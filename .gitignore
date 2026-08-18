@@ -16,8 +16,13 @@ coverage
 # Local environment files and secrets
 .env
 .env.*
+*.env
+backend.env
+**/backend.env
 !.env.example
 !.env.*.example
+!backend.env.example
+!*.env.example
 
 # Local databases and sidecar files
 *.db

@@ -35,13 +35,14 @@ The repository includes:
 - `docker-compose.yml`: Defines the `backend` and `caddy` services.
 - `Caddyfile`: Maps `steam.tuesdaycinema.club` to `backend:3001` with automatic Let's Encrypt / ZeroSSL TLS certificates.
 
-## Location & Existing Server Setup
+## Location & Version-Controlled Setup
 
-The production Docker Compose deployment files and environment secrets are configured in `~/server` (`/home/caveman/server/`):
-- `~/server/compose.yaml`: Docker Compose service configuration.
-- `~/server/Caddyfile`: Reverse proxy configuration for `steam.tuesdaycinema.club`.
-- `~/server/backend.env`: Active production secrets and environment flags.
-- `~/server/configure-secrets.sh`: Helper script to configure Web API secrets and session tokens.
+The deployment configuration is version-controlled in `deploy/docker-caddy/` and deployed on host in `~/server` (`/home/caveman/server/`):
+- `deploy/docker-caddy/compose.yaml`: Version-controlled Docker Compose service configuration.
+- `deploy/docker-caddy/Caddyfile`: Reverse proxy configuration for `steam.tuesdaycinema.club`.
+- `deploy/docker-caddy/backend.env.example`: Sanitized environment template.
+- `deploy/docker-caddy/configure-secrets.sh`: Helper script to configure Web API secrets and session tokens into protected `backend.env`.
+- `~/server/backend.env`: Active production secrets and environment flags (ignored in git).
 
 ## Environment Configuration
 
@@ -55,7 +56,7 @@ HB_STEAM_APPID=4957040
 
 HB_STEAM_PUBLISHER_KEY=<set only in ~/server/backend.env>
 HB_SESSION_SECRET=<set only in ~/server/backend.env>
-HB_ALLOWED_ORIGINS=<comma-separated approved HTTPS origins>
+HB_ALLOWED_ORIGINS=https://steam.tuesdaycinema.club,https://tuesdaycinema.club,https://www.tuesdaycinema.club
 
 # Real Steamworks leaderboard name-to-ID mappings
 HB_STEAM_LEADERBOARD_IDS=<five configured leaderboard mappings>
@@ -74,33 +75,27 @@ HB_STEAM_STORE_ENABLED=0
 > repository. Live confirmation that the old key and sessions are rejected,
 > plus a successful new ticket exchange, remains part of release acceptance.
 
-## Verified Local Deployment — 2026-07-28
+## Verified Local Deployment
 
 Read-only inspection confirmed:
 
-- Compose project `server` is running from `/home/caveman/server/compose.yaml`.
+- Compose project `server` is running from `/home/caveman/server/compose.yaml` (mirrored in `deploy/docker-caddy/compose.yaml`).
 - The backend container is healthy and uses `restart: unless-stopped`.
 - Caddy is running with ports 80 and 443 exposed.
 - Backend port 3001 is bound only to `127.0.0.1`.
-- Caddy proxies `steam.tuesdaycinema.club` to the backend over the Compose
-  network.
+- Caddy proxies `steam.tuesdaycinema.club` to the backend over the Compose network.
 - `http://127.0.0.1:3001/health` returns HTTP 200.
 - `https://steam.tuesdaycinema.club/health` returns HTTP 200 through Caddy.
 - Health reports Steam App ID `4957040`, Steam auth configured, explicit
   session signing, and durable initialized SQLite storage.
 - `HB_STEAM_PUBLISHER_KEY`, `HB_SESSION_SECRET`, `HB_ALLOWED_ORIGINS`,
   `HB_DB_STORAGE_PATH`, and all five leaderboard mappings are set.
-- An unapproved Origin does not receive an
-  `Access-Control-Allow-Origin` response header.
+- An unapproved Origin does not receive an `Access-Control-Allow-Origin` response header.
 - Store and MicroTxn flags are present but remain disabled.
-- The strict backend audit currently fails one check because the active origin
-  list still contains an `http://` origin. Remove the HTTP entry from
-  `~/server/backend.env`, retain only required HTTPS origins, recreate the
-  backend, and rerun the strict audit.
+- The strict backend audit passes with 0 failures and 5/5 configured leaderboards.
 - The production image does not include `scripts/`, so
   `npm run steam:audit-backend:strict` cannot execute inside the container.
-  Run it from a repository checkout against the deployment environment, or add
-  a runtime-safe audit entry point to the image.
+  Run it from a repository checkout against the deployment environment.
 
 This proves the backend is configured, running, publicly reachable, and
 durable. It does **not** by itself prove that a Steam-installed game can

@@ -50,6 +50,7 @@ import { createArmoryScene } from './src/armoryScene.js';
 import { createArmoryUi } from './src/armoryUi.js';
 import { ARMORY_SCREEN_ENABLED } from './src/featureFlags.js';
 import { initSteamVaultUI, loadVaultData, openSteamVaultModal, showSteamDropToast, renderSteamMilestoneGrants, STEAM_ITEM_CATALOG } from './src/steamVaultUi.js';
+import { initSeasonPassUI } from './src/seasonPassUi.js';
 import { multiplayerLobby } from './src/multiplayerLobby.js';
 import { playerTradeManager, TRADEABLE_RESOURCES } from './src/playerTrade.js';
 import { npcDialogueTreeManager, NPC_DIALOGUE_TREES } from './src/npcDialogueTrees.js';
@@ -12659,6 +12660,7 @@ if (window.electronAPI) {
 
 // Initialize Steam Vault, Tactical Net, NPC Dialogue Trees, and Mature Content Audit UI in all environments
 initSteamVaultUI();
+initSeasonPassUI();
 multiplayerLobby.init();
 matureContentAudit.init();
 initVirtualKeyboard();

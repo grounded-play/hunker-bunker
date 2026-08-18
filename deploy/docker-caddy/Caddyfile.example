@@ -1,0 +1,5 @@
+# Example Caddyfile for host or container reverse proxy
+# Replace domain with your public DNS record
+steam.tuesdaycinema.club {
+    reverse_proxy 127.0.0.1:3001
+}

@@ -43,3 +43,8 @@
    - (`07-pre-mission-armory-and-class-weapons.md` is a concurrent-draft doc merged into this one — kept as a pointer.)
    - **Build tracking**: [`docs/armory-and-class-weapons-worklog.md`](file:///home/caveman/Desktop/icecave/hunker-bunker/docs/armory-and-class-weapons-worklog.md) is the live task board/status log for implementation — check it before starting any code work on this doc.
 
+8. [08. Complete Asset Audit & Render Gaps](file:///home/caveman/Desktop/icecave/hunker-bunker/docs/season-zero-protocol/08-asset-audit-and-gaps.md)
+   - File-by-file cross-reference of all 60 itemdefs against real 2D art, 3D models, and Steam catalog registration.
+   - The single biggest blocker: **zero of the 60 season itemdefs are registered in `src/data/steamItemCatalog.js`**, so even complete items don't show in the Vault UI yet.
+   - Discovered naming/data conflicts (itemdef `4107`/`4103` class mismatches, `4154` vs `4001` duplicate) and a priority order for closing the remaining gaps.
+

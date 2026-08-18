@@ -226,6 +226,58 @@ Status to `Done` and add a one-line result to §5 when finished, don't just leav
 
 Append here, most recent first. One line per event: date, agent, what happened.
 
+- **2026-08-17 16:54** — Claude: **Built and live-verified the Season 0 Tactical Dossier (battle
+  pass) system** — separate feature from the Armory, but same season economy, so logging it here
+  rather than starting a third worklog. Note this doc's title/scope no longer fully covers what's
+  tracked in it; consider a rename or split if this keeps growing.
+  - `src/seasonPass.js`: `SeasonPassManager` — XP storage/persistence (`hb_season_pass_v1`), tier
+    math (5000 XP/tier, 50 tiers), and the full 50-tier free/premium reward table transcribed
+    from `docs/season-zero-protocol/04-battle-pass-and-progression-tiers.md` §3. Fully unit
+    tested (`src/seasonPass.test.js`, 14 tests: tier math, claim gating, premium gating,
+    persistence round-trip, reset) — this module has real automated coverage, not just manual
+    browser verification.
+  - `src/seasonPassUi.js`: renders the modal, wires 3 **real** gameplay-completion events (found
+    via code inspection, not the design doc's fictional event names — `mission-objective-complete`
+    → Room/Objective Cleared +50 XP, `enemy-killed` with `detail.isBoss`/`detail.isMilestone` →
+    Boss Defeated +2500 / Elite Nest Purged +250, `depth-tier-changed` → Floor Cleared +1000),
+    shows XP/tier-up toasts on the shared `.hud-notification-stack`, and grants claimed rewards
+    into the **same systems everything else reads from** — `BankManager.deposit()` for currency
+    (doc 04's "Fabrication Scrap" has no real matching currency, `src/bank.js` only tracks
+    tech/coin/med/shells — realized as `coin`, flagged in code) and a new exported
+    `grantVaultItem()` in `src/steamVaultUi.js` (mirrors the exact sandbox-grant pattern
+    `openDeepRelicCache()` already used) for item/cache rewards — not a second parallel
+    inventory, the mistake this session kept finding and fixing in other agents' work.
+  - New `#season-pass-modal` in `index.html` + a `◈ DOSSIER` hub button on the Briefing Console
+    (no existing button was free to repurpose — confirmed via research, all 6 were live features).
+    CSS follows the same design-token/`.season-pass-*` pattern as the Armory CSS fix above.
+  - **Deliberately NOT built**: doc 04's "Daily Tactical Bounty"/"Weekly Sector Directive" XP
+    sources — no quest/bounty-tracking system exists anywhere in this codebase (confirmed via
+    research) to hook, and building one is a separate feature (tracking + reset timers + UI), not
+    battle-pass plumbing. Flagged as a real, known gap rather than faked with a wrong signal.
+  - **Live-verified in a real browser, not just unit tests**: opened a fresh session and
+    `depth-tier-changed` events fired for real from an already-in-progress game, producing correct
+    "+1000 XP" toasts with zero console errors — proof the event wiring works outside of a
+    synthetic test. Then manually drove XP past tier 1 and confirmed: the DOSSIER modal renders
+    all 50 tiers with correct per-tier reward labels, the free-track CLAIM button appears exactly
+    when a tier is reached, clicking it moved `bankManager`'s `coin` balance from `0` → `500`
+    (doc's "500x Fabrication Scrap," tier 1) confirming the grant path actually executes rather
+    than just updating UI state, the premium unlock button flips `hasPremium` and unlocks
+    premium-track claims immediately, and the hub button's "TIER N / 50" status updates live.
+  - **One real, honest limitation found and left as-is rather than papered over**: claimed
+    itemdef-type rewards (skins/charms/decals in the 4100-4159 range) correctly get added to the
+    underlying inventory array via `grantVaultItem()`, but `steamVaultUi.js`'s
+    `renderInventoryGrid()` silently skips any item whose `itemdefid` isn't registered in the
+    *generated* `src/data/steamItemCatalog.js` (`if (!catalog) return;`, line ~313) — and almost
+    none of the 41xx season-item range is registered there yet (confirmed: `4000` is, `4100` is
+    not). So a claimed weapon skin/charm won't visually appear in the separate Steam Vault
+    browsing grid yet, even though the claim itself succeeded and the player gets a clear
+    in-modal confirmation toast either way. This is a pre-existing content-catalog completeness
+    gap (that generated file needs ~60 more real Steam-schema entries with hosted icon URLs, a
+    content-authoring task, not something to hand-edit) — not a season-pass bug, and not
+    something I'm going to try to backfill by hand here. Currency and cache-type rewards (itemdef
+    `4000`, already registered) are unaffected and fully visible.
+  Full suite after this work: 191/191 test files, 1601/1601 tests. Production build + the
+  existing `audit-build-media.js` both still pass clean.
 - **2026-08-17 16:37** — Claude: **Fixed two user-reported bugs, both root-caused via live browser
   testing before touching any code:**
   1. **Armory CSS was spilling/clipping and didn't match the game's visual language.**

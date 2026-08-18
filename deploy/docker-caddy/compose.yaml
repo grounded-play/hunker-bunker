@@ -1,0 +1,38 @@
+services:
+  hunker-bunker-backend:
+    build:
+      context: ../..
+      dockerfile: Dockerfile
+    image: hunker-bunker-backend:local
+    container_name: hunker-bunker-backend
+    restart: unless-stopped
+    env_file:
+      - backend.env
+    ports:
+      - "127.0.0.1:3001:3001"
+    volumes:
+      - hunker-bunker-data:/app/server/data
+
+  caddy:
+    image: caddy:2-alpine
+    container_name: hunker-bunker-caddy
+    restart: unless-stopped
+    depends_on:
+      hunker-bunker-backend:
+        condition: service_healthy
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - hunker-bunker-caddy-data:/data
+      - hunker-bunker-caddy-config:/config
+
+volumes:
+  hunker-bunker-data:
+    name: hunker-bunker-data
+  hunker-bunker-caddy-data:
+    name: hunker-bunker-caddy-data
+  hunker-bunker-caddy-config:
+    name: hunker-bunker-caddy-config

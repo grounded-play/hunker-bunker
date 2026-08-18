@@ -348,6 +348,10 @@
                     <button class="start-btn start-btn--vault" id="steam-vault-btn" title="Steam Vault — view Steam-owned cosmetics">◈ STEAM VAULT</button>
                     <div class="menu-command__status" id="vault-command-status">OFFLINE</div>
                   </div>
+                  <div class="menu-command" id="season-pass-command">
+                    <button class="start-btn start-btn--dossier" id="season-pass-btn" title="Tactical Dossier — Season 0 battle pass progression">◈ DOSSIER</button>
+                    <div class="menu-command__status" id="season-pass-command-status">TIER 0 / 50</div>
+                  </div>
                 </div>
               </div>
               <button class="start-btn map-initialize-btn" id="start-game">INITIALIZE</button>
@@ -474,6 +478,18 @@
           <div id="archive-summary" class="archive-summary">LOGS RECOVERED: 0 / 27</div>
         </div>
         <div id="archive-log-list" class="archive-log-list"></div>
+      </div>
+    </div>
+
+    <div id="season-pass-modal" class="modal hidden" aria-hidden="true">
+      <div class="modal-content season-pass-modal-content">
+        <div class="terminal-scanline"></div>
+        <div class="season-pass-header">
+          <button class="close-modal" id="close-season-pass-modal" aria-label="Close Tactical Dossier">×</button>
+          <div class="season-pass-title">◈ SEASON 0 // TACTICAL DOSSIER</div>
+          <div id="season-pass-progress-summary" class="season-pass-progress-summary"></div>
+        </div>
+        <div id="season-pass-body" class="season-pass-body"></div>
       </div>
     </div>
 
