@@ -208,14 +208,31 @@ function renderSeasonPassBody() {
     const progress = seasonPass.getTierProgress();
     if (summary) {
         summary.innerHTML = `
-            <span class="season-pass-xp-total">${seasonPass.getTotalXp().toLocaleString()} XP</span>
-            <span class="season-pass-tier-label">TIER ${progress.tier} / ${TOTAL_TIERS}</span>
-            <div class="season-pass-progress-bar"><div class="season-pass-progress-fill" style="width:${Math.round(progress.fraction * 100)}%"></div></div>
-            <span class="season-pass-xp-next">${progress.xpIntoTier} / ${progress.xpForNextTier || XP_PER_TIER} XP to next tier</span>
-            ${!seasonPass.hasPremium() ? '<button id="season-pass-unlock-premium" class="season-pass-unlock-btn">UNLOCK CLASSIFIED DOSSIER</button>' : '<span class="season-pass-premium-active">CLASSIFIED DOSSIER ACTIVE</span>'}
+            <div class="season-pass-telemetry-row">
+                <div class="season-pass-chip season-pass-chip--tier">
+                    <span>◈</span> TIER ${progress.tier} / ${TOTAL_TIERS}
+                </div>
+                <div class="season-pass-chip season-pass-chip--xp">
+                    <span>⚡</span> ${seasonPass.getTotalXp().toLocaleString()} XP
+                </div>
+                <div class="season-pass-progress-bar-wrap">
+                    <div class="season-pass-progress-bar">
+                        <div class="season-pass-progress-fill" style="width:${Math.round(progress.fraction * 100)}%"></div>
+                    </div>
+                    <span class="season-pass-xp-next">${progress.xpIntoTier} / ${progress.xpForNextTier || XP_PER_TIER} XP</span>
+                </div>
+                ${!seasonPass.hasPremium()
+                    ? '<button id="season-pass-unlock-premium" class="season-pass-unlock-btn">UNLOCK CLASSIFIED INTEL</button>'
+                    : '<span class="season-pass-chip season-pass-chip--active">✓ CLASSIFIED DOSSIER ACTIVE</span>'
+                }
+            </div>
             <div class="season-pass-tabs">
-                <button class="season-pass-tab-btn ${activeTab === 'tiers' ? 'active' : ''}" data-tab="tiers">PROGRESSION REWARDS (1-50)</button>
-                <button class="season-pass-tab-btn ${activeTab === 'bounties' ? 'active' : ''}" data-tab="bounties">DIRECTIVES & BOUNTIES</button>
+                <button class="season-pass-tab-btn ${activeTab === 'tiers' ? 'active' : ''}" data-tab="tiers">
+                    <span class="season-pass-tab-icon">◈</span> PROGRESSION TIERS (1-50)
+                </button>
+                <button class="season-pass-tab-btn ${activeTab === 'bounties' ? 'active' : ''}" data-tab="bounties">
+                    <span class="season-pass-tab-icon">⚡</span> TACTICAL DIRECTIVES & BOUNTIES
+                </button>
             </div>
         `;
         summary.querySelector('#season-pass-unlock-premium')?.addEventListener('click', () => {
@@ -232,7 +249,13 @@ function renderSeasonPassBody() {
     }
 
     if (activeTab === 'tiers') {
-        let rows = '';
+        let rows = `
+            <div class="season-pass-tier-header-row">
+                <div class="tier-col-num">TIER</div>
+                <div class="tier-col-free">FREE REQUISITION TRACK</div>
+                <div class="tier-col-premium">CLASSIFIED OPERATOR TRACK</div>
+            </div>
+        `;
         for (let t = 1; t <= TOTAL_TIERS; t++) rows += renderTierCard(t);
         body.innerHTML = `<div class="season-pass-tier-list">${rows}</div>`;
 
@@ -253,7 +276,7 @@ function renderSeasonPassBody() {
         body.innerHTML = `
             <div class="bounty-section">
                 <div class="bounty-section__header">
-                    <span class="bounty-section__title">◈ DAILY TACTICAL DIRECTIVES</span>
+                    <span class="bounty-section__title">◈ DAILY TACTICAL DIRECTIVES (3 ACTIVE)</span>
                     <span class="bounty-section__timer">RESETS IN: ${getTimeUntilDailyReset()}</span>
                 </div>
                 <div class="bounty-grid">
@@ -262,7 +285,7 @@ function renderSeasonPassBody() {
             </div>
             <div class="bounty-section">
                 <div class="bounty-section__header">
-                    <span class="bounty-section__title">◈ WEEKLY SECTOR OPERATIONS</span>
+                    <span class="bounty-section__title">◈ WEEKLY SECTOR OPERATIONS (5 ACTIVE)</span>
                     <span class="bounty-section__timer">RESETS IN: ${getTimeUntilWeeklyReset()}</span>
                 </div>
                 <div class="bounty-grid">

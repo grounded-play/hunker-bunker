@@ -17858,92 +17858,255 @@ body.show-debug .map-tool-btn--debug { display: inline-flex; }
 
 /* ── Season 0 Tactical Dossier (#season-pass-modal) ───────────────────── */
 .season-pass-modal-content {
-  width: calc(var(--vu) * 130);
-  max-width: 95%;
+  --season-glow-rgb: 255, 159, 28;
+  max-width: min(96vw, calc(var(--vu) * 148));
+  width: min(96vw, calc(var(--vu) * 148));
+  height: min(90vh, calc(var(--vu) * 96));
+  background: rgba(8, 14, 22, 0.97) !important;
+  border: 1.5px solid rgba(var(--season-glow-rgb), 0.45) !important;
+  box-shadow: 0 0 35px rgba(var(--season-glow-rgb), 0.2), 0 0 70px rgba(0, 0, 0, 0.9) !important;
+  color: #fff7ed !important;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden !important;
+  position: relative;
+  border-radius: 8px;
 }
 
 .season-pass-header {
-  display: flex;
-  flex-direction: column;
-  gap: calc(var(--vu) * 1);
-  margin-bottom: calc(var(--vu) * 2);
+  position: relative;
+  text-align: center;
+  margin-bottom: calc(var(--vu) * 1);
+  flex: 0 0 auto;
+}
+
+.season-pass-header-kicker {
+  font-family: 'Space Mono', monospace;
+  font-size: calc(var(--font-xs) * 0.7);
+  letter-spacing: 0.16em;
+  color: #ffb238;
+  margin-bottom: 2px;
+  font-weight: 700;
 }
 
 .season-pass-title {
-  font-family: 'Outfit', sans-serif;
-  font-size: var(--font-lg, 22px);
+  font-size: calc(var(--vu) * 3.2);
   font-weight: 900;
-  letter-spacing: 0.04em;
-  color: var(--text-main);
+  letter-spacing: 0.12em;
+  color: #ffffff;
+  text-shadow: 0 0 calc(var(--vu) * 2) rgba(var(--season-glow-rgb), 0.6);
+  font-family: 'Rajdhani', 'Outfit', sans-serif;
+  line-height: 1.1;
+  text-transform: uppercase;
+}
+
+.season-pass-title-accent {
+  color: #ff9f1c;
+  font-weight: 700;
 }
 
 .season-pass-progress-summary {
   display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: calc(var(--vu) * 1.4);
-  font-family: 'Space Mono', monospace;
-  font-size: var(--font-xs, 13px);
-  color: var(--text-muted);
+  flex-direction: column;
+  gap: calc(var(--vu) * 0.8);
+  margin-top: calc(var(--vu) * 0.8);
 }
 
-.season-pass-xp-total {
-  color: var(--accent-primary);
+.season-pass-telemetry-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: calc(var(--vu) * 1);
+  font-family: 'Space Mono', monospace;
+  font-size: var(--font-xs, 12px);
+}
+
+.season-pass-chip {
+  font-family: 'Space Mono', monospace;
+  font-size: calc(var(--font-xs) * 0.78);
+  font-weight: 800;
+  padding: 4px 10px;
+  border-radius: 4px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  letter-spacing: 0.05em;
+}
+
+.season-pass-chip--tier {
+  background: rgba(46, 196, 182, 0.15);
+  color: #2ec4b6;
+  border: 1px solid rgba(46, 196, 182, 0.4);
+}
+
+.season-pass-chip--xp {
+  background: rgba(255, 159, 28, 0.15);
+  color: #ff9f1c;
+  border: 1px solid rgba(255, 159, 28, 0.4);
+}
+
+.season-pass-chip--active {
+  background: rgba(16, 185, 129, 0.15);
+  color: #10b981;
+  border: 1px solid rgba(16, 185, 129, 0.4);
   font-weight: 900;
 }
 
-.season-pass-tier-label {
-  color: var(--accent-secondary);
-  font-weight: 700;
+.season-pass-progress-bar-wrap {
+  display: flex;
+  align-items: center;
+  gap: calc(var(--vu) * 0.8);
+  flex: 1 1 200px;
+  max-width: 320px;
 }
 
 .season-pass-progress-bar {
-  flex: 1 1 160px;
-  min-width: 160px;
-  height: 10px;
+  flex: 1;
+  height: 8px;
   background: rgba(255, 255, 255, 0.08);
-  border: 1px solid var(--border-subtle);
+  border: 1px solid rgba(255, 255, 255, 0.15);
   border-radius: 999px;
   overflow: hidden;
 }
 
 .season-pass-progress-fill {
   height: 100%;
-  background: linear-gradient(90deg, var(--accent-secondary), var(--accent-primary));
+  background: linear-gradient(90deg, #2ec4b6, #ff9f1c);
   transition: width 0.3s ease;
+  box-shadow: 0 0 8px rgba(255, 159, 28, 0.5);
+}
+
+.season-pass-xp-next {
+  font-size: calc(var(--font-xs) * 0.72);
+  color: var(--text-muted);
+  white-space: nowrap;
 }
 
 .season-pass-unlock-btn,
 .season-pass-claim-btn {
-  font-family: 'Space Mono', monospace;
-  font-weight: 900;
-  font-size: var(--font-xxs, 11px);
-  letter-spacing: 0.06em;
-  padding: calc(var(--vu) * 0.7) calc(var(--vu) * 1.4);
-  border-radius: 6px;
-  border: none;
+  font-family: 'Rajdhani', 'Space Mono', monospace;
+  font-weight: 800;
+  font-size: var(--font-xs, 12px);
+  letter-spacing: 0.08em;
+  padding: 5px 14px;
+  border-radius: 4px;
+  border: 1px solid #ff9f1c;
   cursor: pointer;
-  background: var(--accent-primary);
-  color: #1a1103;
-  box-shadow: 0 3px 0 #c77b15;
+  background: linear-gradient(135deg, rgba(255, 159, 28, 0.25) 0%, rgba(255, 178, 56, 0.15) 100%);
+  color: #ffffff;
+  box-shadow: 0 0 12px rgba(255, 159, 28, 0.3);
   transition: all 0.15s ease;
+  text-transform: uppercase;
 }
 
 .season-pass-unlock-btn:hover,
 .season-pass-claim-btn:hover {
-  background: #ffb238;
+  background: linear-gradient(135deg, rgba(255, 159, 28, 0.45) 0%, rgba(255, 178, 56, 0.3) 100%);
   transform: translateY(-1px);
+  box-shadow: 0 0 16px rgba(255, 159, 28, 0.5);
 }
 
-.season-pass-premium-active {
-  color: var(--accent-secondary);
-  font-weight: 700;
+.season-pass-tabs {
+  display: flex;
+  gap: calc(var(--vu) * 1.2);
+  justify-content: center;
+  border-bottom: 1px solid rgba(var(--season-glow-rgb), 0.25);
+  padding-bottom: calc(var(--vu) * 0.8);
+  margin-top: calc(var(--vu) * 0.6);
+  flex: 0 0 auto;
+}
+
+.season-pass-tab-btn {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #c4b5a5;
+  font-family: 'Rajdhani', sans-serif;
+  font-weight: 800;
+  font-size: calc(var(--font-xs) * 0.95);
+  letter-spacing: 0.1em;
+  padding: 6px 20px;
+  cursor: pointer;
+  border-radius: 6px;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  text-transform: uppercase;
+}
+
+.season-pass-tab-btn:hover {
+  color: #fff7ed;
+  background: rgba(var(--season-glow-rgb), 0.12);
+  border-color: rgba(var(--season-glow-rgb), 0.35);
+}
+
+.season-pass-tab-btn.active {
+  color: #ffffff;
+  background: linear-gradient(135deg, rgba(255, 159, 28, 0.25) 0%, rgba(255, 178, 56, 0.15) 100%);
+  border-color: #ff9f1c;
+  box-shadow: 0 0 16px rgba(255, 159, 28, 0.35);
+}
+
+.season-pass-tab-icon {
+  font-size: 13px;
+  color: #ff9f1c;
+}
+
+.season-pass-body {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  padding-right: 6px;
+  margin-top: calc(var(--vu) * 1);
+}
+
+.season-pass-body::-webkit-scrollbar {
+  width: 6px;
+}
+
+.season-pass-body::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 3px;
+}
+
+.season-pass-body::-webkit-scrollbar-thumb {
+  background: rgba(255, 159, 28, 0.35);
+  border-radius: 3px;
+}
+
+.season-pass-body::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 159, 28, 0.6);
 }
 
 .season-pass-tier-list {
   display: flex;
   flex-direction: column;
-  gap: calc(var(--vu) * 0.6);
+  gap: calc(var(--vu) * 0.5);
+}
+
+.season-pass-tier-header-row {
+  display: grid;
+  grid-template-columns: calc(var(--vu) * 4) minmax(0, 1fr) minmax(0, 1fr);
+  gap: calc(var(--vu) * 1);
+  padding: calc(var(--vu) * 0.4) calc(var(--vu) * 0.8);
+  font-family: 'Space Mono', monospace;
+  font-size: calc(var(--font-xs) * 0.72);
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+  border-bottom: 1px dashed rgba(255, 255, 255, 0.1);
+}
+
+.tier-col-num {
+  text-align: center;
+}
+
+.tier-col-free {
+  color: var(--accent-secondary);
+}
+
+.tier-col-premium {
+  color: var(--accent-primary);
 }
 
 .season-pass-tier-row {
@@ -17951,15 +18114,22 @@ body.show-debug .map-tool-btn--debug { display: inline-flex; }
   grid-template-columns: calc(var(--vu) * 4) minmax(0, 1fr) minmax(0, 1fr);
   align-items: stretch;
   gap: calc(var(--vu) * 1);
-  padding: calc(var(--vu) * 0.8);
+  padding: calc(var(--vu) * 0.6);
   border-radius: 6px;
   background: rgba(255, 255, 255, 0.02);
-  opacity: 0.55;
+  border: 1px solid rgba(255, 255, 255, 0.04);
+  opacity: 0.6;
+  transition: all 0.15s ease;
+}
+
+.season-pass-tier-row:hover {
+  background: rgba(255, 255, 255, 0.04);
 }
 
 .season-pass-tier-row.unlocked {
   opacity: 1;
   background: rgba(46, 196, 182, 0.05);
+  border-color: rgba(46, 196, 182, 0.15);
 }
 
 .season-pass-tier-number {
@@ -17968,7 +18138,7 @@ body.show-debug .map-tool-btn--debug { display: inline-flex; }
   justify-content: center;
   font-family: 'Space Mono', monospace;
   font-weight: 900;
-  font-size: var(--font-sm, 15px);
+  font-size: var(--font-sm, 14px);
   color: var(--text-muted);
 }
 
@@ -17981,97 +18151,38 @@ body.show-debug .map-tool-btn--debug { display: inline-flex; }
   align-items: center;
   justify-content: space-between;
   gap: calc(var(--vu) * 1);
-  padding: calc(var(--vu) * 0.7) calc(var(--vu) * 1);
+  padding: calc(var(--vu) * 0.6) calc(var(--vu) * 1);
   border-radius: 4px;
   border: 1px solid var(--border-subtle);
-  background: rgba(0, 0, 0, 0.25);
+  background: rgba(0, 0, 0, 0.35);
   font-family: 'Space Mono', monospace;
-  font-size: var(--font-xxs, 12px);
+  font-size: var(--font-xxs, 11px);
   color: var(--text-main);
 }
 
 .season-pass-slot--empty {
   justify-content: center;
   color: var(--text-muted);
-  opacity: 0.4;
+  opacity: 0.3;
 }
 
 .season-pass-slot--claimed {
-  border-color: rgba(46, 196, 182, 0.4);
-  color: var(--accent-secondary);
+  border-color: rgba(16, 185, 129, 0.4);
+  color: #34d399;
+  background: rgba(16, 185, 129, 0.06);
 }
 
 .season-pass-slot--claimable {
-  border-color: rgba(255, 159, 28, 0.5);
-  box-shadow: 0 0 10px rgba(255, 159, 28, 0.2);
+  border-color: rgba(255, 159, 28, 0.6);
+  background: rgba(255, 159, 28, 0.08);
+  box-shadow: 0 0 12px rgba(255, 159, 28, 0.2);
 }
 
 .season-pass-slot__state {
-  font-size: var(--font-xxxs, 10px);
+  font-size: 9px;
   color: var(--text-muted);
   letter-spacing: 0.06em;
-}
-
-.season-pass-tabs {
-  display: flex;
-  gap: calc(var(--vu) * 1);
-  margin-top: calc(var(--vu) * 1);
-  border-bottom: 1px solid var(--border-subtle);
-  padding-bottom: calc(var(--vu) * 0.8);
-}
-
-.season-pass-tab-btn {
-  font-family: 'Space Mono', monospace;
-  font-size: var(--font-xs, 12px);
   font-weight: 700;
-  letter-spacing: 0.06em;
-  padding: calc(var(--vu) * 0.6) calc(var(--vu) * 1.4);
-  border: 1px solid transparent;
-  border-radius: 4px;
-  background: rgba(255, 255, 255, 0.03);
-  color: var(--text-muted);
-  cursor: pointer;
-  transition: all 0.15s ease;
-}
-
-.season-pass-tab-btn:hover {
-  color: var(--text-main);
-  background: rgba(255, 255, 255, 0.08);
-}
-
-.season-pass-tab-btn.active {
-  color: var(--accent-primary);
-  border-color: rgba(255, 159, 28, 0.4);
-  background: rgba(255, 159, 28, 0.12);
-}
-
-.bounty-section {
-  display: flex;
-  flex-direction: column;
-  gap: calc(var(--vu) * 1);
-  margin-bottom: calc(var(--vu) * 2);
-}
-
-.bounty-section__header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  font-family: 'Space Mono', monospace;
-  font-size: var(--font-xs, 12px);
-  color: var(--text-muted);
-  padding-bottom: calc(var(--vu) * 0.4);
-  border-bottom: 1px dashed rgba(255, 255, 255, 0.1);
-}
-
-.bounty-section__title {
-  font-weight: 900;
-  color: var(--accent-secondary);
-  letter-spacing: 0.06em;
-}
-
-.bounty-section__timer {
-  font-size: var(--font-xxs, 11px);
-  color: var(--accent-primary);
 }
 
 .bounty-grid {

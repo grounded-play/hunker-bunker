@@ -10159,6 +10159,13 @@ export class ThreeGame {
             this.damageScatterProp(sprite, amount);
             return;
         }
+        // Season 0 Cryo-Capacitor Overclock proc (itemdef 4140): 18% chance per hit to
+        // freeze the target in place. cryoDurationMultiplier (default 1.0, +0.08 when
+        // equipped) scales the freeze duration off a 1.0s base.
+        const cryoMult = this.loadoutMods?.cryoDurationMultiplier ?? 1.0;
+        if (sprite?.userData && cryoMult > 1.0 && Math.random() < 0.18) {
+            sprite.userData.frozenTimer = Math.max(sprite.userData.frozenTimer ?? 0, 1.0 * cryoMult);
+        }
         const fight = sprite?.userData?.queenFight;
         if (fight) {
             const dealt = applyBossDamage(fight, amount);
@@ -13164,8 +13171,27 @@ export class ThreeGame {
         this.o2DispatchTimer = 0;
         this._lastLoopStepKey = null;
 
+        // Season 0 Thermal Heat Exchanger overclock (itemdef 4144, docs/season-zero-protocol/03 §4):
+        // grants a small personal damage-absorb shield; the item's own effect makes it
+        // recharge faster after taking fire (shieldRechargeDelayMultiplier).
+        this.playerShieldMax = (this.loadoutMods?.shieldRechargeDelayMultiplier ?? 1.0) < 1.0 ? 20 : 0;
+        this.playerShieldHp = this.playerShieldMax;
+        this.shieldRechargeDelayTimer = 0;
+
         if (emit) {
             this.emitVitalsState();
+        }
+    }
+
+    // Ticks the shield recharge delay + regen. Called once per frame from the main update loop.
+    updatePlayerShield(delta) {
+        if (!this.playerShieldMax) return;
+        if (this.shieldRechargeDelayTimer > 0) {
+            this.shieldRechargeDelayTimer = Math.max(0, this.shieldRechargeDelayTimer - delta);
+            return;
+        }
+        if (this.playerShieldHp < this.playerShieldMax) {
+            this.playerShieldHp = Math.min(this.playerShieldMax, this.playerShieldHp + this.playerShieldMax * 0.5 * delta);
         }
     }
 
@@ -14226,9 +14252,29 @@ export class ThreeGame {
         if (typeof window !== 'undefined' && window.npcDialogueTreeManager?.activePerks?.has?.('vesper_field_armor')) {
             effectiveAmount *= 0.9;
         }
+        // Season 0 Thermal Heat Exchanger overclock (itemdef 4144): shield absorbs damage
+        // before HP, then goes on a recharge delay (shortened by shieldRechargeDelayMultiplier).
+        if (this.playerShieldMax > 0 && this.playerShieldHp > 0) {
+            const absorbed = Math.min(this.playerShieldHp, effectiveAmount);
+            this.playerShieldHp -= absorbed;
+            effectiveAmount -= absorbed;
+        }
+        if (this.playerShieldMax > 0) {
+            const baseDelay = 4.0;
+            this.shieldRechargeDelayTimer = baseDelay * (this.loadoutMods?.shieldRechargeDelayMultiplier ?? 1.0);
+        }
         const damage = Math.max(0, Math.round(effectiveAmount));
         this.playerVitals.hp = Math.max(0, this.playerVitals.hp - damage);
-        if (this.playerVitals.hp === previousHp) return false;
+        if (this.playerVitals.hp === previousHp) {
+            if (this.playerShieldMax > 0) {
+                // Fully shield-absorbed hit — no HP change, but give real feedback so the
+                // mechanic doesn't read as broken/unresponsive.
+                window.AudioManager?.play?.('ui_error', { volume: 0.25, playbackRate: 1.4 });
+                if (this.player) this.tintPlayerSprites?.(0x9beaff);
+                setTimeout(() => this.tintPlayerSprites?.(this._playerPolishHex ?? 0xffffff), 120);
+            }
+            return false;
+        }
         this.player3dOverlay?.trigger('hit');
 
         if (sourceX != null && sourceZ != null) {
@@ -15462,6 +15508,8 @@ export class ThreeGame {
                 }
             }
         }
+
+        this.updatePlayerShield(delta);
 
         // Handle slow and poison status effects
         if (this.playerSlowTimer > 0) {
@@ -17259,6 +17307,7 @@ export class ThreeGame {
                 }
             }
 
+            this.spawnMuzzleFlash?.(spawnX, spawnZ);
             this.spawnProjectile({
                 x: spawnX,
                 z: spawnZ,
@@ -17451,6 +17500,32 @@ export class ThreeGame {
             child.material?.dispose?.();
             child.geometry?.dispose?.();
         });
+    }
+
+    // Season 0 Cryo Shockwave Muzzle Flare mutator (itemdef 4153, docs/season-zero-protocol/03 §5)
+    spawnMuzzleFlash(x, z) {
+        const muzzleFxId = window.loadout?.state?.muzzleFxId;
+        const isCryo = muzzleFxId === '4153' || muzzleFxId === 'fx_cryo_shockwave_muzzle';
+        const color = isCryo ? 0x9beaff : 0xffd27a;
+
+        const effect = new THREE.Group();
+        const flash = new THREE.Mesh(
+            new THREE.CircleGeometry(isCryo ? 0.22 : 0.14, 10),
+            new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.9, depthWrite: false })
+        );
+        flash.rotation.x = -Math.PI / 2;
+        flash.userData = { isGlow: true };
+        effect.add(flash);
+        effect.position.set(x, 0.42, z);
+        effect.renderOrder = 31;
+        effect.userData = { age: 0, duration: isCryo ? 0.16 : 0.09 };
+        this.scene.add(effect);
+        this.transientEffects.push(effect);
+
+        const light = new THREE.PointLight(color, isCryo ? 2.2 : 1.6, isCryo ? 4.5 : 3.0, 2);
+        light.position.set(x, 0.5, z);
+        this.scene.add(light);
+        setTimeout(() => this.scene?.remove(light), 90);
     }
 
     spawnProjectileImpactEffect(x, z) {
@@ -24180,6 +24255,17 @@ export class ThreeGame {
         data.attackCooldown = Math.max(0, (data.attackCooldown ?? 0) - delta);
         data.pathRetargetTimer = Math.max(0, (data.pathRetargetTimer ?? 0) - delta);
         data.wallBreakCooldown = Math.max(0, (data.wallBreakCooldown ?? 0) - delta);
+
+        // Season 0 Cryo-Capacitor Overclock proc (itemdef 4140, docs/season-zero-protocol/03 §4):
+        // freezes hostiles in place on hit, duration extended by loadoutMods.cryoDurationMultiplier.
+        if (data.frozenTimer > 0) {
+            data.frozenTimer = Math.max(0, data.frozenTimer - delta);
+            sprite.material?.color?.setHex?.(0x88ccff);
+            if (data.frozenTimer <= 0) {
+                sprite.material?.color?.setHex?.(data.biomeTint ?? 0x88ff88);
+            }
+            return;
+        }
 
         if (data.type === 'boss_cryosnail' && data.frostShockwaveWindup > 0) {
             data.frostShockwaveWindup -= delta;
