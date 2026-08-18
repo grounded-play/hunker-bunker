@@ -98,6 +98,7 @@ export function createArmoryUi({
 }) {
     if (!container) throw new Error('Armory UI requires a container DOM element');
 
+    const ALLOWED_CLASSES = new Set(['scout', 'tank', 'engineer']);
     let activeClass = 'scout';
 
     function playSound(key) {
@@ -369,7 +370,8 @@ export function createArmoryUi({
     }
 
     function setClass(classType) {
-        activeClass = classType || 'scout';
+        const normalizedClass = typeof classType === 'string' ? classType.toLowerCase() : '';
+        activeClass = ALLOWED_CLASSES.has(normalizedClass) ? normalizedClass : 'scout';
         loadoutManager.setActiveClass(activeClass);
         armoryScene?.setClass(activeClass);
         armoryScene?.updateFromLoadout(loadoutManager, activeClass);
