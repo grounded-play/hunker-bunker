@@ -131,6 +131,7 @@
     "uuid": "^14.0.1",
     "qs": "^6.15.3",
     "js-yaml": "^4.3.0",
-    "launch-editor": "^2.14.1"
+    "launch-editor": "^2.14.1",
+    "@puppeteer/browsers": "^3.2.1"
   }
 }
