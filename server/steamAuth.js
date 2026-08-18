@@ -388,18 +388,19 @@ export async function verifySteamSessionTicket({ ticketHex, identity } = {}) {
 }
 
 export async function authenticateSteamRequest(req, { allowDevFallback = true } = {}) {
+    // Run the signed-session check unconditionally rather than gating it behind
+    // `if (bearerToken)` — verifySteamSessionToken already treats a missing/empty
+    // token as a clean 401 (`missing_session`), so branching on its verified
+    // *result* (sessionAuth.ok) instead of on the raw, attacker-controlled
+    // Authorization header avoids deciding whether a security check runs based
+    // on untrusted input. A present-but-invalid bearer token now falls through
+    // to ticket verification instead of failing outright, which only helps a
+    // legitimate client (e.g. an expired cached session presented alongside a
+    // fresh ticket) — it can't be used to skip verification either way.
     const bearerToken = getBearerToken(req);
-    // Presence of a bearer token selects WHICH verifier runs (signed-session vs.
-    // fresh Steam ticket below); it does not skip verification — both branches
-    // perform real cryptographic checks (HMAC signature check inside
-    // verifySteamSessionToken, or Steam's own AuthenticateUserTicket call inside
-    // verifySteamSessionTicket). The actual forgery risk this query guards
-    // against was the session-signing secret falling back to a hardcoded value
-    // outside explicit dev-fallback mode; that's fixed in normalizeSessionSecret()
-    // above (now gated on isDevFallbackAllowed()), so this branch can't be used
-    // to mint a token the signature check will accept.
-    if (bearerToken) { // codeql[js/user-controlled-bypass]
-        return verifySteamSessionToken(bearerToken);
+    const sessionAuth = verifySteamSessionToken(bearerToken);
+    if (sessionAuth.ok) {
+        return sessionAuth;
     }
 
     const ticketHex = req.body?.ticketHex ?? req.query?.ticketHex;
