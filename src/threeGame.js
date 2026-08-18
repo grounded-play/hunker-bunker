@@ -17239,6 +17239,7 @@ export class ThreeGame {
                         this.spawnProjectileImpactEffect(hx, hz);
                         this.spawnPhysicalBurst(hx, hz, { color: 0xffd27a, count: 5, upward: 0.16 });
                         const destroyedWall = this.damageWall(wall, damage, { source: 'player' });
+                        if (destroyedWall) window.dispatchEvent(new CustomEvent('wall-breached'));
                         if (!destroyedWall && FEATURE_WALL_DECALS) {
                             let nx = -dx;
                             let nz = -dz;
@@ -17295,7 +17296,9 @@ export class ThreeGame {
         const classColor = PLAYER_COLORS[this.playerType] ?? 0xffe08f;
         let coreColor = options.color ?? (isEnemy ? 0xff4a4a : classColor);
         let glowColor = options.glowColor ?? (isEnemy ? 0xff0000 : classColor);
-        if (!isEnemy && (window.loadout?.state?.hudThemeId === 'hudtheme_emerald_radar' || window.loadout?.state?.hudThemeId === '4151' || options.tracerFx === 'emerald')) {
+        // Season 0 Emerald Void Tracer Rounds mutator (itemdef 4152, docs/season-zero-protocol/03 §5)
+        const tracerFxId = window.loadout?.state?.tracerFxId;
+        if (!isEnemy && (tracerFxId === '4152' || tracerFxId === 'fx_emerald_void_tracer' || options.tracerFx === 'emerald')) {
             coreColor = 0x10b981;
             glowColor = 0x34d399;
         }
@@ -17739,6 +17742,7 @@ export class ThreeGame {
                 const destroyedWall = this.damageWall(wallHit.wall, projectile.damage, {
                     source: projectile.isEnemy ? 'enemy-projectile' : 'player'
                 });
+                if (destroyedWall && !projectile.isEnemy) window.dispatchEvent(new CustomEvent('wall-breached'));
                 if (!destroyedWall && FEATURE_WALL_DECALS) {
                     this.spawnWallDecal(hx, hz, wallHit.normalX, wallHit.normalZ, {
                         wallKey: wallHit.wall?.userData?.wallKey ?? null
@@ -22436,6 +22440,7 @@ export class ThreeGame {
             this.dashCooldownTimer = 0;
             this._recentKillTimestamps = [];
             window.AudioManager?.play?.('fx_achievement', { volume: 0.35, bus: 'sfx' });
+            window.dispatchEvent(new CustomEvent('dash-overdrive-ready'));
             if (this.player) {
                 this.spawnPhysicalBurst(this.player.position.x, this.player.position.z, { color: 0xc084fc, count: 16, upward: 0.3 });
             }

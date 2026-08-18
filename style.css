@@ -18173,6 +18173,30 @@ body.show-debug .map-tool-btn--debug { display: inline-flex; }
   background: #10b981;
 }
 
+/* ── Gamepad & Keyboard Focus Indicator Styles ──────────────────────── */
+.season-pass-tab-btn:focus-visible,
+.season-pass-claim-btn:focus-visible,
+.season-pass-unlock-btn:focus-visible {
+  outline: 2px solid var(--accent-primary) !important;
+  outline-offset: 2px;
+  box-shadow: 0 0 12px rgba(255, 159, 28, 0.6) !important;
+}
+
+.armory-select:focus-visible,
+.armory-btn:focus-visible {
+  outline: 2px solid var(--accent-secondary) !important;
+  outline-offset: 2px;
+  box-shadow: 0 0 12px rgba(46, 196, 182, 0.6) !important;
+}
+
+.vault-tab-btn:focus-visible,
+.vault-item-card:focus-visible {
+  outline: 2px solid var(--accent-secondary) !important;
+  outline-offset: 2px;
+  box-shadow: 0 0 12px rgba(46, 196, 182, 0.6) !important;
+}
+
+
 
 
 

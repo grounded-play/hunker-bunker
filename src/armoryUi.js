@@ -336,16 +336,46 @@ export function createArmoryUi({
             playSound('ui_upgrade_weapon1');
             onEmbark?.();
         });
+
+        // Steam Deck / Keyboard controller shortcuts for Armory screen
+        container.dataset = container.dataset || {};
+        if (typeof window !== 'undefined' && !container.dataset.kbBound) {
+            container.dataset.kbBound = 'true';
+            window.addEventListener('keydown', (event) => {
+                const screen = document?.getElementById?.('armory-screen');
+                if (!screen || screen.classList?.contains?.('hidden') || screen.style?.display === 'none') return;
+
+                const classes = ['scout', 'tank', 'engineer'];
+                const currentIdx = classes.indexOf(activeClass.toLowerCase());
+
+                if (event.code === 'KeyQ') {
+                    event.preventDefault();
+                    const prevIdx = (currentIdx - 1 + classes.length) % classes.length;
+                    setClass(classes[prevIdx]);
+                    playSound('ui_click_confirm1');
+                    return;
+                }
+                if (event.code === 'KeyE') {
+                    event.preventDefault();
+                    const nextIdx = (currentIdx + 1) % classes.length;
+                    setClass(classes[nextIdx]);
+                    playSound('ui_click_confirm1');
+                    return;
+                }
+            });
+        }
+    }
+
+    function setClass(classType) {
+        activeClass = classType || 'scout';
+        loadoutManager.setActiveClass(activeClass);
+        armoryScene?.setClass(activeClass);
+        armoryScene?.updateFromLoadout(loadoutManager, activeClass);
+        render();
     }
 
     return {
-        setClass(classType) {
-            activeClass = classType || 'scout';
-            loadoutManager.setActiveClass(activeClass);
-            armoryScene?.setClass(activeClass);
-            armoryScene?.updateFromLoadout(loadoutManager, activeClass);
-            render();
-        },
+        setClass,
         refresh() {
             render();
         }

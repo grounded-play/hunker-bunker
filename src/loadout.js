@@ -61,7 +61,9 @@ function createDefaultLoadoutState() {
             decalId: null
         },
         hudThemeId: null,
-        voicePackId: null
+        voicePackId: null,
+        tracerFxId: null,
+        muzzleFxId: null
     };
 }
 
@@ -103,6 +105,8 @@ export class LoadoutManager {
                     }
                     result.hudThemeId = parsed.hudThemeId != null ? String(parsed.hudThemeId) : null;
                     result.voicePackId = parsed.voicePackId != null ? String(parsed.voicePackId) : null;
+                    result.tracerFxId = parsed.tracerFxId != null ? String(parsed.tracerFxId) : null;
+                    result.muzzleFxId = parsed.muzzleFxId != null ? String(parsed.muzzleFxId) : null;
                     return result;
                 }
             }
@@ -296,6 +300,20 @@ export class LoadoutManager {
 
     equipVoicePack(voicePackId) {
         this.state.voicePackId = voicePackId != null ? String(voicePackId) : null;
+        this.save();
+        return true;
+    }
+
+    // Season 0 Tracer/Muzzle FX Mutators (itemdefs 4152/4153) — read by
+    // src/threeGame.js's spawnPlayerShot/spawnProjectile.
+    equipTracerFx(tracerFxId) {
+        this.state.tracerFxId = tracerFxId != null ? String(tracerFxId) : null;
+        this.save();
+        return true;
+    }
+
+    equipMuzzleFx(muzzleFxId) {
+        this.state.muzzleFxId = muzzleFxId != null ? String(muzzleFxId) : null;
         this.save();
         return true;
     }

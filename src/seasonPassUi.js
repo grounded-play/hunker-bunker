@@ -279,6 +279,14 @@ export function openSeasonPassModal() {
     modal.classList.remove('hidden');
     modal.setAttribute('aria-hidden', 'false');
     renderSeasonPassBody();
+
+    // Auto-focus preferred controller/keyboard target
+    requestAnimationFrame(() => {
+        const target = modal.querySelector('.season-pass-claim-btn')
+            || modal.querySelector('.season-pass-tab-btn.active')
+            || modal.querySelector('#close-season-pass-modal');
+        target?.focus?.();
+    });
 }
 
 export function closeSeasonPassModal() {
@@ -288,12 +296,33 @@ export function closeSeasonPassModal() {
     modal.setAttribute('aria-hidden', 'true');
 }
 
+export function handleSeasonPassKeyDown(event) {
+    const modal = document.getElementById('season-pass-modal');
+    if (!modal || modal.classList.contains('hidden')) return;
+
+    if (event.code === 'KeyQ' || event.code === 'KeyE') {
+        event.preventDefault();
+        activeTab = activeTab === 'tiers' ? 'bounties' : 'tiers';
+        renderSeasonPassBody();
+        const activeTabBtn = modal.querySelector(`.season-pass-tab-btn[data-tab="${activeTab}"]`);
+        activeTabBtn?.focus?.();
+        return;
+    }
+
+    if (event.code === 'Escape') {
+        event.preventDefault();
+        closeSeasonPassModal();
+        return;
+    }
+}
+
 export function initSeasonPassUI() {
     document.getElementById('season-pass-btn')?.addEventListener('click', openSeasonPassModal);
     document.getElementById('close-season-pass-modal')?.addEventListener('click', closeSeasonPassModal);
     document.getElementById('season-pass-modal')?.addEventListener('click', (event) => {
         if (event.target.id === 'season-pass-modal') closeSeasonPassModal();
     });
+    window.addEventListener('keydown', handleSeasonPassKeyDown);
     wireSeasonPassXpEvents();
     updateMenuStatus();
 }

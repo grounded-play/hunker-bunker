@@ -51,6 +51,7 @@ import { createArmoryUi } from './src/armoryUi.js';
 import { ARMORY_SCREEN_ENABLED } from './src/featureFlags.js';
 import { initSteamVaultUI, loadVaultData, openSteamVaultModal, showSteamDropToast, renderSteamMilestoneGrants, STEAM_ITEM_CATALOG } from './src/steamVaultUi.js';
 import { initSeasonPassUI } from './src/seasonPassUi.js';
+import { initVoiceCallouts } from './src/voiceCallouts.js';
 import { multiplayerLobby } from './src/multiplayerLobby.js';
 import { playerTradeManager, TRADEABLE_RESOURCES } from './src/playerTrade.js';
 import { npcDialogueTreeManager, NPC_DIALOGUE_TREES } from './src/npcDialogueTrees.js';
@@ -353,7 +354,10 @@ const STEAM_INPUT_FOCUS_ROOT_IDS = Object.freeze([
     'elevator-choice-modal',
     'archive-sims-modal',
     'lore-modal',
+    'season-pass-modal',
+    'armory-screen',
     'steam-vault-modal',
+    'player-trade-modal',
     'multiplayer-modal',
     'mature-content-audit-modal',
     'operator-polish-modal',
@@ -699,6 +703,23 @@ function getPreferredControllerFocusTarget(root, focusables) {
         return focusables.find((element) => element.id === 'fab-activate-btn' && !element.disabled)
             ?? focusables.find((element) => element.id === 'fab-roll-btn' && !element.disabled)
             ?? focusables.find((element) => element.id === 'close-fabrication-modal')
+            ?? focusables[0];
+    }
+    if (root?.id === 'season-pass-modal') {
+        return focusables.find((element) => element.classList?.contains('season-pass-claim-btn'))
+            ?? focusables.find((element) => element.classList?.contains('season-pass-tab-btn') && element.classList.contains('active'))
+            ?? focusables.find((element) => element.id === 'close-season-pass-modal')
+            ?? focusables[0];
+    }
+    if (root?.id === 'armory-screen') {
+        return focusables.find((element) => element.id === 'armory-btn-embark')
+            ?? focusables.find((element) => element.classList?.contains('armory-select'))
+            ?? focusables.find((element) => element.id === 'armory-btn-back')
+            ?? focusables[0];
+    }
+    if (root?.id === 'steam-vault-modal') {
+        return focusables.find((element) => element.classList?.contains('vault-tab-btn') && element.classList.contains('active'))
+            ?? focusables.find((element) => element.id === 'close-steam-vault-modal')
             ?? focusables[0];
     }
     if (root?.id === 'mothership-dialogue') {
@@ -9197,6 +9218,27 @@ document.addEventListener('keydown', (event) => {
             return;
         }
 
+        const seasonPassModal = document.getElementById('season-pass-modal');
+        if (seasonPassModal && !seasonPassModal.classList.contains('hidden')) {
+            document.getElementById('close-season-pass-modal')?.click();
+            event.preventDefault();
+            return;
+        }
+
+        const steamVaultModal = document.getElementById('steam-vault-modal');
+        if (steamVaultModal && !steamVaultModal.classList.contains('hidden')) {
+            document.getElementById('close-steam-vault-modal')?.click();
+            event.preventDefault();
+            return;
+        }
+
+        const armoryScreen = document.getElementById('armory-screen');
+        if (armoryScreen && !armoryScreen.classList.contains('hidden')) {
+            document.getElementById('armory-btn-back')?.click();
+            event.preventDefault();
+            return;
+        }
+
         const rosterModal = document.getElementById('roster-modal');
         if (rosterModal && !rosterModal.classList.contains('hidden')) {
             rosterModal.classList.add('hidden');
@@ -12702,6 +12744,7 @@ if (window.electronAPI) {
 // Initialize Steam Vault, Tactical Net, NPC Dialogue Trees, and Mature Content Audit UI in all environments
 initSteamVaultUI();
 initSeasonPassUI();
+initVoiceCallouts();
 multiplayerLobby.init();
 matureContentAudit.init();
 initVirtualKeyboard();

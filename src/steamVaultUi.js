@@ -205,8 +205,28 @@ export function initSteamVaultUI() {
     if (!modal.dataset.escBound) {
         modal.dataset.escBound = 'true';
         window.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape' && !modal.classList.contains('hidden')) {
+            if (modal.classList.contains('hidden')) return;
+            if (e.key === 'Escape') {
                 closeModal();
+                return;
+            }
+            if (e.code === 'KeyQ') {
+                e.preventDefault();
+                const tabs = [tabInventory, tabStore, tabSmelter].filter(Boolean);
+                const currentIdx = tabs.findIndex((t) => t.classList.contains('active'));
+                const prevIdx = (currentIdx - 1 + tabs.length) % tabs.length;
+                tabs[prevIdx]?.click();
+                tabs[prevIdx]?.focus();
+                return;
+            }
+            if (e.code === 'KeyE') {
+                e.preventDefault();
+                const tabs = [tabInventory, tabStore, tabSmelter].filter(Boolean);
+                const currentIdx = tabs.findIndex((t) => t.classList.contains('active'));
+                const nextIdx = (currentIdx + 1) % tabs.length;
+                tabs[nextIdx]?.click();
+                tabs[nextIdx]?.focus();
+                return;
             }
         });
     }
