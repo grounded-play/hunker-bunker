@@ -17,6 +17,8 @@
     "3d/runtime/hull-matrix.glb",
     "3d/runtime/new3ds/bunker_junk_rare.glb",
     "3d/runtime/new3ds/bunker_junk_uncommon.glb",
+    "3d/runtime/new3ds/charm_amber_bio_flask.glb",
+    "3d/runtime/new3ds/charm_dark_matter.glb",
     "3d/runtime/new3ds/charm_geodetic_compass.glb",
     "3d/runtime/new3ds/charm_glitched_ram.glb",
     "3d/runtime/new3ds/charm_golden_sub_bunker_key.glb",
@@ -30,8 +32,11 @@
     "3d/runtime/new3ds/gun_scout_talon_c.glb",
     "3d/runtime/new3ds/gun_scout_vector9_talon.glb",
     "3d/runtime/new3ds/gun_tank_siege_breaker50.glb",
+    "3d/runtime/new3ds/mod_bio_hazard_filter.glb",
     "3d/runtime/new3ds/mod_cryo_capacitor.glb",
+    "3d/runtime/new3ds/mod_kinetic_impact.glb",
     "3d/runtime/new3ds/mod_magnetic_scavenger.glb",
+    "3d/runtime/new3ds/mod_thermal_heat_exchanger.glb",
     "3d/runtime/new3ds/mod_zero_point_flux.glb",
     "3d/runtime/new3ds/prop_ammo_crate_stack.glb",
     "3d/runtime/new3ds/prop_biomech_arch.glb",
@@ -78,7 +83,6 @@
     "Scout.full_v2.png",
     "Tank.full_v2.png",
     "Tank.walk_v4.png",
-    "\\.webm",
     "ach_ending_alien_exodus.jpg",
     "ach_ending_empty_husk.jpg",
     "ach_ending_failed_carrier.jpg",
@@ -105,6 +109,25 @@
     "audio/generated/camp_worker_fleeing.wav",
     "audio/generated/camp_worker_infected.wav",
     "audio/generated/camp_worker_panicked.wav",
+    "audio/generated/sfx_charm_clink_heavy.wav",
+    "audio/generated/sfx_charm_clink_light.wav",
+    "audio/generated/sfx_overclock_hum_cryo.wav",
+    "audio/generated/sfx_overclock_hum_magnetic.wav",
+    "audio/generated/sfx_overclock_socket.wav",
+    "audio/generated/sfx_smelt_forge_burst.wav",
+    "audio/generated/sfx_trade_shard_dispense.wav",
+    "audio/generated/voice_aura_overdrive_ready.wav",
+    "audio/generated/voice_aura_reloading.wav",
+    "audio/generated/voice_aura_sector_cleared.wav",
+    "audio/generated/voice_aura_shield_critical.wav",
+    "audio/generated/voice_aura_target_down.wav",
+    "audio/generated/voice_aura_threat_high.wav",
+    "audio/generated/voice_commander_boss_spotted.wav",
+    "audio/generated/voice_commander_breached.wav",
+    "audio/generated/voice_commander_killstreak.wav",
+    "audio/generated/voice_commander_low_health.wav",
+    "audio/generated/voice_commander_reloading.wav",
+    "audio/generated/voice_commander_victory.wav",
     "audio/vg2/amb_bunker_loop.wav",
     "audio/vg2/amb_drip1.wav",
     "audio/vg2/amb_drip2.wav",
@@ -296,37 +319,140 @@
     "economy/cache_deep_relic_large.png",
     "economy/cache_key.png",
     "economy/cache_key_large.png",
+    "economy/charm_amber_bio_flask.png",
+    "economy/charm_amber_bio_flask_large.png",
+    "economy/charm_dark_matter.png",
+    "economy/charm_dark_matter_large.png",
     "economy/charm_geodetic_compass.png",
+    "economy/charm_geodetic_compass_large.png",
     "economy/charm_glitched_ram.png",
+    "economy/charm_glitched_ram_large.png",
     "economy/charm_golden_sub_bunker_key.png",
+    "economy/charm_golden_sub_bunker_key_large.png",
     "economy/charm_mini_cryo_core.png",
+    "economy/charm_mini_cryo_core_large.png",
     "economy/charm_mini_drone_bobble.png",
+    "economy/charm_mini_drone_bobble_large.png",
     "economy/charm_spent_50cal.png",
+    "economy/charm_spent_50cal_large.png",
     "economy/charm_sporesnail_pearl.png",
+    "economy/charm_sporesnail_pearl_large.png",
     "economy/charm_trench_whistle.png",
+    "economy/charm_trench_whistle_large.png",
+    "economy/chassis_bio_synthesizer_medic.png",
+    "economy/chassis_bio_synthesizer_medic_large.png",
+    "economy/chassis_cryo_vanguard_scout.png",
+    "economy/chassis_cryo_vanguard_scout_large.png",
+    "economy/chassis_cyber_spectre_infiltrator.png",
+    "economy/chassis_cyber_spectre_infiltrator_large.png",
+    "economy/chassis_dreadnought_exo_juggernaut.png",
+    "economy/chassis_dreadnought_exo_juggernaut_large.png",
+    "economy/chassis_hive_lord_symbiote.png",
+    "economy/chassis_hive_lord_symbiote_large.png",
+    "economy/chassis_subterran_drill_engineer.png",
+    "economy/chassis_subterran_drill_engineer_large.png",
+    "economy/chassis_trench_warden_heavy.png",
+    "economy/chassis_trench_warden_heavy_large.png",
+    "economy/chassis_void_commando_recon.png",
+    "economy/chassis_void_commando_recon_large.png",
+    "economy/decal_ancient_core_glyphs.png",
+    "economy/decal_ancient_core_glyphs_large.png",
+    "economy/decal_bunker404_lost_squad.png",
+    "economy/decal_bunker404_lost_squad_large.png",
     "economy/decal_carbon.png",
     "economy/decal_carbon_large.png",
+    "economy/decal_cryo_phoenix.png",
+    "economy/decal_cryo_phoenix_large.png",
+    "economy/decal_cyber_skull_tactical_pin.png",
+    "economy/decal_cyber_skull_tactical_pin_large.png",
+    "economy/decal_grand_marshal_relic_crest.png",
+    "economy/decal_grand_marshal_relic_crest_large.png",
+    "economy/decal_radiation_trefoil.png",
+    "economy/decal_radiation_trefoil_large.png",
+    "economy/decal_sporesnail_hunter_crest.png",
+    "economy/decal_sporesnail_hunter_crest_large.png",
+    "economy/decal_subzero_pioneer.png",
+    "economy/decal_subzero_pioneer_large.png",
+    "economy/decal_void_horizon_sigil.png",
+    "economy/decal_void_horizon_sigil_large.png",
     "economy/emblem_archivist.png",
     "economy/emblem_archivist_large.png",
     "economy/emblem_queen_slayer.png",
     "economy/emblem_queen_slayer_large.png",
     "economy/finish_chrome.png",
     "economy/finish_chrome_large.png",
+    "economy/fx_cryo_shockwave_muzzle.png",
+    "economy/fx_cryo_shockwave_muzzle_large.png",
+    "economy/fx_emerald_void_tracer.png",
+    "economy/fx_emerald_void_tracer_large.png",
+    "economy/hudtheme_amber_crt.png",
+    "economy/hudtheme_amber_crt_large.png",
+    "economy/hudtheme_emerald_radar.png",
+    "economy/hudtheme_emerald_radar_large.png",
+    "economy/mod_bio_hazard_filter.png",
+    "economy/mod_bio_hazard_filter_large.png",
     "economy/mod_cryo_capacitor.png",
+    "economy/mod_cryo_capacitor_large.png",
+    "economy/mod_echo_location_transceiver.png",
+    "economy/mod_echo_location_transceiver_large.png",
+    "economy/mod_kinetic_impact.png",
+    "economy/mod_kinetic_impact_large.png",
     "economy/mod_magnetic_scavenger.png",
+    "economy/mod_magnetic_scavenger_large.png",
+    "economy/mod_symbiotic_adrenaline_pump.png",
+    "economy/mod_symbiotic_adrenaline_pump_large.png",
+    "economy/mod_thermal_heat_exchanger.png",
+    "economy/mod_thermal_heat_exchanger_large.png",
     "economy/mod_zero_point_flux.png",
+    "economy/mod_zero_point_flux_large.png",
     "economy/patch_engineer.png",
     "economy/patch_engineer_large.png",
     "economy/patch_scout.png",
     "economy/patch_scout_large.png",
     "economy/patch_tank.png",
     "economy/patch_tank_large.png",
+    "economy/reagent_cryo_alloy_ingot.png",
+    "economy/reagent_cryo_alloy_ingot_large.png",
+    "economy/reagent_deep_core_shard.png",
+    "economy/reagent_deep_core_shard_large.png",
+    "economy/reagent_deep_sub_core_matrix.png",
+    "economy/reagent_deep_sub_core_matrix_large.png",
+    "economy/reagent_refined_ambergris.png",
+    "economy/reagent_refined_ambergris_large.png",
+    "economy/reagent_relic_key_master_pack.png",
+    "economy/reagent_relic_key_master_pack_large.png",
     "economy/relic_common.png",
     "economy/relic_common_large.png",
     "economy/relic_rare.png",
     "economy/relic_rare_large.png",
+    "economy/skin_biolume_spore_sprayer.png",
+    "economy/skin_biolume_spore_sprayer_large.png",
+    "economy/skin_engineer_cryo_plasma.png",
+    "economy/skin_engineer_cryo_plasma_large.png",
+    "economy/skin_glitched_circuit_bolter.png",
+    "economy/skin_glitched_circuit_bolter_large.png",
+    "economy/skin_hazard_stripe_smg.png",
+    "economy/skin_hazard_stripe_smg_large.png",
+    "economy/skin_obsidian_shard.png",
+    "economy/skin_obsidian_shard_large.png",
     "economy/skin_queen_carapace_carbine.png",
+    "economy/skin_queen_carapace_carbine_large.png",
+    "economy/skin_rust_bone_trench.png",
+    "economy/skin_rust_bone_trench_large.png",
+    "economy/skin_scout_frostbite.png",
+    "economy/skin_scout_frostbite_large.png",
+    "economy/skin_solar_flare_antimatter.png",
+    "economy/skin_solar_flare_antimatter_large.png",
+    "economy/skin_tank_deep_core_melter.png",
+    "economy/skin_tank_deep_core_melter_large.png",
+    "economy/skin_tectonic_driller.png",
+    "economy/skin_tectonic_driller_large.png",
     "economy/skin_void_walker_beam.png",
+    "economy/skin_void_walker_beam_large.png",
+    "economy/voicepack_aura.png",
+    "economy/voicepack_aura_large.png",
+    "economy/voicepack_soviet_commander.png",
+    "economy/voicepack_soviet_commander_large.png",
     "ending_carriersbargain_eggs.png",
     "ending_cleanescape_cabin.png",
     "ending_fullbrood_ship.png",
@@ -585,6 +711,16 @@
       "classification": "runtime-required"
     },
     {
+      "path": "3d/runtime/new3ds/charm_amber_bio_flask.glb",
+      "bytes": 1456720,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/charm_dark_matter.glb",
+      "bytes": 1360896,
+      "classification": "runtime-required"
+    },
+    {
       "path": "3d/runtime/new3ds/charm_geodetic_compass.glb",
       "bytes": 1722644,
       "classification": "runtime-required"
@@ -635,6 +771,11 @@
       "classification": "runtime-required"
     },
     {
+      "path": "3d/runtime/new3ds/gun_scout_talon_c.glb",
+      "bytes": 118376,
+      "classification": "runtime-required"
+    },
+    {
       "path": "3d/runtime/new3ds/gun_scout_vector9_talon.glb",
       "bytes": 548956,
       "classification": "runtime-required"
@@ -645,13 +786,28 @@
       "classification": "runtime-required"
     },
     {
+      "path": "3d/runtime/new3ds/mod_bio_hazard_filter.glb",
+      "bytes": 1862176,
+      "classification": "runtime-required"
+    },
+    {
       "path": "3d/runtime/new3ds/mod_cryo_capacitor.glb",
       "bytes": 1975092,
       "classification": "runtime-required"
     },
     {
+      "path": "3d/runtime/new3ds/mod_kinetic_impact.glb",
+      "bytes": 1527784,
+      "classification": "runtime-required"
+    },
+    {
       "path": "3d/runtime/new3ds/mod_magnetic_scavenger.glb",
       "bytes": 2129132,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/mod_thermal_heat_exchanger.glb",
+      "bytes": 2073092,
       "classification": "runtime-required"
     },
     {
@@ -1522,47 +1678,97 @@
     {
       "path": "audio/generated/sfx_charm_clink_heavy.wav",
       "bytes": 30914,
-      "classification": "generated-intermediate"
+      "classification": "runtime-required"
     },
     {
       "path": "audio/generated/sfx_charm_clink_light.wav",
       "bytes": 24740,
-      "classification": "generated-intermediate"
+      "classification": "runtime-required"
     },
     {
       "path": "audio/generated/sfx_overclock_hum_cryo.wav",
       "bytes": 57374,
-      "classification": "generated-intermediate"
+      "classification": "runtime-required"
     },
     {
       "path": "audio/generated/sfx_overclock_hum_magnetic.wav",
       "bytes": 48554,
-      "classification": "generated-intermediate"
+      "classification": "runtime-required"
     },
     {
       "path": "audio/generated/sfx_overclock_socket.wav",
       "bytes": 37088,
-      "classification": "generated-intermediate"
+      "classification": "runtime-required"
     },
     {
       "path": "audio/generated/sfx_smelt_forge_burst.wav",
       "bytes": 75014,
-      "classification": "generated-intermediate"
+      "classification": "runtime-required"
     },
     {
       "path": "audio/generated/sfx_trade_shard_dispense.wav",
       "bytes": 66194,
-      "classification": "generated-intermediate"
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/generated/voice_aura_overdrive_ready.wav",
+      "bytes": 101474,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/generated/voice_aura_reloading.wav",
+      "bytes": 75014,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/generated/voice_aura_sector_cleared.wav",
+      "bytes": 110294,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/generated/voice_aura_shield_critical.wav",
+      "bytes": 97064,
+      "classification": "runtime-required"
     },
     {
       "path": "audio/generated/voice_aura_target_down.wav",
       "bytes": 83834,
-      "classification": "generated-intermediate"
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/generated/voice_aura_threat_high.wav",
+      "bytes": 114704,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/generated/voice_commander_boss_spotted.wav",
+      "bytes": 119114,
+      "classification": "runtime-required"
     },
     {
       "path": "audio/generated/voice_commander_breached.wav",
       "bytes": 97064,
-      "classification": "generated-intermediate"
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/generated/voice_commander_killstreak.wav",
+      "bytes": 92654,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/generated/voice_commander_low_health.wav",
+      "bytes": 110294,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/generated/voice_commander_reloading.wav",
+      "bytes": 79424,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/generated/voice_commander_victory.wav",
+      "bytes": 123524,
+      "classification": "runtime-required"
     },
     {
       "path": "audio/ost/A Snail Blocks the Hallway.mp3",
@@ -3130,43 +3336,213 @@
       "classification": "runtime-required"
     },
     {
+      "path": "economy/charm_amber_bio_flask.png",
+      "bytes": 72432,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/charm_amber_bio_flask_chroma.jpg",
+      "bytes": 258773,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/charm_amber_bio_flask_large.png",
+      "bytes": 259246,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/charm_dark_matter.png",
+      "bytes": 94470,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/charm_dark_matter_chroma.jpg",
+      "bytes": 339784,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/charm_dark_matter_large.png",
+      "bytes": 339878,
+      "classification": "runtime-required"
+    },
+    {
       "path": "economy/charm_geodetic_compass.png",
-      "bytes": 730930,
+      "bytes": 116215,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/charm_geodetic_compass_large.png",
+      "bytes": 299530,
       "classification": "runtime-required"
     },
     {
       "path": "economy/charm_glitched_ram.png",
-      "bytes": 617429,
+      "bytes": 85311,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/charm_glitched_ram_large.png",
+      "bytes": 199685,
       "classification": "runtime-required"
     },
     {
       "path": "economy/charm_golden_sub_bunker_key.png",
-      "bytes": 744498,
+      "bytes": 114506,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/charm_golden_sub_bunker_key_large.png",
+      "bytes": 300421,
       "classification": "runtime-required"
     },
     {
       "path": "economy/charm_mini_cryo_core.png",
-      "bytes": 726099,
+      "bytes": 121579,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/charm_mini_cryo_core_large.png",
+      "bytes": 317693,
       "classification": "runtime-required"
     },
     {
       "path": "economy/charm_mini_drone_bobble.png",
-      "bytes": 685756,
+      "bytes": 127088,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/charm_mini_drone_bobble_large.png",
+      "bytes": 331219,
       "classification": "runtime-required"
     },
     {
       "path": "economy/charm_spent_50cal.png",
-      "bytes": 620963,
+      "bytes": 116542,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/charm_spent_50cal_large.png",
+      "bytes": 304090,
       "classification": "runtime-required"
     },
     {
       "path": "economy/charm_sporesnail_pearl.png",
-      "bytes": 592503,
+      "bytes": 101664,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/charm_sporesnail_pearl_large.png",
+      "bytes": 253461,
       "classification": "runtime-required"
     },
     {
       "path": "economy/charm_trench_whistle.png",
-      "bytes": 730661,
+      "bytes": 122263,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/charm_trench_whistle_large.png",
+      "bytes": 318782,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/chassis_bio_synthesizer_medic.png",
+      "bytes": 15248,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/chassis_bio_synthesizer_medic_large.png",
+      "bytes": 32345,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/chassis_cryo_vanguard_scout.png",
+      "bytes": 15228,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/chassis_cryo_vanguard_scout_large.png",
+      "bytes": 34356,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/chassis_cyber_spectre_infiltrator.png",
+      "bytes": 12218,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/chassis_cyber_spectre_infiltrator_large.png",
+      "bytes": 27497,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/chassis_dreadnought_exo_juggernaut.png",
+      "bytes": 14205,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/chassis_dreadnought_exo_juggernaut_large.png",
+      "bytes": 30299,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/chassis_hive_lord_symbiote.png",
+      "bytes": 24688,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/chassis_hive_lord_symbiote_large.png",
+      "bytes": 57804,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/chassis_subterran_drill_engineer.png",
+      "bytes": 17758,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/chassis_subterran_drill_engineer_large.png",
+      "bytes": 39749,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/chassis_trench_warden_heavy.png",
+      "bytes": 13594,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/chassis_trench_warden_heavy_large.png",
+      "bytes": 31328,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/chassis_void_commando_recon.png",
+      "bytes": 16693,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/chassis_void_commando_recon_large.png",
+      "bytes": 38887,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/decal_ancient_core_glyphs.png",
+      "bytes": 15522,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/decal_ancient_core_glyphs_large.png",
+      "bytes": 33606,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/decal_bunker404_lost_squad.png",
+      "bytes": 18385,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/decal_bunker404_lost_squad_large.png",
+      "bytes": 41338,
       "classification": "runtime-required"
     },
     {
@@ -3177,6 +3553,76 @@
     {
       "path": "economy/decal_carbon_large.png",
       "bytes": 150308,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/decal_cryo_phoenix.png",
+      "bytes": 34933,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/decal_cryo_phoenix_large.png",
+      "bytes": 77323,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/decal_cyber_skull_tactical_pin.png",
+      "bytes": 28961,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/decal_cyber_skull_tactical_pin_large.png",
+      "bytes": 63625,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/decal_grand_marshal_relic_crest.png",
+      "bytes": 21764,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/decal_grand_marshal_relic_crest_large.png",
+      "bytes": 50613,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/decal_radiation_trefoil.png",
+      "bytes": 10191,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/decal_radiation_trefoil_large.png",
+      "bytes": 21025,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/decal_sporesnail_hunter_crest.png",
+      "bytes": 20784,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/decal_sporesnail_hunter_crest_large.png",
+      "bytes": 43573,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/decal_subzero_pioneer.png",
+      "bytes": 22591,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/decal_subzero_pioneer_large.png",
+      "bytes": 50476,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/decal_void_horizon_sigil.png",
+      "bytes": 35110,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/decal_void_horizon_sigil_large.png",
+      "bytes": 75642,
       "classification": "runtime-required"
     },
     {
@@ -3210,18 +3656,198 @@
       "classification": "runtime-required"
     },
     {
+      "path": "economy/fx_cryo_shockwave_muzzle.png",
+      "bytes": 34118,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/fx_cryo_shockwave_muzzle_large.png",
+      "bytes": 81288,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/fx_emerald_void_tracer.png",
+      "bytes": 14443,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/fx_emerald_void_tracer_large.png",
+      "bytes": 32254,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/gun_engineer_tesla_lock.png",
+      "bytes": 146556,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/gun_engineer_tesla_lock_large.png",
+      "bytes": 385349,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/gun_engineer_tesla_lock_source.jpg",
+      "bytes": 91277,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/gun_scout_talon_c.png",
+      "bytes": 364349,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/gun_scout_talon_c_chroma.jpg",
+      "bytes": 510099,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/gun_scout_talon_c_large.png",
+      "bytes": 1198206,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/gun_scout_vector9_talon.png",
+      "bytes": 118967,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/gun_scout_vector9_talon_large.png",
+      "bytes": 253847,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/gun_scout_vector9_talon_source.jpg",
+      "bytes": 71313,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/gun_tank_siege_breaker50.png",
+      "bytes": 132739,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/gun_tank_siege_breaker50_large.png",
+      "bytes": 301985,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/gun_tank_siege_breaker50_source.jpg",
+      "bytes": 79944,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/hudtheme_amber_crt.png",
+      "bytes": 16444,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/hudtheme_amber_crt_large.png",
+      "bytes": 37846,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/hudtheme_emerald_radar.png",
+      "bytes": 33694,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/hudtheme_emerald_radar_large.png",
+      "bytes": 78886,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/mod_bio_hazard_filter.png",
+      "bytes": 113587,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/mod_bio_hazard_filter_chroma.jpg",
+      "bytes": 402592,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/mod_bio_hazard_filter_large.png",
+      "bytes": 404376,
+      "classification": "runtime-required"
+    },
+    {
       "path": "economy/mod_cryo_capacitor.png",
-      "bytes": 765335,
+      "bytes": 130492,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/mod_cryo_capacitor_large.png",
+      "bytes": 346990,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/mod_echo_location_transceiver.png",
+      "bytes": 96919,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/mod_echo_location_transceiver_large.png",
+      "bytes": 332047,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/mod_kinetic_impact.png",
+      "bytes": 94738,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/mod_kinetic_impact_chroma.jpg",
+      "bytes": 73792,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/mod_kinetic_impact_large.png",
+      "bytes": 302587,
       "classification": "runtime-required"
     },
     {
       "path": "economy/mod_magnetic_scavenger.png",
-      "bytes": 853894,
+      "bytes": 136268,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/mod_magnetic_scavenger_large.png",
+      "bytes": 356640,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/mod_symbiotic_adrenaline_pump.png",
+      "bytes": 15116,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/mod_symbiotic_adrenaline_pump_large.png",
+      "bytes": 33487,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/mod_thermal_heat_exchanger.png",
+      "bytes": 87130,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/mod_thermal_heat_exchanger_chroma.jpg",
+      "bytes": 62877,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/mod_thermal_heat_exchanger_large.png",
+      "bytes": 288784,
       "classification": "runtime-required"
     },
     {
       "path": "economy/mod_zero_point_flux.png",
-      "bytes": 845798,
+      "bytes": 142422,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/mod_zero_point_flux_large.png",
+      "bytes": 385984,
       "classification": "runtime-required"
     },
     {
@@ -3255,6 +3881,56 @@
       "classification": "runtime-required"
     },
     {
+      "path": "economy/reagent_cryo_alloy_ingot.png",
+      "bytes": 74566,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/reagent_cryo_alloy_ingot_large.png",
+      "bytes": 270354,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/reagent_deep_core_shard.png",
+      "bytes": 66566,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/reagent_deep_core_shard_large.png",
+      "bytes": 219146,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/reagent_deep_sub_core_matrix.png",
+      "bytes": 110721,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/reagent_deep_sub_core_matrix_large.png",
+      "bytes": 404832,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/reagent_refined_ambergris.png",
+      "bytes": 94998,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/reagent_refined_ambergris_large.png",
+      "bytes": 331479,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/reagent_relic_key_master_pack.png",
+      "bytes": 82088,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/reagent_relic_key_master_pack_large.png",
+      "bytes": 285410,
+      "classification": "runtime-required"
+    },
+    {
       "path": "economy/relic_common.png",
       "bytes": 55138,
       "classification": "runtime-required"
@@ -3275,13 +3951,163 @@
       "classification": "runtime-required"
     },
     {
+      "path": "economy/skin_biolume_spore_sprayer.png",
+      "bytes": 59101,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/skin_biolume_spore_sprayer_large.png",
+      "bytes": 197525,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/skin_engineer_cryo_plasma.png",
+      "bytes": 60663,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/skin_engineer_cryo_plasma_large.png",
+      "bytes": 211912,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/skin_engineer_cryo_plasma_source.jpg",
+      "bytes": 244176,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/skin_glitched_circuit_bolter.png",
+      "bytes": 36370,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/skin_glitched_circuit_bolter_large.png",
+      "bytes": 126762,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/skin_hazard_stripe_smg.png",
+      "bytes": 40857,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/skin_hazard_stripe_smg_large.png",
+      "bytes": 131582,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/skin_obsidian_shard.png",
+      "bytes": 37198,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/skin_obsidian_shard_large.png",
+      "bytes": 116291,
+      "classification": "runtime-required"
+    },
+    {
       "path": "economy/skin_queen_carapace_carbine.png",
-      "bytes": 657294,
+      "bytes": 112951,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/skin_queen_carapace_carbine_large.png",
+      "bytes": 287314,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/skin_rust_bone_trench.png",
+      "bytes": 24598,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/skin_rust_bone_trench_large.png",
+      "bytes": 82588,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/skin_scout_frostbite.png",
+      "bytes": 41061,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/skin_scout_frostbite_large.png",
+      "bytes": 129204,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/skin_scout_frostbite_source.jpg",
+      "bytes": 65336,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/skin_scout_talon_c.png",
+      "bytes": 364349,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/skin_solar_flare_antimatter.png",
+      "bytes": 47456,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/skin_solar_flare_antimatter_large.png",
+      "bytes": 164000,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/skin_tank_deep_core_melter.png",
+      "bytes": 41652,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/skin_tank_deep_core_melter_large.png",
+      "bytes": 132076,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/skin_tank_deep_core_melter_source.jpg",
+      "bytes": 68460,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/skin_tectonic_driller.png",
+      "bytes": 36771,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/skin_tectonic_driller_large.png",
+      "bytes": 121773,
       "classification": "runtime-required"
     },
     {
       "path": "economy/skin_void_walker_beam.png",
-      "bytes": 727988,
+      "bytes": 113828,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/skin_void_walker_beam_large.png",
+      "bytes": 283741,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/voicepack_aura.png",
+      "bytes": 38928,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/voicepack_aura_large.png",
+      "bytes": 95164,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/voicepack_soviet_commander.png",
+      "bytes": 38744,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/voicepack_soviet_commander_large.png",
+      "bytes": 86460,
       "classification": "runtime-required"
     },
     {
@@ -3745,11 +4571,6 @@
       "classification": "runtime-required"
     },
     {
-      "path": "interstitials/motion/int_01_someone_is_still_alive_key_v1.mp4",
-      "bytes": 6205608,
-      "classification": "runtime-required"
-    },
-    {
       "path": "interstitials/motion/int_01_someone_is_still_alive_motion_v1.mp4",
       "bytes": 6205608,
       "classification": "runtime-required"
@@ -3757,11 +4578,6 @@
     {
       "path": "interstitials/motion/int_01_someone_is_still_alive_motion_v1.webm",
       "bytes": 2790610,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "interstitials/motion/int_02_kaelen_s_sleeping_machine_key_v1.mp4",
-      "bytes": 8282853,
       "classification": "runtime-required"
     },
     {
@@ -3775,11 +4591,6 @@
       "classification": "runtime-required"
     },
     {
-      "path": "interstitials/motion/int_03_the_math_is_beautiful_now_key_v1.mp4",
-      "bytes": 8505266,
-      "classification": "runtime-required"
-    },
-    {
       "path": "interstitials/motion/int_03_the_math_is_beautiful_now_motion_v1.mp4",
       "bytes": 8505266,
       "classification": "runtime-required"
@@ -3787,11 +4598,6 @@
     {
       "path": "interstitials/motion/int_03_the_math_is_beautiful_now_motion_v1.webm",
       "bytes": 4560608,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "interstitials/motion/int_04_warmth_beneath_the_ice_key_v1.mp4",
-      "bytes": 7180538,
       "classification": "runtime-required"
     },
     {
@@ -3805,11 +4611,6 @@
       "classification": "runtime-required"
     },
     {
-      "path": "interstitials/motion/int_05_the_pipes_are_singing_key_v1.mp4",
-      "bytes": 9665825,
-      "classification": "runtime-required"
-    },
-    {
       "path": "interstitials/motion/int_05_the_pipes_are_singing_motion_v1.mp4",
       "bytes": 9665825,
       "classification": "runtime-required"
@@ -3817,11 +4618,6 @@
     {
       "path": "interstitials/motion/int_05_the_pipes_are_singing_motion_v1.webm",
       "bytes": 5239483,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "interstitials/motion/int_06_briggs_keeps_the_ledger_key_v1.mp4",
-      "bytes": 8603484,
       "classification": "runtime-required"
     },
     {
@@ -3835,11 +4631,6 @@
       "classification": "runtime-required"
     },
     {
-      "path": "interstitials/motion/int_07_your_name_was_written_twice_key_v1.mp4",
-      "bytes": 6523322,
-      "classification": "runtime-required"
-    },
-    {
       "path": "interstitials/motion/int_07_your_name_was_written_twice_motion_v1.mp4",
       "bytes": 6523322,
       "classification": "runtime-required"
@@ -3847,11 +4638,6 @@
     {
       "path": "interstitials/motion/int_07_your_name_was_written_twice_motion_v1.webm",
       "bytes": 3336521,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "interstitials/motion/int_08_dr_nahl_remembers_the_tissue_key_v1.mp4",
-      "bytes": 8853498,
       "classification": "runtime-required"
     },
     {
@@ -3865,11 +4651,6 @@
       "classification": "runtime-required"
     },
     {
-      "path": "interstitials/motion/int_09_mothership_customer_support_key_v1.mp4",
-      "bytes": 8940257,
-      "classification": "runtime-required"
-    },
-    {
       "path": "interstitials/motion/int_09_mothership_customer_support_motion_v1.mp4",
       "bytes": 8940257,
       "classification": "runtime-required"
@@ -3877,11 +4658,6 @@
     {
       "path": "interstitials/motion/int_09_mothership_customer_support_motion_v1.webm",
       "bytes": 5215025,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "interstitials/motion/int_10_mothership_is_not_feeling_well_key_v1.mp4",
-      "bytes": 11308780,
       "classification": "runtime-required"
     },
     {
@@ -3895,11 +4671,6 @@
       "classification": "runtime-required"
     },
     {
-      "path": "interstitials/motion/int_11_her_voice_inside_your_helmet_key_v1.mp4",
-      "bytes": 9383728,
-      "classification": "runtime-required"
-    },
-    {
       "path": "interstitials/motion/int_11_her_voice_inside_your_helmet_motion_v1.mp4",
       "bytes": 9383728,
       "classification": "runtime-required"
@@ -3907,11 +4678,6 @@
     {
       "path": "interstitials/motion/int_11_her_voice_inside_your_helmet_motion_v1.webm",
       "bytes": 5354158,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "interstitials/motion/int_12_the_queen_makes_a_reasonable_offer_key_v1.mp4",
-      "bytes": 8928628,
       "classification": "runtime-required"
     },
     {
@@ -3925,11 +4691,6 @@
       "classification": "runtime-required"
     },
     {
-      "path": "interstitials/motion/int_13_a_snail_blocks_the_hallway_key_v1.mp4",
-      "bytes": 7994570,
-      "classification": "runtime-required"
-    },
-    {
       "path": "interstitials/motion/int_13_a_snail_blocks_the_hallway_motion_v1.mp4",
       "bytes": 7994570,
       "classification": "runtime-required"
@@ -3937,11 +4698,6 @@
     {
       "path": "interstitials/motion/int_13_a_snail_blocks_the_hallway_motion_v1.webm",
       "bytes": 4599406,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "interstitials/motion/int_14_cold_enough_to_think_key_v1.mp4",
-      "bytes": 12347982,
       "classification": "runtime-required"
     },
     {
@@ -3955,11 +4711,6 @@
       "classification": "runtime-required"
     },
     {
-      "path": "interstitials/motion/int_15_the_spores_know_your_name_key_v1.mp4",
-      "bytes": 14059035,
-      "classification": "runtime-required"
-    },
-    {
       "path": "interstitials/motion/int_15_the_spores_know_your_name_motion_v1.mp4",
       "bytes": 14059035,
       "classification": "runtime-required"
@@ -3967,11 +4718,6 @@
     {
       "path": "interstitials/motion/int_15_the_spores_know_your_name_motion_v1.webm",
       "bytes": 9079290,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "interstitials/motion/int_16_we_could_avoid_doing_this_key_v1.mp4",
-      "bytes": 5906919,
       "classification": "runtime-required"
     },
     {
@@ -3985,11 +4731,6 @@
       "classification": "runtime-required"
     },
     {
-      "path": "interstitials/motion/int_17_it_understands_the_gun_key_v1.mp4",
-      "bytes": 7052743,
-      "classification": "runtime-required"
-    },
-    {
       "path": "interstitials/motion/int_17_it_understands_the_gun_motion_v1.mp4",
       "bytes": 7052743,
       "classification": "runtime-required"
@@ -3997,11 +4738,6 @@
     {
       "path": "interstitials/motion/int_17_it_understands_the_gun_motion_v1.webm",
       "bytes": 3650593,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "interstitials/motion/int_18_the_creature_lets_you_pass_key_v1.mp4",
-      "bytes": 9183476,
       "classification": "runtime-required"
     },
     {
@@ -4015,11 +4751,6 @@
       "classification": "runtime-required"
     },
     {
-      "path": "interstitials/motion/int_19_meridian_remembers_you_key_v1.mp4",
-      "bytes": 14294231,
-      "classification": "runtime-required"
-    },
-    {
       "path": "interstitials/motion/int_19_meridian_remembers_you_motion_v1.mp4",
       "bytes": 14294231,
       "classification": "runtime-required"
@@ -4027,11 +4758,6 @@
     {
       "path": "interstitials/motion/int_19_meridian_remembers_you_motion_v1.webm",
       "bytes": 9032567,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "interstitials/motion/int_20_tallow_keeps_the_steam_key_v1.mp4",
-      "bytes": 8823888,
       "classification": "runtime-required"
     },
     {
@@ -4045,11 +4771,6 @@
       "classification": "runtime-required"
     },
     {
-      "path": "interstitials/motion/int_21_vesper_sleeps_in_shifts_key_v1.mp4",
-      "bytes": 7647184,
-      "classification": "runtime-required"
-    },
-    {
       "path": "interstitials/motion/int_21_vesper_sleeps_in_shifts_motion_v1.mp4",
       "bytes": 7647184,
       "classification": "runtime-required"
@@ -4057,11 +4778,6 @@
     {
       "path": "interstitials/motion/int_21_vesper_sleeps_in_shifts_motion_v1.webm",
       "bytes": 4041361,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "interstitials/motion/int_22_you_robbed_the_only_people_left_key_v1.mp4",
-      "bytes": 8532810,
       "classification": "runtime-required"
     },
     {
@@ -4075,11 +4791,6 @@
       "classification": "runtime-required"
     },
     {
-      "path": "interstitials/motion/int_23_they_still_have_their_faces_key_v1.mp4",
-      "bytes": 7968052,
-      "classification": "runtime-required"
-    },
-    {
       "path": "interstitials/motion/int_23_they_still_have_their_faces_motion_v1.mp4",
       "bytes": 7968052,
       "classification": "runtime-required"
@@ -4087,11 +4798,6 @@
     {
       "path": "interstitials/motion/int_23_they_still_have_their_faces_motion_v1.webm",
       "bytes": 3786334,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "interstitials/motion/int_24_nobody_says_goodbye_key_v1.mp4",
-      "bytes": 5659997,
       "classification": "runtime-required"
     },
     {
@@ -4105,11 +4811,6 @@
       "classification": "runtime-required"
     },
     {
-      "path": "interstitials/motion/int_25_gigawatt_goliath_key_v1.mp4",
-      "bytes": 11447642,
-      "classification": "runtime-required"
-    },
-    {
       "path": "interstitials/motion/int_25_gigawatt_goliath_motion_v1.mp4",
       "bytes": 11447642,
       "classification": "runtime-required"
@@ -4117,11 +4818,6 @@
     {
       "path": "interstitials/motion/int_25_gigawatt_goliath_motion_v1.webm",
       "bytes": 7094947,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "interstitials/motion/int_26_absolute_zero_has_a_shell_key_v1.mp4",
-      "bytes": 8207651,
       "classification": "runtime-required"
     },
     {
@@ -4135,11 +4831,6 @@
       "classification": "runtime-required"
     },
     {
-      "path": "interstitials/motion/int_27_the_bloom_that_hunts_key_v1.mp4",
-      "bytes": 11829236,
-      "classification": "runtime-required"
-    },
-    {
       "path": "interstitials/motion/int_27_the_bloom_that_hunts_motion_v1.mp4",
       "bytes": 11829236,
       "classification": "runtime-required"
@@ -4147,11 +4838,6 @@
     {
       "path": "interstitials/motion/int_27_the_bloom_that_hunts_motion_v1.webm",
       "bytes": 7090124,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "interstitials/motion/int_28_martha_runs_faster_now_key_v1.mp4",
-      "bytes": 8442110,
       "classification": "runtime-required"
     },
     {
@@ -4165,11 +4851,6 @@
       "classification": "runtime-required"
     },
     {
-      "path": "interstitials/motion/int_29_briggs_became_the_barricade_key_v1.mp4",
-      "bytes": 5012028,
-      "classification": "runtime-required"
-    },
-    {
       "path": "interstitials/motion/int_29_briggs_became_the_barricade_motion_v1.mp4",
       "bytes": 5012028,
       "classification": "runtime-required"
@@ -4177,11 +4858,6 @@
     {
       "path": "interstitials/motion/int_29_briggs_became_the_barricade_motion_v1.webm",
       "bytes": 2342114,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "interstitials/motion/int_30_kaelen_is_the_grid_key_v1.mp4",
-      "bytes": 17439242,
       "classification": "runtime-required"
     },
     {
@@ -4195,11 +4871,6 @@
       "classification": "runtime-required"
     },
     {
-      "path": "interstitials/motion/int_31_mother_of_the_last_world_key_v1.mp4",
-      "bytes": 10837581,
-      "classification": "runtime-required"
-    },
-    {
       "path": "interstitials/motion/int_31_mother_of_the_last_world_motion_v1.mp4",
       "bytes": 10837581,
       "classification": "runtime-required"
@@ -4207,11 +4878,6 @@
     {
       "path": "interstitials/motion/int_31_mother_of_the_last_world_motion_v1.webm",
       "bytes": 6437194,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "interstitials/motion/int_32_black_box_stain_key_v1.mp4",
-      "bytes": 9223148,
       "classification": "runtime-required"
     },
     {
@@ -5115,6 +5781,21 @@
       "classification": "runtime-required"
     },
     {
+      "path": "prop_camp_meridian_battery_bank.jpg",
+      "bytes": 11979,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "prop_camp_meridian_radio.jpg",
+      "bytes": 11348,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "prop_camp_meridian_repair_rig.jpg",
+      "bytes": 12013,
+      "classification": "runtime-required"
+    },
+    {
       "path": "prop_camp_sandbags.png",
       "bytes": 1137453,
       "classification": "runtime-required"
@@ -5122,6 +5803,36 @@
     {
       "path": "prop_camp_shutter_lockdown.png",
       "bytes": 111314,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "prop_camp_tallow_resin_urn.jpg",
+      "bytes": 10992,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "prop_camp_tallow_spore_trays.jpg",
+      "bytes": 10579,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "prop_camp_tallow_still.jpg",
+      "bytes": 10859,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "prop_camp_vesper_ammo_press.jpg",
+      "bytes": 10731,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "prop_camp_vesper_shield_rack.jpg",
+      "bytes": 11170,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "prop_camp_vesper_turret.jpg",
+      "bytes": 9562,
       "classification": "runtime-required"
     },
     {
@@ -5205,6 +5916,21 @@
       "classification": "runtime-required"
     },
     {
+      "path": "prop_hive_carapace_molt.jpg",
+      "bytes": 11322,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "prop_hive_chitin_hatchery.jpg",
+      "bytes": 11176,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "prop_hive_relay_antenna.jpg",
+      "bytes": 11514,
+      "classification": "runtime-required"
+    },
+    {
       "path": "prop_hive_resin_sac.png",
       "bytes": 176610,
       "classification": "runtime-required"
@@ -5212,6 +5938,21 @@
     {
       "path": "prop_hive_resin_sac.svg",
       "bytes": 1505,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "prop_hive_suture_organ.jpg",
+      "bytes": 11561,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "prop_hive_synaptic_web.jpg",
+      "bytes": 11585,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "prop_hive_wound_cauterizer.jpg",
+      "bytes": 11316,
       "classification": "runtime-required"
     },
     {

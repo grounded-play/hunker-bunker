@@ -15,7 +15,15 @@ const SOURCE_DIRS = ['electron', 'server', 'src'];
 // standalone Steam soundtrack depot, and the optimized gameplay GLBs are now
 // part of the retail presentation. Keep finite headroom for those explicit
 // runtime assets without allowing the ignored high-resolution sources in.
-const PUBLIC_BUDGET = 1150 * 1024 * 1024;
+// Raised 1150->1800 MiB after this sprint's 32 real narrative interstitial
+// cutscenes landed (public/interstitials, 731MB before a 281MB duplicate
+// cleanup below; see the duplicate-checksum sweep that removed 32
+// byte-identical, never-referenced `_key_v1.mp4` files that shipped
+// alongside their real, code-referenced `_motion_v1.mp4`/`.webm` siblings).
+// Current measured payload is ~1616 MiB; this leaves ~184MB of real headroom
+// rather than the bare minimum, so the next small asset addition doesn't
+// immediately re-trip this gate.
+const PUBLIC_BUDGET = 1800 * 1024 * 1024;
 const ASAR_BUDGET = 950 * 1024 * 1024;
 const UNKNOWN_ASSET_BUDGET = 160;
 const CODEC_MISMATCH_BUDGET = 140;

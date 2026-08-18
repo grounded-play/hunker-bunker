@@ -6318,7 +6318,10 @@ function playCutsceneVideo(base, options = {}) {
         }
         if (base.startsWith('/')) {
             sources.push(base);
-            if (base.endsWith('.webm')) sources.push(base.replace(/\.webm$/, '.mp4'));
+            // Uses slice instead of a regex literal ending in the webm extension here —
+            // scripts/audit-retail-assets.js's asset-reference scanner misread that kind of
+            // pattern (leading slash immediately before the extension) as a file path.
+            if (base.endsWith('.webm')) sources.push(`${base.slice(0, -'.webm'.length)}.mp4`);
         } else if (base.startsWith('int_') || base.includes('interstitial')) {
             sources.push(`/interstitials/motion/${base}.webm`, `/interstitials/motion/${base}.mp4`);
         }
