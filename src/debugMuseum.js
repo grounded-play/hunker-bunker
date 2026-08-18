@@ -12,42 +12,30 @@ import { getItemCatalogEntry } from './steamVaultUi.js';
 import { WEAPON_ARCHETYPES, WEAPON_SKIN_MESHES } from './player3dOverlay.js';
 import { CHARM_GLB_MAP, MOD_GLB_MAP } from './armoryScene.js';
 
+import { SHOWROOM_CATEGORIES } from './debugShowroom.js';
+
 // Far outside any real generated terrain so the museum never overlaps a real run's chunks.
 const MUSEUM_ORIGIN = Object.freeze({ x: 9000, z: 9000 });
 const ITEM_SPACING = 2.4;
 const CATEGORY_GAP = 5;
 
 // Hand-collected from threeGame.js's isEnemyType() allowlist.
-const ENEMY_TYPES = [
-    'cybersnail', 'cryosnail', 'sporesnail', 'boss_cybersnail', 'boss_cryosnail',
-    'boss_sporesnail', 'sentinel', 'crawler', 'boss_corrupted_scout', 'boss_corrupted_tank',
-    'boss_corrupted_engineer', 'alien_proto_crawler', 'alien_proto_spitter', 'boss_queen',
-    'fungal_spore_vent', 'mycelium_stalker', 'bio_charger', 'spore_mortar'
-];
+const ENEMY_TYPES = SHOWROOM_CATEGORIES.ENEMIES;
 
 // Hand-collected from threeGame.js's WALL_DECAL_TYPES set.
-const ENVIRONMENTAL_DECAL_TYPES = [
-    'decal_wall_breach', 'decal_hazard_stripes', 'decal_biohazard_stencil',
-    'decal_meridian_stencil', 'decal_claw_scratches', 'decal_bullet_holes',
-    'decal_machine_cult_shrine', 'decal_pod_312_breach', 'prop_torn_warning_poster',
-    'decal_scars'
-];
+const ENVIRONMENTAL_DECAL_TYPES = SHOWROOM_CATEGORIES.WALL_DECALS;
 
-// Hand-collected, de-duplicated union of threeGame.js's CRYO/BIO/ACTIVE/SPORE/JUNK scatter
-// variant lists (props, ground overlays, biome-specific dressing).
+// Props & ground overlays
 const PROP_AND_OVERLAY_TYPES = [
-    'scatter_coolant_puddle', 'scatter_ice_stalagmite', 'scatter_cryo_icicle',
-    'scatter_cryo_shards', 'decal_oil_spill_patch', 'decal_footprints_mud',
-    'body_human_frozen_suit', 'body_empty_exosuit', 'scatter_bio_pod', 'scatter_bio_moss',
-    'scatter_slime_puddle', 'decal_bio_sample_spill', 'decal_spore_growth_patch',
-    'decal_hive_growth', 'prop_hive_resin_sac', 'bio_spores', 'bio_spores_blue',
-    'bio_spores_amber', 'scatter_gravel', 'scatter_cable_coil', 'scatter_bolts',
-    'bunker_junk', 'bunker_junk_uncommon', 'bunker_junk_rare', 'bunker_junk_legendary'
+    ...SHOWROOM_CATEGORIES.TACTICAL_PROPS,
+    ...SHOWROOM_CATEGORIES.BIOMECH_PROPS,
+    ...SHOWROOM_CATEGORIES.SETPIECES,
+    ...SHOWROOM_CATEGORIES.FLOOR_DECALS
 ];
 
 // Season 0 chassis skins (itemdefs 4112-4119) and cosmetic decals (4120-4129)
-const CHASSIS_SKIN_ITEMDEFS = ['4112', '4113', '4114', '4115', '4116', '4117', '4118', '4119'];
-const COSMETIC_DECAL_ITEMDEFS = ['4120', '4121', '4122', '4123', '4124', '4125', '4126', '4127', '4128', '4129'];
+const CHASSIS_SKIN_ITEMDEFS = SHOWROOM_CATEGORIES.CHASSIS_SKINS;
+const COSMETIC_DECAL_ITEMDEFS = SHOWROOM_CATEGORIES.COSMETIC_PLAYER_DECALS;
 
 function createMuseumGltfLoader() {
     return new GLTFLoader().setMeshoptDecoder(MeshoptDecoder);
