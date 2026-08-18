@@ -5,7 +5,13 @@ import { createRateLimitOptions } from './rateLimit.js';
 
 const DEFAULT_STEAM_AUTH_IDENTITY = 'hunker-bunker-backend';
 const DEV_STEAM_ID64 = '76561198000000000';
-const STEAM_AUTH_URL = 'https://api.steampowered.com/ISteamUserAuth/AuthenticateUserTicket/v1/';
+// partner.steam-api.com, not the general api.steampowered.com host: Valve's docs
+// specifically call this out for AuthenticateUserTicket (a publisher-key-gated
+// endpoint), and every other publisher-key call in this codebase already uses it
+// (steamStore.js, steamGrant.js, steamInventory.js, steamLeaderboards.js) -- this
+// was the one outlier, and the likely cause of a live 405 a real player hit on
+// /steam/session (see the status-passthrough fix a few lines below).
+const STEAM_AUTH_URL = 'https://partner.steam-api.com/ISteamUserAuth/AuthenticateUserTicket/v1/';
 const STEAM_SESSION_TTL_MS = 15 * 60 * 1000;
 const DEV_SESSION_SECRET = 'hunker-bunker-local-dev-session-secret';
 
