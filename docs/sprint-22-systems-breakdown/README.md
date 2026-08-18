@@ -60,6 +60,8 @@ These establish what the game is, what is safe to claim, and which risks require
 1. [World Generation and WFC](01-world-generation-and-wfc.md)
 2. [WFC Chunk Math](06-engineering-wfc-chunk-math.md)
 3. [Combat, Movement, and Classes](02-combat-and-classes.md)
+   - [Standardized Movement & Controls Specification](../gameplay-movement-and-controls-standard.md)
+   - [Movement Controls Evolution & Proposed Changes Log](../movement-controls-evolution-and-proposed-changes.md)
 4. [Combat and Boss Phases](07-engineering-combat-boss-phases.md)
 5. [Run Director and Events](13-systems-run-director-and-events.md)
 6. [Rendering and Performance](14-engineering-rendering-and-performance.md)

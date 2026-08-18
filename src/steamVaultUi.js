@@ -30,10 +30,19 @@ export function getItemCatalogEntry(itemdefid) {
 
 export function applyCatalogImage(image, catalog) {
     if (!image || !catalog) return;
+    // Remote CDN -> local economy PNG -> generic placeholder. The season catalog (itemdefs
+    // 4100-4159) is fully registered but roughly a third of its items don't have real key art
+    // yet (docs/season-zero-protocol/08-asset-audit-and-gaps.md) — this keeps those showing a
+    // clean placeholder instead of a broken-image icon until art lands, no code change needed
+    // when it does.
     image.onerror = () => {
+        if (!image.dataset.localFallback) {
+            image.dataset.localFallback = 'true';
+            image.src = assetUrl(catalog.localImg);
+            return;
+        }
         image.onerror = null;
-        image.src = assetUrl(catalog.localImg);
-        image.dataset.localFallback = 'true';
+        image.src = assetUrl('/favicon.png');
     };
     image.src = assetUrl(catalog.img);
 }
@@ -725,7 +734,7 @@ export function playCacheRevealAnimation(rewardDefId, onClaim) {
         return;
     }
 
-    const reward = STEAM_ITEM_CATALOG[rewardDefId] || {
+    const reward = getItemCatalogEntry(rewardDefId) || {
         name: `Item #${rewardDefId}`,
         rarity: 'rare',
         desc: 'Subterranean relic recovered from deep vault cache.',
@@ -858,7 +867,7 @@ export async function openDeepRelicCache() {
         updateOpenCacheAvailability();
 
         playCacheRevealAnimation(randomDefId, () => {
-            const reward = STEAM_ITEM_CATALOG[randomDefId];
+            const reward = getItemCatalogEntry(randomDefId);
             const statusEl = document.getElementById('vault-store-open-status');
             if (statusEl) {
                 statusEl.classList.remove('hidden');
@@ -877,7 +886,7 @@ export async function openDeepRelicCache() {
         await loadVaultData();
         updateOpenCacheAvailability();
         const grantedId = result.granted?.[0]?.itemdefid;
-        const reward = STEAM_ITEM_CATALOG[grantedId];
+        const reward = getItemCatalogEntry(grantedId);
 
         if (grantedId) {
             playCacheRevealAnimation(grantedId, () => {

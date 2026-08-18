@@ -50,11 +50,24 @@ chrome/
 
 # Local scratch directory (generators, smoke tests, profiles)
 scratch/
+tmp/
+temp/
+screenshots/
+test-artifacts/
 
-# 3D authoring/reference sources stay local. Only optimized runtime exports
-# (for example public/3d/scouting-scout/Scout.game.glb) belong in Git/builds.
-art/source/mixamo/
-art/source/new3d/
+# Root level temporary screenshots, visual smoke captures, and debug dumps
+/*.png
+/*.jpg
+/*.jpeg
+/*.webp
+!index.html
+
+# 2D/3D Authoring, reference sources, and graphic design masters stay local.
+# Only optimized runtime exports (e.g. public/3d/runtime/ and public/economy/*.png) belong in Git/builds.
+art/source/
+art/raw/
+art/scratch/
+art/upscales/
 *.fbx
 *.blend
 *.blend1
@@ -64,6 +77,32 @@ art/source/new3d/
 *.max
 *.mb
 *.ma
+*.psd
+*.psb
+*.xcf
+*.kra
+*.ase
+*.aseprite
+*.clip
+*.ai
+*.tga
+*.exr
+*.hdr
+*.tiff
+*.tif
+
+# Intermediate generation companions and uncompressed source captures
+public/economy/*_source.*
+public/economy/*_chroma.jpg
+*_source.jpg
+*_source.png
+*_source.webp
+*_preview.jpg
+*_preview.png
+*_upscaled.png
+**/generated_raw/
+**/intermediates/
+**/scratch_images/
 
 # Editor directories and files
 .vscode/*

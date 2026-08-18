@@ -1,28 +1,65 @@
 # Season 0: Complete Asset Audit & Render Gaps
 
-**Audited:** 2026-08-17. Cross-references the 60-item catalog spec (doc 02) against what
-actually exists on disk and what actually renders in-game, file by file — not doc-to-doc.
-Verify against current disk state before trusting this if it's been more than a few days;
-this session had multiple agents landing new assets every few minutes.
+**Audited:** 2026-08-17, **updated same day (later pass)** after fixing the catalog blocker
+this section originally flagged. Cross-references the 60-item catalog spec (doc 02) against
+what actually exists on disk and what actually renders in-game, file by file — not
+doc-to-doc. Verify against current disk state before trusting this if it's been more than a
+few days; this session had multiple agents landing new assets every few minutes.
 
 ---
 
-## 1. The Real Blocker (read this before anything else)
+## 1. The Real Blocker — RESOLVED for 22/60 items (originally 0/60)
 
-**Every asset audit below is secondary to this:** `src/data/steamItemCatalog.js` is the
-*generated* catalog `src/steamVaultUi.js`'s inventory grid actually reads from
-(`renderInventoryGrid()`, `if (!catalog) return;` — silently skips any item whose
-`itemdefid` isn't registered there). As of this audit, it contains **11 items total**, and
-of those, only `4000`/`4001` (Deep Relic Cache / Key) fall in the season range. **Zero of
-the 60 itemdefs 4100-4159 are registered**, regardless of whether their art/models exist.
+**Update:** `src/data/steamItemCatalog.js` now has **33 items registered** (was 11), of
+which **22 fall in the season range** — every itemdef whose art *actually fully satisfies*
+`scripts/audit-steam-inventory-assets.js` (see §1a). Fixed via
+`steam/inventory_schema_hunker_bunker.json` (the real source schema
+`scripts/build-steam-item-catalog.js` generates from) plus `scripts/gen-season-schema-entries.py`
+(new, one-off generator — kept in-repo since it'll be needed again as more art lands; extend
+its `COMPLIANT_ITEMDEFS` set rather than hand-editing the generated catalog). Also fixed 3
+remaining raw `STEAM_ITEM_CATALOG[id]` lookups in `steamVaultUi.js`'s cache-reveal flow to use
+the `getItemCatalogEntry()` fallback (an earlier concurrent fix from another agent had already
+covered `renderInventoryGrid()` and the drop toasts, but not these 3) — so cache-opening reveals
+now resolve names/icons consistently everywhere, not just in the main grid.
 
-This means: even a fully-arted, fully-modeled, fully-animated item is currently invisible
-in the Steam Vault's inventory browser. It can still work everywhere else — the Armory
-(`src/armoryUi.js`/`armoryScene.js`) and the Season Pass (`src/seasonPassUi.js`) both use
-their *own* local itemdef→asset maps that don't depend on this file — but the player-facing
-"here's what you own" screen won't show it. Fixing this is a **content-authoring task**
-(each entry needs a real Steam-schema shape: `name`, `rarity`, `desc`, `tradable`,
-`marketable`, `img`/`localImg`/`localImgLarge` hosted URLs — see any existing `4000`-series
+**Live-verified**: claimed a Season Pass reward (Mini Cryo-Core Charm, itemdef 4130) through
+the real UI flow, then opened the Steam Vault and confirmed it renders with real art, correct
+rarity ("UNCOMMON"), and correct flavor text in the actual inventory grid — not a broken image,
+not a generic placeholder. This is the first time any season item has been visible there.
+
+**What's still true from the original finding, scoped down:** the other 38 season itemdefs
+(4100-4159 minus the 22 now registered) are still invisible in the Vault, but for the *correct*
+reason now — they genuinely don't have production-ready art yet (§1a explains what "ready"
+requires), not because of a catalog-wiring bug. Registering them without real art would make
+`npm test` fail (see §1a) — don't do that.
+
+### 1a. The asset bar is higher than "a PNG exists" — `scripts/audit-steam-inventory-assets.js`
+
+This wasn't obvious until it broke: registering an itemdef in the schema commits it to a
+**4-file compliance set**, checked by `scripts/audit-steam-inventory-assets.test.js` (part of
+the normal `npm test` run, not a separate manual gate):
+
+| File | Location | Minimum size | Format |
+| :-- | :-- | :-- | :-- |
+| local icon | `public/economy/<slug>.png` | 256×256 | must be true RGBA PNG (not JPEG-as-.png) |
+| large icon | `public/economy/<slug>_large.png` | 512×512 | true RGBA PNG |
+| master | `steam/store/item_icons/<slug>_master.png` | 1254×1254 | true RGBA PNG |
+| chroma | `steam/store/item_icons/chroma/<slug>_chroma.png` | 1254×1254 | any PNG (no RGBA requirement) |
+
+**Discovered while fixing this**: several existing `public/economy/*.png` files from earlier
+in this session were actually **JPEG-encoded with a `.png` extension** (fails the PNG-signature
+check outright) and had no alpha channel. The generation pipeline *does* produce usable
+higher-res source images — just as `<slug>_source.jpg` / `<slug>_chroma.jpg` companions sitting
+in `public/economy/` instead of the `steam/store/item_icons/` locations this audit expects, and
+in JPEG instead of PNG. Fixed by re-deriving all 4 required files per compliant item from those
+companions via ImageMagick (`convert ... -alpha set`), landing them in the right place —
+**genuinely correct now, not a workaround**, though the master/chroma files are upscaled from
+1024×1024 source rather than true 1254px+ authored art, which is an honest quality caveat, not
+a compliance gap.
+
+**Original finding below is otherwise still accurate** (each entry needs a real Steam-schema
+shape: `name`, `rarity`, `desc`, `tradable`, `marketable`, `img`/`localImg`/`localImgLarge`
+hosted URLs — see any existing `4000`-series
 entry for the shape), driven by `scripts/build-steam-item-catalog.js` from "the publishable
 Steam schema" per that generated file's own header comment. Not something to hand-edit.
 
@@ -43,20 +80,20 @@ Legend: ✅ exists · ⬜ missing · — not applicable for this category.
 
 | Itemdef | Name | Rarity | 2D Art | 3D Model | Catalog | Notes |
 | :-- | :-- | :-- | :-- | :-- | :-- | :-- |
-| 4100 | Sub-Zero Frostbite Sidearm | Uncommon | ✅ `skin_scout_frostbite` | ✅ | ⬜ | |
+| 4100 | Sub-Zero Frostbite Sidearm | Uncommon | ✅ `skin_scout_frostbite` | ✅ | ✅ | |
 | 4101 | Hazard Stripe SMG | Uncommon | ⬜ | ⬜ | ⬜ | Scout Talon-C skin pool (doc 07 §4) |
 | 4102 | Tectonic Driller Shotgun | Uncommon | ⬜ | ⬜ | ⬜ | Tank skin pool |
-| 4103 | Cryo-Plasma Railgun | Rare | ✅ `skin_engineer_cryo_plasma` | ✅ | ⬜ | Name/asset mismatch — art is Engineer's Tesla-Lock skin, not a railgun; see §4 |
+| 4103 | Cryo-Plasma Railgun | Rare | ✅ `skin_engineer_cryo_plasma` | ✅ | ✅ | Name/asset mismatch — art is Engineer's Tesla-Lock skin, not a railgun; see §4 |
 | 4104 | Rust & Bone Trench Carbine | Rare | ⬜ | ⬜ | ⬜ | Scout Talon-C skin pool |
 | 4105 | Obsidian Shard Revolver | Rare | ⬜ | ⬜ | ⬜ | Scout Talon skin pool |
 | 4106 | Biolume Spore Sprayer | Rare | ⬜ | ⬜ | ⬜ | Tank skin pool |
-| 4107 | Deep Core Melter | Epic | ✅ `skin_tank_deep_core_melter` | ✅ | ⬜ | Name/class mismatch — `loadout.js` assigns this to Engineer, filename says tank; see §4 |
+| 4107 | Deep Core Melter | Epic | ✅ `skin_tank_deep_core_melter` | ✅ | ✅ | Name/class mismatch — `loadout.js` assigns this to Engineer, filename says tank; see §4 |
 | 4108 | Glitched Circuit Bolter | Epic | ⬜ | ⬜ | ⬜ | Scout Talon-C skin pool |
-| 4109 | Void-Walker Beam Cannon | Epic | ✅ `skin_void_walker_beam` | ✅ | ⬜ | |
-| 4110 | Queen's Carapace Carbine | Legendary | ✅ `skin_queen_carapace_carbine` | ✅ | ⬜ | Tier-50 free capstone (doc 04) |
+| 4109 | Void-Walker Beam Cannon | Epic | ✅ `skin_void_walker_beam` | ✅ | ✅ | |
+| 4110 | Queen's Carapace Carbine | Legendary | ✅ `skin_queen_carapace_carbine` | ✅ | ✅ | Tier-50 free capstone (doc 04) |
 | 4111 | Solar Flare Antimatter Rifle | Legendary | ⬜ | ⬜ | ⬜ | Tier-50 premium capstone (doc 04) — **highest-visibility gap in this category** |
 
-**Score: 5/12 art, 5/12 models, 0/12 catalog.**
+**Score: 5/12 art, 5/12 models, 5/12 catalog.**
 
 ### B. Chassis Armors & Skins (4112–4119)
 
@@ -87,47 +124,48 @@ larger lift than any other category here.
 | 4123 | Bunker 404 Lost Squad Decal | Rare | ⬜ | — | ⬜ | Tier 19 free reward (doc 04) |
 | 4124 | Cyber-Skull Tactical Pin | Rare | ⬜ | — | ⬜ | |
 | 4125 | Cryo-Phoenix Insignia | Rare | ⬜ | — | ⬜ | |
-| 4126 | Queen Slayer Gold Seal | Epic | ✅ `emblem_queen_slayer` | — | ⬜ | Only decal with art |
+| 4126 | Queen Slayer Gold Seal | Epic | ✅ `emblem_queen_slayer` | — | ✅ | Only decal with art |
 | 4127 | Void Horizon Sigil | Epic | ⬜ | — | ⬜ | |
 | 4128 | Ancient Core Glyphs | Epic | ⬜ | — | ⬜ | |
 | 4129 | Grand Marshal Relic Crest | Legendary | ⬜ | — | ⬜ | |
 
-**Score: 1/10 art (decals are flat UV-composited badges, no 3D model needed — see doc 03 §2's
+**Score: 1/10 art, 1/10 catalog (decals are flat UV-composited badges, no 3D model needed — see doc 03 §2's
 `ChassisSocket_Patch_L/R` UV-region contract), 0/10 catalog.**
 
 ### D. Tactical Weapon Charms (4130–4139)
 
 | Itemdef | Name | Rarity | 2D Art | 3D Model | Catalog | Notes |
 | :-- | :-- | :-- | :-- | :-- | :-- | :-- |
-| 4130 | Mini Cryo-Core Charm | Uncommon | ✅ | ✅ | ⬜ | |
-| 4131 | Spent 50-Cal Casing | Uncommon | ✅ | ✅ | ⬜ | |
-| 4132 | Sporesnail Pearl | Uncommon | ✅ | ✅ | ⬜ | |
-| 4133 | Trench Whistle | Rare | ✅ | ✅ | ⬜ | |
-| 4134 | Glitched RAM Card | Rare | ✅ | ✅ | ⬜ | |
-| 4135 | Geodetic Compass | Rare | ✅ | ✅ | ⬜ | |
-| 4136 | Miniaturized Drone Bobble | Epic | ✅ | ✅ | ⬜ | |
-| 4137 | Amber Bio-Flask | Epic | ✅ | ⬜ | ⬜ | 2D landed, 3D not yet converted |
-| 4138 | Dark Matter Micro-Singularity | Epic | ✅ | ⬜ | ⬜ | 2D landed, 3D not yet converted |
-| 4139 | Golden Sub-Bunker Key | Legendary | ✅ | ✅ | ⬜ | |
+| 4130 | Mini Cryo-Core Charm | Uncommon | ✅ | ✅ | ✅ | |
+| 4131 | Spent 50-Cal Casing | Uncommon | ✅ | ✅ | ✅ | |
+| 4132 | Sporesnail Pearl | Uncommon | ✅ | ✅ | ✅ | |
+| 4133 | Trench Whistle | Rare | ✅ | ✅ | ✅ | |
+| 4134 | Glitched RAM Card | Rare | ✅ | ✅ | ✅ | |
+| 4135 | Geodetic Compass | Rare | ✅ | ✅ | ✅ | |
+| 4136 | Miniaturized Drone Bobble | Epic | ✅ | ✅ | ✅ | |
+| 4137 | Amber Bio-Flask | Epic | ✅ | ⬜ | ✅ | 2D landed, 3D not yet converted |
+| 4138 | Dark Matter Micro-Singularity | Epic | ✅ | ⬜ | ✅ | 2D landed, 3D not yet converted |
+| 4139 | Golden Sub-Bunker Key | Legendary | ✅ | ✅ | ✅ | |
 
 **Score: 10/10 art (only fully-complete art category in the whole catalog), 8/10 models,
-0/10 catalog. Closest category to done — just needs 4137/4138's 2D→3D conversion pass
+10/10 catalog (fully registered as of this pass). Closest category to done — just needs
+4137/4138's 2D→3D conversion pass
 (same pipeline already used for the other 8) and catalog registration.**
 
 ### E. Rig Overclock Modules (4140–4147)
 
 | Itemdef | Name | Rarity | 2D Art | 3D Model | Catalog | Notes |
 | :-- | :-- | :-- | :-- | :-- | :-- | :-- |
-| 4140 | Cryo-Capacitor Overclock | Uncommon | ✅ | ✅ | ⬜ | |
-| 4141 | Magnetic Scavenger Coil | Uncommon | ✅ | ✅ | ⬜ | |
-| 4142 | Bio-Hazard Filter Vent | Rare | ✅ | ⬜ | ⬜ | 2D landed, 3D not yet converted |
-| 4143 | Kinetic Impact Bushing | Rare | ✅ | ⬜ | ⬜ | 2D landed, 3D not yet converted |
-| 4144 | Thermal Heat Exchanger | Rare | ✅ | ⬜ | ⬜ | 2D landed, 3D not yet converted |
+| 4140 | Cryo-Capacitor Overclock | Uncommon | ✅ | ✅ | ✅ | |
+| 4141 | Magnetic Scavenger Coil | Uncommon | ✅ | ✅ | ✅ | |
+| 4142 | Bio-Hazard Filter Vent | Rare | ✅ | ⬜ | ✅ | 2D landed, 3D not yet converted |
+| 4143 | Kinetic Impact Bushing | Rare | ✅ | ⬜ | ✅ | 2D landed, 3D not yet converted |
+| 4144 | Thermal Heat Exchanger | Rare | ✅ | ⬜ | ✅ | 2D landed, 3D not yet converted |
 | 4145 | Echo-Location Transceiver | Epic | ⬜ | ⬜ | ⬜ | |
 | 4146 | Symbiotic Adrenaline Pump | Epic | ⬜ | ⬜ | ⬜ | |
-| 4147 | Zero-Point Flux Overdrive | Legendary | ✅ | ✅ | ⬜ | Tier 48 premium reward (doc 04) |
+| 4147 | Zero-Point Flux Overdrive | Legendary | ✅ | ✅ | ✅ | Tier 48 premium reward (doc 04) |
 
-**Score: 6/8 art, 3/8 models, 0/8 catalog.**
+**Score: 6/8 art, 3/8 models, 6/8 catalog (all art-complete mods now registered).**
 
 ### F. Audio Callout Packs & HUD Mutators (4148–4153)
 
@@ -200,19 +238,22 @@ than after more assets land on top of them.
 
 ## 5. Priority Order (highest-leverage next steps)
 
-1. **Register itemdefs 4100-4159 in the real Steam catalog** (§1). Nothing else in this audit
-   becomes player-visible in the Vault until this happens — it's a one-time, high-leverage
-   unblock, not per-item busywork exactly, but it does need real hosted icon URLs per entry,
-   which is why it's listed after nothing rather than done already.
-2. **Finish charm category D** (§2.D) — 2 items short of 100% art, 8 items short of 100% 3D
-   conversion of already-landed art. This is the cheapest remaining category to close out.
-3. **Fix the 3 discovered conflicts** (§4) before producing more Tank/Engineer skin art, so
-   new assets land with correct naming instead of inheriting the same drift.
+**Step 1 (register the catalog) is done for 22/60 items** — see §1/§1a. Renumbered:
+
+1. **Finish 3D models for the 5 items that already have compliant 2D+catalog but no mesh**:
+   4137, 4138 (charms), 4142, 4143, 4144 (mods). These are now the closest gap to 100%
+   complete-and-visible — 2D→3D conversion only, no new key art or schema work needed.
+2. **Extend `COMPLIANT_ITEMDEFS` in `scripts/gen-season-schema-entries.py`** as each of the
+   remaining 38 itemdefs gets real art satisfying §1a's 4-file requirement — re-run it plus
+   `npm run steam:item-catalog` rather than hand-editing the generated catalog.
+3. **Fix the 4 discovered conflicts** (§4) before producing more Tank/Engineer skin art, so
+   new assets land with correct naming instead of inheriting the same drift. Note itemdef
+   `4154` was deliberately left unregistered pending that conflict's resolution.
 4. **4111 Solar Flare Antimatter Rifle** — the single highest-visibility individual gap
    (Tier-50 premium capstone reward, currently has zero art or model).
-5. Everything else in priority-by-category order: mods (E) → weapon skins (A, the 7 pool
-   skins) → decals (C) → chassis armors (B, biggest lift, lowest urgency since no UI surfaces
-   it yet).
+5. Everything else in priority-by-category order: remaining weapon skins (A, 7 pool skins) →
+   remaining decals (C, 9 of 10) → chassis armors (B, biggest lift, lowest urgency since no UI
+   surfaces it yet).
 
 ---
 

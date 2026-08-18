@@ -75,7 +75,7 @@ test.describe('gameplay facing yaw (mouse + gamepad)', () => {
         expect(Math.abs(rightUp.crosshairCenterX - viewportWidth / 2)).toBeLessThan(2);
     });
 
-    test('WASD movement is relative to the current facing direction', async ({ page }) => {
+    test('WASD movement is screen-relative regardless of facing direction', async ({ page }) => {
         await bootToOperatorMenu(page);
         await startRunAndSkipIntro(page);
 

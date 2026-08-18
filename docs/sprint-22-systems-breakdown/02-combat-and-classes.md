@@ -2,7 +2,7 @@
 
 ## Current Truth
 
-Combat is an isometric shooter under oxygen, ammo, positioning, and route pressure. Universal sprint is implemented for every class. Class passives are implemented and tested. The Queen uses a multi-phase boss framework. The remaining product problem is comparative feel across ordinary enemies and the other bosses—not the absence of all mobility or phase code.
+Combat is an isometric shooter under oxygen, ammo, positioning, and route pressure. For the complete mathematical specification of the decoupled movement, aim, and camera model, see [`docs/gameplay-movement-and-controls-standard.md`](../gameplay-movement-and-controls-standard.md). Universal sprint is implemented for every class. Class passives are implemented and tested. The Queen uses a multi-phase boss framework. The remaining product problem is comparative feel across ordinary enemies and the other bosses—not the absence of all mobility or phase code.
 
 ## Class Identity
 

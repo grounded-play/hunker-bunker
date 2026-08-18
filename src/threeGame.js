@@ -46,7 +46,7 @@ export const TiltShiftPassShader = {
     `
 };
 import { assetUrl } from './assetUrl.js';
-import { wrapAngle, planarBasisFromOffsetAzimuth, aimVectorFromYaw, stepAngleTowards } from './cameraYaw.js';
+import { wrapAngle, planarBasisFromOffsetAzimuth, aimVectorFromYaw } from './cameraYaw.js';
 import { MULTIPLAYER_SPAWN_MODES } from './multiplayerCrashPlanner.js';
 import { multiplayerLobby } from './multiplayerLobby.js';
 import { BankManager, O2_GENERATOR_UPGRADES, BASE_TURRET_UPGRADES, BASE_TURRET_REPAIR_COST, TIER2_UPGRADE_ORDER, TIER2_UPGRADE_CONFIGS, WEAPON_UPGRADE_ORDER, WEAPON_UPGRADES_CONFIG, CLASS_SKILL_TREES, shellPriceOf } from './bank.js';
@@ -983,7 +983,6 @@ function isChunkTraversalConnected(grid) {
 // already skipped by the hasAlpha/hasSourceAlpha check in the common case,
 // and repackGeneratedSpriteAtlas's output isn't safe to assume shareable.
 const keyedSpriteTextureCache = new Map();
-const CAMERA_ROT_SPEED = 4.0;
 
 export class ThreeGame {
     constructor({ parent, playerType = 'TANK', deferPlayerSpriteLoad = false, bankManager = null, dialogueManager = null, arcManager = null, act2Manager = null } = {}) {
@@ -4715,10 +4714,17 @@ export class ThreeGame {
         if (!this.isGameplayInputActive()) return false;
         if (this.dashCooldownTimer > 0 || this.isDashing) return false;
 
-        let dirX = (this.keys.right ? 1 : 0) - (this.keys.left ? 1 : 0);
-        let dirZ = (this.keys.down ? 1 : 0) - (this.keys.up ? 1 : 0);
+        const keyAxisX = (this.keys.right ? 1 : 0) - (this.keys.left ? 1 : 0);
+        const keyAxisZ = (this.keys.down ? 1 : 0) - (this.keys.up ? 1 : 0);
+        const screenAxisX = THREE.MathUtils.clamp(keyAxisX + (this.virtualInput?.x || 0), -1, 1);
+        const screenAxisZ = THREE.MathUtils.clamp(keyAxisZ + (this.virtualInput?.z || 0), -1, 1);
 
-        if (!dirX && !dirZ) {
+        let dirX;
+        let dirZ;
+        if (screenAxisX || screenAxisZ) {
+            dirX = (this.cameraPlanarRight.x * screenAxisX) + (this.cameraPlanarForward.x * -screenAxisZ);
+            dirZ = (this.cameraPlanarRight.y * screenAxisX) + (this.cameraPlanarForward.y * -screenAxisZ);
+        } else {
             dirX = this.aimDirX || 1;
             dirZ = this.aimDirZ || 0;
         }
@@ -15477,8 +15483,8 @@ export class ThreeGame {
         const keyAxisZ = (this.keys.down ? 1 : 0) - (this.keys.up ? 1 : 0);
         const screenAxisX = THREE.MathUtils.clamp(keyAxisX + this.virtualInput.x, -1, 1);
         const screenAxisZ = THREE.MathUtils.clamp(keyAxisZ + this.virtualInput.z, -1, 1);
-        const moveAxisX = (this.facingPlanarRight.x * screenAxisX) + (this.facingPlanarForward.x * -screenAxisZ);
-        const moveAxisZ = (this.facingPlanarRight.y * screenAxisX) + (this.facingPlanarForward.y * -screenAxisZ);
+        const moveAxisX = (this.cameraPlanarRight.x * screenAxisX) + (this.cameraPlanarForward.x * -screenAxisZ);
+        const moveAxisZ = (this.cameraPlanarRight.y * screenAxisX) + (this.cameraPlanarForward.y * -screenAxisZ);
         const isMoving = Boolean(moveAxisX || moveAxisZ);
         let moveDirX = this.aimDirX || 1;
         let moveDirZ = this.aimDirZ || 0;
@@ -16942,8 +16948,8 @@ export class ThreeGame {
         return getDirectionIndexFromWorldVector(
             worldX,
             worldZ,
-            this.facingPlanarRight,
-            this.facingPlanarForward
+            this.cameraPlanarRight,
+            this.cameraPlanarForward
         );
     }
 
@@ -17003,8 +17009,8 @@ export class ThreeGame {
         const angle = facingRow * (Math.PI / 4);
         const screenAxisX = Math.cos(angle);
         const screenAxisZ = Math.sin(angle);
-        const worldX = (this.facingPlanarRight.x * screenAxisX) + (this.facingPlanarForward.x * -screenAxisZ);
-        const worldZ = (this.facingPlanarRight.y * screenAxisX) + (this.facingPlanarForward.y * -screenAxisZ);
+        const worldX = (this.cameraPlanarRight.x * screenAxisX) + (this.cameraPlanarForward.x * -screenAxisZ);
+        const worldZ = (this.cameraPlanarRight.y * screenAxisX) + (this.cameraPlanarForward.y * -screenAxisZ);
         const length = Math.hypot(worldX, worldZ) || 1;
         return { x: worldX / length, z: worldZ / length };
     }
@@ -17826,8 +17832,6 @@ export class ThreeGame {
     }
 
     updateCamera(delta) {
-        const targetAzimuth = this.facingYaw + Math.PI;
-        this.cameraAzimuth = stepAngleTowards(this.cameraAzimuth, targetAzimuth, CAMERA_ROT_SPEED, delta);
         const camBasis = planarBasisFromOffsetAzimuth(this.cameraAzimuth);
         this.cameraPlanarForward.set(camBasis.forward.x, camBasis.forward.y);
         this.cameraPlanarRight.set(camBasis.right.x, camBasis.right.y);
@@ -17886,7 +17890,6 @@ export class ThreeGame {
 
     snapCameraToPlayer() {
         if (!this.player || !this.camera) return;
-        this.cameraAzimuth = wrapAngle(this.facingYaw + Math.PI);
         const camBasis = planarBasisFromOffsetAzimuth(this.cameraAzimuth);
         this.cameraPlanarForward.set(camBasis.forward.x, camBasis.forward.y);
         this.cameraPlanarRight.set(camBasis.right.x, camBasis.right.y);

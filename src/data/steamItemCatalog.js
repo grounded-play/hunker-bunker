@@ -121,6 +121,248 @@ const catalog = {
         "img": "https://hunkerbunker.netlify.app/economy/cache_key.png",
         "localImg": "/economy/cache_key.png",
         "localImgLarge": "/economy/cache_key_large.png"
+    },
+    "4100": {
+        "itemdefid": 4100,
+        "name": "Sub-Zero Frostbite Sidearm",
+        "rarity": "uncommon",
+        "desc": "Cryogenic frost-coated polymer chassis with cooling vents.",
+        "tradable": true,
+        "marketable": true,
+        "img": "https://hunkerbunker.netlify.app/economy/skin_scout_frostbite.png",
+        "localImg": "/economy/skin_scout_frostbite.png",
+        "localImgLarge": "/economy/skin_scout_frostbite_large.png"
+    },
+    "4103": {
+        "itemdefid": 4103,
+        "name": "Cryo-Plasma Railgun",
+        "rarity": "rare",
+        "desc": "Superconducting cyan plasma coils wrapped around a carbon frame.",
+        "tradable": true,
+        "marketable": true,
+        "img": "https://hunkerbunker.netlify.app/economy/skin_engineer_cryo_plasma.png",
+        "localImg": "/economy/skin_engineer_cryo_plasma.png",
+        "localImgLarge": "/economy/skin_engineer_cryo_plasma_large.png"
+    },
+    "4107": {
+        "itemdefid": 4107,
+        "name": "Deep Core Melter",
+        "rarity": "epic",
+        "desc": "Magma-infused reactor core pulsing with orange thermal energy.",
+        "tradable": true,
+        "marketable": true,
+        "img": "https://hunkerbunker.netlify.app/economy/skin_tank_deep_core_melter.png",
+        "localImg": "/economy/skin_tank_deep_core_melter.png",
+        "localImgLarge": "/economy/skin_tank_deep_core_melter_large.png"
+    },
+    "4109": {
+        "itemdefid": 4109,
+        "name": "Void-Walker Beam Cannon",
+        "rarity": "epic",
+        "desc": "Dark matter emitter with purple gravitational event horizon.",
+        "tradable": true,
+        "marketable": true,
+        "img": "https://hunkerbunker.netlify.app/economy/skin_void_walker_beam.png",
+        "localImg": "/economy/skin_void_walker_beam.png",
+        "localImgLarge": "/economy/skin_void_walker_beam_large.png"
+    },
+    "4110": {
+        "itemdefid": 4110,
+        "name": "Queen's Carapace Carbine",
+        "rarity": "legendary",
+        "desc": "Living chitin alloy salvaged from the brood queen's crown.",
+        "tradable": true,
+        "marketable": true,
+        "img": "https://hunkerbunker.netlify.app/economy/skin_queen_carapace_carbine.png",
+        "localImg": "/economy/skin_queen_carapace_carbine.png",
+        "localImgLarge": "/economy/skin_queen_carapace_carbine_large.png"
+    },
+    "4126": {
+        "itemdefid": 4126,
+        "name": "Queen Slayer Gold Seal",
+        "rarity": "epic",
+        "desc": "Embossed gold seal celebrating brood queen termination.",
+        "tradable": true,
+        "marketable": true,
+        "img": "https://hunkerbunker.netlify.app/economy/emblem_queen_slayer.png",
+        "localImg": "/economy/emblem_queen_slayer.png",
+        "localImgLarge": "/economy/emblem_queen_slayer_large.png"
+    },
+    "4130": {
+        "itemdefid": 4130,
+        "name": "Mini Cryo-Core Charm",
+        "rarity": "uncommon",
+        "desc": "Tiny frosted core venting microscopic cold vapor.",
+        "tradable": true,
+        "marketable": true,
+        "img": "https://hunkerbunker.netlify.app/economy/charm_mini_cryo_core.png",
+        "localImg": "/economy/charm_mini_cryo_core.png",
+        "localImgLarge": "/economy/charm_mini_cryo_core_large.png"
+    },
+    "4131": {
+        "itemdefid": 4131,
+        "name": "Spent 50-Cal Casing",
+        "rarity": "uncommon",
+        "desc": "Engraved spent casing from the initial bunker breach.",
+        "tradable": true,
+        "marketable": true,
+        "img": "https://hunkerbunker.netlify.app/economy/charm_spent_50cal.png",
+        "localImg": "/economy/charm_spent_50cal.png",
+        "localImgLarge": "/economy/charm_spent_50cal_large.png"
+    },
+    "4132": {
+        "itemdefid": 4132,
+        "name": "Sporesnail Pearl",
+        "rarity": "uncommon",
+        "desc": "Lustrous biological pearl recovered from a hive queen.",
+        "tradable": true,
+        "marketable": true,
+        "img": "https://hunkerbunker.netlify.app/economy/charm_sporesnail_pearl.png",
+        "localImg": "/economy/charm_sporesnail_pearl.png",
+        "localImgLarge": "/economy/charm_sporesnail_pearl_large.png"
+    },
+    "4133": {
+        "itemdefid": 4133,
+        "name": "Trench Whistle",
+        "rarity": "rare",
+        "desc": "Retro tactical whistle dangling from a dog tag chain.",
+        "tradable": true,
+        "marketable": true,
+        "img": "https://hunkerbunker.netlify.app/economy/charm_trench_whistle.png",
+        "localImg": "/economy/charm_trench_whistle.png",
+        "localImgLarge": "/economy/charm_trench_whistle_large.png"
+    },
+    "4134": {
+        "itemdefid": 4134,
+        "name": "Glitched RAM Card",
+        "rarity": "rare",
+        "desc": "Circuit chip with flickering miniature green LED readout.",
+        "tradable": true,
+        "marketable": true,
+        "img": "https://hunkerbunker.netlify.app/economy/charm_glitched_ram.png",
+        "localImg": "/economy/charm_glitched_ram.png",
+        "localImgLarge": "/economy/charm_glitched_ram_large.png"
+    },
+    "4135": {
+        "itemdefid": 4135,
+        "name": "Geodetic Compass",
+        "rarity": "rare",
+        "desc": "Needle spins wildly when pointing toward boss chambers.",
+        "tradable": true,
+        "marketable": true,
+        "img": "https://hunkerbunker.netlify.app/economy/charm_geodetic_compass.png",
+        "localImg": "/economy/charm_geodetic_compass.png",
+        "localImgLarge": "/economy/charm_geodetic_compass_large.png"
+    },
+    "4136": {
+        "itemdefid": 4136,
+        "name": "Miniaturized Drone Bobble",
+        "rarity": "epic",
+        "desc": "Tiny articulated turret drone with moving search beam.",
+        "tradable": true,
+        "marketable": true,
+        "img": "https://hunkerbunker.netlify.app/economy/charm_mini_drone_bobble.png",
+        "localImg": "/economy/charm_mini_drone_bobble.png",
+        "localImgLarge": "/economy/charm_mini_drone_bobble_large.png"
+    },
+    "4137": {
+        "itemdefid": 4137,
+        "name": "Amber Bio-Flask",
+        "rarity": "epic",
+        "desc": "Suspended glowing embryo reacting to weapon fire.",
+        "tradable": true,
+        "marketable": true,
+        "img": "https://hunkerbunker.netlify.app/economy/charm_amber_bio_flask.png",
+        "localImg": "/economy/charm_amber_bio_flask.png",
+        "localImgLarge": "/economy/charm_amber_bio_flask_large.png"
+    },
+    "4138": {
+        "itemdefid": 4138,
+        "name": "Dark Matter Micro-Singularity",
+        "rarity": "epic",
+        "desc": "Miniature black hole with orbiting plasma particles.",
+        "tradable": true,
+        "marketable": true,
+        "img": "https://hunkerbunker.netlify.app/economy/charm_dark_matter.png",
+        "localImg": "/economy/charm_dark_matter.png",
+        "localImgLarge": "/economy/charm_dark_matter_large.png"
+    },
+    "4139": {
+        "itemdefid": 4139,
+        "name": "Golden Sub-Bunker Key",
+        "rarity": "legendary",
+        "desc": "Emits radiant gold god-rays and coin jingling audio.",
+        "tradable": true,
+        "marketable": true,
+        "img": "https://hunkerbunker.netlify.app/economy/charm_golden_sub_bunker_key.png",
+        "localImg": "/economy/charm_golden_sub_bunker_key.png",
+        "localImgLarge": "/economy/charm_golden_sub_bunker_key_large.png"
+    },
+    "4140": {
+        "itemdefid": 4140,
+        "name": "Cryo-Capacitor Overclock",
+        "rarity": "uncommon",
+        "desc": "+8% Cryo Freeze Duration on elemental attacks.",
+        "tradable": true,
+        "marketable": true,
+        "img": "https://hunkerbunker.netlify.app/economy/mod_cryo_capacitor.png",
+        "localImg": "/economy/mod_cryo_capacitor.png",
+        "localImgLarge": "/economy/mod_cryo_capacitor_large.png"
+    },
+    "4141": {
+        "itemdefid": 4141,
+        "name": "Magnetic Scavenger Coil",
+        "rarity": "uncommon",
+        "desc": "+20% Scrap & Salvage Magnet Pull Radius.",
+        "tradable": true,
+        "marketable": true,
+        "img": "https://hunkerbunker.netlify.app/economy/mod_magnetic_scavenger.png",
+        "localImg": "/economy/mod_magnetic_scavenger.png",
+        "localImgLarge": "/economy/mod_magnetic_scavenger_large.png"
+    },
+    "4142": {
+        "itemdefid": 4142,
+        "name": "Bio-Hazard Filter Vent",
+        "rarity": "rare",
+        "desc": "-12% Damage from Spore & Acid Gas Clouds.",
+        "tradable": true,
+        "marketable": true,
+        "img": "https://hunkerbunker.netlify.app/economy/mod_bio_hazard_filter.png",
+        "localImg": "/economy/mod_bio_hazard_filter.png",
+        "localImgLarge": "/economy/mod_bio_hazard_filter_large.png"
+    },
+    "4143": {
+        "itemdefid": 4143,
+        "name": "Kinetic Impact Bushing",
+        "rarity": "rare",
+        "desc": "+1 Piercing Penetration on kinetic weapon rounds.",
+        "tradable": true,
+        "marketable": true,
+        "img": "https://hunkerbunker.netlify.app/economy/mod_kinetic_impact.png",
+        "localImg": "/economy/mod_kinetic_impact.png",
+        "localImgLarge": "/economy/mod_kinetic_impact_large.png"
+    },
+    "4144": {
+        "itemdefid": 4144,
+        "name": "Thermal Heat Exchanger",
+        "rarity": "rare",
+        "desc": "+10% Faster Shield Recharge Rate after taking fire.",
+        "tradable": true,
+        "marketable": true,
+        "img": "https://hunkerbunker.netlify.app/economy/mod_thermal_heat_exchanger.png",
+        "localImg": "/economy/mod_thermal_heat_exchanger.png",
+        "localImgLarge": "/economy/mod_thermal_heat_exchanger_large.png"
+    },
+    "4147": {
+        "itemdefid": 4147,
+        "name": "Zero-Point Flux Overdrive",
+        "rarity": "legendary",
+        "desc": "Killing 5 enemies in 3s refunds 1 Dash/Sprint Charge.",
+        "tradable": true,
+        "marketable": true,
+        "img": "https://hunkerbunker.netlify.app/economy/mod_zero_point_flux.png",
+        "localImg": "/economy/mod_zero_point_flux.png",
+        "localImgLarge": "/economy/mod_zero_point_flux_large.png"
     }
 };
 

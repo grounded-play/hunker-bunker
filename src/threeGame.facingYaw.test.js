@@ -1,7 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import * as THREE from 'three';
 import { ThreeGame } from './threeGame.js';
-import { wrapAngle } from './cameraYaw.js';
 
 describe('updateFacingYaw', () => {
     it('derives aim direction and facing basis from yaw, and marks aim active', () => {
@@ -38,10 +37,10 @@ describe('updateFacingYaw', () => {
     });
 });
 
-describe('updateCamera orbit', () => {
-    function makeCameraGame(facingYaw, cameraAzimuth) {
+describe('updateCamera stable isometric tracking', () => {
+    function makeCameraGame(cameraAzimuth) {
         return {
-            facingYaw,
+            facingYaw: 0,
             cameraAzimuth,
             cameraOrbitRadius: Math.hypot(8, 8),
             cameraLift: 10,
@@ -51,7 +50,8 @@ describe('updateCamera orbit', () => {
             player: { position: new THREE.Vector3(0, 0, 0) },
             camera: {
                 position: new THREE.Vector3(0, 10, 11.31),
-                lookAt: () => {}
+                lookAt: () => {},
+                position_lerp: vi.fn()
             },
             performanceProfile: 'gameplay',
             _menuParallaxX: 0,
@@ -61,58 +61,46 @@ describe('updateCamera orbit', () => {
         };
     }
 
-    it('eases cameraAzimuth toward facingYaw + PI without snapping instantly', () => {
-        const game = makeCameraGame(0, Math.PI); // target = facingYaw+PI = PI, already equal on purpose for a baseline...
-        game.facingYaw = Math.PI / 2; // now target = 3PI/2 (wrapped), azimuth starts at PI
-        const before = game.cameraAzimuth;
-        ThreeGame.prototype.updateCamera.call(game, 0.1);
-        expect(game.cameraAzimuth).not.toBe(before);
-        // one 0.1s step at CAMERA_ROT_SPEED=4 should not have fully arrived
-        const target = wrapAngle(game.facingYaw + Math.PI);
-        expect(Math.abs(wrapAngle(target - game.cameraAzimuth))).toBeGreaterThan(0.01);
-    });
+    it('maintains stable isometric camera offset and updates planar basis', () => {
+        const game = makeCameraGame(Math.PI / 4);
+        ThreeGame.prototype.updateCamera.call(game, 0.016);
 
-    it('converges over many frames and recomputes cameraOffset/basis to match', () => {
-        const game = makeCameraGame(0, 0);
-        game.facingYaw = Math.PI / 2;
-        for (let i = 0; i < 300; i += 1) {
-            ThreeGame.prototype.updateCamera.call(game, 0.016);
-        }
-        const target = wrapAngle(game.facingYaw + Math.PI);
-        expect(game.cameraAzimuth).toBeCloseTo(target, 2);
-        expect(game.cameraOffset.x).toBeCloseTo(game.cameraOrbitRadius * Math.sin(game.cameraAzimuth), 3);
-        expect(game.cameraOffset.z).toBeCloseTo(game.cameraOrbitRadius * Math.cos(game.cameraAzimuth), 3);
+        expect(game.cameraPlanarForward.x).toBeCloseTo(-1 / Math.sqrt(2), 3);
+        expect(game.cameraPlanarForward.y).toBeCloseTo(-1 / Math.sqrt(2), 3);
+        expect(game.cameraPlanarRight.x).toBeCloseTo(1 / Math.sqrt(2), 3);
+        expect(game.cameraPlanarRight.y).toBeCloseTo(-1 / Math.sqrt(2), 3);
+        expect(game.cameraOffset.x).toBeCloseTo(8, 2);
+        expect(game.cameraOffset.z).toBeCloseTo(8, 2);
     });
 });
 
-describe('snapCameraToPlayer orbit', () => {
-    it('snaps cameraAzimuth instantly, with no easing lag', () => {
+describe('snapCameraToPlayer', () => {
+    it('snaps camera position to player without altering cameraAzimuth', () => {
         const game = {
-            facingYaw: Math.PI / 2,
-            cameraAzimuth: 0,
+            cameraAzimuth: Math.PI / 4,
             cameraOrbitRadius: Math.hypot(8, 8),
             cameraLift: 10,
             cameraOffset: new THREE.Vector3(),
             cameraPlanarForward: new THREE.Vector2(),
             cameraPlanarRight: new THREE.Vector2(),
-            player: { position: new THREE.Vector3(1, 0, 2) },
-            camera: { position: new THREE.Vector3(), lookAt: () => {} },
+            player: { position: new THREE.Vector3(10, 0, 20) },
+            camera: { position: new THREE.Vector3(), lookAt: vi.fn() },
             updateTiltShiftAndBokeh: () => {}
         };
 
         ThreeGame.prototype.snapCameraToPlayer.call(game);
 
-        expect(game.cameraAzimuth).toBeCloseTo(wrapAngle(Math.PI / 2 + Math.PI), 5);
+        expect(game.cameraAzimuth).toBeCloseTo(Math.PI / 4, 5);
+        expect(game.camera.position.x).toBeCloseTo(18, 2);
+        expect(game.camera.position.z).toBeCloseTo(28, 2);
     });
 });
 
-describe('getFacingRow / getWorldDirectionForFacingRow use the instant facing basis', () => {
-    it('getFacingRow reads facingPlanarRight/Forward, ignoring a divergent camera basis', () => {
+describe('getFacingRow / getWorldDirectionForFacingRow use the camera basis', () => {
+    it('getFacingRow reads cameraPlanarRight/Forward', () => {
         const game = {
-            facingPlanarRight: { x: 1, y: 0 },
-            facingPlanarForward: { x: 0, y: -1 },
-            cameraPlanarRight: { x: 0, y: 1 },
-            cameraPlanarForward: { x: 1, y: 0 }
+            cameraPlanarRight: { x: 1, y: 0 },
+            cameraPlanarForward: { x: 0, y: -1 }
         };
 
         const row = ThreeGame.prototype.getFacingRow.call(game, 1, 0);
@@ -120,10 +108,10 @@ describe('getFacingRow / getWorldDirectionForFacingRow use the instant facing ba
         expect(row).toBe(0);
     });
 
-    it('getWorldDirectionForFacingRow round-trips through the facing basis', () => {
+    it('getWorldDirectionForFacingRow round-trips through the camera basis', () => {
         const game = {
-            facingPlanarRight: { x: 1, y: 0 },
-            facingPlanarForward: { x: 0, y: -1 }
+            cameraPlanarRight: { x: 1, y: 0 },
+            cameraPlanarForward: { x: 0, y: -1 }
         };
 
         const dir = ThreeGame.prototype.getWorldDirectionForFacingRow.call(game, 0);
@@ -133,7 +121,7 @@ describe('getFacingRow / getWorldDirectionForFacingRow use the instant facing ba
     });
 });
 
-describe('fire/melee direction no longer falls back to the camera basis', () => {
+describe('fire/melee direction normalizes aimDirX/Z', () => {
     beforeEach(() => {
         globalThis.window = {
             dispatchEvent: vi.fn(),
@@ -144,7 +132,7 @@ describe('fire/melee direction no longer falls back to the camera basis', () => 
         };
     });
 
-    it('triggerGameplayMelee normalizes aimDirX/Z directly, with no hasActiveAim branch', () => {
+    it('triggerGameplayMelee normalizes aimDirX/Z directly', () => {
         const game = {
             isGameplayInputActive: () => true,
             player: { position: { x: 0, z: 0 } },
@@ -159,8 +147,6 @@ describe('fire/melee direction no longer falls back to the camera basis', () => 
 
         ThreeGame.prototype.triggerGameplayMelee.call(game, {});
 
-        // Function should run past the direction computation without throwing
-        // even though cameraPlanarForward is undefined on this mock.
         expect(game.aimDirX).toBe(0);
     });
 });
