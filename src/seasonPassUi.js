@@ -21,7 +21,36 @@ if (typeof window !== 'undefined') window.bountyManager = bountyManager;
 let hudCardSeq = 0;
 let activeTab = 'tiers'; // 'tiers' | 'bounties'
 
+// XP/tier-up toasts used to render the instant an event fired, regardless of
+// what was on screen -- a tier-up mid-gameplay popped up over a door prompt,
+// or over the intro cutscene video, since nothing gated them to a specific
+// app phase. Real progress (seasonPass.addXp, in awardXp below) still
+// applies immediately either way; only the visible toast is held back.
+const queuedSeasonPassToasts = [];
+function isMainMenuPhase() {
+    return window.__hbAppPhase === 'splash' || window.__hbAppPhase === 'menu';
+}
+
 function showSeasonPassToast(title, blurb) {
+    if (!isMainMenuPhase()) {
+        queuedSeasonPassToasts.push({ title, blurb });
+        return;
+    }
+    renderSeasonPassToast(title, blurb);
+}
+
+// Called from main.js's setAppPhase once the player is actually back on the
+// title/loadout screen, so anything earned mid-run still gets shown -- just
+// not stacked on top of gameplay, doors, or the cutscene video.
+export function flushQueuedSeasonPassToasts() {
+    if (!isMainMenuPhase() || queuedSeasonPassToasts.length === 0) return;
+    const queued = queuedSeasonPassToasts.splice(0, queuedSeasonPassToasts.length);
+    for (const { title, blurb } of queued) {
+        renderSeasonPassToast(title, blurb);
+    }
+}
+
+function renderSeasonPassToast(title, blurb) {
     const stack = document.querySelector('.hud-notification-stack');
     if (!stack) return;
     const toast = document.createElement('div');
