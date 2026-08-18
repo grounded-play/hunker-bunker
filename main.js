@@ -7205,6 +7205,25 @@ function devToggleGodMode() {
     return `God mode ${debugGodModeActive ? 'ONLINE (Invulnerable)' : 'OFFLINE'}.`;
 }
 
+let debugNoclipActive = false;
+
+function devToggleNoclip(speedMult = 3.5) {
+    const game = window.game || window.threeGame;
+    if (!game?.setNoclip) {
+        return 'Game instance not ready.';
+    }
+    debugNoclipActive = game.toggleNoclip(speedMult);
+    const noclipBtn = document.getElementById('dev-btn-noclip');
+    if (noclipBtn) {
+        noclipBtn.classList.toggle('dev-btn--active', debugNoclipActive);
+        noclipBtn.textContent = debugNoclipActive ? 'GHOST/FLY✓' : '👻 NOCLIP / FLY';
+    }
+    showBiomePrompt?.(`> DEBUG: NOCLIP ${debugNoclipActive ? 'ONLINE [3.5x FLY]' : 'OFFLINE'}.`);
+    return `NOCLIP (Fly, Ghost, Zero Collision, 3.5x Speed) ${debugNoclipActive ? 'ONLINE [Fly Mode Active]' : 'OFFLINE [Normal Physics]'}.`;
+}
+window.devToggleNoclip = devToggleNoclip;
+if (window.__DEBUG__) window.__DEBUG__.toggleNoclip = devToggleNoclip;
+
 function devHealPlayer() {
     window.game?.healPlayer?.(999);
     window.game?.adjustOxygen?.(999);
@@ -7615,6 +7634,11 @@ function executeDevCommand(input) {
         case 'god':
             result = devToggleGodMode();
             break;
+        case 'noclip':
+        case 'fly':
+        case 'ghost':
+            result = devToggleNoclip();
+            break;
         case 'salvage':
         case 'resources':
         case '+$':
@@ -7866,6 +7890,21 @@ document.getElementById('dev-btn-jump-rgb-chapter')?.addEventListener('click', (
 document.getElementById('dev-btn-god')?.addEventListener('click', () => {
     const res = devToggleGodMode();
     logDevConsole(res, 'system');
+});
+document.getElementById('dev-btn-noclip')?.addEventListener('click', () => {
+    const res = devToggleNoclip();
+    logDevConsole(res, 'system');
+});
+document.getElementById('dev-btn-open-museum')?.addEventListener('click', () => {
+    closeDevConsoleModal();
+    logDevConsole('Opening Debug Museum at (9000, 9000)...', 'system');
+    void window.__DEBUG__.openMuseum();
+});
+document.getElementById('dev-tp-select')?.addEventListener('change', (e) => {
+    const target = e.target.value;
+    if (!target) return;
+    executeDevCommand(`tp ${target}`);
+    e.target.value = '';
 });
 document.getElementById('dev-btn-resources')?.addEventListener('click', () => {
     const res = devGrantResources();

@@ -320,10 +320,25 @@ export class DebugLogger {
                     <button id="hb-console-close" style="background: none; border: none; color: #ff5566; font-weight: bold; cursor: pointer; font-size: 14px; padding: 0 4px;">✕</button>
                 </div>
             </div>
+            <div style="display: flex; align-items: center; gap: 6px; padding: 5px 12px; background: rgba(14, 24, 38, 0.75); border-bottom: 1px solid rgba(0, 240, 255, 0.15); flex-wrap: wrap;">
+                <span style="color: #ffaa44; font-size: 10px; font-weight: bold; margin-right: 4px;">QUICK CHEATS:</span>
+                <button id="hb-quick-god" class="hb-cmd-btn hb-cheat-btn" title="Toggle Godmode (Invulnerability)">⚡ GOD</button>
+                <button id="hb-quick-noclip" class="hb-cmd-btn hb-cheat-btn" style="background: rgba(34, 211, 238, 0.15); border-color: #22d3ee; color: #22d3ee;" title="Toggle Noclip (Ghost Fly through walls, Zero Collision, 3.5x Speed)">👻 NOCLIP / FLY</button>
+                <button id="hb-quick-heal" class="hb-cmd-btn hb-cheat-btn" title="Refill HP and Oxygen">❤️ HEAL</button>
+                <button id="hb-quick-speed" class="hb-cmd-btn hb-cheat-btn" title="Boost Sprint Traversal Speed">🚀 SPEED</button>
+                <button id="hb-quick-resources" class="hb-cmd-btn hb-cheat-btn" title="Grant +250 Tech, +150 Coin, +75 Med, +75 Shells">💎 +500$</button>
+                <button id="hb-quick-nuke" class="hb-cmd-btn hb-cheat-btn" title="Purge all hostiles from active sector">💥 NUKE</button>
+                <span style="color: #00f0ff; font-size: 10px; font-weight: bold; margin-left: 8px; margin-right: 4px;">TELEPORT:</span>
+                <button id="hb-quick-tp-museum" class="hb-cmd-btn hb-nav-btn" title="Teleport to continuous asset museum (9000, 9000)">🏛️ MUSEUM</button>
+                <button id="hb-quick-tp-showroom" class="hb-cmd-btn hb-nav-btn" title="Teleport to 4-wall showroom (9500, 9500)">🏢 SHOWROOM</button>
+                <button id="hb-quick-tp-camp" class="hb-cmd-btn hb-nav-btn" title="Teleport to nearest survivor camp">⛺ CAMP</button>
+                <button id="hb-quick-tp-queen" class="hb-cmd-btn hb-nav-btn" title="Teleport to Cave Queen lair">👑 QUEEN</button>
+                <button id="hb-quick-tp-crash" class="hb-cmd-btn hb-nav-btn" title="Teleport back to crash origin">🚀 CRASH</button>
+            </div>
             <div id="hb-console-logs" style="flex: 1; overflow-y: auto; padding: 8px 12px; display: flex; flex-direction: column; gap: 3px; scroll-behavior: smooth;"></div>
             <div style="display: flex; align-items: center; padding: 6px 12px; background: rgba(0, 0, 0, 0.4); border-top: 1px solid rgba(255, 255, 255, 0.1);">
                 <span style="color: #00f0ff; margin-right: 8px; font-weight: bold;">&gt;</span>
-                <input id="hb-console-input" type="text" placeholder="Type a command (help, god, heal, tp x z, spawn enemy, give tech 100, clear, or JS expr)..." style="flex: 1; background: transparent; border: none; outline: none; color: #00ffff; font-family: inherit; font-size: 12px;" />
+                <input id="hb-console-input" type="text" placeholder="Type a command (help, noclip, god, heal, speed, tp x z, spawn enemy, give tech 100, clear, or JS expr)..." style="flex: 1; background: transparent; border: none; outline: none; color: #00ffff; font-family: inherit; font-size: 12px;" />
             </div>
         `;
 
@@ -398,6 +413,74 @@ export class DebugLogger {
                 this.renderAllLogs();
             };
         });
+
+        // Quick Cheats & Teleport Action Toolbar Listeners
+        const quickGodBtn = overlay.querySelector('#hb-quick-god');
+        const quickNoclipBtn = overlay.querySelector('#hb-quick-noclip');
+        const quickHealBtn = overlay.querySelector('#hb-quick-heal');
+        const quickSpeedBtn = overlay.querySelector('#hb-quick-speed');
+        const quickResBtn = overlay.querySelector('#hb-quick-resources');
+        const quickNukeBtn = overlay.querySelector('#hb-quick-nuke');
+
+        if (quickGodBtn) quickGodBtn.onclick = () => this.executeCommand('god');
+        if (quickNoclipBtn) quickNoclipBtn.onclick = () => this.executeCommand('noclip');
+        if (quickHealBtn) quickHealBtn.onclick = () => this.executeCommand('heal');
+        if (quickSpeedBtn) {
+            quickSpeedBtn.onclick = () => {
+                const targetGame = window.threeGame || window.game;
+                if (targetGame) {
+                    targetGame._sprintMoveSpeedMult = (targetGame._sprintMoveSpeedMult > 2.0 ? 1.0 : 3.0);
+                    this.info('CHEAT', `Sprint speed multiplier set to ${targetGame._sprintMoveSpeedMult}x`);
+                }
+            };
+        }
+        if (quickResBtn) quickResBtn.onclick = () => this.executeCommand('give tech 250');
+        if (quickNukeBtn) quickNukeBtn.onclick = () => this.executeCommand('nuke');
+
+        const quickTpMuseum = overlay.querySelector('#hb-quick-tp-museum');
+        const quickTpShowroom = overlay.querySelector('#hb-quick-tp-showroom');
+        const quickTpCamp = overlay.querySelector('#hb-quick-tp-camp');
+        const quickTpQueen = overlay.querySelector('#hb-quick-tp-queen');
+        const quickTpCrash = overlay.querySelector('#hb-quick-tp-crash');
+
+        if (quickTpMuseum) quickTpMuseum.onclick = () => this.executeCommand('museum');
+        if (quickTpShowroom) quickTpShowroom.onclick = () => this.executeCommand('showroom');
+        if (quickTpCamp) {
+            quickTpCamp.onclick = () => {
+                const targetGame = window.threeGame || window.game;
+                const pois = targetGame?.getDebugPointsOfInterest?.() ?? [];
+                const camp = pois.find(p => p.id?.includes('camp') || p.name?.toLowerCase().includes('camp'));
+                if (camp && targetGame?.teleportPlayerTo) {
+                    targetGame.teleportPlayerTo(camp.x, camp.z);
+                    this.info('NAV', `Teleported to ${camp.name} (${camp.x.toFixed(1)}, ${camp.z.toFixed(1)})`);
+                } else {
+                    this.executeCommand('tp 0 0');
+                }
+            };
+        }
+        if (quickTpQueen) {
+            quickTpQueen.onclick = () => {
+                const targetGame = window.threeGame || window.game;
+                const pois = targetGame?.getDebugPointsOfInterest?.() ?? [];
+                const queen = pois.find(p => p.id?.includes('queen') || p.name?.toLowerCase().includes('queen'));
+                if (queen && targetGame?.teleportPlayerTo) {
+                    targetGame.teleportPlayerTo(queen.x, queen.z);
+                    this.info('NAV', `Teleported to Cave Queen Lair (${queen.x.toFixed(1)}, ${queen.z.toFixed(1)})`);
+                } else {
+                    this.executeCommand('tp 900 900');
+                }
+            };
+        }
+        if (quickTpCrash) {
+            quickTpCrash.onclick = () => {
+                const targetGame = window.threeGame || window.game;
+                const spawn = targetGame?.getSpawnTile?.() ?? { x: 0, y: 0 };
+                if (targetGame?.teleportPlayerTo) {
+                    targetGame.teleportPlayerTo(spawn.x, spawn.y);
+                    this.info('NAV', `Teleported to Bunker Crash Origin (${spawn.x.toFixed(1)}, ${spawn.y.toFixed(1)})`);
+                }
+            };
+        }
 
         const catFilterSelect = overlay.querySelector('#hb-console-cat-filter');
         if (catFilterSelect) {
@@ -659,6 +742,77 @@ export class DebugLogger {
                     this.warn('CMD', 'Game or player vitals not active');
                 }
                 break;
+
+            case 'noclip':
+            case 'fly':
+            case 'ghost': {
+                const targetGame = game || win?.game;
+                if (targetGame?.toggleNoclip) {
+                    const active = targetGame.toggleNoclip();
+                    this.info('CHEAT', `Noclip (Ghost Fly + Zero Collision + 3.5x Speed) ${active ? 'ACTIVE [Fly Mode ON]' : 'DISABLED [Normal Physics]'}`);
+                } else if (typeof win?.devToggleNoclip === 'function') {
+                    const msg = win.devToggleNoclip();
+                    this.info('CHEAT', msg);
+                } else {
+                    this.warn('CMD', 'Noclip unavailable (Game instance not active)');
+                }
+                break;
+            }
+
+            case 'speed': {
+                const targetGame = game || win?.game;
+                if (targetGame) {
+                    const mult = parseFloat(parts[1]) || (targetGame._sprintMoveSpeedMult > 2.0 ? 1.0 : 3.0);
+                    targetGame._sprintMoveSpeedMult = mult;
+                    this.info('CHEAT', `Sprint speed multiplier set to ${mult}x`);
+                } else {
+                    this.warn('CMD', 'Game instance not active');
+                }
+                break;
+            }
+
+            case 'nuke':
+            case 'kill':
+            case 'kill_all': {
+                const targetGame = game || win?.game;
+                if (targetGame?.purgeHostiles) {
+                    const killed = targetGame.purgeHostiles();
+                    this.info('CHEAT', `Purged ${killed} hostile enemies from active sector.`);
+                } else if (typeof win?.devKillSnails === 'function') {
+                    this.info('CHEAT', win.devKillSnails());
+                } else {
+                    this.warn('CMD', 'Hostile purge unavailable');
+                }
+                break;
+            }
+
+            case 'museum': {
+                const targetGame = game || win?.game;
+                if (win?.__DEBUG__?.openMuseum) {
+                    this.info('NAV', 'Opening Continuous Asset Museum at (9000, 9000)...');
+                    void win.__DEBUG__.openMuseum();
+                } else if (win?.openDebugMuseum) {
+                    this.info('NAV', 'Opening Debug Museum...');
+                    void win.openDebugMuseum(targetGame);
+                } else {
+                    this.warn('CMD', 'Museum module not loaded');
+                }
+                break;
+            }
+
+            case 'showroom': {
+                const targetGame = game || win?.game;
+                if (win?.__DEBUG__?.openShowroom) {
+                    this.info('NAV', 'Opening 4-Wall Showroom at (9500, 9500)...');
+                    void win.__DEBUG__.openShowroom();
+                } else if (win?.openDebugShowroom) {
+                    this.info('NAV', 'Opening Debug Showroom...');
+                    void win.openDebugShowroom(targetGame);
+                } else {
+                    this.warn('CMD', 'Showroom module not loaded');
+                }
+                break;
+            }
 
             case 'heal':
                 if (game?.playerVitals) {

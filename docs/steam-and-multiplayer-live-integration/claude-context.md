@@ -38,24 +38,34 @@ multiplayer/socket.io, full docs/ survey) plus a live network probe. Findings:
   at read time — see the duplication note below for why. Corrected to describe both real
   systems as they currently exist.
 
-## 2. Known duplication — read before touching debug showroom/museum code
+## 2. Resolved: debug showroom/museum duplication (2026-08-17, later pass)
 
-Two QA-gallery dev tools exist side by side right now, built independently in the same
-session:
+Two QA-gallery dev tools exist side by side, built independently by two agents converging on
+the same design in the same session — kept as two *presentations* rather than merged into one,
+since they serve different QA purposes and the hallway specifically matches the user's literal
+original request ("drop all in a long series of lines in an uninterrupted hallway museum"):
 
-- `src/debugShowroom.js` — pre-existing, 4-wall stall grid at chunk (500,500), reached via
-  `showroom`/`gallery`/`tp museum`. Claude extended this one with the Season 0 economy
-  categories (weapon archetypes/skins, charms, mods, chassis skins, cosmetic decals) after
-  discovering it already existed and scrapping a duplicate standalone module.
-- `src/debugMuseum.js` — rebuilt independently after Claude's first version of the same
-  concept was deleted in favor of extending `debugShowroom.js` above; reached via the bare
-  `museum`/`closemuseum` console commands, continuous hallway at (9000,9000).
+- `src/debugShowroom.js` — 4-wall stall grid at chunk (500,500), reached via
+  `showroom`/`gallery`/`tp museum`. Good for inspecting one item at a time from multiple angles.
+- `src/debugMuseum.js` — continuous hallway at (9000,9000), reached via `museum`/`closemuseum`.
+  Good for a fast linear scan of everything.
 
-Both pass tests and lint cleanly; neither is broken. **Don't assume they have the same
-category coverage** — verify against the actual file before claiming either one demonstrates a
-given asset. This should get consolidated into one system eventually rather than left as two;
-flagging rather than unilaterally deleting either one again, since the first deletion round
-didn't stick and re-collided.
+**What was actually consolidated**: the Season 0 economy catalogs (weapon archetypes/skins,
+charms, mods, chassis skins, cosmetic decals) that both files had independently hand-duplicated
+— extracted into `src/debugAssetCatalogs.js`, which both now import. `debugMuseum.js` also
+re-exports `SHOWROOM_CATEGORIES` from `debugShowroom.js` for its enemy/wall-decal/prop lists
+rather than hand-duplicating those too. One update point now instead of two.
+
+**Real bug found and fixed during consolidation**: after the enemy/prop lists got unified,
+`debugMuseum.js`'s "PROPS & GROUND OVERLAYS" category silently broke — it inherited
+`debugShowroom.js`'s `TACTICAL_PROPS`/`BIOMECH_PROPS`/`SETPIECES` type strings (which need
+`createWorld3dModel()`) but only ever called `game.createScatterInstance()` (a different
+loader, silently returns `null` for those types). The defensive skip-on-null design meant this
+never crashed, just silently under-rendered ~36 of ~49 items in that category with no visible
+error. Fixed by splitting into two categories (`WORLD PROPS & SETPIECES` via
+`createWorld3dModel`, `GROUND OVERLAYS & FLOOR DECALS` via `createScatterInstance`).
+Live-verified: `[debug-museum] opened: 117 objects spawned, 0 skipped` (was silently dropping
+objects before the fix).
 
 ## 3. Everything else
 

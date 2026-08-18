@@ -1063,6 +1063,8 @@ export class ThreeGame {
         this._sprintMoveSpeedMult = 1.0;
         this._sprintO2DrainMult = 1.0;
         this._wasSprinting = false;
+        this.noclip = false;
+        this.noclipSpeedMult = 3.5;
         this.activeTurret = null;
         this.turretCooldownTimer = 0;
         this.cameraLift = 10;
@@ -14306,6 +14308,37 @@ export class ThreeGame {
         return this.godMode;
     }
 
+    setNoclip(enabled = false, speedMultiplier = 3.5) {
+        this.noclip = Boolean(enabled);
+        this.noclipSpeedMult = Math.max(1, Number(speedMultiplier) || 3.5);
+        if (this.noclip) {
+            this._savedGodMode = Boolean(this.godMode);
+            this.setGodMode(true);
+            if (this.playerSprite?.material) {
+                this.playerSprite.material.opacity = 0.65;
+            }
+        } else {
+            if (this.playerSprite?.material) {
+                this.playerSprite.material.opacity = 1.0;
+            }
+            if (this._savedGodMode !== undefined) {
+                this.setGodMode(this._savedGodMode);
+            }
+        }
+        window.dispatchEvent(new CustomEvent('noclip-toggled', {
+            detail: {
+                enabled: this.noclip,
+                speedMult: this.noclipSpeedMult,
+                godMode: this.godMode
+            }
+        }));
+        return this.noclip;
+    }
+
+    toggleNoclip(speedMultiplier = 3.5) {
+        return this.setNoclip(!this.noclip, speedMultiplier);
+    }
+
     healPlayer(amount = 1) {
         if (this.isPlayerDead) return;
         const previousHp = this.playerVitals.hp;
@@ -14703,7 +14736,7 @@ export class ThreeGame {
 
     takeDamage(amount = 1, reason = 'hazard', sourceX = null, sourceZ = null) {
         if (this.isPlayerDead) return false;
-        if (this.godMode) return false;
+        if (this.godMode || this.noclip) return false;
         if (this.cinematicLock) return false; // untouchable during scripted sequences
         if (this.isInPocket) return false; // untouchable while resolving a fall inside a pocket
         if (this.iFrameTimer > 0 && reason !== 'abyss') return false;
@@ -15643,7 +15676,8 @@ export class ThreeGame {
     }
 
     _spawnSprintTrail() {
-        const color = PLAYER_COLORS[this.playerType] ?? 0x7dff5a;
+        if (!this.player || !this.scene || !this.transientEffects) return;
+        const color = (this._sprintColorOverride ?? 0x2ec4b6);
         const geo = new THREE.CircleGeometry(0.06 + Math.random() * 0.05, 6);
         const mat = new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.55, depthWrite: false });
         const mesh = new THREE.Mesh(geo, mat);
@@ -15941,7 +15975,7 @@ export class ThreeGame {
         // still be under the player while underground (caught via the
         // in-browser verification pass: this spuriously fired near the
         // climb point, which sits close to the pocket's edge by design).
-        if (this.player && this.performanceProfile === 'gameplay' && !this.isInPocket) {
+        if (this.player && this.performanceProfile === 'gameplay' && !this.isInPocket && !this.noclip) {
             if (this.isPlayerOverAnyHole(this.player.position.x, this.player.position.z)) {
                 this.isPlayerFalling = true;
                 this._fallHoleX = Math.round(this.player.position.x);
@@ -15966,10 +16000,10 @@ export class ThreeGame {
             const dashSpeed = 16.0;
             const stepX = this.dashDirX * dashSpeed * delta;
             const stepZ = this.dashDirZ * dashSpeed * delta;
-            if (this.canOccupyPosition(this.player.position.x + stepX, this.player.position.z)) {
+            if (this.noclip || this.canOccupyPosition(this.player.position.x + stepX, this.player.position.z)) {
                 this.player.position.x += stepX;
             }
-            if (this.canOccupyPosition(this.player.position.x, this.player.position.z + stepZ)) {
+            if (this.noclip || this.canOccupyPosition(this.player.position.x, this.player.position.z + stepZ)) {
                 this.player.position.z += stepZ;
             }
             if (this.dashTimer <= 0) {
@@ -16047,6 +16081,10 @@ export class ThreeGame {
             const prevZ = this.player.position.z;
 
             let speed = this.moveSpeed * (this._sprintMoveSpeedMult ?? 1.0);
+            if (this.noclip) {
+                const sprintBoost = (this._sprintMoveSpeedMult > 1 ? 1.7 : 1.0);
+                speed *= (this.noclipSpeedMult || 3.5) * sprintBoost;
+            }
             if (typeof window !== 'undefined' && window.npcDialogueTreeManager?.activePerks?.has?.('vesper_vanguard_adrenaline')) {
                 speed *= 1.10;
             }
@@ -16054,10 +16092,10 @@ export class ThreeGame {
             if (this.loadoutMods?.lowHpSpeedBoostActive && (this.health / (this.maxHealth || 100)) < 0.25) {
                 speed *= 1.15;
             }
-            if (this.playerSlowTimer > 0 && !(this._sprintMoveSpeedMult > 1)) {
+            if (this.playerSlowTimer > 0 && !(this._sprintMoveSpeedMult > 1) && !this.noclip) {
                 speed *= 0.55;
             }
-            if (this._sprintMoveSpeedMult > 1 && Math.random() < 0.45) {
+            if ((this._sprintMoveSpeedMult > 1 || this.noclip) && Math.random() < 0.45) {
                 this._spawnSprintTrail();
             }
             const moveVector = new THREE.Vector3(moveAxisX, 0, moveAxisZ).normalize().multiplyScalar(speed * delta);
@@ -16065,11 +16103,11 @@ export class ThreeGame {
             const nextX = new THREE.Vector3(current.x + moveVector.x, current.y, current.z);
             const nextZ = new THREE.Vector3(current.x, current.y, current.z + moveVector.z);
 
-            if (this.canOccupyPosition(nextX.x, nextX.z)) {
+            if (this.noclip || this.canOccupyPosition(nextX.x, nextX.z)) {
                 this.player.position.x = nextX.x;
             }
 
-            if (this.canOccupyPosition(nextZ.x, nextZ.z)) {
+            if (this.noclip || this.canOccupyPosition(nextZ.x, nextZ.z)) {
                 this.player.position.z = nextZ.z;
             }
 
@@ -16088,13 +16126,15 @@ export class ThreeGame {
 
         this.updatePlayerSpriteAnimation(moveDirX, moveDirZ, delta, isMoving, moveDirX, moveDirZ);
         // Keep night visibility centered on the player sprite under isometric camera.
-        const spriteAnchorX = this.player.position.x + (this.playerSprite?.position.x ?? 0);
-        const spriteAnchorZ = this.player.position.z + (this.playerSprite?.position.z ?? 0);
-        this.playerGlow.position.set(
-            spriteAnchorX + this.cameraPlanarForward.x * PLAYER_GLOW_SCREEN_OFFSET,
-            1.6,
-            spriteAnchorZ + this.cameraPlanarForward.y * PLAYER_GLOW_SCREEN_OFFSET
-        );
+        const spriteAnchorX = this.player.position.x + (this.playerSprite?.position?.x ?? 0);
+        const spriteAnchorZ = this.player.position.z + (this.playerSprite?.position?.z ?? 0);
+        if (this.playerGlow?.position) {
+            this.playerGlow.position.set(
+                spriteAnchorX + this.cameraPlanarForward.x * PLAYER_GLOW_SCREEN_OFFSET,
+                1.6,
+                spriteAnchorZ + this.cameraPlanarForward.y * PLAYER_GLOW_SCREEN_OFFSET
+            );
+        }
         // Beam always points where you're shooting; once aim releases it swings
         // cleanly back to the actual travel heading (or holds the last facing
         // when standing still). The smoothing lives in updatePlayerForwardLight.

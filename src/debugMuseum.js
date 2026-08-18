@@ -95,6 +95,41 @@ async function spawnGlbAt(loader, cache, url, x, y, z) {
     }
 }
 
+// Wing 1 (docs/debug-gallery-and-architectural-grid-expansion-plan.md §2): every item sits on
+// a dedicated pedestal instead of floating at floor level.
+const PEDESTAL_HEIGHT = 0.6;
+const PEDESTAL_RADIUS = 0.8;
+function spawnPedestal(x, z) {
+    const pedestal = new THREE.Group();
+    const body = new THREE.Mesh(
+        new THREE.CylinderGeometry(PEDESTAL_RADIUS, PEDESTAL_RADIUS * 1.1, PEDESTAL_HEIGHT, 6),
+        new THREE.MeshStandardMaterial({ color: 0x141c28, roughness: 0.5, metalness: 0.7 })
+    );
+    body.position.y = PEDESTAL_HEIGHT / 2;
+    pedestal.add(body);
+
+    const baseRing = new THREE.Mesh(
+        new THREE.TorusGeometry(PEDESTAL_RADIUS * 1.05, 0.03, 8, 24),
+        new THREE.MeshBasicMaterial({ color: 0x22d3ee, transparent: true, opacity: 0.85 })
+    );
+    baseRing.rotation.x = Math.PI / 2;
+    baseRing.position.y = 0.02;
+    pedestal.add(baseRing);
+
+    pedestal.position.set(x, 0, z);
+    return pedestal;
+}
+
+// Counts triangles across a model's meshes for the placard's polycount readout.
+function countTriangles(object3d) {
+    let tris = 0;
+    object3d.traverse((child) => {
+        const pos = child.isMesh ? child.geometry?.attributes?.position : null;
+        if (pos) tris += pos.count / 3;
+    });
+    return Math.round(tris);
+}
+
 function spawnIconPlaneAt(iconPath, x, y, z) {
     if (!iconPath) return null;
     try {
@@ -168,14 +203,24 @@ export async function openDebugMuseum(game) {
                 console.warn('[debug-museum] spawn failed:', entry, err);
             }
             if (obj) {
+                // Wing 1 §2.3: uniform +Z forward orientation for every asset. Best-effort —
+                // GLB sources don't carry a "this is the front" convention this tool can read,
+                // so this normalizes rotation to a fixed value rather than leaving whatever
+                // orientation each source file happened to author it in.
+                obj.rotation.y = 0;
+                group.add(spawnPedestal(cursorX, z));
+                obj.position.y += PEDESTAL_HEIGHT;
                 group.add(obj);
                 spawnedCount += 1;
+
                 const label = typeof entry === 'string'
                     ? entry
                     : (Array.isArray(entry) ? entry[0] : (entry.label ?? String(entry)));
-                const nameLabel = makeLabelSprite(label, { fontSize: 30 });
-                nameLabel.position.set(cursorX, 0.55, z + 1.0);
-                nameLabel.scale.set(1.6, 0.4, 1);
+                const triCount = countTriangles(obj);
+                const placardText = triCount > 0 ? `${label} // ${triCount} TRIS` : label;
+                const nameLabel = makeLabelSprite(placardText, { fontSize: 26 });
+                nameLabel.position.set(cursorX, PEDESTAL_HEIGHT + 1.1, z + 1.0);
+                nameLabel.scale.set(1.8, 0.45, 1);
                 group.add(nameLabel);
             } else {
                 skippedCount += 1;
