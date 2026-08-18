@@ -131,9 +131,28 @@ this. If AI-generated art is needed going forward, use a provider with a real su
   - Optimized `syncVisibleChunks()` collection allocation with cached `_neededChunkKeys` and `_residentChunkKeys` Sets and array length reset.
   - Added `isTileScanned(worldX, worldZ)` & `getExplorationState(worldX, worldZ)` in `src/mapSystem.js`.
   - Authored comprehensive test suites `src/mapSystem.test.js` and `src/threeGame.tacticalCursorTelemeter.test.js`. Full test suite passing 100% (195 test files, 1,645 tests).
-- **2026-08-17 22:17** — **Lanes B, C, D COMPLETED**:
+- **2026-08-17 22:17** — **Lanes B, C, D COMPLETED** (superseded/clarified by the entry below —
+  Lane C in particular changed shape after discovering `src/debugShowroom.js` already existed):
   - **Lane B (Decals)**: Fixed aspect-ratio scaling distortion in `createScatterInstance()` for square environmental decals. Added chest-mounted `playerDecalSprite` cosmetic overlay in `src/threeGame.js` wired to `getEquippedDecalId()`.
-  - **Lane C (Museum / Debug Showroom)**: Added 4-wall orientation stalls and comprehensive asset exhibition in `src/debugShowroom.js`. Exposed `window.__DEBUG__.openMuseum()` API and `tp museum` in `main.js`.
   - **Lane D (Armory GLB Caching)**: Added module-scoped GLTF template cache `armoryGltfCache` in `src/armoryScene.js`, preventing duplicate network fetches and GLB parsing thrash on loadout screen clicks.
   - **Overall Status**: All 195 test files (1,645 tests) pass cleanly with zero regressions.
+- **2026-08-17 22:27** — **Lane C corrected**: initially built a standalone `src/debugMuseum.js`
+  before discovering `src/debugShowroom.js` + `game.buildDebugShowroom()` + `tp museum` /
+  `window.__DEBUG__.openMuseum()` (routing through `teleport('museum')`) already existed and
+  covers props/wall-decals/floor-decals/enemies with a nicer 4-wall stall-grid layout than what
+  I'd built. Deleted the duplicate file rather than ship two competing showroom systems, and
+  extended the existing `debugShowroom.js` instead with the 6 categories it was missing: weapon
+  archetypes, weapon skins, weapon charms, rig overclock mods (all real GLBs via an isolated
+  cached loader), plus chassis skins and cosmetic player decals as icon-plane billboards (no 3D
+  model exists yet for either, matching Lane B's finding). Floor enlarged 160→320 to fit the
+  ~50 added stalls. Live-verified: `buildDebugShowroom()` now produces 1800 scene objects
+  (1071 real meshes, 737 sprites) with zero console errors. One test regression found and fixed
+  along the way — `makeIconPlaneSprite()` crashed in the Node test environment (`document` is
+  undefined there) same as `TextureLoader.load()` always will outside a browser; guarded it the
+  same way the file's own `createLabelSprite()` already guards for that. Final: 196 test files,
+  1648 tests, 100% passing, lint clean across all touched files.
+- **Lane B/C/D final file list**: `src/threeGame.js` (decal scale fix + wall-offset
+  consolidation + `playerDecalSprite`), `src/armoryScene.js` (GLTF caching + exported
+  `CHARM_GLB_MAP`/`MOD_GLB_MAP`), `src/debugShowroom.js` (6 new categories + isolated GLB/icon
+  loaders). No changes to any Lane A (Gemini) file.
 

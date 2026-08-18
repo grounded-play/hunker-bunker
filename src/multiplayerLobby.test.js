@@ -1,11 +1,36 @@
-import { describe, expect, it, beforeEach } from 'vitest';
-import { MultiplayerLobby, MULTIPLAYER_MODES } from './multiplayerLobby.js';
+import { describe, expect, it, beforeEach, afterEach } from 'vitest';
+import { MultiplayerLobby, MULTIPLAYER_MODES, resolveRelayUrl } from './multiplayerLobby.js';
 
 describe('MultiplayerLobby', () => {
     let lobby;
+    let originalWindow;
 
     beforeEach(() => {
         lobby = new MultiplayerLobby();
+    });
+
+    describe('resolveRelayUrl', () => {
+        afterEach(() => {
+            if (originalWindow) globalThis.window = originalWindow;
+        });
+
+        it('returns explicit HB_RELAY_URL when defined', () => {
+            originalWindow = globalThis.window;
+            globalThis.window = { HB_RELAY_URL: 'https://relay.custom.io' };
+            expect(resolveRelayUrl()).toBe('https://relay.custom.io');
+        });
+
+        it('resolves localhost to port 3001 for dev servers', () => {
+            originalWindow = globalThis.window;
+            globalThis.window = { location: { origin: 'http://localhost:5173' } };
+            expect(resolveRelayUrl()).toBe('http://localhost:3001');
+        });
+
+        it('defaults to production backend for file:// or packaged Electron', () => {
+            originalWindow = globalThis.window;
+            globalThis.window = { location: { origin: 'file://' } };
+            expect(resolveRelayUrl()).toBe('https://steam.tuesdaycinema.club');
+        });
     });
 
     it('initializes with default co-op mode and room code', () => {

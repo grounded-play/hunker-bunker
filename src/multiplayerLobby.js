@@ -11,17 +11,27 @@ export const MULTIPLAYER_MODES = Object.freeze({
     PVP: 'pvp'
 });
 
+export function resolveRelayUrl() {
+    if (typeof window === 'undefined') return 'http://localhost:3001';
+    if (window.HB_RELAY_URL) return window.HB_RELAY_URL;
+    const origin = window.location?.origin || '';
+    if (origin.includes('localhost') || origin.includes('127.0.0.1') || origin.includes(':5173')) {
+        return 'http://localhost:3001';
+    }
+    if (origin.startsWith('http://') || origin.startsWith('https://')) {
+        return origin;
+    }
+    // Packaged Electron or file:// protocol fallback to live production backend
+    return 'https://steam.tuesdaycinema.club';
+}
+
 export class MultiplayerLobby {
     constructor() {
         this.socket = null;
         this.connected = false;
         this.currentMode = MULTIPLAYER_MODES.COOP;
         this.roomCode = 'SECTOR-7';
-        this.serverUrl = typeof window !== 'undefined' && window.location?.origin
-            ? (window.location.origin.includes('localhost') || window.location.origin.includes('127.0.0.1')
-                ? 'http://localhost:3001'
-                : window.location.origin)
-            : 'http://localhost:3001';
+        this.serverUrl = resolveRelayUrl();
         this.players = new Map();
         this.pingMs = 18;
         this.isHost = true;
