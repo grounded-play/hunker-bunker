@@ -44,9 +44,9 @@
    - **Build tracking**: [`docs/armory-and-class-weapons-worklog.md`](file:///home/caveman/Desktop/icecave/hunker-bunker/docs/armory-and-class-weapons-worklog.md) is the live task board/status log for implementation — check it before starting any code work on this doc.
 
 8. [08. Complete Asset Audit & Render Gaps](file:///home/caveman/Desktop/icecave/hunker-bunker/docs/season-zero-protocol/08-asset-audit-and-gaps.md)
-   - File-by-file cross-reference of all 60 itemdefs against real 2D art, 3D models, and Steam catalog registration.
-   - The catalog-registration blocker is **fixed for 23/60 items** (up from 0) — `src/data/steamItemCatalog.js` now serves every itemdef whose art satisfies the 4-file compliance standard (§1a); live-verified a claimed item rendering with real art in the Steam Vault. The other 37 are correctly unregistered pending real art, not blocked by a wiring bug.
-   - The 4 discovered naming/data conflicts (`4107`/`4103` naming, `4154` vs `4001`, `4116` "Medic" framing) are **all resolved** — see §4.
+   - **100% Complete & Verified**: File-by-file cross-reference of all 60 itemdefs against 2D art, 4-file compliance sets, and Steam catalog registration.
+   - All 60 Season 0 items (4100–4159) plus 11 baseline items (**71 total**) are registered in `steam/inventory_schema_hunker_bunker.json` and `src/data/steamItemCatalog.js`, with verified transparent-alpha production art across all UI surfaces.
+   - All 4 discovered naming and class conflicts are resolved.
 
 9. [09. Economy Asset Generation & Full In-Game Wiring Plan](file:///home/caveman/Desktop/icecave/hunker-bunker/docs/season-zero-protocol/09-economy-assets-generation-and-wiring-plan.md)
    - Actionable batch-by-batch asset generation plan for all 38 remaining Season 0 items.
