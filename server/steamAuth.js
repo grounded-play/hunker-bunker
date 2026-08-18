@@ -356,9 +356,15 @@ export async function verifySteamSessionTicket({ ticketHex, identity } = {}) {
         });
 
         if (!response.ok) {
+            // Don't reflect Steam's raw upstream HTTP status as our own /steam/session
+            // response status — a client saw this arrive as a literal 405 on our POST
+            // endpoint (nothing wrong with the client's request; Steam's own API call
+            // failed). 502 accurately describes "the upstream service failed," matching
+            // the network-failure catch block below. The real upstream code is still
+            // captured in upstream.status for diagnostics.
             return {
                 ok: false,
-                status: response.status,
+                status: 502,
                 reason: 'steam_auth_http_error',
                 upstream: {
                     service: 'steamworks-authenticate-user-ticket',

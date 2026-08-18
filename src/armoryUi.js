@@ -341,7 +341,6 @@ export function createArmoryUi({
         });
 
         // Steam Deck / Keyboard controller shortcuts for Armory screen
-        container.dataset = container.dataset || {};
         if (typeof window !== 'undefined' && !container.dataset.kbBound) {
             container.dataset.kbBound = 'true';
             window.addEventListener('keydown', (event) => {
