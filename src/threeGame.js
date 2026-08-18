@@ -13195,6 +13195,35 @@ export class ThreeGame {
         }
     }
 
+    // Season 0 Echo-Location Transceiver overclock (itemdef 4145, docs/season-zero-protocol/03
+    // §4). No secret-room/radar-blip system exists in this codebase to extend "hidden room
+    // detection" as originally spec'd (docs/season-zero-protocol/08 §5 item 2) — reinterpreted
+    // as a periodic sonar ping that briefly highlights nearby hostiles within
+    // hiddenRoomDetectionRange, since that's the closest real, buildable analog.
+    updateEchoLocationPulse(delta) {
+        const range = this.loadoutMods?.hiddenRoomDetectionRange ?? 0;
+        if (!range || !this.player) return;
+        this._echoLocationTimer = (this._echoLocationTimer ?? 0) - delta;
+        if (this._echoLocationTimer > 0) return;
+        this._echoLocationTimer = 2.5;
+
+        window.AudioManager?.play?.('ui_scan_ping', { volume: 0.3, playbackRate: 0.7, bus: 'sfx' });
+        const px = this.player.position.x;
+        const pz = this.player.position.z;
+        for (const sprite of this.scatterSprites ?? []) {
+            const data = sprite.userData;
+            if (!data || data.hp <= 0 || data.frozenTimer > 0) continue;
+            const dist = Math.hypot(sprite.position.x - px, sprite.position.z - pz);
+            if (dist > range) continue;
+            const restoreHex = data.biomeTint ?? 0x88ff88;
+            sprite.material?.color?.setHex?.(0xffe066);
+            setTimeout(() => {
+                if (data.frozenTimer > 0) return;
+                sprite.material?.color?.setHex?.(restoreHex);
+            }, 350);
+        }
+    }
+
     isPlayerInjured() {
         const maxHp = this.playerVitals?.maxHp;
         if (!Number.isFinite(maxHp) || maxHp <= 0) return false;
@@ -15510,6 +15539,7 @@ export class ThreeGame {
         }
 
         this.updatePlayerShield(delta);
+        this.updateEchoLocationPulse(delta);
 
         // Handle slow and poison status effects
         if (this.playerSlowTimer > 0) {

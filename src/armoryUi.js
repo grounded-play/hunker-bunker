@@ -120,14 +120,16 @@ export function createArmoryUi({
 
         container.innerHTML = `
             <div class="armory-hud">
+                <div class="terminal-scanline"></div>
                 <header class="armory-header">
                     <div class="armory-title-box">
-                        <span class="armory-tag">HUNKER BUNKER // PRE-MISSION ARMORY</span>
-                        <h1 class="armory-title">SECTOR ZERO TACTICAL BENCH</h1>
+                        <span class="armory-tag">◈ SUB-TERRAN PRE-MISSION ARMORY // SECTOR ZERO</span>
+                        <h1 class="armory-title">SECTOR ZERO TACTICAL BENCH <span class="armory-title-accent">// LOADOUT</span></h1>
                     </div>
                     <div class="armory-operator-status">
+                        <span class="status-cycle-hint">[Q / E CYCLE]</span>
                         <span class="status-label">ACTIVE OPERATOR:</span>
-                        <span class="status-value class-${cls}">${activeClass.toUpperCase()}</span>
+                        <span class="status-value class-${cls}">◈ ${activeClass.toUpperCase()} MK-IV</span>
                     </div>
                 </header>
 
@@ -136,14 +138,14 @@ export function createArmoryUi({
                     <section class="armory-panel suit-bench-panel" aria-label="Suit Bench">
                         <div class="panel-header">
                             <span class="panel-icon">🛡️</span>
-                            <h2>SUIT BENCH</h2>
+                            <h2>OPERATOR EXOSUIT RIG</h2>
                         </div>
                         <div class="bench-field">
-                            <label>CHASSIS SPEC</label>
-                            <div class="field-value">${activeClass.toUpperCase()} MK-IV PRESSURIZED</div>
+                            <label>CHASSIS SPECIFICATION</label>
+                            <div class="field-value">${activeClass.toUpperCase()} MK-IV SUB-ZERO PRESSURIZED</div>
                         </div>
                         <div class="bench-field">
-                            <label>SHOULDER PATCH / DECAL</label>
+                            <label>SHOULDER PATCH &amp; INSIGNIA</label>
                             <select id="armory-decal-select" class="armory-select">
                                 <option value="">[DEFAULT CLASS INSIGNIA]</option>
                                 ${['4120', '4121', '4124', '4126'].map((id) => `
@@ -154,10 +156,10 @@ export function createArmoryUi({
                             </select>
                         </div>
                         <div class="telemetry-box">
-                            <div class="telemetry-title">SUIT INTEGRITY TELEMETRY</div>
-                            <div class="telemetry-item"><span>Thermal Layer:</span> <strong>Active Cryo-Mesh</strong></div>
-                            <div class="telemetry-item"><span>Subterranean Seal:</span> <strong>Nominal 100%</strong></div>
-                            <div class="telemetry-item"><span>Exo-Turntable:</span> <strong>360° Drag Orbit Active</strong></div>
+                            <div class="telemetry-title">SUIT TELEMETRY STATUS</div>
+                            <div class="telemetry-item"><span>Thermal Cryo-Mesh:</span> <strong>NOMINAL 100%</strong></div>
+                            <div class="telemetry-item"><span>Radiation Seal:</span> <strong>ACTIVE</strong></div>
+                            <div class="telemetry-item"><span>Turntable Staging:</span> <strong>360° DRAG ORBIT</strong></div>
                         </div>
                     </section>
 
@@ -170,7 +172,7 @@ export function createArmoryUi({
 
                         <div class="bench-grid">
                             <div class="bench-field">
-                                <label>GUN ARCHETYPE</label>
+                                <label>PRIMARY WEAPON ARCHETYPE</label>
                                 <select id="armory-archetype-select" class="armory-select">
                                     ${allowedArchetypes.map((arch) => `
                                         <option value="${arch}" ${archetype === arch ? 'selected' : ''}>
@@ -181,7 +183,7 @@ export function createArmoryUi({
                             </div>
 
                             <div class="bench-field">
-                                <label>WEAPON FINISH / SKIN</label>
+                                <label>TACTICAL WEAPON FINISH &amp; SKIN</label>
                                 <select id="armory-skin-select" class="armory-select">
                                     <option value="">[DEFAULT FACTORY FINISH]</option>
                                     ${allowedSkins.map((id) => `
@@ -193,7 +195,7 @@ export function createArmoryUi({
                             </div>
 
                             <div class="bench-field">
-                                <label>TACTICAL CHARM (ACCESSORY RAIL)</label>
+                                <label>ACCESSORY RAIL CHARM</label>
                                 <select id="armory-charm-select" class="armory-select">
                                     <option value="">[NO CHARM EQUIPPED]</option>
                                     ${['4130', '4131', '4132', '4133', '4134', '4135', '4136', '4137', '4138', '4139'].map((id) => `
@@ -205,24 +207,24 @@ export function createArmoryUi({
                             </div>
 
                             <div class="bench-field">
-                                <label>RIG OVERCLOCK - SLOT A</label>
+                                <label>RIG OVERCLOCK — BAY A</label>
                                 <select id="armory-mod1-select" class="armory-select">
                                     <option value="">[EMPTY OVERCLOCK BAY A]</option>
                                     ${['4140', '4141', '4142', '4143', '4144', '4145', '4146', '4147'].map((id) => `
                                         <option value="${id}" ${loadout.mod1Id === id ? 'selected' : ''}>
-                                            ${CATALOG_ITEMS[id]?.name || id} - ${CATALOG_ITEMS[id]?.perk || ''}
+                                            ${CATALOG_ITEMS[id]?.name || id} — ${CATALOG_ITEMS[id]?.perk || ''}
                                         </option>
                                     `).join('')}
                                 </select>
                             </div>
 
                             <div class="bench-field">
-                                <label>RIG OVERCLOCK - SLOT B</label>
+                                <label>RIG OVERCLOCK — BAY B</label>
                                 <select id="armory-mod2-select" class="armory-select">
                                     <option value="">[EMPTY OVERCLOCK BAY B]</option>
                                     ${['4140', '4141', '4142', '4143', '4144', '4145', '4146', '4147'].map((id) => `
                                         <option value="${id}" ${loadout.mod2Id === id ? 'selected' : ''}>
-                                            ${CATALOG_ITEMS[id]?.name || id} - ${CATALOG_ITEMS[id]?.perk || ''}
+                                            ${CATALOG_ITEMS[id]?.name || id} — ${CATALOG_ITEMS[id]?.perk || ''}
                                         </option>
                                     `).join('')}
                                 </select>
@@ -231,22 +233,22 @@ export function createArmoryUi({
 
                         <!-- ACTIVE MODIFIERS TELEMETRY -->
                         <div class="modifiers-summary">
-                            <div class="modifiers-title">ACTIVE COMBAT OVERCLOCKS</div>
+                            <div class="modifiers-title">◈ ACTIVE COMBAT OVERCLOCKS</div>
                             <div class="modifiers-badges">
                                 <span class="mod-badge ${modifiers.scrapMagnetRadiusBonus > 0 ? 'active' : ''}">
-                                    🧲 Scrap Magnet: +${Math.round(modifiers.scrapMagnetRadiusBonus * 100)}%
+                                    🧲 Magnet: +${Math.round(modifiers.scrapMagnetRadiusBonus * 100)}%
                                 </span>
                                 <span class="mod-badge ${modifiers.cryoDurationMultiplier > 1.0 ? 'active' : ''}">
-                                    ❄️ Cryo Freeze: +${Math.round((modifiers.cryoDurationMultiplier - 1.0) * 100)}%
+                                    ❄️ Cryo: +${Math.round((modifiers.cryoDurationMultiplier - 1.0) * 100)}%
                                 </span>
                                 <span class="mod-badge ${modifiers.kineticPierceBonus > 0 ? 'active' : ''}">
-                                    🎯 Kinetic Pierce: +${modifiers.kineticPierceBonus}
+                                    🎯 Pierce: +${modifiers.kineticPierceBonus}
                                 </span>
                                 <span class="mod-badge ${modifiers.gasDamageReduction > 0 ? 'active' : ''}">
-                                    ☣️ Gas Resist: -${Math.round(modifiers.gasDamageReduction * 100)}%
+                                    ☣️ Gas: -${Math.round(modifiers.gasDamageReduction * 100)}%
                                 </span>
                                 <span class="mod-badge ${modifiers.dashRefundOnMultiKill ? 'active' : ''}">
-                                    ⚡ Zero-Point Refund: ${modifiers.dashRefundOnMultiKill ? 'READY' : 'OFF'}
+                                    ⚡ Dash Refund: ${modifiers.dashRefundOnMultiKill ? 'READY' : 'OFF'}
                                 </span>
                             </div>
                         </div>
@@ -256,13 +258,13 @@ export function createArmoryUi({
                 <!-- FOOTER NAVIGATION -->
                 <footer class="armory-footer">
                     <button id="armory-btn-back" class="armory-btn secondary-btn">
-                        &lt; SWITCH CLASS
+                        &lt; SWITCH CLASS <span class="btn-keyhint">[ESC]</span>
                     </button>
                     <button id="armory-btn-vault" class="armory-btn tertiary-btn">
-                        STEAM VAULT &amp; FAB BAY
+                        STEAM VAULT &amp; FAB BAY <span class="btn-keyhint">[V]</span>
                     </button>
                     <button id="armory-btn-embark" class="armory-btn primary-btn embark-glow">
-                        EMBARK TO BUNKER &gt;&gt;
+                        EMBARK TO BUNKER &gt;&gt; <span class="btn-keyhint">[ENTER / A]</span>
                     </button>
                 </footer>
             </div>
