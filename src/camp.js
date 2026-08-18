@@ -17,6 +17,57 @@ const LEADER_BOSS_SPRITESHEETS = {
     'Overseer Kaelen': '/boss_corrupted_engineer_v2.png'
 };
 
+// docs/sprint-23-room-juice-and-dressing-assets.md §4 — one dedicated
+// signature prop per camp, replacing the generic same-for-every-camp
+// dressing (crates/cookfire/sandbags above) with faction-specific
+// silhouettes. Art is queued, not rendered yet (image-gen quota); each
+// path is registered now so the prop appears automatically the moment a
+// real file lands at that path — loadKeyedTexture's onerror path already
+// falls back gracefully (see makeSignaturePropFallbackCanvas below), so
+// wiring ahead of the asset is safe.
+export const CAMP_SIGNATURE_PROPS = Object.freeze({
+    camp_meridian: [
+        { id: 'radio', path: '/prop_camp_meridian_radio.jpg', x: 1.7, z: 2.15, y: 0.42, scale: 1.1, color: 0xffb347 },
+        { id: 'battery_bank', path: '/prop_camp_meridian_battery_bank.jpg', x: -1.85, z: -2.3, y: 0.32, scale: 0.95, color: 0xffb347 },
+        { id: 'repair_rig', path: '/prop_camp_meridian_repair_rig.jpg', x: 3.35, z: 1.35, y: 0.4, scale: 1.2, color: 0xffb347 }
+    ],
+    camp_tallow: [
+        { id: 'still', path: '/prop_camp_tallow_still.jpg', x: 1.5, z: 1.95, y: 0.4, scale: 1.05, color: 0x6ee66e },
+        { id: 'spore_trays', path: '/prop_camp_tallow_spore_trays.jpg', x: -2.05, z: -1.75, y: 0.38, scale: 1.15, color: 0x6ee66e },
+        { id: 'resin_urn', path: '/prop_camp_tallow_resin_urn.jpg', x: 2.6, z: -2.35, y: 0.3, scale: 0.75, color: 0x6ee66e }
+    ],
+    camp_vesper: [
+        { id: 'turret', path: '/prop_camp_vesper_turret.jpg', x: 0, z: -3.4, y: 0.46, scale: 1.3, color: 0xff5c4d },
+        { id: 'ammo_press', path: '/prop_camp_vesper_ammo_press.jpg', x: -2.6, z: 1.75, y: 0.36, scale: 1.0, color: 0xff5c4d },
+        { id: 'shield_rack', path: '/prop_camp_vesper_shield_rack.jpg', x: 2.45, z: 2.55, y: 0.4, scale: 1.1, color: 0xff5c4d }
+    ]
+});
+
+// A plain placeholder tile (no photographic detail) so a pending signature
+// prop reads as "reserved for X" rather than a blank/broken sprite while
+// real art is queued. Matches makeLeaderFallbackCanvas's spirit, simplified
+// since these are inanimate props, not an animated 4x4 walk sheet.
+function makeSignaturePropFallbackCanvas({ color = 0xffe9b0, label = '?' } = {}) {
+    if (typeof document === 'undefined') return null;
+    const canvas = document.createElement('canvas');
+    canvas.width = 96;
+    canvas.height = 96;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return canvas;
+    const hex = `#${color.toString(16).padStart(6, '0')}`;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.strokeStyle = hex;
+    ctx.lineWidth = 3;
+    ctx.setLineDash([6, 5]);
+    ctx.strokeRect(6, 6, 84, 84);
+    ctx.fillStyle = hex;
+    ctx.font = 'bold 34px monospace';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(label.slice(0, 1).toUpperCase(), 48, 50);
+    return canvas;
+}
+
 function makeLeaderFallbackCanvas({ color = 0xffe9b0, isBoss = false, label = '?' } = {}) {
     if (typeof document === 'undefined') return null;
     const canvas = document.createElement('canvas');
@@ -90,6 +141,13 @@ function applyFallbackToTexture(texture, fallbackCanvas) {
     texture.needsUpdate = true;
 }
 
+// Camp prop/leader textures are reused verbatim across every SurvivorCamp
+// instance (three camps per run, each with the same ~11 prop sprites). Without
+// this cache each instance independently re-decoded and re-ran the
+// full-resolution chroma-key flood-fill on the identical bytes, multiplying
+// an already-expensive synchronous pass by the camp count for no visual gain.
+const keyedTextureCache = new Map();
+
 function loadKeyedTexture(path, threshold = 15, onLoad = null, fallbackCanvas = null) {
     const texture = new THREE.Texture();
     texture.colorSpace = THREE.SRGBColorSpace;
@@ -102,6 +160,23 @@ function loadKeyedTexture(path, threshold = 15, onLoad = null, fallbackCanvas = 
 
     applyFallbackToTexture(texture, fallbackCanvas);
 
+    const cacheKey = `${path}::${threshold}`;
+    const cached = keyedTextureCache.get(cacheKey);
+    if (cached) {
+        if (cached.canvas) {
+            texture.image = cached.canvas;
+            texture.needsUpdate = true;
+            if (onLoad) onLoad(texture);
+        } else {
+            cached.waiters.push((canvas) => {
+                texture.image = canvas;
+                texture.needsUpdate = true;
+                if (onLoad) onLoad(texture);
+            });
+        }
+        return texture;
+    }
+
     if (typeof Image === 'undefined') {
         if (onLoad) {
             setTimeout(() => onLoad(texture), 0);
@@ -109,12 +184,19 @@ function loadKeyedTexture(path, threshold = 15, onLoad = null, fallbackCanvas = 
         return texture;
     }
 
+    const entry = { canvas: null, waiters: [] };
+    keyedTextureCache.set(cacheKey, entry);
+
     const image = new Image();
     image.onload = () => {
         applyImageToTexture(texture, image, threshold);
+        entry.canvas = texture.image;
+        const waiters = entry.waiters.splice(0);
+        waiters.forEach((notify) => notify(entry.canvas));
         if (onLoad) onLoad(texture);
     };
     image.onerror = () => {
+        keyedTextureCache.delete(cacheKey);
         applyFallbackToTexture(texture, fallbackCanvas);
         if (onLoad) onLoad(texture);
     };
@@ -513,6 +595,29 @@ export class SurvivorCamp {
             spriteSandbags.visible = false;
             group.add(spriteSandbags);
             this.sandbagSprites.push(spriteSandbags);
+        }
+
+        // Faction signature props (docs/sprint-23-room-juice-and-dressing-assets.md §4).
+        this.signatureProps = {};
+        for (const spec of CAMP_SIGNATURE_PROPS[this.id] ?? []) {
+            const texture = loadKeyedTexture(
+                spec.path,
+                15,
+                (tex) => tex.repeat.set(1, 1),
+                makeSignaturePropFallbackCanvas({ color: spec.color, label: spec.id })
+            );
+            const material = new THREE.SpriteMaterial({
+                map: texture,
+                transparent: true,
+                alphaTest: 0.05,
+                depthWrite: false
+            });
+            const sprite = new THREE.Sprite(material);
+            sprite.position.set(spec.x, spec.y, spec.z);
+            sprite.scale.set(spec.scale, spec.scale, 1);
+            sprite.userData = { kind: 'camp-signature-prop', campId: this.id, propId: spec.id };
+            group.add(sprite);
+            this.signatureProps[spec.id] = sprite;
         }
 
         group.visible = false;

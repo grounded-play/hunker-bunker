@@ -127,6 +127,7 @@
       <select id="debug-achievement-select" class="dev-select" title="Trigger Steam Achievement">
         <option value="">-- UNLOCK ACH --</option>
       </select>
+      <button id="debug-open-showroom" class="dev-btn dev-btn--accent" title="Open 4-Wall Prop/Enemy Showroom">⚑ SHOWROOM</button>
       <button id="debug-unlock-all-ach" class="dev-btn dev-btn--warn" title="Unlock All Achievements">★ ACH ALL</button>
       <button id="debug-unlock-all-codex" class="dev-btn dev-btn--accent" title="Unlock All Codex Entries">❑ CODEX ALL</button>
       <button id="debug-unlock-all-polishes" class="dev-btn dev-btn--accent" title="Unlock All Operator Polishes">◆ POLISH ALL</button>
@@ -221,6 +222,7 @@
           <button class="title-menu-btn" id="title-continue-btn" disabled>CONTINUE</button>
           <button class="title-menu-btn title-menu-btn--secondary hidden" id="title-switch-class-btn">SWITCH CLASS</button>
           <button class="title-menu-btn" id="title-newrun-btn">NEW RUN</button>
+          <button class="title-menu-btn" id="title-multiplayer-btn">TACTICAL NET</button>
           <button class="title-menu-btn" id="title-achievements-btn">ACHIEVEMENTS</button>
           <button class="title-menu-btn" id="title-settings-btn">SETTINGS</button>
           <button class="title-menu-btn" id="title-about-btn">ABOUT</button>
@@ -230,10 +232,14 @@
     </div>
 
     <!-- About Modal (Credits) -->
-    <div id="about-modal" class="modal hidden">
+    <div id="about-modal" class="modal hidden" aria-hidden="true">
       <div class="modal-content credits-modal-content">
-        <button class="close-modal" id="close-about">&times;</button>
-        <div class="modal-title">TACTICAL COMMAND CREDITS</div>
+        <div class="terminal-scanline"></div>
+        <button class="close-modal" id="close-about" aria-label="Close Credits">&times;</button>
+        <div class="credits-header">
+          <div class="credits-header-kicker">◈ PERSONNEL ARCHIVE // PRODUCTION CREDITS</div>
+          <div class="credits-modal-title">TACTICAL COMMAND <span class="credits-title-accent">// CREDITS</span></div>
+        </div>
         
         <div class="credits-container">
           <div class="credits-scroll">
@@ -274,10 +280,9 @@
           </div>
         </div>
 
-        <div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border-subtle); text-align: center;">
-          <span
-            style="font-size: var(--font-sm); font-weight: 900; letter-spacing: 1px; display: block; margin-bottom: 2px; color: var(--text-main);">THANK YOU FOR DEPLOYING</span>
-          <span id="about-modal-sys-ver" style="font-size: var(--font-xs); color: var(--text-muted); letter-spacing: 2px;">SYS VER: 2.1.0 // ACTIVE</span>
+        <div class="credits-footer">
+          <span class="credits-footer-thankyou">THANK YOU FOR DEPLOYING</span>
+          <span id="about-modal-sys-ver" class="credits-footer-ver">SYS VER: 2.1.0 // ACTIVE</span>
         </div>
       </div>
     </div>
@@ -312,6 +317,10 @@
                     <button class="start-btn start-btn--daily" id="daily-ops-btn" title="One attempt per day — fixed world seed">DAILY OPS</button>
                     <div class="menu-command__status daily-ops-status" id="daily-ops-status"></div>
                   </div>
+                  <div class="menu-command" id="multiplayer-command">
+                    <button class="start-btn start-btn--net" id="briefing-multiplayer-btn" title="Tactical Net — Online & LAN Co-Op and PVP">◈ TACTICAL NET</button>
+                    <div class="menu-command__status" id="net-command-status">CO-OP / PVP</div>
+                  </div>
                   <div class="menu-command hidden" id="archive-sims-command">
                     <button class="start-btn start-btn--archive-sims" id="archive-sims-btn" title="Archive Simulations — unlockable story mini-games">◈ ARCHIVE SIMS</button>
                     <div class="menu-command__status" id="archive-sims-command-status">RGB</div>
@@ -341,6 +350,10 @@
                   <div class="menu-command" id="steam-vault-command">
                     <button class="start-btn start-btn--vault" id="steam-vault-btn" title="Steam Vault — view Steam-owned cosmetics">◈ STEAM VAULT</button>
                     <div class="menu-command__status" id="vault-command-status">OFFLINE</div>
+                  </div>
+                  <div class="menu-command" id="season-pass-command">
+                    <button class="start-btn start-btn--dossier" id="season-pass-btn" title="Tactical Dossier — Season 0 battle pass progression">◈ DOSSIER</button>
+                    <div class="menu-command__status" id="season-pass-command-status">TIER 0 / 50</div>
                   </div>
                 </div>
               </div>
@@ -452,6 +465,12 @@
       </div>
     </div>
 
+    <!-- Fullsize 3D Pre-Mission Armory (#armory-screen) -->
+    <section id="armory-screen" class="hidden" aria-label="Pre-Mission Armory">
+      <canvas id="armory-canvas"></canvas>
+      <div id="armory-hud-overlay"></div>
+    </section>
+
     <!-- Bunker Archive Modal -->
     <div id="archive-modal" class="modal hidden" aria-hidden="true">
       <div class="modal-content archive-modal-content">
@@ -462,6 +481,19 @@
           <div id="archive-summary" class="archive-summary">LOGS RECOVERED: 0 / 27</div>
         </div>
         <div id="archive-log-list" class="archive-log-list"></div>
+      </div>
+    </div>
+
+    <div id="season-pass-modal" class="modal hidden" aria-hidden="true">
+      <div class="modal-content season-pass-modal-content">
+        <div class="terminal-scanline"></div>
+        <div class="season-pass-header">
+          <button class="close-modal" id="close-season-pass-modal" aria-label="Close Tactical Dossier">×</button>
+          <div class="season-pass-header-kicker">◈ SUB-TERRAN SECTOR OPERATIONS // SEASON 0</div>
+          <div class="season-pass-title">TACTICAL DOSSIER <span class="season-pass-title-accent">& DIRECTIVES</span></div>
+          <div id="season-pass-progress-summary" class="season-pass-progress-summary"></div>
+        </div>
+        <div id="season-pass-body" class="season-pass-body"></div>
       </div>
     </div>
 
@@ -536,9 +568,10 @@
       <div class="modal-content codex-modal-content">
         <div class="terminal-scanline"></div>
         <div class="codex-header">
-          <button class="close-modal" id="close-codex-modal">×</button>
-          <div class="codex-title">❑ FIELD CODEX</div>
-          <div class="codex-subtitle">CATALOGUED BY ENCOUNTER</div>
+          <button class="close-modal" id="close-codex-modal" aria-label="Close Field Codex">×</button>
+          <div class="codex-header-kicker">◈ FIELD INTEL // DISCOVERED SPECIMENS & LORE</div>
+          <div class="codex-title">FIELD CODEX <span class="codex-title-accent">// BESTIARY</span></div>
+          <div class="codex-subtitle">CATALOGUED BY SUB-TERRAN ENCOUNTER</div>
           <div id="codex-summary" class="codex-summary">ENTRIES RECOVERED: 0 / 0</div>
         </div>
         <div id="codex-grid" class="codex-grid"></div>
@@ -570,8 +603,9 @@
       <div class="modal-content achievements-modal-content">
         <div class="terminal-scanline"></div>
         <div class="achievements-header">
-          <button class="close-modal" id="close-achievements-modal">×</button>
-          <div class="achievements-title">ACHIEVEMENTS</div>
+          <button class="close-modal" id="close-achievements-modal" aria-label="Close Achievements">×</button>
+          <div class="achievements-header-kicker">◈ COMBAT CITATIONS // DEEP CRUST COMMENDATIONS</div>
+          <div class="achievements-title">OPERATIVE CITATIONS <span class="achievements-title-accent">// ARCHIVE</span></div>
           <div id="achievements-summary" class="achievements-summary">0 / 0 UNLOCKED</div>
         </div>
         <div id="achievements-grid" class="achievements-grid"></div>
@@ -587,19 +621,31 @@
       <div class="modal-content vault-modal-content">
         <div class="terminal-scanline"></div>
         <div class="vault-header">
-          <button class="close-modal" id="close-steam-vault-modal">×</button>
-          <div class="vault-title">◈ STEAM VAULT</div>
+          <button class="close-modal" id="close-steam-vault-modal" aria-label="Close Steam Vault">×</button>
+          <div class="vault-header-kicker">◈ SECURE STEAM INVENTORY & ITEM DISPENSARY // APPID 4957040</div>
+          <div class="vault-title">◈ STEAM VAULT <span class="vault-title-accent">// ITEM DISPATCH</span></div>
           <div class="vault-callsign-row">
             <span class="vault-callsign" id="vault-player-name">OFFLINE OPERATOR</span>
             <span class="vault-status" id="vault-connection-status">DEV FALLBACK</span>
+            <div class="vault-telemetry-chips">
+              <span class="vault-chip vault-chip--caches"><span class="vault-chip-icon">📦</span> CACHES: <strong id="vault-cache-count">0</strong></span>
+              <span class="vault-chip vault-chip--keys"><span class="vault-chip-icon">🗝️</span> KEYS: <strong id="vault-key-count">0</strong></span>
+            </div>
           </div>
         </div>
         <div class="vault-tabs">
-          <button class="vault-tab-btn active" id="vault-tab-inventory">OWNED ITEMS</button>
-          <button class="vault-tab-btn" id="vault-tab-store">◈ STORE</button>
+          <button class="vault-tab-btn active" id="vault-tab-inventory"><span class="vault-tab-icon">📦</span> OWNED INVENTORY</button>
+          <button class="vault-tab-btn" id="vault-tab-store"><span class="vault-tab-icon">🗝️</span> ◈ RELIC STORE & DROP ODDS</button>
+          <button class="vault-tab-btn" id="vault-tab-smelter"><span class="vault-tab-icon">🔥</span> ◈ SMELTER & DISPENSARY</button>
         </div>
+
+        <!-- Inventory Tab Layout -->
         <div class="vault-main-layout" id="vault-inventory-layout">
           <div class="vault-left-column">
+            <div class="vault-column-header">
+              <span class="vault-column-title">STEAM INVENTORY MANIFEST</span>
+              <span class="vault-column-badge">VERIFIED</span>
+            </div>
             <div class="vault-inventory-container" id="vault-inventory-container">
               <div class="vault-grid" id="vault-item-grid"></div>
               <div class="vault-empty-state hidden" id="vault-empty-state">NO ITEMS DETECTED IN STEAM VAULT</div>
@@ -613,7 +659,7 @@
               <div class="vault-details-name" id="vault-details-name">SELECT AN ITEM</div>
               <div class="vault-details-rarity" id="vault-details-rarity">—</div>
               <div class="vault-details-desc" id="vault-details-desc">Select any item from the grid to view Steam ownership details.</div>
-              <div class="vault-steam-disclaimer" style="font-size: 10px; color: var(--text-muted); margin-bottom: 8px;">All items and transactions are securely managed through your linked Steam account.</div>
+              <div class="vault-steam-disclaimer">All items and cosmetics are securely managed through your linked Steam account.</div>
               <div class="vault-details-meta">
                 <span class="vault-meta-tag" id="vault-meta-tradable">TRADABLE</span>
                 <span class="vault-meta-tag" id="vault-meta-marketable">MARKETABLE</span>
@@ -625,28 +671,130 @@
             </div>
           </div>
         </div>
+
+        <!-- Store Tab Layout (Zero-Scroll 2-Column Split Grid) -->
         <div class="vault-store-layout hidden" id="vault-store-layout">
-          <div class="vault-store-intro">
-            Deep Relic Caches drop for free during play. Cache Keys are the
-            only item sold for real money — buying a key does not guarantee
-            a Cache, and opening a Cache does not guarantee its best reward.
-            Odds below are exactly what the server rolls against.<br><br>
-            <span style="color: var(--text-muted); font-size: 0.9em;">All purchases and inventory actions happen securely through your Steam wallet.</span>
+          <div class="vault-store-col vault-store-col--left">
+            <div class="vault-store-intro">
+              <div class="vault-store-intro__badges">
+                <span class="vault-notice-badge">🛡️ STEAM SECURED</span>
+                <span class="vault-notice-badge vault-notice-badge--odds">⚖️ TRANSPARENT ODDS</span>
+              </div>
+              <div class="vault-store-intro__body">
+                <strong>Deep Relic Caches</strong> drop free during play. <strong>Cache Keys</strong> are sold to decrypt caches. Roll rates match exact server tables.
+              </div>
+            </div>
+
+            <div class="vault-store-section-header">
+              <span class="vault-store-section-label">RELIC KEY DISPENSARY</span>
+              <span class="vault-store-section-sub">STEAM WALLET DIRECT</span>
+            </div>
+            <div class="vault-store-grid" id="vault-store-sku-grid"></div>
+
+            <div class="vault-store-hosted hidden" id="vault-store-hosted">
+              <div class="vault-store-hosted-info">
+                <span class="vault-store-hosted-dot">●</span>
+                <span class="vault-store-hosted-status" id="vault-store-hosted-status">STEAM ITEM STORE OFFLINE</span>
+              </div>
+              <button class="start-btn vault-store-hosted-btn" id="vault-store-hosted-btn">OPEN IN STEAM ↗</button>
+            </div>
           </div>
-          <div class="vault-store-grid" id="vault-store-sku-grid"></div>
-          <div class="vault-store-hosted hidden" id="vault-store-hosted">
-            <span class="vault-store-hosted-status" id="vault-store-hosted-status">STEAM ITEM STORE OFFLINE</span>
-            <button class="start-btn vault-store-hosted-btn" id="vault-store-hosted-btn">OPEN STEAM ITEM STORE</button>
-          </div>
-          <div class="vault-store-odds">
-            <div class="vault-store-odds-title">DEEP RELIC CACHE — PUBLISHED ODDS</div>
-            <div class="vault-store-odds-table" id="vault-store-odds-table"></div>
-          </div>
-          <div class="vault-store-open-row">
-            <span class="vault-store-open-status" id="vault-store-open-status">No Cache + Key pair detected in your inventory.</span>
-            <button class="start-btn vault-store-open-btn hidden" id="vault-store-open-btn">◈ OPEN DEEP RELIC CACHE</button>
+
+          <div class="vault-store-col vault-store-col--right">
+            <div class="vault-store-decrypt-card">
+              <div class="vault-decrypt-header">
+                <div class="vault-decrypt-title">RELIC CACHE DECRYPTOR</div>
+                <div class="vault-decrypt-inventory">
+                  <span class="vault-inventory-pill"><span class="vault-pill-dot">●</span> CACHES: <strong id="vault-store-cache-val">0</strong></span>
+                  <span class="vault-inventory-pill vault-inventory-pill--key"><span class="vault-pill-dot">●</span> KEYS: <strong id="vault-store-key-val">0</strong></span>
+                </div>
+              </div>
+              <div class="vault-store-open-row">
+                <div class="vault-store-open-info">
+                  <span class="vault-store-open-icon">◈</span>
+                  <span class="vault-store-open-status" id="vault-store-open-status">No Cache + Key pair detected in your inventory.</span>
+                </div>
+                <button class="start-btn vault-store-open-btn hidden" id="vault-store-open-btn">◈ OPEN DEEP RELIC CACHE</button>
+              </div>
+            </div>
+
+            <div class="vault-store-odds">
+              <div class="vault-store-odds-header">
+                <div class="vault-store-odds-title">PUBLISHED DROP RATES</div>
+                <div class="vault-store-odds-badge">100% DISCLOSED</div>
+              </div>
+              <div class="vault-store-odds-table" id="vault-store-odds-table"></div>
+            </div>
           </div>
         </div>
+
+        <!-- Smelter Tab Layout -->
+        <div class="vault-store-layout hidden" id="vault-smelter-layout">
+          <div class="vault-store-col vault-store-col--left">
+            <div class="vault-store-intro">
+              <div class="vault-store-intro__badges">
+                <span class="vault-notice-badge">🔥 TRADE-UP SMELTING</span>
+                <span class="vault-notice-badge vault-notice-badge--odds">⚖️ 5:1 GUARANTEED TIER-UP</span>
+              </div>
+              <div class="vault-store-intro__body">
+                Combine 5 owned items of the same rarity into 1 guaranteed item at the next rarity tier. Consumed items are permanently removed from your inventory.
+              </div>
+            </div>
+
+            <div class="vault-store-section-header">
+              <span class="vault-store-section-label">DEEP SMELTER</span>
+              <span class="vault-store-section-sub">CONSUMES 5x SAME-TIER ITEMS</span>
+            </div>
+            <div class="vault-smelter-grid" id="vault-smelter-grid"></div>
+          </div>
+
+          <div class="vault-store-col vault-store-col--right">
+            <div class="vault-store-decrypt-card">
+              <div class="vault-decrypt-header">
+                <div class="vault-decrypt-title">DEEP CORE SHARD DISPENSARY</div>
+                <div class="vault-decrypt-inventory">
+                  <span class="vault-inventory-pill"><span class="vault-pill-dot">●</span> SHARDS: <strong id="vault-shard-balance">0</strong></span>
+                </div>
+              </div>
+              <div class="vault-store-open-row">
+                <div class="vault-store-open-info">
+                  <span class="vault-store-open-icon">◈</span>
+                  <span class="vault-store-open-status" id="vault-smelter-status">Duplicate unboxes award bonus Shards. Spend them here on specific items.</span>
+                </div>
+              </div>
+              <div class="vault-smelter-grid" id="vault-dispensary-grid"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Cache Decryption & Reveal Animation Overlay (Fabricator Reel Architecture) -->
+        <div id="vault-reveal-overlay" class="vault-reveal-overlay hidden" aria-hidden="true" data-state="idle">
+          <div class="vault-reveal-container">
+            <div class="vault-reveal-header">
+              <div class="vault-reveal-kicker">◈ STEAM RELIC DISPENSARY // APPID 4957040</div>
+              <div class="vault-reveal-title" id="vault-reveal-title">DECRYPTING RELIC CACHE</div>
+              <div class="vault-reveal-subtitle" id="vault-reveal-status">SPINNING CIPHER MATRIX...</div>
+            </div>
+
+            <!-- Ticker Reel Strip (Fabricator Metaphor) -->
+            <div class="vault-reveal-strip-wrap" id="vault-reveal-strip-wrap">
+              <div class="vault-reveal-marker"></div>
+              <div class="vault-reveal-strip" id="vault-reveal-strip"></div>
+            </div>
+
+            <!-- Final Revealed Item Card -->
+            <div class="vault-reveal-card" id="vault-reveal-card">
+              <div class="vault-reveal-card__art">
+                <img id="vault-reveal-img" src="/favicon.png" alt="Reward" />
+              </div>
+              <div class="vault-reveal-card__rarity" id="vault-reveal-rarity-pill">LEGENDARY REWARD</div>
+              <div class="vault-reveal-card__name" id="vault-reveal-name">QUEEN SLAYER EMBLEM</div>
+              <div class="vault-reveal-card__desc" id="vault-reveal-desc">Awarded for single-handedly defeating the deep vault matriarch.</div>
+              <button class="start-btn vault-reveal-claim-btn" id="vault-reveal-claim-btn">◈ CLAIM TO INVENTORY</button>
+            </div>
+          </div>
+        </div>
+
       </div>
     </div>
 
@@ -746,6 +894,197 @@
               <div class="keyhint-row">[M] / [SELECT] / [ESC] CLOSE</div>
             </div>
           </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tactical Trade & Operative Link Modal -->
+    <div id="player-trade-modal" class="modal hidden" aria-hidden="true">
+      <div class="modal-content trade-modal-content">
+        <div class="settings-sticky-header">
+          <div class="net-header-wrap">
+            <h2 class="modal-title">OPERATIVE LINK // FIELD BARTER</h2>
+            <div id="trade-status-pill" class="net-status-pill net-status--online">LINK ACTIVE</div>
+          </div>
+          <button class="close-modal" id="close-player-trade-modal" aria-label="Close Trade Link">×</button>
+        </div>
+
+        <div class="trade-grid">
+          <!-- Local Operative Column -->
+          <div class="trade-column trade-column--self">
+            <div class="trade-column-header">
+              <div class="trade-op-name" id="trade-self-callsign">LOCAL OPERATIVE</div>
+              <div class="trade-op-meta" id="trade-self-class">TANK // COMMAND</div>
+            </div>
+            <div class="trade-resource-list">
+              <div class="trade-resource-row">
+                <div class="trade-res-info">
+                  <span class="trade-res-icon">🐚</span>
+                  <span class="trade-res-name">SHELLS</span>
+                  <span class="trade-res-avail" id="trade-self-shells-avail">(0)</span>
+                </div>
+                <div class="trade-res-controls">
+                  <button type="button" class="trade-stepper-btn" id="trade-self-shells-minus">-10</button>
+                  <span class="trade-res-val" id="trade-self-shells-val">0</span>
+                  <button type="button" class="trade-stepper-btn" id="trade-self-shells-plus">+10</button>
+                </div>
+              </div>
+
+              <div class="trade-resource-row">
+                <div class="trade-res-info">
+                  <span class="trade-res-icon">⚡</span>
+                  <span class="trade-res-name">AMMO</span>
+                  <span class="trade-res-avail" id="trade-self-ammo-avail">(0)</span>
+                </div>
+                <div class="trade-res-controls">
+                  <button type="button" class="trade-stepper-btn" id="trade-self-ammo-minus">-10</button>
+                  <span class="trade-res-val" id="trade-self-ammo-val">0</span>
+                  <button type="button" class="trade-stepper-btn" id="trade-self-ammo-plus">+10</button>
+                </div>
+              </div>
+
+              <div class="trade-resource-row">
+                <div class="trade-res-info">
+                  <span class="trade-res-icon">💉</span>
+                  <span class="trade-res-name">MEDKITS</span>
+                  <span class="trade-res-avail" id="trade-self-meds-avail">(0)</span>
+                </div>
+                <div class="trade-res-controls">
+                  <button type="button" class="trade-stepper-btn" id="trade-self-meds-minus">-1</button>
+                  <span class="trade-res-val" id="trade-self-meds-val">0</span>
+                  <button type="button" class="trade-stepper-btn" id="trade-self-meds-plus">+1</button>
+                </div>
+              </div>
+
+              <div class="trade-resource-row">
+                <div class="trade-res-info">
+                  <span class="trade-res-icon">🫧</span>
+                  <span class="trade-res-name">O2 FILTER</span>
+                  <span class="trade-res-avail" id="trade-self-o2-avail">(0)</span>
+                </div>
+                <div class="trade-res-controls">
+                  <button type="button" class="trade-stepper-btn" id="trade-self-o2-minus">-1</button>
+                  <span class="trade-res-val" id="trade-self-o2-val">0</span>
+                  <button type="button" class="trade-stepper-btn" id="trade-self-o2-plus">+1</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Peer Operative Column -->
+          <div class="trade-column trade-column--peer">
+            <div class="trade-column-header">
+              <div class="trade-op-name" id="trade-peer-callsign">SQUADMATE</div>
+              <div class="trade-op-meta" id="trade-peer-class">SCOUT // RECON</div>
+            </div>
+            <div class="trade-resource-list">
+              <div class="trade-resource-row trade-resource-row--peer">
+                <div class="trade-res-info">
+                  <span class="trade-res-icon">🐚</span>
+                  <span class="trade-res-name">SHELLS OFFERED</span>
+                </div>
+                <span class="trade-res-val trade-res-val--peer" id="trade-peer-shells-val">0</span>
+              </div>
+
+              <div class="trade-resource-row trade-resource-row--peer">
+                <div class="trade-res-info">
+                  <span class="trade-res-icon">⚡</span>
+                  <span class="trade-res-name">AMMO OFFERED</span>
+                </div>
+                <span class="trade-res-val trade-res-val--peer" id="trade-peer-ammo-val">0</span>
+              </div>
+
+              <div class="trade-resource-row trade-resource-row--peer">
+                <div class="trade-res-info">
+                  <span class="trade-res-icon">💉</span>
+                  <span class="trade-res-name">MEDKITS OFFERED</span>
+                </div>
+                <span class="trade-res-val trade-res-val--peer" id="trade-peer-meds-val">0</span>
+              </div>
+
+              <div class="trade-resource-row trade-resource-row--peer">
+                <div class="trade-res-info">
+                  <span class="trade-res-icon">🫧</span>
+                  <span class="trade-res-name">O2 FILTERS OFFERED</span>
+                </div>
+                <span class="trade-res-val trade-res-val--peer" id="trade-peer-o2-val">0</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="trade-status-bar" id="trade-status-bar-text">
+          AWAITING TRANSFER CONFIRMATION
+        </div>
+
+        <div class="trade-actions-footer">
+          <button type="button" class="start-btn trade-btn--cancel" id="trade-cancel-btn">CANCEL LINK</button>
+          <button type="button" class="start-btn trade-btn--confirm" id="trade-confirm-btn">CONFIRM TRANSFER</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Interactive NPC Dialogue & Sensual Storyline Modal -->
+    <div id="npc-dialogue-modal" class="modal hidden" aria-hidden="true">
+      <div class="modal-content npc-dialogue-content">
+        <div class="terminal-scanline"></div>
+        <div class="npc-dialogue-header">
+          <div class="npc-header-left">
+            <span class="npc-header-icon" id="npc-dialogue-icon">🩸</span>
+            <div class="npc-header-meta">
+              <div class="npc-header-name" id="npc-dialogue-name">SISTER VAL</div>
+              <div class="npc-header-faction" id="npc-dialogue-faction">CAMP TALLOW // SUTURE SANCTUARY</div>
+            </div>
+          </div>
+          <div class="npc-header-right">
+            <div class="npc-bond-container">
+              <span class="npc-bond-tag">AFFECTION // BOND</span>
+              <div class="npc-bond-badge" id="npc-dialogue-bond-badge">NEUTRAL (LVL 0)</div>
+            </div>
+            <button type="button" class="close-modal" id="close-npc-dialogue-modal" title="Exit Dialogue">×</button>
+          </div>
+        </div>
+
+        <div class="npc-story-tracker" id="npc-story-tracker">
+          <div class="npc-story-stage-row">
+            <span class="npc-story-stage-title" id="npc-story-stage-title">SIDE STORY // STAGE 1/3: THE SHIVERING SHELTER</span>
+            <div class="npc-story-progress-dots" id="npc-story-progress-dots">
+              <span class="story-dot story-dot--active"></span>
+              <span class="story-dot"></span>
+              <span class="story-dot"></span>
+            </div>
+          </div>
+          <div class="npc-story-objective-text" id="npc-story-objective-text">
+            OBJECTIVE: Survive subzero exposure or reach Camp Tallow with low O2.
+          </div>
+        </div>
+
+        <div class="npc-dialogue-body">
+          <div class="npc-portrait-wrapper" id="npc-portrait-wrapper">
+            <div class="npc-portrait-glow" id="npc-portrait-glow"></div>
+            <div class="npc-portrait-frame">
+              <div class="npc-avatar-visual" id="npc-avatar-visual">🩸</div>
+            </div>
+            <div class="npc-mood-indicator" id="npc-mood-indicator">INTIMATE / ATTRACTED</div>
+          </div>
+
+          <div class="npc-script-container">
+            <div class="npc-narration-box" id="npc-narration-box">
+              She sets down a steaming bronze kettle of heated botanical resin...
+            </div>
+            <div class="npc-dialogue-box">
+              <span class="npc-dialogue-speaker" id="npc-dialogue-speaker">SISTER VAL:</span>
+              <p class="npc-dialogue-text" id="npc-dialogue-text">"You're shivering, contractor..."</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="npc-choices-container" id="npc-choices-container">
+          <!-- Dynamically populated choices -->
+        </div>
+
+        <div class="npc-dialogue-footer">
+          <span class="npc-footer-hint">PRESS [1-4] OR CLICK CHOICE CARD • [ESC] WITHDRAW</span>
         </div>
       </div>
     </div>
@@ -1142,6 +1481,11 @@
         <span class="prompt-text">FILL HOLE</span>
       </div>
 
+      <div id="mouse-look-prompt" class="hud-action-prompt hidden">
+        <span class="prompt-key">CLICK</span>
+        <span class="prompt-text">TO LOOK AROUND</span>
+      </div>
+
       <div id="mission-progress-hud" class="mission-progress-hud hidden" aria-live="polite">
         <span class="mission-progress-hud__icon">◈</span>
         <span id="mission-progress-text" class="mission-progress-hud__text">MISSION ACTIVE</span>
@@ -1156,10 +1500,42 @@
       <div id="objective-tracker" class="objective-tracker hidden" aria-live="polite"></div>
     </div>
 
+
     <!-- Persistent loop-state cue: always shows the next thing to do -->
     <div id="loop-step-hud" class="loop-step-hud hidden" aria-live="polite">
       <span class="loop-step-hud__chevron" aria-hidden="true">▸</span>
       <span id="loop-step-text" class="loop-step-hud__text">DEPLOYING</span>
+    </div>
+
+    <!-- Tactical Telemeter / Inspection Box -->
+    <div id="tactical-telemeter-box" class="tactical-telemeter-box hidden" aria-live="polite">
+      <div class="telemeter-scanline"></div>
+      <div class="telemeter-header">
+        <span class="telemeter-status-icon">◈</span>
+        <span id="telemeter-kicker" class="telemeter-kicker">TARGET SCANNER // ACTIVE</span>
+        <span id="telemeter-type-tag" class="telemeter-type-tag telemeter-tag--sector">SECTOR</span>
+      </div>
+      <div class="telemeter-body">
+        <div class="telemeter-main-row">
+          <div id="telemeter-title" class="telemeter-title">ICE CORRIDOR</div>
+          <div id="telemeter-coords" class="telemeter-coords">[X: +00, Z: +00]</div>
+        </div>
+        <div id="telemeter-subtitle" class="telemeter-subtitle">BIOME: GLACIAL BEDROCK</div>
+        <div id="telemeter-stats-row" class="telemeter-stats-row">
+          <div id="telemeter-integrity-wrap" class="telemeter-integrity-wrap">
+            <span class="telemeter-stat-label">INTEGRITY:</span>
+            <div class="telemeter-meter-track">
+              <div id="telemeter-meter-bar" class="telemeter-meter-bar" style="width: 100%;"></div>
+            </div>
+            <span id="telemeter-meter-val" class="telemeter-meter-val">100%</span>
+          </div>
+          <div id="telemeter-range-val" class="telemeter-range-val">DIST: 0.0m</div>
+        </div>
+        <div id="telemeter-action-prompt" class="telemeter-action-prompt hidden">
+          <span id="telemeter-action-key" class="telemeter-action-key">E</span>
+          <span id="telemeter-action-text" class="telemeter-action-text">INTERACT</span>
+        </div>
+      </div>
     </div>
 
     <!-- In-Game Dev Console Modal -->
@@ -1196,11 +1572,31 @@
             <button id="dev-btn-jump-rgb-chapter" class="dev-btn">JUMP CHAPTER</button>
           </div>
           <div class="dev-quick-group">
-            <span class="dev-group-label">GAMEPLAY &amp; SALVAGE:</span>
+            <span class="dev-group-label">GAMEPLAY &amp; CHEATS:</span>
+            <button id="dev-btn-noclip" class="dev-btn dev-btn--accent" title="Fly through walls with zero collision &amp; 3.5x speed">👻 NOCLIP / FLY</button>
             <button id="dev-btn-god" class="dev-btn">TOGGLE GOD</button>
-            <button id="dev-btn-resources" class="dev-btn">+$ SALVAGE</button>
             <button id="dev-btn-heal" class="dev-btn">+HP / O₂</button>
+            <button id="dev-btn-resources" class="dev-btn">+$ SALVAGE</button>
             <button id="dev-btn-nuke" class="dev-btn">KILL SNAILS</button>
+          </div>
+          <div class="dev-quick-group">
+            <span class="dev-group-label">QA PROVING GROUNDS:</span>
+            <button id="dev-btn-open-nexus" class="dev-btn dev-btn--accent" title="Open Unified QA Nexus Command Terminal">⚙️ QA NEXUS</button>
+            <button id="dev-btn-open-museum" class="dev-btn">W1: COLONNADE</button>
+            <button id="dev-btn-open-showroom" class="dev-btn">SHOWROOM</button>
+            <select id="dev-tp-select" class="dev-select">
+              <option value="">Jump to Sector / Proving Ground...</option>
+              <option value="nexus">⚙️ QA Nexus Command</option>
+              <option value="museum">🏛️ Wing 1: Solo Colonnade (9000, 9000)</option>
+              <option value="showroom">🏢 Showroom Gallery (9500, 9500)</option>
+              <option value="tilegrid">📐 Wing 2: Architectural Grid (11000, 9500)</option>
+              <option value="bosses">⚔️ Wing 3: Boss Arenas (13000, 9500)</option>
+              <option value="campsim">⛺ Wing 4: Camp Testing Lab (15000, 9500)</option>
+              <option value="crash">🚀 Bunker Crash Origin (0, 0)</option>
+              <option value="camp">⛺ Survivor Camp</option>
+              <option value="hive">🪲 Hive Infestation</option>
+              <option value="queen">👑 Cave Queen Lair</option>
+            </select>
           </div>
           <div class="dev-quick-group">
             <span class="dev-group-label">STAGE &amp; ACCESSIBILITY:</span>
@@ -1609,7 +2005,7 @@
     <div id="song-interstitial" class="song-interstitial hidden" aria-hidden="true">
       <div class="song-interstitial__placeholder" aria-hidden="true"></div>
       <img id="song-interstitial-image" class="song-interstitial__media" alt="" hidden>
-      <video id="song-interstitial-video" class="song-interstitial__media" muted playsinline hidden></video>
+      <video id="song-interstitial-video" class="song-interstitial__media" playsinline hidden></video>
       <div class="song-interstitial__flash" aria-hidden="true"></div>
       <div class="song-interstitial__door song-interstitial__door--left" aria-hidden="true"></div>
       <div class="song-interstitial__door song-interstitial__door--right" aria-hidden="true"></div>
@@ -1788,6 +2184,14 @@
           <div class="setting-item setting-item--operator">
             <span>OPERATOR CALLSIGN</span>
             <input type="text" id="operator-callsign" class="operator-callsign-input" maxlength="16" placeholder="AGENT" autocomplete="off" spellcheck="false" aria-label="Operator callsign">
+          </div>
+          <div class="setting-item">
+            <span>STEAM CLOUD SYNC</span>
+            <span id="setting-steam-cloud-status" class="setting-val-display" style="color: var(--accent-secondary, #2ec4b6);">SYNCED (AUTO-CLOUD)</span>
+          </div>
+          <div class="setting-item setting-item--action">
+            <span>MATURE CONTENT AUDIT</span>
+            <button type="button" class="calibrate-btn settings-action-btn" id="open-mature-audit-btn" title="Steam Reviewer Compliance Suite (F9)">INSPECT (F9)</button>
           </div>
           <div class="setting-item setting-item--action">
             <span>SAVE DATA</span>
@@ -1971,6 +2375,269 @@
           <button type="button" id="snail-encounter-talk-btn">TALK</button>
           <button type="button" id="snail-encounter-custom-btn" class="hidden">RECRUIT</button>
           <button type="button" id="snail-encounter-flee-btn">FLEE</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tactical Net: Multiplayer PVP & Co-Op Modal -->
+    <div id="multiplayer-modal" class="modal hidden" aria-hidden="true">
+      <div class="modal-content net-modal-content">
+        <div class="terminal-scanline"></div>
+
+        <!-- Header -->
+        <div class="net-header">
+          <div class="net-header-meta">
+            <span class="net-header-kicker">◈ SUB-SURFACE COMMS // COMBAT DATA-LINK v2.1</span>
+            <div class="net-header-title-row">
+              <h2 class="net-modal-title">TACTICAL NET <span class="net-title-accent">// RELAY COMMAND</span></h2>
+              <div class="net-status-badge">
+                <span class="net-status-dot"></span>
+                <span id="net-status-pill" class="net-status-pill net-status--connecting">CONNECTING...</span>
+              </div>
+            </div>
+          </div>
+          <button class="close-modal" id="close-multiplayer-modal" aria-label="Close Tactical Net">×</button>
+        </div>
+
+        <!-- Mode Selector Cards -->
+        <div class="net-mode-selector">
+          <button type="button" class="net-mode-card active" id="net-mode-coop-btn">
+            <div class="net-mode-card__badge">
+              <span class="net-mode-card__icon">◈</span>
+              <span class="net-mode-card__tag">PVE SQUAD</span>
+            </div>
+            <div class="net-mode-card__info">
+              <div class="net-mode-card__title">CO-OP EXPEDITION</div>
+              <div class="net-mode-card__meta">2-4 OPERATIVES // SHARED SALVAGE & REVIVAL</div>
+            </div>
+            <div class="net-mode-card__perks">
+              <span class="net-perk-chip">SYNCED TELEMETRY</span>
+              <span class="net-perk-chip">EMERGENCY RESCUE</span>
+              <span class="net-perk-chip">SHARED O₂ LINK</span>
+            </div>
+            <div class="net-mode-card__indicator">ACTIVE MODE</div>
+          </button>
+
+          <button type="button" class="net-mode-card" id="net-mode-pvp-btn">
+            <div class="net-mode-card__badge net-mode-card__badge--pvp">
+              <span class="net-mode-card__icon">⚔</span>
+              <span class="net-mode-card__tag">PVP DUEL</span>
+            </div>
+            <div class="net-mode-card__info">
+              <div class="net-mode-card__title">PVP SECTOR SKIRMISH</div>
+              <div class="net-mode-card__meta">CONTESTED BUNKER // HIGH-TIER DROPS</div>
+            </div>
+            <div class="net-mode-card__perks">
+              <span class="net-perk-chip net-perk-chip--pvp">CONTESTED CORRIDORS</span>
+              <span class="net-perk-chip net-perk-chip--pvp">FULL LOOT CLAIM</span>
+              <span class="net-perk-chip net-perk-chip--pvp">RIVAL BOUNTIES</span>
+            </div>
+            <div class="net-mode-card__indicator">SELECT MODE</div>
+          </button>
+        </div>
+
+        <!-- Mode Mission Briefing Banner -->
+        <div class="net-briefing-banner">
+          <div class="net-briefing-label">MISSION OBJECTIVE:</div>
+          <div class="net-mode-description" id="net-mode-description">
+            CO-OP EXPEDITION: Deploy joint squads through the outer ring. Shared salvage, synchronized telemetry, and emergency revival.
+          </div>
+        </div>
+
+        <!-- Main Split Grid -->
+        <div class="net-main-grid">
+
+          <!-- Column 1: Network & Sector Frequency -->
+          <div class="net-column net-column--telemetry">
+            <div class="net-panel-header">
+              <span class="net-panel-title">SECTOR FREQUENCY & UPLINK</span>
+              <span class="net-panel-badge">CH-07</span>
+            </div>
+
+            <div class="net-telemetry-box">
+              <div class="net-field-group">
+                <span class="net-field-label">SECTOR ROOM CODE</span>
+                <div class="net-code-display">
+                  <span class="net-code-val" id="net-room-code-val">SECTOR-7</span>
+                  <button type="button" class="net-code-copy-btn" id="net-copy-code-btn" title="Copy Sector Frequency">
+                    <span>📋</span> COPY
+                  </button>
+                </div>
+              </div>
+
+              <div class="net-field-group">
+                <span class="net-field-label">NETWORK RELAY BACKEND</span>
+                <div class="net-relay-display">
+                  <div class="net-relay-url-wrap">
+                    <span class="net-relay-dot">●</span>
+                    <span class="net-relay-url" id="net-relay-url">socket.io://active</span>
+                  </div>
+                  <button type="button" class="start-btn net-connect-toggle-btn" id="net-connect-btn">DISCONNECT</button>
+                </div>
+              </div>
+
+              <div class="net-protocol-specs">
+                <div class="net-spec-row">
+                  <span class="net-spec-name">ENCRYPTION:</span>
+                  <span class="net-spec-val">AES-256 / SHARED SEED</span>
+                </div>
+                <div class="net-spec-row">
+                  <span class="net-spec-name">SYNC RATE:</span>
+                  <span class="net-spec-val">60 HZ STATE LOCK</span>
+                </div>
+                <div class="net-spec-row">
+                  <span class="net-spec-name">SECTOR MAP:</span>
+                  <span class="net-spec-val">PROCEDURAL RADIAL RING</span>
+                </div>
+                <div class="net-spec-row">
+                  <span class="net-spec-name">CRASH SITES:</span>
+                  <span class="net-spec-val">SYNCHRONIZED SPLIT-DROP</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Column 2: Squad Manifest / Operatives Roster -->
+          <div class="net-column net-column--roster">
+            <div class="net-panel-header">
+              <div class="net-panel-title-wrap">
+                <span class="net-panel-title">SQUAD MANIFEST</span>
+                <span class="net-roster-count" id="net-roster-count">SQUAD: 1 / 4</span>
+              </div>
+              <span class="net-panel-badge net-panel-badge--green">MAX: 4</span>
+            </div>
+
+            <div class="net-roster-container">
+              <div class="net-roster-header">
+                <span>OPERATIVE CALLSIGN</span>
+                <span>CHASSIS FRAME</span>
+                <span>LATENCY</span>
+                <span>STATUS</span>
+              </div>
+              <div class="net-roster-list" id="net-roster-list">
+                <!-- Dynamically populated by JS -->
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Footer Action Bar -->
+        <div class="net-modal-actions">
+          <div class="net-action-hints">
+            <span class="net-hint-item"><kbd>ESC</kbd> CLOSE</span>
+            <span class="net-hint-item"><kbd>CLICK</kbd> TOGGLE MODE</span>
+            <span class="net-hint-item"><kbd>HOST</kbd> DEPLOY SQUAD</span>
+          </div>
+          <button type="button" class="start-btn net-deploy-btn" id="net-deploy-btn">DEPLOY SQUAD</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Mature Content Compliance & Reviewer Verification Modal (F9) -->
+    <div id="mature-content-audit-modal" class="modal hidden" aria-hidden="true">
+      <div class="modal-content mature-audit-modal-content">
+        <div class="settings-sticky-header">
+          <div>
+            <h2 class="modal-title">STEAM MATURE CONTENT & REVIEWER AUDIT</h2>
+            <div class="mature-audit-subtitle">F9 SHORTCUT // COMPLIANCE VERIFICATION SUITE</div>
+          </div>
+          <button class="close-modal" id="close-mature-audit-modal" aria-label="Close audit suite">×</button>
+        </div>
+        <p class="mature-audit-summary">
+          This panel catalogs all mature themes, psychological horror, alien parasite symbiosis, Queen subjugation choices, and self-annihilation plotlines present in Hunker Bunker for Steam review verification.
+        </p>
+        <div class="mature-audit-list" id="mature-audit-list">
+          <!-- Dynamically populated from MATURE_CONTENT_MANIFEST -->
+        </div>
+      </div>
+    </div>
+
+    <!-- Wing 5: Gameplay Progression Walkthrough (docs/debug-gallery-and-architectural-grid-
+         expansion-plan.md §7) — reuses the mature-audit-* CSS classes above so no new styling
+         is needed. F10 shortcut, dev-only. -->
+    <div id="progression-walkthrough-modal" class="modal hidden" aria-hidden="true">
+      <div class="modal-content mature-audit-modal-content">
+        <div class="settings-sticky-header">
+          <div>
+            <h2 class="modal-title">GAMEPLAY PROGRESSION WALKTHROUGH</h2>
+            <div class="mature-audit-subtitle">F10 SHORTCUT // DEV-ONLY QA TOOL</div>
+          </div>
+          <button class="close-modal" id="close-progression-walkthrough-modal" aria-label="Close progression walkthrough">×</button>
+        </div>
+        <p class="mature-audit-summary">
+          Jump directly to any real gameplay/story beat in the order a player encounters it —
+          tutorial, depth tiers, camp/hive discovery, milestone bosses, Act 2 endings, Battle
+          Pass tiers, achievements, and extraction — without playing a full run.
+        </p>
+        <div class="mature-audit-list" id="progression-walkthrough-list">
+          <!-- Dynamically populated from PROGRESSION_MANIFEST -->
+        </div>
+      </div>
+    </div>
+
+    <!-- Controller-only On-Screen Keyboard: fallback for text fields (e.g.
+         Operator Callsign) when Steam's native gamepad text input isn't
+         available (outside Steam Big Picture / non-Steam build). -->
+    <div id="virtual-keyboard-overlay" class="modal hidden" aria-hidden="true">
+      <div class="modal-content virtual-keyboard-content">
+        <div class="settings-sticky-header">
+          <div>
+            <h2 class="modal-title" id="virtual-keyboard-label">ENTER TEXT</h2>
+          </div>
+          <button class="close-modal" id="virtual-keyboard-close" aria-label="Close on-screen keyboard">×</button>
+        </div>
+        <div id="virtual-keyboard-preview" class="virtual-keyboard-preview" aria-live="polite"></div>
+        <div class="virtual-keyboard-grid" id="virtual-keyboard-grid">
+          <div class="virtual-keyboard-row">
+            <button type="button" class="virtual-keyboard-key" data-key="1">1</button>
+            <button type="button" class="virtual-keyboard-key" data-key="2">2</button>
+            <button type="button" class="virtual-keyboard-key" data-key="3">3</button>
+            <button type="button" class="virtual-keyboard-key" data-key="4">4</button>
+            <button type="button" class="virtual-keyboard-key" data-key="5">5</button>
+            <button type="button" class="virtual-keyboard-key" data-key="6">6</button>
+            <button type="button" class="virtual-keyboard-key" data-key="7">7</button>
+            <button type="button" class="virtual-keyboard-key" data-key="8">8</button>
+            <button type="button" class="virtual-keyboard-key" data-key="9">9</button>
+            <button type="button" class="virtual-keyboard-key" data-key="0">0</button>
+          </div>
+          <div class="virtual-keyboard-row">
+            <button type="button" class="virtual-keyboard-key" data-key="Q">Q</button>
+            <button type="button" class="virtual-keyboard-key" data-key="W">W</button>
+            <button type="button" class="virtual-keyboard-key" data-key="E">E</button>
+            <button type="button" class="virtual-keyboard-key" data-key="R">R</button>
+            <button type="button" class="virtual-keyboard-key" data-key="T">T</button>
+            <button type="button" class="virtual-keyboard-key" data-key="Y">Y</button>
+            <button type="button" class="virtual-keyboard-key" data-key="U">U</button>
+            <button type="button" class="virtual-keyboard-key" data-key="I">I</button>
+            <button type="button" class="virtual-keyboard-key" data-key="O">O</button>
+            <button type="button" class="virtual-keyboard-key" data-key="P">P</button>
+          </div>
+          <div class="virtual-keyboard-row">
+            <button type="button" class="virtual-keyboard-key" data-key="A">A</button>
+            <button type="button" class="virtual-keyboard-key" data-key="S">S</button>
+            <button type="button" class="virtual-keyboard-key" data-key="D">D</button>
+            <button type="button" class="virtual-keyboard-key" data-key="F">F</button>
+            <button type="button" class="virtual-keyboard-key" data-key="G">G</button>
+            <button type="button" class="virtual-keyboard-key" data-key="H">H</button>
+            <button type="button" class="virtual-keyboard-key" data-key="J">J</button>
+            <button type="button" class="virtual-keyboard-key" data-key="K">K</button>
+            <button type="button" class="virtual-keyboard-key" data-key="L">L</button>
+          </div>
+          <div class="virtual-keyboard-row">
+            <button type="button" class="virtual-keyboard-key" data-key="Z">Z</button>
+            <button type="button" class="virtual-keyboard-key" data-key="X">X</button>
+            <button type="button" class="virtual-keyboard-key" data-key="C">C</button>
+            <button type="button" class="virtual-keyboard-key" data-key="V">V</button>
+            <button type="button" class="virtual-keyboard-key" data-key="B">B</button>
+            <button type="button" class="virtual-keyboard-key" data-key="N">N</button>
+            <button type="button" class="virtual-keyboard-key" data-key="M">M</button>
+            <button type="button" class="virtual-keyboard-key virtual-keyboard-key--wide" data-action="backspace">⌫ BACK</button>
+          </div>
+          <div class="virtual-keyboard-row">
+            <button type="button" class="virtual-keyboard-key virtual-keyboard-key--space" data-key=" ">SPACE</button>
+            <button type="button" class="virtual-keyboard-key virtual-keyboard-key--wide start-btn" id="virtual-keyboard-done" data-action="done">✓ DONE</button>
+          </div>
         </div>
       </div>
     </div>

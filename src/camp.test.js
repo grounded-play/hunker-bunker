@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import * as THREE from 'three';
-import { SurvivorCamp, CAMP_CLEARING_RADIUS, CAMP_FLOOR_SIZE, CAMP_INTERACT_RADIUS } from './camp.js';
+import { SurvivorCamp, CAMP_CLEARING_RADIUS, CAMP_FLOOR_SIZE, CAMP_INTERACT_RADIUS, CAMP_SIGNATURE_PROPS } from './camp.js';
 
 describe('SurvivorCamp', () => {
     it('uses a crash-site-style clearing with structures spread across it', () => {
@@ -125,5 +125,34 @@ describe('SurvivorCamp', () => {
         camp.setStatus('turned');
         expect(camp.npcSprite.scale.x).toBeGreaterThan(1.5);
         expect(camp.campWorkers.every((worker) => worker.mesh.visible)).toBe(true);
+    });
+
+    it('builds one distinct signature-prop sprite per faction, positioned inside the clearing', () => {
+        for (const campId of Object.keys(CAMP_SIGNATURE_PROPS)) {
+            const camp = new SurvivorCamp(new THREE.Scene(), { id: campId, label: campId });
+            camp.reveal(0, 0);
+            const specs = CAMP_SIGNATURE_PROPS[campId];
+            expect(Object.keys(camp.signatureProps)).toHaveLength(specs.length);
+            for (const spec of specs) {
+                const sprite = camp.signatureProps[spec.id];
+                expect(sprite).toBeInstanceOf(THREE.Sprite);
+                expect(sprite.userData).toMatchObject({ kind: 'camp-signature-prop', campId, propId: spec.id });
+                expect(sprite.position.x).toBeCloseTo(spec.x);
+                expect(sprite.position.z).toBeCloseTo(spec.z);
+                expect(Math.hypot(spec.x, spec.z)).toBeLessThan(CAMP_CLEARING_RADIUS + 1);
+                expect(camp.group.children).toContain(sprite);
+            }
+        }
+    });
+
+    it('never throws building a signature prop before its queued art file exists', () => {
+        // The asset files in CAMP_SIGNATURE_PROPS are queued but not yet
+        // rendered (see docs/sprint-23-room-juice-and-dressing-assets.md §8);
+        // loadKeyedTexture's fallback path must make that visually inert,
+        // not broken.
+        expect(() => {
+            const camp = new SurvivorCamp(new THREE.Scene(), { id: 'camp_vesper', label: 'CAMP VESPER' });
+            camp.reveal(0, 0);
+        }).not.toThrow();
     });
 });

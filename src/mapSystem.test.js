@@ -110,4 +110,18 @@ describe('ExplorationTracker & Map Helpers', () => {
         const unreachedResult = tracker.computeScannedPath({ x: 0, z: 0 }, { x: 200, z: 200 });
         expect(unreachedResult.found).toBe(false);
     });
+
+    it('queries tile scanned and exploration state by world coordinates', () => {
+        expect(tracker.isTileScanned(0, 0)).toBe(false);
+        const unreachedState = tracker.getExplorationState(150, 150);
+        expect(unreachedState.explored).toBe(false);
+        expect(unreachedState.scanned).toBe(false);
+        expect(unreachedState.roomType).toBe('unscanned_sector');
+
+        tracker.recordPlayerPosition(0, 0);
+        expect(tracker.isTileScanned(0, 0)).toBe(true);
+        const exploredState = tracker.getExplorationState(2, 2);
+        expect(exploredState.explored).toBe(true);
+        expect(exploredState.key).toBe('0,0');
+    });
 });

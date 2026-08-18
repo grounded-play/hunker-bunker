@@ -20,6 +20,8 @@
 
 🎮 **[Play Live Browser Build](https://hunkerbunker.netlify.app/)** • 💬 **[Join Discord Server](https://discord.gg/XXwwz3rauu)** • 📜 **[Steam Readiness Specs](docs/steam-docs-master-index.md)**
 
+> **Status**: In active development, heading into Steam review. The browser build above is always current — play it, then come tell us what broke in Discord. No wishlist link yet; Discord is the fastest way to hear the moment that changes.
+
 ---
 
 ## 📸 Sector Zero Teaser
@@ -32,11 +34,12 @@
 
 ## ⚡ Core Features
 
-- **Procedural Bunker Runs**: WebGL-powered isometric corridors with dynamic fog of war, environmental hazards, and O2 survival pressure.
+- **Procedural Bunker Runs**: WebGL-powered isometric corridors with dynamic fog of war, environmental hazards, and O2 survival pressure — no two runs share a layout.
 - **3 Exosuit Classes**: Distinct playstyles for **Scout** (Speed & Recon), **Tank** (Endurance & Armor), and **Engineer** (Systems & Terminals).
-- **Deep Progression**: Bank salvage between runs, research skill tree nodes, craft specialized medkits, and unlock weapons.
-- **Branching Decisions & Extraction**: Navigate survivor encounters, discover underground signals, and determine your mission outcome.
-- **Live Steamworks Integration**: 5 trusted backend leaderboards, Steam Cloud Auto-Cloud saves, Steam Vault Inventory Service, and 23 Steam Achievements.
+- **Deep Progression**: Bank salvage between runs, research a full combat skill tree, craft specialized gear, and level a **50-tier Season 0 Battle Pass**.
+- **10 Branching Endings**: Survivor encounters, faction standing with the Meridian/Tallow/Vesper camps, and hive diplomacy all feed into which of ten real Act 2 outcomes you land.
+- **Real Multiplayer**: Socket.IO relay lobby with LAN and online play — drop in with a friend or run solo against AI.
+- **Live Steamworks Integration**: 5 trusted backend leaderboards, Steam Cloud Auto-Cloud saves, a full Steam Vault economy (weapon skins, charms, cosmetics), and 24 Steam Achievements.
 - **In-Game Dev & QA Console (`~`)**: Real-time diagnostic telemetry, event interceptors, audio/network monitors, and QA cheat commands (`resetachievements`).
 
 ---
@@ -100,9 +103,30 @@ unmerged branch.
 ## 🛠️ Tech Architecture
 
 - **WebGL 3D Engine**: Powered by **Three.js** (r184) with procedural dungeon generation, dynamic fog of war, and WebAudio spatial soundscapes.
-- **Desktop & Steam Shell**: Built with **Electron** featuring native **Steamworks** integration for Steam Cloud saves, Steam Input, and 23 Steam Achievements.
+- **Desktop & Steam Shell**: Built with **Electron** featuring native **Steamworks** integration for Steam Cloud saves, Steam Input, and 24 Steam Achievements.
 - **Trusted Relay Server**: Node.js & Express server running in **Docker Compose** behind **Caddy** (`steam.tuesdaycinema.club`), enforcing verified score validation for 5 Steam Leaderboards.
 
+---
+
+## 🤝 Join the Team
+
+Hunker Bunker is built in the open. Whether you write code or just want first
+crack at every new drop, there's a seat for you.
+
+**Playtesters & community** — the fastest way in. Jump into Discord, play the
+live browser build, break things, and tell us what you found. Community
+feedback has directly shaped classes, endings, and the economy in this repo.
+
+**Contributors** — this is a real MIT-licensed open-source project, not a
+mirror. Bug fixes, balance tuning, new content, tooling — all welcome.
+1. Read [`CONTRIBUTING.md`](CONTRIBUTING.md) for the fork/branch/PR workflow.
+2. Check [open issues](https://github.com/grounded-play/hunker-bunker/issues) for
+   something to grab, or file a [bug report](https://github.com/grounded-play/hunker-bunker/issues/new?template=bug_report.md) /
+   [feature request](https://github.com/grounded-play/hunker-bunker/issues/new?template=feature_request.md).
+3. `npm test && npm run lint` before you open a PR — CI runs the same checks.
+
+- 💬 **Discord**: [Join Server](https://discord.gg/XXwwz3rauu)
+- 🛠️ **Issues & PRs**: [github.com/grounded-play/hunker-bunker](https://github.com/grounded-play/hunker-bunker)
 
 ---
 

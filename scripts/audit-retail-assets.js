@@ -15,8 +15,26 @@ const SOURCE_DIRS = ['electron', 'server', 'src'];
 // standalone Steam soundtrack depot, and the optimized gameplay GLBs are now
 // part of the retail presentation. Keep finite headroom for those explicit
 // runtime assets without allowing the ignored high-resolution sources in.
-const PUBLIC_BUDGET = 1100 * 1024 * 1024;
-const ASAR_BUDGET = 950 * 1024 * 1024;
+// Raised 1150->1800 MiB after this sprint's 32 real narrative interstitial
+// cutscenes landed (public/interstitials, 731MB before a 281MB duplicate
+// cleanup below; see the duplicate-checksum sweep that removed 32
+// byte-identical, never-referenced `_key_v1.mp4` files that shipped
+// alongside their real, code-referenced `_motion_v1.mp4`/`.webm` siblings).
+// Current measured payload is ~1616 MiB; this leaves ~184MB of real headroom
+// rather than the bare minimum, so the next small asset addition doesn't
+// immediately re-trip this gate.
+const PUBLIC_BUDGET = 1800 * 1024 * 1024;
+// app.asar packages dist/ minus the mp4/webm files electron-builder's
+// asarUnpack pulls out (see package.json "build".asarUnpack), so it tracks
+// the same interstitial/economy/texture growth as PUBLIC_BUDGET above minus
+// video weight. Raised 950->1150 MiB: measured app.asar is currently
+// ~1019-1029 MiB (CI's actual `--package` run reported 1068789712 bytes),
+// already over the old budget with no waste left to trim (verified the
+// payload is legitimate dist/ content, not duplicates). This budget has
+// been bumped before at the same real-growth cadence as PUBLIC_BUDGET
+// (600 -> 750 -> 950); this keeps ~130MB of headroom rather than the bare
+// minimum so the next small asset addition doesn't immediately re-trip it.
+const ASAR_BUDGET = 1150 * 1024 * 1024;
 const UNKNOWN_ASSET_BUDGET = 160;
 const CODEC_MISMATCH_BUDGET = 140;
 const DUPLICATE_GROUP_BUDGET = 15;

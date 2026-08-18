@@ -29,6 +29,7 @@
     "lint": "eslint .",
     "test": "vitest run",
     "test:e2e": "playwright test",
+    "test:e2e:playthrough": "playwright test tests/e2e/automated-playthrough.spec.js",
     "coverage": "vitest run --coverage",
     "electron:dev": "concurrently \"vite\" \"wait-on http://localhost:5173 && cross-env ELECTRON_DEV=1 electron .\"",
     "steam:config": "node scripts/write-steam-config.js",
@@ -119,6 +120,7 @@
     "express": "^5.2.1",
     "express-rate-limit": "^8.6.2",
     "socket.io": "^4.8.3",
+    "socket.io-client": "^4.8.3",
     "steamworks.js": "^0.4.0",
     "three": "^0.185.1"
   },
@@ -129,6 +131,7 @@
     "uuid": "^14.0.1",
     "qs": "^6.15.3",
     "js-yaml": "^4.3.0",
-    "launch-editor": "^2.14.1"
+    "launch-editor": "^2.14.1",
+    "@puppeteer/browsers": "^3.2.1"
   }
 }

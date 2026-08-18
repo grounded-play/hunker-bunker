@@ -148,9 +148,12 @@ export function getDeathCinematicSpec(reason = 'hazard') {
     const rawKey = cleanString(reason, 'hazard').toLowerCase();
     let key = rawKey;
     if (rawKey.includes('o2') || rawKey.includes('oxygen')) key = 'oxygen';
+    else if (rawKey.includes('pit') || rawKey.includes('fall') || rawKey.includes('abyss') || rawKey.includes('hole')) key = 'abyss';
+    else if (rawKey.includes('crawler') || rawKey.includes('melee')) key = 'crawler';
     else if (rawKey.includes('queen')) key = 'queen';
     else if (rawKey.includes('ship')) key = 'ship';
     else if (rawKey.includes('poison') || rawKey.includes('spore') || rawKey.includes('bio')) key = 'biohazard';
+    else if (rawKey.includes('abort')) key = 'mission-abort';
     else if (
         rawKey.includes('projectile')
         || rawKey.includes('turret')

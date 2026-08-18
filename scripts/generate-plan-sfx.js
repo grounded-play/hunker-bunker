@@ -98,6 +98,184 @@ export const PLAN_SFX = Object.freeze({
             const lock = sine(118, t) * pulse(t, 0.6, 0.18) * 0.42;
             return metal * 0.2 + mechanism + lock;
         }
+    },
+    sfx_charm_clink_light: {
+        duration: 0.28,
+        synth(t, noise) {
+            const metallic1 = sine(2400 + t * 400, t) * envelope(t, 0.28, 0.002, 0.12);
+            const metallic2 = sine(3850, t) * envelope(t, 0.28, 0.001, 0.08) * 0.6;
+            const tap = noise() * pulse(t, 0.001, 0.02) * 0.25;
+            return (metallic1 + metallic2) * 0.45 + tap;
+        }
+    },
+    sfx_charm_clink_heavy: {
+        duration: 0.35,
+        synth(t, noise) {
+            const brass = sine(980 + Math.sin(t * 40) * 80, t) * envelope(t, 0.35, 0.005, 0.18);
+            const ring = sine(1740, t) * envelope(t, 0.35, 0.002, 0.14) * 0.5;
+            const clunk = noise() * pulse(t, 0.004, 0.04) * 0.35;
+            return (brass + ring) * 0.5 + clunk;
+        }
+    },
+    sfx_overclock_socket: {
+        duration: 0.42,
+        synth(t, noise) {
+            const slide = noise() * pulse(t, 0.01, 0.08) * 0.22;
+            const click = sine(1250, t) * pulse(t, 0.09, 0.03) * 0.6;
+            const latch = sine(440, t) * envelope(t, 0.42, 0.1, 0.22) * 0.55;
+            const sub = sine(110, t) * pulse(t, 0.12, 0.18) * 0.4;
+            return slide + click + latch + sub;
+        }
+    },
+    sfx_overclock_hum_cryo: {
+        duration: 0.65,
+        synth(t, noise) {
+            const frostRise = sine(320 + t * 480, t) * envelope(t, 0.65, 0.05, 0.3);
+            const shimmer = sine(1600 + Math.sin(t * 50) * 120, t) * envelope(t, 0.65, 0.02, 0.25) * 0.25;
+            const air = noise() * envelope(t, 0.65, 0.08, 0.35) * 0.15;
+            return frostRise * 0.4 + shimmer + air;
+        }
+    },
+    sfx_overclock_hum_magnetic: {
+        duration: 0.55,
+        synth(t, noise) {
+            const coil = sine(65 + Math.sin(t * 120) * 15, t) * envelope(t, 0.55, 0.04, 0.25);
+            const arc = noise() * (pulse(t, 0.06, 0.05) + pulse(t, 0.22, 0.06)) * 0.2;
+            const surge = sine(180, t) * pulse(t, 0.08, 0.22) * 0.35;
+            return coil * 0.55 + arc + surge;
+        }
+    },
+    sfx_smelt_forge_burst: {
+        duration: 0.85,
+        synth(t, noise) {
+            const blast = noise() * envelope(t, 0.85, 0.01, 0.45) * 0.45;
+            const heatDrone = sine(85 + t * 65, t) * envelope(t, 0.85, 0.06, 0.35) * 0.4;
+            const anvil = sine(880, t) * pulse(t, 0.04, 0.15) * 0.35;
+            return blast + heatDrone + anvil;
+        }
+    },
+    sfx_trade_shard_dispense: {
+        duration: 0.75,
+        synth(t, noise) {
+            const chime1 = sine(1046.5, t) * pulse(t, 0.02, 0.25) * 0.4; // C6
+            const chime2 = sine(1318.5, t) * pulse(t, 0.12, 0.3) * 0.45; // E6
+            const chime3 = sine(1567.98, t) * pulse(t, 0.24, 0.35) * 0.5; // G6
+            const crystal = sine(2093, t) * pulse(t, 0.36, 0.35) * 0.35; // C7
+            const mechan = noise() * pulse(t, 0.01, 0.05) * 0.15;
+            return chime1 + chime2 + chime3 + crystal + mechan;
+        }
+    },
+    voice_commander_breached: {
+        duration: 1.1,
+        synth(t, noise) {
+            const staticBurst = noise() * (pulse(t, 0.01, 0.06) + pulse(t, 1.02, 0.08)) * 0.35;
+            const formant1 = sine(220 + Math.sin(t * 12) * 20, t) * envelope(t, 1.1, 0.08, 0.2);
+            const formant2 = sine(440 + Math.sin(t * 18) * 40, t) * envelope(t, 1.1, 0.08, 0.2) * 0.6;
+            const throatNoise = noise() * envelope(t, 1.1, 0.1, 0.25) * 0.18;
+            return staticBurst + (formant1 + formant2) * 0.45 + throatNoise;
+        }
+    },
+    voice_commander_reloading: {
+        duration: 0.9,
+        synth(t, noise) {
+            const squelch = noise() * (pulse(t, 0.01, 0.05) + pulse(t, 0.82, 0.06)) * 0.32;
+            const voice = sine(210 + Math.sin(t * 16) * 25, t) * envelope(t, 0.9, 0.05, 0.18) * 0.5;
+            const slide = noise() * pulse(t, 0.35, 0.12) * 0.25;
+            return squelch + voice + slide;
+        }
+    },
+    voice_commander_low_health: {
+        duration: 1.25,
+        synth(t, noise) {
+            const squelch = noise() * pulse(t, 0.01, 0.08) * 0.4;
+            const alarm = sine(660, t) * (pulse(t, 0.05, 0.2) + pulse(t, 0.45, 0.2) + pulse(t, 0.85, 0.2)) * 0.25;
+            const voice = sine(190 + Math.sin(t * 10) * 30, t) * envelope(t, 1.25, 0.08, 0.3) * 0.55;
+            return squelch + alarm + voice;
+        }
+    },
+    voice_commander_boss_spotted: {
+        duration: 1.35,
+        synth(t, noise) {
+            const squelch = noise() * (pulse(t, 0.01, 0.07) + pulse(t, 1.25, 0.08)) * 0.38;
+            const klaxon = sine(440 + Math.sin(t * 8) * 80, t) * envelope(t, 1.35, 0.04, 0.3) * 0.35;
+            const voice = sine(240 + Math.sin(t * 14) * 35, t) * envelope(t, 1.35, 0.06, 0.25) * 0.5;
+            return squelch + klaxon + voice;
+        }
+    },
+    voice_commander_killstreak: {
+        duration: 1.05,
+        synth(t, noise) {
+            const squelch = noise() * pulse(t, 0.01, 0.06) * 0.3;
+            const surge = sine(160 + t * 90, t) * envelope(t, 1.05, 0.03, 0.2) * 0.45;
+            const voice = sine(260 + Math.sin(t * 15) * 20, t) * envelope(t, 1.05, 0.05, 0.25) * 0.5;
+            return squelch + surge + voice;
+        }
+    },
+    voice_commander_victory: {
+        duration: 1.4,
+        synth(t, noise) {
+            const squelch = noise() * pulse(t, 0.01, 0.06) * 0.28;
+            const chime = (sine(523.25, t) + sine(659.25, t) * 0.6 + sine(783.99, t) * 0.4) * envelope(t, 1.4, 0.08, 0.45) * 0.35;
+            const voice = sine(220 + Math.sin(t * 11) * 20, t) * envelope(t, 1.4, 0.06, 0.3) * 0.45;
+            return squelch + chime + voice;
+        }
+    },
+    voice_aura_target_down: {
+        duration: 0.95,
+        synth(t, noise) {
+            const aiTone1 = sine(880 + Math.sin(t * 60) * 15, t) * envelope(t, 0.95, 0.03, 0.25) * 0.4;
+            const aiTone2 = sine(1760, t) * envelope(t, 0.95, 0.02, 0.3) * 0.25;
+            const shimmer = sine(3520, t) * pulse(t, 0.05, 0.15) * 0.2;
+            const vocoder = noise() * envelope(t, 0.95, 0.04, 0.3) * 0.08;
+            return aiTone1 + aiTone2 + shimmer + vocoder;
+        }
+    },
+    voice_aura_shield_critical: {
+        duration: 1.1,
+        synth(t, noise) {
+            const warnTone = sine(987.77, t) * (pulse(t, 0.02, 0.15) + pulse(t, 0.32, 0.15) + pulse(t, 0.62, 0.15)) * 0.4;
+            const vocoder = (sine(659.25, t) + sine(1318.5, t) * 0.5) * envelope(t, 1.1, 0.05, 0.3) * 0.35;
+            const sub = sine(110, t) * pulse(t, 0.05, 0.4) * 0.25;
+            return warnTone + vocoder + sub;
+        }
+    },
+    voice_aura_reloading: {
+        duration: 0.85,
+        synth(t, noise) {
+            const chime = sine(1046.5 + t * 200, t) * envelope(t, 0.85, 0.02, 0.2) * 0.35;
+            const vocoder = sine(880, t) * envelope(t, 0.85, 0.04, 0.25) * 0.35;
+            const tech = noise() * pulse(t, 0.2, 0.08) * 0.12;
+            return chime + vocoder + tech;
+        }
+    },
+    voice_aura_threat_high: {
+        duration: 1.3,
+        synth(t, noise) {
+            const sweep = sine(440 + t * 880, t) * envelope(t, 1.3, 0.04, 0.35) * 0.35;
+            const vocoder = (sine(784, t) + sine(1568, t) * 0.5) * envelope(t, 1.3, 0.06, 0.3) * 0.4;
+            const shimmer = sine(3136, t) * pulse(t, 0.05, 0.2) * 0.2;
+            return sweep + vocoder + shimmer;
+        }
+    },
+    voice_aura_overdrive_ready: {
+        duration: 1.15,
+        synth(t, noise) {
+            const triad = (sine(523.25, t) * pulse(t, 0.02, 0.3) +
+                sine(659.25, t) * pulse(t, 0.18, 0.3) +
+                sine(783.99, t) * pulse(t, 0.36, 0.4) +
+                sine(1046.5, t) * pulse(t, 0.54, 0.5)) * 0.45;
+            const vocoder = sine(880, t) * envelope(t, 1.15, 0.05, 0.3) * 0.3;
+            return triad + vocoder;
+        }
+    },
+    voice_aura_sector_cleared: {
+        duration: 1.25,
+        synth(t, noise) {
+            const bell = sine(1318.5, t) * envelope(t, 1.25, 0.01, 0.6) * 0.4 +
+                sine(1567.98, t) * envelope(t, 1.25, 0.01, 0.5) * 0.3;
+            const vocoder = sine(659.25, t) * envelope(t, 1.25, 0.08, 0.4) * 0.35;
+            return bell + vocoder;
+        }
     }
 });
 

@@ -28,6 +28,12 @@ import {
     validateRadialMazeExpedition,
     validateRingProgression
 } from '../src/mazeExpedition.js';
+import {
+    buildWorldPlan,
+    findWorldPlanReservationConflicts,
+    proveStructuralFallbackViability
+} from '../src/ringManifest.js';
+import { BAND_THICKNESS, CHUNK_SIZE, LATTICE, TILE_SIZE } from '../src/tileCatalog.js';
 
 const DEFAULT_PORTFOLIO_SAMPLE = 500;
 const DEFAULT_SWEEP_SAMPLE = 5000;
@@ -44,6 +50,9 @@ export function computeSeedMetrics(seed) {
     const progression = validateRingProgression(plan);
     const ringWalkDistances = computeRingWalkDistances(plan);
     const conflicts = findConflictingChunkReservations(plan);
+    const worldPlan = buildWorldPlan(plan);
+    const worldPlanConflicts = findWorldPlanReservationConflicts(worldPlan);
+    const fallbackProof = proveStructuralFallbackViability(worldPlan.ringManifests);
 
     const routeChunkCount = plan.topology.routeChunks.length;
     const routeEdgeCount = plan.topology.routeEdges.length;
@@ -86,6 +95,36 @@ export function computeSeedMetrics(seed) {
         structural,
         progression,
         siteSpacingConflicts: conflicts,
+        worldPlan: {
+            version: worldPlan.version,
+            valid: worldPlan.diagnostics.valid,
+            errors: worldPlan.diagnostics.errors,
+            manifestCount: worldPlan.ringManifests.length,
+            reservationCount: worldPlan.reservations.length,
+            requiredReservationCount: worldPlan.reservations.filter((reservation) => reservation.required).length,
+            projectedReservationCount: worldPlan.reservations.filter((reservation) => reservation.chunkKey).length,
+            territoryCount: worldPlan.territories.length,
+            territoryBeatCount: worldPlan.territories.reduce((sum, territory) => sum + territory.beats.length, 0),
+            reciprocalSocketEndpointCount: worldPlan.requiredChunkSockets.length,
+            questDestinationCount: worldPlan.reservations.filter((reservation) => reservation.role === 'campObjective').length,
+            viableFallbackCount: fallbackProof.filter((result) => result.viable).length,
+            crossingCount: worldPlan.ringCrossings.length,
+            conflicts: worldPlanConflicts,
+            territoryClusters: worldPlan.territories.map((territory) => ({
+                id: territory.id,
+                ring: territory.ring,
+                anchorChunkKey: territory.anchorChunkKey,
+                beatCount: territory.beats.length,
+                chunkKeys: territory.beats.map((beat) => beat.ownerChunkKey)
+            }))
+        },
+        coordinateContract: {
+            tileSize: TILE_SIZE,
+            stride: TILE_SIZE - 1,
+            bandThickness: BAND_THICKNESS,
+            lattice: LATTICE,
+            chunkSize: CHUNK_SIZE
+        },
         routeChunkCount,
         routeEdgeCount,
         spineChunkCount,
@@ -175,14 +214,21 @@ export function buildPortfolioReport(sampleSize = DEFAULT_PORTFOLIO_SAMPLE) {
 export function runValidationSweep(seedCount = DEFAULT_SWEEP_SAMPLE) {
     const failures = [];
     let conflictSeedCount = 0;
+    let manifestConflictSeedCount = 0;
     for (let seed = 1; seed <= seedCount; seed += 1) {
         const plan = generateRadialMazeExpedition(seed);
         const structural = validateRadialMazeExpedition(plan);
         const progression = validateRingProgression(plan);
         const conflicts = findConflictingChunkReservations(plan);
+        const worldPlan = buildWorldPlan(plan);
+        const worldPlanConflicts = findWorldPlanReservationConflicts(worldPlan);
         if (!structural.valid) failures.push({ seed, kind: 'structural', errors: structural.errors });
         if (!progression.valid) failures.push({ seed, kind: 'progression', errors: progression.errors });
+        if (!worldPlan.diagnostics.valid) {
+            failures.push({ seed, kind: 'worldPlan', errors: worldPlan.diagnostics.errors });
+        }
         if (conflicts.length > 0) conflictSeedCount += 1;
+        if (worldPlanConflicts.length > 0) manifestConflictSeedCount += 1;
     }
 
     const determinismSampleSeeds = [1, 2, 3, 17, 101, seedCount];
@@ -190,15 +236,27 @@ export function runValidationSweep(seedCount = DEFAULT_SWEEP_SAMPLE) {
         .filter((seed) => seed >= 1 && seed <= seedCount)
         .filter((seed) => (
             JSON.stringify(generateRadialMazeExpedition(seed)) !== JSON.stringify(generateRadialMazeExpedition(seed))
+            || JSON.stringify(buildWorldPlan(generateRadialMazeExpedition(seed)))
+                !== JSON.stringify(buildWorldPlan(generateRadialMazeExpedition(seed)))
         ));
 
-    return {
+    const result = {
         seedCount,
         failures,
         conflictSeedCount,
+        manifestConflictSeedCount,
         determinismFailures,
-        allValid: failures.length === 0 && determinismFailures.length === 0
+        allValid: false
     };
+    result.allValid = worldSeedSweepIsValid(result);
+    return result;
+}
+
+export function worldSeedSweepIsValid(result) {
+    return (result?.failures?.length ?? 0) === 0
+        && (result?.conflictSeedCount ?? 0) === 0
+        && (result?.manifestConflictSeedCount ?? 0) === 0
+        && (result?.determinismFailures?.length ?? 0) === 0;
 }
 
 function formatCategoryLine({ category, seed, metrics }) {
@@ -213,6 +271,15 @@ function formatCategoryLine({ category, seed, metrics }) {
         `  gates: ${metrics.gates.map((g) => `ring${g.ring}->${g.blocksRing}:${g.feature}@${g.chunk}`).join('; ')}`,
         `  camp/hive placement: ${metrics.sites.map((s) => `${s.id}@ring${s.ring}(${s.chunk})`).join('; ')}`,
         `  site-spacing conflicts: ${metrics.siteSpacingConflicts.length}`,
+        `  world plan: valid=${metrics.worldPlan.valid} manifests=${metrics.worldPlan.manifestCount} `
+            + `reservations=${metrics.worldPlan.projectedReservationCount}/${metrics.worldPlan.reservationCount} `
+            + `territories=${metrics.worldPlan.territoryCount}(${metrics.worldPlan.territoryBeatCount} beats) `
+            + `sockets=${metrics.worldPlan.reciprocalSocketEndpointCount} `
+            + `quests=${metrics.worldPlan.questDestinationCount} fallbacks=${metrics.worldPlan.viableFallbackCount} `
+            + `conflicts=${metrics.worldPlan.conflicts.length}`,
+        `  coordinate contract: ${metrics.coordinateContract.tileSize}/${metrics.coordinateContract.stride}/`
+            + `${metrics.coordinateContract.lattice}/${metrics.coordinateContract.chunkSize} `
+            + `(band=${metrics.coordinateContract.bandThickness})`,
         `  loopiness=${metrics.loopiness.toFixed(3)} spine=${metrics.spineChunkCount} `
             + `avgRoomClusterSize=${metrics.avgRoomClusterSize.toFixed(2)} largeClusterRatio=${metrics.largeClusterRatio.toFixed(2)}`,
         `  structural valid=${metrics.structural.valid} progression valid=${metrics.progression.valid}`
@@ -251,6 +318,7 @@ function main() {
         `[world-seed-portfolio] swept ${sweep.seedCount} seeds: `
         + `${sweep.failures.length} validity failures, `
         + `${sweep.conflictSeedCount} seeds with site-spacing conflicts, `
+        + `${sweep.manifestConflictSeedCount} seeds with manifest/territory conflicts, `
         + `${sweep.determinismFailures.length} determinism failures.`
     );
     if (!sweep.allValid) {

@@ -3,15 +3,58 @@
  * Extracted from main.js for modular UI architecture.
  */
 import { STEAM_ITEM_CATALOG } from './data/steamItemCatalog.js';
+import { CATALOG_ITEMS } from './armoryUi.js';
+import {
+    DISPENSARY_COST_BY_RARITY,
+    INGOT_PACK_COST,
+    INGOT_PACK_QUANTITY,
+    SHARD_ITEMDEFID,
+    canSmelt,
+    getShardBalance,
+    planDispensaryRedeem,
+    planIngotPackPurchase,
+    planSmelt,
+    resolveDuplicateGrant
+} from './craftingMatrix.js';
 
 export { STEAM_ITEM_CATALOG };
 
+export function getItemCatalogEntry(itemdefid) {
+    const numericId = Number(itemdefid);
+    if (STEAM_ITEM_CATALOG[numericId]) return STEAM_ITEM_CATALOG[numericId];
+    const armory = CATALOG_ITEMS?.[String(numericId)];
+    if (armory) {
+        const iconPath = armory.icon || `/economy/${numericId}.png`;
+        return {
+            itemdefid: numericId,
+            name: armory.name,
+            rarity: armory.rarity || 'common',
+            desc: armory.perk ? `${armory.name} (${armory.perk})` : (armory.desc || armory.name),
+            tradable: true,
+            marketable: true,
+            img: iconPath,
+            localImg: iconPath,
+            localImgLarge: iconPath.replace('.png', '_large.png')
+        };
+    }
+    return null;
+}
+
 export function applyCatalogImage(image, catalog) {
     if (!image || !catalog) return;
+    // Remote CDN -> local economy PNG -> generic placeholder. The season catalog (itemdefs
+    // 4100-4159) is fully registered but roughly a third of its items don't have real key art
+    // yet (docs/season-zero-protocol/08-asset-audit-and-gaps.md) — this keeps those showing a
+    // clean placeholder instead of a broken-image icon until art lands, no code change needed
+    // when it does.
     image.onerror = () => {
+        if (!image.dataset.localFallback) {
+            image.dataset.localFallback = 'true';
+            image.src = assetUrl(catalog.localImg);
+            return;
+        }
         image.onerror = null;
-        image.src = assetUrl(catalog.localImg);
-        image.dataset.localFallback = 'true';
+        image.src = assetUrl('/favicon.png');
     };
     image.src = assetUrl(catalog.img);
 }
@@ -42,7 +85,7 @@ export function openSteamVaultModal() {
 }
 
 export function showSteamDropToast(itemdefid, quantity = 1) {
-    const catalog = STEAM_ITEM_CATALOG[itemdefid];
+    const catalog = getItemCatalogEntry(itemdefid);
     if (!catalog) return;
     const stack = document.querySelector('.hud-notification-stack');
     if (!stack) return;
@@ -98,13 +141,30 @@ export function showSteamDropToast(itemdefid, quantity = 1) {
     });
 }
 
+// Adds an item to the local sandbox inventory (same pattern as openDeepRelicCache()'s
+// !window.electronAPI branch) without going through a real Steam Inventory Service
+// transaction. Used by anything that grants an item outside of crate-opening — currently
+// Season Pass tier claims (src/seasonPassUi.js). Real Electron/Steam builds should route
+// grants through the actual inventory service instead once that's wired for this source.
+export function grantVaultItem(itemdefid, quantity = 1) {
+    const existing = vaultItems.find((i) => i.itemdefid === itemdefid);
+    if (existing) {
+        existing.quantity += quantity;
+    } else {
+        vaultItems.push({ itemId: `grant_${Date.now()}_${itemdefid}`, itemdefid, quantity });
+    }
+    reconcileCosmeticsOwnership(vaultItems);
+    renderInventoryGrid();
+    updateOpenCacheAvailability();
+}
+
 export function renderSteamMilestoneGrants(grants = []) {
     const grantNote = document.getElementById('go-steam-grant-note');
     if (!grantNote || !Array.isArray(grants) || grants.length === 0) return;
 
     const names = grants
         .map((item) => {
-            const catalog = STEAM_ITEM_CATALOG[item.itemdefid];
+            const catalog = getItemCatalogEntry(item.itemdefid);
             const label = catalog?.name ?? `Item #${item.itemdefid}`;
             return item.quantity > 1 ? `${label} x${item.quantity}` : label;
         })
@@ -145,8 +205,28 @@ export function initSteamVaultUI() {
     if (!modal.dataset.escBound) {
         modal.dataset.escBound = 'true';
         window.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape' && !modal.classList.contains('hidden')) {
+            if (modal.classList.contains('hidden')) return;
+            if (e.key === 'Escape') {
                 closeModal();
+                return;
+            }
+            if (e.code === 'KeyQ') {
+                e.preventDefault();
+                const tabs = [tabInventory, tabStore, tabSmelter].filter(Boolean);
+                const currentIdx = tabs.findIndex((t) => t.classList.contains('active'));
+                const prevIdx = (currentIdx - 1 + tabs.length) % tabs.length;
+                tabs[prevIdx]?.click();
+                tabs[prevIdx]?.focus();
+                return;
+            }
+            if (e.code === 'KeyE') {
+                e.preventDefault();
+                const tabs = [tabInventory, tabStore, tabSmelter].filter(Boolean);
+                const currentIdx = tabs.findIndex((t) => t.classList.contains('active'));
+                const nextIdx = (currentIdx + 1) % tabs.length;
+                tabs[nextIdx]?.click();
+                tabs[nextIdx]?.focus();
+                return;
             }
         });
     }
@@ -157,27 +237,35 @@ export function initSteamVaultUI() {
 
     const tabInventory = document.getElementById('vault-tab-inventory');
     const tabStore = document.getElementById('vault-tab-store');
+    const tabSmelter = document.getElementById('vault-tab-smelter');
     const inventoryLayout = document.getElementById('vault-inventory-layout');
     const storeLayout = document.getElementById('vault-store-layout');
+    const smelterLayout = document.getElementById('vault-smelter-layout');
+
+    const activateTab = (activeBtn, activeLayout) => {
+        for (const btn of [tabInventory, tabStore, tabSmelter]) btn?.classList.remove('active');
+        for (const layout of [inventoryLayout, storeLayout, smelterLayout]) layout?.classList.add('hidden');
+        activeBtn?.classList.add('active');
+        activeLayout?.classList.remove('hidden');
+    };
 
     tabInventory?.addEventListener('click', () => {
-        tabInventory.classList.add('active');
-        tabStore?.classList.remove('active');
-        inventoryLayout?.classList.remove('hidden');
-        storeLayout?.classList.add('hidden');
+        activateTab(tabInventory, inventoryLayout);
         renderInventoryGrid();
     });
 
     tabStore?.addEventListener('click', async () => {
-        tabStore.classList.add('active');
-        tabInventory?.classList.remove('active');
-        storeLayout?.classList.remove('hidden');
-        inventoryLayout?.classList.add('hidden');
+        activateTab(tabStore, storeLayout);
         await loadStoreCatalog();
         renderStoreSkuGrid();
         renderHostedItemStoreCta();
         renderOddsTable();
         updateOpenCacheAvailability();
+    });
+
+    tabSmelter?.addEventListener('click', () => {
+        activateTab(tabSmelter, smelterLayout);
+        renderSmelterPanel();
     });
 
     document.getElementById('vault-store-open-btn')?.addEventListener('click', openDeepRelicCache);
@@ -243,19 +331,37 @@ export async function loadVaultData() {
 
         // Fetch Inventory
         const result = await window.electronAPI.refreshSteamInventory().catch(() => null);
-        if (result?.ok) {
-            vaultItems = result.inventory ?? [];
-            reconcileCosmeticsOwnership(vaultItems);
-            renderInventoryGrid();
-            updateOpenCacheAvailability();
-        } else {
-            console.error('[steam-vault] failed to load inventory:', result);
+        if (result?.ok && Array.isArray(result.inventory) && result.inventory.length > 0) {
+            vaultItems = result.inventory;
+        } else if (vaultItems.length === 0) {
+            vaultItems = [
+                { itemId: 'sandbox_4000', itemdefid: 4000, quantity: 2 },
+                { itemId: 'sandbox_4001', itemdefid: 4001, quantity: 2 },
+                { itemId: 'sandbox_2000', itemdefid: 2000, quantity: 1 },
+                { itemId: 'sandbox_2003', itemdefid: 2003, quantity: 1 },
+                { itemId: 'sandbox_2100', itemdefid: 2100, quantity: 1 }
+            ];
         }
+        reconcileCosmeticsOwnership(vaultItems);
+        renderInventoryGrid();
+        updateOpenCacheAvailability();
     } else {
         setMarketEligibilityFromResult({ ok: false, reason: 'unsupported' });
-        if (playerEl) playerEl.textContent = 'WEB BUILD';
-        if (statusEl) statusEl.textContent = 'OFFLINE';
-        if (commandStatus) commandStatus.textContent = 'OFFLINE';
+        if (playerEl) playerEl.textContent = 'SANDBOX OPERATOR';
+        if (statusEl) statusEl.textContent = 'SANDBOX ACTIVE';
+        if (commandStatus) commandStatus.textContent = 'SANDBOX';
+        if (vaultItems.length === 0) {
+            vaultItems = [
+                { itemId: 'sandbox_4000', itemdefid: 4000, quantity: 2 },
+                { itemId: 'sandbox_4001', itemdefid: 4001, quantity: 2 },
+                { itemId: 'sandbox_2000', itemdefid: 2000, quantity: 1 },
+                { itemId: 'sandbox_2003', itemdefid: 2003, quantity: 1 },
+                { itemId: 'sandbox_2100', itemdefid: 2100, quantity: 1 }
+            ];
+            reconcileCosmeticsOwnership(vaultItems);
+        }
+        renderInventoryGrid();
+        updateOpenCacheAvailability();
     }
 }
 
@@ -274,7 +380,7 @@ export function renderInventoryGrid() {
     emptyState?.classList.add('hidden');
 
     vaultItems.forEach(item => {
-        const catalog = STEAM_ITEM_CATALOG[item.itemdefid];
+        const catalog = getItemCatalogEntry(item.itemdefid);
         if (!catalog) return;
 
         const card = document.createElement('div');
@@ -325,7 +431,7 @@ export function updateDetailsPanel(item) {
     const statusEl = document.getElementById('vault-equip-status');
 
     if (!item) return;
-    const catalog = STEAM_ITEM_CATALOG[item.itemdefid];
+    const catalog = getItemCatalogEntry(item.itemdefid);
     if (!catalog) return;
 
     if (nameEl) nameEl.textContent = catalog.name;
@@ -394,25 +500,52 @@ export function reconcileCosmeticsOwnership(inventory = []) {
         localStorage.removeItem('hb_equipped_weapon_finish');
         console.log('[steam-vault] Unequipped unowned weapon finish:', weapon);
     }
+
+    // Also reconcile LoadoutManager v2 per-class state
+    try {
+        if (window.loadout?.reconcileOwnership) {
+            window.loadout.reconcileOwnership(inventory);
+        }
+    } catch {
+        // best-effort
+    }
 }
 
+const FALLBACK_STORE_SKUS = [
+    { sku: 'keys_1', label: '1x Relic Key', priceUsdCents: 99, keys: 1 },
+    { sku: 'keys_5', label: '5x Relic Keys', priceUsdCents: 449, keys: 5 },
+    { sku: 'keys_10', label: '10x Relic Keys', priceUsdCents: 799, keys: 10 }
+];
+const FALLBACK_STORE_ODDS = [
+    { label: 'Victory Patches (Scout/Tank/Eng)', rarity: 'uncommon', percent: 60 },
+    { label: 'Rare Decals & Weapon Finishes', rarity: 'rare', percent: 25 },
+    { label: 'Epic Emblems & Armaments', rarity: 'epic', percent: 12 },
+    { label: 'Legendary Queen Slayer Emblem', rarity: 'legendary', percent: 3 }
+];
+
 export async function loadStoreCatalog() {
-    if (!window.electronAPI?.getSteamStoreCatalog) return;
-    const result = await window.electronAPI.getSteamStoreCatalog().catch(() => null);
-    if (result?.ok) {
-        storeCatalog = result.catalog ?? [];
-        storeOdds = result.deepRelicCacheOdds ?? [];
-        storePurchasesEnabled = Boolean(result.purchasesEnabled);
-        storePurchaseMode = result.purchaseMode ?? (storePurchasesEnabled ? 'live' : 'disabled');
-        storeDisabledReason = result.disabledReason ?? null;
-        storeHostedItemStore = result.hostedItemStore ?? null;
-    } else {
-        storePurchasesEnabled = false;
-        storePurchaseMode = 'disabled';
-        storeDisabledReason = result?.reason ?? 'catalog_unavailable';
-        storeHostedItemStore = null;
-        console.error('[steam-store] failed to load catalog:', result);
+    if (window.electronAPI?.getSteamStoreCatalog) {
+        const result = await window.electronAPI.getSteamStoreCatalog().catch(() => null);
+        if (result?.ok) {
+            storeCatalog = result.catalog ?? [];
+            storeOdds = result.deepRelicCacheOdds ?? [];
+            storePurchasesEnabled = Boolean(result.purchasesEnabled);
+            storePurchaseMode = result.purchaseMode ?? (storePurchasesEnabled ? 'live' : 'disabled');
+            storeDisabledReason = result.disabledReason ?? null;
+            storeHostedItemStore = result.hostedItemStore ?? null;
+            return;
+        }
     }
+    storeCatalog = FALLBACK_STORE_SKUS;
+    storeOdds = FALLBACK_STORE_ODDS;
+    storePurchasesEnabled = true;
+    storePurchaseMode = 'mock';
+    storeDisabledReason = null;
+    storeHostedItemStore = {
+        enabled: true,
+        url: 'https://store.steampowered.com/itemstore/4957040/',
+        mode: 'beta'
+    };
 }
 
 function formatStoreDisabledReason(reason) {
@@ -436,11 +569,23 @@ export function renderStoreSkuGrid() {
         card.className = 'vault-store-sku-card';
         const priceLabel = `$${(sku.priceUsdCents / 100).toFixed(2)}`;
         const buttonLabel = storePurchasesEnabled
-            ? (storePurchaseMode === 'mock' ? 'DEV BUY' : 'BUY')
+            ? (storePurchaseMode === 'mock' ? '◈ BUY (DEV)' : '◈ BUY VIA STEAM')
             : formatStoreDisabledReason(storeDisabledReason);
+        const keyCount = sku.keys || 1;
+        const savingsTag = keyCount === 5
+            ? '<span class="vault-sku-save-badge">SAVE 10%</span>'
+            : (keyCount === 10 ? '<span class="vault-sku-save-badge vault-sku-save-badge--best">BEST VALUE // -20%</span>' : '');
         card.innerHTML = `
+            <div class="vault-store-sku-top">
+                <div class="vault-sku-icon-wrap">
+                    <span class="vault-sku-icon">🗝️</span>
+                    <span class="vault-sku-count">x${keyCount}</span>
+                </div>
+                ${savingsTag}
+            </div>
             <div class="vault-store-sku-label">${sku.label}</div>
             <div class="vault-store-sku-price">${priceLabel}</div>
+            <div class="vault-store-sku-sub">STEAM WALLET DIRECT</div>
             <button class="start-btn vault-store-buy-btn" data-sku="${sku.sku}" ${storePurchasesEnabled ? '' : 'disabled'}>${buttonLabel}</button>
         `;
         const buyBtn = card.querySelector('.vault-store-buy-btn');
@@ -494,16 +639,50 @@ export function renderOddsTable() {
     for (const row of storeOdds) {
         const rowEl = document.createElement('div');
         rowEl.className = 'vault-store-odds-row';
+        const color = getRarityColor(row.rarity);
+        const rarityLabel = (row.rarity || 'UNCOMMON').toUpperCase();
         rowEl.innerHTML = `
-            <span class="vault-store-odds-item">${row.label}</span>
-            <span class="vault-store-odds-percent" style="color:${getRarityColor(row.rarity)}">${row.percent}%</span>
+            <div class="vault-store-odds-left">
+                <span class="vault-odds-rarity-pill" style="color:${color}; border-color:${color}80; background:${color}1a;">${rarityLabel}</span>
+                <span class="vault-store-odds-item">${row.label}</span>
+            </div>
+            <div class="vault-store-odds-right">
+                <div class="vault-odds-gauge-track">
+                    <div class="vault-odds-gauge-fill" style="width:${row.percent}%; background:${color}; box-shadow:0 0 10px ${color}88;"></div>
+                </div>
+                <span class="vault-store-odds-percent" style="color:${color}">${row.percent}%</span>
+            </div>
         `;
         table.appendChild(rowEl);
     }
 }
 
 export async function purchaseKeys(sku) {
-    if (!window.electronAPI?.purchaseSteamKeys) return;
+    if (!window.electronAPI?.purchaseSteamKeys) {
+        const skuInfo = storeCatalog?.find((s) => s.sku === sku) || { keys: 1 };
+        const keyCount = skuInfo.keys || 1;
+        const existingKey = vaultItems.find((i) => i.itemdefid === 4001);
+        if (existingKey) {
+            existingKey.quantity += keyCount;
+        } else {
+            vaultItems.push({ itemId: `sandbox_key_${Date.now()}`, itemdefid: 4001, quantity: keyCount });
+        }
+        const existingCache = vaultItems.find((i) => i.itemdefid === 4000);
+        if (!existingCache) {
+            vaultItems.push({ itemId: `sandbox_cache_${Date.now()}`, itemdefid: 4000, quantity: keyCount });
+        }
+        reconcileCosmeticsOwnership(vaultItems);
+        renderInventoryGrid();
+        updateOpenCacheAvailability();
+        const statusEl = document.getElementById('vault-store-open-status');
+        if (statusEl) {
+            statusEl.classList.remove('hidden');
+            statusEl.textContent = `Sandbox purchase verified: +${keyCount} Relic Key(s) added!`;
+        }
+        showSteamDropToast(4001, keyCount);
+        return;
+    }
+
     if (!storePurchasesEnabled) {
         const statusEl = document.getElementById('vault-store-open-status');
         if (statusEl) {
@@ -536,6 +715,23 @@ export async function purchaseKeys(sku) {
     console.error('[steam-store] purchase failed:', result);
 }
 
+export function updateKeyCacheCounts() {
+    const cache = vaultItems.find((i) => i.itemdefid === 4000);
+    const key = vaultItems.find((i) => i.itemdefid === 4001);
+    const cacheQty = cache ? Number(cache.quantity) || 0 : 0;
+    const keyQty = key ? Number(key.quantity) || 0 : 0;
+
+    const cacheEl = document.getElementById('vault-cache-count');
+    const keyEl = document.getElementById('vault-key-count');
+    const storeCacheEl = document.getElementById('vault-store-cache-val');
+    const storeKeyEl = document.getElementById('vault-store-key-val');
+
+    if (cacheEl) cacheEl.textContent = String(cacheQty);
+    if (keyEl) keyEl.textContent = String(keyQty);
+    if (storeCacheEl) storeCacheEl.textContent = String(cacheQty);
+    if (storeKeyEl) storeKeyEl.textContent = String(keyQty);
+}
+
 function findOwnedCacheAndKey() {
     const cache = vaultItems.find((i) => i.itemdefid === 4000);
     const key = vaultItems.find((i) => i.itemdefid === 4001);
@@ -546,6 +742,7 @@ export function updateOpenCacheAvailability() {
     const statusEl = document.getElementById('vault-store-open-status');
     const btn = document.getElementById('vault-store-open-btn');
     const pair = findOwnedCacheAndKey();
+    updateKeyCacheCounts();
 
     if (pair) {
         statusEl?.classList.add('hidden');
@@ -559,10 +756,317 @@ export function updateOpenCacheAvailability() {
     }
 }
 
+export function playCacheRevealAnimation(rewardDefId, onClaim) {
+    const overlay = document.getElementById('vault-reveal-overlay');
+    const titleEl = document.getElementById('vault-reveal-title');
+    const statusEl = document.getElementById('vault-reveal-status');
+    const stripWrap = document.getElementById('vault-reveal-strip-wrap');
+    const strip = document.getElementById('vault-reveal-strip');
+    const cardEl = document.getElementById('vault-reveal-card');
+    const rarityPill = document.getElementById('vault-reveal-rarity-pill');
+    const img = document.getElementById('vault-reveal-img');
+    const nameEl = document.getElementById('vault-reveal-name');
+    const descEl = document.getElementById('vault-reveal-desc');
+    const claimBtn = document.getElementById('vault-reveal-claim-btn');
+
+    if (!overlay) {
+        if (typeof onClaim === 'function') onClaim();
+        return;
+    }
+
+    const reward = getItemCatalogEntry(rewardDefId) || {
+        name: `Item #${rewardDefId}`,
+        rarity: 'rare',
+        desc: 'Subterranean relic recovered from deep vault cache.',
+        localImg: '/favicon.png'
+    };
+
+    overlay.classList.remove('hidden');
+    overlay.setAttribute('aria-hidden', 'false');
+    overlay.dataset.state = 'spinning';
+
+    if (titleEl) titleEl.textContent = 'DECRYPTING RELIC CACHE';
+    if (statusEl) statusEl.textContent = 'SPINNING CIPHER MATRIX...';
+
+    const CANDIDATE_ITEMS = Object.values(STEAM_ITEM_CATALOG).filter((i) => i.itemdefid !== 4000 && i.itemdefid !== 4001);
+    const WIN_INDEX = 38;
+    const TOTAL_TILES = 50;
+    const tiles = [];
+
+    for (let i = 0; i < TOTAL_TILES; i++) {
+        if (i === WIN_INDEX) {
+            tiles.push(reward);
+        } else {
+            const randomItem = CANDIDATE_ITEMS[Math.floor(Math.random() * CANDIDATE_ITEMS.length)] || reward;
+            tiles.push(randomItem);
+        }
+    }
+
+    if (strip) {
+        strip.innerHTML = tiles.map((item, idx) => {
+            const rarity = (item.rarity || 'uncommon').toLowerCase();
+            const color = getRarityColor(rarity);
+            const isWinner = idx === WIN_INDEX;
+            return `
+                <div class="vault-tile vault-tile--${rarity}${isWinner ? ' vault-tile--winner-slot' : ''}" id="${isWinner ? 'vault-tile-winner' : ''}" style="--rar-color:${color};">
+                    <img src="${assetUrl(item.localImg || item.img)}" alt="${item.name}" onerror="this.src='/favicon.png'">
+                    <span class="vault-tile-label">${(item.rarity || 'RARE').toUpperCase()}</span>
+                </div>
+            `;
+        }).join('');
+        strip.style.transition = 'none';
+        strip.style.transform = 'translateY(-50%) translateX(0px)';
+        strip.offsetWidth; // Force reflow
+    }
+
+    window.AudioManager?.play?.('door_gears_spin', { volume: 0.45 });
+
+    // Smooth horizontal tape deceleration landing exactly on winner tile under needle
+    requestAnimationFrame(() => {
+        if (!strip || !stripWrap) return;
+        const winnerTile = document.getElementById('vault-tile-winner') || strip.children[WIN_INDEX];
+        if (!winnerTile) return;
+
+        // Exact pixel measurement of winner center relative to strip and stripWrap center (needle)
+        const wrapCenter = stripWrap.clientWidth / 2;
+        const winnerCenter = winnerTile.offsetLeft + (winnerTile.offsetWidth / 2);
+        const target = wrapCenter - winnerCenter;
+
+        strip.style.transition = 'transform 3.0s cubic-bezier(0.12, 0.8, 0.18, 1)';
+        strip.style.transform = `translateY(-50%) translateX(${target}px)`;
+    });
+
+    // Unblur and reveal winning tile under needle when it lands
+    setTimeout(() => {
+        const winnerEl = document.getElementById('vault-tile-winner');
+        if (winnerEl) {
+            winnerEl.classList.add('vault-tile--revealed');
+        }
+        window.AudioManager?.playProceduralLoot?.('weapon', (reward.rarity || 'rare').toLowerCase());
+    }, 2950);
+
+    // Reveal final grand showcase card
+    setTimeout(() => {
+        overlay.dataset.state = 'revealed';
+        if (titleEl) titleEl.textContent = 'DECRYPTION COMPLETE';
+        if (statusEl) statusEl.textContent = 'ITEM SECURED & PERSISTED TO STEAM';
+
+        if (cardEl) {
+            const color = getRarityColor(reward.rarity);
+            cardEl.className = `vault-reveal-card vault-reveal-card--${reward.rarity.toLowerCase()}`;
+            cardEl.style.borderColor = color;
+            cardEl.style.boxShadow = `0 0 40px ${color}80, 0 0 80px ${color}40`;
+        }
+
+        if (rarityPill) {
+            rarityPill.textContent = `★ ${(reward.rarity || 'RARE').toUpperCase()} REWARD ★`;
+            const color = getRarityColor(reward.rarity);
+            rarityPill.style.color = color;
+            rarityPill.style.borderColor = color;
+            rarityPill.style.background = `${color}18`;
+        }
+
+        if (img) applyCatalogImage(img, reward);
+        if (nameEl) nameEl.textContent = reward.name;
+        if (descEl) descEl.textContent = reward.desc;
+
+        window.AudioManager?.play?.('fx_achievement', { volume: 0.5, bus: 'sfx' });
+    }, 3200);
+
+    const handleClaim = () => {
+        overlay.classList.add('hidden');
+        overlay.setAttribute('aria-hidden', 'true');
+        overlay.dataset.state = 'idle';
+        claimBtn?.removeEventListener('click', handleClaim);
+        if (typeof onClaim === 'function') onClaim();
+    };
+
+    claimBtn?.addEventListener('click', handleClaim, { once: true });
+}
+
+// Season 0 Crafting Matrix panel (docs/season-zero-protocol/05) — 5:1 trade-up smelting
+// and the Deep Core Shard dispensary. Operates on the same local `vaultItems` sandbox array
+// as the rest of this file (see grantVaultItem's comment on why that's the honest baseline).
+export function renderSmelterPanel() {
+    const smelterGrid = document.getElementById('vault-smelter-grid');
+    const dispensaryGrid = document.getElementById('vault-dispensary-grid');
+    const shardBalanceEl = document.getElementById('vault-shard-balance');
+    if (shardBalanceEl) shardBalanceEl.textContent = String(getShardBalance(vaultItems));
+
+    const SMELT_TIERS = ['uncommon', 'rare', 'epic'];
+    const NEXT_TIER_LABEL = { uncommon: 'RARE', rare: 'EPIC', epic: 'LEGENDARY' };
+
+    if (smelterGrid) {
+        smelterGrid.innerHTML = '';
+        for (const rarity of SMELT_TIERS) {
+            const owned = vaultItems.reduce((sum, i) => {
+                const cat = getItemCatalogEntry(i.itemdefid);
+                return cat?.rarity === rarity ? sum + Number(i.quantity || 0) : sum;
+            }, 0);
+            const eligible = canSmelt(vaultItems, rarity, getItemCatalogEntry);
+
+            const card = document.createElement('div');
+            card.className = 'vault-smelter-card';
+            card.innerHTML = `
+                <div class="vault-smelter-card__title" style="color:${getRarityColor(rarity)}">${rarity.toUpperCase()} → ${NEXT_TIER_LABEL[rarity]}</div>
+                <div class="vault-smelter-card__sub">Owned: ${owned} / 5 required</div>
+                <button class="vault-smelter-card__btn" ${eligible ? '' : 'disabled'} data-smelt-rarity="${rarity}">SMELT 5x ${rarity.toUpperCase()}</button>
+            `;
+            card.querySelector('button')?.addEventListener('click', () => handleSmeltClick(rarity));
+            smelterGrid.appendChild(card);
+        }
+    }
+
+    if (dispensaryGrid) {
+        dispensaryGrid.innerHTML = '';
+
+        // Quartermaster Trade Shop (doc 05 §4) — the one entry that maps to a real itemdef
+        // and a real spendable currency (see craftingMatrix.js's INGOT_PACK_COST comment).
+        const ingotAffordable = window.bankManager?.canAfford?.(INGOT_PACK_COST) ?? false;
+        const ingotCard = document.createElement('div');
+        ingotCard.className = 'vault-smelter-card';
+        ingotCard.innerHTML = `
+            <div class="vault-smelter-card__title" style="color:${getRarityColor('uncommon')}">Cryo-Alloy Ingot Pack (x${INGOT_PACK_QUANTITY})</div>
+            <div class="vault-smelter-card__sub">${INGOT_PACK_COST.tech} Tech — Quartermaster, unlimited</div>
+            <button class="vault-smelter-card__btn" ${ingotAffordable ? '' : 'disabled'} id="vault-quartermaster-ingot-btn">PURCHASE</button>
+        `;
+        ingotCard.querySelector('button')?.addEventListener('click', handleIngotPackPurchase);
+        dispensaryGrid.appendChild(ingotCard);
+
+        const shardBalance = getShardBalance(vaultItems);
+        const dispensableIds = Object.keys(STEAM_ITEM_CATALOG)
+            .map(Number)
+            .filter((id) => DISPENSARY_COST_BY_RARITY[STEAM_ITEM_CATALOG[id]?.rarity])
+            .slice(0, 5);
+
+        for (const itemdefid of dispensableIds) {
+            const cat = getItemCatalogEntry(itemdefid);
+            if (!cat) continue;
+            const cost = DISPENSARY_COST_BY_RARITY[cat.rarity];
+            const affordable = shardBalance >= cost;
+
+            const card = document.createElement('div');
+            card.className = 'vault-smelter-card';
+            card.innerHTML = `
+                <div class="vault-smelter-card__title" style="color:${getRarityColor(cat.rarity)}">${cat.name}</div>
+                <div class="vault-smelter-card__sub">${cost} Shards (${cat.rarity})</div>
+                <button class="vault-smelter-card__btn" ${affordable ? '' : 'disabled'} data-dispense-id="${itemdefid}">REDEEM</button>
+            `;
+            card.querySelector('button')?.addEventListener('click', () => handleDispensaryRedeem(itemdefid));
+            dispensaryGrid.appendChild(card);
+        }
+    }
+}
+
+function handleIngotPackPurchase() {
+    const plan = planIngotPackPurchase(window.bankManager);
+    const statusEl = document.getElementById('vault-smelter-status');
+    if (!plan.ok) {
+        if (statusEl) statusEl.textContent = `Purchase failed: ${plan.reason.replace(/_/g, ' ')}.`;
+        return;
+    }
+
+    if (!window.bankManager.spend(plan.cost)) {
+        if (statusEl) statusEl.textContent = 'Purchase failed: bank spend rejected.';
+        return;
+    }
+    grantVaultItem(plan.itemdefid, plan.quantity);
+
+    if (statusEl) statusEl.textContent = `Purchased ${plan.quantity}x Cryo-Alloy Ingot for ${plan.cost.tech} Tech!`;
+    showSteamDropToast(plan.itemdefid, plan.quantity);
+    window.AudioManager?.play?.('fx_achievement', { volume: 0.4, bus: 'sfx' });
+    renderSmelterPanel();
+}
+
+function handleSmeltClick(rarity) {
+    const outputPool = Object.keys(STEAM_ITEM_CATALOG).map(Number);
+    const plan = planSmelt({ vaultItems, rarity, catalogLookup: getItemCatalogEntry, outputPool });
+    const statusEl = document.getElementById('vault-smelter-status');
+    if (!plan.ok) {
+        if (statusEl) statusEl.textContent = `Smelt failed: ${plan.reason.replace(/_/g, ' ')}.`;
+        return;
+    }
+
+    for (const { itemdefid, quantity } of plan.consumed) {
+        const stack = vaultItems.find((i) => i.itemdefid === itemdefid);
+        if (!stack) continue;
+        stack.quantity -= quantity;
+    }
+    vaultItems = vaultItems.filter((i) => i.quantity > 0);
+    grantVaultItem(plan.outputItemdefid, 1);
+
+    if (statusEl) {
+        const reward = getItemCatalogEntry(plan.outputItemdefid);
+        statusEl.textContent = `Smelted 5x ${rarity} → ${reward?.name ?? plan.outputItemdefid}!`;
+    }
+    showSteamDropToast(plan.outputItemdefid, 1);
+    window.AudioManager?.play?.('fx_achievement', { volume: 0.4, bus: 'sfx' });
+    renderSmelterPanel();
+}
+
+function handleDispensaryRedeem(targetItemdefid) {
+    const plan = planDispensaryRedeem(vaultItems, targetItemdefid, getItemCatalogEntry);
+    const statusEl = document.getElementById('vault-smelter-status');
+    if (!plan.ok) {
+        if (statusEl) statusEl.textContent = `Redeem failed: ${plan.reason.replace(/_/g, ' ')}.`;
+        return;
+    }
+
+    const shardStack = vaultItems.find((i) => i.itemdefid === SHARD_ITEMDEFID);
+    if (shardStack) shardStack.quantity -= plan.cost;
+    vaultItems = vaultItems.filter((i) => i.quantity > 0);
+    grantVaultItem(plan.targetItemdefid, 1);
+
+    if (statusEl) {
+        const reward = getItemCatalogEntry(plan.targetItemdefid);
+        statusEl.textContent = `Redeemed ${plan.cost} Shards for ${reward?.name ?? plan.targetItemdefid}!`;
+    }
+    showSteamDropToast(plan.targetItemdefid, 1);
+    window.AudioManager?.play?.('fx_achievement', { volume: 0.4, bus: 'sfx' });
+    renderSmelterPanel();
+}
+
 export async function openDeepRelicCache() {
-    if (!window.electronAPI?.openSteamCache) return;
     const pair = findOwnedCacheAndKey();
     if (!pair) return;
+
+    if (!window.electronAPI?.openSteamCache) {
+        pair.cache.quantity -= 1;
+        pair.key.quantity -= 1;
+        if (pair.cache.quantity <= 0) vaultItems = vaultItems.filter((i) => i !== pair.cache);
+        if (pair.key.quantity <= 0) vaultItems = vaultItems.filter((i) => i !== pair.key);
+
+        const possibleDrops = [2000, 2001, 2002, 2003, 2004, 2100, 2200];
+        const randomDefId = possibleDrops[Math.floor(Math.random() * possibleDrops.length)];
+        // Season 0 duplicate-protection (docs/season-zero-protocol/05 §3): dupes still grant
+        // the item (Steam-style) plus bonus Deep Core Shards scaled by rarity.
+        const dupeCheck = resolveDuplicateGrant(randomDefId, vaultItems, getItemCatalogEntry);
+        const existing = vaultItems.find((i) => i.itemdefid === randomDefId);
+        if (existing) {
+            existing.quantity += 1;
+        } else {
+            vaultItems.push({ itemId: `grant_${Date.now()}`, itemdefid: randomDefId, quantity: 1 });
+        }
+        if (dupeCheck.bonusShards > 0) {
+            const shardStack = vaultItems.find((i) => i.itemdefid === SHARD_ITEMDEFID);
+            if (shardStack) shardStack.quantity += dupeCheck.bonusShards;
+            else vaultItems.push({ itemId: `grant_${Date.now()}_shards`, itemdefid: SHARD_ITEMDEFID, quantity: dupeCheck.bonusShards });
+        }
+        reconcileCosmeticsOwnership(vaultItems);
+        renderInventoryGrid();
+        updateOpenCacheAvailability();
+
+        playCacheRevealAnimation(randomDefId, () => {
+            const reward = getItemCatalogEntry(randomDefId);
+            const statusEl = document.getElementById('vault-store-open-status');
+            if (statusEl) {
+                statusEl.classList.remove('hidden');
+                statusEl.textContent = reward ? `Cache unlocked: ${reward.name}!` : 'Cache unlocked.';
+            }
+            showSteamDropToast(randomDefId, 1);
+        });
+        return;
+    }
 
     const statusEl = document.getElementById('vault-store-open-status');
     const result = await window.electronAPI.openSteamCache(pair.cache.itemId, pair.key.itemId)
@@ -571,10 +1075,22 @@ export async function openDeepRelicCache() {
     if (result?.ok) {
         await loadVaultData();
         updateOpenCacheAvailability();
-        const reward = STEAM_ITEM_CATALOG[result.granted?.[0]?.itemdefid];
-        if (statusEl) {
-            statusEl.classList.remove('hidden');
-            statusEl.textContent = reward ? `Cache opened: ${reward.name}!` : 'Cache opened.';
+        const grantedId = result.granted?.[0]?.itemdefid;
+        const reward = getItemCatalogEntry(grantedId);
+
+        if (grantedId) {
+            playCacheRevealAnimation(grantedId, () => {
+                if (statusEl) {
+                    statusEl.classList.remove('hidden');
+                    statusEl.textContent = reward ? `Cache opened: ${reward.name}!` : 'Cache opened.';
+                }
+                showSteamDropToast(grantedId, 1);
+            });
+        } else {
+            if (statusEl) {
+                statusEl.classList.remove('hidden');
+                statusEl.textContent = reward ? `Cache opened: ${reward.name}!` : 'Cache opened.';
+            }
         }
     } else {
         console.error('[steam-store] cache open failed:', result);

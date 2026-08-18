@@ -46,13 +46,28 @@ import { STAGE_WIDTH, computeStageTransform } from './src/stage.js';
 import { PLAYER_SPRITE_LAYOUTS, getPlayerSpriteLayout } from './src/playerSpriteLayouts.js';
 import { repackGeneratedSpriteAtlas } from './src/spriteAtlasRuntime.js';
 import { createScoutHeroPreview } from './src/scoutHeroPreview.js';
+import { createArmoryScene } from './src/armoryScene.js';
+import { createArmoryUi } from './src/armoryUi.js';
+import { ARMORY_SCREEN_ENABLED } from './src/featureFlags.js';
 import { initSteamVaultUI, loadVaultData, openSteamVaultModal, showSteamDropToast, renderSteamMilestoneGrants, STEAM_ITEM_CATALOG } from './src/steamVaultUi.js';
+import { initSeasonPassUI } from './src/seasonPassUi.js';
+import { initVoiceCallouts } from './src/voiceCallouts.js';
+import { multiplayerLobby } from './src/multiplayerLobby.js';
+import { playerTradeManager, TRADEABLE_RESOURCES } from './src/playerTrade.js';
+import { npcDialogueTreeManager, NPC_DIALOGUE_TREES } from './src/npcDialogueTrees.js';
+import { sideStoryManager, SIDE_STORIES_CONFIG, SIDE_STORY_STATUS } from './src/sideStorySystem.js';
+import { matureContentAudit } from './src/matureContentAudit.js';
+import { progressionWalkthrough } from './src/progressionWalkthrough.js';
 import { renderGameOverLeaderboard } from './src/leaderboardUi.js';
 import { OPERATOR_POLISHES, getSelectedPolish, getUnlockedPolishIds, selectPolish, unlockAllPolishes, unlockMilestonePolish } from './src/operatorPolishes.js';
 import { STARTING_RUN_AMMO, CLASS_AMMO_CAPACITY } from './src/data/ammoEconomy.js';
 import { explainEnding, formatManifestBlocker } from './src/endingExplanations.js';
 import { SongInterstitialController, selectCampInterstitial } from './src/songInterstitials.js';
 import { dialogueReactionForLine, preloadLeaderMedia, resolveLeaderIdentity } from './src/leaderIdentity.js';
+import { openQaNexusModal, closeQaNexusModal } from './src/debugQaNexus.js';
+import { openDebugTileGrid, closeDebugTileGrid } from './src/debugTileGrid.js';
+import { openDebugBossArenas, closeDebugBossArenas } from './src/debugBossArenas.js';
+import { openDebugCampSimulator, closeDebugCampSimulator } from './src/debugCampSimulator.js';
 import { LeaderConversation3d } from './src/leaderConversation3d.js';
 import {
     computeTopologyDistances,
@@ -292,6 +307,7 @@ function setAppPhase(phase) {
         boot: 'BOOTSTRAP — renderer and account services starting',
         splash: 'TITLE READY — awaiting operator command',
         menu: 'LOADOUT CONSOLE — operator configuration active',
+        armory: 'PRE-MISSION ARMORY — weapon and module loadout active',
         gameplay: 'DEPLOYMENT — live simulation and input active',
         gameover: 'RUN COMPLETE — telemetry finalized',
         'demo-end': 'DEMO COMPLETE — session awaiting operator command'
@@ -323,6 +339,7 @@ const STEAM_INPUT_PROMPT_IDS = Object.freeze([
 ]);
 
 const STEAM_INPUT_FOCUS_ROOT_IDS = Object.freeze([
+    'virtual-keyboard-overlay',
     'dev-console-modal',
     'confirm-modal',
     'reset-save-confirm-modal',
@@ -342,7 +359,12 @@ const STEAM_INPUT_FOCUS_ROOT_IDS = Object.freeze([
     'elevator-choice-modal',
     'archive-sims-modal',
     'lore-modal',
+    'season-pass-modal',
+    'armory-screen',
     'steam-vault-modal',
+    'player-trade-modal',
+    'multiplayer-modal',
+    'mature-content-audit-modal',
     'operator-polish-modal',
     'tactical-map-modal',
     'base-turret-modal',
@@ -633,13 +655,15 @@ function adjustRangeInputValue(element, direction) {
 }
 
 function adjustSelectValue(element, direction) {
-    if (!element?.matches?.('select') || !element.options?.length) return false;
-    const currentIndex = Math.max(0, element.selectedIndex);
-    const nextIndex = wrapMenuIndex(currentIndex, direction, element.options.length);
-    if (nextIndex === element.selectedIndex) return true;
-    element.selectedIndex = nextIndex;
-    element.dispatchEvent(new Event('input', { bubbles: true }));
-    element.dispatchEvent(new Event('change', { bubbles: true }));
+    const select = element?.matches?.('select') ? element : element?.querySelector?.('select');
+    if (!select || !select.options?.length) return false;
+    const currentIndex = Math.max(0, select.selectedIndex);
+    const nextIndex = wrapMenuIndex(currentIndex, direction, select.options.length);
+    if (nextIndex === select.selectedIndex) return true;
+    select.selectedIndex = nextIndex;
+    select.dispatchEvent(new Event('input', { bubbles: true }));
+    select.dispatchEvent(new Event('change', { bubbles: true }));
+    window.AudioManager?.play?.('fx_menu_hover', { volume: 0.2, bus: 'sfx' });
     return true;
 }
 
@@ -684,6 +708,23 @@ function getPreferredControllerFocusTarget(root, focusables) {
         return focusables.find((element) => element.id === 'fab-activate-btn' && !element.disabled)
             ?? focusables.find((element) => element.id === 'fab-roll-btn' && !element.disabled)
             ?? focusables.find((element) => element.id === 'close-fabrication-modal')
+            ?? focusables[0];
+    }
+    if (root?.id === 'season-pass-modal') {
+        return focusables.find((element) => element.classList?.contains('season-pass-claim-btn'))
+            ?? focusables.find((element) => element.classList?.contains('season-pass-tab-btn') && element.classList.contains('active'))
+            ?? focusables.find((element) => element.id === 'close-season-pass-modal')
+            ?? focusables[0];
+    }
+    if (root?.id === 'armory-screen') {
+        return focusables.find((element) => element.id === 'armory-btn-embark')
+            ?? focusables.find((element) => element.classList?.contains('armory-select'))
+            ?? focusables.find((element) => element.id === 'armory-btn-back')
+            ?? focusables[0];
+    }
+    if (root?.id === 'steam-vault-modal') {
+        return focusables.find((element) => element.classList?.contains('vault-tab-btn') && element.classList.contains('active'))
+            ?? focusables.find((element) => element.id === 'close-steam-vault-modal')
             ?? focusables[0];
     }
     if (root?.id === 'mothership-dialogue') {
@@ -871,10 +912,44 @@ function moveHeroSelectPanelFocus(code) {
 }
 
 function moveMenuDirectionalFocus(code) {
+    if (moveVirtualKeyboardGridFocus(code)) return true;
     if (moveMenuCommandGridFocus(code)) return true;
     if (moveHeroSelectPanelFocus(code)) return true;
     const direction = menuKeyboardDirection(code);
     return direction ? Boolean(moveControllerFocus(direction)) : false;
+}
+
+// Row-aware grid navigation for the on-screen keyboard. Rows are uneven
+// widths (10/10/9/8/2 keys), so this clamps column position against each
+// row's own length rather than assuming a fixed column count.
+function moveVirtualKeyboardGridFocus(code) {
+    const active = document.activeElement;
+    if (!active?.classList?.contains('virtual-keyboard-key')) return false;
+
+    const row = active.closest('.virtual-keyboard-row');
+    const rows = Array.from(document.querySelectorAll('#virtual-keyboard-grid .virtual-keyboard-row'));
+    const rowIndex = rows.indexOf(row);
+    if (!row || rowIndex < 0) return false;
+
+    const keysInRow = Array.from(row.querySelectorAll('.virtual-keyboard-key'));
+    const colIndex = keysInRow.indexOf(active);
+
+    let target = null;
+    if (code === 'KeyA' || code === 'ArrowLeft') {
+        target = keysInRow[(colIndex - 1 + keysInRow.length) % keysInRow.length];
+    } else if (code === 'KeyD' || code === 'ArrowRight') {
+        target = keysInRow[(colIndex + 1) % keysInRow.length];
+    } else if (code === 'KeyW' || code === 'ArrowUp') {
+        const nextRow = rows[(rowIndex - 1 + rows.length) % rows.length];
+        const nextKeys = Array.from(nextRow.querySelectorAll('.virtual-keyboard-key'));
+        target = nextKeys[Math.min(colIndex, nextKeys.length - 1)];
+    } else if (code === 'KeyS' || code === 'ArrowDown') {
+        const nextRow = rows[(rowIndex + 1) % rows.length];
+        const nextKeys = Array.from(nextRow.querySelectorAll('.virtual-keyboard-key'));
+        target = nextKeys[Math.min(colIndex, nextKeys.length - 1)];
+    }
+
+    return target ? focusControllerTarget(target, { playHover: true }) : false;
 }
 
 function moveOperatorPolishGridFocus(code) {
@@ -1072,6 +1147,91 @@ async function openSteamGamepadTextInputForElement(element, {
     }
 }
 
+let virtualKeyboardTargetElement = null;
+
+// In-engine on-screen keyboard: fallback text entry for controller-only play
+// when Steam's native showGamepadTextInput isn't available (web build, or
+// Electron build running outside Steam Big Picture / without Steam Input).
+function openVirtualKeyboardForElement(element, { description = 'Enter text', maxCharacters = 32 } = {}) {
+    if (!element) return false;
+    const overlay = document.getElementById('virtual-keyboard-overlay');
+    if (!overlay) return false;
+
+    virtualKeyboardTargetElement = element;
+    element.dataset.virtualKeyboardMax = String(maxCharacters);
+
+    const label = document.getElementById('virtual-keyboard-label');
+    if (label) label.textContent = description.toUpperCase();
+
+    updateVirtualKeyboardPreview();
+
+    overlay.classList.remove('hidden');
+    overlay.setAttribute('aria-hidden', 'false');
+
+    const firstKey = overlay.querySelector('.virtual-keyboard-key');
+    if (firstKey) focusControllerTarget(firstKey);
+    return true;
+}
+
+function updateVirtualKeyboardPreview() {
+    const preview = document.getElementById('virtual-keyboard-preview');
+    if (preview) preview.textContent = virtualKeyboardTargetElement?.value || '';
+}
+
+function closeVirtualKeyboard() {
+    const overlay = document.getElementById('virtual-keyboard-overlay');
+    if (overlay) {
+        overlay.classList.add('hidden');
+        overlay.setAttribute('aria-hidden', 'true');
+    }
+    const target = virtualKeyboardTargetElement;
+    if (target) {
+        target.dataset.menuTextEditing = 'false';
+        target.classList.remove('is-menu-text-editing');
+        target.dispatchEvent(new Event('change', { bubbles: true }));
+        focusControllerTarget(target);
+    }
+    virtualKeyboardTargetElement = null;
+}
+
+function handleVirtualKeyboardKey(key) {
+    const target = virtualKeyboardTargetElement;
+    if (!target) return;
+    const maxLen = Number(target.dataset.virtualKeyboardMax) || 32;
+    if (target.value.length >= maxLen) return;
+    target.value += key;
+    target.dispatchEvent(new Event('input', { bubbles: true }));
+    updateVirtualKeyboardPreview();
+    AudioManager?.play?.('ui_click', { volume: 0.3 });
+}
+
+function handleVirtualKeyboardBackspace() {
+    const target = virtualKeyboardTargetElement;
+    if (!target) return;
+    target.value = target.value.slice(0, -1);
+    target.dispatchEvent(new Event('input', { bubbles: true }));
+    updateVirtualKeyboardPreview();
+    AudioManager?.play?.('ui_click', { volume: 0.3 });
+}
+
+function initVirtualKeyboard() {
+    const grid = document.getElementById('virtual-keyboard-grid');
+    grid?.addEventListener('click', (event) => {
+        const btn = event.target.closest('.virtual-keyboard-key');
+        if (!btn) return;
+        const action = btn.getAttribute('data-action');
+        if (action === 'backspace') {
+            handleVirtualKeyboardBackspace();
+        } else if (action === 'done') {
+            closeVirtualKeyboard();
+        } else {
+            const key = btn.getAttribute('data-key');
+            if (key) handleVirtualKeyboardKey(key);
+        }
+    });
+    document.getElementById('virtual-keyboard-close')?.addEventListener('click', () => closeVirtualKeyboard());
+}
+
 function activateControllerFocusedElement() {
     const root = getControllerFocusRoot();
     const focusables = getVisibleControllerFocusables(root ?? document);
@@ -1084,22 +1244,29 @@ function activateControllerFocusedElement() {
     if (!activeElement) return false;
 
     if (isTextEditableElement(activeElement)) {
-        const usesSteamKeyboard = Boolean(isSteamControllerInputActive() && window.electronAPI?.showGamepadTextInput);
         activeElement.dataset.menuTextEditing = 'true';
         activeElement.classList.add('is-menu-text-editing');
+        const description = activeElement.getAttribute('aria-label')
+            || activeElement.getAttribute('placeholder')
+            || 'Enter text';
+        const maxCharacters = Number(activeElement.getAttribute('maxlength')) || (activeElement.tagName === 'TEXTAREA' ? 1024 : 32);
         const inputPromise = openSteamGamepadTextInputForElement(activeElement, {
-            description: activeElement.getAttribute('aria-label')
-                || activeElement.getAttribute('placeholder')
-                || 'Enter text',
-            maxCharacters: Number(activeElement.getAttribute('maxlength')) || (activeElement.tagName === 'TEXTAREA' ? 1024 : 32),
+            description,
+            maxCharacters,
             multiline: activeElement.tagName === 'TEXTAREA'
         });
-        if (usesSteamKeyboard) {
-            void inputPromise.finally(() => {
+        void inputPromise.then((usedNativeKeyboard) => {
+            if (usedNativeKeyboard) {
                 activeElement.dataset.menuTextEditing = 'false';
                 activeElement.classList.remove('is-menu-text-editing');
-            });
-        }
+                return;
+            }
+            // Native Steam gamepad text input isn't available (non-Steam
+            // build, or not running through Big Picture) — fall back to the
+            // in-engine on-screen keyboard so controller-only play can still
+            // edit this field, per Full Controller Support requirements.
+            openVirtualKeyboardForElement(activeElement, { description, maxCharacters });
+        });
         return true;
     }
 
@@ -1264,18 +1431,6 @@ function ensureVirtualGamepadCursor() {
     return virtualGamepadCursor;
 }
 
-// Controller aim feeds updateAimFromClient (and anything else listening for
-// real pointer motion) through a synthetic mousemove, since that's the same
-// path a physical mouse uses. Marking it lets #tactical-cursor's own
-// mousemove listener (initTacticalCursor) tell it apart from a real mouse and
-// skip showing its own lagged cursor on top of the instant virtual-gamepad
-// one -- without this, gameplay aim renders both crosshairs at once.
-function dispatchSyntheticControllerMousemove(clientX, clientY) {
-    const event = new MouseEvent('mousemove', { clientX, clientY, bubbles: true });
-    event.isControllerSynthetic = true;
-    window.dispatchEvent(event);
-}
-
 function updateVirtualGamepadCursorPosition(clientX, clientY, visible = true) {
     const cursor = ensureVirtualGamepadCursor();
     if (!cursor) return;
@@ -1429,58 +1584,22 @@ window.addEventListener('gamepad-menu-nav', (event) => {
 });
 
 // Trackpad and gyro aim arrive as per-frame mouse deltas rather than a stick
-// position, so they drive a virtual cursor that feeds the same screen->world
-// raycast a real mouse uses. Deltas are already in pixels; the sensitivity knob
-// on the Steam side does the heavy lifting, so this stays 1:1 by default.
-const CONTROLLER_CURSOR_SENSITIVITY = 1;
+// position; they drive facingYaw directly (see Task 2's updateFacingYaw),
+// mirroring how mouse pointer-lock deltas work.
+const CONTROLLER_YAW_SENSITIVITY = 0.0025;
 let controllerAimCursor = null;
-let lastPlayerAnchor = null;
-
-function getAimCursorAnchor() {
-    const playerPt = window.game?.getPlayerScreenPoint?.();
-    if (playerPt && Number.isFinite(playerPt.viewportX) && Number.isFinite(playerPt.viewportY)) {
-        return { x: playerPt.viewportX, y: playerPt.viewportY };
-    }
-    const width = window.innerWidth || 1280;
-    const height = window.innerHeight || 720;
-    return { x: width / 2, y: height / 2 };
-}
 
 function applyControllerCursorAim(controller) {
     const deltaX = Number(controller.cameraDelta?.x) || 0;
     const deltaY = Number(controller.cameraDelta?.y) || 0;
     // Sub-pixel motion is sensor noise, not a gesture.
     if (Math.hypot(deltaX, deltaY) < 1) return false;
-    if (typeof window.game?.updateAimFromClient !== 'function') return false;
-
-    const width = window.innerWidth || 0;
-    const height = window.innerHeight || 0;
-    if (!width || !height) return false;
-
-    const anchor = getAimCursorAnchor();
-    if (!controllerAimCursor) {
-        controllerAimCursor = { x: anchor.x, y: anchor.y };
-    } else if (lastPlayerAnchor) {
-        const playerMovedX = anchor.x - lastPlayerAnchor.x;
-        const playerMovedY = anchor.y - lastPlayerAnchor.y;
-        controllerAimCursor.x += playerMovedX;
-        controllerAimCursor.y += playerMovedY;
-    }
-    lastPlayerAnchor = { ...anchor };
+    if (typeof window.game?.updateFacingYaw !== 'function') return false;
 
     const sensitivity = state.settings.aimSensitivity ?? 1.0;
-    const invertSign = state.settings.invertAimY ? -1 : 1;
-    controllerAimCursor.x = Math.min(width, Math.max(0, controllerAimCursor.x + (deltaX * CONTROLLER_CURSOR_SENSITIVITY * sensitivity)));
-    controllerAimCursor.y = Math.min(height, Math.max(0, controllerAimCursor.y + (deltaY * CONTROLLER_CURSOR_SENSITIVITY * sensitivity * invertSign)));
-
-    dispatchSyntheticControllerMousemove(controllerAimCursor.x, controllerAimCursor.y);
-    updateVirtualGamepadCursorPosition(controllerAimCursor.x, controllerAimCursor.y, true);
-
-    return Boolean(window.game.updateAimFromClient(
-        controllerAimCursor.x,
-        controllerAimCursor.y,
-        { keepMouseActive: true }
-    ));
+    const currentYaw = Number(window.game.facingYaw) || 0;
+    window.game.updateFacingYaw(currentYaw - deltaX * CONTROLLER_YAW_SENSITIVITY * sensitivity);
+    return true;
 }
 
 function handleSteamGameplayInput(controller) {
@@ -1495,27 +1614,10 @@ function handleSteamGameplayInput(controller) {
     }
 
     const cursorAimed = applyControllerCursorAim(controller);
-    const anchor = getAimCursorAnchor();
 
     if (!cursorAimed && (aimX || aimY)) {
-        const width = window.innerWidth || 1280;
-        const height = window.innerHeight || 800;
-        const sensitivity = state.settings.aimSensitivity ?? 1.0;
-        const invertSign = state.settings.invertAimY ? -1 : 1;
-        if (!controllerAimCursor) controllerAimCursor = { x: anchor.x, y: anchor.y };
-        if (lastPlayerAnchor) {
-            controllerAimCursor.x += anchor.x - lastPlayerAnchor.x;
-            controllerAimCursor.y += anchor.y - lastPlayerAnchor.y;
-        }
-        const cursorSpeed = 16 * sensitivity;
-        controllerAimCursor.x = Math.min(width - 4, Math.max(4, controllerAimCursor.x + aimX * cursorSpeed));
-        controllerAimCursor.y = Math.min(height - 4, Math.max(4, controllerAimCursor.y + aimY * cursorSpeed * invertSign));
-        lastPlayerAnchor = { ...anchor };
-        updateVirtualGamepadCursorPosition(controllerAimCursor.x, controllerAimCursor.y, true);
-        dispatchSyntheticControllerMousemove(controllerAimCursor.x, controllerAimCursor.y);
-        window.game?.updateAimFromClient?.(controllerAimCursor.x, controllerAimCursor.y, { keepMouseActive: true });
-    } else if (!cursorAimed) {
-        lastPlayerAnchor = { ...anchor };
+        window.game?.updateFacingYaw?.(Math.atan2(aimX, aimY));
+        updateVirtualGamepadCursorPosition(0, 0, false);
     }
 
     if (controller.fire) {
@@ -2023,6 +2125,28 @@ window.achievementEngine = achievementEngine;
 
 const loadout = new LoadoutManager();
 window.loadout = loadout;
+
+// Season 0 HUD CRT Mutators (docs/season-zero-protocol/03 §5, itemdefs 4150/4151)
+const HUD_THEME_PRESETS = {
+    4150: { '--hud-primary': '#f59e0b', '--hud-glow': 'rgba(245, 158, 11, 0.4)', '--hud-scanline': '#d97706' }, // Amber CRT
+    4151: { '--hud-primary': '#10b981', '--hud-glow': 'rgba(16, 185, 129, 0.4)', '--hud-scanline': '#059669' }, // Emerald Radar
+    hudtheme_amber_crt: { '--hud-primary': '#f59e0b', '--hud-glow': 'rgba(245, 158, 11, 0.4)', '--hud-scanline': '#d97706' },
+    hudtheme_emerald_radar: { '--hud-primary': '#10b981', '--hud-glow': 'rgba(16, 185, 129, 0.4)', '--hud-scanline': '#059669' }
+};
+const HUD_THEME_VARS = ['--hud-primary', '--hud-glow', '--hud-scanline'];
+function applyHudThemeFromLoadout() {
+    const gameContainer = document.getElementById('game-container');
+    if (!gameContainer) return;
+    const rawId = loadout.state.hudThemeId;
+    const preset = HUD_THEME_PRESETS[rawId] ?? HUD_THEME_PRESETS[Number(rawId)];
+    if (preset) {
+        for (const [key, value] of Object.entries(preset)) gameContainer.style.setProperty(key, value);
+    } else {
+        for (const key of HUD_THEME_VARS) gameContainer.style.removeProperty(key);
+    }
+}
+applyHudThemeFromLoadout();
+window.addEventListener('loadout-hud-theme-changed', applyHudThemeFromLoadout);
 
 // ── Daily Ops System ──────────────────────────────────────────
 const DAILY_OPS_KEY_PREFIX = 'hb_daily_v1_';
@@ -3770,6 +3894,15 @@ function showGameOverScreen(stats, { isVictory = false, deathReason = 'hazard' }
     const rating = window.game?.getRunRating?.(score) ?? { grade: 'D', label: 'AGENT LOST — MINIMAL TELEMETRY' };
     const wasDailyOpsRun = _isDailyOpsRun;
     const dailyOpsDate = wasDailyOpsRun ? getTodayDateString() : null;
+
+    const isMultiplayer = Boolean(window.game?.isMultiplayer || window.activeMultiplayerSession);
+    const mpMode = window.game?.multiplayerMode || window.activeMultiplayerSession?.mode || 'coop';
+    const roomCode = window.activeMultiplayerSession?.roomCode || null;
+    const peersCount = window.game?.remotePlayers?.size || 0;
+    const tradeStats = playerTradeManager?.getTradeStats?.() || {};
+    const breadcrumbCount = window.game?.explorationTracker?.getBreadcrumbTrail?.()?.length || 0;
+    const discoveredSectors = window.game?.discoveredMapChunkKeys?.size || 0;
+
     const steamRunPayload = buildSteamRunScorePayload({
         stats: {
             ...stats,
@@ -3787,8 +3920,36 @@ function showGameOverScreen(stats, { isVictory = false, deathReason = 'hazard' }
         dailyOpsDate,
         seed: activeRunSeed,
         runCards: activeRunCards,
-        depositedResources: window.game?.runDepositedResources ?? {}
+        depositedResources: window.game?.runDepositedResources ?? {},
+        multiplayer: {
+            isMultiplayer,
+            mode: mpMode,
+            roomCode,
+            peersCount,
+            tradesCompleted: tradeStats.completedCount || 0,
+            rivalKills: window.game?.pvpKillsCount || 0,
+            squadRevives: window.game?.squadRevivesCount || 0
+        },
+        exploration: {
+            breadcrumbsCount: breadcrumbCount,
+            trailDistanceMeters: stats.distanceTravelled || 0,
+            sectorsDiscovered: discoveredSectors
+        },
+        trades: tradeStats
     });
+
+    debugLog.info('TELEMETRY', 'Run score finalized', {
+        score,
+        outcome: steamRunPayload.outcome,
+        multiplayer: steamRunPayload.multiplayer,
+        exploration: steamRunPayload.exploration,
+        trades: steamRunPayload.trades
+    });
+
+    if (isMultiplayer) {
+        window.profileManager?.recordMultiplayerRun?.({ mode: mpMode, isVictory });
+    }
+
     dispatchSteamRunScoreFinalized(steamRunPayload, window);
     void renderGameOverLeaderboard(steamRunPayload);
 
@@ -3894,7 +4055,7 @@ window.addEventListener('run-cards-drawn', (event) => {
 
     const seedHUD = document.getElementById('hud-run-seed');
     if (seedHUD) {
-        if (activeRunSeed !== null) {
+        if (activeRunSeed !== null && document.body.classList.contains('show-debug')) {
             seedHUD.textContent = `SEED: ${activeRunSeed}`;
             seedHUD.classList.remove('hidden');
         } else {
@@ -5126,21 +5287,22 @@ window.addEventListener('engineer-turret-tick', (event) => {
     }
 });
 
+let _cachedScanBar = null;
+let _cachedRadarPanel = null;
 window.addEventListener('scan-cooldown-tick', (event) => {
     const { remaining = 0, max = 1 } = event?.detail ?? {};
-    const bar = document.getElementById('scan-bar');
-    const panel = document.getElementById('radar-scan-panel');
+    if (!_cachedScanBar) _cachedScanBar = document.getElementById('scan-bar');
+    if (!_cachedRadarPanel) _cachedRadarPanel = document.getElementById('radar-scan-panel');
     const fillPct = 1 - (remaining / Math.max(0.001, max));
 
-    if (bar) {
-        bar.style.transform = `scaleX(${Math.max(0, Math.min(1, fillPct))})`;
+    if (_cachedScanBar) {
+        _cachedScanBar.style.transform = `scaleX(${Math.max(0, Math.min(1, fillPct))})`;
     }
 
-    if (panel) {
-        panel.classList.toggle('class-ability-panel--ready', remaining <= 0);
-        panel.classList.toggle('class-ability-panel--active', remaining > 0);
+    if (_cachedRadarPanel) {
+        _cachedRadarPanel.classList.toggle('class-ability-panel--ready', remaining <= 0);
+        _cachedRadarPanel.classList.toggle('class-ability-panel--active', remaining > 0);
     }
-
 });
 
 function syncAbilityPanelLabel() {
@@ -5806,6 +5968,12 @@ function setSnailSpawnState(enabled, { purgeExisting = false } = {}) {
     window.game?.setSnailsEnabled?.(Boolean(enabled), { removeExisting: purgeExisting });
 }
 
+const CLASS_CHARACTER_INTRO_BASENAMES = {
+    SCOUT: 'scout-class-intro',
+    TANK: 'tank-class-intro',
+    ENGINEER: 'engineer-class-intro'
+};
+
 const CLASS_INTRO_WEBM_BASENAMES = {
     SCOUT: 'scout-intro',
     TANK: 'tank-intro',
@@ -5816,7 +5984,8 @@ const cutsceneImagePreloadCache = new Map();
 const cutsceneVideoPreloadCache = new Map();
 
 function getCutsceneVideoHost() {
-    return document.getElementById('game-viewport')
+    return document.getElementById('stage-root')
+        ?? document.getElementById('game-viewport')
         ?? document.getElementById('game-container')
         ?? document.body;
 }
@@ -5832,28 +6001,94 @@ function warmCutsceneImage(src) {
 function warmCutsceneVideo(base) {
     if (!base) return;
     const canPlayWebm = document.createElement('video').canPlayType('video/webm');
-    const source = canPlayWebm ? `/cutscenes/${base}.webm` : `/cutscenes/${base}.mp4`;
+    let source;
+    if (base === 'DoorIntro' || base === '/DoorIntro.mp4' || base === 'DoorIntro.mp4') {
+        // Electron's bundled Chromium on Linux commonly ships without H.264
+        // decode support (licensing); webm/VP9 always works there. Every
+        // other cutscene already falls back this way — DoorIntro lives at
+        // the repo root instead of /cutscenes/ so it needs its own branch.
+        source = canPlayWebm ? '/DoorIntro.webm' : '/DoorIntro.mp4';
+    } else if (base.startsWith('/')) {
+        source = base;
+    } else {
+        source = canPlayWebm ? `/cutscenes/${base}.webm` : `/cutscenes/${base}.mp4`;
+    }
     if (cutsceneVideoPreloadCache.has(source)) return;
 
-    warmCutsceneImage(`/cutscenes/${base}-poster.jpg`);
+    if (!base.includes('DoorIntro')) {
+        warmCutsceneImage(`/cutscenes/${base}-poster.jpg`);
+    }
 
     const video = document.createElement('video');
     video.muted = true;
     video.playsInline = true;
     video.preload = 'auto';
-    video.poster = assetUrl(`/cutscenes/${base}-poster.jpg`);
+    if (!base.includes('DoorIntro')) {
+        video.poster = assetUrl(`/cutscenes/${base}-poster.jpg`);
+    }
     video.src = assetUrl(source);
     video.load();
     cutsceneVideoPreloadCache.set(source, video);
 }
 
+function preloadVideoReady(base) {
+    if (!base) return Promise.resolve();
+    warmCutsceneVideo(base);
+    return new Promise((resolve) => {
+        const canPlayWebm = document.createElement('video').canPlayType('video/webm');
+        let source;
+        if (base === 'DoorIntro' || base === '/DoorIntro.mp4' || base === 'DoorIntro.mp4') {
+            source = canPlayWebm ? '/DoorIntro.webm' : '/DoorIntro.mp4';
+        } else if (base.startsWith('/')) {
+            source = base;
+        } else {
+            source = canPlayWebm ? `/cutscenes/${base}.webm` : `/cutscenes/${base}.mp4`;
+        }
+
+        const cached = cutsceneVideoPreloadCache.get(source);
+        if (cached && cached.readyState >= 2) {
+            resolve();
+            return;
+        }
+
+        const video = cached || document.createElement('video');
+        video.muted = true;
+        video.playsInline = true;
+        video.preload = 'auto';
+        if (!cached) {
+            video.src = assetUrl(source);
+            video.load();
+        }
+
+        let settled = false;
+        const done = () => {
+            if (settled) return;
+            settled = true;
+            resolve();
+        };
+
+        if (video.readyState >= 2) {
+            done();
+            return;
+        }
+
+        video.addEventListener('loadeddata', done, { once: true });
+        video.addEventListener('canplay', done, { once: true });
+        video.addEventListener('error', done, { once: true });
+        setTimeout(done, 2500);
+    });
+}
+
 function warmClassIntroMedia(playerType = 'SCOUT') {
+    const charBase = CLASS_CHARACTER_INTRO_BASENAMES[playerType] ?? CLASS_CHARACTER_INTRO_BASENAMES.SCOUT;
     const webmBase = CLASS_INTRO_WEBM_BASENAMES[playerType] ?? CLASS_INTRO_WEBM_BASENAMES.SCOUT;
+    warmCutsceneVideo(charBase);
     warmCutsceneVideo(webmBase);
 }
 
 function playClassIntroSequence(playerType = 'SCOUT') {
-    const webmBase = CLASS_INTRO_WEBM_BASENAMES[playerType] ?? CLASS_INTRO_WEBM_BASENAMES.SCOUT;
+    const charBase = CLASS_CHARACTER_INTRO_BASENAMES[playerType] ?? CLASS_CHARACTER_INTRO_BASENAMES.SCOUT;
+    const launchBase = CLASS_INTRO_WEBM_BASENAMES[playerType] ?? CLASS_INTRO_WEBM_BASENAMES.SCOUT;
     warmClassIntroMedia(playerType);
     window.AudioManager?.unlock?.();
 
@@ -5871,27 +6106,37 @@ function playClassIntroSequence(playerType = 'SCOUT') {
         const host = getCutsceneVideoHost();
         const overlay = document.createElement('div');
         overlay.className = 'class-intro-overlay';
-        overlay.style.setProperty('--class-intro-poster', `url('${assetUrl(`/cutscenes/${webmBase}-poster.jpg`)}')`);
+        overlay.style.setProperty('--class-intro-poster', `url('${assetUrl(`/cutscenes/${charBase}-poster.jpg`)}')`);
 
         const skipHint = document.createElement('div');
         skipHint.className = 'class-intro-skip';
         skipHint.textContent = 'PRESS ANY BUTTON / KEY TO SKIP';
 
         let settled = false;
+        let step = 'character'; // 'character' | 'launch' | 'done'
         let guardTimer = null;
         let videoElement = null;
         let checkSkipInterval = null;
+        let inputArmed = false;
+
+        const armTimer = window.setTimeout(() => {
+            inputArmed = true;
+        }, 500);
 
         const clearTimers = () => {
             if (guardTimer) {
                 window.clearTimeout(guardTimer);
                 guardTimer = null;
             }
+            if (armTimer) {
+                window.clearTimeout(armTimer);
+            }
         };
 
         function cleanupAndResolve() {
             if (settled) return;
             settled = true;
+            step = 'done';
             clearTimers();
             if (checkSkipInterval) {
                 clearInterval(checkSkipInterval);
@@ -5918,14 +6163,91 @@ function playClassIntroSequence(playerType = 'SCOUT') {
             }, 280);
         }
 
+        function playVideoSource(baseName, onEnd) {
+            if (settled) return;
+            clearTimers();
+
+            if (!videoElement) {
+                videoElement = document.createElement('video');
+                videoElement.className = 'class-intro-video';
+                videoElement.playsInline = true;
+                videoElement.muted = true;
+                videoElement.volume = Math.min(1, Math.max(0, window.AudioManager?.masterVolume ?? 1.0));
+                videoElement.autoplay = true;
+                videoElement.controls = false;
+                videoElement.preload = 'auto';
+                overlay.insertBefore(videoElement, skipHint);
+            }
+
+            overlay.style.setProperty('--class-intro-poster', `url('${assetUrl(`/cutscenes/${baseName}-poster.jpg`)}')`);
+            videoElement.poster = assetUrl(`/cutscenes/${baseName}-poster.jpg`);
+            videoElement.style.opacity = '1';
+            videoElement.src = assetUrl(`/cutscenes/${baseName}.webm`);
+
+            guardTimer = window.setTimeout(() => {
+                if (videoElement.readyState < 2 && videoElement.currentTime <= 0) {
+                    onEnd();
+                }
+            }, 8500);
+
+            const onPlaying = () => {
+                if (guardTimer) {
+                    window.clearTimeout(guardTimer);
+                    guardTimer = null;
+                }
+                videoElement.style.opacity = '1';
+            };
+
+            const onEndedHandler = () => {
+                videoElement.removeEventListener('playing', onPlaying);
+                videoElement.removeEventListener('ended', onEndedHandler);
+                videoElement.removeEventListener('error', onErrorHandler);
+                onEnd();
+            };
+
+            const onErrorHandler = () => {
+                if (videoElement.src && !videoElement.src.endsWith('.mp4')) {
+                    videoElement.src = assetUrl(`/cutscenes/${baseName}.mp4`);
+                    videoElement.play().catch(onEndedHandler);
+                } else {
+                    onEndedHandler();
+                }
+            };
+
+            videoElement.addEventListener('playing', onPlaying);
+            videoElement.addEventListener('ended', onEndedHandler, { once: true });
+            videoElement.addEventListener('error', onErrorHandler, { once: true });
+
+            videoElement.play().catch(() => {
+                videoElement.muted = true;
+                return videoElement.play();
+            }).catch(onEndedHandler);
+        }
+
+        function startLaunchStep() {
+            if (settled || step === 'launch') return;
+            step = 'launch';
+            playVideoSource(launchBase, cleanupAndResolve);
+        }
+
         function onKey(event) {
+            if (!inputArmed && event.key !== 'Escape') return;
             event.preventDefault();
-            cleanupAndResolve();
+            if (event.key === 'Escape' || step === 'launch') {
+                cleanupAndResolve();
+            } else {
+                startLaunchStep();
+            }
         }
 
         function onPointerUp(event) {
+            if (!inputArmed) return;
             event.preventDefault();
-            cleanupAndResolve();
+            if (step === 'launch') {
+                cleanupAndResolve();
+            } else {
+                startLaunchStep();
+            }
         }
 
         window.addEventListener('keydown', onKey);
@@ -5937,63 +6259,10 @@ function playClassIntroSequence(playerType = 'SCOUT') {
             }
         }, 50);
 
-        // Start directly on the authored class movie. The old GIF pre-roll
-        // looked like a stray flash/interstitial before the real intro loaded.
         overlay.append(skipHint);
         host.appendChild(overlay);
-        buildVideo();
 
-        function buildVideo() {
-        videoElement = document.createElement('video');
-        videoElement.className = 'class-intro-video';
-        videoElement.style.opacity = '0';
-        videoElement.playsInline = true;
-        // The class clips contain unexplained combat/gunfire audio that does
-        // not match the on-screen action. Keep the visual briefing clean.
-        videoElement.muted = true;
-        videoElement.volume = Math.min(1, Math.max(0, window.AudioManager?.masterVolume ?? 1.0));
-        videoElement.autoplay = true;
-        videoElement.controls = false;
-        videoElement.preload = 'auto';
-        videoElement.poster = assetUrl(`/cutscenes/${webmBase}-poster.jpg`);
-
-        const webmSource = document.createElement('source');
-        webmSource.src = assetUrl(`/cutscenes/${webmBase}.webm`);
-        webmSource.type = 'video/webm';
-
-        // The intro is a one-shot cutscene and never loops.
-        if (videoElement.canPlayType('video/webm')) {
-            videoElement.append(webmSource);
-        } else {
-            const mp4Fallback = document.createElement('source');
-            mp4Fallback.src = assetUrl(`/cutscenes/${webmBase}.mp4`);
-            mp4Fallback.type = 'video/mp4';
-            videoElement.append(mp4Fallback);
-        }
-        overlay.insertBefore(videoElement, skipHint);
-
-        guardTimer = window.setTimeout(() => {
-            if (videoElement.readyState < 2) cleanupAndResolve();
-        }, 4000);
-
-        videoElement.addEventListener('playing', () => {
-            if (guardTimer) {
-                window.clearTimeout(guardTimer);
-                guardTimer = null;
-            }
-            videoElement.style.opacity = '1';
-        });
-        videoElement.addEventListener('loadeddata', () => {
-            videoElement.style.opacity = '1';
-        }, { once: true });
-        videoElement.addEventListener('ended', cleanupAndResolve);
-        videoElement.addEventListener('error', cleanupAndResolve);
-
-        videoElement.play().catch(() => {
-            videoElement.muted = true;
-            return videoElement.play();
-        }).catch(cleanupAndResolve);
-        }
+        playVideoSource(charBase, startLaunchStep);
     });
 }
 
@@ -6001,7 +6270,15 @@ function playClassIntroSequence(playerType = 'SCOUT') {
 // fallback, {base}-poster.jpg). Skippable, and resolves immediately when the
 // asset doesn't exist so story beats never stall on missing files.
 function playCutsceneVideo(base, options = {}) {
-    const { onDoorCutoff = null } = (typeof options === 'object' && options !== null ? options : {});
+    const {
+        onDoorCutoff = null,
+        kicker = '',
+        title = '',
+        body = '',
+        fallback = null,
+        tone = 'event'
+    } = (typeof options === 'object' && options !== null ? options : {});
+
     warmCutsceneVideo(base);
     window.AudioManager?.unlock?.();
 
@@ -6013,7 +6290,8 @@ function playCutsceneVideo(base, options = {}) {
 
         const host = getCutsceneVideoHost();
         const overlay = document.createElement('div');
-        overlay.className = 'class-intro-overlay';
+        const activeTone = tone || fallback?.tone || 'event';
+        overlay.className = `class-intro-overlay cinematic-still-overlay--${activeTone}`;
         if (base === 'DoorIntro' || base.includes('DoorIntro')) {
             overlay.style.backgroundColor = '#000000';
             overlay.style.setProperty('--class-intro-poster', 'none');
@@ -6034,26 +6312,77 @@ function playCutsceneVideo(base, options = {}) {
 
         const sources = [];
         if (base === 'DoorIntro' || base === '/DoorIntro.mp4' || base === 'DoorIntro.mp4') {
-            sources.push('/DoorIntro.mp4');
+            // webm first so browsers without H.264 support (Linux Electron
+            // builds commonly lack it) pick it up via native <source> fallback.
+            sources.push('/DoorIntro.webm', '/DoorIntro.mp4');
         }
         if (base.startsWith('/')) {
             sources.push(base);
+            // Uses slice instead of a regex literal ending in the webm extension here —
+            // scripts/audit-retail-assets.js's asset-reference scanner misread that kind of
+            // pattern (leading slash immediately before the extension) as a file path.
+            if (base.endsWith('.webm')) sources.push(`${base.slice(0, -'.webm'.length)}.mp4`);
+        } else if (base.startsWith('int_') || base.includes('interstitial')) {
+            sources.push(`/interstitials/motion/${base}.webm`, `/interstitials/motion/${base}.mp4`);
         }
-        sources.push(`/cutscenes/${base}.webm`, `/cutscenes/${base}.mp4`, `/${base}.mp4`, `/${base}.webm`);
+        sources.push(
+            `/cutscenes/${base}.webm`,
+            `/cutscenes/${base}.mp4`,
+            `/interstitials/motion/${base}.webm`,
+            `/interstitials/motion/${base}.mp4`,
+            `/${base}.mp4`,
+            `/${base}.webm`
+        );
 
-        let primarySource = null;
         for (const src of [...new Set(sources)]) {
             const sourceEl = document.createElement('source');
             sourceEl.src = assetUrl(src);
             if (src.endsWith('.webm')) sourceEl.type = 'video/webm';
             if (src.endsWith('.mp4')) sourceEl.type = 'video/mp4';
             video.appendChild(sourceEl);
-            if (!primarySource) primarySource = sourceEl;
         }
 
         const skipHint = document.createElement('div');
-        skipHint.className = 'class-intro-skip';
+        skipHint.className = 'class-intro-skip cinematic-still-skip';
         skipHint.textContent = 'PRESS ANY BUTTON / KEY TO SKIP';
+
+        // Render text overlay on top of video when kicker/title/body are provided
+        const resolvedKicker = kicker || fallback?.kicker || '';
+        const resolvedTitle = title || fallback?.title || '';
+        const resolvedBody = body || fallback?.body || '';
+
+        let shade = null;
+        let copy = null;
+        if (resolvedTitle || resolvedKicker || resolvedBody) {
+            shade = document.createElement('div');
+            shade.className = 'cinematic-still-shade';
+
+            copy = document.createElement('div');
+            copy.className = 'cinematic-still-copy';
+
+            if (resolvedKicker) {
+                const kickerEl = document.createElement('div');
+                kickerEl.className = 'cinematic-still-kicker';
+                kickerEl.textContent = resolvedKicker;
+                copy.appendChild(kickerEl);
+            }
+            if (resolvedTitle) {
+                const titleEl = document.createElement('div');
+                titleEl.className = 'cinematic-still-title';
+                titleEl.textContent = resolvedTitle;
+                copy.appendChild(titleEl);
+            }
+            if (resolvedBody) {
+                const bodyEl = document.createElement('div');
+                bodyEl.className = 'cinematic-still-body';
+                bodyEl.textContent = resolvedBody;
+                copy.appendChild(bodyEl);
+            }
+
+            if (resolvedTitle || resolvedBody) {
+                window.AudioManager?.speakNarration?.(`${resolvedTitle}. ${resolvedBody || ''}`);
+            }
+        }
 
         let settled = false;
         let played = false;
@@ -6065,6 +6394,7 @@ function playCutsceneVideo(base, options = {}) {
             settled = true;
             window.clearTimeout(guardTimer);
             window.removeEventListener('keydown', onKey);
+            overlay.removeEventListener('pointerup', onPointer);
             if (typeof onDoorCutoff === 'function') {
                 onDoorCutoff();
             }
@@ -6086,6 +6416,11 @@ function playCutsceneVideo(base, options = {}) {
         };
 
         const onKey = (event) => {
+            event.preventDefault();
+            finish({ skipped: true });
+        };
+
+        const onPointer = (event) => {
             event.preventDefault();
             finish({ skipped: true });
         };
@@ -6113,22 +6448,25 @@ function playCutsceneVideo(base, options = {}) {
             video.style.opacity = '1';
         }, { once: true });
 
-        if (primarySource) {
-            primarySource.addEventListener('error', finish);
-        }
-        overlay.addEventListener('pointerup', finish);
+        overlay.addEventListener('pointerup', onPointer);
         window.addEventListener('keydown', onKey);
+
         guardTimer = window.setTimeout(() => {
-            if (video.readyState < 2) finish();
+            if (video.readyState < 2 && video.currentTime <= 0) finish();
         }, 4000);
+
         video.addEventListener('playing', () => {
             window.clearTimeout(guardTimer);
             played = true;
             video.style.opacity = '1';
         });
 
-        overlay.append(video, skipHint);
+        overlay.append(video);
+        if (shade) overlay.append(shade);
+        if (copy) overlay.append(copy);
+        overlay.append(skipHint);
         host.appendChild(overlay);
+
         video.play().catch(() => {
             video.muted = true;
             return video.play();
@@ -6245,11 +6583,13 @@ async function playCinematicBeat({
     videoBase = null,
     fallback = null
 } = {}) {
-    if (videoBase) {
-        const result = await playCutsceneVideo(videoBase);
+    const spec = fallback ? normalizeCinematicStillSpec(fallback) : null;
+    const targetVideo = videoBase || spec?.id || null;
+    if (targetVideo) {
+        const result = await playCutsceneVideo(targetVideo, { ...spec, fallback: spec });
         if (result?.played || result?.skipped) return result;
     }
-    return playCinematicStills(fallback ?? {});
+    return playCinematicStills(spec ?? {});
 }
 
 let cinematicEventQueue = Promise.resolve();
@@ -6498,6 +6838,77 @@ const transitionFromTitleToMenu = (afterClosed = null) => {
     );
 };
 
+// ── Pre-Mission Armory Gate (docs/armory-and-class-weapons-worklog.md task 5) ──
+// Inserted between class-select (menu) and run launch. Off unless
+// ARMORY_SCREEN_ENABLED is flipped true in src/featureFlags.js, in which case
+// callers below fall straight through to their embark action unchanged.
+let armorySceneInstance = null;
+let armoryUiInstance = null;
+let armoryInitPromise = null;
+let pendingArmoryEmbarkAction = null;
+
+function ensureArmoryInitialized() {
+    if (!armoryInitPromise) {
+        armoryInitPromise = (async () => {
+            const canvas = document.getElementById('armory-canvas');
+            const hudContainer = document.getElementById('armory-hud-overlay');
+            armorySceneInstance = await createArmoryScene(canvas);
+            armoryUiInstance = createArmoryUi({
+                container: hudContainer,
+                loadoutManager: loadout,
+                armoryScene: armorySceneInstance,
+                onEmbark: () => closeArmoryScreen({ embark: true }),
+                onBack: () => closeArmoryScreen({ embark: false }),
+                onOpenVault: () => openSteamVaultModal()
+            });
+        })();
+    }
+    return armoryInitPromise;
+}
+
+function closeArmoryScreen({ embark }) {
+    document.getElementById('armory-screen')?.classList.add('hidden');
+    if (embark) {
+        // Heading into gameplay — tear the scene down rather than leaving its
+        // requestAnimationFrame loop rendering a hidden canvas indefinitely.
+        // ensureArmoryInitialized() rebuilds fresh next time INITIALIZE/DAILY
+        // OPS is pressed.
+        armorySceneInstance?.dispose?.();
+        armorySceneInstance = null;
+        armoryUiInstance = null;
+        armoryInitPromise = null;
+        const action = pendingArmoryEmbarkAction;
+        pendingArmoryEmbarkAction = null;
+        action?.();
+    } else {
+        menu?.classList.remove('hidden');
+        setAppPhase('menu');
+        pendingArmoryEmbarkAction = null;
+    }
+}
+
+// Wraps a run-launch action (launchStandardRun or the Daily Ops flow) so it
+// fires only after the player confirms their loadout in the Armory. Bypassed
+// entirely while the feature flag is off, or mid-campaign on an active Act 2
+// continuation run (doc 07 §2 — you don't re-gear for a boss-continuation run,
+// same reasoning as the existing Mothership-dialogue skip inside
+// runMissionIntroSequence).
+async function openArmoryGate(embarkAction) {
+    if (!ARMORY_SCREEN_ENABLED || isAct2RunActive()) {
+        embarkAction();
+        return;
+    }
+    pendingArmoryEmbarkAction = embarkAction;
+    await ensureArmoryInitialized();
+    const playerType = getSelectedHeroType();
+    splash?.classList.add('hidden');
+    menu?.classList.add('hidden');
+    document.getElementById('armory-screen')?.classList.remove('hidden');
+    setAppPhase('armory');
+    armoryUiInstance.setClass(playerType);
+    armorySceneInstance.resize();
+}
+
 function launchStandardRun({ resetBank = false, playIntro = false } = {}) {
     const playerType = getSelectedHeroType();
     saveHeroType(playerType);
@@ -6542,20 +6953,26 @@ function launchStandardRun({ resetBank = false, playIntro = false } = {}) {
             return prepareGameplayForDialogue({ loaderOverDoor: true });
         },
         () => {
-            if (playIntro) {
-                void runMissionIntroSequence({ deploymentHold });
-            } else {
+            if (!playIntro) {
                 window.game?.setInputEnabled?.(true);
             }
         },
         undefined,
-        { waitForClosedWork: true, openingHoldMs: 160 }
+        {
+            waitForClosedWork: true,
+            openingHoldMs: 160,
+            onOpeningStart: () => {
+                if (playIntro) {
+                    void runMissionIntroSequence({ deploymentHold });
+                }
+            }
+        }
     );
 }
 
 if (startBtn) {
     startBtn.addEventListener('click', () => {
-        launchStandardRun({ resetBank: true, playIntro: true });
+        openArmoryGate(() => launchStandardRun({ resetBank: true, playIntro: true }));
     });
 }
 
@@ -6565,49 +6982,55 @@ if (dailyOpsBtn) {
     dailyOpsBtn.addEventListener('click', () => {
         const record = getDailyOpsRecord();
         if (record?.completed) return;
-        saveDailyOpsRecord({ attempted: true, completed: false, date: getTodayDateString() });
-        _isDailyOpsRun = true;
-        if (window.game) {
-            window.game.globalSeedOffset = getDailySeedInt();
-            window.game.fixedRunEntropy = true;
-        }
-        document.body.classList.add('mission-intro-active');
-        const deploymentHold = suspendGameForFullscreenVideo();
-        triggerDoorTransition(
-            () => {
-                showRunLoadingScreen('DOWNLOADING SECTOR PILLAR TOPOGRAPHY...', 0, { overDoor: true });
-                if (menu) menu.classList.add('hidden');
-                setAppPhase('gameplay');
-                window.game?.setPerformanceProfile?.('gameplay');
-                window.game?.updatePlayerType?.(getSelectedHeroType(), { poof: false, emitWorldEvents: false });
-                resetRunToStartingState({
-                    resetBank: false,
-                    skipEffects: true,
-                    snailSpawnEnabled: true,
-                    purgeSnails: false,
-                    deferChunkMount: true
-                });
-                document.getElementById('ui')?.classList.remove('hidden');
-                syncHudCompassVisibility();
-                const gameContainer = document.getElementById('game-container');
-                const viewport = document.getElementById('game-viewport');
-                if (gameContainer && viewport) {
-                    viewport.insertBefore(gameContainer, document.getElementById('ui'));
-                    gameContainer.classList.add('fullscreen-mode');
-                    queueGameLayoutRefresh();
-                }
+        openArmoryGate(() => {
+            saveDailyOpsRecord({ attempted: true, completed: false, date: getTodayDateString() });
+            _isDailyOpsRun = true;
+            if (window.game) {
+                window.game.globalSeedOffset = getDailySeedInt();
+                window.game.fixedRunEntropy = true;
+            }
+            document.body.classList.add('mission-intro-active');
+            const deploymentHold = suspendGameForFullscreenVideo();
+            triggerDoorTransition(
+                () => {
+                    showRunLoadingScreen('DOWNLOADING SECTOR PILLAR TOPOGRAPHY...', 0, { overDoor: true });
+                    if (menu) menu.classList.add('hidden');
+                    setAppPhase('gameplay');
+                    window.game?.setPerformanceProfile?.('gameplay');
+                    window.game?.updatePlayerType?.(getSelectedHeroType(), { poof: false, emitWorldEvents: false });
+                    resetRunToStartingState({
+                        resetBank: false,
+                        skipEffects: true,
+                        snailSpawnEnabled: true,
+                        purgeSnails: false,
+                        deferChunkMount: true
+                    });
+                    document.getElementById('ui')?.classList.remove('hidden');
+                    syncHudCompassVisibility();
+                    const gameContainer = document.getElementById('game-container');
+                    const viewport = document.getElementById('game-viewport');
+                    if (gameContainer && viewport) {
+                        viewport.insertBefore(gameContainer, document.getElementById('ui'));
+                        gameContainer.classList.add('fullscreen-mode');
+                        queueGameLayoutRefresh();
+                    }
 
-                // Keep the doors closed while the world build + shader warm-up
-                // runs, with the progress readout mounted over the door face.
-                return prepareGameplayForDialogue({ loaderOverDoor: true });
-            },
-            () => {
-                void runMissionIntroSequence({ deploymentHold });
-            },
-            undefined,
-            { waitForClosedWork: true, openingHoldMs: 160 }
-            // Defaults to active class door
-        );
+                    // Keep the doors closed while the world build + shader warm-up
+                    // runs, with the progress readout mounted over the door face.
+                    return prepareGameplayForDialogue({ loaderOverDoor: true });
+                },
+                () => {},
+                undefined,
+                {
+                    waitForClosedWork: true,
+                    openingHoldMs: 160,
+                    onOpeningStart: () => {
+                        void runMissionIntroSequence({ deploymentHold });
+                    }
+                }
+                // Defaults to active class door
+            );
+        });
     });
 }
 
@@ -6635,6 +7058,15 @@ function setDebugMode(active) {
     if (mainDebugToggle) {
         mainDebugToggle.checked = enabled;
         mainDebugToggle.disabled = !developerToolsAuthorized;
+    }
+    const seedHUD = document.getElementById('hud-run-seed');
+    if (seedHUD) {
+        if (enabled && activeRunSeed !== null) {
+            seedHUD.textContent = `SEED: ${activeRunSeed}`;
+            seedHUD.classList.remove('hidden');
+        } else {
+            seedHUD.classList.add('hidden');
+        }
     }
 }
 
@@ -6781,6 +7213,25 @@ function devToggleGodMode() {
     return `God mode ${debugGodModeActive ? 'ONLINE (Invulnerable)' : 'OFFLINE'}.`;
 }
 
+let debugNoclipActive = false;
+
+function devToggleNoclip(speedMult = 3.5) {
+    const game = window.game || window.threeGame;
+    if (!game?.setNoclip) {
+        return 'Game instance not ready.';
+    }
+    debugNoclipActive = game.toggleNoclip(speedMult);
+    const noclipBtn = document.getElementById('dev-btn-noclip');
+    if (noclipBtn) {
+        noclipBtn.classList.toggle('dev-btn--active', debugNoclipActive);
+        noclipBtn.textContent = debugNoclipActive ? 'GHOST/FLY✓' : '👻 NOCLIP / FLY';
+    }
+    showBiomePrompt?.(`> DEBUG: NOCLIP ${debugNoclipActive ? 'ONLINE [3.5x FLY]' : 'OFFLINE'}.`);
+    return `NOCLIP (Fly, Ghost, Zero Collision, 3.5x Speed) ${debugNoclipActive ? 'ONLINE [Fly Mode Active]' : 'OFFLINE [Normal Physics]'}.`;
+}
+window.devToggleNoclip = devToggleNoclip;
+if (window.__DEBUG__) window.__DEBUG__.toggleNoclip = devToggleNoclip;
+
 function devHealPlayer() {
     window.game?.healPlayer?.(999);
     window.game?.adjustOxygen?.(999);
@@ -6894,6 +7345,45 @@ function devGetLayoutMetrics() {
         + `  Res Preset:      ${preset}`;
 }
 
+function transitionToGameplayForDebug() {
+    if (appPhase !== 'gameplay') {
+        const splash = document.getElementById('splash-screen');
+        const menu = document.getElementById('menu-screen');
+        splash?.classList.add('hidden');
+        menu?.classList.add('hidden');
+        setAppPhase('gameplay');
+        window.game?.setPerformanceProfile?.('gameplay');
+        document.getElementById('ui')?.classList.remove('hidden');
+        const gameContainer = document.getElementById('game-container');
+        const viewport = document.getElementById('game-viewport');
+        if (gameContainer && viewport && !viewport.contains(gameContainer)) {
+            viewport.insertBefore(gameContainer, document.getElementById('ui'));
+            gameContainer.classList.add('fullscreen-mode');
+            queueGameLayoutRefresh();
+        }
+        window.game?.setInputEnabled?.(true);
+    }
+}
+
+function openDebugShowroom() {
+    transitionToGameplayForDebug();
+    closeDevConsoleModal();
+    const game = window.game;
+    if (!game) return Promise.reject(new Error('Game not initialized'));
+    showBiomePrompt('> DEBUG: ENTERING SHOWROOM VALIDATION GALLERY');
+    return game.buildDebugShowroom().then((showroom) => {
+        game.godMode = true;
+        const targetX = showroom.spawnX || 9510;
+        const targetZ = showroom.spawnZ || 9510;
+        const pos = game.teleportPlayerTo(targetX, targetZ, { syncChunks: false, safeFloor: false });
+        logDevConsole(`Teleported to Debug Showroom Gallery at (${targetX.toFixed(1)}, ${targetZ.toFixed(1)})`, 'success');
+        return pos;
+    }).catch((err) => {
+        logDevConsole(`Failed opening showroom: ${err?.message ?? err}`, 'error');
+        throw err;
+    });
+}
+
 function executeDevCommand(input) {
     const raw = String(input ?? '').trim();
     if (!raw) return;
@@ -6911,6 +7401,10 @@ function executeDevCommand(input) {
         case 'commands':
         case '?':
             result = 'Available commands:\n'
+                + '  tp <target>         - Teleport: crash, showroom, camp [id], hive [id], queen, chunk <x y>, coords <x z>, list\n'
+                + '  stats / state       - Comprehensive game telemetry: Act, Level, Temp, Events x/total, FPS, and assets\n'
+                + '  event <type> [args] - Trigger event: queen_hallucination, blackout, corrupt_compass, milestone_boss, camp_quest, spawn_patrol, drop_gear, win, game_over\n'
+                + '  seed [number]       - View or set active run seed\n'
                 + '  unlock <key>        - Unlock specific achievement\n'
                 + '  unlock_all          - Unlock all achievements\n'
                 + '  reset_ach           - Clear local achievement unlocks\n'
@@ -6925,11 +7419,169 @@ function executeDevCommand(input) {
                 + '  god                 - Toggle God Mode\n'
                 + '  salvage / +$        - Grant salvage & shells\n'
                 + '  heal                - Refill Health & O₂\n'
-                + '  nuke / kill         - Clear hostiles in current sector\n'
+                + '  museum              - Open continuous asset museum hallway (chunk 9000, 9000)\n'
+                + '  showroom            - Open 4-wall orientation showroom gallery (chunk 500, 500)\n'
+                + '  closemuseum         - Close continuous asset museum hallway\n'
+                + '  progression         - Open Gameplay Progression Walkthrough (F10)\n'
                 + '  steam               - View Steam connection info\n'
                 + '  steamlog            - View Steam startup diagnostics\n'
                 + '  clear / cls         - Clear console log';
             break;
+        case 'tp':
+        case 'teleport':
+        case 'goto': {
+            const game = window.game;
+            if (!game?.teleportPlayerTo) {
+                result = 'Game not initialized or inactive.';
+                resultType = 'error';
+                break;
+            }
+            const target = String(arg || '').trim().toLowerCase();
+            if (!target || target === 'list' || target === 'locations' || target === 'poi') {
+                const pois = game.getDebugPointsOfInterest?.() ?? [];
+                result = `POINTS OF INTEREST (${pois.length} locations):\n`
+                    + pois.map((p) => `  [${p.category.padEnd(6)}] ${p.id.padEnd(20)} (${p.x.toFixed(1)}, ${p.z.toFixed(1)}) chunk:${p.chunkKey} · ${p.name}`).join('\n')
+                    + '\nUsage: tp <id> (e.g. tp crash, tp showroom, tp camp, tp hive, tp queen, tp 120 45)';
+                break;
+            }
+            if (target === 'nexus' || target === 'qanexus') {
+                closeDevConsoleModal();
+                openQaNexusModal();
+                result = 'Opened QA Nexus Proving Grounds command center.';
+                break;
+            }
+            if (target === 'museum' || target === 'colonnade' || target === 'wing1') {
+                closeDevConsoleModal();
+                result = 'Opening Wing 1 Solo Asset Colonnade at (9000, 9000)...';
+                void window.__DEBUG__.openMuseum();
+                break;
+            }
+            if (target === 'showroom' || target === 'gallery') {
+                closeDevConsoleModal();
+                result = 'Building showroom 4-wall gallery and teleporting...';
+                void openDebugShowroom();
+                break;
+            }
+            if (target === 'tilegrid' || target === 'grid' || target === 'wing2') {
+                closeDevConsoleModal();
+                result = 'Opening Wing 2 Architectural Tile Grid at (11000, 9500)...';
+                void openDebugTileGrid(game);
+                break;
+            }
+            if (target === 'bosses' || target === 'bossarenas' || target === 'wing3') {
+                closeDevConsoleModal();
+                result = 'Opening Wing 3 Boss & Encounter Arenas at (13000, 9500)...';
+                void openDebugBossArenas(game);
+                break;
+            }
+            if (target === 'campsim' || target === 'camps' || target === 'wing4') {
+                closeDevConsoleModal();
+                result = 'Opening Wing 4 Survivor Camp Testing Lab at (15000, 9500)...';
+                void openDebugCampSimulator(game);
+                break;
+            }
+            if (target === 'crash' || target === 'spawn' || target === 'origin') {
+                const spawn = game.getSpawnTile?.() ?? { x: 0, y: 0 };
+                const res = game.teleportPlayerTo(spawn.x, spawn.y);
+                result = res ? `Teleported to Bunker Spawn (${res.x.toFixed(1)}, ${res.z.toFixed(1)})` : 'Failed teleporting to spawn.';
+                break;
+            }
+            if (target.startsWith('chunk')) {
+                const chunkParts = target.split(/\s+/).slice(1);
+                const cx = parseInt(chunkParts[0], 10) || 0;
+                const cy = parseInt(chunkParts[1], 10) || 0;
+                const worldX = cx * game.chunkSize + game.chunkSize * 0.5;
+                const worldZ = cy * game.chunkSize + game.chunkSize * 0.5;
+                const res = game.teleportPlayerTo(worldX, worldZ);
+                result = res ? `Teleported to chunk (${cx}, ${cy}) at (${res.x.toFixed(1)}, ${res.z.toFixed(1)})` : 'Failed chunk teleport.';
+                break;
+            }
+            const coordMatch = target.match(/^(-?\d+(?:\.\d+)?)\s+(-?\d+(?:\.\d+)?)$/);
+            if (coordMatch) {
+                const wx = parseFloat(coordMatch[1]);
+                const wz = parseFloat(coordMatch[2]);
+                const res = game.teleportPlayerTo(wx, wz);
+                result = res ? `Teleported to world coordinates (${res.x.toFixed(1)}, ${res.z.toFixed(1)})` : 'Failed coordinates teleport.';
+                break;
+            }
+            const pois = game.getDebugPointsOfInterest?.() ?? [];
+            const matched = pois.find((p) => p.id === target || p.id.toLowerCase().includes(target) || p.name.toLowerCase().includes(target));
+            if (matched) {
+                const res = game.teleportPlayerTo(matched.x, matched.z);
+                result = res ? `Teleported to ${matched.name} (${res.x.toFixed(1)}, ${res.z.toFixed(1)}) [${matched.chunkKey}]` : `Failed teleporting to ${matched.id}.`;
+            } else {
+                result = `Unknown target '${target}'. Type 'tp list' for available points of interest.`;
+                resultType = 'error';
+            }
+            break;
+        }
+        case 'stats':
+        case 'state':
+        case 'telemetry':
+        case 'info': {
+            const game = window.game;
+            if (!game?.getComprehensiveDebugStats) {
+                result = 'Game not initialized or inactive.';
+                resultType = 'error';
+                break;
+            }
+            const s = game.getComprehensiveDebugStats();
+            result = `══════════════════ [ GAME STATE & TELEMETRY ] ══════════════════\n`
+                + `  RUN SEED:       ${s.seed} (entropy)\n`
+                + `  PROGRESSION:    Act ${s.act} · Level/Depth ${s.level} · Landform: ${s.landform}\n`
+                + `  POSITION:       (${s.position.x}, ${s.position.z}) [Chunk ${s.position.chunk}]\n`
+                + `  ENVIRONMENT:    Biome: ${s.environment.biome} · Temp: ${s.environment.temperatureC}°C · Phase: ${s.environment.dayNightPhase}\n`
+                + `                  Hazard: ${(s.environment.hazardPressure * 100).toFixed(0)}% · Infection: ${(s.environment.infectionPressure * 100).toFixed(0)}%\n`
+                + `  PLAYER:         ${s.player.type} · HP: ${s.player.hp} · O₂: ${s.player.o2} · God: ${s.player.godMode ? 'ON' : 'OFF'}\n`
+                + `────────────────────── [ EVENTS & QUESTS ] ──────────────────────\n`
+                + `  BASE UPGRADES:  ${s.events.baseUpgrades.label} goals built\n`
+                + `  CAMPS:          ${s.events.camps.discovered}/${s.events.camps.total} discovered · ${s.events.camps.questsCompleted}/${s.events.camps.total} quests done\n`
+                + `  HIVES:          ${s.events.hives.neutralized}/${s.events.hives.total} neutralized\n`
+                + `  RING GATES:     ${s.events.ringGates.unlocked}/${s.events.ringGates.total} unlocked\n`
+                + `  BOSSES:         ${s.events.bosses.defeated}/${s.events.bosses.total} defeated\n`
+                + `───────────────────── [ RENDERER PERFORMANCE ] ─────────────────────\n`
+                + `  FPS:            ${Math.round(fpsFrames / Math.max((performance.now() - fpsLastTime) / 1000, 0.001))} (sampled)\n`
+                + `  DRAWS/TRIS:     ${s.performance.drawCalls} calls · ${s.performance.triangles.toLocaleString()} triangles\n`
+                + `  ASSETS:         ${s.performance.textures} textures · ${s.performance.geometries} geometries · ${s.performance.activeChunks} active chunks\n`
+                + `════════════════════════════════════════════════════════════════`;
+            break;
+        }
+        case 'event':
+        case 'trigger': {
+            const game = window.game;
+            if (!game?.triggerDebugEvent) {
+                result = 'Game not initialized or inactive.';
+                resultType = 'error';
+                break;
+            }
+            const eventParts = String(arg || '').trim().split(/\s+/);
+            const evtName = eventParts[0];
+            const evtArg = eventParts[1];
+            result = 'Triggering event...';
+            void game.triggerDebugEvent(evtName, { intensity: evtArg, seconds: evtArg, bossId: evtArg, count: evtArg }).then((msg) => {
+                logDevConsole(msg, 'success');
+            }).catch((err) => {
+                logDevConsole(`Event trigger failed: ${err?.message ?? err}`, 'error');
+            });
+            break;
+        }
+        case 'seed': {
+            const game = window.game;
+            if (arg) {
+                const newSeed = parseInt(arg, 10);
+                if (Number.isFinite(newSeed) && game) {
+                    game.runEntropy = newSeed >>> 0;
+                    game.fixedRunEntropy = true;
+                    result = `Run seed set to ${game.runEntropy} (pinned).`;
+                } else {
+                    result = 'Invalid seed number.';
+                    resultType = 'error';
+                }
+            } else {
+                result = `Current Run Seed: ${game?.runEntropy ?? 'none'}`;
+            }
+            break;
+        }
         case 'layout':
         case 'stage':
         case 'metrics':
@@ -7022,10 +7674,76 @@ function executeDevCommand(input) {
         case 'god':
             result = devToggleGodMode();
             break;
+        case 'noclip':
+        case 'fly':
+        case 'ghost':
+            result = devToggleNoclip();
+            break;
         case 'salvage':
         case 'resources':
         case '+$':
             result = devGrantResources();
+            break;
+        case 'museum':
+            closeDevConsoleModal();
+            result = 'Opening Debug Hallway Museum at (9000, 9000)...';
+            void window.__DEBUG__.openMuseum();
+            break;
+        case 'closemuseum':
+            result = 'Closing Debug Hallway Museum...';
+            void window.__DEBUG__.closeMuseum();
+            break;
+        case 'showroom':
+            result = 'Building 4-wall showroom gallery and teleporting...';
+            void openDebugShowroom();
+            break;
+        case 'progression':
+        case 'walkthrough':
+            result = 'Opening Gameplay Progression Walkthrough (F10)...';
+            progressionWalkthrough.openModal();
+            break;
+        case 'nexus':
+        case 'qanexus':
+        case 'provinggrounds':
+            closeDevConsoleModal();
+            openQaNexusModal();
+            result = 'Opened QA Nexus Proving Grounds command center.';
+            break;
+        case 'closenexus':
+            closeQaNexusModal();
+            result = 'Closed QA Nexus terminal.';
+            break;
+        case 'tilegrid':
+        case 'grid':
+        case 'canyon':
+            closeDevConsoleModal();
+            result = 'Building Wing 2 Architectural Tile Grid at (11000, 9500)...';
+            void openDebugTileGrid(window.game || window.threeGame);
+            break;
+        case 'closetilegrid':
+            closeDebugTileGrid(window.game || window.threeGame);
+            result = 'Closed Wing 2 Architectural Tile Grid.';
+            break;
+        case 'bosses':
+        case 'bossarenas':
+        case 'arenas':
+            closeDevConsoleModal();
+            result = 'Opening Wing 3 Boss & Encounter Arenas at (13000, 9500)...';
+            void openDebugBossArenas(window.game || window.threeGame);
+            break;
+        case 'closebosses':
+            closeDebugBossArenas(window.game || window.threeGame);
+            result = 'Closed Wing 3 Boss & Encounter Arenas.';
+            break;
+        case 'campsim':
+        case 'camps':
+            closeDevConsoleModal();
+            result = 'Opening Wing 4 Survivor Camp Testing Lab at (15000, 9500)...';
+            void openDebugCampSimulator(window.game || window.threeGame);
+            break;
+        case 'closecamps':
+            closeDebugCampSimulator(window.game || window.threeGame);
+            result = 'Closed Wing 4 Survivor Camp Testing Lab.';
             break;
         case 'heal':
         case 'hp':
@@ -7080,6 +7798,60 @@ function executeDevCommand(input) {
 
     logDevConsole(result, resultType);
 }
+
+// Programmatic Automation and Testing API
+window.__DEBUG__ = {
+    // Runs a raw dev-console command string through the exact same dispatcher the console
+    // itself uses (docs/debug-gallery-and-architectural-grid-expansion-plan.md §7 "Wing 5" —
+    // progression walkthrough triggers reuse real commands rather than reimplementing them).
+    runCommand: (input) => executeDevCommand(input),
+    teleport: (target, options) => {
+        const game = window.game;
+        if (!game) return Promise.reject(new Error('Game not initialized'));
+        if (target === 'showroom' || target === 'gallery' || target === 'museum') {
+            return openDebugShowroom();
+        }
+        if (typeof target === 'object' && target !== null && Number.isFinite(target.x) && Number.isFinite(target.z)) {
+            return Promise.resolve(game.teleportPlayerTo(target.x, target.z, options));
+        }
+        const targetStr = String(target).toLowerCase();
+        if (targetStr === 'crash' || targetStr === 'spawn') {
+            const spawn = game.getSpawnTile?.() ?? { x: 0, y: 0 };
+            return Promise.resolve(game.teleportPlayerTo(spawn.x, spawn.y, options));
+        }
+        const pois = game.getDebugPointsOfInterest?.() ?? [];
+        const matched = pois.find((p) => p.id === targetStr || p.id.toLowerCase().includes(targetStr) || p.name.toLowerCase().includes(targetStr));
+        if (matched) {
+            return Promise.resolve(game.teleportPlayerTo(matched.x, matched.z, options));
+        }
+        return Promise.reject(new Error(`Location '${target}' not found`));
+    },
+    triggerEvent: (type, options) => window.game?.triggerDebugEvent?.(type, options),
+    getLocations: () => window.game?.getDebugPointsOfInterest?.() ?? [],
+    getStats: () => window.game?.getComprehensiveDebugStats?.() ?? null,
+    getRunSeed: () => window.game?.runEntropy ?? 0,
+    openShowroom: () => window.__DEBUG__.teleport('showroom'),
+    openMuseum: () => window.__DEBUG__.teleport('museum'),
+    getState: () => ({
+        appPhase,
+        playerType: window.game?.playerType,
+        inputEnabled: window.game?.inputEnabled,
+        stats: window.game?.getComprehensiveDebugStats?.()
+    }),
+    startRun: (options) => {
+        launchStandardRun(options);
+        return true;
+    },
+    skipIntro: () => {
+        window.skipAllIntro = true;
+        return true;
+    },
+    nukeEnemies: () => devKillSnails(),
+    heal: () => devHealPlayer(),
+    grantResources: () => devGrantResources(),
+    log: (msg, type = 'system') => logDevConsole(msg, type)
+};
+
 
 function openDevConsoleModal() {
     if (!developerToolsAuthorized) {
@@ -7153,6 +7925,8 @@ function populateDevAchievementDropdowns() {
 // Dev Console UI Bindings
 document.getElementById('debug-open-console')?.addEventListener('click', openDevConsoleModal);
 document.getElementById('debug-launch-rgb')?.addEventListener('click', () => launchRgb());
+document.getElementById('debug-open-showroom')?.addEventListener('click', () => openDebugShowroom());
+document.getElementById('dev-btn-open-showroom')?.addEventListener('click', () => openDebugShowroom());
 document.getElementById('debug-achievement-select')?.addEventListener('change', (e) => {
     const key = e.target.value;
     if (key) {
@@ -7205,6 +7979,25 @@ document.getElementById('dev-btn-jump-rgb-chapter')?.addEventListener('click', (
 document.getElementById('dev-btn-god')?.addEventListener('click', () => {
     const res = devToggleGodMode();
     logDevConsole(res, 'system');
+});
+document.getElementById('dev-btn-noclip')?.addEventListener('click', () => {
+    const res = devToggleNoclip();
+    logDevConsole(res, 'system');
+});
+document.getElementById('dev-btn-open-nexus')?.addEventListener('click', () => {
+    closeDevConsoleModal();
+    openQaNexusModal();
+});
+document.getElementById('dev-btn-open-museum')?.addEventListener('click', () => {
+    closeDevConsoleModal();
+    logDevConsole('Opening Debug Museum at (9000, 9000)...', 'system');
+    void window.__DEBUG__.openMuseum();
+});
+document.getElementById('dev-tp-select')?.addEventListener('change', (e) => {
+    const target = e.target.value;
+    if (!target) return;
+    executeDevCommand(`tp ${target}`);
+    e.target.value = '';
 });
 document.getElementById('dev-btn-resources')?.addEventListener('click', () => {
     const res = devGrantResources();
@@ -7274,8 +8067,17 @@ if (fpsDisplay) {
     }, 1000);
 }
 
+let gearSpinRafId = 0;
+function ensureGearSpinActive() {
+    if (!gearSpinRafId) {
+        gearSpinState.lastTime = performance.now();
+        gearSpinRafId = requestAnimationFrame(updateGearSpin);
+    }
+}
+
 function updateGearSpin(now) {
     const overlay = transitionOverlay || document.getElementById('transition-overlay');
+    const isVisible = overlay?.classList.contains('visible') || overlay?.classList.contains('closing-v') || overlay?.classList.contains('opening-h');
     const dt = Math.min((now - gearSpinState.lastTime) / 1000, 0.05);
     gearSpinState.lastTime = now;
 
@@ -7291,13 +8093,21 @@ function updateGearSpin(now) {
     gearSpinState.velocity += (gearSpinState.targetVelocity - gearSpinState.velocity) * smoothing;
     gearSpinState.rotation += gearSpinState.velocity * dt;
 
-    if (overlay) {
-        overlay.style.setProperty('--gear-rotation', `${gearSpinState.rotation}deg`);
+    if (overlay && isVisible) {
+        const stacks = overlay.querySelectorAll('.gear-stack');
+        const rot = `rotate(${gearSpinState.rotation.toFixed(1)}deg)`;
+        for (let i = 0; i < stacks.length; i++) {
+            stacks[i].style.transform = rot;
+        }
     }
 
-    requestAnimationFrame(updateGearSpin);
+    if (isVisible || Math.abs(gearSpinState.velocity) > 0.5) {
+        gearSpinRafId = requestAnimationFrame(updateGearSpin);
+    } else {
+        gearSpinRafId = 0;
+    }
 }
-requestAnimationFrame(updateGearSpin);
+ensureGearSpinActive();
 
 // About Modal Logic
 const aboutBtn = document.getElementById('about-btn');
@@ -7644,6 +8454,284 @@ function focusTacticalMapOnPlayer() {
     }
 }
 
+function getCurrentInventoryForTrade() {
+    const bankState = window.game?.bank?.getState?.() || {};
+    const ammoCount = Number(window.pickupCounterState?.ammo) || 0;
+    const medkitCount = Number(window.pickupCounterState?.medkits) || 0;
+    const o2Count = Number(window.pickupCounterState?.o2Canisters) || 0;
+    return {
+        shells: Number(bankState.shells) || 0,
+        ammo: ammoCount,
+        medkits: medkitCount,
+        o2Canisters: o2Count
+    };
+}
+
+function updatePlayerTradeUi(state) {
+    const modal = document.getElementById('player-trade-modal');
+    if (!modal) return;
+
+    if (!state.isOpen) {
+        modal.classList.add('hidden');
+        modal.setAttribute('aria-hidden', 'true');
+        return;
+    }
+
+    modal.classList.remove('hidden');
+    modal.setAttribute('aria-hidden', 'false');
+
+    const inv = getCurrentInventoryForTrade();
+    const selfCallsign = window.profileManager?.getCallsign?.() || 'LOCAL AGENT';
+    const selfClass = window.selectedPlayerType || 'TANK';
+
+    const selfCallsignEl = document.getElementById('trade-self-callsign');
+    const selfClassEl = document.getElementById('trade-self-class');
+    if (selfCallsignEl) selfCallsignEl.textContent = selfCallsign.toUpperCase();
+    if (selfClassEl) selfClassEl.textContent = `${selfClass} // OPERATIVE`;
+
+    const peerCallsignEl = document.getElementById('trade-peer-callsign');
+    const peerClassEl = document.getElementById('trade-peer-class');
+    if (peerCallsignEl) peerCallsignEl.textContent = (state.partner?.callsign || 'SQUADMATE').toUpperCase();
+    if (peerClassEl) peerClassEl.textContent = `${state.partner?.opClass || 'SCOUT'} // REMOTE`;
+
+    // Self availability
+    const shellAvailEl = document.getElementById('trade-self-shells-avail');
+    const ammoAvailEl = document.getElementById('trade-self-ammo-avail');
+    const medsAvailEl = document.getElementById('trade-self-meds-avail');
+    const o2AvailEl = document.getElementById('trade-self-o2-avail');
+    if (shellAvailEl) shellAvailEl.textContent = `(${inv.shells})`;
+    if (ammoAvailEl) ammoAvailEl.textContent = `(${inv.ammo})`;
+    if (medsAvailEl) medsAvailEl.textContent = `(${inv.medkits})`;
+    if (o2AvailEl) o2AvailEl.textContent = `(${inv.o2Canisters})`;
+
+    // Self offer values
+    const shellValEl = document.getElementById('trade-self-shells-val');
+    const ammoValEl = document.getElementById('trade-self-ammo-val');
+    const medsValEl = document.getElementById('trade-self-meds-val');
+    const o2ValEl = document.getElementById('trade-self-o2-val');
+    if (shellValEl) shellValEl.textContent = String(state.myOffer.shells || 0);
+    if (ammoValEl) ammoValEl.textContent = String(state.myOffer.ammo || 0);
+    if (medsValEl) medsValEl.textContent = String(state.myOffer.medkits || 0);
+    if (o2ValEl) o2ValEl.textContent = String(state.myOffer.o2Canisters || 0);
+
+    // Peer offer values
+    const peerShellValEl = document.getElementById('trade-peer-shells-val');
+    const peerAmmoValEl = document.getElementById('trade-peer-ammo-val');
+    const peerMedsValEl = document.getElementById('trade-peer-meds-val');
+    const peerO2ValEl = document.getElementById('trade-peer-o2-val');
+    if (peerShellValEl) peerShellValEl.textContent = String(state.peerOffer.shells || 0);
+    if (peerAmmoValEl) peerAmmoValEl.textContent = String(state.peerOffer.ammo || 0);
+    if (peerMedsValEl) peerMedsValEl.textContent = String(state.peerOffer.medkits || 0);
+    if (peerO2ValEl) peerO2ValEl.textContent = String(state.peerOffer.o2Canisters || 0);
+
+    const statusBarEl = document.getElementById('trade-status-bar-text');
+    if (statusBarEl) statusBarEl.textContent = state.statusMessage || 'AWAITING OFFER SELECTION';
+
+    const confirmBtn = document.getElementById('trade-confirm-btn');
+    if (confirmBtn) {
+        confirmBtn.textContent = state.myAccepted ? 'WAITING FOR SQUADMATE...' : 'CONFIRM TRANSFER';
+        confirmBtn.disabled = state.myAccepted;
+    }
+}
+
+let playerTradeEventsInitialized = false;
+function setupPlayerTradeEvents() {
+    if (playerTradeEventsInitialized) return;
+    playerTradeEventsInitialized = true;
+
+    playerTradeManager.onStateChanged = updatePlayerTradeUi;
+
+    // Local Steppers
+    const bindStepper = (minusId, plusId, key, step, maxSupplier) => {
+        document.getElementById(minusId)?.addEventListener('click', () => {
+            const current = playerTradeManager.myOffer[key] || 0;
+            playerTradeManager.setOfferItem(key, Math.max(0, current - step));
+            window.AudioManager?.play?.('ui_click', { volume: 0.25 });
+        });
+        document.getElementById(plusId)?.addEventListener('click', () => {
+            const current = playerTradeManager.myOffer[key] || 0;
+            const maxVal = maxSupplier();
+            playerTradeManager.setOfferItem(key, Math.min(maxVal, current + step));
+            window.AudioManager?.play?.('ui_click', { volume: 0.25 });
+        });
+    };
+
+    const inv = () => getCurrentInventoryForTrade();
+    bindStepper('trade-self-shells-minus', 'trade-self-shells-plus', TRADEABLE_RESOURCES.SHELLS, 10, () => inv().shells);
+    bindStepper('trade-self-ammo-minus', 'trade-self-ammo-plus', TRADEABLE_RESOURCES.AMMO, 10, () => inv().ammo);
+    bindStepper('trade-self-meds-minus', 'trade-self-meds-plus', TRADEABLE_RESOURCES.MEDKITS, 1, () => inv().medkits);
+    bindStepper('trade-self-o2-minus', 'trade-self-o2-plus', TRADEABLE_RESOURCES.O2, 1, () => inv().o2Canisters);
+
+    document.getElementById('close-player-trade-modal')?.addEventListener('click', () => {
+        playerTradeManager.closeTrade();
+        window.AudioManager?.play?.('ui_click', { volume: 0.3 });
+    });
+    document.getElementById('trade-cancel-btn')?.addEventListener('click', () => {
+        playerTradeManager.closeTrade();
+        window.AudioManager?.play?.('ui_click', { volume: 0.3 });
+    });
+
+    document.getElementById('trade-confirm-btn')?.addEventListener('click', () => {
+        const invState = getCurrentInventoryForTrade();
+        const success = playerTradeManager.acceptTrade(invState);
+        if (success) {
+            window.AudioManager?.play?.('fx_menu_confirm', { volume: 0.4 });
+        } else {
+            window.AudioManager?.play?.('ui_error', { volume: 0.35 });
+        }
+    });
+
+    window.openPlayerTradeWith = (peerData) => {
+        setupPlayerTradeEvents();
+        playerTradeManager.openTrade(peerData);
+    };
+}
+
+let npcDialogueEventsInitialized = false;
+
+function updateNpcDialogueUi(state = {}) {
+    const modal = document.getElementById('npc-dialogue-modal');
+    if (!modal) return;
+
+    if (!state.isOpen || !state.node || !state.tree) {
+        modal.classList.add('hidden');
+        modal.setAttribute('aria-hidden', 'true');
+        return;
+    }
+
+    modal.classList.remove('hidden');
+    modal.setAttribute('aria-hidden', 'false');
+
+    const tree = state.tree;
+    const node = state.node;
+    const bond = state.bond;
+
+    const iconEl = document.getElementById('npc-dialogue-icon');
+    const nameEl = document.getElementById('npc-dialogue-name');
+    const factionEl = document.getElementById('npc-dialogue-faction');
+    const bondBadgeEl = document.getElementById('npc-dialogue-bond-badge');
+    const avatarEl = document.getElementById('npc-avatar-visual');
+    const moodEl = document.getElementById('npc-mood-indicator');
+    const narrationEl = document.getElementById('npc-narration-box');
+    const speakerEl = document.getElementById('npc-dialogue-speaker');
+    const textEl = document.getElementById('npc-dialogue-text');
+    const choicesEl = document.getElementById('npc-choices-container');
+
+    const storyTitleEl = document.getElementById('npc-story-stage-title');
+    const storyObjectiveEl = document.getElementById('npc-story-objective-text');
+    const dotsContainer = document.getElementById('npc-story-progress-dots');
+
+    if (storyTitleEl) {
+        storyTitleEl.textContent = state.currentStage
+            ? `SIDE STORY // STAGE ${state.currentStage.index}/3: ${state.currentStage.title.toUpperCase()}`
+            : 'SIDE STORY // COMPANION ARC';
+    }
+    if (storyObjectiveEl) {
+        storyObjectiveEl.textContent = state.currentStage
+            ? `OBJECTIVE: ${state.currentStage.objective}`
+            : 'Explore the sector and converse with survivors.';
+    }
+    if (dotsContainer) {
+        const completed = state.storyState?.completedStages || [];
+        const activeIdx = state.storyState?.stageIndex || 1;
+        dotsContainer.innerHTML = [1, 2, 3].map((idx) => {
+            if (completed.includes(idx)) return '<span class="story-dot story-dot--completed"></span>';
+            if (idx === activeIdx) return '<span class="story-dot story-dot--active"></span>';
+            return '<span class="story-dot"></span>';
+        }).join('');
+    }
+
+    if (iconEl) iconEl.textContent = tree.icon || '💬';
+    if (nameEl) nameEl.textContent = tree.name.toUpperCase();
+    if (factionEl) factionEl.textContent = tree.faction;
+    if (bondBadgeEl && bond) {
+        bondBadgeEl.textContent = `${bond.label} (${state.bondScore || 0} PTS)`;
+    }
+    if (avatarEl) avatarEl.textContent = tree.icon || '💬';
+    if (moodEl) {
+        moodEl.textContent = (bond?.level >= 2) ? 'ENAMORED / DEVOTED' : ((bond?.level === 1) ? 'WARM / ATTRACTION' : 'ATTENTIVE');
+    }
+
+    if (narrationEl) {
+        if (node.narration) {
+            narrationEl.style.display = 'block';
+            narrationEl.textContent = node.narration;
+        } else {
+            narrationEl.style.display = 'none';
+        }
+    }
+
+    if (speakerEl) speakerEl.textContent = `${node.speaker ? node.speaker.toUpperCase() : tree.name.toUpperCase()}:`;
+    if (textEl) textEl.textContent = `"${node.dialogue}"`;
+
+    if (choicesEl) {
+        choicesEl.innerHTML = '';
+        (node.choices || []).forEach((choice, idx) => {
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'npc-choice-btn';
+            btn.setAttribute('data-choice-id', choice.id);
+            btn.innerHTML = `
+                <span class="npc-choice-key">[${idx + 1}]</span>
+                <span class="npc-choice-tone">${choice.tone || ''}</span>
+                <span class="npc-choice-text">${choice.text}</span>
+            `;
+            btn.addEventListener('click', () => {
+                window.AudioManager?.play?.('ui_click', { volume: 0.3 });
+                npcDialogueTreeManager.selectChoice(choice.id);
+            });
+            choicesEl.appendChild(btn);
+        });
+    }
+}
+
+function setupNpcDialogueEvents() {
+    if (npcDialogueEventsInitialized) return;
+    npcDialogueEventsInitialized = true;
+
+    npcDialogueTreeManager.onStateChanged = updateNpcDialogueUi;
+
+    document.getElementById('close-npc-dialogue-modal')?.addEventListener('click', () => {
+        npcDialogueTreeManager.closeDialogue();
+        window.AudioManager?.play?.('ui_click', { volume: 0.3 });
+    });
+
+    window.addEventListener('keydown', (e) => {
+        if (!npcDialogueTreeManager.activeTree || !npcDialogueTreeManager.currentNode) return;
+
+        if (e.key === 'Escape') {
+            e.preventDefault();
+            npcDialogueTreeManager.closeDialogue();
+            return;
+        }
+
+        const choices = npcDialogueTreeManager.currentNode.choices || [];
+        const num = parseInt(e.key, 10);
+        if (!isNaN(num) && num >= 1 && num <= choices.length) {
+            e.preventDefault();
+            const selected = choices[num - 1];
+            if (selected) {
+                window.AudioManager?.play?.('ui_click', { volume: 0.3 });
+                npcDialogueTreeManager.selectChoice(selected.id);
+            }
+        }
+    });
+
+    window.openNpcDialogueTree = async (treeId) => {
+        setupNpcDialogueEvents();
+        const node = npcDialogueTreeManager.startDialogue(treeId);
+        if (node?.interstitial && typeof window.playSideStoryInterstitial === 'function') {
+            await window.playSideStoryInterstitial(node.interstitial);
+        }
+        return node;
+    };
+    window.NPC_DIALOGUE_TREES = NPC_DIALOGUE_TREES;
+    window.npcDialogueTreeManager = npcDialogueTreeManager;
+    window.sideStoryManager = sideStoryManager;
+    window.SIDE_STORIES_CONFIG = SIDE_STORIES_CONFIG;
+    window.SIDE_STORY_STATUS = SIDE_STORY_STATUS;
+}
+
 function adjustTacticalMapZoom(delta) {
     tacticalMapState.zoom = Math.max(0.5, Math.min(3.5, tacticalMapState.zoom + delta));
 }
@@ -7801,9 +8889,16 @@ function drawTacticalMapOverlay() {
         }
     }
 
-    // Render the actual stamped floors. Rooms and halls retain their authored
-    // silhouettes, including bends, branches, and door connector lanes.
+    // Render the actual stamped floors with chunk-level culling
+    const chunkPixelSize = chunkSize * cellSize;
     for (const chunk of detailedChunks) {
+        const chunkScreenX = chunk.chunkX * chunkPixelSize + offsetX;
+        const chunkScreenY = chunk.chunkY * chunkPixelSize + offsetY;
+        if (chunkScreenX + chunkPixelSize < -50 || chunkScreenX > width + 50 ||
+            chunkScreenY + chunkPixelSize < -50 || chunkScreenY > height + 50) {
+            continue;
+        }
+
         for (const cell of chunk.cells ?? []) {
             const p = worldToMap(chunk.chunkX * chunkSize + cell.x, chunk.chunkY * chunkSize + cell.y);
             if (p.x < -cellSize || p.x > width || p.y < -cellSize || p.y > height) continue;
@@ -7812,6 +8907,44 @@ function drawTacticalMapOverlay() {
                     : 'rgba(55,145,178,.5)';
             ctx.fillRect(p.x, p.y, Math.max(1.2, cellSize + 0.25), Math.max(1.2, cellSize + 0.25));
         }
+    }
+
+    // Render Traversed Exploration Breadcrumb Trail (Real Historical Footsteps)
+    const breadcrumbTrail = mapState.breadcrumbTrail ?? [];
+    if (breadcrumbTrail.length >= 2) {
+        ctx.save();
+
+        // 1. Soft glowing outer trail path
+        ctx.beginPath();
+        const startPt = worldToMap(breadcrumbTrail[0].x, breadcrumbTrail[0].z);
+        ctx.moveTo(startPt.x, startPt.y);
+        for (let i = 1; i < breadcrumbTrail.length; i++) {
+            const pt = worldToMap(breadcrumbTrail[i].x, breadcrumbTrail[i].z);
+            ctx.lineTo(pt.x, pt.y);
+        }
+        ctx.strokeStyle = 'rgba(0, 229, 255, 0.22)';
+        ctx.lineWidth = 4.5;
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+        ctx.stroke();
+
+        // 2. Inner crisp neon route trail
+        ctx.strokeStyle = 'rgba(46, 230, 255, 0.85)';
+        ctx.lineWidth = 1.8;
+        ctx.setLineDash([4, 2]);
+        ctx.stroke();
+
+        // 3. Footstep waypoint pulse markers along the traveled route
+        const stepInterval = Math.max(3, Math.floor(breadcrumbTrail.length / 40));
+        for (let i = 0; i < breadcrumbTrail.length; i += stepInterval) {
+            const wp = worldToMap(breadcrumbTrail[i].x, breadcrumbTrail[i].z);
+            if (wp.x < -10 || wp.x > width + 10 || wp.y < -10 || wp.y > height + 10) continue;
+            ctx.beginPath();
+            ctx.arc(wp.x, wp.y, 2.0, 0, Math.PI * 2);
+            ctx.fillStyle = '#00ffd2';
+            ctx.fill();
+        }
+        ctx.restore();
     }
 
     // Landmarks (including Home Base)
@@ -7873,7 +9006,7 @@ function drawTacticalMapOverlay() {
         ctx.fillRect(pt.x - 3, pt.y - 3, 6, 6);
     }
 
-    // Render scanned path connectivity lines & route vectors ("math paths of scanned area")
+    // Render scanned path connectivity lines & route vectors
     const scannedPaths = mapState.scannedPaths ?? [];
     for (const sp of scannedPaths) {
         if (!sp.path || sp.path.length < 2) continue;
@@ -7949,6 +9082,11 @@ function toggleTacticalMapModal(forceState) {
 
     const isHidden = modal.classList.contains('hidden');
     const shouldOpen = typeof forceState === 'boolean' ? forceState : isHidden;
+
+    // Tactical map is an in-run tool -- never let it open from the title
+    // menu, settings, or any other non-gameplay screen. Closing (forceState
+    // === false) is always allowed so an in-progress close can't get stuck.
+    if (shouldOpen && appPhase !== 'gameplay') return;
 
     if (shouldOpen) {
         modal.classList.remove('hidden');
@@ -8054,6 +9192,26 @@ document.addEventListener('keydown', (event) => {
         return;
     }
 
+    if (event.code === 'KeyT') {
+        const activeTag = document.activeElement?.tagName?.toLowerCase();
+        if (activeTag !== 'input' && activeTag !== 'textarea') {
+            const tradeModal = document.getElementById('player-trade-modal');
+            if (tradeModal && !tradeModal.classList.contains('hidden')) {
+                playerTradeManager.closeTrade();
+            } else {
+                setupPlayerTradeEvents();
+                const remotes = window.game?.remotePlayers;
+                let nearest = null;
+                if (remotes && remotes.size > 0) {
+                    nearest = Array.from(remotes.values())[0];
+                }
+                playerTradeManager.openTrade(nearest || { id: 'squad-peer', callsign: 'SQUAD-OPERATIVE', opClass: 'SCOUT' });
+            }
+            event.preventDefault();
+            return;
+        }
+    }
+
     if (event.code === 'KeyM' || (event.key === 'Tab' && !event.ctrlKey && !event.altKey)) {
         const activeTag = document.activeElement?.tagName?.toLowerCase();
         if (activeTag !== 'input' && activeTag !== 'textarea') {
@@ -8064,6 +9222,20 @@ document.addEventListener('keydown', (event) => {
     }
 
     if (event.key === 'Escape') {
+        const virtualKeyboardOverlay = document.getElementById('virtual-keyboard-overlay');
+        if (virtualKeyboardOverlay && !virtualKeyboardOverlay.classList.contains('hidden')) {
+            closeVirtualKeyboard();
+            event.preventDefault();
+            return;
+        }
+
+        const tradeModal = document.getElementById('player-trade-modal');
+        if (tradeModal && !tradeModal.classList.contains('hidden')) {
+            playerTradeManager.closeTrade();
+            event.preventDefault();
+            return;
+        }
+
         const tacticalMapModal = document.getElementById('tactical-map-modal');
         if (tacticalMapModal && !tacticalMapModal.classList.contains('hidden')) {
             toggleTacticalMapModal(false);
@@ -8190,6 +9362,27 @@ document.addEventListener('keydown', (event) => {
         const codexModal = document.getElementById('codex-modal');
         if (codexModal && !codexModal.classList.contains('hidden')) {
             closeCodexModal();
+            event.preventDefault();
+            return;
+        }
+
+        const seasonPassModal = document.getElementById('season-pass-modal');
+        if (seasonPassModal && !seasonPassModal.classList.contains('hidden')) {
+            document.getElementById('close-season-pass-modal')?.click();
+            event.preventDefault();
+            return;
+        }
+
+        const steamVaultModal = document.getElementById('steam-vault-modal');
+        if (steamVaultModal && !steamVaultModal.classList.contains('hidden')) {
+            document.getElementById('close-steam-vault-modal')?.click();
+            event.preventDefault();
+            return;
+        }
+
+        const armoryScreen = document.getElementById('armory-screen');
+        if (armoryScreen && !armoryScreen.classList.contains('hidden')) {
+            document.getElementById('armory-btn-back')?.click();
             event.preventDefault();
             return;
         }
@@ -8661,7 +9854,7 @@ window.addEventListener('milestone-boss-warning', (event) => {
     const bossType = String(event?.detail?.type ?? '').replace(/^boss_/, '');
     const suffix = MILESTONE_BOSS_CINEMATIC_SUFFIXES.has(bossType) ? bossType : 'cryosnail';
     playAuthoredEventOnce(`boss_encounter_${suffix}`, {
-        videoBase: null,
+        videoBase: `event-boss-encounter-${suffix}`,
         eventDetail: event?.detail ?? {}
     });
 });
@@ -9076,6 +10269,11 @@ const songInterstitial = new SongInterstitialController({
     AudioManager,
     reducedMotion: window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches
 });
+
+window.playSideStoryInterstitial = async (id) => {
+    if (!songInterstitial) return { shown: false };
+    return await songInterstitial.show(id, { holdMs: 1400 });
+};
 
 window.addEventListener('camp-choice-open', async (event) => {
     const detail = event?.detail ?? {};
@@ -10017,11 +11215,13 @@ function preloadDoorAssets() {
 function triggerDoorTransition(onClosed, onOpened, doorKey, options = {}) {
     const {
         waitForClosedWork = false,
-        openingHoldMs = 300
+        openingHoldMs = 300,
+        onOpeningStart = null
     } = options;
     const overlay = transitionOverlay || document.getElementById('transition-overlay');
     if (!overlay) {
         if (onClosed) void onClosed();
+        if (onOpeningStart) onOpeningStart();
         if (onOpened) onOpened();
         return;
     }
@@ -10036,6 +11236,7 @@ function triggerDoorTransition(onClosed, onOpened, doorKey, options = {}) {
     // 1. Prepare for vertical close
     overlay.classList.add('visible');
     overlay.classList.add('closing-v');
+    ensureGearSpinActive();
     AudioManager.play('ui_boot1', { volume: 0.5 });
 
     // Force reflow
@@ -10071,6 +11272,28 @@ function triggerDoorTransition(onClosed, onOpened, doorKey, options = {}) {
                         overlay.classList.add('active');
                         AudioManager.play('door_slide_horiz', { volume: 0.4 });
                         AudioManager.play('door_gears_spin', { volume: 0.25 });
+
+                        // onOpeningStart fires here, alongside the 'active'
+                        // class that actually triggers the CSS transition --
+                        // NOT immediately after the forced reflow above.
+                        // Callers use this hook to insert a lot of DOM (a
+                        // fullscreen video overlay, mission-intro UI); doing
+                        // that between the reflow and the double-RAF that
+                        // commits the door's "closed" starting position can
+                        // make the browser coalesce the style changes and
+                        // skip the transition entirely -- the doors jump
+                        // straight to their end state (effectively
+                        // vanishing) instead of visibly sliding open. Firing
+                        // it here, once the transition is already underway,
+                        // avoids that race.
+                        if (onOpeningStart) {
+                            try {
+                                onOpeningStart();
+                            } catch (err) {
+                                console.error('Door onOpeningStart callback error:', err);
+                            }
+                        }
+
                         // Opening owns the reveal. Do not transfer control or
                         // start intro work until the panels have visibly
                         // completed their 800ms travel.
@@ -10574,15 +11797,25 @@ function initTacticalCursor() {
         document.documentElement.classList.add('custom-cursor-enabled');
     }, { passive: true });
 
+    let lastRenderedX = -9999;
+    let lastRenderedY = -9999;
+    let lastRenderedScale = -1;
+
     function updateCursorPosition() {
-        curX += (mouseX - curX) * LERP_FACTOR;
-        curY += (mouseY - curY) * LERP_FACTOR;
+        const dx = mouseX - curX;
+        const dy = mouseY - curY;
+        const ds = targetScale - curScale;
 
-        // Snappy dynamic scale LERP for precise clicks and fadeouts
-        curScale += (targetScale - curScale) * 0.35;
+        curX += dx * LERP_FACTOR;
+        curY += dy * LERP_FACTOR;
+        curScale += ds * 0.35;
 
-        // Keep the custom cursor perfectly centered on the physical pointer tip and scaled correctly
-        cursor.style.transform = `translate3d(${curX}px, ${curY}px, 0) translate3d(-50%, -50%, 0) scale(${curScale})`;
+        if (Math.abs(curX - lastRenderedX) > 0.05 || Math.abs(curY - lastRenderedY) > 0.05 || Math.abs(curScale - lastRenderedScale) > 0.005) {
+            lastRenderedX = curX;
+            lastRenderedY = curY;
+            lastRenderedScale = curScale;
+            cursor.style.transform = `translate3d(${curX.toFixed(1)}px, ${curY.toFixed(1)}px, 0) translate3d(-50%, -50%, 0) scale(${curScale.toFixed(3)})`;
+        }
         requestAnimationFrame(updateCursorPosition);
     }
     requestAnimationFrame(updateCursorPosition);
@@ -10737,6 +11970,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             '/door_cryo_keyart_v2.webp',
             '/door_alien_keyart_v2.webp',
             '/door_rust_keyart_v2.webp',
+            '/title_key_art_v2.png',
             '/menu_bg.webp',
             '/ship_wreckage.png',
             '/scout_ship.png',
@@ -11031,6 +12265,25 @@ document.addEventListener('DOMContentLoaded', async () => {
                     { key: 'camp_verb_meridian', url: '/audio/generated/camp_verb_meridian.wav' },
                     { key: 'camp_verb_tallow', url: '/audio/generated/camp_verb_tallow.wav' },
                     { key: 'camp_verb_vesper', url: '/audio/generated/camp_verb_vesper.wav' },
+                    { key: 'voice_commander_breached', url: '/audio/generated/voice_commander_breached.wav' },
+                    { key: 'voice_commander_reloading', url: '/audio/generated/voice_commander_reloading.wav' },
+                    { key: 'voice_commander_low_health', url: '/audio/generated/voice_commander_low_health.wav' },
+                    { key: 'voice_commander_boss_spotted', url: '/audio/generated/voice_commander_boss_spotted.wav' },
+                    { key: 'voice_commander_killstreak', url: '/audio/generated/voice_commander_killstreak.wav' },
+                    { key: 'voice_commander_victory', url: '/audio/generated/voice_commander_victory.wav' },
+                    { key: 'voice_aura_target_down', url: '/audio/generated/voice_aura_target_down.wav' },
+                    { key: 'voice_aura_shield_critical', url: '/audio/generated/voice_aura_shield_critical.wav' },
+                    { key: 'voice_aura_reloading', url: '/audio/generated/voice_aura_reloading.wav' },
+                    { key: 'voice_aura_threat_high', url: '/audio/generated/voice_aura_threat_high.wav' },
+                    { key: 'voice_aura_overdrive_ready', url: '/audio/generated/voice_aura_overdrive_ready.wav' },
+                    { key: 'voice_aura_sector_cleared', url: '/audio/generated/voice_aura_sector_cleared.wav' },
+                    { key: 'sfx_charm_clink_light', url: '/audio/generated/sfx_charm_clink_light.wav' },
+                    { key: 'sfx_charm_clink_heavy', url: '/audio/generated/sfx_charm_clink_heavy.wav' },
+                    { key: 'sfx_overclock_socket', url: '/audio/generated/sfx_overclock_socket.wav' },
+                    { key: 'sfx_overclock_hum_cryo', url: '/audio/generated/sfx_overclock_hum_cryo.wav' },
+                    { key: 'sfx_overclock_hum_magnetic', url: '/audio/generated/sfx_overclock_hum_magnetic.wav' },
+                    { key: 'sfx_smelt_forge_burst', url: '/audio/generated/sfx_smelt_forge_burst.wav' },
+                    { key: 'sfx_trade_shard_dispense', url: '/audio/generated/sfx_trade_shard_dispense.wav' },
                     { key: 'hive_eggs_hum', url: '/audio/vg2/hive_eggs_hum.wav' },
                     { key: 'hive_eggs_hatch', url: '/audio/vg2/hive_eggs_hatch.wav' },
                     { key: 'hive_spores_puff', url: '/audio/vg2/hive_spores_puff.wav' },
@@ -11065,7 +12318,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                     parent: 'game-container',
                     playerType: targetType,
                     deferPlayerSpriteLoad: true,
-                    deferGameplayAtlasLoad: true,
                     bankManager,
                     dialogueManager,
                     arcManager,
@@ -11182,6 +12434,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         try {
             await initializeGame(initialType);
             traceBootPhase('airlock-start');
+            if (loaderBar) loaderBar.style.width = '85%';
+            renderLoaderLogs('> PRELOADING CINEMATIC FEED (DoorIntro)...');
+            await preloadVideoReady('DoorIntro');
+            if (document.fonts?.ready) await document.fonts.ready;
             if (loaderBar) loaderBar.style.width = '100%';
             renderLoaderLogs('> ALL ASSETS LOADED — OPENING AIRLOCK...');
         } catch (err) {
@@ -11194,49 +12450,52 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
 
         setTimeout(() => {
+            let doorStarted = false;
+            const triggerClosingDoors = () => {
+                if (doorStarted) return;
+                doorStarted = true;
+                triggerDoorTransition(
+                    () => {
+                        if (splash) splash.classList.remove('hidden');
+                        setAppPhase('splash');
+                        window.game?.setLoadingPaused?.(false);
+                        transitionToMenuMusic();
+                        finishBootDiagnostics();
+                    },
+                    () => {
+                        document.documentElement.classList.remove(
+                            'boot-cursor-hidden',
+                            'custom-cursor-enabled'
+                        );
+                        ensureControllerMenuFocus();
+                    },
+                    'base'
+                );
+            };
+
+            // Same door mechanism used everywhere else (launchStandardRun,
+            // Daily Ops): the door's own close/open animation runs on its
+            // normal, un-lagged schedule, and onOpeningStart fires the
+            // instant the doors begin sliding open so the DoorIntro cutscene
+            // is already loading/playing by the time the panels finish
+            // their travel.
             triggerDoorTransition(
                 () => {
                     if (loadingScreen) loadingScreen.classList.add('hidden');
                     if (splash) splash.classList.add('hidden');
                 },
-                async () => {
-                    // Play DoorIntro cutscene against solid pitch-black background.
-                    // The second door transition triggers WHILE the video is playing (at ~70% mark)
-                    // so the heavy blast doors slam shut directly over the active video.
-                    await new Promise((resolve) => {
-                        let doorStarted = false;
-                        const triggerClosingDoors = () => {
-                            if (doorStarted) return;
-                            doorStarted = true;
-                            triggerDoorTransition(
-                                () => {
-                                    if (splash) splash.classList.remove('hidden');
-                                    setAppPhase('splash');
-                                    window.game?.setLoadingPaused?.(false);
-                                    transitionToMenuMusic();
-                                    finishBootDiagnostics();
-                                },
-                                () => {
-                                    document.documentElement.classList.remove(
-                                        'boot-cursor-hidden',
-                                        'custom-cursor-enabled'
-                                    );
-                                    ensureControllerMenuFocus();
-                                },
-                                'base'
-                            );
-                            resolve();
-                        };
-
+                () => {},
+                'base',
+                {
+                    onOpeningStart: () => {
                         playCutsceneVideo('DoorIntro', { onDoorCutoff: triggerClosingDoors })
                             .then(triggerClosingDoors)
                             .catch(async () => {
                                 await playCutsceneVideo('scout-intro').catch(() => null);
                                 triggerClosingDoors();
                             });
-                    });
-                },
-                'base'
+                    }
+                }
             );
         }, 180);
     };
@@ -11630,8 +12889,15 @@ if (window.electronAPI) {
     setSteamDebugStatus('STEAM: WEB BUILD\nBACKEND: OFF', 'offline');
 }
 
-// Initialize Steam Vault UI in all environments
+// Initialize Steam Vault, Tactical Net, NPC Dialogue Trees, and Mature Content Audit UI in all environments
 initSteamVaultUI();
+initSeasonPassUI();
+initVoiceCallouts();
+multiplayerLobby.init();
+matureContentAudit.init();
+progressionWalkthrough.init();
+initVirtualKeyboard();
+setupNpcDialogueEvents();
 
 // Keep the title art alive at rest while making pointer movement feel like a
 // reflection travelling across damp metal. Motion is deliberately tiny so the

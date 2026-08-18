@@ -1,10 +1,48 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
+import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.js';
 import { clone as cloneSkeleton } from 'three/examples/jsm/utils/SkeletonUtils.js';
 import { assetUrl } from './assetUrl.js';
 
+// The 2D-to-3D generation pipeline's gltf-transform optimize pass applies
+// EXT_meshopt_compression; GLTFLoader throws "setMeshoptDecoder must be called
+// before loading compressed files" without this registered first.
+function createGltfLoader() {
+    return new GLTFLoader().setMeshoptDecoder(MeshoptDecoder);
+}
+
 const MODEL_URL = '/3d/scouting-scout/Scout.game.glb';
 const WEAPON_URL = '/3d/GG.1.glb';
+// Class-unique gun archetypes (docs/armory-and-class-weapons-worklog.md §2a).
+// 'gg1' is the pre-Armory shared weapon and doubles as the guaranteed-available
+// fallback below until each archetype's .glb lands. Paths match the live
+// 2D-to-3D generation manifest (docs/season-zero-protocol/06-asset-production-
+// and-prompt-manifest.md §5A "Target 3D Mesh" — that doc is the source of
+// truth for these filenames, keep in sync if it changes) — NOT the
+// public/3d/runtime/weapon-*.glb convention worklog §2a originally guessed.
+// talon_c (Scout's Talon-C Carbine, doc 07 §4) has no generation prompt yet;
+// path below is a best-effort guess at the same naming pattern, update once
+// doc 06 actually adds it.
+export const WEAPON_ARCHETYPES = {
+    gg1: WEAPON_URL,
+    talon: '/3d/runtime/new3ds/gun_scout_vector9_talon.glb',
+    talon_c: '/3d/runtime/new3ds/gun_scout_talon_c.glb',
+    siege_breaker: '/3d/runtime/new3ds/gun_tank_siege_breaker50.glb',
+    tesla_lock: '/3d/runtime/new3ds/gun_engineer_tesla_lock.glb'
+};
+// Weapon skins, keyed by Steam itemdef id. The live gen pipeline produces these as whole
+// separate meshes rather than a material swap on the archetype mesh (doc 07 §4 assumed the
+// latter — see worklog task 6). NOTE: doc 06 §5B labels itemdef 4107 (Deep Core Melter) as a
+// TANK skin, but doc 07 §4's itemdef table assigns 4107 to ENGINEER — unresolved conflict,
+// flagged in the worklog; this map only records what mesh exists for what id; it doesn't take
+// a side on which class 4107 actually belongs to.
+export const WEAPON_SKIN_MESHES = {
+    4100: '/3d/runtime/new3ds/skin_scout_frostbite.glb',          // Sub-Zero Frostbite Talon SMG
+    4107: '/3d/runtime/new3ds/skin_tank_deep_core_melter.glb',    // Deep Core Melter Autocannon
+    4103: '/3d/runtime/new3ds/skin_engineer_cryo_plasma.glb',     // Cryo-Plasma Arc Driver
+    4109: '/3d/runtime/new3ds/skin_void_walker_beam.glb',         // Void-Walker Beam Cannon (Engineer, doc 07 §4)
+    4110: '/3d/runtime/new3ds/skin_queen_carapace_carbine.glb'    // Queen's Carapace Carbine (Scout Talon-C, doc 07 §4 Tier-50 capstone)
+};
 
 export const ENGINEER_GESTURES = Object.freeze([
     'engineerWeightShift', 'engineerDismiss', 'engineerThoughtful', 'engineerCocky',
@@ -23,21 +61,57 @@ export const INJURED_LOCOMOTION_VARIANTS = Object.freeze({
     walk: 'injuredWalk',
     run: 'injuredRun'
 });
-let weaponTemplatePromise = null;
 const characterTemplates = new Map();
+const weaponTemplates = new Map();
 
 function loadCharacterTemplate(url) {
     if (!characterTemplates.has(url)) {
-        characterTemplates.set(url, new GLTFLoader().loadAsync(assetUrl(url)));
+        const promise = createGltfLoader().loadAsync(assetUrl(url)).catch((err) => {
+            characterTemplates.delete(url);
+            throw err;
+        });
+        characterTemplates.set(url, promise);
     }
     return characterTemplates.get(url);
 }
 
-async function createGg1Weapon({ position = [0.03, 0.02, -0.10] } = {}) {
-    weaponTemplatePromise ??= new GLTFLoader().loadAsync(assetUrl(WEAPON_URL));
-    const template = await weaponTemplatePromise;
+function loadWeaponTemplate(url) {
+    if (!weaponTemplates.has(url)) {
+        const promise = createGltfLoader().loadAsync(assetUrl(url)).catch((err) => {
+            weaponTemplates.delete(url);
+            throw err;
+        });
+        weaponTemplates.set(url, promise);
+    }
+    return weaponTemplates.get(url);
+}
+
+// Generalized weapon loader keyed by archetype (docs/armory-and-class-weapons-worklog.md §2a).
+// Falls back to the GG1 reference weapon if an archetype's .glb isn't in place yet, so this
+// function is safe to call with any archetypeId today, before task 2's assets land.
+//
+// Weapon skins (opts.skinId) are whole separate meshes in the live asset pipeline, not a
+// material swap on the archetype mesh — see WEAPON_SKIN_MESHES and worklog task 6. If skinId
+// is given and mapped, it takes priority over archetypeId for which mesh loads; on failure it
+// falls back to the archetype mesh, then to GG1, same chain as the archetype-only path.
+export async function createClassWeapon(archetypeId, { position = [0.03, 0.02, -0.10], skinId = null } = {}) {
+    const skinUrl = skinId ? WEAPON_SKIN_MESHES[skinId] : null;
+    const archetypeUrl = WEAPON_ARCHETYPES[archetypeId] ?? WEAPON_URL;
+    const url = skinUrl ?? archetypeUrl;
+    let template;
+    try {
+        template = await loadWeaponTemplate(url);
+    } catch (err) {
+        if (url === WEAPON_URL) throw err;
+        if (url === skinUrl) {
+            console.warn(`[player-3d-overlay] weapon skin "${skinId}" (${url}) failed to load; falling back to archetype "${archetypeId}"`, err);
+            return createClassWeapon(archetypeId, { position });
+        }
+        console.warn(`[player-3d-overlay] weapon archetype "${archetypeId}" (${url}) failed to load; falling back to GG1`, err);
+        template = await loadWeaponTemplate(WEAPON_URL);
+    }
     const weapon = template.scene.clone(true);
-    weapon.name = 'ScoutGG1';
+    weapon.name = archetypeId ? `ClassWeapon_${archetypeId}${skinUrl === url ? `_skin${skinId}` : ''}` : 'ScoutGG1';
     weapon.updateMatrixWorld(true);
     const bounds = new THREE.Box3().setFromObject(weapon);
     const size = bounds.getSize(new THREE.Vector3());
@@ -84,7 +158,11 @@ export function selectOverlayAnimation({
     if (isFalling) return 'fall';
     if (isReloading) return 'reload';
     if (!isMoving) return 'idle';
-    if (!hasAim) return isSprinting ? 'run' : 'walk';
+    // Sprint follows travel, not aim. The overlay root already faces moveX/Z,
+    // while the upper body independently tracks aim, so always use the
+    // forward run cycle instead of aim-relative strafe/backward clips.
+    if (isSprinting) return 'run';
+    if (!hasAim) return 'walk';
 
     const moveLength = Math.hypot(moveX, moveZ) || 1;
     const aimLength = Math.hypot(aimX, aimZ) || 1;
@@ -97,7 +175,7 @@ export function selectOverlayAnimation({
     if (forward < -0.35) return 'backward';
     if (side > 0.35) return 'strafeLeft';
     if (side < -0.35) return 'strafeRight';
-    return isSprinting ? 'run' : 'walk';
+    return 'walk';
 }
 
 // Which concrete action name should currently carry a locomotion weight
@@ -111,7 +189,8 @@ export function selectLocomotionActionName(name, isInjured, hasVariantClip) {
 export function computeLocomotionWeights(state = {}) {
     if (state.isFalling) return { fall: 1 };
     if (!state.isMoving) return { idle: 1 };
-    if (!state.hasAim) return { [state.isSprinting ? 'run' : 'walk']: 1 };
+    if (state.isSprinting) return { run: 1 };
+    if (!state.hasAim) return { walk: 1 };
 
     const moveLength = Math.hypot(state.moveX ?? 0, state.moveZ ?? 0) || 1;
     const aimLength = Math.hypot(state.aimX ?? 0, state.aimZ ?? 1) || 1;
@@ -205,6 +284,7 @@ export async function createPlayer3dOverlay({
     idleActionName = 'idle',
     weaponVisible = true,
     weaponEnabled = true,
+    weaponArchetype = 'gg1',
     weaponMount = undefined,
     modelUrl = MODEL_URL,
     animationModelUrl = null,
@@ -238,7 +318,7 @@ export async function createPlayer3dOverlay({
             if (!rightHand && /RightHand$/.test(object.name)) rightHand = object;
         });
     }
-    const weapon = weaponEnabled && rightHand ? await createGg1Weapon(weaponMount) : null;
+    const weapon = weaponEnabled && rightHand ? await createClassWeapon(weaponArchetype, weaponMount) : null;
     if (weapon) {
         // The Mixamo rig is authored in centimeters and normalized by scaling
         // its armature. Compensate for the hand's complete inherited scale so

@@ -1,18 +1,18 @@
 {
   "version": 1,
   "budgets": {
-    "publicBytes": 1153433600,
-    "appAsarBytes": 996147200,
+    "publicBytes": 1887436800,
+    "appAsarBytes": 1205862400,
     "unknownAssets": 160,
     "codecMismatches": 140,
     "duplicateGroups": 15
   },
   "measured": {
-    "publicBytes": 1132971698,
-    "publicFileCount": 818
+    "publicBytes": 1695049306,
+    "publicFileCount": 1127
   },
   "classifications": {
-    "runtime-required": 672,
+    "runtime-required": 981,
     "source-reference": 0,
     "generated-intermediate": 0,
     "unknown": 146
@@ -686,6 +686,13 @@
       "files": [
         "cutscenes/event-o2-generator-upgraded-poster.jpg",
         "cutscenes/poster-art/event-o2-generator-upgraded.png"
+      ]
+    },
+    {
+      "sha256": "376f82eba835a5437fa7cb2d50ee4a8e36e83d20ffd4db6dc7db72e808bd16bb",
+      "files": [
+        "economy/gun_scout_talon_c.png",
+        "economy/skin_scout_talon_c.png"
       ]
     },
     {

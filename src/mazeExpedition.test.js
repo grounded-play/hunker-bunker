@@ -7,6 +7,7 @@ import {
     MAZE_ROOM_TILES,
     RADIAL_RING_RADII,
     RADIAL_SITE_RULES,
+    RING_BLOCKER_FEATURES,
     computeReachableRings,
     computeRingWalkDistances,
     computeTopologyDistances,
@@ -17,6 +18,7 @@ import {
     generateRegionalRouteTopology,
     getLockedRingBoundaryRadius,
     getMaxUnlockedRing,
+    getTraversalUnlocks,
     projectPlanToChunkReservations,
     validateRadialMazeExpedition,
     validateRingProgression,
@@ -77,6 +79,23 @@ describe('long maze expedition plan', () => {
             }
         }
     });
+
+    it('keeps same-ring camp and hive hearts far enough apart for authored territory allocation', () => {
+        for (let seed = 1; seed <= 500; seed += 1) {
+            const plan = generateRadialMazeExpedition(seed);
+            for (const ring of [2, 3]) {
+                const sites = plan.nodes.filter((node) => node.ring === ring && (
+                    node.kind === 'camp' || node.kind === 'hive_threshold'
+                ));
+                expect(sites, `seed ${seed} ring ${ring}`).toHaveLength(2);
+                const delta = Math.abs(Math.atan2(
+                    Math.sin(sites[0].angle - sites[1].angle),
+                    Math.cos(sites[0].angle - sites[1].angle)
+                ));
+                expect(delta, `seed ${seed} ring ${ring}`).toBeGreaterThanOrEqual(1.6);
+            }
+        }
+    });
 });
 
 describe('radial ring crossing gates are provably non-bypassable', () => {
@@ -97,6 +116,17 @@ describe('radial ring crossing gates are provably non-bypassable', () => {
         const plan = generateRadialMazeExpedition(1);
         const allBlockerIds = new Set(plan.blockers.map((blocker) => blocker.id));
         expect(computeReachableRings(plan, allBlockerIds)).toEqual(new Set([0, 1, 2, 3, 4, 5]));
+    });
+
+    it('realizes only declared changed-world traversal from unlocked blocker IDs', () => {
+        expect(RING_BLOCKER_FEATURES.map((feature) => feature.opensTraversal))
+            .toEqual([null, 'bridge', null, null]);
+        expect(getTraversalUnlocks(new Set(['ring-1-gate']))).toEqual([]);
+        expect(getTraversalUnlocks(new Set(['ring-2-gate']))).toEqual([
+            { ring: 2, traversal: 'bridge', from: 'ring-2-gate' }
+        ]);
+        expect(getTraversalUnlocks(new Set(['ring-1-gate', 'ring-2-gate', 'ring-3-gate', 'ring-4-gate'])))
+            .toEqual([{ ring: 2, traversal: 'bridge', from: 'ring-2-gate' }]);
     });
 
     it('increases shortest walk distance strictly outward by ring', () => {
@@ -226,22 +256,13 @@ describe('chunk reservation projection (Phase 6.1 foundation)', () => {
         expect(conflicts[0].siteIds).toContain(plan.nodes[0].id);
     });
 
-    it('quantifies the current macro-plan spacing gap across 2,000 seeds (documents reality, does not silently hide it)', () => {
-        // Known, minor gap: RADIAL_SITE_RULES/RING_BLOCKER_FEATURES placement
-        // doesn't check chunk-grid separation, only angular separation
-        // (generateRadialMazeExpedition's per-ring angle retry loop). A future
-        // Phase 6.1/6.3 chunk-generation integration needs to either merge a
-        // colliding node+blocker into one chunk's purpose or extend the
-        // angle-retry loop to also check chunk distance -- this test exists
-        // so that work starts from a measured number, not a guess, and so a
-        // regression (a much higher collision rate) gets caught.
+    it('keeps required macro sites conflict-free across 2,000 seeds', () => {
         let seedsWithConflicts = 0;
         for (let seed = 1; seed <= 2000; seed += 1) {
             const plan = generateRadialMazeExpedition(seed);
             if (findConflictingChunkReservations(plan).length > 0) seedsWithConflicts += 1;
         }
-        const conflictRate = seedsWithConflicts / 2000;
-        expect(conflictRate).toBeLessThan(0.05);
+        expect(seedsWithConflicts).toBe(0);
     }, 20_000);
 });
 

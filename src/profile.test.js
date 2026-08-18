@@ -36,6 +36,34 @@ describe('ProfileManager', () => {
         const p = new ProfileManager({ storage });
         expect(p.setCallsign('!!!')).toBe('AGENT');
     });
+
+    it('tracks multiplayer runs and trades accurately in profile state', () => {
+        const p = new ProfileManager({ storage });
+        expect(p.getStats()).toEqual({
+            multiplayerMatches: 0,
+            multiplayerVictories: 0,
+            tradesCompleted: 0,
+            coopExpeditions: 0,
+            pvpDuels: 0
+        });
+
+        p.recordMultiplayerRun({ mode: 'coop', isVictory: true });
+        p.recordMultiplayerRun({ mode: 'pvp', isVictory: false });
+        p.recordTradeCompleted();
+
+        expect(p.getStats()).toEqual({
+            multiplayerMatches: 2,
+            multiplayerVictories: 1,
+            tradesCompleted: 1,
+            coopExpeditions: 1,
+            pvpDuels: 1
+        });
+
+        // Persisted across reloads
+        const reloaded = new ProfileManager({ storage });
+        expect(reloaded.getStats().multiplayerMatches).toBe(2);
+        expect(reloaded.getStats().tradesCompleted).toBe(1);
+    });
 });
 
 describe('save codes', () => {

@@ -174,3 +174,104 @@ describe('procedural door reinforcement ribs', () => {
         ribGroup.children[0].material.dispose();
     });
 });
+
+describe('wall decals and showroom gallery', () => {
+    it('mounts wall decals at mid-wall height facing outward along the wall normal', () => {
+        const texture = new THREE.Texture();
+        const game = Object.assign(Object.create(ThreeGame.prototype), {
+            wallHeight: 2.8,
+            scatterTextures: { decal_hazard_stripes: texture },
+            getTileType: vi.fn(() => '.')
+        });
+
+        // Test explicit North wall face (normal faces South: nx=0, nz=1)
+        const decal = ThreeGame.prototype.createScatterInstance.call(game, {
+            type: 'decal_hazard_stripes',
+            x: 5,
+            z: 8,
+            scale: 1.0,
+            wallNormal: { x: 0, z: 1 }
+        });
+
+        expect(decal).toBeInstanceOf(THREE.Mesh);
+        expect(decal.userData.isWallDecal).toBe(true);
+        expect(decal.position.y).toBeCloseTo(2.8 * 0.48);
+        expect(decal.rotation.y).toBeCloseTo(0);
+        expect(decal.material.depthWrite).toBe(false);
+        expect(decal.material.side).toBe(THREE.DoubleSide);
+        expect(decal.position.z).toBeCloseTo(8 - 0.5 + 0.02);
+
+        // Test explicit West wall face (normal faces East: nx=1, nz=0)
+        const westDecal = ThreeGame.prototype.createScatterInstance.call(game, {
+            type: 'decal_hazard_stripes',
+            x: 10,
+            z: 12,
+            scale: 1.0,
+            wallNormal: { x: 1, z: 0 }
+        });
+        expect(westDecal.rotation.y).toBeCloseTo(Math.PI / 2);
+        expect(westDecal.position.x).toBeCloseTo(10 - 0.5 + 0.02);
+
+        decal.material.dispose();
+        westDecal.material.dispose();
+        texture.dispose();
+    });
+
+    it('auto-snaps wall decals to adjacent wall tiles when wallNormal is omitted', () => {
+        const texture = new THREE.Texture();
+        const game = Object.assign(Object.create(ThreeGame.prototype), {
+            wallHeight: 2.8,
+            scatterTextures: { decal_wall_breach: texture },
+            getTileType: vi.fn((x, z) => (x === 4 && z === 6 ? '#' : '.')) // Wall is to the North (z=6)
+        });
+
+        const decal = ThreeGame.prototype.createScatterInstance.call(game, {
+            type: 'decal_wall_breach',
+            x: 4,
+            z: 7, // tile at (4, 7), North neighbor is (4, 6) = '#'
+            scale: 1.0
+        });
+
+        expect(decal).toBeInstanceOf(THREE.Mesh);
+        expect(decal.userData.isWallDecal).toBe(true);
+        expect(decal.rotation.y).toBeCloseTo(0); // Normal is (0, 1) facing South
+        expect(decal.position.z).toBeCloseTo(7 - 0.5 + 0.02);
+
+        decal.material.dispose();
+        texture.dispose();
+    });
+
+    it('generates an open walkable grid for showroom chunks without hostile spawns or maze walls', () => {
+        const game = Object.assign(Object.create(ThreeGame.prototype), {
+            chunkSize: 19,
+            performanceProfile: 'gameplay'
+        });
+
+        const grid = game.buildChunk(500, 500);
+        expect(grid.length).toBe(19);
+        expect(grid[0].length).toBe(19);
+        expect(grid.every((row) => row.every((cell) => cell === '.'))).toBe(true);
+
+        expect(game.isSnailTileWalkable(500 * 19 + 5, 500 * 19 + 5)).toBe(true);
+
+        const scatter = game.createChunkScatterPlacements(500, 500, grid);
+        expect(scatter).toEqual([]);
+    });
+
+    it('builds and caches showroom scene reliably', async () => {
+        const game = Object.assign(Object.create(ThreeGame.prototype), {
+            chunkSize: 19,
+            scene: new THREE.Scene(),
+            createScatterInstance: vi.fn(() => new THREE.Group()),
+            createWorld3dModel: vi.fn(async () => new THREE.Group())
+        });
+
+        const showroom1 = await game.buildDebugShowroom();
+        expect(showroom1).toBeDefined();
+        expect(showroom1.spawnX).toBe(500 * 19 + 10);
+        expect(showroom1.spawnZ).toBe(500 * 19 + 10);
+
+        const showroom2 = await game.buildDebugShowroom();
+        expect(showroom2).toBe(showroom1);
+    });
+});

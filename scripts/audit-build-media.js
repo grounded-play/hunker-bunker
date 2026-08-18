@@ -3,6 +3,7 @@ import path from 'node:path';
 
 const requiredMedia = [
     'DoorIntro.mp4',
+    'DoorIntro.webm',
     'door_biomech_keyart_v2.webp',
     'door_bio_keyart_v2.webp',
     'door_nuclear_keyart_v2.webp',

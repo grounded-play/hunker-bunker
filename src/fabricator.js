@@ -21,7 +21,12 @@ export const FAB_RECIPES = Object.freeze([
     { id: 'neon_smg',      name: 'NEON SMG',           klass: 'WEAPON', rarity: 'RARE',      art: '/schematics/schematic_04.webp', cost: { tech: 16, coin: 10, med: 0 }, printSeconds: 12, blurb: 'High fire-rate SMG. Loud, fast, pink.' },
     { id: 'cryo_lance',    name: 'CRYO LANCE',         klass: 'WEAPON', rarity: 'EPIC',      art: '/schematics/schematic_05.webp', cost: { tech: 18, coin: 10, med: 4 }, printSeconds: 14, blurb: 'Freezing lance. Slows whatever it hits.' },
     { id: 'salvage_drill', name: 'SALVAGE DRILL',      klass: 'TOOL',   rarity: 'COMMON',    art: '/schematics/schematic_06.webp', cost: { tech: 10, coin: 14, med: 0 }, printSeconds: 11, blurb: 'Powered drill. Cracks junk piles wide open.' },
-    { id: 'exo_plating',   name: 'EXOSUIT PLATING',    klass: 'MODULE', rarity: 'LEGENDARY', art: '/schematics/schematic_07.webp', cost: { tech: 22, coin: 16, med: 6 }, printSeconds: 20, blurb: 'Layered hull plating. Hardens the exosuit shell.' }
+    { id: 'exo_plating',   name: 'EXOSUIT PLATING',    klass: 'MODULE', rarity: 'LEGENDARY', art: '/schematics/schematic_07.webp', cost: { tech: 22, coin: 16, med: 6 }, printSeconds: 20, blurb: 'Layered hull plating. Hardens the exosuit shell.' },
+    { id: 'tallow_thermal_wrap', name: 'TALLOW THERMAL WRAP', klass: 'MODULE', rarity: 'RARE', art: '/schematics/schematic_05.webp', cost: { tech: 12, coin: 6, med: 6 }, printSeconds: 12, blurb: 'Freezing-resistant thermal underlayer woven from bio-spore fibers.' },
+    { id: 'vesper_vanguard_rig', name: 'VESPER VANGUARD RIG', klass: 'MODULE', rarity: 'EPIC', art: '/schematics/schematic_07.webp', cost: { tech: 18, coin: 10, med: 4 }, printSeconds: 15, blurb: 'Hardened titanium chest harness crafted by Vanguard mechanics.' },
+    { id: 'meridian_frequency_scanner', name: 'MERIDIAN FREQUENCY SCANNER', klass: 'TOOL', rarity: 'RARE', art: '/schematics/schematic_06.webp', cost: { tech: 20, coin: 8, med: 0 }, printSeconds: 14, blurb: 'High-frequency radar mast amplifier tuned to deep cavern signals.' },
+    { id: 'brood_chitin_plating', name: 'BROOD CHITIN PLATING', klass: 'MODULE', rarity: 'EPIC', art: '/schematics/schematic_03.webp', cost: { tech: 16, coin: 6, med: 10 }, printSeconds: 16, blurb: 'Living bio-chitin plates that reflect acidic spore splatter.' },
+    { id: 'nahl_resonant_chitin', name: 'RESONANT CHITIN MESH', klass: 'MODULE', rarity: 'LEGENDARY', art: '/schematics/schematic_07.webp', cost: { tech: 24, coin: 14, med: 12 }, printSeconds: 18, blurb: 'Symbiotic bio-mesh that absorbs psychic shockwaves and regenerates armor.' }
 ]);
 
 // Flat "spin" cost for a fabricator roll (mothership's gamba metaphor, in HB
@@ -162,11 +167,25 @@ export class FabricatorManager {
         return Math.max(0, Math.min(1, 1 - remaining / total));
     }
 
+    getEffectiveCost(recipe) {
+        if (!recipe?.cost) return null;
+        let cost = { ...recipe.cost };
+        if (typeof window !== 'undefined' && window.npcDialogueTreeManager?.activePerks?.has?.('meridian_supercharged_matrix')) {
+            cost = {
+                tech: Math.max(0, Math.floor(cost.tech * 0.8)),
+                coin: Math.max(0, Math.floor(cost.coin * 0.8)),
+                med: Math.max(0, Math.floor(cost.med * 0.8))
+            };
+        }
+        return cost;
+    }
+
     canFabricate(id, bank) {
         const recipe = getRecipe(id);
         if (!recipe) return false;
         if (this.isFabricated(id) || this.isPrinting(id)) return false;
-        return bank ? bank.canAfford(recipe.cost) : true;
+        const cost = this.getEffectiveCost(recipe);
+        return bank ? bank.canAfford(cost) : true;
     }
 
     getRandomFabricationCandidates(bank) {
@@ -263,7 +282,8 @@ export class FabricatorManager {
         const recipe = getRecipe(id);
         if (!recipe) return null;
         if (this.isFabricated(id) || this.isPrinting(id)) return null;
-        if (!bank?.spend(recipe.cost)) return null;
+        const cost = this.getEffectiveCost(recipe);
+        if (!bank?.spend(cost)) return null;
 
         this.state.prints[id] = this.now() + recipe.printSeconds * 1000;
         this.save();

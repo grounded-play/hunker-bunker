@@ -1,7 +1,14 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
+import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.js';
 import { clone as cloneSkeleton } from 'three/examples/jsm/utils/SkeletonUtils.js';
 import { assetUrl } from './assetUrl.js';
+
+// docs/armory-and-class-weapons-worklog.md — gltf-transform's optimize pass applies
+// EXT_meshopt_compression; GLTFLoader throws without this registered first.
+function createGltfLoader() {
+    return new GLTFLoader().setMeshoptDecoder(MeshoptDecoder);
+}
 
 const MODEL_CONFIG = {
     cybersnail: { url: '/3d/runtime/cyber-snail.glb', height: 0.72, yaw: -Math.PI / 2 },
@@ -31,7 +38,11 @@ export function hasEnemy3dModel(type) {
 
 function loadTemplate(url) {
     if (!templates.has(url)) {
-        templates.set(url, new GLTFLoader().loadAsync(assetUrl(url)));
+        const promise = createGltfLoader().loadAsync(assetUrl(url)).catch((err) => {
+            templates.delete(url);
+            throw err;
+        });
+        templates.set(url, promise);
     }
     return templates.get(url);
 }

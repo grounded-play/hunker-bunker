@@ -64,10 +64,20 @@ function normalizeSessionSecret() {
         };
     }
 
-    if (process.env.NODE_ENV === 'production') {
+    // Session tokens are HMAC-signed with this secret, so anything that can
+    // reach this branch without an explicit/publisher secret must not use a
+    // value visible in this public repo (the DEV_SESSION_SECRET constant) —
+    // that would let anyone forge a bearer token for any steamId64/persona,
+    // bypassing authenticateSteamRequest's ticket check entirely. Gate on
+    // isDevFallbackAllowed() (the same check ticket-fallback already uses)
+    // rather than a bare NODE_ENV==='production' check, so an operator who
+    // sets HB_ALLOW_DEV_STEAM_AUTH=false but leaves NODE_ENV unset (common
+    // outside containerized prod setups) still gets a real random secret
+    // instead of the hardcoded one.
+    if (!isDevFallbackAllowed()) {
         if (!ephemeralSessionSecret) {
             ephemeralSessionSecret = crypto.randomBytes(32).toString('hex');
-            console.warn('[security] Generating ephemeral session secret for production environment.');
+            console.warn('[security] Generating ephemeral session secret; no explicit HB_SESSION_SECRET/publisher key configured.');
         }
         return {
             secret: ephemeralSessionSecret,
@@ -378,9 +388,19 @@ export async function verifySteamSessionTicket({ ticketHex, identity } = {}) {
 }
 
 export async function authenticateSteamRequest(req, { allowDevFallback = true } = {}) {
+    // Run the signed-session check unconditionally rather than gating it behind
+    // `if (bearerToken)` — verifySteamSessionToken already treats a missing/empty
+    // token as a clean 401 (`missing_session`), so branching on its verified
+    // *result* (sessionAuth.ok) instead of on the raw, attacker-controlled
+    // Authorization header avoids deciding whether a security check runs based
+    // on untrusted input. A present-but-invalid bearer token now falls through
+    // to ticket verification instead of failing outright, which only helps a
+    // legitimate client (e.g. an expired cached session presented alongside a
+    // fresh ticket) — it can't be used to skip verification either way.
     const bearerToken = getBearerToken(req);
-    if (bearerToken) {
-        return verifySteamSessionToken(bearerToken);
+    const sessionAuth = verifySteamSessionToken(bearerToken);
+    if (sessionAuth.ok) {
+        return sessionAuth;
     }
 
     const ticketHex = req.body?.ticketHex ?? req.query?.ticketHex;

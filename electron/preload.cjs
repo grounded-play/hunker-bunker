@@ -39,6 +39,16 @@ function cleanConfigString(value, fallback) {
     return cleaned || fallback;
 }
 
+// steam-config.json is bundled app config (written at build time from
+// HB_STEAM_AUTH_IDENTITY), not user input, but its authIdentity field ends
+// up in outbound backend request bodies via STEAM_AUTH_IDENTITY below.
+// Whitelist the charset here rather than just trimming, so a malformed or
+// tampered bundled config can't put arbitrary file content on the wire.
+function cleanIdentityString(value, fallback) {
+    const cleaned = String(value ?? '').trim().slice(0, 128);
+    return /^[a-zA-Z0-9_.-]+$/.test(cleaned) ? cleaned : fallback;
+}
+
 function cleanBackendUrl(value) {
     const raw = cleanConfigString(value, DEFAULT_STEAM_CONFIG.backendUrl);
     try {
@@ -67,7 +77,7 @@ const STEAM_BACKEND_URL = cleanBackendUrl(
 const STEAM_APP_ID = cleanAppId(
     BUNDLED_STEAM_CONFIG.appId ?? process.env.HB_STEAM_APPID
 );
-const STEAM_AUTH_IDENTITY = cleanConfigString(
+const STEAM_AUTH_IDENTITY = cleanIdentityString(
     BUNDLED_STEAM_CONFIG.authIdentity ?? process.env.HB_STEAM_AUTH_IDENTITY,
     DEFAULT_STEAM_CONFIG.authIdentity
 );

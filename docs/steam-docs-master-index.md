@@ -8,6 +8,30 @@ useful history but are not current status.
 
 ## Start here
 
+- **[`steam-review-failures-and-action-plan.md`](./steam-review-failures-and-action-plan.md)**
+  — **CRITICAL (2026-08-14)**: Valve review rejection analysis, root causes,
+  dashboard fix instructions, and code solutions for store categories, Steam
+  Cloud dev-flag, mature content survey, in-app purchases, controller input,
+  AI disclosure, and library assets. This is the original plan (written
+  before implementation) — for verified current status use the guide below.
+- **[`steam-review-remediation-master-guide.md`](./steam-review-remediation-master-guide.md)**
+  — **CRITICAL, reconciled against actual code 2026-08-14**: the executive
+  summary table and "Verification Log" section are the current source of
+  truth for what's actually code-complete vs. Steamworks-dashboard-only vs.
+  still unbuilt (multiplayer relay connection, mature-content gallery jump
+  buttons, and the controller virtual keyboard were fixed this session; the
+  Library Logo tagline and two mature-content categories with no backing
+  in-game content are still open).
+- **[`narrative-endings-and-mature-content-guide.md`](./narrative-endings-and-mature-content-guide.md)**
+  — **CRITICAL (2026-08-14)**: Narrative endings, moral dilemmas, suicide / self-annihilation
+  in the void choices (`EMPTY_HUSK`, `SCORCHED_SKY`), Queen will-crush subjugation (`FULL_BROOD`),
+  infection mechanics, and reviewer fast-verification debug triggers.
+- **[`narrative-branching-symbiosis-and-allegiances.md`](./narrative-branching-symbiosis-and-allegiances.md)**
+  — Structural outline for writers: alien mimicry / femme fatale arcs, human-to-human bonds,
+  symbiotic hybrid partnerships, and inter-hive swarm wars.
+- **[`sprint-23-steam-review-and-narrative-expansion.md`](./sprint-23-steam-review-and-narrative-expansion.md)**
+  — **Sprint 23 Notes**: Steam review remediation roadmap, PvP/Co-Op multiplayer, 10-ending
+  narrative matrix, dual-perspective mimicry, and fast-test QA policy.
 - **[`current-feature-status.md`](./current-feature-status.md)**
   — canonical implementation/connection/test/live-acceptance/claim matrix.
   Historical planning is indexed under [`archive/`](./archive/README.md);

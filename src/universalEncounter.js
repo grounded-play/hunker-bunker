@@ -36,11 +36,14 @@ export function createUniversalEncounter({
 
     return {
         entityType,
+        snailType: entityType,
         category,
         name: name || entityType.toUpperCase(),
         isNpc,
         hp: entityHp,
+        snailHp: entityHp,
         maxHp,
+        snailMaxHp: maxHp,
         resolve: 0,
         resolveMax: 100,
         actionLabels,
@@ -67,6 +70,7 @@ export function resolveEncounterAction(state, action, { playerDamage = 1, counte
             state: {
                 ...state,
                 hp,
+                snailHp: hp,
                 outcome: died ? 'fight_win' : null
             },
             playerDamageTaken,

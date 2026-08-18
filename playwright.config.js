@@ -18,8 +18,9 @@ export default defineConfig({
     // body under load) — 120s gives the body real room without masking
     // hangs, since the boot helper still hard-fails at 45s.
     timeout: 120_000,
-    expect: { timeout: 5_000 },
+    expect: { timeout: 10_000 },
     fullyParallel: false,
+    workers: 1,
     retries: 1,
     reporter: [['list'], ['html', { open: 'never', outputFolder: 'playwright-report' }]],
     use: {

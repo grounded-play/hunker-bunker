@@ -76,7 +76,10 @@ export function buildSteamRunScorePayload({
     seed = null,
     runCards = [],
     depositedResources = {},
-    gameVersion = null
+    gameVersion = null,
+    multiplayer = {},
+    exploration = {},
+    trades = {}
 } = {}) {
     const normalizedScore = clampInteger(score);
     const startedAt = clampInteger(runStartTime, endedAt);
@@ -125,6 +128,27 @@ export function buildSteamRunScorePayload({
             dailyOps: dailyOps
                 ? { date: dailyOpsDate ?? null }
                 : null
+        },
+        multiplayer: {
+            isMultiplayer: Boolean(multiplayer.isMultiplayer),
+            mode: multiplayer.mode ? String(multiplayer.mode) : null,
+            roomCode: multiplayer.roomCode ? String(multiplayer.roomCode) : null,
+            peersCount: clampInteger(multiplayer.peersCount),
+            tradesCompleted: clampInteger(multiplayer.tradesCompleted),
+            rivalKills: clampInteger(multiplayer.rivalKills),
+            squadRevives: clampInteger(multiplayer.squadRevives)
+        },
+        exploration: {
+            breadcrumbsCount: clampInteger(exploration.breadcrumbsCount),
+            trailDistanceMeters: Number(exploration.trailDistanceMeters) || 0,
+            sectorsDiscovered: clampInteger(exploration.sectorsDiscovered)
+        },
+        trades: {
+            completedCount: clampInteger(trades.completedCount),
+            shellsTraded: clampInteger(trades.shellsTraded),
+            ammoTraded: clampInteger(trades.ammoTraded),
+            medkitsTraded: clampInteger(trades.medkitsTraded),
+            o2Traded: clampInteger(trades.o2Traded)
         },
         stats: {
             distanceTravelled,

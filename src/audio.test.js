@@ -107,4 +107,26 @@ describe('AudioManager Voice Channel & Soundsets Toggle', () => {
         expect(result.source).toBeDefined();
         expect(result.gainNode).toBeDefined();
     });
+
+    it('plays situational voice callouts based on equipped voice pack', () => {
+        AudioManager.buffers['voice_commander_reloading'] = {};
+        AudioManager.buffers['voice_aura_reloading'] = {};
+
+        // Mock window.loadout
+        globalThis.window = globalThis.window || {};
+        globalThis.window.loadout = {
+            state: { voicePackId: '4148' }
+        };
+
+        const resultCommander = AudioManager.playVoiceCallout('reload');
+        expect(resultCommander).not.toBeNull();
+
+        globalThis.window.loadout.state.voicePackId = '4149';
+        const resultAura = AudioManager.playVoiceCallout('reload');
+        expect(resultAura).not.toBeNull();
+
+        globalThis.window.loadout.state.voicePackId = null;
+        const resultNone = AudioManager.playVoiceCallout('reload');
+        expect(resultNone).toBeNull();
+    });
 });

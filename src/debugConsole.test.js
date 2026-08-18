@@ -119,4 +119,65 @@ describe('debugConsole', () => {
         expect(exported).toContain('[WARN] [WORLD] unexpected chunk fallback');
         expect(exported).toContain('"chunk": "2,-1"');
     });
+
+    it('executes noclip command and delegates to game instance', () => {
+        let noclipCalled = false;
+        globalThis.window.threeGame = {
+            toggleNoclip: () => {
+                noclipCalled = true;
+                return true;
+            }
+        };
+
+        debugLog.executeCommand('noclip');
+        expect(noclipCalled).toBe(true);
+        const lastLog = debugLog.logs[debugLog.logs.length - 1];
+        expect(lastLog.message).toContain('Noclip');
+        expect(lastLog.message).toContain('ACTIVE');
+    });
+
+    it('executes speed and nuke commands cleanly', () => {
+        let hostilesPurged = false;
+        globalThis.window.threeGame = {
+            _sprintMoveSpeedMult: 1.0,
+            purgeHostiles: () => {
+                hostilesPurged = true;
+                return 5;
+            }
+        };
+
+        debugLog.executeCommand('speed 4.5');
+        expect(globalThis.window.threeGame._sprintMoveSpeedMult).toBe(4.5);
+
+        debugLog.executeCommand('nuke');
+        expect(hostilesPurged).toBe(true);
+        const lastLog = debugLog.logs[debugLog.logs.length - 1];
+        expect(lastLog.message).toContain('5 hostile enemies');
+    });
+
+    it('executes proving grounds commands (nexus, tilegrid, bosses, campsim)', () => {
+        let nexusOpened = false;
+        let tileGridOpened = false;
+        let bossesOpened = false;
+        let campsOpened = false;
+
+        globalThis.window.__DEBUG__ = {
+            openNexus: () => { nexusOpened = true; },
+            openTileGrid: () => { tileGridOpened = true; },
+            openBossArenas: () => { bossesOpened = true; },
+            openCampSimulator: () => { campsOpened = true; }
+        };
+
+        debugLog.executeCommand('nexus');
+        expect(nexusOpened).toBe(true);
+
+        debugLog.executeCommand('tilegrid');
+        expect(tileGridOpened).toBe(true);
+
+        debugLog.executeCommand('bosses');
+        expect(bossesOpened).toBe(true);
+
+        debugLog.executeCommand('campsim');
+        expect(campsOpened).toBe(true);
+    });
 });

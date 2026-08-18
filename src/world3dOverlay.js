@@ -1,7 +1,14 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
+import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.js';
 import { clone as cloneSkeleton } from 'three/examples/jsm/utils/SkeletonUtils.js';
 import { assetUrl } from './assetUrl.js';
+
+// docs/armory-and-class-weapons-worklog.md — gltf-transform's optimize pass applies
+// EXT_meshopt_compression; GLTFLoader throws without this registered first.
+function createGltfLoader() {
+    return new GLTFLoader().setMeshoptDecoder(MeshoptDecoder);
+}
 
 export const WORLD_3D_MODELS = Object.freeze({
     broken_scout_ship: { url: '/3d/runtime/broken-scout-ship.glb', height: 1.35, yaw: 0 },
@@ -27,7 +34,19 @@ export const WORLD_3D_MODELS = Object.freeze({
     prop_conduit_hub: { url: '/3d/runtime/new3ds/prop_conduit_hub.glb', height: 0.78, yaw: 0 },
     prop_cave_bones: { url: '/3d/runtime/new3ds/prop_cave_bones.glb', height: 0.34, yaw: 0 },
     prop_cave_queen_throne: { url: '/3d/runtime/new3ds/prop_cave_queen_throne.glb', height: 2.0, yaw: 0 },
-    prop_biomech_arch: { url: '/3d/runtime/new3ds/prop_biomech_arch.glb', height: 2.35, yaw: 0 }
+    prop_biomech_arch: { url: '/3d/runtime/new3ds/prop_biomech_arch.glb', height: 2.35, yaw: 0 },
+    prop_ammo_crate_stack: { url: '/3d/runtime/new3ds/prop_ammo_crate_stack.glb', height: 0.85, yaw: 0 },
+    prop_biomech_flesh_locker: { url: '/3d/runtime/new3ds/prop_biomech_flesh_locker.glb', height: 1.35, yaw: 0 },
+    prop_biomech_incubator: { url: '/3d/runtime/new3ds/prop_biomech_incubator.glb', height: 1.45, yaw: 0 },
+    prop_biomech_neural_synapse: { url: '/3d/runtime/new3ds/prop_biomech_neural_synapse.glb', height: 1.40, yaw: 0 },
+    prop_biomech_respirator: { url: '/3d/runtime/new3ds/prop_biomech_respirator.glb', height: 1.30, yaw: 0 },
+    prop_biomech_sphincter_trap: { url: '/3d/runtime/new3ds/prop_biomech_sphincter_trap.glb', height: 0.80, yaw: 0 },
+    prop_biomech_triage_cradle: { url: '/3d/runtime/new3ds/prop_biomech_triage_cradle.glb', height: 0.95, yaw: 0 },
+    prop_fabricator_workstation: { url: '/3d/runtime/new3ds/prop_fabricator_workstation.glb', height: 1.20, yaw: 0 },
+    prop_laser_trap_emitter: { url: '/3d/runtime/new3ds/prop_laser_trap_emitter.glb', height: 0.75, yaw: 0 },
+    prop_o2_filter_vat: { url: '/3d/runtime/new3ds/prop_o2_filter_vat.glb', height: 1.40, yaw: 0 },
+    prop_tesla_coil_node: { url: '/3d/runtime/new3ds/prop_tesla_coil_node.glb', height: 1.45, yaw: 0 },
+    prop_vital_monitor: { url: '/3d/runtime/new3ds/prop_vital_monitor.glb', height: 1.10, yaw: 0 }
 });
 
 const templates = new Map();
@@ -35,7 +54,11 @@ export const WORLD_3D_FACING_YAW = Math.PI;
 
 function loadTemplate(url) {
     if (!templates.has(url)) {
-        templates.set(url, new GLTFLoader().loadAsync(assetUrl(url)));
+        const promise = createGltfLoader().loadAsync(assetUrl(url)).catch((err) => {
+            templates.delete(url);
+            throw err;
+        });
+        templates.set(url, promise);
     }
     return templates.get(url);
 }
@@ -58,7 +81,17 @@ export async function createWorld3dModel(type) {
         if (!object.isMesh) return;
         object.castShadow = true;
         object.receiveShadow = true;
-        object.frustumCulled = false;
+        // Unlike camera-facing billboard sprites elsewhere in this codebase
+        // (whose bounding-sphere math against a THREE.Sprite is unreliable,
+        // hence their frustumCulled = false), these are static-position GLB
+        // meshes with a bounding box already computed above via
+        // Box3().setFromObject(). Frustum culling is safe here and matters
+        // at scale: as more chunks/camps/hives populate authored-room and
+        // signature-prop GLBs (see docs/sprint-23-room-juice-and-dressing-
+        // assets.md), leaving every one of them permanently submitted to
+        // the renderer regardless of camera visibility compounds badly.
+        if (!object.geometry.boundingSphere) object.geometry.computeBoundingSphere();
+        object.frustumCulled = true;
     });
     const root = new THREE.Group();
     root.name = `World3d:${type}`;

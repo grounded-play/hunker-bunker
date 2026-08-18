@@ -1,0 +1,3 @@
+steam.tuesdaycinema.club {
+    reverse_proxy hunker-bunker-backend:3001
+}

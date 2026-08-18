@@ -1,4 +1,4 @@
-import { CHUNK_SIZE } from './tileCatalog.js';
+import { CHUNK_SIZE, TILE_SIZE } from './tileCatalog.js';
 import { getControllerGlyphLabel } from './inputGlyphs.js';
 
 import * as THREE from 'three';
@@ -10,8 +10,8 @@ export const TiltShiftPassShader = {
     uniforms: {
         tDiffuse: { value: null },
         focusY: { value: 0.5 },
-        focusRange: { value: 0.24 },
-        blurAmount: { value: 0.0050 },
+        focusRange: { value: 0.38 },
+        blurAmount: { value: 0.0035 },
         dir: { value: new THREE.Vector2(0, 1) }
     },
     vertexShader: `
@@ -46,20 +46,24 @@ export const TiltShiftPassShader = {
     `
 };
 import { assetUrl } from './assetUrl.js';
+import { getItemCatalogEntry } from './steamVaultUi.js';
+import { wrapAngle, planarBasisFromOffsetAzimuth, aimVectorFromYaw } from './cameraYaw.js';
+import { MULTIPLAYER_SPAWN_MODES } from './multiplayerCrashPlanner.js';
+import { multiplayerLobby } from './multiplayerLobby.js';
 import { BankManager, O2_GENERATOR_UPGRADES, BASE_TURRET_UPGRADES, BASE_TURRET_REPAIR_COST, TIER2_UPGRADE_ORDER, TIER2_UPGRADE_CONFIGS, WEAPON_UPGRADE_ORDER, WEAPON_UPGRADES_CONFIG, CLASS_SKILL_TREES, shellPriceOf } from './bank.js';
 import { MarkovGenerator } from './generator.js';
 import {
     addCanyonVoidAroundWalkable,
     collapseChunkLattice,
     collapsePocketLattice,
-    stampLattice,
-    extractChunkWfcMetadata
+    extractChunkWfcMetadata,
+    stampLattice
 } from './wfcGenerator.js';
 import { generateArchitecturalMazeChunk } from './architecturalMaze.js';
 import { applyVerticalBridgeFeature, VERTICAL_TILE } from './verticalWfc.js';
 import { assignRoomThemes } from './roomThemes.js';
 import { planChunkRoomPopulation } from './roomPopulation.js';
-import { planChunkRoomEncounters } from './roomEncounters.js';
+import { collectReachableCells, planChunkRoomEncounters } from './roomEncounters.js';
 import {
     planProceduralDoors,
     restoreDoorStates,
@@ -73,6 +77,37 @@ import {
     isGateRequirementMet,
     serializeAccessState
 } from './accessControl.js';
+import {
+    isCellInSafeZone,
+    shouldBlockAttackPath,
+    canHostileAggroTarget,
+    isDoorClosed,
+    translateContainmentZone,
+    translateContainmentDoor
+} from './roomContainment.js';
+import { bindRoomContent } from './roomContent.js';
+import { buildMazeChunkStructure, buildHallwayConnectorChunkStructure } from './chunkStructure.js';
+import {
+    MILESTONE_BOSS_STATES,
+    MILESTONE_BOSS_EVENT_TYPES,
+    MILESTONE_BOSS_DEFINITIONS,
+    createMilestoneBossLifecycleState,
+    migrateMilestoneBossLifecycleState,
+    reconcileMilestoneBossLifecycle as canonicalReconcileMilestoneBossLifecycle,
+    applyMilestoneBossEvent,
+    getMilestoneForGoal,
+    getMilestoneById,
+    buildMilestoneBossReport
+} from './milestoneBossLifecycle.js';
+import { resolveObjectiveTarget, toObjectiveCompass } from './objectiveTargetResolver.js';
+import { buildRingCrossingPlan } from './ringCrossings.js';
+import {
+    clampPositionToAuthoredRing,
+    reconcileWorldPlanRingCrossings,
+    resolveAuthoredChunkStructure,
+    selectRingCrossingFarSide
+} from './authoredWorldRuntime.js';
+import { buildWorldPlan } from './ringManifest.js';
 import { planSafeGates } from './mazeGates.js';
 import { extractChunkPortals, buildWorldRouteGraph, reachableChunkKeys } from './worldRoutePlanner.js';
 import { BaseLights } from './baseLights.js';
@@ -95,7 +130,11 @@ import {
 import { HiveSite } from './hiveSite.js';
 import { describeDialogueProgress, leaderKeyFromName, nextDialogueBeat, isFinalStage } from './data/campDialogue.js';
 import { blackBoxStore } from './blackBox.js';
-import { ARC_PRELUDE_ENABLED, PLAYER_3D_COSMETIC_OVERLAY_ENABLED } from './featureFlags.js';
+import {
+    ARC_PRELUDE_ENABLED,
+    AUTHORED_WORLD_TILES_ENABLED,
+    PLAYER_3D_COSMETIC_OVERLAY_ENABLED
+} from './featureFlags.js';
 import { createPlayer3dOverlay, ENGINEER_GESTURES } from './player3dOverlay.js';
 import { createEnemy3dVisual, disposeEnemy3dVisual, updateEnemy3dVisual } from './enemy3dOverlay.js';
 import { createWorld3dModel, hasWorld3dModel, syncWorld3dReplacement } from './world3dOverlay.js';
@@ -159,6 +198,7 @@ import {
     getEnemyDirectionRow,
     getEnemySpriteLayout
 } from './enemySpriteLayouts.js';
+import { SHOWROOM_CHUNK_X, SHOWROOM_CHUNK_Y } from './debugShowroom.js';
 
 
 const PLAYER_COLORS = {
@@ -381,7 +421,19 @@ const GENERATED_ROOM_PROP_PATHS = Object.freeze({
     prop_cryo_sleep_pod: '/prop_cryo_sleep_pod.png',
     prop_ruptured_coolant_pump: '/prop_ruptured_coolant_pump.png',
     prop_alien_respiratory_vent: '/prop_alien_respiratory_vent.png',
-    prop_alien_feeding_basin: '/prop_alien_feeding_basin.png'
+    prop_alien_feeding_basin: '/prop_alien_feeding_basin.png',
+    prop_vital_monitor: '/prop_vital_monitor.jpg',
+    prop_ammo_crate_stack: '/prop_ammo_crate_stack.jpg',
+    prop_o2_filter_vat: '/prop_o2_filter_vat.jpg',
+    prop_fabricator_workstation: '/prop_fabricator_workstation.jpg',
+    prop_tesla_coil_node: '/prop_tesla_coil_node.jpg',
+    prop_laser_trap_emitter: '/prop_laser_trap_emitter.jpg',
+    prop_biomech_respirator: '/prop_biomech_respirator.jpg',
+    prop_biomech_incubator: '/prop_biomech_incubator.jpg',
+    prop_biomech_neural_synapse: '/prop_biomech_neural_synapse.jpg',
+    prop_biomech_flesh_locker: '/prop_biomech_flesh_locker.jpg',
+    prop_biomech_sphincter_trap: '/prop_biomech_sphincter_trap.jpg',
+    prop_biomech_triage_cradle: '/prop_biomech_triage_cradle.jpg'
 });
 const FLOOR_OVERLAY_TYPES = new Set([
     'decal_oil_spill_patch',
@@ -391,12 +443,10 @@ const FLOOR_OVERLAY_TYPES = new Set([
     'decal_childlike_cave_map',
     'decal_hive_growth',
     'decal_spore_growth_patch',
-    'decal_bullet_holes',
-    'decal_wall_breach',
-    'decal_hazard_stripes',
-    'decal_biohazard_stencil',
-    'decal_meridian_stencil',
-    'decal_claw_scratches',
+    'decal_abandoned_meal_tray',
+    'decal_failed_decon_kit',
+    'decal_worker_sleep_roll',
+    'decal_tallow_herb_cache',
     'scatter_bolts',
     'scatter_cable_coil',
     'scatter_coolant_puddle',
@@ -407,7 +457,20 @@ const FLOOR_OVERLAY_TYPES = new Set([
     'prop_blood_trail',
     'prop_iron_guild_dogtags'
 ]);
+const WALL_DECAL_TYPES = new Set([
+    'decal_wall_breach',
+    'decal_hazard_stripes',
+    'decal_biohazard_stencil',
+    'decal_meridian_stencil',
+    'decal_claw_scratches',
+    'decal_bullet_holes',
+    'decal_machine_cult_shrine',
+    'decal_pod_312_breach',
+    'prop_torn_warning_poster',
+    'decal_scars'
+]);
 const isFloorOverlayType = (type) => FLOOR_OVERLAY_TYPES.has(type);
+const isWallDecalType = (type) => WALL_DECAL_TYPES.has(type);
 const PROCEDURAL_DOOR_OPEN_RADIUS = 2.7;
 const PROCEDURAL_DOOR_CLOSE_RADIUS = 3.6;
 const BOSS_WALL_BREAK_COOLDOWN = 0.42;
@@ -479,6 +542,13 @@ const PHYS_PARTICLE_BOUNCE = -0.45;  // floor restitution
 const SHIP_MAX_HP = 24;
 const SHIP_NO_FIRE_RADIUS = 2.4;
 const SHIP_HIT_RADIUS_MULT = 0.78;
+
+const _scratchMatrix4 = new THREE.Matrix4();
+const _scratchQuaternion = new THREE.Quaternion();
+const _scratchVector3 = new THREE.Vector3();
+const _scratchScale = new THREE.Vector3(1, 1, 1);
+const _scratchEuler = new THREE.Euler();
+
 const LORE_LOGS = {
     active: [
         { key: 'A01', text: 'PRIORITY: RESTRICTED\nPersonnel count: 312. Deployment: Sub-level 1 through 9.\nMission status: CLASSIFIED. Authorization: DIRECTOR CHEN, OVERSEER RANK.' },
@@ -913,8 +983,17 @@ function isChunkTraversalConnected(grid) {
     return seen.size === cells.length;
 }
 
+// loadKeyedSpriteTexture is called once per registry entry at boot but also
+// per-instance for repeated world dressing (e.g. camp civilian sprites, one
+// call per camp). Without this cache, every repeat call independently
+// re-decoded the image and re-ran the full-resolution chroma-key flood-fill
+// on identical bytes. Layout-based atlas sprites are excluded: they're
+// already skipped by the hasAlpha/hasSourceAlpha check in the common case,
+// and repackGeneratedSpriteAtlas's output isn't safe to assume shareable.
+const keyedSpriteTextureCache = new Map();
+
 export class ThreeGame {
-    constructor({ parent, playerType = 'TANK', deferPlayerSpriteLoad = false, deferGameplayAtlasLoad = false, bankManager = null, dialogueManager = null, arcManager = null, act2Manager = null } = {}) {
+    constructor({ parent, playerType = 'TANK', deferPlayerSpriteLoad = false, bankManager = null, dialogueManager = null, arcManager = null, act2Manager = null } = {}) {
         this.container = typeof parent === 'string' ? document.getElementById(parent) : parent;
         if (!this.container) {
             throw new Error('ThreeGame requires a valid parent container.');
@@ -922,7 +1001,10 @@ export class ThreeGame {
 
         const initialType = String(playerType ?? 'TANK').trim().toUpperCase();
         this.playerType = PLAYER_COLORS[initialType] ? initialType : 'TANK';
-        this.deferGameplayAtlasLoad = Boolean(deferGameplayAtlasLoad);
+        // Chroma-keyed sprite textures are always processed via idle-time
+        // scheduling (see loadKeyedSpriteTexture); this queue is drained as a
+        // synchronous safety net once gameplay starts, in case anything
+        // hasn't had an idle slot yet.
         this._deferredGameplayAtlasProcessors = [];
         this.dialogueManager = dialogueManager;
         this.arcManager = ARC_PRELUDE_ENABLED ? arcManager : null;
@@ -981,12 +1063,24 @@ export class ThreeGame {
         this._sprintMoveSpeedMult = 1.0;
         this._sprintO2DrainMult = 1.0;
         this._wasSprinting = false;
+        this.noclip = false;
+        this.noclipSpeedMult = 3.5;
         this.activeTurret = null;
         this.turretCooldownTimer = 0;
         this.cameraLift = 10;
-        this.cameraOffset = new THREE.Vector3(8, this.cameraLift, 8);
-        this.cameraPlanarForward = new THREE.Vector2(-this.cameraOffset.x, -this.cameraOffset.z).normalize();
-        this.cameraPlanarRight = new THREE.Vector2(-this.cameraPlanarForward.y, this.cameraPlanarForward.x).normalize();
+        this.cameraOrbitRadius = Math.hypot(8, 8);
+        this.cameraAzimuth = Math.atan2(8, 8);
+        this.cameraOffset = new THREE.Vector3(
+            this.cameraOrbitRadius * Math.sin(this.cameraAzimuth),
+            this.cameraLift,
+            this.cameraOrbitRadius * Math.cos(this.cameraAzimuth)
+        );
+        const initialCameraBasis = planarBasisFromOffsetAzimuth(this.cameraAzimuth);
+        this.cameraPlanarForward = new THREE.Vector2(initialCameraBasis.forward.x, initialCameraBasis.forward.y);
+        this.cameraPlanarRight = new THREE.Vector2(initialCameraBasis.right.x, initialCameraBasis.right.y);
+        this.facingPlanarForward = new THREE.Vector2(0, 0);
+        this.facingPlanarRight = new THREE.Vector2(0, 0);
+        this.updateFacingYaw(Math.PI / 2);
         this.chunkCache = new Map();
         this.pocketCache = new Map();
         this.wfcMetadataCache = new Map();
@@ -1100,7 +1194,6 @@ export class ThreeGame {
         this.aimDirZ = 0;
         this.aimFacingRow = PLAYER_DEFAULT_DIRECTION_INDEX;
         this.aimWorldPoint = null;
-        this.hasActiveAim = false;
         this.mouseAimActive = false;
         this.lastMouseClientX = null;
         this.lastMouseClientY = null;
@@ -1173,6 +1266,16 @@ export class ThreeGame {
         this.playerPoisonTimer = 0;
         this.playerPoisonTickTimer = 0;
         this.killedBosses = new Set();
+        this.defeatedMilestoneBosses = new Set();
+        const builtGoalKeys = new Set(Object.entries(this.bank?.getState?.()?.unlocks ?? {})
+            .filter(([, built]) => Boolean(built))
+            .map(([goalKey]) => goalKey));
+        this.milestoneBossLifecycleState = createMilestoneBossLifecycleState({ builtGoalKeys });
+        this.ringCrossingState = null;
+        this.completedRingCrossingMissionIds = new Set();
+        this.worldPlan = null;
+        this._worldPlanInjected = false;
+        this.authoredWorldTiles = AUTHORED_WORLD_TILES_ENABLED;
         this.activeBoss = null;
         this.queenFightSprite = null;
         this.missionState = { type: null, label: '', status: 'inactive', extractionTimer: 0, killCount: 0, targetKills: 0, targetDepth: 0 };
@@ -2708,6 +2811,15 @@ export class ThreeGame {
                         #ifdef DECODE_VIDEO_TEXTURE
                             sampledDiffuseColor = vec4( mix( pow( sampledDiffuseColor.rgb * 0.9478672986 + vec3( 0.0521327014 ), vec3( 2.4 ) ), sampledDiffuseColor.rgb * 0.0773993808, vec3( lessThanEqual( sampledDiffuseColor.rgb, vec3( 0.04045 ) ) ) ), sampledDiffuseColor.w );
                         #endif
+                        // Source art (canyon_falloff_biomech/ice/alien) reads
+                        // near-black at native brightness -- lift it so the
+                        // rock detail actually reads near the rim, then let
+                        // it fall away to true darkness toward the pit floor
+                        // (rim ~= world y 0, floor ~= world y -9.8; see
+                        // addCliffInstance's column placement/height).
+                        sampledDiffuseColor.rgb = pow( sampledDiffuseColor.rgb, vec3( 0.55 ) ) * 1.35;
+                        float cliffDepthFade = smoothstep( -8.5, -0.3, vWorldPos.y );
+                        sampledDiffuseColor.rgb *= mix( 0.05, 1.0, cliffDepthFade );
                         diffuseColor *= sampledDiffuseColor;
                     #endif
                     `
@@ -2722,6 +2834,76 @@ export class ThreeGame {
                 );
             };
             this.cliffMaterials[biomeKey] = material;
+        }
+
+        this.canyonDropMaterials = {};
+        // A flat vertical plane read as a sheer, featureless wall — bow it
+        // outward as it falls (2 units clear of the tile edge by the
+        // bottom) and drop it 4 units deeper (10 -> 14) so the canyon reads
+        // as a receding rock face instead of a straight drop.
+        this.canyonDropGeometry = new THREE.PlaneGeometry(1.0, 14.0, 1, 8);
+        this.canyonDropGeometry.translate(0, -7.0, 0);
+        {
+            const posAttr = this.canyonDropGeometry.attributes.position;
+            for (let i = 0; i < posAttr.count; i += 1) {
+                const y = posAttr.getY(i);
+                const depthT = THREE.MathUtils.clamp(-y / 14, 0, 1);
+                const outward = depthT * depthT * 2.0;
+                posAttr.setZ(i, posAttr.getZ(i) + outward);
+            }
+            posAttr.needsUpdate = true;
+            this.canyonDropGeometry.computeVertexNormals();
+        }
+
+        for (const [biomeKey, [path, , color, emissive]] of Object.entries(canyonMaterialConfigs)) {
+            const dropTex = this.loadTerrainTexture(path, textureLoader, maxAnisotropy);
+            dropTex.wrapS = THREE.RepeatWrapping;
+            dropTex.wrapT = THREE.ClampToEdgeWrapping;
+            dropTex.repeat.set(1.0, 1.0);
+            const dropMat = new THREE.MeshStandardMaterial({
+                map: dropTex,
+                color,
+                emissive: new THREE.Color(emissive),
+                emissiveIntensity: 0.75,
+                roughness: 0.95,
+                metalness: 0.05,
+                side: THREE.DoubleSide,
+                fog: true
+            });
+            dropMat.onBeforeCompile = (shader) => {
+                shader.vertexShader = shader.vertexShader.replace(
+                    'void main() {',
+                    `
+                    varying vec3 vCanyonDropWorldPos;
+                    void main() {
+                    `
+                );
+                shader.vertexShader = shader.vertexShader.replace(
+                    '#include <worldpos_vertex>',
+                    `
+                    #include <worldpos_vertex>
+                    #ifdef USE_INSTANCING
+                        vCanyonDropWorldPos = (modelMatrix * instanceMatrix * vec4(transformed, 1.0)).xyz;
+                    #else
+                        vCanyonDropWorldPos = (modelMatrix * vec4(transformed, 1.0)).xyz;
+                    #endif
+                    `
+                );
+                shader.fragmentShader = `
+                    varying vec3 vCanyonDropWorldPos;
+                    ${shader.fragmentShader}
+                `;
+                shader.fragmentShader = shader.fragmentShader.replace(
+                    '#include <dithering_fragment>',
+                    `
+                    #include <dithering_fragment>
+                    float depthFade = clamp((vCanyonDropWorldPos.y + 9.5) / 9.5, 0.0, 1.0);
+                    depthFade = smoothstep(0.0, 1.0, depthFade);
+                    gl_FragColor.rgb *= depthFade * depthFade;
+                    `
+                );
+            };
+            this.canyonDropMaterials[biomeKey] = dropMat;
         }
 
         this.voidMaterial = new THREE.MeshBasicMaterial({
@@ -2742,12 +2924,16 @@ export class ThreeGame {
         // rotated instances form a chipped overhang without changing the
         // underlying collision/navigation grid.
         this.cliffEdgeGeometry = new THREE.DodecahedronGeometry(0.62, 0);
+        // Shared organic rock-column geometry instanced by addCliffInstance
+        // (buildChunk's chunk-mesh pass) for every canyon-edge/cliff tile.
+        this.cliffPrimaryGeometry = new THREE.CylinderGeometry(0.68, 0.95, 10, 14);
 
         this.invisibleMaterial = new THREE.MeshBasicMaterial({ visible: false });
 
         this.setupLighting();
         this.setupWorld();
         this.setupPlayer();
+        this.setupMultiplayerNetwork();
         this.setupInput();
         this.resize();
         this.syncVisibleChunks(true);
@@ -3547,6 +3733,17 @@ export class ThreeGame {
         this.playerTorsoSprite.visible = false;
         this.player.add(this.playerTorsoSprite);
 
+        // Season 0 cosmetic player decal (itemdefs 4120-4129, docs/game-audit-lane-split-and-worklog.md
+        // §3b) — previously equippable via the Armory but never actually rendered anywhere.
+        // Small chest-mounted billboard sprite, hidden until a decal texture loads.
+        this.playerDecalSprite = new THREE.Sprite(new THREE.SpriteMaterial({ transparent: true, opacity: 0, depthTest: true }));
+        this.playerDecalSprite.center.set(0.5, 0.5);
+        this.playerDecalSprite.position.set(this.playerSpriteLead + 0.16, this.playerHeight * 0.62, this.playerSpriteLead - 0.05);
+        this.playerDecalSprite.scale.set(0.22, 0.22, 1);
+        this.playerDecalSprite.renderOrder = 7;
+        this.playerDecalSprite.visible = false;
+        this.player.add(this.playerDecalSprite);
+
         // Legs face movement, torso faces aim — tracked separately.
         this.torsoFacingRow = this.currentFacingRow;
 
@@ -3580,6 +3777,37 @@ export class ThreeGame {
         this.emitWeaponClipState();
         this.emitShipHealthState();
         this.setupPlayer3dCosmeticOverlay();
+        this.updatePlayerDecalSprite();
+    }
+
+    // Season 0 cosmetic player decal (see this.playerDecalSprite's creation comment above).
+    // Reads the equipped decal once at spawn, same timing as setupPlayer3dCosmeticOverlay()'s
+    // weapon skin read — cosmetics are fixed for the run, re-read on the next spawn.
+    updatePlayerDecalSprite() {
+        const sprite = this.playerDecalSprite;
+        if (!sprite) return;
+        const decalId = window.loadout?.getEquippedDecalId?.();
+        if (!decalId) {
+            sprite.visible = false;
+            sprite.material.opacity = 0;
+            return;
+        }
+        const catalog = getItemCatalogEntry(decalId);
+        const iconPath = catalog?.localImg || catalog?.img;
+        if (!iconPath) {
+            sprite.visible = false;
+            sprite.material.opacity = 0;
+            return;
+        }
+        new THREE.TextureLoader().load(assetUrl(iconPath), (texture) => {
+            if (sprite.material.map) sprite.material.map.dispose();
+            sprite.material.map = texture;
+            sprite.material.opacity = 1;
+            sprite.material.needsUpdate = true;
+            sprite.visible = true;
+        }, undefined, () => {
+            sprite.visible = false;
+        });
     }
 
     async setupPlayer3dCosmeticOverlay() {
@@ -3590,20 +3818,32 @@ export class ThreeGame {
         const playerRoot = this.player;
         const overlayType = this.playerType;
         try {
+            // Reads the equipped archetype/skin from LoadoutManager v2
+            // (docs/armory-and-class-weapons-worklog.md §2b/§2c) when available,
+            // falling back to each class's Armory base gun default otherwise
+            // (e.g. in tests, or a profile with no loadout saved yet).
+            const archetypeFor = (defaultId) => window.loadout?.getActiveArchetype?.(this.playerType) ?? defaultId;
+            const skinIdFor = () => window.loadout?.getEquippedSkinId?.(this.playerType) ?? null;
             const classVisuals = {
-                SCOUT: {},
+                SCOUT: {
+                    weaponArchetype: archetypeFor('talon'),
+                    weaponMount: { skinId: skinIdFor() }
+                },
                 ENGINEER: {
                     modelUrl: '/3d/runtime/engineer-rigged-gestures.glb',
                     animationModelUrl: '/3d/scouting-scout/Scout.game.glb',
                     animationBonePrefix: 'mixamorig',
                     weaponEnabled: true,
+                    weaponArchetype: archetypeFor('tesla_lock'),
+                    weaponMount: { skinId: skinIdFor() }
                 },
                 TANK: {
                     modelUrl: '/3d/runtime/tank-rigged.glb',
                     animationModelUrl: '/3d/scouting-scout/Scout.game.glb',
                     animationBonePrefix: 'mixamorig',
                     weaponEnabled: true,
-                    weaponMount: { position: [0.03, 0.02, 0.03] }
+                    weaponArchetype: archetypeFor('siege_breaker'),
+                    weaponMount: { position: [0.03, 0.02, 0.03], skinId: skinIdFor() }
                 }
             };
             const overlay = await createPlayer3dOverlay({
@@ -3630,6 +3870,234 @@ export class ThreeGame {
         }
     }
 
+    setupMultiplayerNetwork() {
+        const session = (typeof window !== 'undefined' && window.activeMultiplayerSession) || multiplayerLobby?.getActiveSession?.();
+        if (!session) return;
+
+        this.isMultiplayer = true;
+        this.multiplayerMode = session.mode || MULTIPLAYER_SPAWN_MODES.COOP;
+        this.multiplayerRoomCode = session.roomCode || 'SECTOR-7';
+        this.multiplayerCrashPlan = session.crashPlan || null;
+        this.remotePlayers = new Map();
+        this.netSocket = session.socket || null;
+        this.lastNetBroadcastTime = 0;
+
+        // If a crash plan exists, adjust local player spawn if assigned
+        if (this.multiplayerCrashPlan?.players?.length && this.player) {
+            const myInfo = this.multiplayerCrashPlan.players.find(p => p.isHost) || this.multiplayerCrashPlan.players[0];
+            if (myInfo && Number.isFinite(myInfo.spawnX) && Number.isFinite(myInfo.spawnZ)) {
+                this.player.position.x = myInfo.spawnX;
+                this.player.position.z = myInfo.spawnZ;
+            }
+        }
+
+        // Bind socket network events
+        if (this.netSocket) {
+            this.netSocket.on('playerMoved', (data) => this.handleRemotePlayerMoved(data));
+            this.netSocket.on('playerFired', (data) => this.handleRemotePlayerFired(data));
+            this.netSocket.on('playerDamaged', (data) => this.handleRemotePlayerDamaged(data));
+            this.netSocket.on('playerRevived', (data) => this.handleRemotePlayerRevived(data));
+            this.netSocket.on('playerDisconnected', (id) => this.removeRemotePlayer(id));
+            this.netSocket.on('newPlayer', (player) => this.getOrCreateRemotePlayer(player));
+        }
+
+        // Spawn peers from crash plan / roster
+        if (this.multiplayerCrashPlan?.players) {
+            this.multiplayerCrashPlan.players.forEach((p) => {
+                if (!p.isHost) {
+                    this.getOrCreateRemotePlayer(p);
+                }
+            });
+        }
+    }
+
+    getOrCreateRemotePlayer(playerData) {
+        if (!playerData || !playerData.id) return null;
+        if (this.remotePlayers?.has(playerData.id)) {
+            return this.remotePlayers.get(playerData.id);
+        }
+        this.remotePlayers ??= new Map();
+
+        const group = new THREE.Group();
+        const spawnX = playerData.spawnX ?? playerData.x ?? 9;
+        const spawnZ = playerData.spawnZ ?? playerData.z ?? 9;
+        group.position.set(spawnX, 0, spawnZ);
+
+        const opClass = playerData.opClass || 'SCOUT';
+        const isPvP = this.multiplayerMode === 'pvp';
+        const themeColor = isPvP ? 0xff4444 : (playerData.color || (opClass === 'SCOUT' ? 0x7dff5a : (opClass === 'TANK' ? 0xffb700 : 0x00e5ff)));
+
+        // Create 2D Sprite visual fallback / base
+        const spriteMat = new THREE.SpriteMaterial({
+            color: themeColor,
+            transparent: true,
+            opacity: 0.95
+        });
+        const sprite = new THREE.Sprite(spriteMat);
+        sprite.center.set(0.5, 0);
+        sprite.position.set(0, 0.4, 0);
+        sprite.scale.set(this.playerSpriteScale || 2.2, this.playerSpriteScale || 2.2, 1);
+        group.add(sprite);
+
+        // Add 3D Overhead Nameplate
+        if (typeof document !== 'undefined') {
+            const canvas = document.createElement('canvas');
+            canvas.width = 256;
+            canvas.height = 64;
+            const ctx = canvas.getContext('2d');
+            if (ctx) {
+                ctx.fillStyle = 'rgba(10, 16, 24, 0.85)';
+                ctx.fillRect(4, 4, 248, 56);
+                ctx.strokeStyle = isPvP ? '#ff4444' : '#2ec4b6';
+                ctx.lineWidth = 3;
+                ctx.strokeRect(4, 4, 248, 56);
+
+                ctx.fillStyle = isPvP ? '#ff6666' : '#ffffff';
+                ctx.font = 'bold 20px monospace';
+                ctx.textAlign = 'center';
+                ctx.fillText(`${isPvP ? '[RIVAL] ' : '[SQUAD] '}${playerData.callsign || opClass}`, 128, 38);
+            }
+            const texture = new THREE.CanvasTexture(canvas);
+            const nameplateMat = new THREE.SpriteMaterial({ map: texture, transparent: true, depthTest: false });
+            const nameplateSprite = new THREE.Sprite(nameplateMat);
+            nameplateSprite.scale.set(2.2, 0.55, 1);
+            nameplateSprite.position.set(0, 2.2, 0);
+            group.add(nameplateSprite);
+        }
+
+        this.scene.add(group);
+
+        const remote = {
+            id: playerData.id,
+            callsign: playerData.callsign || 'OPERATIVE',
+            opClass,
+            mesh: group,
+            sprite,
+            targetPos: new THREE.Vector3(group.position.x, group.position.y, group.position.z),
+            targetYaw: playerData.yaw || 0,
+            currentYaw: 0,
+            hp: 100,
+            maxHp: 100,
+            isDown: false,
+            lastUpdate: Date.now()
+        };
+
+        this.remotePlayers.set(playerData.id, remote);
+        return remote;
+    }
+
+    handleRemotePlayerMoved(data) {
+        if (!data || !data.id) return;
+        const remote = this.getOrCreateRemotePlayer(data);
+        if (!remote) return;
+
+        if (Number.isFinite(data.x) && Number.isFinite(data.z)) {
+            remote.targetPos.set(data.x, 0, data.z);
+        }
+        if (Number.isFinite(data.yaw)) {
+            remote.targetYaw = data.yaw;
+        }
+        remote.animState = data.animState || 'idle';
+        remote.lastUpdate = Date.now();
+    }
+
+    handleRemotePlayerFired(data) {
+        if (!data) return;
+        const originX = data.originX;
+        const originZ = data.originZ;
+        const dirX = data.dirX;
+        const dirZ = data.dirZ;
+        if (!Number.isFinite(originX) || !Number.isFinite(originZ) || !Number.isFinite(dirX) || !Number.isFinite(dirZ)) return;
+
+        const isPvP = this.multiplayerMode === 'pvp';
+        this.spawnProjectile({
+            x: originX,
+            z: originZ,
+            vx: dirX * PROJECTILE_SPEED,
+            vz: dirZ * PROJECTILE_SPEED,
+            isEnemy: isPvP,
+            options: {
+                color: data.color ?? (isPvP ? 0xff4a4a : 0x2ec4b6),
+                glowColor: isPvP ? 0xff0000 : 0x00ffff
+            }
+        });
+        window.AudioManager?.play?.('weapon_fire_sidearm', { volume: 0.28, varyPitch: true });
+    }
+
+    handleRemotePlayerDamaged(data) {
+        if (!data) return;
+        if (data.targetId === this.netSocket?.id) {
+            // Local player was hit in PvP
+            this.takePlayerDamage?.(data.damage || 10, 'pvp-rival');
+        } else if (this.remotePlayers?.has(data.targetId)) {
+            const remote = this.remotePlayers.get(data.targetId);
+            remote.hp = Math.max(0, remote.hp - (data.damage || 10));
+            if (remote.hp === 0) {
+                remote.isDown = true;
+                if (this.multiplayerMode === 'pvp') {
+                    window.showToastNotification?.(`RIVAL ELIMINATED: ${remote.callsign}`);
+                    window.AudioManager?.play?.('fx_achievement', { volume: 0.4 });
+                } else {
+                    window.showToastNotification?.(`SQUADMATE DOWN: ${remote.callsign}`);
+                    window.AudioManager?.play?.('ui_error', { volume: 0.4 });
+                }
+            }
+        }
+    }
+
+    handleRemotePlayerRevived(data) {
+        if (!data || !this.remotePlayers?.has(data.targetId)) return;
+        const remote = this.remotePlayers.get(data.targetId);
+        remote.isDown = false;
+        remote.hp = remote.maxHp;
+        window.showToastNotification?.(`SQUADMATE REVIVED: ${remote.callsign}`);
+        window.AudioManager?.play?.('fx_level_up', { volume: 0.4 });
+    }
+
+    removeRemotePlayer(id) {
+        if (!this.remotePlayers?.has(id)) return;
+        const remote = this.remotePlayers.get(id);
+        if (remote.mesh) {
+            this.scene.remove(remote.mesh);
+        }
+        this.remotePlayers.delete(id);
+    }
+
+    updateMultiplayer(delta, now) {
+        if (!this.isMultiplayer) return;
+
+        // 1. Broadcast local position periodically (~30Hz)
+        if (this.netSocket && this.player && !this.isPlayerDead) {
+            if (now - (this.lastNetBroadcastTime ?? 0) >= 33) {
+                this.lastNetBroadcastTime = now;
+                this.netSocket.emit('playerMove', {
+                    x: this.player.position.x,
+                    z: this.player.position.z,
+                    yaw: this.facingYaw,
+                    vx: this.vx ?? 0,
+                    vz: this.vz ?? 0,
+                    animState: this.isMoving ? 'run' : 'idle'
+                });
+            }
+        }
+
+        // 2. Interpolate and animate remote players
+        if (this.remotePlayers?.size) {
+            for (const remote of this.remotePlayers.values()) {
+                const mesh = remote.mesh;
+                if (!mesh) continue;
+
+                // Smooth position lerp
+                mesh.position.lerp(remote.targetPos, Math.min(1.0, delta * 12));
+
+                // Smooth rotation lerp
+                const yawDelta = wrapAngle(remote.targetYaw - remote.currentYaw);
+                remote.currentYaw += yawDelta * Math.min(1.0, delta * 14);
+                mesh.rotation.y = remote.currentYaw;
+            }
+        }
+    }
+
     async setupEnemy3dCosmeticOverlay(sprite) {
         if (!sprite?.userData || sprite.userData.enemy3dLoading || sprite.userData.enemy3dVisual) return;
         sprite.userData.enemy3dLoading = true;
@@ -3645,11 +4113,15 @@ export class ThreeGame {
         }
     }
 
+    async createWorld3dModel(modelType) {
+        return createWorld3dModel(modelType);
+    }
+
     async setupWorld3dReplacement(source, modelType, { owner = null, ownerKey = null } = {}) {
         if (!source || source.userData?.world3dLoading || source.userData?.world3dRoot) return;
         source.userData.world3dLoading = true;
         try {
-            const root = await createWorld3dModel(modelType);
+            const root = await (this.createWorld3dModel?.(modelType) ?? createWorld3dModel(modelType));
             if (!root || !source.parent) return;
             root.position.copy(source.position);
             root.rotation.y = source.material?.rotation ?? 0;
@@ -4023,7 +4495,6 @@ export class ThreeGame {
             const pointerType = event.pointerType || 'mouse';
             if (pointerType === 'mouse' && event.button === 2) {
                 event.preventDefault();
-                this.updateAimFromClient(event.clientX, event.clientY, { keepMouseActive: true });
                 this.triggerGameplayMelee();
                 return;
             }
@@ -4055,11 +4526,16 @@ export class ThreeGame {
             if (this.tryInteractWithBlackBoxPointer(event.clientX, event.clientY)) {
                 return;
             }
+            if (this.tryInteractWithBunkerDoorPointer(event.clientX, event.clientY)) {
+                return;
+            }
+            if (this.tryInteractWithPlayerTradePointer(event.clientX, event.clientY)) {
+                return;
+            }
+            if (this.tryInteractWithCampPointer(event.clientX, event.clientY)) {
+                return;
+            }
 
-            this.updateAimFromClient(event.clientX, event.clientY, {
-                keepMouseActive: pointerType === 'mouse',
-                persistDuration: pointerType === 'mouse' ? 0 : 2.0
-            });
             this.beginHeldFire(event.clientX, event.clientY, pointerType);
         };
 
@@ -4073,10 +4549,13 @@ export class ThreeGame {
             if (pointerType !== 'mouse') return;
             this.lastMouseClientX = event.clientX;
             this.lastMouseClientY = event.clientY;
+
+            // Direct tactical crosshair aim: turn player to face mouse pointer in world
             this.updateAimFromClient(event.clientX, event.clientY, {
                 keepMouseActive: true,
                 persistDuration: 0
             });
+            this.checkHoverInteractable(event.clientX, event.clientY);
         };
 
         this.handleCanvasTap = (event) => {
@@ -4113,7 +4592,11 @@ export class ThreeGame {
                 const goalKey = event?.detail?.goalKey;
                 const bossType = MILESTONE_BOSS_FOR_GOAL[goalKey];
                 if (!bossType) return;
-                if (goalKey === 'o2Bubble') return;
+                this.applyMilestoneBossRuntimeEvent({
+                    type: MILESTONE_BOSS_EVENT_TYPES.GOAL_BUILT,
+                    goalKey
+                });
+                this.reconcileAuthoredWorldProgression?.();
 
                 this.closeConsoleModal();
                 this.setInputEnabled(false);
@@ -4174,9 +4657,22 @@ export class ThreeGame {
         this.renderer.domElement.addEventListener('pointerdown', this.handleCanvasPointerDown);
         this.renderer.domElement.addEventListener('contextmenu', this.handleCanvasContextMenu);
         this.renderer.domElement.addEventListener('pointermove', this.handleCanvasPointerMove);
+        window.addEventListener('pointermove', this.handleCanvasPointerMove, { passive: true });
         this.renderer.domElement.addEventListener('pointerup', this.handleCanvasTap);
         this.renderer.domElement.addEventListener('pointercancel', this.handleCanvasPointerCancel);
         this.renderer.domElement.addEventListener('pointerleave', this.handleCanvasPointerCancel);
+    }
+
+    updateFacingYaw(yaw) {
+        this.facingYaw = wrapAngle(yaw);
+        const aim = aimVectorFromYaw(this.facingYaw);
+        this.aimDirX = aim.x;
+        this.aimDirZ = aim.z;
+        const basis = planarBasisFromOffsetAzimuth(this.facingYaw + Math.PI);
+        this.facingPlanarForward.set(basis.forward.x, basis.forward.y);
+        this.facingPlanarRight.set(basis.right.x, basis.right.y);
+        this.aimFacingRow = this.getFacingRow(this.aimDirX, this.aimDirZ);
+        this.hasActiveAim = true;
     }
 
     getWorldAimPoint(clientX, clientY) {
@@ -4203,10 +4699,8 @@ export class ThreeGame {
         if (length <= 0.0001) return null;
 
         this.aimWorldPoint = worldPoint.clone();
-        this.aimDirX = aimDirX / length;
-        this.aimDirZ = aimDirZ / length;
-        this.aimFacingRow = this.getFacingRow(this.aimDirX, this.aimDirZ);
-        this.hasActiveAim = true;
+        const yaw = Math.atan2(aimDirX, aimDirZ);
+        this.updateFacingYaw(yaw);
         this.mouseAimActive = keepMouseActive;
         this._aimResetTimer = keepMouseActive ? 0 : Math.max(0, persistDuration);
         return worldPoint;
@@ -4272,10 +4766,17 @@ export class ThreeGame {
         if (!this.isGameplayInputActive()) return false;
         if (this.dashCooldownTimer > 0 || this.isDashing) return false;
 
-        let dirX = (this.keys.right ? 1 : 0) - (this.keys.left ? 1 : 0);
-        let dirZ = (this.keys.down ? 1 : 0) - (this.keys.up ? 1 : 0);
+        const keyAxisX = (this.keys.right ? 1 : 0) - (this.keys.left ? 1 : 0);
+        const keyAxisZ = (this.keys.down ? 1 : 0) - (this.keys.up ? 1 : 0);
+        const screenAxisX = THREE.MathUtils.clamp(keyAxisX + (this.virtualInput?.x || 0), -1, 1);
+        const screenAxisZ = THREE.MathUtils.clamp(keyAxisZ + (this.virtualInput?.z || 0), -1, 1);
 
-        if (!dirX && !dirZ) {
+        let dirX;
+        let dirZ;
+        if (screenAxisX || screenAxisZ) {
+            dirX = (this.cameraPlanarRight.x * screenAxisX) + (this.cameraPlanarForward.x * -screenAxisZ);
+            dirZ = (this.cameraPlanarRight.y * screenAxisX) + (this.cameraPlanarForward.y * -screenAxisZ);
+        } else {
             dirX = this.aimDirX || 1;
             dirZ = this.aimDirZ || 0;
         }
@@ -4360,42 +4861,6 @@ export class ThreeGame {
         return chunk.heightmap[localZ][localX] ?? TERRAIN_HEIGHTS.GROUND;
     }
 
-    setControllerAimVector(x = 0, y = 0) {
-        if (!this.isGameplayInputActive()) return false;
-
-        const screenAxisX = THREE.MathUtils.clamp(Number(x) || 0, -1, 1);
-        const screenAxisZ = THREE.MathUtils.clamp(Number(y) || 0, -1, 1);
-        const magnitude = Math.hypot(screenAxisX, screenAxisZ);
-        if (magnitude <= 0.18) return false;
-
-        const right = this.cameraPlanarRight ?? { x: 1, y: 0 };
-        const forward = this.cameraPlanarForward ?? { x: 0, y: 1 };
-        const aimX = (right.x * screenAxisX) + (forward.x * -screenAxisZ);
-        const aimZ = (right.y * screenAxisX) + (forward.y * -screenAxisZ);
-        const aimLength = Math.hypot(aimX, aimZ);
-        if (aimLength <= 0.0001) return false;
-
-        this.aimDirX = aimX / aimLength;
-        this.aimDirZ = aimZ / aimLength;
-        this.aimFacingRow = this.getFacingRow(this.aimDirX, this.aimDirZ);
-        this.hasActiveAim = true;
-        this.mouseAimActive = false;
-        this._aimResetTimer = 0;
-
-        if (this.player) {
-            const aimDist = 7.5;
-            const px = this.player.position.x;
-            const py = this.player.position.y ?? TERRAIN_HEIGHTS.GROUND;
-            const pz = this.player.position.z;
-            this.aimWorldPoint = new THREE.Vector3(
-                px + (this.aimDirX * aimDist),
-                py,
-                pz + (this.aimDirZ * aimDist)
-            );
-        }
-        return true;
-    }
-
     playThrottledUiError(fieldName, options = {}, eventName = null) {
         const now = performance.now();
         const lastPlayed = this[fieldName] ?? 0;
@@ -4432,16 +4897,6 @@ export class ThreeGame {
             return false;
         }
 
-        if (!this.hasActiveAim) {
-            const fallbackX = this.cameraPlanarForward?.x ?? this.aimDirX ?? 1;
-            const fallbackZ = this.cameraPlanarForward?.y ?? this.aimDirZ ?? 0;
-            const fallbackLength = Math.hypot(fallbackX, fallbackZ) || 1;
-            this.aimDirX = fallbackX / fallbackLength;
-            this.aimDirZ = fallbackZ / fallbackLength;
-            this.aimFacingRow = this.getFacingRow(this.aimDirX, this.aimDirZ);
-            this.hasActiveAim = true;
-        }
-
         const normX = this.aimDirX;
         const normZ = this.aimDirZ;
         if (!Number.isFinite(normX) || !Number.isFinite(normZ)) return false;
@@ -4452,6 +4907,17 @@ export class ThreeGame {
         this.emitWeaponClipState();
 
         this.spawnPlayerShot(normX, normZ);
+
+        if (this.isMultiplayer && this.netSocket && this.player) {
+            this.netSocket.emit('playerFire', {
+                originX: this.player.position.x,
+                originZ: this.player.position.z,
+                dirX: normX,
+                dirZ: normZ,
+                weaponType: this.currentWeaponType || 'plasma_carbine',
+                damage: this.playerDamage || 10
+            });
+        }
 
         window.AudioManager?.play('weapon_fire_sidearm', { volume: 0.34 });
 
@@ -4470,13 +4936,9 @@ export class ThreeGame {
         if ((this.meleeCooldownTimer ?? 0) > 0) return false;
         if (this.isInsideNoFireZone()) return false;
 
-        const fallbackX = this.cameraPlanarForward?.x ?? 1;
-        const fallbackZ = this.cameraPlanarForward?.y ?? 0;
-        const directionX = this.hasActiveAim ? this.aimDirX : fallbackX;
-        const directionZ = this.hasActiveAim ? this.aimDirZ : fallbackZ;
-        const directionLength = Math.hypot(directionX, directionZ) || 1;
-        const aimX = directionX / directionLength;
-        const aimZ = directionZ / directionLength;
+        const directionLength = Math.hypot(this.aimDirX, this.aimDirZ) || 1;
+        const aimX = this.aimDirX / directionLength;
+        const aimZ = this.aimDirZ / directionLength;
         const targets = [];
 
         for (const sprite of this.scatterSprites) {
@@ -4626,7 +5088,6 @@ export class ThreeGame {
         this.virtualInput.z = 0;
         this.isMoving = false;
         this.mouseAimActive = false;
-        this.hasActiveAim = false;
         this.endHeldFire();
         this._aimResetTimer = 0;
         this.lastMouseClientX = null;
@@ -4850,6 +5311,9 @@ export class ThreeGame {
         } else if (resolvedType === 'ENGINEER' && this.bank && this.bank.isSkillUnlocked('engineer_magnet_1')) {
             baseMagnet = 5.0;
         }
+        // Season 0 Rig Overclock Modules (docs/season-zero-protocol/03) — see LoadoutManager#getActiveModifiers
+        this.loadoutMods = window.loadout?.getActiveModifiers?.(resolvedType.toLowerCase()) ?? null;
+        baseMagnet *= 1 + (this.loadoutMods?.scrapMagnetRadiusBonus ?? 0);
         this.pickupMagnetRadius = baseMagnet;
 
         this._initClassPassives();
@@ -5147,6 +5611,30 @@ export class ThreeGame {
         placeholder.height = 1;
         texture.image = placeholder;
 
+        // Atlas/layout sprites aren't cached: repackGeneratedSpriteAtlas's
+        // output isn't known to be safely shareable across texture instances,
+        // and in practice these are already skipped by the alpha check below.
+        const cacheKey = options?.layout ? null : `${safePath}::${threshold}::${options?.cropBottomRatio ?? ''}`;
+        const cached = cacheKey ? keyedSpriteTextureCache.get(cacheKey) : null;
+        if (cached) {
+            if (cached.image) {
+                queueMicrotask(() => {
+                    texture.image = cached.image;
+                    texture.needsUpdate = true;
+                    if (onLoad) onLoad(texture);
+                });
+            } else {
+                cached.waiters.push((image) => {
+                    texture.image = image;
+                    texture.needsUpdate = true;
+                    if (onLoad) onLoad(texture);
+                });
+            }
+            return texture;
+        }
+        const cacheEntry = cacheKey ? { image: null, waiters: [] } : null;
+        if (cacheKey) keyedSpriteTextureCache.set(cacheKey, cacheEntry);
+
         const image = new Image();
         const processImage = () => {
             const cropBottomRatioRaw = Number(options?.cropBottomRatio);
@@ -5176,30 +5664,60 @@ export class ThreeGame {
             // Preserve authored alpha sprites. Older generated assets arrive
             // on black and still need keying, while production collectibles
             // are pre-matted from chroma green and contain transparent pixels.
-            const hasSourceAlpha = imgData.data.some((value, index) => index % 4 === 3 && value < 255);
+            let hasSourceAlpha = false;
+            const data = imgData.data;
+            for (let i = 3; i < data.length; i += 4) {
+                if (data[i] < 255) {
+                    hasSourceAlpha = true;
+                    break;
+                }
+            }
             if (!options?.layout?.hasAlpha && !hasSourceAlpha) {
                 applyGreenChromaKey(imgData);
                 applyBlackChromaKey(imgData, { threshold });
             }
 
             ctx.putImageData(imgData, 0, 0);
-            
-            texture.image = repackGeneratedSpriteAtlas(canvas, options?.layout);
+
+            const finalImage = repackGeneratedSpriteAtlas(canvas, options?.layout);
+            texture.image = finalImage;
             texture.needsUpdate = true;
+            if (cacheEntry) {
+                cacheEntry.image = finalImage;
+                const waiters = cacheEntry.waiters.splice(0);
+                waiters.forEach((notify) => notify(finalImage));
+            }
             if (onLoad) {
                 onLoad(texture);
             }
         };
         image.onload = () => {
-            if (options?.layout && this.deferGameplayAtlasLoad) {
-                this._deferredGameplayAtlasProcessors.push(processImage);
-                return;
+            // Chroma-keying (multiple full-resolution flood-fill passes) is
+            // expensive enough that a burst of these landing together used to
+            // freeze the main thread for seconds — worst-case right at deploy,
+            // starving the class-intro video of the main-thread time it needs
+            // to buffer before its readiness guard skips it. Always route
+            // through idle time instead of running inline in onload, whether
+            // the image finishes decoding during the menu or mid-deploy.
+            const entry = { run: processImage, done: false };
+            this._deferredGameplayAtlasProcessors.push(entry);
+            const runOnce = () => {
+                if (entry.done) return;
+                entry.done = true;
+                const idx = this._deferredGameplayAtlasProcessors.indexOf(entry);
+                if (idx !== -1) this._deferredGameplayAtlasProcessors.splice(idx, 1);
+                entry.run();
+            };
+            if (typeof window.requestIdleCallback === 'function') {
+                window.requestIdleCallback(runOnce, { timeout: 2000 });
+            } else {
+                window.setTimeout(runOnce, 300);
             }
-            processImage();
         };
 
         image.onerror = (err) => {
             console.error(`[ThreeGame] loadKeyedSpriteTexture: Failed to load image: ${safePath}`, err);
+            if (cacheKey) keyedSpriteTextureCache.delete(cacheKey);
         };
 
         image.src = safePath;
@@ -5292,7 +5810,7 @@ export class ThreeGame {
         const width = this.container.clientWidth || 1;
         const height = this.container.clientHeight || 1;
         const aspect = width / height;
-        const viewSize = this.performanceProfile === 'menu' ? 3.7 : 6.8;
+        const viewSize = this.performanceProfile === 'menu' ? 3.7 : 5.2;
 
         this.menuPixelRatio = cappedPixelRatio({
             width,
@@ -5344,6 +5862,38 @@ export class ThreeGame {
         );
     }
 
+    _flushDeferredAtlasProcessors() {
+        if (this._atlasFlushScheduled) return;
+        if (!this._deferredGameplayAtlasProcessors.length) return;
+        this._atlasFlushScheduled = true;
+        const startedAt = performance.now();
+        let processedCount = 0;
+        const FRAME_BUDGET_MS = 6;
+        const step = () => {
+            const stepStart = performance.now();
+            while (
+                this._deferredGameplayAtlasProcessors.length
+                && performance.now() - stepStart < FRAME_BUDGET_MS
+            ) {
+                const entry = this._deferredGameplayAtlasProcessors.shift();
+                if (entry.done) continue;
+                entry.done = true;
+                entry.run();
+                processedCount += 1;
+            }
+            if (this._deferredGameplayAtlasProcessors.length) {
+                requestAnimationFrame(step);
+            } else {
+                this._atlasFlushScheduled = false;
+                debugLog.info('PERF', 'Deferred sprite atlas processing complete', {
+                    atlasCount: processedCount,
+                    durationMs: Math.round((performance.now() - startedAt) * 10) / 10
+                });
+            }
+        };
+        requestAnimationFrame(step);
+    }
+
     setPerformanceProfile(profile = 'menu') {
         const nextProfile = profile === 'gameplay' ? 'gameplay' : 'menu';
         if (this.performanceProfile === nextProfile) return;
@@ -5353,14 +5903,13 @@ export class ThreeGame {
             ? this.defaultVisibleChunkRadius
             : 0;
         if (nextProfile === 'gameplay') {
-            this.deferGameplayAtlasLoad = false;
-            const deferredAtlasProcessors = this._deferredGameplayAtlasProcessors.splice(0);
-            const atlasFlushStartedAt = performance.now();
-            for (const processAtlas of deferredAtlasProcessors) processAtlas();
-            debugLog.info('PERF', 'Deferred sprite atlas processing complete', {
-                atlasCount: deferredAtlasProcessors.length,
-                durationMs: Math.round((performance.now() - atlasFlushStartedAt) * 10) / 10
-            });
+            // Idle-callback scheduling (see loadKeyedSpriteTexture) should have
+            // already drained most of this queue during menu idle time; this is
+            // just a safety-net for whatever didn't get an idle slot. It still
+            // needs to stay off the main thread's critical path (the deploy
+            // cutscene is racing a 4s readiness guard), so it drains in small
+            // per-frame chunks instead of one blocking pass.
+            this._flushDeferredAtlasProcessors();
             this.virtualInput.x = 0;
             this.virtualInput.z = 0;
             this._menuShowcaseTimer = 0;
@@ -5568,11 +6117,13 @@ export class ThreeGame {
         this.updateEngineerTurret(delta);
         this.updateRadarScans(delta);
         this.updatePlayer(delta);
+        this.updateMultiplayer?.(delta, now);
         this.updateWeaponState(delta);
         this.updateProjectiles(delta);
         this.updateCamera(delta);
         this._lastFrameDeltaForChunkMounts = delta;
         this.syncVisibleChunks();
+        if (this._milestoneBossRestagePending) this.restageReadyMilestoneBosses?.();
         this.updateTacticalMapDiscovery?.();
         this.updateCompanions(delta);
         this.updateTransientEffects(delta, now);
@@ -6677,6 +7228,9 @@ export class ThreeGame {
                 const worldZ = chunkY * this.chunkSize + source.localY;
                 if (Math.hypot(this.player.position.x - worldX, this.player.position.z - worldZ) > 1.8) continue;
                 const granted = grantAccess(this.mazeAccessState, source.requirement);
+                if (source.requirement?.type === 'objective') {
+                    this.completeRingCrossingMission?.(source.requirement.id);
+                }
                 if (granted) {
                     window.dispatchEvent(new CustomEvent('maze-access-granted', {
                         detail: {
@@ -6920,6 +7474,695 @@ export class ThreeGame {
         return this.interactWithBlackBox();
     }
 
+    tryInteractWithCampPointer(clientX, clientY) {
+        if (!this.isGameplayInputActive() || !this.player) return false;
+        const worldPoint = this.getWorldAimPoint(clientX, clientY);
+        if (!worldPoint) return false;
+
+        const actionable = this.getActionableCampAt?.(worldPoint.x, worldPoint.z)
+            || this.getActionableCampAt?.(this.player.position.x, this.player.position.z);
+        if (actionable) {
+            return this.interactWithAct2Camp();
+        }
+
+        if (this.camps) {
+            for (const camp of this.camps) {
+                const cx = camp.tileX ?? camp.x ?? 0;
+                const cz = camp.tileZ ?? camp.z ?? 0;
+                const distCamp = Math.hypot(worldPoint.x - cx, worldPoint.z - cz);
+                const playerDist = Math.hypot(this.player.position.x - cx, this.player.position.z - cz);
+                if (distCamp <= (camp.radius || 3.5) && playerDist <= ((camp.radius || 3.5) + 3.0)) {
+                    return this.interactWithAct2Camp();
+                }
+            }
+        }
+        return false;
+    }
+
+    tryInteractWithPlayerTradePointer(clientX, clientY) {
+        if (!this.isGameplayInputActive() || !this.player || !this.remotePlayers?.size) return false;
+        const worldPoint = this.getWorldAimPoint(clientX, clientY);
+        if (!worldPoint) return false;
+
+        for (const remote of this.remotePlayers.values()) {
+            const rPos = remote.mesh?.position;
+            if (!rPos) continue;
+            const dist = Math.hypot(worldPoint.x - rPos.x, worldPoint.z - rPos.z);
+            if (dist <= 2.2) {
+                if (this.multiplayerMode !== 'pvp' && !remote.isDown) {
+                    window.openPlayerTradeWith?.(remote);
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    resolveTacticalInspectTarget(worldPoint) {
+        if (!worldPoint || !this.player) return null;
+
+        const playerDist = Math.hypot(worldPoint.x - this.player.position.x, worldPoint.z - this.player.position.z);
+        const tileX = Math.round(worldPoint.x);
+        const tileZ = Math.round(worldPoint.z);
+
+        // 0. Check Remote Players (Rivals in PvP or Downed/Trading Squadmates in Co-Op)
+        if (this.remotePlayers?.size) {
+            for (const remote of this.remotePlayers.values()) {
+                const rPos = remote.mesh?.position;
+                if (!rPos) continue;
+                const dist = Math.hypot(worldPoint.x - rPos.x, worldPoint.z - rPos.z);
+                if (dist <= 2.2) {
+                    if (this.multiplayerMode === 'pvp') {
+                        return {
+                            type: 'enemy',
+                            targetId: 'rival_player',
+                            badgeLabel: `RIVAL: ${(remote.callsign || 'OPERATIVE').toUpperCase()}`,
+                            kicker: 'HOSTILE DETECTED // RIVAL',
+                            title: (remote.callsign || 'RIVAL OPERATIVE').toUpperCase(),
+                            subtitle: `CLASS: ${(remote.playerType || 'OPERATIVE').toUpperCase()}`,
+                            coords: { x: tileX, z: tileZ },
+                            distance: dist,
+                            integrity: 100,
+                            promptKey: 'L-CLICK',
+                            promptText: 'ENGAGE'
+                        };
+                    } else if (remote.isDown) {
+                        return {
+                            type: 'interact',
+                            targetId: 'revive_peer',
+                            badgeLabel: `REVIVE: ${(remote.callsign || 'SQUADMATE').toUpperCase()}`,
+                            kicker: 'ALLY IN DISTRESS // MEDICAL',
+                            title: (remote.callsign || 'SQUADMATE').toUpperCase(),
+                            subtitle: 'STATUS: CRITICAL // DOWNED',
+                            coords: { x: tileX, z: tileZ },
+                            distance: dist,
+                            integrity: 15,
+                            promptKey: 'E',
+                            promptText: 'REVIVE OPERATIVE'
+                        };
+                    } else {
+                        return {
+                            type: 'interact',
+                            targetId: 'trade_peer',
+                            badgeLabel: `[T] LINK // BARTER WITH ${(remote.callsign || 'SQUADMATE').toUpperCase()}`,
+                            kicker: 'SQUADMATE COMM // TRADE',
+                            title: (remote.callsign || 'SQUADMATE').toUpperCase(),
+                            subtitle: `CLASS: ${(remote.playerType || 'OPERATIVE').toUpperCase()}`,
+                            coords: { x: tileX, z: tileZ },
+                            distance: dist,
+                            integrity: 100,
+                            promptKey: 'T',
+                            promptText: 'BARTER / TRADE'
+                        };
+                    }
+                }
+            }
+        }
+
+        // 1. Check Active Enemies (Hostiles)
+        if (this.scatterSprites) {
+            for (const sprite of this.scatterSprites) {
+                if (!sprite?.parent || sprite.userData?.burstTriggered) continue;
+                const type = sprite.userData?.type;
+                if (!this.isEnemyType(type) && !sprite.userData?.isEnemy) continue;
+                const dist = Math.hypot(worldPoint.x - sprite.position.x, worldPoint.z - sprite.position.z);
+                const hoverRadius = sprite.userData?.isBoss ? 3.0 : (sprite.scale?.x ? Math.max(1.2, sprite.scale.x * 0.9) : 1.6);
+                if (dist <= hoverRadius) {
+                    const cleanName = (type ? type.replace(/^boss_/, '').replace(/_/g, ' ') : 'HOSTILE').toUpperCase();
+                    const hp = sprite.userData?.hp ?? 100;
+                    const maxHp = sprite.userData?.maxHp ?? 100;
+                    const integrity = Math.max(0, Math.min(100, Math.round((hp / maxHp) * 100)));
+                    return {
+                        type: 'enemy',
+                        targetId: 'enemy',
+                        badgeLabel: cleanName,
+                        kicker: 'TARGET LOCKED // HOSTILE',
+                        title: cleanName,
+                        subtitle: sprite.userData?.isBoss ? 'THREAT LEVEL: CRITICAL // ALPHA SPECIMEN' : 'THREAT LEVEL: HIGH // BIOMECHANICAL',
+                        coords: { x: tileX, z: tileZ },
+                        distance: dist,
+                        integrity,
+                        promptKey: 'L-CLICK',
+                        promptText: 'ENGAGE'
+                    };
+                }
+            }
+        }
+
+        // 2. Check Major Bosses
+        if (this.queenBossSprite?.parent) {
+            const dist = Math.hypot(worldPoint.x - this.queenBossSprite.position.x, worldPoint.z - this.queenBossSprite.position.z);
+            if (dist <= 4.2) {
+                return {
+                    type: 'enemy',
+                    targetId: 'enemy',
+                    badgeLabel: 'HIVE QUEEN',
+                    kicker: 'TARGET LOCKED // APEX PREDATOR',
+                    title: 'THE HIVE QUEEN',
+                    subtitle: 'THREAT LEVEL: APOCALYPTIC // ANOMALY',
+                    coords: { x: tileX, z: tileZ },
+                    distance: dist,
+                    integrity: Math.round(((this.queenBossHp ?? 1000) / (this.queenBossMaxHp ?? 1000)) * 100),
+                    promptKey: 'L-CLICK',
+                    promptText: 'ENGAGE'
+                };
+            }
+        }
+        if (this.sporesnailSprite?.parent) {
+            const dist = Math.hypot(worldPoint.x - this.sporesnailSprite.position.x, worldPoint.z - this.sporesnailSprite.position.z);
+            if (dist <= 3.6) {
+                return {
+                    type: 'enemy',
+                    targetId: 'enemy',
+                    badgeLabel: 'SPORESNAIL',
+                    kicker: 'TARGET LOCKED // BIO-ORGANISM',
+                    title: 'SPORESNAIL MATRIARCH',
+                    subtitle: 'THREAT LEVEL: HIGH // CORROSIVE SPORES',
+                    coords: { x: tileX, z: tileZ },
+                    distance: dist,
+                    integrity: 85,
+                    promptKey: 'L-CLICK',
+                    promptText: 'ENGAGE'
+                };
+            }
+        }
+
+        // 3. Check Procedural Doors / Biomechanical Doors / Blast Gates
+        if (this.proceduralDoorStates) {
+            for (const door of this.proceduralDoorStates.values()) {
+                const dx = door.worldX ?? door.x;
+                const dz = door.worldZ ?? door.z;
+                if (Number.isFinite(dx) && Number.isFinite(dz)) {
+                    const dist = Math.hypot(worldPoint.x - dx, worldPoint.z - dz);
+                    if (dist <= 2.2) {
+                        const isLocked = door.state === 'locked' || door.locked;
+                        const label = isLocked ? 'LOCKED DOOR' : (door.state === 'open' ? 'OPEN DOOR' : 'SECURITY DOOR');
+                        return {
+                            type: 'enemy',
+                            targetId: 'door',
+                            badgeLabel: label,
+                            kicker: 'STRUCTURAL BARRIER // SECURITY',
+                            title: label,
+                            subtitle: isLocked ? 'STATUS: ACCESS DENIED // KEYCARD REQUIRED' : 'STATUS: SYSTEM READY',
+                            coords: { x: tileX, z: tileZ },
+                            distance: dist,
+                            integrity: 100,
+                            promptKey: isLocked ? null : 'E',
+                            promptText: isLocked ? 'LOCKED' : 'CYCLE AIRLOCK'
+                        };
+                    }
+                }
+            }
+        }
+
+        if (this.biomechanicalDoors) {
+            for (const door of this.biomechanicalDoors) {
+                const dist = Math.hypot(worldPoint.x - door.x, worldPoint.z - door.z);
+                if (dist <= 2.4) {
+                    return {
+                        type: 'enemy',
+                        targetId: 'door',
+                        badgeLabel: 'BIO DOOR',
+                        kicker: 'ORGANIC BULWARK // MEMBRANE',
+                        title: 'BIOMECHANICAL SPHINCTER DOOR',
+                        subtitle: 'STATUS: HIVE CONTROLLED',
+                        coords: { x: tileX, z: tileZ },
+                        distance: dist,
+                        integrity: 100,
+                        promptKey: null,
+                        promptText: 'NEURAL PASS'
+                    };
+                }
+            }
+        }
+
+        // 4. Check Bunker Doors / Airlock Buttons
+        if (this.bunkerDoorButtons) {
+            const distDoor = Math.hypot(worldPoint.x - 8.5, worldPoint.z - 15.0);
+            const distInt = Math.hypot(worldPoint.x - this.bunkerDoorButtons.interior.x, worldPoint.z - this.bunkerDoorButtons.interior.z);
+            const distExt = Math.hypot(worldPoint.x - this.bunkerDoorButtons.exterior.x, worldPoint.z - this.bunkerDoorButtons.exterior.z);
+            if (distDoor <= 3.2 || distInt <= 2.0 || distExt <= 2.0) {
+                return {
+                    type: 'enemy',
+                    targetId: 'door',
+                    badgeLabel: 'AIRLOCK',
+                    kicker: 'FACILITY ENTRY // AIRLOCK',
+                    title: 'PRIMARY BUNKER AIRLOCK',
+                    subtitle: 'PRESSURIZATION: SEALED',
+                    coords: { x: tileX, z: tileZ },
+                    distance: Math.min(distDoor, distInt, distExt),
+                    integrity: 100,
+                    promptKey: 'E',
+                    promptText: 'CYCLE AIRLOCK'
+                };
+            }
+        }
+
+        // 5. Check Destructible Corrupted / Cryo Barriers
+        const tileType = this.getCachedTileType?.(tileX, tileZ) ?? (this.chunkCache && this.getTileType ? this.getTileType(tileX, tileZ) : '.');
+        if (tileType === 'X' || tileType === 'C') {
+            const dist = Math.hypot(worldPoint.x - tileX, worldPoint.z - tileZ);
+            if (dist <= 1.35) {
+                const isCorrupted = tileType === 'X';
+                return {
+                    type: 'enemy',
+                    targetId: 'destructible_wall',
+                    badgeLabel: isCorrupted ? 'CORRUPTED BARRIER' : 'CRYO WALL',
+                    kicker: 'DESTRUCTIBLE OBSTACLE // BREACHABLE',
+                    title: isCorrupted ? 'CORRUPTED BIOMASS BARRIER' : 'CRYO ICE FORMATION',
+                    subtitle: 'COMPOSITION: DESTRUCTIBLE // FIRE TO CLEAR',
+                    coords: { x: tileX, z: tileZ },
+                    distance: dist,
+                    integrity: 75,
+                    promptKey: 'L-CLICK',
+                    promptText: 'DESTROY BARRIER'
+                };
+            }
+        }
+
+        // 6. Check Pickups & Lore Drops
+        if (this.pickupMeshes) {
+            for (const mesh of this.pickupMeshes) {
+                if (!mesh?.parent || !mesh.visible) continue;
+                const dist = Math.hypot(worldPoint.x - mesh.position.x, worldPoint.z - mesh.position.z);
+                if (dist <= 1.4) {
+                    const pType = mesh.userData?.type || 'salvage';
+                    const label = pType === 'ammo' ? 'AMMO CACHE' : (pType === 'health' ? 'MEDKIT' : (pType === 'weapon' ? 'WEAPON' : 'SALVAGE SCRAP'));
+                    return {
+                        type: 'loot',
+                        targetId: 'pickup',
+                        badgeLabel: label,
+                        kicker: 'RESOURCE DETECTED // FIELD SALVAGE',
+                        title: label,
+                        subtitle: 'RECOVERABLE MATERIEL',
+                        coords: { x: tileX, z: tileZ },
+                        distance: dist,
+                        integrity: 100,
+                        promptKey: 'E',
+                        promptText: 'COLLECT'
+                    };
+                }
+            }
+        }
+        if (this.loreDrops) {
+            for (const drop of this.loreDrops) {
+                if (!drop?.active && !drop?.mesh?.parent) continue;
+                const dx = drop.x ?? drop.mesh?.position?.x;
+                const dz = drop.z ?? drop.mesh?.position?.z;
+                if (Number.isFinite(dx) && Number.isFinite(dz)) {
+                    const dist = Math.hypot(worldPoint.x - dx, worldPoint.z - dz);
+                    if (dist <= 1.5) {
+                        return {
+                            type: 'loot',
+                            targetId: 'lore',
+                            badgeLabel: 'DATAPAD',
+                            kicker: 'ARCHIVE LOG // DECRYPTABLE',
+                            title: 'ENCRYPTED EXPEDITION DATAPAD',
+                            subtitle: 'SECURITY LEVEL: ARCHIVE RECOVERY',
+                            coords: { x: tileX, z: tileZ },
+                            distance: dist,
+                            integrity: 100,
+                            promptKey: 'E',
+                            promptText: 'DECRYPT AUDIO'
+                        };
+                    }
+                }
+            }
+        }
+
+        // 7. Check Crashed Ships / Consoles
+        if (this.crashedShips) {
+            for (const ship of this.crashedShips) {
+                if (!ship.isVisible) continue;
+                const consoleX = ship.tileX + ship.consoleOffset.x;
+                const consoleZ = ship.tileZ + ship.consoleOffset.z;
+                const distWorld = Math.hypot(worldPoint.x - consoleX, worldPoint.z - consoleZ);
+                const pDist = Math.hypot(this.player.position.x - consoleX, this.player.position.z - consoleZ);
+                if ((distWorld <= 2.5 || Math.hypot(worldPoint.x - ship.tileX, worldPoint.z - ship.tileZ) <= Math.max(1.5, ship.width * 0.9)) && pDist <= 5.2) {
+                    return {
+                        type: 'interact',
+                        targetId: 'console',
+                        badgeLabel: 'TERMINAL',
+                        kicker: 'AVIONICS TERMINAL // CRASH SITE',
+                        title: 'VESSEL AVIONICS CONSOLE',
+                        subtitle: 'REQUISITION & REPAIRS INTERFACE',
+                        coords: { x: tileX, z: tileZ },
+                        distance: pDist,
+                        integrity: 100,
+                        promptKey: 'E',
+                        promptText: 'ACCESS TERMINAL'
+                    };
+                }
+            }
+        }
+
+        // 8. Check O2 Generator
+        const o2Pos = this.getActiveO2GeneratorPosition?.();
+        if (o2Pos) {
+            const distO2 = Math.hypot(worldPoint.x - o2Pos.x, worldPoint.z - o2Pos.z);
+            const pDist = Math.hypot(this.player.position.x - o2Pos.x, this.player.position.z - o2Pos.z);
+            if (distO2 <= 2.0 && pDist <= 5.2) {
+                return {
+                    type: 'interact',
+                    targetId: 'o2',
+                    badgeLabel: 'O2 STATION',
+                    kicker: 'LIFE SUPPORT // ATMOSPHERE',
+                    title: 'O₂ REFUELING PYLON',
+                    subtitle: 'OXYGEN PRESSURE: STABLE',
+                    coords: { x: tileX, z: tileZ },
+                    distance: pDist,
+                    integrity: 100,
+                    promptKey: 'E',
+                    promptText: 'REFILL OXYGEN'
+                };
+            }
+        }
+
+        // 9. Check Foundry
+        if (this.foundry?.isRevealed && this.foundry.isWithinInteractRange(worldPoint.x, worldPoint.z)) {
+            return {
+                type: 'interact',
+                targetId: 'foundry',
+                badgeLabel: 'FOUNDRY',
+                kicker: 'FABRICATION FACILITY // CRAFTING',
+                title: 'AUTOMATED NANO-FOUNDRY',
+                subtitle: 'STATUS: ONLINE // BLUEPRINTS READY',
+                coords: { x: tileX, z: tileZ },
+                distance: playerDist,
+                integrity: 100,
+                promptKey: 'E',
+                promptText: 'OPEN FAB BAY'
+            };
+        }
+
+        // 10. Check Black Box
+        if (this._blackBoxMarkerActive && this._blackBoxState) {
+            const distBB = Math.hypot(worldPoint.x - this._blackBoxState.x, worldPoint.z - this._blackBoxState.z);
+            if (distBB <= 2.0) {
+                return {
+                    type: 'interact',
+                    targetId: 'black_box',
+                    badgeLabel: 'BLACK BOX',
+                    kicker: 'PRIMARY OBJECTIVE // RECOVERY',
+                    title: 'TELEMETRY FLIGHT RECORDER',
+                    subtitle: 'BEACON: ACTIVE RECOVERY',
+                    coords: { x: tileX, z: tileZ },
+                    distance: distBB,
+                    integrity: 100,
+                    promptKey: 'E',
+                    promptText: 'RECOVER RECORDER'
+                };
+            }
+        }
+
+        // 11. Check Camps & Camp Leaders
+        const actionable = this.getActionableCampAt?.(worldPoint.x, worldPoint.z);
+        if (actionable) {
+            const campLabel = actionable.camp?.leaderName ? `TALK: ${actionable.camp.leaderName.toUpperCase()}` : (actionable.camp?.label?.toUpperCase() || 'CAMP');
+            return {
+                type: 'camp',
+                targetId: 'camp',
+                badgeLabel: campLabel,
+                kicker: 'OUTPOST SETTLEMENT // SURVIVOR',
+                title: actionable.camp?.leaderName ? `COMMANDER ${actionable.camp.leaderName.toUpperCase()}` : 'OUTPOST HABITATION',
+                subtitle: 'FACTION: EXPEDITION SURVIVORS',
+                coords: { x: tileX, z: tileZ },
+                distance: playerDist,
+                integrity: 100,
+                promptKey: 'E',
+                promptText: 'INITIATE DIALOGUE'
+            };
+        }
+
+        if (this.camps) {
+            for (const camp of this.camps) {
+                const cx = camp.tileX ?? camp.x ?? 0;
+                const cz = camp.tileZ ?? camp.z ?? 0;
+                const distCamp = Math.hypot(worldPoint.x - cx, worldPoint.z - cz);
+                const pDist = Math.hypot(this.player.position.x - cx, this.player.position.z - cz);
+                if (distCamp <= (camp.radius || 3.5) && pDist <= ((camp.radius || 3.5) + 3.0)) {
+                    return {
+                        type: 'camp',
+                        targetId: 'camp',
+                        badgeLabel: camp.leaderName ? `TALK: ${camp.leaderName.toUpperCase()}` : 'CAMP',
+                        kicker: 'OUTPOST SETTLEMENT // SURVIVOR',
+                        title: camp.leaderName ? `COMMANDER ${camp.leaderName.toUpperCase()}` : 'SURVIVOR PERIMETER',
+                        subtitle: 'FACTION: ALLIED FORCES',
+                        coords: { x: tileX, z: tileZ },
+                        distance: pDist,
+                        integrity: 100,
+                        promptKey: 'E',
+                        promptText: 'APPROACH'
+                    };
+                }
+            }
+        }
+
+        // 12. Check Fog of War / Unscanned Territory
+        const isScanned = this.explorationTracker?.isTileScanned(worldPoint.x, worldPoint.z);
+        const visionRadius = FOG_OF_WAR_CLEAR_RADIUS ?? 6.2;
+        if (!this.disableFogOfWar && playerDist > visionRadius && !isScanned) {
+            return {
+                type: 'unscanned',
+                targetId: 'unscanned',
+                badgeLabel: '???',
+                kicker: 'UNEXPLORED SECTOR // FOG OF WAR',
+                title: '??? // UNSCANNED SECTOR',
+                subtitle: 'RADAR OCCLUDED // NO SENSOR RETURN',
+                coords: { x: tileX, z: tileZ },
+                distance: playerDist,
+                integrity: 0,
+                promptKey: null,
+                promptText: 'ADVISORY: ADVANCE OR DEPLOY RADAR'
+            };
+        }
+
+        // 13. Check Solid Walls & Obstacles
+        if (tileType === '#' || tileType === 'W' || this.isWallTile?.(tileX, tileZ)) {
+            return {
+                type: 'wall',
+                targetId: 'wall',
+                badgeLabel: 'WALL',
+                kicker: 'STRUCTURAL BULWARK // SOLID',
+                title: 'PERIMETER REINFORCED ICE BULWARK',
+                subtitle: 'COMPOSITION: SUB-ZERO GLACIAL BEDROCK (IMPERVIOUS)',
+                coords: { x: tileX, z: tileZ },
+                distance: playerDist,
+                integrity: 100,
+                promptKey: null,
+                promptText: 'IMPASSABLE'
+            };
+        }
+
+        if (tileType === EXTERIOR_CANYON_TILE || tileType === CLIFF_TILE || this.isHoleTile?.(tileX, tileZ)) {
+            return {
+                type: 'wall',
+                targetId: 'chasm',
+                badgeLabel: 'CHASM',
+                kicker: 'ENVIRONMENTAL HAZARD // DROP',
+                title: 'GLACIAL CANYON CHASM EDGE',
+                subtitle: 'SUB-LEVEL VOID // FALL HAZARD',
+                coords: { x: tileX, z: tileZ },
+                distance: playerDist,
+                integrity: 100,
+                promptKey: null,
+                promptText: 'HAZARDOUS DROP'
+            };
+        }
+
+        // 14. Explored Ground / Sector Terrain
+        const biomeName = (this.currentBiomeKey || 'CRYO').toUpperCase();
+        return {
+            type: 'terrain',
+            targetId: 'terrain',
+            badgeLabel: '',
+            kicker: 'SURFACE SCAN // SECTOR ACTIVE',
+            title: `SUB-SURFACE ${biomeName} CORRIDOR`,
+            subtitle: `SECTOR DEPTH: TIER ${this.currentDepthTier ?? 1} // SECURE DECK`,
+            coords: { x: tileX, z: tileZ },
+            distance: playerDist,
+            integrity: 100,
+            promptKey: null,
+            promptText: ''
+        };
+    }
+
+    setCursorInspectState(target) {
+        if (typeof document === 'undefined') return;
+        const cursor = document.getElementById('tactical-cursor');
+        if (!cursor) return;
+
+        cursor.classList.remove(
+            'cursor-target',
+            'cursor-enemy',
+            'cursor-interact',
+            'cursor-camp',
+            'cursor-unscanned',
+            'cursor-wall',
+            'cursor-loot'
+        );
+
+        let badge = cursor.querySelector('.cursor-interact-badge');
+
+        if (!target || !target.badgeLabel) {
+            if (badge) badge.textContent = '';
+            return;
+        }
+
+        if (!badge) {
+            badge = document.createElement('div');
+            badge.className = 'cursor-interact-badge';
+            cursor.appendChild(badge);
+        }
+
+        badge.textContent = target.badgeLabel;
+
+        if (target.type === 'enemy') {
+            cursor.classList.add('cursor-target', 'cursor-enemy');
+        } else if (target.type === 'interact' || target.type === 'camp') {
+            cursor.classList.add('cursor-interact', 'cursor-camp');
+        } else if (target.type === 'unscanned') {
+            cursor.classList.add('cursor-unscanned');
+        } else if (target.type === 'wall') {
+            cursor.classList.add('cursor-wall');
+        } else if (target.type === 'loot') {
+            cursor.classList.add('cursor-loot');
+        }
+    }
+
+    setCursorUnscannedState(isUnscanned, label = '???') {
+        if (isUnscanned) {
+            this.setCursorInspectState({ type: 'unscanned', badgeLabel: label });
+        } else {
+            this.setCursorInspectState(null);
+        }
+    }
+
+    setCursorWallState(isWall, label = 'WALL') {
+        if (isWall) {
+            this.setCursorInspectState({ type: 'wall', badgeLabel: label });
+        } else {
+            this.setCursorInspectState(null);
+        }
+    }
+
+    setCursorLootState(isLoot, label = 'RESOURCE') {
+        if (isLoot) {
+            this.setCursorInspectState({ type: 'loot', badgeLabel: label });
+        } else {
+            this.setCursorInspectState(null);
+        }
+    }
+
+    setCursorInteractState(isInteract, label = '') {
+        if (isInteract) {
+            this.setCursorInspectState({ type: 'interact', badgeLabel: label });
+        } else {
+            this.setCursorInspectState(null);
+        }
+    }
+
+    setCursorHostileState(isHostile, label = '') {
+        if (isHostile) {
+            this.setCursorInspectState({ type: 'enemy', badgeLabel: label });
+        } else {
+            this.setCursorInspectState(null);
+        }
+    }
+
+    updateTacticalTelemeter(target) {
+        if (typeof document === 'undefined') return;
+        const telemeter = document.getElementById('tactical-telemeter-box');
+        if (!telemeter) return;
+
+        if (!target || target.type === 'terrain') {
+            if (!this.player || !this.isGameplayInputActive()) {
+                telemeter.classList.add('hidden');
+                return;
+            }
+            telemeter.classList.remove('hidden');
+            const kicker = telemeter.querySelector('#telemeter-kicker');
+            const typeTag = telemeter.querySelector('#telemeter-type-tag');
+            const title = telemeter.querySelector('#telemeter-title');
+            const coords = telemeter.querySelector('#telemeter-coords');
+            const subtitle = telemeter.querySelector('#telemeter-subtitle');
+            const meterBar = telemeter.querySelector('#telemeter-meter-bar');
+            const meterVal = telemeter.querySelector('#telemeter-meter-val');
+            const rangeVal = telemeter.querySelector('#telemeter-range-val');
+            const actionPrompt = telemeter.querySelector('#telemeter-action-prompt');
+
+            if (kicker) kicker.textContent = target?.kicker || 'SURFACE SCAN // PASSIVE';
+            if (typeTag) {
+                typeTag.textContent = 'SECTOR';
+                typeTag.className = 'telemeter-type-tag telemeter-tag--sector';
+            }
+            if (title) title.textContent = target?.title || 'EXPLORED CORRIDOR';
+            if (coords) coords.textContent = target?.coords ? `[X: ${target.coords.x >= 0 ? '+' : ''}${target.coords.x}, Z: ${target.coords.z >= 0 ? '+' : ''}${target.coords.z}]` : '[X: --, Z: --]';
+            if (subtitle) subtitle.textContent = target?.subtitle || `BIOME: ${(this.currentBiomeKey || 'CRYO').toUpperCase()} // TIER ${this.currentDepthTier ?? 1}`;
+            if (meterBar) meterBar.style.width = '100%';
+            if (meterVal) meterVal.textContent = 'STABLE';
+            if (rangeVal) rangeVal.textContent = target?.distance != null ? `DIST: ${target.distance.toFixed(1)}m` : 'DIST: 0.0m';
+            if (actionPrompt) actionPrompt.classList.add('hidden');
+            return;
+        }
+
+        telemeter.classList.remove('hidden');
+        const kicker = telemeter.querySelector('#telemeter-kicker');
+        const typeTag = telemeter.querySelector('#telemeter-type-tag');
+        const title = telemeter.querySelector('#telemeter-title');
+        const coords = telemeter.querySelector('#telemeter-coords');
+        const subtitle = telemeter.querySelector('#telemeter-subtitle');
+        const meterBar = telemeter.querySelector('#telemeter-meter-bar');
+        const meterVal = telemeter.querySelector('#telemeter-meter-val');
+        const rangeVal = telemeter.querySelector('#telemeter-range-val');
+        const actionPrompt = telemeter.querySelector('#telemeter-action-prompt');
+        const actionKey = telemeter.querySelector('#telemeter-action-key');
+        const actionText = telemeter.querySelector('#telemeter-action-text');
+
+        if (kicker) kicker.textContent = target.kicker;
+        if (typeTag) {
+            typeTag.textContent = target.type.toUpperCase();
+            typeTag.className = `telemeter-type-tag telemeter-tag--${target.type}`;
+        }
+        if (title) title.textContent = target.title;
+        if (coords) coords.textContent = target.coords ? `[X: ${target.coords.x >= 0 ? '+' : ''}${target.coords.x}, Z: ${target.coords.z >= 0 ? '+' : ''}${target.coords.z}]` : '[X: --, Z: --]';
+        if (subtitle) subtitle.textContent = target.subtitle;
+
+        if (meterBar) meterBar.style.width = `${target.integrity ?? 100}%`;
+        if (meterVal) meterVal.textContent = target.type === 'unscanned' ? 'OCCLUDED' : `${target.integrity ?? 100}%`;
+        if (rangeVal) rangeVal.textContent = target.distance != null ? `DIST: ${target.distance.toFixed(1)}m` : '';
+
+        if (actionPrompt && actionKey && actionText) {
+            if (target.promptKey && target.promptText) {
+                actionPrompt.classList.remove('hidden');
+                actionKey.textContent = target.promptKey;
+                actionText.textContent = target.promptText;
+            } else {
+                actionPrompt.classList.add('hidden');
+            }
+        }
+    }
+
+    checkHoverInteractable(clientX, clientY) {
+        if (!this.isGameplayInputActive() || !this.player) {
+            this.setCursorInspectState(null);
+            this.updateTacticalTelemeter(null);
+            return null;
+        }
+
+        const worldPoint = this.getWorldAimPoint(clientX, clientY);
+        if (!worldPoint) {
+            this.setCursorInspectState(null);
+            this.updateTacticalTelemeter(null);
+            return null;
+        }
+
+        const target = this.resolveTacticalInspectTarget(worldPoint);
+        this.setCursorInspectState(target);
+        this.updateTacticalTelemeter(target);
+        return target?.targetId ?? null;
+    }
+
     getSessionInventory() {
         const snapshot = window.getPickupCounterState?.();
         if (!snapshot || typeof snapshot !== 'object') {
@@ -6975,7 +8218,11 @@ export class ThreeGame {
         if (!this.player) return 0;
         this.snailsEnabled = true;
         let spawned = 0;
-        const types = ['cybersnail', 'cybersnail', this.currentBiomeKey === BIOME_KEYS.BIO ? 'sporesnail' : 'cryosnail'];
+        const playerDist = Math.hypot(this.player.position.x, this.player.position.z);
+        const isEarlyArea = playerDist < 55 || (this.maxDepthTierReached ?? 0) <= 0;
+        const types = isEarlyArea
+            ? ['cybersnail', 'crawler', 'cybersnail']
+            : ['cybersnail', 'crawler', this.currentBiomeKey === BIOME_KEYS.BIO ? 'sporesnail' : 'cryosnail'];
         for (let i = 0; i < 3; i++) {
             const type = types[i % types.length];
             const angle = Math.random() * Math.PI * 2;
@@ -7008,8 +8255,43 @@ export class ThreeGame {
             this.scatterSprites.push(sprite);
             spawned += 1;
         }
-        if (spawned > 0) window.dispatchEvent(new CustomEvent('milestone-boss-warning'));
         return spawned;
+    }
+
+    // Dev-console `spawn <type>` (src/debugConsole.js). Places one real
+    // enemy sprite of the requested type through the same createScatterInstance
+    // pipeline spawnPatrolNearPlayer() uses, rather than a fake/no-op.
+    spawnEnemyInstance(type = 'cybersnail', x = null, z = null) {
+        if (!this.player) return null;
+        const resolvedType = type === 'queen' ? 'boss_queen' : type;
+        if (!this.scatterMaterials[resolvedType]) return null;
+        this.snailsEnabled = true;
+        const spawnX = Number.isFinite(x) ? x : this.player.position.x + 2;
+        const spawnZ = Number.isFinite(z) ? z : this.player.position.z + 2;
+        const placement = {
+            x: spawnX,
+            z: spawnZ,
+            type: resolvedType,
+            scatterKey: `debug-spawn:${Date.now()}`,
+            scale: 1.25,
+            rotation: 0,
+            tiltX: 0,
+            tiltZ: 0,
+            elevation: 0.1,
+            groupType: 'enemy',
+            phase: Math.random() * Math.PI * 2,
+            opacity: 1,
+            biomeTint: 0xffffff,
+            isEnemy: true
+        };
+        const sprite = this.createScatterInstance(placement);
+        if (!sprite) return null;
+        const chunkX = Math.floor(spawnX / this.chunkSize);
+        const chunkY = Math.floor(spawnZ / this.chunkSize);
+        const group = this.chunkMeshes.get(`${chunkX},${chunkY}`) ?? this.scene;
+        group.add(sprite);
+        this.scatterSprites.push(sprite);
+        return sprite;
     }
 
     revealNearbyExits() {
@@ -7029,6 +8311,22 @@ export class ThreeGame {
     grantSalvageCache({ tech = 0, coin = 0, med = 0 } = {}) {
         this.bank.deposit({ tech, coin, med });
         window.dispatchEvent(new CustomEvent('salvage-cache-opened', { detail: { tech, coin, med } }));
+    }
+
+    // Dev-console `give <resource> <qty>` (src/debugConsole.js). Routes into
+    // the real bank rather than a field the bank never reads.
+    addRunResource(resource = 'tech', amount = 50) {
+        const key = String(resource || 'tech').toLowerCase();
+        const qty = Number.isFinite(amount) ? amount : 50;
+        if (key === 'shell' || key === 'shells') {
+            this.bank.addShells(qty);
+            return true;
+        }
+        if (key === 'tech' || key === 'coin' || key === 'med') {
+            this.bank.deposit({ [key]: qty });
+            return true;
+        }
+        return false;
     }
 
     triggerLightsOut(seconds = 8) {
@@ -9325,6 +10623,13 @@ export class ThreeGame {
             this.damageScatterProp(sprite, amount);
             return;
         }
+        // Season 0 Cryo-Capacitor Overclock proc (itemdef 4140): 18% chance per hit to
+        // freeze the target in place. cryoDurationMultiplier (default 1.0, +0.08 when
+        // equipped) scales the freeze duration off a 1.0s base.
+        const cryoMult = this.loadoutMods?.cryoDurationMultiplier ?? 1.0;
+        if (sprite?.userData && cryoMult > 1.0 && Math.random() < 0.18) {
+            sprite.userData.frozenTimer = Math.max(sprite.userData.frozenTimer ?? 0, 1.0 * cryoMult);
+        }
         const fight = sprite?.userData?.queenFight;
         if (fight) {
             const dealt = applyBossDamage(fight, amount);
@@ -9785,11 +11090,18 @@ export class ThreeGame {
             this.radialMazePlan = generateRadialMazeExpedition(
                 ((this.runEntropy ?? 0) ^ (this.globalSeedOffset ?? 0) ^ 0x52494e47) >>> 0
             );
+            if (this.radialMazePlan && !this.radialMazePlan.crossings) {
+                this.radialMazePlan.crossings = buildRingCrossingPlan(this.radialMazePlan);
+            }
         }
         return this.radialMazePlan;
     }
 
     getRegionalRouteTopology() {
+        if (this.authoredWorldTiles) {
+            this.ensureAuthoredWorldPlan?.();
+            if (this.authoredWorldTiles && this.worldPlan?.topology) return this.worldPlan.topology;
+        }
         return this.getRadialMazePlan()?.topology ?? null;
     }
 
@@ -10211,6 +11523,7 @@ export class ThreeGame {
         });
         this.ensureCampCivilians();
         this._act2CampsReady = true;
+        this.restoreActiveCampQuestFromState?.();
     }
 
     // Two ambient civilians per living camp (miner + researcher walk sheets).
@@ -10374,13 +11687,17 @@ export class ThreeGame {
         for (let i = this.loreDrops.length - 1; i >= 0; i -= 1) {
             const entry = this.loreDrops[i];
             entry.t += delta;
-            entry.sprite.position.y = entry.baseY + 0.08 + Math.sin(entry.t * 2.2) * 0.07;
-            entry.sprite.material.opacity = 0.8 + Math.sin(entry.t * 3.1) * 0.2;
+            entry.sprite.position.y = entry.baseY + 0.12 + Math.sin(entry.t * 2.6) * 0.08;
+            entry.sprite.material.opacity = 0.85 + Math.sin(entry.t * 3.5) * 0.15;
             if (this.isPlayerDead) continue;
-            const d = Math.hypot(
-                entry.sprite.position.x - this.player.position.x,
-                entry.sprite.position.z - this.player.position.z
-            );
+            const dx = this.player.position.x - entry.sprite.position.x;
+            const dz = this.player.position.z - entry.sprite.position.z;
+            const d = Math.hypot(dx, dz);
+            if (d < 2.8 && d > 0.01) {
+                const pullSpeed = Math.min(8.0, (2.8 - d) * 3.5) * delta;
+                entry.sprite.position.x += (dx / d) * pullSpeed;
+                entry.sprite.position.z += (dz / d) * pullSpeed;
+            }
             if (d <= 1.25) this.collectLoreDrop(i);
         }
     }
@@ -10391,12 +11708,23 @@ export class ThreeGame {
         this.loreDrops.splice(index, 1);
         this.scene.remove(entry.sprite);
         markLoreDropFound(entry.drop.key);
-        window.AudioManager?.play?.('ui_scan_ping', { volume: 0.6 });
+        window.AudioManager?.play?.('ui_scan_ping', { volume: 0.65 });
+        window.AudioManager?.play?.('item_pickup', { volume: 0.55 });
+        if (typeof this.spawnPhysicalBurst === 'function') {
+            this.spawnPhysicalBurst(entry.sprite.position.x, entry.sprite.position.z, {
+                color: entry.drop.rarity === 'legendary' ? 0xffd27a : entry.drop.rarity === 'rare' ? 0x9be8ff : 0x75d5a0,
+                count: 8,
+                upward: 0.28
+            });
+        }
         window.dispatchEvent(new CustomEvent('lore-drop-collected', {
             detail: { key: entry.drop.key, title: entry.drop.title, rarity: entry.drop.rarity }
         }));
         window.dispatchEvent(new CustomEvent('lore-terminal-read', {
             detail: { loreKey: entry.drop.key, loreText: entry.drop.text, skipSave: true }
+        }));
+        window.dispatchEvent(new CustomEvent('objective-resolved', {
+            detail: { id: 'retrieve-relic' }
         }));
     }
 
@@ -10408,7 +11736,27 @@ export class ThreeGame {
         this._loreDropSitesSpawned = new Set();
     }
 
+    clearActiveCampQuestEntities() {
+        const questEntities = new Set([
+            ...(this._activeCampQuest?.props ?? []),
+            ...(this.scatterSprites ?? []).filter((sprite) => (
+                sprite?.userData?.campQuestId || sprite?.userData?.campQuestKey
+            ))
+        ]);
+        for (const sprite of questEntities) {
+            sprite?.parent?.remove?.(sprite);
+            sprite?.material?.dispose?.();
+            if (!sprite?.isSprite) sprite?.geometry?.dispose?.();
+        }
+        if (Array.isArray(this.scatterSprites)) {
+            this.scatterSprites = this.scatterSprites.filter((sprite) => !questEntities.has(sprite));
+        }
+        if (this._activeCampQuest) this._activeCampQuest.props = [];
+        return questEntities.size;
+    }
+
     resetAct2World() {
+        this.clearActiveCampQuestEntities();
         this.caveEntrance?.reset?.();
         for (const camp of this.camps ?? []) {
             camp.reset?.();
@@ -10427,6 +11775,10 @@ export class ThreeGame {
         }
         this.hives = [];
         this._hiveSitesReady = false;
+        // Persisted Act 2 quest flags are authoritative. Drop the stale sprite
+        // references now; ensureAct2Camps reconstructs and respawns the active
+        // quest idempotently after the world is mounted again.
+        this._activeCampQuest = null;
     }
 
     getCampRecord(id) {
@@ -10636,6 +11988,22 @@ export class ThreeGame {
             if (record.questFlags?.[quest.id] === 'done') continue;
             if ((record.bond ?? 0) < quest.bond) return null;
             return quest;
+        }
+        return null;
+    }
+
+    restoreActiveCampQuestFromState() {
+        if (this._activeCampQuest || !this.act2) return this._activeCampQuest;
+        const state = this.act2.getState?.();
+        for (const record of state?.camps ?? []) {
+            const activeQuestId = Object.entries(record.questFlags ?? {})
+                .find(([, status]) => status === 'active')?.[0];
+            if (!activeQuestId) continue;
+            const quest = (CAMP_QUESTS[record.id] ?? []).find((entry) => entry.id === activeQuestId);
+            const camp = this.getCampById?.(record.id);
+            if (!quest || !camp) continue;
+            this.acceptCampQuest(camp, quest);
+            return this._activeCampQuest;
         }
         return null;
     }
@@ -11043,6 +12411,10 @@ export class ThreeGame {
         window.dispatchEvent(new CustomEvent('camp-quest-complete', {
             detail: { campId: aq.campId, questId: aq.quest.id, label: aq.quest.label }
         }));
+        window.objectiveRegistry?.resolveObjective?.(
+            `camp-quest:${aq.campId}:${aq.quest.id}`,
+            'complete'
+        );
         this._activeCampQuest = null;
     }
 
@@ -11292,10 +12664,45 @@ export class ThreeGame {
                 finalReady: isFinalStage(beat.stage)
             }
         }));
+
+        const treeMap = {
+            camp_tallow: 'sister_val',
+            camp_vesper: 'commander_briggs',
+            camp_meridian: 'overseer_kaelen',
+            hive_suture: 'aria_queen_mimic',
+            hive_relay: 'aria_queen_mimic',
+            hive_carapace: 'aria_queen_mimic',
+            camp_nahl: 'dr_nahl',
+            hive_nahl: 'dr_nahl',
+            hive_bio_relay: 'dr_nahl'
+        };
+        const treeId = treeMap[entity.id] || (String(entity.id).includes('nahl') ? 'dr_nahl' : null);
+        if (treeId && typeof window !== 'undefined') {
+            if (window.sideStoryManager) {
+                window.sideStoryManager.evaluateTriggers({
+                    visitedCampTallow: entity.id === 'camp_tallow',
+                    visitedCampVesper: entity.id === 'camp_vesper',
+                    visitedCampMeridian: entity.id === 'camp_meridian',
+                    visitedBioLab: String(entity.id).includes('nahl') || entity.id === 'hive_suture',
+                    touchedHiveRelay: String(entity.id).startsWith('hive_'),
+                    depthTier: this.depthTier ?? 1,
+                    ringIndex: this.ringProgressionIndex ?? 1,
+                    techInventory: this.bank?.getBanked?.()?.tech ?? 0,
+                    medInventory: this.bank?.getBanked?.()?.med ?? 0,
+                    ammoInventory: this.playerAmmo ?? 0,
+                    lowO2Exposures: (this.playerVitals?.o2 < 20) ? 1 : 0
+                });
+            }
+            if (window.openNpcDialogueTree) {
+                window.openNpcDialogueTree(treeId);
+            }
+        }
+
         return true;
     }
 
     getActionableCampAt(x, z, phase = this.act2?.getPhase()) {
+        if (!this.camps) return null;
         for (const camp of this.camps) {
             // Post-reveal, a live defense turret is its own interaction: spoof
             // it quietly if Vey taught you how, or smash it and be heard.
@@ -12229,8 +13636,56 @@ export class ThreeGame {
         this.o2DispatchTimer = 0;
         this._lastLoopStepKey = null;
 
+        // Season 0 Thermal Heat Exchanger overclock (itemdef 4144, docs/season-zero-protocol/03 §4):
+        // grants a small personal damage-absorb shield; the item's own effect makes it
+        // recharge faster after taking fire (shieldRechargeDelayMultiplier).
+        this.playerShieldMax = (this.loadoutMods?.shieldRechargeDelayMultiplier ?? 1.0) < 1.0 ? 20 : 0;
+        this.playerShieldHp = this.playerShieldMax;
+        this.shieldRechargeDelayTimer = 0;
+
         if (emit) {
             this.emitVitalsState();
+        }
+    }
+
+    // Ticks the shield recharge delay + regen. Called once per frame from the main update loop.
+    updatePlayerShield(delta) {
+        if (!this.playerShieldMax) return;
+        if (this.shieldRechargeDelayTimer > 0) {
+            this.shieldRechargeDelayTimer = Math.max(0, this.shieldRechargeDelayTimer - delta);
+            return;
+        }
+        if (this.playerShieldHp < this.playerShieldMax) {
+            this.playerShieldHp = Math.min(this.playerShieldMax, this.playerShieldHp + this.playerShieldMax * 0.5 * delta);
+        }
+    }
+
+    // Season 0 Echo-Location Transceiver overclock (itemdef 4145, docs/season-zero-protocol/03
+    // §4). No secret-room/radar-blip system exists in this codebase to extend "hidden room
+    // detection" as originally spec'd (docs/season-zero-protocol/08 §5 item 2) — reinterpreted
+    // as a periodic sonar ping that briefly highlights nearby hostiles within
+    // hiddenRoomDetectionRange, since that's the closest real, buildable analog.
+    updateEchoLocationPulse(delta) {
+        const range = this.loadoutMods?.hiddenRoomDetectionRange ?? 0;
+        if (!range || !this.player) return;
+        this._echoLocationTimer = (this._echoLocationTimer ?? 0) - delta;
+        if (this._echoLocationTimer > 0) return;
+        this._echoLocationTimer = 2.5;
+
+        window.AudioManager?.play?.('ui_scan_ping', { volume: 0.3, playbackRate: 0.7, bus: 'sfx' });
+        const px = this.player.position.x;
+        const pz = this.player.position.z;
+        for (const sprite of this.scatterSprites ?? []) {
+            const data = sprite.userData;
+            if (!data || data.hp <= 0 || data.frozenTimer > 0) continue;
+            const dist = Math.hypot(sprite.position.x - px, sprite.position.z - pz);
+            if (dist > range) continue;
+            const restoreHex = data.biomeTint ?? 0x88ff88;
+            sprite.material?.color?.setHex?.(0xffe066);
+            setTimeout(() => {
+                if (data.frozenTimer > 0) return;
+                sprite.material?.color?.setHex?.(restoreHex);
+            }, 350);
         }
     }
 
@@ -12419,6 +13874,43 @@ export class ThreeGame {
         return nearest;
     }
 
+    syncActiveCampQuestObjectiveTarget() {
+        const active = this._activeCampQuest;
+        const registry = typeof window !== 'undefined' ? window.objectiveRegistry : null;
+        if (!active?.quest || !registry?.trackObjective) return null;
+        const resolved = resolveObjectiveTarget({
+            id: active.quest.id,
+            ...active.quest,
+            exactRevealed: this.wfcMetadataCache?.size > 0
+        }, {
+            worldPlan: this.worldPlan,
+            chunkStructures: this.wfcMetadataCache,
+            // ChunkStructureResult anchors already use absolute chunk indices.
+            // The biome/ship anchor would double-shift their final position.
+            worldOffset: { x: 0, z: 0 }
+        });
+        const authoredCompass = toObjectiveCompass(resolved);
+        const liveTarget = this.getActiveCampQuestTargetPos?.();
+        // Until the authored content binder has instantiated the quest prop,
+        // the live prop is the authoritative destination. Pointing at a
+        // reservation anchor while the interactable still lives on the legacy
+        // fallback would make the compass confidently wrong.
+        const compass = liveTarget
+            ? { x: liveTarget.x, z: liveTarget.z }
+            : authoredCompass;
+        registry.trackObjective({
+            id: `camp-quest:${active.campId}:${active.quest.id}`,
+            source: 'camp-quest',
+            label: `${active.quest.label ?? 'QUEST'} — ${active.current}/${active.target}`,
+            current: active.current,
+            target: active.target,
+            priority: 40,
+            compass,
+            persistent: true
+        });
+        return compass;
+    }
+
     getRadarCompassState() {
         if (!this.player) {
             return { active: false, angle: 0, distance: 0 };
@@ -12429,21 +13921,7 @@ export class ThreeGame {
             return { active: true, mode: 'corrupt', label: 'SIGNAL CORRUPT', angle: jitter, distance: 0 };
         }
 
-        const regTarget = typeof window !== 'undefined' ? window.objectiveRegistry?.getCompassTarget?.() : null;
-        if (regTarget && regTarget.priority < 50) {
-            const rdx = regTarget.x - this.player.position.x;
-            const rdz = regTarget.z - this.player.position.z;
-            const rdist = Math.hypot(rdx, rdz);
-            if (rdist > 0.5) {
-                return {
-                    active: true,
-                    mode: regTarget.source ?? 'objective',
-                    label: regTarget.label,
-                    angle: this.planarAngleTo(rdx, rdz, rdist),
-                    distance: rdist
-                };
-            }
-        }
+        this.syncActiveCampQuestObjectiveTarget?.();
 
         if (this._blackBoxMarkerActive && this._blackBoxState?.active) {
             const dx = this._blackBoxState.x - this.player.position.x;
@@ -12493,6 +13971,26 @@ export class ThreeGame {
                     label: 'FABRICATION BAY',
                     angle: this.planarAngleTo(fdx, fdz, fdist),
                     distance: fdist
+                };
+            }
+        }
+
+        // The shared registry arbitrates authored objectives, camp quests,
+        // missions, and priority-50 lore after the still-migrating bespoke
+        // story-critical branches above. This preserves their explicit order
+        // while producers move onto the single registry contract.
+        const regTarget = typeof window !== 'undefined' ? window.objectiveRegistry?.getCompassTarget?.() : null;
+        if (regTarget && regTarget.priority <= 50) {
+            const rdx = regTarget.x - this.player.position.x;
+            const rdz = regTarget.z - this.player.position.z;
+            const rdist = Math.hypot(rdx, rdz);
+            if (rdist > 0.5) {
+                return {
+                    active: true,
+                    mode: regTarget.source ?? 'objective',
+                    label: regTarget.label,
+                    angle: this.planarAngleTo(rdx, rdz, rdist),
+                    distance: rdist
                 };
             }
         }
@@ -12671,31 +14169,34 @@ export class ThreeGame {
             });
         }
 
-        const detailedChunks = [];
-        for (const key of this.discoveredMapChunkKeys ?? []) {
-            const [chunkX, chunkY] = key.split(',').map(Number);
-            const grid = this.chunkCache.get(key);
-            if (!grid) continue;
-            const rooms = this.wfcMetadataCache?.get(key)?.roomInstances ?? [];
-            const roomCells = new Set(rooms
-                .filter((room) => this.discoveredMapRoomKeys?.has(`${key}:${room.id}`))
-                .flatMap((room) => room.footprint ?? [])
-                .map((cell) => `${cell.x},${cell.y}`));
-            const cells = [];
-            for (let y = 0; y < grid.length; y += 1) {
-                for (let x = 0; x < (grid[y]?.length ?? 0); x += 1) {
-                    const tile = grid[y][x];
-                    if (!['.', 'D', 'R', 'B', 'L', 'O'].includes(tile)) continue;
-                    const worldKey = `${chunkX * this.chunkSize + x},${chunkY * this.chunkSize + y}`;
-                    // The crash-site chunk is an authored home chamber rather
-                    // than WFC room metadata. Elsewhere reveal whole rooms on
-                    // entry and only the hallway tiles the operator has swept.
-                    if (rooms.length > 0 && !roomCells.has(`${x},${y}`) && !this.discoveredMapCellKeys?.has(worldKey)) continue;
-                    cells.push({ x, y, kind: tile === 'D' ? 'door' : roomCells.has(`${x},${y}`) ? 'room' : 'hall' });
+        let detailedChunks = this._cachedDetailedChunks;
+        if (!detailedChunks || this._detailedChunksDirty) {
+            detailedChunks = [];
+            for (const key of this.discoveredMapChunkKeys ?? []) {
+                const [chunkX, chunkY] = key.split(',').map(Number);
+                const grid = this.chunkCache.get(key);
+                if (!grid) continue;
+                const rooms = this.wfcMetadataCache?.get(key)?.roomInstances ?? [];
+                const roomCells = new Set(rooms
+                    .filter((room) => this.discoveredMapRoomKeys?.has(`${key}:${room.id}`))
+                    .flatMap((room) => room.footprint ?? [])
+                    .map((cell) => `${cell.x},${cell.y}`));
+                const cells = [];
+                for (let y = 0; y < grid.length; y += 1) {
+                    for (let x = 0; x < (grid[y]?.length ?? 0); x += 1) {
+                        const tile = grid[y][x];
+                        if (!['.', 'D', 'R', 'B', 'L', 'O'].includes(tile)) continue;
+                        const worldKey = `${chunkX * this.chunkSize + x},${chunkY * this.chunkSize + y}`;
+                        if (rooms.length > 0 && !roomCells.has(`${x},${y}`) && !this.discoveredMapCellKeys?.has(worldKey)) continue;
+                        cells.push({ x, y, kind: tile === 'D' ? 'door' : roomCells.has(`${x},${y}`) ? 'room' : 'hall' });
+                    }
                 }
+                detailedChunks.push({ key, chunkX, chunkY, cells });
             }
-            detailedChunks.push({ key, chunkX, chunkY, cells });
+            this._cachedDetailedChunks = detailedChunks;
+            this._detailedChunksDirty = false;
         }
+
         const topology = this.getRegionalRouteTopology?.();
         const scannedPaths = [];
         if (this.explorationTracker && this.player) {
@@ -12722,12 +14223,14 @@ export class ThreeGame {
                 }
             }
         }
+
         return {
             player: this.player ? { x: this.player.position.x, z: this.player.position.z, rotation: this.player.rotation?.y ?? 0 } : null,
             home: { x: CRASH_SITE_CENTER, z: CRASH_SITE_CENTER },
             chunkSize: this.chunkSize,
             detailedChunks,
             scannedPaths,
+            breadcrumbTrail: this.explorationTracker ? this.explorationTracker.getBreadcrumbTrail() : [],
             routeChunks: topology?.routeChunks ?? [],
             routeEdges: (topology?.routeEdges ?? []).map((edge) => {
                 const [from, to] = edge.split('|');
@@ -12744,24 +14247,37 @@ export class ThreeGame {
         this.explorationTracker?.recordPlayerPosition(this.player.position.x, this.player.position.z);
         const chunkX = Math.floor(this.player.position.x / this.chunkSize);
         const chunkY = Math.floor(this.player.position.z / this.chunkSize);
-        this.discoveredMapChunkKeys ??= new Set();
+        const localX = Math.round(this.player.position.x - chunkX * this.chunkSize);
+        const localY = Math.round(this.player.position.z - chunkY * this.chunkSize);
         const chunkKey = `${chunkX},${chunkY}`;
+
+        if (this._lastDiscoveryChunkKey === chunkKey && this._lastDiscoveryLocalX === localX && this._lastDiscoveryLocalY === localY) {
+            return;
+        }
+        this._lastDiscoveryChunkKey = chunkKey;
+        this._lastDiscoveryLocalX = localX;
+        this._lastDiscoveryLocalY = localY;
+
+        this.discoveredMapChunkKeys ??= new Set();
         if (!this.discoveredMapChunkKeys.has(chunkKey)) {
             this.discoveredMapChunkKeys.add(chunkKey);
+            this._detailedChunksDirty = true;
             debugLog.info('MAP', 'Chunk revealed', { chunk: chunkKey });
         }
         this.discoveredMapRoomKeys ??= new Set();
         this.discoveredMapCellKeys ??= new Set();
         const grid = this.chunkCache.get(chunkKey);
-        const localX = Math.round(this.player.position.x - chunkX * this.chunkSize);
-        const localY = Math.round(this.player.position.z - chunkY * this.chunkSize);
         for (let dy = -3; dy <= 3; dy += 1) {
             for (let dx = -3; dx <= 3; dx += 1) {
                 if (dx * dx + dy * dy > 10) continue;
                 const x = localX + dx;
                 const y = localY + dy;
                 if (!['.', 'D', 'R', 'B', 'L', 'O'].includes(grid?.[y]?.[x])) continue;
-                this.discoveredMapCellKeys.add(`${chunkX * this.chunkSize + x},${chunkY * this.chunkSize + y}`);
+                const worldKey = `${chunkX * this.chunkSize + x},${chunkY * this.chunkSize + y}`;
+                if (!this.discoveredMapCellKeys.has(worldKey)) {
+                    this.discoveredMapCellKeys.add(worldKey);
+                    this._detailedChunksDirty = true;
+                }
             }
         }
         for (const room of this.wfcMetadataCache?.get(chunkKey)?.roomInstances ?? []) {
@@ -12769,6 +14285,7 @@ export class ThreeGame {
                 const roomKey = `${chunkKey}:${room.id}`;
                 if (!this.discoveredMapRoomKeys.has(roomKey)) {
                     this.discoveredMapRoomKeys.add(roomKey);
+                    this._detailedChunksDirty = true;
                     debugLog.info('MAP', 'Room revealed', {
                         chunk: chunkKey,
                         roomId: room.id,
@@ -12789,6 +14306,37 @@ export class ThreeGame {
             this.emitO2State();
         }
         return this.godMode;
+    }
+
+    setNoclip(enabled = false, speedMultiplier = 3.5) {
+        this.noclip = Boolean(enabled);
+        this.noclipSpeedMult = Math.max(1, Number(speedMultiplier) || 3.5);
+        if (this.noclip) {
+            this._savedGodMode = Boolean(this.godMode);
+            this.setGodMode(true);
+            if (this.playerSprite?.material) {
+                this.playerSprite.material.opacity = 0.65;
+            }
+        } else {
+            if (this.playerSprite?.material) {
+                this.playerSprite.material.opacity = 1.0;
+            }
+            if (this._savedGodMode !== undefined) {
+                this.setGodMode(this._savedGodMode);
+            }
+        }
+        window.dispatchEvent(new CustomEvent('noclip-toggled', {
+            detail: {
+                enabled: this.noclip,
+                speedMult: this.noclipSpeedMult,
+                godMode: this.godMode
+            }
+        }));
+        return this.noclip;
+    }
+
+    toggleNoclip(speedMultiplier = 3.5) {
+        return this.setNoclip(!this.noclip, speedMultiplier);
     }
 
     healPlayer(amount = 1) {
@@ -12847,22 +14395,411 @@ export class ThreeGame {
         return stats;
     }
 
+    getActiveContainmentZones() {
+        const zones = [];
+        for (const camp of this.camps ?? []) {
+            const campPosition = camp?.position ?? camp?.pos;
+            const record = this.getCampRecord?.(camp.id);
+            const campStatus = record?.status ?? camp.status ?? null;
+            const hostileInAct2 = Boolean(this.isAct2Active?.())
+                && ['alive', 'robbed'].includes(campStatus);
+            const campIsSafe = !camp.destroyed
+                && campStatus !== 'culled'
+                && !hostileInAct2;
+            if (campPosition && campIsSafe) {
+                const safeHalfExtent = CAMP_CLEARING_RADIUS + 0.5;
+                zones.push({
+                    id: camp.id ?? 'camp',
+                    isSafe: true,
+                    bounds: {
+                        minX: campPosition.x - safeHalfExtent,
+                        maxX: campPosition.x + safeHalfExtent,
+                        minZ: campPosition.z - safeHalfExtent,
+                        maxZ: campPosition.z + safeHalfExtent
+                    }
+                });
+            }
+        }
+        for (const [key, metadata] of this.wfcMetadataCache?.entries() ?? []) {
+            const [cx, cy] = String(key).split(',').map(Number);
+            const chunkWorldX = Number.isFinite(cx) ? cx * this.chunkSize : 0;
+            const chunkWorldZ = Number.isFinite(cy) ? cy * this.chunkSize : 0;
+            for (const room of metadata?.roomInstances ?? []) {
+                const isSafe = Boolean(
+                    room.isSafe === true
+                    || room.safeZone === true
+                    || room.containment?.safeZone === true
+                    || room.containment?.blocksHostiles === true
+                    || room.containment?.blocksDamage === true
+                );
+                const roomDoors = (room.doors ?? [])
+                    .map((door) => this.proceduralDoorStates?.get?.(door.id))
+                    .filter(Boolean);
+                const isSealed = roomDoors.length === 0 || roomDoors.every(isDoorClosed);
+                if (isSafe && isSealed) {
+                    const translated = translateContainmentZone({
+                        ...room,
+                        isSafe: true,
+                        bounds: room.containmentBounds ?? room.bounds
+                    }, { x: chunkWorldX, z: chunkWorldZ });
+                    if (translated) zones.push(translated);
+                }
+            }
+        }
+        return zones;
+    }
+
+    canEnemyTargetPlayer(enemySprite) {
+        if (!enemySprite?.position || !this.player?.position) return true;
+        return canHostileAggroTarget(
+            { x: enemySprite.position.x, z: enemySprite.position.z },
+            { x: this.player.position.x, z: this.player.position.z },
+            {
+                containmentZones: this.getActiveContainmentZones?.() ?? [],
+                doors: this.getActiveDoors?.() ?? []
+            }
+        );
+    }
+
+    isPositionInSafeZone(x, z) {
+        return isCellInSafeZone(x, z, this.getActiveContainmentZones?.() ?? []);
+    }
+
+    getActiveDoors() {
+        const doors = [];
+        for (const door of this.proceduralDoorStates?.values() ?? []) {
+            const [chunkX, chunkY] = String(door.chunkKey ?? '0,0').split(',').map(Number);
+            const translated = translateContainmentDoor(door, {
+                x: Number.isFinite(chunkX) ? chunkX * this.chunkSize : 0,
+                z: Number.isFinite(chunkY) ? chunkY * this.chunkSize : 0
+            });
+            if (translated) doors.push(translated);
+        }
+        const blastDoor = this.bunkerBlastDoorState;
+        if (blastDoor && !blastDoor.destroyed) {
+            doors.push({
+                id: 'bunker-blast-door',
+                state: blastDoor.open ? 'open' : 'closed',
+                bounds: {
+                    minX: blastDoor.startTileX - 0.5,
+                    maxX: blastDoor.endTileX + 0.5,
+                    minZ: blastDoor.doorZ - 0.5,
+                    maxZ: blastDoor.doorZ + 0.5
+                }
+            });
+        }
+        return doors;
+    }
+
+    getBuiltGoalKeys() {
+        const unlocks = this.bank?.getState?.()?.unlocks ?? {};
+        return new Set(Object.keys(unlocks).filter((goalKey) => Boolean(unlocks[goalKey])));
+    }
+
+    getLiveMilestoneBossIds() {
+        const ids = new Set();
+        for (const sprite of this.scatterSprites ?? []) {
+            if (sprite?.parent && !sprite.userData?.burstTriggered && sprite.userData?.milestoneId) {
+                ids.add(sprite.userData.milestoneId);
+            }
+        }
+        if (this.activeBoss?.parent && !this.activeBoss.userData?.burstTriggered) {
+            const activeId = this.activeBoss.userData?.milestoneId
+                ?? getMilestoneForGoal(this.activeBoss.userData?.sourceGoalKey)?.milestoneId;
+            if (activeId) ids.add(activeId);
+        }
+        return ids;
+    }
+
+    applyMilestoneBossRuntimeEvent(event) {
+        const builtGoalKeys = typeof this.getBuiltGoalKeys === 'function'
+            ? this.getBuiltGoalKeys()
+            : new Set(Object.entries(this.bank?.getState?.()?.unlocks ?? {})
+                .filter(([, built]) => Boolean(built))
+                .map(([goalKey]) => goalKey));
+        if (!this.milestoneBossLifecycleState) {
+            this.milestoneBossLifecycleState = createMilestoneBossLifecycleState({ builtGoalKeys });
+        }
+        const result = applyMilestoneBossEvent(this.milestoneBossLifecycleState, event);
+        this.milestoneBossLifecycleState = result.state;
+        for (const effect of result.effects ?? []) {
+            if (effect.type === 'milestone_defeated') {
+                const definition = getMilestoneById(effect.milestoneId);
+                if (definition) this.defeatedMilestoneBosses?.add(definition.goalKey);
+            }
+        }
+        return result;
+    }
+
+    reconcileMilestoneBossLifecycle({ activeMilestoneIds } = {}) {
+        const builtGoalKeys = typeof this.getBuiltGoalKeys === 'function'
+            ? this.getBuiltGoalKeys()
+            : new Set(Object.entries(this.bank?.getState?.()?.unlocks ?? {})
+                .filter(([, built]) => Boolean(built))
+                .map(([goalKey]) => goalKey));
+        const defeatedMilestoneIds = [...(this.defeatedMilestoneBosses ?? [])]
+            .map((goalKey) => getMilestoneForGoal(goalKey)?.milestoneId)
+            .filter(Boolean);
+        this.milestoneBossLifecycleState = migrateMilestoneBossLifecycleState({
+            ...(this.milestoneBossLifecycleState ?? {}),
+            defeatedMilestoneIds
+        }, { builtGoalKeys });
+        const liveIds = activeMilestoneIds === undefined
+            ? (typeof this.getLiveMilestoneBossIds === 'function'
+                ? this.getLiveMilestoneBossIds()
+                : new Set([
+                    this.activeBoss?.parent
+                        ? (this.activeBoss.userData?.milestoneId
+                            ?? getMilestoneForGoal(this.activeBoss.userData?.sourceGoalKey)?.milestoneId)
+                        : null
+                ].filter(Boolean)))
+            : new Set(activeMilestoneIds);
+        for (const milestoneId of liveIds) {
+            const staged = applyMilestoneBossEvent(this.milestoneBossLifecycleState, {
+                type: MILESTONE_BOSS_EVENT_TYPES.BOSS_SPAWNED,
+                milestoneId
+            });
+            this.milestoneBossLifecycleState = staged.state;
+        }
+        const reconciled = canonicalReconcileMilestoneBossLifecycle(this.milestoneBossLifecycleState, {
+            builtGoalKeys,
+            activeMilestoneIds: liveIds
+        });
+        this.milestoneBossLifecycleState = reconciled.state;
+        const report = buildMilestoneBossReport(this.milestoneBossLifecycleState);
+        for (const entry of Object.values(report)) {
+            entry.unlocked = entry.isUnlocked;
+            entry.defeated = entry.isDefeated;
+        }
+        return report;
+    }
+
+    restageReadyMilestoneBosses() {
+        const report = this.reconcileMilestoneBossLifecycle();
+        const next = MILESTONE_BOSS_DEFINITIONS.find((definition) => (
+            report[definition.goalKey]?.status === MILESTONE_BOSS_STATES.READY_TO_STAGE
+        ));
+        if (!next) {
+            this._milestoneBossRestagePending = false;
+            return null;
+        }
+        const boss = this.spawnMilestoneBoss?.(next.presentationEnemyType, {
+            sourceGoalKey: next.goalKey
+        }) ?? null;
+        this._milestoneBossRestagePending = !boss;
+        return boss;
+    }
+
+    setAuthoredWorldPlan(worldPlan, { enabled = true } = {}) {
+        const planChanged = this.worldPlan !== (worldPlan ?? null)
+            || this.authoredWorldTiles !== Boolean(enabled && worldPlan);
+        if (planChanged) {
+            const removedGroups = new Set(this.chunkMeshes?.values?.() ?? []);
+            for (const group of removedGroups) {
+                this.disposeChunkGroupResources?.(group);
+                this.chunkGroups?.remove?.(group);
+            }
+            this.chunkMeshes?.clear?.();
+            this.chunkCache?.clear?.();
+            this._chunkRoomTypeCache?.clear?.();
+            this._chunkTemplateCache?.clear?.();
+            this._chunkLandformCache?.clear?.();
+            this.wfcMetadataCache?.clear?.();
+            this.proceduralDoorStates?.clear?.();
+            this.proceduralDoorMeshes?.clear?.();
+            this.worldRouteRecords?.clear?.();
+            if (Array.isArray(this.scatterSprites)) {
+                this.scatterSprites = this.scatterSprites.filter((sprite) => !removedGroups.has(sprite?.parent));
+            }
+            if (Array.isArray(this.pickupMeshes)) {
+                this.pickupMeshes = this.pickupMeshes.filter((mesh) => !removedGroups.has(mesh?.parent));
+            }
+            if (Array.isArray(this.pendingChunkMounts)) this.pendingChunkMounts = [];
+            this.pendingChunkMountKeys?.clear?.();
+            // The prior key may describe the same player chunk even though all
+            // mounted groups were just removed. Force the next visibility pass
+            // to repopulate immediately instead of waiting for player travel.
+            this._lastChunkVisibilityKey = null;
+        }
+        this.worldPlan = worldPlan ?? null;
+        this._worldPlanInjected = Boolean(worldPlan);
+        this.authoredWorldTiles = Boolean(enabled && worldPlan);
+        this._restoredAuthoredWorldIdentity = null;
+        this.ringCrossingState = null;
+        this.reconcileAuthoredWorldProgression?.();
+        return this.worldPlan;
+    }
+
+    getActiveAuthoredReservationIds() {
+        const ids = new Set();
+        const act2State = this.act2?.getState?.();
+        for (const camp of act2State?.camps ?? []) {
+            if (camp?.id && camp?.status) ids.add(`${camp.id}:state:${camp.status}`);
+            // Chunk selection can run before ensureAct2Camps reconstructs the
+            // runtime quest object. Persisted flags therefore activate the
+            // destination directly, independent of mount order.
+            for (const [questId, status] of Object.entries(camp?.questFlags ?? {})) {
+                if (camp?.id && (status === 'active' || status === 'done')) {
+                    ids.add(`quest:${camp.id}:${questId}:destination`);
+                }
+            }
+        }
+        for (const hive of act2State?.hives ?? []) {
+            if (hive?.id && hive?.status) ids.add(`${hive.id}:state:${hive.status}`);
+        }
+        if (this._activeCampQuest?.campId && this._activeCampQuest?.quest?.id) {
+            ids.add(`quest:${this._activeCampQuest.campId}:${this._activeCampQuest.quest.id}:destination`);
+        }
+        return ids;
+    }
+
+    ensureAuthoredWorldPlan() {
+        if (!this.authoredWorldTiles) return null;
+        const expectedIdentity = this._restoredAuthoredWorldIdentity;
+        const matchesRestoredIdentity = (plan) => {
+            if (!expectedIdentity || !plan) return true;
+            const seedMatches = expectedIdentity.seed == null
+                || (Number(plan.seed) >>> 0) === (Number(expectedIdentity.seed) >>> 0);
+            const versionMatches = expectedIdentity.version == null
+                || Number(plan.version) === Number(expectedIdentity.version);
+            return seedMatches && versionMatches;
+        };
+        const rejectMismatchedPlan = () => {
+            this.authoredWorldTiles = false;
+            this.worldPlan = null;
+            this.ringCrossingState = null;
+            return null;
+        };
+        if (this._worldPlanInjected && this.worldPlan) {
+            if (!matchesRestoredIdentity(this.worldPlan)) return rejectMismatchedPlan();
+            this._restoredAuthoredWorldIdentity = null;
+            return this.worldPlan;
+        }
+        const expedition = this.getRadialMazePlan?.();
+        if (!expedition) return null;
+        if (!this.worldPlan || this.worldPlan.seed !== (Number(expedition.seed) >>> 0)) {
+            this.worldPlan = buildWorldPlan(expedition);
+            this._worldPlanInjected = false;
+            this.ringCrossingState = null;
+        }
+        if (!matchesRestoredIdentity(this.worldPlan)) return rejectMismatchedPlan();
+        this._restoredAuthoredWorldIdentity = null;
+        return this.worldPlan;
+    }
+
+    completeRingCrossingMission(missionId) {
+        const worldPlan = this.ensureAuthoredWorldPlan?.() ?? this.worldPlan;
+        const known = worldPlan?.ringCrossings?.some((crossing) => crossing.requirements?.missionId === missionId);
+        if (!known) return false;
+        if (!this.completedRingCrossingMissionIds) this.completedRingCrossingMissionIds = new Set();
+        const previousSize = this.completedRingCrossingMissionIds.size;
+        this.completedRingCrossingMissionIds.add(missionId);
+        this.mazeAccessState?.completedObjectives?.add(missionId);
+        this.reconcileAuthoredWorldProgression?.();
+        return this.completedRingCrossingMissionIds.size !== previousSize;
+    }
+
+    reconcileAuthoredWorldProgression() {
+        if (!this.authoredWorldTiles) return null;
+        const worldPlan = this.ensureAuthoredWorldPlan?.() ?? this.worldPlan;
+        if (!worldPlan?.ringCrossings) return null;
+        const completedMissionIds = new Set([
+            ...(this.completedRingCrossingMissionIds ?? []),
+            ...(this.mazeAccessState?.completedObjectives ?? [])
+        ]);
+        const result = reconcileWorldPlanRingCrossings(worldPlan, this.ringCrossingState, {
+            builtGoalKeys: typeof this.getBuiltGoalKeys === 'function'
+                ? this.getBuiltGoalKeys()
+                : new Set(Object.entries(this.bank?.getState?.()?.unlocks ?? {})
+                    .filter(([, built]) => Boolean(built))
+                    .map(([goalKey]) => goalKey)),
+            completedMissionIds,
+            milestoneLifecycle: this.milestoneBossLifecycleState
+        });
+        this.ringCrossingState = result.state;
+        this._openCrossings = result.openCrossingIds;
+        this._traversalUnlocks = result.traversalUnlocks;
+        for (const crossingId of result.openCrossingIds) {
+            this.mazeAccessState?.completedObjectives?.add(`ring-crossing-open:${crossingId}`);
+        }
+        for (const [doorId, door] of this.proceduralDoorStates ?? []) {
+            if (!door?.ringCrossingId || door.state === 'destroyed') continue;
+            const isOpen = result.openCrossingIds.has(door.ringCrossingId);
+            this.proceduralDoorStates.set(doorId, {
+                ...door,
+                state: isOpen ? 'open' : 'locked',
+                lock: isOpen ? null : door.lock
+            });
+        }
+        return result;
+    }
+
     takeDamage(amount = 1, reason = 'hazard', sourceX = null, sourceZ = null) {
-        if (this.isPlayerDead) return;
-        if (this.godMode) return;
-        if (this.cinematicLock) return; // untouchable during scripted sequences
-        if (this.isInPocket) return; // untouchable while resolving a fall inside a pocket
-        if (this.iFrameTimer > 0 && reason !== 'abyss') return;
-        if (this.missionState?.status === 'inactive') return;
+        if (this.isPlayerDead) return false;
+        if (this.godMode || this.noclip) return false;
+        if (this.cinematicLock) return false; // untouchable during scripted sequences
+        if (this.isInPocket) return false; // untouchable while resolving a fall inside a pocket
+        if (this.iFrameTimer > 0 && reason !== 'abyss') return false;
+        if (this.missionState?.status === 'inactive') return false;
+        if (sourceX != null && sourceZ != null && this.player?.position) {
+            const containmentClamped = shouldBlockAttackPath(
+                { x: sourceX, z: sourceZ },
+                { x: this.player.position.x, z: this.player.position.z },
+                {
+                    containmentZones: this.getActiveContainmentZones(),
+                    doors: this.getActiveDoors()
+                }
+            );
+            if (containmentClamped) {
+                return false; // Damage absorbed by safe haven or closed containment barrier
+            }
+        }
         if (this.playerType === 'TANK' && Math.random() < (this.blockChance ?? 0)) {
             window.AudioManager?.play('fx_tank_shockwave', { volume: 0.4, bus: 'sfx' });
             window.dispatchEvent(new CustomEvent('player-blocked', { detail: { reason } }));
-            return;
+            return false;
+        }
+        if (typeof window !== 'undefined' && window.npcDialogueTreeManager?.activePerks?.has?.('nahl_bio_cloaking') && Math.random() < 0.15) {
+            window.dispatchEvent(new CustomEvent('player-evaded', { detail: { reason } }));
+            return false;
         }
         const previousHp = this.playerVitals.hp;
-        const damage = Math.max(0, Math.round(amount));
+        let effectiveAmount = amount;
+        if (typeof window !== 'undefined' && window.npcDialogueTreeManager?.activePerks?.has?.('arias_psychic_mind_caress') && ['poison', 'hazard-zone', 'bio', 'sporesnail'].includes(reason)) {
+            effectiveAmount *= 0.8;
+        }
+        if (typeof window !== 'undefined' && window.npcDialogueTreeManager?.activePerks?.has?.('nahl_symbiotic_resonance') && (this.playerVitals?.hp ?? 100) < 50) {
+            effectiveAmount *= 0.85;
+        }
+        if (typeof window !== 'undefined' && window.npcDialogueTreeManager?.activePerks?.has?.('nahl_neural_freedom') && ['psychic', 'queen', 'dread'].includes(reason)) {
+            effectiveAmount *= 0.5;
+        }
+        if (typeof window !== 'undefined' && window.npcDialogueTreeManager?.activePerks?.has?.('vesper_field_armor')) {
+            effectiveAmount *= 0.9;
+        }
+        // Season 0 Thermal Heat Exchanger overclock (itemdef 4144): shield absorbs damage
+        // before HP, then goes on a recharge delay (shortened by shieldRechargeDelayMultiplier).
+        if (this.playerShieldMax > 0 && this.playerShieldHp > 0) {
+            const absorbed = Math.min(this.playerShieldHp, effectiveAmount);
+            this.playerShieldHp -= absorbed;
+            effectiveAmount -= absorbed;
+        }
+        if (this.playerShieldMax > 0) {
+            const baseDelay = 4.0;
+            this.shieldRechargeDelayTimer = baseDelay * (this.loadoutMods?.shieldRechargeDelayMultiplier ?? 1.0);
+        }
+        const damage = Math.max(0, Math.round(effectiveAmount));
         this.playerVitals.hp = Math.max(0, this.playerVitals.hp - damage);
-        if (this.playerVitals.hp === previousHp) return;
+        if (this.playerVitals.hp === previousHp) {
+            if (this.playerShieldMax > 0) {
+                // Fully shield-absorbed hit — no HP change, but give real feedback so the
+                // mechanic doesn't read as broken/unresponsive.
+                window.AudioManager?.play?.('ui_error', { volume: 0.25, playbackRate: 1.4 });
+                if (this.player) this.tintPlayerSprites?.(0x9beaff);
+                setTimeout(() => this.tintPlayerSprites?.(this._playerPolishHex ?? 0xffffff), 120);
+            }
+            return false;
+        }
         this.player3dOverlay?.trigger('hit');
 
         if (sourceX != null && sourceZ != null) {
@@ -12886,9 +14823,16 @@ export class ThreeGame {
             this.hadNearDeath = true;
         }
 
+        if (this.playerVitals.hp > 0 && (this.playerVitals.hp / (this.playerVitals.maxHp || 100)) <= 0.25 && !this._lowHealthVoiceCooldown) {
+            this._lowHealthVoiceCooldown = true;
+            window.AudioManager?.playVoiceCallout?.('low_health');
+            setTimeout(() => { this._lowHealthVoiceCooldown = false; }, 12000);
+        }
+
         if (this.playerVitals.hp <= 0) {
             this.handleDeath(reason);
         }
+        return true;
     }
 
     showDirectionalHitIndicator(attackerX, attackerZ) {
@@ -12921,6 +14865,10 @@ export class ThreeGame {
     handleDeath(reason = 'hazard') {
         if (this.isPlayerDead) return;
         this.isPlayerDead = true;
+        this.applyMilestoneBossRuntimeEvent?.({
+            type: MILESTONE_BOSS_EVENT_TYPES.PLAYER_DEATH
+        });
+        this._milestoneBossRestagePending = true;
         this.closeConsoleModal();
         const inventory = this.getSessionInventory();
         const salvage = {
@@ -12971,6 +14919,11 @@ export class ThreeGame {
         this._chunkTemplateCache?.clear();
         this._chunkLandformCache?.clear();
         this.radialMazePlan = null;
+        this.worldPlan = null;
+        this._worldPlanInjected = false;
+        this.ringCrossingState = null;
+        this._openCrossings = new Set();
+        this._traversalUnlocks = [];
         this.wfcMetadataCache?.clear();
         this.proceduralDoorStates?.clear();
         this.proceduralDoorMeshes?.clear();
@@ -12988,6 +14941,7 @@ export class ThreeGame {
         this.wallMeshes = [];
         this.pickupMeshes = [];
         this.scatterSprites = [];
+        this.activeBoss = null;
     }
 
     disposeChunkGroupResources(group) {
@@ -13013,7 +14967,6 @@ export class ThreeGame {
         this.resetVitalsForRun({ emit: false });
         this.resetWeaponState({ emit: false });
         this.mouseAimActive = false;
-        this.hasActiveAim = false;
         this._aimResetTimer = 0;
         this.aimWorldPoint = null;
         this.keys.up = false;
@@ -13093,6 +15046,12 @@ export class ThreeGame {
             }
             this.clearLoadedChunksForRunReset();
             this.syncVisibleChunks(true, { processLimit: deferChunkMount ? 0 : null });
+            this.applyMilestoneBossRuntimeEvent?.({
+                type: MILESTONE_BOSS_EVENT_TYPES.BASE_RETURN,
+                builtGoalKeys: [...(this.getBuiltGoalKeys?.() ?? [])],
+                activeMilestoneIds: []
+            });
+            this._milestoneBossRestagePending = true;
             this.updateCrashedShipsVisibility(false);
             this.emitDepthTierChanged(0);
         }
@@ -13598,10 +15557,17 @@ export class ThreeGame {
         const pz = this.player.position.z;
 
         const upgrade1 = this.playerType === 'ENGINEER' && this.bank.isSkillUnlocked('engineer_radar_1');
+        let radarBonusMult = 1.0;
+        if (typeof window !== 'undefined' && window.npcDialogueTreeManager?.activePerks?.has?.('meridian_neural_overclock')) {
+            radarBonusMult += 0.50; // +50% Radar Reach
+        } else if (typeof window !== 'undefined' && window.npcDialogueTreeManager?.activePerks?.has?.('meridian_sensor_pulse')) {
+            radarBonusMult += 0.25; // +25% Radar Reach
+        }
         const maxRadius = 18.0
             * (upgrade1 ? 1.3 : 1.0)
             * (radarEffects.rangeMult ?? 1)
-            * (campRadarEffects.rangeMult ?? 1);
+            * (campRadarEffects.rangeMult ?? 1)
+            * radarBonusMult;
         const compassHoldSeconds = Math.max(0, Number(campRadarEffects.compassHoldSeconds) || 0);
         if (compassHoldSeconds > 0) {
             const compassTarget = this.getMeridianCompassTarget();
@@ -13710,7 +15676,8 @@ export class ThreeGame {
     }
 
     _spawnSprintTrail() {
-        const color = PLAYER_COLORS[this.playerType] ?? 0x7dff5a;
+        if (!this.player || !this.scene || !this.transientEffects) return;
+        const color = (this._sprintColorOverride ?? 0x2ec4b6);
         const geo = new THREE.CircleGeometry(0.06 + Math.random() * 0.05, 6);
         const mat = new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.55, depthWrite: false });
         const mesh = new THREE.Mesh(geo, mat);
@@ -13886,6 +15853,9 @@ export class ThreeGame {
             else if (reactorLevel >= 2) refillMult = 2.0;
 
             let refillRate = generatorState.refillRate * refillMult;
+            if (typeof window !== 'undefined' && window.npcDialogueTreeManager?.activePerks?.has?.('flesh_communion_blessing')) {
+                refillRate *= 1.25;
+            }
             this.playerVitals.o2 = Math.min(100, this.playerVitals.o2 + refillRate * delta);
             this.playerVitals.o2HealthTimer = 0;
         } else {
@@ -13895,6 +15865,9 @@ export class ThreeGame {
                 * (this._sprintO2DrainMult ?? 1.0)
                 // THIN AIR run modifier: reserves are poor beyond the ship field.
                 * (this.getRunCardEffects().survival?.o2DrainMult ?? (this.currentRunModifier?.id === 'thin_air' ? 1.4 : 1.0));
+            if (typeof window !== 'undefined' && window.npcDialogueTreeManager?.activePerks?.has?.('tallows_seductive_warmth')) {
+                drainRate *= 0.80; // Seductive warmth protects against freezing drain
+            }
             if (this.playerType === 'TANK' && this.bank && this.bank.isSkillUnlocked('tank_o2_efficiency')) {
                 drainRate *= 0.85;
             } else if (this.playerType === 'ENGINEER' && this.bank && this.bank.isSkillUnlocked('engineer_battery_1')) {
@@ -14002,7 +15975,7 @@ export class ThreeGame {
         // still be under the player while underground (caught via the
         // in-browser verification pass: this spuriously fired near the
         // climb point, which sits close to the pocket's edge by design).
-        if (this.player && this.performanceProfile === 'gameplay' && !this.isInPocket) {
+        if (this.player && this.performanceProfile === 'gameplay' && !this.isInPocket && !this.noclip) {
             if (this.isPlayerOverAnyHole(this.player.position.x, this.player.position.z)) {
                 this.isPlayerFalling = true;
                 this._fallHoleX = Math.round(this.player.position.x);
@@ -14027,10 +16000,10 @@ export class ThreeGame {
             const dashSpeed = 16.0;
             const stepX = this.dashDirX * dashSpeed * delta;
             const stepZ = this.dashDirZ * dashSpeed * delta;
-            if (this.canOccupyPosition(this.player.position.x + stepX, this.player.position.z)) {
+            if (this.noclip || this.canOccupyPosition(this.player.position.x + stepX, this.player.position.z)) {
                 this.player.position.x += stepX;
             }
-            if (this.canOccupyPosition(this.player.position.x, this.player.position.z + stepZ)) {
+            if (this.noclip || this.canOccupyPosition(this.player.position.x, this.player.position.z + stepZ)) {
                 this.player.position.z += stepZ;
             }
             if (this.dashTimer <= 0) {
@@ -14062,6 +16035,9 @@ export class ThreeGame {
             }
         }
 
+        this.updatePlayerShield(delta);
+        this.updateEchoLocationPulse(delta);
+
         // Handle slow and poison status effects
         if (this.playerSlowTimer > 0) {
             this.playerSlowTimer = Math.max(0, this.playerSlowTimer - delta);
@@ -14072,7 +16048,9 @@ export class ThreeGame {
             this.playerPoisonTickTimer += delta;
             if (this.playerPoisonTickTimer >= 1.2) {
                 this.playerPoisonTickTimer = 0;
-                this.takeDamage(1, 'poison');
+                // Season 0 Bio-Hazard Filter Vent overclock (itemdef 4142) reduces gas/toxic tick damage
+                const gasResist = this.loadoutMods?.gasDamageReduction ?? 0;
+                this.takeDamage(Math.max(0, 1 * (1 - gasResist)), 'poison');
             }
             this.tintPlayerSprites(0x88ff88); // green poison tint
             if (wasPoisoned && this.playerPoisonTimer <= 0) {
@@ -14103,10 +16081,21 @@ export class ThreeGame {
             const prevZ = this.player.position.z;
 
             let speed = this.moveSpeed * (this._sprintMoveSpeedMult ?? 1.0);
-            if (this.playerSlowTimer > 0 && !(this._sprintMoveSpeedMult > 1)) {
+            if (this.noclip) {
+                const sprintBoost = (this._sprintMoveSpeedMult > 1 ? 1.7 : 1.0);
+                speed *= (this.noclipSpeedMult || 3.5) * sprintBoost;
+            }
+            if (typeof window !== 'undefined' && window.npcDialogueTreeManager?.activePerks?.has?.('vesper_vanguard_adrenaline')) {
+                speed *= 1.10;
+            }
+            // Season 0 Symbiotic Adrenaline Pump overclock (itemdef 4146): +15% speed under 25% HP
+            if (this.loadoutMods?.lowHpSpeedBoostActive && (this.health / (this.maxHealth || 100)) < 0.25) {
+                speed *= 1.15;
+            }
+            if (this.playerSlowTimer > 0 && !(this._sprintMoveSpeedMult > 1) && !this.noclip) {
                 speed *= 0.55;
             }
-            if (this._sprintMoveSpeedMult > 1 && Math.random() < 0.45) {
+            if ((this._sprintMoveSpeedMult > 1 || this.noclip) && Math.random() < 0.45) {
                 this._spawnSprintTrail();
             }
             const moveVector = new THREE.Vector3(moveAxisX, 0, moveAxisZ).normalize().multiplyScalar(speed * delta);
@@ -14114,11 +16103,11 @@ export class ThreeGame {
             const nextX = new THREE.Vector3(current.x + moveVector.x, current.y, current.z);
             const nextZ = new THREE.Vector3(current.x, current.y, current.z + moveVector.z);
 
-            if (this.canOccupyPosition(nextX.x, nextX.z)) {
+            if (this.noclip || this.canOccupyPosition(nextX.x, nextX.z)) {
                 this.player.position.x = nextX.x;
             }
 
-            if (this.canOccupyPosition(nextZ.x, nextZ.z)) {
+            if (this.noclip || this.canOccupyPosition(nextZ.x, nextZ.z)) {
                 this.player.position.z = nextZ.z;
             }
 
@@ -14137,13 +16126,15 @@ export class ThreeGame {
 
         this.updatePlayerSpriteAnimation(moveDirX, moveDirZ, delta, isMoving, moveDirX, moveDirZ);
         // Keep night visibility centered on the player sprite under isometric camera.
-        const spriteAnchorX = this.player.position.x + (this.playerSprite?.position.x ?? 0);
-        const spriteAnchorZ = this.player.position.z + (this.playerSprite?.position.z ?? 0);
-        this.playerGlow.position.set(
-            spriteAnchorX + this.cameraPlanarForward.x * PLAYER_GLOW_SCREEN_OFFSET,
-            1.6,
-            spriteAnchorZ + this.cameraPlanarForward.y * PLAYER_GLOW_SCREEN_OFFSET
-        );
+        const spriteAnchorX = this.player.position.x + (this.playerSprite?.position?.x ?? 0);
+        const spriteAnchorZ = this.player.position.z + (this.playerSprite?.position?.z ?? 0);
+        if (this.playerGlow?.position) {
+            this.playerGlow.position.set(
+                spriteAnchorX + this.cameraPlanarForward.x * PLAYER_GLOW_SCREEN_OFFSET,
+                1.6,
+                spriteAnchorZ + this.cameraPlanarForward.y * PLAYER_GLOW_SCREEN_OFFSET
+            );
+        }
         // Beam always points where you're shooting; once aim releases it swings
         // cleanly back to the actual travel heading (or holds the last facing
         // when standing still). The smoothing lives in updatePlayerForwardLight.
@@ -14298,14 +16289,34 @@ export class ThreeGame {
         if (!this.player || !this.isGameplayInputActive?.()) return;
         const unlocks = this.bank?.getState?.()?.unlocks ?? {};
         const unlockedGoalKeys = new Set(Object.keys(unlocks).filter((key) => unlocks[key]));
-        const maxUnlockedRing = getMaxUnlockedRing(unlockedGoalKeys);
+        let maxUnlockedRing = getMaxUnlockedRing(unlockedGoalKeys);
+        let authoredProgression = false;
+        if (this.authoredWorldTiles && this.worldPlan?.ringCrossings) {
+            const authored = ThreeGame.prototype.reconcileAuthoredWorldProgression.call(this);
+            if (authored) {
+                maxUnlockedRing = authored.maxUnlockedRing;
+                authoredProgression = true;
+            }
+        }
         const anchor = this.getBiomeAnchorPosition();
-        const result = clampPositionToUnlockedRing(
-            this.player.position.x,
-            this.player.position.z,
-            anchor,
-            maxUnlockedRing
-        );
+        const result = authoredProgression
+            ? clampPositionToAuthoredRing(
+                this.player.position.x,
+                this.player.position.z,
+                anchor,
+                maxUnlockedRing,
+                this.getRadialMazePlan?.()?.radii,
+                {
+                    worldPlan: this.worldPlan,
+                    chunkSize: this.chunkSize
+                }
+            )
+            : clampPositionToUnlockedRing(
+                this.player.position.x,
+                this.player.position.z,
+                anchor,
+                maxUnlockedRing
+            );
         if (result.blocked) {
             this.player.position.x = result.x;
             this.player.position.z = result.z;
@@ -14389,6 +16400,34 @@ export class ThreeGame {
 
         const spawn = this.getSpawnTile();
         return { x: spawn.x, z: spawn.y };
+    }
+
+    // Dev-console `biome <active|cryo|bio>` (src/debugConsole.js). Biome
+    // isn't an independent flag anywhere in this class — updateBiomeEnvironment()
+    // recomputes currentBiomeKey every frame purely from the player's distance
+    // to the ship anchor, so the only real way to force one is to put the
+    // player at a distance that actually satisfies it.
+    forceBiome(key = 'cryo') {
+        const normalized = String(key || '').toLowerCase();
+        const targetKey = normalized === 'active' ? BIOME_KEYS.ACTIVE
+            : normalized === 'bio' ? BIOME_KEYS.BIO
+            : BIOME_KEYS.CRYO;
+        if (!this.player) return false;
+
+        const anchor = this.getBiomeAnchorPosition();
+        const margin = BIOME_BLEND_HALF_WIDTH + 2;
+        const distance = targetKey === BIOME_KEYS.ACTIVE
+            ? Math.max(0, BIOME_THRESHOLD_CRYO - margin)
+            : targetKey === BIOME_KEYS.CRYO
+                ? BIOME_THRESHOLD_CRYO + margin
+                : BIOME_THRESHOLD_BIO + margin;
+
+        const angle = Math.random() * Math.PI * 2;
+        const targetX = anchor.x + Math.cos(angle) * distance;
+        const targetZ = anchor.z + Math.sin(angle) * distance;
+        const result = this.teleportPlayerTo(targetX, targetZ, { safeFloor: false });
+        this.updateBiomeEnvironment({ immediate: true, forceEvent: true });
+        return Boolean(result);
     }
 
     getBiomeMixValues(distanceFromAnchor) {
@@ -14914,24 +16953,62 @@ export class ThreeGame {
 
         ctx.save();
         ctx.globalCompositeOperation = 'destination-out';
-        ctx.filter = `blur(${THREE.MathUtils.clamp(Math.min(w, h) * 0.014, 7, 13).toFixed(1)}px)`;
+        ctx.shadowColor = 'rgba(0, 0, 0, 1)';
+        ctx.shadowBlur = THREE.MathUtils.clamp(Math.min(w, h) * 0.015, 8, 14);
         this.buildFlashlightScreenPath(ctx, points);
         ctx.fillStyle = 'rgba(0, 0, 0, 1)';
         ctx.fill();
         ctx.restore();
     }
 
+    hasTileWallBetween(x1, z1, x2, z2) {
+        const dx = x2 - x1;
+        const dz = z2 - z1;
+        const dist = Math.hypot(dx, dz);
+        if (dist <= 0.3) return false;
+
+        const steps = Math.min(48, Math.max(1, Math.ceil(dist * 2.5)));
+        const stepX = dx / steps;
+        const stepZ = dz / steps;
+
+        let curX = x1;
+        let curZ = z1;
+        let lastTileX = Math.round(x1);
+        let lastTileZ = Math.round(z1);
+
+        for (let i = 1; i < steps; i++) {
+            curX += stepX;
+            curZ += stepZ;
+            const tx = Math.round(curX);
+            const tz = Math.round(curZ);
+            if (tx === lastTileX && tz === lastTileZ) continue;
+            lastTileX = tx;
+            lastTileZ = tz;
+
+            const tile = this.getCachedTileType(tx, tz) ?? this.getTileType(tx, tz);
+            if (tile === '#' || tile === 'C' || tile === 'X') {
+                return true;
+            }
+        }
+        return false;
+    }
+
     hasWallBetween(x1, z1, x2, z2) {
+        if (this.hasTileWallBetween(x1, z1, x2, z2)) return true;
         if (this.wallMeshes.length === 0) return false;
 
-        const origin = new THREE.Vector3(x1, SUIT_LIGHT_EMITTER_HEIGHT, z1);
-        const target = new THREE.Vector3(x2, SUIT_LIGHT_EMITTER_HEIGHT, z2);
-        const direction = target.clone().sub(origin);
-        const distance = direction.length();
+        this._hasWallOrigin ??= new THREE.Vector3();
+        this._hasWallTarget ??= new THREE.Vector3();
+        this._hasWallDir ??= new THREE.Vector3();
+
+        this._hasWallOrigin.set(x1, SUIT_LIGHT_EMITTER_HEIGHT, z1);
+        this._hasWallTarget.set(x2, SUIT_LIGHT_EMITTER_HEIGHT, z2);
+        this._hasWallDir.subVectors(this._hasWallTarget, this._hasWallOrigin);
+        const distance = this._hasWallDir.length();
         if (distance <= 0.1) return false;
 
-        direction.normalize();
-        this._lightOcclusionRaycaster.set(origin, direction);
+        this._hasWallDir.normalize();
+        this._lightOcclusionRaycaster.set(this._hasWallOrigin, this._hasWallDir);
         this._lightOcclusionRaycaster.far = distance;
 
         const hits = this._lightOcclusionRaycaster.intersectObjects(this.wallMeshes, false);
@@ -15015,16 +17092,20 @@ export class ThreeGame {
     }
 
     applyFogOfWarOpacity(object, visibility, { captureCurrent = false } = {}) {
-        object?.traverse?.((child) => {
+        if (!object) return;
+        object.traverse?.((child) => {
             const material = child.material;
             if (!material) return;
             const materials = Array.isArray(material) ? material : [material];
             for (const mat of materials) {
                 if (!mat) continue;
-                const previousVisibility = mat.userData.fogVisibility ?? 1;
+                const previousVisibility = mat.userData.fogVisibility;
+                if (!captureCurrent && previousVisibility !== undefined && Math.abs(visibility - previousVisibility) < 0.005) {
+                    continue;
+                }
                 const baseOpacity = captureCurrent
                     ? (mat.opacity ?? 1)
-                    : (mat.opacity ?? 1) / Math.max(0.001, previousVisibility);
+                    : (mat.opacity ?? 1) / Math.max(0.001, previousVisibility ?? 1);
                 mat.transparent = true;
                 mat.opacity = baseOpacity * visibility;
                 mat.userData.fogVisibility = visibility;
@@ -15575,20 +17656,6 @@ export class ThreeGame {
             this.weaponFireCooldown = Math.max(0, this.weaponFireCooldown - delta);
         }
 
-        if (this.mouseAimActive && Number.isFinite(this.lastMouseClientX) && Number.isFinite(this.lastMouseClientY)) {
-            this.updateAimFromClient(this.lastMouseClientX, this.lastMouseClientY, {
-                keepMouseActive: true,
-                persistDuration: 0
-            });
-        }
-
-        if (!this.mouseAimActive && this._aimResetTimer > 0) {
-            this._aimResetTimer = Math.max(0, this._aimResetTimer - delta);
-            if (this._aimResetTimer === 0) {
-                this.hasActiveAim = false;
-            }
-        }
-
         this.updateWeaponAmmoRefill(delta);
         this.updateHeldFire();
 
@@ -15629,6 +17696,7 @@ export class ThreeGame {
         this.weaponReloadTimer = this.weaponReloadDuration;
         this.emitWeaponClipState();
         window.AudioManager?.play('weapon_reload', { volume: 0.52 });
+        window.AudioManager?.playVoiceCallout?.('reload');
         return true;
     }
 
@@ -15660,12 +17728,20 @@ export class ThreeGame {
     tryFireWeapon(clientX, clientY) {
         if (!this.isGameplayInputActive()) return false;
 
-        const worldPoint = this.updateAimFromClient(clientX, clientY, {
-            keepMouseActive: this._canvasPointerType === 'mouse',
-            persistDuration: this._canvasPointerType === 'mouse' ? 0 : 2.0
-        });
+        if (Number.isFinite(clientX) && Number.isFinite(clientY)) {
+            this.updateAimFromClient(clientX, clientY, {
+                keepMouseActive: this._canvasPointerType === 'mouse',
+                persistDuration: this._canvasPointerType === 'mouse' ? 0 : 2.0
+            });
+        }
 
-        if (!worldPoint && !this.hasActiveAim) return false;
+        if (!this.hasActiveAim) {
+            const aim = aimVectorFromYaw(this.facingYaw);
+            this.aimDirX = aim.x;
+            this.aimDirZ = aim.z;
+            this.aimFacingRow = this.getFacingRow(this.aimDirX, this.aimDirZ);
+            this.hasActiveAim = true;
+        }
 
         return this.fireWeaponAtCurrentAim();
     }
@@ -15691,6 +17767,16 @@ export class ThreeGame {
         const playerHeight = this.getTerrainHeightAt(this.player?.position?.x ?? 0, this.player?.position?.z ?? 0);
         if (playerHeight > 0) {
             damage *= 1.15; // High-Ground +15% Damage Advantage!
+        }
+
+        if (typeof window !== 'undefined' && window.npcDialogueTreeManager?.activePerks?.has?.('vesper_unyielding_might')) {
+            const hpRatio = (this.playerVitals?.hp ?? 100) / Math.max(1, (this.playerVitals?.maxHp ?? 100));
+            if (hpRatio < 0.40 && Math.random() < 0.25) {
+                damage *= 1.5; // Unyielding Might Critical Strike!
+            }
+        }
+        if (typeof window !== 'undefined' && window.npcDialogueTreeManager?.activePerks?.has?.('nahl_neural_freedom')) {
+            damage *= 1.15; // Neural Sovereignty +15% damage bonus
         }
 
         // Stacked multipliers (reload, overclocks, high-ground) can land on a
@@ -15734,6 +17820,7 @@ export class ThreeGame {
                         this.spawnProjectileImpactEffect(hx, hz);
                         this.spawnPhysicalBurst(hx, hz, { color: 0xffd27a, count: 5, upward: 0.16 });
                         const destroyedWall = this.damageWall(wall, damage, { source: 'player' });
+                        if (destroyedWall) window.dispatchEvent(new CustomEvent('wall-breached'));
                         if (!destroyedWall && FEATURE_WALL_DECALS) {
                             let nx = -dx;
                             let nz = -dz;
@@ -15753,6 +17840,7 @@ export class ThreeGame {
                 }
             }
 
+            this.spawnMuzzleFlash?.(spawnX, spawnZ);
             this.spawnProjectile({
                 x: spawnX,
                 z: spawnZ,
@@ -15788,8 +17876,14 @@ export class ThreeGame {
     }) {
         const group = new THREE.Group();
         const classColor = PLAYER_COLORS[this.playerType] ?? 0xffe08f;
-        const coreColor = options.color ?? (isEnemy ? 0xff4a4a : classColor);
-        const glowColor = options.glowColor ?? (isEnemy ? 0xff0000 : classColor);
+        let coreColor = options.color ?? (isEnemy ? 0xff4a4a : classColor);
+        let glowColor = options.glowColor ?? (isEnemy ? 0xff0000 : classColor);
+        // Season 0 Emerald Void Tracer Rounds mutator (itemdef 4152, docs/season-zero-protocol/03 §5)
+        const tracerFxId = window.loadout?.state?.tracerFxId;
+        if (!isEnemy && (tracerFxId === '4152' || tracerFxId === 'fx_emerald_void_tracer' || options.tracerFx === 'emerald')) {
+            coreColor = 0x10b981;
+            glowColor = 0x34d399;
+        }
 
         const core = new THREE.Mesh(
             new THREE.SphereGeometry(radius, 8, 8),
@@ -15821,7 +17915,8 @@ export class ThreeGame {
             ttl,
             damage,
             radius,
-            isEnemy
+            isEnemy,
+            pierceRemaining: (!isEnemy && this.loadoutMods?.kineticPierceBonus) ? this.loadoutMods.kineticPierceBonus : 0
         });
     }
 
@@ -15938,6 +18033,32 @@ export class ThreeGame {
             child.material?.dispose?.();
             child.geometry?.dispose?.();
         });
+    }
+
+    // Season 0 Cryo Shockwave Muzzle Flare mutator (itemdef 4153, docs/season-zero-protocol/03 §5)
+    spawnMuzzleFlash(x, z) {
+        const muzzleFxId = window.loadout?.state?.muzzleFxId;
+        const isCryo = muzzleFxId === '4153' || muzzleFxId === 'fx_cryo_shockwave_muzzle';
+        const color = isCryo ? 0x9beaff : 0xffd27a;
+
+        const effect = new THREE.Group();
+        const flash = new THREE.Mesh(
+            new THREE.CircleGeometry(isCryo ? 0.22 : 0.14, 10),
+            new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.9, depthWrite: false })
+        );
+        flash.rotation.x = -Math.PI / 2;
+        flash.userData = { isGlow: true };
+        effect.add(flash);
+        effect.position.set(x, 0.42, z);
+        effect.renderOrder = 31;
+        effect.userData = { age: 0, duration: isCryo ? 0.16 : 0.09 };
+        this.scene.add(effect);
+        this.transientEffects.push(effect);
+
+        const light = new THREE.PointLight(color, isCryo ? 2.2 : 1.6, isCryo ? 4.5 : 3.0, 2);
+        light.position.set(x, 0.5, z);
+        this.scene.add(light);
+        setTimeout(() => this.scene?.remove(light), 90);
     }
 
     spawnProjectileImpactEffect(x, z) {
@@ -16206,6 +18327,19 @@ export class ThreeGame {
             projectile.mesh.position.x += projectile.vx * delta;
             projectile.mesh.position.z += projectile.vz * delta;
 
+            if (projectile.isEnemy && shouldBlockAttackPath(
+                { x: oldX, z: oldZ },
+                { x: projectile.mesh.position.x, z: projectile.mesh.position.z },
+                {
+                    containmentZones: this.getActiveContainmentZones?.() ?? [],
+                    doors: this.getActiveDoors?.() ?? []
+                }
+            )) {
+                this.spawnProjectileImpactEffect(projectile.mesh.position.x, projectile.mesh.position.z);
+                toRemove.add(projectile);
+                continue;
+            }
+
             const wallHit = this.checkProjectileWallHit(projectile, { x: oldX, z: oldZ });
             if (wallHit) {
                 const hx = wallHit.point?.x ?? projectile.mesh.position.x;
@@ -16216,6 +18350,7 @@ export class ThreeGame {
                 const destroyedWall = this.damageWall(wallHit.wall, projectile.damage, {
                     source: projectile.isEnemy ? 'enemy-projectile' : 'player'
                 });
+                if (destroyedWall && !projectile.isEnemy) window.dispatchEvent(new CustomEvent('wall-breached'));
                 if (!destroyedWall && FEATURE_WALL_DECALS) {
                     this.spawnWallDecal(hx, hz, wallHit.normalX, wallHit.normalZ, {
                         wallKey: wallHit.wall?.userData?.wallKey ?? null
@@ -16242,7 +18377,12 @@ export class ThreeGame {
                 const snail = this.checkProjectileSnailHit(projectile);
                 if (snail) {
                     this.applyPlayerDamageToEnemy(snail, projectile.damage);
-                    toRemove.add(projectile);
+                    if (projectile.pierceRemaining && projectile.pierceRemaining > 0) {
+                        projectile.pierceRemaining -= 1;
+                        this.spawnProjectileImpactEffect(projectile.mesh.position.x, projectile.mesh.position.z);
+                    } else {
+                        toRemove.add(projectile);
+                    }
                     continue;
                 }
 
@@ -16330,6 +18470,15 @@ export class ThreeGame {
     }
 
     updateCamera(delta) {
+        const camBasis = planarBasisFromOffsetAzimuth(this.cameraAzimuth);
+        this.cameraPlanarForward.set(camBasis.forward.x, camBasis.forward.y);
+        this.cameraPlanarRight.set(camBasis.right.x, camBasis.right.y);
+        this.cameraOffset.set(
+            this.cameraOrbitRadius * Math.sin(this.cameraAzimuth),
+            this.cameraLift,
+            this.cameraOrbitRadius * Math.cos(this.cameraAzimuth)
+        );
+
         const target = new THREE.Vector3(
             this.player.position.x + this.cameraOffset.x,
             this.player.position.y + this.cameraOffset.y,
@@ -16368,9 +18517,9 @@ export class ThreeGame {
         if (this.performanceProfile === 'menu' && typeof document !== 'undefined') {
             const menuEl = document.getElementById('menu') || document.getElementById('splash');
             if (menuEl && !menuEl.classList.contains('hidden')) {
-                const rotY = ((this._menuParallaxX || 0) * 4.5).toFixed(2);
-                const rotX = (-(this._menuParallaxY || 0) * 4.5).toFixed(2);
-                menuEl.style.transform = `perspective(1000px) rotateY(${rotY}deg) rotateX(${rotX}deg)`;
+                const rotY = ((this._menuParallaxX || 0) * 1.0).toFixed(2);
+                const rotX = (-(this._menuParallaxY || 0) * 1.0).toFixed(2);
+                menuEl.style.transform = `perspective(2400px) rotateY(${rotY}deg) rotateX(${rotX}deg)`;
             }
         }
 
@@ -16379,6 +18528,14 @@ export class ThreeGame {
 
     snapCameraToPlayer() {
         if (!this.player || !this.camera) return;
+        const camBasis = planarBasisFromOffsetAzimuth(this.cameraAzimuth);
+        this.cameraPlanarForward.set(camBasis.forward.x, camBasis.forward.y);
+        this.cameraPlanarRight.set(camBasis.right.x, camBasis.right.y);
+        this.cameraOffset.set(
+            this.cameraOrbitRadius * Math.sin(this.cameraAzimuth),
+            this.cameraLift,
+            this.cameraOrbitRadius * Math.cos(this.cameraAzimuth)
+        );
         this.camera.position.set(
             this.player.position.x + this.cameraOffset.x,
             this.player.position.y + this.cameraOffset.y,
@@ -16397,11 +18554,14 @@ export class ThreeGame {
 
         if (!isGameplay) return;
 
-        // Project player's torso position into screen percentage coordinates
+        // Project a focal lead point in front of the player along the aim direction
+        // so where the player looks and aims is always in sharp, crystal-clear focus.
+        const aim = aimVectorFromYaw(this.facingYaw ?? 0);
+        const focalLead = 4.0;
         this._tiltShiftProjectVec.set(
-            this.player.position.x,
-            this.player.position.y + 0.7,
-            this.player.position.z
+            this.player.position.x + aim.x * focalLead,
+            this.player.position.y + 0.4,
+            this.player.position.z + aim.z * focalLead
         ).project(this.camera);
 
         const targetX = Math.min(95, Math.max(5, (this._tiltShiftProjectVec.x * 0.5 + 0.5) * 100));
@@ -16458,11 +18618,15 @@ export class ThreeGame {
         }
         this._lastChunkVisibilityKey = visibilityKey;
         this.updateDepthTierProgress(centerChunkX, centerChunkY);
-        const needed = new Set();
-        const resident = new Set();
-        this.wallMeshes = [];
-        this.pickupMeshes = [];
-        this.scatterSprites = [];
+        if (!this._neededChunkKeys) this._neededChunkKeys = new Set();
+        if (!this._residentChunkKeys) this._residentChunkKeys = new Set();
+        const needed = this._neededChunkKeys;
+        const resident = this._residentChunkKeys;
+        needed.clear();
+        resident.clear();
+        if (!this.wallMeshes) this.wallMeshes = []; else this.wallMeshes.length = 0;
+        if (!this.pickupMeshes) this.pickupMeshes = []; else this.pickupMeshes.length = 0;
+        if (!this.scatterSprites) this.scatterSprites = []; else this.scatterSprites.length = 0;
 
         for (let chunkY = centerChunkY - this.visibleChunkRadius; chunkY <= centerChunkY + this.visibleChunkRadius; chunkY++) {
             for (let chunkX = centerChunkX - this.visibleChunkRadius; chunkX <= centerChunkX + this.visibleChunkRadius; chunkX++) {
@@ -16699,8 +18863,6 @@ export class ThreeGame {
         const maxSteps = landform === LANDFORMS.RUINS ? 30 : landform === LANDFORMS.MAZE ? 24 : 16;
         let steps = 0;
         const stepMatrices = [];
-        const matrix = new THREE.Matrix4();
-        const rotQuat = new THREE.Quaternion();
 
         for (let localY = 1; localY < this.chunkSize - 1; localY++) {
             for (let localX = 1; localX < this.chunkSize - 1; localX++) {
@@ -16720,13 +18882,12 @@ export class ThreeGame {
                 const depth = 0.68 + random() * 0.26;
                 const worldX = chunkX * this.chunkSize + localX + (random() - 0.5) * 0.16;
                 const worldZ = chunkY * this.chunkSize + localY + (random() - 0.5) * 0.16;
-                rotQuat.setFromEuler(new THREE.Euler(0, Math.floor(random() * 4) * (Math.PI / 2), 0));
-                matrix.compose(
-                    new THREE.Vector3(worldX, height / 2 + 0.006, worldZ),
-                    rotQuat,
-                    new THREE.Vector3(width, height / 0.08, depth)
-                );
-                stepMatrices.push(matrix.clone());
+                _scratchEuler.set(0, Math.floor(random() * 4) * (Math.PI / 2), 0);
+                _scratchQuaternion.setFromEuler(_scratchEuler);
+                _scratchVector3.set(worldX, height / 2 + 0.006, worldZ);
+                const scaleVec = new THREE.Vector3(width, height / 0.08, depth);
+                _scratchMatrix4.compose(_scratchVector3, _scratchQuaternion, scaleVec);
+                stepMatrices.push(_scratchMatrix4.clone());
                 steps++;
             }
         }
@@ -17203,99 +19364,12 @@ export class ThreeGame {
         return adjacentCount > 0 && !bridgesPlayableSpaces;
     }
 
-    createVoidPatch(worldX, worldZ) {
-        if (!this.floorGeometry || !this.voidMaterial) return null;
-        const group = new THREE.Group();
-        const patch = new THREE.Mesh(this.floorGeometry, this.voidMaterial);
-        patch.rotation.x = -Math.PI / 2;
-        patch.position.set(worldX, -10, worldZ); // deeply sunken
-        patch.receiveShadow = false;
-        patch.userData = { isExteriorCanyon: true, isLethalPit: true, worldX, worldZ };
-        group.add(patch);
-
-        const coord = this.getChunkLocalFromWorld(worldX, worldZ);
-        const grid = this.chunkCache?.get?.(coord.key);
-        if (grid?.[coord.localY]) {
-            const localX = coord.localX;
-            const localY = coord.localY;
-            const hasWalkableOrWall = (dx, dy) => {
-                const char = grid[localY + dy]?.[localX + dx];
-                return char === '.' || char === 'D' || char === '#' || char === 'C';
-            };
-            if (
-                hasWalkableOrWall(0, -1) || hasWalkableOrWall(0, 1)
-                || hasWalkableOrWall(-1, 0) || hasWalkableOrWall(1, 0)
-            ) {
-                const cliffSkirt = this.createCliffPatch(worldX, worldZ);
-                if (cliffSkirt) group.add(cliffSkirt);
-            }
-        }
-        return group;
-    }
-
-    createCliffPatch(worldX, worldZ) {
-        const biomeKey = this.getBiomeKeyForWorldPosition?.(worldX, worldZ) ?? BIOME_KEYS.ACTIVE;
-        const material = this.cliffMaterials?.[biomeKey] ?? this.cliffMaterials?.[BIOME_KEYS.ACTIVE];
-        if (!material) return null;
-
-        if (!this.cliffPrimaryGeometry) {
-            this.cliffPrimaryGeometry = new THREE.CylinderGeometry(0.68, 0.95, 10, 14);
-        }
-        if (!this.cliffRockGeometry) {
-            this.cliffRockGeometry = new THREE.ConeGeometry(0.85, 9.5, 12);
-        }
-
-        const group = new THREE.Group();
-        group.userData = { isCliff: true, worldX, worldZ };
-
-        const seed = (this.hashTile(Math.round(worldX * 137 + 19), Math.round(worldZ * 223 + 43)) ^ (this.runEntropy ?? 0)) >>> 0;
-        const rng = this.createSeededRandom(seed);
-
-        // 1. Primary organic rock column with position jitter, scale, and tilt
-        const pOffsetX = (rng() - 0.5) * 0.48;
-        const pOffsetZ = (rng() - 0.5) * 0.48;
-        const pScaleX = 0.78 + rng() * 0.52;
-        const pScaleZ = 0.78 + rng() * 0.52;
-        const primaryMesh = new THREE.Mesh(this.cliffPrimaryGeometry, material);
-        primaryMesh.position.set(worldX + pOffsetX, -4.8, worldZ + pOffsetZ);
-        primaryMesh.scale.set(pScaleX, 1.02, pScaleZ);
-        primaryMesh.rotation.y = rng() * Math.PI * 2;
-        primaryMesh.rotation.x = (rng() - 0.5) * 0.22;
-        primaryMesh.rotation.z = (rng() - 0.5) * 0.22;
-        primaryMesh.receiveShadow = true;
-        primaryMesh.castShadow = true;
-        group.add(primaryMesh);
-
-        if (this.isCliffSecretPath(worldX, worldZ) && this.cliffPathGeometry && this.cliffPathMaterial) {
-            const pathGlow = new THREE.Mesh(this.cliffPathGeometry, this.cliffPathMaterial);
-            pathGlow.rotation.x = -Math.PI / 2;
-            pathGlow.position.set(worldX, 0.045, worldZ);
-            pathGlow.renderOrder = 2;
-            pathGlow.userData = { isCliffSecretPath: true };
-            group.add(pathGlow);
-        }
-
-        // 2. Secondary organic rock outcroppings to break straight grid lines
-        const subCount = 1 + Math.floor(rng() * 2);
-        for (let i = 0; i < subCount; i += 1) {
-            const angle = rng() * Math.PI * 2;
-            const dist = 0.28 + rng() * 0.38;
-            const subX = worldX + Math.cos(angle) * dist;
-            const subZ = worldZ + Math.sin(angle) * dist;
-            const subScale = 0.55 + rng() * 0.45;
-            const rockMesh = new THREE.Mesh(this.cliffRockGeometry, material);
-            rockMesh.position.set(subX, -4.6 + (rng() - 0.5) * 0.6, subZ);
-            rockMesh.scale.set(subScale, 1.05, subScale);
-            rockMesh.rotation.y = rng() * Math.PI * 2;
-            rockMesh.rotation.x = (rng() - 0.5) * 0.28;
-            rockMesh.rotation.z = (rng() - 0.5) * 0.28;
-            rockMesh.receiveShadow = true;
-            rockMesh.castShadow = true;
-            group.add(rockMesh);
-        }
-
-        return group;
-    }
+    // createVoidPatch/createCliffPatch (the per-call, non-instanced canyon
+    // rock-column builder) were removed here: superseded by the instanced
+    // addCliffInstance/addCanyonDropSkirt pass in the chunk-mesh build below,
+    // and unreachable — createVoidPatch had no callers anywhere in the
+    // codebase. cliffPrimaryGeometry, the one live dependency it lazily
+    // created, now initializes in the constructor above instead.
 
     createExteriorGroundPatch(worldX, worldZ) {
         const biomeKey = this.getBiomeKeyForWorldPosition?.(worldX, worldZ) ?? BIOME_KEYS.ACTIVE;
@@ -17713,15 +19787,12 @@ export class ThreeGame {
             const matrix = new THREE.Matrix4();
             const rotation = new THREE.Quaternion().setFromEuler(new THREE.Euler(-Math.PI / 2, 0, 0));
             floorCells.forEach((cell, index) => {
-                matrix.compose(
-                    new THREE.Vector3(
-                        chunkX * this.chunkSize + cell.localX,
-                        0,
-                        chunkY * this.chunkSize + cell.localY
-                    ),
-                    rotation,
-                    new THREE.Vector3(1, 1, 1)
+                _scratchVector3.set(
+                    chunkX * this.chunkSize + cell.localX,
+                    0,
+                    chunkY * this.chunkSize + cell.localY
                 );
+                matrix.compose(_scratchVector3, rotation, _scratchScale);
                 floors.setMatrixAt(index, matrix);
             });
             floors.instanceMatrix.needsUpdate = true;
@@ -17737,15 +19808,12 @@ export class ThreeGame {
                     exteriorGroundCells.length
                 );
                 exteriorGroundCells.forEach((cell, index) => {
-                    matrix.compose(
-                        new THREE.Vector3(
-                            chunkX * this.chunkSize + cell.localX,
-                            0.012,
-                            chunkY * this.chunkSize + cell.localY
-                        ),
-                        rotation,
-                        new THREE.Vector3(1, 1, 1)
+                    _scratchVector3.set(
+                        chunkX * this.chunkSize + cell.localX,
+                        0.012,
+                        chunkY * this.chunkSize + cell.localY
                     );
+                    matrix.compose(_scratchVector3, rotation, _scratchScale);
                     ledges.setMatrixAt(index, matrix);
                 });
                 ledges.instanceMatrix.needsUpdate = true;
@@ -17831,9 +19899,21 @@ export class ThreeGame {
         const voidPatchMatrices = [];
         const cliffMatricesByBiome = new Map();
         const cliffEdgeMatricesByBiome = new Map();
+        const canyonDropMatricesByBiome = new Map();
         const rubbleMatrices = [];
         const floorRotation = new THREE.Quaternion().setFromEuler(new THREE.Euler(-Math.PI / 2, 0, 0));
         const instMatrix = new THREE.Matrix4();
+
+        const addCanyonDropSkirt = (posX, posZ, rotY, biomeKey) => {
+            const skirtQuat = new THREE.Quaternion().setFromEuler(new THREE.Euler(0, rotY, 0));
+            const skirtMat = new THREE.Matrix4().compose(
+                new THREE.Vector3(posX, 0.0, posZ),
+                skirtQuat,
+                new THREE.Vector3(1.0, 1.0, 1.0)
+            );
+            if (!canyonDropMatricesByBiome.has(biomeKey)) canyonDropMatricesByBiome.set(biomeKey, []);
+            canyonDropMatricesByBiome.get(biomeKey).push(skirtMat);
+        };
 
         // Standard/damaged walls instance into one InstancedMesh per distinct
         // roomStyleId within this chunk (not one pool for the whole chunk):
@@ -17969,6 +20049,19 @@ export class ThreeGame {
                         const char = grid[localY + dy]?.[localX + dx];
                         return char === '.' || char === 'D' || char === '#' || char === 'C';
                     };
+                    const bKey = this.getBiomeKeyForWorldPosition?.(worldX, worldZ) ?? BIOME_KEYS.ACTIVE;
+                    if (hasWalkableOrWall(0, -1)) {
+                        addCanyonDropSkirt(worldX, worldZ - 0.5, 0, bKey);
+                    }
+                    if (hasWalkableOrWall(0, 1)) {
+                        addCanyonDropSkirt(worldX, worldZ + 0.5, Math.PI, bKey);
+                    }
+                    if (hasWalkableOrWall(-1, 0)) {
+                        addCanyonDropSkirt(worldX - 0.5, worldZ, Math.PI / 2, bKey);
+                    }
+                    if (hasWalkableOrWall(1, 0)) {
+                        addCanyonDropSkirt(worldX + 0.5, worldZ, -Math.PI / 2, bKey);
+                    }
                     if (
                         hasWalkableOrWall(0, -1) || hasWalkableOrWall(0, 1)
                         || hasWalkableOrWall(-1, 0) || hasWalkableOrWall(1, 0)
@@ -18349,6 +20442,21 @@ export class ThreeGame {
                 cliffEdges.castShadow = true;
                 cliffEdges.userData = { isCliffEdgeDressing: true };
                 group.add(cliffEdges);
+            }
+        }
+
+        if (this.canyonDropGeometry && canyonDropMatricesByBiome.size > 0) {
+            for (const [bKey, matrices] of canyonDropMatricesByBiome.entries()) {
+                if (matrices.length === 0) continue;
+                const mat = this.canyonDropMaterials?.[bKey] ?? this.canyonDropMaterials?.[BIOME_KEYS.ACTIVE];
+                if (!mat) continue;
+                const dropInstanced = new THREE.InstancedMesh(this.canyonDropGeometry, mat, matrices.length);
+                matrices.forEach((m, idx) => dropInstanced.setMatrixAt(idx, m));
+                dropInstanced.instanceMatrix.needsUpdate = true;
+                dropInstanced.receiveShadow = true;
+                dropInstanced.castShadow = false;
+                dropInstanced.userData = { isCanyonDropSkirt: true };
+                group.add(dropInstanced);
             }
         }
 
@@ -18795,13 +20903,14 @@ export class ThreeGame {
                         x: worldX,
                         z: worldZ,
                         type: propType,
+                        wallNormal: planned.wallNormal,
                         scatterKey: `room_plan:${planned.id}`,
                         scale: planned.kind === 'signature'
                             ? 1.3
                             : planned.kind === 'large'
                                 ? 1.15
                                 : planned.kind === 'ambient' ? 1.05 : 0.82,
-                        elevation: 0.08,
+                        elevation: isWallDecalType(propType) ? 0 : (isFloorOverlayType(propType) ? 0.035 : 0.08),
                         hp: propType === 'prop_specimen_tank' ? 4 : 3,
                         groupType: 'prop',
                         opacity: 1,
@@ -19072,7 +21181,7 @@ export class ThreeGame {
     }
 
     createChunkScatterPlacements(chunkX, chunkY, grid) {
-        if (this.performanceProfile === 'menu') {
+        if (this.performanceProfile === 'menu' || (chunkX >= SHOWROOM_CHUNK_X && chunkX <= SHOWROOM_CHUNK_X + 10 && chunkY >= SHOWROOM_CHUNK_Y && chunkY <= SHOWROOM_CHUNK_Y + 10)) {
             return [];
         }
         const random = this.createSeededRandom(((this.hashTile(chunkX * 523 + 43, chunkY * 859 + 71) ^ (this.runEntropy ?? 0)) >>> 0));
@@ -19391,7 +21500,9 @@ export class ThreeGame {
                 opacity = 1;
                 hasLoreTerminalThisChunk = true;
             } else if (canSpawnSnail && roll < snailSpawnConfig.chance) {
-                if (chunkBiomeKey === BIOME_KEYS.BIO) {
+                if (depthTierForScatter <= 0 || distFromSpawn < 45) {
+                    type = 'cybersnail';
+                } else if (chunkBiomeKey === BIOME_KEYS.BIO) {
                     type = 'sporesnail';
                 } else if (chunkBiomeKey === BIOME_KEYS.CRYO) {
                     type = 'cryosnail';
@@ -19413,13 +21524,14 @@ export class ThreeGame {
                 opacity = 1;
             } else {
                 type = this.chooseWeightedType(biomeVariants, random);
-                const isGroundCover = type.includes('puddle') || type === 'scatter_gravel'
+                const isGroundCover = isFloorOverlayType(type) || type.includes('puddle') || type === 'scatter_gravel'
                     || type === 'scatter_cable_coil' || type === 'scatter_bolts'
                     || type === 'scatter_cryo_shards' || type === 'scatter_bio_moss'
                     || type === 'scatter_camp_supplies' || type === 'scatter_hive_eggs'
                     || type === 'prop_blood_trail' || type === 'scatter_broken_drone'
                     || type === 'scatter_biomech_debris'
-                    || type === 'body_human_frozen_suit' || type === 'body_empty_exosuit';
+                    || type === 'body_human_frozen_suit' || type === 'body_empty_exosuit'
+                    || type.startsWith('decal_');
                 const isTallScatter = type === 'scatter_ice_stalagmite'
                     || type === 'scatter_bio_pod'
                     || type === 'prop_hive_resin_sac';
@@ -19428,6 +21540,10 @@ export class ThreeGame {
                     scaleMultiplier = 1.05 + random() * 0.3;
                     elevation = 0.12 + random() * 0.08;
                     opacity = 0.92;
+                } else if (isWallDecalType(type)) {
+                    scaleMultiplier = 0.95 + random() * 0.25;
+                    elevation = 0;
+                    opacity = 0.88 + random() * 0.12;
                 } else if (isGroundCover) {
                     if (type.startsWith('body_')) {
                         scaleMultiplier = 0.82 + random() * 0.16;
@@ -19435,7 +21551,7 @@ export class ThreeGame {
                         opacity = 0.9 + random() * 0.08;
                     } else {
                         scaleMultiplier = 0.85 + random() * 0.28;
-                        elevation = 0.05 + random() * 0.04;
+                        elevation = 0.04 + random() * 0.02;
                         opacity = 0.72 + random() * 0.14;
                     }
                 } else if (isTallScatter) {
@@ -19443,9 +21559,9 @@ export class ThreeGame {
                     elevation = 0.8 + random() * 0.55;
                     opacity = 0.68 + random() * 0.22;
                 } else {
-                    scaleMultiplier = 0.42 + random() * 0.1;
-                    elevation = 1.45 + random() * 0.95;
-                    opacity = 0.58 + random() * 0.16;
+                    scaleMultiplier = 0.55 + random() * 0.2;
+                    elevation = 0.08 + random() * 0.04;
+                    opacity = 0.75 + random() * 0.15;
                 }
             }
 
@@ -19458,7 +21574,7 @@ export class ThreeGame {
                 if (tooCloseToOtherJunk) {
                     type = this.chooseWeightedType(biomeVariants, random);
                     scaleMultiplier = 0.58 + random() * 0.18;
-                    elevation = 0.9 + random() * 0.7;
+                    elevation = 0.08 + random() * 0.04;
                     opacity = 0.62 + random() * 0.16;
                 } else {
                     junkPlacementAnchors.push({ x: p.x, z: p.z });
@@ -19485,10 +21601,32 @@ export class ThreeGame {
                 finalType = 'ship_wreckage';
             }
 
+            let wallNormal = null;
+            let finalX = p.x;
+            let finalZ = p.z;
+            if (isWallDecalType(finalType)) {
+                const localX = Math.round(p.x - chunkX * this.chunkSize);
+                const localY = Math.round(p.z - chunkY * this.chunkSize);
+                if (grid[localY - 1]?.[localX] === '#') {
+                    wallNormal = { x: 0, z: 1 };
+                    finalZ = (chunkY * this.chunkSize + localY) - 0.5 + 0.02;
+                } else if (grid[localY + 1]?.[localX] === '#') {
+                    wallNormal = { x: 0, z: -1 };
+                    finalZ = (chunkY * this.chunkSize + localY) + 0.5 - 0.02;
+                } else if (grid[localY]?.[localX - 1] === '#') {
+                    wallNormal = { x: 1, z: 0 };
+                    finalX = (chunkX * this.chunkSize + localX) - 0.5 + 0.02;
+                } else if (grid[localY]?.[localX + 1] === '#') {
+                    wallNormal = { x: -1, z: 0 };
+                    finalX = (chunkX * this.chunkSize + localX) + 0.5 - 0.02;
+                }
+            }
+
             finalPlacements.push({
-                x: p.x,
-                z: p.z,
+                x: finalX,
+                z: finalZ,
                 type: finalType,
+                wallNormal,
                 scatterKey: `${chunkX},${chunkY}:${finalPlacements.length}:${finalType}`,
                 scale,
                 rotation,
@@ -19567,8 +21705,112 @@ export class ThreeGame {
         const scaleY = placement.scale * (1.0 + placement.tiltX);
         const anchoredY = placement.elevation ?? 0;
 
+        if (placement.type.startsWith('drop_')) {
+            const dropKey = placement.type;
+            const loreEntry = LORE_DROPS.find((d) => d.key === dropKey) || {
+                key: dropKey,
+                title: dropKey.replace(/^drop_/, '').toUpperCase().replace(/_/g, ' '),
+                rarity: dropKey === 'drop_black_flask' ? 'rare' : 'common',
+                text: 'Recovered expedition artifact.'
+            };
+            const dropSprite = this.spawnLoreDropSprite(loreEntry, placement.x, placement.z);
+            if (dropSprite) return dropSprite;
+        }
+
+        if (isWallDecalType(placement.type) || placement.isWallDecal) {
+            const texture = this.scatterTextures[placement.type] || this.scatterMaterials[placement.type]?.map;
+            if (!texture) return null;
+            const material = new THREE.MeshStandardMaterial({
+                map: texture,
+                transparent: true,
+                alphaTest: 0.04,
+                roughness: 0.85,
+                metalness: 0.12,
+                polygonOffset: true,
+                polygonOffsetFactor: -4,
+                polygonOffsetUnits: -4,
+                side: THREE.DoubleSide,
+                fog: true,
+                depthWrite: false
+            });
+            // Wall decal textures are all square (docs/game-audit-lane-split-and-worklog.md §3c) —
+            // use uniform scaleX for both axes rather than the shared scaleY, which folds in
+            // placement.tiltX (a distortion meant for 3D organic props like stalagmites/junk
+            // piles, not a flat wall-mounted 2D plane). Reusing it here silently stretched
+            // otherwise-square textures up to ~8% non-uniformly.
+            const decalWidth = Math.max(1.0, scaleX * 1.4);
+            const decalHeight = decalWidth;
+            const wallDecalGeo = new THREE.PlaneGeometry(decalWidth, decalHeight);
+            const decalMesh = new THREE.Mesh(wallDecalGeo, material);
+            
+            // Docs/game-audit-lane-split-and-worklog.md §3c: this used to be two independent
+            // copies of the same snap-to-wall-face offset formula — one for an auto-detected
+            // neighbor, one for a pre-calculated normal — that happened to agree but could
+            // silently drift if only one was ever edited. Consolidated into a single formula
+            // applied once nx/nz are resolved, regardless of which path resolved them.
+            let nx = placement.wallNormal?.x ?? placement.normalX;
+            let nz = placement.wallNormal?.z ?? placement.normalZ;
+            const tileX = Math.round(placement.x);
+            const tileZ = Math.round(placement.z);
+
+            if (!Number.isFinite(nx) || !Number.isFinite(nz) || (nx === 0 && nz === 0)) {
+                // Wall normal not pre-calculated — detect the adjacent wall from the world tile.
+                const neighbors = [
+                    { dx: 0, dz: -1, nx: 0, nz: 1 },  // North wall -> faces South (+Z)
+                    { dx: 0, dz: 1,  nx: 0, nz: -1 }, // South wall -> faces North (-Z)
+                    { dx: -1, dz: 0, nx: 1, nz: 0 },  // West wall -> faces East (+X)
+                    { dx: 1, dz: 0,  nx: -1, nz: 0 }  // East wall -> faces West (-X)
+                ];
+                const foundNeighbor = neighbors.find((n) => this.getTileType?.(tileX + n.dx, tileZ + n.dz) === '#');
+                if (foundNeighbor) {
+                    nx = foundNeighbor.nx;
+                    nz = foundNeighbor.nz;
+                } else {
+                    nx = 0;
+                    nz = 1;
+                }
+            }
+
+            let decalX = placement.x;
+            let decalZ = placement.z;
+            if (nz === 1) {
+                decalZ = tileZ - 0.5 + 0.02;
+            } else if (nz === -1) {
+                decalZ = tileZ + 0.5 - 0.02;
+            } else if (nx === 1) {
+                decalX = tileX - 0.5 + 0.02;
+            } else if (nx === -1) {
+                decalX = tileX + 0.5 - 0.02;
+            }
+
+            const wallY = this.wallHeight ? this.wallHeight * 0.48 : 1.34;
+            decalMesh.position.set(decalX, wallY, decalZ);
+            decalMesh.rotation.y = Math.atan2(nx, nz);
+            decalMesh.renderOrder = 6;
+            decalMesh.userData = {
+                isScatter: true,
+                isWallDecal: true,
+                type: placement.type,
+                scatterKey: placement.scatterKey,
+                groupType: placement.groupType,
+                baseY: wallY,
+                elevationOffset: placement.elevation,
+                baseScaleX: scaleX,
+                baseScaleY: scaleY,
+                baseOpacity: placement.opacity ?? 1
+            };
+            decalMesh.onBeforeRender = () => {
+                const width = Number(texture.image?.width);
+                const height = Number(texture.image?.height);
+                if (!(width > 0 && height > 0) || decalMesh.userData.aspectApplied) return;
+                decalMesh.scale.x = (width / height);
+                decalMesh.userData.aspectApplied = true;
+            };
+            return decalMesh;
+        }
+
         if (isFloorOverlayType(placement.type)) {
-            const texture = this.scatterTextures[placement.type];
+            const texture = this.scatterTextures[placement.type] || this.scatterMaterials[placement.type]?.map;
             if (!texture) return null;
             const material = new THREE.MeshBasicMaterial({
                 map: texture,
@@ -19585,7 +21827,7 @@ export class ThreeGame {
             const overlay = new THREE.Mesh(this.floorGeometry, material);
             overlay.rotation.x = -Math.PI / 2;
             overlay.rotation.z = placement.rotation ?? 0;
-            overlay.position.set(placement.x, Math.max(0.03, anchoredY), placement.z);
+            overlay.position.set(placement.x, 0.035, placement.z);
             overlay.scale.set(scaleX, scaleY, 1);
             overlay.frustumCulled = false;
             overlay.renderOrder = 7;
@@ -19595,15 +21837,12 @@ export class ThreeGame {
                 type: placement.type,
                 scatterKey: placement.scatterKey,
                 groupType: placement.groupType,
-                baseY: overlay.position.y,
-                elevationOffset: overlay.position.y,
+                baseY: 0.035,
+                elevationOffset: 0.035,
                 baseScaleX: scaleX,
                 baseScaleY: scaleY,
                 baseOpacity: placement.opacity ?? 1
             };
-            // Keyed textures finish on an async canvas. Apply their real
-            // aspect ratio once available so wide prefabs do not get crushed
-            // into square floor icons.
             overlay.onBeforeRender = () => {
                 const width = Number(texture.image?.width);
                 const height = Number(texture.image?.height);
@@ -19868,6 +22107,7 @@ export class ThreeGame {
             sprite.userData = {
                 isScatter: true,
                 isEnemy: true,
+                isDisplayModel: Boolean(placement.isDisplayModel),
                 isBoss: isBoss,
                 biome: placement.type.includes('cryo') ? 'cryo' : placement.type.includes('spore') ? 'bio' : 'active',
                 type: placement.type,
@@ -20790,6 +23030,21 @@ export class ThreeGame {
         sprite.userData.burstTriggered = true;
         sprite.userData.burstTimer = 0;
         this.snailsKilledThisRun = (this.snailsKilledThisRun ?? 0) + 1;
+
+        // Season 0 Zero-Point Flux Overdrive overclock (itemdef 4147): 5 kills in 3s refunds 1 dash charge
+        const now = (typeof performance !== 'undefined' ? performance.now() : Date.now());
+        this._recentKillTimestamps = (this._recentKillTimestamps || []).filter((t) => (now - t) <= 3000);
+        this._recentKillTimestamps.push(now);
+        if (this.loadoutMods?.dashRefundOnMultiKill && this._recentKillTimestamps.length >= 5) {
+            this.dashCooldownTimer = 0;
+            this._recentKillTimestamps = [];
+            window.AudioManager?.play?.('fx_achievement', { volume: 0.35, bus: 'sfx' });
+            window.dispatchEvent(new CustomEvent('dash-overdrive-ready'));
+            if (this.player) {
+                this.spawnPhysicalBurst(this.player.position.x, this.player.position.z, { color: 0xc084fc, count: 16, upward: 0.3 });
+            }
+        }
+
         this.arcManager?.recordSignal?.({ snailsKilled: 1 });
         this.arcManager?.evaluate?.();
         // Post-turn, wild snails are family. Killing them upsets the queen —
@@ -20832,6 +23087,18 @@ export class ThreeGame {
 
         if (isBoss) {
             this.killedBosses.add(sprite.userData.biome);
+            if (sprite.userData.isMilestone && sprite.userData.milestoneId) {
+                const transition = this.applyMilestoneBossRuntimeEvent({
+                    type: MILESTONE_BOSS_EVENT_TYPES.ENEMY_KILLED,
+                    milestoneId: sprite.userData.milestoneId,
+                    encounterId: sprite.userData.milestoneEncounterId
+                });
+                if (transition.effects?.some((effect) => effect.type === 'milestone_defeated')) {
+                    const milestoneDef = getMilestoneById(sprite.userData.milestoneId);
+                    if (milestoneDef) this.defeatedMilestoneBosses.add(milestoneDef.goalKey);
+                    this.reconcileAuthoredWorldProgression?.();
+                }
+            }
             if (sprite.userData.isMilestone && sprite.userData.sourceGoalKey === 'o2Bubble') {
                 this.revealFoundry({ randomEdge: true, source: 'o2-counterattack-complete' });
             }
@@ -21064,6 +23331,11 @@ export class ThreeGame {
     }
 
     isSnailTileWalkable(tileX, tileZ) {
+        const chunkX = Math.floor(tileX / this.chunkSize);
+        const chunkY = Math.floor(tileZ / this.chunkSize);
+        if (chunkX >= SHOWROOM_CHUNK_X && chunkX <= SHOWROOM_CHUNK_X + 10 && chunkY >= SHOWROOM_CHUNK_Y && chunkY <= SHOWROOM_CHUNK_Y + 10) {
+            return true;
+        }
         if (this.isFilledHoleTile?.(tileX, tileZ)) return true;
         const tile = this.getTileType(tileX, tileZ);
         return tile === '.'
@@ -21097,10 +23369,23 @@ export class ThreeGame {
     // for the ship. Driven by the bank's `goal-unlocked` event (see init wiring).
     spawnMilestoneBoss(bossType, { sourceGoalKey = null } = {}) {
         if (!this.player || !this.snailsEnabled) return null;
+        const milestoneDef = sourceGoalKey ? getMilestoneForGoal(sourceGoalKey) : null;
+        if (milestoneDef) bossType = milestoneDef.presentationEnemyType;
         if (!this.scatterMaterials[bossType]) return null;
-        // Never stack the same milestone boss.
-        if (this.scatterSprites.some((s) => s.userData?.isMilestone && s.userData?.type === bossType && !s.userData?.burstTriggered)) {
+        // Presentation types are not identities: radar and reactor both use a
+        // Sporesnail. Deduplicate only by the canonical milestone ID.
+        if (milestoneDef && this.scatterSprites.some((sprite) => (
+            sprite.userData?.milestoneId === milestoneDef.milestoneId
+            && !sprite.userData?.burstTriggered
+            && sprite.parent
+        ))) {
             return null;
+        }
+        if (milestoneDef) {
+            this.reconcileMilestoneBossLifecycle?.();
+            const status = this.milestoneBossLifecycleState?.milestones?.[milestoneDef.milestoneId]?.status;
+            if (status === MILESTONE_BOSS_STATES.DEFEATED || status === MILESTONE_BOSS_STATES.ACTIVE) return null;
+            if (status !== MILESTONE_BOSS_STATES.READY_TO_STAGE) return null;
         }
 
         const baseX = this.player.position.x;
@@ -21122,6 +23407,14 @@ export class ThreeGame {
             if (spawnX !== null) break;
         }
         if (spawnX === null) return null;
+
+        // Do not advance the pure lifecycle until a live parent exists. The
+        // previous ordering could persist ACTIVE even though streaming had no
+        // group to own the attempted boss.
+        const chunkX = Math.floor(baseX / this.chunkSize);
+        const chunkY = Math.floor(baseZ / this.chunkSize);
+        const group = this.chunkMeshes.get(`${chunkX},${chunkY}`);
+        if (!group) return null;
 
         const tint = bossType === 'boss_cryosnail' ? 0x88ccff
             : bossType === 'boss_sporesnail' ? 0x88ff88 : 0xffffff;
@@ -21145,6 +23438,7 @@ export class ThreeGame {
         if (!boss) return null;
         boss.userData.isMilestone = true;
         boss.userData.sourceGoalKey = sourceGoalKey;
+        if (milestoneDef) boss.userData.milestoneId = milestoneDef.milestoneId;
         boss.userData.prioritizeShip = true;
         boss.userData.targetType = 'ship';
 
@@ -21159,12 +23453,18 @@ export class ThreeGame {
 
         // Parent to the player's (loaded) chunk group so the boss persists in
         // scatterSprites across chunk syncs. Chunk groups use world coords.
-        const chunkX = Math.floor(baseX / this.chunkSize);
-        const chunkY = Math.floor(baseZ / this.chunkSize);
-        const group = this.chunkMeshes.get(`${chunkX},${chunkY}`);
-        if (!group) return null;
         group.add(boss);
         this.scatterSprites.push(boss);
+        if (milestoneDef) {
+            const transition = this.applyMilestoneBossRuntimeEvent({
+                type: MILESTONE_BOSS_EVENT_TYPES.BOSS_SPAWNED,
+                milestoneId: milestoneDef.milestoneId
+            });
+            const active = transition.effects?.find((effect) => effect.type === 'milestone_active');
+            boss.userData.milestoneEncounterId = active?.encounterId
+                ?? this.milestoneBossLifecycleState?.milestones?.[milestoneDef.milestoneId]?.activeEncounterId
+                ?? null;
+        }
 
         window.AudioManager?.playMetalStress?.({ volume: 0.6, playbackRate: 0.42, force: true });
         window.dispatchEvent(new CustomEvent('milestone-boss-spawned', { detail: { type: bossType } }));
@@ -21413,7 +23713,8 @@ export class ThreeGame {
 
     selectSnailTarget(sprite, activeShip) {
         const targets = [];
-        if (this.player && !this.isPlayerDead && !this.isHiveKinPassive(sprite)) {
+        if (this.player && !this.isPlayerDead && !this.isHiveKinPassive(sprite)
+            && this.canEnemyTargetPlayer?.(sprite) !== false) {
             targets.push({
                 type: 'player',
                 x: this.player.position.x,
@@ -21500,6 +23801,10 @@ export class ThreeGame {
             { dx: -1, dz: 1, cost: Math.SQRT2, diagonal: true },
             { dx: -1, dz: -1, cost: Math.SQRT2, diagonal: true }
         ];
+        const containmentOptions = {
+            containmentZones: this.getActiveContainmentZones?.() ?? [],
+            doors: this.getActiveDoors?.() ?? []
+        };
 
         if (!this.isSnailTileWalkable(startTileX, startTileZ)) {
             return [{ x: startTileX, z: startTileZ }];
@@ -21573,6 +23878,11 @@ export class ThreeGame {
                 const nx = current.x + dir.dx;
                 const nz = current.z + dir.dz;
                 if (!this.isSnailTileWalkable(nx, nz)) continue;
+                if (shouldBlockAttackPath(
+                    { x: current.x, z: current.z },
+                    { x: nx, z: nz },
+                    containmentOptions
+                )) continue;
                 if (dir.diagonal) {
                     if (!this.isSnailTileWalkable(current.x + dir.dx, current.z) || !this.isSnailTileWalkable(current.x, current.z + dir.dz)) {
                         continue;
@@ -21612,6 +23922,12 @@ export class ThreeGame {
         const data = sprite.userData;
         if (!this.player) return;
 
+        if (this.canEnemyTargetPlayer?.(sprite) === false) {
+            data.active = false;
+            sprite.material.color.setHex(0xffdd44);
+            return;
+        }
+
         const dx = this.player.position.x - sprite.position.x;
         const dz = this.player.position.z - sprite.position.z;
         const distToPlayer = Math.hypot(dx, dz);
@@ -21646,6 +23962,7 @@ export class ThreeGame {
 
     fireSentinelProjectile(sprite) {
         if (!this.player) return;
+        if (this.canEnemyTargetPlayer?.(sprite) === false) return;
         const dx = this.player.position.x - sprite.position.x;
         const dz = this.player.position.z - sprite.position.z;
         const dist = Math.hypot(dx, dz);
@@ -21672,6 +23989,11 @@ export class ThreeGame {
     updateCrawlerBehavior(sprite, delta) {
         const data = sprite.userData;
         if (!this.player) return;
+
+        if (this.canEnemyTargetPlayer?.(sprite) === false) {
+            data.crawlerState = 'idle';
+            return;
+        }
 
         if (data.attackCooldown > 0) {
             data.attackCooldown = Math.max(0, data.attackCooldown - delta);
@@ -21715,7 +24037,16 @@ export class ThreeGame {
             const moveZ = data.chargeDirZ * CRAWLER_CHARGE_SPEED * delta;
             const nextX = sprite.position.x + moveX;
             const nextZ = sprite.position.z + moveZ;
-            const wallHit = this.getTileType(Math.round(nextX), Math.round(nextZ)) === '#';
+            const containmentHit = shouldBlockAttackPath(
+                { x: sprite.position.x, z: sprite.position.z },
+                { x: nextX, z: nextZ },
+                {
+                    containmentZones: this.getActiveContainmentZones?.() ?? [],
+                    doors: this.getActiveDoors?.() ?? []
+                }
+            );
+            const wallHit = containmentHit
+                || this.getTileType(Math.round(nextX), Math.round(nextZ)) === '#';
 
             if (wallHit || data.chargeTimer >= CRAWLER_CHARGE_MAX_DURATION) {
                 data.crawlerState = 'idle';
@@ -21735,8 +24066,11 @@ export class ThreeGame {
             if (!this.isPlayerDead && newDist <= CRAWLER_ATTACK_RADIUS && data.attackCooldown <= 0 && !this.isHiveKinPassive(sprite)) {
                 data.attackCooldown = CRAWLER_ATTACK_COOLDOWN;
                 data.crawlerState = 'idle';
-                window.dispatchEvent(new CustomEvent('player-hit', { detail: { reason: 'crawler' } }));
-                window.AudioManager?.play('ui_error', { volume: 0.5, playbackRate: 1.3, bus: 'sfx' });
+                const hitApplied = this.takeDamage(1, 'crawler', sprite.position.x, sprite.position.z);
+                if (hitApplied) {
+                    window.dispatchEvent(new CustomEvent('player-hit', { detail: { reason: 'crawler' } }));
+                    window.AudioManager?.play('ui_error', { volume: 0.5, playbackRate: 1.3, bus: 'sfx' });
+                }
             }
         }
     }
@@ -21748,10 +24082,11 @@ export class ThreeGame {
         const dx = this.player.position.x - sprite.position.x;
         const dz = this.player.position.z - sprite.position.z;
         const distToPlayer = Math.hypot(dx, dz);
+        const canTargetPlayer = this.canEnemyTargetPlayer?.(sprite) !== false;
 
         // Stage 1 -> Stage 2 transition: Trigger eruption if player gets close (<=3.2) or vent takes damage
         const currentHp = Number.isFinite(data.hp) ? data.hp : 6;
-        if (distToPlayer <= 3.2 || currentHp < 6) {
+        if ((canTargetPlayer && distToPlayer <= 3.2) || currentHp < 6) {
             this.eruptFungalVent(sprite);
             return;
         }
@@ -21760,7 +24095,7 @@ export class ThreeGame {
         data.sporeTimer = (data.sporeTimer ?? 2.8) - delta;
         if (data.sporeTimer <= 0) {
             data.sporeTimer = 3.5 + Math.random() * 1.5;
-            if (distToPlayer <= 9.0) {
+            if (canTargetPlayer && distToPlayer <= 9.0) {
                 this.spawnProjectile({
                     x: sprite.position.x,
                     z: sprite.position.z,
@@ -21817,6 +24152,12 @@ export class ThreeGame {
     updateChargerOrStalkerBehavior(sprite, delta, { isStalker = false } = {}) {
         const data = sprite.userData;
         if (!this.player || this.isPlayerDead) return;
+        if (this.canEnemyTargetPlayer?.(sprite) === false) {
+            data.vx = (data.vx ?? 0) * 0.5;
+            data.vz = (data.vz ?? 0) * 0.5;
+            data.attackCooldown = Math.max(0, (data.attackCooldown ?? 0) - delta);
+            return;
+        }
 
         const dx = this.player.position.x - sprite.position.x;
         const dz = this.player.position.z - sprite.position.z;
@@ -21846,17 +24187,28 @@ export class ThreeGame {
 
         const nextX = sprite.position.x + data.vx * delta;
         const nextZ = sprite.position.z + data.vz * delta;
+        const containmentOptions = {
+            containmentZones: this.getActiveContainmentZones?.() ?? [],
+            doors: this.getActiveDoors?.() ?? []
+        };
+        const canMoveTo = (x, z) => !shouldBlockAttackPath(
+            { x: sprite.position.x, z: sprite.position.z },
+            { x, z },
+            containmentOptions
+        );
 
         // Collision & door breaching physics
-        if (this.isSnailTileWalkable(Math.round(nextX), Math.round(nextZ))) {
+        if (canMoveTo(nextX, nextZ) && this.isSnailTileWalkable(Math.round(nextX), Math.round(nextZ))) {
             sprite.position.x = nextX;
             sprite.position.z = nextZ;
         } else {
             // Wall sliding check along X and Z axes
-            if (this.isSnailTileWalkable(Math.round(nextX), Math.round(sprite.position.z))) {
+            if (canMoveTo(nextX, sprite.position.z)
+                && this.isSnailTileWalkable(Math.round(nextX), Math.round(sprite.position.z))) {
                 sprite.position.x = nextX;
                 data.vz *= 0.4;
-            } else if (this.isSnailTileWalkable(Math.round(sprite.position.x), Math.round(nextZ))) {
+            } else if (canMoveTo(sprite.position.x, nextZ)
+                && this.isSnailTileWalkable(Math.round(sprite.position.x), Math.round(nextZ))) {
                 sprite.position.z = nextZ;
                 data.vx *= 0.4;
             } else {
@@ -21872,9 +24224,16 @@ export class ThreeGame {
         // Contact attack check
         if (distToPlayer <= 0.95 && (data.attackCooldown ?? 0) <= 0) {
             data.attackCooldown = 1.0;
-            this.takeDamage(isStalker ? 1 : 2, isStalker ? 'mycelium_stalker' : 'bio_charger', sprite.position.x, sprite.position.z);
-            if (isStalker) this.spawnToxicSporePuddle(sprite.position.x, sprite.position.z, false);
-            window.AudioManager?.playMetalStress?.({ volume: 0.35, playbackRate: 1.4, force: true });
+            const hitApplied = this.takeDamage(
+                isStalker ? 1 : 2,
+                isStalker ? 'mycelium_stalker' : 'bio_charger',
+                sprite.position.x,
+                sprite.position.z
+            );
+            if (hitApplied) {
+                if (isStalker) this.spawnToxicSporePuddle(sprite.position.x, sprite.position.z, false);
+                window.AudioManager?.playMetalStress?.({ volume: 0.35, playbackRate: 1.4, force: true });
+            }
         } else {
             data.attackCooldown = Math.max(0, (data.attackCooldown ?? 0) - delta);
         }
@@ -22382,10 +24741,17 @@ export class ThreeGame {
 
         if (state.outcome === 'befriend' || state.outcome === 'pacified' || state.outcome === 'recruited') {
             if (sprite) {
+                sprite.userData = sprite.userData || {};
                 sprite.userData.isCompanion = true;
                 sprite.userData.encounterResolved = true;
-                this.scene.add(sprite);
-                this.companions = this.companions.filter((c) => c.sprite !== sprite);
+                if (typeof this.scene?.add === 'function') {
+                    if (sprite.isObject3D) {
+                        this.scene.add(sprite);
+                    } else {
+                        sprite.parent = this.scene;
+                    }
+                }
+                this.companions = (this.companions || []).filter((c) => c.sprite !== sprite);
                 this.companions.push({ sprite, assistCooldown: 0 });
             }
             this.act2?.completeScientistQuest?.('snail_befriended');
@@ -22413,6 +24779,17 @@ export class ThreeGame {
         data.attackCooldown = Math.max(0, (data.attackCooldown ?? 0) - delta);
         data.pathRetargetTimer = Math.max(0, (data.pathRetargetTimer ?? 0) - delta);
         data.wallBreakCooldown = Math.max(0, (data.wallBreakCooldown ?? 0) - delta);
+
+        // Season 0 Cryo-Capacitor Overclock proc (itemdef 4140, docs/season-zero-protocol/03 §4):
+        // freezes hostiles in place on hit, duration extended by loadoutMods.cryoDurationMultiplier.
+        if (data.frozenTimer > 0) {
+            data.frozenTimer = Math.max(0, data.frozenTimer - delta);
+            sprite.material?.color?.setHex?.(0x88ccff);
+            if (data.frozenTimer <= 0) {
+                sprite.material?.color?.setHex?.(data.biomeTint ?? 0x88ff88);
+            }
+            return;
+        }
 
         if (data.type === 'boss_cryosnail' && data.frostShockwaveWindup > 0) {
             data.frostShockwaveWindup -= delta;
@@ -22620,14 +24997,16 @@ export class ThreeGame {
                     if (this.player && !this.isPlayerDead) {
                         const d = Math.hypot(this.player.position.x - sprite.position.x, this.player.position.z - sprite.position.z);
                         if (d <= 5.0) {
-                            this.takeDamage(2, 'ground-slam', sprite.position.x, sprite.position.z);
-                            this.triggerCameraShake?.(0.35, 0.45);
+                            const hitApplied = this.takeDamage(2, 'ground-slam', sprite.position.x, sprite.position.z);
+                            if (hitApplied) this.triggerCameraShake?.(0.35, 0.45);
                         }
                     }
                     window.AudioManager?.playMetalStress?.({ volume: 0.52, playbackRate: 0.8, force: true });
                 } else if (data.type === 'boss_corrupted_engineer' && distanceToTarget <= 12) {
                     data.bossAttackTimer = 6.0;
-                    this.applyPlayerSlow(2.5); // Jam and slow (SCOUT passive reduces this)
+                    if (target.type === 'player' && this.canEnemyTargetPlayer?.(sprite) !== false) {
+                        this.applyPlayerSlow(2.5); // Jam and slow (SCOUT passive reduces this)
+                    }
                     const parent = sprite.parent;
                     if (parent) {
                         const tx = sprite.position.x + (Math.random() - 0.5) * 2;
@@ -22677,10 +25056,12 @@ export class ThreeGame {
             data.attackCooldown = SNAIL_ATTACK_COOLDOWN;
             const damage = data.isBoss ? 2 : 1;
             if (target.type === 'player') {
-                this.takeDamage(damage, data.type, sprite.position.x, sprite.position.z);
-                this.applySnailContactKnockback(sprite, data);
-                if (data.type === 'cryosnail') {
-                    this.applyPlayerSlow(2.5); // Cryosnail slows player on hit (SCOUT passive reduces this)
+                const damageApplied = this.takeDamage(damage, data.type, sprite.position.x, sprite.position.z);
+                if (damageApplied !== false) {
+                    this.applySnailContactKnockback(sprite, data);
+                    if (data.type === 'cryosnail') {
+                        this.applyPlayerSlow(2.5); // Cryosnail slows player on hit (SCOUT passive reduces this)
+                    }
                 }
             } else if (target.type === 'base-turret') {
                 this.damageBaseTurret(damage, data.type);
@@ -22709,21 +25090,22 @@ export class ThreeGame {
             this.player.position.z - sprite.position.z
         );
         const hit = distance <= 4.5;
+        let damageApplied = false;
         if (hit) {
-            this.takeDamage(1, 'frost-shockwave', sprite.position.x, sprite.position.z);
-            this.applyPlayerSlow(3.0);
+            damageApplied = this.takeDamage(1, 'frost-shockwave', sprite.position.x, sprite.position.z) !== false;
+            if (damageApplied) this.applyPlayerSlow(3.0);
         }
         window.dispatchEvent(new CustomEvent('boss-attack-resolved', {
             detail: {
                 attackId: sprite.userData?.frostShockwaveAttackId ?? null,
                 boss: 'boss_cryosnail',
                 attack: 'frost-shockwave',
-                outcome: hit ? 'hit' : 'escaped',
+                outcome: damageApplied ? 'hit' : hit ? 'blocked' : 'escaped',
                 radius: 4.5,
                 playerDistanceAtResolution: Math.round(distance * 10) / 10
             }
         }));
-        return hit;
+        return damageApplied;
     }
 
     isEnemyType(type) {
@@ -22795,7 +25177,15 @@ export class ThreeGame {
                 // Deal damage if player walks in it
                 if (this.player && !this.isPlayerDead && age % 0.4 < dt) {
                     const d = Math.hypot(this.player.position.x - x, this.player.position.z - z);
-                    if (d <= damageRadius) {
+                    const containmentBlocked = shouldBlockAttackPath(
+                        { x, z },
+                        { x: this.player.position.x, z: this.player.position.z },
+                        {
+                            containmentZones: this.getActiveContainmentZones?.() ?? [],
+                            doors: this.getActiveDoors?.() ?? []
+                        }
+                    );
+                    if (d <= damageRadius && !containmentBlocked) {
                         this.playerPoisonTimer = 3.0; // poisoned for 3 seconds
                     }
                 }
@@ -22894,46 +25284,52 @@ export class ThreeGame {
             }
         }
         
-        const bossPanel = document.getElementById('boss-status-panel');
+        if (!this._bossPanelEl) this._bossPanelEl = document.getElementById('boss-status-panel');
+        if (!this._bossNameEl) this._bossNameEl = document.getElementById('boss-name');
+        if (!this._bossHpBarEl) this._bossHpBarEl = document.getElementById('boss-hp-bar');
+        if (!this._bossHpTextEl) this._bossHpTextEl = document.getElementById('boss-hp-text');
+
         if (nearestBoss && minBossDist < 16.0) {
             this.activeBoss = nearestBoss;
-            if (bossPanel) {
-                bossPanel.classList.remove('hidden');
-                const nameEl = document.getElementById('boss-name');
-                const hpBar = document.getElementById('boss-hp-bar');
-                const hpText = document.getElementById('boss-hp-text');
+            if (this._bossPanelEl) {
+                this._bossPanelEl.classList.remove('hidden');
                 
-                if (nameEl) {
+                if (this._bossNameEl && this._lastRenderedBossType !== nearestBoss.userData.type) {
+                    this._lastRenderedBossType = nearestBoss.userData.type;
                     if (nearestBoss.userData.type === 'boss_cybersnail') {
-                        nameEl.textContent = 'CYBER-SHELL TITAN';
+                        this._bossNameEl.textContent = 'CYBER-SHELL TITAN';
                     } else if (nearestBoss.userData.type === 'boss_cryosnail') {
-                        nameEl.textContent = 'CRYO-GOLIATH SNAIL';
+                        this._bossNameEl.textContent = 'CRYO-GOLIATH SNAIL';
                     } else if (nearestBoss.userData.type === 'boss_sporesnail') {
-                        nameEl.textContent = 'PLAGUE-SHELL BEHEMOTH';
+                        this._bossNameEl.textContent = 'PLAGUE-SHELL BEHEMOTH';
                     } else if (nearestBoss.userData.type === 'boss_corrupted_scout') {
-                        nameEl.textContent = 'CORRUPTED SCOUT: MARTHA';
+                        this._bossNameEl.textContent = 'CORRUPTED SCOUT: MARTHA';
                     } else if (nearestBoss.userData.type === 'boss_corrupted_tank') {
-                        nameEl.textContent = 'CORRUPTED TANK: BRIGGS';
+                        this._bossNameEl.textContent = 'CORRUPTED TANK: BRIGGS';
                     } else if (nearestBoss.userData.type === 'boss_corrupted_engineer') {
-                        nameEl.textContent = 'CORRUPTED ENGINEER: KAELEN';
+                        this._bossNameEl.textContent = 'CORRUPTED ENGINEER: KAELEN';
                     } else if (nearestBoss.userData.type === 'boss_queen') {
-                        nameEl.textContent = 'THE QUEEN';
+                        this._bossNameEl.textContent = 'THE QUEEN';
                     } else {
-                        nameEl.textContent = 'ELITE THREAT';
+                        this._bossNameEl.textContent = 'ELITE THREAT';
                     }
                 }
                 
                 const hp = nearestBoss.userData.hp ?? 0;
                 const maxHp = nearestBoss.userData.maxHp ?? 10;
-                const pct = Math.max(0, Math.min(100, (hp / maxHp) * 100));
-                
-                if (hpBar) hpBar.style.width = `${pct}%`;
-                if (hpText) hpText.textContent = `${hp} / ${maxHp}`;
+                if (this._lastRenderedBossHp !== hp || this._lastRenderedBossMaxHp !== maxHp) {
+                    this._lastRenderedBossHp = hp;
+                    this._lastRenderedBossMaxHp = maxHp;
+                    const pct = Math.max(0, Math.min(100, (hp / maxHp) * 100));
+                    if (this._bossHpBarEl) this._bossHpBarEl.style.width = `${pct}%`;
+                    if (this._bossHpTextEl) this._bossHpTextEl.textContent = `${hp} / ${maxHp}`;
+                }
             }
         } else {
             this.activeBoss = null;
-            if (bossPanel) {
-                bossPanel.classList.add('hidden');
+            this._lastRenderedBossType = null;
+            if (this._bossPanelEl) {
+                this._bossPanelEl.classList.add('hidden');
             }
         }
 
@@ -23029,6 +25425,20 @@ export class ThreeGame {
                     this.updateSentinelBehavior(child, delta);
                 }
             } else if (this.isEnemyType(child.userData.type)) {
+                if (child.userData.isDisplayModel) {
+                    // Static showcase model: in-place walk cycle animation only, no movement, no aggro, no puddles
+                    child.position.y = baseY;
+                    if (child.userData.sheetSprite && child.userData.sheetLayout) {
+                        child.userData.sheetTime = (child.userData.sheetTime ?? 0) + delta * 2.5;
+                        const frame = Math.floor(child.userData.sheetTime) % (child.userData.sheetLayout.columns || 4);
+                        const layout = child.userData.sheetLayout;
+                        const southRow = layout.directionRows?.south ?? 0;
+                        if (child.material?.map?.offset) {
+                            child.material.map.offset.set(frame / layout.columns, (layout.rows - 1 - southRow) / layout.rows);
+                        }
+                    }
+                    continue;
+                }
                 child.position.y = baseY + Math.sin(time * 4 + (child.userData.phase ?? 0)) * 0.04;
                 child.material.opacity = child.userData.baseOpacity ?? 1;
                 if (child.userData.type === 'fungal_spore_vent') {
@@ -23485,18 +25895,28 @@ export class ThreeGame {
     }
 
     updateHiddenPlayerMarker(now) {
-        const origin = this.camera.position.clone();
-        const target = this.player.position.clone();
-        const direction = target.clone().sub(origin);
-        const distance = direction.length();
-
-        if (distance <= 0.001 || this.wallMeshes.length === 0) {
+        if (!this.player || !this.camera || !this.playerMarker) return;
+        if (this.wallMeshes.length === 0) {
             this.playerMarker.visible = false;
             return;
         }
 
-        direction.normalize();
-        this.raycaster.set(origin, direction);
+        this._hiddenMarkerOrigin ??= new THREE.Vector3();
+        this._hiddenMarkerTarget ??= new THREE.Vector3();
+        this._hiddenMarkerDir ??= new THREE.Vector3();
+
+        this._hiddenMarkerOrigin.copy(this.camera.position);
+        this._hiddenMarkerTarget.copy(this.player.position);
+        this._hiddenMarkerDir.subVectors(this._hiddenMarkerTarget, this._hiddenMarkerOrigin);
+        const distance = this._hiddenMarkerDir.length();
+
+        if (distance <= 0.001) {
+            this.playerMarker.visible = false;
+            return;
+        }
+
+        this._hiddenMarkerDir.normalize();
+        this.raycaster.set(this._hiddenMarkerOrigin, this._hiddenMarkerDir);
         this.raycaster.far = distance - this.playerRadius * 0.25;
         const hits = this.raycaster.intersectObjects(this.wallMeshes, false);
         const hidden = hits.length > 0;
@@ -23505,9 +25925,13 @@ export class ThreeGame {
         if (!hidden) return;
 
         const pulse = 0.7 + Math.sin(now * 0.012) * 0.2;
-        this.playerMarker.children[0].material.opacity = pulse;
-        this.playerMarker.children[1].material.opacity = 0.7 + Math.sin(now * 0.012 + 0.7) * 0.2;
-        this.playerMarker.children[0].lookAt(this.camera.position.x, 0.05, this.camera.position.z);
+        if (this.playerMarker.children[0]?.material) {
+            this.playerMarker.children[0].material.opacity = pulse;
+            this.playerMarker.children[0].lookAt(this.camera.position.x, 0.05, this.camera.position.z);
+        }
+        if (this.playerMarker.children[1]?.material) {
+            this.playerMarker.children[1].material.opacity = 0.7 + Math.sin(now * 0.012 + 0.7) * 0.2;
+        }
         if (this.playerMarker.children[2]?.material) {
             this.playerMarker.children[2].material.opacity = 0.8 + Math.sin(now * 0.014) * 0.2;
         }
@@ -23933,11 +26357,11 @@ export class ThreeGame {
         if (!this.wfcDebugPlaneGeometry) {
             this.wfcDebugPlaneGeometry = new THREE.PlaneGeometry(0.76, 0.76);
             this.wfcDebugMaterials = {
-                room: new THREE.MeshBasicMaterial({ color: 0x00e5ff, transparent: true, opacity: 0.48, depthWrite: false }),
-                hall: new THREE.MeshBasicMaterial({ color: 0xffb020, transparent: true, opacity: 0.42, depthWrite: false }),
-                wall: new THREE.MeshBasicMaterial({ color: 0xff2bd6, transparent: true, opacity: 0.72, depthWrite: false }),
-                door: new THREE.MeshBasicMaterial({ color: 0x36ff72, transparent: true, opacity: 0.9, depthWrite: false }),
-                canyon: new THREE.MeshBasicMaterial({ color: 0x287cff, transparent: true, opacity: 0.68, depthWrite: false }),
+                room: new THREE.MeshBasicMaterial({ color: 0x00f0ff, transparent: true, opacity: 0.52, depthWrite: false }),
+                hall: new THREE.MeshBasicMaterial({ color: 0xff9d00, transparent: true, opacity: 0.46, depthWrite: false }),
+                wall: new THREE.MeshBasicMaterial({ color: 0xff007f, transparent: true, opacity: 0.78, depthWrite: false }),
+                door: new THREE.MeshBasicMaterial({ color: 0x00ff66, transparent: true, opacity: 0.92, depthWrite: false }),
+                canyon: new THREE.MeshBasicMaterial({ color: 0x1a3d8f, transparent: true, opacity: 0.72, depthWrite: false }),
                 seam: new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.82 }),
                 seamError: new THREE.LineBasicMaterial({ color: 0xff2020, transparent: true, opacity: 1 })
             };
@@ -23988,29 +26412,27 @@ export class ThreeGame {
             overlay.add(mesh);
         }
 
-        const stride = 6;
+        const stride = TILE_SIZE - 1;
         const seamMaterial = (metadata.seamErrors?.length ?? 0) > 0
             ? this.wfcDebugMaterials.seamError
             : this.wfcDebugMaterials.seam;
         for (let my = 0; my < 3; my += 1) {
             for (let mx = 0; mx < 3; mx += 1) {
-                const x0 = chunkX * this.chunkSize + mx * stride - 0.48;
-                const z0 = chunkY * this.chunkSize + my * stride - 0.48;
-                const x1 = x0 + 6.96;
-                const z1 = z0 + 6.96;
-                const geometry = new THREE.BufferGeometry().setFromPoints([
-                    new THREE.Vector3(x0, 0.11, z0),
-                    new THREE.Vector3(x1, 0.11, z0),
-                    new THREE.Vector3(x1, 0.11, z1),
-                    new THREE.Vector3(x0, 0.11, z1)
-                ]);
-                const line = new THREE.LineLoop(geometry, seamMaterial);
-                line.renderOrder = 101;
-                overlay.add(line);
+                const border = new THREE.LineSegments(
+                    this.wfcDebugBorderGeometry,
+                    seamMaterial
+                );
+                border.position.set(
+                    chunkX * this.chunkSize + mx * stride,
+                    0.09,
+                    chunkY * this.chunkSize + my * stride
+                );
+                overlay.add(border);
             }
         }
 
-        const makeFloorLabel = (text, color, width = 5.4, height = 1.25) => {
+        const makeFloorLabel = (text, color, width = 2.4, height = 0.52) => {
+            if (typeof document === 'undefined') return new THREE.Group();
             const canvas = document.createElement('canvas');
             canvas.width = 768;
             canvas.height = 160;
@@ -24049,7 +26471,7 @@ export class ThreeGame {
             const tile = metadata.lattice[index];
             const mx = index % 3;
             const my = Math.floor(index / 3);
-            const label = makeFloorLabel(tile.id ?? `tile-${index}`, '#00e5ff');
+            const label = makeFloorLabel(tile.id ?? `tile-${index}`, '#00f0ff');
             label.position.set(
                 chunkX * this.chunkSize + mx * stride + 3,
                 0.14,
@@ -24062,7 +26484,7 @@ export class ThreeGame {
         // socket side generated the connection.
         for (const door of metadata.doors ?? []) {
             const arrow = { n: '↑', s: '↓', e: '→', w: '←' }[door.side] ?? '↔';
-            const label = makeFloorLabel(`DOOR ${door.side?.toUpperCase() ?? ''} ${arrow}`, '#36ff72', 2.9, 0.72);
+            const label = makeFloorLabel(`DOOR ${door.side?.toUpperCase() ?? ''} ${arrow}`, '#00ff66', 2.9, 0.72);
             label.position.set(
                 chunkX * this.chunkSize + door.localX,
                 0.17,
@@ -24074,11 +26496,298 @@ export class ThreeGame {
         group.add(overlay);
     }
 
+    teleportPlayerTo(worldX, worldZ, { syncChunks = true, safeFloor = true } = {}) {
+        if (!this.player) return false;
+        const targetX = Number(worldX);
+        const targetZ = Number(worldZ);
+        if (!Number.isFinite(targetX) || !Number.isFinite(targetZ)) return false;
+
+        let finalX = targetX;
+        let finalZ = targetZ;
+
+        if (safeFloor && typeof this.isSnailTileWalkable === 'function') {
+            const tileX = Math.round(targetX);
+            const tileZ = Math.round(targetZ);
+            let bestX = targetX;
+            let bestZ = targetZ;
+            let found = false;
+
+            if (this.isSnailTileWalkable(tileX, tileZ)) {
+                bestX = tileX + 0.5;
+                bestZ = tileZ + 0.5;
+            } else {
+                for (let r = 1; r <= 5; r += 1) {
+                    for (let dx = -r; dx <= r; dx += 1) {
+                        for (let dz = -r; dz <= r; dz += 1) {
+                            if (Math.abs(dx) !== r && Math.abs(dz) !== r) continue;
+                            if (this.isSnailTileWalkable(tileX + dx, tileZ + dz)) {
+                                bestX = tileX + dx + 0.5;
+                                bestZ = tileZ + dz + 0.5;
+                                found = true;
+                                break;
+                            }
+                        }
+                        if (found) break;
+                    }
+                    if (found) break;
+                }
+            }
+            finalX = bestX;
+            finalZ = bestZ;
+        }
+
+        this.player.position.set(finalX, 0, finalZ);
+        if (this.playerGlow) this.playerGlow.position.set(finalX, 1.6, finalZ);
+        if (this.playerMarker) this.playerMarker.position.set(finalX, this.playerMarkerHeight || 0.05, finalZ);
+        this.updatePlayerForwardLight?.(1, { immediate: true });
+
+        if (this.camera) {
+            const camOffset = this.getCameraOffset ? this.getCameraOffset() : { x: 0, y: 14, z: 12 };
+            this.camera.position.set(finalX + (camOffset.x || 0), (camOffset.y || 14), finalZ + (camOffset.z || 12));
+            this.camera.lookAt(finalX, 0, finalZ);
+        }
+
+        if (syncChunks) {
+            this.syncVisibleChunks(true);
+        }
+
+        const depth = this.getDepthTier?.(Math.floor(finalX / this.chunkSize), Math.floor(finalZ / this.chunkSize)) ?? 0;
+        this.emitDepthTierChanged?.(depth);
+        return { x: finalX, z: finalZ, chunkKey: `${Math.floor(finalX / this.chunkSize)},${Math.floor(finalZ / this.chunkSize)}` };
+    }
+
+    getDebugPointsOfInterest() {
+        const locations = [];
+        const spawn = this.getSpawnTile?.() ?? { x: 0, y: 0 };
+        locations.push({
+            id: 'spawn',
+            category: 'SPAWN',
+            name: 'Bunker Crash Site',
+            x: Number(spawn.x ?? 0),
+            z: Number(spawn.y ?? 0),
+            chunkKey: '0,0'
+        });
+
+        const radialPlan = this.getRadialMazePlan?.();
+        if (radialPlan?.sites) {
+            for (const site of radialPlan.sites) {
+                const sx = Number.isFinite(site.worldX) ? site.worldX : Number.isFinite(site.x) ? site.x : ((site.chunkX ?? 0) * this.chunkSize + this.chunkSize * 0.5);
+                const sz = Number.isFinite(site.worldZ) ? site.worldZ : Number.isFinite(site.z) ? site.z : ((site.chunkY ?? 0) * this.chunkSize + this.chunkSize * 0.5);
+                locations.push({
+                    id: site.id,
+                    category: site.category || (site.id.includes('camp') ? 'CAMP' : site.id.includes('hive') ? 'HIVE' : 'SITE'),
+                    name: site.name || site.label || site.id,
+                    x: sx,
+                    z: sz,
+                    ring: site.ring ?? 0,
+                    chunkKey: site.chunkKey || `${Math.floor(sx / this.chunkSize)},${Math.floor(sz / this.chunkSize)}`
+                });
+            }
+        }
+
+        if (this.camps) {
+            for (const camp of this.camps) {
+                if (!locations.some((l) => l.id === camp.id)) {
+                    const cx = Number.isFinite(camp.worldX) ? camp.worldX : Number.isFinite(camp.x) ? camp.x : ((camp.chunkX ?? 0) * this.chunkSize + 10);
+                    const cz = Number.isFinite(camp.worldZ) ? camp.worldZ : Number.isFinite(camp.z) ? camp.z : ((camp.chunkY ?? 0) * this.chunkSize + 10);
+                    locations.push({
+                        id: camp.id,
+                        category: 'CAMP',
+                        name: camp.label || camp.name || camp.id,
+                        x: cx,
+                        z: cz,
+                        chunkKey: camp.chunkKey || `${Math.floor(cx / this.chunkSize)},${Math.floor(cz / this.chunkSize)}`
+                    });
+                }
+            }
+        }
+
+        if (this.hiveSites) {
+            for (const hive of this.hiveSites) {
+                if (!locations.some((l) => l.id === hive.id)) {
+                    const hx = Number.isFinite(hive.worldX) ? hive.worldX : Number.isFinite(hive.x) ? hive.x : ((hive.chunkX ?? 0) * this.chunkSize + 10);
+                    const hz = Number.isFinite(hive.worldZ) ? hive.worldZ : Number.isFinite(hive.z) ? hive.z : ((hive.chunkY ?? 0) * this.chunkSize + 10);
+                    locations.push({
+                        id: hive.id,
+                        category: 'HIVE',
+                        name: hive.label || hive.name || hive.id,
+                        x: hx,
+                        z: hz,
+                        chunkKey: hive.chunkKey || `${Math.floor(hx / this.chunkSize)},${Math.floor(hz / this.chunkSize)}`
+                    });
+                }
+            }
+        }
+
+        locations.push({
+            id: 'showroom',
+            category: 'DEBUG',
+            name: '4-Wall Prop & Enemy Validation Gallery',
+            x: SHOWROOM_CHUNK_X * this.chunkSize + 10,
+            z: SHOWROOM_CHUNK_Y * this.chunkSize + 10,
+            chunkKey: `${SHOWROOM_CHUNK_X},${SHOWROOM_CHUNK_Y}`
+        });
+
+        return locations;
+    }
+
+    getComprehensiveDebugStats() {
+        const pX = this.player?.position?.x ?? 0;
+        const pZ = this.player?.position?.z ?? 0;
+        const chunkX = Math.floor(pX / this.chunkSize);
+        const chunkY = Math.floor(pZ / this.chunkSize);
+        const biome = this.getBiomeKeyForWorldPosition?.(pX, pZ) ?? 'ACTIVE';
+        const depthTier = this.getDepthTier?.(chunkX, chunkY) ?? 0;
+        const act = this.isAct2Active?.() ? 2 : 1;
+
+        const unlocks = this.bank?.getState?.()?.unlocks ?? {};
+        const totalBaseGoals = 6;
+        const builtBaseGoals = Object.values(unlocks).filter(Boolean).length;
+
+        const totalCamps = this.camps?.length ?? (Object.keys(ACT2_CAMP_LABELS ?? {}).length || 4);
+        const discoveredCamps = (this.camps ?? []).filter((c) => c.discovered || c.visited).length;
+        const completedCampQuests = (this.camps ?? []).filter((c) => c.questCompleted || c.status === 'secured').length;
+
+        const totalHives = this.hiveSites?.length ?? (ACT2_HIVE_SITES?.length ?? 4);
+        const destroyedHives = (this.hiveSites ?? []).filter((h) => h.status === 'destroyed' || h.destroyed).length;
+
+        const ringCrossings = this.worldPlan?.ringCrossings ?? [];
+        const totalRingCrossings = ringCrossings.length;
+        const openCrossings = this._openCrossings?.size ?? 0;
+
+        const totalMilestones = 3;
+        const defeatedBosses = this.killedBosses?.size ?? 0;
+
+        const temp = this.ambientTemperature ?? (biome === 'CRYO' ? -42 : biome === 'BIO' ? 18 : -15);
+        const o2Frac = Math.round(((this.playerVitals?.o2 ?? 100) / 100) * 100);
+        const hpFrac = Math.round(((this.playerVitals?.hp ?? 100) / Math.max(1, this.playerVitals?.maxHp ?? 100)) * 100);
+
+        const renderer = this.renderer;
+        const renderInfo = renderer?.info?.render ?? {};
+        const memoryInfo = renderer?.info?.memory ?? {};
+
+        return {
+            seed: this.runEntropy ?? 0,
+            act,
+            level: depthTier,
+            landform: this.getChunkLandform?.(chunkX, chunkY) ?? 'MAZE',
+            position: { x: Math.round(pX * 10) / 10, z: Math.round(pZ * 10) / 10, chunk: `${chunkX},${chunkY}` },
+            environment: {
+                biome,
+                temperatureC: temp,
+                hazardPressure: this.hazardZonePressure ?? 0,
+                infectionPressure: this.infectionPressure ?? 0,
+                dayNightPhase: this.dayNightCyclePhase ?? 'day'
+            },
+            player: {
+                type: this.playerType,
+                hp: `${hpFrac}%`,
+                o2: `${o2Frac}%`,
+                godMode: Boolean(this.godMode)
+            },
+            events: {
+                baseUpgrades: { completed: builtBaseGoals, total: totalBaseGoals, label: `${builtBaseGoals}/${totalBaseGoals}` },
+                camps: { discovered: discoveredCamps, questsCompleted: completedCampQuests, total: totalCamps, label: `${completedCampQuests}/${totalCamps}` },
+                hives: { neutralized: destroyedHives, total: totalHives, label: `${destroyedHives}/${totalHives}` },
+                ringGates: { unlocked: openCrossings, total: totalRingCrossings, label: `${openCrossings}/${totalRingCrossings}` },
+                bosses: { defeated: defeatedBosses, total: totalMilestones, label: `${defeatedBosses}/${totalMilestones}` }
+            },
+            performance: {
+                drawCalls: renderInfo.calls ?? 0,
+                triangles: renderInfo.triangles ?? 0,
+                textures: memoryInfo.textures ?? 0,
+                geometries: memoryInfo.geometries ?? 0,
+                activeChunks: this.chunkMeshes?.size ?? 0
+            }
+        };
+    }
+
+    async triggerDebugEvent(name, options = {}) {
+        const evt = String(name || '').toLowerCase();
+        switch (evt) {
+            case 'queen_hallucination': {
+                const intensity = Number(options.intensity ?? 0.85);
+                window.dispatchEvent(new CustomEvent('queen-hallucination', { detail: { intensity } }));
+                this.lineDirector?.requestLine?.('hallucination', this.buildLineDirectorContext?.({ intensity }));
+                return `Triggered Queen Hallucination (intensity: ${intensity})`;
+            }
+            case 'blackout': {
+                const seconds = Number(options.seconds ?? 8);
+                this.triggerLightsOut?.(seconds);
+                return `Triggered Sector Blackout (${seconds}s)`;
+            }
+            case 'corrupt_compass': {
+                const seconds = Number(options.seconds ?? 20);
+                this.corruptCompass?.(seconds);
+                return `Triggered Compass Corruption (${seconds}s)`;
+            }
+            case 'spawn_patrol': {
+                const count = this.spawnPatrolNearPlayer?.(Number(options.count ?? 3)) ?? 0;
+                return `Spawned patrol wave of ${count} hostiles`;
+            }
+            case 'milestone_boss': {
+                const bossType = options.bossId || 'boss_cybersnail';
+                const pos = this.player?.position ?? { x: 0, z: 0 };
+                this.spawnMilestoneBoss?.(bossType, pos.x + 4, pos.z + 4);
+                return `Spawned milestone boss: ${bossType}`;
+            }
+            case 'camp_quest': {
+                const camp = this.camps?.[0];
+                if (camp) {
+                    this.triggerCampQuestAdvance?.(camp.id);
+                    return `Advanced camp quest for ${camp.id}`;
+                }
+                return 'No active camp to advance quest';
+            }
+            case 'drop_gear':
+            case 'drop_relic':
+            case 'drop_lore': {
+                const pos = this.player?.position ?? { x: 0, z: 0 };
+                this.spawnPickupAt?.({ worldX: pos.x + 1, worldZ: pos.z + 1, type: evt === 'drop_relic' ? 'relic' : 'tech' });
+                return 'Spawned test drop near player';
+            }
+            case 'win':
+            case 'victory':
+            case 'ending': {
+                window.dispatchEvent(new CustomEvent('mission-complete', { detail: { reason: 'debug_win' } }));
+                return 'Triggered mission victory event';
+            }
+            case 'game_over':
+            case 'kill_player': {
+                this.handlePlayerDeath?.('debug_kill');
+                return 'Triggered player defeat event';
+            }
+            default:
+                return `Unknown event '${name}'. Available: queen_hallucination, blackout, corrupt_compass, spawn_patrol, milestone_boss, camp_quest, drop_gear, win, game_over`;
+        }
+    }
+
+    async buildDebugShowroom() {
+        if (this._debugShowroomBuilt && this._debugShowroom) {
+            return this._debugShowroom;
+        }
+        const { buildShowroomScene } = await import('./debugShowroom.js');
+        const showroom = await buildShowroomScene(this);
+        this._debugShowroom = showroom;
+        this._debugShowroomGroup = showroom.root;
+        this.scene.add(this._debugShowroomGroup);
+        this._debugShowroomBuilt = true;
+        return showroom;
+    }
+
     getMazePersistenceState() {
         return {
             generationVersion: 2,
             access: serializeAccessState(this.mazeAccessState),
-            doors: serializeDoorStates(this.proceduralDoorStates)
+            doors: serializeDoorStates(this.proceduralDoorStates),
+            milestoneBosses: this.milestoneBossLifecycleState ?? null,
+            ringCrossings: this.ringCrossingState ?? null,
+            authoredWorld: {
+                enabled: Boolean(this.authoredWorldTiles),
+                seed: this.worldPlan?.seed ?? null,
+                version: this.worldPlan?.version ?? null,
+                completedMissionIds: [...(this.completedRingCrossingMissionIds ?? [])]
+            }
         };
     }
 
@@ -24086,6 +26795,38 @@ export class ThreeGame {
         if (!raw || raw.generationVersion !== 2) return false;
         this.mazeAccessState = createAccessState(raw.access);
         this.proceduralDoorStates = restoreDoorStates(raw.doors);
+        if (raw.milestoneBosses) {
+            this.milestoneBossLifecycleState = migrateMilestoneBossLifecycleState(raw.milestoneBosses);
+        }
+        if (raw.ringCrossings) {
+            this.ringCrossingState = raw.ringCrossings;
+        }
+        if (raw.authoredWorld) {
+            // Saved data must never override a code-level rollback. A currently
+            // enabled runtime may resume an enabled save, but the default-off
+            // feature flag always wins when no explicit opt-in exists.
+            const runtimeAllowsAuthoredWorld = Boolean(
+                this.authoredWorldTiles || AUTHORED_WORLD_TILES_ENABLED
+            );
+            this.authoredWorldTiles = Boolean(
+                runtimeAllowsAuthoredWorld && raw.authoredWorld.enabled
+            );
+            this._restoredAuthoredWorldIdentity = this.authoredWorldTiles
+                ? {
+                    seed: raw.authoredWorld.seed ?? null,
+                    version: raw.authoredWorld.version ?? null
+                }
+                : null;
+            if (!this.authoredWorldTiles) this.worldPlan = null;
+            this.completedRingCrossingMissionIds = new Set(raw.authoredWorld.completedMissionIds ?? []);
+        }
+        const reloaded = this.applyMilestoneBossRuntimeEvent?.({
+            type: MILESTONE_BOSS_EVENT_TYPES.RELOAD,
+            builtGoalKeys: [...(this.getBuiltGoalKeys?.() ?? [])],
+            activeMilestoneIds: []
+        });
+        if (reloaded) this._milestoneBossRestagePending = true;
+        this.reconcileAuthoredWorldProgression?.();
         return true;
     }
 
@@ -24158,7 +26899,7 @@ export class ThreeGame {
     }
 
     buildChunk(chunkX, chunkY) {
-        if (this.performanceProfile === 'menu') {
+        if (this.performanceProfile === 'menu' || (chunkX >= SHOWROOM_CHUNK_X && chunkX <= SHOWROOM_CHUNK_X + 10 && chunkY >= SHOWROOM_CHUNK_Y && chunkY <= SHOWROOM_CHUNK_Y + 10)) {
             return Array(this.chunkSize).fill(null).map(() => Array(this.chunkSize).fill('.'));
         }
 
@@ -24171,6 +26912,7 @@ export class ThreeGame {
         let grid;
         let mazeLattice = null;
         let mazeMetadata = null;
+        let preserveAuthoredGrid = false;
         if (landform === LANDFORMS.MAZE) {
             // WFC tile catalog (docs/superpowers/specs/2026-07-27-wfc-tile-maze-generation-design.md
             // §1-3) replaces the old DFS-carve+erosion pipeline for MAZE
@@ -24204,16 +26946,22 @@ export class ThreeGame {
                     ? 3
                     : 2;
             const isRingRoute = regionalRoles.includes('ring');
-            mazeLattice = collapseChunkLattice(random, {
-                tutorialOnly: this.isInTutorialRing(chunkX, chunkY),
-                depthTier: this.getDepthTier?.(chunkX, chunkY) ?? 0,
-                hallwayContinuation,
-                minimumHallwayRun,
-                loopChance: isRingRoute ? 0.58 : 0.18,
-                maxLoops: isRingRoute ? 2 : 1
-            });
-            if (!this.wfcMetadataCache) this.wfcMetadataCache = new Map();
-            mazeMetadata = extractChunkWfcMetadata(mazeLattice, this.chunkSize, { chunkX, chunkY });
+            // Preserve the exact legacy RNG call order and WFC metadata while
+            // the authored-world flag is off. This is the rollback path, so it
+            // must remain byte-for-byte seed compatible with the pre-Lane-C
+            // generator rather than merely returning a similar architecture.
+            if (!this.authoredWorldTiles) {
+                mazeLattice = collapseChunkLattice(random, {
+                    tutorialOnly: this.isInTutorialRing(chunkX, chunkY),
+                    depthTier: this.getDepthTier?.(chunkX, chunkY) ?? 0,
+                    hallwayContinuation,
+                    minimumHallwayRun,
+                    loopChance: isRingRoute ? 0.58 : 0.18,
+                    maxLoops: isRingRoute ? 2 : 1
+                });
+                if (!this.wfcMetadataCache) this.wfcMetadataCache = new Map();
+                mazeMetadata = extractChunkWfcMetadata(mazeLattice, this.chunkSize, { chunkX, chunkY });
+            }
             const architecturalOpenings = {
                 north: this.getEdgeOpening('horizontal', chunkX, chunkY),
                 south: this.getEdgeOpening('horizontal', chunkX, chunkY + 1),
@@ -24228,42 +26976,108 @@ export class ThreeGame {
                 || regionalRoles.includes('ring')
                 || nearestRadialRoom <= this.chunkSize * 0.9
                 || random() < 0.24;
-            const architectural = generateArchitecturalMazeChunk(random, {
-                size: this.chunkSize,
-                openings: architecturalOpenings,
-                roomMode,
-                important: isDestination
-            });
-            grid = architectural.grid;
-            mazeMetadata.architectural = {
-                mode: architectural.room ? 'large-room' : 'long-connector',
-                roomShape: architectural.room?.shape ?? null,
-                canyonCells: grid.flat().filter((cell) => cell === EXTERIOR_CANYON_TILE).length
-            };
-            // The old nine 7x7 metadata rooms no longer describe the floor.
-            // Until multi-chunk room metadata is introduced, expose the one
-            // actual architectural room so population and overlays cannot be
-            // stamped into canyon.
-            if (architectural.room) {
-                const existing = mazeMetadata.roomInstances?.[0] ?? {};
-                const roomId = `architectural-room:${chunkX},${chunkY}`;
-                const doors = (architectural.room.doors ?? []).map((door, index) => ({
-                    id: `${chunkX},${chunkY}:architectural-door:${index}:${door.side}`,
-                    side: door.side,
-                    cells: door.cells.map((cell) => ({ ...cell })),
-                    neighborIndex: null
-                }));
-                mazeMetadata.roomInstances = [{
-                    ...existing,
-                    id: roomId,
-                    chunkKey: `${chunkX},${chunkY}`,
-                    interior: architectural.room.interior,
-                    bounds: architectural.room.bounds,
-                    doors,
-                    navigation: { doorLanes: doors.flatMap((door) => door.cells) }
-                }];
+            if (!this.authoredWorldTiles) {
+                const architectural = generateArchitecturalMazeChunk(random, {
+                    size: this.chunkSize,
+                    openings: architecturalOpenings,
+                    roomMode,
+                    important: isDestination
+                });
+                grid = architectural.grid;
+                mazeMetadata.architectural = {
+                    mode: architectural.room ? 'large-room' : 'long-connector',
+                    roomShape: architectural.room?.shape ?? null,
+                    canyonCells: grid.flat().filter((cell) => cell === EXTERIOR_CANYON_TILE).length
+                };
+                if (architectural.room) {
+                    const existing = mazeMetadata.roomInstances?.[0] ?? {};
+                    const roomId = `architectural-room:${chunkX},${chunkY}`;
+                    const doors = (architectural.room.doors ?? []).map((door, index) => ({
+                        id: `${chunkX},${chunkY}:architectural-door:${index}:${door.side}`,
+                        side: door.side,
+                        cells: door.cells.map((cell) => ({ ...cell })),
+                        neighborIndex: null
+                    }));
+                    mazeMetadata.roomInstances = [{
+                        ...existing,
+                        id: roomId,
+                        chunkKey: `${chunkX},${chunkY}`,
+                        interior: architectural.room.interior,
+                        bounds: architectural.room.bounds,
+                        doors,
+                        navigation: { doorLanes: doors.flatMap((door) => door.cells) }
+                    }];
+                } else {
+                    mazeMetadata.roomInstances = [];
+                }
             } else {
-                mazeMetadata.roomInstances = [];
+                const authoredPlan = this.ensureAuthoredWorldPlan?.() ?? this.worldPlan;
+                const authoredResolution = authoredPlan
+                    ? resolveAuthoredChunkStructure(random, authoredPlan, {
+                    chunkX,
+                    chunkY,
+                    activeReservationIds: this.getActiveAuthoredReservationIds?.() ?? [],
+                    chunkSize: this.chunkSize,
+                    openings: architecturalOpenings,
+                    biome: String(this.getBiomeKeyForWorldPosition?.(
+                        chunkX * this.chunkSize + this.chunkSize * 0.5,
+                        chunkY * this.chunkSize + this.chunkSize * 0.5
+                    ) ?? 'active').toLowerCase(),
+                    tutorialOnly: this.isInTutorialRing(chunkX, chunkY)
+                    })
+                    : null;
+                let structure = null;
+                if (authoredResolution?.status === 'accepted') structure = authoredResolution.structure;
+                if (!structure && !roomMode) {
+                    structure = buildHallwayConnectorChunkStructure(random, {
+                        chunkX,
+                        chunkY,
+                        chunkSize: this.chunkSize,
+                        openings: architecturalOpenings,
+                        fromFamily: regionalRoles[0] ?? null,
+                        toFamily: regionalRoles[1] ?? null
+                    });
+                }
+                if (!structure) {
+                    structure = buildMazeChunkStructure(random, {
+                        chunkX,
+                        chunkY,
+                        chunkSize: this.chunkSize,
+                        openings: architecturalOpenings,
+                        roomMode,
+                        important: isDestination,
+                        tutorialOnly: this.isInTutorialRing(chunkX, chunkY),
+                        depthTier: this.getDepthTier?.(chunkX, chunkY) ?? 0,
+                        hallwayContinuation,
+                        minimumHallwayRun,
+                        loopChance: isRingRoute ? 0.58 : 0.18,
+                        maxLoops: isRingRoute ? 2 : 1
+                    });
+                }
+                preserveAuthoredGrid = structure.generatorId === 'authored-room'
+                    || structure.generatorId === 'hallway-connector';
+                grid = structure.grid;
+                if (!this.wfcMetadataCache) this.wfcMetadataCache = new Map();
+                mazeMetadata = {
+                generationVersion: 2,
+                chunkKey: structure.chunkKey,
+                architectural: {
+                    mode: structure.diagnostics.architecturalMode,
+                    roomShape: structure.rooms?.[0]?.bounds?.shape ?? null,
+                    canyonCells: structure.diagnostics.canyonCellCount
+                },
+                roomInstances: structure.rooms,
+                rooms: structure.rooms,
+                anchors: structure.anchors,
+                zones: structure.zones,
+                sockets: structure.sockets,
+                wayfindingMarkers: structure.wayfindingMarkers ?? [],
+                generatorId: structure.generatorId,
+                reservationId: structure.reservationId ?? authoredResolution?.reservationId ?? null,
+                ringCrossingId: authoredResolution?.reservation?.crossingId ?? null,
+                authoredResolution: authoredResolution?.diagnostics ?? null,
+                    structureResult: structure
+                };
             }
             if (radialPlan) {
                 const radialDistance = Math.hypot(chunkWorldX, chunkWorldZ);
@@ -24340,7 +27154,7 @@ export class ThreeGame {
             }
         }
 
-        this.ensureChunkPortals(grid, chunkX, chunkY);
+        if (!preserveAuthoredGrid) this.ensureChunkPortals(grid, chunkX, chunkY);
 
         // Walls tracing a carved plaza silhouette. openMazeTerrain fills
         // this and shields them from its own soften/fill; every later
@@ -24354,20 +27168,22 @@ export class ThreeGame {
             // reconciliation FIELD/CANYON/CRATER/RUINS already rely on
             // instead of teaching WFC about chunk-border constraints (spec
             // §4).
-            connectPortalsInward(grid);
-            const boundary = new Set();
-            const stride = 6; // TILE_SIZE - 1, matches wfcGenerator's stamping stride
-            for (let i = 0; i < this.chunkSize; i += 1) {
-                for (const line of [0, stride, stride * 2, stride * 3]) {
-                    boundary.add(`${i},${line}`);
-                    boundary.add(`${line},${i}`);
+            if (!preserveAuthoredGrid) {
+                connectPortalsInward(grid);
+                const boundary = new Set();
+                const stride = TILE_SIZE - 1; // TILE_SIZE - 1, matches wfcGenerator's stamping stride
+                for (let i = 0; i < this.chunkSize; i += 1) {
+                    for (const line of [0, stride, stride * 2, stride * 3]) {
+                        boundary.add(`${i},${line}`);
+                        boundary.add(`${line},${i}`);
+                    }
                 }
+                for (const room of mazeMetadata?.roomInstances ?? []) {
+                    for (const { x, y } of room.interior) boundary.add(`${x},${y}`);
+                    for (const { x, y } of room.navigation?.doorLanes ?? []) boundary.add(`${x},${y}`);
+                }
+                this.runMazeDetailPass(grid, random, boundary);
             }
-            for (const room of mazeMetadata?.roomInstances ?? []) {
-                for (const { x, y } of room.interior) boundary.add(`${x},${y}`);
-                for (const { x, y } of room.navigation?.doorLanes ?? []) boundary.add(`${x},${y}`);
-            }
-            this.runMazeDetailPass(grid, random, boundary);
         } else {
             // A ridge or crater rim can sit flush behind a portal opening —
             // tunnel inward so entrances never dead-end.
@@ -24448,6 +27264,40 @@ export class ThreeGame {
                 depthTier: this.getDepthTier?.(chunkX, chunkY) ?? 0,
                 random: roomRandom
             });
+            // Door records live in one global runtime Map. Authored catalog
+            // IDs are local to a build, so namespace them before planning to
+            // prevent `door:0:s` in one chunk overwriting another chunk.
+            mazeMetadata.roomInstances = mazeMetadata.roomInstances.map((room) => ({
+                ...room,
+                doors: (room.doors ?? []).map((door) => ({
+                    ...door,
+                    id: String(door.id).startsWith(`${room.chunkKey}:`)
+                        ? door.id
+                        : `${room.chunkKey}:${door.id}`
+                }))
+            }));
+            const activeQuests = [];
+            if (this._activeCampQuest?.quest) {
+                const active = this._activeCampQuest;
+                const reservation = this.worldPlan?.reservations?.find((entry) => (
+                    entry.role === 'campObjective'
+                    && entry.campId === active.campId
+                    && entry.questId === active.quest.id
+                ));
+                activeQuests.push({
+                    ...active.quest,
+                    reservationId: reservation?.id ?? null,
+                    targetFamily: reservation?.roomFamily ?? null,
+                    objectiveAnchorId: reservation?.objectiveAnchorId ?? null
+                });
+            }
+            mazeMetadata.roomInstances = mazeMetadata.roomInstances.map((room) => ({
+                ...room,
+                contentPlan: bindRoomContent(room, room.roomBuild ?? {}, {
+                    chunkSize: this.chunkSize,
+                    activeQuests
+                })
+            }));
             const plans = planChunkRoomPopulation(mazeMetadata.roomInstances, grid, roomRandom);
             const planByRoom = new Map(plans.map((plan) => [plan.roomId, plan]));
             mazeMetadata.roomInstances = mazeMetadata.roomInstances.map((room) => ({
@@ -24455,18 +27305,19 @@ export class ThreeGame {
                 populationPlan: planByRoom.get(room.id) ?? null
             }));
             mazeMetadata.populationPlans = plans;
-            const encounterPlans = planChunkRoomEncounters(
-                mazeMetadata.roomInstances,
-                grid,
-                roomRandom,
-                { depthTier: this.getDepthTier?.(chunkX, chunkY) ?? 0 }
-            );
-            const encounterByRoom = new Map(encounterPlans.map((plan) => [plan.roomId, plan]));
-            mazeMetadata.roomInstances = mazeMetadata.roomInstances.map((room) => ({
-                ...room,
-                encounter: encounterByRoom.get(room.id) ?? null
-            }));
-            mazeMetadata.encounterPlans = encounterPlans;
+            let encounterPlans = [];
+            // Preserve the pre-Lane-C RNG ordering on the rollback path:
+            // legacy encounters were selected before procedural doors. The
+            // authored path deliberately waits until doors are stamped so it
+            // can filter against the final reachable navigation component.
+            if (!this.authoredWorldTiles) {
+                encounterPlans = planChunkRoomEncounters(
+                    mazeMetadata.roomInstances,
+                    grid,
+                    roomRandom,
+                    { depthTier: this.getDepthTier?.(chunkX, chunkY) ?? 0 }
+                );
+            }
             const plannedDoors = planProceduralDoors(mazeMetadata.roomInstances, roomRandom, {
                 tutorial: this.isInTutorialRing(chunkX, chunkY),
                 forceAtLeastOne: Boolean(mazeMetadata.radial?.blocker)
@@ -24491,20 +27342,78 @@ export class ThreeGame {
                         : null
                 }
             );
+            if (mazeMetadata.ringCrossingId) {
+                const crossingId = mazeMetadata.ringCrossingId;
+                const crossing = this.worldPlan?.ringCrossings?.find((entry) => entry.id === crossingId);
+                const crossingStatus = this.reconcileAuthoredWorldProgression?.()
+                    ?.state?.crossings?.[crossingId]?.status ?? 'locked';
+                const sideVectors = {
+                    n: { dx: 0, dy: -1 },
+                    s: { dx: 0, dy: 1 },
+                    w: { dx: -1, dy: 0 },
+                    e: { dx: 1, dy: 0 }
+                };
+                // Select only from doors the accepted structure stamped, then
+                // use topology distance to identify the threshold that advances
+                // away from the ship. Radial direction is only a fail-closed
+                // compatibility fallback for incomplete injected plans.
+                const availableDoorSides = [...new Set(gatePlan.doors.map((door) => door.side))]
+                    .filter((side) => sideVectors[side])
+                    .sort();
+                const outwardSide = selectRingCrossingFarSide(
+                    this.worldPlan,
+                    crossingId,
+                    availableDoorSides
+                ) ?? [...availableDoorSides].sort((a, b) => (
+                        Math.hypot(chunkX + sideVectors[b].dx, chunkY + sideVectors[b].dy)
+                        - Math.hypot(chunkX + sideVectors[a].dx, chunkY + sideVectors[a].dy)
+                    ))[0];
+                gatePlan.doors = gatePlan.doors.map((door) => {
+                    if (door.side !== outwardSide) return door;
+                    const isOpen = crossingStatus === 'open';
+                    return {
+                        ...door,
+                        state: isOpen ? 'open' : 'locked',
+                        lock: isOpen ? null : {
+                            type: 'objective',
+                            id: `ring-crossing-open:${crossingId}`,
+                            label: `${String(crossingStatus).replace(/_/g, ' ').toUpperCase()} — ${crossing?.door?.toUpperCase() ?? 'CROSSING'}`
+                        },
+                        autoClose: false,
+                        ringCrossingId: crossingId
+                    };
+                });
+                const control = mazeMetadata.anchors?.find((anchor) => anchor.id === 'gate_control')
+                    ?? mazeMetadata.roomInstances.flatMap((room) => room.interactionAnchors ?? [])
+                        .find((anchor) => anchor.id === 'gate_control');
+                if (control && crossing?.requirements?.missionId) {
+                    gatePlan.accessSources.push({
+                        id: `${crossingId}:mission-control`,
+                        roomId: mazeMetadata.roomInstances[0]?.id ?? null,
+                        localX: control.x ?? control.localX,
+                        localY: control.y ?? control.localY,
+                        requirement: {
+                            type: 'objective',
+                            id: crossing.requirements.missionId,
+                            label: crossing.requirements.missionId.replace(/_/g, ' ').toUpperCase()
+                        }
+                    });
+                }
+            }
             mazeMetadata.doors = gatePlan.doors;
             mazeMetadata.gates = gatePlan.gates;
             mazeMetadata.accessSources = gatePlan.accessSources.map((source) => {
                 const sourceRoom = mazeMetadata.roomInstances.find((room) => room.id === source.roomId);
                 const signature = sourceRoom?.populationPlan?.placements
                     ?.find((placement) => placement.kind === 'signature');
-                if (signature) {
+                if (signature && !Number.isFinite(source.localX)) {
                     signature.type = 'lore_terminal';
                     signature.accessRequirement = source.requirement;
                 }
                 return {
                     ...source,
-                    localX: signature?.x ?? sourceRoom?.interior?.[0]?.x,
-                    localY: signature?.y ?? sourceRoom?.interior?.[0]?.y
+                    localX: source.localX ?? signature?.x ?? sourceRoom?.interior?.[0]?.x,
+                    localY: source.localY ?? signature?.y ?? sourceRoom?.interior?.[0]?.y
                 };
             });
             if (!this.proceduralDoorStates) this.proceduralDoorStates = new Map();
@@ -24514,6 +27423,37 @@ export class ThreeGame {
             }
             stampDoorRecords(grid, gatePlan.doors);
             this.clearDoorways?.(grid);
+            const blockedDoorCells = new Set(gatePlan.doors
+                .filter((door) => door.state === 'locked')
+                .flatMap((door) => door.cells ?? [])
+                .map((cell) => `${cell.x},${cell.y}`));
+            const reachableCells = collectReachableCells(grid, { blockedCells: blockedDoorCells });
+            const unlockedKeys = new Set(Object.keys(this.bank?.getState?.()?.unlocks ?? {})
+                .filter((key) => this.bank?.getState?.()?.unlocks?.[key]));
+            const authoredProgression = this.authoredWorldTiles
+                ? this.reconcileAuthoredWorldProgression?.()
+                : null;
+            const maxUnlockedRing = authoredProgression?.maxUnlockedRing
+                ?? getMaxUnlockedRing(unlockedKeys);
+            if (this.authoredWorldTiles) {
+                encounterPlans = planChunkRoomEncounters(
+                    mazeMetadata.roomInstances,
+                    grid,
+                    roomRandom,
+                    {
+                        depthTier: this.getDepthTier?.(chunkX, chunkY) ?? 0,
+                        maxUnlockedRing,
+                        reachableCells
+                    }
+                );
+            }
+            const encounterByRoom = new Map(encounterPlans.map((plan) => [plan.roomId, plan]));
+            mazeMetadata.roomInstances = mazeMetadata.roomInstances.map((room) => ({
+                ...room,
+                encounter: encounterByRoom.get(room.id) ?? null
+            }));
+            mazeMetadata.encounterPlans = encounterPlans;
+            mazeMetadata.reachableCells = reachableCells;
         }
         if (landform === LANDFORMS.MAZE) {
             addCanyonVoidAroundWalkable(grid, mazeLattice, {
@@ -24955,8 +27895,26 @@ export class ThreeGame {
     }
 
     destroy() {
+        this.applyMilestoneBossRuntimeEvent?.({ type: MILESTONE_BOSS_EVENT_TYPES.QUIT });
         this.renderer.setAnimationLoop(null);
         this.resetWeaponState({ emit: false });
+
+        if (this.remotePlayers) {
+            for (const remote of this.remotePlayers.values()) {
+                if (remote.mesh) this.scene.remove(remote.mesh);
+            }
+            this.remotePlayers.clear();
+        }
+        if (this.netSocket) {
+            this.netSocket.off('playerMoved');
+            this.netSocket.off('playerFired');
+            this.netSocket.off('playerDamaged');
+            this.netSocket.off('playerRevived');
+            this.netSocket.off('playerDisconnected');
+            this.netSocket.off('newPlayer');
+            this.netSocket = null;
+        }
+
         window.removeEventListener('keydown', this.handleKeyDown);
         window.removeEventListener('keyup', this.handleKeyUp);
         this.consolePromptEl?.removeEventListener('pointerup', this.handlePromptTap);
@@ -24980,6 +27938,7 @@ export class ThreeGame {
         this.renderer.domElement.removeEventListener('pointerdown', this.handleCanvasPointerDown);
         this.renderer.domElement.removeEventListener('contextmenu', this.handleCanvasContextMenu);
         this.renderer.domElement.removeEventListener('pointermove', this.handleCanvasPointerMove);
+        window.removeEventListener('pointermove', this.handleCanvasPointerMove);
         this.renderer.domElement.removeEventListener('pointerup', this.handleCanvasTap);
         this.renderer.domElement.removeEventListener('pointercancel', this.handleCanvasPointerCancel);
         this.renderer.domElement.removeEventListener('pointerleave', this.handleCanvasPointerCancel);
@@ -25012,6 +27971,8 @@ export class ThreeGame {
         this.cliffPrimaryGeometry?.dispose?.();
         this.cliffRockGeometry?.dispose?.();
         this.cliffEdgeGeometry?.dispose?.();
+        Object.values(this.canyonDropMaterials ?? {}).forEach((material) => material?.dispose?.());
+        this.canyonDropGeometry?.dispose?.();
         this.voidMaterial?.dispose?.();
         Object.values(this.exteriorCanyonTextures ?? {}).forEach((texture) => texture?.dispose?.());
         this.wallMaterial?.dispose?.();
