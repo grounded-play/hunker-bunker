@@ -232,10 +232,14 @@
     </div>
 
     <!-- About Modal (Credits) -->
-    <div id="about-modal" class="modal hidden">
+    <div id="about-modal" class="modal hidden" aria-hidden="true">
       <div class="modal-content credits-modal-content">
-        <button class="close-modal" id="close-about">&times;</button>
-        <div class="modal-title">TACTICAL COMMAND CREDITS</div>
+        <div class="terminal-scanline"></div>
+        <button class="close-modal" id="close-about" aria-label="Close Credits">&times;</button>
+        <div class="credits-header">
+          <div class="credits-header-kicker">◈ PERSONNEL ARCHIVE // PRODUCTION CREDITS</div>
+          <div class="credits-modal-title">TACTICAL COMMAND <span class="credits-title-accent">// CREDITS</span></div>
+        </div>
         
         <div class="credits-container">
           <div class="credits-scroll">
@@ -276,10 +280,9 @@
           </div>
         </div>
 
-        <div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border-subtle); text-align: center;">
-          <span
-            style="font-size: var(--font-sm); font-weight: 900; letter-spacing: 1px; display: block; margin-bottom: 2px; color: var(--text-main);">THANK YOU FOR DEPLOYING</span>
-          <span id="about-modal-sys-ver" style="font-size: var(--font-xs); color: var(--text-muted); letter-spacing: 2px;">SYS VER: 2.1.0 // ACTIVE</span>
+        <div class="credits-footer">
+          <span class="credits-footer-thankyou">THANK YOU FOR DEPLOYING</span>
+          <span id="about-modal-sys-ver" class="credits-footer-ver">SYS VER: 2.1.0 // ACTIVE</span>
         </div>
       </div>
     </div>
@@ -565,9 +568,10 @@
       <div class="modal-content codex-modal-content">
         <div class="terminal-scanline"></div>
         <div class="codex-header">
-          <button class="close-modal" id="close-codex-modal">×</button>
-          <div class="codex-title">❑ FIELD CODEX</div>
-          <div class="codex-subtitle">CATALOGUED BY ENCOUNTER</div>
+          <button class="close-modal" id="close-codex-modal" aria-label="Close Field Codex">×</button>
+          <div class="codex-header-kicker">◈ FIELD INTEL // DISCOVERED SPECIMENS & LORE</div>
+          <div class="codex-title">FIELD CODEX <span class="codex-title-accent">// BESTIARY</span></div>
+          <div class="codex-subtitle">CATALOGUED BY SUB-TERRAN ENCOUNTER</div>
           <div id="codex-summary" class="codex-summary">ENTRIES RECOVERED: 0 / 0</div>
         </div>
         <div id="codex-grid" class="codex-grid"></div>
@@ -599,8 +603,9 @@
       <div class="modal-content achievements-modal-content">
         <div class="terminal-scanline"></div>
         <div class="achievements-header">
-          <button class="close-modal" id="close-achievements-modal">×</button>
-          <div class="achievements-title">ACHIEVEMENTS</div>
+          <button class="close-modal" id="close-achievements-modal" aria-label="Close Achievements">×</button>
+          <div class="achievements-header-kicker">◈ COMBAT CITATIONS // DEEP CRUST COMMENDATIONS</div>
+          <div class="achievements-title">OPERATIVE CITATIONS <span class="achievements-title-accent">// ARCHIVE</span></div>
           <div id="achievements-summary" class="achievements-summary">0 / 0 UNLOCKED</div>
         </div>
         <div id="achievements-grid" class="achievements-grid"></div>

@@ -9,10 +9,9 @@ import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.js';
 import { assetUrl } from './assetUrl.js';
 import { getItemCatalogEntry } from './steamVaultUi.js';
-import { WEAPON_ARCHETYPES, WEAPON_SKIN_MESHES } from './player3dOverlay.js';
-import { CHARM_GLB_MAP, MOD_GLB_MAP } from './armoryScene.js';
-
+import { WEAPON_ARCHETYPES, WEAPON_SKIN_MESHES, CHARM_GLB_MAP, MOD_GLB_MAP } from './debugAssetCatalogs.js';
 import { SHOWROOM_CATEGORIES } from './debugShowroom.js';
+import { createWorld3dModel } from './world3dOverlay.js';
 
 // Far outside any real generated terrain so the museum never overlaps a real run's chunks.
 const MUSEUM_ORIGIN = Object.freeze({ x: 9000, z: 9000 });
@@ -25,13 +24,17 @@ const ENEMY_TYPES = SHOWROOM_CATEGORIES.ENEMIES;
 // Hand-collected from threeGame.js's WALL_DECAL_TYPES set.
 const ENVIRONMENTAL_DECAL_TYPES = SHOWROOM_CATEGORIES.WALL_DECALS;
 
-// Props & ground overlays
-const PROP_AND_OVERLAY_TYPES = [
+// World-model props (spawned via createWorld3dModel — a different loader than the
+// createScatterInstance-based types below, since debugShowroom.js's TACTICAL_PROPS/
+// BIOMECH_PROPS/SETPIECES were authored against that catalog, not the scatter one).
+const WORLD_MODEL_PROP_TYPES = [
     ...SHOWROOM_CATEGORIES.TACTICAL_PROPS,
     ...SHOWROOM_CATEGORIES.BIOMECH_PROPS,
-    ...SHOWROOM_CATEGORIES.SETPIECES,
-    ...SHOWROOM_CATEGORIES.FLOOR_DECALS
+    ...SHOWROOM_CATEGORIES.SETPIECES
 ];
+
+// Ground overlays / floor decals — these ARE createScatterInstance-compatible.
+const PROP_AND_OVERLAY_TYPES = SHOWROOM_CATEGORIES.FLOOR_DECALS;
 
 // Season 0 chassis skins (itemdefs 4112-4119) and cosmetic decals (4120-4129)
 const CHASSIS_SKIN_ITEMDEFS = SHOWROOM_CATEGORIES.CHASSIS_SKINS;
@@ -222,8 +225,21 @@ export async function openDebugMuseum(game) {
         return game.createScatterInstance(placement);
     });
 
-    // 8. Props & ground overlays (real production spawn path)
-    await addCategory('PROPS & GROUND OVERLAYS', PROP_AND_OVERLAY_TYPES, async (type, x, zPos) => {
+    // 8a. World-model props (createWorld3dModel — TACTICAL_PROPS/BIOMECH_PROPS/SETPIECES;
+    // these are NOT createScatterInstance-compatible, see WORLD_MODEL_PROP_TYPES comment above)
+    await addCategory('WORLD PROPS & SETPIECES', WORLD_MODEL_PROP_TYPES, async (type, x, zPos) => {
+        try {
+            const modelGroup = await (game?.createWorld3dModel ? game.createWorld3dModel(type) : createWorld3dModel(type));
+            if (modelGroup) modelGroup.position.set(x, 0, zPos);
+            return modelGroup;
+        } catch (err) {
+            console.warn('[debug-museum] failed to load world prop:', type, err);
+            return null;
+        }
+    });
+
+    // 8b. Ground overlays / floor decals (real production spawn path)
+    await addCategory('GROUND OVERLAYS & FLOOR DECALS', PROP_AND_OVERLAY_TYPES, async (type, x, zPos) => {
         const placement = { type, x, z: zPos, scale: 1, tiltX: 0, elevation: 0.05, rotation: 0 };
         return game.createScatterInstance(placement);
     });

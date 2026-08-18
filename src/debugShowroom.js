@@ -4,8 +4,14 @@ import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.j
 import { createWorld3dModel } from './world3dOverlay.js';
 import { assetUrl } from './assetUrl.js';
 import { getItemCatalogEntry } from './steamVaultUi.js';
-import { WEAPON_ARCHETYPES, WEAPON_SKIN_MESHES } from './player3dOverlay.js';
-import { CHARM_GLB_MAP, MOD_GLB_MAP } from './armoryScene.js';
+import {
+    WEAPON_ARCHETYPES,
+    WEAPON_SKIN_MESHES,
+    CHARM_GLB_MAP,
+    MOD_GLB_MAP,
+    CHASSIS_SKIN_ITEMDEFS,
+    COSMETIC_DECAL_ITEMDEFS
+} from './debugAssetCatalogs.js';
 
 export const SHOWROOM_CHUNK_X = 500;
 export const SHOWROOM_CHUNK_Y = 500;
@@ -99,15 +105,15 @@ export const SHOWROOM_CATEGORIES = Object.freeze({
         'spore_mortar'
     ],
     // Season 0 economy — added so the showroom covers the full 60-item catalog, not just
-    // world dressing/enemies (docs/game-audit-lane-split-and-worklog.md §4).
+    // world dressing/enemies (docs/game-audit-lane-split-and-worklog.md §4). Category lists
+    // come from src/debugAssetCatalogs.js, shared with src/debugMuseum.js, so both galleries
+    // stay in sync as new Season 0 items land.
     WEAPON_ARCHETYPES: Object.keys(WEAPON_ARCHETYPES),
     WEAPON_SKINS: Object.keys(WEAPON_SKIN_MESHES),
     WEAPON_CHARMS: Object.keys(CHARM_GLB_MAP),
     RIG_OVERCLOCK_MODS: Object.keys(MOD_GLB_MAP),
-    // No 3D model exists yet for chassis skins (docs/season-zero-protocol/08 §2) — shown as
-    // icon-plane billboards, same as the cosmetic player decals below.
-    CHASSIS_SKINS: ['4112', '4113', '4114', '4115', '4116', '4117', '4118', '4119'],
-    COSMETIC_PLAYER_DECALS: ['4120', '4121', '4122', '4123', '4124', '4125', '4126', '4127', '4128', '4129']
+    CHASSIS_SKINS: CHASSIS_SKIN_ITEMDEFS,
+    COSMETIC_PLAYER_DECALS: COSMETIC_DECAL_ITEMDEFS
 });
 
 // Helper to create a text sprite label in 3D world
