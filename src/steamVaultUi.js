@@ -3,8 +3,30 @@
  * Extracted from main.js for modular UI architecture.
  */
 import { STEAM_ITEM_CATALOG } from './data/steamItemCatalog.js';
+import { CATALOG_ITEMS } from './armoryUi.js';
 
 export { STEAM_ITEM_CATALOG };
+
+export function getItemCatalogEntry(itemdefid) {
+    const numericId = Number(itemdefid);
+    if (STEAM_ITEM_CATALOG[numericId]) return STEAM_ITEM_CATALOG[numericId];
+    const armory = CATALOG_ITEMS?.[String(numericId)];
+    if (armory) {
+        const iconPath = armory.icon || `/economy/${numericId}.png`;
+        return {
+            itemdefid: numericId,
+            name: armory.name,
+            rarity: armory.rarity || 'common',
+            desc: armory.perk ? `${armory.name} (${armory.perk})` : (armory.desc || armory.name),
+            tradable: true,
+            marketable: true,
+            img: iconPath,
+            localImg: iconPath,
+            localImgLarge: iconPath.replace('.png', '_large.png')
+        };
+    }
+    return null;
+}
 
 export function applyCatalogImage(image, catalog) {
     if (!image || !catalog) return;
@@ -42,7 +64,7 @@ export function openSteamVaultModal() {
 }
 
 export function showSteamDropToast(itemdefid, quantity = 1) {
-    const catalog = STEAM_ITEM_CATALOG[itemdefid];
+    const catalog = getItemCatalogEntry(itemdefid);
     if (!catalog) return;
     const stack = document.querySelector('.hud-notification-stack');
     if (!stack) return;
@@ -98,13 +120,30 @@ export function showSteamDropToast(itemdefid, quantity = 1) {
     });
 }
 
+// Adds an item to the local sandbox inventory (same pattern as openDeepRelicCache()'s
+// !window.electronAPI branch) without going through a real Steam Inventory Service
+// transaction. Used by anything that grants an item outside of crate-opening — currently
+// Season Pass tier claims (src/seasonPassUi.js). Real Electron/Steam builds should route
+// grants through the actual inventory service instead once that's wired for this source.
+export function grantVaultItem(itemdefid, quantity = 1) {
+    const existing = vaultItems.find((i) => i.itemdefid === itemdefid);
+    if (existing) {
+        existing.quantity += quantity;
+    } else {
+        vaultItems.push({ itemId: `grant_${Date.now()}_${itemdefid}`, itemdefid, quantity });
+    }
+    reconcileCosmeticsOwnership(vaultItems);
+    renderInventoryGrid();
+    updateOpenCacheAvailability();
+}
+
 export function renderSteamMilestoneGrants(grants = []) {
     const grantNote = document.getElementById('go-steam-grant-note');
     if (!grantNote || !Array.isArray(grants) || grants.length === 0) return;
 
     const names = grants
         .map((item) => {
-            const catalog = STEAM_ITEM_CATALOG[item.itemdefid];
+            const catalog = getItemCatalogEntry(item.itemdefid);
             const label = catalog?.name ?? `Item #${item.itemdefid}`;
             return item.quantity > 1 ? `${label} x${item.quantity}` : label;
         })
@@ -292,7 +331,7 @@ export function renderInventoryGrid() {
     emptyState?.classList.add('hidden');
 
     vaultItems.forEach(item => {
-        const catalog = STEAM_ITEM_CATALOG[item.itemdefid];
+        const catalog = getItemCatalogEntry(item.itemdefid);
         if (!catalog) return;
 
         const card = document.createElement('div');
@@ -343,7 +382,7 @@ export function updateDetailsPanel(item) {
     const statusEl = document.getElementById('vault-equip-status');
 
     if (!item) return;
-    const catalog = STEAM_ITEM_CATALOG[item.itemdefid];
+    const catalog = getItemCatalogEntry(item.itemdefid);
     if (!catalog) return;
 
     if (nameEl) nameEl.textContent = catalog.name;

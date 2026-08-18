@@ -42,11 +42,43 @@ export const CATALOG_ITEMS = Object.freeze({
     '4146': { name: 'Symbiotic Adrenaline Pump', perk: '+15% Speed Below 25% HP', rarity: 'epic', type: 'mod' },
     '4147': { name: 'Zero-Point Flux Overdrive', perk: '5 Kills Refunds Dash Charge', rarity: 'legendary', type: 'mod', icon: '/economy/mod_zero_point_flux.png' },
 
+    // Chassis Armors & Skins
+    '4112': { name: 'Sub-Terran Drill Engineer', rarity: 'uncommon', type: 'chassis' },
+    '4113': { name: 'Cryo-Vanguard Scout', rarity: 'uncommon', type: 'chassis' },
+    '4114': { name: 'Trench Warden Heavy', rarity: 'rare', type: 'chassis' },
+    '4115': { name: 'Void Commando Recon', rarity: 'rare', type: 'chassis' },
+    '4116': { name: 'Bio-Synthesizer Engineer', rarity: 'rare', type: 'chassis' },
+    '4117': { name: 'Dreadnought Exo-Juggernaut', rarity: 'epic', type: 'chassis' },
+    '4118': { name: 'Cyber-Spectre Infiltrator', rarity: 'epic', type: 'chassis' },
+    '4119': { name: 'Hive-Lord Symbiote Exosuit', rarity: 'legendary', type: 'chassis' },
+
     // Decals / Patches
     '4120': { name: 'Sub-Zero Pioneer Patch', rarity: 'uncommon', type: 'decal' },
     '4121': { name: 'Radiation Trefoil', rarity: 'uncommon', type: 'decal' },
+    '4122': { name: 'Sporesnail Hunter Crest', rarity: 'uncommon', type: 'decal' },
+    '4123': { name: 'Bunker 404 Lost Squad Decal', rarity: 'rare', type: 'decal' },
     '4124': { name: 'Cyber-Skull Tactical Pin', rarity: 'rare', type: 'decal' },
-    '4126': { name: 'Queen Slayer Gold Seal', rarity: 'epic', type: 'decal' }
+    '4125': { name: 'Cryo-Phoenix Insignia', rarity: 'rare', type: 'decal' },
+    '4126': { name: 'Queen Slayer Gold Seal', rarity: 'epic', type: 'decal', icon: '/economy/emblem_queen_slayer.png' },
+    '4127': { name: 'Void Horizon Sigil', rarity: 'epic', type: 'decal' },
+    '4128': { name: 'Ancient Core Glyphs', rarity: 'epic', type: 'decal' },
+    '4129': { name: 'Grand Marshal Relic Crest', rarity: 'legendary', type: 'decal' },
+
+    // Audio Packs & HUD Themes
+    '4148': { name: 'Soviet Sub-Commander Radio', rarity: 'rare', type: 'audio' },
+    '4149': { name: "Synthesized AI Unit 'AURA'", rarity: 'rare', type: 'audio' },
+    '4150': { name: 'Amber CRT Monitor Theme', rarity: 'rare', type: 'hud' },
+    '4151': { name: 'Emerald Radar Phosphor HUD', rarity: 'rare', type: 'hud' },
+    '4152': { name: 'Emerald Void Tracer Rounds', rarity: 'epic', type: 'vfx' },
+    '4153': { name: 'Cryo Shockwave Muzzle Flare', rarity: 'epic', type: 'vfx' },
+
+    // Reagents & Keys
+    '4154': { name: 'Relic Decryption Key', rarity: 'rare', type: 'key', icon: '/economy/cache_key.png' },
+    '4155': { name: '5x Relic Key Master Pack', rarity: 'rare', type: 'key_bundle' },
+    '4156': { name: 'Cryo-Alloy Ingot', rarity: 'uncommon', type: 'reagent' },
+    '4157': { name: 'Deep Sub-Core Matrix', rarity: 'rare', type: 'reagent' },
+    '4158': { name: 'Refined Ambergris Catalyst', rarity: 'epic', type: 'reagent' },
+    '4159': { name: 'Deep Core Shard (Token)', rarity: 'uncommon', type: 'shard', icon: '/economy/relic_common.png' }
 });
 
 const ARCHETYPE_NAMES = Object.freeze({
