@@ -6123,6 +6123,335 @@ html.boot-cursor-hidden #tactical-cursor {
   border-color: #ff4444;
 }
 
+/* --- Unscanned Fog-of-War / Anomaly Hover State (Amber Scanning) --- */
+#tactical-cursor.cursor-unscanned {
+  width: 44px;
+  height: 44px;
+}
+
+#tactical-cursor.cursor-unscanned .cursor-dot {
+  background-color: #ffb703;
+  box-shadow: 0 0 10px #ffb703, 0 0 18px rgba(255, 183, 3, 0.5);
+  transform: translate(-50%, -50%) scale(1.4);
+}
+
+#tactical-cursor.cursor-unscanned .cursor-ring {
+  border-color: #ffb703;
+  border-style: dashed;
+  border-width: 1.5px;
+  border-radius: 50%;
+  animation: spin-clockwise 3s linear infinite;
+  box-shadow: 0 0 8px rgba(255, 183, 3, 0.35);
+}
+
+#tactical-cursor.cursor-unscanned .cursor-bracket {
+  border-color: #ffb703;
+  border-width: 1.5px;
+  opacity: 0.95;
+}
+
+#tactical-cursor.cursor-unscanned .cursor-bracket-tl {
+  transform: translate(3px, 3px);
+}
+
+#tactical-cursor.cursor-unscanned .cursor-bracket-tr {
+  transform: translate(-3px, 3px);
+}
+
+#tactical-cursor.cursor-unscanned .cursor-bracket-bl {
+  transform: translate(3px, -3px);
+}
+
+#tactical-cursor.cursor-unscanned .cursor-bracket-br {
+  transform: translate(-3px, -3px);
+}
+
+#tactical-cursor.cursor-unscanned .cursor-interact-badge {
+  opacity: 1;
+  color: #ffb703;
+  background: rgba(30, 20, 5, 0.95);
+  border: 1px solid #ffb703;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.8), 0 0 8px rgba(255, 183, 3, 0.4);
+}
+
+/* --- Solid Wall & Obstacle Hover State (Steel Cyan/Blue) --- */
+#tactical-cursor.cursor-wall {
+  width: 42px;
+  height: 42px;
+}
+
+#tactical-cursor.cursor-wall .cursor-dot {
+  background-color: #48cae4;
+  box-shadow: 0 0 8px #48cae4;
+  transform: translate(-50%, -50%) scale(1.3);
+}
+
+#tactical-cursor.cursor-wall .cursor-ring {
+  border-color: #48cae4;
+  border-style: solid;
+  border-width: 1.5px;
+  border-radius: 2px;
+  box-shadow: 0 0 6px rgba(72, 202, 228, 0.3);
+}
+
+#tactical-cursor.cursor-wall .cursor-bracket {
+  border-color: #90e0ef;
+  border-width: 2px;
+  opacity: 0.9;
+}
+
+#tactical-cursor.cursor-wall .cursor-interact-badge {
+  opacity: 1;
+  color: #caf0f8;
+  background: rgba(10, 25, 40, 0.92);
+  border: 1px solid #48cae4;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.8), 0 0 8px rgba(72, 202, 228, 0.3);
+}
+
+/* --- Loot, Pickups & Salvage Hover State (Emerald/Gold) --- */
+#tactical-cursor.cursor-loot {
+  width: 44px;
+  height: 44px;
+}
+
+#tactical-cursor.cursor-loot .cursor-dot {
+  background-color: #52b788;
+  box-shadow: 0 0 10px #52b788, 0 0 18px rgba(82, 183, 136, 0.5);
+  transform: translate(-50%, -50%) scale(1.5);
+}
+
+#tactical-cursor.cursor-loot .cursor-ring {
+  border-color: #52b788;
+  border-style: double;
+  border-width: 2px;
+  animation: spin-clockwise 3s linear infinite;
+  box-shadow: 0 0 10px rgba(82, 183, 136, 0.4);
+}
+
+#tactical-cursor.cursor-loot .cursor-bracket {
+  border-color: #74c69d;
+  border-width: 2px;
+  opacity: 1;
+}
+
+#tactical-cursor.cursor-loot .cursor-interact-badge {
+  opacity: 1;
+  color: #d8f3dc;
+  background: rgba(10, 35, 20, 0.94);
+  border: 1px solid #52b788;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.8), 0 0 8px rgba(82, 183, 136, 0.4);
+}
+
+/* --- Tactical Telemeter / Inspection Box (Docked HUD Panel) --- */
+.tactical-telemeter-box {
+  position: absolute;
+  bottom: 24px;
+  right: 24px;
+  z-index: 7500;
+  width: 290px;
+  background: rgba(6, 14, 24, 0.92);
+  border: 1px solid rgba(46, 196, 182, 0.45);
+  border-radius: 4px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.85), 0 0 12px rgba(46, 196, 182, 0.2);
+  padding: 10px 12px;
+  font-family: 'Rajdhani', monospace, sans-serif;
+  color: #ffffff;
+  pointer-events: none;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  transition: opacity 0.2s ease, transform 0.2s ease;
+  overflow: hidden;
+}
+
+.tactical-telemeter-box.hidden {
+  display: none !important;
+}
+
+.tactical-telemeter-box .telemeter-scanline {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, transparent 50%, rgba(0, 0, 0, 0.25) 51%);
+  background-size: 100% 4px;
+  pointer-events: none;
+  opacity: 0.6;
+}
+
+.telemeter-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 6px;
+  border-bottom: 1px solid rgba(46, 196, 182, 0.25);
+  padding-bottom: 4px;
+}
+
+.telemeter-status-icon {
+  color: var(--accent-secondary, #2ec4b6);
+  font-size: 10px;
+}
+
+.telemeter-kicker {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  color: rgba(255, 255, 255, 0.85);
+  flex: 1;
+  text-transform: uppercase;
+}
+
+.telemeter-type-tag {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  padding: 1px 5px;
+  border-radius: 2px;
+  text-transform: uppercase;
+}
+
+.telemeter-tag--enemy {
+  background: rgba(255, 51, 51, 0.25);
+  border: 1px solid #ff3333;
+  color: #ff6b6b;
+}
+
+.telemeter-tag--unscanned {
+  background: rgba(255, 183, 3, 0.25);
+  border: 1px solid #ffb703;
+  color: #ffb703;
+}
+
+.telemeter-tag--wall {
+  background: rgba(72, 202, 228, 0.2);
+  border: 1px solid #48cae4;
+  color: #90e0ef;
+}
+
+.telemeter-tag--loot {
+  background: rgba(82, 183, 136, 0.25);
+  border: 1px solid #52b788;
+  color: #74c69d;
+}
+
+.telemeter-tag--interact,
+.telemeter-tag--camp,
+.telemeter-tag--sector {
+  background: rgba(46, 196, 182, 0.2);
+  border: 1px solid #2ec4b6;
+  color: #2ec4b6;
+}
+
+.telemeter-main-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.telemeter-title {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: #ffffff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.telemeter-coords {
+  font-size: 10px;
+  font-family: monospace;
+  color: rgba(255, 255, 255, 0.6);
+  white-space: nowrap;
+}
+
+.telemeter-subtitle {
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.7);
+  letter-spacing: 0.06em;
+  margin-top: 1px;
+  margin-bottom: 6px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.telemeter-stats-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  font-size: 10px;
+}
+
+.telemeter-integrity-wrap {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 1;
+}
+
+.telemeter-stat-label {
+  font-size: 9px;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.telemeter-meter-track {
+  flex: 1;
+  height: 5px;
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.telemeter-meter-bar {
+  height: 100%;
+  background: var(--accent-secondary, #2ec4b6);
+  box-shadow: 0 0 6px var(--accent-secondary, #2ec4b6);
+  transition: width 0.15s ease;
+}
+
+.telemeter-meter-val {
+  font-size: 9px;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.telemeter-range-val {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--accent-secondary, #2ec4b6);
+  white-space: nowrap;
+}
+
+.telemeter-action-prompt {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 6px;
+  padding-top: 4px;
+  border-top: 1px dashed rgba(255, 255, 255, 0.15);
+  font-size: 10px;
+}
+
+.telemeter-action-prompt.hidden {
+  display: none !important;
+}
+
+.telemeter-action-key {
+  background: var(--accent-primary, #ff9f1c);
+  color: #000000;
+  font-weight: 700;
+  padding: 1px 5px;
+  border-radius: 2px;
+  font-size: 9px;
+}
+
+.telemeter-action-text {
+  color: rgba(255, 255, 255, 0.9);
+  letter-spacing: 0.08em;
+  font-weight: 600;
+}
+
 /* --- Sonar Ripple Ring (Subtle, Localized Tactile Feedback) --- */
 .cursor-ripple {
   position: fixed;

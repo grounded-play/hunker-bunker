@@ -7392,7 +7392,9 @@ function executeDevCommand(input) {
                 + '  god                 - Toggle God Mode\n'
                 + '  salvage / +$        - Grant salvage & shells\n'
                 + '  heal                - Refill Health & O₂\n'
-                + '  nuke / kill         - Clear hostiles in current sector\n'
+                + '  museum              - Open continuous asset museum hallway (chunk 9000, 9000)\n'
+                + '  showroom            - Open 4-wall orientation showroom gallery (chunk 500, 500)\n'
+                + '  closemuseum         - Close continuous asset museum hallway\n'
                 + '  steam               - View Steam connection info\n'
                 + '  steamlog            - View Steam startup diagnostics\n'
                 + '  clear / cls         - Clear console log';
@@ -7414,8 +7416,8 @@ function executeDevCommand(input) {
                     + '\nUsage: tp <id> (e.g. tp crash, tp showroom, tp camp, tp hive, tp queen, tp 120 45)';
                 break;
             }
-            if (target === 'showroom' || target === 'gallery') {
-                result = 'Building 4-wall showroom gallery and teleporting...';
+            if (target === 'showroom' || target === 'gallery' || target === 'museum') {
+                result = 'Building showroom / museum gallery and teleporting...';
                 void openDebugShowroom();
                 break;
             }
@@ -7618,6 +7620,19 @@ function executeDevCommand(input) {
         case '+$':
             result = devGrantResources();
             break;
+        case 'museum':
+            closeDevConsoleModal();
+            result = 'Opening Debug Hallway Museum at (9000, 9000)...';
+            void window.__DEBUG__.openMuseum();
+            break;
+        case 'closemuseum':
+            result = 'Closing Debug Hallway Museum...';
+            void window.__DEBUG__.closeMuseum();
+            break;
+        case 'showroom':
+            result = 'Building 4-wall showroom gallery and teleporting...';
+            void openDebugShowroom();
+            break;
         case 'heal':
         case 'hp':
         case 'o2':
@@ -7677,7 +7692,7 @@ window.__DEBUG__ = {
     teleport: (target, options) => {
         const game = window.game;
         if (!game) return Promise.reject(new Error('Game not initialized'));
-        if (target === 'showroom' || target === 'gallery') {
+        if (target === 'showroom' || target === 'gallery' || target === 'museum') {
             return openDebugShowroom();
         }
         if (typeof target === 'object' && target !== null && Number.isFinite(target.x) && Number.isFinite(target.z)) {
@@ -7700,6 +7715,7 @@ window.__DEBUG__ = {
     getStats: () => window.game?.getComprehensiveDebugStats?.() ?? null,
     getRunSeed: () => window.game?.runEntropy ?? 0,
     openShowroom: () => window.__DEBUG__.teleport('showroom'),
+    openMuseum: () => window.__DEBUG__.teleport('museum'),
     getState: () => ({
         appPhase,
         playerType: window.game?.playerType,

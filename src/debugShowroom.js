@@ -1,5 +1,11 @@
 import * as THREE from 'three';
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
+import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.js';
 import { createWorld3dModel } from './world3dOverlay.js';
+import { assetUrl } from './assetUrl.js';
+import { getItemCatalogEntry } from './steamVaultUi.js';
+import { WEAPON_ARCHETYPES, WEAPON_SKIN_MESHES } from './player3dOverlay.js';
+import { CHARM_GLB_MAP, MOD_GLB_MAP } from './armoryScene.js';
 
 export const SHOWROOM_CHUNK_X = 500;
 export const SHOWROOM_CHUNK_Y = 500;
@@ -91,7 +97,17 @@ export const SHOWROOM_CATEGORIES = Object.freeze({
         'mycelium_stalker',
         'bio_charger',
         'spore_mortar'
-    ]
+    ],
+    // Season 0 economy — added so the showroom covers the full 60-item catalog, not just
+    // world dressing/enemies (docs/game-audit-lane-split-and-worklog.md §4).
+    WEAPON_ARCHETYPES: Object.keys(WEAPON_ARCHETYPES),
+    WEAPON_SKINS: Object.keys(WEAPON_SKIN_MESHES),
+    WEAPON_CHARMS: Object.keys(CHARM_GLB_MAP),
+    RIG_OVERCLOCK_MODS: Object.keys(MOD_GLB_MAP),
+    // No 3D model exists yet for chassis skins (docs/season-zero-protocol/08 §2) — shown as
+    // icon-plane billboards, same as the cosmetic player decals below.
+    CHASSIS_SKINS: ['4112', '4113', '4114', '4115', '4116', '4117', '4118', '4119'],
+    COSMETIC_PLAYER_DECALS: ['4120', '4121', '4122', '4123', '4124', '4125', '4126', '4127', '4128', '4129']
 });
 
 // Helper to create a text sprite label in 3D world
@@ -126,6 +142,44 @@ function createLabelSprite(text, { color = '#00f0ff', bgColor = 'rgba(10, 16, 26
     return sprite;
 }
 
+// Isolated GLTF loader for Season 0 economy items (weapon archetypes/skins, charms, mods) —
+// separate from threeGame.js's own loaders since this file is a standalone dev tool. Caches
+// by URL so repeated showroom rebuilds don't re-fetch the same .glb.
+let _showroomGltfLoader = null;
+const _showroomGltfCache = new Map();
+function getShowroomGltfLoader() {
+    if (!_showroomGltfLoader) _showroomGltfLoader = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder);
+    return _showroomGltfLoader;
+}
+async function loadShowroomGlb(url) {
+    if (!url) return null;
+    if (!_showroomGltfCache.has(url)) {
+        _showroomGltfCache.set(url, getShowroomGltfLoader().loadAsync(assetUrl(url)).catch((err) => {
+            _showroomGltfCache.delete(url);
+            throw err;
+        }));
+    }
+    const gltf = await _showroomGltfCache.get(url);
+    const model = gltf.scene.clone(true);
+    const bbox = new THREE.Box3().setFromObject(model);
+    const size = bbox.getSize(new THREE.Vector3());
+    const maxDim = Math.max(size.x, size.y, size.z, 0.001);
+    model.scale.setScalar(1.3 / maxDim);
+    return model;
+}
+function makeIconPlaneSprite(iconPath) {
+    if (!iconPath || typeof document === 'undefined') return null;
+    try {
+        const texture = new THREE.TextureLoader().load(assetUrl(iconPath));
+        const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: texture, transparent: true }));
+        sprite.scale.set(1.4, 1.4, 1);
+        return sprite;
+    } catch (err) {
+        console.warn('[Showroom] Failed loading icon plane:', iconPath, err);
+        return null;
+    }
+}
+
 // Builds the entire Showroom at (SHOWROOM_CHUNK_X, SHOWROOM_CHUNK_Y)
 export async function buildShowroomScene(threeGame) {
     const root = new THREE.Group();
@@ -135,8 +189,9 @@ export async function buildShowroomScene(threeGame) {
     const originX = SHOWROOM_CHUNK_X * chunkSize;
     const originZ = SHOWROOM_CHUNK_Y * chunkSize;
 
-    // Floor base
-    const floorSize = 160;
+    // Floor base — enlarged from the original 160 to fit the added Season 0 economy
+    // categories (~50 more stalls) without running off the edge.
+    const floorSize = 320;
     const floorGeo = new THREE.PlaneGeometry(floorSize, floorSize, 80, 80);
     const floorMat = new THREE.MeshStandardMaterial({
         color: 0x0a101a,
@@ -174,7 +229,13 @@ export async function buildShowroomScene(threeGame) {
         ...SHOWROOM_CATEGORIES.SETPIECES.map((id) => ({ id, type: 'prop', category: 'SETPIECE' })),
         ...SHOWROOM_CATEGORIES.WALL_DECALS.map((id) => ({ id, type: 'wall_decal', category: 'WALL_DECAL' })),
         ...SHOWROOM_CATEGORIES.FLOOR_DECALS.map((id) => ({ id, type: 'floor_decal', category: 'FLOOR_DECAL' })),
-        ...SHOWROOM_CATEGORIES.ENEMIES.map((id) => ({ id, type: 'enemy', category: 'ENEMY' }))
+        ...SHOWROOM_CATEGORIES.ENEMIES.map((id) => ({ id, type: 'enemy', category: 'ENEMY' })),
+        ...SHOWROOM_CATEGORIES.WEAPON_ARCHETYPES.map((id) => ({ id, type: 'weapon_glb', category: 'WEAPON', glbUrl: WEAPON_ARCHETYPES[id] })),
+        ...SHOWROOM_CATEGORIES.WEAPON_SKINS.map((id) => ({ id, type: 'weapon_glb', category: 'WEAPON_SKIN', glbUrl: WEAPON_SKIN_MESHES[id] })),
+        ...SHOWROOM_CATEGORIES.WEAPON_CHARMS.map((id) => ({ id, type: 'weapon_glb', category: 'CHARM', glbUrl: CHARM_GLB_MAP[id] })),
+        ...SHOWROOM_CATEGORIES.RIG_OVERCLOCK_MODS.map((id) => ({ id, type: 'weapon_glb', category: 'MOD', glbUrl: MOD_GLB_MAP[id] })),
+        ...SHOWROOM_CATEGORIES.CHASSIS_SKINS.map((id) => ({ id: getItemCatalogEntry(id)?.name ?? id, type: 'icon_plane', category: 'CHASSIS', itemdefid: id })),
+        ...SHOWROOM_CATEGORIES.COSMETIC_PLAYER_DECALS.map((id) => ({ id: getItemCatalogEntry(id)?.name ?? id, type: 'icon_plane', category: 'DECAL', itemdefid: id }))
     ];
 
     const sampleWallMat = new THREE.MeshStandardMaterial({
@@ -282,6 +343,25 @@ export async function buildShowroomScene(threeGame) {
                 });
                 if (floorInstance) {
                     root.add(floorInstance);
+                }
+            } else if (item.type === 'weapon_glb' && p.name === 'CTR') {
+                // Single center pedestal only — a floating weapon/charm model doesn't need
+                // the 4-wall repeat that decals use to show different mount orientations.
+                try {
+                    const model = await loadShowroomGlb(item.glbUrl);
+                    if (model) {
+                        model.position.set(p.x, 1.0, p.z);
+                        root.add(model);
+                    }
+                } catch (err) {
+                    console.warn(`[Showroom] Failed loading GLB: ${item.id}`, err);
+                }
+            } else if (item.type === 'icon_plane' && p.name === 'CTR') {
+                const catalog = getItemCatalogEntry(item.itemdefid);
+                const sprite = makeIconPlaneSprite(catalog?.localImg || catalog?.img);
+                if (sprite) {
+                    sprite.position.set(p.x, 1.4, p.z);
+                    root.add(sprite);
                 }
             }
         }

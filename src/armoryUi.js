@@ -148,7 +148,7 @@ export function createArmoryUi({
                             <label>SHOULDER PATCH &amp; INSIGNIA</label>
                             <select id="armory-decal-select" class="armory-select">
                                 <option value="">[DEFAULT CLASS INSIGNIA]</option>
-                                ${['4120', '4121', '4124', '4126'].map((id) => `
+                                ${['4120', '4121', '4122', '4123', '4124', '4125', '4126', '4127', '4128', '4129'].map((id) => `
                                     <option value="${id}" ${loadoutManager.getEquippedDecalId() === id ? 'selected' : ''}>
                                         ${CATALOG_ITEMS[id]?.name || id} (${CATALOG_ITEMS[id]?.rarity?.toUpperCase()})
                                     </option>

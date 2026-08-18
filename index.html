@@ -1502,6 +1502,37 @@
       <span id="loop-step-text" class="loop-step-hud__text">DEPLOYING</span>
     </div>
 
+    <!-- Tactical Telemeter / Inspection Box -->
+    <div id="tactical-telemeter-box" class="tactical-telemeter-box hidden" aria-live="polite">
+      <div class="telemeter-scanline"></div>
+      <div class="telemeter-header">
+        <span class="telemeter-status-icon">◈</span>
+        <span id="telemeter-kicker" class="telemeter-kicker">TARGET SCANNER // ACTIVE</span>
+        <span id="telemeter-type-tag" class="telemeter-type-tag telemeter-tag--sector">SECTOR</span>
+      </div>
+      <div class="telemeter-body">
+        <div class="telemeter-main-row">
+          <div id="telemeter-title" class="telemeter-title">ICE CORRIDOR</div>
+          <div id="telemeter-coords" class="telemeter-coords">[X: +00, Z: +00]</div>
+        </div>
+        <div id="telemeter-subtitle" class="telemeter-subtitle">BIOME: GLACIAL BEDROCK</div>
+        <div id="telemeter-stats-row" class="telemeter-stats-row">
+          <div id="telemeter-integrity-wrap" class="telemeter-integrity-wrap">
+            <span class="telemeter-stat-label">INTEGRITY:</span>
+            <div class="telemeter-meter-track">
+              <div id="telemeter-meter-bar" class="telemeter-meter-bar" style="width: 100%;"></div>
+            </div>
+            <span id="telemeter-meter-val" class="telemeter-meter-val">100%</span>
+          </div>
+          <div id="telemeter-range-val" class="telemeter-range-val">DIST: 0.0m</div>
+        </div>
+        <div id="telemeter-action-prompt" class="telemeter-action-prompt hidden">
+          <span id="telemeter-action-key" class="telemeter-action-key">E</span>
+          <span id="telemeter-action-text" class="telemeter-action-text">INTERACT</span>
+        </div>
+      </div>
+    </div>
+
     <!-- In-Game Dev Console Modal -->
     <div id="dev-console-modal" class="modal hidden" aria-hidden="true">
       <div class="modal-content dev-console-content">

@@ -46,6 +46,7 @@ export const TiltShiftPassShader = {
     `
 };
 import { assetUrl } from './assetUrl.js';
+import { getItemCatalogEntry } from './steamVaultUi.js';
 import { wrapAngle, planarBasisFromOffsetAzimuth, aimVectorFromYaw } from './cameraYaw.js';
 import { MULTIPLAYER_SPAWN_MODES } from './multiplayerCrashPlanner.js';
 import { multiplayerLobby } from './multiplayerLobby.js';
@@ -541,6 +542,13 @@ const PHYS_PARTICLE_BOUNCE = -0.45;  // floor restitution
 const SHIP_MAX_HP = 24;
 const SHIP_NO_FIRE_RADIUS = 2.4;
 const SHIP_HIT_RADIUS_MULT = 0.78;
+
+const _scratchMatrix4 = new THREE.Matrix4();
+const _scratchQuaternion = new THREE.Quaternion();
+const _scratchVector3 = new THREE.Vector3();
+const _scratchScale = new THREE.Vector3(1, 1, 1);
+const _scratchEuler = new THREE.Euler();
+
 const LORE_LOGS = {
     active: [
         { key: 'A01', text: 'PRIORITY: RESTRICTED\nPersonnel count: 312. Deployment: Sub-level 1 through 9.\nMission status: CLASSIFIED. Authorization: DIRECTOR CHEN, OVERSEER RANK.' },
@@ -3723,6 +3731,17 @@ export class ThreeGame {
         this.playerTorsoSprite.visible = false;
         this.player.add(this.playerTorsoSprite);
 
+        // Season 0 cosmetic player decal (itemdefs 4120-4129, docs/game-audit-lane-split-and-worklog.md
+        // §3b) — previously equippable via the Armory but never actually rendered anywhere.
+        // Small chest-mounted billboard sprite, hidden until a decal texture loads.
+        this.playerDecalSprite = new THREE.Sprite(new THREE.SpriteMaterial({ transparent: true, opacity: 0, depthTest: true }));
+        this.playerDecalSprite.center.set(0.5, 0.5);
+        this.playerDecalSprite.position.set(this.playerSpriteLead + 0.16, this.playerHeight * 0.62, this.playerSpriteLead - 0.05);
+        this.playerDecalSprite.scale.set(0.22, 0.22, 1);
+        this.playerDecalSprite.renderOrder = 7;
+        this.playerDecalSprite.visible = false;
+        this.player.add(this.playerDecalSprite);
+
         // Legs face movement, torso faces aim — tracked separately.
         this.torsoFacingRow = this.currentFacingRow;
 
@@ -3756,6 +3775,37 @@ export class ThreeGame {
         this.emitWeaponClipState();
         this.emitShipHealthState();
         this.setupPlayer3dCosmeticOverlay();
+        this.updatePlayerDecalSprite();
+    }
+
+    // Season 0 cosmetic player decal (see this.playerDecalSprite's creation comment above).
+    // Reads the equipped decal once at spawn, same timing as setupPlayer3dCosmeticOverlay()'s
+    // weapon skin read — cosmetics are fixed for the run, re-read on the next spawn.
+    updatePlayerDecalSprite() {
+        const sprite = this.playerDecalSprite;
+        if (!sprite) return;
+        const decalId = window.loadout?.getEquippedDecalId?.();
+        if (!decalId) {
+            sprite.visible = false;
+            sprite.material.opacity = 0;
+            return;
+        }
+        const catalog = getItemCatalogEntry(decalId);
+        const iconPath = catalog?.localImg || catalog?.img;
+        if (!iconPath) {
+            sprite.visible = false;
+            sprite.material.opacity = 0;
+            return;
+        }
+        new THREE.TextureLoader().load(assetUrl(iconPath), (texture) => {
+            if (sprite.material.map) sprite.material.map.dispose();
+            sprite.material.map = texture;
+            sprite.material.opacity = 1;
+            sprite.material.needsUpdate = true;
+            sprite.visible = true;
+        }, undefined, () => {
+            sprite.visible = false;
+        });
     }
 
     async setupPlayer3dCosmeticOverlay() {
@@ -5612,7 +5662,14 @@ export class ThreeGame {
             // Preserve authored alpha sprites. Older generated assets arrive
             // on black and still need keying, while production collectibles
             // are pre-matted from chroma green and contain transparent pixels.
-            const hasSourceAlpha = imgData.data.some((value, index) => index % 4 === 3 && value < 255);
+            let hasSourceAlpha = false;
+            const data = imgData.data;
+            for (let i = 3; i < data.length; i += 4) {
+                if (data[i] < 255) {
+                    hasSourceAlpha = true;
+                    break;
+                }
+            }
             if (!options?.layout?.hasAlpha && !hasSourceAlpha) {
                 applyGreenChromaKey(imgData);
                 applyBlackChromaKey(imgData, { threshold });
@@ -7459,19 +7516,12 @@ export class ThreeGame {
         return false;
     }
 
-    checkHoverInteractable(clientX, clientY) {
-        if (!this.isGameplayInputActive() || !this.player) {
-            this.setCursorInteractState(false);
-            this.setCursorHostileState(false);
-            return null;
-        }
+    resolveTacticalInspectTarget(worldPoint) {
+        if (!worldPoint || !this.player) return null;
 
-        const worldPoint = this.getWorldAimPoint(clientX, clientY);
-        if (!worldPoint) {
-            this.setCursorInteractState(false);
-            this.setCursorHostileState(false);
-            return null;
-        }
+        const playerDist = Math.hypot(worldPoint.x - this.player.position.x, worldPoint.z - this.player.position.z);
+        const tileX = Math.round(worldPoint.x);
+        const tileZ = Math.round(worldPoint.z);
 
         // 0. Check Remote Players (Rivals in PvP or Downed/Trading Squadmates in Co-Op)
         if (this.remotePlayers?.size) {
@@ -7481,17 +7531,47 @@ export class ThreeGame {
                 const dist = Math.hypot(worldPoint.x - rPos.x, worldPoint.z - rPos.z);
                 if (dist <= 2.2) {
                     if (this.multiplayerMode === 'pvp') {
-                        this.setCursorInteractState(false);
-                        this.setCursorHostileState(true, `RIVAL: ${(remote.callsign || 'OPERATIVE').toUpperCase()}`);
-                        return 'rival_player';
+                        return {
+                            type: 'enemy',
+                            targetId: 'rival_player',
+                            badgeLabel: `RIVAL: ${(remote.callsign || 'OPERATIVE').toUpperCase()}`,
+                            kicker: 'HOSTILE DETECTED // RIVAL',
+                            title: (remote.callsign || 'RIVAL OPERATIVE').toUpperCase(),
+                            subtitle: `CLASS: ${(remote.playerType || 'OPERATIVE').toUpperCase()}`,
+                            coords: { x: tileX, z: tileZ },
+                            distance: dist,
+                            integrity: 100,
+                            promptKey: 'L-CLICK',
+                            promptText: 'ENGAGE'
+                        };
                     } else if (remote.isDown) {
-                        this.setCursorHostileState(false);
-                        this.setCursorInteractState(true, `REVIVE: ${(remote.callsign || 'SQUADMATE').toUpperCase()}`);
-                        return 'revive_peer';
+                        return {
+                            type: 'interact',
+                            targetId: 'revive_peer',
+                            badgeLabel: `REVIVE: ${(remote.callsign || 'SQUADMATE').toUpperCase()}`,
+                            kicker: 'ALLY IN DISTRESS // MEDICAL',
+                            title: (remote.callsign || 'SQUADMATE').toUpperCase(),
+                            subtitle: 'STATUS: CRITICAL // DOWNED',
+                            coords: { x: tileX, z: tileZ },
+                            distance: dist,
+                            integrity: 15,
+                            promptKey: 'E',
+                            promptText: 'REVIVE OPERATIVE'
+                        };
                     } else {
-                        this.setCursorHostileState(false);
-                        this.setCursorInteractState(true, `[T] LINK // BARTER WITH ${(remote.callsign || 'SQUADMATE').toUpperCase()}`);
-                        return 'trade_peer';
+                        return {
+                            type: 'interact',
+                            targetId: 'trade_peer',
+                            badgeLabel: `[T] LINK // BARTER WITH ${(remote.callsign || 'SQUADMATE').toUpperCase()}`,
+                            kicker: 'SQUADMATE COMM // TRADE',
+                            title: (remote.callsign || 'SQUADMATE').toUpperCase(),
+                            subtitle: `CLASS: ${(remote.playerType || 'OPERATIVE').toUpperCase()}`,
+                            coords: { x: tileX, z: tileZ },
+                            distance: dist,
+                            integrity: 100,
+                            promptKey: 'T',
+                            promptText: 'BARTER / TRADE'
+                        };
                     }
                 }
             }
@@ -7506,10 +7586,23 @@ export class ThreeGame {
                 const dist = Math.hypot(worldPoint.x - sprite.position.x, worldPoint.z - sprite.position.z);
                 const hoverRadius = sprite.userData?.isBoss ? 3.0 : (sprite.scale?.x ? Math.max(1.2, sprite.scale.x * 0.9) : 1.6);
                 if (dist <= hoverRadius) {
-                    const label = (type ? type.replace(/^boss_/, '').replace(/_/g, ' ') : 'HOSTILE').toUpperCase();
-                    this.setCursorInteractState(false);
-                    this.setCursorHostileState(true, label);
-                    return 'enemy';
+                    const cleanName = (type ? type.replace(/^boss_/, '').replace(/_/g, ' ') : 'HOSTILE').toUpperCase();
+                    const hp = sprite.userData?.hp ?? 100;
+                    const maxHp = sprite.userData?.maxHp ?? 100;
+                    const integrity = Math.max(0, Math.min(100, Math.round((hp / maxHp) * 100)));
+                    return {
+                        type: 'enemy',
+                        targetId: 'enemy',
+                        badgeLabel: cleanName,
+                        kicker: 'TARGET LOCKED // HOSTILE',
+                        title: cleanName,
+                        subtitle: sprite.userData?.isBoss ? 'THREAT LEVEL: CRITICAL // ALPHA SPECIMEN' : 'THREAT LEVEL: HIGH // BIOMECHANICAL',
+                        coords: { x: tileX, z: tileZ },
+                        distance: dist,
+                        integrity,
+                        promptKey: 'L-CLICK',
+                        promptText: 'ENGAGE'
+                    };
                 }
             }
         }
@@ -7518,21 +7611,41 @@ export class ThreeGame {
         if (this.queenBossSprite?.parent) {
             const dist = Math.hypot(worldPoint.x - this.queenBossSprite.position.x, worldPoint.z - this.queenBossSprite.position.z);
             if (dist <= 4.2) {
-                this.setCursorInteractState(false);
-                this.setCursorHostileState(true, 'HIVE QUEEN');
-                return 'enemy';
+                return {
+                    type: 'enemy',
+                    targetId: 'enemy',
+                    badgeLabel: 'HIVE QUEEN',
+                    kicker: 'TARGET LOCKED // APEX PREDATOR',
+                    title: 'THE HIVE QUEEN',
+                    subtitle: 'THREAT LEVEL: APOCALYPTIC // ANOMALY',
+                    coords: { x: tileX, z: tileZ },
+                    distance: dist,
+                    integrity: Math.round(((this.queenBossHp ?? 1000) / (this.queenBossMaxHp ?? 1000)) * 100),
+                    promptKey: 'L-CLICK',
+                    promptText: 'ENGAGE'
+                };
             }
         }
         if (this.sporesnailSprite?.parent) {
             const dist = Math.hypot(worldPoint.x - this.sporesnailSprite.position.x, worldPoint.z - this.sporesnailSprite.position.z);
             if (dist <= 3.6) {
-                this.setCursorInteractState(false);
-                this.setCursorHostileState(true, 'SPORESNAIL');
-                return 'enemy';
+                return {
+                    type: 'enemy',
+                    targetId: 'enemy',
+                    badgeLabel: 'SPORESNAIL',
+                    kicker: 'TARGET LOCKED // BIO-ORGANISM',
+                    title: 'SPORESNAIL MATRIARCH',
+                    subtitle: 'THREAT LEVEL: HIGH // CORROSIVE SPORES',
+                    coords: { x: tileX, z: tileZ },
+                    distance: dist,
+                    integrity: 85,
+                    promptKey: 'L-CLICK',
+                    promptText: 'ENGAGE'
+                };
             }
         }
 
-        // 3. Check Procedural Doors / Biomechanical Doors / Blast Gates (Red targeting)
+        // 3. Check Procedural Doors / Biomechanical Doors / Blast Gates
         if (this.proceduralDoorStates) {
             for (const door of this.proceduralDoorStates.values()) {
                 const dx = door.worldX ?? door.x;
@@ -7542,9 +7655,19 @@ export class ThreeGame {
                     if (dist <= 2.2) {
                         const isLocked = door.state === 'locked' || door.locked;
                         const label = isLocked ? 'LOCKED DOOR' : (door.state === 'open' ? 'OPEN DOOR' : 'SECURITY DOOR');
-                        this.setCursorInteractState(false);
-                        this.setCursorHostileState(true, label);
-                        return 'door';
+                        return {
+                            type: 'enemy',
+                            targetId: 'door',
+                            badgeLabel: label,
+                            kicker: 'STRUCTURAL BARRIER // SECURITY',
+                            title: label,
+                            subtitle: isLocked ? 'STATUS: ACCESS DENIED // KEYCARD REQUIRED' : 'STATUS: SYSTEM READY',
+                            coords: { x: tileX, z: tileZ },
+                            distance: dist,
+                            integrity: 100,
+                            promptKey: isLocked ? null : 'E',
+                            promptText: isLocked ? 'LOCKED' : 'CYCLE AIRLOCK'
+                        };
                     }
                 }
             }
@@ -7554,9 +7677,19 @@ export class ThreeGame {
             for (const door of this.biomechanicalDoors) {
                 const dist = Math.hypot(worldPoint.x - door.x, worldPoint.z - door.z);
                 if (dist <= 2.4) {
-                    this.setCursorInteractState(false);
-                    this.setCursorHostileState(true, 'BIO DOOR');
-                    return 'door';
+                    return {
+                        type: 'enemy',
+                        targetId: 'door',
+                        badgeLabel: 'BIO DOOR',
+                        kicker: 'ORGANIC BULWARK // MEMBRANE',
+                        title: 'BIOMECHANICAL SPHINCTER DOOR',
+                        subtitle: 'STATUS: HIVE CONTROLLED',
+                        coords: { x: tileX, z: tileZ },
+                        distance: dist,
+                        integrity: 100,
+                        promptKey: null,
+                        promptText: 'NEURAL PASS'
+                    };
                 }
             }
         }
@@ -7567,77 +7700,196 @@ export class ThreeGame {
             const distInt = Math.hypot(worldPoint.x - this.bunkerDoorButtons.interior.x, worldPoint.z - this.bunkerDoorButtons.interior.z);
             const distExt = Math.hypot(worldPoint.x - this.bunkerDoorButtons.exterior.x, worldPoint.z - this.bunkerDoorButtons.exterior.z);
             if (distDoor <= 3.2 || distInt <= 2.0 || distExt <= 2.0) {
-                this.setCursorInteractState(false);
-                this.setCursorHostileState(true, 'AIRLOCK');
-                return 'door';
+                return {
+                    type: 'enemy',
+                    targetId: 'door',
+                    badgeLabel: 'AIRLOCK',
+                    kicker: 'FACILITY ENTRY // AIRLOCK',
+                    title: 'PRIMARY BUNKER AIRLOCK',
+                    subtitle: 'PRESSURIZATION: SEALED',
+                    coords: { x: tileX, z: tileZ },
+                    distance: Math.min(distDoor, distInt, distExt),
+                    integrity: 100,
+                    promptKey: 'E',
+                    promptText: 'CYCLE AIRLOCK'
+                };
             }
         }
 
         // 5. Check Destructible Corrupted / Cryo Barriers
-        const hoveredTileX = Math.round(worldPoint.x);
-        const hoveredTileZ = Math.round(worldPoint.z);
-        const tileType = this.getCachedTileType?.(hoveredTileX, hoveredTileZ) ?? this.getTileType?.(hoveredTileX, hoveredTileZ);
+        const tileType = this.getCachedTileType?.(tileX, tileZ) ?? (this.chunkCache && this.getTileType ? this.getTileType(tileX, tileZ) : '.');
         if (tileType === 'X' || tileType === 'C') {
-            const dist = Math.hypot(worldPoint.x - hoveredTileX, worldPoint.z - hoveredTileZ);
+            const dist = Math.hypot(worldPoint.x - tileX, worldPoint.z - tileZ);
             if (dist <= 1.35) {
-                this.setCursorInteractState(false);
-                this.setCursorHostileState(true, tileType === 'X' ? 'CORRUPTED BARRIER' : 'CRYO WALL');
-                return 'destructible_wall';
+                const isCorrupted = tileType === 'X';
+                return {
+                    type: 'enemy',
+                    targetId: 'destructible_wall',
+                    badgeLabel: isCorrupted ? 'CORRUPTED BARRIER' : 'CRYO WALL',
+                    kicker: 'DESTRUCTIBLE OBSTACLE // BREACHABLE',
+                    title: isCorrupted ? 'CORRUPTED BIOMASS BARRIER' : 'CRYO ICE FORMATION',
+                    subtitle: 'COMPOSITION: DESTRUCTIBLE // FIRE TO CLEAR',
+                    coords: { x: tileX, z: tileZ },
+                    distance: dist,
+                    integrity: 75,
+                    promptKey: 'L-CLICK',
+                    promptText: 'DESTROY BARRIER'
+                };
             }
         }
 
-        // 6. Check Crashed Ships / Consoles (Cyan/Green friendly interactable)
+        // 6. Check Pickups & Lore Drops
+        if (this.pickupMeshes) {
+            for (const mesh of this.pickupMeshes) {
+                if (!mesh?.parent || !mesh.visible) continue;
+                const dist = Math.hypot(worldPoint.x - mesh.position.x, worldPoint.z - mesh.position.z);
+                if (dist <= 1.4) {
+                    const pType = mesh.userData?.type || 'salvage';
+                    const label = pType === 'ammo' ? 'AMMO CACHE' : (pType === 'health' ? 'MEDKIT' : (pType === 'weapon' ? 'WEAPON' : 'SALVAGE SCRAP'));
+                    return {
+                        type: 'loot',
+                        targetId: 'pickup',
+                        badgeLabel: label,
+                        kicker: 'RESOURCE DETECTED // FIELD SALVAGE',
+                        title: label,
+                        subtitle: 'RECOVERABLE MATERIEL',
+                        coords: { x: tileX, z: tileZ },
+                        distance: dist,
+                        integrity: 100,
+                        promptKey: 'E',
+                        promptText: 'COLLECT'
+                    };
+                }
+            }
+        }
+        if (this.loreDrops) {
+            for (const drop of this.loreDrops) {
+                if (!drop?.active && !drop?.mesh?.parent) continue;
+                const dx = drop.x ?? drop.mesh?.position?.x;
+                const dz = drop.z ?? drop.mesh?.position?.z;
+                if (Number.isFinite(dx) && Number.isFinite(dz)) {
+                    const dist = Math.hypot(worldPoint.x - dx, worldPoint.z - dz);
+                    if (dist <= 1.5) {
+                        return {
+                            type: 'loot',
+                            targetId: 'lore',
+                            badgeLabel: 'DATAPAD',
+                            kicker: 'ARCHIVE LOG // DECRYPTABLE',
+                            title: 'ENCRYPTED EXPEDITION DATAPAD',
+                            subtitle: 'SECURITY LEVEL: ARCHIVE RECOVERY',
+                            coords: { x: tileX, z: tileZ },
+                            distance: dist,
+                            integrity: 100,
+                            promptKey: 'E',
+                            promptText: 'DECRYPT AUDIO'
+                        };
+                    }
+                }
+            }
+        }
+
+        // 7. Check Crashed Ships / Consoles
         if (this.crashedShips) {
             for (const ship of this.crashedShips) {
                 if (!ship.isVisible) continue;
                 const consoleX = ship.tileX + ship.consoleOffset.x;
                 const consoleZ = ship.tileZ + ship.consoleOffset.z;
                 const distWorld = Math.hypot(worldPoint.x - consoleX, worldPoint.z - consoleZ);
-                const playerDist = Math.hypot(this.player.position.x - consoleX, this.player.position.z - consoleZ);
-                if ((distWorld <= 2.5 || Math.hypot(worldPoint.x - ship.tileX, worldPoint.z - ship.tileZ) <= Math.max(1.5, ship.width * 0.9)) && playerDist <= 5.2) {
-                    this.setCursorHostileState(false);
-                    this.setCursorInteractState(true, 'TERMINAL');
-                    return 'console';
+                const pDist = Math.hypot(this.player.position.x - consoleX, this.player.position.z - consoleZ);
+                if ((distWorld <= 2.5 || Math.hypot(worldPoint.x - ship.tileX, worldPoint.z - ship.tileZ) <= Math.max(1.5, ship.width * 0.9)) && pDist <= 5.2) {
+                    return {
+                        type: 'interact',
+                        targetId: 'console',
+                        badgeLabel: 'TERMINAL',
+                        kicker: 'AVIONICS TERMINAL // CRASH SITE',
+                        title: 'VESSEL AVIONICS CONSOLE',
+                        subtitle: 'REQUISITION & REPAIRS INTERFACE',
+                        coords: { x: tileX, z: tileZ },
+                        distance: pDist,
+                        integrity: 100,
+                        promptKey: 'E',
+                        promptText: 'ACCESS TERMINAL'
+                    };
                 }
             }
         }
 
-        // 7. Check O2 Generator
+        // 8. Check O2 Generator
         const o2Pos = this.getActiveO2GeneratorPosition?.();
         if (o2Pos) {
             const distO2 = Math.hypot(worldPoint.x - o2Pos.x, worldPoint.z - o2Pos.z);
-            const playerDist = Math.hypot(this.player.position.x - o2Pos.x, this.player.position.z - o2Pos.z);
-            if (distO2 <= 2.0 && playerDist <= 5.2) {
-                this.setCursorHostileState(false);
-                this.setCursorInteractState(true, 'O2 STATION');
-                return 'o2';
+            const pDist = Math.hypot(this.player.position.x - o2Pos.x, this.player.position.z - o2Pos.z);
+            if (distO2 <= 2.0 && pDist <= 5.2) {
+                return {
+                    type: 'interact',
+                    targetId: 'o2',
+                    badgeLabel: 'O2 STATION',
+                    kicker: 'LIFE SUPPORT // ATMOSPHERE',
+                    title: 'O₂ REFUELING PYLON',
+                    subtitle: 'OXYGEN PRESSURE: STABLE',
+                    coords: { x: tileX, z: tileZ },
+                    distance: pDist,
+                    integrity: 100,
+                    promptKey: 'E',
+                    promptText: 'REFILL OXYGEN'
+                };
             }
         }
 
-        // 8. Check Foundry
+        // 9. Check Foundry
         if (this.foundry?.isRevealed && this.foundry.isWithinInteractRange(worldPoint.x, worldPoint.z)) {
-            this.setCursorHostileState(false);
-            this.setCursorInteractState(true, 'FOUNDRY');
-            return 'foundry';
+            return {
+                type: 'interact',
+                targetId: 'foundry',
+                badgeLabel: 'FOUNDRY',
+                kicker: 'FABRICATION FACILITY // CRAFTING',
+                title: 'AUTOMATED NANO-FOUNDRY',
+                subtitle: 'STATUS: ONLINE // BLUEPRINTS READY',
+                coords: { x: tileX, z: tileZ },
+                distance: playerDist,
+                integrity: 100,
+                promptKey: 'E',
+                promptText: 'OPEN FAB BAY'
+            };
         }
 
-        // 9. Check Black Box
+        // 10. Check Black Box
         if (this._blackBoxMarkerActive && this._blackBoxState) {
             const distBB = Math.hypot(worldPoint.x - this._blackBoxState.x, worldPoint.z - this._blackBoxState.z);
             if (distBB <= 2.0) {
-                this.setCursorHostileState(false);
-                this.setCursorInteractState(true, 'BLACK BOX');
-                return 'black_box';
+                return {
+                    type: 'interact',
+                    targetId: 'black_box',
+                    badgeLabel: 'BLACK BOX',
+                    kicker: 'PRIMARY OBJECTIVE // RECOVERY',
+                    title: 'TELEMETRY FLIGHT RECORDER',
+                    subtitle: 'BEACON: ACTIVE RECOVERY',
+                    coords: { x: tileX, z: tileZ },
+                    distance: distBB,
+                    integrity: 100,
+                    promptKey: 'E',
+                    promptText: 'RECOVER RECORDER'
+                };
             }
         }
 
-        // 10. Check Camps & Camp Leaders
+        // 11. Check Camps & Camp Leaders
         const actionable = this.getActionableCampAt?.(worldPoint.x, worldPoint.z);
         if (actionable) {
             const campLabel = actionable.camp?.leaderName ? `TALK: ${actionable.camp.leaderName.toUpperCase()}` : (actionable.camp?.label?.toUpperCase() || 'CAMP');
-            this.setCursorHostileState(false);
-            this.setCursorInteractState(true, campLabel);
-            return 'camp';
+            return {
+                type: 'camp',
+                targetId: 'camp',
+                badgeLabel: campLabel,
+                kicker: 'OUTPOST SETTLEMENT // SURVIVOR',
+                title: actionable.camp?.leaderName ? `COMMANDER ${actionable.camp.leaderName.toUpperCase()}` : 'OUTPOST HABITATION',
+                subtitle: 'FACTION: EXPEDITION SURVIVORS',
+                coords: { x: tileX, z: tileZ },
+                distance: playerDist,
+                integrity: 100,
+                promptKey: 'E',
+                promptText: 'INITIATE DIALOGUE'
+            };
         }
 
         if (this.camps) {
@@ -7645,58 +7897,268 @@ export class ThreeGame {
                 const cx = camp.tileX ?? camp.x ?? 0;
                 const cz = camp.tileZ ?? camp.z ?? 0;
                 const distCamp = Math.hypot(worldPoint.x - cx, worldPoint.z - cz);
-                const playerDist = Math.hypot(this.player.position.x - cx, this.player.position.z - cz);
-                if (distCamp <= (camp.radius || 3.5) && playerDist <= ((camp.radius || 3.5) + 3.0)) {
-                    this.setCursorHostileState(false);
-                    this.setCursorInteractState(true, camp.leaderName ? `TALK: ${camp.leaderName.toUpperCase()}` : 'CAMP');
-                    return 'camp';
+                const pDist = Math.hypot(this.player.position.x - cx, this.player.position.z - cz);
+                if (distCamp <= (camp.radius || 3.5) && pDist <= ((camp.radius || 3.5) + 3.0)) {
+                    return {
+                        type: 'camp',
+                        targetId: 'camp',
+                        badgeLabel: camp.leaderName ? `TALK: ${camp.leaderName.toUpperCase()}` : 'CAMP',
+                        kicker: 'OUTPOST SETTLEMENT // SURVIVOR',
+                        title: camp.leaderName ? `COMMANDER ${camp.leaderName.toUpperCase()}` : 'SURVIVOR PERIMETER',
+                        subtitle: 'FACTION: ALLIED FORCES',
+                        coords: { x: tileX, z: tileZ },
+                        distance: pDist,
+                        integrity: 100,
+                        promptKey: 'E',
+                        promptText: 'APPROACH'
+                    };
                 }
             }
         }
 
-        this.setCursorInteractState(false);
-        this.setCursorHostileState(false);
-        return null;
+        // 12. Check Fog of War / Unscanned Territory
+        const isScanned = this.explorationTracker?.isTileScanned(worldPoint.x, worldPoint.z);
+        const visionRadius = FOG_OF_WAR_CLEAR_RADIUS ?? 6.2;
+        if (!this.disableFogOfWar && playerDist > visionRadius && !isScanned) {
+            return {
+                type: 'unscanned',
+                targetId: 'unscanned',
+                badgeLabel: '???',
+                kicker: 'UNEXPLORED SECTOR // FOG OF WAR',
+                title: '??? // UNSCANNED SECTOR',
+                subtitle: 'RADAR OCCLUDED // NO SENSOR RETURN',
+                coords: { x: tileX, z: tileZ },
+                distance: playerDist,
+                integrity: 0,
+                promptKey: null,
+                promptText: 'ADVISORY: ADVANCE OR DEPLOY RADAR'
+            };
+        }
+
+        // 13. Check Solid Walls & Obstacles
+        if (tileType === '#' || tileType === 'W' || this.isWallTile?.(tileX, tileZ)) {
+            return {
+                type: 'wall',
+                targetId: 'wall',
+                badgeLabel: 'WALL',
+                kicker: 'STRUCTURAL BULWARK // SOLID',
+                title: 'PERIMETER REINFORCED ICE BULWARK',
+                subtitle: 'COMPOSITION: SUB-ZERO GLACIAL BEDROCK (IMPERVIOUS)',
+                coords: { x: tileX, z: tileZ },
+                distance: playerDist,
+                integrity: 100,
+                promptKey: null,
+                promptText: 'IMPASSABLE'
+            };
+        }
+
+        if (tileType === EXTERIOR_CANYON_TILE || tileType === CLIFF_TILE || this.isHoleTile?.(tileX, tileZ)) {
+            return {
+                type: 'wall',
+                targetId: 'chasm',
+                badgeLabel: 'CHASM',
+                kicker: 'ENVIRONMENTAL HAZARD // DROP',
+                title: 'GLACIAL CANYON CHASM EDGE',
+                subtitle: 'SUB-LEVEL VOID // FALL HAZARD',
+                coords: { x: tileX, z: tileZ },
+                distance: playerDist,
+                integrity: 100,
+                promptKey: null,
+                promptText: 'HAZARDOUS DROP'
+            };
+        }
+
+        // 14. Explored Ground / Sector Terrain
+        const biomeName = (this.currentBiomeKey || 'CRYO').toUpperCase();
+        return {
+            type: 'terrain',
+            targetId: 'terrain',
+            badgeLabel: '',
+            kicker: 'SURFACE SCAN // SECTOR ACTIVE',
+            title: `SUB-SURFACE ${biomeName} CORRIDOR`,
+            subtitle: `SECTOR DEPTH: TIER ${this.currentDepthTier ?? 1} // SECURE DECK`,
+            coords: { x: tileX, z: tileZ },
+            distance: playerDist,
+            integrity: 100,
+            promptKey: null,
+            promptText: ''
+        };
     }
 
-    setCursorInteractState(isInteract, label = '') {
+    setCursorInspectState(target) {
         if (typeof document === 'undefined') return;
         const cursor = document.getElementById('tactical-cursor');
         if (!cursor) return;
-        cursor.classList.toggle('cursor-interact', Boolean(isInteract));
-        cursor.classList.toggle('cursor-camp', Boolean(isInteract));
+
+        cursor.classList.remove(
+            'cursor-target',
+            'cursor-enemy',
+            'cursor-interact',
+            'cursor-camp',
+            'cursor-unscanned',
+            'cursor-wall',
+            'cursor-loot'
+        );
 
         let badge = cursor.querySelector('.cursor-interact-badge');
-        if (isInteract && label) {
-            if (!badge) {
-                badge = document.createElement('div');
-                badge.className = 'cursor-interact-badge';
-                cursor.appendChild(badge);
-            }
-            badge.textContent = label;
-        } else if (!isInteract && !cursor.classList.contains('cursor-target') && badge) {
-            badge.textContent = '';
+
+        if (!target || !target.badgeLabel) {
+            if (badge) badge.textContent = '';
+            return;
+        }
+
+        if (!badge) {
+            badge = document.createElement('div');
+            badge.className = 'cursor-interact-badge';
+            cursor.appendChild(badge);
+        }
+
+        badge.textContent = target.badgeLabel;
+
+        if (target.type === 'enemy') {
+            cursor.classList.add('cursor-target', 'cursor-enemy');
+        } else if (target.type === 'interact' || target.type === 'camp') {
+            cursor.classList.add('cursor-interact', 'cursor-camp');
+        } else if (target.type === 'unscanned') {
+            cursor.classList.add('cursor-unscanned');
+        } else if (target.type === 'wall') {
+            cursor.classList.add('cursor-wall');
+        } else if (target.type === 'loot') {
+            cursor.classList.add('cursor-loot');
+        }
+    }
+
+    setCursorUnscannedState(isUnscanned, label = '???') {
+        if (isUnscanned) {
+            this.setCursorInspectState({ type: 'unscanned', badgeLabel: label });
+        } else {
+            this.setCursorInspectState(null);
+        }
+    }
+
+    setCursorWallState(isWall, label = 'WALL') {
+        if (isWall) {
+            this.setCursorInspectState({ type: 'wall', badgeLabel: label });
+        } else {
+            this.setCursorInspectState(null);
+        }
+    }
+
+    setCursorLootState(isLoot, label = 'RESOURCE') {
+        if (isLoot) {
+            this.setCursorInspectState({ type: 'loot', badgeLabel: label });
+        } else {
+            this.setCursorInspectState(null);
+        }
+    }
+
+    setCursorInteractState(isInteract, label = '') {
+        if (isInteract) {
+            this.setCursorInspectState({ type: 'interact', badgeLabel: label });
+        } else {
+            this.setCursorInspectState(null);
         }
     }
 
     setCursorHostileState(isHostile, label = '') {
-        if (typeof document === 'undefined') return;
-        const cursor = document.getElementById('tactical-cursor');
-        if (!cursor) return;
-        cursor.classList.toggle('cursor-target', Boolean(isHostile));
-        cursor.classList.toggle('cursor-enemy', Boolean(isHostile));
-
-        let badge = cursor.querySelector('.cursor-interact-badge');
-        if (isHostile && label) {
-            if (!badge) {
-                badge = document.createElement('div');
-                badge.className = 'cursor-interact-badge';
-                cursor.appendChild(badge);
-            }
-            badge.textContent = label;
-        } else if (!isHostile && !cursor.classList.contains('cursor-interact') && badge) {
-            badge.textContent = '';
+        if (isHostile) {
+            this.setCursorInspectState({ type: 'enemy', badgeLabel: label });
+        } else {
+            this.setCursorInspectState(null);
         }
+    }
+
+    updateTacticalTelemeter(target) {
+        if (typeof document === 'undefined') return;
+        const telemeter = document.getElementById('tactical-telemeter-box');
+        if (!telemeter) return;
+
+        if (!target || target.type === 'terrain') {
+            if (!this.player || !this.isGameplayInputActive()) {
+                telemeter.classList.add('hidden');
+                return;
+            }
+            telemeter.classList.remove('hidden');
+            const kicker = telemeter.querySelector('#telemeter-kicker');
+            const typeTag = telemeter.querySelector('#telemeter-type-tag');
+            const title = telemeter.querySelector('#telemeter-title');
+            const coords = telemeter.querySelector('#telemeter-coords');
+            const subtitle = telemeter.querySelector('#telemeter-subtitle');
+            const meterBar = telemeter.querySelector('#telemeter-meter-bar');
+            const meterVal = telemeter.querySelector('#telemeter-meter-val');
+            const rangeVal = telemeter.querySelector('#telemeter-range-val');
+            const actionPrompt = telemeter.querySelector('#telemeter-action-prompt');
+
+            if (kicker) kicker.textContent = target?.kicker || 'SURFACE SCAN // PASSIVE';
+            if (typeTag) {
+                typeTag.textContent = 'SECTOR';
+                typeTag.className = 'telemeter-type-tag telemeter-tag--sector';
+            }
+            if (title) title.textContent = target?.title || 'EXPLORED CORRIDOR';
+            if (coords) coords.textContent = target?.coords ? `[X: ${target.coords.x >= 0 ? '+' : ''}${target.coords.x}, Z: ${target.coords.z >= 0 ? '+' : ''}${target.coords.z}]` : '[X: --, Z: --]';
+            if (subtitle) subtitle.textContent = target?.subtitle || `BIOME: ${(this.currentBiomeKey || 'CRYO').toUpperCase()} // TIER ${this.currentDepthTier ?? 1}`;
+            if (meterBar) meterBar.style.width = '100%';
+            if (meterVal) meterVal.textContent = 'STABLE';
+            if (rangeVal) rangeVal.textContent = target?.distance != null ? `DIST: ${target.distance.toFixed(1)}m` : 'DIST: 0.0m';
+            if (actionPrompt) actionPrompt.classList.add('hidden');
+            return;
+        }
+
+        telemeter.classList.remove('hidden');
+        const kicker = telemeter.querySelector('#telemeter-kicker');
+        const typeTag = telemeter.querySelector('#telemeter-type-tag');
+        const title = telemeter.querySelector('#telemeter-title');
+        const coords = telemeter.querySelector('#telemeter-coords');
+        const subtitle = telemeter.querySelector('#telemeter-subtitle');
+        const meterBar = telemeter.querySelector('#telemeter-meter-bar');
+        const meterVal = telemeter.querySelector('#telemeter-meter-val');
+        const rangeVal = telemeter.querySelector('#telemeter-range-val');
+        const actionPrompt = telemeter.querySelector('#telemeter-action-prompt');
+        const actionKey = telemeter.querySelector('#telemeter-action-key');
+        const actionText = telemeter.querySelector('#telemeter-action-text');
+
+        if (kicker) kicker.textContent = target.kicker;
+        if (typeTag) {
+            typeTag.textContent = target.type.toUpperCase();
+            typeTag.className = `telemeter-type-tag telemeter-tag--${target.type}`;
+        }
+        if (title) title.textContent = target.title;
+        if (coords) coords.textContent = target.coords ? `[X: ${target.coords.x >= 0 ? '+' : ''}${target.coords.x}, Z: ${target.coords.z >= 0 ? '+' : ''}${target.coords.z}]` : '[X: --, Z: --]';
+        if (subtitle) subtitle.textContent = target.subtitle;
+
+        if (meterBar) meterBar.style.width = `${target.integrity ?? 100}%`;
+        if (meterVal) meterVal.textContent = target.type === 'unscanned' ? 'OCCLUDED' : `${target.integrity ?? 100}%`;
+        if (rangeVal) rangeVal.textContent = target.distance != null ? `DIST: ${target.distance.toFixed(1)}m` : '';
+
+        if (actionPrompt && actionKey && actionText) {
+            if (target.promptKey && target.promptText) {
+                actionPrompt.classList.remove('hidden');
+                actionKey.textContent = target.promptKey;
+                actionText.textContent = target.promptText;
+            } else {
+                actionPrompt.classList.add('hidden');
+            }
+        }
+    }
+
+    checkHoverInteractable(clientX, clientY) {
+        if (!this.isGameplayInputActive() || !this.player) {
+            this.setCursorInspectState(null);
+            this.updateTacticalTelemeter(null);
+            return null;
+        }
+
+        const worldPoint = this.getWorldAimPoint(clientX, clientY);
+        if (!worldPoint) {
+            this.setCursorInspectState(null);
+            this.updateTacticalTelemeter(null);
+            return null;
+        }
+
+        const target = this.resolveTacticalInspectTarget(worldPoint);
+        this.setCursorInspectState(target);
+        this.updateTacticalTelemeter(target);
+        return target?.targetId ?? null;
     }
 
     getSessionInventory() {
@@ -12238,6 +12700,7 @@ export class ThreeGame {
     }
 
     getActionableCampAt(x, z, phase = this.act2?.getPhase()) {
+        if (!this.camps) return null;
         for (const camp of this.camps) {
             // Post-reveal, a live defense turret is its own interaction: spoof
             // it quietly if Vey taught you how, or smash it and be heard.
@@ -18115,11 +18578,15 @@ export class ThreeGame {
         }
         this._lastChunkVisibilityKey = visibilityKey;
         this.updateDepthTierProgress(centerChunkX, centerChunkY);
-        const needed = new Set();
-        const resident = new Set();
-        this.wallMeshes = [];
-        this.pickupMeshes = [];
-        this.scatterSprites = [];
+        if (!this._neededChunkKeys) this._neededChunkKeys = new Set();
+        if (!this._residentChunkKeys) this._residentChunkKeys = new Set();
+        const needed = this._neededChunkKeys;
+        const resident = this._residentChunkKeys;
+        needed.clear();
+        resident.clear();
+        if (!this.wallMeshes) this.wallMeshes = []; else this.wallMeshes.length = 0;
+        if (!this.pickupMeshes) this.pickupMeshes = []; else this.pickupMeshes.length = 0;
+        if (!this.scatterSprites) this.scatterSprites = []; else this.scatterSprites.length = 0;
 
         for (let chunkY = centerChunkY - this.visibleChunkRadius; chunkY <= centerChunkY + this.visibleChunkRadius; chunkY++) {
             for (let chunkX = centerChunkX - this.visibleChunkRadius; chunkX <= centerChunkX + this.visibleChunkRadius; chunkX++) {
@@ -18356,8 +18823,6 @@ export class ThreeGame {
         const maxSteps = landform === LANDFORMS.RUINS ? 30 : landform === LANDFORMS.MAZE ? 24 : 16;
         let steps = 0;
         const stepMatrices = [];
-        const matrix = new THREE.Matrix4();
-        const rotQuat = new THREE.Quaternion();
 
         for (let localY = 1; localY < this.chunkSize - 1; localY++) {
             for (let localX = 1; localX < this.chunkSize - 1; localX++) {
@@ -18377,13 +18842,12 @@ export class ThreeGame {
                 const depth = 0.68 + random() * 0.26;
                 const worldX = chunkX * this.chunkSize + localX + (random() - 0.5) * 0.16;
                 const worldZ = chunkY * this.chunkSize + localY + (random() - 0.5) * 0.16;
-                rotQuat.setFromEuler(new THREE.Euler(0, Math.floor(random() * 4) * (Math.PI / 2), 0));
-                matrix.compose(
-                    new THREE.Vector3(worldX, height / 2 + 0.006, worldZ),
-                    rotQuat,
-                    new THREE.Vector3(width, height / 0.08, depth)
-                );
-                stepMatrices.push(matrix.clone());
+                _scratchEuler.set(0, Math.floor(random() * 4) * (Math.PI / 2), 0);
+                _scratchQuaternion.setFromEuler(_scratchEuler);
+                _scratchVector3.set(worldX, height / 2 + 0.006, worldZ);
+                const scaleVec = new THREE.Vector3(width, height / 0.08, depth);
+                _scratchMatrix4.compose(_scratchVector3, _scratchQuaternion, scaleVec);
+                stepMatrices.push(_scratchMatrix4.clone());
                 steps++;
             }
         }
@@ -19283,15 +19747,12 @@ export class ThreeGame {
             const matrix = new THREE.Matrix4();
             const rotation = new THREE.Quaternion().setFromEuler(new THREE.Euler(-Math.PI / 2, 0, 0));
             floorCells.forEach((cell, index) => {
-                matrix.compose(
-                    new THREE.Vector3(
-                        chunkX * this.chunkSize + cell.localX,
-                        0,
-                        chunkY * this.chunkSize + cell.localY
-                    ),
-                    rotation,
-                    new THREE.Vector3(1, 1, 1)
+                _scratchVector3.set(
+                    chunkX * this.chunkSize + cell.localX,
+                    0,
+                    chunkY * this.chunkSize + cell.localY
                 );
+                matrix.compose(_scratchVector3, rotation, _scratchScale);
                 floors.setMatrixAt(index, matrix);
             });
             floors.instanceMatrix.needsUpdate = true;
@@ -19307,15 +19768,12 @@ export class ThreeGame {
                     exteriorGroundCells.length
                 );
                 exteriorGroundCells.forEach((cell, index) => {
-                    matrix.compose(
-                        new THREE.Vector3(
-                            chunkX * this.chunkSize + cell.localX,
-                            0.012,
-                            chunkY * this.chunkSize + cell.localY
-                        ),
-                        rotation,
-                        new THREE.Vector3(1, 1, 1)
+                    _scratchVector3.set(
+                        chunkX * this.chunkSize + cell.localX,
+                        0.012,
+                        chunkY * this.chunkSize + cell.localY
                     );
+                    matrix.compose(_scratchVector3, rotation, _scratchScale);
                     ledges.setMatrixAt(index, matrix);
                 });
                 ledges.instanceMatrix.needsUpdate = true;
@@ -21235,59 +21693,54 @@ export class ThreeGame {
                 fog: true,
                 depthWrite: false
             });
+            // Wall decal textures are all square (docs/game-audit-lane-split-and-worklog.md §3c) —
+            // use uniform scaleX for both axes rather than the shared scaleY, which folds in
+            // placement.tiltX (a distortion meant for 3D organic props like stalagmites/junk
+            // piles, not a flat wall-mounted 2D plane). Reusing it here silently stretched
+            // otherwise-square textures up to ~8% non-uniformly.
             const decalWidth = Math.max(1.0, scaleX * 1.4);
-            const decalHeight = Math.max(1.0, scaleY * 1.4);
+            const decalHeight = decalWidth;
             const wallDecalGeo = new THREE.PlaneGeometry(decalWidth, decalHeight);
             const decalMesh = new THREE.Mesh(wallDecalGeo, material);
             
+            // Docs/game-audit-lane-split-and-worklog.md §3c: this used to be two independent
+            // copies of the same snap-to-wall-face offset formula — one for an auto-detected
+            // neighbor, one for a pre-calculated normal — that happened to agree but could
+            // silently drift if only one was ever edited. Consolidated into a single formula
+            // applied once nx/nz are resolved, regardless of which path resolved them.
             let nx = placement.wallNormal?.x ?? placement.normalX;
             let nz = placement.wallNormal?.z ?? placement.normalZ;
-            let decalX = placement.x;
-            let decalZ = placement.z;
+            const tileX = Math.round(placement.x);
+            const tileZ = Math.round(placement.z);
 
-            // If wall normal is not pre-calculated, detect adjacent wall from world tile
             if (!Number.isFinite(nx) || !Number.isFinite(nz) || (nx === 0 && nz === 0)) {
-                const tileX = Math.round(placement.x);
-                const tileZ = Math.round(placement.z);
+                // Wall normal not pre-calculated — detect the adjacent wall from the world tile.
                 const neighbors = [
                     { dx: 0, dz: -1, nx: 0, nz: 1 },  // North wall -> faces South (+Z)
                     { dx: 0, dz: 1,  nx: 0, nz: -1 }, // South wall -> faces North (-Z)
                     { dx: -1, dz: 0, nx: 1, nz: 0 },  // West wall -> faces East (+X)
                     { dx: 1, dz: 0,  nx: -1, nz: 0 }  // East wall -> faces West (-X)
                 ];
-                let foundNeighbor = null;
-                for (const n of neighbors) {
-                    if (this.getTileType?.(tileX + n.dx, tileZ + n.dz) === '#') {
-                        foundNeighbor = n;
-                        break;
-                    }
-                }
+                const foundNeighbor = neighbors.find((n) => this.getTileType?.(tileX + n.dx, tileZ + n.dz) === '#');
                 if (foundNeighbor) {
                     nx = foundNeighbor.nx;
                     nz = foundNeighbor.nz;
-                    if (foundNeighbor.dz === -1) {
-                        decalZ = tileZ - 0.5 + 0.02;
-                    } else if (foundNeighbor.dz === 1) {
-                        decalZ = tileZ + 0.5 - 0.02;
-                    } else if (foundNeighbor.dx === -1) {
-                        decalX = tileX - 0.5 + 0.02;
-                    } else if (foundNeighbor.dx === 1) {
-                        decalX = tileX + 0.5 - 0.02;
-                    }
                 } else {
                     nx = 0;
                     nz = 1;
                 }
-            } else {
-                if (nz === 1) {
-                    decalZ = Math.round(placement.z) - 0.5 + 0.02;
-                } else if (nz === -1) {
-                    decalZ = Math.round(placement.z) + 0.5 - 0.02;
-                } else if (nx === 1) {
-                    decalX = Math.round(placement.x) - 0.5 + 0.02;
-                } else if (nx === -1) {
-                    decalX = Math.round(placement.x) + 0.5 - 0.02;
-                }
+            }
+
+            let decalX = placement.x;
+            let decalZ = placement.z;
+            if (nz === 1) {
+                decalZ = tileZ - 0.5 + 0.02;
+            } else if (nz === -1) {
+                decalZ = tileZ + 0.5 - 0.02;
+            } else if (nx === 1) {
+                decalX = tileX - 0.5 + 0.02;
+            } else if (nx === -1) {
+                decalX = tileX + 0.5 - 0.02;
             }
 
             const wallY = this.wallHeight ? this.wallHeight * 0.48 : 1.34;

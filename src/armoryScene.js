@@ -5,7 +5,7 @@ import { assetUrl } from './assetUrl.js';
 import { createPlayer3dOverlay, WEAPON_ARCHETYPES, WEAPON_SKIN_MESHES } from './player3dOverlay.js';
 import { DEFAULT_ARCHETYPES } from './loadout.js';
 
-const CHARM_GLB_MAP = Object.freeze({
+export const CHARM_GLB_MAP = Object.freeze({
     '4130': '/3d/runtime/new3ds/charm_mini_cryo_core.glb',
     '4131': '/3d/runtime/new3ds/charm_spent_50cal.glb',
     '4132': '/3d/runtime/new3ds/charm_sporesnail_pearl.glb',
@@ -20,7 +20,7 @@ const CHARM_GLB_MAP = Object.freeze({
     '4139': '/3d/runtime/new3ds/charm_golden_sub_bunker_key.glb'
 });
 
-const MOD_GLB_MAP = Object.freeze({
+export const MOD_GLB_MAP = Object.freeze({
     '4140': '/3d/runtime/new3ds/mod_cryo_capacitor.glb',
     '4141': '/3d/runtime/new3ds/mod_magnetic_scavenger.glb',
     // 4142/4143/4144 — same Hyper3D Rodin generation as 4137/4138 above.
@@ -37,6 +37,29 @@ const MOD_GLB_MAP = Object.freeze({
 const WEAPON_SKIN_GLB_MAP = WEAPON_SKIN_MESHES;
 const WEAPON_ARCHETYPE_GLBS = WEAPON_ARCHETYPES;
 const FALLBACK_WEAPON_GLB = WEAPON_ARCHETYPES.gg1;
+
+// Lane D fix (docs/game-audit-lane-split-and-worklog.md §2): every other overlay file
+// (player3dOverlay.js, world3dOverlay.js, enemy3dOverlay.js) caches loaded GLTF templates by
+// URL so repeated equips don't re-fetch/re-parse the same .glb. This file didn't, and the
+// Armory is clicked far more densely than any in-run asset load — likely the main source of
+// "loading makes it go slower." Mirrors player3dOverlay.js's loadWeaponTemplate() pattern
+// exactly: cache the promise (so concurrent requests for the same url share one fetch, and a
+// failed load evicts itself for retry), and always .clone(true) the cached template's scene
+// before mutating scale/position — mutating the cached original directly would corrupt it for
+// every future load of the same item.
+// Module-scope so the cache also survives the Armory scene being torn down and recreated
+// (e.g. closing and reopening the Armory), not just repeated clicks within one session.
+const armoryGltfCache = new Map();
+function loadArmoryGltfCached(loader, url) {
+    if (!armoryGltfCache.has(url)) {
+        const promise = loader.loadAsync(assetUrl(url)).catch((err) => {
+            armoryGltfCache.delete(url);
+            throw err;
+        });
+        armoryGltfCache.set(url, promise);
+    }
+    return armoryGltfCache.get(url);
+}
 
 export async function createArmoryScene(canvas) {
     if (!canvas) throw new Error('Armory scene requires a canvas element');
@@ -270,10 +293,10 @@ export async function createArmoryScene(canvas) {
         try {
             let gltf;
             try {
-                gltf = await gltfLoader.loadAsync(assetUrl(url));
+                gltf = await loadArmoryGltfCached(gltfLoader, url);
             } catch {
                 // Fallback to GG1 if archetype or skin GLB is not authored yet
-                gltf = await gltfLoader.loadAsync(assetUrl(FALLBACK_WEAPON_GLB));
+                gltf = await loadArmoryGltfCached(gltfLoader, FALLBACK_WEAPON_GLB);
             }
             if (gen !== weaponLoadGen) return;
 
@@ -281,7 +304,7 @@ export async function createArmoryScene(canvas) {
                 weaponPivot.remove(currentWeaponMesh);
             }
 
-            const model = gltf.scene;
+            const model = gltf.scene.clone(true);
             // Normalize weapon scale for prominent bench inspection
             const bbox = new THREE.Box3().setFromObject(model);
             const size = bbox.getSize(new THREE.Vector3());
@@ -325,10 +348,10 @@ export async function createArmoryScene(canvas) {
 
         const url = CHARM_GLB_MAP[String(charmItemdefId)];
         try {
-            const gltf = await gltfLoader.loadAsync(assetUrl(url));
+            const gltf = await loadArmoryGltfCached(gltfLoader, url);
             if (currentCharmMesh) charmSocket.remove(currentCharmMesh);
 
-            const model = gltf.scene;
+            const model = gltf.scene.clone(true);
             const bbox = new THREE.Box3().setFromObject(model);
             const maxDim = Math.max(bbox.getSize(new THREE.Vector3()).length(), 0.001);
             model.scale.setScalar(0.18 / maxDim); // Trinket scale
@@ -361,11 +384,11 @@ export async function createArmoryScene(canvas) {
 
         const url = MOD_GLB_MAP[String(modItemdefId)];
         try {
-            const gltf = await gltfLoader.loadAsync(assetUrl(url));
+            const gltf = await loadArmoryGltfCached(gltfLoader, url);
             if (slot === 2 && currentMod2Mesh) mod2Socket.remove(currentMod2Mesh);
             if (slot === 1 && currentMod1Mesh) mod1Socket.remove(currentMod1Mesh);
 
-            const model = gltf.scene;
+            const model = gltf.scene.clone(true);
             const bbox = new THREE.Box3().setFromObject(model);
             const maxDim = Math.max(bbox.getSize(new THREE.Vector3()).length(), 0.001);
             model.scale.setScalar(0.14 / maxDim); // Modular chip scale

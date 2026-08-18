@@ -122,6 +122,39 @@ export class ExplorationTracker {
         return this.exploredCells.has(`${gx},${gz}`);
     }
 
+    isTileScanned(worldX, worldZ) {
+        const { gx, gz } = worldToGrid(worldX, worldZ, this.cellSize);
+        const cell = this.exploredCells.get(`${gx},${gz}`);
+        return Boolean(cell && (cell.scanned || cell.discoveredAt));
+    }
+
+    getExplorationState(worldX, worldZ) {
+        const { gx, gz } = worldToGrid(worldX, worldZ, this.cellSize);
+        const key = `${gx},${gz}`;
+        const cell = this.exploredCells.get(key);
+        if (!cell) {
+            return {
+                explored: false,
+                scanned: false,
+                gx,
+                gz,
+                key,
+                roomType: 'unscanned_sector',
+                label: 'Unscanned Sector'
+            };
+        }
+        return {
+            explored: true,
+            scanned: Boolean(cell.scanned),
+            gx,
+            gz,
+            key,
+            roomType: cell.roomType ?? 'scanned_sector',
+            label: cell.label ?? 'Explored Sector',
+            cleared: Boolean(cell.cleared)
+        };
+    }
+
     getExploredCells() {
         return Array.from(this.exploredCells.values());
     }
