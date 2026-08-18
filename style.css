@@ -18055,12 +18055,12 @@ body.show-debug .map-tool-btn--debug { display: inline-flex; }
 }
 
 .armory-tag {
-  font-family: 'Space Mono', monospace;
+  font-family: 'Outfit', sans-serif;
   font-size: calc(var(--font-xs) * 0.72);
   font-weight: 700;
   letter-spacing: 0.16em;
-  color: #5bc8d8;
-  text-shadow: 0 0 8px rgba(46, 196, 182, 0.55);
+  color: var(--accent-primary);
+  text-shadow: 0 0 8px rgba(255, 159, 28, 0.55);
 }
 
 .armory-title {
@@ -18070,56 +18070,56 @@ body.show-debug .map-tool-btn--debug { display: inline-flex; }
   letter-spacing: 0.1em;
   color: #ffffff;
   margin: 0;
-  text-shadow: 0 0 20px rgba(6, 182, 212, 0.5), 0 2px 10px rgba(0, 0, 0, 0.9);
+  text-shadow: 0 0 20px rgba(255, 159, 28, 0.5), 0 2px 10px rgba(0, 0, 0, 0.9);
   text-transform: uppercase;
 }
 
 .armory-title-accent {
-  color: #22d3ee;
+  color: var(--accent-primary);
   font-weight: 700;
 }
 
 .armory-operator-status {
   background: rgba(8, 14, 22, 0.92);
-  border: 1.5px solid rgba(46, 196, 182, 0.4);
+  border: 1.5px solid rgba(255, 159, 28, 0.4);
   border-radius: 6px;
   padding: calc(var(--vu) * 0.6) calc(var(--vu) * 1.4);
   display: flex;
   align-items: center;
   gap: 8px;
   backdrop-filter: blur(10px);
-  box-shadow: 0 0 20px rgba(6, 182, 212, 0.2), 0 4px 16px rgba(0, 0, 0, 0.6);
+  box-shadow: 0 0 20px rgba(255, 159, 28, 0.2), 0 4px 16px rgba(0, 0, 0, 0.6);
 }
 
 .status-cycle-hint {
-  font-family: 'Space Mono', monospace;
+  font-family: 'Outfit', sans-serif;
   font-size: calc(var(--font-xs) * 0.68);
   font-weight: 800;
-  color: #ff9f1c;
-  background: rgba(255, 159, 28, 0.15);
-  border: 1px solid rgba(255, 159, 28, 0.35);
+  color: var(--accent-secondary);
+  background: rgba(46, 196, 182, 0.15);
+  border: 1px solid rgba(46, 196, 182, 0.35);
   padding: 2px 6px;
   border-radius: 3px;
   letter-spacing: 0.06em;
 }
 
 .armory-operator-status .status-label {
-  font-family: 'Space Mono', monospace;
+  font-family: 'Outfit', sans-serif;
   font-size: calc(var(--font-xs) * 0.7);
   color: var(--text-muted);
   letter-spacing: 0.08em;
 }
 
 .armory-operator-status .status-value {
-  font-family: 'Space Mono', monospace;
+  font-family: 'Outfit', sans-serif;
   font-size: calc(var(--font-xs) * 0.9);
   font-weight: 900;
   letter-spacing: 0.1em;
-  color: #2ec4b6;
+  color: var(--accent-secondary);
 }
 
 .armory-operator-status .status-value.class-tank {
-  color: #ff9f1c;
+  color: var(--accent-primary);
 }
 
 .armory-operator-status .status-value.class-engineer {
@@ -18140,11 +18140,11 @@ body.show-debug .map-tool-btn--debug { display: inline-flex; }
 .armory-panel {
   pointer-events: auto;
   background: rgba(8, 14, 22, 0.92);
-  border: 1.5px solid rgba(46, 196, 182, 0.35);
+  border: 1.5px solid rgba(255, 159, 28, 0.35);
   border-radius: 8px;
   padding: calc(var(--vu) * 1.4) calc(var(--vu) * 1.8);
   backdrop-filter: blur(12px);
-  box-shadow: 0 0 25px rgba(6, 182, 212, 0.15), 0 8px 32px rgba(0, 0, 0, 0.8);
+  box-shadow: 0 0 25px rgba(255, 159, 28, 0.15), 0 8px 32px rgba(0, 0, 0, 0.8);
   display: flex;
   flex-direction: column;
   gap: calc(var(--vu) * 1);
@@ -18153,21 +18153,24 @@ body.show-debug .map-tool-btn--debug { display: inline-flex; }
   min-width: 0;
 }
 
+/* Suit vs. weapon panels keep their own left/right accent (teal vs. orange)
+   as an intentional wayfinding split between the two benches -- everything
+   else on this screen uses the shared orange system identity above. */
 .suit-bench-panel {
   grid-column: 1;
-  border-left: 3px solid #2ec4b6;
+  border-left: 3px solid var(--accent-secondary);
 }
 
 .weapon-bench-panel {
   grid-column: 3;
-  border-right: 3px solid #ff9f1c;
+  border-right: 3px solid var(--accent-primary);
 }
 
 .panel-header {
   display: flex;
   align-items: center;
   gap: 8px;
-  border-bottom: 1px solid rgba(46, 196, 182, 0.25);
+  border-bottom: 1px solid rgba(255, 159, 28, 0.25);
   padding-bottom: calc(var(--vu) * 0.6);
 }
 
@@ -18188,31 +18191,31 @@ body.show-debug .map-tool-btn--debug { display: inline-flex; }
 }
 
 .bench-field label {
-  font-family: 'Space Mono', monospace;
+  font-family: 'Outfit', sans-serif;
   font-size: calc(var(--font-xs) * 0.68);
   font-weight: 700;
   letter-spacing: 0.08em;
-  color: #88aacc;
+  color: var(--text-muted);
 }
 
 .field-value {
-  font-family: 'Space Mono', monospace;
+  font-family: 'Outfit', sans-serif;
   font-size: calc(var(--font-xs) * 0.82);
   font-weight: 700;
-  color: #ecfeff;
+  color: var(--text-main);
   background: rgba(255, 255, 255, 0.04);
   padding: 6px 10px;
   border-radius: 4px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--border-subtle);
 }
 
 .armory-select {
-  font-family: 'Space Mono', monospace;
+  font-family: 'Outfit', sans-serif;
   font-size: calc(var(--font-xs) * 0.78);
   font-weight: 600;
-  color: #ecfeff;
-  background: rgba(14, 23, 36, 0.95);
-  border: 1px solid rgba(46, 196, 182, 0.4);
+  color: var(--accent-primary);
+  background: var(--bg-panel);
+  border: 1px solid var(--border-subtle);
   border-radius: 4px;
   padding: 7px 10px;
   outline: none;
@@ -18221,8 +18224,14 @@ body.show-debug .map-tool-btn--debug { display: inline-flex; }
   max-width: 100%;
 }
 
-.armory-select:hover, .armory-select:focus {
-  border-color: #22d3ee;
+.armory-select:hover {
+  border-color: var(--accent-primary);
+}
+
+.armory-select:focus {
+  border-color: var(--accent-primary);
+  outline: 2px solid rgba(46, 196, 182, 0.9);
+  outline-offset: 2px;
   box-shadow: 0 0 12px rgba(46, 196, 182, 0.4);
 }
 
@@ -18234,7 +18243,7 @@ body.show-debug .map-tool-btn--debug { display: inline-flex; }
 
 .telemetry-box {
   background: rgba(0, 0, 0, 0.45);
-  border: 1px solid rgba(46, 196, 182, 0.25);
+  border: 1px solid rgba(255, 159, 28, 0.25);
   border-radius: 6px;
   padding: 10px 12px;
   display: flex;
@@ -18243,24 +18252,24 @@ body.show-debug .map-tool-btn--debug { display: inline-flex; }
 }
 
 .telemetry-title {
-  font-family: 'Space Mono', monospace;
+  font-family: 'Outfit', sans-serif;
   font-size: 9px;
   font-weight: 800;
   letter-spacing: 0.12em;
-  color: #2ec4b6;
+  color: var(--accent-primary);
   margin-bottom: 2px;
 }
 
 .telemetry-item {
   display: flex;
   justify-content: space-between;
-  font-family: 'Space Mono', monospace;
+  font-family: 'Outfit', sans-serif;
   font-size: 10px;
-  color: #88aacc;
+  color: var(--text-muted);
 }
 
 .telemetry-item strong {
-  color: #ecfeff;
+  color: var(--text-main);
 }
 
 .modifiers-summary {
@@ -18272,11 +18281,11 @@ body.show-debug .map-tool-btn--debug { display: inline-flex; }
 }
 
 .modifiers-title {
-  font-family: 'Space Mono', monospace;
+  font-family: 'Outfit', sans-serif;
   font-size: 10px;
   font-weight: 800;
   letter-spacing: 0.08em;
-  color: #ff9f1c;
+  color: var(--accent-primary);
   margin-bottom: 8px;
 }
 
@@ -18287,7 +18296,7 @@ body.show-debug .map-tool-btn--debug { display: inline-flex; }
 }
 
 .mod-badge {
-  font-family: 'Space Mono', monospace;
+  font-family: 'Outfit', sans-serif;
   font-size: 10px;
   font-weight: 700;
   padding: 4px 8px;
@@ -18313,7 +18322,7 @@ body.show-debug .map-tool-btn--debug { display: inline-flex; }
 }
 
 .armory-btn {
-  font-family: 'Rajdhani', 'Space Mono', monospace;
+  font-family: 'Rajdhani', 'Outfit', sans-serif;
   font-size: calc(var(--font-xs) * 0.95);
   font-weight: 900;
   letter-spacing: 0.08em;
@@ -18330,7 +18339,7 @@ body.show-debug .map-tool-btn--debug { display: inline-flex; }
 }
 
 .btn-keyhint {
-  font-family: 'Space Mono', monospace;
+  font-family: 'Outfit', sans-serif;
   font-size: calc(var(--font-xs) * 0.65);
   font-weight: 800;
   opacity: 0.75;
@@ -18339,25 +18348,28 @@ body.show-debug .map-tool-btn--debug { display: inline-flex; }
 
 .armory-btn.secondary-btn {
   background: rgba(18, 28, 42, 0.85);
-  color: #88aacc;
-  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: var(--text-muted);
+  border: 1px solid var(--border-subtle);
 }
 
 .armory-btn.secondary-btn:hover {
   background: rgba(30, 48, 72, 0.95);
   color: #ffffff;
-  border-color: #2ec4b6;
+  border-color: var(--accent-primary);
 }
 
+/* Tertiary (Steam Vault): a real secondary nav action, kept on the shared
+   teal accent-secondary token rather than EMBARK's primary orange so the
+   two footer actions don't compete for attention. */
 .armory-btn.tertiary-btn {
   background: rgba(10, 24, 38, 0.85);
-  color: #22d3ee;
-  border: 1px solid rgba(6, 182, 212, 0.4);
+  color: var(--accent-secondary);
+  border: 1px solid rgba(46, 196, 182, 0.4);
 }
 
 .armory-btn.tertiary-btn:hover {
-  background: rgba(6, 182, 212, 0.2);
-  box-shadow: 0 0 16px rgba(6, 182, 212, 0.35);
+  background: rgba(46, 196, 182, 0.2);
+  box-shadow: 0 0 16px rgba(46, 196, 182, 0.35);
 }
 
 .armory-btn.primary-btn {

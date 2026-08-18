@@ -102,6 +102,31 @@ describe('steam auth backend helpers', () => {
         expect(globalThis.fetch).toHaveBeenCalledOnce();
     });
 
+    it('normalizes an unexpected Steam HTTP status to 502 instead of reflecting it', async () => {
+        // Regression: this used to set status: response.status verbatim, so a live
+        // deployment saw a real client-visible 405 on OUR /steam/session POST route
+        // purely because Steam's own upstream API happened to respond 405 -- nothing
+        // wrong with the client's request. The raw upstream code should only ever
+        // show up inside upstream.status for diagnostics, never as our own status.
+        process.env.HB_STEAM_PUBLISHER_KEY = 'publisher-key';
+        globalThis.fetch = vi.fn().mockResolvedValue({
+            ok: false,
+            status: 405,
+            json: async () => ({})
+        });
+
+        const result = await verifySteamSessionTicket({
+            ticketHex: '00112233445566778899aabbccddeeff'
+        });
+
+        expect(result).toMatchObject({
+            ok: false,
+            status: 502,
+            reason: 'steam_auth_http_error',
+            upstream: { status: 405 }
+        });
+    });
+
     it('creates and verifies short-lived backend session tokens', () => {
         process.env.HB_SESSION_SECRET = 'session-secret';
         const now = Date.UTC(2026, 6, 13, 12);

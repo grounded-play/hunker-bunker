@@ -158,7 +158,12 @@ function getShowroomGltfLoader() {
     return _showroomGltfLoader;
 }
 async function loadShowroomGlb(url) {
-    if (!url) return null;
+    // Node's URL/fetch (undici) can't resolve the site-root-relative paths assetUrl()
+    // returns without a document.baseURI to resolve against — every showroom GLB fails
+    // this way under vitest, logging a scary "Invalid URL" stack per item even though
+    // it's expected and harmless (matches makeIconPlaneSprite's guard below). Skip the
+    // attempt entirely outside a real browser instead of throwing-and-catching per item.
+    if (!url || typeof document === 'undefined') return null;
     if (!_showroomGltfCache.has(url)) {
         _showroomGltfCache.set(url, getShowroomGltfLoader().loadAsync(assetUrl(url)).catch((err) => {
             _showroomGltfCache.delete(url);

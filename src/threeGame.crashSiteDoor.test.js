@@ -20,6 +20,11 @@ describe('clearSpawnArea — door/portal alignment', () => {
         ]);
         const game = {
             getTileType: (x, z) => tiles.get(`${x},${z}`) ?? 'X',
+            // isCliffSecretPath reads getCachedTileType (cache-only, never
+            // triggers a chunk build) rather than getTileType -- same fake
+            // lookup semantics are fine here since this test has no real
+            // chunkCache to peek.
+            getCachedTileType: (x, z) => tiles.get(`${x},${z}`) ?? 'X',
             getWallKey: (x, z) => `${x},${z}`,
             filledHoleKeys: new Set(),
             isCliffSecretPath: ThreeGame.prototype.isCliffSecretPath
