@@ -19393,10 +19393,20 @@ export class ThreeGame {
         return patch;
     }
 
+    // getCachedTileType (cache-only, never builds), not getTileType (builds
+    // an uncached chunk on demand) -- this runs from addCliffInstance for
+    // every exterior-canyon/cliff tile mountChunk touches, often 1000+ per
+    // canyon-heavy chunk, each checking up to 5 world positions. Profiled
+    // live: this alone accounted for ~425 of ~435 getOrCreateChunk calls in
+    // a single mountChunk call, cascading into full builds of neighboring
+    // chunks purely to decide whether to draw a cosmetic glowing path decal.
+    // An uncached neighbor just means "not a secret path this pass" (null
+    // treated as false) -- once that neighbor chunk mounts on its own, its
+    // own cliff tiles evaluate this normally.
     isCliffSecretPath(worldX, worldZ) {
-        if (this.getTileType(worldX, worldZ) !== CLIFF_TILE) return false;
+        if (this.getCachedTileType(worldX, worldZ) !== CLIFF_TILE) return false;
         return [[1, 0], [-1, 0], [0, 1], [0, -1]].some(([dx, dz]) => (
-            this.getTileType(worldX + dx, worldZ + dz) === CLIFF_TILE
+            this.getCachedTileType(worldX + dx, worldZ + dz) === CLIFF_TILE
         ));
     }
 
@@ -20215,7 +20225,9 @@ export class ThreeGame {
                         ));
                         continue;
                     }
-                    const holeInfo = this.getHoleVisualInfo(worldX, worldZ);
+                    // requireCached is safe here: worldX/worldZ is always a tile of
+                    // the chunk currently being mounted, already in chunkCache.
+                    const holeInfo = this.getHoleVisualInfo(worldX, worldZ, { requireCached: true });
                     if (!holeInfo) continue;
                     // Hole / Pit (flat on the ground)
                     holeOverlayMatrices.push(new THREE.Matrix4().compose(
