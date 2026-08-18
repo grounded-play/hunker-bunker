@@ -175,7 +175,7 @@ export function selectOverlayAnimation({
     if (forward < -0.35) return 'backward';
     if (side > 0.35) return 'strafeLeft';
     if (side < -0.35) return 'strafeRight';
-    return isSprinting ? 'run' : 'walk';
+    return 'walk';
 }
 
 // Which concrete action name should currently carry a locomotion weight

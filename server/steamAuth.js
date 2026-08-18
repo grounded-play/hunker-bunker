@@ -389,7 +389,16 @@ export async function verifySteamSessionTicket({ ticketHex, identity } = {}) {
 
 export async function authenticateSteamRequest(req, { allowDevFallback = true } = {}) {
     const bearerToken = getBearerToken(req);
-    if (bearerToken) {
+    // Presence of a bearer token selects WHICH verifier runs (signed-session vs.
+    // fresh Steam ticket below); it does not skip verification — both branches
+    // perform real cryptographic checks (HMAC signature check inside
+    // verifySteamSessionToken, or Steam's own AuthenticateUserTicket call inside
+    // verifySteamSessionTicket). The actual forgery risk this query guards
+    // against was the session-signing secret falling back to a hardcoded value
+    // outside explicit dev-fallback mode; that's fixed in normalizeSessionSecret()
+    // above (now gated on isDevFallbackAllowed()), so this branch can't be used
+    // to mint a token the signature check will accept.
+    if (bearerToken) { // codeql[js/user-controlled-bypass]
         return verifySteamSessionToken(bearerToken);
     }
 

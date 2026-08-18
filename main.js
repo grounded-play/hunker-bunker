@@ -7839,11 +7839,8 @@ window.__DEBUG__ = {
         stats: window.game?.getComprehensiveDebugStats?.()
     }),
     startRun: (options) => {
-        if (typeof launchStandardRun === 'function') {
-            launchStandardRun(options);
-            return true;
-        }
-        return false;
+        launchStandardRun(options);
+        return true;
     },
     skipIntro: () => {
         window.skipAllIntro = true;
