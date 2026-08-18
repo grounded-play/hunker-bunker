@@ -630,6 +630,7 @@
         <div class="vault-tabs">
           <button class="vault-tab-btn active" id="vault-tab-inventory"><span class="vault-tab-icon">📦</span> OWNED INVENTORY</button>
           <button class="vault-tab-btn" id="vault-tab-store"><span class="vault-tab-icon">🗝️</span> ◈ RELIC STORE & DROP ODDS</button>
+          <button class="vault-tab-btn" id="vault-tab-smelter"><span class="vault-tab-icon">🔥</span> ◈ SMELTER & DISPENSARY</button>
         </div>
 
         <!-- Inventory Tab Layout -->
@@ -717,6 +718,45 @@
                 <div class="vault-store-odds-badge">100% DISCLOSED</div>
               </div>
               <div class="vault-store-odds-table" id="vault-store-odds-table"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Smelter Tab Layout -->
+        <div class="vault-store-layout hidden" id="vault-smelter-layout">
+          <div class="vault-store-col vault-store-col--left">
+            <div class="vault-store-intro">
+              <div class="vault-store-intro__badges">
+                <span class="vault-notice-badge">🔥 TRADE-UP SMELTING</span>
+                <span class="vault-notice-badge vault-notice-badge--odds">⚖️ 5:1 GUARANTEED TIER-UP</span>
+              </div>
+              <div class="vault-store-intro__body">
+                Combine 5 owned items of the same rarity into 1 guaranteed item at the next rarity tier. Consumed items are permanently removed from your inventory.
+              </div>
+            </div>
+
+            <div class="vault-store-section-header">
+              <span class="vault-store-section-label">DEEP SMELTER</span>
+              <span class="vault-store-section-sub">CONSUMES 5x SAME-TIER ITEMS</span>
+            </div>
+            <div class="vault-smelter-grid" id="vault-smelter-grid"></div>
+          </div>
+
+          <div class="vault-store-col vault-store-col--right">
+            <div class="vault-store-decrypt-card">
+              <div class="vault-decrypt-header">
+                <div class="vault-decrypt-title">DEEP CORE SHARD DISPENSARY</div>
+                <div class="vault-decrypt-inventory">
+                  <span class="vault-inventory-pill"><span class="vault-pill-dot">●</span> SHARDS: <strong id="vault-shard-balance">0</strong></span>
+                </div>
+              </div>
+              <div class="vault-store-open-row">
+                <div class="vault-store-open-info">
+                  <span class="vault-store-open-icon">◈</span>
+                  <span class="vault-store-open-status" id="vault-smelter-status">Duplicate unboxes award bonus Shards. Spend them here on specific items.</span>
+                </div>
+              </div>
+              <div class="vault-smelter-grid" id="vault-dispensary-grid"></div>
             </div>
           </div>
         </div>

@@ -16,20 +16,25 @@ Season 0 registers **60 distinct Steam Inventory items** within the `itemdefid` 
 ## 2. Complete 60-Item Catalog Matrix
 
 ### Category A: Weapon Skins (Itemdefs 4100–4111)
+> **Applicable Weapon column corrected post-roster-lock** (see doc 07 §1): the original
+> fantasy weapon-type labels (Sniper/Rail, Assault Carbine, Heavy Breacher, etc.) predate the
+> 3-class lock and never matched a real archetype. Values below match `src/loadout.js`'s
+> `ARCHETYPE_SKINS`/`class_tag` assignment, which is the functional source of truth.
+
 | Itemdef ID | Name | Rarity | Applicable Weapon | Description |
 | :--- | :--- | :--- | :--- | :--- |
-| `4100` | Sub-Zero Frostbite Sidearm | Uncommon | Scout Pistol | Cryogenic frost-coated polymer chassis with cooling vents. |
-| `4101` | Hazard Stripe SMG | Uncommon | Assault Carbine | High-visibility yellow/black industrial warning livery. |
-| `4102` | Tectonic Driller Shotgun | Uncommon | Heavy Breacher | Heavy tungsten barrel with heat-dissipating fluting. |
-| `4103` | Cryo-Plasma Railgun | Rare | Sniper / Rail | Superconducting cyan plasma coils wrapped around a carbon frame. |
-| `4104` | Rust & Bone Trench Carbine | Rare | Assault Carbine | Weathered bunker salvage with bio-luminescent bone inlays. |
-| `4105` | Obsidian Shard Revolver | Rare | Scout Pistol | Polished volcanic glass receiver with Damascus steel cylinder. |
-| `4106` | Biolume Spore Sprayer | Rare | Heavy Flamer | Biomechanical tank leaking pulsing green fungal spores. |
-| `4107` | Deep Core Melter | Epic | Plasma Lance | Magma-infused reactor core pulsing with orange thermal energy. |
-| `4108` | Glitched Circuit Bolter | Epic | Assault Carbine | Holographic animated circuit board flickering with error logs. |
-| `4109` | Void-Walker Beam Cannon | Epic | Heavy Beam | Dark matter emitter with purple gravitational event horizon. |
-| `4110` | Queen's Carapace Carbine | Legendary | Assault Carbine | Living chitin alloy salvaged from the brood queen's crown. |
-| `4111` | Solar Flare Antimatter Rifle | Legendary | Rail Sniper | Pure golden antimatter accelerator with solar particle trail. |
+| `4100` | Sub-Zero Frostbite Sidearm | Uncommon | Scout — Talon-9 | Cryogenic frost-coated polymer chassis with cooling vents. |
+| `4101` | Hazard Stripe SMG | Uncommon | Scout — Talon-C | High-visibility yellow/black industrial warning livery. |
+| `4102` | Tectonic Driller Shotgun | Uncommon | Tank — Siege-Breaker 50 | Heavy tungsten barrel with heat-dissipating fluting. |
+| `4103` | Cryo-Plasma Arc Driver | Rare | Engineer — Tesla-Lock MK-IV | Superconducting cyan plasma coils wrapped around the Tesla-Lock's arc driver frame. |
+| `4104` | Rust & Bone Trench Carbine | Rare | Scout — Talon-C | Weathered bunker salvage with bio-luminescent bone inlays. |
+| `4105` | Obsidian Shard Revolver | Rare | Scout — Talon-9 | Polished volcanic glass receiver with Damascus steel cylinder. |
+| `4106` | Biolume Spore Sprayer | Rare | Tank — Siege-Breaker 50 | Biomechanical tank leaking pulsing green fungal spores. |
+| `4107` | Deep Core Melter | Epic | Engineer — Tesla-Lock MK-IV | Magma-infused reactor core pulsing with orange thermal energy. Note: generated asset filename (`skin_tank_deep_core_melter`) reads as Tank-themed, but the shipped class assignment (code + schema `class_tag`) is Engineer — filename is legacy/cosmetic-only and non-blocking since players never see it. |
+| `4108` | Glitched Circuit Bolter | Epic | Scout — Talon-C | Holographic animated circuit board flickering with error logs. |
+| `4109` | Void-Walker Beam Cannon | Epic | Engineer — Tesla-Lock MK-IV | Dark matter emitter with purple gravitational event horizon. |
+| `4110` | Queen's Carapace Carbine | Legendary | Scout — Talon-C | Living chitin alloy salvaged from the brood queen's crown. |
+| `4111` | Solar Flare Antimatter Rifle | Legendary | Engineer — Tesla-Lock MK-IV | Pure golden antimatter accelerator with solar particle trail. |
 
 ---
 
@@ -38,10 +43,10 @@ Season 0 registers **60 distinct Steam Inventory items** within the `itemdefid` 
 | :--- | :--- | :--- | :--- | :--- |
 | `4112` | Sub-Terran Drill Engineer | Uncommon | Engineer | Reinforced heavy hazard plating and visor searchlight. |
 | `4113` | Cryo-Vanguard Scout | Uncommon | Scout | Thermal insulated white-camo pressurized stealth suit. |
-| `4114` | Trench Warden Heavy | Rare | Heavy | Riveted blast-shield plate armor with gas respirator. |
+| `4114` | Trench Warden Heavy | Rare | Tank | Riveted blast-shield plate armor with gas respirator. |
 | `4115` | Void Commando Recon | Rare | Scout | Stealth matte-black nano-weave with purple optic sensor. |
-| `4116` | Bio-Synthesizer Medic | Rare | Medic/Support | Biomechanical syringe harness with pulsing fluid tubes. |
-| `4117` | Dreadnought Exo-Juggernaut | Epic | Heavy | Heavy hydraulic power-armor with glowing magma core. |
+| `4116` | Bio-Synthesizer Harness | Rare | All | Biomechanical syringe harness with pulsing fluid tubes. Chassis skins equip through a single global suit slot (`src/loadout.js` `suit.chassisSkinId`), not per-class — the original "Medic" framing assumed a class that never shipped (see §4 below); no class restriction was ever needed. |
+| `4117` | Dreadnought Exo-Juggernaut | Epic | Tank | Heavy hydraulic power-armor with glowing magma core. |
 | `4118` | Cyber-Spectre Infiltrator | Epic | Scout | Active-camo holographic shimmer with cybernetic visor. |
 | `4119` | Hive-Lord Symbiote Exosuit | Legendary | All Classes | Mutated hybrid armor of living alien carapace and steel. |
 
@@ -110,7 +115,7 @@ Season 0 registers **60 distinct Steam Inventory items** within the `itemdefid` 
 ### Category G: Crafting Reagents & Keys (Itemdefs 4154–4159)
 | Itemdef ID | Name | Rarity | Purpose & Utility |
 | :--- | :--- | :--- | :--- |
-| `4154` | Relic Decryption Key | Rare | Unlocks 1 Deep Relic Cache via the Steam Vault. |
+| `4154` | Relic Decryption Key (Earned) | Rare | Unlocks 1 Deep Relic Cache. F2P-earned counterpart to itemdef `4001`'s paid Cache Key (see §4 below) — 4001 is purchase-only and never drops free; 4154 is earned via the Deep Core Shard dispensary (doc 05 §4). Registered and equippable, reusing 4001's `cache_key` art. |
 | `4155` | 5x Relic Key Master Pack | Rare | Bundle pack containing 5 Relic Decryption Keys. |
 | `4156` | Cryo-Alloy Ingot | Uncommon | Primary seasonal crafting metal for unboxing and forging. |
 | `4157` | Deep Sub-Core Matrix | Rare | Concentrated power core used to craft Epic Overclocks. |

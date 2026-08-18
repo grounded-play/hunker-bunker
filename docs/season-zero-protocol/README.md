@@ -45,8 +45,8 @@
 
 8. [08. Complete Asset Audit & Render Gaps](file:///home/caveman/Desktop/icecave/hunker-bunker/docs/season-zero-protocol/08-asset-audit-and-gaps.md)
    - File-by-file cross-reference of all 60 itemdefs against real 2D art, 3D models, and Steam catalog registration.
-   - The catalog-registration blocker is **fixed for 22/60 items** (up from 0) — `src/data/steamItemCatalog.js` now serves every itemdef whose art satisfies the 4-file compliance standard (§1a); live-verified a claimed item rendering with real art in the Steam Vault. The other 38 are correctly unregistered pending real art, not blocked by a wiring bug.
-   - Discovered naming/data conflicts (itemdef `4107`/`4103` class mismatches, `4154` vs `4001` duplicate) and a priority order for closing the remaining gaps.
+   - The catalog-registration blocker is **fixed for 23/60 items** (up from 0) — `src/data/steamItemCatalog.js` now serves every itemdef whose art satisfies the 4-file compliance standard (§1a); live-verified a claimed item rendering with real art in the Steam Vault. The other 37 are correctly unregistered pending real art, not blocked by a wiring bug.
+   - The 4 discovered naming/data conflicts (`4107`/`4103` naming, `4154` vs `4001`, `4116` "Medic" framing) are **all resolved** — see §4.
 
 9. [09. Economy Asset Generation & Full In-Game Wiring Plan](file:///home/caveman/Desktop/icecave/hunker-bunker/docs/season-zero-protocol/09-economy-assets-generation-and-wiring-plan.md)
    - Actionable batch-by-batch asset generation plan for all 38 remaining Season 0 items.

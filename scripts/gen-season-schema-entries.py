@@ -22,7 +22,7 @@ ITEMS = [
     (4100, "Sub-Zero Frostbite Sidearm", "Cryogenic frost-coated polymer chassis with cooling vents.", 'uncommon', 'CosmeticWeapon', 'weapon_finish', 'scout', 'skin_scout_frostbite', True),
     (4101, "Hazard Stripe SMG", "High-visibility yellow/black industrial warning livery.", 'uncommon', 'CosmeticWeapon', 'weapon_finish', 'scout', 'skin_hazard_stripe_smg', True),
     (4102, "Tectonic Driller Shotgun", "Heavy tungsten barrel with heat-dissipating fluting.", 'uncommon', 'CosmeticWeapon', 'weapon_finish', 'tank', 'skin_tectonic_driller', True),
-    (4103, "Cryo-Plasma Railgun", "Superconducting cyan plasma coils wrapped around a carbon frame.", 'rare', 'CosmeticWeapon', 'weapon_finish', 'engineer', 'skin_engineer_cryo_plasma', True),
+    (4103, "Cryo-Plasma Arc Driver", "Superconducting cyan plasma coils wrapped around the Tesla-Lock's arc driver frame.", 'rare', 'CosmeticWeapon', 'weapon_finish', 'engineer', 'skin_engineer_cryo_plasma', True),
     (4104, "Rust & Bone Trench Carbine", "Weathered bunker salvage with bio-luminescent bone inlays.", 'rare', 'CosmeticWeapon', 'weapon_finish', 'scout', 'skin_rust_bone_trench', True),
     (4105, "Obsidian Shard Revolver", "Polished volcanic glass receiver with Damascus steel cylinder.", 'rare', 'CosmeticWeapon', 'weapon_finish', 'scout', 'skin_obsidian_shard', True),
     (4106, "Biolume Spore Sprayer", "Biomechanical tank leaking pulsing green fungal spores.", 'rare', 'CosmeticWeapon', 'weapon_finish', 'tank', 'skin_biolume_spore_sprayer', True),
@@ -36,7 +36,7 @@ ITEMS = [
     (4113, "Cryo-Vanguard Scout", "Thermal insulated white-camo pressurized stealth suit.", 'uncommon', 'CosmeticChassis', 'chassis_skin', 'scout', 'chassis_cryo_vanguard_scout', True),
     (4114, "Trench Warden Heavy", "Riveted blast-shield plate armor with gas respirator.", 'rare', 'CosmeticChassis', 'chassis_skin', 'tank', 'chassis_trench_warden_heavy', True),
     (4115, "Void Commando Recon", "Stealth matte-black nano-weave with purple optic sensor.", 'rare', 'CosmeticChassis', 'chassis_skin', 'scout', 'chassis_void_commando_recon', True),
-    (4116, "Bio-Synthesizer Medic", "Biomechanical syringe harness with pulsing fluid tubes. (Reserved — no Medic class currently ships; unassigned pending a roster decision.)", 'rare', 'CosmeticChassis', 'chassis_skin', 'unassigned', 'chassis_bio_synthesizer_medic', True),
+    (4116, "Bio-Synthesizer Harness", "Biomechanical syringe harness with pulsing fluid tubes. Chassis skins equip via LoadoutManager's single global suit slot (src/loadout.js `suit.chassisSkinId`, not per-class) — no class restriction needed, so the earlier 'Medic class' framing (there is no Medic class; roster is locked to Scout/Tank/Engineer per doc 07 §1) never actually blocked this item.", 'rare', 'CosmeticChassis', 'chassis_skin', 'all', 'chassis_bio_synthesizer_medic', True),
     (4117, "Dreadnought Exo-Juggernaut", "Heavy hydraulic power-armor with glowing magma core.", 'epic', 'CosmeticChassis', 'chassis_skin', 'tank', 'chassis_dreadnought_exo_juggernaut', True),
     (4118, "Cyber-Spectre Infiltrator", "Active-camo holographic shimmer with cybernetic visor.", 'epic', 'CosmeticChassis', 'chassis_skin', 'scout', 'chassis_cyber_spectre_infiltrator', True),
     (4119, "Hive-Lord Symbiote Exosuit", "Mutated hybrid armor of living alien carapace and steel.", 'legendary', 'CosmeticChassis', 'chassis_skin', 'all', 'chassis_hive_lord_symbiote', True),
@@ -79,7 +79,7 @@ ITEMS = [
     (4152, "Emerald Void Tracer Rounds", "Weapon projectiles emit bright emerald green laser trails.", 'epic', 'CosmeticFX', 'tracer_fx', 'all', 'fx_emerald_void_tracer', True),
     (4153, "Cryo Shockwave Muzzle Flare", "Muzzle blast triggers a miniature freezing ice crystal burst.", 'epic', 'CosmeticFX', 'muzzle_fx', 'all', 'fx_cryo_shockwave_muzzle', True),
     # G. Crafting Reagents & Keys
-    (4154, "Relic Decryption Key", "Unlocks 1 Deep Relic Cache via the Steam Vault. (Note: itemdef 4001 already serves this exact role — flagged as a likely catalog duplicate, see docs/season-zero-protocol/08-asset-audit-and-gaps.md §4.)", 'rare', 'Key', 'cache_key', 'all', 'cache_key', False),
+    (4154, "Relic Decryption Key (Earned)", "Unlocks 1 Deep Relic Cache via the Steam Vault. Earned for free through Deep Core Shard dispensary trade-in (docs/season-zero-protocol/05 §4) — the F2P-earned counterpart to itemdef 4001's paid Cache Key, not a duplicate; 4001 is purchase-only and never drops free.", 'rare', 'Key', 'cache_key', 'all', 'cache_key', False),
     (4155, "5x Relic Key Master Pack", "Bundle pack containing 5 Relic Decryption Keys.", 'rare', 'Bundle', 'reagent', 'all', 'reagent_relic_key_master_pack', True),
     (4156, "Cryo-Alloy Ingot", "Primary seasonal crafting metal for unboxing and forging.", 'uncommon', 'Material', 'reagent', 'all', 'reagent_cryo_alloy_ingot', False),
     (4157, "Deep Sub-Core Matrix", "Concentrated power core used to craft Epic Overclocks.", 'rare', 'Material', 'reagent', 'all', 'reagent_deep_sub_core_matrix', False),
@@ -113,14 +113,15 @@ def build_entry(itemdefid, name, desc, rarity, item_slot, slot_tag, class_tag, s
 # real production art fails that audit's PNG/size/RGBA checks, which is part of the test
 # suite — so the other 38 season itemdefs stay unregistered until their art lands, matching
 # docs/season-zero-protocol/08-asset-audit-and-gaps.md's honest current-state accounting.
-# Itemdef 4154 is deliberately excluded even though it has no art conflict directly — it's
-# flagged in that audit doc as a likely duplicate of the already-shipped 4001 "Cache Key".
-COMPLIANT_ITEMDEFS = {
-    4100, 4103, 4107, 4109, 4110,  # A: weapon skins with converted art
-    4126,                          # C: only decal with art (pre-existing compliant asset)
-    4130, 4131, 4132, 4133, 4134, 4135, 4136, 4137, 4138, 4139,  # D: all 10 charms
-    4140, 4141, 4142, 4143, 4144, 4147,  # E: 6 of 8 mods (4145/4146 have no art yet)
-}
+# Itemdef 4154 vs 4001 conflict (docs/season-zero-protocol/08-asset-audit-and-gaps.md §4,
+# item 3) is resolved: they're intentionally distinct SKUs, not a duplicate — 4001 is the
+# purchase-only Cache Key (never drops free), 4154 is the F2P-earned counterpart from the
+# Deep Core Shard dispensary (doc 05 §4). Both reuse the same compliant `cache_key` art
+# (same physical key, different acquisition path), so 4154 is now registered too.
+# All 60 Season 0 itemdefs (4100-4159) now have a full, verified compliant asset set
+# (local/large/master/chroma) on disk satisfying scripts/audit-steam-inventory-assets.js.
+COMPLIANT_ITEMDEFS = set(range(4100, 4160))
+
 
 def main():
     path = "steam/inventory_schema_hunker_bunker.json"

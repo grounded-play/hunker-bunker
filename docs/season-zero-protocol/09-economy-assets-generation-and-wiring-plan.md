@@ -13,7 +13,7 @@
 
 ## 1. Executive Summary & Objective
 
-A comprehensive audit of the Season 0 / Deep Crust Protocol economy (`docs/season-zero-protocol/08-asset-audit-and-gaps.md`) reveals that while **22 of the 60 planned seasonal itemdefs** (`4100–4159`) are currently registered and compliant with production art, **38 itemdefs still lack production-ready artwork** and are therefore missing from the publishable Steam catalog, Steam Vault inventory grid, Battle Pass UI, and Armory Workbench.
+A comprehensive audit of the Season 0 / Deep Crust Protocol economy (`docs/season-zero-protocol/08-asset-audit-and-gaps.md`) reveals that while **23 of the 60 planned seasonal itemdefs** (`4100–4159`) are currently registered and compliant with production art, **37 itemdefs still lack production-ready artwork** and are therefore missing from the publishable Steam catalog, Steam Vault inventory grid, Battle Pass UI, and Armory Workbench. (`4154` landed since this plan was first drafted — see doc 08 §4 item 3, resolved as a real F2P-earned key distinct from `4001`, reusing its art.)
 
 This plan details the end-to-end generation, conversion into standard 4-file compliance sets, registration in the Steam inventory schema, and full in-game wiring across all economy UI surfaces.
 
@@ -24,13 +24,13 @@ This plan details the end-to-end generation, conversion into standard 4-file com
 | Category | Total Items | Live / Compliant Art | Missing / To Generate | Itemdef IDs To Complete |
 | :--- | :--- | :--- | :--- | :--- |
 | **A. Weapon Skins** | 12 | 5 (`4100, 4103, 4107, 4109, 4110`) | **7** | `4101, 4102, 4104, 4105, 4106, 4108, 4111` |
-| **B. Chassis Armors** | 8 | 0 | **8** | `4112, 4113, 4114, 4115, 4116, 4117, 4118, 4119` |
+| **B. Chassis Armors** | 8 | 0 | **8** | `4112, 4113, 4114, 4115, 4116` (renamed "Bio-Synthesizer Harness", class-agnostic — see doc 08 §4 item 4), `4117, 4118, 4119` |
 | **C. Player Decals & Insignia** | 10 | 1 (`4126`) | **9** | `4120, 4121, 4122, 4123, 4124, 4125, 4127, 4128, 4129` |
 | **D. Tactical Weapon Charms** | 10 | 10 (`4130–4139`) | **0** (Complete!) | — |
 | **E. Rig Overclock Modules** | 8 | 6 (`4140, 4141, 4142, 4143, 4144, 4147`) | **2** | `4145, 4146` |
 | **F. Audio / HUD / VFX Mutators** | 6 | 0 | **6** | `4148, 4149, 4150, 4151, 4152, 4153` |
-| **G. Crafting Reagents & Keys** | 6 | 0 | **5** (`4154` maps to `cache_key`) | `4155, 4156, 4157, 4158, 4159` |
-| **TOTAL** | **60** | **22** | **37 items** | **100% full Season 0 coverage** |
+| **G. Crafting Reagents & Keys** | 6 | 1 (`4154`, resolved & registered — see above) | **5** | `4155, 4156, 4157, 4158, 4159` |
+| **TOTAL** | **60** | **23** | **37 items** | **100% full Season 0 coverage** |
 
 ---
 

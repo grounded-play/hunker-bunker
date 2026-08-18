@@ -13040,6 +13040,63 @@ button.archive-log-entry:active {
   letter-spacing: 0.06em;
 }
 
+.vault-smelter-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: calc(var(--vu) * 0.7);
+}
+
+.vault-smelter-card {
+  background: rgba(14, 24, 40, 0.85);
+  border: 1.5px solid rgba(var(--vault-glow-rgb), 0.25);
+  border-radius: 8px;
+  padding: calc(var(--vu) * 0.7);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  align-items: stretch;
+  text-align: left;
+}
+
+.vault-smelter-card__title {
+  font-family: 'Rajdhani', sans-serif;
+  font-weight: 800;
+  font-size: calc(var(--vu) * 1.5);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.vault-smelter-card__sub {
+  font-family: 'Space Mono', monospace;
+  font-size: calc(var(--font-xs) * 0.68);
+  color: #7a93b0;
+}
+
+.vault-smelter-card__btn {
+  margin-top: 6px;
+  font-family: 'Space Mono', monospace;
+  font-size: calc(var(--font-xs) * 0.78);
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  padding: 6px 10px;
+  border-radius: 5px;
+  border: 1px solid rgba(251, 191, 36, 0.5);
+  background: rgba(245, 158, 11, 0.15);
+  color: #fbbf24;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.vault-smelter-card__btn:hover:not(:disabled) {
+  background: rgba(245, 158, 11, 0.3);
+  transform: translateY(-1px);
+}
+
+.vault-smelter-card__btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
 .vault-store-buy-btn {
   width: 100% !important;
   min-width: 0 !important;

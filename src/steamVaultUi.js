@@ -4,6 +4,15 @@
  */
 import { STEAM_ITEM_CATALOG } from './data/steamItemCatalog.js';
 import { CATALOG_ITEMS } from './armoryUi.js';
+import {
+    DISPENSARY_COST_BY_RARITY,
+    SHARD_ITEMDEFID,
+    canSmelt,
+    getShardBalance,
+    planDispensaryRedeem,
+    planSmelt,
+    resolveDuplicateGrant
+} from './craftingMatrix.js';
 
 export { STEAM_ITEM_CATALOG };
 
@@ -205,27 +214,35 @@ export function initSteamVaultUI() {
 
     const tabInventory = document.getElementById('vault-tab-inventory');
     const tabStore = document.getElementById('vault-tab-store');
+    const tabSmelter = document.getElementById('vault-tab-smelter');
     const inventoryLayout = document.getElementById('vault-inventory-layout');
     const storeLayout = document.getElementById('vault-store-layout');
+    const smelterLayout = document.getElementById('vault-smelter-layout');
+
+    const activateTab = (activeBtn, activeLayout) => {
+        for (const btn of [tabInventory, tabStore, tabSmelter]) btn?.classList.remove('active');
+        for (const layout of [inventoryLayout, storeLayout, smelterLayout]) layout?.classList.add('hidden');
+        activeBtn?.classList.add('active');
+        activeLayout?.classList.remove('hidden');
+    };
 
     tabInventory?.addEventListener('click', () => {
-        tabInventory.classList.add('active');
-        tabStore?.classList.remove('active');
-        inventoryLayout?.classList.remove('hidden');
-        storeLayout?.classList.add('hidden');
+        activateTab(tabInventory, inventoryLayout);
         renderInventoryGrid();
     });
 
     tabStore?.addEventListener('click', async () => {
-        tabStore.classList.add('active');
-        tabInventory?.classList.remove('active');
-        storeLayout?.classList.remove('hidden');
-        inventoryLayout?.classList.add('hidden');
+        activateTab(tabStore, storeLayout);
         await loadStoreCatalog();
         renderStoreSkuGrid();
         renderHostedItemStoreCta();
         renderOddsTable();
         updateOpenCacheAvailability();
+    });
+
+    tabSmelter?.addEventListener('click', () => {
+        activateTab(tabSmelter, smelterLayout);
+        renderSmelterPanel();
     });
 
     document.getElementById('vault-store-open-btn')?.addEventListener('click', openDeepRelicCache);
@@ -844,6 +861,114 @@ export function playCacheRevealAnimation(rewardDefId, onClaim) {
     claimBtn?.addEventListener('click', handleClaim, { once: true });
 }
 
+// Season 0 Crafting Matrix panel (docs/season-zero-protocol/05) — 5:1 trade-up smelting
+// and the Deep Core Shard dispensary. Operates on the same local `vaultItems` sandbox array
+// as the rest of this file (see grantVaultItem's comment on why that's the honest baseline).
+export function renderSmelterPanel() {
+    const smelterGrid = document.getElementById('vault-smelter-grid');
+    const dispensaryGrid = document.getElementById('vault-dispensary-grid');
+    const shardBalanceEl = document.getElementById('vault-shard-balance');
+    if (shardBalanceEl) shardBalanceEl.textContent = String(getShardBalance(vaultItems));
+
+    const SMELT_TIERS = ['uncommon', 'rare', 'epic'];
+    const NEXT_TIER_LABEL = { uncommon: 'RARE', rare: 'EPIC', epic: 'LEGENDARY' };
+
+    if (smelterGrid) {
+        smelterGrid.innerHTML = '';
+        for (const rarity of SMELT_TIERS) {
+            const owned = vaultItems.reduce((sum, i) => {
+                const cat = getItemCatalogEntry(i.itemdefid);
+                return cat?.rarity === rarity ? sum + Number(i.quantity || 0) : sum;
+            }, 0);
+            const eligible = canSmelt(vaultItems, rarity, getItemCatalogEntry);
+
+            const card = document.createElement('div');
+            card.className = 'vault-smelter-card';
+            card.innerHTML = `
+                <div class="vault-smelter-card__title" style="color:${getRarityColor(rarity)}">${rarity.toUpperCase()} → ${NEXT_TIER_LABEL[rarity]}</div>
+                <div class="vault-smelter-card__sub">Owned: ${owned} / 5 required</div>
+                <button class="vault-smelter-card__btn" ${eligible ? '' : 'disabled'} data-smelt-rarity="${rarity}">SMELT 5x ${rarity.toUpperCase()}</button>
+            `;
+            card.querySelector('button')?.addEventListener('click', () => handleSmeltClick(rarity));
+            smelterGrid.appendChild(card);
+        }
+    }
+
+    if (dispensaryGrid) {
+        dispensaryGrid.innerHTML = '';
+        const shardBalance = getShardBalance(vaultItems);
+        const dispensableIds = Object.keys(STEAM_ITEM_CATALOG)
+            .map(Number)
+            .filter((id) => DISPENSARY_COST_BY_RARITY[STEAM_ITEM_CATALOG[id]?.rarity])
+            .slice(0, 6);
+
+        for (const itemdefid of dispensableIds) {
+            const cat = getItemCatalogEntry(itemdefid);
+            if (!cat) continue;
+            const cost = DISPENSARY_COST_BY_RARITY[cat.rarity];
+            const affordable = shardBalance >= cost;
+
+            const card = document.createElement('div');
+            card.className = 'vault-smelter-card';
+            card.innerHTML = `
+                <div class="vault-smelter-card__title" style="color:${getRarityColor(cat.rarity)}">${cat.name}</div>
+                <div class="vault-smelter-card__sub">${cost} Shards (${cat.rarity})</div>
+                <button class="vault-smelter-card__btn" ${affordable ? '' : 'disabled'} data-dispense-id="${itemdefid}">REDEEM</button>
+            `;
+            card.querySelector('button')?.addEventListener('click', () => handleDispensaryRedeem(itemdefid));
+            dispensaryGrid.appendChild(card);
+        }
+    }
+}
+
+function handleSmeltClick(rarity) {
+    const outputPool = Object.keys(STEAM_ITEM_CATALOG).map(Number);
+    const plan = planSmelt({ vaultItems, rarity, catalogLookup: getItemCatalogEntry, outputPool });
+    const statusEl = document.getElementById('vault-smelter-status');
+    if (!plan.ok) {
+        if (statusEl) statusEl.textContent = `Smelt failed: ${plan.reason.replace(/_/g, ' ')}.`;
+        return;
+    }
+
+    for (const { itemdefid, quantity } of plan.consumed) {
+        const stack = vaultItems.find((i) => i.itemdefid === itemdefid);
+        if (!stack) continue;
+        stack.quantity -= quantity;
+    }
+    vaultItems = vaultItems.filter((i) => i.quantity > 0);
+    grantVaultItem(plan.outputItemdefid, 1);
+
+    if (statusEl) {
+        const reward = getItemCatalogEntry(plan.outputItemdefid);
+        statusEl.textContent = `Smelted 5x ${rarity} → ${reward?.name ?? plan.outputItemdefid}!`;
+    }
+    showSteamDropToast(plan.outputItemdefid, 1);
+    window.AudioManager?.play?.('fx_achievement', { volume: 0.4, bus: 'sfx' });
+    renderSmelterPanel();
+}
+
+function handleDispensaryRedeem(targetItemdefid) {
+    const plan = planDispensaryRedeem(vaultItems, targetItemdefid, getItemCatalogEntry);
+    const statusEl = document.getElementById('vault-smelter-status');
+    if (!plan.ok) {
+        if (statusEl) statusEl.textContent = `Redeem failed: ${plan.reason.replace(/_/g, ' ')}.`;
+        return;
+    }
+
+    const shardStack = vaultItems.find((i) => i.itemdefid === SHARD_ITEMDEFID);
+    if (shardStack) shardStack.quantity -= plan.cost;
+    vaultItems = vaultItems.filter((i) => i.quantity > 0);
+    grantVaultItem(plan.targetItemdefid, 1);
+
+    if (statusEl) {
+        const reward = getItemCatalogEntry(plan.targetItemdefid);
+        statusEl.textContent = `Redeemed ${plan.cost} Shards for ${reward?.name ?? plan.targetItemdefid}!`;
+    }
+    showSteamDropToast(plan.targetItemdefid, 1);
+    window.AudioManager?.play?.('fx_achievement', { volume: 0.4, bus: 'sfx' });
+    renderSmelterPanel();
+}
+
 export async function openDeepRelicCache() {
     const pair = findOwnedCacheAndKey();
     if (!pair) return;
@@ -856,11 +981,19 @@ export async function openDeepRelicCache() {
 
         const possibleDrops = [2000, 2001, 2002, 2003, 2004, 2100, 2200];
         const randomDefId = possibleDrops[Math.floor(Math.random() * possibleDrops.length)];
+        // Season 0 duplicate-protection (docs/season-zero-protocol/05 §3): dupes still grant
+        // the item (Steam-style) plus bonus Deep Core Shards scaled by rarity.
+        const dupeCheck = resolveDuplicateGrant(randomDefId, vaultItems, getItemCatalogEntry);
         const existing = vaultItems.find((i) => i.itemdefid === randomDefId);
         if (existing) {
             existing.quantity += 1;
         } else {
             vaultItems.push({ itemId: `grant_${Date.now()}`, itemdefid: randomDefId, quantity: 1 });
+        }
+        if (dupeCheck.bonusShards > 0) {
+            const shardStack = vaultItems.find((i) => i.itemdefid === SHARD_ITEMDEFID);
+            if (shardStack) shardStack.quantity += dupeCheck.bonusShards;
+            else vaultItems.push({ itemId: `grant_${Date.now()}_shards`, itemdefid: SHARD_ITEMDEFID, quantity: dupeCheck.bonusShards });
         }
         reconcileCosmeticsOwnership(vaultItems);
         renderInventoryGrid();

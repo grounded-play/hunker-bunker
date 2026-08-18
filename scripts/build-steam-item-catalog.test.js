@@ -11,7 +11,7 @@ const schema = JSON.parse(fs.readFileSync('steam/inventory_schema_hunker_bunker.
 describe('Steam renderer catalog generation', () => {
     it('projects only visible renderer-safe item metadata', () => {
         const catalog = buildRendererCatalog(schema);
-        expect(Object.keys(catalog)).toHaveLength(33);
+        expect(Object.keys(catalog)).toHaveLength(71);
         expect(catalog[1000]).toMatchObject({
             name: 'Common Relic Fragment',
             rarity: 'common',

@@ -5259,6 +5259,9 @@ export class ThreeGame {
         } else if (resolvedType === 'ENGINEER' && this.bank && this.bank.isSkillUnlocked('engineer_magnet_1')) {
             baseMagnet = 5.0;
         }
+        // Season 0 Rig Overclock Modules (docs/season-zero-protocol/03) — see LoadoutManager#getActiveModifiers
+        this.loadoutMods = window.loadout?.getActiveModifiers?.(resolvedType.toLowerCase()) ?? null;
+        baseMagnet *= 1 + (this.loadoutMods?.scrapMagnetRadiusBonus ?? 0);
         this.pickupMagnetRadius = baseMagnet;
 
         this._initClassPassives();
@@ -15464,7 +15467,9 @@ export class ThreeGame {
             this.playerPoisonTickTimer += delta;
             if (this.playerPoisonTickTimer >= 1.2) {
                 this.playerPoisonTickTimer = 0;
-                this.takeDamage(1, 'poison');
+                // Season 0 Bio-Hazard Filter Vent overclock (itemdef 4142) reduces gas/toxic tick damage
+                const gasResist = this.loadoutMods?.gasDamageReduction ?? 0;
+                this.takeDamage(Math.max(0, 1 * (1 - gasResist)), 'poison');
             }
             this.tintPlayerSprites(0x88ff88); // green poison tint
             if (wasPoisoned && this.playerPoisonTimer <= 0) {

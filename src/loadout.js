@@ -288,6 +288,9 @@ export class LoadoutManager {
     equipHudTheme(themeId) {
         this.state.hudThemeId = themeId != null ? String(themeId) : null;
         this.save();
+        if (typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent('loadout-hud-theme-changed', { detail: { themeId: this.state.hudThemeId } }));
+        }
         return true;
     }
 
