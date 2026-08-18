@@ -102,6 +102,10 @@ describe('buildPortfolioReport', () => {
 });
 
 describe('runValidationSweep', () => {
+    // A 300-seed sweep takes ~3.1-3.2s locally — comfortably under vitest's 5000ms default,
+    // but close enough to the edge that slower/shared CI runners tip over it (seen failing in
+    // CI with the default timeout). Explicit generous timeout rather than shrinking the sweep,
+    // since the whole point of these tests is validating at real portfolio-report scale.
     it('reports no failures across a sweep and confirms determinism', () => {
         const sweep = runValidationSweep(300);
         expect(sweep.seedCount).toBe(300);
@@ -110,13 +114,13 @@ describe('runValidationSweep', () => {
         expect(sweep.conflictSeedCount).toBe(0);
         expect(sweep.manifestConflictSeedCount).toBe(0);
         expect(sweep.allValid).toBe(true);
-    });
+    }, 30000);
 
     it('counts seeds with site-spacing conflicts separately from validity failures', () => {
         const sweep = runValidationSweep(300);
         expect(sweep.conflictSeedCount).toBeGreaterThanOrEqual(0);
         expect(sweep.conflictSeedCount).toBeLessThanOrEqual(sweep.seedCount);
-    });
+    }, 30000);
 
     it('treats legacy spacing and new manifest/territory conflicts as fatal audit failures', () => {
         const base = { failures: [], conflictSeedCount: 0, manifestConflictSeedCount: 0, determinismFailures: [] };

@@ -5,7 +5,6 @@
 import os
 import subprocess
 import tempfile
-from PIL import Image, ImageOps
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 PROCESS_SCRIPT = os.path.join(ROOT, "scripts/process-season-assets.py")
