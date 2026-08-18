@@ -48,10 +48,25 @@ A step-by-step checklist to launch, connect, and verify all Steam, multiplayer, 
 ---
 
 ### D. Testing Debug Showroom & Museum
+
+**Known duplication, flagged 2026-08-17, not yet consolidated**: this repo currently has
+*two* separate QA-gallery systems built independently by different agents in the same
+session, both still present and both working — pick whichever fits your task, but expect
+them to converge into one eventually:
+
+1. `src/debugShowroom.js` (`showroom`/`gallery`/`tp museum`, chunk `(500, 500)`, 4-wall
+   orientation stalls) — covers world props/wall-decals/floor-decals/enemies *and* the full
+   Season 0 economy (weapon archetypes, skins, charms, mods, chassis skins, cosmetic decals —
+   added 2026-08-17).
+2. `src/debugMuseum.js` (bare `museum`/`closemuseum` console commands, position
+   `(9000, 9000)`, continuous hallway) — a separately-built parallel system; check its own
+   category list before assuming it has the same Season 0 coverage as (1).
+
+Quick checklist:
 1. Open the in-game dev console (`~`).
-2. Type `museum` $\rightarrow$ Teleports operative to the continuous hallway museum at `(9000, 9000)` showcasing all 9 asset categories.
-3. Type `showroom` $\rightarrow$ Teleports operative to the 4-wall orientation stalls at chunk `(500, 500)` to test angle alignment.
-4. Type `tp crash` $\rightarrow$ Returns operative to the standard bunker spawn point.
+2. Type `showroom` (or `tp museum`) → the 4-wall stall gallery at chunk `(500, 500)`.
+3. Type `museum` → the standalone hallway at `(9000, 9000)`; `closemuseum` tears it down.
+4. Type `tp crash` → returns to the standard bunker spawn point.
 
 ---
 

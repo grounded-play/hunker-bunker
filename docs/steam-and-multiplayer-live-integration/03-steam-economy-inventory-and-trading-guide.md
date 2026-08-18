@@ -8,21 +8,29 @@ Hunker Bunker features a complete **Steam Inventory Service (Item Economy)** sup
 
 The catalog is defined in [`src/data/steamItemCatalog.js`](file:///home/caveman/Desktop/icecave/hunker-bunker/src/data/steamItemCatalog.js) and backed by the Steam Inventory schema [`steam/inventory_schema_hunker_bunker.json`](file:///home/caveman/Desktop/icecave/hunker-bunker/steam/inventory_schema_hunker_bunker.json).
 
+**Corrected against the real schema** (`steam/inventory_schema_hunker_bunker.json`) — the
+original version of this table described a plausible-sounding but fabricated 1000-3001 range;
+verified 2026-08-17 against `python3 -c "import json; ..."` reading the actual file:
+
 ```
-Itemdef ID Range  Category                       Item Count  Tradeable / Marketable
+Itemdef ID        Category                       Item Count  Tradeable / Marketable
 ──────────────────────────────────────────────────────────────────────────────────
-1000–1004         Base Guns & Core Weaponry      5 items     Yes (Standard)
-2000–2003         Weapon Charms & Badges         4 items     Yes (Standard)
-3000–3001         Base Rig Modules & Perks       2 items     Yes (Standard)
-4000              Sub-Terran Relic Cache (Crate) 1 item      Yes (Marketable)
-4001              Relic Decryption Key (Key)     1 item      Yes (Marketable)
+1000, 1100        Relic Fragments (Common/Rare)  2 items     No (crafting material)
+2000–2004         Victory Patches & Emblems      5 items     Yes (cosmetic patch)
+2100               Carbon Fiber Decal            1 item      Yes (cosmetic decal)
+2200               Chrome Plated Sidearm         1 item      Yes (weapon finish)
+3000              Playtime Drop Generator        1 item      No (internal loot resolver)
+4000              Deep Relic Cache (Crate)       1 item      Yes (Marketable)
+4001              Cache Key (paid, never drops)  1 item      Yes (Marketable)
 4100–4111         Season 0 Weapon Skins          12 items    Yes (Tradable / Marketable)
 4112–4119         Season 0 Chassis Armors        8 items     Yes (Tradable / Marketable)
 4120–4129         Season 0 Cosmetic Decals       10 items    Yes (Tradable / Marketable)
 4130–4139         Season 0 Tactical Charms       10 items    Yes (Tradable / Marketable)
 4140–4147         Season 0 Rig Overclock Mods    8 items     Yes (Tradable / Marketable)
 4148–4153         Season 0 Audio/HUD/VFX Mutators6 items     Yes (Tradable / Marketable)
-4154–4159         Season 0 Reagents & Shards     6 items     Yes (Crafting Reagents)
+4154–4159         Season 0 Reagents & Shards     6 items     Yes (crafting reagent);
+                                                              4154 = F2P-earned Relic Key,
+                                                              intentionally distinct from 4001
 ──────────────────────────────────────────────────────────────────────────────────
 TOTAL             Full Deep Crust Catalog        71 items    100% Asset Compliant
 ```
@@ -51,10 +59,23 @@ In development and demo environments:
 - Select your primary weapon archetype $\rightarrow$ apply unlocked skins $\rightarrow$ attach 3D weapon charms $\rightarrow$ socket Rig Overclock chips into Bay A and Bay B.
 - Updates combat modifiers (e.g. `+20% Scrap Magnet`, `+8% Cryo Duration`) stored in `LoadoutManager`.
 
-### 3. Subterranean Fabricator & Smelting (`fabricator.js`)
-- Found at survivor outposts inside the bunker.
-- **5:1 Trade-Up Smelting**: Combine 5 lower-tier items/reagents into 1 guaranteed higher-tier reward.
-- **Recipe 4100**: Combine Cache (`4000`) + Key (`4001` or `4154`) $\rightarrow$ Roll random weighted Season 0 cosmetic or weapon finish.
+### 3. Three separate real systems, previously conflated here — corrected 2026-08-17
+
+This section originally described one fictional "Recipe 4100" that blended three genuinely
+distinct, separately-implemented systems. They are:
+
+- **Cache + Key unboxing** (`steamVaultUi.js`'s `openDeepRelicCache()`): consume 1 Deep Relic
+  Cache (`4000`) + 1 Cache Key (`4001` or the F2P `4154`) → roll one random weighted item from
+  the drop table. This is the Steam Vault's Decryption Bay, not a "fabricator" recipe.
+- **5:1 Trade-Up Smelting & Deep Core Shard Dispensary** (`src/craftingMatrix.js`, new
+  `SMELTER & DISPENSARY` tab in the Steam Vault): combine 5 owned items of the same rarity for
+  1 guaranteed item at the next tier, or spend Deep Core Shards (earned from duplicate
+  unboxings) to redeem a specific item directly. Unrelated to Cache+Key — operates on whatever
+  is already in inventory.
+- **Base weapon crafting** (`src/fabricator.js`, `FabricatorManager`, `getRecipe()`): the
+  in-game Fabrication Bay's base weapon unlock recipes (itemdefs below 4000, e.g. `2200` Chrome
+  Plated Sidearm's `exchange: "1000x10,1100x2"` — spends Relic Fragments, not Season 0 items).
+  A third, separate system from the two above.
 
 ### 4. Player-to-Player Barter & Trading (`playerTrade.js`)
 - In multiplayer lobbies or survivor camps, interact with a teammate to open the barter exchange.
