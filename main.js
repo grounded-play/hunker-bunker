@@ -12610,6 +12610,32 @@ function finishBootDiagnostics() {
     bootLongTaskObserver?.disconnect();
     bootLongTaskObserver = null;
     bootLongTasks = [];
+    startGameplayLongTaskDiagnostics();
+}
+
+// Boot's observer stops at boot-ready, so nothing recorded *why* a frame
+// stalled during actual play -- a session log exported after a laggy
+// stretch showed circumstantial evidence (bursts of "Chunk generated"
+// entries, repeated input events) but no direct main-thread-stall timing to
+// correlate against. This keeps recording for the rest of the session so
+// the next exported log shows exactly when and how long each >50ms stall
+// was, interleaved with the same WORLD/INPUT/GAME entries already captured.
+let gameplayLongTaskObserver = null;
+function startGameplayLongTaskDiagnostics() {
+    if (typeof PerformanceObserver === 'undefined' || gameplayLongTaskObserver) return;
+    try {
+        gameplayLongTaskObserver = new PerformanceObserver((list) => {
+            for (const task of list.getEntries()) {
+                debugLog.warn('PERF', `Long task: ${Math.round(task.duration)}ms`, {
+                    durationMs: Math.round(task.duration),
+                    startMs: Math.round(task.startTime)
+                });
+            }
+        });
+        gameplayLongTaskObserver.observe({ type: 'longtask', buffered: false });
+    } catch {
+        gameplayLongTaskObserver = null;
+    }
 }
 
 window.__hbBootDiagnostics = bootDiagnostics;

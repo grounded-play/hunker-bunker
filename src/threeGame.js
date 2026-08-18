@@ -4454,6 +4454,16 @@ export class ThreeGame {
                 this.setKeyState(event.code, false);
                 return;
             }
+            // Held keys generate browser auto-repeat keydown events (OS-rate, often
+            // 20-50Hz, faster on some Windows configs) -- without this guard every
+            // repeat re-ran the discrete action triggers below (dash/interact/
+            // reload/scan/melee) and pushed a debugLog entry each time. Continuous
+            // movement doesn't need this: it reads this.keys[code] every frame, set
+            // once below and cleared on keyup, not from repeat events.
+            if (event.repeat) {
+                this.setKeyState(event.code, true);
+                return;
+            }
             if (event.code === 'Enter' || this.codeMatchesAction(event.code, 'interact')) {
                 debugLog.debug('INPUT', 'Action: INTERACT (E/Enter)');
                 this.triggerGameplayInteract();
