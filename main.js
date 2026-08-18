@@ -2103,13 +2103,16 @@ window.loadout = loadout;
 // Season 0 HUD CRT Mutators (docs/season-zero-protocol/03 §5, itemdefs 4150/4151)
 const HUD_THEME_PRESETS = {
     4150: { '--hud-primary': '#f59e0b', '--hud-glow': 'rgba(245, 158, 11, 0.4)', '--hud-scanline': '#d97706' }, // Amber CRT
-    4151: { '--hud-primary': '#10b981', '--hud-glow': 'rgba(16, 185, 129, 0.4)', '--hud-scanline': '#059669' } // Emerald Radar
+    4151: { '--hud-primary': '#10b981', '--hud-glow': 'rgba(16, 185, 129, 0.4)', '--hud-scanline': '#059669' }, // Emerald Radar
+    hudtheme_amber_crt: { '--hud-primary': '#f59e0b', '--hud-glow': 'rgba(245, 158, 11, 0.4)', '--hud-scanline': '#d97706' },
+    hudtheme_emerald_radar: { '--hud-primary': '#10b981', '--hud-glow': 'rgba(16, 185, 129, 0.4)', '--hud-scanline': '#059669' }
 };
 const HUD_THEME_VARS = ['--hud-primary', '--hud-glow', '--hud-scanline'];
 function applyHudThemeFromLoadout() {
     const gameContainer = document.getElementById('game-container');
     if (!gameContainer) return;
-    const preset = HUD_THEME_PRESETS[Number(loadout.state.hudThemeId)];
+    const rawId = loadout.state.hudThemeId;
+    const preset = HUD_THEME_PRESETS[rawId] ?? HUD_THEME_PRESETS[Number(rawId)];
     if (preset) {
         for (const [key, value] of Object.entries(preset)) gameContainer.style.setProperty(key, value);
     } else {

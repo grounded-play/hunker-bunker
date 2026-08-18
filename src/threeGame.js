@@ -15503,6 +15503,10 @@ export class ThreeGame {
             if (typeof window !== 'undefined' && window.npcDialogueTreeManager?.activePerks?.has?.('vesper_vanguard_adrenaline')) {
                 speed *= 1.10;
             }
+            // Season 0 Symbiotic Adrenaline Pump overclock (itemdef 4146): +15% speed under 25% HP
+            if (this.loadoutMods?.lowHpSpeedBoostActive && (this.health / (this.maxHealth || 100)) < 0.25) {
+                speed *= 1.15;
+            }
             if (this.playerSlowTimer > 0 && !(this._sprintMoveSpeedMult > 1)) {
                 speed *= 0.55;
             }
@@ -17282,8 +17286,12 @@ export class ThreeGame {
     }) {
         const group = new THREE.Group();
         const classColor = PLAYER_COLORS[this.playerType] ?? 0xffe08f;
-        const coreColor = options.color ?? (isEnemy ? 0xff4a4a : classColor);
-        const glowColor = options.glowColor ?? (isEnemy ? 0xff0000 : classColor);
+        let coreColor = options.color ?? (isEnemy ? 0xff4a4a : classColor);
+        let glowColor = options.glowColor ?? (isEnemy ? 0xff0000 : classColor);
+        if (!isEnemy && (window.loadout?.state?.hudThemeId === 'hudtheme_emerald_radar' || window.loadout?.state?.hudThemeId === '4151' || options.tracerFx === 'emerald')) {
+            coreColor = 0x10b981;
+            glowColor = 0x34d399;
+        }
 
         const core = new THREE.Mesh(
             new THREE.SphereGeometry(radius, 8, 8),
@@ -17315,7 +17323,8 @@ export class ThreeGame {
             ttl,
             damage,
             radius,
-            isEnemy
+            isEnemy,
+            pierceRemaining: (!isEnemy && this.loadoutMods?.kineticPierceBonus) ? this.loadoutMods.kineticPierceBonus : 0
         });
     }
 
@@ -17749,7 +17758,12 @@ export class ThreeGame {
                 const snail = this.checkProjectileSnailHit(projectile);
                 if (snail) {
                     this.applyPlayerDamageToEnemy(snail, projectile.damage);
-                    toRemove.add(projectile);
+                    if (projectile.pierceRemaining && projectile.pierceRemaining > 0) {
+                        projectile.pierceRemaining -= 1;
+                        this.spawnProjectileImpactEffect(projectile.mesh.position.x, projectile.mesh.position.z);
+                    } else {
+                        toRemove.add(projectile);
+                    }
                     continue;
                 }
 
@@ -22406,6 +22420,20 @@ export class ThreeGame {
         sprite.userData.burstTriggered = true;
         sprite.userData.burstTimer = 0;
         this.snailsKilledThisRun = (this.snailsKilledThisRun ?? 0) + 1;
+
+        // Season 0 Zero-Point Flux Overdrive overclock (itemdef 4147): 5 kills in 3s refunds 1 dash charge
+        const now = (typeof performance !== 'undefined' ? performance.now() : Date.now());
+        this._recentKillTimestamps = (this._recentKillTimestamps || []).filter((t) => (now - t) <= 3000);
+        this._recentKillTimestamps.push(now);
+        if (this.loadoutMods?.dashRefundOnMultiKill && this._recentKillTimestamps.length >= 5) {
+            this.dashCooldownTimer = 0;
+            this._recentKillTimestamps = [];
+            window.AudioManager?.play?.('fx_achievement', { volume: 0.35, bus: 'sfx' });
+            if (this.player) {
+                this.spawnPhysicalBurst(this.player.position.x, this.player.position.z, { color: 0xc084fc, count: 16, upward: 0.3 });
+            }
+        }
+
         this.arcManager?.recordSignal?.({ snailsKilled: 1 });
         this.arcManager?.evaluate?.();
         // Post-turn, wild snails are family. Killing them upsets the queen —

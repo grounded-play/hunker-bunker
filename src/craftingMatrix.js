@@ -36,6 +36,24 @@ export const DISPENSARY_COST_BY_RARITY = Object.freeze({
 
 export const SHARD_ITEMDEFID = 4159;
 
+// docs/season-zero-protocol/05 §4 Quartermaster Trade Shop. Only this one entry is buildable
+// for real: it's the sole listing that (a) maps to an actual registered itemdef (4156) and
+// (b) doesn't require "weekly max" purchase-limit infrastructure this codebase doesn't have
+// (unlike the Deep Sub-Core Matrix/Ambergris/Relic-Key rows, which are weekly-capped in the
+// doc). The other raw-component rows (Titanium Clasp, Micro-Capacitor Board, Blueprint Pack)
+// don't correspond to any of the 60 registered itemdefs — narrative filler, not real SKUs.
+// "Bunker Scrap" isn't a real BankManager currency (real ones: tech/coin/med/shells) — mapped
+// 1:1 to `tech`, the game's existing generic crafting-material currency, as the closest honest
+// substitution rather than inventing a new currency unilaterally.
+export const INGOT_PACK_COST = Object.freeze({ tech: 400 });
+export const INGOT_PACK_ITEMDEFID = 4156;
+export const INGOT_PACK_QUANTITY = 10;
+
+export function planIngotPackPurchase(bankManager) {
+    if (!bankManager?.canAfford?.(INGOT_PACK_COST)) return { ok: false, reason: 'insufficient_tech' };
+    return { ok: true, cost: INGOT_PACK_COST, itemdefid: INGOT_PACK_ITEMDEFID, quantity: INGOT_PACK_QUANTITY };
+}
+
 export function countByRarity(vaultItems = [], catalogLookup) {
     const counts = {};
     for (const item of vaultItems) {

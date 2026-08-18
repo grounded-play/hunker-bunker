@@ -2,11 +2,15 @@ import { describe, expect, it } from 'vitest';
 import {
     DISPENSARY_COST_BY_RARITY,
     DUPLICATE_SHARD_BONUS,
+    INGOT_PACK_COST,
+    INGOT_PACK_ITEMDEFID,
+    INGOT_PACK_QUANTITY,
     SHARD_ITEMDEFID,
     canSmelt,
     countByRarity,
     getShardBalance,
     planDispensaryRedeem,
+    planIngotPackPurchase,
     planSmelt,
     resolveDuplicateGrant
 } from './craftingMatrix.js';
@@ -105,5 +109,26 @@ describe('craftingMatrix: duplicate-protection dispensary', () => {
 
     it('rejects an unknown item id', () => {
         expect(planDispensaryRedeem([], 99999, lookup)).toEqual({ ok: false, reason: 'unknown_item' });
+    });
+});
+
+describe('craftingMatrix: Quartermaster Ingot Pack purchase', () => {
+    it('plans a purchase when the bank can afford it', () => {
+        const bank = { canAfford: (cost) => cost.tech <= 500 };
+        expect(planIngotPackPurchase(bank)).toEqual({
+            ok: true,
+            cost: INGOT_PACK_COST,
+            itemdefid: INGOT_PACK_ITEMDEFID,
+            quantity: INGOT_PACK_QUANTITY
+        });
+    });
+
+    it('rejects when the bank cannot afford it', () => {
+        const bank = { canAfford: () => false };
+        expect(planIngotPackPurchase(bank)).toEqual({ ok: false, reason: 'insufficient_tech' });
+    });
+
+    it('rejects when no bank manager is provided', () => {
+        expect(planIngotPackPurchase(null)).toEqual({ ok: false, reason: 'insufficient_tech' });
     });
 });

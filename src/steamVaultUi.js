@@ -6,10 +6,13 @@ import { STEAM_ITEM_CATALOG } from './data/steamItemCatalog.js';
 import { CATALOG_ITEMS } from './armoryUi.js';
 import {
     DISPENSARY_COST_BY_RARITY,
+    INGOT_PACK_COST,
+    INGOT_PACK_QUANTITY,
     SHARD_ITEMDEFID,
     canSmelt,
     getShardBalance,
     planDispensaryRedeem,
+    planIngotPackPurchase,
     planSmelt,
     resolveDuplicateGrant
 } from './craftingMatrix.js';
@@ -896,11 +899,25 @@ export function renderSmelterPanel() {
 
     if (dispensaryGrid) {
         dispensaryGrid.innerHTML = '';
+
+        // Quartermaster Trade Shop (doc 05 §4) — the one entry that maps to a real itemdef
+        // and a real spendable currency (see craftingMatrix.js's INGOT_PACK_COST comment).
+        const ingotAffordable = window.bankManager?.canAfford?.(INGOT_PACK_COST) ?? false;
+        const ingotCard = document.createElement('div');
+        ingotCard.className = 'vault-smelter-card';
+        ingotCard.innerHTML = `
+            <div class="vault-smelter-card__title" style="color:${getRarityColor('uncommon')}">Cryo-Alloy Ingot Pack (x${INGOT_PACK_QUANTITY})</div>
+            <div class="vault-smelter-card__sub">${INGOT_PACK_COST.tech} Tech — Quartermaster, unlimited</div>
+            <button class="vault-smelter-card__btn" ${ingotAffordable ? '' : 'disabled'} id="vault-quartermaster-ingot-btn">PURCHASE</button>
+        `;
+        ingotCard.querySelector('button')?.addEventListener('click', handleIngotPackPurchase);
+        dispensaryGrid.appendChild(ingotCard);
+
         const shardBalance = getShardBalance(vaultItems);
         const dispensableIds = Object.keys(STEAM_ITEM_CATALOG)
             .map(Number)
             .filter((id) => DISPENSARY_COST_BY_RARITY[STEAM_ITEM_CATALOG[id]?.rarity])
-            .slice(0, 6);
+            .slice(0, 5);
 
         for (const itemdefid of dispensableIds) {
             const cat = getItemCatalogEntry(itemdefid);
@@ -919,6 +936,26 @@ export function renderSmelterPanel() {
             dispensaryGrid.appendChild(card);
         }
     }
+}
+
+function handleIngotPackPurchase() {
+    const plan = planIngotPackPurchase(window.bankManager);
+    const statusEl = document.getElementById('vault-smelter-status');
+    if (!plan.ok) {
+        if (statusEl) statusEl.textContent = `Purchase failed: ${plan.reason.replace(/_/g, ' ')}.`;
+        return;
+    }
+
+    if (!window.bankManager.spend(plan.cost)) {
+        if (statusEl) statusEl.textContent = 'Purchase failed: bank spend rejected.';
+        return;
+    }
+    grantVaultItem(plan.itemdefid, plan.quantity);
+
+    if (statusEl) statusEl.textContent = `Purchased ${plan.quantity}x Cryo-Alloy Ingot for ${plan.cost.tech} Tech!`;
+    showSteamDropToast(plan.itemdefid, plan.quantity);
+    window.AudioManager?.play?.('fx_achievement', { volume: 0.4, bus: 'sfx' });
+    renderSmelterPanel();
 }
 
 function handleSmeltClick(rarity) {

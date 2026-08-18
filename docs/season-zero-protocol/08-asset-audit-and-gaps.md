@@ -119,16 +119,31 @@ Legend: ✅ exists · — not applicable.
 
 ### F. Audio Callout Packs & HUD Mutators (4148–4153)
 
-| Itemdef | Name | Rarity | 2D Art / Asset | Catalog | Notes |
-| :-- | :-- | :-- | :-- | :-- | :-- |
-| 4148 | Soviet Sub-Commander Radio | Rare | ✅ `voicepack_soviet_commander` | ✅ | Audio + icon landed |
-| 4149 | Synthesized AI Unit 'AURA' | Rare | ✅ `voicepack_aura` | ✅ | Audio + icon landed |
-| 4150 | Amber CRT Monitor Theme | Rare | ✅ `hudtheme_amber_crt` | ✅ | CSS theme + icon landed |
-| 4151 | Emerald Radar Phosphor HUD | Rare | ✅ `hudtheme_emerald_radar` | ✅ | CSS theme + icon landed |
-| 4152 | Emerald Void Tracer Rounds | Epic | ✅ `fx_emerald_void_tracer` | ✅ | VFX mutator + icon landed |
-| 4153 | Cryo Shockwave Muzzle Flare | Epic | ✅ `fx_cryo_shockwave_muzzle` | ✅ | VFX mutator + icon landed |
+**Correction (2026-08-17, later pass):** art/catalog are genuinely 6/6, but "landed" below
+originally implied the runtime *effect* was wired too — verified against actual code and only
+the HUD themes are. `equipHudTheme()` (`src/loadout.js`) now fires a `loadout-hud-theme-changed`
+event that `main.js`'s `applyHudThemeFromLoadout()` listens for, setting the doc 03 §5
+`--hud-primary`/`--hud-glow`/`--hud-scanline` CSS custom properties on `#game-container` —
+real, live, wired. The other 4 have `voicePackId`/no equivalent tracer/muzzle slot stored in
+`LoadoutManager`, but no runtime hook consumes them: `src/audio.js`'s `AudioManager` has no
+callout/voice-bank system for 4148/4149 to plug into (doc 03 §5 assumes combat callouts like
+"Reloading"/"Heavy incoming" that were never built), and `src/threeGame.js` has no
+muzzle-flash/tracer-rendering system at all for 4152/4153 to customize — grepped for
+`muzzle`/`tracer` project-wide, zero matches. Building either from scratch is a real new
+gameplay/audio feature, not a wiring task, and risks the core combat render loop if rushed —
+left honest and unbuilt rather than faked, same call as the Season Pass's skipped daily/weekly
+bounties.
 
-**Score: 6/6 art (100%), 6/6 catalog (100%).**
+| Itemdef | Name | Rarity | 2D Art / Asset | Catalog | Runtime Effect |
+| :-- | :-- | :-- | :-- | :-- | :-- |
+| 4148 | Soviet Sub-Commander Radio | Rare | ✅ `voicepack_soviet_commander` | ✅ | ⬜ no callout system exists to swap |
+| 4149 | Synthesized AI Unit 'AURA' | Rare | ✅ `voicepack_aura` | ✅ | ⬜ no callout system exists to swap |
+| 4150 | Amber CRT Monitor Theme | Rare | ✅ `hudtheme_amber_crt` | ✅ | ✅ wired, live-verifiable via `equipHudTheme('4150')` |
+| 4151 | Emerald Radar Phosphor HUD | Rare | ✅ `hudtheme_emerald_radar` | ✅ | ✅ wired, live-verifiable via `equipHudTheme('4151')` |
+| 4152 | Emerald Void Tracer Rounds | Epic | ✅ `fx_emerald_void_tracer` | ✅ | ⬜ no tracer-rendering system exists to hook |
+| 4153 | Cryo Shockwave Muzzle Flare | Epic | ✅ `fx_cryo_shockwave_muzzle` | ✅ | ⬜ no muzzle-flash system exists to hook |
+
+**Score: 6/6 art (100%), 6/6 catalog (100%), 2/6 runtime effect wired.**
 
 ---
 
@@ -161,3 +176,32 @@ Legend: ✅ exists · — not applicable.
 - `scripts/audit-steam-inventory-assets.test.js`: **PASSED (71/71 items)**
 - `scripts/build-steam-item-catalog.test.js`: **PASSED (71/71 items)**
 - `eslint`: **0 errors, 0 warnings**
+
+## 5. What's Genuinely Still Open (art/catalog being 100% doesn't mean the season is 100%)
+
+1. **5 items with 2D art but no 3D mesh**: `4137`, `4138` (charms), `4142`, `4143`, `4144`
+   (mods). 2D→3D conversion pass, blocked on getting Blender MCP running (needs a GUI or
+   `xvfb-run` — neither available in this environment as of this pass; `apt-get install xvfb`
+   needs a sudo password not available to the agent).
+2. **§F runtime-effect gap** (see updated table above): voice packs (4148/4149) have no
+   callout system to plug into; tracer/muzzle FX (4152/4153) have no rendering system to hook.
+   Both are real new-feature builds, not wiring — left honest and unbuilt.
+3. **Doc 05 Crafting Matrix — now real, not a doc-only spec.** `src/craftingMatrix.js` (new)
+   implements the 5:1 trade-up smelter and Deep Core Shard duplicate-protection dispensary from
+   doc 05 §2/§3, unit-tested (`src/craftingMatrix.test.js`). Wired into a new SMELTER &
+   DISPENSARY tab in the Steam Vault UI (`src/steamVaultUi.js`, `index.html`). Operates on the
+   same local sandbox `vaultItems` array the rest of the Vault already uses — there's no real
+   Steamworks `ExchangeItems` backend in this codebase, so this matches the existing "real"
+   baseline rather than faking a server call. Doc 05 §4's Quartermaster Trade Shop (spending
+   "Bunker Scrap" on raw reagents) is **not built** — it assumes a `Scrap` currency that
+   doesn't exist in `BankManager` (real currencies are `tech`/`coin`/`med`/`shells`), the same
+   false-currency assumption caught earlier in the Season Pass work; needs a currency decision
+   before it can be built honestly.
+4. **Rig Overclock Module gameplay hooks (doc 03 §4)**: `LoadoutManager.getActiveModifiers()`
+   already existed but was completely unwired. Now wired for the 2 modifiers that map to real
+   systems: `scrapMagnetRadiusBonus` → pickup magnet radius (`src/threeGame.js`
+   `updatePlayerType`), `gasDamageReduction` → poison tick damage (closest real analog to
+   "gas/toxic" in this game's vocabulary). The other 6 modifiers (cryo duration, kinetic
+   pierce, shield recharge, hidden-room radar, low-HP speed boost, dash refund) reference
+   gameplay systems that don't exist (no enemy-freeze mechanic, no pierce/shield/dash-refund
+   systems) — left unwired rather than faked.
