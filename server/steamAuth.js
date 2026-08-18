@@ -64,10 +64,20 @@ function normalizeSessionSecret() {
         };
     }
 
-    if (process.env.NODE_ENV === 'production') {
+    // Session tokens are HMAC-signed with this secret, so anything that can
+    // reach this branch without an explicit/publisher secret must not use a
+    // value visible in this public repo (the DEV_SESSION_SECRET constant) —
+    // that would let anyone forge a bearer token for any steamId64/persona,
+    // bypassing authenticateSteamRequest's ticket check entirely. Gate on
+    // isDevFallbackAllowed() (the same check ticket-fallback already uses)
+    // rather than a bare NODE_ENV==='production' check, so an operator who
+    // sets HB_ALLOW_DEV_STEAM_AUTH=false but leaves NODE_ENV unset (common
+    // outside containerized prod setups) still gets a real random secret
+    // instead of the hardcoded one.
+    if (!isDevFallbackAllowed()) {
         if (!ephemeralSessionSecret) {
             ephemeralSessionSecret = crypto.randomBytes(32).toString('hex');
-            console.warn('[security] Generating ephemeral session secret for production environment.');
+            console.warn('[security] Generating ephemeral session secret; no explicit HB_SESSION_SECRET/publisher key configured.');
         }
         return {
             secret: ephemeralSessionSecret,
