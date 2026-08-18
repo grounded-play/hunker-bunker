@@ -24,7 +24,17 @@ const SOURCE_DIRS = ['electron', 'server', 'src'];
 // rather than the bare minimum, so the next small asset addition doesn't
 // immediately re-trip this gate.
 const PUBLIC_BUDGET = 1800 * 1024 * 1024;
-const ASAR_BUDGET = 950 * 1024 * 1024;
+// app.asar packages dist/ minus the mp4/webm files electron-builder's
+// asarUnpack pulls out (see package.json "build".asarUnpack), so it tracks
+// the same interstitial/economy/texture growth as PUBLIC_BUDGET above minus
+// video weight. Raised 950->1150 MiB: measured app.asar is currently
+// ~1019-1029 MiB (CI's actual `--package` run reported 1068789712 bytes),
+// already over the old budget with no waste left to trim (verified the
+// payload is legitimate dist/ content, not duplicates). This budget has
+// been bumped before at the same real-growth cadence as PUBLIC_BUDGET
+// (600 -> 750 -> 950); this keeps ~130MB of headroom rather than the bare
+// minimum so the next small asset addition doesn't immediately re-trip it.
+const ASAR_BUDGET = 1150 * 1024 * 1024;
 const UNKNOWN_ASSET_BUDGET = 160;
 const CODEC_MISMATCH_BUDGET = 140;
 const DUPLICATE_GROUP_BUDGET = 15;

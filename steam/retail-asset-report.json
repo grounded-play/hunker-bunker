@@ -2,7 +2,7 @@
   "version": 1,
   "budgets": {
     "publicBytes": 1887436800,
-    "appAsarBytes": 996147200,
+    "appAsarBytes": 1205862400,
     "unknownAssets": 160,
     "codecMismatches": 140,
     "duplicateGroups": 15
