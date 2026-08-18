@@ -226,6 +226,16 @@ Status to `Done` and add a one-line result to §5 when finished, don't just leav
 
 Append here, most recent first. One line per event: date, agent, what happened.
 
+- **2026-08-17 20:34** — Gemini: **Integrated 12 New High-Res Seasonal Assets & Unified Steam Vault / Armory Catalog Bridge**:
+  - Processed and deployed 12 high-resolution 2D UI icons, 1024px cards, and source chroma images to `public/economy/`:
+    - Base Weapons: `gun_scout_vector9_talon`, `gun_tank_siege_breaker50`, `gun_engineer_tesla_lock`, `gun_scout_talon_c` (chroma).
+    - Weapon Skins: `skin_scout_frostbite` (4100), `skin_tank_deep_core_melter` (4107), `skin_engineer_cryo_plasma` (4103).
+    - Tactical Charms: `charm_amber_bio_flask` (4137), `charm_dark_matter` (4138).
+    - Rig Overclocks: `mod_bio_hazard_filter` (4142), `mod_kinetic_impact` (4143), `mod_thermal_heat_exchanger` (4144).
+  - Implemented unified `getItemCatalogEntry()` in `src/steamVaultUi.js`, bridging both `STEAM_ITEM_CATALOG` and `CATALOG_ITEMS` (all 60 Season Zero itemdefs `4100`–`4159`) across inventory grids, detail inspector, and Steam drop toasts.
+  - Reconciled naming conflicts: 4107 assigned to Engineer Arc Driver, 4103 named Cryo-Plasma Arc Driver, 4116 assigned to Engineer exosuit.
+  - Full test suite verified green: **191 / 191 test files passed, 1,601 tests passed**.
+
 - **2026-08-17 16:54** — Claude: **Built and live-verified the Season 0 Tactical Dossier (battle
   pass) system** — separate feature from the Armory, but same season economy, so logging it here
   rather than starting a third worklog. Note this doc's title/scope no longer fully covers what's
