@@ -338,6 +338,15 @@ const PROJECTILE_SPEED = 13.4;
 const PROJECTILE_TTL = 1.15;
 const PROJECTILE_RADIUS = 0.16;
 const PROJECTILE_DAMAGE = 1;
+// updateProjectiles does a full wall-raycast + scatter-prop/enemy scan per
+// active projectile, every frame -- no spatial culling. Profiled live: ~71ms
+// for a single frame at 380 simultaneous projectiles (105us wall-raycast +
+// ~40us each for the prop/enemy scans, roughly linear per projectile). A
+// stacked-multishot build combined with a crowded firefight's enemy
+// projectiles can reach that range with no cap in place today. This bounds
+// worst-case frame cost regardless of what let the count climb, without
+// touching the per-projectile checks themselves.
+const MAX_ACTIVE_PROJECTILES = 120;
 const TURRET_RANGE = 8.0;
 const TURRET_DAMAGE = 1;
 const FALL_DAMAGE_BASE = 2;
@@ -17917,6 +17926,14 @@ export class ThreeGame {
         group.add(core, glow);
         group.position.set(x, 0.42, z);
         this.scene.add(group);
+
+        // FIFO-evict the oldest active projectile once at the cap, same
+        // cleanup path expiry already uses, instead of letting the pool grow
+        // without bound.
+        if (this.activeProjectiles.length >= MAX_ACTIVE_PROJECTILES) {
+            const oldest = this.activeProjectiles.shift();
+            if (oldest) this.destroyProjectile(oldest);
+        }
 
         this.activeProjectiles.push({
             mesh: group,

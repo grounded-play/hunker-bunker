@@ -50,7 +50,7 @@ import { createArmoryScene } from './src/armoryScene.js';
 import { createArmoryUi } from './src/armoryUi.js';
 import { ARMORY_SCREEN_ENABLED } from './src/featureFlags.js';
 import { initSteamVaultUI, loadVaultData, openSteamVaultModal, showSteamDropToast, renderSteamMilestoneGrants, STEAM_ITEM_CATALOG } from './src/steamVaultUi.js';
-import { initSeasonPassUI } from './src/seasonPassUi.js';
+import { initSeasonPassUI, flushQueuedSeasonPassToasts } from './src/seasonPassUi.js';
 import { initVoiceCallouts } from './src/voiceCallouts.js';
 import { multiplayerLobby } from './src/multiplayerLobby.js';
 import { playerTradeManager, TRADEABLE_RESOURCES } from './src/playerTrade.js';
@@ -315,6 +315,7 @@ function setAppPhase(phase) {
     debugLog.info('PHASE', `${previousPhase ?? 'none'} -> ${phase}: ${phaseLabels[phase] ?? 'application state changed'}`);
     syncSteamInputPhase();
     syncSteamTimelinePhase(phase);
+    if (phase === 'splash' || phase === 'menu') flushQueuedSeasonPassToasts();
     if (!isGameplayPhase()) {
         if (tacticalOverlayTimer) {
             clearTimeout(tacticalOverlayTimer);
