@@ -289,9 +289,9 @@ export async function openDebugMuseum(game) {
         return game.createScatterInstance(placement);
     });
 
-    // 9. Enemies (real production spawn path)
+    // 9. Enemies (real production spawn path with static in-place walk cycle animation)
     await addCategory('ENEMIES & BOSSES', ENEMY_TYPES, async (type, x, zPos) => {
-        const placement = { type, x, z: zPos, scale: 1, tiltX: 0, elevation: 0 };
+        const placement = { type, x, z: zPos, scale: 1, tiltX: 0, elevation: 0, isDisplayModel: true };
         return game.createScatterInstance(placement);
     });
 
@@ -312,4 +312,15 @@ export function closeDebugMuseum(game) {
     });
     game.scene.remove(group);
     return true;
+}
+
+export const openDebugAssetColonnade = openDebugMuseum;
+export const closeDebugAssetColonnade = closeDebugMuseum;
+
+if (typeof window !== 'undefined') {
+    window.__DEBUG__ = window.__DEBUG__ || {};
+    window.__DEBUG__.openMuseum = (game = window.game || window.threeGame) => openDebugMuseum(game);
+    window.__DEBUG__.closeMuseum = (game = window.game || window.threeGame) => closeDebugMuseum(game);
+    window.__DEBUG__.openAssetColonnade = window.__DEBUG__.openMuseum;
+    window.__DEBUG__.closeAssetColonnade = window.__DEBUG__.closeMuseum;
 }

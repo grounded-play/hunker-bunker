@@ -57,12 +57,17 @@ import { playerTradeManager, TRADEABLE_RESOURCES } from './src/playerTrade.js';
 import { npcDialogueTreeManager, NPC_DIALOGUE_TREES } from './src/npcDialogueTrees.js';
 import { sideStoryManager, SIDE_STORIES_CONFIG, SIDE_STORY_STATUS } from './src/sideStorySystem.js';
 import { matureContentAudit } from './src/matureContentAudit.js';
+import { progressionWalkthrough } from './src/progressionWalkthrough.js';
 import { renderGameOverLeaderboard } from './src/leaderboardUi.js';
 import { OPERATOR_POLISHES, getSelectedPolish, getUnlockedPolishIds, selectPolish, unlockAllPolishes, unlockMilestonePolish } from './src/operatorPolishes.js';
 import { STARTING_RUN_AMMO, CLASS_AMMO_CAPACITY } from './src/data/ammoEconomy.js';
 import { explainEnding, formatManifestBlocker } from './src/endingExplanations.js';
 import { SongInterstitialController, selectCampInterstitial } from './src/songInterstitials.js';
 import { dialogueReactionForLine, preloadLeaderMedia, resolveLeaderIdentity } from './src/leaderIdentity.js';
+import { openQaNexusModal, closeQaNexusModal } from './src/debugQaNexus.js';
+import { openDebugTileGrid, closeDebugTileGrid } from './src/debugTileGrid.js';
+import { openDebugBossArenas, closeDebugBossArenas } from './src/debugBossArenas.js';
+import { openDebugCampSimulator, closeDebugCampSimulator } from './src/debugCampSimulator.js';
 import { LeaderConversation3d } from './src/leaderConversation3d.js';
 import {
     computeTopologyDistances,
@@ -7414,6 +7419,7 @@ function executeDevCommand(input) {
                 + '  museum              - Open continuous asset museum hallway (chunk 9000, 9000)\n'
                 + '  showroom            - Open 4-wall orientation showroom gallery (chunk 500, 500)\n'
                 + '  closemuseum         - Close continuous asset museum hallway\n'
+                + '  progression         - Open Gameplay Progression Walkthrough (F10)\n'
                 + '  steam               - View Steam connection info\n'
                 + '  steamlog            - View Steam startup diagnostics\n'
                 + '  clear / cls         - Clear console log';
@@ -7435,9 +7441,40 @@ function executeDevCommand(input) {
                     + '\nUsage: tp <id> (e.g. tp crash, tp showroom, tp camp, tp hive, tp queen, tp 120 45)';
                 break;
             }
-            if (target === 'showroom' || target === 'gallery' || target === 'museum') {
-                result = 'Building showroom / museum gallery and teleporting...';
+            if (target === 'nexus' || target === 'qanexus') {
+                closeDevConsoleModal();
+                openQaNexusModal();
+                result = 'Opened QA Nexus Proving Grounds command center.';
+                break;
+            }
+            if (target === 'museum' || target === 'colonnade' || target === 'wing1') {
+                closeDevConsoleModal();
+                result = 'Opening Wing 1 Solo Asset Colonnade at (9000, 9000)...';
+                void window.__DEBUG__.openMuseum();
+                break;
+            }
+            if (target === 'showroom' || target === 'gallery') {
+                closeDevConsoleModal();
+                result = 'Building showroom 4-wall gallery and teleporting...';
                 void openDebugShowroom();
+                break;
+            }
+            if (target === 'tilegrid' || target === 'grid' || target === 'wing2') {
+                closeDevConsoleModal();
+                result = 'Opening Wing 2 Architectural Tile Grid at (11000, 9500)...';
+                void openDebugTileGrid(game);
+                break;
+            }
+            if (target === 'bosses' || target === 'bossarenas' || target === 'wing3') {
+                closeDevConsoleModal();
+                result = 'Opening Wing 3 Boss & Encounter Arenas at (13000, 9500)...';
+                void openDebugBossArenas(game);
+                break;
+            }
+            if (target === 'campsim' || target === 'camps' || target === 'wing4') {
+                closeDevConsoleModal();
+                result = 'Opening Wing 4 Survivor Camp Testing Lab at (15000, 9500)...';
+                void openDebugCampSimulator(game);
                 break;
             }
             if (target === 'crash' || target === 'spawn' || target === 'origin') {
@@ -7657,6 +7694,54 @@ function executeDevCommand(input) {
             result = 'Building 4-wall showroom gallery and teleporting...';
             void openDebugShowroom();
             break;
+        case 'progression':
+        case 'walkthrough':
+            result = 'Opening Gameplay Progression Walkthrough (F10)...';
+            progressionWalkthrough.openModal();
+            break;
+        case 'nexus':
+        case 'qanexus':
+        case 'provinggrounds':
+            closeDevConsoleModal();
+            openQaNexusModal();
+            result = 'Opened QA Nexus Proving Grounds command center.';
+            break;
+        case 'closenexus':
+            closeQaNexusModal();
+            result = 'Closed QA Nexus terminal.';
+            break;
+        case 'tilegrid':
+        case 'grid':
+        case 'canyon':
+            closeDevConsoleModal();
+            result = 'Building Wing 2 Architectural Tile Grid at (11000, 9500)...';
+            void openDebugTileGrid(window.game || window.threeGame);
+            break;
+        case 'closetilegrid':
+            closeDebugTileGrid(window.game || window.threeGame);
+            result = 'Closed Wing 2 Architectural Tile Grid.';
+            break;
+        case 'bosses':
+        case 'bossarenas':
+        case 'arenas':
+            closeDevConsoleModal();
+            result = 'Opening Wing 3 Boss & Encounter Arenas at (13000, 9500)...';
+            void openDebugBossArenas(window.game || window.threeGame);
+            break;
+        case 'closebosses':
+            closeDebugBossArenas(window.game || window.threeGame);
+            result = 'Closed Wing 3 Boss & Encounter Arenas.';
+            break;
+        case 'campsim':
+        case 'camps':
+            closeDevConsoleModal();
+            result = 'Opening Wing 4 Survivor Camp Testing Lab at (15000, 9500)...';
+            void openDebugCampSimulator(window.game || window.threeGame);
+            break;
+        case 'closecamps':
+            closeDebugCampSimulator(window.game || window.threeGame);
+            result = 'Closed Wing 4 Survivor Camp Testing Lab.';
+            break;
         case 'heal':
         case 'hp':
         case 'o2':
@@ -7713,6 +7798,10 @@ function executeDevCommand(input) {
 
 // Programmatic Automation and Testing API
 window.__DEBUG__ = {
+    // Runs a raw dev-console command string through the exact same dispatcher the console
+    // itself uses (docs/debug-gallery-and-architectural-grid-expansion-plan.md §7 "Wing 5" —
+    // progression walkthrough triggers reuse real commands rather than reimplementing them).
+    runCommand: (input) => executeDevCommand(input),
     teleport: (target, options) => {
         const game = window.game;
         if (!game) return Promise.reject(new Error('Game not initialized'));
@@ -7894,6 +7983,10 @@ document.getElementById('dev-btn-god')?.addEventListener('click', () => {
 document.getElementById('dev-btn-noclip')?.addEventListener('click', () => {
     const res = devToggleNoclip();
     logDevConsole(res, 'system');
+});
+document.getElementById('dev-btn-open-nexus')?.addEventListener('click', () => {
+    closeDevConsoleModal();
+    openQaNexusModal();
 });
 document.getElementById('dev-btn-open-museum')?.addEventListener('click', () => {
     closeDevConsoleModal();
@@ -12802,6 +12895,7 @@ initSeasonPassUI();
 initVoiceCallouts();
 multiplayerLobby.init();
 matureContentAudit.init();
+progressionWalkthrough.init();
 initVirtualKeyboard();
 setupNpcDialogueEvents();
 

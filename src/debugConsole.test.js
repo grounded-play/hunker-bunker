@@ -154,4 +154,30 @@ describe('debugConsole', () => {
         const lastLog = debugLog.logs[debugLog.logs.length - 1];
         expect(lastLog.message).toContain('5 hostile enemies');
     });
+
+    it('executes proving grounds commands (nexus, tilegrid, bosses, campsim)', () => {
+        let nexusOpened = false;
+        let tileGridOpened = false;
+        let bossesOpened = false;
+        let campsOpened = false;
+
+        globalThis.window.__DEBUG__ = {
+            openNexus: () => { nexusOpened = true; },
+            openTileGrid: () => { tileGridOpened = true; },
+            openBossArenas: () => { bossesOpened = true; },
+            openCampSimulator: () => { campsOpened = true; }
+        };
+
+        debugLog.executeCommand('nexus');
+        expect(nexusOpened).toBe(true);
+
+        debugLog.executeCommand('tilegrid');
+        expect(tileGridOpened).toBe(true);
+
+        debugLog.executeCommand('bosses');
+        expect(bossesOpened).toBe(true);
+
+        debugLog.executeCommand('campsim');
+        expect(campsOpened).toBe(true);
+    });
 });

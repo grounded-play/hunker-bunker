@@ -22107,6 +22107,7 @@ export class ThreeGame {
             sprite.userData = {
                 isScatter: true,
                 isEnemy: true,
+                isDisplayModel: Boolean(placement.isDisplayModel),
                 isBoss: isBoss,
                 biome: placement.type.includes('cryo') ? 'cryo' : placement.type.includes('spore') ? 'bio' : 'active',
                 type: placement.type,
@@ -25424,6 +25425,20 @@ export class ThreeGame {
                     this.updateSentinelBehavior(child, delta);
                 }
             } else if (this.isEnemyType(child.userData.type)) {
+                if (child.userData.isDisplayModel) {
+                    // Static showcase model: in-place walk cycle animation only, no movement, no aggro, no puddles
+                    child.position.y = baseY;
+                    if (child.userData.sheetSprite && child.userData.sheetLayout) {
+                        child.userData.sheetTime = (child.userData.sheetTime ?? 0) + delta * 2.5;
+                        const frame = Math.floor(child.userData.sheetTime) % (child.userData.sheetLayout.columns || 4);
+                        const layout = child.userData.sheetLayout;
+                        const southRow = layout.directionRows?.south ?? 0;
+                        if (child.material?.map?.offset) {
+                            child.material.map.offset.set(frame / layout.columns, (layout.rows - 1 - southRow) / layout.rows);
+                        }
+                    }
+                    continue;
+                }
                 child.position.y = baseY + Math.sin(time * 4 + (child.userData.phase ?? 0)) * 0.04;
                 child.material.opacity = child.userData.baseOpacity ?? 1;
                 if (child.userData.type === 'fungal_spore_vent') {

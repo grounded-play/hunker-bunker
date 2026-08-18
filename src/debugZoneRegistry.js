@@ -64,6 +64,8 @@ registerDebugZone('debugMuseum', { originX: 9000 + 130, originZ: 9000, width: 30
 // a second overlapping registration for the same ground.
 registerDebugZone('wing5-progression', { originX: 0, originZ: 0, width: 0, depth: 0 }); // DOM gallery, no 3D footprint
 registerDebugZone('wing2-roomgrid', { originX: 11000, originZ: 9500, width: 900, depth: 500 }); // moved off the original (9500,9500) collision
+registerDebugZone('wing3-bossarenas', { originX: 13000, originZ: 9500, width: 900, depth: 500 }); // 5 boss arenas with phase switches
+registerDebugZone('wing4-campsimulator', { originX: 15000, originZ: 9500, width: 900, depth: 500 }); // 4 camp state testbeds
 registerDebugZone('qa-nexus', { originX: 8700, originZ: 9000, width: 40, depth: 40 }); // small kiosk, west of the colonnade entrance
 
 export const RESERVED_ZONE_NAMES = Object.freeze([...zones.keys()]);

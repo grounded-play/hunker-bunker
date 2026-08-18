@@ -328,11 +328,13 @@ export class DebugLogger {
                 <button id="hb-quick-speed" class="hb-cmd-btn hb-cheat-btn" title="Boost Sprint Traversal Speed">🚀 SPEED</button>
                 <button id="hb-quick-resources" class="hb-cmd-btn hb-cheat-btn" title="Grant +250 Tech, +150 Coin, +75 Med, +75 Shells">💎 +500$</button>
                 <button id="hb-quick-nuke" class="hb-cmd-btn hb-cheat-btn" title="Purge all hostiles from active sector">💥 NUKE</button>
-                <span style="color: #00f0ff; font-size: 10px; font-weight: bold; margin-left: 8px; margin-right: 4px;">TELEPORT:</span>
-                <button id="hb-quick-tp-museum" class="hb-cmd-btn hb-nav-btn" title="Teleport to continuous asset museum (9000, 9000)">🏛️ MUSEUM</button>
-                <button id="hb-quick-tp-showroom" class="hb-cmd-btn hb-nav-btn" title="Teleport to 4-wall showroom (9500, 9500)">🏢 SHOWROOM</button>
-                <button id="hb-quick-tp-camp" class="hb-cmd-btn hb-nav-btn" title="Teleport to nearest survivor camp">⛺ CAMP</button>
-                <button id="hb-quick-tp-queen" class="hb-cmd-btn hb-nav-btn" title="Teleport to Cave Queen lair">👑 QUEEN</button>
+                <span style="color: #00f0ff; font-size: 10px; font-weight: bold; margin-left: 8px; margin-right: 4px;">PROVING GROUNDS:</span>
+                <button id="hb-quick-tp-nexus" class="hb-cmd-btn hb-cheat-btn" style="background: rgba(46, 196, 182, 0.2); border-color: #2ec4b6; color: #2ec4b6;" title="Open QA Nexus Command Terminal">⚙️ NEXUS</button>
+                <button id="hb-quick-tp-museum" class="hb-cmd-btn hb-nav-btn" title="Wing 1: Solo Colonnade (9000, 9000)">🏛️ W1: COLONNADE</button>
+                <button id="hb-quick-tp-showroom" class="hb-cmd-btn hb-nav-btn" title="4-Wall Orientation Showroom (9500, 9500)">🏢 SHOWROOM</button>
+                <button id="hb-quick-tp-tilegrid" class="hb-cmd-btn hb-nav-btn" title="Wing 2: Architectural &amp; Canyon Grid (11000, 9500)">📐 W2: GRID</button>
+                <button id="hb-quick-tp-bosses" class="hb-cmd-btn hb-nav-btn" title="Wing 3: Boss Arenas (13000, 9500)">⚔️ W3: BOSS</button>
+                <button id="hb-quick-tp-camps" class="hb-cmd-btn hb-nav-btn" title="Wing 4: Camp Testing Lab (15000, 9500)">⛺ W4: CAMP</button>
                 <button id="hb-quick-tp-crash" class="hb-cmd-btn hb-nav-btn" title="Teleport back to crash origin">🚀 CRASH</button>
             </div>
             <div id="hb-console-logs" style="flex: 1; overflow-y: auto; padding: 8px 12px; display: flex; flex-direction: column; gap: 3px; scroll-behavior: smooth;"></div>
@@ -437,14 +439,22 @@ export class DebugLogger {
         if (quickResBtn) quickResBtn.onclick = () => this.executeCommand('give tech 250');
         if (quickNukeBtn) quickNukeBtn.onclick = () => this.executeCommand('nuke');
 
+        const quickTpNexus = overlay.querySelector('#hb-quick-tp-nexus');
         const quickTpMuseum = overlay.querySelector('#hb-quick-tp-museum');
         const quickTpShowroom = overlay.querySelector('#hb-quick-tp-showroom');
+        const quickTpTilegrid = overlay.querySelector('#hb-quick-tp-tilegrid');
+        const quickTpBosses = overlay.querySelector('#hb-quick-tp-bosses');
+        const quickTpCamps = overlay.querySelector('#hb-quick-tp-camps');
         const quickTpCamp = overlay.querySelector('#hb-quick-tp-camp');
         const quickTpQueen = overlay.querySelector('#hb-quick-tp-queen');
         const quickTpCrash = overlay.querySelector('#hb-quick-tp-crash');
 
+        if (quickTpNexus) quickTpNexus.onclick = () => this.executeCommand('nexus');
         if (quickTpMuseum) quickTpMuseum.onclick = () => this.executeCommand('museum');
         if (quickTpShowroom) quickTpShowroom.onclick = () => this.executeCommand('showroom');
+        if (quickTpTilegrid) quickTpTilegrid.onclick = () => this.executeCommand('tilegrid');
+        if (quickTpBosses) quickTpBosses.onclick = () => this.executeCommand('bosses');
+        if (quickTpCamps) quickTpCamps.onclick = () => this.executeCommand('campsim');
         if (quickTpCamp) {
             quickTpCamp.onclick = () => {
                 const targetGame = window.threeGame || window.game;
@@ -800,16 +810,55 @@ export class DebugLogger {
                 break;
             }
 
-            case 'showroom': {
-                const targetGame = game || win?.game;
-                if (win?.__DEBUG__?.openShowroom) {
-                    this.info('NAV', 'Opening 4-Wall Showroom at (9500, 9500)...');
-                    void win.__DEBUG__.openShowroom();
-                } else if (win?.openDebugShowroom) {
-                    this.info('NAV', 'Opening Debug Showroom...');
-                    void win.openDebugShowroom(targetGame);
+            case 'nexus':
+            case 'qanexus':
+            case 'provinggrounds': {
+                if (win?.openQaNexusModal) {
+                    this.info('NAV', 'Opening QA Nexus Proving Grounds command center...');
+                    win.openQaNexusModal();
+                } else if (win?.__DEBUG__?.openNexus) {
+                    this.info('NAV', 'Opening QA Nexus Proving Grounds command center...');
+                    win.__DEBUG__.openNexus();
                 } else {
-                    this.warn('CMD', 'Showroom module not loaded');
+                    this.warn('CMD', 'QA Nexus module not loaded');
+                }
+                break;
+            }
+
+            case 'tilegrid':
+            case 'grid':
+            case 'canyon': {
+                const targetGame = game || win?.game || win?.threeGame;
+                if (win?.__DEBUG__?.openTileGrid) {
+                    this.info('NAV', 'Opening Wing 2 Architectural Tile Grid at (11000, 9500)...');
+                    void win.__DEBUG__.openTileGrid(targetGame);
+                } else {
+                    this.warn('CMD', 'Tile Grid module not loaded');
+                }
+                break;
+            }
+
+            case 'bosses':
+            case 'bossarenas':
+            case 'arenas': {
+                const targetGame = game || win?.game || win?.threeGame;
+                if (win?.__DEBUG__?.openBossArenas) {
+                    this.info('NAV', 'Opening Wing 3 Boss & Encounter Arenas at (13000, 9500)...');
+                    void win.__DEBUG__.openBossArenas(targetGame);
+                } else {
+                    this.warn('CMD', 'Boss Arenas module not loaded');
+                }
+                break;
+            }
+
+            case 'campsim':
+            case 'camps': {
+                const targetGame = game || win?.game || win?.threeGame;
+                if (win?.__DEBUG__?.openCampSimulator) {
+                    this.info('NAV', 'Opening Wing 4 Survivor Camp Testing Lab at (15000, 9500)...');
+                    void win.__DEBUG__.openCampSimulator(targetGame);
+                } else {
+                    this.warn('CMD', 'Camp Simulator module not loaded');
                 }
                 break;
             }

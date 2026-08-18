@@ -1580,15 +1580,22 @@
             <button id="dev-btn-nuke" class="dev-btn">KILL SNAILS</button>
           </div>
           <div class="dev-quick-group">
-            <span class="dev-group-label">QA GALLERIES &amp; TP:</span>
-            <button id="dev-btn-open-museum" class="dev-btn dev-btn--accent">MUSEUM (9000, 9000)</button>
-            <button id="dev-btn-open-showroom" class="dev-btn dev-btn--accent">SHOWROOM (9500, 9500)</button>
+            <span class="dev-group-label">QA PROVING GROUNDS:</span>
+            <button id="dev-btn-open-nexus" class="dev-btn dev-btn--accent" title="Open Unified QA Nexus Command Terminal">⚙️ QA NEXUS</button>
+            <button id="dev-btn-open-museum" class="dev-btn">W1: COLONNADE</button>
+            <button id="dev-btn-open-showroom" class="dev-btn">SHOWROOM</button>
             <select id="dev-tp-select" class="dev-select">
-              <option value="">Jump to POI...</option>
-              <option value="crash">Bunker Crash Spawn</option>
-              <option value="camp">Survivor Camp</option>
-              <option value="hive">Hive Infestation</option>
-              <option value="queen">Cave Queen Lair</option>
+              <option value="">Jump to Sector / Proving Ground...</option>
+              <option value="nexus">⚙️ QA Nexus Command</option>
+              <option value="museum">🏛️ Wing 1: Solo Colonnade (9000, 9000)</option>
+              <option value="showroom">🏢 Showroom Gallery (9500, 9500)</option>
+              <option value="tilegrid">📐 Wing 2: Architectural Grid (11000, 9500)</option>
+              <option value="bosses">⚔️ Wing 3: Boss Arenas (13000, 9500)</option>
+              <option value="campsim">⛺ Wing 4: Camp Testing Lab (15000, 9500)</option>
+              <option value="crash">🚀 Bunker Crash Origin (0, 0)</option>
+              <option value="camp">⛺ Survivor Camp</option>
+              <option value="hive">🪲 Hive Infestation</option>
+              <option value="queen">👑 Cave Queen Lair</option>
             </select>
           </div>
           <div class="dev-quick-group">
@@ -2542,6 +2549,29 @@
         </p>
         <div class="mature-audit-list" id="mature-audit-list">
           <!-- Dynamically populated from MATURE_CONTENT_MANIFEST -->
+        </div>
+      </div>
+    </div>
+
+    <!-- Wing 5: Gameplay Progression Walkthrough (docs/debug-gallery-and-architectural-grid-
+         expansion-plan.md §7) — reuses the mature-audit-* CSS classes above so no new styling
+         is needed. F10 shortcut, dev-only. -->
+    <div id="progression-walkthrough-modal" class="modal hidden" aria-hidden="true">
+      <div class="modal-content mature-audit-modal-content">
+        <div class="settings-sticky-header">
+          <div>
+            <h2 class="modal-title">GAMEPLAY PROGRESSION WALKTHROUGH</h2>
+            <div class="mature-audit-subtitle">F10 SHORTCUT // DEV-ONLY QA TOOL</div>
+          </div>
+          <button class="close-modal" id="close-progression-walkthrough-modal" aria-label="Close progression walkthrough">×</button>
+        </div>
+        <p class="mature-audit-summary">
+          Jump directly to any real gameplay/story beat in the order a player encounters it —
+          tutorial, depth tiers, camp/hive discovery, milestone bosses, Act 2 endings, Battle
+          Pass tiers, achievements, and extraction — without playing a full run.
+        </p>
+        <div class="mature-audit-list" id="progression-walkthrough-list">
+          <!-- Dynamically populated from PROGRESSION_MANIFEST -->
         </div>
       </div>
     </div>
