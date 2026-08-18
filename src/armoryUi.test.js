@@ -176,7 +176,11 @@ describe('createArmoryUi', () => {
 
         ui.setClass('ENGINEER');
         expect(container.innerHTML).toContain('ENGINEER');
-        expect(fakeScene.setClass).toHaveBeenCalledWith('ENGINEER');
+        // armoryUi.js's setClass() normalizes to lowercase before forwarding (matching
+        // LoadoutManager's normalizeClassId convention used everywhere else in this codebase);
+        // armoryScene.js's real setClass() then normalizes to uppercase internally regardless
+        // of input case, so this is a case-convention detail, not a functional bug.
+        expect(fakeScene.setClass).toHaveBeenCalledWith('engineer');
     });
 
     it('exports complete catalog metadata', () => {
