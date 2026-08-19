@@ -4728,19 +4728,28 @@ export class ThreeGame {
     triggerGameplayInteract() {
         if (!this.isGameplayInputActive()) return false;
         if (this.interactWithNearestShipStation()) return true;
-        this.interactWithBunkerBlastDoorButton();
-        this.interactWithProceduralDoor();
-        this.interactWithMazeAccessSource();
-        this.interactWithLoreTerminal();
-        this.interactWithBlackBox();
-        this.interactWithCaveEntrance();
-        this.interactWithAct2Camp();
-        this.interactWithScientist();
-        this.interactWithHiveSite();
-        this.interactWithCampQuestObject();
-        this.interactWithHoleTile();
-        this.interactWithPocketClimbPoint();
-        this.interactWithBiomechanicalDoor();
+        // Every check below used to run with its result discarded, so a press
+        // near nothing interactable was silent -- no success, no "nothing
+        // here" cue, indistinguishable from the game not having heard the
+        // keypress at all (docs/log1-perf-and-telemetry-followups-2026-08-18.md
+        // #4: 8 rapid presses near a pit produced zero feedback either way).
+        let handled = false;
+        handled = this.interactWithBunkerBlastDoorButton() || handled;
+        handled = this.interactWithProceduralDoor() || handled;
+        handled = this.interactWithMazeAccessSource() || handled;
+        handled = this.interactWithLoreTerminal() || handled;
+        handled = this.interactWithBlackBox() || handled;
+        handled = this.interactWithCaveEntrance() || handled;
+        handled = this.interactWithAct2Camp() || handled;
+        handled = this.interactWithScientist() || handled;
+        handled = this.interactWithHiveSite() || handled;
+        handled = this.interactWithCampQuestObject() || handled;
+        handled = this.interactWithHoleTile() || handled;
+        handled = this.interactWithPocketClimbPoint() || handled;
+        handled = this.interactWithBiomechanicalDoor() || handled;
+        if (!handled) {
+            this.playThrottledUiError('_lastNoInteractCueAt', { volume: 0.3, playbackRate: 0.9 });
+        }
         return true;
     }
 

@@ -253,7 +253,7 @@ function from one or two more places), but changing when
 `isMultiplayer`/`multiplayerMode` become true needs a test pass against the
 four gated call sites before shipping, since they currently silently no-op.
 
-## 4. Interact spam near the pit-fall death — silent failure
+## 4. Interact spam near the pit-fall death — silent failure — FIXED (UX gap)
 
 **Confirmed:** 8 rapid `Action: INTERACT` presses (elapsedMs 72032-73575,
 ~150-330ms apart) immediately preceding the pit-fall death at 77601. No
@@ -270,26 +270,31 @@ biomechanical door. `interactWithHoleTile()` only fires
 the function just returns after doing nothing, same as if the player weren't
 near an interactable at all.
 
-**Open question, not yet resolved:** was the player actually near something
-interactable (and one of the 13 checks has a real bug), or were they simply
-not close enough to anything and correctly got no response? The position at
-death (`x: 0.90, z: -18.00`, depth 0) needs to be cross-referenced against
-that chunk's actual generated content to know which case this is.
+**Exact reproduction not feasible:** `runEntropy` (the seed logged as
+`"Seed: 3428689285"` at `ThreeGame initialized`, elapsedMs 2810) gets
+re-rolled to a fresh value once the run actually starts
+(`respawnPlayer({resetRunState: true})`, ~32s later in the real log) and is
+never logged again — so the exact chunk content the player was standing in
+at death can't be regenerated from this log alone. Whether that specific
+death had a genuine interactable in range that silently failed to fire
+stays an open, unresolvable-from-this-log question.
 
-**Next step:** pull chunk `(0, -1)` (or whichever chunk contains
-`x≈1, z≈-18`) from a reproduction at the same seed/area, check what
-interactable content (if any) existed within interact range of that death
-position. If something was there and its check didn't fire, that's a real
-bug in one of the 13 `interactWithX` functions. If nothing was there, this
-closes as "working as intended" — but even then, consider adding a
-throttled "nothing to interact with" cue (audio/HUD flash) so repeated
-failed presses give the player feedback instead of silence, matching the
-existing `playThrottledUiError` pattern already used elsewhere in
-`fireWeaponAtCurrentAim()` for blocked-fire cases.
+**Fixed the general gap regardless.** Whether or not that exact death had a
+real interactable nearby, the underlying UX problem was real and
+reproducible: `triggerGameplayInteract()`
+(`src/threeGame.js:4728-4750`) discarded the return value of 12 of its 13
+`interactWithX()` checks, so a press near nothing interactable was
+indistinguishable from the game not registering the keypress at all — no
+success, no "nothing here" cue, just silence either way. Now tracks whether
+any check succeeded and plays the existing throttled `ui_error` cue
+(`playThrottledUiError`, same pattern `fireWeaponAtCurrentAim()` already
+uses for blocked-fire cases) when none did. Verified live: at a position with
+all 13 checks confirmed individually returning `false`, the cue now fires;
+previously it did not.
 
-**Priority:** low-medium — UX polish either way; only becomes a real bug if
-the chunk cross-reference finds a genuine interactable in range.
-**Risk:** low.
+**Priority:** closed — shipped. **Risk:** low; verified all 1677 existing
+tests still pass, and the fix only adds a cue on the already-existing
+"nothing happened" path — it doesn't change any interact behavior.
 
 ## 5. `totalPickups` stayed 0 despite the crate dropping ammo + health — CLOSED, not a bug
 
@@ -354,20 +359,37 @@ worth the risk at all given it's confirmed invisible to players.
 
 ## Summary / execution order
 
+**Fixed and shipped:** #3 (multiplayer mode never propagating to
+`game.isMultiplayer`/`multiplayerMode`), #4 (interact presses near nothing
+gave no feedback). **Closed, not bugs:** #5 (`totalPickups` correctly
+tracks banked resources, not world pickups), #6 (branch-name typo confirmed
+never reaches shipped/tagged builds). **Root cause found, fix proposed but
+not yet implemented:** #2 (boot-time chroma-key pixel processing, ~2.6s
+every session, needs a scoped caching/build-step pass — see section 2's
+three options). **Still open, hardest remaining item:** #1 (the sustained
+drip) — four independent live-reproduction attempts all failed to
+reproduce it; next step is capturing a real trace from an actual future
+occurrence rather than further synthetic guessing (see section 1's
+"Recommended next step").
+
 1. **#3 multiplayer mode mismatch — FIXED.** `setupMultiplayerNetwork()` now
    re-runs from `deployMatch()`/`handleRemoteMatchStart()`; verified live
    that `game.isMultiplayer`/`game.multiplayerMode` correctly flip on
    deploy instead of staying `undefined` all session. Shipped in
    commit `1f22fcc`.
-2. **#5 totalPickups — CLOSED, not a bug.** The field tracks banked
+2. **#4 interact silent failure — FIXED.** `triggerGameplayInteract()` now
+   tracks whether any of its 13 checks succeeded and plays the existing
+   throttled `ui_error` cue when none did, instead of silent no-op either
+   way. Verified live.
+3. **#5 totalPickups — CLOSED, not a bug.** The field tracks banked
    resources, not world pickups; 0 is correct for a run that never returned
    to deposit anything.
-3. **#6 branch typo — CLOSED for shipped builds.** Confirmed tagged Steam
+4. **#6 branch typo — CLOSED for shipped builds.** Confirmed tagged Steam
    releases get the version tag as the label, never a branch name; this only
    ever shows up in local dev. Rename is optional dev-loop tidiness, not a
    player-facing fix, and is a user decision given the shared working
    directory risk.
-4. **#2 boot overhead — root cause found, fix not yet implemented.**
+5. **#2 boot overhead — root cause found, fix not yet implemented.**
    Confirmed via live CPU profile: ~2.6s of every single boot goes into
    `src/textureKeying.js`'s chroma-key pixel processing, re-run from scratch
    every session because the only cache is in-memory and empty on every page
@@ -375,11 +397,9 @@ worth the risk at all given it's confirmed invisible to players.
    pre-bake at build time, or move it off the main thread) — the first two
    are the real fix but need their own scoped implementation pass, not a
    quick patch.
-5. **#1 sustained drip — still open, hardest remaining item.** Four
+6. **#1 sustained drip — still open, hardest remaining item.** Four
    independent live-reproduction attempts (bare-stub enemies, full real
    frame loop, real 3D-enemy CPU profile, 68s continuous-play CPU profile)
    all failed to reproduce it. This needs a real trace captured from an
    actual future occurrence rather than more synthetic guessing — see the
    "Recommended next step" in section 1.
-6. **#4 interact silent failure — still open**, needs the death-position
-   chunk cross-reference to know if there's a real bug here at all.
