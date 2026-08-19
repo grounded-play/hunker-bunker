@@ -36,6 +36,40 @@ export function hasEnemy3dModel(type) {
     return Boolean(MODEL_CONFIG[type]);
 }
 
+// Boss/queen encounters are rare, once-per-run, and already a big cinematic
+// moment -- a lazy-load pause there is far less disruptive than the same
+// pause mid-firefight against a common enemy. Preload only the regular
+// roster; bosses keep the original lazy path.
+const PRELOAD_TYPES = ['cybersnail', 'sporesnail', 'fungal_spore_vent', 'spore_mortar', 'crawler', 'mycelium_stalker'];
+
+// Enemy GLBs used to load lazily on each type's first spawn -- fine on paper
+// since it's async, but GLTFLoader's parse step (meshopt decompress, skeleton
+// build) runs synchronously once the fetch resolves and can run 2-5s per
+// model. Confirmed live via a session log: a bio-stalker.glb fetch finishing
+// in 4183ms lined up with a 4086ms main-thread freeze right after, mid-firefight.
+//
+// Fired from main.js as a background task once the title screen is already up
+// and interactive (see finishBootDiagnostics), never awaited by boot. A real
+// delay between models (not just a microtask yield -- tried that first, it
+// still left the page feeling frozen between loads) gives the UI thread
+// actual breathing room, at the cost of taking longer in wall-clock time to
+// finish. setupEnemy3dCosmeticOverlay's existing lazy-load path still covers
+// anything not done in time, and all boss types.
+export async function preloadEnemy3dTemplates() {
+    const urls = new Set(PRELOAD_TYPES.map((type) => MODEL_CONFIG[type]?.url).filter(Boolean));
+    // crawler falls back to this shared run-cycle when its GLB has no embedded
+    // clip (see createEnemy3dVisual) -- preload it too or crawler still stalls.
+    if (PRELOAD_TYPES.includes('crawler')) urls.add(LOCOMOTION_URL);
+    for (const url of urls) {
+        try {
+            await loadTemplate(url);
+        } catch (err) {
+            console.warn(`[enemy-3d-overlay] preload failed for ${url}`, err);
+        }
+        await new Promise((resolve) => setTimeout(resolve, 1800));
+    }
+}
+
 function loadTemplate(url) {
     if (!templates.has(url)) {
         const promise = createGltfLoader().loadAsync(assetUrl(url)).catch((err) => {

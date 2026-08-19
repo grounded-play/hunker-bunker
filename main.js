@@ -51,6 +51,7 @@ import { createArmoryUi } from './src/armoryUi.js';
 import { ARMORY_SCREEN_ENABLED } from './src/featureFlags.js';
 import { initSteamVaultUI, loadVaultData, openSteamVaultModal, showSteamDropToast, renderSteamMilestoneGrants, STEAM_ITEM_CATALOG } from './src/steamVaultUi.js';
 import { initSeasonPassUI, flushQueuedSeasonPassToasts } from './src/seasonPassUi.js';
+import { preloadEnemy3dTemplates } from './src/enemy3dOverlay.js';
 import { initVoiceCallouts } from './src/voiceCallouts.js';
 import { multiplayerLobby } from './src/multiplayerLobby.js';
 import { playerTradeManager, TRADEABLE_RESOURCES } from './src/playerTrade.js';
@@ -12612,6 +12613,16 @@ function finishBootDiagnostics() {
     bootLongTaskObserver = null;
     bootLongTasks = [];
     startGameplayLongTaskDiagnostics();
+
+    // Enemy GLB parsing is CPU-bound and serializes on the main thread -- an
+    // earlier attempt at awaiting this alongside core boot assets turned a
+    // rare mid-run freeze into a guaranteed 50+ second load screen, and even
+    // firing it unawaited during boot still delayed the page's own load
+    // event (measured live both ways). Starting it only now, once the title
+    // screen is already up and interactive, keeps it off the boot critical
+    // path entirely; setupEnemy3dCosmeticOverlay's existing lazy-load path
+    // still covers anything not done in time.
+    preloadEnemy3dTemplates().catch(() => {});
 }
 
 // Boot's observer stops at boot-ready, so nothing recorded *why* a frame
