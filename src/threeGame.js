@@ -3958,6 +3958,8 @@ export class ThreeGame {
             this.netSocket.on('playerFired', (data) => this.handleRemotePlayerFired(data));
             this.netSocket.on('playerDamaged', (data) => this.handleRemotePlayerDamaged(data));
             this.netSocket.on('playerRevived', (data) => this.handleRemotePlayerRevived(data));
+            this.netSocket.on('playerDownedBroadcast', (data) => this.handleRemotePlayerDowned(data?.playerId));
+            this.netSocket.on('enemyDamaged', (data) => this.handleRemoteEnemyDamage(data));
             this.netSocket.on('playerDisconnected', (id) => this.removeRemotePlayer(id));
             this.netSocket.on('newPlayer', (player) => this.getOrCreateRemotePlayer(player));
         }
@@ -4088,8 +4090,11 @@ export class ThreeGame {
     handleRemotePlayerDamaged(data) {
         if (!data) return;
         if (data.targetId === this.netSocket?.id) {
-            // Local player was hit in PvP
-            this.takePlayerDamage?.(data.damage || 10, 'pvp-rival');
+            // Local player was hit in PvP. Was this.takePlayerDamage?.(...) --
+            // that method never existed (Sprint 24 audit finding), so this
+            // branch silently never fired even on the rare occasion something
+            // emitted playerDamage.
+            this.takeDamage?.(data.damage || 10, 'pvp-rival');
         } else if (this.remotePlayers?.has(data.targetId)) {
             const remote = this.remotePlayers.get(data.targetId);
             remote.hp = Math.max(0, remote.hp - (data.damage || 10));
@@ -4107,12 +4112,59 @@ export class ThreeGame {
     }
 
     handleRemotePlayerRevived(data) {
-        if (!data || !this.remotePlayers?.has(data.targetId)) return;
+        if (!data) return;
+        if (data.targetId === this.netSocket?.id) {
+            // The local player was the one revived -- server broadcasts
+            // playerRevived to the whole room (including both the reviver and
+            // the target), so this branch is what the downed player's own
+            // client uses to actually come back up.
+            const reviver = this.remotePlayers?.get(data.reviverId);
+            this.revivePlayerFromDowned(reviver?.callsign);
+            return;
+        }
+        if (!this.remotePlayers?.has(data.targetId)) return;
         const remote = this.remotePlayers.get(data.targetId);
         remote.isDown = false;
         remote.hp = remote.maxHp;
         window.showToastNotification?.(`SQUADMATE REVIVED: ${remote.callsign}`);
         window.AudioManager?.play?.('fx_level_up', { volume: 0.4 });
+    }
+
+    handleRemotePlayerDowned(playerId) {
+        if (!playerId || !this.remotePlayers?.has(playerId)) return;
+        const remote = this.remotePlayers.get(playerId);
+        remote.isDown = true;
+        remote.hp = 0;
+        window.showToastNotification?.(`SQUADMATE DOWN: ${remote.callsign}`);
+        window.AudioManager?.play?.('ui_error', { volume: 0.4 });
+    }
+
+    // Sprint 24 Milestone A co-op enemy hit-sync (host-authoritative-style
+    // gossip broadcast, see server/relay.js's enemyDamage handler comment).
+    // Enemies don't have a cross-client-stable ID yet, so this matches by
+    // type + nearest position on the receiving end -- documented as a known
+    // approximation, not exact-identity sync.
+    handleRemoteEnemyDamage(data) {
+        if (!data || !Number.isFinite(data.x) || !Number.isFinite(data.z) || !(data.damage > 0)) return;
+        let best = null;
+        let bestDist = Infinity;
+        for (const sprite of this.scatterSprites) {
+            if (sprite.userData?.type !== data.enemyType) continue;
+            if (sprite.userData?.burstTriggered) continue;
+            const dist = Math.hypot(sprite.position.x - data.x, sprite.position.z - data.z);
+            if (dist < bestDist) {
+                bestDist = dist;
+                best = sprite;
+            }
+        }
+        // 3-unit tolerance: generous enough for network lag/interpolation
+        // drift between when the attacker's client sampled the enemy's
+        // position and when this broadcast arrives, tight enough that two
+        // same-type enemies rarely sit close enough to be confused for
+        // typical encounter density.
+        if (best && bestDist <= 3) {
+            this.applyPlayerDamageToEnemy(best, data.damage, { fromNetwork: true });
+        }
     }
 
     removeRemotePlayer(id) {
@@ -4613,6 +4665,9 @@ export class ThreeGame {
                 return;
             }
             if (this.tryInteractWithPlayerTradePointer(event.clientX, event.clientY)) {
+                return;
+            }
+            if (this.tryInteractWithRevivePointer(event.clientX, event.clientY)) {
                 return;
             }
             if (this.tryInteractWithCampPointer(event.clientX, event.clientY)) {
@@ -7641,6 +7696,32 @@ export class ThreeGame {
                     window.openPlayerTradeWith?.(remote);
                     return true;
                 }
+            }
+        }
+        return false;
+    }
+
+    // Sprint 24 Milestone A: the "REVIVE OPERATIVE" prompt
+    // (resolveTacticalInspectTarget's targetId: 'revive_peer') was UI-only
+    // before this -- computed and displayed as a tooltip, but nothing in the
+    // pointer-down dispatch chain ever consumed it. This is that missing
+    // handler, mirroring tryInteractWithPlayerTradePointer's shape exactly.
+    tryInteractWithRevivePointer(clientX, clientY) {
+        if (!this.isGameplayInputActive() || !this.player || !this.remotePlayers?.size) return false;
+        if (this.multiplayerMode === 'pvp') return false;
+        const worldPoint = this.getWorldAimPoint(clientX, clientY);
+        if (!worldPoint) return false;
+
+        for (const remote of this.remotePlayers.values()) {
+            if (!remote.isDown) continue;
+            const rPos = remote.mesh?.position;
+            if (!rPos) continue;
+            const dist = Math.hypot(worldPoint.x - rPos.x, worldPoint.z - rPos.z);
+            if (dist <= 2.2) {
+                this.netSocket?.emit('playerRevive', { targetId: remote.id });
+                window.showToastNotification?.(`REVIVING ${(remote.callsign || 'SQUADMATE').toUpperCase()}...`);
+                window.AudioManager?.play?.('fx_level_up', { volume: 0.35 });
+                return true;
             }
         }
         return false;
@@ -10746,7 +10827,7 @@ export class ThreeGame {
         if (spawned) window.AudioManager?.playMetalStress?.({ volume: 0.5, playbackRate: 0.5, force: true });
     }
 
-    applyPlayerDamageToEnemy(sprite, amount) {
+    applyPlayerDamageToEnemy(sprite, amount, { fromNetwork = false } = {}) {
         if (sprite?.userData?.isDestructibleProp) {
             this.damageScatterProp(sprite, amount);
             return;
@@ -10757,6 +10838,21 @@ export class ThreeGame {
         const cryoMult = this.loadoutMods?.cryoDurationMultiplier ?? 1.0;
         if (sprite?.userData && cryoMult > 1.0 && Math.random() < 0.18) {
             sprite.userData.frozenTimer = Math.max(sprite.userData.frozenTimer ?? 0, 1.0 * cryoMult);
+        }
+        // Sprint 24 Milestone A co-op enemy hit-sync: only for the plain
+        // damageSnail path below, and only for locally-originated hits (never
+        // re-broadcast a hit that itself arrived from the network, or every
+        // enemy hit in a 2-player run would ping-pong forever). Boss fights
+        // (queenFight/sporesnailFight, both branch out above) are not synced
+        // yet -- documented gap, see docs/sprint24-multiplayer-runtime-2026-08-19.md.
+        if (!fromNetwork && this.isMultiplayer && this.multiplayerMode !== 'pvp' && this.netSocket
+            && sprite?.userData?.type && !sprite.userData?.queenFight && !sprite.userData?.sporesnailFight) {
+            this.netSocket.emit('enemyDamage', {
+                enemyType: sprite.userData.type,
+                x: sprite.position.x,
+                z: sprite.position.z,
+                damage: amount
+            });
         }
         const fight = sprite?.userData?.queenFight;
         if (fight) {
@@ -14863,7 +14959,7 @@ export class ThreeGame {
     }
 
     takeDamage(amount = 1, reason = 'hazard', sourceX = null, sourceZ = null) {
-        if (this.isPlayerDead) return false;
+        if (this.isPlayerDead || this.isPlayerDowned) return false;
         if (this.godMode || this.noclip) return false;
         if (this.cinematicLock) return false; // untouchable during scripted sequences
         if (this.isInPocket) return false; // untouchable while resolving a fall inside a pocket
@@ -14958,9 +15054,48 @@ export class ThreeGame {
         }
 
         if (this.playerVitals.hp <= 0) {
-            this.handleDeath(reason);
+            // Sprint 24 Milestone A: co-op only (never PvP -- a PvP "kill" must
+            // stay a real kill), and only when someone else is actually in the
+            // run to revive you. Solo runs and PvP both fall straight through
+            // to the normal handleDeath() sequence, unchanged.
+            if (this.isMultiplayer && this.multiplayerMode !== 'pvp' && this.remotePlayers?.size && !this.isPlayerDowned) {
+                this.enterDownedState(reason);
+            } else {
+                this.handleDeath(reason);
+            }
         }
         return true;
+    }
+
+    // Sprint 24 Milestone A (docs/sprint24-multiplayer-runtime-2026-08-19.md):
+    // co-op downed/revive state. Deliberately does not run any of
+    // handleDeath()'s side effects (black box, death curtain, game-over
+    // screen) -- being downed in co-op is meant to be recoverable, not a run
+    // ender, unless nobody revives you (not yet implemented -- see doc).
+    enterDownedState(reason = 'hazard') {
+        if (this.isPlayerDowned || this.isPlayerDead) return;
+        this.isPlayerDowned = true;
+        this.playerVitals.hp = 0;
+        this.emitHealthState?.();
+        this.setInputEnabled?.(false);
+        this.closeConsoleModal?.();
+        window.showToastNotification?.('YOU ARE DOWNED -- AWAIT REVIVAL');
+        window.AudioManager?.play?.('ui_error', { volume: 0.5 });
+        if (this.netSocket) {
+            this.netSocket.emit('playerDowned', {});
+        }
+        window.dispatchEvent(new CustomEvent('player-downed', { detail: { reason } }));
+    }
+
+    revivePlayerFromDowned(reviverCallsign = 'SQUADMATE') {
+        if (!this.isPlayerDowned) return;
+        this.isPlayerDowned = false;
+        this.playerVitals.hp = Math.max(1, Math.round((this.playerVitals.maxHp || 100) * 0.5));
+        this.emitHealthState?.();
+        this.setInputEnabled?.(true);
+        window.showToastNotification?.(`REVIVED BY ${String(reviverCallsign || 'SQUADMATE').toUpperCase()}`);
+        window.AudioManager?.play?.('fx_level_up', { volume: 0.5 });
+        window.dispatchEvent(new CustomEvent('player-revived-self'));
     }
 
     showDirectionalHitIndicator(attackerX, attackerZ) {
