@@ -7500,8 +7500,17 @@ export class ThreeGame {
                         hit = true;
                     }
                 }
+                // playerDist is a sanity bound (can't open the console by aiming
+                // at it from across the map) -- it used to also stand in for
+                // `hit` on its own (`hit || playerDist <= 3.8`), which meant
+                // ANY click -- firing at a wall included -- opened the console
+                // just from standing near the ship, regardless of where the
+                // player was actually aiming. Only a real aim/hover hit opens it
+                // now, matching every sibling tryInteractWithXPointer function
+                // (O2/foundry/black-box/player-trade), none of which had this
+                // proximity-only fallback.
                 const playerDist = Math.hypot(this.player.position.x - consoleX, this.player.position.z - consoleZ);
-                if (playerDist <= 4.2 && (hit || playerDist <= 3.8)) {
+                if (playerDist <= 4.2 && hit) {
                     this.activeInteractiveConsole = ship;
                     this.interactWithConsole();
                     return true;
