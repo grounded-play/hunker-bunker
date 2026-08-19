@@ -200,6 +200,7 @@ import {
     getEnemySpriteLayout
 } from './enemySpriteLayouts.js';
 import { SHOWROOM_CHUNK_X, SHOWROOM_CHUNK_Y } from './debugShowroom.js';
+import { getWing2ChunkOverride } from './debugTileGrid.js';
 
 
 const PLAYER_COLORS = {
@@ -16413,7 +16414,16 @@ export class ThreeGame {
     // isGameplayInputActive so it never fights a cutscene/dialogue that's
     // scripting the player position itself.
     enforceRingProgressionLock() {
-        if (!this.player || !this.isGameplayInputActive?.()) return;
+        // docs/debug-proving-grounds-audit-2026-08-19.md: every debug proving-
+        // grounds teleport (museum, showroom, wings 1-4) lands the player far
+        // outside their unlocked ring radius, and this ran unconditionally --
+        // confirmed live it snaps the player back to the ring edge within a
+        // single frame, regardless of the god mode those tools already enable
+        // right after teleporting. godMode/noclip are themselves cheat/debug
+        // states (a player who enabled either has already opted out of normal
+        // rules), so bypass here too rather than requiring every debug caller
+        // to know about this separate system.
+        if (!this.player || !this.isGameplayInputActive?.() || this.godMode || this.noclip) return;
         const unlocks = this.bank?.getState?.()?.unlocks ?? {};
         const unlockedGoalKeys = new Set(Object.keys(unlocks).filter((key) => unlocks[key]));
         let maxUnlockedRing = getMaxUnlockedRing(unlockedGoalKeys);
@@ -27151,6 +27161,16 @@ export class ThreeGame {
         if (this.performanceProfile === 'menu' || (chunkX >= SHOWROOM_CHUNK_X && chunkX <= SHOWROOM_CHUNK_X + 10 && chunkY >= SHOWROOM_CHUNK_Y && chunkY <= SHOWROOM_CHUNK_Y + 10)) {
             return Array(this.chunkSize).fill(null).map(() => Array(this.chunkSize).fill('.'));
         }
+
+        // docs/debug-proving-grounds-audit-2026-08-19.md Bug 1 -- without this,
+        // Wing 2's far-away debug origin got whatever real procedural landform
+        // happened to generate there (often canyon/void), which the game's
+        // normal hole-detection read as a real hole and killed the player on
+        // arrival. Same pattern as the Showroom override just above, but with
+        // real room/door tile data (not blanket floor) for its room-type
+        // modules -- see getWing2ChunkOverride's own comment in debugTileGrid.js.
+        const wing2Override = getWing2ChunkOverride(chunkX, chunkY, this.chunkSize);
+        if (wing2Override) return wing2Override;
 
         const landform = this.getChunkLandform(chunkX, chunkY);
         // Mix in per-run entropy: hashTile alone is constant for a given

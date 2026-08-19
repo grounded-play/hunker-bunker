@@ -8,6 +8,7 @@
  */
 import * as THREE from 'three';
 import { getDebugZone } from './debugZoneRegistry.js';
+import { generateArchitecturalMazeChunk } from './architecturalMaze.js';
 
 const TILE_GRID_ORIGIN = Object.freeze(getDebugZone('wing2-roomgrid')
     ? { x: getDebugZone('wing2-roomgrid').originX, z: getDebugZone('wing2-roomgrid').originZ }
@@ -420,6 +421,126 @@ function buildModuleScene(moduleDef, mx, mz) {
     return group;
 }
 
+// ── Real tile-data floor & room override ─────────────────────────────
+//
+// Everything above builds this wing's decorative dressing (floor plate,
+// pedestals, module-specific meshes) — but that's just visual. The game's
+// actual collision/hole-detection (canOccupyPosition, isPlayerOverAnyHole)
+// reads a completely separate character grid via getTileType(), which is
+// generated per-chunk by threeGame.js's buildChunk(). Without an override,
+// visiting this wing triggers REAL procedural generation for whatever
+// chunk this far-away origin happens to land in — which can (and did, per
+// docs/debug-proving-grounds-audit-2026-08-19.md) produce a canyon/void
+// landform, reading as "standing over a hole" and killing the player via
+// the same lethal pit-fall mechanic a real run uses, seconds after
+// arriving, regardless of god mode (a scripted fall, not damage).
+//
+// getWing2ChunkOverride() (called from threeGame.js's buildChunk(), same
+// pattern already used for the Showroom's own chunk range) makes this
+// wing's real tile data a plain walkable "generic grid" everywhere by
+// default. Canyon/chasm-type modules (TILE_GRID_MODULES row 0) stay pure
+// generic floor — they're demo dressing, not meant to be an actual fall
+// hazard. Every other module type gets a REAL generated room layout
+// (generateArchitecturalMazeChunk — the same generator real gameplay maze
+// rooms use) stamped into the grid at its world position, so those modules
+// have actual walls you can collide with and door gaps matching their
+// "Sockets: [...]" labels, not just decorative meshes floating over open
+// ground.
+const ROOM_LIKE_TYPES = new Set([
+    'room_lab', 'room_bio', 'room_industrial', 'room_hub',
+    'survivor_camp', 'hive_heart', 'hive_nursery', 'camp_fortified',
+    'door_blast_closed', 'door_blast_open', 'ring_barrier_locked', 'ring_barrier_unlocked'
+]);
+
+const moduleRoomGridCache = new Map();
+
+function getModuleRoomGrid(moduleDef) {
+    if (moduleRoomGridCache.has(moduleDef.id)) return moduleRoomGridCache.get(moduleDef.id);
+    const { grid } = generateArchitecturalMazeChunk(Math.random, {
+        size: MODULE_SIZE,
+        openings: {
+            north: { open: true, offset: 0 },
+            south: { open: true, offset: 0 },
+            east: { open: true, offset: 0 },
+            west: { open: true, offset: 0 }
+        },
+        roomMode: true,
+        important: true
+    });
+    // 'X' means "would be lethal canyon in real generation" -- here it just
+    // means "outside this room", which should read as safe generic floor,
+    // not the module's own perimeter turning into a hazard.
+    for (let y = 0; y < grid.length; y += 1) {
+        for (let x = 0; x < grid[y].length; x += 1) {
+            if (grid[y][x] === 'X') grid[y][x] = '.';
+        }
+    }
+    moduleRoomGridCache.set(moduleDef.id, grid);
+    return grid;
+}
+
+function computeWing2WorldBounds() {
+    let minX = Infinity; let maxX = -Infinity; let minZ = Infinity; let maxZ = -Infinity;
+    for (const mod of TILE_GRID_MODULES) {
+        const mx = TILE_GRID_ORIGIN.x + mod.col * MODULE_SPACING;
+        const mz = TILE_GRID_ORIGIN.z + mod.row * MODULE_SPACING;
+        minX = Math.min(minX, mx - MODULE_SIZE / 2);
+        maxX = Math.max(maxX, mx + MODULE_SIZE / 2);
+        minZ = Math.min(minZ, mz - MODULE_SIZE / 2);
+        maxZ = Math.max(maxZ, mz + MODULE_SIZE / 2);
+    }
+    return { minX, maxX, minZ, maxZ };
+}
+const WING2_WORLD_BOUNDS = computeWing2WorldBounds();
+
+/**
+ * Returns a full chunkSize x chunkSize tile-character grid for the given
+ * chunk coordinates if they fall inside Wing 2's footprint, or null if they
+ * don't (the common case — this is called for every chunk in the game).
+ */
+export function getWing2ChunkOverride(chunkX, chunkY, chunkSize) {
+    const chunkWorldX0 = chunkX * chunkSize;
+    const chunkWorldZ0 = chunkY * chunkSize;
+    const chunkWorldX1 = chunkWorldX0 + chunkSize - 1;
+    const chunkWorldZ1 = chunkWorldZ0 + chunkSize - 1;
+    if (
+        chunkWorldX1 < WING2_WORLD_BOUNDS.minX || chunkWorldX0 > WING2_WORLD_BOUNDS.maxX
+        || chunkWorldZ1 < WING2_WORLD_BOUNDS.minZ || chunkWorldZ0 > WING2_WORLD_BOUNDS.maxZ
+    ) {
+        return null;
+    }
+
+    const grid = Array.from({ length: chunkSize }, () => Array(chunkSize).fill('.'));
+
+    for (const mod of TILE_GRID_MODULES) {
+        if (!ROOM_LIKE_TYPES.has(mod.type)) continue; // canyon/chasm modules stay plain floor
+        const mx = TILE_GRID_ORIGIN.x + mod.col * MODULE_SPACING;
+        const mz = TILE_GRID_ORIGIN.z + mod.row * MODULE_SPACING;
+        const roomOriginX = mx - MODULE_SIZE / 2;
+        const roomOriginZ = mz - MODULE_SIZE / 2;
+
+        const overlapX0 = Math.max(chunkWorldX0, roomOriginX);
+        const overlapX1 = Math.min(chunkWorldX1, roomOriginX + MODULE_SIZE - 1);
+        const overlapZ0 = Math.max(chunkWorldZ0, roomOriginZ);
+        const overlapZ1 = Math.min(chunkWorldZ1, roomOriginZ + MODULE_SIZE - 1);
+        if (overlapX0 > overlapX1 || overlapZ0 > overlapZ1) continue;
+
+        const roomGrid = getModuleRoomGrid(mod);
+        for (let worldZ = overlapZ0; worldZ <= overlapZ1; worldZ += 1) {
+            const localZ = worldZ - chunkWorldZ0;
+            const roomLocalZ = worldZ - roomOriginZ;
+            const roomRow = roomGrid[roomLocalZ];
+            if (!roomRow) continue;
+            for (let worldX = overlapX0; worldX <= overlapX1; worldX += 1) {
+                const cell = roomRow[worldX - roomOriginX];
+                if (cell) grid[localZ][worldX - chunkWorldX0] = cell;
+            }
+        }
+    }
+
+    return grid;
+}
+
 /**
  * Opens the Architectural & Canyon Tile Grid QA Proving Grounds.
  */
@@ -451,8 +572,25 @@ export async function openDebugTileGrid(game) {
         rootGroup.add(modScene);
     }
 
-    // Teleport player to first observation pad
-    game.player.position.set(TILE_GRID_ORIGIN.x, 0, TILE_GRID_ORIGIN.z + 12);
+    // Teleport player to first observation pad. teleportPlayerTo (not a bare
+    // position.set) so the camera/glow/marker follow correctly --
+    // docs/debug-proving-grounds-audit-2026-08-19.md Bug 1. safeFloor: false
+    // since these are exact staged coordinates, not "nearest walkable tile to
+    // a rough target". syncChunks: false skips only the teleport's own
+    // immediate sync call -- the main render loop's unconditional per-frame
+    // syncVisibleChunks() still mounts real chunk meshes around wherever the
+    // player currently stands regardless, so real biome-terrain visuals (e.g.
+    // bio-sector organic floor textures, confirmed live) still layer in
+    // alongside this wing's own high-viz demo dressing. Not fixed here --
+    // collision/hole-safety (the actual ask) come from
+    // getWing2ChunkOverride's tile data via getTileType/canOccupyPosition
+    // either way, independent of what visually mounts; the dressing/terrain
+    // visual clash is a follow-up, not a safety issue.
+    if (typeof game.teleportPlayerTo === 'function') {
+        game.teleportPlayerTo(TILE_GRID_ORIGIN.x, TILE_GRID_ORIGIN.z + 12, { safeFloor: false, syncChunks: false });
+    } else {
+        game.player.position.set(TILE_GRID_ORIGIN.x, 0, TILE_GRID_ORIGIN.z + 12);
+    }
     if (typeof game.setGodMode === 'function') game.setGodMode(true);
 
     console.log(`[debug-tile-grid] opened: ${TILE_GRID_MODULES.length} architectural modules spawned across 4x4 grid at (${TILE_GRID_ORIGIN.x}, ${TILE_GRID_ORIGIN.z}).`);
