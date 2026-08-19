@@ -37,44 +37,45 @@ The residual +28 growth (down from +149) and the still-nonzero 47
 "physical" programs confirm muzzle flash was the *dominant* contributor,
 not the *only* one — directions #1 and #3 below are what's left.
 
-### Not started — Direction #1: cap simultaneous dynamic lights to a small budget
+### ✅ Direction #1 — cap simultaneous dynamic lights to a small budget (DONE, commit `e59ec04`)
 
-**What's still contributing:** the 11 `PointLight`/`SpotLight` creation
-sites in `src/threeGame.js` that are *not* muzzle flash — player glow
-(`playerGlow`, ~line 2990), console/terminal lights (`terminalLight`,
-~3362), status lights (`statusLight`, ~3453), base-defense turret light
-(~3556), suit fill light (`suitFillLight`, ~3773), player forward
-spotlight (~4392), beacons (~6628), the O2-safe light (~13568), the
-crash-site heat light (one-time, ruled out as a frequency contributor),
-and — the other real candidate alongside muzzle flash — the **lore
-terminal light** (~line 22076 pre-fix, now shifted), created once per
-`lore_terminal` scatter placement. Unlike muzzle flash these are mostly
-persistent rather than per-shot, but there can be *many* of them live
-simultaneously across an explored world (one lore terminal per relevant
-scatter placement, one terminal/status light per structure encountered),
-and as the player moves through the world, standard-lit objects still
-encounter a growing set of *which subset of these is currently in
-range* — the same combinatorial mechanism, just at a slower rate than
-muzzle flash was producing.
+Triggered by a fresh report the same night: `docs/logs/log6.json` showed
+~14fps just walking a hallway on the shipped Steam/Electron build, no
+combat involved — direct confirmation that #2 alone (muzzle flash) left
+real growth on the table, exactly as this doc predicted, since the
+remaining contributors here are persistent rather than per-shot and
+don't need shooting to accumulate.
 
-**Proposed approach:** a small central light-budget manager — track all
-"non-essential" dynamic lights (everything except maybe the sun/ambient
-and the player's own always-on lights) in a list, each frame pick the
-closest N to the camera (a fixed budget, e.g. 6-8) and toggle `.visible`
-(or `intensity = 0`, whichever cleanly removes a light from a material's
-lit-set without disposing it) on the rest. This keeps the *set* of
-lights any given object can be affected by drawn from a small, bounded
-pool instead of the full accumulated set ever created, which caps how
-many light combinations three.js can ever encounter — the program count
-should plateau instead of climbing indefinitely.
+Implemented a `registerEnvLight()` registry + `updateEnvLightBudget()`
+(`src/threeGame.js`), called from the main render loop every ~0.35s:
+sorts registered lights by distance to camera, keeps only the closest
+`ENV_LIGHT_BUDGET` (8) visible, hides the rest. Registered: ship
+terminal/status lights, the base-defense turret light, the black-box
+beacon, the crash-site heat light, and per-prop lore-terminal lights.
+Deliberately **not** registered: `playerGlow`/`suitFillLight`/
+`playerForwardSpotLight` (always travel with the player, culling them
+wouldn't reduce combination variety and would look wrong), and the O2
+safe-bubble light specifically (it already has its own semantic
+`.visible` toggle tied to whether the bubble is built/active — confirmed
+by reading its toggle call sites before wiring anything in; a blind
+distance-based override would have fought that state machine and
+produced a real visual bug).
 
-**Risk:** medium. Touches lighting globally, needs verification that
-toggling lights off at distance doesn't create visible pop-in/pop-out
-for lights near the edge of the budget cutoff (may need a small
-hysteresis band, not a hard cutoff, to avoid flicker as the player moves
-back and forth across the boundary). Needs its own live-profiling pass
-(same before/after `renderer.info.programs` methodology used tonight)
-before landing.
+**Verified live**: a synthetic 20-light test (spread along a line from
+the player, closest-to-farthest) confirms exactly the closest 8 stay
+`visible: true`, the other 12 correctly hidden — the mechanism itself is
+provably correct. (The natural 65s exploration test didn't cover enough
+distance to *naturally* accumulate many env-light encounters in one
+run — this is expected; the effect compounds over a full run's worth of
+exploration, which is exactly the shape of log6's report after ~90+
+seconds of hallway walking, not a short synthetic loop near spawn.)
+
+**Risk note carried into future verification:** toggling lights off at
+distance could in principle create visible pop-in/pop-out right at the
+budget cutoff edge. Not yet observed in testing, but if a future report
+mentions lights flickering near a boundary, add hysteresis (require a
+light to be closest-8 for two consecutive budget ticks before toggling
+visible, or vice versa) rather than the current hard cutoff.
 
 ### Not started — Direction #3: shared materials near light clusters
 
@@ -95,11 +96,12 @@ against an unbounded combination set still leaves the set unbounded.
 
 ## Recommended order for the next session
 
-1. **#1 (light budget)** first — it's the one that actually bounds the
-   growth; #2 (shipped tonight) only removed the single worst
-   contributor, it didn't cap the mechanism itself.
-2. **#3 (shared materials)** after #1, as a multiplier cleanup once the
-   combination count is no longer unbounded.
-3. Re-run the same 65s live test + `renderer.info.programs` check after
-   each step to confirm the number *plateaus* (not just grows slower) —
-   that's the real bar for "fixed," not just "reduced."
+1. ~~**#1 (light budget)** first~~ — done tonight (`e59ec04`).
+2. **#3 (shared materials)**, as a multiplier cleanup now that the
+   combination count is bounded.
+3. Get a real long-duration (multi-minute, real distance covered) live
+   trace against the current build to confirm `renderer.info.programs`
+   actually *plateaus* now rather than just growing slower — the 65s
+   near-spawn synthetic test isn't long/far-ranging enough to prove that
+   on its own; log6-shaped reports (extended hallway walking) are the
+   real test.
