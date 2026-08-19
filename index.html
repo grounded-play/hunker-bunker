@@ -1383,6 +1383,16 @@
       </div>
     </div>
 
+    <!-- Solid black curtain spanning the whole post-death sequence (death
+         flash -> cinematic -> door-close -> game-over reveal -> MAIN MENU ->
+         door-reopen). Shown the instant player-death fires and only removed
+         once the return-to-menu door transition has closed and the menu is
+         ready underneath -- without it, the live (frozen) game world was
+         visible through the two timing gaps between those steps. Sits below
+         .modal (100000) and #transition-overlay/.door (250000+) so the
+         game-over modal and the doors are the only things drawn over it. -->
+    <div id="death-curtain" class="hidden" aria-hidden="true"></div>
+
     <div id="cutscene-overlay" class="hidden" aria-hidden="true">
       <div class="cutscene-space-bg" aria-hidden="true"></div>
       <div id="cutscene-starfield" class="cutscene-starfield" aria-hidden="true"></div>

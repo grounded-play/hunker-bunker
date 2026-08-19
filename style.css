@@ -461,6 +461,30 @@ body {
 }
 
 
+/* --- Post-Death Curtain --- */
+/* Solid black, spans the whole death -> cinematic -> door-close ->
+   game-over -> MAIN MENU -> door-reopen sequence. Below .modal (100000) and
+   the door cluster (250000+, see below) so those two are the only things
+   ever drawn over it; above the 3D canvas/HUD so the live game never shows
+   through the gaps between those steps. */
+#death-curtain {
+  position: absolute;
+  inset: 0;
+  z-index: 90000;
+  background: #000;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 320ms ease-out;
+}
+
+#death-curtain.hidden {
+  display: none;
+}
+
+#death-curtain.is-visible {
+  opacity: 1;
+}
+
 /* --- Tactical Door Transition --- */
 #transition-overlay {
   --gear-focus-x: calc(var(--vu) * 80);

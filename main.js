@@ -4217,6 +4217,21 @@ function resetRunToStartingState({
     }
 }
 
+function showDeathCurtain() {
+    const curtain = document.getElementById('death-curtain');
+    if (!curtain) return;
+    curtain.classList.remove('hidden');
+    void curtain.offsetWidth; // force reflow so the opacity transition actually plays
+    curtain.classList.add('is-visible');
+}
+
+function hideDeathCurtain() {
+    const curtain = document.getElementById('death-curtain');
+    if (!curtain) return;
+    curtain.classList.remove('is-visible');
+    curtain.classList.add('hidden');
+}
+
 function runDeathSequence(event) {
     if (deathSequenceTimer) return;
 
@@ -4227,6 +4242,13 @@ function runDeathSequence(event) {
     clearTimeout(biomePromptTimer);
     biomePromptTimer = null;
     document.body.classList.add('player-dead-flash');
+    // Fades to solid black immediately and stays up through the whole
+    // cinematic -> door-close -> game-over -> MAIN MENU -> door-reopen
+    // sequence; only hideDeathCurtain() (in returnToMainMenuFromRun) clears
+    // it. Without this, the live (frozen) 3D world was visible through the
+    // gap before the death cinematic reaches full opacity, and again in the
+    // ~900ms window here before the cinematic even starts.
+    showDeathCurtain();
     playPlayerDeathCue(deathReason);
 
     deathSequenceTimer = window.setTimeout(async () => {
@@ -5492,6 +5514,13 @@ if (gameOverTryAgain) {
         triggerDoorTransition(
             () => {
                 hideGameOverScreen();
+                // Same reasoning as returnToMainMenuFromRun: doors are fully
+                // closed here, so it's safe to drop the curtain before the
+                // new run's world builds underneath -- without this, TRY
+                // AGAIN would leave the whole next run permanently blacked
+                // out (this path never goes through returnToMainMenuFromRun,
+                // so its own hideDeathCurtain() call never runs otherwise).
+                hideDeathCurtain();
                 showRunLoadingScreen('DOWNLOADING SECTOR PILLAR TOPOGRAPHY...', 0, { overDoor: true });
                 // Death puts the app in the gameover phase. Input can be
                 // enabled on ThreeGame after the doors reopen, but movement
@@ -5528,6 +5557,11 @@ function returnToMainMenuFromRun({ doorKey = 'base' } = {}) {
     triggerDoorTransition(
         () => {
             hideGameOverScreen();
+            // Doors are fully closed and covering the screen at this point
+            // (onClosed), so it's safe to drop the curtain that's been up
+            // since player-death -- the menu being prepared below is never
+            // exposed early.
+            hideDeathCurtain();
             document.getElementById('ui')?.classList.add('hidden');
             window.game?.setInputEnabled?.(false);
             syncHudCompassVisibility();
