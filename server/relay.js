@@ -255,6 +255,48 @@ export function attachRelay(server, { allowedOrigins = [] } = {}) {
             }
         });
 
+        // Co-Op Downed-State relay -- Sprint 24 Milestone A. A player entering
+        // "downed" (co-op only, revivable) rather than full death broadcasts
+        // this so squadmates see them go down and can revive them; mirrors
+        // playerRevive's shape exactly.
+        socket.on('playerDowned', () => {
+            logRelayEvent('PLAYER_DOWNED', { roomCode: player.roomCode, playerId: socket.id });
+            if (player.roomCode) {
+                socket.to(player.roomCode).emit('playerDownedBroadcast', {
+                    playerId: socket.id,
+                    timestamp: Date.now()
+                });
+            }
+        });
+
+        // Co-Op Enemy Hit-Sync relay -- Sprint 24 Milestone A. Host-authoritative-
+        // style broadcast, not full server validation yet (see
+        // docs/sprint24-multiplayer-runtime-2026-08-19.md): the sender's own
+        // client already applied this damage locally when its projectile hit;
+        // this just tells other clients in the room to apply the identical
+        // damage to their own local copy of the same enemy (matched by type +
+        // position on the receiving end, since enemies don't yet have a
+        // cross-client-stable ID).
+        socket.on('enemyDamage', (dmgData) => {
+            if (!dmgData || typeof dmgData !== 'object') return;
+            const x = sanitizeCoord(dmgData.x);
+            const z = sanitizeCoord(dmgData.z);
+            if (x === null || z === null) return;
+            const damage = typeof dmgData.damage === 'number' ? Math.max(0, Math.min(999, dmgData.damage)) : 0;
+            if (damage <= 0) return;
+            const enemyType = sanitizeString(dmgData.enemyType, 32, 'unknown');
+
+            if (player.roomCode) {
+                socket.to(player.roomCode).emit('enemyDamaged', {
+                    attackerId: socket.id,
+                    enemyType,
+                    x,
+                    z,
+                    damage
+                });
+            }
+        });
+
         // Operative Field Trade & Barter relay
         socket.on('playerTradeOpen', (tradeData) => {
             if (!tradeData || typeof tradeData !== 'object') return;
