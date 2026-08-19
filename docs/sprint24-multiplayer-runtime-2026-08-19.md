@@ -313,7 +313,7 @@ from a normal desktop environment with unrestricted network access —
 outside this sandbox — to determine whether the validation timeout is
 an environment artifact or a real app-configuration issue.
 
-## Host-authoritative co-op enemy state (added in a third follow-up pass, same day; NOT yet live-verified)
+## Host-authoritative co-op enemy state (added in a third follow-up pass, same day)
 
 Item 5: "Host-authoritative PvE for the first cut (host owns AI/enemy
 HP/world state/objectives/loot, relay broadcasts, clients render
@@ -339,21 +339,62 @@ truth. Restructured so only the room's actual host is authoritative:
   against its own local enemy copy and the existing `enemyDamage`
   broadcast carries the outcome to the rest of the room.
 
-**Verification status: lint and the full unit suite (1677 tests) pass,
-but this has not yet been exercised with a real two-instance test** —
-unlike items 3 and 4 earlier in this pass, which were each confirmed
-live before being called done. This is flagged explicitly rather than
-glossed over: the design has a plausible failure mode I have not ruled
-out empirically — if `isMultiplayerHost` is ever `false` on every
-client in a room (e.g. a timing issue in when `currentPlayers` fires
-relative to when the lobby reads `isLocalPlayerHost` into
-`activeMatch`), enemy hits would silently never resolve for anyone,
-since no client would ever emit the canonical `enemyDamage` broadcast.
-Also unverified: what happens when the host disconnects mid-match — no
-host-reassignment logic was written, so enemy sync would likely stop
-resolving entirely for the rest of that match. Both need a real
-two-instance pass before this could be called confirmed working, not
-just believed correct from code review.
+**Verification (fourth follow-up pass, same day): the server-side
+routing mechanism is confirmed correct; host *assignment* itself has a
+confirmed, real reliability gap.**
+
+Two-tab browser testing repeatedly failed to resolve reports even with
+clean single-connect sequences — the relay log showed 2-3 `CONNECT`
+events for what should have been one connection per tab before either
+settled. Ruled out test-harness double-clicking (an early theory) by
+reproducing with a completely different, minimal test: two raw
+`socket.io-client` connections in a plain Node script, no browser
+involved at all. Result:
+
+- **Server-side routing is correct.** With clean connections, B's
+  `enemyHitReport` was received by A (the host) via `enemyHitReported`
+  exactly as designed — confirmed directly, no game instance needed
+  since this only exercises `server/relay.js`.
+- **Host assignment is genuinely fragile under connection churn**,
+  confirmed independently in the browser tests: `joinRoom`'s `isHost`
+  logic (`server/relay.js`) grants host to whichever socket is first to
+  join an empty room, with no concept of "this reconnecting client was
+  already the host." Every socket reconnect — even during the initial
+  connect sequence, before gameplay starts, seen happening 2-3 times in
+  a single tab's connection attempt during heavier sandbox load —
+  re-runs `joinRoom` with a fresh socket id, which can either steal an
+  existing host slot or land as non-host in a room that currently has
+  no host at all (if the original host's connection was itself one of
+  the churned-away sockets). Added `ENEMY_HIT_REPORT_NO_HOST` logging
+  (`server/relay.js`) so this failure mode is now diagnosable from
+  server logs (roomCode, reporter, and that no host was found) instead
+  of only showing up as "enemy HP silently never updates" client-side.
+
+**Root cause is plausibly connected to this session's own item 4
+work**: `fetchMultiplayerSessionToken`'s `/steam/session` fetch now
+runs *before* `connectSocketIo`, adding a network round-trip to the
+critical path before the socket handshake even starts. Under load
+(confirmed present in this sandbox — multiple concurrent Electron/Xvfb/
+Chromium processes from the same session's earlier Steam ticket test)
+that extra latency plausibly increases how often the initial connection
+attempt hits Socket.IO's own `timeout`/`reconnectionAttempts` retry
+path. Not confirmed as the sole cause, but a credible contributor worth
+noting rather than treating the churn as unexplained.
+
+**Net assessment**: the report→host-resolves→broadcast *mechanism*
+built this pass works correctly once host status is actually,
+stably assigned — that half is no longer a hypothetical, it's directly
+tested. What's not solved, and is now a confirmed (not hypothetical)
+gap: the mechanism this codebase uses to decide *who* is host has no
+resilience against reconnection during the join sequence, let alone a
+disconnect mid-match. A real fix needs host identity tied to something
+durable across reconnects — `steamId64` is now tracked per-connection
+(this session's item 4 work) and is a plausible candidate, but every
+dev-mode connection currently shares the same placeholder `steamId64`
+(`76561198000000000`), which would make that fix untestable in this
+sandbox without real, distinct Steam accounts. Not attempted this
+pass — flagged as the concrete next step for item 5, not a vague
+"needs hardening."
 
 ## Verification (two real browser instances, local relay on port 3099)
 
@@ -442,16 +483,27 @@ outstanding, in the order the goal itself lists them:
    completed real-Steam-account authentication — that still needs
    either a non-sandboxed environment to retest ticket validation, or
    the publisher key to complete the backend half.
-4. **Host-authoritative PvE, not yet exercised for AI/enemy state
-   ownership.** The goal calls for the host to own AI/enemy HP/world
-   state/objectives/loot with clients rendering canonical state, for a
-   first cut. What was actually built is closer to peer-gossip
-   (any client's local hit gets broadcast and applied by every other
-   client independently) rather than one designated host owning
-   canonical enemy HP. This works for the 2-client case tested but does
-   not by itself prevent divergence if two clients both send `enemyDamage`
-   for the same hit, or if a client processes them out of order — no
-   host-side enemy-HP-ownership arbitration exists yet.
+4. **Host-authoritative PvE for enemy HP: mechanism built and confirmed
+   correct, but host *assignment* is a confirmed reliability gap, not
+   just a hypothetical one.** Superseded the earlier peer-gossip design
+   (any client's local hit broadcast and applied by everyone
+   independently) with report→host-resolves→broadcast: non-host clients
+   report candidate hits privately to the host, only the host applies
+   and broadcasts the canonical outcome. The routing half is directly
+   verified (a clean two-socket test confirmed the host receives
+   reports correctly). What's confirmed broken, not just untested: host
+   status is assigned by "first socket to join an empty room," with no
+   resilience against reconnection — observed happening even during the
+   *initial* connect sequence under sandbox load, not just as a
+   mid-match disconnect scenario. A room can end up with no host at all,
+   silently dropping all non-host enemy-hit reports (now at least
+   logged server-side as `ENEMY_HIT_REPORT_NO_HOST`). Real fix needs
+   host identity tied to something durable across reconnects (`steamId64`
+   is tracked per-connection now, a plausible candidate) rather than
+   the current per-socket-id, first-come-first-served assignment — not
+   attempted this pass, and untestable in this sandbox anyway since
+   every dev-mode connection currently shares one placeholder
+   `steamId64`.
 5. **PvP mode: downed/revive and enemy-hit-sync still excluded (by
    design), but damage itself is now hardened.** The co-op downed state
    and enemy-hit-sync explicitly exclude `multiplayerMode === 'pvp'` in
@@ -494,11 +546,15 @@ progress on the goal's success criterion and on items 3 and 4, but is
 still short of "Online Co-op" as a Steam-store claim: no
 `GameController`/session architectural refactor (item 1), no
 server-side trajectory/wall raycasting even within the new PvP
-validation, host-authoritative co-op enemy state is built but not
-live-verified (item 5), the reconnect-resets-PvP-state gap, and no
-`HB_STEAM_PUBLISHER_KEY` configured for the backend half of real ticket
-verification. The one item in this list that plausibly needs something
-beyond this sandbox specifically (not necessarily the user's
-Steamworks partner access, which turned out to already be wired up) is
-re-running the ticket-validation test from a normal desktop network to
-isolate whether the timeout is this environment or an app-side issue.
+validation, no `HB_STEAM_PUBLISHER_KEY` configured for the backend half
+of real ticket verification, and — the most significant open item —
+item 5's host-authoritative enemy-hit routing is directly verified
+correct, but host *assignment* has a confirmed reliability gap (not
+just a mid-match disconnect concern; observed happening during initial
+connect itself under load), plus the pre-existing
+reconnect-resets-PvP-state gap. The one item in this list that
+plausibly needs something beyond this sandbox specifically (not
+necessarily the user's Steamworks partner access, which turned out to
+already be wired up) is re-running the ticket-validation test from a
+normal desktop network to isolate whether the timeout is this
+environment or an app-side issue.
