@@ -226,7 +226,7 @@ click/aim landed.
 expectation exactly — the terminal now only opens on a real click-while-
 aiming-at-it. See commit `e3aa17a`.
 
-## 7. Still-massive frame dips on shoot/damage — partially fixed, second cost found
+## 7. Still-massive frame dips on shoot/damage — FIXED
 
 **From `docs/logs/log3.json`:** 36.2% of a 117s session spent in long
 tasks — *worse* than log1/log2's ~19-21%, despite this session running
@@ -249,32 +249,40 @@ GLB model is now preloaded in the background (model preload only covers
 the GLTF parse step; the material's shader doesn't compile until the model
 is actually rendered for the first time).
 
-**Not yet fixed.** The likely real fix is pre-warming shaders during the
-loading screen — `THREE.WebGLRenderer.compile(scene, camera)` run against
-a representative scene containing one of each enemy/material type, mirror
-of the existing enemy-GLB background-preload pattern but for the compiled
-*shader* rather than the parsed *model*. Bigger scope than a one-line flag
-flip; needs its own pass. Flagging clearly rather than shipping a guess
-under time pressure.
+**Fixed: shader pre-warming added to the existing background preload.**
+`preloadEnemy3dTemplates()` (`src/enemy3dOverlay.js`) now takes an optional
+`game` reference; for each of the 6 background-preloaded types, right after
+that type's model finishes loading, a throwaway visual is built and passed
+into `renderer.compileAsync()` — using `compileAsync`'s own signature
+(object-to-precompile, camera, real-scene-for-lighting-context as three
+separate arguments) so the throwaway visual is never added to the live
+scene graph at all, nothing visible or gameplay-affecting happens. Call
+site in `main.js` passes `window.game` through, still entirely on the same
+background/non-blocking path already established for the model preload
+(never the boot-critical path).
 
-**Priority:** high — this is the concrete, still-present "shoot/damage lag"
-the player is reporting. **Risk:** unassessed until a specific
-implementation is scoped.
+**Verified live:** boot speed unaffected (2.2s to armory, 1.3s to
+gameplay, matching pre-existing baselines). Re-ran the exact same
+real-combat profile that found the ~9.4s cost: `getProgramParameter`
+dropped to **206.9ms — a 97.8% reduction** — and the profile is now >88%
+idle with no dominant hot function. All 1677 tests pass.
+
+**Status: closed.** See commit `279402c`.
 
 ## Summary / execution order
 
 1. **#1 doors-under-modals — DONE.** Commit `52ab8d9`.
 2. **#2 shoot glitch — DONE**, covered by the existing checkShaderErrors fix
    (commit `83a74ba`); log2 is corroborating evidence, not a new bug.
-3. **#5 game-over shows live scene — DONE.** Commit `2bb87fb`.
-4. **#6 shooting opens console terminal — DONE.** Commit `e3aa17a`.
-5. **#7 frame dips on shoot/damage — partially fixed, second cost
-   identified but not yet resolved.** `getProgramParameter` (~9.4s in a
-   5s combat profile) needs shader pre-warming (`renderer.compile()`
-   against a representative scene), not a flag flip. Highest-value
-   remaining item.
-6. **#3 mouse reactive during menus** — needs one more investigation pass
-   (audit modal IDs against `hasBlockingGameplayOverlay()`, or find the
-   parallax-effect gate if that's the real cause) before it's a "just fix
-   it" task rather than a "find it" task.
-7. **#4 increase menu blur — DONE.** blur(5px) → blur(14px).
+3. **#4 increase menu blur — DONE.** blur(5px) → blur(14px).
+4. **#5 game-over shows live scene — DONE.** Commit `2bb87fb`.
+5. **#6 shooting opens console terminal — DONE.** Commit `e3aa17a`.
+6. **#7 frame dips on shoot/damage — DONE.** `getProgramParameter` dropped
+   97.8% (9.4s → 206.9ms in the same real-combat profile) via shader
+   pre-warming folded into the existing enemy-model background preload.
+   Commit `279402c`.
+7. **#3 mouse reactive during menus — the only item still open.** Needs one
+   more investigation pass (audit modal IDs against
+   `hasBlockingGameplayOverlay()`, or find the parallax-effect gate if
+   that's the real cause) before it's a "just fix it" task rather than a
+   "find it" task.
