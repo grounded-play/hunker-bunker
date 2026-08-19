@@ -266,18 +266,52 @@ Wired the gap shut:
    bug: it means gating cannot be defeated by hitting the token endpoint
    directly.
 
-**What this still doesn't do — the real remaining gap for item 4**: no
-actual Steamworks ticket is ever generated or verified, because nothing
-in this codebase can produce one. Closing that requires: a registered
-Steamworks App ID with matching depot config, the Steamworks SDK (or a
-wrapper like `steamworks.js`) integrated as a native module in the
-Electron main process calling real `GetAuthSessionTicket`, a real
-`HB_STEAM_PUBLISHER_KEY` for the backend's `AuthenticateUserTicket`
-call, and testing against a live Steam client with a real logged-in
-account. None of that is something further code changes alone can
-produce in this environment — it needs the user's actual Steamworks
-partner access and a real Steam client to test against, not more
-autonomous iteration.
+**Correction (fourth follow-up pass, same day) — the "no real ticket
+retrieval exists" claim above was wrong.** `electron/preload.cjs` /
+`electron/main.cjs` already have a complete, real `steamworks.js`
+integration: `getSteamAuthTicket` calls
+`steamClient.auth.getAuthTicketForWebApi`, a genuine Steamworks API.
+An earlier grep this session searched `src/*.js main.js` only and
+missed the `electron/` directory entirely, wrongly concluding nothing
+existed. Worse, the client code written earlier in this pass
+(`fetchMultiplayerSessionToken`) had a real bug: it treated
+`getSteamAuthTicket`'s return value — an object,
+`{ok, ticketHex, appId, identity, handle, expiresAt}` — as if it *were*
+the ticket string, which would have silently sent garbage to
+`/steam/session` instead of a real ticket even when running inside the
+actual Electron app with a live Steam session. Fixed to read
+`.ticketHex` correctly, only on `ok:true`.
+
+**Tested against the user's real, live Steam session this pass**: with
+their permission, launched the actual Electron app (`ELECTRON_DEV=1`,
+headless via `xvfb-run` since this sandbox has no display server) and
+connected to its renderer over CDP. Steamworks initialized
+successfully against their real, running Steam client — real identity
+`tuesday-cinema-club`, real SteamID64 `76561198689294528`, confirmed
+in the process log. Calling the fixed `getSteamAuthTicket` reached the
+real API and attempted a real ticket request, but
+`getAuthTicketForWebApi` failed both at its default 10s timeout and a
+retried 28s timeout with `"Steam didn't validated the ticket in
+time."` — the local Steam client responded, but the client-to-Steam-backend
+validation round-trip (a different network path than plain HTTPS,
+which this sandbox does have — confirmed `steamcommunity.com` and
+`api.steampowered.com` are reachable) never completed. Most likely
+cause: this sandboxed environment's network doesn't permit whatever
+protocol/ports Steam's ticket-validation handshake actually uses, but
+that's inferred, not confirmed — an unpublished/dev-state app's ticket
+validation being incomplete on Valve's side is also possible and not
+ruled out.
+
+**Net effect**: real ticket generation code exists, is now correctly
+wired, and was exercised against a real Steam identity — but a full
+real ticket could not be obtained from inside this sandbox, so
+end-to-end verification through Steam's actual `AuthenticateUserTicket`
+still hasn't happened (and separately, no `HB_STEAM_PUBLISHER_KEY` is
+configured here either, which the backend needs for that call
+regardless of whether a ticket is obtained). This would need to be run
+from a normal desktop environment with unrestricted network access —
+outside this sandbox — to determine whether the validation timeout is
+an environment artifact or a real app-configuration issue.
 
 ## Host-authoritative co-op enemy state (added in a third follow-up pass, same day; NOT yet live-verified)
 
@@ -387,20 +421,27 @@ outstanding, in the order the goal itself lists them:
    Also still missing even within PvP: no trajectory/line-of-sight
    raycast against wall geometry (a claim that passes range+rate-limit
    but was actually blocked by a wall client-side is still honored).
-3. **Steam authentication: handshake gate built and verified, real
-   ticket retrieval still missing.** The socket handshake now genuinely
-   requires a valid session token in production (verified live: rejects
-   unauthenticated sockets, and can't be bypassed by self-minting a
-   token without real Steam credentials, see the dedicated section
-   above). What's still missing is the one piece no amount of further
-   code can produce in this environment: nothing in this codebase can
-   generate a real Steamworks ticket (`GetAuthSessionTicket`) — no
-   native Steamworks SDK binding exists in the Electron main process at
-   all (confirmed via repo-wide grep). Closing this needs the user's
-   real Steamworks partner access (App ID, publisher key), a native SDK
-   integration, and a live Steam client to test against — this pass's
-   verification used two Socket.IO clients with dev-mode tokens, not two
-   real Steam accounts, per the goal's own allowance.
+3. **Steam authentication: handshake gate built and verified; real
+   ticket retrieval exists and reaches a real Steam client, but a
+   ticket could not actually be obtained from this sandbox.** The
+   socket handshake genuinely requires a valid session token in
+   production (verified live: rejects unauthenticated sockets, can't be
+   bypassed by self-minting a token without real Steam credentials).
+   Corrected finding, see the dedicated section above: a real
+   `steamworks.js`-backed `getAuthTicketForWebApi` call already exists
+   in `electron/main.cjs` (an earlier claim in this doc that "nothing in
+   this codebase can generate a real ticket" was wrong — it came from a
+   grep that missed the `electron/` directory). Tested against the
+   user's real, live Steam session (real identity confirmed,
+   SteamID64 confirmed) — but the ticket-validation round-trip timed
+   out from inside this sandbox, most likely a network-path restriction
+   here rather than a code gap, though that's inferred, not confirmed.
+   No `HB_STEAM_PUBLISHER_KEY` is configured in this environment either,
+   which the backend needs regardless. This pass's multiplayer-sync
+   verification used two Socket.IO clients with dev-mode tokens, not
+   completed real-Steam-account authentication — that still needs
+   either a non-sandboxed environment to retest ticket validation, or
+   the publisher key to complete the backend half.
 4. **Host-authoritative PvE, not yet exercised for AI/enemy state
    ownership.** The goal calls for the host to own AI/enemy HP/world
    state/objectives/loot with clients rendering canonical state, for a
@@ -443,15 +484,21 @@ genuinely server-authoritative, verified live against both a legitimate
 and a spoofed hit claim. The socket handshake itself now genuinely
 requires authentication in production, verified live including the
 rejection path — closing item 4's "no anonymous production sockets"
-requirement architecturally, even though real Steamworks ticket
-retrieval (the piece that needs the user's actual Steamworks partner
-access and a live Steam client) is not implemented. This is real,
-demonstrated progress on the goal's success criterion and on items 3
-and 4, but is still short of "Online Co-op" as a Steam-store claim:
-no `GameController`/session architectural refactor (item 1), no
+requirement architecturally. Real Steamworks ticket generation code
+already exists (`electron/main.cjs`) and was exercised this pass
+against the user's real, live Steam session with a real fixed bug
+along the way — but the actual ticket-validation round-trip timed out
+from inside this sandbox, so end-to-end real-Steam-account
+authentication still hasn't completed. This is real, demonstrated
+progress on the goal's success criterion and on items 3 and 4, but is
+still short of "Online Co-op" as a Steam-store claim: no
+`GameController`/session architectural refactor (item 1), no
 server-side trajectory/wall raycasting even within the new PvP
-validation, no server-authority over co-op enemy state (item 5), the
-reconnect-resets-PvP-state gap, and — the one gap in this list that
-isn't closeable by more autonomous code changes — no real Steamworks
-ticket generation, which needs the user's Steamworks App ID/publisher
-key and a native SDK integration tested against a live Steam client.
+validation, host-authoritative co-op enemy state is built but not
+live-verified (item 5), the reconnect-resets-PvP-state gap, and no
+`HB_STEAM_PUBLISHER_KEY` configured for the backend half of real ticket
+verification. The one item in this list that plausibly needs something
+beyond this sandbox specifically (not necessarily the user's
+Steamworks partner access, which turned out to already be wired up) is
+re-running the ticket-validation test from a normal desktop network to
+isolate whether the timeout is this environment or an app-side issue.
