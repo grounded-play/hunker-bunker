@@ -1,4 +1,5 @@
 import { Server } from 'socket.io';
+import { verifySteamSessionToken, isSteamAuthDevFallbackAllowed } from './steamAuth.js';
 
 // Movement & ballistics hardening: reject non-finite values, clamp to a sane world range,
 // and rate-limit updates to protect the relay from flooding.
@@ -109,13 +110,41 @@ export function attachRelay(server, { allowedOrigins = [] } = {}) {
         return result;
     };
 
+    // Sprint 24 Milestone A item 4: no anonymous production sockets. A
+    // connecting client must present a session token minted by the
+    // existing POST /steam/session route (ticket -> AuthenticateUserTicket
+    // -> SteamID64 -> signed short-lived token, server/steamAuth.js). This
+    // uses the exact same isSteamAuthDevFallbackAllowed() gate the REST
+    // auth routes already use: outside production (no publisher key
+    // configured, or HB_ALLOW_DEV_STEAM_AUTH not explicitly disabled), a
+    // socket with no/invalid token is still let through as a dev-mode
+    // identity so local dev/test workflows keep working -- in production,
+    // it is rejected outright, closing the anonymous-socket gap the
+    // Sprint 24 review flagged.
+    io.use((socket, next) => {
+        const token = socket.handshake.auth?.sessionToken ?? socket.handshake.query?.sessionToken;
+        const verified = verifySteamSessionToken(token);
+        if (verified.ok) {
+            socket.steamAuth = verified;
+            return next();
+        }
+        if (isSteamAuthDevFallbackAllowed()) {
+            socket.steamAuth = { ok: true, steamId64: null, isDevMode: true, authMethod: 'unauthenticated_dev' };
+            return next();
+        }
+        logRelayEvent('SOCKET_AUTH_REJECTED', { reason: verified.reason ?? 'unknown' });
+        return next(new Error('unauthenticated_socket'));
+    });
+
     io.on('connection', (socket) => {
         sessionTelemetry.totalConnections += 1;
-        logRelayEvent('CONNECT', { socketId: socket.id });
+        logRelayEvent('CONNECT', { socketId: socket.id, steamId64: socket.steamAuth?.steamId64 ?? null, isDevMode: Boolean(socket.steamAuth?.isDevMode) });
         const player = {
             id: socket.id,
             callsign: 'AGENT',
             opClass: 'TANK',
+            steamId64: socket.steamAuth?.steamId64 ?? null,
+            isDevMode: Boolean(socket.steamAuth?.isDevMode),
             x: 9,
             z: 9,
             yaw: 0,
