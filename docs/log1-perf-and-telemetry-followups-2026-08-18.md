@@ -118,7 +118,7 @@ cost; four rounds of live reproduction have not found it, so the highest-
 value next step is capturing real data from the next occurrence rather than
 a fifth synthetic guess.
 
-## 2. Boot overhead (2.65s across 28 long tasks before title screen, incl. one 949ms task)
+## 2. Boot overhead (2.65s across 28 long tasks before title screen, incl. one 949ms task) — FIXED (70% reduction)
 
 **Confirmed:** this is boot-time cost captured by `bootLongTaskObserver` in
 `main.js` (disconnects at `boot-ready`, i.e. right when `finishBootDiagnostics`
@@ -148,36 +148,42 @@ every single page load. Nothing persists this across sessions, so every
 boot re-runs the exact same pixel-by-pixel work on the exact same static
 PNG files.
 
-**Proposed fixes, not yet implemented (this is a real optimization, not a
-one-line change — needs its own scoped pass):**
-1. **Persist the keyed result across sessions** — cache the post-chroma-key
-   `ImageData`/canvas (or the decoded bitmap) in IndexedDB keyed by
-   asset path + a content hash/version, so only the *first-ever* boot on a
-   given browser profile pays this cost. Biggest win, moderate complexity
-   (async storage API, cache invalidation when source PNGs change).
-2. **Pre-bake chroma-keyed assets at build time** — if the source PNGs are
-   static repo assets (not runtime-generated), run the same
-   `applyBlackChromaKey`/`applyGreenChromaKey` logic once in a build script
-   and ship pre-keyed PNGs (already-transparent) instead of doing it in the
-   browser at all. Best runtime cost (zero), but needs confirming which
-   sprite paths are static vs actually dynamic/generated per-run first.
-3. **Move the pixel loop off the main thread** — a Web Worker (transferring
-   the `ImageData` buffer) would keep boot from stalling even without
-   caching. Doesn't reduce total CPU work, just stops it from blocking
-   rendering/input, similar in spirit to the enemy-GLB background-preload
-   fix already shipped this session.
+**Implemented option 1 (persist the keyed result across sessions).** New
+module `src/keyedTextureCache.js`: an IndexedDB-backed cache
+(`getCachedKeyedImage`/`putCachedKeyedImage`), keyed the same way the
+existing in-memory `keyedSpriteTextureCache` already is (asset path +
+threshold + cropBottomRatio), versioned so a future keying-algorithm change
+can invalidate every stored entry with one constant bump. Wired into
+`loadKeyedSpriteTexture` (`src/threeGame.js`): before fetching the source
+image at all, check the persistent cache; on a hit, decode straight to an
+`ImageBitmap` and skip the fetch *and* the chroma-key pixel work entirely.
+On a miss, run the normal path and write the freshly-keyed canvas to the
+cache afterward (fire-and-forget `canvas.toBlob()`, failures swallowed —
+this is a cache, not a requirement).
 
-Option 1 or 2 is the real fix (eliminates the repeated work, not just moves
-it); option 3 is a fallback if the assets genuinely must be keyed live every
-time (e.g. some overlay is truly runtime-generated).
+Deliberately did **not** extend this to the "layout"/sprite-atlas path
+(player class atlases — the "Repacking sprite atlas: ENGINEER" etc. log
+lines). The existing code already excludes those from even the in-memory
+cache, with an explicit comment that `repackGeneratedSpriteAtlas`'s output
+"isn't known to be safely shareable across texture instances." Respecting
+that existing caution rather than overriding it under time pressure.
 
-**Priority:** medium — one-time cost, paid once per session rather than
-repeatedly, so lower urgency than #1's per-run drip despite the large
-single number; but ~2.6s wasted identically on every single boot, forever,
-is a real win once fixed. **Risk:** low for option 3 (pure relocation, same
-pattern already validated this session); moderate for options 1-2 (new
-caching/build-step surface area) — needs its own test pass before shipping,
-not a quick patch.
+**Measured live** (CDP CPU profile, chroma-key function self-time only,
+same methodology as the original diagnosis): cold boot (empty cache)
+**1835ms**; second boot (cache populated from the first) **550-558ms**,
+stable across repeated measurement — a **70% reduction**. The remaining
+~550ms is exactly the excluded atlas/layout path described above, not a gap
+in the new cache's coverage (confirmed: `applyBlackChromaKey`/
+`applyGreenChromaKey` have exactly one call site in the codebase, inside
+the function this fix wraps).
+
+**Priority:** done for the cacheable path; the atlas/layout ~550ms remains
+open only because fixing it means overriding an existing, deliberate safety
+comment about shared mutable canvas state — worth a real look, not a fix to
+rush. **Risk:** low — IndexedDB failures (quota, unsupported browser,
+blocked) fall back to the exact original fetch+key path at every stage
+(`openDb`, `getCachedKeyedImage`, `putCachedKeyedImage` all catch and
+degrade gracefully); all 1677 tests still pass.
 
 ## 3. Multiplayer mode mismatch (PVP selected, telemetry says coop) — FIXED
 
@@ -359,18 +365,27 @@ worth the risk at all given it's confirmed invisible to players.
 
 ## Summary / execution order
 
-**Fixed and shipped:** #3 (multiplayer mode never propagating to
-`game.isMultiplayer`/`multiplayerMode`), #4 (interact presses near nothing
-gave no feedback). **Closed, not bugs:** #5 (`totalPickups` correctly
-tracks banked resources, not world pickups), #6 (branch-name typo confirmed
-never reaches shipped/tagged builds). **Root cause found, fix proposed but
-not yet implemented:** #2 (boot-time chroma-key pixel processing, ~2.6s
-every session, needs a scoped caching/build-step pass — see section 2's
-three options). **Still open, hardest remaining item:** #1 (the sustained
-drip) — four independent live-reproduction attempts all failed to
-reproduce it; next step is capturing a real trace from an actual future
-occurrence rather than further synthetic guessing (see section 1's
-"Recommended next step").
+**Fixed and shipped:** #2 (boot-time chroma-key pixel processing, 70%
+reduction via a persistent IndexedDB cache), #3 (multiplayer mode never
+propagating to `game.isMultiplayer`/`multiplayerMode`), #4 (interact
+presses near nothing gave no feedback). **Closed, not bugs:** #5
+(`totalPickups` correctly tracks banked resources, not world pickups), #6
+(branch-name typo confirmed never reaches shipped/tagged builds). **Still
+open, hardest remaining item:** #1 (the sustained drip) — four independent
+live-reproduction attempts all failed to reproduce it; next step is
+capturing a real trace from an actual future occurrence rather than further
+synthetic guessing (see section 1's "Recommended next step").
+
+Also fixed this pass, found while verifying the `~` dev console's
+debug-chamber teleport commands actually move the player (separate from
+this doc's six items, per direct user request): the `museum` command took
+minutes instead of teleporting immediately (teleport was the function's
+*last* line, after ~76 sequential unbatched GLB loads); the "SHOWROOM"
+quick-cheat button called a command with no matching case and silently
+errored; and submitting any dev-console command with Enter could
+simultaneously trigger a real gameplay action underneath the overlay
+(`handleKeyDown` never checked for a focused text input). See commit
+`9a4971b`.
 
 1. **#3 multiplayer mode mismatch — FIXED.** `setupMultiplayerNetwork()` now
    re-runs from `deployMatch()`/`handleRemoteMatchStart()`; verified live
@@ -389,14 +404,12 @@ occurrence rather than further synthetic guessing (see section 1's
    ever shows up in local dev. Rename is optional dev-loop tidiness, not a
    player-facing fix, and is a user decision given the shared working
    directory risk.
-5. **#2 boot overhead — root cause found, fix not yet implemented.**
-   Confirmed via live CPU profile: ~2.6s of every single boot goes into
-   `src/textureKeying.js`'s chroma-key pixel processing, re-run from scratch
-   every session because the only cache is in-memory and empty on every page
-   load. Three fix options proposed in section 2 (persist the keyed result,
-   pre-bake at build time, or move it off the main thread) — the first two
-   are the real fix but need their own scoped implementation pass, not a
-   quick patch.
+5. **#2 boot overhead — FIXED, 70% reduction.** New persistent IndexedDB
+   cache (`src/keyedTextureCache.js`) skips the fetch and chroma-key pixel
+   work entirely on a cache hit. Measured live: 1835ms cold → 550-558ms
+   once populated. Remaining ~550ms is the sprite-atlas/layout path, left
+   alone deliberately — the existing code already excludes it from even the
+   in-memory cache over a documented shared-mutable-state safety concern.
 6. **#1 sustained drip — still open, hardest remaining item.** Four
    independent live-reproduction attempts (bare-stub enemies, full real
    frame loop, real 3D-enemy CPU profile, 68s continuous-play CPU profile)

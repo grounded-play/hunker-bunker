@@ -163,6 +163,7 @@ import { CAMP_QUESTS } from './data/campQuests.js';
 import { humanityDecayProgress } from './vitals.js';
 import { applyCampPayoutEffects } from './runModifiers.js';
 import { applyBlackChromaKey, applyGreenChromaKey } from './textureKeying.js';
+import { getCachedKeyedImage, putCachedKeyedImage } from './keyedTextureCache.js';
 import { LANDFORMS, pickLandform, applyLandform, applyCanyonCollapse, connectPortalsInward, openMazeTerrain, generateHeightmapGrid, TERRAIN_HEIGHTS, findFarthestFloorCell } from './landforms.js';
 import { getDepthThreatScale, getProgressionSlot, progressionWorldTarget } from './worldProgression.js';
 import {
@@ -5675,6 +5676,17 @@ export class ThreeGame {
         const cacheEntry = cacheKey ? { image: null, waiters: [] } : null;
         if (cacheKey) keyedSpriteTextureCache.set(cacheKey, cacheEntry);
 
+        const applyFinalImage = (finalImage) => {
+            texture.image = finalImage;
+            texture.needsUpdate = true;
+            if (cacheEntry) {
+                cacheEntry.image = finalImage;
+                const waiters = cacheEntry.waiters.splice(0);
+                waiters.forEach((notify) => notify(finalImage));
+            }
+            if (onLoad) onLoad(texture);
+        };
+
         const image = new Image();
         const processImage = () => {
             const cropBottomRatioRaw = Number(options?.cropBottomRatio);
@@ -5719,17 +5731,13 @@ export class ThreeGame {
 
             ctx.putImageData(imgData, 0, 0);
 
+            // repackGeneratedSpriteAtlas is a passthrough (returns canvas
+            // unchanged) whenever options.layout is unset, which is exactly
+            // when cacheKey is non-null below -- caching the pre-repack
+            // canvas is safe and correct for every case that reaches here.
+            if (cacheKey) putCachedKeyedImage(cacheKey, canvas);
             const finalImage = repackGeneratedSpriteAtlas(canvas, options?.layout);
-            texture.image = finalImage;
-            texture.needsUpdate = true;
-            if (cacheEntry) {
-                cacheEntry.image = finalImage;
-                const waiters = cacheEntry.waiters.splice(0);
-                waiters.forEach((notify) => notify(finalImage));
-            }
-            if (onLoad) {
-                onLoad(texture);
-            }
+            applyFinalImage(finalImage);
         };
         image.onload = () => {
             // Chroma-keying (multiple full-resolution flood-fill passes) is
@@ -5760,7 +5768,25 @@ export class ThreeGame {
             if (cacheKey) keyedSpriteTextureCache.delete(cacheKey);
         };
 
-        image.src = safePath;
+        const startFetch = () => {
+            image.src = safePath;
+        };
+
+        if (cacheKey) {
+            // Skip the fetch AND the chroma-key pixel work entirely on a
+            // persistent-cache hit -- this is the actual boot-time win, not
+            // just deferring the cost to idle time (which the
+            // requestIdleCallback path above already did).
+            getCachedKeyedImage(cacheKey).then((blob) => {
+                if (!blob) {
+                    startFetch();
+                    return;
+                }
+                createImageBitmap(blob).then(applyFinalImage).catch(startFetch);
+            }).catch(startFetch);
+        } else {
+            startFetch();
+        }
 
         return texture;
     }
