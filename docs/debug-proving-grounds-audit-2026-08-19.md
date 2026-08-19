@@ -73,6 +73,25 @@ that actually matters here) in all four files. Small, mechanical,
 low-risk — this is exactly the pattern the Showroom already uses
 correctly (see below).
 
+**Update (Wing 2 fixed, commit `e34a8b1`)**: fixing Wing 2 surfaced a
+*second*, unrelated bug in this same "teleport far away" family, worth
+flagging for wings 1/3/4 too. Even after real tile data was in place
+(no more hole/pit-fall) and the teleport call swapped for
+`teleportPlayerTo`, the player still got silently snapped back to their
+ring-progression boundary within a single frame — `enforceRingProgressionLock()`
+(`threeGame.js`, runs every frame from `updatePlayer`) had no exemption
+for god mode or noclip, so any debug teleport far outside the player's
+unlocked ring got fought continuously regardless of the god mode these
+tools already enable. Root-caused via a property-setter trace on
+`player.position` pointing straight at the offending call. Fixed by
+bypassing the lock when `godMode`/`noclip` is active — since this lives
+in the shared per-frame player-update path, not per-wing code, **this
+one fix covers all four wings and the museum at once**, not just Wing 2.
+Given this, wings 1/3/4 may now already work correctly for the *ring-lock*
+part even before their own `position.set` → `teleportPlayerTo` swap
+lands — worth re-testing before assuming they still need the full
+Bug 1 fix as originally scoped.
+
 ## Bug 2 (confirmed, severe): the 4-Wall Showroom hangs for minutes on open
 
 **Root cause, confirmed via source read** (the live repro was still
