@@ -3942,6 +3942,12 @@ export class ThreeGame {
         this.remotePlayers = new Map();
         this.netSocket = session.socket || null;
         this.lastNetBroadcastTime = 0;
+        // Sprint 24 Milestone A item 5 (docs/sprint24-multiplayer-runtime-2026-08-19.md):
+        // captured by the lobby from the server's currentPlayers roster (the
+        // only point the server tells a client its own isHost status) and
+        // carried through on the session object, since currentPlayers fires
+        // well before this method's own listeners could catch it.
+        this.isMultiplayerHost = Boolean(session.isHost);
 
         // If a crash plan exists, adjust local player spawn if assigned
         if (this.multiplayerCrashPlan?.players?.length && this.player) {
@@ -3960,6 +3966,7 @@ export class ThreeGame {
             this.netSocket.on('playerRevived', (data) => this.handleRemotePlayerRevived(data));
             this.netSocket.on('playerDownedBroadcast', (data) => this.handleRemotePlayerDowned(data?.playerId));
             this.netSocket.on('enemyDamaged', (data) => this.handleRemoteEnemyDamage(data));
+            this.netSocket.on('enemyHitReported', (data) => this.handleEnemyHitReported(data));
             this.netSocket.on('playerDisconnected', (id) => this.removeRemotePlayer(id));
             this.netSocket.on('newPlayer', (player) => this.getOrCreateRemotePlayer(player));
         }
@@ -4145,26 +4152,48 @@ export class ThreeGame {
     // Enemies don't have a cross-client-stable ID yet, so this matches by
     // type + nearest position on the receiving end -- documented as a known
     // approximation, not exact-identity sync.
-    handleRemoteEnemyDamage(data) {
-        if (!data || !Number.isFinite(data.x) || !Number.isFinite(data.z) || !(data.damage > 0)) return;
+    // Shared by handleRemoteEnemyDamage and handleEnemyHitReported. 3-unit
+    // tolerance: generous enough for network lag/interpolation drift between
+    // when a client sampled the enemy's position and when this arrives,
+    // tight enough that two same-type enemies rarely sit close enough to be
+    // confused for typical encounter density.
+    findNearestMatchingEnemySprite(enemyType, x, z, maxDist = 3) {
         let best = null;
         let bestDist = Infinity;
         for (const sprite of this.scatterSprites) {
-            if (sprite.userData?.type !== data.enemyType) continue;
+            if (sprite.userData?.type !== enemyType) continue;
             if (sprite.userData?.burstTriggered) continue;
-            const dist = Math.hypot(sprite.position.x - data.x, sprite.position.z - data.z);
+            const dist = Math.hypot(sprite.position.x - x, sprite.position.z - z);
             if (dist < bestDist) {
                 bestDist = dist;
                 best = sprite;
             }
         }
-        // 3-unit tolerance: generous enough for network lag/interpolation
-        // drift between when the attacker's client sampled the enemy's
-        // position and when this broadcast arrives, tight enough that two
-        // same-type enemies rarely sit close enough to be confused for
-        // typical encounter density.
-        if (best && bestDist <= 3) {
-            this.applyPlayerDamageToEnemy(best, data.damage, { fromNetwork: true });
+        return (best && bestDist <= maxDist) ? best : null;
+    }
+
+    handleRemoteEnemyDamage(data) {
+        if (!data || !Number.isFinite(data.x) || !Number.isFinite(data.z) || !(data.damage > 0)) return;
+        const sprite = this.findNearestMatchingEnemySprite(data.enemyType, data.x, data.z);
+        if (sprite) {
+            this.applyPlayerDamageToEnemy(sprite, data.damage, { fromNetwork: true });
+        }
+    }
+
+    // Sprint 24 Milestone A item 5 (docs/sprint24-multiplayer-runtime-2026-08-19.md):
+    // host-authoritative PvE, first cut. The relay only routes enemyHitReport
+    // to the room's host socket, but this.isMultiplayerHost is checked too
+    // in case of a stale/late host-status flip. Resolving via
+    // applyPlayerDamageToEnemy (not fromNetwork) re-enters that method's own
+    // host branch, which applies the hit locally AND broadcasts the
+    // canonical outcome to the rest of the room -- including back to the
+    // original reporter, who applied nothing locally itself.
+    handleEnemyHitReported(data) {
+        if (!this.isMultiplayerHost) return;
+        if (!data || !Number.isFinite(data.x) || !Number.isFinite(data.z) || !(data.damage > 0)) return;
+        const sprite = this.findNearestMatchingEnemySprite(data.enemyType, data.x, data.z);
+        if (sprite) {
+            this.applyPlayerDamageToEnemy(sprite, data.damage);
         }
     }
 
@@ -10839,20 +10868,32 @@ export class ThreeGame {
         if (sprite?.userData && cryoMult > 1.0 && Math.random() < 0.18) {
             sprite.userData.frozenTimer = Math.max(sprite.userData.frozenTimer ?? 0, 1.0 * cryoMult);
         }
-        // Sprint 24 Milestone A co-op enemy hit-sync: only for the plain
-        // damageSnail path below, and only for locally-originated hits (never
-        // re-broadcast a hit that itself arrived from the network, or every
-        // enemy hit in a 2-player run would ping-pong forever). Boss fights
-        // (queenFight/sporesnailFight, both branch out above) are not synced
-        // yet -- documented gap, see docs/sprint24-multiplayer-runtime-2026-08-19.md.
-        if (!fromNetwork && this.isMultiplayer && this.multiplayerMode !== 'pvp' && this.netSocket
-            && sprite?.userData?.type && !sprite.userData?.queenFight && !sprite.userData?.sporesnailFight) {
-            this.netSocket.emit('enemyDamage', {
-                enemyType: sprite.userData.type,
-                x: sprite.position.x,
-                z: sprite.position.z,
-                damage: amount
-            });
+        // Sprint 24 Milestone A co-op enemy hit-sync, now host-authoritative
+        // for the first cut (docs/sprint24-multiplayer-runtime-2026-08-19.md):
+        // only for the plain damageSnail path below, and only for
+        // locally-originated hits (never re-broadcast a hit that itself
+        // arrived from the network, or every enemy hit in a 2-player run
+        // would ping-pong forever). Boss fights (queenFight/sporesnailFight,
+        // both branch out below) are not synced yet -- documented gap.
+        const isSyncableCoopHit = !fromNetwork && this.isMultiplayer && this.multiplayerMode !== 'pvp' && this.netSocket
+            && sprite?.userData?.type && !sprite.userData?.queenFight && !sprite.userData?.sporesnailFight;
+        if (isSyncableCoopHit) {
+            const payload = { enemyType: sprite.userData.type, x: sprite.position.x, z: sprite.position.z, damage: amount };
+            if (this.isMultiplayerHost) {
+                // The host's own local detection is immediately canonical.
+                this.netSocket.emit('enemyDamage', payload);
+            } else {
+                // A non-host client's local hit-detection is a candidate,
+                // not a fact: report it to the host (relayed privately by
+                // the server, see server/relay.js's enemyHitReport handler)
+                // and wait for the resulting enemyDamaged broadcast
+                // (handleRemoteEnemyDamage -> this function again, with
+                // fromNetwork:true) to actually apply it. Returning here
+                // instead of falling through to damageSnail avoids a
+                // double-apply when that broadcast arrives back.
+                this.netSocket.emit('enemyHitReport', payload);
+                return;
+            }
         }
         const fight = sprite?.userData?.queenFight;
         if (fight) {
