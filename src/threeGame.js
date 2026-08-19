@@ -546,6 +546,12 @@ const WEAPON_CLIP_PER_CAPACITY = 2;     // +clip rounds per ammoCapacity tier
 const WEAPON_SPEED_PER_TIER = 2.5;      // +projectile speed per shotSpeed tier
 const MULTISHOT_SPREADS = Object.freeze([[], [-0.085, 0.085], [-0.15, 0.0, 0.15]]);
 const WALL_DECAL_CAP = 24;
+// docs/dynamic-light-shader-runaway-plan-2026-08-19.md direction #1 -- max
+// simultaneously-visible "environmental" PointLights (registerEnvLight),
+// closest-to-camera wins. Bounds how many distinct light combinations lit
+// materials can ever encounter, capping shader-program growth instead of
+// letting it climb for the length of a run.
+const ENV_LIGHT_BUDGET = 8;
 const PHYS_PARTICLE_GRAVITY = 7.0;   // units/s²
 const PHYS_PARTICLE_DRAG = 2.2;      // exponential drag coefficient (per second)
 const PHYS_PARTICLE_BOUNCE = -0.45;  // floor restitution
@@ -1151,6 +1157,21 @@ export class ThreeGame {
         this.encounterState = null;
         this._encounterSprite = null;
         this.depletedGearPileKeys = new Set();
+        // docs/dynamic-light-shader-runaway-plan-2026-08-19.md direction #1 --
+        // "environmental" PointLights (terminal/status/beacon/O2-safe/lore-terminal
+        // lights, etc, registered via registerEnvLight below) accumulate as the
+        // player explores a run; every unique combination of "which of these are
+        // currently in range" forces three.js to compile a distinct shader program
+        // per lit material, and nothing ever bounds how many combinations get
+        // created over a long run. updateEnvLightBudget() below keeps only the
+        // closest ENV_LIGHT_BUDGET of these visible at any time, so the live set
+        // any object can be affected by is drawn from a small, bounded pool
+        // instead of the full accumulated set. Player-attached lights (playerGlow,
+        // suitFillLight, playerForwardSpotLight) are deliberately NOT registered
+        // here -- they always travel with the player, so culling them wouldn't
+        // meaningfully reduce combination variety and would look wrong if toggled.
+        this.envDynamicLights = [];
+        this._envLightBudgetTimer = 0;
         this.transientEffects = [];
         this.hitstopTimer = 0;
         this.activeRadarScans = [];
@@ -3362,6 +3383,7 @@ export class ThreeGame {
             const terminalLight = new THREE.PointLight(ship.color, 1.8, 2.8, 2);
             terminalLight.position.set(consoleX, 0.5, consoleZ);
             this.scene.add(terminalLight);
+            this.registerEnvLight?.(terminalLight);
 
             // Store all 3D objects associated with this base so we can toggle visibility
             ship.threeObjects = [
@@ -3453,6 +3475,7 @@ export class ThreeGame {
         const statusLight = new THREE.PointLight(0xff2200, 1.5, 7.0);
         statusLight.position.set(9, 2.2, 3);
         this.scene.add(statusLight);
+        this.registerEnvLight?.(statusLight);
         this._bunkerDoorStatusLight = statusLight;
 
         this.bunkerBlastDoorGroup = doorGroup;
@@ -3556,6 +3579,7 @@ export class ThreeGame {
         const light = new THREE.PointLight(0x5cd6ff, 1.2, 5.0);
         light.position.set(9, 1.2, 4.8);
         this.scene.add(light);
+        this.registerEnvLight?.(light);
 
         this.baseDefenseTurretGroup = group;
         this.baseDefenseTurretHead = headGroup;
@@ -6205,6 +6229,7 @@ export class ThreeGame {
         if (this._milestoneBossRestagePending) this.restageReadyMilestoneBosses?.();
         this.updateTacticalMapDiscovery?.();
         this.updateCompanions(delta);
+        this.updateEnvLightBudget?.(delta);
         this.updateTransientEffects(delta, now);
         this.updateHiddenPlayerMarker(now);
         this.updateVitals(delta);
@@ -6629,6 +6654,7 @@ export class ThreeGame {
         beacon.position.y = 1.0;
         beacon.userData.blackBoxOwnedMaterial = true;
         marker.add(beacon);
+        this.registerEnvLight?.(beacon);
 
         marker.position.set(state.x, 0, state.z);
         marker.userData.isBlackBoxMarker = true;
@@ -19995,6 +20021,7 @@ export class ThreeGame {
                 impactLight.position.z = 0.85;
                 impactLight.userData = { isCrashSiteHeatLight: true };
                 crashDeck.add(impactLight);
+                this.registerEnvLight?.(impactLight);
                 this.crashSiteHeatLight = impactLight;
             }
             this.crashSiteFloorMesh = crashDeck;
@@ -22100,6 +22127,7 @@ export class ThreeGame {
             const light = new THREE.PointLight(0xffaa44, 1.8, 3.5, 1.8);
             light.position.set(0, 0.35, 0);
             sprite.add(light);
+            this.registerEnvLight?.(light);
 
             // Assign a log entry from the biome pool
             const biomeKey = this.getBiomeKeyForWorldPosition(placement.x, placement.z);
@@ -25852,6 +25880,46 @@ export class ThreeGame {
         effect.userData = { age: 0, duration: 0.56 };
         this.scene.add(effect);
         this.transientEffects.push(effect);
+    }
+
+    // docs/dynamic-light-shader-runaway-plan-2026-08-19.md direction #1.
+    registerEnvLight(light) {
+        this.envDynamicLights.push(light);
+        return light;
+    }
+
+    updateEnvLightBudget(delta) {
+        if (!this.envDynamicLights.length || !this.camera) return;
+        // Re-sorting the whole list is cheap at this scale but pointless every
+        // single frame -- a few times a second is plenty responsive to player
+        // movement while keeping the cost of this system itself negligible.
+        this._envLightBudgetTimer -= delta;
+        if (this._envLightBudgetTimer > 0) return;
+        this._envLightBudgetTimer = 0.35;
+
+        // Some registered lights (e.g. the black-box beacon, nested under a
+        // marker group) get removed from the scene graph when their owning
+        // object is collected/disposed -- checking light.parent alone misses
+        // this (the light keeps its immediate parent reference even once that
+        // parent itself is detached), so walk the chain up to this.scene.
+        this.envDynamicLights = this.envDynamicLights.filter((light) => {
+            for (let node = light; node; node = node.parent) {
+                if (node === this.scene) return true;
+            }
+            return false;
+        });
+        if (!this.envDynamicLights.length) return;
+
+        const camPos = this.camera.position;
+        const budget = ENV_LIGHT_BUDGET;
+        const withDistance = this.envDynamicLights.map((light) => {
+            const worldPos = light.getWorldPosition(this._envLightBudgetVec ??= new THREE.Vector3());
+            return { light, distSq: worldPos.distanceToSquared(camPos) };
+        });
+        withDistance.sort((a, b) => a.distSq - b.distSq);
+        withDistance.forEach(({ light }, index) => {
+            light.visible = index < budget;
+        });
     }
 
     updateTransientEffects(delta) {
