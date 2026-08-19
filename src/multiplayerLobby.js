@@ -11,6 +11,43 @@ export const MULTIPLAYER_MODES = Object.freeze({
     PVP: 'pvp'
 });
 
+// Sprint 24 Milestone A (docs/sprint24-multiplayer-runtime-2026-08-19.md):
+// clicking #start-game/#title-newrun-btn only opens the pre-mission Armory
+// gate (openArmoryGate in main.js) -- it does not itself start the run.
+// Confirmed live with two real browser instances: without this, BOTH
+// deployMatch() and handleRemoteMatchStart() left every player sitting in
+// their own local Armory forever, performanceProfile stuck at 'menu',
+// isMultiplayer/remotePlayers set correctly but updateMultiplayer() (gated
+// on the 'gameplay' profile) never once running -- no movement/fire/damage
+// sync of any kind, despite the lobby and session bootstrap looking
+// entirely correct. The Armory renders asynchronously (createArmoryScene
+// awaits a canvas + scene build), so this polls for its embark button
+// rather than assuming it exists immediately after the gate opens.
+function waitForArmoryEmbarkButton(timeoutMs = 8000) {
+    return new Promise((resolve) => {
+        const deadline = Date.now() + timeoutMs;
+        const poll = () => {
+            const btn = document.getElementById('armory-btn-embark');
+            if (btn) {
+                resolve(btn);
+                return;
+            }
+            if (Date.now() >= deadline) {
+                resolve(null);
+                return;
+            }
+            setTimeout(poll, 100);
+        };
+        poll();
+    });
+}
+
+async function autoEmbarkFromArmory() {
+    if (typeof document === 'undefined') return;
+    const btn = await waitForArmoryEmbarkButton();
+    btn?.click();
+}
+
 export function resolveRelayUrl() {
     if (typeof window === 'undefined') return 'http://localhost:3001';
     if (window.HB_RELAY_URL) return window.HB_RELAY_URL;
@@ -284,10 +321,13 @@ export class MultiplayerLobby {
             });
         }
 
-        // Launch the game run
+        // Launch the game run. start-game only opens the pre-mission Armory
+        // gate -- it does not itself start the run -- so also auto-embark
+        // once the Armory finishes rendering (see autoEmbarkFromArmory above).
         const startBtn = document.getElementById('start-game') || document.getElementById('title-newrun-btn');
         if (startBtn) {
             startBtn.click();
+            void autoEmbarkFromArmory();
         }
 
         const modeName = this.currentMode === MULTIPLAYER_MODES.COOP ? 'CO-OP EXPEDITION' : 'PVP SECTOR DUEL';
@@ -315,6 +355,7 @@ export class MultiplayerLobby {
         const startBtn = document.getElementById('start-game') || document.getElementById('title-newrun-btn');
         if (startBtn) {
             startBtn.click();
+            void autoEmbarkFromArmory();
         }
     }
 
