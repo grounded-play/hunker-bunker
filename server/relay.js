@@ -6,6 +6,25 @@ const WORLD_LIMIT = 100000;
 const MIN_MOVE_INTERVAL_MS = 16; // ~60 updates/sec cap per socket
 const MIN_FIRE_INTERVAL_MS = 40; // ~25 shots/sec cap per socket
 
+// Sprint 24 Milestone A server-authoritative PvP damage
+// (docs/sprint24-multiplayer-runtime-2026-08-19.md). These mirror the
+// client's existing, unmodified balance -- BASE_HEARTS (src/threeGame.js)
+// and the flat 10-damage-per-hit fallback every PvP shot already used
+// (this.playerDamage was never actually assigned anywhere, so the
+// fallback was the *only* value in practice) -- so moving authority to
+// the server does not change game balance, only who gets to decide the
+// outcome of a hit.
+const PVP_DEFAULT_MAX_HP = 3;
+const PVP_WEAPON_DAMAGE = 10;
+// Real client projectile reach is PROJECTILE_SPEED(13.4) * PROJECTILE_TTL(1.15)
+// =~15.4 units; this adds slack for the lag between when the attacker's
+// origin was sampled and when the hit report arrives.
+const PVP_WEAPON_RANGE = 20;
+// Slightly under the client's real fire cooldown (WEAPON_FIRE_COOLDOWN =
+// 0.14s = 140ms) to tolerate jitter without meaningfully allowing
+// faster-than-legal fire.
+const PVP_MIN_HIT_INTERVAL_MS = 110;
+
 function sanitizeCoord(value) {
     if (typeof value !== 'number' || !Number.isFinite(value)) return null;
     return Math.max(-WORLD_LIMIT, Math.min(WORLD_LIMIT, value));
@@ -106,7 +125,14 @@ export function attachRelay(server, { allowedOrigins = [] } = {}) {
             roomCode: 'SECTOR-7',
             isHost: false,
             lastMoveAt: 0,
-            lastFireAt: 0
+            lastFireAt: 0,
+            // Sprint 24 Milestone A: server-authoritative PvP HP + fire-rate
+            // tracking. hp/maxHp/mode get (re)initialized on matchDeploy so
+            // every fresh match starts full-health regardless of prior state.
+            hp: PVP_DEFAULT_MAX_HP,
+            maxHp: PVP_DEFAULT_MAX_HP,
+            mode: 'coop',
+            lastWeaponHitAt: 0
         };
         players.set(socket.id, player);
 
@@ -148,13 +174,28 @@ export function attachRelay(server, { allowedOrigins = [] } = {}) {
             const roomCode = player.roomCode;
             if (!roomCode) return;
 
+            const mode = matchData.mode === 'pvp' ? 'pvp' : 'coop';
             const payload = {
                 seed: matchData.seed || 'SECTOR-7',
-                mode: matchData.mode === 'pvp' ? 'pvp' : 'coop',
+                mode,
                 crashPlan: matchData.crashPlan || null,
                 startedBy: socket.id,
                 timestamp: Date.now()
             };
+
+            // Sprint 24 Milestone A: (re)arm server-authoritative HP for every
+            // player in the room at the start of a fresh match, not just the
+            // one who clicked deploy.
+            const roomSocketIds = rooms.get(roomCode);
+            if (roomSocketIds) {
+                roomSocketIds.forEach((id) => {
+                    const p = players.get(id);
+                    if (!p) return;
+                    p.mode = mode;
+                    p.hp = PVP_DEFAULT_MAX_HP;
+                    p.maxHp = PVP_DEFAULT_MAX_HP;
+                });
+            }
 
             sessionTelemetry.matchesDeployed += 1;
             logRelayEvent('MATCH_DEPLOY', { roomCode, mode: payload.mode, seed: payload.seed, startedBy: socket.id });
@@ -295,6 +336,62 @@ export function attachRelay(server, { allowedOrigins = [] } = {}) {
                     damage
                 });
             }
+        });
+
+        // Sprint 24 Milestone A: server-authoritative PvP damage
+        // (docs/sprint24-multiplayer-runtime-2026-08-19.md). The VICTIM's
+        // client reports being hit (this socket is the victim -- `player`
+        // in this closure), naming who allegedly hit them and where that
+        // attacker's shot originated. This direction is safe to
+        // self-report: the only thing a lying victim can do is reduce
+        // their own HP, which no rational cheater wants. The server never
+        // trusts a client-supplied damage amount or fatality flag -- it
+        // looks up the attacker's own server-known position (from their
+        // playerMove updates, not the hit report) to range-check the
+        // claim, rate-limits per attacker, and computes damage from its
+        // own constant. What this does NOT do: full trajectory/line-of-
+        // sight raycasting against wall geometry (the goal's own scoping
+        // note says not to attempt headless server simulation this pass),
+        // so a claim that passes range+rate-limit but was actually blocked
+        // by a wall client-side would still be honored -- a known,
+        // documented gap, not silently missed.
+        socket.on('weaponHit', (hitData) => {
+            if (!hitData || typeof hitData !== 'object') return;
+            if (player.mode !== 'pvp') return;
+            if (player.hp <= 0) return;
+
+            const attackerId = sanitizeString(hitData.attackerId, 64, '');
+            const attacker = players.get(attackerId);
+            if (!attacker || !player.roomCode || attacker.roomCode !== player.roomCode) return;
+            if (attacker.mode !== 'pvp') return;
+
+            const now = Date.now();
+            if (now - (attacker.lastWeaponHitAt || 0) < PVP_MIN_HIT_INTERVAL_MS) return;
+
+            const originX = sanitizeCoord(hitData.originX);
+            const originZ = sanitizeCoord(hitData.originZ);
+            if (originX === null || originZ === null) return;
+            const dist = Math.hypot(originX - attacker.x, originZ - attacker.z);
+            if (dist > PVP_WEAPON_RANGE) return;
+
+            attacker.lastWeaponHitAt = now;
+
+            const damage = PVP_WEAPON_DAMAGE;
+            player.hp = Math.max(0, player.hp - damage);
+            const isFatal = player.hp <= 0;
+
+            if (isFatal) {
+                sessionTelemetry.fatalHits += 1;
+                logRelayEvent('FATAL_HIT', { roomCode: player.roomCode, attackerId, targetId: socket.id, damage });
+            }
+            logRelayEvent('WEAPON_HIT', { roomCode: player.roomCode, attackerId, targetId: socket.id, damage, isFatal });
+
+            io.to(player.roomCode).emit('playerDamaged', {
+                attackerId,
+                targetId: socket.id,
+                damage,
+                isFatal
+            });
         });
 
         // Operative Field Trade & Barter relay
