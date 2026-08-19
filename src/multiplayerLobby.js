@@ -11,6 +11,39 @@ export const MULTIPLAYER_MODES = Object.freeze({
     PVP: 'pvp'
 });
 
+// Sprint 24 Milestone A item 4 (docs/sprint24-multiplayer-runtime-2026-08-19.md):
+// mint a short-lived session token from the relay's existing POST
+// /steam/session route before connecting the socket, so the handshake
+// carries proof of auth instead of connecting anonymously (server/relay.js
+// now rejects unauthenticated sockets outright in production).
+//
+// window.electronAPI.getSteamAuthTicket does not exist anywhere in this
+// codebase yet -- no Steamworks native ticket retrieval (GetAuthSessionTicket)
+// is wired into the Electron main/preload layer -- so this always falls
+// through to a clearly-labeled dev placeholder ticket today. That's the
+// exact scenario the backend's own dev-fallback path (isDevFallbackAllowed
+// in server/steamAuth.js) already exists to handle: with no publisher key
+// configured, verifySteamSessionTicket short-circuits before ever calling
+// Steam's real API and the relay still issues a valid signed dev-mode
+// session token. Real Steamworks ticket retrieval is a separate, larger
+// piece of work (native SDK integration) not attempted this pass.
+async function fetchMultiplayerSessionToken(relayUrl, identity) {
+    try {
+        const ticketHex = (typeof window !== 'undefined' && await window.electronAPI?.getSteamAuthTicket?.())
+            || '00'.repeat(32); // dev placeholder: well-formed hex, not a real Steam ticket
+        const response = await fetch(`${relayUrl}/steam/session`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ ticketHex, identity })
+        });
+        if (!response.ok) return null;
+        const session = await response.json();
+        return session?.ok ? session.token : null;
+    } catch {
+        return null;
+    }
+}
+
 // Sprint 24 Milestone A (docs/sprint24-multiplayer-runtime-2026-08-19.md):
 // clicking #start-game/#title-newrun-btn only opens the pre-mission Armory
 // gate (openArmoryGate in main.js) -- it does not itself start the run.
@@ -153,9 +186,11 @@ export class MultiplayerLobby {
 
         try {
             if (typeof window !== 'undefined') {
+                const sessionToken = await fetchMultiplayerSessionToken(this.serverUrl, callsign);
                 this.socket = connectSocketIo(this.serverUrl, {
                     timeout: 4000,
-                    reconnectionAttempts: 2
+                    reconnectionAttempts: 2,
+                    auth: { sessionToken }
                 });
 
                 this.socket.on('connect', () => {
@@ -214,7 +249,24 @@ export class MultiplayerLobby {
                     this.handleRemoteMatchStart(data);
                 });
 
-                this.socket.on('connect_error', () => {
+                this.socket.on('connect_error', (err) => {
+                    if (err?.message === 'unauthenticated_socket') {
+                        // Sprint 24 Milestone A item 4: an explicit auth
+                        // rejection is a policy decision, not a network
+                        // failure -- don't paper over it with
+                        // fallbackLocalSession()'s simulated opponent (the
+                        // exact discoverable-but-still-deployable gap the
+                        // Sprint 24 review flagged). Surface it distinctly
+                        // instead.
+                        this.connected = false;
+                        this.usingRelay = false;
+                        const statusEl = document.getElementById('net-status-pill');
+                        if (statusEl) {
+                            statusEl.textContent = 'STEAM AUTH REQUIRED';
+                            statusEl.className = 'net-status-pill net-status--offline';
+                        }
+                        return;
+                    }
                     this.fallbackLocalSession();
                 });
             } else {
