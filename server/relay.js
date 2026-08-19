@@ -389,7 +389,17 @@ export function attachRelay(server, { allowedOrigins = [] } = {}) {
             const hostId = roomSocketIds
                 ? [...roomSocketIds].find((id) => players.get(id)?.isHost)
                 : null;
-            if (!hostId || hostId === socket.id) return;
+            if (!hostId || hostId === socket.id) {
+                // Sprint 24 Milestone A item 5: this is the observable
+                // signature of the "no host in the room" reliability gap
+                // (docs/sprint24-multiplayer-runtime-2026-08-19.md) -- a
+                // reporting client's hit is silently dropped whenever no
+                // room member currently has isHost:true. Logged so this is
+                // diagnosable from server logs instead of only inferrable
+                // from a client-side symptom (enemy HP never updates).
+                logRelayEvent('ENEMY_HIT_REPORT_NO_HOST', { roomCode: player.roomCode, reporterId: socket.id, hostId: hostId ?? null });
+                return;
+            }
 
             io.to(hostId).emit('enemyHitReported', {
                 reporterId: socket.id,
