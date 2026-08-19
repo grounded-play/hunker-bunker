@@ -408,7 +408,7 @@ body {
 }
 
 #loading-screen.over-door-loader {
-  z-index: 15250;
+  z-index: 250250;
   background: transparent;
   pointer-events: none;
   opacity: 1;
@@ -479,7 +479,15 @@ body {
   --transition-scene-fade: 0;
   position: absolute;
   inset: 0;
-  z-index: 15000;
+  /* Doors are a full-screen curtain hiding scene/screen swaps -- they must
+     render above literally everything else on the page (modals included:
+     .modal is z-index 100000, and content revealed by a door transition's
+     onClosed callback -- e.g. the game-over modal -- used to visibly peek
+     out above the still-opening doors instead of staying hidden behind
+     them until the doors finished sliding away). 250000 clears the
+     highest z-index anywhere else in this file (200000, a cursor trail
+     effect) with headroom. */
+  z-index: 250000;
   pointer-events: none;
   display: flex;
   overflow: hidden;
@@ -491,7 +499,7 @@ body {
   content: "";
   position: absolute;
   inset: 0;
-  z-index: 15000;
+  z-index: 250000;
   background:
     radial-gradient(circle at center, rgba(3, 4, 8, 0.65) 0%, rgba(1, 2, 4, 0.88) 45%, rgba(0, 0, 0, 0.98) 100%);
   opacity: var(--transition-scene-fade);
@@ -503,7 +511,7 @@ body {
   content: "";
   position: absolute;
   inset: 0;
-  z-index: 15002;
+  z-index: 250002;
   box-shadow: inset 0 0 60px rgba(0, 0, 0, 0.75);
   pointer-events: none;
   opacity: var(--transition-scene-fade);
@@ -529,7 +537,7 @@ body {
   background-image: var(--door-bg-image, url('/door_biomech_keyart_v2.webp'));
   background-repeat: no-repeat;
   box-shadow: inset 0 0 30px rgba(0, 0, 0, 0.85), 0 0 25px rgba(0, 0, 0, 0.7);
-  z-index: 15001;
+  z-index: 250001;
   display: none;
   overflow: visible;
   will-change: transform;
@@ -606,7 +614,7 @@ body {
 .shared-gear {
   position: absolute;
   pointer-events: none;
-  z-index: 15005;
+  z-index: 250005;
   display: block;
 }
 
@@ -684,7 +692,7 @@ body {
   background: radial-gradient(circle, rgba(220, 225, 235, 0.45) 0%, rgba(160, 175, 195, 0.15) 50%, transparent 75%);
   border-radius: 50%;
   pointer-events: none;
-  z-index: 15100;
+  z-index: 250100;
   filter: blur(10px);
   animation: smoke-drift 1.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
