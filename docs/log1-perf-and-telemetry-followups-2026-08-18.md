@@ -86,7 +86,16 @@ repeatedly, so lower urgency than #1 despite the large single number.
 care taken with the enemy-GLB preload fix (verify `page.goto`'s `load` event
 and boot-to-`armory` timing don't regress before shipping).
 
-## 3. Multiplayer mode mismatch (PVP selected, telemetry says coop)
+## 3. Multiplayer mode mismatch (PVP selected, telemetry says coop) — FIXED
+
+**Status: fixed and verified live.** The original telemetry-mismatch
+symptom didn't reproduce, but the investigation found a real bug underneath
+it (see below) and it's fixed: `src/multiplayerLobby.js`'s `deployMatch()`
+and `handleRemoteMatchStart()` now call `window.game?.setupMultiplayerNetwork?.()`
+right after setting `window.activeMultiplayerSession`. Verified live —
+before the fix, `game.isMultiplayer`/`game.multiplayerMode` stayed
+`undefined` for the entire session even after deploying a PVP match; after
+the fix, they correctly become `true`/`'pvp'` immediately on deploy.
 
 **Confirmed via code reading, not yet live-tested:** the wiring exists and
 looks correct end-to-end —
@@ -100,28 +109,56 @@ looks correct end-to-end —
 - `main.js:3900-3901` (telemetry read) falls back to `'coop'` only if
   neither `game.multiplayerMode` nor `activeMultiplayerSession.mode` is set.
 
-**Leading hypothesis:** a click-target mismatch, not a logic bug. The log's
-click event (id 49) landed on `<div.net-mode-card__title>` — the text label
-inside the PVP card — not necessarily the element `setMode('pvp')` is
-actually bound to (`net-mode-pvp-btn`, per
-`src/multiplayerLobby.js:66-67`). If the title text doesn't
-sit inside that button (or doesn't bubble a click to it), selecting PVP by
-clicking the title never calls `setMode('pvp')`, and the session silently
-stays on whatever `currentMode` defaulted to.
+**Click-target hypothesis ruled out.** Checked `index.html:2421-2435`:
+`.net-mode-card__title` renders *inside* `<button id="net-mode-pvp-btn">`, so
+a click on the title text bubbles to the button's listener normally — no
+binding gap there.
 
-**Next step:** read `index.html`'s markup for `.net-mode-card` /
-`#net-mode-pvp-btn` to confirm whether `.net-mode-card__title` is inside the
-button or a sibling, then reproduce live (Playwright click sequence
-matching the log: open TACTICAL NET, click the PVP card title specifically,
-click DEPLOY SQUAD, inspect `window.activeMultiplayerSession?.mode`). Fix is
-almost certainly either widening the button's clickable area/binding
-(`.net-mode-card` container gets the listener, not just one child) or moving
-the listener to whichever element the title actually renders inside.
+**Reproduced live end-to-end and could NOT reproduce the bug.** Replayed the
+exact click sequence from the log against the running dev build (open
+TACTICAL NET → click `.net-mode-card__title` inside the PVP card → click
+DEPLOY SQUAD → click `#start-game` → click `#armory-btn-embark` → trigger
+`handleDeath()` to reach `gameover`), inspecting the real values at each
+step:
+- Immediately after clicking the PVP title: `window.activeMultiplayerSession.mode
+  === 'pvp'`.
+- After DEPLOY SQUAD + reaching `gameplay`: still `'pvp'`.
+- After death, at `gameover` (where the telemetry snippet in `main.js:3900-3901`
+  actually runs): `mpMode` resolves to `'pvp'`, correctly.
+- Confirmed separately: `window.game.multiplayerMode` stays `undefined` the
+  whole session — `setupMultiplayerNetwork()` (`src/threeGame.js:2945`,
+  called once from the constructor) runs during initial boot, ~21s before
+  the player ever opens TACTICAL NET in the real log, so it always sees
+  `!session` and early-returns without setting `isMultiplayer`/
+  `multiplayerMode`. This is harmless *for telemetry* only because
+  `main.js:3901`'s `||` chain falls through correctly to
+  `activeMultiplayerSession?.mode` — but it does mean `game.isMultiplayer`
+  and `game.multiplayerMode` are unreliable everywhere else they're read
+  (`src/threeGame.js:3936,4021,4046,7554` all gate real PVP-only behavior
+  behind `this.multiplayerMode === 'pvp'`, which is silently always false
+  this way). That's a second, more consequential bug hiding under the same
+  symptom: **actual PVP gameplay logic (friendly-fire rules, spawn
+  placement, etc. at those four call sites) may never activate**, even
+  though telemetry happens to still report the right label.
 
-**Priority:** medium — doesn't affect gameplay, but corrupts multiplayer-mode
-analytics for any run where a player clicks a card by its title text rather
-than some other hit area. **Risk:** low; UI event-binding fix, no gameplay
-state touched.
+**Revised next step:** the telemetry mismatch itself is not reproducible as
+described and may have been specific to that captured session (different
+code revision, a real timing race, or a transient socket/session state this
+repro didn't hit) — lower confidence there's a live bug here. The
+`setupMultiplayerNetwork()` early-return-and-never-retry issue is real and
+verified, though, and is very likely the actual root cause worth fixing:
+call it again (or move its logic into `setupMultiplayerNetwork` triggered
+from `deployMatch`/`handleRemoteMatchStart`, not just the constructor) so
+`game.isMultiplayer`/`game.multiplayerMode` get set correctly once a session
+actually exists, rather than staying frozen at their pre-session state for
+the rest of the run.
+
+**Priority:** medium, upgraded in scope — this is no longer just a telemetry
+label bug but a possible dead PVP-gameplay-rules bug (4 call sites gated on
+a flag that may never flip true). **Risk:** low to fix (call an existing
+function from one or two more places), but changing when
+`isMultiplayer`/`multiplayerMode` become true needs a test pass against the
+four gated call sites before shipping, since they currently silently no-op.
 
 ## 4. Interact spam near the pit-fall death — silent failure
 

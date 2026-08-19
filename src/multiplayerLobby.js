@@ -267,6 +267,12 @@ export class MultiplayerLobby {
 
         if (typeof window !== 'undefined') {
             window.activeMultiplayerSession = this.activeMatch;
+            // ThreeGame's constructor calls setupMultiplayerNetwork() once, well
+            // before this modal is ever opened, so it always finds no session and
+            // never sets isMultiplayer/multiplayerMode -- those four PVP-gated
+            // call sites (threeGame.js:3936,4021,4046,7554) silently never fire.
+            // Re-run it now that a real session exists.
+            window.game?.setupMultiplayerNetwork?.();
         }
 
         // Notify socket peers if connected
@@ -302,6 +308,7 @@ export class MultiplayerLobby {
 
         if (typeof window !== 'undefined') {
             window.activeMultiplayerSession = this.activeMatch;
+            window.game?.setupMultiplayerNetwork?.();
         }
 
         this.closeModal();
