@@ -18145,16 +18145,40 @@ export class ThreeGame {
         flash.rotation.x = -Math.PI / 2;
         flash.userData = { isGlow: true };
         effect.add(flash);
+
+        // docs/log5-dynamic-light-shader-runaway-findings-2026-08-19.md: this used
+        // to also add a real THREE.PointLight per shot (removed after 90ms via
+        // setTimeout). Every unique combination of "which lights currently affect
+        // a given material" forces three.js to compile a brand new shader program
+        // (WebGLPrograms bakes light count/type into its program cache key), and
+        // since this fires on every single bullet, it was the single largest
+        // driver of renderer.info.programs growing without bound during combat --
+        // confirmed live via CPU profiling (64 programs at boot -> 213+ after 65s
+        // of ordinary play, 112 of them "physical"/lit-material variants differing
+        // only in light combination). A second, larger, additive-blended unlit
+        // circle gives a similar "flash lights up the area" look without ever
+        // touching the standard lighting model, so it can't grow the program
+        // cache at all. Both circles share updateTransientEffects()'s existing
+        // isGlow fade logic (src/threeGame.js:25861), no new update path needed.
+        const glow = new THREE.Mesh(
+            new THREE.CircleGeometry(isCryo ? 0.55 : 0.4, 10),
+            new THREE.MeshBasicMaterial({
+                color,
+                transparent: true,
+                opacity: 0.5,
+                depthWrite: false,
+                blending: THREE.AdditiveBlending
+            })
+        );
+        glow.rotation.x = -Math.PI / 2;
+        glow.userData = { isGlow: true };
+        effect.add(glow);
+
         effect.position.set(x, 0.42, z);
         effect.renderOrder = 31;
         effect.userData = { age: 0, duration: isCryo ? 0.16 : 0.09 };
         this.scene.add(effect);
         this.transientEffects.push(effect);
-
-        const light = new THREE.PointLight(color, isCryo ? 2.2 : 1.6, isCryo ? 4.5 : 3.0, 2);
-        light.position.set(x, 0.5, z);
-        this.scene.add(light);
-        setTimeout(() => this.scene?.remove(light), 90);
     }
 
     spawnProjectileImpactEffect(x, z) {
