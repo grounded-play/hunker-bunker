@@ -12655,8 +12655,11 @@ function finishBootDiagnostics() {
     // event (measured live both ways). Starting it only now, once the title
     // screen is already up and interactive, keeps it off the boot critical
     // path entirely; setupEnemy3dCosmeticOverlay's existing lazy-load path
-    // still covers anything not done in time.
-    preloadEnemy3dTemplates().catch(() => {});
+    // still covers anything not done in time. Passing window.game lets it
+    // also pre-warm each type's shader program (renderer.compileAsync), not
+    // just parse the model -- see the function's own comment for why that's
+    // a second, separate cost.
+    preloadEnemy3dTemplates(window.game).catch(() => {});
 }
 
 // Boot's observer stops at boot-ready, so nothing recorded *why* a frame

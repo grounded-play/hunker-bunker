@@ -48,6 +48,18 @@ const PRELOAD_TYPES = ['cybersnail', 'sporesnail', 'fungal_spore_vent', 'spore_m
 // model. Confirmed live via a session log: a bio-stalker.glb fetch finishing
 // in 4183ms lined up with a 4086ms main-thread freeze right after, mid-firefight.
 //
+// Parsing the GLB only gets the model into memory -- the WebGL shader program
+// for its material doesn't compile until the model is actually rendered for
+// the first time, which is a *separate* stall parsing never touched. Confirmed
+// live: even with the model preloaded below, a real spawn's first appearance
+// still cost ~9.4s of getProgramParameter self-time in a 5s combat profile
+// (docs/log2-ui-transitions-and-menu-isolation-plan-2026-08-19.md #7). Each
+// type below now also gets a throwaway visual built and run through
+// renderer.compileAsync() -- never added to the live scene graph, passed
+// directly as compileAsync's own scene-to-precompile argument with the real
+// game scene passed separately for lighting context, so nothing is visible or
+// touches gameplay state -- before moving to the next type.
+//
 // Fired from main.js as a background task once the title screen is already up
 // and interactive (see finishBootDiagnostics), never awaited by boot. A real
 // delay between models (not just a microtask yield -- tried that first, it
@@ -55,17 +67,31 @@ const PRELOAD_TYPES = ['cybersnail', 'sporesnail', 'fungal_spore_vent', 'spore_m
 // actual breathing room, at the cost of taking longer in wall-clock time to
 // finish. setupEnemy3dCosmeticOverlay's existing lazy-load path still covers
 // anything not done in time, and all boss types.
-export async function preloadEnemy3dTemplates() {
-    const urls = new Set(PRELOAD_TYPES.map((type) => MODEL_CONFIG[type]?.url).filter(Boolean));
-    // crawler falls back to this shared run-cycle when its GLB has no embedded
-    // clip (see createEnemy3dVisual) -- preload it too or crawler still stalls.
-    if (PRELOAD_TYPES.includes('crawler')) urls.add(LOCOMOTION_URL);
-    for (const url of urls) {
+export async function preloadEnemy3dTemplates(game = null) {
+    const canPrewarmShaders = Boolean(game?.renderer?.compileAsync && game?.camera && game?.scene);
+    for (const type of PRELOAD_TYPES) {
+        const url = MODEL_CONFIG[type]?.url;
         try {
-            await loadTemplate(url);
+            if (url) await loadTemplate(url);
+            // crawler falls back to this shared run-cycle when its GLB has no
+            // embedded clip (see createEnemy3dVisual) -- preload it too or
+            // crawler still stalls on its locomotion source, not just its mesh.
+            if (type === 'crawler') await loadTemplate(LOCOMOTION_URL);
         } catch (err) {
-            console.warn(`[enemy-3d-overlay] preload failed for ${url}`, err);
+            console.warn(`[enemy-3d-overlay] preload failed for ${type}`, err);
         }
+
+        if (canPrewarmShaders) {
+            try {
+                const visual = await createEnemy3dVisual(type);
+                if (visual?.root) {
+                    await game.renderer.compileAsync(visual.root, game.camera, game.scene);
+                }
+            } catch (err) {
+                console.warn(`[enemy-3d-overlay] shader prewarm failed for ${type}`, err);
+            }
+        }
+
         await new Promise((resolve) => setTimeout(resolve, 1800));
     }
 }
