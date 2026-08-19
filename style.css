@@ -463,14 +463,20 @@ body {
 
 /* --- Post-Death Curtain --- */
 /* Solid black, spans the whole death -> cinematic -> door-close ->
-   game-over -> MAIN MENU -> door-reopen sequence. Below .modal (100000) and
-   the door cluster (250000+, see below) so those two are the only things
-   ever drawn over it; above the 3D canvas/HUD so the live game never shows
-   through the gaps between those steps. */
+   game-over -> MAIN MENU -> door-reopen sequence. Kept BELOW the death
+   cinematic video/still overlay (.class-intro-overlay z-index 12000,
+   .cinematic-still-overlay 12010) -- originally shipped at 90000, which sat
+   above those and silently blacked out the death movie for its entire
+   runtime instead of just filling the gaps around it. 11000 still clears
+   every normal gameplay/HUD z-index (nothing else in the sheet sits between
+   10020 and 12000) so the frozen 3D world still never shows through, while
+   the cinematic now renders on top of it as intended. Still below .modal
+   (100000) and the door cluster (250000+, see below) so those two remain
+   the only things ever drawn over it. */
 #death-curtain {
   position: absolute;
   inset: 0;
-  z-index: 90000;
+  z-index: 11000;
   background: #000;
   opacity: 0;
   pointer-events: none;
