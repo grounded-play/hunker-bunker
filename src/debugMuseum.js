@@ -158,6 +158,16 @@ export async function openDebugMuseum(game) {
     group.name = 'debug-museum';
     game.scene.add(group);
 
+    // Teleport first, spawn after. This used to sit at the very end of the
+    // function, after ~76 sequential (unbatched, one-await-at-a-time) GLB
+    // loads across every category below -- confirmed live to take multiple
+    // minutes with zero visible progress, directly contradicting this
+    // function's own promise to let the player "walk down the hallway
+    // immediately." The player now appears in the corridor right away and
+    // watches pedestals fill in as each category's assets finish loading.
+    game.player.position.set(MUSEUM_ORIGIN.x - 4, 0, MUSEUM_ORIGIN.z);
+    if (typeof game.setGodMode === 'function') game.setGodMode(true);
+
     // Studio lighting for museum corridor
     const ambient = new THREE.AmbientLight(0xffffff, 1.4);
     group.add(ambient);
@@ -294,9 +304,6 @@ export async function openDebugMuseum(game) {
         const placement = { type, x, z: zPos, scale: 1, tiltX: 0, elevation: 0, isDisplayModel: true };
         return game.createScatterInstance(placement);
     });
-
-    // Teleport the player into the museum so they can walk down the hallway immediately.
-    game.player.position.set(MUSEUM_ORIGIN.x - 4, 0, MUSEUM_ORIGIN.z);
 
     console.log(`[debug-museum] opened: ${spawnedCount} objects spawned, ${skippedCount} skipped. Walk +X to tour every category.`);
     return true;

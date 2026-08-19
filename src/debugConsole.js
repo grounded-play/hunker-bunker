@@ -507,7 +507,16 @@ export class DebugLogger {
 
         // Command Input Listener
         this.inputEl.onkeydown = (e) => {
+            // Enter/ArrowUp/ArrowDown used to fall through to whatever else was
+            // listening for keydown -- including the game's own action-key
+            // handler, which doesn't check for focused input fields. Submitting
+            // a command with Enter (E/Enter is also the gameplay interact bind)
+            // could simultaneously trigger a real interact in the world behind
+            // the overlay; confirmed live as a cinematicLock getting set right
+            // after running a console command near the crash-site console.
             if (e.key === 'Enter') {
+                e.preventDefault();
+                e.stopPropagation();
                 const cmd = this.inputEl.value.trim();
                 if (cmd) {
                     this.executeCommand(cmd);
@@ -516,11 +525,15 @@ export class DebugLogger {
                     this.inputEl.value = '';
                 }
             } else if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                e.stopPropagation();
                 if (this.historyIndex > 0) {
                     this.historyIndex--;
                     this.inputEl.value = this.commandHistory[this.historyIndex] ?? '';
                 }
             } else if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                e.stopPropagation();
                 if (this.historyIndex < this.commandHistory.length - 1) {
                     this.historyIndex++;
                     this.inputEl.value = this.commandHistory[this.historyIndex] ?? '';
@@ -532,6 +545,12 @@ export class DebugLogger {
                 e.preventDefault();
                 e.stopPropagation();
                 this.toggle(false);
+            } else {
+                // Any other keystroke while typing (letters, digits, space, etc.)
+                // -- same leak, just less consequential per-keystroke than Enter.
+                // Stop it at the source rather than only guarding the keys that
+                // happened to cause a visible symptom.
+                e.stopPropagation();
             }
         };
 
@@ -807,6 +826,28 @@ export class DebugLogger {
                 } else {
                     this.warn('CMD', 'Museum module not loaded');
                 }
+                break;
+            }
+
+            case 'showroom': {
+                // The QUICK CHEATS "SHOWROOM" button has called executeCommand('showroom')
+                // since it was added, but no case existed for it -- it silently fell to the
+                // default `eval('showroom')` branch and just logged a ReferenceError.
+                const targetGame = game || win?.game;
+                if (!targetGame?.buildDebugShowroom || !targetGame?.teleportPlayerTo) {
+                    this.warn('CMD', 'Showroom module not loaded');
+                    break;
+                }
+                this.info('NAV', 'Opening 4-Wall Orientation Showroom at (9500, 9500)...');
+                targetGame.buildDebugShowroom().then((showroom) => {
+                    targetGame.setGodMode?.(true);
+                    const targetX = showroom?.spawnX ?? 9510;
+                    const targetZ = showroom?.spawnZ ?? 9510;
+                    targetGame.teleportPlayerTo(targetX, targetZ, { syncChunks: false, safeFloor: false });
+                    this.info('NAV', `Teleported to Showroom (${targetX.toFixed(1)}, ${targetZ.toFixed(1)})`);
+                }).catch((err) => {
+                    this.error('CMD', `Failed opening showroom: ${err?.message ?? err}`);
+                });
                 break;
             }
 

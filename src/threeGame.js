@@ -4463,6 +4463,18 @@ export class ThreeGame {
                 this.setKeyState(event.code, false);
                 return;
             }
+            // Never checked whether a text input (dev console, chat, settings
+            // field) currently has focus -- typing into any of them, or just
+            // submitting a command with Enter, also fired real gameplay actions
+            // underneath (Enter doubles as the interact bind). Confirmed live:
+            // running a debug-console teleport command triggered a real
+            // interact and, near the crash console, a cinematic lock that then
+            // fought the teleport for player position.
+            const focusedTag = document.activeElement?.tagName?.toLowerCase();
+            if (focusedTag === 'input' || focusedTag === 'textarea') {
+                this.setKeyState(event.code, false);
+                return;
+            }
             // Held keys generate browser auto-repeat keydown events (OS-rate, often
             // 20-50Hz, faster on some Windows configs) -- without this guard every
             // repeat re-ran the discrete action triggers below (dash/interact/
