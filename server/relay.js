@@ -339,14 +339,16 @@ export function attachRelay(server, { allowedOrigins = [] } = {}) {
             }
         });
 
-        // Co-Op Enemy Hit-Sync relay -- Sprint 24 Milestone A. Host-authoritative-
-        // style broadcast, not full server validation yet (see
-        // docs/sprint24-multiplayer-runtime-2026-08-19.md): the sender's own
-        // client already applied this damage locally when its projectile hit;
-        // this just tells other clients in the room to apply the identical
-        // damage to their own local copy of the same enemy (matched by type +
-        // position on the receiving end, since enemies don't yet have a
-        // cross-client-stable ID).
+        // Co-Op Enemy Hit-Sync relay -- Sprint 24 Milestone A item 5,
+        // host-authoritative for the first cut (see
+        // docs/sprint24-multiplayer-runtime-2026-08-19.md). The client-side
+        // gate now only lets the room's actual host emit this event directly
+        // (a non-host client's local hit is a candidate, reported via
+        // enemyHitReport below instead) -- so this broadcast is genuinely
+        // the host's canonical determination, not peer gossip. The relay
+        // itself still does not validate trajectory/range against enemy
+        // position -- that would need real server-side enemy-state tracking,
+        // out of scope for "don't attempt headless server simulation yet".
         socket.on('enemyDamage', (dmgData) => {
             if (!dmgData || typeof dmgData !== 'object') return;
             const x = sanitizeCoord(dmgData.x);
@@ -365,6 +367,37 @@ export function attachRelay(server, { allowedOrigins = [] } = {}) {
                     damage
                 });
             }
+        });
+
+        // Sprint 24 Milestone A item 5: a non-host client's candidate enemy
+        // hit, relayed privately to the room's host only (not broadcast) --
+        // the host resolves it (matches its own local copy of the enemy,
+        // applies damage, and broadcasts the canonical enemyDamage/enemyDamaged
+        // outcome above) rather than every client independently deciding
+        // enemy state for itself.
+        socket.on('enemyHitReport', (dmgData) => {
+            if (!dmgData || typeof dmgData !== 'object') return;
+            if (!player.roomCode) return;
+            const x = sanitizeCoord(dmgData.x);
+            const z = sanitizeCoord(dmgData.z);
+            if (x === null || z === null) return;
+            const damage = typeof dmgData.damage === 'number' ? Math.max(0, Math.min(999, dmgData.damage)) : 0;
+            if (damage <= 0) return;
+            const enemyType = sanitizeString(dmgData.enemyType, 32, 'unknown');
+
+            const roomSocketIds = rooms.get(player.roomCode);
+            const hostId = roomSocketIds
+                ? [...roomSocketIds].find((id) => players.get(id)?.isHost)
+                : null;
+            if (!hostId || hostId === socket.id) return;
+
+            io.to(hostId).emit('enemyHitReported', {
+                reporterId: socket.id,
+                enemyType,
+                x,
+                z,
+                damage
+            });
         });
 
         // Sprint 24 Milestone A: server-authoritative PvP damage
