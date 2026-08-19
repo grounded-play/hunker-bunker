@@ -125,22 +125,59 @@ a fifth synthetic guess.
 fires) — separate from the gameplay-time cost this session already fixed.
 Not yet profiled to a specific function.
 
-**Next step:** same CDP `Profiler.start`/`stop` technique, wrapped around a
-fresh `page.goto` + boot sequence (no reload mid-trace, since `autoStop`
-matters here — want the full boot from navigation to `boot-ready`). Likely
-candidates going in: WebGL context/shader program creation
-(`renderer.compile`-equivalent work), the "Repacking sprite atlas: ENGINEER"
-step logged right before the long-task burst starts (id 10, elapsedMs 609,
-`LOAD` category), or `generateHeightmapGrid`/`buildChunk` for the initial
-crash-site chunk mount. Whichever shows up as the 949ms sample gets a
-one-line writeup here before any fix is attempted — this item hasn't earned
-a hypothesis yet, unlike #1.
+**Root cause found and confirmed via live CPU profile** (CDP
+`Profiler.start`/`stop` across a full `page.reload()` through to
+`boot-ready`/splash). The dominant cost, by a wide margin, is
+**`src/textureKeying.js`'s chroma-key pixel processing**:
+`applyBlackChromaKey`/`applyGreenChromaKey`/`isBlackChromaPixel`/
+`isGreenChromaPixel`/their internal flood-fill `enqueue` closures, plus the
+`getImageData`/`drawImage`/`putImageData` canvas calls around them in
+`processImage()` (`src/threeGame.js:5658`). Summed self-time across these
+functions in the captured profile: **~2.6 seconds** — matching the log's
+2.65s figure almost exactly. `getProgramInfoLog` (WebGL shader
+compile/link, ~253ms) is a distant second contributor.
+
+**Why it's expensive:** `applyBlackChromaKey`/`applyGreenChromaKey`
+(`src/textureKeying.js:22-146`) run a flood-fill (`Uint8Array` visited set +
+`Int32Array` queue, BFS from the image edges) followed by a full
+width×height pass, entirely in plain JS on the main thread, once per sprite
+image that needs its chroma background keyed out. `loadKeyedSpriteTexture`
+(`src/threeGame.js:5622`) does cache the *result* — but only in an
+in-memory `Map` (`keyedSpriteTextureCache`) that's empty at the start of
+every single page load. Nothing persists this across sessions, so every
+boot re-runs the exact same pixel-by-pixel work on the exact same static
+PNG files.
+
+**Proposed fixes, not yet implemented (this is a real optimization, not a
+one-line change — needs its own scoped pass):**
+1. **Persist the keyed result across sessions** — cache the post-chroma-key
+   `ImageData`/canvas (or the decoded bitmap) in IndexedDB keyed by
+   asset path + a content hash/version, so only the *first-ever* boot on a
+   given browser profile pays this cost. Biggest win, moderate complexity
+   (async storage API, cache invalidation when source PNGs change).
+2. **Pre-bake chroma-keyed assets at build time** — if the source PNGs are
+   static repo assets (not runtime-generated), run the same
+   `applyBlackChromaKey`/`applyGreenChromaKey` logic once in a build script
+   and ship pre-keyed PNGs (already-transparent) instead of doing it in the
+   browser at all. Best runtime cost (zero), but needs confirming which
+   sprite paths are static vs actually dynamic/generated per-run first.
+3. **Move the pixel loop off the main thread** — a Web Worker (transferring
+   the `ImageData` buffer) would keep boot from stalling even without
+   caching. Doesn't reduce total CPU work, just stops it from blocking
+   rendering/input, similar in spirit to the enemy-GLB background-preload
+   fix already shipped this session.
+
+Option 1 or 2 is the real fix (eliminates the repeated work, not just moves
+it); option 3 is a fallback if the assets genuinely must be keyed live every
+time (e.g. some overlay is truly runtime-generated).
 
 **Priority:** medium — one-time cost, paid once per session rather than
-repeatedly, so lower urgency than #1 despite the large single number.
-**Risk:** unknown until profiled; boot-critical-path changes need the same
-care taken with the enemy-GLB preload fix (verify `page.goto`'s `load` event
-and boot-to-`armory` timing don't regress before shipping).
+repeatedly, so lower urgency than #1's per-run drip despite the large
+single number; but ~2.6s wasted identically on every single boot, forever,
+is a real win once fixed. **Risk:** low for option 3 (pure relocation, same
+pattern already validated this session); moderate for options 1-2 (new
+caching/build-step surface area) — needs its own test pass before shipping,
+not a quick patch.
 
 ## 3. Multiplayer mode mismatch (PVP selected, telemetry says coop) — FIXED
 
@@ -330,13 +367,19 @@ worth the risk at all given it's confirmed invisible to players.
    ever shows up in local dev. Rename is optional dev-loop tidiness, not a
    player-facing fix, and is a user decision given the shared working
    directory risk.
-4. **#1 sustained drip — still open, hardest remaining item.** Four
+4. **#2 boot overhead — root cause found, fix not yet implemented.**
+   Confirmed via live CPU profile: ~2.6s of every single boot goes into
+   `src/textureKeying.js`'s chroma-key pixel processing, re-run from scratch
+   every session because the only cache is in-memory and empty on every page
+   load. Three fix options proposed in section 2 (persist the keyed result,
+   pre-bake at build time, or move it off the main thread) — the first two
+   are the real fix but need their own scoped implementation pass, not a
+   quick patch.
+5. **#1 sustained drip — still open, hardest remaining item.** Four
    independent live-reproduction attempts (bare-stub enemies, full real
    frame loop, real 3D-enemy CPU profile, 68s continuous-play CPU profile)
    all failed to reproduce it. This needs a real trace captured from an
    actual future occurrence rather than more synthetic guessing — see the
    "Recommended next step" in section 1.
-5. **#2 boot overhead — still open**, independent of #1, needs its own CPU
-   profile of the boot sequence specifically.
 6. **#4 interact silent failure — still open**, needs the death-position
    chunk cross-reference to know if there's a real bug here at all.
