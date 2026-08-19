@@ -4079,6 +4079,7 @@ export class ThreeGame {
             vx: dirX * PROJECTILE_SPEED,
             vz: dirZ * PROJECTILE_SPEED,
             isEnemy: isPvP,
+            attackerId: isPvP ? data.playerId : null,
             options: {
                 color: data.color ?? (isPvP ? 0xff4a4a : 0x2ec4b6),
                 glowColor: isPvP ? 0xff0000 : 0x00ffff
@@ -5061,8 +5062,7 @@ export class ThreeGame {
                 originZ: this.player.position.z,
                 dirX: normX,
                 dirZ: normZ,
-                weaponType: this.currentWeaponType || 'plasma_carbine',
-                damage: this.playerDamage || 10
+                weaponType: this.currentWeaponType || 'plasma_carbine'
             });
         }
 
@@ -18144,6 +18144,7 @@ export class ThreeGame {
         damage = PROJECTILE_DAMAGE,
         radius = PROJECTILE_RADIUS,
         isEnemy = false,
+        attackerId = null,
         options = {}
     }) {
         const group = new THREE.Group();
@@ -18196,6 +18197,7 @@ export class ThreeGame {
             damage,
             radius,
             isEnemy,
+            attackerId,
             pierceRemaining: (!isEnemy && this.loadoutMods?.kineticPierceBonus) ? this.loadoutMods.kineticPierceBonus : 0
         });
     }
@@ -18666,7 +18668,24 @@ export class ThreeGame {
 
             if (projectile.isEnemy) {
                 if (this.checkProjectilePlayerHit(projectile)) {
-                    this.takeDamage(projectile.damage, 'enemy-projectile', projectile.mesh.position.x, projectile.mesh.position.z);
+                    if (projectile.attackerId && this.isMultiplayer && this.netSocket) {
+                        // Sprint 24 Milestone A: server-authoritative PvP
+                        // damage (docs/sprint24-multiplayer-runtime-2026-08-19.md).
+                        // The local (victim) client no longer decides its own
+                        // outcome -- it reports the hit and who allegedly
+                        // dealt it; the server range/rate-checks against the
+                        // attacker's own known position and is the only
+                        // party that calls takeDamage, via the playerDamaged
+                        // broadcast every client (including this one)
+                        // receives back through handleRemotePlayerDamaged.
+                        this.netSocket.emit('weaponHit', {
+                            attackerId: projectile.attackerId,
+                            originX: projectile.mesh.position.x,
+                            originZ: projectile.mesh.position.z
+                        });
+                    } else {
+                        this.takeDamage(projectile.damage, 'enemy-projectile', projectile.mesh.position.x, projectile.mesh.position.z);
+                    }
                     this.spawnProjectileImpactEffect(projectile.mesh.position.x, projectile.mesh.position.z);
                     toRemove.add(projectile);
                     continue;
