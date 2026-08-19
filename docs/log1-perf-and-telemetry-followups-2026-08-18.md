@@ -33,34 +33,90 @@ stretch specifically.
   in the original investigation: no new `Chunk generated` entries, no FETCH
   entries, in this window).
 
-**Leading unconfirmed hypothesis:** the synthetic enemies used above were
-bare data stubs with no `userData.enemy3dVisual` attached, so
-`updateEnemy3dVisual()` (src/threeGame.js:25428-25430, calls into
-`src/enemy3dOverlay.js`'s `AnimationMixer.update()` + skinned-mesh work) never
-actually ran in that test. Multiple *real* enemies with loaded, animating
-GLTF rigs — skinning + mixer update, once per enemy per frame — is the one
-per-frame-scaling system this investigation hasn't load-tested yet, and it's
-consistent with the timing: the drip's onset (~66.7s) lands right after the
-`mycelium_stalker` (bio-stalker.glb) finished its first lazy-load, i.e. right
-when it and any other nearby enemies would have started rendering with full
-3D visuals instead of flat sprites.
+**Enemy-3D-visual hypothesis also ruled out**, now via a real CPU profile
+(CDP `Profiler.start`/`stop`, sampled at 100us) captured against a live
+gameplay session with 23 *real* enemies (spawned through the game's actual
+chunk-mount path, not fake stubs) that already had loaded 3D visuals
+(`userData.enemy3dVisual` set, actively running `AnimationMixer.update()` +
+skinning every frame via `updateEnemy3dVisual`). Over a 4-second capture,
+the profiler was 94% idle; `updateEnemy3dVisual`/`AnimationMixer.update`
+don't even appear in the top 20 functions by self-time. This is the third
+independent live test (bare-stub `updateScatter` call, full real-frame RAF
+loop, now a real sampled CPU profile with genuine loaded 3D enemies) to
+show no meaningful per-enemy cost. Enemy count/AI/3D-rendering is no longer
+a credible lead for this drip.
 
-**Next step:** reproduce with the game's real spawn path (not fake stubs) —
-walk/teleport the player into a chunk with several live snails/crawlers,
-wait for their 3D overlays to finish loading, then run the same CDP
-`Profiler.start`/`stop` capture. If `AnimationMixer.update` or the skinning
-matrix work shows up as the hot path, the fix is a distance/count-based
-throttle (e.g. mixer update only for enemies within N units or the M
-nearest, matching the pattern `MAX_ACTIVE_PROJECTILES` already established
-for projectiles). If it doesn't show up, keep going down the candidate list
-(shadow map re-render cost given the PCFSoftShadowMap deprecation warning in
-this same log; `scanDangerHoles`' radar-reveal animation, timing permitting).
+**Still unexplained.** What's ruled out so far: enemy AI/behavior loop,
+interact handlers, chunk streaming (no `Chunk generated` entries in the
+drip window), the projectile cap and GLB-parse freezes already fixed, and
+now enemy 3D-visual animation/skinning at realistic and above-realistic
+enemy counts. Remaining candidates, in the order worth checking next:
+- **Shadow map re-rendering** — this same log has a
+  `THREE.WebGLShadowMap: PCFSoftShadowMap has been deprecated` warning
+  (id 55), meaning shadow maps are active; re-rendering the scene from each
+  shadow-casting light's perspective scales with both light count and
+  shadow-casting mesh count and wasn't included in any of the three tests
+  above (all used a fixed/default light rig). Worth a CPU profile captured
+  specifically while positioned so many enemies + player + any dynamic
+  lights are all shadow-casting simultaneously.
+- **GC pauses from accumulated garbage over the run** — none of the three
+  tests ran for a comparable wall-clock duration to the real session's ~77
+  seconds of pre-death gameplay; a slow leak (retained references, growing
+  arrays never trimmed) could produce GC pressure that only shows up after
+  a minute-plus of continuous play, which no test here has actually done.
+  Worth a profile that plays continuously for 60-90s rather than a few
+  seconds of synthetic setup.
+- **`scanDangerHoles`' radar-reveal animation** — not yet timed out as a
+  possibility; the one radar-scan press in the log (elapsedMs 47006) is
+  ~20s before the drip starts, which argues against it, but the growing-
+  radius animation's actual duration hasn't been checked against that gap.
+
+**Update: the 60-90s continuous-play profile was also run, and also came up
+empty.** Captured a real CDP CPU profile over a full 68-second simulated
+session (continuous movement + randomized firing + randomized interact
+presses, texturally matching the real log rather than idle) against the
+live dev build. Result: 96.5% idle, garbage collector time totaled 29ms
+across the whole 68s (not a leak), and no function came anywhere near a
+50ms+ self-time bucket. This rules out GC pressure from this specific
+synthetic load as well.
+
+**Status after four independent live-reproduction attempts (bare-stub
+`updateScatter`, full real-frame RAF loop, real-3D-enemy short CPU profile,
+68s continuous-play CPU profile) — none reproduce the drip.** This has
+stopped being a "try the next hypothesis" problem and become a "the
+reproduction itself is missing something real about that session" problem.
+Candidates not yet tried, because they can't be synthesized the same way:
+- **Shadow map cost** — still untested (see above); needs a scene with
+  actual shadow-casting geometry density matching a real explored area, not
+  a freshly-booted default scene.
+- **Platform/driver difference** — the original log's `userAgent` is
+  Windows Chrome 151; all reproduction here ran on headless Linux Chrome via
+  Playwright. A GPU/driver-specific cost (e.g. real shadow map compilation,
+  texture upload stalls) wouldn't show up in this environment at all.
+- **Genuine multi-minute session state** — the real run was 92s total with
+  ~77s of gameplay before death; even the 68s synthetic test kept a mostly
+  static enemy/chunk population instead of the organic growth of a real
+  played run (more chunks discovered over time, more scatter sprites
+  accumulated, more destroyed-wall/hole state tracked).
+
+**Recommended next step, given reproduction has failed four times:** stop
+guessing and capture a **real trace from an actual play session** next time
+this happens — either ask for a fresh session log with the gameplay long-task
+observer active (already wired, see `startGameplayLongTaskDiagnostics` in
+`main.js`, which is exactly what produced the data this whole investigation
+is based on) alongside a browser-side CPU profile taken during that same
+real session (Chrome DevTools' Performance panel, manually, since headless
+reproduction isn't surfacing it), or add a lightweight production-safe
+sampling profiler that activates automatically once several long tasks fire
+in a short window, so the next real occurrence captures its own call stack
+without needing a human to catch it live.
 
 **Priority:** high — this is the actual "lag" the player feels sustained for
 close to 20% of a 92-second run, distinct from the fire-burst and cold-load
-freezes already fixed. **Risk:** low to implement once the hot path is
-identified (same throttle/cap pattern used for projectiles); the remaining
-work is almost entirely diagnostic.
+freezes already fixed. **Risk/effort:** significant remaining diagnostic
+cost; four rounds of live reproduction have not found it, so the highest-
+value next step is capturing real data from the next occurrence rather than
+a fifth synthetic guess.
 
 ## 2. Boot overhead (2.65s across 28 long tasks before title screen, incl. one 949ms task)
 
@@ -198,22 +254,27 @@ existing `playThrottledUiError` pattern already used elsewhere in
 the chunk cross-reference finds a genuine interactable in range.
 **Risk:** low.
 
-## 5. `totalPickups` stayed 0 despite the crate dropping ammo + health
+## 5. `totalPickups` stayed 0 despite the crate dropping ammo + health — CLOSED, not a bug
 
-**Confirmed:** `destructible-prop-broken` (id 137, elapsedMs 54052) reported
-drops `["ammo", "health"]` at `(9, 2)`; final `runStats.totalPickups` is 0.
+**Confirmed via code reading — this was a misread of the field, not a bug.**
+`src/threeGame.js:17451-17456` (`getRunStats()`):
 
-**Assessment:** very likely benign — the player died at `(0.9, -18.0)` roughly
-20 world-units away and ~23 seconds later, consistent with simply never
-walking back over the drop. Not treating this as a bug without evidence.
+```js
+const bankState = this.bank.getState();
+const totalBanked = (bankState.med ?? 0) + (bankState.tech ?? 0) + (bankState.coin ?? 0);
+return { ..., totalPickups: totalBanked, ... };
+```
 
-**Next step:** a quick live check only — spawn a destructible prop, break it,
-confirm the resulting pickup meshes exist in the world and increment
-`totalPickups` when the player walks over them (existing pickup-radius /
-magnet logic, not new code). If that works as expected, close this item with
-no code change. Lowest priority of the six; do last.
+`totalPickups` is actually "total MED/TECH/COIN **banked** at the bunker,"
+not "items picked up in the world." Ammo and health crate drops are
+consumables, not bank-tracked resources, so they were never going to move
+this counter even if the player had walked over them. The player in this
+log died mid-run without ever returning to deposit anything (matches
+`runDepositedResources: {tech: 0, coin: 0, med: 0}` in the same log), so
+`totalPickups: 0` is exactly correct, expected behavior — closing with no
+code change and no further live verification needed.
 
-**Priority:** low. **Risk:** none (verification only, no fix expected).
+**Priority:** none — closed. **Risk:** none.
 
 ## 6. "INITIALIZING SYSTEMS SPRIT-25" boot text typo
 
@@ -226,31 +287,56 @@ the branch name itself (should be `dev/sprint-25`), not a string-handling bug
 in the display code. The display code is doing exactly what it's supposed to:
 show the real branch name.
 
-**Next step:** this is a git-ref rename, not a code change, and this repo has
-had a concurrent agent/session actively working the same working directory
-all session — renaming a branch out from under it is exactly the kind of
-shared-state action this session's established caution rules out doing
-unilaterally. **Flagging to the user for a decision, not fixing directly:**
-rename `dev/sprit-25` → `dev/sprint-25` (and update any open PR base/head
-refs) when it's safe to do so without disrupting concurrent work, or leave
-it if the branch is short-lived anyway. Confirm first whether this label
-ever reaches a real player-facing build — `HB_BUILD_BRANCH` is only set
-explicitly in CI for tagged/release builds per `.github/workflows/`, so this
-may already be dev/preview-only and not worth spending a branch rename on.
+**Confirmed this never reaches real players.** Checked
+`.github/workflows/steam-build.yml:58`:
+`HB_BUILD_BRANCH: ${{ github.head_ref || github.ref_name }}`. The only
+workflow runs that actually upload to Steam are tag-triggered (`v*`) or
+manual `workflow_dispatch` (per the same workflow's trigger comment,
+verified earlier in this investigation for the projectile-cap PR). For a
+tag-triggered run, `github.ref_name` is the version tag (e.g. `v1.2.3`), not
+a branch name at all — so a real tagged release build's loading screen would
+read "INITIALIZING SYSTEMS V1.2.3", never a branch name, typo'd or not.
+Every non-tag CI run (including this typo'd `dev/sprit-25` branch's own push
+builds) only packages and proves buildability; nothing about that artifact
+reaches a player. This closes as **confirmed non-issue for shipped
+builds** — dev/preview-loop cosmetic noise only.
 
-**Priority:** cosmetic, dev-only unless proven otherwise. **Risk:** the
+**Next step, if it's still worth doing:** this is a git-ref rename, not a
+code change, and this repo has had a concurrent agent/session actively
+working the same working directory all session — renaming a branch out
+from under it is exactly the kind of shared-state action this session's
+established caution rules out doing unilaterally. Flagging to the user:
+rename `dev/sprit-25` → `dev/sprint-25` (and update any open PR base/head
+refs) when it's safe to do so without disrupting concurrent work, purely
+for dev-loop tidiness — not because it affects anything players see.
+
+**Priority:** cosmetic, dev-only, confirmed not shipped. **Risk:** the
 branch rename itself carries real risk (shared working directory, concurrent
-agent) — explicitly not doing it without user go-ahead.
+agent) — explicitly not doing it without user go-ahead, and arguably not
+worth the risk at all given it's confirmed invisible to players.
 
 ## Summary / execution order
 
-1. **#1 sustained drip** — highest value, needs a real-enemy CPU profile to
-   convert the leading hypothesis into a confirmed fix.
-2. **#3 multiplayer mode mismatch** — cheap to confirm/fix once the DOM
-   structure around `.net-mode-card` is checked.
-3. **#2 boot overhead** — needs its own CPU profile; independent of #1.
-4. **#4 interact silent failure** — needs the death-position chunk
-   cross-reference before it's clear whether there's a bug to fix at all.
-5. **#5 totalPickups** — quick verification, expected to close with no
-   change.
-6. **#6 branch typo** — no code fix; needs a user decision on the rename.
+1. **#3 multiplayer mode mismatch — FIXED.** `setupMultiplayerNetwork()` now
+   re-runs from `deployMatch()`/`handleRemoteMatchStart()`; verified live
+   that `game.isMultiplayer`/`game.multiplayerMode` correctly flip on
+   deploy instead of staying `undefined` all session. Shipped in
+   commit `1f22fcc`.
+2. **#5 totalPickups — CLOSED, not a bug.** The field tracks banked
+   resources, not world pickups; 0 is correct for a run that never returned
+   to deposit anything.
+3. **#6 branch typo — CLOSED for shipped builds.** Confirmed tagged Steam
+   releases get the version tag as the label, never a branch name; this only
+   ever shows up in local dev. Rename is optional dev-loop tidiness, not a
+   player-facing fix, and is a user decision given the shared working
+   directory risk.
+4. **#1 sustained drip — still open, hardest remaining item.** Four
+   independent live-reproduction attempts (bare-stub enemies, full real
+   frame loop, real 3D-enemy CPU profile, 68s continuous-play CPU profile)
+   all failed to reproduce it. This needs a real trace captured from an
+   actual future occurrence rather than more synthetic guessing — see the
+   "Recommended next step" in section 1.
+5. **#2 boot overhead — still open**, independent of #1, needs its own CPU
+   profile of the boot sequence specifically.
+6. **#4 interact silent failure — still open**, needs the death-position
+   chunk cross-reference to know if there's a real bug here at all.
