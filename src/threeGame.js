@@ -1379,6 +1379,19 @@ export class ThreeGame {
         this.loadingPaused = false;
 
         this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+        // Three.js's default (true) synchronously calls gl.getShaderInfoLog()/
+        // getProgramInfoLog() after every shader program compile+link -- a
+        // driver round-trip three.js's own docs call out as a real
+        // performance cost, meant for development only. Confirmed live via a
+        // CPU profile during real exploration (new chunks -> new landform/
+        // material combinations -> fresh shader programs): getProgramInfoLog
+        // and getShaderInfoLog alone accounted for ~19s of a ~30s profile,
+        // matching two independent real session logs' pattern of recurring,
+        // worsening long-task freezes with no other explanation
+        // (docs/log1-perf-and-telemetry-followups-2026-08-18.md #1). This
+        // cost was invisible to every earlier reproduction attempt because
+        // repeated testing in the same tab reused already-compiled programs.
+        this.renderer.debug.checkShaderErrors = false;
         this.renderer.setPixelRatio(this.menuPixelRatio);
         this.renderer.shadowMap.enabled = false;
         this.renderer.shadowMap.type = THREE.PCFShadowMap;

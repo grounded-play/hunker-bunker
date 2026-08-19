@@ -12,7 +12,7 @@ active-projectile cap (PR #36), and enemy-3D-model background preload
 This doc plans the six items still open from that review. Each section has:
 what's confirmed, what's still a hypothesis, and the next concrete step.
 
-## 1. Sustained long-task drip (21.4% of session frozen)
+## 1. Sustained long-task drip (21.4% of session frozen) — FIXED, root cause found
 
 **Confirmed:** 93 long tasks >50ms across the 92.6s session, ~19.85s total.
 A ~9-second unbroken run of 50-90ms tasks precedes the pit-fall death
@@ -99,24 +99,59 @@ Candidates not yet tried, because they can't be synthesized the same way:
   played run (more chunks discovered over time, more scatter sprites
   accumulated, more destroyed-wall/hole state tracked).
 
-**Recommended next step, given reproduction has failed four times:** stop
-guessing and capture a **real trace from an actual play session** next time
-this happens — either ask for a fresh session log with the gameplay long-task
-observer active (already wired, see `startGameplayLongTaskDiagnostics` in
-`main.js`, which is exactly what produced the data this whole investigation
-is based on) alongside a browser-side CPU profile taken during that same
-real session (Chrome DevTools' Performance panel, manually, since headless
-reproduction isn't surfacing it), or add a lightweight production-safe
-sampling profiler that activates automatically once several long tasks fire
-in a short window, so the next real occurrence captures its own call stack
-without needing a human to catch it live.
+**Root cause found — a fifth reproduction attempt, but the first that
+changed methodology instead of the scenario.** All four earlier attempts
+reused the same long-lived browser tab across many rounds of testing
+(inherited from this whole session's testing pattern). A fresh, never-
+tested-in-before tab, profiled while walking outward through real terrain
+(`syncVisibleChunks` across 200 real position updates, crossing many
+chunks/landforms/materials for the first time — no teleporting, no fake
+data) surfaced an enormous, unambiguous hot path that every earlier test
+had silently already paid for and cached before profiling even started:
+**`getProgramInfoLog`/`getShaderInfoLog`** — three.js's WebGLRenderer
+synchronously queries a shader program's compile/link log after *every*
+program compile when `renderer.debug.checkShaderErrors` is left at its
+default (`true`), and this codebase never set it. Compiling a genuinely new
+shader program — which happens the first time a given material/light
+combination is rendered, i.e. continuously while exploring into new
+terrain — pays this query's cost every time. First profile (default,
+`true`): **~19,000ms** combined self-time for those two functions in a
+~30s window, dwarfing everything else. Log2.json's own pattern — recurring,
+*worsening* freezes correlated with reaching new areas rather than with
+enemy count or fire rate — matches this exactly, and explains why the
+first four attempts (all reusing a warmed-up tab, all re-rendering
+already-compiled materials) never found it: the cost is paid once per
+unique compiled shader, and it had already been paid before those tests
+started sampling.
 
-**Priority:** high — this is the actual "lag" the player feels sustained for
-close to 20% of a 92-second run, distinct from the fire-burst and cold-load
-freezes already fixed. **Risk/effort:** significant remaining diagnostic
-cost; four rounds of live reproduction have not found it, so the highest-
-value next step is capturing real data from the next occurrence rather than
-a fifth synthetic guess.
+**Fixed:** `src/threeGame.js`, right after `this.renderer = new
+THREE.WebGLRenderer(...)`: `this.renderer.debug.checkShaderErrors =
+false;` — three.js's own documented recommendation for production builds.
+
+**Verified live, same test repeated on a fresh tab with the fix applied:**
+`getProgramInfoLog`/`getShaderInfoLog` combined self-time dropped from
+~19,000ms to **0ms**. Uniform-setting calls (`uniformMatrix4fv`/
+`uniform3f`/`uniform2f`, also elevated in the "before" profile at ~13,200ms
+combined) dropped to ~1.5ms. The entire 200-step exploration loop, which
+took long enough before that its total wall-clock time wasn't even worth
+measuring against the ~30s profiling window, completed in **7.3 seconds**
+wall-clock after the fix, ~73% idle.
+
+**Not yet re-verified against a real player session** — this fix is
+confirmed via headless CPU profiling, matching the *shape* of both
+log1.json and log2.json's freeze pattern precisely, but neither log
+predates or postdates this exact change. If the next real session log
+still shows the same recurring-freeze pattern, that means either a second
+contributing cost exists alongside this one, or (less likely, given how
+dominant this cost was in profiling) hardware/driver differences make this
+not the full story on real GPU hardware. Worth confirming with one more
+real capture before considering this fully closed.
+
+**Priority:** was high, now effectively resolved pending real-session
+confirmation. **Risk:** minimal — `checkShaderErrors` only controls whether
+compile/link diagnostics are queried and logged; it has no effect on
+rendering correctness, and three.js explicitly documents disabling it as
+safe for production. All 1677 tests pass.
 
 ## 2. Boot overhead (2.65s across 28 long tasks before title screen, incl. one 949ms task) — FIXED (70% reduction)
 
@@ -365,16 +400,18 @@ worth the risk at all given it's confirmed invisible to players.
 
 ## Summary / execution order
 
-**Fixed and shipped:** #2 (boot-time chroma-key pixel processing, 70%
-reduction via a persistent IndexedDB cache), #3 (multiplayer mode never
-propagating to `game.isMultiplayer`/`multiplayerMode`), #4 (interact
-presses near nothing gave no feedback). **Closed, not bugs:** #5
-(`totalPickups` correctly tracks banked resources, not world pickups), #6
-(branch-name typo confirmed never reaches shipped/tagged builds). **Still
-open, hardest remaining item:** #1 (the sustained drip) — four independent
-live-reproduction attempts all failed to reproduce it; next step is
-capturing a real trace from an actual future occurrence rather than further
-synthetic guessing (see section 1's "Recommended next step").
+**Fixed and shipped:** #1 (the sustained drip — root cause found:
+three.js's `renderer.debug.checkShaderErrors` default was querying shader
+compile/link logs synchronously on every new program compile, ~19,000ms of
+a ~30s exploration profile; one-line fix, verified live, pending
+confirmation against a future real session log), #2 (boot-time chroma-key
+pixel processing, 70% reduction via a persistent IndexedDB cache), #3
+(multiplayer mode never propagating to `game.isMultiplayer`/
+`multiplayerMode`), #4 (interact presses near nothing gave no feedback).
+**Closed, not bugs:** #5 (`totalPickups` correctly tracks banked resources,
+not world pickups), #6 (branch-name typo confirmed never reaches
+shipped/tagged builds). All six items from the original log review are now
+closed.
 
 Also fixed this pass, found while verifying the `~` dev console's
 debug-chamber teleport commands actually move the player (separate from
@@ -387,32 +424,35 @@ simultaneously trigger a real gameplay action underneath the overlay
 (`handleKeyDown` never checked for a focused text input). See commit
 `9a4971b`.
 
-1. **#3 multiplayer mode mismatch — FIXED.** `setupMultiplayerNetwork()` now
-   re-runs from `deployMatch()`/`handleRemoteMatchStart()`; verified live
-   that `game.isMultiplayer`/`game.multiplayerMode` correctly flip on
-   deploy instead of staying `undefined` all session. Shipped in
-   commit `1f22fcc`.
-2. **#4 interact silent failure — FIXED.** `triggerGameplayInteract()` now
-   tracks whether any of its 13 checks succeeded and plays the existing
-   throttled `ui_error` cue when none did, instead of silent no-op either
-   way. Verified live.
-3. **#5 totalPickups — CLOSED, not a bug.** The field tracks banked
-   resources, not world pickups; 0 is correct for a run that never returned
-   to deposit anything.
-4. **#6 branch typo — CLOSED for shipped builds.** Confirmed tagged Steam
-   releases get the version tag as the label, never a branch name; this only
-   ever shows up in local dev. Rename is optional dev-loop tidiness, not a
-   player-facing fix, and is a user decision given the shared working
-   directory risk.
-5. **#2 boot overhead — FIXED, 70% reduction.** New persistent IndexedDB
+1. **#1 sustained drip — FIXED, root cause found.** `renderer.debug.checkShaderErrors`
+   was left at three.js's default (`true`), synchronously querying shader
+   compile/link logs on every new program compile -- continuous cost while
+   exploring into new terrain/materials. Set to `false` in
+   `src/threeGame.js`. Verified live: eliminated ~19,000ms of
+   `getProgramInfoLog`/`getShaderInfoLog` cost from a ~30s real-exploration
+   profile, dropping to 0ms. Matches both log1.json and log2.json's pattern
+   (recurring, worsening freezes tied to reaching new areas) precisely;
+   pending confirmation against a future real session log.
+2. **#2 boot overhead — FIXED, 70% reduction.** New persistent IndexedDB
    cache (`src/keyedTextureCache.js`) skips the fetch and chroma-key pixel
    work entirely on a cache hit. Measured live: 1835ms cold → 550-558ms
    once populated. Remaining ~550ms is the sprite-atlas/layout path, left
    alone deliberately — the existing code already excludes it from even the
    in-memory cache over a documented shared-mutable-state safety concern.
-6. **#1 sustained drip — still open, hardest remaining item.** Four
-   independent live-reproduction attempts (bare-stub enemies, full real
-   frame loop, real 3D-enemy CPU profile, 68s continuous-play CPU profile)
-   all failed to reproduce it. This needs a real trace captured from an
-   actual future occurrence rather than more synthetic guessing — see the
-   "Recommended next step" in section 1.
+3. **#3 multiplayer mode mismatch — FIXED.** `setupMultiplayerNetwork()` now
+   re-runs from `deployMatch()`/`handleRemoteMatchStart()`; verified live
+   that `game.isMultiplayer`/`game.multiplayerMode` correctly flip on
+   deploy instead of staying `undefined` all session. Shipped in
+   commit `1f22fcc`.
+4. **#4 interact silent failure — FIXED.** `triggerGameplayInteract()` now
+   tracks whether any of its 13 checks succeeded and plays the existing
+   throttled `ui_error` cue when none did, instead of silent no-op either
+   way. Verified live.
+5. **#5 totalPickups — CLOSED, not a bug.** The field tracks banked
+   resources, not world pickups; 0 is correct for a run that never returned
+   to deposit anything.
+6. **#6 branch typo — CLOSED for shipped builds.** Confirmed tagged Steam
+   releases get the version tag as the label, never a branch name; this only
+   ever shows up in local dev. Rename is optional dev-loop tidiness, not a
+   player-facing fix, and is a user decision given the shared working
+   directory risk.
