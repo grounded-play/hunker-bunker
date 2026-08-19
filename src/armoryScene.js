@@ -99,8 +99,10 @@ export async function createArmoryScene(canvas) {
     scene.add(fillLight);
 
     const benchSpot = new THREE.SpotLight(0xfff0dd, 4.5, 8.0, Math.PI / 4, 0.4, 1.2);
-    benchSpot.position.set(1.2, 3.2, 1.5);
-    benchSpot.target.position.set(1.1, 1.15, 0);
+    benchSpot.position.set(1.2, 3.6, 1.7);
+    // Tracks weaponBenchGroup's new (1.05, 1.85, -0.05) position below --
+    // docs/armory-layout-and-cosmetic-preview-plan-2026-08-19.md #1.
+    benchSpot.target.position.set(1.05, 1.85, -0.05);
     scene.add(benchSpot);
     scene.add(benchSpot.target);
 
@@ -141,6 +143,15 @@ export async function createArmoryScene(canvas) {
     envGroup.add(backWall);
 
     // Magnetic Weapon Wall Mounting Panel (Right / Center-Right)
+    // Raised and pushed back from its original (1.1, 1.25, -0.6) --
+    // docs/armory-layout-and-cosmetic-preview-plan-2026-08-19.md #1/#2:
+    // at the old position the gun (scaled to a 1.15-unit prominent size,
+    // continuously auto-rotating via weaponPivot.rotation.y) sat only 0.15
+    // units in front of this panel's own 0.12-unit-thick front face --
+    // nowhere near its own ~0.575-unit half-extent, so it clipped into the
+    // panel at most rotation angles. Raised to track the gun's new height
+    // (see weaponBenchGroup below) and moved back in Z to restore real
+    // clearance once the gun itself also moves forward.
     const rackPanelGeo = new THREE.BoxGeometry(2.4, 1.3, 0.12);
     const rackPanelMat = new THREE.MeshStandardMaterial({
         color: 0x182433,
@@ -148,16 +159,18 @@ export async function createArmoryScene(canvas) {
         metalness: 0.85
     });
     const rackPanel = new THREE.Mesh(rackPanelGeo, rackPanelMat);
-    rackPanel.position.set(1.1, 1.25, -0.6);
+    rackPanel.position.set(1.1, 1.7, -1.0);
     rackPanel.castShadow = true;
     rackPanel.receiveShadow = true;
     envGroup.add(rackPanel);
 
-    // Glowing Neon Guideline on Rack
+    // Glowing Neon Guideline on Rack -- kept at the same relative offset from
+    // rackPanel (0.6 below, 0.07 toward camera from its front face) it had
+    // before the panel moved.
     const neonLineGeo = new THREE.BoxGeometry(2.3, 0.02, 0.02);
     const neonLineMat = new THREE.MeshBasicMaterial({ color: 0x00e5ff });
     const neonLine = new THREE.Mesh(neonLineGeo, neonLineMat);
-    neonLine.position.set(1.1, 0.65, -0.53);
+    neonLine.position.set(1.1, 1.1, -0.93);
     envGroup.add(neonLine);
 
     // Operator Hexagonal Turntable Platform (Left)
@@ -303,8 +316,18 @@ export async function createArmoryScene(canvas) {
     }
 
     // ── Weapon Workbench Group (Center / Right) ──────────────
+    // Y raised from 1.25 and Z pulled forward (toward the camera) from -0.45
+    // -- docs/armory-layout-and-cosmetic-preview-plan-2026-08-19.md #1/#2.
+    // The old position put the gun's on-screen projection directly behind
+    // .weapon-bench-panel's top edge (only the barrel poked out above it),
+    // with a large genuinely-empty region above/around that point doing
+    // nothing, and left only 0.15 units of Z clearance to rackPanel behind
+    // it (which now sits further back, see above) for a gun scaled to a
+    // 1.15-unit prominent size. Raising Y lifts the gun into that empty
+    // space; pulling Z forward both grows the wall clearance and reads
+    // better relative to the now-narrower weapon-bench-panel CSS column.
     const weaponBenchGroup = new THREE.Group();
-    weaponBenchGroup.position.set(1.1, 1.25, -0.45);
+    weaponBenchGroup.position.set(1.05, 1.85, -0.05);
     scene.add(weaponBenchGroup);
 
     // Interactive pivot inside weapon bench

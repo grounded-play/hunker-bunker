@@ -18164,10 +18164,16 @@ body.show-debug .map-tool-btn--debug { display: inline-flex; }
 }
 
 /* Suit panel | open 3D stage | weapon panel, so the operator/gun render has
-   a clear middle lane instead of panels floating on top of the character. */
+   a clear middle lane instead of panels floating on top of the character.
+   Weapon column narrowed from 60vu toward the suit panel's own 38vu --
+   docs/armory-layout-and-cosmetic-preview-plan-2026-08-19.md #1: the same
+   shape of content (labeled dropdowns) doesn't need nearly double the
+   width, and freeing it gives the raised/repositioned gun (armoryScene.js)
+   more headroom above the panel instead of the panel's tall top edge
+   slicing through it. */
 .armory-main-layout {
   display: grid;
-  grid-template-columns: minmax(0, calc(var(--vu) * 38)) minmax(calc(var(--vu) * 28), 1fr) minmax(0, calc(var(--vu) * 60));
+  grid-template-columns: minmax(0, calc(var(--vu) * 38)) minmax(calc(var(--vu) * 28), 1fr) minmax(0, calc(var(--vu) * 42));
   align-items: end;
   gap: calc(var(--vu) * 2.4);
   min-height: 0;
