@@ -105,6 +105,11 @@ export class MultiplayerLobby {
         this.players = new Map();
         this.pingMs = 18;
         this.isHost = true;
+        // Sprint 24 Milestone A item 5: the real, server-verified host flag
+        // (see the currentPlayers handler in connect()) -- distinct from the
+        // pre-existing this.isHost above, which is a hardcoded UI-cosmetic
+        // default unrelated to actual server-assigned host status.
+        this.isLocalPlayerHost = false;
         this.activeMatch = null;
         this.usingRelay = false;
     }
@@ -213,6 +218,15 @@ export class MultiplayerLobby {
                 });
 
                 this.socket.on('currentPlayers', (serverPlayers) => {
+                    // Sprint 24 Milestone A item 5 (docs/sprint24-multiplayer-runtime-2026-08-19.md):
+                    // this is the only point in the connection lifecycle where
+                    // the server tells a client its OWN isHost status (the
+                    // roster always includes the just-joined socket). Captured
+                    // here, not re-derived later, because currentPlayers fires
+                    // once right after joinRoom -- well before ThreeGame's
+                    // setupMultiplayerNetwork() attaches its own listeners at
+                    // deploy time, so a listener added there would miss it.
+                    this.isLocalPlayerHost = Boolean(serverPlayers[this.socket.id]?.isHost);
                     Object.entries(serverPlayers).forEach(([id, player]) => {
                         if (id !== this.socket.id) {
                             this.players.set(id, {
@@ -351,6 +365,7 @@ export class MultiplayerLobby {
             seed: this.roomCode,
             crashPlan,
             isMultiplayer: true,
+            isHost: Boolean(this.isLocalPlayerHost),
             socket: this.socket
         };
 
@@ -395,6 +410,7 @@ export class MultiplayerLobby {
             seed: data.seed || this.roomCode,
             crashPlan: data.crashPlan || null,
             isMultiplayer: true,
+            isHost: Boolean(this.isLocalPlayerHost),
             socket: this.socket
         };
 
