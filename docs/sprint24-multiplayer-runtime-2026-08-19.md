@@ -279,6 +279,48 @@ produce in this environment — it needs the user's actual Steamworks
 partner access and a real Steam client to test against, not more
 autonomous iteration.
 
+## Host-authoritative co-op enemy state (added in a third follow-up pass, same day; NOT yet live-verified)
+
+Item 5: "Host-authoritative PvE for the first cut (host owns AI/enemy
+HP/world state/objectives/loot, relay broadcasts, clients render
+canonical state) — don't attempt headless server simulation yet." The
+enemy-hit-sync built earlier this pass was peer-gossip: any client's
+local hit broadcast directly to the whole room, with no single owner of
+truth. Restructured so only the room's actual host is authoritative:
+
+- `multiplayerLobby.js` now captures the local player's real,
+  server-verified `isHost` status from the `currentPlayers` roster (the
+  only point the server reports it) and threads it through
+  `activeMatch.isHost` for the game instance to read at deploy time.
+- `applyPlayerDamageToEnemy`'s network branch now checks host status: a
+  non-host client's local hit is a candidate only — it emits
+  `enemyHitReport` and returns *without* applying damage locally, then
+  waits for the host's resulting canonical broadcast to actually apply
+  it (avoiding a double-apply: local-optimistic-guess plus later
+  correction). The host's own local hits remain immediately canonical
+  and broadcast directly, unchanged from the earlier gossip version.
+- `server/relay.js`'s new `enemyHitReport` handler relays privately to
+  the room's host socket only (looked up via the existing `isHost` flag
+  on room members), not broadcast to everyone — the host resolves it
+  against its own local enemy copy and the existing `enemyDamage`
+  broadcast carries the outcome to the rest of the room.
+
+**Verification status: lint and the full unit suite (1677 tests) pass,
+but this has not yet been exercised with a real two-instance test** —
+unlike items 3 and 4 earlier in this pass, which were each confirmed
+live before being called done. This is flagged explicitly rather than
+glossed over: the design has a plausible failure mode I have not ruled
+out empirically — if `isMultiplayerHost` is ever `false` on every
+client in a room (e.g. a timing issue in when `currentPlayers` fires
+relative to when the lobby reads `isLocalPlayerHost` into
+`activeMatch`), enemy hits would silently never resolve for anyone,
+since no client would ever emit the canonical `enemyDamage` broadcast.
+Also unverified: what happens when the host disconnects mid-match — no
+host-reassignment logic was written, so enemy sync would likely stop
+resolving entirely for the rest of that match. Both need a real
+two-instance pass before this could be called confirmed working, not
+just believed correct from code review.
+
 ## Verification (two real browser instances, local relay on port 3099)
 
 Both clients: joined a lobby, deployed, confirmed reaching real gameplay
