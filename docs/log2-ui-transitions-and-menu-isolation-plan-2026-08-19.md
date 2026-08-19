@@ -136,7 +136,7 @@ correctly stops responding to mouse input underneath it.
 **Priority:** low — pure polish. **Risk:** low; a CSS value change, easy to
 preview and revert.
 
-## 5. Game-over should stay black through the door transition, not show the live scene
+## 5. Game-over should stay black through the door transition, not show the live scene — FIXED
 
 **The ask:** after death, the screen should go/stay black through the
 game-over sequence and door transition — not show the (now-irrelevant)
@@ -178,26 +178,103 @@ Two independent, combinable options:
    layer that snaps in the moment `player-dead-flash` is added, so there's
    no gap between "died" and "screen is black" at all.
 
-Given item 1 (doors) is fixed and step 3 is already correctly sequenced,
-the actual remaining work is narrow: close the two gaps in steps 1-2 above,
-not redesign the sequence.
+**Fixed via option 2**, extended to span the *entire* sequence rather than
+just the two original gaps: new `#death-curtain` element (`index.html`,
+`style.css`), solid black, `z-index: 90000` (below `.modal`'s 100000 and
+the door cluster's 250000+, so those two remain the only things ever drawn
+over it). Shown immediately on `player-death` (`main.js`'s
+`runDeathSequence`, alongside the existing `player-dead-flash` class) and
+only cleared once a door transition has fully closed and the next screen
+is ready underneath — wired into both `returnToMainMenuFromRun`'s and the
+`TRY AGAIN` handler's `onClosed` callbacks (the latter needed its own
+explicit `hideDeathCurtain()` call since it never routes through
+`returnToMainMenuFromRun` — missing it there would have left the *next*
+run permanently blacked out, a real regression risk caught before
+shipping).
 
-**Priority:** medium — a real, reproducible "seeing something you
-shouldn't" issue on every single death, high-frequency exposure. **Risk:**
-low for option 2 (CSS/timing only); option 1 needs a quick check that nothing
-depends on the render loop continuing post-death before cutting it.
+**Verified live end-to-end:** curtain opacity tracked correctly from 0
+(before death) through the full fade to 1 (covering the former 900ms gap),
+stays at 1 through the cinematic and game-over screen, and drops to 0
+within one frame of the door transition's `onClosed` firing, confirmed on
+both the `MAIN MENU` and `TRY AGAIN` paths.
+
+**Status: closed.** See commit `2bb87fb`.
+
+## 6. Shooting at a wall opens the console terminal — FIXED
+
+**From `docs/logs/log3.json` (a follow-up session) and direct report:**
+firing without pressing E, while simply standing near a crashed ship,
+opened the console terminal modal instead of firing — even when aiming at
+a wall in an unrelated direction.
+
+**Root cause:** fire and interact share the same left-click handler
+(`handleCanvasPointerDown`, `src/threeGame.js`) — before a click is treated
+as "fire," it's checked against a chain of `tryInteractWithXPointer`
+functions (console, O2 generator, foundry, black box, bunker door,
+player-trade, camp). `tryInteractWithConsolePointer` had
+`if (playerDist <= 4.2 && (hit || playerDist <= 3.8))` — the `hit` half is
+the real aim/hover check (does the click's raycast land on/near the
+console); `playerDist <= 3.8` was a second, independent way to satisfy the
+same condition that ignored aim entirely. Any click while standing within
+3.8 units of the console — regardless of where the mouse was pointing —
+opened it. None of the five sibling `tryInteractWithXPointer` functions
+have this proximity-only fallback; all of them gate purely on where the
+click/aim landed.
+
+**Fixed:** removed the `playerDist <= 3.8` fallback, keeping
+`playerDist <= 4.2` only as an outer sanity bound. Matches the reported
+expectation exactly — the terminal now only opens on a real click-while-
+aiming-at-it. See commit `e3aa17a`.
+
+## 7. Still-massive frame dips on shoot/damage — partially fixed, second cost found
+
+**From `docs/logs/log3.json`:** 36.2% of a 117s session spent in long
+tasks — *worse* than log1/log2's ~19-21%, despite this session running
+after the `checkShaderErrors` fix landed. No single catastrophic freeze
+this time (biggest was 1988ms, vs 4.6-5.2s before) but a dense, sustained
+stream of 80-140ms tasks throughout combat, directly interleaved with fire
+clicks.
+
+**Live-reproduced a second, related WebGL cost.** Confirmed
+`checkShaderErrors: false` was active, then profiled spawning a real enemy
+and firing 4 real damage-dealing shots at it over 5 seconds:
+**`getProgramParameter`** alone accounted for **~9.4 seconds** of
+self-time in that window — a different WebGLProgram diagnostic call than
+the two `checkShaderErrors` already silences, apparently not gated by that
+same flag. Leading theory: this is the shader *compile* cost itself
+(`LINK_STATUS` query, checked once per newly-compiled program), separate
+from the *diagnostic log* cost already fixed — meaning an enemy's first
+real appearance on screen still pays a shader-compile tax even though its
+GLB model is now preloaded in the background (model preload only covers
+the GLTF parse step; the material's shader doesn't compile until the model
+is actually rendered for the first time).
+
+**Not yet fixed.** The likely real fix is pre-warming shaders during the
+loading screen — `THREE.WebGLRenderer.compile(scene, camera)` run against
+a representative scene containing one of each enemy/material type, mirror
+of the existing enemy-GLB background-preload pattern but for the compiled
+*shader* rather than the parsed *model*. Bigger scope than a one-line flag
+flip; needs its own pass. Flagging clearly rather than shipping a guess
+under time pressure.
+
+**Priority:** high — this is the concrete, still-present "shoot/damage lag"
+the player is reporting. **Risk:** unassessed until a specific
+implementation is scoped.
 
 ## Summary / execution order
 
 1. **#1 doors-under-modals — DONE.** Commit `52ab8d9`.
 2. **#2 shoot glitch — DONE**, covered by the existing checkShaderErrors fix
    (commit `83a74ba`); log2 is corroborating evidence, not a new bug.
-3. **#5 game-over shows live scene** — next most valuable: narrow, well-
-   understood gap (two specific timing windows), every death is affected.
-4. **#3 mouse reactive during menus** — needs one more investigation pass
+3. **#5 game-over shows live scene — DONE.** Commit `2bb87fb`.
+4. **#6 shooting opens console terminal — DONE.** Commit `e3aa17a`.
+5. **#7 frame dips on shoot/damage — partially fixed, second cost
+   identified but not yet resolved.** `getProgramParameter` (~9.4s in a
+   5s combat profile) needs shader pre-warming (`renderer.compile()`
+   against a representative scene), not a flag flip. Highest-value
+   remaining item.
+6. **#3 mouse reactive during menus** — needs one more investigation pass
    (audit modal IDs against `hasBlockingGameplayOverlay()`, or find the
    parallax-effect gate if that's the real cause) before it's a "just fix
    it" task rather than a "find it" task.
-5. **#4 increase menu blur** — pure polish, do alongside #3 since both touch
-   the same "menu should visually and functionally isolate from gameplay"
-   goal; needs a visual value pass, not just a number picked blind.
+7. **#4 increase menu blur — DONE.** blur(5px) → blur(14px).
