@@ -119,6 +119,88 @@ Added:
   — the `fromNetwork` flag prevents re-broadcasting the same hit back
   out, avoiding an echo loop.
 
+## Server-authoritative PvP damage (added in a follow-up pass, same day)
+
+Item 3 of the goal's ordered list ("server knows weapon/fire-rate/origin,
+validates trajectory/range, determines hit, calculates damage, applies
+HP, announces result. Clients send actions, never outcomes/isFatal
+directly") was originally deferred. Investigating it turned up that the
+existing `playerDamage`/`playerDamaged` relay pair — which looked like
+the review's flagged risk — was actually **dead code no client ever
+emitted** (confirmed via grep: no `emit('playerDamage'` call site existed
+anywhere). PvP damage instead worked entirely client-side: a remote
+player's projectile was spawned locally with `isEnemy: true` when
+`multiplayerMode === 'pvp'`, and the *victim's own client* called
+`takeDamage` directly the moment its local collision check saw that
+projectile touch its own player collider — the shooter's client had no
+feedback and never computed or reported an outcome at all. Also found:
+`this.playerDamage` (the value the dead code path would have sent) was
+never assigned anywhere, so it was always the literal fallback `10`.
+
+Built a real server-authoritative path to replace this:
+
+- Server tracks authoritative `hp`/`maxHp`/`mode` per connected player,
+  (re)initialized to full HP on every `matchDeploy` for the whole room,
+  not just the deploying player.
+- New `weaponHit` event: the **victim's** client reports being hit,
+  naming who allegedly hit them (`attackerId`) and where that shot
+  appeared to originate. This direction of self-report is safe — the
+  only thing a lying victim can do is reduce their own HP, which no
+  rational cheater wants; the exploitable direction the review actually
+  flagged (an attacker claiming `damage`/`isFatal`) is removed entirely.
+- Server validates the claim against data it already trusts from the
+  attacker's own `playerMove` history (not anything in the hit report):
+  per-attacker rate limit (~110ms, just under the client's real 140ms
+  fire cooldown) and a range check (claimed origin within 20 units of
+  the attacker's own server-known position — real client projectile
+  reach is ~15.4 units, so this adds latency slack without being
+  arbitrarily loose). Damage itself comes from a server-side constant
+  (10, matching the pre-existing client value exactly, so this is a
+  pure authority change, not a balance change) — no client-supplied
+  damage/isFatal is read at all.
+- Client side: `spawnProjectile`/`handleRemotePlayerFired` now thread
+  through the firing player's socket id (`attackerId`) so a PvP
+  projectile's victim knows who to name in its hit report.
+  `updateProjectiles`'s PvP hit branch now emits `weaponHit` instead of
+  calling `takeDamage` directly; the actual damage/death only happens
+  when the server's `playerDamaged` broadcast round-trips back through
+  the existing `handleRemotePlayerDamaged`. The outgoing `playerFire`
+  action payload also dropped its vestigial `damage` field (the relay
+  never read it, but sending an outcome value in an action message
+  contradicted the intent).
+
+**Verified live**, two fresh browser instances in a real PvP match: a
+spoofed hit claim with an origin 500 units from the attacker's actual
+server-known position was silently rejected (victim HP stayed at 3/3).
+A legitimate claim with an origin near the attacker's real position was
+accepted — with no `damage` field in the payload at all — and correctly
+resulted in server-computed damage (10) reducing HP to 0, an `isFatal`
+broadcast, and the victim's own client correctly running the full
+`handleDeath` sequence (not the co-op downed state — PvP stays a real
+kill, confirmed).
+
+**What this still doesn't do**: no trajectory/line-of-sight raycasting
+against wall geometry server-side (a claim that passes range+rate-limit
+but was actually blocked by a wall client-side would still be honored)
+— consistent with the goal's own note not to attempt full server
+simulation this pass. `enemyDamage` (co-op) remains a client-trusted
+gossip broadcast, unchanged by this section — PvP was prioritized
+because it's the mode the review's economy-safety concern (no
+marketable gameplay-power items in PvP) actually applies to.
+
+One test-environment note worth recording as a real, if edge-case,
+product gap: mid-test, one client's socket transport reconnected
+(Chromium background-tab throttling is a known cause, see the earlier
+Chromium rAF-throttling note), which handed it a brand-new Socket.IO
+connection and therefore a fresh server-side `player` object — `mode`
+reset to the `'coop'` default, HP reset to 3/3, and both `weaponHit`
+calls were silently rejected by the `mode !== 'pvp'` guard until the
+client re-ran `matchDeploy`. This means a real disconnect/reconnect
+mid-PvP-match would currently silently stop that player from dealing or
+taking real damage until something re-triggers deploy — folded into the
+existing "disconnect/reconnect... not stress-tested" known gap below,
+now with a concrete mechanism identified.
+
 ## Verification (two real browser instances, local relay on port 3099)
 
 Both clients: joined a lobby, deployed, confirmed reaching real gameplay
@@ -169,14 +251,22 @@ outstanding, in the order the goal itself lists them:
    deliberately: making the existing path *work* took priority over
    replacing it, per the goal's own risk framing ("stop at a clean,
    documented, working subset rather than a half-wired approximation").
-2. **No server-authoritative damage validation.** Both the existing PvP
-   damage path and the new enemy-hit-sync path are client-reported: a
-   client decides a hit happened and broadcasts the outcome: the server
-   relays it with only basic type/range clamping, not trajectory,
-   fire-rate, or line-of-sight validation. This is explicitly a
-   client-trusts-client design for this pass, described accurately in
-   code comments as "gossip broadcast, not full server validation." A
-   modified/cheating client could currently report false damage.
+2. **Server-authoritative damage: done for PvP, not for co-op
+   enemy-hit-sync.** PvP damage (see the dedicated section above) is now
+   genuinely server-authoritative — the server tracks HP, computes
+   damage from its own constant, and range/rate-validates every claim
+   against data it already trusts, verified live including a rejected
+   spoofed claim. The co-op `enemyDamage` path is unchanged: still
+   client-reported with only basic type/range clamping, no trajectory,
+   fire-rate, or line-of-sight validation, honestly described in code
+   comments as "gossip broadcast, not full server validation." Not
+   extended to co-op this pass because the review's specific
+   economy-safety concern (no marketable gameplay-power items) is a PvP
+   concern, not a PvE one — extending server-authority to enemy damage
+   is a reasonable next step but wasn't required to close that risk.
+   Also still missing even within PvP: no trajectory/line-of-sight
+   raycast against wall geometry (a claim that passes range+rate-limit
+   but was actually blocked by a wall client-side is still honored).
 3. **No Steam authentication.** All connections are anonymous Socket.IO
    room-code joins; there is no Steam auth ticket →
    `AuthenticateUserTicket` → SteamID64 → session-token handshake. This
@@ -192,14 +282,25 @@ outstanding, in the order the goal itself lists them:
    not by itself prevent divergence if two clients both send `enemyDamage`
    for the same hit, or if a client processes them out of order — no
    host-side enemy-HP-ownership arbitration exists yet.
-5. **PvP mode untouched/unverified this pass.** All new work (downed
-   state, enemy-hit-sync) explicitly excludes `multiplayerMode ===
-   'pvp'` in every gate. Real PvP-specific hardening (goal item 3's
-   "server determines hit, calculates damage" for player-vs-player) is
-   not attempted.
+5. **PvP mode: downed/revive and enemy-hit-sync still excluded (by
+   design), but damage itself is now hardened.** The co-op downed state
+   and enemy-hit-sync explicitly exclude `multiplayerMode === 'pvp'` in
+   every gate, unchanged — a PvP kill should stay a kill, not become
+   revivable. What changed: PvP's actual hit/damage/death path is now
+   server-authoritative (see above), which is exactly the "server
+   determines hit, calculates damage" hardening goal item 3 asked for,
+   for the player-vs-player case specifically.
 6. **Disconnect/reconnect** only has the basic pre-existing
    `playerDisconnected` → `removeRemotePlayer` handling; no reconnect
-   grace period, no state resync on rejoin, not stress-tested.
+   grace period, no state resync on rejoin. Now has a concrete observed
+   failure mode, found live during PvP testing: a mid-match socket
+   reconnect (seen from Chromium background-tab throttling during
+   testing, but the same Socket.IO behavior — reconnect = new socket id
+   = fresh server-side player record) silently resets that player's
+   server-side `mode` to `'coop'` and HP to full, so `weaponHit` claims
+   for/against them are rejected until something re-runs `matchDeploy`.
+   No fix attempted this pass — noting it precisely rather than papering
+   over it.
 7. **No full match-completion/extraction sync** — not attempted this
    pass; each client's `planMultiplayerCrashSites`-derived spawn state
    remains independently computed rather than server-assigned, though
@@ -208,8 +309,14 @@ outstanding, in the order the goal itself lists them:
 **Bottom line for Steam claims**: co-op movement, enemy-damage, and
 downed/revive now demonstrably synchronize between two real clients
 end-to-end, which was not true before this pass (nothing synchronized,
-because deploy never left the Armory for anyone). This is real progress
-on the goal's success criterion but is still short of "Online Co-op" as
-a Steam-store claim: no server-authoritative validation and no Steam
-auth means it is not yet abuse-resistant or identity-verified enough for
-a production multiplayer claim.
+because deploy never left the Armory for anyone). PvP damage is now
+genuinely server-authoritative, verified live against both a legitimate
+and a spoofed hit claim. This is real, demonstrated progress on both the
+goal's success criterion and its item 3, but is still short of "Online
+Co-op" as a Steam-store claim: no Steam authentication (item 4), no
+`GameController`/session architectural refactor (item 1), no
+server-side trajectory/wall raycasting even within the new PvP
+validation, no server-authority over co-op enemy state (item 5), and the
+newly-found reconnect-resets-PvP-state gap all remain. It is not yet
+identity-verified or fully abuse-resistant enough for a production
+multiplayer claim.
