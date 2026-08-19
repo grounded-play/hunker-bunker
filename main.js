@@ -6889,6 +6889,15 @@ function ensureArmoryInitialized() {
             const canvas = document.getElementById('armory-canvas');
             const hudContainer = document.getElementById('armory-hud-overlay');
             armorySceneInstance = await createArmoryScene(canvas);
+            // setOperatorPolish/setDecal are already wired to the in-run
+            // player and (polish only) the title-screen hero preview -- the
+            // Armory's own operator preview just never got the same calls
+            // (docs/armory-layout-and-cosmetic-preview-plan-2026-08-19.md #3).
+            // setOperatorPolish stores the color internally and re-applies it
+            // on every class switch, so this one call covers the whole armory
+            // session; the decal equivalent is covered per-class already via
+            // updateFromLoadout below.
+            armorySceneInstance.setOperatorPolish(getSelectedPolish().color);
             armoryUiInstance = createArmoryUi({
                 container: hudContainer,
                 loadoutManager: loadout,

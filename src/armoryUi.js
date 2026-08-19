@@ -320,6 +320,7 @@ export function createArmoryUi({
         // Decal switch
         container.querySelector('#armory-decal-select')?.addEventListener('change', (e) => {
             loadoutManager.equipDecal(e.target.value || null);
+            armoryScene?.setDecal(e.target.value || null);
             playSound('sfx_charm_clink_light');
             render();
         });

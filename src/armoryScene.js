@@ -4,6 +4,7 @@ import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.j
 import { assetUrl } from './assetUrl.js';
 import { createPlayer3dOverlay, WEAPON_ARCHETYPES, WEAPON_SKIN_MESHES } from './player3dOverlay.js';
 import { DEFAULT_ARCHETYPES } from './loadout.js';
+import { getItemCatalogEntry } from './steamVaultUi.js';
 
 export const CHARM_GLB_MAP = Object.freeze({
     '4130': '/3d/runtime/new3ds/charm_mini_cryo_core.glb',
@@ -189,6 +190,67 @@ export async function createArmoryScene(canvas) {
     let activeClass = 'SCOUT';
     let loadGen = 0;
 
+    // Operator Polish (colorway) and the shoulder-patch decal are both real,
+    // already-shipped systems -- setOperatorPolish() is wired to the in-run
+    // player and the title-screen hero preview, and playerDecalSprite renders
+    // in-run -- but neither was ever connected to the Armory's own operator
+    // preview (docs/armory-layout-and-cosmetic-preview-plan-2026-08-19.md #3).
+    // Stored here (not just applied once) because loadOperatorModel rebuilds
+    // currentOverlay.root from scratch on every class switch, dropping
+    // whatever was applied to the previous instance.
+    let currentPolishColor = 0xffffff;
+    let currentDecalId = null;
+    let decalSprite = null;
+
+    // Chest-mounted, matching src/threeGame.js's playerDecalSprite placement
+    // convention (same relative height/forward offset), but each class's real
+    // 3D chassis has its own chest bulge/depth (TANK's armor protrudes far
+    // more than SCOUT's), and a sprite tested against real mesh depth
+    // (depthTest: true, needed so the badge still hides when the operator is
+    // rotated to face away) disappears if it sits behind that surface. Anchors
+    // tuned per class via live-screenshot iteration rather than one shared
+    // offset that only worked for SCOUT.
+    const DECAL_ANCHORS = {
+        SCOUT: { x: 0.16, y: 1.3, z: 0.14 },
+        ENGINEER: { x: 0.16, y: 1.3, z: 0.16 },
+        TANK: { x: 0.18, y: 1.38, z: 0.34 }
+    };
+
+    function applyDecalSprite(decalId) {
+        if (decalSprite) {
+            decalSprite.material?.map?.dispose?.();
+            decalSprite.material?.dispose?.();
+            decalSprite.removeFromParent();
+            decalSprite = null;
+        }
+        if (!decalId || !currentOverlay?.root) return;
+        const catalog = getItemCatalogEntry(decalId);
+        const iconPath = catalog?.localImg || catalog?.img;
+        if (!iconPath) return;
+        // normalizeModel() (player3dOverlay.js) scales the raw GLB (exported
+        // in centimeter-ish units) up to targetHeight meters via root.scale --
+        // confirmed live at ~184.9x for these operator rigs. DECAL_ANCHORS
+        // below is expressed in the same "world meters" terms as targetHeight
+        // (e.g. chest at y~1.3 out of a ~1.85-1.95 tall operator), so it has
+        // to be divided back down by that same factor before being used as a
+        // position/scale local to root -- otherwise (as first shipped) the
+        // sprite lands ~200 units away in space, nowhere near the model.
+        const rootScale = currentOverlay.root.scale.x || 1;
+        const anchor = DECAL_ANCHORS[activeClass] || DECAL_ANCHORS.SCOUT;
+        const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ transparent: true, opacity: 0, depthTest: false, depthWrite: false }));
+        sprite.center.set(0.5, 0.5);
+        sprite.position.set(anchor.x / rootScale, anchor.y / rootScale, anchor.z / rootScale);
+        sprite.scale.set(0.16 / rootScale, 0.16 / rootScale, 1);
+        sprite.renderOrder = 7;
+        new THREE.TextureLoader().load(assetUrl(iconPath), (texture) => {
+            sprite.material.map = texture;
+            sprite.material.opacity = 1;
+            sprite.material.needsUpdate = true;
+        });
+        currentOverlay.root.add(sprite);
+        decalSprite = sprite;
+    }
+
     async function loadOperatorModel(classType) {
         const gen = ++loadGen;
         const normalized = ['SCOUT', 'TANK', 'ENGINEER'].includes(String(classType).toUpperCase())
@@ -233,6 +295,8 @@ export async function createArmoryScene(canvas) {
             currentOverlay = overlay;
             overlay.root.rotation.y = 0.35; // Angle slightly toward center weapon bench
             operatorGroup.add(overlay.root);
+            overlay.setOperatorPolish?.(currentPolishColor);
+            applyDecalSprite(currentDecalId);
         } catch (err) {
             console.warn('[armoryScene] Failed loading operator overlay:', err);
         }
@@ -538,6 +602,14 @@ export async function createArmoryScene(canvas) {
         async setRigModule(slot, modItemdefId) {
             await loadModAsset(slot, modItemdefId);
         },
+        setOperatorPolish(color = 0xffffff) {
+            currentPolishColor = color;
+            currentOverlay?.setOperatorPolish?.(color);
+        },
+        setDecal(decalItemdefId) {
+            currentDecalId = decalItemdefId || null;
+            applyDecalSprite(currentDecalId);
+        },
         updateFromLoadout(loadoutManager, classType = activeClass) {
             const cls = String(classType).toLowerCase();
             const lo = loadoutManager.getClassLoadout(cls);
@@ -545,6 +617,7 @@ export async function createArmoryScene(canvas) {
             this.setCharm(lo.charmId);
             this.setRigModule(1, lo.mod1Id);
             this.setRigModule(2, lo.mod2Id);
+            this.setDecal(loadoutManager.getEquippedDecalId?.());
         },
         resize,
         dispose() {
