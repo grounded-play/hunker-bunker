@@ -201,6 +201,84 @@ taking real damage until something re-triggers deploy — folded into the
 existing "disconnect/reconnect... not stress-tested" known gap below,
 now with a concrete mechanism identified.
 
+## Steam-authenticated socket handshake (added in a second follow-up pass, same day)
+
+Item 4: "Steam-authenticate connections... No anonymous production
+sockets." Investigating this found the entire REST half already built
+and tested (`server/steamAuth.js`, `attachSteamAuthRoutes`): `POST
+/steam/session` takes a ticket, calls Valve's real
+`AuthenticateUserTicket` when a publisher key is configured, and mints a
+signed short-lived session token — with a deliberate, already-tested
+dev-fallback path for exactly the case this sandbox is in (no publisher
+key configured). What didn't exist was anything requiring that token
+for the Socket.IO connection itself — every relay connection was
+unauthenticated regardless.
+
+Wired the gap shut:
+
+- Exported `isSteamAuthDevFallbackAllowed()` from `steamAuth.js` (was a
+  private helper) so the relay uses the exact same production-vs-dev gate
+  the REST routes already use, instead of re-deriving it.
+- `server/relay.js` now runs an `io.use(...)` handshake middleware:
+  verifies `socket.handshake.auth.sessionToken` via the existing
+  `verifySteamSessionToken`; a valid token attaches `socket.steamAuth`
+  and lets the connection through; an invalid/missing token is allowed
+  through as a labeled dev-mode identity *only* when
+  `isSteamAuthDevFallbackAllowed()` is true (no publisher key configured,
+  `NODE_ENV !== 'production'`, `HB_ALLOW_DEV_STEAM_AUTH` not explicitly
+  `'false'`) — otherwise the connection is rejected outright
+  (`unauthenticated_socket`), which is the actual "no anonymous
+  production sockets" enforcement.
+- `src/multiplayerLobby.js`'s `connect()` now mints a session token via
+  `/steam/session` before opening the socket, passing it as
+  `auth: { sessionToken }`. It checks for
+  `window.electronAPI.getSteamAuthTicket` first — **this does not exist
+  anywhere in the codebase** (confirmed via repo-wide grep for
+  `AuthSessionTicket`/`getSteamAuthTicket`: no Steamworks native ticket
+  retrieval is wired into the Electron main/preload layer at all) — so
+  it always falls through to a clearly-labeled dev placeholder ticket
+  today. Real Steamworks `GetAuthSessionTicket` integration is separate,
+  larger work (native SDK binding into the Electron main process) not
+  attempted this pass.
+- Also hardened `connect_error` handling: previously *any* connection
+  failure — including an explicit auth rejection — fell through to
+  `fallbackLocalSession()`, which inserts a simulated local opponent
+  (the exact "discoverable but still deployable" gap the goal's own
+  root-problem description named). An `unauthenticated_socket` error now
+  surfaces distinctly (`STEAM AUTH REQUIRED` status) instead of silently
+  degrading to a fake opponent.
+
+**Verified live** against the running relay (Node script driving
+`socket.io-client` directly, plus `curl` against the REST route):
+1. `POST /steam/session` with a dev-placeholder ticket and no publisher
+   key configured correctly mints a valid signed dev-mode token.
+2. A socket presenting that token connects successfully.
+3. A socket presenting no token also connects when dev-fallback is
+   allowed (matches existing local/test workflows — unchanged).
+4. With `HB_ALLOW_DEV_STEAM_AUTH=false` (simulating production without
+   real Steam credentials configured), a socket with no token is
+   correctly **rejected** (`unauthenticated_socket`).
+5. In that same locked-down mode, attempting to self-mint a bypass token
+   via `/steam/session` also correctly fails — the REST route's own
+   dev-fallback is gated by the identical flag, so there is no path to a
+   valid token without either real Steam credentials or dev-fallback
+   explicitly enabled. This is the correct fail-closed property, not a
+   bug: it means gating cannot be defeated by hitting the token endpoint
+   directly.
+
+**What this still doesn't do — the real remaining gap for item 4**: no
+actual Steamworks ticket is ever generated or verified, because nothing
+in this codebase can produce one. Closing that requires: a registered
+Steamworks App ID with matching depot config, the Steamworks SDK (or a
+wrapper like `steamworks.js`) integrated as a native module in the
+Electron main process calling real `GetAuthSessionTicket`, a real
+`HB_STEAM_PUBLISHER_KEY` for the backend's `AuthenticateUserTicket`
+call, and testing against a live Steam client with a real logged-in
+account. None of that is something further code changes alone can
+produce in this environment — it needs the user's actual Steamworks
+partner access and a real Steam client to test against, not more
+autonomous iteration.
+
 ## Verification (two real browser instances, local relay on port 3099)
 
 Both clients: joined a lobby, deployed, confirmed reaching real gameplay
@@ -267,11 +345,20 @@ outstanding, in the order the goal itself lists them:
    Also still missing even within PvP: no trajectory/line-of-sight
    raycast against wall geometry (a claim that passes range+rate-limit
    but was actually blocked by a wall client-side is still honored).
-3. **No Steam authentication.** All connections are anonymous Socket.IO
-   room-code joins; there is no Steam auth ticket →
-   `AuthenticateUserTicket` → SteamID64 → session-token handshake. This
-   pass's verification used two Socket.IO clients, not two Steam
-   accounts, per the goal's own allowance for this pass.
+3. **Steam authentication: handshake gate built and verified, real
+   ticket retrieval still missing.** The socket handshake now genuinely
+   requires a valid session token in production (verified live: rejects
+   unauthenticated sockets, and can't be bypassed by self-minting a
+   token without real Steam credentials, see the dedicated section
+   above). What's still missing is the one piece no amount of further
+   code can produce in this environment: nothing in this codebase can
+   generate a real Steamworks ticket (`GetAuthSessionTicket`) — no
+   native Steamworks SDK binding exists in the Electron main process at
+   all (confirmed via repo-wide grep). Closing this needs the user's
+   real Steamworks partner access (App ID, publisher key), a native SDK
+   integration, and a live Steam client to test against — this pass's
+   verification used two Socket.IO clients with dev-mode tokens, not two
+   real Steam accounts, per the goal's own allowance.
 4. **Host-authoritative PvE, not yet exercised for AI/enemy state
    ownership.** The goal calls for the host to own AI/enemy HP/world
    state/objectives/loot with clients rendering canonical state, for a
@@ -311,12 +398,18 @@ downed/revive now demonstrably synchronize between two real clients
 end-to-end, which was not true before this pass (nothing synchronized,
 because deploy never left the Armory for anyone). PvP damage is now
 genuinely server-authoritative, verified live against both a legitimate
-and a spoofed hit claim. This is real, demonstrated progress on both the
-goal's success criterion and its item 3, but is still short of "Online
-Co-op" as a Steam-store claim: no Steam authentication (item 4), no
-`GameController`/session architectural refactor (item 1), no
+and a spoofed hit claim. The socket handshake itself now genuinely
+requires authentication in production, verified live including the
+rejection path — closing item 4's "no anonymous production sockets"
+requirement architecturally, even though real Steamworks ticket
+retrieval (the piece that needs the user's actual Steamworks partner
+access and a live Steam client) is not implemented. This is real,
+demonstrated progress on the goal's success criterion and on items 3
+and 4, but is still short of "Online Co-op" as a Steam-store claim:
+no `GameController`/session architectural refactor (item 1), no
 server-side trajectory/wall raycasting even within the new PvP
-validation, no server-authority over co-op enemy state (item 5), and the
-newly-found reconnect-resets-PvP-state gap all remain. It is not yet
-identity-verified or fully abuse-resistant enough for a production
-multiplayer claim.
+validation, no server-authority over co-op enemy state (item 5), the
+reconnect-resets-PvP-state gap, and — the one gap in this list that
+isn't closeable by more autonomous code changes — no real Steamworks
+ticket generation, which needs the user's Steamworks App ID/publisher
+key and a native SDK integration tested against a live Steam client.
