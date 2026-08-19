@@ -3417,7 +3417,12 @@ input:checked+.slider:before {
   display: flex;
   align-items: center;
   justify-content: center;
-  backdrop-filter: blur(5px);
+  /* Raised from 5px -- at 5px the live scene behind a menu stayed legible
+     enough that "am I still in the game" wasn't visually obvious. Bumped
+     alongside menu-isolation fixes (docs/log2-ui-transitions-and-menu-
+     isolation-plan-2026-08-19.md #4) so the backdrop actually reads as
+     "menu land" rather than a lightly-frosted view of live gameplay. */
+  backdrop-filter: blur(14px);
   overflow: hidden;
   padding: clamp(12px, 2vh, 24px) 0;
   scrollbar-width: none !important;
