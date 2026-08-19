@@ -87,12 +87,41 @@ every shot:
    stacks on top of the wall-decal/raycast cost above is likely part of
    this too.
 
-## Not yet done
+## Resolution
 
-This doc is the "document findings first" step the user asked for.
-Root-causing which of the above (or something else entirely) is the
-actual dominant cost requires a live CPU trace of held-fire combat in a
-fresh browser tab (the methodology that worked for both perf bugs fixed
-earlier this session) — log timestamps alone can show *when* and
-*how much*, not *which function*. That trace is the next step before any
-fix lands.
+A live CPU trace (Playwright + CDP `Profiler.start`/`stop`, held-fire
+combat in a fresh tab, per the methodology used for the earlier perf
+fixes this session) ruled out both leading suspects above and found the
+real cost:
+
+- **`spawnWallDecal`'s per-hit `ShaderMaterial`** — disproven directly.
+  Instrumented `renderer.info.programs.length` around repeated
+  `spawnWallDecal()` calls: after the first call, the program count
+  stayed flat (three.js's shader cache correctly dedupes the identical
+  GLSL source across instances), yet each subsequent call still cost
+  ~1.3s in the test environment. Ruled out — not a shader-compile cost.
+- **Per-shot raycast against `wallMeshes`** — not the dominant cost
+  either (not the top self-time entry in any capture).
+- **The actual cause**: `findSnailPath`'s A* search (up to
+  `SNAIL_PATH_NODE_BUDGET=360` nodes × 8 directions, ~2880 iterations per
+  single pathfind) calls `shouldBlockAttackPath` →
+  `doesSegmentIntersectDoor` → `segmentIntersectsBox` once per iteration
+  per door. `segmentIntersectsBox` re-normalized that door's bounds via
+  `normalizeContainmentBounds` from scratch on *every single call*, even
+  though the door list (`containmentOptions.doors`) is built once at the
+  top of `findSnailPath` and reused unchanged for the entire search — the
+  same bounds object was being renormalized thousands of times per
+  pathfind with an identical result every time. This chain
+  (`normalizeContainmentBounds` / `segmentIntersectsBox` /
+  `doesSegmentIntersectDoor` / `shouldBlockAttackPath` / `findSnailPath` /
+  `updateSnailBehavior`) was the largest non-native (real JS) self-time
+  cost in every capture, and scales directly with live-snail count —
+  matching the user's "worse when we fight things."
+
+**Fix** (`src/roomContainment.js`, commit `0f39d2c`): a `WeakMap` cache in
+`normalizeContainmentBounds` keyed by the bounds object reference, safe
+because every caller in this module treats bounds objects as immutable.
+Verified live via a same-world-state A/B (toggling the cache off/on
+without reloading, so door/zone data was identical both times):
+`findSnailPath` dropped from **73.6ms/call to 0.46ms/call — a ~160x
+speedup**.
