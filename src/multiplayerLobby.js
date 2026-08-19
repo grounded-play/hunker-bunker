@@ -17,20 +17,31 @@ export const MULTIPLAYER_MODES = Object.freeze({
 // carries proof of auth instead of connecting anonymously (server/relay.js
 // now rejects unauthenticated sockets outright in production).
 //
-// window.electronAPI.getSteamAuthTicket does not exist anywhere in this
-// codebase yet -- no Steamworks native ticket retrieval (GetAuthSessionTicket)
-// is wired into the Electron main/preload layer -- so this always falls
-// through to a clearly-labeled dev placeholder ticket today. That's the
-// exact scenario the backend's own dev-fallback path (isDevFallbackAllowed
-// in server/steamAuth.js) already exists to handle: with no publisher key
-// configured, verifySteamSessionTicket short-circuits before ever calling
-// Steam's real API and the relay still issues a valid signed dev-mode
-// session token. Real Steamworks ticket retrieval is a separate, larger
-// piece of work (native SDK integration) not attempted this pass.
+// Correction to an earlier assumption this pass: window.electronAPI.getSteamAuthTicket
+// DOES already exist (electron/preload.cjs -> hb:getSteamAuthTicket ->
+// electron/main.cjs's steamClient.auth.getAuthTicketForWebApi, a real
+// steamworks.js call) -- an earlier grep of this codebase missed the
+// electron/ directory entirely. It resolves to a RESULT OBJECT
+// ({ok, ticketHex, appId, identity, handle, expiresAt} on success), not a
+// bare hex string -- a bug in an earlier version of this function treated
+// the whole object as the ticket, which would have silently sent garbage
+// to /steam/session instead of the real ticket even when running inside
+// the actual Electron app with a live Steam session. Fixed here: only the
+// real .ticketHex field is used, and only on ok:true; anything else
+// (running in a plain browser tab, no Steam client, ticket request
+// failed) falls through to the dev placeholder, which the backend's
+// existing dev-fallback path (isDevFallbackAllowed in server/steamAuth.js)
+// already handles correctly.
 async function fetchMultiplayerSessionToken(relayUrl, identity) {
     try {
-        const ticketHex = (typeof window !== 'undefined' && await window.electronAPI?.getSteamAuthTicket?.())
-            || '00'.repeat(32); // dev placeholder: well-formed hex, not a real Steam ticket
+        let ticketHex = null;
+        if (typeof window !== 'undefined' && window.electronAPI?.getSteamAuthTicket) {
+            const ticketResult = await window.electronAPI.getSteamAuthTicket(identity);
+            if (ticketResult?.ok && typeof ticketResult.ticketHex === 'string') {
+                ticketHex = ticketResult.ticketHex;
+            }
+        }
+        if (!ticketHex) ticketHex = '00'.repeat(32); // dev placeholder: well-formed hex, not a real Steam ticket
         const response = await fetch(`${relayUrl}/steam/session`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
