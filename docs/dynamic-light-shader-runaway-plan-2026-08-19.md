@@ -77,31 +77,58 @@ mentions lights flickering near a boundary, add hysteresis (require a
 light to be closest-8 for two consecutive budget ticks before toggling
 visible, or vice versa) rather than the current hard cutoff.
 
-### Not started — Direction #3: shared materials near light clusters
+### ✅ Direction #3 (partial) — shared materials near light clusters: wall damage (DONE, commit `4133eef`)
 
-**Rationale:** this doesn't reduce the number of light *combinations* —
-it reduces how many *distinct materials* get multiplied against each
-combination. If, say, five different wall-decal or prop materials are
-all near the same light cluster, that's five programs for one light
-combination instead of one. Lower priority than #1 (which attacks the
-combination count directly, the actual unbounded-growth driver) — #3 is
-a multiplier reduction, not a growth-cap. Worth a pass afterward: audit
-for near-duplicate `MeshStandardMaterial` instantiations (e.g. per-decal
-or per-prop materials created with `.clone()` when they could share a
-single shared instance) once #1 is in and the combination count itself
-is bounded.
+Triggered by a fresh, specific report: "there is still a slow down when
+an object hits the wall... it shouldn't crash the game to shoot a bullet
+and hit something." This is exactly the shape #3 predicted (distinct
+material instances multiplying program count) and #1/#2 didn't cover it
+at all — it's not about light combinations, it's about material variety.
 
-**Risk:** low, but low-yield until #1 lands — reducing material count
-against an unbounded combination set still leaves the set unbounded.
+`updateWallDamageColor()` cloned `this.wallMaterial` into a brand new
+`MeshStandardMaterial` for every non-instanced wall the first time it
+took *any* damage, permanently — no disposal, not even on wall
+destruction. The instanced-wall fast path
+(`wall.instancedMesh.setColorAt(...)`) already existed right next to it,
+but confirmed live that **106/106 walls in a fresh run are
+non-instanced** — the expensive clone path is the *only* one ever
+exercised, not an edge case.
+
+Fixed by pooling: `WALL_HP_STANDARD=8` already means standard walls only
+ever show 8 distinct damage ratios regardless of which/how many walls
+get hit, so `getWallDamageTierMaterial()` shares one material object per
+damage tier (`WALL_DAMAGE_TIER_COUNT=8`) across every wall at that
+ratio, instead of cloning fresh per wall.
+
+**Verified live, decisively**: damaging 60 distinct walls once each grew
+`renderer.info.programs` by +26 before the fix, +7 after. More
+importantly, five full damage passes over every wall in the level
+(~630 total hits, cycling through every tier as walls take damage and
+some get destroyed) show `renderer.info.programs` **plateau at 124 from
+the first pass onward** — the pool itself only ever grew to 6 of its 8
+possible entries. This is the real bar this doc set for "fixed": growth
+*stops*, not just slows.
+
+### Still open — Direction #3, general audit
+
+Wall damage was one concrete, high-value instance, found because the
+user reported it specifically. The general rationale from the original
+scoping still stands and hasn't been swept broadly: any other
+`.clone()`-per-instance `MeshStandardMaterial`/`MeshPhysicalMaterial`
+pattern (per-decal materials, per-prop materials, per-effect materials)
+is a candidate for the same fix. Worth a dedicated audit pass — grep for
+`.clone()` calls on lit materials specifically — rather than assuming
+wall damage was the only instance.
 
 ## Recommended order for the next session
 
-1. ~~**#1 (light budget)** first~~ — done tonight (`e59ec04`).
-2. **#3 (shared materials)**, as a multiplier cleanup now that the
-   combination count is bounded.
-3. Get a real long-duration (multi-minute, real distance covered) live
+1. ~~**#1 (light budget)**~~ — done (`e59ec04`).
+2. ~~**#2 (muzzle flash)**~~ — done (`c4c68a8`).
+3. ~~**#3, wall damage**~~ — done (`4133eef`).
+4. **#3, general audit** — grep the codebase for other `.clone()`-per-hit
+   patterns on lit materials; wall damage is unlikely to be the only one.
+5. Get a real long-duration (multi-minute, real distance covered) live
    trace against the current build to confirm `renderer.info.programs`
-   actually *plateaus* now rather than just growing slower — the 65s
-   near-spawn synthetic test isn't long/far-ranging enough to prove that
-   on its own; log6-shaped reports (extended hallway walking) are the
-   real test.
+   actually *plateaus* in real gameplay now, combining all three fixes —
+   the synthetic tests each prove their own mechanism in isolation, but
+   a real session is the final word.
