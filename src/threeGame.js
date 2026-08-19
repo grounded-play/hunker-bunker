@@ -552,6 +552,19 @@ const WALL_DECAL_CAP = 24;
 // materials can ever encounter, capping shader-program growth instead of
 // letting it climb for the length of a run.
 const ENV_LIGHT_BUDGET = 8;
+// docs/dynamic-light-shader-runaway-plan-2026-08-19.md direction #3 --
+// updateWallDamageColor used to clone this.wallMaterial into a brand new
+// MeshStandardMaterial for every non-instanced wall the first time it took
+// any damage, permanently. Confirmed live: damaging 60 distinct walls once
+// each grew renderer.info.programs by +26, and every one of this world's
+// walls (106/106 in a fresh run) is non-instanced, so this was the default
+// path, not an edge case. WALL_HP_STANDARD=8 already means standard walls
+// only ever show 8 distinct damage ratios (1/8..8/8) regardless -- pooling
+// into this many shared tiers gives the same visual result (a wall recolors
+// to whichever tier its current damage ratio rounds up to) while capping
+// the number of distinct wall materials that can ever exist to a small
+// constant instead of one per wall ever hit.
+const WALL_DAMAGE_TIER_COUNT = 8;
 const PHYS_PARTICLE_GRAVITY = 7.0;   // units/s²
 const PHYS_PARTICLE_DRAG = 2.2;      // exponential drag coefficient (per second)
 const PHYS_PARTICLE_BOUNCE = -0.45;  // floor restitution
@@ -19658,24 +19671,29 @@ export class ThreeGame {
             return;
         }
 
-        if (wall.material === this.wallMaterial) {
-            wall.material = this.wallMaterial.clone();
-        }
+        wall.material = this.getWallDamageTierMaterial(damageRatio);
+    }
 
-        if (!wall.userData.originalColorHex && wall.material?.color) {
-            wall.userData.originalColorHex = wall.material.color.getHex();
-        }
-
-        if (wall.material?.color) {
-            const baseColor = new THREE.Color(wall.userData.originalColorHex ?? 0x808b96);
+    // See WALL_DAMAGE_TIER_COUNT above. Shared pool keyed by tier index so
+    // repeated damage across many different walls reuses the same handful of
+    // material objects instead of allocating a new one per wall.
+    getWallDamageTierMaterial(damageRatio) {
+        this._wallDamageMaterialPool ??= new Map();
+        const tier = Math.max(1, Math.min(WALL_DAMAGE_TIER_COUNT, Math.ceil(damageRatio * WALL_DAMAGE_TIER_COUNT)));
+        let material = this._wallDamageMaterialPool.get(tier);
+        if (!material) {
+            material = this.wallMaterial.clone();
+            const ratio = tier / WALL_DAMAGE_TIER_COUNT;
+            const baseColor = new THREE.Color(0xffffff); // this.wallMaterial's own base color
             const targetColor = new THREE.Color(0xff3300);
-            wall.material.color.copy(baseColor).lerp(targetColor, damageRatio * 0.75);
+            material.color.copy(baseColor).lerp(targetColor, ratio * 0.75);
+            if (material.emissive) {
+                material.emissive.setHex(0xff2200);
+                material.emissiveIntensity = ratio * 0.85;
+            }
+            this._wallDamageMaterialPool.set(tier, material);
         }
-
-        if (wall.material?.emissive) {
-            wall.material.emissive.setHex(0xff2200);
-            wall.material.emissiveIntensity = damageRatio * 0.85;
-        }
+        return material;
     }
 
     damageWall(wall, amount = 1, { source = 'player' } = {}) {

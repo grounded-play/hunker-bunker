@@ -147,25 +147,41 @@ describe('destructible wall grid persistence', () => {
         expect(fakeThis.transientEffects).toEqual([otherDecal]);
     });
 
-    it('clones shared material and shifts color and emissive when damaged', () => {
-        const sharedMat = { clone: vi.fn(() => ({ color: { getHex: () => 0x808b96, copy: vi.fn().mockReturnThis(), lerp: vi.fn() }, emissive: { setHex: vi.fn() }, emissiveIntensity: 0 })) };
-        const wall = {
-            userData: { isWall: true, wallHp: 10, maxWallHp: 10, worldX: 2, worldZ: 3 },
+    it('pools a shared tinted material per damage tier and shifts color and emissive when damaged', () => {
+        // docs/dynamic-light-shader-runaway-plan-2026-08-19.md direction #3 --
+        // updateWallDamageColor used to clone this.wallMaterial into a brand
+        // new material per wall on every hit, unbounded; it now pools a small
+        // fixed number of tier materials (WALL_DAMAGE_TIER_COUNT) shared
+        // across every wall at that damage ratio.
+        const makeClone = () => ({ color: { copy: vi.fn().mockReturnThis(), lerp: vi.fn() }, emissive: { setHex: vi.fn() }, emissiveIntensity: 0 });
+        const sharedMat = { clone: vi.fn(makeClone) };
+        const wallA = {
+            userData: { isWall: true, wallHp: 5, maxWallHp: 10, worldX: 2, worldZ: 3 },
+            material: sharedMat
+        };
+        const wallB = {
+            userData: { isWall: true, wallHp: 5, maxWallHp: 10, worldX: 9, worldZ: 4 },
             material: sharedMat
         };
         const fakeThis = {
             wallMaterial: sharedMat,
             updateWallDamageColor: ThreeGame.prototype.updateWallDamageColor,
+            getWallDamageTierMaterial: ThreeGame.prototype.getWallDamageTierMaterial,
             destroyWall: vi.fn()
         };
 
-        const result = call('damageWall', fakeThis, wall, 5);
+        const resultA = call('damageWall', fakeThis, wallA, 0);
+        const resultB = call('damageWall', fakeThis, wallB, 0);
 
-        expect(result).toBe(false);
-        expect(wall.userData.wallHp).toBe(5);
-        expect(sharedMat.clone).toHaveBeenCalled();
-        expect(wall.material.emissive.setHex).toHaveBeenCalledWith(0xff2200);
-        expect(wall.material.emissiveIntensity).toBeGreaterThan(0);
+        expect(resultA).toBe(false);
+        expect(resultB).toBe(false);
+        expect(wallA.userData.wallHp).toBe(5);
+        expect(sharedMat.clone).toHaveBeenCalledTimes(1);
+        expect(wallA.material.emissive.setHex).toHaveBeenCalledWith(0xff2200);
+        expect(wallA.material.emissiveIntensity).toBeGreaterThan(0);
+        // Both walls sit at the same damage ratio (5/10) -- confirms they
+        // share the one pooled tier material instead of getting their own.
+        expect(wallB.material).toBe(wallA.material);
     });
 
     it('tunes door HP lower than standard walls for quick breaching', () => {
