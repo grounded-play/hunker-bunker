@@ -117,6 +117,32 @@ describe('Server Relay: ready-up / host-start gate', () => {
         expect(sa.timestamp).toBe(sb.timestamp);
     });
 
+    it('rejects a ready non-host from starting the room even when everyone is ready', async () => {
+        ({ httpServer, url } = await startTestServer());
+        const roomCode = 'READY-GATE-HOST-AUTHORITY-TEST';
+
+        const clientA = await connectClient(url);
+        const clientB = await connectClient(url);
+        sockets.push(clientA, clientB);
+
+        clientA.emit('joinRoom', { roomCode, callsign: 'HOST', opClass: 'TANK' });
+        await waitForEvent(clientA, 'currentPlayers');
+        clientB.emit('joinRoom', { roomCode, callsign: 'GUEST', opClass: 'SCOUT' });
+        await waitForEvent(clientB, 'currentPlayers');
+
+        clientA.emit('playerReady', { ready: true });
+        clientB.emit('playerReady', { ready: true });
+        await waitForEvent(clientA, 'playerReadyChanged');
+        await waitForEvent(clientA, 'playerReadyChanged');
+
+        const rejected = waitForEvent(clientB, 'matchDeployRejected');
+        const countdown = waitForEvent(clientA, 'matchCountdown', 500);
+        clientB.emit('matchDeploy', { mode: 'coop', seed: 'guest-must-not-start', crashPlan: null });
+
+        expect(await rejected).toEqual({ reason: 'not_host' });
+        expect(await countdown).toBeNull();
+    });
+
     it('cancels a pending countdown if a player un-readies before it fires', async () => {
         ({ httpServer, url } = await startTestServer());
         const roomCode = 'READY-GATE-CANCEL-TEST';

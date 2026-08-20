@@ -406,3 +406,24 @@ document used.
 - `main.js` still has zero unit-test infrastructure — Phase 4's
   `buildSquadManifestPanel()` is only covered by live verification, same as
   every other `main.js`-level change in this document.
+
+### Meetup correction — explicit host versus join
+
+The first implementation still made CO-OP/PVP selection call `connect()`;
+because `connect()` creates a Steam lobby when no lobby id exists, two players
+who both selected CO-OP became hosts of separate lobbies. This is now fixed:
+mode selection only selects the mode, the button reads `HOST NEW LOBBY`, and
+only that explicit action creates a lobby. Steam invite acceptance and public
+lobby JOIN rows remain the join paths. The join sequencing regression is also
+covered so a guest's existing lobby is left before the invited target is
+joined.
+
+### Ready state and host deployment authority
+
+The relay now broadcasts the full roster with each ready transition, and the
+client treats that snapshot as authoritative. This closes the stale-screen
+case where each account saw only its own ready choice. The relay also rejects
+`matchDeploy` from any non-host, even when every player is ready. Readiness is
+therefore a shared confirmation, while deployment remains a host-only command;
+the host's final button is labeled `START SQUAD` after the roster reaches
+ready-for-all. Focused coverage lives in `server/relayReadyUp.test.js`.

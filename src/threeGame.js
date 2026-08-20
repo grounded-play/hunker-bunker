@@ -18298,11 +18298,27 @@ export class ThreeGame {
             const visualMoving = isMoving || this.isDashing;
             const visualMoveX = this.isDashing ? this.dashDirX : moveDirX;
             const visualMoveZ = this.isDashing ? this.dashDirZ : moveDirZ;
+            const isSprinting = (this._sprintMoveSpeedMult ?? 1) > 1 || this.isDashing;
+            if (this._wasSprinting && !visualMoving && !this.isPlayerFalling) {
+                this.player3dOverlay.trigger('runToStop', 0.4);
+            }
+            this._wasSprinting = isSprinting && visualMoving;
+
+            if (!visualMoving && (this.oxygen ?? 100) < 20 && !this.weaponReloading) {
+                this._o2GaspTimer = (this._o2GaspTimer ?? 3.5) - delta;
+                if (this._o2GaspTimer <= 0) {
+                    this.player3dOverlay.trigger('annoyedHeadShake', 1.2);
+                    this._o2GaspTimer = 4.5 + Math.random() * 2.5;
+                }
+            } else {
+                this._o2GaspTimer = 2.0;
+            }
+
             this.player3dOverlay.update(delta, {
                 isFalling: this.isPlayerFalling,
                 isReloading: this.weaponReloading,
                 isMoving: visualMoving,
-                isSprinting: (this._sprintMoveSpeedMult ?? 1) > 1 || this.isDashing,
+                isSprinting,
                 isInjured: this.isPlayerInjured(),
                 hasAim: this.hasActiveAim,
                 moveX: visualMoveX,

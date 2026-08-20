@@ -243,6 +243,31 @@ describe('MultiplayerLobby', () => {
         });
 
         describe('handleSteamLobbyJoinRequested', () => {
+            it('leaves an existing guest lobby before joining the invited target lobby', async () => {
+                originalWindow = globalThis.window;
+                const events = [];
+                const steamJoinLobby = vi.fn().mockImplementation(async () => {
+                    events.push('join-target');
+                    return { ok: true, lobby: { id: '777', data: { hb_mode: 'coop' } } };
+                });
+                globalThis.window = { electronAPI: { steamJoinLobby, steamCreateLobby: vi.fn() } };
+                lobby.connected = true;
+                lobby.steamLobbyId = '111';
+                lobby.disconnect = vi.fn(() => {
+                    events.push('leave-current');
+                    lobby.connected = false;
+                    lobby.steamLobbyId = null;
+                });
+                lobby.connect = vi.fn().mockResolvedValue(undefined);
+
+                await lobby.handleSteamLobbyJoinRequested('777');
+
+                expect(events).toEqual(['leave-current', 'join-target']);
+                expect(lobby.steamLobbyId).toBe('777');
+                expect(lobby.roomCode).toBe('STEAM-777');
+                expect(lobby.connect).toHaveBeenCalledOnce();
+            });
+
             it('joins the lobby, derives roomCode, and connects', async () => {
                 originalWindow = globalThis.window;
                 const steamJoinLobby = vi.fn().mockResolvedValue({ ok: true, lobby: { id: '777', data: {} } });
@@ -510,18 +535,18 @@ describe('MultiplayerLobby', () => {
             expect(lobby.onLaunch).toBeNull();
         });
 
-        it('picking CO-OP or PVP connects; picking SOLO after disconnects rather than leaving a live session behind', () => {
+        it('selecting CO-OP or PVP does not create a host lobby until explicitly requested', () => {
             let connectCount = 0;
-            let disconnectCalled = false;
             lobby.connect = async () => { connectCount += 1; lobby.connected = true; };
-            lobby.disconnect = () => { disconnectCalled = true; lobby.connected = false; };
+            lobby.disconnect = () => { lobby.connected = false; };
             lobby.openModal({ onLaunch: vi.fn() });
 
             lobby.setMode(MULTIPLAYER_MODES.COOP);
-            expect(connectCount).toBe(1);
+            expect(connectCount).toBe(0);
+            expect(lobby.connected).toBe(false);
 
-            lobby.setMode(MULTIPLAYER_MODES.SOLO);
-            expect(disconnectCalled).toBe(true);
+            lobby.toggleConnection();
+            expect(connectCount).toBe(1);
         });
 
         it('cancelModal fires onCancel and clears both callbacks; a subsequent deploy click does nothing', () => {

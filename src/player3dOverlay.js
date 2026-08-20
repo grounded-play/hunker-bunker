@@ -57,7 +57,15 @@ export const ENGINEER_GESTURES = Object.freeze([
     'engineerAnnoyed', 'engineerLookAway', 'engineerSarcastic',
     'engineerAcknowledge', 'engineerHardNod', 'engineerLongNod', 'engineerNo'
 ]);
-const ONE_SHOTS = new Set(['fire', 'reload', 'hit', 'land', 'melee', ...ENGINEER_GESTURES]);
+
+export const SIGNATURE_GESTURES = Object.freeze([
+    'standingGreeting', 'dismissingGesture', 'beckoning', 'rummaging',
+    'pointingForward', 'strutWalk', 'runToStop', 'hardLanding',
+    'relievedSigh', 'beingCocky', 'annoyedHeadShake', 'thoughtfulHeadShake',
+    'lookAway', 'happyHand', 'angryGesture', 'hardHeadNod', 'floatingTrance'
+]);
+
+const ONE_SHOTS = new Set(['fire', 'reload', 'hit', 'land', 'melee', ...ENGINEER_GESTURES, ...SIGNATURE_GESTURES]);
 const BLENDABLE_ACTIONS = ['idle', 'walk', 'run', 'backward', 'strafeLeft', 'strafeRight', 'fall'];
 // Below INJURED_HP_RATIO, idle/walk/run cross-fade to their limping
 // counterparts (see computeLocomotionWeights callers). Only these three carry

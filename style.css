@@ -17128,6 +17128,18 @@ body.show-debug .map-tool-btn--debug { display: inline-flex; }
   color: #7799bb;
 }
 
+.net-field-hint {
+  font-family: 'Space Mono', monospace;
+  font-size: calc(var(--font-xs) * 0.68);
+  line-height: 1.35;
+  letter-spacing: 0.06em;
+  color: #7799bb;
+}
+
+.net-field-hint[data-state="ready"] { color: #39ff88; }
+.net-field-hint[data-state="warning"] { color: #ffe14a; }
+.net-field-hint[data-state="error"] { color: #ff4f64; }
+
 .net-code-display {
   display: flex;
   align-items: center;
@@ -19317,7 +19329,6 @@ body.colorblind-assist #net-mode-pvp-btn.active {
   background: rgba(192, 132, 252, 0.16) !important;
   box-shadow: 0 0 24px rgba(192, 132, 252, 0.35) !important;
 }
-
 
 
 

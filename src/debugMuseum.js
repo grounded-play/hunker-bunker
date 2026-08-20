@@ -9,7 +9,7 @@ import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.js';
 import { assetUrl } from './assetUrl.js';
 import { getItemCatalogEntry } from './steamVaultUi.js';
-import { WEAPON_ARCHETYPES, WEAPON_SKIN_MESHES, CHARM_GLB_MAP, MOD_GLB_MAP } from './debugAssetCatalogs.js';
+import { WEAPON_ARCHETYPES, WEAPON_SKIN_MESHES, CHARM_GLB_MAP, MOD_GLB_MAP, CHASSIS_SKIN_GLB_MAP, NPC_GLB_MAP } from './debugAssetCatalogs.js';
 import { SHOWROOM_CATEGORIES } from './debugShowroom.js';
 import { createWorld3dModel } from './world3dOverlay.js';
 
@@ -262,10 +262,23 @@ export async function openDebugMuseum(game) {
         return spawnGlbAt(loader, glbCache, url, x, 0.7, zPos);
     });
 
-    // 5. Chassis skins (icon-plane)
+    // 5. Chassis skins (3D Model with icon-plane fallback)
     await addCategory('CHASSIS SKINS', CHASSIS_SKIN_ITEMDEFS, async (itemdefid, x, zPos) => {
+        const glbUrl = CHASSIS_SKIN_GLB_MAP[itemdefid];
+        if (glbUrl) {
+            try {
+                return await spawnGlbAt(loader, glbCache, glbUrl, x, 0.0, zPos);
+            } catch (err) {
+                console.warn('[debug-museum] chassis glb fallback:', itemdefid, err);
+            }
+        }
         const catalog = getItemCatalogEntry(itemdefid);
         return spawnIconPlaneAt(catalog?.localImg || catalog?.img, x, 1.0, zPos);
+    });
+
+    // 5b. Camp Leaders & NPC Entities
+    await addCategory('CAMP LEADERS & NPCS', Object.entries(NPC_GLB_MAP), async ([, url], x, zPos) => {
+        return spawnGlbAt(loader, glbCache, url, x, 0.0, zPos);
     });
 
     // 6. Cosmetic player decals (icon-plane)

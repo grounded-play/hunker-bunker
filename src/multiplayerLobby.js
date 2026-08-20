@@ -315,19 +315,14 @@ export class MultiplayerLobby {
     }
 
     setMode(mode) {
-        const wasSolo = this.currentMode === MULTIPLAYER_MODES.SOLO;
         this.currentMode = mode;
         if (mode === MULTIPLAYER_MODES.SOLO) {
             // Backing out of a CO-OP/PVP pick to SOLO: don't leave a live
             // relay connection or Steam lobby sitting open behind the scenes
             // for a run that's about to launch solo.
             if (this.connected) this.disconnect();
-        } else if (wasSolo || !this.connected) {
-            // docs/multiplayer-flow-and-lobby-bugs-2026-08-20.md Phase 2:
-            // openModal() no longer auto-connects (that used to fire for
-            // every run, including ones that turn out solo) -- connecting
-            // only happens once the player actually picks CO-OP or PVP.
-            this.connect();
+        } else if (!this.connected && !this.steamLobbyId) {
+            this.setSteamLobbyStatus('SELECT HOST NEW LOBBY OR JOIN A PUBLIC LOBBY / INVITE', 'warning');
         }
         this.updateUiState();
         if (typeof window !== 'undefined') {
@@ -337,10 +332,9 @@ export class MultiplayerLobby {
 
     async connect() {
         // docs/multiplayer-flow-and-lobby-bugs-2026-08-20.md Phase 2: connect()
-        // is now reachable indirectly via setMode(COOP/PVP), not just
-        // openModal() (which always had a real document) -- a caller
-        // exercising setMode() alone (e.g. a unit test, or a future
-        // programmatic mode switch) shouldn't crash on a missing DOM.
+        // Host action and invite/public-join callbacks reach connect(); mode
+        // selection alone must never create a lobby. Keep the DOM guard for
+        // tests and non-visual callers.
         if (typeof document === 'undefined') return;
         const statusEl = document.getElementById('net-status-pill');
         if (statusEl) {
@@ -468,10 +462,16 @@ export class MultiplayerLobby {
 
                 // Ready-up / host-start gate (previously nonexistent -- see
                 // deployMatch/toggleReady/handleDeployButtonClick).
-                this.socket.on('playerReadyChanged', ({ id, ready }) => {
-                    const entry = this.players.get(id);
-                    if (entry) entry.ready = Boolean(ready);
-                    if (id === this.socket.id) this.localReady = Boolean(ready);
+                this.socket.on('playerReadyChanged', ({ id, ready, players }) => {
+                    if (players && typeof players === 'object') {
+                        // Server snapshot is authoritative; this also repairs
+                        // a client that missed an earlier ready transition.
+                        this.syncServerRoster(players);
+                    } else {
+                        const entry = this.players.get(id);
+                        if (entry) entry.ready = Boolean(ready);
+                        if (id === this.socket.id) this.localReady = Boolean(ready);
+                    }
                     this.updateUiState();
                 });
 
@@ -484,15 +484,17 @@ export class MultiplayerLobby {
                     this.updateUiState();
                 });
 
-                this.socket.on('matchDeployRejected', () => {
+                this.socket.on('matchDeployRejected', ({ reason } = {}) => {
                     const el = document.getElementById('net-status-pill');
                     if (!el) return;
                     const original = el.textContent;
                     const originalClass = el.className;
-                    el.textContent = 'NOT ALL OPERATIVES READY';
+                    el.textContent = reason === 'not_host'
+                        ? 'HOST CONTROL REQUIRED'
+                        : 'NOT ALL OPERATIVES READY';
                     el.className = 'net-status-pill net-status--offline';
                     setTimeout(() => {
-                        if (el.textContent === 'NOT ALL OPERATIVES READY') {
+                        if (el.textContent === 'NOT ALL OPERATIVES READY' || el.textContent === 'HOST CONTROL REQUIRED') {
                             el.textContent = original;
                             el.className = originalClass;
                         }
@@ -605,6 +607,8 @@ export class MultiplayerLobby {
         if (this.steamLobbyId) return;
         if (typeof window === 'undefined' || !window.electronAPI?.steamCreateLobby) return;
 
+        this.setSteamLobbyStatus('STEAM LOBBY: CREATING...', 'connecting');
+
         // docs/multiplayer-flow-and-lobby-bugs-2026-08-20.md Phase 2:
         // hostPrivate maps directly to Steam's own Private visibility (an
         // invite-only lobby that never appears in getSteamLobbies() browse
@@ -624,7 +628,19 @@ export class MultiplayerLobby {
             this.roomCode = deriveRelayRoomFromLobbyId(result.lobby.id);
             this.updateUiState();
             this.reportSteamRichPresence();
+            this.setSteamLobbyStatus('STEAM LOBBY READY — INVITE FRIENDS NOW', 'ready');
+        } else {
+            this.setSteamLobbyStatus('STEAM LOBBY FAILED — RUN `STEAM` DIAGNOSTICS', 'error');
         }
+    }
+
+    setSteamLobbyStatus(message, state = '') {
+        if (typeof document === 'undefined') return;
+        const status = document.getElementById('net-steam-lobby-status');
+        if (!status) return;
+        status.textContent = message;
+        if (state) status.dataset.state = state;
+        else delete status.dataset.state;
     }
 
     // The #net-steam-invite-btn click handler. Only meaningful once a
@@ -643,14 +659,17 @@ export class MultiplayerLobby {
         // an honest, specific message instead of a silently dead button.
         const launchedViaSteam = await isLaunchedViaSteam();
         if (launchedViaSteam === false) {
+            this.setSteamLobbyStatus('INVITES REQUIRE A STEAM-LAUNCHED BUILD', 'error');
             window.showToastNotification?.('STEAM OVERLAY UNAVAILABLE — LAUNCH HUNKER BUNKER FROM STEAM TO INVITE FRIENDS');
             return;
         }
         const result = await openSteamInviteDialog();
         if (result?.ok) {
+            this.setSteamLobbyStatus('STEAM INVITE PANEL OPEN — SELECT YOUR FRIEND', 'ready');
             window.showToastNotification?.('STEAM OVERLAY: SELECT A FRIEND TO INVITE');
             window.AudioManager?.play?.('fx_menu_click', { volume: 0.3, bus: 'sfx' });
         } else {
+            this.setSteamLobbyStatus('INVITE PANEL FAILED — RUN `STEAM` DIAGNOSTICS', 'error');
             window.showToastNotification?.('COULD NOT OPEN STEAM INVITE DIALOG');
         }
     }
@@ -667,13 +686,20 @@ export class MultiplayerLobby {
         const lobbies = result?.ok ? (result.lobbies ?? []) : [];
 
         if (!result?.ok) {
+            this.setSteamLobbyStatus('PUBLIC LOBBY SEARCH UNAVAILABLE — USE A STEAM INVITE', 'warning');
             listEl.innerHTML = '<div class="net-spec-row"><span class="net-spec-val">Could not load public lobbies.</span></div>';
             return;
         }
         if (lobbies.length === 0) {
+            this.setSteamLobbyStatus('NO SAME-REGION PUBLIC LOBBIES — USE INVITE OR REFRESH', 'warning');
             listEl.innerHTML = '<div class="net-spec-row"><span class="net-spec-val">No public lobbies found. Try REFRESH, or create your own.</span></div>';
             return;
         }
+
+        this.setSteamLobbyStatus(
+            lobbies.length === 1 ? '1 PUBLIC LOBBY FOUND' : `${lobbies.length} PUBLIC LOBBIES FOUND`,
+            'ready'
+        );
 
         listEl.innerHTML = '';
         for (const lobby of lobbies) {
@@ -709,10 +735,18 @@ export class MultiplayerLobby {
     // guessed at now.
     async handleSteamLobbyJoinRequested(lobbyId) {
         if (!lobbyId) return;
+        // Leave the current relay/Steam party before joining the target. The
+        // old order joined target first and then called disconnect();
+        // disconnect() leaves whichever Steam lobby is current, so a guest
+        // who had already selected CO-OP could immediately leave the invitee
+        // lobby it had just joined.
+        if (this.connected || this.steamLobbyId) this.disconnect();
+        this.setSteamLobbyStatus('JOINING STEAM INVITE...', 'connecting');
         const result = await joinSteamLobby(lobbyId);
-        if (!result?.ok) return;
-
-        if (this.connected) this.disconnect();
+        if (!result?.ok) {
+            this.setSteamLobbyStatus('STEAM INVITE JOIN FAILED — RUN `STEAM` DIAGNOSTICS', 'error');
+            return;
+        }
 
         // docs/multiplayer-flow-and-lobby-bugs-2026-08-20.md Phase 2: a
         // password-required lobby is always Steam-Private (see
@@ -733,6 +767,7 @@ export class MultiplayerLobby {
         this.roomCode = deriveRelayRoomFromLobbyId(lobbyId);
         if (result.lobby?.data?.hb_mode) this.currentMode = result.lobby.data.hb_mode;
         this.updateUiState();
+        this.setSteamLobbyStatus('INVITE ACCEPTED — CONNECTING TO SQUAD', 'connecting');
         if (typeof document !== 'undefined') {
             const modal = document.getElementById('multiplayer-modal');
             modal?.classList.remove('hidden');
@@ -1087,7 +1122,7 @@ export class MultiplayerLobby {
                 : 'socket.io://unreachable (local fallback)';
         }
         if (connectBtn) {
-            connectBtn.textContent = this.connected ? 'DISCONNECT' : 'CONNECT RELAY';
+            connectBtn.textContent = this.connected ? 'DISCONNECT' : 'HOST NEW LOBBY';
         }
 
         const rosterCountEl = document.getElementById('net-roster-count');
@@ -1160,7 +1195,10 @@ export class MultiplayerLobby {
                 deployBtn.textContent = `WAITING FOR SQUAD (${readyCount}/${this.players.size} READY)`;
             } else {
                 deployBtn.disabled = false;
-                deployBtn.textContent = deployLabel;
+                // Readiness is a vote; deployment remains a host command.
+                // Make the second host click explicit once the whole roster
+                // is ready, so the room does not appear stuck at 2/2 READY.
+                deployBtn.textContent = isCoop ? 'START SQUAD' : 'START MATCH';
             }
         }
     }

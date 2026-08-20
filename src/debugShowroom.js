@@ -9,6 +9,8 @@ import {
     WEAPON_SKIN_MESHES,
     CHARM_GLB_MAP,
     MOD_GLB_MAP,
+    CHASSIS_SKIN_GLB_MAP,
+    NPC_GLB_MAP,
     CHASSIS_SKIN_ITEMDEFS,
     COSMETIC_DECAL_ITEMDEFS
 } from './debugAssetCatalogs.js';
@@ -245,7 +247,19 @@ export async function buildShowroomScene(threeGame) {
         ...SHOWROOM_CATEGORIES.WEAPON_SKINS.map((id) => ({ id, type: 'weapon_glb', category: 'WEAPON_SKIN', glbUrl: WEAPON_SKIN_MESHES[id] })),
         ...SHOWROOM_CATEGORIES.WEAPON_CHARMS.map((id) => ({ id, type: 'weapon_glb', category: 'CHARM', glbUrl: CHARM_GLB_MAP[id] })),
         ...SHOWROOM_CATEGORIES.RIG_OVERCLOCK_MODS.map((id) => ({ id, type: 'weapon_glb', category: 'MOD', glbUrl: MOD_GLB_MAP[id] })),
-        ...SHOWROOM_CATEGORIES.CHASSIS_SKINS.map((id) => ({ id: getItemCatalogEntry(id)?.name ?? id, type: 'icon_plane', category: 'CHASSIS', itemdefid: id })),
+        ...SHOWROOM_CATEGORIES.CHASSIS_SKINS.map((id) => ({
+            id: getItemCatalogEntry(id)?.name ?? id,
+            type: CHASSIS_SKIN_GLB_MAP[id] ? 'weapon_glb' : 'icon_plane',
+            category: 'CHASSIS',
+            itemdefid: id,
+            glbUrl: CHASSIS_SKIN_GLB_MAP[id]
+        })),
+        ...Object.entries(NPC_GLB_MAP).map(([key, url]) => ({
+            id: `NPC: ${key.toUpperCase()}`,
+            type: 'weapon_glb',
+            category: 'NPC',
+            glbUrl: url
+        })),
         ...SHOWROOM_CATEGORIES.COSMETIC_PLAYER_DECALS.map((id) => ({ id: getItemCatalogEntry(id)?.name ?? id, type: 'icon_plane', category: 'DECAL', itemdefid: id }))
     ];
 
