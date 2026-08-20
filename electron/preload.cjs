@@ -380,5 +380,22 @@ contextBridge.exposeInMainWorld('electronAPI', {
         const listener = (_event, snapshot) => handler(snapshot);
         ipcRenderer.on('hb:steamInputState', listener);
         return () => ipcRenderer.removeListener('hb:steamInputState', listener);
+    },
+    // docs/steam-lobby-integration-plan-2026-08-20.md step 2.
+    steamCreateLobby: (options) => ipcRenderer.invoke('hb:steamCreateLobby', options),
+    steamJoinLobby: (lobbyId) => ipcRenderer.invoke('hb:steamJoinLobby', lobbyId),
+    steamLeaveLobby: () => ipcRenderer.invoke('hb:steamLeaveLobby'),
+    steamGetLobby: () => ipcRenderer.invoke('hb:steamGetLobby'),
+    steamOpenInviteDialog: () => ipcRenderer.invoke('hb:steamOpenInviteDialog'),
+    steamSetLobbyState: (state) => ipcRenderer.invoke('hb:steamSetLobbyState', state),
+    steamSetRichPresence: (presence) => ipcRenderer.invoke('hb:steamSetRichPresence', presence),
+    // Fires for both step 1 cases (cold-start +connect_lobby, second-instance
+    // relaunch) and the live GameLobbyJoinRequested callback -- all three
+    // converge on the same hb:steamLobbyJoinRequested push from main.cjs's
+    // forwardPendingSteamLobbyJoin(), so callers only need one subscription.
+    onSteamLobbyJoinRequested: (handler) => {
+        const listener = (_event, lobbyId) => handler(lobbyId);
+        ipcRenderer.on('hb:steamLobbyJoinRequested', listener);
+        return () => ipcRenderer.removeListener('hb:steamLobbyJoinRequested', listener);
     }
 });
