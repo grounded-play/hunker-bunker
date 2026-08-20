@@ -92,12 +92,19 @@ export async function fetchMultiplayerSessionToken(relayUrl, identity) {
 // src/gameController.js's startMultiplayerRun, called from finalizeDeploy
 // below, instead of as local functions in this file.)
 
+// Local dev backend port: matches .env.loco's PORT (3002, not the relay's
+// old default of 3001) so npm run server:local doesn't collide with the
+// production hunker-bunker-backend Docker container, which is permanently
+// bound to 127.0.0.1:3001 on machines running docker-compose.yml alongside
+// local dev. Override via window.HB_RELAY_URL if you need something else.
+const LOCAL_DEV_RELAY_URL = 'http://localhost:3002';
+
 export function resolveRelayUrl() {
-    if (typeof window === 'undefined') return 'http://localhost:3001';
+    if (typeof window === 'undefined') return LOCAL_DEV_RELAY_URL;
     if (window.HB_RELAY_URL) return window.HB_RELAY_URL;
     const origin = window.location?.origin || '';
     if (origin.includes('localhost') || origin.includes('127.0.0.1') || origin.includes(':5173')) {
-        return 'http://localhost:3001';
+        return LOCAL_DEV_RELAY_URL;
     }
     if (origin.startsWith('http://') || origin.startsWith('https://')) {
         return origin;

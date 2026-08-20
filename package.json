@@ -10,6 +10,7 @@
     "dev": "vite --host",
     "server": "nodemon server/index.js",
     "server:start": "node server/index.js",
+    "server:local": "node --env-file=.env.loco --watch server/index.js",
     "server:nonprod": "cross-env HB_DB_BACKEND=sqlite HB_DB_SQLITE_PATH=server/data/hunker-bunker-nonprod.sqlite HB_STEAM_STORE_ENABLED=1 HB_STEAM_MICROTXN_ENABLED=1 HB_STEAM_STORE_MOCK_PURCHASES=1 nodemon server/index.js",
     "build": "vite build && npm run audit:build-media",
     "audit:build-media": "node scripts/audit-build-media.js",

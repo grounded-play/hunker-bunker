@@ -82,10 +82,10 @@ describe('MultiplayerLobby', () => {
             expect(resolveRelayUrl()).toBe('https://relay.custom.io');
         });
 
-        it('resolves localhost to port 3001 for dev servers', () => {
+        it('resolves localhost to port 3002 for dev servers (avoids colliding with the production Docker container on 3001)', () => {
             originalWindow = globalThis.window;
             globalThis.window = { location: { origin: 'http://localhost:5173' } };
-            expect(resolveRelayUrl()).toBe('http://localhost:3001');
+            expect(resolveRelayUrl()).toBe('http://localhost:3002');
         });
 
         it('defaults to production backend for file:// or packaged Electron', () => {
