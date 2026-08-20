@@ -3415,6 +3415,23 @@ function maybeShowCaveSignalTransmission() {
     AudioManager.playProceduralBreathing?.({ volume: 0.035, duration: 1.8 });
 }
 
+// docs/design/one-more-ring-design-pillars.md item 1 (Sprint 28 Lane A):
+// this listener already existed as the depth-crossing ritual beat (sound +
+// radio-transmission prompt) -- it just never said anything about the
+// actual reward/danger tradeoff. `crossing` (only present on a genuine
+// crossing, see threeGame.js's emitDepthTierChanged) makes that bet
+// legible instead of a silent number change.
+function formatDepthCrossingDelta(crossing) {
+    if (!crossing) return '';
+    const pct = (value) => `${value >= 0 ? '+' : ''}${Math.round(value * 100)}%`;
+    const parts = [];
+    if (crossing.salvageMultiplierDelta) parts.push(`SALVAGE ${pct(crossing.salvageMultiplierDelta)}`);
+    if (crossing.o2EfficiencyPenaltyDelta) parts.push(`O2 EFFICIENCY ${pct(-crossing.o2EfficiencyPenaltyDelta)}`);
+    if (crossing.eliteSpawnChanceDelta) parts.push(`HOSTILE THREAT ${pct(crossing.eliteSpawnChanceDelta)}`);
+    if (crossing.rareRelicChanceDelta) parts.push(`RARE SALVAGE ODDS ${pct(crossing.rareRelicChanceDelta)}`);
+    return parts.length ? ` // ${parts.join(' // ')}` : '';
+}
+
 let lastReportedDepthTier = 0;
 window.addEventListener('depth-tier-changed', (event) => {
     const tier = event?.detail?.tier ?? 0;
@@ -3423,7 +3440,7 @@ window.addEventListener('depth-tier-changed', (event) => {
         lastReportedDepthTier = tier;
         const label = event?.detail?.label ?? `DEPTH ${tier}`;
         AudioManager.play('ui_boot', { volume: 0.28, playbackRate: 0.78 + tier * 0.06, bus: 'sfx' });
-        showBiomePrompt(`> DEPTH: ${label}`);
+        showBiomePrompt(`> DEPTH: ${label}${formatDepthCrossingDelta(event?.detail?.crossing)}`);
         maybeShowCaveSignalTransmission();
     }
 });

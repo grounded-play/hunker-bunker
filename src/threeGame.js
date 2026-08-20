@@ -147,6 +147,7 @@ import { pickTerminalEvent } from './data/terminalEvents.js';
 import { getDialogueLine, getSuitRegister } from './data/dialogueLines.js';
 import { getEnemyStats } from './data/enemies.js';
 import { DEPTH_TIER_NAMES, getDepthLootConfig } from './data/loot.js';
+import { applyO2EfficiencyPenalty, describeCrossing } from './depthContract.js';
 import { BunkerDirector } from './director.js';
 import { LineDirector } from './lineDirector.js';
 import { DIRECTOR_AMBIENT_LINES } from './data/lineDirectorPools.js';
@@ -16457,6 +16458,16 @@ export class ThreeGame {
             if (this.playerVitals.o2 < O2_DANGER_THRESHOLD) {
                 drainRate *= O2_DRAIN_RATE_DANGER_MULT;
             }
+            // docs/design/one-more-ring-design-pillars.md item 1 (Sprint 28
+            // Lane A): the Depth Contract's o2EfficiencyPenalty is the part
+            // of "one more ring" that hits the game's already-strongest,
+            // already-felt pressure system directly -- a lower efficiency
+            // at depth means the same air runs out faster. applyO2EfficiencyPenalty
+            // returns an efficiency multiplier <=1.0 (1.0 at ring 1, lower
+            // deeper); dividing drainRate by it is the correct inverse
+            // relationship ("X% less efficient" means "1/(1-X%) more drain",
+            // not "X% more drain" -- see the function's own doc comment).
+            drainRate /= applyO2EfficiencyPenalty(1.0, (this.currentDepthTier ?? 0) + 1);
             if (reactorLevel === 1) {
                 drainRate *= 0.8;
             } else if (reactorLevel >= 2) {
@@ -17992,14 +18003,27 @@ export class ThreeGame {
         });
     }
 
-    emitDepthTierChanged(depthTier = this.maxDepthTierReached) {
+    // docs/design/one-more-ring-design-pillars.md item 1 (Sprint 28 Lane A):
+    // isCrossing marks a genuine new-depth crossing (as opposed to a
+    // forceEmit re-announce of the current tier, e.g. after a respawn) --
+    // only a real crossing gets the Depth Contract's before/after delta
+    // attached, so main.js's depth-tier-changed listener can surface the
+    // "explicit, legible bet" ritual the design doc asks for without
+    // re-announcing a crossing that already happened. Ring numbers are
+    // depthTier+1 (depthContract.js's own ring 1-5 catalog is one step
+    // coarser than the live 0-3 depthTier signal this runtime actually
+    // tracks -- see depthContract.js's MAX_RING clamp for why ring 5 is
+    // simply never reached at today's depthTier ceiling, which is fine).
+    emitDepthTierChanged(depthTier = this.maxDepthTierReached, { isCrossing = false } = {}) {
         const tier = Math.max(0, Math.min(DEPTH_TIER_NAMES.length - 1, Math.floor(depthTier)));
-        window.dispatchEvent(new CustomEvent('depth-tier-changed', {
-            detail: {
-                tier,
-                label: this.getDepthTierName(tier)
-            }
-        }));
+        const detail = {
+            tier,
+            label: this.getDepthTierName(tier)
+        };
+        if (isCrossing) {
+            detail.crossing = describeCrossing(Math.max(1, tier), tier + 1);
+        }
+        window.dispatchEvent(new CustomEvent('depth-tier-changed', { detail }));
     }
 
     updateDepthTierProgress(chunkX, chunkY, { forceEmit = false } = {}) {
@@ -18010,7 +18034,7 @@ export class ThreeGame {
             this.maxDepthTierReached = depthTier;
             this.arcManager?.recordSignal?.({ deepestDepthTier: depthTier });
             this.arcManager?.evaluate?.();
-            this.emitDepthTierChanged(depthTier);
+            this.emitDepthTierChanged(depthTier, { isCrossing: true });
             return;
         }
 
