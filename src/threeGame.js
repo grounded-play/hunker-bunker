@@ -3997,12 +3997,27 @@ export class ThreeGame {
         const isPvP = this.multiplayerMode === 'pvp';
         const themeColor = isPvP ? 0xff4444 : (playerData.color || (opClass === 'SCOUT' ? 0x7dff5a : (opClass === 'TANK' ? 0xffb700 : 0x00e5ff)));
 
-        // Create 2D Sprite visual fallback / base
-        const spriteMat = new THREE.SpriteMaterial({
-            color: themeColor,
-            transparent: true,
-            opacity: 0.95
-        });
+        // Real class chassis sprite, matching how the local player's own
+        // sprite is built (this.playerMaterials is a shared, pre-textured
+        // cache keyed by class -- see this.playerSprite construction).
+        // The material AND its map are cloned per remote instance: the local
+        // player's own walk-cycle continuously rewrites .repeat/.offset on
+        // the shared cached texture (see setSpriteHalfFrame), so sharing
+        // that texture object here would make same-class remotes flicker
+        // through whatever frame the local player happens to be on. A clone
+        // gives each remote an independent, per-instance frame to drive.
+        // Falls back to a flat-color square only if that cache isn't ready.
+        const classMaterial = this.playerMaterials?.[opClass] ?? this.playerMaterials?.SCOUT;
+        const spriteMat = classMaterial
+            ? classMaterial.clone()
+            : new THREE.SpriteMaterial({ color: themeColor, transparent: true, opacity: 0.95 });
+        if (classMaterial?.map) {
+            spriteMat.map = classMaterial.map.clone();
+            spriteMat.map.needsUpdate = true;
+        }
+        if (isPvP) {
+            spriteMat.color.setHex(themeColor);
+        }
         const sprite = new THREE.Sprite(spriteMat);
         sprite.center.set(0.5, 0);
         sprite.position.set(0, 0.4, 0);
@@ -4046,14 +4061,37 @@ export class ThreeGame {
             targetPos: new THREE.Vector3(group.position.x, group.position.y, group.position.z),
             targetYaw: playerData.yaw || 0,
             currentYaw: 0,
+            vx: 0,
+            vz: 0,
+            facingRow: PLAYER_DEFAULT_DIRECTION_INDEX,
+            animationTimer: 0,
+            lastAnimationColumn: -1,
             hp: 100,
             maxHp: 100,
             isDown: false,
             lastUpdate: Date.now()
         };
 
+        this.setRemoteSpriteFrame(remote, 0, PLAYER_DEFAULT_DIRECTION_INDEX);
+
         this.remotePlayers.set(playerData.id, remote);
         return remote;
+    }
+
+    // Points a remote player's own (already-cloned, per-instance) texture at
+    // one direction/walk frame -- the remote equivalent of setSpriteHalfFrame,
+    // which operates on the local player's shared/cached texture instead.
+    setRemoteSpriteFrame(remote, column, row) {
+        const texture = remote?.sprite?.material?.map;
+        if (!texture) return;
+        const layout = getPlayerSpriteLayout(remote.opClass);
+        const directionCell = layout.directionCells[row] ?? layout.directionCells[PLAYER_DEFAULT_DIRECTION_INDEX];
+        const repeatX = 1 / layout.columns;
+        const repeatY = 1 / layout.rows;
+        const frameColumn = directionCell.baseColumn + (column % layout.walkFrames);
+        const frameBaseY = (layout.rows - 1 - directionCell.row) * repeatY;
+        texture.repeat.set(repeatX, repeatY);
+        texture.offset.set(frameColumn * repeatX, frameBaseY);
     }
 
     handleRemotePlayerMoved(data) {
@@ -4067,6 +4105,8 @@ export class ThreeGame {
         if (Number.isFinite(data.yaw)) {
             remote.targetYaw = data.yaw;
         }
+        remote.vx = Number.isFinite(data.vx) ? data.vx : 0;
+        remote.vz = Number.isFinite(data.vz) ? data.vz : 0;
         remote.animState = data.animState || 'idle';
         remote.lastUpdate = Date.now();
     }
@@ -4237,6 +4277,27 @@ export class ThreeGame {
                 const yawDelta = wrapAngle(remote.targetYaw - remote.currentYaw);
                 remote.currentYaw += yawDelta * Math.min(1.0, delta * 14);
                 mesh.rotation.y = remote.currentYaw;
+
+                // Walk-cycle animation, driven by the vx/vz/animState already
+                // broadcast in playerMove -- mirrors updatePlayerSpriteAnimation
+                // but writes into this remote's own cloned texture.
+                const speedSq = remote.vx * remote.vx + remote.vz * remote.vz;
+                const isMoving = remote.animState === 'run' && speedSq > 0.0001;
+                if (isMoving) {
+                    remote.facingRow = this.getFacingRow(remote.vx, remote.vz);
+                    const layout = getPlayerSpriteLayout(remote.opClass);
+                    remote.animationTimer += delta * layout.animationFps;
+                    const frames = layout.walkFrames;
+                    const column = ((Math.floor(remote.animationTimer) % frames) + frames) % frames;
+                    if (column !== remote.lastAnimationColumn) {
+                        remote.lastAnimationColumn = column;
+                        this.setRemoteSpriteFrame(remote, column, remote.facingRow);
+                    }
+                } else if (remote.lastAnimationColumn !== 0) {
+                    remote.animationTimer = 0;
+                    remote.lastAnimationColumn = 0;
+                    this.setRemoteSpriteFrame(remote, 0, remote.facingRow);
+                }
             }
         }
     }
@@ -19159,6 +19220,14 @@ export class ThreeGame {
                 continue;
             }
 
+            // Sprint 24 perf investigation: the gameplay longtask observer
+            // (main.js) records duration/startTime only -- the PerformanceObserver
+            // longtask API has no stack-trace/attribution of its own, so a real
+            // session log showed only "circumstantial" chunk-gen/input bursts near
+            // stalls, nothing conclusive. This tags the last known expensive
+            // synchronous operation so the *next* long-task warning can actually
+            // say what was probably running, instead of staying opaque.
+            if (typeof window !== 'undefined') window.__hbLastPerfPhase = `chunk-mount:${next.chunkX},${next.chunkY}`;
             this.mountChunk(next.chunkX, next.chunkY);
             mounted += 1;
         }
@@ -26022,6 +26091,12 @@ export class ThreeGame {
     }
 
     spawnGearPoofEffect(x, z, junkType = 'bunker_junk') {
+        // See the matching comment in processPendingChunkMounts: this call
+        // allocates ~16 fresh geometries + cloned materials per invocation
+        // (flagged by the sprint 24 perf investigation as a GC-pressure
+        // candidate when it lands near other allocation bursts), so it's
+        // tagged the same way for longtask attribution.
+        if (typeof window !== 'undefined') window.__hbLastPerfPhase = `gear-poof:${junkType}`;
         const colors = this.getJunkVariantEffectColors(junkType);
         const smokeColor = new THREE.Color(colors.smokeColor).lerp(new THREE.Color(0x6b7177), 0.45);
         const glowColor = new THREE.Color(colors.glowColor).lerp(new THREE.Color(0x7a7a7a), 0.62);

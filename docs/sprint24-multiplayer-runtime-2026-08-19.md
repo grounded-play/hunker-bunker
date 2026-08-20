@@ -558,3 +558,163 @@ necessarily the user's Steamworks partner access, which turned out to
 already be wired up) is re-running the ticket-validation test from a
 normal desktop network to isolate whether the timeout is this
 environment or an app-side issue.
+
+## New pass: playtest-driven fixes -- chassis, reconnect mode, ready-up flow, perf instrumentation (2026-08-19, later same day)
+
+Triggered by reviewing a real gameplay session log (not a synthetic
+test) exported from an actual two-player PVP match on the packaged
+Electron build against production (`steam.tuesdaycinema.club`). Three
+symptoms reported: the rival player rendered as a plain red square,
+the rival's shots were never visible, and hits never registered
+against the rival.
+
+### Root-cause findings
+
+1. **Rival renders as a flat red square -- unconditional, not a
+   connection issue.** `getOrCreateRemotePlayer` (`src/threeGame.js`)
+   built every remote player's visual as an untextured
+   `THREE.SpriteMaterial({color, ...})`, never assigning `.map`. No
+   chassis/texture existed for remote players at all, on any
+   connection type.
+2. **No ready-up/host-start flow exists at all.** Grepped the whole
+   client and server for `isReady`/`readyUp`/`countdown`/`matchStart`
+   -- nothing. The only "READY" text anywhere was a hardcoded,
+   non-functional `<span>READY</span>` label rendered on every roster
+   row unconditionally. `deployMatch()` fired unilaterally the instant
+   any single player clicked "ENTER ARENA" (`players.size === 0` was
+   the only gate), and the server's `matchDeploy` handler had zero
+   readiness concept -- it deployed the whole room the instant any one
+   socket emitted it. This is not a regression from the auto-embark
+   fix earlier today (see "Root cause #1" above) -- that fix only
+   automated the one remaining manual step (clicking Embark) on top of
+   an already-ungated deploy flow. The ready-up/host-start loop was
+   never built.
+3. **Production `/steam/session` returned 405, traced to a server-side
+   bug already fixed locally but not yet deployed.**
+   `verifySteamSessionTicket` used to reflect Steam's raw upstream
+   HTTP status verbatim; a Steam-side 405 leaked straight through as a
+   client-visible 405. Already normalized to 502 and locked in by a
+   regression test in this repo (`server/steamAuth.test.js`) -- the
+   fix just hasn't shipped to `steam.tuesdaycinema.club` yet (see
+   "Deploy attempt" below).
+4. **Reconnect mid-PvP-match silently breaks hit registration -- a
+   known gap (#6 above), confirmed live and now fixed.** A reconnect
+   gets a brand-new `socket.id` and therefore a brand-new server-side
+   player object; `mode` defaults back to `'coop'`, and every
+   subsequent `weaponHit` for that player is silently rejected by the
+   `mode !== 'pvp'` guard. Given the same session log showed
+   catastrophic main-thread stutter (below), a mid-match reconnect
+   during that match is a very plausible mechanism for the reported
+   "couldn't hit them."
+5. **Severe main-thread stutter during the same match**: hundreds of
+   60-200ms long-task warnings, plus spikes at 751ms/1004ms/1177ms/
+   2073ms/2104ms, and one 6039ms freeze. Investigated (read-only)
+   rather than blind-fixed, per the diagnostic discipline this doc
+   already follows:
+   - The pervasive 60-200ms stutter has a real, identified cause:
+     chunk mounting (`processPendingChunkMounts`/`mountChunk`,
+     `src/threeGame.js`) is fully synchronous, main-thread-only,
+     capped to 1/frame but never stops running, and does real
+     per-chunk work (WFC/room/encounter planning, `InstancedMesh`
+     construction) with no worker offload anywhere in the codebase
+     (confirmed via `grep -rln "new Worker("`).
+   - The single 6-second outlier has no confirmed single cause. Chunk
+     mounts are capped at 1/frame so can't explain it alone; the
+     existing `longtask` `PerformanceObserver` instrumentation
+     (`main.js`) only ever recorded duration/startTime, with no
+     stack-trace attribution -- the doc's own earlier note
+     (`main.js:12674-12680`) already flagged this as "circumstantial
+     evidence... no direct main-thread-stall timing to correlate
+     against." Most plausible explanation: a GC pause from a burst of
+     near-simultaneous allocations (a destructible prop's
+     `spawnGearPoofEffect` allocates ~16 fresh geometries + cloned
+     materials per call, landing in the same ~1s window as rapid
+     player clicks/projectile spawns just before the freeze) -- not
+     confirmable further with the old instrumentation.
+
+### What was built this pass
+
+- **Real remote-player chassis** (`src/threeGame.js`,
+  `getOrCreateRemotePlayer`/`updateMultiplayer`): remote sprites now
+  use the same class-textured sprite material the local player uses
+  (`this.playerMaterials[opClass]`), cloned per instance -- both the
+  material (so a PvP red tint doesn't bleed onto the local player's
+  own chassis) and its texture (so the local player's own
+  continuously-mutated walk-cycle UV offset, `setSpriteHalfFrame`,
+  doesn't hijack what frame a same-class remote displays). Added a
+  parallel `setRemoteSpriteFrame`/per-remote `animationTimer`/
+  `facingRow` so remotes actually walk-cycle-animate, driven entirely
+  by `vx`/`vz`/`animState` fields the server already broadcasts in
+  `playerMoved` -- no protocol changes needed.
+- **Reconnect PvP-mode fix** (`server/relay.js`): new `roomModes` map
+  (`roomCode -> 'coop'|'pvp'`), set on `matchDeploy`, read on
+  `joinRoom` so a (re)joining socket restores the room's in-progress
+  match mode instead of always defaulting to `'coop'`. HP is
+  deliberately *not* restored (separate design decision, not
+  attempted). Regression-tested in `server/relayReconnect.test.js`
+  (verified the test actually fails without the fix, by temporarily
+  reverting it and confirming red, then restoring green).
+- **Ready-up / host-start flow, built from scratch**
+  (`server/relay.js`, `src/multiplayerLobby.js`):
+  - Server: `player.ready` boolean; new `playerReady` event (toggle +
+    room-wide `playerReadyChanged` broadcast, cancels a pending
+    countdown if someone backs out); `matchDeploy` now rejects
+    (`matchDeployRejected`) unless every socket currently in the room
+    is ready, then broadcasts `matchCountdown` and defers the actual
+    mode/HP arm + `matchStarted` broadcast behind a 3s server-side
+    `setTimeout` (`roomCountdowns` map) so every client transitions
+    together. A disconnect mid-countdown cancels the launch rather
+    than deploying without that player.
+  - Client: `handleDeployButtonClick()` state machine drives the
+    single `#net-deploy-btn` through READY UP -> WAITING FOR
+    HOST/SQUAD -> START, with a live "STARTING IN N..." countdown
+    display; roster rows now show real per-player READY/STANDBY
+    instead of the old hardcoded label. `deployMatch()`/
+    `handleRemoteMatchStart()` were consolidated into one shared
+    `finalizeDeploy()` so the actual "leave the lobby, launch the run"
+    side effects fire exactly once per client, driven by the server's
+    `matchStarted` broadcast for every player including the host
+    (previously the host ran this logic twice: once instantly on its
+    own click, and again reacting to its own broadcast echo). The
+    offline/local-fallback path (no real server to echo a
+    `matchStarted` back) deliberately keeps the old immediate-deploy
+    behavior, since there's no one else to wait on.
+  - Regression-tested in `server/relayReadyUp.test.js` (4 tests:
+    rejects an unready deploy, deploys+broadcasts identically to every
+    player once all ready, cancels on mid-countdown un-ready, cancels
+    on mid-countdown disconnect). Verified the core rejection test
+    fails without the gate.
+- **Long-task attribution instrumentation** (`src/threeGame.js`,
+  `main.js`): tags `window.__hbLastPerfPhase` immediately before the
+  two known-expensive synchronous operations identified above (chunk
+  mount, gear-poof VFX burst) and includes it in every `longtask`
+  warning going forward -- pure additive diagnostics, no behavior
+  change, so the *next* multi-second freeze is actually traceable
+  instead of only "circumstantial."
+
+### Deploy attempt
+
+Triggered `steam-backend-deploy.yml` (`workflow_dispatch`) against
+`dev/sprit-25` to ship the already-committed `/steam/session`
+502-normalization fix (point 3 above). It failed at the pre-deploy
+`npm run steam:audit-backend:strict` gate -- correctly, before
+touching Fly.io -- because this GitHub repo has **no secrets and no
+repo variables configured at all** (`gh secret list` / `gh variable
+list` both empty): missing `HB_STEAM_PUBLISHER_KEY`,
+`HB_SESSION_SECRET`, `HB_ALLOWED_ORIGINS`, `HB_STEAM_LEADERBOARD_IDS`,
+and (untested, since the audit fails first) `FLY_API_TOKEN`. Nothing
+was deployed; production is unchanged. This is a credentials/
+account-access gap, not a code gap -- closing it needs whoever holds
+the Fly.io and Steamworks partner credentials, not further engineering
+work. Run: `github.com/grounded-play/hunker-bunker/actions/runs/32316662105`.
+
+### Net effect
+
+Co-op/PvP multiplayer now has: a real chassis for every remote player
+(not a placeholder), a working ready-up/synchronized-start flow
+(previously nonexistent), a closed reconnect-mode gap (previously a
+confirmed, live-reproduced bug), and diagnosable long-task attribution
+for the still-open perf-stutter investigation. The `/steam/session`
+production 405 has a code fix ready and regression-tested, but
+shipping it needs GitHub Actions secrets configured by whoever owns
+those credentials.

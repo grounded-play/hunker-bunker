@@ -123,6 +123,13 @@ export class MultiplayerLobby {
         this.isLocalPlayerHost = false;
         this.activeMatch = null;
         this.usingRelay = false;
+        // Ready-up / host-start gate: previously nonexistent -- any single
+        // player clicking deploy instantly launched the whole room with no
+        // wait for anyone else (see the deployMatch/matchDeploy trail).
+        // localReady mirrors the player's own roster entry's `ready` field
+        // for quick reads before that entry may exist.
+        this.localReady = false;
+        this.countdownInterval = null;
     }
 
     init() {
@@ -158,7 +165,7 @@ export class MultiplayerLobby {
         connectBtn?.addEventListener('click', () => this.toggleConnection());
 
         const deployBtn = document.getElementById('net-deploy-btn');
-        deployBtn?.addEventListener('click', () => this.deployMatch());
+        deployBtn?.addEventListener('click', () => this.handleDeployButtonClick());
 
         const copyCodeBtn = document.getElementById('net-copy-code-btn');
         copyCodeBtn?.addEventListener('click', () => this.copyRoomCode());
@@ -212,6 +219,13 @@ export class MultiplayerLobby {
                 this.socket.on('connect', () => {
                     this.connected = true;
                     this.usingRelay = true;
+                    // A reconnect re-fires 'connect' with a brand-new
+                    // socket.id and, server-side, a fresh player.ready=false
+                    // (see joinRoom) -- mirror that here rather than keeping
+                    // a stale locally-ready flag pointed at an id that no
+                    // longer exists.
+                    this.localReady = false;
+                    this.cancelCountdownDisplay();
                     this.socket.emit('joinRoom', {
                         roomCode: this.roomCode,
                         callsign,
@@ -223,7 +237,8 @@ export class MultiplayerLobby {
                         callsign: `${callsign} (HOST)`,
                         opClass,
                         ping: 14,
-                        isSelf: true
+                        isSelf: true,
+                        ready: false
                     });
                     this.updateUiState();
                 });
@@ -245,7 +260,8 @@ export class MultiplayerLobby {
                                 callsign: player.callsign || `OPERATIVE-${id.slice(0, 4).toUpperCase()}`,
                                 opClass: player.opClass || 'SCOUT',
                                 ping: Math.floor(20 + Math.random() * 30),
-                                isSelf: false
+                                isSelf: false,
+                                ready: Boolean(player.ready)
                             });
                         }
                     });
@@ -259,7 +275,8 @@ export class MultiplayerLobby {
                         callsign: p?.callsign || `OPERATIVE-${id.slice(0, 4).toUpperCase()}`,
                         opClass: p?.opClass || 'ENGINEER',
                         ping: 28,
-                        isSelf: false
+                        isSelf: false,
+                        ready: Boolean(p?.ready)
                     });
                     this.updateUiState();
                     window.AudioManager?.play?.('fx_achievement', { volume: 0.25, bus: 'sfx' });
@@ -268,6 +285,39 @@ export class MultiplayerLobby {
                 this.socket.on('playerDisconnected', (id) => {
                     this.players.delete(id);
                     this.updateUiState();
+                });
+
+                // Ready-up / host-start gate (previously nonexistent -- see
+                // deployMatch/toggleReady/handleDeployButtonClick).
+                this.socket.on('playerReadyChanged', ({ id, ready }) => {
+                    const entry = this.players.get(id);
+                    if (entry) entry.ready = Boolean(ready);
+                    if (id === this.socket.id) this.localReady = Boolean(ready);
+                    this.updateUiState();
+                });
+
+                this.socket.on('matchCountdown', ({ durationMs }) => {
+                    this.beginCountdownDisplay(durationMs);
+                });
+
+                this.socket.on('matchCountdownCancelled', () => {
+                    this.cancelCountdownDisplay();
+                    this.updateUiState();
+                });
+
+                this.socket.on('matchDeployRejected', () => {
+                    const el = document.getElementById('net-status-pill');
+                    if (!el) return;
+                    const original = el.textContent;
+                    const originalClass = el.className;
+                    el.textContent = 'NOT ALL OPERATIVES READY';
+                    el.className = 'net-status-pill net-status--offline';
+                    setTimeout(() => {
+                        if (el.textContent === 'NOT ALL OPERATIVES READY') {
+                            el.textContent = original;
+                            el.className = originalClass;
+                        }
+                    }, 2200);
                 });
 
                 this.socket.on('matchStarted', (data) => {
@@ -309,12 +359,19 @@ export class MultiplayerLobby {
         const opClass = (typeof window !== 'undefined' && window.selectedPlayerType) || 'TANK';
 
         this.players.clear();
+        // No real server exists to arbitrate a ready-up gate against in this
+        // fallback path -- deploy stays immediate/single-click, as it always
+        // was (see deployMatch/handleDeployButtonClick), so every entry here
+        // is cosmetically "ready" rather than showing a STANDBY state that
+        // clicking deploy would never actually wait on.
+        this.localReady = true;
         this.players.set('local-host', {
             id: 'local-host',
             callsign: `${callsign} (HOST)`,
             opClass,
             ping: 8,
-            isSelf: true
+            isSelf: true,
+            ready: true
         });
 
         // Simulated squadmate/rival for offline/local simulation
@@ -324,7 +381,8 @@ export class MultiplayerLobby {
                 callsign: 'SPECTRE-9',
                 opClass: 'SCOUT',
                 ping: 16,
-                isSelf: false
+                isSelf: false,
+                ready: true
             });
         } else {
             this.players.set('peer-rival', {
@@ -332,7 +390,8 @@ export class MultiplayerLobby {
                 callsign: 'VULCAN-X',
                 opClass: 'ENGINEER',
                 ping: 19,
-                isSelf: false
+                isSelf: false,
+                ready: true
             });
         }
         this.updateUiState();
@@ -347,6 +406,8 @@ export class MultiplayerLobby {
         this.usingRelay = false;
         this.players.clear();
         this.activeMatch = null;
+        this.localReady = false;
+        this.cancelCountdownDisplay();
         this.updateUiState();
     }
 
@@ -358,9 +419,87 @@ export class MultiplayerLobby {
         }
     }
 
+    // The single #net-deploy-btn's click handler now dispatches on
+    // connection/ready/host state instead of always deploying instantly --
+    // see the class-level comment on `localReady` for why this exists.
+    handleDeployButtonClick() {
+        if (!this.usingRelay) {
+            // No real server session (offline/local fallback) -- there's no
+            // one else to wait on, so deploy immediately, exactly as this
+            // always worked before the ready-up gate existed.
+            this.deployMatch();
+            return;
+        }
+        if (!this.localReady) {
+            this.setLocalReady(true);
+            return;
+        }
+        if (this.isLocalPlayerHost) {
+            if (this.allPlayersReady()) {
+                this.deployMatch();
+            } else {
+                // Not everyone's ready -- clicking again backs the host out
+                // rather than doing nothing, so there's always a way to
+                // cancel your own ready state from this one button.
+                this.setLocalReady(false);
+            }
+            return;
+        }
+        // Non-host, already ready: toggle back to not-ready.
+        this.setLocalReady(false);
+    }
+
+    allPlayersReady() {
+        if (this.players.size === 0) return false;
+        return Array.from(this.players.values()).every((p) => p.ready);
+    }
+
+    setLocalReady(ready) {
+        this.localReady = ready;
+        const self = this.players.get(this.socket?.id);
+        if (self) self.ready = ready;
+        this.socket?.emit('playerReady', { ready });
+        this.updateUiState();
+    }
+
+    beginCountdownDisplay(durationMs) {
+        this.cancelCountdownDisplay();
+        const deployBtn = document.getElementById('net-deploy-btn');
+        let remaining = Math.ceil((durationMs ?? 3000) / 1000);
+        if (deployBtn) {
+            deployBtn.disabled = true;
+            deployBtn.textContent = `STARTING IN ${remaining}...`;
+        }
+        this.countdownInterval = setInterval(() => {
+            remaining -= 1;
+            if (deployBtn && remaining > 0) {
+                deployBtn.textContent = `STARTING IN ${remaining}...`;
+            }
+            if (remaining <= 0 && this.countdownInterval) {
+                clearInterval(this.countdownInterval);
+                this.countdownInterval = null;
+            }
+        }, 1000);
+    }
+
+    cancelCountdownDisplay() {
+        if (this.countdownInterval) {
+            clearInterval(this.countdownInterval);
+            this.countdownInterval = null;
+        }
+    }
+
+    // Requests a deploy. For a real relay session this only asks the server
+    // to start the ready-up-gated countdown (see server/relay.js's
+    // matchDeploy handler) -- the run itself only actually launches once
+    // matchStarted comes back through handleRemoteMatchStart below, the same
+    // path every other player in the room takes, so host and guests start
+    // together instead of the host launching solo the instant it clicks
+    // deploy. The offline/local fallback path (no real server to echo a
+    // matchStarted back) is the one exception: it still launches immediately,
+    // exactly as this always worked before the ready-up gate existed.
     deployMatch() {
         window.AudioManager?.play?.('fx_menu_confirm', { volume: 0.4, bus: 'sfx' });
-        this.closeModal();
 
         const playerRoster = Array.from(this.players.values());
         const crashPlan = planMultiplayerCrashSites({
@@ -370,11 +509,40 @@ export class MultiplayerLobby {
             playerRoster
         });
 
+        if (this.usingRelay && this.socket) {
+            this.socket.emit('matchDeploy', {
+                seed: this.roomCode,
+                mode: this.currentMode,
+                crashPlan
+            });
+            return;
+        }
+
+        this.finalizeDeploy({ mode: this.currentMode, seed: this.roomCode, crashPlan });
+    }
+
+    handleRemoteMatchStart(data) {
+        this.cancelCountdownDisplay();
+        this.finalizeDeploy({
+            mode: data.mode || this.currentMode,
+            seed: data.seed || this.roomCode,
+            crashPlan: data.crashPlan || null
+        });
+    }
+
+    // Shared by deployMatch's offline-fallback path and handleRemoteMatchStart
+    // (the real-relay path, for host and guests alike) -- the actual "leave
+    // the lobby and launch the run" side effects used to be duplicated
+    // between those two call sites, which meant a real-relay host ran them
+    // twice: once instantly and redundantly from its own deployMatch, and
+    // again moments later reacting to its own matchStarted echo from the
+    // server (io.to() includes the sender). Consolidated to one place.
+    finalizeDeploy({ mode, seed, crashPlan }) {
         this.activeMatch = {
             roomCode: this.roomCode,
-            mode: this.currentMode,
-            seed: this.roomCode,
-            crashPlan,
+            mode,
+            seed,
+            crashPlan: crashPlan || null,
             isMultiplayer: true,
             isHost: Boolean(this.isLocalPlayerHost),
             socket: this.socket
@@ -390,14 +558,7 @@ export class MultiplayerLobby {
             window.game?.setupMultiplayerNetwork?.();
         }
 
-        // Notify socket peers if connected
-        if (this.socket) {
-            this.socket.emit('matchDeploy', {
-                seed: this.roomCode,
-                mode: this.currentMode,
-                crashPlan
-            });
-        }
+        this.closeModal();
 
         // Launch the game run. start-game only opens the pre-mission Armory
         // gate -- it does not itself start the run -- so also auto-embark
@@ -408,33 +569,9 @@ export class MultiplayerLobby {
             void autoEmbarkFromArmory();
         }
 
-        const modeName = this.currentMode === MULTIPLAYER_MODES.COOP ? 'CO-OP EXPEDITION' : 'PVP SECTOR DUEL';
+        const modeName = mode === MULTIPLAYER_MODES.COOP ? 'CO-OP EXPEDITION' : 'PVP SECTOR DUEL';
         if (typeof window !== 'undefined' && window.showToastNotification) {
             window.showToastNotification(`TACTICAL NET DEPLOYED: ${modeName}`);
-        }
-    }
-
-    handleRemoteMatchStart(data) {
-        this.activeMatch = {
-            roomCode: this.roomCode,
-            mode: data.mode || this.currentMode,
-            seed: data.seed || this.roomCode,
-            crashPlan: data.crashPlan || null,
-            isMultiplayer: true,
-            isHost: Boolean(this.isLocalPlayerHost),
-            socket: this.socket
-        };
-
-        if (typeof window !== 'undefined') {
-            window.activeMultiplayerSession = this.activeMatch;
-            window.game?.setupMultiplayerNetwork?.();
-        }
-
-        this.closeModal();
-        const startBtn = document.getElementById('start-game') || document.getElementById('title-newrun-btn');
-        if (startBtn) {
-            startBtn.click();
-            void autoEmbarkFromArmory();
         }
     }
 
@@ -536,7 +673,7 @@ export class MultiplayerLobby {
                             <span>${player.ping}ms</span>
                         </div>
                         <div class="net-roster-status">
-                            <span class="net-status-tag">READY</span>
+                            <span class="net-status-tag ${player.ready ? '' : 'net-status-tag--standby'}">${player.ready ? 'READY' : 'STANDBY'}</span>
                         </div>
                     `;
                     rosterGrid.appendChild(row);
@@ -545,9 +682,33 @@ export class MultiplayerLobby {
         }
 
         const deployBtn = document.getElementById('net-deploy-btn');
-        if (deployBtn) {
-            deployBtn.disabled = !this.connected || this.players.size === 0;
-            deployBtn.textContent = isCoop ? 'DEPLOY SQUAD' : 'ENTER ARENA';
+        // A pending countdown owns the button's text/disabled state (see
+        // beginCountdownDisplay) -- don't stomp it on an unrelated
+        // updateUiState() call (e.g. another player's ready toggle) while
+        // one is running.
+        if (deployBtn && !this.countdownInterval) {
+            const deployLabel = isCoop ? 'DEPLOY SQUAD' : 'ENTER ARENA';
+            if (!this.connected || this.players.size === 0) {
+                deployBtn.disabled = true;
+                deployBtn.textContent = deployLabel;
+            } else if (!this.usingRelay) {
+                // Offline/local fallback: no ready-up gate to arbitrate.
+                deployBtn.disabled = false;
+                deployBtn.textContent = deployLabel;
+            } else if (!this.localReady) {
+                deployBtn.disabled = false;
+                deployBtn.textContent = 'READY UP';
+            } else if (!this.isLocalPlayerHost) {
+                deployBtn.disabled = false;
+                deployBtn.textContent = 'WAITING FOR HOST... (CLICK TO UN-READY)';
+            } else if (!this.allPlayersReady()) {
+                const readyCount = Array.from(this.players.values()).filter((p) => p.ready).length;
+                deployBtn.disabled = false;
+                deployBtn.textContent = `WAITING FOR SQUAD (${readyCount}/${this.players.size} READY)`;
+            } else {
+                deployBtn.disabled = false;
+                deployBtn.textContent = deployLabel;
+            }
         }
     }
 }

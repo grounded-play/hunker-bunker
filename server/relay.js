@@ -82,10 +82,29 @@ export function attachRelay(server, { allowedOrigins = [] } = {}) {
     const players = new Map();
     // Map: roomCode -> Set of socketIds
     const rooms = new Map();
+    // Map: roomCode -> 'coop' | 'pvp'. A reconnect gets an entirely fresh
+    // socket.id and therefore a fresh `player` object (mode defaults back to
+    // 'coop' below) -- without this, a reconnect mid-PvP-match silently
+    // fails every subsequent weaponHit for that player against the
+    // `mode !== 'pvp'` guard, with no client-visible error. Set on
+    // matchDeploy, read on joinRoom so a (re)joining socket picks up the
+    // room's current match mode instead of always defaulting to coop.
+    // HP is deliberately NOT restored here -- that's a separate design
+    // decision (respawn-on-reconnect vs. exact-HP-restore) this fix doesn't
+    // attempt.
+    const roomModes = new Map();
+    // Map: roomCode -> { timeout }. Set when a host's matchDeploy passes the
+    // ready-up gate below; the actual mode/HP arm + matchStarted broadcast
+    // is deferred to when this timer fires, giving every client the same
+    // countdown window to reach gameplay together instead of the host
+    // launching solo the instant they click deploy.
+    const roomCountdowns = new Map();
+    const MATCH_COUNTDOWN_MS = 3000;
 
     const getPublicPlayer = (p) => ({
         id: p.id,
         callsign: p.callsign,
+        ready: p.ready,
         opClass: p.opClass,
         x: p.x,
         z: p.z,
@@ -161,7 +180,11 @@ export function attachRelay(server, { allowedOrigins = [] } = {}) {
             hp: PVP_DEFAULT_MAX_HP,
             maxHp: PVP_DEFAULT_MAX_HP,
             mode: 'coop',
-            lastWeaponHitAt: 0
+            lastWeaponHitAt: 0,
+            // Ready-up gate (see matchDeploy below): previously nonexistent --
+            // any single socket emitting matchDeploy instantly launched the
+            // whole room for everyone, with no wait for other players.
+            ready: false
         };
         players.set(socket.id, player);
 
@@ -181,6 +204,15 @@ export function attachRelay(server, { allowedOrigins = [] } = {}) {
             player.roomCode = roomCode;
             player.callsign = callsign;
             player.opClass = opClass;
+            player.ready = false;
+            // Restore the room's in-progress match mode (see roomModes
+            // comment above) -- covers both a genuine reconnect mid-match
+            // and, harmlessly, a first-time join before any matchDeploy has
+            // happened yet (roomModes has no entry, so this is a no-op and
+            // player.mode keeps its 'coop' default from connection time).
+            if (roomModes.has(roomCode)) {
+                player.mode = roomModes.get(roomCode);
+            }
 
             if (!rooms.has(roomCode)) {
                 rooms.set(roomCode, new Set());
@@ -198,38 +230,75 @@ export function attachRelay(server, { allowedOrigins = [] } = {}) {
             socket.to(roomCode).emit('newPlayer', getPublicPlayer(player));
         });
 
-        // Match deployment / start event (initiated by room host)
+        // Ready-up gate: previously there was no readiness concept at all --
+        // any single socket emitting matchDeploy instantly deployed the
+        // whole room. A player toggles their own ready state; backing out
+        // while a countdown is already pending cancels the launch rather
+        // than silently deploying without them.
+        socket.on('playerReady', (data = {}) => {
+            if (!player.roomCode) return;
+            player.ready = Boolean(data.ready);
+            io.to(player.roomCode).emit('playerReadyChanged', { id: socket.id, ready: player.ready });
+
+            if (!player.ready && roomCountdowns.has(player.roomCode)) {
+                const pending = roomCountdowns.get(player.roomCode);
+                clearTimeout(pending.timeout);
+                roomCountdowns.delete(player.roomCode);
+                io.to(player.roomCode).emit('matchCountdownCancelled', { reason: 'player_unready', playerId: socket.id });
+            }
+        });
+
+        // Match deployment / start event (initiated by room host). Gated on
+        // every player in the room being ready, then a short synchronized
+        // countdown -- matchStarted only fires once that elapses, so every
+        // client (including the host, via its own io.to() echo) starts
+        // together via the same handleRemoteMatchStart path client-side,
+        // instead of the host launching solo the instant it clicks deploy.
         socket.on('matchDeploy', (matchData = {}) => {
             const roomCode = player.roomCode;
-            if (!roomCode) return;
+            if (!roomCode || roomCountdowns.has(roomCode)) return;
 
-            const mode = matchData.mode === 'pvp' ? 'pvp' : 'coop';
-            const payload = {
-                seed: matchData.seed || 'SECTOR-7',
-                mode,
-                crashPlan: matchData.crashPlan || null,
-                startedBy: socket.id,
-                timestamp: Date.now()
-            };
-
-            // Sprint 24 Milestone A: (re)arm server-authoritative HP for every
-            // player in the room at the start of a fresh match, not just the
-            // one who clicked deploy.
             const roomSocketIds = rooms.get(roomCode);
-            if (roomSocketIds) {
-                roomSocketIds.forEach((id) => {
-                    const p = players.get(id);
-                    if (!p) return;
-                    p.mode = mode;
-                    p.hp = PVP_DEFAULT_MAX_HP;
-                    p.maxHp = PVP_DEFAULT_MAX_HP;
-                });
+            const allReady = Boolean(roomSocketIds?.size) && Array.from(roomSocketIds).every((id) => players.get(id)?.ready);
+            if (!allReady) {
+                socket.emit('matchDeployRejected', { reason: 'not_all_ready' });
+                return;
             }
 
-            sessionTelemetry.matchesDeployed += 1;
-            logRelayEvent('MATCH_DEPLOY', { roomCode, mode: payload.mode, seed: payload.seed, startedBy: socket.id });
+            const mode = matchData.mode === 'pvp' ? 'pvp' : 'coop';
+            const seed = matchData.seed || 'SECTOR-7';
+            const crashPlan = matchData.crashPlan || null;
+            const startedBy = socket.id;
 
-            io.to(roomCode).emit('matchStarted', payload);
+            io.to(roomCode).emit('matchCountdown', { durationMs: MATCH_COUNTDOWN_MS });
+
+            const timeout = setTimeout(() => {
+                roomCountdowns.delete(roomCode);
+                roomModes.set(roomCode, mode);
+
+                // Sprint 24 Milestone A: (re)arm server-authoritative HP for
+                // every player in the room at the start of a fresh match, not
+                // just the one who clicked deploy. Ready resets so the next
+                // deploy needs a fresh ready-up, not stale state from this one.
+                const roomSocketIdsNow = rooms.get(roomCode);
+                if (roomSocketIdsNow) {
+                    roomSocketIdsNow.forEach((id) => {
+                        const p = players.get(id);
+                        if (!p) return;
+                        p.mode = mode;
+                        p.hp = PVP_DEFAULT_MAX_HP;
+                        p.maxHp = PVP_DEFAULT_MAX_HP;
+                        p.ready = false;
+                    });
+                }
+
+                sessionTelemetry.matchesDeployed += 1;
+                logRelayEvent('MATCH_DEPLOY', { roomCode, mode, seed, startedBy });
+
+                io.to(roomCode).emit('matchStarted', { seed, mode, crashPlan, startedBy, timestamp: Date.now() });
+            }, MATCH_COUNTDOWN_MS);
+
+            roomCountdowns.set(roomCode, { timeout });
         });
 
         // Player movement relay
@@ -521,8 +590,17 @@ export function attachRelay(server, { allowedOrigins = [] } = {}) {
             if (roomCode && rooms.has(roomCode)) {
                 const roomSet = rooms.get(roomCode);
                 roomSet.delete(socket.id);
+                // A disconnect mid-countdown means the room that was
+                // confirmed all-ready no longer matches who's actually
+                // still here -- cancel rather than deploy without them.
+                if (roomCountdowns.has(roomCode)) {
+                    clearTimeout(roomCountdowns.get(roomCode).timeout);
+                    roomCountdowns.delete(roomCode);
+                    io.to(roomCode).emit('matchCountdownCancelled', { reason: 'player_disconnected', playerId: socket.id });
+                }
                 if (roomSet.size === 0) {
                     rooms.delete(roomCode);
+                    roomModes.delete(roomCode);
                 } else {
                     socket.to(roomCode).emit('playerDisconnected', socket.id);
                 }

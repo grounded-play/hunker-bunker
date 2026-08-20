@@ -12686,7 +12686,14 @@ function startGameplayLongTaskDiagnostics() {
             for (const task of list.getEntries()) {
                 debugLog.warn('PERF', `Long task: ${Math.round(task.duration)}ms`, {
                     durationMs: Math.round(task.duration),
-                    startMs: Math.round(task.startTime)
+                    startMs: Math.round(task.startTime),
+                    // Set by threeGame.js right before each known-expensive
+                    // synchronous op (chunk mounting, prop-break VFX) and left
+                    // in place afterward -- since JS is single-threaded, by the
+                    // time this callback runs it still names whichever of
+                    // those was most recently active, which is the closest
+                    // thing to attribution the longtask API allows.
+                    lastPhase: window.__hbLastPerfPhase ?? null
                 });
             }
         });

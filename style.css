@@ -17303,6 +17303,12 @@ body.show-debug .map-tool-btn--debug { display: inline-flex; }
   border: 1px solid rgba(57, 255, 136, 0.3);
 }
 
+.net-status-tag--standby {
+  color: #ffb700;
+  background: rgba(255, 183, 0, 0.1);
+  border-color: rgba(255, 183, 0, 0.3);
+}
+
 .net-empty-roster {
   display: flex;
   flex-direction: column;
