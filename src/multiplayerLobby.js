@@ -33,8 +33,28 @@ export const MULTIPLAYER_MODES = Object.freeze({
 // failed) falls through to the dev placeholder, which the backend's
 // existing dev-fallback path (isDevFallbackAllowed in server/steamAuth.js)
 // already handles correctly.
-async function fetchMultiplayerSessionToken(relayUrl, identity) {
+//
+// Steam store walkthrough (docs/steamstorestatus.log), Part A CORS fix:
+// a packaged Electron build's renderer origin is file:// (or null), which
+// production's strict HB_ALLOWED_ORIGINS rejects outright once wildcard/
+// localhost/non-HTTPS origins are locked out -- so POSTing /steam/session
+// from *this* renderer fetch() would start failing the moment production
+// origins are locked down, even though the ticket itself was fetched
+// correctly via IPC above. electron/preload.cjs already exposes
+// window.electronAPI.createSteamSession(), which mints the same session
+// via a preload-context request (electron/preload.cjs's
+// requestSteamBackend -- Node's fetch, not the renderer's CORS-bound one)
+// and, as a bonus, cancels the auth ticket handle when done (this
+// function's own manual fetch path never did). Preferred whenever
+// available; the manual fetch below stays as the fallback for a plain
+// browser dev tab, where window.electronAPI doesn't exist at all.
+export async function fetchMultiplayerSessionToken(relayUrl, identity) {
     try {
+        if (typeof window !== 'undefined' && window.electronAPI?.createSteamSession) {
+            const session = await window.electronAPI.createSteamSession(identity);
+            return session?.ok ? session.token : null;
+        }
+
         let ticketHex = null;
         if (typeof window !== 'undefined' && window.electronAPI?.getSteamAuthTicket) {
             const ticketResult = await window.electronAPI.getSteamAuthTicket(identity);

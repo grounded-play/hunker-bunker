@@ -98,10 +98,34 @@ export function getRelayTelemetry() {
     };
 }
 
+// docs/steamstorestatus.log Part A CORS fix: a packaged Electron renderer's
+// Socket.IO handshake carries an Origin of 'file://' (a scheme, not a
+// browser-style https://host) or no Origin header at all -- neither ever
+// matches an HB_ALLOWED_ORIGINS entry, which strict production deploys
+// require to be real https:// web origins (see
+// server/backendEnvAudit.js's validateOrigins). Locking HB_ALLOWED_ORIGINS
+// down for the real production web origin would therefore also lock out
+// every legitimate packaged-game connection, not just browser tabs.
+// Permits the configured web origins (unchanged) OR a missing/file://
+// Electron origin; does NOT weaken auth -- the socket auth middleware
+// below (io.use, verifying handshake.auth.sessionToken against a signed
+// Steam session) still rejects any connection without a valid session
+// regardless of which origin let the handshake through. CORS answers
+// "which web page may script this connection," not "who is allowed to
+// act" -- those are different questions and only the second one is
+// actually a trust boundary here.
+export function isAllowedRelayOrigin(origin, allowedOrigins = []) {
+    if (allowedOrigins.length === 0) return true; // dev/local: no allowlist configured
+    if (!origin || origin === 'null' || origin.startsWith('file://')) return true;
+    return allowedOrigins.includes(origin);
+}
+
 export function attachRelay(server, { allowedOrigins = [] } = {}) {
     const io = new Server(server, {
         cors: {
-            origin: allowedOrigins.length > 0 ? allowedOrigins : '*',
+            origin: (origin, callback) => {
+                callback(null, isAllowedRelayOrigin(origin, allowedOrigins));
+            },
             methods: ['GET', 'POST']
         }
     });
