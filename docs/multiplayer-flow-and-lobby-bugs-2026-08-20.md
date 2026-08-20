@@ -216,21 +216,58 @@ Title → NEW RUN
 
 ### What this actually requires, broken into phases
 
-**Phase 1 — reroute multiplayer through armory (structural, no new UI).**
-Remove the title-screen and briefing-screen tactical-net entry points; make
-"deploy to tactical net" a mode reachable only after armory embark, on the
-same trigger `closeArmoryScreen({embark:true})` currently uses for solo.
-This alone fixes the "multiplayer players never see armory" gap and gives
-every run — solo or multiplayer — one shared launch sequence to build the
-new screen on top of.
+**Phase 1 and 2 — SHIPPED and live-verified 2026-08-20 (later).** Both
+phases below were built together, since Phase 2's screen needed Phase 1's
+rerouting to have anywhere to open into. Live-tested end to end against the
+real running dev server (Playwright driving a real browser, not just unit
+tests): title → NEW RUN → class select → Armory → embark now opens the
+Deployment Briefing screen with SOLO active by default (`net-mode-solo-btn`
+has the `active` class, telemetry/roster columns correctly hidden, Armory
+itself correctly torn down); clicking **DEPLOY SOLO** launches straight
+into real gameplay (`performanceProfile: 'gameplay'`, `isMultiplayer:
+false`, fullscreen game container) with zero console errors throughout.
+Separately verified picking CO-OP connects to a real local relay server
+(`ONLINE // RELAY ACTIVE`), correctly hides the private-lobby fields once
+connected, and that the "×" close button correctly returns to the title
+menu (`onCancel`) instead of leaving the screen in a dead state. Also
+verified the old title-screen "TACTICAL NET" button, now rebound to the
+same flow as "NEW RUN" instead of skipping class-select/Armory, correctly
+opens the roster/class-select screen. Full test suite (1821 tests) and a
+production build both green throughout.
 
-**Phase 2 — build the Deployment Briefing screen.** A new screen/modal that
-opens where solo currently jumps straight to gameplay: SOLO/CO-OP/PVP
-segmentation up top, and — only when CO-OP or PVP is chosen — the existing
-tactical-net modal's markup and logic (room code, Steam lobby browser,
-roster, ready-up, invite) relocated in, not rebuilt. Solo, picking SOLO,
-should fall straight through with no added friction (a plain skip, not an
-extra click through empty multiplayer UI).
+**Phase 1 — reroute multiplayer through armory (structural, no new UI).**
+Removed the title-screen and briefing-screen tactical-net entry points as
+standalone modal-openers; `#title-multiplayer-btn` is now rebound to the
+same handler as `#title-newrun-btn` (`main.js`'s new
+`startNewTacticalRunFlow()`), and `#briefing-multiplayer-btn`'s container
+is hidden (`index.html`, `#multiplayer-command`) rather than deleted.
+`#start-game`'s Armory-embark callback (`main.js`) now opens the
+Deployment Briefing screen instead of calling `launchStandardRun`
+directly; `src/gameController.js`'s `startMultiplayerRun` no longer
+DOM-clicks back through Armory (`clickThroughToArmoryEmbark` removed
+entirely) since Armory has already run by the time it fires — it just
+sets up the multiplayer session and calls the same launch callback Armory
+itself captured. This fixes the "multiplayer players never see Armory in
+the right order" gap and gives every run — solo or multiplayer — one
+shared launch sequence.
+
+**Phase 2 — build the Deployment Briefing screen.** Reused the existing
+tactical-net modal (`#multiplayer-modal`) rather than building a new one
+from scratch: added a SOLO mode card (`#net-mode-solo-btn`, default-active
+whenever the screen opens, regardless of what mode was picked last run —
+opening this screen must never imply a live relay/Steam connection by
+surprise) alongside the existing CO-OP/PVP cards. `multiplayerLobby.js`'s
+`openModal()` now takes `{ onLaunch, onCancel }` callbacks instead of
+opening itself from a button click; `setMode()` only calls `connect()` when
+CO-OP/PVP is actually chosen (previously `openModal()` connected
+unconditionally on every open, which would have silently created a live
+Steam lobby even for a run that turns out solo). SOLO's deploy button
+(`handleDeployButtonClick`) skips the entire relay/ready-up path and calls
+`onLaunch` directly; a completed CO-OP/PVP deploy (`finalizeDeploy`) does
+the same after `setupMultiplayerNetwork()` runs. The "×" button
+(`cancelModal`, new) is the only path that fires `onCancel` — the two
+success paths call the plain `closeModal()` instead, so a completed deploy
+can never race with "return to menu."
 
 The user specified the exact lobby capabilities CO-OP/PVP must expose here.
 Checked each against what's actually in the codebase today (`visibility`
@@ -244,24 +281,43 @@ modal markup):
   by 1b above (region-filter limitation). Relocating this UI doesn't fix
   that; resolving 1b is a prerequisite for this capability actually working
   cross-region, not just cross-desk/same-network.
-- **Host sets the lobby private, with a password** — **does not exist
-  today, genuinely new work, on both ends:**
-  - `electron/main.cjs`'s `STEAM_LOBBY_TYPE` already includes `private: 0`
-    (`main.js:928`) and `hb:steamCreateLobby` already accepts any
-    `visibility` value — but nothing in the UI ever exposes a choice; every
-    call site hardcodes/defaults to `'public'`. Wiring a visibility toggle
-    into the host-side UI is the easy half of this.
-  - Password protection has **no equivalent in Steamworks at all** —
-    `LobbyType.Private` only controls whether the lobby appears in browse
-    results and who can request to join via Steam's own matchmaking; it
-    has no password concept. A password gate has to be built entirely
-    custom: store a password (or a hash of it, not plaintext — this
-    travels through `setLobbyData`, which other lobby members can read)
-    as lobby metadata alongside the existing `hb_protocol`/`hb_mode`
-    fields, and check it client-side at join time (prompt for password
-    before `joinSteamLobby()`/before the relay accepts the `joinRoom`,
-    reject with a clear error if it doesn't match). This is real, scoped
-    engineering work, not a config flip.
+- **Host sets the lobby private, with a password — SHIPPED.** Built as
+  designed, with one deliberate correction from the original plan: the
+  password hash never touches Steam lobby metadata at all (metadata is
+  readable by any lobby member by design, so even a hash sitting there
+  would be a real crack-offline target). Instead:
+  - `#net-private-toggle` + `#net-private-password` (`index.html`, in the
+    telemetry column, hidden once connected) set `hostPrivate`/
+    `hostPasswordValue` on the `MultiplayerLobby` instance.
+    `maybeCreateSteamLobby()` maps `hostPrivate` directly to Steam's real
+    `LobbyType.Private` (matches actual Steamworks semantics — invite-only,
+    never in browse results) and passes a `passwordRequired` **boolean**
+    (not the password) to `hb:steamCreateLobby`, stored as `hb_pw_required`
+    lobby metadata purely so a joiner's UI knows to prompt.
+  - The actual hash (`src/steamLobbyClient.js`'s `hashPassword`, SHA-256 via
+    Web Crypto) is computed client-side and sent only over the `joinRoom`
+    socket event to `server/relay.js`, which is the only place that ever
+    stores or compares it (`roomPasswordHashes`, keyed by room code) — the
+    relay never sees or needs the plaintext. A mismatched or missing hash
+    on a password-protected room gets a `joinRejected` event before the
+    socket is ever added to the room; the client shows a toast and
+    disconnects (`multiplayerLobby.js`'s `joinRejected` handler).
+  - Since a Private lobby is never in the browse list by definition, the
+    password prompt only makes sense (and is only wired) on the direct-join
+    path — `handleSteamLobbyJoinRequested`, which handles both a Steam
+    invite accept and the `+connect_lobby` cold-start case. `window.prompt`
+    is a deliberate MVP placeholder for the password entry UI there, not a
+    themed dialog — flagged in-code as a known follow-up, not a silent cut
+    corner.
+  - Server-side gate covered by 5 new integration tests
+    (`server/relayPrivateLobbyPassword.test.js`, real socket.io client
+    against `attachRelay`): host sets a password on first join, a
+    no-password guest gets rejected, a wrong-hash guest gets rejected, a
+    correct-hash guest is admitted, and an unpassworded room stays
+    ungated. Client-side covered in `multiplayerLobby.test.js` (hash
+    forwarding on create, prompt-and-hash on join, no-prompt when
+    unrequired, cancelled-prompt leaves the hash null rather than hashing
+    an empty string) and `steamLobbyClient.test.js` (`hashPassword` itself).
 - **Steam friends invite** — exists and already works when launched via
   Steam (`#net-steam-invite-btn` → `openSteamInviteDialog()`, honestly
   gated behind `isLaunchedViaSteam()` per a prior pass's fix). Relocating
@@ -292,20 +348,28 @@ conversation before building Phase 4, since it's the one part of this with
 real creative/asset scope (potentially new video assets, not just new
 selection logic) rather than pure engineering.
 
-### Open questions worth resolving before Phase 1 starts
+### Resolved during Phase 1/2 implementation
 
-- Does SOLO still need to pass through the Deployment Briefing screen at
-  all, or should picking "NEW RUN" solo skip it entirely and only PvP/co-op
-  routes reach it? (Leaning toward: show it, default-selected to SOLO, one
-  click through — keeps one consistent flow rather than two divergent
-  ones — but this is a real product call, not an engineering one.)
-- For 1b (lobby visibility): patch the native binding, or lean on the
-  relay backend for cross-region discovery? Affects whether Phase 2's lobby
-  browser needs a different data source than today's.
-- Phase 4's actual creative direction (see above).
-- Private-lobby password: hashed client-side before it ever hits
-  `setLobbyData` (so other lobby members can't just read a plaintext value
-  off the metadata they already have access to), or treated as
-  low-stakes/casual and left in the clear? Leaning hashed given the data is
-  visible to any lobby member by design — worth confirming before Phase 2
-  writes it.
+- **Does SOLO pass through the Deployment Briefing screen?** Yes, resolved
+  as shown: default-selected, one click through (`DEPLOY SOLO`), same
+  screen every run reaches regardless of mode.
+- **Private-lobby password: hashed, and not through Steam at all.** Resolved
+  as documented above — the relay (`server/relay.js`) is the only place
+  that ever sees the hash; Steam lobby metadata carries only a boolean
+  `hb_pw_required` flag.
+
+### Still open
+
+- For 1b (lobby visibility): patch the native `steamworks.js` binding, or
+  lean on the relay backend for cross-region discovery? Affects whether the
+  Steam lobby browser ever actually works cross-region, independent of the
+  screen it lives on now.
+- Phase 4's actual creative direction (squad-composition cutscene) — not
+  started this pass; see Phase 4 above.
+- The join-side password prompt (`window.prompt` in
+  `handleSteamLobbyJoinRequested`) is an explicit MVP placeholder, not a
+  themed dialog — worth a real UI pass whenever Phase 4 or another lobby-UI
+  pass touches this screen next.
+- Phase 3 (sync per-player loadout onto the roster, for the squad cutscene
+  to read) is not started — the roster still only syncs `opClass`, not
+  weapons/mods/charms.

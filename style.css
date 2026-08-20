@@ -17142,6 +17142,45 @@ body.show-debug .map-tool-btn--debug { display: inline-flex; }
   color: #90d8f8;
 }
 
+/* docs/multiplayer-flow-and-lobby-bugs-2026-08-20.md Phase 2: host-set
+   private lobby + password. Reuses .net-relay-display's flex-row container
+   (already applied to #net-private-lobby-group's own .net-relay-display
+   child in index.html) for layout consistency with the rest of this column. */
+.net-private-toggle-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'Rajdhani', sans-serif;
+  font-size: calc(var(--font-xs) * 0.78);
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  color: #90d8f8;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.net-private-toggle-label input[type="checkbox"] {
+  accent-color: #2ec4b6;
+  cursor: pointer;
+}
+
+.net-private-password-input {
+  font-family: 'Space Mono', monospace;
+  font-size: calc(var(--font-xs) * 0.78);
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+  padding: 5px 10px;
+  min-width: 0;
+  flex: 1;
+  margin-left: 10px;
+}
+
+.net-private-password-input::placeholder {
+  color: rgba(255, 255, 255, 0.35);
+}
+
 .net-connect-toggle-btn {
   font-family: 'Rajdhani', sans-serif;
   font-size: calc(var(--font-xs) * 0.78) !important;

@@ -51,9 +51,32 @@ function hasSteamLobbyApi() {
 // Public lobbies), which made "see and join a public lobby" structurally
 // impossible regardless of any UI built on top. 'friends' and 'private'
 // remain available for a caller that explicitly wants an invite-only session.
-export async function createSteamLobby({ mode = 'coop', maxPlayers = 4, build = null, visibility = 'public' } = {}) {
+//
+// docs/multiplayer-flow-and-lobby-bugs-2026-08-20.md Phase 2: passwordRequired
+// is a plain boolean, deliberately NOT the password itself or its hash --
+// Steam lobby metadata (electron/main.cjs's setLobbyData) is readable by
+// any lobby member by design, so it only ever carries "yes, a password is
+// needed" for the browse-list UI to prompt correctly. The actual hash lives
+// only in the relay server's memory (server/relay.js's roomPasswordHashes),
+// set via the joinRoom socket event, never through Steam at all.
+export async function createSteamLobby({ mode = 'coop', maxPlayers = 4, build = null, visibility = 'public', passwordRequired = false } = {}) {
     if (!hasSteamLobbyApi()) return { ok: false, reason: 'not_electron' };
-    return window.electronAPI.steamCreateLobby({ mode, maxPlayers, build, visibility });
+    return window.electronAPI.steamCreateLobby({ mode, maxPlayers, build, visibility, passwordRequired });
+}
+
+// SHA-256 hex digest via the standard Web Crypto API (available in Electron
+// renderers regardless of file:// origin, unlike a plain browser's
+// secure-context restriction on SubtleCrypto). Used both when a host sets a
+// private-lobby password and when a joiner enters one to compare -- same
+// algorithm, same place, so the two can never silently drift apart. Returns
+// null for an empty/falsy password rather than hashing an empty string, so
+// "no password" stays unambiguously distinct from "password was ''."
+export async function hashPassword(password) {
+    if (!password) return null;
+    if (typeof crypto === 'undefined' || !crypto.subtle) return null;
+    const bytes = new TextEncoder().encode(password);
+    const digest = await crypto.subtle.digest('SHA-256', bytes);
+    return Array.from(new Uint8Array(digest)).map((b) => b.toString(16).padStart(2, '0')).join('');
 }
 
 // Lists this game's currently-open Public lobbies (electron/main.cjs's

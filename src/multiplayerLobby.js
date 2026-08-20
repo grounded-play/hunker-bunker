@@ -15,12 +15,18 @@ import {
     setSteamRichPresence,
     onSteamLobbyJoinRequested,
     deriveRelayRoomFromLobbyId,
-    isLaunchedViaSteam
+    isLaunchedViaSteam,
+    hashPassword
 } from './steamLobbyClient.js';
 
 export const MULTIPLAYER_MODES = Object.freeze({
     COOP: 'coop',
-    PVP: 'pvp'
+    PVP: 'pvp',
+    // docs/multiplayer-flow-and-lobby-bugs-2026-08-20.md Phase 2: this modal
+    // is now the shared Deployment Briefing screen for every run, not just
+    // multiplayer ones -- SOLO is a real segment alongside CO-OP/PVP, not a
+    // separate flow that bypasses this screen entirely.
+    SOLO: 'solo'
 });
 
 // Sprint 24 Milestone A item 4 (docs/sprint24-multiplayer-runtime-2026-08-19.md):
@@ -154,6 +160,26 @@ export class MultiplayerLobby {
         // so updateUiState() knows whether to show the invite button and
         // Rich Presence calls know whether there's a lobby id to report.
         this.steamLobbyId = null;
+
+        // docs/multiplayer-flow-and-lobby-bugs-2026-08-20.md Phase 1/2: this
+        // modal now opens as the post-Armory Deployment Briefing screen,
+        // stashed here by openModal() so a SOLO pick or a completed
+        // multiplayer deploy can both invoke the exact same launch action --
+        // main.js's Armory-embark callback (see openArmoryGate) -- instead of
+        // needing two different launch paths. onCancel fires only from an
+        // explicit close (the "x" button), never from the close-on-success
+        // path finalizeDeploy/solo-deploy already take.
+        this.onLaunch = null;
+        this.onCancel = null;
+        // Host-set private lobby + password (new capability). hostPrivate
+        // and hostPasswordValue are read from the UI at connect() time, only
+        // meaningful while hosting a not-yet-created lobby -- see
+        // maybeCreateSteamLobby(). pendingJoinPasswordHash is the other
+        // direction: set right before connect() when joining a lobby that
+        // reported hb_pw_required, so connect()'s joinRoom emit can include it.
+        this.hostPrivate = false;
+        this.hostPasswordValue = '';
+        this.pendingJoinPasswordHash = null;
     }
 
     init() {
@@ -170,25 +196,23 @@ export class MultiplayerLobby {
     bindUi() {
         if (typeof document === 'undefined') return;
 
-        const openBtns = [
-            document.getElementById('title-multiplayer-btn'),
-            document.getElementById('briefing-multiplayer-btn')
-        ];
-        openBtns.forEach((btn) => {
-            if (btn && !btn.dataset.bound) {
-                btn.dataset.bound = 'true';
-                btn.addEventListener('click', () => this.openModal());
-            }
-        });
-
+        // docs/multiplayer-flow-and-lobby-bugs-2026-08-20.md Phase 1: this
+        // modal no longer opens itself from a title/briefing-screen button --
+        // it's opened explicitly by main.js's Armory-embark callback (see
+        // openModal's docstring), the same way every other post-Armory step
+        // works. #title-multiplayer-btn and #briefing-multiplayer-btn (the
+        // old early-access entry points) are rebound/hidden in main.js
+        // instead of here.
         const closeBtn = document.getElementById('close-multiplayer-modal');
         if (closeBtn && !closeBtn.dataset.bound) {
             closeBtn.dataset.bound = 'true';
-            closeBtn.addEventListener('click', () => this.closeModal());
+            closeBtn.addEventListener('click', () => this.cancelModal());
         }
 
+        const modeSoloBtn = document.getElementById('net-mode-solo-btn');
         const modeCoopBtn = document.getElementById('net-mode-coop-btn');
         const modePvpBtn = document.getElementById('net-mode-pvp-btn');
+        modeSoloBtn?.addEventListener('click', () => this.setMode(MULTIPLAYER_MODES.SOLO));
         modeCoopBtn?.addEventListener('click', () => this.setMode(MULTIPLAYER_MODES.COOP));
         modePvpBtn?.addEventListener('click', () => this.setMode(MULTIPLAYER_MODES.PVP));
 
@@ -206,21 +230,65 @@ export class MultiplayerLobby {
 
         const steamLobbiesRefreshBtn = document.getElementById('net-steam-lobbies-refresh-btn');
         steamLobbiesRefreshBtn?.addEventListener('click', () => this.refreshSteamLobbies());
+
+        // docs/multiplayer-flow-and-lobby-bugs-2026-08-20.md Phase 2: host-set
+        // private lobby + password. Read at connect()/maybeCreateSteamLobby()
+        // time, so simple field storage here is enough -- no live validation.
+        const privateToggle = document.getElementById('net-private-toggle');
+        const passwordInput = document.getElementById('net-private-password');
+        privateToggle?.addEventListener('change', () => {
+            this.hostPrivate = Boolean(privateToggle.checked);
+            this.updateUiState();
+        });
+        passwordInput?.addEventListener('input', () => {
+            this.hostPasswordValue = passwordInput.value;
+        });
     }
 
-    openModal() {
+    /**
+     * Opens the Deployment Briefing screen. Called from main.js's Armory
+     * embark callback (docs/multiplayer-flow-and-lobby-bugs-2026-08-20.md
+     * Phase 1/2) -- Armory has already run and already torn itself down by
+     * the time this fires, so there is no click-through back to it needed
+     * or wanted (see gameController.js's startMultiplayerRun comment).
+     *
+     * @param {{onLaunch?: () => void, onCancel?: () => void}} callbacks
+     *   onLaunch: the exact launch action Armory's own embark captured
+     *   (main.js's launchStandardRun) -- invoked directly for a SOLO pick,
+     *   and again (after setupMultiplayerNetwork) once a CO-OP/PVP deploy
+     *   completes. onCancel: fired only by an explicit close ("x" button),
+     *   never by the close-on-success path deploy already takes.
+     */
+    openModal({ onLaunch, onCancel } = {}) {
         const modal = document.getElementById('multiplayer-modal');
         if (!modal) return;
+        this.onLaunch = onLaunch ?? null;
+        this.onCancel = onCancel ?? null;
+        // Reset to SOLO on every open rather than remembering last run's
+        // CO-OP/PVP pick -- opening a live relay connection / creating a
+        // Steam lobby is a real side effect a player choosing SOLO again
+        // should never trigger by surprise (see setMode()'s connect() gate).
+        this.currentMode = MULTIPLAYER_MODES.SOLO;
+        this.hostPrivate = false;
+        this.hostPasswordValue = '';
         modal.classList.remove('hidden');
         modal.setAttribute('aria-hidden', 'false');
         this.updateUiState();
-        if (!this.connected) {
-            this.connect();
-        }
-        // docs/logs/log8.json / user report: no way to see public lobbies
-        // at all. No-op outside Electron (getSteamLobbies resolves
-        // { ok: true, lobbies: [] } there).
+        // docs/logs/log8.json / user report: no way to see public lobbies at
+        // all. Read-only (getSteamLobbies), safe to prefetch even before
+        // CO-OP/PVP is chosen -- no-op outside Electron.
         this.refreshSteamLobbies();
+    }
+
+    /** Explicit close ("x" button) -- fires onCancel, unlike the plain
+     * closeModal() the success paths (finalizeDeploy, solo deploy) call. */
+    cancelModal() {
+        if (this.connected) this.disconnect();
+        this.closeModal();
+        this.onLaunch = null;
+        const cancel = this.onCancel;
+        this.onCancel = null;
+        cancel?.();
     }
 
     closeModal() {
@@ -231,7 +299,20 @@ export class MultiplayerLobby {
     }
 
     setMode(mode) {
+        const wasSolo = this.currentMode === MULTIPLAYER_MODES.SOLO;
         this.currentMode = mode;
+        if (mode === MULTIPLAYER_MODES.SOLO) {
+            // Backing out of a CO-OP/PVP pick to SOLO: don't leave a live
+            // relay connection or Steam lobby sitting open behind the scenes
+            // for a run that's about to launch solo.
+            if (this.connected) this.disconnect();
+        } else if (wasSolo || !this.connected) {
+            // docs/multiplayer-flow-and-lobby-bugs-2026-08-20.md Phase 2:
+            // openModal() no longer auto-connects (that used to fire for
+            // every run, including ones that turn out solo) -- connecting
+            // only happens once the player actually picks CO-OP or PVP.
+            this.connect();
+        }
         this.updateUiState();
         if (typeof window !== 'undefined') {
             window.AudioManager?.play?.('fx_menu_click', { volume: 0.3, bus: 'sfx' });
@@ -239,6 +320,12 @@ export class MultiplayerLobby {
     }
 
     async connect() {
+        // docs/multiplayer-flow-and-lobby-bugs-2026-08-20.md Phase 2: connect()
+        // is now reachable indirectly via setMode(COOP/PVP), not just
+        // openModal() (which always had a real document) -- a caller
+        // exercising setMode() alone (e.g. a unit test, or a future
+        // programmatic mode switch) shouldn't crash on a missing DOM.
+        if (typeof document === 'undefined') return;
         const statusEl = document.getElementById('net-status-pill');
         if (statusEl) {
             statusEl.textContent = 'CONNECTING...';
@@ -252,6 +339,18 @@ export class MultiplayerLobby {
         // build at all -- room codes remain the only path for browser
         // dev/LAN/QA. Must resolve before joinRoom below reads this.roomCode.
         await this.maybeCreateSteamLobby();
+
+        // docs/multiplayer-flow-and-lobby-bugs-2026-08-20.md Phase 2: whoever
+        // becomes host on this room's first joinRoom is the one whose hash
+        // the relay records (server/relay.js) -- so a fresh host with a
+        // password set sends its hash here, and a joiner headed into an
+        // existing password-protected lobby sends the hash it already
+        // resolved in handleSteamLobbyJoinRequested. Never both at once in
+        // practice (maybeCreateSteamLobby() only creates when steamLobbyId
+        // isn't already set, i.e. not already joining one).
+        const passwordHash = this.pendingJoinPasswordHash
+            ?? (this.hostPrivate && this.hostPasswordValue ? await hashPassword(this.hostPasswordValue) : null);
+        this.pendingJoinPasswordHash = null;
 
         const callsign = (typeof window !== 'undefined' && window.profile?.getCallsign?.()) || 'AGENT';
         const opClass = (typeof window !== 'undefined' && window.selectedPlayerType) || 'TANK';
@@ -286,7 +385,8 @@ export class MultiplayerLobby {
                         // roomHostKeys. Lets a reconnecting host reclaim its
                         // slot instead of every dev-mode connection looking
                         // like the same anonymous peer.
-                        profileId: window.profile?.getProfileId?.() || null
+                        profileId: window.profile?.getProfileId?.() || null,
+                        passwordHash
                     });
 
                     this.players.set(this.socket.id, {
@@ -384,6 +484,19 @@ export class MultiplayerLobby {
                     this.handleRemoteMatchStart(data);
                 });
 
+                // docs/multiplayer-flow-and-lobby-bugs-2026-08-20.md Phase 2:
+                // server/relay.js's private-lobby password gate rejects
+                // joinRoom before adding this socket to the room at all --
+                // there's no roster/ready state to clean up, just tell the
+                // player and let them retry.
+                this.socket.on('joinRejected', ({ reason } = {}) => {
+                    this.disconnect();
+                    const message = reason === 'incorrect_password'
+                        ? 'INCORRECT LOBBY PASSWORD'
+                        : 'COULD NOT JOIN LOBBY';
+                    window.showToastNotification?.(message);
+                });
+
                 this.socket.on('connect_error', (err) => {
                     if (err?.message === 'unauthenticated_socket') {
                         // Sprint 24 Milestone A item 4: an explicit auth
@@ -466,7 +579,20 @@ export class MultiplayerLobby {
         if (this.steamLobbyId) return;
         if (typeof window === 'undefined' || !window.electronAPI?.steamCreateLobby) return;
 
-        const result = await createSteamLobby({ mode: this.currentMode, maxPlayers: 4 });
+        // docs/multiplayer-flow-and-lobby-bugs-2026-08-20.md Phase 2:
+        // hostPrivate maps directly to Steam's own Private visibility (an
+        // invite-only lobby that never appears in getSteamLobbies() browse
+        // results, matching what "private" actually means in Steamworks --
+        // see the plan doc's note on why a password can't ride on Steam
+        // visibility alone). passwordRequired is just a flag for other
+        // players' UI to know to prompt; the actual hash never goes through
+        // Steam at all (see connect()'s own comment).
+        const result = await createSteamLobby({
+            mode: this.currentMode,
+            maxPlayers: 4,
+            visibility: this.hostPrivate ? 'private' : 'public',
+            passwordRequired: Boolean(this.hostPrivate && this.hostPasswordValue)
+        });
         if (result?.ok && result.lobby?.id) {
             this.steamLobbyId = result.lobby.id;
             this.roomCode = deriveRelayRoomFromLobbyId(result.lobby.id);
@@ -562,6 +688,21 @@ export class MultiplayerLobby {
 
         if (this.connected) this.disconnect();
 
+        // docs/multiplayer-flow-and-lobby-bugs-2026-08-20.md Phase 2: a
+        // password-required lobby is always Steam-Private (see
+        // maybeCreateSteamLobby's comment) and so is only ever reached via
+        // this method (a direct Steam invite / +connect_lobby, never the
+        // public browse list) -- this is the one place a password prompt is
+        // needed. window.prompt() is a deliberate MVP placeholder, not a
+        // themed dialog -- if left empty/cancelled, connect() below still
+        // proceeds with no hash, and the relay's own password gate rejects
+        // it with the existing joinRejected toast rather than this method
+        // needing its own duplicate error path.
+        if (result.lobby?.data?.hb_pw_required === 'true' && typeof window !== 'undefined') {
+            const entered = window.prompt?.('THIS LOBBY IS PASSWORD PROTECTED. ENTER PASSWORD:');
+            this.pendingJoinPasswordHash = entered ? await hashPassword(entered) : null;
+        }
+
         this.steamLobbyId = lobbyId;
         this.roomCode = deriveRelayRoomFromLobbyId(lobbyId);
         if (result.lobby?.data?.hb_mode) this.currentMode = result.lobby.data.hb_mode;
@@ -628,6 +769,18 @@ export class MultiplayerLobby {
     // connection/ready/host state instead of always deploying instantly --
     // see the class-level comment on `localReady` for why this exists.
     handleDeployButtonClick() {
+        if (this.currentMode === MULTIPLAYER_MODES.SOLO) {
+            // No relay session, no roster, no crash-plan/multiplayer session
+            // to set up -- SOLO is the Armory-embark launch action Armory
+            // itself already captured, invoked directly.
+            window.AudioManager?.play?.('fx_menu_confirm', { volume: 0.4, bus: 'sfx' });
+            this.closeModal();
+            const launch = this.onLaunch;
+            this.onLaunch = null;
+            this.onCancel = null;
+            launch?.();
+            return;
+        }
         if (!this.usingRelay) {
             // No real server session (offline/local fallback) -- there's no
             // one else to wait on, so deploy immediately, exactly as this
@@ -756,15 +909,17 @@ export class MultiplayerLobby {
         this.reportSteamRichPresence('deployed');
         this.closeModal();
 
-        // Sprint 26: previously this method set window.activeMultiplayerSession
-        // and DOM-clicked through the Armory gate inline (see git history for
-        // the original ThreeGame's constructor calls setupMultiplayerNetwork()
-        // once, well before this modal is ever opened... comment) -- moved into
-        // src/gameController.js's startMultiplayerRun so multiplayer start has
-        // one explicit, testable entry point instead of this class reaching
-        // into globals + DOM directly. Not awaited: nothing here needs to
-        // block on the Armory-embark click actually landing.
-        void startMultiplayerRun(this.activeMatch);
+        // docs/multiplayer-flow-and-lobby-bugs-2026-08-20.md Phase 1: Armory
+        // now runs BEFORE this modal ever opens (see openModal's docstring),
+        // so startMultiplayerRun no longer needs to DOM-click through it a
+        // second time -- it just sets up the multiplayer session and invokes
+        // the exact same launch action Armory's own embark already captured
+        // (this.onLaunch, passed in at openModal() time). Not awaited:
+        // nothing here needs to block on it.
+        const launch = this.onLaunch;
+        this.onLaunch = null;
+        this.onCancel = null;
+        void startMultiplayerRun(this.activeMatch, launch);
 
         const modeName = mode === MULTIPLAYER_MODES.COOP ? 'CO-OP EXPEDITION' : 'PVP SECTOR DUEL';
         if (typeof window !== 'undefined' && window.showToastNotification) {
@@ -792,23 +947,49 @@ export class MultiplayerLobby {
     updateUiState() {
         if (typeof document === 'undefined') return;
 
+        const isSolo = this.currentMode === MULTIPLAYER_MODES.SOLO;
         const isCoop = this.currentMode === MULTIPLAYER_MODES.COOP;
+        const isPvp = this.currentMode === MULTIPLAYER_MODES.PVP;
+        const modeSoloBtn = document.getElementById('net-mode-solo-btn');
         const modeCoopBtn = document.getElementById('net-mode-coop-btn');
         const modePvpBtn = document.getElementById('net-mode-pvp-btn');
+        modeSoloBtn?.classList.toggle('active', isSolo);
         modeCoopBtn?.classList.toggle('active', isCoop);
-        modePvpBtn?.classList.toggle('active', !isCoop);
+        modePvpBtn?.classList.toggle('active', isPvp);
 
+        const soloIndicator = modeSoloBtn?.querySelector('.net-mode-card__indicator');
         const coopIndicator = modeCoopBtn?.querySelector('.net-mode-card__indicator');
         const pvpIndicator = modePvpBtn?.querySelector('.net-mode-card__indicator');
+        if (soloIndicator) soloIndicator.textContent = isSolo ? 'ACTIVE MODE' : 'SELECT MODE';
         if (coopIndicator) coopIndicator.textContent = isCoop ? 'ACTIVE MODE' : 'SELECT MODE';
-        if (pvpIndicator) pvpIndicator.textContent = !isCoop ? 'ACTIVE MODE' : 'SELECT MODE';
+        if (pvpIndicator) pvpIndicator.textContent = isPvp ? 'ACTIVE MODE' : 'SELECT MODE';
 
         const titleDesc = document.getElementById('net-mode-description');
         if (titleDesc) {
-            titleDesc.textContent = isCoop
-                ? 'CO-OP EXPEDITION: Deploy joint squads through the outer ring. Shared salvage, synchronized telemetry, and emergency revival.'
-                : 'PVP SKIRMISH: Contested bunker combat. Battle rival contractor operatives for sector dominance and high-tier drop caches.';
+            titleDesc.textContent = isSolo
+                ? 'SOLO OPERATION: Deploy alone, no squad, no rivals. The outer ring answers to you and you alone.'
+                : isCoop
+                    ? 'CO-OP EXPEDITION: Deploy joint squads through the outer ring. Shared salvage, synchronized telemetry, and emergency revival.'
+                    : 'PVP SKIRMISH: Contested bunker combat. Battle rival contractor operatives for sector dominance and high-tier drop caches.';
         }
+
+        // docs/multiplayer-flow-and-lobby-bugs-2026-08-20.md Phase 2: SOLO
+        // needs none of the telemetry/roster machinery -- hide both columns
+        // rather than showing an empty room-code/roster for a run that was
+        // never going to connect to anything.
+        const telemetryColumn = document.querySelector('.net-column--telemetry');
+        const rosterColumn = document.querySelector('.net-column--roster');
+        telemetryColumn?.classList.toggle('hidden', isSolo);
+        rosterColumn?.classList.toggle('hidden', isSolo);
+        if (isSolo) return this.updateDeployButtonForSolo();
+
+        // Private lobby + password fields only make sense while hosting a
+        // lobby that doesn't exist yet -- once connected (hosting or
+        // joined), visibility/password are already locked in for this
+        // session, so hide the controls rather than imply they still do
+        // something.
+        const privateGroup = document.getElementById('net-private-lobby-group');
+        privateGroup?.classList.toggle('hidden', this.connected);
 
         // docs/steam-lobby-integration-plan-2026-08-20.md step 4: this
         // element was never actually updated after its hardcoded initial
@@ -925,6 +1106,17 @@ export class MultiplayerLobby {
                 deployBtn.disabled = false;
                 deployBtn.textContent = deployLabel;
             }
+        }
+    }
+
+    // SOLO's deploy button never has a countdown or ready-up gate to
+    // arbitrate -- it always just means "launch," so it gets its own tiny
+    // render path instead of threading isSolo through every branch above.
+    updateDeployButtonForSolo() {
+        const deployBtn = document.getElementById('net-deploy-btn');
+        if (deployBtn && !this.countdownInterval) {
+            deployBtn.disabled = false;
+            deployBtn.textContent = 'DEPLOY SOLO';
         }
     }
 }

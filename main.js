@@ -96,6 +96,11 @@ const startBtn = document.getElementById('start-game'); // INITIALIZE button
 const titleContinueBtn = document.getElementById('title-continue-btn');
 const titleSwitchClassBtn = document.getElementById('title-switch-class-btn');
 const titleNewRunBtn = document.getElementById('title-newrun-btn');
+// docs/multiplayer-flow-and-lobby-bugs-2026-08-20.md Phase 1: the old
+// standalone entry point into Tactical Net -- rebound below to the exact
+// same flow as "NEW RUN" now that multiplayer setup lives at the end of
+// class-select -> Armory -> Deployment Briefing, not before it.
+const titleMultiplayerBtn = document.getElementById('title-multiplayer-btn');
 const titleAchievementsBtn = document.getElementById('title-achievements-btn');
 const titleSettingsBtn = document.getElementById('title-settings-btn');
 const titleAboutBtn = document.getElementById('title-about-btn');
@@ -7042,7 +7047,24 @@ function launchStandardRun({ resetBank = false, playIntro = false } = {}) {
 
 if (startBtn) {
     startBtn.addEventListener('click', () => {
-        openArmoryGate(() => launchStandardRun({ resetBank: true, playIntro: true }));
+        // docs/multiplayer-flow-and-lobby-bugs-2026-08-20.md Phase 1/2:
+        // Armory's embark action now opens the Deployment Briefing screen
+        // (the former "tactical net" modal, now shared by every run)
+        // instead of launching straight into gameplay. SOLO deploy there
+        // calls launchStandardRun directly; a completed CO-OP/PVP deploy
+        // calls it too, after setupMultiplayerNetwork() runs first (see
+        // multiplayerLobby.js's finalizeDeploy / gameController.js's
+        // startMultiplayerRun) -- solo and multiplayer end up at the exact
+        // same launch action either way, only the path there differs.
+        openArmoryGate(() => {
+            multiplayerLobby.openModal({
+                onLaunch: () => launchStandardRun({ resetBank: true, playIntro: true }),
+                onCancel: () => {
+                    menu?.classList.remove('hidden');
+                    setAppPhase('menu');
+                }
+            });
+        });
     });
 }
 
@@ -12162,33 +12184,44 @@ document.addEventListener('DOMContentLoaded', async () => {
     };
     updateContinueButtonState();
 
-    if (titleNewRunBtn) {
-        titleNewRunBtn.addEventListener('click', () => {
-            // Sprint 26: window.activeMultiplayerSession was never cleared
-            // anywhere -- a solo run started here after an earlier
-            // multiplayer match in the same tab (no reload) could still
-            // have its end-of-run report read the stale session (main.js's
-            // game-over reporting reads window.activeMultiplayerSession
-            // directly for roomCode, with no fallback to window.game's own
-            // per-run state). Safe specifically here: #start-game is the
-            // button multiplayer's own deploy flow clicks, so clearing
-            // there would wipe a session multiplayer had just set moments
-            // earlier -- this button is solo-only, never part of that chain.
-            clearMultiplayerSession();
-            transitionFromTitleToMenu(() => {
-                clearSaveData();
-                blackBoxStore.clear();
-                window.game?.clearBlackBoxMarker?.();
-                updateContinueButtonState();
-                renderRosterModal('new_game');
-                const modal = document.getElementById('roster-modal');
-                if (modal) {
-                    modal.classList.remove('hidden');
-                    modal.setAttribute('aria-hidden', 'false');
-                }
-                document.getElementById('roster-callsign-input')?.focus?.();
-            });
+    // docs/multiplayer-flow-and-lobby-bugs-2026-08-20.md Phase 1: named so
+    // both "NEW RUN" and the old standalone "TACTICAL NET" title-screen
+    // button (which used to skip straight to the multiplayer modal,
+    // bypassing class-select and Armory entirely) now funnel into the exact
+    // same flow -- multiplayer setup happens later, at the Deployment
+    // Briefing screen after Armory, not here.
+    function startNewTacticalRunFlow() {
+        // Sprint 26: window.activeMultiplayerSession was never cleared
+        // anywhere -- a solo run started here after an earlier
+        // multiplayer match in the same tab (no reload) could still
+        // have its end-of-run report read the stale session (main.js's
+        // game-over reporting reads window.activeMultiplayerSession
+        // directly for roomCode, with no fallback to window.game's own
+        // per-run state). Safe specifically here: #start-game is the
+        // button multiplayer's own deploy flow clicks, so clearing
+        // there would wipe a session multiplayer had just set moments
+        // earlier -- this function is solo/pre-deploy-only, never part
+        // of that chain.
+        clearMultiplayerSession();
+        transitionFromTitleToMenu(() => {
+            clearSaveData();
+            blackBoxStore.clear();
+            window.game?.clearBlackBoxMarker?.();
+            updateContinueButtonState();
+            renderRosterModal('new_game');
+            const modal = document.getElementById('roster-modal');
+            if (modal) {
+                modal.classList.remove('hidden');
+                modal.setAttribute('aria-hidden', 'false');
+            }
+            document.getElementById('roster-callsign-input')?.focus?.();
         });
+    }
+    if (titleNewRunBtn) {
+        titleNewRunBtn.addEventListener('click', startNewTacticalRunFlow);
+    }
+    if (titleMultiplayerBtn) {
+        titleMultiplayerBtn.addEventListener('click', startNewTacticalRunFlow);
     }
     if (titleContinueBtn) {
         titleContinueBtn.addEventListener('click', () => {

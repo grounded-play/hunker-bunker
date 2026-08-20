@@ -12,7 +12,8 @@ import {
     setSteamLobbyState,
     setSteamRichPresence,
     onSteamLobbyJoinRequested,
-    isLaunchedViaSteam
+    isLaunchedViaSteam,
+    hashPassword
 } from './steamLobbyClient.js';
 
 // docs/steam-lobby-integration-plan-2026-08-20.md step 3: renderer-side
@@ -80,7 +81,7 @@ describe('steamLobbyClient', () => {
 
             const result = await createSteamLobby({ mode: 'pvp', maxPlayers: 2, build: 'gh-123' });
 
-            expect(steamCreateLobby).toHaveBeenCalledWith({ mode: 'pvp', maxPlayers: 2, build: 'gh-123', visibility: 'public' });
+            expect(steamCreateLobby).toHaveBeenCalledWith({ mode: 'pvp', maxPlayers: 2, build: 'gh-123', visibility: 'public', passwordRequired: false });
             expect(result).toEqual({ ok: true, lobby: { id: '42' } });
         });
 
@@ -91,7 +92,17 @@ describe('steamLobbyClient', () => {
 
             await createSteamLobby({ visibility: 'friends' });
 
-            expect(steamCreateLobby).toHaveBeenCalledWith({ mode: 'coop', maxPlayers: 4, build: null, visibility: 'friends' });
+            expect(steamCreateLobby).toHaveBeenCalledWith({ mode: 'coop', maxPlayers: 4, build: null, visibility: 'friends', passwordRequired: false });
+        });
+
+        it('createSteamLobby forwards passwordRequired:true for a host-set private+password lobby', async () => {
+            originalWindow = globalThis.window;
+            const steamCreateLobby = vi.fn().mockResolvedValue({ ok: true, lobby: { id: '9' } });
+            globalThis.window = { electronAPI: { steamCreateLobby } };
+
+            await createSteamLobby({ visibility: 'private', passwordRequired: true });
+
+            expect(steamCreateLobby).toHaveBeenCalledWith({ mode: 'coop', maxPlayers: 4, build: null, visibility: 'private', passwordRequired: true });
         });
 
         it('getSteamLobbies delegates to electronAPI.steamGetLobbies', async () => {
@@ -142,6 +153,31 @@ describe('steamLobbyClient', () => {
 
             expect(onSteamLobbyJoinRequested_).toHaveBeenCalledWith(handler);
             expect(result).toBe(unsubscribe);
+        });
+    });
+
+    // docs/multiplayer-flow-and-lobby-bugs-2026-08-20.md Phase 2: shared
+    // client-side hash used both when a host sets a private-lobby password
+    // and when a joiner enters one to compare -- the relay only ever sees
+    // this hash, never the plaintext.
+    describe('hashPassword', () => {
+        it('returns a stable SHA-256 hex digest for the same password', async () => {
+            const a = await hashPassword('hunter2');
+            const b = await hashPassword('hunter2');
+            expect(a).toBe(b);
+            expect(a).toMatch(/^[0-9a-f]{64}$/);
+        });
+
+        it('returns different digests for different passwords', async () => {
+            const a = await hashPassword('hunter2');
+            const b = await hashPassword('correct-horse-battery-staple');
+            expect(a).not.toBe(b);
+        });
+
+        it('returns null for an empty or missing password rather than hashing an empty string', async () => {
+            expect(await hashPassword('')).toBeNull();
+            expect(await hashPassword(null)).toBeNull();
+            expect(await hashPassword(undefined)).toBeNull();
         });
     });
 });

@@ -317,7 +317,14 @@
                     <button class="start-btn start-btn--daily" id="daily-ops-btn" title="One attempt per day — fixed world seed">DAILY OPS</button>
                     <div class="menu-command__status daily-ops-status" id="daily-ops-status"></div>
                   </div>
-                  <div class="menu-command" id="multiplayer-command">
+                  <!-- docs/multiplayer-flow-and-lobby-bugs-2026-08-20.md
+                       Phase 1: multiplayer setup now lives at the
+                       Deployment Briefing screen, reached via INITIALIZE ->
+                       Armory -> embark, not from a separate early button
+                       here -- this used to skip class-select/Armory
+                       entirely. Hidden rather than removed in case a future
+                       pass wants this slot for something else. -->
+                  <div class="menu-command hidden" id="multiplayer-command">
                     <button class="start-btn start-btn--net" id="briefing-multiplayer-btn" title="Tactical Net — Online & LAN Co-Op and PVP">◈ TACTICAL NET</button>
                     <div class="menu-command__status" id="net-command-status">CO-OP / PVP</div>
                   </div>
@@ -2411,7 +2418,29 @@
 
         <!-- Mode Selector Cards -->
         <div class="net-mode-selector">
-          <button type="button" class="net-mode-card active" id="net-mode-coop-btn">
+          <!-- docs/multiplayer-flow-and-lobby-bugs-2026-08-20.md Phase 1/2:
+               this modal is now the shared post-Armory Deployment Briefing
+               screen for every run, not just multiplayer ones -- SOLO is
+               the default/active card so opening this screen never implies
+               a live relay/Steam connection until CO-OP or PVP is chosen
+               (see multiplayerLobby.js's openModal/setMode). -->
+          <button type="button" class="net-mode-card active" id="net-mode-solo-btn">
+            <div class="net-mode-card__badge">
+              <span class="net-mode-card__icon">▲</span>
+              <span class="net-mode-card__tag">SOLO</span>
+            </div>
+            <div class="net-mode-card__info">
+              <div class="net-mode-card__title">SOLO OPERATION</div>
+              <div class="net-mode-card__meta">1 OPERATIVE // NO SQUAD, NO RIVALS</div>
+            </div>
+            <div class="net-mode-card__perks">
+              <span class="net-perk-chip">NO RELAY REQUIRED</span>
+              <span class="net-perk-chip">FULL SALVAGE CLAIM</span>
+            </div>
+            <div class="net-mode-card__indicator">ACTIVE MODE</div>
+          </button>
+
+          <button type="button" class="net-mode-card" id="net-mode-coop-btn">
             <div class="net-mode-card__badge">
               <span class="net-mode-card__icon">◈</span>
               <span class="net-mode-card__tag">PVE SQUAD</span>
@@ -2425,7 +2454,7 @@
               <span class="net-perk-chip">EMERGENCY RESCUE</span>
               <span class="net-perk-chip">SHARED O₂ LINK</span>
             </div>
-            <div class="net-mode-card__indicator">ACTIVE MODE</div>
+            <div class="net-mode-card__indicator">SELECT MODE</div>
           </button>
 
           <button type="button" class="net-mode-card" id="net-mode-pvp-btn">
@@ -2479,6 +2508,21 @@
                   <button type="button" class="net-code-copy-btn hidden" id="net-steam-invite-btn" title="Invite a Steam Friend">
                     <span>👥</span> INVITE FRIEND
                   </button>
+                </div>
+              </div>
+
+              <!-- docs/multiplayer-flow-and-lobby-bugs-2026-08-20.md Phase 2:
+                   host-set private lobby + password. Only meaningful while
+                   hosting a lobby that doesn't exist yet -- hidden once
+                   connected (multiplayerLobby.js's updateUiState()). -->
+              <div class="net-field-group" id="net-private-lobby-group">
+                <span class="net-field-label">LOBBY ACCESS</span>
+                <div class="net-relay-display">
+                  <label class="net-private-toggle-label">
+                    <input type="checkbox" id="net-private-toggle">
+                    <span>PRIVATE (INVITE-ONLY)</span>
+                  </label>
+                  <input type="password" class="net-private-password-input" id="net-private-password" placeholder="OPTIONAL PASSWORD" maxlength="64">
                 </div>
               </div>
 

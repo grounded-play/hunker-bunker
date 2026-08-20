@@ -164,6 +164,18 @@ export function attachRelay(server, { allowedOrigins = [] } = {}) {
     // an unrelated new peer.
     const roomHostKeys = new Map();
 
+    // docs/multiplayer-flow-and-lobby-bugs-2026-08-20.md Phase 2: host-set
+    // private-lobby password. Map: roomCode -> SHA-256 hex hash, hashed
+    // client-side (src/steamLobbyClient.js's hashPassword) -- the relay only
+    // ever sees/stores the hash, never the plaintext password. Set once by
+    // whoever holds host on first joinRoom for a room that doesn't have one
+    // yet; every later non-host joinRoom for that room must supply a
+    // matching hash or gets rejected before being added to the room. Never
+    // cleared on room-empty (same lifetime rule as roomHostKeys, for the
+    // same reconnect reason) -- only ever overwritten if the room's host
+    // reclaims with a different password.
+    const roomPasswordHashes = new Map();
+
     const getStableClientKey = (p) => p.steamId64 || p.profileId || null;
 
     const getPublicPlayer = (p) => ({
@@ -343,6 +355,31 @@ export function attachRelay(server, { allowedOrigins = [] } = {}) {
                 if (!recordedHostKey && stableKey) roomHostKeys.set(roomCode, stableKey);
             } else {
                 player.isHost = false;
+            }
+
+            // docs/multiplayer-flow-and-lobby-bugs-2026-08-20.md Phase 2:
+            // private-lobby password gate. The host's hash (if any) is
+            // recorded the moment they hold host on a room with no password
+            // recorded yet; every other joiner must then supply a matching
+            // hash. A host who reclaims (reconnect) with a different hash
+            // than what's recorded is trusted to update it -- they own the
+            // room, not an attacker impersonating them, since reclaim itself
+            // already required stableKey === recordedHostKey above.
+            const suppliedPasswordHash = typeof data.passwordHash === 'string' && data.passwordHash.length <= 128
+                ? data.passwordHash
+                : null;
+            if (player.isHost) {
+                if (suppliedPasswordHash) {
+                    roomPasswordHashes.set(roomCode, suppliedPasswordHash);
+                } else {
+                    roomPasswordHashes.delete(roomCode);
+                }
+            } else {
+                const requiredPasswordHash = roomPasswordHashes.get(roomCode);
+                if (requiredPasswordHash && requiredPasswordHash !== suppliedPasswordHash) {
+                    socket.emit('joinRejected', { reason: 'incorrect_password' });
+                    return;
+                }
             }
 
             rooms.get(roomCode).add(socket.id);

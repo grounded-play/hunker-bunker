@@ -952,7 +952,7 @@ function serializeLobby(lobby) {
     }
 }
 
-ipcMain.handle('hb:steamCreateLobby', async (_e, { mode = 'coop', maxPlayers = 4, build = null, visibility = DEFAULT_STEAM_LOBBY_VISIBILITY } = {}) => {
+ipcMain.handle('hb:steamCreateLobby', async (_e, { mode = 'coop', maxPlayers = 4, build = null, visibility = DEFAULT_STEAM_LOBBY_VISIBILITY, passwordRequired = false } = {}) => {
     if (!steamClient?.matchmaking?.createLobby) {
         return { ok: false, reason: 'steam_lobby_unavailable' };
     }
@@ -964,7 +964,14 @@ ipcMain.handle('hb:steamCreateLobby', async (_e, { mode = 'coop', maxPlayers = 4
             hb_mode: String(mode || 'coop'),
             hb_state: 'lobby',
             hb_build: String(build ?? ''),
-            hb_room: `STEAM-${lobby.id}`
+            hb_room: `STEAM-${lobby.id}`,
+            // docs/multiplayer-flow-and-lobby-bugs-2026-08-20.md Phase 2: a
+            // plain "does this lobby need a password" flag only, so a
+            // browsing joiner's UI knows to prompt -- never the password or
+            // its hash. Lobby metadata is readable by any lobby member by
+            // design, so the actual hash comparison lives only in the relay
+            // server's memory (server/relay.js's roomPasswordHashes), never here.
+            hb_pw_required: passwordRequired ? 'true' : 'false'
         });
         currentLobby = lobby;
         recordSteamDiagnostic('info', 'steam_lobby_created', 'Created Steam lobby', { lobbyId: String(lobby.id), mode, visibility });
