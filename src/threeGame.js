@@ -180,7 +180,7 @@ import { ExplorationTracker } from './mapSystem.js';
 export const EXTERIOR_CANYON_TILE = 'X';
 export const CLIFF_TILE = 'C';
 export const LEDGE_TILE = 'O';
-import { rollEnemyLootDrop, computeActiveSynergies, WEAPON_OVERCLOCKS, SUIT_RELICS } from './runDrops.js';
+import { rollEnemyLootDrop, computeActiveSynergies, WEAPON_OVERCLOCKS, SUIT_RELICS, applyLastBreathDamage } from './runDrops.js';
 import { buildUnifiedSkillTree, getTreeConnectors } from './skillTree.js';
 import { pickLoreDropForSite, getFoundLoreKeys, markLoreDropFound, LORE_DROPS } from './loreDrops.js';
 import { createBossFight, tickBossFight, applyBossDamage, QUEEN_FIGHT_DEF, QUEEN_PHASE_LINES, SPORESNAIL_FIGHT_DEF } from './bossPhases.js';
@@ -18320,6 +18320,13 @@ export class ThreeGame {
             if (mod.stats?.extraBullets) extraBullets += mod.stats.extraBullets;
             if (mod.stats?.spreadAngle) spreadAngle = mod.stats.spreadAngle;
         }
+        // "Last Breath" relic (docs/design/one-more-ring-design-pillars.md
+        // item 2): the first "transformative" relic -- changes a rule
+        // (oxygen becomes a damage lever, not just a timer) instead of
+        // adding a flat bonus. Pulled out into runDrops.js's
+        // applyLastBreathDamage so it's testable without faking this
+        // method's much larger dependency surface.
+        damage = applyLastBreathDamage(damage, this.runRelics, this.playerVitals?.o2 ?? 100);
 
         const playerHeight = this.getTerrainHeightAt(this.player?.position?.x ?? 0, this.player?.position?.z ?? 0);
         if (playerHeight > 0) {

@@ -60,6 +60,22 @@ export const WEAPON_OVERCLOCKS = Object.freeze([
     }
 ]);
 
+// Sprint 25 design pass (docs/design/one-more-ring-design-pillars.md item 2):
+// "transformative" relics/overclocks that change a rule instead of adding a
+// flat stat bonus -- the design doc's own examples are named here directly.
+// Most existing SUIT_RELICS/WEAPON_OVERCLOCKS entries above are catalog-only
+// today (confirmed: no id below is referenced anywhere outside this file and
+// runDrops.test.js except through the generic mod.stats?.* reads threiGame.js
+// already does for damageMult/extraBullets/spreadAngle) -- these new entries
+// keep that same honest split. `wired: true` marks the ones actually read at
+// runtime this pass; the rest are real catalog entries (roll into loot,
+// appear in the manifest/UI) whose effect is described but not yet enforced,
+// same status quo as e.g. pheromone_aura/chitin_membrane above.
+export const TRANSFORMATIVE_RELIC_IDS = Object.freeze([
+    'last_breath', 'punctured_lung', 'scrap_cycler', 'parasitic_magazine',
+    'false_telemetry', 'vesper_doctrine', 'cryo_breach', 'queens_milk'
+]);
+
 export const SUIT_RELICS = Object.freeze([
     {
         id: 'shatter_engine',
@@ -108,6 +124,81 @@ export const SUIT_RELICS = Object.freeze([
         rarity: DROP_RARITIES.RARE,
         description: 'Thruster dash emits a bio-pulse that stuns nearby hostiles for 2s.',
         element: 'tesla'
+    },
+    {
+        id: 'last_breath',
+        type: DROP_TYPES.RELIC,
+        name: 'Last Breath',
+        rarity: DROP_RARITIES.MYTHIC,
+        description: 'Below 20% O2, weapon damage doubles. Oxygen stops being a countdown and starts being a decision.',
+        transformative: true,
+        wired: true,
+        stats: { lowO2Threshold: 20, lowO2DamageMult: 2.0 }
+    },
+    {
+        id: 'punctured_lung',
+        type: DROP_TYPES.RELIC,
+        name: 'Punctured Lung',
+        rarity: DROP_RARITIES.CORRUPTED,
+        description: 'Maximum oxygen capacity permanently reduced. Kills restore oxygen.',
+        transformative: true,
+        stats: { maxO2PenaltyPercent: 40, killO2Restore: 8 }
+    },
+    {
+        id: 'scrap_cycler',
+        type: DROP_TYPES.RELIC,
+        name: 'Scrap Cycler',
+        rarity: DROP_RARITIES.RARE,
+        description: 'Reloading consumes 3 salvage and fires a radial shrapnel blast.',
+        transformative: true,
+        stats: { reloadSalvageCost: 3, reloadShrapnelDamage: 15 }
+    },
+    {
+        id: 'parasitic_magazine',
+        type: DROP_TYPES.RELIC,
+        name: 'Parasitic Magazine',
+        rarity: DROP_RARITIES.CORRUPTED,
+        description: 'Kills refill the magazine but permanently reduce maximum oxygen.',
+        transformative: true,
+        stats: { killAmmoRefund: 1, maxO2PenaltyPercent: 5 }
+    },
+    {
+        id: 'false_telemetry',
+        type: DROP_TYPES.RELIC,
+        name: 'False Telemetry',
+        rarity: DROP_RARITIES.RARE,
+        description: 'At critical health, enemies temporarily lose track of you.',
+        transformative: true,
+        stats: { criticalHpPercent: 15, aggroDropChance: 0.4, aggroDropDuration: 2.5 }
+    },
+    {
+        id: 'vesper_doctrine',
+        type: DROP_TYPES.OVERCLOCK,
+        name: 'Vesper Doctrine',
+        rarity: DROP_RARITIES.RARE,
+        description: 'Every empty reload ejects the remaining magazine as an explosive.',
+        transformative: true,
+        stats: { emptyReloadExplosionDamage: 20 }
+    },
+    {
+        id: 'cryo_breach',
+        type: DROP_TYPES.RELIC,
+        name: 'Cryo Breach',
+        rarity: DROP_RARITIES.RARE,
+        description: 'Frozen enemies explode on death and freeze nearby targets.',
+        element: 'cryo',
+        transformative: true,
+        stats: { chainFreezeRadius: 3 }
+    },
+    {
+        id: 'queens_milk',
+        type: DROP_TYPES.RELIC,
+        name: "Queen's Milk",
+        rarity: DROP_RARITIES.MYTHIC,
+        description: 'Alien enemies may heal you on contact. Human healing hurts instead.',
+        element: 'bio',
+        transformative: true,
+        stats: { alienHealAmount: 5, humanHealPenaltyMult: 0.5 }
     }
 ]);
 
@@ -128,6 +219,21 @@ export function rollEnemyLootDrop(random, { isElite = false, isBoss = false } = 
     const pool = [...WEAPON_OVERCLOCKS, ...SUIT_RELICS].filter((item) => item.rarity === rarity);
     if (!pool.length) return WEAPON_OVERCLOCKS[0];
     return pool[Math.floor(random() * pool.length)];
+}
+
+// "Last Breath" (docs/design/one-more-ring-design-pillars.md item 2): the
+// first transformative relic wired to a real gameplay hook, called from
+// src/threeGame.js's spawnPlayerShot. Pulled out as a standalone pure
+// function (rather than inlined in that already-large method) so it's
+// testable without faking spawnPlayerShot's much bigger dependency surface.
+export function applyLastBreathDamage(baseDamage, equippedRelics = [], currentO2 = 100) {
+    let damage = baseDamage;
+    for (const relic of equippedRelics) {
+        if (relic?.stats?.lowO2DamageMult && currentO2 < relic.stats.lowO2Threshold) {
+            damage *= relic.stats.lowO2DamageMult;
+        }
+    }
+    return damage;
 }
 
 export function computeActiveSynergies(equippedItems = []) {

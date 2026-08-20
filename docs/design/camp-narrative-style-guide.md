@@ -120,10 +120,38 @@ Nahl; oath/obligation for Rhun) rather than reusing the humans' vocabulary.
 
 ## Status
 
-This is a reference document, not a content backlog with tickets — the next
-action is the user (or a future writing-focused pass) picking one arc (the
-source doc's own recommendation is Tallow/Martha + Nahl, "human care versus
-alien healing," as the highest-value vertical slice) and drafting scenes
-against the five-beat structure above, checked against the typography and
-sensual-writing rules before landing in `src/npcDialogueTrees.js` /
-`src/sideStorySystem.js`.
+**Correction from the first pass of this doc:** the actual staged dialogue
+content lives in `src/data/campDialogue.js` (`LEADER_DIALOGUE`, a real
+Elden-Ring-style beat ladder per leader, already gated by camp
+level/bond/postReveal), not `npcDialogueTrees.js`/`sideStorySystem.js` as
+first guessed — those own the perk/relationship-tree side, not the prose.
+Worth noting: the shipped `LEADER_DIALOGUE` content already independently
+converged on several of this doc's own rules before this doc existed — the
+CAPS-vs-mixed-case typography split (pre-reveal stages are full caps,
+post-reveal stage 3 drops to mixed case) and Martha's already-warm
+moss/steam/singing-pipes vocabulary are both already there. This doc's job
+turned out to be *codifying* an instinct already present in the writing,
+not introducing a new one.
+
+**What actually landed this pass:** `LEADER_DEATH_BEATS` (the beat that
+plays on first return-from-death — the closest existing touchpoint to this
+doc's Body/Work/Power/Intimacy structure, since the player is physically
+present and the leader has power over what happens next) got a third line
+for kaelen/martha/briggs, written in-voice and checked against the
+sensual-writing rule (sensation + restraint — a doubled heartbeat, a hand
+given rather than taken, a blink noticed and not yet logged). Also fixed a
+pre-existing stray-lowercase typo in two of those lines caught while
+touching the block. Confirmed safe to extend without disturbing the
+existing stage/talk gating (`nextDialogueBeat` reads `beats.length`
+generically, so array length isn't pinned anywhere it would break) — 3 new
+regression tests in `src/data/campDialogue.test.js`, all 17 tests in that
+file passing.
+
+The style guide's fifth beat, **Choice**, still doesn't have a home — this
+dialogue system is linear staged beats with no branching player-choice
+mechanism, so nothing in this doc's structure can fully land until that's
+built (a real, separate system, not attempted here). The full
+Tallow/Martha + Nahl vertical slice (new mid-ladder scenes, not just the
+death-beat enrichment above) is still open — same reasoning as before: it's
+real authored-prose work best done deliberately, beat by beat, rather than
+generated wholesale across six characters in one pass.

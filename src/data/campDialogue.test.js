@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
     LEADER_DIALOGUE,
+    LEADER_DEATH_BEATS,
     LEADER_KEYS,
     describeDialogueProgress,
     leaderKeyFromName,
@@ -131,5 +132,33 @@ describe('meetsRequirements', () => {
 
     it('is unaffected when next has no questFlag', () => {
         expect(meetsRequirements({ talks: 0 }, { questFlags: {} })).toBe(true);
+    });
+});
+
+// Sprint 25 design pass (docs/design/camp-narrative-style-guide.md): the
+// human leaders' death-return beat is the closest existing touchpoint to
+// the style guide's Body/Work/Power/Intimacy structure, so it's where a
+// third, more physically specific line landed for kaelen/martha/briggs.
+describe('LEADER_DEATH_BEATS', () => {
+    it('gives each human leader a third, more intimate line beyond the original two', () => {
+        for (const key of ['kaelen', 'martha', 'briggs']) {
+            expect(LEADER_DEATH_BEATS[key].length).toBeGreaterThanOrEqual(3);
+        }
+    });
+
+    it('has no stray lowercase mid-caps-line typos in the human leaders (all-caps register throughout)', () => {
+        for (const key of ['kaelen', 'martha', 'briggs']) {
+            for (const line of LEADER_DEATH_BEATS[key]) {
+                const spoken = line.split(':').slice(1).join(':');
+                expect(spoken).toBe(spoken.toUpperCase());
+            }
+        }
+    });
+
+    it('flows the full death-beat line array through nextDialogueBeat unmodified, including new lines', () => {
+        const beat = nextDialogueBeat('martha', { stage: 0, talks: 0 }, { deaths: 1, questFlags: {} });
+        expect(beat.type).toBe('death_beat');
+        expect(beat.lines).toEqual(LEADER_DEATH_BEATS.martha);
+        expect(beat.lines.length).toBe(3);
     });
 });

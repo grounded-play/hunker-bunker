@@ -59,15 +59,27 @@ included in this pass.
 ## 2. Transformative run-build relics (12–20, not 100 stat sticks)
 
 Relics that change *rules*, not numbers — e.g. "below 20% O2, weapon damage
-doubles" or "kills refill the magazine but permanently reduce max O2." The
-existing loadout-mod system (`loadoutMods` referenced throughout
-`src/threeGame.js`, e.g. `cryoDurationMultiplier`) is exactly the right shape
-of infrastructure for this — it already supports conditional/percentage
-modifiers read at combat time. Extending that data table with rule-breaking
-entries (rather than building a parallel system) is the right implementation
-path. **Not started this pass** — needs game-design iteration on the actual
-12–20 relics before implementation, which is a creative decision for the
-user, not something to fabricate wholesale into game data.
+doubles" or "kills refill the magazine but permanently reduce max O2."
+
+**Status update:** further along than "not started." Investigating this
+found `src/runDrops.js` already has exactly this shape of catalog
+(`SUIT_RELICS`/`WEAPON_OVERCLOCKS`, rolled by `rollEnemyLootDrop`) — most
+existing entries there were catalog-only (never read anywhere outside their
+own data file except through a couple of generic stat keys `spawnPlayerShot`
+already applies). Added 8 named transformative relics from this doc's own
+examples (`last_breath`, `punctured_lung`, `scrap_cycler`,
+`parasitic_magazine`, `false_telemetry`, `vesper_doctrine`, `cryo_breach`,
+`queens_milk`, tracked via `TRANSFORMATIVE_RELIC_IDS`), each with a real
+`stats` object rather than flavor text alone. One (`last_breath` — below 20%
+O2, weapon damage doubles) is fully wired to a real runtime hook: a new pure
+`applyLastBreathDamage` in `runDrops.js`, called from
+`ThreeGame.spawnPlayerShot`, with unit tests. The other 7 are honest
+catalog-only entries (roll into loot, appear in the manifest/UI, described
+accurately) — wiring each into its own gameplay hook (reload economy,
+enemy-aggro AI, faction-aware healing) is real per-relic engineering work
+still to do, not attempted wholesale in one pass to avoid fabricating
+half-tested mechanics across systems (reload, ammo, AI targeting, faction
+state) this pass didn't otherwise touch.
 
 ## 3. Combat impact stack + enemy verbs + stagger/armor/weakpoint grammar
 
