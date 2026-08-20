@@ -193,7 +193,9 @@ import {
     applyFalseTelemetryAggroDrop,
     getCryoBreachChainFreezeRadius,
     getScrapCyclerReloadEffect,
-    getVesperDoctrineReloadEffect
+    getVesperDoctrineReloadEffect,
+    getQueensMilkAlienContactHeal,
+    getQueensMilkHumanHealPenalty
 } from './runDrops.js';
 import { buildUnifiedSkillTree, getTreeConnectors } from './skillTree.js';
 import { pickLoreDropForSite, getFoundLoreKeys, markLoreDropFound, LORE_DROPS } from './loreDrops.js';
@@ -15003,8 +15005,21 @@ export class ThreeGame {
         return this.setNoclip(!this.noclip, speedMultiplier);
     }
 
-    healPlayer(amount = 1) {
+    healPlayer(amount = 1, { skipQueensMilkPenalty = false } = {}) {
         if (this.isPlayerDead) return;
+        // "Queen's Milk": human-sourced healing hurts instead. Every current
+        // caller of healPlayer() (med conversion, camp aid, health pickup) is
+        // human-sourced -- EXCEPT takeDamage()'s own alien-contact-heal call
+        // below, which reuses this same method to get the maxHp clamp and
+        // health-restored event for free and must pass skipQueensMilkPenalty
+        // so its own heal doesn't immediately get flipped back into damage.
+        if (!skipQueensMilkPenalty) {
+            const queensMilkPenalty = getQueensMilkHumanHealPenalty(amount, this.runRelics ?? []);
+            if (queensMilkPenalty != null) {
+                this.takeDamage(queensMilkPenalty, 'queens-milk-backlash');
+                return;
+            }
+        }
         const previousHp = this.playerVitals.hp;
         this.playerVitals.hp = Math.min(this.playerVitals.maxHp, this.playerVitals.hp + Math.max(0, amount));
         if (this.playerVitals.hp === previousHp) return;
@@ -15426,6 +15441,15 @@ export class ThreeGame {
         }
         if (typeof window !== 'undefined' && window.npcDialogueTreeManager?.activePerks?.has?.('nahl_bio_cloaking') && Math.random() < 0.15) {
             window.dispatchEvent(new CustomEvent('player-evaded', { detail: { reason } }));
+            return false;
+        }
+        // "Queen's Milk" (docs/design/one-more-ring-design-pillars.md item 2):
+        // a genuine alien-body contact hit heals instead of damaging. Checked
+        // after the block/evasion guards above (those mean the hit never
+        // really landed at all) but before any damage math starts.
+        const queensMilkHeal = getQueensMilkAlienContactHeal(reason, this.runRelics ?? []);
+        if (queensMilkHeal != null) {
+            this.healPlayer(queensMilkHeal, { skipQueensMilkPenalty: true });
             return false;
         }
         const previousHp = this.playerVitals.hp;

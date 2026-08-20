@@ -13,7 +13,9 @@ import {
     applyFalseTelemetryAggroDrop,
     getCryoBreachChainFreezeRadius,
     getScrapCyclerReloadEffect,
-    getVesperDoctrineReloadEffect
+    getVesperDoctrineReloadEffect,
+    getQueensMilkAlienContactHeal,
+    getQueensMilkHumanHealPenalty
 } from './runDrops.js';
 
 describe('runDrops', () => {
@@ -176,5 +178,36 @@ describe('runDrops', () => {
         expect(getVesperDoctrineReloadEffect(false, [overclock])).toBeNull();
         // Empty reload, but overclock not equipped: still nothing.
         expect(getVesperDoctrineReloadEffect(true, [])).toBeNull();
+    });
+
+    describe("Queen's Milk", () => {
+        const relic = SUIT_RELICS.find((r) => r.id === 'queens_milk');
+
+        it('heals on a genuine alien-contact reason when equipped', () => {
+            expect(getQueensMilkAlienContactHeal('crawler', [relic])).toBe(5);
+            expect(getQueensMilkAlienContactHeal('mycelium_stalker', [relic])).toBe(5);
+            expect(getQueensMilkAlienContactHeal('bio_charger', [relic])).toBe(5);
+        });
+
+        it('does not heal on non-contact or non-alien reasons, even when equipped', () => {
+            expect(getQueensMilkAlienContactHeal('enemy-projectile', [relic])).toBeNull();
+            expect(getQueensMilkAlienContactHeal('ground-slam', [relic])).toBeNull();
+            expect(getQueensMilkAlienContactHeal('hazard-zone', [relic])).toBeNull();
+            expect(getQueensMilkAlienContactHeal('pvp-rival', [relic])).toBeNull();
+        });
+
+        it('does nothing on a contact reason when not equipped', () => {
+            expect(getQueensMilkAlienContactHeal('crawler', [])).toBeNull();
+        });
+
+        it('flips a human heal into a smaller damage amount when equipped', () => {
+            expect(getQueensMilkHumanHealPenalty(1, [relic])).toBe(1);
+            expect(getQueensMilkHumanHealPenalty(10, [relic])).toBe(5);
+        });
+
+        it('does nothing to a heal when not equipped, or for a non-positive heal', () => {
+            expect(getQueensMilkHumanHealPenalty(10, [])).toBeNull();
+            expect(getQueensMilkHumanHealPenalty(0, [relic])).toBeNull();
+        });
     });
 });

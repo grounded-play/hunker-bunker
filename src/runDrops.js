@@ -206,6 +206,7 @@ export const SUIT_RELICS = Object.freeze([
         description: 'Alien enemies may heal you on contact. Human healing hurts instead.',
         element: 'bio',
         transformative: true,
+        wired: true,
         stats: { alienHealAmount: 5, humanHealPenaltyMult: 0.5 }
     }
 ]);
@@ -355,6 +356,47 @@ export function getVesperDoctrineReloadEffect(wasEmpty, equippedOverclocks = [])
                 explosionRadius: Number(mod?.stats?.emptyReloadExplosionRadius) || 3
             };
         }
+    }
+    return null;
+}
+
+// "Queen's Milk -- Alien enemies may heal you on contact. Human healing
+// hurts instead." Two independent hooks, both pure:
+//
+// 1. getQueensMilkAlienContactHeal -- reason must be a genuine alien-body
+//    touch, not a ranged/AoE/environmental hit. Verified against threeGame.js
+//    call sites: 'crawler' (charge-attack proximity check) and
+//    'mycelium_stalker' / 'bio_charger' (both explicitly commented
+//    "Contact attack check"). Deliberately excludes enemy-projectile,
+//    ground-slam, frost-shockwave, queen-shockwave (alien, but ranged/AoE,
+//    not contact) and hazard-zone/o2-depletion/fall/camp-turret/pvp-rival
+//    (not alien contact at all) -- "on contact" means the creature's own
+//    body touching you.
+// 2. getQueensMilkHumanHealPenalty -- healAmount is whatever a human-sourced
+//    heal call was about to apply (med conversion, camp aid, health pickup
+//    -- every current call to ThreeGame.healPlayer() in this codebase is one
+//    of these three, there is no separate "alien heals you" path elsewhere
+//    to accidentally double-flip). Returns a positive damage amount for the
+//    caller to route through takeDamage() instead of healing, or null when
+//    the relic isn't equipped / there's nothing to flip.
+const QUEENS_MILK_ALIEN_CONTACT_REASONS = new Set(['crawler', 'mycelium_stalker', 'bio_charger']);
+
+export function getQueensMilkAlienContactHeal(reason, equippedRelics = []) {
+    if (!QUEENS_MILK_ALIEN_CONTACT_REASONS.has(reason)) return null;
+    for (const relic of equippedRelics) {
+        if (relic?.id !== 'queens_milk') continue;
+        const healAmount = Number(relic?.stats?.alienHealAmount);
+        if (Number.isFinite(healAmount)) return healAmount;
+    }
+    return null;
+}
+
+export function getQueensMilkHumanHealPenalty(healAmount, equippedRelics = []) {
+    if (!(healAmount > 0)) return null;
+    for (const relic of equippedRelics) {
+        if (relic?.id !== 'queens_milk') continue;
+        const penaltyMult = Number(relic?.stats?.humanHealPenaltyMult);
+        if (Number.isFinite(penaltyMult)) return Math.max(1, Math.round(healAmount * penaltyMult));
     }
     return null;
 }

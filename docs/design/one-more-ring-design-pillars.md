@@ -145,12 +145,40 @@ helper (distance-check against `scatterSprites`, same pattern Cryo Breach's
 chain-freeze already established, just dealing real damage via `damageSnail`
 instead of a status effect) — see `src/threeGame.reloadRelicEffects.test.js`.
 
-Only `queens_milk` ("Alien enemies may heal you on contact. Human healing
-hurts instead.") remains an honest catalog-only entry — it needs both the
-alien-contact-damage path and the human-healing-item-use path found and
-hooked, which is a two-system change, not a single call site like the rest,
-and was deprioritized to land the other 7 first ("quality over count" per the
-original Lane B brief).
+**Update, 2026-08-20 (later same day):** `queens_milk` is now the 8th and
+last relic wired — 8/8. Two independent pure hooks in `runDrops.js`:
+- `getQueensMilkAlienContactHeal(reason, relics)` — heals `alienHealAmount`
+  (5) instead of taking damage, but only for a reason string verified as a
+  genuine alien-body touch: `'crawler'` (its own charge-attack proximity
+  check) and `'mycelium_stalker'`/`'bio_charger'` (both explicitly commented
+  `// Contact attack check` at their call site). Deliberately excludes
+  ranged/AoE alien attacks (`enemy-projectile`, `ground-slam`,
+  `frost-shockwave`, `queen-shockwave`) and non-alien reasons
+  (`hazard-zone`, `o2-depletion`, `fall`, `camp-turret`, `pvp-rival`) — "on
+  contact" means the creature's own body touching you, not its blast radius.
+  Called from `ThreeGame.takeDamage`, after the existing TANK-block/evasion
+  guards (a blocked or evaded hit never really landed) but before any damage
+  math starts.
+- `getQueensMilkHumanHealPenalty(healAmount, relics)` — flips a positive
+  heal into `round(healAmount * humanHealPenaltyMult)` (0.5) damage instead.
+  Called from `ThreeGame.healPlayer`, which every current human-sourced heal
+  in the codebase already routes through (med-conversion console item,
+  `camp_tallow`'s full-heal verb, the `health` pickup type) — there's no
+  separate "alien heals you" path elsewhere to accidentally double-flip
+  (`bio_vampirism`'s kill-heal restores O2/battery, a different vitals
+  system, never HP via `healPlayer`).
+
+Real bug caught by the fail-first regression check on this pair: the
+contact-heal hook (`takeDamage`) calls `healPlayer()` to actually add the
+HP back — but `healPlayer()` itself now treats *every* call as human-sourced
+when the relic is equipped, so the contact-heal's own HP restore was
+immediately flipping itself back into damage. Fixed with an explicit
+`healPlayer(amount, { skipQueensMilkPenalty: true })` opt-out used only by
+that one internal call site — not a generic flag, a deliberate escape hatch
+for the one caller that both is inside this relic's own logic and still
+wants `healPlayer`'s maxHp clamp and `health-restored` event for free. See
+`src/threeGame.queensMilk.test.js` (includes a test locking in the
+non-recursive behavior) and `src/runDrops.test.js`.
 
 ## 3. Combat impact stack + enemy verbs + stagger/armor/weakpoint grammar
 
