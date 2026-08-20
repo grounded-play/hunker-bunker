@@ -20,7 +20,9 @@
 
 🎮 **[Play Live Browser Build](https://hunkerbunker.netlify.app/)** • 💬 **[Join Discord Server](https://discord.gg/XXwwz3rauu)** • 📜 **[Steam Readiness Specs](docs/steam-docs-master-index.md)**
 
-> **Status**: In active development, heading into Steam review. The browser build above is always current — play it, then come tell us what broke in Discord. No wishlist link yet; Discord is the fastest way to hear the moment that changes.
+> **Status**: In active development, heading into Steam review. Sprint 26 landed Steam-native multiplayer — production Steam auth confirmed live, real Steam Lobby integration (Friends invite, Join Game, Rich Presence) code-complete — with Sprint 27 up next. The browser build above is always current — play it, then come tell us what broke in Discord. No wishlist link yet; Discord is the fastest way to hear the moment that changes.
+>
+> The automated suite currently covers **1,780 passing tests across 219 files** — see [`docs/releases/`](docs/releases/) for what shipped each sprint.
 
 ---
 
@@ -103,8 +105,8 @@ unmerged branch.
 ## 🛠️ Tech Architecture
 
 - **WebGL 3D Engine**: Powered by **Three.js** (r184) with procedural dungeon generation, dynamic fog of war, and WebAudio spatial soundscapes.
-- **Desktop & Steam Shell**: Built with **Electron** featuring native **Steamworks** integration for Steam Cloud saves, Steam Input, and 24 Steam Achievements.
-- **Trusted Relay Server**: Node.js & Express server running in **Docker Compose** behind **Caddy** (`steam.tuesdaycinema.club`), enforcing verified score validation for 5 Steam Leaderboards.
+- **Desktop & Steam Shell**: Built with **Electron** featuring native **Steamworks** integration for Steam Cloud saves, Steam Input, real Steam Lobbies (Friends invite, Join Game, Rich Presence), and 24 Steam Achievements.
+- **Trusted Relay Server**: Node.js & Express server running in **Docker Compose** behind **Caddy** (`steam.tuesdaycinema.club`), enforcing verified score validation for 5 Steam Leaderboards and Steam-session-authenticated multiplayer.
 
 ---
 
