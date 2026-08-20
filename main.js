@@ -96,6 +96,11 @@ const startBtn = document.getElementById('start-game'); // INITIALIZE button
 const titleContinueBtn = document.getElementById('title-continue-btn');
 const titleSwitchClassBtn = document.getElementById('title-switch-class-btn');
 const titleNewRunBtn = document.getElementById('title-newrun-btn');
+// docs/multiplayer-flow-and-lobby-bugs-2026-08-20.md Phase 1: the old
+// standalone entry point into Tactical Net -- rebound below to the exact
+// same flow as "NEW RUN" now that multiplayer setup lives at the end of
+// class-select -> Armory -> Deployment Briefing, not before it.
+const titleMultiplayerBtn = document.getElementById('title-multiplayer-btn');
 const titleAchievementsBtn = document.getElementById('title-achievements-btn');
 const titleSettingsBtn = document.getElementById('title-settings-btn');
 const titleAboutBtn = document.getElementById('title-about-btn');
@@ -3965,7 +3970,7 @@ function showGameOverScreen(stats, { isVictory = false, deathReason = 'hazard' }
     });
 
     if (isMultiplayer) {
-        window.profileManager?.recordMultiplayerRun?.({ mode: mpMode, isVictory });
+        window.profile?.recordMultiplayerRun?.({ mode: mpMode, isVictory });
     }
 
     dispatchSteamRunScoreFinalized(steamRunPayload, window);
@@ -6311,11 +6316,60 @@ function playClassIntroSequence(playerType = 'SCOUT') {
             }
         }, 50);
 
+        // docs/multiplayer-flow-and-lobby-bugs-2026-08-20.md Phase 4: no new
+        // video assets exist per squad composition (and none can be
+        // authored this pass) -- the intro video itself stays the local
+        // player's own already-built single-class cut. What genuinely
+        // varies by squad composition is this roster overlay: real
+        // callsigns/classes/loadouts synced via Phase 3, composited over
+        // the video rather than baked into it. multiplayerLobby.players
+        // still holds the full roster at this point (finalizeDeploy never
+        // clears it -- only disconnect() does, and this only ever fires
+        // after a successful deploy).
+        if (window.game?.isMultiplayer && multiplayerLobby.players.size > 0) {
+            overlay.append(buildSquadManifestPanel());
+        }
+
         overlay.append(skipHint);
         host.appendChild(overlay);
 
         playVideoSource(charBase, startLaunchStep);
     });
+}
+
+// docs/multiplayer-flow-and-lobby-bugs-2026-08-20.md Phase 4: renders the
+// live multiplayer roster (callsign, class, Phase 3's synced loadout
+// summary) as an overlay panel for playClassIntroSequence -- a child of
+// that function's own `overlay` element, so it's torn down automatically
+// by cleanupAndResolve()'s overlay.remove() with no extra cleanup needed.
+function buildSquadManifestPanel() {
+    const panel = document.createElement('div');
+    panel.className = 'class-intro-squad-panel';
+
+    const title = document.createElement('div');
+    title.className = 'class-intro-squad-title';
+    title.textContent = 'SQUAD MANIFEST';
+    panel.appendChild(title);
+
+    multiplayerLobby.players.forEach((player) => {
+        const row = document.createElement('div');
+        row.className = `class-intro-squad-row ${player.isSelf ? 'class-intro-squad-row--self' : ''}`;
+
+        const callsignEl = document.createElement('span');
+        callsignEl.className = 'class-intro-squad-callsign';
+        callsignEl.textContent = player.callsign;
+
+        const metaEl = document.createElement('span');
+        metaEl.className = 'class-intro-squad-meta';
+        const cls = (player.opClass || 'TANK').toUpperCase();
+        const weapon = player.loadout?.weapon ?? 'UNARMED';
+        metaEl.textContent = `${cls} // ${weapon}${player.loadout?.hasCharm ? ' ◆' : ''}`;
+
+        row.append(callsignEl, metaEl);
+        panel.appendChild(row);
+    });
+
+    return panel;
 }
 
 // Generic fullscreen cutscene video: plays /cutscenes/{base}.webm (mp4
@@ -7042,7 +7096,24 @@ function launchStandardRun({ resetBank = false, playIntro = false } = {}) {
 
 if (startBtn) {
     startBtn.addEventListener('click', () => {
-        openArmoryGate(() => launchStandardRun({ resetBank: true, playIntro: true }));
+        // docs/multiplayer-flow-and-lobby-bugs-2026-08-20.md Phase 1/2:
+        // Armory's embark action now opens the Deployment Briefing screen
+        // (the former "tactical net" modal, now shared by every run)
+        // instead of launching straight into gameplay. SOLO deploy there
+        // calls launchStandardRun directly; a completed CO-OP/PVP deploy
+        // calls it too, after setupMultiplayerNetwork() runs first (see
+        // multiplayerLobby.js's finalizeDeploy / gameController.js's
+        // startMultiplayerRun) -- solo and multiplayer end up at the exact
+        // same launch action either way, only the path there differs.
+        openArmoryGate(() => {
+            multiplayerLobby.openModal({
+                onLaunch: () => launchStandardRun({ resetBank: true, playIntro: true }),
+                onCancel: () => {
+                    menu?.classList.remove('hidden');
+                    setAppPhase('menu');
+                }
+            });
+        });
     });
 }
 
@@ -8554,7 +8625,7 @@ function updatePlayerTradeUi(state) {
     modal.setAttribute('aria-hidden', 'false');
 
     const inv = getCurrentInventoryForTrade();
-    const selfCallsign = window.profileManager?.getCallsign?.() || 'LOCAL AGENT';
+    const selfCallsign = window.profile?.getCallsign?.() || 'LOCAL AGENT';
     const selfClass = window.selectedPlayerType || 'TANK';
 
     const selfCallsignEl = document.getElementById('trade-self-callsign');
@@ -12162,33 +12233,44 @@ document.addEventListener('DOMContentLoaded', async () => {
     };
     updateContinueButtonState();
 
-    if (titleNewRunBtn) {
-        titleNewRunBtn.addEventListener('click', () => {
-            // Sprint 26: window.activeMultiplayerSession was never cleared
-            // anywhere -- a solo run started here after an earlier
-            // multiplayer match in the same tab (no reload) could still
-            // have its end-of-run report read the stale session (main.js's
-            // game-over reporting reads window.activeMultiplayerSession
-            // directly for roomCode, with no fallback to window.game's own
-            // per-run state). Safe specifically here: #start-game is the
-            // button multiplayer's own deploy flow clicks, so clearing
-            // there would wipe a session multiplayer had just set moments
-            // earlier -- this button is solo-only, never part of that chain.
-            clearMultiplayerSession();
-            transitionFromTitleToMenu(() => {
-                clearSaveData();
-                blackBoxStore.clear();
-                window.game?.clearBlackBoxMarker?.();
-                updateContinueButtonState();
-                renderRosterModal('new_game');
-                const modal = document.getElementById('roster-modal');
-                if (modal) {
-                    modal.classList.remove('hidden');
-                    modal.setAttribute('aria-hidden', 'false');
-                }
-                document.getElementById('roster-callsign-input')?.focus?.();
-            });
+    // docs/multiplayer-flow-and-lobby-bugs-2026-08-20.md Phase 1: named so
+    // both "NEW RUN" and the old standalone "TACTICAL NET" title-screen
+    // button (which used to skip straight to the multiplayer modal,
+    // bypassing class-select and Armory entirely) now funnel into the exact
+    // same flow -- multiplayer setup happens later, at the Deployment
+    // Briefing screen after Armory, not here.
+    function startNewTacticalRunFlow() {
+        // Sprint 26: window.activeMultiplayerSession was never cleared
+        // anywhere -- a solo run started here after an earlier
+        // multiplayer match in the same tab (no reload) could still
+        // have its end-of-run report read the stale session (main.js's
+        // game-over reporting reads window.activeMultiplayerSession
+        // directly for roomCode, with no fallback to window.game's own
+        // per-run state). Safe specifically here: #start-game is the
+        // button multiplayer's own deploy flow clicks, so clearing
+        // there would wipe a session multiplayer had just set moments
+        // earlier -- this function is solo/pre-deploy-only, never part
+        // of that chain.
+        clearMultiplayerSession();
+        transitionFromTitleToMenu(() => {
+            clearSaveData();
+            blackBoxStore.clear();
+            window.game?.clearBlackBoxMarker?.();
+            updateContinueButtonState();
+            renderRosterModal('new_game');
+            const modal = document.getElementById('roster-modal');
+            if (modal) {
+                modal.classList.remove('hidden');
+                modal.setAttribute('aria-hidden', 'false');
+            }
+            document.getElementById('roster-callsign-input')?.focus?.();
         });
+    }
+    if (titleNewRunBtn) {
+        titleNewRunBtn.addEventListener('click', startNewTacticalRunFlow);
+    }
+    if (titleMultiplayerBtn) {
+        titleMultiplayerBtn.addEventListener('click', startNewTacticalRunFlow);
     }
     if (titleContinueBtn) {
         titleContinueBtn.addEventListener('click', () => {
@@ -12717,12 +12799,59 @@ function finishBootDiagnostics() {
 // correlate against. This keeps recording for the rest of the session so
 // the next exported log shows exactly when and how long each >50ms stall
 // was, interleaved with the same WORLD/INPUT/GAME entries already captured.
+// docs/perf-chunk-mount-plan-2026-08-20.md: the "since JS is single-
+// threaded, by the time this callback runs it still names whichever [phase]
+// was most recently active" assumption below only holds if some tagged
+// operation ran recently. Live-verified this can go stale for minutes --
+// sitting idle on the menu screen (no chunk-mount/gear-poof event fires
+// there) still produced real long tasks, including a 3.9s and a 6.5s one,
+// and every one of them was misattributed to a chunk mount from minutes
+// earlier just because that's the last value the tag ever held. 500ms is
+// generous (PerformanceObserver callback delivery isn't always immediate)
+// while still rejecting anything stale by seconds, let alone minutes.
+const PERF_PHASE_MAX_AGE_MS = 500;
+
+// docs/perf-chunk-mount-plan-2026-08-20.md Track D: an unattributed long task
+// during the 'menu' profile (idle title/loadout/armory screens) was
+// reproduced live, but only in a sandboxed dev environment running Chrome
+// with SwiftShader (software WebGL, confirmed via WEBGL_debug_renderer_info)
+// instead of a real GPU -- absolute timings there aren't trustworthy evidence
+// for what happens on a real player's hardware. This snapshot exists so the
+// *next* unattributed menu-profile long task, captured from a real installed
+// build on real hardware, arrives with the render-cost context needed to
+// confirm or rule out the "map-box preview re-renders the full showcase
+// scene every frame" hypothesis without another blind live-debugging pass.
+function captureMenuRenderSnapshot() {
+    try {
+        const game = window.game;
+        if (!game || game.performanceProfile !== 'menu') return null;
+        const info = game.renderer?.info;
+        const container = game.container;
+        return {
+            drawCalls: info?.render?.calls ?? null,
+            triangles: info?.render?.triangles ?? null,
+            containerW: container?.clientWidth ?? null,
+            containerH: container?.clientHeight ?? null,
+            sceneObjects: game.scene?.children?.length ?? null,
+            transientEffects: game.transientEffects?.length ?? null
+        };
+    } catch {
+        return null;
+    }
+}
+
 let gameplayLongTaskObserver = null;
 function startGameplayLongTaskDiagnostics() {
     if (typeof PerformanceObserver === 'undefined' || gameplayLongTaskObserver) return;
     try {
         gameplayLongTaskObserver = new PerformanceObserver((list) => {
             for (const task of list.getEntries()) {
+                const phaseAge = window.__hbLastPerfPhaseAt != null
+                    ? performance.now() - window.__hbLastPerfPhaseAt
+                    : null;
+                const lastPhase = (phaseAge != null && phaseAge <= PERF_PHASE_MAX_AGE_MS)
+                    ? window.__hbLastPerfPhase
+                    : null;
                 debugLog.warn('PERF', `Long task: ${Math.round(task.duration)}ms`, {
                     durationMs: Math.round(task.duration),
                     startMs: Math.round(task.startTime),
@@ -12731,8 +12860,14 @@ function startGameplayLongTaskDiagnostics() {
                     // in place afterward -- since JS is single-threaded, by the
                     // time this callback runs it still names whichever of
                     // those was most recently active, which is the closest
-                    // thing to attribution the longtask API allows.
-                    lastPhase: window.__hbLastPerfPhase ?? null
+                    // thing to attribution the longtask API allows. null here
+                    // (rather than a stale guess) means the real cause is
+                    // still genuinely unattributed -- a real open question,
+                    // not chunk-mount work.
+                    lastPhase,
+                    // Only populated when still unattributed and the game is
+                    // sitting in the menu profile -- see captureMenuRenderSnapshot.
+                    menuRenderSnapshot: lastPhase === null ? captureMenuRenderSnapshot() : null
                 });
             }
         });

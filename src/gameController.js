@@ -9,62 +9,20 @@
 //                                                 |- SinglePlayerSession
 //                                                 `- MultiplayerSession -> NetReplication
 //
-// This is deliberately a SMALL first step, not the full target shape: a
-// live investigation of the actual start-flow (title -> roster ->
-// #start-game -> Armory gate -> #armory-btn-embark -> launchStandardRun in
-// main.js) found that whole chain has no unit-test coverage (no test
-// constructs a real ThreeGame -- it needs a live WebGL context) and a
-// questionable e2e safety net (the shared Playwright helper never actually
-// clicks through the Armory gate). Rewriting launchStandardRun/
-// openArmoryGate's internals -- which aren't even exported from main.js --
-// without a trustworthy net was judged too risky for one pass. This
-// increment instead:
+// This is deliberately a SMALL first step, not the full target shape.
 //
-//   1. Gives multiplayer start a single, explicit, testable entry point
-//      (startMultiplayerRun) instead of MultiplayerLobby directly mutating
-//      a global and DOM-clicking through main.js's chain inline.
-//   2. Passes the session explicitly into ThreeGame.setupMultiplayerNetwork
-//      instead of that method only ever reading a global.
-//   3. Fixes a real bug the investigation surfaced along the way:
-//      window.activeMultiplayerSession was never cleared, so a solo run
-//      started after a multiplayer match (same tab, no reload) could still
-//      have its end-of-run report read stale multiplayer state (main.js's
-//      game-over reporting reads window.activeMultiplayerSession directly
-//      for roomCode, with no fallback to window.game's own state).
-//
-// The DOM-click mechanism itself (main.js's launchStandardRun/
-// openArmoryGate not being directly callable) is intentionally NOT
-// removed this pass -- absorbing those into GameController is the natural
-// next increment, once they're exported from main.js and the flow has
-// real coverage to change safely against.
-
-function waitForArmoryEmbarkButton(timeoutMs = 8000) {
-    return new Promise((resolve) => {
-        const deadline = Date.now() + timeoutMs;
-        const poll = () => {
-            const btn = document.getElementById('armory-btn-embark');
-            if (btn) {
-                resolve(btn);
-                return;
-            }
-            if (Date.now() >= deadline) {
-                resolve(null);
-                return;
-            }
-            setTimeout(poll, 100);
-        };
-        poll();
-    });
-}
-
-async function clickThroughToArmoryEmbark() {
-    if (typeof document === 'undefined') return;
-    const startBtn = document.getElementById('start-game') || document.getElementById('title-newrun-btn');
-    if (!startBtn) return;
-    startBtn.click();
-    const embarkBtn = await waitForArmoryEmbarkButton();
-    embarkBtn?.click();
-}
+// docs/multiplayer-flow-and-lobby-bugs-2026-08-20.md Phase 1: startMultiplayerRun
+// used to DOM-click through #start-game -> Armory gate -> #armory-btn-embark
+// itself (see git history for clickThroughToArmoryEmbark), because the
+// tactical-net modal used to open BEFORE Armory in the old flow -- so
+// deploying from the lobby had to trigger Armory from scratch. The new flow
+// opens the lobby/Deployment Briefing screen AFTER Armory embark instead (see
+// main.js's #start-game handler and src/multiplayerLobby.js's openModal),
+// so by the time this runs, Armory is already done and pendingArmoryEmbarkAction
+// is already the caller's own launchCallback -- no DOM click-through needed
+// or wanted anymore (clicking #start-game again here would re-open Armory a
+// second time). This now does exactly what its own name says: sets up the
+// multiplayer session, then calls the launch callback directly.
 
 /**
  * Starts a multiplayer run: the single explicit entry point every
@@ -74,8 +32,13 @@ async function clickThroughToArmoryEmbark() {
  *
  * @param {object} session - Same shape MultiplayerLobby has always built:
  *   { roomCode, mode, seed, crashPlan, isMultiplayer, isHost, socket }
+ * @param {() => void} launchCallback - The same launch action Armory's own
+ *   embark already captured for a solo run (main.js's
+ *   `openArmoryGate(() => ...)` argument) -- multiplayer and solo end up
+ *   calling the exact same launchStandardRun, the only difference being
+ *   that setupMultiplayerNetwork(session) runs first here.
  */
-export async function startMultiplayerRun(session) {
+export async function startMultiplayerRun(session, launchCallback) {
     if (typeof window !== 'undefined') {
         window.activeMultiplayerSession = session;
         // Still passed explicitly (see setupMultiplayerNetwork's own
@@ -85,7 +48,7 @@ export async function startMultiplayerRun(session) {
         // fallback support for any other caller that hasn't migrated yet.
         window.game?.setupMultiplayerNetwork?.(session);
     }
-    await clickThroughToArmoryEmbark();
+    launchCallback?.();
 }
 
 /**

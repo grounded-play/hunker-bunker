@@ -45,9 +45,62 @@ function hasSteamLobbyApi() {
     return typeof window !== 'undefined' && Boolean(window.electronAPI?.steamCreateLobby);
 }
 
-export async function createSteamLobby({ mode = 'coop', maxPlayers = 4, build = null } = {}) {
+// visibility defaults to 'public' -- docs/logs/log8.json / user report: a
+// FriendsOnly lobby (this file's original default) never shows up in
+// getSteamLobbies() below (Steamworks' RequestLobbyList only returns
+// Public lobbies), which made "see and join a public lobby" structurally
+// impossible regardless of any UI built on top. 'friends' and 'private'
+// remain available for a caller that explicitly wants an invite-only session.
+//
+// docs/multiplayer-flow-and-lobby-bugs-2026-08-20.md Phase 2: passwordRequired
+// is a plain boolean, deliberately NOT the password itself or its hash --
+// Steam lobby metadata (electron/main.cjs's setLobbyData) is readable by
+// any lobby member by design, so it only ever carries "yes, a password is
+// needed" for the browse-list UI to prompt correctly. The actual hash lives
+// only in the relay server's memory (server/relay.js's roomPasswordHashes),
+// set via the joinRoom socket event, never through Steam at all.
+export async function createSteamLobby({ mode = 'coop', maxPlayers = 4, build = null, visibility = 'public', passwordRequired = false } = {}) {
     if (!hasSteamLobbyApi()) return { ok: false, reason: 'not_electron' };
-    return window.electronAPI.steamCreateLobby({ mode, maxPlayers, build });
+    return window.electronAPI.steamCreateLobby({ mode, maxPlayers, build, visibility, passwordRequired });
+}
+
+// SHA-256 hex digest via the standard Web Crypto API (available in Electron
+// renderers regardless of file:// origin, unlike a plain browser's
+// secure-context restriction on SubtleCrypto). Used both when a host sets a
+// private-lobby password and when a joiner enters one to compare -- same
+// algorithm, same place, so the two can never silently drift apart. Returns
+// null for an empty/falsy password rather than hashing an empty string, so
+// "no password" stays unambiguously distinct from "password was ''."
+export async function hashPassword(password) {
+    if (!password) return null;
+    if (typeof crypto === 'undefined' || !crypto.subtle) return null;
+    const bytes = new TextEncoder().encode(password);
+    const digest = await crypto.subtle.digest('SHA-256', bytes);
+    return Array.from(new Uint8Array(digest)).map((b) => b.toString(16).padStart(2, '0')).join('');
+}
+
+// Lists this game's currently-open Public lobbies (electron/main.cjs's
+// hb:steamGetLobbies already filters out anything not carrying this
+// game's hb_protocol metadata). Empty array outside Electron rather than
+// an error -- there's nothing to browse, not a failure.
+export async function getSteamLobbies() {
+    if (!hasSteamLobbyApi()) return { ok: true, lobbies: [] };
+    return window.electronAPI.steamGetLobbies();
+}
+
+// docs/logs/log8.json / user report: Invite Friends "didn't open the Steam
+// overlay." The overlay (and therefore the invite dialog) can only ever
+// work when this process was actually launched BY Steam -- running the
+// packaged binary directly bypasses Steam's overlay hook entirely, and
+// steamworks.js exposes no way to detect overlay availability directly
+// (confirmed against the type defs). electron/main.cjs's launchedViaSteam
+// flag is the best available proxy, so UI can warn accurately instead of
+// the invite button silently doing nothing. Returns null (genuinely
+// unknown, not "false") outside Electron.
+export async function isLaunchedViaSteam() {
+    if (typeof window === 'undefined' || !window.electronAPI?.getSteamInfo) return null;
+    const info = await window.electronAPI.getSteamInfo();
+    return Boolean(info?.launchedViaSteam);
 }
 
 export async function joinSteamLobby(lobbyId) {

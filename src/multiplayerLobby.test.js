@@ -1,5 +1,5 @@
 import { describe, expect, it, beforeEach, afterEach, vi } from 'vitest';
-import { MultiplayerLobby, MULTIPLAYER_MODES, resolveRelayUrl, fetchMultiplayerSessionToken } from './multiplayerLobby.js';
+import { MultiplayerLobby, MULTIPLAYER_MODES, resolveRelayUrl, fetchMultiplayerSessionToken, getLocalLoadoutSummary } from './multiplayerLobby.js';
 
 describe('MultiplayerLobby', () => {
     let lobby;
@@ -90,7 +90,7 @@ describe('MultiplayerLobby', () => {
 
                 await lobby.maybeCreateSteamLobby();
 
-                expect(steamCreateLobby).toHaveBeenCalledWith({ mode: MULTIPLAYER_MODES.COOP, maxPlayers: 4, build: null });
+                expect(steamCreateLobby).toHaveBeenCalledWith({ mode: MULTIPLAYER_MODES.COOP, maxPlayers: 4, build: null, visibility: 'public', passwordRequired: false });
                 expect(lobby.steamLobbyId).toBe('555');
                 expect(lobby.roomCode).toBe('STEAM-555');
             });
@@ -116,6 +116,99 @@ describe('MultiplayerLobby', () => {
 
                 expect(steamCreateLobby).not.toHaveBeenCalled();
                 expect(lobby.roomCode).toBe('STEAM-999');
+            });
+        });
+
+        // docs/logs/log8.json / user report: "the invite friends didn't
+        // open the Steam overlay." matchmaking.Lobby.openInviteDialog()
+        // never throws for "overlay unavailable" and steamworks.js exposes
+        // no way to check overlay availability directly -- launchedViaSteam
+        // (electron/main.cjs) is the best available proxy, checked here
+        // before ever attempting the dialog so a player running the
+        // packaged binary directly gets an honest, specific toast instead
+        // of a silently dead button.
+        describe('handleSteamInviteClick', () => {
+            it('warns and never attempts the dialog when not launched via Steam', async () => {
+                originalWindow = globalThis.window;
+                const openInviteDialogSpy = vi.fn();
+                const showToastNotification = vi.fn();
+                globalThis.window = {
+                    electronAPI: {
+                        getSteamInfo: vi.fn().mockResolvedValue({ launchedViaSteam: false }),
+                        steamOpenInviteDialog: openInviteDialogSpy
+                    },
+                    showToastNotification
+                };
+                lobby.steamLobbyId = '555';
+
+                await lobby.handleSteamInviteClick();
+
+                expect(openInviteDialogSpy).not.toHaveBeenCalled();
+                expect(showToastNotification).toHaveBeenCalledWith(expect.stringContaining('LAUNCH HUNKER BUNKER FROM STEAM'));
+            });
+
+            it('attempts the dialog and reports success when launched via Steam', async () => {
+                originalWindow = globalThis.window;
+                const showToastNotification = vi.fn();
+                globalThis.window = {
+                    electronAPI: {
+                        steamCreateLobby: vi.fn(),
+                        getSteamInfo: vi.fn().mockResolvedValue({ launchedViaSteam: true }),
+                        steamOpenInviteDialog: vi.fn().mockResolvedValue({ ok: true })
+                    },
+                    showToastNotification,
+                    AudioManager: { play: vi.fn() }
+                };
+                lobby.steamLobbyId = '555';
+
+                await lobby.handleSteamInviteClick();
+
+                expect(showToastNotification).toHaveBeenCalledWith(expect.stringContaining('SELECT A FRIEND'));
+            });
+
+            it('reports failure distinctly when the dialog call itself fails', async () => {
+                originalWindow = globalThis.window;
+                const showToastNotification = vi.fn();
+                const steamOpenInviteDialog = vi.fn().mockResolvedValue({ ok: false, reason: 'steam_lobby_invite_dialog_failed' });
+                globalThis.window = {
+                    electronAPI: {
+                        steamCreateLobby: vi.fn(),
+                        getSteamInfo: vi.fn().mockResolvedValue({ launchedViaSteam: true }),
+                        steamOpenInviteDialog
+                    },
+                    showToastNotification
+                };
+                lobby.steamLobbyId = '555';
+
+                await lobby.handleSteamInviteClick();
+
+                expect(steamOpenInviteDialog).toHaveBeenCalled();
+                expect(showToastNotification).toHaveBeenCalledWith(expect.stringContaining('COULD NOT OPEN'));
+            });
+
+            it('does nothing at all without an active lobby', async () => {
+                originalWindow = globalThis.window;
+                const showToastNotification = vi.fn();
+                const getSteamInfo = vi.fn();
+                globalThis.window = { electronAPI: { getSteamInfo }, showToastNotification };
+                lobby.steamLobbyId = null;
+
+                await lobby.handleSteamInviteClick();
+
+                expect(getSteamInfo).not.toHaveBeenCalled();
+                expect(showToastNotification).not.toHaveBeenCalled();
+            });
+        });
+
+        // docs/logs/log8.json / user report: no way to see or join a
+        // public Steam lobby at all -- getSteamLobbies() (matchmaking.
+        // Lobby list) was never wired to anything.
+        describe('refreshSteamLobbies', () => {
+            it('is safe to call when there is no document (non-browser context)', async () => {
+                originalWindow = globalThis.window;
+                globalThis.window = { electronAPI: { steamGetLobbies: vi.fn() } };
+
+                await expect(lobby.refreshSteamLobbies()).resolves.toBeUndefined();
             });
         });
 
@@ -294,5 +387,280 @@ describe('MultiplayerLobby', () => {
         lobby.disconnect();
         expect(lobby.connected).toBe(false);
         expect(lobby.players.size).toBe(0);
+    });
+
+    // docs/multiplayer-flow-and-lobby-bugs-2026-08-20.md Phase 1/2: this
+    // modal is now the shared post-Armory Deployment Briefing screen for
+    // every run. No real jsdom in this suite (vitest.config.js runs the
+    // node environment) -- a minimal fake document is enough to exercise
+    // openModal/updateUiState/deploy without a real DOM, same spirit as the
+    // rest of this file's globalThis.window stubs.
+    function createFakeElement() {
+        return {
+            classList: { add: vi.fn(), remove: vi.fn(), toggle: vi.fn() },
+            setAttribute: vi.fn(),
+            dataset: {},
+            style: {},
+            textContent: '',
+            disabled: false,
+            checked: false,
+            value: '',
+            addEventListener: vi.fn(),
+            querySelector: vi.fn(() => null)
+        };
+    }
+
+    function createFakeDocument() {
+        const elements = new Map();
+        return {
+            getElementById: vi.fn((id) => {
+                if (!elements.has(id)) elements.set(id, createFakeElement());
+                return elements.get(id);
+            }),
+            querySelector: vi.fn(() => createFakeElement()),
+            _elements: elements
+        };
+    }
+
+    describe('Deployment Briefing screen (openModal/SOLO/cancelModal)', () => {
+        let originalDocument;
+
+        beforeEach(() => {
+            originalDocument = globalThis.document;
+            globalThis.document = createFakeDocument();
+        });
+
+        afterEach(() => {
+            globalThis.document = originalDocument;
+        });
+
+        it('openModal stashes onLaunch/onCancel and resets to SOLO regardless of the last session\'s mode', () => {
+            lobby.currentMode = MULTIPLAYER_MODES.PVP;
+            const onLaunch = vi.fn();
+            const onCancel = vi.fn();
+
+            lobby.openModal({ onLaunch, onCancel });
+
+            expect(lobby.currentMode).toBe(MULTIPLAYER_MODES.SOLO);
+            expect(lobby.onLaunch).toBe(onLaunch);
+            expect(lobby.onCancel).toBe(onCancel);
+        });
+
+        it('does not auto-connect on open (SOLO must never open a live relay/Steam session by surprise)', () => {
+            let connectCalled = false;
+            lobby.connect = async () => { connectCalled = true; };
+
+            lobby.openModal({ onLaunch: vi.fn() });
+
+            expect(connectCalled).toBe(false);
+            expect(lobby.connected).toBe(false);
+        });
+
+        it('SOLO deploy calls onLaunch directly, with no relay/session setup at all', () => {
+            const onLaunch = vi.fn();
+            let connectCalled = false;
+            lobby.connect = async () => { connectCalled = true; };
+            lobby.openModal({ onLaunch });
+
+            lobby.handleDeployButtonClick();
+
+            expect(onLaunch).toHaveBeenCalledTimes(1);
+            expect(connectCalled).toBe(false);
+            expect(lobby.activeMatch).toBeNull();
+        });
+
+        it('SOLO deploy clears the stashed callbacks so a stale onLaunch can never fire twice', () => {
+            const onLaunch = vi.fn();
+            lobby.openModal({ onLaunch });
+
+            lobby.handleDeployButtonClick();
+            lobby.onLaunch?.(); // would throw/no-op if still set -- assert it's gone instead
+
+            expect(onLaunch).toHaveBeenCalledTimes(1);
+            expect(lobby.onLaunch).toBeNull();
+        });
+
+        it('picking CO-OP or PVP connects; picking SOLO after disconnects rather than leaving a live session behind', () => {
+            let connectCount = 0;
+            let disconnectCalled = false;
+            lobby.connect = async () => { connectCount += 1; lobby.connected = true; };
+            lobby.disconnect = () => { disconnectCalled = true; lobby.connected = false; };
+            lobby.openModal({ onLaunch: vi.fn() });
+
+            lobby.setMode(MULTIPLAYER_MODES.COOP);
+            expect(connectCount).toBe(1);
+
+            lobby.setMode(MULTIPLAYER_MODES.SOLO);
+            expect(disconnectCalled).toBe(true);
+        });
+
+        it('cancelModal fires onCancel and clears both callbacks; a subsequent deploy click does nothing', () => {
+            const onLaunch = vi.fn();
+            const onCancel = vi.fn();
+            lobby.openModal({ onLaunch, onCancel });
+
+            lobby.cancelModal();
+            lobby.handleDeployButtonClick();
+
+            expect(onCancel).toHaveBeenCalledTimes(1);
+            expect(onLaunch).not.toHaveBeenCalled();
+        });
+
+        it('a successful CO-OP/PVP deploy never fires onCancel', async () => {
+            const onLaunch = vi.fn();
+            const onCancel = vi.fn();
+            lobby.openModal({ onLaunch, onCancel });
+            lobby.currentMode = MULTIPLAYER_MODES.COOP;
+            lobby.players.set('local-host', { id: 'local-host', callsign: 'HOST', opClass: 'TANK', ping: 8, isSelf: true, ready: true });
+
+            lobby.finalizeDeploy({ mode: MULTIPLAYER_MODES.COOP, seed: 'SECTOR-7', crashPlan: null });
+            await Promise.resolve();
+
+            expect(onCancel).not.toHaveBeenCalled();
+            expect(onLaunch).toHaveBeenCalledTimes(1);
+        });
+    });
+
+    // docs/multiplayer-flow-and-lobby-bugs-2026-08-20.md Phase 2: host-set
+    // private lobby + password. The relay only ever sees the hash (see
+    // server/relayPrivateLobbyPassword.test.js); these tests cover the
+    // client-side half -- what gets sent to Steam (a boolean flag only,
+    // never the hash) and what gets prompted for on join.
+    describe('private lobby + password', () => {
+        afterEach(() => {
+            if (originalWindow) globalThis.window = originalWindow;
+        });
+
+        it('maybeCreateSteamLobby requests a Private Steam lobby with passwordRequired:true when hostPrivate is set with a password', async () => {
+            originalWindow = globalThis.window;
+            const steamCreateLobby = vi.fn().mockResolvedValue({ ok: true, lobby: { id: '9' } });
+            globalThis.window = { electronAPI: { steamCreateLobby } };
+            lobby.hostPrivate = true;
+            lobby.hostPasswordValue = 'hunter2';
+
+            await lobby.maybeCreateSteamLobby();
+
+            expect(steamCreateLobby).toHaveBeenCalledWith(expect.objectContaining({ visibility: 'private', passwordRequired: true }));
+        });
+
+        it('maybeCreateSteamLobby does not require a password just because hostPrivate is set (private with no password is valid)', async () => {
+            originalWindow = globalThis.window;
+            const steamCreateLobby = vi.fn().mockResolvedValue({ ok: true, lobby: { id: '9' } });
+            globalThis.window = { electronAPI: { steamCreateLobby } };
+            lobby.hostPrivate = true;
+            lobby.hostPasswordValue = '';
+
+            await lobby.maybeCreateSteamLobby();
+
+            expect(steamCreateLobby).toHaveBeenCalledWith(expect.objectContaining({ visibility: 'private', passwordRequired: false }));
+        });
+
+        it('handleSteamLobbyJoinRequested prompts for a password when the lobby reports hb_pw_required, and hashes it before connecting', async () => {
+            originalWindow = globalThis.window;
+            const steamJoinLobby = vi.fn().mockResolvedValue({ ok: true, lobby: { id: '5', data: { hb_pw_required: 'true' } } });
+            const promptSpy = vi.fn().mockReturnValue('hunter2');
+            globalThis.window = { electronAPI: { steamJoinLobby, steamCreateLobby: vi.fn() }, prompt: promptSpy };
+            lobby.connect = async () => {};
+
+            await lobby.handleSteamLobbyJoinRequested('5');
+
+            expect(promptSpy).toHaveBeenCalled();
+            expect(lobby.pendingJoinPasswordHash).toMatch(/^[0-9a-f]{64}$/);
+        });
+
+        it('does not prompt for a password when the lobby does not require one', async () => {
+            originalWindow = globalThis.window;
+            const steamJoinLobby = vi.fn().mockResolvedValue({ ok: true, lobby: { id: '6', data: {} } });
+            const promptSpy = vi.fn();
+            globalThis.window = { electronAPI: { steamJoinLobby, steamCreateLobby: vi.fn() }, prompt: promptSpy };
+            lobby.connect = async () => {};
+
+            await lobby.handleSteamLobbyJoinRequested('6');
+
+            expect(promptSpy).not.toHaveBeenCalled();
+            expect(lobby.pendingJoinPasswordHash).toBeNull();
+        });
+
+        it('leaves pendingJoinPasswordHash null (not an empty-string hash) when the password prompt is cancelled', async () => {
+            originalWindow = globalThis.window;
+            const steamJoinLobby = vi.fn().mockResolvedValue({ ok: true, lobby: { id: '7', data: { hb_pw_required: 'true' } } });
+            const promptSpy = vi.fn().mockReturnValue(null);
+            globalThis.window = { electronAPI: { steamJoinLobby, steamCreateLobby: vi.fn() }, prompt: promptSpy };
+            lobby.connect = async () => {};
+
+            await lobby.handleSteamLobbyJoinRequested('7');
+
+            expect(lobby.pendingJoinPasswordHash).toBeNull();
+        });
+    });
+
+    // docs/multiplayer-flow-and-lobby-bugs-2026-08-20.md Phase 3: the
+    // display-only loadout summary synced onto the roster (equipped weapon
+    // label + whether a charm is equipped) -- reused by connect(),
+    // fallbackLocalSession(), and Phase 4's squad-manifest cutscene overlay.
+    describe('getLocalLoadoutSummary', () => {
+        afterEach(() => {
+            if (originalWindow) globalThis.window = originalWindow;
+        });
+
+        it('reads the equipped weapon label and charm state for the given class', () => {
+            originalWindow = globalThis.window;
+            const getEquippedLabel = vi.fn().mockReturnValue('RAILGUN MK.II');
+            const getEquippedCharmId = vi.fn().mockReturnValue('4200');
+            globalThis.window = { loadout: { getEquippedLabel, getEquippedCharmId }, fabricator: { isFabricated: vi.fn() } };
+
+            const summary = getLocalLoadoutSummary('TANK');
+
+            expect(summary).toEqual({ weapon: 'RAILGUN MK.II', hasCharm: true });
+            expect(getEquippedLabel).toHaveBeenCalledWith(globalThis.window.fabricator, 'TANK');
+            expect(getEquippedCharmId).toHaveBeenCalledWith('TANK');
+        });
+
+        it('reports hasCharm:false when no charm is equipped', () => {
+            originalWindow = globalThis.window;
+            globalThis.window = {
+                loadout: { getEquippedLabel: () => 'SIDEARM', getEquippedCharmId: () => null },
+                fabricator: {}
+            };
+
+            expect(getLocalLoadoutSummary('SCOUT')).toEqual({ weapon: 'SIDEARM', hasCharm: false });
+        });
+
+        it('returns null when there is no live loadout manager yet (very early boot)', () => {
+            originalWindow = globalThis.window;
+            globalThis.window = {};
+
+            expect(getLocalLoadoutSummary('TANK')).toBeNull();
+        });
+    });
+
+    describe('roster entries carry the synced loadout summary', () => {
+        afterEach(() => {
+            if (originalWindow) globalThis.window = originalWindow;
+        });
+
+        it('fallbackLocalSession attaches the local player\'s real loadout summary to its own roster entry', () => {
+            originalWindow = globalThis.window;
+            globalThis.window = {
+                loadout: { getEquippedLabel: () => 'ARC WELDER', getEquippedCharmId: () => '1' },
+                fabricator: {},
+                selectedPlayerType: 'ENGINEER',
+                AudioManager: { play: vi.fn() }
+            };
+
+            lobby.fallbackLocalSession();
+
+            const self = [...lobby.players.values()].find((p) => p.isSelf);
+            expect(self.loadout).toEqual({ weapon: 'ARC WELDER', hasCharm: true });
+        });
+
+        // A remote player's loadout arriving via the real currentPlayers/
+        // newPlayer socket handlers is covered by
+        // server/relayLoadoutSync.test.js (real socket.io round-trip through
+        // server/relay.js) and was live-verified end to end against the real
+        // dev server -- connect() itself isn't structured for isolating just
+        // that handler without replacing connect() wholesale, which would
+        // test a reimplementation rather than the real code (same reason no
+        // other test in this file exercises connect()'s internal handlers).
     });
 });

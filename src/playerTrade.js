@@ -215,8 +215,8 @@ export class PlayerTradeManager {
             this.medkitsTraded += Number(this.myOffer.medkits || 0) + Number(this.peerOffer.medkits || 0);
             this.o2Traded += Number(this.myOffer.o2Canisters || 0) + Number(this.peerOffer.o2Canisters || 0);
 
-            if (typeof window !== 'undefined' && window.profileManager?.recordTradeCompleted) {
-                window.profileManager.recordTradeCompleted();
+            if (typeof window !== 'undefined' && window.profile?.recordTradeCompleted) {
+                window.profile.recordTradeCompleted();
             }
 
             this.statusMessage = 'TRANSACTION COMPLETE — TELEMETRY COMMITTED';

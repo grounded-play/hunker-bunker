@@ -12492,6 +12492,62 @@ button.archive-log-entry:active {
   to { opacity: 0.85; }
 }
 
+/* docs/multiplayer-flow-and-lobby-bugs-2026-08-20.md Phase 4: squad roster
+   overlay for a multiplayer deploy's class-intro cutscene -- top-left,
+   pointer-events: none (purely informational, must never block the
+   skip-on-click/keypress handlers the overlay itself listens for). */
+.class-intro-squad-panel {
+  position: absolute;
+  left: calc(var(--vu) * 3);
+  top: calc(var(--vu) * 3);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 10px 14px;
+  background: rgba(4, 10, 14, 0.55);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 6px;
+  pointer-events: none;
+  opacity: 0;
+  animation: class-intro-skip-in 0.4s ease 1.4s forwards;
+  max-width: min(320px, 60vw);
+}
+
+.class-intro-squad-title {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  color: rgba(255, 255, 255, 0.55);
+  margin-bottom: 2px;
+}
+
+.class-intro-squad-row {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  font-family: 'Space Mono', monospace;
+}
+
+.class-intro-squad-row--self .class-intro-squad-callsign {
+  color: #2ec4b6;
+}
+
+.class-intro-squad-callsign {
+  font-size: 13px;
+  font-weight: 700;
+  color: #ffffff;
+  white-space: nowrap;
+}
+
+.class-intro-squad-meta {
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.5);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 /* ── Cinematic still fallback: one/two authored frames when video is absent. ── */
 .cinematic-still-overlay {
   position: absolute;
@@ -17142,6 +17198,45 @@ body.show-debug .map-tool-btn--debug { display: inline-flex; }
   color: #90d8f8;
 }
 
+/* docs/multiplayer-flow-and-lobby-bugs-2026-08-20.md Phase 2: host-set
+   private lobby + password. Reuses .net-relay-display's flex-row container
+   (already applied to #net-private-lobby-group's own .net-relay-display
+   child in index.html) for layout consistency with the rest of this column. */
+.net-private-toggle-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'Rajdhani', sans-serif;
+  font-size: calc(var(--font-xs) * 0.78);
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  color: #90d8f8;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.net-private-toggle-label input[type="checkbox"] {
+  accent-color: #2ec4b6;
+  cursor: pointer;
+}
+
+.net-private-password-input {
+  font-family: 'Space Mono', monospace;
+  font-size: calc(var(--font-xs) * 0.78);
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+  padding: 5px 10px;
+  min-width: 0;
+  flex: 1;
+  margin-left: 10px;
+}
+
+.net-private-password-input::placeholder {
+  color: rgba(255, 255, 255, 0.35);
+}
+
 .net-connect-toggle-btn {
   font-family: 'Rajdhani', sans-serif;
   font-size: calc(var(--font-xs) * 0.78) !important;
@@ -17277,6 +17372,20 @@ body.show-debug .map-tool-btn--debug { display: inline-flex; }
 .net-class--cyan { background: rgba(0, 229, 255, 0.12); color: #00e5ff; border: 1px solid rgba(0, 229, 255, 0.3); }
 .net-class--amber { background: rgba(255, 159, 28, 0.12); color: #ff9f1c; border: 1px solid rgba(255, 159, 28, 0.3); }
 .net-class--green { background: rgba(57, 255, 136, 0.12); color: #39ff88; border: 1px solid rgba(57, 255, 136, 0.3); }
+
+/* docs/multiplayer-flow-and-lobby-bugs-2026-08-20.md Phase 3: each roster
+   row's synced loadout summary, shown as a small subtitle under the class
+   badge rather than a new grid column. */
+.net-roster-loadout {
+  display: block;
+  font-family: 'Space Mono', monospace;
+  font-size: calc(var(--font-xs) * 0.62);
+  color: rgba(255, 255, 255, 0.55);
+  margin-top: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 
 .net-roster-ping {
   display: flex;

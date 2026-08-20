@@ -22,29 +22,40 @@ describe('gameController', () => {
     });
 
     describe('startMultiplayerRun', () => {
-        it('sets window.activeMultiplayerSession and passes the session explicitly into setupMultiplayerNetwork', async () => {
+        it('sets window.activeMultiplayerSession, passes the session explicitly into setupMultiplayerNetwork, and calls the launch callback', async () => {
             originalWindow = globalThis.window;
             originalDocument = globalThis.document;
             const setupMultiplayerNetwork = vi.fn();
             globalThis.window = { game: { setupMultiplayerNetwork } };
-            globalThis.document = undefined; // no DOM in this test -- click-through should no-op cleanly
+            globalThis.document = undefined;
+            const launchCallback = vi.fn();
 
             const session = { roomCode: 'SECTOR-7', mode: 'pvp', isHost: true };
-            await startMultiplayerRun(session);
+            await startMultiplayerRun(session, launchCallback);
 
             expect(globalThis.window.activeMultiplayerSession).toBe(session);
             expect(setupMultiplayerNetwork).toHaveBeenCalledWith(session);
+            expect(launchCallback).toHaveBeenCalledTimes(1);
         });
 
-        it('does not throw when window.game does not exist yet', async () => {
+        it('does not throw when window.game does not exist yet, and still calls the launch callback', async () => {
             originalWindow = globalThis.window;
             originalDocument = globalThis.document;
             globalThis.window = {};
             globalThis.document = undefined;
+            const launchCallback = vi.fn();
 
             const session = { roomCode: 'SECTOR-7', mode: 'coop' };
-            await expect(startMultiplayerRun(session)).resolves.toBeUndefined();
+            await expect(startMultiplayerRun(session, launchCallback)).resolves.toBeUndefined();
             expect(globalThis.window.activeMultiplayerSession).toBe(session);
+            expect(launchCallback).toHaveBeenCalledTimes(1);
+        });
+
+        it('does not throw when no launch callback is passed', async () => {
+            originalWindow = globalThis.window;
+            globalThis.window = {};
+            const session = { roomCode: 'SECTOR-7', mode: 'coop' };
+            await expect(startMultiplayerRun(session)).resolves.toBeUndefined();
         });
     });
 

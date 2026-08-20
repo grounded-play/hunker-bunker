@@ -69,6 +69,21 @@ function sanitizeString(value, maxLen = 32, fallback = 'AGENT') {
     return value.trim().slice(0, maxLen) || fallback;
 }
 
+// docs/multiplayer-flow-and-lobby-bugs-2026-08-20.md Phase 3: a small,
+// display-only summary of each player's equipped weapon/charm -- not the
+// full loadout (mods, skins, decals stay purely local, no gameplay logic
+// anywhere reads this), just enough for the roster and the squad-composition
+// cutscene (Phase 4) to show what each operative brought. Untrusted client
+// input, so every field gets the same defensive treatment as callsign/opClass
+// above rather than trusting shape or type.
+function sanitizeLoadout(value) {
+    if (!value || typeof value !== 'object') return null;
+    return {
+        weapon: sanitizeString(value.weapon, 40, 'UNARMED'),
+        hasCharm: Boolean(value.hasCharm)
+    };
+}
+
 export const sessionTelemetry = {
     totalConnections: 0,
     matchesDeployed: 0,
@@ -164,6 +179,18 @@ export function attachRelay(server, { allowedOrigins = [] } = {}) {
     // an unrelated new peer.
     const roomHostKeys = new Map();
 
+    // docs/multiplayer-flow-and-lobby-bugs-2026-08-20.md Phase 2: host-set
+    // private-lobby password. Map: roomCode -> SHA-256 hex hash, hashed
+    // client-side (src/steamLobbyClient.js's hashPassword) -- the relay only
+    // ever sees/stores the hash, never the plaintext password. Set once by
+    // whoever holds host on first joinRoom for a room that doesn't have one
+    // yet; every later non-host joinRoom for that room must supply a
+    // matching hash or gets rejected before being added to the room. Never
+    // cleared on room-empty (same lifetime rule as roomHostKeys, for the
+    // same reconnect reason) -- only ever overwritten if the room's host
+    // reclaims with a different password.
+    const roomPasswordHashes = new Map();
+
     const getStableClientKey = (p) => p.steamId64 || p.profileId || null;
 
     const getPublicPlayer = (p) => ({
@@ -171,6 +198,7 @@ export function attachRelay(server, { allowedOrigins = [] } = {}) {
         callsign: p.callsign,
         ready: p.ready,
         opClass: p.opClass,
+        loadout: p.loadout,
         x: p.x,
         z: p.z,
         yaw: p.yaw,
@@ -227,6 +255,7 @@ export function attachRelay(server, { allowedOrigins = [] } = {}) {
             id: socket.id,
             callsign: 'AGENT',
             opClass: 'TANK',
+            loadout: null,
             steamId64: socket.steamAuth?.steamId64 ?? null,
             isDevMode: Boolean(socket.steamAuth?.isDevMode),
             x: 9,
@@ -259,6 +288,7 @@ export function attachRelay(server, { allowedOrigins = [] } = {}) {
             const roomCode = sanitizeString(data.roomCode, 24, 'SECTOR-7').toUpperCase();
             const callsign = sanitizeString(data.callsign, 20, `OPERATIVE-${socket.id.slice(0, 4).toUpperCase()}`);
             const opClass = ['SCOUT', 'TANK', 'ENGINEER'].includes(data.opClass) ? data.opClass : 'TANK';
+            const loadoutSummary = sanitizeLoadout(data.loadout);
             // No fallback here (unlike callsign/opClass): an empty string
             // must stay falsy so getStableClientKey() correctly reports "no
             // durable identity available" rather than a literal placeholder
@@ -276,6 +306,10 @@ export function attachRelay(server, { allowedOrigins = [] } = {}) {
             player.roomCode = roomCode;
             player.callsign = callsign;
             player.opClass = opClass;
+            // A reconnect (rejoin with no loadout data) shouldn't wipe a
+            // previously-synced summary -- only overwrite when this joinRoom
+            // actually carried one.
+            if (loadoutSummary) player.loadout = loadoutSummary;
             player.ready = false;
             // Restore the room's in-progress match mode (see roomModes
             // comment above) -- covers both a genuine reconnect mid-match
@@ -343,6 +377,31 @@ export function attachRelay(server, { allowedOrigins = [] } = {}) {
                 if (!recordedHostKey && stableKey) roomHostKeys.set(roomCode, stableKey);
             } else {
                 player.isHost = false;
+            }
+
+            // docs/multiplayer-flow-and-lobby-bugs-2026-08-20.md Phase 2:
+            // private-lobby password gate. The host's hash (if any) is
+            // recorded the moment they hold host on a room with no password
+            // recorded yet; every other joiner must then supply a matching
+            // hash. A host who reclaims (reconnect) with a different hash
+            // than what's recorded is trusted to update it -- they own the
+            // room, not an attacker impersonating them, since reclaim itself
+            // already required stableKey === recordedHostKey above.
+            const suppliedPasswordHash = typeof data.passwordHash === 'string' && data.passwordHash.length <= 128
+                ? data.passwordHash
+                : null;
+            if (player.isHost) {
+                if (suppliedPasswordHash) {
+                    roomPasswordHashes.set(roomCode, suppliedPasswordHash);
+                } else {
+                    roomPasswordHashes.delete(roomCode);
+                }
+            } else {
+                const requiredPasswordHash = roomPasswordHashes.get(roomCode);
+                if (requiredPasswordHash && requiredPasswordHash !== suppliedPasswordHash) {
+                    socket.emit('joinRejected', { reason: 'incorrect_password' });
+                    return;
+                }
             }
 
             rooms.get(roomCode).add(socket.id);

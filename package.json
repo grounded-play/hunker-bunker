@@ -88,7 +88,8 @@
     "asarUnpack": [
       "**/node_modules/steamworks.js/**/*",
       "dist/**/*.mp4",
-      "dist/**/*.webm"
+      "dist/**/*.webm",
+      "dist/**/*.glb"
     ],
     "linux": {
       "executableName": "hunker-bunker",
