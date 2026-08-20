@@ -2472,6 +2472,13 @@
                   <button type="button" class="net-code-copy-btn" id="net-copy-code-btn" title="Copy Sector Frequency">
                     <span>📋</span> COPY
                   </button>
+                  <!-- docs/steam-lobby-integration-plan-2026-08-20.md step 4:
+                       Electron/Steam only -- hidden by default, shown by
+                       multiplayerLobby.js's updateUiState() once a Steam
+                       lobby exists to invite a friend into. -->
+                  <button type="button" class="net-code-copy-btn hidden" id="net-steam-invite-btn" title="Invite a Steam Friend">
+                    <span>👥</span> INVITE FRIEND
+                  </button>
                 </div>
               </div>
 

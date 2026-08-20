@@ -34,6 +34,13 @@ export function checkLobbyProtocolCompatibility(lobbyData, localProtocol = HB_LO
     return { compatible: false, reason: 'VERSION_MISMATCH', localProtocol, remoteProtocol };
 }
 
+// Checks for steamCreateLobby specifically as a proxy for "the real
+// electronAPI bridge exists," not because lobby creation is special --
+// preload.cjs exposes every steam* function in the same
+// contextBridge.exposeInMainWorld call, so in the real app this is either
+// entirely present or entirely absent. (A hand-written test/mock object
+// that only stubs one specific steam* function without this one will
+// read as "not Electron" here -- include steamCreateLobby too.)
 function hasSteamLobbyApi() {
     return typeof window !== 'undefined' && Boolean(window.electronAPI?.steamCreateLobby);
 }
