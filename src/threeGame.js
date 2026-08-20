@@ -209,6 +209,12 @@ const PLAYER_COLORS = {
     ENGINEER: 0x00e5ff
 };
 
+// docs/perf-chunk-mount-plan-2026-08-20.md Track A: per-call time budget
+// for prepareVisibleChunksForGameplay's initial chunk-staging batches.
+// Half of a 16.6ms (60fps) frame, leaving headroom for the rest of the
+// render/game loop that still has to run in the same frame.
+const CHUNK_MOUNT_BATCH_BUDGET_MS = 8;
+
 const BUILD_STRUCTURE_GRID_SIZE = 2;
 const BUILD_STRUCTURE_FRAME_REPEAT = 1 / BUILD_STRUCTURE_GRID_SIZE;
 const RADAR_DISH_GRID_SIZE = 2;
@@ -311,6 +317,24 @@ const GOAL_CARD_CONFIGS = Object.freeze([
         lockedStatusText: 'LOCKED — INSTALL RADAR NODE FIRST'
     })
 ]);
+// docs/perf-chunk-mount-plan-2026-08-20.md: window.__hbLastPerfPhase's
+// original design assumed "since JS is single-threaded, by the time the
+// longtask callback runs it still names whichever [phase] was most
+// recently active" (see the comment at its write sites) -- true only if
+// SOME tagged operation ran recently. Live-tested with Playwright against
+// a real idle menu screen: this tag can go stale for minutes (no
+// chunk-mount/gear-poof event fires while just sitting on the title/
+// loadout/armory screens), and every unrelated long task in that window
+// -- including a real 3.9s and a real 6.5s one, cause still unknown --
+// was silently misattributed to a chunk mount from minutes earlier.
+// tagPerfPhase() timestamps every write so the reader (main.js) can reject
+// a stale tag instead of trusting it unconditionally.
+function tagPerfPhase(phase) {
+    if (typeof window === 'undefined') return;
+    window.__hbLastPerfPhase = phase;
+    window.__hbLastPerfPhaseAt = performance.now();
+}
+
 function setSpriteSheetFrame(texture, columns, rows, frameIndex = 0) {
     if (!texture || columns <= 0 || rows <= 0) return;
 
@@ -19401,9 +19425,31 @@ export class ThreeGame {
         this.pendingChunkMounts.sort((a, b) => a.priority - b.priority);
     }
 
-    processPendingChunkMounts(limit = 1) {
+    // docs/perf-chunk-mount-plan-2026-08-20.md Track A: `limit` alone let
+    // the initial-deploy staging path (prepareVisibleChunksForGameplay)
+    // mount a fixed count of chunks per call with no regard for how
+    // expensive any individual one turned out to be -- mountChunk itself
+    // can cost anywhere from ~20ms to 900ms+ depending on chunk complexity
+    // (see the plan doc's cost-center breakdown), and three of the
+    // expensive kind stacking back-to-back with zero yield between them is
+    // exactly what a "long task" warning up to 996ms in a real playtest
+    // (docs/logs/log8.json) turned out to be. `maxDurationMs` is opt-in and
+    // additive to `limit`, not a replacement for it -- the runtime
+    // steady-state caller (syncVisibleChunks) already has its own careful
+    // frame-delta-aware throttling and passes neither option, so its
+    // behavior is completely unchanged by this. Always mounts at least one
+    // chunk per call regardless of budget (forward progress guarantee) --
+    // the budget only stops it from mounting a *second* or later chunk in
+    // the same call once the time is already spent.
+    processPendingChunkMounts(limit = 1, { maxDurationMs = Infinity } = {}) {
+        const budgetStart = Number.isFinite(maxDurationMs) && typeof performance !== 'undefined'
+            ? performance.now()
+            : null;
         let mounted = 0;
         while (mounted < limit && this.pendingChunkMounts.length > 0) {
+            if (budgetStart !== null && mounted > 0 && (performance.now() - budgetStart) >= maxDurationMs) {
+                break;
+            }
             const next = this.pendingChunkMounts.shift();
             this.pendingChunkMountKeys.delete(next.key);
             if (this.chunkMeshes.has(next.key)) {
@@ -19417,10 +19463,11 @@ export class ThreeGame {
             // stalls, nothing conclusive. This tags the last known expensive
             // synchronous operation so the *next* long-task warning can actually
             // say what was probably running, instead of staying opaque.
-            if (typeof window !== 'undefined') window.__hbLastPerfPhase = `chunk-mount:${next.chunkX},${next.chunkY}`;
+            tagPerfPhase(`chunk-mount:${next.chunkX},${next.chunkY}`);
             this.mountChunk(next.chunkX, next.chunkY);
             mounted += 1;
         }
+        return mounted;
     }
 
     async prepareVisibleChunksForGameplay({ batchSize = 3, onProgress = null } = {}) {
@@ -19440,7 +19487,14 @@ export class ThreeGame {
 
         while (this.pendingChunkMounts.length > 0) {
             const before = this.pendingChunkMounts.length;
-            this.processPendingChunkMounts(batchSize);
+            // docs/perf-chunk-mount-plan-2026-08-20.md Track A: batchSize
+            // stays as the upper bound for cheap chunks, but
+            // CHUNK_MOUNT_BATCH_BUDGET_MS stops this call early if the
+            // chunks turned out to be expensive, so up to `batchSize`
+            // large chunks can no longer stack into one uninterrupted
+            // long task -- the actual mechanism behind the up-to-996ms
+            // spikes seen in a real playtest (docs/logs/log8.json).
+            this.processPendingChunkMounts(batchSize, { maxDurationMs: CHUNK_MOUNT_BATCH_BUDGET_MS });
             mounted += Math.max(0, before - this.pendingChunkMounts.length);
             const total = Math.max(1, initialPending);
             onProgress?.(Math.min(1, mounted / total));
@@ -26290,7 +26344,7 @@ export class ThreeGame {
         // (flagged by the sprint 24 perf investigation as a GC-pressure
         // candidate when it lands near other allocation bursts), so it's
         // tagged the same way for longtask attribution.
-        if (typeof window !== 'undefined') window.__hbLastPerfPhase = `gear-poof:${junkType}`;
+        tagPerfPhase(`gear-poof:${junkType}`);
         const colors = this.getJunkVariantEffectColors(junkType);
         const smokeColor = new THREE.Color(colors.smokeColor).lerp(new THREE.Color(0x6b7177), 0.45);
         const glowColor = new THREE.Color(colors.glowColor).lerp(new THREE.Color(0x7a7a7a), 0.62);

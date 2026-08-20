@@ -12717,12 +12717,30 @@ function finishBootDiagnostics() {
 // correlate against. This keeps recording for the rest of the session so
 // the next exported log shows exactly when and how long each >50ms stall
 // was, interleaved with the same WORLD/INPUT/GAME entries already captured.
+// docs/perf-chunk-mount-plan-2026-08-20.md: the "since JS is single-
+// threaded, by the time this callback runs it still names whichever [phase]
+// was most recently active" assumption below only holds if some tagged
+// operation ran recently. Live-verified this can go stale for minutes --
+// sitting idle on the menu screen (no chunk-mount/gear-poof event fires
+// there) still produced real long tasks, including a 3.9s and a 6.5s one,
+// and every one of them was misattributed to a chunk mount from minutes
+// earlier just because that's the last value the tag ever held. 500ms is
+// generous (PerformanceObserver callback delivery isn't always immediate)
+// while still rejecting anything stale by seconds, let alone minutes.
+const PERF_PHASE_MAX_AGE_MS = 500;
+
 let gameplayLongTaskObserver = null;
 function startGameplayLongTaskDiagnostics() {
     if (typeof PerformanceObserver === 'undefined' || gameplayLongTaskObserver) return;
     try {
         gameplayLongTaskObserver = new PerformanceObserver((list) => {
             for (const task of list.getEntries()) {
+                const phaseAge = window.__hbLastPerfPhaseAt != null
+                    ? performance.now() - window.__hbLastPerfPhaseAt
+                    : null;
+                const lastPhase = (phaseAge != null && phaseAge <= PERF_PHASE_MAX_AGE_MS)
+                    ? window.__hbLastPerfPhase
+                    : null;
                 debugLog.warn('PERF', `Long task: ${Math.round(task.duration)}ms`, {
                     durationMs: Math.round(task.duration),
                     startMs: Math.round(task.startTime),
@@ -12731,8 +12749,11 @@ function startGameplayLongTaskDiagnostics() {
                     // in place afterward -- since JS is single-threaded, by the
                     // time this callback runs it still names whichever of
                     // those was most recently active, which is the closest
-                    // thing to attribution the longtask API allows.
-                    lastPhase: window.__hbLastPerfPhase ?? null
+                    // thing to attribution the longtask API allows. null here
+                    // (rather than a stale guess) means the real cause is
+                    // still genuinely unattributed -- a real open question,
+                    // not chunk-mount work.
+                    lastPhase
                 });
             }
         });
