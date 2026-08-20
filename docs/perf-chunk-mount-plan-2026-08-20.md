@@ -212,6 +212,95 @@ but-never-confirmed "6-second freeze / GC-pressure hypothesis" --
 plausibly the same freeze, now reproduced live and with real numbers
 instead of a hypothesis.
 
+## Track D -- idle-menu freeze investigation, and a hard environment limit
+
+Followed Track C's open item directly: took a live Playwright session
+sitting idle on the loadout/roster screen (the same `.map-box` character-
+selection view the original 3.9s/6.5s freezes were seen on) and captured
+real evidence three different ways -- a CDP `Profiler` CPU sample (200us
+interval), a full CDP `Tracing` capture (devtools.timeline/blink/v8
+categories), and the browser's own native `PerformanceObserver({type:
+'longtask'})` plus a per-frame `requestAnimationFrame` timer, matching the
+exact mechanism the original bug report used.
+
+**Critical finding, discovered mid-investigation:** this sandbox's Chrome
+renders WebGL through **SwiftShader** -- confirmed via
+`WEBGL_debug_renderer_info` on the game's own live `renderer.getContext()`,
+returning `ANGLE (... SwiftShader Device ... SwiftShader driver)`. That's
+pure software rasterization, not the real GPU a player's machine uses.
+Every absolute timing number gathered live in this sandbox this pass --
+here and in the rest of this document's Track C verification -- carries
+that caveat: draw-call and shader-program-switch costs on SwiftShader are
+inflated by an unknown, likely large factor versus real hardware. This
+doesn't invalidate *relative* findings (below), but it means **the exact
+3.9s/6.5s freeze magnitude was not reproduced or explained by this
+investigation**, and no fix here should be read as confirmed against real
+hardware.
+
+What the live evidence did show, hands-off (no Playwright tool calls
+mid-capture, ruling out automation overhead as the cause):
+
+- The loadout/roster screen ran at a **sustained ~7fps** (125-155ms per
+  animation frame, continuously, not as an occasional spike) for the
+  entire time it was open and idle -- not the discrete rare freeze the
+  original report described, but a persistently degraded baseline. The
+  3.9s/6.5s outliers previously logged are plausibly just the tail of this
+  same distribution, not a separate mechanism.
+- A CDP `Tracing` capture confirmed ~92% of a clean 30-second window was
+  spent in `GPUTask` on the GPU process thread, not JS. The CPU profiler's
+  JS-only view was consistent: `(program)` (the profiler's "not JS, not
+  idle" bucket) dominated at ~32s of a 45s window, while every actual JS
+  function's self-time summed to a few hundred ms at most.
+- Monkey-patching `WebGL2RenderingContext.prototype.drawElements` /
+  `useProgram` per-canvas and capturing real JS stacks traced the cost
+  conclusively back to `ThreeGame.render()` (`src/threeGame.js:6535` at
+  the time) via the normal `renderer.setAnimationLoop` path -- not a
+  duplicate renderer, not a leaked second loop. The existing
+  `menuFrameIntervalMs = 1000 / 30` throttle (`src/threeGame.js:1446`) was
+  confirmed present and working correctly -- call *frequency* was never
+  the problem; individual `render()` calls were themselves taking
+  4-5x their throttled budget to finish.
+- Ruled out two live hypotheses with direct evidence rather than leaving
+  them speculative: `this.transientEffects.length` stayed at 2 across the
+  whole idle session (no leak from `_spawnSprintTrail()`'s unbounded
+  spawning -- each particle's own `dispose()` is working), and a
+  JS-level `readPixels` patch caught zero real calls across 45s+ of pure
+  idle wait (an earlier apparent GPU-readback storm during active
+  Playwright tool use was self-inflicted automation overhead, not a game
+  bug -- caught and corrected before it became a false lead).
+- One concrete, unambiguous waste found and fixed regardless of the
+  SwiftShader caveat: `#game-container` was observed, live, sitting at
+  `getBoundingClientRect()` `0x0` (reparented into a closed/hidden
+  `.map-box` preview slot) while `ThreeGame.render()` kept doing its full
+  per-frame update-and-draw pass every tick anyway. A canvas nobody can
+  see should never cost render time, on any hardware -- this is fixed
+  now (see below), independent of whether it explains the original
+  freeze.
+
+**Fix shipped this pass:** `render()` (`src/threeGame.js`) now returns
+immediately when `this.container` has collapsed to `0x0`, before touching
+any shader uniforms, scene updates, or `renderer.render()`. Unit-tested in
+`src/threeGame.menuRenderContainerGuard.test.js` (verified to fail without
+the guard, passes with it). This is a real, safe efficiency fix, not a
+speculative one -- but be honest that it was not confirmed to be *the*
+cause of the original 3.9s/6.5s freezes; it's a genuine waste this
+investigation happened to catch along the way.
+
+**Still open, and now instrumented for next time:** what actually causes
+the multi-second freezes remains unconfirmed on real hardware. Rather than
+ship a speculative fix based on confounded software-rendering data (the
+same mistake this document already caught itself making once with the
+false chunk-mount lead), `startGameplayLongTaskDiagnostics()` (`main.js`)
+now attaches a `menuRenderSnapshot` (draw calls, triangles, container
+size, scene object count, transient-effect count) to any long task that's
+still unattributed (`lastPhase: null`) while `performanceProfile ===
+'menu'`. The next real playtest session log that catches one of these will
+carry the exact context needed to confirm or rule out the render-cost
+hypothesis above -- without another blind live-debugging pass. Testing
+against the packaged Electron build (real GPU, not this dev-server
+sandbox) is the recommended next step before attempting any further fix
+here.
+
 ## What ships this pass
 
 - **Track A**: the time-budget scheduling fix in
@@ -220,8 +309,15 @@ instead of a hypothesis.
 - **Track C's fix**: `tagPerfPhase()` timestamping + the 500ms staleness
   check in `startGameplayLongTaskDiagnostics()`, live-verified to correctly
   reject a stale tag instead of misattributing.
+- **Track D's fix**: `render()`'s 0x0-container guard
+  (`src/threeGame.js`), unit-tested, plus the `menuRenderSnapshot`
+  diagnostic addition to `startGameplayLongTaskDiagnostics()` for the next
+  real-hardware investigation.
 - **Not shipped**: Track B (mountChunk's own constant-factor cost) stays
-  documented as follow-up backlog. Track C's open item (what's actually
-  causing multi-second idle-menu freezes) is a new, real, unsolved
-  question for the next investigation -- now armed with trustworthy
-  attribution data instead of a false lead.
+  documented as follow-up backlog. The actual root cause of the
+  multi-second idle-menu freezes remains unconfirmed -- this sandbox's
+  SwiftShader (software) rendering makes it unsuitable for measuring the
+  exact magnitude, and shipping a fix without real-hardware evidence risks
+  repeating the false-lead mistake Track C already corrected once. Testing
+  the packaged Electron build on real hardware is the recommended next
+  step.

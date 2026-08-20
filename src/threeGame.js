@@ -6482,6 +6482,15 @@ export class ThreeGame {
     }
 
     render() {
+        // docs/perf-chunk-mount-plan-2026-08-20.md Track D: live-observed the
+        // menu-showcase's #game-container collapsed to 0x0 (reparented into a
+        // hidden/closed '.map-box' preview slot) while this method kept
+        // running its full per-frame update + renderer.render() every tick --
+        // real GPU/CPU cost spent on a canvas nothing could see. No frame
+        // skipped here is ever visible, on any hardware.
+        if (this.container && this.container.clientWidth === 0 && this.container.clientHeight === 0) {
+            return;
+        }
         const now = performance.now();
         const crashHeatPulse = Math.sin(now * 0.0026);
         if (this.crashSiteFloorMaterial) {

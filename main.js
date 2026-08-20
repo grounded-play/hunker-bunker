@@ -12729,6 +12729,35 @@ function finishBootDiagnostics() {
 // while still rejecting anything stale by seconds, let alone minutes.
 const PERF_PHASE_MAX_AGE_MS = 500;
 
+// docs/perf-chunk-mount-plan-2026-08-20.md Track D: an unattributed long task
+// during the 'menu' profile (idle title/loadout/armory screens) was
+// reproduced live, but only in a sandboxed dev environment running Chrome
+// with SwiftShader (software WebGL, confirmed via WEBGL_debug_renderer_info)
+// instead of a real GPU -- absolute timings there aren't trustworthy evidence
+// for what happens on a real player's hardware. This snapshot exists so the
+// *next* unattributed menu-profile long task, captured from a real installed
+// build on real hardware, arrives with the render-cost context needed to
+// confirm or rule out the "map-box preview re-renders the full showcase
+// scene every frame" hypothesis without another blind live-debugging pass.
+function captureMenuRenderSnapshot() {
+    try {
+        const game = window.game;
+        if (!game || game.performanceProfile !== 'menu') return null;
+        const info = game.renderer?.info;
+        const container = game.container;
+        return {
+            drawCalls: info?.render?.calls ?? null,
+            triangles: info?.render?.triangles ?? null,
+            containerW: container?.clientWidth ?? null,
+            containerH: container?.clientHeight ?? null,
+            sceneObjects: game.scene?.children?.length ?? null,
+            transientEffects: game.transientEffects?.length ?? null
+        };
+    } catch {
+        return null;
+    }
+}
+
 let gameplayLongTaskObserver = null;
 function startGameplayLongTaskDiagnostics() {
     if (typeof PerformanceObserver === 'undefined' || gameplayLongTaskObserver) return;
@@ -12753,7 +12782,10 @@ function startGameplayLongTaskDiagnostics() {
                     // (rather than a stale guess) means the real cause is
                     // still genuinely unattributed -- a real open question,
                     // not chunk-mount work.
-                    lastPhase
+                    lastPhase,
+                    // Only populated when still unattributed and the game is
+                    // sitting in the menu profile -- see captureMenuRenderSnapshot.
+                    menuRenderSnapshot: lastPhase === null ? captureMenuRenderSnapshot() : null
                 });
             }
         });
