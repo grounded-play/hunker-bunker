@@ -201,9 +201,10 @@ Title → NEW RUN
   → Armory (existing screen, kept — now the SAME path for solo and multiplayer)
   → NEW: Deployment Briefing screen ("third screen, behind doors")
       - Segment: SOLO / CO-OP / PVP
-      - If CO-OP or PVP: today's tactical-net modal contents relocated here —
-        room code create/join, Steam public lobby browser, roster, ready-up,
-        invite friends
+      - If CO-OP or PVP: host-a-lobby, browse/join open lobbies, host sets
+        the lobby private with a password (new), roster, ready-up, and
+        Steam friends invite — today's tactical-net modal contents
+        relocated here, plus the new private+password capability
       - Replaces BOTH current entry points (#title-multiplayer-btn and
         #briefing-multiplayer-btn) with this one canonical spot
   → Squad-composition + loadout-aware cutscene (new)
@@ -230,6 +231,45 @@ tactical-net modal's markup and logic (room code, Steam lobby browser,
 roster, ready-up, invite) relocated in, not rebuilt. Solo, picking SOLO,
 should fall straight through with no added friction (a plain skip, not an
 extra click through empty multiplayer UI).
+
+The user specified the exact lobby capabilities CO-OP/PVP must expose here.
+Checked each against what's actually in the codebase today (`visibility`
+grep across `electron/main.cjs`/`src/steamLobbyClient.js`/
+`src/multiplayerLobby.js`, and a DOM search of `index.html`'s multiplayer
+modal markup):
+
+- **Host a lobby** — exists, reuse as-is. `createSteamLobby()`.
+- **Join an open (public) lobby** — exists in code
+  (`refreshSteamLobbies()`/lobby browser), but is the exact feature blocked
+  by 1b above (region-filter limitation). Relocating this UI doesn't fix
+  that; resolving 1b is a prerequisite for this capability actually working
+  cross-region, not just cross-desk/same-network.
+- **Host sets the lobby private, with a password** — **does not exist
+  today, genuinely new work, on both ends:**
+  - `electron/main.cjs`'s `STEAM_LOBBY_TYPE` already includes `private: 0`
+    (`main.js:928`) and `hb:steamCreateLobby` already accepts any
+    `visibility` value — but nothing in the UI ever exposes a choice; every
+    call site hardcodes/defaults to `'public'`. Wiring a visibility toggle
+    into the host-side UI is the easy half of this.
+  - Password protection has **no equivalent in Steamworks at all** —
+    `LobbyType.Private` only controls whether the lobby appears in browse
+    results and who can request to join via Steam's own matchmaking; it
+    has no password concept. A password gate has to be built entirely
+    custom: store a password (or a hash of it, not plaintext — this
+    travels through `setLobbyData`, which other lobby members can read)
+    as lobby metadata alongside the existing `hb_protocol`/`hb_mode`
+    fields, and check it client-side at join time (prompt for password
+    before `joinSteamLobby()`/before the relay accepts the `joinRoom`,
+    reject with a clear error if it doesn't match). This is real, scoped
+    engineering work, not a config flip.
+- **Steam friends invite** — exists and already works when launched via
+  Steam (`#net-steam-invite-btn` → `openSteamInviteDialog()`, honestly
+  gated behind `isLaunchedViaSteam()` per a prior pass's fix). Relocating
+  it into the new screen is copy-the-markup-and-rewire-the-button-id level
+  work, not new logic — the one thing to preserve is that existing honest
+  warning path (it categorically can't open the overlay if the binary
+  wasn't launched through Steam, and the UI should keep saying so rather
+  than silently failing).
 
 **Phase 3 — sync per-player loadout onto the roster.** Extend the
 `{id, callsign, opClass, ping, isSelf, ready}` roster entry shape with a
@@ -263,3 +303,9 @@ selection logic) rather than pure engineering.
   relay backend for cross-region discovery? Affects whether Phase 2's lobby
   browser needs a different data source than today's.
 - Phase 4's actual creative direction (see above).
+- Private-lobby password: hashed client-side before it ever hits
+  `setLobbyData` (so other lobby members can't just read a plaintext value
+  off the metadata they already have access to), or treated as
+  low-stakes/casual and left in the clear? Leaning hashed given the data is
+  visible to any lobby member by design — worth confirming before Phase 2
+  writes it.
