@@ -114,16 +114,43 @@ already applies). Added 8 named transformative relics from this doc's own
 examples (`last_breath`, `punctured_lung`, `scrap_cycler`,
 `parasitic_magazine`, `false_telemetry`, `vesper_doctrine`, `cryo_breach`,
 `queens_milk`, tracked via `TRANSFORMATIVE_RELIC_IDS`), each with a real
-`stats` object rather than flavor text alone. One (`last_breath` — below 20%
-O2, weapon damage doubles) is fully wired to a real runtime hook: a new pure
-`applyLastBreathDamage` in `runDrops.js`, called from
-`ThreeGame.spawnPlayerShot`, with unit tests. The other 7 are honest
-catalog-only entries (roll into loot, appear in the manifest/UI, described
-accurately) — wiring each into its own gameplay hook (reload economy,
-enemy-aggro AI, faction-aware healing) is real per-relic engineering work
-still to do, not attempted wholesale in one pass to avoid fabricating
-half-tested mechanics across systems (reload, ammo, AI targeting, faction
-state) this pass didn't otherwise touch.
+`stats` object rather than flavor text alone.
+
+**Update, 2026-08-20:** 7 of 8 are now wired to real runtime hooks, each with
+its own `wired: true` catalog flag and unit tests:
+- `last_breath` — below 20% O2, weapon damage doubles. Pure
+  `applyLastBreathDamage` in `runDrops.js`, called from
+  `ThreeGame.spawnPlayerShot`.
+- `punctured_lung` — max O2 capacity permanently reduced, kills restore O2.
+  `applyPuncturedLungCapacity`/`applyPuncturedLungKillO2`.
+- `parasitic_magazine` — kills refund ammo, permanently shrink max O2.
+  `applyParasiticMagazineKill`.
+- `false_telemetry` — at critical HP, chance to drop enemy aggro.
+  `applyFalseTelemetryAggroDrop`.
+- `cryo_breach` — frozen kills chain-freeze nearby enemies.
+  `getCryoBreachChainFreezeRadius`, read at the existing freeze-kill site.
+- `scrap_cycler` — reloading spends 3 salvage for a radial shrapnel blast.
+  `getScrapCyclerReloadEffect`, called from the new
+  `ThreeGame.triggerReloadRelicEffects`, itself called from `startReload()`.
+- `vesper_doctrine` — an EMPTY reload (not a partial one) ejects the mag as
+  an explosive. `getVesperDoctrineReloadEffect`, same call site as Scrap
+  Cycler. Data quirk carried forward, not silently "fixed": despite
+  `type: DROP_TYPES.OVERCLOCK`, this entry is physically stored in the
+  `SUIT_RELICS` array — `equipRunDrop` sorts by the `type` field at equip
+  time, not by source array, so runtime behavior is unaffected; only test
+  fixtures need to know to look in `SUIT_RELICS` for it.
+
+Scrap Cycler and Vesper Doctrine share a new `ThreeGame.applyRadialEnemyDamage`
+helper (distance-check against `scatterSprites`, same pattern Cryo Breach's
+chain-freeze already established, just dealing real damage via `damageSnail`
+instead of a status effect) — see `src/threeGame.reloadRelicEffects.test.js`.
+
+Only `queens_milk` ("Alien enemies may heal you on contact. Human healing
+hurts instead.") remains an honest catalog-only entry — it needs both the
+alien-contact-damage path and the human-healing-item-use path found and
+hooked, which is a two-system change, not a single call site like the rest,
+and was deprioritized to land the other 7 first ("quality over count" per the
+original Lane B brief).
 
 ## 3. Combat impact stack + enemy verbs + stagger/armor/weakpoint grammar
 

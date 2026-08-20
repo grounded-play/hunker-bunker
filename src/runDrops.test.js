@@ -11,7 +11,9 @@ import {
     applyPuncturedLungKillO2,
     applyParasiticMagazineKill,
     applyFalseTelemetryAggroDrop,
-    getCryoBreachChainFreezeRadius
+    getCryoBreachChainFreezeRadius,
+    getScrapCyclerReloadEffect,
+    getVesperDoctrineReloadEffect
 } from './runDrops.js';
 
 describe('runDrops', () => {
@@ -145,5 +147,34 @@ describe('runDrops', () => {
         const relic = SUIT_RELICS.find((r) => r.id === 'cryo_breach');
         expect(getCryoBreachChainFreezeRadius([relic])).toBe(3);
         expect(getCryoBreachChainFreezeRadius([])).toBe(0);
+    });
+
+    it('Scrap Cycler returns the real reload effect only when equipped', () => {
+        const relic = SUIT_RELICS.find((r) => r.id === 'scrap_cycler');
+        expect(getScrapCyclerReloadEffect([relic])).toEqual({
+            salvageCost: 3,
+            shrapnelDamage: 15,
+            shrapnelRadius: 3
+        });
+        expect(getScrapCyclerReloadEffect([])).toBeNull();
+    });
+
+    it('Vesper Doctrine only ejects on an EMPTY reload, and reads from overclocks not relics', () => {
+        // Vesper Doctrine's catalog entry lives in SUIT_RELICS physically
+        // (a pre-existing data-organization quirk, not something this pass
+        // introduced or should silently "fix" by moving it) but carries
+        // type: DROP_TYPES.OVERCLOCK -- equipRunDrop (threeGame.js) sorts by
+        // that field, not by which array an entry came from, so it still
+        // correctly ends up in runOverclocks at runtime. Reading it from
+        // SUIT_RELICS here to build the test fixture, not WEAPON_OVERCLOCKS.
+        const overclock = SUIT_RELICS.find((o) => o.id === 'vesper_doctrine');
+        expect(getVesperDoctrineReloadEffect(true, [overclock])).toEqual({
+            explosionDamage: 20,
+            explosionRadius: 3
+        });
+        // Non-empty reload: no explosion, even with the overclock equipped.
+        expect(getVesperDoctrineReloadEffect(false, [overclock])).toBeNull();
+        // Empty reload, but overclock not equipped: still nothing.
+        expect(getVesperDoctrineReloadEffect(true, [])).toBeNull();
     });
 });

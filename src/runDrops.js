@@ -154,7 +154,8 @@ export const SUIT_RELICS = Object.freeze([
         rarity: DROP_RARITIES.RARE,
         description: 'Reloading consumes 3 salvage and fires a radial shrapnel blast.',
         transformative: true,
-        stats: { reloadSalvageCost: 3, reloadShrapnelDamage: 15 }
+        wired: true,
+        stats: { reloadSalvageCost: 3, reloadShrapnelDamage: 15, reloadShrapnelRadius: 3 }
     },
     {
         id: 'parasitic_magazine',
@@ -183,7 +184,8 @@ export const SUIT_RELICS = Object.freeze([
         rarity: DROP_RARITIES.RARE,
         description: 'Every empty reload ejects the remaining magazine as an explosive.',
         transformative: true,
-        stats: { emptyReloadExplosionDamage: 20 }
+        wired: true,
+        stats: { emptyReloadExplosionDamage: 20, emptyReloadExplosionRadius: 3 }
     },
     {
         id: 'cryo_breach',
@@ -311,6 +313,50 @@ export function getCryoBreachChainFreezeRadius(equippedRelics = []) {
         const value = Number(relic?.stats?.chainFreezeRadius);
         return Number.isFinite(value) && value > radius ? value : radius;
     }, 0);
+}
+
+// docs/design/one-more-ring-design-pillars.md item 2 (Sprint 28): "Scrap
+// Cycler -- reloading consumes 3 salvage and fires a radial shrapnel
+// blast." Pure decision only -- does NOT touch this.bank itself (spending
+// shells is a real side effect the caller must perform and only apply the
+// blast if the spend actually succeeded, so a broke player still gets a
+// normal reload rather than a silently-failed one). Returns null when the
+// relic isn't equipped, distinct from "equipped but nothing happens" so a
+// caller doesn't need a second existence check.
+export function getScrapCyclerReloadEffect(equippedRelics = []) {
+    for (const relic of equippedRelics) {
+        const salvageCost = Number(relic?.stats?.reloadSalvageCost);
+        const shrapnelDamage = Number(relic?.stats?.reloadShrapnelDamage);
+        if (Number.isFinite(salvageCost) && Number.isFinite(shrapnelDamage)) {
+            return {
+                salvageCost,
+                shrapnelDamage,
+                shrapnelRadius: Number(relic?.stats?.reloadShrapnelRadius) || 3
+            };
+        }
+    }
+    return null;
+}
+
+// "Vesper Doctrine -- every empty reload ejects the remaining magazine as
+// an explosive." An OVERCLOCK (weapon-side), not a suit RELIC, so it reads
+// from equippedOverclocks, not equippedRelics -- see DROP_TYPES.OVERCLOCK
+// on its own catalog entry. wasEmpty is the caller's own read of
+// clipAmmo === 0 at the moment reload was requested, passed in rather than
+// re-derived here so this stays a pure function with no clip-state
+// knowledge of its own.
+export function getVesperDoctrineReloadEffect(wasEmpty, equippedOverclocks = []) {
+    if (!wasEmpty) return null;
+    for (const mod of equippedOverclocks) {
+        const explosionDamage = Number(mod?.stats?.emptyReloadExplosionDamage);
+        if (Number.isFinite(explosionDamage)) {
+            return {
+                explosionDamage,
+                explosionRadius: Number(mod?.stats?.emptyReloadExplosionRadius) || 3
+            };
+        }
+    }
+    return null;
 }
 
 export function computeActiveSynergies(equippedItems = []) {

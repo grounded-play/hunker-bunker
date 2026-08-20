@@ -191,7 +191,9 @@ import {
     applyPuncturedLungKillO2,
     applyParasiticMagazineKill,
     applyFalseTelemetryAggroDrop,
-    getCryoBreachChainFreezeRadius
+    getCryoBreachChainFreezeRadius,
+    getScrapCyclerReloadEffect,
+    getVesperDoctrineReloadEffect
 } from './runDrops.js';
 import { buildUnifiedSkillTree, getTreeConnectors } from './skillTree.js';
 import { pickLoreDropForSite, getFoundLoreKeys, markLoreDropFound, LORE_DROPS } from './loreDrops.js';
@@ -18446,13 +18448,59 @@ export class ThreeGame {
         const missingAmmo = Math.max(0, this.weaponClipSize - this.weaponClipAmmo);
         const refillAmount = Math.min(missingAmmo, availableAmmo);
         if (refillAmount <= 0) return false;
+        // docs/design/one-more-ring-design-pillars.md item 2 (Sprint 28):
+        // wasEmpty must be read BEFORE any of this method's own state
+        // changes below (weaponClipAmmo isn't touched here, but capturing
+        // it at the top keeps this call site obviously correct regardless
+        // of future edits to this method's body).
+        const wasEmptyReload = this.weaponClipAmmo <= 0;
         this.weaponReloading = true;
         this.weaponReloadDuration = WEAPON_RELOAD_DURATION * (this.reloadSpeedMult ?? 1.0);
         this.weaponReloadTimer = this.weaponReloadDuration;
         this.emitWeaponClipState();
         window.AudioManager?.play('weapon_reload', { volume: 0.52 });
         window.AudioManager?.playVoiceCallout?.('reload');
+        this.triggerReloadRelicEffects?.(wasEmptyReload);
         return true;
+    }
+
+    // "Scrap Cycler" (relic) and "Vesper Doctrine" (overclock) --
+    // docs/design/one-more-ring-design-pillars.md item 2. Both fire off the
+    // same real reload commit point (startReload, once it's actually
+    // decided to proceed) rather than requestReload, which can bail out in
+    // several places before a reload genuinely starts. Scrap Cycler's spend
+    // is attempted regardless of empty/non-empty reload; if the player can't
+    // afford it, spendShells() returns false and the blast simply doesn't
+    // fire -- the reload itself is never blocked by lack of salvage.
+    triggerReloadRelicEffects(wasEmptyReload) {
+        if (!this.player) return;
+        const scrapEffect = getScrapCyclerReloadEffect(this.runRelics ?? []);
+        if (scrapEffect && this.bank?.spendShells?.(scrapEffect.salvageCost)) {
+            this.applyRadialEnemyDamage(this.player.position.x, this.player.position.z, scrapEffect.shrapnelRadius, scrapEffect.shrapnelDamage);
+            this.spawnPhysicalBurst(this.player.position.x, this.player.position.z, { color: 0xffb700, count: 14, upward: 0.22 });
+        }
+
+        const vesperEffect = getVesperDoctrineReloadEffect(wasEmptyReload, this.runOverclocks ?? []);
+        if (vesperEffect) {
+            this.applyRadialEnemyDamage(this.player.position.x, this.player.position.z, vesperEffect.explosionRadius, vesperEffect.explosionDamage);
+            this.spawnPhysicalBurst(this.player.position.x, this.player.position.z, { color: 0xff5500, count: 20, upward: 0.3 });
+        }
+    }
+
+    // Shared radial-damage helper for the two reload relics above -- follows
+    // the exact scatterSprites-distance-check pattern Cryo Breach's chain
+    // freeze already established (see getCryoBreachChainFreezeRadius's call
+    // site), just applying real damage via the same damageSnail() every
+    // normal hit already goes through, instead of a status effect.
+    applyRadialEnemyDamage(x, z, radius, damage) {
+        if (!(radius > 0) || !(damage > 0)) return;
+        for (const sprite of this.scatterSprites ?? []) {
+            if (!sprite || sprite.userData?.hp <= 0) continue;
+            const distance = Math.hypot(sprite.position.x - x, sprite.position.z - z);
+            if (distance <= radius) {
+                this.damageSnail(sprite, damage);
+            }
+        }
     }
 
     requestReload({ manual = false } = {}) {
