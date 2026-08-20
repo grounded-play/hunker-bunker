@@ -26,6 +26,34 @@ const PVP_WEAPON_RANGE = 20;
 // faster-than-legal fire.
 const PVP_MIN_HIT_INTERVAL_MS = 110;
 
+// Sprint 26: co-op enemy-hit-sync (enemyDamage/enemyHitReport below) was
+// still fully client-trusted gossip after the PvP damage hardening pass --
+// "basic clamping (damage 0-999), not full server validation" per
+// docs/sprint24-multiplayer-runtime-2026-08-19.md. Full server-authority
+// (the relay owning enemy HP truth) is a real architecture change the
+// review explicitly scoped out ("don't attempt headless server simulation
+// yet") -- the host stays the source of truth for enemy state. This adds
+// the same category of *validation* PvP got, without taking over that
+// ownership: is the claimed damage plausible, and is the claimed hit
+// position plausible given where the reporting socket says it actually is.
+// 999 was roughly 100x any real single-hit value (base projectileDamage is
+// 1-2/class, MELEE_DAMAGE 4, TURRET/ASSIST_DAMAGE 1 -- see src/threeGame.js)
+// -- 50 stays generously above any known base+skill-tree-bonus combination
+// while cutting the spoofable range by >90%; it's a judgment call, not a
+// verified exact ceiling, same as PVP_WEAPON_RANGE's margin below.
+const PVE_MAX_HIT_DAMAGE = 50;
+// Reuses PvP's own range constant rather than re-deriving a PvE-specific
+// one: it's the same weapons/projectiles on both sides of that constant.
+const PVE_HIT_RANGE = PVP_WEAPON_RANGE;
+// Deliberately reuses MIN_FIRE_INTERVAL_MS (the same ~25/sec cap already
+// applied to this player's own weapon-fire relay) rather than PvP's
+// stricter 110ms: co-op damage can legitimately land from multiple
+// simultaneous sources per player (ranged + melee + an ENGINEER's
+// auto-turret, which is attributed to the player who deployed it) in a way
+// a single PvP gun's fire-rate never can, so a PvP-tight limit would risk
+// false-rejecting real simultaneous hits.
+const PVE_MIN_HIT_INTERVAL_MS = MIN_FIRE_INTERVAL_MS;
+
 function sanitizeCoord(value) {
     if (typeof value !== 'number' || !Number.isFinite(value)) return null;
     return Math.max(-WORLD_LIMIT, Math.min(WORLD_LIMIT, value));
@@ -100,6 +128,19 @@ export function attachRelay(server, { allowedOrigins = [] } = {}) {
     // launching solo the instant they click deploy.
     const roomCountdowns = new Map();
     const MATCH_COUNTDOWN_MS = 3000;
+    // Map: roomCode -> stable identity key (steamId64 when real, otherwise
+    // the client's persisted localStorage profileId -- see
+    // src/profile.js's ProfileManager) of whoever should be that room's
+    // host. Host assignment used to be pure "first socket to join an empty
+    // room," which is why a reconnect (a brand-new socket.id, confirmed
+    // happening even during the *initial* connect sequence under load, not
+    // just mid-match) could either steal an existing host's slot or land as
+    // non-host in a room whose real host was mid-reconnect. This map lets a
+    // reconnecting socket reclaim host status instead of being treated as
+    // an unrelated new peer.
+    const roomHostKeys = new Map();
+
+    const getStableClientKey = (p) => p.steamId64 || p.profileId || null;
 
     const getPublicPlayer = (p) => ({
         id: p.id,
@@ -181,6 +222,7 @@ export function attachRelay(server, { allowedOrigins = [] } = {}) {
             maxHp: PVP_DEFAULT_MAX_HP,
             mode: 'coop',
             lastWeaponHitAt: 0,
+            lastEnemyHitAt: 0,
             // Ready-up gate (see matchDeploy below): previously nonexistent --
             // any single socket emitting matchDeploy instantly launched the
             // whole room for everyone, with no wait for other players.
@@ -193,6 +235,12 @@ export function attachRelay(server, { allowedOrigins = [] } = {}) {
             const roomCode = sanitizeString(data.roomCode, 24, 'SECTOR-7').toUpperCase();
             const callsign = sanitizeString(data.callsign, 20, `OPERATIVE-${socket.id.slice(0, 4).toUpperCase()}`);
             const opClass = ['SCOUT', 'TANK', 'ENGINEER'].includes(data.opClass) ? data.opClass : 'TANK';
+            // No fallback here (unlike callsign/opClass): an empty string
+            // must stay falsy so getStableClientKey() correctly reports "no
+            // durable identity available" rather than a literal placeholder
+            // string that would make every such client look like the same
+            // "user."
+            player.profileId = sanitizeString(data.profileId, 64, '') || null;
 
             // Leave existing room if any
             if (player.roomCode && rooms.has(player.roomCode)) {
@@ -214,11 +262,63 @@ export function attachRelay(server, { allowedOrigins = [] } = {}) {
                 player.mode = roomModes.get(roomCode);
             }
 
+            const stableKey = getStableClientKey(player);
+            const recordedHostKey = roomHostKeys.get(roomCode);
+            const roomSocketIdsForHost = rooms.get(roomCode);
+            const currentHostStillPresent = Boolean(
+                roomSocketIdsForHost && Array.from(roomSocketIdsForHost).some((id) => players.get(id)?.isHost)
+            );
+
+            // Demotes every other currently-connected player in the room --
+            // called whenever this joiner is about to become host, so a
+            // reclaim/promotion can never leave two sockets simultaneously
+            // marked isHost in the same room (which player.isHost alone,
+            // set only on the joiner, would otherwise allow).
+            const demoteOtherHostsInRoom = () => {
+                if (!roomSocketIdsForHost) return;
+                for (const id of roomSocketIdsForHost) {
+                    if (id === socket.id) continue;
+                    const p = players.get(id);
+                    if (p) p.isHost = false;
+                }
+            };
+
             if (!rooms.has(roomCode)) {
                 rooms.set(roomCode, new Set());
+            }
+
+            // Deliberately checked BEFORE/independent of whether the room
+            // Set above was just (re)created: the most common real case
+            // this durability fix targets is a *solo* host's connection
+            // dropping and reconnecting, which empties (and, pre-fix,
+            // deleted) the room Set in between -- so gating reclaim on "the
+            // room already existed" would defeat the fix for exactly that
+            // case. roomHostKeys is intentionally never cleared just because
+            // a room went momentarily empty (see disconnect handler below).
+            if (stableKey && recordedHostKey && stableKey === recordedHostKey) {
+                // This socket's stable identity matches the room's recorded
+                // host, even though its socket.id is new (a reconnect) --
+                // reclaim host status rather than landing as a regular peer,
+                // even if someone else was promoted to host in the interim.
+                demoteOtherHostsInRoom();
                 player.isHost = true;
+            } else if (!currentHostStillPresent) {
+                // Nobody currently connected holds host -- either this is a
+                // genuinely fresh room, or the recorded host is gone (never
+                // had a stable key, or truly left rather than reconnecting).
+                // Promote this joiner rather than leaving the room hostless.
+                player.isHost = true;
+                // Only claim the room's durable host record if nobody has
+                // ever been recorded for it. A promotion into a room that's
+                // merely *transiently* hostless (its real host may still be
+                // mid-reconnect) must not overwrite that host's claim --
+                // otherwise the very next reconnect from the real host would
+                // find its own key already evicted by whoever got promoted
+                // in the gap, defeating this fix for exactly the case it
+                // targets.
+                if (!recordedHostKey && stableKey) roomHostKeys.set(roomCode, stableKey);
             } else {
-                player.isHost = rooms.get(roomCode).size === 0;
+                player.isHost = false;
             }
 
             rooms.get(roomCode).add(socket.id);
@@ -408,29 +508,89 @@ export function attachRelay(server, { allowedOrigins = [] } = {}) {
             }
         });
 
+        // Sprint 26: match-completion/extraction sync -- previously a
+        // player extracting was invisible to both the server and every
+        // other client in the room (docs/sprint24-multiplayer-runtime-2026-08-19.md's
+        // known gap #7's actual remaining half; its spawn/crash-site half
+        // was already fixed by matchDeploy relaying one deployer-computed
+        // crashPlan verbatim to everyone, not independently recomputed).
+        // Mirrors playerDowned's shape exactly -- this is visibility, not
+        // match-authority: it does NOT end the match for anyone else or
+        // gate anything server-side, deliberately scoped smaller than
+        // "the server decides when the whole room's run is over," which
+        // would need reconciling each client's independently-computed
+        // runStats/score into one server-agreed outcome (a bigger lift,
+        // not attempted here).
+        socket.on('playerExtracted', (data = {}) => {
+            logRelayEvent('PLAYER_EXTRACTED', { roomCode: player.roomCode, playerId: socket.id });
+            if (player.roomCode) {
+                socket.to(player.roomCode).emit('playerExtractedBroadcast', {
+                    playerId: socket.id,
+                    callsign: player.callsign,
+                    runScore: Number.isFinite(data?.runScore) ? data.runScore : null,
+                    timestamp: Date.now()
+                });
+            }
+        });
+
+        // Sprint 26: shared by both enemyDamage and enemyHitReport below.
+        // In both handlers `player` (the emitting socket's own tracked
+        // state) IS the attacker making the claim -- neither event names a
+        // separate attacker the way PvP's weaponHit does -- so validation is
+        // simpler: is the claimed damage plausible, is the claimed hit
+        // position plausible given where this same socket's own playerMove
+        // history says it actually is, and is it claiming hits faster than
+        // physically possible. Returns a clamped, validated { x, z, damage,
+        // enemyType } or null if the claim should be dropped.
+        function validateEnemyHitClaim(dmgData) {
+            if (!dmgData || typeof dmgData !== 'object') return null;
+            const x = sanitizeCoord(dmgData.x);
+            const z = sanitizeCoord(dmgData.z);
+            if (x === null || z === null) return null;
+            const damage = typeof dmgData.damage === 'number' ? Math.max(0, Math.min(PVE_MAX_HIT_DAMAGE, dmgData.damage)) : 0;
+            if (damage <= 0) return null;
+
+            const now = Date.now();
+            if (now - (player.lastEnemyHitAt || 0) < PVE_MIN_HIT_INTERVAL_MS) return null;
+
+            const dist = Math.hypot(x - player.x, z - player.z);
+            if (dist > PVE_HIT_RANGE) return null;
+
+            player.lastEnemyHitAt = now;
+            const enemyType = sanitizeString(dmgData.enemyType, 32, 'unknown');
+            // Sprint 26: pass-through only, not validated against anything --
+            // the server doesn't track enemy state to check it against (see
+            // this function's own header comment). Purely a routing string
+            // the receiving client uses to look up its local sprite by exact
+            // ID instead of nearest-position matching; sanitizeString still
+            // bounds its length/type like every other client-supplied field.
+            const scatterKey = dmgData.scatterKey != null ? sanitizeString(dmgData.scatterKey, 64, '') || null : null;
+            return { x, z, damage, enemyType, scatterKey };
+        }
+
         // Co-Op Enemy Hit-Sync relay -- Sprint 24 Milestone A item 5,
         // host-authoritative for the first cut (see
         // docs/sprint24-multiplayer-runtime-2026-08-19.md). The client-side
         // gate now only lets the room's actual host emit this event directly
         // (a non-host client's local hit is a candidate, reported via
         // enemyHitReport below instead) -- so this broadcast is genuinely
-        // the host's canonical determination, not peer gossip. The relay
-        // itself still does not validate trajectory/range against enemy
-        // position -- that would need real server-side enemy-state tracking,
-        // out of scope for "don't attempt headless server simulation yet".
+        // the host's canonical determination, not peer gossip. Sprint 26:
+        // the relay now validates the claim (see validateEnemyHitClaim)
+        // instead of only clamping damage to an arbitrary 0-999 -- it still
+        // doesn't own enemy HP truth (that stays with the host; full
+        // server-authority would need real server-side enemy-state
+        // tracking, out of scope for "don't attempt headless server
+        // simulation yet"), it just refuses to relay an implausible claim.
         socket.on('enemyDamage', (dmgData) => {
-            if (!dmgData || typeof dmgData !== 'object') return;
-            const x = sanitizeCoord(dmgData.x);
-            const z = sanitizeCoord(dmgData.z);
-            if (x === null || z === null) return;
-            const damage = typeof dmgData.damage === 'number' ? Math.max(0, Math.min(999, dmgData.damage)) : 0;
-            if (damage <= 0) return;
-            const enemyType = sanitizeString(dmgData.enemyType, 32, 'unknown');
+            const claim = validateEnemyHitClaim(dmgData);
+            if (!claim) return;
+            const { x, z, damage, enemyType, scatterKey } = claim;
 
             if (player.roomCode) {
                 socket.to(player.roomCode).emit('enemyDamaged', {
                     attackerId: socket.id,
                     enemyType,
+                    scatterKey,
                     x,
                     z,
                     damage
@@ -445,14 +605,10 @@ export function attachRelay(server, { allowedOrigins = [] } = {}) {
         // outcome above) rather than every client independently deciding
         // enemy state for itself.
         socket.on('enemyHitReport', (dmgData) => {
-            if (!dmgData || typeof dmgData !== 'object') return;
             if (!player.roomCode) return;
-            const x = sanitizeCoord(dmgData.x);
-            const z = sanitizeCoord(dmgData.z);
-            if (x === null || z === null) return;
-            const damage = typeof dmgData.damage === 'number' ? Math.max(0, Math.min(999, dmgData.damage)) : 0;
-            if (damage <= 0) return;
-            const enemyType = sanitizeString(dmgData.enemyType, 32, 'unknown');
+            const claim = validateEnemyHitClaim(dmgData);
+            if (!claim) return;
+            const { x, z, damage, enemyType, scatterKey } = claim;
 
             const roomSocketIds = rooms.get(player.roomCode);
             const hostId = roomSocketIds
@@ -473,6 +629,7 @@ export function attachRelay(server, { allowedOrigins = [] } = {}) {
             io.to(hostId).emit('enemyHitReported', {
                 reporterId: socket.id,
                 enemyType,
+                scatterKey,
                 x,
                 z,
                 damage
@@ -601,8 +758,37 @@ export function attachRelay(server, { allowedOrigins = [] } = {}) {
                 if (roomSet.size === 0) {
                     rooms.delete(roomCode);
                     roomModes.delete(roomCode);
+                    // roomHostKeys is deliberately NOT cleared here -- it
+                    // must survive a room going momentarily empty so a solo
+                    // host's reconnect can still reclaim (see joinRoom's
+                    // comment). A stale entry for an abandoned room code is
+                    // harmless: a real reconnect only matches when the
+                    // rejoining socket's stable identity key is actually
+                    // equal, and any other joiner just gets promoted via the
+                    // "nobody currently holds host" branch as normal.
                 } else {
                     socket.to(roomCode).emit('playerDisconnected', socket.id);
+                    // Sprint 26 goal item 5: immediate host failover. Without
+                    // this, a host disconnecting mid-match (not just at the
+                    // lobby) left the room permanently hostless until either
+                    // the original host reconnected or a brand-new player
+                    // joined -- neither of which happens for the common
+                    // "co-op squad, nobody new shows up mid-run" case. Since
+                    // enemyHitReport only ever routes to whoever currently
+                    // has isHost, that silently froze co-op combat
+                    // resolution for everyone else for the entire outage.
+                    // Deliberately does NOT touch roomHostKeys: this is an
+                    // interim promotion only, so the original host can still
+                    // reclaim its durable slot on reconnect exactly as
+                    // before (see joinRoom's reclaim branch).
+                    if (player.isHost) {
+                        const nextHostId = roomSet.values().next().value;
+                        const nextHost = nextHostId ? players.get(nextHostId) : null;
+                        if (nextHost) {
+                            nextHost.isHost = true;
+                            io.to(roomCode).emit('hostChanged', { hostId: nextHostId });
+                        }
+                    }
                 }
             }
         });

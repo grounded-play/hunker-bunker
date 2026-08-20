@@ -5,6 +5,7 @@
 
 import { io as connectSocketIo } from 'socket.io-client';
 import { planMultiplayerCrashSites } from './multiplayerCrashPlanner.js';
+import { startMultiplayerRun } from './gameController.js';
 
 export const MULTIPLAYER_MODES = Object.freeze({
     COOP: 'coop',
@@ -65,32 +66,11 @@ async function fetchMultiplayerSessionToken(relayUrl, identity) {
 // on the 'gameplay' profile) never once running -- no movement/fire/damage
 // sync of any kind, despite the lobby and session bootstrap looking
 // entirely correct. The Armory renders asynchronously (createArmoryScene
-// awaits a canvas + scene build), so this polls for its embark button
-// rather than assuming it exists immediately after the gate opens.
-function waitForArmoryEmbarkButton(timeoutMs = 8000) {
-    return new Promise((resolve) => {
-        const deadline = Date.now() + timeoutMs;
-        const poll = () => {
-            const btn = document.getElementById('armory-btn-embark');
-            if (btn) {
-                resolve(btn);
-                return;
-            }
-            if (Date.now() >= deadline) {
-                resolve(null);
-                return;
-            }
-            setTimeout(poll, 100);
-        };
-        poll();
-    });
-}
-
-async function autoEmbarkFromArmory() {
-    if (typeof document === 'undefined') return;
-    const btn = await waitForArmoryEmbarkButton();
-    btn?.click();
-}
+// awaits a canvas + scene build), so the click-through this required polls
+// for its embark button rather than assuming it exists immediately after
+// the gate opens. (Sprint 26: that click-through now lives in
+// src/gameController.js's startMultiplayerRun, called from finalizeDeploy
+// below, instead of as local functions in this file.)
 
 export function resolveRelayUrl() {
     if (typeof window === 'undefined') return 'http://localhost:3001';
@@ -229,7 +209,15 @@ export class MultiplayerLobby {
                     this.socket.emit('joinRoom', {
                         roomCode: this.roomCode,
                         callsign,
-                        opClass
+                        opClass,
+                        // Sprint 26: durable per-browser id (src/profile.js,
+                        // localStorage-backed) the server uses as a
+                        // reconnect-stable host-identity fallback when a real
+                        // steamId64 isn't available -- see server/relay.js's
+                        // roomHostKeys. Lets a reconnecting host reclaim its
+                        // slot instead of every dev-mode connection looking
+                        // like the same anonymous peer.
+                        profileId: window.profileManager?.getProfileId?.() || null
                     });
 
                     this.players.set(this.socket.id, {
@@ -548,26 +536,17 @@ export class MultiplayerLobby {
             socket: this.socket
         };
 
-        if (typeof window !== 'undefined') {
-            window.activeMultiplayerSession = this.activeMatch;
-            // ThreeGame's constructor calls setupMultiplayerNetwork() once, well
-            // before this modal is ever opened, so it always finds no session and
-            // never sets isMultiplayer/multiplayerMode -- those four PVP-gated
-            // call sites (threeGame.js:3936,4021,4046,7554) silently never fire.
-            // Re-run it now that a real session exists.
-            window.game?.setupMultiplayerNetwork?.();
-        }
-
         this.closeModal();
 
-        // Launch the game run. start-game only opens the pre-mission Armory
-        // gate -- it does not itself start the run -- so also auto-embark
-        // once the Armory finishes rendering (see autoEmbarkFromArmory above).
-        const startBtn = document.getElementById('start-game') || document.getElementById('title-newrun-btn');
-        if (startBtn) {
-            startBtn.click();
-            void autoEmbarkFromArmory();
-        }
+        // Sprint 26: previously this method set window.activeMultiplayerSession
+        // and DOM-clicked through the Armory gate inline (see git history for
+        // the original ThreeGame's constructor calls setupMultiplayerNetwork()
+        // once, well before this modal is ever opened... comment) -- moved into
+        // src/gameController.js's startMultiplayerRun so multiplayer start has
+        // one explicit, testable entry point instead of this class reaching
+        // into globals + DOM directly. Not awaited: nothing here needs to
+        // block on the Armory-embark click actually landing.
+        void startMultiplayerRun(this.activeMatch);
 
         const modeName = mode === MULTIPLAYER_MODES.COOP ? 'CO-OP EXPEDITION' : 'PVP SECTOR DUEL';
         if (typeof window !== 'undefined' && window.showToastNotification) {
