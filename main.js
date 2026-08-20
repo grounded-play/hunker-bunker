@@ -3965,7 +3965,7 @@ function showGameOverScreen(stats, { isVictory = false, deathReason = 'hazard' }
     });
 
     if (isMultiplayer) {
-        window.profileManager?.recordMultiplayerRun?.({ mode: mpMode, isVictory });
+        window.profile?.recordMultiplayerRun?.({ mode: mpMode, isVictory });
     }
 
     dispatchSteamRunScoreFinalized(steamRunPayload, window);
@@ -8554,7 +8554,7 @@ function updatePlayerTradeUi(state) {
     modal.setAttribute('aria-hidden', 'false');
 
     const inv = getCurrentInventoryForTrade();
-    const selfCallsign = window.profileManager?.getCallsign?.() || 'LOCAL AGENT';
+    const selfCallsign = window.profile?.getCallsign?.() || 'LOCAL AGENT';
     const selfClass = window.selectedPlayerType || 'TANK';
 
     const selfCallsignEl = document.getElementById('trade-self-callsign');

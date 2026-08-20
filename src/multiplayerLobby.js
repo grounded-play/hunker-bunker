@@ -253,7 +253,7 @@ export class MultiplayerLobby {
         // dev/LAN/QA. Must resolve before joinRoom below reads this.roomCode.
         await this.maybeCreateSteamLobby();
 
-        const callsign = (typeof window !== 'undefined' && window.profileManager?.getCallsign?.()) || 'AGENT';
+        const callsign = (typeof window !== 'undefined' && window.profile?.getCallsign?.()) || 'AGENT';
         const opClass = (typeof window !== 'undefined' && window.selectedPlayerType) || 'TANK';
 
         try {
@@ -286,7 +286,7 @@ export class MultiplayerLobby {
                         // roomHostKeys. Lets a reconnecting host reclaim its
                         // slot instead of every dev-mode connection looking
                         // like the same anonymous peer.
-                        profileId: window.profileManager?.getProfileId?.() || null
+                        profileId: window.profile?.getProfileId?.() || null
                     });
 
                     this.players.set(this.socket.id, {
@@ -415,7 +415,7 @@ export class MultiplayerLobby {
     fallbackLocalSession() {
         this.connected = true;
         this.usingRelay = false;
-        const callsign = (typeof window !== 'undefined' && window.profileManager?.getCallsign?.()) || 'AGENT';
+        const callsign = (typeof window !== 'undefined' && window.profile?.getCallsign?.()) || 'AGENT';
         const opClass = (typeof window !== 'undefined' && window.selectedPlayerType) || 'TANK';
 
         this.players.clear();
