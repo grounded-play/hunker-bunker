@@ -38,10 +38,17 @@ export const WEAPON_ARCHETYPES = {
 // a side on which class 4107 actually belongs to.
 export const WEAPON_SKIN_MESHES = {
     4100: '/3d/runtime/new3ds/skin_scout_frostbite.glb',          // Sub-Zero Frostbite Talon SMG
-    4107: '/3d/runtime/new3ds/skin_tank_deep_core_melter.glb',    // Deep Core Melter Autocannon
+    4101: '/3d/runtime/new3ds/skin_hazard_stripe_smg.glb',        // Hazard Stripe SMG
+    4102: '/3d/runtime/new3ds/skin_tectonic_driller.glb',         // Tectonic Driller Shotgun/Autocannon
     4103: '/3d/runtime/new3ds/skin_engineer_cryo_plasma.glb',     // Cryo-Plasma Arc Driver
-    4109: '/3d/runtime/new3ds/skin_void_walker_beam.glb',         // Void-Walker Beam Cannon (Engineer, doc 07 §4)
-    4110: '/3d/runtime/new3ds/skin_queen_carapace_carbine.glb'    // Queen's Carapace Carbine (Scout Talon-C, doc 07 §4 Tier-50 capstone)
+    4104: '/3d/runtime/new3ds/skin_rust_bone_trench.glb',         // Rust & Bone Trench Carbine
+    4105: '/3d/runtime/new3ds/skin_obsidian_shard.glb',           // Obsidian Shard Marksman
+    4106: '/3d/runtime/new3ds/skin_biolume_spore_sprayer.glb',    // Biolume Spore Sprayer
+    4107: '/3d/runtime/new3ds/skin_tank_deep_core_melter.glb',    // Deep Core Melter Autocannon
+    4108: '/3d/runtime/new3ds/skin_glitched_circuit_bolter.glb',  // Glitched Circuit Bolter
+    4109: '/3d/runtime/new3ds/skin_void_walker_beam.glb',         // Void-Walker Beam Cannon
+    4110: '/3d/runtime/new3ds/skin_queen_carapace_carbine.glb',   // Queen's Carapace Carbine (Capstone)
+    4111: '/3d/runtime/new3ds/skin_solar_flare_antimatter.glb'    // Solar Flare Antimatter Rifle
 };
 
 export const ENGINEER_GESTURES = Object.freeze([

@@ -21,6 +21,12 @@ Every system change should be checked against: *does this create
 anticipation, decision, payoff, mastery, surprise, or story?* If not, it's not
 a priority for this era.
 
+The concrete player-facing version of this thesis is now maintained in
+`docs/design/game-outline-and-proof-run.md`. Use that document when turning
+these pillars into onboarding, room pacing, relic choices, extraction, and
+acceptance checks; this file remains the source of the strategic design
+principles.
+
 ## What already exists to build on
 
 - `src/ringManifest.js`, `src/ringCrossings.js`, `src/mazeTiers.js` —
@@ -128,7 +134,8 @@ requiring asset iteration, distinct from the data-driven mechanics above.
 ## 4. The 10-step roadmap (the doc's own proposed sequencing)
 
 1. Freeze scope — no new pillars/systems beyond what's below.
-2. Build one perfect 35–45 minute "Proof Run" expedition.
+2. Build one perfect 35–45 minute "Proof Run" expedition, following the
+   player-facing outline in `docs/design/game-outline-and-proof-run.md`.
 3. Combat Feel Pass (see combat-feel-and-juice-plan.md).
 4. One More Ring economy — the Depth Contract above.
 5. 12–20 transformative relics.

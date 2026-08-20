@@ -359,6 +359,42 @@ function tagPerfPhase(phase) {
     window.__hbLastPerfPhaseAt = performance.now();
 }
 
+// Sprint 28 Lane F: bounded synchronous phase history for packaged-build
+// long-task attribution. The Long Task API has no stack information, so the
+// completed span timeline is the diagnostic bridge between a stall and the
+// operation that occupied the main thread.
+function beginPerfPhase(phase, context = {}) {
+    if (typeof window === 'undefined' || typeof performance === 'undefined') {
+        return { end: () => null };
+    }
+    const startMs = performance.now();
+    const stack = window.__hbPerfPhaseStack ?? (window.__hbPerfPhaseStack = []);
+    const span = { phase, startMs, context };
+    stack.push(span);
+    tagPerfPhase(phase);
+    let ended = false;
+    return {
+        end: (result = null) => {
+            if (ended) return result;
+            ended = true;
+            const endMs = performance.now();
+            const index = stack.lastIndexOf(span);
+            if (index >= 0) stack.splice(index, 1);
+            const history = window.__hbPerfPhaseHistory ?? (window.__hbPerfPhaseHistory = []);
+            history.push({
+                phase,
+                startMs: Math.round(startMs * 10) / 10,
+                durationMs: Math.round((endMs - startMs) * 10) / 10,
+                context
+            });
+            if (history.length > 64) history.splice(0, history.length - 64);
+            const parent = stack[stack.length - 1];
+            if (parent) tagPerfPhase(parent.phase);
+            return result;
+        }
+    };
+}
+
 function setSpriteSheetFrame(texture, columns, rows, frameIndex = 0) {
     if (!texture || columns <= 0 || rows <= 0) return;
 
@@ -6434,6 +6470,37 @@ export class ThreeGame {
         this.resize();
     }
 
+    getPerformanceDiagnosticsSnapshot() {
+        const info = this.renderer?.info;
+        return {
+            profile: this.performanceProfile,
+            drawCalls: info?.render?.calls ?? null,
+            triangles: info?.render?.triangles ?? null,
+            sceneObjects: this.scene?.children?.length ?? null,
+            transientEffects: this.transientEffects?.length ?? null,
+            activeProjectiles: this.activeProjectiles?.length ?? null,
+            wallInstances: this._wallInstanceIndex?.size ?? null,
+            wallMeshes: this.wallMeshes?.length ?? null,
+            destroyedWallCount: this.destroyedWallKeys?.size ?? null,
+            pendingChunkMounts: this.pendingChunkMounts?.length ?? null,
+            activeChunks: this.chunkMeshes?.size ?? null,
+            geometries: info?.memory?.geometries ?? null,
+            textures: info?.memory?.textures ?? null,
+            programs: info?.programs?.length ?? null,
+            jsHeapUsed: performance.memory?.usedJSHeapSize ?? null
+        };
+    }
+
+    renderWithPerf(label = 'frame:render') {
+        const span = beginPerfPhase(label, this.getPerformanceDiagnosticsSnapshot());
+        try {
+            if (this.composer && this.performanceProfile === 'gameplay') this.composer.render();
+            else this.renderer.render(this.scene, this.camera);
+        } finally {
+            span.end();
+        }
+    }
+
     updateMenuShowcase(delta) {
         if (this.performanceProfile !== 'menu' || !this.player || this.isPlayerDead) return;
 
@@ -6521,6 +6588,15 @@ export class ThreeGame {
         if (this.container && this.container.clientWidth === 0 && this.container.clientHeight === 0) {
             return;
         }
+        // Keep the render guard callable with the deliberately minimal fake
+        // objects used by the defensive tests and lightweight integrations.
+        const renderFrame = () => {
+            if (typeof this.renderWithPerf === 'function') {
+                this.renderWithPerf();
+            } else {
+                this.renderer.render(this.scene, this.camera);
+            }
+        };
         const now = performance.now();
         const crashHeatPulse = Math.sin(now * 0.0026);
         if (this.crashSiteFloorMaterial) {
@@ -6551,7 +6627,7 @@ export class ThreeGame {
 
         if (this.hitstopTimer > 0) {
             this.hitstopTimer -= delta * 1000;
-            this.renderer.render(this.scene, this.camera);
+            renderFrame();
             return;
         }
 
@@ -6571,7 +6647,7 @@ export class ThreeGame {
             this.updateCamera(delta);
             this.updateTransientEffects(delta, now);
             this.updateHiddenPlayerMarker(now);
-            this.renderer.render(this.scene, this.camera);
+            renderFrame();
             return;
         }
 
@@ -6579,7 +6655,7 @@ export class ThreeGame {
             this.clearGameplayInputState();
             this.updateCamera(delta);
             this.updateHiddenPlayerMarker(now);
-            this.renderer.render(this.scene, this.camera);
+            renderFrame();
             return;
         }
 
@@ -6659,11 +6735,7 @@ export class ThreeGame {
         } else {
             this.updatePocketContent(delta, now);
         }
-        if (this.composer && this.performanceProfile === 'gameplay') {
-            this.composer.render();
-        } else {
-            this.renderer.render(this.scene, this.camera);
-        }
+        renderFrame();
     }
 
     // Feed the Director a run-state snapshot and execute whatever lever it pulls.
@@ -19565,8 +19637,15 @@ export class ThreeGame {
             // stalls, nothing conclusive. This tags the last known expensive
             // synchronous operation so the *next* long-task warning can actually
             // say what was probably running, instead of staying opaque.
-            tagPerfPhase(`chunk-mount:${next.chunkX},${next.chunkY}`);
+            const span = beginPerfPhase(`chunk:mount:${next.chunkX},${next.chunkY}`, {
+                chunkX: next.chunkX,
+                chunkY: next.chunkY,
+                prefetch: next.prefetch,
+                priority: next.priority,
+                queuedBefore: this.pendingChunkMounts.length
+            });
             this.mountChunk(next.chunkX, next.chunkY);
+            span.end();
             mounted += 1;
         }
         return mounted;
@@ -20228,14 +20307,28 @@ export class ThreeGame {
     }
 
     destroyWall(wall, { source = 'player', burstColor = 0xb8c2c9, force = false } = {}) {
-        if (!wall?.userData?.isWall || wall.userData.destroyed) return false;
+        const span = beginPerfPhase('wall:destroy', {
+            source,
+            wallKey: wall?.userData?.wallKey ?? null,
+            force
+        });
+        if (!wall?.userData?.isWall || wall.userData.destroyed) {
+            span.end();
+            return false;
+        }
         if (wall.userData.isProceduralDoor && wall.userData.proceduralDoorId) {
             const door = this.proceduralDoorStates.get(wall.userData.proceduralDoorId);
             this.refreshMazeAccessState();
-            if (door?.lock && !isGateRequirementMet(door.lock, this.mazeAccessState) && !force) return false;
+            if (door?.lock && !isGateRequirementMet(door.lock, this.mazeAccessState) && !force) {
+                span.end();
+                return false;
+            }
             if (door) this.proceduralDoorStates.set(door.id, transitionDoorState(door, 'destroy', true));
         }
-        if (wall.userData.indestructible && !force) return false;
+        if (wall.userData.indestructible && !force) {
+            span.end();
+            return false;
+        }
 
         const worldX = Number.isFinite(wall.userData.worldX) ? wall.userData.worldX : wall.position.x;
         const worldZ = Number.isFinite(wall.userData.worldZ) ? wall.userData.worldZ : wall.position.z;
@@ -20273,6 +20366,7 @@ export class ThreeGame {
         window.dispatchEvent(new CustomEvent('wall-destroyed', {
             detail: { source, x: coord.tileX, z: coord.tileZ }
         }));
+        span.end(true);
         return true;
     }
 
@@ -20317,9 +20411,19 @@ export class ThreeGame {
     }
 
     damageWall(wall, amount = 1, { source = 'player' } = {}) {
-        if (!wall?.userData?.isWall || wall.userData.destroyed) return false;
+        const span = beginPerfPhase('wall:damage', {
+            source,
+            amount,
+            wallKey: wall?.userData?.wallKey ?? null
+        });
+        if (!wall?.userData?.isWall || wall.userData.destroyed) {
+            span.end();
+            return false;
+        }
         if (wall?.userData?.isBunkerBlastDoor || (wall?.userData?.worldZ === 15 && wall?.userData?.worldX >= 6 && wall?.userData?.worldX <= 11)) {
-            return this.damageBunkerBlastDoor(amount, { source });
+            const result = this.damageBunkerBlastDoor(amount, { source });
+            span.end(result);
+            return result;
         }
         const maxHp = Math.max(1, wall.userData.maxWallHp ?? WALL_HP_STANDARD);
         const damage = Math.max(0, Math.round(Number(amount) || 0));
@@ -20337,9 +20441,12 @@ export class ThreeGame {
                     }
                 }));
             }
+            span.end();
             return false;
         }
-        return this.destroyWall(wall, { source });
+        const result = this.destroyWall(wall, { source });
+        span.end(result);
+        return result;
     }
 
     tryBossBreakWall(sprite, nextX, nextZ) {
@@ -26535,7 +26642,7 @@ export class ThreeGame {
         // (flagged by the sprint 24 perf investigation as a GC-pressure
         // candidate when it lands near other allocation bursts), so it's
         // tagged the same way for longtask attribution.
-        tagPerfPhase(`gear-poof:${junkType}`);
+        const span = beginPerfPhase(`gear-poof:${junkType}`, { junkType });
         const colors = this.getJunkVariantEffectColors(junkType);
         const smokeColor = new THREE.Color(colors.smokeColor).lerp(new THREE.Color(0x6b7177), 0.45);
         const glowColor = new THREE.Color(colors.glowColor).lerp(new THREE.Color(0x7a7a7a), 0.62);
@@ -26617,6 +26724,7 @@ export class ThreeGame {
         effect.userData = { age: 0, duration: 0.56 };
         this.scene.add(effect);
         this.transientEffects.push(effect);
+        span.end();
     }
 
     // docs/dynamic-light-shader-runaway-plan-2026-08-19.md direction #1.

@@ -155,8 +155,8 @@ build · **Accepted** = confirmed with real Steam accounts/real players.
 | System | Designed | Coded | Connected | Tested | Live-verified | Packaged | Accepted |
 |---|:-:|:-:|:-:|:-:|:-:|:-:|:-:|
 | Oxygen pressure loop | — | ✅ | ✅ | partial | — | — | — |
-| Depth Contract (One More Ring core) | ✅ | ✅ | ❌ | ✅ (pure fns) | ❌ | — | — |
-| Transformative relics (8 new) | ✅ | ✅ (8/8 catalog) | ⚠️ (1/8 gameplay hook) | ✅ (the 1) | — | — | — |
+| Depth Contract (One More Ring core) | ✅ | ✅ | ✅ (except elite promotion) | ✅ | ✅ (dev-server) | — | — |
+| Transformative relics (8 new) | ✅ | ✅ (8/8 catalog) | ⚠️ (5/8 gameplay hooks) | ✅ (pure + runtime coverage) | — | — | — |
 | Boss stagger/armor/weakpoint grammar | ✅ | ✅ (2 fights) | ✅ | — | unknown | — | — |
 | Combat hitstop / camera shake | — | ✅ | ✅ | — | unknown | — | — |
 | Combat-feel-and-juice plan (broader) | ✅ | ❌ (by its own admission) | ❌ | ❌ | ❌ | — | — |
@@ -323,7 +323,9 @@ systems. Finish the one that's already 80% built, raise the floor on the
 handful of things that would embarrass the game in front of a real reviewer
 or a colorblind player, and get real evidence (packaged build, real
 hardware, two real Steam accounts) instead of more sandbox-qualified
-confidence.
+confidence. The player-facing shape of that expedition is defined in
+`docs/design/game-outline-and-proof-run.md`; use it as the shared contract
+for onboarding, room pacing, relic expression, extraction, and acceptance.
 
 This reaches the same practical shape as the prior recommendation this
 review was asked to try to disprove, but for reasons this review verified

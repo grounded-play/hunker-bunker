@@ -12857,6 +12857,22 @@ function captureMenuRenderSnapshot() {
     }
 }
 
+function captureGameplayPerfContext() {
+    try {
+        return {
+            activePhases: (window.__hbPerfPhaseStack ?? []).map((span) => ({
+                phase: span.phase,
+                startMs: Math.round(span.startMs * 10) / 10,
+                context: span.context ?? null
+            })),
+            recentPhases: (window.__hbPerfPhaseHistory ?? []).slice(-12),
+            counters: window.game?.getPerformanceDiagnosticsSnapshot?.() ?? null
+        };
+    } catch {
+        return { activePhases: [], recentPhases: [], counters: null };
+    }
+}
+
 let gameplayLongTaskObserver = null;
 function startGameplayLongTaskDiagnostics() {
     if (typeof PerformanceObserver === 'undefined' || gameplayLongTaskObserver) return;
@@ -12882,6 +12898,7 @@ function startGameplayLongTaskDiagnostics() {
                     // still genuinely unattributed -- a real open question,
                     // not chunk-mount work.
                     lastPhase,
+                    ...captureGameplayPerfContext(),
                     // Only populated when still unattributed and the game is
                     // sitting in the menu profile -- see captureMenuRenderSnapshot.
                     menuRenderSnapshot: lastPhase === null ? captureMenuRenderSnapshot() : null

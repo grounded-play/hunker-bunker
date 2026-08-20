@@ -119,6 +119,16 @@ export function createArmoryUi({
         const allowedArchetypes = CLASS_ARCHETYPES[cls] || [archetype];
         const allowedSkins = ARCHETYPE_SKINS[archetype] || [];
 
+        if (typeof document !== 'undefined') {
+            const screen = document.getElementById('armory-screen');
+            if (screen) {
+                screen.style.backgroundImage = `radial-gradient(circle at 45% 45%, rgba(6, 11, 19, 0.25) 0%, rgba(6, 11, 19, 0.82) 85%, #060b13 100%), url('/ui/armory_bg_${cls}.jpg')`;
+                screen.style.backgroundSize = 'cover';
+                screen.style.backgroundPosition = 'center';
+                screen.style.backgroundRepeat = 'no-repeat';
+            }
+        }
+
         container.innerHTML = `
             <div class="armory-hud">
                 <div class="terminal-scanline"></div>

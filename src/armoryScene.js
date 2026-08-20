@@ -612,8 +612,19 @@ export async function createArmoryScene(canvas) {
 
     return {
         async setClass(classType) {
+            const cls = String(classType || 'scout').toLowerCase();
+            const themeColors = {
+                scout: 0x00f0ff,
+                tank: 0xff9f1c,
+                engineer: 0x34d399
+            };
+            const accentColor = themeColors[cls] || 0x00f0ff;
+            if (rimLight?.color) rimLight.color.setHex(accentColor);
+            if (platRingMat?.color) platRingMat.color.setHex(accentColor);
+            if (neonLineMat?.color) neonLineMat.color.setHex(accentColor);
+
             await loadOperatorModel(classType);
-            const defaultArch = DEFAULT_ARCHETYPES[classType.toLowerCase()] || 'talon';
+            const defaultArch = DEFAULT_ARCHETYPES[cls] || 'talon';
             await loadWeaponAsset(defaultArch, null);
         },
         async setWeapon(archetypeId, skinItemdefId) {

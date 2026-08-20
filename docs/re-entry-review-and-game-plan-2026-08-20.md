@@ -18,6 +18,10 @@
 └───────────────────────┘      └────────────────────┘     └───────────────────────┘     └───────────────────────┘
 ```
 
+The chronology graphic is historical context; current verified state is 5/8
+transformative relics wired and 1,870 passing tests. The canonical live state
+is `PRODUCT_STATE.md`.
+
 #### **Sprint 23 (Aug 13–17): Content Foundation, 3D Staging & Season Zero**
 * **The Pre-Mission Armory**: Shipped the fullsize 3D staging room, class loadout builder v2, and integrated class-specific primary weapons.
 * **Season 0 Catalog (60 items)**: Authored and bridged the complete 60-item Steam Vault catalog (itemdefs, overclocks, skins, audio voice packs, daily/weekly bounties, and drop toasts).
@@ -45,7 +49,7 @@
 
 #### **Sprint 28 (Current): Convergence & Execution ("The Proof Run")**
 * **Lane A (Depth Contract)**: Salvage scaling, O2 efficiency, director aggression, and ring-crossing ritual beats connected to runtime.
-* **Lane B (Relic Activation)**: 7 inert relics (`punctured_lung`, `scrap_cycler`, `parasitic_magazine`, `false_telemetry`, `vesper_doctrine`, `cryo_breach`, `queens_milk`) activated in combat.
+* **Lane B (Relic Activation)**: 5/8 transformative relics currently have gameplay hooks; `scrap_cycler`, `vesper_doctrine`, and `queens_milk` remain catalog-only and are intentionally tracked as open work.
 * **Lane C (Combat Feel)**: Boss stagger/armor/weakpoint grammar extended to `cryosnail`, `bio_charger`, and `sentinel`.
 * **Multiplayer Host Audit**: Client-side `hostChanged` listener wired to ensure single authoritative host election.
 
@@ -95,6 +99,13 @@
 ---
 
 ## 3. Master Game Plan & Next Steps (Sprint 28 Convergence)
+
+The shared player-facing target is now written in
+`docs/design/game-outline-and-proof-run.md`. It defines the 35–45 minute
+Proof Run as briefing → orientation → first commitment → depth crossing →
+build expression → escalation → extraction. This prevents the plan from
+measuring only system completion while missing whether a player experiences
+the intended oxygen-pressured depth gamble.
 
 ```mermaid
 graph TD
