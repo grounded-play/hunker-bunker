@@ -1,5 +1,20 @@
 # Steam Lobby Integration — Implementation Plan
 
+**Update (2026-08-20, later same day) — real playtest feedback on the
+first build of this:** two gaps found and fixed. (1) Lobbies were created
+`LobbyType.FriendsOnly`, which Steamworks' `RequestLobbyList` never
+returns — made "browse and join a public lobby" structurally impossible
+regardless of UI. Fixed: `visibility` param on lobby creation, defaults to
+`public`; new `hb:steamGetLobbies` + a real "PUBLIC STEAM LOBBIES" list in
+the multiplayer modal. (2) Invite Friends silently did nothing when the
+Steam overlay wasn't attached (running the packaged binary directly
+instead of launching through Steam). `matchmaking.Lobby.openInviteDialog()`
+has no success signal at all and steamworks.js exposes no overlay-
+availability check — added `launchedViaSteam` (best available proxy) so
+the UI can say so honestly instead of a dead button. See the "Playtest
+fixes" section below for detail; this doesn't change the plan's original
+four steps, all of which are still code-complete.
+
 Date: 2026-08-20. Supersedes Part B of `docs/steamstorestatus.log` (the
 "walk me through setting this up" conversation at the end of that file) as
 the working plan for this specific piece — that log stays as historical
@@ -143,6 +158,42 @@ A small, pure-ish module (same shape as `src/gameController.js`) that:
    all need an actual second Steam account accepting a real invite. Steps
    1-4 are ordinary engineering work I can do without that; step 5 is the
    same acceptance gate Sprint 26 already names.
+
+## Playtest fixes (2026-08-20, after step 5's first real attempt)
+
+The first real build+playtest of steps 1-4 (docs/logs/log8.json — file
+itself was empty when checked, so this is from the user's direct bug
+report) surfaced two real gaps step 5's "needs two real Steam accounts"
+framing hadn't anticipated, because they're visible even solo:
+
+- **No way to browse or join a lobby at all.** Traced to a design choice
+  in step 2, not a UI gap: every lobby was created `LobbyType.FriendsOnly`,
+  and Steamworks' `RequestLobbyList` (`matchmaking.getLobbies()`) only
+  ever returns `Public` lobbies by design — a FriendsOnly lobby is
+  invite-only on purpose. No lobby-browser UI, however complete, could
+  have shown a lobby that structurally can never appear in that list.
+  Fixed: lobby creation now takes a `visibility` param (`public` by
+  default), and a real "PUBLIC STEAM LOBBIES" list with join buttons
+  exists in the multiplayer modal now, refreshing on open and on demand.
+- **Invite Friends did nothing, no error either.** `matchmaking.Lobby.
+  openInviteDialog()` has no way to report "the overlay didn't actually
+  open" — it's fire-and-forget with no return value, confirmed against
+  the type defs, and steamworks.js exposes no overlay-availability check
+  at all. The overlay itself only ever attaches to a process launched BY
+  Steam, so testing by running the packaged binary directly (plausible
+  for solo beta testing) means it categorically cannot work regardless of
+  code correctness. Added the best available proxy (`launchedViaSteam`,
+  derived from `process.env.SteamAppId`/`SteamGameId`) so the UI can say
+  so honestly — "launch Hunker Bunker from Steam to invite friends" —
+  instead of a silently dead button. This doesn't fix an overlay that's
+  genuinely unavailable; it makes that state diagnosable instead of
+  indistinguishable from a bug.
+
+Both fixes are code-complete with unit coverage; neither could be
+fully live-verified from this environment for the same reason step 5
+already names (no real Steam client here). The next real playtest is the
+one that actually tells us whether the public-lobby list populates
+correctly and whether the honest overlay warning fires at the right time.
 
 ## Acceptance (unchanged from the log, restated for reference)
 
