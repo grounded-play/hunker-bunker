@@ -409,11 +409,12 @@ export class MultiplayerLobby {
 
                     this.players.set(this.socket.id, {
                         id: this.socket.id,
-                        callsign: `${callsign} (HOST)`,
+                        callsign,
                         opClass,
                         loadout,
                         ping: 14,
                         isSelf: true,
+                        isHost: false,
                         ready: false
                     });
                     this.updateUiState();
@@ -428,22 +429,18 @@ export class MultiplayerLobby {
                     // once right after joinRoom -- well before ThreeGame's
                     // setupMultiplayerNetwork() attaches its own listeners at
                     // deploy time, so a listener added there would miss it.
-                    this.isLocalPlayerHost = Boolean(serverPlayers[this.socket.id]?.isHost);
-                    Object.entries(serverPlayers).forEach(([id, player]) => {
-                        if (id !== this.socket.id) {
-                            this.players.set(id, {
-                                id,
-                                callsign: player.callsign || `OPERATIVE-${id.slice(0, 4).toUpperCase()}`,
-                                opClass: player.opClass || 'SCOUT',
-                                loadout: player.loadout || null,
-                                ping: Math.floor(20 + Math.random() * 30),
-                                isSelf: false,
-                                ready: Boolean(player.ready)
-                            });
-                        }
-                    });
+                    this.syncServerRoster(serverPlayers);
                     this.updateUiState();
                     this.reportSteamRichPresence();
+                });
+
+                // The relay emits this when it promotes a remaining player
+                // after a host disconnects. Without this listener the server
+                // and lobby UI disagree permanently: the promoted player can
+                // be authoritative host for combat, but still sees the
+                // guest deploy branch until they reconnect.
+                this.socket.on('hostChanged', ({ hostId } = {}) => {
+                    this.handleHostChanged({ hostId });
                 });
 
                 this.socket.on('newPlayer', (p) => {
@@ -455,6 +452,7 @@ export class MultiplayerLobby {
                         loadout: p?.loadout || null,
                         ping: 28,
                         isSelf: false,
+                        isHost: Boolean(p?.isHost),
                         ready: Boolean(p?.ready)
                     });
                     this.updateUiState();
@@ -840,6 +838,35 @@ export class MultiplayerLobby {
         return Array.from(this.players.values()).every((p) => p.ready);
     }
 
+    syncServerRoster(serverPlayers = {}) {
+        const selfId = this.socket?.id;
+        this.players.clear();
+        for (const [id, player] of Object.entries(serverPlayers)) {
+            this.players.set(id, {
+                id,
+                callsign: player.callsign || `OPERATIVE-${id.slice(0, 4).toUpperCase()}`,
+                opClass: player.opClass || 'SCOUT',
+                loadout: player.loadout || null,
+                ping: id === selfId ? 14 : Math.floor(20 + Math.random() * 30),
+                isSelf: id === selfId,
+                isHost: Boolean(player.isHost),
+                ready: Boolean(player.ready)
+            });
+        }
+        this.isLocalPlayerHost = Boolean(serverPlayers[selfId]?.isHost);
+        this.localReady = Boolean(serverPlayers[selfId]?.ready);
+    }
+
+    handleHostChanged({ hostId } = {}) {
+        if (!hostId) return;
+        this.isLocalPlayerHost = hostId === this.socket?.id;
+        this.players.forEach((player) => {
+            player.isHost = player.id === hostId;
+        });
+        this.updateUiState();
+        this.reportSteamRichPresence();
+    }
+
     setLocalReady(ready) {
         this.localReady = ready;
         const self = this.players.get(this.socket?.id);
@@ -1088,7 +1115,7 @@ export class MultiplayerLobby {
                     row.innerHTML = `
                         <div class="net-roster-callsign">
                             <span class="net-roster-avatar net-avatar--${classColor}">${classIcon}</span>
-                            <span>${player.callsign}</span>
+                            <span>${player.callsign}${player.isHost ? ' (HOST)' : ''}</span>
                         </div>
                         <div class="net-roster-class">
                             <span class="net-class-badge net-class--${classColor}">${normalizedClass}</span>

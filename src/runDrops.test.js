@@ -6,7 +6,12 @@ import {
     TRANSFORMATIVE_RELIC_IDS,
     computeActiveSynergies,
     rollEnemyLootDrop,
-    applyLastBreathDamage
+    applyLastBreathDamage,
+    applyPuncturedLungCapacity,
+    applyPuncturedLungKillO2,
+    applyParasiticMagazineKill,
+    applyFalseTelemetryAggroDrop,
+    getCryoBreachChainFreezeRadius
 } from './runDrops.js';
 
 describe('runDrops', () => {
@@ -74,5 +79,30 @@ describe('runDrops', () => {
             const splitShot = WEAPON_OVERCLOCKS.find((o) => o.id === 'split_shot');
             expect(applyLastBreathDamage(10, [splitShot], 5)).toBe(10);
         });
+    });
+
+    it('reduces O2 capacity and restores O2 on a kill with Punctured Lung', () => {
+        const relic = SUIT_RELICS.find((r) => r.id === 'punctured_lung');
+        const maxO2 = applyPuncturedLungCapacity(100, [relic]);
+        expect(maxO2).toBe(60);
+        expect(applyPuncturedLungKillO2(55, [relic], maxO2)).toBe(60);
+    });
+
+    it('refunds a magazine round while shrinking O2 with Parasitic Magazine', () => {
+        const relic = SUIT_RELICS.find((r) => r.id === 'parasitic_magazine');
+        expect(applyParasiticMagazineKill({ clipAmmo: 2, clipSize: 6, maxO2: 100 }, [relic]))
+            .toEqual({ clipAmmo: 3, maxO2: 95 });
+    });
+
+    it('drops enemy aggro only when False Telemetry is critical and proc succeeds', () => {
+        const relic = SUIT_RELICS.find((r) => r.id === 'false_telemetry');
+        expect(applyFalseTelemetryAggroDrop(1, 10, [relic], () => 0.1)).toBe(2.5);
+        expect(applyFalseTelemetryAggroDrop(2, 10, [relic], () => 0.1)).toBe(0);
+    });
+
+    it('exposes Cryo Breach chain-freeze radius only when equipped', () => {
+        const relic = SUIT_RELICS.find((r) => r.id === 'cryo_breach');
+        expect(getCryoBreachChainFreezeRadius([relic])).toBe(3);
+        expect(getCryoBreachChainFreezeRadius([])).toBe(0);
     });
 });

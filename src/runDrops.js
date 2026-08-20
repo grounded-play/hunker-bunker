@@ -142,6 +142,7 @@ export const SUIT_RELICS = Object.freeze([
         rarity: DROP_RARITIES.CORRUPTED,
         description: 'Maximum oxygen capacity permanently reduced. Kills restore oxygen.',
         transformative: true,
+        wired: true,
         stats: { maxO2PenaltyPercent: 40, killO2Restore: 8 }
     },
     {
@@ -160,6 +161,7 @@ export const SUIT_RELICS = Object.freeze([
         rarity: DROP_RARITIES.CORRUPTED,
         description: 'Kills refill the magazine but permanently reduce maximum oxygen.',
         transformative: true,
+        wired: true,
         stats: { killAmmoRefund: 1, maxO2PenaltyPercent: 5 }
     },
     {
@@ -169,6 +171,7 @@ export const SUIT_RELICS = Object.freeze([
         rarity: DROP_RARITIES.RARE,
         description: 'At critical health, enemies temporarily lose track of you.',
         transformative: true,
+        wired: true,
         stats: { criticalHpPercent: 15, aggroDropChance: 0.4, aggroDropDuration: 2.5 }
     },
     {
@@ -188,6 +191,7 @@ export const SUIT_RELICS = Object.freeze([
         description: 'Frozen enemies explode on death and freeze nearby targets.',
         element: 'cryo',
         transformative: true,
+        wired: true,
         stats: { chainFreezeRadius: 3 }
     },
     {
@@ -234,6 +238,59 @@ export function applyLastBreathDamage(baseDamage, equippedRelics = [], currentO2
         }
     }
     return damage;
+}
+
+export function applyPuncturedLungCapacity(baseMaxO2 = 100, equippedRelics = []) {
+    let maxO2 = baseMaxO2;
+    for (const relic of equippedRelics) {
+        const penalty = Number(relic?.stats?.maxO2PenaltyPercent);
+        if (Number.isFinite(penalty) && penalty > 0) {
+            maxO2 *= Math.max(0, 1 - (penalty / 100));
+        }
+    }
+    return Math.max(1, maxO2);
+}
+
+export function applyPuncturedLungKillO2(currentO2 = 0, equippedRelics = [], maxO2 = 100) {
+    let nextO2 = currentO2;
+    for (const relic of equippedRelics) {
+        const restore = Number(relic?.stats?.killO2Restore);
+        if (Number.isFinite(restore) && restore > 0) nextO2 += restore;
+    }
+    return Math.min(maxO2, Math.max(0, nextO2));
+}
+
+export function applyParasiticMagazineKill({ clipAmmo = 0, clipSize = 0, maxO2 = 100 } = {}, equippedRelics = []) {
+    let nextClipAmmo = clipAmmo;
+    let nextMaxO2 = maxO2;
+    for (const relic of equippedRelics) {
+        const refund = Number(relic?.stats?.killAmmoRefund);
+        const penalty = Number(relic?.stats?.maxO2PenaltyPercent);
+        if (Number.isFinite(refund) && refund > 0) nextClipAmmo = Math.min(clipSize, nextClipAmmo + refund);
+        if (Number.isFinite(penalty) && penalty > 0) nextMaxO2 *= Math.max(0, 1 - (penalty / 100));
+    }
+    return { clipAmmo: nextClipAmmo, maxO2: Math.max(1, nextMaxO2) };
+}
+
+export function applyFalseTelemetryAggroDrop(currentHp = 100, maxHp = 100, equippedRelics = [], random = Math.random) {
+    const hpRatio = currentHp / Math.max(1, maxHp);
+    for (const relic of equippedRelics) {
+        const threshold = Number(relic?.stats?.criticalHpPercent);
+        const chance = Number(relic?.stats?.aggroDropChance);
+        const duration = Number(relic?.stats?.aggroDropDuration);
+        if (Number.isFinite(threshold) && Number.isFinite(chance) && Number.isFinite(duration)
+            && hpRatio * 100 <= threshold && random() < chance) {
+            return Math.max(0, duration);
+        }
+    }
+    return 0;
+}
+
+export function getCryoBreachChainFreezeRadius(equippedRelics = []) {
+    return equippedRelics.reduce((radius, relic) => {
+        const value = Number(relic?.stats?.chainFreezeRadius);
+        return Number.isFinite(value) && value > radius ? value : radius;
+    }, 0);
 }
 
 export function computeActiveSynergies(equippedItems = []) {

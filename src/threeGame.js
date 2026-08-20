@@ -181,10 +181,33 @@ import { ExplorationTracker } from './mapSystem.js';
 export const EXTERIOR_CANYON_TILE = 'X';
 export const CLIFF_TILE = 'C';
 export const LEDGE_TILE = 'O';
-import { rollEnemyLootDrop, computeActiveSynergies, WEAPON_OVERCLOCKS, SUIT_RELICS, applyLastBreathDamage } from './runDrops.js';
+import {
+    rollEnemyLootDrop,
+    computeActiveSynergies,
+    WEAPON_OVERCLOCKS,
+    SUIT_RELICS,
+    applyLastBreathDamage,
+    applyPuncturedLungCapacity,
+    applyPuncturedLungKillO2,
+    applyParasiticMagazineKill,
+    applyFalseTelemetryAggroDrop,
+    getCryoBreachChainFreezeRadius
+} from './runDrops.js';
 import { buildUnifiedSkillTree, getTreeConnectors } from './skillTree.js';
 import { pickLoreDropForSite, getFoundLoreKeys, markLoreDropFound, LORE_DROPS } from './loreDrops.js';
-import { createBossFight, tickBossFight, applyBossDamage, QUEEN_FIGHT_DEF, QUEEN_PHASE_LINES, SPORESNAIL_FIGHT_DEF } from './bossPhases.js';
+import {
+    createBossFight,
+    tickBossFight,
+    applyBossDamage,
+    QUEEN_FIGHT_DEF,
+    QUEEN_PHASE_LINES,
+    SPORESNAIL_FIGHT_DEF,
+    createEnemyStaggerState,
+    applyStaggerDamage,
+    tickStaggerState,
+    isStaggered,
+    ENEMY_STAGGER_DEFS
+} from './bossPhases.js';
 import { debugLog } from './debugConsole.js';
 import {
     PLAYER_DEFAULT_DIRECTION_INDEX,
@@ -1268,6 +1291,7 @@ export class ThreeGame {
             hp: BASE_HEARTS,
             maxHp: BASE_HEARTS,
             o2: 100,
+            maxO2: 100,
             o2HealthTimer: 0
         };
         this.aimDirX = 1;
@@ -5236,6 +5260,11 @@ export class ThreeGame {
         } else {
             this.runRelics.push(drop);
         }
+        if (drop.id === 'punctured_lung') {
+            this.playerVitals.maxO2 = applyPuncturedLungCapacity(this.playerVitals.maxO2, [drop]);
+            this.playerVitals.o2 = Math.min(this.playerVitals.o2, this.playerVitals.maxO2);
+            this.emitO2State();
+        }
         this.activeSynergies = computeActiveSynergies([...this.runOverclocks, ...this.runRelics]);
         window.AudioManager?.play?.('ui_confirm', { volume: 0.8 });
         window.dispatchEvent(new CustomEvent('in-run-drop-equipped', { detail: { drop, synergies: this.activeSynergies } }));
@@ -8701,7 +8730,7 @@ export class ThreeGame {
     }
 
     adjustOxygen(amount = 0) {
-        const next = Math.max(0, Math.min(100, (this.playerVitals.o2 ?? 0) + Number(amount || 0)));
+        const next = Math.max(0, Math.min(this.playerVitals.maxO2 ?? 100, (this.playerVitals.o2 ?? 0) + Number(amount || 0)));
         this.playerVitals.o2 = next;
         this.emitO2State();
     }
@@ -11172,6 +11201,24 @@ export class ThreeGame {
         if (sporesnailFight) {
             const dealt = applyBossDamage(sporesnailFight, amount);
             this.damageSnail(sprite, dealt);
+            return;
+        }
+        const stagger = sprite?.userData?.staggerState;
+        if (stagger) {
+            const result = applyStaggerDamage(stagger, amount);
+            if (result.triggeredStagger) {
+                const color = stagger.def?.staggerColor ?? 0xffe066;
+                sprite.material?.color?.setHex?.(color);
+                window.AudioManager?.play?.('ui_scan_ping', { volume: 0.38, playbackRate: 0.55 });
+                window.dispatchEvent(new CustomEvent('enemy-staggered', {
+                    detail: {
+                        type: sprite.userData.type,
+                        scatterKey: sprite.userData.scatterKey ?? null,
+                        duration: stagger.def?.staggerDuration ?? 2.0
+                    }
+                }));
+            }
+            this.damageSnail(sprite, result.dealt);
             return;
         }
         this.damageSnail(sprite, amount);
@@ -14162,7 +14209,11 @@ export class ThreeGame {
     resetVitalsForRun({ emit = true } = {}) {
         this.syncPersistentUpgrades();
         this.playerVitals.hp = this.playerVitals.maxHp;
-        this.playerVitals.o2 = 100;
+        this.playerVitals.maxO2 = applyPuncturedLungCapacity(
+            100,
+            (this.runRelics ?? []).filter((relic) => relic?.id === 'punctured_lung')
+        );
+        this.playerVitals.o2 = this.playerVitals.maxO2;
         this.playerVitals.o2HealthTimer = 0;
         this.isPlayerDead = false;
         this.o2DispatchTimer = 0;
@@ -14833,7 +14884,7 @@ export class ThreeGame {
         this.godMode = Boolean(enabled);
         if (this.godMode) {
             this.playerVitals.hp = this.playerVitals.maxHp;
-            this.playerVitals.o2 = 100;
+            this.playerVitals.o2 = this.playerVitals.maxO2 ?? 100;
             this.emitHealthState();
             this.emitO2State();
         }
@@ -14983,6 +15034,7 @@ export class ThreeGame {
 
     canEnemyTargetPlayer(enemySprite) {
         if (!enemySprite?.position || !this.player?.position) return true;
+        if ((this.falseTelemetryTimer ?? 0) > 0) return false;
         return canHostileAggroTarget(
             { x: enemySprite.position.x, z: enemySprite.position.z },
             { x: this.player.position.x, z: this.player.position.z },
@@ -15332,6 +15384,15 @@ export class ThreeGame {
             }
             return false;
         }
+        this.falseTelemetryTimer = Math.max(
+            this.falseTelemetryTimer ?? 0,
+            applyFalseTelemetryAggroDrop(
+                this.playerVitals.hp,
+                this.playerVitals.maxHp,
+                this.runRelics,
+                Math.random
+            )
+        );
         this.player3dOverlay?.trigger('hit');
 
         if (sourceX != null && sourceZ != null) {
@@ -16408,9 +16469,10 @@ export class ThreeGame {
 
     updateVitals(delta) {
         if (!this.player || this.isPlayerDead) return;
+        this.falseTelemetryTimer = Math.max(0, (this.falseTelemetryTimer ?? 0) - Math.max(0, delta));
         if (this.cinematicLock) return; // no O2 drain during scripted sequences
         if (this.godMode) {
-            this.playerVitals.o2 = 100;
+            this.playerVitals.o2 = this.playerVitals.maxO2 ?? 100;
             this.playerVitals.o2HealthTimer = 0;
             this.emitO2State();
             return;
@@ -16438,7 +16500,7 @@ export class ThreeGame {
             if (typeof window !== 'undefined' && window.npcDialogueTreeManager?.activePerks?.has?.('flesh_communion_blessing')) {
                 refillRate *= 1.25;
             }
-            this.playerVitals.o2 = Math.min(100, this.playerVitals.o2 + refillRate * delta);
+            this.playerVitals.o2 = Math.min(this.playerVitals.maxO2 ?? 100, this.playerVitals.o2 + refillRate * delta);
             this.playerVitals.o2HealthTimer = 0;
         } else {
             let drainRate = O2_DRAIN_RATE_PCT_PER_SEC
@@ -22786,7 +22848,8 @@ export class ThreeGame {
                 fireCooldown: SENTINEL_FIRE_COOLDOWN * (0.5 + Math.random() * 0.8),
                 detectRadius: SENTINEL_DETECT_RADIUS,
                 active: false,
-                biomeTint: 0xffdd44
+                biomeTint: 0xffdd44,
+                staggerState: createEnemyStaggerState(ENEMY_STAGGER_DEFS.sentinel)
             };
             return sprite;
         }
@@ -22852,6 +22915,10 @@ export class ThreeGame {
                 speed *= threatScale.speed;
             }
 
+            const staggerState = (!isBoss && ENEMY_STAGGER_DEFS[placement.type])
+                ? createEnemyStaggerState(ENEMY_STAGGER_DEFS[placement.type])
+                : null;
+
             sprite.userData = {
                 isScatter: true,
                 isEnemy: true,
@@ -22889,7 +22956,8 @@ export class ThreeGame {
                 bossAttackTimer: 0,
                 sporeEmitTimer: 0,
                 biomeTint: tintColor,
-                sporesnailFight
+                sporesnailFight,
+                staggerState
             };
             if (isPreEnraged && !isBoss) {
                 clonedMat.color.setHex(SNAIL_ENRAGED_TINT);
@@ -23779,6 +23847,39 @@ export class ThreeGame {
         sprite.userData.burstTimer = 0;
         if (sprite.userData.scatterKey) this.killedEnemyScatterKeys.add(sprite.userData.scatterKey);
         this.snailsKilledThisRun = (this.snailsKilledThisRun ?? 0) + 1;
+
+        if (this.playerVitals) {
+            const puncturedMaxO2 = this.playerVitals.maxO2 ?? 100;
+            const restoredO2 = applyPuncturedLungKillO2(this.playerVitals.o2, this.runRelics, puncturedMaxO2);
+            if (restoredO2 !== this.playerVitals.o2) {
+                this.playerVitals.o2 = restoredO2;
+                this.emitO2State();
+            }
+            const parasiticResult = applyParasiticMagazineKill({
+                clipAmmo: this.weaponClipAmmo,
+                clipSize: this.weaponClipSize,
+                maxO2: puncturedMaxO2
+            }, this.runRelics);
+            if (parasiticResult.clipAmmo !== this.weaponClipAmmo || parasiticResult.maxO2 !== puncturedMaxO2) {
+                this.weaponClipAmmo = parasiticResult.clipAmmo;
+                this.playerVitals.maxO2 = parasiticResult.maxO2;
+                this.playerVitals.o2 = Math.min(this.playerVitals.o2, this.playerVitals.maxO2);
+                this.emitWeaponClipState();
+                this.emitO2State();
+            }
+        }
+
+        const chainFreezeRadius = getCryoBreachChainFreezeRadius(this.runRelics);
+        if (chainFreezeRadius > 0 && sprite.userData.frozenTimer > 0) {
+            for (const other of this.scatterSprites ?? []) {
+                if (other === sprite || other.userData?.hp <= 0) continue;
+                const distance = Math.hypot(other.position.x - sprite.position.x, other.position.z - sprite.position.z);
+                if (distance <= chainFreezeRadius) {
+                    other.userData.frozenTimer = Math.max(other.userData.frozenTimer ?? 0, 1.5);
+                }
+            }
+            this.spawnPhysicalBurst(sprite.position.x, sprite.position.z, { color: 0x88ccff, count: 12, upward: 0.15 });
+        }
 
         // Season 0 Zero-Point Flux Overdrive overclock (itemdef 4147): 5 kills in 3s refunds 1 dash charge
         const now = (typeof performance !== 'undefined' ? performance.now() : Date.now());
@@ -24671,6 +24772,18 @@ export class ThreeGame {
         const data = sprite.userData;
         if (!this.player) return;
 
+        if (data.staggerState) {
+            const events = tickStaggerState(data.staggerState, delta);
+            if (events.some((e) => e.type === 'stagger-end')) {
+                sprite.material.color.setHex(0xffdd44);
+            }
+            if (isStaggered(data.staggerState)) {
+                data.fireCooldown = SENTINEL_FIRE_COOLDOWN;
+                sprite.material.color.setHex(0xffe066);
+                return;
+            }
+        }
+
         if (this.canEnemyTargetPlayer?.(sprite) === false) {
             data.active = false;
             sprite.material.color.setHex(0xffdd44);
@@ -24901,6 +25014,19 @@ export class ThreeGame {
     updateChargerOrStalkerBehavior(sprite, delta, { isStalker = false } = {}) {
         const data = sprite.userData;
         if (!this.player || this.isPlayerDead) return;
+
+        if (data.staggerState) {
+            const events = tickStaggerState(data.staggerState, delta);
+            if (events.some((e) => e.type === 'stagger-end')) {
+                sprite.material?.color?.setHex?.(data.biomeTint ?? 0xffffff);
+            }
+            if (isStaggered(data.staggerState)) {
+                data.vx = 0;
+                data.vz = 0;
+                data.attackCooldown = Math.max(data.attackCooldown ?? 0, 0.5);
+                return;
+            }
+        }
         if (this.canEnemyTargetPlayer?.(sprite) === false) {
             data.vx = (data.vx ?? 0) * 0.5;
             data.vz = (data.vz ?? 0) * 0.5;
@@ -25525,6 +25651,20 @@ export class ThreeGame {
             this.updateQueenFightTick(sprite, delta);
             return;
         }
+
+        if (data.staggerState) {
+            const events = tickStaggerState(data.staggerState, delta);
+            if (events.some((e) => e.type === 'stagger-end')) {
+                sprite.material?.color?.setHex?.(data.biomeTint ?? 0xffffff);
+            }
+            if (isStaggered(data.staggerState)) {
+                if (data.sheetSprite) {
+                    this.updateSheetSpriteFrame(sprite, 0, 0, delta, false);
+                }
+                return;
+            }
+        }
+
         data.attackCooldown = Math.max(0, (data.attackCooldown ?? 0) - delta);
         data.pathRetargetTimer = Math.max(0, (data.pathRetargetTimer ?? 0) - delta);
         data.wallBreakCooldown = Math.max(0, (data.wallBreakCooldown ?? 0) - delta);

@@ -7,7 +7,15 @@ import {
     currentPhase,
     QUEEN_FIGHT_DEF,
     QUEEN_PHASE_LINES,
-    SPORESNAIL_FIGHT_DEF
+    SPORESNAIL_FIGHT_DEF,
+    createEnemyStaggerState,
+    isStaggered,
+    applyStaggerDamage,
+    tickStaggerState,
+    CRYOSNAIL_STAGGER_DEF,
+    BIO_CHARGER_STAGGER_DEF,
+    SENTINEL_STAGGER_DEF,
+    ENEMY_STAGGER_DEFS
 } from './bossPhases.js';
 
 const SIMPLE_DEF = {
@@ -233,6 +241,114 @@ describe('the sporesnail def (Sprint 22 B1)', () => {
             }
             expect(fight.defeated, `damagePerShot=${damagePerShot} finalHp=${fight.hp}`).toBe(true);
             expect(elapsed).toBeLessThanOrEqual(300);
+        }
+    });
+});
+
+describe('ordinary enemy stagger / armor / weakpoint mechanics (Sprint 28 Lane C)', () => {
+    it('initializes stagger state with zero poise and armored posture', () => {
+        const state = createEnemyStaggerState(CRYOSNAIL_STAGGER_DEF);
+        expect(state).not.toBeNull();
+        expect(state.poise).toBe(0);
+        expect(state.staggered).toBe(false);
+        expect(isStaggered(state)).toBe(false);
+    });
+
+    it('rejects null or invalid defs safely', () => {
+        expect(createEnemyStaggerState(null)).toBeNull();
+        expect(isStaggered(null)).toBe(false);
+        expect(applyStaggerDamage(null, 2)).toEqual({ dealt: 0, triggeredStagger: false, isWeakpoint: false });
+        expect(tickStaggerState(null, 1)).toEqual([]);
+    });
+
+    it('applies armored damage reduction before stagger threshold is met', () => {
+        const state = createEnemyStaggerState(CRYOSNAIL_STAGGER_DEF);
+        // Cryosnail has armoredDamageMult: 0.5, staggerThreshold: 2
+        // Raw hit of 1 damage -> 1 * 0.5 = 0.5 -> rounded to 1 minimum dealt
+        const result = applyStaggerDamage(state, 1);
+        expect(result.dealt).toBe(1);
+        expect(result.triggeredStagger).toBe(false);
+        expect(result.isWeakpoint).toBe(false);
+        expect(state.poise).toBe(1);
+        expect(isStaggered(state)).toBe(false);
+    });
+
+    it('always deals and records whole-number damage for fractional hits', () => {
+        const state = createEnemyStaggerState({
+            armoredDamageMult: 0.25,
+            staggerThreshold: 10,
+            staggerDuration: 2.0,
+            weakpointDamageMult: 1.5
+        });
+
+        // 1 * 0.25 = 0.25 -> 1
+        expect(applyStaggerDamage(state, 1).dealt).toBe(1);
+        // 3 * 0.25 = 0.75 -> 1
+        expect(applyStaggerDamage(state, 3).dealt).toBe(1);
+        // 6 * 0.25 = 1.5 -> 2
+        expect(applyStaggerDamage(state, 6).dealt).toBe(2);
+    });
+
+    it('triggers stagger when cumulative damage reaches posture threshold', () => {
+        const state = createEnemyStaggerState(CRYOSNAIL_STAGGER_DEF);
+        // Hit 1: 1 dmg -> poise 1
+        applyStaggerDamage(state, 1);
+        expect(isStaggered(state)).toBe(false);
+
+        // Hit 2: 1 dmg -> poise 2 >= threshold (2) -> triggers stagger!
+        const hit2 = applyStaggerDamage(state, 1);
+        expect(hit2.triggeredStagger).toBe(true);
+        expect(hit2.isWeakpoint).toBe(false);
+        expect(isStaggered(state)).toBe(true);
+        expect(state.staggerTimer).toBe(CRYOSNAIL_STAGGER_DEF.staggerDuration);
+    });
+
+    it('deals bonus weakpoint damage while enemy is staggered', () => {
+        const state = createEnemyStaggerState(CRYOSNAIL_STAGGER_DEF);
+        // Break posture
+        applyStaggerDamage(state, 2);
+        expect(isStaggered(state)).toBe(true);
+
+        // Hit while staggered: weakpointDamageMult is 1.5
+        // 2 raw * 1.5 = 3 dealt
+        const hit = applyStaggerDamage(state, 2);
+        expect(hit.dealt).toBe(3);
+        expect(hit.isWeakpoint).toBe(true);
+        expect(hit.triggeredStagger).toBe(false);
+    });
+
+    it('recovers from stagger when timer expires and resets posture', () => {
+        const state = createEnemyStaggerState(CRYOSNAIL_STAGGER_DEF);
+        applyStaggerDamage(state, 2); // enters stagger (2.5s duration)
+        expect(isStaggered(state)).toBe(true);
+
+        const eventsMid = tickStaggerState(state, 1.0);
+        expect(eventsMid).toEqual([]);
+        expect(isStaggered(state)).toBe(true);
+
+        const eventsEnd = tickStaggerState(state, 1.6);
+        expect(eventsEnd).toEqual([{ type: 'stagger-end' }]);
+        expect(isStaggered(state)).toBe(false);
+        expect(state.poise).toBe(0);
+
+        // Next hit is armored again
+        const nextHit = applyStaggerDamage(state, 1);
+        expect(nextHit.isWeakpoint).toBe(false);
+        expect(state.poise).toBe(1);
+    });
+
+    it('exports well-tuned definitions for cryosnail, bio_charger, and sentinel', () => {
+        expect(ENEMY_STAGGER_DEFS.cryosnail).toBe(CRYOSNAIL_STAGGER_DEF);
+        expect(ENEMY_STAGGER_DEFS.bio_charger).toBe(BIO_CHARGER_STAGGER_DEF);
+        expect(ENEMY_STAGGER_DEFS.sentinel).toBe(SENTINEL_STAGGER_DEF);
+
+        for (const def of Object.values(ENEMY_STAGGER_DEFS)) {
+            expect(def.armoredDamageMult).toBeLessThan(1.0);
+            expect(def.armoredDamageMult).toBeGreaterThan(0.0);
+            expect(def.staggerThreshold).toBeGreaterThan(0);
+            expect(def.staggerDuration).toBeGreaterThan(1.0);
+            expect(def.weakpointDamageMult).toBeGreaterThan(1.0);
+            expect(def.staggerColor).toBe(0xffe066);
         }
     });
 });

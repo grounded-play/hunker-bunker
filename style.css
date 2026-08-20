@@ -19233,6 +19233,64 @@ body.show-debug .map-tool-btn--debug { display: inline-flex; }
   color: #00f0ff;
 }
 
+/* ── Menu & Armory / Lobby UI Accessibility & Focus Rings ───────────── */
+.net-mode-card:focus-visible,
+.armory-weapon-card:focus-visible,
+.armory-attachable-card:focus-visible,
+.armory-embark-btn:focus-visible,
+.armory-back-btn:focus-visible,
+.net-btn:focus-visible,
+.close-modal:focus-visible,
+.net-private-input:focus-visible {
+  outline: 2px solid var(--accent-primary, #ff9f1c) !important;
+  outline-offset: 2px;
+  box-shadow: 0 0 16px rgba(255, 159, 28, 0.6) !important;
+}
+
+/* ── Colorblind Assist Palette Remapping (.colorblind-assist) ───────── */
+body.colorblind-assist {
+  --accent-primary: #facc15;      /* High-contrast Gold */
+  --accent-secondary: #38bdf8;    /* High-contrast Sky Blue */
+  --color-hp: #38bdf8;            /* Sky Blue instead of Red/Green */
+  --color-o2: #06b6d4;            /* Bright Cyan */
+  --color-danger: #c084fc;        /* Purple/Violet for critical danger */
+  --color-warning: #facc15;       /* Amber/Yellow */
+}
+
+body.colorblind-assist #hp-bar,
+body.colorblind-assist .health-bar-fill,
+body.colorblind-assist .vitals-hp-fill {
+  background: linear-gradient(90deg, #0284c7, #38bdf8) !important;
+  box-shadow: 0 0 12px rgba(56, 189, 248, 0.6) !important;
+}
+
+body.colorblind-assist #o2-bar,
+body.colorblind-assist .o2-bar-fill,
+body.colorblind-assist .vitals-o2-fill {
+  background: linear-gradient(90deg, #0e7490, #06b6d4) !important;
+  box-shadow: 0 0 12px rgba(6, 182, 212, 0.6) !important;
+}
+
+body.colorblind-assist .danger-indicator,
+body.colorblind-assist .critical-warning,
+body.colorblind-assist .low-o2-pulse {
+  border-color: #c084fc !important;
+  box-shadow: 0 0 16px rgba(192, 132, 252, 0.8) !important;
+}
+
+body.colorblind-assist .net-perk-chip--pvp,
+body.colorblind-assist .net-mode-card__badge--pvp {
+  border-color: #c084fc !important;
+  color: #e9d5ff !important;
+}
+
+body.colorblind-assist #net-mode-pvp-btn.active {
+  border-color: #c084fc !important;
+  background: rgba(192, 132, 252, 0.16) !important;
+  box-shadow: 0 0 24px rgba(192, 132, 252, 0.35) !important;
+}
+
+
 
 
 

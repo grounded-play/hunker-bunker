@@ -9,6 +9,36 @@ describe('MultiplayerLobby', () => {
         lobby = new MultiplayerLobby();
     });
 
+    describe('authoritative host state', () => {
+        it('mirrors the server host flag for the local roster entry', () => {
+            lobby.socket = { id: 'guest-socket' };
+
+            lobby.syncServerRoster({
+                'host-socket': { callsign: 'HOST', opClass: 'TANK', isHost: true, ready: true },
+                'guest-socket': { callsign: 'GUEST', opClass: 'SCOUT', isHost: false, ready: false }
+            });
+
+            expect(lobby.isLocalPlayerHost).toBe(false);
+            expect(lobby.players.get('host-socket').isHost).toBe(true);
+            expect(lobby.players.get('guest-socket').isHost).toBe(false);
+        });
+
+        it('updates the promoted guest when the relay broadcasts hostChanged', () => {
+            lobby.socket = { id: 'guest-socket' };
+            lobby.players.set('host-socket', { id: 'host-socket', isHost: true });
+            lobby.players.set('guest-socket', { id: 'guest-socket', isHost: false });
+            lobby.updateUiState = vi.fn();
+            lobby.reportSteamRichPresence = vi.fn();
+
+            lobby.handleHostChanged({ hostId: 'guest-socket' });
+
+            expect(lobby.isLocalPlayerHost).toBe(true);
+            expect(lobby.players.get('host-socket').isHost).toBe(false);
+            expect(lobby.players.get('guest-socket').isHost).toBe(true);
+            expect(lobby.updateUiState).toHaveBeenCalled();
+        });
+    });
+
     // docs/steamstorestatus.log Part A CORS fix: a packaged Electron
     // renderer's origin (file://, or null) gets rejected by strict
     // production HB_ALLOWED_ORIGINS, so minting the session via a plain

@@ -235,3 +235,121 @@ export const SPORESNAIL_FIGHT_DEF = Object.freeze({
         })
     ]
 });
+
+// ── Ordinary enemy stagger/armor/weakpoint grammar (Sprint 28 Lane C) ─
+// Extends the boss armor/weakpoint grammar to ordinary enemies with a
+// lighter posture/stagger mechanic. Sustained damage breaks poise to trigger
+// an exposed weakpoint window where the enemy is incapacitated and takes
+// increased damage.
+//
+// Def shape:
+// {
+//   type: 'cryosnail',
+//   armoredDamageMult: 0.5,     // damage taken while armor is intact (default 1)
+//   staggerThreshold: 2,        // raw damage accumulated to trigger stagger
+//   staggerDuration: 2.5,       // seconds the weakpoint window stays open
+//   weakpointDamageMult: 1.5,   // bonus multiplier during stagger window
+//   staggerColor: 0xffe066      // weakpoint highlight tint (golden)
+// }
+
+export function createEnemyStaggerState(def) {
+    if (!def) return null;
+    return {
+        def,
+        poise: 0,
+        staggered: false,
+        staggerTimer: 0,
+        defeated: false
+    };
+}
+
+export function isStaggered(state) {
+    return Boolean(state && state.staggered && state.staggerTimer > 0);
+}
+
+// Apply player damage against an enemy with stagger/armor state.
+// Outside stagger windows, damage is reduced by armoredDamageMult and
+// accumulates poise towards staggerThreshold.
+// When poise reaches or exceeds staggerThreshold, the enemy enters a
+// staggered weakpoint state for staggerDuration and takes weakpointDamageMult.
+// Returns an object: { dealt: number, triggeredStagger: boolean, isWeakpoint: boolean }
+export function applyStaggerDamage(state, amount = 0) {
+    if (!state || amount <= 0 || state.defeated) {
+        return { dealt: 0, triggeredStagger: false, isWeakpoint: false };
+    }
+    const def = state.def;
+    const staggered = isStaggered(state);
+
+    if (staggered) {
+        const mult = def.weakpointDamageMult ?? 1.5;
+        const raw = amount * mult;
+        const dealt = raw > 0 ? Math.max(1, Math.round(raw)) : 0;
+        return { dealt, triggeredStagger: false, isWeakpoint: true };
+    }
+
+    // Armored state
+    const mult = def.armoredDamageMult ?? 1.0;
+    const raw = amount * mult;
+    const dealt = raw > 0 ? Math.max(1, Math.round(raw)) : 0;
+
+    state.poise = (state.poise || 0) + amount;
+    let triggeredStagger = false;
+    if (state.poise >= (def.staggerThreshold ?? 2)) {
+        state.staggered = true;
+        state.staggerTimer = def.staggerDuration ?? 2.0;
+        state.poise = 0;
+        triggeredStagger = true;
+    }
+
+    return { dealt, triggeredStagger, isWeakpoint: false };
+}
+
+// Advance stagger timer by delta. Returns list of events:
+//   { type: 'stagger-end' }
+export function tickStaggerState(state, delta) {
+    if (!state) return [];
+    const events = [];
+    if (state.staggered) {
+        state.staggerTimer -= delta;
+        if (state.staggerTimer <= 0) {
+            state.staggered = false;
+            state.staggerTimer = 0;
+            state.poise = 0;
+            events.push({ type: 'stagger-end' });
+        }
+    }
+    return events;
+}
+
+export const CRYOSNAIL_STAGGER_DEF = Object.freeze({
+    type: 'cryosnail',
+    armoredDamageMult: 0.5,
+    staggerThreshold: 2,
+    staggerDuration: 2.5,
+    weakpointDamageMult: 1.5,
+    staggerColor: 0xffe066
+});
+
+export const BIO_CHARGER_STAGGER_DEF = Object.freeze({
+    type: 'bio_charger',
+    armoredDamageMult: 0.6,
+    staggerThreshold: 3,
+    staggerDuration: 2.0,
+    weakpointDamageMult: 1.5,
+    staggerColor: 0xffe066
+});
+
+export const SENTINEL_STAGGER_DEF = Object.freeze({
+    type: 'sentinel',
+    armoredDamageMult: 0.5,
+    staggerThreshold: 2,
+    staggerDuration: 3.0,
+    weakpointDamageMult: 1.5,
+    staggerColor: 0xffe066
+});
+
+export const ENEMY_STAGGER_DEFS = Object.freeze({
+    cryosnail: CRYOSNAIL_STAGGER_DEF,
+    bio_charger: BIO_CHARGER_STAGGER_DEF,
+    sentinel: SENTINEL_STAGGER_DEF
+});
