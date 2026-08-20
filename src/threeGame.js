@@ -130,6 +130,7 @@ import {
 import { HiveSite } from './hiveSite.js';
 import { describeDialogueProgress, leaderKeyFromName, nextDialogueBeat, isFinalStage } from './data/campDialogue.js';
 import { blackBoxStore } from './blackBox.js';
+import { runCheckpointStore } from './runCheckpoint.js';
 import {
     ARC_PRELUDE_ENABLED,
     AUTHORED_WORLD_TILES_ENABLED,
@@ -440,6 +441,8 @@ const MAX_ACTIVE_PROJECTILES = 120;
 const TURRET_RANGE = 8.0;
 const TURRET_DAMAGE = 1;
 const FALL_DAMAGE_BASE = 2;
+// docs/sprint28plan.md Lane D: coarse crash-recovery checkpoint interval.
+const RUN_CHECKPOINT_INTERVAL_SECONDS = 20;
 const POCKET_WORLD_Y = -6; // fixed depth below the surface (y=0)
 const WALL_HP_DAMAGED = 5;
 const WALL_HP_STANDARD = 8;
@@ -6695,6 +6698,7 @@ export class ThreeGame {
         this.updateHiddenPlayerMarker(now);
         this.updateVitals(delta);
         this.updateO2StartupSequence(delta);
+        this.updateRunCheckpoint?.(delta);
         this.updateLoopStep();
         // Surface-only systems: enemy AI, hazards, and prompts that key off
         // X/Z proximity to the player with no notion of Y/isInPocket
@@ -8785,6 +8789,34 @@ export class ThreeGame {
             coin,
             total: health + weapon + coin
         };
+    }
+
+    // docs/sprint28plan.md Lane D: coarse crash-recovery checkpoint, not a
+    // full save/resume system. Writes a lightweight "run in progress"
+    // snapshot on a timer while a run is live; cleared on every graceful
+    // way a run can end (handleDeath, handleExtraction, a fresh NEW RUN --
+    // see main.js's startNewTacticalRunFlow). If a snapshot is still
+    // present at next boot, that's proof the previous session never
+    // reached a graceful end (crash/force-quit/tab-close) -- main.js's
+    // boot sequence converts it into a normal black-box death-stain entry.
+    updateRunCheckpoint(delta) {
+        if (this.isPlayerDead || !this.player) return;
+        this._runCheckpointTimer = (this._runCheckpointTimer ?? 0) - delta;
+        if (this._runCheckpointTimer > 0) return;
+        this._runCheckpointTimer = RUN_CHECKPOINT_INTERVAL_SECONDS;
+
+        const inventory = this.getSessionInventory();
+        runCheckpointStore.save({
+            x: this.player.position.x,
+            z: this.player.position.z,
+            depth: this.maxDepthTierReached,
+            classType: this.playerType,
+            salvage: {
+                tech: inventory.weapon ?? 0,
+                coin: inventory.coin ?? 0,
+                med: inventory.health ?? 0
+            }
+        });
     }
 
     showBunkerLine(text) {
@@ -15602,6 +15634,9 @@ export class ThreeGame {
     handleDeath(reason = 'hazard') {
         if (this.isPlayerDead) return;
         this.isPlayerDead = true;
+        // A real death is now gracefully recorded via blackBoxStore.recordDeath
+        // below -- the crash-only checkpoint has nothing left to add.
+        runCheckpointStore.clear();
         this.applyMilestoneBossRuntimeEvent?.({
             type: MILESTONE_BOSS_EVENT_TYPES.PLAYER_DEATH
         });
@@ -15903,6 +15938,9 @@ export class ThreeGame {
         }
         if (this.missionState) this.missionState.status = 'extracted';
         this.inputEnabled = false;
+        // A clean extraction is a graceful run end -- nothing left to
+        // crash-recover, and the salvage below is being deposited for real.
+        runCheckpointStore.clear();
 
         const inventory = this.getSessionInventory();
         const depositPayload = {

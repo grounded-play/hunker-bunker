@@ -565,7 +565,7 @@ of the existing grammar), changing how a player has to fight them.
 **Test approach:** unit tests on the new stagger-state logic; live/manual
 verification that the enemy behavior actually changes during combat.
 
-### Lane D — Accessibility + save/recovery floor-raising
+### Lane D — Accessibility + save/recovery floor-raising — **DONE, 2026-08-20**
 **Files:** `style.css` (colorblind CSS — currently zero rules for
 `.colorblind-assist`, needs real palette remapping for HP/O2/danger-state
 UI elements at minimum), a new small autosave/checkpoint module (does not
@@ -581,6 +581,40 @@ touches the least shared surface with A/B/C.
 **Test approach:** colorblind — visual diff/manual check with a
 deuteranopia/protanopia simulator. Save/recovery — unit test the
 checkpoint write/read cycle, manual test of the actual crash-recovery flow.
+
+**Colorblind (done earlier, commit `f726218`):** retargeted `.colorblind-assist`
+CSS at the real HP/O2/danger selectors instead of hallucinated ones.
+
+**Save/recovery (done, commits pending push):** deliberately did NOT build a
+full save/resume system — the actual gap, verified by reading the code
+first rather than assuming, was narrower than it looked. `src/blackBox.js`
+already handles a *graceful* in-game death gracefully (records a
+recoverable-salvage marker at the death site); `bank.addShells()` already
+persists shell currency synchronously on every pickup. The real hole was
+specifically an *ungraceful* process death (crash/force-quit/tab-close)
+happening before `handleDeath()` ever runs — nothing got recorded at all.
+
+New `src/runCheckpoint.js` (same injectable-storage factory pattern as
+`blackBox.js`/`bank.js`) periodically snapshots position/depth/class/salvage
+during a live run (`ThreeGame.updateRunCheckpoint`, every 20s, plus
+immediately on run start) and is cleared on every graceful run-end:
+`handleDeath`, `handleExtraction`, and a fresh NEW RUN
+(`main.js`'s `startNewTacticalRunFlow`). If a checkpoint is still present at
+next boot, that's proof of a crash — `main.js`'s `recoverCrashedRunCheckpoint()`
+converts it into a normal `blackBoxStore.recordDeath()` entry
+(`cause: 'crash-recovered'`), so the *existing*, already-shipped black-box
+recovery flow is the only recovery UX a player ever sees, whether they died
+or crashed. A checkpoint with zero salvage is just cleared silently — nothing
+worth recovering.
+
+Verified live in a real browser (Playwright against the Vite dev server, not
+just unit tests, since `main.js`'s boot sequence isn't unit-tested anywhere
+in this codebase): seeded a checkpoint in `localStorage`, reloaded, confirmed
+the checkpoint was cleared and a correctly-populated black box appeared
+(`cause: 'crash-recovered'`, right x/z/depth/class/salvage, proper log
+string), and confirmed the title screen's CONTINUE button picked it up. Also
+verified a zero-salvage checkpoint is cleared without spawning an empty
+marker. See `src/runCheckpoint.test.js`, `src/threeGame.runCheckpoint.test.js`.
 
 ### Lane E — Real-world acceptance evidence (do last, needs A-D's output)
 **Files:** none to edit — this lane is verification, not implementation.

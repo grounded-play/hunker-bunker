@@ -14,6 +14,7 @@ import { getDeathCinematicSpec, getEventCinematicSpec, normalizeCinematicStillSp
 import { DialogueManager } from './src/dialogue.js';
 import { VitalsHUD } from './src/vitals.js';
 import { blackBoxStore } from './src/blackBox.js';
+import { runCheckpointStore, hasRecoverableSalvage } from './src/runCheckpoint.js';
 import { codexStore, getClassWreckageLog, recordSpecimen0047OriginIfFound } from './src/codex.js';
 import { CODEX_ENTRIES, CODEX_CATEGORIES, getCodexEntry, CODEX_TOTAL, LORE_METADATA } from './src/data/codex.js';
 import { pickRunModifier } from './src/data/runModifiers.js';
@@ -12048,6 +12049,37 @@ function initTacticalCursor() {
     });
 }
 
+// docs/sprint28plan.md Lane D: if a run-in-progress checkpoint is still on
+// disk at boot, the previous session never reached a graceful end (death,
+// extraction, or a fresh NEW RUN all clear it -- see src/threeGame.js's
+// handleDeath/handleExtraction and startNewTacticalRunFlow below) -- proof
+// of a crash, force-quit, or tab-close mid-run. Convert it into a normal
+// black-box death-stain entry (same recovery flow a real death already
+// uses) so a crash degrades to "died with recoverable salvage" instead of
+// silent total loss. A checkpoint with no salvage yet is just cleared --
+// nothing to recover, no point spawning an empty marker.
+function recoverCrashedRunCheckpoint() {
+    try {
+        const checkpoint = runCheckpointStore.load();
+        if (!checkpoint) return;
+        if (hasRecoverableSalvage(checkpoint)) {
+            const { tech, coin, med } = checkpoint.salvage;
+            blackBoxStore.recordDeath({
+                x: checkpoint.x,
+                z: checkpoint.z,
+                depth: checkpoint.depth,
+                classType: checkpoint.classType,
+                salvage: checkpoint.salvage,
+                cause: 'crash-recovered',
+                log: `Operator ${checkpoint.classType} signal lost mid-expedition (unexpected shutdown). Recoverable salvage: ${tech} TECH / ${coin} COIN / ${med} MED.`
+            });
+        }
+        runCheckpointStore.clear();
+    } catch {
+        // Best effort -- never block boot on this.
+    }
+}
+
 // Initial State Setup
 document.addEventListener('DOMContentLoaded', async () => {
     traceBootPhase('dom-content-loaded', {
@@ -12055,6 +12087,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         devicePixelRatio: window.devicePixelRatio
     });
     startBootLongTaskDiagnostics();
+    recoverCrashedRunCheckpoint();
     window.AudioManager = AudioManager; // Expose globally for the 3D engine/Telemeters
     preloadDoorAssets();
     initTacticalCursor();
@@ -12288,6 +12321,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         transitionFromTitleToMenu(() => {
             clearSaveData();
             blackBoxStore.clear();
+            runCheckpointStore.clear();
             window.game?.clearBlackBoxMarker?.();
             updateContinueButtonState();
             renderRosterModal('new_game');
