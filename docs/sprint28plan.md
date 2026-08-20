@@ -203,13 +203,26 @@ when they do), not by engineering effort to fix.
    parallel investigations): zero call sites for `depthContract`/
    `DEPTH_CONTRACT` outside its own file. If a reviewer or player is told
    "depth is a legible bet," today it demonstrably isn't one.
-3. **The colorblind accessibility toggle is a convincing fake.** Fully wired
-   UI, state, and persistence — and zero CSS behind it. This is worse than
-   an absent feature: a colorblind player who finds and enables the setting
-   gets nothing, with no error, no indication it didn't work. This is
-   exactly the kind of "optional-chained failure" this review was asked to
-   surface. Cheap to fix (either wire real colorblind palettes or remove the
-   setting until it's real) but currently a live credibility risk.
+3. **The colorblind accessibility toggle was a convincing fake, fixed
+   2026-08-20 — twice.** Originally: fully wired UI, state, and persistence,
+   zero CSS behind it. A concurrent Sprint 28 pass then added real CSS
+   (`body.colorblind-assist` palette remap) — but targeted selectors
+   (`#hp-bar`, `.health-bar-fill`, `.vitals-hp-fill`, `#o2-bar`,
+   `.o2-bar-fill`, `.vitals-o2-fill`, `.danger-indicator`,
+   `.critical-warning`, `.low-o2-pulse`) that don't exist anywhere in
+   `index.html`/`main.js` — a second, differently-shaped version of the same
+   bug (CSS that parses and "looks" done, targeting nothing real). Traced the
+   actual HP/O2 markup (`.vitals-hearts` icon count for HP — already
+   colorblind-safe by design, no color-only info — and
+   `.vitals-panel__o2-bar` under `.vitals-panel--o2-warning`/
+   `--o2-critical`, toggled by `src/vitals.js`, not `main.js`) and retargeted
+   the critical-state remap there instead. Live-verified via direct
+   `fetch(..., {cache: 'no-store'})` against the served stylesheet (a normal
+   browser reload wasn't enough to prove this one — the versioned CSS URL is
+   served `Cache-Control: immutable, max-age=1yr`, so a tab that loaded the
+   page before this fix landed cannot see it without an explicit cache
+   bypass; not a codebase bug, a dev-session caching artifact worth knowing
+   about if a future check here seems to contradict a source read).
 4. **Cross-region Steam lobby discovery is confirmed broken**, not merely
    unverified — traced to the installed `steamworks.js` binding lacking a
    distance-filter parameter, which per Valve's own docs defaults Steam to
@@ -522,18 +535,18 @@ message), `src/runDrops.js` (`rollEnemyLootDrop`'s new `ring` param),
 exported got a real caller, not a rewritten table.
 
 ### Lane B — Transformative relics wiring
-**Files:** `src/runDrops.js` (the 7 inert relics: `punctured_lung`,
-`scrap_cycler`, `parasitic_magazine`, `false_telemetry`, `vesper_doctrine`,
-`cryo_breach`, `queens_milk` — each has a real `stats` object already, just
-no gameplay hook reads it), `src/threeGame.js` (wherever each relic's effect
+**Files:** `src/runDrops.js` (the remaining 3 inert relics:
+`scrap_cycler`, `vesper_doctrine`, `queens_milk` — each has a real `stats`
+object already, just no gameplay hook reads it), `src/threeGame.js` (wherever each relic's effect
 actually needs to hook in — reload economy, enemy-aggro AI, faction-aware
 healing, etc., per relic).
-**Done means:** as many of the 7 as time allows get one real, testable
+**Done means:** each remaining relic gets one real, testable
 gameplay hook each, following the `last_breath`/`applyLastBreathDamage`
 pattern already proven in this codebase (a pure function in `runDrops.js`,
 called from the relevant `threeGame.js` combat/state site, unit-tested).
-Explicitly OK to land 3-4 real ones rather than force all 7 — quality over
-count, per the sprint's own non-goals.
+Five of the original eight are now wired; finish the remaining three only
+when their effects have a clear player-facing decision and a stable runtime
+integration. Do not add a shallow hook merely to reach 8/8.
 **Depends on:** nothing directly, but coordinate with Lane A if any relic's
 effect should scale with ring depth (natural overlap, not a hard blocker).
 **Test approach:** one unit test per newly-wired relic's pure function,
