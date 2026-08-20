@@ -383,6 +383,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
     },
     // docs/steam-lobby-integration-plan-2026-08-20.md step 2.
     steamCreateLobby: (options) => ipcRenderer.invoke('hb:steamCreateLobby', options),
+    steamGetLobbies: () => ipcRenderer.invoke('hb:steamGetLobbies'),
     steamJoinLobby: (lobbyId) => ipcRenderer.invoke('hb:steamJoinLobby', lobbyId),
     steamLeaveLobby: () => ipcRenderer.invoke('hb:steamLeaveLobby'),
     steamGetLobby: () => ipcRenderer.invoke('hb:steamGetLobby'),

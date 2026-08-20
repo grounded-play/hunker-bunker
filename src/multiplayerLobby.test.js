@@ -90,7 +90,7 @@ describe('MultiplayerLobby', () => {
 
                 await lobby.maybeCreateSteamLobby();
 
-                expect(steamCreateLobby).toHaveBeenCalledWith({ mode: MULTIPLAYER_MODES.COOP, maxPlayers: 4, build: null });
+                expect(steamCreateLobby).toHaveBeenCalledWith({ mode: MULTIPLAYER_MODES.COOP, maxPlayers: 4, build: null, visibility: 'public' });
                 expect(lobby.steamLobbyId).toBe('555');
                 expect(lobby.roomCode).toBe('STEAM-555');
             });
@@ -116,6 +116,99 @@ describe('MultiplayerLobby', () => {
 
                 expect(steamCreateLobby).not.toHaveBeenCalled();
                 expect(lobby.roomCode).toBe('STEAM-999');
+            });
+        });
+
+        // docs/logs/log8.json / user report: "the invite friends didn't
+        // open the Steam overlay." matchmaking.Lobby.openInviteDialog()
+        // never throws for "overlay unavailable" and steamworks.js exposes
+        // no way to check overlay availability directly -- launchedViaSteam
+        // (electron/main.cjs) is the best available proxy, checked here
+        // before ever attempting the dialog so a player running the
+        // packaged binary directly gets an honest, specific toast instead
+        // of a silently dead button.
+        describe('handleSteamInviteClick', () => {
+            it('warns and never attempts the dialog when not launched via Steam', async () => {
+                originalWindow = globalThis.window;
+                const openInviteDialogSpy = vi.fn();
+                const showToastNotification = vi.fn();
+                globalThis.window = {
+                    electronAPI: {
+                        getSteamInfo: vi.fn().mockResolvedValue({ launchedViaSteam: false }),
+                        steamOpenInviteDialog: openInviteDialogSpy
+                    },
+                    showToastNotification
+                };
+                lobby.steamLobbyId = '555';
+
+                await lobby.handleSteamInviteClick();
+
+                expect(openInviteDialogSpy).not.toHaveBeenCalled();
+                expect(showToastNotification).toHaveBeenCalledWith(expect.stringContaining('LAUNCH HUNKER BUNKER FROM STEAM'));
+            });
+
+            it('attempts the dialog and reports success when launched via Steam', async () => {
+                originalWindow = globalThis.window;
+                const showToastNotification = vi.fn();
+                globalThis.window = {
+                    electronAPI: {
+                        steamCreateLobby: vi.fn(),
+                        getSteamInfo: vi.fn().mockResolvedValue({ launchedViaSteam: true }),
+                        steamOpenInviteDialog: vi.fn().mockResolvedValue({ ok: true })
+                    },
+                    showToastNotification,
+                    AudioManager: { play: vi.fn() }
+                };
+                lobby.steamLobbyId = '555';
+
+                await lobby.handleSteamInviteClick();
+
+                expect(showToastNotification).toHaveBeenCalledWith(expect.stringContaining('SELECT A FRIEND'));
+            });
+
+            it('reports failure distinctly when the dialog call itself fails', async () => {
+                originalWindow = globalThis.window;
+                const showToastNotification = vi.fn();
+                const steamOpenInviteDialog = vi.fn().mockResolvedValue({ ok: false, reason: 'steam_lobby_invite_dialog_failed' });
+                globalThis.window = {
+                    electronAPI: {
+                        steamCreateLobby: vi.fn(),
+                        getSteamInfo: vi.fn().mockResolvedValue({ launchedViaSteam: true }),
+                        steamOpenInviteDialog
+                    },
+                    showToastNotification
+                };
+                lobby.steamLobbyId = '555';
+
+                await lobby.handleSteamInviteClick();
+
+                expect(steamOpenInviteDialog).toHaveBeenCalled();
+                expect(showToastNotification).toHaveBeenCalledWith(expect.stringContaining('COULD NOT OPEN'));
+            });
+
+            it('does nothing at all without an active lobby', async () => {
+                originalWindow = globalThis.window;
+                const showToastNotification = vi.fn();
+                const getSteamInfo = vi.fn();
+                globalThis.window = { electronAPI: { getSteamInfo }, showToastNotification };
+                lobby.steamLobbyId = null;
+
+                await lobby.handleSteamInviteClick();
+
+                expect(getSteamInfo).not.toHaveBeenCalled();
+                expect(showToastNotification).not.toHaveBeenCalled();
+            });
+        });
+
+        // docs/logs/log8.json / user report: no way to see or join a
+        // public Steam lobby at all -- getSteamLobbies() (matchmaking.
+        // Lobby list) was never wired to anything.
+        describe('refreshSteamLobbies', () => {
+            it('is safe to call when there is no document (non-browser context)', async () => {
+                originalWindow = globalThis.window;
+                globalThis.window = { electronAPI: { steamGetLobbies: vi.fn() } };
+
+                await expect(lobby.refreshSteamLobbies()).resolves.toBeUndefined();
             });
         });
 

@@ -45,9 +45,39 @@ function hasSteamLobbyApi() {
     return typeof window !== 'undefined' && Boolean(window.electronAPI?.steamCreateLobby);
 }
 
-export async function createSteamLobby({ mode = 'coop', maxPlayers = 4, build = null } = {}) {
+// visibility defaults to 'public' -- docs/logs/log8.json / user report: a
+// FriendsOnly lobby (this file's original default) never shows up in
+// getSteamLobbies() below (Steamworks' RequestLobbyList only returns
+// Public lobbies), which made "see and join a public lobby" structurally
+// impossible regardless of any UI built on top. 'friends' and 'private'
+// remain available for a caller that explicitly wants an invite-only session.
+export async function createSteamLobby({ mode = 'coop', maxPlayers = 4, build = null, visibility = 'public' } = {}) {
     if (!hasSteamLobbyApi()) return { ok: false, reason: 'not_electron' };
-    return window.electronAPI.steamCreateLobby({ mode, maxPlayers, build });
+    return window.electronAPI.steamCreateLobby({ mode, maxPlayers, build, visibility });
+}
+
+// Lists this game's currently-open Public lobbies (electron/main.cjs's
+// hb:steamGetLobbies already filters out anything not carrying this
+// game's hb_protocol metadata). Empty array outside Electron rather than
+// an error -- there's nothing to browse, not a failure.
+export async function getSteamLobbies() {
+    if (!hasSteamLobbyApi()) return { ok: true, lobbies: [] };
+    return window.electronAPI.steamGetLobbies();
+}
+
+// docs/logs/log8.json / user report: Invite Friends "didn't open the Steam
+// overlay." The overlay (and therefore the invite dialog) can only ever
+// work when this process was actually launched BY Steam -- running the
+// packaged binary directly bypasses Steam's overlay hook entirely, and
+// steamworks.js exposes no way to detect overlay availability directly
+// (confirmed against the type defs). electron/main.cjs's launchedViaSteam
+// flag is the best available proxy, so UI can warn accurately instead of
+// the invite button silently doing nothing. Returns null (genuinely
+// unknown, not "false") outside Electron.
+export async function isLaunchedViaSteam() {
+    if (typeof window === 'undefined' || !window.electronAPI?.getSteamInfo) return null;
+    const info = await window.electronAPI.getSteamInfo();
+    return Boolean(info?.launchedViaSteam);
 }
 
 export async function joinSteamLobby(lobbyId) {

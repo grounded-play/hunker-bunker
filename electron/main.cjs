@@ -186,7 +186,19 @@ function getSteamIdentitySnapshot() {
         betaName,
         qaToolsEnabled: qaToolsEnabled(betaName),
         cloud: getSteamCloudStatusSnapshot(),
-        timelineAvailable: Boolean(getSteamTimelineApi())
+        timelineAvailable: Boolean(getSteamTimelineApi()),
+        // docs/logs/log8.json / user report: invite dialog "didn't open the
+        // Steam overlay." matchmaking.Lobby.openInviteDialog() (like the
+        // overlay generally) only works when this process was actually
+        // launched BY Steam -- Steam's overlay hook (LD_PRELOAD on Linux,
+        // DLL injection on Windows) never attaches to a binary launched
+        // directly. steamworks.js exposes no isOverlayEnabled()-style
+        // check at all (confirmed: grepped client.d.ts's utils/overlay
+        // namespaces, neither has one), so this is the best available
+        // proxy -- already computed once for the startup diagnostic log
+        // (see initSteam's 'starting' entry), surfaced here so the
+        // renderer can warn instead of silently doing nothing.
+        launchedViaSteam: Boolean(process.env.SteamAppId || process.env.SteamGameId)
     };
 
     if (!steamClient) {
@@ -910,9 +922,20 @@ ipcMain.handle('hb:steamInfo', () => getSteamIdentitySnapshot());
 const HB_LOBBY_PROTOCOL_VERSION = '1';
 // matchmaking.LobbyType is a TypeScript const enum with no runtime object
 // anywhere in the installed package (confirmed: grepped the compiled JS,
-// nothing) -- createLobby() genuinely expects the raw number. 1 =
-// FriendsOnly per node_modules/steamworks.js/client.d.ts.
-const STEAM_LOBBY_TYPE_FRIENDS_ONLY = 1;
+// nothing) -- createLobby() genuinely expects the raw number, per
+// node_modules/steamworks.js/client.d.ts: 0 Private, 1 FriendsOnly,
+// 2 Public, 3 Invisible.
+const STEAM_LOBBY_TYPE = Object.freeze({ private: 0, friends: 1, public: 2, invisible: 3 });
+// Real playtest gap (docs/logs/log8.json / user report): lobbies were only
+// ever created FriendsOnly, which Steamworks' unfiltered RequestLobbyList
+// (what matchmaking.getLobbies() below wraps) never returns -- a
+// FriendsOnly lobby is invite-only by design, not browsable. That made
+// "see and join a public lobby" structurally impossible regardless of any
+// UI, since the lobby itself was never the right visibility to be found.
+// Public is now the default so a freshly created lobby is actually
+// discoverable; friends/private remain available via the `visibility`
+// param for a player who explicitly wants an invite-only session.
+const DEFAULT_STEAM_LOBBY_VISIBILITY = 'public';
 
 function serializeLobby(lobby) {
     if (!lobby) return null;
@@ -929,12 +952,13 @@ function serializeLobby(lobby) {
     }
 }
 
-ipcMain.handle('hb:steamCreateLobby', async (_e, { mode = 'coop', maxPlayers = 4, build = null } = {}) => {
+ipcMain.handle('hb:steamCreateLobby', async (_e, { mode = 'coop', maxPlayers = 4, build = null, visibility = DEFAULT_STEAM_LOBBY_VISIBILITY } = {}) => {
     if (!steamClient?.matchmaking?.createLobby) {
         return { ok: false, reason: 'steam_lobby_unavailable' };
     }
+    const lobbyType = STEAM_LOBBY_TYPE[visibility] ?? STEAM_LOBBY_TYPE[DEFAULT_STEAM_LOBBY_VISIBILITY];
     try {
-        const lobby = await steamClient.matchmaking.createLobby(STEAM_LOBBY_TYPE_FRIENDS_ONLY, Math.max(2, Math.min(4, Number(maxPlayers) || 4)));
+        const lobby = await steamClient.matchmaking.createLobby(lobbyType, Math.max(2, Math.min(4, Number(maxPlayers) || 4)));
         lobby.mergeFullData({
             hb_protocol: HB_LOBBY_PROTOCOL_VERSION,
             hb_mode: String(mode || 'coop'),
@@ -943,11 +967,33 @@ ipcMain.handle('hb:steamCreateLobby', async (_e, { mode = 'coop', maxPlayers = 4
             hb_room: `STEAM-${lobby.id}`
         });
         currentLobby = lobby;
-        recordSteamDiagnostic('info', 'steam_lobby_created', 'Created Steam lobby', { lobbyId: String(lobby.id), mode });
+        recordSteamDiagnostic('info', 'steam_lobby_created', 'Created Steam lobby', { lobbyId: String(lobby.id), mode, visibility });
         return { ok: true, lobby: serializeLobby(lobby) };
     } catch (err) {
         recordSteamDiagnostic('warn', 'steam_lobby_create_failed', 'Could not create Steam lobby', serializeError(err));
         return { ok: false, reason: 'steam_lobby_create_failed', message: err?.message ?? String(err) };
+    }
+});
+
+// docs/logs/log8.json / user report: no way to see or join a public lobby
+// at all -- matchmaking.getLobbies() (Steamworks' unfiltered
+// RequestLobbyList, scoped to this app's AppID by the SDK itself) was
+// never wired to anything. Filters to lobbies actually carrying this
+// game's hb_protocol so a stray same-appid lobby from a totally different
+// build/tool can't show up as if it were a joinable Hunker session.
+ipcMain.handle('hb:steamGetLobbies', async () => {
+    if (!steamClient?.matchmaking?.getLobbies) {
+        return { ok: false, reason: 'steam_lobby_unavailable' };
+    }
+    try {
+        const lobbies = await steamClient.matchmaking.getLobbies();
+        const serialized = lobbies
+            .map((lobby) => serializeLobby(lobby))
+            .filter((lobby) => lobby && lobby.data?.hb_protocol);
+        return { ok: true, lobbies: serialized };
+    } catch (err) {
+        recordSteamDiagnostic('warn', 'steam_lobby_list_failed', 'Could not list Steam lobbies', serializeError(err));
+        return { ok: false, reason: 'steam_lobby_list_failed', message: err?.message ?? String(err) };
     }
 });
 

@@ -10,10 +10,12 @@ import {
     createSteamLobby,
     joinSteamLobby,
     leaveSteamLobby,
+    getSteamLobbies,
     openSteamInviteDialog,
     setSteamRichPresence,
     onSteamLobbyJoinRequested,
-    deriveRelayRoomFromLobbyId
+    deriveRelayRoomFromLobbyId,
+    isLaunchedViaSteam
 } from './steamLobbyClient.js';
 
 export const MULTIPLAYER_MODES = Object.freeze({
@@ -201,6 +203,9 @@ export class MultiplayerLobby {
 
         const steamInviteBtn = document.getElementById('net-steam-invite-btn');
         steamInviteBtn?.addEventListener('click', () => this.handleSteamInviteClick());
+
+        const steamLobbiesRefreshBtn = document.getElementById('net-steam-lobbies-refresh-btn');
+        steamLobbiesRefreshBtn?.addEventListener('click', () => this.refreshSteamLobbies());
     }
 
     openModal() {
@@ -212,6 +217,10 @@ export class MultiplayerLobby {
         if (!this.connected) {
             this.connect();
         }
+        // docs/logs/log8.json / user report: no way to see public lobbies
+        // at all. No-op outside Electron (getSteamLobbies resolves
+        // { ok: true, lobbies: [] } there).
+        this.refreshSteamLobbies();
     }
 
     closeModal() {
@@ -472,8 +481,69 @@ export class MultiplayerLobby {
     // than Hunker building a friends picker itself.
     async handleSteamInviteClick() {
         if (!this.steamLobbyId) return;
-        await openSteamInviteDialog();
-        if (typeof window !== 'undefined') window.AudioManager?.play?.('fx_menu_click', { volume: 0.3, bus: 'sfx' });
+        // docs/logs/log8.json / user report: "the invite friends didn't
+        // open the Steam overlay." matchmaking.Lobby.openInviteDialog()
+        // never throws for "overlay unavailable" -- it's a fire-and-forget
+        // native call with no success signal at all (confirmed against
+        // steamworks.js's own type defs), and the overlay itself only ever
+        // attaches when this process was launched BY Steam. Checking that
+        // first means a player running the packaged binary directly gets
+        // an honest, specific message instead of a silently dead button.
+        const launchedViaSteam = await isLaunchedViaSteam();
+        if (launchedViaSteam === false) {
+            window.showToastNotification?.('STEAM OVERLAY UNAVAILABLE — LAUNCH HUNKER BUNKER FROM STEAM TO INVITE FRIENDS');
+            return;
+        }
+        const result = await openSteamInviteDialog();
+        if (result?.ok) {
+            window.showToastNotification?.('STEAM OVERLAY: SELECT A FRIEND TO INVITE');
+            window.AudioManager?.play?.('fx_menu_click', { volume: 0.3, bus: 'sfx' });
+        } else {
+            window.showToastNotification?.('COULD NOT OPEN STEAM INVITE DIALOG');
+        }
+    }
+
+    // docs/logs/log8.json / user report: no way to see or join a public
+    // Steam lobby at all. Populates #net-steam-lobbies-list; no-op outside
+    // Electron (getSteamLobbies resolves an empty list there, so the group
+    // stays hidden -- see updateUiState()).
+    async refreshSteamLobbies() {
+        if (typeof document === 'undefined') return;
+        const listEl = document.getElementById('net-steam-lobbies-list');
+        if (!listEl) return;
+        const result = await getSteamLobbies();
+        const lobbies = result?.ok ? (result.lobbies ?? []) : [];
+
+        if (!result?.ok) {
+            listEl.innerHTML = '<div class="net-spec-row"><span class="net-spec-val">Could not load public lobbies.</span></div>';
+            return;
+        }
+        if (lobbies.length === 0) {
+            listEl.innerHTML = '<div class="net-spec-row"><span class="net-spec-val">No public lobbies found. Try REFRESH, or create your own.</span></div>';
+            return;
+        }
+
+        listEl.innerHTML = '';
+        for (const lobby of lobbies) {
+            const row = document.createElement('div');
+            row.className = 'net-spec-row';
+
+            const label = document.createElement('span');
+            label.className = 'net-spec-name';
+            const mode = (lobby.data?.hb_mode || 'coop').toUpperCase();
+            const memberCount = lobby.members?.length ?? 0;
+            label.textContent = `${mode} // ${memberCount}/4 OPERATIVES`;
+
+            const joinBtn = document.createElement('button');
+            joinBtn.type = 'button';
+            joinBtn.className = 'net-code-copy-btn';
+            joinBtn.textContent = 'JOIN';
+            joinBtn.addEventListener('click', () => this.handleSteamLobbyJoinRequested(lobby.id));
+
+            row.appendChild(label);
+            row.appendChild(joinBtn);
+            listEl.appendChild(row);
+        }
     }
 
     // Fires for cold-start +connect_lobby, a second-instance relaunch, and
@@ -750,6 +820,14 @@ export class MultiplayerLobby {
 
         const steamInviteBtn = document.getElementById('net-steam-invite-btn');
         steamInviteBtn?.classList.toggle('hidden', !this.steamLobbyId);
+
+        // docs/logs/log8.json / user report: shown whenever Steam Lobby
+        // integration is available at all, not gated on steamLobbyId --
+        // browsing/joining a public lobby is exactly how a player without
+        // one yet gets into a session.
+        const steamLobbiesGroup = document.getElementById('net-steam-lobbies-group');
+        const hasSteamLobbyApi = typeof window !== 'undefined' && Boolean(window.electronAPI?.steamCreateLobby);
+        steamLobbiesGroup?.classList.toggle('hidden', !hasSteamLobbyApi);
 
         const statusEl = document.getElementById('net-status-pill');
         const connectBtn = document.getElementById('net-connect-btn');

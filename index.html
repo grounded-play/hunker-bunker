@@ -2511,6 +2511,22 @@
                   <span class="net-spec-val">SYNCHRONIZED SPLIT-DROP</span>
                 </div>
               </div>
+
+              <!-- docs/logs/log8.json / user report: no way to see or join
+                   a public Steam lobby at all. Electron/Steam only --
+                   hidden by default, shown by multiplayerLobby.js's
+                   updateUiState() when window.electronAPI is present. -->
+              <div class="net-field-group hidden" id="net-steam-lobbies-group">
+                <div class="net-code-display">
+                  <span class="net-field-label">PUBLIC STEAM LOBBIES</span>
+                  <button type="button" class="net-code-copy-btn" id="net-steam-lobbies-refresh-btn" title="Refresh Public Lobbies">
+                    <span>🔄</span> REFRESH
+                  </button>
+                </div>
+                <div class="net-protocol-specs" id="net-steam-lobbies-list">
+                  <div class="net-spec-row"><span class="net-spec-val">No public lobbies found yet.</span></div>
+                </div>
+              </div>
             </div>
           </div>
 
