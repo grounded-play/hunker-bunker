@@ -334,6 +334,17 @@ review found directly in the code and git history.
 
 ### Priorities (in order)
 
+0. **P0 — explain and reduce packaged-build gameplay stalls before adding
+   polish.** `docs/logs/log10.json` is a real Windows Steam-installed session
+   with 299 long tasks totaling 44,790 ms, including a 6,176 ms unattributed
+   stall, 3,430/1,386/640 ms streaming-adjacent stalls, and repeated
+   `gear-poof` tasks of 58–127 ms. First add nested attribution around frame
+   update/render, projectile and wall destruction, debris/VFX, chunk generation
+   and mounting, renderer first-use, and asset uploads. Then reproduce the
+   wall-break hitch and 6-second stall, resolve the apparent `batchSize: 3`
+   telemetry contradiction, and pool/defer destruction effects. Do not call
+   this fixed based on dev-browser or SwiftShader timings; require a repeat
+   packaged-build comparison against log10.
 1. **Wire the Depth Contract into the runtime.** Import `depthContract.js`
    into the ring-crossing/salvage/spawn/O2 pipeline it was designed for;
    add the HUD/audio "crossing ritual" beat the design doc calls for. This
@@ -487,21 +498,26 @@ completable lanes against this plan without re-deriving the context above.
 Each lane includes: the relevant files, what "done" means for that lane
 specifically, and explicit dependencies on other lanes.
 
-### Lane A — Depth Contract wiring (highest priority, do first)
-**Files:** `src/depthContract.js` (read-only reference — data model is
-already tuned, do not redesign it), `src/threeGame.js` (ring-crossing logic,
-salvage/loot spawn, O2 drain calculation, director aggression), likely a new
-small HUD component for the crossing ritual beat.
-**Done means:** `DEPTH_CONTRACT` is imported and read by at least: salvage
-value on pickup, elite/rare-relic spawn-pool selection, O2 efficiency
-calculation, and the run director's aggression score — matching the fields
-`depthContract.js` already exports per ring. A player crossing into a deeper
-ring sees/hears a real, brief beat (not just a number changing silently).
-**Depends on:** nothing — this is unblocked and should start immediately.
-**Test approach:** unit tests for the new call sites (follow the existing
-pattern in `src/depthContract.js`'s own test file), plus a live Playwright
-or manual verification that crossing rings actually changes salvage
-value/spawn behavior mid-run.
+### Lane A — Depth Contract wiring — **DONE, 2026-08-20**
+**Status:** all fields wired except `eliteSpawnChance`, which has no existing
+"promote to elite" mechanism to hook into and was left honestly unwired
+rather than fabricated. Full account of what was wired, where, and why —
+including the two gaps (salvage/rare-relic, director aggression) that were
+deliberately left open in the first pass and filled in a follow-up commit
+after investigating the overlap/false-claim risk each one carried — is in
+`docs/design/one-more-ring-design-pillars.md`'s own "Status" note under item
+1, kept there rather than duplicated here since that's the doc a future
+reader will actually check first. Two commits: `feat(depth): wire the Depth
+Contract into the runtime` (O2 penalty + crossing ritual) and `feat(depth):
+wire the Depth Contract's last two gaps` (salvage + director aggression).
+Both live-verified against the real dev server; full suite green throughout.
+
+**Files touched (for reference):** `src/threeGame.js` (ring-crossing/O2/
+salvage/loot-roll/director-snapshot call sites), `main.js` (crossing-ritual
+message), `src/runDrops.js` (`rollEnemyLootDrop`'s new `ring` param),
+`src/director.js` (`chooseDirectorAction`'s new `aggressionBonus` param).
+`src/depthContract.js` itself was never redesigned — every field it already
+exported got a real caller, not a rewritten table.
 
 ### Lane B — Transformative relics wiring
 **Files:** `src/runDrops.js` (the 7 inert relics: `punctured_lung`,
@@ -564,6 +580,41 @@ something real to test).
 this review's own finding that the first-hour acceptance plan has never
 been run for exactly this reason (agents can't self-certify "does a human
 feel X").
+
+### Lane F — P0 gameplay frame-pacing audit (start immediately)
+**Evidence:** `docs/logs/log10.json` (Windows Steam-installed build,
+2026-08-20). **Files:** `src/threeGame.js`, `main.js`,
+`docs/perf-chunk-mount-plan-2026-08-20.md`, and the existing destruction/chunk
+tests.
+
+**Done means:** the next packaged capture can attribute the relevant long tasks
+to a concrete phase instead of leaving the worst stalls as `lastPhase: null`,
+and the wall-break/streaming hypotheses are proved or disproved.
+
+Required sequence:
+
+1. Add nested timing attribution for frame update/render, projectile
+   collision/wall-hit, wall damage/destroy/instance/collision updates,
+   debris/loot, `gear-poof` create/update/dispose, chunk generation and each
+   mount phase, unmount, renderer compile/first-use, and model/texture
+   first-use.
+2. Record contextual counters with each long task: draw calls, triangles,
+   scene objects, transient effects, wall instances, destroyed walls, new
+   meshes/materials/textures, pending mounts, renderer memory/program counts,
+   and JS heap where available.
+3. Reproduce one wall destruction, ten rapid destructions, junk-pile
+   destruction, and destruction during chunk streaming. Verify that one wall
+   does not rebuild an entire pool/chunk or recreate GPU resources.
+4. Audit `gear-poof` allocations and pool/defer critical-frame work where
+   safe; compare first-use and repeat-use timings.
+5. Verify whether packaged runtime still uses fixed `batchSize: 3`, whether
+   telemetry is stale, or whether another staging path bypasses the
+   time-budget scheduler.
+6. Re-run the same packaged scenario and compare counts, maximum duration,
+   unattributed-task share, and wall/streaming attribution against log10.
+
+**Non-goal:** do not rewrite world generation or renderer architecture before
+the instrumentation identifies the dominant phase.
 
 ### Explicit cross-lane rules (apply to all agents)
 - Do not touch `src/multiplayerLobby.js`, `src/gameController.js`, or

@@ -48,13 +48,51 @@ elite/rare-relic spawn-pool unlocks, O2 efficiency penalty, director
 aggression bump, extraction distance. Surfaced as a short ritual at the
 crossing itself (brief HUD/audio beat), not just an invisible number.
 
-Status: **not yet implemented.** No `salvageMultiplier`/`rewardMultiplier`
-concept exists anywhere in `src/*.js` today (confirmed via repo search). This
-is the first concrete build target — see the companion module this doc's
-sibling commit adds (`src/depthContract.js`) for a first data-driven cut:
-pure functions only (no rendering/HUD wiring yet), so it's low-risk to land
-and testable in isolation. HUD/audio ritual presentation is a follow-up, not
-included in this pass.
+Status: **wired into the runtime, 2026-08-20 (Sprint 28, docs/sprint28plan.md
+Lane A).** `src/depthContract.js` shipped first as pure data + pure functions
+only (see below); the independent review at `docs/sprint28plan.md` found it
+sitting fully coded and tested with zero call sites anywhere else in the
+codebase, and it's the single item that review named as the highest-leverage
+build target in the entire game. All five of the table's fields are now
+connected:
+
+- **salvageMultiplier** — `ThreeGame.collectSnailShell` (`src/threeGame.js`)
+  scales shell value by ring on collection. Deliberately NOT layered onto
+  `getDepthLootConfig()`'s existing `pickupMultiplier`/`legendaryBoost` (chunk
+  pickup-item density and legendary odds on placement) — traced both systems
+  first and confirmed shell-value-on-collection is a genuinely separate axis,
+  so there's no double-scaling of the same reward.
+- **eliteSpawnChance / rareRelicChance** — `rollsRareRelic` biases
+  `rollEnemyLootDrop` (`src/runDrops.js`) toward the relic half of the
+  rarity-filtered drop pool at deeper rings, rather than only raising the
+  rarity floor. `eliteSpawnChance` remains unwired — the codebase has no
+  existing "promote this spawn to elite" mechanism to hook into (the current
+  `isElite` flag is derived from specific enemy states like `enraged`/
+  `isSentinel`, not a probability roll at spawn time); flagged here rather
+  than fabricated.
+- **o2EfficiencyPenalty** — `ThreeGame.updateVitals`'s O2 drain-rate
+  calculation, extending the game's already-strongest, already-felt pressure
+  system directly.
+- **directorAggressionBonus** — this doc's own header comment (below) claimed
+  a matching aggression score already existed in `src/act2.js`/
+  `src/arcState.js`. That was checked, not assumed, while wiring this: it's
+  false (both files are narrative-state/camp management, zero grep hits for
+  "aggression"). The real, already-live equivalent is `src/director.js`'s
+  `chooseDirectorAction` — its existing `escalation` signal (0-1, driving
+  patrol probability) now takes the bonus as an additional term.
+- **Crossing ritual** — `ThreeGame.emitDepthTierChanged` attaches
+  `describeCrossing()`'s real before/after delta to a genuine new-depth
+  crossing (never a `forceEmit` re-announce), surfaced through an
+  already-existing depth-announcement listener in `main.js` that previously
+  said only "› DEPTH: ABYSS" with a sound cue.
+
+One live nuance found while wiring: this table's own ring numbering (1-5,
+matching `RING_CONTENT_BUDGETS` in `ringManifest.js`) isn't actually tracked
+live anywhere during gameplay — only a coarser 0-3 `depthTier` signal
+(`SURFACE`/`SHALLOW`/`DEEP`/`ABYSS`) is. Every wiring above maps
+`ring = depthTier + 1`, so ring 5 (`SECTOR ZERO`) is never reached at today's
+depth ceiling — not a bug, just headroom this table already had before the
+runtime could use all of it.
 
 ## 2. Transformative run-build relics (12–20, not 100 stat sticks)
 
