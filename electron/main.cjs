@@ -9,6 +9,21 @@
 
 const { app, BrowserWindow, ipcMain } = require('electron');
 
+// docs/steam-lobby-integration-plan-2026-08-20.md step 1: Steam's "Join
+// Game" launches a second OS process with `+connect_lobby <id>` when a
+// friend accepts an invite while Hunker is closed. Without a single-
+// instance lock, that second launch would just open a second game window
+// instead of routing the join request into the already-running one (which
+// is what happens if Hunker was already open when the invite lands, via
+// the separate GameLobbyJoinRequested Steam callback -- step 2). Must be
+// requested before any other app setup below; quits this (second) process
+// immediately if another instance already holds the lock.
+const gotSingleInstanceLock = app.requestSingleInstanceLock();
+if (!gotSingleInstanceLock) {
+    app.quit();
+    process.exit(0);
+}
+
 // Give Gamescope a stable native identity before Chromium creates its first
 // surface. Steam's launch overlay tracks the game window by its Linux desktop
 // identity; Electron's generic fallback can otherwise leave that overlay up
@@ -47,6 +62,7 @@ const {
     writeSaveAtomic
 } = require('./save-contract.cjs');
 const { isQaToolsEnabled, normalizeBetaName } = require('./qa-tools.cjs');
+const { parseConnectLobbyArg } = require('./steam-lobby.cjs');
 
 const DEV = process.env.ELECTRON_DEV === '1';
 const DEV_URL = process.env.ELECTRON_DEV_URL ?? 'http://localhost:5173';
@@ -61,6 +77,12 @@ let steam = null;
 let steamClient = null;
 let steamInitError = null;
 let mainWindow = null;
+// docs/steam-lobby-integration-plan-2026-08-20.md step 1: cold-start case
+// -- Steam launched this very process with +connect_lobby (as opposed to
+// the second-instance case below, where Steam relaunches while an
+// instance is already running). Step 2 will forward this to the renderer
+// once mainWindow exists and the join-request IPC channel is built.
+let pendingConnectLobbyId = parseConnectLobbyArg(process.argv);
 let steamInputPhase = 'loading';
 let steamInputReady = false;
 let steamInputHandles = null;
@@ -931,9 +953,37 @@ function createWindow() {
     return win;
 }
 
+// docs/steam-lobby-integration-plan-2026-08-20.md step 1: fires in the
+// already-running instance when Steam relaunches the app with
+// +connect_lobby (the single-instance lock above causes the second
+// process to quit and Electron to deliver its argv here instead). Restores
+// and focuses the existing window rather than leaving the join request
+// stranded behind it.
+app.on('second-instance', (_event, commandLine) => {
+    const lobbyId = parseConnectLobbyArg(commandLine);
+    if (lobbyId) {
+        pendingConnectLobbyId = lobbyId;
+        recordSteamDiagnostic('info', 'steam_lobby_join_requested', 'second-instance +connect_lobby', { lobbyId });
+        // Step 2 forwards pendingConnectLobbyId to the renderer here, once
+        // the join-request IPC channel exists.
+    }
+    if (mainWindow) {
+        if (mainWindow.isMinimized()) mainWindow.restore();
+        mainWindow.focus();
+    }
+});
+
 app.whenReady().then(() => {
     loadSaveFile();
     createWindow();
+
+    // Cold-start +connect_lobby (parsed from this process's own argv at
+    // module load, before app was even ready) -- logged the same way as
+    // the second-instance case above so both paths are equally
+    // diagnosable. Step 2 forwards pendingConnectLobbyId to the renderer.
+    if (pendingConnectLobbyId) {
+        recordSteamDiagnostic('info', 'steam_lobby_join_requested', 'cold-start +connect_lobby', { lobbyId: pendingConnectLobbyId });
+    }
 
     // Defer Steam initialization so it doesn't block the initial native window
     // creation or Gamescope's surface handoff on the Steam Deck.
