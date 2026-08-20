@@ -266,10 +266,33 @@ export const LEADER_DIALOGUE = Object.freeze({
 
 export const LEADER_KEYS = Object.freeze(Object.keys(LEADER_DIALOGUE));
 
+// Sprint 25 design pass (docs/design/camp-narrative-style-guide.md): the
+// death-return moment is the closest thing this linear staged-beat system
+// has to the style guide's Body/Work/Power/Intimacy beats landing in one
+// place at once -- the player is physically present, the leader has power
+// over what happens next, and something usually hidden gets noticed. (The
+// style guide's fifth beat, Choice, needs branching dialogue this system
+// doesn't have yet -- not attempted here.) Third line added per human
+// leader below, in-voice, following the sensual-writing rule (sensation +
+// restraint, not declaration). Also fixes a pre-existing stray lowercase
+// mid-caps-line typo in kaelen/briggs's first line ("I HEARD the..." ->
+// "I HEARD THE...") caught while touching this block.
 export const LEADER_DEATH_BEATS = Object.freeze({
-    kaelen: ['KAELEN: YOU DIED OUT THERE. I HEARD the grid static change. SIT DOWN.', 'KAELEN: CHEN KEPT SPARE BODY CORES IN THE FABRICATOR. YOU MUST HAVE BEEN RETRIEVED.'],
-    martha: ['MARTHA: YOU DIED OUT THERE. I FELT THE COLD. COME CLOSER TO THE STEAM.', 'MARTHA: THE MOSS GROWS WARMER WHERE YOUR BLOOD SPILLED. IT IS REMEMBERING YOU.'],
-    briggs: ['BRIGGS: YOU DIED OUT THERE. I HEARD the static on the frequency. SIT DOWN.', 'BRIGGS: THE FIRST THING WE LEARN IN THE IRON GUILD: IF YOU DIE, DO IT OUTSIDE THE FIRING CONE.'],
+    kaelen: [
+        'KAELEN: YOU DIED OUT THERE. I HEARD THE GRID STATIC CHANGE. SIT DOWN.',
+        'KAELEN: CHEN KEPT SPARE BODY CORES IN THE FABRICATOR. YOU MUST HAVE BEEN RETRIEVED.',
+        'KAELEN: YOUR PULSE READS THROUGH THE FLOOR PLATING NOW. IT DIDN\'T, BEFORE. I CHECKED.'
+    ],
+    martha: [
+        'MARTHA: YOU DIED OUT THERE. I FELT THE COLD. COME CLOSER TO THE STEAM.',
+        'MARTHA: THE MOSS GROWS WARMER WHERE YOUR BLOOD SPILLED. IT IS REMEMBERING YOU.',
+        'MARTHA: GIVE ME THE HAND. THE OTHER ONE. THERE. YOUR PULSE IS COUNTING SOMETHING I DON\'T RECOGNIZE.'
+    ],
+    briggs: [
+        'BRIGGS: YOU DIED OUT THERE. I HEARD THE STATIC ON THE FREQUENCY. SIT DOWN.',
+        'BRIGGS: THE FIRST THING WE LEARN IN THE IRON GUILD: IF YOU DIE, DO IT OUTSIDE THE FIRING CONE.',
+        'BRIGGS: DO THAT AGAIN. BLINK. ...THERE. THAT\'S NEW. I\'M NOT WRITING IT IN THE LEDGER YET.'
+    ],
     nahl: ['NAHL: I FELT YOUR THREAD SEVER. AND I STITCHED IT BACK. SIT STILL.', 'NAHL: THE QUEEN SEES EVERY DEATH. SHE DOES NOT CARE. I DO.'],
     vey: ['VEY: YOUR SIGNAL DIED. THE STATIC WAS DEAFENING. SIT STILL.', 'VEY: THE MOTHERSHIP ARCHIVES EVERY AGENT SOUL. BUT THE BUNKER... THE BUNKER KEEPS THE BODY.'],
     rhun: ['RHUN: YOU FELL. I STOOD UP. THAT IS THE OATH.', 'RHUN: A WALL THAT BREAKS CAN BE KNIT. A CARRIER THAT DIES... CAN BE CARRIED.']

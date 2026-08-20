@@ -5,6 +5,16 @@
 
 import { io as connectSocketIo } from 'socket.io-client';
 import { planMultiplayerCrashSites } from './multiplayerCrashPlanner.js';
+import { startMultiplayerRun } from './gameController.js';
+import {
+    createSteamLobby,
+    joinSteamLobby,
+    leaveSteamLobby,
+    openSteamInviteDialog,
+    setSteamRichPresence,
+    onSteamLobbyJoinRequested,
+    deriveRelayRoomFromLobbyId
+} from './steamLobbyClient.js';
 
 export const MULTIPLAYER_MODES = Object.freeze({
     COOP: 'coop',
@@ -32,8 +42,28 @@ export const MULTIPLAYER_MODES = Object.freeze({
 // failed) falls through to the dev placeholder, which the backend's
 // existing dev-fallback path (isDevFallbackAllowed in server/steamAuth.js)
 // already handles correctly.
-async function fetchMultiplayerSessionToken(relayUrl, identity) {
+//
+// Steam store walkthrough (docs/steamstorestatus.log), Part A CORS fix:
+// a packaged Electron build's renderer origin is file:// (or null), which
+// production's strict HB_ALLOWED_ORIGINS rejects outright once wildcard/
+// localhost/non-HTTPS origins are locked out -- so POSTing /steam/session
+// from *this* renderer fetch() would start failing the moment production
+// origins are locked down, even though the ticket itself was fetched
+// correctly via IPC above. electron/preload.cjs already exposes
+// window.electronAPI.createSteamSession(), which mints the same session
+// via a preload-context request (electron/preload.cjs's
+// requestSteamBackend -- Node's fetch, not the renderer's CORS-bound one)
+// and, as a bonus, cancels the auth ticket handle when done (this
+// function's own manual fetch path never did). Preferred whenever
+// available; the manual fetch below stays as the fallback for a plain
+// browser dev tab, where window.electronAPI doesn't exist at all.
+export async function fetchMultiplayerSessionToken(relayUrl, identity) {
     try {
+        if (typeof window !== 'undefined' && window.electronAPI?.createSteamSession) {
+            const session = await window.electronAPI.createSteamSession(identity);
+            return session?.ok ? session.token : null;
+        }
+
         let ticketHex = null;
         if (typeof window !== 'undefined' && window.electronAPI?.getSteamAuthTicket) {
             const ticketResult = await window.electronAPI.getSteamAuthTicket(identity);
@@ -65,39 +95,25 @@ async function fetchMultiplayerSessionToken(relayUrl, identity) {
 // on the 'gameplay' profile) never once running -- no movement/fire/damage
 // sync of any kind, despite the lobby and session bootstrap looking
 // entirely correct. The Armory renders asynchronously (createArmoryScene
-// awaits a canvas + scene build), so this polls for its embark button
-// rather than assuming it exists immediately after the gate opens.
-function waitForArmoryEmbarkButton(timeoutMs = 8000) {
-    return new Promise((resolve) => {
-        const deadline = Date.now() + timeoutMs;
-        const poll = () => {
-            const btn = document.getElementById('armory-btn-embark');
-            if (btn) {
-                resolve(btn);
-                return;
-            }
-            if (Date.now() >= deadline) {
-                resolve(null);
-                return;
-            }
-            setTimeout(poll, 100);
-        };
-        poll();
-    });
-}
+// awaits a canvas + scene build), so the click-through this required polls
+// for its embark button rather than assuming it exists immediately after
+// the gate opens. (Sprint 26: that click-through now lives in
+// src/gameController.js's startMultiplayerRun, called from finalizeDeploy
+// below, instead of as local functions in this file.)
 
-async function autoEmbarkFromArmory() {
-    if (typeof document === 'undefined') return;
-    const btn = await waitForArmoryEmbarkButton();
-    btn?.click();
-}
+// Local dev backend port: matches .env.loco's PORT (3002, not the relay's
+// old default of 3001) so npm run server:local doesn't collide with the
+// production hunker-bunker-backend Docker container, which is permanently
+// bound to 127.0.0.1:3001 on machines running docker-compose.yml alongside
+// local dev. Override via window.HB_RELAY_URL if you need something else.
+const LOCAL_DEV_RELAY_URL = 'http://localhost:3002';
 
 export function resolveRelayUrl() {
-    if (typeof window === 'undefined') return 'http://localhost:3001';
+    if (typeof window === 'undefined') return LOCAL_DEV_RELAY_URL;
     if (window.HB_RELAY_URL) return window.HB_RELAY_URL;
     const origin = window.location?.origin || '';
     if (origin.includes('localhost') || origin.includes('127.0.0.1') || origin.includes(':5173')) {
-        return 'http://localhost:3001';
+        return LOCAL_DEV_RELAY_URL;
     }
     if (origin.startsWith('http://') || origin.startsWith('https://')) {
         return origin;
@@ -130,10 +146,23 @@ export class MultiplayerLobby {
         // for quick reads before that entry may exist.
         this.localReady = false;
         this.countdownInterval = null;
+        // docs/steam-lobby-integration-plan-2026-08-20.md step 4: set once
+        // this session's room code came from a real Steam lobby (as
+        // opposed to the default SECTOR-7 / a manually-typed room code),
+        // so updateUiState() knows whether to show the invite button and
+        // Rich Presence calls know whether there's a lobby id to report.
+        this.steamLobbyId = null;
     }
 
     init() {
         this.bindUi();
+        // docs/steam-lobby-integration-plan-2026-08-20.md step 4: listens
+        // regardless of whether the multiplayer modal is even open --
+        // fires for cold-start +connect_lobby, a second-instance relaunch,
+        // and a friend accepting a live invite while Hunker is already
+        // running, all funneled through electron/main.cjs's
+        // forwardPendingSteamLobbyJoin(). No-op outside Electron.
+        onSteamLobbyJoinRequested((lobbyId) => this.handleSteamLobbyJoinRequested(lobbyId));
     }
 
     bindUi() {
@@ -169,6 +198,9 @@ export class MultiplayerLobby {
 
         const copyCodeBtn = document.getElementById('net-copy-code-btn');
         copyCodeBtn?.addEventListener('click', () => this.copyRoomCode());
+
+        const steamInviteBtn = document.getElementById('net-steam-invite-btn');
+        steamInviteBtn?.addEventListener('click', () => this.handleSteamInviteClick());
     }
 
     openModal() {
@@ -204,6 +236,14 @@ export class MultiplayerLobby {
             statusEl.className = 'net-status-pill net-status--connecting';
         }
 
+        // docs/steam-lobby-integration-plan-2026-08-20.md step 4: no-op if
+        // this.steamLobbyId is already set (we joined an existing lobby via
+        // handleSteamLobbyJoinRequested, which sets this.roomCode itself
+        // before calling connect()) or if this isn't a packaged Electron
+        // build at all -- room codes remain the only path for browser
+        // dev/LAN/QA. Must resolve before joinRoom below reads this.roomCode.
+        await this.maybeCreateSteamLobby();
+
         const callsign = (typeof window !== 'undefined' && window.profileManager?.getCallsign?.()) || 'AGENT';
         const opClass = (typeof window !== 'undefined' && window.selectedPlayerType) || 'TANK';
 
@@ -229,7 +269,15 @@ export class MultiplayerLobby {
                     this.socket.emit('joinRoom', {
                         roomCode: this.roomCode,
                         callsign,
-                        opClass
+                        opClass,
+                        // Sprint 26: durable per-browser id (src/profile.js,
+                        // localStorage-backed) the server uses as a
+                        // reconnect-stable host-identity fallback when a real
+                        // steamId64 isn't available -- see server/relay.js's
+                        // roomHostKeys. Lets a reconnecting host reclaim its
+                        // slot instead of every dev-mode connection looking
+                        // like the same anonymous peer.
+                        profileId: window.profileManager?.getProfileId?.() || null
                     });
 
                     this.players.set(this.socket.id, {
@@ -266,6 +314,7 @@ export class MultiplayerLobby {
                         }
                     });
                     this.updateUiState();
+                    this.reportSteamRichPresence();
                 });
 
                 this.socket.on('newPlayer', (p) => {
@@ -279,12 +328,14 @@ export class MultiplayerLobby {
                         ready: Boolean(p?.ready)
                     });
                     this.updateUiState();
+                    this.reportSteamRichPresence();
                     window.AudioManager?.play?.('fx_achievement', { volume: 0.25, bus: 'sfx' });
                 });
 
                 this.socket.on('playerDisconnected', (id) => {
                     this.players.delete(id);
                     this.updateUiState();
+                    this.reportSteamRichPresence();
                 });
 
                 // Ready-up / host-start gate (previously nonexistent -- see
@@ -397,6 +448,79 @@ export class MultiplayerLobby {
         this.updateUiState();
     }
 
+    // docs/steam-lobby-integration-plan-2026-08-20.md step 4. Creates a
+    // real Steam lobby and derives this.roomCode from it, so the same
+    // connect()/joinRoom relay flow used for room codes carries the Steam
+    // party straight through -- nothing downstream needs to know whether
+    // the room code came from a lobby id or was typed in by hand.
+    async maybeCreateSteamLobby() {
+        if (this.steamLobbyId) return;
+        if (typeof window === 'undefined' || !window.electronAPI?.steamCreateLobby) return;
+
+        const result = await createSteamLobby({ mode: this.currentMode, maxPlayers: 4 });
+        if (result?.ok && result.lobby?.id) {
+            this.steamLobbyId = result.lobby.id;
+            this.roomCode = deriveRelayRoomFromLobbyId(result.lobby.id);
+            this.updateUiState();
+            this.reportSteamRichPresence();
+        }
+    }
+
+    // The #net-steam-invite-btn click handler. Only meaningful once a
+    // lobby actually exists (updateUiState() keeps the button hidden
+    // otherwise) -- opens Steam's own native Friends invite dialog rather
+    // than Hunker building a friends picker itself.
+    async handleSteamInviteClick() {
+        if (!this.steamLobbyId) return;
+        await openSteamInviteDialog();
+        if (typeof window !== 'undefined') window.AudioManager?.play?.('fx_menu_click', { volume: 0.3, bus: 'sfx' });
+    }
+
+    // Fires for cold-start +connect_lobby, a second-instance relaunch, and
+    // a friend accepting a live invite while Hunker is already running
+    // (electron/main.cjs's forwardPendingSteamLobbyJoin funnels all three
+    // through one channel -- see init()'s subscription). Deliberately
+    // simple for this first pass: if already connected to a different
+    // session, disconnect first rather than trying to merge two live
+    // connections -- an edge case (accepting an invite while already
+    // mid-match elsewhere) worth revisiting once this is live-tested, not
+    // guessed at now.
+    async handleSteamLobbyJoinRequested(lobbyId) {
+        if (!lobbyId) return;
+        const result = await joinSteamLobby(lobbyId);
+        if (!result?.ok) return;
+
+        if (this.connected) this.disconnect();
+
+        this.steamLobbyId = lobbyId;
+        this.roomCode = deriveRelayRoomFromLobbyId(lobbyId);
+        if (result.lobby?.data?.hb_mode) this.currentMode = result.lobby.data.hb_mode;
+        this.updateUiState();
+        if (typeof document !== 'undefined') {
+            const modal = document.getElementById('multiplayer-modal');
+            modal?.classList.remove('hidden');
+            modal?.setAttribute('aria-hidden', 'false');
+        }
+        await this.connect();
+    }
+
+    // Steam Friends-visible status + "Join Game" support. Called at the
+    // handful of state changes the plan calls out (lobby created, roster
+    // changed, ready, deployed) rather than from every updateUiState() --
+    // Rich Presence is meant to change occasionally, not on every render.
+    // Fire-and-forget: a failure here shouldn't block or be surfaced as a
+    // gameplay error, same treatment steamLobbyClient's own no-op guards
+    // already give every other Steam call that isn't on the critical path.
+    reportSteamRichPresence(phase = 'lobby') {
+        if (!this.steamLobbyId) return;
+        const isCoop = this.currentMode === MULTIPLAYER_MODES.COOP;
+        const modeLabel = isCoop ? 'Co-op Expedition' : 'PvP Skirmish';
+        const status = phase === 'deployed'
+            ? `${modeLabel} — In Progress`
+            : `${modeLabel} — ${this.players.size}/4 Operatives`;
+        void setSteamRichPresence({ status, connect: `+connect_lobby ${this.steamLobbyId}` });
+    }
+
     disconnect() {
         if (this.socket) {
             try { this.socket.disconnect(); } catch { /* ignore */ }
@@ -408,6 +532,17 @@ export class MultiplayerLobby {
         this.activeMatch = null;
         this.localReady = false;
         this.cancelCountdownDisplay();
+        // docs/steam-lobby-integration-plan-2026-08-20.md step 4: leave the
+        // Steam lobby alongside the relay socket, and reset roomCode back
+        // to the plain default rather than leaving a stale STEAM-<id>
+        // around -- otherwise the next connect() would see steamLobbyId
+        // still set and skip creating/joining a fresh lobby entirely (see
+        // maybeCreateSteamLobby's early-return). No-op outside Electron.
+        if (this.steamLobbyId) {
+            void leaveSteamLobby();
+            this.steamLobbyId = null;
+            this.roomCode = 'SECTOR-7';
+        }
         this.updateUiState();
     }
 
@@ -548,26 +683,18 @@ export class MultiplayerLobby {
             socket: this.socket
         };
 
-        if (typeof window !== 'undefined') {
-            window.activeMultiplayerSession = this.activeMatch;
-            // ThreeGame's constructor calls setupMultiplayerNetwork() once, well
-            // before this modal is ever opened, so it always finds no session and
-            // never sets isMultiplayer/multiplayerMode -- those four PVP-gated
-            // call sites (threeGame.js:3936,4021,4046,7554) silently never fire.
-            // Re-run it now that a real session exists.
-            window.game?.setupMultiplayerNetwork?.();
-        }
-
+        this.reportSteamRichPresence('deployed');
         this.closeModal();
 
-        // Launch the game run. start-game only opens the pre-mission Armory
-        // gate -- it does not itself start the run -- so also auto-embark
-        // once the Armory finishes rendering (see autoEmbarkFromArmory above).
-        const startBtn = document.getElementById('start-game') || document.getElementById('title-newrun-btn');
-        if (startBtn) {
-            startBtn.click();
-            void autoEmbarkFromArmory();
-        }
+        // Sprint 26: previously this method set window.activeMultiplayerSession
+        // and DOM-clicked through the Armory gate inline (see git history for
+        // the original ThreeGame's constructor calls setupMultiplayerNetwork()
+        // once, well before this modal is ever opened... comment) -- moved into
+        // src/gameController.js's startMultiplayerRun so multiplayer start has
+        // one explicit, testable entry point instead of this class reaching
+        // into globals + DOM directly. Not awaited: nothing here needs to
+        // block on the Armory-embark click actually landing.
+        void startMultiplayerRun(this.activeMatch);
 
         const modeName = mode === MULTIPLAYER_MODES.COOP ? 'CO-OP EXPEDITION' : 'PVP SECTOR DUEL';
         if (typeof window !== 'undefined' && window.showToastNotification) {
@@ -612,6 +739,17 @@ export class MultiplayerLobby {
                 ? 'CO-OP EXPEDITION: Deploy joint squads through the outer ring. Shared salvage, synchronized telemetry, and emergency revival.'
                 : 'PVP SKIRMISH: Contested bunker combat. Battle rival contractor operatives for sector dominance and high-tier drop caches.';
         }
+
+        // docs/steam-lobby-integration-plan-2026-08-20.md step 4: this
+        // element was never actually updated after its hardcoded initial
+        // HTML text before this -- harmless while this.roomCode always
+        // equaled the same 'SECTOR-7' default, but a real gap now that a
+        // Steam lobby can change it to STEAM-<id>.
+        const roomCodeEl = document.getElementById('net-room-code-val');
+        if (roomCodeEl) roomCodeEl.textContent = this.roomCode;
+
+        const steamInviteBtn = document.getElementById('net-steam-invite-btn');
+        steamInviteBtn?.classList.toggle('hidden', !this.steamLobbyId);
 
         const statusEl = document.getElementById('net-status-pill');
         const connectBtn = document.getElementById('net-connect-btn');

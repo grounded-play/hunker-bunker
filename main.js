@@ -54,6 +54,7 @@ import { initSeasonPassUI, flushQueuedSeasonPassToasts } from './src/seasonPassU
 import { preloadEnemy3dTemplates } from './src/enemy3dOverlay.js';
 import { initVoiceCallouts } from './src/voiceCallouts.js';
 import { multiplayerLobby } from './src/multiplayerLobby.js';
+import { clearMultiplayerSession } from './src/gameController.js';
 import { playerTradeManager, TRADEABLE_RESOURCES } from './src/playerTrade.js';
 import { npcDialogueTreeManager, NPC_DIALOGUE_TREES } from './src/npcDialogueTrees.js';
 import { sideStoryManager, SIDE_STORIES_CONFIG, SIDE_STORY_STATUS } from './src/sideStorySystem.js';
@@ -76,6 +77,21 @@ import {
     getMaxUnlockedRing,
     validateRingProgression
 } from './src/mazeExpedition.js';
+import { installSteamCloudSaveBridge } from './src/steamCloudSaveBridge.js';
+
+// docs/steamstorestatus.log Steam Cloud gap: electron/main.cjs's
+// hb:saveDataChanged bridge (mirrors hb_*-prefixed saves into save.json,
+// the file Steam Cloud's Auto-Cloud config watches) was fully built but
+// never actually called from the game -- every hb_* write went straight
+// to plain localStorage. Installed here, as early as possible (before
+// AchievementEngine or anything else below does its first save write),
+// so both the one-time bootstrap sync of existing progress and every
+// future write reach Electron. No-ops outside a packaged Electron build.
+installSteamCloudSaveBridge({
+    storage: typeof window !== 'undefined' ? window.localStorage : null,
+    electronAPI: typeof window !== 'undefined' ? window.electronAPI : null
+});
+
 const startBtn = document.getElementById('start-game'); // INITIALIZE button
 const titleContinueBtn = document.getElementById('title-continue-btn');
 const titleSwitchClassBtn = document.getElementById('title-switch-class-btn');
@@ -6957,10 +6973,19 @@ async function openArmoryGate(embarkAction) {
 function launchStandardRun({ resetBank = false, playIntro = false } = {}) {
     const playerType = getSelectedHeroType();
     saveHeroType(playerType);
-    // Standard deployments always roll a fresh world. Daily Ops is the only
-    // mode allowed to retain a fixed shared seed.
+    // Standard solo deployments always roll a fresh world. Daily Ops and an
+    // active multiplayer session are the two modes allowed to retain a
+    // fixed shared seed -- multiplayer's replays this exact function via
+    // the #start-game click chain (src/gameController.js's
+    // startMultiplayerRun), running AFTER ThreeGame.setupMultiplayerNetwork
+    // already pinned fixedRunEntropy/globalSeedOffset to the match's shared
+    // seed (see that method's own comment: without this guard, this
+    // unconditional reset silently wiped that sync out before world
+    // generation ever ran, since this fires before respawnPlayer's own
+    // seed-reset logic). isMultiplayer is already correctly set by that
+    // point, so it's a reliable gate here.
     _isDailyOpsRun = false;
-    if (window.game) {
+    if (window.game && !window.game.isMultiplayer) {
         window.game.fixedRunEntropy = false;
         window.game.globalSeedOffset = 0;
     }
@@ -7027,6 +7052,9 @@ if (dailyOpsBtn) {
     dailyOpsBtn.addEventListener('click', () => {
         const record = getDailyOpsRecord();
         if (record?.completed) return;
+        // Same stale-session leak as titleNewRunBtn above -- Daily Ops is
+        // also never part of multiplayer's #start-game replay chain.
+        clearMultiplayerSession();
         openArmoryGate(() => {
             saveDailyOpsRecord({ attempted: true, completed: false, date: getTodayDateString() });
             _isDailyOpsRun = true;
@@ -12136,6 +12164,17 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     if (titleNewRunBtn) {
         titleNewRunBtn.addEventListener('click', () => {
+            // Sprint 26: window.activeMultiplayerSession was never cleared
+            // anywhere -- a solo run started here after an earlier
+            // multiplayer match in the same tab (no reload) could still
+            // have its end-of-run report read the stale session (main.js's
+            // game-over reporting reads window.activeMultiplayerSession
+            // directly for roomCode, with no fallback to window.game's own
+            // per-run state). Safe specifically here: #start-game is the
+            // button multiplayer's own deploy flow clicks, so clearing
+            // there would wipe a session multiplayer had just set moments
+            // earlier -- this button is solo-only, never part of that chain.
+            clearMultiplayerSession();
             transitionFromTitleToMenu(() => {
                 clearSaveData();
                 blackBoxStore.clear();

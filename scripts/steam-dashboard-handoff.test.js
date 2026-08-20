@@ -50,7 +50,13 @@ describe('steam dashboard handoff', () => {
         ]);
         expect(handoff.stats.map((row) => row.apiName)).toEqual([
             'total_deaths',
-            'longest_run_seconds'
+            'longest_run_seconds',
+            'total_kills',
+            'total_runs',
+            'total_victories',
+            'shells_collected',
+            'lore_drops_collected',
+            'max_hive_bond'
         ]);
         expect(handoff.heldAchievements.map((row) => row.apiName)).toEqual(['slay_the_queen']);
         expect(handoff.activeAchievementCount).toBeGreaterThan(20);

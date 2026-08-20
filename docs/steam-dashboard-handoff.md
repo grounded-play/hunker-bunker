@@ -1,6 +1,6 @@
 # Steam Dashboard Handoff
 
-Generated: 2026-08-04.
+Generated: 2026-08-20.
 
 This is the copy/paste packet for Steamworks dashboard work that cannot be
 completed from the repo. Keep it in sync with code by running:
@@ -105,6 +105,12 @@ active in code.
 | --- | --- | --- | --- |
 | `total_deaths` | INT | Client | achievementState.stats.totalDeaths |
 | `longest_run_seconds` | INT | Client | floor(achievementState.stats.maxRunMs / 1000) |
+| `total_kills` | INT | Client | achievementState.stats.totalKills |
+| `total_runs` | INT | Client | achievementState.stats.runCount |
+| `total_victories` | INT | Client | achievementState.stats.victories |
+| `shells_collected` | INT | Client | achievementState.stats.shellsCollected |
+| `lore_drops_collected` | INT | Client | achievementState.stats.loreDropIds.length \|\| achievementState.stats.loreDrops |
+| `max_hive_bond` | INT | Client | achievementState.stats.maxHiveBond |
 
 ## Beta Achievement Reset
 
@@ -177,7 +183,7 @@ Upload `steam/inventory_schema_hunker_bunker.json` to Steam Inventory Service.
 | Field | Value |
 | --- | --- |
 | Schema appid | `4957040` |
-| ItemDefs | 13 |
+| ItemDefs | 73 |
 | Hosted Item Store URL | `https://store.steampowered.com/itemstore/4957040/` |
 | Hosted Item Store beta URL | `https://store.steampowered.com/itemstore/4957040/?beta=1` |
 

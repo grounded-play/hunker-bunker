@@ -41,6 +41,7 @@ function makeFakeThis(overrides = {}) {
         spawnSporesnailAdds: ThreeGame.prototype.spawnSporesnailAdds,
         isAct2Active: () => false,
         killedBosses: new Set(),
+        killedEnemyScatterKeys: new Set(),
         snailsKilledThisRun: 0,
         scatterSprites: [],
         arcManager: { recordSignal: () => {}, evaluate: () => {} },

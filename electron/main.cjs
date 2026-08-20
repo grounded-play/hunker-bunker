@@ -9,6 +9,21 @@
 
 const { app, BrowserWindow, ipcMain } = require('electron');
 
+// docs/steam-lobby-integration-plan-2026-08-20.md step 1: Steam's "Join
+// Game" launches a second OS process with `+connect_lobby <id>` when a
+// friend accepts an invite while Hunker is closed. Without a single-
+// instance lock, that second launch would just open a second game window
+// instead of routing the join request into the already-running one (which
+// is what happens if Hunker was already open when the invite lands, via
+// the separate GameLobbyJoinRequested Steam callback -- step 2). Must be
+// requested before any other app setup below; quits this (second) process
+// immediately if another instance already holds the lock.
+const gotSingleInstanceLock = app.requestSingleInstanceLock();
+if (!gotSingleInstanceLock) {
+    app.quit();
+    process.exit(0);
+}
+
 // Give Gamescope a stable native identity before Chromium creates its first
 // surface. Steam's launch overlay tracks the game window by its Linux desktop
 // identity; Electron's generic fallback can otherwise leave that overlay up
@@ -47,6 +62,7 @@ const {
     writeSaveAtomic
 } = require('./save-contract.cjs');
 const { isQaToolsEnabled, normalizeBetaName } = require('./qa-tools.cjs');
+const { parseConnectLobbyArg } = require('./steam-lobby.cjs');
 
 const DEV = process.env.ELECTRON_DEV === '1';
 const DEV_URL = process.env.ELECTRON_DEV_URL ?? 'http://localhost:5173';
@@ -61,6 +77,19 @@ let steam = null;
 let steamClient = null;
 let steamInitError = null;
 let mainWindow = null;
+// docs/steam-lobby-integration-plan-2026-08-20.md step 1: cold-start case
+// -- Steam launched this very process with +connect_lobby (as opposed to
+// the second-instance case below, where Steam relaunches while an
+// instance is already running). Forwarded to the renderer by
+// forwardPendingSteamLobbyJoin() (step 2) once mainWindow exists.
+let pendingConnectLobbyId = parseConnectLobbyArg(process.argv);
+// The renderer only ever sees plain serialized lobby data (serializeLobby
+// below) -- a real steamworks.js Lobby instance can't cross the
+// contextBridge/IPC boundary. This is the one live reference the main
+// process keeps so leaveLobby/getLobby/openInviteDialog/setLobbyState can
+// all operate on "whichever lobby we're currently in" without the
+// renderer re-passing an id every call.
+let currentLobby = null;
 let steamInputPhase = 'loading';
 let steamInputReady = false;
 let steamInputHandles = null;
@@ -455,6 +484,33 @@ function initSteam() {
         steamInitState.completedAt = Date.now();
         steamInitState.durationMs = steamInitState.completedAt - steamInitState.startedAt;
         recordSteamDiagnostic('info', 'complete', `Steamworks initialization completed in ${steamInitState.durationMs}ms`);
+
+        // docs/steam-lobby-integration-plan-2026-08-20.md step 2: fires
+        // while Hunker is already running and a friend accepts a Steam
+        // invite or clicks "Join Game" (the cold-start/second-instance
+        // cases in step 1 above cover the two scenarios where it isn't
+        // already running). Registered once per steamClient lifetime, not
+        // per-request like the ipcMain handlers below. No manual
+        // runCallbacks() pump needed -- confirmed via
+        // node_modules/steamworks.js/index.d.ts: init() is typed as
+        // Omit<Client, "init" | "runCallbacks">, meaning this native
+        // binding dispatches callbacks on its own background thread.
+        try {
+            // steam.SteamCallback (the required module's own top-level
+            // export), not steamClient.callback.SteamCallback -- verified
+            // at runtime (node -e "console.log(require('steamworks.js').SteamCallback)")
+            // since client.d.ts's namespacing is misleading here: the enum
+            // values live on the package root export, only .register()
+            // itself is on the client's callback namespace.
+            steamClient.callback.register(steam.SteamCallback.GameLobbyJoinRequested, ({ lobby_steam_id }) => {
+                pendingConnectLobbyId = String(lobby_steam_id);
+                recordSteamDiagnostic('info', 'steam_lobby_join_requested', 'GameLobbyJoinRequested callback', { lobbyId: pendingConnectLobbyId });
+                forwardPendingSteamLobbyJoin();
+            });
+        } catch (err) {
+            recordSteamDiagnostic('warn', 'steam_lobby_callback_failed', 'Could not register GameLobbyJoinRequested callback', serializeError(err));
+        }
+
         return true;
     } catch (err) {
         steam = null;
@@ -846,6 +902,124 @@ ipcMain.handle('hb:showFloatingGamepadTextInput', async (_e, keyboardMode, x, y,
 });
 ipcMain.handle('hb:steamInfo', () => getSteamIdentitySnapshot());
 
+// docs/steam-lobby-integration-plan-2026-08-20.md step 2: SteamLobbyService.
+// Lobby data is discovery/party metadata only -- damage, item grants,
+// results, and identity stay authoritative in the already-live relay
+// backend (Part A). Room codes stay available for browser dev/LAN/QA;
+// this is additive, not a replacement.
+const HB_LOBBY_PROTOCOL_VERSION = '1';
+// matchmaking.LobbyType is a TypeScript const enum with no runtime object
+// anywhere in the installed package (confirmed: grepped the compiled JS,
+// nothing) -- createLobby() genuinely expects the raw number. 1 =
+// FriendsOnly per node_modules/steamworks.js/client.d.ts.
+const STEAM_LOBBY_TYPE_FRIENDS_ONLY = 1;
+
+function serializeLobby(lobby) {
+    if (!lobby) return null;
+    try {
+        return {
+            id: String(lobby.id),
+            ownerSteamId64: serializeSteamId(lobby.getOwner())?.steamId64 ?? null,
+            members: lobby.getMembers().map((m) => serializeSteamId(m)),
+            data: lobby.getFullData()
+        };
+    } catch (err) {
+        recordSteamDiagnostic('warn', 'steam_lobby_serialize_failed', 'Could not serialize lobby state', serializeError(err));
+        return null;
+    }
+}
+
+ipcMain.handle('hb:steamCreateLobby', async (_e, { mode = 'coop', maxPlayers = 4, build = null } = {}) => {
+    if (!steamClient?.matchmaking?.createLobby) {
+        return { ok: false, reason: 'steam_lobby_unavailable' };
+    }
+    try {
+        const lobby = await steamClient.matchmaking.createLobby(STEAM_LOBBY_TYPE_FRIENDS_ONLY, Math.max(2, Math.min(4, Number(maxPlayers) || 4)));
+        lobby.mergeFullData({
+            hb_protocol: HB_LOBBY_PROTOCOL_VERSION,
+            hb_mode: String(mode || 'coop'),
+            hb_state: 'lobby',
+            hb_build: String(build ?? ''),
+            hb_room: `STEAM-${lobby.id}`
+        });
+        currentLobby = lobby;
+        recordSteamDiagnostic('info', 'steam_lobby_created', 'Created Steam lobby', { lobbyId: String(lobby.id), mode });
+        return { ok: true, lobby: serializeLobby(lobby) };
+    } catch (err) {
+        recordSteamDiagnostic('warn', 'steam_lobby_create_failed', 'Could not create Steam lobby', serializeError(err));
+        return { ok: false, reason: 'steam_lobby_create_failed', message: err?.message ?? String(err) };
+    }
+});
+
+ipcMain.handle('hb:steamJoinLobby', async (_e, lobbyId) => {
+    if (!steamClient?.matchmaking?.joinLobby) {
+        return { ok: false, reason: 'steam_lobby_unavailable' };
+    }
+    if (typeof lobbyId !== 'string' || !/^\d+$/.test(lobbyId)) {
+        return { ok: false, reason: 'invalid_lobby_id' };
+    }
+    try {
+        const lobby = await steamClient.matchmaking.joinLobby(BigInt(lobbyId));
+        currentLobby = lobby;
+        recordSteamDiagnostic('info', 'steam_lobby_joined', 'Joined Steam lobby', { lobbyId });
+        return { ok: true, lobby: serializeLobby(lobby) };
+    } catch (err) {
+        recordSteamDiagnostic('warn', 'steam_lobby_join_failed', 'Could not join Steam lobby', { lobbyId, ...serializeError(err) });
+        return { ok: false, reason: 'steam_lobby_join_failed', message: err?.message ?? String(err) };
+    }
+});
+
+ipcMain.handle('hb:steamLeaveLobby', () => {
+    if (!currentLobby) return { ok: true };
+    try {
+        currentLobby.leave();
+        recordSteamDiagnostic('info', 'steam_lobby_left', 'Left Steam lobby', { lobbyId: String(currentLobby.id) });
+    } catch (err) {
+        recordSteamDiagnostic('warn', 'steam_lobby_leave_failed', 'Could not leave Steam lobby', serializeError(err));
+    } finally {
+        currentLobby = null;
+    }
+    return { ok: true };
+});
+
+ipcMain.handle('hb:steamGetLobby', () => {
+    return { ok: true, lobby: serializeLobby(currentLobby) };
+});
+
+ipcMain.handle('hb:steamOpenInviteDialog', () => {
+    if (!currentLobby) return { ok: false, reason: 'no_active_lobby' };
+    try {
+        currentLobby.openInviteDialog();
+        return { ok: true };
+    } catch (err) {
+        recordSteamDiagnostic('warn', 'steam_lobby_invite_dialog_failed', 'Could not open Steam invite dialog', serializeError(err));
+        return { ok: false, reason: 'steam_lobby_invite_dialog_failed', message: err?.message ?? String(err) };
+    }
+});
+
+ipcMain.handle('hb:steamSetLobbyState', (_e, state) => {
+    if (!currentLobby || typeof state !== 'string') return { ok: false, reason: 'no_active_lobby' };
+    try {
+        currentLobby.setData('hb_state', state);
+        return { ok: true };
+    } catch (err) {
+        recordSteamDiagnostic('warn', 'steam_lobby_set_state_failed', 'Could not update Steam lobby state', serializeError(err));
+        return { ok: false, reason: 'steam_lobby_set_state_failed', message: err?.message ?? String(err) };
+    }
+});
+
+ipcMain.handle('hb:steamSetRichPresence', (_e, { status = null, connect = null } = {}) => {
+    if (!steamClient?.localplayer?.setRichPresence) return { ok: false, reason: 'steam_unavailable' };
+    try {
+        steamClient.localplayer.setRichPresence('status', status);
+        steamClient.localplayer.setRichPresence('connect', connect);
+        return { ok: true };
+    } catch (err) {
+        recordSteamDiagnostic('warn', 'steam_rich_presence_failed', 'Could not set Steam Rich Presence', serializeError(err));
+        return { ok: false, reason: 'steam_rich_presence_failed', message: err?.message ?? String(err) };
+    }
+});
+
 function createWindow() {
     let presentationAttempts = 0;
     const win = new BrowserWindow({
@@ -909,6 +1083,11 @@ function createWindow() {
     win.webContents.once('dom-ready', raiseAboveSteamLaunchOverlay);
     win.webContents.once('did-finish-load', () => {
         setTimeout(() => presentGameWindow('did-finish-load'), 0);
+        // Cold-start +connect_lobby: the renderer's join-request listener
+        // (src/multiplayerLobby.js, step 4) attaches at module load, same
+        // as this codebase's other window.electronAPI.on* subscriptions --
+        // safe to forward once the page has actually finished loading.
+        forwardPendingSteamLobbyJoin();
     });
     // Claim the Gamescope slot as soon as the native surface exists, then
     // retry once after Chromium has submitted its first frames. Retrying is
@@ -931,9 +1110,51 @@ function createWindow() {
     return win;
 }
 
+// docs/steam-lobby-integration-plan-2026-08-20.md step 2: the one place
+// that actually pushes a pending +connect_lobby id to the renderer,
+// called from all three sources that can set pendingConnectLobbyId
+// (cold-start argv, second-instance relaunch, and the live
+// GameLobbyJoinRequested callback below). Clears it after sending so a
+// later call (e.g. a second did-finish-load somehow) doesn't resend a
+// stale request.
+function forwardPendingSteamLobbyJoin() {
+    if (!pendingConnectLobbyId || !mainWindow || mainWindow.isDestroyed()) return;
+    const lobbyId = pendingConnectLobbyId;
+    pendingConnectLobbyId = null;
+    mainWindow.webContents.send('hb:steamLobbyJoinRequested', lobbyId);
+}
+
+// docs/steam-lobby-integration-plan-2026-08-20.md step 1: fires in the
+// already-running instance when Steam relaunches the app with
+// +connect_lobby (the single-instance lock above causes the second
+// process to quit and Electron to deliver its argv here instead). Restores
+// and focuses the existing window rather than leaving the join request
+// stranded behind it.
+app.on('second-instance', (_event, commandLine) => {
+    const lobbyId = parseConnectLobbyArg(commandLine);
+    if (lobbyId) {
+        pendingConnectLobbyId = lobbyId;
+        recordSteamDiagnostic('info', 'steam_lobby_join_requested', 'second-instance +connect_lobby', { lobbyId });
+        forwardPendingSteamLobbyJoin();
+    }
+    if (mainWindow) {
+        if (mainWindow.isMinimized()) mainWindow.restore();
+        mainWindow.focus();
+    }
+});
+
 app.whenReady().then(() => {
     loadSaveFile();
     createWindow();
+
+    // Cold-start +connect_lobby (parsed from this process's own argv at
+    // module load, before app was even ready) -- logged the same way as
+    // the second-instance case above so both paths are equally
+    // diagnosable. Actually forwarded from createWindow()'s
+    // did-finish-load handler above, once the renderer exists to receive it.
+    if (pendingConnectLobbyId) {
+        recordSteamDiagnostic('info', 'steam_lobby_join_requested', 'cold-start +connect_lobby', { lobbyId: pendingConnectLobbyId });
+    }
 
     // Defer Steam initialization so it doesn't block the initial native window
     // creation or Gamescope's surface handoff on the Steam Deck.

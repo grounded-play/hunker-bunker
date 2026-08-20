@@ -48,7 +48,7 @@ export const TiltShiftPassShader = {
 import { assetUrl } from './assetUrl.js';
 import { getItemCatalogEntry } from './steamVaultUi.js';
 import { wrapAngle, planarBasisFromOffsetAzimuth, aimVectorFromYaw } from './cameraYaw.js';
-import { MULTIPLAYER_SPAWN_MODES } from './multiplayerCrashPlanner.js';
+import { MULTIPLAYER_SPAWN_MODES, hashSeed } from './multiplayerCrashPlanner.js';
 import { multiplayerLobby } from './multiplayerLobby.js';
 import { BankManager, O2_GENERATOR_UPGRADES, BASE_TURRET_UPGRADES, BASE_TURRET_REPAIR_COST, TIER2_UPGRADE_ORDER, TIER2_UPGRADE_CONFIGS, WEAPON_UPGRADE_ORDER, WEAPON_UPGRADES_CONFIG, CLASS_SKILL_TREES, shellPriceOf } from './bank.js';
 import { MarkovGenerator } from './generator.js';
@@ -180,7 +180,7 @@ import { ExplorationTracker } from './mapSystem.js';
 export const EXTERIOR_CANYON_TILE = 'X';
 export const CLIFF_TILE = 'C';
 export const LEDGE_TILE = 'O';
-import { rollEnemyLootDrop, computeActiveSynergies, WEAPON_OVERCLOCKS, SUIT_RELICS } from './runDrops.js';
+import { rollEnemyLootDrop, computeActiveSynergies, WEAPON_OVERCLOCKS, SUIT_RELICS, applyLastBreathDamage } from './runDrops.js';
 import { buildUnifiedSkillTree, getTreeConnectors } from './skillTree.js';
 import { pickLoreDropForSite, getFoundLoreKeys, markLoreDropFound, LORE_DROPS } from './loreDrops.js';
 import { createBossFight, tickBossFight, applyBossDamage, QUEEN_FIGHT_DEF, QUEEN_PHASE_LINES, SPORESNAIL_FIGHT_DEF } from './bossPhases.js';
@@ -1171,6 +1171,16 @@ export class ThreeGame {
         this.encounterState = null;
         this._encounterSprite = null;
         this.depletedGearPileKeys = new Set();
+        // Sprint 26: mirrors depletedGearPileKeys, but for ordinary (non-boss)
+        // enemies. Found while wiring scatterKey as a stable cross-client
+        // entity ID (see resolveNetworkEnemySprite): without this, a killed
+        // enemy's (chunk, index, type) scatterKey was silently reissued to a
+        // freshly-spawned "new" instance if the player left the chunk and
+        // came back, since chunk mounting has no memory of what already died
+        // there. That's a real respawn bug on its own (solo or co-op), and
+        // it also meant a stale client could re-report a hit against a key
+        // the world had already reused for a different live enemy.
+        this.killedEnemyScatterKeys = new Set();
         // docs/dynamic-light-shader-runaway-plan-2026-08-19.md direction #1 --
         // "environmental" PointLights (terminal/status/beacon/O2-safe/lore-terminal
         // lights, etc, registered via registerEnvLight below) accumulate as the
@@ -3931,8 +3941,16 @@ export class ThreeGame {
         }
     }
 
-    setupMultiplayerNetwork() {
-        const session = (typeof window !== 'undefined' && window.activeMultiplayerSession) || multiplayerLobby?.getActiveSession?.();
+    // Sprint 26: accepts an explicit session now (src/gameController.js's
+    // startMultiplayerRun passes one), so this doesn't have to rely solely
+    // on reading globals -- falls back to the pre-existing global/lobby
+    // reads when called with no argument (the constructor's own call site
+    // below, and any other caller that hasn't migrated), so nothing else
+    // that already worked this way breaks.
+    setupMultiplayerNetwork(explicitSession = null) {
+        const session = explicitSession
+            || (typeof window !== 'undefined' && window.activeMultiplayerSession)
+            || multiplayerLobby?.getActiveSession?.();
         if (!session) return;
 
         this.isMultiplayer = true;
@@ -3948,6 +3966,38 @@ export class ThreeGame {
         // carried through on the session object, since currentPlayers fires
         // well before this method's own listeners could catch it.
         this.isMultiplayerHost = Boolean(session.isHost);
+
+        // Sprint 26: world-generation seed sync. Found investigating stable
+        // cross-client enemy IDs: chunk/enemy generation IS fully
+        // deterministic given identical inputs (createChunkScatterPlacements
+        // seeds a single RNG from hashTile(...) XOR this.runEntropy, no raw
+        // Math.random() anywhere in that path) -- but `session.seed`
+        // (broadcast identically to everyone via matchDeploy/matchStarted)
+        // was never actually used for world generation, only for crash-site
+        // spawn-point layout. `runEntropy` is per-client
+        // crypto-random (createFreshRunEntropy()) and `fixedRunEntropy` is
+        // set to false at init and never flipped true anywhere in the
+        // codebase -- so two clients in the same match have been generating
+        // DIFFERENT worlds this whole time, not just failing to agree on
+        // individual enemy identity. respawnPlayer's run-reset (which fires
+        // after this, via launchStandardRun -> resetRunToStartingState)
+        // does `this.runEntropy = this.fixedRunEntropy ? 0 : createFreshRunEntropy()`
+        // -- setting fixedRunEntropy here is what makes that later
+        // assignment land on the same constant for everyone, rather than a
+        // fresh random value per client. globalSeedOffset is untouched by
+        // that reset, so it's set directly here to a match-derived hash
+        // (hashSeed, the same function already used for crash-site
+        // planning) for match-to-match variety despite runEntropy always
+        // settling on the same constant. Scoped to the INITIAL shared
+        // world only: globalSeedOffset can still independently drift later
+        // if players trigger Act-2 descent at different real-world moments
+        // (threeGame.js's post-descent `globalSeedOffset += 7919` runs
+        // per-client, unsynced) -- a real, separate, deeper gap not
+        // attempted in this pass.
+        if (session.seed != null) {
+            this.fixedRunEntropy = true;
+            this.globalSeedOffset = hashSeed(session.seed) | 0;
+        }
 
         // If a crash plan exists, adjust local player spawn if assigned
         if (this.multiplayerCrashPlan?.players?.length && this.player) {
@@ -3965,10 +4015,22 @@ export class ThreeGame {
             this.netSocket.on('playerDamaged', (data) => this.handleRemotePlayerDamaged(data));
             this.netSocket.on('playerRevived', (data) => this.handleRemotePlayerRevived(data));
             this.netSocket.on('playerDownedBroadcast', (data) => this.handleRemotePlayerDowned(data?.playerId));
+            this.netSocket.on('playerExtractedBroadcast', (data) => this.handleRemotePlayerExtracted(data));
             this.netSocket.on('enemyDamaged', (data) => this.handleRemoteEnemyDamage(data));
             this.netSocket.on('enemyHitReported', (data) => this.handleEnemyHitReported(data));
             this.netSocket.on('playerDisconnected', (id) => this.removeRemotePlayer(id));
             this.netSocket.on('newPlayer', (player) => this.getOrCreateRemotePlayer(player));
+            // Sprint 26: server/relay.js's disconnect handler now promotes a
+            // remaining connected player to interim host the instant the
+            // current host drops mid-match (see its own comment), rather
+            // than leaving the room hostless until a reconnect or a
+            // brand-new joiner. this.isMultiplayerHost was previously only
+            // ever set once, from session.isHost at the top of this method
+            // -- with no listener at all, it never learned about a mid-match
+            // failover, so a promoted client's own enemyHitReport authority
+            // branch in applyPlayerDamageToEnemy/handleEnemyHitReported
+            // stayed stuck on stale "I'm not host" state.
+            this.netSocket.on('hostChanged', (data) => this.handleHostChanged(data));
         }
 
         // Spawn peers from crash plan / roster
@@ -3979,6 +4041,55 @@ export class ThreeGame {
                 }
             });
         }
+    }
+
+    // Sprint 26: extracted from destroy()'s inline version (which had drifted
+    // out of sync with setupMultiplayerNetwork's actual listener list --
+    // missing playerDownedBroadcast/enemyDamaged/enemyHitReported, left
+    // registered on the underlying socket after "teardown") so there's one
+    // source of truth for what setupMultiplayerNetwork registers and what
+    // undoes it. Also now called when starting a fresh SOLO run after an
+    // earlier multiplayer match in the same tab (no reload): isMultiplayer
+    // was previously only ever set to true, never reset anywhere, so a
+    // later solo run would still be treated as multiplayer by every
+    // isMultiplayer-gated code path, not just end-of-run reporting -- and
+    // any surviving socket listeners would keep mutating this (now solo)
+    // instance's state in response to stale multiplayer events.
+    teardownMultiplayerNetwork() {
+        if (this.remotePlayers) {
+            for (const remote of this.remotePlayers.values()) {
+                if (remote.mesh) this.scene.remove(remote.mesh);
+            }
+            this.remotePlayers.clear();
+        }
+        if (this.netSocket) {
+            this.netSocket.off('playerMoved');
+            this.netSocket.off('playerFired');
+            this.netSocket.off('playerDamaged');
+            this.netSocket.off('playerRevived');
+            this.netSocket.off('playerDownedBroadcast');
+            this.netSocket.off('playerExtractedBroadcast');
+            this.netSocket.off('enemyDamaged');
+            this.netSocket.off('enemyHitReported');
+            this.netSocket.off('playerDisconnected');
+            this.netSocket.off('newPlayer');
+            this.netSocket.off('hostChanged');
+            this.netSocket = null;
+        }
+        this.isMultiplayer = false;
+        this.multiplayerMode = null;
+        this.multiplayerRoomCode = null;
+        this.multiplayerCrashPlan = null;
+        this.isMultiplayerHost = false;
+        this.lastNetBroadcastTime = 0;
+        // Sprint 26: undoes setupMultiplayerNetwork's world-seed sync (see
+        // its own comment) -- without this, a solo run started after a
+        // multiplayer match in the same tab would keep generating worlds
+        // from the pinned match seed forever, the same class of leak the
+        // isMultiplayer fix above closes, just for world generation instead
+        // of multiplayer flags.
+        this.fixedRunEntropy = false;
+        this.globalSeedOffset = 0;
     }
 
     getOrCreateRemotePlayer(playerData) {
@@ -4187,11 +4298,41 @@ export class ThreeGame {
         window.AudioManager?.play?.('ui_error', { volume: 0.4 });
     }
 
+    // Sprint 26: the receiving end of handleExtraction's netSocket.emit
+    // above -- visibility only (see that method's comment for the scope
+    // boundary), so this deliberately does NOT end this client's own run,
+    // touch missionState, or grant anything. Falls back to the broadcast's
+    // own callsign field when the remote roster entry isn't known locally
+    // (e.g. they extracted before this client ever received a movement
+    // update naming them), matching handleRemotePlayerDowned's own
+    // `remote.callsign` reliance but tolerating the entry's absence.
+    handleRemotePlayerExtracted(data) {
+        const remote = data?.playerId ? this.remotePlayers?.get(data.playerId) : null;
+        const callsign = remote?.callsign || data?.callsign || 'SQUADMATE';
+        window.showToastNotification?.(`SQUADMATE EXTRACTED: ${callsign}`);
+        window.AudioManager?.play?.('fx_level_up', { volume: 0.4 });
+    }
+
+    // Sprint 26: server/relay.js's disconnect handler emits this the instant
+    // the current host drops mid-match and a remaining player is promoted
+    // to interim host (see that handler's comment) -- this is that
+    // promotion landing on every client in the room, including the newly-
+    // promoted one itself. Compares against this.netSocket.id rather than
+    // trusting a locally-cached "am I host" flag, since the whole point is
+    // that flag can now change mid-match.
+    handleHostChanged(data) {
+        const wasHost = this.isMultiplayerHost;
+        this.isMultiplayerHost = Boolean(data?.hostId) && data.hostId === this.netSocket?.id;
+        if (this.isMultiplayerHost && !wasHost) {
+            window.showToastNotification?.('HOST REASSIGNED TO YOU');
+        }
+    }
+
     // Sprint 24 Milestone A co-op enemy hit-sync (host-authoritative-style
     // gossip broadcast, see server/relay.js's enemyDamage handler comment).
-    // Enemies don't have a cross-client-stable ID yet, so this matches by
-    // type + nearest position on the receiving end -- documented as a known
-    // approximation, not exact-identity sync.
+    // Type + nearest position on the receiving end -- a known approximation,
+    // not exact-identity sync (see resolveNetworkEnemySprite below, which
+    // now tries an exact ID match first and only falls back to this).
     // Shared by handleRemoteEnemyDamage and handleEnemyHitReported. 3-unit
     // tolerance: generous enough for network lag/interpolation drift between
     // when a client sampled the enemy's position and when this arrives,
@@ -4212,9 +4353,27 @@ export class ThreeGame {
         return (best && bestDist <= maxDist) ? best : null;
     }
 
+    // Sprint 26: resolves a network hit report to a local sprite by exact
+    // scatterKey first -- now a real cross-client-stable ID, not just a
+    // local bookkeeping key, since world generation is seed-synced (see
+    // setupMultiplayerNetwork's comment). Falls back to the pre-existing
+    // fuzzy type+position match when the key isn't found locally (the
+    // reporting client's chunk hasn't mounted on this client yet, or the
+    // payload predates this field) rather than dropping the hit outright.
+    resolveNetworkEnemySprite(data) {
+        if (data?.scatterKey) {
+            for (const sprite of this.scatterSprites) {
+                if (sprite.userData?.scatterKey !== data.scatterKey) continue;
+                if (sprite.userData?.burstTriggered) continue;
+                return sprite;
+            }
+        }
+        return this.findNearestMatchingEnemySprite(data.enemyType, data.x, data.z);
+    }
+
     handleRemoteEnemyDamage(data) {
         if (!data || !Number.isFinite(data.x) || !Number.isFinite(data.z) || !(data.damage > 0)) return;
-        const sprite = this.findNearestMatchingEnemySprite(data.enemyType, data.x, data.z);
+        const sprite = this.resolveNetworkEnemySprite(data);
         if (sprite) {
             this.applyPlayerDamageToEnemy(sprite, data.damage, { fromNetwork: true });
         }
@@ -4231,7 +4390,7 @@ export class ThreeGame {
     handleEnemyHitReported(data) {
         if (!this.isMultiplayerHost) return;
         if (!data || !Number.isFinite(data.x) || !Number.isFinite(data.z) || !(data.damage > 0)) return;
-        const sprite = this.findNearestMatchingEnemySprite(data.enemyType, data.x, data.z);
+        const sprite = this.resolveNetworkEnemySprite(data);
         if (sprite) {
             this.applyPlayerDamageToEnemy(sprite, data.damage);
         }
@@ -10939,7 +11098,20 @@ export class ThreeGame {
         const isSyncableCoopHit = !fromNetwork && this.isMultiplayer && this.multiplayerMode !== 'pvp' && this.netSocket
             && sprite?.userData?.type && !sprite.userData?.queenFight && !sprite.userData?.sporesnailFight;
         if (isSyncableCoopHit) {
-            const payload = { enemyType: sprite.userData.type, x: sprite.position.x, z: sprite.position.z, damage: amount };
+            // Sprint 26: scatterKey (createChunkScatterPlacements's
+            // `${chunkX},${chunkY}:${indexInChunk}:${type}`, already set on
+            // every enemy sprite's userData in createScatterInstance -- see
+            // that function's isEnemyType branch) is a real cross-client-
+            // stable ID now that world generation is seed-synced (see
+            // setupMultiplayerNetwork's comment) -- previously the
+            // receiving end could only match by type + nearest position
+            // because two clients weren't even generating the same world.
+            // Included alongside x/z rather than replacing them: the
+            // receiving end still falls back to fuzzy position matching if
+            // the exact key isn't found locally (e.g. that chunk hasn't
+            // mounted there yet), so this is additive, not a breaking
+            // protocol change.
+            const payload = { enemyType: sprite.userData.type, scatterKey: sprite.userData.scatterKey ?? null, x: sprite.position.x, z: sprite.position.z, damage: amount };
             if (this.isMultiplayerHost) {
                 // The host's own local detection is immediately canonical.
                 this.netSocket.emit('enemyDamage', payload);
@@ -15402,6 +15574,7 @@ export class ThreeGame {
             window.resetPickupCounter?.();
             this.depletedGearPileKeys.clear();
             this.killedBosses.clear();
+            this.killedEnemyScatterKeys.clear();
             this.playerSlowTimer = 0;
             this.playerPoisonTimer = 0;
             this.playerPoisonTickTimer = 0;
@@ -15544,6 +15717,16 @@ export class ThreeGame {
             this.runDepositedResources.coin += depositPayload.coin;
             window.consumeSessionInventoryForDeposit?.(depositPayload);
         }
+
+        // Sprint 26: match-completion/extraction sync -- previously this
+        // was entirely local; squadmates had no way to know a player had
+        // extracted (mirrors enterDownedState's netSocket.emit pattern
+        // exactly). Visibility only, deliberately not authoritative --
+        // doesn't end the match for anyone else, doesn't grant rewards; see
+        // server/relay.js's playerExtracted handler comment for the scope
+        // boundary against the bigger "server decides when the room's run
+        // is over" lift this isn't attempting.
+        this.netSocket?.emit('playerExtracted', {});
 
         window.dispatchEvent(new CustomEvent('player-extracted', {
             detail: {
@@ -18137,6 +18320,13 @@ export class ThreeGame {
             if (mod.stats?.extraBullets) extraBullets += mod.stats.extraBullets;
             if (mod.stats?.spreadAngle) spreadAngle = mod.stats.spreadAngle;
         }
+        // "Last Breath" relic (docs/design/one-more-ring-design-pillars.md
+        // item 2): the first "transformative" relic -- changes a rule
+        // (oxygen becomes a damage lever, not just a timer) instead of
+        // adding a flat bonus. Pulled out into runDrops.js's
+        // applyLastBreathDamage so it's testable without faking this
+        // method's much larger dependency surface.
+        damage = applyLastBreathDamage(damage, this.runRelics, this.playerVitals?.o2 ?? 100);
 
         const playerHeight = this.getTerrainHeightAt(this.player?.position?.x ?? 0, this.player?.position?.z ?? 0);
         if (playerHeight > 0) {
@@ -21036,6 +21226,9 @@ export class ThreeGame {
             if (placement.type.startsWith('bunker_junk') && this.depletedGearPileKeys.has(placement.scatterKey)) {
                 continue;
             }
+            if (this.isEnemyType(placement.type) && this.killedEnemyScatterKeys.has(placement.scatterKey)) {
+                continue;
+            }
             const scatter = this.createScatterInstance(placement);
             if (scatter) {
                 group.add(scatter);
@@ -23497,6 +23690,7 @@ export class ThreeGame {
 
         sprite.userData.burstTriggered = true;
         sprite.userData.burstTimer = 0;
+        if (sprite.userData.scatterKey) this.killedEnemyScatterKeys.add(sprite.userData.scatterKey);
         this.snailsKilledThisRun = (this.snailsKilledThisRun ?? 0) + 1;
 
         // Season 0 Zero-Point Flux Overdrive overclock (itemdef 4147): 5 kills in 3s refunds 1 dash charge
@@ -28438,21 +28632,7 @@ export class ThreeGame {
         this.renderer.setAnimationLoop(null);
         this.resetWeaponState({ emit: false });
 
-        if (this.remotePlayers) {
-            for (const remote of this.remotePlayers.values()) {
-                if (remote.mesh) this.scene.remove(remote.mesh);
-            }
-            this.remotePlayers.clear();
-        }
-        if (this.netSocket) {
-            this.netSocket.off('playerMoved');
-            this.netSocket.off('playerFired');
-            this.netSocket.off('playerDamaged');
-            this.netSocket.off('playerRevived');
-            this.netSocket.off('playerDisconnected');
-            this.netSocket.off('newPlayer');
-            this.netSocket = null;
-        }
+        this.teardownMultiplayerNetwork();
 
         window.removeEventListener('keydown', this.handleKeyDown);
         window.removeEventListener('keyup', this.handleKeyUp);
