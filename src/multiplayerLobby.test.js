@@ -1,5 +1,5 @@
 import { describe, expect, it, beforeEach, afterEach, vi } from 'vitest';
-import { MultiplayerLobby, MULTIPLAYER_MODES, resolveRelayUrl, fetchMultiplayerSessionToken } from './multiplayerLobby.js';
+import { MultiplayerLobby, MULTIPLAYER_MODES, resolveRelayUrl, fetchMultiplayerSessionToken, getLocalLoadoutSummary } from './multiplayerLobby.js';
 
 describe('MultiplayerLobby', () => {
     let lobby;
@@ -592,5 +592,75 @@ describe('MultiplayerLobby', () => {
 
             expect(lobby.pendingJoinPasswordHash).toBeNull();
         });
+    });
+
+    // docs/multiplayer-flow-and-lobby-bugs-2026-08-20.md Phase 3: the
+    // display-only loadout summary synced onto the roster (equipped weapon
+    // label + whether a charm is equipped) -- reused by connect(),
+    // fallbackLocalSession(), and Phase 4's squad-manifest cutscene overlay.
+    describe('getLocalLoadoutSummary', () => {
+        afterEach(() => {
+            if (originalWindow) globalThis.window = originalWindow;
+        });
+
+        it('reads the equipped weapon label and charm state for the given class', () => {
+            originalWindow = globalThis.window;
+            const getEquippedLabel = vi.fn().mockReturnValue('RAILGUN MK.II');
+            const getEquippedCharmId = vi.fn().mockReturnValue('4200');
+            globalThis.window = { loadout: { getEquippedLabel, getEquippedCharmId }, fabricator: { isFabricated: vi.fn() } };
+
+            const summary = getLocalLoadoutSummary('TANK');
+
+            expect(summary).toEqual({ weapon: 'RAILGUN MK.II', hasCharm: true });
+            expect(getEquippedLabel).toHaveBeenCalledWith(globalThis.window.fabricator, 'TANK');
+            expect(getEquippedCharmId).toHaveBeenCalledWith('TANK');
+        });
+
+        it('reports hasCharm:false when no charm is equipped', () => {
+            originalWindow = globalThis.window;
+            globalThis.window = {
+                loadout: { getEquippedLabel: () => 'SIDEARM', getEquippedCharmId: () => null },
+                fabricator: {}
+            };
+
+            expect(getLocalLoadoutSummary('SCOUT')).toEqual({ weapon: 'SIDEARM', hasCharm: false });
+        });
+
+        it('returns null when there is no live loadout manager yet (very early boot)', () => {
+            originalWindow = globalThis.window;
+            globalThis.window = {};
+
+            expect(getLocalLoadoutSummary('TANK')).toBeNull();
+        });
+    });
+
+    describe('roster entries carry the synced loadout summary', () => {
+        afterEach(() => {
+            if (originalWindow) globalThis.window = originalWindow;
+        });
+
+        it('fallbackLocalSession attaches the local player\'s real loadout summary to its own roster entry', () => {
+            originalWindow = globalThis.window;
+            globalThis.window = {
+                loadout: { getEquippedLabel: () => 'ARC WELDER', getEquippedCharmId: () => '1' },
+                fabricator: {},
+                selectedPlayerType: 'ENGINEER',
+                AudioManager: { play: vi.fn() }
+            };
+
+            lobby.fallbackLocalSession();
+
+            const self = [...lobby.players.values()].find((p) => p.isSelf);
+            expect(self.loadout).toEqual({ weapon: 'ARC WELDER', hasCharm: true });
+        });
+
+        // A remote player's loadout arriving via the real currentPlayers/
+        // newPlayer socket handlers is covered by
+        // server/relayLoadoutSync.test.js (real socket.io round-trip through
+        // server/relay.js) and was live-verified end to end against the real
+        // dev server -- connect() itself isn't structured for isolating just
+        // that handler without replacing connect() wholesale, which would
+        // test a reimplementation rather than the real code (same reason no
+        // other test in this file exercises connect()'s internal handlers).
     });
 });

@@ -130,6 +130,22 @@ export function resolveRelayUrl() {
     return 'https://steam.tuesdaycinema.club';
 }
 
+// docs/multiplayer-flow-and-lobby-bugs-2026-08-20.md Phase 3: a small,
+// display-only summary of the LOCAL player's current loadout -- equipped
+// weapon label + whether a charm is equipped, not the full loadout (mods,
+// skins, decals stay purely local; nothing here ever feeds gameplay logic,
+// only the roster display and Phase 4's squad-composition cutscene).
+// window.loadout/window.fabricator are the same module-scoped singletons
+// main.js already exposes for this exact purpose (armory UI, HUD). null
+// outside a real game session (no window.loadout yet, e.g. very early boot)
+// rather than a placeholder value that would look like a real loadout.
+export function getLocalLoadoutSummary(opClass) {
+    if (typeof window === 'undefined' || !window.loadout) return null;
+    const weapon = window.loadout.getEquippedLabel?.(window.fabricator, opClass) ?? 'UNARMED';
+    const hasCharm = Boolean(window.loadout.getEquippedCharmId?.(opClass));
+    return { weapon, hasCharm };
+}
+
 export class MultiplayerLobby {
     constructor() {
         this.socket = null;
@@ -354,6 +370,7 @@ export class MultiplayerLobby {
 
         const callsign = (typeof window !== 'undefined' && window.profile?.getCallsign?.()) || 'AGENT';
         const opClass = (typeof window !== 'undefined' && window.selectedPlayerType) || 'TANK';
+        const loadout = getLocalLoadoutSummary(opClass);
 
         try {
             if (typeof window !== 'undefined') {
@@ -386,13 +403,15 @@ export class MultiplayerLobby {
                         // slot instead of every dev-mode connection looking
                         // like the same anonymous peer.
                         profileId: window.profile?.getProfileId?.() || null,
-                        passwordHash
+                        passwordHash,
+                        loadout
                     });
 
                     this.players.set(this.socket.id, {
                         id: this.socket.id,
                         callsign: `${callsign} (HOST)`,
                         opClass,
+                        loadout,
                         ping: 14,
                         isSelf: true,
                         ready: false
@@ -416,6 +435,7 @@ export class MultiplayerLobby {
                                 id,
                                 callsign: player.callsign || `OPERATIVE-${id.slice(0, 4).toUpperCase()}`,
                                 opClass: player.opClass || 'SCOUT',
+                                loadout: player.loadout || null,
                                 ping: Math.floor(20 + Math.random() * 30),
                                 isSelf: false,
                                 ready: Boolean(player.ready)
@@ -432,6 +452,7 @@ export class MultiplayerLobby {
                         id,
                         callsign: p?.callsign || `OPERATIVE-${id.slice(0, 4).toUpperCase()}`,
                         opClass: p?.opClass || 'ENGINEER',
+                        loadout: p?.loadout || null,
                         ping: 28,
                         isSelf: false,
                         ready: Boolean(p?.ready)
@@ -530,6 +551,7 @@ export class MultiplayerLobby {
         this.usingRelay = false;
         const callsign = (typeof window !== 'undefined' && window.profile?.getCallsign?.()) || 'AGENT';
         const opClass = (typeof window !== 'undefined' && window.selectedPlayerType) || 'TANK';
+        const loadout = getLocalLoadoutSummary(opClass);
 
         this.players.clear();
         // No real server exists to arbitrate a ready-up gate against in this
@@ -542,17 +564,22 @@ export class MultiplayerLobby {
             id: 'local-host',
             callsign: `${callsign} (HOST)`,
             opClass,
+            loadout,
             ping: 8,
             isSelf: true,
             ready: true
         });
 
-        // Simulated squadmate/rival for offline/local simulation
+        // Simulated squadmate/rival for offline/local simulation -- no real
+        // loadoutManager for a peer that doesn't exist, so a plausible fixed
+        // summary stands in (matches the fixed callsign/opClass already used
+        // for these entries).
         if (this.currentMode === MULTIPLAYER_MODES.COOP) {
             this.players.set('peer-recon', {
                 id: 'peer-recon',
                 callsign: 'SPECTRE-9',
                 opClass: 'SCOUT',
+                loadout: { weapon: 'CARBINE MK.I', hasCharm: false },
                 ping: 16,
                 isSelf: false,
                 ready: true
@@ -562,6 +589,7 @@ export class MultiplayerLobby {
                 id: 'peer-rival',
                 callsign: 'VULCAN-X',
                 opClass: 'ENGINEER',
+                loadout: { weapon: 'ARC WELDER', hasCharm: true },
                 ping: 19,
                 isSelf: false,
                 ready: true
@@ -1064,6 +1092,7 @@ export class MultiplayerLobby {
                         </div>
                         <div class="net-roster-class">
                             <span class="net-class-badge net-class--${classColor}">${normalizedClass}</span>
+                            ${player.loadout?.weapon ? `<span class="net-roster-loadout">${player.loadout.weapon}${player.loadout.hasCharm ? ' ◆' : ''}</span>` : ''}
                         </div>
                         <div class="net-roster-ping">
                             <span class="net-ping-dot">●</span>

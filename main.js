@@ -6316,11 +6316,60 @@ function playClassIntroSequence(playerType = 'SCOUT') {
             }
         }, 50);
 
+        // docs/multiplayer-flow-and-lobby-bugs-2026-08-20.md Phase 4: no new
+        // video assets exist per squad composition (and none can be
+        // authored this pass) -- the intro video itself stays the local
+        // player's own already-built single-class cut. What genuinely
+        // varies by squad composition is this roster overlay: real
+        // callsigns/classes/loadouts synced via Phase 3, composited over
+        // the video rather than baked into it. multiplayerLobby.players
+        // still holds the full roster at this point (finalizeDeploy never
+        // clears it -- only disconnect() does, and this only ever fires
+        // after a successful deploy).
+        if (window.game?.isMultiplayer && multiplayerLobby.players.size > 0) {
+            overlay.append(buildSquadManifestPanel());
+        }
+
         overlay.append(skipHint);
         host.appendChild(overlay);
 
         playVideoSource(charBase, startLaunchStep);
     });
+}
+
+// docs/multiplayer-flow-and-lobby-bugs-2026-08-20.md Phase 4: renders the
+// live multiplayer roster (callsign, class, Phase 3's synced loadout
+// summary) as an overlay panel for playClassIntroSequence -- a child of
+// that function's own `overlay` element, so it's torn down automatically
+// by cleanupAndResolve()'s overlay.remove() with no extra cleanup needed.
+function buildSquadManifestPanel() {
+    const panel = document.createElement('div');
+    panel.className = 'class-intro-squad-panel';
+
+    const title = document.createElement('div');
+    title.className = 'class-intro-squad-title';
+    title.textContent = 'SQUAD MANIFEST';
+    panel.appendChild(title);
+
+    multiplayerLobby.players.forEach((player) => {
+        const row = document.createElement('div');
+        row.className = `class-intro-squad-row ${player.isSelf ? 'class-intro-squad-row--self' : ''}`;
+
+        const callsignEl = document.createElement('span');
+        callsignEl.className = 'class-intro-squad-callsign';
+        callsignEl.textContent = player.callsign;
+
+        const metaEl = document.createElement('span');
+        metaEl.className = 'class-intro-squad-meta';
+        const cls = (player.opClass || 'TANK').toUpperCase();
+        const weapon = player.loadout?.weapon ?? 'UNARMED';
+        metaEl.textContent = `${cls} // ${weapon}${player.loadout?.hasCharm ? ' ◆' : ''}`;
+
+        row.append(callsignEl, metaEl);
+        panel.appendChild(row);
+    });
+
+    return panel;
 }
 
 // Generic fullscreen cutscene video: plays /cutscenes/{base}.webm (mp4

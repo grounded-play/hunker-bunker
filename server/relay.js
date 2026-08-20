@@ -69,6 +69,21 @@ function sanitizeString(value, maxLen = 32, fallback = 'AGENT') {
     return value.trim().slice(0, maxLen) || fallback;
 }
 
+// docs/multiplayer-flow-and-lobby-bugs-2026-08-20.md Phase 3: a small,
+// display-only summary of each player's equipped weapon/charm -- not the
+// full loadout (mods, skins, decals stay purely local, no gameplay logic
+// anywhere reads this), just enough for the roster and the squad-composition
+// cutscene (Phase 4) to show what each operative brought. Untrusted client
+// input, so every field gets the same defensive treatment as callsign/opClass
+// above rather than trusting shape or type.
+function sanitizeLoadout(value) {
+    if (!value || typeof value !== 'object') return null;
+    return {
+        weapon: sanitizeString(value.weapon, 40, 'UNARMED'),
+        hasCharm: Boolean(value.hasCharm)
+    };
+}
+
 export const sessionTelemetry = {
     totalConnections: 0,
     matchesDeployed: 0,
@@ -183,6 +198,7 @@ export function attachRelay(server, { allowedOrigins = [] } = {}) {
         callsign: p.callsign,
         ready: p.ready,
         opClass: p.opClass,
+        loadout: p.loadout,
         x: p.x,
         z: p.z,
         yaw: p.yaw,
@@ -239,6 +255,7 @@ export function attachRelay(server, { allowedOrigins = [] } = {}) {
             id: socket.id,
             callsign: 'AGENT',
             opClass: 'TANK',
+            loadout: null,
             steamId64: socket.steamAuth?.steamId64 ?? null,
             isDevMode: Boolean(socket.steamAuth?.isDevMode),
             x: 9,
@@ -271,6 +288,7 @@ export function attachRelay(server, { allowedOrigins = [] } = {}) {
             const roomCode = sanitizeString(data.roomCode, 24, 'SECTOR-7').toUpperCase();
             const callsign = sanitizeString(data.callsign, 20, `OPERATIVE-${socket.id.slice(0, 4).toUpperCase()}`);
             const opClass = ['SCOUT', 'TANK', 'ENGINEER'].includes(data.opClass) ? data.opClass : 'TANK';
+            const loadoutSummary = sanitizeLoadout(data.loadout);
             // No fallback here (unlike callsign/opClass): an empty string
             // must stay falsy so getStableClientKey() correctly reports "no
             // durable identity available" rather than a literal placeholder
@@ -288,6 +306,10 @@ export function attachRelay(server, { allowedOrigins = [] } = {}) {
             player.roomCode = roomCode;
             player.callsign = callsign;
             player.opClass = opClass;
+            // A reconnect (rejoin with no loadout data) shouldn't wipe a
+            // previously-synced summary -- only overwrite when this joinRoom
+            // actually carried one.
+            if (loadoutSummary) player.loadout = loadoutSummary;
             player.ready = false;
             // Restore the room's in-progress match mode (see roomModes
             // comment above) -- covers both a genuine reconnect mid-match

@@ -327,26 +327,57 @@ modal markup):
   wasn't launched through Steam, and the UI should keep saying so rather
   than silently failing).
 
-**Phase 3 — sync per-player loadout onto the roster.** Extend the
-`{id, callsign, opClass, ping, isSelf, ready}` roster entry shape with a
-loadout summary (equipped weapon + active mods/charms at minimum — decide
-exact fields against what the cutscene actually needs to differentiate,
-not everything `loadoutManager` tracks) and send it alongside `opClass` in
-the existing `joinRoom`/roster-sync messages.
+**Phase 3 and 4 — SHIPPED and live-verified 2026-08-20 (evening).**
 
-**Phase 4 — squad-composition cutscene selector.** Generalize
-`playClassIntroSequence`/`runMissionIntroSequence` (or add a sibling
-function reusing the same asset-selection machinery) to accept the full
-squad roster instead of a single `playerType`, and call it from the new
-Deployment Briefing screen's "all ready, launch" transition for co-op/pvp
-runs, in addition to the existing solo call site. Needs a design decision
-this doc doesn't make: what actually varies by squad composition — a
-different cut/edit per class combination, a shared base cut with per-player
-inserts, or something simpler like picking one "lead" player's intro and
-listing the rest as a roster card overlay. Worth a short follow-up
-conversation before building Phase 4, since it's the one part of this with
-real creative/asset scope (potentially new video assets, not just new
-selection logic) rather than pure engineering.
+**Phase 3 — sync per-player loadout onto the roster.** The roster entry
+shape (`{id, callsign, opClass, ping, isSelf, ready}`) now carries
+`loadout: { weapon, hasCharm }` too. `src/multiplayerLobby.js`'s new
+`getLocalLoadoutSummary(opClass)` reads it from the same `window.loadout`/
+`window.fabricator` singletons `main.js` already exposes for the Armory UI
+(`loadout.getEquippedLabel(fabricator, opClass)` for a real weapon name,
+`getEquippedCharmId(opClass)` for the boolean) — display-only, not the full
+loadout (mods/skins/decals stay purely local; nothing gameplay-relevant
+reads this field). Sent alongside `opClass` in the `joinRoom` emit;
+`server/relay.js` stores it per-player (`sanitizeLoadout`, same defensive
+treatment as callsign/opClass — untrusted client input, capped length,
+type-checked, unknown fields dropped) and forwards it through the existing
+`getPublicPlayer` shape used by `currentPlayers`/`newPlayer`/`playerMoved`,
+so every roster-sync path picked it up for free. Also threaded through the
+offline/local-fallback session (`fallbackLocalSession`) and the roster UI
+itself (`net-roster-loadout`, a small subtitle line under each player's
+class badge). Covered by 5 new relay integration tests
+(`server/relayLoadoutSync.test.js`) plus client-side tests for
+`getLocalLoadoutSummary` and the `fallbackLocalSession` self-entry.
+**Live-verified**: a real CO-OP connect against the dev relay showed the
+host's real equipped-weapon label ("SIDEARM") on its own roster row.
+
+**Phase 4 — squad-composition cutscene.** Design call made without a
+follow-up conversation (per the active `/goal`'s "don't pause to ask"
+directive) given a hard constraint discovered while investigating: no new
+video assets exist per squad composition, and none can be authored this
+pass. Rather than block on that, went with the simplest option already
+flagged above as a fallback — the intro video itself stays exactly what it
+already is (the local player's own single-class cut, unchanged,
+`playClassIntroSequence`/`runMissionIntroSequence` untouched in that
+respect) — but a new **squad manifest overlay**
+(`buildSquadManifestPanel()`, `main.js`) is composited on top whenever
+`window.game.isMultiplayer` is true, reading the live roster straight from
+`multiplayerLobby.players` (still populated at this point -- only
+`disconnect()` clears it, never a successful deploy) and rendering real
+callsigns, classes, and Phase 3's synced loadout summary, top-left,
+non-interactive (`pointer-events: none`, never blocks the existing
+skip-on-click/keypress handlers). It's a child of the cutscene's own
+`overlay` element, so `cleanupAndResolve()`'s existing `overlay.remove()`
+tears it down automatically — no new cleanup path needed. **Live-verified**
+end to end: a real CO-OP deploy against the dev relay showed the panel
+rendering "PHANTOM-9 (HOST)" / "TANK // SIDEARM" during the actual cutscene,
+and the run correctly proceeded into real gameplay
+(`performanceProfile: 'gameplay'`, `isMultiplayer: true`) after skip, with
+zero new console errors. Not unit-tested — `main.js` has no unit-test
+infrastructure at all (same pre-existing gap `src/gameController.js`'s own
+header comment already documents), so this follows the same
+live-verification-only precedent every other `main.js`-level change in this
+document used.
 
 ### Resolved during Phase 1/2 implementation
 
@@ -364,12 +395,14 @@ selection logic) rather than pure engineering.
   lean on the relay backend for cross-region discovery? Affects whether the
   Steam lobby browser ever actually works cross-region, independent of the
   screen it lives on now.
-- Phase 4's actual creative direction (squad-composition cutscene) — not
-  started this pass; see Phase 4 above.
+- Phase 4 shipped the roster-overlay fallback (see above) because no new
+  per-composition video assets exist or could be authored this pass. If
+  bespoke squad-intro video ever becomes real asset scope, that's a
+  genuinely bigger follow-up, not a tweak to what's here.
 - The join-side password prompt (`window.prompt` in
   `handleSteamLobbyJoinRequested`) is an explicit MVP placeholder, not a
-  themed dialog — worth a real UI pass whenever Phase 4 or another lobby-UI
-  pass touches this screen next.
-- Phase 3 (sync per-player loadout onto the roster, for the squad cutscene
-  to read) is not started — the roster still only syncs `opClass`, not
-  weapons/mods/charms.
+  themed dialog — worth a real UI pass whenever another lobby-UI pass
+  touches this screen next.
+- `main.js` still has zero unit-test infrastructure — Phase 4's
+  `buildSquadManifestPanel()` is only covered by live verification, same as
+  every other `main.js`-level change in this document.
