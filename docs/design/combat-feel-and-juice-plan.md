@@ -18,6 +18,13 @@ impulse, projectile readability, hit response, stagger, audio transient,
 casing/eject effects, animation timing, death response, reload cadence,
 crosshair communication, and low-ammo tension first.
 
+For the current milestone, run this test as the combat slice of the Proof Run
+defined in `docs/design/game-outline-and-proof-run.md`: the player must feel
+the weapon, understand at least three enemy verbs, and make one meaningful
+fight-or-bypass decision before the first depth crossing. This keeps combat
+polish tied to the game's central oxygen-and-depth gamble instead of treating
+juice as isolated spectacle.
+
 ## The Impact Stack (input → action → contact → consequence)
 
 Each step must be visually, audibly, and physically distinct:
@@ -159,3 +166,13 @@ fabricate wholesale. Use this doc as the checklist when that work is
 scheduled. The one adjacent piece that *is* pure data/logic (and therefore
 safe to build now) is the Depth Contract in
 `one-more-ring-design-pillars.md`, which a sibling commit implements.
+
+### Proof Run priority order
+
+1. Make fire, hit, stagger, kill, reload, and low-O2 feedback readable with
+   existing assets.
+2. Give cryosnails, bio chargers, and sentinels distinct combat questions;
+   validate that the new stagger grammar changes player behavior.
+3. Add one rare-relic loot ceremony and one extraction payoff beat.
+4. Only then spend time on broader VFX density, environmental interaction
+   breadth, or additional enemy variants.

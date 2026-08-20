@@ -8,6 +8,8 @@ export class DebugLogger {
         this.logs = [];
         this.sessionLogs = [];
         this.sessionStartedAt = new Date();
+        this.demoStartedAt = null;
+        this.demoMarkers = [];
         this.sequence = 0;
         this.maxLogs = 2500;
         // Cap on how many <div> rows the live panel keeps in the DOM at once.
@@ -48,6 +50,7 @@ export class DebugLogger {
                     this.info(category || 'SYS', message, ...details);
                 }
             };
+            window.hbDemoMark = (label, details) => this.markDemo(label, details);
             if (typeof document !== 'undefined') {
                 if (document.readyState === 'loading') {
                     document.addEventListener('DOMContentLoaded', () => this.mountUI());
@@ -656,6 +659,9 @@ export class DebugLogger {
 
     buildSessionCapture() {
         const game = typeof window !== 'undefined' ? (window.game ?? window.threeGame) : null;
+        const inputState = typeof window !== 'undefined'
+            ? window.HunkerInputState?.getState?.() ?? null
+            : null;
         return {
             format: 'hunker-bunker-session-log',
             schemaVersion: 1,
@@ -664,7 +670,10 @@ export class DebugLogger {
                 exportedAt: new Date().toISOString(),
                 durationMs: Date.now() - this.sessionStartedAt.getTime(),
                 userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : null,
-                url: typeof location !== 'undefined' ? location.href : null
+                url: typeof location !== 'undefined' ? location.href : null,
+                demoStartedAt: this.demoStartedAt,
+                demoDurationMs: this.demoStartedAt ? Date.now() - this.demoStartedAt : null,
+                demoMarkers: this.demoMarkers.map((marker) => ({ ...marker }))
             },
             state: {
                 appPhase: typeof window !== 'undefined' ? window.__hbAppPhase ?? null : null,
@@ -673,10 +682,29 @@ export class DebugLogger {
                 position: game?.player?.position
                     ? { x: game.player.position.x, y: game.player.position.y, z: game.player.position.z }
                     : null,
-                renderer: game?.renderer?.info?.render ?? null
+                renderer: game?.renderer?.info?.render ?? null,
+                performance: game?.getPerformanceDiagnosticsSnapshot?.() ?? null,
+                stage: typeof window !== 'undefined' ? window.hbStage ?? null : null,
+                input: inputState,
+                steam: typeof window !== 'undefined' ? window.__hbSteamStatus ?? null : null
             },
             entries: this.sessionLogs.map((entry) => ({ ...entry }))
         };
+    }
+
+    markDemo(label = 'checkpoint', details = null) {
+        const normalizedLabel = String(label || 'checkpoint').slice(0, 80);
+        const marker = {
+            at: new Date().toISOString(),
+            elapsedMs: Date.now() - this.sessionStartedAt.getTime(),
+            label: normalizedLabel,
+            details: details ?? null
+        };
+        if (!this.demoStartedAt) this.demoStartedAt = Date.now();
+        this.demoMarkers.push(marker);
+        if (this.demoMarkers.length > 100) this.demoMarkers.shift();
+        this.info('DEMO', normalizedLabel, details ?? undefined);
+        return marker;
     }
 
     serializeSession(format = 'json') {
@@ -803,6 +831,7 @@ export class DebugLogger {
   • steam [status|recheck]- Perform Steamworks integration & backend diagnostic check
   • clear                 - Clear dev log history
   • exportlogs [json|txt] - Download the complete log captured since launch
+  • demo [start|mark <label>|stop] - Mark a friend-demo session/checkpoint
   • god                   - Toggle player invincibility
   • heal                  - Fully restore player Health & Oxygen
   • tp <x> <z>            - Teleport player to target tile
@@ -847,6 +876,21 @@ export class DebugLogger {
             case 'clear':
                 this.clear();
                 break;
+
+            case 'demo': {
+                const subcommand = parts[1]?.toLowerCase() ?? 'mark';
+                if (subcommand === 'start') {
+                    this.demoStartedAt = Date.now();
+                    this.demoMarkers = [];
+                    this.markDemo('demo-start');
+                } else if (subcommand === 'stop') {
+                    this.markDemo('demo-stop');
+                } else {
+                    const label = parts.slice(subcommand === 'mark' ? 2 : 1).join(' ') || 'checkpoint';
+                    this.markDemo(label);
+                }
+                break;
+            }
 
             case 'exportlogs':
             case 'savelogs':

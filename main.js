@@ -1343,6 +1343,8 @@ function handleSteamInputSnapshot(snapshot = {}) {
     const previousPhase = steamInputState.phase;
     const previousMode = steamInputState.lastInputMode;
     const previousPrimaryType = steamInputState.primaryControllerType;
+    const previousDeck = steamInputState.isSteamDeck;
+    const previousCount = steamInputState.controllerCount;
     const controllers = Array.isArray(snapshot.controllers) ? snapshot.controllers : [];
 
     steamInputState.available = Boolean(snapshot.available);
@@ -1353,6 +1355,20 @@ function handleSteamInputSnapshot(snapshot = {}) {
     steamInputState.primaryControllerHandle = snapshot.primaryControllerHandle ?? null;
     steamInputState.primaryControllerType = snapshot.primaryControllerType ?? null;
     steamInputState.controllers = controllers;
+    window.__hbSteamInputState = {
+        phase: steamInputState.phase,
+        available: steamInputState.available,
+        isSteamDeck: steamInputState.isSteamDeck,
+        controllerCount: steamInputState.controllerCount,
+        primaryControllerType: steamInputState.primaryControllerType,
+        lastInputMode: steamInputState.lastInputMode
+    };
+
+    if (previousPhase !== steamInputState.phase
+        || previousDeck !== steamInputState.isSteamDeck
+        || previousCount !== steamInputState.controllerCount) {
+        debugLog.info('INPUT', 'Steam Input state changed', window.__hbSteamInputState);
+    }
 
     if (steamInputState.anyInput) {
         setLastInputMode('controller', { refresh: false });
@@ -12974,6 +12990,28 @@ async function refreshSteamBridgeStatus({ waitForBackend = true } = {}) {
     const health = waitForBackend
         ? await healthPromise
         : { ok: false, pending: true, reason: 'health_pending' };
+
+    // Keep a privacy-safe snapshot available to the in-game session exporter.
+    // It intentionally omits SteamID64; demo logs need platform health, not
+    // an account identifier.
+    window.__hbSteamStatus = {
+        active: Boolean(info?.active),
+        persona: info?.persona ?? null,
+        appId: info?.appId ?? null,
+        isSteamDeck: Boolean(info?.isSteamDeck),
+        steamInputAvailable: Boolean(info?.steamInputAvailable),
+        cloud: info?.cloud ? {
+            available: Boolean(info.cloud.available),
+            enabledForApp: Boolean(info.cloud.enabledForApp),
+            enabledForAccount: Boolean(info.cloud.enabledForAccount)
+        } : null,
+        backend: {
+            ok: Boolean(health?.ok),
+            pending: Boolean(health?.pending),
+            reason: health?.reason ?? null,
+            authConfigured: Boolean(health?.steam?.authConfigured)
+        }
+    };
 
     const identityLogKey = JSON.stringify({
         active: Boolean(info?.active),

@@ -31,6 +31,15 @@ export const MOD_GLB_MAP = Object.freeze({
     '4147': '/3d/runtime/new3ds/mod_zero_point_flux.glb'
 });
 
+export const CHASSIS_SKIN_GLB_MAP = Object.freeze({
+    '4112': '/3d/runtime/new3ds/chassis_subterran_drill_engineer.glb',
+    '4113': '/3d/runtime/new3ds/chassis_cryo_vanguard_scout.glb',
+    '4114': '/3d/runtime/new3ds/chassis_trench_warden_heavy.glb',
+    '4116': '/3d/runtime/new3ds/chassis_bio_synthesizer_medic.glb',
+    '4117': '/3d/runtime/new3ds/chassis_dreadnought_exo_juggernaut.glb',
+    '4118': '/3d/runtime/new3ds/chassis_cyber_spectre_infiltrator.glb'
+});
+
 // Weapon archetype/skin GLB paths come from src/player3dOverlay.js — the same maps that
 // drive the in-combat held weapon — so the Armory bench preview can never drift out of
 // sync with what actually renders in a run (this file used to keep its own stale copy;
@@ -264,7 +273,7 @@ export async function createArmoryScene(canvas) {
         decalSprite = sprite;
     }
 
-    async function loadOperatorModel(classType) {
+    async function loadOperatorModel(classType, chassisSkinId = null) {
         const gen = ++loadGen;
         const normalized = ['SCOUT', 'TANK', 'ENGINEER'].includes(String(classType).toUpperCase())
             ? String(classType).toUpperCase()
@@ -302,8 +311,14 @@ export async function createArmoryScene(canvas) {
             }
         };
 
+        const baseConfig = configs[normalized] || configs.SCOUT;
+        const customModel = chassisSkinId && CHASSIS_SKIN_GLB_MAP[chassisSkinId]
+            ? CHASSIS_SKIN_GLB_MAP[chassisSkinId]
+            : null;
+        const config = customModel ? { ...baseConfig, modelUrl: customModel } : baseConfig;
+
         try {
-            const overlay = await createPlayer3dOverlay(configs[normalized] || configs.SCOUT);
+            const overlay = await createPlayer3dOverlay(config);
             if (gen !== loadGen) return;
             currentOverlay = overlay;
             overlay.root.rotation.y = 0.35; // Angle slightly toward center weapon bench
