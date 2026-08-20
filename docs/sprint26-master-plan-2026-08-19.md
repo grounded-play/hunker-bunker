@@ -1,5 +1,17 @@
 # Sprint 26 — Master Plan
 
+**Correction (2026-08-20, evening) -- read this before trusting any "blocked
+on GitHub secrets" / "Fly.io" claim below:** those claims were about the
+`.github/workflows/steam-backend-deploy.yml` → Fly.io path specifically,
+which really is unset and unused. But production Steam auth is separately
+**live** via a self-hosted `docker-compose.yml`/`Caddyfile` deploy the user
+already had running at `https://steam.tuesdaycinema.club` this whole time
+-- confirmed via its `/health` endpoint (`authConfigured: true`,
+`signingMode: explicit`, durable storage). See `PRODUCT_STATE.md` (repo
+root) for the current, corrected truth on this -- this doc's own Fly.io
+references below are now historical investigation of a path that turned
+out not to be the real one.
+
 Date: 2026-08-19 (branch cut 2026-08-20T04:40Z, right after PR #37 merged)
 Branch: `dev/sprint-26`, cut clean from `mothership` at the PR #37 merge
 commit (`2be2190`).
