@@ -77,6 +77,21 @@ import {
     getMaxUnlockedRing,
     validateRingProgression
 } from './src/mazeExpedition.js';
+import { installSteamCloudSaveBridge } from './src/steamCloudSaveBridge.js';
+
+// docs/steamstorestatus.log Steam Cloud gap: electron/main.cjs's
+// hb:saveDataChanged bridge (mirrors hb_*-prefixed saves into save.json,
+// the file Steam Cloud's Auto-Cloud config watches) was fully built but
+// never actually called from the game -- every hb_* write went straight
+// to plain localStorage. Installed here, as early as possible (before
+// AchievementEngine or anything else below does its first save write),
+// so both the one-time bootstrap sync of existing progress and every
+// future write reach Electron. No-ops outside a packaged Electron build.
+installSteamCloudSaveBridge({
+    storage: typeof window !== 'undefined' ? window.localStorage : null,
+    electronAPI: typeof window !== 'undefined' ? window.electronAPI : null
+});
+
 const startBtn = document.getElementById('start-game'); // INITIALIZE button
 const titleContinueBtn = document.getElementById('title-continue-btn');
 const titleSwitchClassBtn = document.getElementById('title-switch-class-btn');

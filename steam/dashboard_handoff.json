@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-04T22:06:36.276Z",
+  "generatedAt": "2026-08-20T07:52:58.332Z",
   "app": {
     "appId": 4957040,
     "title": "Hunker Bunker",
@@ -327,6 +327,42 @@
       "type": "INT",
       "setBy": "Client",
       "source": "floor(achievementState.stats.maxRunMs / 1000)"
+    },
+    {
+      "apiName": "total_kills",
+      "type": "INT",
+      "setBy": "Client",
+      "source": "achievementState.stats.totalKills"
+    },
+    {
+      "apiName": "total_runs",
+      "type": "INT",
+      "setBy": "Client",
+      "source": "achievementState.stats.runCount"
+    },
+    {
+      "apiName": "total_victories",
+      "type": "INT",
+      "setBy": "Client",
+      "source": "achievementState.stats.victories"
+    },
+    {
+      "apiName": "shells_collected",
+      "type": "INT",
+      "setBy": "Client",
+      "source": "achievementState.stats.shellsCollected"
+    },
+    {
+      "apiName": "lore_drops_collected",
+      "type": "INT",
+      "setBy": "Client",
+      "source": "achievementState.stats.loreDropIds.length || achievementState.stats.loreDrops"
+    },
+    {
+      "apiName": "max_hive_bond",
+      "type": "INT",
+      "setBy": "Client",
+      "source": "achievementState.stats.maxHiveBond"
     }
   ],
   "cloudPaths": [
@@ -504,7 +540,7 @@
   },
   "inventory": {
     "appid": 4957040,
-    "itemCount": 13,
+    "itemCount": 73,
     "sellableItems": [
       {
         "itemdefid": 4001,
