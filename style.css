@@ -408,7 +408,7 @@ body {
 }
 
 #loading-screen.over-door-loader {
-  z-index: 15250;
+  z-index: 250250;
   background: transparent;
   pointer-events: none;
   opacity: 1;
@@ -461,6 +461,36 @@ body {
 }
 
 
+/* --- Post-Death Curtain --- */
+/* Solid black, spans the whole death -> cinematic -> door-close ->
+   game-over -> MAIN MENU -> door-reopen sequence. Kept BELOW the death
+   cinematic video/still overlay (.class-intro-overlay z-index 12000,
+   .cinematic-still-overlay 12010) -- originally shipped at 90000, which sat
+   above those and silently blacked out the death movie for its entire
+   runtime instead of just filling the gaps around it. 11000 still clears
+   every normal gameplay/HUD z-index (nothing else in the sheet sits between
+   10020 and 12000) so the frozen 3D world still never shows through, while
+   the cinematic now renders on top of it as intended. Still below .modal
+   (100000) and the door cluster (250000+, see below) so those two remain
+   the only things ever drawn over it. */
+#death-curtain {
+  position: absolute;
+  inset: 0;
+  z-index: 11000;
+  background: #000;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 320ms ease-out;
+}
+
+#death-curtain.hidden {
+  display: none;
+}
+
+#death-curtain.is-visible {
+  opacity: 1;
+}
+
 /* --- Tactical Door Transition --- */
 #transition-overlay {
   --gear-focus-x: calc(var(--vu) * 80);
@@ -479,7 +509,15 @@ body {
   --transition-scene-fade: 0;
   position: absolute;
   inset: 0;
-  z-index: 15000;
+  /* Doors are a full-screen curtain hiding scene/screen swaps -- they must
+     render above literally everything else on the page (modals included:
+     .modal is z-index 100000, and content revealed by a door transition's
+     onClosed callback -- e.g. the game-over modal -- used to visibly peek
+     out above the still-opening doors instead of staying hidden behind
+     them until the doors finished sliding away). 250000 clears the
+     highest z-index anywhere else in this file (200000, a cursor trail
+     effect) with headroom. */
+  z-index: 250000;
   pointer-events: none;
   display: flex;
   overflow: hidden;
@@ -491,7 +529,7 @@ body {
   content: "";
   position: absolute;
   inset: 0;
-  z-index: 15000;
+  z-index: 250000;
   background:
     radial-gradient(circle at center, rgba(3, 4, 8, 0.65) 0%, rgba(1, 2, 4, 0.88) 45%, rgba(0, 0, 0, 0.98) 100%);
   opacity: var(--transition-scene-fade);
@@ -503,7 +541,7 @@ body {
   content: "";
   position: absolute;
   inset: 0;
-  z-index: 15002;
+  z-index: 250002;
   box-shadow: inset 0 0 60px rgba(0, 0, 0, 0.75);
   pointer-events: none;
   opacity: var(--transition-scene-fade);
@@ -529,7 +567,7 @@ body {
   background-image: var(--door-bg-image, url('/door_biomech_keyart_v2.webp'));
   background-repeat: no-repeat;
   box-shadow: inset 0 0 30px rgba(0, 0, 0, 0.85), 0 0 25px rgba(0, 0, 0, 0.7);
-  z-index: 15001;
+  z-index: 250001;
   display: none;
   overflow: visible;
   will-change: transform;
@@ -606,7 +644,7 @@ body {
 .shared-gear {
   position: absolute;
   pointer-events: none;
-  z-index: 15005;
+  z-index: 250005;
   display: block;
 }
 
@@ -684,7 +722,7 @@ body {
   background: radial-gradient(circle, rgba(220, 225, 235, 0.45) 0%, rgba(160, 175, 195, 0.15) 50%, transparent 75%);
   border-radius: 50%;
   pointer-events: none;
-  z-index: 15100;
+  z-index: 250100;
   filter: blur(10px);
   animation: smoke-drift 1.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
@@ -3409,7 +3447,12 @@ input:checked+.slider:before {
   display: flex;
   align-items: center;
   justify-content: center;
-  backdrop-filter: blur(5px);
+  /* Raised from 5px -- at 5px the live scene behind a menu stayed legible
+     enough that "am I still in the game" wasn't visually obvious. Bumped
+     alongside menu-isolation fixes (docs/log2-ui-transitions-and-menu-
+     isolation-plan-2026-08-19.md #4) so the backdrop actually reads as
+     "menu land" rather than a lightly-frosted view of live gameplay. */
+  backdrop-filter: blur(14px);
   overflow: hidden;
   padding: clamp(12px, 2vh, 24px) 0;
   scrollbar-width: none !important;
@@ -17260,6 +17303,12 @@ body.show-debug .map-tool-btn--debug { display: inline-flex; }
   border: 1px solid rgba(57, 255, 136, 0.3);
 }
 
+.net-status-tag--standby {
+  color: #ffb700;
+  background: rgba(255, 183, 0, 0.1);
+  border-color: rgba(255, 183, 0, 0.3);
+}
+
 .net-empty-roster {
   display: flex;
   flex-direction: column;
@@ -18127,10 +18176,16 @@ body.show-debug .map-tool-btn--debug { display: inline-flex; }
 }
 
 /* Suit panel | open 3D stage | weapon panel, so the operator/gun render has
-   a clear middle lane instead of panels floating on top of the character. */
+   a clear middle lane instead of panels floating on top of the character.
+   Weapon column narrowed from 60vu toward the suit panel's own 38vu --
+   docs/armory-layout-and-cosmetic-preview-plan-2026-08-19.md #1: the same
+   shape of content (labeled dropdowns) doesn't need nearly double the
+   width, and freeing it gives the raised/repositioned gun (armoryScene.js)
+   more headroom above the panel instead of the panel's tall top edge
+   slicing through it. */
 .armory-main-layout {
   display: grid;
-  grid-template-columns: minmax(0, calc(var(--vu) * 38)) minmax(calc(var(--vu) * 28), 1fr) minmax(0, calc(var(--vu) * 60));
+  grid-template-columns: minmax(0, calc(var(--vu) * 38)) minmax(calc(var(--vu) * 28), 1fr) minmax(0, calc(var(--vu) * 42));
   align-items: end;
   gap: calc(var(--vu) * 2.4);
   min-height: 0;

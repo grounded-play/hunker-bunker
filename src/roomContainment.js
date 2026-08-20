@@ -48,8 +48,31 @@ export function isCellInSafeZone(x, z, roomsOrZones = []) {
  * @param {Object} bounds
  * @returns {{minX: number, maxX: number, minZ: number, maxZ: number}|null}
  */
+// docs/log4-combat-perf-regression-findings-2026-08-19.md: findSnailPath's
+// A* search (up to SNAIL_PATH_NODE_BUDGET=360 nodes x 8 directions, so up to
+// ~2880 iterations per single pathfind) calls shouldBlockAttackPath ->
+// doesSegmentIntersectDoor -> segmentIntersectsBox once per iteration per
+// door, and segmentIntersectsBox re-normalizes that SAME door's bounds from
+// scratch every single time even though the door list (and its bounds) never
+// changes across one pathfind call -- confirmed live via CPU profiling
+// during held-fire combat, where this chain was consistently the largest
+// non-native (real JS) self-time cost in every capture, worse with more live
+// snails repathing at once. Doors' bounds also arrive here ALREADY
+// normalized (translateContainmentBounds calls this function once, then just
+// offsets it), so most of these calls were re-normalizing an object that was
+// already in canonical form. A WeakMap cache keyed by the bounds object
+// reference is safe here because every caller in this module treats bounds
+// objects as immutable (translate* always returns a new object rather than
+// mutating one in place) and turns the up-to-thousands-of-redundant-calls
+// case into a single real computation plus O(1) lookups.
+const _normalizedBoundsCache = new WeakMap();
+
 export function normalizeContainmentBounds(bounds) {
     if (!bounds) return null;
+    if (typeof bounds === 'object') {
+        const cached = _normalizedBoundsCache.get(bounds);
+        if (cached !== undefined) return cached;
+    }
 
     const rawMinX = bounds.minX ?? bounds.left ?? bounds.x;
     const rawMaxX = bounds.maxX
@@ -66,14 +89,19 @@ export function normalizeContainmentBounds(bounds) {
                 : undefined));
 
     const values = [rawMinX, rawMaxX, rawMinZ, rawMaxZ].map(Number);
-    if (!values.every(Number.isFinite)) return null;
+    if (!values.every(Number.isFinite)) {
+        if (typeof bounds === 'object') _normalizedBoundsCache.set(bounds, null);
+        return null;
+    }
     const [x1, x2, z1, z2] = values;
-    return {
+    const result = {
         minX: Math.min(x1, x2),
         maxX: Math.max(x1, x2),
         minZ: Math.min(z1, z2),
         maxZ: Math.max(z1, z2)
     };
+    if (typeof bounds === 'object') _normalizedBoundsCache.set(bounds, result);
+    return result;
 }
 
 /**

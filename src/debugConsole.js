@@ -10,6 +10,15 @@ export class DebugLogger {
         this.sessionStartedAt = new Date();
         this.sequence = 0;
         this.maxLogs = 2500;
+        // Cap on how many <div> rows the live panel keeps in the DOM at once.
+        // A long/laggy session can log dozens of entries per real frame (PERF
+        // "Long task" warnings alone), and the panel used to append one row
+        // per entry synchronously the instant it arrived -- opening the
+        // console during a slowdown piled DOM-append work directly on top of
+        // whatever was already causing the slowdown. See _pendingEntries below.
+        this.maxRenderedRows = 400;
+        this._pendingEntries = [];
+        this._flushHandle = null;
         this.subscribers = new Set();
         this.visible = false;
         this.currentFilter = 'ALL';
@@ -257,10 +266,52 @@ export class DebugLogger {
             try { sub(entry); } catch (e) { console.error(e); }
         }
         if (this.visible && this.logsContainer) {
-            this.renderSingleLog(entry);
-            if (this.autoScroll) {
-                this.logsContainer.scrollTop = this.logsContainer.scrollHeight;
-            }
+            this._pendingEntries.push(entry);
+            this.scheduleLogFlush();
+        }
+    }
+
+    // Batches every log that arrives within a frame into one DOM update
+    // instead of one synchronous appendChild per entry -- a single frame
+    // during a bad slowdown can carry dozens of entries (PERF long-task
+    // warnings especially), and rendering each one individually the instant
+    // it arrived was adding real, compounding DOM work on top of whatever
+    // was already making the game slow.
+    scheduleLogFlush() {
+        if (this._flushHandle != null) return;
+        const raf = typeof requestAnimationFrame === 'function' ? requestAnimationFrame : (fn) => setTimeout(fn, 16);
+        this._flushHandle = raf(() => {
+            this._flushHandle = null;
+            this.flushPendingLogs();
+        });
+    }
+
+    flushPendingLogs() {
+        if (!this.logsContainer || !this._pendingEntries.length) {
+            this._pendingEntries.length = 0;
+            return;
+        }
+        const entries = this._pendingEntries;
+        this._pendingEntries = [];
+
+        const fragment = document.createDocumentFragment();
+        for (const entry of entries) {
+            const row = this.buildLogRow(entry);
+            if (row) fragment.appendChild(row);
+        }
+        if (fragment.childNodes.length) {
+            this.logsContainer.appendChild(fragment);
+        }
+
+        // Trim from the top -- keeps the on-screen row count bounded no
+        // matter how long the panel is left open, independent of this.logs'
+        // own (much larger) in-memory cap.
+        while (this.logsContainer.children.length > this.maxRenderedRows) {
+            this.logsContainer.removeChild(this.logsContainer.firstElementChild);
+        }
+
+        if (this.autoScroll) {
+            this.logsContainer.scrollTop = this.logsContainer.scrollHeight;
         }
     }
 
@@ -507,7 +558,16 @@ export class DebugLogger {
 
         // Command Input Listener
         this.inputEl.onkeydown = (e) => {
+            // Enter/ArrowUp/ArrowDown used to fall through to whatever else was
+            // listening for keydown -- including the game's own action-key
+            // handler, which doesn't check for focused input fields. Submitting
+            // a command with Enter (E/Enter is also the gameplay interact bind)
+            // could simultaneously trigger a real interact in the world behind
+            // the overlay; confirmed live as a cinematicLock getting set right
+            // after running a console command near the crash-site console.
             if (e.key === 'Enter') {
+                e.preventDefault();
+                e.stopPropagation();
                 const cmd = this.inputEl.value.trim();
                 if (cmd) {
                     this.executeCommand(cmd);
@@ -516,11 +576,15 @@ export class DebugLogger {
                     this.inputEl.value = '';
                 }
             } else if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                e.stopPropagation();
                 if (this.historyIndex > 0) {
                     this.historyIndex--;
                     this.inputEl.value = this.commandHistory[this.historyIndex] ?? '';
                 }
             } else if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                e.stopPropagation();
                 if (this.historyIndex < this.commandHistory.length - 1) {
                     this.historyIndex++;
                     this.inputEl.value = this.commandHistory[this.historyIndex] ?? '';
@@ -532,6 +596,12 @@ export class DebugLogger {
                 e.preventDefault();
                 e.stopPropagation();
                 this.toggle(false);
+            } else {
+                // Any other keystroke while typing (letters, digits, space, etc.)
+                // -- same leak, just less consequential per-keystroke than Enter.
+                // Stop it at the source rather than only guarding the keys that
+                // happened to cause a visible symptom.
+                e.stopPropagation();
             }
         };
 
@@ -556,12 +626,28 @@ export class DebugLogger {
             if (this.visible) {
                 this.renderAllLogs();
                 setTimeout(() => this.inputEl?.focus(), 50);
+            } else {
+                // Nobody's watching -- drop anything queued rather than pay
+                // to render it into a hidden panel. Reopening rebuilds from
+                // this.logs via renderAllLogs above, so nothing is lost.
+                this._pendingEntries.length = 0;
+                if (this._flushHandle != null) {
+                    const cancel = typeof cancelAnimationFrame === 'function' ? cancelAnimationFrame : clearTimeout;
+                    cancel(this._flushHandle);
+                    this._flushHandle = null;
+                }
             }
         }
     }
 
     clear() {
         this.logs = [];
+        this._pendingEntries.length = 0;
+        if (this._flushHandle != null) {
+            const cancel = typeof cancelAnimationFrame === 'function' ? cancelAnimationFrame : clearTimeout;
+            cancel(this._flushHandle);
+            this._flushHandle = null;
+        }
         if (this.logsContainer) {
             this.logsContainer.innerHTML = '';
         }
@@ -631,23 +717,47 @@ export class DebugLogger {
         return filename;
     }
 
-    renderSingleLog(entry) {
-        if (!this.logsContainer) return;
-        if (!this.matchesFilter(entry)) return;
-
+    buildLogRow(entry) {
+        if (!this.matchesFilter(entry)) return null;
         const row = document.createElement('div');
         row.className = `hb-log-entry hb-log-${entry.level}`;
         row.innerHTML = `<span style="color:#556677;">[${entry.timestamp}]</span> <span style="color:#00f0ff;font-weight:bold;">[${entry.category}]</span> ${this.escapeHTML(entry.message)}`;
-        this.logsContainer.appendChild(row);
+        return row;
+    }
+
+    renderSingleLog(entry) {
+        if (!this.logsContainer) return;
+        const row = this.buildLogRow(entry);
+        if (row) this.logsContainer.appendChild(row);
     }
 
     renderAllLogs() {
         if (!this.logsContainer) return;
+        // Any pending batched entries are about to be superseded by this
+        // full rebuild -- drop them so flushPendingLogs doesn't double-render
+        // (or render against a container that's mid-rebuild) on the next tick.
+        this._pendingEntries.length = 0;
+        if (this._flushHandle != null) {
+            const cancel = typeof cancelAnimationFrame === 'function' ? cancelAnimationFrame : clearTimeout;
+            cancel(this._flushHandle);
+            this._flushHandle = null;
+        }
+
         this.logsContainer.innerHTML = '';
         const matching = this.logs.filter(entry => this.matchesFilter(entry));
-        for (const entry of matching) {
-            this.renderSingleLog(entry);
+        // Cap the initial render too -- rebuilding every buffered entry (up
+        // to this.logs' own cap of maxLogs=2500) synchronously on open was
+        // itself a multi-hundred-row blocking DOM build, i.e. exactly the
+        // freeze the panel is meant to help you diagnose, not cause.
+        const visible = matching.length > this.maxRenderedRows
+            ? matching.slice(matching.length - this.maxRenderedRows)
+            : matching;
+        const fragment = document.createDocumentFragment();
+        for (const entry of visible) {
+            const row = this.buildLogRow(entry);
+            if (row) fragment.appendChild(row);
         }
+        this.logsContainer.appendChild(fragment);
         if (this.autoScroll) {
             this.logsContainer.scrollTop = this.logsContainer.scrollHeight;
         }
@@ -807,6 +917,28 @@ export class DebugLogger {
                 } else {
                     this.warn('CMD', 'Museum module not loaded');
                 }
+                break;
+            }
+
+            case 'showroom': {
+                // The QUICK CHEATS "SHOWROOM" button has called executeCommand('showroom')
+                // since it was added, but no case existed for it -- it silently fell to the
+                // default `eval('showroom')` branch and just logged a ReferenceError.
+                const targetGame = game || win?.game;
+                if (!targetGame?.buildDebugShowroom || !targetGame?.teleportPlayerTo) {
+                    this.warn('CMD', 'Showroom module not loaded');
+                    break;
+                }
+                this.info('NAV', 'Opening 4-Wall Orientation Showroom at (9500, 9500)...');
+                targetGame.buildDebugShowroom().then((showroom) => {
+                    targetGame.setGodMode?.(true);
+                    const targetX = showroom?.spawnX ?? 9510;
+                    const targetZ = showroom?.spawnZ ?? 9510;
+                    targetGame.teleportPlayerTo(targetX, targetZ, { syncChunks: false, safeFloor: false });
+                    this.info('NAV', `Teleported to Showroom (${targetX.toFixed(1)}, ${targetZ.toFixed(1)})`);
+                }).catch((err) => {
+                    this.error('CMD', `Failed opening showroom: ${err?.message ?? err}`);
+                });
                 break;
             }
 

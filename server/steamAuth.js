@@ -106,6 +106,14 @@ function isDevFallbackAllowed(allowDevFallbackParam = true) {
     return true;
 }
 
+// Exported so other trusted-backend entry points (currently: the Socket.IO
+// relay's connection handshake, Sprint 24 Milestone A item 4) can apply the
+// exact same dev-vs-production gate the REST auth routes already use,
+// rather than re-deriving the same env-var logic and risking drift.
+export function isSteamAuthDevFallbackAllowed() {
+    return isDevFallbackAllowed(true);
+}
+
 function getSteamSessionTtlMs() {
     const raw = Number(process.env.HB_SESSION_TTL_SECONDS);
     if (!Number.isFinite(raw) || raw <= 0) return STEAM_SESSION_TTL_MS;

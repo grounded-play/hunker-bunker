@@ -51,6 +51,7 @@ import { createArmoryUi } from './src/armoryUi.js';
 import { ARMORY_SCREEN_ENABLED } from './src/featureFlags.js';
 import { initSteamVaultUI, loadVaultData, openSteamVaultModal, showSteamDropToast, renderSteamMilestoneGrants, STEAM_ITEM_CATALOG } from './src/steamVaultUi.js';
 import { initSeasonPassUI, flushQueuedSeasonPassToasts } from './src/seasonPassUi.js';
+import { preloadEnemy3dTemplates } from './src/enemy3dOverlay.js';
 import { initVoiceCallouts } from './src/voiceCallouts.js';
 import { multiplayerLobby } from './src/multiplayerLobby.js';
 import { playerTradeManager, TRADEABLE_RESOURCES } from './src/playerTrade.js';
@@ -4216,6 +4217,21 @@ function resetRunToStartingState({
     }
 }
 
+function showDeathCurtain() {
+    const curtain = document.getElementById('death-curtain');
+    if (!curtain) return;
+    curtain.classList.remove('hidden');
+    void curtain.offsetWidth; // force reflow so the opacity transition actually plays
+    curtain.classList.add('is-visible');
+}
+
+function hideDeathCurtain() {
+    const curtain = document.getElementById('death-curtain');
+    if (!curtain) return;
+    curtain.classList.remove('is-visible');
+    curtain.classList.add('hidden');
+}
+
 function runDeathSequence(event) {
     if (deathSequenceTimer) return;
 
@@ -4226,6 +4242,13 @@ function runDeathSequence(event) {
     clearTimeout(biomePromptTimer);
     biomePromptTimer = null;
     document.body.classList.add('player-dead-flash');
+    // Fades to solid black immediately and stays up through the whole
+    // cinematic -> door-close -> game-over -> MAIN MENU -> door-reopen
+    // sequence; only hideDeathCurtain() (in returnToMainMenuFromRun) clears
+    // it. Without this, the live (frozen) 3D world was visible through the
+    // gap before the death cinematic reaches full opacity, and again in the
+    // ~900ms window here before the cinematic even starts.
+    showDeathCurtain();
     playPlayerDeathCue(deathReason);
 
     deathSequenceTimer = window.setTimeout(async () => {
@@ -5491,6 +5514,13 @@ if (gameOverTryAgain) {
         triggerDoorTransition(
             () => {
                 hideGameOverScreen();
+                // Same reasoning as returnToMainMenuFromRun: doors are fully
+                // closed here, so it's safe to drop the curtain before the
+                // new run's world builds underneath -- without this, TRY
+                // AGAIN would leave the whole next run permanently blacked
+                // out (this path never goes through returnToMainMenuFromRun,
+                // so its own hideDeathCurtain() call never runs otherwise).
+                hideDeathCurtain();
                 showRunLoadingScreen('DOWNLOADING SECTOR PILLAR TOPOGRAPHY...', 0, { overDoor: true });
                 // Death puts the app in the gameover phase. Input can be
                 // enabled on ThreeGame after the doors reopen, but movement
@@ -5527,6 +5557,11 @@ function returnToMainMenuFromRun({ doorKey = 'base' } = {}) {
     triggerDoorTransition(
         () => {
             hideGameOverScreen();
+            // Doors are fully closed and covering the screen at this point
+            // (onClosed), so it's safe to drop the curtain that's been up
+            // since player-death -- the menu being prepared below is never
+            // exposed early.
+            hideDeathCurtain();
             document.getElementById('ui')?.classList.add('hidden');
             window.game?.setInputEnabled?.(false);
             syncHudCompassVisibility();
@@ -6854,6 +6889,15 @@ function ensureArmoryInitialized() {
             const canvas = document.getElementById('armory-canvas');
             const hudContainer = document.getElementById('armory-hud-overlay');
             armorySceneInstance = await createArmoryScene(canvas);
+            // setOperatorPolish/setDecal are already wired to the in-run
+            // player and (polish only) the title-screen hero preview -- the
+            // Armory's own operator preview just never got the same calls
+            // (docs/armory-layout-and-cosmetic-preview-plan-2026-08-19.md #3).
+            // setOperatorPolish stores the color internally and re-applies it
+            // on every class switch, so this one call covers the whole armory
+            // session; the decal equivalent is covered per-class already via
+            // updateFromLoadout below.
+            armorySceneInstance.setOperatorPolish(getSelectedPolish().color);
             armoryUiInstance = createArmoryUi({
                 container: hudContainer,
                 loadoutManager: loadout,
@@ -12612,6 +12656,19 @@ function finishBootDiagnostics() {
     bootLongTaskObserver = null;
     bootLongTasks = [];
     startGameplayLongTaskDiagnostics();
+
+    // Enemy GLB parsing is CPU-bound and serializes on the main thread -- an
+    // earlier attempt at awaiting this alongside core boot assets turned a
+    // rare mid-run freeze into a guaranteed 50+ second load screen, and even
+    // firing it unawaited during boot still delayed the page's own load
+    // event (measured live both ways). Starting it only now, once the title
+    // screen is already up and interactive, keeps it off the boot critical
+    // path entirely; setupEnemy3dCosmeticOverlay's existing lazy-load path
+    // still covers anything not done in time. Passing window.game lets it
+    // also pre-warm each type's shader program (renderer.compileAsync), not
+    // just parse the model -- see the function's own comment for why that's
+    // a second, separate cost.
+    preloadEnemy3dTemplates(window.game).catch(() => {});
 }
 
 // Boot's observer stops at boot-ready, so nothing recorded *why* a frame
@@ -12629,7 +12686,14 @@ function startGameplayLongTaskDiagnostics() {
             for (const task of list.getEntries()) {
                 debugLog.warn('PERF', `Long task: ${Math.round(task.duration)}ms`, {
                     durationMs: Math.round(task.duration),
-                    startMs: Math.round(task.startTime)
+                    startMs: Math.round(task.startTime),
+                    // Set by threeGame.js right before each known-expensive
+                    // synchronous op (chunk mounting, prop-break VFX) and left
+                    // in place afterward -- since JS is single-threaded, by the
+                    // time this callback runs it still names whichever of
+                    // those was most recently active, which is the closest
+                    // thing to attribution the longtask API allows.
+                    lastPhase: window.__hbLastPerfPhase ?? null
                 });
             }
         });

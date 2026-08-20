@@ -4,6 +4,7 @@ import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.j
 import { assetUrl } from './assetUrl.js';
 import { createPlayer3dOverlay, WEAPON_ARCHETYPES, WEAPON_SKIN_MESHES } from './player3dOverlay.js';
 import { DEFAULT_ARCHETYPES } from './loadout.js';
+import { getItemCatalogEntry } from './steamVaultUi.js';
 
 export const CHARM_GLB_MAP = Object.freeze({
     '4130': '/3d/runtime/new3ds/charm_mini_cryo_core.glb',
@@ -98,8 +99,10 @@ export async function createArmoryScene(canvas) {
     scene.add(fillLight);
 
     const benchSpot = new THREE.SpotLight(0xfff0dd, 4.5, 8.0, Math.PI / 4, 0.4, 1.2);
-    benchSpot.position.set(1.2, 3.2, 1.5);
-    benchSpot.target.position.set(1.1, 1.15, 0);
+    benchSpot.position.set(1.2, 3.6, 1.7);
+    // Tracks weaponBenchGroup's new (1.05, 1.85, -0.05) position below --
+    // docs/armory-layout-and-cosmetic-preview-plan-2026-08-19.md #1.
+    benchSpot.target.position.set(1.05, 1.85, -0.05);
     scene.add(benchSpot);
     scene.add(benchSpot.target);
 
@@ -140,6 +143,15 @@ export async function createArmoryScene(canvas) {
     envGroup.add(backWall);
 
     // Magnetic Weapon Wall Mounting Panel (Right / Center-Right)
+    // Raised and pushed back from its original (1.1, 1.25, -0.6) --
+    // docs/armory-layout-and-cosmetic-preview-plan-2026-08-19.md #1/#2:
+    // at the old position the gun (scaled to a 1.15-unit prominent size,
+    // continuously auto-rotating via weaponPivot.rotation.y) sat only 0.15
+    // units in front of this panel's own 0.12-unit-thick front face --
+    // nowhere near its own ~0.575-unit half-extent, so it clipped into the
+    // panel at most rotation angles. Raised to track the gun's new height
+    // (see weaponBenchGroup below) and moved back in Z to restore real
+    // clearance once the gun itself also moves forward.
     const rackPanelGeo = new THREE.BoxGeometry(2.4, 1.3, 0.12);
     const rackPanelMat = new THREE.MeshStandardMaterial({
         color: 0x182433,
@@ -147,16 +159,18 @@ export async function createArmoryScene(canvas) {
         metalness: 0.85
     });
     const rackPanel = new THREE.Mesh(rackPanelGeo, rackPanelMat);
-    rackPanel.position.set(1.1, 1.25, -0.6);
+    rackPanel.position.set(1.1, 1.7, -1.0);
     rackPanel.castShadow = true;
     rackPanel.receiveShadow = true;
     envGroup.add(rackPanel);
 
-    // Glowing Neon Guideline on Rack
+    // Glowing Neon Guideline on Rack -- kept at the same relative offset from
+    // rackPanel (0.6 below, 0.07 toward camera from its front face) it had
+    // before the panel moved.
     const neonLineGeo = new THREE.BoxGeometry(2.3, 0.02, 0.02);
     const neonLineMat = new THREE.MeshBasicMaterial({ color: 0x00e5ff });
     const neonLine = new THREE.Mesh(neonLineGeo, neonLineMat);
-    neonLine.position.set(1.1, 0.65, -0.53);
+    neonLine.position.set(1.1, 1.1, -0.93);
     envGroup.add(neonLine);
 
     // Operator Hexagonal Turntable Platform (Left)
@@ -188,6 +202,67 @@ export async function createArmoryScene(canvas) {
     let currentOverlay = null;
     let activeClass = 'SCOUT';
     let loadGen = 0;
+
+    // Operator Polish (colorway) and the shoulder-patch decal are both real,
+    // already-shipped systems -- setOperatorPolish() is wired to the in-run
+    // player and the title-screen hero preview, and playerDecalSprite renders
+    // in-run -- but neither was ever connected to the Armory's own operator
+    // preview (docs/armory-layout-and-cosmetic-preview-plan-2026-08-19.md #3).
+    // Stored here (not just applied once) because loadOperatorModel rebuilds
+    // currentOverlay.root from scratch on every class switch, dropping
+    // whatever was applied to the previous instance.
+    let currentPolishColor = 0xffffff;
+    let currentDecalId = null;
+    let decalSprite = null;
+
+    // Chest-mounted, matching src/threeGame.js's playerDecalSprite placement
+    // convention (same relative height/forward offset), but each class's real
+    // 3D chassis has its own chest bulge/depth (TANK's armor protrudes far
+    // more than SCOUT's), and a sprite tested against real mesh depth
+    // (depthTest: true, needed so the badge still hides when the operator is
+    // rotated to face away) disappears if it sits behind that surface. Anchors
+    // tuned per class via live-screenshot iteration rather than one shared
+    // offset that only worked for SCOUT.
+    const DECAL_ANCHORS = {
+        SCOUT: { x: 0.16, y: 1.3, z: 0.14 },
+        ENGINEER: { x: 0.16, y: 1.3, z: 0.16 },
+        TANK: { x: 0.18, y: 1.38, z: 0.34 }
+    };
+
+    function applyDecalSprite(decalId) {
+        if (decalSprite) {
+            decalSprite.material?.map?.dispose?.();
+            decalSprite.material?.dispose?.();
+            decalSprite.removeFromParent();
+            decalSprite = null;
+        }
+        if (!decalId || !currentOverlay?.root) return;
+        const catalog = getItemCatalogEntry(decalId);
+        const iconPath = catalog?.localImg || catalog?.img;
+        if (!iconPath) return;
+        // normalizeModel() (player3dOverlay.js) scales the raw GLB (exported
+        // in centimeter-ish units) up to targetHeight meters via root.scale --
+        // confirmed live at ~184.9x for these operator rigs. DECAL_ANCHORS
+        // below is expressed in the same "world meters" terms as targetHeight
+        // (e.g. chest at y~1.3 out of a ~1.85-1.95 tall operator), so it has
+        // to be divided back down by that same factor before being used as a
+        // position/scale local to root -- otherwise (as first shipped) the
+        // sprite lands ~200 units away in space, nowhere near the model.
+        const rootScale = currentOverlay.root.scale.x || 1;
+        const anchor = DECAL_ANCHORS[activeClass] || DECAL_ANCHORS.SCOUT;
+        const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ transparent: true, opacity: 0, depthTest: false, depthWrite: false }));
+        sprite.center.set(0.5, 0.5);
+        sprite.position.set(anchor.x / rootScale, anchor.y / rootScale, anchor.z / rootScale);
+        sprite.scale.set(0.16 / rootScale, 0.16 / rootScale, 1);
+        sprite.renderOrder = 7;
+        new THREE.TextureLoader().load(assetUrl(iconPath), (texture) => {
+            sprite.material.map = texture;
+            sprite.material.opacity = 1;
+            sprite.material.needsUpdate = true;
+        });
+        currentOverlay.root.add(sprite);
+        decalSprite = sprite;
+    }
 
     async function loadOperatorModel(classType) {
         const gen = ++loadGen;
@@ -233,14 +308,26 @@ export async function createArmoryScene(canvas) {
             currentOverlay = overlay;
             overlay.root.rotation.y = 0.35; // Angle slightly toward center weapon bench
             operatorGroup.add(overlay.root);
+            overlay.setOperatorPolish?.(currentPolishColor);
+            applyDecalSprite(currentDecalId);
         } catch (err) {
             console.warn('[armoryScene] Failed loading operator overlay:', err);
         }
     }
 
     // ── Weapon Workbench Group (Center / Right) ──────────────
+    // Y raised from 1.25 and Z pulled forward (toward the camera) from -0.45
+    // -- docs/armory-layout-and-cosmetic-preview-plan-2026-08-19.md #1/#2.
+    // The old position put the gun's on-screen projection directly behind
+    // .weapon-bench-panel's top edge (only the barrel poked out above it),
+    // with a large genuinely-empty region above/around that point doing
+    // nothing, and left only 0.15 units of Z clearance to rackPanel behind
+    // it (which now sits further back, see above) for a gun scaled to a
+    // 1.15-unit prominent size. Raising Y lifts the gun into that empty
+    // space; pulling Z forward both grows the wall clearance and reads
+    // better relative to the now-narrower weapon-bench-panel CSS column.
     const weaponBenchGroup = new THREE.Group();
-    weaponBenchGroup.position.set(1.1, 1.25, -0.45);
+    weaponBenchGroup.position.set(1.05, 1.85, -0.05);
     scene.add(weaponBenchGroup);
 
     // Interactive pivot inside weapon bench
@@ -538,6 +625,14 @@ export async function createArmoryScene(canvas) {
         async setRigModule(slot, modItemdefId) {
             await loadModAsset(slot, modItemdefId);
         },
+        setOperatorPolish(color = 0xffffff) {
+            currentPolishColor = color;
+            currentOverlay?.setOperatorPolish?.(color);
+        },
+        setDecal(decalItemdefId) {
+            currentDecalId = decalItemdefId || null;
+            applyDecalSprite(currentDecalId);
+        },
         updateFromLoadout(loadoutManager, classType = activeClass) {
             const cls = String(classType).toLowerCase();
             const lo = loadoutManager.getClassLoadout(cls);
@@ -545,6 +640,7 @@ export async function createArmoryScene(canvas) {
             this.setCharm(lo.charmId);
             this.setRigModule(1, lo.mod1Id);
             this.setRigModule(2, lo.mod2Id);
+            this.setDecal(loadoutManager.getEquippedDecalId?.());
         },
         resize,
         dispose() {

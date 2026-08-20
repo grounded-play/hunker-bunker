@@ -163,6 +163,7 @@ import { CAMP_QUESTS } from './data/campQuests.js';
 import { humanityDecayProgress } from './vitals.js';
 import { applyCampPayoutEffects } from './runModifiers.js';
 import { applyBlackChromaKey, applyGreenChromaKey } from './textureKeying.js';
+import { getCachedKeyedImage, putCachedKeyedImage } from './keyedTextureCache.js';
 import { LANDFORMS, pickLandform, applyLandform, applyCanyonCollapse, connectPortalsInward, openMazeTerrain, generateHeightmapGrid, TERRAIN_HEIGHTS, findFarthestFloorCell } from './landforms.js';
 import { getDepthThreatScale, getProgressionSlot, progressionWorldTarget } from './worldProgression.js';
 import {
@@ -199,6 +200,7 @@ import {
     getEnemySpriteLayout
 } from './enemySpriteLayouts.js';
 import { SHOWROOM_CHUNK_X, SHOWROOM_CHUNK_Y } from './debugShowroom.js';
+import { getWing2ChunkOverride } from './debugTileGrid.js';
 
 
 const PLAYER_COLORS = {
@@ -545,6 +547,25 @@ const WEAPON_CLIP_PER_CAPACITY = 2;     // +clip rounds per ammoCapacity tier
 const WEAPON_SPEED_PER_TIER = 2.5;      // +projectile speed per shotSpeed tier
 const MULTISHOT_SPREADS = Object.freeze([[], [-0.085, 0.085], [-0.15, 0.0, 0.15]]);
 const WALL_DECAL_CAP = 24;
+// docs/dynamic-light-shader-runaway-plan-2026-08-19.md direction #1 -- max
+// simultaneously-visible "environmental" PointLights (registerEnvLight),
+// closest-to-camera wins. Bounds how many distinct light combinations lit
+// materials can ever encounter, capping shader-program growth instead of
+// letting it climb for the length of a run.
+const ENV_LIGHT_BUDGET = 8;
+// docs/dynamic-light-shader-runaway-plan-2026-08-19.md direction #3 --
+// updateWallDamageColor used to clone this.wallMaterial into a brand new
+// MeshStandardMaterial for every non-instanced wall the first time it took
+// any damage, permanently. Confirmed live: damaging 60 distinct walls once
+// each grew renderer.info.programs by +26, and every one of this world's
+// walls (106/106 in a fresh run) is non-instanced, so this was the default
+// path, not an edge case. WALL_HP_STANDARD=8 already means standard walls
+// only ever show 8 distinct damage ratios (1/8..8/8) regardless -- pooling
+// into this many shared tiers gives the same visual result (a wall recolors
+// to whichever tier its current damage ratio rounds up to) while capping
+// the number of distinct wall materials that can ever exist to a small
+// constant instead of one per wall ever hit.
+const WALL_DAMAGE_TIER_COUNT = 8;
 const PHYS_PARTICLE_GRAVITY = 7.0;   // units/s²
 const PHYS_PARTICLE_DRAG = 2.2;      // exponential drag coefficient (per second)
 const PHYS_PARTICLE_BOUNCE = -0.45;  // floor restitution
@@ -1150,6 +1171,21 @@ export class ThreeGame {
         this.encounterState = null;
         this._encounterSprite = null;
         this.depletedGearPileKeys = new Set();
+        // docs/dynamic-light-shader-runaway-plan-2026-08-19.md direction #1 --
+        // "environmental" PointLights (terminal/status/beacon/O2-safe/lore-terminal
+        // lights, etc, registered via registerEnvLight below) accumulate as the
+        // player explores a run; every unique combination of "which of these are
+        // currently in range" forces three.js to compile a distinct shader program
+        // per lit material, and nothing ever bounds how many combinations get
+        // created over a long run. updateEnvLightBudget() below keeps only the
+        // closest ENV_LIGHT_BUDGET of these visible at any time, so the live set
+        // any object can be affected by is drawn from a small, bounded pool
+        // instead of the full accumulated set. Player-attached lights (playerGlow,
+        // suitFillLight, playerForwardSpotLight) are deliberately NOT registered
+        // here -- they always travel with the player, so culling them wouldn't
+        // meaningfully reduce combination variety and would look wrong if toggled.
+        this.envDynamicLights = [];
+        this._envLightBudgetTimer = 0;
         this.transientEffects = [];
         this.hitstopTimer = 0;
         this.activeRadarScans = [];
@@ -1378,6 +1414,19 @@ export class ThreeGame {
         this.loadingPaused = false;
 
         this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+        // Three.js's default (true) synchronously calls gl.getShaderInfoLog()/
+        // getProgramInfoLog() after every shader program compile+link -- a
+        // driver round-trip three.js's own docs call out as a real
+        // performance cost, meant for development only. Confirmed live via a
+        // CPU profile during real exploration (new chunks -> new landform/
+        // material combinations -> fresh shader programs): getProgramInfoLog
+        // and getShaderInfoLog alone accounted for ~19s of a ~30s profile,
+        // matching two independent real session logs' pattern of recurring,
+        // worsening long-task freezes with no other explanation
+        // (docs/log1-perf-and-telemetry-followups-2026-08-18.md #1). This
+        // cost was invisible to every earlier reproduction attempt because
+        // repeated testing in the same tab reused already-compiled programs.
+        this.renderer.debug.checkShaderErrors = false;
         this.renderer.setPixelRatio(this.menuPixelRatio);
         this.renderer.shadowMap.enabled = false;
         this.renderer.shadowMap.type = THREE.PCFShadowMap;
@@ -3348,6 +3397,7 @@ export class ThreeGame {
             const terminalLight = new THREE.PointLight(ship.color, 1.8, 2.8, 2);
             terminalLight.position.set(consoleX, 0.5, consoleZ);
             this.scene.add(terminalLight);
+            this.registerEnvLight?.(terminalLight);
 
             // Store all 3D objects associated with this base so we can toggle visibility
             ship.threeObjects = [
@@ -3439,6 +3489,7 @@ export class ThreeGame {
         const statusLight = new THREE.PointLight(0xff2200, 1.5, 7.0);
         statusLight.position.set(9, 2.2, 3);
         this.scene.add(statusLight);
+        this.registerEnvLight?.(statusLight);
         this._bunkerDoorStatusLight = statusLight;
 
         this.bunkerBlastDoorGroup = doorGroup;
@@ -3542,6 +3593,7 @@ export class ThreeGame {
         const light = new THREE.PointLight(0x5cd6ff, 1.2, 5.0);
         light.position.set(9, 1.2, 4.8);
         this.scene.add(light);
+        this.registerEnvLight?.(light);
 
         this.baseDefenseTurretGroup = group;
         this.baseDefenseTurretHead = headGroup;
@@ -3890,6 +3942,12 @@ export class ThreeGame {
         this.remotePlayers = new Map();
         this.netSocket = session.socket || null;
         this.lastNetBroadcastTime = 0;
+        // Sprint 24 Milestone A item 5 (docs/sprint24-multiplayer-runtime-2026-08-19.md):
+        // captured by the lobby from the server's currentPlayers roster (the
+        // only point the server tells a client its own isHost status) and
+        // carried through on the session object, since currentPlayers fires
+        // well before this method's own listeners could catch it.
+        this.isMultiplayerHost = Boolean(session.isHost);
 
         // If a crash plan exists, adjust local player spawn if assigned
         if (this.multiplayerCrashPlan?.players?.length && this.player) {
@@ -3906,6 +3964,9 @@ export class ThreeGame {
             this.netSocket.on('playerFired', (data) => this.handleRemotePlayerFired(data));
             this.netSocket.on('playerDamaged', (data) => this.handleRemotePlayerDamaged(data));
             this.netSocket.on('playerRevived', (data) => this.handleRemotePlayerRevived(data));
+            this.netSocket.on('playerDownedBroadcast', (data) => this.handleRemotePlayerDowned(data?.playerId));
+            this.netSocket.on('enemyDamaged', (data) => this.handleRemoteEnemyDamage(data));
+            this.netSocket.on('enemyHitReported', (data) => this.handleEnemyHitReported(data));
             this.netSocket.on('playerDisconnected', (id) => this.removeRemotePlayer(id));
             this.netSocket.on('newPlayer', (player) => this.getOrCreateRemotePlayer(player));
         }
@@ -3936,12 +3997,27 @@ export class ThreeGame {
         const isPvP = this.multiplayerMode === 'pvp';
         const themeColor = isPvP ? 0xff4444 : (playerData.color || (opClass === 'SCOUT' ? 0x7dff5a : (opClass === 'TANK' ? 0xffb700 : 0x00e5ff)));
 
-        // Create 2D Sprite visual fallback / base
-        const spriteMat = new THREE.SpriteMaterial({
-            color: themeColor,
-            transparent: true,
-            opacity: 0.95
-        });
+        // Real class chassis sprite, matching how the local player's own
+        // sprite is built (this.playerMaterials is a shared, pre-textured
+        // cache keyed by class -- see this.playerSprite construction).
+        // The material AND its map are cloned per remote instance: the local
+        // player's own walk-cycle continuously rewrites .repeat/.offset on
+        // the shared cached texture (see setSpriteHalfFrame), so sharing
+        // that texture object here would make same-class remotes flicker
+        // through whatever frame the local player happens to be on. A clone
+        // gives each remote an independent, per-instance frame to drive.
+        // Falls back to a flat-color square only if that cache isn't ready.
+        const classMaterial = this.playerMaterials?.[opClass] ?? this.playerMaterials?.SCOUT;
+        const spriteMat = classMaterial
+            ? classMaterial.clone()
+            : new THREE.SpriteMaterial({ color: themeColor, transparent: true, opacity: 0.95 });
+        if (classMaterial?.map) {
+            spriteMat.map = classMaterial.map.clone();
+            spriteMat.map.needsUpdate = true;
+        }
+        if (isPvP) {
+            spriteMat.color.setHex(themeColor);
+        }
         const sprite = new THREE.Sprite(spriteMat);
         sprite.center.set(0.5, 0);
         sprite.position.set(0, 0.4, 0);
@@ -3985,14 +4061,37 @@ export class ThreeGame {
             targetPos: new THREE.Vector3(group.position.x, group.position.y, group.position.z),
             targetYaw: playerData.yaw || 0,
             currentYaw: 0,
+            vx: 0,
+            vz: 0,
+            facingRow: PLAYER_DEFAULT_DIRECTION_INDEX,
+            animationTimer: 0,
+            lastAnimationColumn: -1,
             hp: 100,
             maxHp: 100,
             isDown: false,
             lastUpdate: Date.now()
         };
 
+        this.setRemoteSpriteFrame(remote, 0, PLAYER_DEFAULT_DIRECTION_INDEX);
+
         this.remotePlayers.set(playerData.id, remote);
         return remote;
+    }
+
+    // Points a remote player's own (already-cloned, per-instance) texture at
+    // one direction/walk frame -- the remote equivalent of setSpriteHalfFrame,
+    // which operates on the local player's shared/cached texture instead.
+    setRemoteSpriteFrame(remote, column, row) {
+        const texture = remote?.sprite?.material?.map;
+        if (!texture) return;
+        const layout = getPlayerSpriteLayout(remote.opClass);
+        const directionCell = layout.directionCells[row] ?? layout.directionCells[PLAYER_DEFAULT_DIRECTION_INDEX];
+        const repeatX = 1 / layout.columns;
+        const repeatY = 1 / layout.rows;
+        const frameColumn = directionCell.baseColumn + (column % layout.walkFrames);
+        const frameBaseY = (layout.rows - 1 - directionCell.row) * repeatY;
+        texture.repeat.set(repeatX, repeatY);
+        texture.offset.set(frameColumn * repeatX, frameBaseY);
     }
 
     handleRemotePlayerMoved(data) {
@@ -4006,6 +4105,8 @@ export class ThreeGame {
         if (Number.isFinite(data.yaw)) {
             remote.targetYaw = data.yaw;
         }
+        remote.vx = Number.isFinite(data.vx) ? data.vx : 0;
+        remote.vz = Number.isFinite(data.vz) ? data.vz : 0;
         remote.animState = data.animState || 'idle';
         remote.lastUpdate = Date.now();
     }
@@ -4025,6 +4126,7 @@ export class ThreeGame {
             vx: dirX * PROJECTILE_SPEED,
             vz: dirZ * PROJECTILE_SPEED,
             isEnemy: isPvP,
+            attackerId: isPvP ? data.playerId : null,
             options: {
                 color: data.color ?? (isPvP ? 0xff4a4a : 0x2ec4b6),
                 glowColor: isPvP ? 0xff0000 : 0x00ffff
@@ -4036,8 +4138,11 @@ export class ThreeGame {
     handleRemotePlayerDamaged(data) {
         if (!data) return;
         if (data.targetId === this.netSocket?.id) {
-            // Local player was hit in PvP
-            this.takePlayerDamage?.(data.damage || 10, 'pvp-rival');
+            // Local player was hit in PvP. Was this.takePlayerDamage?.(...) --
+            // that method never existed (Sprint 24 audit finding), so this
+            // branch silently never fired even on the rare occasion something
+            // emitted playerDamage.
+            this.takeDamage?.(data.damage || 10, 'pvp-rival');
         } else if (this.remotePlayers?.has(data.targetId)) {
             const remote = this.remotePlayers.get(data.targetId);
             remote.hp = Math.max(0, remote.hp - (data.damage || 10));
@@ -4055,12 +4160,81 @@ export class ThreeGame {
     }
 
     handleRemotePlayerRevived(data) {
-        if (!data || !this.remotePlayers?.has(data.targetId)) return;
+        if (!data) return;
+        if (data.targetId === this.netSocket?.id) {
+            // The local player was the one revived -- server broadcasts
+            // playerRevived to the whole room (including both the reviver and
+            // the target), so this branch is what the downed player's own
+            // client uses to actually come back up.
+            const reviver = this.remotePlayers?.get(data.reviverId);
+            this.revivePlayerFromDowned(reviver?.callsign);
+            return;
+        }
+        if (!this.remotePlayers?.has(data.targetId)) return;
         const remote = this.remotePlayers.get(data.targetId);
         remote.isDown = false;
         remote.hp = remote.maxHp;
         window.showToastNotification?.(`SQUADMATE REVIVED: ${remote.callsign}`);
         window.AudioManager?.play?.('fx_level_up', { volume: 0.4 });
+    }
+
+    handleRemotePlayerDowned(playerId) {
+        if (!playerId || !this.remotePlayers?.has(playerId)) return;
+        const remote = this.remotePlayers.get(playerId);
+        remote.isDown = true;
+        remote.hp = 0;
+        window.showToastNotification?.(`SQUADMATE DOWN: ${remote.callsign}`);
+        window.AudioManager?.play?.('ui_error', { volume: 0.4 });
+    }
+
+    // Sprint 24 Milestone A co-op enemy hit-sync (host-authoritative-style
+    // gossip broadcast, see server/relay.js's enemyDamage handler comment).
+    // Enemies don't have a cross-client-stable ID yet, so this matches by
+    // type + nearest position on the receiving end -- documented as a known
+    // approximation, not exact-identity sync.
+    // Shared by handleRemoteEnemyDamage and handleEnemyHitReported. 3-unit
+    // tolerance: generous enough for network lag/interpolation drift between
+    // when a client sampled the enemy's position and when this arrives,
+    // tight enough that two same-type enemies rarely sit close enough to be
+    // confused for typical encounter density.
+    findNearestMatchingEnemySprite(enemyType, x, z, maxDist = 3) {
+        let best = null;
+        let bestDist = Infinity;
+        for (const sprite of this.scatterSprites) {
+            if (sprite.userData?.type !== enemyType) continue;
+            if (sprite.userData?.burstTriggered) continue;
+            const dist = Math.hypot(sprite.position.x - x, sprite.position.z - z);
+            if (dist < bestDist) {
+                bestDist = dist;
+                best = sprite;
+            }
+        }
+        return (best && bestDist <= maxDist) ? best : null;
+    }
+
+    handleRemoteEnemyDamage(data) {
+        if (!data || !Number.isFinite(data.x) || !Number.isFinite(data.z) || !(data.damage > 0)) return;
+        const sprite = this.findNearestMatchingEnemySprite(data.enemyType, data.x, data.z);
+        if (sprite) {
+            this.applyPlayerDamageToEnemy(sprite, data.damage, { fromNetwork: true });
+        }
+    }
+
+    // Sprint 24 Milestone A item 5 (docs/sprint24-multiplayer-runtime-2026-08-19.md):
+    // host-authoritative PvE, first cut. The relay only routes enemyHitReport
+    // to the room's host socket, but this.isMultiplayerHost is checked too
+    // in case of a stale/late host-status flip. Resolving via
+    // applyPlayerDamageToEnemy (not fromNetwork) re-enters that method's own
+    // host branch, which applies the hit locally AND broadcasts the
+    // canonical outcome to the rest of the room -- including back to the
+    // original reporter, who applied nothing locally itself.
+    handleEnemyHitReported(data) {
+        if (!this.isMultiplayerHost) return;
+        if (!data || !Number.isFinite(data.x) || !Number.isFinite(data.z) || !(data.damage > 0)) return;
+        const sprite = this.findNearestMatchingEnemySprite(data.enemyType, data.x, data.z);
+        if (sprite) {
+            this.applyPlayerDamageToEnemy(sprite, data.damage);
+        }
     }
 
     removeRemotePlayer(id) {
@@ -4103,6 +4277,27 @@ export class ThreeGame {
                 const yawDelta = wrapAngle(remote.targetYaw - remote.currentYaw);
                 remote.currentYaw += yawDelta * Math.min(1.0, delta * 14);
                 mesh.rotation.y = remote.currentYaw;
+
+                // Walk-cycle animation, driven by the vx/vz/animState already
+                // broadcast in playerMove -- mirrors updatePlayerSpriteAnimation
+                // but writes into this remote's own cloned texture.
+                const speedSq = remote.vx * remote.vx + remote.vz * remote.vz;
+                const isMoving = remote.animState === 'run' && speedSq > 0.0001;
+                if (isMoving) {
+                    remote.facingRow = this.getFacingRow(remote.vx, remote.vz);
+                    const layout = getPlayerSpriteLayout(remote.opClass);
+                    remote.animationTimer += delta * layout.animationFps;
+                    const frames = layout.walkFrames;
+                    const column = ((Math.floor(remote.animationTimer) % frames) + frames) % frames;
+                    if (column !== remote.lastAnimationColumn) {
+                        remote.lastAnimationColumn = column;
+                        this.setRemoteSpriteFrame(remote, column, remote.facingRow);
+                    }
+                } else if (remote.lastAnimationColumn !== 0) {
+                    remote.animationTimer = 0;
+                    remote.lastAnimationColumn = 0;
+                    this.setRemoteSpriteFrame(remote, 0, remote.facingRow);
+                }
             }
         }
     }
@@ -4463,6 +4658,18 @@ export class ThreeGame {
                 this.setKeyState(event.code, false);
                 return;
             }
+            // Never checked whether a text input (dev console, chat, settings
+            // field) currently has focus -- typing into any of them, or just
+            // submitting a command with Enter, also fired real gameplay actions
+            // underneath (Enter doubles as the interact bind). Confirmed live:
+            // running a debug-console teleport command triggered a real
+            // interact and, near the crash console, a cinematic lock that then
+            // fought the teleport for player position.
+            const focusedTag = document.activeElement?.tagName?.toLowerCase();
+            if (focusedTag === 'input' || focusedTag === 'textarea') {
+                this.setKeyState(event.code, false);
+                return;
+            }
             // Held keys generate browser auto-repeat keydown events (OS-rate, often
             // 20-50Hz, faster on some Windows configs) -- without this guard every
             // repeat re-ran the discrete action triggers below (dash/interact/
@@ -4549,6 +4756,9 @@ export class ThreeGame {
                 return;
             }
             if (this.tryInteractWithPlayerTradePointer(event.clientX, event.clientY)) {
+                return;
+            }
+            if (this.tryInteractWithRevivePointer(event.clientX, event.clientY)) {
                 return;
             }
             if (this.tryInteractWithCampPointer(event.clientX, event.clientY)) {
@@ -4728,19 +4938,28 @@ export class ThreeGame {
     triggerGameplayInteract() {
         if (!this.isGameplayInputActive()) return false;
         if (this.interactWithNearestShipStation()) return true;
-        this.interactWithBunkerBlastDoorButton();
-        this.interactWithProceduralDoor();
-        this.interactWithMazeAccessSource();
-        this.interactWithLoreTerminal();
-        this.interactWithBlackBox();
-        this.interactWithCaveEntrance();
-        this.interactWithAct2Camp();
-        this.interactWithScientist();
-        this.interactWithHiveSite();
-        this.interactWithCampQuestObject();
-        this.interactWithHoleTile();
-        this.interactWithPocketClimbPoint();
-        this.interactWithBiomechanicalDoor();
+        // Every check below used to run with its result discarded, so a press
+        // near nothing interactable was silent -- no success, no "nothing
+        // here" cue, indistinguishable from the game not having heard the
+        // keypress at all (docs/log1-perf-and-telemetry-followups-2026-08-18.md
+        // #4: 8 rapid presses near a pit produced zero feedback either way).
+        let handled = false;
+        handled = this.interactWithBunkerBlastDoorButton() || handled;
+        handled = this.interactWithProceduralDoor() || handled;
+        handled = this.interactWithMazeAccessSource() || handled;
+        handled = this.interactWithLoreTerminal() || handled;
+        handled = this.interactWithBlackBox() || handled;
+        handled = this.interactWithCaveEntrance() || handled;
+        handled = this.interactWithAct2Camp() || handled;
+        handled = this.interactWithScientist() || handled;
+        handled = this.interactWithHiveSite() || handled;
+        handled = this.interactWithCampQuestObject() || handled;
+        handled = this.interactWithHoleTile() || handled;
+        handled = this.interactWithPocketClimbPoint() || handled;
+        handled = this.interactWithBiomechanicalDoor() || handled;
+        if (!handled) {
+            this.playThrottledUiError('_lastNoInteractCueAt', { volume: 0.3, playbackRate: 0.9 });
+        }
         return true;
     }
 
@@ -4933,8 +5152,7 @@ export class ThreeGame {
                 originZ: this.player.position.z,
                 dirX: normX,
                 dirZ: normZ,
-                weaponType: this.currentWeaponType || 'plasma_carbine',
-                damage: this.playerDamage || 10
+                weaponType: this.currentWeaponType || 'plasma_carbine'
             });
         }
 
@@ -5654,6 +5872,17 @@ export class ThreeGame {
         const cacheEntry = cacheKey ? { image: null, waiters: [] } : null;
         if (cacheKey) keyedSpriteTextureCache.set(cacheKey, cacheEntry);
 
+        const applyFinalImage = (finalImage) => {
+            texture.image = finalImage;
+            texture.needsUpdate = true;
+            if (cacheEntry) {
+                cacheEntry.image = finalImage;
+                const waiters = cacheEntry.waiters.splice(0);
+                waiters.forEach((notify) => notify(finalImage));
+            }
+            if (onLoad) onLoad(texture);
+        };
+
         const image = new Image();
         const processImage = () => {
             const cropBottomRatioRaw = Number(options?.cropBottomRatio);
@@ -5698,17 +5927,13 @@ export class ThreeGame {
 
             ctx.putImageData(imgData, 0, 0);
 
+            // repackGeneratedSpriteAtlas is a passthrough (returns canvas
+            // unchanged) whenever options.layout is unset, which is exactly
+            // when cacheKey is non-null below -- caching the pre-repack
+            // canvas is safe and correct for every case that reaches here.
+            if (cacheKey) putCachedKeyedImage(cacheKey, canvas);
             const finalImage = repackGeneratedSpriteAtlas(canvas, options?.layout);
-            texture.image = finalImage;
-            texture.needsUpdate = true;
-            if (cacheEntry) {
-                cacheEntry.image = finalImage;
-                const waiters = cacheEntry.waiters.splice(0);
-                waiters.forEach((notify) => notify(finalImage));
-            }
-            if (onLoad) {
-                onLoad(texture);
-            }
+            applyFinalImage(finalImage);
         };
         image.onload = () => {
             // Chroma-keying (multiple full-resolution flood-fill passes) is
@@ -5739,7 +5964,25 @@ export class ThreeGame {
             if (cacheKey) keyedSpriteTextureCache.delete(cacheKey);
         };
 
-        image.src = safePath;
+        const startFetch = () => {
+            image.src = safePath;
+        };
+
+        if (cacheKey) {
+            // Skip the fetch AND the chroma-key pixel work entirely on a
+            // persistent-cache hit -- this is the actual boot-time win, not
+            // just deferring the cost to idle time (which the
+            // requestIdleCallback path above already did).
+            getCachedKeyedImage(cacheKey).then((blob) => {
+                if (!blob) {
+                    startFetch();
+                    return;
+                }
+                createImageBitmap(blob).then(applyFinalImage).catch(startFetch);
+            }).catch(startFetch);
+        } else {
+            startFetch();
+        }
 
         return texture;
     }
@@ -6145,6 +6388,7 @@ export class ThreeGame {
         if (this._milestoneBossRestagePending) this.restageReadyMilestoneBosses?.();
         this.updateTacticalMapDiscovery?.();
         this.updateCompanions(delta);
+        this.updateEnvLightBudget?.(delta);
         this.updateTransientEffects(delta, now);
         this.updateHiddenPlayerMarker(now);
         this.updateVitals(delta);
@@ -6569,6 +6813,7 @@ export class ThreeGame {
         beacon.position.y = 1.0;
         beacon.userData.blackBoxOwnedMaterial = true;
         marker.add(beacon);
+        this.registerEnvLight?.(beacon);
 
         marker.position.set(state.x, 0, state.z);
         marker.userData.isBlackBoxMarker = true;
@@ -7440,8 +7685,17 @@ export class ThreeGame {
                         hit = true;
                     }
                 }
+                // playerDist is a sanity bound (can't open the console by aiming
+                // at it from across the map) -- it used to also stand in for
+                // `hit` on its own (`hit || playerDist <= 3.8`), which meant
+                // ANY click -- firing at a wall included -- opened the console
+                // just from standing near the ship, regardless of where the
+                // player was actually aiming. Only a real aim/hover hit opens it
+                // now, matching every sibling tryInteractWithXPointer function
+                // (O2/foundry/black-box/player-trade), none of which had this
+                // proximity-only fallback.
                 const playerDist = Math.hypot(this.player.position.x - consoleX, this.player.position.z - consoleZ);
-                if (playerDist <= 4.2 && (hit || playerDist <= 3.8)) {
+                if (playerDist <= 4.2 && hit) {
                     this.activeInteractiveConsole = ship;
                     this.interactWithConsole();
                     return true;
@@ -7532,6 +7786,32 @@ export class ThreeGame {
                     window.openPlayerTradeWith?.(remote);
                     return true;
                 }
+            }
+        }
+        return false;
+    }
+
+    // Sprint 24 Milestone A: the "REVIVE OPERATIVE" prompt
+    // (resolveTacticalInspectTarget's targetId: 'revive_peer') was UI-only
+    // before this -- computed and displayed as a tooltip, but nothing in the
+    // pointer-down dispatch chain ever consumed it. This is that missing
+    // handler, mirroring tryInteractWithPlayerTradePointer's shape exactly.
+    tryInteractWithRevivePointer(clientX, clientY) {
+        if (!this.isGameplayInputActive() || !this.player || !this.remotePlayers?.size) return false;
+        if (this.multiplayerMode === 'pvp') return false;
+        const worldPoint = this.getWorldAimPoint(clientX, clientY);
+        if (!worldPoint) return false;
+
+        for (const remote of this.remotePlayers.values()) {
+            if (!remote.isDown) continue;
+            const rPos = remote.mesh?.position;
+            if (!rPos) continue;
+            const dist = Math.hypot(worldPoint.x - rPos.x, worldPoint.z - rPos.z);
+            if (dist <= 2.2) {
+                this.netSocket?.emit('playerRevive', { targetId: remote.id });
+                window.showToastNotification?.(`REVIVING ${(remote.callsign || 'SQUADMATE').toUpperCase()}...`);
+                window.AudioManager?.play?.('fx_level_up', { volume: 0.35 });
+                return true;
             }
         }
         return false;
@@ -10637,7 +10917,7 @@ export class ThreeGame {
         if (spawned) window.AudioManager?.playMetalStress?.({ volume: 0.5, playbackRate: 0.5, force: true });
     }
 
-    applyPlayerDamageToEnemy(sprite, amount) {
+    applyPlayerDamageToEnemy(sprite, amount, { fromNetwork = false } = {}) {
         if (sprite?.userData?.isDestructibleProp) {
             this.damageScatterProp(sprite, amount);
             return;
@@ -10648,6 +10928,33 @@ export class ThreeGame {
         const cryoMult = this.loadoutMods?.cryoDurationMultiplier ?? 1.0;
         if (sprite?.userData && cryoMult > 1.0 && Math.random() < 0.18) {
             sprite.userData.frozenTimer = Math.max(sprite.userData.frozenTimer ?? 0, 1.0 * cryoMult);
+        }
+        // Sprint 24 Milestone A co-op enemy hit-sync, now host-authoritative
+        // for the first cut (docs/sprint24-multiplayer-runtime-2026-08-19.md):
+        // only for the plain damageSnail path below, and only for
+        // locally-originated hits (never re-broadcast a hit that itself
+        // arrived from the network, or every enemy hit in a 2-player run
+        // would ping-pong forever). Boss fights (queenFight/sporesnailFight,
+        // both branch out below) are not synced yet -- documented gap.
+        const isSyncableCoopHit = !fromNetwork && this.isMultiplayer && this.multiplayerMode !== 'pvp' && this.netSocket
+            && sprite?.userData?.type && !sprite.userData?.queenFight && !sprite.userData?.sporesnailFight;
+        if (isSyncableCoopHit) {
+            const payload = { enemyType: sprite.userData.type, x: sprite.position.x, z: sprite.position.z, damage: amount };
+            if (this.isMultiplayerHost) {
+                // The host's own local detection is immediately canonical.
+                this.netSocket.emit('enemyDamage', payload);
+            } else {
+                // A non-host client's local hit-detection is a candidate,
+                // not a fact: report it to the host (relayed privately by
+                // the server, see server/relay.js's enemyHitReport handler)
+                // and wait for the resulting enemyDamaged broadcast
+                // (handleRemoteEnemyDamage -> this function again, with
+                // fromNetwork:true) to actually apply it. Returning here
+                // instead of falling through to damageSnail avoids a
+                // double-apply when that broadcast arrives back.
+                this.netSocket.emit('enemyHitReport', payload);
+                return;
+            }
         }
         const fight = sprite?.userData?.queenFight;
         if (fight) {
@@ -14754,7 +15061,7 @@ export class ThreeGame {
     }
 
     takeDamage(amount = 1, reason = 'hazard', sourceX = null, sourceZ = null) {
-        if (this.isPlayerDead) return false;
+        if (this.isPlayerDead || this.isPlayerDowned) return false;
         if (this.godMode || this.noclip) return false;
         if (this.cinematicLock) return false; // untouchable during scripted sequences
         if (this.isInPocket) return false; // untouchable while resolving a fall inside a pocket
@@ -14849,9 +15156,48 @@ export class ThreeGame {
         }
 
         if (this.playerVitals.hp <= 0) {
-            this.handleDeath(reason);
+            // Sprint 24 Milestone A: co-op only (never PvP -- a PvP "kill" must
+            // stay a real kill), and only when someone else is actually in the
+            // run to revive you. Solo runs and PvP both fall straight through
+            // to the normal handleDeath() sequence, unchanged.
+            if (this.isMultiplayer && this.multiplayerMode !== 'pvp' && this.remotePlayers?.size && !this.isPlayerDowned) {
+                this.enterDownedState(reason);
+            } else {
+                this.handleDeath(reason);
+            }
         }
         return true;
+    }
+
+    // Sprint 24 Milestone A (docs/sprint24-multiplayer-runtime-2026-08-19.md):
+    // co-op downed/revive state. Deliberately does not run any of
+    // handleDeath()'s side effects (black box, death curtain, game-over
+    // screen) -- being downed in co-op is meant to be recoverable, not a run
+    // ender, unless nobody revives you (not yet implemented -- see doc).
+    enterDownedState(reason = 'hazard') {
+        if (this.isPlayerDowned || this.isPlayerDead) return;
+        this.isPlayerDowned = true;
+        this.playerVitals.hp = 0;
+        this.emitHealthState?.();
+        this.setInputEnabled?.(false);
+        this.closeConsoleModal?.();
+        window.showToastNotification?.('YOU ARE DOWNED -- AWAIT REVIVAL');
+        window.AudioManager?.play?.('ui_error', { volume: 0.5 });
+        if (this.netSocket) {
+            this.netSocket.emit('playerDowned', {});
+        }
+        window.dispatchEvent(new CustomEvent('player-downed', { detail: { reason } }));
+    }
+
+    revivePlayerFromDowned(reviverCallsign = 'SQUADMATE') {
+        if (!this.isPlayerDowned) return;
+        this.isPlayerDowned = false;
+        this.playerVitals.hp = Math.max(1, Math.round((this.playerVitals.maxHp || 100) * 0.5));
+        this.emitHealthState?.();
+        this.setInputEnabled?.(true);
+        window.showToastNotification?.(`REVIVED BY ${String(reviverCallsign || 'SQUADMATE').toUpperCase()}`);
+        window.AudioManager?.play?.('fx_level_up', { volume: 0.5 });
+        window.dispatchEvent(new CustomEvent('player-revived-self'));
     }
 
     showDirectionalHitIndicator(attackerX, attackerZ) {
@@ -16305,7 +16651,16 @@ export class ThreeGame {
     // isGameplayInputActive so it never fights a cutscene/dialogue that's
     // scripting the player position itself.
     enforceRingProgressionLock() {
-        if (!this.player || !this.isGameplayInputActive?.()) return;
+        // docs/debug-proving-grounds-audit-2026-08-19.md: every debug proving-
+        // grounds teleport (museum, showroom, wings 1-4) lands the player far
+        // outside their unlocked ring radius, and this ran unconditionally --
+        // confirmed live it snaps the player back to the ring edge within a
+        // single frame, regardless of the god mode those tools already enable
+        // right after teleporting. godMode/noclip are themselves cheat/debug
+        // states (a player who enabled either has already opted out of normal
+        // rules), so bypass here too rather than requiring every debug caller
+        // to know about this separate system.
+        if (!this.player || !this.isGameplayInputActive?.() || this.godMode || this.noclip) return;
         const unlocks = this.bank?.getState?.()?.unlocks ?? {};
         const unlockedGoalKeys = new Set(Object.keys(unlocks).filter((key) => unlocks[key]));
         let maxUnlockedRing = getMaxUnlockedRing(unlockedGoalKeys);
@@ -17891,6 +18246,7 @@ export class ThreeGame {
         damage = PROJECTILE_DAMAGE,
         radius = PROJECTILE_RADIUS,
         isEnemy = false,
+        attackerId = null,
         options = {}
     }) {
         const group = new THREE.Group();
@@ -17943,6 +18299,7 @@ export class ThreeGame {
             damage,
             radius,
             isEnemy,
+            attackerId,
             pierceRemaining: (!isEnemy && this.loadoutMods?.kineticPierceBonus) ? this.loadoutMods.kineticPierceBonus : 0
         });
     }
@@ -18076,16 +18433,40 @@ export class ThreeGame {
         flash.rotation.x = -Math.PI / 2;
         flash.userData = { isGlow: true };
         effect.add(flash);
+
+        // docs/log5-dynamic-light-shader-runaway-findings-2026-08-19.md: this used
+        // to also add a real THREE.PointLight per shot (removed after 90ms via
+        // setTimeout). Every unique combination of "which lights currently affect
+        // a given material" forces three.js to compile a brand new shader program
+        // (WebGLPrograms bakes light count/type into its program cache key), and
+        // since this fires on every single bullet, it was the single largest
+        // driver of renderer.info.programs growing without bound during combat --
+        // confirmed live via CPU profiling (64 programs at boot -> 213+ after 65s
+        // of ordinary play, 112 of them "physical"/lit-material variants differing
+        // only in light combination). A second, larger, additive-blended unlit
+        // circle gives a similar "flash lights up the area" look without ever
+        // touching the standard lighting model, so it can't grow the program
+        // cache at all. Both circles share updateTransientEffects()'s existing
+        // isGlow fade logic (src/threeGame.js:25861), no new update path needed.
+        const glow = new THREE.Mesh(
+            new THREE.CircleGeometry(isCryo ? 0.55 : 0.4, 10),
+            new THREE.MeshBasicMaterial({
+                color,
+                transparent: true,
+                opacity: 0.5,
+                depthWrite: false,
+                blending: THREE.AdditiveBlending
+            })
+        );
+        glow.rotation.x = -Math.PI / 2;
+        glow.userData = { isGlow: true };
+        effect.add(glow);
+
         effect.position.set(x, 0.42, z);
         effect.renderOrder = 31;
         effect.userData = { age: 0, duration: isCryo ? 0.16 : 0.09 };
         this.scene.add(effect);
         this.transientEffects.push(effect);
-
-        const light = new THREE.PointLight(color, isCryo ? 2.2 : 1.6, isCryo ? 4.5 : 3.0, 2);
-        light.position.set(x, 0.5, z);
-        this.scene.add(light);
-        setTimeout(() => this.scene?.remove(light), 90);
     }
 
     spawnProjectileImpactEffect(x, z) {
@@ -18389,7 +18770,24 @@ export class ThreeGame {
 
             if (projectile.isEnemy) {
                 if (this.checkProjectilePlayerHit(projectile)) {
-                    this.takeDamage(projectile.damage, 'enemy-projectile', projectile.mesh.position.x, projectile.mesh.position.z);
+                    if (projectile.attackerId && this.isMultiplayer && this.netSocket) {
+                        // Sprint 24 Milestone A: server-authoritative PvP
+                        // damage (docs/sprint24-multiplayer-runtime-2026-08-19.md).
+                        // The local (victim) client no longer decides its own
+                        // outcome -- it reports the hit and who allegedly
+                        // dealt it; the server range/rate-checks against the
+                        // attacker's own known position and is the only
+                        // party that calls takeDamage, via the playerDamaged
+                        // broadcast every client (including this one)
+                        // receives back through handleRemotePlayerDamaged.
+                        this.netSocket.emit('weaponHit', {
+                            attackerId: projectile.attackerId,
+                            originX: projectile.mesh.position.x,
+                            originZ: projectile.mesh.position.z
+                        });
+                    } else {
+                        this.takeDamage(projectile.damage, 'enemy-projectile', projectile.mesh.position.x, projectile.mesh.position.z);
+                    }
                     this.spawnProjectileImpactEffect(projectile.mesh.position.x, projectile.mesh.position.z);
                     toRemove.add(projectile);
                     continue;
@@ -18822,6 +19220,14 @@ export class ThreeGame {
                 continue;
             }
 
+            // Sprint 24 perf investigation: the gameplay longtask observer
+            // (main.js) records duration/startTime only -- the PerformanceObserver
+            // longtask API has no stack-trace/attribution of its own, so a real
+            // session log showed only "circumstantial" chunk-gen/input bursts near
+            // stalls, nothing conclusive. This tags the last known expensive
+            // synchronous operation so the *next* long-task warning can actually
+            // say what was probably running, instead of staying opaque.
+            if (typeof window !== 'undefined') window.__hbLastPerfPhase = `chunk-mount:${next.chunkX},${next.chunkY}`;
             this.mountChunk(next.chunkX, next.chunkY);
             mounted += 1;
         }
@@ -19539,24 +19945,29 @@ export class ThreeGame {
             return;
         }
 
-        if (wall.material === this.wallMaterial) {
-            wall.material = this.wallMaterial.clone();
-        }
+        wall.material = this.getWallDamageTierMaterial(damageRatio);
+    }
 
-        if (!wall.userData.originalColorHex && wall.material?.color) {
-            wall.userData.originalColorHex = wall.material.color.getHex();
-        }
-
-        if (wall.material?.color) {
-            const baseColor = new THREE.Color(wall.userData.originalColorHex ?? 0x808b96);
+    // See WALL_DAMAGE_TIER_COUNT above. Shared pool keyed by tier index so
+    // repeated damage across many different walls reuses the same handful of
+    // material objects instead of allocating a new one per wall.
+    getWallDamageTierMaterial(damageRatio) {
+        this._wallDamageMaterialPool ??= new Map();
+        const tier = Math.max(1, Math.min(WALL_DAMAGE_TIER_COUNT, Math.ceil(damageRatio * WALL_DAMAGE_TIER_COUNT)));
+        let material = this._wallDamageMaterialPool.get(tier);
+        if (!material) {
+            material = this.wallMaterial.clone();
+            const ratio = tier / WALL_DAMAGE_TIER_COUNT;
+            const baseColor = new THREE.Color(0xffffff); // this.wallMaterial's own base color
             const targetColor = new THREE.Color(0xff3300);
-            wall.material.color.copy(baseColor).lerp(targetColor, damageRatio * 0.75);
+            material.color.copy(baseColor).lerp(targetColor, ratio * 0.75);
+            if (material.emissive) {
+                material.emissive.setHex(0xff2200);
+                material.emissiveIntensity = ratio * 0.85;
+            }
+            this._wallDamageMaterialPool.set(tier, material);
         }
-
-        if (wall.material?.emissive) {
-            wall.material.emissive.setHex(0xff2200);
-            wall.material.emissiveIntensity = damageRatio * 0.85;
-        }
+        return material;
     }
 
     damageWall(wall, amount = 1, { source = 'player' } = {}) {
@@ -19902,6 +20313,7 @@ export class ThreeGame {
                 impactLight.position.z = 0.85;
                 impactLight.userData = { isCrashSiteHeatLight: true };
                 crashDeck.add(impactLight);
+                this.registerEnvLight?.(impactLight);
                 this.crashSiteHeatLight = impactLight;
             }
             this.crashSiteFloorMesh = crashDeck;
@@ -22007,6 +22419,7 @@ export class ThreeGame {
             const light = new THREE.PointLight(0xffaa44, 1.8, 3.5, 1.8);
             light.position.set(0, 0.35, 0);
             sprite.add(light);
+            this.registerEnvLight?.(light);
 
             // Assign a log entry from the biome pool
             const biomeKey = this.getBiomeKeyForWorldPosition(placement.x, placement.z);
@@ -25678,6 +26091,12 @@ export class ThreeGame {
     }
 
     spawnGearPoofEffect(x, z, junkType = 'bunker_junk') {
+        // See the matching comment in processPendingChunkMounts: this call
+        // allocates ~16 fresh geometries + cloned materials per invocation
+        // (flagged by the sprint 24 perf investigation as a GC-pressure
+        // candidate when it lands near other allocation bursts), so it's
+        // tagged the same way for longtask attribution.
+        if (typeof window !== 'undefined') window.__hbLastPerfPhase = `gear-poof:${junkType}`;
         const colors = this.getJunkVariantEffectColors(junkType);
         const smokeColor = new THREE.Color(colors.smokeColor).lerp(new THREE.Color(0x6b7177), 0.45);
         const glowColor = new THREE.Color(colors.glowColor).lerp(new THREE.Color(0x7a7a7a), 0.62);
@@ -25759,6 +26178,46 @@ export class ThreeGame {
         effect.userData = { age: 0, duration: 0.56 };
         this.scene.add(effect);
         this.transientEffects.push(effect);
+    }
+
+    // docs/dynamic-light-shader-runaway-plan-2026-08-19.md direction #1.
+    registerEnvLight(light) {
+        this.envDynamicLights.push(light);
+        return light;
+    }
+
+    updateEnvLightBudget(delta) {
+        if (!this.envDynamicLights.length || !this.camera) return;
+        // Re-sorting the whole list is cheap at this scale but pointless every
+        // single frame -- a few times a second is plenty responsive to player
+        // movement while keeping the cost of this system itself negligible.
+        this._envLightBudgetTimer -= delta;
+        if (this._envLightBudgetTimer > 0) return;
+        this._envLightBudgetTimer = 0.35;
+
+        // Some registered lights (e.g. the black-box beacon, nested under a
+        // marker group) get removed from the scene graph when their owning
+        // object is collected/disposed -- checking light.parent alone misses
+        // this (the light keeps its immediate parent reference even once that
+        // parent itself is detached), so walk the chain up to this.scene.
+        this.envDynamicLights = this.envDynamicLights.filter((light) => {
+            for (let node = light; node; node = node.parent) {
+                if (node === this.scene) return true;
+            }
+            return false;
+        });
+        if (!this.envDynamicLights.length) return;
+
+        const camPos = this.camera.position;
+        const budget = ENV_LIGHT_BUDGET;
+        const withDistance = this.envDynamicLights.map((light) => {
+            const worldPos = light.getWorldPosition(this._envLightBudgetVec ??= new THREE.Vector3());
+            return { light, distSq: worldPos.distanceToSquared(camPos) };
+        });
+        withDistance.sort((a, b) => a.distSq - b.distSq);
+        withDistance.forEach(({ light }, index) => {
+            light.visible = index < budget;
+        });
     }
 
     updateTransientEffects(delta) {
@@ -26972,6 +27431,16 @@ export class ThreeGame {
         if (this.performanceProfile === 'menu' || (chunkX >= SHOWROOM_CHUNK_X && chunkX <= SHOWROOM_CHUNK_X + 10 && chunkY >= SHOWROOM_CHUNK_Y && chunkY <= SHOWROOM_CHUNK_Y + 10)) {
             return Array(this.chunkSize).fill(null).map(() => Array(this.chunkSize).fill('.'));
         }
+
+        // docs/debug-proving-grounds-audit-2026-08-19.md Bug 1 -- without this,
+        // Wing 2's far-away debug origin got whatever real procedural landform
+        // happened to generate there (often canyon/void), which the game's
+        // normal hole-detection read as a real hole and killed the player on
+        // arrival. Same pattern as the Showroom override just above, but with
+        // real room/door tile data (not blanket floor) for its room-type
+        // modules -- see getWing2ChunkOverride's own comment in debugTileGrid.js.
+        const wing2Override = getWing2ChunkOverride(chunkX, chunkY, this.chunkSize);
+        if (wing2Override) return wing2Override;
 
         const landform = this.getChunkLandform(chunkX, chunkY);
         // Mix in per-run entropy: hashTile alone is constant for a given
