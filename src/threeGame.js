@@ -147,7 +147,7 @@ import { pickTerminalEvent } from './data/terminalEvents.js';
 import { getDialogueLine, getSuitRegister } from './data/dialogueLines.js';
 import { getEnemyStats } from './data/enemies.js';
 import { DEPTH_TIER_NAMES, getDepthLootConfig } from './data/loot.js';
-import { applyO2EfficiencyPenalty, describeCrossing } from './depthContract.js';
+import { applyO2EfficiencyPenalty, describeCrossing, applySalvageMultiplier, getDepthContract } from './depthContract.js';
 import { BunkerDirector } from './director.js';
 import { LineDirector } from './lineDirector.js';
 import { DIRECTOR_AMBIENT_LINES } from './data/lineDirectorPools.js';
@@ -6681,7 +6681,14 @@ export class ThreeGame {
             o2Frac: (this.playerVitals?.o2 ?? 100) / 100,
             depth: this.getActiveO2GeneratorDistance?.() ?? 0,
             inSafeField,
-            patrolBias: Boolean(cardEffects.spawnBias?.patrolBias) || this.currentRunModifier?.id === 'patrol_surge'
+            patrolBias: Boolean(cardEffects.spawnBias?.patrolBias) || this.currentRunModifier?.id === 'patrol_surge',
+            // docs/design/one-more-ring-design-pillars.md item 1 (Sprint 28
+            // Lane A): the Depth Contract's directorAggressionBonus wired
+            // into the real, already-live director (src/director.js's
+            // chooseDirectorAction) instead of the nonexistent "aggression
+            // score" depthContract.js's own header comment mistakenly cited
+            // in src/act2.js/src/arcState.js.
+            aggressionBonus: getDepthContract((this.currentDepthTier ?? 0) + 1).directorAggressionBonus
         };
         const action = this.bunkerDirector.tick(delta, snapshot);
         if (action) this.executeDirectorAction(action);
@@ -23910,7 +23917,10 @@ export class ThreeGame {
         }
         const isElite = Boolean(sprite.userData.enraged || sprite.userData.isSentinel);
         const isBossEnemy = Boolean(sprite.userData.isHiveHarvestBoss || sprite.userData.isBoss);
-        const drop = rollEnemyLootDrop(Math.random, { isElite, isBoss: isBossEnemy });
+        // docs/design/one-more-ring-design-pillars.md item 1 (Sprint 28):
+        // deeper rings bias this roll toward relics (see runDrops.js's
+        // rollEnemyLootDrop / rollsRareRelic).
+        const drop = rollEnemyLootDrop(Math.random, { isElite, isBoss: isBossEnemy, ring: (this.currentDepthTier ?? 0) + 1 });
         if (drop) {
             this.spawnPhysicalLootDrop?.(sprite.position?.x ?? 0, sprite.position?.z ?? 0, drop);
         }
@@ -24101,7 +24111,15 @@ export class ThreeGame {
         if (!corpse || corpse.userData.collected) return;
         corpse.userData.collected = true;
         corpse.userData.collectTimer = 0;
-        const gained = corpse.userData.shellValue ?? 1;
+        // docs/design/one-more-ring-design-pillars.md item 1 (Sprint 28):
+        // shell value is a genuinely separate axis from getDepthLootConfig's
+        // pickupMultiplier/legendaryBoost (those scale chunk pickup-item
+        // DENSITY and legendary-item ODDS on placement, not corpse-shell
+        // VALUE on collection) -- confirmed via repo-wide read before wiring
+        // this, specifically to avoid double-scaling the same reward with
+        // two systems. Rounded since shells are an integer currency.
+        const baseGained = corpse.userData.shellValue ?? 1;
+        const gained = Math.round(applySalvageMultiplier(baseGained, (this.currentDepthTier ?? 0) + 1));
         this.bank?.addShells?.(gained);
         window.AudioManager?.play?.('ui_click_confirm', {
             volume: 0.5,

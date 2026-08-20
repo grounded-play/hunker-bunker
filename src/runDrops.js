@@ -2,6 +2,8 @@
 // Manages randomized mid-run loot drops (Weapon Overclocks & Suit Relics)
 // and calculates elemental synergies (Cryo, Bio, Tesla) per playthrough.
 
+import { rollsRareRelic } from './depthContract.js';
+
 export const DROP_TYPES = Object.freeze({
     OVERCLOCK: 'overclock',
     RELIC: 'relic'
@@ -206,7 +208,13 @@ export const SUIT_RELICS = Object.freeze([
     }
 ]);
 
-export function rollEnemyLootDrop(random, { isElite = false, isBoss = false } = {}) {
+// docs/design/one-more-ring-design-pillars.md item 1 (Sprint 28 Lane A):
+// ring defaults to 1 (depthContract.js's neutral baseline, rollsRareRelic
+// returns false at ring 1) so every existing caller not yet passing it
+// keeps today's exact drop distribution -- this only changes behavior for
+// a caller that explicitly supplies a deeper ring (see threeGame.js's
+// spawnGearPoofEffect/kill-loot call site).
+export function rollEnemyLootDrop(random, { isElite = false, isBoss = false, ring = 1 } = {}) {
     const chance = isBoss ? 1.0 : (isElite ? 0.65 : 0.12);
     if (random() > chance) return null;
 
@@ -220,7 +228,19 @@ export function rollEnemyLootDrop(random, { isElite = false, isBoss = false } = 
         rarity = rarityRoll < 0.1 ? DROP_RARITIES.RARE : DROP_RARITIES.COMMON;
     }
 
-    const pool = [...WEAPON_OVERCLOCKS, ...SUIT_RELICS].filter((item) => item.rarity === rarity);
+    let pool = [...WEAPON_OVERCLOCKS, ...SUIT_RELICS].filter((item) => item.rarity === rarity);
+    // Depth Contract's rareRelicChance (design doc: "chance a reward-tier
+    // drop rolls a relic instead of a common/useful item") biases this roll
+    // toward the relic half of the pool specifically, not just a higher
+    // rarity floor -- rarity and item-type (overclock vs relic) were
+    // previously two separate axes with no depth-based link between them.
+    // Only narrows the pool when a relic actually exists at this rarity;
+    // never empties an otherwise-valid roll.
+    if (rollsRareRelic(ring, random())) {
+        const relicsOnly = pool.filter((item) => item.type === DROP_TYPES.RELIC);
+        if (relicsOnly.length) pool = relicsOnly;
+    }
+
     if (!pool.length) return WEAPON_OVERCLOCKS[0];
     return pool[Math.floor(random() * pool.length)];
 }

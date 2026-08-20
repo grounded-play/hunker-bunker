@@ -28,6 +28,47 @@ describe('runDrops', () => {
         expect([DROP_RARITIES.MYTHIC, DROP_RARITIES.CORRUPTED]).toContain(dropHigh.rarity);
     });
 
+    // docs/design/one-more-ring-design-pillars.md item 1 (Sprint 28 Lane A):
+    // rareRelicChance biases this roll toward the relic half of the pool at
+    // a given rarity, not just a higher rarity floor -- rarity and item-type
+    // (overclock vs relic) were previously unrelated axes.
+    describe('rollEnemyLootDrop ring bias (Depth Contract wiring)', () => {
+        function sequence(values) {
+            let i = 0;
+            return () => values[Math.min(i++, values.length - 1)];
+        }
+
+        it('defaults to ring 1 (no bias) when ring is omitted -- identical to pre-wiring behavior', () => {
+            // roll1: chance, roll2: rarity->RARE, roll3: would-be rareRelic
+            // roll (irrelevant at ring 1, rollsRareRelic always false), roll4: pool index
+            const withoutRing = rollEnemyLootDrop(sequence([0.05, 0.05, 0.5, 0.5]));
+            const withRing1 = rollEnemyLootDrop(sequence([0.05, 0.05, 0.5, 0.5]), { ring: 1 });
+            expect(withoutRing?.id).toBe(withRing1?.id);
+        });
+
+        it('narrows the pool to relics only when rollsRareRelic hits and a relic exists at this rarity', () => {
+            const relicIds = new Set(SUIT_RELICS.filter((i) => i.rarity === DROP_RARITIES.RARE).map((i) => i.id));
+            expect(relicIds.size).toBeGreaterThan(0); // sanity: fixture assumption holds
+            // roll1: chance (0.05 < 0.12), roll2: rarity roll 0.05 < 0.1 -> RARE,
+            // roll3: rareRelic roll 0.01 < ring 3's 0.12 rareRelicChance -> true,
+            // roll4: pool index 0 (first item in the narrowed relics-only pool)
+            const drop = rollEnemyLootDrop(sequence([0.05, 0.05, 0.01, 0]), { ring: 3 });
+            expect(drop).not.toBeNull();
+            expect(drop.rarity).toBe(DROP_RARITIES.RARE);
+            expect(relicIds.has(drop.id)).toBe(true);
+        });
+
+        it('does not narrow the pool when rollsRareRelic misses, even at a deep ring', () => {
+            // roll3 (0.99) is well above ring 5's 0.3 rareRelicChance -> rollsRareRelic
+            // false -> pool stays the full RARE-tier mix (overclocks + relics), so the
+            // pool-index roll (0, first item) should be a WEAPON_OVERCLOCKS entry, the
+            // same as it would be without any Depth Contract involvement at all.
+            const drop = rollEnemyLootDrop(sequence([0.05, 0.05, 0.99, 0]), { ring: 5 });
+            const unbiasedPool = [...WEAPON_OVERCLOCKS, ...SUIT_RELICS].filter((i) => i.rarity === DROP_RARITIES.RARE);
+            expect(drop?.id).toBe(unbiasedPool[0].id);
+        });
+    });
+
     it('computes superconductor arc synergy when cryo and tesla items are equipped', () => {
         const cryoItem = WEAPON_OVERCLOCKS.find((item) => item.element === 'cryo');
         const teslaItem = SUIT_RELICS.find((item) => item.element === 'tesla');
