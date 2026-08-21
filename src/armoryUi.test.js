@@ -6,6 +6,7 @@ function createMockElement(tagName = 'div') {
     let _innerHTML = '';
     const listeners = {};
     let children = {};
+    let classTabs = [];
     const element = {
         tagName: tagName.toUpperCase(),
         dataset: {},
@@ -13,6 +14,19 @@ function createMockElement(tagName = 'div') {
         set innerHTML(val) {
             _innerHTML = val;
             children = {};
+            classTabs = [];
+
+            for (const match of String(val).matchAll(/id="([^"]+)"/g)) {
+                const child = createMockElement('div');
+                child.id = match[1];
+                children[match[1]] = child;
+            }
+
+            for (const match of String(val).matchAll(/class="[^"]*\bclass-tab\b[^"]*" data-class="([^"]+)"/g)) {
+                const child = createMockElement('button');
+                child.dataset.class = match[1];
+                classTabs.push(child);
+            }
         },
         textContent: '',
         value: '',
@@ -36,11 +50,7 @@ function createMockElement(tagName = 'div') {
         querySelector: (sel) => {
             if (sel.startsWith('#')) {
                 const id = sel.slice(1);
-                if (children[id]) return children[id];
-                const child = createMockElement('div');
-                child.id = id;
-                children[id] = child;
-                return child;
+                return children[id] || null;
             }
             if (sel.startsWith('.')) {
                 const child = createMockElement('div');
@@ -50,12 +60,7 @@ function createMockElement(tagName = 'div') {
             return null;
         },
         querySelectorAll: (sel) => {
-            if (sel.startsWith('.')) {
-                const child = createMockElement('button');
-                child.dataset.class = 'SCOUT';
-                child.textContent = 'SCOUT';
-                return [child];
-            }
+            if (sel === '.class-tab') return classTabs;
             return [];
         }
     };
@@ -191,6 +196,12 @@ describe('createArmoryUi', () => {
         // armoryScene.js's real setClass() then normalizes to uppercase internally regardless
         // of input case, so this is a case-convention detail, not a functional bug.
         expect(fakeScene.setClass).toHaveBeenCalledWith('engineer');
+
+        const tankTab = container.querySelectorAll('.class-tab')
+            .find((tab) => tab.dataset.class === 'tank');
+        tankTab.click();
+        expect(fakeScene.setClass).toHaveBeenLastCalledWith('tank');
+        expect(container.innerHTML).toContain('class="class-tab active" data-class="tank"');
     });
 
     it('exports complete catalog metadata', () => {

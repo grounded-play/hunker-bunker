@@ -124,7 +124,7 @@ export function createArmoryUi({
             const screen = document.getElementById('armory-screen');
             if (screen) {
                 const bgUrl = assetUrl(`/ui/armory_bg_${cls}.jpg`);
-                screen.style.backgroundImage = `radial-gradient(circle at 45% 45%, rgba(6, 11, 19, 0.35) 0%, rgba(6, 11, 19, 0.85) 85%, #060b13 100%), url('${bgUrl}')`;
+                screen.style.backgroundImage = `radial-gradient(circle at 50% 50%, rgba(6, 11, 19, 0.15) 0%, rgba(6, 11, 19, 0.55) 75%, rgba(6, 11, 19, 0.88) 100%), url('${bgUrl}')`;
                 screen.style.backgroundSize = 'cover';
                 screen.style.backgroundPosition = 'center';
                 screen.style.backgroundRepeat = 'no-repeat';
@@ -219,19 +219,6 @@ export function createArmoryUi({
                                     <option value="">[NO CHARM ATTACHED]</option>
                                     ${['4130', '4131', '4132', '4133', '4134', '4135', '4136', '4137'].map((id) => `
                                         <option value="${id}" ${loadout.charmId === id ? 'selected' : ''}>
-                                            ${CATALOG_ITEMS[id]?.name || id}
-                                        </option>
-                                    `).join('')}
-                                </select>
-                            </div>
-
-                            <!-- DECAL / PATCH -->
-                            <div class="bench-field">
-                                <label>TACTICAL EMBLEM / PATCH</label>
-                                <select id="armory-decal-select" class="armory-select">
-                                    <option value="">[NO EMBLEM PATCH]</option>
-                                    ${['4120', '4121', '4122', '4123', '4124', '4125', '4126', '4127'].map((id) => `
-                                        <option value="${id}" ${(loadoutManager.getEquippedDecalId?.() || loadoutManager.state?.suit?.decalId) === id ? 'selected' : ''}>
                                             ${CATALOG_ITEMS[id]?.name || id}
                                         </option>
                                     `).join('')}

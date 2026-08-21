@@ -18323,7 +18323,10 @@ body.show-debug .map-tool-btn--debug { display: inline-flex; }
   position: absolute;
   inset: 0;
   z-index: 8000;
-  background: var(--bg-dark);
+  background-color: var(--bg-dark);
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
   overflow: hidden;
   user-select: none;
 }
@@ -18350,7 +18353,7 @@ body.show-debug .map-tool-btn--debug { display: inline-flex; }
   gap: calc(var(--vu) * 1.6);
   padding: calc(var(--vu) * 3.2) calc(var(--vu) * 4);
   pointer-events: none;
-  background: radial-gradient(circle at center, transparent 40%, rgba(6, 11, 19, 0.75) 100%);
+  background: transparent;
 }
 
 .armory-header {

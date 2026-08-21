@@ -121,36 +121,10 @@ export async function createArmoryScene(canvas) {
     scene.add(rimLight);
 
     // ── Subterranean Bunker Environment Geometry ─────────────
+    // Opaque backdrop wall and floor are removed so the transparent WebGL canvas
+    // allows the rich per-class background concept art (armory_bg_scout/tank/engineer)
+    // on #armory-screen to show through behind the 3D operator and weapon models.
     const envGroup = new THREE.Group();
-
-    // Metallic Floor
-    const floorGeo = new THREE.PlaneGeometry(16, 16, 8, 8);
-    const floorMat = new THREE.MeshStandardMaterial({
-        color: 0x121820,
-        roughness: 0.75,
-        metalness: 0.65
-    });
-    const floor = new THREE.Mesh(floorGeo, floorMat);
-    floor.rotation.x = -Math.PI / 2;
-    floor.receiveShadow = true;
-    envGroup.add(floor);
-
-    // Grated Floor Trim
-    const gridHelper = new THREE.GridHelper(16, 32, 0x00e5ff, 0x1c2d3d);
-    gridHelper.position.y = 0.002;
-    envGroup.add(gridHelper);
-
-    // Back Staging Wall
-    const wallGeo = new THREE.PlaneGeometry(18, 8);
-    const wallMat = new THREE.MeshStandardMaterial({
-        color: 0x0d141d,
-        roughness: 0.85,
-        metalness: 0.5
-    });
-    const backWall = new THREE.Mesh(wallGeo, wallMat);
-    backWall.position.set(0, 3.5, -2.5);
-    backWall.receiveShadow = true;
-    envGroup.add(backWall);
 
     // Magnetic Weapon Wall Mounting Panel (Right / Center-Right)
     // Raised and pushed back from its original (1.1, 1.25, -0.6) --
