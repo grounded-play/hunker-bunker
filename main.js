@@ -7729,6 +7729,10 @@ function executeDevCommand(input) {
                 break;
             }
             const s = game.getComprehensiveDebugStats();
+            const gpuMs = s.performance.gpuFrame?.averageMs;
+            const gpuMemoryMiB = Number.isFinite(s.performance.gpuMemory?.estimatedBytes)
+                ? s.performance.gpuMemory.estimatedBytes / (1024 * 1024)
+                : null;
             result = `══════════════════ [ GAME STATE & TELEMETRY ] ══════════════════\n`
                 + `  RUN SEED:       ${s.seed} (entropy)\n`
                 + `  PROGRESSION:    Act ${s.act} · Level/Depth ${s.level} · Landform: ${s.landform}\n`
@@ -7746,6 +7750,7 @@ function executeDevCommand(input) {
                 + `  FPS:            ${Math.round(fpsFrames / Math.max((performance.now() - fpsLastTime) / 1000, 0.001))} (sampled)\n`
                 + `  DRAWS/TRIS:     ${s.performance.drawCalls} calls · ${s.performance.triangles.toLocaleString()} triangles\n`
                 + `  ASSETS:         ${s.performance.textures} textures · ${s.performance.geometries} geometries · ${s.performance.activeChunks} active chunks\n`
+                + `  GPU FRAME:      ${Number.isFinite(gpuMs) ? `${gpuMs.toFixed(2)}ms` : 'UNAVAILABLE'} · MEMORY EST: ${Number.isFinite(gpuMemoryMiB) ? `${gpuMemoryMiB.toFixed(1)} MiB` : 'UNAVAILABLE'}\n`
                 + `════════════════════════════════════════════════════════════════`;
             break;
         }

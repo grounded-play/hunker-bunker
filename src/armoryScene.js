@@ -74,7 +74,12 @@ function loadArmoryGltfCached(loader, url) {
 export async function createArmoryScene(canvas) {
     if (!canvas) throw new Error('Armory scene requires a canvas element');
 
-    const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
+    const renderer = new THREE.WebGLRenderer({
+        canvas,
+        alpha: true,
+        antialias: true,
+        powerPreference: 'high-performance'
+    });
     renderer.setClearColor(0x000000, 0);
     renderer.setPixelRatio(Math.min(globalThis.devicePixelRatio ?? 1, 2));
     renderer.setSize(canvas.clientWidth || window.innerWidth, canvas.clientHeight || window.innerHeight, false);

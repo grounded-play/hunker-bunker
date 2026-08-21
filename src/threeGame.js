@@ -4,6 +4,8 @@ import { getControllerGlyphLabel } from './inputGlyphs.js';
 import * as THREE from 'three';
 import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
 import { createFrameProfiler } from './frameProfiler.js';
+import { createGpuFrameTimer } from './gpuFrameTimer.js';
+import { captureHardwareCapabilities, createGpuMemoryTracker } from './gpuMemoryBudget.js';
 import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
 import { ShaderPass } from 'three/examples/jsm/postprocessing/ShaderPass.js';
 
@@ -1567,7 +1569,16 @@ export class ThreeGame {
         this._lastMenuRenderAt = 0;
         this.loadingPaused = false;
 
-        this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+        this.renderer = new THREE.WebGLRenderer({
+            antialias: true,
+            alpha: false,
+            // On hybrid-GPU PCs, ask Chromium for the discrete/high-throughput
+            // adapter. Steam Deck has one GPU, so the hint is harmless there.
+            powerPreference: 'high-performance'
+        });
+        this.gpuFrameTimer = createGpuFrameTimer(this.renderer.getContext());
+        this.gpuMemoryTracker = createGpuMemoryTracker();
+        this._hardwareCapabilities = null;
         // Three.js's default (true) synchronously calls gl.getShaderInfoLog()/
         // getProgramInfoLog() after every shader program compile+link -- a
         // driver round-trip three.js's own docs call out as a real
@@ -6739,6 +6750,13 @@ export class ThreeGame {
 
     getPerformanceDiagnosticsSnapshot() {
         const info = this.renderer?.info;
+        const gpuFrame = this.gpuFrameTimer?.snapshot?.() ?? null;
+        const gpuMemory = this.gpuMemoryTracker?.snapshot?.({
+            scene: this.scene,
+            renderer: this.renderer,
+            composer: this.composer
+        }) ?? null;
+        const hardware = this.getHardwareCapabilitiesSnapshot?.() ?? null;
         return {
             profile: this.performanceProfile,
             drawCalls: info?.render?.calls ?? null,
@@ -6758,12 +6776,31 @@ export class ThreeGame {
             gameplayPostProcessingEnabled: this.gameplayPostProcessingEnabled !== false,
             shadowsEnabled: Boolean(this.renderer?.shadowMap?.enabled),
             frameProfilerEnabled: Boolean(this.frameProfiler?.enabled),
-            jsHeapUsed: performance.memory?.usedJSHeapSize ?? null
+            jsHeapUsed: performance.memory?.usedJSHeapSize ?? null,
+            jsHeapLimit: performance.memory?.jsHeapSizeLimit ?? null,
+            gpuFrame,
+            gpuMemory,
+            hardware
         };
+    }
+
+    getHardwareCapabilitiesSnapshot() {
+        const isSteamDeck = typeof window !== 'undefined'
+            && Boolean(window.__hbSteamStatus?.isSteamDeck);
+        if (!this._hardwareCapabilities
+            || this._hardwareCapabilities.isSteamDeck !== isSteamDeck) {
+            this._hardwareCapabilities = captureHardwareCapabilities({
+                renderer: this.renderer,
+                navigatorObject: typeof navigator !== 'undefined' ? navigator : null,
+                isSteamDeck
+            });
+        }
+        return this._hardwareCapabilities;
     }
 
     renderWithPerf(label = 'frame:render') {
         const span = beginPerfPhase(label, this.getPerformanceDiagnosticsSnapshot());
+        const gpuQueryStarted = this.gpuFrameTimer?.beginFrame?.() ?? false;
         try {
             if (this.composer
                 && this.performanceProfile === 'gameplay'
@@ -6772,6 +6809,7 @@ export class ThreeGame {
             }
             else this.renderer.render(this.scene, this.camera);
         } finally {
+            if (gpuQueryStarted) this.gpuFrameTimer?.endFrame?.();
             span.end();
         }
     }
@@ -28346,7 +28384,14 @@ export class ThreeGame {
                 triangles: renderInfo.triangles ?? 0,
                 textures: memoryInfo.textures ?? 0,
                 geometries: memoryInfo.geometries ?? 0,
-                activeChunks: this.chunkMeshes?.size ?? 0
+                activeChunks: this.chunkMeshes?.size ?? 0,
+                gpuFrame: this.gpuFrameTimer?.snapshot?.() ?? null,
+                gpuMemory: this.gpuMemoryTracker?.snapshot?.({
+                    scene: this.scene,
+                    renderer: this.renderer,
+                    composer: this.composer
+                }) ?? null,
+                hardware: this.getHardwareCapabilitiesSnapshot?.() ?? null
             }
         };
     }
@@ -29697,6 +29742,7 @@ export class ThreeGame {
             this.o2BubbleObjects = null;
         }
         this.removeMenuGyroListeners();
+        this.gpuFrameTimer?.dispose?.();
         this.renderer.dispose();
         this.container.replaceChildren();
     }

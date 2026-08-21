@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { ThreeGame } from './threeGame.js';
 
 const originalWindow = globalThis.window;
@@ -27,6 +27,32 @@ describe('ThreeGame performance diagnostics', () => {
         expect(globalThis.window.__hbPerfPhaseHistory[0].phase).toBe('frame:render');
         expect(globalThis.window.__hbPerfPhaseHistory[0].context).toEqual({ drawCalls: 12, wallInstances: 8 });
         expect(globalThis.window.__hbPerfPhaseStack).toHaveLength(0);
+    });
+
+    it('wraps renderer submission in a non-blocking GPU query when available', () => {
+        globalThis.window = {
+            __hbPerfPhaseHistory: [],
+            __hbPerfPhaseStack: []
+        };
+        const gpuFrameTimer = {
+            beginFrame: vi.fn(() => true),
+            endFrame: vi.fn()
+        };
+        const fake = {
+            performanceProfile: 'gameplay',
+            gameplayPostProcessingEnabled: false,
+            scene: {},
+            camera: {},
+            renderer: { render: vi.fn() },
+            gpuFrameTimer,
+            getPerformanceDiagnosticsSnapshot: () => ({})
+        };
+
+        ThreeGame.prototype.renderWithPerf.call(fake);
+
+        expect(gpuFrameTimer.beginFrame).toHaveBeenCalledOnce();
+        expect(fake.renderer.render).toHaveBeenCalledOnce();
+        expect(gpuFrameTimer.endFrame).toHaveBeenCalledOnce();
     });
 
     it('attributes an ignored wall hit without changing gameplay state', () => {
@@ -62,7 +88,18 @@ describe('ThreeGame performance diagnostics', () => {
             chunkMeshes: new Map([['0,0', {}]]),
             adaptiveGameplayPerformanceMode: true,
             gameplayPostProcessingEnabled: false,
-            frameProfiler: { enabled: true }
+            frameProfiler: { enabled: true },
+            gpuFrameTimer: {
+                snapshot: () => ({ supported: true, latestMs: 6.25, averageMs: 7.5 })
+            },
+            gpuMemoryTracker: {
+                snapshot: () => ({ estimatedBytes: 64_000_000, textureBytes: 48_000_000 })
+            },
+            getHardwareCapabilitiesSnapshot: () => ({
+                isSteamDeck: true,
+                logicalCores: 8,
+                deviceMemoryGb: 16
+            })
         };
 
         expect(ThreeGame.prototype.getPerformanceDiagnosticsSnapshot.call(fake)).toMatchObject({
@@ -82,7 +119,10 @@ describe('ThreeGame performance diagnostics', () => {
             adaptiveGameplayPerformanceMode: true,
             gameplayPostProcessingEnabled: false,
             shadowsEnabled: false,
-            frameProfilerEnabled: true
+            frameProfilerEnabled: true,
+            gpuFrame: { supported: true, latestMs: 6.25, averageMs: 7.5 },
+            gpuMemory: { estimatedBytes: 64_000_000, textureBytes: 48_000_000 },
+            hardware: { isSteamDeck: true, logicalCores: 8, deviceMemoryGb: 16 }
         });
     });
 });

@@ -23,12 +23,16 @@ test('profile gameplay frame cost and shader program growth', async ({ page }) =
     const before = await page.evaluate(() => {
         window.game.frameProfiler.reset();
         window.game.frameProfiler.enable();
+        const diagnostics = window.game.getPerformanceDiagnosticsSnapshot();
         return {
             programs: window.game.renderer.info.programs.length,
             envLights: window.game.envDynamicLights.length,
             scatter: window.game.scatterSprites.length,
             enemies: window.game.scatterSprites.filter((sprite) => sprite.userData?.isEnemy).length,
-            world3d: window.game.scatterSprites.filter((sprite) => sprite.userData?.world3dRoot).length
+            world3d: window.game.scatterSprites.filter((sprite) => sprite.userData?.world3dRoot).length,
+            gpuFrame: diagnostics.gpuFrame,
+            gpuMemory: diagnostics.gpuMemory,
+            hardware: diagnostics.hardware
         };
     });
 
@@ -58,6 +62,7 @@ test('profile gameplay frame cost and shader program growth', async ({ page }) =
     const after = await page.evaluate(() => {
         const snap = window.game.frameProfiler.snapshot();
         window.game.frameProfiler.disable();
+        const diagnostics = window.game.getPerformanceDiagnosticsSnapshot();
         return {
             snap,
             programs: window.game.renderer.info.programs.length,
@@ -65,7 +70,10 @@ test('profile gameplay frame cost and shader program growth', async ({ page }) =
             poolSize: window.game.envLightPool?.length ?? null,
             scatter: window.game.scatterSprites.length,
             enemies: window.game.scatterSprites.filter((sprite) => sprite.userData?.isEnemy).length,
-            world3d: window.game.scatterSprites.filter((sprite) => sprite.userData?.world3dRoot).length
+            world3d: window.game.scatterSprites.filter((sprite) => sprite.userData?.world3dRoot).length,
+            gpuFrame: diagnostics.gpuFrame,
+            gpuMemory: diagnostics.gpuMemory,
+            hardware: diagnostics.hardware
         };
     });
 
@@ -77,6 +85,9 @@ test('profile gameplay frame cost and shader program growth', async ({ page }) =
     console.log(`programs          : ${before.programs} -> ${after.programs}  (growth ${after.programs - before.programs})`);
     console.log(`env lights        : ${before.envLights} -> ${after.envLights}, pool ${after.poolSize}`);
     console.log(`scatter / enemies : ${before.scatter} / ${before.enemies}  (3D ${before.world3d} -> ${after.world3d})`);
+    console.log(`GPU frame timing  : ${after.gpuFrame?.supported ? `${after.gpuFrame.averageMs ?? 'pending'} ms avg (${after.gpuFrame.samples} samples)` : 'extension unavailable'}`);
+    console.log(`GPU memory est.   : ${after.gpuMemory ? `${(after.gpuMemory.estimatedBytes / 1048576).toFixed(1)} MiB (${(after.gpuMemory.textureBytes / 1048576).toFixed(1)} texture, ${(after.gpuMemory.renderTargetBytes / 1048576).toFixed(1)} targets, ${after.gpuMemory.uniqueTextures} uploads/${after.gpuMemory.uniqueTextureObjects} objects)` : 'unavailable'}`);
+    console.log(`hardware          : ${after.hardware?.gpuRenderer ?? 'masked GPU'} · ${after.hardware?.logicalCores ?? '?'} logical cores · ${after.hardware?.deviceMemoryGb ?? '?'} GB tier`);
     console.log('--------------------------------------------------------');
     console.log('  ms/frame    total     max   calls  section');
     for (const s of snap.sections.slice(0, 22)) {
@@ -107,4 +118,5 @@ test('profile gameplay frame cost and shader program growth', async ({ page }) =
     console.log('========================================================\n');
 
     expect(snap.frames).toBeGreaterThan(0);
+    expect(after.gpuMemory?.estimatedBytes).toBeGreaterThan(0);
 });
