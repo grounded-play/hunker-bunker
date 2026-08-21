@@ -189,9 +189,8 @@ function buildControllerConfig(controllerType) {
             left_bumper: ['menu_tab_left', 'Previous Tab'],
             right_bumper: ['menu_tab_right', 'Next Tab']
         }),
-        // Keep the manifest action represented for user-authored layouts, but
-        // leave this group inactive in the official menu preset. The default
-        // right stick must not move menu focus or scrolling.
+        // Mouse-like menu cursor. The official preset binds this normalized
+        // analog action to the right stick on every twin-stick controller.
         analogGroup(6, 'menu', 'menu_pointer'),
         faceGroup(10, 'gameplay', {
             a: ['interact', 'Interact'],
@@ -251,7 +250,8 @@ function buildControllerConfig(controllerType) {
         2: 'joystick',
         3: 'left_trigger',
         4: 'right_trigger',
-        5: 'switch'
+        5: 'switch',
+        6: 'right_joystick'
     };
     const gameplaySources = {
         10: 'button_diamond',
@@ -272,7 +272,6 @@ function buildControllerConfig(controllerType) {
 
     if (hasDualTrackpads) {
         menuSources[7] = 'left_trackpad';
-        menuSources[8] = 'right_trackpad';
         archiveSources[26] = 'left_trackpad';
         archiveSources[27] = 'right_trackpad';
     } else if (hasCenterTrackpad) {
@@ -291,16 +290,16 @@ function buildControllerConfig(controllerType) {
     "version" "3"
     "game" "Hunker Bunker"
     "title" "Official Hunker Bunker Layout"
-    "description" "Twin-stick layout: A interact, B dodge, X reload, Y smash, RT fire."
+    "description" "Twin-stick layout: right stick pointer/aim, A interact, B dodge, X reload, Y smash, RT fire."
     "controller_type" "${controllerType}"
-    "major_revision" "7"
+    "major_revision" "8"
     "minor_revision" "0"
     "localization"
     {
         "english"
         {
             "title" "Official Hunker Bunker Layout"
-            "description" "Twin-stick layout: A interact, B dodge, X reload, Y smash, RT fire."
+            "description" "Twin-stick layout: right stick pointer/aim, A interact, B dodge, X reload, Y smash, RT fire."
         }
     }
     ${groups.join('\n    ')}

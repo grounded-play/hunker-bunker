@@ -3,16 +3,16 @@
     "version" "3"
     "game" "Hunker Bunker"
     "title" "Official Hunker Bunker Layout"
-    "description" "Twin-stick layout: A interact, B dodge, X reload, Y smash, RT fire."
+    "description" "Twin-stick layout: right stick pointer/aim, A interact, B dodge, X reload, Y smash, RT fire."
     "controller_type" "controller_xbox360"
-    "major_revision" "7"
+    "major_revision" "8"
     "minor_revision" "0"
     "localization"
     {
         "english"
         {
             "title" "Official Hunker Bunker Layout"
-            "description" "Twin-stick layout: A interact, B dodge, X reload, Y smash, RT fire."
+            "description" "Twin-stick layout: right stick pointer/aim, A interact, B dodge, X reload, Y smash, RT fire."
         }
     }
     "group"
@@ -643,6 +643,7 @@
             "3" "left_trigger active"
             "4" "right_trigger active"
             "5" "switch active"
+            "6" "right_joystick active"
         }
     }
     "preset"
