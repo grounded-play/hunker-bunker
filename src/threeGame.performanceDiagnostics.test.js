@@ -59,7 +59,10 @@ describe('ThreeGame performance diagnostics', () => {
             wallMeshes: [{}, {}],
             destroyedWallKeys: new Set(['x']),
             pendingChunkMounts: [{}, {}, {}],
-            chunkMeshes: new Map([['0,0', {}]])
+            chunkMeshes: new Map([['0,0', {}]]),
+            adaptiveGameplayPerformanceMode: true,
+            gameplayPostProcessingEnabled: false,
+            frameProfiler: { enabled: true }
         };
 
         expect(ThreeGame.prototype.getPerformanceDiagnosticsSnapshot.call(fake)).toMatchObject({
@@ -75,7 +78,11 @@ describe('ThreeGame performance diagnostics', () => {
             activeChunks: 1,
             geometries: 7,
             textures: 9,
-            programs: 2
+            programs: 2,
+            adaptiveGameplayPerformanceMode: true,
+            gameplayPostProcessingEnabled: false,
+            shadowsEnabled: false,
+            frameProfilerEnabled: true
         });
     });
 });

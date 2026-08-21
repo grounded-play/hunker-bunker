@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { ThreeGame } from './threeGame.js';
 import { hashSeed } from './multiplayerCrashPlanner.js';
 
@@ -75,5 +75,31 @@ describe('ThreeGame.setupMultiplayerNetwork world-seed sync', () => {
 
         expect(fake.fixedRunEntropy).toBe(false);
         expect(fake.globalSeedOffset).toBe(0);
+    });
+
+    it('uses the guest socket ID for its spawn and seeds the host as the remote avatar', () => {
+        const fake = buildFakeGameInstance();
+        fake.player = { position: { x: 0, z: 0 } };
+        fake.getOrCreateRemotePlayer = vi.fn();
+        const socket = { id: 'guest-socket', on: vi.fn() };
+        const crashPlan = {
+            players: [
+                { id: 'host-socket', isHost: true, opClass: 'ENGINEER', spawnX: 9, spawnZ: 9 },
+                { id: 'guest-socket', isHost: false, opClass: 'TANK', spawnX: 47, spawnZ: 47 }
+            ]
+        };
+
+        ThreeGame.prototype.setupMultiplayerNetwork.call(fake, {
+            mode: 'pvp',
+            seed: 'ROOM',
+            isHost: false,
+            socket,
+            crashPlan
+        });
+
+        expect(fake.player.position).toMatchObject({ x: 47, z: 47 });
+        expect(fake.multiplayerLocalPlayerId).toBe('guest-socket');
+        expect(fake.getOrCreateRemotePlayer).toHaveBeenCalledTimes(1);
+        expect(fake.getOrCreateRemotePlayer).toHaveBeenCalledWith(crashPlan.players[0]);
     });
 });

@@ -37,6 +37,11 @@ describe('roomContainment', () => {
             });
             expect(isPointInBounds(4, 12, bounds)).toBe(true);
         });
+
+        it('reuses already-canonical numeric bounds on the hot collision path', () => {
+            const bounds = { minX: 2, maxX: 8, minZ: 9, maxZ: 15 };
+            expect(normalizeContainmentBounds(bounds)).toBe(bounds);
+        });
     });
 
     describe('isCellInSafeZone', () => {

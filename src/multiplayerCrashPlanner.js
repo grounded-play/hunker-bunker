@@ -14,6 +14,32 @@ export const MULTIPLAYER_SPAWN_MODES = Object.freeze({
 export const DEFAULT_BASE_SPAWN = Object.freeze({ x: 9, z: 9 });
 
 /**
+ * Resolves one client's local and remote crash-plan entries. Socket ID is
+ * authoritative because isHost describes a roster role, not "this client."
+ * The role fallback keeps offline/synthetic sessions working when no live
+ * socket ID exists.
+ */
+export function partitionCrashPlanPlayers(players = [], { localPlayerId = null, isHost = false } = {}) {
+    const roster = Array.isArray(players) ? players.filter(Boolean) : [];
+    let localPlayer = localPlayerId
+        ? roster.find((player) => player.id === localPlayerId) ?? null
+        : null;
+
+    if (!localPlayer) {
+        localPlayer = isHost
+            ? roster.find((player) => player.isHost) ?? roster[0] ?? null
+            : roster.find((player) => !player.isHost) ?? roster[0] ?? null;
+    }
+
+    return {
+        localPlayer,
+        remotePlayers: localPlayer
+            ? roster.filter((player) => player.id !== localPlayer.id)
+            : []
+    };
+}
+
+/**
  * Derives an integer hash from any string or number seed.
  */
 export function hashSeed(seed) {

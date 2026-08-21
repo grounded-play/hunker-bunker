@@ -32,11 +32,10 @@ test.describe('boot and main menu', () => {
         // that real flow instead of trying to click through the modal.
         await startRunAndSkipIntro(page);
 
-        // hud-run-seed is part of the always-present gameplay HUD chrome
-        // (index.html) rather than a canvas-drawn element, so it's a
-        // reliable DOM signal that the run actually started, past the door-
-        // transition/world-build/shader-warmup sequence.
-        await expect(page.locator('#hud-run-seed')).toBeVisible({ timeout: 20_000 });
+        // The seed label is intentionally debug-only. The HUD root is the
+        // stable production signal that deployment passed world warm-up and
+        // returned control to gameplay.
+        await expect(page.locator('#ui')).toBeVisible({ timeout: 20_000 });
 
         await page.screenshot({ path: 'playwright-report/screenshots/gameplay-hud-1280x800.png' });
     });

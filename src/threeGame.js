@@ -3,6 +3,7 @@ import { getControllerGlyphLabel } from './inputGlyphs.js';
 
 import * as THREE from 'three';
 import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
+import { createFrameProfiler } from './frameProfiler.js';
 import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
 import { ShaderPass } from 'three/examples/jsm/postprocessing/ShaderPass.js';
 
@@ -48,7 +49,7 @@ export const TiltShiftPassShader = {
 import { assetUrl } from './assetUrl.js';
 import { getItemCatalogEntry } from './steamVaultUi.js';
 import { wrapAngle, planarBasisFromOffsetAzimuth, aimVectorFromYaw } from './cameraYaw.js';
-import { MULTIPLAYER_SPAWN_MODES, hashSeed } from './multiplayerCrashPlanner.js';
+import { MULTIPLAYER_SPAWN_MODES, hashSeed, partitionCrashPlanPlayers } from './multiplayerCrashPlanner.js';
 import { multiplayerLobby } from './multiplayerLobby.js';
 import { BankManager, O2_GENERATOR_UPGRADES, BASE_TURRET_UPGRADES, BASE_TURRET_REPAIR_COST, TIER2_UPGRADE_ORDER, TIER2_UPGRADE_CONFIGS, WEAPON_UPGRADE_ORDER, WEAPON_UPGRADES_CONFIG, CLASS_SKILL_TREES, shellPriceOf } from './bank.js';
 import { MarkovGenerator } from './generator.js';
@@ -644,6 +645,14 @@ const WALL_DECAL_CAP = 24;
 // materials can ever encounter, capping shader-program growth instead of
 // letting it climb for the length of a run.
 const ENV_LIGHT_BUDGET = 8;
+// docs/log13-gameplay-fps-findings-and-fix-plan-2026-08-20.md: keep gameplay
+// simulation and world visibility intact while removing cosmetic render
+// multipliers on Steam Deck or after sustained frame pressure.
+const ADAPTIVE_GAMEPLAY_FPS_FLOOR = 45;
+const ADAPTIVE_GAMEPLAY_RECOVERY_FPS = 52;
+const ADAPTIVE_GAMEPLAY_TRIGGER_SECONDS = 1.5;
+const ADAPTIVE_GAMEPLAY_MAX_SAMPLE_SECONDS = 0.25;
+const ADAPTIVE_GAMEPLAY_PIXEL_RATIO_CAP = 0.85;
 // docs/dynamic-light-shader-runaway-plan-2026-08-19.md direction #3 --
 // updateWallDamageColor used to clone this.wallMaterial into a brand new
 // MeshStandardMaterial for every non-instanced wall the first time it took
@@ -1168,6 +1177,40 @@ export class ThreeGame {
         this.pipeMaterial = new THREE.MeshBasicMaterial({ color: 0x24282c });
 
         // Pre-allocated geometries/materials to optimize runtime chunk loading (avoid stutters)
+        this.doorPanelGeometry = new THREE.BoxGeometry(0.38, 0.58, 0.24);
+        this.doorPanelMaterial = new THREE.MeshStandardMaterial({ color: 0x12191f, emissive: 0x07141a, metalness: 0.78, roughness: 0.38 });
+        this.doorRibGeometry = new THREE.BoxGeometry(0.08, 1.02, 1.1);
+        this.doorRibMaterial = new THREE.MeshStandardMaterial({
+            color: 0x11161b,
+            roughness: 0.3,
+            metalness: 0.92
+        });
+        this.doorStatusBarGeometry = new THREE.BoxGeometry(0.82, 0.09, 1.08);
+        this.doorButtonGeometry = new THREE.CircleGeometry(0.11, 16);
+        this.doorStatusMaterials = {
+            open: new THREE.MeshStandardMaterial({
+                color: 0x00e5ff,
+                emissive: 0x00e5ff,
+                emissiveIntensity: 1.35,
+                metalness: 0.35,
+                roughness: 0.32
+            }),
+            closed: new THREE.MeshStandardMaterial({
+                color: 0xff2a00,
+                emissive: 0xff2a00,
+                emissiveIntensity: 1.35,
+                metalness: 0.35,
+                roughness: 0.32
+            }),
+            locked: new THREE.MeshStandardMaterial({
+                color: 0xffaa00,
+                emissive: 0xffaa00,
+                emissiveIntensity: 1.35,
+                metalness: 0.35,
+                roughness: 0.32
+            })
+        };
+
         this.sirenBaseGeometry = new THREE.CylinderGeometry(0.12, 0.14, 0.1, 8);
         this.sirenDomeGeometry = new THREE.CylinderGeometry(0.08, 0.08, 0.12, 8);
         this.sirenBaseMaterial = new THREE.MeshBasicMaterial({ color: 0x111111 });
@@ -1442,6 +1485,11 @@ export class ThreeGame {
         this.scene = new THREE.Scene();
         this.scene.background = new THREE.Color(0x0b0d0f);
         this.scene.fog = new THREE.Fog(0x0b0d0f, 10, 28);
+        // Create all eight renderer-visible slots before the loading-screen
+        // shader warm-up. Creating them on the first gameplay update would
+        // compile the zero-light variant during staging and miss again when
+        // the pool appeared.
+        this._ensureEnvLightPool();
 
         // Base flood-lights: dormant until the O2 station powers the grid (Beat 2).
         this.baseLights = new BaseLights(this.scene);
@@ -1511,6 +1559,10 @@ export class ThreeGame {
         this.menuPixelRatio = 1;
         this.gameplayPixelRatio = 1;
         this.performanceProfile = 'menu';
+        this.adaptiveGameplayPerformanceMode = false;
+        this.gameplayPostProcessingEnabled = true;
+        this._adaptiveLowFpsSeconds = 0;
+        this._adaptiveLastFps = null;
         this.menuFrameIntervalMs = 1000 / 30;
         this._lastMenuRenderAt = 0;
         this.loadingPaused = false;
@@ -3113,8 +3165,8 @@ export class ThreeGame {
         const directionalLight = new THREE.DirectionalLight(0xd6e7ff, 2.3);
         directionalLight.position.set(10, 18, 8);
         directionalLight.castShadow = true;
-        directionalLight.shadow.mapSize.width = 2048;
-        directionalLight.shadow.mapSize.height = 2048;
+        directionalLight.shadow.mapSize.width = 1024;
+        directionalLight.shadow.mapSize.height = 1024;
         directionalLight.shadow.camera.near = 0.5;
         directionalLight.shadow.camera.far = 40;
         directionalLight.shadow.camera.left = -14;
@@ -3747,7 +3799,11 @@ export class ThreeGame {
         const active = Boolean(this.baseDefenseTurretState?.active && hp > 0);
         this.baseDefenseTurretGroup.visible = Boolean(isUnlocked);
         if (this.baseDefenseTurretLight) {
-            this.baseDefenseTurretLight.visible = active;
+            const lightState = (this.baseDefenseTurretLight.userData ??= {});
+            lightState.envLightEnabled = active;
+            // Registered source lights are never renderer-visible; the fixed
+            // env-light pool mirrors enabled source state on its next tick.
+            this.baseDefenseTurretLight.visible = false;
         }
 
         if (this.baseDefenseTurretEyeMat) {
@@ -4051,6 +4107,7 @@ export class ThreeGame {
         this.multiplayerCrashPlan = session.crashPlan || null;
         this.remotePlayers = new Map();
         this.netSocket = session.socket || null;
+        this.multiplayerLocalPlayerId = this.netSocket?.id || session.localPlayerId || null;
         this.lastNetBroadcastTime = 0;
         // Sprint 24 Milestone A item 5 (docs/sprint24-multiplayer-runtime-2026-08-19.md):
         // captured by the lobby from the server's currentPlayers roster (the
@@ -4091,9 +4148,19 @@ export class ThreeGame {
             this.globalSeedOffset = hashSeed(session.seed) | 0;
         }
 
-        // If a crash plan exists, adjust local player spawn if assigned
-        if (this.multiplayerCrashPlan?.players?.length && this.player) {
-            const myInfo = this.multiplayerCrashPlan.players.find(p => p.isHost) || this.multiplayerCrashPlan.players[0];
+        const crashParticipants = partitionCrashPlanPlayers(
+            this.multiplayerCrashPlan?.players,
+            {
+                localPlayerId: this.multiplayerLocalPlayerId,
+                isHost: this.isMultiplayerHost
+            }
+        );
+
+        // If a crash plan exists, adjust the local player to this socket's
+        // assigned spawn. isHost cannot answer this on a guest client: it is
+        // a global roster role and previously put every client at host spawn.
+        if (crashParticipants.localPlayer && this.player) {
+            const myInfo = crashParticipants.localPlayer;
             if (myInfo && Number.isFinite(myInfo.spawnX) && Number.isFinite(myInfo.spawnZ)) {
                 this.player.position.x = myInfo.spawnX;
                 this.player.position.z = myInfo.spawnZ;
@@ -4125,12 +4192,20 @@ export class ThreeGame {
             this.netSocket.on('hostChanged', (data) => this.handleHostChanged(data));
         }
 
-        // Spawn peers from crash plan / roster
-        if (this.multiplayerCrashPlan?.players) {
-            this.multiplayerCrashPlan.players.forEach((p) => {
-                if (!p.isHost) {
-                    this.getOrCreateRemotePlayer(p);
-                }
+        // Seed every participant except this socket. The old !p.isHost filter
+        // made guests create themselves as a remote and omit the real host.
+        crashParticipants.remotePlayers.forEach((player) => {
+            this.getOrCreateRemotePlayer(player);
+        });
+
+        if (typeof window !== 'undefined' && window.hbLog) {
+            window.hbLog('MULTIPLAYER', 'info', 'remote-avatar-roster-seeded', {
+                localPlayerId: crashParticipants.localPlayer?.id || this.multiplayerLocalPlayerId,
+                localSpawn: crashParticipants.localPlayer
+                    ? { x: crashParticipants.localPlayer.spawnX, z: crashParticipants.localPlayer.spawnZ }
+                    : null,
+                remotePlayerIds: crashParticipants.remotePlayers.map((player) => player.id),
+                remoteClasses: crashParticipants.remotePlayers.map((player) => player.opClass)
             });
         }
     }
@@ -4150,6 +4225,7 @@ export class ThreeGame {
     teardownMultiplayerNetwork() {
         if (this.remotePlayers) {
             for (const remote of this.remotePlayers.values()) {
+                remote.overlay?.dispose?.();
                 if (remote.mesh) this.scene.remove(remote.mesh);
             }
             this.remotePlayers.clear();
@@ -4172,6 +4248,7 @@ export class ThreeGame {
         this.multiplayerMode = null;
         this.multiplayerRoomCode = null;
         this.multiplayerCrashPlan = null;
+        this.multiplayerLocalPlayerId = null;
         this.isMultiplayerHost = false;
         this.lastNetBroadcastTime = 0;
         // Sprint 26: undoes setupMultiplayerNetwork's world-seed sync (see
@@ -4278,7 +4355,74 @@ export class ThreeGame {
         this.setRemoteSpriteFrame(remote, 0, PLAYER_DEFAULT_DIRECTION_INDEX);
 
         this.remotePlayers.set(playerData.id, remote);
+        void this.setupRemotePlayer3dOverlay?.(remote);
+
+        if (typeof window !== 'undefined' && window.hbLog) {
+            window.hbLog('MULTIPLAYER', 'info', 'remote-avatar-created', {
+                playerId: remote.id,
+                callsign: remote.callsign,
+                opClass: remote.opClass,
+                x: group.position.x,
+                z: group.position.z,
+                visual: 'sprite-fallback'
+            });
+        }
         return remote;
+    }
+
+    async setupRemotePlayer3dOverlay(remote) {
+        if (!PLAYER_3D_COSMETIC_OVERLAY_ENABLED || !remote?.mesh || remote.overlay || remote.overlayLoading) return;
+        if (!['SCOUT', 'ENGINEER', 'TANK'].includes(remote.opClass)) return;
+        remote.overlayLoading = true;
+
+        const classVisuals = {
+            SCOUT: { weaponArchetype: 'talon' },
+            ENGINEER: {
+                modelUrl: '/3d/runtime/engineer-rigged-gestures.glb',
+                animationModelUrl: '/3d/scouting-scout/Scout.game.glb',
+                animationBonePrefix: 'mixamorig',
+                weaponArchetype: 'tesla_lock'
+            },
+            TANK: {
+                modelUrl: '/3d/runtime/tank-rigged.glb',
+                animationModelUrl: '/3d/scouting-scout/Scout.game.glb',
+                animationBonePrefix: 'mixamorig',
+                weaponArchetype: 'siege_breaker',
+                weaponMount: { position: [0.03, 0.02, 0.03] }
+            }
+        };
+
+        try {
+            const overlay = await createPlayer3dOverlay({
+                targetHeight: (this.playerSpriteScale || 1.6) * 0.98,
+                ...classVisuals[remote.opClass]
+            });
+            if (this.remotePlayers?.get(remote.id) !== remote || !remote.mesh.parent) {
+                overlay.dispose();
+                return;
+            }
+            overlay.root.position.y += 0.12;
+            remote.mesh.add(overlay.root);
+            remote.overlay = overlay;
+            remote.sprite.visible = false;
+            if (typeof window !== 'undefined' && window.hbLog) {
+                window.hbLog('MULTIPLAYER', 'info', 'remote-avatar-3d-ready', {
+                    playerId: remote.id,
+                    opClass: remote.opClass
+                });
+            }
+        } catch (error) {
+            remote.sprite.visible = true;
+            if (typeof window !== 'undefined' && window.hbLog) {
+                window.hbLog('MULTIPLAYER', 'warn', 'remote-avatar-3d-fallback', {
+                    playerId: remote.id,
+                    opClass: remote.opClass,
+                    reason: error?.message || String(error)
+                });
+            }
+        } finally {
+            remote.overlayLoading = false;
+        }
     }
 
     // Points a remote player's own (already-cloned, per-instance) texture at
@@ -4491,6 +4635,7 @@ export class ThreeGame {
     removeRemotePlayer(id) {
         if (!this.remotePlayers?.has(id)) return;
         const remote = this.remotePlayers.get(id);
+        remote.overlay?.dispose?.();
         if (remote.mesh) {
             this.scene.remove(remote.mesh);
         }
@@ -4534,6 +4679,18 @@ export class ThreeGame {
                 // but writes into this remote's own cloned texture.
                 const speedSq = remote.vx * remote.vx + remote.vz * remote.vz;
                 const isMoving = remote.animState === 'run' && speedSq > 0.0001;
+                remote.overlay?.update?.(delta, {
+                    isFalling: false,
+                    isReloading: false,
+                    isMoving,
+                    isSprinting: isMoving,
+                    isInjured: remote.hp < remote.maxHp * 0.4,
+                    hasAim: false,
+                    moveX: 0,
+                    moveZ: 0,
+                    aimX: 0,
+                    aimZ: 0
+                });
                 if (isMoving) {
                     remote.facingRow = this.getFacingRow(remote.vx, remote.vz);
                     const layout = getPlayerSpriteLayout(remote.opClass);
@@ -4831,11 +4988,7 @@ export class ThreeGame {
         );
         this.playerForwardSpotLight.position.set(0, SUIT_LIGHT_EMITTER_HEIGHT, 0);
         this.playerForwardSpotLight.target = this.playerForwardLightTarget;
-        this.playerForwardSpotLight.castShadow = true;
-        this.playerForwardSpotLight.shadow.mapSize.set(1024, 1024);
-        this.playerForwardSpotLight.shadow.camera.near = 0.1;
-        this.playerForwardSpotLight.shadow.camera.far = SUIT_CONE_LIGHT_DISTANCE + 3;
-        this.playerForwardSpotLight.shadow.bias = -0.0008;
+        this.playerForwardSpotLight.castShadow = false;
         this.scene.add(this.playerForwardSpotLight);
     }
 
@@ -5547,8 +5700,22 @@ export class ThreeGame {
             const el = document.getElementById(id);
             return Boolean(el && !el.classList.contains('hidden'));
         };
+        const hasActiveClass = (className, inactiveClass = null) => {
+            // getElementsByClassName uses the browser's class index. The old
+            // compound document.querySelector walked the full HUD tree every
+            // time gameplay/input checked this gate and was the hottest
+            // avoidable DOM operation in the sampled gameplay profile.
+            for (const el of document.getElementsByClassName(className)) {
+                if (!inactiveClass || !el.classList.contains(inactiveClass)) return true;
+            }
+            return false;
+        };
         return document.body.classList.contains('mission-intro-active')
-            || Boolean(document.querySelector('.modal:not(.hidden), .class-intro-overlay:not(.is-closing), .cinematic-still-overlay:not(.is-closing), #cutscene-overlay.is-active, .rgb-cinematic--visible'))
+            || hasActiveClass('modal', 'hidden')
+            || hasActiveClass('class-intro-overlay', 'is-closing')
+            || hasActiveClass('cinematic-still-overlay', 'is-closing')
+            || Boolean(document.getElementById('cutscene-overlay')?.classList.contains('is-active'))
+            || hasActiveClass('rgb-cinematic--visible')
             || isVisible('console-terminal-modal')
             || isVisible('o2-generator-modal')
             || isVisible('game-over-modal')
@@ -6341,11 +6508,13 @@ export class ThreeGame {
             width,
             height,
             devicePixelRatio: window.devicePixelRatio || 1,
-            maxPixelRatio: 1.35,
-            maxFramebufferPixels: 3_600_000
+            maxPixelRatio: 1.15,
+            maxFramebufferPixels: 2_200_000
         });
         const targetPixelRatio = this.performanceProfile === 'gameplay'
-            ? this.gameplayPixelRatio
+            ? (this.adaptiveGameplayPerformanceMode
+                ? Math.min(this.gameplayPixelRatio, ADAPTIVE_GAMEPLAY_PIXEL_RATIO_CAP)
+                : this.gameplayPixelRatio)
             : this.menuPixelRatio;
         if (Math.abs(this.renderer.getPixelRatio() - targetPixelRatio) > 0.001) {
             this.renderer.setPixelRatio(targetPixelRatio);
@@ -6416,6 +6585,13 @@ export class ThreeGame {
         const nextProfile = profile === 'gameplay' ? 'gameplay' : 'menu';
         if (this.performanceProfile === nextProfile) return;
         this.performanceProfile = nextProfile;
+        // Adaptive mode is sticky only for the current combat run. Returning
+        // to menu restores presentation quality; a later run evaluates its
+        // own hardware/frame pressure from a clean state.
+        this.adaptiveGameplayPerformanceMode = false;
+        this.gameplayPostProcessingEnabled = true;
+        this._adaptiveLowFpsSeconds = 0;
+        this._adaptiveLastFps = null;
         this._lastMenuRenderAt = 0;
         this.visibleChunkRadius = nextProfile === 'gameplay'
             ? this.defaultVisibleChunkRadius
@@ -6463,7 +6639,10 @@ export class ThreeGame {
         if (nextProfile === 'menu' && this.darknessOverlay) {
             this.darknessOverlay.style.opacity = '0';
         }
-        this.tiltShiftOverlay?.classList.toggle('is-active', nextProfile === 'gameplay');
+        this.tiltShiftOverlay?.classList.toggle(
+            'is-active',
+            nextProfile === 'gameplay' && !this.adaptiveGameplayPerformanceMode
+        );
         if (this.chunkGroups) {
             this.chunkGroups.visible = nextProfile === 'gameplay';
         }
@@ -6475,6 +6654,87 @@ export class ThreeGame {
         }
         this.renderer.shadowMap.enabled = nextProfile === 'gameplay';
         this.resize();
+        if (nextProfile === 'gameplay') {
+            // Hardware status is known before deployment in packaged builds;
+            // engage Deck quality before staging warms shader variants that
+            // this hardware profile will never render.
+            this.updateAdaptiveGameplayQuality?.(0);
+        }
+    }
+
+    setAdaptiveGameplayPerformanceMode(enabled = true, {
+        reason = 'sustained-low-fps',
+        fps = null
+    } = {}) {
+        const nextEnabled = Boolean(enabled) && this.performanceProfile === 'gameplay';
+        if (this.adaptiveGameplayPerformanceMode === nextEnabled) return false;
+
+        this.adaptiveGameplayPerformanceMode = nextEnabled;
+        this.gameplayPostProcessingEnabled = !nextEnabled;
+        if (this.renderer?.shadowMap) {
+            this.renderer.shadowMap.enabled = this.performanceProfile === 'gameplay' && !nextEnabled;
+        }
+        this.tiltShiftOverlay?.classList?.toggle?.(
+            'is-active',
+            this.performanceProfile === 'gameplay' && !nextEnabled
+        );
+
+        const basePixelRatio = this.gameplayPixelRatio ?? 1;
+        const targetPixelRatio = nextEnabled
+            ? Math.min(basePixelRatio, ADAPTIVE_GAMEPLAY_PIXEL_RATIO_CAP)
+            : basePixelRatio;
+        const currentPixelRatio = this.renderer?.getPixelRatio?.();
+        if (this.renderer?.setPixelRatio
+            && (!Number.isFinite(currentPixelRatio)
+                || Math.abs(currentPixelRatio - targetPixelRatio) > 0.001)) {
+            this.renderer.setPixelRatio(targetPixelRatio);
+        }
+        this.resize?.();
+
+        if (nextEnabled) {
+            const details = {
+                reason,
+                fps: Number.isFinite(fps) ? Math.round(fps * 10) / 10 : null,
+                pixelRatio: targetPixelRatio,
+                shadows: false,
+                postprocessing: false,
+                visibleChunkRadius: this.visibleChunkRadius ?? null,
+                renderer: this.getPerformanceDiagnosticsSnapshot?.() ?? null
+            };
+            debugLog.warn('PERF', 'adaptive-gameplay-quality-engaged', details);
+        }
+        return true;
+    }
+
+    updateAdaptiveGameplayQuality(frameDeltaSeconds = 0) {
+        if (this.performanceProfile !== 'gameplay' || this.adaptiveGameplayPerformanceMode) return;
+
+        const steamDeck = typeof window !== 'undefined'
+            && Boolean(window.__hbSteamStatus?.isSteamDeck);
+        if (steamDeck) {
+            this.setAdaptiveGameplayPerformanceMode(true, { reason: 'steam-deck' });
+            return;
+        }
+
+        if (!Number.isFinite(frameDeltaSeconds) || frameDeltaSeconds <= 0) return;
+        const fps = 1 / frameDeltaSeconds;
+        this._adaptiveLastFps = fps;
+        if (fps < ADAPTIVE_GAMEPLAY_FPS_FLOOR) {
+            // A debugger pause, tab switch, shader compile, or single long task
+            // must not instantly degrade desktop rendering. Cap how much one
+            // sample can contribute; only repeated slow frames reach 1.5s.
+            this._adaptiveLowFpsSeconds = (this._adaptiveLowFpsSeconds ?? 0)
+                + Math.min(frameDeltaSeconds, ADAPTIVE_GAMEPLAY_MAX_SAMPLE_SECONDS);
+        } else if (fps >= ADAPTIVE_GAMEPLAY_RECOVERY_FPS) {
+            this._adaptiveLowFpsSeconds = 0;
+        }
+
+        if ((this._adaptiveLowFpsSeconds ?? 0) >= ADAPTIVE_GAMEPLAY_TRIGGER_SECONDS) {
+            this.setAdaptiveGameplayPerformanceMode(true, {
+                reason: 'sustained-low-fps',
+                fps
+            });
+        }
     }
 
     getPerformanceDiagnosticsSnapshot() {
@@ -6494,6 +6754,10 @@ export class ThreeGame {
             geometries: info?.memory?.geometries ?? null,
             textures: info?.memory?.textures ?? null,
             programs: info?.programs?.length ?? null,
+            adaptiveGameplayPerformanceMode: Boolean(this.adaptiveGameplayPerformanceMode),
+            gameplayPostProcessingEnabled: this.gameplayPostProcessingEnabled !== false,
+            shadowsEnabled: Boolean(this.renderer?.shadowMap?.enabled),
+            frameProfilerEnabled: Boolean(this.frameProfiler?.enabled),
             jsHeapUsed: performance.memory?.usedJSHeapSize ?? null
         };
     }
@@ -6501,7 +6765,11 @@ export class ThreeGame {
     renderWithPerf(label = 'frame:render') {
         const span = beginPerfPhase(label, this.getPerformanceDiagnosticsSnapshot());
         try {
-            if (this.composer && this.performanceProfile === 'gameplay') this.composer.render();
+            if (this.composer
+                && this.performanceProfile === 'gameplay'
+                && this.gameplayPostProcessingEnabled !== false) {
+                this.composer.render();
+            }
             else this.renderer.render(this.scene, this.camera);
         } finally {
             span.end();
@@ -6585,7 +6853,27 @@ export class ThreeGame {
         }
     }
 
+    // Thin wrapper so the frame profiler sees every exit path. renderFrameBody
+    // below has ~8 early `return`s (hitstop, loadingPaused, menu profile,
+    // blocking overlay, zero-size container); measuring inside it meant a frame
+    // that took any of those paths was never counted at all -- the first
+    // profiling run reported 0 frames because the harness sat on the Armory
+    // screen, where #game-container is reparented to 0x0 and render() bails at
+    // the very first guard.
     render() {
+        const fp = this.frameProfiler ?? (this.frameProfiler = createFrameProfiler());
+        fp.beginFrame();
+        try {
+            const frameBody = typeof this.renderFrameBody === 'function'
+                ? this.renderFrameBody
+                : ThreeGame.prototype.renderFrameBody;
+            return frameBody.call(this);
+        } finally {
+            fp.endFrame();
+        }
+    }
+
+    renderFrameBody() {
         // docs/perf-chunk-mount-plan-2026-08-20.md Track D: live-observed the
         // menu-showcase's #game-container collapsed to 0x0 (reparented into a
         // hidden/closed '.map-box' preview slot) while this method kept
@@ -6597,12 +6885,17 @@ export class ThreeGame {
         }
         // Keep the render guard callable with the deliberately minimal fake
         // objects used by the defensive tests and lightweight integrations.
+        // Inert unless explicitly enabled (src/frameProfiler.js), so this costs
+        // one boolean test per call in a shipping frame.
+        const fp = this.frameProfiler ?? (this.frameProfiler = createFrameProfiler());
         const renderFrame = () => {
-            if (typeof this.renderWithPerf === 'function') {
-                this.renderWithPerf();
-            } else {
-                this.renderer.render(this.scene, this.camera);
-            }
+            fp.measure('renderFrame', () => {
+                if (typeof this.renderWithPerf === 'function') {
+                    this.renderWithPerf();
+                } else {
+                    this.renderer.render(this.scene, this.camera);
+                }
+            });
         };
         const now = performance.now();
         const crashHeatPulse = Math.sin(now * 0.0026);
@@ -6629,7 +6922,8 @@ export class ThreeGame {
         if (this.performanceProfile === 'menu') {
             this._lastMenuRenderAt = now;
         }
-        const delta = Math.min((now - this.lastTime) / 1000, 0.05);
+        const rawFrameDelta = Math.max(0, (now - this.lastTime) / 1000);
+        const delta = Math.min(rawFrameDelta, 0.05);
         this.lastTime = now;
 
         if (this.hitstopTimer > 0) {
@@ -6666,40 +6960,32 @@ export class ThreeGame {
             return;
         }
 
-        // Track sustained frame pressure for diagnostics, but never solve it by
-        // hiding neighboring world chunks. Radius-zero was the reason the view
-        // outside the current room disappeared during the startup FPS dip.
-        if (delta > 0) {
-            const fps = 1 / delta;
-            if (fps < 45) {
-                this._lowFpsTimer = (this._lowFpsTimer ?? 0) + delta;
-            } else {
-                this._lowFpsTimer = 0;
-            }
-            this.visibleChunkRadius = this.defaultVisibleChunkRadius;
-        }
+        // Preserve every neighboring room and actor. Frame pressure now sheds
+        // only cosmetic postprocessing/shadows/resolution cost.
+        this.updateAdaptiveGameplayQuality?.(rawFrameDelta);
+        this.visibleChunkRadius = this.defaultVisibleChunkRadius;
 
-        this.updateSprintState(delta);
-        this.updateTankRegen(delta);
-        this.updateEngineerTurret(delta);
-        this.updateRadarScans(delta);
-        this.updatePlayer(delta);
-        this.updateMultiplayer?.(delta, now);
-        this.updateWeaponState(delta);
-        this.updateProjectiles(delta);
-        this.updateCamera(delta);
+        fp.measure('updateSprintState', () => this.updateSprintState(delta));
+        fp.measure('updateTankRegen', () => this.updateTankRegen(delta));
+        fp.measure('updateEngineerTurret', () => this.updateEngineerTurret(delta));
+        fp.measure('updateRadarScans', () => this.updateRadarScans(delta));
+        fp.measure('updatePlayer', () => this.updatePlayer(delta));
+        fp.measure('updateMultiplayer', () => this.updateMultiplayer?.(delta, now));
+        fp.measure('updateWeaponState', () => this.updateWeaponState(delta));
+        fp.measure('updateProjectiles', () => this.updateProjectiles(delta));
+        fp.measure('updateCamera', () => this.updateCamera(delta));
         this._lastFrameDeltaForChunkMounts = delta;
-        this.syncVisibleChunks();
+        fp.measure('syncVisibleChunks', () => this.syncVisibleChunks());
         if (this._milestoneBossRestagePending) this.restageReadyMilestoneBosses?.();
-        this.updateTacticalMapDiscovery?.();
-        this.updateCompanions(delta);
-        this.updateEnvLightBudget?.(delta);
-        this.updateTransientEffects(delta, now);
-        this.updateHiddenPlayerMarker(now);
-        this.updateVitals(delta);
-        this.updateO2StartupSequence(delta);
-        this.updateRunCheckpoint?.(delta);
-        this.updateLoopStep();
+        fp.measure('updateTacticalMapDiscovery', () => this.updateTacticalMapDiscovery?.());
+        fp.measure('updateCompanions', () => this.updateCompanions(delta));
+        fp.measure('updateEnvLightBudget', () => this.updateEnvLightBudget?.(delta));
+        fp.measure('updateTransientEffects', () => this.updateTransientEffects(delta, now));
+        fp.measure('updateHiddenPlayerMarker', () => this.updateHiddenPlayerMarker(now));
+        fp.measure('updateVitals', () => this.updateVitals(delta));
+        fp.measure('updateO2StartupSequence', () => this.updateO2StartupSequence(delta));
+        fp.measure('updateRunCheckpoint', () => this.updateRunCheckpoint?.(delta));
+        fp.measure('updateLoopStep', () => this.updateLoopStep());
         // Surface-only systems: enemy AI, hazards, and prompts that key off
         // X/Z proximity to the player with no notion of Y/isInPocket
         // (docs/superpowers/specs/2026-07-27-wfc-tile-maze-generation-
@@ -6712,36 +6998,36 @@ export class ThreeGame {
         // far lower-risk than patching each proximity check individually in
         // a 20k-line file.
         if (!this.isInPocket) {
-            this.updateBunkerBlastDoor(delta);
-            this.updateProceduralDoors?.(delta);
-            this.updateBiomeEnvironment({ delta });
-            this.updateWeather(delta);
-            this.updateDayNightCycle(delta);
-            this.updateTerminalClockTick(now);
-            this.updatePickups(delta, now);
-            this.updateScatter(delta, now);
-            this.updateBaseDefenseTurret(delta);
-            this.updateCorpses(delta);
-            this.updateLoreDrops(delta);
-            this.updateBuildSiteBeacon(now);
-            this.updateConsoles(delta, now);
-            this.updateLoreTerminals();
-            this.baseLights?.update(delta);
-            this.foundry?.update(delta);
-            this.updateFoundryPrompt();
-            this.updateCaveEntrance(delta);
-            this.updateAct2(delta);
-            this.updateCamps(delta);
-            this.updateHiveSites(delta);
-            this.updateInfectionPressure(delta);
-            this.updateHazardZoneDamage(delta);
-            this.updateCampQuest(delta);
-            this.updateShipVisualState(now);
-            this.updateBlackBoxMarker(delta);
-            this.updateRunModifierEffects(delta);
-            this.updateBunkerDirector(delta);
+            fp.measure('updateBunkerBlastDoor', () => this.updateBunkerBlastDoor(delta));
+            fp.measure('updateProceduralDoors', () => this.updateProceduralDoors?.(delta));
+            fp.measure('updateBiomeEnvironment', () => this.updateBiomeEnvironment({ delta }));
+            fp.measure('updateWeather', () => this.updateWeather(delta));
+            fp.measure('updateDayNightCycle', () => this.updateDayNightCycle(delta));
+            fp.measure('updateTerminalClockTick', () => this.updateTerminalClockTick(now));
+            fp.measure('updatePickups', () => this.updatePickups(delta, now));
+            fp.measure('updateScatter', () => this.updateScatter(delta, now));
+            fp.measure('updateBaseDefenseTurret', () => this.updateBaseDefenseTurret(delta));
+            fp.measure('updateCorpses', () => this.updateCorpses(delta));
+            fp.measure('updateLoreDrops', () => this.updateLoreDrops(delta));
+            fp.measure('updateBuildSiteBeacon', () => this.updateBuildSiteBeacon(now));
+            fp.measure('updateConsoles', () => this.updateConsoles(delta, now));
+            fp.measure('updateLoreTerminals', () => this.updateLoreTerminals());
+            fp.measure('baseLights.update', () => this.baseLights?.update(delta));
+            fp.measure('foundry.update', () => this.foundry?.update(delta));
+            fp.measure('updateFoundryPrompt', () => this.updateFoundryPrompt());
+            fp.measure('updateCaveEntrance', () => this.updateCaveEntrance(delta));
+            fp.measure('updateAct2', () => this.updateAct2(delta));
+            fp.measure('updateCamps', () => this.updateCamps(delta));
+            fp.measure('updateHiveSites', () => this.updateHiveSites(delta));
+            fp.measure('updateInfectionPressure', () => this.updateInfectionPressure(delta));
+            fp.measure('updateHazardZoneDamage', () => this.updateHazardZoneDamage(delta));
+            fp.measure('updateCampQuest', () => this.updateCampQuest(delta));
+            fp.measure('updateShipVisualState', () => this.updateShipVisualState(now));
+            fp.measure('updateBlackBoxMarker', () => this.updateBlackBoxMarker(delta));
+            fp.measure('updateRunModifierEffects', () => this.updateRunModifierEffects(delta));
+            fp.measure('updateBunkerDirector', () => this.updateBunkerDirector(delta));
         } else {
-            this.updatePocketContent(delta, now);
+            fp.measure('updatePocketContent', () => this.updatePocketContent(delta, now));
         }
         renderFrame();
     }
@@ -7829,6 +8115,7 @@ export class ThreeGame {
             this.refreshMazeAccessState?.();
         }
         let nearestDoor = null;
+        let minDistance = Infinity;
         for (const [id, mesh] of this.proceduralDoorMeshes ?? []) {
             if (!mesh?.parent) {
                 this.proceduralDoorMeshes.delete(id);
@@ -7841,21 +8128,34 @@ export class ThreeGame {
                 : (mesh.userData.closedY ?? this.wallHeight / 2);
             mesh.position.y = THREE.MathUtils.lerp(mesh.position.y, targetY, Math.min(1, delta * 7));
             mesh.visible = door.state !== 'destroyed';
-            const statusMaterial = mesh.userData.proceduralDoorStatusMaterial;
-            if (statusMaterial) {
+            const targetState = door.state === 'locked' ? 'locked' : door.state === 'open' ? 'open' : 'closed';
+            const nextStatusMaterial = this.doorStatusMaterials?.[targetState];
+            if (nextStatusMaterial) {
+                if (mesh.userData.proceduralDoorStatusBar) {
+                    mesh.userData.proceduralDoorStatusBar.material = nextStatusMaterial;
+                }
+                if (mesh.userData.proceduralDoorButtons) {
+                    for (const btn of mesh.userData.proceduralDoorButtons) {
+                        btn.material = nextStatusMaterial;
+                    }
+                }
+                mesh.userData.proceduralDoorStatusMaterial = nextStatusMaterial;
+            } else if (mesh.userData.proceduralDoorStatusMaterial) {
                 const statusColor = door.state === 'locked'
                     ? 0xffaa00
                     : door.state === 'open'
                         ? 0x00e5ff
                         : 0xff2a00;
-                statusMaterial.color.setHex(statusColor);
-                statusMaterial.emissive.setHex(statusColor);
+                mesh.userData.proceduralDoorStatusMaterial.color?.setHex?.(statusColor);
+                mesh.userData.proceduralDoorStatusMaterial.emissive?.setHex?.(statusColor);
             }
+            let distanceToPlayer = null;
             if (this.player && this.isGameplayInputActive()) {
                 const distance = Math.hypot(
                     this.player.position.x - mesh.userData.worldX,
                     this.player.position.z - mesh.userData.worldZ
                 );
+                distanceToPlayer = distance;
                 const unlocked = isGateRequirementMet(door.lock, this.mazeAccessState);
                 if (unlocked && door.state !== 'destroyed') {
                     const action = door.state !== 'open' && distance <= PROCEDURAL_DOOR_OPEN_RADIUS
@@ -7867,26 +8167,29 @@ export class ThreeGame {
                         const next = transitionDoorState(door, action, true);
                         this.proceduralDoorStates.set(id, next);
                         window.AudioManager?.playMetalStress?.({
-                            volume: 0.34,
-                            playbackRate: action === 'open' ? 1.3 : 0.82,
+                            volume: 0.22,
+                            playbackRate: action === 'open' ? 1.08 : 0.86,
                             force: true
                         });
                     }
                 }
-                if (distance <= 2.4 && (!nearestDoor || distance < nearestDoor.distance)) {
-                    nearestDoor = { door, distance };
-                }
+            }
+            if (distanceToPlayer !== null && distanceToPlayer < minDistance) {
+                minDistance = distanceToPlayer;
+                nearestDoor = mesh;
             }
         }
+        this.activeProceduralDoor = nearestDoor;
 
         const promptEl = document.getElementById('console-hud-prompt');
         const actionText = promptEl?.querySelector('.prompt-text');
-        const nearestLocked = nearestDoor?.door.lock
-            && !isGateRequirementMet(nearestDoor.door.lock, this.mazeAccessState);
+        const nearestDoorState = nearestDoor ? this.proceduralDoorStates.get(nearestDoor.userData.id) : null;
+        const nearestLocked = nearestDoorState?.lock
+            && !isGateRequirementMet(nearestDoorState.lock, this.mazeAccessState);
         if (nearestDoor && nearestLocked && promptEl && !this.activeInteractiveConsole) {
             const promptKey = promptEl.querySelector('.prompt-key');
             if (actionText) {
-                actionText.textContent = `BLAST THRESHOLD LOCKED — ${nearestDoor.door.lock.label}`;
+                actionText.textContent = `BLAST THRESHOLD LOCKED — ${nearestDoorState.lock.label}`;
             }
             if (promptKey) {
                 const promptKeyLabel = this.getPromptKeyLabel('E');
@@ -7913,8 +8216,8 @@ export class ThreeGame {
             1 / doorMesh.scale.z
         );
         ribGroup.userData = { isDoorDecoration: true, decorationType: 'rib-group' };
-        const geometry = new THREE.BoxGeometry(0.08, 1.02, 1.1);
-        const material = new THREE.MeshStandardMaterial({
+        const geometry = this.doorRibGeometry ?? new THREE.BoxGeometry(0.08, 1.02, 1.1);
+        const material = this.doorRibMaterial ?? new THREE.MeshStandardMaterial({
             color: 0x11161b,
             roughness: 0.3,
             metalness: 0.92
@@ -15160,13 +15463,20 @@ export class ThreeGame {
         return zones;
     }
 
+    getCurrentContainmentOptions() {
+        return this._frameContainmentOptions ?? {
+            containmentZones: this.getActiveContainmentZones?.() ?? [],
+            doors: this.getActiveDoors?.() ?? []
+        };
+    }
+
     canEnemyTargetPlayer(enemySprite) {
         if (!enemySprite?.position || !this.player?.position) return true;
         if ((this.falseTelemetryTimer ?? 0) > 0) return false;
         return canHostileAggroTarget(
             { x: enemySprite.position.x, z: enemySprite.position.z },
             { x: this.player.position.x, z: this.player.position.z },
-            {
+            this.getCurrentContainmentOptions?.() ?? {
                 containmentZones: this.getActiveContainmentZones?.() ?? [],
                 doors: this.getActiveDoors?.() ?? []
             }
@@ -19488,7 +19798,9 @@ export class ThreeGame {
         const overlay = this.tiltShiftOverlay;
         if (!overlay || !this.player || !this.camera) return;
 
-        const isGameplay = this.performanceProfile === 'gameplay' && !this.loadingPaused;
+        const isGameplay = this.performanceProfile === 'gameplay'
+            && !this.loadingPaused
+            && !this.adaptiveGameplayPerformanceMode;
         overlay.classList.toggle('is-active', isGameplay);
 
         if (!isGameplay) return;
@@ -19810,19 +20122,12 @@ export class ThreeGame {
 
         this.syncVisibleChunks(true, { prefetch: false });
 
-        // Warm up the GPU before the cutscene: compile every material's shader
-        // program and prime the shadow map now, while the loader still covers
-        // the screen. Otherwise these one-time costs land on the first rendered
-        // frames and stutter the cutscene.
-        if (this.renderer && this.camera) {
-            try {
-                this.renderer.compile(this.scene, this.camera);
-            } catch {
-                // compile() is best-effort; never block the drop on it.
-            }
-            this.renderer.shadowMap.needsUpdate = true;
-            this.renderer.render(this.scene, this.camera);
-        }
+        // Must precede the warm-up: the pool's 8 lights are part of the light
+        // count the warm-up needs to compile against, and creating them later
+        // (lazily, on the first gameplay frame) would itself change the count
+        // and force exactly the recompile this is all here to avoid.
+        this._ensureEnvLightPool();
+        this.warmUpShaderPrograms();
 
         onProgress?.(1);
         debugLog.info('STREAM', 'Initial chunk staging ready', {
@@ -19880,7 +20185,7 @@ export class ThreeGame {
             const instancedSteps = new THREE.InstancedMesh(this.terrainStepGeometry, this.wallMaterial, stepMatrices.length);
             stepMatrices.forEach((m, idx) => instancedSteps.setMatrixAt(idx, m));
             instancedSteps.instanceMatrix.needsUpdate = true;
-            instancedSteps.castShadow = true;
+            instancedSteps.castShadow = false;
             instancedSteps.receiveShadow = true;
             instancedSteps.userData = { isTerrainStep: true };
             group.add(instancedSteps);
@@ -21158,20 +21463,20 @@ export class ThreeGame {
                     // reinforcement ribs, status bar, and controls on both
                     // sides. These must read as interactable architecture,
                     // not as another short wall segment.
-                    const statusMaterial = new THREE.MeshStandardMaterial({
-                        color: persistedDoor?.state === 'open' ? 0x00e5ff : 0xff2a00,
-                        emissive: persistedDoor?.state === 'open' ? 0x00e5ff : 0xff2a00,
-                        emissiveIntensity: 1.35,
-                        metalness: 0.35,
-                        roughness: 0.32
-                    });
+                    const doorState = persistedDoor?.state === 'open' ? 'open' : persistedDoor?.state === 'locked' ? 'locked' : 'closed';
+                    const statusMaterial = this.doorStatusMaterials?.[doorState] ?? (persistedDoor?.state === 'open'
+                        ? this.doorStatusMaterials?.open
+                        : this.doorStatusMaterials?.closed);
                     const statusBar = new THREE.Mesh(
-                        new THREE.BoxGeometry(0.82, 0.09, 1.08),
+                        this.doorStatusBarGeometry ?? new THREE.BoxGeometry(0.82, 0.09, 1.08),
                         statusMaterial
                     );
                     statusBar.position.y = 0.42;
                     doorMesh.add(statusBar);
                     doorMesh.userData.proceduralDoorStatusMaterial = statusMaterial;
+                    doorMesh.userData.proceduralDoorStatusBar = statusBar;
+                    const doorButtons = [];
+                    doorMesh.userData.proceduralDoorButtons = doorButtons;
                     this.attachProceduralDoorRibs(doorMesh, horizontal);
 
                     for (const side of [-1, 1]) {
@@ -21180,7 +21485,7 @@ export class ThreeGame {
                         doorPanelMatrices.push(new THREE.Matrix4().makeTranslation(panelWorldX, 0.82, panelWorldZ));
 
                         const button = new THREE.Mesh(
-                            new THREE.CircleGeometry(0.11, 16),
+                            this.doorButtonGeometry ?? new THREE.CircleGeometry(0.11, 16),
                             statusMaterial
                         );
                         button.position.set(panelWorldX, 0.82, panelWorldZ + 0.125);
@@ -21188,6 +21493,7 @@ export class ThreeGame {
                             isProceduralDoorControl: true,
                             proceduralDoorId: persistedDoor?.id ?? null
                         };
+                        doorButtons.push(button);
                         group.add(button);
                     }
                     if (persistedDoor?.id) {
@@ -21485,7 +21791,7 @@ export class ThreeGame {
                 matrices.forEach((matrix, index) => cliffEdges.setMatrixAt(index, matrix));
                 cliffEdges.instanceMatrix.needsUpdate = true;
                 cliffEdges.receiveShadow = true;
-                cliffEdges.castShadow = true;
+                cliffEdges.castShadow = false;
                 cliffEdges.userData = { isCliffEdgeDressing: true };
                 group.add(cliffEdges);
             }
@@ -21543,7 +21849,7 @@ export class ThreeGame {
             const pool = new THREE.InstancedMesh(this.pillarGeometry, this.wallMaterial, matrices.length);
             matrices.forEach((m, idx) => pool.setMatrixAt(idx, m));
             pool.instanceMatrix.needsUpdate = true;
-            pool.castShadow = true;
+            pool.castShadow = false;
             pool.receiveShadow = true;
             pool.userData = { isWallDecoration: true, decorationType: 'pillar' };
             pool.onBeforeRender = () => {
@@ -21560,7 +21866,7 @@ export class ThreeGame {
             const pool = new THREE.InstancedMesh(this.bracketGeometry, this.wallMaterial, matrices.length);
             matrices.forEach((m, idx) => pool.setMatrixAt(idx, m));
             pool.instanceMatrix.needsUpdate = true;
-            pool.castShadow = true;
+            pool.castShadow = false;
             pool.receiveShadow = true;
             pool.userData = { isWallDecoration: true, decorationType: 'bracket' };
             pool.onBeforeRender = () => {
@@ -21584,15 +21890,15 @@ export class ThreeGame {
             const pipePool = new THREE.InstancedMesh(this.pipeGeometry, this.pipeMaterial, pipeMatrices.length);
             pipeMatrices.forEach((m, idx) => pipePool.setMatrixAt(idx, m));
             pipePool.instanceMatrix.needsUpdate = true;
-            pipePool.castShadow = true;
+            pipePool.castShadow = false;
             pipePool.receiveShadow = true;
             pipePool.userData = { isWallDecoration: true, decorationType: 'pipe' };
             group.add(pipePool);
         }
 
         if (doorPanelMatrices.length > 0) {
-            const panelGeometry = new THREE.BoxGeometry(0.38, 0.58, 0.24);
-            const panelMaterial = new THREE.MeshStandardMaterial({ color: 0x12191f, emissive: 0x07141a, metalness: 0.78, roughness: 0.38 });
+            const panelGeometry = this.doorPanelGeometry ?? new THREE.BoxGeometry(0.38, 0.58, 0.24);
+            const panelMaterial = this.doorPanelMaterial ?? new THREE.MeshStandardMaterial({ color: 0x12191f, emissive: 0x07141a, metalness: 0.78, roughness: 0.38 });
             const panelPool = new THREE.InstancedMesh(panelGeometry, panelMaterial, doorPanelMatrices.length);
             doorPanelMatrices.forEach((m, idx) => panelPool.setMatrixAt(idx, m));
             panelPool.instanceMatrix.needsUpdate = true;
@@ -21604,7 +21910,7 @@ export class ThreeGame {
             const rubbleInstanced = new THREE.InstancedMesh(this.rubbleGeometry, this.wallMaterial, rubbleMatrices.length);
             rubbleMatrices.forEach((m, idx) => rubbleInstanced.setMatrixAt(idx, m));
             rubbleInstanced.instanceMatrix.needsUpdate = true;
-            rubbleInstanced.castShadow = true;
+            rubbleInstanced.castShadow = false;
             rubbleInstanced.receiveShadow = true;
             group.add(rubbleInstanced);
         }
@@ -23636,8 +23942,6 @@ export class ThreeGame {
         );
         halo.rotation.x = Math.PI / 2;
         halo.position.y = 0.03;
-        core.castShadow = true;
-        cross.castShadow = true;
         group.add(core, cross, halo);
         return group;
     }
@@ -23662,10 +23966,6 @@ export class ThreeGame {
         shellRight.rotation.z = Math.PI / 2;
         shellLeft.position.set(-0.12, 0.18, 0);
         shellRight.position.set(0.12, 0.18, 0);
-        crate.castShadow = true;
-        band.castShadow = true;
-        shellLeft.castShadow = true;
-        shellRight.castShadow = true;
         group.add(crate, band, shellLeft, shellRight);
         return group;
     }
@@ -23687,9 +23987,6 @@ export class ThreeGame {
         const ringBack = ring.clone();
         ringBack.position.z = -0.01;
 
-        coin.castShadow = true;
-        ring.castShadow = true;
-        ringBack.castShadow = true;
         group.add(coin, ring, ringBack);
         return group;
     }
@@ -23710,9 +24007,6 @@ export class ThreeGame {
         );
         barrel.position.set(0.28, 0.04, 0);
         stock.position.set(-0.18, -0.02, 0);
-        base.castShadow = true;
-        barrel.castShadow = true;
-        stock.castShadow = true;
         group.add(base, barrel, stock);
         return group;
     }
@@ -24902,7 +25196,7 @@ export class ThreeGame {
             { dx: -1, dz: 1, cost: Math.SQRT2, diagonal: true },
             { dx: -1, dz: -1, cost: Math.SQRT2, diagonal: true }
         ];
-        const containmentOptions = {
+        const containmentOptions = this.getCurrentContainmentOptions?.() ?? {
             containmentZones: this.getActiveContainmentZones?.() ?? [],
             doors: this.getActiveDoors?.() ?? []
         };
@@ -25153,7 +25447,7 @@ export class ThreeGame {
             const containmentHit = shouldBlockAttackPath(
                 { x: sprite.position.x, z: sprite.position.z },
                 { x: nextX, z: nextZ },
-                {
+                this.getCurrentContainmentOptions?.() ?? {
                     containmentZones: this.getActiveContainmentZones?.() ?? [],
                     doors: this.getActiveDoors?.() ?? []
                 }
@@ -25313,7 +25607,7 @@ export class ThreeGame {
 
         const nextX = sprite.position.x + data.vx * delta;
         const nextZ = sprite.position.z + data.vz * delta;
-        const containmentOptions = {
+        const containmentOptions = this.getCurrentContainmentOptions?.() ?? {
             containmentZones: this.getActiveContainmentZones?.() ?? [],
             doors: this.getActiveDoors?.() ?? []
         };
@@ -26408,6 +26702,13 @@ export class ThreeGame {
     updateScatter(delta, now) {
         const time = now * 0.001;
         const activeShip = this.getActiveShip();
+        const previousContainmentOptions = this._frameContainmentOptions;
+        this._frameContainmentOptions = {
+            containmentZones: this.getActiveContainmentZones?.() ?? [],
+            doors: this.getActiveDoors?.() ?? []
+        };
+
+        try {
 
         // Update Boss HUD status bar
         let nearestBoss = null;
@@ -26501,10 +26802,18 @@ export class ThreeGame {
             }
         }
 
+        this._scatter3dScanTimer = (this._scatter3dScanTimer ?? 0) + delta;
+        const shouldScan3dReplacements = this._scatter3dScanTimer >= 0.12;
+        if (shouldScan3dReplacements) {
+            this._scatter3dScanTimer = 0;
+        }
+
         for (const child of this.scatterSprites) {
             const baseY = child.userData.elevationOffset ?? 0;
             child.userData.baseY = baseY;
-            this.loadNearbyWorld3dReplacement(child);
+            if (shouldScan3dReplacements) {
+                this.loadNearbyWorld3dReplacement(child);
+            }
             const world3dRoot = child.userData.world3dRoot;
             if (world3dRoot) {
                 world3dRoot.position.copy(child.position);
@@ -26678,6 +26987,9 @@ export class ThreeGame {
         // instead of dozens of per-wall dynamic PointLights).
         if (this.sirenDomeMaterial) {
             this.sirenDomeMaterial.color.setRGB(0.82, 0.08, 0.08);
+        }
+        } finally {
+            this._frameContainmentOptions = previousContainmentOptions;
         }
     }
 
@@ -26853,14 +27165,122 @@ export class ThreeGame {
         span.end();
     }
 
-    // docs/dynamic-light-shader-runaway-plan-2026-08-19.md direction #1.
+    // Warm up the GPU while the loader still covers the screen, so first-use
+    // shader compilation never lands on a visible frame.
+    //
+    // docs/log13-gameplay-fps-plan-2026-08-20.md: this used to call
+    // renderer.compile() + renderer.render() straight to the canvas, which
+    // compiled the wrong programs. three.js resolves `outputColorSpace` and
+    // `toneMapping` -- both part of the program cache key -- differently when
+    // the current render target is null (canvas) versus a real render target
+    // (WebGLPrograms.js:176-186, :212). Gameplay draws through EffectComposer,
+    // i.e. always into a render target, so every material compiled here was a
+    // cache miss again on its first real frame. Warming through the composer
+    // compiles exactly what gameplay will ask for.
+    warmUpShaderPrograms() {
+        if (!this.renderer || !this.camera || !this.scene) return;
+        const shadowMap = this.renderer.shadowMap;
+        const configuredShadows = Boolean(shadowMap?.enabled);
+        const configuredPostprocessing = this.composer
+            && this.performanceProfile === 'gameplay'
+            && this.gameplayPostProcessingEnabled !== false;
+        const safeCompile = () => {
+            try {
+                this.renderer.compile(this.scene, this.camera);
+            } catch {
+                // compile() is best-effort; never block the drop on it.
+            }
+        };
+        const safeRender = (render) => {
+            try {
+                render();
+            } catch {
+                // Warming up must never block deployment if a driver rejects it.
+            }
+        };
+
+        try {
+            // Prewarm the exact variant selected later by adaptive mode. Both
+            // shadowMapEnabled and canvas-vs-composer output are shader cache
+            // keys; doing this behind the loader prevents the quality drop from
+            // compiling every visible material on an already-slow frame.
+            if (shadowMap) shadowMap.enabled = false;
+            safeCompile();
+            safeRender(() => this.renderer.render(this.scene, this.camera));
+
+            if (configuredPostprocessing) {
+                if (shadowMap) shadowMap.enabled = configuredShadows;
+                safeCompile();
+                // Twice: the composer ping-pongs between two render targets, so
+                // one pass can leave its second target's variants cold.
+                safeRender(() => this.composer.render());
+                safeRender(() => this.composer.render());
+            } else if (configuredShadows) {
+                // A direct-render gameplay profile with shadows is distinct
+                // from the adaptive direct/no-shadow variant too.
+                if (shadowMap) shadowMap.enabled = true;
+                safeCompile();
+                safeRender(() => this.renderer.render(this.scene, this.camera));
+            }
+        } finally {
+            if (shadowMap) {
+                shadowMap.enabled = configuredShadows;
+                // Shadows are gameplay-only and rebuilding their map is itself
+                // a stall; request it while the loader still covers the scene.
+                shadowMap.needsUpdate = configuredShadows;
+            }
+        }
+    }
+
+    // docs/dynamic-light-shader-runaway-plan-2026-08-19.md direction #1,
+    // completed by docs/log13-gameplay-fps-plan-2026-08-20.md.
+    //
+    // Registered sources are bookkeeping only -- they are hidden permanently
+    // and never light anything themselves. Their position/colour/intensity is
+    // copied into a fixed-size pool of real lights each budget tick. See
+    // _ensureEnvLightPool() for why the pool has to be fixed-size.
     registerEnvLight(light) {
         this.envDynamicLights.push(light);
+        light.userData.envLightEnabled = light.visible !== false;
+        light.visible = false;
         return light;
     }
 
+    // The whole point of this pool is that its size NEVER changes.
+    //
+    // three.js bakes the current light counts into every material's shader
+    // program cache key (`numPointLights` et al, WebGLPrograms.js:472-474) and
+    // WebGLRenderer.projectObject() skips any light with visible === false. So
+    // the previous approach here -- toggling `.visible` on the closest N
+    // lights every 0.35s -- changed that cache key several times a second, and
+    // every material in view had to synchronously compile a brand new program
+    // each time a count was seen for the first time. docs/logs/log13.json
+    // caught this costing 1.66 SECONDS of frozen frames inside one 2.1s window
+    // at the start of a run (five frames of 208-592ms, `programs` climbing
+    // 56 -> 88 in lockstep).
+    //
+    // Holding the count constant collapses that to a single light-count
+    // variant per material, and -- because the count is now the same during
+    // loading as it is in gameplay -- lets the staging warm-up actually
+    // precompile the programs gameplay will use.
+    _ensureEnvLightPool() {
+        if (this.envLightPool) return this.envLightPool;
+        this.envLightPool = [];
+        for (let i = 0; i < ENV_LIGHT_BUDGET; i++) {
+            const slot = new THREE.PointLight(0xffffff, 0, 1, 2);
+            // Never toggled, never removed: constant contribution to the
+            // renderer's light state for the lifetime of the scene.
+            slot.visible = true;
+            slot.userData.isEnvLightSlot = true;
+            this.scene.add(slot);
+            this.envLightPool.push(slot);
+        }
+        return this.envLightPool;
+    }
+
     updateEnvLightBudget(delta) {
-        if (!this.envDynamicLights.length || !this.camera) return;
+        if (!this.camera || !this.scene) return;
+        const pool = this._ensureEnvLightPool();
         // Re-sorting the whole list is cheap at this scale but pointless every
         // single frame -- a few times a second is plenty responsive to player
         // movement while keeping the cost of this system itself negligible.
@@ -26879,18 +27299,45 @@ export class ThreeGame {
             }
             return false;
         });
-        if (!this.envDynamicLights.length) return;
 
         const camPos = this.camera.position;
-        const budget = ENV_LIGHT_BUDGET;
-        const withDistance = this.envDynamicLights.map((light) => {
-            const worldPos = light.getWorldPosition(this._envLightBudgetVec ??= new THREE.Vector3());
-            return { light, distSq: worldPos.distanceToSquared(camPos) };
+        const vec = (this._envLightBudgetVec ??= new THREE.Vector3());
+        const withDistance = this.envDynamicLights.filter((light) => {
+            if (light.userData?.envLightEnabled === false) return false;
+            for (let node = light.parent; node; node = node.parent) {
+                if (node.visible === false) return false;
+                if (node === this.scene) return true;
+            }
+            return false;
+        }).map((light) => {
+            const worldPos = light.getWorldPosition(vec);
+            return {
+                light,
+                distSq: worldPos.distanceToSquared(camPos),
+                x: worldPos.x,
+                y: worldPos.y,
+                z: worldPos.z
+            };
         });
         withDistance.sort((a, b) => a.distSq - b.distSq);
-        withDistance.forEach(({ light }, index) => {
-            light.visible = index < budget;
-        });
+
+        for (let i = 0; i < pool.length; i++) {
+            const slot = pool[i];
+            const source = withDistance[i];
+            if (!source) {
+                // Parked, not hidden. An intensity-0 light still counts toward
+                // numPointLights, which is exactly what we need it to do.
+                slot.intensity = 0;
+                continue;
+            }
+            // Registered lights can be nested under moving parents, so copy the
+            // resolved world position rather than the local one.
+            slot.position.set(source.x, source.y, source.z);
+            slot.color.copy(source.light.color);
+            slot.intensity = source.light.intensity;
+            slot.distance = source.light.distance;
+            slot.decay = source.light.decay;
+        }
     }
 
     updateTransientEffects(delta) {

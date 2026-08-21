@@ -49,45 +49,72 @@ export async function bootToOperatorMenu(page) {
     await page.locator('#start-game').waitFor({ state: 'visible', timeout: 15_000 });
 }
 
-// Starting a run (#start-game) launches runMissionIntroSequence
+// Drive the current production run-start flow all the way to a visible,
+// input-enabled gameplay canvas:
+// roster -> INITIALIZE -> Armory EMBARK -> SOLO deployment -> intro skip.
+// Keeping this in one shared helper prevents gameplay specs from silently
+// measuring a hidden 0x0 menu/Armory canvas after the flow gains a new gate.
 export async function startRunAndSkipIntro(page) {
     await page.evaluate(() => { window.skipAllIntro = true; }).catch(() => {});
 
-    const rosterConfirm = page.locator('#roster-confirm-btn');
-    const startGame = page.locator('#start-game');
-
-    if (await rosterConfirm.isVisible().catch(() => false)) {
-        await rosterConfirm.click().catch(() => {});
-        await page.waitForTimeout(200);
-    }
-    if (await startGame.isVisible().catch(() => false)) {
-        await startGame.click().catch(() => {});
-    }
-
-    const skipBtn = page.locator('#global-skip-intro-btn');
-    const dialogueSkipChoice = page.locator('#mothership-choice-skip');
-    const deadline = Date.now() + 45_000;
+    const oneShotActions = [
+        '#roster-confirm-btn',
+        '#start-game',
+        '#armory-btn-embark',
+        '#net-deploy-btn'
+    ];
+    const completedActions = new Set();
+    const repeatableSkips = ['#global-skip-intro-btn', '#mothership-choice-skip'];
+    const deadline = Date.now() + 75_000;
     let ready = false;
     while (Date.now() < deadline) {
         ready = await page.evaluate(() => {
             window.skipAllIntro = true;
-            return window.game?.inputEnabled === true;
+            const game = window.game;
+            return game?.performanceProfile === 'gameplay'
+                && game?.inputEnabled === true
+                && game?.loadingPaused === false
+                && !game?.hasBlockingGameplayOverlay?.()
+                && game?.container?.clientWidth > 0
+                && game?.container?.clientHeight > 0;
         }).catch(() => false);
         if (ready) break;
-        if (await skipBtn.isVisible().catch(() => false)) {
-            await skipBtn.click({ timeout: 1_000 }).catch(() => {});
+
+        for (const selector of oneShotActions) {
+            if (completedActions.has(selector)) continue;
+            const button = page.locator(selector);
+            const actionable = await button.isVisible().catch(() => false)
+                && await button.isEnabled().catch(() => false);
+            if (!actionable) continue;
+            const clicked = await button.click({ timeout: 2_000 })
+                .then(() => true)
+                .catch(() => false);
+            if (clicked) completedActions.add(selector);
         }
-        if (await dialogueSkipChoice.isVisible().catch(() => false)) {
-            await dialogueSkipChoice.click({ timeout: 1_000 }).catch(() => {});
+
+        for (const selector of repeatableSkips) {
+            const button = page.locator(selector);
+            if (await button.isVisible().catch(() => false)) {
+                await button.click({ timeout: 1_000 }).catch(() => {});
+            }
         }
-        await page.waitForTimeout(400);
+        await page.waitForTimeout(250);
     }
     if (!ready) {
-        // Fallback safety unblocker so tests never freeze under heavy machine contention
-        await page.evaluate(() => {
-            window.game?.setInputEnabled?.(true);
-            document.body.classList.remove('mission-intro-active', 'hud-hidden');
-        }).catch(() => {});
+        const state = await page.evaluate(() => ({
+            appPhase: document.body.dataset.appPhase ?? null,
+            profile: window.game?.performanceProfile ?? null,
+            inputEnabled: window.game?.inputEnabled ?? null,
+            loadingPaused: window.game?.loadingPaused ?? null,
+            blockingOverlay: window.game?.hasBlockingGameplayOverlay?.() ?? null,
+            container: window.game?.container ? {
+                width: window.game.container.clientWidth,
+                height: window.game.container.clientHeight
+            } : null,
+            armoryVisible: !document.getElementById('armory-screen')?.classList.contains('hidden'),
+            deploymentVisible: !document.getElementById('multiplayer-modal')?.classList.contains('hidden')
+        })).catch(() => null);
+        throw new Error(`run-start flow did not reach gameplay: ${JSON.stringify(state)}`);
     }
     await page.evaluate(() => {
         const settings = document.getElementById('settings-popup');
