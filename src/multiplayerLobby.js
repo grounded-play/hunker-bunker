@@ -1272,27 +1272,34 @@ export class MultiplayerLobby {
             if (!this.connected || this.players.size === 0) {
                 deployBtn.disabled = true;
                 deployBtn.textContent = deployLabel;
+                deployBtn.title = '';
             } else if (!this.usingRelay) {
                 // Offline/local fallback: no ready-up gate to arbitrate.
                 deployBtn.disabled = false;
                 deployBtn.textContent = deployLabel;
+                deployBtn.title = '';
             } else if (!this.localReady) {
                 deployBtn.disabled = false;
                 deployBtn.textContent = 'READY UP';
+                deployBtn.title = 'Mark this operative ready';
             } else if (!this.isLocalPlayerHost) {
                 deployBtn.disabled = false;
-                deployBtn.textContent = 'WAITING FOR HOST... (CLICK TO UN-READY)';
+                deployBtn.textContent = 'READY ✓';
+                deployBtn.title = 'Waiting for the host. Click to cancel readiness.';
             } else if (!this.allPlayersReady()) {
                 const readyCount = Array.from(this.players.values()).filter((p) => p.ready).length;
                 deployBtn.disabled = false;
-                deployBtn.textContent = `WAITING FOR SQUAD (${readyCount}/${this.players.size} READY)`;
+                deployBtn.textContent = `SQUAD ${readyCount}/${this.players.size} READY`;
+                deployBtn.title = 'Waiting for the squad. Click to cancel readiness.';
             } else {
                 deployBtn.disabled = false;
                 // Readiness is a vote; deployment remains a host command.
                 // Make the second host click explicit once the whole roster
                 // is ready, so the room does not appear stuck at 2/2 READY.
                 deployBtn.textContent = isCoop ? 'START SQUAD' : 'START MATCH';
+                deployBtn.title = 'All operatives ready';
             }
+            deployBtn.setAttribute('aria-label', deployBtn.title || deployBtn.textContent);
         }
     }
 

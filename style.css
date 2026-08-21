@@ -17542,6 +17542,10 @@ body.show-debug .map-tool-btn--debug { display: inline-flex; }
   border: none !important;
   border-radius: 6px !important;
   cursor: pointer;
+  min-inline-size: 11rem;
+  max-inline-size: 100%;
+  white-space: nowrap;
+  line-height: 1.1;
   transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
   box-shadow: 0 0 20px rgba(46, 196, 182, 0.4) !important;
 }
@@ -19467,7 +19471,6 @@ body.colorblind-assist #net-mode-pvp-btn.active {
   background: rgba(192, 132, 252, 0.16) !important;
   box-shadow: 0 0 24px rgba(192, 132, 252, 0.35) !important;
 }
-
 
 
 

@@ -493,6 +493,7 @@ describe('MultiplayerLobby', () => {
             checked: false,
             value: '',
             addEventListener: vi.fn(),
+            appendChild: vi.fn(),
             querySelector: vi.fn(() => null)
         };
     }
@@ -505,6 +506,7 @@ describe('MultiplayerLobby', () => {
                 return elements.get(id);
             }),
             querySelector: vi.fn(() => createFakeElement()),
+            createElement: vi.fn(() => createFakeElement()),
             _elements: elements
         };
     }
@@ -541,6 +543,27 @@ describe('MultiplayerLobby', () => {
 
             expect(connectCalled).toBe(false);
             expect(lobby.connected).toBe(false);
+        });
+
+        it('keeps ready/waiting labels compact enough for the Deck lobby button', () => {
+            lobby.currentMode = MULTIPLAYER_MODES.COOP;
+            lobby.connected = true;
+            lobby.usingRelay = true;
+            lobby.socket = { id: 'guest' };
+            lobby.players.set('host', { id: 'host', callsign: 'HOST', opClass: 'SCOUT', ready: false, isHost: true });
+            lobby.players.set('guest', { id: 'guest', callsign: 'DECK', opClass: 'ENGINEER', ready: true, isHost: false });
+            lobby.localReady = true;
+            lobby.isLocalPlayerHost = false;
+
+            lobby.updateUiState();
+
+            const button = globalThis.document.getElementById('net-deploy-btn');
+            expect(button.textContent).toBe('READY ✓');
+            expect(button.title).toContain('Waiting for the host');
+
+            lobby.isLocalPlayerHost = true;
+            lobby.updateUiState();
+            expect(button.textContent).toBe('SQUAD 1/2 READY');
         });
 
         it('SOLO deploy calls onLaunch directly, with no relay/session setup at all', () => {
