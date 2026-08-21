@@ -1,4 +1,5 @@
 import { AudioManager } from './audio.js';
+import { assetUrl } from './assetUrl.js';
 import {
     ARCHETYPE_SKINS,
     CLASS_ARCHETYPES,
@@ -122,7 +123,8 @@ export function createArmoryUi({
         if (typeof document !== 'undefined') {
             const screen = document.getElementById('armory-screen');
             if (screen) {
-                screen.style.backgroundImage = `radial-gradient(circle at 45% 45%, rgba(6, 11, 19, 0.25) 0%, rgba(6, 11, 19, 0.82) 85%, #060b13 100%), url('/ui/armory_bg_${cls}.jpg')`;
+                const bgUrl = assetUrl(`/ui/armory_bg_${cls}.jpg`);
+                screen.style.backgroundImage = `radial-gradient(circle at 45% 45%, rgba(6, 11, 19, 0.35) 0%, rgba(6, 11, 19, 0.85) 85%, #060b13 100%), url('${bgUrl}')`;
                 screen.style.backgroundSize = 'cover';
                 screen.style.backgroundPosition = 'center';
                 screen.style.backgroundRepeat = 'no-repeat';

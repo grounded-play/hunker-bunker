@@ -16744,19 +16744,27 @@ body.show-debug .map-tool-btn--debug { display: inline-flex; }
   --net-glow-rgb: 46, 196, 182;
   --net-pvp-rgb: 255, 79, 100;
   --net-amber-rgb: 255, 183, 91;
-  max-width: min(96vw, calc(var(--vu) * 152));
-  width: min(96vw, calc(var(--vu) * 152));
-  max-height: 90vh;
+  max-width: min(96vw, calc(var(--vu) * 154));
+  width: min(96vw, calc(var(--vu) * 154));
+  max-height: 96vh;
   background: rgba(8, 13, 20, 0.97) !important;
   border: 1.5px solid rgba(var(--net-glow-rgb), 0.45) !important;
   box-shadow: 0 0 35px rgba(var(--net-glow-rgb), 0.22), 0 0 70px rgba(0, 0, 0, 0.9) !important;
   border-radius: 12px;
-  padding: calc(var(--vu) * 2.4) !important;
+  padding: calc(var(--vu) * 1.5) calc(var(--vu) * 1.8) !important;
   display: flex;
   flex-direction: column;
-  gap: calc(var(--vu) * 1.3);
+  gap: calc(var(--vu) * 0.9);
   overflow-y: auto;
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
   position: relative;
+}
+
+.net-modal-content::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
 }
 
 .net-header {
@@ -16764,7 +16772,7 @@ body.show-debug .map-tool-btn--debug { display: inline-flex; }
   justify-content: space-between;
   align-items: flex-start;
   border-bottom: 1px solid rgba(var(--net-glow-rgb), 0.25);
-  padding-bottom: calc(var(--vu) * 1.1);
+  padding-bottom: calc(var(--vu) * 0.8);
   position: relative;
   z-index: 2;
 }
@@ -16793,7 +16801,7 @@ body.show-debug .map-tool-btn--debug { display: inline-flex; }
 
 .net-modal-title {
   font-family: 'Outfit', 'Rajdhani', sans-serif;
-  font-size: calc(var(--vu) * 3.2);
+  font-size: calc(var(--vu) * 2.8);
   font-weight: 900;
   letter-spacing: 0.1em;
   color: #e2fbf9;
@@ -16857,8 +16865,8 @@ body.show-debug .map-tool-btn--debug { display: inline-flex; }
 /* Mode Selector Grid */
 .net-mode-selector {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: calc(var(--vu) * 1.4);
+  grid-template-columns: repeat(3, 1fr);
+  gap: calc(var(--vu) * 1.0);
   position: relative;
   z-index: 2;
 }
@@ -16869,10 +16877,10 @@ body.show-debug .map-tool-btn--debug { display: inline-flex; }
   background: rgba(14, 22, 34, 0.75) !important;
   border: 1.5px solid rgba(255, 255, 255, 0.12) !important;
   border-radius: 8px;
-  padding: calc(var(--vu) * 1.4) calc(var(--vu) * 1.6);
+  padding: calc(var(--vu) * 1.0) calc(var(--vu) * 1.2);
   display: flex;
   flex-direction: column;
-  gap: calc(var(--vu) * 0.8);
+  gap: calc(var(--vu) * 0.5);
   cursor: pointer;
   transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
   color: #fff !important;
@@ -17519,6 +17527,37 @@ body.show-debug .map-tool-btn--debug { display: inline-flex; }
   box-shadow: none !important;
 }
 
+@media (max-height: 900px), (max-width: 1366px) {
+  .net-modal-content {
+    max-height: 98vh;
+    padding: calc(var(--vu) * 0.8) calc(var(--vu) * 1.2) !important;
+    gap: calc(var(--vu) * 0.5);
+  }
+  .net-header {
+    padding-bottom: calc(var(--vu) * 0.5);
+  }
+  .net-modal-title {
+    font-size: calc(var(--vu) * 2.2);
+  }
+  .net-mode-card {
+    padding: calc(var(--vu) * 0.6) calc(var(--vu) * 0.8) !important;
+    gap: calc(var(--vu) * 0.25);
+  }
+  .net-mode-card__title {
+    font-size: calc(var(--vu) * 1.5);
+  }
+  .net-briefing-banner {
+    padding: calc(var(--vu) * 0.4) calc(var(--vu) * 0.8);
+  }
+  .net-telemetry-box {
+    padding: calc(var(--vu) * 0.7);
+    gap: calc(var(--vu) * 0.5);
+  }
+  .net-roster-container {
+    max-height: calc(var(--vu) * 20);
+  }
+}
+
 @media (max-width: 800px) {
   .net-main-grid {
     grid-template-columns: 1fr;
@@ -17526,6 +17565,15 @@ body.show-debug .map-tool-btn--debug { display: inline-flex; }
   .net-mode-selector {
     grid-template-columns: 1fr;
   }
+}
+
+/* Ensure Debug Console & QA Overlays are ALWAYS on top of all doors, menus, and modals */
+#hb-debug-console,
+.hb-debug-overlay,
+#debug-qa-nexus,
+#qa-tools-panel,
+.debug-menu-overlay {
+  z-index: 9999999 !important;
 }
 
 /* Mature Content Audit Suite */

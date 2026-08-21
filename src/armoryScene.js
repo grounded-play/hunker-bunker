@@ -74,7 +74,8 @@ function loadArmoryGltfCached(loader, url) {
 export async function createArmoryScene(canvas) {
     if (!canvas) throw new Error('Armory scene requires a canvas element');
 
-    const renderer = new THREE.WebGLRenderer({ canvas, alpha: false, antialias: true });
+    const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
+    renderer.setClearColor(0x000000, 0);
     renderer.setPixelRatio(Math.min(globalThis.devicePixelRatio ?? 1, 2));
     renderer.setSize(canvas.clientWidth || window.innerWidth, canvas.clientHeight || window.innerHeight, false);
     renderer.outputColorSpace = THREE.SRGBColorSpace;
@@ -84,8 +85,8 @@ export async function createArmoryScene(canvas) {
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x060b13);
-    scene.fog = new THREE.FogExp2(0x060b13, 0.055);
+    scene.background = null;
+    scene.fog = new THREE.FogExp2(0x060b13, 0.025);
 
     const camera = new THREE.PerspectiveCamera(40, (canvas.clientWidth || window.innerWidth) / (canvas.clientHeight || window.innerHeight), 0.1, 50);
     camera.position.set(0.15, 1.45, 4.4);

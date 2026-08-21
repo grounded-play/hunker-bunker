@@ -1,5 +1,5 @@
 import { describe, expect, it, beforeEach, afterEach, vi } from 'vitest';
-import { MultiplayerLobby, MULTIPLAYER_MODES, resolveRelayUrl, fetchMultiplayerSessionToken, getLocalLoadoutSummary } from './multiplayerLobby.js';
+import { MultiplayerLobby, MULTIPLAYER_MODES, resolveRelayUrl, fetchMultiplayerSessionToken, getLocalLoadoutSummary, getLocalOperatorClass, getLocalCallsign } from './multiplayerLobby.js';
 
 describe('MultiplayerLobby', () => {
     let lobby;
@@ -420,6 +420,26 @@ describe('MultiplayerLobby', () => {
         expect(lobby.currentMode).toBe(MULTIPLAYER_MODES.COOP);
         expect(lobby.roomCode).toBe('SECTOR-7');
         expect(lobby.connected).toBe(false);
+    });
+
+    it('resolves the selected class and callsign from the packaged lobby sources', () => {
+        originalWindow = globalThis.window;
+        globalThis.window = {
+            game: { playerType: 'SCOUT' },
+            selectedPlayerType: 'SCOUT',
+            profile: { getCallsign: () => 'DECK-TANK' },
+            localStorage: { getItem: () => 'TANK' }
+        };
+        const originalDocument = globalThis.document;
+        globalThis.document = {
+            querySelector: () => ({ getAttribute: () => 'TANK' }),
+            getElementById: () => null
+        };
+
+        expect(getLocalOperatorClass()).toBe('TANK');
+        expect(getLocalCallsign()).toBe('DECK-TANK');
+
+        globalThis.document = originalDocument;
     });
 
     it('toggles mode between coop and pvp', () => {

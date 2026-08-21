@@ -335,7 +335,7 @@ export class DebugLogger {
             backdropFilter: 'blur(10px)',
             borderBottom: '2px solid #00f0ff',
             boxShadow: '0 8px 32px rgba(0, 240, 255, 0.25)',
-            zIndex: '99999',
+            zIndex: '9999999',
             display: 'none',
             flexDirection: 'column',
             fontFamily: "'Space Mono', 'Courier New', monospace",

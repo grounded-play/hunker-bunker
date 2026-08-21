@@ -52,6 +52,17 @@ able to start the room. The relay is now the source of truth for both parts:
 This is covered by `server/relayReadyUp.test.js`, including the regression
 where a ready non-host attempts to deploy an all-ready room.
 
+## Steam Deck identity correction
+
+The meetup screenshot found a second client-side issue: the roster showed
+generated `OPERATIVE-*` names and `SCOUT` for both players even when a player
+had selected Tank. `src/multiplayerLobby.js` was reading a legacy
+`window.selectedPlayerType` global that `main.js` does not guarantee in the
+packaged Deck flow. Join identity now resolves from the selected character
+card, active game class, and persisted class in that order, while callsign
+resolves from the profile/callsign UI and falls back only to `AGENT`. The
+focused lobby test covers the packaged-style selection path.
+
 ## Scope boundary
 
 This review does not change the relay’s host-election rules, multiplayer lobby

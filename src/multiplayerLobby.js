@@ -146,6 +146,35 @@ export function getLocalLoadoutSummary(opClass) {
     return { weapon, hasCharm };
 }
 
+const PLAYABLE_OPERATOR_CLASSES = Object.freeze(['SCOUT', 'TANK', 'ENGINEER']);
+
+// Keep the lobby identity source aligned with the title/Armory selector. The
+// old implementation depended on window.selectedPlayerType, but main.js does
+// not guarantee that legacy global exists in a packaged Steam/Deck session;
+// that made a Tank selection arrive as the fallback class on the relay.
+export function getLocalOperatorClass() {
+    if (typeof window === 'undefined') return 'TANK';
+    const selectedCard = typeof document !== 'undefined'
+        ? document.querySelector('.char-card.selected')?.getAttribute('data-type')
+        : null;
+    let saved = null;
+    try { saved = window.localStorage?.getItem('hb_active_class_v1'); } catch { /* best effort */ }
+    const candidates = [selectedCard, window.game?.playerType, window.selectedPlayerType, saved];
+    return candidates
+        .map((value) => String(value ?? '').trim().toUpperCase())
+        .find((value) => PLAYABLE_OPERATOR_CLASSES.includes(value)) || 'TANK';
+}
+
+export function getLocalCallsign() {
+    if (typeof window === 'undefined') return 'AGENT';
+    const profileCallsign = window.profile?.getCallsign?.();
+    const inputCallsign = typeof document !== 'undefined'
+        ? (document.getElementById('operator-callsign')?.value || document.getElementById('roster-callsign-input')?.value)
+        : '';
+    const callsign = String(profileCallsign || inputCallsign || '').trim().toUpperCase();
+    return callsign || 'AGENT';
+}
+
 export class MultiplayerLobby {
     constructor() {
         this.socket = null;
@@ -362,8 +391,8 @@ export class MultiplayerLobby {
             ?? (this.hostPrivate && this.hostPasswordValue ? await hashPassword(this.hostPasswordValue) : null);
         this.pendingJoinPasswordHash = null;
 
-        const callsign = (typeof window !== 'undefined' && window.profile?.getCallsign?.()) || 'AGENT';
-        const opClass = (typeof window !== 'undefined' && window.selectedPlayerType) || 'TANK';
+        const callsign = getLocalCallsign();
+        const opClass = getLocalOperatorClass();
         const loadout = getLocalLoadoutSummary(opClass);
 
         try {
@@ -549,8 +578,8 @@ export class MultiplayerLobby {
     fallbackLocalSession() {
         this.connected = true;
         this.usingRelay = false;
-        const callsign = (typeof window !== 'undefined' && window.profile?.getCallsign?.()) || 'AGENT';
-        const opClass = (typeof window !== 'undefined' && window.selectedPlayerType) || 'TANK';
+        const callsign = getLocalCallsign();
+        const opClass = getLocalOperatorClass();
         const loadout = getLocalLoadoutSummary(opClass);
 
         this.players.clear();
