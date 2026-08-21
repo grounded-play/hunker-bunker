@@ -773,8 +773,6 @@
             "13" "left_trigger active"
             "14" "right_trigger active"
             "15" "switch active"
-            "16" "left_trackpad active"
-            "17" "right_trackpad active"
         }
     }
     "preset"

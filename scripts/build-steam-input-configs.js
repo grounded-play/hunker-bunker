@@ -273,13 +273,10 @@ function buildControllerConfig(controllerType) {
     if (hasDualTrackpads) {
         menuSources[7] = 'left_trackpad';
         menuSources[8] = 'right_trackpad';
-        gameplaySources[16] = 'left_trackpad';
-        gameplaySources[17] = 'right_trackpad';
         archiveSources[26] = 'left_trackpad';
         archiveSources[27] = 'right_trackpad';
     } else if (hasCenterTrackpad) {
         menuSources[8] = 'center_trackpad';
-        gameplaySources[17] = 'center_trackpad';
         archiveSources[27] = 'center_trackpad';
     }
 
