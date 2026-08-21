@@ -1,5 +1,5 @@
 import { describe, expect, it, beforeEach, afterEach, vi } from 'vitest';
-import { MultiplayerLobby, MULTIPLAYER_MODES, resolveRelayUrl, fetchMultiplayerSessionToken, getLocalLoadoutSummary, getLocalOperatorClass, getLocalCallsign } from './multiplayerLobby.js';
+import { MultiplayerLobby, MULTIPLAYER_MODES, resolveRelayUrl, fetchMultiplayerSessionToken, getLocalLoadoutSummary, getLocalOperatorClass, getLocalCallsign, filterDiscoverableSteamLobbies } from './multiplayerLobby.js';
 
 describe('MultiplayerLobby', () => {
     let lobby;
@@ -440,6 +440,18 @@ describe('MultiplayerLobby', () => {
         expect(getLocalCallsign()).toBe('DECK-TANK');
 
         globalThis.document = originalDocument;
+    });
+
+    it('does not offer the local host its own public lobby as a join target', () => {
+        const lobbies = [
+            { id: 'own', ownerSteamId64: '76561198000000001' },
+            { id: 'friend', ownerSteamId64: '76561198000000002' }
+        ];
+
+        expect(filterDiscoverableSteamLobbies(lobbies, '76561198000000001')).toEqual([
+            { id: 'friend', ownerSteamId64: '76561198000000002' }
+        ]);
+        expect(filterDiscoverableSteamLobbies(lobbies, null)).toEqual(lobbies);
     });
 
     it('toggles mode between coop and pvp', () => {

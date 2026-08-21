@@ -148,6 +148,12 @@ export function getLocalLoadoutSummary(opClass) {
 
 const PLAYABLE_OPERATOR_CLASSES = Object.freeze(['SCOUT', 'TANK', 'ENGINEER']);
 
+function logMultiplayerEvent(message, details = {}) {
+    if (typeof window !== 'undefined' && window.hbLog) {
+        window.hbLog('MULTIPLAYER', 'info', message, details);
+    }
+}
+
 // Keep the lobby identity source aligned with the title/Armory selector. The
 // old implementation depended on window.selectedPlayerType, but main.js does
 // not guarantee that legacy global exists in a packaged Steam/Deck session;
@@ -173,6 +179,12 @@ export function getLocalCallsign() {
         : '';
     const callsign = String(profileCallsign || inputCallsign || '').trim().toUpperCase();
     return callsign || 'AGENT';
+}
+
+export function filterDiscoverableSteamLobbies(lobbies = [], localSteamId64 = null) {
+    const localId = String(localSteamId64 ?? '').trim();
+    if (!localId) return lobbies;
+    return lobbies.filter((lobby) => String(lobby?.ownerSteamId64 ?? '').trim() !== localId);
 }
 
 export class MultiplayerLobby {
@@ -252,6 +264,12 @@ export class MultiplayerLobby {
         if (closeBtn && !closeBtn.dataset.bound) {
             closeBtn.dataset.bound = 'true';
             closeBtn.addEventListener('click', () => this.cancelModal());
+        }
+
+        const backBtn = document.getElementById('net-back-btn');
+        if (backBtn && !backBtn.dataset.bound) {
+            backBtn.dataset.bound = 'true';
+            backBtn.addEventListener('click', () => this.cancelModal());
         }
 
         const modeSoloBtn = document.getElementById('net-mode-solo-btn');
@@ -414,7 +432,7 @@ export class MultiplayerLobby {
                     // longer exists.
                     this.localReady = false;
                     this.cancelCountdownDisplay();
-                    this.socket.emit('joinRoom', {
+                    const joinPayload = {
                         roomCode: this.roomCode,
                         callsign,
                         opClass,
@@ -428,7 +446,15 @@ export class MultiplayerLobby {
                         profileId: window.profile?.getProfileId?.() || null,
                         passwordHash,
                         loadout
+                    };
+                    logMultiplayerEvent('relay-join-sent', {
+                        roomCode: this.roomCode,
+                        callsign,
+                        opClass,
+                        hasLoadout: Boolean(loadout),
+                        hasPassword: Boolean(passwordHash)
                     });
+                    this.socket.emit('joinRoom', joinPayload);
 
                     this.players.set(this.socket.id, {
                         id: this.socket.id,
@@ -453,6 +479,14 @@ export class MultiplayerLobby {
                     // setupMultiplayerNetwork() attaches its own listeners at
                     // deploy time, so a listener added there would miss it.
                     this.syncServerRoster(serverPlayers);
+                    logMultiplayerEvent('relay-roster-received', {
+                        players: Object.values(serverPlayers).map((player) => ({
+                            callsign: player.callsign,
+                            opClass: player.opClass,
+                            ready: Boolean(player.ready),
+                            isHost: Boolean(player.isHost)
+                        }))
+                    });
                     this.updateUiState();
                     this.reportSteamRichPresence();
                 });
@@ -501,6 +535,16 @@ export class MultiplayerLobby {
                         if (entry) entry.ready = Boolean(ready);
                         if (id === this.socket.id) this.localReady = Boolean(ready);
                     }
+                    logMultiplayerEvent('relay-ready-received', {
+                        changedPlayerId: id,
+                        ready: Boolean(ready),
+                        roster: Object.values(players || {}).map((player) => ({
+                            callsign: player.callsign,
+                            opClass: player.opClass,
+                            ready: Boolean(player.ready),
+                            isHost: Boolean(player.isHost)
+                        }))
+                    });
                     this.updateUiState();
                 });
 
@@ -514,6 +558,7 @@ export class MultiplayerLobby {
                 });
 
                 this.socket.on('matchDeployRejected', ({ reason } = {}) => {
+                    logMultiplayerEvent('relay-deploy-rejected', { reason: reason || 'unknown' });
                     const el = document.getElementById('net-status-pill');
                     if (!el) return;
                     const original = el.textContent;
@@ -712,7 +757,15 @@ export class MultiplayerLobby {
         const listEl = document.getElementById('net-steam-lobbies-list');
         if (!listEl) return;
         const result = await getSteamLobbies();
-        const lobbies = result?.ok ? (result.lobbies ?? []) : [];
+        const discoveredLobbies = result?.ok ? (result.lobbies ?? []) : [];
+        let localSteamId64 = null;
+        try {
+            localSteamId64 = (await window.electronAPI?.getSteamInfo?.())?.steamId64 ?? null;
+        } catch {
+            // Discovery should remain usable if the optional identity lookup
+            // is temporarily unavailable; the relay still enforces host state.
+        }
+        const lobbies = filterDiscoverableSteamLobbies(discoveredLobbies, localSteamId64);
 
         if (!result?.ok) {
             this.setSteamLobbyStatus('PUBLIC LOBBY SEARCH UNAVAILABLE — USE A STEAM INVITE', 'warning');
@@ -720,7 +773,12 @@ export class MultiplayerLobby {
             return;
         }
         if (lobbies.length === 0) {
-            this.setSteamLobbyStatus('NO SAME-REGION PUBLIC LOBBIES — USE INVITE OR REFRESH', 'warning');
+            this.setSteamLobbyStatus(
+                discoveredLobbies.length > 0 && localSteamId64
+                    ? 'NO OTHER PUBLIC LOBBIES — YOUR LOBBY IS ALREADY ACTIVE'
+                    : 'NO SAME-REGION PUBLIC LOBBIES — USE INVITE OR REFRESH',
+                'warning'
+            );
             listEl.innerHTML = '<div class="net-spec-row"><span class="net-spec-val">No public lobbies found. Try REFRESH, or create your own.</span></div>';
             return;
         }
@@ -935,6 +993,12 @@ export class MultiplayerLobby {
         this.localReady = ready;
         const self = this.players.get(this.socket?.id);
         if (self) self.ready = ready;
+        logMultiplayerEvent('relay-ready-sent', {
+            roomCode: this.roomCode,
+            ready: Boolean(ready),
+            callsign: self?.callsign || getLocalCallsign(),
+            opClass: self?.opClass || getLocalOperatorClass()
+        });
         this.socket?.emit('playerReady', { ready });
         this.updateUiState();
     }
