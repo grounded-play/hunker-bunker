@@ -3,6 +3,7 @@ import { assetUrl } from './assetUrl.js';
 import {
     ARCHETYPE_SKINS,
     CLASS_ARCHETYPES,
+    CLASS_CHASSIS_SKINS,
     DEFAULT_ARCHETYPES
 } from './loadout.js';
 
@@ -119,6 +120,8 @@ export function createArmoryUi({
         const modifiers = loadoutManager.getActiveModifiers(cls);
         const allowedArchetypes = CLASS_ARCHETYPES[cls] || [archetype];
         const allowedSkins = ARCHETYPE_SKINS[archetype] || [];
+        const allowedChassisSkins = CLASS_CHASSIS_SKINS[cls] || [];
+        const chassisSkinId = loadoutManager.getEquippedChassisSkinId?.();
 
         if (typeof document !== 'undefined') {
             const screen = document.getElementById('armory-screen');
@@ -159,6 +162,17 @@ export function createArmoryUi({
                         <div class="bench-field">
                             <label>CHASSIS SPECIFICATION</label>
                             <div class="field-value">${activeClass.toUpperCase()} MK-IV SUB-ZERO PRESSURIZED</div>
+                        </div>
+                        <div class="bench-field">
+                            <label>EXOSUIT CHASSIS SKIN</label>
+                            <select id="armory-chassis-select" class="armory-select">
+                                <option value="">[STANDARD CLASS CHASSIS]</option>
+                                ${allowedChassisSkins.map((id) => `
+                                    <option value="${id}" ${chassisSkinId === id ? 'selected' : ''}>
+                                        ${CATALOG_ITEMS[id]?.name || id} (${CATALOG_ITEMS[id]?.rarity?.toUpperCase()})
+                                    </option>
+                                `).join('')}
+                            </select>
                         </div>
                         <div class="bench-field">
                             <label>SHOULDER PATCH &amp; INSIGNIA</label>
@@ -315,6 +329,15 @@ export function createArmoryUi({
             render();
         });
 
+        // Operator chassis skin switch
+        container.querySelector('#armory-chassis-select')?.addEventListener('change', (e) => {
+            const chassisSkinId = e.target.value || null;
+            loadoutManager.equipChassisSkin(chassisSkinId);
+            playSound('sfx_overclock_socket');
+            armoryScene?.setChassisSkin?.(chassisSkinId, cls);
+            render();
+        });
+
         // Charm switch
         container.querySelector('#armory-charm-select')?.addEventListener('change', (e) => {
             loadoutManager.equipCharm(cls, e.target.value || null);
@@ -406,7 +429,11 @@ export function createArmoryUi({
         const normalizedClass = typeof classType === 'string' ? classType.toLowerCase() : '';
         activeClass = ALLOWED_CLASSES.has(normalizedClass) ? normalizedClass : 'scout';
         loadoutManager.setActiveClass(activeClass);
-        armoryScene?.setClass(activeClass);
+        const chassisSkinId = loadoutManager.getEquippedChassisSkinId?.();
+        const compatibleChassisSkin = (CLASS_CHASSIS_SKINS[activeClass] || []).includes(chassisSkinId)
+            ? chassisSkinId
+            : null;
+        armoryScene?.setClass(activeClass, compatibleChassisSkin);
         armoryScene?.updateFromLoadout(loadoutManager, activeClass);
         render();
     }

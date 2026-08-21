@@ -20,6 +20,16 @@ export const CLASS_ARCHETYPES = Object.freeze({
     engineer: ['tesla_lock']
 });
 
+// Chassis skins with authored runtime meshes. Keep this list class-specific:
+// loading a Scout chassis as a Tank would replace the operator silhouette, not
+// merely recolor it. Additional catalog chassis can be added here when their
+// corresponding runtime GLBs land.
+export const CLASS_CHASSIS_SKINS = Object.freeze({
+    scout: ['4113'],
+    tank: ['4114'],
+    engineer: ['4112']
+});
+
 export const ARCHETYPE_SKINS = Object.freeze({
     talon: ['4100', '4105'],
     talon_c: ['4101', '4104', '4108', '4110'],
@@ -436,4 +446,3 @@ export class LoadoutManager {
         this.save();
     }
 }
-

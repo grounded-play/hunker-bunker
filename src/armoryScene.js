@@ -601,7 +601,7 @@ export async function createArmoryScene(canvas) {
     requestAnimationFrame(animate);
 
     return {
-        async setClass(classType) {
+        async setClass(classType, chassisSkinId = null) {
             const cls = String(classType || 'scout').toLowerCase();
             const themeColors = {
                 scout: 0x00f0ff,
@@ -613,9 +613,12 @@ export async function createArmoryScene(canvas) {
             if (platRingMat?.color) platRingMat.color.setHex(accentColor);
             if (neonLineMat?.color) neonLineMat.color.setHex(accentColor);
 
-            await loadOperatorModel(classType);
+            await loadOperatorModel(classType, chassisSkinId);
             const defaultArch = DEFAULT_ARCHETYPES[cls] || 'talon';
             await loadWeaponAsset(defaultArch, null);
+        },
+        async setChassisSkin(chassisSkinId, classType = activeClass) {
+            await loadOperatorModel(classType, chassisSkinId);
         },
         async setWeapon(archetypeId, skinItemdefId) {
             await loadWeaponAsset(archetypeId, skinItemdefId);

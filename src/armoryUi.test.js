@@ -92,6 +92,7 @@ describe('createArmoryUi', () => {
         fakeScene = {
             setClass: vi.fn(),
             setWeapon: vi.fn(),
+            setChassisSkin: vi.fn(),
             setCharm: vi.fn(),
             setRigModule: vi.fn(),
             updateFromLoadout: vi.fn(),
@@ -120,6 +121,8 @@ describe('createArmoryUi', () => {
         expect(container.innerHTML).toContain('SECTOR ZERO TACTICAL BENCH');
         expect(container.innerHTML).toContain('class="class-tab active" data-class="scout"');
         expect(container.innerHTML).toContain('id="armory-archetype-select"');
+        expect(container.innerHTML).toContain('id="armory-chassis-select"');
+        expect(container.innerHTML).toContain('Cryo-Vanguard Scout');
         expect(container.innerHTML).toContain('id="armory-charm-select"');
         expect(container.innerHTML).toContain('id="armory-mod1-select"');
         expect(container.innerHTML).toContain('id="armory-mod2-select"');
@@ -143,6 +146,12 @@ describe('createArmoryUi', () => {
 
         expect(loadoutManager.getEquippedCharmId('scout')).toBe('4130');
         expect(fakeScene.updateFromLoadout).toHaveBeenCalledWith(loadoutManager, 'scout');
+
+        const chassisSelect = container.querySelector('#armory-chassis-select');
+        chassisSelect.dispatchEvent({ type: 'change', target: { value: '4113' } });
+
+        expect(loadoutManager.getEquippedChassisSkinId()).toBe('4113');
+        expect(fakeScene.setChassisSkin).toHaveBeenCalledWith('4113', 'scout');
 
         const mod1Select = container.querySelector('#armory-mod1-select');
         mod1Select.value = '4141';
@@ -195,12 +204,16 @@ describe('createArmoryUi', () => {
         // LoadoutManager's normalizeClassId convention used everywhere else in this codebase);
         // armoryScene.js's real setClass() then normalizes to uppercase internally regardless
         // of input case, so this is a case-convention detail, not a functional bug.
-        expect(fakeScene.setClass).toHaveBeenCalledWith('engineer');
+        expect(fakeScene.setClass).toHaveBeenCalledWith('engineer', null);
+        expect(container.innerHTML).toContain('Sub-Terran Drill Engineer');
+        expect(container.innerHTML).not.toContain('Cryo-Vanguard Scout');
 
         const tankTab = container.querySelectorAll('.class-tab')
             .find((tab) => tab.dataset.class === 'tank');
         tankTab.click();
-        expect(fakeScene.setClass).toHaveBeenLastCalledWith('tank');
+        expect(fakeScene.setClass).toHaveBeenLastCalledWith('tank', null);
+        expect(container.innerHTML).toContain('Trench Warden Heavy');
+        expect(container.innerHTML).not.toContain('Sub-Terran Drill Engineer');
         expect(container.innerHTML).toContain('class="class-tab active" data-class="tank"');
     });
 
