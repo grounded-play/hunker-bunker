@@ -85,6 +85,27 @@ tasks while mounting the menu scene. That is a real menu responsiveness issue,
 but it is not evidence of a relay failure and remains a separate performance
 follow-up.
 
+## `log12.json` production-relay diagnosis and correction
+
+`log12.json` finally captured both sides of the client/relay boundary. At
+91.679 seconds the Windows client sent room `STEAM-109775242803168102` with
+callsign `SHADOW-5` and class `TANK`. One millisecond later the production
+relay returned two roster records with no callsign, no class, and no host; the
+client therefore rendered generated `OPERATIVE-*` names, fallback `SCOUT`
+classes, and `WAITING FOR HOST`. At 96.878 seconds the client sent ready=true,
+but no `relay-ready-received` event followed. This proves the packaged client
+was sending the right identity while the deployed relay was still running the
+older roster/ready protocol.
+
+The self-hosted backend image dated from August 18, before the host/ready
+changes. On 2026-08-20 it was rebuilt from the current repository and only the
+`hunker-bunker-backend` container was recreated; Caddy and the durable SQLite
+volume were left intact. Public `/health` returned 200 after restart, and the
+running container was verified to contain the authoritative ready roster
+snapshot and host-only deploy rejection. A real two-account reconnect remains
+the final acceptance because production development authentication is
+correctly disabled.
+
 ## Scope boundary
 
 This review does not change the relay’s host-election rules, multiplayer lobby

@@ -140,9 +140,12 @@ export function createArmoryUi({
                         <h1 class="armory-title">SECTOR ZERO TACTICAL BENCH <span class="armory-title-accent">// LOADOUT</span></h1>
                     </div>
                     <div class="armory-operator-status">
+                        <div class="armory-class-tabs" role="tablist">
+                            <button type="button" class="class-tab ${cls === 'scout' ? 'active' : ''}" data-class="scout">↗ SCOUT</button>
+                            <button type="button" class="class-tab ${cls === 'tank' ? 'active' : ''}" data-class="tank">▰ TANK</button>
+                            <button type="button" class="class-tab ${cls === 'engineer' ? 'active' : ''}" data-class="engineer">⚙ ENGINEER</button>
+                        </div>
                         <span class="status-cycle-hint">[Q / E CYCLE]</span>
-                        <span class="status-label">ACTIVE OPERATOR:</span>
-                        <span class="status-value class-${cls}">◈ ${activeClass.toUpperCase()} MK-IV</span>
                     </div>
                 </header>
 
@@ -179,64 +182,56 @@ export function createArmoryUi({
                     <!-- WEAPON BENCH (RIGHT / CENTER) -->
                     <section class="armory-panel weapon-bench-panel" aria-label="Weapon Bench">
                         <div class="panel-header">
-                            <span class="panel-icon">⚡</span>
-                            <h2>CLASS WEAPON BENCH</h2>
+                            <span class="panel-icon">⚔️</span>
+                            <h2>BALLISTIC BENCH &amp; OVERCLOCKS</h2>
                         </div>
 
-                        <div class="bench-grid">
-                            <div class="bench-field">
-                                <label>PRIMARY WEAPON ARCHETYPE</label>
-                                <select id="armory-archetype-select" class="armory-select">
-                                    ${allowedArchetypes.map((arch) => `
-                                        <option value="${arch}" ${archetype === arch ? 'selected' : ''}>
-                                            ${ARCHETYPE_NAMES[arch] || arch}
-                                        </option>
-                                    `).join('')}
-                                </select>
-                            </div>
+                        <!-- WEAPON ARCHETYPE -->
+                        <div class="bench-field">
+                            <label>PRIMARY WEAPON PLATFORM</label>
+                            <select id="armory-archetype-select" class="armory-select">
+                                ${allowedArchetypes.map((id) => `
+                                    <option value="${id}" ${archetype === id ? 'selected' : ''}>
+                                        ${ARCHETYPE_NAMES[id] || id.replace(/_/g, ' ').toUpperCase()}
+                                    </option>
+                                `).join('')}
+                            </select>
+                        </div>
 
-                            <div class="bench-field">
-                                <label>TACTICAL WEAPON FINISH &amp; SKIN</label>
-                                <select id="armory-skin-select" class="armory-select">
-                                    <option value="">[DEFAULT FACTORY FINISH]</option>
-                                    ${allowedSkins.map((id) => `
-                                        <option value="${id}" ${loadout.weaponSkinId === id ? 'selected' : ''}>
-                                            ${CATALOG_ITEMS[id]?.name || id} (${CATALOG_ITEMS[id]?.rarity?.toUpperCase()})
-                                        </option>
-                                    `).join('')}
-                                </select>
-                            </div>
+                        <!-- 3D WEAPON SKIN -->
+                        <div class="bench-field">
+                            <label>TACTICAL CAMOUFLAGE / FINISH</label>
+                            <select id="armory-skin-select" class="armory-select">
+                                <option value="">[STANDARD FACTORY FINISH]</option>
+                                ${allowedSkins.map((id) => `
+                                    <option value="${id}" ${loadout.skinId === id ? 'selected' : ''}>
+                                        ${CATALOG_ITEMS[id]?.name || id} (${CATALOG_ITEMS[id]?.rarity?.toUpperCase()})
+                                    </option>
+                                `).join('')}
+                            </select>
+                        </div>
 
+                        <div class="bench-row-two-col">
+                            <!-- CHARM -->
                             <div class="bench-field">
-                                <label>ACCESSORY RAIL CHARM</label>
+                                <label>TACTICAL CHARM</label>
                                 <select id="armory-charm-select" class="armory-select">
-                                    <option value="">[NO CHARM EQUIPPED]</option>
-                                    ${['4130', '4131', '4132', '4133', '4134', '4135', '4136', '4137', '4138', '4139'].map((id) => `
+                                    <option value="">[NO CHARM ATTACHED]</option>
+                                    ${['4130', '4131', '4132', '4133', '4134', '4135', '4136', '4137'].map((id) => `
                                         <option value="${id}" ${loadout.charmId === id ? 'selected' : ''}>
-                                            ${CATALOG_ITEMS[id]?.name || id} (${CATALOG_ITEMS[id]?.rarity?.toUpperCase()})
+                                            ${CATALOG_ITEMS[id]?.name || id}
                                         </option>
                                     `).join('')}
                                 </select>
                             </div>
 
+                            <!-- RIG MOD -->
                             <div class="bench-field">
-                                <label>RIG OVERCLOCK — BAY A</label>
-                                <select id="armory-mod1-select" class="armory-select">
-                                    <option value="">[EMPTY OVERCLOCK BAY A]</option>
-                                    ${['4140', '4141', '4142', '4143', '4144', '4145', '4146', '4147'].map((id) => `
-                                        <option value="${id}" ${loadout.mod1Id === id ? 'selected' : ''}>
-                                            ${CATALOG_ITEMS[id]?.name || id} — ${CATALOG_ITEMS[id]?.perk || ''}
-                                        </option>
-                                    `).join('')}
-                                </select>
-                            </div>
-
-                            <div class="bench-field">
-                                <label>RIG OVERCLOCK — BAY B</label>
-                                <select id="armory-mod2-select" class="armory-select">
-                                    <option value="">[EMPTY OVERCLOCK BAY B]</option>
-                                    ${['4140', '4141', '4142', '4143', '4144', '4145', '4146', '4147'].map((id) => `
-                                        <option value="${id}" ${loadout.mod2Id === id ? 'selected' : ''}>
+                                <label>OVERCLOCK MOD</label>
+                                <select id="armory-mod-select" class="armory-select">
+                                    <option value="">[NO OVERCLOCK INSTALLED]</option>
+                                    ${['4140', '4141', '4142', '4143', '4144', '4145'].map((id) => `
+                                        <option value="${id}" ${loadout.modId === id ? 'selected' : ''}>
                                             ${CATALOG_ITEMS[id]?.name || id} — ${CATALOG_ITEMS[id]?.perk || ''}
                                         </option>
                                     `).join('')}
@@ -270,8 +265,8 @@ export function createArmoryUi({
 
                 <!-- FOOTER NAVIGATION -->
                 <footer class="armory-footer">
-                    <button id="armory-btn-back" class="armory-btn secondary-btn">
-                        &lt; SWITCH CLASS <span class="btn-keyhint">[ESC]</span>
+                    <button id="armory-btn-back" class="armory-btn secondary-btn" title="Return to Main Menu Briefing Console">
+                        ← RETURN TO MAIN MENU <span class="btn-keyhint">[ESC]</span>
                     </button>
                     <button id="armory-btn-vault" class="armory-btn tertiary-btn">
                         STEAM VAULT &amp; FAB BAY <span class="btn-keyhint">[V]</span>
@@ -335,6 +330,17 @@ export function createArmoryUi({
             armoryScene?.setDecal(e.target.value || null);
             playSound('sfx_charm_clink_light');
             render();
+        });
+
+        // Class tabs
+        container.querySelectorAll('.class-tab').forEach((btn) => {
+            btn.addEventListener('click', () => {
+                const targetCls = btn.dataset.class;
+                if (targetCls) {
+                    setClass(targetCls);
+                    playSound('ui_click_confirm1');
+                }
+            });
         });
 
         // Navigation
