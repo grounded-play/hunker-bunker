@@ -17,9 +17,28 @@ import {
     resolveDuplicateGrant
 } from './craftingMatrix.js';
 
+import { COMMUNITY_SKINS } from './data/communitySkins.js';
+
 export { STEAM_ITEM_CATALOG };
 
 export function getItemCatalogEntry(itemdefid) {
+    if (!itemdefid) return null;
+    const strId = String(itemdefid);
+    const comm = COMMUNITY_SKINS.find((s) => s.id === strId);
+    if (comm) {
+        const iconPath = `/economy/${comm.classId === 'scout' ? 'chassis_cryo_vanguard_scout' : comm.classId === 'tank' ? 'chassis_trench_warden_heavy' : 'chassis_subterran_drill_engineer'}.png`;
+        return {
+            itemdefid: comm.id,
+            name: comm.name,
+            rarity: comm.rarity || 'epic',
+            desc: `${comm.desc} [Action: ${comm.actionLabel}]`,
+            tradable: true,
+            marketable: false,
+            img: iconPath,
+            localImg: iconPath,
+            localImgLarge: iconPath.replace('.png', '_large.png')
+        };
+    }
     const numericId = Number(itemdefid);
     if (STEAM_ITEM_CATALOG[numericId]) return STEAM_ITEM_CATALOG[numericId];
     const armory = CATALOG_ITEMS?.[String(numericId)];

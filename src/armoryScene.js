@@ -5,6 +5,7 @@ import { assetUrl } from './assetUrl.js';
 import { createPlayer3dOverlay, WEAPON_ARCHETYPES, WEAPON_SKIN_MESHES } from './player3dOverlay.js';
 import { DEFAULT_ARCHETYPES } from './loadout.js';
 import { getItemCatalogEntry } from './steamVaultUi.js';
+import { COMMUNITY_GLB_MAP } from './data/communitySkins.js';
 
 export const CHARM_GLB_MAP = Object.freeze({
     '4130': '/3d/runtime/new3ds/charm_mini_cryo_core.glb',
@@ -37,7 +38,8 @@ export const CHASSIS_SKIN_GLB_MAP = Object.freeze({
     '4114': '/3d/runtime/new3ds/chassis_trench_warden_heavy.glb',
     '4116': '/3d/runtime/new3ds/chassis_bio_synthesizer_medic.glb',
     '4117': '/3d/runtime/new3ds/chassis_dreadnought_exo_juggernaut.glb',
-    '4118': '/3d/runtime/new3ds/chassis_cyber_spectre_infiltrator.glb'
+    '4118': '/3d/runtime/new3ds/chassis_cyber_spectre_infiltrator.glb',
+    ...(COMMUNITY_GLB_MAP || {})
 });
 
 // Weapon archetype/skin GLB paths come from src/player3dOverlay.js — the same maps that

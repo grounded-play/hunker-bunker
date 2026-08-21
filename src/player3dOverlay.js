@@ -51,6 +51,8 @@ export const WEAPON_SKIN_MESHES = {
     4111: '/3d/runtime/new3ds/skin_solar_flare_antimatter.glb'    // Solar Flare Antimatter Rifle
 };
 
+import { COMMUNITY_GESTURES } from './data/communitySkins.js';
+
 export const ENGINEER_GESTURES = Object.freeze([
     'engineerWeightShift', 'engineerDismiss', 'engineerThoughtful', 'engineerCocky',
     'engineerHappy', 'engineerRelieved', 'engineerNod', 'engineerAngry',
@@ -62,7 +64,8 @@ export const SIGNATURE_GESTURES = Object.freeze([
     'standingGreeting', 'dismissingGesture', 'beckoning', 'rummaging',
     'pointingForward', 'strutWalk', 'runToStop', 'hardLanding',
     'relievedSigh', 'beingCocky', 'annoyedHeadShake', 'thoughtfulHeadShake',
-    'lookAway', 'happyHand', 'angryGesture', 'hardHeadNod', 'floatingTrance'
+    'lookAway', 'happyHand', 'angryGesture', 'hardHeadNod', 'floatingTrance',
+    ...(COMMUNITY_GESTURES || [])
 ]);
 
 const ONE_SHOTS = new Set(['fire', 'reload', 'hit', 'land', 'melee', ...ENGINEER_GESTURES, ...SIGNATURE_GESTURES]);
