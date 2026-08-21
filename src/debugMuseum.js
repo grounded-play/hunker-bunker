@@ -70,7 +70,37 @@ function makeLabelSprite(text, { color = '#e2e8f0', fontSize = 48 } = {}) {
     return sprite;
 }
 
-async function spawnGlbAt(loader, cache, url, x, y, z) {
+let _museumAnimFrame = null;
+let _lastMuseumTickTime = 0;
+
+function startMuseumAnimationLoop(group) {
+    if (typeof requestAnimationFrame === 'undefined') return;
+    if (_museumAnimFrame != null && typeof cancelAnimationFrame === 'function') {
+        cancelAnimationFrame(_museumAnimFrame);
+        _museumAnimFrame = null;
+    }
+    _lastMuseumTickTime = performance.now();
+
+    function tick(now) {
+        const delta = Math.min((now - _lastMuseumTickTime) / 1000, 0.1);
+        _lastMuseumTickTime = now;
+
+        if (group && group.parent) {
+            const mixers = group.userData.mixers || [];
+            for (const mixer of mixers) {
+                mixer.update(delta);
+            }
+            const rotatingItems = group.userData.rotatingItems || [];
+            for (const item of rotatingItems) {
+                item.rotation.y += delta * 0.75;
+            }
+            _museumAnimFrame = requestAnimationFrame(tick);
+        }
+    }
+    _museumAnimFrame = requestAnimationFrame(tick);
+}
+
+async function spawnGlbAt(loader, cache, url, x, y, z, options = {}) {
     if (!url) return null;
     try {
         if (!cache.has(url)) {
@@ -85,9 +115,24 @@ async function spawnGlbAt(loader, cache, url, x, y, z) {
         const bbox = new THREE.Box3().setFromObject(model);
         const size = bbox.getSize(new THREE.Vector3());
         const maxDim = Math.max(size.x, size.y, size.z, 0.001);
-        model.scale.setScalar(1.1 / maxDim);
-        const center = bbox.getCenter(new THREE.Vector3()).multiplyScalar(1.1 / maxDim);
+        const scaleFactor = options.scale || 1.1;
+        model.scale.setScalar(scaleFactor / maxDim);
+        const center = bbox.getCenter(new THREE.Vector3()).multiplyScalar(scaleFactor / maxDim);
         model.position.set(x - center.x, y - center.y, z - center.z);
+
+        // Play baked rig animations if available (randomized start time per exhibit)
+        if (gltf.animations && gltf.animations.length > 0) {
+            const mixer = new THREE.AnimationMixer(model);
+            const clipIdx = Math.floor(Math.random() * gltf.animations.length);
+            const clip = gltf.animations[clipIdx];
+            const action = mixer.clipAction(clip);
+            action.play();
+            action.time = Math.random() * (clip.duration || 1);
+            if (options.mixersList) options.mixersList.push(mixer);
+        } else if (options.rotate && options.rotatingList) {
+            options.rotatingList.push(model);
+        }
+
         return model;
     } catch (err) {
         console.warn('[debug-museum] failed to load GLB:', url, err);
@@ -156,7 +201,10 @@ export async function openDebugMuseum(game) {
 
     const group = new THREE.Group();
     group.name = 'debug-museum';
+    group.userData.mixers = [];
+    group.userData.rotatingItems = [];
     game.scene.add(group);
+    startMuseumAnimationLoop(group);
 
     // Teleport first, spawn after. This used to sit at the very end of the
     // function, after ~76 sequential (unbatched, one-await-at-a-time) GLB
@@ -242,24 +290,24 @@ export async function openDebugMuseum(game) {
 
     // 1. Weapon archetypes (base guns)
     await addCategory('WEAPON ARCHETYPES', Object.entries(WEAPON_ARCHETYPES), async ([id, url], x, zPos) => {
-        const model = await spawnGlbAt(loader, glbCache, url, x, 1.0, zPos);
+        const model = await spawnGlbAt(loader, glbCache, url, x, 1.0, zPos, { rotate: true, rotatingList: group.userData.rotatingItems });
         if (model) model.userData.label = id;
         return model;
     });
 
     // 2. Weapon skins
     await addCategory('WEAPON SKINS', Object.entries(WEAPON_SKIN_MESHES), async ([, url], x, zPos) => {
-        return spawnGlbAt(loader, glbCache, url, x, 1.0, zPos);
+        return spawnGlbAt(loader, glbCache, url, x, 1.0, zPos, { rotate: true, rotatingList: group.userData.rotatingItems });
     });
 
     // 3. Tactical charms
     await addCategory('WEAPON CHARMS', Object.entries(CHARM_GLB_MAP), async ([, url], x, zPos) => {
-        return spawnGlbAt(loader, glbCache, url, x, 0.7, zPos);
+        return spawnGlbAt(loader, glbCache, url, x, 0.7, zPos, { rotate: true, rotatingList: group.userData.rotatingItems });
     });
 
     // 4. Rig overclock mods
     await addCategory('RIG OVERCLOCK MODS', Object.entries(MOD_GLB_MAP), async ([, url], x, zPos) => {
-        return spawnGlbAt(loader, glbCache, url, x, 0.7, zPos);
+        return spawnGlbAt(loader, glbCache, url, x, 0.7, zPos, { rotate: true, rotatingList: group.userData.rotatingItems });
     });
 
     // 5. Chassis skins (3D Model with icon-plane fallback)
@@ -267,7 +315,7 @@ export async function openDebugMuseum(game) {
         const glbUrl = CHASSIS_SKIN_GLB_MAP[itemdefid];
         if (glbUrl) {
             try {
-                return await spawnGlbAt(loader, glbCache, glbUrl, x, 0.0, zPos);
+                return await spawnGlbAt(loader, glbCache, glbUrl, x, 0.0, zPos, { scale: 1.4, mixersList: group.userData.mixers });
             } catch (err) {
                 console.warn('[debug-museum] chassis glb fallback:', itemdefid, err);
             }
@@ -278,7 +326,7 @@ export async function openDebugMuseum(game) {
 
     // 5b. Camp Leaders & NPC Entities
     await addCategory('CAMP LEADERS & NPCS', Object.entries(NPC_GLB_MAP), async ([, url], x, zPos) => {
-        return spawnGlbAt(loader, glbCache, url, x, 0.0, zPos);
+        return spawnGlbAt(loader, glbCache, url, x, 0.0, zPos, { scale: 1.4, mixersList: group.userData.mixers });
     });
 
     // 6. Cosmetic player decals (icon-plane)
@@ -323,6 +371,10 @@ export async function openDebugMuseum(game) {
 }
 
 export function closeDebugMuseum(game) {
+    if (_museumAnimFrame != null && typeof cancelAnimationFrame === 'function') {
+        cancelAnimationFrame(_museumAnimFrame);
+        _museumAnimFrame = null;
+    }
     const group = game?.scene?.getObjectByName('debug-museum');
     if (!group) return false;
     group.traverse((child) => {

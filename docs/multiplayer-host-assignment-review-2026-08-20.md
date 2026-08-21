@@ -63,6 +63,28 @@ card, active game class, and persisted class in that order, while callsign
 resolves from the profile/callsign UI and falls back only to `AGENT`. The
 focused lobby test covers the packaged-style selection path.
 
+## `log11.json` review
+
+The session timeline confirms the failure was not a clean two-client ready
+test. This capture is Windows (`Electron/43.4.1`, `isSteamDeck: false`) and
+records one host creating a public lobby, refreshing the public list, then
+clicking `JOIN` before later ready actions. Because the browser listed the
+host's own public lobby, that action could re-enter the same Steam room and
+disturb the relay host transition; the host subsequently saw
+`WAITING FOR HOST`. The public browser now removes the local owner's lobby
+from join targets.
+
+The log also had no relay join/roster/ready events, so it could not establish
+whether the Deck payload, server snapshot, or client render was wrong. The
+client now emits redacted `MULTIPLAYER` telemetry for join identity, roster
+identity/host/ready state, ready sends/receives, and deploy rejection. The
+next two-account export will identify the failing boundary directly.
+
+Separate performance evidence: the menu recorded repeated 100–306 ms long
+tasks while mounting the menu scene. That is a real menu responsiveness issue,
+but it is not evidence of a relay failure and remains a separate performance
+follow-up.
+
 ## Scope boundary
 
 This review does not change the relay’s host-election rules, multiplayer lobby
