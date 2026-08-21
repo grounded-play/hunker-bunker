@@ -225,13 +225,41 @@ export function createArmoryUi({
                                 </select>
                             </div>
 
-                            <!-- RIG MOD -->
+                            <!-- DECAL / PATCH -->
                             <div class="bench-field">
-                                <label>OVERCLOCK MOD</label>
-                                <select id="armory-mod-select" class="armory-select">
-                                    <option value="">[NO OVERCLOCK INSTALLED]</option>
-                                    ${['4140', '4141', '4142', '4143', '4144', '4145'].map((id) => `
-                                        <option value="${id}" ${loadout.modId === id ? 'selected' : ''}>
+                                <label>TACTICAL EMBLEM / PATCH</label>
+                                <select id="armory-decal-select" class="armory-select">
+                                    <option value="">[NO EMBLEM PATCH]</option>
+                                    ${['4120', '4121', '4122', '4123', '4124', '4125', '4126', '4127'].map((id) => `
+                                        <option value="${id}" ${(loadoutManager.getEquippedDecalId?.() || loadoutManager.state?.suit?.decalId) === id ? 'selected' : ''}>
+                                            ${CATALOG_ITEMS[id]?.name || id}
+                                        </option>
+                                    `).join('')}
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="bench-row-two-col">
+                            <!-- RIG MOD 1 -->
+                            <div class="bench-field">
+                                <label>OVERCLOCK — BAY A</label>
+                                <select id="armory-mod1-select" class="armory-select">
+                                    <option value="">[EMPTY OVERCLOCK BAY A]</option>
+                                    ${['4140', '4141', '4142', '4143', '4144', '4145', '4146', '4147'].map((id) => `
+                                        <option value="${id}" ${loadout.mod1Id === id ? 'selected' : ''}>
+                                            ${CATALOG_ITEMS[id]?.name || id} — ${CATALOG_ITEMS[id]?.perk || ''}
+                                        </option>
+                                    `).join('')}
+                                </select>
+                            </div>
+
+                            <!-- RIG MOD 2 -->
+                            <div class="bench-field">
+                                <label>OVERCLOCK — BAY B</label>
+                                <select id="armory-mod2-select" class="armory-select">
+                                    <option value="">[EMPTY OVERCLOCK BAY B]</option>
+                                    ${['4140', '4141', '4142', '4143', '4144', '4145', '4146', '4147'].map((id) => `
+                                        <option value="${id}" ${loadout.mod2Id === id ? 'selected' : ''}>
                                             ${CATALOG_ITEMS[id]?.name || id} — ${CATALOG_ITEMS[id]?.perk || ''}
                                         </option>
                                     `).join('')}
@@ -333,9 +361,9 @@ export function createArmoryUi({
         });
 
         // Class tabs
-        container.querySelectorAll('.class-tab').forEach((btn) => {
-            btn.addEventListener('click', () => {
-                const targetCls = btn.dataset.class;
+        container.querySelectorAll?.('.class-tab')?.forEach?.((btn) => {
+            btn.addEventListener?.('click', () => {
+                const targetCls = btn.dataset?.class || btn.getAttribute?.('data-class');
                 if (targetCls) {
                     setClass(targetCls);
                     playSound('ui_click_confirm1');
@@ -344,23 +372,23 @@ export function createArmoryUi({
         });
 
         // Navigation
-        container.querySelector('#armory-btn-back')?.addEventListener('click', () => {
+        container.querySelector?.('#armory-btn-back')?.addEventListener?.('click', () => {
             playSound('ui_click_confirm1');
             onBack?.();
         });
 
-        container.querySelector('#armory-btn-vault')?.addEventListener('click', () => {
+        container.querySelector?.('#armory-btn-vault')?.addEventListener?.('click', () => {
             playSound('ui_click_confirm1');
             onOpenVault?.();
         });
 
-        container.querySelector('#armory-btn-embark')?.addEventListener('click', () => {
+        container.querySelector?.('#armory-btn-embark')?.addEventListener?.('click', () => {
             playSound('ui_upgrade_weapon1');
             onEmbark?.();
         });
 
         // Steam Deck / Keyboard controller shortcuts for Armory screen
-        if (typeof window !== 'undefined' && !container.dataset.kbBound) {
+        if (typeof window !== 'undefined' && container.dataset && !container.dataset.kbBound) {
             container.dataset.kbBound = 'true';
             window.addEventListener('keydown', (event) => {
                 const screen = document?.getElementById?.('armory-screen');

@@ -8,6 +8,7 @@ function createMockElement(tagName = 'div') {
     let children = {};
     const element = {
         tagName: tagName.toUpperCase(),
+        dataset: {},
         get innerHTML() { return _innerHTML; },
         set innerHTML(val) {
             _innerHTML = val;
@@ -47,6 +48,15 @@ function createMockElement(tagName = 'div') {
                 return child;
             }
             return null;
+        },
+        querySelectorAll: (sel) => {
+            if (sel.startsWith('.')) {
+                const child = createMockElement('button');
+                child.dataset.class = 'SCOUT';
+                child.textContent = 'SCOUT';
+                return [child];
+            }
+            return [];
         }
     };
     return element;
@@ -103,7 +113,7 @@ describe('createArmoryUi', () => {
 
         ui.setClass('SCOUT');
         expect(container.innerHTML).toContain('SECTOR ZERO TACTICAL BENCH');
-        expect(container.innerHTML).toContain('ACTIVE OPERATOR:');
+        expect(container.innerHTML).toContain('class="class-tab active" data-class="scout"');
         expect(container.innerHTML).toContain('id="armory-archetype-select"');
         expect(container.innerHTML).toContain('id="armory-charm-select"');
         expect(container.innerHTML).toContain('id="armory-mod1-select"');
