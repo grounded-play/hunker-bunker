@@ -65,6 +65,8 @@ export const SIGNATURE_GESTURES = Object.freeze([
     'pointingForward', 'strutWalk', 'runToStop', 'hardLanding',
     'relievedSigh', 'beingCocky', 'annoyedHeadShake', 'thoughtfulHeadShake',
     'lookAway', 'happyHand', 'angryGesture', 'hardHeadNod', 'floatingTrance',
+    'pickFruit', 'crawling', 'cowMilking', 'unarmedRunForward', 'idleCartographer',
+    'walkWithRifle', 'joggingWithBox', 'defeat', 'talkingAtWatercooler', 'rightStrafeWalk', 'rejected',
     ...(COMMUNITY_GESTURES || [])
 ]);
 

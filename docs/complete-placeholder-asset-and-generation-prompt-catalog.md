@@ -5,7 +5,26 @@
 **Style anchor:** `public/title_key_art_v2.png`  
 **Runtime:** 2D sprite fallback today; promote approved assets to `public/3d/runtime/new3ds/` when a GLB is specified.
 
-This is the canonical list of reward cosmetics and gameplay objects that still need a bespoke 3D asset, or remain represented by a flat 2D sprite/PNG/SVG. It also contains production-ready prompts for generating replacement art.
+This is the canonical list of reward cosmetics and gameplay objects that still need a bespoke 3D asset, or remain represented by a flat 2D sprite/PNG/SVG. It also contains production-ready prompts for generating replacement art. Existing GLBs are explicitly removed from the outstanding queue even when a legacy sprite is still retained as the gameplay-state owner.
+
+## Audit correction: existing 3D coverage
+
+The following assets were previously at risk of being listed twice, but already have a valid GLB and runtime route:
+
+- `prop_bunker_supplies` and its `storage_locker` variant.
+- `prop_cave_bones`.
+- `prop_cave_queen_throne`.
+- `prop_specimen_tank` and `prop_broken_specimen_tank`.
+- `prop_surgical_cart`.
+- `prop_medical_bed`.
+- `prop_diagnostic_console`.
+- `prop_security_barricade`.
+- `prop_conduit_hub`.
+- `prop_fabricator_workstation`.
+- `prop_ammo_crate_stack`.
+- The biomechanical facility props, O2 filter vat, Tesla coil node, vital monitor, laser trap emitter, and related 3D room-dressing props.
+
+`prop_camp_sandbags` is also already remastered as a high-quality 2D asset. It is not a missing art asset for the current 2D presentation, but it has no bespoke 3D GLB yet and therefore remains in the optional 3D conversion queue.
 
 ## Global generation rules
 
@@ -124,7 +143,7 @@ Use the existing achievement-skin prompts in [season-rewards-skins-and-achieveme
 
 ## C. World objects still using 2D sprites or flat images
 
-These are gameplay objects, not reward catalog items. They currently need 3D replacements or remain intentionally sprite-based until replacement assets are approved.
+These are gameplay objects, not reward catalog items. This section contains only objects that do not already have an exact active world-3D route. Legacy sprites may remain in the scene as the gameplay-state owner while a GLB replacement is displayed over them; that does not mean the object is still visually 2D.
 
 ### C1. Survivor camp
 
@@ -137,14 +156,14 @@ These are gameplay objects, not reward catalog items. They currently need 3D rep
 | Bedrolls | `prop_camp_bedrolls.png` | `prop_camp_bedrolls.glb` |
 | Crate stack | `prop_camp_crates.png` | `prop_camp_crates.glb` |
 | Chained crate stack | `prop_camp_crates_chained.png` | `prop_camp_crates_chained.glb` |
-| Sandbag barricade | `prop_camp_sandbags.png` | `prop_camp_sandbags.glb` |
+| Sandbag barricade | `prop_camp_sandbags.png` | Optional `prop_camp_sandbags.glb`; current remastered 2D asset is accepted |
 | Fresh grave | `prop_camp_grave_fresh.png` | `prop_camp_grave_fresh.glb` |
 | Old grave | `prop_camp_grave_old.png` | `prop_camp_grave_old.glb` |
 | Laundry line | `prop_camp_laundry.png` | `prop_camp_laundry.glb` |
 | Lockdown shutter | `prop_camp_shutter_lockdown.png` | `prop_camp_shutter_lockdown.glb` |
 | Warning placard | `prop_camp_warning_placard.png` | `prop_camp_warning_placard.glb` |
 
-**Shared camp prompt:**
+**Shared camp prompt for the genuinely unmodeled camp objects:**
 
 > Isolated 3D biomechanical survivor-camp prop: [INSERT OBJECT]. Built from scavenged bunker steel, bone-white composite, worn canvas and dark rubber, with subtle cyan or amber utility lights, chipped paint, dust, field repairs and believable contact points. Dark subterranean refuge atmosphere, readable game silhouette, no people, no text, no extra objects, neutral dark-grey studio background, high-detail PBR, GLB-ready.
 
@@ -153,14 +172,14 @@ These are gameplay objects, not reward catalog items. They currently need 3D rep
 | Object | Current asset family | Suggested GLB |
 |---|---|---|
 | Cave lichen | `prop_cave_lichen.png` | `prop_cave_lichen.glb` |
-| Bone pile | `prop_cave_bones.png` | `prop_cave_bones.glb` |
 | Intact egg cluster | `prop_cave_eggs_intact.png` | `prop_cave_eggs_intact.glb` |
 | Hatched egg shells | `prop_cave_eggs_hatched.png` | `prop_cave_eggs_hatched.glb` |
 | Spore pod emitter | `prop_cave_spores.png` | `prop_cave_spores.glb` |
 | Organic web canopy | `prop_cave_webs.png` | `prop_cave_webs.glb` |
 | Wounded hive wall | `prop_cave_hive_wounded.png` | `prop_cave_hive_wounded.glb` |
-| Queen throne | `prop_cave_queen_throne.png` | `prop_cave_queen_throne.glb` |
 | Hive resin sac | `prop_hive_resin_sac.svg/png` | `prop_hive_resin_sac.glb` |
+
+Already covered and removed from this queue: `prop_cave_bones` and `prop_cave_queen_throne`.
 
 **Shared hive prompt:**
 
@@ -196,13 +215,31 @@ Liquids should be generated as shallow mesh decals with transparent edges and a 
 
 ### C4. Utility and facility props without exact 3D counterparts
 
-- Engineering bench
-- Security locker
-- Cryo sleep pod
-- Ruptured coolant pump
-- Alien respiratory vent
-- Alien feeding basin
-- Torn warning poster
+- Engineering bench (`prop_engineering_bench`); the related `prop_fabricator_workstation` is already 3D, but is not an exact replacement.
+- Cryo sleep pod (`prop_cryo_sleep_pod`).
+- Ruptured coolant pump (`prop_ruptured_coolant_pump`).
+- Alien feeding basin (`prop_alien_feeding_basin`).
+- Torn warning poster (`prop_torn_warning_poster`).
+
+Already covered and removed from this queue: security locker via `storage_locker.glb`, alien respiratory equipment via `prop_biomech_respirator.glb`, diagnostic console via `prop_diagnostic_console.glb`, medical bed, surgical cart, security barricade, and all exact world-map biomechanical props.
+
+## F. Complete GLB utilization audit
+
+Audited recursively under `public/3d/**/*.glb` and compared against all source references and runtime catalogs.
+
+- **122 GLB files present.**
+- **121 are referenced by source or runtime catalogs.**
+- **1 appears unused:** `public/3d/runtime/engineer-vanguard.glb`.
+- **5 runtime references point to files that do not exist:**
+  - `skin_rust_bone_trench.glb` — itemdef 4104.
+  - `skin_solar_flare_antimatter.glb` — itemdef 4111.
+  - `chassis_bio_synthesizer_medic.glb` — itemdef 4116.
+  - `chassis_dreadnought_exo_juggernaut.glb` — itemdef 4117.
+  - `chassis_cyber_spectre_infiltrator.glb` — itemdef 4118.
+
+The missing 3D files for chassis 4115, chassis 4119, modules 4145/4146, and achievement skins 5001–5012 are not yet referenced by code, so they are design backlog rather than broken runtime routes.
+
+`engineer-vanguard.glb` should either be assigned to a live engineer character route, documented as a deliberate legacy asset, or removed from the shipped asset set after confirming no external build pipeline consumes it.
 
 **Shared facility prompt:**
 

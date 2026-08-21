@@ -26,9 +26,9 @@ export const CLASS_ARCHETYPES = Object.freeze({
 // merely recolor it. Additional catalog chassis can be added here when their
 // corresponding runtime GLBs land.
 export const CLASS_CHASSIS_SKINS = Object.freeze({
-    scout: ['4113', ...(COMMUNITY_CLASS_MAP?.scout || [])],
-    tank: ['4114', ...(COMMUNITY_CLASS_MAP?.tank || [])],
-    engineer: ['4112', ...(COMMUNITY_CLASS_MAP?.engineer || [])]
+    scout: ['4113', '4115', '4118', '5003', '5004', ...(COMMUNITY_CLASS_MAP?.scout || [])],
+    tank: ['4114', '4117', '4119', '5005', '5007', '5008', ...(COMMUNITY_CLASS_MAP?.tank || [])],
+    engineer: ['4112', '4116', '5011', '5012', ...(COMMUNITY_CLASS_MAP?.engineer || [])]
 });
 
 export const ARCHETYPE_SKINS = Object.freeze({
