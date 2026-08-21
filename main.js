@@ -50,7 +50,7 @@ import { createScoutHeroPreview } from './src/scoutHeroPreview.js';
 import { createArmoryScene } from './src/armoryScene.js';
 import { createArmoryUi } from './src/armoryUi.js';
 import { ARMORY_SCREEN_ENABLED } from './src/featureFlags.js';
-import { initSteamVaultUI, loadVaultData, openSteamVaultModal, showSteamDropToast, renderSteamMilestoneGrants, STEAM_ITEM_CATALOG } from './src/steamVaultUi.js';
+import { initSteamVaultUI, loadVaultData, openSteamVaultModal, showSteamDropToast, renderSteamMilestoneGrants, grantVaultItem, STEAM_ITEM_CATALOG } from './src/steamVaultUi.js';
 import { initSeasonPassUI, flushQueuedSeasonPassToasts } from './src/seasonPassUi.js';
 import { preloadEnemy3dTemplates } from './src/enemy3dOverlay.js';
 import { initVoiceCallouts } from './src/voiceCallouts.js';
@@ -2186,25 +2186,39 @@ window.loadout = loadout;
 
 // Season 0 HUD CRT Mutators (docs/season-zero-protocol/03 §5, itemdefs 4150/4151)
 const HUD_THEME_PRESETS = {
-    4150: { '--hud-primary': '#f59e0b', '--hud-glow': 'rgba(245, 158, 11, 0.4)', '--hud-scanline': '#d97706' }, // Amber CRT
-    4151: { '--hud-primary': '#10b981', '--hud-glow': 'rgba(16, 185, 129, 0.4)', '--hud-scanline': '#059669' }, // Emerald Radar
-    hudtheme_amber_crt: { '--hud-primary': '#f59e0b', '--hud-glow': 'rgba(245, 158, 11, 0.4)', '--hud-scanline': '#d97706' },
-    hudtheme_emerald_radar: { '--hud-primary': '#10b981', '--hud-glow': 'rgba(16, 185, 129, 0.4)', '--hud-scanline': '#059669' }
+    4150: { '--hud-primary': '#f59e0b', '--hud-secondary': '#fde68a', '--hud-glow': 'rgba(245, 158, 11, 0.4)', '--hud-scanline': '#d97706', '--hud-border': 'rgba(245, 158, 11, 0.62)', '--hud-panel': 'rgba(55, 30, 4, 0.84)', '--hud-warning': '#fb7185' }, // Amber CRT
+    4151: { '--hud-primary': '#10b981', '--hud-secondary': '#a7f3d0', '--hud-glow': 'rgba(16, 185, 129, 0.4)', '--hud-scanline': '#059669', '--hud-border': 'rgba(16, 185, 129, 0.62)', '--hud-panel': 'rgba(2, 44, 34, 0.84)', '--hud-warning': '#fbbf24' }, // Emerald Radar
+    hudtheme_amber_crt: { '--hud-primary': '#f59e0b', '--hud-secondary': '#fde68a', '--hud-glow': 'rgba(245, 158, 11, 0.4)', '--hud-scanline': '#d97706', '--hud-border': 'rgba(245, 158, 11, 0.62)', '--hud-panel': 'rgba(55, 30, 4, 0.84)', '--hud-warning': '#fb7185' },
+    hudtheme_emerald_radar: { '--hud-primary': '#10b981', '--hud-secondary': '#a7f3d0', '--hud-glow': 'rgba(16, 185, 129, 0.4)', '--hud-scanline': '#059669', '--hud-border': 'rgba(16, 185, 129, 0.62)', '--hud-panel': 'rgba(2, 44, 34, 0.84)', '--hud-warning': '#fbbf24' }
 };
-const HUD_THEME_VARS = ['--hud-primary', '--hud-glow', '--hud-scanline'];
+const HUD_THEME_VARS = ['--hud-primary', '--hud-secondary', '--hud-glow', '--hud-scanline', '--hud-border', '--hud-panel', '--hud-warning'];
 function applyHudThemeFromLoadout() {
     const gameContainer = document.getElementById('game-container');
     if (!gameContainer) return;
+    const hudRoot = document.getElementById('ui');
+    const targets = [gameContainer, hudRoot].filter(Boolean);
     const rawId = loadout.state.hudThemeId;
     const preset = HUD_THEME_PRESETS[rawId] ?? HUD_THEME_PRESETS[Number(rawId)];
     if (preset) {
-        for (const [key, value] of Object.entries(preset)) gameContainer.style.setProperty(key, value);
+        for (const target of targets) {
+            for (const [key, value] of Object.entries(preset)) target.style.setProperty(key, value);
+            target.dataset.hudTheme = String(rawId);
+        }
     } else {
-        for (const key of HUD_THEME_VARS) gameContainer.style.removeProperty(key);
+        for (const target of targets) {
+            for (const key of HUD_THEME_VARS) target.style.removeProperty(key);
+            delete target.dataset.hudTheme;
+        }
     }
 }
 applyHudThemeFromLoadout();
 window.addEventListener('loadout-hud-theme-changed', applyHudThemeFromLoadout);
+
+// Achievement cosmetics use the same local vault grant path as Season Pass
+// rewards. The event keeps achievements independent from the Steam UI module.
+window.addEventListener('achievement-cosmetic-unlocked', ({ detail }) => {
+    if (detail?.itemdefid) grantVaultItem(detail.itemdefid, 1);
+});
 
 // ── Daily Ops System ──────────────────────────────────────────
 const DAILY_OPS_KEY_PREFIX = 'hb_daily_v1_';
@@ -7569,21 +7583,43 @@ function transitionToGameplayForDebug() {
 }
 
 function openDebugShowroom() {
-    transitionToGameplayForDebug();
     closeDevConsoleModal();
     const game = window.game;
     if (!game) return Promise.reject(new Error('Game not initialized'));
-    showBiomePrompt('> DEBUG: ENTERING SHOWROOM VALIDATION GALLERY');
-    return game.buildDebugShowroom().then((showroom) => {
-        game.godMode = true;
-        const targetX = showroom.spawnX || 9510;
-        const targetZ = showroom.spawnZ || 9510;
-        const pos = game.teleportPlayerTo(targetX, targetZ, { syncChunks: false, safeFloor: false });
-        logDevConsole(`Teleported to Debug Showroom Gallery at (${targetX.toFixed(1)}, ${targetZ.toFixed(1)})`, 'success');
-        return pos;
-    }).catch((err) => {
-        logDevConsole(`Failed opening showroom: ${err?.message ?? err}`, 'error');
-        throw err;
+    showBiomePrompt('> DEBUG: CLOSING BULKHEAD FOR SHOWROOM LOAD');
+
+    // The showroom is a debug-only scene and can be expensive to build. Keep
+    // the player behind the normal bulkhead transition while gameplay mode is
+    // entered and every display asset is staged, matching the Armory/run gate.
+    return new Promise((resolve, reject) => {
+        let showroom = null;
+        let failure = null;
+        triggerDoorTransition(
+            async () => {
+                try {
+                    transitionToGameplayForDebug();
+                    showBiomePrompt('> DEBUG: ENTERING SHOWROOM VALIDATION GALLERY');
+                    showroom = await game.buildDebugShowroom({ debug: true });
+                } catch (err) {
+                    failure = err;
+                    logDevConsole(`Failed building showroom: ${err?.message ?? err}`, 'error');
+                }
+            },
+            () => {
+                if (failure) {
+                    reject(failure);
+                    return;
+                }
+                game.godMode = true;
+                const targetX = showroom?.spawnX || 9510;
+                const targetZ = showroom?.spawnZ || 9510;
+                const pos = game.teleportPlayerTo(targetX, targetZ, { syncChunks: false, safeFloor: false });
+                logDevConsole(`Teleported to Debug Showroom Gallery at (${targetX.toFixed(1)}, ${targetZ.toFixed(1)})`, 'success');
+                resolve(pos);
+            },
+            'base',
+            { waitForClosedWork: true, openingHoldMs: 450 }
+        );
     });
 }
 

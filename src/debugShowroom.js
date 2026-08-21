@@ -193,6 +193,56 @@ function makeIconPlaneSprite(iconPath) {
     }
 }
 
+// Debug-only wall display. The production createScatterInstance() intentionally
+// snaps to a world tile boundary (x/z +/- 0.5). A showroom panel is already a
+// self-contained wall, so using that tile offset would place the decal behind
+// or in front of the panel depending on orientation. Mount directly on the
+// panel face while preserving the production wall-normal rotation convention.
+export function createDebugWallDecalDisplay(game, type, {
+    width = 1.54,
+    panelWidth = 2.4,
+    panelHeight = 2.6,
+    panelDepth = 0.2,
+    panelColor = 0x1b2838,
+    wallNormal = { x: 0, z: 1 }
+} = {}) {
+    const group = new THREE.Group();
+    group.name = `DebugWallDecal:${type}`;
+
+    const panel = new THREE.Mesh(
+        new THREE.BoxGeometry(panelWidth, panelHeight, panelDepth),
+        new THREE.MeshStandardMaterial({ color: panelColor, roughness: 0.7, metalness: 0.3 })
+    );
+    panel.position.y = panelHeight * 0.5;
+    group.add(panel);
+
+    const texture = game?.scatterTextures?.[type] || game?.scatterMaterials?.[type]?.map;
+    if (!texture) return group;
+
+    const material = new THREE.MeshStandardMaterial({
+        map: texture,
+        transparent: true,
+        alphaTest: 0.04,
+        roughness: 0.85,
+        metalness: 0.12,
+        polygonOffset: true,
+        polygonOffsetFactor: -4,
+        polygonOffsetUnits: -4,
+        side: THREE.DoubleSide,
+        depthWrite: false
+    });
+    const decal = new THREE.Mesh(new THREE.PlaneGeometry(width, width), material);
+    // The debug panel faces into the stall. Keep the same normal convention as
+    // createScatterInstance: N +Z, S -Z, E -X, W +X.
+    const normal = wallNormal;
+    decal.position.set(normal.x * (panelDepth * 0.5 + 0.012), panelHeight * 0.48, normal.z * (panelDepth * 0.5 + 0.012));
+    decal.rotation.y = Math.atan2(normal.x, normal.z);
+    decal.renderOrder = 6;
+    decal.userData = { isWallDecal: true, type };
+    group.add(decal);
+    return group;
+}
+
 // Builds the entire Showroom at (SHOWROOM_CHUNK_X, SHOWROOM_CHUNK_Y)
 export async function buildShowroomScene(threeGame) {
     const root = new THREE.Group();
@@ -347,15 +397,28 @@ export async function buildShowroomScene(threeGame) {
                 wallPanel.rotation.y = p.yaw;
                 root.add(wallPanel);
 
-                const decalInstance = threeGame.createScatterInstance?.({
-                    type: item.id,
-                    x: p.x,
-                    z: p.z,
-                    scale: 1.1,
-                    wallNormal: { x: p.nx, z: p.nz }
-                });
-                if (decalInstance) {
-                    root.add(decalInstance);
+                const texture = threeGame.scatterTextures?.[item.id]
+                    || threeGame.scatterMaterials?.[item.id]?.map;
+                if (texture) {
+                    const decalMaterial = new THREE.MeshStandardMaterial({
+                        map: texture,
+                        transparent: true,
+                        alphaTest: 0.04,
+                        roughness: 0.85,
+                        metalness: 0.12,
+                        polygonOffset: true,
+                        polygonOffsetFactor: -4,
+                        polygonOffsetUnits: -4,
+                        side: THREE.DoubleSide,
+                        depthWrite: false
+                    });
+                    const decal = new THREE.Mesh(new THREE.PlaneGeometry(1.54, 1.54), decalMaterial);
+                    const faceOffset = 0.1 + 0.012;
+                    decal.position.set(p.x + p.nx * faceOffset, 1.3, p.z + p.nz * faceOffset);
+                    decal.rotation.y = p.yaw;
+                    decal.renderOrder = 6;
+                    decal.userData = { isWallDecal: true, type: item.id, wallNormal: { x: p.nx, z: p.nz } };
+                    root.add(decal);
                 }
             } else if (item.type === 'floor_decal') {
                 const floorInstance = threeGame.createScatterInstance?.({

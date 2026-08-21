@@ -5,7 +5,9 @@ import re
 import bpy
 
 # Set input and output directories
-FBX_DIR = os.path.abspath('public/3d')
+# Authoring sources live outside the public release tree. Runtime GLBs remain
+# under public/3d/runtime/community and are the only files shipped.
+FBX_DIR = os.path.abspath('art/source/3d/community')
 OUTPUT_DIR = os.path.abspath('public/3d/runtime/community')
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 

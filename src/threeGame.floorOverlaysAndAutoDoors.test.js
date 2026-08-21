@@ -266,12 +266,21 @@ describe('wall decals and showroom gallery', () => {
             createWorld3dModel: vi.fn(async () => new THREE.Group())
         });
 
-        const showroom1 = await game.buildDebugShowroom();
+        const showroom1 = await game.buildDebugShowroom({ debug: true });
         expect(showroom1).toBeDefined();
         expect(showroom1.spawnX).toBe(500 * 19 + 10);
         expect(showroom1.spawnZ).toBe(500 * 19 + 10);
 
-        const showroom2 = await game.buildDebugShowroom();
+        const showroom2 = await game.buildDebugShowroom({ debug: true });
         expect(showroom2).toBe(showroom1);
+    });
+
+    it('does not build the showroom without an explicit debug token', async () => {
+        const game = Object.assign(Object.create(ThreeGame.prototype), {
+            chunkSize: 19,
+            scene: new THREE.Scene()
+        });
+
+        await expect(game.buildDebugShowroom()).rejects.toThrow(/explicit debug entry point/);
     });
 });

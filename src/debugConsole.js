@@ -965,22 +965,15 @@ export class DebugLogger {
             }
 
             case 'showroom': {
-                // The QUICK CHEATS "SHOWROOM" button has called executeCommand('showroom')
-                // since it was added, but no case existed for it -- it silently fell to the
-                // default `eval('showroom')` branch and just logged a ReferenceError.
-                const targetGame = game || win?.game;
-                if (!targetGame?.buildDebugShowroom || !targetGame?.teleportPlayerTo) {
+                // Route every debug-console entry through main.js's guarded
+                // transition so this path cannot build the showroom behind
+                // the player's back or bypass the bulkhead loading sequence.
+                if (!win?.__DEBUG__?.openShowroom) {
                     this.warn('CMD', 'Showroom module not loaded');
                     break;
                 }
                 this.info('NAV', 'Opening 4-Wall Orientation Showroom at (9500, 9500)...');
-                targetGame.buildDebugShowroom().then((showroom) => {
-                    targetGame.setGodMode?.(true);
-                    const targetX = showroom?.spawnX ?? 9510;
-                    const targetZ = showroom?.spawnZ ?? 9510;
-                    targetGame.teleportPlayerTo(targetX, targetZ, { syncChunks: false, safeFloor: false });
-                    this.info('NAV', `Teleported to Showroom (${targetX.toFixed(1)}, ${targetZ.toFixed(1)})`);
-                }).catch((err) => {
+                void win.__DEBUG__.openShowroom().catch?.((err) => {
                     this.error('CMD', `Failed opening showroom: ${err?.message ?? err}`);
                 });
                 break;

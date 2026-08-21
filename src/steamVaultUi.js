@@ -18,6 +18,7 @@ import {
 } from './craftingMatrix.js';
 
 import { COMMUNITY_SKINS } from './data/communitySkins.js';
+import { ACHIEVEMENT_COSMETICS } from './data/achievementCosmetics.js';
 
 export { STEAM_ITEM_CATALOG };
 
@@ -41,6 +42,15 @@ export function getItemCatalogEntry(itemdefid) {
     }
     const numericId = Number(itemdefid);
     if (STEAM_ITEM_CATALOG[numericId]) return STEAM_ITEM_CATALOG[numericId];
+    const achievement = ACHIEVEMENT_COSMETICS.find((item) => item.itemdefid === String(numericId));
+    if (achievement) {
+        const iconBase = achievement.slot === 'weapon'
+            ? 'skin_frostbite_talon'
+            : achievement.classId === 'scout' ? 'chassis_cryo_vanguard_scout'
+                : achievement.classId === 'tank' ? 'chassis_trench_warden_heavy' : 'chassis_subterran_drill_engineer';
+        const iconPath = `/economy/${iconBase}.png`;
+        return { ...achievement, itemdefid: numericId, tradable: false, marketable: false, img: iconPath, localImg: iconPath, localImgLarge: iconPath.replace('.png', '_large.png') };
+    }
     const armory = CATALOG_ITEMS?.[String(numericId)];
     if (armory) {
         const iconPath = armory.icon || `/economy/${numericId}.png`;
@@ -61,11 +71,10 @@ export function getItemCatalogEntry(itemdefid) {
 
 export function applyCatalogImage(image, catalog) {
     if (!image || !catalog) return;
-    // Remote CDN -> local economy PNG -> generic placeholder. The season catalog (itemdefs
-    // 4100-4159) is fully registered but roughly a third of its items don't have real key art
-    // yet (docs/season-zero-protocol/08-asset-audit-and-gaps.md) — this keeps those showing a
-    // clean placeholder instead of a broken-image icon until art lands, no code change needed
-    // when it does.
+    // Remote CDN -> local economy PNG -> generic placeholder. The current visible Season 0
+    // catalog (itemdefs 4100-4159) has complete 2D economy coverage; retain the fallback for
+    // legacy/achievement/community entries so a future art gap never becomes a broken-image
+    // icon.
     image.onerror = () => {
         if (!image.dataset.localFallback) {
             image.dataset.localFallback = 'true';

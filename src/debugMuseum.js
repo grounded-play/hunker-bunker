@@ -10,7 +10,7 @@ import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.j
 import { assetUrl } from './assetUrl.js';
 import { getItemCatalogEntry } from './steamVaultUi.js';
 import { WEAPON_ARCHETYPES, WEAPON_SKIN_MESHES, CHARM_GLB_MAP, MOD_GLB_MAP, CHASSIS_SKIN_GLB_MAP, NPC_GLB_MAP } from './debugAssetCatalogs.js';
-import { SHOWROOM_CATEGORIES } from './debugShowroom.js';
+import { SHOWROOM_CATEGORIES, createDebugWallDecalDisplay } from './debugShowroom.js';
 import { createWorld3dModel } from './world3dOverlay.js';
 
 // Far outside any real generated terrain so the museum never overlaps a real run's chunks.
@@ -337,8 +337,11 @@ export async function openDebugMuseum(game) {
 
     // 7. Environmental wall decals (real production spawn path)
     await addCategory('ENVIRONMENTAL WALL DECALS', ENVIRONMENTAL_DECAL_TYPES, async (type, x, zPos) => {
-        const placement = { type, x, z: zPos, scale: 1, tiltX: 0, elevation: 0, isWallDecal: true, wallNormal: { x: 0, z: 1 } };
-        return game.createScatterInstance(placement);
+        const display = createDebugWallDecalDisplay(game, type, {
+            wallNormal: { x: 0, z: 1 }
+        });
+        display.position.set(x, 0, zPos);
+        return display;
     });
 
     // 8a. World-model props (createWorld3dModel — TACTICAL_PROPS/BIOMECH_PROPS/SETPIECES;

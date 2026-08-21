@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { openDebugMuseum, closeDebugMuseum } from './debugMuseum.js';
+import { SHOWROOM_CATEGORIES, createDebugWallDecalDisplay } from './debugShowroom.js';
 
 describe('Debug Hallway Museum', () => {
     let mockGame;
@@ -86,5 +87,31 @@ describe('Debug Hallway Museum', () => {
         const closed = closeDebugMuseum(mockGame);
         expect(closed).toBe(true);
         expect(scene.getObjectByName('debug-museum')).toBeUndefined();
+    });
+
+    it('keeps all decal families in the debug catalog and mounts wall decals on the panel face', () => {
+        expect(SHOWROOM_CATEGORIES.COSMETIC_PLAYER_DECALS).toHaveLength(10);
+        // Nine core wall decal types plus prop_torn_warning_poster, which is
+        // explicitly mounted through the same wall-decal production path.
+        expect(SHOWROOM_CATEGORIES.WALL_DECALS).toHaveLength(10);
+        expect(SHOWROOM_CATEGORIES.FLOOR_DECALS).toHaveLength(13);
+
+        const texture = new THREE.Texture();
+        const display = createDebugWallDecalDisplay({ scatterTextures: { decal_hazard_stripes: texture } }, 'decal_hazard_stripes', {
+            wallNormal: { x: 1, z: 0 }
+        });
+        const decal = display.children.find((child) => child.userData?.isWallDecal);
+
+        expect(decal).toBeDefined();
+        expect(decal.position.x).toBeCloseTo(0.112);
+        expect(decal.position.y).toBeCloseTo(2.6 * 0.48);
+        expect(decal.position.z).toBeCloseTo(0);
+        expect(decal.rotation.y).toBeCloseTo(Math.PI / 2);
+
+        display.traverse((child) => {
+            child.geometry?.dispose?.();
+            child.material?.dispose?.();
+        });
+        texture.dispose();
     });
 });

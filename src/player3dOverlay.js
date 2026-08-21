@@ -3,6 +3,7 @@ import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.js';
 import { clone as cloneSkeleton } from 'three/examples/jsm/utils/SkeletonUtils.js';
 import { assetUrl } from './assetUrl.js';
+import { recordAssetLoad } from './assetLoadTelemetry.js';
 
 // The 2D-to-3D generation pipeline's gltf-transform optimize pass applies
 // EXT_meshopt_compression; GLTFLoader throws "setMeshoptDecoder must be called
@@ -85,10 +86,19 @@ const characterTemplates = new Map();
 const weaponTemplates = new Map();
 
 function loadCharacterTemplate(url) {
+    if (characterTemplates.has(url)) {
+        recordAssetLoad(url, { group: 'player-character', cacheHit: true });
+        return characterTemplates.get(url);
+    }
+    const started = performance.now();
     if (!characterTemplates.has(url)) {
         const promise = createGltfLoader().loadAsync(assetUrl(url)).catch((err) => {
+            recordAssetLoad(url, { group: 'player-character', status: 'failed', durationMs: performance.now() - started, error: err });
             characterTemplates.delete(url);
             throw err;
+        }).then((gltf) => {
+            recordAssetLoad(url, { group: 'player-character', durationMs: performance.now() - started });
+            return gltf;
         });
         characterTemplates.set(url, promise);
     }
@@ -96,10 +106,19 @@ function loadCharacterTemplate(url) {
 }
 
 function loadWeaponTemplate(url) {
+    if (weaponTemplates.has(url)) {
+        recordAssetLoad(url, { group: 'weapon', cacheHit: true });
+        return weaponTemplates.get(url);
+    }
+    const started = performance.now();
     if (!weaponTemplates.has(url)) {
         const promise = createGltfLoader().loadAsync(assetUrl(url)).catch((err) => {
+            recordAssetLoad(url, { group: 'weapon', status: 'failed', durationMs: performance.now() - started, error: err });
             weaponTemplates.delete(url);
             throw err;
+        }).then((gltf) => {
+            recordAssetLoad(url, { group: 'weapon', durationMs: performance.now() - started });
+            return gltf;
         });
         weaponTemplates.set(url, promise);
     }

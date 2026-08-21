@@ -4,7 +4,9 @@ import re
 import bpy
 
 TARGET_DIR = os.path.abspath('public/3d/runtime/new3ds')
-FBX_DIR = os.path.abspath('public/3d')
+# Keep Blender inputs outside the public release tree so build-media auditing
+# cannot accidentally publish source FBX files.
+FBX_DIR = os.path.abspath('art/source/3d/season')
 os.makedirs(TARGET_DIR, exist_ok=True)
 
 # Mapping from pattern/keyword to target glb filename and action name

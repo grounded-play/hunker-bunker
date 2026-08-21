@@ -19142,6 +19142,22 @@ export class ThreeGame {
         core.renderOrder = 25;
         glow.renderOrder = 24;
         group.add(core, glow);
+
+        let tracerMaterial = null;
+        if (!isEnemy && (tracerFxId === '4152' || tracerFxId === 'fx_emerald_void_tracer' || options.tracerFx === 'emerald')) {
+            tracerMaterial = new THREE.ShaderMaterial({
+                uniforms: { uColor: { value: new THREE.Color(0x34d399) }, uTime: { value: 0 } },
+                vertexShader: 'varying vec2 vUv; void main(){vUv=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}',
+                fragmentShader: 'uniform vec3 uColor; uniform float uTime; varying vec2 vUv; void main(){float edge=smoothstep(0.0,0.22,vUv.y)*smoothstep(1.0,0.78,vUv.y);float pulse=0.72+0.28*sin((vUv.x*10.0)-uTime*7.0);gl_FragColor=vec4(uColor,edge*pulse*0.72);}',
+                transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide
+            });
+            const tracerRibbon = new THREE.Mesh(new THREE.PlaneGeometry(0.95, radius * 2.2), tracerMaterial);
+            tracerRibbon.rotation.x = -Math.PI / 2;
+            tracerRibbon.position.x = -Math.sign(vx || 1) * 0.32;
+            tracerRibbon.renderOrder = 23;
+            group.rotation.y = -Math.atan2(vz, vx);
+            group.add(tracerRibbon);
+        }
         group.position.set(x, 0.42, z);
         this.scene.add(group);
 
@@ -19162,6 +19178,7 @@ export class ThreeGame {
             radius,
             isEnemy,
             attackerId,
+            tracerMaterial,
             pierceRemaining: (!isEnemy && this.loadoutMods?.kineticPierceBonus) ? this.loadoutMods.kineticPierceBonus : 0
         });
     }
@@ -19323,6 +19340,20 @@ export class ThreeGame {
         glow.rotation.x = -Math.PI / 2;
         glow.userData = { isGlow: true };
         effect.add(glow);
+
+        if (isCryo) {
+            for (let i = 0; i < 8; i++) {
+                const shard = new THREE.Mesh(
+                    new THREE.PlaneGeometry(0.08 + Math.random() * 0.1, 0.22 + Math.random() * 0.22),
+                    new THREE.MeshBasicMaterial({ color: i % 2 ? 0xd9f7ff : 0x67e8f9, transparent: true, opacity: 0.85, depthWrite: false, blending: THREE.AdditiveBlending })
+                );
+                shard.rotation.x = -Math.PI / 2;
+                shard.rotation.z = Math.random() * Math.PI;
+                shard.position.set((Math.random() - 0.5) * 0.12, 0.06, (Math.random() - 0.5) * 0.12);
+                shard.userData = { vx: (Math.random() - 0.5) * 1.6, vz: (Math.random() - 0.5) * 1.6, vy: 0.04 + Math.random() * 0.12, growth: 2.5 };
+                effect.add(shard);
+            }
+        }
 
         effect.position.set(x, 0.42, z);
         effect.renderOrder = 31;
@@ -19596,6 +19627,7 @@ export class ThreeGame {
 
             projectile.mesh.position.x += projectile.vx * delta;
             projectile.mesh.position.z += projectile.vz * delta;
+            if (projectile.tracerMaterial) projectile.tracerMaterial.uniforms.uTime.value += delta;
 
             if (projectile.isEnemy && shouldBlockAttackPath(
                 { x: oldX, z: oldZ },
@@ -28456,7 +28488,10 @@ export class ThreeGame {
         }
     }
 
-    async buildDebugShowroom() {
+    async buildDebugShowroom({ debug = false } = {}) {
+        if (debug !== true) {
+            throw new Error('Debug showroom is only available through an explicit debug entry point');
+        }
         if (this._debugShowroomBuilt && this._debugShowroom) {
             return this._debugShowroom;
         }

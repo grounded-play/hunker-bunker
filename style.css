@@ -1882,6 +1882,44 @@ body {
   contain: layout paint;
 }
 
+/* Season 0 HUD themes are intentionally structural, not only a color swap.
+   The variables are applied to #ui and the game viewport by main.js. */
+#game-container[data-hud-theme="4150"],
+#game-container[data-hud-theme="hudtheme_amber_crt"] {
+  border-color: var(--hud-border, rgba(245, 158, 11, 0.62));
+  box-shadow: inset 0 0 0 1px var(--hud-border), inset 0 0 28px var(--hud-glow);
+}
+
+#game-container[data-hud-theme="4151"],
+#game-container[data-hud-theme="hudtheme_emerald_radar"] {
+  border-color: var(--hud-border, rgba(16, 185, 129, 0.62));
+  box-shadow: inset 0 0 0 1px var(--hud-border), inset 0 0 28px var(--hud-glow);
+}
+
+#ui[data-hud-theme] .hud-header,
+#ui[data-hud-theme] .level-indicator,
+#ui[data-hud-theme] .hud-action-prompt,
+#ui[data-hud-theme] .mission-progress-hud {
+  border-color: var(--hud-border, var(--accent-primary));
+  color: var(--hud-secondary, var(--hud-primary, var(--accent-primary)));
+  background-color: var(--hud-panel, rgba(0, 0, 0, 0.5));
+  text-shadow: 0 0 8px var(--hud-glow, rgba(255, 159, 28, 0.4));
+}
+
+#ui[data-hud-theme="4150"]::after,
+#ui[data-hud-theme="hudtheme_amber_crt"]::after,
+#ui[data-hud-theme="4151"]::after,
+#ui[data-hud-theme="hudtheme_emerald_radar"]::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 9999;
+  opacity: 0.08;
+  background: repeating-linear-gradient(0deg, transparent 0 3px, var(--hud-scanline) 4px 5px);
+  mix-blend-mode: screen;
+}
+
 #game-container canvas {
   display: block;
   width: 100% !important;
@@ -19581,7 +19619,6 @@ body.colorblind-assist #net-mode-pvp-btn.active {
   background: rgba(192, 132, 252, 0.16) !important;
   box-shadow: 0 0 24px rgba(192, 132, 252, 0.35) !important;
 }
-
 
 
 
