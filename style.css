@@ -6285,6 +6285,79 @@ html.boot-cursor-hidden #tactical-cursor {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.8), 0 0 8px rgba(82, 183, 136, 0.4);
 }
 
+/* --- Menu, Dialogue & Story Mode Cursor Reticle --- */
+html.phase-menu #tactical-cursor .cursor-bracket,
+html.in-dialogue #tactical-cursor .cursor-bracket,
+html.in-story #tactical-cursor .cursor-bracket,
+html.phase-menu #tactical-cursor .cursor-interact-badge,
+html.in-dialogue #tactical-cursor .cursor-interact-badge,
+html.in-story #tactical-cursor .cursor-interact-badge,
+html.phase-menu .virtual-gamepad-cursor .cursor-bracket,
+html.in-dialogue .virtual-gamepad-cursor .cursor-bracket,
+html.in-story .virtual-gamepad-cursor .cursor-bracket,
+#armory-screen:not(.hidden) ~ #tactical-cursor .cursor-bracket,
+#armory-screen:not(.hidden) ~ #tactical-cursor .cursor-interact-badge {
+  display: none !important;
+  opacity: 0 !important;
+}
+
+html.phase-menu #tactical-cursor,
+html.in-dialogue #tactical-cursor,
+html.in-story #tactical-cursor,
+html.phase-menu .virtual-gamepad-cursor,
+html.in-dialogue .virtual-gamepad-cursor,
+html.in-story .virtual-gamepad-cursor,
+#armory-screen:not(.hidden) ~ #tactical-cursor {
+  width: 22px !important;
+  height: 22px !important;
+  mix-blend-mode: normal;
+}
+
+html.phase-menu #tactical-cursor .cursor-ring,
+html.in-dialogue #tactical-cursor .cursor-ring,
+html.in-story #tactical-cursor .cursor-ring,
+html.phase-menu .virtual-gamepad-cursor .cursor-ring,
+html.in-dialogue .virtual-gamepad-cursor .cursor-ring,
+html.in-story .virtual-gamepad-cursor .cursor-ring,
+#armory-screen:not(.hidden) ~ #tactical-cursor .cursor-ring {
+  border-width: 1.5px !important;
+  border-style: solid !important;
+  border-color: var(--accent-secondary, #2ec4b6) !important;
+  border-radius: 50% !important;
+  animation: none !important;
+  box-shadow: 0 0 10px rgba(46, 196, 182, 0.45) !important;
+}
+
+html.phase-menu #tactical-cursor .cursor-dot,
+html.in-dialogue #tactical-cursor .cursor-dot,
+html.in-story #tactical-cursor .cursor-dot,
+html.phase-menu .virtual-gamepad-cursor .cursor-dot,
+html.in-dialogue .virtual-gamepad-cursor .cursor-dot,
+html.in-story .virtual-gamepad-cursor .cursor-dot,
+#armory-screen:not(.hidden) ~ #tactical-cursor .cursor-dot {
+  background-color: var(--accent-secondary, #2ec4b6) !important;
+  box-shadow: 0 0 8px rgba(46, 196, 182, 0.9) !important;
+  transform: translate(-50%, -50%) scale(1.0) !important;
+}
+
+html.phase-menu #tactical-cursor.cursor-hovering,
+html.in-dialogue #tactical-cursor.cursor-hovering,
+html.in-story #tactical-cursor.cursor-hovering,
+#armory-screen:not(.hidden) ~ #tactical-cursor.cursor-hovering {
+  width: 32px !important;
+  height: 32px !important;
+}
+
+html.phase-menu #tactical-cursor.cursor-hovering .cursor-ring,
+html.in-dialogue #tactical-cursor.cursor-hovering .cursor-ring,
+html.in-story #tactical-cursor.cursor-hovering .cursor-ring,
+#armory-screen:not(.hidden) ~ #tactical-cursor.cursor-hovering .cursor-ring {
+  border-color: #ffffff !important;
+  border-width: 2px !important;
+  box-shadow: 0 0 16px rgba(46, 196, 182, 0.7) !important;
+}
+
+
 /* --- Tactical Telemeter / Inspection Box (Docked HUD Panel) --- */
 .tactical-telemeter-box {
   position: absolute;
@@ -18451,10 +18524,11 @@ body.show-debug .map-tool-btn--debug { display: inline-flex; }
    slicing through it. */
 .armory-main-layout {
   display: grid;
-  grid-template-columns: minmax(0, calc(var(--vu) * 38)) minmax(calc(var(--vu) * 28), 1fr) minmax(0, calc(var(--vu) * 42));
-  align-items: end;
-  gap: calc(var(--vu) * 2.4);
+  grid-template-columns: minmax(0, calc(var(--vu) * 38)) minmax(calc(var(--vu) * 20), 1fr) minmax(0, calc(var(--vu) * 44));
+  align-items: stretch;
+  gap: calc(var(--vu) * 2);
   min-height: 0;
+  height: 100%;
   pointer-events: none;
 }
 
@@ -18463,15 +18537,21 @@ body.show-debug .map-tool-btn--debug { display: inline-flex; }
   background: rgba(8, 14, 22, 0.92);
   border: 1.5px solid rgba(255, 159, 28, 0.35);
   border-radius: 8px;
-  padding: calc(var(--vu) * 1.4) calc(var(--vu) * 1.8);
+  padding: calc(var(--vu) * 1.0) calc(var(--vu) * 1.4);
   backdrop-filter: blur(12px);
   box-shadow: 0 0 25px rgba(255, 159, 28, 0.15), 0 8px 32px rgba(0, 0, 0, 0.8);
   display: flex;
   flex-direction: column;
-  gap: calc(var(--vu) * 1);
+  gap: calc(var(--vu) * 0.8);
   max-height: 100%;
   overflow-y: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
   min-width: 0;
+}
+
+.armory-panel::-webkit-scrollbar {
+  display: none;
 }
 
 /* Suit vs. weapon panels keep their own left/right accent (teal vs. orange)
@@ -18492,12 +18572,12 @@ body.show-debug .map-tool-btn--debug { display: inline-flex; }
   align-items: center;
   gap: 8px;
   border-bottom: 1px solid rgba(255, 159, 28, 0.25);
-  padding-bottom: calc(var(--vu) * 0.6);
+  padding-bottom: calc(var(--vu) * 0.4);
 }
 
 .panel-header h2 {
   font-family: 'Rajdhani', 'Outfit', sans-serif;
-  font-size: calc(var(--font-sm) * 1.15);
+  font-size: calc(var(--font-sm) * 1.05);
   font-weight: 800;
   letter-spacing: 0.08em;
   color: #ffffff;
@@ -18505,15 +18585,27 @@ body.show-debug .map-tool-btn--debug { display: inline-flex; }
   text-transform: uppercase;
 }
 
+.bench-row-two-col {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: calc(var(--vu) * 0.8);
+  min-width: 0;
+}
+
+.bench-row-two-col .bench-field {
+  min-width: 0;
+}
+
 .bench-field {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 2px;
+  min-width: 0;
 }
 
 .bench-field label {
   font-family: 'Outfit', sans-serif;
-  font-size: calc(var(--font-xs) * 0.68);
+  font-size: calc(var(--font-xs) * 0.64);
   font-weight: 700;
   letter-spacing: 0.08em;
   color: var(--text-muted);
@@ -18521,28 +18613,31 @@ body.show-debug .map-tool-btn--debug { display: inline-flex; }
 
 .field-value {
   font-family: 'Outfit', sans-serif;
-  font-size: calc(var(--font-xs) * 0.82);
+  font-size: calc(var(--font-xs) * 0.76);
   font-weight: 700;
   color: var(--text-main);
   background: rgba(255, 255, 255, 0.04);
-  padding: 6px 10px;
+  padding: 4px 8px;
   border-radius: 4px;
   border: 1px solid var(--border-subtle);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .armory-select {
   font-family: 'Space Mono', 'Outfit', monospace;
-  font-size: calc(var(--font-xs) * 0.76);
+  font-size: calc(var(--font-xs) * 0.72);
   font-weight: 700;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.03em;
   color: var(--accent-primary);
   background-color: rgba(10, 16, 26, 0.95);
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%23ff9f1c' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23ff9f1c' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
   background-repeat: no-repeat;
-  background-position: right 10px center;
+  background-position: right 8px center;
   border: 1.5px solid rgba(255, 159, 28, 0.35);
   border-radius: 5px;
-  padding: 8px 30px 8px 10px;
+  padding: 6px 24px 6px 8px;
   outline: none;
   cursor: pointer;
   appearance: none;
@@ -18550,6 +18645,9 @@ body.show-debug .map-tool-btn--debug { display: inline-flex; }
   transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
   max-width: 100%;
   box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.6);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .armory-select option {
@@ -18557,7 +18655,7 @@ body.show-debug .map-tool-btn--debug { display: inline-flex; }
   color: #fdfffc;
   font-family: 'Space Mono', monospace;
   font-size: 11px;
-  padding: 8px 10px;
+  padding: 6px 8px;
 }
 
 .armory-select:hover {
@@ -18569,7 +18667,7 @@ body.show-debug .map-tool-btn--debug { display: inline-flex; }
 .armory-select:focus,
 .armory-select:focus-visible {
   border-color: var(--accent-secondary, #2ec4b6);
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%232ec4b6' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%232ec4b6' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
   outline: 2px solid rgba(46, 196, 182, 0.85);
   outline-offset: 2px;
   box-shadow: 0 0 16px rgba(46, 196, 182, 0.45);
@@ -18578,17 +18676,17 @@ body.show-debug .map-tool-btn--debug { display: inline-flex; }
 .bench-grid {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
 }
 
 .telemetry-box {
   background: rgba(0, 0, 0, 0.45);
   border: 1px solid rgba(255, 159, 28, 0.25);
   border-radius: 6px;
-  padding: 10px 12px;
+  padding: 6px 10px;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 4px;
 }
 
 .telemetry-title {
@@ -18604,7 +18702,7 @@ body.show-debug .map-tool-btn--debug { display: inline-flex; }
   display: flex;
   justify-content: space-between;
   font-family: 'Outfit', sans-serif;
-  font-size: 10px;
+  font-size: 9.5px;
   color: var(--text-muted);
 }
 
@@ -18613,33 +18711,33 @@ body.show-debug .map-tool-btn--debug { display: inline-flex; }
 }
 
 .modifiers-summary {
-  margin-top: 4px;
+  margin-top: 2px;
   background: rgba(0, 0, 0, 0.45);
   border: 1px solid rgba(255, 159, 28, 0.3);
   border-radius: 6px;
-  padding: 10px 12px;
+  padding: 6px 10px;
 }
 
 .modifiers-title {
   font-family: 'Outfit', sans-serif;
-  font-size: 10px;
+  font-size: 9px;
   font-weight: 800;
   letter-spacing: 0.08em;
   color: var(--accent-primary);
-  margin-bottom: 8px;
+  margin-bottom: 4px;
 }
 
 .modifiers-badges {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: 4px;
 }
 
 .mod-badge {
   font-family: 'Outfit', sans-serif;
-  font-size: 10px;
+  font-size: 9px;
   font-weight: 700;
-  padding: 4px 8px;
+  padding: 3px 6px;
   border-radius: 4px;
   background: rgba(255, 255, 255, 0.04);
   color: var(--text-muted);
@@ -18663,10 +18761,10 @@ body.show-debug .map-tool-btn--debug { display: inline-flex; }
 
 .armory-btn {
   font-family: 'Rajdhani', 'Outfit', sans-serif;
-  font-size: calc(var(--font-xs) * 0.95);
+  font-size: calc(var(--font-xs) * 0.9);
   font-weight: 900;
   letter-spacing: 0.08em;
-  padding: calc(var(--vu) * 1.2) calc(var(--vu) * 2.4);
+  padding: calc(var(--vu) * 0.9) calc(var(--vu) * 2.0);
   border-radius: 6px;
   border: none;
   cursor: pointer;
@@ -18733,24 +18831,6 @@ body.show-debug .map-tool-btn--debug { display: inline-flex; }
 @keyframes pulseGlow {
   0% { box-shadow: 0 4px 0 #c77b15; }
   100% { box-shadow: 0 4px 0 #c77b15, 0 0 24px rgba(255, 159, 28, 0.7); }
-}
-
-/* Narrow stages (e.g. Steam Deck at 1280x800, or a small windowed launch):
-   drop to a single scrollable column instead of clipping the weapon panel
-   or overlapping the operator. */
-@container (max-width: 900px) {
-  .armory-main-layout {
-    grid-template-columns: minmax(0, 1fr);
-    grid-auto-rows: min-content;
-    overflow-y: auto;
-    max-height: 100%;
-  }
-
-  .suit-bench-panel,
-  .weapon-bench-panel {
-    grid-column: 1;
-    max-height: none;
-  }
 }
 
 /* ── Season 0 Tactical Dossier (#season-pass-modal) ───────────────────── */

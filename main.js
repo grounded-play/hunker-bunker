@@ -339,7 +339,11 @@ function setAppPhase(phase) {
     syncSteamInputPhase();
     syncSteamTimelinePhase(phase);
     if (phase === 'splash' || phase === 'menu') flushQueuedSeasonPassToasts();
-    if (!isGameplayPhase()) {
+    const isGameplay = phase === 'gameplay';
+    document.documentElement.classList.toggle('phase-gameplay', isGameplay);
+    document.documentElement.classList.toggle('phase-menu', !isGameplay);
+    if (!isGameplay) {
+        window.game?.setCursorInspectState?.(null);
         if (tacticalOverlayTimer) {
             clearTimeout(tacticalOverlayTimer);
             tacticalOverlayTimer = null;
@@ -1553,9 +1557,9 @@ function handleSteamMenuInput(actions) {
 
         // Hover element focus
         const hovered = document.elementFromPoint(controllerAimCursor.x, controllerAimCursor.y);
-        const focusable = hovered?.closest?.('button, select, input, a, [tabindex]:not([tabindex="-1"]), .setting-item');
+        const focusable = hovered?.closest?.('button, select, input, a, [tabindex]:not([tabindex="-1"]), .setting-item, .char-card, .class-tab, .armory-btn, .armory-select, .deck-focus-target, .toggle, .splash-btn, .about-btn');
         if (focusable) {
-            const target = focusable.matches('button, select, input, a') ? focusable : focusable.querySelector('button, select, input, a');
+            const target = focusable.matches('button, select, input, a, .char-card, .class-tab, .armory-btn, .armory-select, .toggle') ? focusable : (focusable.querySelector('button, select, input, a') || focusable);
             if (target && target !== document.activeElement) {
                 focusControllerTarget(target, { playHover: true });
             }
@@ -1591,7 +1595,21 @@ function handleSteamMenuInput(actions) {
         else moveControllerFocus((actions.up || actions.left) ? -1 : 1);
     }
 
-    if (actions.confirm) {
+    if (actions.confirm || actions.fire || actions.triggerRight) {
+        if (controllerAimCursor) {
+            const hovered = document.elementFromPoint(controllerAimCursor.x, controllerAimCursor.y);
+            const clickable = hovered?.closest?.('button, select, input, a, .char-card, .class-tab, .armory-btn, .armory-select, .toggle, .splash-btn, .about-btn, [tabindex]:not([tabindex="-1"])');
+            if (clickable) {
+                if (clickable.tagName === 'SELECT') {
+                    clickable.focus();
+                } else if (typeof clickable.click === 'function') {
+                    clickable.click();
+                } else {
+                    activateControllerFocusedElement();
+                }
+                return;
+            }
+        }
         activateControllerFocusedElement();
     }
     if (actions.back) {
@@ -12024,11 +12042,14 @@ function initTacticalCursor() {
     let currentHoverTarget = null;
 
     document.addEventListener('pointerover', (e) => {
-        const target = e.target.closest('button, .char-card, .toggle, .calibrate-btn, .close-modal, .about-btn, a, input, select');
+        const target = e.target.closest('button, .char-card, .toggle, .calibrate-btn, .close-modal, .about-btn, a, input, select, .class-tab, .armory-btn, .armory-select, .deck-focus-target, .setting-item');
         if (target) {
             if (currentHoverTarget !== target) {
                 currentHoverTarget = target;
                 cursor.classList.add('cursor-hovering');
+                if (typeof focusControllerTarget === 'function' && document.activeElement !== target) {
+                    focusControllerTarget(target, { playHover: false });
+                }
                 // Play in-universe hover click blip
                 AudioManager.play('ui_hover', { volume: 0.12, varyPitch: true });
             }
@@ -12036,9 +12057,9 @@ function initTacticalCursor() {
     });
 
     document.addEventListener('pointerout', (e) => {
-        const target = e.target.closest('button, .char-card, .toggle, .calibrate-btn, .close-modal, .about-btn, a, input, select');
+        const target = e.target.closest('button, .char-card, .toggle, .calibrate-btn, .close-modal, .about-btn, a, input, select, .class-tab, .armory-btn, .armory-select, .deck-focus-target, .setting-item');
         if (target) {
-            const related = e.relatedTarget ? e.relatedTarget.closest('button, .char-card, .toggle, .calibrate-btn, .close-modal, .about-btn, a, input, select') : null;
+            const related = e.relatedTarget ? e.relatedTarget.closest('button, .char-card, .toggle, .calibrate-btn, .close-modal, .about-btn, a, input, select, .class-tab, .armory-btn, .armory-select, .deck-focus-target, .setting-item') : null;
             if (related !== currentHoverTarget) {
                 currentHoverTarget = related;
                 if (!related) {

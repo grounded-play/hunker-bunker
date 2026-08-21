@@ -163,27 +163,29 @@ export function createArmoryUi({
                             <label>CHASSIS SPECIFICATION</label>
                             <div class="field-value">${activeClass.toUpperCase()} MK-IV SUB-ZERO PRESSURIZED</div>
                         </div>
-                        <div class="bench-field">
-                            <label>EXOSUIT CHASSIS SKIN</label>
-                            <select id="armory-chassis-select" class="armory-select">
-                                <option value="">[STANDARD CLASS CHASSIS]</option>
-                                ${allowedChassisSkins.map((id) => `
-                                    <option value="${id}" ${chassisSkinId === id ? 'selected' : ''}>
-                                        ${CATALOG_ITEMS[id]?.name || id} (${CATALOG_ITEMS[id]?.rarity?.toUpperCase()})
-                                    </option>
-                                `).join('')}
-                            </select>
-                        </div>
-                        <div class="bench-field">
-                            <label>SHOULDER PATCH &amp; INSIGNIA</label>
-                            <select id="armory-decal-select" class="armory-select">
-                                <option value="">[DEFAULT CLASS INSIGNIA]</option>
-                                ${['4120', '4121', '4122', '4123', '4124', '4125', '4126', '4127', '4128', '4129'].map((id) => `
-                                    <option value="${id}" ${loadoutManager.getEquippedDecalId() === id ? 'selected' : ''}>
-                                        ${CATALOG_ITEMS[id]?.name || id} (${CATALOG_ITEMS[id]?.rarity?.toUpperCase()})
-                                    </option>
-                                `).join('')}
-                            </select>
+                        <div class="bench-row-two-col">
+                            <div class="bench-field">
+                                <label>EXOSUIT CHASSIS SKIN</label>
+                                <select id="armory-chassis-select" class="armory-select">
+                                    <option value="">[STANDARD CLASS CHASSIS]</option>
+                                    ${allowedChassisSkins.map((id) => `
+                                        <option value="${id}" ${chassisSkinId === id ? 'selected' : ''}>
+                                            ${CATALOG_ITEMS[id]?.name || id} (${CATALOG_ITEMS[id]?.rarity?.toUpperCase()})
+                                        </option>
+                                    `).join('')}
+                                </select>
+                            </div>
+                            <div class="bench-field">
+                                <label>SHOULDER PATCH &amp; INSIGNIA</label>
+                                <select id="armory-decal-select" class="armory-select">
+                                    <option value="">[DEFAULT CLASS INSIGNIA]</option>
+                                    ${['4120', '4121', '4122', '4123', '4124', '4125', '4126', '4127', '4128', '4129'].map((id) => `
+                                        <option value="${id}" ${(loadoutManager.getEquippedDecalId?.() || loadoutManager.state?.suit?.decalId) === id ? 'selected' : ''}>
+                                            ${CATALOG_ITEMS[id]?.name || id} (${CATALOG_ITEMS[id]?.rarity?.toUpperCase()})
+                                        </option>
+                                    `).join('')}
+                                </select>
+                            </div>
                         </div>
                         <div class="telemetry-box">
                             <div class="telemetry-title">SUIT TELEMETRY STATUS</div>
