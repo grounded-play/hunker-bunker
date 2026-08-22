@@ -1968,7 +1968,15 @@ body {
 }
 
 .gameplay-tilt-shift::after {
-  display: none !important;
+  content: "";
+  position: absolute;
+  inset: -5%;
+  display: block;
+  background: radial-gradient(ellipse 42% 38% at var(--focus-x) var(--focus-y), transparent 0 52%, rgba(4, 8, 12, 0.08) 72%, rgba(0, 0, 0, 0.3) 100%);
+  backdrop-filter: blur(2.5px) saturate(0.88);
+  -webkit-backdrop-filter: blur(2.5px) saturate(0.88);
+  -webkit-mask-image: radial-gradient(ellipse 42% 38% at var(--focus-x) var(--focus-y), transparent 0 52%, #000 100%);
+  mask-image: radial-gradient(ellipse 42% 38% at var(--focus-x) var(--focus-y), transparent 0 52%, #000 100%);
 }
 
 .gameplay-tilt-shift.is-active {
@@ -19700,5 +19708,4 @@ body.colorblind-assist #net-mode-pvp-btn.active {
   background: rgba(192, 132, 252, 0.16) !important;
   box-shadow: 0 0 24px rgba(192, 132, 252, 0.35) !important;
 }
-
 

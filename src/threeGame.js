@@ -1236,6 +1236,7 @@ export class ThreeGame {
         this.cameraLift = 10;
         this.cameraOrbitRadius = Math.hypot(8, 8);
         this.cameraAzimuth = Math.atan2(8, 8);
+        this.cameraRotationInput = 0;
         this.cameraOffset = new THREE.Vector3(
             this.cameraOrbitRadius * Math.sin(this.cameraAzimuth),
             this.cameraLift,
@@ -5689,6 +5690,14 @@ export class ThreeGame {
         this.virtualInput.z = THREE.MathUtils.clamp(z, -1, 1);
     }
 
+    setCameraRotationInput(value = 0) {
+        if (!this.isGameplayInputActive()) {
+            this.cameraRotationInput = 0;
+            return;
+        }
+        this.cameraRotationInput = THREE.MathUtils.clamp(Number(value) || 0, -1, 1);
+    }
+
     setVirtualInputSprint(active = false) {
         if (!this.isGameplayInputActive()) {
             this.sprinting = false;
@@ -6683,11 +6692,14 @@ export class ThreeGame {
         this.adaptiveGameplayPerformanceMode = nextEnabled;
         this.gameplayPostProcessingEnabled = !nextEnabled;
         if (this.renderer?.shadowMap) {
-            this.renderer.shadowMap.enabled = this.performanceProfile === 'gameplay' && !nextEnabled;
+            // Keep the shadow variant stable while adaptive mode lowers pixel
+            // cost/post-processing. Toggling shadowMap at runtime caused a
+            // visible lighting drop and texture/shader shimmer on some drivers.
+            this.renderer.shadowMap.enabled = this.performanceProfile === 'gameplay';
         }
         this.tiltShiftOverlay?.classList?.toggle?.(
             'is-active',
-            this.performanceProfile === 'gameplay' && !nextEnabled
+            this.performanceProfile === 'gameplay'
         );
 
         const basePixelRatio = this.gameplayPixelRatio ?? 1;
@@ -19793,6 +19805,14 @@ export class ThreeGame {
     }
 
     updateCamera(delta) {
+        if (this.performanceProfile === 'gameplay' && Math.abs(this.cameraRotationInput ?? 0) > 0.01) {
+            // Right-stick orbit: preserve the classic isometric height and
+            // radius while rotating the camera and screen-relative movement
+            // axes around the operator.
+            this.cameraAzimuth = wrapAngle(
+                this.cameraAzimuth + (this.cameraRotationInput * delta * 2.8)
+            );
+        }
         const camBasis = planarBasisFromOffsetAzimuth(this.cameraAzimuth);
         this.cameraPlanarForward.set(camBasis.forward.x, camBasis.forward.y);
         this.cameraPlanarRight.set(camBasis.right.x, camBasis.right.y);

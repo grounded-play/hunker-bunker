@@ -1670,6 +1670,7 @@ function handleSteamGameplayInput(controller) {
     if (window.game?.setVirtualInput) {
         window.game.setVirtualInput(moveX, -moveY);
     }
+    window.game?.setCameraRotationInput?.(aimX);
 
     const cursorAimed = applyControllerCursorAim(controller);
 

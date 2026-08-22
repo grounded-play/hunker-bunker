@@ -44,7 +44,7 @@ describe('ThreeGame adaptive gameplay quality', () => {
 
         expect(fake.adaptiveGameplayPerformanceMode).toBe(true);
         expect(fake.gameplayPostProcessingEnabled).toBe(false);
-        expect(fake.renderer.shadowMap.enabled).toBe(false);
+        expect(fake.renderer.shadowMap.enabled).toBe(true);
         expect(fake.renderer.setPixelRatio).toHaveBeenCalledWith(0.85);
         expect(fake.visibleChunkRadius).toBe(fake.defaultVisibleChunkRadius);
     });
