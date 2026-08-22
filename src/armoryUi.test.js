@@ -122,6 +122,8 @@ describe('createArmoryUi', () => {
         expect(container.innerHTML).toContain('class="class-tab active" data-class="scout"');
         expect(container.innerHTML).toContain('id="armory-archetype-select"');
         expect(container.innerHTML).toContain('id="armory-chassis-select"');
+        expect(container.innerHTML).toContain('WEAPON SHEEN / TACTICAL FINISH');
+        expect(container.innerHTML).toContain('id="armory-polish-btn"');
         expect(container.innerHTML).toContain('Cryo-Vanguard Scout');
         expect(container.innerHTML).toContain('id="armory-charm-select"');
         expect(container.innerHTML).toContain('id="armory-mod1-select"');
@@ -160,6 +162,11 @@ describe('createArmoryUi', () => {
         expect(loadoutManager.getEquippedRigModule(1, 'scout')).toBe('4141');
         const modifiers = loadoutManager.getActiveModifiers('scout');
         expect(modifiers.scrapMagnetRadiusBonus).toBeCloseTo(0.20);
+
+        const skinSelect = container.querySelector('#armory-skin-select');
+        skinSelect.dispatchEvent({ type: 'change', target: { value: '4100' } });
+        expect(loadoutManager.getClassLoadout('scout').weaponSkinId).toBe('4100');
+        expect(fakeScene.updateFromLoadout).toHaveBeenCalledWith(loadoutManager, 'scout');
     });
 
     it('handles navigation button clicks', () => {

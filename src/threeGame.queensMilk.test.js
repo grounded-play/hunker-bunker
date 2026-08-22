@@ -79,5 +79,11 @@ describe('Queen\'s Milk (alien-contact heal / human-heal backlash)', () => {
             ThreeGame.prototype.healPlayer.call(fakeThis, 4);
             expect(fakeThis.playerVitals.hp).toBe(9);
         });
+
+        it('allows a debug grant to heal without backlash', () => {
+            const fakeThis = makeFakeThis({ runRelics: [queensMilk], playerVitals: { hp: 5, maxHp: 10 } });
+            ThreeGame.prototype.healPlayer.call(fakeThis, 4, { skipQueensMilkPenalty: true });
+            expect(fakeThis.playerVitals.hp).toBe(9);
+        });
     });
 });

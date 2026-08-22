@@ -15796,6 +15796,9 @@ export class ThreeGame {
 
     takeDamage(amount = 1, reason = 'hazard', sourceX = null, sourceZ = null) {
         if (this.isPlayerDead || this.isPlayerDowned) return false;
+        // Menu/showroom previews share the player object with gameplay, but
+        // defensive effects must never damage the preview operator.
+        if (this.performanceProfile && this.performanceProfile !== 'gameplay') return false;
         if (this.godMode || this.noclip) return false;
         if (this.cinematicLock) return false; // untouchable during scripted sequences
         if (this.isInPocket) return false; // untouchable while resolving a fall inside a pocket
@@ -15981,6 +15984,7 @@ export class ThreeGame {
 
     handleDeath(reason = 'hazard') {
         if (this.isPlayerDead) return;
+        if (this.performanceProfile && this.performanceProfile !== 'gameplay') return;
         this.isPlayerDead = true;
         // A real death is now gracefully recorded via blackBoxStore.recordDeath
         // below -- the crash-only checkpoint has nothing left to add.
@@ -24544,6 +24548,12 @@ export class ThreeGame {
 
         if (isBoss) {
             this.killedBosses.add(sprite.userData.biome);
+            if (sprite.userData.corruptedOperator) {
+                window.dispatchEvent(new CustomEvent('black-box-guard-defeated', {
+                    detail: { state: this._blackBoxState, boss: sprite }
+                }));
+                this.showBunkerLine('CORRUPTED OPERATOR NEUTRALIZED. BLACK BOX RECOVERY NOW AUTHORIZED.');
+            }
             if (sprite.userData.isMilestone && sprite.userData.milestoneId) {
                 const transition = this.applyMilestoneBossRuntimeEvent({
                     type: MILESTONE_BOSS_EVENT_TYPES.ENEMY_KILLED,

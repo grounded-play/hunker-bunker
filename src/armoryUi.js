@@ -122,6 +122,7 @@ export function createArmoryUi({
         const allowedSkins = ARCHETYPE_SKINS[archetype] || [];
         const allowedChassisSkins = CLASS_CHASSIS_SKINS[cls] || [];
         const chassisSkinId = loadoutManager.getEquippedChassisSkinId?.();
+        const selectedFinish = loadout.weaponSkinId ? (CATALOG_ITEMS[loadout.weaponSkinId]?.name || loadout.weaponSkinId) : 'STANDARD FACTORY FINISH';
 
         if (typeof document !== 'undefined') {
             const screen = document.getElementById('armory-screen');
@@ -196,6 +197,18 @@ export function createArmoryUi({
                     </section>
 
                     <!-- WEAPON BENCH (RIGHT / CENTER) -->
+                    <aside class="armory-stage-readout" aria-label="Live Armory Preview">
+                        <div class="armory-stage-readout__eyebrow">LIVE BENCH PREVIEW</div>
+                        <div class="armory-stage-readout__title">${activeClass.toUpperCase()} // ${ARCHETYPE_NAMES[archetype] || archetype}</div>
+                        <div class="armory-stage-readout__line"><span>WEAPON SHEEN</span><strong>${selectedFinish}</strong></div>
+                        <div class="armory-stage-readout__line"><span>CHASSIS SKIN</span><strong>${chassisSkinId ? (CATALOG_ITEMS[chassisSkinId]?.name || chassisSkinId) : 'STANDARD CLASS CHASSIS'}</strong></div>
+                        <button type="button" class="armory-stage-readout__polish" id="armory-polish-btn">
+                            <span class="armory-stage-readout__polish-swatch" aria-hidden="true"></span>
+                            <span><small>OPERATOR SHEEN</small><b>OPEN SUIT TINT MATRIX</b></span>
+                        </button>
+                        <div class="armory-stage-readout__hint">DRAG THE MODEL TO INSPECT // SELECT A FINISH TO APPLY</div>
+                    </aside>
+
                     <section class="armory-panel weapon-bench-panel" aria-label="Weapon Bench">
                         <div class="panel-header">
                             <span class="panel-icon">⚔️</span>
@@ -216,7 +229,7 @@ export function createArmoryUi({
 
                         <!-- 3D WEAPON SKIN -->
                         <div class="bench-field">
-                            <label>TACTICAL CAMOUFLAGE / FINISH</label>
+                            <label>WEAPON SHEEN / TACTICAL FINISH</label>
                             <select id="armory-skin-select" class="armory-select">
                                 <option value="">[STANDARD FACTORY FINISH]</option>
                                 ${allowedSkins.map((id) => `
@@ -397,6 +410,11 @@ export function createArmoryUi({
         container.querySelector?.('#armory-btn-embark')?.addEventListener?.('click', () => {
             playSound('ui_upgrade_weapon1');
             onEmbark?.();
+        });
+
+        container.querySelector?.('#armory-polish-btn')?.addEventListener?.('click', () => {
+            playSound('ui_click_confirm1');
+            document.getElementById('hero-polish-btn')?.click?.();
         });
 
         // Steam Deck / Keyboard controller shortcuts for Armory screen

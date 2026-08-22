@@ -3718,8 +3718,10 @@ function renderOperatorPolishUi() {
                 if (!next) return;
                 window.game?.setOperatorPolish?.(next.color);
                 scoutHeroPreview?.setOperatorPolish?.(next.color);
+                armorySceneInstance?.setOperatorPolish?.(next.color);
                 void renderPreviewFrame(activePreviewType, previewFrameIndex);
                 renderOperatorPolishUi();
+                armoryUiInstance?.refresh?.();
                 window.AudioManager?.play?.('ui_click', { volume: 0.5 });
             });
         }
@@ -5309,7 +5311,8 @@ window.addEventListener('camp-quest-complete', (event) => {
 });
 
 window.addEventListener('black-box-marker-active', (event) => {
-    const { x, z } = event?.detail ?? {};
+    const state = event?.detail?.state ?? event?.detail ?? {};
+    const { x, z } = state;
     objectiveRegistry.trackObjective({
         id: 'story:black_box',
         source: 'black-box',
@@ -5323,6 +5326,22 @@ window.addEventListener('black-box-marker-active', (event) => {
 
 window.addEventListener('black-box-recovered', () => {
     objectiveRegistry.resolveObjective('story:black_box', 'complete');
+});
+
+window.addEventListener('black-box-guard-defeated', (event) => {
+    const state = event?.detail?.state ?? {};
+    objectiveRegistry.trackObjective({
+        id: 'story:black_box',
+        source: 'black-box',
+        label: 'RECOVER BLACK BOX — GUARD DEFEATED',
+        current: 0,
+        target: 1,
+        priority: 10,
+        compass: Number.isFinite(state.x) && Number.isFinite(state.z)
+            ? { x: state.x, z: state.z }
+            : null
+    });
+    showBiomePrompt('> GUARD DEFEATED — BLACK BOX UNLOCKED. FOLLOW THE COMPASS.');
 });
 
 window.addEventListener('player-death', () => {
@@ -7017,6 +7036,20 @@ const transitionFromTitleToMenu = (afterClosed = null) => {
     );
 };
 
+function returnFromHeroSelectToTitle() {
+    triggerDoorTransition(
+        () => {
+            menu?.classList.add('hidden');
+            splash?.classList.remove('hidden');
+            setAppPhase('splash');
+            window.game?.setPerformanceProfile?.('menu');
+            transitionToMenuMusic();
+        },
+        () => ensureControllerMenuFocus(),
+        'base'
+    );
+}
+
 // ── Pre-Mission Armory Gate (docs/armory-and-class-weapons-worklog.md task 5) ──
 // Inserted between class-select (menu) and run launch. Off unless
 // ARMORY_SCREEN_ENABLED is flipped true in src/featureFlags.js, in which case
@@ -7056,15 +7089,14 @@ function ensureArmoryInitialized() {
 
 function closeArmoryScreen({ embark }) {
     document.getElementById('armory-screen')?.classList.add('hidden');
+    // The Armory owns a renderer loop and loaded GLB scene graph. Tear it down
+    // on every exit, including RETURN TO MAIN MENU; leaving it alive behind the
+    // menu kept a hidden canvas rendering and retained its textures/geometry.
+    armorySceneInstance?.dispose?.();
+    armorySceneInstance = null;
+    armoryUiInstance = null;
+    armoryInitPromise = null;
     if (embark) {
-        // Heading into gameplay — tear the scene down rather than leaving its
-        // requestAnimationFrame loop rendering a hidden canvas indefinitely.
-        // ensureArmoryInitialized() rebuilds fresh next time INITIALIZE/DAILY
-        // OPS is pressed.
-        armorySceneInstance?.dispose?.();
-        armorySceneInstance = null;
-        armoryUiInstance = null;
-        armoryInitPromise = null;
         const action = pendingArmoryEmbarkAction;
         pendingArmoryEmbarkAction = null;
         action?.();
@@ -7332,7 +7364,7 @@ let debugGodModeActive = false;
 debugGrantResourcesBtn?.addEventListener('click', () => {
     bankManager.deposit({ tech: 250, coin: 150, med: 75 });
     bankManager.addShells(75);
-    window.game?.healPlayer?.(99);
+    window.game?.healPlayer?.(99, { skipQueensMilkPenalty: true });
     window.game?.adjustOxygen?.(100);
     window.game?.renderConsoleBanking?.(window.game?.activeInteractiveConsole);
     renderFabricationModal();
@@ -7412,7 +7444,7 @@ function devResetAchievements() {
 function devGrantResources() {
     bankManager.deposit({ tech: 250, coin: 150, med: 75 });
     bankManager.addShells(75);
-    window.game?.healPlayer?.(99);
+    window.game?.healPlayer?.(99, { skipQueensMilkPenalty: true });
     window.game?.adjustOxygen?.(100);
     window.game?.renderConsoleBanking?.(window.game?.activeInteractiveConsole);
     renderFabricationModal();
@@ -7450,7 +7482,7 @@ window.devToggleNoclip = devToggleNoclip;
 if (window.__DEBUG__) window.__DEBUG__.toggleNoclip = devToggleNoclip;
 
 function devHealPlayer() {
-    window.game?.healPlayer?.(999);
+    window.game?.healPlayer?.(999, { skipQueensMilkPenalty: true });
     window.game?.adjustOxygen?.(999);
     return 'Player fully healed and O₂ refilled.';
 }
@@ -11962,6 +11994,11 @@ charCards.forEach(card => {
             }
         }
     });
+});
+
+document.getElementById('hero-select-back-btn')?.addEventListener('click', () => {
+    AudioManager.play('ui_click_confirm1', { volume: 0.7 });
+    returnFromHeroSelectToTitle();
 });
 
 // In-Universe Tactical Cursor and Hover React
