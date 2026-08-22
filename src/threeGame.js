@@ -5404,6 +5404,7 @@ export class ThreeGame {
         // keypress at all (docs/log1-perf-and-telemetry-followups-2026-08-18.md
         // #4: 8 rapid presses near a pit produced zero feedback either way).
         let handled = false;
+        handled = this.interactWithNearestDestructibleProp() || handled;
         handled = this.interactWithBunkerBlastDoorButton() || handled;
         handled = this.interactWithProceduralDoor() || handled;
         handled = this.interactWithMazeAccessSource() || handled;
@@ -5421,6 +5422,37 @@ export class ThreeGame {
         if (!handled) {
             this.playThrottledUiError('_lastNoInteractCueAt', { volume: 0.3, playbackRate: 0.9 });
         }
+        return true;
+    }
+
+    interactWithNearestDestructibleProp() {
+        if (!this.player || !this.scatterSprites) return false;
+        const openable = new Set([
+            'prop_bunker_supplies',
+            'prop_ammo_crate_stack',
+            'prop_camp_crate',
+            'prop_camp_crates',
+            'prop_security_locker'
+        ]);
+        let nearest = null;
+        let nearestDistance = 2.0;
+        for (const sprite of this.scatterSprites) {
+            const type = sprite?.userData?.type;
+            if (!sprite?.parent || sprite.userData?.burstTriggered
+                || !sprite.userData?.isDestructibleProp || !openable.has(type)) continue;
+            const distance = Math.hypot(
+                this.player.position.x - sprite.position.x,
+                this.player.position.z - sprite.position.z
+            );
+            if (distance <= nearestDistance) {
+                nearest = sprite;
+                nearestDistance = distance;
+            }
+        }
+        if (!nearest) return false;
+        this.damageScatterProp(nearest, nearest.userData.propHp ?? 3);
+        window.AudioManager?.play?.('ui_click_confirm1', { volume: 0.42 });
+        window.showToastNotification?.('SUPPLY CONTAINER OPENED');
         return true;
     }
 
@@ -8743,6 +8775,40 @@ export class ThreeGame {
                     promptKey: 'L-CLICK',
                     promptText: 'DESTROY BARRIER'
                 };
+            }
+        }
+
+        // Supply crates and lockers are opened with the same interaction key
+        // used by the rest of the field equipment. Keep this before pickup
+        // resolution so the cursor communicates the action while aiming at
+        // the container instead of silently treating it as scenery.
+        if (this.scatterSprites) {
+            const openable = new Set([
+                'prop_bunker_supplies',
+                'prop_ammo_crate_stack',
+                'prop_camp_crate',
+                'prop_camp_crates',
+                'prop_security_locker'
+            ]);
+            for (const sprite of this.scatterSprites) {
+                if (!sprite?.parent || sprite.userData?.burstTriggered
+                    || !sprite.userData?.isDestructibleProp || !openable.has(sprite.userData?.type)) continue;
+                const dist = Math.hypot(worldPoint.x - sprite.position.x, worldPoint.z - sprite.position.z);
+                if (dist <= 1.35 && playerDist <= 2.0) {
+                    return {
+                        type: 'interact',
+                        targetId: 'supply_container',
+                        badgeLabel: sprite.userData.type.includes('locker') ? 'SUPPLY LOCKER' : 'SUPPLY CRATE',
+                        kicker: 'FIELD CONTAINER // SALVAGEABLE',
+                        title: sprite.userData.type.includes('locker') ? 'SECURITY SUPPLY LOCKER' : 'SEALED PROCUREMENT CRATE',
+                        subtitle: 'CONTENTS: AMMUNITION // OPEN CONTAINER',
+                        coords: { x: tileX, z: tileZ },
+                        distance: playerDist,
+                        integrity: 100,
+                        promptKey: 'E',
+                        promptText: 'OPEN CONTAINER'
+                    };
+                }
             }
         }
 
@@ -24578,6 +24644,8 @@ export class ThreeGame {
         const previousHp = sprite.userData.propHp ?? 3;
         const damage = Math.max(1, Math.round(amount));
         sprite.userData.propHp = Math.max(0, previousHp - damage);
+        sprite.userData.impactAnimationTimer = 0.2;
+        sprite.userData.impactAnimationDuration = 0.2;
 
         this.spawnDamagePip(sprite.position.x, sprite.position.z, damage);
 
@@ -24595,11 +24663,15 @@ export class ThreeGame {
             window.AudioManager?.playMetalStress?.({ volume: 0.5, playbackRate: 1.85, force: true });
 
             this.spawnDestructiblePropDrops(sprite);
-
-            const idx = this.scatterSprites.indexOf(sprite);
-            if (idx !== -1) this.scatterSprites.splice(idx, 1);
-            sprite.userData.world3dRoot?.removeFromParent();
-            if (sprite.parent) sprite.parent.remove(sprite);
+            sprite.userData.destructionAnimationTimer = 0.34;
+            sprite.userData.destructionAnimationDuration = 0.34;
+            window.dispatchEvent(new CustomEvent('destructible-prop-opening', {
+                detail: {
+                    type: sprite.userData.type ?? 'prop',
+                    x: Math.round(sprite.position.x),
+                    z: Math.round(sprite.position.z)
+                }
+            }));
             return true;
         }
         return false;
@@ -27168,7 +27240,54 @@ export class ThreeGame {
             const world3dRoot = child.userData.world3dRoot;
             if (world3dRoot) {
                 world3dRoot.position.copy(child.position);
-                world3dRoot.visible = !child.userData.burstTriggered;
+                const destructionTimer = child.userData.destructionAnimationTimer ?? 0;
+                world3dRoot.visible = !child.userData.burstTriggered || destructionTimer > 0;
+                const impactTimer = child.userData.impactAnimationTimer ?? 0;
+                const animationTimer = Math.max(impactTimer, destructionTimer);
+                if (animationTimer > 0) {
+                    const duration = child.userData.destructionAnimationDuration
+                        ?? child.userData.impactAnimationDuration
+                        ?? 0.2;
+                    const progress = Math.max(0, Math.min(1, 1 - animationTimer / duration));
+                    const pulse = Math.sin(progress * Math.PI);
+                    const burst = destructionTimer > 0 ? progress : 0;
+                    world3dRoot.scale.setScalar(1 + pulse * 0.08 + burst * 0.14);
+                    world3dRoot.rotation.z = Math.sin(progress * Math.PI * 7) * (0.035 + burst * 0.06);
+                } else {
+                    world3dRoot.scale.setScalar(1);
+                    world3dRoot.rotation.z = 0;
+                }
+            } else if (child.userData.isDestructibleProp) {
+                const impactTimer = child.userData.impactAnimationTimer ?? 0;
+                const destructionTimer = child.userData.destructionAnimationTimer ?? 0;
+                const animationTimer = Math.max(impactTimer, destructionTimer);
+                if (animationTimer > 0 && child.material) {
+                    const duration = child.userData.destructionAnimationDuration
+                        ?? child.userData.impactAnimationDuration
+                        ?? 0.2;
+                    const progress = Math.max(0, Math.min(1, 1 - animationTimer / duration));
+                    const pulse = Math.sin(progress * Math.PI);
+                    const burst = destructionTimer > 0 ? progress : 0;
+                    child.scale.set(
+                        child.userData.baseScaleX * (1 + pulse * 0.08 + burst * 0.14),
+                        child.userData.baseScaleY * (1 + pulse * 0.08 + burst * 0.14),
+                        1
+                    );
+                    child.material.rotation = Math.sin(progress * Math.PI * 7) * (0.08 + burst * 0.06);
+                } else if (child.material) {
+                    child.scale.set(child.userData.baseScaleX, child.userData.baseScaleY, 1);
+                    child.material.rotation = 0;
+                }
+            }
+            if (child.userData.isDestructibleProp) {
+                child.userData.impactAnimationTimer = Math.max(0, (child.userData.impactAnimationTimer ?? 0) - delta);
+                child.userData.destructionAnimationTimer = Math.max(0, (child.userData.destructionAnimationTimer ?? 0) - delta);
+                if (child.userData.burstTriggered && child.userData.destructionAnimationTimer <= 0) {
+                    child.userData.world3dRoot?.removeFromParent();
+                    child.parent?.remove(child);
+                    const index = this.scatterSprites.indexOf(child);
+                    if (index !== -1) this.scatterSprites.splice(index, 1);
+                }
             }
             if (child.userData.enemy3dVisual) {
                 updateEnemy3dVisual(child.userData.enemy3dVisual, child, delta, time);
