@@ -19291,6 +19291,34 @@ body.show-debug .map-tool-btn--debug { display: inline-flex; }
   color: var(--text-main);
 }
 
+.season-pass-slot__reward {
+  display: flex;
+  align-items: center;
+  gap: calc(var(--vu) * 0.8);
+  min-width: 0;
+}
+
+.season-pass-slot__art {
+  width: calc(var(--vu) * 5.2);
+  height: calc(var(--vu) * 5.2);
+  object-fit: contain;
+  flex: 0 0 auto;
+  border: 1px solid rgba(255, 159, 28, 0.28);
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.32);
+}
+
+.season-pass-slot__art.is-missing { opacity: 0; }
+.season-pass-slot__art--glyph {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--accent-primary);
+  font-size: calc(var(--vu) * 2.2);
+}
+.season-pass-slot__label { min-width: 0; }
+.season-pass-slot__qty { color: var(--accent-primary); font-weight: 900; }
+
 .season-pass-slot--empty {
   justify-content: center;
   color: var(--text-muted);
@@ -19298,9 +19326,18 @@ body.show-debug .map-tool-btn--debug { display: inline-flex; }
 }
 
 .season-pass-slot--claimed {
-  border-color: rgba(16, 185, 129, 0.4);
-  color: #34d399;
-  background: rgba(16, 185, 129, 0.06);
+  border-color: rgba(148, 163, 184, 0.22);
+  color: #94a3b8;
+  background: rgba(148, 163, 184, 0.045);
+  opacity: 0.58;
+  filter: grayscale(0.75);
+}
+.season-pass-slot--claimed.just-collected { animation: season-pass-collect 0.75s ease both; }
+
+@keyframes season-pass-collect {
+  0% { transform: scale(1); box-shadow: 0 0 0 rgba(46, 196, 182, 0); }
+  45% { transform: scale(1.035); box-shadow: 0 0 22px rgba(46, 196, 182, 0.65); }
+  100% { transform: scale(1); box-shadow: 0 0 0 rgba(46, 196, 182, 0); }
 }
 
 .season-pass-slot--claimable {
@@ -19413,6 +19450,27 @@ body.show-debug .map-tool-btn--debug { display: inline-flex; }
 
 .bounty-card.completed .bounty-card__progress-fill {
   background: #10b981;
+}
+
+.season-pass-bounty-claim-btn {
+  align-self: flex-start;
+  margin-top: calc(var(--vu) * 0.7);
+  padding: 5px 10px;
+  border: 1px solid rgba(46, 196, 182, 0.65);
+  border-radius: 4px;
+  background: rgba(46, 196, 182, 0.14);
+  color: #8ff7e8;
+  font: 800 var(--font-xxs, 11px) 'Space Mono', monospace;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+}
+.season-pass-bounty-claim-btn:hover { background: rgba(46, 196, 182, 0.28); }
+.bounty-card__claim-state {
+  display: block;
+  margin-top: calc(var(--vu) * 0.7);
+  color: var(--text-muted);
+  font: 700 var(--font-xxxs, 10px) 'Space Mono', monospace;
+  letter-spacing: 0.08em;
 }
 
 /* ── Gamepad & Keyboard Focus Indicator Styles ──────────────────────── */
@@ -19708,4 +19766,3 @@ body.colorblind-assist #net-mode-pvp-btn.active {
   background: rgba(192, 132, 252, 0.16) !important;
   box-shadow: 0 0 24px rgba(192, 132, 252, 0.35) !important;
 }
-
