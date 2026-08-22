@@ -167,6 +167,9 @@ import {
 import { CAMP_QUESTS } from './data/campQuests.js';
 import { humanityDecayProgress } from './vitals.js';
 import { applyCampPayoutEffects } from './runModifiers.js';
+import { WandererManager, isWandererEligible } from './wandererSystem.js';
+import { renderWandererModal, closeWandererModal } from './wandererModal.js';
+import { createWanderer3dInstance } from './wanderer3d.js';
 import { applyBlackChromaKey, applyGreenChromaKey } from './textureKeying.js';
 import { getCachedKeyedImage, putCachedKeyedImage } from './keyedTextureCache.js';
 import { LANDFORMS, pickLandform, applyLandform, applyCanyonCollapse, connectPortalsInward, openMazeTerrain, generateHeightmapGrid, TERRAIN_HEIGHTS, findFarthestFloorCell } from './landforms.js';
@@ -1302,7 +1305,10 @@ export class ThreeGame {
         // encounter.md) specifically so a chunk falling out of the resident
         // radius as the player travels can't dispose of one mid-follow.
         this.companions = [];
-        // Non-null while the paused Fight/Talk/Flee overlay is open — see
+        this.wandererManager = new WandererManager();
+        this.activeWanderer = null;
+        this.activeWanderer3d = null;
+        this._wandererPromptLabel = null;
         // openSnailEncounter. hasBlockingGameplayOverlay checks the DOM
         // modal's visibility, not this field directly; this is the actual
         // battle state (src/snailEncounter.js) driving it.
@@ -5408,6 +5414,7 @@ export class ThreeGame {
         handled = this.interactWithScientist() || handled;
         handled = this.interactWithHiveSite() || handled;
         handled = this.interactWithCampQuestObject() || handled;
+        handled = this.interactWithWanderer() || handled;
         handled = this.interactWithHoleTile() || handled;
         handled = this.interactWithPocketClimbPoint() || handled;
         handled = this.interactWithBiomechanicalDoor() || handled;
@@ -11889,6 +11896,7 @@ export class ThreeGame {
         this.updateCampTurrets(delta, phase);
         this.updateCampPrompt(phase);
         this.updateScientistPromptState();
+        this.updateWandererPromptState();
     }
 
     // Camp defense turrets: friendly artillery in Act 1, the first hostile
@@ -13949,6 +13957,158 @@ export class ThreeGame {
             ? Math.hypot(this.player.position.x - pos.x, this.player.position.z - pos.z) <= 2.0
             : false;
         promptEl.classList.toggle('hidden', !near);
+    }
+
+    checkWandererSpawning() {
+        if (this.activeWanderer || !this.player || this.isPlayerDead) return;
+        const bankState = this.bank?.getState?.() || {};
+        const eligible = isWandererEligible({
+            bank: this.bank,
+            defeatedBosses: this.defeatedMilestoneBosses,
+            unlocks: bankState.unlocks
+        }) || Boolean(bankState.unlocks?.o2Bubble && (this.killedBosses?.size > 0 || this.defeatedMilestoneBosses?.size > 0));
+
+        if (!eligible) return;
+
+        const wanderer = this.wandererManager?.rollWanderer?.({
+            bank: this.bank,
+            defeatedBosses: this.defeatedMilestoneBosses,
+            unlocks: bankState.unlocks
+        });
+        if (!wanderer) return;
+
+        this.spawnCrashSiteWanderer(wanderer);
+    }
+
+    async spawnCrashSiteWanderer(wanderer) {
+        if (!wanderer || this.activeWanderer) return;
+        const activeShip = this.activeInteractiveConsole || this.ship || { tileX: 0, tileZ: 0 };
+        const spawnX = (activeShip.tileX ?? 0) + 2.5;
+        const spawnZ = (activeShip.tileZ ?? 0) + 1.8;
+
+        const instance3d = await createWanderer3dInstance({
+            glbUrl: wanderer.glbUrl,
+            actionKey: wanderer.actionKey,
+            scale: 0.85
+        });
+
+        if (instance3d && instance3d.root) {
+            instance3d.root.position.set(spawnX, 0, spawnZ);
+            instance3d.root.rotation.y = Math.PI * 0.75;
+            this.scene.add(instance3d.root);
+        }
+
+        this.activeWanderer = {
+            ...wanderer,
+            x: spawnX,
+            z: spawnZ,
+            instance3d
+        };
+
+        this.showBunkerLine(`SURVIVOR TRANSMISSION: ${wanderer.name.toUpperCase()} ARRIVED AT CRASH SITE.`);
+    }
+
+    updateWandererPromptState() {
+        if (!this.activeWanderer?.instance3d?.update) {
+            this.checkWandererSpawning();
+        }
+        if (this.activeWanderer?.instance3d?.update) {
+            this.activeWanderer.instance3d.update(0.016);
+        }
+
+        if (!this.activeWanderer || !this.player) {
+            if (this._wandererPromptLabel) {
+                this._wandererPromptLabel = null;
+                window.dispatchEvent(new CustomEvent('camp-prompt-clear'));
+            }
+            return;
+        }
+
+        const dist = Math.hypot(this.player.position.x - this.activeWanderer.x, this.player.position.z - this.activeWanderer.z);
+        const near = dist <= 3.0;
+        const label = near ? `[E] COMMUNICATE WITH ${this.activeWanderer.name.toUpperCase()} (${this.activeWanderer.title})` : null;
+
+        if (label !== this._wandererPromptLabel) {
+            this._wandererPromptLabel = label;
+            if (label) {
+                window.dispatchEvent(new CustomEvent('camp-prompt-nearby', { detail: { label } }));
+            } else {
+                window.dispatchEvent(new CustomEvent('camp-prompt-clear'));
+            }
+        }
+    }
+
+    interactWithWanderer() {
+        if (!this.isGameplayInputActive() || !this.activeWanderer || !this.player) return false;
+        const dist = Math.hypot(this.player.position.x - this.activeWanderer.x, this.player.position.z - this.activeWanderer.z);
+        if (dist > 3.0) return false;
+
+        renderWandererModal(this.activeWanderer, {
+            onBefriend: (w) => this.handleWandererBefriend(w),
+            onChaseOff: (w) => this.handleWandererChaseOff(w),
+            onClose: () => {}
+        });
+        return true;
+    }
+
+    async handleWandererBefriend(wanderer) {
+        const res = this.wandererManager?.befriend?.(wanderer);
+        if (!res) return;
+
+        this.showBunkerLine(`${wanderer.name.toUpperCase()} HAS JOINED YOUR SQUAD.`);
+        await this.addHumanoidCompanion(wanderer);
+
+        if (this.activeWanderer?.instance3d?.root) {
+            this.scene.remove(this.activeWanderer.instance3d.root);
+            this.activeWanderer.instance3d.dispose?.();
+        }
+        this.activeWanderer = null;
+        this._wandererPromptLabel = null;
+        window.dispatchEvent(new CustomEvent('camp-prompt-clear'));
+    }
+
+    handleWandererChaseOff(wanderer) {
+        const res = this.wandererManager?.chaseOff?.(wanderer);
+        if (!res) return;
+
+        this.showBunkerLine(`SURVIVOR CHASED OFF. RECOVERED ${res.lootGranted?.scrap || 35} SALVAGE SCRAP.`);
+        if (this.bank && res.lootGranted?.scrap) {
+            this.bank.deposit?.({ scrap: res.lootGranted.scrap, tech: res.lootGranted.tech || 0 });
+        }
+        this.spawnGearPoofEffect(wanderer.x, wanderer.z, 'bunker_junk_rare');
+
+        if (this.activeWanderer?.instance3d?.root) {
+            this.scene.remove(this.activeWanderer.instance3d.root);
+            this.activeWanderer.instance3d.dispose?.();
+        }
+        this.activeWanderer = null;
+        this._wandererPromptLabel = null;
+        window.dispatchEvent(new CustomEvent('camp-prompt-clear'));
+    }
+
+    async addHumanoidCompanion(wanderer) {
+        const companion3d = await createWanderer3dInstance({
+            glbUrl: wanderer.glbUrl,
+            actionKey: wanderer.actionKey,
+            scale: 0.85
+        });
+
+        const posX = this.player ? this.player.position.x : 0;
+        const posZ = this.player ? this.player.position.z : 0;
+        if (companion3d?.root) {
+            companion3d.root.position.set(posX, 0, posZ);
+            this.scene.add(companion3d.root);
+        }
+
+        this.companions = (this.companions || []).filter((c) => !c.isWanderer);
+        this.companions.push({
+            isWanderer: true,
+            wanderer,
+            instance3d: companion3d,
+            assistCooldown: 0,
+            currentHp: 100,
+            maxHp: 100
+        });
     }
 
     interactWithAct2Camp() {
@@ -24645,6 +24805,7 @@ export class ThreeGame {
                     detail: { key: 'queenKilled', source: 'queen-fight', combat: true }
                 }));
             }
+            this.checkWandererSpawning?.();
         }
 
         if (this.isSentinel(sprite.userData.type)) {
@@ -24776,6 +24937,10 @@ export class ThreeGame {
         for (const companion of this.companions ?? []) {
             companion.sprite?.parent?.remove(companion.sprite);
             companion.sprite?.material?.dispose?.();
+            companion.instance3d?.dispose?.();
+            if (companion.instance3d?.root?.parent) {
+                companion.instance3d.root.parent.remove(companion.instance3d.root);
+            }
         }
         this.companions = [];
     }
@@ -26038,6 +26203,44 @@ export class ThreeGame {
             : { dirX: 0, dirZ: 1 };
 
         for (const companion of this.companions) {
+            if (companion.isWanderer && companion.instance3d?.root) {
+                const root = companion.instance3d.root;
+                const trail = computeTrailPosition(this.player.position, facing, 2.0);
+                const toTrailX = trail.x - root.position.x;
+                const toTrailZ = trail.z - root.position.z;
+                const dist = Math.hypot(toTrailX, toTrailZ);
+                if (dist > 0.1) {
+                    const step = Math.min(dist, 2.5 * delta);
+                    root.position.x += (toTrailX / dist) * step;
+                    root.position.z += (toTrailZ / dist) * step;
+                    root.rotation.y = Math.atan2(toTrailX, toTrailZ);
+                }
+                companion.instance3d.update(delta);
+
+                companion.assistCooldown = Math.max(0, (companion.assistCooldown ?? 0) - delta);
+                if (companion.assistCooldown <= 0) {
+                    let nearestHostile = null;
+                    let nearestDist = 8.0;
+                    for (const other of this.scatterSprites || []) {
+                        if (!other?.userData || other.userData?.isCompanion || other.userData?.dead) continue;
+                        if (!other.userData.hp && !['cybersnail', 'cryosnail', 'sporesnail', 'crawler'].includes(other.userData.type)) continue;
+                        const d = Math.hypot(other.position.x - root.position.x, other.position.z - root.position.z);
+                        if (d < nearestDist) {
+                            nearestDist = d;
+                            nearestHostile = other;
+                        }
+                    }
+                    if (nearestHostile) {
+                        this.applyPlayerDamageToEnemy(nearestHostile, 2);
+                        this.spawnMuzzleFlash?.(root.position.x, 1.0, root.position.z);
+                        const cd = companion.wanderer?.assistAbility?.cooldown || 12;
+                        companion.assistCooldown = cd;
+                        this.showBunkerLine(`[COMPANION] ${companion.wanderer?.name || 'SURVIVOR'} ACTIVATED ${companion.wanderer?.assistAbility?.name || 'SUPPORT FIRE'}!`);
+                    }
+                }
+                continue;
+            }
+
             const sprite = companion.sprite;
             if (!sprite?.userData) continue;
 
