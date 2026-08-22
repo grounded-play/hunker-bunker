@@ -27,6 +27,18 @@ describe('ammo lockers, solid props, and Smash', () => {
         expect(ThreeGame.prototype.canOccupyPosition.call(game, 2.2, 3)).toBe(true);
     });
 
+    it('does not leave a hidden 2D source sprite blocking movement after GLB replacement', () => {
+        const prop = {
+            parent: {}, visible: false, position: { x: 2, z: 3 },
+            userData: { isSolidProp: true, collisionRadius: 0.5, burstTriggered: false }
+        };
+        const game = {
+            isInPocket: false, scatterSprites: [prop], playerRadius: 0.38,
+            crashedShips: [], getTileType: () => '.', isHoleTile: () => false
+        };
+        expect(ThreeGame.prototype.canOccupyPosition.call(game, 2.2, 3)).toBe(true);
+    });
+
     it('gives an ammo locker three guaranteed ammo drops', () => {
         const parent = { add: vi.fn() };
         const game = {

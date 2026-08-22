@@ -15194,6 +15194,13 @@ export class ThreeGame {
             this.explorationTracker.recordPlayerPosition(this.player.position.x, this.player.position.z);
         }
 
+        // The debug map is also useful before the player has visited Act 2.
+        // Materialize the registered sites on demand so debug-reveal can show
+        // the complete camp/hive network instead of only sites created by a
+        // gameplay update that happened to run first.
+        this.ensureAct2Camps?.();
+        this.ensureHiveSites?.();
+
         if (this.explorationTracker) {
             this.explorationTracker.registerLandmark('home_base', {
                 x: CRASH_SITE_CENTER,
@@ -15217,8 +15224,8 @@ export class ThreeGame {
             }
         }
 
-        if (this.hiveSites) {
-            for (const [id, hive] of Object.entries(this.hiveSites)) {
+        if (this.hives) {
+            for (const [id, hive] of Object.entries(this.hives)) {
                 if (hive && hive.position) {
                     this.explorationTracker.registerLandmark(`hive_${id}`, {
                         x: hive.position.x,
@@ -27626,7 +27633,11 @@ export class ThreeGame {
 
         if (!this.isInPocket && this.scatterSprites) {
             for (const prop of this.scatterSprites) {
-                if (!prop?.parent || !prop.userData?.isSolidProp || prop.userData.burstTriggered) continue;
+                // A 2D prop is hidden after its nearby GLB replacement is
+                // ready. Hidden source sprites must not keep an invisible
+                // collision volume in the world while the visible GLB is
+                // being rendered.
+                if (!prop?.parent || prop.visible === false || !prop.userData?.isSolidProp || prop.userData.burstTriggered) continue;
                 const collisionRadius = prop.userData.collisionRadius ?? 0.38;
                 if (Math.hypot(x - prop.position.x, z - prop.position.z) < collisionRadius + this.playerRadius) {
                     return false;
@@ -28774,10 +28785,15 @@ export class ThreeGame {
                 role === 'camp' || role === 'hive' || role === 'queen'
                 || role === 'room' || role === 'mission'
             ));
-            const roomMode = isDestination
+            const tutorialRing = this.isInTutorialRing(chunkX, chunkY);
+            // Keep the two chunks immediately outside the authored crash room
+            // readable and collision-light. The old radial-room override made
+            // a large chamber appear beside the start almost every run, then
+            // populated it with props before the player had a clear route.
+            const roomMode = !tutorialRing && (isDestination
                 || regionalRoles.includes('ring')
                 || nearestRadialRoom <= this.chunkSize * 0.9
-                || random() < 0.24;
+                || random() < 0.24);
             if (!this.authoredWorldTiles) {
                 const architectural = generateArchitecturalMazeChunk(random, {
                     size: this.chunkSize,
