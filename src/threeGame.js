@@ -1237,6 +1237,7 @@ export class ThreeGame {
         this.cameraOrbitRadius = Math.hypot(8, 8);
         this.cameraAzimuth = Math.atan2(8, 8);
         this.cameraRotationInput = 0;
+        this._cameraOrbitPointerDelta = 0;
         this.cameraOffset = new THREE.Vector3(
             this.cameraOrbitRadius * Math.sin(this.cameraAzimuth),
             this.cameraLift,
@@ -5133,11 +5134,21 @@ export class ThreeGame {
         this._canvasTapStartX = 0;
         this._canvasTapStartY = 0;
         this._canvasPointerType = 'mouse';
+        this._cameraOrbitPointerHeld = false;
+        this._cameraOrbitPointerDragged = false;
         this.handleCanvasPointerDown = (event) => {
             const pointerType = event.pointerType || 'mouse';
             if (pointerType === 'mouse' && event.button === 2) {
                 event.preventDefault();
-                this.triggerGameplayMelee();
+                this._cameraOrbitPointerHeld = true;
+                this._cameraOrbitPointerDragged = false;
+                this._canvasTapStartX = event.clientX;
+                this._canvasTapStartY = event.clientY;
+                try {
+                    this.renderer.domElement.setPointerCapture?.(event.pointerId);
+                } catch {
+                    // Best effort only.
+                }
                 return;
             }
             if (pointerType === 'mouse' && event.button !== 0) return;
@@ -5192,6 +5203,15 @@ export class ThreeGame {
                 this.heldFireClientY = event.clientY;
             }
             if (pointerType !== 'mouse') return;
+            if (this._cameraOrbitPointerHeld) {
+                const dragX = event.clientX - this._canvasTapStartX;
+                if (Math.abs(dragX) > 1) {
+                    this._cameraOrbitPointerDragged = true;
+                    this._cameraOrbitPointerDelta += dragX;
+                    this._canvasTapStartX = event.clientX;
+                }
+                return;
+            }
             this.lastMouseClientX = event.clientX;
             this.lastMouseClientY = event.clientY;
 
@@ -5204,11 +5224,19 @@ export class ThreeGame {
         };
 
         this.handleCanvasTap = (event) => {
+            const wasCameraOrbit = this._cameraOrbitPointerHeld;
+            const didCameraOrbit = this._cameraOrbitPointerDragged;
+            this._cameraOrbitPointerHeld = false;
+            this._cameraOrbitPointerDragged = false;
             this.endHeldFire();
             try {
                 this.renderer.domElement.releasePointerCapture?.(event.pointerId);
             } catch {
                 // Best effort only.
+            }
+            if (wasCameraOrbit && !didCameraOrbit && this.isGameplayInputActive()) {
+                this.triggerGameplayMelee();
+                return;
             }
             if (!this.isGameplayInputActive()) return;
             const dx = event.clientX - this._canvasTapStartX;
@@ -5217,6 +5245,8 @@ export class ThreeGame {
             if (!wasTap) return;
         };
         this.handleCanvasPointerCancel = (event) => {
+            this._cameraOrbitPointerHeld = false;
+            this._cameraOrbitPointerDragged = false;
             this.endHeldFire();
             try {
                 this.renderer.domElement.releasePointerCapture?.(event.pointerId);
@@ -19805,12 +19835,15 @@ export class ThreeGame {
     }
 
     updateCamera(delta) {
-        if (this.performanceProfile === 'gameplay' && Math.abs(this.cameraRotationInput ?? 0) > 0.01) {
+        const pointerOrbitDelta = this._cameraOrbitPointerDelta ?? 0;
+        this._cameraOrbitPointerDelta = 0;
+        const stickOrbit = this.cameraRotationInput ?? 0;
+        if (this.performanceProfile === 'gameplay' && (Math.abs(stickOrbit) > 0.01 || pointerOrbitDelta)) {
             // Right-stick orbit: preserve the classic isometric height and
             // radius while rotating the camera and screen-relative movement
             // axes around the operator.
             this.cameraAzimuth = wrapAngle(
-                this.cameraAzimuth + (this.cameraRotationInput * delta * 2.8)
+                this.cameraAzimuth + (stickOrbit * delta * 2.8) + (pointerOrbitDelta * 0.008)
             );
         }
         const camBasis = planarBasisFromOffsetAzimuth(this.cameraAzimuth);

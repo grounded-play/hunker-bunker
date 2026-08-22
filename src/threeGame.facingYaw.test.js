@@ -82,6 +82,15 @@ describe('updateCamera stable isometric tracking', () => {
         expect(game.cameraPlanarForward.length()).toBeCloseTo(1, 5);
         expect(game.cameraPlanarRight.length()).toBeCloseTo(1, 5);
     });
+
+    it('orbits from mouse-right drag deltas', () => {
+        const game = makeCameraGame(Math.PI / 4);
+        game._cameraOrbitPointerDelta = 20;
+        ThreeGame.prototype.updateCamera.call(game, 0.016);
+
+        expect(game.cameraAzimuth).toBeCloseTo(Math.PI / 4 + 0.16, 5);
+        expect(game._cameraOrbitPointerDelta).toBe(0);
+    });
 });
 
 describe('snapCameraToPlayer', () => {
