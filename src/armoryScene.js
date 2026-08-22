@@ -2,10 +2,14 @@ import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.js';
 import { assetUrl } from './assetUrl.js';
-import { createPlayer3dOverlay, WEAPON_ARCHETYPES, WEAPON_SKIN_MESHES } from './player3dOverlay.js';
+import {
+    CHASSIS_SKIN_MODELS,
+    createPlayer3dOverlay,
+    WEAPON_ARCHETYPES,
+    WEAPON_SKIN_MESHES
+} from './player3dOverlay.js';
 import { DEFAULT_ARCHETYPES } from './loadout.js';
 import { getItemCatalogEntry } from './steamVaultUi.js';
-import { COMMUNITY_GLB_MAP } from './data/communitySkins.js';
 
 export const CHARM_GLB_MAP = Object.freeze({
     '4130': '/3d/runtime/new3ds/charm_mini_cryo_core.glb',
@@ -34,24 +38,7 @@ export const MOD_GLB_MAP = Object.freeze({
     '4147': '/3d/runtime/new3ds/mod_zero_point_flux.glb'
 });
 
-export const CHASSIS_SKIN_GLB_MAP = Object.freeze({
-    '4112': '/3d/runtime/new3ds/chassis_subterran_drill_engineer.glb',
-    '4113': '/3d/runtime/new3ds/chassis_cryo_vanguard_scout.glb',
-    '4114': '/3d/runtime/new3ds/chassis_trench_warden_heavy.glb',
-    '4115': '/3d/runtime/new3ds/chassis_void_commando_recon.glb',
-    '4116': '/3d/runtime/new3ds/chassis_bio_synthesizer_medic.glb',
-    '4117': '/3d/runtime/new3ds/chassis_dreadnought_exo_juggernaut.glb',
-    '4118': '/3d/runtime/new3ds/chassis_cyber_spectre_infiltrator.glb',
-    '4119': '/3d/runtime/new3ds/chassis_hive_lord_symbiote.glb',
-    '5003': '/3d/runtime/new3ds/chassis_scout_cartographer.glb',
-    '5004': '/3d/runtime/new3ds/chassis_scout_pioneer_courier.glb',
-    '5005': '/3d/runtime/new3ds/chassis_tank_old_iron.glb',
-    '5007': '/3d/runtime/new3ds/chassis_tank_colossus_hive.glb',
-    '5008': '/3d/runtime/new3ds/chassis_tank_gentle_titan.glb',
-    '5011': '/3d/runtime/new3ds/chassis_engineer_chen_undying.glb',
-    '5012': '/3d/runtime/new3ds/chassis_engineer_exodus_vanguard.glb',
-    ...(COMMUNITY_GLB_MAP || {})
-});
+export const CHASSIS_SKIN_GLB_MAP = CHASSIS_SKIN_MODELS;
 
 // Weapon archetype/skin GLB paths come from src/player3dOverlay.js — the same maps that
 // drive the in-combat held weapon — so the Armory bench preview can never drift out of

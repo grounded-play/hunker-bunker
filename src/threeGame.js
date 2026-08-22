@@ -139,7 +139,7 @@ import {
     AUTHORED_WORLD_TILES_ENABLED,
     PLAYER_3D_COSMETIC_OVERLAY_ENABLED
 } from './featureFlags.js';
-import { createPlayer3dOverlay, ENGINEER_GESTURES } from './player3dOverlay.js';
+import { CHASSIS_SKIN_MODELS, createPlayer3dOverlay, ENGINEER_GESTURES } from './player3dOverlay.js';
 import { createEnemy3dVisual, disposeEnemy3dVisual, updateEnemy3dVisual } from './enemy3dOverlay.js';
 import { createWorld3dModel, hasWorld3dModel, syncWorld3dReplacement } from './world3dOverlay.js';
 import { computeTrailPosition } from './companionFollow.js';
@@ -4078,6 +4078,14 @@ export class ThreeGame {
                     weaponMount: { position: [0.03, 0.02, 0.03], skinId: skinIdFor() }
                 }
             };
+            const chassisSkinId = window.loadout?.getEquippedChassisSkinId?.();
+            const chassisModelUrl = chassisSkinId ? CHASSIS_SKIN_MODELS[String(chassisSkinId)] : null;
+            if (chassisModelUrl && classVisuals[overlayType]) {
+                classVisuals[overlayType] = {
+                    ...classVisuals[overlayType],
+                    modelUrl: chassisModelUrl
+                };
+            }
             const overlay = await createPlayer3dOverlay({
                 targetHeight: this.playerSpriteScale * 0.98,
                 ...classVisuals[overlayType]

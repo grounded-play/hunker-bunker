@@ -52,7 +52,28 @@ export const WEAPON_SKIN_MESHES = {
     4111: '/3d/runtime/new3ds/skin_solar_flare_antimatter.glb'    // Solar Flare Antimatter Rifle
 };
 
-import { COMMUNITY_GESTURES } from './data/communitySkins.js';
+import { COMMUNITY_GESTURES, COMMUNITY_GLB_MAP } from './data/communitySkins.js';
+
+// Keep the in-run operator model list next to the loader that consumes it.
+// Armory re-exports this map so preview and gameplay cannot silently drift.
+export const CHASSIS_SKIN_MODELS = Object.freeze({
+    '4112': '/3d/runtime/new3ds/chassis_subterran_drill_engineer.glb',
+    '4113': '/3d/runtime/new3ds/chassis_cryo_vanguard_scout.glb',
+    '4114': '/3d/runtime/new3ds/chassis_trench_warden_heavy.glb',
+    '4115': '/3d/runtime/new3ds/chassis_void_commando_recon.glb',
+    '4116': '/3d/runtime/new3ds/chassis_bio_synthesizer_medic.glb',
+    '4117': '/3d/runtime/new3ds/chassis_dreadnought_exo_juggernaut.glb',
+    '4118': '/3d/runtime/new3ds/chassis_cyber_spectre_infiltrator.glb',
+    '4119': '/3d/runtime/new3ds/chassis_hive_lord_symbiote.glb',
+    '5003': '/3d/runtime/new3ds/chassis_scout_cartographer.glb',
+    '5004': '/3d/runtime/new3ds/chassis_scout_pioneer_courier.glb',
+    '5005': '/3d/runtime/new3ds/chassis_tank_old_iron.glb',
+    '5007': '/3d/runtime/new3ds/chassis_tank_colossus_hive.glb',
+    '5008': '/3d/runtime/new3ds/chassis_tank_gentle_titan.glb',
+    '5011': '/3d/runtime/new3ds/chassis_engineer_chen_undying.glb',
+    '5012': '/3d/runtime/new3ds/chassis_engineer_exodus_vanguard.glb',
+    ...(COMMUNITY_GLB_MAP || {})
+});
 
 export const ENGINEER_GESTURES = Object.freeze([
     'engineerWeightShift', 'engineerDismiss', 'engineerThoughtful', 'engineerCocky',
