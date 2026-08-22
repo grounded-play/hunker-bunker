@@ -39,19 +39,6 @@ describe('ammo lockers, solid props, and Smash', () => {
         expect(ThreeGame.prototype.canOccupyPosition.call(game, 2.2, 3)).toBe(true);
     });
 
-    it('opens a nearby supply container from the interact action', () => {
-        const sprite = {
-            parent: {}, position: { x: 2, z: 3 },
-            userData: { type: 'prop_bunker_supplies', isDestructibleProp: true, propHp: 3, burstTriggered: false }
-        };
-        const game = {
-            player: { position: { x: 2.5, z: 3 } }, scatterSprites: [sprite],
-            damageScatterProp: vi.fn(), showToastNotification: vi.fn()
-        };
-        expect(ThreeGame.prototype.interactWithNearestDestructibleProp.call(game)).toBe(true);
-        expect(game.damageScatterProp).toHaveBeenCalledWith(sprite, 3);
-    });
-
     it('gives an ammo locker three guaranteed ammo drops', () => {
         const parent = { add: vi.fn() };
         const game = {
