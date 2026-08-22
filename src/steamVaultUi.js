@@ -803,9 +803,11 @@ export function playCacheRevealAnimation(rewardDefId, onClaim) {
     }
 
     const reward = getItemCatalogEntry(rewardDefId) || {
-        name: `Item #${rewardDefId}`,
+        name: rewardDefId ? `Item #${rewardDefId}` : 'RELIC CACHE OPENED',
         rarity: 'rare',
-        desc: 'Subterranean relic recovered from deep vault cache.',
+        desc: rewardDefId
+            ? 'Subterranean relic recovered from deep vault cache.'
+            : 'Steam confirmed the cache exchange. No new item grant was returned for this transaction.',
         localImg: '/favicon.png'
     };
 
@@ -1101,25 +1103,25 @@ export async function openDeepRelicCache() {
         .catch((err) => ({ ok: false, message: err?.message }));
 
     if (result?.ok) {
-        await loadVaultData();
+        // The inventory refresh is useful for counts, but a transient refresh
+        // failure must not swallow the successful cache reveal animation.
+        await loadVaultData().catch((error) => {
+            console.warn('[steam-store] inventory refresh after cache open failed:', error);
+        });
         updateOpenCacheAvailability();
         const grantedId = result.granted?.[0]?.itemdefid;
         const reward = getItemCatalogEntry(grantedId);
 
-        if (grantedId) {
-            playCacheRevealAnimation(grantedId, () => {
-                if (statusEl) {
-                    statusEl.classList.remove('hidden');
-                    statusEl.textContent = reward ? `Cache opened: ${reward.name}!` : 'Cache opened.';
-                }
-                showSteamDropToast(grantedId, 1);
-            });
-        } else {
+        // Steam can legitimately return an empty `granted` array for a
+        // duplicate/already-granted exchange. Still show the same decryptor
+        // sequence so a successful OPEN action never appears to do nothing.
+        playCacheRevealAnimation(grantedId ?? null, () => {
             if (statusEl) {
                 statusEl.classList.remove('hidden');
-                statusEl.textContent = reward ? `Cache opened: ${reward.name}!` : 'Cache opened.';
+                statusEl.textContent = reward ? `Cache opened: ${reward.name}!` : 'Cache exchange complete.';
             }
-        }
+            if (grantedId) showSteamDropToast(grantedId, 1);
+        });
     } else {
         console.error('[steam-store] cache open failed:', result);
         if (statusEl) {
