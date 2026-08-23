@@ -15379,26 +15379,28 @@ export class ThreeGame {
             });
         }
 
-        if (this.camps) {
-            for (const [id, camp] of Object.entries(this.camps)) {
-                if (camp && camp.position) {
-                    this.explorationTracker.registerLandmark(`camp_${id}`, {
-                        x: camp.position.x,
-                        z: camp.position.z,
-                        label: camp.label || `Camp ${id}`,
+        if (Array.isArray(this.camps)) {
+            for (const camp of this.camps) {
+                const position = camp?.position ?? camp?.group?.position;
+                if (camp && position) {
+                    this.explorationTracker.registerLandmark(`camp_${camp.id}`, {
+                        x: position.x,
+                        z: position.z,
+                        label: camp.label || `Camp ${camp.id}`,
                         type: 'camp'
                     });
                 }
             }
         }
 
-        if (this.hives) {
-            for (const [id, hive] of Object.entries(this.hives)) {
-                if (hive && hive.position) {
-                    this.explorationTracker.registerLandmark(`hive_${id}`, {
-                        x: hive.position.x,
-                        z: hive.position.z,
-                        label: hive.label || `Hive ${id}`,
+        if (Array.isArray(this.hives)) {
+            for (const hive of this.hives) {
+                const position = hive?.position ?? hive?.group?.position;
+                if (hive && position) {
+                    this.explorationTracker.registerLandmark(`hive_${hive.id}`, {
+                        x: position.x,
+                        z: position.z,
+                        label: hive.label || `Hive ${hive.id}`,
                         type: 'hive'
                     });
                 }
@@ -16360,6 +16362,14 @@ export class ThreeGame {
             this._cavePromptActive = false;
             this._caveAnomalySignaled = false;
             this.resetAct2World();
+            // A fresh deployment must not inherit an old run's ACTIVE/READY
+            // milestone state and immediately restage a retaliation boss.
+            const builtGoalKeys = typeof this.getBuiltGoalKeys === 'function'
+                ? this.getBuiltGoalKeys()
+                : new Set(Object.entries(this.bank?.getState?.()?.unlocks ?? {})
+                    .filter(([, built]) => Boolean(built))
+                    .map(([goalKey]) => goalKey));
+            this.milestoneBossLifecycleState = createMilestoneBossLifecycleState({ builtGoalKeys });
             this.clearCorpses();
             this.clearCompanions();
             this.clearLoreDrops();
@@ -27858,6 +27868,12 @@ export class ThreeGame {
 
         const tileX = Math.round(x);
         const tileY = Math.round(z);
+
+        // Canyon/cliff cells are void, not floor. The previous collision path
+        // only rejected '#' walls, so some canyon tiles could be crossed until
+        // the separate fall-radius check happened to catch the player.
+        const tile = this.getTileType(tileX, tileY);
+        if (tile === EXTERIOR_CANYON_TILE || tile === CLIFF_TILE) return false;
 
         for (let offsetY = -2; offsetY <= 2; offsetY++) {
             for (let offsetX = -2; offsetX <= 2; offsetX++) {

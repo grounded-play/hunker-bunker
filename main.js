@@ -11496,10 +11496,26 @@ function triggerDoorTransition(onClosed, onOpened, doorKey, options = {}) {
         onOpeningStart = null
     } = options;
     const overlay = transitionOverlay || document.getElementById('transition-overlay');
+    const transitionGame = window.game;
+    const transitionGodMode = transitionGame ? Boolean(transitionGame.godMode) : false;
+    let transitionGodModeActive = false;
+    const enableTransitionProtection = () => {
+        if (!transitionGame || transitionGodModeActive) return;
+        transitionGame.setGodMode?.(true);
+        transitionGodModeActive = true;
+    };
+    const finishOpened = () => {
+        if (transitionGame && transitionGodModeActive) {
+            transitionGame.setGodMode?.(transitionGodMode);
+            transitionGodModeActive = false;
+        }
+        if (onOpened) onOpened();
+    };
+    enableTransitionProtection();
     if (!overlay) {
         if (onClosed) void onClosed();
         if (onOpeningStart) onOpeningStart();
-        if (onOpened) onOpened();
+        finishOpened();
         return;
     }
 
@@ -11575,7 +11591,7 @@ function triggerDoorTransition(onClosed, onOpened, doorKey, options = {}) {
                         // start intro work until the panels have visibly
                         // completed their 800ms travel.
                         setTimeout(() => {
-                            if (onOpened) onOpened();
+                            finishOpened();
                         }, 800);
                     }, openingHoldMs);
 
