@@ -1,21 +1,21 @@
 {
   "version": 1,
   "budgets": {
-    "publicBytes": 1887436800,
+    "publicBytes": 2831155200,
     "appAsarBytes": 996147200,
     "unknownAssets": 160,
     "codecMismatches": 140,
     "duplicateGroups": 15
   },
   "measured": {
-    "publicBytes": 1695049306,
-    "publicFileCount": 1127
+    "publicBytes": 2690354352,
+    "publicFileCount": 1193
   },
   "classifications": {
-    "runtime-required": 981,
+    "runtime-required": 1043,
     "source-reference": 0,
     "generated-intermediate": 0,
-    "unknown": 146
+    "unknown": 150
   },
   "missingReferences": [],
   "invalidMedia": [],
@@ -693,16 +693,6 @@
       "files": [
         "economy/gun_scout_talon_c.png",
         "economy/skin_scout_talon_c.png"
-      ]
-    },
-    {
-      "sha256": "8b1c8b594afb0be67094bb1ee80346a85b69f7f04315f521409bdc930096834e",
-      "files": [
-        "favicon.png",
-        "icon_cull.png",
-        "icon_recruit.png",
-        "icon_steal.png",
-        "icon_turn.png"
       ]
     },
     {
