@@ -162,7 +162,7 @@ export async function createArmoryScene(canvas) {
     neonLine.position.set(1.1, 1.1, -0.93);
     envGroup.add(neonLine);
 
-    // Operator Hexagonal Turntable Platform (Left)
+    // Operator Hexagonal Turntable Platform (Positioned in clear central-left lane)
     const platGeo = new THREE.CylinderGeometry(0.85, 0.95, 0.12, 6);
     const platMat = new THREE.MeshStandardMaterial({
         color: 0x1a2636,
@@ -170,7 +170,7 @@ export async function createArmoryScene(canvas) {
         metalness: 0.8
     });
     const platform = new THREE.Mesh(platGeo, platMat);
-    platform.position.set(-1.15, 0.06, 0.1);
+    platform.position.set(-0.75, 0.06, 0.15);
     platform.receiveShadow = true;
     envGroup.add(platform);
 
@@ -178,14 +178,14 @@ export async function createArmoryScene(canvas) {
     const platRingMat = new THREE.MeshBasicMaterial({ color: 0x00e5ff, side: THREE.DoubleSide });
     const platRing = new THREE.Mesh(platRingGeo, platRingMat);
     platRing.rotation.x = -Math.PI / 2;
-    platRing.position.set(-1.15, 0.125, 0.1);
+    platRing.position.set(-0.75, 0.125, 0.15);
     envGroup.add(platRing);
 
     scene.add(envGroup);
 
-    // ── Operator Turntable Group (Left) ──────────────────────
+    // ── Operator Turntable Group (Left / Center Lane) ────────
     const operatorGroup = new THREE.Group();
-    operatorGroup.position.set(-1.15, 0.12, 0.1);
+    operatorGroup.position.set(-0.75, 0.12, 0.15);
     scene.add(operatorGroup);
 
     let currentOverlay = null;
@@ -611,10 +611,11 @@ export async function createArmoryScene(canvas) {
             const themeColors = {
                 scout: 0x00f0ff,
                 tank: 0xff9f1c,
-                engineer: 0x34d399
+                engineer: 0x10b981
             };
             const accentColor = themeColors[cls] || 0x00f0ff;
             if (rimLight?.color) rimLight.color.setHex(accentColor);
+            if (fillLight?.color) fillLight.color.setHex(accentColor);
             if (platRingMat?.color) platRingMat.color.setHex(accentColor);
             if (neonLineMat?.color) neonLineMat.color.setHex(accentColor);
 

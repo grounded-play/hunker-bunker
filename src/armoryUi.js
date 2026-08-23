@@ -127,6 +127,7 @@ export function createArmoryUi({
         if (typeof document !== 'undefined') {
             const screen = document.getElementById('armory-screen');
             if (screen) {
+                screen.dataset.class = cls;
                 const bgUrl = assetUrl(`/ui/armory_bg_${cls}.jpg`);
                 screen.style.backgroundImage = `radial-gradient(circle at 50% 50%, rgba(6, 11, 19, 0.15) 0%, rgba(6, 11, 19, 0.55) 75%, rgba(6, 11, 19, 0.88) 100%), url('${bgUrl}')`;
                 screen.style.backgroundSize = 'cover';
@@ -136,7 +137,7 @@ export function createArmoryUi({
         }
 
         container.innerHTML = `
-            <div class="armory-hud">
+            <div class="armory-hud" data-class="${cls}">
                 <div class="terminal-scanline"></div>
                 <header class="armory-header">
                     <div class="armory-title-box">
@@ -171,7 +172,7 @@ export function createArmoryUi({
                                     <option value="">[STANDARD CLASS CHASSIS]</option>
                                     ${allowedChassisSkins.map((id) => `
                                         <option value="${id}" ${chassisSkinId === id ? 'selected' : ''}>
-                                            ${CATALOG_ITEMS[id]?.name || id} (${CATALOG_ITEMS[id]?.rarity?.toUpperCase()})
+                                             ${CATALOG_ITEMS[id]?.name || id} (${CATALOG_ITEMS[id]?.rarity?.toUpperCase()})
                                         </option>
                                     `).join('')}
                                 </select>
@@ -198,15 +199,19 @@ export function createArmoryUi({
 
                     <!-- WEAPON BENCH (RIGHT / CENTER) -->
                     <aside class="armory-stage-readout" aria-label="Live Armory Preview">
-                        <div class="armory-stage-readout__eyebrow">LIVE BENCH PREVIEW</div>
-                        <div class="armory-stage-readout__title">${activeClass.toUpperCase()} // ${ARCHETYPE_NAMES[archetype] || archetype}</div>
-                        <div class="armory-stage-readout__line"><span>WEAPON SHEEN</span><strong>${selectedFinish}</strong></div>
-                        <div class="armory-stage-readout__line"><span>CHASSIS SKIN</span><strong>${chassisSkinId ? (CATALOG_ITEMS[chassisSkinId]?.name || chassisSkinId) : 'STANDARD CLASS CHASSIS'}</strong></div>
+                        <div class="armory-stage-readout__info">
+                            <div class="armory-stage-readout__eyebrow">◈ LIVE STAGE PREVIEW</div>
+                            <div class="armory-stage-readout__title">${activeClass.toUpperCase()} // ${ARCHETYPE_NAMES[archetype] || archetype}</div>
+                            <div class="armory-stage-readout__details">
+                                <span class="armory-stage-readout__chip"><b>FINISH:</b> ${selectedFinish}</span>
+                                <span class="armory-stage-readout__chip"><b>CHASSIS:</b> ${chassisSkinId ? (CATALOG_ITEMS[chassisSkinId]?.name || chassisSkinId) : 'STANDARD'}</span>
+                            </div>
+                        </div>
                         <button type="button" class="armory-stage-readout__polish" id="armory-polish-btn">
                             <span class="armory-stage-readout__polish-swatch" aria-hidden="true"></span>
                             <span><small>OPERATOR SHEEN</small><b>OPEN SUIT TINT MATRIX</b></span>
                         </button>
-                        <div class="armory-stage-readout__hint">DRAG THE MODEL TO INSPECT // SELECT A FINISH TO APPLY</div>
+                        <div class="armory-stage-readout__hint">DRAG 3D STAGE TO INSPECT OPERATOR &amp; WEAPON</div>
                     </aside>
 
                     <section class="armory-panel weapon-bench-panel" aria-label="Weapon Bench">
