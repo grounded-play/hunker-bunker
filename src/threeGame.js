@@ -5211,12 +5211,29 @@ export class ThreeGame {
 
         this.handleCanvasPointerMove = (event) => {
             if (!this.isGameplayInputActive()) return;
+            this._handledPointerMoveEvents ??= new WeakSet();
+            if (this._handledPointerMoveEvents.has(event)) return;
+            this._handledPointerMoveEvents.add(event);
             const pointerType = event.pointerType || this._canvasPointerType || 'mouse';
             if (this.isPointerFireHeld) {
                 this.heldFireClientX = event.clientX;
                 this.heldFireClientY = event.clientY;
             }
             if (pointerType !== 'mouse') return;
+            if (document.pointerLockElement === this.renderer.domElement) {
+                const movementX = Number(event.movementX) || 0;
+                const movementY = Number(event.movementY) || 0;
+                if (movementX || movementY) {
+                    this.updateFacingYaw(this.facingYaw - movementX * 0.005);
+                    const rect = this.renderer.domElement.getBoundingClientRect();
+                    window.updateGameplayCrosshair?.(
+                        rect.left + rect.width / 2,
+                        rect.top + rect.height / 2,
+                        true
+                    );
+                }
+                return;
+            }
             if (this._cameraOrbitPointerHeld) {
                 const dragX = event.clientX - this._canvasTapStartX;
                 if (Math.abs(dragX) > 1) {
@@ -5234,6 +5251,7 @@ export class ThreeGame {
                 keepMouseActive: true,
                 persistDuration: 0
             });
+            window.updateGameplayCrosshair?.(event.clientX, event.clientY, true);
             this.checkHoverInteractable(event.clientX, event.clientY);
         };
 

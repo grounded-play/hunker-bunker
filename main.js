@@ -342,6 +342,7 @@ function setAppPhase(phase) {
     const isGameplay = phase === 'gameplay';
     document.documentElement.classList.toggle('phase-gameplay', isGameplay);
     document.documentElement.classList.toggle('phase-menu', !isGameplay);
+    if (!isGameplay) updateGameplayCrosshair?.(0, 0, false);
     if (!isGameplay) {
         window.game?.setCursorInspectState?.(null);
         if (tacticalOverlayTimer) {
@@ -1383,6 +1384,12 @@ function handleSteamInputSnapshot(snapshot = {}) {
 
     if (previousPhase !== steamInputState.phase) {
         steamInputPrevControllers.clear();
+        if (steamInputState.phase === 'gameplay') {
+            controllerAimCursor = {
+                x: (window.innerWidth || 1280) / 2,
+                y: (window.innerHeight || 800) / 2
+            };
+        }
     }
     if (previousMode !== steamInputState.lastInputMode || previousPrimaryType !== steamInputState.primaryControllerType) {
         refreshInteractivePromptKeys();
@@ -1641,24 +1648,20 @@ window.addEventListener('gamepad-menu-nav', (event) => {
     }
 });
 
-// Trackpad and gyro aim arrive as per-frame mouse deltas rather than a stick
-// position; they drive facingYaw directly (see Task 2's updateFacingYaw),
-// mirroring how mouse pointer-lock deltas work.
-const CONTROLLER_YAW_SENSITIVITY = 0.0025;
 let controllerAimCursor = null;
 
-function applyControllerCursorAim(controller) {
-    const deltaX = Number(controller.cameraDelta?.x) || 0;
-    const deltaY = Number(controller.cameraDelta?.y) || 0;
-    // Sub-pixel motion is sensor noise, not a gesture.
-    if (Math.hypot(deltaX, deltaY) < 1) return false;
-    if (typeof window.game?.updateFacingYaw !== 'function') return false;
-
-    const sensitivity = state.settings.aimSensitivity ?? 1.0;
-    const currentYaw = Number(window.game.facingYaw) || 0;
-    window.game.updateFacingYaw(currentYaw - deltaX * CONTROLLER_YAW_SENSITIVITY * sensitivity);
-    return true;
+function updateGameplayCrosshair(clientX, clientY, visible = true) {
+    const crosshair = document.getElementById('gameplay-crosshair');
+    if (!crosshair) return;
+    const shouldShow = visible && appPhase === 'gameplay'
+        && Boolean(window.game?.isGameplayInputActive?.());
+    crosshair.classList.toggle('hidden', !shouldShow);
+    if (shouldShow && Number.isFinite(clientX) && Number.isFinite(clientY)) {
+        crosshair.style.left = `${clientX}px`;
+        crosshair.style.top = `${clientY}px`;
+    }
 }
+window.updateGameplayCrosshair = updateGameplayCrosshair;
 
 function handleSteamGameplayInput(controller) {
     const prev = steamInputPrevControllers.get(controller.handle) ?? {};
@@ -1670,14 +1673,24 @@ function handleSteamGameplayInput(controller) {
     if (window.game?.setVirtualInput) {
         window.game.setVirtualInput(moveX, -moveY);
     }
-    window.game?.setCameraRotationInput?.(aimX);
-
-    const cursorAimed = applyControllerCursorAim(controller);
-
-    if (!cursorAimed && (aimX || aimY)) {
-        window.game?.updateFacingYaw?.(Math.atan2(aimX, aimY));
-        updateVirtualGamepadCursorPosition(0, 0, false);
+    // The right stick and trackpad move one screen-space aim point. Movement
+    // remains independent, so strafing never steals the shot direction.
+    const width = window.innerWidth || 1280;
+    const height = window.innerHeight || 800;
+    if (!controllerAimCursor) controllerAimCursor = { x: width / 2, y: height / 2 };
+    const deltaX = aimX * 14 + (Number(controller.cameraDelta?.x) || 0) * 0.55;
+    const deltaY = aimY * 14 + (Number(controller.cameraDelta?.y) || 0) * 0.55;
+    if (Math.hypot(deltaX, deltaY) > 0.01) {
+        controllerAimCursor.x = Math.min(width - 8, Math.max(8, controllerAimCursor.x + deltaX));
+        controllerAimCursor.y = Math.min(height - 8, Math.max(8, controllerAimCursor.y + deltaY));
+        window.game?.updateAimFromClient?.(controllerAimCursor.x, controllerAimCursor.y, {
+            keepMouseActive: false,
+            persistDuration: 2.0
+        });
     }
+    updateVirtualGamepadCursorPosition(controllerAimCursor.x, controllerAimCursor.y, true);
+    updateGameplayCrosshair(controllerAimCursor.x, controllerAimCursor.y, true);
+    window.game?.setCameraRotationInput?.(aimX);
 
     if (controller.fire) {
         window.game?.triggerControllerFire?.();
@@ -12084,6 +12097,7 @@ function initTacticalCursor() {
         if (!isInsideGameViewport(mouseX, mouseY)) {
             cursor.classList.add('cursor-fade-out');
             document.documentElement.classList.remove('custom-cursor-enabled');
+            updateGameplayCrosshair(mouseX, mouseY, false);
             targetScale = 0.65;
             return;
         }
@@ -12093,6 +12107,7 @@ function initTacticalCursor() {
 
         if (!hasMoved) hasMoved = true;
         document.documentElement.classList.add('custom-cursor-enabled');
+        updateGameplayCrosshair(mouseX, mouseY, appPhase === 'gameplay');
     }, { passive: true });
 
     let lastRenderedX = -9999;
