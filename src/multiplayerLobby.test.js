@@ -1,5 +1,5 @@
 import { describe, expect, it, beforeEach, afterEach, vi } from 'vitest';
-import { MultiplayerLobby, MULTIPLAYER_MODES, resolveRelayUrl, fetchMultiplayerSessionToken, getLocalLoadoutSummary } from './multiplayerLobby.js';
+import { MultiplayerLobby, MULTIPLAYER_MODES, resolveRelayUrl, fetchMultiplayerSessionToken, getLocalLoadoutSummary, getLocalOperatorClass, getLocalCallsign, filterDiscoverableSteamLobbies } from './multiplayerLobby.js';
 
 describe('MultiplayerLobby', () => {
     let lobby;
@@ -7,6 +7,36 @@ describe('MultiplayerLobby', () => {
 
     beforeEach(() => {
         lobby = new MultiplayerLobby();
+    });
+
+    describe('authoritative host state', () => {
+        it('mirrors the server host flag for the local roster entry', () => {
+            lobby.socket = { id: 'guest-socket' };
+
+            lobby.syncServerRoster({
+                'host-socket': { callsign: 'HOST', opClass: 'TANK', isHost: true, ready: true },
+                'guest-socket': { callsign: 'GUEST', opClass: 'SCOUT', isHost: false, ready: false }
+            });
+
+            expect(lobby.isLocalPlayerHost).toBe(false);
+            expect(lobby.players.get('host-socket').isHost).toBe(true);
+            expect(lobby.players.get('guest-socket').isHost).toBe(false);
+        });
+
+        it('updates the promoted guest when the relay broadcasts hostChanged', () => {
+            lobby.socket = { id: 'guest-socket' };
+            lobby.players.set('host-socket', { id: 'host-socket', isHost: true });
+            lobby.players.set('guest-socket', { id: 'guest-socket', isHost: false });
+            lobby.updateUiState = vi.fn();
+            lobby.reportSteamRichPresence = vi.fn();
+
+            lobby.handleHostChanged({ hostId: 'guest-socket' });
+
+            expect(lobby.isLocalPlayerHost).toBe(true);
+            expect(lobby.players.get('host-socket').isHost).toBe(false);
+            expect(lobby.players.get('guest-socket').isHost).toBe(true);
+            expect(lobby.updateUiState).toHaveBeenCalled();
+        });
     });
 
     // docs/steamstorestatus.log Part A CORS fix: a packaged Electron
@@ -213,6 +243,31 @@ describe('MultiplayerLobby', () => {
         });
 
         describe('handleSteamLobbyJoinRequested', () => {
+            it('leaves an existing guest lobby before joining the invited target lobby', async () => {
+                originalWindow = globalThis.window;
+                const events = [];
+                const steamJoinLobby = vi.fn().mockImplementation(async () => {
+                    events.push('join-target');
+                    return { ok: true, lobby: { id: '777', data: { hb_mode: 'coop' } } };
+                });
+                globalThis.window = { electronAPI: { steamJoinLobby, steamCreateLobby: vi.fn() } };
+                lobby.connected = true;
+                lobby.steamLobbyId = '111';
+                lobby.disconnect = vi.fn(() => {
+                    events.push('leave-current');
+                    lobby.connected = false;
+                    lobby.steamLobbyId = null;
+                });
+                lobby.connect = vi.fn().mockResolvedValue(undefined);
+
+                await lobby.handleSteamLobbyJoinRequested('777');
+
+                expect(events).toEqual(['leave-current', 'join-target']);
+                expect(lobby.steamLobbyId).toBe('777');
+                expect(lobby.roomCode).toBe('STEAM-777');
+                expect(lobby.connect).toHaveBeenCalledOnce();
+            });
+
             it('joins the lobby, derives roomCode, and connects', async () => {
                 originalWindow = globalThis.window;
                 const steamJoinLobby = vi.fn().mockResolvedValue({ ok: true, lobby: { id: '777', data: {} } });
@@ -367,6 +422,38 @@ describe('MultiplayerLobby', () => {
         expect(lobby.connected).toBe(false);
     });
 
+    it('resolves the selected class and callsign from the packaged lobby sources', () => {
+        originalWindow = globalThis.window;
+        globalThis.window = {
+            game: { playerType: 'SCOUT' },
+            selectedPlayerType: 'SCOUT',
+            profile: { getCallsign: () => 'DECK-TANK' },
+            localStorage: { getItem: () => 'TANK' }
+        };
+        const originalDocument = globalThis.document;
+        globalThis.document = {
+            querySelector: () => ({ getAttribute: () => 'TANK' }),
+            getElementById: () => null
+        };
+
+        expect(getLocalOperatorClass()).toBe('TANK');
+        expect(getLocalCallsign()).toBe('DECK-TANK');
+
+        globalThis.document = originalDocument;
+    });
+
+    it('does not offer the local host its own public lobby as a join target', () => {
+        const lobbies = [
+            { id: 'own', ownerSteamId64: '76561198000000001' },
+            { id: 'friend', ownerSteamId64: '76561198000000002' }
+        ];
+
+        expect(filterDiscoverableSteamLobbies(lobbies, '76561198000000001')).toEqual([
+            { id: 'friend', ownerSteamId64: '76561198000000002' }
+        ]);
+        expect(filterDiscoverableSteamLobbies(lobbies, null)).toEqual(lobbies);
+    });
+
     it('toggles mode between coop and pvp', () => {
         lobby.setMode(MULTIPLAYER_MODES.PVP);
         expect(lobby.currentMode).toBe(MULTIPLAYER_MODES.PVP);
@@ -406,6 +493,7 @@ describe('MultiplayerLobby', () => {
             checked: false,
             value: '',
             addEventListener: vi.fn(),
+            appendChild: vi.fn(),
             querySelector: vi.fn(() => null)
         };
     }
@@ -418,6 +506,7 @@ describe('MultiplayerLobby', () => {
                 return elements.get(id);
             }),
             querySelector: vi.fn(() => createFakeElement()),
+            createElement: vi.fn(() => createFakeElement()),
             _elements: elements
         };
     }
@@ -456,6 +545,27 @@ describe('MultiplayerLobby', () => {
             expect(lobby.connected).toBe(false);
         });
 
+        it('keeps ready/waiting labels compact enough for the Deck lobby button', () => {
+            lobby.currentMode = MULTIPLAYER_MODES.COOP;
+            lobby.connected = true;
+            lobby.usingRelay = true;
+            lobby.socket = { id: 'guest' };
+            lobby.players.set('host', { id: 'host', callsign: 'HOST', opClass: 'SCOUT', ready: false, isHost: true });
+            lobby.players.set('guest', { id: 'guest', callsign: 'DECK', opClass: 'ENGINEER', ready: true, isHost: false });
+            lobby.localReady = true;
+            lobby.isLocalPlayerHost = false;
+
+            lobby.updateUiState();
+
+            const button = globalThis.document.getElementById('net-deploy-btn');
+            expect(button.textContent).toBe('READY ✓');
+            expect(button.title).toContain('Waiting for the host');
+
+            lobby.isLocalPlayerHost = true;
+            lobby.updateUiState();
+            expect(button.textContent).toBe('SQUAD 1/2 READY');
+        });
+
         it('SOLO deploy calls onLaunch directly, with no relay/session setup at all', () => {
             const onLaunch = vi.fn();
             let connectCalled = false;
@@ -480,18 +590,18 @@ describe('MultiplayerLobby', () => {
             expect(lobby.onLaunch).toBeNull();
         });
 
-        it('picking CO-OP or PVP connects; picking SOLO after disconnects rather than leaving a live session behind', () => {
+        it('selecting CO-OP or PVP does not create a host lobby until explicitly requested', () => {
             let connectCount = 0;
-            let disconnectCalled = false;
             lobby.connect = async () => { connectCount += 1; lobby.connected = true; };
-            lobby.disconnect = () => { disconnectCalled = true; lobby.connected = false; };
+            lobby.disconnect = () => { lobby.connected = false; };
             lobby.openModal({ onLaunch: vi.fn() });
 
             lobby.setMode(MULTIPLAYER_MODES.COOP);
-            expect(connectCount).toBe(1);
+            expect(connectCount).toBe(0);
+            expect(lobby.connected).toBe(false);
 
-            lobby.setMode(MULTIPLAYER_MODES.SOLO);
-            expect(disconnectCalled).toBe(true);
+            lobby.toggleConnection();
+            expect(connectCount).toBe(1);
         });
 
         it('cancelModal fires onCancel and clears both callbacks; a subsequent deploy click does nothing', () => {

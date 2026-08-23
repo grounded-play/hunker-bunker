@@ -24,6 +24,7 @@ describe('ThreeGame.teardownMultiplayerNetwork', () => {
             multiplayerMode: 'pvp',
             multiplayerRoomCode: 'SECTOR-7',
             multiplayerCrashPlan: { players: [] },
+            multiplayerLocalPlayerId: 'local-player',
             isMultiplayerHost: true,
             lastNetBroadcastTime: 12345,
             // Sprint 26: setupMultiplayerNetwork's world-seed sync (see its
@@ -46,6 +47,7 @@ describe('ThreeGame.teardownMultiplayerNetwork', () => {
         expect(fake.multiplayerMode).toBeNull();
         expect(fake.multiplayerRoomCode).toBeNull();
         expect(fake.multiplayerCrashPlan).toBeNull();
+        expect(fake.multiplayerLocalPlayerId).toBeNull();
         expect(fake.isMultiplayerHost).toBe(false);
         expect(fake.lastNetBroadcastTime).toBe(0);
     });

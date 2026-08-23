@@ -6,7 +6,7 @@ describe('leader conversation identity', () => {
         const identity = resolveLeaderIdentity({ id: 'camp_meridian', leaderName: 'Commander Briggs', leaderClassId: 'TANK' });
         expect(identity.id).toBe('briggs');
         expect(identity.portrait).toContain('vesper_briggs');
-        expect(identity.model.modelUrl).toContain('tank-rigged');
+        expect(identity.model.modelUrl).toMatch(/chassis_trench_warden_heavy|tank-rigged/);
     });
 
     it('selects readable reactions from dialogue content', () => {

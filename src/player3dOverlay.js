@@ -3,6 +3,7 @@ import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.js';
 import { clone as cloneSkeleton } from 'three/examples/jsm/utils/SkeletonUtils.js';
 import { assetUrl } from './assetUrl.js';
+import { recordAssetLoad } from './assetLoadTelemetry.js';
 
 // The 2D-to-3D generation pipeline's gltf-transform optimize pass applies
 // EXT_meshopt_compression; GLTFLoader throws "setMeshoptDecoder must be called
@@ -38,11 +39,41 @@ export const WEAPON_ARCHETYPES = {
 // a side on which class 4107 actually belongs to.
 export const WEAPON_SKIN_MESHES = {
     4100: '/3d/runtime/new3ds/skin_scout_frostbite.glb',          // Sub-Zero Frostbite Talon SMG
-    4107: '/3d/runtime/new3ds/skin_tank_deep_core_melter.glb',    // Deep Core Melter Autocannon
+    4101: '/3d/runtime/new3ds/skin_hazard_stripe_smg.glb',        // Hazard Stripe SMG
+    4102: '/3d/runtime/new3ds/skin_tectonic_driller.glb',         // Tectonic Driller Shotgun/Autocannon
     4103: '/3d/runtime/new3ds/skin_engineer_cryo_plasma.glb',     // Cryo-Plasma Arc Driver
-    4109: '/3d/runtime/new3ds/skin_void_walker_beam.glb',         // Void-Walker Beam Cannon (Engineer, doc 07 §4)
-    4110: '/3d/runtime/new3ds/skin_queen_carapace_carbine.glb'    // Queen's Carapace Carbine (Scout Talon-C, doc 07 §4 Tier-50 capstone)
+    4104: '/3d/runtime/new3ds/skin_rust_bone_trench.glb',         // Rust & Bone Trench Carbine
+    4105: '/3d/runtime/new3ds/skin_obsidian_shard.glb',           // Obsidian Shard Marksman
+    4106: '/3d/runtime/new3ds/skin_biolume_spore_sprayer.glb',    // Biolume Spore Sprayer
+    4107: '/3d/runtime/new3ds/skin_tank_deep_core_melter.glb',    // Deep Core Melter Autocannon
+    4108: '/3d/runtime/new3ds/skin_glitched_circuit_bolter.glb',  // Glitched Circuit Bolter
+    4109: '/3d/runtime/new3ds/skin_void_walker_beam.glb',         // Void-Walker Beam Cannon
+    4110: '/3d/runtime/new3ds/skin_queen_carapace_carbine.glb',   // Queen's Carapace Carbine (Capstone)
+    4111: '/3d/runtime/new3ds/skin_solar_flare_antimatter.glb'    // Solar Flare Antimatter Rifle
 };
+
+import { COMMUNITY_GESTURES, COMMUNITY_GLB_MAP } from './data/communitySkins.js';
+
+// Keep the in-run operator model list next to the loader that consumes it.
+// Armory re-exports this map so preview and gameplay cannot silently drift.
+export const CHASSIS_SKIN_MODELS = Object.freeze({
+    '4112': '/3d/runtime/new3ds/chassis_subterran_drill_engineer.glb',
+    '4113': '/3d/runtime/new3ds/chassis_cryo_vanguard_scout.glb',
+    '4114': '/3d/runtime/new3ds/chassis_trench_warden_heavy.glb',
+    '4115': '/3d/runtime/new3ds/chassis_void_commando_recon.glb',
+    '4116': '/3d/runtime/new3ds/chassis_bio_synthesizer_medic.glb',
+    '4117': '/3d/runtime/new3ds/chassis_dreadnought_exo_juggernaut.glb',
+    '4118': '/3d/runtime/new3ds/chassis_cyber_spectre_infiltrator.glb',
+    '4119': '/3d/runtime/new3ds/chassis_hive_lord_symbiote.glb',
+    '5003': '/3d/runtime/new3ds/chassis_scout_cartographer.glb',
+    '5004': '/3d/runtime/new3ds/chassis_scout_pioneer_courier.glb',
+    '5005': '/3d/runtime/new3ds/chassis_tank_old_iron.glb',
+    '5007': '/3d/runtime/new3ds/chassis_tank_colossus_hive.glb',
+    '5008': '/3d/runtime/new3ds/chassis_tank_gentle_titan.glb',
+    '5011': '/3d/runtime/new3ds/chassis_engineer_chen_undying.glb',
+    '5012': '/3d/runtime/new3ds/chassis_engineer_exodus_vanguard.glb',
+    ...(COMMUNITY_GLB_MAP || {})
+});
 
 export const ENGINEER_GESTURES = Object.freeze([
     'engineerWeightShift', 'engineerDismiss', 'engineerThoughtful', 'engineerCocky',
@@ -50,7 +81,18 @@ export const ENGINEER_GESTURES = Object.freeze([
     'engineerAnnoyed', 'engineerLookAway', 'engineerSarcastic',
     'engineerAcknowledge', 'engineerHardNod', 'engineerLongNod', 'engineerNo'
 ]);
-const ONE_SHOTS = new Set(['fire', 'reload', 'hit', 'land', 'melee', ...ENGINEER_GESTURES]);
+
+export const SIGNATURE_GESTURES = Object.freeze([
+    'standingGreeting', 'dismissingGesture', 'beckoning', 'rummaging',
+    'pointingForward', 'strutWalk', 'runToStop', 'hardLanding',
+    'relievedSigh', 'beingCocky', 'annoyedHeadShake', 'thoughtfulHeadShake',
+    'lookAway', 'happyHand', 'angryGesture', 'hardHeadNod', 'floatingTrance',
+    'pickFruit', 'crawling', 'cowMilking', 'unarmedRunForward', 'idleCartographer',
+    'walkWithRifle', 'joggingWithBox', 'defeat', 'talkingAtWatercooler', 'rightStrafeWalk', 'rejected',
+    ...(COMMUNITY_GESTURES || [])
+]);
+
+const ONE_SHOTS = new Set(['fire', 'reload', 'hit', 'land', 'melee', ...ENGINEER_GESTURES, ...SIGNATURE_GESTURES]);
 const BLENDABLE_ACTIONS = ['idle', 'walk', 'run', 'backward', 'strafeLeft', 'strafeRight', 'fall'];
 // Below INJURED_HP_RATIO, idle/walk/run cross-fade to their limping
 // counterparts (see computeLocomotionWeights callers). Only these three carry
@@ -65,10 +107,19 @@ const characterTemplates = new Map();
 const weaponTemplates = new Map();
 
 function loadCharacterTemplate(url) {
+    if (characterTemplates.has(url)) {
+        recordAssetLoad(url, { group: 'player-character', cacheHit: true });
+        return characterTemplates.get(url);
+    }
+    const started = performance.now();
     if (!characterTemplates.has(url)) {
         const promise = createGltfLoader().loadAsync(assetUrl(url)).catch((err) => {
+            recordAssetLoad(url, { group: 'player-character', status: 'failed', durationMs: performance.now() - started, error: err });
             characterTemplates.delete(url);
             throw err;
+        }).then((gltf) => {
+            recordAssetLoad(url, { group: 'player-character', durationMs: performance.now() - started });
+            return gltf;
         });
         characterTemplates.set(url, promise);
     }
@@ -76,10 +127,19 @@ function loadCharacterTemplate(url) {
 }
 
 function loadWeaponTemplate(url) {
+    if (weaponTemplates.has(url)) {
+        recordAssetLoad(url, { group: 'weapon', cacheHit: true });
+        return weaponTemplates.get(url);
+    }
+    const started = performance.now();
     if (!weaponTemplates.has(url)) {
         const promise = createGltfLoader().loadAsync(assetUrl(url)).catch((err) => {
+            recordAssetLoad(url, { group: 'weapon', status: 'failed', durationMs: performance.now() - started, error: err });
             weaponTemplates.delete(url);
             throw err;
+        }).then((gltf) => {
+            recordAssetLoad(url, { group: 'weapon', durationMs: performance.now() - started });
+            return gltf;
         });
         weaponTemplates.set(url, promise);
     }

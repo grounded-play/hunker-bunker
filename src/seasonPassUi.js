@@ -6,7 +6,8 @@
 // everything else in the game reads from — not a second parallel system.
 import { SeasonPassManager, TIER_REWARDS, TOTAL_TIERS, XP_PER_TIER, XP_SOURCES } from './seasonPass.js';
 import { BountyManager } from './bountySystem.js';
-import { grantVaultItem } from './steamVaultUi.js';
+import { getItemCatalogEntry, grantVaultItem } from './steamVaultUi.js';
+import { assetUrl } from './assetUrl.js';
 
 export const seasonPass = new SeasonPassManager();
 if (typeof window !== 'undefined') window.seasonPass = seasonPass;
@@ -20,6 +21,9 @@ if (typeof window !== 'undefined') window.bountyManager = bountyManager;
 
 let hudCardSeq = 0;
 let activeTab = 'tiers'; // 'tiers' | 'bounties'
+let recentlyCollectedKey = null;
+const progressionCeremonyQueue = [];
+let progressionCeremonyActive = false;
 
 // XP/tier-up toasts used to render the instant an event fired, regardless of
 // what was on screen -- a tier-up mid-gameplay popped up over a door prompt,
@@ -27,12 +31,13 @@ let activeTab = 'tiers'; // 'tiers' | 'bounties'
 // app phase. Real progress (seasonPass.addXp, in awardXp below) still
 // applies immediately either way; only the visible toast is held back.
 const queuedSeasonPassToasts = [];
-function isMainMenuPhase() {
-    return window.__hbAppPhase === 'splash' || window.__hbAppPhase === 'menu';
+function isSeasonPassModalOpen() {
+    const modal = document.getElementById('season-pass-modal');
+    return Boolean(modal) && !modal.classList.contains('hidden');
 }
 
 function showSeasonPassToast(title, blurb) {
-    if (!isMainMenuPhase()) {
+    if (!isSeasonPassModalOpen()) {
         queuedSeasonPassToasts.push({ title, blurb });
         return;
     }
@@ -40,10 +45,10 @@ function showSeasonPassToast(title, blurb) {
 }
 
 // Called from main.js's setAppPhase once the player is actually back on the
-// title/loadout screen, so anything earned mid-run still gets shown -- just
-// not stacked on top of gameplay, doors, or the cutscene video.
+// Season-screen feedback is kept out of gameplay, doors, and cutscenes. It is
+// queued until the player opens the Season Pass modal.
 export function flushQueuedSeasonPassToasts() {
-    if (!isMainMenuPhase() || queuedSeasonPassToasts.length === 0) return;
+    if (!isSeasonPassModalOpen() || queuedSeasonPassToasts.length === 0) return;
     const queued = queuedSeasonPassToasts.splice(0, queuedSeasonPassToasts.length);
     for (const { title, blurb } of queued) {
         renderSeasonPassToast(title, blurb);
@@ -85,14 +90,96 @@ function renderSeasonPassToast(title, blurb) {
     });
 }
 
+function ensureProgressionCeremony() {
+    let overlay = document.getElementById('progression-reward-overlay');
+    if (overlay) return overlay;
+    overlay = document.createElement('div');
+    overlay.id = 'progression-reward-overlay';
+    overlay.className = 'progression-reward-overlay hidden';
+    overlay.setAttribute('aria-hidden', 'true');
+    overlay.innerHTML = `
+        <div class="progression-reward-panel">
+            <div class="progression-reward-kicker">◈ TACTICAL DOSSIER // PROMOTION SIGNAL</div>
+            <div class="progression-reward-title">LEVEL <span id="progression-level-value">1</span> REACHED</div>
+            <div class="progression-xp-track"><div id="progression-xp-bar" class="progression-xp-bar"></div></div>
+            <div id="progression-xp-label" class="progression-xp-label">XP THRESHOLD CONFIRMED</div>
+            <div class="progression-reward-burst" aria-hidden="true"></div>
+            <div class="progression-reward-card">
+                <div class="progression-reward-card__slot">NEW REQUISITION</div>
+                <div id="progression-reward-primary" class="progression-reward-card__name"></div>
+                <div id="progression-reward-secondary" class="progression-reward-card__desc"></div>
+                <div id="progression-reward-currency" class="progression-reward-card__meta"></div>
+            </div>
+            <button id="progression-claim-btn" class="start-btn progression-claim-btn">◈ CLAIM REWARD</button>
+        </div>
+    `;
+    document.body.appendChild(overlay);
+    overlay.querySelector('#progression-claim-btn')?.addEventListener('click', claimProgressionReward);
+    return overlay;
+}
+
+function queueProgressionCeremony(tiers) {
+    for (const tier of tiers ?? []) {
+        const tracks = ['free', ...(seasonPass.hasPremium() ? ['premium'] : [])];
+        for (const track of tracks) {
+            if (seasonPass.canClaim(tier, track)) progressionCeremonyQueue.push({ tier, track });
+        }
+    }
+    if (!progressionCeremonyActive) showNextProgressionReward();
+}
+
+function showNextProgressionReward() {
+    const next = progressionCeremonyQueue.shift();
+    if (!next) {
+        progressionCeremonyActive = false;
+        return;
+    }
+    progressionCeremonyActive = true;
+    const reward = seasonPass.getReward(next.tier, next.track);
+    const overlay = ensureProgressionCeremony();
+    overlay.dataset.tier = String(next.tier);
+    overlay.dataset.track = next.track;
+    overlay.classList.remove('hidden');
+    overlay.setAttribute('aria-hidden', 'false');
+    overlay.querySelector('#progression-level-value').textContent = String(next.tier);
+    overlay.querySelector('#progression-reward-primary').textContent = reward?.label ?? 'REWARD SIGNAL';
+    overlay.querySelector('#progression-reward-secondary').textContent = reward?.kind === 'item' || reward?.kind === 'cache'
+        ? 'ITEM SECURED FOR VAULT CLAIM'
+        : 'CURRENCY CREDIT READY';
+    overlay.querySelector('#progression-reward-currency').textContent = reward?.qty > 1 ? `QUANTITY ×${reward.qty}` : `${next.track.toUpperCase()} TRACK`;
+    overlay.querySelector('#progression-xp-label').textContent = `TIER ${next.tier} // XP THRESHOLD CONFIRMED`;
+    const bar = overlay.querySelector('#progression-xp-bar');
+    bar.style.width = '0%';
+    requestAnimationFrame(() => { bar.style.width = '100%'; });
+    const burst = overlay.querySelector('.progression-reward-burst');
+    burst.innerHTML = Array.from({ length: 18 }, (_, i) => `<i style="--particle-angle:${i * 20}deg"></i>`).join('');
+    overlay.querySelector('#progression-claim-btn')?.focus?.();
+}
+
+function claimProgressionReward() {
+    if (!progressionCeremonyActive) return;
+    const overlay = document.getElementById('progression-reward-overlay');
+    const tier = Number(overlay?.dataset.tier);
+    const track = overlay?.dataset.track;
+    const reward = seasonPass.claim(tier, track);
+    if (!reward) return;
+    grantReward(reward);
+    overlay.classList.add('hidden');
+    overlay.setAttribute('aria-hidden', 'true');
+    progressionCeremonyActive = false;
+    updateMenuStatus();
+    window.setTimeout(showNextProgressionReward, 260);
+}
+
 function awardXp(amount, source, label) {
     const before = seasonPass.getCurrentTier();
-    const { xpAwarded } = seasonPass.addXp(amount, source);
+    const { xpAwarded, tiersCrossed } = seasonPass.addXp(amount, source);
     if (xpAwarded <= 0) return;
     const after = seasonPass.getCurrentTier();
     showSeasonPassToast(`+${xpAwarded} XP`, label);
     if (after > before) {
         showSeasonPassToast('TIER UP', `Tactical Dossier — Tier ${after} reached.`);
+        queueProgressionCeremony(tiersCrossed);
     }
     updateMenuStatus();
     if (isModalOpen()) renderSeasonPassBody();
@@ -120,7 +207,7 @@ export function wireSeasonPassXpEvents() {
     window.addEventListener('bounty-completed', (event) => {
         const bounty = event.detail?.bounty;
         if (bounty) {
-            showSeasonPassToast('DIRECTIVE COMPLETE', `${bounty.title} — +${bounty.xp.toLocaleString()} XP`);
+            showSeasonPassToast('DIRECTIVE COMPLETE', `${bounty.title} — XP READY TO COLLECT`);
             if (isModalOpen()) renderSeasonPassBody();
         }
     });
@@ -157,11 +244,13 @@ function renderTierCard(tierNumber) {
         const claimed = seasonPass.isClaimed(tierNumber, track);
         const canClaim = seasonPass.canClaim(tierNumber, track);
         const locked = track === 'premium' && !seasonPass.hasPremium();
+        const collectedKey = `${tierNumber}:${track}`;
+        const justCollected = recentlyCollectedKey === collectedKey;
         let stateClass = 'locked';
         let actionHtml = '<span class="season-pass-slot__state">LOCKED</span>';
         if (claimed) {
-            stateClass = 'claimed';
-            actionHtml = '<span class="season-pass-slot__state">CLAIMED</span>';
+            stateClass = `claimed${justCollected ? ' just-collected' : ''}`;
+            actionHtml = `<span class="season-pass-slot__state">${justCollected ? 'COLLECTED ✓' : 'CLAIMED ✓'}</span>`;
         } else if (canClaim) {
             stateClass = 'claimable';
             actionHtml = `<button class="season-pass-claim-btn" data-tier="${tierNumber}" data-track="${track}">CLAIM</button>`;
@@ -172,7 +261,10 @@ function renderTierCard(tierNumber) {
         }
         return `
             <div class="season-pass-slot season-pass-slot--${track} season-pass-slot--${stateClass}">
-                <div class="season-pass-slot__label">${reward.label}</div>
+                <div class="season-pass-slot__reward">
+                    ${renderRewardVisual(reward)}
+                    <div class="season-pass-slot__label">${reward.label}${reward.qty > 1 ? ` <span class="season-pass-slot__qty">×${reward.qty}</span>` : ''}</div>
+                </div>
                 ${actionHtml}
             </div>
         `;
@@ -185,6 +277,16 @@ function renderTierCard(tierNumber) {
             ${renderSlot('premium')}
         </div>
     `;
+}
+
+function renderRewardVisual(reward) {
+    const catalog = reward.itemdefid != null ? getItemCatalogEntry(reward.itemdefid) : null;
+    const image = catalog?.localImg || catalog?.img;
+    if (image) {
+        return `<img class="season-pass-slot__art" src="${assetUrl(image)}" alt="" loading="lazy" onerror="this.classList.add('is-missing')">`;
+    }
+    const icon = reward.kind === 'currency' ? '⬢' : reward.kind === 'cache' ? '📦' : '◈';
+    return `<span class="season-pass-slot__art season-pass-slot__art--glyph" aria-hidden="true">${icon}</span>`;
 }
 
 function renderBountyCard(bounty) {
@@ -204,6 +306,9 @@ function renderBountyCard(bounty) {
                 <div class="bounty-card__progress-bar">
                     <div class="bounty-card__progress-fill" style="width:${pct}%"></div>
                 </div>
+                ${bounty.completed && !bounty.claimed
+                    ? `<button class="season-pass-bounty-claim-btn" data-bounty-id="${bounty.id}">COLLECT +${bounty.xp.toLocaleString()} XP</button>`
+                    : `<span class="bounty-card__claim-state">${bounty.claimed ? 'XP COLLECTED ✓' : 'IN PROGRESS'}</span>`}
             </div>
         </div>
     `;
@@ -293,9 +398,17 @@ function renderSeasonPassBody() {
                 const tier = Number(btn.dataset.tier);
                 const track = btn.dataset.track;
                 const reward = seasonPass.claim(tier, track);
-                if (reward) grantReward(reward);
+                if (reward) {
+                    recentlyCollectedKey = `${tier}:${track}`;
+                    grantReward(reward);
+                }
                 updateMenuStatus();
                 renderSeasonPassBody();
+                window.setTimeout(() => {
+                    if (recentlyCollectedKey !== `${tier}:${track}`) return;
+                    recentlyCollectedKey = null;
+                    if (isSeasonPassModalOpen()) renderSeasonPassBody();
+                }, 800);
             });
         });
     } else {
@@ -322,6 +435,15 @@ function renderSeasonPassBody() {
                 </div>
             </div>
         `;
+        body.querySelectorAll('.season-pass-bounty-claim-btn').forEach((button) => {
+            button.addEventListener('click', () => {
+                const bounty = bountyManager.claim(button.dataset.bountyId);
+                if (!bounty) return;
+                const weekly = bountyManager.state.weeklies.some((entry) => entry.id === bounty.id);
+                awardXp(bounty.xp, weekly ? 'weeklyDirective' : 'dailyBounty', `Directive Complete: ${bounty.title}`);
+                renderSeasonPassBody();
+            });
+        });
     }
 }
 
@@ -331,6 +453,7 @@ export function openSeasonPassModal() {
     modal.classList.remove('hidden');
     modal.setAttribute('aria-hidden', 'false');
     renderSeasonPassBody();
+    flushQueuedSeasonPassToasts();
 
     // Auto-focus preferred controller/keyboard target
     requestAnimationFrame(() => {
@@ -349,6 +472,17 @@ export function closeSeasonPassModal() {
 }
 
 export function handleSeasonPassKeyDown(event) {
+    const ceremony = document.getElementById('progression-reward-overlay');
+    if (ceremony && !ceremony.classList.contains('hidden')) {
+        if (event.code === 'Enter' || event.code === 'Space') {
+            event.preventDefault();
+            claimProgressionReward();
+        }
+        // B/Escape cannot discard an earned reward; the claim remains safely
+        // available and focused until the operator accepts it.
+        if (event.code === 'Escape') event.preventDefault();
+        return;
+    }
     const modal = document.getElementById('season-pass-modal');
     if (!modal || modal.classList.contains('hidden')) return;
 
@@ -378,4 +512,3 @@ export function initSeasonPassUI() {
     wireSeasonPassXpEvents();
     updateMenuStatus();
 }
-

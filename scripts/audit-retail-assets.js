@@ -15,15 +15,11 @@ const SOURCE_DIRS = ['electron', 'server', 'src'];
 // standalone Steam soundtrack depot, and the optimized gameplay GLBs are now
 // part of the retail presentation. Keep finite headroom for those explicit
 // runtime assets without allowing the ignored high-resolution sources in.
-// Raised 1150->1800 MiB after this sprint's 32 real narrative interstitial
-// cutscenes landed (public/interstitials, 731MB before a 281MB duplicate
-// cleanup below; see the duplicate-checksum sweep that removed 32
-// byte-identical, never-referenced `_key_v1.mp4` files that shipped
-// alongside their real, code-referenced `_motion_v1.mp4`/`.webm` siblings).
-// Current measured payload is ~1616 MiB; this leaves ~184MB of real headroom
-// rather than the bare minimum, so the next small asset addition doesn't
-// immediately re-trip this gate.
-const PUBLIC_BUDGET = 1800 * 1024 * 1024;
+// Raised 1800->2700 MiB after Sprint 28's 30 community 3D operator skins
+// (~525 MB) and 16 Season 0 / achievement 3D GLBs (~250 MB) landed in
+// public/3d/runtime/. Measured payload is ~2565 MiB, leaving ~135 MB of
+// headroom.
+const PUBLIC_BUDGET = 2700 * 1024 * 1024;
 // app.asar packages dist/ minus the mp4/webm/glb files electron-builder's
 // asarUnpack pulls out (see package.json "build".asarUnpack), so it tracks
 // the same interstitial/economy/texture growth as PUBLIC_BUDGET above minus

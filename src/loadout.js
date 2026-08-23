@@ -3,6 +3,7 @@
 // weapon skins, tactical charms, rig overclock modules, and exosuit cosmetics.
 
 import { getRecipe } from './fabricator.js';
+import { COMMUNITY_CLASS_MAP } from './data/communitySkins.js';
 
 export const STORAGE_KEY_V2 = 'hb_loadout_v2';
 export const STORAGE_KEY_V1 = 'hb_loadout_v1';
@@ -20,11 +21,21 @@ export const CLASS_ARCHETYPES = Object.freeze({
     engineer: ['tesla_lock']
 });
 
+// Chassis skins with authored runtime meshes. Keep this list class-specific:
+// loading a Scout chassis as a Tank would replace the operator silhouette, not
+// merely recolor it. Additional catalog chassis can be added here when their
+// corresponding runtime GLBs land.
+export const CLASS_CHASSIS_SKINS = Object.freeze({
+    scout: ['4113', '4115', '4118', '5001', '5003', '5004', ...(COMMUNITY_CLASS_MAP?.scout || [])],
+    tank: ['4114', '4117', '4119', '5005', '5007', '5008', ...(COMMUNITY_CLASS_MAP?.tank || [])],
+    engineer: ['4112', '4116', '5011', '5012', ...(COMMUNITY_CLASS_MAP?.engineer || [])]
+});
+
 export const ARCHETYPE_SKINS = Object.freeze({
     talon: ['4100', '4105'],
-    talon_c: ['4101', '4104', '4108', '4110'],
-    siege_breaker: ['4102', '4106'],
-    tesla_lock: ['4103', '4107', '4109', '4111']
+    talon_c: ['4101', '4104', '4108', '4110', '5002'],
+    siege_breaker: ['4102', '4106', '5006'],
+    tesla_lock: ['4103', '4107', '4109', '4111', '5009', '5010']
 });
 
 function normalizeClassId(classId) {
@@ -436,4 +447,3 @@ export class LoadoutManager {
         this.save();
     }
 }
-

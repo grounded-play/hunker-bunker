@@ -14,6 +14,7 @@ import { getDeathCinematicSpec, getEventCinematicSpec, normalizeCinematicStillSp
 import { DialogueManager } from './src/dialogue.js';
 import { VitalsHUD } from './src/vitals.js';
 import { blackBoxStore } from './src/blackBox.js';
+import { runCheckpointStore, hasRecoverableSalvage } from './src/runCheckpoint.js';
 import { codexStore, getClassWreckageLog, recordSpecimen0047OriginIfFound } from './src/codex.js';
 import { CODEX_ENTRIES, CODEX_CATEGORIES, getCodexEntry, CODEX_TOTAL, LORE_METADATA } from './src/data/codex.js';
 import { pickRunModifier } from './src/data/runModifiers.js';
@@ -49,7 +50,7 @@ import { createScoutHeroPreview } from './src/scoutHeroPreview.js';
 import { createArmoryScene } from './src/armoryScene.js';
 import { createArmoryUi } from './src/armoryUi.js';
 import { ARMORY_SCREEN_ENABLED } from './src/featureFlags.js';
-import { initSteamVaultUI, loadVaultData, openSteamVaultModal, showSteamDropToast, renderSteamMilestoneGrants, STEAM_ITEM_CATALOG } from './src/steamVaultUi.js';
+import { initSteamVaultUI, loadVaultData, openSteamVaultModal, showSteamDropToast, renderSteamMilestoneGrants, grantVaultItem, resetDevVaultInventory, setDevInfiniteCacheMode, isDevInfiniteCacheMode, STEAM_ITEM_CATALOG } from './src/steamVaultUi.js';
 import { initSeasonPassUI, flushQueuedSeasonPassToasts } from './src/seasonPassUi.js';
 import { preloadEnemy3dTemplates } from './src/enemy3dOverlay.js';
 import { initVoiceCallouts } from './src/voiceCallouts.js';
@@ -62,6 +63,7 @@ import { matureContentAudit } from './src/matureContentAudit.js';
 import { progressionWalkthrough } from './src/progressionWalkthrough.js';
 import { renderGameOverLeaderboard } from './src/leaderboardUi.js';
 import { OPERATOR_POLISHES, getSelectedPolish, getUnlockedPolishIds, selectPolish, unlockAllPolishes, unlockMilestonePolish } from './src/operatorPolishes.js';
+import { createOwnershipStore } from './src/itemOwnership.js';
 import { STARTING_RUN_AMMO, CLASS_AMMO_CAPACITY } from './src/data/ammoEconomy.js';
 import { explainEnding, formatManifestBlocker } from './src/endingExplanations.js';
 import { SongInterstitialController, selectCampInterstitial } from './src/songInterstitials.js';
@@ -338,7 +340,12 @@ function setAppPhase(phase) {
     syncSteamInputPhase();
     syncSteamTimelinePhase(phase);
     if (phase === 'splash' || phase === 'menu') flushQueuedSeasonPassToasts();
-    if (!isGameplayPhase()) {
+    const isGameplay = phase === 'gameplay';
+    document.documentElement.classList.toggle('phase-gameplay', isGameplay);
+    document.documentElement.classList.toggle('phase-menu', !isGameplay);
+    if (!isGameplay) updateGameplayCrosshair?.(0, 0, false);
+    if (!isGameplay) {
+        window.game?.setCursorInspectState?.(null);
         if (tacticalOverlayTimer) {
             clearTimeout(tacticalOverlayTimer);
             tacticalOverlayTimer = null;
@@ -1343,6 +1350,8 @@ function handleSteamInputSnapshot(snapshot = {}) {
     const previousPhase = steamInputState.phase;
     const previousMode = steamInputState.lastInputMode;
     const previousPrimaryType = steamInputState.primaryControllerType;
+    const previousDeck = steamInputState.isSteamDeck;
+    const previousCount = steamInputState.controllerCount;
     const controllers = Array.isArray(snapshot.controllers) ? snapshot.controllers : [];
 
     steamInputState.available = Boolean(snapshot.available);
@@ -1353,6 +1362,20 @@ function handleSteamInputSnapshot(snapshot = {}) {
     steamInputState.primaryControllerHandle = snapshot.primaryControllerHandle ?? null;
     steamInputState.primaryControllerType = snapshot.primaryControllerType ?? null;
     steamInputState.controllers = controllers;
+    window.__hbSteamInputState = {
+        phase: steamInputState.phase,
+        available: steamInputState.available,
+        isSteamDeck: steamInputState.isSteamDeck,
+        controllerCount: steamInputState.controllerCount,
+        primaryControllerType: steamInputState.primaryControllerType,
+        lastInputMode: steamInputState.lastInputMode
+    };
+
+    if (previousPhase !== steamInputState.phase
+        || previousDeck !== steamInputState.isSteamDeck
+        || previousCount !== steamInputState.controllerCount) {
+        debugLog.info('INPUT', 'Steam Input state changed', window.__hbSteamInputState);
+    }
 
     if (steamInputState.anyInput) {
         setLastInputMode('controller', { refresh: false });
@@ -1362,6 +1385,12 @@ function handleSteamInputSnapshot(snapshot = {}) {
 
     if (previousPhase !== steamInputState.phase) {
         steamInputPrevControllers.clear();
+        if (steamInputState.phase === 'gameplay') {
+            controllerAimCursor = {
+                x: (window.innerWidth || 1280) / 2,
+                y: (window.innerHeight || 800) / 2
+            };
+        }
     }
     if (previousMode !== steamInputState.lastInputMode || previousPrimaryType !== steamInputState.primaryControllerType) {
         refreshInteractivePromptKeys();
@@ -1536,9 +1565,9 @@ function handleSteamMenuInput(actions) {
 
         // Hover element focus
         const hovered = document.elementFromPoint(controllerAimCursor.x, controllerAimCursor.y);
-        const focusable = hovered?.closest?.('button, select, input, a, [tabindex]:not([tabindex="-1"]), .setting-item');
+        const focusable = hovered?.closest?.('button, select, input, a, [tabindex]:not([tabindex="-1"]), .setting-item, .char-card, .class-tab, .armory-btn, .armory-select, .deck-focus-target, .toggle, .splash-btn, .about-btn');
         if (focusable) {
-            const target = focusable.matches('button, select, input, a') ? focusable : focusable.querySelector('button, select, input, a');
+            const target = focusable.matches('button, select, input, a, .char-card, .class-tab, .armory-btn, .armory-select, .toggle') ? focusable : (focusable.querySelector('button, select, input, a') || focusable);
             if (target && target !== document.activeElement) {
                 focusControllerTarget(target, { playHover: true });
             }
@@ -1574,7 +1603,21 @@ function handleSteamMenuInput(actions) {
         else moveControllerFocus((actions.up || actions.left) ? -1 : 1);
     }
 
-    if (actions.confirm) {
+    if (actions.confirm || actions.fire || actions.triggerRight) {
+        if (controllerAimCursor) {
+            const hovered = document.elementFromPoint(controllerAimCursor.x, controllerAimCursor.y);
+            const clickable = hovered?.closest?.('button, select, input, a, .char-card, .class-tab, .armory-btn, .armory-select, .toggle, .splash-btn, .about-btn, [tabindex]:not([tabindex="-1"])');
+            if (clickable) {
+                if (clickable.tagName === 'SELECT') {
+                    clickable.focus();
+                } else if (typeof clickable.click === 'function') {
+                    clickable.click();
+                } else {
+                    activateControllerFocusedElement();
+                }
+                return;
+            }
+        }
         activateControllerFocusedElement();
     }
     if (actions.back) {
@@ -1606,24 +1649,20 @@ window.addEventListener('gamepad-menu-nav', (event) => {
     }
 });
 
-// Trackpad and gyro aim arrive as per-frame mouse deltas rather than a stick
-// position; they drive facingYaw directly (see Task 2's updateFacingYaw),
-// mirroring how mouse pointer-lock deltas work.
-const CONTROLLER_YAW_SENSITIVITY = 0.0025;
 let controllerAimCursor = null;
 
-function applyControllerCursorAim(controller) {
-    const deltaX = Number(controller.cameraDelta?.x) || 0;
-    const deltaY = Number(controller.cameraDelta?.y) || 0;
-    // Sub-pixel motion is sensor noise, not a gesture.
-    if (Math.hypot(deltaX, deltaY) < 1) return false;
-    if (typeof window.game?.updateFacingYaw !== 'function') return false;
-
-    const sensitivity = state.settings.aimSensitivity ?? 1.0;
-    const currentYaw = Number(window.game.facingYaw) || 0;
-    window.game.updateFacingYaw(currentYaw - deltaX * CONTROLLER_YAW_SENSITIVITY * sensitivity);
-    return true;
+function updateGameplayCrosshair(clientX, clientY, visible = true) {
+    const crosshair = document.getElementById('gameplay-crosshair');
+    if (!crosshair) return;
+    const shouldShow = visible && appPhase === 'gameplay'
+        && Boolean(window.game?.isGameplayInputActive?.());
+    crosshair.classList.toggle('hidden', !shouldShow);
+    if (shouldShow && Number.isFinite(clientX) && Number.isFinite(clientY)) {
+        crosshair.style.left = `${clientX}px`;
+        crosshair.style.top = `${clientY}px`;
+    }
 }
+window.updateGameplayCrosshair = updateGameplayCrosshair;
 
 function handleSteamGameplayInput(controller) {
     const prev = steamInputPrevControllers.get(controller.handle) ?? {};
@@ -1635,13 +1674,24 @@ function handleSteamGameplayInput(controller) {
     if (window.game?.setVirtualInput) {
         window.game.setVirtualInput(moveX, -moveY);
     }
-
-    const cursorAimed = applyControllerCursorAim(controller);
-
-    if (!cursorAimed && (aimX || aimY)) {
-        window.game?.updateFacingYaw?.(Math.atan2(aimX, aimY));
-        updateVirtualGamepadCursorPosition(0, 0, false);
+    // The right stick and trackpad move one screen-space aim point. Movement
+    // remains independent, so strafing never steals the shot direction.
+    const width = window.innerWidth || 1280;
+    const height = window.innerHeight || 800;
+    if (!controllerAimCursor) controllerAimCursor = { x: width / 2, y: height / 2 };
+    const deltaX = aimX * 14 + (Number(controller.cameraDelta?.x) || 0) * 0.55;
+    const deltaY = aimY * 14 + (Number(controller.cameraDelta?.y) || 0) * 0.55;
+    if (Math.hypot(deltaX, deltaY) > 0.01) {
+        controllerAimCursor.x = Math.min(width - 8, Math.max(8, controllerAimCursor.x + deltaX));
+        controllerAimCursor.y = Math.min(height - 8, Math.max(8, controllerAimCursor.y + deltaY));
+        window.game?.updateAimFromClient?.(controllerAimCursor.x, controllerAimCursor.y, {
+            keepMouseActive: false,
+            persistDuration: 2.0
+        });
     }
+    updateVirtualGamepadCursorPosition(controllerAimCursor.x, controllerAimCursor.y, true);
+    updateGameplayCrosshair(controllerAimCursor.x, controllerAimCursor.y, true);
+    window.game?.setCameraRotationInput?.(aimX);
 
     if (controller.fire) {
         window.game?.triggerControllerFire?.();
@@ -2146,30 +2196,76 @@ window.profile = profile;
 const achievementEngine = new AchievementEngine();
 window.achievementEngine = achievementEngine;
 
+// Single app-wide ownership store (src/itemOwnership.js). Everything that asks
+// "does the player have this?" -- Armory dropdowns, Vault rendering, equip
+// gating -- goes through this one object, replacing the three separate
+// catalogs and two copies of reconciliation described in
+// docs/armory-vault-progression-audit-2026-08-23.md.
+let ownershipStore = null;
+function getOwnershipStore() {
+    if (!ownershipStore) {
+        ownershipStore = createOwnershipStore({
+            storage: (() => {
+                try {
+                    return typeof localStorage !== 'undefined' ? localStorage : null;
+                } catch {
+                    // Private mode / blocked storage: run without persistence
+                    // rather than failing to boot.
+                    return null;
+                }
+            })()
+        });
+        window.itemOwnership = ownershipStore;
+    }
+    return ownershipStore;
+}
+// Warm it at startup so `window.itemOwnership` is available to the console and
+// to any UI that opens before the Armory does.
+getOwnershipStore();
+
 const loadout = new LoadoutManager();
 window.loadout = loadout;
 
 // Season 0 HUD CRT Mutators (docs/season-zero-protocol/03 §5, itemdefs 4150/4151)
 const HUD_THEME_PRESETS = {
-    4150: { '--hud-primary': '#f59e0b', '--hud-glow': 'rgba(245, 158, 11, 0.4)', '--hud-scanline': '#d97706' }, // Amber CRT
-    4151: { '--hud-primary': '#10b981', '--hud-glow': 'rgba(16, 185, 129, 0.4)', '--hud-scanline': '#059669' }, // Emerald Radar
-    hudtheme_amber_crt: { '--hud-primary': '#f59e0b', '--hud-glow': 'rgba(245, 158, 11, 0.4)', '--hud-scanline': '#d97706' },
-    hudtheme_emerald_radar: { '--hud-primary': '#10b981', '--hud-glow': 'rgba(16, 185, 129, 0.4)', '--hud-scanline': '#059669' }
+    4150: { '--hud-primary': '#f59e0b', '--hud-secondary': '#fde68a', '--hud-glow': 'rgba(245, 158, 11, 0.4)', '--hud-scanline': '#d97706', '--hud-border': 'rgba(245, 158, 11, 0.62)', '--hud-panel': 'rgba(55, 30, 4, 0.84)', '--hud-warning': '#fb7185' }, // Amber CRT
+    4151: { '--hud-primary': '#10b981', '--hud-secondary': '#a7f3d0', '--hud-glow': 'rgba(16, 185, 129, 0.4)', '--hud-scanline': '#059669', '--hud-border': 'rgba(16, 185, 129, 0.62)', '--hud-panel': 'rgba(2, 44, 34, 0.84)', '--hud-warning': '#fbbf24' }, // Emerald Radar
+    hudtheme_amber_crt: { '--hud-primary': '#f59e0b', '--hud-secondary': '#fde68a', '--hud-glow': 'rgba(245, 158, 11, 0.4)', '--hud-scanline': '#d97706', '--hud-border': 'rgba(245, 158, 11, 0.62)', '--hud-panel': 'rgba(55, 30, 4, 0.84)', '--hud-warning': '#fb7185' },
+    hudtheme_emerald_radar: { '--hud-primary': '#10b981', '--hud-secondary': '#a7f3d0', '--hud-glow': 'rgba(16, 185, 129, 0.4)', '--hud-scanline': '#059669', '--hud-border': 'rgba(16, 185, 129, 0.62)', '--hud-panel': 'rgba(2, 44, 34, 0.84)', '--hud-warning': '#fbbf24' }
 };
-const HUD_THEME_VARS = ['--hud-primary', '--hud-glow', '--hud-scanline'];
+const HUD_THEME_VARS = ['--hud-primary', '--hud-secondary', '--hud-glow', '--hud-scanline', '--hud-border', '--hud-panel', '--hud-warning'];
 function applyHudThemeFromLoadout() {
     const gameContainer = document.getElementById('game-container');
     if (!gameContainer) return;
+    const hudRoot = document.getElementById('ui');
+    const targets = [gameContainer, hudRoot].filter(Boolean);
     const rawId = loadout.state.hudThemeId;
     const preset = HUD_THEME_PRESETS[rawId] ?? HUD_THEME_PRESETS[Number(rawId)];
     if (preset) {
-        for (const [key, value] of Object.entries(preset)) gameContainer.style.setProperty(key, value);
+        for (const target of targets) {
+            for (const [key, value] of Object.entries(preset)) target.style.setProperty(key, value);
+            target.dataset.hudTheme = String(rawId);
+        }
     } else {
-        for (const key of HUD_THEME_VARS) gameContainer.style.removeProperty(key);
+        for (const target of targets) {
+            for (const key of HUD_THEME_VARS) target.style.removeProperty(key);
+            delete target.dataset.hudTheme;
+        }
     }
 }
 applyHudThemeFromLoadout();
 window.addEventListener('loadout-hud-theme-changed', applyHudThemeFromLoadout);
+
+// Achievement cosmetics use the same local vault grant path as Season Pass
+// rewards. The event keeps achievements independent from the Steam UI module.
+window.addEventListener('achievement-cosmetic-unlocked', ({ detail }) => {
+    if (!detail?.itemdefid) return;
+    grantVaultItem(detail.itemdefid, 1);
+    // Also record it in the persisted ownership store, so the unlock survives a
+    // reload -- grantVaultItem() only touches steamVaultUi's in-memory array
+    // (audit finding F3).
+    getOwnershipStore().grantDev(detail.itemdefid, 1);
+});
 
 // ── Daily Ops System ──────────────────────────────────────────
 const DAILY_OPS_KEY_PREFIX = 'hb_daily_v1_';
@@ -3415,6 +3511,23 @@ function maybeShowCaveSignalTransmission() {
     AudioManager.playProceduralBreathing?.({ volume: 0.035, duration: 1.8 });
 }
 
+// docs/design/one-more-ring-design-pillars.md item 1 (Sprint 28 Lane A):
+// this listener already existed as the depth-crossing ritual beat (sound +
+// radio-transmission prompt) -- it just never said anything about the
+// actual reward/danger tradeoff. `crossing` (only present on a genuine
+// crossing, see threeGame.js's emitDepthTierChanged) makes that bet
+// legible instead of a silent number change.
+function formatDepthCrossingDelta(crossing) {
+    if (!crossing) return '';
+    const pct = (value) => `${value >= 0 ? '+' : ''}${Math.round(value * 100)}%`;
+    const parts = [];
+    if (crossing.salvageMultiplierDelta) parts.push(`SALVAGE ${pct(crossing.salvageMultiplierDelta)}`);
+    if (crossing.o2EfficiencyPenaltyDelta) parts.push(`O2 EFFICIENCY ${pct(-crossing.o2EfficiencyPenaltyDelta)}`);
+    if (crossing.eliteSpawnChanceDelta) parts.push(`HOSTILE THREAT ${pct(crossing.eliteSpawnChanceDelta)}`);
+    if (crossing.rareRelicChanceDelta) parts.push(`RARE SALVAGE ODDS ${pct(crossing.rareRelicChanceDelta)}`);
+    return parts.length ? ` // ${parts.join(' // ')}` : '';
+}
+
 let lastReportedDepthTier = 0;
 window.addEventListener('depth-tier-changed', (event) => {
     const tier = event?.detail?.tier ?? 0;
@@ -3423,7 +3536,7 @@ window.addEventListener('depth-tier-changed', (event) => {
         lastReportedDepthTier = tier;
         const label = event?.detail?.label ?? `DEPTH ${tier}`;
         AudioManager.play('ui_boot', { volume: 0.28, playbackRate: 0.78 + tier * 0.06, bus: 'sfx' });
-        showBiomePrompt(`> DEPTH: ${label}`);
+        showBiomePrompt(`> DEPTH: ${label}${formatDepthCrossingDelta(event?.detail?.crossing)}`);
         maybeShowCaveSignalTransmission();
     }
 });
@@ -3652,8 +3765,10 @@ function renderOperatorPolishUi() {
                 if (!next) return;
                 window.game?.setOperatorPolish?.(next.color);
                 scoutHeroPreview?.setOperatorPolish?.(next.color);
+                armorySceneInstance?.setOperatorPolish?.(next.color);
                 void renderPreviewFrame(activePreviewType, previewFrameIndex);
                 renderOperatorPolishUi();
+                armoryUiInstance?.refresh?.();
                 window.AudioManager?.play?.('ui_click', { volume: 0.5 });
             });
         }
@@ -5243,7 +5358,8 @@ window.addEventListener('camp-quest-complete', (event) => {
 });
 
 window.addEventListener('black-box-marker-active', (event) => {
-    const { x, z } = event?.detail ?? {};
+    const state = event?.detail?.state ?? event?.detail ?? {};
+    const { x, z } = state;
     objectiveRegistry.trackObjective({
         id: 'story:black_box',
         source: 'black-box',
@@ -5257,6 +5373,22 @@ window.addEventListener('black-box-marker-active', (event) => {
 
 window.addEventListener('black-box-recovered', () => {
     objectiveRegistry.resolveObjective('story:black_box', 'complete');
+});
+
+window.addEventListener('black-box-guard-defeated', (event) => {
+    const state = event?.detail?.state ?? {};
+    objectiveRegistry.trackObjective({
+        id: 'story:black_box',
+        source: 'black-box',
+        label: 'RECOVER BLACK BOX — GUARD DEFEATED',
+        current: 0,
+        target: 1,
+        priority: 10,
+        compass: Number.isFinite(state.x) && Number.isFinite(state.z)
+            ? { x: state.x, z: state.z }
+            : null
+    });
+    showBiomePrompt('> GUARD DEFEATED — BLACK BOX UNLOCKED. FOLLOW THE COMPASS.');
 });
 
 window.addEventListener('player-death', () => {
@@ -6917,6 +7049,13 @@ async function runMissionIntroSequence({ deploymentHold = null } = {}) {
         document.body.classList.remove('hud-hidden');
         game?.setCinematicLock?.(false);
         game?.setInputEnabled?.(true);
+        // The mission intro is the outer owner of the deployment rendering
+        // hold. Nested class/video skips can settle their suspend callbacks in
+        // a different order, leaving the reference-counted helper restored to
+        // `loadingPaused=true` even though every overlay and lock is gone.
+        // Finishing this sequence must always hand a live renderer back to
+        // gameplay; otherwise the HUD appears over a permanently black frame.
+        game?.setLoadingPaused?.(false);
         missionFlowRunning = false;
         const skipBtn = document.getElementById('global-skip-intro-btn');
         if (skipBtn) skipBtn.classList.add('hidden');
@@ -6943,6 +7082,20 @@ const transitionFromTitleToMenu = (afterClosed = null) => {
         'base'
     );
 };
+
+function returnFromHeroSelectToTitle() {
+    triggerDoorTransition(
+        () => {
+            menu?.classList.add('hidden');
+            splash?.classList.remove('hidden');
+            setAppPhase('splash');
+            window.game?.setPerformanceProfile?.('menu');
+            transitionToMenuMusic();
+        },
+        () => ensureControllerMenuFocus(),
+        'base'
+    );
+}
 
 // ── Pre-Mission Armory Gate (docs/armory-and-class-weapons-worklog.md task 5) ──
 // Inserted between class-select (menu) and run launch. Off unless
@@ -6974,7 +7127,8 @@ function ensureArmoryInitialized() {
                 armoryScene: armorySceneInstance,
                 onEmbark: () => closeArmoryScreen({ embark: true }),
                 onBack: () => closeArmoryScreen({ embark: false }),
-                onOpenVault: () => openSteamVaultModal()
+                onOpenVault: () => openSteamVaultModal(),
+                ownership: getOwnershipStore()
             });
         })();
     }
@@ -6983,15 +7137,14 @@ function ensureArmoryInitialized() {
 
 function closeArmoryScreen({ embark }) {
     document.getElementById('armory-screen')?.classList.add('hidden');
+    // The Armory owns a renderer loop and loaded GLB scene graph. Tear it down
+    // on every exit, including RETURN TO MAIN MENU; leaving it alive behind the
+    // menu kept a hidden canvas rendering and retained its textures/geometry.
+    armorySceneInstance?.dispose?.();
+    armorySceneInstance = null;
+    armoryUiInstance = null;
+    armoryInitPromise = null;
     if (embark) {
-        // Heading into gameplay — tear the scene down rather than leaving its
-        // requestAnimationFrame loop rendering a hidden canvas indefinitely.
-        // ensureArmoryInitialized() rebuilds fresh next time INITIALIZE/DAILY
-        // OPS is pressed.
-        armorySceneInstance?.dispose?.();
-        armorySceneInstance = null;
-        armoryUiInstance = null;
-        armoryInitPromise = null;
         const action = pendingArmoryEmbarkAction;
         pendingArmoryEmbarkAction = null;
         action?.();
@@ -7218,6 +7371,7 @@ if (window.electronAPI?.getQaToolsEnabled) {
     window.electronAPI.getQaToolsEnabled()
         .then((enabled) => {
             qaToolsEnabled = Boolean(enabled);
+            window.__hbQaToolsEnabled = qaToolsEnabled;
             developerToolsAuthorized = canUseDeveloperTools({
                 electronApiPresent,
                 qaToolsEnabled
@@ -7230,6 +7384,7 @@ if (window.electronAPI?.getQaToolsEnabled) {
         })
         .catch(() => {
             qaToolsEnabled = false;
+            window.__hbQaToolsEnabled = false;
             developerToolsAuthorized = canUseDeveloperTools({
                 electronApiPresent,
                 qaToolsEnabled
@@ -7259,7 +7414,7 @@ let debugGodModeActive = false;
 debugGrantResourcesBtn?.addEventListener('click', () => {
     bankManager.deposit({ tech: 250, coin: 150, med: 75 });
     bankManager.addShells(75);
-    window.game?.healPlayer?.(99);
+    window.game?.healPlayer?.(99, { skipQueensMilkPenalty: true });
     window.game?.adjustOxygen?.(100);
     window.game?.renderConsoleBanking?.(window.game?.activeInteractiveConsole);
     renderFabricationModal();
@@ -7307,6 +7462,35 @@ function devUnlockAchievement(key) {
     return `Unlocked achievement: ${targetTitle} (${targetKey})`;
 }
 
+// docs/armory-vault-progression-audit-2026-08-23.md A2. An explicit, visible
+// override -- it makes catalogue items equippable WITHOUT marking them owned,
+// so "rewards locked until earned" still holds for anything that asks about
+// ownership rather than equippability.
+function devSetCosmeticUnlockAll(arg) {
+    const store = getOwnershipStore();
+    const next = arg === undefined || arg === ''
+        ? !store.isUnlockAll()
+        : !['0', 'off', 'false', 'no'].includes(String(arg).toLowerCase());
+    store.setUnlockAll(next);
+    return `Cosmetic UNLOCK ALL ${next ? 'ENABLED' : 'DISABLED'} (equip override; ownership unchanged)`;
+}
+
+// B9: clears economy state only. Settings, achievements and codex progress live
+// under their own storage keys and are deliberately left alone.
+function devResetInventory() {
+    getOwnershipStore().reset();
+    resetDevVaultInventory();
+    return 'Inventory reset: dev grants, Vault items, cache state and UNLOCK ALL cleared. Settings untouched.';
+}
+
+function devSetInfiniteCache(arg) {
+    const next = arg === undefined || arg === ''
+        ? !isDevInfiniteCacheMode()
+        : !['0', 'off', 'false', 'no'].includes(String(arg).toLowerCase());
+    setDevInfiniteCacheMode(next);
+    return `Infinite dev caches/keys ${next ? 'ENABLED' : 'DISABLED'}`;
+}
+
 function devUnlockAllAchievements() {
     let count = 0;
     for (const def of ACHIEVEMENT_DEFS) {
@@ -7339,7 +7523,7 @@ function devResetAchievements() {
 function devGrantResources() {
     bankManager.deposit({ tech: 250, coin: 150, med: 75 });
     bankManager.addShells(75);
-    window.game?.healPlayer?.(99);
+    window.game?.healPlayer?.(99, { skipQueensMilkPenalty: true });
     window.game?.adjustOxygen?.(100);
     window.game?.renderConsoleBanking?.(window.game?.activeInteractiveConsole);
     renderFabricationModal();
@@ -7377,7 +7561,7 @@ window.devToggleNoclip = devToggleNoclip;
 if (window.__DEBUG__) window.__DEBUG__.toggleNoclip = devToggleNoclip;
 
 function devHealPlayer() {
-    window.game?.healPlayer?.(999);
+    window.game?.healPlayer?.(999, { skipQueensMilkPenalty: true });
     window.game?.adjustOxygen?.(999);
     return 'Player fully healed and O₂ refilled.';
 }
@@ -7510,21 +7694,43 @@ function transitionToGameplayForDebug() {
 }
 
 function openDebugShowroom() {
-    transitionToGameplayForDebug();
     closeDevConsoleModal();
     const game = window.game;
     if (!game) return Promise.reject(new Error('Game not initialized'));
-    showBiomePrompt('> DEBUG: ENTERING SHOWROOM VALIDATION GALLERY');
-    return game.buildDebugShowroom().then((showroom) => {
-        game.godMode = true;
-        const targetX = showroom.spawnX || 9510;
-        const targetZ = showroom.spawnZ || 9510;
-        const pos = game.teleportPlayerTo(targetX, targetZ, { syncChunks: false, safeFloor: false });
-        logDevConsole(`Teleported to Debug Showroom Gallery at (${targetX.toFixed(1)}, ${targetZ.toFixed(1)})`, 'success');
-        return pos;
-    }).catch((err) => {
-        logDevConsole(`Failed opening showroom: ${err?.message ?? err}`, 'error');
-        throw err;
+    showBiomePrompt('> DEBUG: CLOSING BULKHEAD FOR SHOWROOM LOAD');
+
+    // The showroom is a debug-only scene and can be expensive to build. Keep
+    // the player behind the normal bulkhead transition while gameplay mode is
+    // entered and every display asset is staged, matching the Armory/run gate.
+    return new Promise((resolve, reject) => {
+        let showroom = null;
+        let failure = null;
+        triggerDoorTransition(
+            async () => {
+                try {
+                    transitionToGameplayForDebug();
+                    showBiomePrompt('> DEBUG: ENTERING SHOWROOM VALIDATION GALLERY');
+                    showroom = await game.buildDebugShowroom({ debug: true });
+                } catch (err) {
+                    failure = err;
+                    logDevConsole(`Failed building showroom: ${err?.message ?? err}`, 'error');
+                }
+            },
+            () => {
+                if (failure) {
+                    reject(failure);
+                    return;
+                }
+                game.godMode = true;
+                const targetX = showroom?.spawnX || 9510;
+                const targetZ = showroom?.spawnZ || 9510;
+                const pos = game.teleportPlayerTo(targetX, targetZ, { syncChunks: false, safeFloor: false });
+                logDevConsole(`Teleported to Debug Showroom Gallery at (${targetX.toFixed(1)}, ${targetZ.toFixed(1)})`, 'success');
+                resolve(pos);
+            },
+            'base',
+            { waitForClosedWork: true, openingHoldMs: 450 }
+        );
     });
 }
 
@@ -7551,6 +7757,9 @@ function executeDevCommand(input) {
                 + '  seed [number]       - View or set active run seed\n'
                 + '  unlock <key>        - Unlock specific achievement\n'
                 + '  unlock_all          - Unlock all achievements\n'
+                + '  cosmetics_all [0|1] - Toggle cosmetic UNLOCK ALL (equip override)\n'
+                + '  cache_infinite [0|1] - Toggle infinite dev cache/key supply\n'
+                + '  reset_inventory     - Clear dev grants + unlock flags (keeps settings)\n'
                 + '  reset_ach           - Clear local achievement unlocks\n'
                 + '  reset_save          - Confirm a full save, RGB, and achievement reset\n'
                 + '  rgb [chapter]       - Launch RGB minigame (parking_lot, warehouse, incident_review, medi_kiosk, server_room, sector_four)\n'
@@ -7670,6 +7879,10 @@ function executeDevCommand(input) {
                 break;
             }
             const s = game.getComprehensiveDebugStats();
+            const gpuMs = s.performance.gpuFrame?.averageMs;
+            const gpuMemoryMiB = Number.isFinite(s.performance.gpuMemory?.estimatedBytes)
+                ? s.performance.gpuMemory.estimatedBytes / (1024 * 1024)
+                : null;
             result = `══════════════════ [ GAME STATE & TELEMETRY ] ══════════════════\n`
                 + `  RUN SEED:       ${s.seed} (entropy)\n`
                 + `  PROGRESSION:    Act ${s.act} · Level/Depth ${s.level} · Landform: ${s.landform}\n`
@@ -7687,6 +7900,7 @@ function executeDevCommand(input) {
                 + `  FPS:            ${Math.round(fpsFrames / Math.max((performance.now() - fpsLastTime) / 1000, 0.001))} (sampled)\n`
                 + `  DRAWS/TRIS:     ${s.performance.drawCalls} calls · ${s.performance.triangles.toLocaleString()} triangles\n`
                 + `  ASSETS:         ${s.performance.textures} textures · ${s.performance.geometries} geometries · ${s.performance.activeChunks} active chunks\n`
+                + `  GPU FRAME:      ${Number.isFinite(gpuMs) ? `${gpuMs.toFixed(2)}ms` : 'UNAVAILABLE'} · MEMORY EST: ${Number.isFinite(gpuMemoryMiB) ? `${gpuMemoryMiB.toFixed(1)} MiB` : 'UNAVAILABLE'}\n`
                 + `════════════════════════════════════════════════════════════════`;
             break;
         }
@@ -7800,6 +8014,19 @@ function executeDevCommand(input) {
         case 'codexall':
         case 'unlock_codex':
             result = devUnlockAllCodex();
+            break;
+        case 'cosmetics_all':
+        case 'unlock_cosmetics':
+            result = devSetCosmeticUnlockAll(arg);
+            break;
+        case 'reset_inventory':
+        case 'resetinv':
+            result = devResetInventory();
+            break;
+        case 'cache_infinite':
+        case 'infinite_cache':
+        case 'cacheinfinite':
+            result = devSetInfiniteCache(arg);
             break;
         case 'reset_ach':
         case 'resetach':
@@ -11363,10 +11590,26 @@ function triggerDoorTransition(onClosed, onOpened, doorKey, options = {}) {
         onOpeningStart = null
     } = options;
     const overlay = transitionOverlay || document.getElementById('transition-overlay');
+    const transitionGame = window.game;
+    const transitionGodMode = transitionGame ? Boolean(transitionGame.godMode) : false;
+    let transitionGodModeActive = false;
+    const enableTransitionProtection = () => {
+        if (!transitionGame || transitionGodModeActive) return;
+        transitionGame.setGodMode?.(true);
+        transitionGodModeActive = true;
+    };
+    const finishOpened = () => {
+        if (transitionGame && transitionGodModeActive) {
+            transitionGame.setGodMode?.(transitionGodMode);
+            transitionGodModeActive = false;
+        }
+        if (onOpened) onOpened();
+    };
+    enableTransitionProtection();
     if (!overlay) {
         if (onClosed) void onClosed();
         if (onOpeningStart) onOpeningStart();
-        if (onOpened) onOpened();
+        finishOpened();
         return;
     }
 
@@ -11442,7 +11685,7 @@ function triggerDoorTransition(onClosed, onOpened, doorKey, options = {}) {
                         // start intro work until the panels have visibly
                         // completed their 800ms travel.
                         setTimeout(() => {
-                            if (onOpened) onOpened();
+                            finishOpened();
                         }, 800);
                     }, openingHoldMs);
 
@@ -11864,6 +12107,11 @@ charCards.forEach(card => {
     });
 });
 
+document.getElementById('hero-select-back-btn')?.addEventListener('click', () => {
+    AudioManager.play('ui_click_confirm1', { volume: 0.7 });
+    returnFromHeroSelectToTitle();
+});
+
 // In-Universe Tactical Cursor and Hover React
 function initTacticalCursor() {
     const cursor = document.createElement('div');
@@ -11930,6 +12178,7 @@ function initTacticalCursor() {
         if (!isInsideGameViewport(mouseX, mouseY)) {
             cursor.classList.add('cursor-fade-out');
             document.documentElement.classList.remove('custom-cursor-enabled');
+            updateGameplayCrosshair(mouseX, mouseY, false);
             targetScale = 0.65;
             return;
         }
@@ -11939,6 +12188,7 @@ function initTacticalCursor() {
 
         if (!hasMoved) hasMoved = true;
         document.documentElement.classList.add('custom-cursor-enabled');
+        updateGameplayCrosshair(mouseX, mouseY, appPhase === 'gameplay');
     }, { passive: true });
 
     let lastRenderedX = -9999;
@@ -11990,11 +12240,14 @@ function initTacticalCursor() {
     let currentHoverTarget = null;
 
     document.addEventListener('pointerover', (e) => {
-        const target = e.target.closest('button, .char-card, .toggle, .calibrate-btn, .close-modal, .about-btn, a, input, select');
+        const target = e.target.closest('button, .char-card, .toggle, .calibrate-btn, .close-modal, .about-btn, a, input, select, .class-tab, .armory-btn, .armory-select, .deck-focus-target, .setting-item');
         if (target) {
             if (currentHoverTarget !== target) {
                 currentHoverTarget = target;
                 cursor.classList.add('cursor-hovering');
+                if (typeof focusControllerTarget === 'function' && document.activeElement !== target) {
+                    focusControllerTarget(target, { playHover: false });
+                }
                 // Play in-universe hover click blip
                 AudioManager.play('ui_hover', { volume: 0.12, varyPitch: true });
             }
@@ -12002,9 +12255,9 @@ function initTacticalCursor() {
     });
 
     document.addEventListener('pointerout', (e) => {
-        const target = e.target.closest('button, .char-card, .toggle, .calibrate-btn, .close-modal, .about-btn, a, input, select');
+        const target = e.target.closest('button, .char-card, .toggle, .calibrate-btn, .close-modal, .about-btn, a, input, select, .class-tab, .armory-btn, .armory-select, .deck-focus-target, .setting-item');
         if (target) {
-            const related = e.relatedTarget ? e.relatedTarget.closest('button, .char-card, .toggle, .calibrate-btn, .close-modal, .about-btn, a, input, select') : null;
+            const related = e.relatedTarget ? e.relatedTarget.closest('button, .char-card, .toggle, .calibrate-btn, .close-modal, .about-btn, a, input, select, .class-tab, .armory-btn, .armory-select, .deck-focus-target, .setting-item') : null;
             if (related !== currentHoverTarget) {
                 currentHoverTarget = related;
                 if (!related) {
@@ -12015,6 +12268,37 @@ function initTacticalCursor() {
     });
 }
 
+// docs/sprint28plan.md Lane D: if a run-in-progress checkpoint is still on
+// disk at boot, the previous session never reached a graceful end (death,
+// extraction, or a fresh NEW RUN all clear it -- see src/threeGame.js's
+// handleDeath/handleExtraction and startNewTacticalRunFlow below) -- proof
+// of a crash, force-quit, or tab-close mid-run. Convert it into a normal
+// black-box death-stain entry (same recovery flow a real death already
+// uses) so a crash degrades to "died with recoverable salvage" instead of
+// silent total loss. A checkpoint with no salvage yet is just cleared --
+// nothing to recover, no point spawning an empty marker.
+function recoverCrashedRunCheckpoint() {
+    try {
+        const checkpoint = runCheckpointStore.load();
+        if (!checkpoint) return;
+        if (hasRecoverableSalvage(checkpoint)) {
+            const { tech, coin, med } = checkpoint.salvage;
+            blackBoxStore.recordDeath({
+                x: checkpoint.x,
+                z: checkpoint.z,
+                depth: checkpoint.depth,
+                classType: checkpoint.classType,
+                salvage: checkpoint.salvage,
+                cause: 'crash-recovered',
+                log: `Operator ${checkpoint.classType} signal lost mid-expedition (unexpected shutdown). Recoverable salvage: ${tech} TECH / ${coin} COIN / ${med} MED.`
+            });
+        }
+        runCheckpointStore.clear();
+    } catch {
+        // Best effort -- never block boot on this.
+    }
+}
+
 // Initial State Setup
 document.addEventListener('DOMContentLoaded', async () => {
     traceBootPhase('dom-content-loaded', {
@@ -12022,6 +12306,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         devicePixelRatio: window.devicePixelRatio
     });
     startBootLongTaskDiagnostics();
+    recoverCrashedRunCheckpoint();
     window.AudioManager = AudioManager; // Expose globally for the 3D engine/Telemeters
     preloadDoorAssets();
     initTacticalCursor();
@@ -12255,6 +12540,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         transitionFromTitleToMenu(() => {
             clearSaveData();
             blackBoxStore.clear();
+            runCheckpointStore.clear();
             window.game?.clearBlackBoxMarker?.();
             updateContinueButtonState();
             renderRosterModal('new_game');
@@ -12840,6 +13126,22 @@ function captureMenuRenderSnapshot() {
     }
 }
 
+function captureGameplayPerfContext() {
+    try {
+        return {
+            activePhases: (window.__hbPerfPhaseStack ?? []).map((span) => ({
+                phase: span.phase,
+                startMs: Math.round(span.startMs * 10) / 10,
+                context: span.context ?? null
+            })),
+            recentPhases: (window.__hbPerfPhaseHistory ?? []).slice(-12),
+            counters: window.game?.getPerformanceDiagnosticsSnapshot?.() ?? null
+        };
+    } catch {
+        return { activePhases: [], recentPhases: [], counters: null };
+    }
+}
+
 let gameplayLongTaskObserver = null;
 function startGameplayLongTaskDiagnostics() {
     if (typeof PerformanceObserver === 'undefined' || gameplayLongTaskObserver) return;
@@ -12865,6 +13167,7 @@ function startGameplayLongTaskDiagnostics() {
                     // still genuinely unattributed -- a real open question,
                     // not chunk-mount work.
                     lastPhase,
+                    ...captureGameplayPerfContext(),
                     // Only populated when still unattributed and the game is
                     // sitting in the menu profile -- see captureMenuRenderSnapshot.
                     menuRenderSnapshot: lastPhase === null ? captureMenuRenderSnapshot() : null
@@ -12940,6 +13243,28 @@ async function refreshSteamBridgeStatus({ waitForBackend = true } = {}) {
     const health = waitForBackend
         ? await healthPromise
         : { ok: false, pending: true, reason: 'health_pending' };
+
+    // Keep a privacy-safe snapshot available to the in-game session exporter.
+    // It intentionally omits SteamID64; demo logs need platform health, not
+    // an account identifier.
+    window.__hbSteamStatus = {
+        active: Boolean(info?.active),
+        persona: info?.persona ?? null,
+        appId: info?.appId ?? null,
+        isSteamDeck: Boolean(info?.isSteamDeck),
+        steamInputAvailable: Boolean(info?.steamInputAvailable),
+        cloud: info?.cloud ? {
+            available: Boolean(info.cloud.available),
+            enabledForApp: Boolean(info.cloud.enabledForApp),
+            enabledForAccount: Boolean(info.cloud.enabledForAccount)
+        } : null,
+        backend: {
+            ok: Boolean(health?.ok),
+            pending: Boolean(health?.pending),
+            reason: health?.reason ?? null,
+            authConfigured: Boolean(health?.steam?.authConfigured)
+        }
+    };
 
     const identityLogKey = JSON.stringify({
         active: Boolean(info?.active),

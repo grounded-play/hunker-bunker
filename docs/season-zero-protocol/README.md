@@ -53,4 +53,9 @@
    - Automated conversion pipeline for the 4-file compliance standard (`256px local`, `512px large`, `1254px master`, `1254px chroma`).
    - Registration into Steam inventory schema, catalog synchronization, and Armory / Battle Pass UI integration.
 
+10. [10. Season Rewards, Skin Catalog Review & Achievement-Unlocked Class Skins Manifest](file:///home/caveman/Desktop/icecave/hunker-bunker/docs/season-rewards-skins-and-achievement-unlocks.md)
+    - Full audit of all 71 existing catalog items, 2D art, 3D meshes, and runtime engine wiring.
+    - Master prompt manifest for all missing 3D models, shaders, and synthesized voice callouts.
+    - 12 brand-new achievement-unlocked class skins (4 Scout, 4 Tank, 4 Engineer) with full lore, 2D/3D prompts, and technical engine wiring plan.
+
 

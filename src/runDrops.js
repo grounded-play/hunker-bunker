@@ -2,6 +2,8 @@
 // Manages randomized mid-run loot drops (Weapon Overclocks & Suit Relics)
 // and calculates elemental synergies (Cryo, Bio, Tesla) per playthrough.
 
+import { rollsRareRelic } from './depthContract.js';
+
 export const DROP_TYPES = Object.freeze({
     OVERCLOCK: 'overclock',
     RELIC: 'relic'
@@ -142,6 +144,7 @@ export const SUIT_RELICS = Object.freeze([
         rarity: DROP_RARITIES.CORRUPTED,
         description: 'Maximum oxygen capacity permanently reduced. Kills restore oxygen.',
         transformative: true,
+        wired: true,
         stats: { maxO2PenaltyPercent: 40, killO2Restore: 8 }
     },
     {
@@ -151,7 +154,8 @@ export const SUIT_RELICS = Object.freeze([
         rarity: DROP_RARITIES.RARE,
         description: 'Reloading consumes 3 salvage and fires a radial shrapnel blast.',
         transformative: true,
-        stats: { reloadSalvageCost: 3, reloadShrapnelDamage: 15 }
+        wired: true,
+        stats: { reloadSalvageCost: 3, reloadShrapnelDamage: 15, reloadShrapnelRadius: 3 }
     },
     {
         id: 'parasitic_magazine',
@@ -160,6 +164,7 @@ export const SUIT_RELICS = Object.freeze([
         rarity: DROP_RARITIES.CORRUPTED,
         description: 'Kills refill the magazine but permanently reduce maximum oxygen.',
         transformative: true,
+        wired: true,
         stats: { killAmmoRefund: 1, maxO2PenaltyPercent: 5 }
     },
     {
@@ -169,6 +174,7 @@ export const SUIT_RELICS = Object.freeze([
         rarity: DROP_RARITIES.RARE,
         description: 'At critical health, enemies temporarily lose track of you.',
         transformative: true,
+        wired: true,
         stats: { criticalHpPercent: 15, aggroDropChance: 0.4, aggroDropDuration: 2.5 }
     },
     {
@@ -178,7 +184,8 @@ export const SUIT_RELICS = Object.freeze([
         rarity: DROP_RARITIES.RARE,
         description: 'Every empty reload ejects the remaining magazine as an explosive.',
         transformative: true,
-        stats: { emptyReloadExplosionDamage: 20 }
+        wired: true,
+        stats: { emptyReloadExplosionDamage: 20, emptyReloadExplosionRadius: 3 }
     },
     {
         id: 'cryo_breach',
@@ -188,6 +195,7 @@ export const SUIT_RELICS = Object.freeze([
         description: 'Frozen enemies explode on death and freeze nearby targets.',
         element: 'cryo',
         transformative: true,
+        wired: true,
         stats: { chainFreezeRadius: 3 }
     },
     {
@@ -198,11 +206,18 @@ export const SUIT_RELICS = Object.freeze([
         description: 'Alien enemies may heal you on contact. Human healing hurts instead.',
         element: 'bio',
         transformative: true,
+        wired: true,
         stats: { alienHealAmount: 5, humanHealPenaltyMult: 0.5 }
     }
 ]);
 
-export function rollEnemyLootDrop(random, { isElite = false, isBoss = false } = {}) {
+// docs/design/one-more-ring-design-pillars.md item 1 (Sprint 28 Lane A):
+// ring defaults to 1 (depthContract.js's neutral baseline, rollsRareRelic
+// returns false at ring 1) so every existing caller not yet passing it
+// keeps today's exact drop distribution -- this only changes behavior for
+// a caller that explicitly supplies a deeper ring (see threeGame.js's
+// spawnGearPoofEffect/kill-loot call site).
+export function rollEnemyLootDrop(random, { isElite = false, isBoss = false, ring = 1 } = {}) {
     const chance = isBoss ? 1.0 : (isElite ? 0.65 : 0.12);
     if (random() > chance) return null;
 
@@ -216,7 +231,19 @@ export function rollEnemyLootDrop(random, { isElite = false, isBoss = false } = 
         rarity = rarityRoll < 0.1 ? DROP_RARITIES.RARE : DROP_RARITIES.COMMON;
     }
 
-    const pool = [...WEAPON_OVERCLOCKS, ...SUIT_RELICS].filter((item) => item.rarity === rarity);
+    let pool = [...WEAPON_OVERCLOCKS, ...SUIT_RELICS].filter((item) => item.rarity === rarity);
+    // Depth Contract's rareRelicChance (design doc: "chance a reward-tier
+    // drop rolls a relic instead of a common/useful item") biases this roll
+    // toward the relic half of the pool specifically, not just a higher
+    // rarity floor -- rarity and item-type (overclock vs relic) were
+    // previously two separate axes with no depth-based link between them.
+    // Only narrows the pool when a relic actually exists at this rarity;
+    // never empties an otherwise-valid roll.
+    if (rollsRareRelic(ring, random())) {
+        const relicsOnly = pool.filter((item) => item.type === DROP_TYPES.RELIC);
+        if (relicsOnly.length) pool = relicsOnly;
+    }
+
     if (!pool.length) return WEAPON_OVERCLOCKS[0];
     return pool[Math.floor(random() * pool.length)];
 }
@@ -234,6 +261,144 @@ export function applyLastBreathDamage(baseDamage, equippedRelics = [], currentO2
         }
     }
     return damage;
+}
+
+export function applyPuncturedLungCapacity(baseMaxO2 = 100, equippedRelics = []) {
+    let maxO2 = baseMaxO2;
+    for (const relic of equippedRelics) {
+        const penalty = Number(relic?.stats?.maxO2PenaltyPercent);
+        if (Number.isFinite(penalty) && penalty > 0) {
+            maxO2 *= Math.max(0, 1 - (penalty / 100));
+        }
+    }
+    return Math.max(1, maxO2);
+}
+
+export function applyPuncturedLungKillO2(currentO2 = 0, equippedRelics = [], maxO2 = 100) {
+    let nextO2 = currentO2;
+    for (const relic of equippedRelics) {
+        const restore = Number(relic?.stats?.killO2Restore);
+        if (Number.isFinite(restore) && restore > 0) nextO2 += restore;
+    }
+    return Math.min(maxO2, Math.max(0, nextO2));
+}
+
+export function applyParasiticMagazineKill({ clipAmmo = 0, clipSize = 0, maxO2 = 100 } = {}, equippedRelics = []) {
+    let nextClipAmmo = clipAmmo;
+    let nextMaxO2 = maxO2;
+    for (const relic of equippedRelics) {
+        const refund = Number(relic?.stats?.killAmmoRefund);
+        const penalty = Number(relic?.stats?.maxO2PenaltyPercent);
+        if (Number.isFinite(refund) && refund > 0) nextClipAmmo = Math.min(clipSize, nextClipAmmo + refund);
+        if (Number.isFinite(penalty) && penalty > 0) nextMaxO2 *= Math.max(0, 1 - (penalty / 100));
+    }
+    return { clipAmmo: nextClipAmmo, maxO2: Math.max(1, nextMaxO2) };
+}
+
+export function applyFalseTelemetryAggroDrop(currentHp = 100, maxHp = 100, equippedRelics = [], random = Math.random) {
+    const hpRatio = currentHp / Math.max(1, maxHp);
+    for (const relic of equippedRelics) {
+        const threshold = Number(relic?.stats?.criticalHpPercent);
+        const chance = Number(relic?.stats?.aggroDropChance);
+        const duration = Number(relic?.stats?.aggroDropDuration);
+        if (Number.isFinite(threshold) && Number.isFinite(chance) && Number.isFinite(duration)
+            && hpRatio * 100 <= threshold && random() < chance) {
+            return Math.max(0, duration);
+        }
+    }
+    return 0;
+}
+
+export function getCryoBreachChainFreezeRadius(equippedRelics = []) {
+    return equippedRelics.reduce((radius, relic) => {
+        const value = Number(relic?.stats?.chainFreezeRadius);
+        return Number.isFinite(value) && value > radius ? value : radius;
+    }, 0);
+}
+
+// docs/design/one-more-ring-design-pillars.md item 2 (Sprint 28): "Scrap
+// Cycler -- reloading consumes 3 salvage and fires a radial shrapnel
+// blast." Pure decision only -- does NOT touch this.bank itself (spending
+// shells is a real side effect the caller must perform and only apply the
+// blast if the spend actually succeeded, so a broke player still gets a
+// normal reload rather than a silently-failed one). Returns null when the
+// relic isn't equipped, distinct from "equipped but nothing happens" so a
+// caller doesn't need a second existence check.
+export function getScrapCyclerReloadEffect(equippedRelics = []) {
+    for (const relic of equippedRelics) {
+        const salvageCost = Number(relic?.stats?.reloadSalvageCost);
+        const shrapnelDamage = Number(relic?.stats?.reloadShrapnelDamage);
+        if (Number.isFinite(salvageCost) && Number.isFinite(shrapnelDamage)) {
+            return {
+                salvageCost,
+                shrapnelDamage,
+                shrapnelRadius: Number(relic?.stats?.reloadShrapnelRadius) || 3
+            };
+        }
+    }
+    return null;
+}
+
+// "Vesper Doctrine -- every empty reload ejects the remaining magazine as
+// an explosive." An OVERCLOCK (weapon-side), not a suit RELIC, so it reads
+// from equippedOverclocks, not equippedRelics -- see DROP_TYPES.OVERCLOCK
+// on its own catalog entry. wasEmpty is the caller's own read of
+// clipAmmo === 0 at the moment reload was requested, passed in rather than
+// re-derived here so this stays a pure function with no clip-state
+// knowledge of its own.
+export function getVesperDoctrineReloadEffect(wasEmpty, equippedOverclocks = []) {
+    if (!wasEmpty) return null;
+    for (const mod of equippedOverclocks) {
+        const explosionDamage = Number(mod?.stats?.emptyReloadExplosionDamage);
+        if (Number.isFinite(explosionDamage)) {
+            return {
+                explosionDamage,
+                explosionRadius: Number(mod?.stats?.emptyReloadExplosionRadius) || 3
+            };
+        }
+    }
+    return null;
+}
+
+// "Queen's Milk -- Alien enemies may heal you on contact. Human healing
+// hurts instead." Two independent hooks, both pure:
+//
+// 1. getQueensMilkAlienContactHeal -- reason must be a genuine alien-body
+//    touch, not a ranged/AoE/environmental hit. Verified against threeGame.js
+//    call sites: 'crawler' (charge-attack proximity check) and
+//    'mycelium_stalker' / 'bio_charger' (both explicitly commented
+//    "Contact attack check"). Deliberately excludes enemy-projectile,
+//    ground-slam, frost-shockwave, queen-shockwave (alien, but ranged/AoE,
+//    not contact) and hazard-zone/o2-depletion/fall/camp-turret/pvp-rival
+//    (not alien contact at all) -- "on contact" means the creature's own
+//    body touching you.
+// 2. getQueensMilkHumanHealPenalty -- healAmount is whatever a human-sourced
+//    heal call was about to apply (med conversion, camp aid, health pickup
+//    -- every current call to ThreeGame.healPlayer() in this codebase is one
+//    of these three, there is no separate "alien heals you" path elsewhere
+//    to accidentally double-flip). Returns a positive damage amount for the
+//    caller to route through takeDamage() instead of healing, or null when
+//    the relic isn't equipped / there's nothing to flip.
+const QUEENS_MILK_ALIEN_CONTACT_REASONS = new Set(['crawler', 'mycelium_stalker', 'bio_charger']);
+
+export function getQueensMilkAlienContactHeal(reason, equippedRelics = []) {
+    if (!QUEENS_MILK_ALIEN_CONTACT_REASONS.has(reason)) return null;
+    for (const relic of equippedRelics) {
+        if (relic?.id !== 'queens_milk') continue;
+        const healAmount = Number(relic?.stats?.alienHealAmount);
+        if (Number.isFinite(healAmount)) return healAmount;
+    }
+    return null;
+}
+
+export function getQueensMilkHumanHealPenalty(healAmount, equippedRelics = []) {
+    if (!(healAmount > 0)) return null;
+    for (const relic of equippedRelics) {
+        if (relic?.id !== 'queens_milk') continue;
+        const penaltyMult = Number(relic?.stats?.humanHealPenaltyMult);
+        if (Number.isFinite(penaltyMult)) return Math.max(1, Math.round(healAmount * penaltyMult));
+    }
+    return null;
 }
 
 export function computeActiveSynergies(equippedItems = []) {

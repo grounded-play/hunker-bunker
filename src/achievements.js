@@ -16,6 +16,12 @@ const ENDING_FAMILIES = Object.freeze([
     ['empty_husk', 'EMPTY HUSK']
 ]);
 
+export const ACHIEVEMENT_COSMETIC_REWARDS = Object.freeze({
+    ghost: '5001', quick_study: '5002', cartographer: '5003', reyes_courier: '5004',
+    hardened: '5005', hunkered: '5006', ending_full_brood: '5007', gentle_drill: '5008',
+    archivist: '5009', kin: '5010', chen_thirteenth: '5011', ending_alien_exodus: '5012'
+});
+
 const freezeDeep = (value) => {
     if (!value || typeof value !== 'object') return value;
     Object.freeze(value);
@@ -457,6 +463,12 @@ export function recordEvent(name, detail = {}, { storage = null, now = Date.now(
     const current = loadAchievements(store);
     const result = applyAchievementEvent(current, name, detail, now);
     saveAchievements(result.state, store);
+    if (typeof window !== 'undefined') {
+        for (const unlock of result.newUnlocks) {
+            const itemdefid = ACHIEVEMENT_COSMETIC_REWARDS[unlock.key];
+            if (itemdefid) window.dispatchEvent(new CustomEvent('achievement-cosmetic-unlocked', { detail: { achievementKey: unlock.key, itemdefid } }));
+        }
+    }
     return result;
 }
 

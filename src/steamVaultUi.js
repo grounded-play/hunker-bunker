@@ -13,15 +13,49 @@ import {
     getShardBalance,
     planDispensaryRedeem,
     planIngotPackPurchase,
-    planSmelt,
-    resolveDuplicateGrant
+    planSmelt
 } from './craftingMatrix.js';
+
+import { COMMUNITY_SKINS } from './data/communitySkins.js';
+import { ACHIEVEMENT_COSMETICS } from './data/achievementCosmetics.js';
+import {
+    adaptSteamCacheResult,
+    createCacheOpeningResult,
+    CACHE_ITEMDEFID,
+    CACHE_KEY_ITEMDEFID
+} from './cacheOpening.js';
 
 export { STEAM_ITEM_CATALOG };
 
 export function getItemCatalogEntry(itemdefid) {
+    if (!itemdefid) return null;
+    const strId = String(itemdefid);
+    const comm = COMMUNITY_SKINS.find((s) => s.id === strId);
+    if (comm) {
+        const iconPath = `/economy/${comm.classId === 'scout' ? 'chassis_cryo_vanguard_scout' : comm.classId === 'tank' ? 'chassis_trench_warden_heavy' : 'chassis_subterran_drill_engineer'}.png`;
+        return {
+            itemdefid: comm.id,
+            name: comm.name,
+            rarity: comm.rarity || 'epic',
+            desc: `${comm.desc} [Action: ${comm.actionLabel}]`,
+            tradable: true,
+            marketable: false,
+            img: iconPath,
+            localImg: iconPath,
+            localImgLarge: iconPath.replace('.png', '_large.png')
+        };
+    }
     const numericId = Number(itemdefid);
     if (STEAM_ITEM_CATALOG[numericId]) return STEAM_ITEM_CATALOG[numericId];
+    const achievement = ACHIEVEMENT_COSMETICS.find((item) => item.itemdefid === String(numericId));
+    if (achievement) {
+        const iconBase = achievement.slot === 'weapon'
+            ? 'skin_frostbite_talon'
+            : achievement.classId === 'scout' ? 'chassis_cryo_vanguard_scout'
+                : achievement.classId === 'tank' ? 'chassis_trench_warden_heavy' : 'chassis_subterran_drill_engineer';
+        const iconPath = `/economy/${iconBase}.png`;
+        return { ...achievement, itemdefid: numericId, tradable: false, marketable: false, img: iconPath, localImg: iconPath, localImgLarge: iconPath.replace('.png', '_large.png') };
+    }
     const armory = CATALOG_ITEMS?.[String(numericId)];
     if (armory) {
         const iconPath = armory.icon || `/economy/${numericId}.png`;
@@ -42,11 +76,10 @@ export function getItemCatalogEntry(itemdefid) {
 
 export function applyCatalogImage(image, catalog) {
     if (!image || !catalog) return;
-    // Remote CDN -> local economy PNG -> generic placeholder. The season catalog (itemdefs
-    // 4100-4159) is fully registered but roughly a third of its items don't have real key art
-    // yet (docs/season-zero-protocol/08-asset-audit-and-gaps.md) — this keeps those showing a
-    // clean placeholder instead of a broken-image icon until art lands, no code change needed
-    // when it does.
+    // Remote CDN -> local economy PNG -> generic placeholder. The current visible Season 0
+    // catalog (itemdefs 4100-4159) has complete 2D economy coverage; retain the fallback for
+    // legacy/achievement/community entries so a future art gap never becomes a broken-image
+    // icon.
     image.onerror = () => {
         if (!image.dataset.localFallback) {
             image.dataset.localFallback = 'true';
@@ -71,6 +104,64 @@ let selectedVaultItem = null;
 let marketEligibility = 'unknown';
 let marketEligibilityReason = null;
 let hudCardSeq = 0;
+let cacheOpeningBusy = false;
+const DEV_VAULT_STORAGE_KEY = 'hb_dev_vault_inventory_v1';
+const DEV_INFINITE_CACHE_STORAGE_KEY = 'hb_dev_infinite_cache_v1';
+
+function isBrowserSandbox() {
+    return typeof window !== 'undefined' && (!window.electronAPI || window.__hbQaToolsEnabled === true);
+}
+
+function readDevVaultInventory() {
+    if (!isBrowserSandbox()) return null;
+    try {
+        const parsed = JSON.parse(window.localStorage?.getItem(DEV_VAULT_STORAGE_KEY) ?? 'null');
+        return Array.isArray(parsed) ? parsed : null;
+    } catch {
+        return null;
+    }
+}
+
+function persistDevVaultInventory() {
+    if (!isBrowserSandbox()) return;
+    try {
+        window.localStorage?.setItem(DEV_VAULT_STORAGE_KEY, JSON.stringify(vaultItems));
+    } catch {
+        // Sandbox persistence is best effort in private browsing.
+    }
+}
+
+export function setDevInfiniteCacheMode(enabled) {
+    if (typeof window === 'undefined') return Boolean(enabled);
+    try {
+        if (enabled) window.localStorage?.setItem(DEV_INFINITE_CACHE_STORAGE_KEY, 'true');
+        else window.localStorage?.removeItem(DEV_INFINITE_CACHE_STORAGE_KEY);
+    } catch { /* best effort */ }
+    return Boolean(enabled);
+}
+
+export function isDevInfiniteCacheMode() {
+    try {
+        return isBrowserSandbox() && window.localStorage?.getItem(DEV_INFINITE_CACHE_STORAGE_KEY) === 'true';
+    } catch {
+        return false;
+    }
+}
+
+export function resetDevVaultInventory() {
+    vaultItems = [];
+    selectedVaultItem = null;
+    if (isBrowserSandbox()) {
+        try { window.localStorage?.removeItem(DEV_VAULT_STORAGE_KEY); } catch { /* best effort */ }
+        syncDevOwnership();
+    }
+    renderInventoryGrid();
+    updateOpenCacheAvailability();
+}
+
+function syncDevOwnership() {
+    if (isBrowserSandbox()) window.itemOwnership?.setDevInventory?.(vaultItems);
+}
 
 export function openSteamVaultModal() {
     if (typeof window !== 'undefined' && window.hbLog) {
@@ -153,6 +244,8 @@ export function grantVaultItem(itemdefid, quantity = 1) {
     } else {
         vaultItems.push({ itemId: `grant_${Date.now()}_${itemdefid}`, itemdefid, quantity });
     }
+    persistDevVaultInventory();
+    syncDevOwnership();
     reconcileCosmeticsOwnership(vaultItems);
     renderInventoryGrid();
     updateOpenCacheAvailability();
@@ -333,8 +426,13 @@ export async function loadVaultData() {
         const result = await window.electronAPI.refreshSteamInventory().catch(() => null);
         if (result?.ok && Array.isArray(result.inventory) && result.inventory.length > 0) {
             vaultItems = result.inventory;
+            // Feed the unified ownership store (src/itemOwnership.js) so the
+            // Armory gates on the same entitlements the Vault renders. Only the
+            // real service response is pushed here -- the sandbox fallback below
+            // is not an entitlement and must not read as one.
+            window.itemOwnership?.setSteamInventory(result.inventory);
         } else if (vaultItems.length === 0) {
-            vaultItems = [
+            vaultItems = readDevVaultInventory() ?? [
                 { itemId: 'sandbox_4000', itemdefid: 4000, quantity: 2 },
                 { itemId: 'sandbox_4001', itemdefid: 4001, quantity: 2 },
                 { itemId: 'sandbox_2000', itemdefid: 2000, quantity: 1 },
@@ -351,15 +449,17 @@ export async function loadVaultData() {
         if (statusEl) statusEl.textContent = 'SANDBOX ACTIVE';
         if (commandStatus) commandStatus.textContent = 'SANDBOX';
         if (vaultItems.length === 0) {
-            vaultItems = [
+            vaultItems = readDevVaultInventory() ?? [
                 { itemId: 'sandbox_4000', itemdefid: 4000, quantity: 2 },
                 { itemId: 'sandbox_4001', itemdefid: 4001, quantity: 2 },
                 { itemId: 'sandbox_2000', itemdefid: 2000, quantity: 1 },
                 { itemId: 'sandbox_2003', itemdefid: 2003, quantity: 1 },
                 { itemId: 'sandbox_2100', itemdefid: 2100, quantity: 1 }
             ];
+            persistDevVaultInventory();
             reconcileCosmeticsOwnership(vaultItems);
         }
+        syncDevOwnership();
         renderInventoryGrid();
         updateOpenCacheAvailability();
     }
@@ -744,7 +844,7 @@ export function updateOpenCacheAvailability() {
     const pair = findOwnedCacheAndKey();
     updateKeyCacheCounts();
 
-    if (pair) {
+    if (pair || isDevInfiniteCacheMode()) {
         statusEl?.classList.add('hidden');
         btn?.classList.remove('hidden');
     } else {
@@ -756,7 +856,13 @@ export function updateOpenCacheAvailability() {
     }
 }
 
-export function playCacheRevealAnimation(rewardDefId, onClaim) {
+function applyCacheOpeningRewards(result) {
+    for (const reward of result?.rewards ?? []) {
+        grantVaultItem(reward.itemdefid, reward.quantity ?? 1);
+    }
+}
+
+export function playCacheRevealAnimation(openingOrReward, onClaim) {
     const overlay = document.getElementById('vault-reveal-overlay');
     const titleEl = document.getElementById('vault-reveal-title');
     const statusEl = document.getElementById('vault-reveal-status');
@@ -774,10 +880,16 @@ export function playCacheRevealAnimation(rewardDefId, onClaim) {
         return;
     }
 
-    const reward = getItemCatalogEntry(rewardDefId) || {
-        name: `Item #${rewardDefId}`,
+    const rewards = Array.isArray(openingOrReward?.rewards)
+        ? openingOrReward.rewards
+        : [{ slot: 'cosmetic', itemdefid: openingOrReward, quantity: 1 }];
+    const primaryDefId = rewards[0]?.itemdefid ?? null;
+    const reward = getItemCatalogEntry(primaryDefId) || {
+        name: primaryDefId ? `Item #${primaryDefId}` : 'RELIC CACHE OPENED',
         rarity: 'rare',
-        desc: 'Subterranean relic recovered from deep vault cache.',
+        desc: primaryDefId
+            ? 'Subterranean relic recovered from deep vault cache.'
+            : 'Steam confirmed the cache exchange. No new item grant was returned for this transaction.',
         localImg: '/favicon.png'
     };
 
@@ -869,6 +981,23 @@ export function playCacheRevealAnimation(rewardDefId, onClaim) {
         if (img) applyCatalogImage(img, reward);
         if (nameEl) nameEl.textContent = reward.name;
         if (descEl) descEl.textContent = reward.desc;
+
+        const existingBundle = cardEl?.querySelector('.vault-reveal-bundle');
+        existingBundle?.remove();
+        if (cardEl && rewards.length > 1) {
+            const bundle = document.createElement('div');
+            bundle.className = 'vault-reveal-bundle';
+            bundle.innerHTML = rewards.map((entry) => {
+                const catalog = getItemCatalogEntry(entry.itemdefid);
+                const color = getRarityColor(entry.rarity || catalog?.rarity || 'common');
+                return `<div class="vault-reveal-bundle__item" style="--rarity-color:${color}">
+                    <span class="vault-reveal-bundle__slot">${String(entry.slot || 'reward').toUpperCase()}</span>
+                    <strong>${entry.label || catalog?.name || `ITEM #${entry.itemdefid}`}</strong>
+                    <span>x${entry.quantity ?? 1}${entry.duplicate ? ' // DUPLICATE CONVERTED' : ''}</span>
+                </div>`;
+            }).join('');
+            cardEl.insertBefore(bundle, claimBtn);
+        }
 
         window.AudioManager?.play?.('fx_achievement', { volume: 0.5, bus: 'sfx' });
     }, 3200);
@@ -1027,43 +1156,45 @@ function handleDispensaryRedeem(targetItemdefid) {
 }
 
 export async function openDeepRelicCache() {
+    if (cacheOpeningBusy) return;
+    cacheOpeningBusy = true;
+    if (!window.electronAPI?.openSteamCache && isDevInfiniteCacheMode()) {
+        if (!vaultItems.some((item) => item.itemdefid === CACHE_ITEMDEFID && item.quantity > 0)) {
+            vaultItems.push({ itemId: `dev_cache_${Date.now()}`, itemdefid: CACHE_ITEMDEFID, quantity: 1 });
+        }
+        if (!vaultItems.some((item) => item.itemdefid === CACHE_KEY_ITEMDEFID && item.quantity > 0)) {
+            vaultItems.push({ itemId: `dev_key_${Date.now()}`, itemdefid: CACHE_KEY_ITEMDEFID, quantity: 1 });
+        }
+    }
     const pair = findOwnedCacheAndKey();
-    if (!pair) return;
+    if (!pair) {
+        cacheOpeningBusy = false;
+        return;
+    }
 
     if (!window.electronAPI?.openSteamCache) {
-        pair.cache.quantity -= 1;
-        pair.key.quantity -= 1;
-        if (pair.cache.quantity <= 0) vaultItems = vaultItems.filter((i) => i !== pair.cache);
-        if (pair.key.quantity <= 0) vaultItems = vaultItems.filter((i) => i !== pair.key);
-
-        const possibleDrops = [2000, 2001, 2002, 2003, 2004, 2100, 2200];
-        const randomDefId = possibleDrops[Math.floor(Math.random() * possibleDrops.length)];
-        // Season 0 duplicate-protection (docs/season-zero-protocol/05 §3): dupes still grant
-        // the item (Steam-style) plus bonus Deep Core Shards scaled by rarity.
-        const dupeCheck = resolveDuplicateGrant(randomDefId, vaultItems, getItemCatalogEntry);
-        const existing = vaultItems.find((i) => i.itemdefid === randomDefId);
-        if (existing) {
-            existing.quantity += 1;
-        } else {
-            vaultItems.push({ itemId: `grant_${Date.now()}`, itemdefid: randomDefId, quantity: 1 });
+        const infinite = isDevInfiniteCacheMode();
+        if (!infinite) {
+            pair.cache.quantity -= 1;
+            pair.key.quantity -= 1;
+            if (pair.cache.quantity <= 0) vaultItems = vaultItems.filter((i) => i !== pair.cache);
+            if (pair.key.quantity <= 0) vaultItems = vaultItems.filter((i) => i !== pair.key);
         }
-        if (dupeCheck.bonusShards > 0) {
-            const shardStack = vaultItems.find((i) => i.itemdefid === SHARD_ITEMDEFID);
-            if (shardStack) shardStack.quantity += dupeCheck.bonusShards;
-            else vaultItems.push({ itemId: `grant_${Date.now()}_shards`, itemdefid: SHARD_ITEMDEFID, quantity: dupeCheck.bonusShards });
-        }
+        const opening = createCacheOpeningResult({ inventory: vaultItems });
+        applyCacheOpeningRewards(opening);
+        persistDevVaultInventory();
         reconcileCosmeticsOwnership(vaultItems);
         renderInventoryGrid();
         updateOpenCacheAvailability();
 
-        playCacheRevealAnimation(randomDefId, () => {
-            const reward = getItemCatalogEntry(randomDefId);
+        playCacheRevealAnimation(opening, () => {
+            cacheOpeningBusy = false;
             const statusEl = document.getElementById('vault-store-open-status');
             if (statusEl) {
                 statusEl.classList.remove('hidden');
-                statusEl.textContent = reward ? `Cache unlocked: ${reward.name}!` : 'Cache unlocked.';
+                statusEl.textContent = `Cache unlocked: ${opening.rewards.length} rewards secured.`;
             }
-            showSteamDropToast(randomDefId, 1);
+            for (const reward of opening.rewards) showSteamDropToast(reward.itemdefid, reward.quantity ?? 1);
         });
         return;
     }
@@ -1073,26 +1204,27 @@ export async function openDeepRelicCache() {
         .catch((err) => ({ ok: false, message: err?.message }));
 
     if (result?.ok) {
-        await loadVaultData();
+        // The inventory refresh is useful for counts, but a transient refresh
+        // failure must not swallow the successful cache reveal animation.
+        await loadVaultData().catch((error) => {
+            console.warn('[steam-store] inventory refresh after cache open failed:', error);
+        });
         updateOpenCacheAvailability();
-        const grantedId = result.granted?.[0]?.itemdefid;
-        const reward = getItemCatalogEntry(grantedId);
+        const opening = adaptSteamCacheResult(result);
 
-        if (grantedId) {
-            playCacheRevealAnimation(grantedId, () => {
-                if (statusEl) {
-                    statusEl.classList.remove('hidden');
-                    statusEl.textContent = reward ? `Cache opened: ${reward.name}!` : 'Cache opened.';
-                }
-                showSteamDropToast(grantedId, 1);
-            });
-        } else {
+        // Steam can legitimately return an empty `granted` array for a
+        // duplicate/already-granted exchange. Still show the same decryptor
+        // sequence so a successful OPEN action never appears to do nothing.
+        playCacheRevealAnimation(opening, () => {
+            cacheOpeningBusy = false;
             if (statusEl) {
                 statusEl.classList.remove('hidden');
-                statusEl.textContent = reward ? `Cache opened: ${reward.name}!` : 'Cache opened.';
+                statusEl.textContent = opening.complete ? 'Cache bundle opened.' : 'Cache exchange completed with a partial Steam grant.';
             }
-        }
+            for (const reward of opening.rewards) showSteamDropToast(reward.itemdefid, reward.quantity ?? 1);
+        });
     } else {
+        cacheOpeningBusy = false;
         console.error('[steam-store] cache open failed:', result);
         if (statusEl) {
             statusEl.classList.remove('hidden');

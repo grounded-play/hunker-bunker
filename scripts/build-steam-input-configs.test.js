@@ -22,7 +22,7 @@ describe('buildSteamInputConfigs', () => {
         expect(outputs).toHaveLength(7);
         const deck = fs.readFileSync(path.join(destination, 'controller_neptune.vdf'), 'utf8');
         expect(deck).toContain('"controller_type" "controller_neptune"');
-        expect(deck).toContain('"major_revision" "7"');
+        expect(deck).toContain('"major_revision" "8"');
         expect(deck).toContain('"name" "menu"');
         expect(deck).toContain('"name" "gameplay"');
         expect(deck).toContain('"name" "archive"');
@@ -51,13 +51,13 @@ describe('buildSteamInputConfigs', () => {
         expect(deck).toContain('"gameplay" "move"');
         expect(deck).toContain('"gameplay" "camera"');
         expect(deck).toContain('"menu" "menu_pointer"');
-        expect(deck).not.toContain('"6" "right_joystick active"');
+        expect(deck).toContain('"6" "right_joystick active"');
         expect(deck).toContain('"12" "right_joystick active"');
         expect(deck).not.toContain('"17" "right_joystick active"');
         expect(deck).toContain('"7" "left_trackpad active"');
-        expect(deck).toContain('"8" "right_trackpad active"');
-        expect(deck).toContain('"16" "left_trackpad active"');
-        expect(deck).toContain('"17" "right_trackpad active"');
+        expect(deck).not.toContain('"8" "right_trackpad active"');
+        expect(deck).not.toContain('"16" "left_trackpad active"');
+        expect(deck).not.toContain('"17" "right_trackpad active"');
         expect(deck).toContain('"26" "left_trackpad active"');
         expect(deck).toContain('"27" "right_trackpad active"');
         expect(deck).not.toContain('gyro active');
@@ -68,7 +68,7 @@ describe('buildSteamInputConfigs', () => {
         expect(deck).toMatch(/"button_menu"[\s\S]*?game_action menu pause, Settings \/ Pause/);
     });
 
-    it('maps PlayStation touchpads in every action set without inventing pads for Xbox', () => {
+    it('maps PlayStation touchpads in menu and archive without inventing pads for Xbox', () => {
         const destination = fs.mkdtempSync(path.join(os.tmpdir(), 'hb-input-configs-'));
         tempDirs.push(destination);
 
@@ -76,7 +76,7 @@ describe('buildSteamInputConfigs', () => {
         for (const controller of ['controller_ps4', 'controller_ps5']) {
             const config = fs.readFileSync(path.join(destination, `${controller}.vdf`), 'utf8');
             expect(config).toContain('"8" "center_trackpad active"');
-            expect(config).toContain('"17" "center_trackpad active"');
+            expect(config).not.toContain('"17" "center_trackpad active"');
             expect(config).toContain('"27" "center_trackpad active"');
         }
 

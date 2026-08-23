@@ -146,6 +146,47 @@ export function getLocalLoadoutSummary(opClass) {
     return { weapon, hasCharm };
 }
 
+const PLAYABLE_OPERATOR_CLASSES = Object.freeze(['SCOUT', 'TANK', 'ENGINEER']);
+
+function logMultiplayerEvent(message, details = {}) {
+    if (typeof window !== 'undefined' && window.hbLog) {
+        window.hbLog('MULTIPLAYER', 'info', message, details);
+    }
+}
+
+// Keep the lobby identity source aligned with the title/Armory selector. The
+// old implementation depended on window.selectedPlayerType, but main.js does
+// not guarantee that legacy global exists in a packaged Steam/Deck session;
+// that made a Tank selection arrive as the fallback class on the relay.
+export function getLocalOperatorClass() {
+    if (typeof window === 'undefined') return 'TANK';
+    const selectedCard = typeof document !== 'undefined'
+        ? document.querySelector('.char-card.selected')?.getAttribute('data-type')
+        : null;
+    let saved = null;
+    try { saved = window.localStorage?.getItem('hb_active_class_v1'); } catch { /* best effort */ }
+    const candidates = [selectedCard, window.game?.playerType, window.selectedPlayerType, saved];
+    return candidates
+        .map((value) => String(value ?? '').trim().toUpperCase())
+        .find((value) => PLAYABLE_OPERATOR_CLASSES.includes(value)) || 'TANK';
+}
+
+export function getLocalCallsign() {
+    if (typeof window === 'undefined') return 'AGENT';
+    const profileCallsign = window.profile?.getCallsign?.();
+    const inputCallsign = typeof document !== 'undefined'
+        ? (document.getElementById('operator-callsign')?.value || document.getElementById('roster-callsign-input')?.value)
+        : '';
+    const callsign = String(profileCallsign || inputCallsign || '').trim().toUpperCase();
+    return callsign || 'AGENT';
+}
+
+export function filterDiscoverableSteamLobbies(lobbies = [], localSteamId64 = null) {
+    const localId = String(localSteamId64 ?? '').trim();
+    if (!localId) return lobbies;
+    return lobbies.filter((lobby) => String(lobby?.ownerSteamId64 ?? '').trim() !== localId);
+}
+
 export class MultiplayerLobby {
     constructor() {
         this.socket = null;
@@ -223,6 +264,12 @@ export class MultiplayerLobby {
         if (closeBtn && !closeBtn.dataset.bound) {
             closeBtn.dataset.bound = 'true';
             closeBtn.addEventListener('click', () => this.cancelModal());
+        }
+
+        const backBtn = document.getElementById('net-back-btn');
+        if (backBtn && !backBtn.dataset.bound) {
+            backBtn.dataset.bound = 'true';
+            backBtn.addEventListener('click', () => this.cancelModal());
         }
 
         const modeSoloBtn = document.getElementById('net-mode-solo-btn');
@@ -315,19 +362,14 @@ export class MultiplayerLobby {
     }
 
     setMode(mode) {
-        const wasSolo = this.currentMode === MULTIPLAYER_MODES.SOLO;
         this.currentMode = mode;
         if (mode === MULTIPLAYER_MODES.SOLO) {
             // Backing out of a CO-OP/PVP pick to SOLO: don't leave a live
             // relay connection or Steam lobby sitting open behind the scenes
             // for a run that's about to launch solo.
             if (this.connected) this.disconnect();
-        } else if (wasSolo || !this.connected) {
-            // docs/multiplayer-flow-and-lobby-bugs-2026-08-20.md Phase 2:
-            // openModal() no longer auto-connects (that used to fire for
-            // every run, including ones that turn out solo) -- connecting
-            // only happens once the player actually picks CO-OP or PVP.
-            this.connect();
+        } else if (!this.connected && !this.steamLobbyId) {
+            this.setSteamLobbyStatus('SELECT HOST NEW LOBBY OR JOIN A PUBLIC LOBBY / INVITE', 'warning');
         }
         this.updateUiState();
         if (typeof window !== 'undefined') {
@@ -337,10 +379,9 @@ export class MultiplayerLobby {
 
     async connect() {
         // docs/multiplayer-flow-and-lobby-bugs-2026-08-20.md Phase 2: connect()
-        // is now reachable indirectly via setMode(COOP/PVP), not just
-        // openModal() (which always had a real document) -- a caller
-        // exercising setMode() alone (e.g. a unit test, or a future
-        // programmatic mode switch) shouldn't crash on a missing DOM.
+        // Host action and invite/public-join callbacks reach connect(); mode
+        // selection alone must never create a lobby. Keep the DOM guard for
+        // tests and non-visual callers.
         if (typeof document === 'undefined') return;
         const statusEl = document.getElementById('net-status-pill');
         if (statusEl) {
@@ -368,8 +409,8 @@ export class MultiplayerLobby {
             ?? (this.hostPrivate && this.hostPasswordValue ? await hashPassword(this.hostPasswordValue) : null);
         this.pendingJoinPasswordHash = null;
 
-        const callsign = (typeof window !== 'undefined' && window.profile?.getCallsign?.()) || 'AGENT';
-        const opClass = (typeof window !== 'undefined' && window.selectedPlayerType) || 'TANK';
+        const callsign = getLocalCallsign();
+        const opClass = getLocalOperatorClass();
         const loadout = getLocalLoadoutSummary(opClass);
 
         try {
@@ -391,7 +432,7 @@ export class MultiplayerLobby {
                     // longer exists.
                     this.localReady = false;
                     this.cancelCountdownDisplay();
-                    this.socket.emit('joinRoom', {
+                    const joinPayload = {
                         roomCode: this.roomCode,
                         callsign,
                         opClass,
@@ -405,15 +446,24 @@ export class MultiplayerLobby {
                         profileId: window.profile?.getProfileId?.() || null,
                         passwordHash,
                         loadout
+                    };
+                    logMultiplayerEvent('relay-join-sent', {
+                        roomCode: this.roomCode,
+                        callsign,
+                        opClass,
+                        hasLoadout: Boolean(loadout),
+                        hasPassword: Boolean(passwordHash)
                     });
+                    this.socket.emit('joinRoom', joinPayload);
 
                     this.players.set(this.socket.id, {
                         id: this.socket.id,
-                        callsign: `${callsign} (HOST)`,
+                        callsign,
                         opClass,
                         loadout,
                         ping: 14,
                         isSelf: true,
+                        isHost: false,
                         ready: false
                     });
                     this.updateUiState();
@@ -428,22 +478,26 @@ export class MultiplayerLobby {
                     // once right after joinRoom -- well before ThreeGame's
                     // setupMultiplayerNetwork() attaches its own listeners at
                     // deploy time, so a listener added there would miss it.
-                    this.isLocalPlayerHost = Boolean(serverPlayers[this.socket.id]?.isHost);
-                    Object.entries(serverPlayers).forEach(([id, player]) => {
-                        if (id !== this.socket.id) {
-                            this.players.set(id, {
-                                id,
-                                callsign: player.callsign || `OPERATIVE-${id.slice(0, 4).toUpperCase()}`,
-                                opClass: player.opClass || 'SCOUT',
-                                loadout: player.loadout || null,
-                                ping: Math.floor(20 + Math.random() * 30),
-                                isSelf: false,
-                                ready: Boolean(player.ready)
-                            });
-                        }
+                    this.syncServerRoster(serverPlayers);
+                    logMultiplayerEvent('relay-roster-received', {
+                        players: Object.values(serverPlayers).map((player) => ({
+                            callsign: player.callsign,
+                            opClass: player.opClass,
+                            ready: Boolean(player.ready),
+                            isHost: Boolean(player.isHost)
+                        }))
                     });
                     this.updateUiState();
                     this.reportSteamRichPresence();
+                });
+
+                // The relay emits this when it promotes a remaining player
+                // after a host disconnects. Without this listener the server
+                // and lobby UI disagree permanently: the promoted player can
+                // be authoritative host for combat, but still sees the
+                // guest deploy branch until they reconnect.
+                this.socket.on('hostChanged', ({ hostId } = {}) => {
+                    this.handleHostChanged({ hostId });
                 });
 
                 this.socket.on('newPlayer', (p) => {
@@ -455,6 +509,7 @@ export class MultiplayerLobby {
                         loadout: p?.loadout || null,
                         ping: 28,
                         isSelf: false,
+                        isHost: Boolean(p?.isHost),
                         ready: Boolean(p?.ready)
                     });
                     this.updateUiState();
@@ -470,10 +525,26 @@ export class MultiplayerLobby {
 
                 // Ready-up / host-start gate (previously nonexistent -- see
                 // deployMatch/toggleReady/handleDeployButtonClick).
-                this.socket.on('playerReadyChanged', ({ id, ready }) => {
-                    const entry = this.players.get(id);
-                    if (entry) entry.ready = Boolean(ready);
-                    if (id === this.socket.id) this.localReady = Boolean(ready);
+                this.socket.on('playerReadyChanged', ({ id, ready, players }) => {
+                    if (players && typeof players === 'object') {
+                        // Server snapshot is authoritative; this also repairs
+                        // a client that missed an earlier ready transition.
+                        this.syncServerRoster(players);
+                    } else {
+                        const entry = this.players.get(id);
+                        if (entry) entry.ready = Boolean(ready);
+                        if (id === this.socket.id) this.localReady = Boolean(ready);
+                    }
+                    logMultiplayerEvent('relay-ready-received', {
+                        changedPlayerId: id,
+                        ready: Boolean(ready),
+                        roster: Object.values(players || {}).map((player) => ({
+                            callsign: player.callsign,
+                            opClass: player.opClass,
+                            ready: Boolean(player.ready),
+                            isHost: Boolean(player.isHost)
+                        }))
+                    });
                     this.updateUiState();
                 });
 
@@ -486,15 +557,18 @@ export class MultiplayerLobby {
                     this.updateUiState();
                 });
 
-                this.socket.on('matchDeployRejected', () => {
+                this.socket.on('matchDeployRejected', ({ reason } = {}) => {
+                    logMultiplayerEvent('relay-deploy-rejected', { reason: reason || 'unknown' });
                     const el = document.getElementById('net-status-pill');
                     if (!el) return;
                     const original = el.textContent;
                     const originalClass = el.className;
-                    el.textContent = 'NOT ALL OPERATIVES READY';
+                    el.textContent = reason === 'not_host'
+                        ? 'HOST CONTROL REQUIRED'
+                        : 'NOT ALL OPERATIVES READY';
                     el.className = 'net-status-pill net-status--offline';
                     setTimeout(() => {
-                        if (el.textContent === 'NOT ALL OPERATIVES READY') {
+                        if (el.textContent === 'NOT ALL OPERATIVES READY' || el.textContent === 'HOST CONTROL REQUIRED') {
                             el.textContent = original;
                             el.className = originalClass;
                         }
@@ -549,8 +623,8 @@ export class MultiplayerLobby {
     fallbackLocalSession() {
         this.connected = true;
         this.usingRelay = false;
-        const callsign = (typeof window !== 'undefined' && window.profile?.getCallsign?.()) || 'AGENT';
-        const opClass = (typeof window !== 'undefined' && window.selectedPlayerType) || 'TANK';
+        const callsign = getLocalCallsign();
+        const opClass = getLocalOperatorClass();
         const loadout = getLocalLoadoutSummary(opClass);
 
         this.players.clear();
@@ -607,6 +681,8 @@ export class MultiplayerLobby {
         if (this.steamLobbyId) return;
         if (typeof window === 'undefined' || !window.electronAPI?.steamCreateLobby) return;
 
+        this.setSteamLobbyStatus('STEAM LOBBY: CREATING...', 'connecting');
+
         // docs/multiplayer-flow-and-lobby-bugs-2026-08-20.md Phase 2:
         // hostPrivate maps directly to Steam's own Private visibility (an
         // invite-only lobby that never appears in getSteamLobbies() browse
@@ -626,7 +702,19 @@ export class MultiplayerLobby {
             this.roomCode = deriveRelayRoomFromLobbyId(result.lobby.id);
             this.updateUiState();
             this.reportSteamRichPresence();
+            this.setSteamLobbyStatus('STEAM LOBBY READY — INVITE FRIENDS NOW', 'ready');
+        } else {
+            this.setSteamLobbyStatus('STEAM LOBBY FAILED — RUN `STEAM` DIAGNOSTICS', 'error');
         }
+    }
+
+    setSteamLobbyStatus(message, state = '') {
+        if (typeof document === 'undefined') return;
+        const status = document.getElementById('net-steam-lobby-status');
+        if (!status) return;
+        status.textContent = message;
+        if (state) status.dataset.state = state;
+        else delete status.dataset.state;
     }
 
     // The #net-steam-invite-btn click handler. Only meaningful once a
@@ -645,14 +733,17 @@ export class MultiplayerLobby {
         // an honest, specific message instead of a silently dead button.
         const launchedViaSteam = await isLaunchedViaSteam();
         if (launchedViaSteam === false) {
+            this.setSteamLobbyStatus('INVITES REQUIRE A STEAM-LAUNCHED BUILD', 'error');
             window.showToastNotification?.('STEAM OVERLAY UNAVAILABLE — LAUNCH HUNKER BUNKER FROM STEAM TO INVITE FRIENDS');
             return;
         }
         const result = await openSteamInviteDialog();
         if (result?.ok) {
+            this.setSteamLobbyStatus('STEAM INVITE PANEL OPEN — SELECT YOUR FRIEND', 'ready');
             window.showToastNotification?.('STEAM OVERLAY: SELECT A FRIEND TO INVITE');
             window.AudioManager?.play?.('fx_menu_click', { volume: 0.3, bus: 'sfx' });
         } else {
+            this.setSteamLobbyStatus('INVITE PANEL FAILED — RUN `STEAM` DIAGNOSTICS', 'error');
             window.showToastNotification?.('COULD NOT OPEN STEAM INVITE DIALOG');
         }
     }
@@ -666,16 +757,36 @@ export class MultiplayerLobby {
         const listEl = document.getElementById('net-steam-lobbies-list');
         if (!listEl) return;
         const result = await getSteamLobbies();
-        const lobbies = result?.ok ? (result.lobbies ?? []) : [];
+        const discoveredLobbies = result?.ok ? (result.lobbies ?? []) : [];
+        let localSteamId64 = null;
+        try {
+            localSteamId64 = (await window.electronAPI?.getSteamInfo?.())?.steamId64 ?? null;
+        } catch {
+            // Discovery should remain usable if the optional identity lookup
+            // is temporarily unavailable; the relay still enforces host state.
+        }
+        const lobbies = filterDiscoverableSteamLobbies(discoveredLobbies, localSteamId64);
 
         if (!result?.ok) {
+            this.setSteamLobbyStatus('PUBLIC LOBBY SEARCH UNAVAILABLE — USE A STEAM INVITE', 'warning');
             listEl.innerHTML = '<div class="net-spec-row"><span class="net-spec-val">Could not load public lobbies.</span></div>';
             return;
         }
         if (lobbies.length === 0) {
+            this.setSteamLobbyStatus(
+                discoveredLobbies.length > 0 && localSteamId64
+                    ? 'NO OTHER PUBLIC LOBBIES — YOUR LOBBY IS ALREADY ACTIVE'
+                    : 'NO SAME-REGION PUBLIC LOBBIES — USE INVITE OR REFRESH',
+                'warning'
+            );
             listEl.innerHTML = '<div class="net-spec-row"><span class="net-spec-val">No public lobbies found. Try REFRESH, or create your own.</span></div>';
             return;
         }
+
+        this.setSteamLobbyStatus(
+            lobbies.length === 1 ? '1 PUBLIC LOBBY FOUND' : `${lobbies.length} PUBLIC LOBBIES FOUND`,
+            'ready'
+        );
 
         listEl.innerHTML = '';
         for (const lobby of lobbies) {
@@ -711,10 +822,18 @@ export class MultiplayerLobby {
     // guessed at now.
     async handleSteamLobbyJoinRequested(lobbyId) {
         if (!lobbyId) return;
+        // Leave the current relay/Steam party before joining the target. The
+        // old order joined target first and then called disconnect();
+        // disconnect() leaves whichever Steam lobby is current, so a guest
+        // who had already selected CO-OP could immediately leave the invitee
+        // lobby it had just joined.
+        if (this.connected || this.steamLobbyId) this.disconnect();
+        this.setSteamLobbyStatus('JOINING STEAM INVITE...', 'connecting');
         const result = await joinSteamLobby(lobbyId);
-        if (!result?.ok) return;
-
-        if (this.connected) this.disconnect();
+        if (!result?.ok) {
+            this.setSteamLobbyStatus('STEAM INVITE JOIN FAILED — RUN `STEAM` DIAGNOSTICS', 'error');
+            return;
+        }
 
         // docs/multiplayer-flow-and-lobby-bugs-2026-08-20.md Phase 2: a
         // password-required lobby is always Steam-Private (see
@@ -735,6 +854,7 @@ export class MultiplayerLobby {
         this.roomCode = deriveRelayRoomFromLobbyId(lobbyId);
         if (result.lobby?.data?.hb_mode) this.currentMode = result.lobby.data.hb_mode;
         this.updateUiState();
+        this.setSteamLobbyStatus('INVITE ACCEPTED — CONNECTING TO SQUAD', 'connecting');
         if (typeof document !== 'undefined') {
             const modal = document.getElementById('multiplayer-modal');
             modal?.classList.remove('hidden');
@@ -840,10 +960,45 @@ export class MultiplayerLobby {
         return Array.from(this.players.values()).every((p) => p.ready);
     }
 
+    syncServerRoster(serverPlayers = {}) {
+        const selfId = this.socket?.id;
+        this.players.clear();
+        for (const [id, player] of Object.entries(serverPlayers)) {
+            this.players.set(id, {
+                id,
+                callsign: player.callsign || `OPERATIVE-${id.slice(0, 4).toUpperCase()}`,
+                opClass: player.opClass || 'SCOUT',
+                loadout: player.loadout || null,
+                ping: id === selfId ? 14 : Math.floor(20 + Math.random() * 30),
+                isSelf: id === selfId,
+                isHost: Boolean(player.isHost),
+                ready: Boolean(player.ready)
+            });
+        }
+        this.isLocalPlayerHost = Boolean(serverPlayers[selfId]?.isHost);
+        this.localReady = Boolean(serverPlayers[selfId]?.ready);
+    }
+
+    handleHostChanged({ hostId } = {}) {
+        if (!hostId) return;
+        this.isLocalPlayerHost = hostId === this.socket?.id;
+        this.players.forEach((player) => {
+            player.isHost = player.id === hostId;
+        });
+        this.updateUiState();
+        this.reportSteamRichPresence();
+    }
+
     setLocalReady(ready) {
         this.localReady = ready;
         const self = this.players.get(this.socket?.id);
         if (self) self.ready = ready;
+        logMultiplayerEvent('relay-ready-sent', {
+            roomCode: this.roomCode,
+            ready: Boolean(ready),
+            callsign: self?.callsign || getLocalCallsign(),
+            opClass: self?.opClass || getLocalOperatorClass()
+        });
         this.socket?.emit('playerReady', { ready });
         this.updateUiState();
     }
@@ -1060,7 +1215,7 @@ export class MultiplayerLobby {
                 : 'socket.io://unreachable (local fallback)';
         }
         if (connectBtn) {
-            connectBtn.textContent = this.connected ? 'DISCONNECT' : 'CONNECT RELAY';
+            connectBtn.textContent = this.connected ? 'DISCONNECT' : 'HOST NEW LOBBY';
         }
 
         const rosterCountEl = document.getElementById('net-roster-count');
@@ -1088,7 +1243,7 @@ export class MultiplayerLobby {
                     row.innerHTML = `
                         <div class="net-roster-callsign">
                             <span class="net-roster-avatar net-avatar--${classColor}">${classIcon}</span>
-                            <span>${player.callsign}</span>
+                            <span>${player.callsign}${player.isHost ? ' (HOST)' : ''}</span>
                         </div>
                         <div class="net-roster-class">
                             <span class="net-class-badge net-class--${classColor}">${normalizedClass}</span>
@@ -1117,24 +1272,34 @@ export class MultiplayerLobby {
             if (!this.connected || this.players.size === 0) {
                 deployBtn.disabled = true;
                 deployBtn.textContent = deployLabel;
+                deployBtn.title = '';
             } else if (!this.usingRelay) {
                 // Offline/local fallback: no ready-up gate to arbitrate.
                 deployBtn.disabled = false;
                 deployBtn.textContent = deployLabel;
+                deployBtn.title = '';
             } else if (!this.localReady) {
                 deployBtn.disabled = false;
                 deployBtn.textContent = 'READY UP';
+                deployBtn.title = 'Mark this operative ready';
             } else if (!this.isLocalPlayerHost) {
                 deployBtn.disabled = false;
-                deployBtn.textContent = 'WAITING FOR HOST... (CLICK TO UN-READY)';
+                deployBtn.textContent = 'READY ✓';
+                deployBtn.title = 'Waiting for the host. Click to cancel readiness.';
             } else if (!this.allPlayersReady()) {
                 const readyCount = Array.from(this.players.values()).filter((p) => p.ready).length;
                 deployBtn.disabled = false;
-                deployBtn.textContent = `WAITING FOR SQUAD (${readyCount}/${this.players.size} READY)`;
+                deployBtn.textContent = `SQUAD ${readyCount}/${this.players.size} READY`;
+                deployBtn.title = 'Waiting for the squad. Click to cancel readiness.';
             } else {
                 deployBtn.disabled = false;
-                deployBtn.textContent = deployLabel;
+                // Readiness is a vote; deployment remains a host command.
+                // Make the second host click explicit once the whole roster
+                // is ready, so the room does not appear stuck at 2/2 READY.
+                deployBtn.textContent = isCoop ? 'START SQUAD' : 'START MATCH';
+                deployBtn.title = 'All operatives ready';
             }
+            deployBtn.setAttribute('aria-label', deployBtn.title || deployBtn.textContent);
         }
     }
 

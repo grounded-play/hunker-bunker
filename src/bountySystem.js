@@ -299,11 +299,10 @@ export class BountyManager {
             if (bounty.progress !== prev) progressChanged = true;
             if (bounty.progress >= bounty.target && !bounty.completed) {
                 bounty.completed = true;
-                bounty.claimed = true;
+                // Completion makes the directive eligible; the player must
+                // explicitly collect its XP from the Season screen.
+                bounty.claimed = false;
                 completedBounties.push(bounty);
-                if (typeof this.onAwardXp === 'function') {
-                    this.onAwardXp(bounty.xp, bounty.type.startsWith('weekly') ? 'weeklyDirective' : 'dailyBounty', bounty.title);
-                }
                 if (typeof window !== 'undefined') {
                     window.dispatchEvent(new CustomEvent('bounty-completed', { detail: { bounty } }));
                 }
@@ -314,6 +313,14 @@ export class BountyManager {
             this.save();
         }
         return completedBounties;
+    }
+
+    claim(id) {
+        const bounty = [...this.state.dailies, ...this.state.weeklies].find((entry) => entry.id === id);
+        if (!bounty || !bounty.completed || bounty.claimed) return null;
+        bounty.claimed = true;
+        this.save();
+        return bounty;
     }
 
     wireGameEvents() {

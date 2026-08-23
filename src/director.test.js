@@ -31,6 +31,34 @@ describe('chooseDirectorAction', () => {
             expect(action).not.toBe('corrupt');
         }
     });
+
+    // docs/design/one-more-ring-design-pillars.md item 1 (Sprint 28): the
+    // Depth Contract's directorAggressionBonus wired through here -- see
+    // threeGame.js's updateBunkerDirector for where it's supplied per-ring.
+    describe('aggressionBonus (Depth Contract wiring)', () => {
+        it('is a no-op by default (backward compatible with every existing caller/snapshot)', () => {
+            const snapshot = { hpFrac: 1, depth: 0, secondsSinceThreat: 999, secondsElapsed: 0 };
+            expect(chooseDirectorAction(snapshot, () => 0.41)).toBe(chooseDirectorAction({ ...snapshot, aggressionBonus: 0 }, () => 0.41));
+        });
+
+        it('raises patrol probability at a fixed roll that would otherwise land on taunt', () => {
+            const snapshot = { hpFrac: 1, depth: 0, secondsSinceThreat: 999, secondsElapsed: 0 };
+            // Without a bonus: escalation=0, patrolP=0.4, roll 0.42 falls just past
+            // the patrol cutoff into the taunt band (patrolP..patrolP+0.22).
+            expect(chooseDirectorAction(snapshot, () => 0.42)).toBe('taunt');
+            // Ring 5's full bonus (3) lifts escalation to 0.3, patrolP to 0.454 --
+            // the same roll now lands inside the patrol band instead.
+            expect(chooseDirectorAction({ ...snapshot, aggressionBonus: 3 }, () => 0.42)).toBe('patrol');
+        });
+
+        it('never pushes escalation past its intended 0-1 bound even at max depth + run length + bonus', () => {
+            const maxed = { hpFrac: 1, depth: 999, secondsSinceThreat: 999, secondsElapsed: 999, aggressionBonus: 999 };
+            // If escalation weren't clamped, an absurd aggressionBonus could push
+            // patrolP arbitrarily high -- it should still cap out sanely.
+            const action = chooseDirectorAction(maxed, () => 0.99);
+            expect(['patrol', 'taunt', 'none']).toContain(action);
+        });
+    });
 });
 
 describe('BunkerDirector', () => {

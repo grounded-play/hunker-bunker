@@ -40,7 +40,7 @@ describe('Bounty & Directive System', () => {
         }
     });
 
-    it('records progress and triggers XP award upon completion', () => {
+    it('records progress and waits for an explicit XP claim', () => {
         const storage = createMockStorage();
         const onAwardXp = vi.fn();
         const manager = new BountyManager({ storage, onAwardXp });
@@ -59,7 +59,12 @@ describe('Bounty & Directive System', () => {
             expect(killsBounty.completed).toBe(true);
             expect(killsBounty.progress).toBe(target);
             expect(completed).toContain(killsBounty);
-            expect(onAwardXp).toHaveBeenCalledWith(killsBounty.xp, expect.any(String), killsBounty.title);
+            expect(killsBounty.claimed).toBe(false);
+            expect(onAwardXp).not.toHaveBeenCalled();
+
+            expect(manager.claim(killsBounty.id)).toBe(killsBounty);
+            expect(killsBounty.claimed).toBe(true);
+            expect(manager.claim(killsBounty.id)).toBeNull();
         }
     });
 

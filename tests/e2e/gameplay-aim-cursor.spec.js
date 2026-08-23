@@ -27,7 +27,7 @@ test.describe('gameplay facing yaw (mouse + gamepad)', () => {
         expect(turnedYaw).not.toBeCloseTo(initialYaw, 2);
     });
 
-    test('gamepad right-stick sets facingYaw directly, and the fixed crosshair stays put while the old drifting cursor stays suppressed', async ({ page }) => {
+    test('gamepad right-stick moves the visible aim crosshair and updates facingYaw', async ({ page }) => {
         test.setTimeout(180_000);
         await bootToOperatorMenu(page);
         await startRunAndSkipIntro(page);
@@ -50,13 +50,15 @@ test.describe('gameplay facing yaw (mouse + gamepad)', () => {
             const crosshairRect = crosshair.getBoundingClientRect();
             return {
                 controllerMode: document.body.classList.contains('controller-mode'),
-                crosshairHidden: crosshair.classList.contains('hidden'),
-                crosshairCenterX: crosshairRect.left + crosshairRect.width / 2,
+            crosshairHidden: crosshair.classList.contains('hidden'),
+            crosshairCenterX: crosshairRect.left + crosshairRect.width / 2,
+            crosshairCenterY: crosshairRect.top + crosshairRect.height / 2,
                 tacticalDisplay: getComputedStyle(tacticalCursor).display,
                 facingYaw: window.game.facingYaw
             };
         };
 
+        const viewport = await page.evaluate(() => ({ width: window.innerWidth, height: window.innerHeight }));
         const yawBefore = await page.evaluate(() => window.game.facingYaw);
         await pushStick(0.7, -0.7);
         await page.waitForTimeout(500);
@@ -70,9 +72,10 @@ test.describe('gameplay facing yaw (mouse + gamepad)', () => {
         expect(rightUp.crosshairHidden, 'the fixed gameplay crosshair should be visible').toBe(false);
         expect(rightUp.facingYaw).not.toBeCloseTo(yawBefore, 2);
         expect(leftDown.facingYaw).not.toBeCloseTo(rightUp.facingYaw, 2);
-        const viewportWidth = await page.evaluate(() => window.innerWidth);
-        expect(Math.abs(leftDown.crosshairCenterX - viewportWidth / 2)).toBeLessThan(2);
-        expect(Math.abs(rightUp.crosshairCenterX - viewportWidth / 2)).toBeLessThan(2);
+        expect(Math.abs(rightUp.crosshairCenterX - viewport.width / 2)).toBeGreaterThan(4);
+        expect(Math.abs(rightUp.crosshairCenterY - viewport.height / 2)).toBeGreaterThan(4);
+        expect(rightUp.crosshairCenterX).not.toBeCloseTo(leftDown.crosshairCenterX, 0);
+        expect(rightUp.crosshairCenterY).not.toBeCloseTo(leftDown.crosshairCenterY, 0);
     });
 
     test('WASD movement is screen-relative regardless of facing direction', async ({ page }) => {

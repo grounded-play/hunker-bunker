@@ -7,6 +7,36 @@
     "3d/runtime/broken-engineer-ship.glb",
     "3d/runtime/broken-scout-ship.glb",
     "3d/runtime/broken-tank-ship.glb",
+    "3d/runtime/community/eng_abg.glb",
+    "3d/runtime/community/eng_afro_crash.glb",
+    "3d/runtime/community/eng_apex.glb",
+    "3d/runtime/community/eng_corpo_shadow_runner.glb",
+    "3d/runtime/community/eng_foxhole_shadow.glb",
+    "3d/runtime/community/eng_neural_weaver.glb",
+    "3d/runtime/community/eng_sil.glb",
+    "3d/runtime/community/eng_soft_manic_architect_gf.glb",
+    "3d/runtime/community/eng_swim.glb",
+    "3d/runtime/community/eng_toxic_apex_chrysalis.glb",
+    "3d/runtime/community/scount_sil.glb",
+    "3d/runtime/community/scout_abg.glb",
+    "3d/runtime/community/scout_apex.glb",
+    "3d/runtime/community/scout_corpo_shadow_runner.glb",
+    "3d/runtime/community/scout_foxhole_shadow.glb",
+    "3d/runtime/community/scout_soft_manic_infiltrator_gf.glb",
+    "3d/runtime/community/scout_swim.glb",
+    "3d/runtime/community/scout_tank_crash.glb",
+    "3d/runtime/community/scout_toxic_apex_chrysalis.glb",
+    "3d/runtime/community/scout_xeno_stalker.glb",
+    "3d/runtime/community/tank_abg.glb",
+    "3d/runtime/community/tank_afro_crash.glb",
+    "3d/runtime/community/tank_apex.glb",
+    "3d/runtime/community/tank_brood_matron.glb",
+    "3d/runtime/community/tank_chubby_protective_hacker_gf.glb",
+    "3d/runtime/community/tank_corpo_shadow_runner.glb",
+    "3d/runtime/community/tank_foxhole_shadow.glb",
+    "3d/runtime/community/tank_sil.glb",
+    "3d/runtime/community/tank_swim.glb",
+    "3d/runtime/community/tank_toxic_apex_chrysalis.glb",
     "3d/runtime/console.glb",
     "3d/runtime/cryo-snail-boss.glb",
     "3d/runtime/cyber-snail-boss.glb",
@@ -15,6 +45,8 @@
     "3d/runtime/frozen-tanker.glb",
     "3d/runtime/fusion-generator.glb",
     "3d/runtime/hull-matrix.glb",
+    "3d/runtime/new3ds/boss_corrupted_briggs.glb",
+    "3d/runtime/new3ds/boss_corrupted_martha.glb",
     "3d/runtime/new3ds/bunker_junk_rare.glb",
     "3d/runtime/new3ds/bunker_junk_uncommon.glb",
     "3d/runtime/new3ds/charm_amber_bio_flask.glb",
@@ -27,6 +59,21 @@
     "3d/runtime/new3ds/charm_spent_50cal.glb",
     "3d/runtime/new3ds/charm_sporesnail_pearl.glb",
     "3d/runtime/new3ds/charm_trench_whistle.glb",
+    "3d/runtime/new3ds/chassis_bio_synthesizer_medic.glb",
+    "3d/runtime/new3ds/chassis_cryo_vanguard_scout.glb",
+    "3d/runtime/new3ds/chassis_cyber_spectre_infiltrator.glb",
+    "3d/runtime/new3ds/chassis_dreadnought_exo_juggernaut.glb",
+    "3d/runtime/new3ds/chassis_engineer_chen_undying.glb",
+    "3d/runtime/new3ds/chassis_engineer_exodus_vanguard.glb",
+    "3d/runtime/new3ds/chassis_hive_lord_symbiote.glb",
+    "3d/runtime/new3ds/chassis_scout_cartographer.glb",
+    "3d/runtime/new3ds/chassis_scout_pioneer_courier.glb",
+    "3d/runtime/new3ds/chassis_subterran_drill_engineer.glb",
+    "3d/runtime/new3ds/chassis_tank_colossus_hive.glb",
+    "3d/runtime/new3ds/chassis_tank_gentle_titan.glb",
+    "3d/runtime/new3ds/chassis_tank_old_iron.glb",
+    "3d/runtime/new3ds/chassis_trench_warden_heavy.glb",
+    "3d/runtime/new3ds/chassis_void_commando_recon.glb",
     "3d/runtime/new3ds/fungal_spore_vent.glb",
     "3d/runtime/new3ds/gun_engineer_tesla_lock.glb",
     "3d/runtime/new3ds/gun_scout_talon_c.glb",
@@ -34,10 +81,18 @@
     "3d/runtime/new3ds/gun_tank_siege_breaker50.glb",
     "3d/runtime/new3ds/mod_bio_hazard_filter.glb",
     "3d/runtime/new3ds/mod_cryo_capacitor.glb",
+    "3d/runtime/new3ds/mod_echo_location_transceiver.glb",
     "3d/runtime/new3ds/mod_kinetic_impact.glb",
     "3d/runtime/new3ds/mod_magnetic_scavenger.glb",
+    "3d/runtime/new3ds/mod_symbiotic_adrenaline_pump.glb",
     "3d/runtime/new3ds/mod_thermal_heat_exchanger.glb",
     "3d/runtime/new3ds/mod_zero_point_flux.glb",
+    "3d/runtime/new3ds/npc_aria.glb",
+    "3d/runtime/new3ds/npc_kaelen.glb",
+    "3d/runtime/new3ds/npc_martha.glb",
+    "3d/runtime/new3ds/npc_nahl.glb",
+    "3d/runtime/new3ds/npc_queen.glb",
+    "3d/runtime/new3ds/npc_val.glb",
     "3d/runtime/new3ds/prop_ammo_crate_stack.glb",
     "3d/runtime/new3ds/prop_biomech_arch.glb",
     "3d/runtime/new3ds/prop_biomech_flesh_locker.glb",
@@ -61,10 +116,17 @@
     "3d/runtime/new3ds/prop_surgical_cart.glb",
     "3d/runtime/new3ds/prop_tesla_coil_node.glb",
     "3d/runtime/new3ds/prop_vital_monitor.glb",
+    "3d/runtime/new3ds/skin_biolume_spore_sprayer.glb",
     "3d/runtime/new3ds/skin_engineer_cryo_plasma.glb",
+    "3d/runtime/new3ds/skin_glitched_circuit_bolter.glb",
+    "3d/runtime/new3ds/skin_hazard_stripe_smg.glb",
+    "3d/runtime/new3ds/skin_obsidian_shard.glb",
     "3d/runtime/new3ds/skin_queen_carapace_carbine.glb",
+    "3d/runtime/new3ds/skin_rust_bone_trench.glb",
     "3d/runtime/new3ds/skin_scout_frostbite.glb",
+    "3d/runtime/new3ds/skin_solar_flare_antimatter.glb",
     "3d/runtime/new3ds/skin_tank_deep_core_melter.glb",
+    "3d/runtime/new3ds/skin_tectonic_driller.glb",
     "3d/runtime/new3ds/skin_void_walker_beam.glb",
     "3d/runtime/new3ds/spore_mortar.glb",
     "3d/runtime/new3ds/sporesnail.glb",
@@ -656,6 +718,161 @@
       "classification": "runtime-required"
     },
     {
+      "path": "3d/runtime/community/eng_abg.glb",
+      "bytes": 20852544,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/community/eng_afro_crash.glb",
+      "bytes": 15979540,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/community/eng_apex.glb",
+      "bytes": 15912516,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/community/eng_corpo_shadow_runner.glb",
+      "bytes": 13090748,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/community/eng_foxhole_shadow.glb",
+      "bytes": 18023792,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/community/eng_neural_weaver.glb",
+      "bytes": 21071408,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/community/eng_sil.glb",
+      "bytes": 18462876,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/community/eng_soft_manic_architect_gf.glb",
+      "bytes": 23253796,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/community/eng_swim.glb",
+      "bytes": 19618696,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/community/eng_toxic_apex_chrysalis.glb",
+      "bytes": 19295992,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/community/manifest.json",
+      "bytes": 10239,
+      "classification": "unknown"
+    },
+    {
+      "path": "3d/runtime/community/scount_sil.glb",
+      "bytes": 17313112,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/community/scout_abg.glb",
+      "bytes": 21494776,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/community/scout_apex.glb",
+      "bytes": 15690116,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/community/scout_corpo_shadow_runner.glb",
+      "bytes": 13903192,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/community/scout_foxhole_shadow.glb",
+      "bytes": 16979956,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/community/scout_soft_manic_infiltrator_gf.glb",
+      "bytes": 20757108,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/community/scout_swim.glb",
+      "bytes": 17539104,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/community/scout_tank_crash.glb",
+      "bytes": 16280876,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/community/scout_toxic_apex_chrysalis.glb",
+      "bytes": 19560012,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/community/scout_xeno_stalker.glb",
+      "bytes": 19323352,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/community/tank_abg.glb",
+      "bytes": 18249912,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/community/tank_afro_crash.glb",
+      "bytes": 17350060,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/community/tank_apex.glb",
+      "bytes": 15531088,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/community/tank_brood_matron.glb",
+      "bytes": 25863484,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/community/tank_chubby_protective_hacker_gf.glb",
+      "bytes": 23394404,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/community/tank_corpo_shadow_runner.glb",
+      "bytes": 9065188,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/community/tank_foxhole_shadow.glb",
+      "bytes": 16735556,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/community/tank_sil.glb",
+      "bytes": 17921092,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/community/tank_swim.glb",
+      "bytes": 24656952,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/community/tank_toxic_apex_chrysalis.glb",
+      "bytes": 17709980,
+      "classification": "runtime-required"
+    },
+    {
       "path": "3d/runtime/console.glb",
       "bytes": 4318964,
       "classification": "runtime-required"
@@ -698,6 +915,16 @@
     {
       "path": "3d/runtime/hull-matrix.glb",
       "bytes": 4910584,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/boss_corrupted_briggs.glb",
+      "bytes": 3386260,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/boss_corrupted_martha.glb",
+      "bytes": 3025896,
       "classification": "runtime-required"
     },
     {
@@ -761,6 +988,81 @@
       "classification": "runtime-required"
     },
     {
+      "path": "3d/runtime/new3ds/chassis_bio_synthesizer_medic.glb",
+      "bytes": 20085460,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/chassis_cryo_vanguard_scout.glb",
+      "bytes": 3405192,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/chassis_cyber_spectre_infiltrator.glb",
+      "bytes": 16163084,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/chassis_dreadnought_exo_juggernaut.glb",
+      "bytes": 17377968,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/chassis_engineer_chen_undying.glb",
+      "bytes": 22201000,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/chassis_engineer_exodus_vanguard.glb",
+      "bytes": 20023616,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/chassis_hive_lord_symbiote.glb",
+      "bytes": 17337132,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/chassis_scout_cartographer.glb",
+      "bytes": 18956524,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/chassis_scout_pioneer_courier.glb",
+      "bytes": 18516476,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/chassis_subterran_drill_engineer.glb",
+      "bytes": 3734008,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/chassis_tank_colossus_hive.glb",
+      "bytes": 18853208,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/chassis_tank_gentle_titan.glb",
+      "bytes": 20286712,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/chassis_tank_old_iron.glb",
+      "bytes": 23918628,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/chassis_trench_warden_heavy.glb",
+      "bytes": 3250012,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/chassis_void_commando_recon.glb",
+      "bytes": 6367676,
+      "classification": "runtime-required"
+    },
+    {
       "path": "3d/runtime/new3ds/fungal_spore_vent.glb",
       "bytes": 3284196,
       "classification": "runtime-required"
@@ -796,6 +1098,11 @@
       "classification": "runtime-required"
     },
     {
+      "path": "3d/runtime/new3ds/mod_echo_location_transceiver.glb",
+      "bytes": 30854568,
+      "classification": "runtime-required"
+    },
+    {
       "path": "3d/runtime/new3ds/mod_kinetic_impact.glb",
       "bytes": 1527784,
       "classification": "runtime-required"
@@ -806,6 +1113,11 @@
       "classification": "runtime-required"
     },
     {
+      "path": "3d/runtime/new3ds/mod_symbiotic_adrenaline_pump.glb",
+      "bytes": 40393748,
+      "classification": "runtime-required"
+    },
+    {
       "path": "3d/runtime/new3ds/mod_thermal_heat_exchanger.glb",
       "bytes": 2073092,
       "classification": "runtime-required"
@@ -813,6 +1125,36 @@
     {
       "path": "3d/runtime/new3ds/mod_zero_point_flux.glb",
       "bytes": 2099316,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/npc_aria.glb",
+      "bytes": 3211072,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/npc_kaelen.glb",
+      "bytes": 3682960,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/npc_martha.glb",
+      "bytes": 3271444,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/npc_nahl.glb",
+      "bytes": 3425744,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/npc_queen.glb",
+      "bytes": 3244112,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/npc_val.glb",
+      "bytes": 3728960,
       "classification": "runtime-required"
     },
     {
@@ -931,8 +1273,28 @@
       "classification": "runtime-required"
     },
     {
+      "path": "3d/runtime/new3ds/skin_biolume_spore_sprayer.glb",
+      "bytes": 4976612,
+      "classification": "runtime-required"
+    },
+    {
       "path": "3d/runtime/new3ds/skin_engineer_cryo_plasma.glb",
       "bytes": 541968,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/skin_glitched_circuit_bolter.glb",
+      "bytes": 4932832,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/skin_hazard_stripe_smg.glb",
+      "bytes": 4500836,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/skin_obsidian_shard.glb",
+      "bytes": 4261544,
       "classification": "runtime-required"
     },
     {
@@ -941,13 +1303,28 @@
       "classification": "runtime-required"
     },
     {
+      "path": "3d/runtime/new3ds/skin_rust_bone_trench.glb",
+      "bytes": 42499044,
+      "classification": "runtime-required"
+    },
+    {
       "path": "3d/runtime/new3ds/skin_scout_frostbite.glb",
       "bytes": 478056,
       "classification": "runtime-required"
     },
     {
+      "path": "3d/runtime/new3ds/skin_solar_flare_antimatter.glb",
+      "bytes": 45688800,
+      "classification": "runtime-required"
+    },
+    {
       "path": "3d/runtime/new3ds/skin_tank_deep_core_melter.glb",
       "bytes": 513376,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/skin_tectonic_driller.glb",
+      "bytes": 4540248,
       "classification": "runtime-required"
     },
     {
@@ -4282,22 +4659,22 @@
     },
     {
       "path": "icon_cull.png",
-      "bytes": 453141,
+      "bytes": 608272,
       "classification": "unknown"
     },
     {
       "path": "icon_recruit.png",
-      "bytes": 453141,
+      "bytes": 851399,
       "classification": "unknown"
     },
     {
       "path": "icon_steal.png",
-      "bytes": 453141,
+      "bytes": 877338,
       "classification": "unknown"
     },
     {
       "path": "icon_turn.png",
-      "bytes": 453141,
+      "bytes": 729123,
       "classification": "unknown"
     },
     {
@@ -6252,13 +6629,28 @@
     },
     {
       "path": "title_key_art.png",
-      "bytes": 742665,
+      "bytes": 1010879,
       "classification": "unknown"
     },
     {
       "path": "title_key_art_v2.png",
       "bytes": 1710466,
       "classification": "runtime-required"
+    },
+    {
+      "path": "ui/armory_bg_engineer.jpg",
+      "bytes": 958580,
+      "classification": "unknown"
+    },
+    {
+      "path": "ui/armory_bg_scout.jpg",
+      "bytes": 927452,
+      "classification": "unknown"
+    },
+    {
+      "path": "ui/armory_bg_tank.jpg",
+      "bytes": 904389,
+      "classification": "unknown"
     }
   ]
 }

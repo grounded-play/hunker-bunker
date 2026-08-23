@@ -8,6 +8,8 @@ export class DebugLogger {
         this.logs = [];
         this.sessionLogs = [];
         this.sessionStartedAt = new Date();
+        this.demoStartedAt = null;
+        this.demoMarkers = [];
         this.sequence = 0;
         this.maxLogs = 2500;
         // Cap on how many <div> rows the live panel keeps in the DOM at once.
@@ -48,6 +50,7 @@ export class DebugLogger {
                     this.info(category || 'SYS', message, ...details);
                 }
             };
+            window.hbDemoMark = (label, details) => this.markDemo(label, details);
             if (typeof document !== 'undefined') {
                 if (document.readyState === 'loading') {
                     document.addEventListener('DOMContentLoaded', () => this.mountUI());
@@ -332,7 +335,7 @@ export class DebugLogger {
             backdropFilter: 'blur(10px)',
             borderBottom: '2px solid #00f0ff',
             boxShadow: '0 8px 32px rgba(0, 240, 255, 0.25)',
-            zIndex: '99999',
+            zIndex: '9999999',
             display: 'none',
             flexDirection: 'column',
             fontFamily: "'Space Mono', 'Courier New', monospace",
@@ -656,6 +659,9 @@ export class DebugLogger {
 
     buildSessionCapture() {
         const game = typeof window !== 'undefined' ? (window.game ?? window.threeGame) : null;
+        const inputState = typeof window !== 'undefined'
+            ? window.HunkerInputState?.getState?.() ?? null
+            : null;
         return {
             format: 'hunker-bunker-session-log',
             schemaVersion: 1,
@@ -664,7 +670,10 @@ export class DebugLogger {
                 exportedAt: new Date().toISOString(),
                 durationMs: Date.now() - this.sessionStartedAt.getTime(),
                 userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : null,
-                url: typeof location !== 'undefined' ? location.href : null
+                url: typeof location !== 'undefined' ? location.href : null,
+                demoStartedAt: this.demoStartedAt,
+                demoDurationMs: this.demoStartedAt ? Date.now() - this.demoStartedAt : null,
+                demoMarkers: this.demoMarkers.map((marker) => ({ ...marker }))
             },
             state: {
                 appPhase: typeof window !== 'undefined' ? window.__hbAppPhase ?? null : null,
@@ -673,10 +682,29 @@ export class DebugLogger {
                 position: game?.player?.position
                     ? { x: game.player.position.x, y: game.player.position.y, z: game.player.position.z }
                     : null,
-                renderer: game?.renderer?.info?.render ?? null
+                renderer: game?.renderer?.info?.render ?? null,
+                performance: game?.getPerformanceDiagnosticsSnapshot?.() ?? null,
+                stage: typeof window !== 'undefined' ? window.hbStage ?? null : null,
+                input: inputState,
+                steam: typeof window !== 'undefined' ? window.__hbSteamStatus ?? null : null
             },
             entries: this.sessionLogs.map((entry) => ({ ...entry }))
         };
+    }
+
+    markDemo(label = 'checkpoint', details = null) {
+        const normalizedLabel = String(label || 'checkpoint').slice(0, 80);
+        const marker = {
+            at: new Date().toISOString(),
+            elapsedMs: Date.now() - this.sessionStartedAt.getTime(),
+            label: normalizedLabel,
+            details: details ?? null
+        };
+        if (!this.demoStartedAt) this.demoStartedAt = Date.now();
+        this.demoMarkers.push(marker);
+        if (this.demoMarkers.length > 100) this.demoMarkers.shift();
+        this.info('DEMO', normalizedLabel, details ?? undefined);
+        return marker;
     }
 
     serializeSession(format = 'json') {
@@ -803,6 +831,7 @@ export class DebugLogger {
   • steam [status|recheck]- Perform Steamworks integration & backend diagnostic check
   • clear                 - Clear dev log history
   • exportlogs [json|txt] - Download the complete log captured since launch
+  • demo [start|mark <label>|stop] - Mark a friend-demo session/checkpoint
   • god                   - Toggle player invincibility
   • heal                  - Fully restore player Health & Oxygen
   • tp <x> <z>            - Teleport player to target tile
@@ -847,6 +876,21 @@ export class DebugLogger {
             case 'clear':
                 this.clear();
                 break;
+
+            case 'demo': {
+                const subcommand = parts[1]?.toLowerCase() ?? 'mark';
+                if (subcommand === 'start') {
+                    this.demoStartedAt = Date.now();
+                    this.demoMarkers = [];
+                    this.markDemo('demo-start');
+                } else if (subcommand === 'stop') {
+                    this.markDemo('demo-stop');
+                } else {
+                    const label = parts.slice(subcommand === 'mark' ? 2 : 1).join(' ') || 'checkpoint';
+                    this.markDemo(label);
+                }
+                break;
+            }
 
             case 'exportlogs':
             case 'savelogs':
@@ -921,22 +965,15 @@ export class DebugLogger {
             }
 
             case 'showroom': {
-                // The QUICK CHEATS "SHOWROOM" button has called executeCommand('showroom')
-                // since it was added, but no case existed for it -- it silently fell to the
-                // default `eval('showroom')` branch and just logged a ReferenceError.
-                const targetGame = game || win?.game;
-                if (!targetGame?.buildDebugShowroom || !targetGame?.teleportPlayerTo) {
+                // Route every debug-console entry through main.js's guarded
+                // transition so this path cannot build the showroom behind
+                // the player's back or bypass the bulkhead loading sequence.
+                if (!win?.__DEBUG__?.openShowroom) {
                     this.warn('CMD', 'Showroom module not loaded');
                     break;
                 }
                 this.info('NAV', 'Opening 4-Wall Orientation Showroom at (9500, 9500)...');
-                targetGame.buildDebugShowroom().then((showroom) => {
-                    targetGame.setGodMode?.(true);
-                    const targetX = showroom?.spawnX ?? 9510;
-                    const targetZ = showroom?.spawnZ ?? 9510;
-                    targetGame.teleportPlayerTo(targetX, targetZ, { syncChunks: false, safeFloor: false });
-                    this.info('NAV', `Teleported to Showroom (${targetX.toFixed(1)}, ${targetZ.toFixed(1)})`);
-                }).catch((err) => {
+                void win.__DEBUG__.openShowroom().catch?.((err) => {
                     this.error('CMD', `Failed opening showroom: ${err?.message ?? err}`);
                 });
                 break;

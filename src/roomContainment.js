@@ -69,6 +69,19 @@ const _normalizedBoundsCache = new WeakMap();
 
 export function normalizeContainmentBounds(bounds) {
     if (!bounds) return null;
+    // Runtime doors/zones produced by translateContainment* are already in
+    // canonical numeric form. This is the overwhelmingly hot A* path, so do
+    // not pay a WeakMap lookup and four nullish-property chains for every
+    // explored edge.
+    if (typeof bounds === 'object'
+        && Number.isFinite(bounds.minX)
+        && Number.isFinite(bounds.maxX)
+        && Number.isFinite(bounds.minZ)
+        && Number.isFinite(bounds.maxZ)
+        && bounds.minX <= bounds.maxX
+        && bounds.minZ <= bounds.maxZ) {
+        return bounds;
+    }
     if (typeof bounds === 'object') {
         const cached = _normalizedBoundsCache.get(bounds);
         if (cached !== undefined) return cached;

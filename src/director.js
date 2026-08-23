@@ -30,8 +30,18 @@ const clamp01 = (v) => Math.max(0, Math.min(1, v));
 //
 // snapshot: {
 //   hpFrac, o2Frac, depth, inSafeField,
-//   secondsSinceThreat, secondsElapsed, threatGap, patrolBias
+//   secondsSinceThreat, secondsElapsed, threatGap, patrolBias, aggressionBonus
 // }
+//
+// docs/design/one-more-ring-design-pillars.md item 1 (Sprint 28 Lane A):
+// this is the real, live-connected "director" the Depth Contract's
+// directorAggressionBonus was actually meant for -- depthContract.js's own
+// header comment claimed a matching aggression score already existed in
+// src/act2.js/src/arcState.js; it doesn't (confirmed via repo-wide grep,
+// both files are narrative-state/camp management, not a continuous
+// intensity score). This module already had the real thing: `escalation`
+// below, an existing 0-1 pressure signal driving patrol probability. See
+// threeGame.js's updateBunkerDirector for where the bonus is supplied.
 export function chooseDirectorAction(snapshot = {}, random = Math.random) {
     const {
         hpFrac = 1,
@@ -40,7 +50,8 @@ export function chooseDirectorAction(snapshot = {}, random = Math.random) {
         secondsSinceThreat = 999,
         secondsElapsed = 0,
         threatGap = 16,
-        patrolBias = false
+        patrolBias = false,
+        aggressionBonus = 0
     } = snapshot;
 
     // The base/O2 field is sanctuary — the bunker never harasses you there.
@@ -57,7 +68,16 @@ export function chooseDirectorAction(snapshot = {}, random = Math.random) {
     }
 
     // Healthy + quiet → escalate with depth (greed) and run length.
-    const escalation = clamp01(depth / 40) * 0.6 + clamp01(secondsElapsed / 240) * 0.4; // 0..1
+    // aggressionBonus (depthContract.js's directorAggressionBonus, 0-3
+    // integer by ring) is scaled *0.1 so it contributes a meaningful but not
+    // overwhelming nudge -- +0.3 max at the deepest ring reached today,
+    // deliberately calibrated rather than added at face value (a raw "3"
+    // would dwarf the existing two 0-1-weighted terms). Outer clamp01 keeps
+    // the combined signal bounded even at max depth + max run length + max
+    // ring, so patrolP below can never leave its intended range.
+    const escalation = clamp01(
+        clamp01(depth / 40) * 0.6 + clamp01(secondsElapsed / 240) * 0.4 + aggressionBonus * 0.1
+    ); // 0..1
     const r = random();
     const patrolP = 0.4 + 0.18 * escalation + (patrolBias ? 0.18 : 0);
     if (r < patrolP) return 'patrol';

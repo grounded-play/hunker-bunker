@@ -321,3 +321,23 @@ here.
   repeating the false-lead mistake Track C already corrected once. Testing
   the packaged Electron build on real hardware is the recommended next
   step.
+
+## Lane F attribution instrumentation (2026-08-20)
+
+The first Lane F implementation slice is now in place. `ThreeGame` records
+bounded nested phase history for frame rendering, chunk mounts, wall damage,
+wall destruction, and `gear-poof` effect creation. Each span includes its
+duration and small context payload; history is capped so diagnostics cannot
+become a new unbounded allocation source. The game also exposes renderer
+draw calls/triangles, scene and transient-effect counts, wall/chunk counts,
+renderer memory counters, and available JS heap usage through
+`getPerformanceDiagnosticsSnapshot()`.
+
+`main.js` includes the active/recent phase history and counters with long-task
+diagnostics. This completes Lane F's attribution prerequisite and is covered
+by `src/threeGame.performanceDiagnostics.test.js` plus the existing chunk,
+wall, and render-guard suites. It does not claim a performance fix: the next
+required evidence is a packaged Windows rerun of the log10 reproduction
+matrix, using the new nested phase/counter data to identify whether wall
+destruction, VFX allocation, streaming, or renderer/asset first-use work is
+responsible before changing those systems.

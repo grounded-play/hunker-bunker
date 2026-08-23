@@ -421,7 +421,14 @@ export function attachRelay(server, { allowedOrigins = [] } = {}) {
         socket.on('playerReady', (data = {}) => {
             if (!player.roomCode) return;
             player.ready = Boolean(data.ready);
-            io.to(player.roomCode).emit('playerReadyChanged', { id: socket.id, ready: player.ready });
+            // Send the delta plus the authoritative room snapshot. The delta
+            // keeps the UI cheap; the snapshot lets a client self-heal if it
+            // joined during a ready transition or missed an earlier event.
+            io.to(player.roomCode).emit('playerReadyChanged', {
+                id: socket.id,
+                ready: player.ready,
+                players: getRoomPlayers(player.roomCode)
+            });
 
             if (!player.ready && roomCountdowns.has(player.roomCode)) {
                 const pending = roomCountdowns.get(player.roomCode);
@@ -440,6 +447,11 @@ export function attachRelay(server, { allowedOrigins = [] } = {}) {
         socket.on('matchDeploy', (matchData = {}) => {
             const roomCode = player.roomCode;
             if (!roomCode || roomCountdowns.has(roomCode)) return;
+
+            if (!player.isHost) {
+                socket.emit('matchDeployRejected', { reason: 'not_host' });
+                return;
+            }
 
             const roomSocketIds = rooms.get(roomCode);
             const allReady = Boolean(roomSocketIds?.size) && Array.from(roomSocketIds).every((id) => players.get(id)?.ready);

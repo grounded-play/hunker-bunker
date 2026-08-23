@@ -149,9 +149,15 @@ export class SeasonPassManager {
     addXp(amount, source = 'unknown') {
         const awarded = Math.max(0, Math.floor(amount) || 0);
         if (awarded === 0) return { xpAwarded: 0, source };
+        const beforeTier = this.getCurrentTier();
         this.state.xp += awarded;
         this.save();
-        return { xpAwarded: awarded, source };
+        const afterTier = this.getCurrentTier();
+        return {
+            xpAwarded: awarded,
+            source,
+            tiersCrossed: Array.from({ length: Math.max(0, afterTier - beforeTier) }, (_, index) => beforeTier + index + 1)
+        };
     }
 
     getCurrentTier() {

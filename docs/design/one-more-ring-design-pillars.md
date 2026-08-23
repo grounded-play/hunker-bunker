@@ -21,6 +21,12 @@ Every system change should be checked against: *does this create
 anticipation, decision, payoff, mastery, surprise, or story?* If not, it's not
 a priority for this era.
 
+The concrete player-facing version of this thesis is now maintained in
+`docs/design/game-outline-and-proof-run.md`. Use that document when turning
+these pillars into onboarding, room pacing, relic choices, extraction, and
+acceptance checks; this file remains the source of the strategic design
+principles.
+
 ## What already exists to build on
 
 - `src/ringManifest.js`, `src/ringCrossings.js`, `src/mazeTiers.js` —
@@ -48,13 +54,51 @@ elite/rare-relic spawn-pool unlocks, O2 efficiency penalty, director
 aggression bump, extraction distance. Surfaced as a short ritual at the
 crossing itself (brief HUD/audio beat), not just an invisible number.
 
-Status: **not yet implemented.** No `salvageMultiplier`/`rewardMultiplier`
-concept exists anywhere in `src/*.js` today (confirmed via repo search). This
-is the first concrete build target — see the companion module this doc's
-sibling commit adds (`src/depthContract.js`) for a first data-driven cut:
-pure functions only (no rendering/HUD wiring yet), so it's low-risk to land
-and testable in isolation. HUD/audio ritual presentation is a follow-up, not
-included in this pass.
+Status: **wired into the runtime, 2026-08-20 (Sprint 28, docs/sprint28plan.md
+Lane A).** `src/depthContract.js` shipped first as pure data + pure functions
+only (see below); the independent review at `docs/sprint28plan.md` found it
+sitting fully coded and tested with zero call sites anywhere else in the
+codebase, and it's the single item that review named as the highest-leverage
+build target in the entire game. All five of the table's fields are now
+connected:
+
+- **salvageMultiplier** — `ThreeGame.collectSnailShell` (`src/threeGame.js`)
+  scales shell value by ring on collection. Deliberately NOT layered onto
+  `getDepthLootConfig()`'s existing `pickupMultiplier`/`legendaryBoost` (chunk
+  pickup-item density and legendary odds on placement) — traced both systems
+  first and confirmed shell-value-on-collection is a genuinely separate axis,
+  so there's no double-scaling of the same reward.
+- **eliteSpawnChance / rareRelicChance** — `rollsRareRelic` biases
+  `rollEnemyLootDrop` (`src/runDrops.js`) toward the relic half of the
+  rarity-filtered drop pool at deeper rings, rather than only raising the
+  rarity floor. `eliteSpawnChance` remains unwired — the codebase has no
+  existing "promote this spawn to elite" mechanism to hook into (the current
+  `isElite` flag is derived from specific enemy states like `enraged`/
+  `isSentinel`, not a probability roll at spawn time); flagged here rather
+  than fabricated.
+- **o2EfficiencyPenalty** — `ThreeGame.updateVitals`'s O2 drain-rate
+  calculation, extending the game's already-strongest, already-felt pressure
+  system directly.
+- **directorAggressionBonus** — this doc's own header comment (below) claimed
+  a matching aggression score already existed in `src/act2.js`/
+  `src/arcState.js`. That was checked, not assumed, while wiring this: it's
+  false (both files are narrative-state/camp management, zero grep hits for
+  "aggression"). The real, already-live equivalent is `src/director.js`'s
+  `chooseDirectorAction` — its existing `escalation` signal (0-1, driving
+  patrol probability) now takes the bonus as an additional term.
+- **Crossing ritual** — `ThreeGame.emitDepthTierChanged` attaches
+  `describeCrossing()`'s real before/after delta to a genuine new-depth
+  crossing (never a `forceEmit` re-announce), surfaced through an
+  already-existing depth-announcement listener in `main.js` that previously
+  said only "› DEPTH: ABYSS" with a sound cue.
+
+One live nuance found while wiring: this table's own ring numbering (1-5,
+matching `RING_CONTENT_BUDGETS` in `ringManifest.js`) isn't actually tracked
+live anywhere during gameplay — only a coarser 0-3 `depthTier` signal
+(`SURFACE`/`SHALLOW`/`DEEP`/`ABYSS`) is. Every wiring above maps
+`ring = depthTier + 1`, so ring 5 (`SECTOR ZERO`) is never reached at today's
+depth ceiling — not a bug, just headroom this table already had before the
+runtime could use all of it.
 
 ## 2. Transformative run-build relics (12–20, not 100 stat sticks)
 
@@ -70,16 +114,71 @@ already applies). Added 8 named transformative relics from this doc's own
 examples (`last_breath`, `punctured_lung`, `scrap_cycler`,
 `parasitic_magazine`, `false_telemetry`, `vesper_doctrine`, `cryo_breach`,
 `queens_milk`, tracked via `TRANSFORMATIVE_RELIC_IDS`), each with a real
-`stats` object rather than flavor text alone. One (`last_breath` — below 20%
-O2, weapon damage doubles) is fully wired to a real runtime hook: a new pure
-`applyLastBreathDamage` in `runDrops.js`, called from
-`ThreeGame.spawnPlayerShot`, with unit tests. The other 7 are honest
-catalog-only entries (roll into loot, appear in the manifest/UI, described
-accurately) — wiring each into its own gameplay hook (reload economy,
-enemy-aggro AI, faction-aware healing) is real per-relic engineering work
-still to do, not attempted wholesale in one pass to avoid fabricating
-half-tested mechanics across systems (reload, ammo, AI targeting, faction
-state) this pass didn't otherwise touch.
+`stats` object rather than flavor text alone.
+
+**Update, 2026-08-20:** 7 of 8 are now wired to real runtime hooks, each with
+its own `wired: true` catalog flag and unit tests:
+- `last_breath` — below 20% O2, weapon damage doubles. Pure
+  `applyLastBreathDamage` in `runDrops.js`, called from
+  `ThreeGame.spawnPlayerShot`.
+- `punctured_lung` — max O2 capacity permanently reduced, kills restore O2.
+  `applyPuncturedLungCapacity`/`applyPuncturedLungKillO2`.
+- `parasitic_magazine` — kills refund ammo, permanently shrink max O2.
+  `applyParasiticMagazineKill`.
+- `false_telemetry` — at critical HP, chance to drop enemy aggro.
+  `applyFalseTelemetryAggroDrop`.
+- `cryo_breach` — frozen kills chain-freeze nearby enemies.
+  `getCryoBreachChainFreezeRadius`, read at the existing freeze-kill site.
+- `scrap_cycler` — reloading spends 3 salvage for a radial shrapnel blast.
+  `getScrapCyclerReloadEffect`, called from the new
+  `ThreeGame.triggerReloadRelicEffects`, itself called from `startReload()`.
+- `vesper_doctrine` — an EMPTY reload (not a partial one) ejects the mag as
+  an explosive. `getVesperDoctrineReloadEffect`, same call site as Scrap
+  Cycler. Data quirk carried forward, not silently "fixed": despite
+  `type: DROP_TYPES.OVERCLOCK`, this entry is physically stored in the
+  `SUIT_RELICS` array — `equipRunDrop` sorts by the `type` field at equip
+  time, not by source array, so runtime behavior is unaffected; only test
+  fixtures need to know to look in `SUIT_RELICS` for it.
+
+Scrap Cycler and Vesper Doctrine share a new `ThreeGame.applyRadialEnemyDamage`
+helper (distance-check against `scatterSprites`, same pattern Cryo Breach's
+chain-freeze already established, just dealing real damage via `damageSnail`
+instead of a status effect) — see `src/threeGame.reloadRelicEffects.test.js`.
+
+**Update, 2026-08-20 (later same day):** `queens_milk` is now the 8th and
+last relic wired — 8/8. Two independent pure hooks in `runDrops.js`:
+- `getQueensMilkAlienContactHeal(reason, relics)` — heals `alienHealAmount`
+  (5) instead of taking damage, but only for a reason string verified as a
+  genuine alien-body touch: `'crawler'` (its own charge-attack proximity
+  check) and `'mycelium_stalker'`/`'bio_charger'` (both explicitly commented
+  `// Contact attack check` at their call site). Deliberately excludes
+  ranged/AoE alien attacks (`enemy-projectile`, `ground-slam`,
+  `frost-shockwave`, `queen-shockwave`) and non-alien reasons
+  (`hazard-zone`, `o2-depletion`, `fall`, `camp-turret`, `pvp-rival`) — "on
+  contact" means the creature's own body touching you, not its blast radius.
+  Called from `ThreeGame.takeDamage`, after the existing TANK-block/evasion
+  guards (a blocked or evaded hit never really landed) but before any damage
+  math starts.
+- `getQueensMilkHumanHealPenalty(healAmount, relics)` — flips a positive
+  heal into `round(healAmount * humanHealPenaltyMult)` (0.5) damage instead.
+  Called from `ThreeGame.healPlayer`, which every current human-sourced heal
+  in the codebase already routes through (med-conversion console item,
+  `camp_tallow`'s full-heal verb, the `health` pickup type) — there's no
+  separate "alien heals you" path elsewhere to accidentally double-flip
+  (`bio_vampirism`'s kill-heal restores O2/battery, a different vitals
+  system, never HP via `healPlayer`).
+
+Real bug caught by the fail-first regression check on this pair: the
+contact-heal hook (`takeDamage`) calls `healPlayer()` to actually add the
+HP back — but `healPlayer()` itself now treats *every* call as human-sourced
+when the relic is equipped, so the contact-heal's own HP restore was
+immediately flipping itself back into damage. Fixed with an explicit
+`healPlayer(amount, { skipQueensMilkPenalty: true })` opt-out used only by
+that one internal call site — not a generic flag, a deliberate escape hatch
+for the one caller that both is inside this relic's own logic and still
+wants `healPlayer`'s maxHp clamp and `health-restored` event for free. See
+`src/threeGame.queensMilk.test.js` (includes a test locking in the
+non-recursive behavior) and `src/runDrops.test.js`.
 
 ## 3. Combat impact stack + enemy verbs + stagger/armor/weakpoint grammar
 
@@ -90,7 +189,8 @@ requiring asset iteration, distinct from the data-driven mechanics above.
 ## 4. The 10-step roadmap (the doc's own proposed sequencing)
 
 1. Freeze scope — no new pillars/systems beyond what's below.
-2. Build one perfect 35–45 minute "Proof Run" expedition.
+2. Build one perfect 35–45 minute "Proof Run" expedition, following the
+   player-facing outline in `docs/design/game-outline-and-proof-run.md`.
 3. Combat Feel Pass (see combat-feel-and-juice-plan.md).
 4. One More Ring economy — the Depth Contract above.
 5. 12–20 transformative relics.

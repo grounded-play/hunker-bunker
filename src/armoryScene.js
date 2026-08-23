@@ -2,7 +2,12 @@ import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.js';
 import { assetUrl } from './assetUrl.js';
-import { createPlayer3dOverlay, WEAPON_ARCHETYPES, WEAPON_SKIN_MESHES } from './player3dOverlay.js';
+import {
+    CHASSIS_SKIN_MODELS,
+    createPlayer3dOverlay,
+    WEAPON_ARCHETYPES,
+    WEAPON_SKIN_MESHES
+} from './player3dOverlay.js';
 import { DEFAULT_ARCHETYPES } from './loadout.js';
 import { getItemCatalogEntry } from './steamVaultUi.js';
 
@@ -28,8 +33,12 @@ export const MOD_GLB_MAP = Object.freeze({
     '4142': '/3d/runtime/new3ds/mod_bio_hazard_filter.glb',
     '4143': '/3d/runtime/new3ds/mod_kinetic_impact.glb',
     '4144': '/3d/runtime/new3ds/mod_thermal_heat_exchanger.glb',
+    '4145': '/3d/runtime/new3ds/mod_echo_location_transceiver.glb',
+    '4146': '/3d/runtime/new3ds/mod_symbiotic_adrenaline_pump.glb',
     '4147': '/3d/runtime/new3ds/mod_zero_point_flux.glb'
 });
+
+export const CHASSIS_SKIN_GLB_MAP = CHASSIS_SKIN_MODELS;
 
 // Weapon archetype/skin GLB paths come from src/player3dOverlay.js — the same maps that
 // drive the in-combat held weapon — so the Armory bench preview can never drift out of
@@ -65,7 +74,13 @@ function loadArmoryGltfCached(loader, url) {
 export async function createArmoryScene(canvas) {
     if (!canvas) throw new Error('Armory scene requires a canvas element');
 
-    const renderer = new THREE.WebGLRenderer({ canvas, alpha: false, antialias: true });
+    const renderer = new THREE.WebGLRenderer({
+        canvas,
+        alpha: true,
+        antialias: true,
+        powerPreference: 'high-performance'
+    });
+    renderer.setClearColor(0x000000, 0);
     renderer.setPixelRatio(Math.min(globalThis.devicePixelRatio ?? 1, 2));
     renderer.setSize(canvas.clientWidth || window.innerWidth, canvas.clientHeight || window.innerHeight, false);
     renderer.outputColorSpace = THREE.SRGBColorSpace;
@@ -75,8 +90,8 @@ export async function createArmoryScene(canvas) {
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x060b13);
-    scene.fog = new THREE.FogExp2(0x060b13, 0.055);
+    scene.background = null;
+    scene.fog = new THREE.FogExp2(0x060b13, 0.025);
 
     const camera = new THREE.PerspectiveCamera(40, (canvas.clientWidth || window.innerWidth) / (canvas.clientHeight || window.innerHeight), 0.1, 50);
     camera.position.set(0.15, 1.45, 4.4);
@@ -111,36 +126,10 @@ export async function createArmoryScene(canvas) {
     scene.add(rimLight);
 
     // ── Subterranean Bunker Environment Geometry ─────────────
+    // Opaque backdrop wall and floor are removed so the transparent WebGL canvas
+    // allows the rich per-class background concept art (armory_bg_scout/tank/engineer)
+    // on #armory-screen to show through behind the 3D operator and weapon models.
     const envGroup = new THREE.Group();
-
-    // Metallic Floor
-    const floorGeo = new THREE.PlaneGeometry(16, 16, 8, 8);
-    const floorMat = new THREE.MeshStandardMaterial({
-        color: 0x121820,
-        roughness: 0.75,
-        metalness: 0.65
-    });
-    const floor = new THREE.Mesh(floorGeo, floorMat);
-    floor.rotation.x = -Math.PI / 2;
-    floor.receiveShadow = true;
-    envGroup.add(floor);
-
-    // Grated Floor Trim
-    const gridHelper = new THREE.GridHelper(16, 32, 0x00e5ff, 0x1c2d3d);
-    gridHelper.position.y = 0.002;
-    envGroup.add(gridHelper);
-
-    // Back Staging Wall
-    const wallGeo = new THREE.PlaneGeometry(18, 8);
-    const wallMat = new THREE.MeshStandardMaterial({
-        color: 0x0d141d,
-        roughness: 0.85,
-        metalness: 0.5
-    });
-    const backWall = new THREE.Mesh(wallGeo, wallMat);
-    backWall.position.set(0, 3.5, -2.5);
-    backWall.receiveShadow = true;
-    envGroup.add(backWall);
 
     // Magnetic Weapon Wall Mounting Panel (Right / Center-Right)
     // Raised and pushed back from its original (1.1, 1.25, -0.6) --
@@ -173,7 +162,7 @@ export async function createArmoryScene(canvas) {
     neonLine.position.set(1.1, 1.1, -0.93);
     envGroup.add(neonLine);
 
-    // Operator Hexagonal Turntable Platform (Left)
+    // Operator Hexagonal Turntable Platform (Positioned in clear central-left lane)
     const platGeo = new THREE.CylinderGeometry(0.85, 0.95, 0.12, 6);
     const platMat = new THREE.MeshStandardMaterial({
         color: 0x1a2636,
@@ -181,7 +170,7 @@ export async function createArmoryScene(canvas) {
         metalness: 0.8
     });
     const platform = new THREE.Mesh(platGeo, platMat);
-    platform.position.set(-1.15, 0.06, 0.1);
+    platform.position.set(-0.75, 0.06, 0.15);
     platform.receiveShadow = true;
     envGroup.add(platform);
 
@@ -189,14 +178,14 @@ export async function createArmoryScene(canvas) {
     const platRingMat = new THREE.MeshBasicMaterial({ color: 0x00e5ff, side: THREE.DoubleSide });
     const platRing = new THREE.Mesh(platRingGeo, platRingMat);
     platRing.rotation.x = -Math.PI / 2;
-    platRing.position.set(-1.15, 0.125, 0.1);
+    platRing.position.set(-0.75, 0.125, 0.15);
     envGroup.add(platRing);
 
     scene.add(envGroup);
 
-    // ── Operator Turntable Group (Left) ──────────────────────
+    // ── Operator Turntable Group (Left / Center Lane) ────────
     const operatorGroup = new THREE.Group();
-    operatorGroup.position.set(-1.15, 0.12, 0.1);
+    operatorGroup.position.set(-0.75, 0.12, 0.15);
     scene.add(operatorGroup);
 
     let currentOverlay = null;
@@ -264,7 +253,7 @@ export async function createArmoryScene(canvas) {
         decalSprite = sprite;
     }
 
-    async function loadOperatorModel(classType) {
+    async function loadOperatorModel(classType, chassisSkinId = null) {
         const gen = ++loadGen;
         const normalized = ['SCOUT', 'TANK', 'ENGINEER'].includes(String(classType).toUpperCase())
             ? String(classType).toUpperCase()
@@ -302,8 +291,14 @@ export async function createArmoryScene(canvas) {
             }
         };
 
+        const baseConfig = configs[normalized] || configs.SCOUT;
+        const customModel = chassisSkinId && CHASSIS_SKIN_GLB_MAP[chassisSkinId]
+            ? CHASSIS_SKIN_GLB_MAP[chassisSkinId]
+            : null;
+        const config = customModel ? { ...baseConfig, modelUrl: customModel } : baseConfig;
+
         try {
-            const overlay = await createPlayer3dOverlay(configs[normalized] || configs.SCOUT);
+            const overlay = await createPlayer3dOverlay(config);
             if (gen !== loadGen) return;
             currentOverlay = overlay;
             overlay.root.rotation.y = 0.35; // Angle slightly toward center weapon bench
@@ -611,10 +606,25 @@ export async function createArmoryScene(canvas) {
     requestAnimationFrame(animate);
 
     return {
-        async setClass(classType) {
-            await loadOperatorModel(classType);
-            const defaultArch = DEFAULT_ARCHETYPES[classType.toLowerCase()] || 'talon';
+        async setClass(classType, chassisSkinId = null) {
+            const cls = String(classType || 'scout').toLowerCase();
+            const themeColors = {
+                scout: 0x00f0ff,
+                tank: 0xff9f1c,
+                engineer: 0x10b981
+            };
+            const accentColor = themeColors[cls] || 0x00f0ff;
+            if (rimLight?.color) rimLight.color.setHex(accentColor);
+            if (fillLight?.color) fillLight.color.setHex(accentColor);
+            if (platRingMat?.color) platRingMat.color.setHex(accentColor);
+            if (neonLineMat?.color) neonLineMat.color.setHex(accentColor);
+
+            await loadOperatorModel(classType, chassisSkinId);
+            const defaultArch = DEFAULT_ARCHETYPES[cls] || 'talon';
             await loadWeaponAsset(defaultArch, null);
+        },
+        async setChassisSkin(chassisSkinId, classType = activeClass) {
+            await loadOperatorModel(classType, chassisSkinId);
         },
         async setWeapon(archetypeId, skinItemdefId) {
             await loadWeaponAsset(archetypeId, skinItemdefId);

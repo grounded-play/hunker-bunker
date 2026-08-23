@@ -43,6 +43,11 @@ describe('SeasonPassManager', () => {
         expect(manager.getCurrentTier()).toBe(3);
     });
 
+    it('returns every tier crossed by a single XP award for sequential ceremony playback', () => {
+        const manager = new SeasonPassManager({ storage: createMemoryStorage() });
+        expect(manager.addXp(XP_PER_TIER * 3 + 25, 'test').tiersCrossed).toEqual([1, 2, 3]);
+    });
+
     it('never exceeds the max tier even with excess XP', () => {
         const manager = new SeasonPassManager({ storage: createMemoryStorage() });
         manager.addXp(XP_PER_TIER * (TOTAL_TIERS + 10), 'test');

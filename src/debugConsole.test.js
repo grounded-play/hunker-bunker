@@ -120,6 +120,27 @@ describe('debugConsole', () => {
         expect(exported).toContain('"chunk": "2,-1"');
     });
 
+    it('records demo checkpoints and exports Deck-safe diagnostic context', () => {
+        globalThis.window.HunkerInputState = {
+            getState: () => ({ isSteamDeck: true, controllerCount: 1, lastInputMode: 'controller' })
+        };
+        globalThis.window.hbStage = { stageWidth: 1280, stageHeight: 800, scale: 1 };
+        globalThis.window.__hbSteamStatus = { active: true, isSteamDeck: true, backend: { ok: true } };
+        globalThis.window.threeGame = {
+            getPerformanceDiagnosticsSnapshot: () => ({ drawCalls: 12, triangles: 400 })
+        };
+
+        debugLog.executeCommand('demo start');
+        debugLog.executeCommand('demo mark first-room');
+        const capture = debugLog.buildSessionCapture();
+
+        expect(capture.session.demoMarkers.map((marker) => marker.label)).toEqual(['demo-start', 'first-room']);
+        expect(capture.state.input.isSteamDeck).toBe(true);
+        expect(capture.state.stage.stageWidth).toBe(1280);
+        expect(capture.state.steam.backend.ok).toBe(true);
+        expect(capture.state.performance.drawCalls).toBe(12);
+    });
+
     it('executes noclip command and delegates to game instance', () => {
         let noclipCalled = false;
         globalThis.window.threeGame = {
