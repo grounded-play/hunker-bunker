@@ -13,8 +13,7 @@ import {
     getShardBalance,
     planDispensaryRedeem,
     planIngotPackPurchase,
-    planSmelt,
-    resolveDuplicateGrant
+    planSmelt
 } from './craftingMatrix.js';
 
 import { COMMUNITY_SKINS } from './data/communitySkins.js';

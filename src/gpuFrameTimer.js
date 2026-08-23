@@ -38,7 +38,7 @@ export function createGpuFrameTimer(gl, {
 
     function poll() {
         if (!supported || disposed || pending.length === 0) return;
-        let disjoint = false;
+        let disjoint;
         try {
             disjoint = Boolean(gl.getParameter?.(ext.GPU_DISJOINT_EXT));
         } catch {
@@ -52,7 +52,7 @@ export function createGpuFrameTimer(gl, {
 
         while (pending.length) {
             const query = pending[0];
-            let available = false;
+            let available;
             try {
                 available = Boolean(gl.getQueryParameter(query, gl.QUERY_RESULT_AVAILABLE));
             } catch {

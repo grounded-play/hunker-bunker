@@ -1,6 +1,5 @@
 import bpy
 import os
-import math
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
 SOURCE_DIR = os.path.join(ROOT, 'public', '3d')

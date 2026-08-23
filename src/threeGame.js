@@ -168,7 +168,7 @@ import { CAMP_QUESTS } from './data/campQuests.js';
 import { humanityDecayProgress } from './vitals.js';
 import { applyCampPayoutEffects } from './runModifiers.js';
 import { WandererManager, isWandererEligible } from './wandererSystem.js';
-import { renderWandererModal, closeWandererModal } from './wandererModal.js';
+import { renderWandererModal } from './wandererModal.js';
 import { createWanderer3dInstance } from './wanderer3d.js';
 import { applyBlackChromaKey, applyGreenChromaKey } from './textureKeying.js';
 import { getCachedKeyedImage, putCachedKeyedImage } from './keyedTextureCache.js';

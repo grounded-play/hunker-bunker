@@ -1,6 +1,5 @@
 import os
 import glob
-import re
 import bpy
 
 TARGET_DIR = os.path.abspath('public/3d/runtime/new3ds')

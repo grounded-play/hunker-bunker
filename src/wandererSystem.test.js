@@ -2,8 +2,7 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import {
     isWandererEligible,
     WANDERER_ARCHETYPES,
-    WandererManager,
-    createDefaultWandererState
+    WandererManager
 } from './wandererSystem.js';
 
 class MockStorage {
