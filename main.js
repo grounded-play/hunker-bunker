@@ -50,7 +50,7 @@ import { createScoutHeroPreview } from './src/scoutHeroPreview.js';
 import { createArmoryScene } from './src/armoryScene.js';
 import { createArmoryUi } from './src/armoryUi.js';
 import { ARMORY_SCREEN_ENABLED } from './src/featureFlags.js';
-import { initSteamVaultUI, loadVaultData, openSteamVaultModal, showSteamDropToast, renderSteamMilestoneGrants, grantVaultItem, STEAM_ITEM_CATALOG } from './src/steamVaultUi.js';
+import { initSteamVaultUI, loadVaultData, openSteamVaultModal, showSteamDropToast, renderSteamMilestoneGrants, grantVaultItem, resetDevVaultInventory, setDevInfiniteCacheMode, isDevInfiniteCacheMode, STEAM_ITEM_CATALOG } from './src/steamVaultUi.js';
 import { initSeasonPassUI, flushQueuedSeasonPassToasts } from './src/seasonPassUi.js';
 import { preloadEnemy3dTemplates } from './src/enemy3dOverlay.js';
 import { initVoiceCallouts } from './src/voiceCallouts.js';
@@ -63,6 +63,7 @@ import { matureContentAudit } from './src/matureContentAudit.js';
 import { progressionWalkthrough } from './src/progressionWalkthrough.js';
 import { renderGameOverLeaderboard } from './src/leaderboardUi.js';
 import { OPERATOR_POLISHES, getSelectedPolish, getUnlockedPolishIds, selectPolish, unlockAllPolishes, unlockMilestonePolish } from './src/operatorPolishes.js';
+import { createOwnershipStore } from './src/itemOwnership.js';
 import { STARTING_RUN_AMMO, CLASS_AMMO_CAPACITY } from './src/data/ammoEconomy.js';
 import { explainEnding, formatManifestBlocker } from './src/endingExplanations.js';
 import { SongInterstitialController, selectCampInterstitial } from './src/songInterstitials.js';
@@ -2195,6 +2196,33 @@ window.profile = profile;
 const achievementEngine = new AchievementEngine();
 window.achievementEngine = achievementEngine;
 
+// Single app-wide ownership store (src/itemOwnership.js). Everything that asks
+// "does the player have this?" -- Armory dropdowns, Vault rendering, equip
+// gating -- goes through this one object, replacing the three separate
+// catalogs and two copies of reconciliation described in
+// docs/armory-vault-progression-audit-2026-08-23.md.
+let ownershipStore = null;
+function getOwnershipStore() {
+    if (!ownershipStore) {
+        ownershipStore = createOwnershipStore({
+            storage: (() => {
+                try {
+                    return typeof localStorage !== 'undefined' ? localStorage : null;
+                } catch {
+                    // Private mode / blocked storage: run without persistence
+                    // rather than failing to boot.
+                    return null;
+                }
+            })()
+        });
+        window.itemOwnership = ownershipStore;
+    }
+    return ownershipStore;
+}
+// Warm it at startup so `window.itemOwnership` is available to the console and
+// to any UI that opens before the Armory does.
+getOwnershipStore();
+
 const loadout = new LoadoutManager();
 window.loadout = loadout;
 
@@ -2231,7 +2259,12 @@ window.addEventListener('loadout-hud-theme-changed', applyHudThemeFromLoadout);
 // Achievement cosmetics use the same local vault grant path as Season Pass
 // rewards. The event keeps achievements independent from the Steam UI module.
 window.addEventListener('achievement-cosmetic-unlocked', ({ detail }) => {
-    if (detail?.itemdefid) grantVaultItem(detail.itemdefid, 1);
+    if (!detail?.itemdefid) return;
+    grantVaultItem(detail.itemdefid, 1);
+    // Also record it in the persisted ownership store, so the unlock survives a
+    // reload -- grantVaultItem() only touches steamVaultUi's in-memory array
+    // (audit finding F3).
+    getOwnershipStore().grantDev(detail.itemdefid, 1);
 });
 
 // ── Daily Ops System ──────────────────────────────────────────
@@ -7094,7 +7127,8 @@ function ensureArmoryInitialized() {
                 armoryScene: armorySceneInstance,
                 onEmbark: () => closeArmoryScreen({ embark: true }),
                 onBack: () => closeArmoryScreen({ embark: false }),
-                onOpenVault: () => openSteamVaultModal()
+                onOpenVault: () => openSteamVaultModal(),
+                ownership: getOwnershipStore()
             });
         })();
     }
@@ -7337,6 +7371,7 @@ if (window.electronAPI?.getQaToolsEnabled) {
     window.electronAPI.getQaToolsEnabled()
         .then((enabled) => {
             qaToolsEnabled = Boolean(enabled);
+            window.__hbQaToolsEnabled = qaToolsEnabled;
             developerToolsAuthorized = canUseDeveloperTools({
                 electronApiPresent,
                 qaToolsEnabled
@@ -7349,6 +7384,7 @@ if (window.electronAPI?.getQaToolsEnabled) {
         })
         .catch(() => {
             qaToolsEnabled = false;
+            window.__hbQaToolsEnabled = false;
             developerToolsAuthorized = canUseDeveloperTools({
                 electronApiPresent,
                 qaToolsEnabled
@@ -7424,6 +7460,35 @@ function devUnlockAchievement(key) {
         window.electronAPI.unlockAchievement(targetKey);
     }
     return `Unlocked achievement: ${targetTitle} (${targetKey})`;
+}
+
+// docs/armory-vault-progression-audit-2026-08-23.md A2. An explicit, visible
+// override -- it makes catalogue items equippable WITHOUT marking them owned,
+// so "rewards locked until earned" still holds for anything that asks about
+// ownership rather than equippability.
+function devSetCosmeticUnlockAll(arg) {
+    const store = getOwnershipStore();
+    const next = arg === undefined || arg === ''
+        ? !store.isUnlockAll()
+        : !['0', 'off', 'false', 'no'].includes(String(arg).toLowerCase());
+    store.setUnlockAll(next);
+    return `Cosmetic UNLOCK ALL ${next ? 'ENABLED' : 'DISABLED'} (equip override; ownership unchanged)`;
+}
+
+// B9: clears economy state only. Settings, achievements and codex progress live
+// under their own storage keys and are deliberately left alone.
+function devResetInventory() {
+    getOwnershipStore().reset();
+    resetDevVaultInventory();
+    return 'Inventory reset: dev grants, Vault items, cache state and UNLOCK ALL cleared. Settings untouched.';
+}
+
+function devSetInfiniteCache(arg) {
+    const next = arg === undefined || arg === ''
+        ? !isDevInfiniteCacheMode()
+        : !['0', 'off', 'false', 'no'].includes(String(arg).toLowerCase());
+    setDevInfiniteCacheMode(next);
+    return `Infinite dev caches/keys ${next ? 'ENABLED' : 'DISABLED'}`;
 }
 
 function devUnlockAllAchievements() {
@@ -7692,6 +7757,9 @@ function executeDevCommand(input) {
                 + '  seed [number]       - View or set active run seed\n'
                 + '  unlock <key>        - Unlock specific achievement\n'
                 + '  unlock_all          - Unlock all achievements\n'
+                + '  cosmetics_all [0|1] - Toggle cosmetic UNLOCK ALL (equip override)\n'
+                + '  cache_infinite [0|1] - Toggle infinite dev cache/key supply\n'
+                + '  reset_inventory     - Clear dev grants + unlock flags (keeps settings)\n'
                 + '  reset_ach           - Clear local achievement unlocks\n'
                 + '  reset_save          - Confirm a full save, RGB, and achievement reset\n'
                 + '  rgb [chapter]       - Launch RGB minigame (parking_lot, warehouse, incident_review, medi_kiosk, server_room, sector_four)\n'
@@ -7946,6 +8014,19 @@ function executeDevCommand(input) {
         case 'codexall':
         case 'unlock_codex':
             result = devUnlockAllCodex();
+            break;
+        case 'cosmetics_all':
+        case 'unlock_cosmetics':
+            result = devSetCosmeticUnlockAll(arg);
+            break;
+        case 'reset_inventory':
+        case 'resetinv':
+            result = devResetInventory();
+            break;
+        case 'cache_infinite':
+        case 'infinite_cache':
+        case 'cacheinfinite':
+            result = devSetInfiniteCache(arg);
             break;
         case 'reset_ach':
         case 'resetach':

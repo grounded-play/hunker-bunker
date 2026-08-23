@@ -14441,6 +14441,49 @@ button.archive-log-entry:active {
   box-shadow: 0 0 30px rgba(34, 211, 238, 0.7) !important;
 }
 
+/* Sequential Season Pass promotion ceremony. The DOM is created lazily by
+   seasonPassUi.js so normal boot and menu layouts pay no cost until XP crosses
+   a tier. */
+.progression-reward-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 2200;
+  display: grid;
+  place-items: center;
+  background: rgba(2, 6, 12, .86);
+  backdrop-filter: blur(8px);
+}
+.progression-reward-overlay.hidden { display: none !important; }
+.progression-reward-panel {
+  position: relative;
+  width: min(560px, calc(100vw - 32px));
+  padding: 28px;
+  text-align: center;
+  border: 1px solid rgba(0, 229, 255, .72);
+  background: linear-gradient(145deg, rgba(9, 23, 36, .98), rgba(9, 12, 24, .98));
+  box-shadow: 0 0 60px rgba(0, 229, 255, .22), inset 0 0 36px rgba(0, 229, 255, .08);
+}
+.progression-reward-kicker { color: #00e5ff; letter-spacing: .14em; font-size: .72rem; }
+.progression-reward-title { margin: 14px 0 16px; color: #f8fafc; font-size: 2rem; font-weight: 800; letter-spacing: .08em; }
+.progression-xp-track { height: 10px; overflow: hidden; border: 1px solid rgba(0, 229, 255, .55); background: #07111b; }
+.progression-xp-bar { width: 0; height: 100%; background: linear-gradient(90deg, #00e5ff, #a7f3d0); box-shadow: 0 0 18px #00e5ff; transition: width 900ms cubic-bezier(.16, 1, .3, 1); }
+.progression-xp-label { margin: 9px 0 16px; color: #8faabd; font-size: .75rem; letter-spacing: .1em; }
+.progression-reward-card { position: relative; padding: 20px 18px; border: 1px solid rgba(255, 159, 28, .7); background: rgba(255, 159, 28, .08); }
+.progression-reward-card__slot { color: #ff9f1c; font-size: .7rem; letter-spacing: .14em; }
+.progression-reward-card__name { margin-top: 10px; color: #fff; font-size: 1.3rem; font-weight: 800; }
+.progression-reward-card__desc { margin-top: 7px; color: #b7c9d8; }
+.progression-reward-card__meta { margin-top: 10px; color: #ffcf80; font-size: .78rem; letter-spacing: .1em; }
+.progression-claim-btn { margin-top: 20px; min-width: 220px; }
+.progression-reward-burst { position: absolute; inset: 38% 50% auto; pointer-events: none; }
+.progression-reward-burst i { position: absolute; width: 3px; height: 34px; background: #ffcf80; box-shadow: 0 0 10px #ff9f1c; transform-origin: 50% 110px; transform: rotate(var(--particle-angle)); animation: progression-particle 900ms ease-out both; }
+@keyframes progression-particle { from { opacity: 0; transform: rotate(var(--particle-angle)) translateY(0) scale(.4); } 30% { opacity: 1; } to { opacity: 0; transform: rotate(var(--particle-angle)) translateY(-75px) scale(1); } }
+
+.vault-reveal-bundle { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin: 14px 0; text-align: left; }
+.vault-reveal-bundle__item { display: grid; gap: 4px; padding: 9px; border-left: 2px solid var(--rarity-color, #00e5ff); background: rgba(255,255,255,.04); font-size: .68rem; }
+.vault-reveal-bundle__slot { color: var(--rarity-color, #00e5ff); font-size: .58rem; letter-spacing: .08em; }
+.vault-reveal-bundle__item strong { color: #f8fafc; font-size: .72rem; }
+.vault-reveal-bundle__item span:last-child { color: #8faabd; }
+
 @keyframes spinRing {
   from { transform: rotate(0deg); }
   to { transform: rotate(360deg); }

@@ -1,5 +1,7 @@
 import { AudioManager } from './audio.js';
 import { assetUrl } from './assetUrl.js';
+import { buildEquipOptions } from './armoryOptions.js';
+import { ITEM_TYPE, getCatalogIdsByType } from './itemOwnership.js';
 import {
     ARCHETYPE_SKINS,
     CLASS_ARCHETYPES,
@@ -96,9 +98,11 @@ export function createArmoryUi({
     armoryScene,
     onEmbark,
     onBack,
-    onOpenVault
+    onOpenVault,
+    ownership
 }) {
     if (!container) throw new Error('Armory UI requires a container DOM element');
+    if (!ownership) throw new Error('Armory UI requires an ownership store');
 
     const ALLOWED_CLASSES = new Set(['scout', 'tank', 'engineer']);
     let activeClass = 'scout';
@@ -111,6 +115,35 @@ export function createArmoryUi({
         } catch {
             // best-effort
         }
+    }
+
+    // docs/armory-vault-progression-audit-2026-08-23.md A1: every candidate is
+    // rendered, but an unearned one comes back `disabled` from
+    // buildEquipOptions() and is labelled so the reason is visible rather than
+    // the item simply being missing from the list.
+    function optionsHtml(ids, selectedId) {
+        return buildEquipOptions({ ids, selectedId, ownership })
+            .map((opt) => `<option value="${opt.id}"`
+                + `${opt.selected ? ' selected' : ''}`
+                + `${opt.disabled ? ' disabled' : ''}`
+                + ` data-owned="${opt.owned}"`
+                + ` class="armory-option${opt.owned ? '' : ' armory-option--locked'}">`
+                + `${opt.label}</option>`)
+            .join('');
+    }
+
+    // Defence in depth behind the `disabled` attribute: a change event can
+    // still arrive with a locked id (DOM edited, option re-enabled, stale
+    // value), and equipping is the one thing ownership actually gates.
+    function equipGuard(rawValue, apply) {
+        const value = rawValue || null;
+        if (value !== null && !ownership.canEquip(value)) {
+            playSound('sfx_ui_denied');
+            render();
+            return false;
+        }
+        apply(value);
+        return true;
     }
 
     function render() {
@@ -170,22 +203,17 @@ export function createArmoryUi({
                                 <label>EXOSUIT CHASSIS SKIN</label>
                                 <select id="armory-chassis-select" class="armory-select">
                                     <option value="">[STANDARD CLASS CHASSIS]</option>
-                                    ${allowedChassisSkins.map((id) => `
-                                        <option value="${id}" ${chassisSkinId === id ? 'selected' : ''}>
-                                             ${CATALOG_ITEMS[id]?.name || id} (${CATALOG_ITEMS[id]?.rarity?.toUpperCase()})
-                                        </option>
-                                    `).join('')}
+                                    ${optionsHtml(allowedChassisSkins, chassisSkinId)}
                                 </select>
                             </div>
                             <div class="bench-field">
                                 <label>SHOULDER PATCH &amp; INSIGNIA</label>
                                 <select id="armory-decal-select" class="armory-select">
                                     <option value="">[DEFAULT CLASS INSIGNIA]</option>
-                                    ${['4120', '4121', '4122', '4123', '4124', '4125', '4126', '4127', '4128', '4129'].map((id) => `
-                                        <option value="${id}" ${(loadoutManager.getEquippedDecalId?.() || loadoutManager.state?.suit?.decalId) === id ? 'selected' : ''}>
-                                            ${CATALOG_ITEMS[id]?.name || id} (${CATALOG_ITEMS[id]?.rarity?.toUpperCase()})
-                                        </option>
-                                    `).join('')}
+                                    ${optionsHtml(
+                                        getCatalogIdsByType(ITEM_TYPE.DECAL),
+                                        loadoutManager.getEquippedDecalId?.() ?? loadoutManager.state?.suit?.decalId
+                                    )}
                                 </select>
                             </div>
                         </div>
@@ -237,11 +265,7 @@ export function createArmoryUi({
                             <label>WEAPON SHEEN / TACTICAL FINISH</label>
                             <select id="armory-skin-select" class="armory-select">
                                 <option value="">[STANDARD FACTORY FINISH]</option>
-                                ${allowedSkins.map((id) => `
-                                    <option value="${id}" ${loadout.skinId === id ? 'selected' : ''}>
-                                        ${CATALOG_ITEMS[id]?.name || id} (${CATALOG_ITEMS[id]?.rarity?.toUpperCase()})
-                                    </option>
-                                `).join('')}
+                                ${optionsHtml(allowedSkins, loadout.skinId)}
                             </select>
                         </div>
 
@@ -251,11 +275,7 @@ export function createArmoryUi({
                                 <label>TACTICAL CHARM</label>
                                 <select id="armory-charm-select" class="armory-select">
                                     <option value="">[NO CHARM ATTACHED]</option>
-                                    ${['4130', '4131', '4132', '4133', '4134', '4135', '4136', '4137'].map((id) => `
-                                        <option value="${id}" ${loadout.charmId === id ? 'selected' : ''}>
-                                            ${CATALOG_ITEMS[id]?.name || id}
-                                        </option>
-                                    `).join('')}
+                                    ${optionsHtml(getCatalogIdsByType(ITEM_TYPE.CHARM), loadout.charmId)}
                                 </select>
                             </div>
                         </div>
@@ -266,11 +286,7 @@ export function createArmoryUi({
                                 <label>OVERCLOCK — BAY A</label>
                                 <select id="armory-mod1-select" class="armory-select">
                                     <option value="">[EMPTY OVERCLOCK BAY A]</option>
-                                    ${['4140', '4141', '4142', '4143', '4144', '4145', '4146', '4147'].map((id) => `
-                                        <option value="${id}" ${loadout.mod1Id === id ? 'selected' : ''}>
-                                            ${CATALOG_ITEMS[id]?.name || id} — ${CATALOG_ITEMS[id]?.perk || ''}
-                                        </option>
-                                    `).join('')}
+                                    ${optionsHtml(getCatalogIdsByType(ITEM_TYPE.MOD), loadout.mod1Id)}
                                 </select>
                             </div>
 
@@ -279,11 +295,7 @@ export function createArmoryUi({
                                 <label>OVERCLOCK — BAY B</label>
                                 <select id="armory-mod2-select" class="armory-select">
                                     <option value="">[EMPTY OVERCLOCK BAY B]</option>
-                                    ${['4140', '4141', '4142', '4143', '4144', '4145', '4146', '4147'].map((id) => `
-                                        <option value="${id}" ${loadout.mod2Id === id ? 'selected' : ''}>
-                                            ${CATALOG_ITEMS[id]?.name || id} — ${CATALOG_ITEMS[id]?.perk || ''}
-                                        </option>
-                                    `).join('')}
+                                    ${optionsHtml(getCatalogIdsByType(ITEM_TYPE.MOD), loadout.mod2Id)}
                                 </select>
                             </div>
                         </div>
@@ -343,7 +355,7 @@ export function createArmoryUi({
 
         // Weapon Skin switch
         container.querySelector('#armory-skin-select')?.addEventListener('change', (e) => {
-            loadoutManager.equipWeaponSkin(cls, e.target.value || null);
+            if (!equipGuard(e.target.value, (v) => loadoutManager.equipWeaponSkin(cls, v))) return;
             playSound('sfx_charm_clink_light');
             armoryScene?.updateFromLoadout(loadoutManager, cls);
             render();
@@ -352,7 +364,7 @@ export function createArmoryUi({
         // Operator chassis skin switch
         container.querySelector('#armory-chassis-select')?.addEventListener('change', (e) => {
             const chassisSkinId = e.target.value || null;
-            loadoutManager.equipChassisSkin(chassisSkinId);
+            if (!equipGuard(chassisSkinId, (v) => loadoutManager.equipChassisSkin(v))) return;
             playSound('sfx_overclock_socket');
             armoryScene?.setChassisSkin?.(chassisSkinId, cls);
             render();
@@ -360,7 +372,7 @@ export function createArmoryUi({
 
         // Charm switch
         container.querySelector('#armory-charm-select')?.addEventListener('change', (e) => {
-            loadoutManager.equipCharm(cls, e.target.value || null);
+            if (!equipGuard(e.target.value, (v) => loadoutManager.equipCharm(cls, v))) return;
             playSound('sfx_charm_clink_heavy');
             armoryScene?.updateFromLoadout(loadoutManager, cls);
             render();
@@ -368,7 +380,7 @@ export function createArmoryUi({
 
         // Mod 1 switch
         container.querySelector('#armory-mod1-select')?.addEventListener('change', (e) => {
-            loadoutManager.equipRigModule(cls, 1, e.target.value || null);
+            if (!equipGuard(e.target.value, (v) => loadoutManager.equipRigModule(cls, 1, v))) return;
             playSound('sfx_overclock_socket');
             armoryScene?.updateFromLoadout(loadoutManager, cls);
             render();
@@ -376,7 +388,7 @@ export function createArmoryUi({
 
         // Mod 2 switch
         container.querySelector('#armory-mod2-select')?.addEventListener('change', (e) => {
-            loadoutManager.equipRigModule(cls, 2, e.target.value || null);
+            if (!equipGuard(e.target.value, (v) => loadoutManager.equipRigModule(cls, 2, v))) return;
             playSound('sfx_overclock_socket');
             armoryScene?.updateFromLoadout(loadoutManager, cls);
             render();
@@ -384,7 +396,7 @@ export function createArmoryUi({
 
         // Decal switch
         container.querySelector('#armory-decal-select')?.addEventListener('change', (e) => {
-            loadoutManager.equipDecal(e.target.value || null);
+            if (!equipGuard(e.target.value, (v) => loadoutManager.equipDecal(v))) return;
             armoryScene?.setDecal(e.target.value || null);
             playSound('sfx_charm_clink_light');
             render();
@@ -463,10 +475,17 @@ export function createArmoryUi({
         render();
     }
 
+    // Requirement A4: an item granted while the Armory is on screen (a cache
+    // opened in the Vault tab, a tier claimed) has to appear immediately.
+    const unsubscribeOwnership = ownership.subscribe(() => render());
+
     return {
         setClass,
         refresh() {
             render();
+        },
+        destroy() {
+            unsubscribeOwnership();
         }
     };
 }
