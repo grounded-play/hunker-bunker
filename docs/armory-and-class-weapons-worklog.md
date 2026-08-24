@@ -5,7 +5,7 @@ done; see §3). Remaining work is asset coverage (task 2's Talon-C, task 6's rem
 polish (task 8, itemdef 4107 naming), not blocking functionality — `ARMORY_SCREEN_ENABLED` is on.
 
 This is the shared coordination doc for turning
-[`docs/season-zero-protocol/07-armory-and-weapon-bench.md`](file:///home/caveman/Desktop/icecave/hunker-bunker/docs/season-zero-protocol/07-armory-and-weapon-bench.md)
+[`docs/season-zero-protocol/07-armory-and-weapon-bench.md`](./season-zero-protocol/07-armory-and-weapon-bench.md)
 (the design spec — read that first for *why*, this doc is *where things actually stand and who's
 doing what*) into real, running code. Follows this repo's established
 `docs/*-lane-split.md` convention (see `docs/cosmetics-and-loadout-lane-split.md` and

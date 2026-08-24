@@ -6129,3 +6129,7 @@ But I want to see what's one ring deeper.
 And every time I make that choice, I come back a little less certain that home will still recognize me.
 
 That is the version of Hunker Bunker I would organize the entire project around now.
+> **Historical Sprint 25 design/check-in transcript.** It is retained for
+> creative provenance, not current status. Use
+> [`planning/repository-roadmap.md`](planning/repository-roadmap.md) for the
+> current disposition of its ideas.

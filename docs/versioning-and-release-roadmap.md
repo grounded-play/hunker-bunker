@@ -1,9 +1,13 @@
 # Hunker Bunker Versioning Strategy & Release Roadmap
 
-**Current Active Sprint:** Sprint 29  
-**Active Development Branch:** `dev/sprint-29`  
-**Current Working Version:** `v2.3.1-beta` (`2.3.1-beta` in `package.json`)  
-**Base Stable Release:** [`v2.3.0-beta`](https://github.com/grounded-play/hunker-bunker/releases/tag/v2.3.0-beta)  
+**Current Active Sprint:** Sprint 30
+
+**Active Development Branch:** `dev/sprint-30`
+
+**Current Working Version:** `v2.3.2-beta` (`2.3.2-beta` in `package.json`)
+
+**Base Stable Release:** [`v2.3.0-beta`](https://github.com/grounded-play/hunker-bunker/releases/tag/v2.3.0-beta)
+
 **Main Branch:** `mothership`
 
 ---
@@ -32,47 +36,35 @@ $$\textbf{v[MAJOR].[MINOR].[PATCH]-[PRE-RELEASE]}$$
 | **v2.1.0-beta** | Sprint 21 | 2026-08-03 | `v2.1.0-beta` | Multiplayer runtime prototype, co-op damage sync, network seed dispatch. |
 | **v2.2.0-beta** | Sprint 26 (`dev/sprint-26`) | 2026-08-20 | [PR #38](https://github.com/grounded-play/hunker-bunker/pull/38) | Steamworks stats (8/8 synced), Steam Cloud save bridge, self-hosted TLS auth backend (`steam.tuesdaycinema.club`), Depth Contract initial wiring, host failover. |
 | **v2.3.0-beta** | Sprint 28 (`dev/sprint-28`) | 2026-08-23 | [PR #40](https://github.com/grounded-play/hunker-bunker/pull/40) (`030a8f9`) | **46 new 3D models** (30 community chassis skins + 16 Season 0 assets), redesigned 3-column Armory with class backgrounds, Wanderer companion system, Steam Deck twin-stick aiming preset, mid-run crash recovery (`runCheckpoint.js`), GPU frame profiler, all 8 transformative relics. |
-| **v2.3.1-beta** *(Active)* | Sprint 29 (`dev/sprint-29`) | *In Progress* | `dev/sprint-29` (off `mothership`) | Biomechanical horror 3D asset generation follow-through, Wanderer quest line expansion, Steam Deck performance optimization, end-to-end multi-account Steam Lobby certification. |
+| **v2.3.1-beta** *(merged, not tagged)* | Sprint 29 (`dev/sprint-29`) | 2026-08-24 | `959239c` on `mothership` | Presentation telemetry and fixes, 11 optimized runtime models, reward/XP feedback, lighting reports, weapon/charm calibration, locomotion cadence, and chroma-green auditing. |
+| **v2.3.2-beta** *(active working version)* | Sprint 30 (`dev/sprint-30`) | *In progress* | Branch from `959239c` | Acceptance, first-hour/product coherence, real packaged/Deck/Cloud evidence, production two-account co-op, and repository control. |
 
 ---
 
-## 3. Sprint 29 Roadmap & Iteration Objectives (`v2.3.1-beta`)
+## 3. Sprint 30 Roadmap & Iteration Objectives (`v2.3.2-beta`)
 
-As we step onto `dev/sprint-29` and iterate across `v2.3.1-beta`, the sprint focuses on the following pillars:
+Sprint 30 deliberately narrows the work to acceptance and the defects that its
+end-to-end routes expose. The executable plan is
+[`planning/sprint-30.md`](planning/sprint-30.md).
 
 ```mermaid
 graph TD
-    A["Sprint 29: v2.3.1-beta"] --> B["1. 3D Model Generation Pipeline"]
-    A --> C["2. Wanderer & Companion Quests"]
-    A --> D["3. Combat Feel & Enemy Stagger"]
-    A --> E["4. Steam Deck & Engine Tuning"]
-    A --> F["5. Multi-Account Steam Certification"]
-
-    B --> B1["Generate GLBs from docs/3d-asset-master-backlog-and-prompts.md"]
-    B --> B2["Wire missing 5 achievement weapons/chassis into catalog"]
-    
-    C --> C1["Expand 6 Wanderer quest objectives & reward loops"]
-    C --> C2["Tune companion combat follow AI and assist cooldowns"]
-
-    D --> D1["Tune visual & auditory feedback for enemy stagger"]
-    D --> D2["Outer sector director aggression & salvage balance"]
-
-    E --> E1["Package builds & audit 60 FPS pacing on Steam Deck"]
-    E --> E2["Optimize texture memory with KTX2/Basis pipelines"]
-
-    F --> F1["Two real Steam accounts verified on production lobby"]
-    F --> F2["End-to-end co-op expedition completion test"]
+    A["Sprint 30: v2.3.2-beta"] --> B["1. Single-player Proof Run"]
+    A --> C["2. Production two-account co-op"]
+    A --> D["3. Deck, Cloud, package acceptance"]
+    A --> E["4. Fix measured P0/P1 failures"]
+    A --> F["5. Documentation and claim control"]
 ```
 
 ---
 
 ## 4. Release Promotion & Verification Workflow
 
-When promoting changes or releasing incremental versions (`v2.3.1-beta.1`, `v2.3.2-beta`, etc.), follow this standard release checklist:
+When promoting changes or releasing a version, follow this standard release checklist:
 
 ### Step 1: Version Bumping
-1. Update `package.json` with target version (`"version": "2.3.1-beta"`).
-2. Update `index.html` system tag (`SYS VER: 2.3.1-BETA // ACTIVE`).
+1. Update `package.json` and `package-lock.json` with the target version.
+2. Update `index.html` system tag.
 3. Update `PRODUCT_STATE.md` and this ledger.
 
 ### Step 2: Full Local Presubmit & Test Gate
@@ -82,12 +74,12 @@ npm run lint                  # 0 errors / 0 warnings
 npm run presubmit             # Claims, SFX, retail assets, item catalog, soundtrack
 npm run audit:dependencies    # Production dependencies mapped
 npm run build                 # Vite bundle + audit:build-media
-npm run coverage              # Vitest suite (>2,031 tests, >98% coverage)
+npm run coverage              # Vitest suite (current baseline: 2,151 tests)
 ```
 
 ### Step 3: Branch Pull Request & Review
-1. Commit all changes to active sprint branch (`dev/sprint-29`).
-2. Push branch to remote: `git push origin dev/sprint-29`.
+1. Commit all changes to the active sprint branch.
+2. Push that branch to the remote.
 3. Open/update PR into `mothership` on GitHub.
 4. Verify automated CI/CD checks pass on GitHub Actions.
 

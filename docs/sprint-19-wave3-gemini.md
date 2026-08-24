@@ -1,7 +1,7 @@
 # Sprint 19 Wave 3 Brief — Gemini: Lore Coherence Content & Aesthetics
 
-Derived from [lore-coherence-and-secret-sauce-review.md](file:///home/caveman/Desktop/icecave/hunker-bunker/docs/lore-coherence-and-secret-sauce-review.md). 
-Sibling brief: [Codex — Lore Coherence Systems & Mechanics](file:///home/caveman/Desktop/icecave/hunker-bunker/docs/sprint-19-wave3-codex.md).
+Derived from [lore-coherence-and-secret-sauce-review.md](./lore-coherence-and-secret-sauce-review.md).
+Sibling brief: [Codex — Lore Coherence Systems & Mechanics](./sprint-19-wave3-codex.md).
 
 ## Mission
 

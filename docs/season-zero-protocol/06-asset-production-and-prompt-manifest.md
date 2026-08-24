@@ -24,23 +24,23 @@ Season 0 assets reflect the **Deep Crust Protocol** thematic identity:
 
 ## 3. Deployed Runtime 3D Models (`public/3d/runtime/new3ds/*.glb`)
 
-The following 13 3D models have been compressed for real-time WebGL rendering (1024x1024 WebP PBR textures, optimized vertex buffers, ~1.5–2.2MB per charm/mod, decimated weapon meshes) and deployed to the runtime assets folder. Original high-poly 4K source assets are preserved in the non-build directory [`art/source/new3d/`](file:///home/caveman/Desktop/icecave/hunker-bunker/art/source/new3d/):
+The following 13 3D models have been compressed for real-time WebGL rendering (1024x1024 WebP PBR textures, optimized vertex buffers, ~1.5–2.2MB per charm/mod, decimated weapon meshes) and deployed to the runtime assets folder. Original high-poly 4K source assets are preserved in the non-build directory [`art/source/new3d/`](../../art/source/new3d):
 
 | Itemdef | 3D Asset Name | Runtime File Path | Compressed Size | Category / Slot |
 | :--- | :--- | :--- | :--- | :--- |
-| `4130` | **Mini Cryo-Core Charm** | [`public/3d/runtime/new3ds/charm_mini_cryo_core.glb`](file:///home/caveman/Desktop/icecave/hunker-bunker/public/3d/runtime/new3ds/charm_mini_cryo_core.glb) | `1.90 MB` | Weapon Charm |
-| `4131` | **Spent 50-Cal Casing Charm** | [`public/3d/runtime/new3ds/charm_spent_50cal.glb`](file:///home/caveman/Desktop/icecave/hunker-bunker/public/3d/runtime/new3ds/charm_spent_50cal.glb) | `1.56 MB` | Weapon Charm |
-| `4132` | **Sporesnail Pearl Charm** | [`public/3d/runtime/new3ds/charm_sporesnail_pearl.glb`](file:///home/caveman/Desktop/icecave/hunker-bunker/public/3d/runtime/new3ds/charm_sporesnail_pearl.glb) | `1.63 MB` | Weapon Charm |
-| `4133` | **Trench Whistle Charm** | [`public/3d/runtime/new3ds/charm_trench_whistle.glb`](file:///home/caveman/Desktop/icecave/hunker-bunker/public/3d/runtime/new3ds/charm_trench_whistle.glb) | `1.61 MB` | Weapon Charm |
-| `4134` | **Glitched RAM Card Charm** | [`public/3d/runtime/new3ds/charm_glitched_ram.glb`](file:///home/caveman/Desktop/icecave/hunker-bunker/public/3d/runtime/new3ds/charm_glitched_ram.glb) | `1.79 MB` | Weapon Charm |
-| `4135` | **Geodetic Compass Charm** | [`public/3d/runtime/new3ds/charm_geodetic_compass.glb`](file:///home/caveman/Desktop/icecave/hunker-bunker/public/3d/runtime/new3ds/charm_geodetic_compass.glb) | `1.64 MB` | Weapon Charm |
-| `4136` | **Mini Drone Bobble Charm** | [`public/3d/runtime/new3ds/charm_mini_drone_bobble.glb`](file:///home/caveman/Desktop/icecave/hunker-bunker/public/3d/runtime/new3ds/charm_mini_drone_bobble.glb) | `1.81 MB` | Weapon Charm (Epic) |
-| `4139` | **Golden Sub-Bunker Key** | [`public/3d/runtime/new3ds/charm_golden_sub_bunker_key.glb`](file:///home/caveman/Desktop/icecave/hunker-bunker/public/3d/runtime/new3ds/charm_golden_sub_bunker_key.glb) | `2.10 MB` | Weapon Charm (Legendary) |
-| `4140` | **Cryo-Capacitor Overclock** | [`public/3d/runtime/new3ds/mod_cryo_capacitor.glb`](file:///home/caveman/Desktop/icecave/hunker-bunker/public/3d/runtime/new3ds/mod_cryo_capacitor.glb) | `1.88 MB` | Rig Overclock Module |
-| `4141` | **Magnetic Scavenger Module**| [`public/3d/runtime/new3ds/mod_magnetic_scavenger.glb`](file:///home/caveman/Desktop/icecave/hunker-bunker/public/3d/runtime/new3ds/mod_magnetic_scavenger.glb) | `2.03 MB` | Rig Overclock Module |
-| `4147` | **Zero-Point Flux Overdrive** | [`public/3d/runtime/new3ds/mod_zero_point_flux.glb`](file:///home/caveman/Desktop/icecave/hunker-bunker/public/3d/runtime/new3ds/mod_zero_point_flux.glb) | `2.00 MB` | Rig Overclock (Legendary) |
-| `4109` | **Void-Walker Beam Cannon** | [`public/3d/runtime/new3ds/skin_void_walker_beam.glb`](file:///home/caveman/Desktop/icecave/hunker-bunker/public/3d/runtime/new3ds/skin_void_walker_beam.glb) | `14.06 MB` | Weapon Frame (Epic) |
-| `4110` | **Queen's Carapace Carbine** | [`public/3d/runtime/new3ds/skin_queen_carapace_carbine.glb`](file:///home/caveman/Desktop/icecave/hunker-bunker/public/3d/runtime/new3ds/skin_queen_carapace_carbine.glb) | `11.97 MB` | Weapon Frame (Legendary) |
+| `4130` | **Mini Cryo-Core Charm** | [`public/3d/runtime/new3ds/charm_mini_cryo_core.glb`](../../public/3d/runtime/new3ds/charm_mini_cryo_core.glb) | `1.90 MB` | Weapon Charm |
+| `4131` | **Spent 50-Cal Casing Charm** | [`public/3d/runtime/new3ds/charm_spent_50cal.glb`](../../public/3d/runtime/new3ds/charm_spent_50cal.glb) | `1.56 MB` | Weapon Charm |
+| `4132` | **Sporesnail Pearl Charm** | [`public/3d/runtime/new3ds/charm_sporesnail_pearl.glb`](../../public/3d/runtime/new3ds/charm_sporesnail_pearl.glb) | `1.63 MB` | Weapon Charm |
+| `4133` | **Trench Whistle Charm** | [`public/3d/runtime/new3ds/charm_trench_whistle.glb`](../../public/3d/runtime/new3ds/charm_trench_whistle.glb) | `1.61 MB` | Weapon Charm |
+| `4134` | **Glitched RAM Card Charm** | [`public/3d/runtime/new3ds/charm_glitched_ram.glb`](../../public/3d/runtime/new3ds/charm_glitched_ram.glb) | `1.79 MB` | Weapon Charm |
+| `4135` | **Geodetic Compass Charm** | [`public/3d/runtime/new3ds/charm_geodetic_compass.glb`](../../public/3d/runtime/new3ds/charm_geodetic_compass.glb) | `1.64 MB` | Weapon Charm |
+| `4136` | **Mini Drone Bobble Charm** | [`public/3d/runtime/new3ds/charm_mini_drone_bobble.glb`](../../public/3d/runtime/new3ds/charm_mini_drone_bobble.glb) | `1.81 MB` | Weapon Charm (Epic) |
+| `4139` | **Golden Sub-Bunker Key** | [`public/3d/runtime/new3ds/charm_golden_sub_bunker_key.glb`](../../public/3d/runtime/new3ds/charm_golden_sub_bunker_key.glb) | `2.10 MB` | Weapon Charm (Legendary) |
+| `4140` | **Cryo-Capacitor Overclock** | [`public/3d/runtime/new3ds/mod_cryo_capacitor.glb`](../../public/3d/runtime/new3ds/mod_cryo_capacitor.glb) | `1.88 MB` | Rig Overclock Module |
+| `4141` | **Magnetic Scavenger Module**| [`public/3d/runtime/new3ds/mod_magnetic_scavenger.glb`](../../public/3d/runtime/new3ds/mod_magnetic_scavenger.glb) | `2.03 MB` | Rig Overclock Module |
+| `4147` | **Zero-Point Flux Overdrive** | [`public/3d/runtime/new3ds/mod_zero_point_flux.glb`](../../public/3d/runtime/new3ds/mod_zero_point_flux.glb) | `2.00 MB` | Rig Overclock (Legendary) |
+| `4109` | **Void-Walker Beam Cannon** | [`public/3d/runtime/new3ds/skin_void_walker_beam.glb`](../../public/3d/runtime/new3ds/skin_void_walker_beam.glb) | `14.06 MB` | Weapon Frame (Epic) |
+| `4110` | **Queen's Carapace Carbine** | [`public/3d/runtime/new3ds/skin_queen_carapace_carbine.glb`](../../public/3d/runtime/new3ds/skin_queen_carapace_carbine.glb) | `11.97 MB` | Weapon Frame (Legendary) |
 
 ---
 
@@ -48,19 +48,19 @@ The following 13 3D models have been compressed for real-time WebGL rendering (1
 
 | Itemdef | Asset Name | File Path | Type / Category | Visual Key Highlights |
 | :--- | :--- | :--- | :--- | :--- |
-| `4130` | **Mini Cryo-Core Charm** | [`public/economy/charm_mini_cryo_core.png`](file:///home/caveman/Desktop/icecave/hunker-bunker/public/economy/charm_mini_cryo_core.png) | Tactical Charm | Frosted reactor cube, cyan cooling coils, carabiner chain |
-| `4131` | **Spent 50-Cal Casing Charm** | [`public/economy/charm_spent_50cal.png`](file:///home/caveman/Desktop/icecave/hunker-bunker/public/economy/charm_spent_50cal.png) | Tactical Charm | Engraved brass shell, hazard stripes, military ball chain |
-| `4132` | **Sporesnail Pearl Charm** | [`public/economy/charm_sporesnail_pearl.png`](file:///home/caveman/Desktop/icecave/hunker-bunker/public/economy/charm_sporesnail_pearl.png) | Tactical Charm | Bioluminescent green pearl, 4-prong titanium mechanical claw |
-| `4133` | **Trench Whistle Charm** | [`public/economy/charm_trench_whistle.png`](file:///home/caveman/Desktop/icecave/hunker-bunker/public/economy/charm_trench_whistle.png) | Tactical Charm | Weathered steel military whistle, engraved serial, ball chain |
-| `4134` | **Glitched RAM Card Charm** | [`public/economy/charm_glitched_ram.png`](file:///home/caveman/Desktop/icecave/hunker-bunker/public/economy/charm_glitched_ram.png) | Tactical Charm | Green PCB memory stick, flickering micro LEDs, lanyard clip |
-| `4135` | **Geodetic Compass Charm** | [`public/economy/charm_geodetic_compass.png`](file:///home/caveman/Desktop/icecave/hunker-bunker/public/economy/charm_geodetic_compass.png) | Tactical Charm | Vintage brass bunker compass, phosphorescent cyan dial |
-| `4136` | **Mini Drone Bobble Charm** | [`public/economy/charm_mini_drone_bobble.png`](file:///home/caveman/Desktop/icecave/hunker-bunker/public/economy/charm_mini_drone_bobble.png) | Tactical Charm | Chibi sentry turret, orange/white livery, cyan LED eye |
-| `4139` | **Golden Sub-Bunker Key** | [`public/economy/charm_golden_sub_bunker_key.png`](file:///home/caveman/Desktop/icecave/hunker-bunker/public/economy/charm_golden_sub_bunker_key.png) | Tactical Charm (Legendary) | Solid gold antique bunker skeleton key, radiant god-rays |
-| `4140` | **Cryo-Capacitor Overclock** | [`public/economy/mod_cryo_capacitor.png`](file:///home/caveman/Desktop/icecave/hunker-bunker/public/economy/mod_cryo_capacitor.png) | Rig Overclock Module | Frosted heatsink fins, cyan conduits, gold connector pins |
-| `4141` | **Magnetic Scavenger Module**| [`public/economy/mod_magnetic_scavenger.png`](file:///home/caveman/Desktop/icecave/hunker-bunker/public/economy/mod_magnetic_scavenger.png) | Rig Overclock Module | Yellow hazard chassis, copper induction coils, toggle switch |
-| `4147` | **Zero-Point Flux Overdrive** | [`public/economy/mod_zero_point_flux.png`](file:///home/caveman/Desktop/icecave/hunker-bunker/public/economy/mod_zero_point_flux.png) | Rig Overclock (Legendary) | Obsidian casing, glass sphere with cosmic purple singularity |
-| `4109` | **Void-Walker Beam Cannon** | [`public/economy/skin_void_walker_beam.png`](file:///home/caveman/Desktop/icecave/hunker-bunker/public/economy/skin_void_walker_beam.png) | Weapon Skin (Epic) | Obsidian frame, violet event horizon emitter, neon coils |
-| `4110` | **Queen's Carapace Carbine** | [`public/economy/skin_queen_carapace_carbine.png`](file:///home/caveman/Desktop/icecave/hunker-bunker/public/economy/skin_queen_carapace_carbine.png) | Weapon Skin (Legendary) | Living insectoid chitin, pulsing orange heat vents, sinew |
+| `4130` | **Mini Cryo-Core Charm** | [`public/economy/charm_mini_cryo_core.png`](../../public/economy/charm_mini_cryo_core.png) | Tactical Charm | Frosted reactor cube, cyan cooling coils, carabiner chain |
+| `4131` | **Spent 50-Cal Casing Charm** | [`public/economy/charm_spent_50cal.png`](../../public/economy/charm_spent_50cal.png) | Tactical Charm | Engraved brass shell, hazard stripes, military ball chain |
+| `4132` | **Sporesnail Pearl Charm** | [`public/economy/charm_sporesnail_pearl.png`](../../public/economy/charm_sporesnail_pearl.png) | Tactical Charm | Bioluminescent green pearl, 4-prong titanium mechanical claw |
+| `4133` | **Trench Whistle Charm** | [`public/economy/charm_trench_whistle.png`](../../public/economy/charm_trench_whistle.png) | Tactical Charm | Weathered steel military whistle, engraved serial, ball chain |
+| `4134` | **Glitched RAM Card Charm** | [`public/economy/charm_glitched_ram.png`](../../public/economy/charm_glitched_ram.png) | Tactical Charm | Green PCB memory stick, flickering micro LEDs, lanyard clip |
+| `4135` | **Geodetic Compass Charm** | [`public/economy/charm_geodetic_compass.png`](../../public/economy/charm_geodetic_compass.png) | Tactical Charm | Vintage brass bunker compass, phosphorescent cyan dial |
+| `4136` | **Mini Drone Bobble Charm** | [`public/economy/charm_mini_drone_bobble.png`](../../public/economy/charm_mini_drone_bobble.png) | Tactical Charm | Chibi sentry turret, orange/white livery, cyan LED eye |
+| `4139` | **Golden Sub-Bunker Key** | [`public/economy/charm_golden_sub_bunker_key.png`](../../public/economy/charm_golden_sub_bunker_key.png) | Tactical Charm (Legendary) | Solid gold antique bunker skeleton key, radiant god-rays |
+| `4140` | **Cryo-Capacitor Overclock** | [`public/economy/mod_cryo_capacitor.png`](../../public/economy/mod_cryo_capacitor.png) | Rig Overclock Module | Frosted heatsink fins, cyan conduits, gold connector pins |
+| `4141` | **Magnetic Scavenger Module**| [`public/economy/mod_magnetic_scavenger.png`](../../public/economy/mod_magnetic_scavenger.png) | Rig Overclock Module | Yellow hazard chassis, copper induction coils, toggle switch |
+| `4147` | **Zero-Point Flux Overdrive** | [`public/economy/mod_zero_point_flux.png`](../../public/economy/mod_zero_point_flux.png) | Rig Overclock (Legendary) | Obsidian casing, glass sphere with cosmic purple singularity |
+| `4109` | **Void-Walker Beam Cannon** | [`public/economy/skin_void_walker_beam.png`](../../public/economy/skin_void_walker_beam.png) | Weapon Skin (Epic) | Obsidian frame, violet event horizon emitter, neon coils |
+| `4110` | **Queen's Carapace Carbine** | [`public/economy/skin_queen_carapace_carbine.png`](../../public/economy/skin_queen_carapace_carbine.png) | Weapon Skin (Legendary) | Living insectoid chitin, pulsing orange heat vents, sinew |
 
 ---
 

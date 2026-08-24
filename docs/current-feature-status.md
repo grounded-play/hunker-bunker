@@ -1,5 +1,11 @@
 # Current Feature Status
 
+> **Historical audit (2026-07-28; no longer current).** This matrix is retained
+> as evidence of what was checked at the time. Use
+> [`../PRODUCT_STATE.md`](../PRODUCT_STATE.md) for current truth and
+> [`planning/repository-roadmap.md`](planning/repository-roadmap.md) for open
+> acceptance work.
+
 Canonical implementation/acceptance truth for Hunker Bunker as of
 2026-07-28. “Connected” means the shipped runtime calls the implementation;
 it does not imply Steamworks, hardware, legal, or live-service acceptance.
@@ -49,4 +55,3 @@ it does not imply Steamworks, hardware, legal, or live-service acceptance.
 Store and event copy is additionally enforced by
 `npm run steam:claims:check`; this matrix is explanatory evidence, not a way
 to bypass that gate.
-

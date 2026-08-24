@@ -1,5 +1,10 @@
 # Sprint 28 Plan — Independent Review + Convergence Sprint
 
+> **Closed historical plan.** Use [`../PRODUCT_STATE.md`](../PRODUCT_STATE.md)
+> for current truth and
+> [`planning/repository-roadmap.md`](planning/repository-roadmap.md) for work
+> carried beyond Sprint 28.
+
 **Author's note on method:** this document is an independent review, not a rubber
 stamp of any prior recommendation. It was produced by (1) reconstructing the
 real Sprint 23–27 chronology from git history rather than trusting doc

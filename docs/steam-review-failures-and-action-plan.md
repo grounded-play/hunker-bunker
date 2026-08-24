@@ -63,7 +63,7 @@
 > *Failure: Your build has failed our review because online categories appear on the store page ("PVP", "Co-Op"), but the game doesn't appear to currently support everything here. We were unable to find anywhere in-game to connect to the "online" elements of the game. If online is implemented and working correctly, and we simply missed it during our review, please re-submit the game and include instructions in the "Notes" section on how to access online gameplay. Please also specify which variant of PVP and Coop your game supports, for example "LAN" or "Online".*
 
 ### System Architecture
-We maintain the "PVP" and "Co-Op" claims by wiring the existing backend relay infrastructure in [server/relay.js](file:///home/caveman/Desktop/icecave/hunker-bunker/server/relay.js) directly into the game client.
+We maintain the "PVP" and "Co-Op" claims by wiring the existing backend relay infrastructure in [server/relay.js](../server/relay.js) directly into the game client.
 
 ```
                   ┌────────────────────────────────────────┐
@@ -94,7 +94,7 @@ We maintain the "PVP" and "Co-Op" claims by wiring the existing backend relay in
 
 ### Implementation Tasks
 
-1. **Title Menu UI (`#menu` in [index.html](file:///home/caveman/Desktop/icecave/hunker-bunker/index.html))**:
+1. **Title Menu UI (`#menu` in [index.html](../index.html))**:
    - Add a prominent **"TACTICAL NET (MULTIPLAYER)"** button in the main command column.
    - Open a dedicated Multiplayer Modal (`#multiplayer-lobby-modal`):
      - **Mode Selection Tabs**: `[ CO-OP EXPEDITION ]` | `[ SECTOR SKIRMISH (PVP) ]`
@@ -110,7 +110,7 @@ We maintain the "PVP" and "Co-Op" claims by wiring the existing backend relay in
    - Emits local player position, yaw, health, weapon fire, and animation state at 30-60 Hz.
    - Listens for `newPlayer`, `playerMoved`, `playerFired`, `playerDamaged`, `playerRespawned`, and `playerDisconnected`.
 
-3. **In-Engine Remote Player Rendering ([src/threeGame.js](file:///home/caveman/Desktop/icecave/hunker-bunker/src/threeGame.js))**:
+3. **In-Engine Remote Player Rendering ([src/threeGame.js](../src/threeGame.js))**:
    - Spawn a remote player 3D mesh / sprite for each connected peer in the Three.js scene.
    - Attach floating billboard UI above each remote player (Operator Callsign, Class Badge, Health Bar, Co-op/PvP indicator).
    - In **Co-Op Mode**: Remote players appear as blue/green allies; damage from allies is disabled; standing near downed teammates revives them.
@@ -140,7 +140,7 @@ We maintain the "PVP" and "Co-Op" claims by wiring the existing backend relay in
    - **Subdirectory**: `hunker-bunker`
    - **File Pattern**: `save.json`
 5. Click **Save** and **Publish Steamworks Settings**.
-6. **Code Confirmation**: Verify [electron/main.cjs](file:///home/caveman/Desktop/icecave/hunker-bunker/electron/main.cjs) persists `save.json` in `app.getPath('userData')` whenever localStorage updates.
+6. **Code Confirmation**: Verify [electron/main.cjs](../electron/main.cjs) persists `save.json` in `app.getPath('userData')` whenever localStorage updates.
 
 ---
 
@@ -157,7 +157,7 @@ We maintain the "PVP" and "Co-Op" claims by wiring the existing backend relay in
 > *Can you please provide clear instructions on how we can find these things? If this requires a lot of gameplay progress (over one hour) to unlock, please upload a debug build that will help us skip ahead quickly.*
 
 ### Narrative Architecture: Story Choices & Mature Content
-As detailed in the companion guide [docs/narrative-endings-and-mature-content-guide.md](file:///home/caveman/Desktop/icecave/hunker-bunker/docs/narrative-endings-and-mature-content-guide.md), *Hunker Bunker*'s core branching story actively features deep psychological and moral dilemmas that directly correspond to these mature categories:
+As detailed in the companion guide [docs/narrative-endings-and-mature-content-guide.md](./narrative-endings-and-mature-content-guide.md), *Hunker Bunker*'s core branching story actively features deep psychological and moral dilemmas that directly correspond to these mature categories:
 
 1. **Self-Annihilation / Suicide in the Void (Dying to Prevent Infection)**:
    - **`EMPTY_HUSK` Ending**: The operative refuses to become a biological carrier for either human worlds or the alien brood, launching the escape shuttle alone into the freezing dark with life support running out (*"Crew manifest: one... There was so much to carry. You carried nothing"*).
@@ -194,7 +194,7 @@ To ensure Valve testers can immediately locate and verify all 6 listed items wit
      - Button: `[ VIEW UNCENSORED STILLS: BROOD MOTHER & HIVE QUEEN REVEAL ]`
 
 3. **Content Survey Alignment**:
-   - Mature Content Survey on Steamworks matches these exact branching story choices and gallery scenes. Detailed narrative walkthrough: [docs/narrative-endings-and-mature-content-guide.md](file:///home/caveman/Desktop/icecave/hunker-bunker/docs/narrative-endings-and-mature-content-guide.md).
+   - Mature Content Survey on Steamworks matches these exact branching story choices and gallery scenes. Detailed narrative walkthrough: [docs/narrative-endings-and-mature-content-guide.md](./narrative-endings-and-mature-content-guide.md).
 
 ---
 
@@ -216,7 +216,7 @@ To ensure Valve testers can immediately locate and verify all 6 listed items wit
 
 ### Implementation Tasks
 
-1. **Default Fallback Catalog ([src/steamVaultUi.js](file:///home/caveman/Desktop/icecave/hunker-bunker/src/steamVaultUi.js))**:
+1. **Default Fallback Catalog ([src/steamVaultUi.js](../src/steamVaultUi.js))**:
    - Replace the empty state with a rich, fully populated default catalog so `storeCatalog` is NEVER empty:
    ```javascript
    export const DEFAULT_STORE_CATALOG = [
@@ -228,7 +228,7 @@ To ensure Valve testers can immediately locate and verify all 6 listed items wit
    ```
    - If the backend is loading or in offline mode, automatically render the default catalog with active `BUY` buttons.
 
-2. **Steam Wallet Checkout Handler ([electron/main.cjs](file:///home/caveman/Desktop/icecave/hunker-bunker/electron/main.cjs) & [src/steamVaultUi.js](file:///home/caveman/Desktop/icecave/hunker-bunker/src/steamVaultUi.js))**:
+2. **Steam Wallet Checkout Handler ([electron/main.cjs](../electron/main.cjs) & [src/steamVaultUi.js](../src/steamVaultUi.js))**:
    - When a user clicks **BUY**:
      - **In Steam Production / Sandbox**: Triggers `steamClient.microTxn.initPurchase(...)` / Steam Overlay to URL (`https://store.steampowered.com/buyitem/...` or MicroTxn Auth URL) to present the official Steam Wallet dialog.
      - **In Standalone / Review Dev Mode**: Opens a stylized Steam Wallet Authorization Modal simulating live Steam Wallet approval:
@@ -237,7 +237,7 @@ To ensure Valve testers can immediately locate and verify all 6 listed items wit
 
 3. **Steamworks Configuration**:
    - In Steamworks App Admin → **Features** → **Item Store & Economy**:
-     - Ensure Item Definition schema matching [steam/inventory_schema_hunker_bunker.json](file:///home/caveman/Desktop/icecave/hunker-bunker/steam/inventory_schema_hunker_bunker.json) is published.
+     - Ensure Item Definition schema matching [steam/inventory_schema_hunker_bunker.json](../steam/inventory_schema_hunker_bunker.json) is published.
      - Enable Hosted Item Store and specify valid pricing tiers.
 
 ---
@@ -252,7 +252,7 @@ To ensure Valve testers can immediately locate and verify all 6 listed items wit
 > - *Players are unable to use the virtual keyboard for the 'Operator Callsign' options in the 'Settings' menu when only using a controller.*
 > - *Players are unable to scroll through the 'Achievements' menu when only using a controller.*
 
-### Code Fixes in [main.js](file:///home/caveman/Desktop/icecave/hunker-bunker/main.js)
+### Code Fixes in [main.js](../main.js)
 
 #### Fix A: Interactive `<select>` Handling for Resolution, UI Scale, and Text Speed
 When a `<select>` dropdown (`#setting-resolution`, `#setting-ui-scale`, `#setting-text-speed`) is focused by a controller:
@@ -458,10 +458,10 @@ Thank you for your assistance in reviewing Hunker Bunker!
 ## Next Steps for Immediate Execution
 
 1. **Code Execution**:
-   - Apply controller navigation enhancements in [main.js](file:///home/caveman/Desktop/icecave/hunker-bunker/main.js).
-   - Wire Multiplayer Lobby & Socket.IO network session into [src/threeGame.js](file:///home/caveman/Desktop/icecave/hunker-bunker/src/threeGame.js).
-   - Add Reviewer Mature Content Debug Viewer (`F9`) in [src/debugConsole.js](file:///home/caveman/Desktop/icecave/hunker-bunker/src/debugConsole.js).
-   - Connect fallback catalog and Steam Wallet purchase flow in [src/steamVaultUi.js](file:///home/caveman/Desktop/icecave/hunker-bunker/src/steamVaultUi.js).
+   - Apply controller navigation enhancements in [main.js](../main.js).
+   - Wire Multiplayer Lobby & Socket.IO network session into [src/threeGame.js](../src/threeGame.js).
+   - Add Reviewer Mature Content Debug Viewer (`F9`) in [src/debugConsole.js](../src/debugConsole.js).
+   - Connect fallback catalog and Steam Wallet purchase flow in [src/steamVaultUi.js](../src/steamVaultUi.js).
 2. **Steamworks Dashboard Updates**:
    - Uncheck Cloud dev-only flag in App Admin.
    - Update Content Survey AI & Mature descriptions.

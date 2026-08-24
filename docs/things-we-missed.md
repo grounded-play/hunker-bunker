@@ -1,5 +1,11 @@
 # Things We Missed: Underplanned, Unexplored, and Dropped Work
 
+> **Historical gap audit (2026-07-16).** Many findings remain useful, but the
+> status details predate Sprints 24–30. Its open themes were re-evaluated and
+> dispositioned in
+> [`planning/repository-roadmap.md`](planning/repository-roadmap.md); use that
+> roadmap and [`../PRODUCT_STATE.md`](../PRODUCT_STATE.md) for current state.
+
 Date: 2026-07-16.
 
 This audit looks across the repo documentation and current branch shape to answer one question: **what areas are underplanned, unexplored, or only partially considered in the design and deployment of Hunker Bunker?**

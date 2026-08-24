@@ -53,7 +53,7 @@ In multiple narrative branches, the operative realizes they are carrying an exti
   SYSTEM: THE CAMPS ARE SILENT. THE HIVES ARE SILENT. THE QUEEN IS SILENT.
   SYSTEM: THERE WAS SO MUCH TO CARRY. YOU CARRIED NOTHING.
   ```
-* **Cutscene / Visual Art**: [ending-emptyhusk-poster.jpg](file:///home/caveman/Desktop/icecave/hunker-bunker/public/cutscenes/ending-scorchedsky-poster.jpg) — A solitary vessel drifting into the dark void with flickering cabin lights.
+* **Cutscene / Visual Art**: [ending-emptyhusk-poster.jpg](../public/cutscenes/ending-scorchedsky-poster.jpg) — A solitary vessel drifting into the dark void with flickering cabin lights.
 
 #### 2. Ending: `SCORCHED_SKY` (Nihilistic Self-Sacrifice / Purging All Biological Life)
 * **Narrative Context**: The player purges every egg clutch, destroys every bio-node, and incinerates the survivor camps before launching into space alone with zero trajectory or rescue beacon.
@@ -63,7 +63,7 @@ In multiple narrative branches, the operative realizes they are carrying an exti
   SYSTEM: No beacons behind. No signal ahead.
   SYSTEM: Four seats. One heartbeat.
   ```
-* **Cutscene Asset**: [ending-scorchedsky.webm](file:///home/caveman/Desktop/icecave/hunker-bunker/public/cutscenes/ending-scorchedsky.webm).
+* **Cutscene Asset**: [ending-scorchedsky.webm](../public/cutscenes/ending-scorchedsky.webm).
 
 #### 3. Log C11 & Courier Arc: Pvt. M. Reyes' Sacrifice
 * **Narrative Context**: Pvt. Reyes' hidden letter in the bunker ruins acknowledges her inevitable death and acceptance of self-sacrifice:
@@ -92,7 +92,7 @@ In multiple narrative branches, the operative realizes they are carrying an exti
     QUEEN: PERFECT OBEDIENCE. THE CORE WORLDS ARE WARM AND CROWDED.
     QUEEN: SLEEP, CARRIER. WE HAVE SO MANY WORLDS TO MEET.
     ```
-* **Cutscene Asset**: [ending-fullbrood.webm](file:///home/caveman/Desktop/icecave/hunker-bunker/public/cutscenes/ending-fullbrood.webm).
+* **Cutscene Asset**: [ending-fullbrood.webm](../public/cutscenes/ending-fullbrood.webm).
 
 #### 2. Ending: `CARRIER'S BARGAIN` (The Hidden Infection)
 * **Narrative Context**: The operative rescues the human survivors and boards the vessel, but chooses not to tell them that the alien parasite has already burrowed into their spine. The player knows they will lose their mind during the journey, but chose to save their comrades first.
@@ -102,7 +102,7 @@ In multiple narrative branches, the operative realizes they are carrying an exti
   SYSTEM: Operator vitals nominal. Subdermal readings... flagged.
   SYSTEM: The survivors are safe. Nobody checked your neck.
   ```
-* **Cutscene Asset**: [ending-carriersbargain.webm](file:///home/caveman/Desktop/icecave/hunker-bunker/public/cutscenes/ending-carriersbargain.webm).
+* **Cutscene Asset**: [ending-carriersbargain.webm](../public/cutscenes/ending-carriersbargain.webm).
 
 #### 3. Ending: `MOTHERSHIP_INFECTION` (Bio-Trojan Infiltration)
 * **Narrative Context**: The player cooperates with the Queen to masquerade as an uninfected rescue shuttle, docking with the fleet flagship while carrying dormant parasite spores into the heart of humanity's fleet.

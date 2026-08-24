@@ -1,7 +1,7 @@
 # Hunker Bunker: Expanded Universe & Narrative Design Bible
 *Target Sprints: 20+ | Narrative Expansion Plan*
 
-This design document builds upon the core mechanics of [story-arc-endings-design.md](file:///home/caveman/Desktop/icecave/hunker-bunker/docs/story-arc-endings-design.md). It outlines the expanded universe of the ice world, detailed camp lore, optional Act 1 quests, Act 2 choice dynamics, and the multi-ending narrative paths that make the story "wide" and deep.
+This design document builds upon the core mechanics of [story-arc-endings-design.md](./story-arc-endings-design.md). It outlines the expanded universe of the ice world, detailed camp lore, optional Act 1 quests, Act 2 choice dynamics, and the multi-ending narrative paths that make the story "wide" and deep.
 
 ---
 

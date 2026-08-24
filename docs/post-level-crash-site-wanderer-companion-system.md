@@ -77,8 +77,8 @@ When the player approaches and presses `[E] Interact`:
 ## 4. 3D Companion AI & Combat Assist Architecture
 
 ### 4.1 3D Model Spawning & Locomotion
-* The companion uses their actual `.glb` model from [`public/3d/runtime/community/`](file:///home/caveman/Desktop/icecave/hunker-bunker/public/3d/runtime/community/) instead of 2D sprites.
-* Uses [`src/companionFollow.js`](file:///home/caveman/Desktop/icecave/hunker-bunker/src/companionFollow.js) for distance trailing (`computeTrailPosition(playerPos, facingDir, 2.5)`).
+* The companion uses their actual `.glb` model from [`public/3d/runtime/community/`](../public/3d/runtime/community) instead of 2D sprites.
+* Uses [`src/companionFollow.js`](../src/companionFollow.js) for distance trailing (`computeTrailPosition(playerPos, facingDir, 2.5)`).
 * Smoothly blends locomotion clips (`idle`, `walk`, `run`, `crouchToStand`) with their unique action emote when idle.
 
 ### 4.2 Combat State Machine

@@ -1,5 +1,9 @@
 # Sprint 26 — Master Plan
 
+> **Closed historical plan.** Acceptance items that survived later sprints are
+> tracked in [`planning/repository-roadmap.md`](planning/repository-roadmap.md),
+> not by the unchecked boxes below.
+
 **Correction (2026-08-20, evening) -- read this before trusting any "blocked
 on GitHub secrets" / "Fly.io" claim below:** those claims were about the
 `.github/workflows/steam-backend-deploy.yml` → Fly.io path specifically,

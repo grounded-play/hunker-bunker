@@ -39,7 +39,7 @@ This sprint log documents the complete implementation and design plans addressin
 * **Lobby & UI**: Added Title Menu entry for **"TACTICAL NET (MULTIPLAYER)"** with mode selection:
   - **Co-Op Expedition**: 2-4 player synchronized bunker dive with shared revives and objectives.
   - **Sector Skirmish (PVP)**: Deathmatch / duel combat with live projectile syncing and kill tracker.
-* **Networking**: Driven by [server/relay.js](file:///home/caveman/Desktop/icecave/hunker-bunker/server/relay.js) Socket.IO relay for Online play, and local loopback/subnet networking for LAN play.
+* **Networking**: Driven by [server/relay.js](../server/relay.js) Socket.IO relay for Online play, and local loopback/subnet networking for LAN play.
 * **Reviewer Instructions**: Clear instructions included in the resubmission notes detailing LAN/Online lobby setup.
 
 ### B. Steam Cloud
@@ -51,7 +51,7 @@ This sprint log documents the complete implementation and design plans addressin
 * **Instant Verification Hub**: Immediate scene and cutscene player for all 6 mature categories flagged by Valve (suicide cutscenes, operator skins, bio-incubator stills, adult lore logs, and alien Queen reveals).
 
 ### D. In-App Purchases & Steam Vault Store
-* **Fix**: Replaced empty catalog failure with an active fallback catalog in [src/steamVaultUi.js](file:///home/caveman/Desktop/icecave/hunker-bunker/src/steamVaultUi.js).
+* **Fix**: Replaced empty catalog failure with an active fallback catalog in [src/steamVaultUi.js](../src/steamVaultUi.js).
 * **Steam Wallet Flow**: Integrated simulated and sandbox Steam Wallet authorization modals so clicking "BUY" invokes the wallet checkout dialog smoothly.
 
 ### E. Full Controller Support Fixes
@@ -67,7 +67,7 @@ This sprint log documents the complete implementation and design plans addressin
 
 ## 3. Narrative Endings & Mature Moral Dilemmas
 
-Documented in [docs/narrative-endings-and-mature-content-guide.md](file:///home/caveman/Desktop/icecave/hunker-bunker/docs/narrative-endings-and-mature-content-guide.md):
+Documented in [docs/narrative-endings-and-mature-content-guide.md](./narrative-endings-and-mature-content-guide.md):
 
 1. **Self-Annihilation / Suicide in the Void (Dying to Prevent Humanity's Contagion)**:
    - **`EMPTY_HUSK`**: The operative refuses to carry the parasite to either human colonies or the Queen, launching alone into the freezing dark with life support running down (*"Crew manifest: one... There was so much to carry. You carried nothing"*).
@@ -85,7 +85,7 @@ Documented in [docs/narrative-endings-and-mature-content-guide.md](file:///home/
 
 ## 4. Dual-Perspective Alien Mimicry & Infiltration Framework
 
-Documented in [docs/narrative-branching-symbiosis-and-allegiances.md](file:///home/caveman/Desktop/icecave/hunker-bunker/docs/narrative-branching-symbiosis-and-allegiances.md):
+Documented in [docs/narrative-branching-symbiosis-and-allegiances.md](./narrative-branching-symbiosis-and-allegiances.md):
 
 * **4 Relationship Vectors**:
   1. *Predatory Mimicry & Seduction*: Alien bio-infiltrator ("Aria" / Unit 0047-B) using synthetic warmth and sensory allure to compromise human defenses.
@@ -109,7 +109,7 @@ Documented in [docs/narrative-branching-symbiosis-and-allegiances.md](file:///ho
 
 ## 6. Associated Documentation Links
 
-- [docs/steam-review-failures-and-action-plan.md](file:///home/caveman/Desktop/icecave/hunker-bunker/docs/steam-review-failures-and-action-plan.md) — Steam review rejection remediation blueprint.
-- [docs/narrative-endings-and-mature-content-guide.md](file:///home/caveman/Desktop/icecave/hunker-bunker/docs/narrative-endings-and-mature-content-guide.md) — 10-ending moral matrix and mature content guide.
-- [docs/narrative-branching-symbiosis-and-allegiances.md](file:///home/caveman/Desktop/icecave/hunker-bunker/docs/narrative-branching-symbiosis-and-allegiances.md) — Alien mimicry, human bonding, and swarm war framework.
-- [docs/steam-docs-master-index.md](file:///home/caveman/Desktop/icecave/hunker-bunker/docs/steam-docs-master-index.md) — Master index of all Steam and narrative documentation.
+- [docs/steam-review-failures-and-action-plan.md](./steam-review-failures-and-action-plan.md) — Steam review rejection remediation blueprint.
+- [docs/narrative-endings-and-mature-content-guide.md](./narrative-endings-and-mature-content-guide.md) — 10-ending moral matrix and mature content guide.
+- [docs/narrative-branching-symbiosis-and-allegiances.md](./narrative-branching-symbiosis-and-allegiances.md) — Alien mimicry, human bonding, and swarm war framework.
+- [docs/steam-docs-master-index.md](./steam-docs-master-index.md) — Master index of all Steam and narrative documentation.

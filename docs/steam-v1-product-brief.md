@@ -90,9 +90,9 @@ Status: Approved Product Brief (v1 Full Economy & Steamworks Integration)
   - Steam Microtransactions setup & Valve banking/tax authorization.
   - Physical Steam Deck hardware playtesting & final store page copy approval.
 - **Engineering Agents**:
-  - SQLite backend storage migration ([server/db-sqlite.js](file:///home/caveman/Desktop/icecave/hunker-bunker/server/db-sqlite.js)).
+  - SQLite backend storage migration ([server/db-sqlite.js](../server/db-sqlite.js)).
   - Automated UI acceptance tests (Playwright & Vitest) covering Store, Inventory, and Vault UI.
-  - Steam Microtransaction init/finalize flow testing and odds UI verification ([server/steamStore.js](file:///home/caveman/Desktop/icecave/hunker-bunker/server/steamStore.js)).
+  - Steam Microtransaction init/finalize flow testing and odds UI verification ([server/steamStore.js](../server/steamStore.js)).
   - Objective & UI polish (RGB minigame runtime, Queen's Ledger HUD chip).
-  - Local packaging scripts ([scripts/steam-drm-wrap.js](file:///home/caveman/Desktop/icecave/hunker-bunker/scripts/steam-drm-wrap.js)).
+  - Local packaging scripts ([scripts/steam-drm-wrap.js](../scripts/steam-drm-wrap.js)).
 

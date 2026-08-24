@@ -52,12 +52,12 @@ no agent can complete from this repo.
    npm run electron:build
    ```
 2. **Linux Executable Permissions**:
-   - Verify that [scripts/after-pack.cjs](file:///home/caveman/Desktop/icecave/hunker-bunker/scripts/after-pack.cjs) sets executable permissions (`chmod +x` / `0o755`) on the Linux binary and wrapper scripts.
+   - Verify that [scripts/after-pack.cjs](../scripts/after-pack.cjs) sets executable permissions (`chmod +x` / `0o755`) on the Linux binary and wrapper scripts.
 3. **Dynamic Dependencies & Audio Drivers**:
    - Ensure Electron relies on standard system `libasound2`, `libnss3`, `libxss1`, and `libgtk-3-0` without missing bundled dynamic libraries.
    - Confirm WebAudio fallback operates when ALSA or PulseAudio latency occurs.
 4. **Steam Deck Input & Display Spec**:
-   - Confirm target resolution scales to 1280x800 (16:10) without UI clipping, per [docs/steam-deck-first-display-and-input-spec.md](file:///home/caveman/Desktop/icecave/hunker-bunker/docs/steam-deck-first-display-and-input-spec.md).
+   - Confirm target resolution scales to 1280x800 (16:10) without UI clipping, per [docs/steam-deck-first-display-and-input-spec.md](./steam-deck-first-display-and-input-spec.md).
 
 ---
 
@@ -71,7 +71,7 @@ no agent can complete from this repo.
   - **Co-Op Expedition**: 2-4 player cooperative bunker dive with shared revive mechanics, synced door hacking, and team objectives.
   - **Sector Skirmish (PVP)**: 1v1 / Free-For-All tactical bunker arena combat with synchronized ballistic projectiles, shields/health, and a kill feed.
 - **Connection Variants**:
-  - **Online**: Socket.IO relay server via [server/relay.js](file:///home/caveman/Desktop/icecave/hunker-bunker/server/relay.js) connecting remote players over the internet.
+  - **Online**: Socket.IO relay server via [server/relay.js](../server/relay.js) connecting remote players over the internet.
   - **LAN / Local Loopback**: Direct subnet peer discovery and local WebSocket host for zero-latency local play.
 
 ### How to Access In-Game
@@ -112,7 +112,7 @@ no agent can complete from this repo.
 > - *Contains sexual content that is explicit or graphic and is intended for adults only*
 > *Can you please provide clear instructions on how we can find these things? If this requires a lot of gameplay progress (over one hour) to unlock, please upload a debug build that will help us skip ahead quickly.*
 
-### Instant Reviewer Verification Hub ([src/matureContentAudit.js](file:///home/caveman/Desktop/icecave/hunker-bunker/src/matureContentAudit.js))
+### Instant Reviewer Verification Hub ([src/matureContentAudit.js](../src/matureContentAudit.js))
 To prevent reviewers from needing hours of gameplay to verify mature content tags, the build includes an instant verification gallery:
 
 - **Keyboard Shortcut**: Press `F9` or `Ctrl+M` anywhere in the Title Menu / Settings.
@@ -173,7 +173,7 @@ that category legitimately.
 > *Failure: Your build's review has been blocked because your game appears to have in-app purchases, but we were unable to verify their Steam Wallet integration. After opening the Steam Vault menu and selecting "Store", a message appears: "Store Catalog Unavailable".*
 
 ### Remediation
-1. **Fallback Catalog ([src/steamVaultUi.js](file:///home/caveman/Desktop/icecave/hunker-bunker/src/steamVaultUi.js))**:
+1. **Fallback Catalog ([src/steamVaultUi.js](../src/steamVaultUi.js))**:
    - The Store tab now initializes with an active default catalog containing valid item definitions (Deep Relic Cache Keys, Chassis Skins, Bunker Supporter Pass).
    - "Store Catalog Unavailable" is completely eliminated.
 2. **Steam Wallet Checkout Flow**:
@@ -192,7 +192,7 @@ that category legitimately.
 > - *Players are unable to use the virtual keyboard for the 'Operator Callsign' options in the 'Settings' menu when only using a controller.*
 > - *Players are unable to scroll through the 'Achievements' menu when only using a controller.*
 
-### Code Fixes in [main.js](file:///home/caveman/Desktop/icecave/hunker-bunker/main.js)
+### Code Fixes in [main.js](../main.js)
 1. **Interactive Settings Select Controls**:
    - When focused on `#setting-resolution`, `#setting-ui-scale`, or `#setting-text-speed`, pressing D-Pad **Left / Right** cycles options with immediate visual and sound feedback.
    - Pressing **A / Confirm** button advances to the next option.

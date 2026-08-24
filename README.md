@@ -12,17 +12,17 @@
   <a href="https://app.netlify.com/projects/hunkerbunker/deploys"><img src="https://api.netlify.com/api/v1/badges/3d99b6f8-2e77-4a86-8292-1fffe5c9c308/deploy-status" alt="Netlify Status"></a>
   <a href="https://discord.gg/XXwwz3rauu"><img src="https://img.shields.io/badge/Discord-Join%20Server-5865F2?logo=discord&logoColor=white" alt="Discord Server"></a>
   <a href="https://opensource.org/licenses/MIT"><img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="License: MIT"></a>
-  <a href="https://threejs.org/"><img src="https://img.shields.io/badge/Three.js-r184-00e5ff.svg?logo=three.js" alt="Three.js"></a>
+  <a href="https://threejs.org/"><img src="https://img.shields.io/badge/Three.js-r185-00e5ff.svg?logo=three.js" alt="Three.js"></a>
 </p>
 
 > **Crash in. Scavenge O2. Upgrade your suit. Survive the depths.**  
 > **Hunker Bunker** is a retro-futuristic tactical survival game where you navigate ice-locked subterranean corridors, balance failing life support, uncover lost telemetry, and decide what leaves the planet with you.
 
-🎮 **[Play Live Browser Build](https://hunkerbunker.netlify.app/)** • 💬 **[Join Discord Server](https://discord.gg/XXwwz3rauu)** • 📜 **[Steam Readiness Specs](docs/steam-docs-master-index.md)**
+🎮 **[Play Live Browser Build](https://hunkerbunker.netlify.app/)** • 💬 **[Join Discord Server](https://discord.gg/XXwwz3rauu)** • 📚 **[Documentation Map](docs/README.md)**
 
-> **Status**: In active development, heading into Steam review. Sprint 26 landed Steam-native multiplayer — production Steam auth confirmed live, real Steam Lobby integration (Friends invite, Join Game, Rich Presence) code-complete — with Sprint 27 up next. The browser build above is always current — play it, then come tell us what broke in Discord. No wishlist link yet; Discord is the fastest way to hear the moment that changes.
+> **Status (2026-08-24):** Sprint 30 is the current planning and acceptance sprint on `dev/sprint-30`, targeting `v2.3.2-beta`. Sprint 29's presentation, model-integration, telemetry, weapon/charm, and locomotion work is merged. Steam lobby, Cloud, Deck, packaged-build, and co-op claims still have human or real-hardware acceptance gates; see [Product State](PRODUCT_STATE.md) for the exact distinction.
 >
-> The automated suite currently covers **1,780 passing tests across 219 files** — see [`docs/releases/`](docs/releases/) for what shipped each sprint.
+> Verified locally on 2026-08-24: **2,151 passing tests across 255 files**. See [Sprint 30](docs/planning/sprint-30.md) for current work and [`docs/releases/`](docs/releases/) for tagged releases.
 
 ---
 
@@ -41,7 +41,7 @@
 - **Deep Progression**: Bank salvage between runs, research a full combat skill tree, craft specialized gear, and level a **50-tier Season 0 Battle Pass**.
 - **10 Branching Endings**: Survivor encounters, faction standing with the Meridian/Tallow/Vesper camps, and hive diplomacy all feed into which of ten real Act 2 outcomes you land.
 - **Real Multiplayer**: Socket.IO relay lobby with LAN and online play — drop in with a friend or run solo against AI.
-- **Live Steamworks Integration**: 5 trusted backend leaderboards, Steam Cloud Auto-Cloud saves, a full Steam Vault economy (weapon skins, charms, cosmetics), and 24 Steam Achievements.
+- **Steamworks Integration**: Code-backed support for trusted leaderboards, Steam Cloud saves, Steam lobbies, the Steam Vault economy, and 24 achievements. Production acceptance varies by feature and is tracked in [Product State](PRODUCT_STATE.md).
 - **In-Game Dev & QA Console (`~`)**: Real-time diagnostic telemetry, event interceptors, audio/network monitors, and QA cheat commands (`resetachievements`).
 
 ---
@@ -73,8 +73,8 @@
 ## 🚀 Quickstart & Setup
 
 ### Prerequisites
-- **Node.js**: v20 or newer
-- **npm**: v9+
+- **Node.js**: v22 or newer (matches CI)
+- **npm**: the version bundled with Node.js 22 or newer
 
 ```bash
 # Clone the repository
@@ -104,7 +104,7 @@ unmerged branch.
 
 ## 🛠️ Tech Architecture
 
-- **WebGL 3D Engine**: Powered by **Three.js** (r184) with procedural dungeon generation, dynamic fog of war, and WebAudio spatial soundscapes.
+- **WebGL 3D Engine**: Powered by **Three.js** (r185) with procedural dungeon generation, dynamic fog of war, and WebAudio spatial soundscapes.
 - **Desktop & Steam Shell**: Built with **Electron** featuring native **Steamworks** integration for Steam Cloud saves, Steam Input, real Steam Lobbies (Friends invite, Join Game, Rich Presence), and 24 Steam Achievements.
 - **Trusted Relay Server**: Node.js & Express server running in **Docker Compose** behind **Caddy** (`steam.tuesdaycinema.club`), enforcing verified score validation for 5 Steam Leaderboards and Steam-session-authenticated multiplayer.
 

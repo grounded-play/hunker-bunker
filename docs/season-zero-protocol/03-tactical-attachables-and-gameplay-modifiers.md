@@ -149,7 +149,7 @@ export function getActiveLoadoutModifiers(loadoutState) {
 
 The `PlayerLoadoutState` contract in §2 above was written against a 4-class roster
 (`scout | heavy | assault | engineer`) that was never fully shipped — the live class-select
-screen only has **Scout / Tank / Engineer**. [07. The Armory & Weapon Bench](file:///home/caveman/Desktop/icecave/hunker-bunker/docs/season-zero-protocol/07-armory-and-weapon-bench.md)
+screen only has **Scout / Tank / Engineer**. [07. The Armory & Weapon Bench](./07-armory-and-weapon-bench.md)
 locks the roster to those 3 shipped classes, moves this section's flat single-loadout shape to a
 **per-class `perClass: { scout, tank, engineer }`** shape (so each class remembers its own gun
 build), and reframes Rig Overclock Modules as clipping to the *weapon's* accessory rail
