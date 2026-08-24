@@ -13,6 +13,7 @@ Read these first:
 - [`PRODUCT_STATE.md`](PRODUCT_STATE.md) — current product truth.
 - [`docs/README.md`](docs/README.md) — documentation lifecycle and evidence language.
 - [`docs/repo-roadmap.md`](docs/repo-roadmap.md) — prioritized work.
+- [`docs/architecture/system-map.md`](docs/architecture/system-map.md) — current runtime ownership/authority boundaries.
 - [`docs/sprints/sprint-30-plan.md`](docs/sprints/sprint-30-plan.md) — current active sprint while Sprint 30 is in progress.
 
 Historical sprint plans and audits are useful context, but they do not outrank the current-truth documents above.
@@ -101,6 +102,7 @@ New documents should follow [`docs/README.md`](docs/README.md):
 
 - put active sprint plans under `docs/sprints/`;
 - put measurements/audits under `docs/reports/`;
+- put current architecture/ownership references under `docs/architecture/`;
 - put releases under `docs/releases/`;
 - put prompts under `docs/prompts/`;
 - use `docs/archive/` for superseded historical material;
@@ -108,11 +110,61 @@ New documents should follow [`docs/README.md`](docs/README.md):
 
 When a change alters product truth, update `PRODUCT_STATE.md`. When it alters setup/public status, update `README.md`. When it changes release/version state, update the release roadmap and release notes as appropriate.
 
+## Runtime ownership
+
+Before adding a new gameplay/platform subsystem, read [`docs/architecture/system-map.md`](docs/architecture/system-map.md) and identify:
+
+1. canonical state owner;
+2. runtime producer/command/event;
+3. live consumer;
+4. persistence boundary;
+5. multiplayer authority where applicable;
+6. acceptance route.
+
+Do not create a second owner for state merely because it is convenient in a UI module. A module with no live runtime consumer is **Coded**, not **Connected**.
+
+## Art, audio, 3D, generated content and provenance
+
+Player-facing and marketing assets are release inputs, not incidental files. Read [`ASSET_PROVENANCE.md`](ASSET_PROVENANCE.md) before contributing art/audio/models/content.
+
+For any new visual, audio, 3D, font, voice, video, store/marketing or similar content contribution, include enough provenance to record:
+
+- creator/contributor or external source;
+- source/master location;
+- production method;
+- commercial-use basis / license when external;
+- attribution requirements;
+- whether generative AI or AI-assisted content creation was used;
+- relevant tool/model/source when disclosure or rights depend on it;
+- final runtime/marketing derivative path.
+
+Do not submit third-party content merely because it is available online. The contributor must be able to identify the source and the basis on which the project may redistribute it.
+
+Generative-AI use is not hidden in the repo workflow: if AI-generated or AI-assisted content will be consumed by players or used in store/community/marketing assets, disclose that in the asset provenance record so Steam/content disclosures can be derived from evidence rather than reconstructed later.
+
+Coding-agent assistance should not be represented as ownership of third-party code or assets. Contributors remain responsible for ensuring submitted code/content can be distributed by the project and does not introduce secrets, unlicensed dependencies, copied proprietary material, or credentials.
+
+`tmp/` is not a canonical source-master location. If source material must be preserved, put it in the project's deliberate source-asset structure and record it; otherwise treat temporary output as reproducible working material rather than permanent repo content.
+
+## Security and credentials
+
+Never commit:
+
+- Steam publisher/server keys;
+- Steam auth/session tokens;
+- backend signing secrets;
+- deployment tokens;
+- passwords;
+- personal access tokens;
+- `.env` files containing live credentials.
+
+Use the documented secret/config path for the target environment. If a change introduces a new secret, document its **name, purpose and restoration location/process** without committing the value.
+
 ## Code style
 
 - ESLint is the source of truth for JavaScript linting.
 - Match surrounding style unless a refactor is explicitly part of the change.
-- Prefer small ownership-boundary extractions over sweeping rewrites of `main.js`, `style.css`, or `index.html`.
+- Prefer small ownership-boundary extractions over sweeping rewrites of `main.js`, `style.css`, `index.html`, or `src/threeGame.js`.
 - Add focused tests before deleting or replacing an established runtime path.
 
 ## Bugs and feature requests
