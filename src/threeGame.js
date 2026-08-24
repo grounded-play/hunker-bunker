@@ -5224,15 +5224,18 @@ export class ThreeGame {
             if (document.pointerLockElement === this.renderer.domElement) {
                 const movementX = Number(event.movementX) || 0;
                 const movementY = Number(event.movementY) || 0;
+                const rect = this.renderer.domElement.getBoundingClientRect();
+                const aimClientX = rect.left + rect.width / 2;
+                const aimClientY = rect.top + rect.height / 2;
                 if (movementX || movementY) {
                     this.updateFacingYaw(this.facingYaw - movementX * 0.005);
-                    const rect = this.renderer.domElement.getBoundingClientRect();
-                    window.updateGameplayCrosshair?.(
-                        rect.left + rect.width / 2,
-                        rect.top + rect.height / 2,
-                        true
-                    );
                 }
+                // Pointer lock has no meaningful client coordinates, but the
+                // camera-centre ray is still the real aim ray. Resolve it on
+                // every locked move so hostile, pickup, and interactable
+                // reticle states do not silently fall back to neutral.
+                window.updateGameplayCrosshair?.(aimClientX, aimClientY, true);
+                this.checkHoverInteractable(aimClientX, aimClientY);
                 return;
             }
             if (this._cameraOrbitPointerHeld) {

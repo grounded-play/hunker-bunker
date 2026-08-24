@@ -408,7 +408,6 @@ export async function createArmoryScene(canvas) {
             // Normalize weapon scale for prominent bench inspection
             const bbox = new THREE.Box3().setFromObject(model);
             const size = bbox.getSize(new THREE.Vector3());
-            const maxDim = Math.max(size.x, size.y, size.z, 0.001);
             const scale = getWeaponScaleForBounds(size, archetypeId, 'armory');
             model.scale.setScalar(scale);
             const calibration = getWeaponCalibration(archetypeId, 'armory');

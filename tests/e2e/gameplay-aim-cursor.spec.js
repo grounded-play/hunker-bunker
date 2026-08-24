@@ -2,17 +2,17 @@ import { test, expect } from '@playwright/test';
 import { bootToOperatorMenu, startRunAndSkipIntro } from './helpers.js';
 
 test.describe('gameplay facing yaw (mouse + gamepad)', () => {
-    test('clicking the game canvas engages pointer lock and hides the mouse-look prompt', async ({ page }) => {
+    test('clicking the game canvas hides the mouse-look prompt without requiring pointer lock', async ({ page }) => {
         await bootToOperatorMenu(page);
         await startRunAndSkipIntro(page);
 
         await page.locator('#game-container canvas').first().click();
         await expect(page.locator('#mouse-look-prompt')).toHaveClass(/hidden/);
         const locked = await page.evaluate(() => document.pointerLockElement !== null);
-        expect(locked).toBe(true);
+        expect(locked).toBe(false);
     });
 
-    test('mouse movement while locked turns facingYaw', async ({ page }) => {
+    test('mouse movement in tactical-cursor mode turns facingYaw', async ({ page }) => {
         await bootToOperatorMenu(page);
         await startRunAndSkipIntro(page);
 
