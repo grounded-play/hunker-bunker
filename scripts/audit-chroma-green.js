@@ -109,7 +109,7 @@ export const CHROMA_GREEN_ALLOWLIST = new Set([
     'public/lore_portraits/queen_00.webp'
 ]);
 
-function decodeAndSamplePng(buffer) {
+export function decodeAndSamplePng(buffer) {
     if (buffer.length < 8 || buffer.readUInt32BE(0) !== 0x89504E47) return null;
     let offset = 8;
     let width = 0, height = 0, bitDepth = 0, colorType = 0;
