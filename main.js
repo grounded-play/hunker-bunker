@@ -10521,10 +10521,6 @@ window.addEventListener('cave-entrance-interact', () => {
 // queen. The title corruption still lands for whenever they next see the menu.
 async function handleCaveRevealBecomeInfected() {
     applyCorruptedTitlePresentation({ sting: true });
-    if (DEMO_BUILD) {
-        showDemoEndModal();
-        return;
-    }
 
     const game = window.game;
     ensureMissionManagers();
