@@ -308,6 +308,12 @@ function flushXpBurst(label, { leveledUp = false, bonus = false } = {}) {
         const sound = selectXpSound({ leveledUp, bonus });
         window.AudioManager?.play(sound, { bus: 'sfx' });
         presentationTelemetry.emitOnce('XP', PRESENTATION_EVENTS.XP.SOUND, { sound }, actionKey);
+        // The toast carries autoDismissMs 4200 + removeDelayMs 320; record when
+        // the XP UI is actually gone so "hidden at rest" (§6) is checkable from
+        // the log rather than only by eye.
+        setTimeout(() => {
+            presentationTelemetry.emitOnce('XP', PRESENTATION_EVENTS.XP.UI_HIDE, { amount: burst.amount }, actionKey);
+        }, 4520);
     }, 260);
 }
 

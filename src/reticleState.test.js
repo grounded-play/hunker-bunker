@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { selectReticleState, resolveReticlePlacement, parseWeaponBlockReason, targetFromCursorClasses, isWeaponDry } from './reticleState.js';
+import { selectReticleState, resolveReticlePlacement, parseWeaponBlockReason, targetFromCursorClasses, isWeaponDry, diffReticleTelemetry } from './reticleState.js';
 
 describe('selectReticleState', () => {
     it('is neutral when the player looks at nothing in particular', () => {
@@ -165,5 +165,47 @@ describe('isWeaponDry', () => {
 
     it('treats missing numbers as not-dry rather than falsely alarming', () => {
         expect(isWeaponDry({})).toBe(false);
+    });
+});
+
+describe('diffReticleTelemetry', () => {
+    // log16 was 2,108 PERF entries out of 2,875. Reticle telemetry fires on
+    // every frame's worth of input, so it must emit on transitions only or it
+    // will drown the log it exists to make readable.
+    const neutral = { state: 'neutral', visible: true, hiddenReason: null, targetKind: null };
+
+    it('emits nothing when nothing changed', () => {
+        expect(diffReticleTelemetry(neutral, { ...neutral })).toEqual([]);
+    });
+
+    it('reports a state change with the screen position', () => {
+        const events = diffReticleTelemetry(neutral, { ...neutral, state: 'hostile' });
+
+        expect(events).toContain('state');
+        expect(events).toContain('screen-pos');
+    });
+
+    it('reports a new look target', () => {
+        expect(diffReticleTelemetry(neutral, { ...neutral, targetKind: 'pickup' })).toContain('target');
+    });
+
+    it('reports when the look target is cleared', () => {
+        expect(diffReticleTelemetry({ ...neutral, targetKind: 'pickup' }, neutral)).toContain('target');
+    });
+
+    it('reports why the reticle went away', () => {
+        const events = diffReticleTelemetry(neutral, { ...neutral, visible: false, hiddenReason: 'blocking-overlay' });
+
+        expect(events).toContain('hidden-reason');
+    });
+
+    it('does not repeat the hidden reason while it stays hidden', () => {
+        const hidden = { ...neutral, visible: false, hiddenReason: 'blocking-overlay' };
+
+        expect(diffReticleTelemetry(hidden, { ...hidden })).not.toContain('hidden-reason');
+    });
+
+    it('treats a first observation as a change', () => {
+        expect(diffReticleTelemetry(null, neutral)).toContain('state');
     });
 });

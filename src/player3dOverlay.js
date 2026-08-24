@@ -5,6 +5,7 @@ import { clone as cloneSkeleton } from 'three/examples/jsm/utils/SkeletonUtils.j
 import { assetUrl } from './assetUrl.js';
 import { recordAssetLoad } from './assetLoadTelemetry.js';
 import { getWeaponCalibration, getWeaponScaleForBounds } from './weaponCalibration.js';
+import { getCharmSocketTransform } from './charmSockets.js';
 
 // The 2D-to-3D generation pipeline's gltf-transform optimize pass applies
 // EXT_meshopt_compression; GLTFLoader throws "setMeshoptDecoder must be called
@@ -190,7 +191,41 @@ export async function createClassWeapon(archetypeId, { position = null, skinId =
         object.castShadow = true;
         object.frustumCulled = false;
     });
+    // §9: give the gameplay weapon the same named charm mount the armory and
+    // the reward preview use, so a charm equipped in the armory has somewhere
+    // correct to hang during play instead of only existing on the bench.
+    const socketTransform = resolveGameplayCharmSocket(archetypeId, weapon.scale.x);
+    const charmSocket = new THREE.Group();
+    charmSocket.name = 'CharmSocket';
+    charmSocket.position.fromArray(socketTransform.position);
+    charmSocket.rotation.fromArray(socketTransform.rotation);
+    charmSocket.scale.setScalar(socketTransform.scale);
+    charmSocket.userData.archetype = socketTransform.archetype;
+    charmSocket.userData.anchor = socketTransform.anchor;
+    weapon.add(charmSocket);
+    weapon.userData.charmSocket = charmSocket;
     return weapon;
+}
+
+/**
+ * Where the charm socket sits on a gameplay weapon.
+ *
+ * src/charmSockets.js states the socket in weapon-pivot space, which is what
+ * the armory uses -- there the socket hangs off an unscaled pivot beside the
+ * model. In gameplay the socket is a child of the weapon itself, which has
+ * already been scaled to fit the player's hand, so the weapon's scale has to be
+ * divided back out or the charm drifts by exactly that factor.
+ */
+export function resolveGameplayCharmSocket(archetypeId, weaponScale = 1) {
+    const socket = getCharmSocketTransform(archetypeId);
+    const scale = Number.isFinite(weaponScale) && weaponScale > 0 ? weaponScale : 1;
+    return {
+        archetype: socket.archetype,
+        anchor: socket.anchor,
+        position: socket.position.map((value) => value / scale),
+        rotation: [...socket.rotation],
+        scale: socket.scale / scale
+    };
 }
 
 export function computeOverlayYaw(directionX, directionZ) {
@@ -246,6 +281,24 @@ export function selectOverlayAnimation({
 export function selectLocomotionActionName(name, isInjured, hasVariantClip) {
     const variant = INJURED_LOCOMOTION_VARIANTS[name];
     return isInjured && variant && hasVariantClip ? variant : name;
+}
+
+// Sprint 29 §10: the mixer used to run the walk clip at a fixed rate for every
+// class, but the three classes move at 4.8, 3.6, and 2.6 units/s. Two of them
+// therefore had feet that could not match the ground -- the reported glide.
+// Cadence is now proportional to the speed the player is actually travelling.
+export const LOCOMOTION_REFERENCE_SPEED = 3.6;
+const SPRINT_CADENCE = 1.25;
+
+export function computeLocomotionTimeScale({ speed, referenceSpeed = LOCOMOTION_REFERENCE_SPEED, isSprinting = false } = {}) {
+    const reference = Number.isFinite(referenceSpeed) && referenceSpeed > 0
+        ? referenceSpeed
+        : LOCOMOTION_REFERENCE_SPEED;
+    const ratio = Number.isFinite(speed) && speed > 0 ? speed / reference : 1;
+    const cadence = ratio * (isSprinting ? SPRINT_CADENCE : 1);
+    // Outside this band the clip either shreds or crawls, which reads worse
+    // than a small residual slide.
+    return Math.min(1.6, Math.max(0.6, cadence));
 }
 
 export function computeLocomotionWeights(state = {}) {
@@ -579,9 +632,10 @@ export async function createPlayer3dOverlay({
                 forcedAction.setEffectiveWeight(forcedWeight);
             }
             if (state.isMoving) {
-                const speedScale = state.isSprinting ? 1.25 : 1.0;
-                const multiplier = Number.isFinite(state.speedMultiplier) ? state.speedMultiplier : 1.0;
-                const targetTimeScale = THREE.MathUtils.clamp(speedScale * multiplier, 0.75, 1.4);
+                const targetTimeScale = computeLocomotionTimeScale({
+                    speed: state.groundSpeed,
+                    isSprinting: state.isSprinting
+                });
                 mixer.timeScale = THREE.MathUtils.damp(mixer.timeScale, targetTimeScale, 10, delta);
             } else {
                 mixer.timeScale = THREE.MathUtils.damp(mixer.timeScale, 1.0, 10, delta);

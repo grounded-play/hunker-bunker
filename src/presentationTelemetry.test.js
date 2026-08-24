@@ -68,4 +68,37 @@ describe('createPresentationTelemetry', () => {
 
         expect(logger.info).toHaveBeenCalledTimes(2);
     });
+
+    it('accepts audio load and playback diagnostics through the shared contract', () => {
+        const logger = fakeLogger();
+        const telemetry = createPresentationTelemetry({ logger });
+
+        telemetry.emit('AUDIO', PRESENTATION_EVENTS.AUDIO.LOAD_FAILED, { key: 'missing-track' });
+        telemetry.emit('AUDIO', PRESENTATION_EVENTS.AUDIO.PLAY_MISSING, { key: 'missing-track' });
+
+        expect(logger.info).toHaveBeenCalledTimes(2);
+    });
+
+    it('defaults to info level', () => {
+        const logger = fakeLogger();
+        createPresentationTelemetry({ logger }).emit('WEAPON', 'shot-blocked', {});
+
+        expect(logger.info).toHaveBeenCalledTimes(1);
+        expect(logger.warn).not.toHaveBeenCalled();
+    });
+
+    it('honours an explicit level so severity survives the contract', () => {
+        const logger = fakeLogger();
+        createPresentationTelemetry({ logger }).emit('WEAPON', 'shot-blocked', { reason: 'out_of_ammo' }, { level: 'warn' });
+
+        expect(logger.warn).toHaveBeenCalledTimes(1);
+        expect(logger.info).not.toHaveBeenCalled();
+    });
+
+    it('falls back to info for a level the logger does not have', () => {
+        const logger = fakeLogger();
+        createPresentationTelemetry({ logger }).emit('WEAPON', 'shot-blocked', {}, { level: 'nonsense' });
+
+        expect(logger.info).toHaveBeenCalledTimes(1);
+    });
 });

@@ -44,3 +44,18 @@ export function captureMenuVisibilitySnapshot({
 
     return { surfaces };
 }
+
+/**
+ * Did a blocking overlay just open or close?
+ *
+ * Menu open/close is derived from the single gate that already decides whether
+ * world input is suppressed, rather than instrumenting all 49 modals by hand.
+ * A first observation counts as an open if something is already up, but never
+ * as a close -- there was no menu to close.
+ */
+export function describeOverlayTransition(previous, next) {
+    const was = previous === true;
+    const is = next === true;
+    if (was === is) return null;
+    return is ? 'open' : 'close';
+}

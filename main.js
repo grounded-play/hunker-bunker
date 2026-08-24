@@ -2,8 +2,8 @@
 import { AudioManager } from './src/audio.js';
 import { assetUrl } from './src/assetUrl.js';
 import { debugLog } from './src/debugConsole.js';
-import { captureMenuVisibilitySnapshot } from './src/menuVisibility.js';
-import { selectReticleState, resolveReticlePlacement, parseWeaponBlockReason, targetFromCursorClasses, isWeaponDry } from './src/reticleState.js';
+import { captureMenuVisibilitySnapshot, describeOverlayTransition } from './src/menuVisibility.js';
+import { selectReticleState, resolveReticlePlacement, parseWeaponBlockReason, targetFromCursorClasses, isWeaponDry, diffReticleTelemetry } from './src/reticleState.js';
 import { presentationTelemetry, PRESENTATION_EVENTS } from './src/presentationTelemetry.js';
 import { canUseDeveloperTools } from './src/devToolsAccess.js';
 import { ObjectiveRegistry } from './src/objectiveRegistry.js';
@@ -1673,7 +1673,8 @@ const RETICLE_STATE_CLASSES = Object.freeze([
     'gameplay-crosshair--blocked'
 ]);
 
-let lastReticleState = null;
+let lastReticleObservation = null;
+let lastBlockingOverlay = null;
 
 // Refusals are reported by Lane C's WEAPON telemetry rather than by a direct
 // call, so the reticle can show a blocked state without Lane A reaching into
@@ -1704,20 +1705,44 @@ function applyReticleState(crosshair) {
     // crosshair and wrote it onto #tactical-cursor; read it back rather than
     // duplicating the raycast or editing Lane B's file.
     const tacticalCursor = document.getElementById('tactical-cursor');
-    const { state, visible, reason } = selectReticleState({
-        target: targetFromCursorClasses(tacticalCursor ? Array.from(tacticalCursor.classList) : []),
+    const target = targetFromCursorClasses(tacticalCursor ? Array.from(tacticalCursor.classList) : []);
+    const { state, visible, reason, hiddenReason } = selectReticleState({
+        target,
         blockedReason: reticleBlockedReason,
         hasBlockingOverlay: Boolean(window.game?.hasBlockingGameplayOverlay?.())
     });
+
     for (const cls of RETICLE_STATE_CLASSES) crosshair.classList.remove(cls);
     crosshair.classList.add(`gameplay-crosshair--${state}`);
     crosshair.dataset.reticleState = state;
     if (reason) crosshair.dataset.reticleReason = reason;
     else delete crosshair.dataset.reticleReason;
-    if (state !== lastReticleState) {
-        lastReticleState = state;
-        presentationTelemetry.emit('RETICLE', PRESENTATION_EVENTS.RETICLE.STATE, { state, reason });
+    // §16 wanted menu open/close and input-blocked in the log. Deriving them
+    // from the same gate the reticle already consults covers every modal at
+    // once, and carries the visibility snapshot that log16 could not produce.
+    const blockingOverlay = Boolean(window.game?.hasBlockingGameplayOverlay?.());
+    const overlayTransition = describeOverlayTransition(lastBlockingOverlay, blockingOverlay);
+    if (overlayTransition) {
+        const M = PRESENTATION_EVENTS.MENU;
+        presentationTelemetry.emit('MENU', overlayTransition === 'open' ? M.OPEN : M.CLOSE,
+            overlayTransition === 'open' ? captureMenuRenderSnapshot() : undefined);
+        presentationTelemetry.emit('MENU', M.INPUT_BLOCKED, { blocked: blockingOverlay });
     }
+    lastBlockingOverlay = blockingOverlay;
+
+    const observation = { state, visible, hiddenReason, targetKind: target?.kind ?? null };
+    const E = PRESENTATION_EVENTS.RETICLE;
+    for (const event of diffReticleTelemetry(lastReticleObservation, observation)) {
+        if (event === E.STATE) presentationTelemetry.emit('RETICLE', E.STATE, { state, reason });
+        else if (event === E.SCREEN_POS) {
+            presentationTelemetry.emit('RETICLE', E.SCREEN_POS, { x: lastReticleClientX, y: lastReticleClientY });
+        } else if (event === E.TARGET) {
+            presentationTelemetry.emit('RETICLE', E.TARGET, { kind: observation.targetKind });
+        } else if (event === E.HIDDEN_REASON) {
+            presentationTelemetry.emit('RETICLE', E.HIDDEN_REASON, { reason: hiddenReason });
+        }
+    }
+    lastReticleObservation = observation;
     return visible;
 }
 
@@ -13275,10 +13300,13 @@ function captureMenuRenderSnapshot() {
             computeStyle: (el) => window.getComputedStyle(el),
             measure: (el) => el.getBoundingClientRect()
         });
-        if (!game || game.performanceProfile !== 'menu') return menus;
+        if (!game || game.performanceProfile !== 'menu') {
+            presentationTelemetry.emit('MENU', PRESENTATION_EVENTS.MENU.VISIBILITY_SNAPSHOT, menus);
+            return menus;
+        }
         const info = game.renderer?.info;
         const container = game.container;
-        return {
+        const snapshot = {
             ...menus,
             drawCalls: info?.render?.calls ?? null,
             triangles: info?.render?.triangles ?? null,
@@ -13287,6 +13315,8 @@ function captureMenuRenderSnapshot() {
             sceneObjects: game.scene?.children?.length ?? null,
             transientEffects: game.transientEffects?.length ?? null
         };
+        presentationTelemetry.emit('MENU', PRESENTATION_EVENTS.MENU.VISIBILITY_SNAPSHOT, snapshot);
+        return snapshot;
     } catch {
         return null;
     }

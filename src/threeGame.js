@@ -237,6 +237,7 @@ import {
 import { SHOWROOM_CHUNK_X, SHOWROOM_CHUNK_Y } from './debugShowroom.js';
 import { getWing2ChunkOverride } from './debugTileGrid.js';
 import { PRESENTATION_EVENTS, presentationTelemetry } from './presentationTelemetry.js';
+import { summarizeSceneLights, diffLightCounts } from './lightingReport.js';
 
 
 const PLAYER_COLORS = {
@@ -5602,28 +5603,28 @@ export class ThreeGame {
     fireWeaponAtCurrentAim({ source = 'pointer' } = {}) {
         if (!this.isGameplayInputActive()) return false;
 
-        window.hbLog?.('WEAPON', 'debug', 'fire-input', { source, aimX: this.aimDirX, aimZ: this.aimDirZ });
+        presentationTelemetry.emit('WEAPON', PRESENTATION_EVENTS.WEAPON.FIRE_INPUT, { source, aimX: this.aimDirX, aimZ: this.aimDirZ });
 
         if (this.isInsideNoFireZone()) {
-            window.hbLog?.('WEAPON', 'warn', 'shot-blocked', { reason: 'no_fire_zone', clip: this.weaponClipAmmo, reserve: this.getAvailableAmmo() });
+            presentationTelemetry.emit('WEAPON', PRESENTATION_EVENTS.WEAPON.SHOT_BLOCKED, { reason: 'no_fire_zone', clip: this.weaponClipAmmo, reserve: this.getAvailableAmmo() }, { level: 'warn' });
             this.playThrottledUiError('_lastNoFireCueAt', { volume: 0.42 }, 'combat-no-fire-zone');
             return false;
         }
 
         if (this.weaponReloading) {
-            window.hbLog?.('WEAPON', 'debug', 'shot-blocked', { reason: 'reloading', clip: this.weaponClipAmmo, reserve: this.getAvailableAmmo() });
+            presentationTelemetry.emit('WEAPON', PRESENTATION_EVENTS.WEAPON.SHOT_BLOCKED, { reason: 'reloading', clip: this.weaponClipAmmo, reserve: this.getAvailableAmmo() });
             this.playThrottledUiError('_lastReloadBlockedCueAt', { volume: 0.34, playbackRate: 1.05 });
             return false;
         }
         if (this.weaponFireCooldown > 0) {
-            window.hbLog?.('WEAPON', 'debug', 'shot-blocked', { reason: 'fire_cooldown', cooldownRemaining: this.weaponFireCooldown });
+            presentationTelemetry.emit('WEAPON', PRESENTATION_EVENTS.WEAPON.SHOT_BLOCKED, { reason: 'fire_cooldown', cooldownRemaining: this.weaponFireCooldown });
             return false;
         }
         if (this.weaponClipAmmo <= 0) {
             const availableAmmo = this.getAvailableAmmo();
             if (availableAmmo < 1) {
                 window.AudioManager?.play('weapon_dry_fire', { volume: 0.45 });
-                window.hbLog?.('WEAPON', 'warn', 'shot-blocked', { reason: 'out_of_ammo', clip: 0, reserve: 0 });
+                presentationTelemetry.emit('WEAPON', PRESENTATION_EVENTS.WEAPON.SHOT_BLOCKED, { reason: 'out_of_ammo', clip: 0, reserve: 0 }, { level: 'warn' });
                 return this.triggerGameplayMelee({ source: 'empty-fire-fallback' });
             }
             this.requestReload();
@@ -5633,7 +5634,7 @@ export class ThreeGame {
         const normX = this.aimDirX;
         const normZ = this.aimDirZ;
         if (!Number.isFinite(normX) || !Number.isFinite(normZ)) {
-            window.hbLog?.('WEAPON', 'warn', 'shot-blocked', { reason: 'invalid_aim', normX, normZ });
+            presentationTelemetry.emit('WEAPON', PRESENTATION_EVENTS.WEAPON.SHOT_BLOCKED, { reason: 'invalid_aim', normX, normZ }, { level: 'warn' });
             return false;
         }
 
@@ -5644,12 +5645,12 @@ export class ThreeGame {
 
         this.spawnPlayerShot(normX, normZ);
 
-        window.hbLog?.('WEAPON', 'info', 'shot-accepted', {
+        presentationTelemetry.emit('WEAPON', PRESENTATION_EVENTS.WEAPON.SHOT_ACCEPTED, {
             weaponType: this.currentWeaponType || 'plasma_carbine',
             clipRemaining: this.weaponClipAmmo,
             reserveRemaining: this.getAvailableAmmo()
         });
-        window.hbLog?.('WEAPON', 'debug', 'projectile', {
+        presentationTelemetry.emit('WEAPON', PRESENTATION_EVENTS.WEAPON.PROJECTILE, {
             weaponType: this.currentWeaponType || 'plasma_carbine',
             origin: [this.player?.position?.x ?? 0, this.player?.position?.z ?? 0],
             dir: [normX, normZ]
@@ -6690,16 +6691,33 @@ export class ThreeGame {
     }
 
     emitLightingTelemetry(reason = 'profile-change', extra = {}) {
+        // §2 asks the report to carry the lights themselves alongside the
+        // renderer settings, so a "lighting turned off" report can be confirmed
+        // or ruled out from the log instead of by eye.
+        const lights = summarizeSceneLights(this.scene);
+        const dropped = diffLightCounts(this._lastLightingSummary, lights);
+        this._lastLightingSummary = lights;
+
         presentationTelemetry.emit('LIGHTING', PRESENTATION_EVENTS.LIGHTING.SNAPSHOT, {
             reason,
             ...extra,
             profile: this.performanceProfile,
+            lightCount: lights.total,
+            lightsByType: lights.byType,
+            exposure: this.renderer?.toneMappingExposure ?? null,
+            toneMapping: this.renderer?.toneMapping ?? null,
             shadowsEnabled: Boolean(this.renderer?.shadowMap?.enabled),
             shadowMapType: this.renderer?.shadowMap?.type ?? null,
             adaptiveGameplayPerformanceMode: Boolean(this.adaptiveGameplayPerformanceMode),
             postprocessing: this.gameplayPostProcessingEnabled !== false,
             diagnostics: this.getPerformanceDiagnosticsSnapshot?.() ?? null
         });
+
+        for (const drop of dropped) {
+            presentationTelemetry.emit('LIGHTING', PRESENTATION_EVENTS.LIGHTING.LIGHT_DROPPED, {
+                reason, ...drop
+            });
+        }
     }
 
     setPerformanceProfile(profile = 'menu') {
@@ -18965,6 +18983,12 @@ export class ThreeGame {
                 isReloading: this.weaponReloading,
                 isMoving: visualMoving,
                 isSprinting,
+                // Sprint 29 §10: the walk cadence has to know how fast the
+                // player is actually travelling, or the same clip plays for a
+                // 2.6-speed TANK and a 4.8-speed SCOUT and at least one of them
+                // slides. Sprint cadence is applied inside the overlay, so this
+                // is the pre-sprint ground speed.
+                groundSpeed: this.moveSpeed,
                 isInjured: this.isPlayerInjured(),
                 hasAim: this.hasActiveAim,
                 moveX: visualMoveX,

@@ -4,6 +4,8 @@ import {
     INJURED_LOCOMOTION_VARIANTS,
     computeOperatorPolishMaterialState,
     computeLocomotionWeights,
+    computeLocomotionTimeScale,
+    resolveGameplayCharmSocket,
     computeOverlayYaw,
     computeUpperBodyAimOffset,
     selectLocomotionActionName,
@@ -97,5 +99,75 @@ describe('player 3D cosmetic overlay', () => {
         expect(selectLocomotionActionName('strafeLeft', true, false)).toBe('strafeLeft');
         expect(INJURED_LOCOMOTION_VARIANTS.backward).toBeUndefined();
         expect(INJURED_LOCOMOTION_VARIANTS.strafeLeft).toBeUndefined();
+    });
+});
+
+describe('computeLocomotionTimeScale', () => {
+    // Sprint 29 §10. Class move speeds differ by nearly 2x (SCOUT 4.8, ENGINEER
+    // 3.6, TANK 2.6) but every class played the same walk clip at a fixed rate,
+    // so the feet could not match the ground for two of the three. TANK -- the
+    // class in log16 -- slid worst.
+    it('plays the clip at authored rate when the walk matches the reference speed', () => {
+        expect(computeLocomotionTimeScale({ speed: 3.6, referenceSpeed: 3.6 })).toBeCloseTo(1, 5);
+    });
+
+    it('slows the cadence for a slower class', () => {
+        expect(computeLocomotionTimeScale({ speed: 2.6, referenceSpeed: 3.6 })).toBeLessThan(1);
+    });
+
+    it('quickens the cadence for a faster class', () => {
+        expect(computeLocomotionTimeScale({ speed: 4.8, referenceSpeed: 3.6 })).toBeGreaterThan(1);
+    });
+
+    it('adds sprint cadence on top of the ground speed', () => {
+        const walk = computeLocomotionTimeScale({ speed: 3.6, referenceSpeed: 3.6 });
+        const sprint = computeLocomotionTimeScale({ speed: 3.6, referenceSpeed: 3.6, isSprinting: true });
+
+        expect(sprint).toBeGreaterThan(walk);
+    });
+
+    it('clamps so an extreme speed cannot shred or freeze the clip', () => {
+        expect(computeLocomotionTimeScale({ speed: 40, referenceSpeed: 3.6 })).toBeLessThanOrEqual(1.6);
+        expect(computeLocomotionTimeScale({ speed: 0.01, referenceSpeed: 3.6 })).toBeGreaterThanOrEqual(0.6);
+    });
+
+    it('falls back to the authored rate when speed is unknown', () => {
+        expect(computeLocomotionTimeScale({})).toBeCloseTo(1, 5);
+    });
+});
+
+describe('resolveGameplayCharmSocket', () => {
+    // The armory hangs the socket off an unscaled pivot, so its transform is in
+    // pivot space. In gameplay the socket is a child of the weapon, which has
+    // already been scaled to fit the hand -- so the same numbers would land
+    // somewhere else unless the weapon's scale is divided back out.
+    it('matches the armory placement when the weapon is unscaled', () => {
+        const socket = resolveGameplayCharmSocket('gg1', 1);
+
+        expect(socket.position).toEqual([0.18, -0.05, 0.06]);
+        expect(socket.scale).toBeCloseTo(1, 5);
+    });
+
+    it('divides the weapon scale back out so world placement is unchanged', () => {
+        const socket = resolveGameplayCharmSocket('gg1', 2);
+
+        expect(socket.position[0]).toBeCloseTo(0.09, 5);
+        expect(socket.scale).toBeCloseTo(0.5, 5);
+    });
+
+    it('uses the archetype own socket, not a shared one', () => {
+        expect(resolveGameplayCharmSocket('siege_breaker', 1).position)
+            .not.toEqual(resolveGameplayCharmSocket('gg1', 1).position);
+    });
+
+    it('falls back to a known archetype rather than throwing', () => {
+        expect(resolveGameplayCharmSocket('not-a-gun', 1).archetype).toBe('gg1');
+    });
+
+    it('treats a nonsense weapon scale as unscaled instead of dividing by zero', () => {
+        const socket = resolveGameplayCharmSocket('gg1', 0);
+
+        expect(Number.isFinite(socket.position[0])).toBe(true);
+        expect(socket.position).toEqual([0.18, -0.05, 0.06]);
     });
 });

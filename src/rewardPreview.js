@@ -4,7 +4,7 @@ import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.j
 import { assetUrl } from './assetUrl.js';
 import { CHARM_GLB_MAP, MOD_GLB_MAP } from './armoryScene.js';
 import { CHASSIS_SKIN_MODELS, WEAPON_ARCHETYPES, WEAPON_SKIN_MESHES } from './player3dOverlay.js';
-import { getCharmSocketTransform } from './charmSockets.js';
+import { getCharmSocketTransform, resolveCharmModelOffset } from './charmSockets.js';
 import { getWeaponCalibration, getWeaponScaleForBounds } from './weaponCalibration.js';
 import { PRESENTATION_EVENTS, presentationTelemetry } from './presentationTelemetry.js';
 
@@ -207,8 +207,11 @@ export function mountRewardPreview({ container, itemId, category, archetypeId = 
                     socket.scale.setScalar(socketTransform.scale);
                     weaponModel.add(socket);
                     const charmSize = getSize(model);
-                    model.position.set(0, -0.05, 0);
                     model.scale.setScalar(0.18 / Math.max(charmSize.length(), 0.001));
+                    // Per-charm normalization from its own scaled bounds; a
+                    // shared constant here would hide socket errors.
+                    model.updateMatrixWorld(true);
+                    model.position.fromArray(resolveCharmModelOffset(new THREE.Box3().setFromObject(model)));
                     socket.add(model);
                 }
                 const size = getSize(weaponModel);

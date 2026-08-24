@@ -103,3 +103,24 @@ export function isWeaponDry({ clip, cache } = {}) {
     if (!Number.isFinite(clip) || !Number.isFinite(cache)) return false;
     return clip <= 0 && cache <= 0;
 }
+
+/**
+ * Which reticle telemetry events a transition warrants.
+ *
+ * Reticle state is recomputed on every pointer move and on a refresh tick.
+ * Emitting per evaluation would bury the log -- log16 was already 2,108 PERF
+ * entries out of 2,875 -- so events fire only when something actually changed.
+ */
+export function diffReticleTelemetry(previous, next) {
+    const events = [];
+    if (!next) return events;
+    if (!previous || previous.state !== next.state) {
+        events.push('state', 'screen-pos');
+    }
+    if (!previous || previous.targetKind !== next.targetKind) events.push('target');
+    const wasHidden = Boolean(previous && previous.visible === false);
+    if (next.visible === false && !wasHidden && next.hiddenReason) {
+        events.push('hidden-reason');
+    }
+    return events;
+}

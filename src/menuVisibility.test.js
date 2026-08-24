@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { captureMenuVisibilitySnapshot } from './menuVisibility.js';
+import { captureMenuVisibilitySnapshot, describeOverlayTransition } from './menuVisibility.js';
 
 function surface(style = {}, rect = { width: 400, height: 300 }) {
     return {
@@ -65,5 +65,34 @@ describe('captureMenuVisibilitySnapshot', () => {
         const snap = snapshotOf({ 'armory-modal': surface({}, { width: 0, height: 0 }) });
 
         expect(snap.surfaces[0]).toMatchObject({ visible: false, hiddenReason: 'zero-size' });
+    });
+});
+
+describe('describeOverlayTransition', () => {
+    // Rather than instrumenting all 49 modals individually, menu open/close is
+    // derived from the one gate that already decides whether world input is
+    // suppressed: hasBlockingGameplayOverlay().
+    it('reports an open when a blocking overlay appears', () => {
+        expect(describeOverlayTransition(false, true)).toBe('open');
+    });
+
+    it('reports a close when it goes away', () => {
+        expect(describeOverlayTransition(true, false)).toBe('close');
+    });
+
+    it('stays quiet while the overlay simply remains open', () => {
+        expect(describeOverlayTransition(true, true)).toBe(null);
+    });
+
+    it('stays quiet while nothing is open', () => {
+        expect(describeOverlayTransition(false, false)).toBe(null);
+    });
+
+    it('treats the first observation of an open overlay as an open', () => {
+        expect(describeOverlayTransition(null, true)).toBe('open');
+    });
+
+    it('does not announce a close for a first observation of nothing', () => {
+        expect(describeOverlayTransition(null, false)).toBe(null);
     });
 });

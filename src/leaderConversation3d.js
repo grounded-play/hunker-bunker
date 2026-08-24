@@ -7,7 +7,11 @@ export class LeaderConversation3d {
         this.renderer = null;
         this.overlay = null;
         this.frame = 0;
-        this.clock = new THREE.Clock();
+        // THREE.Clock is deprecated (it emits a console warning at boot, seen
+        // at 9ms in docs/logs/log16.json). Timer additionally clamps the delta
+        // spike that a tab-switch or window-blur would otherwise hand to the
+        // animation mixer.
+        this.timer = new THREE.Timer();
         this.idleActionName = 'idle';
         this.loadToken = 0;
     }
@@ -39,7 +43,7 @@ export class LeaderConversation3d {
             overlay.root.rotation.y = 0.08;
             this.scene.add(overlay.root);
             this.canvas.classList.remove('hidden');
-            this.clock.start();
+            this.timer.reset();
             this.animate();
             return true;
         } catch (error) {
@@ -77,7 +81,8 @@ export class LeaderConversation3d {
             this.camera.aspect = width / height;
             this.camera.updateProjectionMatrix();
         }
-        const delta = Math.min(this.clock.getDelta(), 0.05);
+        this.timer.update();
+        const delta = Math.min(this.timer.getDelta(), 0.05);
         this.overlay.update(delta, {
             isMoving: false,
             isFalling: false,

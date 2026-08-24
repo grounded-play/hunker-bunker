@@ -10,7 +10,7 @@ import {
 } from './player3dOverlay.js';
 import { DEFAULT_ARCHETYPES } from './loadout.js';
 import { getItemCatalogEntry } from './steamVaultUi.js';
-import { getCharmSocketTransform } from './charmSockets.js';
+import { getCharmSocketTransform, resolveCharmModelOffset } from './charmSockets.js';
 import { getWeaponScaleForBounds, getWeaponCalibration } from './weaponCalibration.js';
 
 export const CHARM_GLB_MAP = Object.freeze({
@@ -455,7 +455,10 @@ export async function createArmoryScene(canvas) {
             const bbox = new THREE.Box3().setFromObject(model);
             const maxDim = Math.max(bbox.getSize(new THREE.Vector3()).length(), 0.001);
             model.scale.setScalar((0.18 / maxDim) * (charmSocket.userData.archetype ? charmSocket.scale.x : 1));
-            model.position.set(0, -0.05, 0);
+            // Offset comes from this charm's own scaled geometry, so each one
+            // hangs from its own top edge instead of sharing one constant.
+            model.updateMatrixWorld(true);
+            model.position.fromArray(resolveCharmModelOffset(new THREE.Box3().setFromObject(model)));
 
             model.traverse((child) => {
                 if (child.isMesh) {

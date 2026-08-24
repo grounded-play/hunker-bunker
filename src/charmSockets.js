@@ -34,3 +34,22 @@ export function getCharmSocketRegistry() {
 }
 
 export { SOCKETS };
+
+/**
+ * The charm's own model-local offset, derived from its geometry.
+ *
+ * Charms were all shifted by the same hardcoded `(0, -0.05, 0)`. A blanket
+ * constant is the same mistake as the single shared weapon socket it replaced:
+ * it is not normalization, it is one charm's correction applied to ten. A charm
+ * hangs from its top edge, centred on the socket, so a tall charm drops further
+ * than a squat one -- which is what makes it read as attached rather than
+ * intersecting.
+ */
+export function resolveCharmModelOffset(bounds) {
+    const min = bounds?.min;
+    const max = bounds?.max;
+    if (!min || !max) return [0, 0, 0];
+    const centreX = (min.x + max.x) / 2;
+    const centreZ = (min.z + max.z) / 2;
+    return [-centreX, -max.y, -centreZ];
+}

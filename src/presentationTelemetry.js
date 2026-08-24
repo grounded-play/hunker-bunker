@@ -51,11 +51,18 @@ export const PRESENTATION_EVENTS = Object.freeze({
         SHOT_ACCEPTED: 'shot-accepted',
         SHOT_BLOCKED: 'shot-blocked',
         PROJECTILE: 'projectile'
+    }),
+    AUDIO: Object.freeze({
+        LOAD_START: 'load-start',
+        LOAD_FAILED: 'load-failed',
+        LOAD_COMPLETE: 'load-complete',
+        PLAY: 'play',
+        PLAY_MISSING: 'play-missing'
     })
 });
 
 export function createPresentationTelemetry({ logger = debugLog } = {}) {
-    function emit(category, event, detail) {
+    function emit(category, event, detail, { level = 'info' } = {}) {
         const events = PRESENTATION_EVENTS[category];
         if (!events) {
             throw new Error(`presentationTelemetry: unknown category "${category}"`);
@@ -63,7 +70,10 @@ export function createPresentationTelemetry({ logger = debugLog } = {}) {
         if (!Object.values(events).includes(event)) {
             throw new Error(`presentationTelemetry: unknown ${category} event "${event}"`);
         }
-        logger.info(category, event, detail);
+        // Severity is worth keeping: the debug console filters on it, and an
+        // out-of-ammo refusal should not read the same as a routine frame event.
+        const write = typeof logger[level] === 'function' ? logger[level] : logger.info;
+        write.call(logger, category, event, detail);
     }
 
     // Sprint 29 §19 requires each lane's events to fire exactly once per
