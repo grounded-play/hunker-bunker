@@ -1,34 +1,122 @@
 # Contributing to Hunker Bunker
 
-First off, thank you for considering contributing to Hunker Bunker! It's people like you that make this game better for everyone.
+**Status:** Canonical contributor workflow  
+**Last verified:** 2026-08-24
 
-## Getting Started
+Thanks for helping make Hunker Bunker better. The project is in active development on the path toward a Steam-quality desktop/Steam Deck release, so contribution quality is measured by both implementation and evidence that the implementation is actually connected and behaves correctly in the environment it targets.
 
-1. **Fork the repository** to your own GitHub account.
-2. **Clone the project** to your local machine.
-3. Install dependencies by running `npm install`.
-4. Start the development server using `npm run dev`.
-5. Open your browser and navigate to the local URL provided by Vite (usually `http://localhost:5173`).
+## Before you start
 
-## Submitting Changes
+Read these first:
 
-1. **Branch out**: Create a new branch for your feature or bug fix (`git checkout -b feature/your-feature-name` or `bugfix/issue-number`).
-2. **Make your changes**: Write your code and ensure you aren't breaking existing functionality.
-3. **Commit your changes**: Write clear, descriptive commit messages.
-4. **Push your branch**: Push the changes to your fork on GitHub.
-5. **Open a Pull Request**: Submit a Pull Request against our main repository. Please fill out the provided Pull Request template completely so we can review your changes efficiently.
+- [`README.md`](README.md) — project overview and setup.
+- [`PRODUCT_STATE.md`](PRODUCT_STATE.md) — current product truth.
+- [`docs/README.md`](docs/README.md) — documentation lifecycle and evidence language.
+- [`docs/repo-roadmap.md`](docs/repo-roadmap.md) — prioritized work.
+- [`docs/sprints/sprint-30-plan.md`](docs/sprints/sprint-30-plan.md) — current active sprint while Sprint 30 is in progress.
 
-## Code Style
+Historical sprint plans and audits are useful context, but they do not outrank the current-truth documents above.
 
-- We use ESLint for code formatting and quality. Please run `npm run lint` before submitting a PR.
-- Try to match the existing coding style for consistency.
+## Development setup
 
-## Reporting Bugs
+### Requirements
 
-If you find a bug, please use the **Bug Report** issue template. Provide as much detail as possible, including steps to reproduce, what you expected to happen, and what actually happened.
+- **Node.js 22**
+- npm compatible with Node 22
 
-## Feature Requests
+```bash
+# Clone your fork or the main repository
+git clone https://github.com/grounded-play/hunker-bunker.git
+cd hunker-bunker
 
-We are always open to new ideas! If you have a feature request, please use the **Feature Request** issue template and clearly describe the problem it solves and how it would work in the game.
+# Install exactly from package-lock.json
+npm ci
 
-Thank you for contributing!
+# Start the browser development server
+npm run dev
+```
+
+Vite normally serves the game at `http://localhost:5173`.
+
+## Choosing work
+
+Prefer work in this order:
+
+1. player-blocking defects;
+2. open Steam/release acceptance gates;
+3. systems already designed/coded but not connected or accepted;
+4. measured reliability/performance issues;
+5. high-leverage player-facing polish;
+6. new content breadth.
+
+This ordering is intentional. Recent sprints showed that adding new lanes faster than old acceptance work closes makes the repository look more complete than the player experience actually is.
+
+## Branches and pull requests
+
+For outside contributors, work from a fork and open a PR into `mothership`.
+
+Suggested branch names:
+
+- `feature/<short-name>`
+- `fix/<short-name>`
+- `docs/<short-name>`
+- sprint integration branches use `dev/sprint-N` when maintained by the core project.
+
+Keep PRs narrow enough that the acceptance story is understandable. Large sprint integrations may still be broad, but they should have a single plan and a cross-lane integration audit before merge.
+
+## Evidence levels
+
+Use the project-wide vocabulary from [`docs/README.md`](docs/README.md):
+
+- **Designed** — a spec/decision exists.
+- **Coded** — implementation exists.
+- **Connected** — the live runtime calls it.
+- **Tested** — automated assertions cover it.
+- **Live-verified** — observed in a running development build.
+- **Packaged-verified** — observed in a packaged Electron/Steam-target build.
+- **Accepted** — the promised player/hardware/account route passed.
+
+A PR should state the highest evidence level it actually reached. Do not call Steam-, hardware-, or package-dependent work complete based only on unit tests.
+
+## Verification
+
+Run the gates relevant to your change. The common full set is:
+
+```bash
+npm run lint
+npm test
+npm run presubmit
+npm run build
+npm run coverage
+npm run test:e2e
+```
+
+Not every small docs-only change needs every gate, but player-facing runtime changes should normally run lint/tests/build/presubmit, plus targeted E2E where applicable.
+
+For Electron, Steamworks, multiplayer, media unpacking, controller, or GPU/performance work, include the package/hardware/account evidence the feature depends on.
+
+## Documentation changes
+
+New documents should follow [`docs/README.md`](docs/README.md):
+
+- put active sprint plans under `docs/sprints/`;
+- put measurements/audits under `docs/reports/`;
+- put releases under `docs/releases/`;
+- put prompts under `docs/prompts/`;
+- use `docs/archive/` for superseded historical material;
+- avoid adding sprint-specific Markdown to the repository root.
+
+When a change alters product truth, update `PRODUCT_STATE.md`. When it alters setup/public status, update `README.md`. When it changes release/version state, update the release roadmap and release notes as appropriate.
+
+## Code style
+
+- ESLint is the source of truth for JavaScript linting.
+- Match surrounding style unless a refactor is explicitly part of the change.
+- Prefer small ownership-boundary extractions over sweeping rewrites of `main.js`, `style.css`, or `index.html`.
+- Add focused tests before deleting or replacing an established runtime path.
+
+## Bugs and feature requests
+
+Use the repository's GitHub issue templates when available. For bugs, include reproduction steps, expected behavior, actual behavior, environment, and whether the failure occurs in browser, packaged Electron, Steam, or specific hardware.
+
+For feature requests, describe the player problem first. New breadth should explain why it outranks existing roadmap/acceptance work.
