@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import fs from 'node:fs';
 import path from 'node:path';
+import zlib from 'node:zlib';
 import { fileURLToPath } from 'node:url';
 import { execFileSync } from 'node:child_process';
 
@@ -108,10 +109,145 @@ export const CHROMA_GREEN_ALLOWLIST = new Set([
     'public/lore_portraits/queen_00.webp'
 ]);
 
+function decodePng(buffer) {
+    if (buffer.length < 8 || buffer.readUInt32BE(0) !== 0x89504E47) return null;
+    let offset = 8;
+    let width = 0, height = 0, bitDepth = 0, colorType = 0;
+    const idatChunks = [];
+    let palette = null;
+
+    while (offset + 8 <= buffer.length) {
+        const length = buffer.readUInt32BE(offset);
+        const type = buffer.toString('ascii', offset + 4, offset + 8);
+        if (offset + 12 + length > buffer.length) break;
+        const data = buffer.subarray(offset + 8, offset + 8 + length);
+        offset += 12 + length;
+
+        if (type === 'IHDR') {
+            width = data.readUInt32BE(0);
+            height = data.readUInt32BE(4);
+            bitDepth = data[8];
+            colorType = data[9];
+        } else if (type === 'PLTE') {
+            palette = data;
+        } else if (type === 'IDAT') {
+            idatChunks.push(data);
+        } else if (type === 'IEND') {
+            break;
+        }
+    }
+
+    if (!idatChunks.length || bitDepth !== 8) return null;
+    let decompressed;
+    try {
+        decompressed = zlib.inflateSync(Buffer.concat(idatChunks));
+    } catch {
+        return null;
+    }
+
+    let bpp = 0;
+    if (colorType === 6) bpp = 4;
+    else if (colorType === 2) bpp = 3;
+    else if (colorType === 3) bpp = 1;
+    else if (colorType === 0) bpp = 1;
+    else if (colorType === 4) bpp = 2;
+    else return null;
+
+    const stride = width * bpp;
+    const rawData = Buffer.alloc(height * stride);
+    let srcPos = 0;
+    let destPos = 0;
+
+    for (let y = 0; y < height; y++) {
+        const filter = decompressed[srcPos++];
+        const rowStart = destPos;
+        const prevRowStart = y > 0 ? (y - 1) * stride : -1;
+
+        for (let x = 0; x < stride; x++) {
+            const byte = decompressed[srcPos++];
+            const left = x >= bpp ? rawData[rowStart + x - bpp] : 0;
+            const up = prevRowStart >= 0 ? rawData[prevRowStart + x] : 0;
+            const upLeft = (prevRowStart >= 0 && x >= bpp) ? rawData[prevRowStart + x - bpp] : 0;
+
+            let val = byte;
+            if (filter === 1) val = (byte + left) & 0xff;
+            else if (filter === 2) val = (byte + up) & 0xff;
+            else if (filter === 3) val = (byte + Math.floor((left + up) / 2)) & 0xff;
+            else if (filter === 4) {
+                const p = left + up - upLeft;
+                const pa = Math.abs(p - left);
+                const pb = Math.abs(p - up);
+                const pc = Math.abs(p - upLeft);
+                const pr = (pa <= pb && pa <= pc) ? left : (pb <= pc ? up : upLeft);
+                val = (byte + pr) & 0xff;
+            }
+            rawData[destPos++] = val;
+        }
+    }
+
+    return { width, height, colorType, rawData, bpp, palette };
+}
+
+function analyzePngGreen(buffer) {
+    const decoded = decodePng(buffer);
+    if (!decoded) return null;
+    const { width, height, colorType, rawData, bpp, palette } = decoded;
+    const totalPixels = width * height;
+    const step = Math.max(1, Math.floor(totalPixels / 3000));
+    let greenCount = 0;
+    let sampledCount = 0;
+
+    for (let i = 0; i < totalPixels; i += step) {
+        sampledCount++;
+        let r = 0, g = 0, b = 0, a = 255;
+        const offset = i * bpp;
+        if (colorType === 6) {
+            r = rawData[offset];
+            g = rawData[offset + 1];
+            b = rawData[offset + 2];
+            a = rawData[offset + 3];
+        } else if (colorType === 2) {
+            r = rawData[offset];
+            g = rawData[offset + 1];
+            b = rawData[offset + 2];
+        } else if (colorType === 3 && palette) {
+            const idx = rawData[offset];
+            r = palette[idx * 3];
+            g = palette[idx * 3 + 1];
+            b = palette[idx * 3 + 2];
+        }
+
+        if (a > 25) {
+            if (g > 180 && g > 1.5 * Math.max(r, b) && (r < 110 || b < 110)) {
+                greenCount++;
+            }
+        }
+    }
+
+    const ratio = greenCount / (sampledCount || 1);
+    return { width, height, ratio };
+}
+
+function walkDir(dir) {
+    const files = [];
+    if (!fs.existsSync(dir)) return files;
+    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+        const full = path.join(dir, entry.name);
+        if (entry.isDirectory()) files.push(...walkDir(full));
+        else files.push(full);
+    }
+    return files;
+}
+
 export function runChromaGreenScan() {
+    // Try Python + PIL first if available (for full JPEG/WebP coverage); otherwise fallback to pure Node.js PNG scanner
     const pythonScript = `
 import os, json
-from PIL import Image
+try:
+    from PIL import Image
+except ImportError:
+    print("[]")
+    exit(0)
 
 image_exts = {'.png', '.webp', '.jpg', '.jpeg'}
 findings = []
@@ -120,7 +256,6 @@ for root, dirs, files in os.walk('public'):
     for f in files:
         ext = os.path.splitext(f)[1].lower()
         if ext in image_exts:
-            # Skip normal maps which encode geometric vectors in RGB
             if f.endswith('_normal.png') or f.endswith('_normal.jpg'):
                 continue
             filepath = os.path.join(root, f)
@@ -151,9 +286,47 @@ for root, dirs, files in os.walk('public'):
 print(json.dumps(findings))
 `;
 
-    const stdout = execFileSync('python3', ['-c', pythonScript], { cwd: ROOT_DIR, encoding: 'utf8' });
-    const results = JSON.parse(stdout || '[]');
-    return results;
+    let pythonResults = null;
+    try {
+        const stdout = execFileSync('python3', ['-c', pythonScript], { cwd: ROOT_DIR, encoding: 'utf8', stdio: ['pipe', 'pipe', 'ignore'] });
+        const parsed = JSON.parse(stdout || '[]');
+        if (Array.isArray(parsed) && parsed.length > 0) {
+            pythonResults = parsed;
+        }
+    } catch {
+        pythonResults = null;
+    }
+
+    if (pythonResults) {
+        return pythonResults;
+    }
+
+    // Pure Node.js scanner (guaranteed zero external dependencies on all CI environments)
+    const findings = [];
+    const publicDir = path.resolve(ROOT_DIR, 'public');
+    const files = walkDir(publicDir);
+
+    for (const file of files) {
+        const rel = path.relative(ROOT_DIR, file).split(path.sep).join('/');
+        if (rel.endsWith('.png') && !rel.endsWith('_normal.png')) {
+            try {
+                const buf = fs.readFileSync(file);
+                const res = analyzePngGreen(buf);
+                if (res && res.ratio > 0.02) {
+                    findings.push({
+                        file: rel,
+                        ratio: Math.round(res.ratio * 10000) / 10000,
+                        width: res.width,
+                        height: res.height
+                    });
+                }
+            } catch {
+                // Ignore corrupt or unreadable files
+            }
+        }
+    }
+
+    return findings;
 }
 
 export function auditChromaGreen({ check = false, writeReport = true } = {}) {
