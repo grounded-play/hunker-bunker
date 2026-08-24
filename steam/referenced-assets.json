@@ -45,6 +45,8 @@
     "3d/runtime/frozen-tanker.glb",
     "3d/runtime/fusion-generator.glb",
     "3d/runtime/hull-matrix.glb",
+    "3d/runtime/new3ds/alien_proto_crawler.glb",
+    "3d/runtime/new3ds/alien_proto_crawler_A.glb",
     "3d/runtime/new3ds/boss_corrupted_briggs.glb",
     "3d/runtime/new3ds/boss_corrupted_martha.glb",
     "3d/runtime/new3ds/bunker_junk_rare.glb",
@@ -74,6 +76,7 @@
     "3d/runtime/new3ds/chassis_tank_old_iron.glb",
     "3d/runtime/new3ds/chassis_trench_warden_heavy.glb",
     "3d/runtime/new3ds/chassis_void_commando_recon.glb",
+    "3d/runtime/new3ds/cybersnail_dead.glb",
     "3d/runtime/new3ds/fungal_spore_vent.glb",
     "3d/runtime/new3ds/gun_engineer_tesla_lock.glb",
     "3d/runtime/new3ds/gun_scout_talon_c.glb",
@@ -87,13 +90,18 @@
     "3d/runtime/new3ds/mod_symbiotic_adrenaline_pump.glb",
     "3d/runtime/new3ds/mod_thermal_heat_exchanger.glb",
     "3d/runtime/new3ds/mod_zero_point_flux.glb",
+    "3d/runtime/new3ds/npc_alien_rhun.glb",
+    "3d/runtime/new3ds/npc_alien_vey.glb",
     "3d/runtime/new3ds/npc_aria.glb",
+    "3d/runtime/new3ds/npc_civilian_miner.glb",
+    "3d/runtime/new3ds/npc_civilian_researcher.glb",
     "3d/runtime/new3ds/npc_kaelen.glb",
     "3d/runtime/new3ds/npc_martha.glb",
     "3d/runtime/new3ds/npc_nahl.glb",
     "3d/runtime/new3ds/npc_queen.glb",
     "3d/runtime/new3ds/npc_val.glb",
     "3d/runtime/new3ds/prop_ammo_crate_stack.glb",
+    "3d/runtime/new3ds/prop_base_defense_turret.glb",
     "3d/runtime/new3ds/prop_biomech_arch.glb",
     "3d/runtime/new3ds/prop_biomech_flesh_locker.glb",
     "3d/runtime/new3ds/prop_biomech_incubator.glb",
@@ -101,6 +109,8 @@
     "3d/runtime/new3ds/prop_biomech_respirator.glb",
     "3d/runtime/new3ds/prop_biomech_sphincter_trap.glb",
     "3d/runtime/new3ds/prop_biomech_triage_cradle.glb",
+    "3d/runtime/new3ds/prop_body_empty_exosuit.glb",
+    "3d/runtime/new3ds/prop_body_human_frozen.glb",
     "3d/runtime/new3ds/prop_broken_specimen_tank.glb",
     "3d/runtime/new3ds/prop_bunker_supplies.glb",
     "3d/runtime/new3ds/prop_cave_bones.glb",
@@ -116,6 +126,9 @@
     "3d/runtime/new3ds/prop_surgical_cart.glb",
     "3d/runtime/new3ds/prop_tesla_coil_node.glb",
     "3d/runtime/new3ds/prop_vital_monitor.glb",
+    "3d/runtime/new3ds/sentinel.glb",
+    "3d/runtime/new3ds/sentinel_A.glb",
+    "3d/runtime/new3ds/sentinel_B.glb",
     "3d/runtime/new3ds/skin_biolume_spore_sprayer.glb",
     "3d/runtime/new3ds/skin_engineer_cryo_plasma.glb",
     "3d/runtime/new3ds/skin_glitched_circuit_bolter.glb",
@@ -918,6 +931,16 @@
       "classification": "runtime-required"
     },
     {
+      "path": "3d/runtime/new3ds/alien_proto_crawler.glb",
+      "bytes": 5088468,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/alien_proto_crawler_A.glb",
+      "bytes": 5088468,
+      "classification": "runtime-required"
+    },
+    {
       "path": "3d/runtime/new3ds/boss_corrupted_briggs.glb",
       "bytes": 3386260,
       "classification": "runtime-required"
@@ -1063,6 +1086,11 @@
       "classification": "runtime-required"
     },
     {
+      "path": "3d/runtime/new3ds/cybersnail_dead.glb",
+      "bytes": 4283480,
+      "classification": "runtime-required"
+    },
+    {
       "path": "3d/runtime/new3ds/fungal_spore_vent.glb",
       "bytes": 3284196,
       "classification": "runtime-required"
@@ -1128,8 +1156,28 @@
       "classification": "runtime-required"
     },
     {
+      "path": "3d/runtime/new3ds/npc_alien_rhun.glb",
+      "bytes": 5570392,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/npc_alien_vey.glb",
+      "bytes": 5192952,
+      "classification": "runtime-required"
+    },
+    {
       "path": "3d/runtime/new3ds/npc_aria.glb",
       "bytes": 3211072,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/npc_civilian_miner.glb",
+      "bytes": 5345724,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/npc_civilian_researcher.glb",
+      "bytes": 4917168,
       "classification": "runtime-required"
     },
     {
@@ -1160,6 +1208,11 @@
     {
       "path": "3d/runtime/new3ds/prop_ammo_crate_stack.glb",
       "bytes": 1130116,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/prop_base_defense_turret.glb",
+      "bytes": 5036496,
       "classification": "runtime-required"
     },
     {
@@ -1195,6 +1248,16 @@
     {
       "path": "3d/runtime/new3ds/prop_biomech_triage_cradle.glb",
       "bytes": 1242384,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/prop_body_empty_exosuit.glb",
+      "bytes": 4818916,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/prop_body_human_frozen.glb",
+      "bytes": 4380640,
       "classification": "runtime-required"
     },
     {
@@ -1270,6 +1333,21 @@
     {
       "path": "3d/runtime/new3ds/prop_vital_monitor.glb",
       "bytes": 1060412,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/sentinel.glb",
+      "bytes": 5822928,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/sentinel_A.glb",
+      "bytes": 5822928,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/sentinel_B.glb",
+      "bytes": 5886780,
       "classification": "runtime-required"
     },
     {

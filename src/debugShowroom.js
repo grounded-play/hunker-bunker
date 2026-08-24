@@ -34,7 +34,8 @@ export const SHOWROOM_CATEGORIES = Object.freeze({
         'prop_o2_filter_vat',
         'prop_security_barricade',
         'prop_conduit_hub',
-        'prop_vital_monitor'
+        'prop_vital_monitor',
+        'prop_base_defense_turret'
     ],
     BIOMECH_PROPS: [
         'prop_medical_bed',
@@ -48,7 +49,9 @@ export const SHOWROOM_CATEGORIES = Object.freeze({
         'prop_biomech_triage_cradle',
         'prop_biomech_neural_synapse',
         'prop_biomech_sphincter_trap',
-        'prop_laser_trap_emitter'
+        'prop_laser_trap_emitter',
+        'prop_body_empty_exosuit',
+        'prop_body_human_frozen'
     ],
     SETPIECES: [
         'broken_scout_ship',
@@ -61,7 +64,8 @@ export const SHOWROOM_CATEGORIES = Object.freeze({
         'frozen_tanker',
         'basic_pile',
         'bunker_junk_rare',
-        'bunker_junk_uncommon'
+        'bunker_junk_uncommon',
+        'cybersnail_dead'
     ],
     WALL_DECALS: [
         'decal_wall_breach',
@@ -95,6 +99,9 @@ export const SHOWROOM_CATEGORIES = Object.freeze({
         'sporesnail',
         'alien_proto_crawler',
         'alien_proto_spitter',
+        'sentinel',
+        'sentinel_A',
+        'sentinel_B',
         'boss_cybersnail',
         'boss_cryosnail',
         'boss_sporesnail',

@@ -12,7 +12,11 @@ const NEW_ASSETS = [
     'prop_ammo_crate_stack', 'prop_biomech_flesh_locker', 'prop_biomech_incubator',
     'prop_biomech_neural_synapse', 'prop_biomech_respirator', 'prop_biomech_sphincter_trap',
     'prop_biomech_triage_cradle', 'prop_fabricator_workstation', 'prop_laser_trap_emitter',
-    'prop_o2_filter_vat', 'prop_tesla_coil_node', 'prop_vital_monitor'
+    'prop_o2_filter_vat', 'prop_tesla_coil_node', 'prop_vital_monitor',
+    'prop_base_defense_turret', 'prop_body_empty_exosuit', 'prop_body_human_frozen',
+    'cybersnail_dead', 'alien_proto_crawler', 'alien_proto_crawler_A',
+    'sentinel', 'sentinel_A', 'sentinel_B',
+    'npc_alien_rhun', 'npc_alien_vey', 'npc_civilian_miner', 'npc_civilian_researcher'
 ];
 
 describe('new 3D replacement asset coverage', () => {
