@@ -3706,6 +3706,24 @@ input:checked+.slider:before {
   transition: opacity 0.35s cubic-bezier(0.25, 1, 0.5, 1);
 }
 
+/* Sprint 29 P0: out of ammo with nothing left to reload from. Pulsed rather
+   than merely recoloured, because the player needs to notice it mid-fight
+   without reading a number. */
+.weapon-status-panel.is-dry {
+  border-color: rgba(255, 90, 74, 0.85);
+  animation: weapon-dry-pulse 1100ms ease-in-out infinite;
+}
+.weapon-status-panel.is-dry .weapon-status-panel__cache { color: #ff8a7a; font-weight: 800; }
+
+@keyframes weapon-dry-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(255, 90, 74, 0); }
+  50% { box-shadow: 0 0 calc(var(--vu) * 1.2) 0 rgba(255, 90, 74, 0.45); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .weapon-status-panel.is-dry { animation: none; box-shadow: 0 0 0 1px rgba(255, 90, 74, 0.6); }
+}
+
 .gameplay-crosshair {
   position: fixed;
   left: 0;
@@ -3715,23 +3733,47 @@ input:checked+.slider:before {
   pointer-events: none;
   z-index: 210000;
   transform: translate3d(-50%, -50%, 0);
-  mix-blend-mode: screen;
+  /* Sprint 29 §1: this was mix-blend-mode: screen, which blends the reticle
+     toward white against any bright surface and erases it outright on lit
+     floors and walls -- one of the two confirmed causes of "the crosshair is
+     invisible". Readability now comes from a dark outline under a light core,
+     so the reticle survives both dark caves and bright rooms without relying
+     on colour alone. */
   transition: opacity 0.16s ease, width 0.16s ease, height 0.16s ease;
+  --crosshair-state-color: var(--crosshair-color, #ff9f1c);
 }
 .gameplay-crosshair.hidden { opacity: 0; visibility: hidden; }
 .gameplay-crosshair__dot,
 .gameplay-crosshair__ring,
 .gameplay-crosshair__tick { position: absolute; display: block; }
+/* Reactive states (§1). Each carries a distinct shape or weight change as well
+   as a hue, so the state is legible without colour discrimination. */
+.gameplay-crosshair--neutral { --crosshair-state-color: var(--crosshair-color, #ff9f1c); }
+.gameplay-crosshair--interactable { --crosshair-state-color: #7fdfff; }
+.gameplay-crosshair--hostile { --crosshair-state-color: #ff5a4a; }
+.gameplay-crosshair--pickup { --crosshair-state-color: #6cffa8; }
+.gameplay-crosshair--blocked { --crosshair-state-color: #9aa4ad; opacity: .72; }
+
+.gameplay-crosshair--interactable .gameplay-crosshair__ring { inset: 1px; border-width: 2px; }
+.gameplay-crosshair--hostile .gameplay-crosshair__ring { inset: 7px; }
+.gameplay-crosshair--hostile .gameplay-crosshair__tick { width: 10px; }
+.gameplay-crosshair--pickup .gameplay-crosshair__ring { border-style: dashed; }
+/* Muted, never invisible (§1). */
+.gameplay-crosshair--blocked .gameplay-crosshair__ring { border-style: dotted; }
+
 .gameplay-crosshair__dot {
   left: 50%; top: 50%; width: 5px; height: 5px; border-radius: 50%;
-  transform: translate(-50%, -50%); background: var(--crosshair-color, #ff9f1c);
-  box-shadow: 0 0 9px var(--crosshair-color, #ff9f1c);
+  transform: translate(-50%, -50%); background: var(--crosshair-state-color, #ff9f1c);
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.85), 0 0 9px var(--crosshair-state-color, #ff9f1c);
 }
 .gameplay-crosshair__ring {
-  inset: 4px; border: 1px solid var(--crosshair-color, #ff9f1c); border-radius: 50%; opacity: .82;
-  box-shadow: 0 0 8px color-mix(in srgb, var(--crosshair-color, #ff9f1c) 60%, transparent);
+  inset: 4px; border: 1px solid var(--crosshair-state-color, #ff9f1c); border-radius: 50%; opacity: .82;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.7), 0 0 8px color-mix(in srgb, var(--crosshair-state-color, #ff9f1c) 60%, transparent);
 }
-.gameplay-crosshair__tick { width: 7px; height: 1px; background: var(--crosshair-color, #ff9f1c); opacity: .95; }
+.gameplay-crosshair__tick {
+  width: 7px; height: 1px; background: var(--crosshair-state-color, #ff9f1c); opacity: .95;
+  outline: 1px solid rgba(0, 0, 0, 0.75);
+}
 .gameplay-crosshair__tick--top { left: 50%; top: 0; transform: translateX(-50%); }
 .gameplay-crosshair__tick--bottom { left: 50%; bottom: 0; transform: translateX(-50%); }
 .gameplay-crosshair__tick--left { left: 0; top: 50%; transform: translateY(-50%); }
@@ -9974,6 +10016,36 @@ body.mission-intro-active #game-container canvas {
   font-weight: 900;
 }
 
+/* Sprint 29 §6: XP rode the plain green achievement-toast, which made every
+   gain look identical to an achievement and read as flat, permanent UI. The XP
+   variant is narrower, carries its own accent, and pulses once on arrival so a
+   gain is felt rather than merely listed. Achievements keep the green card. */
+.season-pass-toast {
+  width: min(calc(var(--vu) * 30), 68vw);
+  background: linear-gradient(135deg, rgba(6, 16, 26, 0.96), rgba(10, 14, 24, 0.94));
+  border: 1px solid rgba(0, 229, 255, 0.5);
+  border-left: 3px solid rgba(0, 229, 255, 0.92);
+}
+.season-pass-toast .achievement-toast__icon {
+  border-color: rgba(0, 229, 255, 0.42);
+  color: #bff4ff;
+}
+.season-pass-toast .achievement-toast__kicker { color: #7fdfff; }
+.season-pass-toast .achievement-toast__title {
+  color: #ffffff;
+  font-variant-numeric: tabular-nums;
+}
+.season-pass-toast.visible { animation: season-xp-pulse 420ms ease-out 1; }
+
+@keyframes season-xp-pulse {
+  from { box-shadow: 0 0 0 0 rgba(0, 229, 255, 0.45); }
+  to { box-shadow: 0 0 0 calc(var(--vu) * 1.4) rgba(0, 229, 255, 0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .season-pass-toast.visible { animation: none; }
+}
+
 .achievement-toast__icon img {
   width: 100%;
   height: 100%;
@@ -14474,7 +14546,30 @@ button.archive-log-entry:active {
 .progression-reward-card__desc { margin-top: 7px; color: #b7c9d8; }
 .progression-reward-card__meta { margin-top: 10px; color: #ffcf80; font-size: .78rem; letter-spacing: .1em; }
 .progression-claim-btn { margin-top: 20px; min-width: 220px; }
-.progression-reward-burst { position: absolute; inset: 38% 50% auto; pointer-events: none; }
+.progression-continue-btn { margin-top: 20px; min-width: 220px; }
+.progression-reward-confirm { color: #6cffa8; font-weight: 700; }
+.progression-reward-confirm.hidden, .progression-continue-btn.hidden, .progression-claim-btn.hidden { display: none; }
+
+/* §5: reduced motion keeps the layer order and the information, and drops only
+   the movement -- the burst still reads as a burst, it just does not fly. */
+@media (prefers-reduced-motion: reduce) {
+  .progression-reward-burst i { animation: none; opacity: .55; transform: rotate(var(--particle-angle)) translateY(-40px); }
+  .progression-xp-bar { transition: none; }
+}
+/* Sprint 29 §5: the burst and the card were both positioned with z-index:auto,
+   so they painted in DOM order and the card -- which comes later -- covered the
+   burst entirely. That is the reported "burst renders behind the thing it is
+   celebrating". The reveal now declares its stack explicitly: preview under the
+   burst, burst under the readable card, card under the input prompt. */
+.progression-reward-preview { position: relative; z-index: 1; min-height: 0; }
+.progression-reward-preview:empty { display: none; }
+.progression-reward-preview--unavailable {
+  padding: 14px; color: #8faabd; font-size: .78rem; letter-spacing: .1em;
+  border: 1px dashed rgba(143, 170, 189, .5);
+}
+.progression-reward-card { z-index: 3; }
+.progression-claim-btn, .progression-continue-btn { position: relative; z-index: 4; }
+.progression-reward-burst { position: absolute; inset: 38% 50% auto; pointer-events: none; z-index: 2; }
 .progression-reward-burst i { position: absolute; width: 3px; height: 34px; background: #ffcf80; box-shadow: 0 0 10px #ff9f1c; transform-origin: 50% 110px; transform: rotate(var(--particle-angle)); animation: progression-particle 900ms ease-out both; }
 @keyframes progression-particle { from { opacity: 0; transform: rotate(var(--particle-angle)) translateY(0) scale(.4); } 30% { opacity: 1; } to { opacity: 0; transform: rotate(var(--particle-angle)) translateY(-75px) scale(1); } }
 

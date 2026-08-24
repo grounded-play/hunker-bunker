@@ -26,21 +26,23 @@ All 3D assets in this catalog must adhere strictly to the following aesthetic ru
 
 ## 2. Combatants, Bosses & Enemies
 
-### 2.1 Sentinel
-- **Target File:** `public/3d/runtime/new3ds/sentinel.glb`
-- **Scale:** ~2.1m height
+### 2.1 Sentinel `[INTEGRATED - OPTIMIZED RUNTIME]`
+- **Target Files:** `public/3d/runtime/new3ds/sentinel.glb`, `sentinel_A.glb`, `sentinel_B.glb`
+- **Status:** **Integrated & Optimized** (5.55 MB, 22k tris, rigged with hover cycle)
+- **Scale:** ~1.2m height
 - **Prompt:**
 > Full 3D game asset of a floating subterranean Sentinel drone. Spherical core of matte gunmetal armor fused with a calcified human-alien skull plate, surrounded by three articulating, ribbed mechanical claw limbs made of titanium vertebrae and exposed hydraulic rams. A single glowing crimson laser aperture serves as its cyclopean ocular sensor, surrounded by weeping oily fluid ports and thin copper antenna filaments. Dark H.R. Giger biomechanical horror meets Event Horizon industrial dread, heavy weld seams, worn black metal, isolated on neutral dark grey background, PBR materials, watertight geometry, GLB-ready.
 
-### 2.2 Alien Proto-Crawler
-- **Target File:** `public/3d/runtime/new3ds/alien_proto_crawler.glb`
+### 2.2 Alien Proto-Crawler `[INTEGRATED - OPTIMIZED RUNTIME]`
+- **Target Files:** `public/3d/runtime/new3ds/alien_proto_crawler.glb`, `alien_proto_crawler_A.glb`
+- **Status:** **Integrated & Optimized** (4.85 MB, 25k tris, rigged with crawl cycle)
 - **Scale:** ~0.9m height, 1.4m length
 - **Prompt:**
 > Full 3D game asset of an Alien Proto-Crawler creature in neutral pose. Low-slung quadrupedal predator with a segmented obsidian-chitin carapace, exposed biomechanical spine with ribbed pneumatic conduits running between vertebrae, four multijointed scythe legs tipped with blackened steel-like spurs, and a blind, eyeless skull with a split mandible exposing concentric rows of needle teeth and dripping emerald digestive bile. Dark biomechanical sci-fi horror, matte dark chitin, wet fleshy joints, isolated neutral background, riggable T/neutral pose, GLB-ready.
 
 ### 2.3 Alien Proto-Spitter
 - **Target File:** `public/3d/runtime/new3ds/alien_proto_spitter.glb`
-- **Scale:** ~1.3m height
+- **Scale:** ~1.3m height, 1.4m length
 - **Prompt:**
 > Full 3D game asset of an Alien Proto-Spitter creature in neutral pose. Tripodal biomechanical organism with an elongated ribbed dorsal sac glowing with pressurized acid-green bio-plasma, supported by hydraulic bone-and-iron legs. The head features a massive fleshy sphincter cannon reinforced by circular cast-metal ring clamps and weeping organic mucus ducts. Heavy Gigeresque aesthetic, dark charcoal and sickly olive tones, high-detail wet and metallic PBR surfaces, isolated neutral studio background, GLB-ready.
 
@@ -74,8 +76,8 @@ All 3D assets in this catalog must adhere strictly to the following aesthetic ru
 - **Prompt:**
 > Full 3D character asset of a holographic/biomechanical Decoy Scout phantom in neutral pose. Translucent, shimmering crystalline Scout silhouette intersected by glitching scanlines, fractured volumetric geometry, and thin dark alien tendrils suspending the mirage in mid-air. Eerie violet and cyan refractive edge shimmer, hollow helmet interior with a faint floating neural core, isolated neutral background, GLB-ready.
 
-### 2.9 Dead Enemy & Boss Corpses
-- **Target Files:** `cybersnail_dead.glb`, `cryosnail_dead.glb`, `sporesnail_dead.glb`, `boss_cybersnail_dead.glb`, `boss_cryosnail_dead.glb`, `boss_sporesnail_dead.glb`
+### 2.9 Dead Enemy & Boss Corpses `[PARTIALLY INTEGRATED]`
+- **Target Files:** `cybersnail_dead.glb` (Integrated, 4.09 MB), `cryosnail_dead.glb`, `sporesnail_dead.glb`, `boss_cybersnail_dead.glb`, `boss_cryosnail_dead.glb`, `boss_sporesnail_dead.glb`
 - **Scale:** ~0.4m–1.2m height (flat ground contact)
 - **Prompt:**
 > Full 3D game prop of a slain biomechanical snail creature corpse lying crumpled on the ground. Cracked and scorched steel-bone shell with severed hydraulic cables leaking dark viscous oil and fluorescent ichor, limp organic tentacles curled inward, exposed shattered mechanical turbines and smoking heat vents. Dark Gigeresque decay, grounded contact geometry, burnt metal, bone, and drying biological fluids, isolated neutral background, GLB-ready.
@@ -84,38 +86,44 @@ All 3D assets in this catalog must adhere strictly to the following aesthetic ru
 
 ## 3. NPCs, Survivors & Characters
 
-### 3.1 Civilian Miner
+### 3.1 Civilian Miner `[INTEGRATED - OPTIMIZED RUNTIME]`
 - **Target File:** `public/3d/runtime/new3ds/npc_civilian_miner.glb`
+- **Status:** **Integrated & Optimized** (5.10 MB, 25k tris, rigged with idle breathing)
 - **Scale:** ~1.85m height
 - **Prompt:**
-> Full 3D character asset of a rugged subterranean Civilian Miner in symmetrical T-pose. Bulky padded hazard jumpsuit in dark oil-stained canvas, reinforced with welded steel chest brackets, knee braces, and heavy rubberized boots. Chest-mounted analog oxygen regulator with dangling brass pressure dials and ribbed rubber breathing hoses leading to a dented miner helmet with twin amber halogen lamps. Exhausted, survivor-grit aesthetic, Event Horizon deep-space salvage vibe, PBR materials, riggable GLB-ready.
+> Full 3D character asset of a subterranean Miner survivor in symmetrical T-pose. Rugged reinforced charcoal-colored hazard exosuit with reinforced knee and shoulder plating, heavy-duty pneumatic rock drill slung across the back, industrial respirator mask with glowing amber status LEDs, and stained utility tool harness with sample canisters. Gritty, weathered textures, grease stains, scuffed titanium, isolated on neutral dark grey background, PBR materials, riggable GLB-ready.
 
-### 3.2 Civilian Researcher
+### 3.2 Civilian Field Researcher `[INTEGRATED - OPTIMIZED RUNTIME]`
 - **Target File:** `public/3d/runtime/new3ds/npc_civilian_researcher.glb`
+- **Status:** **Integrated & Optimized** (4.69 MB, 25k tris, rigged with idle breathing)
 - **Scale:** ~1.8m height
 - **Prompt:**
 > Full 3D character asset of a desperate subterranean Field Researcher in symmetrical T-pose. Heavy hooded insulated thermal smock over a lightweight carbon utility harness, adorned with diagnostic sensor holsters, specimen vial pouches glowing with faint cyan liquid, and a wrist-mounted CRT telemetry terminal. Filtered gas mask with twin copper canister filters, cracked protective goggles, and taped field-repair seams. Dark sci-fi survival horror, isolated neutral background, riggable GLB-ready.
 
-### 3.3 Alien Ally: Rhun (Hunter Envoy)
+### 3.3 Alien Ally: Rhun (Hunter Envoy) `[INTEGRATED - OPTIMIZED RUNTIME]`
 - **Target File:** `public/3d/runtime/new3ds/npc_alien_rhun.glb`
+- **Status:** **Integrated & Optimized** (5.31 MB, 25k tris, rigged with idle breathing)
 - **Scale:** ~2.1m height
 - **Prompt:**
 > Full 3D character asset of the alien envoy Rhun in symmetrical T-pose. Tall, lean humanoid alien with a pale ribbed ivory exoskeleton, long slender four-fingered hands tipped with obsidian claws, and a smooth elongated cranial dome without eyes. Wearing a scavenged human industrial harness composed of dark leather straps, bolted titanium armor shards, and copper conduit necklaces. Elegant, intimidating, otherworldly biomechanical ally, subtle emerald subsurface vascular glow, PBR materials, GLB-ready.
 
-### 3.4 Alien Ally: Vey (Chitin Weaver)
+### 3.4 Alien Ally: Vey (Chitin Weaver) `[INTEGRATED - OPTIMIZED RUNTIME]`
 - **Target File:** `public/3d/runtime/new3ds/npc_alien_vey.glb`
+- **Status:** **Integrated & Optimized** (4.95 MB, 25k tris, rigged with idle breathing)
 - **Scale:** ~1.75m height
 - **Prompt:**
 > Full 3D character asset of the alien envoy Vey in symmetrical T-pose. Compact, multi-limbed biomechanical creature with four slender torso arms holding organic bone weaving styluses. The carapace is a mosaic of polished dark beetle chitin and iridescent membranous skin, draped in a tattered survivor poncho woven from copper wire and dried spore moss. Subdued amber emissive sensory pits along jawline, isolated neutral dark studio background, GLB-ready.
 
-### 3.5 Empty Exosuit Body (Environmental Storytelling)
+### 3.5 Empty Exosuit Body (Environmental Storytelling) `[INTEGRATED - OPTIMIZED RUNTIME]`
 - **Target File:** `public/3d/runtime/new3ds/prop_body_empty_exosuit.glb`
+- **Status:** **Integrated & Optimized** (4.60 MB, 20k tris, grounded contact prop)
 - **Scale:** ~0.6m height (slumped seated/lying pose)
 - **Prompt:**
 > Full 3D environment prop of a breached, hollow military exosuit slumped against an invisible wall. The chest armor is violently torn open from the inside out with bent steel plates and severed pneumatic hoses, completely empty inside with dried dark stains coating the internal harness. Charred gunmetal, chipped warning yellow hazard decals, severed wire bundles, and calcified bone-like structural struts. Dark Event Horizon forensic horror, grounded contact base, GLB-ready.
 
-### 3.6 Frozen Human Corpse
+### 3.6 Frozen Human Corpse `[INTEGRATED - OPTIMIZED RUNTIME]`
 - **Target File:** `public/3d/runtime/new3ds/prop_body_human_frozen.glb`
+- **Status:** **Integrated & Optimized** (4.18 MB, 25k tris, grounded contact prop)
 - **Scale:** ~0.5m height, 1.8m length
 - **Prompt:**
 > Full 3D environment prop of a frozen human worker corpse encased in dark sub-zero ice rime. Worn arctic survival suit with cracked faceplate frosted over, frostbitten thermal gloves clutching a frozen emergency beacon, crystalline ice spikes protruding through seams in the fabric, and a layer of hoarfrost over weathered charcoal cloth. Tragic deep-space disaster detail, grounded geometry, PBR ice and fabric shaders, GLB-ready.
@@ -124,8 +132,9 @@ All 3D assets in this catalog must adhere strictly to the following aesthetic ru
 
 ## 4. Bunker, Room Architecture & Milestone Props
 
-### 4.1 Base Defense Turret
+### 4.1 Base Defense Turret `[INTEGRATED - OPTIMIZED RUNTIME]`
 - **Target File:** `public/3d/runtime/new3ds/prop_base_defense_turret.glb`
+- **Status:** **Integrated & Optimized** (4.80 MB, 25k tris down from 1.5M FBX, grounded base)
 - **Scale:** ~1.6m height, 1.2m base diameter
 - **Prompt:**
 > Full 3D game prop of an automated Bunker Defense Turret. Heavy bolted hexagonal base of cast charcoal iron, supporting an articulating dual-barrel 30mm rotary autocannon. The gun housing features cooling fins, exposed ammo feed belts loaded with brass shells in an armored hopper, pneumatic traverse actuators, and a cylindrical armored sensor optics pod with an amber targeting reticle. Dark brutalist industrial design, scuffed metal, grease stains, isolated neutral background, GLB-ready.

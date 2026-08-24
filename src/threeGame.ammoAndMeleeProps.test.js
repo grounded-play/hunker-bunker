@@ -6,7 +6,7 @@ describe('ammo lockers, solid props, and Smash', () => {
     beforeEach(() => {
         globalThis.window = {
             dispatchEvent: vi.fn(),
-            AudioManager: { playMetalStress: vi.fn() }
+            AudioManager: { play: vi.fn(), playMetalStress: vi.fn() }
         };
         globalThis.CustomEvent = class CustomEvent {
             constructor(type, options = {}) { this.type = type; this.detail = options.detail; }

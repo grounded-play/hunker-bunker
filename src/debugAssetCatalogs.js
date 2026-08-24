@@ -22,6 +22,10 @@ export const NPC_GLB_MAP = Object.freeze({
     val: '/3d/runtime/new3ds/npc_val.glb',
     aria: '/3d/runtime/new3ds/npc_aria.glb',
     queen: '/3d/runtime/new3ds/npc_queen.glb',
+    rhun: '/3d/runtime/new3ds/npc_alien_rhun.glb',
+    vey: '/3d/runtime/new3ds/npc_alien_vey.glb',
+    miner: '/3d/runtime/new3ds/npc_civilian_miner.glb',
+    researcher: '/3d/runtime/new3ds/npc_civilian_researcher.glb',
     boss_martha: '/3d/runtime/new3ds/boss_corrupted_martha.glb',
     boss_briggs: '/3d/runtime/new3ds/boss_corrupted_briggs.glb'
 });

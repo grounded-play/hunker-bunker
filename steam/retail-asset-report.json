@@ -8,11 +8,11 @@
     "duplicateGroups": 15
   },
   "measured": {
-    "publicBytes": 2690354352,
-    "publicFileCount": 1193
+    "publicBytes": 2758209980,
+    "publicFileCount": 1218
   },
   "classifications": {
-    "runtime-required": 1043,
+    "runtime-required": 1068,
     "source-reference": 0,
     "generated-intermediate": 0,
     "unknown": 150
@@ -632,6 +632,20 @@
     }
   ],
   "duplicateChecksums": [
+    {
+      "sha256": "2091d99b87581c2cffc8f7369682f9d66dba7a896468a61438fc9bca87426aa3",
+      "files": [
+        "3d/runtime/new3ds/alien_proto_crawler.glb",
+        "3d/runtime/new3ds/alien_proto_crawler_A.glb"
+      ]
+    },
+    {
+      "sha256": "92b5c53c8489c0886071d240cb4d73e5fe6a44b79f5da7e3a69be64677431292",
+      "files": [
+        "3d/runtime/new3ds/sentinel.glb",
+        "3d/runtime/new3ds/sentinel_A.glb"
+      ]
+    },
     {
       "sha256": "a2472109ccf5427f049ad86ffab8e8f136692e1c1ed72091594f420ff5a25606",
       "files": [

@@ -46,7 +46,15 @@ export const WORLD_3D_MODELS = Object.freeze({
     prop_laser_trap_emitter: { url: '/3d/runtime/new3ds/prop_laser_trap_emitter.glb', height: 0.75, yaw: 0 },
     prop_o2_filter_vat: { url: '/3d/runtime/new3ds/prop_o2_filter_vat.glb', height: 1.40, yaw: 0 },
     prop_tesla_coil_node: { url: '/3d/runtime/new3ds/prop_tesla_coil_node.glb', height: 1.45, yaw: 0 },
-    prop_vital_monitor: { url: '/3d/runtime/new3ds/prop_vital_monitor.glb', height: 1.10, yaw: 0 }
+    prop_vital_monitor: { url: '/3d/runtime/new3ds/prop_vital_monitor.glb', height: 1.10, yaw: 0 },
+    prop_base_defense_turret: { url: '/3d/runtime/new3ds/prop_base_defense_turret.glb', height: 1.25, yaw: 0 },
+    prop_body_empty_exosuit: { url: '/3d/runtime/new3ds/prop_body_empty_exosuit.glb', height: 0.75, yaw: 0 },
+    prop_body_human_frozen: { url: '/3d/runtime/new3ds/prop_body_human_frozen.glb', height: 0.55, yaw: 0 },
+    cybersnail_dead: { url: '/3d/runtime/new3ds/cybersnail_dead.glb', height: 0.50, yaw: 0 },
+    npc_alien_rhun: { url: '/3d/runtime/new3ds/npc_alien_rhun.glb', height: 1.95, yaw: 0 },
+    npc_alien_vey: { url: '/3d/runtime/new3ds/npc_alien_vey.glb', height: 1.70, yaw: 0 },
+    npc_civilian_miner: { url: '/3d/runtime/new3ds/npc_civilian_miner.glb', height: 1.80, yaw: 0 },
+    npc_civilian_researcher: { url: '/3d/runtime/new3ds/npc_civilian_researcher.glb', height: 1.75, yaw: 0 }
 });
 
 const templates = new Map();

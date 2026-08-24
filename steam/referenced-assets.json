@@ -45,6 +45,8 @@
     "3d/runtime/frozen-tanker.glb",
     "3d/runtime/fusion-generator.glb",
     "3d/runtime/hull-matrix.glb",
+    "3d/runtime/new3ds/alien_proto_crawler.glb",
+    "3d/runtime/new3ds/alien_proto_crawler_A.glb",
     "3d/runtime/new3ds/boss_corrupted_briggs.glb",
     "3d/runtime/new3ds/boss_corrupted_martha.glb",
     "3d/runtime/new3ds/bunker_junk_rare.glb",
@@ -74,6 +76,7 @@
     "3d/runtime/new3ds/chassis_tank_old_iron.glb",
     "3d/runtime/new3ds/chassis_trench_warden_heavy.glb",
     "3d/runtime/new3ds/chassis_void_commando_recon.glb",
+    "3d/runtime/new3ds/cybersnail_dead.glb",
     "3d/runtime/new3ds/fungal_spore_vent.glb",
     "3d/runtime/new3ds/gun_engineer_tesla_lock.glb",
     "3d/runtime/new3ds/gun_scout_talon_c.glb",
@@ -87,13 +90,18 @@
     "3d/runtime/new3ds/mod_symbiotic_adrenaline_pump.glb",
     "3d/runtime/new3ds/mod_thermal_heat_exchanger.glb",
     "3d/runtime/new3ds/mod_zero_point_flux.glb",
+    "3d/runtime/new3ds/npc_alien_rhun.glb",
+    "3d/runtime/new3ds/npc_alien_vey.glb",
     "3d/runtime/new3ds/npc_aria.glb",
+    "3d/runtime/new3ds/npc_civilian_miner.glb",
+    "3d/runtime/new3ds/npc_civilian_researcher.glb",
     "3d/runtime/new3ds/npc_kaelen.glb",
     "3d/runtime/new3ds/npc_martha.glb",
     "3d/runtime/new3ds/npc_nahl.glb",
     "3d/runtime/new3ds/npc_queen.glb",
     "3d/runtime/new3ds/npc_val.glb",
     "3d/runtime/new3ds/prop_ammo_crate_stack.glb",
+    "3d/runtime/new3ds/prop_base_defense_turret.glb",
     "3d/runtime/new3ds/prop_biomech_arch.glb",
     "3d/runtime/new3ds/prop_biomech_flesh_locker.glb",
     "3d/runtime/new3ds/prop_biomech_incubator.glb",
@@ -101,6 +109,8 @@
     "3d/runtime/new3ds/prop_biomech_respirator.glb",
     "3d/runtime/new3ds/prop_biomech_sphincter_trap.glb",
     "3d/runtime/new3ds/prop_biomech_triage_cradle.glb",
+    "3d/runtime/new3ds/prop_body_empty_exosuit.glb",
+    "3d/runtime/new3ds/prop_body_human_frozen.glb",
     "3d/runtime/new3ds/prop_broken_specimen_tank.glb",
     "3d/runtime/new3ds/prop_bunker_supplies.glb",
     "3d/runtime/new3ds/prop_cave_bones.glb",
@@ -116,6 +126,9 @@
     "3d/runtime/new3ds/prop_surgical_cart.glb",
     "3d/runtime/new3ds/prop_tesla_coil_node.glb",
     "3d/runtime/new3ds/prop_vital_monitor.glb",
+    "3d/runtime/new3ds/sentinel.glb",
+    "3d/runtime/new3ds/sentinel_A.glb",
+    "3d/runtime/new3ds/sentinel_B.glb",
     "3d/runtime/new3ds/skin_biolume_spore_sprayer.glb",
     "3d/runtime/new3ds/skin_engineer_cryo_plasma.glb",
     "3d/runtime/new3ds/skin_glitched_circuit_bolter.glb",
@@ -171,6 +184,12 @@
     "audio/generated/camp_worker_fleeing.wav",
     "audio/generated/camp_worker_infected.wav",
     "audio/generated/camp_worker_panicked.wav",
+    "audio/generated/reward_reveal_charm.wav",
+    "audio/generated/reward_reveal_chassis.wav",
+    "audio/generated/reward_reveal_decal.wav",
+    "audio/generated/reward_reveal_generic.wav",
+    "audio/generated/reward_reveal_module.wav",
+    "audio/generated/reward_reveal_weapon.wav",
     "audio/generated/sfx_charm_clink_heavy.wav",
     "audio/generated/sfx_charm_clink_light.wav",
     "audio/generated/sfx_overclock_hum_cryo.wav",
@@ -178,6 +197,8 @@
     "audio/generated/sfx_overclock_socket.wav",
     "audio/generated/sfx_smelt_forge_burst.wav",
     "audio/generated/sfx_trade_shard_dispense.wav",
+    "audio/generated/ui_reward_burst.wav",
+    "audio/generated/ui_reward_dismiss.wav",
     "audio/generated/voice_aura_overdrive_ready.wav",
     "audio/generated/voice_aura_reloading.wav",
     "audio/generated/voice_aura_sector_cleared.wav",
@@ -190,6 +211,10 @@
     "audio/generated/voice_commander_low_health.wav",
     "audio/generated/voice_commander_reloading.wav",
     "audio/generated/voice_commander_victory.wav",
+    "audio/generated/weapon_dry_fire.wav",
+    "audio/generated/xp_bonus.wav",
+    "audio/generated/xp_levelup.wav",
+    "audio/generated/xp_tick.wav",
     "audio/vg2/amb_bunker_loop.wav",
     "audio/vg2/amb_drip1.wav",
     "audio/vg2/amb_drip2.wav",
@@ -918,6 +943,16 @@
       "classification": "runtime-required"
     },
     {
+      "path": "3d/runtime/new3ds/alien_proto_crawler.glb",
+      "bytes": 5088468,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/alien_proto_crawler_A.glb",
+      "bytes": 5088468,
+      "classification": "runtime-required"
+    },
+    {
       "path": "3d/runtime/new3ds/boss_corrupted_briggs.glb",
       "bytes": 3386260,
       "classification": "runtime-required"
@@ -1063,6 +1098,11 @@
       "classification": "runtime-required"
     },
     {
+      "path": "3d/runtime/new3ds/cybersnail_dead.glb",
+      "bytes": 4283480,
+      "classification": "runtime-required"
+    },
+    {
       "path": "3d/runtime/new3ds/fungal_spore_vent.glb",
       "bytes": 3284196,
       "classification": "runtime-required"
@@ -1128,8 +1168,28 @@
       "classification": "runtime-required"
     },
     {
+      "path": "3d/runtime/new3ds/npc_alien_rhun.glb",
+      "bytes": 5570392,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/npc_alien_vey.glb",
+      "bytes": 5192952,
+      "classification": "runtime-required"
+    },
+    {
       "path": "3d/runtime/new3ds/npc_aria.glb",
       "bytes": 3211072,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/npc_civilian_miner.glb",
+      "bytes": 5345724,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/npc_civilian_researcher.glb",
+      "bytes": 4917168,
       "classification": "runtime-required"
     },
     {
@@ -1160,6 +1220,11 @@
     {
       "path": "3d/runtime/new3ds/prop_ammo_crate_stack.glb",
       "bytes": 1130116,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/prop_base_defense_turret.glb",
+      "bytes": 5036496,
       "classification": "runtime-required"
     },
     {
@@ -1195,6 +1260,16 @@
     {
       "path": "3d/runtime/new3ds/prop_biomech_triage_cradle.glb",
       "bytes": 1242384,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/prop_body_empty_exosuit.glb",
+      "bytes": 4818916,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/prop_body_human_frozen.glb",
+      "bytes": 4380640,
       "classification": "runtime-required"
     },
     {
@@ -1270,6 +1345,21 @@
     {
       "path": "3d/runtime/new3ds/prop_vital_monitor.glb",
       "bytes": 1060412,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/sentinel.glb",
+      "bytes": 5822928,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/sentinel_A.glb",
+      "bytes": 5822928,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/sentinel_B.glb",
+      "bytes": 5886780,
       "classification": "runtime-required"
     },
     {
@@ -2053,6 +2143,36 @@
       "classification": "runtime-required"
     },
     {
+      "path": "audio/generated/reward_reveal_charm.wav",
+      "bytes": 48554,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/generated/reward_reveal_chassis.wav",
+      "bytes": 83834,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/generated/reward_reveal_decal.wav",
+      "bytes": 39734,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/generated/reward_reveal_generic.wav",
+      "bytes": 66194,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/generated/reward_reveal_module.wav",
+      "bytes": 70604,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/generated/reward_reveal_weapon.wav",
+      "bytes": 75014,
+      "classification": "runtime-required"
+    },
+    {
       "path": "audio/generated/sfx_charm_clink_heavy.wav",
       "bytes": 30914,
       "classification": "runtime-required"
@@ -2085,6 +2205,16 @@
     {
       "path": "audio/generated/sfx_trade_shard_dispense.wav",
       "bytes": 66194,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/generated/ui_reward_burst.wav",
+      "bytes": 57374,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/generated/ui_reward_dismiss.wav",
+      "bytes": 35324,
       "classification": "runtime-required"
     },
     {
@@ -2145,6 +2275,26 @@
     {
       "path": "audio/generated/voice_commander_victory.wav",
       "bytes": 123524,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/generated/weapon_dry_fire.wav",
+      "bytes": 15920,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/generated/xp_bonus.wav",
+      "bytes": 30914,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/generated/xp_levelup.wav",
+      "bytes": 66194,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/generated/xp_tick.wav",
+      "bytes": 10628,
       "classification": "runtime-required"
     },
     {

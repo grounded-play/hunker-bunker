@@ -4,6 +4,8 @@ import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.j
 import { clone as cloneSkeleton } from 'three/examples/jsm/utils/SkeletonUtils.js';
 import { assetUrl } from './assetUrl.js';
 import { recordAssetLoad } from './assetLoadTelemetry.js';
+import { getWeaponCalibration, getWeaponScaleForBounds } from './weaponCalibration.js';
+import { getCharmSocketTransform } from './charmSockets.js';
 
 // The 2D-to-3D generation pipeline's gltf-transform optimize pass applies
 // EXT_meshopt_compression; GLTFLoader throws "setMeshoptDecoder must be called
@@ -154,7 +156,7 @@ function loadWeaponTemplate(url) {
 // material swap on the archetype mesh — see WEAPON_SKIN_MESHES and worklog task 6. If skinId
 // is given and mapped, it takes priority over archetypeId for which mesh loads; on failure it
 // falls back to the archetype mesh, then to GG1, same chain as the archetype-only path.
-export async function createClassWeapon(archetypeId, { position = [0.03, 0.02, -0.10], skinId = null } = {}) {
+export async function createClassWeapon(archetypeId, { position = null, skinId = null } = {}) {
     const skinUrl = skinId ? WEAPON_SKIN_MESHES[skinId] : null;
     const archetypeUrl = WEAPON_ARCHETYPES[archetypeId] ?? WEAPON_URL;
     const url = skinUrl ?? archetypeUrl;
@@ -165,7 +167,7 @@ export async function createClassWeapon(archetypeId, { position = [0.03, 0.02, -
         if (url === WEAPON_URL) throw err;
         if (url === skinUrl) {
             console.warn(`[player-3d-overlay] weapon skin "${skinId}" (${url}) failed to load; falling back to archetype "${archetypeId}"`, err);
-            return createClassWeapon(archetypeId, { position });
+            return createClassWeapon(archetypeId, { position, skinId: null });
         }
         console.warn(`[player-3d-overlay] weapon archetype "${archetypeId}" (${url}) failed to load; falling back to GG1`, err);
         template = await loadWeaponTemplate(WEAPON_URL);
@@ -175,20 +177,55 @@ export async function createClassWeapon(archetypeId, { position = [0.03, 0.02, -
     weapon.updateMatrixWorld(true);
     const bounds = new THREE.Box3().setFromObject(weapon);
     const size = bounds.getSize(new THREE.Vector3());
-    const scale = 0.62 / Math.max(size.x, size.y, size.z);
+    const calibration = getWeaponCalibration(archetypeId, 'gameplay');
+    const scale = getWeaponScaleForBounds(size, archetypeId, 'gameplay');
     weapon.scale.multiplyScalar(scale);
     // Preserve the hand-alignment turn and rotate the flat source around its
     // remaining axis so the weapon sits upright in the Scout's grip.
-    weapon.rotation.set(0, -Math.PI / 2, -Math.PI / 2);
+    weapon.rotation.fromArray(calibration.rotation);
     // Pull the grip inward toward the right palm. Rotation is intentionally
     // kept separate so placement can be tuned without re-tilting the model.
-    weapon.position.fromArray(position);
+    weapon.position.fromArray(position ?? calibration.position);
     weapon.traverse((object) => {
         if (!object.isMesh) return;
         object.castShadow = true;
         object.frustumCulled = false;
     });
+    // §9: give the gameplay weapon the same named charm mount the armory and
+    // the reward preview use, so a charm equipped in the armory has somewhere
+    // correct to hang during play instead of only existing on the bench.
+    const socketTransform = resolveGameplayCharmSocket(archetypeId, weapon.scale.x);
+    const charmSocket = new THREE.Group();
+    charmSocket.name = 'CharmSocket';
+    charmSocket.position.fromArray(socketTransform.position);
+    charmSocket.rotation.fromArray(socketTransform.rotation);
+    charmSocket.scale.setScalar(socketTransform.scale);
+    charmSocket.userData.archetype = socketTransform.archetype;
+    charmSocket.userData.anchor = socketTransform.anchor;
+    weapon.add(charmSocket);
+    weapon.userData.charmSocket = charmSocket;
     return weapon;
+}
+
+/**
+ * Where the charm socket sits on a gameplay weapon.
+ *
+ * src/charmSockets.js states the socket in weapon-pivot space, which is what
+ * the armory uses -- there the socket hangs off an unscaled pivot beside the
+ * model. In gameplay the socket is a child of the weapon itself, which has
+ * already been scaled to fit the player's hand, so the weapon's scale has to be
+ * divided back out or the charm drifts by exactly that factor.
+ */
+export function resolveGameplayCharmSocket(archetypeId, weaponScale = 1) {
+    const socket = getCharmSocketTransform(archetypeId);
+    const scale = Number.isFinite(weaponScale) && weaponScale > 0 ? weaponScale : 1;
+    return {
+        archetype: socket.archetype,
+        anchor: socket.anchor,
+        position: socket.position.map((value) => value / scale),
+        rotation: [...socket.rotation],
+        scale: socket.scale / scale
+    };
 }
 
 export function computeOverlayYaw(directionX, directionZ) {
@@ -246,6 +283,24 @@ export function selectLocomotionActionName(name, isInjured, hasVariantClip) {
     return isInjured && variant && hasVariantClip ? variant : name;
 }
 
+// Sprint 29 §10: the mixer used to run the walk clip at a fixed rate for every
+// class, but the three classes move at 4.8, 3.6, and 2.6 units/s. Two of them
+// therefore had feet that could not match the ground -- the reported glide.
+// Cadence is now proportional to the speed the player is actually travelling.
+export const LOCOMOTION_REFERENCE_SPEED = 3.6;
+const SPRINT_CADENCE = 1.25;
+
+export function computeLocomotionTimeScale({ speed, referenceSpeed = LOCOMOTION_REFERENCE_SPEED, isSprinting = false } = {}) {
+    const reference = Number.isFinite(referenceSpeed) && referenceSpeed > 0
+        ? referenceSpeed
+        : LOCOMOTION_REFERENCE_SPEED;
+    const ratio = Number.isFinite(speed) && speed > 0 ? speed / reference : 1;
+    const cadence = ratio * (isSprinting ? SPRINT_CADENCE : 1);
+    // Outside this band the clip either shreds or crawls, which reads worse
+    // than a small residual slide.
+    return Math.min(1.6, Math.max(0.6, cadence));
+}
+
 export function computeLocomotionWeights(state = {}) {
     if (state.isFalling) return { fall: 1 };
     if (!state.isMoving) return { idle: 1 };
@@ -267,9 +322,9 @@ export function computeLocomotionWeights(state = {}) {
         strafeRight: Math.max(0, -side)
     };
     const total = Object.values(directional).reduce((sum, weight) => sum + weight, 0) || 1;
-    const weights = { idle: 0.15 };
+    const weights = {};
     for (const [name, weight] of Object.entries(directional)) {
-        if (weight > 1e-4) weights[name] = (weight / total) * 0.85;
+        if (weight > 1e-4) weights[name] = (weight / total);
     }
     return weights;
 }
@@ -575,6 +630,15 @@ export async function createPlayer3dOverlay({
                     delta
                 );
                 forcedAction.setEffectiveWeight(forcedWeight);
+            }
+            if (state.isMoving) {
+                const targetTimeScale = computeLocomotionTimeScale({
+                    speed: state.groundSpeed,
+                    isSprinting: state.isSprinting
+                });
+                mixer.timeScale = THREE.MathUtils.damp(mixer.timeScale, targetTimeScale, 10, delta);
+            } else {
+                mixer.timeScale = THREE.MathUtils.damp(mixer.timeScale, 1.0, 10, delta);
             }
             mixer.update(delta);
             const targetUpperBodyTurn = followMovement && state.hasAim

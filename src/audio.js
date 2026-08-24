@@ -144,6 +144,10 @@ export class AudioManager {
     static async loadAssets(manifest, onProgress) {
         const total = manifest.audio.length + manifest.images.length;
         let loaded = 0;
+        presentationTelemetry.emit('AUDIO', PRESENTATION_EVENTS.AUDIO.LOAD_START, {
+            audioCount: manifest.audio.length,
+            imageCount: manifest.images.length
+        });
         if (typeof window !== 'undefined' && window.hbLog) {
             window.hbLog('AUDIO', 'info', `Loading assets manifest (${manifest.audio.length} audio, ${manifest.images.length} images)`);
         }
@@ -164,6 +168,7 @@ export class AudioManager {
                 };
                 img.onerror = () => {
                     console.warn(`Failed to load image: ${url}`);
+                    presentationTelemetry.emit('AUDIO', PRESENTATION_EVENTS.AUDIO.LOAD_FAILED, { type: 'image', url, reason: 'image-error' });
                     updateProgress(url);
                     resolve();
                 };
@@ -186,9 +191,22 @@ export class AudioManager {
                         return;
                     } catch (fallbackError) {
                         console.warn(`Failed to load audio: ${item.url}; fallback also failed: ${item.fallbackUrl}`, fallbackError);
+                        presentationTelemetry.emit('AUDIO', PRESENTATION_EVENTS.AUDIO.LOAD_FAILED, {
+                            type: 'audio',
+                            key: item.key,
+                            url: item.url,
+                            fallbackUrl: item.fallbackUrl,
+                            reason: fallbackError?.message ?? String(fallbackError)
+                        });
                     }
                 } else {
                     console.warn(`Failed to load audio: ${item.url}`, e);
+                    presentationTelemetry.emit('AUDIO', PRESENTATION_EVENTS.AUDIO.LOAD_FAILED, {
+                        type: 'audio',
+                        key: item.key,
+                        url: item.url,
+                        reason: e?.message ?? String(e)
+                    });
                 }
                 updateProgress(item.url);
             }
@@ -198,6 +216,7 @@ export class AudioManager {
         if (typeof window !== 'undefined' && window.hbLog) {
             window.hbLog('AUDIO', 'info', `Asset manifest loading finished (${loaded}/${total} loaded)`);
         }
+        presentationTelemetry.emit('AUDIO', PRESENTATION_EVENTS.AUDIO.LOAD_COMPLETE, { loaded, total });
     }
 
     static async decodeAudioAsset(url) {
@@ -220,10 +239,18 @@ export class AudioManager {
 
         // Collect all keys that match 'key' exactly or are numbered variations like 'key1', 'key2'
         const matchingKeys = Object.keys(this.buffers).filter(k => k === key || (k.startsWith(key) && /^\d+$/.test(k.slice(key.length))));
-        if (matchingKeys.length === 0) return null;
+        if (matchingKeys.length === 0) {
+            presentationTelemetry.emit('AUDIO', PRESENTATION_EVENTS.AUDIO.PLAY_MISSING, { key });
+            return null;
+        }
 
         // Pick a random variation
         const selectedKey = matchingKeys[Math.floor(Math.random() * matchingKeys.length)];
+        presentationTelemetry.emit('AUDIO', PRESENTATION_EVENTS.AUDIO.PLAY, {
+            requestedKey: key,
+            selectedKey,
+            bus: options.bus ?? 'sfx'
+        });
 
         const source = audioCtx.createBufferSource();
         source.buffer = this.buffers[selectedKey];
@@ -1033,3 +1060,4 @@ export class AudioManager {
 
 AudioManager.init();
 import { assetUrl } from './assetUrl.js';
+import { PRESENTATION_EVENTS, presentationTelemetry } from './presentationTelemetry.js';

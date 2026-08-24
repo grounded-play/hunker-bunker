@@ -276,6 +276,115 @@ export const PLAN_SFX = Object.freeze({
             const vocoder = sine(659.25, t) * envelope(t, 1.25, 0.08, 0.4) * 0.35;
             return bell + vocoder;
         }
+    },
+    xp_tick: {
+        duration: 0.12,
+        synth(t, noise) {
+            const tone = sine(1760, t) * envelope(t, 0.12, 0.002, 0.04) * 0.45;
+            const click = noise() * pulse(t, 0.001, 0.015) * 0.18;
+            return tone + click;
+        }
+    },
+    xp_bonus: {
+        duration: 0.35,
+        synth(t, noise) {
+            const tone1 = sine(1320, t) * pulse(t, 0.01, 0.15) * 0.4;
+            const tone2 = sine(1760, t) * pulse(t, 0.12, 0.2) * 0.5;
+            const shimmer = sine(2640, t) * envelope(t, 0.35, 0.02, 0.18) * 0.2;
+            return tone1 + tone2 + shimmer;
+        }
+    },
+    xp_levelup: {
+        duration: 0.75,
+        synth(t, noise) {
+            const chord1 = sine(523.25, t) * pulse(t, 0.02, 0.35) * 0.4; // C5
+            const chord2 = sine(659.25, t) * pulse(t, 0.14, 0.38) * 0.45; // E5
+            const chord3 = sine(783.99, t) * pulse(t, 0.26, 0.42) * 0.5; // G5
+            const octave = sine(1046.5, t) * envelope(t, 0.75, 0.32, 0.4) * 0.4; // C6
+            const air = noise() * envelope(t, 0.75, 0.04, 0.3) * 0.08;
+            return chord1 + chord2 + chord3 + octave + air;
+        }
+    },
+    reward_reveal_weapon: {
+        duration: 0.85,
+        synth(t, noise) {
+            const slide = noise() * pulse(t, 0.02, 0.12) * 0.32;
+            const rack = sine(180, t) * pulse(t, 0.15, 0.08) * 0.5 + noise() * pulse(t, 0.15, 0.05) * 0.3;
+            const shimmer = sine(2200 - t * 1320, t) * envelope(t, 0.85, 0.18, 0.45) * 0.35;
+            const lock = sine(440, t) * pulse(t, 0.32, 0.15) * 0.4;
+            return slide + rack + shimmer + lock;
+        }
+    },
+    reward_reveal_chassis: {
+        duration: 0.95,
+        synth(t, noise) {
+            const subThump = sine(55, t) * envelope(t, 0.95, 0.01, 0.4) * 0.6;
+            const servo = sine(180 + Math.sin(t * 30) * 40, t) * envelope(t, 0.95, 0.08, 0.35) * 0.4;
+            const hydraulics = noise() * envelope(t, 0.95, 0.05, 0.45) * 0.22;
+            const clamp = sine(1200, t) * pulse(t, 0.45, 0.06) * 0.35;
+            return subThump + servo + hydraulics + clamp;
+        }
+    },
+    reward_reveal_charm: {
+        duration: 0.55,
+        synth(t, noise) {
+            const ping1 = sine(3200, t) * envelope(t, 0.55, 0.002, 0.15) * 0.5;
+            const ping2 = sine(4800, t) * envelope(t, 0.55, 0.08, 0.2) * 0.35;
+            const chain = noise() * (pulse(t, 0.05, 0.06) + pulse(t, 0.16, 0.08)) * 0.18;
+            return ping1 + ping2 + chain;
+        }
+    },
+    reward_reveal_module: {
+        duration: 0.80,
+        synth(t, noise) {
+            const charge = sine(440 + t * 960, t) * envelope(t, 0.80, 0.05, 0.35) * 0.45;
+            const magnet = sine(110, t) * pulse(t, 0.35, 0.25) * 0.5;
+            const arc = noise() * (pulse(t, 0.1, 0.05) + pulse(t, 0.28, 0.06)) * 0.2;
+            return charge + magnet + arc;
+        }
+    },
+    reward_reveal_decal: {
+        duration: 0.45,
+        synth(t, noise) {
+            const stampThud = sine(120, t) * envelope(t, 0.45, 0.01, 0.2) * 0.55;
+            const pneumatic = noise() * envelope(t, 0.45, 0.02, 0.25) * 0.28;
+            const click = sine(2400, t) * pulse(t, 0.01, 0.02) * 0.35;
+            return stampThud + pneumatic + click;
+        }
+    },
+    reward_reveal_generic: {
+        duration: 0.75,
+        synth(t, noise) {
+            const bell1 = sine(1567.98, t) * envelope(t, 0.75, 0.005, 0.45) * 0.45; // G6
+            const bell2 = sine(2349.32, t) * envelope(t, 0.75, 0.01, 0.4) * 0.35; // D7
+            const shimmer = sine(3135.96, t) * envelope(t, 0.75, 0.08, 0.35) * 0.2;
+            return bell1 + bell2 + shimmer;
+        }
+    },
+    ui_reward_burst: {
+        duration: 0.65,
+        synth(t, noise) {
+            const whoosh = noise() * envelope(t, 0.65, 0.03, 0.35) * 0.45;
+            const flare = sine(880 + t * 440, t) * envelope(t, 0.65, 0.02, 0.25) * 0.3;
+            return whoosh + flare;
+        }
+    },
+    ui_reward_dismiss: {
+        duration: 0.40,
+        synth(t, noise) {
+            const airlock = noise() * envelope(t, 0.40, 0.02, 0.22) * 0.32;
+            const lowClick = sine(220, t) * envelope(t, 0.40, 0.01, 0.15) * 0.4;
+            return airlock + lowClick;
+        }
+    },
+    weapon_dry_fire: {
+        duration: 0.18,
+        synth(t, noise) {
+            const click = sine(1200, t) * envelope(t, 0.18, 0.001, 0.05) * 0.55;
+            const pin = noise() * pulse(t, 0.002, 0.03) * 0.35;
+            const hollow = sine(360, t) * envelope(t, 0.18, 0.01, 0.08) * 0.3;
+            return click + pin + hollow;
+        }
     }
 });
 
