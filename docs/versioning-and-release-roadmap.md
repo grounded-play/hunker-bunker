@@ -1,100 +1,135 @@
-# Hunker Bunker Versioning Strategy & Release Roadmap
+# Hunker Bunker Versioning & Release Roadmap
 
-**Current Active Sprint:** Sprint 29  
-**Active Development Branch:** `dev/sprint-29`  
-**Current Working Version:** `v2.3.1-beta` (`2.3.1-beta` in `package.json`)  
-**Base Stable Release:** [`v2.3.0-beta`](https://github.com/grounded-play/hunker-bunker/releases/tag/v2.3.0-beta)  
-**Main Branch:** `mothership`
+**Status:** Canonical release/version policy  
+**Last verified:** 2026-08-24  
+**Current active sprint:** Sprint 30  
+**Active development branch:** `dev/sprint-30`  
+**Current package version:** `2.3.1-beta`  
+**Latest promoted release:** `v2.3.0-beta`  
+**Main branch:** `mothership`
 
----
-
-## 1. Versioning Architecture & SemVer Standard
-
-Hunker Bunker follows a structured Semantic Versioning convention:
-
-$$\textbf{v[MAJOR].[MINOR].[PATCH]-[PRE-RELEASE]}$$
-
-- **MAJOR (vX.0.0):** Landmark architectural leaps (e.g. initial public release, massive multiplayer network migrations, engine overhauls).
-- **MINOR (v2.X.0):** Major Sprint feature deliverables (e.g. Act 2 story expansion, 3D model conversion & Armory overhaul in v2.3.0-beta).
-- **PATCH (v2.3.X):** Iterative feature polish, bug fixes, balancing, optimization, and cosmetic additions within an active sprint lane.
-- **PRE-RELEASE TAGS:**
-  - `-beta`: Public development and feature sprint builds deployed for testing and verification.
-  - `-rc.N`: Release candidates locked for pre-launch validation and Steam depot certification.
-  - *(no tag)*: Final production builds published to Steam default branch.
+Sprint 30 begins as a convergence/governance sprint. The next version number is intentionally **not** preselected: choose it when the sprint's actual ship scope is locked, rather than allowing a planned version label to imply a release has already earned promotion.
 
 ---
 
-## 2. Release & Sprint History Ledger
+## Versioning convention
 
-| Version | Sprint / Branch | Release Date | PR / Base Commit | Key Deliverables & Milestones |
-| :--- | :--- | :--- | :--- | :--- |
-| **v2.0.1-beta** | Sprint 16 | 2026-07-28 | `v2.0.1-beta` | Baseline survival loop, basic room generation, initial UI framework. |
-| **v2.1.0-beta** | Sprint 21 | 2026-08-03 | `v2.1.0-beta` | Multiplayer runtime prototype, co-op damage sync, network seed dispatch. |
-| **v2.2.0-beta** | Sprint 26 (`dev/sprint-26`) | 2026-08-20 | [PR #38](https://github.com/grounded-play/hunker-bunker/pull/38) | Steamworks stats (8/8 synced), Steam Cloud save bridge, self-hosted TLS auth backend (`steam.tuesdaycinema.club`), Depth Contract initial wiring, host failover. |
-| **v2.3.0-beta** | Sprint 28 (`dev/sprint-28`) | 2026-08-23 | [PR #40](https://github.com/grounded-play/hunker-bunker/pull/40) (`030a8f9`) | **46 new 3D models** (30 community chassis skins + 16 Season 0 assets), redesigned 3-column Armory with class backgrounds, Wanderer companion system, Steam Deck twin-stick aiming preset, mid-run crash recovery (`runCheckpoint.js`), GPU frame profiler, all 8 transformative relics. |
-| **v2.3.1-beta** *(Active)* | Sprint 29 (`dev/sprint-29`) | *In Progress* | `dev/sprint-29` (off `mothership`) | Biomechanical horror 3D asset generation follow-through, Wanderer quest line expansion, Steam Deck performance optimization, end-to-end multi-account Steam Lobby certification. |
+Hunker Bunker uses Semantic Versioning with prerelease labels:
 
----
+`vMAJOR.MINOR.PATCH-PRERELEASE`
 
-## 3. Sprint 29 Roadmap & Iteration Objectives (`v2.3.1-beta`)
+- **MAJOR** — landmark compatibility/architecture shifts.
+- **MINOR** — substantial player-facing milestone releases.
+- **PATCH** — fixes, polish, tuning, optimization, and smaller feature increments within the current product line.
+- **`-beta`** — active public-development builds.
+- **`-rc.N`** — scope-frozen release candidates under launch/depot acceptance.
+- **no prerelease tag** — production release.
 
-As we step onto `dev/sprint-29` and iterate across `v2.3.1-beta`, the sprint focuses on the following pillars:
-
-```mermaid
-graph TD
-    A["Sprint 29: v2.3.1-beta"] --> B["1. 3D Model Generation Pipeline"]
-    A --> C["2. Wanderer & Companion Quests"]
-    A --> D["3. Combat Feel & Enemy Stagger"]
-    A --> E["4. Steam Deck & Engine Tuning"]
-    A --> F["5. Multi-Account Steam Certification"]
-
-    B --> B1["Generate GLBs from docs/3d-asset-master-backlog-and-prompts.md"]
-    B --> B2["Wire missing 5 achievement weapons/chassis into catalog"]
-    
-    C --> C1["Expand 6 Wanderer quest objectives & reward loops"]
-    C --> C2["Tune companion combat follow AI and assist cooldowns"]
-
-    D --> D1["Tune visual & auditory feedback for enemy stagger"]
-    D --> D2["Outer sector director aggression & salvage balance"]
-
-    E --> E1["Package builds & audit 60 FPS pacing on Steam Deck"]
-    E --> E2["Optimize texture memory with KTX2/Basis pipelines"]
-
-    F --> F1["Two real Steam accounts verified on production lobby"]
-    F --> F2["End-to-end co-op expedition completion test"]
-```
+Version numbers describe accepted release scope, not sprint ambition.
 
 ---
 
-## 4. Release Promotion & Verification Workflow
+## Release history
 
-When promoting changes or releasing incremental versions (`v2.3.1-beta.1`, `v2.3.2-beta`, etc.), follow this standard release checklist:
+| Version | Sprint / branch | Date | Integration | Accepted headline |
+|---|---|---|---|---|
+| `v2.0.1-beta` | Sprint 16 | 2026-07-28 | tagged baseline | Survival loop and early UI/world baseline. |
+| `v2.1.0-beta` | Sprint 20/21 era | 2026-07-27 to 2026-08-03 | PRs #22/#23 era | Large gameplay/content, Steam Deck, packaging, media, and runtime expansion. |
+| `v2.2.0-beta` | Sprint 26 / `dev/sprint-26` | 2026-08-20 | PR #38 | Steam stats/cloud wiring, production backend work, Depth Contract integration, multiplayer durability. |
+| `v2.3.0-beta` | Sprint 28 / `dev/sprint-28` | 2026-08-23 | PR #40 | 46 community/Season 0 3D models, Armory overhaul, Wanderers, Steam Deck controls, crash recovery, GPU diagnostics, all 8 transformative relics. |
+| `2.3.1-beta` working tree | Sprint 29 → Sprint 30 carry-forward | not promoted as a release in this ledger | Sprint 29 implementation + closeout work | Additional 3D pipeline integration and presentation/telemetry/weapon/lighting polish; automated closeout green, human/Steam/hardware acceptance still open. |
 
-### Step 1: Version Bumping
-1. Update `package.json` with target version (`"version": "2.3.1-beta"`).
-2. Update `index.html` system tag (`SYS VER: 2.3.1-BETA // ACTIVE`).
-3. Update `PRODUCT_STATE.md` and this ledger.
+See `docs/releases/` for release-note artifacts. Historical sprint plans may describe target versions that were never promoted; this ledger records release state, not planned state.
 
-### Step 2: Full Local Presubmit & Test Gate
-Run all audit and test suites to ensure 100% green status:
+---
+
+## Current Sprint 30 release decision
+
+Sprint 30 starts from package version `2.3.1-beta` and asks a release question only after its P0 acceptance work is understood.
+
+Possible outcomes:
+
+- **Patch beta** if Sprint 30 mainly closes acceptance, fixes, and connected-system gaps.
+- **Minor beta** only if the accepted player-facing scope materially warrants it.
+- **`-rc.1`** only after scope freeze and the Steam/packaged/hardware gates in `docs/repo-roadmap.md` are actually passing.
+
+Do not bump solely because a new sprint number exists.
+
+---
+
+## Release promotion workflow
+
+### 1. Scope lock
+
+Before version bumping:
+
+1. Update the active sprint evidence matrix.
+2. Identify exactly what is shipping and what is deferred.
+3. Confirm required human, packaged, hardware, and Steam-account acceptance routes.
+4. Choose the version based on the accepted scope.
+
+### 2. Version update
+
+Update together:
+
+- `package.json`;
+- in-game/system version surfaces such as `index.html` where applicable;
+- `PRODUCT_STATE.md`;
+- this ledger;
+- active sprint plan/closeout.
+
+### 3. Automated verification
+
+Run the relevant full gates:
+
 ```bash
-npm run lint                  # 0 errors / 0 warnings
-npm run presubmit             # Claims, SFX, retail assets, item catalog, soundtrack
-npm run audit:dependencies    # Production dependencies mapped
-npm run build                 # Vite bundle + audit:build-media
-npm run coverage              # Vitest suite (>2,031 tests, >98% coverage)
+npm run lint
+npm test
+npm run presubmit
+npm run audit:dependencies
+npm run build
+npm run coverage
 ```
 
-### Step 3: Branch Pull Request & Review
-1. Commit all changes to active sprint branch (`dev/sprint-29`).
-2. Push branch to remote: `git push origin dev/sprint-29`.
-3. Open/update PR into `mothership` on GitHub.
-4. Verify automated CI/CD checks pass on GitHub Actions.
+Run targeted/complete Playwright E2E where applicable. A green automated suite does not replace package/hardware/Steam acceptance for features that depend on those environments.
 
-### Step 4: Merge & Release Publication
-1. Merge PR into `mothership`.
-2. Generate/update release notes in `docs/releases/vX.Y.Z-beta.md`.
-3. Create annotated git tag: `git tag -a vX.Y.Z-beta -m "Hunker Bunker vX.Y.Z-Beta — Sprint Name"`.
-4. Push tag: `git push origin vX.Y.Z-beta`.
-5. Create GitHub release: `gh release create vX.Y.Z-beta --title "..." --notes-file docs/releases/vX.Y.Z-beta.md`.
-6. Dispatch Steam depot release: `HB_STEAM_BACKEND_URL=https://steam.tuesdaycinema.club npm run steam:upload`.
+### 4. Package and acceptance
+
+For a Steam-target promotion, record:
+
+- Electron package build result;
+- packaged smoke route;
+- desktop/Deck route as required;
+- Steam auth/lobby/account route as required;
+- performance evidence where release-critical;
+- save/stat/cloud observations where touched.
+
+Store dated evidence under `docs/reports/`.
+
+### 5. PR integration
+
+1. Integrate through a PR to `mothership`.
+2. Verify CI on the PR/head commit.
+3. Complete cross-lane audit and acceptance matrix.
+4. Merge only when the PR description accurately distinguishes shipped, verified, and still-open work.
+
+### 6. Release publication
+
+After merge:
+
+1. Create/update `docs/releases/vX.Y.Z-*.md` from accepted work.
+2. Create the annotated git tag.
+3. Publish the GitHub release.
+4. Prepare/audit Steam depots.
+5. Upload only through the explicitly authorized release path.
+6. Update `PRODUCT_STATE.md` and this ledger to the promoted version.
+
+---
+
+## Release discipline introduced in Sprint 30
+
+Every release claim should be traceable through the same progression used for sprint work:
+
+**Designed → Coded → Connected → Tested → Live-verified → Packaged-verified → Accepted**
+
+A release note should describe work at the evidence level it actually reached. This is the core correction intended to stop unfinished acceptance work from disappearing when sprint/version labels advance.
