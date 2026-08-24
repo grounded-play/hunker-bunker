@@ -99,3 +99,108 @@ Browser: computed-style assertions are **not** proof the reticle is visible — 
 1. **"NIO menu"** has no counterpart anywhere in `index.html`, `main.js`, or `style.css`. Plan §1 says to reconcile the term with the implementation rather than assume a DOM ID. I need the user to name the surface or screenshot it; until then I treat it as one of the 49 existing modals and cannot confirm which.
 2. **"The green XP box is always visible"** — my evidence points at `.season-pass-toast` queue saturation, since the element does carry a 4.2s auto-dismiss. A screenshot would confirm it is that element and not a different green panel.
 3. **Menu-isolation one-frame gap** — log2 §3 left this needing a live repro. If the user has not seen it recently on this branch, I would rather close it as fixed than build a speculative guard.
+
+---
+
+# Lane A delivery log — 2026-08-24
+
+Built test-first throughout: every module below had a failing test watched fail before the implementation existed.
+
+## Shipped
+
+**Day-one deliverables (both other lanes were blocked on these)**
+
+| Deliverable | File | Tests |
+|---|---|---|
+| Shared telemetry contract, closed event names, once-per-action dedupe | `src/presentationTelemetry.js` | 6 |
+| `mountRewardPreview()` interface stub for Lane B | `src/rewardReveal.js` | 2 |
+| Menu visibility snapshot, no longer profile-gated | `src/menuVisibility.js` + `main.js:13110` seam | 6 |
+
+The telemetry contract is deliberately **closed**: emitting an undeclared category or event throws rather than silently entering the log under a new spelling. That is what stops three lanes inventing three names for the same thing, which is how log16 became unqueryable in the first place.
+
+**§1 — reticle**
+
+- `src/reticleState.js` (24 tests): state selection (neutral / interactable / hostile / pickup / blocked), placement resolution, refusal-reason parsing, and look-target derivation.
+- Reticle now shows **on gameplay entry** rather than on first mouse movement — the confirmed cause of "the crosshair is invisible."
+- `mix-blend-mode: screen` removed; readability now comes from a dark outline under a light core, so it survives bright and dark backdrops.
+- Five reactive state classes added to `style.css`, each with a shape or weight change as well as a hue, so state is legible without colour discrimination.
+- A 200ms re-evaluation restores the reticle after menu close, respawn, death, weapon change, and cinematic return — none of which change phase or move the mouse, which is why it previously stayed hidden.
+
+**§6 — XP**
+
+- `src/xpFeedback.js` (9 tests): windowed aggregation, `flushPending()` that can only hand over a burst once, cancellation, and sound selection.
+- `awardXp()` now collapses a run of gains into one burst instead of one toast per gain. Cancelled on death, blocking menu, and leaving gameplay.
+
+**§3 / §7 — reward reveal**
+
+- `src/rewardReveal.js` (21 tests): the claim → grant → reveal → preview → burst → audio sequence, with grant confirmed *before* anything is revealed, and an in-flight guard on top of the existing claim guard.
+- Reward-family endings resolved from the item catalog by `itemdefid`. Weapon, chassis, charm, module, decal, HUD, and voice each end differently; unknown items fall back to a generic ending rather than throwing.
+- Reveal shell: preview mount point, "ADDED TO INVENTORY" confirmation, Continue button, keyboard routing that claims before the reveal and continues after it, and preview disposal on close.
+
+**§5 — burst layering (Lane B confirmed this is DOM/CSS and handed it over)**
+
+Root cause found: `.progression-reward-burst` and `.progression-reward-card` were both positioned with `z-index: auto`, so they painted in DOM order — and the card comes later in the markup, so it covered the burst. The reveal now declares its stack explicitly: preview (1) under burst (2) under card (3) under prompt (4). A reduced-motion path keeps the layer order and drops only the movement.
+
+The burst was also firing at the **wrong moment**: it was generated when the tier-up ceremony opened, not when the reward was claimed, which is a second reason it never read as celebrating anything. It now fires on the reveal's burst stage — after the reward object is up, before the card settles — and its particles are torn down and reflowed each time so a replay cannot stack stale animation state.
+
+**Honest failure states**
+
+A 2D-only reward, or a 3D reward whose model is missing, now renders a labelled `preview unavailable` / `2D requisition` state inside the preview frame rather than an empty box. The reward is still named and the grant still confirmed, per §7.
+
+**XP visual treatment**
+
+`.season-pass-toast` no longer borrows the green achievement card wholesale. It is narrower, carries its own cyan accent, uses tabular numerals so a counting gain does not jitter, and pulses once on arrival — with the pulse dropped under `prefers-reduced-motion`. Achievements keep the green card, so the two stop looking identical.
+
+## Verification
+
+- `npm test` — **254 files / 2105 tests green** (includes Lane B and Lane C work landing concurrently in this tree).
+- `npm run build` — green, build-media audit passes.
+- `npx eslint` — clean across every file I own.
+- Playwright (`tests/e2e/gameplay-aim-cursor.spec.js`, the spec closest to my changes) — **1 failed, 1 flaky, 2 passed** in 8.9 minutes.
+
+### The failing e2e test is stale, and it fails identically without my changes
+
+`clicking the game canvas engages pointer lock and hides the mouse-look prompt` asserts `document.pointerLockElement !== null`. It fails because **the game no longer requests pointer lock at all** — `requestPointerLock` appears nowhere in the repo. It was added in `a62e8d1` ("drive facingYaw from pointer-locked mouse-look", 2026-08-14 10:53) and removed three hours later in `e4ec7ec` ("restore in-game tactical cursor with camp and station hover reticle transitions", same day 12:31). The game deliberately moved from pointer-lock mouse-look to the tactical-cursor model; the test asserting the abandoned design was never updated.
+
+Measured against a clean baseline rather than asserted:
+
+| Tree | Result |
+|---|---|
+| `dev/sprint-29` with all Lane A/B/C work | 1 failed, 1 flaky, 2 passed (8.9m) |
+| Detached worktree at `e8ed5fa` — last commit before any Sprint 29 lane work | 1 failed, 3 passed (8.1m) |
+
+The same single test fails in both, on the original attempt and the retry. The first half of it passes even so — `#mouse-look-prompt` does gain `hidden`, so the click lands; only the lock assertion fails.
+
+The flaky one — `Execution context was destroyed, most likely because of a navigation` — is the known Vite dev-server auto-reload interfering with the first interaction. It passed on retry.
+
+Neither failure is Lane A's, and neither is a regression. **Updating or retiring the stale pointer-lock assertion belongs to Gemini**, who owns `tests/e2e/**`.
+
+Note that `src/threeGame.js:5224` still carries a pointer-lock branch, and my `resolveReticlePlacement` keeps a matching one. Both are currently unreachable in gameplay. I left mine in place rather than deleting it, because removing half of a symmetric pair while the other half stands would be the worse outcome — but it is worth a deliberate decision about whether pointer lock is coming back.
+
+## Corrections to my own plan
+
+**E1 is fixed, not still blocking.** My plan carried forward the armory audit's claim that `startRunAndSkipIntro()` never clicks `#armory-btn-embark`. It does now (`tests/e2e/helpers.js:63`), inside a readiness poll with a 75s deadline. The e2e blocker as described no longer holds.
+
+**The reward-ending selector was wrong on first pass.** I keyed it off a `category` field that season-pass rewards do not have — they carry `{ kind, itemdefid, qty, label }`, and the equip type lives in the item catalog. Caught by writing tests against real reward shapes; the selector now resolves through `getCatalogEntry(itemdefid)`.
+
+**`window.playSfx` does not exist.** I invented it. The real API is `window.AudioManager.play(key, options)`, and Lane C had already registered every key I needed in `main.js`.
+
+## Cross-lane state at hand-off
+
+Both dependencies my plan listed are **closed**, and both were answered by the other lanes rather than assumed:
+
+- **Lane B answered the burst question: it is DOM/CSS, not three.js** (`docs/sprint-29-lane-b-lane-plan-2026-08-24.md`). The stacking fix was therefore mine, and Lane B explicitly declined to build a competing three.js burst. That is the day it was worth spending a morning to avoid.
+- **Lane B shipped the real `src/rewardPreview.js`** and rewired my stub to delegate to it. The interface held unchanged — `ready` resolves rather than rejecting, `dispose()` is idempotent — so the shell needed no edit. My contract tests now guard the real implementation.
+- **Lane C published the audio keys and registered them** in `main.js` before I needed them, and emits `WEAPON` refusal reasons (`out_of_ammo`, `no_fire_zone`, `reloading`, `fire_cooldown`, `invalid_aim`) from `src/threeGame.js`. The reticle consumes those through the telemetry bus, so neither lane had to reach into the other's files.
+
+Lane B committed the shared tree at `051228b` while I was mid-flight, so Lane A's work is in that commit alongside theirs. Nothing was lost, but note that this branch has three agents writing to it live.
+
+## Handed off, not done here
+
+- **Reactive states do not fire under pointer lock.** `handleCanvasPointerMove` returns early on the pointer-lock branch before `checkHoverInteractable` ever runs, so no look-target is resolved while locked. The reticle correctly shows neutral rather than a wrong state, but hostile/pickup/interactable will not appear until that path resolves a target. The fix belongs in `src/threeGame.js`, which is Lane B's file.
+- **`src/armoryScene.js:411`** has an unused `maxDim` that fails lint. That is Lane B's in-flight file; flagged, not touched.
+- **Everything requiring a human eye** — whether the reticle reads well against real scenes, whether the burst feels celebratory, reward hold time, 1280x800 sign-off — belongs to Gemini's Phase 4.
+
+## Still open
+
+The two questions from §7 of the plan above are unchanged and still need the user: **what surface "NIO menu" refers to** (no counterpart exists in the markup, styles, or code), and **confirmation that the green box is the season-pass toast** rather than a different green panel.

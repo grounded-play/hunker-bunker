@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { selectReticleState, resolveReticlePlacement, parseWeaponBlockReason, targetFromCursorClasses } from './reticleState.js';
+import { selectReticleState, resolveReticlePlacement, parseWeaponBlockReason, targetFromCursorClasses, isWeaponDry } from './reticleState.js';
 
 describe('selectReticleState', () => {
     it('is neutral when the player looks at nothing in particular', () => {
@@ -145,5 +145,25 @@ describe('targetFromCursorClasses', () => {
 
     it('ranks an enemy above an interactable when both are flagged', () => {
         expect(targetFromCursorClasses(['cursor-interact', 'cursor-enemy']).kind).toBe('enemy');
+    });
+});
+
+describe('isWeaponDry', () => {
+    // The log16 session ran eight minutes with an empty clip and an empty
+    // reserve, and the HUD said nothing distinguishable about it.
+    it('is dry only when both the clip and the reserve are empty', () => {
+        expect(isWeaponDry({ clip: 0, cache: 0 })).toBe(true);
+    });
+
+    it('is not dry while a reload is still possible', () => {
+        expect(isWeaponDry({ clip: 0, cache: 12 })).toBe(false);
+    });
+
+    it('is not dry with rounds still in the clip', () => {
+        expect(isWeaponDry({ clip: 3, cache: 0 })).toBe(false);
+    });
+
+    it('treats missing numbers as not-dry rather than falsely alarming', () => {
+        expect(isWeaponDry({})).toBe(false);
     });
 });

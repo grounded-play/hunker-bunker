@@ -91,3 +91,15 @@ export function targetFromCursorClasses(classes = []) {
     }
     return null;
 }
+
+/**
+ * Is the weapon completely out of ammunition?
+ *
+ * Both numbers must be present and zero. A missing reading means "we do not
+ * know", which must not raise a dry warning -- a false alarm on a full weapon
+ * would be worse than the silence this is fixing.
+ */
+export function isWeaponDry({ clip, cache } = {}) {
+    if (!Number.isFinite(clip) || !Number.isFinite(cache)) return false;
+    return clip <= 0 && cache <= 0;
+}

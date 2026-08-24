@@ -6,6 +6,7 @@
 // exists.
 
 import { PRESENTATION_EVENTS } from './presentationTelemetry.js';
+import { getCatalogEntry } from './itemOwnership.js';
 import { mountRewardPreview as mountRewardPreview3d } from './rewardPreview.js';
 
 /**
@@ -25,15 +26,20 @@ export function mountRewardPreview(options) {
 // their ending. The final beat is selected from the item definition rather
 // than inferred from a generic animation-completion callback, so adding a
 // reward category is a data change here and not new branching in the player.
+//
+// Season-pass rewards are { kind, itemdefid, qty, label } and carry no equip
+// category of their own -- the equip type lives in the item catalog, keyed by
+// itemdefid, which is what this resolves against.
 const REWARD_FAMILIES = Object.freeze({
-    weapon_skin: { family: 'weapon', ending: 'weapon-sweep', sound: 'reward_reveal_weapon', preview: '3d' },
-    chassis_skin: { family: 'chassis', ending: 'chassis-turn', sound: 'reward_reveal_chassis', preview: '3d' },
+    skin: { family: 'weapon', ending: 'weapon-sweep', sound: 'reward_reveal_weapon', preview: '3d' },
+    chassis: { family: 'chassis', ending: 'chassis-turn', sound: 'reward_reveal_chassis', preview: '3d' },
     charm: { family: 'charm', ending: 'charm-snap', sound: 'reward_reveal_charm', preview: '3d' },
-    rig_module: { family: 'module', ending: 'module-deploy', sound: 'reward_reveal_module', preview: '3d' },
+    mod: { family: 'module', ending: 'module-deploy', sound: 'reward_reveal_module', preview: '3d' },
     // Deliberately 2D: §7 forbids forcing a low-quality fake 3D preview onto
     // artwork that was never modelled.
     decal: { family: 'decal', ending: 'decal-stamp', sound: 'reward_reveal_decal', preview: '2d' },
-    emblem: { family: 'decal', ending: 'decal-stamp', sound: 'reward_reveal_decal', preview: '2d' }
+    hud: { family: 'hud', ending: 'hud-recolor', sound: 'reward_reveal_generic', preview: '2d' },
+    audio: { family: 'voice', ending: 'voice-pulse', sound: 'reward_reveal_generic', preview: '2d' }
 });
 
 const GENERIC_FAMILY = Object.freeze({
@@ -43,8 +49,10 @@ const GENERIC_FAMILY = Object.freeze({
     preview: '2d'
 });
 
-export function selectRewardEnding(item) {
-    return REWARD_FAMILIES[item?.category] ?? GENERIC_FAMILY;
+export function selectRewardEnding(reward) {
+    if (!reward?.itemdefid) return GENERIC_FAMILY;
+    const type = getCatalogEntry(reward.itemdefid)?.type;
+    return REWARD_FAMILIES[type] ?? GENERIC_FAMILY;
 }
 
 /**

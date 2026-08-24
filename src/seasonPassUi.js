@@ -183,18 +183,36 @@ const rewardRevealFlow = createRewardRevealFlow({
         if (ending.preview !== '3d') {
             return { ready: Promise.resolve({ ok: false, reason: 'two-dimensional-reward' }), dispose() {} };
         }
-        activePreviewHandle = mountRewardPreview({ container, itemId: item?.itemdefid, category: item?.category });
+        activePreviewHandle = mountRewardPreview({ container, itemId: item?.itemdefid, category: ending.family });
         return activePreviewHandle;
     },
-    playSound: (name) => window.playSfx?.(name),
+    playSound: (name) => window.AudioManager?.play(name, { bus: 'sfx' }),
     present: (stage, ending) => presentRewardStage(stage, ending)
 });
+
+function renderRewardBurst(overlay) {
+    const burst = overlay.querySelector('.progression-reward-burst');
+    if (!burst) return;
+    // Restart the animation rather than leaving the spent particles in place --
+    // §3 requires that replaying a reward not stack stale animation state.
+    burst.innerHTML = '';
+    void burst.offsetWidth;
+    burst.innerHTML = Array.from({ length: 18 }, (_, i) => `<i style="--particle-angle:${i * 20}deg"></i>`).join('');
+}
 
 function presentRewardStage(stage, ending) {
     const overlay = document.getElementById('progression-reward-overlay');
     if (!overlay) return;
     overlay.dataset.revealStage = stage;
     overlay.dataset.rewardFamily = ending.family;
+    // §5: the burst belongs to the reveal, firing after the reward object is up
+    // and before the card settles -- not at ceremony open, which is when it
+    // used to fire and why it never read as celebrating the claim.
+    if (stage === 'burst') {
+        renderRewardBurst(overlay);
+        window.AudioManager?.play('ui_reward_burst', { bus: 'sfx' });
+        return;
+    }
     if (stage !== 'reveal') return;
     overlay.querySelector('#progression-claim-btn')?.classList.add('hidden');
     overlay.querySelector('#progression-continue-btn')?.classList.remove('hidden');
@@ -217,21 +235,42 @@ function claimProgressionReward() {
     if (claimBtn) claimBtn.disabled = true;
     const reward = seasonPass.getReward(tier, track);
     rewardRevealFlow.run({ actionKey: `reward:${tier}:${track}`, item: reward }).then((result) => {
-        if (result.ok) return;
-        // Nothing was granted, so nothing is being revealed -- restore the
-        // button rather than stranding the player on a dead panel.
-        if (claimBtn) claimBtn.disabled = false;
+        if (!result.ok) {
+            // Nothing was granted, so nothing is being revealed -- restore the
+            // button rather than stranding the player on a dead panel.
+            if (claimBtn) claimBtn.disabled = false;
+            return;
+        }
+        // §7: a reward with no model must say so honestly, while still naming
+        // the reward and confirming the grant -- never a silent empty frame.
+        if (!result.previewOk) showPreviewUnavailable(result.ending, reward);
     });
     updateMenuStatus();
+}
+
+function showPreviewUnavailable(ending, reward) {
+    const container = document.getElementById('progression-reward-preview');
+    if (!container) return;
+    container.classList.add('progression-reward-preview--unavailable');
+    container.textContent = ending.preview === '2d'
+        ? `${String(reward?.label ?? 'REWARD').toUpperCase()} — 2D REQUISITION`
+        : 'PREVIEW UNAVAILABLE — REWARD SECURED';
 }
 
 function dismissProgressionReward() {
     const overlay = document.getElementById('progression-reward-overlay');
     if (!overlay) return;
+    window.AudioManager?.play('ui_reward_dismiss', { bus: 'sfx' });
+    presentationTelemetry.emit('REWARD', PRESENTATION_EVENTS.REWARD.REVEAL_CLOSE, {
+        tier: Number(overlay.dataset.tier), track: overlay.dataset.track
+    });
     activePreviewHandle?.dispose?.();
     activePreviewHandle = null;
     const preview = overlay.querySelector('#progression-reward-preview');
-    if (preview) preview.innerHTML = '';
+    if (preview) {
+        preview.innerHTML = '';
+        preview.classList.remove('progression-reward-preview--unavailable');
+    }
     overlay.querySelector('#progression-reward-confirm')?.classList.add('hidden');
     overlay.querySelector('#progression-continue-btn')?.classList.add('hidden');
     const claimBtn = overlay.querySelector('#progression-claim-btn');
@@ -267,7 +306,7 @@ function flushXpBurst(label, { leveledUp = false, bonus = false } = {}) {
             { amount: burst.amount, events: burst.events }, actionKey);
         presentationTelemetry.emitOnce('XP', PRESENTATION_EVENTS.XP.UI_SHOW, {}, actionKey);
         const sound = selectXpSound({ leveledUp, bonus });
-        window.playSfx?.(sound);
+        window.AudioManager?.play(sound, { bus: 'sfx' });
         presentationTelemetry.emitOnce('XP', PRESENTATION_EVENTS.XP.SOUND, { sound }, actionKey);
     }, 260);
 }

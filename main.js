@@ -3,7 +3,7 @@ import { AudioManager } from './src/audio.js';
 import { assetUrl } from './src/assetUrl.js';
 import { debugLog } from './src/debugConsole.js';
 import { captureMenuVisibilitySnapshot } from './src/menuVisibility.js';
-import { selectReticleState, resolveReticlePlacement, parseWeaponBlockReason, targetFromCursorClasses } from './src/reticleState.js';
+import { selectReticleState, resolveReticlePlacement, parseWeaponBlockReason, targetFromCursorClasses, isWeaponDry } from './src/reticleState.js';
 import { presentationTelemetry, PRESENTATION_EVENTS } from './src/presentationTelemetry.js';
 import { canUseDeveloperTools } from './src/devToolsAccess.js';
 import { ObjectiveRegistry } from './src/objectiveRegistry.js';
@@ -54,7 +54,7 @@ import { createArmoryScene } from './src/armoryScene.js';
 import { createArmoryUi } from './src/armoryUi.js';
 import { ARMORY_SCREEN_ENABLED } from './src/featureFlags.js';
 import { initSteamVaultUI, loadVaultData, openSteamVaultModal, showSteamDropToast, renderSteamMilestoneGrants, grantVaultItem, resetDevVaultInventory, setDevInfiniteCacheMode, isDevInfiniteCacheMode, STEAM_ITEM_CATALOG } from './src/steamVaultUi.js';
-import { initSeasonPassUI, flushQueuedSeasonPassToasts } from './src/seasonPassUi.js';
+import { initSeasonPassUI, flushQueuedSeasonPassToasts, cancelXpFeedback } from './src/seasonPassUi.js';
 import { preloadEnemy3dTemplates } from './src/enemy3dOverlay.js';
 import { initVoiceCallouts } from './src/voiceCallouts.js';
 import { multiplayerLobby } from './src/multiplayerLobby.js';
@@ -349,8 +349,15 @@ function setAppPhase(phase) {
     // Sprint 29 §1: entering gameplay is itself enough to show the reticle.
     // This used to only ever hide it, leaving the reveal to the first mousemove
     // -- so a player who deployed and moved with WASD had no reticle at all.
-    if (isGameplay) showGameplayCrosshairAtRest();
-    else updateGameplayCrosshair?.(0, 0, false);
+    if (isGameplay) {
+        showGameplayCrosshairAtRest();
+        startReticleRefresh();
+    } else {
+        stopReticleRefresh();
+        updateGameplayCrosshair?.(0, 0, false);
+        // §6: a pending XP burst must not fire over the death screen or a menu.
+        cancelXpFeedback();
+    }
     if (!isGameplay) {
         window.game?.setCursorInspectState?.(null);
         if (tacticalOverlayTimer) {
@@ -1674,6 +1681,12 @@ let lastReticleState = null;
 // the muted state does not stick after the cause has gone.
 let reticleBlockedReason = null;
 let reticleBlockedClearTimer = null;
+let lastReticleClientX = null;
+let lastReticleClientY = null;
+// The last visibility the caller actually asked for. The refresh below must
+// re-evaluate state without overriding an explicit hide -- leaving the game
+// viewport hides the reticle, and a refresh must not resurrect it.
+let lastReticleVisibleIntent = false;
 
 function setReticleBlockedReason(reason) {
     reticleBlockedReason = reason;
@@ -1682,12 +1695,9 @@ function setReticleBlockedReason(reason) {
     reticleBlockedClearTimer = setTimeout(() => {
         reticleBlockedReason = null;
         reticleBlockedClearTimer = null;
-        updateGameplayCrosshair(lastReticleClientX, lastReticleClientY, true);
+        updateGameplayCrosshair(lastReticleClientX, lastReticleClientY, lastReticleVisibleIntent);
     }, 700);
 }
-
-let lastReticleClientX = null;
-let lastReticleClientY = null;
 
 function applyReticleState(crosshair) {
     // threeGame's setCursorInspectState already resolved what is under the
@@ -1716,6 +1726,7 @@ function updateGameplayCrosshair(clientX, clientY, visible = true) {
     if (!crosshair) return;
     if (Number.isFinite(clientX)) lastReticleClientX = clientX;
     if (Number.isFinite(clientY)) lastReticleClientY = clientY;
+    lastReticleVisibleIntent = visible;
     const stateAllowsVisible = applyReticleState(crosshair);
     const shouldShow = visible && stateAllowsVisible && appPhase === 'gameplay'
         && Boolean(window.game?.isGameplayInputActive?.());
@@ -1742,6 +1753,28 @@ function showGameplayCrosshairAtRest() {
 }
 window.showGameplayCrosshairAtRest = showGameplayCrosshairAtRest;
 
+// §1: "No state leaves the reticle permanently hidden after closing a menu,
+// respawning, dying, changing weapons, or returning from a cinematic." Those
+// all happen without a phase change and without mouse movement, and the
+// reticle only ever updated on movement -- so it stayed hidden. A low-rate
+// re-evaluation restores it; applyReticleState only touches the DOM when the
+// state actually changes, so an idle gameplay frame costs one class read.
+let reticleRefreshTimer = null;
+
+function startReticleRefresh() {
+    if (reticleRefreshTimer) return;
+    reticleRefreshTimer = setInterval(() => {
+        if (appPhase !== 'gameplay') return;
+        updateGameplayCrosshair(lastReticleClientX, lastReticleClientY, lastReticleVisibleIntent);
+    }, 200);
+}
+
+function stopReticleRefresh() {
+    if (!reticleRefreshTimer) return;
+    clearInterval(reticleRefreshTimer);
+    reticleRefreshTimer = null;
+}
+
 // Lane C owns the weapon-fire path and emits WEAPON refusals; Lane A consumes
 // them here rather than editing src/threeGame.js. Sprint 29's new P0: an
 // out-of-ammo player clicking in a no-fire zone previously received nothing at
@@ -1750,7 +1783,7 @@ debugLog.subscribe((entry) => {
     const reason = parseWeaponBlockReason(entry);
     if (!reason) return;
     setReticleBlockedReason(reason);
-    updateGameplayCrosshair(lastReticleClientX, lastReticleClientY, true);
+    updateGameplayCrosshair(lastReticleClientX, lastReticleClientY, lastReticleVisibleIntent);
 });
 
 function handleSteamGameplayInput(controller) {
@@ -2980,6 +3013,10 @@ function renderWeaponClipState(detail = {}) {
     if (weaponStatusPanel) {
         weaponStatusPanel.classList.toggle('is-reloading', reloading);
         weaponStatusPanel.classList.toggle('is-refilling', refilling);
+        // Sprint 29 P0: an empty clip *and* an empty reserve is the state that
+        // silently turned every shot into a 4-damage melee for eight minutes in
+        // log16. It now reads as its own thing, not as an ordinary low count.
+        weaponStatusPanel.classList.toggle('is-dry', isWeaponDry({ clip, cache }));
         weaponStatusPanel.classList.toggle('is-low-ammo', clip <= 2 && !reloading);
         weaponStatusPanel.setAttribute('aria-busy', reloading ? 'true' : 'false');
     }

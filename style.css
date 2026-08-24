@@ -3706,6 +3706,24 @@ input:checked+.slider:before {
   transition: opacity 0.35s cubic-bezier(0.25, 1, 0.5, 1);
 }
 
+/* Sprint 29 P0: out of ammo with nothing left to reload from. Pulsed rather
+   than merely recoloured, because the player needs to notice it mid-fight
+   without reading a number. */
+.weapon-status-panel.is-dry {
+  border-color: rgba(255, 90, 74, 0.85);
+  animation: weapon-dry-pulse 1100ms ease-in-out infinite;
+}
+.weapon-status-panel.is-dry .weapon-status-panel__cache { color: #ff8a7a; font-weight: 800; }
+
+@keyframes weapon-dry-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(255, 90, 74, 0); }
+  50% { box-shadow: 0 0 calc(var(--vu) * 1.2) 0 rgba(255, 90, 74, 0.45); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .weapon-status-panel.is-dry { animation: none; box-shadow: 0 0 0 1px rgba(255, 90, 74, 0.6); }
+}
+
 .gameplay-crosshair {
   position: fixed;
   left: 0;
@@ -9996,6 +10014,36 @@ body.mission-intro-active #game-container canvas {
   color: #d7ffcd;
   font-size: var(--font-xs);
   font-weight: 900;
+}
+
+/* Sprint 29 §6: XP rode the plain green achievement-toast, which made every
+   gain look identical to an achievement and read as flat, permanent UI. The XP
+   variant is narrower, carries its own accent, and pulses once on arrival so a
+   gain is felt rather than merely listed. Achievements keep the green card. */
+.season-pass-toast {
+  width: min(calc(var(--vu) * 30), 68vw);
+  background: linear-gradient(135deg, rgba(6, 16, 26, 0.96), rgba(10, 14, 24, 0.94));
+  border: 1px solid rgba(0, 229, 255, 0.5);
+  border-left: 3px solid rgba(0, 229, 255, 0.92);
+}
+.season-pass-toast .achievement-toast__icon {
+  border-color: rgba(0, 229, 255, 0.42);
+  color: #bff4ff;
+}
+.season-pass-toast .achievement-toast__kicker { color: #7fdfff; }
+.season-pass-toast .achievement-toast__title {
+  color: #ffffff;
+  font-variant-numeric: tabular-nums;
+}
+.season-pass-toast.visible { animation: season-xp-pulse 420ms ease-out 1; }
+
+@keyframes season-xp-pulse {
+  from { box-shadow: 0 0 0 0 rgba(0, 229, 255, 0.45); }
+  to { box-shadow: 0 0 0 calc(var(--vu) * 1.4) rgba(0, 229, 255, 0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .season-pass-toast.visible { animation: none; }
 }
 
 .achievement-toast__icon img {

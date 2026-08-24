@@ -19,34 +19,52 @@ describe('mountRewardPreview (Lane B contract)', () => {
 });
 
 describe('selectRewardEnding', () => {
-    it('gives a weapon skin its own ending and sting', () => {
-        const ending = selectRewardEnding({ category: 'weapon_skin' });
+    // Season-pass rewards are { kind, itemdefid, qty, label } -- there is no
+    // `category` field on them; the equip type comes from the item catalog.
+    it('reads a charm reward from its itemdefid', () => {
+        const ending = selectRewardEnding({ kind: 'item', itemdefid: 4130 });
 
-        expect(ending).toMatchObject({ family: 'weapon', sound: 'reward_reveal_weapon', preview: '3d' });
-        expect(ending.ending).toBe('weapon-sweep');
+        expect(ending).toMatchObject({ family: 'charm', ending: 'charm-snap', sound: 'reward_reveal_charm', preview: '3d' });
     });
 
-    it('gives a chassis skin a different ending from a weapon skin', () => {
-        const weapon = selectRewardEnding({ category: 'weapon_skin' });
-        const chassis = selectRewardEnding({ category: 'chassis_skin' });
+    it('reads a chassis reward from its itemdefid', () => {
+        const ending = selectRewardEnding({ kind: 'item', itemdefid: 4112 });
 
-        expect(chassis.ending).not.toBe(weapon.ending);
-        expect(chassis.sound).toBe('reward_reveal_chassis');
+        expect(ending).toMatchObject({ family: 'chassis', sound: 'reward_reveal_chassis' });
+    });
+
+    it('gives a chassis a different ending from a charm', () => {
+        expect(selectRewardEnding({ kind: 'item', itemdefid: 4112 }).ending)
+            .not.toBe(selectRewardEnding({ kind: 'item', itemdefid: 4130 }).ending);
     });
 
     it('previews a decal as 2D art rather than a fake 3D spin', () => {
-        expect(selectRewardEnding({ category: 'decal' })).toMatchObject({ family: 'decal', preview: '2d' });
+        const ending = selectRewardEnding({ kind: 'item', itemdefid: 2000 });
+
+        expect(ending).toMatchObject({ family: 'decal', preview: '2d', sound: 'reward_reveal_decal' });
     });
 
-    it('snaps a charm in rather than floating it', () => {
-        expect(selectRewardEnding({ category: 'charm' })).toMatchObject({ ending: 'charm-snap', sound: 'reward_reveal_charm' });
+    it('reads a rig module from its itemdefid', () => {
+        expect(selectRewardEnding({ kind: 'item', itemdefid: 4140 }))
+            .toMatchObject({ family: 'module', sound: 'reward_reveal_module', preview: '3d' });
     });
 
-    it('falls back to a generic ending for an unknown category without throwing', () => {
-        expect(selectRewardEnding({ category: 'something_new' })).toMatchObject({ family: 'generic', sound: 'reward_reveal_generic' });
+    it('reads a weapon skin from its itemdefid', () => {
+        expect(selectRewardEnding({ kind: 'item', itemdefid: 4100 }))
+            .toMatchObject({ family: 'weapon', sound: 'reward_reveal_weapon', preview: '3d' });
     });
 
-    it('falls back to generic when the item carries no category at all', () => {
+    it('treats a currency reward as generic with no 3D preview', () => {
+        const ending = selectRewardEnding({ kind: 'currency', currency: 'scrap', qty: 50 });
+
+        expect(ending).toMatchObject({ family: 'generic', preview: '2d', sound: 'reward_reveal_generic' });
+    });
+
+    it('falls back to generic for an itemdefid the catalog does not classify', () => {
+        expect(selectRewardEnding({ kind: 'item', itemdefid: 999999 }).family).toBe('generic');
+    });
+
+    it('falls back to generic when there is no reward at all', () => {
         expect(selectRewardEnding(undefined).family).toBe('generic');
     });
 });
@@ -68,7 +86,7 @@ describe('createRewardRevealFlow', () => {
     it('confirms the grant before anything is revealed', async () => {
         const { flow, calls } = flowHarness();
 
-        await flow.run({ actionKey: 'reward:3:free', item: { category: 'charm' } });
+        await flow.run({ actionKey: 'reward:3:free', item: { kind: 'item', itemdefid: 4130 } });
 
         expect(calls.indexOf('grant')).toBeLessThan(calls.indexOf('present:reveal'));
         expect(calls).toContain('telemetry:grant-confirmed');
@@ -77,14 +95,14 @@ describe('createRewardRevealFlow', () => {
     it('plays the sting for the reward family, once', async () => {
         const { flow, calls } = flowHarness();
 
-        await flow.run({ actionKey: 'reward:3:free', item: { category: 'charm' } });
+        await flow.run({ actionKey: 'reward:3:free', item: { kind: 'item', itemdefid: 4130 } });
 
         expect(calls.filter((c) => c === 'sound:reward_reveal_charm')).toHaveLength(1);
     });
 
     it('does not grant twice when the player double-clicks Claim', async () => {
         const { flow, calls } = flowHarness();
-        const args = { actionKey: 'reward:3:free', item: { category: 'charm' } };
+        const args = { actionKey: 'reward:3:free', item: { kind: 'item', itemdefid: 4130 } };
 
         await Promise.all([flow.run(args), flow.run(args)]);
 
@@ -96,7 +114,7 @@ describe('createRewardRevealFlow', () => {
             mountPreview: () => ({ ready: Promise.resolve({ ok: false, reason: 'no-model' }), dispose() {} })
         });
 
-        const result = await flow.run({ actionKey: 'reward:9:free', item: { category: 'weapon_skin' } });
+        const result = await flow.run({ actionKey: 'reward:9:free', item: { kind: 'item', itemdefid: 4100 } });
 
         expect(result.previewOk).toBe(false);
         expect(calls).toContain('telemetry:preview-failed');
@@ -106,7 +124,7 @@ describe('createRewardRevealFlow', () => {
     it('abandons the reveal when the grant is refused', async () => {
         const { flow, calls } = flowHarness({ grant: () => ({ ok: false, reason: 'already-claimed' }) });
 
-        const result = await flow.run({ actionKey: 'reward:3:free', item: { category: 'charm' } });
+        const result = await flow.run({ actionKey: 'reward:3:free', item: { kind: 'item', itemdefid: 4130 } });
 
         expect(result.ok).toBe(false);
         expect(calls).not.toContain('present:reveal');
