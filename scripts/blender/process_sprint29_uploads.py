@@ -138,8 +138,6 @@ def build_humanoid_rig_and_idle(mesh_obj, height=1.8):
     bpy.ops.object.mode_set(mode='POSE')
     chest_pbone = arm_obj.pose.bones.get("Chest")
     head_pbone = arm_obj.pose.bones.get("Head")
-    arm_l_pbone = arm_obj.pose.bones.get("Arm_L")
-    arm_r_pbone = arm_obj.pose.bones.get("Arm_R")
     
     # Keyframe frames 0, 30, 60 (2 second loop at 30 fps)
     for frame in [0, 60]:
