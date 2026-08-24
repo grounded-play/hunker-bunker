@@ -1,7 +1,7 @@
 ---
 name: Feature request
 about: Propose a player-facing or repository capability
- title: '[FEATURE] '
+title: '[FEATURE] '
 labels: enhancement
 assignees: ''
 ---
