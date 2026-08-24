@@ -14,6 +14,7 @@ Last reviewed: 2026-08-24 · Owner: repository maintainers
 | What are we doing now? | [Sprint 30 plan](planning/sprint-30.md) |
 | What comes after this sprint? | [Repository roadmap](planning/repository-roadmap.md) |
 | Who owns each runtime boundary? | [Runtime system map](architecture/system-map.md) |
+| Which deployment path is active? | [Deployment topology](architecture/deployment-topology.md) |
 | How are versions and releases handled? | [Versioning and release roadmap](versioning-and-release-roadmap.md) |
 | What does a contributor need? | [Contributing](../CONTRIBUTING.md) |
 
@@ -46,6 +47,10 @@ place until a link-preserving archive pass moves them.
   reconciles original commitments with their highest honest evidence state.
 - [Pre-Sprint-30 technical-debt audit](pre-sprint-30-technical-debt-audit-2026-08-24.md)
   measures branch residue, test gaps, stale feature gates, and root clutter.
+- [Current Steam review status](reports/steam-review-current-status-2026-08-24.md)
+  maps Valve feedback to current evidence and explicit resubmission gates.
+- [Documentation migration inventory](reports/documentation-inventory-and-migration-plan-2026-08-24.md)
+  sequences the remaining loose-file cleanup without breaking links.
 
 ## Documentation rules
 
