@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
-import { CHROMA_GREEN_ALLOWLIST, auditChromaGreen, decodeAndSamplePng } from './audit-chroma-green.js';
+import { CHROMA_GREEN_ALLOWLIST, decodeAndSamplePng } from './audit-chroma-green.js';
 
 const ROOT_DIR = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
