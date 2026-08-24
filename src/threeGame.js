@@ -236,6 +236,7 @@ import {
 } from './enemySpriteLayouts.js';
 import { SHOWROOM_CHUNK_X, SHOWROOM_CHUNK_Y } from './debugShowroom.js';
 import { getWing2ChunkOverride } from './debugTileGrid.js';
+import { PRESENTATION_EVENTS, presentationTelemetry } from './presentationTelemetry.js';
 
 
 const PLAYER_COLORS = {
@@ -6685,6 +6686,19 @@ export class ThreeGame {
         requestAnimationFrame(step);
     }
 
+    emitLightingTelemetry(reason = 'profile-change', extra = {}) {
+        presentationTelemetry.emit('LIGHTING', PRESENTATION_EVENTS.LIGHTING.SNAPSHOT, {
+            reason,
+            ...extra,
+            profile: this.performanceProfile,
+            shadowsEnabled: Boolean(this.renderer?.shadowMap?.enabled),
+            shadowMapType: this.renderer?.shadowMap?.type ?? null,
+            adaptiveGameplayPerformanceMode: Boolean(this.adaptiveGameplayPerformanceMode),
+            postprocessing: this.gameplayPostProcessingEnabled !== false,
+            diagnostics: this.getPerformanceDiagnosticsSnapshot?.() ?? null
+        });
+    }
+
     setPerformanceProfile(profile = 'menu') {
         const nextProfile = profile === 'gameplay' ? 'gameplay' : 'menu';
         if (this.performanceProfile === nextProfile) return;
@@ -6764,6 +6778,7 @@ export class ThreeGame {
             // this hardware profile will never render.
             this.updateAdaptiveGameplayQuality?.(0);
         }
+        this.emitLightingTelemetry?.('profile-change', { nextProfile });
     }
 
     setAdaptiveGameplayPerformanceMode(enabled = true, {
@@ -6810,6 +6825,16 @@ export class ThreeGame {
             };
             debugLog.warn('PERF', 'adaptive-gameplay-quality-engaged', details);
         }
+        presentationTelemetry.emit('LIGHTING', PRESENTATION_EVENTS.LIGHTING.TIER_CHANGE, {
+            reason,
+            from: !nextEnabled,
+            to: nextEnabled,
+            fps: Number.isFinite(fps) ? Math.round(fps * 10) / 10 : null,
+            shadowsEnabled: Boolean(this.renderer?.shadowMap?.enabled),
+            postprocessing: this.gameplayPostProcessingEnabled !== false,
+            pixelRatio: targetPixelRatio
+        });
+        this.emitLightingTelemetry?.('adaptive-tier-change', { reason, fps });
         return true;
     }
 

@@ -3,6 +3,8 @@ import { AudioManager } from './src/audio.js';
 import { assetUrl } from './src/assetUrl.js';
 import { debugLog } from './src/debugConsole.js';
 import { captureMenuVisibilitySnapshot } from './src/menuVisibility.js';
+import { selectReticleState, resolveReticlePlacement, parseWeaponBlockReason, targetFromCursorClasses } from './src/reticleState.js';
+import { presentationTelemetry, PRESENTATION_EVENTS } from './src/presentationTelemetry.js';
 import { canUseDeveloperTools } from './src/devToolsAccess.js';
 import { ObjectiveRegistry } from './src/objectiveRegistry.js';
 import { BankManager, FOUNDRY_ACTIVATION_COST } from './src/bank.js';
@@ -344,7 +346,11 @@ function setAppPhase(phase) {
     const isGameplay = phase === 'gameplay';
     document.documentElement.classList.toggle('phase-gameplay', isGameplay);
     document.documentElement.classList.toggle('phase-menu', !isGameplay);
-    if (!isGameplay) updateGameplayCrosshair?.(0, 0, false);
+    // Sprint 29 §1: entering gameplay is itself enough to show the reticle.
+    // This used to only ever hide it, leaving the reveal to the first mousemove
+    // -- so a player who deployed and moved with WASD had no reticle at all.
+    if (isGameplay) showGameplayCrosshairAtRest();
+    else updateGameplayCrosshair?.(0, 0, false);
     if (!isGameplay) {
         window.game?.setCursorInspectState?.(null);
         if (tacticalOverlayTimer) {
@@ -1652,10 +1658,66 @@ window.addEventListener('gamepad-menu-nav', (event) => {
 
 let controllerAimCursor = null;
 
+const RETICLE_STATE_CLASSES = Object.freeze([
+    'gameplay-crosshair--neutral',
+    'gameplay-crosshair--interactable',
+    'gameplay-crosshair--hostile',
+    'gameplay-crosshair--pickup',
+    'gameplay-crosshair--blocked'
+]);
+
+let lastReticleState = null;
+
+// Refusals are reported by Lane C's WEAPON telemetry rather than by a direct
+// call, so the reticle can show a blocked state without Lane A reaching into
+// src/threeGame.js. Cleared on the next successful shot or on a short timer so
+// the muted state does not stick after the cause has gone.
+let reticleBlockedReason = null;
+let reticleBlockedClearTimer = null;
+
+function setReticleBlockedReason(reason) {
+    reticleBlockedReason = reason;
+    if (reticleBlockedClearTimer) clearTimeout(reticleBlockedClearTimer);
+    if (!reason) return;
+    reticleBlockedClearTimer = setTimeout(() => {
+        reticleBlockedReason = null;
+        reticleBlockedClearTimer = null;
+        updateGameplayCrosshair(lastReticleClientX, lastReticleClientY, true);
+    }, 700);
+}
+
+let lastReticleClientX = null;
+let lastReticleClientY = null;
+
+function applyReticleState(crosshair) {
+    // threeGame's setCursorInspectState already resolved what is under the
+    // crosshair and wrote it onto #tactical-cursor; read it back rather than
+    // duplicating the raycast or editing Lane B's file.
+    const tacticalCursor = document.getElementById('tactical-cursor');
+    const { state, visible, reason } = selectReticleState({
+        target: targetFromCursorClasses(tacticalCursor ? Array.from(tacticalCursor.classList) : []),
+        blockedReason: reticleBlockedReason,
+        hasBlockingOverlay: Boolean(window.game?.hasBlockingGameplayOverlay?.())
+    });
+    for (const cls of RETICLE_STATE_CLASSES) crosshair.classList.remove(cls);
+    crosshair.classList.add(`gameplay-crosshair--${state}`);
+    crosshair.dataset.reticleState = state;
+    if (reason) crosshair.dataset.reticleReason = reason;
+    else delete crosshair.dataset.reticleReason;
+    if (state !== lastReticleState) {
+        lastReticleState = state;
+        presentationTelemetry.emit('RETICLE', PRESENTATION_EVENTS.RETICLE.STATE, { state, reason });
+    }
+    return visible;
+}
+
 function updateGameplayCrosshair(clientX, clientY, visible = true) {
     const crosshair = document.getElementById('gameplay-crosshair');
     if (!crosshair) return;
-    const shouldShow = visible && appPhase === 'gameplay'
+    if (Number.isFinite(clientX)) lastReticleClientX = clientX;
+    if (Number.isFinite(clientY)) lastReticleClientY = clientY;
+    const stateAllowsVisible = applyReticleState(crosshair);
+    const shouldShow = visible && stateAllowsVisible && appPhase === 'gameplay'
         && Boolean(window.game?.isGameplayInputActive?.());
     crosshair.classList.toggle('hidden', !shouldShow);
     if (shouldShow && Number.isFinite(clientX) && Number.isFinite(clientY)) {
@@ -1664,6 +1726,32 @@ function updateGameplayCrosshair(clientX, clientY, visible = true) {
     }
 }
 window.updateGameplayCrosshair = updateGameplayCrosshair;
+
+// Show the reticle without waiting for input, using the aim ray rather than a
+// stale pointer position (Sprint 29 §1).
+function showGameplayCrosshairAtRest() {
+    const placement = resolveReticlePlacement({
+        phase: 'gameplay',
+        pointerLocked: document.pointerLockElement !== null,
+        pointer: Number.isFinite(lastReticleClientX) && Number.isFinite(lastReticleClientY)
+            ? { x: lastReticleClientX, y: lastReticleClientY }
+            : null,
+        viewport: { width: window.innerWidth, height: window.innerHeight }
+    });
+    updateGameplayCrosshair(placement.x, placement.y, placement.visible);
+}
+window.showGameplayCrosshairAtRest = showGameplayCrosshairAtRest;
+
+// Lane C owns the weapon-fire path and emits WEAPON refusals; Lane A consumes
+// them here rather than editing src/threeGame.js. Sprint 29's new P0: an
+// out-of-ammo player clicking in a no-fire zone previously received nothing at
+// all -- no sound, no reticle change, no HUD response.
+debugLog.subscribe((entry) => {
+    const reason = parseWeaponBlockReason(entry);
+    if (!reason) return;
+    setReticleBlockedReason(reason);
+    updateGameplayCrosshair(lastReticleClientX, lastReticleClientY, true);
+});
 
 function handleSteamGameplayInput(controller) {
     const prev = steamInputPrevControllers.get(controller.handle) ?? {};

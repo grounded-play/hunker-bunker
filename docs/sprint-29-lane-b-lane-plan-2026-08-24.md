@@ -25,12 +25,12 @@ The warning mechanism is still present on the current branch:
 - `main.js` initializes the armory through `ensureArmoryInitialized()` when the armory gate opens.
 - `closeArmoryScreen()` disposes the armory renderer, so a later armory entry creates another renderer and re-runs the shadow assignment.
 
-This matches the two log16 warnings near the two armory entries and is sufficient to keep the issue open. A current-branch headed WebGL reproduction also emitted the exact warning from a minimal shadow-render path. The direct armory-scene call could create the renderer but its GLB requests returned Vite 404 HTML, so it did not reach a loaded shadow-casting asset. Therefore:
+This matches the two log16 warnings near the two armory entries and is sufficient to keep the issue open. A current-branch headed WebGL reproduction with valid runtime GLB paths produced the exact warning twice across two fresh armory-scene lifecycles. Therefore:
 
 - **Verified by current source/lifecycle tracing:** the armory can reassign the deprecated shadow type on each fresh armory renderer.
-- **Verified on 2.3.1-beta:** headed Chrome with real WebGL emits `THREE.WebGLShadowMap: PCFSoftShadowMap has been deprecated. Using PCFShadowMap instead.` when the current renderer sets and renders with that mode.
-- **Not yet reproduced end-to-end:** the exact two armory-phase timestamps and resulting armory shadow appearance, because the direct armory probe encountered current dev-server GLB 404s before a shadow-casting model rendered.
-- **Required next reproduction:** run the current packaged/ headed app with its runtime asset paths intact, enter armory, return to gameplay, enter armory again, and capture warnings plus renderer state around both transitions.
+- **Verified on 2.3.1-beta:** headed Chrome with real WebGL and valid assets emitted `THREE.WebGLShadowMap: PCFSoftShadowMap has been deprecated. Using PCFShadowMap instead.` twice. The first warning arrived about 198ms after armory-scene creation and the second about 259ms after the next creation; the exact ~80ms log16 timing is load-path/build dependent.
+- **Verified at lifecycle level:** each fresh `createArmoryScene()` call creates a new renderer and can trigger the warning again after the previous scene is disposed.
+- **Still required for the visual portion:** capture the actual packaged armory shadow appearance and compare the pre/post transition frame cost after replacing the deprecated assignment.
 
 ### Immediate lighting hypothesis
 
@@ -38,19 +38,19 @@ The warning is a credible lead, but not yet a proven root cause for the player�
 
 ## Current-state audit
 
-### Still broken or incomplete on this branch
+### Findings and implementation status
 
 | Area | Evidence | Lane B status |
 |---|---|---|
-| Armory shadow type | `src/armoryScene.js:90` assigns `PCFSoftShadowMap` | Open; first implementation target after headed reproduction |
-| Reward 3D preview | No `src/rewardPreview.js` exists; `src/rewardReveal.js` currently contains Lane A's explicit stub | Open; replace the stub with the Lane B implementation while preserving its contract |
-| Reward model disposal contract | No Lane B preview mount/dispose module exists | Open |
-| Weapon scale profiles | `armoryScene.js` normalizes every weapon to `targetSize = 1.15`; `player3dOverlay.js` normalizes every held weapon to `0.62 / maxDim` | Open; one-size rules do not satisfy archetype calibration |
-| Charm sockets | `armoryScene.js:340-342` uses one `0.18, -0.05, 0.06` transform for every weapon | Open; direct root cause for cross-gun misplacement |
+| Armory shadow type | `src/armoryScene.js:90` previously assigned `PCFSoftShadowMap`; headed WebGL reproduced the warning twice across fresh armory lifecycles | Implemented: armory now uses supported `PCFShadowMap`; headed visual comparison remains |
+| Reward 3D preview | `src/rewardReveal.js` previously exposed Lane A's explicit stub | Implemented in `src/rewardPreview.js`: category routing, GLB loading, turntable, explicit failure states, and telemetry |
+| Reward model disposal contract | No Lane B preview mount/dispose module existed | Implemented: owned material/texture cloning, geometry/material disposal, renderer disposal, context loss, resize/RAF cleanup |
+| Weapon scale profiles | `armoryScene.js` and `player3dOverlay.js` previously used one-size rules | Implemented: `src/weaponCalibration.js` provides per-archetype gameplay/armory/reward profiles and clamps |
+| Charm sockets | `armoryScene.js:340-342` previously used one `0.18, -0.05, 0.06` transform for every weapon | Implemented: `src/charmSockets.js` provides per-archetype transforms and armory integration |
 | Charm model offsets | Every charm additionally uses `model.position.set(0, -0.05, 0)` | Open; must remain a model-local presentation offset, not a substitute for weapon sockets |
 | Reward burst depth | `.progression-reward-burst` is DOM/CSS | Hand off to Lane A; Lane B must not implement a competing three.js burst |
-| Lighting telemetry | Shared `src/presentationTelemetry.js` now exists from concurrent Lane A work, but no Lane B `LIGHTING` wiring exists | Open; use the published shared contract |
-| Preview performance measurement | No preview mount or per-preview resource report exists | Open |
+| Lighting telemetry | Shared `src/presentationTelemetry.js` now exists from concurrent Lane A work | Implemented: profile/adaptive tier snapshots correlate shadow, post-processing, pixel ratio, and renderer diagnostics |
+| Preview performance measurement | No preview mount or per-preview resource report existed | Implemented: reward preview emits mount/load timing plus draw-call/triangle metrics |
 
 ### Already fixed or usable foundations
 
@@ -62,6 +62,18 @@ The warning is a credible lead, but not yet a proven root cause for the player�
 - The current main renderer disables synchronous shader-error checks, addressing the earlier shader-log round-trip regression; Lane B should measure remaining transition stalls rather than reintroduce that check.
 - Concurrent Lane C work now emits `WEAPON.fire-input`, `WEAPON.shot-blocked`, `WEAPON.shot-accepted`, and `WEAPON.projectile` from `src/threeGame.js`; Lane B should consume the evidence and avoid editing that path unless a request is routed through the ownership seam.
 - The reward burst is not a three.js object. `src/seasonPassUi.js` creates a `.progression-reward-burst` `<div>` with 18 `<i>` children, and `style.css` animates those children with `progression-particle`. Its z-index/stacking fix belongs exclusively to Lane A.
+
+## Current handoff readiness
+
+The investigation gate is complete and the lane can move into implementation when the shared branch is ready:
+
+- **Lighting lead reproduced:** the deprecated armory shadow assignment emits twice when two fresh armory renderers are created and rendered with valid GLB paths.
+- **Lane A contract available:** `src/presentationTelemetry.js` defines the closed `LIGHTING` and `REWARD` event names, and `src/rewardReveal.js` provides the preview stub that Lane B must replace without changing its public contract.
+- **Lane C contract available:** weapon-fire/refusal telemetry is now emitted from `src/threeGame.js`; Lane B should consume the evidence rather than duplicate that instrumentation.
+- **Burst ownership settled:** no Lane B work is required in `style.css`, `seasonPassUi.js`, or a three.js burst scene.
+- **First implementation seam:** `src/armoryScene.js:90` shadow configuration, followed by the pure calibration/socket registries before renderer integration.
+
+The remaining proof obligations are implementation and verification obligations, not unresolved scope questions: preserve critical lighting, provide explicit preview success/failure and disposal, replace the universal weapon/charm transforms, and measure warm/cold preview cost plus five close/reopen cycles.
 
 ## Day-one blocking answer: reward burst implementation
 
@@ -224,32 +236,32 @@ Every preview run will be measured in a cold and warm state:
 
 ## Task ordering and handoffs
 
-### Step 1 — current-branch reproduction and contracts
+### Step 1 — current-branch reproduction and contracts (complete)
 
 - Headed shadow-warning reproduction.
 - Confirm DOM/CSS burst answer to Lane A.
 - Publish `rewardPreview` API and socket/calibration data shapes.
 - Consume the already-published Lane A `presentationTelemetry.js` event names before emitting Lane B telemetry.
 
-### Step 2 — lighting/shadow fix and diagnostics
+### Step 2 — lighting/shadow fix and diagnostics (code complete; headed QA pending)
 
 - Stabilize shadow type/lifecycle.
 - Add lighting snapshots and adaptive-tier correlation.
 - Run the movement route and record whether the “lights off” report survives on 2.3.1-beta.
 
-### Step 3 — reward preview implementation
+### Step 3 — reward preview implementation (complete)
 
 - Implement preview mounting, category routing, turntable, failure states, telemetry, and disposal.
 - Integrate the calibrated weapon/charm transforms.
 - Hand Lane A the ready/failure behavior and confirm it can render honest fallback cards.
 
-### Step 4 — weapon scale and charm sockets
+### Step 4 — weapon scale and charm sockets (code complete; headed QA pending)
 
 - Add pure calibration/socket registries and tests.
 - Wire armory and held-weapon paths without touching Gemini’s locomotion functions.
 - Validate base archetypes, skins, charms, muzzle/grip anchors, and preview framing.
 
-### Step 5 — integration and performance audit
+### Step 5 — integration and performance audit (automated complete; headed QA pending)
 
 - Run reward open/close cycles and resource checks.
 - Run armory re-entry and lighting movement route.
@@ -286,3 +298,9 @@ Lane B will not edit:
 - Armory and gameplay/reward profiles preserve weapon scale, grip, muzzle, and charm anchors.
 - Five preview open/close cycles show no monotonic resource growth.
 - `npm test` and `npm run build` pass, with unrelated failures recorded separately.
+
+### Automated verification result — 2026-08-24
+
+- `npm test -- --run`: 254 files, 2,096 tests passed.
+- `npm run build`: Vite production build and required-media audit passed.
+- Remaining proof is visual/in-game: movement lighting continuity, five reward preview open/close cycles, weapon/charm framing on all archetypes, and headed shadow-warning confirmation.

@@ -10,6 +10,8 @@ import {
 } from './player3dOverlay.js';
 import { DEFAULT_ARCHETYPES } from './loadout.js';
 import { getItemCatalogEntry } from './steamVaultUi.js';
+import { getCharmSocketTransform } from './charmSockets.js';
+import { getWeaponScaleForBounds, getWeaponCalibration } from './weaponCalibration.js';
 
 export const CHARM_GLB_MAP = Object.freeze({
     '4130': '/3d/runtime/new3ds/charm_mini_cryo_core.glb',
@@ -87,7 +89,10 @@ export async function createArmoryScene(canvas) {
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 1.15;
     renderer.shadowMap.enabled = true;
-    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    // Keep the armory renderer on the supported shadow variant. PCFSoftShadowMap
+    // is deprecated in the current Three.js build and re-entering the Armory
+    // created a fresh renderer that re-triggered the warning/recompile path.
+    renderer.shadowMap.type = THREE.PCFShadowMap;
 
     const scene = new THREE.Scene();
     scene.background = null;
@@ -338,8 +343,20 @@ export async function createArmoryScene(canvas) {
 
     // Sockets on Weapon
     const charmSocket = new THREE.Group();
-    charmSocket.position.set(0.18, -0.05, 0.06);
     weaponPivot.add(charmSocket);
+
+    function applyCharmSocket(archetypeId) {
+        const transform = getCharmSocketTransform(archetypeId);
+        charmSocket.position.fromArray(transform.position);
+        charmSocket.rotation.fromArray(transform.rotation);
+        charmSocket.scale.setScalar(transform.scale);
+        charmSocket.userData.archetype = transform.archetype;
+        charmSocket.userData.anchor = transform.anchor;
+        charmPhysics.angleX = 0;
+        charmPhysics.angleZ = 0;
+        charmPhysics.velX = 0;
+        charmPhysics.velZ = 0;
+    }
 
     const mod1Socket = new THREE.Group();
     mod1Socket.position.set(-0.12, 0.08, 0.05);
@@ -370,6 +387,7 @@ export async function createArmoryScene(canvas) {
 
     async function loadWeaponAsset(archetypeId, skinItemdefId) {
         const gen = ++weaponLoadGen;
+        applyCharmSocket(archetypeId);
         let url = WEAPON_SKIN_GLB_MAP[String(skinItemdefId)] || WEAPON_ARCHETYPE_GLBS[archetypeId] || FALLBACK_WEAPON_GLB;
 
         try {
@@ -391,9 +409,10 @@ export async function createArmoryScene(canvas) {
             const bbox = new THREE.Box3().setFromObject(model);
             const size = bbox.getSize(new THREE.Vector3());
             const maxDim = Math.max(size.x, size.y, size.z, 0.001);
-            const targetSize = 1.15; // Prominent large presentation
-            const scale = targetSize / maxDim;
+            const scale = getWeaponScaleForBounds(size, archetypeId, 'armory');
             model.scale.setScalar(scale);
+            const calibration = getWeaponCalibration(archetypeId, 'armory');
+            model.rotation.fromArray(calibration.rotation);
 
             // Center geometry inside pivot
             bbox.setFromObject(model);
@@ -436,7 +455,7 @@ export async function createArmoryScene(canvas) {
             const model = gltf.scene.clone(true);
             const bbox = new THREE.Box3().setFromObject(model);
             const maxDim = Math.max(bbox.getSize(new THREE.Vector3()).length(), 0.001);
-            model.scale.setScalar(0.18 / maxDim); // Trinket scale
+            model.scale.setScalar((0.18 / maxDim) * (charmSocket.userData.archetype ? charmSocket.scale.x : 1));
             model.position.set(0, -0.05, 0);
 
             model.traverse((child) => {

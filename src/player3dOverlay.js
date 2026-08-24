@@ -4,6 +4,7 @@ import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.j
 import { clone as cloneSkeleton } from 'three/examples/jsm/utils/SkeletonUtils.js';
 import { assetUrl } from './assetUrl.js';
 import { recordAssetLoad } from './assetLoadTelemetry.js';
+import { getWeaponCalibration, getWeaponScaleForBounds } from './weaponCalibration.js';
 
 // The 2D-to-3D generation pipeline's gltf-transform optimize pass applies
 // EXT_meshopt_compression; GLTFLoader throws "setMeshoptDecoder must be called
@@ -154,7 +155,7 @@ function loadWeaponTemplate(url) {
 // material swap on the archetype mesh — see WEAPON_SKIN_MESHES and worklog task 6. If skinId
 // is given and mapped, it takes priority over archetypeId for which mesh loads; on failure it
 // falls back to the archetype mesh, then to GG1, same chain as the archetype-only path.
-export async function createClassWeapon(archetypeId, { position = [0.03, 0.02, -0.10], skinId = null } = {}) {
+export async function createClassWeapon(archetypeId, { position = null, skinId = null } = {}) {
     const skinUrl = skinId ? WEAPON_SKIN_MESHES[skinId] : null;
     const archetypeUrl = WEAPON_ARCHETYPES[archetypeId] ?? WEAPON_URL;
     const url = skinUrl ?? archetypeUrl;
@@ -165,7 +166,7 @@ export async function createClassWeapon(archetypeId, { position = [0.03, 0.02, -
         if (url === WEAPON_URL) throw err;
         if (url === skinUrl) {
             console.warn(`[player-3d-overlay] weapon skin "${skinId}" (${url}) failed to load; falling back to archetype "${archetypeId}"`, err);
-            return createClassWeapon(archetypeId, { position });
+            return createClassWeapon(archetypeId, { position, skinId: null });
         }
         console.warn(`[player-3d-overlay] weapon archetype "${archetypeId}" (${url}) failed to load; falling back to GG1`, err);
         template = await loadWeaponTemplate(WEAPON_URL);
@@ -175,14 +176,15 @@ export async function createClassWeapon(archetypeId, { position = [0.03, 0.02, -
     weapon.updateMatrixWorld(true);
     const bounds = new THREE.Box3().setFromObject(weapon);
     const size = bounds.getSize(new THREE.Vector3());
-    const scale = 0.62 / Math.max(size.x, size.y, size.z);
+    const calibration = getWeaponCalibration(archetypeId, 'gameplay');
+    const scale = getWeaponScaleForBounds(size, archetypeId, 'gameplay');
     weapon.scale.multiplyScalar(scale);
     // Preserve the hand-alignment turn and rotate the flat source around its
     // remaining axis so the weapon sits upright in the Scout's grip.
-    weapon.rotation.set(0, -Math.PI / 2, -Math.PI / 2);
+    weapon.rotation.fromArray(calibration.rotation);
     // Pull the grip inward toward the right palm. Rotation is intentionally
     // kept separate so placement can be tuned without re-tilting the model.
-    weapon.position.fromArray(position);
+    weapon.position.fromArray(position ?? calibration.position);
     weapon.traverse((object) => {
         if (!object.isMesh) return;
         object.castShadow = true;

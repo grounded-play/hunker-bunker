@@ -1,3 +1,6 @@
+import { createRewardRevealFlow, mountRewardPreview, resolveCeremonyKeyAction } from './rewardReveal.js';
+import { presentationTelemetry, PRESENTATION_EVENTS } from './presentationTelemetry.js';
+import { createXpAggregator, selectXpSound } from './xpFeedback.js';
 // ── Season 0 Tactical Dossier — UI & Live Wiring ──────────────────────────
 // Renders the battle pass modal and wires real gameplay events (see
 // docs/armory-and-class-weapons-worklog.md for the research trail) to XP
@@ -103,18 +106,22 @@ function ensureProgressionCeremony() {
             <div class="progression-reward-title">LEVEL <span id="progression-level-value">1</span> REACHED</div>
             <div class="progression-xp-track"><div id="progression-xp-bar" class="progression-xp-bar"></div></div>
             <div id="progression-xp-label" class="progression-xp-label">XP THRESHOLD CONFIRMED</div>
+            <div id="progression-reward-preview" class="progression-reward-preview" aria-hidden="true"></div>
             <div class="progression-reward-burst" aria-hidden="true"></div>
             <div class="progression-reward-card">
                 <div class="progression-reward-card__slot">NEW REQUISITION</div>
                 <div id="progression-reward-primary" class="progression-reward-card__name"></div>
                 <div id="progression-reward-secondary" class="progression-reward-card__desc"></div>
                 <div id="progression-reward-currency" class="progression-reward-card__meta"></div>
+                <div id="progression-reward-confirm" class="progression-reward-card__meta progression-reward-confirm hidden"></div>
             </div>
             <button id="progression-claim-btn" class="start-btn progression-claim-btn">◈ CLAIM REWARD</button>
+            <button id="progression-continue-btn" class="start-btn progression-continue-btn hidden">◈ CONTINUE</button>
         </div>
     `;
     document.body.appendChild(overlay);
     overlay.querySelector('#progression-claim-btn')?.addEventListener('click', claimProgressionReward);
+    overlay.querySelector('#progression-continue-btn')?.addEventListener('click', dismissProgressionReward);
     return overlay;
 }
 
@@ -156,14 +163,83 @@ function showNextProgressionReward() {
     overlay.querySelector('#progression-claim-btn')?.focus?.();
 }
 
+// Sprint 29 §7. This used to claim, grant, and immediately hide the overlay --
+// the player's only feedback that a reward existed was the panel vanishing.
+// The reveal now runs as an explicit sequence, and the panel stays up until the
+// player dismisses it.
+let activePreviewHandle = null;
+
+const rewardRevealFlow = createRewardRevealFlow({
+    telemetry: presentationTelemetry,
+    grant: () => {
+        const overlay = document.getElementById('progression-reward-overlay');
+        const reward = seasonPass.claim(Number(overlay?.dataset.tier), overlay?.dataset.track);
+        if (!reward) return { ok: false, reason: 'already-claimed' };
+        grantReward(reward);
+        return { ok: true, reward };
+    },
+    mountPreview: ({ item, ending }) => {
+        const container = document.getElementById('progression-reward-preview');
+        if (ending.preview !== '3d') {
+            return { ready: Promise.resolve({ ok: false, reason: 'two-dimensional-reward' }), dispose() {} };
+        }
+        activePreviewHandle = mountRewardPreview({ container, itemId: item?.itemdefid, category: item?.category });
+        return activePreviewHandle;
+    },
+    playSound: (name) => window.playSfx?.(name),
+    present: (stage, ending) => presentRewardStage(stage, ending)
+});
+
+function presentRewardStage(stage, ending) {
+    const overlay = document.getElementById('progression-reward-overlay');
+    if (!overlay) return;
+    overlay.dataset.revealStage = stage;
+    overlay.dataset.rewardFamily = ending.family;
+    if (stage !== 'reveal') return;
+    overlay.querySelector('#progression-claim-btn')?.classList.add('hidden');
+    overlay.querySelector('#progression-continue-btn')?.classList.remove('hidden');
+    overlay.querySelector('#progression-continue-btn')?.focus?.();
+    const confirm = overlay.querySelector('#progression-reward-confirm');
+    if (confirm) {
+        confirm.textContent = 'ADDED TO INVENTORY';
+        confirm.classList.remove('hidden');
+    }
+}
+
 function claimProgressionReward() {
     if (!progressionCeremonyActive) return;
     const overlay = document.getElementById('progression-reward-overlay');
     const tier = Number(overlay?.dataset.tier);
     const track = overlay?.dataset.track;
-    const reward = seasonPass.claim(tier, track);
-    if (!reward) return;
-    grantReward(reward);
+    // Disable immediately so a second click cannot reach the grant at all
+    // (§7's pending state), on top of the flow's own in-flight guard.
+    const claimBtn = overlay?.querySelector('#progression-claim-btn');
+    if (claimBtn) claimBtn.disabled = true;
+    const reward = seasonPass.getReward(tier, track);
+    rewardRevealFlow.run({ actionKey: `reward:${tier}:${track}`, item: reward }).then((result) => {
+        if (result.ok) return;
+        // Nothing was granted, so nothing is being revealed -- restore the
+        // button rather than stranding the player on a dead panel.
+        if (claimBtn) claimBtn.disabled = false;
+    });
+    updateMenuStatus();
+}
+
+function dismissProgressionReward() {
+    const overlay = document.getElementById('progression-reward-overlay');
+    if (!overlay) return;
+    activePreviewHandle?.dispose?.();
+    activePreviewHandle = null;
+    const preview = overlay.querySelector('#progression-reward-preview');
+    if (preview) preview.innerHTML = '';
+    overlay.querySelector('#progression-reward-confirm')?.classList.add('hidden');
+    overlay.querySelector('#progression-continue-btn')?.classList.add('hidden');
+    const claimBtn = overlay.querySelector('#progression-claim-btn');
+    if (claimBtn) {
+        claimBtn.disabled = false;
+        claimBtn.classList.remove('hidden');
+    }
+    delete overlay.dataset.revealStage;
     overlay.classList.add('hidden');
     overlay.setAttribute('aria-hidden', 'true');
     progressionCeremonyActive = false;
@@ -171,12 +247,50 @@ function claimProgressionReward() {
     window.setTimeout(showNextProgressionReward, 260);
 }
 
+// Sprint 29 §6: XP used to spawn one toast per gain. The toast auto-dismisses
+// after 4.2s, but XP fires faster than that during a fight, so the stack
+// saturated and the green box looked permanent. Gains are now collapsed into a
+// single rolling burst and announced once.
+const xpAggregator = createXpAggregator();
+let xpBurstFlushTimer = null;
+let xpBurstSeq = 0;
+
+function flushXpBurst(label, { leveledUp = false, bonus = false } = {}) {
+    if (xpBurstFlushTimer) clearTimeout(xpBurstFlushTimer);
+    xpBurstFlushTimer = setTimeout(() => {
+        xpBurstFlushTimer = null;
+        const burst = xpAggregator.flushPending();
+        if (!burst) return;
+        const actionKey = `xp-burst-${++xpBurstSeq}`;
+        showSeasonPassToast(`+${burst.amount} XP`, label);
+        presentationTelemetry.emitOnce('XP', PRESENTATION_EVENTS.XP.AGGREGATE,
+            { amount: burst.amount, events: burst.events }, actionKey);
+        presentationTelemetry.emitOnce('XP', PRESENTATION_EVENTS.XP.UI_SHOW, {}, actionKey);
+        const sound = selectXpSound({ leveledUp, bonus });
+        window.playSfx?.(sound);
+        presentationTelemetry.emitOnce('XP', PRESENTATION_EVENTS.XP.SOUND, { sound }, actionKey);
+    }, 260);
+}
+
+// Death, a blocking menu, or leaving gameplay must not leave a pending burst
+// waiting to fire over the next screen (§6).
+export function cancelXpFeedback() {
+    if (xpBurstFlushTimer) clearTimeout(xpBurstFlushTimer);
+    xpBurstFlushTimer = null;
+    if (xpAggregator.isPending()) {
+        xpAggregator.cancel();
+        presentationTelemetry.emit('XP', PRESENTATION_EVENTS.XP.CLEANUP, { reason: 'cancelled' });
+    }
+}
+
 function awardXp(amount, source, label) {
     const before = seasonPass.getCurrentTier();
     const { xpAwarded, tiersCrossed } = seasonPass.addXp(amount, source);
     if (xpAwarded <= 0) return;
     const after = seasonPass.getCurrentTier();
-    showSeasonPassToast(`+${xpAwarded} XP`, label);
+    presentationTelemetry.emit('XP', PRESENTATION_EVENTS.XP.GAIN, { amount: xpAwarded, source });
+    xpAggregator.add(xpAwarded);
+    flushXpBurst(label, { leveledUp: after > before });
     if (after > before) {
         showSeasonPassToast('TIER UP', `Tactical Dossier — Tier ${after} reached.`);
         queueProgressionCeremony(tiersCrossed);
@@ -474,13 +588,15 @@ export function closeSeasonPassModal() {
 export function handleSeasonPassKeyDown(event) {
     const ceremony = document.getElementById('progression-reward-overlay');
     if (ceremony && !ceremony.classList.contains('hidden')) {
-        if (event.code === 'Enter' || event.code === 'Space') {
-            event.preventDefault();
-            claimProgressionReward();
-        }
-        // B/Escape cannot discard an earned reward; the claim remains safely
-        // available and focused until the operator accepts it.
-        if (event.code === 'Escape') event.preventDefault();
+        // B/Escape cannot discard an *unclaimed* reward; once the grant has
+        // landed it becomes an ordinary continue (Sprint 29 §7).
+        const action = resolveCeremonyKeyAction({
+            code: event.code,
+            revealStage: ceremony.dataset.revealStage ?? null
+        });
+        if (action) event.preventDefault();
+        if (action === 'claim') claimProgressionReward();
+        else if (action === 'continue') dismissProgressionReward();
         return;
     }
     const modal = document.getElementById('season-pass-modal');
