@@ -67,6 +67,7 @@ Categories to reserve:
 | `REWARD` | `claim-start`, `grant-confirmed`, `reveal-open`, `preview-ready`, `preview-failed`, `burst-fired`, `audio-fired`, `reveal-close` | Claude (shell) / Codex (preview, burst) / Gemini (audio) |
 | `LIGHTING` | `snapshot`, `tier-change`, `light-dropped` | Codex |
 | `WEAPON` | `fire-input`, `shot-accepted`, `shot-blocked`, `projectile` | Gemini |
+| `AUDIO` | `load-start`, `load-failed`, `load-complete`, `play`, `play-missing` | Gemini |
 
 `captureMenuRenderSnapshot()` (`main.js:13110`) currently returns `null` unless `performanceProfile === 'menu'` — which is exactly why log16 could not distinguish a hidden menu from a missing one. **Claude extends it to emit on demand regardless of profile.**
 

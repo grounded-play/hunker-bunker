@@ -24,13 +24,13 @@ Added `computeLocomotionTimeScale()` (6 tests) driving cadence from real ground 
 
 ### 2. Six declared telemetry events were never emitted
 
-`RETICLE hidden-reason`, `RETICLE target`, `RETICLE screen-pos`, `MENU input-blocked`, `XP ui-hide`, `LIGHTING light-dropped` — plus `MENU open` and `MENU close`, which an earlier check missed because those words appear generically elsewhere.
+`RETICLE hidden-reason`, `RETICLE target`, `RETICLE screen-pos`, `MENU input-blocked`, `XP ui-hide`, `LIGHTING light-dropped` — plus `MENU open` and `MENU close`, which an earlier check missed because those words appear generically elsewhere. Audio load/play/missing events were also added so failed packaged media is observable.
 
 - Reticle events now fire through `diffReticleTelemetry()` (6 tests), which emits **on transitions only**. Reticle state is recomputed on every pointer move and refresh tick; emitting per evaluation would bury the log it exists to make readable — log16 was already 2,108 PERF entries out of 2,875.
 - Menu open/close/input-blocked derive from `describeOverlayTransition()` (6 tests) against the single gate that already decides input suppression, covering all 49 modals at once and carrying the visibility snapshot log16 could not produce.
 - `XP ui-hide` fires when the toast is actually gone, making "hidden at rest" checkable from the log rather than only by eye.
 
-All 30 declared events now have emission sites.
+All declared presentation events now have emission sites, including the AUDIO diagnostics contract.
 
 ### 3. The lighting report never recorded the lights (P0, §2)
 
@@ -72,11 +72,11 @@ Lane C emitted `WEAPON` events as raw `window.hbLog` strings, so a typo would en
 | 10 | Charms use correct per-weapon transforms | Complete, now including gameplay |
 | 11 | Walking grounded at all speeds | Complete |
 | 12 | Desktop and Steam Deck visual checks | Human — Gemini's Phase 4 |
-| 13 | Tests and audits pass | `npm test` 255 files / 2,148 tests; build, lint, presubmit green |
+| 13 | Tests and audits pass | `npm test` 255 files / 2,150 tests; build, lint, presubmit green |
 
 ## What cannot be closed by code
 
 - **"NIO menu"** still has no counterpart in `index.html`, `main.js`, or `style.css`. Plan §1 says to reconcile the term rather than assume a DOM ID. Needs the user to name or screenshot the surface.
 - **Whether the green box is the season-pass toast.** Evidence points there (`.achievement-toast`, `.season-pass-toast` riding it, 4.2s auto-dismiss ⇒ saturation not stickiness), but a screenshot would confirm it is not a different green panel.
 - **Every "does it look right" acceptance** — reticle legibility against real scenes, burst impact, reward hold time, 1280x800 sign-off, foot-slide judged on a 10-second fixed-camera capture. These are Gemini's Phase 4 and need a person.
-- **The stale pointer-lock e2e test.** `tests/e2e/gameplay-aim-cursor.spec.js:12` asserts `document.pointerLockElement !== null`, but `requestPointerLock` was removed from the repo in `e4ec7ec` when the game moved to the tactical-cursor model. It fails identically at `e8ed5fa`, before any Sprint 29 work. It needs retiring or rewriting, not fixing.
+- **The pointer-lock e2e contract** was rewritten to assert the current tactical-cursor behavior. Two aim-cursor tests pass; two other runs hit the known dev-server startup/navigation instability before gameplay became ready. The pointer-lock branch remains supported defensively and now resolves the camera-centre target when active.

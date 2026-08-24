@@ -47,7 +47,7 @@ The warning is a credible lead, but not yet a proven root cause for the playerâ€
 | Reward model disposal contract | No Lane B preview mount/dispose module existed | Implemented: owned material/texture cloning, geometry/material disposal, renderer disposal, context loss, resize/RAF cleanup |
 | Weapon scale profiles | `armoryScene.js` and `player3dOverlay.js` previously used one-size rules | Implemented: `src/weaponCalibration.js` provides per-archetype gameplay/armory/reward profiles and clamps |
 | Charm sockets | `armoryScene.js:340-342` previously used one `0.18, -0.05, 0.06` transform for every weapon | Implemented: `src/charmSockets.js` provides per-archetype transforms and armory integration |
-| Charm model offsets | Every charm additionally uses `model.position.set(0, -0.05, 0)` | Open; must remain a model-local presentation offset, not a substitute for weapon sockets |
+| Charm model offsets | Every charm previously used `model.position.set(0, -0.05, 0)` | Implemented: `resolveCharmModelOffset()` derives the local top-edge/centering offset from each model's bounds |
 | Reward burst depth | `.progression-reward-burst` is DOM/CSS | Hand off to Lane A; Lane B must not implement a competing three.js burst |
 | Lighting telemetry | Shared `src/presentationTelemetry.js` now exists from concurrent Lane A work | Implemented: profile/adaptive tier snapshots correlate shadow, post-processing, pixel ratio, and renderer diagnostics |
 | Preview performance measurement | No preview mount or per-preview resource report existed | Implemented: reward preview emits mount/load timing plus draw-call/triangle metrics |
@@ -303,4 +303,4 @@ Lane B will not edit:
 
 - `npm test -- --run`: 254 files, 2,096 tests passed.
 - `npm run build`: Vite production build and required-media audit passed.
-- Remaining proof is visual/in-game: movement lighting continuity, five reward preview open/close cycles, weapon/charm framing on all archetypes, and headed shadow-warning confirmation.
+- Remaining proof is visual/in-game: movement lighting continuity, five reward preview open/close cycles, weapon/charm framing on all archetypes, and headed shadow-warning confirmation. Automated verification is current at 255 files / 2,148 tests; presubmit, build, media, and chroma audits pass.

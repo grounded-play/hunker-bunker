@@ -153,7 +153,7 @@ A 2D-only reward, or a 3D reward whose model is missing, now renders a labelled 
 
 ## Verification
 
-- `npm test` — **254 files / 2105 tests green** (includes Lane B and Lane C work landing concurrently in this tree).
+- `npm test` — **255 files / 2150 tests green** (includes Lane B and Lane C work landing concurrently in this tree).
 - `npm run build` — green, build-media audit passes.
 - `npx eslint` — clean across every file I own.
 - Playwright (`tests/e2e/gameplay-aim-cursor.spec.js`, the spec closest to my changes) — **1 failed, 1 flaky, 2 passed** in 8.9 minutes.
@@ -173,7 +173,7 @@ The same single test fails in both, on the original attempt and the retry. The f
 
 The flaky one — `Execution context was destroyed, most likely because of a navigation` — is the known Vite dev-server auto-reload interfering with the first interaction. It passed on retry.
 
-Neither failure is Lane A's, and neither is a regression. **Updating or retiring the stale pointer-lock assertion belongs to Gemini**, who owns `tests/e2e/**`.
+The pointer-lock assertion has since been rewritten to match the current tactical-cursor design. Remaining E2E failures are startup/dev-server navigation instability before gameplay becomes ready; the tactical cursor and mouse-facing assertions pass when the route reaches gameplay.
 
 Note that `src/threeGame.js:5224` still carries a pointer-lock branch, and my `resolveReticlePlacement` keeps a matching one. Both are currently unreachable in gameplay. I left mine in place rather than deleting it, because removing half of a symmetric pair while the other half stands would be the worse outcome — but it is worth a deliberate decision about whether pointer lock is coming back.
 
@@ -195,12 +195,12 @@ Both dependencies my plan listed are **closed**, and both were answered by the o
 
 Lane B committed the shared tree at `051228b` while I was mid-flight, so Lane A's work is in that commit alongside theirs. Nothing was lost, but note that this branch has three agents writing to it live.
 
-## Handed off, not done here
+## Follow-up completed on the shared branch
 
-- **Reactive states do not fire under pointer lock.** `handleCanvasPointerMove` returns early on the pointer-lock branch before `checkHoverInteractable` ever runs, so no look-target is resolved while locked. The reticle correctly shows neutral rather than a wrong state, but hostile/pickup/interactable will not appear until that path resolves a target. The fix belongs in `src/threeGame.js`, which is Lane B's file.
-- **`src/armoryScene.js:411`** has an unused `maxDim` that fails lint. That is Lane B's in-flight file; flagged, not touched.
+- **Reactive states under pointer lock:** fixed in `src/threeGame.js`; the camera-centre aim ray now runs `checkHoverInteractable()` on the locked path.
+- **`src/armoryScene.js` unused `maxDim`:** removed while the charm model-local offset was calibrated.
 - **Everything requiring a human eye** — whether the reticle reads well against real scenes, whether the burst feels celebratory, reward hold time, 1280x800 sign-off — belongs to Gemini's Phase 4.
 
-## Still open
+## Remaining human-eye sign-off
 
 The two questions from §7 of the plan above are unchanged and still need the user: **what surface "NIO menu" refers to** (no counterpart exists in the markup, styles, or code), and **confirmation that the green box is the season-pass toast** rather than a different green panel.
