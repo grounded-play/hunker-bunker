@@ -4,9 +4,9 @@
 
 **Active Development Branch:** `dev/sprint-30`
 
-**Current Working Version:** `v2.3.2-beta` (`2.3.2-beta` in `package.json`)
+**Current Working Version:** `v2.3.1-beta` (`2.3.1-beta` in `package.json`)
 
-**Base Stable Release:** [`v2.3.0-beta`](https://github.com/grounded-play/hunker-bunker/releases/tag/v2.3.0-beta)
+**Latest Tagged Baseline:** `v2.3.1-beta` at Sprint 29 integration commit `959239c`
 
 **Main Branch:** `mothership`
 
@@ -36,12 +36,12 @@ $$\textbf{v[MAJOR].[MINOR].[PATCH]-[PRE-RELEASE]}$$
 | **v2.1.0-beta** | Sprint 21 | 2026-08-03 | `v2.1.0-beta` | Multiplayer runtime prototype, co-op damage sync, network seed dispatch. |
 | **v2.2.0-beta** | Sprint 26 (`dev/sprint-26`) | 2026-08-20 | [PR #38](https://github.com/grounded-play/hunker-bunker/pull/38) | Steamworks stats (8/8 synced), Steam Cloud save bridge, self-hosted TLS auth backend (`steam.tuesdaycinema.club`), Depth Contract initial wiring, host failover. |
 | **v2.3.0-beta** | Sprint 28 (`dev/sprint-28`) | 2026-08-23 | [PR #40](https://github.com/grounded-play/hunker-bunker/pull/40) (`030a8f9`) | **46 new 3D models** (30 community chassis skins + 16 Season 0 assets), redesigned 3-column Armory with class backgrounds, Wanderer companion system, Steam Deck twin-stick aiming preset, mid-run crash recovery (`runCheckpoint.js`), GPU frame profiler, all 8 transformative relics. |
-| **v2.3.1-beta** *(merged, not tagged)* | Sprint 29 (`dev/sprint-29`) | 2026-08-24 | `959239c` on `mothership` | Presentation telemetry and fixes, 11 optimized runtime models, reward/XP feedback, lighting reports, weapon/charm calibration, locomotion cadence, and chroma-green auditing. |
-| **v2.3.2-beta** *(active working version)* | Sprint 30 (`dev/sprint-30`) | *In progress* | Branch from `959239c` | Acceptance, first-hour/product coherence, real packaged/Deck/Cloud evidence, production two-account co-op, and repository control. |
+| **v2.3.1-beta** | Sprint 29 (`dev/sprint-29`) | 2026-08-24 | `959239c` on `mothership` | Presentation telemetry and fixes, 11 optimized runtime models, reward/XP feedback, lighting reports, weapon/charm calibration, locomotion cadence, and chroma-green auditing. |
+| **Next version: undecided** | Sprint 30 (`dev/sprint-30`) | *In progress* | Branch from `959239c` | Choose the version only after accepted Sprint 30 scope is known. |
 
 ---
 
-## 3. Sprint 30 Roadmap & Iteration Objectives (`v2.3.2-beta`)
+## 3. Sprint 30 Roadmap & Iteration Objectives
 
 Sprint 30 deliberately narrows the work to acceptance and the defects that its
 end-to-end routes expose. The executable plan is
@@ -49,7 +49,7 @@ end-to-end routes expose. The executable plan is
 
 ```mermaid
 graph TD
-    A["Sprint 30: v2.3.2-beta"] --> B["1. Single-player Proof Run"]
+    A["Sprint 30: acceptance first"] --> B["1. Single-player Proof Run"]
     A --> C["2. Production two-account co-op"]
     A --> D["3. Deck, Cloud, package acceptance"]
     A --> E["4. Fix measured P0/P1 failures"]
@@ -74,7 +74,7 @@ npm run lint                  # 0 errors / 0 warnings
 npm run presubmit             # Claims, SFX, retail assets, item catalog, soundtrack
 npm run audit:dependencies    # Production dependencies mapped
 npm run build                 # Vite bundle + audit:build-media
-npm run coverage              # Vitest suite (current baseline: 2,151 tests)
+npm run coverage              # Vitest suite (current baseline: 2,152 tests)
 ```
 
 ### Step 3: Branch Pull Request & Review

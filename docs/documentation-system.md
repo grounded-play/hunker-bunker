@@ -27,6 +27,14 @@ When documents disagree, use this order:
 A plan proves intent, not completion. A unit test proves its contract, not a
 human, hardware, service, or store-dashboard acceptance claim.
 
+Use this evidence progression for individual claims:
+
+**Designed → Coded → Connected → Tested → Live-verified → Packaged-verified → Accepted**
+
+Record the highest state actually demonstrated. Later states do not happen
+automatically: code can exist without a runtime consumer, and a tested feature
+can remain unaccepted on its target hardware or service.
+
 ## Document lifecycles
 
 | Lifecycle | Meaning | Required treatment |
@@ -98,4 +106,3 @@ name the external owner or required environment instead of leaving a bare box.
 files, broken relative links, absolute `file://` links, current sprint/version
 drift, and more than one active sprint plan. Historical archives are preserved
 but excluded from current-truth assertions.
-

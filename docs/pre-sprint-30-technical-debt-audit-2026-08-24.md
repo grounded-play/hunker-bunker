@@ -78,3 +78,19 @@ Sections 1 and 2 of the cleanup brief (docs hierarchy, documentation system) wer
 2. Cover `seasonPassUi.js`'s claim→reveal→dismiss lifecycle.
 3. Retire the four always-true feature flags and correct `ARMORY_SCREEN_ENABLED`'s comment; keep the Act 2 branch it guards.
 4. Tag `v2.3.1-beta` — `package.json` declares it but no tag exists.
+
+## Sprint 30 disposition
+
+Resolved locally on 2026-08-24:
+
+- added Season Pass reveal/dismiss DOM lifecycle coverage;
+- retired the four permanently enabled feature flags while preserving the Act 2
+  Armory bypass and authored-world rollback behavior;
+- removed the duplicate root favicon and zero-byte `node` artifact;
+- created local annotated tag `v2.3.1-beta` at `959239c`;
+- explicitly retained colocated tests instead of moving 193 files into `tests/`.
+- deleted eight ancestry-merged local branches plus duplicate-only
+  `dev/sprint-24`; remote refs were left untouched.
+
+Still open: focused `rewardPreview.js` lifecycle coverage, remaining untested
+modules ranked by risk, and remote branch deletion by a repository maintainer.

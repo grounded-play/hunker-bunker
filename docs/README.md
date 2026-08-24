@@ -13,6 +13,7 @@ Last reviewed: 2026-08-24 · Owner: repository maintainers
 | What works, and what is merely code-complete? | [Product State](../PRODUCT_STATE.md) |
 | What are we doing now? | [Sprint 30 plan](planning/sprint-30.md) |
 | What comes after this sprint? | [Repository roadmap](planning/repository-roadmap.md) |
+| Who owns each runtime boundary? | [Runtime system map](architecture/system-map.md) |
 | How are versions and releases handled? | [Versioning and release roadmap](versioning-and-release-roadmap.md) |
 | What does a contributor need? | [Contributing](../CONTRIBUTING.md) |
 
@@ -39,6 +40,13 @@ was made, but they do not define current status. Older material belongs under
 [the archive](archive/README.md); existing loose historical files remain in
 place until a link-preserving archive pass moves them.
 
+## Sprint 30 evidence inputs
+
+- [Sprint 28–29 carry-forward audit](reports/sprint-28-29-carry-forward-audit-2026-08-24.md)
+  reconciles original commitments with their highest honest evidence state.
+- [Pre-Sprint-30 technical-debt audit](pre-sprint-30-technical-debt-audit-2026-08-24.md)
+  measures branch residue, test gaps, stale feature gates, and root clutter.
+
 ## Documentation rules
 
 [Documentation system](documentation-system.md) defines ownership, lifecycle,
@@ -49,4 +57,3 @@ filenames, sprint closeout, and the automated documentation check. In short:
 3. Put durable design in a maintained reference, not a sprint transcript.
 4. Archive superseded status documents; never silently rewrite history.
 5. Run `npm run audit:docs` before merging documentation changes.
-

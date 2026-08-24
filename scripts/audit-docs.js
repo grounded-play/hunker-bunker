@@ -7,8 +7,8 @@ const canonicalFiles = [
   'README.md',
   'PRODUCT_STATE.md',
   'CONTRIBUTING.md',
-  'PR_OUTLINE.md',
   'docs/README.md',
+  'docs/architecture/system-map.md',
   'docs/documentation-system.md',
   'docs/design/README.md',
   'docs/releases/README.md',
@@ -73,7 +73,7 @@ for (const [relativePath, source] of contents) {
 
 const packageJson = JSON.parse(fs.readFileSync(path.join(root, 'package.json')));
 const version = packageJson.version;
-const expectedVersion = '2.3.2-beta';
+const expectedVersion = '2.3.1-beta';
 const expectedBranch = 'dev/sprint-30';
 if (version !== expectedVersion) {
   errors.push(`package.json: expected Sprint 30 version ${expectedVersion}, found ${version}`);
@@ -81,7 +81,6 @@ if (version !== expectedVersion) {
 
 const synchronizedFiles = [
   'PRODUCT_STATE.md',
-  'PR_OUTLINE.md',
   'docs/planning/sprint-30.md',
   'docs/versioning-and-release-roadmap.md',
 ];
@@ -96,7 +95,7 @@ for (const relativePath of synchronizedFiles) {
 }
 
 const indexHtml = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
-if (!indexHtml.includes('SYS VER: 2.3.2-BETA // ACTIVE')) {
+if (!indexHtml.includes('SYS VER: 2.3.1-BETA // ACTIVE')) {
   errors.push('index.html: in-game version label is not synchronized');
 }
 

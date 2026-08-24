@@ -27,8 +27,7 @@ import { MOTHERSHIP_REACTIVE_LINES } from './src/data/lineDirectorPools.js';
 import { ArcStateManager } from './src/arcState.js';
 import { CaveRevealController } from './src/caveReveal.js';
 import { Act2Manager, ACT2_ENDING_CUTSCENES, ACT2_LINES, getAct2EndingLines, pickAct2Ending, buildAct2Manifest } from './src/act2.js';
-import { ARC_PRELUDE_ENABLED } from './src/featureFlags.js';
-import * as featureFlags from './src/featureFlags.js';
+import { DEMO_BUILD } from './src/featureFlags.js';
 import { ACHIEVEMENT_DEFS, AchievementEngine, getAchievementProgress, getSecretGateState, hasAnyUnlock, saveAchievements } from './src/achievements.js';
 import { STEAM_RUN_SCORE_FINALIZED_EVENT, buildSteamRunScorePayload, dispatchSteamRunScoreFinalized } from './src/steam/steamEvents.js';
 import { syncSteamStats } from './src/steamStats.js';
@@ -52,7 +51,6 @@ import { repackGeneratedSpriteAtlas } from './src/spriteAtlasRuntime.js';
 import { createScoutHeroPreview } from './src/scoutHeroPreview.js';
 import { createArmoryScene } from './src/armoryScene.js';
 import { createArmoryUi } from './src/armoryUi.js';
-import { ARMORY_SCREEN_ENABLED } from './src/featureFlags.js';
 import { initSteamVaultUI, loadVaultData, openSteamVaultModal, showSteamDropToast, renderSteamMilestoneGrants, grantVaultItem, resetDevVaultInventory, setDevInfiniteCacheMode, isDevInfiniteCacheMode, STEAM_ITEM_CATALOG } from './src/steamVaultUi.js';
 import { initSeasonPassUI, flushQueuedSeasonPassToasts, cancelXpFeedback } from './src/seasonPassUi.js';
 import { preloadEnemy3dTemplates } from './src/enemy3dOverlay.js';
@@ -3655,7 +3653,7 @@ function renderBiomeStatus(detail = {}, { showPrompt = false } = {}) {
 }
 
 function maybeShowCaveSignalTransmission() {
-    if (!ARC_PRELUDE_ENABLED || !arcManager) return;
+    if (!arcManager) return;
     arcManager.evaluate();
     const arc = arcManager.getState();
     if (arc.arcState !== 'cave_signal') return;
@@ -7037,7 +7035,7 @@ window.addEventListener('queen-fight-started', () => {
 
 // ── Act 2 run intro: the queen replaces the Mothership handshake ──
 function repairInterruptedCaveReveal() {
-    if (!ARC_PRELUDE_ENABLED || !arcManager) return null;
+    if (!arcManager) return null;
     const arc = arcManager.getState();
     if (arc.arcState === 'infected_blackout') {
         return arcManager.forceState('hive_awakened_tease');
@@ -7046,7 +7044,7 @@ function repairInterruptedCaveReveal() {
 }
 
 function isAct2RunActive() {
-    if (!ARC_PRELUDE_ENABLED || !arcManager || !act2Manager) return false;
+    if (!arcManager || !act2Manager) return false;
     return repairInterruptedCaveReveal()?.arcState === 'hive_awakened_tease';
 }
 
@@ -7255,9 +7253,8 @@ function returnFromHeroSelectToTitle() {
 }
 
 // ── Pre-Mission Armory Gate (docs/armory-and-class-weapons-worklog.md task 5) ──
-// Inserted between class-select (menu) and run launch. Off unless
-// ARMORY_SCREEN_ENABLED is flipped true in src/featureFlags.js, in which case
-// callers below fall straight through to their embark action unchanged.
+// Inserted between class-select (menu) and run launch. Active Act 2
+// continuation runs bypass it so a boss-continuation run does not re-gear.
 let armorySceneInstance = null;
 let armoryUiInstance = null;
 let armoryInitPromise = null;
@@ -7314,12 +7311,12 @@ function closeArmoryScreen({ embark }) {
 
 // Wraps a run-launch action (launchStandardRun or the Daily Ops flow) so it
 // fires only after the player confirms their loadout in the Armory. Bypassed
-// entirely while the feature flag is off, or mid-campaign on an active Act 2
-// continuation run (doc 07 §2 — you don't re-gear for a boss-continuation run,
+// mid-campaign on an active Act 2 continuation run (doc 07 §2 — you don't
+// re-gear for a boss-continuation run,
 // same reasoning as the existing Mothership-dialogue skip inside
 // runMissionIntroSequence).
 async function openArmoryGate(embarkAction) {
-    if (!ARMORY_SCREEN_ENABLED || isAct2RunActive()) {
+    if (isAct2RunActive()) {
         embarkAction();
         return;
     }
@@ -10456,7 +10453,7 @@ window.addEventListener('cave-entrance-revealed', (event) => {
 let caveRevealController = null;
 
 function startCaveRevealSequence() {
-    if (!ARC_PRELUDE_ENABLED || !arcManager) return;
+    if (!arcManager) return;
     ensureMissionManagers();
     if (!caveRevealController) {
         caveRevealController = new CaveRevealController({
@@ -10524,7 +10521,7 @@ window.addEventListener('cave-entrance-interact', () => {
 // queen. The title corruption still lands for whenever they next see the menu.
 async function handleCaveRevealBecomeInfected() {
     applyCorruptedTitlePresentation({ sting: true });
-    if (featureFlags.DEMO_BUILD) {
+    if (DEMO_BUILD) {
         showDemoEndModal();
         return;
     }
@@ -11307,7 +11304,7 @@ async function runAct2DepartureSequence(detail = {}) {
 // After the reveal, Hunker Bunker stops pretending: the title screen shows the
 // game's true name. Applied on boot too so the corruption persists.
 function applyCorruptedTitlePresentation({ sting = false } = {}) {
-    if (!ARC_PRELUDE_ENABLED || !arcManager) return;
+    if (!arcManager) return;
     if (arcManager.getState().arcState !== 'hive_awakened_tease') return;
     document.title = 'PREGALIEN | HIVE COMMAND';
     for (const el of [document.querySelector('.splash-title'), document.querySelector('.title-small')]) {

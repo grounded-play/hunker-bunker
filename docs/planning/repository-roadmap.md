@@ -14,7 +14,7 @@ completion reports, `things-we-missed.md`, current code shape, and Product State
 | Code-complete was treated too close to accepted | Packaged Steam, two-account co-op, Deck, Cloud, and real-GPU proof recur from Sprints 24/26 through 29 | Acceptance gets committed capacity and named evidence, not a final checkbox lane |
 | New scope displaced carryover | Sprint 29 planned Wanderers, tuning, Deck, and certification but closed mainly presentation/model integration work | Every closeout must classify untouched work as carry, blocked, or cut |
 | Plans multiplied faster than truth | 149 loose Markdown files sit directly in `docs/`, including competing master plans and status audits | One Product State, one active sprint, one roadmap, indexed maintained references |
-| Automated volume masked environment gaps | 2,151 tests are healthy, while E2E startup and hardware/service paths remain open | Keep unit, E2E, packaged, hardware, and human evidence as separate grades |
+| Automated volume masked environment gaps | 2,152 tests are healthy, while E2E startup and hardware/service paths remain open | Keep unit, E2E, packaged, hardware, and human evidence as separate grades |
 | Large integration seams regress | Multiplayer handoff was reworked repeatedly; `threeGame.js`, `style.css`, and `main.js` remain very large | Extract from measured seams after acceptance, with characterization tests |
 | Asset count outran review | Large model catalogs landed while per-model framing, runtime cost, and missing variants stayed open | Require in-game visual/perf acceptance before the next production batch |
 
@@ -63,6 +63,11 @@ This is Sprint 30 and the release gate for further breadth.
    leaderboards, and deployment rollback.
 7. Archive historical docs by sprint/subsystem with link-preserving redirects;
    convert valuable conclusions into maintained references.
+8. Keep unit tests colocated with `src/` modules; close measured wiring gaps
+   (`seasonPassUi`, `rewardPreview`, then remaining modules by risk) rather than
+   performing a repository-wide test-file move.
+9. Remove permanent feature flags once rollout is complete. A flag must retain a
+   real off-path, an owner, and a retirement condition or become ordinary code.
 
 ## Horizon D — commercial release readiness
 
@@ -93,4 +98,3 @@ Sprint 31 should be chosen from the failures and evidence produced by Sprint 30,
 not precommitted now. If acceptance is clean, begin Horizon B with the Wanderer
 vertical slice and general objective grammar. If acceptance fails, Sprint 31 is
 the stabilization sprint for the measured blockers.
-

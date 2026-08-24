@@ -1,7 +1,8 @@
 # Sprint 30 — Acceptance, Coherence, and Repository Control
 
 Status: active plan · Owner: repository maintainers · Updated: 2026-08-24 ·
-Branch: `dev/sprint-30` · Target: `v2.3.2-beta`
+Branch: `dev/sprint-30` · Working baseline: `v2.3.1-beta` · Release target:
+decide at scope lock
 
 ## Thesis
 
@@ -14,7 +15,7 @@ feel, and establishes one controlled documentation/backlog path.
 
 - Sprint 29 merged presentation, audio/telemetry, model integration,
   weapon/charm calibration, reward feedback, and locomotion fixes.
-- `npm test` passes 2,151 tests across 255 files on 2026-08-24.
+- `npm test` passes 2,152 tests across 256 files on 2026-08-24.
 - Sprints 24, 26, 28, and 29 all left some combination of packaged-build,
   real-hardware, two-account, Cloud, and first-hour acceptance open.
 - Sprint 29's original Wanderer, balance, Deck optimization, and Steam
@@ -22,6 +23,13 @@ feel, and establishes one controlled documentation/backlog path.
 - `main.js`, `src/threeGame.js`, and `style.css` are 13.7k, 30.2k, and 20.1k
   lines respectively; architectural extraction is necessary, but not a reason
   to derail this acceptance sprint.
+- The technical-debt audit found 17 of 144 `src/` modules without colocated
+  tests. `seasonPassUi.js` and `rewardPreview.js` are the highest-risk Sprint 29
+  gaps because their DOM/Three.js wiring sits beyond well-tested pure helpers.
+- Four of five feature flags are permanently enabled. The Armory flag's comment
+  contradicts live behavior, and authored-world flag evaluation is redundant.
+- No marker debt was found: zero TODO/FIXME/HACK markers, lint suppressions, or
+  skipped tests. Sprint 30 should remove stale gates, not invent a cleanup quota.
 
 ## Committed outcomes
 
@@ -82,6 +90,21 @@ Evidence: one platform acceptance report with machine/build identifiers.
   readiness contract if it blocks acceptance evidence.
 - [ ] Update Product State and store-claim checklists from results.
 
+### 6. Retire measured repository debt
+
+- [x] Cover the Season Pass claim → reveal → dismiss DOM lifecycle using the
+  existing mock-element testing pattern.
+- [ ] Add focused wiring coverage for `rewardPreview.js` where lifecycle and
+  Three.js disposal behavior are not already proven through extracted helpers.
+- [x] Remove the four permanently enabled feature flags and simplify their live
+  call sites without deleting the still-reachable Act 2 fallback.
+- [x] Keep tests colocated with their modules. Do not move 193 test files into
+  `tests/`; Vitest and current parallel ownership both benefit from colocation.
+- [x] Remove the verified duplicate root favicon and zero-byte `node` artifact;
+  retain `public/favicon.png` as the served source.
+- [x] Retire fully merged/duplicate local sprint branches after verifying ancestry. Remote
+  branch deletion remains a deliberate repository-maintainer action.
+
 ## Stretch outcomes
 
 These may begin only after Outcomes 2–4 have evidence:
@@ -114,4 +137,5 @@ Sprint 30 closes only when:
    `npm run audit:docs` pass.
 4. The sprint closeout classifies every item as delivered and accepted,
    carried with reason, blocked with owner, or cut with rationale.
-
+5. The Season Pass DOM lifecycle is regression-tested and stale permanent
+   feature gates no longer misdescribe runtime behavior.

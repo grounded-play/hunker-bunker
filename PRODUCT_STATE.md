@@ -5,7 +5,7 @@ and worklogs are evidence or history; they do not override this file. Update a
 row when its implementation or acceptance state changes and link to evidence
 instead of duplicating it here.
 
-Last verified: 2026-08-24 · Sprint 30 · `dev/sprint-30` · `v2.3.2-beta`
+Last verified: 2026-08-24 · Sprint 30 · `dev/sprint-30` · `v2.3.1-beta`
 
 Status vocabulary:
 
@@ -31,7 +31,7 @@ Status vocabulary:
 | Save recovery | Mid-run checkpoint recovery is implemented through `src/runCheckpoint.js`. | Packaged crash/restart and Steam Cloud interaction tests remain open. |
 | Performance diagnostics | GPU timer, memory budgets, long-task attribution, lighting reports, and presentation telemetry are implemented. | Real-GPU packaged comparison and a stable 60 FPS Deck evidence run remain open. |
 | Presentation | Sprint 29 closed reticle, menu isolation telemetry, XP/reward feedback, lighting reporting, weapon/charm calibration, audio diagnostics, and walk cadence gaps. | Desktop 16:9 and 1280×800 human visual sign-off remains open. |
-| Automated suite | `npm test` passes **2,151 tests across 255 files** as of 2026-08-24. | E2E startup/navigation instability and hardware-only behavior are not covered by this count. |
+| Automated suite | `npm test` passes **2,152 tests across 256 files** as of 2026-08-24. | E2E startup/navigation instability and hardware-only behavior are not covered by this count. |
 
 ## Current milestone
 

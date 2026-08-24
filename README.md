@@ -20,9 +20,9 @@
 
 🎮 **[Play Live Browser Build](https://hunkerbunker.netlify.app/)** • 💬 **[Join Discord Server](https://discord.gg/XXwwz3rauu)** • 📚 **[Documentation Map](docs/README.md)**
 
-> **Status (2026-08-24):** Sprint 30 is the current planning and acceptance sprint on `dev/sprint-30`, targeting `v2.3.2-beta`. Sprint 29's presentation, model-integration, telemetry, weapon/charm, and locomotion work is merged. Steam lobby, Cloud, Deck, packaged-build, and co-op claims still have human or real-hardware acceptance gates; see [Product State](PRODUCT_STATE.md) for the exact distinction.
+> **Status (2026-08-24):** Sprint 30 is the current planning and acceptance sprint on `dev/sprint-30`, working from the `v2.3.1-beta` Sprint 29 baseline. The next version will be selected only after Sprint 30 scope and acceptance are known. Steam lobby, Cloud, Deck, packaged-build, and co-op claims still have human or real-hardware acceptance gates; see [Product State](PRODUCT_STATE.md) for the exact distinction.
 >
-> Verified locally on 2026-08-24: **2,151 passing tests across 255 files**. See [Sprint 30](docs/planning/sprint-30.md) for current work and [`docs/releases/`](docs/releases/) for tagged releases.
+> Verified locally on 2026-08-24: **2,152 passing tests across 256 files**. See [Sprint 30](docs/planning/sprint-30.md) for current work and [`docs/releases/`](docs/releases/) for tagged releases.
 
 ---
 
