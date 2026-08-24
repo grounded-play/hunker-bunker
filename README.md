@@ -12,129 +12,138 @@
   <a href="https://app.netlify.com/projects/hunkerbunker/deploys"><img src="https://api.netlify.com/api/v1/badges/3d99b6f8-2e77-4a86-8292-1fffe5c9c308/deploy-status" alt="Netlify Status"></a>
   <a href="https://discord.gg/XXwwz3rauu"><img src="https://img.shields.io/badge/Discord-Join%20Server-5865F2?logo=discord&logoColor=white" alt="Discord Server"></a>
   <a href="https://opensource.org/licenses/MIT"><img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="License: MIT"></a>
-  <a href="https://threejs.org/"><img src="https://img.shields.io/badge/Three.js-r184-00e5ff.svg?logo=three.js" alt="Three.js"></a>
+  <a href="https://threejs.org/"><img src="https://img.shields.io/badge/Three.js-r185-00e5ff.svg?logo=three.js" alt="Three.js"></a>
 </p>
 
 > **Crash in. Scavenge O2. Upgrade your suit. Survive the depths.**  
-> **Hunker Bunker** is a retro-futuristic tactical survival game where you navigate ice-locked subterranean corridors, balance failing life support, uncover lost telemetry, and decide what leaves the planet with you.
+> **Hunker Bunker** is a biomechanical survival roguelike set beneath the frozen surface of Cocytus IV, built for desktop and Steam Deck with an Electron/Steamworks release path.
 
-🎮 **[Play Live Browser Build](https://hunkerbunker.netlify.app/)** • 💬 **[Join Discord Server](https://discord.gg/XXwwz3rauu)** • 📜 **[Steam Readiness Specs](docs/steam-docs-master-index.md)**
+🎮 **[Play Live Browser Build](https://hunkerbunker.netlify.app/)** • 💬 **[Join Discord](https://discord.gg/XXwwz3rauu)** • 📚 **[Documentation Index](docs/README.md)** • 🚢 **[Steam / Repo Roadmap](docs/repo-roadmap.md)**
 
-> **Status**: In active development, heading into Steam review. Sprint 26 landed Steam-native multiplayer — production Steam auth confirmed live, real Steam Lobby integration (Friends invite, Join Game, Rich Presence) code-complete — with Sprint 27 up next. The browser build above is always current — play it, then come tell us what broke in Discord. No wishlist link yet; Discord is the fastest way to hear the moment that changes.
+> **Current status — Sprint 30 (2026-08-24):** the project is in a convergence and Steam-readiness phase. Sprint 29's automated presentation/integration gates closed green at **2,150 tests across 255 files**, but important acceptance work remains: packaged desktop/Deck visual verification, physical-hardware frame pacing, a full two-real-Steam-account co-op certification route, and runtime connection of Wanderer quest-objective progression.
 >
-> The automated suite currently covers **1,780 passing tests across 219 files** — see [`docs/releases/`](docs/releases/) for what shipped each sprint.
+> The working package version remains **`2.3.1-beta`** while Sprint 30 locks its ship scope. See [`PRODUCT_STATE.md`](PRODUCT_STATE.md) for current truth and [`docs/sprints/sprint-30-plan.md`](docs/sprints/sprint-30-plan.md) for active work.
 
 ---
 
-## 📸 Sector Zero Teaser
+## Core Features
 
-| Ice-Locked Perimeter | Subterranean Tactical Run | Hostile Sector Contacts |
-| :---: | :---: | :---: |
-| <img src="./public/title_key_art_v2.png" alt="Sector Zero Perimeter" width="380"> | <img src="./public/hunker_bunker_hero.png" alt="Tactical Run" width="380"> | <img src="./public/cutscenes/poster-art/death-combat.png" alt="Hostile Contacts" width="380"> |
-
----
-
-## ⚡ Core Features
-
-- **Procedural Bunker Runs**: WebGL-powered isometric corridors with dynamic fog of war, environmental hazards, and O2 survival pressure — no two runs share a layout.
-- **3 Exosuit Classes**: Distinct playstyles for **Scout** (Speed & Recon), **Tank** (Endurance & Armor), and **Engineer** (Systems & Terminals).
-- **Deep Progression**: Bank salvage between runs, research a full combat skill tree, craft specialized gear, and level a **50-tier Season 0 Battle Pass**.
-- **10 Branching Endings**: Survivor encounters, faction standing with the Meridian/Tallow/Vesper camps, and hive diplomacy all feed into which of ten real Act 2 outcomes you land.
-- **Real Multiplayer**: Socket.IO relay lobby with LAN and online play — drop in with a friend or run solo against AI.
-- **Live Steamworks Integration**: 5 trusted backend leaderboards, Steam Cloud Auto-Cloud saves, a full Steam Vault economy (weapon skins, charms, cosmetics), and 24 Steam Achievements.
-- **In-Game Dev & QA Console (`~`)**: Real-time diagnostic telemetry, event interceptors, audio/network monitors, and QA cheat commands (`resetachievements`).
+- **Procedural bunker runs** with authored-set-piece support, dynamic hazards, fog of war, O2 pressure, and escalating depth.
+- **Three exosuit classes** — Scout, Tank, and Engineer — with distinct movement, durability, systems, weapons, and ability profiles.
+- **Buildcraft and progression** across weapons, relics, salvage, research, cosmetics, achievements, and Season 0 rewards.
+- **One More Ring / Depth Contract** risk-reward escalation tied into oxygen pressure, salvage value, and director aggression.
+- **Act 1 + Act 2 consequence paths** including camps, hives, queen/end-state logic, factions, companions, and multiple endings.
+- **Co-op and PvP networking** through Steam/native lobby integration plus a trusted Socket.IO relay/backend path.
+- **Steamworks integration** for stats, achievements, inventory/economy surfaces, Cloud bridge, Steam Input, lobby flows, and release packaging.
+- **Steam Deck-first controls** with twin-stick aiming, right-stick menu pointer behavior, 1280×800 presentation targets, and GPU diagnostics.
+- **In-game QA telemetry** for performance, presentation, networking, weapons, audio, lighting, and developer diagnostics.
 
 ---
 
-## 🛡️ Specialist Classes
+## Specialist Classes
 
 | SCOUT | TANK | ENGINEER |
 | :---: | :---: | :---: |
 | <img src="./public/Scout.Intro.gif" alt="Scout Class Exosuit" width="240"> | <img src="./public/Tank.Intro.gif" alt="Tank Class Exosuit" width="240"> | <img src="./public/Eng.Intro.gif" alt="Engineer Class Exosuit" width="240"> |
-| **Active Ability**: Sprint Burst<br>Fast recon & high-risk salvage runs. | **Active Ability**: Heavy Brace<br>Absorbs punishment & clears corridors. | **Active Ability**: Systems Reroute<br>Hacks terminals & maximizes extraction. |
+| Fast recon, mobility, and high-risk salvage. | Heavy endurance, armor, and corridor control. | Systems manipulation, hacking, and utility. |
 
 ---
 
-## 🕹️ Controls
+## Controls
 
-| Action | Keyboard / Mouse | Gamepad / Touch |
+| Action | Keyboard / Mouse | Gamepad / Steam Deck |
 | --- | --- | --- |
-| **Move** | `WASD` / Arrow Keys | Left Stick / Touch Joystick |
-| **Aim & Fire** | Mouse Aim + Left Click | Right Stick / Fire Trigger |
-| **Interact** | `E` | Action / Confirm Button |
-| **Reload** | `R` | Reload Button |
-| **Class Ability** | `F` | Special Ability Button |
+| **Move** | `WASD` / Arrow Keys | Left Stick |
+| **Aim & Fire** | Mouse Aim + Left Click | Right Stick + Fire Trigger |
+| **Interact** | `E` | Action / Confirm |
+| **Reload** | `R` | Reload |
+| **Class Ability** | `F` | Special Ability |
 | **Radar Scan** | `Q` | Sub-weapon / Scan |
-| **Sprint** | `Shift` | Left Stick Click / Sprint Toggle |
-| **Dev Telemetry** | `~` (Tilde) | Open Diagnostic Overlay |
+| **Sprint** | `Shift` | Sprint binding |
+| **Dev Telemetry** | `~` | Diagnostic overlay where mapped |
 
 ---
 
-## 🚀 Quickstart & Setup
+## Quickstart
 
 ### Prerequisites
-- **Node.js**: v20 or newer
-- **npm**: v9+
+
+- **Node.js 22** — CI was standardized on Node 22 during Sprint 29 to match the current Electron/tooling engine requirements.
+- **npm** compatible with Node 22.
 
 ```bash
 # Clone the repository
 git clone https://github.com/grounded-play/hunker-bunker.git
 cd hunker-bunker
 
-# Install dependencies & launch dev server
-npm install
+# Install the lockfile exactly
+npm ci
+
+# Launch the Vite dev server
 npm run dev
 ```
-> Open **`http://localhost:5173`** in your browser.
 
-### 🧪 Verification & Build
+Open the local URL printed by Vite, normally `http://localhost:5173`.
+
+### Verification
 
 ```bash
-npm test         # Run the complete unit and integration test suite
-npm run coverage # Run tests and generate the coverage report
-npm run lint     # Check formatting & code safety
-npm run build    # Compile production WebGL bundle
+npm run lint          # ESLint
+npm test              # Vitest unit/integration suite
+npm run presubmit     # Generated/content/asset/catalog audits
+npm run build         # Production Vite build + media audit
+npm run coverage      # Coverage run
+npm run test:e2e      # Playwright E2E suite
 ```
 
-The badges above report the latest merged `mothership` workflow results. Pull
-request checks may be newer; use the PR checks view when validating an
-unmerged branch.
+For Steam/Electron work, use the release and packaging commands in `package.json` and the platform documentation under `docs/` / `steam/`. A passing browser test is not a substitute for packaged-build acceptance when the feature depends on Electron, Steamworks, physical hardware, audio/media unpacking, or multiple real Steam accounts.
 
 ---
 
-## 🛠️ Tech Architecture
+## Architecture at a Glance
 
-- **WebGL 3D Engine**: Powered by **Three.js** (r184) with procedural dungeon generation, dynamic fog of war, and WebAudio spatial soundscapes.
-- **Desktop & Steam Shell**: Built with **Electron** featuring native **Steamworks** integration for Steam Cloud saves, Steam Input, real Steam Lobbies (Friends invite, Join Game, Rich Presence), and 24 Steam Achievements.
-- **Trusted Relay Server**: Node.js & Express server running in **Docker Compose** behind **Caddy** (`steam.tuesdaycinema.club`), enforcing verified score validation for 5 Steam Leaderboards and Steam-session-authenticated multiplayer.
+- **Three.js / WebGL runtime** for the 3D bunker world, procedural generation, actors, lighting, effects, and overlays.
+- **Electron desktop shell** with native Steamworks integration and packaged asset handling.
+- **Node/Express + Socket.IO backend/relay** for trusted multiplayer and Steam-adjacent server behavior.
+- **Self-hosted production backend path** using Docker Compose + Caddy at `steam.tuesdaycinema.club`; other deployment configs in the repo are being classified during Sprint 30 so legacy paths are not mistaken for production requirements.
+- **Vite + Vitest + Playwright + ESLint** for build/test/development workflow.
 
----
-
-## 🤝 Join the Team
-
-Hunker Bunker is built in the open. Whether you write code or just want first
-crack at every new drop, there's a seat for you.
-
-**Playtesters & community** — the fastest way in. Jump into Discord, play the
-live browser build, break things, and tell us what you found. Community
-feedback has directly shaped classes, endings, and the economy in this repo.
-
-**Contributors** — this is a real MIT-licensed open-source project, not a
-mirror. Bug fixes, balance tuning, new content, tooling — all welcome.
-1. Read [`CONTRIBUTING.md`](CONTRIBUTING.md) for the fork/branch/PR workflow.
-2. Check [open issues](https://github.com/grounded-play/hunker-bunker/issues) for
-   something to grab, or file a [bug report](https://github.com/grounded-play/hunker-bunker/issues/new?template=bug_report.md) /
-   [feature request](https://github.com/grounded-play/hunker-bunker/issues/new?template=feature_request.md).
-3. `npm test && npm run lint` before you open a PR — CI runs the same checks.
-
-- 💬 **Discord**: [Join Server](https://discord.gg/XXwwz3rauu)
-- 🛠️ **Issues & PRs**: [github.com/grounded-play/hunker-bunker](https://github.com/grounded-play/hunker-bunker)
+The repository is mature enough that several root runtime files have become large. Sprint 30's roadmap favors gradual, test-backed extraction by responsibility rather than a risky wholesale rewrite. See [`docs/repo-roadmap.md`](docs/repo-roadmap.md).
 
 ---
 
-## 📄 License & Contact
+## Documentation
 
-Distributed under the **MIT License**. Built with ❤️ by **Tuesday Cinema Club**.
+Start here instead of searching sprint filenames:
 
-- 💬 **Discord**: [Join Server](https://discord.gg/XXwwz3rauu)
-- 📧 **Support & Contact**: [Support@TuesdayCinema.Club](mailto:Support@TuesdayCinema.Club)
+- [`PRODUCT_STATE.md`](PRODUCT_STATE.md) — what is true today.
+- [`docs/README.md`](docs/README.md) — documentation lifecycle and navigation rules.
+- [`docs/repo-roadmap.md`](docs/repo-roadmap.md) — prioritized path toward a Steam-quality game.
+- [`docs/sprints/sprint-30-plan.md`](docs/sprints/sprint-30-plan.md) — current sprint.
+- [`docs/releases/`](docs/releases/) — release history.
+- [`docs/versioning-and-release-roadmap.md`](docs/versioning-and-release-roadmap.md) — versioning/release process.
+
+Historical sprint plans, audits, prompts, and transcripts are evidence of decisions at a point in time; they are not automatically current product truth.
+
+---
+
+## Contributing
+
+Hunker Bunker is developed in the open under the MIT License.
+
+1. Read [`CONTRIBUTING.md`](CONTRIBUTING.md).
+2. Read [`PRODUCT_STATE.md`](PRODUCT_STATE.md) and the current sprint plan before choosing work.
+3. Prefer work from [`docs/repo-roadmap.md`](docs/repo-roadmap.md) so new breadth does not outrank older Steam acceptance gates.
+4. Run the relevant automated gates before opening a PR.
+5. For player-facing, packaged, Steam, or hardware-specific changes, record the acceptance evidence the change actually requires.
+
+💬 **Discord:** [Join Server](https://discord.gg/XXwwz3rauu)
+
+---
+
+## License & Contact
+
+Distributed under the **MIT License**. Built by **Tuesday Cinema Club**.
+
+- **Support:** Support@TuesdayCinema.Club
+- **Discord:** [Join Server](https://discord.gg/XXwwz3rauu)
