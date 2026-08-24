@@ -184,6 +184,12 @@
     "audio/generated/camp_worker_fleeing.wav",
     "audio/generated/camp_worker_infected.wav",
     "audio/generated/camp_worker_panicked.wav",
+    "audio/generated/reward_reveal_charm.wav",
+    "audio/generated/reward_reveal_chassis.wav",
+    "audio/generated/reward_reveal_decal.wav",
+    "audio/generated/reward_reveal_generic.wav",
+    "audio/generated/reward_reveal_module.wav",
+    "audio/generated/reward_reveal_weapon.wav",
     "audio/generated/sfx_charm_clink_heavy.wav",
     "audio/generated/sfx_charm_clink_light.wav",
     "audio/generated/sfx_overclock_hum_cryo.wav",
@@ -191,6 +197,8 @@
     "audio/generated/sfx_overclock_socket.wav",
     "audio/generated/sfx_smelt_forge_burst.wav",
     "audio/generated/sfx_trade_shard_dispense.wav",
+    "audio/generated/ui_reward_burst.wav",
+    "audio/generated/ui_reward_dismiss.wav",
     "audio/generated/voice_aura_overdrive_ready.wav",
     "audio/generated/voice_aura_reloading.wav",
     "audio/generated/voice_aura_sector_cleared.wav",
@@ -203,6 +211,10 @@
     "audio/generated/voice_commander_low_health.wav",
     "audio/generated/voice_commander_reloading.wav",
     "audio/generated/voice_commander_victory.wav",
+    "audio/generated/weapon_dry_fire.wav",
+    "audio/generated/xp_bonus.wav",
+    "audio/generated/xp_levelup.wav",
+    "audio/generated/xp_tick.wav",
     "audio/vg2/amb_bunker_loop.wav",
     "audio/vg2/amb_drip1.wav",
     "audio/vg2/amb_drip2.wav",
@@ -2131,6 +2143,36 @@
       "classification": "runtime-required"
     },
     {
+      "path": "audio/generated/reward_reveal_charm.wav",
+      "bytes": 48554,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/generated/reward_reveal_chassis.wav",
+      "bytes": 83834,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/generated/reward_reveal_decal.wav",
+      "bytes": 39734,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/generated/reward_reveal_generic.wav",
+      "bytes": 66194,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/generated/reward_reveal_module.wav",
+      "bytes": 70604,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/generated/reward_reveal_weapon.wav",
+      "bytes": 75014,
+      "classification": "runtime-required"
+    },
+    {
       "path": "audio/generated/sfx_charm_clink_heavy.wav",
       "bytes": 30914,
       "classification": "runtime-required"
@@ -2163,6 +2205,16 @@
     {
       "path": "audio/generated/sfx_trade_shard_dispense.wav",
       "bytes": 66194,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/generated/ui_reward_burst.wav",
+      "bytes": 57374,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/generated/ui_reward_dismiss.wav",
+      "bytes": 35324,
       "classification": "runtime-required"
     },
     {
@@ -2223,6 +2275,26 @@
     {
       "path": "audio/generated/voice_commander_victory.wav",
       "bytes": 123524,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/generated/weapon_dry_fire.wav",
+      "bytes": 15920,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/generated/xp_bonus.wav",
+      "bytes": 30914,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/generated/xp_levelup.wav",
+      "bytes": 66194,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/generated/xp_tick.wav",
+      "bytes": 10628,
       "classification": "runtime-required"
     },
     {

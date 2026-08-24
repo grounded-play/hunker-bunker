@@ -51,8 +51,8 @@ describe('song interstitial manifest', () => {
         await stillPromise;
         await controller.loadMotion(spec);
         await controller.startSong(spec);
-        expect(video.src).toBe('file:///opt/hunker-bunker/resources/app.asar/dist/interstitials/motion/int_01_someone_is_still_alive_motion_v1.webm');
-        expect(decoded).toEqual(['file:///opt/hunker-bunker/resources/app.asar/dist/audio/ost/Someone%20Is%20Still%20Alive.mp3']);
+        expect(video.src).toBe('file:///opt/hunker-bunker/resources/app.asar.unpacked/dist/interstitials/motion/int_01_someone_is_still_alive_motion_v1.webm');
+        expect(decoded).toEqual(['file:///opt/hunker-bunker/resources/app.asar.unpacked/dist/audio/ost/Someone%20Is%20Still%20Alive.mp3']);
         globalThis.document = previousDocument;
     });
 

@@ -12,6 +12,12 @@ describe('plan SFX generator', () => {
             'camp_worker_fleeing',
             'camp_worker_infected',
             'camp_worker_panicked',
+            'reward_reveal_charm',
+            'reward_reveal_chassis',
+            'reward_reveal_decal',
+            'reward_reveal_generic',
+            'reward_reveal_module',
+            'reward_reveal_weapon',
             'sfx_charm_clink_heavy',
             'sfx_charm_clink_light',
             'sfx_overclock_hum_cryo',
@@ -19,6 +25,8 @@ describe('plan SFX generator', () => {
             'sfx_overclock_socket',
             'sfx_smelt_forge_burst',
             'sfx_trade_shard_dispense',
+            'ui_reward_burst',
+            'ui_reward_dismiss',
             'voice_aura_overdrive_ready',
             'voice_aura_reloading',
             'voice_aura_sector_cleared',
@@ -30,7 +38,11 @@ describe('plan SFX generator', () => {
             'voice_commander_killstreak',
             'voice_commander_low_health',
             'voice_commander_reloading',
-            'voice_commander_victory'
+            'voice_commander_victory',
+            'weapon_dry_fire',
+            'xp_bonus',
+            'xp_levelup',
+            'xp_tick'
         ]);
     });
 

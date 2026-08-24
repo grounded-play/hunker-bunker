@@ -5595,24 +5595,31 @@ export class ThreeGame {
         return true;
     }
 
-    fireWeaponAtCurrentAim() {
+    fireWeaponAtCurrentAim({ source = 'pointer' } = {}) {
         if (!this.isGameplayInputActive()) return false;
 
+        window.hbLog?.('WEAPON', 'debug', 'fire-input', { source, aimX: this.aimDirX, aimZ: this.aimDirZ });
+
         if (this.isInsideNoFireZone()) {
+            window.hbLog?.('WEAPON', 'warn', 'shot-blocked', { reason: 'no_fire_zone', clip: this.weaponClipAmmo, reserve: this.getAvailableAmmo() });
             this.playThrottledUiError('_lastNoFireCueAt', { volume: 0.42 }, 'combat-no-fire-zone');
             return false;
         }
 
         if (this.weaponReloading) {
+            window.hbLog?.('WEAPON', 'debug', 'shot-blocked', { reason: 'reloading', clip: this.weaponClipAmmo, reserve: this.getAvailableAmmo() });
             this.playThrottledUiError('_lastReloadBlockedCueAt', { volume: 0.34, playbackRate: 1.05 });
             return false;
         }
         if (this.weaponFireCooldown > 0) {
+            window.hbLog?.('WEAPON', 'debug', 'shot-blocked', { reason: 'fire_cooldown', cooldownRemaining: this.weaponFireCooldown });
             return false;
         }
         if (this.weaponClipAmmo <= 0) {
             const availableAmmo = this.getAvailableAmmo();
             if (availableAmmo < 1) {
+                window.AudioManager?.play('weapon_dry_fire', { volume: 0.45 });
+                window.hbLog?.('WEAPON', 'warn', 'shot-blocked', { reason: 'out_of_ammo', clip: 0, reserve: 0 });
                 return this.triggerGameplayMelee({ source: 'empty-fire-fallback' });
             }
             this.requestReload();
@@ -5621,7 +5628,10 @@ export class ThreeGame {
 
         const normX = this.aimDirX;
         const normZ = this.aimDirZ;
-        if (!Number.isFinite(normX) || !Number.isFinite(normZ)) return false;
+        if (!Number.isFinite(normX) || !Number.isFinite(normZ)) {
+            window.hbLog?.('WEAPON', 'warn', 'shot-blocked', { reason: 'invalid_aim', normX, normZ });
+            return false;
+        }
 
         this.weaponClipAmmo = Math.max(0, this.weaponClipAmmo - 1);
         let fireCd = WEAPON_FIRE_COOLDOWN;
@@ -5629,6 +5639,17 @@ export class ThreeGame {
         this.emitWeaponClipState();
 
         this.spawnPlayerShot(normX, normZ);
+
+        window.hbLog?.('WEAPON', 'info', 'shot-accepted', {
+            weaponType: this.currentWeaponType || 'plasma_carbine',
+            clipRemaining: this.weaponClipAmmo,
+            reserveRemaining: this.getAvailableAmmo()
+        });
+        window.hbLog?.('WEAPON', 'debug', 'projectile', {
+            weaponType: this.currentWeaponType || 'plasma_carbine',
+            origin: [this.player?.position?.x ?? 0, this.player?.position?.z ?? 0],
+            dir: [normX, normZ]
+        });
 
         if (this.isMultiplayer && this.netSocket && this.player) {
             this.netSocket.emit('playerFire', {

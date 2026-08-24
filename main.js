@@ -2,6 +2,7 @@
 import { AudioManager } from './src/audio.js';
 import { assetUrl } from './src/assetUrl.js';
 import { debugLog } from './src/debugConsole.js';
+import { captureMenuVisibilitySnapshot } from './src/menuVisibility.js';
 import { canUseDeveloperTools } from './src/devToolsAccess.js';
 import { ObjectiveRegistry } from './src/objectiveRegistry.js';
 import { BankManager, FOUNDRY_ACTIVATION_COST } from './src/bank.js';
@@ -2769,6 +2770,11 @@ function resetPickupCounter(playerType = (window.game?.playerType || 'SCOUT')) {
     pickupCounterState.coin = 0;
     recomputePickupTotal();
     renderPickupCounter();
+    window.hbLog?.('WEAPON', 'info', 'ammo-reset', {
+        startingReserve: pickupCounterState.ammo,
+        capacity: activeAmmoCapacity,
+        playerType
+    });
 }
 
 function getSessionInventorySnapshot() {
@@ -2802,6 +2808,7 @@ function trackPickupCollected(event) {
     const previousValue = pickupCounterState[type] ?? 0;
     if (type === 'ammo') {
         pickupCounterState.ammo = Math.min(activeAmmoCapacity, previousValue + 1);
+        window.hbLog?.('WEAPON', 'info', 'ammo-pickup-collected', { newTotal: pickupCounterState.ammo, maxCapacity: activeAmmoCapacity });
     } else {
         pickupCounterState[type] = previousValue + 1;
     }
@@ -12736,6 +12743,18 @@ document.addEventListener('DOMContentLoaded', async () => {
                     { key: 'sfx_overclock_hum_magnetic', url: '/audio/generated/sfx_overclock_hum_magnetic.wav' },
                     { key: 'sfx_smelt_forge_burst', url: '/audio/generated/sfx_smelt_forge_burst.wav' },
                     { key: 'sfx_trade_shard_dispense', url: '/audio/generated/sfx_trade_shard_dispense.wav' },
+                    { key: 'xp_tick', url: '/audio/generated/xp_tick.wav' },
+                    { key: 'xp_bonus', url: '/audio/generated/xp_bonus.wav' },
+                    { key: 'xp_levelup', url: '/audio/generated/xp_levelup.wav' },
+                    { key: 'reward_reveal_weapon', url: '/audio/generated/reward_reveal_weapon.wav' },
+                    { key: 'reward_reveal_chassis', url: '/audio/generated/reward_reveal_chassis.wav' },
+                    { key: 'reward_reveal_charm', url: '/audio/generated/reward_reveal_charm.wav' },
+                    { key: 'reward_reveal_module', url: '/audio/generated/reward_reveal_module.wav' },
+                    { key: 'reward_reveal_decal', url: '/audio/generated/reward_reveal_decal.wav' },
+                    { key: 'reward_reveal_generic', url: '/audio/generated/reward_reveal_generic.wav' },
+                    { key: 'ui_reward_burst', url: '/audio/generated/ui_reward_burst.wav' },
+                    { key: 'ui_reward_dismiss', url: '/audio/generated/ui_reward_dismiss.wav' },
+                    { key: 'weapon_dry_fire', url: '/audio/generated/weapon_dry_fire.wav' },
                     { key: 'hive_eggs_hum', url: '/audio/vg2/hive_eggs_hum.wav' },
                     { key: 'hive_eggs_hatch', url: '/audio/vg2/hive_eggs_hatch.wav' },
                     { key: 'hive_spores_puff', url: '/audio/vg2/hive_spores_puff.wav' },
@@ -13107,13 +13126,35 @@ const PERF_PHASE_MAX_AGE_MS = 500;
 // build on real hardware, arrives with the render-cost context needed to
 // confirm or rule out the "map-box preview re-renders the full showcase
 // scene every frame" hypothesis without another blind live-debugging pass.
+// Sprint 29 §16/§20: the render-cost half above is still profile-gated for the
+// reason documented there, but the menu *visibility* half is not. log16 could
+// not distinguish a hidden menu from a missing one precisely because this
+// returned null outside the 'menu' profile, which is every gameplay-time menu
+// question the sprint needs answered. Visibility is now captured in every
+// profile; see src/menuVisibility.js.
+const TRACKED_MENU_SURFACE_IDS = Object.freeze([
+    'season-pass-modal',
+    'progression-reward-overlay',
+    'progression-claim-btn',
+    'gameplay-crosshair',
+    'settings-popup',
+    'vault-reveal-overlay'
+]);
+
 function captureMenuRenderSnapshot() {
     try {
         const game = window.game;
-        if (!game || game.performanceProfile !== 'menu') return null;
+        const menus = captureMenuVisibilitySnapshot({
+            surfaceIds: TRACKED_MENU_SURFACE_IDS,
+            getElement: (id) => document.getElementById(id),
+            computeStyle: (el) => window.getComputedStyle(el),
+            measure: (el) => el.getBoundingClientRect()
+        });
+        if (!game || game.performanceProfile !== 'menu') return menus;
         const info = game.renderer?.info;
         const container = game.container;
         return {
+            ...menus,
             drawCalls: info?.render?.calls ?? null,
             triangles: info?.render?.triangles ?? null,
             containerW: container?.clientWidth ?? null,

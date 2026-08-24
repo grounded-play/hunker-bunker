@@ -267,9 +267,9 @@ export function computeLocomotionWeights(state = {}) {
         strafeRight: Math.max(0, -side)
     };
     const total = Object.values(directional).reduce((sum, weight) => sum + weight, 0) || 1;
-    const weights = { idle: 0.15 };
+    const weights = {};
     for (const [name, weight] of Object.entries(directional)) {
-        if (weight > 1e-4) weights[name] = (weight / total) * 0.85;
+        if (weight > 1e-4) weights[name] = (weight / total);
     }
     return weights;
 }
@@ -575,6 +575,14 @@ export async function createPlayer3dOverlay({
                     delta
                 );
                 forcedAction.setEffectiveWeight(forcedWeight);
+            }
+            if (state.isMoving) {
+                const speedScale = state.isSprinting ? 1.25 : 1.0;
+                const multiplier = Number.isFinite(state.speedMultiplier) ? state.speedMultiplier : 1.0;
+                const targetTimeScale = THREE.MathUtils.clamp(speedScale * multiplier, 0.75, 1.4);
+                mixer.timeScale = THREE.MathUtils.damp(mixer.timeScale, targetTimeScale, 10, delta);
+            } else {
+                mixer.timeScale = THREE.MathUtils.damp(mixer.timeScale, 1.0, 10, delta);
             }
             mixer.update(delta);
             const targetUpperBodyTurn = followMovement && state.hasAim

@@ -1,0 +1,441 @@
+{
+  "timestamp": "2026-08-24T19:54:16.447Z",
+  "scannedCount": 72,
+  "unallowedCount": 0,
+  "allowlistCount": 97,
+  "unallowed": [],
+  "findings": [
+    {
+      "file": "public/prop_biomech_incubator.jpg",
+      "ratio": 0.7745,
+      "width": 1024,
+      "height": 1024
+    },
+    {
+      "file": "public/Eng.Full.jpeg",
+      "ratio": 0.7778,
+      "width": 1024,
+      "height": 1024
+    },
+    {
+      "file": "public/scout_walk.png",
+      "ratio": 0.0286,
+      "width": 1024,
+      "height": 1024
+    },
+    {
+      "file": "public/boss_sporesnail.png",
+      "ratio": 0.0453,
+      "width": 1024,
+      "height": 1024
+    },
+    {
+      "file": "public/prop_biomech_triage_cradle.jpg",
+      "ratio": 0.5825,
+      "width": 1024,
+      "height": 1024
+    },
+    {
+      "file": "public/decal_biohazard_stencil.png",
+      "ratio": 0.2619,
+      "width": 512,
+      "height": 512
+    },
+    {
+      "file": "public/decal_claw_scratches.png",
+      "ratio": 0.3216,
+      "width": 512,
+      "height": 512
+    },
+    {
+      "file": "public/decal_worker_sleep_roll.png",
+      "ratio": 0.626,
+      "width": 768,
+      "height": 512
+    },
+    {
+      "file": "public/prop_vital_monitor.jpg",
+      "ratio": 0.5755,
+      "width": 1024,
+      "height": 1024
+    },
+    {
+      "file": "public/Scout.full.jpeg",
+      "ratio": 0.8314,
+      "width": 1024,
+      "height": 1024
+    },
+    {
+      "file": "public/prop_fabricator_workstation.jpg",
+      "ratio": 0.7342,
+      "width": 1024,
+      "height": 1024
+    },
+    {
+      "file": "public/scatter_bio_moss.png",
+      "ratio": 0.0919,
+      "width": 1024,
+      "height": 1024
+    },
+    {
+      "file": "public/crash_site_broken_floor_v1.png",
+      "ratio": 0.3877,
+      "width": 1024,
+      "height": 1024
+    },
+    {
+      "file": "public/decal_emergency_oxygen_nest.png",
+      "ratio": 0.5847,
+      "width": 768,
+      "height": 512
+    },
+    {
+      "file": "public/decal_maintenance_shrine.png",
+      "ratio": 0.68,
+      "width": 768,
+      "height": 512
+    },
+    {
+      "file": "public/scatter_slime_puddle.png",
+      "ratio": 0.2548,
+      "width": 128,
+      "height": 128
+    },
+    {
+      "file": "public/decal_failed_decon_kit.png",
+      "ratio": 0.6047,
+      "width": 768,
+      "height": 512
+    },
+    {
+      "file": "public/Tank.full_v2.png",
+      "ratio": 0.7795,
+      "width": 1024,
+      "height": 1024
+    },
+    {
+      "file": "public/Tank.full.jpeg",
+      "ratio": 0.6737,
+      "width": 1024,
+      "height": 1024
+    },
+    {
+      "file": "public/prop_torn_warning_poster.png",
+      "ratio": 0.2932,
+      "width": 1024,
+      "height": 1024
+    },
+    {
+      "file": "public/prop_ammo_crate_stack.jpg",
+      "ratio": 0.41,
+      "width": 1024,
+      "height": 1024
+    },
+    {
+      "file": "public/prop_tesla_coil_node.jpg",
+      "ratio": 0.7239,
+      "width": 1024,
+      "height": 1024
+    },
+    {
+      "file": "public/decal_wall_breach.png",
+      "ratio": 0.2842,
+      "width": 1024,
+      "height": 1024
+    },
+    {
+      "file": "public/scatter_camp_supplies.png",
+      "ratio": 0.4816,
+      "width": 1024,
+      "height": 1024
+    },
+    {
+      "file": "public/decal_bio_sample_spill.png",
+      "ratio": 0.5134,
+      "width": 768,
+      "height": 512
+    },
+    {
+      "file": "public/boss_decoy_scout.png",
+      "ratio": 0.0486,
+      "width": 1024,
+      "height": 1024
+    },
+    {
+      "file": "public/queen_silhouette.png",
+      "ratio": 0.0303,
+      "width": 1024,
+      "height": 1024
+    },
+    {
+      "file": "public/decal_oil_spill_patch.png",
+      "ratio": 0.5715,
+      "width": 512,
+      "height": 512
+    },
+    {
+      "file": "public/prop_biomech_respirator.jpg",
+      "ratio": 0.6417,
+      "width": 1024,
+      "height": 1024
+    },
+    {
+      "file": "public/decal_footprints_mud.png",
+      "ratio": 0.2287,
+      "width": 512,
+      "height": 512
+    },
+    {
+      "file": "public/prop_o2_filter_vat.jpg",
+      "ratio": 0.5295,
+      "width": 1024,
+      "height": 1024
+    },
+    {
+      "file": "public/decal_meridian_stencil.png",
+      "ratio": 0.16,
+      "width": 512,
+      "height": 512
+    },
+    {
+      "file": "public/prop_camp_tallow_still.jpg",
+      "ratio": 0.0208,
+      "width": 256,
+      "height": 256
+    },
+    {
+      "file": "public/alien_proto_spitter_walk.png",
+      "ratio": 0.033,
+      "width": 1024,
+      "height": 1024
+    },
+    {
+      "file": "public/prop_spore_colony.png",
+      "ratio": 0.0772,
+      "width": 1024,
+      "height": 1024
+    },
+    {
+      "file": "public/Scout.full_v2.png",
+      "ratio": 0.8767,
+      "width": 1024,
+      "height": 1024
+    },
+    {
+      "file": "public/decal_abandoned_meal_tray.png",
+      "ratio": 0.5107,
+      "width": 768,
+      "height": 512
+    },
+    {
+      "file": "public/engineer_walk.png",
+      "ratio": 0.0226,
+      "width": 1024,
+      "height": 1024
+    },
+    {
+      "file": "public/prop_laser_trap_emitter.jpg",
+      "ratio": 0.5871,
+      "width": 1024,
+      "height": 1024
+    },
+    {
+      "file": "public/decal_bullet_holes.png",
+      "ratio": 0.1235,
+      "width": 1024,
+      "height": 1024
+    },
+    {
+      "file": "public/sporesnail.png",
+      "ratio": 0.0739,
+      "width": 1024,
+      "height": 1024
+    },
+    {
+      "file": "public/prop_biomech_neural_synapse.jpg",
+      "ratio": 0.7089,
+      "width": 1024,
+      "height": 1024
+    },
+    {
+      "file": "public/prop_blood_trail.png",
+      "ratio": 0.5032,
+      "width": 1024,
+      "height": 1024
+    },
+    {
+      "file": "public/tank_walk.png",
+      "ratio": 0.0256,
+      "width": 1024,
+      "height": 1024
+    },
+    {
+      "file": "public/prop_biomech_flesh_locker.jpg",
+      "ratio": 0.662,
+      "width": 1024,
+      "height": 1024
+    },
+    {
+      "file": "public/scatter_hive_eggs.png",
+      "ratio": 0.2343,
+      "width": 1024,
+      "height": 1024
+    },
+    {
+      "file": "public/bio_grunge_spores.png",
+      "ratio": 0.1265,
+      "width": 1024,
+      "height": 1024
+    },
+    {
+      "file": "public/decal_barricade_last_stand.png",
+      "ratio": 0.544,
+      "width": 768,
+      "height": 512
+    },
+    {
+      "file": "public/decal_childlike_cave_map.png",
+      "ratio": 0.4757,
+      "width": 768,
+      "height": 512
+    },
+    {
+      "file": "public/decal_hazard_stripes.png",
+      "ratio": 0.3199,
+      "width": 512,
+      "height": 512
+    },
+    {
+      "file": "public/decal_hive_growth.png",
+      "ratio": 0.0273,
+      "width": 1024,
+      "height": 1024
+    },
+    {
+      "file": "public/prop_biomech_sphincter_trap.jpg",
+      "ratio": 0.6347,
+      "width": 1024,
+      "height": 1024
+    },
+    {
+      "file": "public/scatter_broken_drone.png",
+      "ratio": 0.425,
+      "width": 1024,
+      "height": 1024
+    },
+    {
+      "file": "public/Eng.Full_v2.png",
+      "ratio": 0.8697,
+      "width": 1024,
+      "height": 1024
+    },
+    {
+      "file": "public/decal_tallow_symbol.png",
+      "ratio": 0.7799,
+      "width": 512,
+      "height": 512
+    },
+    {
+      "file": "public/decal_spore_growth_patch.png",
+      "ratio": 0.4504,
+      "width": 512,
+      "height": 512
+    },
+    {
+      "file": "public/economy/mod_kinetic_impact_large.png",
+      "ratio": 0.5513,
+      "width": 512,
+      "height": 512
+    },
+    {
+      "file": "public/economy/mod_bio_hazard_filter.png",
+      "ratio": 0.5332,
+      "width": 256,
+      "height": 256
+    },
+    {
+      "file": "public/economy/charm_dark_matter_chroma.jpg",
+      "ratio": 0.7196,
+      "width": 1024,
+      "height": 1024
+    },
+    {
+      "file": "public/economy/gun_scout_talon_c_chroma.jpg",
+      "ratio": 0.7752,
+      "width": 1024,
+      "height": 1024
+    },
+    {
+      "file": "public/economy/mod_thermal_heat_exchanger_large.png",
+      "ratio": 0.6107,
+      "width": 512,
+      "height": 512
+    },
+    {
+      "file": "public/economy/mod_thermal_heat_exchanger_chroma.jpg",
+      "ratio": 0.787,
+      "width": 1024,
+      "height": 559
+    },
+    {
+      "file": "public/economy/charm_dark_matter.png",
+      "ratio": 0.7181,
+      "width": 256,
+      "height": 256
+    },
+    {
+      "file": "public/economy/mod_thermal_heat_exchanger.png",
+      "ratio": 0.6085,
+      "width": 256,
+      "height": 256
+    },
+    {
+      "file": "public/economy/mod_bio_hazard_filter_chroma.jpg",
+      "ratio": 0.5332,
+      "width": 1024,
+      "height": 1024
+    },
+    {
+      "file": "public/economy/charm_dark_matter_large.png",
+      "ratio": 0.7169,
+      "width": 512,
+      "height": 512
+    },
+    {
+      "file": "public/economy/mod_kinetic_impact_chroma.jpg",
+      "ratio": 0.7541,
+      "width": 1024,
+      "height": 559
+    },
+    {
+      "file": "public/economy/mod_kinetic_impact.png",
+      "ratio": 0.5518,
+      "width": 256,
+      "height": 256
+    },
+    {
+      "file": "public/economy/mod_bio_hazard_filter_large.png",
+      "ratio": 0.534,
+      "width": 512,
+      "height": 512
+    },
+    {
+      "file": "public/schematics/schematic_06.webp",
+      "ratio": 0.025,
+      "width": 256,
+      "height": 256
+    },
+    {
+      "file": "public/schematics/schematic_05.webp",
+      "ratio": 0.0256,
+      "width": 256,
+      "height": 256
+    },
+    {
+      "file": "public/lore_portraits/queen_00.webp",
+      "ratio": 0.0702,
+      "width": 256,
+      "height": 256
+    }
+  ]
+}

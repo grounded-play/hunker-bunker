@@ -71,9 +71,9 @@ describe('player 3D cosmetic overlay', () => {
             aimX: 0,
             aimZ: 1
         });
-        expect(weights.idle).toBeCloseTo(0.15);
-        expect(weights.walk).toBeCloseTo(0.425);
-        expect(weights.strafeLeft).toBeCloseTo(0.425);
+        expect(weights.idle).toBeUndefined();
+        expect(weights.walk).toBeCloseTo(0.5);
+        expect(weights.strafeLeft).toBeCloseTo(0.5);
         expect(Object.values(weights).reduce((sum, value) => sum + value, 0)).toBeCloseTo(1);
     });
 
