@@ -1,7 +1,7 @@
 ---
 name: Bug report
 about: Report a reproducible Hunker Bunker defect
- title: '[BUG] '
+title: '[BUG] '
 labels: bug
 assignees: ''
 ---
