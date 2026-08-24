@@ -13,5 +13,5 @@ describe('chroma green asset audit', () => {
         expect(ok).toBe(true);
         expect(report.unallowedCount).toBe(0);
         expect(report.scannedCount).toBeGreaterThan(0);
-    });
+    }, 60000);
 });

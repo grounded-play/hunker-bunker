@@ -109,7 +109,7 @@ export const CHROMA_GREEN_ALLOWLIST = new Set([
     'public/lore_portraits/queen_00.webp'
 ]);
 
-function decodePng(buffer) {
+function decodeAndSamplePng(buffer) {
     if (buffer.length < 8 || buffer.readUInt32BE(0) !== 0x89504E47) return null;
     let offset = 8;
     let width = 0, height = 0, bitDepth = 0, colorType = 0;
@@ -146,28 +146,34 @@ function decodePng(buffer) {
     }
 
     let bpp = 0;
-    if (colorType === 6) bpp = 4;
-    else if (colorType === 2) bpp = 3;
-    else if (colorType === 3) bpp = 1;
-    else if (colorType === 0) bpp = 1;
-    else if (colorType === 4) bpp = 2;
+    if (colorType === 6) bpp = 4; // RGBA
+    else if (colorType === 2) bpp = 3; // RGB
+    else if (colorType === 3) bpp = 1; // Indexed
+    else if (colorType === 0) bpp = 1; // Grayscale
+    else if (colorType === 4) bpp = 2; // GA
     else return null;
 
     const stride = width * bpp;
-    const rawData = Buffer.alloc(height * stride);
+    const expectedSize = height * (1 + stride);
+    if (decompressed.length < expectedSize) return null;
+
+    const totalPixels = width * height;
+    const step = Math.max(1, Math.floor(totalPixels / 3000));
+    let greenCount = 0;
+    let sampledCount = 0;
+
+    let prevRow = Buffer.alloc(stride);
+    let currRow = Buffer.alloc(stride);
     let srcPos = 0;
-    let destPos = 0;
+    let pixelIndex = 0;
 
     for (let y = 0; y < height; y++) {
         const filter = decompressed[srcPos++];
-        const rowStart = destPos;
-        const prevRowStart = y > 0 ? (y - 1) * stride : -1;
-
         for (let x = 0; x < stride; x++) {
             const byte = decompressed[srcPos++];
-            const left = x >= bpp ? rawData[rowStart + x - bpp] : 0;
-            const up = prevRowStart >= 0 ? rawData[prevRowStart + x] : 0;
-            const upLeft = (prevRowStart >= 0 && x >= bpp) ? rawData[prevRowStart + x - bpp] : 0;
+            const left = x >= bpp ? currRow[x - bpp] : 0;
+            const up = prevRow[x];
+            const upLeft = x >= bpp ? prevRow[x - bpp] : 0;
 
             let val = byte;
             if (filter === 1) val = (byte + left) & 0xff;
@@ -181,47 +187,44 @@ function decodePng(buffer) {
                 const pr = (pa <= pb && pa <= pc) ? left : (pb <= pc ? up : upLeft);
                 val = (byte + pr) & 0xff;
             }
-            rawData[destPos++] = val;
-        }
-    }
-
-    return { width, height, colorType, rawData, bpp, palette };
-}
-
-function analyzePngGreen(buffer) {
-    const decoded = decodePng(buffer);
-    if (!decoded) return null;
-    const { width, height, colorType, rawData, bpp, palette } = decoded;
-    const totalPixels = width * height;
-    const step = Math.max(1, Math.floor(totalPixels / 3000));
-    let greenCount = 0;
-    let sampledCount = 0;
-
-    for (let i = 0; i < totalPixels; i += step) {
-        sampledCount++;
-        let r = 0, g = 0, b = 0, a = 255;
-        const offset = i * bpp;
-        if (colorType === 6) {
-            r = rawData[offset];
-            g = rawData[offset + 1];
-            b = rawData[offset + 2];
-            a = rawData[offset + 3];
-        } else if (colorType === 2) {
-            r = rawData[offset];
-            g = rawData[offset + 1];
-            b = rawData[offset + 2];
-        } else if (colorType === 3 && palette) {
-            const idx = rawData[offset];
-            r = palette[idx * 3];
-            g = palette[idx * 3 + 1];
-            b = palette[idx * 3 + 2];
+            currRow[x] = val;
         }
 
-        if (a > 25) {
-            if (g > 180 && g > 1.5 * Math.max(r, b) && (r < 110 || b < 110)) {
-                greenCount++;
+        const rowPixelStart = y * width;
+        const rowPixelEnd = rowPixelStart + width;
+        while (pixelIndex < rowPixelEnd) {
+            const col = pixelIndex - rowPixelStart;
+            const offset = col * bpp;
+            let r = 0, g = 0, b = 0, a = 255;
+            if (colorType === 6) {
+                r = currRow[offset];
+                g = currRow[offset + 1];
+                b = currRow[offset + 2];
+                a = currRow[offset + 3];
+            } else if (colorType === 2) {
+                r = currRow[offset];
+                g = currRow[offset + 1];
+                b = currRow[offset + 2];
+            } else if (colorType === 3 && palette) {
+                const idx = currRow[offset];
+                r = palette[idx * 3];
+                g = palette[idx * 3 + 1];
+                b = palette[idx * 3 + 2];
             }
+
+            sampledCount++;
+            if (a > 25) {
+                if (g > 180 && g > 1.5 * Math.max(r, b) && (r < 110 || b < 110)) {
+                    greenCount++;
+                }
+            }
+
+            pixelIndex += step;
         }
+
+        const tmp = prevRow;
+        prevRow = currRow;
+        currRow = tmp;
     }
 
     const ratio = greenCount / (sampledCount || 1);
@@ -240,7 +243,7 @@ function walkDir(dir) {
 }
 
 export function runChromaGreenScan() {
-    // Try Python + PIL first if available (for full JPEG/WebP coverage); otherwise fallback to pure Node.js PNG scanner
+    // Try Python + PIL first if available; otherwise use pure Node.js PNG scanner
     const pythonScript = `
 import os, json
 try:
@@ -288,7 +291,7 @@ print(json.dumps(findings))
 
     let pythonResults = null;
     try {
-        const stdout = execFileSync('python3', ['-c', pythonScript], { cwd: ROOT_DIR, encoding: 'utf8', stdio: ['pipe', 'pipe', 'ignore'] });
+        const stdout = execFileSync('python3', ['-c', pythonScript], { cwd: ROOT_DIR, encoding: 'utf8', stdio: ['pipe', 'pipe', 'ignore'], timeout: 15000 });
         const parsed = JSON.parse(stdout || '[]');
         if (Array.isArray(parsed) && parsed.length > 0) {
             pythonResults = parsed;
@@ -301,7 +304,7 @@ print(json.dumps(findings))
         return pythonResults;
     }
 
-    // Pure Node.js scanner (guaranteed zero external dependencies on all CI environments)
+    // Pure Node.js scanner (fast, zero external dependencies)
     const findings = [];
     const publicDir = path.resolve(ROOT_DIR, 'public');
     const files = walkDir(publicDir);
@@ -311,7 +314,7 @@ print(json.dumps(findings))
         if (rel.endsWith('.png') && !rel.endsWith('_normal.png')) {
             try {
                 const buf = fs.readFileSync(file);
-                const res = analyzePngGreen(buf);
+                const res = decodeAndSamplePng(buf);
                 if (res && res.ratio > 0.02) {
                     findings.push({
                         file: rel,
