@@ -19,9 +19,17 @@ These should stay small and be updated when reality changes:
 - [`../PRODUCT_STATE.md`](../PRODUCT_STATE.md) — concise current-truth ledger.
 - [`versioning-and-release-roadmap.md`](versioning-and-release-roadmap.md) — version/release policy and release history.
 - [`repo-roadmap.md`](repo-roadmap.md) — prioritized product/repository roadmap toward a Steam-quality game.
+- [`architecture/system-map.md`](architecture/system-map.md) — current runtime responsibility/authority map.
 - [`../CONTRIBUTING.md`](../CONTRIBUTING.md) — contributor workflow and verification expectations.
 
 These files should not become sprint diaries.
+
+## Current Sprint 30 evidence
+
+- [`sprints/sprint-30-plan.md`](sprints/sprint-30-plan.md) — one active sprint contract and living evidence matrix.
+- [`reports/sprint-28-29-carry-forward-audit-2026-08-24.md`](reports/sprint-28-29-carry-forward-audit-2026-08-24.md) — reconciles promises that survived the Sprint 28/29 boundaries and gives each an explicit Sprint 30 disposition.
+
+The carry-forward audit is intentionally separate from `PRODUCT_STATE.md`: Product State answers **what is true now**; the audit answers **what older commitments still need an explicit decision or acceptance route**.
 
 ## Active sprint documents
 
@@ -55,6 +63,7 @@ Use these terms consistently:
 
 The repository already contains several useful category directories. Sprint 30 will migrate loose files into these categories gradually rather than breaking links in one destructive rename pass.
 
+- `docs/architecture/` — current system ownership, authority, dependency and runtime-boundary references.
 - `docs/design/` — enduring game/design pillars and product specifications.
 - `docs/sprints/` — active sprint plans and closeouts.
 - `docs/reports/` — audits, measurements, integration reports, and QA evidence.
@@ -142,7 +151,7 @@ Sprint-specific PR outlines, audits, and worklogs belong under `docs/`.
 ## Sprint 30 cleanup phases
 
 1. **Canonical refresh** — README, product state, release roadmap, contributor workflow.
-2. **Index first** — this file and the new roadmap become the navigation spine.
+2. **Index first** — this file, the runtime system map, and the repo roadmap become the navigation spine.
 3. **Carry-forward audit** — reconcile Sprint 28/29 promises against runtime and acceptance evidence.
 4. **Safe migration** — move loose historical docs in batches only after checking references.
 5. **Enforcement** — add lightweight documentation checks/templates once the target structure has settled.
