@@ -350,7 +350,7 @@ All 3D assets in this catalog must adhere strictly to the following aesthetic ru
 
 ## 8. Missing Achievement Cosmetic 3D Meshes
 
-These 5 achievement rewards have catalog and logic entries but lack source 3D GLBs (see [latest-asset-loading-and-season-audit-2026-08-21.md](file:///home/caveman/Desktop/icecave/hunker-bunker/docs/latest-asset-loading-and-season-audit-2026-08-21.md)):
+These 5 achievement rewards have catalog and logic entries but lack source 3D GLBs (see [latest-asset-loading-and-season-audit-2026-08-21.md](./latest-asset-loading-and-season-audit-2026-08-21.md)):
 
 ### 8.1 Itemdef 5001 — Ghost Runner Exosuit
 - **Achievement:** `ghost` (Flawless extraction without alarms)
@@ -428,7 +428,7 @@ These 5 achievement rewards have catalog and logic entries but lack source 3D GL
    - Apply `EXT_meshopt_compression` and Draco geometry compression to keep prop GLBs under **2 MB** and character GLBs under **6 MB**.
 3. **Target Placement:** Save finalized models into `public/3d/runtime/new3ds/<asset_name>.glb`.
 4. **Registration:**
-   - World Props: Add entry to `WORLD_3D_MODELS` in [world3dOverlay.js](file:///home/caveman/Desktop/icecave/hunker-bunker/src/world3dOverlay.js).
-   - Enemies: Add entry to `MODEL_CONFIG` in [enemy3dOverlay.js](file:///home/caveman/Desktop/icecave/hunker-bunker/src/enemy3dOverlay.js).
-   - Cosmetics/Weapons: Register in `CHASSIS_SKIN_GLB_MAP` / `WEAPON_SKIN_MESHES` in [player3dOverlay.js](file:///home/caveman/Desktop/icecave/hunker-bunker/src/player3dOverlay.js) and [armoryScene.js](file:///home/caveman/Desktop/icecave/hunker-bunker/src/armoryScene.js).
+   - World Props: Add entry to `WORLD_3D_MODELS` in [world3dOverlay.js](../src/world3dOverlay.js).
+   - Enemies: Add entry to `MODEL_CONFIG` in [enemy3dOverlay.js](../src/enemy3dOverlay.js).
+   - Cosmetics/Weapons: Register in `CHASSIS_SKIN_GLB_MAP` / `WEAPON_SKIN_MESHES` in [player3dOverlay.js](../src/player3dOverlay.js) and [armoryScene.js](../src/armoryScene.js).
 5. **Validation:** Run `node scripts/audit-build-media.js` and verify rendering across 3D runtime stages.

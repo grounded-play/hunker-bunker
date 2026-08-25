@@ -14,7 +14,7 @@ gameplay:
    model (`public/3d/GG.1.glb`) shared by all 3 classes**, not class-unique, and not wired to
    `LoadoutManager` at all — whatever's equipped in the (nonexistent) Armory has zero effect on
    what actually renders. Read the full corrected picture, contracts, and task board in
-   [`docs/armory-and-class-weapons-worklog.md`](file:///home/caveman/Desktop/icecave/hunker-bunker/docs/armory-and-class-weapons-worklog.md)
+   [`docs/armory-and-class-weapons-worklog.md`](../armory-and-class-weapons-worklog.md)
    before starting any build work — it supersedes this section's original framing and §6/§7 below
    on asset location specifically (real convention is `public/3d/runtime/`, not
    `public/models/weapons/`).
@@ -42,8 +42,8 @@ authoritative on what's actually live. The Armory *screen* (UI, data model, benc
 still be built and playtested independently of the weapon-model work — see the worklog's task
 board for the current dependency graph, which replaces §7 below.
 
-[`docs/superpowers/specs/2026-07-26-player-chassis-3d-vertical-slice-design.md`](file:///home/caveman/Desktop/icecave/hunker-bunker/docs/superpowers/specs/2026-07-26-player-chassis-3d-vertical-slice-design.md) ·
-[`docs/superpowers/specs/2026-07-26-cosmetics-and-loadout-system-design.md`](file:///home/caveman/Desktop/icecave/hunker-bunker/docs/superpowers/specs/2026-07-26-cosmetics-and-loadout-system-design.md)
+[`docs/superpowers/specs/2026-07-26-player-chassis-3d-vertical-slice-design.md`](../superpowers/specs/2026-07-26-player-chassis-3d-vertical-slice-design.md) ·
+[`docs/superpowers/specs/2026-07-26-cosmetics-and-loadout-system-design.md`](../superpowers/specs/2026-07-26-cosmetics-and-loadout-system-design.md)
 
 ---
 
@@ -239,7 +239,7 @@ from being equippable on a Scout Sidearm.
 ## 6. New Assets Required
 
 > **Superseded on file location and socket mechanics** — see
-> [`docs/armory-and-class-weapons-worklog.md`](file:///home/caveman/Desktop/icecave/hunker-bunker/docs/armory-and-class-weapons-worklog.md)
+> [`docs/armory-and-class-weapons-worklog.md`](../armory-and-class-weapons-worklog.md)
 > §2. Real convention: assets go under `public/3d/runtime/`, not `public/models/weapons/` (that
 > path doesn't exist in this repo). Real socket mechanism: weapons parent directly onto the
 > character's Mixamo `RightHand` bone at runtime (`player3dOverlay.js`'s existing

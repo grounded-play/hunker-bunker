@@ -6,7 +6,7 @@ Hunker Bunker features a complete **Steam Inventory Service (Item Economy)** sup
 
 ## 1. Catalog Architecture ($11 \text{ Base} + 60 \text{ Season 0}$)
 
-The catalog is defined in [`src/data/steamItemCatalog.js`](file:///home/caveman/Desktop/icecave/hunker-bunker/src/data/steamItemCatalog.js) and backed by the Steam Inventory schema [`steam/inventory_schema_hunker_bunker.json`](file:///home/caveman/Desktop/icecave/hunker-bunker/steam/inventory_schema_hunker_bunker.json).
+The catalog is defined in [`src/data/steamItemCatalog.js`](../../src/data/steamItemCatalog.js) and backed by the Steam Inventory schema [`steam/inventory_schema_hunker_bunker.json`](../../steam/inventory_schema_hunker_bunker.json).
 
 **Corrected against the real schema** (`steam/inventory_schema_hunker_bunker.json`) — the
 original version of this table described a plausible-sounding but fabricated 1000-3001 range;
@@ -41,8 +41,8 @@ TOTAL             Full Deep Crust Catalog        71 items    100% Asset Complian
 
 In development and demo environments:
 - **No Credit Cards or Real Cash**: Key purchases and crate unboxings use mock Steam microtransaction purchase receipts (`initSteamPurchase` $\rightarrow$ `finalizeSteamPurchase`) with zero billing.
-- **Sandbox Fallback Roster**: If running outside Steam, [`src/steamVaultUi.js`](file:///home/caveman/Desktop/icecave/hunker-bunker/src/steamVaultUi.js) injects starter sandbox items (`sandbox_4000` cache, `sandbox_4001` key, `sandbox_2000` charm, etc.) so testing can proceed offline.
-- **Battle Pass Leveling**: Earn XP during expeditions to unlock all 50 tiers of the Deep Crust Protocol track in [`src/seasonPassUi.js`](file:///home/caveman/Desktop/icecave/hunker-bunker/src/seasonPassUi.js).
+- **Sandbox Fallback Roster**: If running outside Steam, [`src/steamVaultUi.js`](../../src/steamVaultUi.js) injects starter sandbox items (`sandbox_4000` cache, `sandbox_4001` key, `sandbox_2000` charm, etc.) so testing can proceed offline.
+- **Battle Pass Leveling**: Earn XP during expeditions to unlock all 50 tiers of the Deep Crust Protocol track in [`src/seasonPassUi.js`](../../src/seasonPassUi.js).
 
 ---
 

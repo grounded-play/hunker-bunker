@@ -134,11 +134,6 @@ import { HiveSite } from './hiveSite.js';
 import { describeDialogueProgress, leaderKeyFromName, nextDialogueBeat, isFinalStage } from './data/campDialogue.js';
 import { blackBoxStore } from './blackBox.js';
 import { runCheckpointStore } from './runCheckpoint.js';
-import {
-    ARC_PRELUDE_ENABLED,
-    AUTHORED_WORLD_TILES_ENABLED,
-    PLAYER_3D_COSMETIC_OVERLAY_ENABLED
-} from './featureFlags.js';
 import { CHASSIS_SKIN_MODELS, createPlayer3dOverlay, ENGINEER_GESTURES } from './player3dOverlay.js';
 import { createEnemy3dVisual, disposeEnemy3dVisual, updateEnemy3dVisual } from './enemy3dOverlay.js';
 import { createWorld3dModel, hasWorld3dModel, syncWorld3dReplacement } from './world3dOverlay.js';
@@ -1144,7 +1139,7 @@ export class ThreeGame {
         // hasn't had an idle slot yet.
         this._deferredGameplayAtlasProcessors = [];
         this.dialogueManager = dialogueManager;
-        this.arcManager = ARC_PRELUDE_ENABLED ? arcManager : null;
+        this.arcManager = arcManager;
         this.o2StartupSequenceActive = false;
         this.o2StartupTime = 0;
         this.o2StartupPhase = 'popup';
@@ -1477,7 +1472,7 @@ export class ThreeGame {
         this.completedRingCrossingMissionIds = new Set();
         this.worldPlan = null;
         this._worldPlanInjected = false;
-        this.authoredWorldTiles = AUTHORED_WORLD_TILES_ENABLED;
+        this.authoredWorldTiles = true;
         this.activeBoss = null;
         this.queenFightSprite = null;
         this.missionState = { type: null, label: '', status: 'inactive', extractionTimer: 0, killCount: 0, targetKills: 0, targetDepth: 0 };
@@ -1520,7 +1515,7 @@ export class ThreeGame {
         this.cinematicLock = false;
 
         // Act 2 (PregAlien loop): survivor camps + queen objective ladder.
-        this.act2 = ARC_PRELUDE_ENABLED ? act2Manager : null;
+        this.act2 = act2Manager;
         this.camps = [];
         this._act2CampsReady = false;
         this._campPromptLabel = null;
@@ -4054,7 +4049,7 @@ export class ThreeGame {
         this.player3dOverlay?.dispose?.();
         this.player3dOverlay = null;
         if (this.playerSprite) this.playerSprite.visible = true;
-        if (!PLAYER_3D_COSMETIC_OVERLAY_ENABLED || !['SCOUT', 'ENGINEER', 'TANK'].includes(this.playerType) || !this.player) return;
+        if (!['SCOUT', 'ENGINEER', 'TANK'].includes(this.playerType) || !this.player) return;
         const playerRoot = this.player;
         const overlayType = this.playerType;
         try {
@@ -4400,7 +4395,7 @@ export class ThreeGame {
     }
 
     async setupRemotePlayer3dOverlay(remote) {
-        if (!PLAYER_3D_COSMETIC_OVERLAY_ENABLED || !remote?.mesh || remote.overlay || remote.overlayLoading) return;
+        if (!remote?.mesh || remote.overlay || remote.overlayLoading) return;
         if (!['SCOUT', 'ENGINEER', 'TANK'].includes(remote.opClass)) return;
         remote.overlayLoading = true;
 
@@ -11516,7 +11511,7 @@ export class ThreeGame {
     }
 
     revealCaveEntrance({ instant = false } = {}) {
-        if (!ARC_PRELUDE_ENABLED || !this.arcManager || !this.caveEntrance) return;
+        if (!this.arcManager || !this.caveEntrance) return;
         if (this.isCaveRevealDone() || this.caveEntrance.isRevealed) return;
         const site = this.chooseCaveEntrancePosition();
         if (instant) this.caveEntrance.revealInstant(site.x, site.z);
@@ -11936,7 +11931,7 @@ export class ThreeGame {
     // with shells (and later must betray). Leveled camps double as O2 havens
     // during the human prelude.
     updateCamps(delta) {
-        if (this.performanceProfile === 'menu' || !ARC_PRELUDE_ENABLED || !this.act2) return;
+        if (this.performanceProfile === 'menu' || !this.act2) return;
         this.ensureAct2Camps();
         const phase = this.act2.getPhase();
         for (const camp of this.camps) camp.update(delta);
@@ -12119,7 +12114,7 @@ export class ThreeGame {
     // under scrutiny. Camps that watch a low-cover carrier get suspicious;
     // full suspicion outs the player and the relay spreads the truth.
     updateInfectionPressure(delta) {
-        if (!ARC_PRELUDE_ENABLED || !this.act2 || !this.player || this.isPlayerDead) return;
+        if (!this.act2 || !this.player || this.isPlayerDead) return;
         const phase = this.act2.getPhase();
         if (phase === 'dormant' || phase === 'departed') return;
         const state = this.act2.getState();
@@ -12196,7 +12191,7 @@ export class ThreeGame {
     // player wounded for resources, with rescue/harvest/network choices.
 
     updateHiveSites(delta) {
-        if (this.performanceProfile === 'menu' || !ARC_PRELUDE_ENABLED || !this.act2) return;
+        if (this.performanceProfile === 'menu' || !this.act2) return;
         this.ensureHiveSites();
         for (const hive of this.hives) hive.update(delta);
         this.updateHivePrompt();
@@ -12980,7 +12975,7 @@ export class ThreeGame {
     }
 
     getAct1SideSignalTarget() {
-        if (!ARC_PRELUDE_ENABLED || !this.player || !this.act2) return null;
+        if (!this.player || !this.act2) return null;
         if (this.act2.getPhase() !== 'dormant') return null;
 
         this.ensureAct2Camps();
@@ -13022,7 +13017,7 @@ export class ThreeGame {
     }
 
     getMeridianCompassTarget() {
-        if (!ARC_PRELUDE_ENABLED || !this.player || !this.act2) return null;
+        if (!this.player || !this.act2) return null;
         const candidates = [];
         for (const camp of this.camps ?? []) {
             const record = this.getCampRecord(camp.id);
@@ -28923,12 +28918,10 @@ export class ThreeGame {
             this.ringCrossingState = raw.ringCrossings;
         }
         if (raw.authoredWorld) {
-            // Saved data must never override a code-level rollback. A currently
-            // enabled runtime may resume an enabled save, but the default-off
-            // feature flag always wins when no explicit opt-in exists.
-            const runtimeAllowsAuthoredWorld = Boolean(
-                this.authoredWorldTiles || AUTHORED_WORLD_TILES_ENABLED
-            );
+            // Saved data must never override a runtime rollback. A currently
+            // enabled runtime may resume an enabled save, while an instance
+            // disabled by compatibility/recovery logic remains disabled.
+            const runtimeAllowsAuthoredWorld = Boolean(this.authoredWorldTiles);
             this.authoredWorldTiles = Boolean(
                 runtimeAllowsAuthoredWorld && raw.authoredWorld.enabled
             );

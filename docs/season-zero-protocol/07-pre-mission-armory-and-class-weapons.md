@@ -1,6 +1,6 @@
 # Superseded — Merged into 07-armory-and-weapon-bench.md
 
-This doc and [`07-armory-and-weapon-bench.md`](file:///home/caveman/Desktop/icecave/hunker-bunker/docs/season-zero-protocol/07-armory-and-weapon-bench.md)
+This doc and [`07-armory-and-weapon-bench.md`](./07-armory-and-weapon-bench.md)
 were drafted concurrently by two agents working the same Armory expansion on 2026-08-17. Rather
 than ship two contradicting "07" specs, they've been merged:
 

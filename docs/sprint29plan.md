@@ -1,5 +1,13 @@
 # Sprint 29 Master Plan & Work Lanes
 
+> **Closed historical plan.** Sprint 29 merged to `mothership` on 2026-08-24.
+> Actual delivered work and remaining visual acceptance are recorded in
+> [`reports/sprint-29-three-lane-integration-report-2026-08-24.md`](reports/sprint-29-three-lane-integration-report-2026-08-24.md)
+> and
+> [`sprint-29-cross-lane-completion-audit-2026-08-24.md`](sprint-29-cross-lane-completion-audit-2026-08-24.md).
+> Untouched original lanes are dispositioned in
+> [`planning/repository-roadmap.md`](planning/repository-roadmap.md).
+
 **Sprint Version Target:** `v2.3.1-beta`  
 **Active Development Branch:** `dev/sprint-29`  
 **Base Release:** `v2.3.0-beta` (Commit `030a8f9` on `mothership`)  
@@ -22,7 +30,7 @@ The baseline starting into Sprint 29:
 ## 2. Work Lanes & Deliverables
 
 ### 🧱 Lane A: 3D Asset Production & Catalog Integration
-- **Aesthetic Constitution:** Enforce Dark H.R. Giger × Event Horizon styling established in [docs/3d-asset-master-backlog-and-prompts.md](file:///home/caveman/Desktop/icecave/hunker-bunker/docs/3d-asset-master-backlog-and-prompts.md).
+- **Aesthetic Constitution:** Enforce Dark H.R. Giger × Event Horizon styling established in [docs/3d-asset-master-backlog-and-prompts.md](./3d-asset-master-backlog-and-prompts.md).
 - **Missing Achievement 3D Assets:** Generate/convert and wire the remaining 5 achievement cosmetics:
   1. `chassis_scout_ghost_runner.glb` (Itemdef 5001)
   2. `skin_scout_chrono_drifter.glb` (Itemdef 5002)

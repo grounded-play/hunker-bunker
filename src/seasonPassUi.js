@@ -200,7 +200,7 @@ function renderRewardBurst(overlay) {
     burst.innerHTML = Array.from({ length: 18 }, (_, i) => `<i style="--particle-angle:${i * 20}deg"></i>`).join('');
 }
 
-function presentRewardStage(stage, ending) {
+export function presentRewardStage(stage, ending) {
     const overlay = document.getElementById('progression-reward-overlay');
     if (!overlay) return;
     overlay.dataset.revealStage = stage;
@@ -224,7 +224,7 @@ function presentRewardStage(stage, ending) {
     }
 }
 
-function claimProgressionReward() {
+export function claimProgressionReward() {
     if (!progressionCeremonyActive) return;
     const overlay = document.getElementById('progression-reward-overlay');
     const tier = Number(overlay?.dataset.tier);
@@ -234,7 +234,7 @@ function claimProgressionReward() {
     const claimBtn = overlay?.querySelector('#progression-claim-btn');
     if (claimBtn) claimBtn.disabled = true;
     const reward = seasonPass.getReward(tier, track);
-    rewardRevealFlow.run({ actionKey: `reward:${tier}:${track}`, item: reward }).then((result) => {
+    const reveal = rewardRevealFlow.run({ actionKey: `reward:${tier}:${track}`, item: reward }).then((result) => {
         if (!result.ok) {
             // Nothing was granted, so nothing is being revealed -- restore the
             // button rather than stranding the player on a dead panel.
@@ -246,6 +246,7 @@ function claimProgressionReward() {
         if (!result.previewOk) showPreviewUnavailable(result.ending, reward);
     });
     updateMenuStatus();
+    return reveal;
 }
 
 function showPreviewUnavailable(ending, reward) {
@@ -257,7 +258,7 @@ function showPreviewUnavailable(ending, reward) {
         : 'PREVIEW UNAVAILABLE — REWARD SECURED';
 }
 
-function dismissProgressionReward() {
+export function dismissProgressionReward() {
     const overlay = document.getElementById('progression-reward-overlay');
     if (!overlay) return;
     window.AudioManager?.play('ui_reward_dismiss', { bus: 'sfx' });

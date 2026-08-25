@@ -9,7 +9,7 @@ This guide explains how **Hunker Bunker** interfaces with Steamworks natively on
 ### App ID Configuration
 - **Primary App ID**: `4957040` (Assigned in Steamworks Partner Portal)
 - **Configuration Files**:
-  - [`electron/steam-config.json`](file:///home/caveman/Desktop/icecave/hunker-bunker/electron/steam-config.json):
+  - [`electron/steam-config.json`](../../electron/steam-config.json):
     ```json
     {
       "backendUrl": "https://steam.tuesdaycinema.club",
@@ -24,7 +24,7 @@ This guide explains how **Hunker Bunker** interfaces with Steamworks natively on
 
 ## 2. Boot Sequence & Native Initialization
 
-When the desktop shell launches ([`electron/main.cjs`](file:///home/caveman/Desktop/icecave/hunker-bunker/electron/main.cjs)):
+When the desktop shell launches ([`electron/main.cjs`](../../electron/main.cjs)):
 
 ```
 [Main Process Boot]
@@ -42,7 +42,7 @@ When the desktop shell launches ([`electron/main.cjs`](file:///home/caveman/Desk
 
 ### Key Safety Guarantees
 1. **Strictly Non-Blocking**: If Steam is not running, the module is missing, or the App ID is unassigned, `steamClient` remains `null`. The game client **never crashes** and functions completely in sandbox mode.
-2. **IPC Security Boundary**: The renderer window runs with `contextIsolation: true` and `nodeIntegration: false`. The main process exposes only whitelisted APIs through [`electron/preload.cjs`](file:///home/caveman/Desktop/icecave/hunker-bunker/electron/preload.cjs) via `window.electronAPI`.
+2. **IPC Security Boundary**: The renderer window runs with `contextIsolation: true` and `nodeIntegration: false`. The main process exposes only whitelisted APIs through [`electron/preload.cjs`](../../electron/preload.cjs) via `window.electronAPI`.
 
 ---
 
@@ -52,7 +52,7 @@ Hunker Bunker utilizes **Steam Auto-Cloud** to synchronize player progression, p
 
 ### Save Flow
 1. The game renderer writes progression state to `window.localStorage` (keys prefixed with `hb_*`, such as `hb_profile_v1`, `hb_loadout_v1`, `hb_achievements_v1`, `hb_steam_vault_v1`).
-2. An inline mutation observer in [`index.html`](file:///home/caveman/Desktop/icecave/hunker-bunker/index.html) notifies the preload script via `window.electronAPI.onSaveDataChanged(key, value)`.
+2. An inline mutation observer in [`index.html`](../../index.html) notifies the preload script via `window.electronAPI.onSaveDataChanged(key, value)`.
 3. The Electron main process writes the synchronized snapshot atomically to:
    - **Linux/Steam Deck**: `~/.config/Hunker Bunker/save.json`
    - **Windows**: `%APPDATA%\Hunker Bunker\save.json`

@@ -1,6 +1,6 @@
 # 02. Multiplayer & Socket.IO Relay Guide
 
-Hunker Bunker includes a low-latency **Socket.IO relay architecture** ([`server/relay.js`](file:///home/caveman/Desktop/icecave/hunker-bunker/server/relay.js) and [`src/multiplayerLobby.js`](file:///home/caveman/Desktop/icecave/hunker-bunker/src/multiplayerLobby.js)) supporting cooperative campaigns and PVP arena matches.
+Hunker Bunker includes a low-latency **Socket.IO relay architecture** ([`server/relay.js`](../../server/relay.js) and [`src/multiplayerLobby.js`](../../src/multiplayerLobby.js)) supporting cooperative campaigns and PVP arena matches.
 
 ---
 
@@ -42,7 +42,7 @@ sequenceDiagram
 - When running locally via `npm run dev` or `node server/index.js`, the relay runs on:
   - `http://localhost:3001` (WebSocket port `3001`)
 
-### Client URL Resolution Logic ([`src/multiplayerLobby.js`](file:///home/caveman/Desktop/icecave/hunker-bunker/src/multiplayerLobby.js))
+### Client URL Resolution Logic ([`src/multiplayerLobby.js`](../../src/multiplayerLobby.js))
 ```javascript
 export function resolveRelayUrl() {
     if (typeof window === 'undefined') return 'http://localhost:3001';
@@ -63,7 +63,7 @@ export function resolveRelayUrl() {
 
 ## 3. Protocol & Packet Specification
 
-All packets are rate-limited and sanitized server-side in [`server/relay.js`](file:///home/caveman/Desktop/icecave/hunker-bunker/server/relay.js) to prevent float overflow and flooding.
+All packets are rate-limited and sanitized server-side in [`server/relay.js`](../../server/relay.js) to prevent float overflow and flooding.
 
 | Event Name | Direction | Payload Schema | Description |
 | :--- | :--- | :--- | :--- |
@@ -83,7 +83,7 @@ All packets are rate-limited and sanitized server-side in [`server/relay.js`](fi
 
 When a match deploys:
 1. **Co-Op Mode (`coop`)**:
-   - Both operatives spawn at coordinated adjacent drop-pod crash sites planned by [`src/multiplayerCrashPlanner.js`](file:///home/caveman/Desktop/icecave/hunker-bunker/src/multiplayerCrashPlanner.js).
+   - Both operatives spawn at coordinated adjacent drop-pod crash sites planned by [`src/multiplayerCrashPlanner.js`](../../src/multiplayerCrashPlanner.js).
    - Shared objective tracking, shared camp unlock progress, and teammate revive mechanics.
 2. **PVP Arena Mode (`pvp`)**:
    - Operatives spawn in opposing sectors of the ring maze.

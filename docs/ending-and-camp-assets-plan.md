@@ -1,6 +1,6 @@
 # Ending & Camp Visual Assets Plan
 
-This document outlines the visual assets required to implement the multi-ending narrative paths and camp interactions described in [expanded-universe-narrative-design.md](file:///home/caveman/Desktop/icecave/hunker-bunker/docs/expanded-universe-narrative-design.md) and [implementation_plan.md](file:///home/caveman/Desktop/icecave/hunker-bunker/docs/implementation_plan.md).
+This document outlines the visual assets required to implement the multi-ending narrative paths and camp interactions described in [expanded-universe-narrative-design.md](./expanded-universe-narrative-design.md) and [implementation_plan.md](./implementation_plan.md).
 
 All assets must match the established Hunker Bunker visual style:
 * **Style**: Stylized 2.5D hand-painted retro-futuristic sci-fi, chunky readable silhouettes, high contrast, subtle film grain, and no readable text or logos.

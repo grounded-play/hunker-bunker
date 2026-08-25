@@ -1,6 +1,6 @@
 # Visual Remaster Asset Audit & Queue
 
-A comprehensive inventory of basic, vector SVG, and legacy placeholder assets in `public/` queued for visual remastering to match the dark, sensual, biomechanical Gigeresque key art style ([title_key_art_v2.png](file:///home/caveman/Desktop/icecave/hunker-bunker/public/title_key_art_v2.png)).
+A comprehensive inventory of basic, vector SVG, and legacy placeholder assets in `public/` queued for visual remastering to match the dark, sensual, biomechanical Gigeresque key art style ([title_key_art_v2.png](../public/title_key_art_v2.png)).
 
 ---
 

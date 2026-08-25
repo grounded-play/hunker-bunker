@@ -6,7 +6,7 @@ First off, thank you for considering contributing to Hunker Bunker! It's people 
 
 1. **Fork the repository** to your own GitHub account.
 2. **Clone the project** to your local machine.
-3. Install dependencies by running `npm install`.
+3. Install Node.js 22 or newer, then install dependencies with `npm ci`.
 4. Start the development server using `npm run dev`.
 5. Open your browser and navigate to the local URL provided by Vite (usually `http://localhost:5173`).
 
@@ -22,6 +22,20 @@ First off, thank you for considering contributing to Hunker Bunker! It's people 
 
 - We use ESLint for code formatting and quality. Please run `npm run lint` before submitting a PR.
 - Try to match the existing coding style for consistency.
+
+## Documentation and Verification
+
+- Start with [`docs/README.md`](docs/README.md) and treat
+  [`PRODUCT_STATE.md`](PRODUCT_STATE.md) as current truth.
+- Follow [`docs/documentation-system.md`](docs/documentation-system.md) for
+  lifecycle, placement, naming, and sprint-close rules.
+- Run `npm run audit:docs` after changing Markdown, sprint/version references,
+  or canonical links.
+- Run the smallest relevant tests while developing. Before opening a PR, run
+  `npm test`, `npm run lint`, `npm run presubmit`, and `npm run build` unless
+  the PR explains why a gate cannot run.
+- Keep implementation, automated verification, and human/hardware acceptance
+  distinct in status claims.
 
 ## Reporting Bugs
 

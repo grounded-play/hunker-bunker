@@ -24,6 +24,7 @@
     "audit:playtest-navigation": "node scripts/playtest-navigation-report.js",
     "audit:chroma-green": "node scripts/audit-chroma-green.js",
     "audit:chroma-green:check": "node scripts/audit-chroma-green.js --check",
+    "audit:docs": "node scripts/audit-docs.js",
     "presubmit": "npm run presubmit:generated",
     "presubmit:generated": "npm run steam:claims:check && npm run audio:plan-sfx:check && npm run audit:retail-assets:check && npm run steam:item-catalog:check && npm run audit:soundtrack && npm run audit:chroma-green:check",
     "audio:plan-sfx": "node scripts/generate-plan-sfx.js",
