@@ -51,6 +51,7 @@ export const TiltShiftPassShader = {
 import { assetUrl } from './assetUrl.js';
 import { getItemCatalogEntry } from './steamVaultUi.js';
 import { wrapAngle, planarBasisFromOffsetAzimuth, aimVectorFromYaw } from './cameraYaw.js';
+import { THIRD_PERSON_CAMERA, clampCameraPositionToHit, getThirdPersonCameraPose } from './thirdPersonCamera.js';
 import { MULTIPLAYER_SPAWN_MODES, hashSeed, partitionCrashPlanPlayers } from './multiplayerCrashPlanner.js';
 import { multiplayerLobby } from './multiplayerLobby.js';
 import { BankManager, O2_GENERATOR_UPGRADES, BASE_TURRET_UPGRADES, BASE_TURRET_REPAIR_COST, TIER2_UPGRADE_ORDER, TIER2_UPGRADE_CONFIGS, WEAPON_UPGRADE_ORDER, WEAPON_UPGRADES_CONFIG, CLASS_SKILL_TREES, shellPriceOf } from './bank.js';
@@ -1238,6 +1239,8 @@ export class ThreeGame {
         this.cameraAzimuth = Math.atan2(8, 8);
         this.cameraRotationInput = 0;
         this._cameraOrbitPointerDelta = 0;
+        this.cameraMode = 'third-person';
+        this._thirdPersonCameraRaycaster = new THREE.Raycaster();
         this.cameraOffset = new THREE.Vector3(
             this.cameraOrbitRadius * Math.sin(this.cameraAzimuth),
             this.cameraLift,
@@ -1555,9 +1558,11 @@ export class ThreeGame {
         if (typeof window !== 'undefined') window.lineDirector = this.lineDirector;
         this._syncedRunModifier = null;
 
-        this.camera = new THREE.OrthographicCamera(-10, 10, 10, -10, 0.1, 100);
-        this.camera.position.copy(this.cameraOffset);
-        this.camera.lookAt(0, 0, 0);
+        this.orthographicCamera = new THREE.OrthographicCamera(-10, 10, 10, -10, 0.1, 100);
+        this.orthographicCamera.position.copy(this.cameraOffset);
+        this.orthographicCamera.lookAt(0, 0, 0);
+        this.perspectiveCamera = new THREE.PerspectiveCamera(THIRD_PERSON_CAMERA.fieldOfView, 1, 0.08, 160);
+        this.camera = this.orthographicCamera;
 
         this.setupMenuGyroListeners();
 
@@ -6624,10 +6629,14 @@ export class ThreeGame {
             this.renderer.setPixelRatio(targetPixelRatio);
         }
 
-        this.camera.left = -viewSize * aspect;
-        this.camera.right = viewSize * aspect;
-        this.camera.top = viewSize;
-        this.camera.bottom = -viewSize;
+        if (this.camera.isPerspectiveCamera) {
+            this.camera.aspect = aspect;
+        } else {
+            this.camera.left = -viewSize * aspect;
+            this.camera.right = viewSize * aspect;
+            this.camera.top = viewSize;
+            this.camera.bottom = -viewSize;
+        }
         this.camera.updateProjectionMatrix();
 
         this.renderer.setSize(width, height, false);
@@ -6719,6 +6728,7 @@ export class ThreeGame {
         const nextProfile = profile === 'gameplay' ? 'gameplay' : 'menu';
         if (this.performanceProfile === nextProfile) return;
         this.performanceProfile = nextProfile;
+        this.selectActiveCamera();
         // Adaptive mode is sticky only for the current combat run. Returning
         // to menu restores presentation quality; a later run evaluates its
         // own hardware/frame pressure from a clean state.
@@ -6795,6 +6805,23 @@ export class ThreeGame {
             this.updateAdaptiveGameplayQuality?.(0);
         }
         this.emitLightingTelemetry?.('profile-change', { nextProfile });
+    }
+
+    selectActiveCamera() {
+        const nextCamera = this.performanceProfile === 'gameplay' && this.cameraMode === 'third-person'
+            ? this.perspectiveCamera
+            : this.orthographicCamera;
+        if (!nextCamera || this.camera === nextCamera) return;
+        this.camera = nextCamera;
+        if (this.renderPass) this.renderPass.camera = nextCamera;
+        this.snapCameraToPlayer();
+    }
+
+    setCameraMode(mode = 'third-person') {
+        this.cameraMode = mode === 'isometric' ? 'isometric' : 'third-person';
+        this.selectActiveCamera();
+        this.resize();
+        return this.cameraMode;
     }
 
     setAdaptiveGameplayPerformanceMode(enabled = true, {
@@ -20109,13 +20136,28 @@ export class ThreeGame {
         const pointerOrbitDelta = this._cameraOrbitPointerDelta ?? 0;
         this._cameraOrbitPointerDelta = 0;
         const stickOrbit = this.cameraRotationInput ?? 0;
+        if (this.performanceProfile === 'gameplay' && this.cameraMode === 'third-person') {
+            const turnSensitivity = THREE.MathUtils.clamp(
+                Number(globalThis.window?.state?.settings?.aimSensitivity) || 1,
+                0.5,
+                2
+            );
+            const turnDelta = (stickOrbit * delta * 2.35 * turnSensitivity)
+                + (pointerOrbitDelta * 0.006 * turnSensitivity);
+            if (Math.abs(turnDelta) > 0.0001) this.updateFacingYaw(this.facingYaw + turnDelta);
+            // One steering direction owns both actor and camera. This removes
+            // the old twin-stick burden of separately orbiting, aiming, and firing.
+            this.cameraAzimuth = wrapAngle(this.facingYaw + Math.PI);
+        }
         if (this.performanceProfile === 'gameplay' && (Math.abs(stickOrbit) > 0.01 || pointerOrbitDelta)) {
             // Right-stick orbit: preserve the classic isometric height and
             // radius while rotating the camera and screen-relative movement
             // axes around the operator.
-            this.cameraAzimuth = wrapAngle(
-                this.cameraAzimuth + (stickOrbit * delta * 2.8) + (pointerOrbitDelta * 0.008)
-            );
+            if (this.cameraMode !== 'third-person') {
+                this.cameraAzimuth = wrapAngle(
+                    this.cameraAzimuth + (stickOrbit * delta * 2.8) + (pointerOrbitDelta * 0.008)
+                );
+            }
         }
         const camBasis = planarBasisFromOffsetAzimuth(this.cameraAzimuth);
         this.cameraPlanarForward.set(camBasis.forward.x, camBasis.forward.y);
@@ -20125,6 +20167,12 @@ export class ThreeGame {
             this.cameraLift,
             this.cameraOrbitRadius * Math.cos(this.cameraAzimuth)
         );
+
+        if (this.performanceProfile === 'gameplay' && this.cameraMode === 'third-person') {
+            this.updateThirdPersonCamera(delta);
+            this.updateTiltShiftAndBokeh(delta);
+            return;
+        }
 
         const target = new THREE.Vector3(
             this.player.position.x + this.cameraOffset.x,
@@ -20173,6 +20221,33 @@ export class ThreeGame {
         this.updateTiltShiftAndBokeh(delta);
     }
 
+    updateThirdPersonCamera(delta, { immediate = false } = {}) {
+        const pose = getThirdPersonCameraPose({
+            playerPosition: this.player.position,
+            planarForward: this.cameraPlanarForward,
+            planarRight: this.cameraPlanarRight
+        });
+        const ray = pose.position.clone().sub(pose.focus);
+        const rayLength = ray.length();
+        let resolvedPosition = pose.position;
+        if (rayLength > 0.001 && this.wallMeshes?.length) {
+            this._thirdPersonCameraRaycaster.set(pose.focus, ray.normalize());
+            this._thirdPersonCameraRaycaster.near = 0;
+            this._thirdPersonCameraRaycaster.far = rayLength;
+            const hit = this._thirdPersonCameraRaycaster.intersectObjects(this.wallMeshes, false)[0];
+            if (hit) resolvedPosition = clampCameraPositionToHit(pose.focus, pose.position, hit.distance);
+        }
+        const blend = immediate ? 1 : 1 - Math.exp(-delta * 12);
+        this.camera.position.lerp(resolvedPosition, blend);
+        if (this._cameraShakeTimer > 0) {
+            this._cameraShakeTimer -= delta;
+            const intensity = this._cameraShakeIntensity * Math.max(0, this._cameraShakeTimer / 0.35);
+            this.camera.position.x += (Math.random() - 0.5) * intensity;
+            this.camera.position.y += (Math.random() - 0.5) * intensity * 0.45;
+        }
+        this.camera.lookAt(pose.lookAt);
+    }
+
     snapCameraToPlayer() {
         if (!this.player || !this.camera) return;
         const camBasis = planarBasisFromOffsetAzimuth(this.cameraAzimuth);
@@ -20183,6 +20258,11 @@ export class ThreeGame {
             this.cameraLift,
             this.cameraOrbitRadius * Math.cos(this.cameraAzimuth)
         );
+        if (this.performanceProfile === 'gameplay' && this.cameraMode === 'third-person') {
+            this.updateThirdPersonCamera(0, { immediate: true });
+            this.updateTiltShiftAndBokeh(0.016);
+            return;
+        }
         this.camera.position.set(
             this.player.position.x + this.cameraOffset.x,
             this.player.position.y + this.cameraOffset.y,

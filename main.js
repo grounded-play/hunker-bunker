@@ -1819,14 +1819,15 @@ function handleSteamGameplayInput(controller) {
     if (window.game?.setVirtualInput) {
         window.game.setVirtualInput(moveX, -moveY);
     }
-    // The right stick and trackpad move one screen-space aim point. Movement
-    // remains independent, so strafing never steals the shot direction.
+    const thirdPersonCamera = window.game?.cameraMode === 'third-person';
+    // Classic mode moves a free tactical aim point. Third-person mode keeps
+    // the reticle centered and lets this same stick turn actor + camera.
     const width = window.innerWidth || 1280;
     const height = window.innerHeight || 800;
     if (!controllerAimCursor) controllerAimCursor = { x: width / 2, y: height / 2 };
     const deltaX = aimX * 14 + (Number(controller.cameraDelta?.x) || 0) * 0.55;
     const deltaY = aimY * 14 + (Number(controller.cameraDelta?.y) || 0) * 0.55;
-    if (Math.hypot(deltaX, deltaY) > 0.01) {
+    if (!thirdPersonCamera && Math.hypot(deltaX, deltaY) > 0.01) {
         controllerAimCursor.x = Math.min(width - 8, Math.max(8, controllerAimCursor.x + deltaX));
         controllerAimCursor.y = Math.min(height - 8, Math.max(8, controllerAimCursor.y + deltaY));
         window.game?.updateAimFromClient?.(controllerAimCursor.x, controllerAimCursor.y, {
@@ -1834,7 +1835,11 @@ function handleSteamGameplayInput(controller) {
             persistDuration: 2.0
         });
     }
-    updateVirtualGamepadCursorPosition(controllerAimCursor.x, controllerAimCursor.y, true);
+    if (thirdPersonCamera) {
+        controllerAimCursor.x = width / 2;
+        controllerAimCursor.y = height / 2;
+    }
+    updateVirtualGamepadCursorPosition(controllerAimCursor.x, controllerAimCursor.y, !thirdPersonCamera);
     updateGameplayCrosshair(controllerAimCursor.x, controllerAimCursor.y, true);
     window.game?.setCameraRotationInput?.(aimX);
 
@@ -2085,6 +2090,7 @@ const state = {
         fullscreen: false,
         nightVision: false,
         commentary: false,
+        cameraMode: localStorage.getItem('hb_camera_mode') === 'isometric' ? 'isometric' : 'third-person',
         aimSensitivity: parseFloat(localStorage.getItem('hb_aim_sensitivity') || '1.0'),
         invertAimY: localStorage.getItem('hb_invert_aim_y') === 'true',
         crosshairColor: /^#[0-9a-f]{6}$/i.test(localStorage.getItem(CROSSHAIR_COLOR_STORAGE_KEY) ?? '')
@@ -7745,6 +7751,9 @@ function persistSettings() {
         if (state.settings.aimSensitivity != null) {
             localStorage.setItem('hb_aim_sensitivity', String(state.settings.aimSensitivity));
         }
+        if (state.settings.cameraMode) {
+            localStorage.setItem('hb_camera_mode', state.settings.cameraMode);
+        }
         if (state.settings.invertAimY != null) {
             localStorage.setItem('hb_invert_aim_y', String(state.settings.invertAimY));
         }
@@ -8705,6 +8714,9 @@ function openSettingsModal() {
     if (aimSensSelect) aimSensSelect.value = String(state.settings.aimSensitivity ?? 1.0);
     syncAimSensitivityControls();
 
+    const cameraModeSelect = document.getElementById('setting-camera-mode');
+    if (cameraModeSelect) cameraModeSelect.value = state.settings.cameraMode || 'third-person';
+
     const invertYToggle = document.getElementById('setting-invert-y-toggle');
     if (invertYToggle) invertYToggle.checked = !!state.settings.invertAimY;
 
@@ -8736,6 +8748,11 @@ document.getElementById('setting-text-floor')?.addEventListener('change', (e) =>
 document.getElementById('setting-aim-sensitivity')?.addEventListener('change', (e) => {
     state.settings.aimSensitivity = parseFloat(e.target.value) || 1.0;
     syncAimSensitivityControls();
+    persistSettings();
+});
+document.getElementById('setting-camera-mode')?.addEventListener('change', (e) => {
+    state.settings.cameraMode = e.target.value === 'isometric' ? 'isometric' : 'third-person';
+    window.game?.setCameraMode?.(state.settings.cameraMode);
     persistSettings();
 });
 
@@ -12942,6 +12959,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     act2Manager
                 });
                 window.game.setOperatorPolish?.(getSelectedPolish().color);
+                window.game.setCameraMode?.(state.settings.cameraMode);
                 window.game.nightVision = state.settings.nightVision;
                 traceBootPhase('three-constructor-ready', {
                     pixelRatio: window.game.renderer?.getPixelRatio?.(),

@@ -27,7 +27,7 @@ test.describe('gameplay facing yaw (mouse + gamepad)', () => {
         expect(turnedYaw).not.toBeCloseTo(initialYaw, 2);
     });
 
-    test('gamepad right-stick moves the visible aim crosshair and updates facingYaw', async ({ page }) => {
+    test('gamepad right-stick turns third-person facing while the crosshair stays centered', async ({ page }) => {
         test.setTimeout(180_000);
         await bootToOperatorMenu(page);
         await startRunAndSkipIntro(page);
@@ -72,10 +72,10 @@ test.describe('gameplay facing yaw (mouse + gamepad)', () => {
         expect(rightUp.crosshairHidden, 'the fixed gameplay crosshair should be visible').toBe(false);
         expect(rightUp.facingYaw).not.toBeCloseTo(yawBefore, 2);
         expect(leftDown.facingYaw).not.toBeCloseTo(rightUp.facingYaw, 2);
-        expect(Math.abs(rightUp.crosshairCenterX - viewport.width / 2)).toBeGreaterThan(4);
-        expect(Math.abs(rightUp.crosshairCenterY - viewport.height / 2)).toBeGreaterThan(4);
-        expect(rightUp.crosshairCenterX).not.toBeCloseTo(leftDown.crosshairCenterX, 0);
-        expect(rightUp.crosshairCenterY).not.toBeCloseTo(leftDown.crosshairCenterY, 0);
+        expect(rightUp.crosshairCenterX).toBeCloseTo(viewport.width / 2, 0);
+        expect(rightUp.crosshairCenterY).toBeCloseTo(viewport.height / 2, 0);
+        expect(leftDown.crosshairCenterX).toBeCloseTo(rightUp.crosshairCenterX, 0);
+        expect(leftDown.crosshairCenterY).toBeCloseTo(rightUp.crosshairCenterY, 0);
     });
 
     test('WASD movement is screen-relative regardless of facing direction', async ({ page }) => {
