@@ -1063,14 +1063,14 @@ body {
   flex-direction: column;
   align-items: flex-start;
   justify-content: flex-end;
-  padding: calc(var(--vu) * 6) calc(var(--vu) * 7) calc(var(--vu) * 7);
+  padding: calc(var(--vu) * 3.5) calc(var(--vu) * 5) calc(var(--vu) * 3.5);
   text-align: left;
 }
 
 .splash-title {
   position: relative;
   width: calc(var(--vu) * 34);
-  font-size: calc(var(--vu) * 6.6);
+  font-size: calc(var(--vu) * 5.8);
   font-weight: 900;
   color: var(--text-main);
   letter-spacing: 4px;
@@ -1092,12 +1092,12 @@ body {
 
 .splash-subtitle {
   position: relative;
-  font-size: calc(var(--vu) * 1.45);
+  font-size: calc(var(--vu) * 1.35);
   color: var(--accent-primary);
   font-weight: 900;
   letter-spacing: 0.24em;
   text-transform: uppercase;
-  margin: calc(var(--vu) * 1.3) 0 0 calc(var(--vu) * 0.2);
+  margin: calc(var(--vu) * 0.8) 0 0 calc(var(--vu) * 0.2);
 }
 
 #title-profile-hud,
@@ -1243,9 +1243,9 @@ body {
   position: relative;
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  gap: calc(var(--vu) * 0.75);
-  margin: calc(var(--vu) * 2.2) 0 0;
-  width: clamp(290px, calc(var(--vu) * 34), 420px);
+  gap: calc(var(--vu) * 0.5);
+  margin: calc(var(--vu) * 1.3) 0 0;
+  width: clamp(280px, calc(var(--vu) * 32), 380px);
   max-width: 100%;
 }
 
@@ -1289,16 +1289,16 @@ body {
 
 .title-menu-btn {
   font-family: 'Outfit', sans-serif;
-  font-size: clamp(12px, calc(var(--vu) * 1.5), 15px);
-  font-weight: 800;
+  font-size: clamp(14px, calc(var(--vu) * 1.8), 18px);
+  font-weight: 900;
   text-transform: uppercase;
-  letter-spacing: 1.2px;
-  min-height: calc(var(--vu) * 5.2);
-  padding: calc(var(--vu) * 0.9) calc(var(--vu) * 1.6);
+  letter-spacing: 1.5px;
+  min-height: calc(var(--vu) * 4.6);
+  padding: calc(var(--vu) * 0.7) calc(var(--vu) * 1.5);
   border-radius: 5px;
-  background: rgba(8, 10, 11, 0.88);
-  border: 1px solid var(--border-subtle);
-  color: rgba(240, 246, 252, 0.92);
+  background: rgba(10, 14, 18, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  color: rgba(245, 247, 250, 0.95);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
   transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
   cursor: pointer;
@@ -1317,30 +1317,17 @@ body {
 }
 
 .title-menu-btn:hover {
+  outline: none !important;
   background: var(--accent-primary);
-  border-color: var(--accent-primary);
-  color: #05070a;
-  box-shadow: 0 0 20px rgba(255, 159, 28, 0.45);
+  border-color: #ffb833;
+  color: #000000 !important;
+  box-shadow: 0 4px 18px rgba(255, 159, 28, 0.45);
   transform: translateY(-2px);
 }
 
 .title-menu-btn:active {
   transform: translateY(1px);
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
-}
-
-#title-newrun-btn {
-  border-color: rgba(255, 159, 28, 0.45);
-  color: #ffffff;
-  background: linear-gradient(135deg, rgba(28, 18, 10, 0.94) 0%, rgba(14, 10, 8, 0.96) 100%);
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 159, 28, 0.15);
-}
-
-#title-newrun-btn:hover {
-  background: var(--accent-primary);
-  border-color: var(--accent-primary);
-  color: #05070a;
-  box-shadow: 0 0 24px rgba(255, 159, 28, 0.55);
 }
 
 #title-continue-btn:not(:disabled) {
@@ -1351,21 +1338,36 @@ body {
 }
 
 #title-continue-btn:not(:disabled):hover {
+  outline: none !important;
   background: linear-gradient(135deg, #0369a1 0%, #075985 100%);
   border-color: #7dd3fc;
   box-shadow: 0 6px 22px rgba(56, 189, 248, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.4);
 }
 
 .title-menu-btn--quit {
-  border-color: rgba(255, 77, 77, 0.3);
-  color: rgba(255, 185, 185, 0.9);
+  border-color: rgba(255, 77, 77, 0.28);
+  color: rgba(255, 190, 190, 0.92);
 }
 
 .title-menu-btn--quit:hover {
+  outline: none !important;
   background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
   border-color: #ef4444;
-  color: #ffffff;
-  box-shadow: 0 0 20px rgba(239, 68, 68, 0.5);
+  color: #ffffff !important;
+  box-shadow: 0 4px 18px rgba(239, 68, 68, 0.5);
+}
+
+.title-menu-btn--secondary {
+  border-color: rgba(0, 229, 255, 0.35);
+  color: rgba(180, 240, 250, 0.95);
+}
+
+.title-menu-btn--secondary:hover {
+  outline: none !important;
+  background: #00e5ff;
+  border-color: #38bdf8;
+  color: #000000 !important;
+  box-shadow: 0 4px 18px rgba(0, 229, 255, 0.45);
 }
 
 .title-menu-btn:disabled {
@@ -2491,6 +2493,11 @@ body {
   .char-card.selected {
     animation: none;
   }
+}
+
+body:not(.controller-mode) .title-menu-btn:focus:not(:focus-visible) {
+  outline: none !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4) !important;
 }
 
 .title-menu-btn:focus-visible,
