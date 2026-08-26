@@ -199,7 +199,7 @@ export function createSkyRig({ textureLoader = new THREE.TextureLoader() } = {})
         billboards.sync([
             ...resolveSkyBodies(skyState),
             ...resolveSkyTransients(skyState)
-        ], BILLBOARD_RADIUS);
+        ], BILLBOARD_RADIUS, cloudTime);
 
         const resolved = new Map(
             resolveSkyLayers({ biomeKey, skyState }).map((layer) => [layer.layerId, layer])

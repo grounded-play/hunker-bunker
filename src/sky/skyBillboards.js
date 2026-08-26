@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { createSkySpriteMaterial, updateSkySpriteMaterial, SPRITE_MODES } from './skySpriteMaterial.js';
 
 // A fixed pool of camera-facing quads on the sky dome.
 //
@@ -20,17 +21,10 @@ const HORIZON_EPSILON = -0.02;
 
 function createSlot() {
     const geometry = new THREE.PlaneGeometry(1, 1);
-    const material = new THREE.MeshBasicMaterial({
-        transparent: true,
-        opacity: 1,
-        depthWrite: false,
-        // Same rule as the layer shells: transparent materials draw after all
-        // opaque geometry, so without a depth test the sky paints over the
-        // world it is supposed to sit behind.
-        depthTest: true,
-        fog: false,
-        side: THREE.DoubleSide
-    });
+    // The sprite material samples two atlas cells so slow bodies can cross-fade
+    // between frames, and carries the procedural surface modes for the assets
+    // that deliberately get no atlas at all.
+    const material = createSkySpriteMaterial();
     const mesh = new THREE.Mesh(geometry, material);
     mesh.frustumCulled = false;
     mesh.visible = false;
@@ -53,28 +47,25 @@ export function createSkyBillboardPool({
         group.add(slot);
     }
 
-    // Source textures are shared by url; each slot gets its own clone so it can
-    // hold an independent offset/repeat. Two billboards showing different
-    // frames of the same sheet would otherwise fight over the same object.
+    // One texture per url, shared freely between slots. This used to need a
+    // per-slot clone, because the frame window lived in texture.offset and two
+    // billboards showing different frames of one atlas would fight over it.
+    // The window now lives in the material, so the conflict cannot arise and
+    // the clone is gone -- one upload per atlas instead of one per slot.
     const sourceCache = new Map();
     function textureForSlot(slot, url) {
-        if (slot.userData.sourceUrl === url) return slot.material.map;
-        let source = sourceCache.get(url);
-        if (!source) {
-            source = textureLoader.load(url);
-            sourceCache.set(url, source);
+        let texture = sourceCache.get(url);
+        if (!texture) {
+            texture = textureLoader.load(url);
+            sourceCache.set(url, texture);
         }
-        const clone = source.clone ? source.clone() : source;
-        clone.needsUpdate = true;
         slot.userData.sourceUrl = url;
-        slot.material.map = clone;
-        slot.material.needsUpdate = true;
-        return clone;
+        return texture;
     }
 
     // `radius` is the dome radius the billboards sit on, passed in so the pool
     // does not need to know how the rig is built.
-    function sync(entries, radius) {
+    function sync(entries, radius, elapsedSeconds = 0) {
         const count = Math.min(entries.length, slots.length);
 
         for (let i = 0; i < count; i += 1) {
@@ -101,15 +92,25 @@ export function createSkyBillboardPool({
             slot.scale.set(size, size, 1);
 
             const texture = textureForSlot(slot, entry.url);
-            if (entry.frameRect && texture) {
-                texture.offset.set(entry.frameRect.offsetX, entry.frameRect.offsetY);
-                texture.repeat.set(entry.frameRect.repeatX, entry.frameRect.repeatY);
-            }
+            // The frame window lives in the material, not on the texture: the
+            // shader needs two windows at once, and a texture offset can only
+            // express one.
+            const fullFrame = { offsetX: 0, offsetY: 0, repeatX: 1, repeatY: 1 };
+            updateSkySpriteMaterial(slot.material, {
+                map: texture,
+                rectA: entry.frameRect ?? fullFrame,
+                rectB: entry.frameRectB ?? null,
+                mix: entry.frameMix ?? 0,
+                opacity: entry.opacity ?? 1,
+                tint: entry.tint ?? { r: 1, g: 1, b: 1 },
+                time: elapsedSeconds,
+                additive: entry.blend === 'additive',
+                mode: entry.spriteMode ?? SPRITE_MODES.NONE
+            });
 
             slot.material.blending = entry.blend === 'additive'
                 ? THREE.AdditiveBlending
                 : THREE.NormalBlending;
-            slot.material.opacity = entry.opacity ?? 1;
             slot.userData.slotKey = entry.key;
             slot.visible = true;
         }

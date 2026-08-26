@@ -92,6 +92,38 @@ describe('skyBillboard placement', () => {
     });
 });
 
+describe('skyBillboard sprite material', () => {
+    it('uses the two-cell sprite material so slow bodies can cross-fade', () => {
+        pool.sync([entry()], 50);
+        expect(pool.group.children[0].material).toBeInstanceOf(THREE.ShaderMaterial);
+        expect(pool.group.children[0].material.uniforms.uMix).toBeDefined();
+    });
+
+    it('passes a procedural surface mode through to the shader', () => {
+        pool.sync([entry({ spriteMode: 1 })], 50);
+        expect(pool.group.children[0].material.uniforms.uMode.value).toBe(1);
+    });
+
+    it('cross-fades when a second frame window is supplied', () => {
+        pool.sync([entry({
+            frameRect: { offsetX: 0, offsetY: 0.5, repeatX: 0.25, repeatY: 0.5 },
+            frameRectB: { offsetX: 0.25, offsetY: 0.5, repeatX: 0.25, repeatY: 0.5 },
+            frameMix: 0.6
+        })], 50);
+        expect(pool.group.children[0].material.uniforms.uMix.value).toBeCloseTo(0.6, 6);
+    });
+
+    it('advances time so procedural surfaces animate', () => {
+        pool.sync([entry({ spriteMode: 2 })], 50, 7.5);
+        expect(pool.group.children[0].material.uniforms.uTime.value).toBeCloseTo(7.5, 6);
+    });
+
+    it('applies the extinction tint from the entry', () => {
+        pool.sync([entry({ tint: { r: 1, g: 0.8, b: 0.6 } })], 50);
+        expect(pool.group.children[0].material.uniforms.uTint.value.b).toBeCloseTo(0.6, 5);
+    });
+});
+
 describe('skyBillboard materials', () => {
     it('blends emissive bodies additively', () => {
         pool.sync([entry({ url: '/sky/body_sun_primary.png', blend: 'additive' })], 50);
@@ -115,27 +147,29 @@ describe('skyBillboard materials', () => {
 describe('skyBillboard sheet frames', () => {
     const sheet = SKY_SHEETS.sky_fx_comet_longtail;
 
-    it('windows the texture down to the requested frame', () => {
+    it('windows the atlas down to the requested frame', () => {
         // frameRectFor takes ELAPSED SECONDS, not progress -- at 12fps this is
-        // frame 6 of the comet.
+        // frame 6 of the comet. The window lives in the material now, not on
+        // the texture, because the shader needs two windows at once.
         const rect = frameRectFor(sheet, 6 / sheet.fps);
         pool.sync([entry({ url: '/sky/fx_comet_longtail.png', frameRect: rect })], 50);
-        const { map } = pool.group.children[0].material;
-        expect(map.repeat.x).toBeCloseTo(rect.repeatX, 6);
-        expect(map.offset.x).toBeCloseTo(rect.offsetX, 6);
+        const { uRectA } = pool.group.children[0].material.uniforms;
+        expect(uRectA.value.z).toBeCloseTo(rect.repeatX, 6);
+        expect(uRectA.value.x).toBeCloseTo(rect.offsetX, 6);
     });
 
-    it('gives each slot its own texture so two sheets cannot stomp each other', () => {
-        // Textures are cached by url; sharing one object between two billboards
-        // showing different frames would make them fight over offset.
+    it('lets two slots share one atlas while showing different frames', () => {
+        // The frame window is per-material, so a shared texture object cannot
+        // cause the two to fight -- and the atlas uploads once, not twice.
         const url = '/sky/fx_comet_longtail.png';
         pool.sync([
             entry({ key: 'a', url, frameRect: frameRectFor(sheet, 0) }),
             entry({ key: 'b', url, frameRect: frameRectFor(sheet, 5 / sheet.fps) })
         ], 50);
         const [a, b] = pool.group.children;
-        expect(a.material.map).not.toBe(b.material.map);
-        expect(a.material.map.offset.x).not.toBeCloseTo(b.material.map.offset.x, 6);
+        expect(a.material.uniforms.uMap.value).toBe(b.material.uniforms.uMap.value);
+        expect(a.material.uniforms.uRectA.value.x)
+            .not.toBeCloseTo(b.material.uniforms.uRectA.value.x, 6);
     });
 });
 
@@ -168,7 +202,7 @@ describe('skyBillboard async texture loading', () => {
         const slow = createSkyBillboardPool({ textureLoader: loader, capacity: 2 });
         slow.sync([entry({ url: '/sky/fx_comet_longtail.png' })], 50);
         loader.finishLoading();
-        expect(slow.group.children[0].material.map.image?.width).toBe(2048);
+        expect(slow.group.children[0].material.uniforms.uMap.value.image?.width).toBe(2048);
     });
 
     it('shows the image for two slots sharing one atlas', () => {
@@ -178,7 +212,7 @@ describe('skyBillboard async texture loading', () => {
         slow.sync([entry({ key: 'a', url }), entry({ key: 'b', url })], 50);
         loader.finishLoading();
         for (const mesh of slow.group.children) {
-            expect(mesh.material.map.image?.width).toBe(2048);
+            expect(mesh.material.uniforms.uMap.value.image?.width).toBe(2048);
         }
     });
 });

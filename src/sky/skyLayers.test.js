@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { SKY_LAYERS, resolveSkyLayers, resolveSkyBodies, resolveSkyTransients, ADDITIVE_LAYER_IDS } from './skyLayers.js';
+import { SKY_LAYERS, resolveSkyLayers, resolveSkyBodies, resolveSkyTransients, ADDITIVE_LAYER_IDS, BODY_SPRITE_MODES } from './skyLayers.js';
+import { SPRITE_MODES } from './skySpriteMaterial.js';
 
 const baseState = {
     starOpacity: 1,
@@ -308,6 +309,72 @@ describe('resolveSkyTransients fade-out', () => {
             if (!entry) continue;
             expect(entry.opacity).toBeGreaterThanOrEqual(0);
             expect(entry.opacity).toBeLessThanOrEqual(1);
+        }
+    });
+});
+
+describe('resolveSkyBodies surface motion', () => {
+    const body = (assetId, y = 0.9) => ({
+        assetId, angularSize: 0.1, direction: { x: 0, y, z: Math.sqrt(Math.max(0, 1 - y * y)) }
+    });
+    const build = (bodies, over = {}) => resolveSkyBodies({ ...baseState, bodies, ...over });
+
+    it('churns a star surface rather than leaving it a flat disc', () => {
+        expect(build([body('sky_body_sun_primary')])[0].spriteMode).toBe(SPRITE_MODES.GRANULATION);
+    });
+
+    it('leaves moons and planets with no surface motion at all', () => {
+        // A tidally locked body genuinely does not change, and the art already
+        // carries a baked terminator that a procedural one would fight.
+        for (const id of ['sky_body_moon_cratered_large', 'sky_body_planet_rust',
+                          'sky_body_moon_shattered', 'sky_body_planet_dead_ocean']) {
+            expect(build([body(id)])[0].spriteMode, id).toBe(SPRITE_MODES.NONE);
+        }
+    });
+
+    it('scintillates the ring arc instead of moving it', () => {
+        expect(build([body('sky_body_ring_arc')])[0].spriteMode).toBe(SPRITE_MODES.SCINTILLATE);
+    });
+
+    it('assigns a mode to every body in the catalog', () => {
+        for (const assetId of Object.keys(BODY_SPRITE_MODES)) {
+            expect(build([body(assetId)])[0].spriteMode).toBeDefined();
+        }
+    });
+});
+
+describe('resolveSkyBodies atmospheric extinction', () => {
+    const moon = (y) => ({
+        assetId: 'sky_body_moon_cratered_large',
+        angularSize: 0.1,
+        direction: { x: 0, y, z: Math.sqrt(Math.max(0, 1 - y * y)) }
+    });
+    const build = (y) => resolveSkyBodies({ ...baseState, bodies: [moon(y)] })[0];
+
+    it('dims a body as it sinks toward the horizon', () => {
+        // Real extinction: more atmosphere in the way at low elevation.
+        expect(build(0.06).opacity).toBeLessThan(build(0.9).opacity);
+    });
+
+    it('warms a body toward the horizon rather than only darkening it', () => {
+        const low = build(0.06).tint;
+        const high = build(0.9).tint;
+        expect(low.r / Math.max(low.b, 1e-6)).toBeGreaterThan(high.r / Math.max(high.b, 1e-6));
+    });
+
+    it('leaves a body overhead essentially untinted', () => {
+        const { tint } = build(1);
+        expect(tint.r).toBeCloseTo(1, 2);
+        expect(tint.b).toBeCloseTo(1, 2);
+    });
+
+    it('keeps tint channels inside the unit range at every elevation', () => {
+        for (let y = 0.01; y <= 1; y += 0.05) {
+            const { tint } = build(y);
+            for (const channel of [tint.r, tint.g, tint.b]) {
+                expect(channel).toBeGreaterThanOrEqual(0);
+                expect(channel).toBeLessThanOrEqual(1);
+            }
         }
     });
 });

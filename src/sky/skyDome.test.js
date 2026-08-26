@@ -250,10 +250,19 @@ describe('createSkyRig celestial bodies', () => {
         expect(bodyMeshes().filter((m) => m.visible).length).toBeGreaterThan(0);
     });
 
+    it('advances the billboard clock so procedural surfaces animate', () => {
+        const state = stateAt({ timeOfDay: 0 });
+        rig.update({ skyState: state, biomeKey: 'active', delta: 1 });
+        const first = bodyMeshes().find((m) => m.visible)?.material.uniforms.uTime.value;
+        rig.update({ skyState: state, biomeKey: 'active', delta: 1 });
+        expect(bodyMeshes().find((m) => m.visible).material.uniforms.uTime.value)
+            .toBeGreaterThan(first);
+    });
+
     it('loads a texture for each visible body', () => {
         rig.update({ skyState: stateAt({ timeOfDay: 0 }), biomeKey: 'active' });
         for (const mesh of bodyMeshes().filter((m) => m.visible)) {
-            expect(mesh.material.map).toBeTruthy();
+            expect(mesh.material.uniforms.uMap.value).toBeTruthy();
         }
     });
 });
@@ -289,8 +298,9 @@ describe('createSkyRig transients', () => {
         const comet = billboardMeshes().find(
             (m) => m.userData.sourceUrl === '/sky/fx_comet_longtail.png'
         );
-        expect(comet.material.map.repeat.x).toBeCloseTo(0.25, 6);
-        expect(comet.material.map.repeat.y).toBeCloseTo(0.5, 6);
+        // The frame window is a material uniform now, not a texture offset.
+        expect(comet.material.uniforms.uRectA.value.z).toBeCloseTo(0.25, 6);
+        expect(comet.material.uniforms.uRectA.value.w).toBeCloseTo(0.5, 6);
     });
 
     it('blends transients additively', () => {

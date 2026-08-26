@@ -8,6 +8,7 @@
 // docs/sky-layer-and-weather-asset-catalog-2026-08-25.md section 2.
 
 import { SKY_SHEETS, frameRectFor } from './skySheets.js';
+import { SPRITE_MODES } from './skySpriteMaterial.js';
 import { sheetTimeForTransient, anchorDirectionFor, transientEnvelope } from './skyTransients.js';
 
 const SKY_DIR = '/sky';
@@ -146,6 +147,51 @@ const BODY_TEXTURES = Object.freeze({
     sky_body_mothership_derelict: 'body_mothership_derelict'
 });
 
+// Surface motion per body, decided asset by asset rather than as a blanket
+// rule (docs/sky-fx-animation-classes-2026-08-26.md section 3d).
+//
+// Moons and terrestrial planets get NOTHING on purpose: they are tidally
+// locked or far enough away that rotation is invisible, and the art already
+// carries a baked terminator that a procedural one would fight. Faking motion
+// on them would look worse than leaving them still. What sells those is
+// extinction, below, which applies to every body.
+export const BODY_SPRITE_MODES = Object.freeze({
+    sky_body_sun_primary: SPRITE_MODES.GRANULATION,
+    sky_body_sun_dwarf: SPRITE_MODES.GRANULATION,
+    sky_body_ring_arc: SPRITE_MODES.SCINTILLATE,
+    sky_body_moon_cratered_large: SPRITE_MODES.NONE,
+    sky_body_moon_cratered_small: SPRITE_MODES.NONE,
+    sky_body_moon_shattered: SPRITE_MODES.NONE,
+    sky_body_planet_rust: SPRITE_MODES.NONE,
+    sky_body_planet_dead_ocean: SPRITE_MODES.NONE,
+    // These two are the only bodies that earn an atlas: the gas giant's rings
+    // cross its disc so it cannot be scrolled, and the derelict's silhouette
+    // changes as it tumbles. Until those atlases exist they render as stills.
+    sky_body_gasgiant_ringed: SPRITE_MODES.NONE,
+    sky_body_mothership_derelict: SPRITE_MODES.NONE
+});
+
+// Atmospheric extinction: a body low in the sky is seen through far more air,
+// so it dims and warms. Physically real, costs nothing, and does more for
+// believability on the static bodies than any fake surface motion would.
+const EXTINCTION_HORIZON_DIM = 0.45;
+const EXTINCTION_BLUE_LOSS = 0.42;
+const EXTINCTION_GREEN_LOSS = 0.18;
+
+function extinctionFor(elevation) {
+    // 1 at the zenith, 0 at the horizon.
+    const height = clamp01(elevation);
+    const airmass = Math.pow(1 - height, 2.2);
+    return {
+        dim: 1 - airmass * EXTINCTION_HORIZON_DIM,
+        tint: {
+            r: 1,
+            g: clamp01(1 - airmass * EXTINCTION_GREEN_LOSS),
+            b: clamp01(1 - airmass * EXTINCTION_BLUE_LOSS)
+        }
+    };
+}
+
 const ADDITIVE_BODY_IDS = Object.freeze([
     'sky_body_sun_primary',
     'sky_body_sun_dwarf',
@@ -162,13 +208,16 @@ export function resolveSkyBodies(skyState) {
             // A sun burns through daylight; a moon or planet washes out in it.
             // Thin atmosphere, so they never disappear entirely at noon.
             const daylightFade = additive ? 1 : clamp01(1 - dayFactor * 0.78);
+            const extinction = extinctionFor(body.direction?.y ?? 1);
             return {
                 key: body.assetId,
                 url: `${SKY_DIR}/${BODY_TEXTURES[body.assetId]}.png`,
                 direction: body.direction,
                 angularSize: body.angularSize,
                 blend: additive ? 'additive' : 'alpha',
-                opacity: clamp01(daylightFade * (1 - stormDensity))
+                spriteMode: BODY_SPRITE_MODES[body.assetId] ?? SPRITE_MODES.NONE,
+                tint: extinction.tint,
+                opacity: clamp01(daylightFade * (1 - stormDensity) * extinction.dim)
             };
         });
 }

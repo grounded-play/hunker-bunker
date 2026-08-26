@@ -156,7 +156,37 @@ A period in seconds, not an fps. `frameFloat = (elapsed / periodSeconds) * frame
 
 Two moons on screen advancing in lockstep read as a rendering artefact. Every instance takes a seeded phase offset so identical assets never share a frame. Derived from the run seed plus the instance key, so it stays deterministic for co-op.
 
-### 3d. Where the planet frames come from
+### 3c-bis. Correction: ping-pong is wrong for rotation
+
+The class table above assigns CINEMAGRAPH bodies `pingpong`. That is wrong wherever the change is **directional**. A rotating planet that plays forward then backward is obviously broken; rotation must loop seamlessly, with the last frame flowing into the first, which is an authoring constraint on the atlas rather than a runtime setting.
+
+Ping-pong is right only for **non-directional** change — billowing, churn, shimmer — where there is no "forward". Corrected assignment:
+
+| Change | Cycle | Examples |
+|---|---|---|
+| directional (rotation, tumble) | `loop`, atlas authored seamless | gas giant, derelict |
+| non-directional (churn, billow) | `pingpong` or procedural noise | suns, nebulae |
+| none (physically static) | no frame animation at all | moons, ring arc, galactic band |
+
+### 3d. Per-asset decision
+
+Blanket answers look wrong here, because these assets change for different physical reasons — or don't change at all. **Two atlases, everything else procedural or static.**
+
+| Asset | Technique | Why this and not the other |
+|---|---|---|
+| `body_gasgiant_ringed` | **Atlas** — 8f seamless rotation loop, crossfaded | The rings cross the disc diagonally and the terminator is baked hard. Any texture scroll smears the rings and drags the terminator across a lit face. Rotation on a banded giant is the most visible motion in the sky, so this is the asset that earns an atlas. |
+| `body_mothership_derelict` | **Atlas** — 8f seamless tumble loop, crossfaded | Its silhouette changes as it tumbles. No transform can produce that; it is the definition of something needing real frames. |
+| `body_moon_cratered_large` / `_small` / `_shattered` | **No frame animation.** Orbital drift + atmospheric extinction | Real moons are tidally locked — they show a phase, not surface motion. Faking rotation would look wrong, and a procedural terminator would fight the terminator already baked into the art. What sells them is extinction: dimming and warming as they near the horizon. |
+| `body_planet_rust` / `body_planet_dead_ocean` | **No frame animation.** Orbital drift + extinction | Same reasoning. Polar caps and a baked terminator mean a scroll slides the cap sideways. At this angular size, rotation would be invisible anyway. |
+| `body_sun_primary` / `body_sun_dwarf` | **Procedural** — granulation churn + prominence flicker | A star's surface genuinely churns, and it is non-directional, so noise does it better than frames and never repeats. Small and bright on screen; an atlas would be wasted memory. |
+| `body_ring_arc` | **Procedural** — scintillation only | A ring system does not visibly move. Anything more would be a lie. |
+| `nebula_veil_violet` / `_ember` | **Procedural** — domain-warp billow | Non-directional, and noise never repeats, so it beats any finite atlas. The warp already exists in `skyCloudMaterial`. |
+| `nebula_band_core` | **Procedural** — scintillation only | A galaxy does not move. What gives this life is the atmosphere drifting *in front of* it, which the cloud layers already provide. |
+| `star_*` accents | **Procedural** — twinkle | Scintillation is atmospheric, not stellar. Per-pixel noise, no art. |
+
+The unifying touch across every body is **atmospheric extinction** — dimming and warm-shifting toward the horizon. It is physically real, it applies to all of them, it costs nothing, and it does more for believability than frame animation would on any of the static ones.
+
+### 3e. Where the planet frames come from
 
 Planets, moons and the galaxy currently ship as **single stills** — there are no frames to blend. Two ways to get a cinemagraph out of them:
 
