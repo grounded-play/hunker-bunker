@@ -6,6 +6,7 @@
 // the same sky and the whole thing is testable without a GPU.
 
 import { resolveActiveTransients } from './skyTransients.js';
+import { SKY_DEPTH_TIERS } from './skyProfile.js';
 
 const TWO_PI = Math.PI * 2;
 
@@ -54,17 +55,26 @@ function mixTriple(a, b, c, cryoMix, bioMix) {
     return a.map((channel, i) => mix(mix(channel, b[i], cryoMix), c[i], bioMix));
 }
 
-// Places one body on its seeded circular track. `dayPhase` advances a full turn
-// per day; a body's own orbitRate slows that down so moons and planets drift
-// out of step with the sun across a long run.
+// Places one body in the sky.
+//
+// Bodies sweep in AZIMUTH -- around the horizon -- and only breathe gently in
+// elevation, staying inside the band the camera can see. A full circular orbit
+// is more physical but useless here: the third-person rig tops out at ~17.8
+// degrees, so an orbiting body spends nearly the whole day above the frame and
+// the sky reads as empty. Sweeping the horizon keeps them on screen and gives
+// the parallax something to work against.
 function directionForBody(body, dayPhase) {
-    const angle = dayPhase * body.orbitRate + body.orbitPhase;
-    const elevation = Math.sin(angle) * Math.cos(body.orbitInclination);
-    const horizontal = Math.cos(angle);
-    const x = horizontal * Math.cos(body.orbitInclination);
-    const z = Math.sin(body.orbitInclination);
-    const length = Math.hypot(x, elevation, z) || 1;
-    return { x: x / length, y: elevation / length, z: z / length };
+    const azimuth = dayPhase * body.orbitRate + body.orbitPhase;
+    // A slow, small vertical breath so the sky is never rigid. Half the azimuth
+    // rate, so height and bearing do not march in lockstep.
+    const drift = Math.sin(azimuth * 0.5 + body.orbitInclination) * 0.035;
+    const elevation = Math.max(0.02, body.elevationBand + drift);
+    const horizontal = Math.sqrt(Math.max(0, 1 - elevation * elevation));
+    return {
+        x: Math.cos(azimuth) * horizontal,
+        y: elevation,
+        z: Math.sin(azimuth) * horizontal
+    };
 }
 
 // The primary sun is pinned to real solar time rather than its seeded phase --
@@ -167,14 +177,20 @@ export function computeSkyState({
         timeOfDay,
         dayFactor,
         sunDirection,
+        // The primary sun is included: it was previously excluded entirely, so
+        // the star lighting the world was never actually drawn. Its own
+        // direction stays true solar (it drives the key light), which means it
+        // is simply out of frame around midday and visible low at dawn and dusk.
         bodies: [
-            ...profile.suns.slice(1),
+            ...profile.suns,
             ...profile.moons,
             ...profile.planets
-        ].map((body) => ({
+        ].map((body, index) => ({
             assetId: body.assetId,
             angularSize: body.angularSize,
-            direction: directionForBody(body, dayPhase)
+            depthTier: body.depthTier ?? 'mid',
+            radiusScale: SKY_DEPTH_TIERS[body.depthTier ?? 'mid'].radiusScale,
+            direction: index === 0 ? sunDirection : directionForBody(body, dayPhase)
         })),
         starOpacity,
         weatherState,

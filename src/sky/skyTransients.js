@@ -16,7 +16,11 @@ const RUN_SCHEDULE_SECONDS = 1800;
 // Where anchored effects sit, when they are not travelling a path at all.
 // Storm effects hang low because they belong to the cloud base, not the zenith.
 const ANCHOR_DIRECTIONS = Object.freeze({
-    zenith: { x: 0, y: 1, z: 0 },
+    // Not the true zenith. The third-person rig tops out near 17.8 degrees, so
+    // an effect at y = 1 is permanently above the frame -- the spore bloom was
+    // playing every time and had never once been seen. This is the top of what
+    // the camera can actually show.
+    zenith: { x: 0, y: 0.27, z: -0.963 },
     'storm-base': { x: 0, y: 0.22, z: -0.975 },
     'cloud-base': { x: 0, y: 0.30, z: -0.954 }
 });

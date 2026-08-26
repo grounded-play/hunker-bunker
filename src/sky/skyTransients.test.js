@@ -152,9 +152,12 @@ describe('sheetTimeForTransient', () => {
 describe('anchorDirectionFor', () => {
     const skyState = { sunDirection: { x: 0.6, y: 0.8, z: 0 } };
 
-    it('pins a zenith-anchored effect straight overhead', () => {
+    it('pins a zenith-anchored effect to the top of what the camera can see', () => {
+        // Not the true zenith: the rig tops out near 17.8 deg, so y = 1 would
+        // put the effect permanently above the frame.
         const direction = anchorDirectionFor('zenith', skyState, null);
-        expect(direction.y).toBeCloseTo(1, 5);
+        expect(direction.y).toBeGreaterThan(0.15);
+        expect(direction.y).toBeLessThan(0.31);
     });
 
     it('pins a sun-anchored effect to the current sun position', () => {

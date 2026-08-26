@@ -78,17 +78,23 @@ export function createSkyBillboardPool({
                 continue;
             }
 
+            // Depth tier: nearer bodies ride a smaller shell so the sky has a
+            // front-to-back read instead of everything pasted on one surface.
+            const shell = radius * (entry.radiusScale ?? 1);
             const length = Math.hypot(direction.x, direction.y, direction.z) || 1;
             slot.position.set(
-                (direction.x / length) * radius,
-                (direction.y / length) * radius,
-                (direction.z / length) * radius
+                (direction.x / length) * shell,
+                (direction.y / length) * shell,
+                (direction.z / length) * shell
             );
             // The viewer sits at the dome centre, so facing the centre is the
             // same as facing the camera and costs no camera lookup.
             slot.lookAt(0, 0, 0);
 
-            const size = entry.angularSize * radius * 2;
+            // Scale off the body's own shell, so a given angular size subtends
+            // the same apparent size on every tier -- tiering must change depth,
+            // not silently resize things.
+            const size = entry.angularSize * shell * 2;
             slot.scale.set(size, size, 1);
 
             const texture = textureForSlot(slot, entry.url);

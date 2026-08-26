@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { createSkyProfile } from './skyProfile.js';
 import { computeSkyState } from './skyState.js';
+import { SKY_VISIBLE_ELEVATION } from './skyProfile.js';
 
 const profile = createSkyProfile(4242);
 const at = (overrides = {}) => computeSkyState({
@@ -184,5 +185,53 @@ describe('computeSkyState transients', () => {
             events: [{ sheetId: 'sky_fx_mothership_transit', startedAt: 45, duration: 20 }]
         });
         expect(state.transients[0].sheetId).toBe('sky_fx_mothership_transit');
+    });
+});
+
+describe('computeSkyState body placement', () => {
+    it('keeps every body inside the visible band at every time of day', () => {
+        // Bodies used to ride full circular orbits and spend nearly the whole
+        // day above the top of frame. The primary sun is exempt on purpose: it
+        // drives the key light, so its arc stays true solar and it is simply
+        // out of frame around midday, which is what a real sun does.
+        for (let step = 0; step <= 48; step += 1) {
+            const bodies = at({ timeOfDay: step / 48 }).bodies
+                .filter((b) => b.assetId !== 'sky_body_sun_primary');
+            for (const body of bodies) {
+                expect(body.direction.y).toBeGreaterThan(0);
+                expect(body.direction.y).toBeLessThanOrEqual(SKY_VISIBLE_ELEVATION.max + 0.06);
+            }
+        }
+    });
+
+    it('still returns unit directions', () => {
+        for (const body of at({ timeOfDay: 0.3 }).bodies) {
+            const { x, y, z } = body.direction;
+            expect(Math.hypot(x, y, z)).toBeCloseTo(1, 5);
+        }
+    });
+
+    it('sweeps bodies across the sky rather than pinning them in place', () => {
+        const start = at({ timeOfDay: 0 }).bodies[0];
+        const later = at({ timeOfDay: 0.4 }).bodies[0];
+        const moved = Math.hypot(
+            later.direction.x - start.direction.x,
+            later.direction.z - start.direction.z
+        );
+        expect(moved).toBeGreaterThan(0.15);
+    });
+
+    it('renders the primary sun so it can be seen low in the sky', () => {
+        // The primary sun was excluded from bodies entirely, so the star the
+        // world is lit by was never actually drawn.
+        expect(at({ timeOfDay: 0.5 }).bodies.some((b) => b.assetId === 'sky_body_sun_primary'))
+            .toBe(true);
+    });
+
+    it('carries the depth tier through so the rig can layer the sky', () => {
+        for (const body of at().bodies) {
+            expect(body.depthTier).toBeTruthy();
+            expect(body.radiusScale).toBeGreaterThan(0);
+        }
     });
 });

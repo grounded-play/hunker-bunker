@@ -92,6 +92,34 @@ describe('skyBillboard placement', () => {
     });
 });
 
+describe('skyBillboard depth layering', () => {
+    it('places a nearer body on a smaller shell than a far one', () => {
+        // Everything on one shell reads as a flat decal; tiering gives the sky
+        // a front-to-back depth read.
+        pool.sync([
+            entry({ key: 'near', direction: { x: 0, y: 1, z: 0 }, radiusScale: 0.86 }),
+            entry({ key: 'far', direction: { x: 0, y: 1, z: 0 }, radiusScale: 1.0 })
+        ], 50);
+        const [near, far] = pool.group.children;
+        expect(near.position.y).toBeLessThan(far.position.y);
+    });
+
+    it('defaults to the full radius when no tier is given', () => {
+        pool.sync([entry({ direction: { x: 0, y: 1, z: 0 } })], 50);
+        expect(pool.group.children[0].position.y).toBeCloseTo(50, 4);
+    });
+
+    it('scales a body by its angular size independently of its shell', () => {
+        pool.sync([entry({ angularSize: 0.1, radiusScale: 0.86 })], 50);
+        const nearScale = pool.group.children[0].scale.x;
+        pool.sync([entry({ angularSize: 0.1, radiusScale: 1.0 })], 50);
+        // Same angular size must subtend the same apparent size regardless of
+        // which shell it sits on, or tiering would silently resize bodies.
+        expect(pool.group.children[0].scale.x / 1.0)
+            .toBeCloseTo(nearScale / 0.86, 4);
+    });
+});
+
 describe('skyBillboard sprite material', () => {
     it('uses the two-cell sprite material so slow bodies can cross-fade', () => {
         pool.sync([entry()], 50);

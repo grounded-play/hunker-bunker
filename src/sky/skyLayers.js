@@ -216,6 +216,7 @@ export function resolveSkyBodies(skyState) {
                 angularSize: body.angularSize,
                 blend: additive ? 'additive' : 'alpha',
                 spriteMode: BODY_SPRITE_MODES[body.assetId] ?? SPRITE_MODES.NONE,
+                radiusScale: body.radiusScale ?? 1,
                 tint: extinction.tint,
                 opacity: clamp01(daylightFade * (1 - stormDensity) * extinction.dim)
             };

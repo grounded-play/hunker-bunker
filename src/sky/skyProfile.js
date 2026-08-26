@@ -36,6 +36,25 @@ export const SKY_WEATHER_STATES = Object.freeze([
     'rainstorm'
 ]);
 
+// The band of the sky the player can actually see.
+//
+// The third-person rig (thirdPersonCamera.js: lift 1.55 over distance 3.65 +
+// lookAhead 4.2) pitches ~11.2 degrees downward, and its 58 degree vertical fov
+// puts the top of frame at only ~17.8 degrees elevation -- direction.y above
+// about 0.306. Bodies placed on a full circular orbit spend nearly all their
+// time above that, which is why the sky read as empty even with everything
+// working. Every body is confined to this band instead.
+export const SKY_VISIBLE_ELEVATION = Object.freeze({ min: 0.05, max: 0.28 });
+
+// Depth tiers give the sky a front-to-back read instead of pasting everything
+// on one shell. Nearer tiers sit lower and larger, the way a close body does.
+export const SKY_DEPTH_TIERS = Object.freeze({
+    near: { radiusScale: 0.86, elevationBias: -0.05, sizeScale: 1.45 },
+    mid: { radiusScale: 0.94, elevationBias: 0.0, sizeScale: 1.0 },
+    far: { radiusScale: 1.0, elevationBias: 0.05, sizeScale: 0.72 }
+});
+const DEPTH_TIER_KEYS = Object.freeze(['near', 'mid', 'far']);
+
 const RUN_SCHEDULE_SECONDS = 1800;
 const FRONT_MIN_DURATION = 45;
 const FRONT_MAX_DURATION = 150;
@@ -59,10 +78,22 @@ function range(random, min, max) {
     return min + random() * (max - min);
 }
 
-function makeBody(assetId, random, { minSize, maxSize }) {
+function makeBody(assetId, random, { minSize, maxSize, tier = null }) {
+    const depthTier = tier ?? DEPTH_TIER_KEYS[Math.floor(random() * DEPTH_TIER_KEYS.length)];
+    const { elevationBias, sizeScale } = SKY_DEPTH_TIERS[depthTier];
+    // Seeded resting height inside the visible band, nudged by the tier so a
+    // near body hangs low and a far one rides higher.
+    const span = SKY_VISIBLE_ELEVATION.max - SKY_VISIBLE_ELEVATION.min;
+    const elevationBand = Math.min(
+        SKY_VISIBLE_ELEVATION.max,
+        Math.max(SKY_VISIBLE_ELEVATION.min,
+            SKY_VISIBLE_ELEVATION.min + range(random, 0.15, 0.85) * span + elevationBias)
+    );
     return {
         assetId,
-        angularSize: range(random, minSize, maxSize),
+        depthTier,
+        elevationBand,
+        angularSize: range(random, minSize, maxSize) * sizeScale,
         // Where the body sits on its circular track, and how far that track is
         // tilted off the horizon. Together these are enough to place it on any
         // frame from timeOfDay alone.
