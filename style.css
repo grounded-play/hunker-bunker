@@ -1297,7 +1297,7 @@ body {
   padding: calc(var(--vu) * 0.3) calc(var(--vu) * 1.0);
   border-radius: 4px;
   background: rgba(8, 10, 12, 0.88);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.05);
   color: rgba(240, 244, 248, 0.92);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
   transition: background 0.12s ease, border-color 0.12s ease, color 0.12s ease, box-shadow 0.12s ease, transform 0.12s ease;
@@ -1316,8 +1316,17 @@ body {
   grid-column: auto;
 }
 
-.title-menu:hover .title-menu-btn {
+.title-menu-btn:focus {
+  outline: none;
+  background: rgba(8, 10, 12, 0.88);
+  color: rgba(240, 244, 248, 0.92);
+}
+
+.title-menu:hover .title-menu-btn:not(:hover) {
   outline: none !important;
+  background: rgba(8, 10, 12, 0.88) !important;
+  border-color: rgba(255, 255, 255, 0.05) !important;
+  color: rgba(240, 244, 248, 0.92) !important;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35) !important;
 }
 
@@ -2527,9 +2536,9 @@ body:not(.controller-mode) .title-menu-btn:focus:not(:focus-visible) {
 .controller-mode .save-data-code:focus,
 .hero-select-back-btn:focus-visible,
 .controller-mode .hero-select-back-btn:focus {
-  outline: 2px solid rgba(46, 196, 182, 0.9);
-  outline-offset: 3px;
-  box-shadow: 0 0 12px rgba(46, 196, 182, 0.4);
+  outline: 1.5px solid rgba(0, 229, 255, 0.85);
+  outline-offset: 1.5px;
+  box-shadow: 0 0 6px rgba(0, 229, 255, 0.25);
 }
 
 .char-info {
