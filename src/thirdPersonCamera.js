@@ -22,7 +22,9 @@ export function computeMouseEdgeTurn(clientX, viewportLeft, viewportWidth, edgeS
     if (magnitude <= edgeStart) return 0;
     const progress = THREE.MathUtils.clamp((magnitude - edgeStart) / (1 - edgeStart), 0, 1);
     const eased = progress * progress * (3 - 2 * progress);
-    return Math.sign(normalizedX) * eased;
+    // Camera azimuth grows counter to screen-space mouse direction, so invert
+    // the edge sign: left edge looks left, right edge looks right.
+    return -Math.sign(normalizedX) * eased;
 }
 
 export function getThirdPersonCameraPose({
