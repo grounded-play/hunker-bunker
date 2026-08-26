@@ -26,7 +26,8 @@ The initial release therefore makes **Third-person — Shoulder** the default ga
 
 - **Move:** WASD / left stick moves relative to the camera.
 - **Turn and aim:** right stick turns the operator. The camera follows the same heading and continuously stays behind the operator; there is no separate camera orbit to manage.
-- **Mouse:** point on the world to face that direction. Right-drag also turns the operator and trailing camera as a unit.
+- **Mouse:** the broad center region is a stable aiming workspace. The operator faces the crosshair without moving the camera; entering the far-left or far-right edge zone glides the camera in that direction, with speed increasing toward the edge. Right-drag remains an explicit camera turn.
+- **Movement:** while using mouse aim, forward/back and strafe are oriented by the crosshair direction. Controller movement remains camera-relative because its reticle is centered.
 - **Fire:** left mouse / right trigger fires along the operator's facing direction. Controller play uses a stable center reticle rather than a second free-floating cursor.
 - **Aim speed:** the existing Turn / Aim Speed setting scales third-person turning.
 - **Camera Distance:** Close, Standard, and Wide presets control boom length and shoulder offset.

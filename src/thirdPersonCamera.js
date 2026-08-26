@@ -11,6 +11,20 @@ export const THIRD_PERSON_CAMERA = Object.freeze({
     minimumDistance: 0.72
 });
 
+export function computeMouseEdgeTurn(clientX, viewportLeft, viewportWidth, edgeStart = 0.68) {
+    if (!Number.isFinite(clientX) || !Number.isFinite(viewportLeft) || !(viewportWidth > 0)) return 0;
+    const normalizedX = THREE.MathUtils.clamp(
+        ((clientX - viewportLeft) / viewportWidth) * 2 - 1,
+        -1,
+        1
+    );
+    const magnitude = Math.abs(normalizedX);
+    if (magnitude <= edgeStart) return 0;
+    const progress = THREE.MathUtils.clamp((magnitude - edgeStart) / (1 - edgeStart), 0, 1);
+    const eased = progress * progress * (3 - 2 * progress);
+    return Math.sign(normalizedX) * eased;
+}
+
 export function getThirdPersonCameraPose({
     playerPosition,
     planarForward,

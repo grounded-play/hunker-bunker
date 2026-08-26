@@ -1,8 +1,18 @@
 import { describe, expect, it } from 'vitest';
 import * as THREE from 'three';
-import { clampCameraPositionToHit, getThirdPersonCameraPose } from './thirdPersonCamera.js';
+import { clampCameraPositionToHit, computeMouseEdgeTurn, getThirdPersonCameraPose } from './thirdPersonCamera.js';
 
 describe('third-person camera rig', () => {
+    it('keeps a broad center workspace stable and ramps turning at screen edges', () => {
+        expect(computeMouseEdgeTurn(500, 0, 1000)).toBe(0);
+        expect(computeMouseEdgeTurn(750, 0, 1000)).toBe(0);
+        const nearRightEdge = computeMouseEdgeTurn(900, 0, 1000);
+        expect(nearRightEdge).toBeGreaterThan(0);
+        expect(nearRightEdge).toBeLessThan(1);
+        expect(computeMouseEdgeTurn(1000, 0, 1000)).toBe(1);
+        expect(computeMouseEdgeTurn(0, 0, 1000)).toBe(-1);
+    });
+
     it('places the camera behind and to the right of its focus', () => {
         const pose = getThirdPersonCameraPose({
             playerPosition: new THREE.Vector3(10, 0, 20),

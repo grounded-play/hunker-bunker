@@ -50,8 +50,8 @@ export const TiltShiftPassShader = {
 };
 import { assetUrl } from './assetUrl.js';
 import { getItemCatalogEntry } from './steamVaultUi.js';
-import { wrapAngle, stepAngleTowards, planarBasisFromOffsetAzimuth, aimVectorFromYaw } from './cameraYaw.js';
-import { THIRD_PERSON_CAMERA, clampCameraPositionToHit, getThirdPersonCameraPose } from './thirdPersonCamera.js';
+import { wrapAngle, planarBasisFromOffsetAzimuth, aimVectorFromYaw } from './cameraYaw.js';
+import { THIRD_PERSON_CAMERA, clampCameraPositionToHit, computeMouseEdgeTurn, getThirdPersonCameraPose } from './thirdPersonCamera.js';
 import { createSkyProfile } from './sky/skyProfile.js';
 import { computeSkyState } from './sky/skyState.js';
 import { createSkyRig } from './sky/skyDome.js';
@@ -1261,6 +1261,8 @@ export class ThreeGame {
         this.cameraFollowPreset = 'tight';
         this.cameraFollowRate = 26;
         this.thirdPersonCameraConfig = { ...THIRD_PERSON_CAMERA, distance: 3.05, shoulder: 0.48 };
+        this._mouseEdgeTurnInput = 0;
+        this._cameraTurnVelocity = 0;
         this.cameraOffset = new THREE.Vector3(
             this.cameraOrbitRadius * Math.sin(this.cameraAzimuth),
             this.cameraLift,
@@ -5249,8 +5251,13 @@ export class ThreeGame {
                 const rect = this.renderer.domElement.getBoundingClientRect();
                 const aimClientX = rect.left + rect.width / 2;
                 const aimClientY = rect.top + rect.height / 2;
+                this._mouseEdgeTurnInput = 0;
                 if (movementX || movementY) {
-                    this.updateFacingYaw(this.facingYaw - movementX * 0.005);
+                    if (this.cameraMode === 'third-person') {
+                        this._cameraOrbitPointerDelta += movementX;
+                    } else {
+                        this.updateFacingYaw(this.facingYaw - movementX * 0.005);
+                    }
                 }
                 // Pointer lock has no meaningful client coordinates, but the
                 // camera-centre ray is still the real aim ray. Resolve it on
@@ -5261,6 +5268,7 @@ export class ThreeGame {
                 return;
             }
             if (this._cameraOrbitPointerHeld) {
+                this._mouseEdgeTurnInput = 0;
                 const dragX = event.clientX - this._canvasTapStartX;
                 if (Math.abs(dragX) > 1) {
                     this._cameraOrbitPointerDragged = true;
@@ -5271,6 +5279,12 @@ export class ThreeGame {
             }
             this.lastMouseClientX = event.clientX;
             this.lastMouseClientY = event.clientY;
+            if (this.cameraMode === 'third-person') {
+                const rect = this.renderer.domElement.getBoundingClientRect();
+                this._mouseEdgeTurnInput = computeMouseEdgeTurn(event.clientX, rect.left, rect.width);
+            } else {
+                this._mouseEdgeTurnInput = 0;
+            }
 
             // Direct tactical crosshair aim: turn player to face mouse pointer in world
             this.updateAimFromClient(event.clientX, event.clientY, {
@@ -5305,6 +5319,7 @@ export class ThreeGame {
         this.handleCanvasPointerCancel = (event) => {
             this._cameraOrbitPointerHeld = false;
             this._cameraOrbitPointerDragged = false;
+            this._mouseEdgeTurnInput = 0;
             this.endHeldFire();
             try {
                 this.renderer.domElement.releasePointerCapture?.(event.pointerId);
@@ -5806,6 +5821,10 @@ export class ThreeGame {
             return;
         }
         this.cameraRotationInput = THREE.MathUtils.clamp(Number(value) || 0, -1, 1);
+        if (Math.abs(this.cameraRotationInput) > 0.01) {
+            this.mouseAimActive = false;
+            this._mouseEdgeTurnInput = 0;
+        }
     }
 
     setVirtualInputSprint(active = false) {
@@ -5878,6 +5897,8 @@ export class ThreeGame {
         this.virtualInput.z = 0;
         this.isMoving = false;
         this.mouseAimActive = false;
+        this._mouseEdgeTurnInput = 0;
+        this._cameraTurnVelocity = 0;
         this.endHeldFire();
         this._aimResetTimer = 0;
         this.lastMouseClientX = null;
@@ -17619,8 +17640,13 @@ export class ThreeGame {
         const keyAxisZ = (this.keys.down ? 1 : 0) - (this.keys.up ? 1 : 0);
         const screenAxisX = THREE.MathUtils.clamp(keyAxisX + this.virtualInput.x, -1, 1);
         const screenAxisZ = THREE.MathUtils.clamp(keyAxisZ + this.virtualInput.z, -1, 1);
-        const moveAxisX = (this.cameraPlanarRight.x * screenAxisX) + (this.cameraPlanarForward.x * -screenAxisZ);
-        const moveAxisZ = (this.cameraPlanarRight.y * screenAxisX) + (this.cameraPlanarForward.y * -screenAxisZ);
+        const crosshairGuidesMovement = this.cameraMode === 'third-person' && this.mouseAimActive;
+        const moveForwardX = crosshairGuidesMovement ? this.aimDirX : this.cameraPlanarForward.x;
+        const moveForwardZ = crosshairGuidesMovement ? this.aimDirZ : this.cameraPlanarForward.y;
+        const moveRightX = crosshairGuidesMovement ? this.aimDirZ : this.cameraPlanarRight.x;
+        const moveRightZ = crosshairGuidesMovement ? -this.aimDirX : this.cameraPlanarRight.y;
+        const moveAxisX = (moveRightX * screenAxisX) + (moveForwardX * -screenAxisZ);
+        const moveAxisZ = (moveRightZ * screenAxisX) + (moveForwardZ * -screenAxisZ);
         const isMoving = Boolean(moveAxisX || moveAxisZ);
         let moveDirX = this.aimDirX || 1;
         let moveDirZ = this.aimDirZ || 0;
@@ -20322,17 +20348,24 @@ export class ThreeGame {
                 0.5,
                 2
             );
-            const turnDelta = (stickOrbit * delta * 2.35 * turnSensitivity)
-                + (pointerOrbitDelta * 0.006 * turnSensitivity);
-            if (Math.abs(turnDelta) > 0.0001) this.updateFacingYaw(this.facingYaw + turnDelta);
-            // One steering direction owns both actor and camera. This removes
-            // the old twin-stick burden of separately orbiting, aiming, and firing.
-            this.cameraAzimuth = stepAngleTowards(
-                this.cameraAzimuth,
-                wrapAngle(this.facingYaw + Math.PI),
-                this.cameraFollowRate,
-                delta
+            const edgeTurn = this._mouseEdgeTurnInput ?? 0;
+            const desiredVelocity = ((stickOrbit * 2.35) + (edgeTurn * 1.85)) * turnSensitivity;
+            const velocityBlend = 1 - Math.exp(-delta * Math.max(7, this.cameraFollowRate * 0.55));
+            this._cameraTurnVelocity += (desiredVelocity - this._cameraTurnVelocity) * velocityBlend;
+            if (Math.abs(desiredVelocity) < 0.0001 && Math.abs(this._cameraTurnVelocity) < 0.005) {
+                this._cameraTurnVelocity = 0;
+            }
+            const pointerTurn = pointerOrbitDelta * 0.0045 * turnSensitivity;
+            this.cameraAzimuth = wrapAngle(
+                this.cameraAzimuth + (this._cameraTurnVelocity * delta) + pointerTurn
             );
+            // Controller and pointer-lock input use a centered reticle, so the
+            // operator follows the camera. Free mouse aim remains independent.
+            const pointerLocked = typeof document !== 'undefined'
+                && document.pointerLockElement === this.renderer?.domElement;
+            if (Math.abs(stickOrbit) > 0.01 || pointerLocked) {
+                this.updateFacingYaw(wrapAngle(this.cameraAzimuth + Math.PI));
+            }
         }
         if (this.performanceProfile === 'gameplay' && (Math.abs(stickOrbit) > 0.01 || pointerOrbitDelta)) {
             // Right-stick orbit: preserve the classic isometric height and
@@ -20355,6 +20388,17 @@ export class ThreeGame {
 
         if (this.performanceProfile === 'gameplay' && this.cameraMode === 'third-person') {
             this.updateThirdPersonCamera(delta);
+            if (this.mouseAimActive
+                && Number.isFinite(this.lastMouseClientX)
+                && Number.isFinite(this.lastMouseClientY)) {
+                this.camera.updateMatrixWorld?.();
+                this.updateAimFromClient(this.lastMouseClientX, this.lastMouseClientY, {
+                    keepMouseActive: true,
+                    persistDuration: 0
+                });
+                this.checkHoverInteractable(this.lastMouseClientX, this.lastMouseClientY);
+                window.updateGameplayCrosshair?.(this.lastMouseClientX, this.lastMouseClientY, true);
+            }
             this.updateTiltShiftAndBokeh(delta);
             return;
         }

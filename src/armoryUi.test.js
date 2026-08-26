@@ -368,4 +368,14 @@ describe('createArmoryUi ownership gating', () => {
         expect(container.innerHTML).not.toContain('disabled');
         expect(container.innerHTML).toContain('DEV UNLOCK');
     });
+
+    it('toggles unlock all when clicking the debug unlock skins button', () => {
+        mount();
+        expect(ownership.isUnlockAll()).toBe(false);
+        const btn = container.querySelector('#armory-debug-unlock-skins-btn');
+        expect(btn).not.toBeNull();
+        btn.click();
+        expect(ownership.isUnlockAll()).toBe(true);
+        expect(container.innerHTML).not.toContain('disabled');
+    });
 });

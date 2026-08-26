@@ -94,7 +94,7 @@ describe('updateCamera stable isometric tracking', () => {
 });
 
 describe('updateCamera third-person steering', () => {
-    it('turns actor and camera together and keeps the camera behind facing', () => {
+    it('accelerates camera turning smoothly and keeps centered controller aim aligned', () => {
         const game = {
             cameraMode: 'third-person',
             performanceProfile: 'gameplay',
@@ -102,6 +102,8 @@ describe('updateCamera third-person steering', () => {
             cameraAzimuth: 0,
             cameraRotationInput: 1,
             cameraFollowRate: 26,
+            _cameraTurnVelocity: 0,
+            _mouseEdgeTurnInput: 0,
             _cameraOrbitPointerDelta: 0,
             cameraOrbitRadius: 4,
             cameraLift: 2,
@@ -115,8 +117,10 @@ describe('updateCamera third-person steering', () => {
 
         ThreeGame.prototype.updateCamera.call(game, 0.1);
 
-        expect(game.facingYaw).toBeCloseTo(0.235, 3);
-        expect(Math.abs(game.cameraAzimuth)).toBeGreaterThan(2.5);
+        expect(game._cameraTurnVelocity).toBeGreaterThan(0);
+        expect(game._cameraTurnVelocity).toBeLessThan(2.35);
+        expect(game.cameraAzimuth).toBeGreaterThan(0);
+        expect(game.facingYaw).toBeCloseTo(game.cameraAzimuth - Math.PI, 3);
         expect(game.cameraPlanarForward.length()).toBeCloseTo(1, 3);
         expect(game.updateThirdPersonCamera).toHaveBeenCalledWith(0.1);
     });

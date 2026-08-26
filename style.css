@@ -18904,6 +18904,35 @@ body.show-debug .map-tool-btn--debug { display: inline-flex; }
   letter-spacing: 0.06em;
 }
 
+.armory-debug-skins-btn {
+  font-family: 'Space Mono', 'Outfit', monospace;
+  font-size: calc(var(--font-xs) * 0.64);
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  color: var(--armory-accent);
+  background: rgba(0, 240, 255, 0.08);
+  border: 1px dashed var(--armory-border);
+  padding: calc(var(--vu) * 0.3) calc(var(--vu) * 0.8);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.armory-debug-skins-btn:hover {
+  background: rgba(0, 240, 255, 0.18);
+  border-style: solid;
+  border-color: var(--armory-accent);
+  box-shadow: 0 0 10px var(--armory-glow);
+  color: #ffffff;
+}
+
+.armory-debug-skins-btn.active {
+  background: rgba(16, 185, 129, 0.18);
+  border-color: #10b981;
+  color: #34d399;
+}
+
 .armory-operator-status .status-label {
   font-family: 'Outfit', sans-serif;
   font-size: calc(var(--font-xs) * 0.7);
@@ -18921,22 +18950,45 @@ body.show-debug .map-tool-btn--debug { display: inline-flex; }
 
 .armory-main-layout {
   display: grid;
-  grid-template-columns: minmax(0, calc(var(--vu) * 36)) minmax(calc(var(--vu) * 28), 1fr) minmax(0, calc(var(--vu) * 42));
-  /* The benches are control cards, not full-height sidebars. Let their
-     content define their height so the operator and weapon stage stays open
-     instead of being covered by large, empty slabs. */
-  align-items: start;
+  grid-template-columns: minmax(0, 1fr) minmax(calc(var(--vu) * 36), calc(var(--vu) * 44));
+  align-items: stretch;
   gap: calc(var(--vu) * 2);
   min-height: 0;
   height: 100%;
   pointer-events: none;
 }
 
+.armory-stage-column {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: center;
+  pointer-events: none;
+  min-width: 0;
+  height: 100%;
+}
+
+.armory-controls-sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--vu) * 0.9);
+  min-height: 0;
+  max-height: 100%;
+  overflow-y: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  pointer-events: auto;
+  align-self: start;
+  width: 100%;
+}
+
+.armory-controls-sidebar::-webkit-scrollbar {
+  display: none;
+}
+
 .armory-stage-readout {
-  grid-column: 2;
-  align-self: end;
-  justify-self: center;
-  width: min(100%, calc(var(--vu) * 48));
+  align-self: center;
+  width: min(100%, calc(var(--vu) * 52));
   margin-bottom: calc(var(--vu) * 0.4);
   padding: calc(var(--vu) * 0.7) calc(var(--vu) * 1.2);
   display: flex;
@@ -19060,18 +19112,15 @@ body.show-debug .map-tool-btn--debug { display: inline-flex; }
   background: var(--armory-panel-bg);
   border: 1.5px solid var(--armory-border);
   border-radius: 8px;
-  padding: calc(var(--vu) * 1.0) calc(var(--vu) * 1.4);
+  padding: calc(var(--vu) * 0.85) calc(var(--vu) * 1.2);
   backdrop-filter: blur(12px);
   box-shadow: 0 0 25px var(--armory-glow), 0 8px 32px rgba(0, 0, 0, 0.8);
   display: flex;
   flex-direction: column;
-  gap: calc(var(--vu) * 0.8);
-  align-self: start;
+  gap: calc(var(--vu) * 0.65);
+  align-self: stretch;
   height: fit-content;
-  max-height: 100%;
-  overflow-y: auto;
-  scrollbar-width: none;
-  -ms-overflow-style: none;
+  max-height: none;
   min-width: 0;
 }
 
@@ -19080,12 +19129,10 @@ body.show-debug .map-tool-btn--debug { display: inline-flex; }
 }
 
 .suit-bench-panel {
-  grid-column: 1;
-  border-left: 3px solid var(--armory-accent);
+  border-right: 3px solid var(--armory-accent);
 }
 
 .weapon-bench-panel {
-  grid-column: 3;
   border-right: 3px solid var(--armory-accent);
 }
 

@@ -27,6 +27,34 @@ test.describe('gameplay facing yaw (mouse + gamepad)', () => {
         expect(turnedYaw).not.toBeCloseTo(initialYaw, 2);
     });
 
+    test('third-person mouse aim keeps the camera still in center and edge-turns progressively', async ({ page }) => {
+        test.setTimeout(180_000);
+        await bootToOperatorMenu(page);
+        await startRunAndSkipIntro(page);
+
+        const canvas = page.locator('#game-container canvas').first();
+        const box = await canvas.boundingBox();
+        expect(box).not.toBeNull();
+        await page.evaluate(() => {
+            window.game.setCameraMode('third-person');
+            window.game._cameraTurnVelocity = 0;
+            window.game._mouseEdgeTurnInput = 0;
+        });
+
+        await page.mouse.move(box.x + box.width * 0.45, box.y + box.height * 0.5);
+        await page.waitForTimeout(250);
+        const centeredStart = await page.evaluate(() => window.game.cameraAzimuth);
+        await page.mouse.move(box.x + box.width * 0.62, box.y + box.height * 0.45);
+        await page.waitForTimeout(350);
+        const centeredEnd = await page.evaluate(() => window.game.cameraAzimuth);
+        expect(centeredEnd).toBeCloseTo(centeredStart, 2);
+
+        await page.mouse.move(box.x + box.width * 0.9, box.y + box.height * 0.5);
+        await page.waitForTimeout(500);
+        const edgeTurned = await page.evaluate(() => window.game.cameraAzimuth);
+        expect(edgeTurned).not.toBeCloseTo(centeredEnd, 2);
+    });
+
     test('gamepad right-stick turns third-person facing while the crosshair stays centered', async ({ page }) => {
         test.setTimeout(180_000);
         await bootToOperatorMenu(page);

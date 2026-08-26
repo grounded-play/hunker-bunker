@@ -7696,7 +7696,10 @@ function devSetCosmeticUnlockAll(arg) {
         ? !store.isUnlockAll()
         : !['0', 'off', 'false', 'no'].includes(String(arg).toLowerCase());
     store.setUnlockAll(next);
-    return `Cosmetic UNLOCK ALL ${next ? 'ENABLED' : 'DISABLED'} (equip override; ownership unchanged)`;
+    if (next) {
+        unlockAllPolishes();
+    }
+    return `ALL WEAPON & CHASSIS SKINS ${next ? 'UNLOCKED' : 'LOCKED'} (equip override)`;
 }
 
 // B9: clears economy state only. Settings, achievements and codex progress live
@@ -8248,6 +8251,11 @@ function executeDevCommand(input) {
         case 'unlock_codex':
             result = devUnlockAllCodex();
             break;
+        case 'skins':
+        case 'skins_all':
+        case 'unlock_skins':
+        case 'unlock_all_skins':
+        case 'cosmetics':
         case 'cosmetics_all':
         case 'unlock_cosmetics':
             result = devSetCosmeticUnlockAll(arg);
@@ -8559,12 +8567,20 @@ document.getElementById('debug-unlock-all-codex')?.addEventListener('click', () 
     const res = devUnlockAllCodex();
     showBiomePrompt(`> DEBUG: ${res}`);
 });
+document.getElementById('debug-unlock-all-skins')?.addEventListener('click', () => {
+    const res = devSetCosmeticUnlockAll();
+    showBiomePrompt(`> DEBUG: ${res}`);
+});
 document.getElementById('dev-btn-unlock-all-ach')?.addEventListener('click', () => {
     const res = devUnlockAllAchievements();
     logDevConsole(res, 'success');
 });
 document.getElementById('dev-btn-unlock-all-codex')?.addEventListener('click', () => {
     const res = devUnlockAllCodex();
+    logDevConsole(res, 'success');
+});
+document.getElementById('dev-btn-unlock-all-skins')?.addEventListener('click', () => {
+    const res = devSetCosmeticUnlockAll();
     logDevConsole(res, 'success');
 });
 document.getElementById('dev-btn-reset-save')?.addEventListener('click', () => {
