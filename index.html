@@ -147,7 +147,10 @@
     <!-- Loading Screen (Pre-Splash) -->
     <div id="loading-screen">
       <aside class="loader-system-info" aria-label="Build and developer information">
-        <div class="loader-system-info__label">SYSTEM BUILD</div>
+        <div class="loader-system-info__label" id="loader-system-info-label">
+          <span>SYSTEM BUILD</span>
+          <span class="loader-system-info__time" id="loader-build-time"></span>
+        </div>
         <div class="loader-version-tag" id="loader-version-tag">BUILD DEV // LOADING REVISION…</div>
         <div class="loader-debug-hint"><kbd>~</kbd><span>DEV CONSOLE</span></div>
       </aside>

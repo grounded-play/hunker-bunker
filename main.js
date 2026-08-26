@@ -112,6 +112,8 @@ const splash = document.getElementById('splash');
 const menu = document.getElementById('menu');
 const loadingScreen = document.getElementById('loading-screen');
 const loaderVersionTag = document.getElementById('loader-version-tag');
+const loaderBuildTime = document.getElementById('loader-build-time');
+const loaderSystemInfoLabel = document.getElementById('loader-system-info-label');
 const transitionOverlay = document.getElementById('transition-overlay');
 const loaderTitle = document.querySelector('.loader-title');
 const loaderBar = document.querySelector('.loader-bar');
@@ -159,19 +161,45 @@ const buildInfo = typeof __HB_BUILD_INFO__ === 'object'
         commit: 'unknown',
         branch: 'unknown',
         dirty: true,
-        steamBuild: ''
+        steamBuild: '',
+        builtAt: ''
     });
+
+function formatBuildTimestamp(raw) {
+    if (!raw) return '';
+    try {
+        const d = new Date(raw);
+        if (Number.isNaN(d.getTime())) return String(raw);
+        const pad = (n) => String(n).padStart(2, '0');
+        const year = d.getFullYear();
+        const month = pad(d.getMonth() + 1);
+        const day = pad(d.getDate());
+        const hours = pad(d.getHours());
+        const mins = pad(d.getMinutes());
+        return `${year}-${month}-${day} ${hours}:${mins}`;
+    } catch {
+        return String(raw);
+    }
+}
+
 const buildCommitLabel = `${buildInfo.commit}${buildInfo.dirty ? '-dirty' : ''}`;
 const pipelineBuildLabel = buildInfo.steamBuild ? ` // PIPELINE ${buildInfo.steamBuild}` : '';
 const branchName = buildInfo.branch ? buildInfo.branch.replace(/^dev\//i, '').toUpperCase() : '';
 const sprintLabel = branchName
     ? (branchName.startsWith('SPRINT') ? branchName.replace('-', ' ') : branchName)
     : '';
+const buildTimestampLabel = formatBuildTimestamp(buildInfo.builtAt);
 const loadingVersionText = `${sprintLabel ? `${sprintLabel} // ` : ''}${buildCommitLabel}${pipelineBuildLabel}`;
-const canonicalVersionText = `BUILD ${buildInfo.version} // ${buildCommitLabel} // ${buildInfo.branch}${pipelineBuildLabel}`;
+const canonicalVersionText = `BUILD ${buildInfo.version} // ${buildCommitLabel} // ${buildInfo.branch}${pipelineBuildLabel}${buildTimestampLabel ? ` // ${buildTimestampLabel}` : ''}`;
 if (loaderVersionTag) {
     loaderVersionTag.textContent = loadingVersionText;
     loaderVersionTag.title = `Built ${buildInfo.builtAt ?? 'unknown time'}`;
+}
+if (loaderBuildTime) {
+    loaderBuildTime.textContent = buildTimestampLabel;
+    loaderBuildTime.title = `Built ${buildInfo.builtAt ?? 'unknown time'}`;
+} else if (loaderSystemInfoLabel && buildTimestampLabel) {
+    loaderSystemInfoLabel.textContent = `SYSTEM BUILD // ${buildTimestampLabel}`;
 }
 const aboutSysVer = document.getElementById('about-modal-sys-ver');
 if (aboutSysVer) {
