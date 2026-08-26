@@ -171,6 +171,26 @@ export const BODY_SPRITE_MODES = Object.freeze({
     sky_body_mothership_derelict: SPRITE_MODES.NONE
 });
 
+// Rigid-body tumble, for bodies whose orientation genuinely changes.
+//
+// Only the derelict qualifies. A sphere looks identical from every angle, so a
+// planet or moon has nothing to tumble; the derelict is a long hull that rolls
+// and foreshortens as it turns. Deliberately a runtime transform rather than an
+// atlas: roll and foreshortening ARE transforms, so frames would only make them
+// step, and a genuine silhouette change would need renders that cannot be
+// derived from the single still we have.
+//
+// The two periods are deliberately coprime-ish so the motion never resolves
+// into one mechanical oscillation.
+const BODY_TUMBLE = Object.freeze({
+    sky_body_mothership_derelict: Object.freeze({
+        rollPeriod: 47,
+        rollAmplitude: 0.20,
+        squashPeriod: 71,
+        squashAmplitude: 0.22
+    })
+});
+
 // Atmospheric extinction: a body low in the sky is seen through far more air,
 // so it dims and warms. Physically real, costs nothing, and does more for
 // believability on the static bodies than any fake surface motion would.
@@ -217,6 +237,7 @@ export function resolveSkyBodies(skyState) {
                 blend: additive ? 'additive' : 'alpha',
                 spriteMode: BODY_SPRITE_MODES[body.assetId] ?? SPRITE_MODES.NONE,
                 radiusScale: body.radiusScale ?? 1,
+                ...(BODY_TUMBLE[body.assetId] ? { tumble: BODY_TUMBLE[body.assetId] } : {}),
                 tint: extinction.tint,
                 opacity: clamp01(daylightFade * (1 - stormDensity) * extinction.dim)
             };

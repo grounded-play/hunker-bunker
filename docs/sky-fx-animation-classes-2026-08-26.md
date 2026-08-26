@@ -175,7 +175,7 @@ Blanket answers look wrong here, because these assets change for different physi
 | Asset | Technique | Why this and not the other |
 |---|---|---|
 | `body_gasgiant_ringed` | **Atlas** — 8f seamless rotation loop, crossfaded | The rings cross the disc diagonally and the terminator is baked hard. Any texture scroll smears the rings and drags the terminator across a lit face. Rotation on a banded giant is the most visible motion in the sky, so this is the asset that earns an atlas. |
-| `body_mothership_derelict` | **Atlas** — 8f seamless tumble loop, crossfaded | Its silhouette changes as it tumbles. No transform can produce that; it is the definition of something needing real frames. |
+| `body_mothership_derelict` | **Runtime tumble** — roll + foreshortening, no atlas | Revised after building it. What is achievable from a single still is roll and foreshortening, and those are *transforms* — so doing them at runtime is smooth where frames would step, and costs no texture memory. A genuine silhouette change would need real 3D renders, which cannot be derived from this art; the runtime tumble reads correctly at sky distance. |
 | `body_moon_cratered_large` / `_small` / `_shattered` | **No frame animation.** Orbital drift + atmospheric extinction | Real moons are tidally locked — they show a phase, not surface motion. Faking rotation would look wrong, and a procedural terminator would fight the terminator already baked into the art. What sells them is extinction: dimming and warming as they near the horizon. |
 | `body_planet_rust` / `body_planet_dead_ocean` | **No frame animation.** Orbital drift + extinction | Same reasoning. Polar caps and a baked terminator mean a scroll slides the cap sideways. At this angular size, rotation would be invisible anyway. |
 | `body_sun_primary` / `body_sun_dwarf` | **Procedural** — granulation churn + prominence flicker | A star's surface genuinely churns, and it is non-directional, so noise does it better than frames and never repeats. Small and bright on screen; an atlas would be wasted memory. |
@@ -185,6 +185,53 @@ Blanket answers look wrong here, because these assets change for different physi
 | `star_*` accents | **Procedural** — twinkle | Scintillation is atmospheric, not stellar. Per-pixel noise, no art. |
 
 The unifying touch across every body is **atmospheric extinction** — dimming and warm-shifting toward the horizon. It is physically real, it applies to all of them, it costs nothing, and it does more for believability than frame animation would on any of the static ones.
+
+### 3d-bis. Attempted and rejected: deriving the gas giant rotation from its still
+
+A rotation atlas was built from the existing `body_gasgiant_ringed.png` by
+un-projecting each pixel to (lat, lon) on a sphere, offsetting the longitude,
+and re-sampling. Two problems were solved on the way and one proved fatal.
+
+**Solved — baked lighting.** Rotating pixels directly drags the terminator round
+with the surface, so the planet swings dark. Fitting a Lambert term to the disc
+(best fit: light direction `(-0.90, 0.20, 0.39)`, correlation 0.774 over 62k
+samples), dividing it out, and re-applying it at the destination normal keeps
+the light fixed while the surface turns.
+
+**Solved — the rings.** A colour threshold failed outright: bright desaturated
+cloud is indistinguishable from ring, so the mask pasted swathes of cloud back
+over a rotating planet as duplicated arcs. Fitting the ring ellipse
+geometrically from the pixels *outside* the disc, where they are unambiguous
+(tilt -27.7 deg, a=1134, b=248), and extending that band across the disc gives a
+clean rigid ring.
+
+**Fatal — a hemisphere cannot supply a rotation.** The source shows one face.
+Rotating 90 degrees puts the source's limb at the destination's centre, and the
+limb holds almost no resolution, so it stretches into a hard vertical smear.
+Measured share of disc pixels sampling from `|nx| > 0.95`:
+
+| rotation | 0 | 45 | 90 | 135 | 180 | 225 | 270 | 315 |
+|---|---|---|---|---|---|---|---|---|
+| limb-sourced | 1.2% | 6.9% | **9.8%** | 6.9% | 1.2% | 6.9% | **9.8%** | 6.9% |
+
+This is geometric, not a tuning failure: it peaks at 90 and 270 for any
+parameters. **The gas giant needs genuinely new frames.** Generation spec:
+
+> Eight-frame rotation sequence of the same ringed gas giant, one frame per 45
+> degrees of planetary rotation, as a 4x2 grid at 512px per cell (2048x1024).
+> The cloud bands, storm ovals and belt structure advance by 45 degrees of
+> longitude per frame and wrap seamlessly, so frame 8 flows back into frame 1
+> with no discontinuity. **The ring system, the lighting and the terminator do
+> not move** -- rings stay rigid in the same position and orientation in every
+> frame, the light stays fixed from the upper left, and the shadowed limb stays
+> on the same side throughout. Identical planet position, identical disc radius
+> and identical camera in every cell. Banded turbulent atmosphere in bruised
+> ochre, rust and slate grey; sharp-edged ice rings crossing at a shallow
+> oblique angle with a visible gap; ring shadow cast on the cloud tops. Pure
+> black background, no chroma key, additive-blend asset.
+
+Note the atlas must **loop**, not ping-pong (3c-bis), so the seamless wrap
+between the last and first frame is a hard requirement of the brief.
 
 ### 3e. Where the planet frames come from
 

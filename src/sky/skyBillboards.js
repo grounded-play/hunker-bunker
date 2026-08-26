@@ -95,7 +95,25 @@ export function createSkyBillboardPool({
             // the same apparent size on every tier -- tiering must change depth,
             // not silently resize things.
             const size = entry.angularSize * shell * 2;
-            slot.scale.set(size, size, 1);
+
+            // A slow tumble, for bodies whose motion is a rigid-body transform.
+            // Deliberately NOT baked into an atlas: roll and foreshortening are
+            // transforms, so doing them here is smooth where frames would step,
+            // and costs no texture memory. Only a change that alters the
+            // silhouette in ways a transform cannot reach needs real frames.
+            const tumble = entry.tumble;
+            if (tumble) {
+                const roll = Math.sin((elapsedSeconds / tumble.rollPeriod) * Math.PI * 2)
+                    * tumble.rollAmplitude;
+                slot.rotateZ(roll);
+                // Squash never exceeds 1: a rigid body foreshortens as it turns
+                // away, it never grows wider than its own broadside.
+                const squash = 1 - tumble.squashAmplitude
+                    * (0.5 - 0.5 * Math.cos((elapsedSeconds / tumble.squashPeriod) * Math.PI * 2));
+                slot.scale.set(size * squash, size, 1);
+            } else {
+                slot.scale.set(size, size, 1);
+            }
 
             const texture = textureForSlot(slot, entry.url);
             // The frame window lives in the material, not on the texture: the

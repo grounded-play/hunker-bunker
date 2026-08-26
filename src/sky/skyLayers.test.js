@@ -378,3 +378,27 @@ describe('resolveSkyBodies atmospheric extinction', () => {
         }
     });
 });
+
+describe('resolveSkyBodies tumble', () => {
+    const body = (assetId) => ({
+        assetId, angularSize: 0.1, direction: { x: 0, y: 0.2, z: 0.98 }
+    });
+
+    it('tumbles the derelict, whose orientation genuinely changes in orbit', () => {
+        const [entry] = resolveSkyBodies({
+            ...baseState, bodies: [body('sky_body_mothership_derelict')]
+        });
+        expect(entry.tumble).toBeTruthy();
+        expect(entry.tumble.rollPeriod).not.toBe(entry.tumble.squashPeriod);
+    });
+
+    it('leaves natural bodies untumbled', () => {
+        // A moon does not visibly roll, and a planet certainly does not
+        // foreshorten -- a sphere looks the same from every angle.
+        for (const id of ['sky_body_moon_cratered_large', 'sky_body_planet_rust',
+                          'sky_body_gasgiant_ringed', 'sky_body_sun_primary']) {
+            const [entry] = resolveSkyBodies({ ...baseState, bodies: [body(id)] });
+            expect(entry.tumble, id).toBeUndefined();
+        }
+    });
+});

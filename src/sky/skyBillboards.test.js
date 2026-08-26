@@ -92,6 +92,62 @@ describe('skyBillboard placement', () => {
     });
 });
 
+describe('skyBillboard tumble motion', () => {
+    const tumbling = (over = {}) => entry({
+        direction: { x: 0, y: 0.2, z: 0.98 },
+        tumble: { rollPeriod: 40, rollAmplitude: 0.22, squashPeriod: 63, squashAmplitude: 0.18 },
+        ...over
+    });
+
+    it('rolls a tumbling body over time', () => {
+        pool.sync([tumbling()], 50, 0);
+        const first = pool.group.children[0].rotation.z;
+        pool.sync([tumbling()], 50, 12);
+        expect(pool.group.children[0].rotation.z).not.toBeCloseTo(first, 4);
+    });
+
+    it('foreshortens the body on a different period than it rolls', () => {
+        // Matching periods make the motion read as one mechanical oscillation
+        // rather than as a tumble.
+        pool.sync([tumbling()], 50, 0);
+        const wide = pool.group.children[0].scale.x / pool.group.children[0].scale.y;
+        pool.sync([tumbling()], 50, 31);
+        const narrow = pool.group.children[0].scale.x / pool.group.children[0].scale.y;
+        expect(wide).not.toBeCloseTo(narrow, 3);
+    });
+
+    it('never inverts or collapses the body while foreshortening', () => {
+        for (let t = 0; t < 130; t += 1.5) {
+            pool.sync([tumbling()], 50, t);
+            const mesh = pool.group.children[0];
+            expect(mesh.scale.x).toBeGreaterThan(0);
+            expect(mesh.scale.x / mesh.scale.y).toBeGreaterThan(0.5);
+            expect(mesh.scale.x / mesh.scale.y).toBeLessThanOrEqual(1.0001);
+        }
+    });
+
+    it('keeps the roll within its stated amplitude', () => {
+        // rotation.z is the Euler decomposition of the FULL orientation, which
+        // already carries lookAt's own z term -- so the roll has to be measured
+        // as the angle away from the untumbled facing.
+        const reference = createSkyBillboardPool({ textureLoader: stubLoader(), capacity: 1 });
+        for (let t = 0; t < 130; t += 1.5) {
+            pool.sync([tumbling()], 50, t);
+            reference.sync([tumbling({ tumble: null })], 50, t);
+            const angle = pool.group.children[0].quaternion
+                .angleTo(reference.group.children[0].quaternion);
+            expect(angle).toBeLessThanOrEqual(0.221);
+        }
+    });
+
+    it('leaves bodies without a tumble perfectly still', () => {
+        pool.sync([entry()], 50, 0);
+        const still = pool.group.children[0].rotation.z;
+        pool.sync([entry()], 50, 40);
+        expect(pool.group.children[0].rotation.z).toBeCloseTo(still, 6);
+    });
+});
+
 describe('skyBillboard depth layering', () => {
     it('places a nearer body on a smaller shell than a far one', () => {
         // Everything on one shell reads as a flat decal; tiering gives the sky
