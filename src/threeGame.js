@@ -50,8 +50,12 @@ export const TiltShiftPassShader = {
 };
 import { assetUrl } from './assetUrl.js';
 import { getItemCatalogEntry } from './steamVaultUi.js';
-import { wrapAngle, planarBasisFromOffsetAzimuth, aimVectorFromYaw } from './cameraYaw.js';
+import { wrapAngle, stepAngleTowards, planarBasisFromOffsetAzimuth, aimVectorFromYaw } from './cameraYaw.js';
 import { THIRD_PERSON_CAMERA, clampCameraPositionToHit, getThirdPersonCameraPose } from './thirdPersonCamera.js';
+import { createSkyProfile } from './sky/skyProfile.js';
+import { computeSkyState } from './sky/skyState.js';
+import { createSkyRig } from './sky/skyDome.js';
+import { SKY_SHEETS } from './sky/skySheets.js';
 import { MULTIPLAYER_SPAWN_MODES, hashSeed, partitionCrashPlanPlayers } from './multiplayerCrashPlanner.js';
 import { multiplayerLobby } from './multiplayerLobby.js';
 import { BankManager, O2_GENERATOR_UPGRADES, BASE_TURRET_UPGRADES, BASE_TURRET_REPAIR_COST, TIER2_UPGRADE_ORDER, TIER2_UPGRADE_CONFIGS, WEAPON_UPGRADE_ORDER, WEAPON_UPGRADES_CONFIG, CLASS_SKILL_TREES, shellPriceOf } from './bank.js';
@@ -137,7 +141,7 @@ import { blackBoxStore } from './blackBox.js';
 import { runCheckpointStore } from './runCheckpoint.js';
 import { CHASSIS_SKIN_MODELS, createPlayer3dOverlay, ENGINEER_GESTURES } from './player3dOverlay.js';
 import { createEnemy3dVisual, disposeEnemy3dVisual, updateEnemy3dVisual } from './enemy3dOverlay.js';
-import { createWorld3dModel, hasWorld3dModel, syncWorld3dReplacement } from './world3dOverlay.js';
+import { createWorld3dModel, hasWorld3dModel, preloadWorld3dModels, syncWorld3dReplacement } from './world3dOverlay.js';
 import { computeTrailPosition } from './companionFollow.js';
 import { SNAIL_ENCOUNTER_CONSTANTS } from './snailEncounter.js';
 import { createUniversalEncounter, resolveEncounterAction } from './universalEncounter.js';
@@ -597,6 +601,18 @@ const FEATURE_MILESTONE_BOSSES = true;
 // active particle count (<= cap), point size/color/opacity, fall/drift velocity
 // ranges, and a fog-far multiplier for reduced visibility.
 const FEATURE_WEATHER = true;
+// Sky rig key-light placement. Elevation floor keeps the sun from lighting the
+// world from below once it sets; distance matches the original static key light
+// so the existing shadow-camera extents stay valid.
+const SKY_MIN_KEY_LIGHT_ELEVATION = 0.35;
+const SKY_KEY_LIGHT_DISTANCE = 22;
+// Added to the key light on a lightning frame. updateDayNightCycle resets
+// intensity every frame, so this cannot build up.
+const SKY_FLASH_LIGHT_BOOST = 2.6;
+// How long a director-fired sky beat stays on screen when no duration is given.
+// The atlases hold only a fraction of a second of frames; they are stretched
+// across this instead (see sheetTimeForTransient).
+const SKY_TRANSIENT_DEFAULT_SECONDS = 18;
 const WEATHER_PARTICLE_CAP = 240;
 const WEATHER_FIELD_RADIUS = 20;   // half-extent of the box that follows the player
 const WEATHER_FIELD_HEIGHT = 9;
@@ -1241,6 +1257,10 @@ export class ThreeGame {
         this._cameraOrbitPointerDelta = 0;
         this.cameraMode = 'third-person';
         this._thirdPersonCameraRaycaster = new THREE.Raycaster();
+        this.cameraDistancePreset = 'close';
+        this.cameraFollowPreset = 'tight';
+        this.cameraFollowRate = 26;
+        this.thirdPersonCameraConfig = { ...THIRD_PERSON_CAMERA, distance: 3.05, shoulder: 0.48 };
         this.cameraOffset = new THREE.Vector3(
             this.cameraOrbitRadius * Math.sin(this.cameraAzimuth),
             this.cameraLift,
@@ -3164,6 +3184,7 @@ export class ThreeGame {
         this.invisibleMaterial = new THREE.MeshBasicMaterial({ visible: false });
 
         this.setupLighting();
+        this.setupSkyRig();
         this.setupWorld();
         this.setupPlayer();
         this.setupMultiplayerNetwork();
@@ -5235,8 +5256,8 @@ export class ThreeGame {
                 // camera-centre ray is still the real aim ray. Resolve it on
                 // every locked move so hostile, pickup, and interactable
                 // reticle states do not silently fall back to neutral.
-                window.updateGameplayCrosshair?.(aimClientX, aimClientY, true);
                 this.checkHoverInteractable(aimClientX, aimClientY);
+                window.updateGameplayCrosshair?.(aimClientX, aimClientY, true);
                 return;
             }
             if (this._cameraOrbitPointerHeld) {
@@ -5256,8 +5277,8 @@ export class ThreeGame {
                 keepMouseActive: true,
                 persistDuration: 0
             });
-            window.updateGameplayCrosshair?.(event.clientX, event.clientY, true);
             this.checkHoverInteractable(event.clientX, event.clientY);
+            window.updateGameplayCrosshair?.(event.clientX, event.clientY, true);
         };
 
         this.handleCanvasTap = (event) => {
@@ -6824,6 +6845,21 @@ export class ThreeGame {
         return this.cameraMode;
     }
 
+    setCameraTuning({ distance = this.cameraDistancePreset, follow = this.cameraFollowPreset } = {}) {
+        const distanceByPreset = { close: 3.05, standard: 3.65, wide: 4.35 };
+        const shoulderByPreset = { close: 0.48, standard: 0.58, wide: 0.68 };
+        const followRateByPreset = { smooth: 10, balanced: 17, tight: 26 };
+        this.cameraDistancePreset = distanceByPreset[distance] ? distance : 'close';
+        this.cameraFollowPreset = followRateByPreset[follow] ? follow : 'tight';
+        this.cameraFollowRate = followRateByPreset[this.cameraFollowPreset];
+        this.thirdPersonCameraConfig.distance = distanceByPreset[this.cameraDistancePreset];
+        this.thirdPersonCameraConfig.shoulder = shoulderByPreset[this.cameraDistancePreset];
+        if (this.performanceProfile === 'gameplay' && this.cameraMode === 'third-person') {
+            this.snapCameraToPlayer();
+        }
+        return { distance: this.cameraDistancePreset, follow: this.cameraFollowPreset };
+    }
+
     setAdaptiveGameplayPerformanceMode(enabled = true, {
         reason = 'sustained-low-fps',
         fps = null
@@ -7205,6 +7241,9 @@ export class ThreeGame {
             fp.measure('updateBiomeEnvironment', () => this.updateBiomeEnvironment({ delta }));
             fp.measure('updateWeather', () => this.updateWeather(delta));
             fp.measure('updateDayNightCycle', () => this.updateDayNightCycle(delta));
+            // After updateDayNightCycle: it resets fog colour from the biome
+            // palette every frame, so the sky has to take the last word on it.
+            fp.measure('updateSky', () => this.updateSky(delta));
             fp.measure('updateTerminalClockTick', () => this.updateTerminalClockTick(now));
             fp.measure('updatePickups', () => this.updatePickups(delta, now));
             fp.measure('updateScatter', () => this.updateScatter(delta, now));
@@ -8428,6 +8467,8 @@ export class ThreeGame {
             const rib = new THREE.Mesh(geometry, material);
             rib.position.set(horizontal ? ribOffset : 0, 0, horizontal ? 0 : ribOffset);
             rib.rotation.y = horizontal ? 0 : Math.PI / 2;
+            rib.castShadow = false;
+            rib.receiveShadow = true;
             rib.userData = { isDoorDecoration: true, decorationType: 'rib' };
             ribGroup.add(rib);
         }
@@ -12719,6 +12760,21 @@ export class ThreeGame {
             camp.setStatus(record.status);
             camp.setDiscovered(record.discovered);
             camp.setSuspicion(record.suspicion ?? 0);
+
+            if (camp.npcSprite) {
+                const modelType = camp.npcSprite.userData?.world3dModelType || 'npc_martha';
+                this.setupWorld3dReplacement(camp.npcSprite, modelType, { owner: camp, ownerKey: 'npc3d' });
+            }
+            if (camp.propSprites?.crates) {
+                this.setupWorld3dReplacement(camp.propSprites.crates, 'prop_camp_crates');
+            }
+            if (camp.propSprites?.cookfire) {
+                this.setupWorld3dReplacement(camp.propSprites.cookfire, 'prop_camp_cookfire');
+            }
+            for (const sb of camp.sandbagSprites ?? []) {
+                this.setupWorld3dReplacement(sb, 'prop_camp_sandbags');
+            }
+
             return camp;
         });
         this.ensureCampCivilians();
@@ -12732,6 +12788,7 @@ export class ThreeGame {
     ensureCampCivilians() {
         for (const civ of this.campCivilians) {
             if (civ.sprite) this.scene.remove(civ.sprite);
+            if (civ.sprite?.userData?.world3dRoot) this.scene.remove(civ.sprite.userData.world3dRoot);
         }
         this.campCivilians = [];
         for (const camp of this.camps) {
@@ -12760,6 +12817,8 @@ export class ThreeGame {
                 sprite.userData = { sheetSprite: true, sheetTime: Math.random() * 4, sheetRow: 0 };
                 sprite.renderOrder = 5;
                 this.scene.add(sprite);
+                const modelType = i % 2 === 0 ? 'npc_civilian_miner' : 'npc_civilian_researcher';
+                this.setupWorld3dReplacement(sprite, modelType);
                 this.campCivilians.push({
                     sprite,
                     campId: camp.id,
@@ -12777,6 +12836,9 @@ export class ThreeGame {
             if (!camp || !sprite) continue;
             const alive = camp.revealed && !camp.destroyed && camp.status !== 'culled';
             sprite.visible = alive;
+            if (sprite.userData?.world3dRoot) {
+                sprite.userData.world3dRoot.visible = alive;
+            }
             if (!alive) continue;
             const dx = civ.target.x - sprite.position.x;
             const dz = civ.target.z - sprite.position.z;
@@ -12800,6 +12862,7 @@ export class ThreeGame {
                 sprite.position.z += dirZ * 0.55 * delta;
                 this.updateSheetSpriteFrame(sprite, dirX, dirZ, delta);
             }
+            syncWorld3dReplacement(sprite);
         }
     }
 
@@ -14237,9 +14300,13 @@ export class ThreeGame {
                     detail: {
                         campId: camp.id,
                         campLabel: camp.label,
-                        campState: this.getCampRecord(camp.id)
+                        campState: this.getCampRecord(camp.id),
+                        onComplete: () => {
+                            this.talkToLeader('camp', camp);
+                        }
                     }
                 }));
+                return true;
             }
             return this.talkToLeader('camp', camp);
         }
@@ -18140,6 +18207,119 @@ export class ThreeGame {
         }
     }
 
+    // ── Sky (docs/sky-layer-and-weather-asset-catalog-2026-08-25.md) ──
+    //
+    // The sky used to be a flat scene.background colour lerped toward the biome
+    // fog. The third-person camera (FOV 58, near-level gaze) put the horizon on
+    // screen for most of a run and made that the largest unpainted surface in
+    // the game.
+    //
+    // The rig is camera-locked, so the perspective camera's 160-unit far plane
+    // never clips it, and it is seeded from runEntropy -- co-op peers already
+    // share that seed, so they agree on the sky with nothing on the wire.
+    setupSkyRig() {
+        if (this.skyRig) return;
+        this.skyProfile = createSkyProfile(this.runEntropy);
+        this.skyElapsedSeconds = 0;
+        // Director-fired sky beats (mothership transit, spore bloom, the dying
+        // sun). Never scheduled -- a run must not spoil them at random.
+        this.skyEvents = [];
+        this.skyRig = createSkyRig({});
+        this.scene.add(this.skyRig.group);
+        // Built before warmUpShaderPrograms() runs so the base dome's shader is
+        // compiled behind the loading screen rather than on the first outdoor
+        // frame -- see that function's comment on composer-vs-canvas cache keys.
+    }
+
+    teardownSkyRig() {
+        if (!this.skyRig) return;
+        this.scene.remove(this.skyRig.group);
+        this.skyRig.dispose();
+        this.skyRig = null;
+    }
+
+    updateSky(delta = 0.016) {
+        if (!this.skyRig || !this.skyProfile) return;
+
+        this.skyElapsedSeconds = (this.skyElapsedSeconds ?? 0) + delta;
+        const { cryoMix = 0, bioMix = 0 } = this.biomeMixState ?? {};
+        // Drop finished beats before computing, so the queue cannot grow for
+        // the length of a run.
+        this.skyEvents = (this.skyEvents ?? []).filter(
+            (event) => this.skyElapsedSeconds <= event.startedAt + event.duration
+        );
+
+        const skyState = computeSkyState({
+            profile: this.skyProfile,
+            timeOfDay: this.timeOfDay,
+            elapsedSeconds: this.skyElapsedSeconds,
+            cryoMix,
+            bioMix,
+            events: this.skyEvents
+        });
+        this.skyState = skyState;
+
+        this.skyRig.update({
+            skyState,
+            biomeKey: this.currentBiomeKey,
+            cameraPosition: this.camera?.position ?? null,
+            // The rig accumulates its own cloud clock from this, so the sky
+            // freezes with the game rather than jumping across a pause.
+            delta
+        });
+
+        // The world dissolves into its own sky instead of a mismatched grey.
+        // updateDayNightCycle still owns fog near/far; this only owns colour.
+        if (this.scene?.fog) {
+            this.scene.fog.color.setRGB(
+                skyState.horizonColor.r,
+                skyState.horizonColor.g,
+                skyState.horizonColor.b
+            );
+        }
+
+        // The sun becomes the key light's actual direction. Elevation is clamped
+        // so the light never comes from underground at night -- intensity is
+        // what makes night dark, and updateDayNightCycle already owns that.
+        if (this.directionalLight) {
+            const { x, y, z } = skyState.sunDirection;
+            const elevation = Math.max(y, SKY_MIN_KEY_LIGHT_ELEVATION);
+            const horizontal = Math.hypot(x, z) || 1;
+            const scale = SKY_KEY_LIGHT_DISTANCE / Math.hypot(horizontal, elevation);
+            this.directionalLight.position.set(x * scale, elevation * scale, z * scale);
+        }
+
+        this.applySkyFlash(skyState.flash);
+    }
+
+    // Fire a narrative sky beat. Returns false rather than queueing an atlas
+    // the manifest does not know, so a typo in a director script cannot leave
+    // an invisible entry occupying a billboard slot for the rest of the run.
+    playSkyTransient(sheetId, { duration = null } = {}) {
+        const definition = SKY_SHEETS[sheetId];
+        if (!definition) {
+            debugLog.warn('SKY', `Unknown sky transient requested: ${sheetId}`);
+            return false;
+        }
+        this.skyEvents = this.skyEvents ?? [];
+        this.skyEvents.push({
+            sheetId,
+            startedAt: this.skyElapsedSeconds ?? 0,
+            // Default to a readable screen time rather than the atlas's own
+            // frame duration, which is well under a second for most sheets.
+            duration: duration ?? SKY_TRANSIENT_DEFAULT_SECONDS
+        });
+        return true;
+    }
+
+    // A lightning strike has to reach out of the sky or it reads as a decal on
+    // the backdrop. updateDayNightCycle rewrites intensity from scratch every
+    // frame, so adding here never accumulates.
+    applySkyFlash(flash = 0) {
+        if (!flash || !this.directionalLight) return;
+        this.directionalLight.intensity += flash * SKY_FLASH_LIGHT_BOOST;
+    }
+
     updateDayNightCycle(delta) {
         if (!this.baseLightIntensity || !this.scene?.fog) return;
         if (this.isGameplayInputActive()) {
@@ -20147,7 +20327,12 @@ export class ThreeGame {
             if (Math.abs(turnDelta) > 0.0001) this.updateFacingYaw(this.facingYaw + turnDelta);
             // One steering direction owns both actor and camera. This removes
             // the old twin-stick burden of separately orbiting, aiming, and firing.
-            this.cameraAzimuth = wrapAngle(this.facingYaw + Math.PI);
+            this.cameraAzimuth = stepAngleTowards(
+                this.cameraAzimuth,
+                wrapAngle(this.facingYaw + Math.PI),
+                this.cameraFollowRate,
+                delta
+            );
         }
         if (this.performanceProfile === 'gameplay' && (Math.abs(stickOrbit) > 0.01 || pointerOrbitDelta)) {
             // Right-stick orbit: preserve the classic isometric height and
@@ -20225,7 +20410,8 @@ export class ThreeGame {
         const pose = getThirdPersonCameraPose({
             playerPosition: this.player.position,
             planarForward: this.cameraPlanarForward,
-            planarRight: this.cameraPlanarRight
+            planarRight: this.cameraPlanarRight,
+            config: this.thirdPersonCameraConfig
         });
         const ray = pose.position.clone().sub(pose.focus);
         const rayLength = ray.length();
@@ -20237,7 +20423,7 @@ export class ThreeGame {
             const hit = this._thirdPersonCameraRaycaster.intersectObjects(this.wallMeshes, false)[0];
             if (hit) resolvedPosition = clampCameraPositionToHit(pose.focus, pose.position, hit.distance);
         }
-        const blend = immediate ? 1 : 1 - Math.exp(-delta * 12);
+        const blend = immediate ? 1 : 1 - Math.exp(-delta * this.cameraFollowRate);
         this.camera.position.lerp(resolvedPosition, blend);
         if (this._cameraShakeTimer > 0) {
             this._cameraShakeTimer -= delta;
@@ -20408,8 +20594,8 @@ export class ThreeGame {
                     // prefetch remains throttled, but still gets an occasional
                     // slot so the next boundary is staged before arrival.
                     ? (hasMissingVisibleChunk || this._slowFrameChunkMountTick % 8 === 0 ? 1 : 0)
-                    : this.maxChunkMountsPerFrame;
-        this.processPendingChunkMounts(chunkMountLimit);
+                    : Math.min(1, this.maxChunkMountsPerFrame ?? 1);
+        this.processPendingChunkMounts(chunkMountLimit, { maxDurationMs: CHUNK_MOUNT_BATCH_BUDGET_MS });
 
         for (const [key, group] of this.chunkMeshes.entries()) {
             if (resident.has(key)) {
@@ -20567,12 +20753,15 @@ export class ThreeGame {
         return mounted;
     }
 
-    async prepareVisibleChunksForGameplay({ batchSize = 3, onProgress = null } = {}) {
+    async prepareVisibleChunksForGameplay({ batchSize = 2, onProgress = null } = {}) {
         if (this.performanceProfile !== 'gameplay' || !this.player) return;
+
+        // Preload common 3D world models in background during chunk staging & warmup
+        const preloadPromise = preloadWorld3dModels().catch(() => null);
 
         // Deployment only needs the visible 3x3 set. Directional prefetch is
         // a runtime concern and must not inflate the covered startup workload.
-        this.syncVisibleChunks(true, { prefetch: false });
+        this.syncVisibleChunks(true, { prefetch: false, processLimit: 0 });
         const initialPending = this.pendingChunkMounts.length;
         debugLog.info('STREAM', 'Initial chunk staging started', {
             chunks: initialPending,
@@ -20584,13 +20773,6 @@ export class ThreeGame {
 
         while (this.pendingChunkMounts.length > 0) {
             const before = this.pendingChunkMounts.length;
-            // docs/perf-chunk-mount-plan-2026-08-20.md Track A: batchSize
-            // stays as the upper bound for cheap chunks, but
-            // CHUNK_MOUNT_BATCH_BUDGET_MS stops this call early if the
-            // chunks turned out to be expensive, so up to `batchSize`
-            // large chunks can no longer stack into one uninterrupted
-            // long task -- the actual mechanism behind the up-to-996ms
-            // spikes seen in a real playtest (docs/logs/log8.json).
             this.processPendingChunkMounts(batchSize, { maxDurationMs: CHUNK_MOUNT_BATCH_BUDGET_MS });
             mounted += Math.max(0, before - this.pendingChunkMounts.length);
             const total = Math.max(1, initialPending);
@@ -20598,7 +20780,8 @@ export class ThreeGame {
             await new Promise((resolve) => requestAnimationFrame(resolve));
         }
 
-        this.syncVisibleChunks(true, { prefetch: false });
+        // Rebuild visibility registries from already-mounted chunks WITHOUT re-queueing
+        this.syncVisibleChunks(false, { prefetch: false, processLimit: 0 });
 
         // Must precede the warm-up: the pool's 8 lights are part of the light
         // count the warm-up needs to compile against, and creating them later
@@ -20606,6 +20789,8 @@ export class ThreeGame {
         // and force exactly the recompile this is all here to avoid.
         this._ensureEnvLightPool();
         this.warmUpShaderPrograms();
+
+        await preloadPromise;
 
         onProgress?.(1);
         debugLog.info('STREAM', 'Initial chunk staging ready', {
@@ -21950,6 +22135,8 @@ export class ThreeGame {
                         statusMaterial
                     );
                     statusBar.position.y = 0.42;
+                    statusBar.castShadow = false;
+                    statusBar.receiveShadow = false;
                     doorMesh.add(statusBar);
                     doorMesh.userData.proceduralDoorStatusMaterial = statusMaterial;
                     doorMesh.userData.proceduralDoorStatusBar = statusBar;
@@ -21967,6 +22154,8 @@ export class ThreeGame {
                             statusMaterial
                         );
                         button.position.set(panelWorldX, 0.82, panelWorldZ + 0.125);
+                        button.castShadow = false;
+                        button.receiveShadow = false;
                         button.userData = {
                             isProceduralDoorControl: true,
                             proceduralDoorId: persistedDoor?.id ?? null

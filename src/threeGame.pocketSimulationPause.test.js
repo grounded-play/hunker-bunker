@@ -10,7 +10,7 @@ import { ThreeGame } from './threeGame.js';
 // nothing else in the file checks isInPocket.
 
 const SURFACE_ONLY_METHODS = [
-    'updateBunkerBlastDoor', 'updateBiomeEnvironment', 'updateWeather', 'updateDayNightCycle',
+    'updateBunkerBlastDoor', 'updateBiomeEnvironment', 'updateWeather', 'updateDayNightCycle', 'updateSky',
     'updateTerminalClockTick', 'updatePickups', 'updateScatter', 'updateBaseDefenseTurret', 'updateCorpses', 'updateLoreDrops',
     'updateBuildSiteBeacon', 'updateConsoles', 'updateLoreTerminals', 'updateFoundryPrompt',
     'updateCaveEntrance', 'updateAct2', 'updateCamps', 'updateHiveSites', 'updateInfectionPressure',
