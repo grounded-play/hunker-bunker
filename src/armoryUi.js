@@ -101,6 +101,7 @@ export function createArmoryUi({
     onBack,
     onOpenVault,
     onOpenSettings,
+    onClassChange,
     ownership
 }) {
     if (!container) throw new Error('Armory UI requires a container DOM element');
@@ -504,6 +505,9 @@ export function createArmoryUi({
         armoryScene?.setClass(activeClass, compatibleChassisSkin);
         armoryScene?.updateFromLoadout(loadoutManager, activeClass);
         render();
+        if (typeof onClassChange === 'function') {
+            onClassChange(activeClass.toUpperCase());
+        }
     }
 
     // Requirement A4: an item granted while the Armory is on screen (a cache
@@ -512,6 +516,9 @@ export function createArmoryUi({
 
     return {
         setClass,
+        getActiveClass() {
+            return activeClass;
+        },
         refresh() {
             render();
         },

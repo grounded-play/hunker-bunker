@@ -6189,6 +6189,14 @@ function installStageLayoutSync() {
 }
 
 function getSelectedHeroType() {
+    if (armoryUiInstance?.getActiveClass) {
+        const armoryClass = armoryUiInstance.getActiveClass();
+        if (armoryClass) return armoryClass.toUpperCase();
+    }
+    if (loadout?.getActiveClass) {
+        const loadoutClass = loadout.getActiveClass();
+        if (loadoutClass) return loadoutClass.toUpperCase();
+    }
     const selected = document.querySelector('.char-card.selected');
     return selected?.getAttribute('data-type') || window.game?.playerType || getSavedHeroType();
 }
@@ -7161,15 +7169,36 @@ async function runMissionIntroSequence({ deploymentHold = null } = {}) {
 
     // Set up global skip button
     window.skipAllIntro = false;
+    let isSkippingWithDoor = false;
     const skipBtn = document.getElementById('global-skip-intro-btn');
+
+    const triggerSkipDoorTransition = () => {
+        if (window.skipAllIntro) return;
+        window.skipAllIntro = true;
+        if (skipBtn) skipBtn.classList.add('hidden');
+        if (isSkippingWithDoor) return;
+        isSkippingWithDoor = true;
+
+        triggerDoorTransition(
+            () => {
+                cutsceneManager?.finishActiveRun?.(true);
+                dialogueManager?.cancelDialogue?.();
+                resumeIntroRendering?.();
+                resumeIntroRendering = null;
+                document.body.classList.remove('mission-intro-active');
+            },
+            () => {
+                isSkippingWithDoor = false;
+            },
+            playerType
+        );
+        cutsceneManager?.finishActiveRun?.(true);
+        dialogueManager?.cancelDialogue?.();
+    };
+
     if (skipBtn) {
         skipBtn.classList.remove('hidden');
-        skipBtn.onclick = () => {
-            window.skipAllIntro = true;
-            skipBtn.classList.add('hidden');
-            cutsceneManager?.finishActiveRun?.(true);
-            dialogueManager?.cancelDialogue?.();
-        };
+        skipBtn.onclick = triggerSkipDoorTransition;
     }
 
     try {
@@ -7201,21 +7230,28 @@ async function runMissionIntroSequence({ deploymentHold = null } = {}) {
         if (skipBtn) skipBtn.classList.add('hidden');
 
         const startTutorial = choice === 'tutorial' && !window.skipAllIntro;
-        document.body.classList.add('hud-hidden');
-        await new Promise((resolve) => {
-            triggerDoorTransition(
-                // The panels are fully closed: make the prepared world the
-                // scene behind them, but keep cinematic invulnerability and
-                // input lock until the 800ms opening animation is complete.
-                () => {
-                    resumeIntroRendering?.();
-                    resumeIntroRendering = null;
-                    document.body.classList.remove('mission-intro-active');
-                },
-                resolve
-            );
-        });
-        document.body.classList.remove('hud-hidden');
+        if (!isSkippingWithDoor) {
+            document.body.classList.add('hud-hidden');
+            await new Promise((resolve) => {
+                triggerDoorTransition(
+                    // The panels are fully closed: make the prepared world the
+                    // scene behind them, but keep cinematic invulnerability and
+                    // input lock until the 800ms opening animation is complete.
+                    () => {
+                        resumeIntroRendering?.();
+                        resumeIntroRendering = null;
+                        document.body.classList.remove('mission-intro-active');
+                    },
+                    resolve,
+                    playerType
+                );
+            });
+            document.body.classList.remove('hud-hidden');
+        } else {
+            resumeIntroRendering?.();
+            resumeIntroRendering = null;
+            document.body.classList.remove('mission-intro-active');
+        }
         game?.setCinematicLock?.(false);
 
         if (startTutorial) {
@@ -7336,6 +7372,20 @@ function ensureArmoryInitialized() {
                 onBack: () => closeArmoryScreen({ embark: false }),
                 onOpenVault: () => openSteamVaultModal(),
                 onOpenSettings: () => openSettingsModal(),
+                onClassChange: (cls) => {
+                    saveHeroType(cls);
+                    document.querySelectorAll('.char-card').forEach((card) => {
+                        if (card.getAttribute('data-type') === cls) {
+                            card.classList.add('selected');
+                        } else {
+                            card.classList.remove('selected');
+                        }
+                    });
+                    updateHeroStats(cls);
+                    if (window.game) {
+                        window.game.playerType = cls;
+                    }
+                },
                 ownership: getOwnershipStore()
             });
         })();
@@ -7344,23 +7394,30 @@ function ensureArmoryInitialized() {
 }
 
 function closeArmoryScreen({ embark }) {
-    document.getElementById('armory-screen')?.classList.add('hidden');
-    // The Armory owns a renderer loop and loaded GLB scene graph. Tear it down
-    // on every exit, including RETURN TO MAIN MENU; leaving it alive behind the
-    // menu kept a hidden canvas rendering and retained its textures/geometry.
-    armorySceneInstance?.dispose?.();
-    armorySceneInstance = null;
-    armoryUiInstance = null;
-    armoryInitPromise = null;
-    if (embark) {
-        const action = pendingArmoryEmbarkAction;
-        pendingArmoryEmbarkAction = null;
-        action?.();
-    } else {
-        menu?.classList.remove('hidden');
-        setAppPhase('menu');
-        pendingArmoryEmbarkAction = null;
-    }
+    const playerType = getSelectedHeroType();
+    triggerDoorTransition(
+        () => {
+            document.getElementById('armory-screen')?.classList.add('hidden');
+            // The Armory owns a renderer loop and loaded GLB scene graph. Tear it down
+            // on every exit, including RETURN TO MAIN MENU; leaving it alive behind the
+            // menu kept a hidden canvas rendering and retained its textures/geometry.
+            armorySceneInstance?.dispose?.();
+            armorySceneInstance = null;
+            armoryUiInstance = null;
+            armoryInitPromise = null;
+            if (embark) {
+                const action = pendingArmoryEmbarkAction;
+                pendingArmoryEmbarkAction = null;
+                action?.();
+            } else {
+                menu?.classList.remove('hidden');
+                setAppPhase('menu');
+                pendingArmoryEmbarkAction = null;
+            }
+        },
+        undefined,
+        playerType
+    );
 }
 
 // Wraps a run-launch action (launchStandardRun or the Daily Ops flow) so it
@@ -7369,20 +7426,33 @@ function closeArmoryScreen({ embark }) {
 // re-gear for a boss-continuation run,
 // same reasoning as the existing Mothership-dialogue skip inside
 // runMissionIntroSequence).
-async function openArmoryGate(embarkAction) {
+async function openArmoryGate(embarkAction, { skipDoor = false } = {}) {
     if (isAct2RunActive()) {
         embarkAction();
         return;
     }
     pendingArmoryEmbarkAction = embarkAction;
-    await ensureArmoryInitialized();
     const playerType = getSelectedHeroType();
-    splash?.classList.add('hidden');
-    menu?.classList.add('hidden');
-    document.getElementById('armory-screen')?.classList.remove('hidden');
-    setAppPhase('armory');
-    armoryUiInstance.setClass(playerType);
-    armorySceneInstance.resize();
+
+    const mountArmory = async () => {
+        await ensureArmoryInitialized();
+        splash?.classList.add('hidden');
+        menu?.classList.add('hidden');
+        document.getElementById('armory-screen')?.classList.remove('hidden');
+        setAppPhase('armory');
+        armoryUiInstance?.setClass(playerType);
+        armorySceneInstance?.resize();
+    };
+
+    if (skipDoor) {
+        await mountArmory();
+    } else {
+        triggerDoorTransition(
+            () => mountArmory(),
+            undefined,
+            playerType
+        );
+    }
 }
 
 function launchStandardRun({ resetBank = false, playIntro = false } = {}) {
@@ -7442,7 +7512,7 @@ function launchStandardRun({ resetBank = false, playIntro = false } = {}) {
                 window.game?.setInputEnabled?.(true);
             }
         },
-        undefined,
+        playerType,
         {
             waitForClosedWork: true,
             openingHoldMs: 160,
@@ -7466,15 +7536,23 @@ if (startBtn) {
         // multiplayerLobby.js's finalizeDeploy / gameController.js's
         // startMultiplayerRun) -- solo and multiplayer end up at the exact
         // same launch action either way, only the path there differs.
-        openArmoryGate(() => {
+        const openDeploymentBriefing = () => {
             multiplayerLobby.openModal({
                 onLaunch: () => launchStandardRun({ resetBank: true, playIntro: true }),
                 onCancel: () => {
-                    menu?.classList.remove('hidden');
-                    setAppPhase('menu');
+                    const playerType = getSelectedHeroType();
+                    triggerDoorTransition(
+                        () => {
+                            multiplayerLobby.closeModal();
+                            void openArmoryGate(openDeploymentBriefing, { skipDoor: true });
+                        },
+                        undefined,
+                        playerType
+                    );
                 }
             });
-        });
+        };
+        openArmoryGate(openDeploymentBriefing);
     });
 }
 
@@ -11779,79 +11857,44 @@ setupClickOutside('settings-popup', () => {
 
 setupClickOutside('save-data-popup', () => setSaveDataOpen(false));
 
-setupClickOutside('reset-save-confirm-modal', () => setResetSaveConfirmOpen(false));
-
-setupClickOutside('camp-choice-modal', closeCampChoiceModal);
-
-setupClickOutside('confirm-modal', () => {
-    const confirmModal = document.getElementById('confirm-modal');
-    if (confirmModal) confirmModal.classList.add('hidden');
-});
-
-setupClickOutside('console-terminal-modal', () => {
-    window.game?.closeConsoleModal?.();
-});
-
-if (mainDebugToggle) {
-    mainDebugToggle.addEventListener('change', (e) => {
-        state.settings.debug = e.target.checked;
-        setDebugMode(state.settings.debug);
-    });
-}
-
-if (mainNightVisionToggle) {
-    mainNightVisionToggle.addEventListener('change', (e) => {
-        state.settings.nightVision = e.target.checked;
-        localStorage.setItem('hunker_nightvision_enabled', String(state.settings.nightVision));
-        if (window.game) {
-            window.game.nightVision = state.settings.nightVision;
-        }
-    });
-}
-
-if (mainFsToggle) {
-    mainFsToggle.addEventListener('change', (e) => {
-        state.settings.fullscreen = e.target.checked;
-
-        if (state.settings.fullscreen) {
-            document.documentElement.requestFullscreen().catch(() => { });
-        } else {
-            if (document.fullscreenElement) {
-                document.exitFullscreen().catch(() => { });
-            }
-        }
-    });
-}
-
-if (mainCommentaryToggle) {
-    mainCommentaryToggle.addEventListener('change', (e) => {
-        state.settings.commentary = e.target.checked;
-        localStorage.setItem(COMMENTARY_STORAGE_KEY, String(state.settings.commentary));
-        if (state.settings.commentary) {
-            showDeveloperCommentary('run_start', {}, { once: false });
-        }
-    });
-}
-
 function getDoorImage(key) {
     const CLASS_DOORS = {
-        'SCOUT': '/door_bio_keyart_v2.webp',
-        'TANK': '/door_nuclear_keyart_v2.webp',
-        'ENGINEER': '/door_cryo_keyart_v2.webp'
+        'SCOUT': [
+            '/door_bio_keyart_v2.webp',
+            '/door_bio_keyart_var2.jpg',
+            '/door_bio_keyart_var3.jpg'
+        ],
+        'TANK': [
+            '/door_nuclear_keyart_v2.webp',
+            '/door_nuclear_keyart_var2.jpg',
+            '/door_nuclear_keyart_var3.jpg'
+        ],
+        'ENGINEER': [
+            '/door_cryo_keyart_v2.webp',
+            '/door_cryo_keyart_var2.jpg',
+            '/door_cryo_keyart_var3.jpg'
+        ]
     };
     const SPECIAL_DOORS = {
         'base': '/door_biomech_keyart_v2.webp',
         'win': '/door_alien_keyart_v2.webp',
         'lose': '/door_rust_keyart_v2.webp'
     };
+    const pickDoor = (entry) => {
+        if (Array.isArray(entry)) {
+            return entry[Math.floor(Math.random() * entry.length)];
+        }
+        return entry;
+    };
+
     if (key === 'win') return assetUrl(SPECIAL_DOORS.win);
     if (key === 'lose') return assetUrl(SPECIAL_DOORS.lose);
     if (key === 'base') return assetUrl(SPECIAL_DOORS.base);
-    if (CLASS_DOORS[key]) return assetUrl(CLASS_DOORS[key]);
+    if (CLASS_DOORS[key]) return assetUrl(pickDoor(CLASS_DOORS[key]));
 
     // Automatically determine door image based on active/preview class
-    const activeClass = window.game?.playerType || activePreviewType || 'SCOUT';
-    return assetUrl(CLASS_DOORS[activeClass] || SPECIAL_DOORS.base);
+    const activeClass = window.game?.playerType || (typeof getSelectedHeroType === 'function' ? getSelectedHeroType() : null) || activePreviewType || 'SCOUT';
+    return assetUrl(pickDoor(CLASS_DOORS[activeClass]) || SPECIAL_DOORS.base);
 }
 
 function getMapDoorImage(key) {
@@ -11872,8 +11915,14 @@ function preloadDoorAssets() {
     const doorImages = [
         '/door_biomech_keyart_v2.webp',
         '/door_bio_keyart_v2.webp',
+        '/door_bio_keyart_var2.jpg',
+        '/door_bio_keyart_var3.jpg',
         '/door_nuclear_keyart_v2.webp',
+        '/door_nuclear_keyart_var2.jpg',
+        '/door_nuclear_keyart_var3.jpg',
         '/door_cryo_keyart_v2.webp',
+        '/door_cryo_keyart_var2.jpg',
+        '/door_cryo_keyart_var3.jpg',
         '/door_alien_keyart_v2.webp',
         '/door_rust_keyart_v2.webp',
         '/door_bio.png',
