@@ -13220,16 +13220,15 @@ document.addEventListener('DOMContentLoaded', async () => {
     const renderLoaderLogs = (newLog = null) => {
         if (!loaderStatus) return;
         if (newLog && !logs.includes(newLog)) {
-            logs.push(newLog);
+            logs.unshift(newLog);
             if (logs.length > maxLogs) {
-                logs.shift();
+                logs.pop();
             }
         }
-        loaderStatus.innerHTML = logs.map((log, idx) => {
-            const distance = logs.length - 1 - idx;
-            const opacities = [1.0, 0.65, 0.4, 0.2, 0.08];
-            const opacity = opacities[distance] ?? 0.05;
-            return `<div style="opacity: ${opacity}; line-height: 1.4; transition: opacity 0.15s ease;">${log}</div>`;
+        loaderStatus.innerHTML = logs.map((log, distance) => {
+            const opacities = [1.0, 0.6, 0.35, 0.18, 0.06];
+            const opacity = opacities[distance] ?? 0.04;
+            return `<div style="opacity: ${opacity}; line-height: 1.4; transition: opacity 0.2s ease, transform 0.2s ease;">${log}</div>`;
         }).join('');
     };
 

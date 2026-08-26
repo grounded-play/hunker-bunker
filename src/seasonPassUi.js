@@ -39,8 +39,12 @@ function isSeasonPassModalOpen() {
     return Boolean(modal) && !modal.classList.contains('hidden');
 }
 
+export function shouldPresentProgressionReward({ seasonScreenOpen, claimable }) {
+    return seasonScreenOpen === true && claimable === true;
+}
+
 function showSeasonPassToast(title, blurb) {
-    if (!isSeasonPassModalOpen()) {
+    if (!shouldPresentProgressionReward({ seasonScreenOpen: isSeasonPassModalOpen(), claimable: true })) {
         queuedSeasonPassToasts.push({ title, blurb });
         return;
     }
@@ -129,14 +133,30 @@ function queueProgressionCeremony(tiers) {
     for (const tier of tiers ?? []) {
         const tracks = ['free', ...(seasonPass.hasPremium() ? ['premium'] : [])];
         for (const track of tracks) {
-            if (seasonPass.canClaim(tier, track)) progressionCeremonyQueue.push({ tier, track });
+            const alreadyQueued = progressionCeremonyQueue.some((entry) => entry.tier === tier && entry.track === track);
+            if (!alreadyQueued && seasonPass.canClaim(tier, track)) progressionCeremonyQueue.push({ tier, track });
         }
     }
-    if (!progressionCeremonyActive) showNextProgressionReward();
+    if (isSeasonPassModalOpen() && !progressionCeremonyActive) showNextProgressionReward();
 }
 
 function showNextProgressionReward() {
-    const next = progressionCeremonyQueue.shift();
+    // Promotion ceremonies belong to the Dossier, never boot, doors, movies,
+    // gameplay, or the title menu. Keep the queue intact until that screen is
+    // explicitly opened.
+    if (!isSeasonPassModalOpen()) {
+        progressionCeremonyActive = false;
+        return;
+    }
+    let next = progressionCeremonyQueue.shift();
+    // A reward may have been claimed from its tier row before its queued
+    // ceremony ran. Skip stale entries so claimed rewards never prompt again.
+    while (next && !shouldPresentProgressionReward({
+        seasonScreenOpen: true,
+        claimable: seasonPass.canClaim(next.tier, next.track)
+    })) {
+        next = progressionCeremonyQueue.shift();
+    }
     if (!next) {
         progressionCeremonyActive = false;
         return;
@@ -348,9 +368,11 @@ function awardXp(amount, source, label) {
 // Real gameplay-completion signals wired to XP and Bounty tracking
 export function wireSeasonPassXpEvents() {
     window.addEventListener('mission-objective-complete', () => {
+        if (window.isGameplayHudActive?.() !== true) return;
         awardXp(XP_SOURCES.roomCleared, 'roomCleared', 'Objective cleared.');
     });
     window.addEventListener('enemy-killed', (event) => {
+        if (window.isGameplayHudActive?.() !== true) return;
         const detail = event.detail || {};
         if (detail.isBoss) {
             awardXp(XP_SOURCES.bossDefeated, 'bossDefeated', 'Sector boss terminated.');
@@ -359,6 +381,7 @@ export function wireSeasonPassXpEvents() {
         }
     });
     window.addEventListener('depth-tier-changed', () => {
+        if (window.isGameplayHudActive?.() !== true) return;
         awardXp(XP_SOURCES.floorCleared, 'floorCleared', 'Descended to a new sub-level.');
     });
 
@@ -614,6 +637,7 @@ export function openSeasonPassModal() {
     modal.setAttribute('aria-hidden', 'false');
     renderSeasonPassBody();
     flushQueuedSeasonPassToasts();
+    if (!progressionCeremonyActive) showNextProgressionReward();
 
     // Auto-focus preferred controller/keyboard target
     requestAnimationFrame(() => {
@@ -629,6 +653,7 @@ export function closeSeasonPassModal() {
     if (!modal) return;
     modal.classList.add('hidden');
     modal.setAttribute('aria-hidden', 'true');
+    document.querySelectorAll('.season-pass-toast').forEach((toast) => toast.remove());
 }
 
 export function handleSeasonPassKeyDown(event) {
