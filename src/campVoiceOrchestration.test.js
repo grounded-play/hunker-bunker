@@ -74,6 +74,23 @@ describe('Camp Voice Orchestration & Speech Director', () => {
             const chirpResult = AudioManager.playVoiceForMessage('SCOUT', '...', { isChirp: true });
             expect(chirpResult).toBeNull();
         });
+
+        it('does not restart or clobber the same voice clip when sequential briefing lines trigger', () => {
+            AudioManager.buffers['voice_mothership_01_alive'] = { duration: 10.0 };
+            const firstResult = AudioManager.playVoiceForMessage('MOTHERSHIP', "AGENT SCOUT. YOU'RE ALIVE.");
+            expect(firstResult).not.toBeNull();
+            const originalSource = firstResult.source;
+
+            // Sequential briefing line while the first clip is speaking
+            const secondResult = AudioManager.playVoiceForMessage('MOTHERSHIP', 'YOUR SHIP TOOK A HYPERSONIC STRIKE ON DESCENT.');
+            expect(secondResult).toBeNull(); // not a new authored clip, suppressed while speaking
+            expect(AudioManager.isVoiceSpeaking()).toBe(true);
+            expect(AudioManager.activeVoice.source).toBe(originalSource);
+
+            // Triggering the same track directly returns active voice without restarting
+            const duplicateResult = AudioManager.playVoiceTrack('voice_mothership_01_alive', { duration: 10.0 });
+            expect(duplicateResult.source).toBe(originalSource);
+        });
     });
 
     describe('Camp First Contact & Leader Interaction Sequencing', () => {

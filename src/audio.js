@@ -385,11 +385,24 @@ export class AudioManager {
         const priority = options.priority !== undefined ? options.priority : 3;
         const now = audioCtx.currentTime;
 
+        // If the exact same voice buffer is already actively speaking, do NOT restart it over itself
+        if (this.isVoiceSpeaking() && this.activeVoice?.bufferKey === key) {
+            return this.activeVoice;
+        }
+
         // If a higher-priority narrative voice track is active (<= 2), don't clobber it with lower priority
         if (this.activeVoice?.source && this.activeVoice.priority <= 2 && this.activeVoice.priority < priority) {
             const remaining = ((this.activeVoice.startedAt || 0) + (this.activeVoice.estimatedDuration || 0)) - now;
             if (remaining > 0.15) {
                 return null;
+            }
+        }
+
+        // If a voice track of equal priority is already speaking, and force is not set:
+        // don't interrupt if it's the same speaker
+        if (this.isVoiceSpeaking() && this.activeVoice?.priority === priority && !options.force) {
+            if (this.activeVoice?.speakerName && options.speakerName && this.activeVoice.speakerName === options.speakerName) {
+                return this.activeVoice;
             }
         }
 
@@ -415,6 +428,8 @@ export class AudioManager {
         this.activeVoice = {
             source: playback.source,
             gainNode: playback.gainNode,
+            bufferKey: key,
+            speakerName: options.speakerName || null,
             priority,
             startedAt: now,
             estimatedDuration: duration,
@@ -433,6 +448,8 @@ export class AudioManager {
             if (this.activeVoice?.source === playback.source) {
                 this.activeVoice.source = null;
                 this.activeVoice.gainNode = null;
+                this.activeVoice.bufferKey = null;
+                this.activeVoice.speakerName = null;
                 this.activeVoice.priority = -1;
                 this.activeVoice.startedAt = 0;
                 this.activeVoice.estimatedDuration = 0;
@@ -542,7 +559,7 @@ export class AudioManager {
         else if (speakerName.includes('MOTHERSHIP')) {
             if (textLower.includes('unauthorized biological') || textLower.includes('do not answer') || textLower.includes('extraction window')) targetKey = 'voice_mothership_02_warning_bio';
             else if (textLower.includes('abandoned') || textLower.includes('extermination') || textLower.includes('remain where you are')) targetKey = 'voice_mothership_03_orbital_purge';
-            else if (textLower.includes('alive') || textLower.includes('salvage') || textLower.includes('hypersonic') || textLower.includes('rebuild')) targetKey = 'voice_mothership_01_alive';
+            else if (textLower.includes("you're alive") || textLower.includes("you are alive") || textLower.includes("alive.")) targetKey = 'voice_mothership_01_alive';
         }
         // System / Exosuit
         else if (speakerName.includes('EXOSUIT') || speakerName.includes('SYSTEM')) {
@@ -602,11 +619,15 @@ export class AudioManager {
         }
 
         if (targetKey && this.buffers[targetKey]) {
-            return this.playVoiceTrack(targetKey, { priority, volume: options.volume ?? 1.0, varyPitch: false, ...options });
+            // If this exact buffer is already actively playing, don't restart it
+            if (this.isVoiceSpeaking() && this.activeVoice?.bufferKey === targetKey) {
+                return this.activeVoice;
+            }
+            return this.playVoiceTrack(targetKey, { priority, speakerName, volume: options.volume ?? 1.0, varyPitch: false, ...options });
         }
 
-        // If higher-priority voice is active, do not override with procedural vocalizer
-        if (this.isVoiceSpeaking() && this.activeVoice.priority < priority) {
+        // If voice is currently speaking, do not override with procedural fallback
+        if (this.isVoiceSpeaking()) {
             return null;
         }
 

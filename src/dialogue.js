@@ -551,6 +551,7 @@ export class DialogueManager {
         this.activeDialogueRunId = 0;
         this.activeChoiceResolver?.('skip');
         this.activeChoiceResolver = null;
+        window.AudioManager?.stopActiveVoice?.(0.12);
 
         this.cleanupDialogueListeners();
         this.panelEl?.classList.remove('is-open', 'is-closing');
@@ -626,6 +627,7 @@ export class DialogueManager {
         if (!this.isDialogueRunActive(runId)) return;
 
         window.AudioManager?.play('door_slam_vertical', { volume: 0.4 });
+        window.AudioManager?.stopActiveVoice?.(0.12);
 
         this.panelEl.classList.remove('is-open');
         this.panelEl.classList.add('is-closing');
