@@ -5,7 +5,7 @@
     // players onto the current official config. minor_revision is for additive
     // actions and localization tweaks. Read back via GetDeviceBindingRevision.
     "major_revision" "8"
-    "minor_revision" "0"
+    "minor_revision" "1"
     "configurations"
     {
         "controller_neptune"

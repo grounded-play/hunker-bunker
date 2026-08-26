@@ -3805,17 +3805,6 @@ input:checked+.slider:before {
 .gameplay-crosshair__tick--left { left: 0; top: 50%; transform: translateY(-50%); }
 .gameplay-crosshair__tick--right { right: 0; top: 50%; transform: translateY(-50%); }
 
-.loader-control-reference { margin-top: 13px; color: #7f9cad; text-align: center; font-family: 'Space Mono', monospace; }
-.loader-control-reference__title { color: #2ec4b6; font-size: 10px; letter-spacing: .14em; }
-.loader-control-reference__diagram { display: block; width: min(520px, 78vw); height: auto; margin: 5px auto 3px; }
-.deck-shell { fill: rgba(11, 20, 29, .82); stroke: #2ec4b6; stroke-width: 1.5; }
-.deck-shell path { fill: none; stroke: rgba(46,196,182,.35); }
-.deck-control { fill: none; stroke: #ff9f1c; stroke-width: 1.5; }
-.deck-face circle, .deck-dpad path { fill: #ff9f1c; stroke: none; }
-.deck-touch rect { fill: rgba(46,196,182,.25); stroke: #2ec4b6; }
-.deck-labels { fill: #d8f3dc; font: 7px 'Space Mono', monospace; text-anchor: middle; letter-spacing: .04em; }
-.loader-control-reference__legend { font-size: 8px; line-height: 1.4; color: #9db1bd; letter-spacing: .04em; }
-
 .settings-color-picker {
   width: calc(var(--vu) * 9);
   height: calc(var(--vu) * 4.5);

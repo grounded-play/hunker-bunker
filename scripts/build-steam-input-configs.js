@@ -16,6 +16,12 @@ const controllerTypes = [
     'controller_generic'
 ];
 
+// This text is shown by Valve's controller-layout UI before launch. Keep it
+// aligned with the gameplay preset below instead of duplicating a device image
+// inside the game's loading screen.
+const OFFICIAL_LAYOUT_TITLE = 'Official Hunker Bunker Controls';
+const OFFICIAL_LAYOUT_DESCRIPTION = 'Left Stick Move · Right Stick Aim/Pointer · A Interact · B Dodge/Back · X Reload · Y Smash · LB Scan · RB Map · LT Sprint · RT Fire · Menu Pause.';
+
 function binding(actionSet, action, title) {
     return `"binding" "game_action ${actionSet} ${action}, ${title}"`;
 }
@@ -289,17 +295,17 @@ function buildControllerConfig(controllerType) {
 {
     "version" "3"
     "game" "Hunker Bunker"
-    "title" "Official Hunker Bunker Layout"
-    "description" "Twin-stick layout: right stick pointer/aim, A interact, B dodge, X reload, Y smash, RT fire."
+    "title" "${OFFICIAL_LAYOUT_TITLE}"
+    "description" "${OFFICIAL_LAYOUT_DESCRIPTION}"
     "controller_type" "${controllerType}"
     "major_revision" "8"
-    "minor_revision" "0"
+    "minor_revision" "1"
     "localization"
     {
         "english"
         {
-            "title" "Official Hunker Bunker Layout"
-            "description" "Twin-stick layout: right stick pointer/aim, A interact, B dodge, X reload, Y smash, RT fire."
+            "title" "${OFFICIAL_LAYOUT_TITLE}"
+            "description" "${OFFICIAL_LAYOUT_DESCRIPTION}"
         }
     }
     ${groups.join('\n    ')}
