@@ -6877,10 +6877,28 @@ function playCutsceneVideo(base, options = {}) {
             window.clearTimeout(guardTimer);
             window.removeEventListener('keydown', onKey);
             overlay.removeEventListener('pointerup', onPointer);
-            if (typeof onDoorCutoff === 'function') {
-                onDoorCutoff();
+
+            const hasDoorCutoff = typeof onDoorCutoff === 'function';
+            if (hasDoorCutoff) {
+                try {
+                    onDoorCutoff();
+                } catch (err) {
+                    console.error('onDoorCutoff error:', err);
+                }
             }
-            overlay.classList.add('is-closing');
+
+            if (skipHint) {
+                skipHint.style.display = 'none';
+            }
+
+            if (!hasDoorCutoff) {
+                overlay.classList.add('is-closing');
+            }
+
+            // When a door transition is closing over the cutscene (e.g. DoorIntro),
+            // keep the video visible behind the closing panels throughout their 850ms
+            // travel so the doors close cleanly over the footage instead of cutting away.
+            const cleanupDelay = hasDoorCutoff ? 850 : (skipped ? 150 : 280);
 
             setTimeout(() => {
                 overlay.style.display = 'none';
@@ -6894,7 +6912,7 @@ function playCutsceneVideo(base, options = {}) {
                 overlay.remove();
                 resumeGame();
                 resolve({ played, skipped });
-            }, skipped ? 150 : 280);
+            }, cleanupDelay);
         };
 
         const onKey = (event) => {
@@ -6915,10 +6933,7 @@ function playCutsceneVideo(base, options = {}) {
 
                 if (video.currentTime >= doorCutoffTime) {
                     fadingOut = true;
-                    if (typeof onDoorCutoff === 'function') {
-                        onDoorCutoff();
-                    }
-                    setTimeout(() => finish({ skipped: false }), 200);
+                    finish({ skipped: false });
                 }
             }
         });
@@ -13440,7 +13455,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                         playCutsceneVideo('DoorIntro', { onDoorCutoff: triggerClosingDoors })
                             .then(triggerClosingDoors)
                             .catch(async () => {
-                                await playCutsceneVideo('scout-intro').catch(() => null);
+                                await playCutsceneVideo('scout-intro', { onDoorCutoff: triggerClosingDoors }).catch(() => null);
                                 triggerClosingDoors();
                             });
                     }

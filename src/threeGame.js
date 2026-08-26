@@ -21957,6 +21957,11 @@ export class ThreeGame {
         // since renderOrder/shadow flags are pool-wide, not per-instance)
         // loses nothing gameplay-relevant.
         const holeOverlayMatrices = [];
+        // Parallel IDs let a live repair hide one member of this instanced
+        // batch.  Before this metadata existed fillHoleAt still searched for
+        // the old per-hole Mesh, so collision changed while the black hole art
+        // remained visible until the whole chunk was remounted.
+        const holeOverlayKeys = [];
         const flatOverlayMatrices = [];
 
         const addCanyonDropSkirt = (posX, posZ, rotY, biomeKey) => {
@@ -22225,6 +22230,7 @@ export class ThreeGame {
                         floorRotation,
                         new THREE.Vector3(0.5, 0.5, 1)
                     ));
+                    holeOverlayKeys.push(this.getWallKey(worldX, worldZ));
                     continue;
                 }
                 if (
@@ -22263,6 +22269,7 @@ export class ThreeGame {
                         new THREE.Quaternion().setFromEuler(new THREE.Euler(-Math.PI / 2, 0, holeInfo.rotationZ)),
                         new THREE.Vector3(holeInfo.scale, holeInfo.scale, 1)
                     ));
+                    holeOverlayKeys.push(this.getWallKey(worldX, worldZ));
 
                     // Seeded chance (~40%) to spawn a Fungal Spore Vent (Stage 1 Fungal Enemy) on hole tiles
                     if (wallTypeRng() < 0.40) {
@@ -22459,7 +22466,7 @@ export class ThreeGame {
             holeOverlayInstanced.instanceMatrix.needsUpdate = true;
             holeOverlayInstanced.renderOrder = 2;
             holeOverlayInstanced.receiveShadow = true;
-            holeOverlayInstanced.userData = { isLethalPit: true };
+            holeOverlayInstanced.userData = { isLethalPit: true, holeOverlayKeys };
             group.add(holeOverlayInstanced);
         }
 
@@ -26245,22 +26252,48 @@ export class ThreeGame {
         }
     }
 
-    eruptFungalVent(sprite) {
+    findFungalVentLandingPosition(x, z) {
+        const candidates = [
+            [1, 0], [-1, 0], [0, 1], [0, -1],
+            [1, 1], [1, -1], [-1, 1], [-1, -1],
+            [2, 0], [-2, 0], [0, 2], [0, -2]
+        ].map(([dx, dz]) => ({ x: Math.round(x) + dx, z: Math.round(z) + dz }));
+        if (this.player) {
+            candidates.sort((a, b) => (
+                Math.hypot(a.x - this.player.position.x, a.z - this.player.position.z)
+                - Math.hypot(b.x - this.player.position.x, b.z - this.player.position.z)
+            ));
+        }
+        return candidates.find((candidate) => (
+            this.isSnailTileWalkable?.(candidate.x, candidate.z)
+            && (this.canOccupyPosition?.(candidate.x, candidate.z) ?? true)
+        )) ?? { x, z };
+    }
+
+    eruptFungalVent(sprite, { fromHole = false } = {}) {
         const x = sprite.position.x;
         const z = sprite.position.z;
         const parent = sprite.parent || this.scene;
+        const landing = this.findFungalVentLandingPosition(x, z);
 
         // Visual and sound effects for Stage 2 emergence
         this.spawnGearPoofEffect(x, z, 'bio_spores');
         this.spawnToxicSporePuddle(x, z, false);
-        window.AudioManager?.playMetalStress?.({ volume: 0.55, playbackRate: 2.1, force: true });
+        if (typeof window !== 'undefined') {
+            window.AudioManager?.play?.('hive_spores_puff', { volume: 0.62, playbackRate: 1.15, bus: 'sfx' });
+            window.AudioManager?.playMetalStress?.({ volume: 0.55, playbackRate: 2.1, force: true });
+        }
 
         // Remove static vent sprite
         const idx = this.scatterSprites.indexOf(sprite);
-        if (idx !== -1) this.scatterSprites.splice(idx, 1);
+        sprite.userData.burstTriggered = true;
+        disposeEnemy3dVisual(sprite.userData?.enemy3dVisual);
+        sprite.userData?.world3dRoot?.removeFromParent?.();
         if (sprite.parent) sprite.parent.remove(sprite);
+        sprite.material?.dispose?.();
 
-        // Erupt Stage 2: Mycelium Stalker
+        // Erupt Stage 2 at the hole center, then arc onto an adjacent walkable
+        // tile before normal chase collision/pathing takes over.
         const placement = {
             x,
             z,
@@ -26276,14 +26309,60 @@ export class ThreeGame {
         };
         const stalker = this.createScatterInstance(placement);
         if (stalker) {
+            stalker.userData.holeEmergence = {
+                startX: x,
+                startZ: z,
+                landingX: landing.x,
+                landingZ: landing.z,
+                elapsed: 0,
+                duration: 0.68,
+                fromRepair: fromHole
+            };
+            stalker.userData.aiMode = 'emerging';
             parent.add(stalker);
-            this.scatterSprites.push(stalker);
+            // Replace in place so erupting during the scatter update loop
+            // does not shift the next enemy backward and skip its frame.
+            if (idx !== -1) this.scatterSprites.splice(idx, 1, stalker);
+            else this.scatterSprites.push(stalker);
+            if (typeof window !== 'undefined') {
+                window.dispatchEvent(new CustomEvent('fungal-vent-erupted', {
+                    detail: { x, z, landingX: landing.x, landingZ: landing.z, fromRepair: fromHole }
+                }));
+            }
+        } else if (idx !== -1) {
+            this.scatterSprites.splice(idx, 1);
         }
+        return stalker ?? null;
     }
 
     updateChargerOrStalkerBehavior(sprite, delta, { isStalker = false } = {}) {
         const data = sprite.userData;
         if (!this.player || this.isPlayerDead) return;
+
+        if (data.holeEmergence) {
+            const emergence = data.holeEmergence;
+            emergence.elapsed = Math.min(emergence.duration, emergence.elapsed + delta);
+            const t = emergence.duration > 0 ? emergence.elapsed / emergence.duration : 1;
+            const eased = 1 - Math.pow(1 - t, 3);
+            sprite.position.x = THREE.MathUtils.lerp(emergence.startX, emergence.landingX, eased);
+            sprite.position.z = THREE.MathUtils.lerp(emergence.startZ, emergence.landingZ, eased);
+            sprite.position.y = (data.baseY ?? 0.08) + Math.sin(t * Math.PI) * 1.15;
+            const squash = 0.78 + Math.sin(t * Math.PI) * 0.3;
+            sprite.scale.set(
+                (data.baseScaleX ?? 1) * squash,
+                (data.baseScaleY ?? 1) * (0.9 + Math.sin(t * Math.PI) * 0.24),
+                1
+            );
+            this.faceSpriteFromDir?.(sprite, emergence.landingX - emergence.startX);
+            if (t >= 1) {
+                sprite.position.set(emergence.landingX, data.baseY ?? 0.08, emergence.landingZ);
+                sprite.scale.set(data.baseScaleX ?? 1, data.baseScaleY ?? 1, 1);
+                data.holeEmergence = null;
+                data.aiMode = 'hunt';
+                data.attackCooldown = Math.max(data.attackCooldown ?? 0, 0.25);
+            }
+            return;
+        }
 
         if (data.staggerState) {
             const events = tickStaggerState(data.staggerState, delta);
@@ -28570,34 +28649,60 @@ export class ThreeGame {
         const key = this.getWallKey ? this.getWallKey(tileX, tileZ) : `${tileX},${tileZ}`;
         if (this.filledHoleKeys.has(key)) return false;
         if (typeof this.getTileType === 'function' && this.getTileType(tileX, tileZ) === EXTERIOR_CANYON_TILE) return false;
-        if (!this.isHoleTile(tileX, tileZ)) return false;
+        const holeInfo = this.getHoleVisualInfo?.(tileX, tileZ)
+            ?? (this.isHoleTile?.(tileX, tileZ) ? { x: tileX, z: tileZ } : null);
+        if (!holeInfo) return false;
 
         this.filledHoleKeys.add(key);
 
         if (this.chunkMeshes) {
             for (const group of this.chunkMeshes.values()) {
                 if (!group?.children) continue;
+                let groupContainsHole = false;
                 for (let i = group.children.length - 1; i >= 0; i--) {
                     const child = group.children[i];
-                    if (child.material === this.holeMaterial) {
+                    const instanceIndex = child.userData?.holeOverlayKeys?.indexOf?.(key) ?? -1;
+                    if (instanceIndex >= 0 && child.isInstancedMesh) {
+                        // Keep the batch allocation stable and collapse only
+                        // this repaired instance. setMatrixAt is the supported
+                        // way to mutate one member of an InstancedMesh.
+                        child.setMatrixAt(instanceIndex, new THREE.Matrix4().makeScale(0, 0, 0));
+                        child.instanceMatrix.needsUpdate = true;
+                        groupContainsHole = true;
+                        break;
+                    }
+                    // Compatibility for chunks mounted by the older,
+                    // pre-instancing renderer.
+                    if (!child.isInstancedMesh && child.material === this.holeMaterial) {
                         const dx = Math.abs(child.position.x - tileX);
                         const dz = Math.abs(child.position.z - tileZ);
                         if (dx < 0.9 && dz < 0.9) {
                             group.remove(child);
-                            child.geometry?.dispose?.();
-
-                            const filledPatch = new THREE.Mesh(this.floorGeometry, this.floorMaterial);
-                            filledPatch.rotation.x = -Math.PI / 2;
-                            filledPatch.position.set(tileX, 0.005, tileZ);
-                            filledPatch.receiveShadow = true;
-                            filledPatch.userData = { isFilledHolePatch: true, wallKey: key };
-                            group.add(filledPatch);
+                            groupContainsHole = true;
                             break;
                         }
                     }
                 }
+                if (groupContainsHole && !group.children.some((child) => child.userData?.wallKey === key)) {
+                    const filledPatch = new THREE.Mesh(this.floorGeometry, this.floorMaterial);
+                    filledPatch.rotation.x = -Math.PI / 2;
+                    filledPatch.position.set(tileX, 0.018, tileZ);
+                    filledPatch.receiveShadow = true;
+                    filledPatch.userData = { isFilledHolePatch: true, wallKey: key };
+                    group.add(filledPatch);
+                }
             }
         }
+
+        // A vent is the creature's sealed Stage-1 shell. Repairing underneath
+        // it must force the Stage-2 creature out; otherwise the now-safe hole
+        // leaves the enemy apparently embedded in its old nest forever.
+        const lurkingVent = this.scatterSprites?.find((sprite) => (
+            sprite?.userData?.type === 'fungal_spore_vent'
+            && !sprite.userData.burstTriggered
+            && Math.hypot(sprite.position.x - tileX, sprite.position.z - tileZ) < 0.75
+        ));
+        if (lurkingVent) this.eruptFungalVent?.(lurkingVent, { fromHole: true });
 
         this.spawnPhysicalBurst?.(tileX, tileZ, {
             color: 0x7c6853,
@@ -28615,6 +28720,12 @@ export class ThreeGame {
             rise: 0.15
         });
         if (typeof window !== 'undefined') {
+            // Positive repair confirmation layered over the dirt/metal impact.
+            window.AudioManager?.play?.('ui_upgrade_weapon', {
+                volume: 0.48,
+                playbackRate: 0.82,
+                bus: 'sfx'
+            });
             window.AudioManager?.playMetalStress?.({ volume: 0.4, playbackRate: 0.8, force: true });
             window.dispatchEvent?.(new CustomEvent('hole-filled', {
                 detail: { x: tileX, z: tileZ }
@@ -28636,7 +28747,16 @@ export class ThreeGame {
                 const hx = cx + dx;
                 const hz = cz + dz;
                 if (Math.hypot(px - hx, pz - hz) <= 2.0 && this.isHoleTile(hx, hz)) {
-                    return this.fillHoleAt(hx, hz);
+                    const yaw = Math.atan2(hx - px, hz - pz);
+                    this.updateFacingYaw?.(yaw);
+                    const repaired = this.fillHoleAt(hx, hz);
+                    if (repaired) {
+                        // Every runtime chassis carries this compact forward
+                        // swing; facing the hole makes it read as tamping or
+                        // hammering the repair instead of a combat strike.
+                        this.player3dOverlay?.trigger?.('melee', 0.85);
+                    }
+                    return repaired;
                 }
             }
         }
