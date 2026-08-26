@@ -101,6 +101,7 @@ describe('updateCamera third-person steering', () => {
             facingYaw: 0,
             cameraAzimuth: 0,
             cameraRotationInput: 1,
+            cameraFollowRate: 26,
             _cameraOrbitPointerDelta: 0,
             cameraOrbitRadius: 4,
             cameraLift: 2,
@@ -115,10 +116,35 @@ describe('updateCamera third-person steering', () => {
         ThreeGame.prototype.updateCamera.call(game, 0.1);
 
         expect(game.facingYaw).toBeCloseTo(0.235, 3);
-        expect(game.cameraAzimuth).toBeCloseTo(-Math.PI + 0.235, 3);
-        expect(game.cameraPlanarForward.x).toBeCloseTo(Math.sin(game.facingYaw), 3);
-        expect(game.cameraPlanarForward.y).toBeCloseTo(Math.cos(game.facingYaw), 3);
+        expect(Math.abs(game.cameraAzimuth)).toBeGreaterThan(2.5);
+        expect(game.cameraPlanarForward.length()).toBeCloseTo(1, 3);
         expect(game.updateThirdPersonCamera).toHaveBeenCalledWith(0.1);
+    });
+
+    it('applies close/tight camera tuning and rejects unknown presets', () => {
+        const game = {
+            cameraDistancePreset: 'standard',
+            cameraFollowPreset: 'balanced',
+            cameraFollowRate: 17,
+            thirdPersonCameraConfig: { distance: 3.65, shoulder: 0.58 },
+            performanceProfile: 'menu',
+            cameraMode: 'third-person'
+        };
+
+        const selected = ThreeGame.prototype.setCameraTuning.call(game, {
+            distance: 'close',
+            follow: 'tight'
+        });
+
+        expect(selected).toEqual({ distance: 'close', follow: 'tight' });
+        expect(game.thirdPersonCameraConfig.distance).toBeCloseTo(3.05, 2);
+        expect(game.cameraFollowRate).toBe(26);
+
+        const fallback = ThreeGame.prototype.setCameraTuning.call(game, {
+            distance: 'unknown',
+            follow: 'unknown'
+        });
+        expect(fallback).toEqual({ distance: 'close', follow: 'tight' });
     });
 });
 

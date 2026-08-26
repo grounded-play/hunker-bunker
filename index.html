@@ -111,6 +111,7 @@
       <span class="gameplay-crosshair__tick gameplay-crosshair__tick--right"></span>
       <span class="gameplay-crosshair__tick gameplay-crosshair__tick--bottom"></span>
       <span class="gameplay-crosshair__tick gameplay-crosshair__tick--left"></span>
+      <span class="gameplay-crosshair__label" aria-live="polite"></span>
     </div>
     <div id="debug-toolbar">
       <div id="fps-counter">FPS: --</div>
@@ -333,10 +334,18 @@
                 </div>
               </div>
               <div class="menu-header-actions">
-                <div class="menu-command-column" aria-label="Operations commands">
+                <div class="menu-command-column" aria-label="Operations and Steam commands">
                   <div class="menu-command">
                     <button class="start-btn start-btn--daily" id="daily-ops-btn" title="One attempt per day — fixed world seed">DAILY OPS</button>
                     <div class="menu-command__status daily-ops-status" id="daily-ops-status"></div>
+                  </div>
+                  <div class="menu-command">
+                    <button class="start-btn start-btn--roster" id="roster-btn" title="Operator roster — callsign and equipped loadout">▣ ROSTER</button>
+                    <div class="menu-command__status" id="roster-command-status">0 / 0 ARSENAL</div>
+                  </div>
+                  <div class="menu-command" id="steam-vault-command">
+                    <button class="start-btn start-btn--vault" id="steam-vault-btn" title="Steam Vault — view Steam-owned cosmetics">◈ STEAM VAULT</button>
+                    <div class="menu-command__status" id="vault-command-status">OFFLINE</div>
                   </div>
                   <div class="menu-command hidden" id="archive-sims-command">
                     <button class="start-btn start-btn--archive-sims" id="archive-sims-btn" title="Archive Simulations — unlockable story mini-games">◈ ARCHIVE SIMS</button>
@@ -346,12 +355,8 @@
                     <button class="start-btn start-btn--fab" id="fabrication-btn" title="Fabrication Bay — print gear from salvage (unlocks once the base is powered)">◇ FAB BAY</button>
                     <div class="menu-command__status" id="fab-command-status">0 / 0 PRINTED</div>
                   </div>
-                  <div class="menu-command">
-                    <button class="start-btn start-btn--roster" id="roster-btn" title="Operator roster — callsign and equipped loadout">▣ ROSTER</button>
-                    <div class="menu-command__status" id="roster-command-status">0 / 0 ARSENAL</div>
-                  </div>
                 </div>
-                <div class="menu-command-column" aria-label="Records and Steam commands">
+                <div class="menu-command-column" aria-label="Records and Dossier commands">
                   <div class="menu-command">
                     <button class="start-btn start-btn--archive" id="archive-btn" title="Bunker Archive — discovered lore logs">◈ ARCHIVE</button>
                     <div class="menu-command__status" id="archive-command-status">0 / 27 LOGS</div>
@@ -360,17 +365,13 @@
                     <button class="start-btn start-btn--codex" id="codex-btn" title="Field Codex — catalogued hostiles, infrastructure, and phenomena">❑ CODEX</button>
                     <div class="menu-command__status" id="codex-command-status">0 / 0 INTEL</div>
                   </div>
-                  <div class="menu-command hidden" id="achievements-command">
-                    <button class="start-btn start-btn--achievements" id="achievements-btn" title="Achievement records — unlocked run milestones">ACHIEVEMENTS</button>
-                    <div class="menu-command__status" id="achievements-command-status">LOCKED</div>
-                  </div>
-                  <div class="menu-command" id="steam-vault-command">
-                    <button class="start-btn start-btn--vault" id="steam-vault-btn" title="Steam Vault — view Steam-owned cosmetics">◈ STEAM VAULT</button>
-                    <div class="menu-command__status" id="vault-command-status">OFFLINE</div>
-                  </div>
                   <div class="menu-command" id="season-pass-command">
                     <button class="start-btn start-btn--dossier" id="season-pass-btn" title="Tactical Dossier — Season 0 battle pass progression">◈ DOSSIER</button>
                     <div class="menu-command__status" id="season-pass-command-status">TIER 0 / 50</div>
+                  </div>
+                  <div class="menu-command hidden" id="achievements-command">
+                    <button class="start-btn start-btn--achievements" id="achievements-btn" title="Achievement records — unlocked run milestones">ACHIEVEMENTS</button>
+                    <div class="menu-command__status" id="achievements-command-status">LOCKED</div>
                   </div>
                 </div>
               </div>
@@ -2162,6 +2163,22 @@
             <select id="setting-camera-mode" class="settings-select" aria-label="Gameplay camera">
               <option value="third-person" selected>THIRD-PERSON — SHOULDER</option>
               <option value="isometric">ISOMETRIC — CLASSIC</option>
+            </select>
+          </div>
+          <div class="setting-item">
+            <span>CAMERA DISTANCE</span>
+            <select id="setting-camera-distance" class="settings-select" aria-label="Third-person camera distance">
+              <option value="close" selected>CLOSE</option>
+              <option value="standard">STANDARD</option>
+              <option value="wide">WIDE</option>
+            </select>
+          </div>
+          <div class="setting-item">
+            <span>CAMERA FOLLOW</span>
+            <select id="setting-camera-follow" class="settings-select" aria-label="Third-person camera follow responsiveness">
+              <option value="tight" selected>TIGHT</option>
+              <option value="balanced">BALANCED</option>
+              <option value="smooth">SMOOTH / CINEMATIC</option>
             </select>
           </div>
           <div class="setting-item">

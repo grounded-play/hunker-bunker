@@ -120,9 +120,9 @@ export async function createArmoryScene(canvas) {
 
     const benchSpot = new THREE.SpotLight(0xfff0dd, 4.5, 8.0, Math.PI / 4, 0.4, 1.2);
     benchSpot.position.set(1.2, 3.6, 1.7);
-    // Tracks weaponBenchGroup's new (1.05, 1.85, -0.05) position below --
+    // Tracks the compact center-stage weapon display below.
     // docs/armory-layout-and-cosmetic-preview-plan-2026-08-19.md #1.
-    benchSpot.target.position.set(1.05, 1.85, -0.05);
+    benchSpot.target.position.set(0.45, 1.85, -0.05);
     scene.add(benchSpot);
     scene.add(benchSpot.target);
 
@@ -146,25 +146,23 @@ export async function createArmoryScene(canvas) {
     // panel at most rotation angles. Raised to track the gun's new height
     // (see weaponBenchGroup below) and moved back in Z to restore real
     // clearance once the gun itself also moves forward.
-    const rackPanelGeo = new THREE.BoxGeometry(2.4, 1.3, 0.12);
+    const rackPanelGeo = new THREE.BoxGeometry(1.7, 0.78, 0.12);
     const rackPanelMat = new THREE.MeshStandardMaterial({
         color: 0x182433,
         roughness: 0.4,
         metalness: 0.85
     });
     const rackPanel = new THREE.Mesh(rackPanelGeo, rackPanelMat);
-    rackPanel.position.set(1.1, 1.7, -1.0);
+    rackPanel.position.set(0.45, 1.82, -1.0);
     rackPanel.castShadow = true;
     rackPanel.receiveShadow = true;
     envGroup.add(rackPanel);
 
-    // Glowing Neon Guideline on Rack -- kept at the same relative offset from
-    // rackPanel (0.6 below, 0.07 toward camera from its front face) it had
-    // before the panel moved.
-    const neonLineGeo = new THREE.BoxGeometry(2.3, 0.02, 0.02);
+    // Glowing guideline hugs the lower edge of the compact display rack.
+    const neonLineGeo = new THREE.BoxGeometry(1.62, 0.02, 0.02);
     const neonLineMat = new THREE.MeshBasicMaterial({ color: 0x00e5ff });
     const neonLine = new THREE.Mesh(neonLineGeo, neonLineMat);
-    neonLine.position.set(1.1, 1.1, -0.93);
+    neonLine.position.set(0.45, 1.45, -0.93);
     envGroup.add(neonLine);
 
     // Operator Hexagonal Turntable Platform (Positioned in clear central-left lane)
@@ -327,7 +325,7 @@ export async function createArmoryScene(canvas) {
     // space; pulling Z forward both grows the wall clearance and reads
     // better relative to the now-narrower weapon-bench-panel CSS column.
     const weaponBenchGroup = new THREE.Group();
-    weaponBenchGroup.position.set(1.05, 1.85, -0.05);
+    weaponBenchGroup.position.set(0.45, 1.85, -0.05);
     scene.add(weaponBenchGroup);
 
     // Interactive pivot inside weapon bench

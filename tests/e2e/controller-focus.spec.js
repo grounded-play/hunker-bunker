@@ -12,7 +12,13 @@ test.describe('controller-ready modal focus', () => {
         await expect(page.locator('#roster-btn')).toBeFocused();
 
         await page.keyboard.press('KeyS');
+        await expect(page.locator('#steam-vault-btn')).toBeFocused();
+
+        await page.keyboard.press('KeyS');
         await expect(page.locator('#start-game')).toBeFocused();
+
+        await page.keyboard.press('KeyW');
+        await expect(page.locator('#steam-vault-btn')).toBeFocused();
 
         await page.keyboard.press('KeyW');
         await expect(page.locator('#roster-btn')).toBeFocused();
@@ -26,14 +32,30 @@ test.describe('controller-ready modal focus', () => {
         await page.keyboard.press('KeyD');
         await expect(page.locator('.char-selection .char-card.selected')).toBeFocused();
 
+        // Navigate down the hero stack through all cards to the back button
+        await page.locator('.char-selection .char-card[data-type="SCOUT"]').focus();
+        await page.keyboard.press('KeyS');
+        await expect(page.locator('.char-selection .char-card[data-type="TANK"]')).toBeFocused();
+
+        await page.keyboard.press('KeyS');
+        await expect(page.locator('.char-selection .char-card[data-type="ENGINEER"]')).toBeFocused();
+
+        await page.keyboard.press('KeyS');
+        await expect(page.locator('#hero-select-back-btn')).toBeFocused();
+
+        await page.keyboard.press('KeyW');
+        await expect(page.locator('.char-selection .char-card[data-type="ENGINEER"]')).toBeFocused();
+
+        await page.locator('#hero-select-back-btn').focus();
         await page.keyboard.press('KeyA');
-        await expect(page.locator('#hero-polish-btn')).toBeFocused();
+        await expect(page.locator('#start-game')).toBeFocused();
+
+        await page.locator('#steam-vault-btn').focus();
+        await page.keyboard.press('KeyD');
+        await expect(page.locator('#season-pass-btn')).toBeFocused();
 
         await page.keyboard.press('KeyA');
-        await expect(page.locator('#codex-btn')).toBeFocused();
-
-        await page.keyboard.press('KeyA');
-        await expect(page.locator('#roster-btn')).toBeFocused();
+        await expect(page.locator('#steam-vault-btn')).toBeFocused();
     });
 
     test('operator polish picker uses a spatial WASD grid', async ({ page }) => {
@@ -234,5 +256,42 @@ test.describe('controller-ready modal focus', () => {
 
         await expect(page.locator('#base-turret-modal')).toBeVisible();
         await expect(page.locator('#close-base-turret-modal')).toBeFocused();
+    });
+
+    test('pointer hover updates active focus and moves highlight across main menu buttons', async ({ page }) => {
+        await bootToTitleSplash(page);
+        await expect(page.locator('#title-newrun-btn')).toBeFocused();
+
+        await page.locator('#title-settings-btn').hover();
+        await expect(page.locator('#title-settings-btn')).toBeFocused();
+
+        await page.locator('#title-about-btn').hover();
+        await expect(page.locator('#title-about-btn')).toBeFocused();
+
+        await page.locator('#title-quit-btn').hover();
+        await expect(page.locator('#title-quit-btn')).toBeFocused();
+
+        await page.locator('#title-newrun-btn').hover();
+        await expect(page.locator('#title-newrun-btn')).toBeFocused();
+    });
+
+    test('main menu buttons are navigable via arrow keys and WASD', async ({ page }) => {
+        await bootToTitleSplash(page);
+        await expect(page.locator('#title-newrun-btn')).toBeFocused();
+
+        await page.keyboard.press('ArrowDown');
+        await expect(page.locator('#title-achievements-btn')).toBeFocused();
+
+        await page.keyboard.press('ArrowDown');
+        await expect(page.locator('#title-settings-btn')).toBeFocused();
+
+        await page.keyboard.press('ArrowDown');
+        await expect(page.locator('#title-about-btn')).toBeFocused();
+
+        await page.keyboard.press('ArrowDown');
+        await expect(page.locator('#title-quit-btn')).toBeFocused();
+
+        await page.keyboard.press('ArrowUp');
+        await expect(page.locator('#title-about-btn')).toBeFocused();
     });
 });

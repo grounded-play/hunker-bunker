@@ -1553,7 +1553,7 @@ body {
 }
 
 .menu-command-column:nth-of-type(2)::before {
-  content: 'RECORDS + STEAM';
+  content: 'RECORDS';
 }
 
 .menu-header-actions .start-btn {
@@ -2504,7 +2504,10 @@ body {
 .operator-callsign-input:focus-visible,
 .controller-mode .operator-callsign-input:focus,
 .save-data-code:focus-visible,
-.controller-mode .save-data-code:focus {
+.controller-mode .save-data-code:focus,
+.hero-select-back-btn:focus,
+.hero-select-back-btn:focus-visible,
+.controller-mode .hero-select-back-btn:focus {
   outline: 2px solid rgba(46, 196, 182, 0.9);
   outline-offset: 3px;
   box-shadow: 0 0 12px rgba(46, 196, 182, 0.4);
@@ -3746,6 +3749,29 @@ input:checked+.slider:before {
 .gameplay-crosshair__dot,
 .gameplay-crosshair__ring,
 .gameplay-crosshair__tick { position: absolute; display: block; }
+
+.gameplay-crosshair__label {
+  position: absolute;
+  top: calc(100% + 9px);
+  left: 50%;
+  min-width: max-content;
+  transform: translateX(-50%);
+  padding: 2px 7px;
+  border: 1px solid color-mix(in srgb, var(--crosshair-state-color) 70%, transparent);
+  border-radius: 2px;
+  background: rgba(5, 12, 18, 0.9);
+  color: var(--crosshair-state-color);
+  font-family: 'Rajdhani', monospace, sans-serif;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  line-height: 1.2;
+  white-space: nowrap;
+  opacity: 0;
+  transition: opacity 120ms ease, color 120ms ease, border-color 120ms ease;
+}
+
+.gameplay-crosshair.has-label .gameplay-crosshair__label { opacity: 1; }
 /* Reactive states (§1). Each carries a distinct shape or weight change as well
    as a hue, so the state is legible without colour discrimination. */
 .gameplay-crosshair--neutral { --crosshair-state-color: var(--crosshair-color, #ff9f1c); }
@@ -3997,19 +4023,20 @@ input:checked+.slider:before {
 .song-interstitial.is-open.has-placeholder .song-interstitial__placeholder { opacity: 1; }
 
 .song-interstitial.is-open img.song-interstitial__media {
-  animation: ken-burns-cinematic 8.5s cubic-bezier(0.25, 1, 0.5, 1) forwards;
-  transform-origin: center center;
+  animation: ken-burns-cinematic 12s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+  transform-origin: 52% 48%;
+  filter: saturate(1.08) contrast(1.05);
 }
 
 @keyframes ken-burns-cinematic {
   0% {
     transform: scale(1.0) translate(0, 0);
   }
-  50% {
-    transform: scale(1.05) translate(-1.2%, -0.8%);
+  40% {
+    transform: scale(1.06) translate(-1.5%, -0.8%);
   }
   100% {
-    transform: scale(1.08) translate(-2.2%, -1.4%);
+    transform: scale(1.12) translate(-2.8%, -1.8%);
   }
 }
 
@@ -4048,21 +4075,37 @@ input:checked+.slider:before {
 
 .song-interstitial__caption {
   position: absolute;
-  left: 4.5%;
-  bottom: 4.5%;
+  left: clamp(24px, 4.5vw, 64px);
+  bottom: clamp(24px, 4.5vw, 64px);
   z-index: 2;
   display: grid;
   gap: 0.45rem;
   color: #e9eee8;
-  text-shadow: 0 2px 10px #000;
+  background: rgba(5, 8, 12, 0.72);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  padding: 14px 22px;
+  border-radius: 6px;
+  border: 1px solid rgba(101, 239, 232, 0.25);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(0, 0, 0, 0.5);
+  text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000, 0 2px 10px #000;
   opacity: 0;
   transform: translateY(12px);
   transition: opacity 220ms ease, transform 220ms ease;
 }
 
 .song-interstitial.is-open .song-interstitial__caption { opacity: 1; transform: translateY(0); }
-.song-interstitial__caption span { color: #65efe8; font: 700 0.72rem monospace; letter-spacing: 0.2em; }
-.song-interstitial__caption strong { font: 800 clamp(1.2rem, 3vw, 2.8rem) 'Outfit', sans-serif; text-transform: uppercase; }
+.song-interstitial__caption span {
+  color: #65efe8;
+  font: 700 0.72rem monospace;
+  letter-spacing: 0.2em;
+  text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000, 0 2px 8px rgba(0, 0, 0, 0.8);
+}
+.song-interstitial__caption strong {
+  font: 800 clamp(1.2rem, 3vw, 2.8rem) 'Outfit', sans-serif;
+  text-transform: uppercase;
+  text-shadow: -1.5px -1.5px 0 #000, 1.5px -1.5px 0 #000, -1.5px 1.5px 0 #000, 1.5px 1.5px 0 #000, 0 3px 12px rgba(0, 0, 0, 0.9);
+}
 
 @keyframes song-interstitial-flash {
   0%, 100% { opacity: 0; filter: hue-rotate(0deg); }
@@ -6499,6 +6542,10 @@ html.in-story .virtual-gamepad-cursor,
 /* Gameplay uses the dedicated aim reticle. The menu cursor remains available
    for hover/focus feedback, but must not create a second shot point in combat. */
 html.phase-gameplay #tactical-cursor { display: none !important; }
+
+/* Combat overlays still need a mouse target. The gameplay reticle hides while
+   input is blocked; restore the navigation cursor until the overlay closes. */
+html.phase-gameplay.gameplay-menu-cursor #tactical-cursor { display: block !important; }
 
 html.phase-menu #tactical-cursor .cursor-ring,
 html.in-dialogue #tactical-cursor .cursor-ring,
@@ -12871,18 +12918,18 @@ button.archive-log-entry:active {
   object-fit: var(--cinematic-still-fit, contain);
   object-position: center;
   opacity: 0;
-  filter: saturate(0.78) contrast(1.12) brightness(0.72);
-  transform: scale(1.025);
-  transition: opacity 620ms ease, transform 4.2s ease-out;
+  filter: saturate(0.85) contrast(1.12) brightness(0.78);
+  transform: scale(1.0) translate(0, 0);
+  transition: opacity 620ms ease, transform 6.5s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .cinematic-still-frame.is-active {
   opacity: 1;
-  transform: scale(1.075);
+  transform: scale(1.08) translate(-1.2%, -0.8%);
 }
 
 .cinematic-still-overlay--death .cinematic-still-frame {
-  filter: saturate(0.48) contrast(1.2) brightness(0.62);
+  filter: saturate(0.52) contrast(1.22) brightness(0.66);
 }
 
 .cinematic-still-shade {
@@ -12896,22 +12943,35 @@ button.archive-log-entry:active {
 
 .cinematic-still-copy {
   position: absolute;
-  left: clamp(28px, 6vw, 78px);
-  right: clamp(28px, 12vw, 160px);
-  bottom: clamp(64px, 13vh, 118px);
+  left: clamp(24px, 5vw, 78px);
+  right: clamp(24px, 12vw, 160px);
+  bottom: clamp(48px, 10vh, 118px);
   max-width: 760px;
   text-align: left;
-  text-shadow: 0 2px 18px #000, 0 0 4px #000;
+  background: rgba(6, 10, 14, 0.72);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  padding: clamp(16px, 2.5vw, 24px) clamp(20px, 3vw, 30px);
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.75), 0 0 0 1px rgba(0, 0, 0, 0.6);
+}
+
+.cinematic-still-overlay--death .cinematic-still-copy {
+  border-left: 3px solid #ff5c4d;
+  border-color: rgba(255, 92, 77, 0.32);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.82), 0 0 24px rgba(255, 92, 77, 0.14), 0 0 0 1px rgba(0, 0, 0, 0.6);
 }
 
 .cinematic-still-kicker {
-  margin-bottom: 10px;
+  margin-bottom: 8px;
   color: var(--accent-secondary);
   font-family: 'Space Mono', monospace;
   font-size: clamp(11px, calc(var(--vu) * 1.3), 16px);
   font-weight: 700;
   letter-spacing: 0.16em;
   text-transform: uppercase;
+  text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000, 0 2px 10px rgba(0, 0, 0, 0.9);
 }
 
 .cinematic-still-overlay--death .cinematic-still-kicker {
@@ -12921,20 +12981,22 @@ button.archive-log-entry:active {
 .cinematic-still-title {
   max-width: 22ch;
   font-family: 'Outfit', sans-serif;
-  font-size: clamp(30px, calc(var(--vu) * 5.2), 64px);
+  font-size: clamp(28px, calc(var(--vu) * 4.8), 60px);
   font-weight: 900;
   letter-spacing: 0.035em;
-  line-height: 0.98;
+  line-height: 1.02;
   text-transform: uppercase;
+  text-shadow: -1.5px -1.5px 0 #000, 1.5px -1.5px 0 #000, -1.5px 1.5px 0 #000, 1.5px 1.5px 0 #000, 0 4px 16px rgba(0, 0, 0, 0.95);
 }
 
 .cinematic-still-body {
   max-width: 56ch;
-  margin-top: 14px;
-  color: rgba(242, 245, 244, 0.84);
+  margin-top: 12px;
+  color: rgba(242, 245, 244, 0.9);
   font-family: 'Space Mono', monospace;
-  font-size: clamp(14px, calc(var(--vu) * 1.75), 21px);
+  font-size: clamp(13px, calc(var(--vu) * 1.65), 19px);
   line-height: 1.45;
+  text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000, 0 2px 8px rgba(0, 0, 0, 0.9);
 }
 
 .cinematic-still-skip {
@@ -18860,7 +18922,10 @@ body.show-debug .map-tool-btn--debug { display: inline-flex; }
 .armory-main-layout {
   display: grid;
   grid-template-columns: minmax(0, calc(var(--vu) * 36)) minmax(calc(var(--vu) * 28), 1fr) minmax(0, calc(var(--vu) * 42));
-  align-items: stretch;
+  /* The benches are control cards, not full-height sidebars. Let their
+     content define their height so the operator and weapon stage stays open
+     instead of being covered by large, empty slabs. */
+  align-items: start;
   gap: calc(var(--vu) * 2);
   min-height: 0;
   height: 100%;
@@ -19001,6 +19066,8 @@ body.show-debug .map-tool-btn--debug { display: inline-flex; }
   display: flex;
   flex-direction: column;
   gap: calc(var(--vu) * 0.8);
+  align-self: start;
+  height: fit-content;
   max-height: 100%;
   overflow-y: auto;
   scrollbar-width: none;

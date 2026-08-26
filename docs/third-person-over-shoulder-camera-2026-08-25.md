@@ -29,6 +29,9 @@ The initial release therefore makes **Third-person — Shoulder** the default ga
 - **Mouse:** point on the world to face that direction. Right-drag also turns the operator and trailing camera as a unit.
 - **Fire:** left mouse / right trigger fires along the operator's facing direction. Controller play uses a stable center reticle rather than a second free-floating cursor.
 - **Aim speed:** the existing Turn / Aim Speed setting scales third-person turning.
+- **Camera Distance:** Close, Standard, and Wide presets control boom length and shoulder offset.
+- **Camera Follow:** Tight, Balanced, and Smooth presets control how quickly both heading and position settle. Close + Tight is the default to minimize broad camera sweeps.
+- **Target readout:** the gameplay crosshair carries the existing target badge text; opening a menu swaps back to the navigation cursor.
 
 ### Isometric — Classic
 

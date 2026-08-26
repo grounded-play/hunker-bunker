@@ -50,9 +50,26 @@ export class AudioManager {
     static worldGain = audioCtx.createGain();
     static musicGain = audioCtx.createGain();
     static voiceGain = audioCtx.createGain();
+    static foleyGain = audioCtx.createGain();
+    static rainGain = audioCtx.createGain();
     // Tension multiplier sits between the music sources and the user music
     // slider (musicGain) so runtime intensity and the user mix no longer fight.
     static musicTensionGain = audioCtx.createGain();
+
+    static campRainSource = null;
+    static activeDialogueStage = null;
+
+    // Centralized Speech Director & Active Voice State
+    static activeVoice = {
+        source: null,
+        gainNode: null,
+        priority: -1,
+        startedAt: 0,
+        estimatedDuration: 0,
+        promise: null,
+        resolve: null
+    };
+    static voiceQueue = [];
 
     static voiceVolume = 1.0;
     static voiceEnabled = true;
@@ -72,6 +89,8 @@ export class AudioManager {
         this.worldGain.connect(this.masterGain);
         this.musicGain.connect(this.masterGain);
         this.voiceGain.connect(this.masterGain);
+        this.foleyGain.connect(this.masterGain);
+        this.rainGain.connect(this.worldGain);
         this.musicTensionGain.connect(this.musicGain);
 
         // Base volume mix
@@ -80,8 +99,11 @@ export class AudioManager {
         this.worldGain.gain.value = 1.0;
         this.musicGain.gain.value = 1.0;
         this.voiceGain.gain.value = 1.0;
+        this.foleyGain.gain.value = 1.0;
+        this.rainGain.gain.value = 1.0;
         // Start mid-tension so music is clearly audible from the first frame.
         this.musicTensionGain.gain.value = 0.6;
+        this.stopActiveVoice(0);
     }
 
     static async unlock() {
@@ -120,9 +142,13 @@ export class AudioManager {
             ? this.musicGain
             : channel === 'voice'
                 ? this.voiceGain
-                : (channel === 'vfx' || channel === 'sfx')
-                    ? this.sfxGain
-                    : null;
+                : channel === 'foley'
+                    ? this.foleyGain
+                    : (channel === 'ambient' || channel === 'rain')
+                        ? this.rainGain
+                        : (channel === 'vfx' || channel === 'sfx')
+                            ? this.sfxGain
+                            : null;
 
         if (!gainNode) return;
         gainNode.gain.setTargetAtTime(clamped, audioCtx.currentTime, 0.05);
@@ -300,6 +326,8 @@ export class AudioManager {
             lastNode.connect(this.musicTensionGain); // Music routes through the tension multiplier
         } else if (bus === 'voice') {
             lastNode.connect(this.voiceGain); // Character Voice Audio bus
+        } else if (bus === 'foley') {
+            lastNode.connect(this.foleyGain); // Staged Room Tone & Scene Foley bus
         } else {
             lastNode.connect(this.sfxGain);
         }
@@ -308,8 +336,138 @@ export class AudioManager {
         return { source, gainNode, panner };
     }
 
+    static isVoiceSpeaking() {
+        if (!this.activeVoice?.source) return false;
+        const now = audioCtx.currentTime;
+        return (now - (this.activeVoice.startedAt || 0)) < (this.activeVoice.estimatedDuration || 0);
+    }
+
+    static getActiveVoiceDurationRemaining() {
+        if (!this.activeVoice?.source) return 0;
+        const now = audioCtx.currentTime;
+        const remaining = ((this.activeVoice.startedAt || 0) + (this.activeVoice.estimatedDuration || 0)) - now;
+        return Math.max(0, remaining);
+    }
+
+    static stopActiveVoice(fadeSeconds = 0.08) {
+        if (!this.activeVoice?.source) return;
+        const now = audioCtx.currentTime;
+        if (this.activeVoice.gainNode?.gain) {
+            try {
+                this.activeVoice.gainNode.gain.setValueAtTime(this.activeVoice.gainNode.gain.value || 1.0, now);
+                this.activeVoice.gainNode.gain.linearRampToValueAtTime(0.001, now + fadeSeconds);
+            } catch (e) { void e; }
+        }
+        const src = this.activeVoice.source;
+        setTimeout(() => {
+            try { src.stop?.(); } catch (e) { void e; }
+        }, Math.max(20, Math.round(fadeSeconds * 1000)));
+
+        this.activeVoice.resolve?.(false);
+        this.activeVoice.source = null;
+        this.activeVoice.gainNode = null;
+        this.activeVoice.priority = -1;
+        this.activeVoice.startedAt = 0;
+        this.activeVoice.estimatedDuration = 0;
+        this.activeVoice.promise = null;
+        this.activeVoice.resolve = null;
+
+        // Restore music ducking
+        try {
+            this.musicGain.gain.setTargetAtTime(1.0, audioCtx.currentTime + 0.05, 0.4);
+        } catch (e) { void e; }
+    }
+
+    static playVoiceTrack(key, options = {}) {
+        if (this.globalMuted || !this.voiceEnabled) return null;
+        if (!this.buffers[key]) return null;
+
+        const priority = options.priority !== undefined ? options.priority : 3;
+        const now = audioCtx.currentTime;
+
+        // If a higher-priority narrative voice track is active (<= 2), don't clobber it with lower priority
+        if (this.activeVoice?.source && this.activeVoice.priority <= 2 && this.activeVoice.priority < priority) {
+            const remaining = ((this.activeVoice.startedAt || 0) + (this.activeVoice.estimatedDuration || 0)) - now;
+            if (remaining > 0.15) {
+                return null;
+            }
+        }
+
+        // Stop existing lower/equal priority voice cleanly
+        this.stopActiveVoice(0.06);
+
+        const playback = this.play(key, {
+            bus: 'voice',
+            volume: options.volume !== undefined ? options.volume : 1.0,
+            varyPitch: false,
+            ...options
+        });
+
+        if (!playback) return null;
+
+        const buffer = this.buffers[key];
+        const pbRate = options.playbackRate || 1.0;
+        const duration = (buffer && buffer.duration) ? (buffer.duration / pbRate) : (options.duration || 3.0);
+
+        let resolveFn = null;
+        const completionPromise = new Promise((resolve) => { resolveFn = resolve; });
+
+        this.activeVoice = {
+            source: playback.source,
+            gainNode: playback.gainNode,
+            priority,
+            startedAt: now,
+            estimatedDuration: duration,
+            promise: completionPromise,
+            resolve: resolveFn
+        };
+
+        // Auto-duck music for narrative priorities (<= 2)
+        if (priority <= 2 && options.duckMusic !== false) {
+            try {
+                this.musicGain.gain.setTargetAtTime(0.35, now, 0.2);
+            } catch (e) { void e; }
+        }
+
+        const onEndCleanup = () => {
+            if (this.activeVoice?.source === playback.source) {
+                this.activeVoice.source = null;
+                this.activeVoice.gainNode = null;
+                this.activeVoice.priority = -1;
+                this.activeVoice.startedAt = 0;
+                this.activeVoice.estimatedDuration = 0;
+                this.activeVoice.promise = null;
+                this.activeVoice.resolve = null;
+                if (priority <= 2 && options.duckMusic !== false) {
+                    try {
+                        this.musicGain.gain.setTargetAtTime(1.0, audioCtx.currentTime + 0.1, 0.5);
+                    } catch (e) { void e; }
+                }
+                resolveFn?.(true);
+            }
+        };
+
+        if (playback.source) {
+            playback.source.onended = onEndCleanup;
+        }
+
+        // Backup timer in case onended is not fired by browser or mock environment
+        setTimeout(() => {
+            if (this.activeVoice?.source === playback.source) {
+                onEndCleanup();
+            }
+        }, Math.max(300, Math.round((duration * 1000) + 100)));
+
+        return { ...playback, duration, promise: completionPromise };
+    }
+
     static playVoiceCallout(cueType, options = {}) {
         if (this.globalMuted || !this.voiceEnabled) return null;
+        // Suppress tactical combat chatter if narrative or leader dialogue is active
+        if (this.isVoiceSpeaking() && this.activeVoice.priority <= 2) {
+            return null;
+        }
+
         const voicePackId = (typeof window !== 'undefined' ? (window.loadout?.state?.voicePackId || window.loadout?.getEquippedVoicePackId?.()) : null);
         if (!voicePackId) return null;
 
@@ -338,20 +496,37 @@ export class AudioManager {
         };
 
         const targetKey = cueMap[cueType] || `${prefix}_${cueType}`;
+        if (this.buffers[targetKey]) {
+            return this.playVoiceTrack(targetKey, { priority: 4, volume: options.volume ?? 0.85, ...options });
+        }
         return this.play(targetKey, { bus: 'voice', volume: options.volume ?? 0.85, ...options });
     }
 
-    static playVoiceForMessage(speakerInfo = {}, messageText = '') {
+    static playVoiceForMessage(speakerInfo = {}, messageText = '', options = {}) {
         if (this.globalMuted || !this.isUnlocked || !this.voiceEnabled) return null;
         if (this.voiceGain.gain.value <= 0.001) return null;
 
+        // Skip typewriter chirps if full voice speech is actively playing
+        if (options.isChirp && this.isVoiceSpeaking()) return null;
+
         const speakerName = String(typeof speakerInfo === 'string' ? speakerInfo : (speakerInfo.name || speakerInfo.speaker || '')).toUpperCase();
         const text = String(messageText || (typeof speakerInfo === 'object' ? speakerInfo.cleanText || speakerInfo.text || '' : '')).trim();
-
-        // 1. Check if an authored voice track buffer exists in AudioManager.buffers
         const textLower = text.toLowerCase();
+
+        // Assign voice priority based on speaker identity
+        let priority = options.priority !== undefined ? options.priority : 3;
+        if (speakerName.includes('BRIGGS') || speakerName.includes('MARTHA') || speakerName.includes('KAELEN')
+            || speakerName.includes('NAHL') || speakerName.includes('VEY') || speakerName.includes('RHUN')
+            || speakerName.includes('QUEEN') || speakerName.includes('OKONKWO')) {
+            priority = 1;
+        } else if (speakerName.includes('MOTHERSHIP') || speakerName.includes('SYSTEM') || speakerName.includes('EXOSUIT') || speakerName.includes('BUNKER')) {
+            priority = 3;
+        }
+
+        // 1. Check direct key match or character script mapping
         let targetKey = null;
 
+        // RGB authored voice clips
         if (textLower.includes('purple one') || textLower.includes('drew robot 4a')) targetKey = 'voice_lucia_message';
         else if (textLower.includes('you look like hell')) targetKey = 'voice_marisol_ch1_01';
         else if (textLower.includes('good side')) targetKey = 'voice_elias_ch1_01';
@@ -363,11 +538,79 @@ export class AudioManager {
         else if (textLower.includes('training model sort arm 4a')) targetKey = 'voice_system_ch5_01';
         else if (textLower.includes('thermal warning in sector 4')) targetKey = 'voice_system_ch6_01';
 
-        if (targetKey && this.buffers[targetKey]) {
-            return this.play(targetKey, { bus: 'voice', volume: 1.0, varyPitch: false });
+        // Mothership Command
+        else if (speakerName.includes('MOTHERSHIP')) {
+            if (textLower.includes('unauthorized biological') || textLower.includes('do not answer') || textLower.includes('extraction window')) targetKey = 'voice_mothership_02_warning_bio';
+            else if (textLower.includes('abandoned') || textLower.includes('extermination') || textLower.includes('remain where you are')) targetKey = 'voice_mothership_03_orbital_purge';
+            else if (textLower.includes('alive') || textLower.includes('salvage') || textLower.includes('hypersonic') || textLower.includes('rebuild')) targetKey = 'voice_mothership_01_alive';
+        }
+        // System / Exosuit
+        else if (speakerName.includes('EXOSUIT') || speakerName.includes('SYSTEM')) {
+            if (textLower.includes('uplink severed') || textLower.includes('telemetry lost') || textLower.includes('respiration')) targetKey = 'voice_system_02_uplink_severed';
+            else if (textLower.includes('heartbeat') || textLower.includes('residual neural') || textLower.includes('manifest check')) targetKey = 'voice_system_03_five_heartbeats';
+            else if (textLower.includes('oxygen') || textLower.includes('console stabilized') || textLower.includes('hull integrity')) targetKey = 'voice_system_01_o2_stabilized';
+        }
+        // Bunker / Facilities Director
+        else if (speakerName.includes('BUNKER') || speakerName.includes('FACILITIES')) {
+            if (textLower.includes('welcome committee') || textLower.includes('curiosity continues') || textLower.includes('movement logged')) targetKey = 'voice_bunker_02_welcome_committee';
+            else if (textLower.includes('structure notes') || textLower.includes('disapproves') || textLower.includes('power has been rerouted') || textLower.includes('navigation telemetry')) targetKey = 'voice_bunker_03_depth_disapproves';
+            else if (textLower.includes('unauthorized') || textLower.includes('darkness') || textLower.includes('suspended')) targetKey = 'voice_bunker_01_enjoy_darkness';
+        }
+        // The Queen
+        else if (speakerName.includes('QUEEN')) {
+            if (textLower.includes('whispers through') || textLower.includes('exterminators') || textLower.includes('sever the uplink')) targetKey = 'voice_queen_02_sever_uplink';
+            else if (textLower.includes('grid dies') || textLower.includes('door left open') || textLower.includes('warm bodies') || textLower.includes('call that mercy')) targetKey = 'voice_queen_03_door_left_open';
+            else if (textLower.includes('sleep now') || textLower.includes('choose a new world') || textLower.includes('when you wake')) targetKey = 'voice_queen_04_sleep_now';
+            else if (textLower.includes('two heartbeats') || textLower.includes('one purpose') || textLower.includes('cold box') || textLower.includes('share the body')) targetKey = 'voice_queen_01_two_heartbeats';
+        }
+        // Commander Briggs
+        else if (speakerName.includes('BRIGGS')) {
+            if (textLower.includes('defense line') || textLower.includes('southern barricade') || textLower.includes('magazine') || textLower.includes('beyond the flare')) targetKey = 'voice_briggs_02_southern_barricade';
+            else if (textLower.includes('died out there') || textLower.includes('sit down') || textLower.includes('ledger')) targetKey = 'voice_briggs_03_ledger_sit_down';
+            else if (textLower.includes('stop') || textLower.includes('identify') || textLower.includes('turrets')) targetKey = 'voice_briggs_01_stop_identify';
+        }
+        // Overseer Kaelen
+        else if (speakerName.includes('KAELEN')) {
+            if (textLower.includes('sector zero') || textLower.includes('computer sleeps') || textLower.includes('its dream')) targetKey = 'voice_kaelen_02_sector_zero_dream';
+            else if (textLower.includes('sensory telemetry') || textLower.includes('floor plating') || textLower.includes('pulse reads')) targetKey = 'voice_kaelen_03_pulse_through_floor';
+            else if (textLower.includes('machine dreamed') || textLower.includes('dark at bay') || textLower.includes('primary bus')) targetKey = 'voice_kaelen_01_machine_dreamed';
+        }
+        // Dr. Okonkwo-Vass
+        else if (speakerName.includes('OKONKWO') || speakerName.includes('VASS')) {
+            if (textLower.includes('read us') || textLower.includes('my theory') || textLower.includes('do not hate us')) targetKey = 'voice_okonkwo_02_they_read_us';
+            else if (textLower.includes('stand your ground') || textLower.includes('footnote') || textLower.includes('if i am right')) targetKey = 'voice_okonkwo_03_more_than_footnote';
+            else if (textLower.includes('bitten') || textLower.includes('shelled ones') || textLower.includes('lazy science')) targetKey = 'voice_okonkwo_01_lazy_science';
+        }
+        // Nahl, the Suture
+        else if (speakerName.includes('NAHL')) {
+            if (textLower.includes('pain is information') || textLower.includes('calls it growth') || textLower.includes('look away')) targetKey = 'voice_nahl_02_pain_is_information';
+            else if (textLower.includes('thread sever') || textLower.includes('stitched it back') || textLower.includes('separate hearts') || textLower.includes('beat in rhythm')) targetKey = 'voice_nahl_03_separate_hearts';
+            else if (textLower.includes('hear me now') || textLower.includes('every sac') || textLower.includes('holes you left')) targetKey = 'voice_nahl_01_you_can_hear_me';
+        }
+        // Vey, the Listener
+        else if (speakerName.includes('VEY')) {
+            if (textLower.includes('every filament') || textLower.includes('archived') || textLower.includes('gaps where') || textLower.includes('relay')) targetKey = 'voice_vey_02_gaps_where_mined';
+            else if (textLower.includes('mothership from here') || textLower.includes('easiest to forge') || textLower.includes('static quiets')) targetKey = 'voice_vey_03_forge_mothership';
+            else if (textLower.includes('signal') || textLower.includes('not just noise') || textLower.includes('finally')) targetKey = 'voice_vey_01_signal_recognized';
+        }
+        // Rhun, the Shield
+        else if (speakerName.includes('RHUN')) {
+            if (textLower.includes('not prey') || textLower.includes('not queen') || textLower.includes('old armor')) targetKey = 'voice_rhun_02_not_prey_not_queen';
+            else if (textLower.includes('guard what') || textLower.includes('shield that changes') || textLower.includes('gravestone')) targetKey = 'voice_rhun_03_guard_what';
+            else if (textLower.includes('mark fades') || textLower.includes('stand in front') || textLower.includes('done')) targetKey = 'voice_rhun_04_stand_in_front';
+            else if (textLower.includes('pried my plates') || textLower.includes('look at you')) targetKey = 'voice_rhun_01_pried_my_plates';
         }
 
-        // 2. Character-Matched Procedural Voice Vocalizer
+        if (targetKey && this.buffers[targetKey]) {
+            return this.playVoiceTrack(targetKey, { priority, volume: options.volume ?? 1.0, varyPitch: false, ...options });
+        }
+
+        // If higher-priority voice is active, do not override with procedural vocalizer
+        if (this.isVoiceSpeaking() && this.activeVoice.priority < priority) {
+            return null;
+        }
+
+        // 2. Character-Matched Procedural Voice Vocalizer (Fallback)
         const now = audioCtx.currentTime;
         const osc = audioCtx.createOscillator();
         const osc2 = audioCtx.createOscillator();
@@ -430,7 +673,232 @@ export class AudioManager {
         osc.stop(now + duration + 0.02);
         osc2.stop(now + duration + 0.02);
 
+        // Track procedural voice lifetime
+        this.activeVoice = {
+            source: osc,
+            gainNode,
+            priority,
+            startedAt: now,
+            estimatedDuration: duration + 0.04,
+            promise: Promise.resolve(true),
+            resolve: null
+        };
+
         return { source: osc, gainNode };
+    }
+
+    // ── Staged Dialogue & Foley Engine ──────────────────────────────────
+    static playStagedDialogue({
+        voiceKey,
+        roomToneKey,
+        openingCue,
+        closingCue,
+        syncCues = [],
+        volume = 1.0,
+        duckMusic = true,
+        onComplete = null
+    } = {}) {
+        if (this.globalMuted || !this.voiceEnabled) return null;
+
+        // Stop any previous active dialogue stage
+        this.stopStagedDialogue();
+
+        const stage = {
+            roomTone: null,
+            voice: null,
+            timeoutIds: [],
+            isStopped: false
+        };
+        this.activeDialogueStage = stage;
+
+        const now = audioCtx.currentTime;
+
+        // 1. Duck Music during staged dialogue
+        if (duckMusic) {
+            this.musicGain.gain.setTargetAtTime(0.35, now, 0.3);
+        }
+
+        // 2. Start Room Tone if specified
+        if (roomToneKey && this.buffers[roomToneKey]) {
+            stage.roomTone = this.play(roomToneKey, {
+                bus: 'foley',
+                volume: 0.001,
+                loop: true,
+                varyPitch: false
+            });
+            if (stage.roomTone?.gainNode) {
+                stage.roomTone.gainNode.gain.setValueAtTime(0.001, now);
+                stage.roomTone.gainNode.gain.linearRampToValueAtTime(0.4, now + 0.4);
+            }
+        }
+
+        // 3. Trigger Opening Cue
+        if (openingCue && this.buffers[openingCue]) {
+            this.play(openingCue, { bus: 'foley', volume: 0.7, varyPitch: false });
+        }
+
+        // 4. Play Main Voice Line
+        const startVoiceDelay = openingCue ? 250 : 50;
+        const voiceTimer = setTimeout(() => {
+            if (stage.isStopped) return;
+            if (voiceKey && this.buffers[voiceKey]) {
+                stage.voice = this.play(voiceKey, {
+                    bus: 'voice',
+                    volume: volume,
+                    varyPitch: false
+                });
+
+                const voiceDuration = this.buffers[voiceKey]?.duration || 3.0;
+
+                // Fire sync cues anchored to offsets
+                for (const cue of syncCues) {
+                    const cueDelay = Math.max(0, (cue.offsetSeconds || 0) * 1000);
+                    const cueTimer = setTimeout(() => {
+                        if (stage.isStopped) return;
+                        if (cue.key && this.buffers[cue.key]) {
+                            this.play(cue.key, { bus: 'foley', volume: cue.volume ?? 0.6, varyPitch: false });
+                        }
+                    }, cueDelay);
+                    stage.timeoutIds.push(cueTimer);
+                }
+
+                // Schedule wrap-up
+                const wrapTimer = setTimeout(() => {
+                    if (stage.isStopped) return;
+                    if (closingCue && this.buffers[closingCue]) {
+                        this.play(closingCue, { bus: 'foley', volume: 0.6, varyPitch: false });
+                    }
+                    // Fade out room tone gently
+                    if (stage.roomTone?.gainNode) {
+                        const ct = audioCtx.currentTime;
+                        stage.roomTone.gainNode.gain.linearRampToValueAtTime(0.001, ct + 0.8);
+                        setTimeout(() => {
+                            try { stage.roomTone?.source?.stop(); } catch (e) { void e; }
+                        }, 900);
+                    }
+                    // Restore music volume
+                    if (duckMusic) {
+                        this.musicGain.gain.setTargetAtTime(1.0, audioCtx.currentTime + 0.5, 0.6);
+                    }
+                    if (onComplete) onComplete();
+                }, Math.max(500, (voiceDuration * 1000) - 100));
+                stage.timeoutIds.push(wrapTimer);
+            }
+        }, startVoiceDelay);
+        stage.timeoutIds.push(voiceTimer);
+
+        return stage;
+    }
+
+    static stopStagedDialogue() {
+        if (!this.activeDialogueStage) return;
+        const stage = this.activeDialogueStage;
+        stage.isStopped = true;
+        for (const tid of stage.timeoutIds) {
+            clearTimeout(tid);
+        }
+        if (stage.voice?.source) {
+            try { stage.voice.source.stop(); } catch (e) { void e; }
+        }
+        if (stage.roomTone?.source) {
+            try { stage.roomTone.source.stop(); } catch (e) { void e; }
+        }
+        this.activeDialogueStage = null;
+        this.musicGain.gain.setTargetAtTime(1.0, audioCtx.currentTime, 0.2);
+    }
+
+    // ── Reusable Environmental Foley & Hazard Sound Triggers ────────────
+    static playFoley(key, options = {}) {
+        return this.play(key, { bus: 'foley', ...options });
+    }
+
+    static playBreakerBlackout(options = {}) {
+        return this.play('foley_bunker_blackout_breaker', { bus: 'foley', volume: 0.75, ...options });
+    }
+
+    static playScannerAnomaly(options = {}) {
+        return this.play('foley_exosuit_scanner_anomaly', { bus: 'foley', volume: 0.7, ...options });
+    }
+
+    static playSuitStartup(options = {}) {
+        return this.play('foley_exosuit_startup', { bus: 'foley', volume: 0.8, ...options });
+    }
+
+    static playMechFootsteps(options = {}) {
+        return this.play('foley_bunker_welcome_mech_steps', { bus: 'foley', volume: 0.65, ...options });
+    }
+
+    static playNeuralBond(options = {}) {
+        return this.play('foley_queen_neural_bond', { bus: 'foley', volume: 0.7, ...options });
+    }
+
+    static playCableTear(options = {}) {
+        return this.play('foley_queen_cable_tear', { bus: 'foley', volume: 0.75, ...options });
+    }
+
+    static playMembraneClose(options = {}) {
+        return this.play('foley_queen_membrane_close', { bus: 'foley', volume: 0.7, ...options });
+    }
+
+    static playOrbitalLaunchRumble(options = {}) {
+        return this.play('foley_mothership_orbital_launch', { bus: 'foley', volume: 0.8, ...options });
+    }
+
+    static playNavCorruption(options = {}) {
+        return this.play('foley_bunker_nav_corruption', { bus: 'foley', volume: 0.65, ...options });
+    }
+
+    static playLinkAcquire(options = {}) {
+        return this.play('foley_mothership_link_acquire_1', { bus: 'foley', volume: 0.6, ...options });
+    }
+
+    static playCarrierTerminate(options = {}) {
+        return this.play('foley_mothership_carrier_term', { bus: 'foley', volume: 0.6, ...options });
+    }
+
+    static playSeverUplink(options = {}) {
+        return this.play('foley_exosuit_sever_uplink', { bus: 'foley', volume: 0.7, ...options });
+    }
+
+    // ── Starter Camp Rain Ambient Bed ───────────────────────────────────
+    static startCampRainAmbience(volume = 0.25) {
+        if (this.campRainSource) return; // Already active
+        if (!this.buffers['amb_camp_rain_loop']) return;
+
+        const rain = this.play('amb_camp_rain_loop', {
+            volume: Math.max(0, Math.min(1, volume)),
+            loop: true,
+            bus: 'world',
+            varyPitch: false
+        });
+        if (rain) {
+            this.campRainSource = rain;
+            if (rain.gainNode) {
+                const now = audioCtx.currentTime;
+                rain.gainNode.gain.setValueAtTime(0.001, now);
+                rain.gainNode.gain.linearRampToValueAtTime(volume, now + 1.2);
+            }
+        }
+    }
+
+    static setCampRainVolume(volume, fadeSeconds = 0.5) {
+        if (!this.campRainSource?.gainNode) return;
+        const clamped = Math.max(0, Math.min(1, Number(volume) || 0));
+        const now = audioCtx.currentTime;
+        this.campRainSource.gainNode.gain.setTargetAtTime(clamped, now, Math.max(0.05, fadeSeconds));
+    }
+
+    static stopCampRainAmbience(fadeSeconds = 1.0) {
+        if (!this.campRainSource) return;
+        const sourceRef = this.campRainSource;
+        this.campRainSource = null;
+        if (sourceRef.gainNode) {
+            const now = audioCtx.currentTime;
+            sourceRef.gainNode.gain.linearRampToValueAtTime(0.0001, now + fadeSeconds);
+        }
+        setTimeout(() => {
+            try { sourceRef.source?.stop(); } catch (e) { void e; }
+        }, (fadeSeconds * 1000) + 100);
     }
 
     static _isGameplayAudioContext() {
@@ -994,6 +1462,9 @@ export class AudioManager {
         const drone = this.play('amb_bunker_loop', { volume: 0.005, loop: true, bus: 'world', varyPitch: false });
         if (drone) this.ambientSource = drone.source;
 
+        // Start Starter Camp rain ambience bed if available
+        this.startCampRainAmbience(0.22);
+
         // Start contextual background music (crossfade-managed). Honour any
         // context requested before the audio graph was unlocked.
         this.setMusicContext(this._pendingMusicContext ?? 'safe_ship');
@@ -1050,6 +1521,7 @@ export class AudioManager {
             try { this.ambientSource.stop(); } catch (err) { void err; }
             this.ambientSource = null;
         }
+        this.stopCampRainAmbience(musicFadeSeconds);
         if (stopMusic) this.stopMusic({ fadeSeconds: musicFadeSeconds });
         if (this.randInterval) {
             clearInterval(this.randInterval);

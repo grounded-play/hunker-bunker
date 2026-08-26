@@ -718,10 +718,9 @@ export class DialogueManager {
             textEl.textContent = `> ${nextText}█`;
             this.bodyEl.scrollTop = this.bodyEl.scrollHeight;
             const isSpace = (textToType[index] === ' ');
-            const isStart = (index === 0);
-            const playChance = isSpace || isStart || (Math.random() < 0.22);
-            if (playChance) {
-                window.AudioManager?.playVoiceForMessage(speaker, textToType.slice(index, index + 3));
+            const playChance = (isSpace || (Math.random() < 0.22)) && index > 0;
+            if (playChance && !window.AudioManager?.isVoiceSpeaking?.()) {
+                window.AudioManager?.playVoiceForMessage(speaker, textToType.slice(index, index + 3), { isChirp: true });
             }
             
             let charDelay = DIALOGUE_CHAR_INTERVAL_MS;

@@ -43,6 +43,7 @@ export const SIDE_STORY_INTERSTITIALS = Object.freeze({
         character: 'Sister Val',
         camp: 'Camp Tallow',
         image: '/interstitials/int_val_hearth_warmth_key_v1.webp',
+        motion: '/interstitials/motion/int_04_warmth_beneath_the_ice_motion_v1.webm',
         audio: '/audio/ost/Warmth Beneath the Ice.mp3',
         musicKey: 'music_interstitial_04',
         alt: 'Sister Val warming the survivor hands at the geothermal hearth'
@@ -53,6 +54,7 @@ export const SIDE_STORY_INTERSTITIALS = Object.freeze({
         character: 'Sister Val',
         camp: 'Camp Tallow',
         image: '/interstitials/int_val_spore_communion_key_v1.webp',
+        motion: '/interstitials/motion/int_20_tallow_keeps_the_steam_motion_v1.webm',
         audio: '/audio/ost/Tallow Keeps the Steam.mp3',
         musicKey: 'music_interstitial_20',
         alt: 'Sister Val applying glowing botanical spore salve'
@@ -63,6 +65,7 @@ export const SIDE_STORY_INTERSTITIALS = Object.freeze({
         character: 'Sister Val',
         camp: 'Camp Tallow',
         image: '/interstitials/int_val_eternal_hearth_key_v1.webp',
+        motion: '/interstitials/motion/int_04_warmth_beneath_the_ice_motion_v1.webm',
         audio: '/audio/ost/Warmth Beneath the Ice.mp3',
         musicKey: 'music_interstitial_04',
         alt: 'Devotional embrace at the Eternal Geothermal Hearth'
@@ -73,6 +76,7 @@ export const SIDE_STORY_INTERSTITIALS = Object.freeze({
         character: 'Commander Briggs',
         camp: 'Camp Vesper',
         image: '/interstitials/int_briggs_scorched_rig_key_v1.webp',
+        motion: '/interstitials/motion/int_06_briggs_keeps_the_ledger_motion_v1.webm',
         audio: '/audio/ost/Briggs Keeps the Ledger.mp3',
         musicKey: 'music_interstitial_06',
         alt: 'Commander Briggs resting at the smoking barricade'
@@ -83,6 +87,7 @@ export const SIDE_STORY_INTERSTITIALS = Object.freeze({
         character: 'Commander Briggs',
         camp: 'Camp Vesper',
         image: '/interstitials/int_briggs_scar_tissue_key_v1.webp',
+        motion: '/interstitials/motion/int_21_vesper_sleeps_in_shifts_motion_v1.webm',
         audio: '/audio/ost/Vesper Sleeps in Shifts.mp3',
         musicKey: 'music_interstitial_21',
         alt: 'Commander Briggs showing battle scars in the armory'
@@ -93,6 +98,7 @@ export const SIDE_STORY_INTERSTITIALS = Object.freeze({
         character: 'Commander Briggs',
         camp: 'Camp Vesper',
         image: '/interstitials/int_briggs_vanguard_fire_key_v1.webp',
+        motion: '/interstitials/motion/int_29_briggs_became_the_barricade_motion_v1.webm',
         audio: '/audio/ost/Briggs Became the Barricade.mp3',
         musicKey: 'music_interstitial_29',
         alt: 'Commander Briggs overlooking the subterranean canyon flares'
@@ -103,6 +109,7 @@ export const SIDE_STORY_INTERSTITIALS = Object.freeze({
         character: 'Overseer Kaelen',
         camp: 'Camp Meridian',
         image: '/interstitials/int_kaelen_diagnostic_cradle_key_v1.webp',
+        motion: '/interstitials/motion/int_02_kaelen_s_sleeping_machine_motion_v1.webm',
         audio: '/audio/ost/Kaelens Sleeping Machine.mp3',
         musicKey: 'music_interstitial_02',
         alt: 'Overseer Kaelen at the cyan neural diagnostic cradle'
@@ -113,6 +120,7 @@ export const SIDE_STORY_INTERSTITIALS = Object.freeze({
         character: 'Overseer Kaelen',
         camp: 'Camp Meridian',
         image: '/interstitials/int_kaelen_frequency_overclock_key_v1.webp',
+        motion: '/interstitials/motion/int_19_meridian_remembers_you_motion_v1.webm',
         audio: '/audio/ost/Meridian Remembers You.mp3',
         musicKey: 'music_interstitial_19',
         alt: 'Overseer Kaelen and player connecting bio-link terminal'
@@ -123,6 +131,7 @@ export const SIDE_STORY_INTERSTITIALS = Object.freeze({
         character: 'Overseer Kaelen',
         camp: 'Camp Meridian',
         image: '/interstitials/int_kaelen_supercharged_matrix_key_v1.webp',
+        motion: '/interstitials/motion/int_30_kaelen_is_the_grid_motion_v1.webm',
         audio: '/audio/ost/Kaelen Is the Grid.mp3',
         musicKey: 'music_interstitial_30',
         alt: 'Overseer Kaelen and player embraced inside the reactor matrix'
@@ -133,6 +142,7 @@ export const SIDE_STORY_INTERSTITIALS = Object.freeze({
         character: 'Specimen 0047-B Aria',
         camp: 'The Hive Brood',
         image: '/interstitials/int_aria_whispers_abyss_key_v1.webp',
+        motion: '/interstitials/motion/int_11_her_voice_inside_your_helmet_motion_v1.webm',
         audio: '/audio/ost/Her Voice Inside Your Helmet.mp3',
         musicKey: 'music_interstitial_11',
         alt: 'Aria floating suspended in purple bio-spore mist'
@@ -143,6 +153,7 @@ export const SIDE_STORY_INTERSTITIALS = Object.freeze({
         character: 'Specimen 0047-B Aria',
         camp: 'The Hive Brood',
         image: '/interstitials/int_aria_silk_trance_key_v1.webp',
+        motion: '/interstitials/motion/int_12_the_queen_makes_a_reasonable_offer_motion_v1.webm',
         audio: '/audio/ost/The Queen Makes a Reasonable Offer.mp3',
         musicKey: 'music_interstitial_12',
         alt: 'Aria cradling the player helmet visor with chitin tendrils'
@@ -153,6 +164,7 @@ export const SIDE_STORY_INTERSTITIALS = Object.freeze({
         character: 'Specimen 0047-B Aria',
         camp: 'The Hive Brood',
         image: '/interstitials/int_aria_queens_mark_key_v1.webp',
+        motion: '/interstitials/motion/int_31_mother_of_the_last_world_motion_v1.webm',
         audio: '/audio/ost/Mother of the Last World.mp3',
         musicKey: 'music_interstitial_31',
         alt: "Symbiotic union in the heart of the Brood Queen chamber"
@@ -163,6 +175,7 @@ export const SIDE_STORY_INTERSTITIALS = Object.freeze({
         character: 'Dr. Nahl (Bio-Resonant)',
         camp: 'Renegade Bio-Resonant',
         image: '/interstitials/int_nahl_mind_link_key_v1.webp',
+        motion: '/interstitials/motion/int_08_dr_nahl_remembers_the_tissue_motion_v1.webm',
         audio: '/audio/ost/Dr. Nahl Remembers the Tissue.mp3',
         musicKey: 'music_interstitial_08',
         alt: 'Dr. Nahl establishing voluntary neural handshake'
@@ -173,6 +186,7 @@ export const SIDE_STORY_INTERSTITIALS = Object.freeze({
         character: 'Dr. Nahl (Bio-Resonant)',
         camp: 'Renegade Bio-Resonant',
         image: '/interstitials/int_nahl_co_evolution_key_v1.webp',
+        motion: '/interstitials/motion/int_08_dr_nahl_remembers_the_tissue_motion_v1.webm',
         audio: '/audio/ost/Dr. Nahl Remembers the Tissue.mp3',
         musicKey: 'music_interstitial_08',
         alt: 'Dr. Nahl and player examining tissue samples in warm communion'
@@ -275,7 +289,7 @@ export class SongInterstitialController {
                 this.video.onerror = null;
                 resolve(loaded);
             };
-            const timeoutId = setTimeout(() => done(false), 1200);
+            const timeoutId = setTimeout(() => done(false), 2400);
             this.video.oncanplay = () => done(true);
             this.video.onloadeddata = () => done(true);
             this.video.onerror = () => done(false);
@@ -318,7 +332,13 @@ export class SongInterstitialController {
                 this.video.muted = false;
                 this.video.volume = 0.86;
                 this.video.currentTime = 0;
-                this.video.play?.().catch?.(() => {});
+                const playPromise = this.video.play?.();
+                if (playPromise?.catch) {
+                    playPromise.catch(() => {
+                        this.video.muted = true;
+                        return this.video.play?.().catch?.(() => {});
+                    });
+                }
             }
         }
         // Never reveal the incoming scene until the doors have completely met.
@@ -329,7 +349,37 @@ export class SongInterstitialController {
         await new Promise((resolve) => setTimeout(resolve, closeRemaining));
         this.root.classList.remove('is-closing');
         this.root.classList.add('is-open');
-        await new Promise((resolve) => setTimeout(resolve, this.reducedMotion ? 120 : holdMs));
+
+        const activeHoldMs = this.reducedMotion
+            ? 120
+            : (motionLoaded
+                ? Math.max(holdMs, (this.video?.duration && Number.isFinite(this.video.duration) && this.video.duration > 0) ? (this.video.duration - 0.2) * 1000 : 3200)
+                : holdMs);
+
+        await new Promise((resolve) => {
+            let timer = null;
+            const onSkip = (e) => {
+                if (e.type === 'keydown' && e.code !== 'Space' && e.code !== 'Escape' && e.code !== 'Enter') return;
+                cleanup();
+                resolve();
+            };
+            const cleanup = () => {
+                if (timer) clearTimeout(timer);
+                if (typeof window !== 'undefined') {
+                    window.removeEventListener('keydown', onSkip);
+                    this.root?.removeEventListener('pointerup', onSkip);
+                }
+            };
+            if (typeof window !== 'undefined') {
+                window.addEventListener('keydown', onSkip, { once: true });
+                this.root?.addEventListener('pointerup', onSkip, { once: true });
+            }
+            timer = setTimeout(() => {
+                cleanup();
+                resolve();
+            }, activeHoldMs);
+        });
+
         this.root.classList.add('is-settled');
         await new Promise((resolve) => setTimeout(resolve, this.reducedMotion ? 80 : 260));
         this.hide();

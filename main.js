@@ -803,6 +803,43 @@ function centerSettingsFocusTarget(target) {
     return true;
 }
 
+const MENU_INTERACTIVE_SELECTOR = [
+    'button:not([disabled])',
+    'input:not([disabled])',
+    'select:not([disabled])',
+    'textarea:not([disabled])',
+    'a[href]',
+    '[role="button"]',
+    '[tabindex]:not([tabindex="-1"])',
+    '.char-card',
+    '.setting-item',
+    '.title-menu-btn',
+    '.start-btn',
+    '.hero-select-back-btn',
+    '.armory-btn',
+    '.armory-select',
+    '.class-tab',
+    '.toggle',
+    '.calibrate-btn',
+    '.close-modal',
+    '.about-btn',
+    '.abort-btn',
+    '.game-over-btn',
+    '.hero-polish-slot',
+    '.operator-polish-chip',
+    '.deck-focus-target'
+].join(', ');
+
+function resolveInteractiveFocusTarget(element) {
+    if (!element) return null;
+    const item = element.closest?.(MENU_INTERACTIVE_SELECTOR);
+    if (!item || item.disabled || item.closest?.('.hidden')) return null;
+    if (item.matches?.('button, select, input, textarea, a, .char-card, .hero-polish-slot, .hero-select-back-btn, [tabindex]:not([tabindex="-1"])')) {
+        return item;
+    }
+    return item.querySelector?.('button:not([disabled]), select:not([disabled]), input:not([disabled]), textarea:not([disabled]), a[href], [tabindex]:not([tabindex="-1"])') || item;
+}
+
 function focusControllerTarget(target, { playHover = false } = {}) {
     if (!target) return false;
     const previous = document.activeElement;
@@ -895,6 +932,7 @@ function moveHeroSelectPanelFocus(code) {
     const settingsButton = active?.closest?.('.menu-corner-settings .open-settings-btn');
     const selectedHero = document.querySelector('.char-selection .char-card.selected')
         ?? document.querySelector('.char-selection .char-card');
+    const heroBackBtn = document.getElementById('hero-select-back-btn');
 
     if (settingsButton) {
         const target = isLeft
@@ -905,10 +943,10 @@ function moveHeroSelectPanelFocus(code) {
 
     if (initializeButton) {
         if (isRight) {
-            return focusControllerTarget(document.getElementById('hero-polish-btn'), { playHover: true });
+            return focusControllerTarget(document.getElementById('hero-polish-btn') ?? selectedHero, { playHover: true });
         }
         if (isDown) {
-            return selectedHero ? focusControllerTarget(selectedHero, { playHover: true }) : true;
+            return (selectedHero || heroBackBtn) ? focusControllerTarget(selectedHero ?? heroBackBtn, { playHover: true }) : true;
         }
         const visibleCommands = getVisibleControllerFocusables(document.querySelector('.menu-header-actions'));
         const target = lastHeroMenuCommandFocus && visibleCommands.includes(lastHeroMenuCommandFocus)
@@ -921,27 +959,33 @@ function moveHeroSelectPanelFocus(code) {
         lastHeroMenuCommandFocus = active;
         if (!isRight) return true;
         const target = document.getElementById('hero-polish-btn')
-            ?? document.querySelector('.char-selection .char-card.selected')
-            ?? document.querySelector('.char-selection .char-card')
+            ?? selectedHero
             ?? document.getElementById('start-game');
         return target ? focusControllerTarget(target, { playHover: true }) : true;
     }
 
     if (heroRail) {
-        const cards = getVisibleControllerFocusables(heroRail).filter((element) => element.classList.contains('char-card'));
-        const index = Math.max(0, cards.indexOf(active));
+        const focusableElements = getVisibleControllerFocusables(heroRail);
+        const index = Math.max(0, focusableElements.indexOf(active));
         let target = null;
-        if (isUp && index === 0) target = document.querySelector('#menu .menu-corner-settings .open-settings-btn');
-        else if (isUp) target = cards[index - 1];
-        else if (isDown) target = cards[index + 1] ?? document.getElementById('start-game');
-        else if (isLeft) target = document.getElementById('hero-polish-btn');
-        else if (isRight) target = document.querySelector('#menu .menu-corner-settings .open-settings-btn');
+        if (isUp) {
+            if (index === 0) target = document.querySelector('#menu .menu-corner-settings .open-settings-btn');
+            else target = focusableElements[index - 1];
+        } else if (isDown) {
+            if (index < focusableElements.length - 1) target = focusableElements[index + 1];
+            else target = document.getElementById('start-game');
+        } else if (isLeft) {
+            if (active === heroBackBtn) target = document.getElementById('start-game');
+            else target = document.getElementById('hero-polish-btn');
+        } else if (isRight) {
+            target = document.querySelector('#menu .menu-corner-settings .open-settings-btn');
+        }
         return target ? focusControllerTarget(target, { playHover: true }) : true;
     }
 
     if (previewRail) {
         const target = isRight
-            ? (selectedHero ?? document.getElementById('start-game'))
+            ? (selectedHero ?? heroBackBtn ?? document.getElementById('start-game'))
             : isLeft
                 ? (lastHeroMenuCommandFocus ?? getVisibleControllerFocusables(document.querySelector('.menu-header-actions'))[0])
                 : isUp
@@ -1704,6 +1748,7 @@ function applyReticleState(crosshair) {
     // duplicating the raycast or editing Lane B's file.
     const tacticalCursor = document.getElementById('tactical-cursor');
     const target = targetFromCursorClasses(tacticalCursor ? Array.from(tacticalCursor.classList) : []);
+    const targetLabel = tacticalCursor?.querySelector('.cursor-interact-badge')?.textContent?.trim() ?? '';
     const { state, visible, reason, hiddenReason } = selectReticleState({
         target,
         blockedReason: reticleBlockedReason,
@@ -1715,10 +1760,18 @@ function applyReticleState(crosshair) {
     crosshair.dataset.reticleState = state;
     if (reason) crosshair.dataset.reticleReason = reason;
     else delete crosshair.dataset.reticleReason;
+    const label = crosshair.querySelector('.gameplay-crosshair__label');
+    const visibleLabel = reason ? String(reason).replaceAll('_', ' ').toUpperCase() : targetLabel;
+    if (label) label.textContent = visibleLabel;
+    crosshair.classList.toggle('has-label', Boolean(visibleLabel));
     // §16 wanted menu open/close and input-blocked in the log. Deriving them
     // from the same gate the reticle already consults covers every modal at
     // once, and carries the visibility snapshot that log16 could not produce.
     const blockingOverlay = Boolean(window.game?.hasBlockingGameplayOverlay?.());
+    document.documentElement.classList.toggle(
+        'gameplay-menu-cursor',
+        blockingOverlay && appPhase === 'gameplay'
+    );
     const overlayTransition = describeOverlayTransition(lastBlockingOverlay, blockingOverlay);
     if (overlayTransition) {
         const M = PRESENTATION_EVENTS.MENU;
@@ -1838,6 +1891,7 @@ function handleSteamGameplayInput(controller) {
     if (thirdPersonCamera) {
         controllerAimCursor.x = width / 2;
         controllerAimCursor.y = height / 2;
+        window.game?.checkHoverInteractable?.(controllerAimCursor.x, controllerAimCursor.y);
     }
     updateVirtualGamepadCursorPosition(controllerAimCursor.x, controllerAimCursor.y, !thirdPersonCamera);
     updateGameplayCrosshair(controllerAimCursor.x, controllerAimCursor.y, true);
@@ -2091,6 +2145,12 @@ const state = {
         nightVision: false,
         commentary: false,
         cameraMode: localStorage.getItem('hb_camera_mode') === 'isometric' ? 'isometric' : 'third-person',
+        cameraDistance: ['close', 'standard', 'wide'].includes(localStorage.getItem('hb_camera_distance'))
+            ? localStorage.getItem('hb_camera_distance')
+            : 'close',
+        cameraFollow: ['tight', 'balanced', 'smooth'].includes(localStorage.getItem('hb_camera_follow'))
+            ? localStorage.getItem('hb_camera_follow')
+            : 'tight',
         aimSensitivity: parseFloat(localStorage.getItem('hb_aim_sensitivity') || '1.0'),
         invertAimY: localStorage.getItem('hb_invert_aim_y') === 'true',
         crosshairColor: /^#[0-9a-f]{6}$/i.test(localStorage.getItem(CROSSHAIR_COLOR_STORAGE_KEY) ?? '')
@@ -3522,7 +3582,9 @@ function pumpRadioQueue() {
     }
 
     const now = typeof performance !== 'undefined' ? performance.now() : Date.now();
-    const wait = Math.max(0, RADIO_MIN_GAP_MS - (now - lastRadioRenderAt));
+    const remainingVoiceSec = window.AudioManager?.getActiveVoiceDurationRemaining?.() ?? 0;
+    const requiredGapMs = Math.max(RADIO_MIN_GAP_MS, Math.round(remainingVoiceSec * 1000) + 400);
+    const wait = Math.max(0, requiredGapMs - (now - lastRadioRenderAt));
     if (wait > 0) {
         radioPumpTimer = window.setTimeout(pumpRadioQueue, wait);
         return;
@@ -3532,7 +3594,9 @@ function pumpRadioQueue() {
     lastRadioRenderAt = now;
     renderRadioTransmission(rawText);
     if (radioQueue.length) {
-        radioPumpTimer = window.setTimeout(pumpRadioQueue, RADIO_MIN_GAP_MS);
+        const nextVoiceSec = window.AudioManager?.getActiveVoiceDurationRemaining?.() ?? 0;
+        const nextGapMs = Math.max(RADIO_MIN_GAP_MS, Math.round(nextVoiceSec * 1000) + 400);
+        radioPumpTimer = window.setTimeout(pumpRadioQueue, nextGapMs);
     }
 }
 
@@ -7754,6 +7818,12 @@ function persistSettings() {
         if (state.settings.cameraMode) {
             localStorage.setItem('hb_camera_mode', state.settings.cameraMode);
         }
+        if (state.settings.cameraDistance) {
+            localStorage.setItem('hb_camera_distance', state.settings.cameraDistance);
+        }
+        if (state.settings.cameraFollow) {
+            localStorage.setItem('hb_camera_follow', state.settings.cameraFollow);
+        }
         if (state.settings.invertAimY != null) {
             localStorage.setItem('hb_invert_aim_y', String(state.settings.invertAimY));
         }
@@ -8716,6 +8786,10 @@ function openSettingsModal() {
 
     const cameraModeSelect = document.getElementById('setting-camera-mode');
     if (cameraModeSelect) cameraModeSelect.value = state.settings.cameraMode || 'third-person';
+    const cameraDistanceSelect = document.getElementById('setting-camera-distance');
+    if (cameraDistanceSelect) cameraDistanceSelect.value = state.settings.cameraDistance || 'close';
+    const cameraFollowSelect = document.getElementById('setting-camera-follow');
+    if (cameraFollowSelect) cameraFollowSelect.value = state.settings.cameraFollow || 'tight';
 
     const invertYToggle = document.getElementById('setting-invert-y-toggle');
     if (invertYToggle) invertYToggle.checked = !!state.settings.invertAimY;
@@ -8753,6 +8827,26 @@ document.getElementById('setting-aim-sensitivity')?.addEventListener('change', (
 document.getElementById('setting-camera-mode')?.addEventListener('change', (e) => {
     state.settings.cameraMode = e.target.value === 'isometric' ? 'isometric' : 'third-person';
     window.game?.setCameraMode?.(state.settings.cameraMode);
+    persistSettings();
+});
+function applyCameraTuningSettings() {
+    window.game?.setCameraTuning?.({
+        distance: state.settings.cameraDistance,
+        follow: state.settings.cameraFollow
+    });
+}
+document.getElementById('setting-camera-distance')?.addEventListener('change', (e) => {
+    state.settings.cameraDistance = ['close', 'standard', 'wide'].includes(e.target.value)
+        ? e.target.value
+        : 'close';
+    applyCameraTuningSettings();
+    persistSettings();
+});
+document.getElementById('setting-camera-follow')?.addEventListener('change', (e) => {
+    state.settings.cameraFollow = ['tight', 'balanced', 'smooth'].includes(e.target.value)
+        ? e.target.value
+        : 'tight';
+    applyCameraTuningSettings();
     persistSettings();
 });
 
@@ -10344,6 +10438,9 @@ function renderCodexModal() {
             const card = document.createElement('div');
             card.className = `codex-card${known ? ' codex-card--unlocked' : ' codex-card--locked'}`;
             if (known) {
+                card.setAttribute('role', 'button');
+                card.setAttribute('tabindex', '0');
+                card.setAttribute('aria-label', `View intel record for ${entry.name}`);
                 card.innerHTML = `
                     <div class="codex-card__header">
                       <div class="codex-card__name">${entry.name}</div>
@@ -10353,6 +10450,11 @@ function renderCodexModal() {
                     <div class="codex-card__hint">CLICK TO VIEW INTEL DOSSIER & ARTWORK</div>
                 `;
                 card.addEventListener('click', () => openCodexDetailModal(entry.id));
+                card.addEventListener('keydown', (event) => {
+                    if (event.code !== 'Enter' && event.code !== 'Space') return;
+                    event.preventDefault();
+                    openCodexDetailModal(entry.id);
+                });
             } else {
                 card.innerHTML = `
                     <div class="codex-card__name">??? — UNCATALOGUED</div>
@@ -10827,6 +10929,7 @@ window.addEventListener('camp-choice-open', async (event) => {
 // choice modal, without opening the choice modal itself.
 window.addEventListener('camp-first-contact', async (event) => {
     await songInterstitial.show(selectCampInterstitial(event?.detail ?? {}));
+    event?.detail?.onComplete?.();
 });
 
 const leaderConversationModal = document.getElementById('leader-conversation-modal');
@@ -12346,7 +12449,9 @@ function initTacticalCursor() {
         mouseX = e.clientX;
         mouseY = e.clientY;
 
-        if (!isInsideGameViewport(mouseX, mouseY)) {
+        const menuNavigationActive = appPhase !== 'gameplay'
+            || Boolean(window.game?.hasBlockingGameplayOverlay?.());
+        if (!menuNavigationActive && !isInsideGameViewport(mouseX, mouseY)) {
             cursor.classList.add('cursor-fade-out');
             document.documentElement.classList.remove('custom-cursor-enabled');
             updateGameplayCrosshair(mouseX, mouseY, false);
@@ -12410,25 +12515,35 @@ function initTacticalCursor() {
 
     let currentHoverTarget = null;
 
-    document.addEventListener('pointerover', (e) => {
-        const target = e.target.closest('button, .char-card, .toggle, .calibrate-btn, .close-modal, .about-btn, a, input, select, .class-tab, .armory-btn, .armory-select, .deck-focus-target, .setting-item');
-        if (target) {
-            if (currentHoverTarget !== target) {
-                currentHoverTarget = target;
-                cursor.classList.add('cursor-hovering');
-                if (typeof focusControllerTarget === 'function' && document.activeElement !== target) {
-                    focusControllerTarget(target, { playHover: false });
-                }
-                // Play in-universe hover click blip
+    function handleHoverTargetSync(rawTarget, { playBlip = false } = {}) {
+        const target = resolveInteractiveFocusTarget(rawTarget);
+        if (!target) return null;
+        if (currentHoverTarget !== target) {
+            currentHoverTarget = target;
+            cursor.classList.add('cursor-hovering');
+            if (document.activeElement !== target) {
+                focusControllerTarget(target, { playHover: false });
+            }
+            if (playBlip) {
                 AudioManager.play('ui_hover', { volume: 0.12, varyPitch: true });
             }
         }
+        return target;
+    }
+
+    document.addEventListener('pointerover', (e) => {
+        handleHoverTargetSync(e.target, { playBlip: true });
+    });
+
+    document.addEventListener('pointermove', (e) => {
+        if (e.pointerType && e.pointerType !== 'mouse' && e.pointerType !== 'pen') return;
+        handleHoverTargetSync(e.target, { playBlip: false });
     });
 
     document.addEventListener('pointerout', (e) => {
-        const target = e.target.closest('button, .char-card, .toggle, .calibrate-btn, .close-modal, .about-btn, a, input, select, .class-tab, .armory-btn, .armory-select, .deck-focus-target, .setting-item');
+        const target = resolveInteractiveFocusTarget(e.target);
         if (target) {
-            const related = e.relatedTarget ? e.relatedTarget.closest('button, .char-card, .toggle, .calibrate-btn, .close-modal, .about-btn, a, input, select, .class-tab, .armory-btn, .armory-select, .deck-focus-target, .setting-item') : null;
+            const related = resolveInteractiveFocusTarget(e.relatedTarget);
             if (related !== currentHoverTarget) {
                 currentHoverTarget = related;
                 if (!related) {
@@ -12929,7 +13044,87 @@ document.addEventListener('DOMContentLoaded', async () => {
                     { key: 'fx_tank_shockwave', url: '/audio/vg2/fx_tank_shockwave.wav' },
                     { key: 'fx_engineer_turret', url: '/audio/vg2/fx_engineer_turret.wav' },
                     { key: 'fx_levelup', url: '/audio/vg2/fx_levelup.wav' },
-                    { key: 'fx_achievement', url: '/audio/vg2/fx_achievement.wav' }
+                    { key: 'fx_achievement', url: '/audio/vg2/fx_achievement.wav' },
+
+                    // Starter Camp Ambient Weather Bed
+                    { key: 'amb_camp_rain_loop', url: '/audio/ambient/amb_camp_rain_loop.wav' },
+
+                    // Foley Set 01: Mothership Comms
+                    { key: 'foley_mothership_room_loop', url: '/audio/foley/mothership/foley_mothership_room_loop.wav' },
+                    { key: 'foley_mothership_link_acquire_1', url: '/audio/foley/mothership/foley_mothership_link_acquire_1.wav' },
+                    { key: 'foley_mothership_link_acquire_2', url: '/audio/foley/mothership/foley_mothership_link_acquire_2.wav' },
+                    { key: 'foley_mothership_orbital_launch', url: '/audio/foley/mothership/foley_mothership_orbital_launch.wav' },
+                    { key: 'foley_mothership_carrier_term', url: '/audio/foley/mothership/foley_mothership_carrier_term.wav' },
+
+                    // Foley Set 02: Exosuit / System Interior
+                    { key: 'foley_exosuit_room_loop', url: '/audio/foley/system/foley_exosuit_room_loop.wav' },
+                    { key: 'foley_exosuit_startup', url: '/audio/foley/system/foley_exosuit_startup.wav' },
+                    { key: 'foley_exosuit_scanner_anomaly', url: '/audio/foley/system/foley_exosuit_scanner_anomaly.wav' },
+                    { key: 'foley_exosuit_sever_uplink', url: '/audio/foley/system/foley_exosuit_sever_uplink.wav' },
+
+                    // Foley Set 03: Bunker / Facilities
+                    { key: 'foley_bunker_facility_room_loop', url: '/audio/foley/bunker/foley_bunker_facility_room_loop.wav' },
+                    { key: 'foley_bunker_blackout_breaker', url: '/audio/foley/bunker/foley_bunker_blackout_breaker.wav' },
+                    { key: 'foley_bunker_welcome_mech_steps', url: '/audio/foley/bunker/foley_bunker_welcome_mech_steps.wav' },
+                    { key: 'foley_bunker_nav_corruption', url: '/audio/foley/bunker/foley_bunker_nav_corruption.wav' },
+
+                    // Foley Set 04: Queen Hive Chamber
+                    { key: 'foley_queen_hive_room_loop', url: '/audio/foley/queen/foley_queen_hive_room_loop.wav' },
+                    { key: 'foley_queen_neural_bond', url: '/audio/foley/queen/foley_queen_neural_bond.wav' },
+                    { key: 'foley_queen_cable_tear', url: '/audio/foley/queen/foley_queen_cable_tear.wav' },
+                    { key: 'foley_queen_membrane_close', url: '/audio/foley/queen/foley_queen_membrane_close.wav' },
+
+                    // Character Voices: Mothership Command
+                    { key: 'voice_mothership_01_alive', url: '/audio/voice/mothership/voice_mothership_01_alive.mp3' },
+                    { key: 'voice_mothership_02_warning_bio', url: '/audio/voice/mothership/voice_mothership_02_warning_bio.mp3' },
+                    { key: 'voice_mothership_03_orbital_purge', url: '/audio/voice/mothership/voice_mothership_03_orbital_purge.mp3' },
+
+                    // Character Voices: System / Exosuit
+                    { key: 'voice_system_01_o2_stabilized', url: '/audio/voice/system/voice_system_01_o2_stabilized.mp3' },
+                    { key: 'voice_system_02_uplink_severed', url: '/audio/voice/system/voice_system_02_uplink_severed.mp3' },
+                    { key: 'voice_system_03_five_heartbeats', url: '/audio/voice/system/voice_system_03_five_heartbeats.mp3' },
+
+                    // Character Voices: Bunker / Facilities Director
+                    { key: 'voice_bunker_01_enjoy_darkness', url: '/audio/voice/bunker/voice_bunker_01_enjoy_darkness.mp3' },
+                    { key: 'voice_bunker_02_welcome_committee', url: '/audio/voice/bunker/voice_bunker_02_welcome_committee.mp3' },
+                    { key: 'voice_bunker_03_depth_disapproves', url: '/audio/voice/bunker/voice_bunker_03_depth_disapproves.mp3' },
+
+                    // Character Voices: The Queen
+                    { key: 'voice_queen_01_two_heartbeats', url: '/audio/voice/queen/voice_queen_01_two_heartbeats.mp3' },
+                    { key: 'voice_queen_02_sever_uplink', url: '/audio/voice/queen/voice_queen_02_sever_uplink.mp3' },
+                    { key: 'voice_queen_03_door_left_open', url: '/audio/voice/queen/voice_queen_03_door_left_open.mp3' },
+                    { key: 'voice_queen_04_sleep_now', url: '/audio/voice/queen/voice_queen_04_sleep_now.mp3' },
+
+                    // Character Voices: Commander Briggs
+                    { key: 'voice_briggs_01_stop_identify', url: '/audio/voice/briggs/voice_briggs_01_stop_identify.mp3' },
+                    { key: 'voice_briggs_02_southern_barricade', url: '/audio/voice/briggs/voice_briggs_02_southern_barricade.mp3' },
+                    { key: 'voice_briggs_03_ledger_sit_down', url: '/audio/voice/briggs/voice_briggs_03_ledger_sit_down.mp3' },
+
+                    // Character Voices: Overseer Kaelen
+                    { key: 'voice_kaelen_01_machine_dreamed', url: '/audio/voice/kaelen/voice_kaelen_01_machine_dreamed.mp3' },
+                    { key: 'voice_kaelen_02_sector_zero_dream', url: '/audio/voice/kaelen/voice_kaelen_02_sector_zero_dream.mp3' },
+                    { key: 'voice_kaelen_03_pulse_through_floor', url: '/audio/voice/kaelen/voice_kaelen_03_pulse_through_floor.mp3' },
+
+                    // Character Voices: Dr. Okonkwo-Vass
+                    { key: 'voice_okonkwo_01_lazy_science', url: '/audio/voice/okonkwo/voice_okonkwo_01_lazy_science.mp3' },
+                    { key: 'voice_okonkwo_02_they_read_us', url: '/audio/voice/okonkwo/voice_okonkwo_02_they_read_us.mp3' },
+                    { key: 'voice_okonkwo_03_more_than_footnote', url: '/audio/voice/okonkwo/voice_okonkwo_03_more_than_footnote.mp3' },
+
+                    // Character Voices: Nahl, the Suture
+                    { key: 'voice_nahl_01_you_can_hear_me', url: '/audio/voice/nahl/voice_nahl_01_you_can_hear_me.mp3' },
+                    { key: 'voice_nahl_02_pain_is_information', url: '/audio/voice/nahl/voice_nahl_02_pain_is_information.mp3' },
+                    { key: 'voice_nahl_03_separate_hearts', url: '/audio/voice/nahl/voice_nahl_03_separate_hearts.mp3' },
+
+                    // Character Voices: Vey, the Listener
+                    { key: 'voice_vey_01_signal_recognized', url: '/audio/voice/vey/voice_vey_01_signal_recognized.mp3' },
+                    { key: 'voice_vey_02_gaps_where_mined', url: '/audio/voice/vey/voice_vey_02_gaps_where_mined.mp3' },
+                    { key: 'voice_vey_03_forge_mothership', url: '/audio/voice/vey/voice_vey_03_forge_mothership.mp3' },
+
+                    // Character Voices: Rhun, the Shield
+                    { key: 'voice_rhun_01_pried_my_plates', url: '/audio/voice/rhun/voice_rhun_01_pried_my_plates.mp3' },
+                    { key: 'voice_rhun_02_not_prey_not_queen', url: '/audio/voice/rhun/voice_rhun_02_not_prey_not_queen.mp3' },
+                    { key: 'voice_rhun_03_guard_what', url: '/audio/voice/rhun/voice_rhun_03_guard_what.mp3' },
+                    { key: 'voice_rhun_04_stand_in_front', url: '/audio/voice/rhun/voice_rhun_04_stand_in_front.mp3' }
                 ]
             };
 
@@ -12960,6 +13155,10 @@ document.addEventListener('DOMContentLoaded', async () => {
                 });
                 window.game.setOperatorPolish?.(getSelectedPolish().color);
                 window.game.setCameraMode?.(state.settings.cameraMode);
+                window.game.setCameraTuning?.({
+                    distance: state.settings.cameraDistance,
+                    follow: state.settings.cameraFollow
+                });
                 window.game.nightVision = state.settings.nightVision;
                 traceBootPhase('three-constructor-ready', {
                     pixelRatio: window.game.renderer?.getPixelRatio?.(),

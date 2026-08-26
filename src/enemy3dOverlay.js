@@ -24,13 +24,12 @@ const MODEL_CONFIG = {
     crawler: { url: '/3d/runtime/parasite.glb', height: 1.15, yaw: Math.PI },
     alien_proto_crawler: { url: '/3d/runtime/new3ds/alien_proto_crawler.glb', height: 0.95, yaw: 0 },
     alien_proto_crawler_A: { url: '/3d/runtime/new3ds/alien_proto_crawler_A.glb', height: 0.95, yaw: 0 },
+    alien_proto_spitter: { url: '/3d/runtime/new3ds/alien_proto_crawler_A.glb', height: 0.95, yaw: 0 },
     sentinel: { url: '/3d/runtime/new3ds/sentinel.glb', height: 1.25, yaw: 0 },
     sentinel_A: { url: '/3d/runtime/new3ds/sentinel_A.glb', height: 1.25, yaw: 0 },
     sentinel_B: { url: '/3d/runtime/new3ds/sentinel_B.glb', height: 1.25, yaw: 0 },
-    // The stalker export faces backward relative to its movement direction.
-    // Rotate it another 180 degrees around the vertical axis from its old PI
-    // correction; normalized, that leaves the model-local yaw at zero.
-    mycelium_stalker: { url: '/3d/runtime/bio-stalker.glb', height: 1.2, yaw: 0 },
+    mycelium_stalker: { url: '/3d/runtime/community/scout_xeno_stalker.glb', height: 1.35, yaw: 0 },
+    bio_charger: { url: '/3d/runtime/community/scout_xeno_stalker.glb', height: 1.45, yaw: 0 },
     boss_queen: { url: '/3d/runtime/queen.glb', height: 2.35, yaw: Math.PI }
 };
 
@@ -78,10 +77,9 @@ export async function preloadEnemy3dTemplates(game = null) {
         const url = MODEL_CONFIG[type]?.url;
         try {
             if (url) await loadTemplate(url);
-            // crawler falls back to this shared run-cycle when its GLB has no
-            // embedded clip (see createEnemy3dVisual) -- preload it too or
-            // crawler still stalls on its locomotion source, not just its mesh.
-            if (type === 'crawler') await loadTemplate(LOCOMOTION_URL);
+            // crawler and stalker monsters fall back to this shared run-cycle when their GLB
+            // has no embedded clip (see createEnemy3dVisual) -- preload it too.
+            if (type === 'crawler' || type === 'mycelium_stalker') await loadTemplate(LOCOMOTION_URL);
         } catch (err) {
             console.warn(`[enemy-3d-overlay] preload failed for ${type}`, err);
         }
@@ -127,9 +125,10 @@ function normalizeRoot(root, height) {
 export async function createEnemy3dVisual(type) {
     const config = MODEL_CONFIG[type];
     if (!config) return null;
+    const isHumanoidMonster = type === 'crawler' || type === 'mycelium_stalker' || type === 'bio_charger';
     const [gltf, locomotion] = await Promise.all([
         loadTemplate(config.url),
-        type === 'crawler' ? loadTemplate(LOCOMOTION_URL) : Promise.resolve(null)
+        isHumanoidMonster ? loadTemplate(LOCOMOTION_URL) : Promise.resolve(null)
     ]);
     const model = cloneSkeleton(gltf.scene);
     const root = new THREE.Group();
@@ -149,12 +148,17 @@ export async function createEnemy3dVisual(type) {
     });
     root.scale.setScalar(0.05);
     let mixer = null;
-    const embeddedClip = gltf.animations?.find((clip) => /walk|run|idle/i.test(clip.name)) ?? gltf.animations?.[0];
+    const embeddedClip = gltf.animations?.find((clip) => /walk|run|idle|layer0/i.test(clip.name)) ?? gltf.animations?.[0];
     if (embeddedClip) {
-        mixer = new THREE.AnimationMixer(model);
-        mixer.clipAction(embeddedClip).play();
-    } else if (locomotion) {
-        const source = locomotion.animations.find((clip) => clip.name === 'run');
+        try {
+            mixer = new THREE.AnimationMixer(model);
+            mixer.clipAction(embeddedClip).play();
+        } catch {
+            mixer = null;
+        }
+    }
+    if (!mixer && locomotion) {
+        const source = locomotion.animations.find((clip) => clip.name === 'run' || clip.name === 'walk');
         if (source) {
             const clip = source.clone();
             for (const track of clip.tracks) {
@@ -167,11 +171,15 @@ export async function createEnemy3dVisual(type) {
                     track.values[index + 1] = anchorY;
                 }
             }
-            mixer = new THREE.AnimationMixer(model);
-            mixer.clipAction(clip).play();
+            try {
+                mixer = new THREE.AnimationMixer(model);
+                mixer.clipAction(clip).play();
+            } catch {
+                mixer = null;
+            }
         }
     }
-    return { root, mixer, age: 0, yaw: 0, lastX: null, lastZ: null };
+    return { root, mixer, age: 0, yaw: 0, lastX: null, lastZ: null, hasMixer: Boolean(mixer) };
 }
 
 export function updateEnemy3dVisual(visual, sprite, delta, time = 0) {
@@ -179,10 +187,13 @@ export function updateEnemy3dVisual(visual, sprite, delta, time = 0) {
     if (visual.root.parent !== sprite.parent) sprite.parent.add(visual.root);
     const x = sprite.position.x;
     const z = sprite.position.z;
+    let speed = 0;
     if (visual.lastX != null) {
         const dx = x - visual.lastX;
         const dz = z - visual.lastZ;
-        if (Math.hypot(dx, dz) > 1e-4) {
+        const dist = Math.hypot(dx, dz);
+        speed = delta > 0 ? dist / delta : 0;
+        if (dist > 1e-4) {
             const target = Math.atan2(dx, dz);
             const difference = Math.atan2(Math.sin(target - visual.yaw), Math.cos(target - visual.yaw));
             visual.yaw += difference * (1 - Math.exp(-delta * 12));
@@ -196,9 +207,17 @@ export function updateEnemy3dVisual(visual, sprite, delta, time = 0) {
     const dead = Boolean(sprite.userData?.burstTriggered);
     const deathScale = dead ? Math.max(0, 1 - (sprite.userData.burstTimer ?? 0) * 2.5) : 1;
     visual.root.visible = deathScale > 0 && (sprite.material?.opacity ?? 1) > 0.03;
-    visual.root.position.set(x, sprite.position.y - (1 - emerge) * 0.55, z);
+
+    // Procedural run locomotion / stride bob if moving
+    const isMoving = speed > 0.1;
+    const runBounce = isMoving ? Math.abs(Math.sin(visual.age * 12)) * 0.12 : 0;
+    const runLean = isMoving ? 0.14 : 0;
+    const runTilt = isMoving ? Math.sin(visual.age * 6) * 0.06 : 0;
+
+    visual.root.position.set(x, sprite.position.y - (1 - emerge) * 0.55 + runBounce, z);
     visual.root.rotation.y = visual.yaw;
-    visual.root.rotation.z = Math.sin(time * 7 + (sprite.userData?.phase ?? 0)) * 0.035;
+    visual.root.rotation.x = runLean;
+    visual.root.rotation.z = Math.sin(time * 7 + (sprite.userData?.phase ?? 0)) * 0.035 + runTilt;
     visual.root.scale.setScalar(emerge * deathScale);
 }
 
