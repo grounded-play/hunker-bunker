@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import * as THREE from 'three';
-import { clampCameraPositionToHit, computeMouseEdgeTurn, getThirdPersonCameraPose } from './thirdPersonCamera.js';
+import { clampCameraPositionToHit, computeMouseEdgeTurn, getCrosshairMovementBasis, getThirdPersonCameraPose } from './thirdPersonCamera.js';
 
 describe('third-person camera rig', () => {
     it('keeps a broad center workspace stable and ramps turning at screen edges', () => {
@@ -11,6 +11,12 @@ describe('third-person camera rig', () => {
         expect(nearRightEdge).toBeGreaterThan(-1);
         expect(computeMouseEdgeTurn(1000, 0, 1000)).toBe(-1);
         expect(computeMouseEdgeTurn(0, 0, 1000)).toBe(1);
+    });
+
+    it('maps crosshair-relative strafe left and right without inversion', () => {
+        const basis = getCrosshairMovementBasis(0, 1);
+        expect(basis).toEqual({ forwardX: 0, forwardZ: 1, rightX: -1, rightZ: 0 });
+        expect({ leftX: -basis.rightX, leftZ: -basis.rightZ }).toEqual({ leftX: 1, leftZ: -0 });
     });
 
     it('places the camera behind and to the right of its focus', () => {

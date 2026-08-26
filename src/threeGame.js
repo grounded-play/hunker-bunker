@@ -51,7 +51,7 @@ export const TiltShiftPassShader = {
 import { assetUrl } from './assetUrl.js';
 import { getItemCatalogEntry } from './steamVaultUi.js';
 import { wrapAngle, planarBasisFromOffsetAzimuth, aimVectorFromYaw } from './cameraYaw.js';
-import { THIRD_PERSON_CAMERA, clampCameraPositionToHit, computeMouseEdgeTurn, getThirdPersonCameraPose } from './thirdPersonCamera.js';
+import { THIRD_PERSON_CAMERA, clampCameraPositionToHit, computeMouseEdgeTurn, getCrosshairMovementBasis, getThirdPersonCameraPose } from './thirdPersonCamera.js';
 import { createSkyProfile } from './sky/skyProfile.js';
 import { computeSkyState } from './sky/skyState.js';
 import { createSkyRig } from './sky/skyDome.js';
@@ -17641,10 +17641,13 @@ export class ThreeGame {
         const screenAxisX = THREE.MathUtils.clamp(keyAxisX + this.virtualInput.x, -1, 1);
         const screenAxisZ = THREE.MathUtils.clamp(keyAxisZ + this.virtualInput.z, -1, 1);
         const crosshairGuidesMovement = this.cameraMode === 'third-person' && this.mouseAimActive;
-        const moveForwardX = crosshairGuidesMovement ? this.aimDirX : this.cameraPlanarForward.x;
-        const moveForwardZ = crosshairGuidesMovement ? this.aimDirZ : this.cameraPlanarForward.y;
-        const moveRightX = crosshairGuidesMovement ? this.aimDirZ : this.cameraPlanarRight.x;
-        const moveRightZ = crosshairGuidesMovement ? -this.aimDirX : this.cameraPlanarRight.y;
+        const crosshairBasis = crosshairGuidesMovement
+            ? getCrosshairMovementBasis(this.aimDirX, this.aimDirZ)
+            : null;
+        const moveForwardX = crosshairBasis?.forwardX ?? this.cameraPlanarForward.x;
+        const moveForwardZ = crosshairBasis?.forwardZ ?? this.cameraPlanarForward.y;
+        const moveRightX = crosshairBasis?.rightX ?? this.cameraPlanarRight.x;
+        const moveRightZ = crosshairBasis?.rightZ ?? this.cameraPlanarRight.y;
         const moveAxisX = (moveRightX * screenAxisX) + (moveForwardX * -screenAxisZ);
         const moveAxisZ = (moveRightZ * screenAxisX) + (moveForwardZ * -screenAxisZ);
         const isMoving = Boolean(moveAxisX || moveAxisZ);

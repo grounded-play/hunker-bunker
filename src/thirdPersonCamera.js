@@ -27,6 +27,18 @@ export function computeMouseEdgeTurn(clientX, viewportLeft, viewportWidth, edgeS
     return -Math.sign(normalizedX) * eased;
 }
 
+export function getCrosshairMovementBasis(aimX, aimZ) {
+    const length = Math.hypot(aimX, aimZ) || 1;
+    const forwardX = aimX / length;
+    const forwardZ = aimZ / length;
+    return {
+        forwardX,
+        forwardZ,
+        rightX: -forwardZ,
+        rightZ: forwardX
+    };
+}
+
 export function getThirdPersonCameraPose({
     playerPosition,
     planarForward,
