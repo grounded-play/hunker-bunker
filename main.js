@@ -52,7 +52,7 @@ import { createScoutHeroPreview } from './src/scoutHeroPreview.js';
 import { createArmoryScene } from './src/armoryScene.js';
 import { createArmoryUi } from './src/armoryUi.js';
 import { initSteamVaultUI, loadVaultData, openSteamVaultModal, showSteamDropToast, renderSteamMilestoneGrants, grantVaultItem, resetDevVaultInventory, setDevInfiniteCacheMode, isDevInfiniteCacheMode, STEAM_ITEM_CATALOG } from './src/steamVaultUi.js';
-import { initSeasonPassUI, flushQueuedSeasonPassToasts, cancelXpFeedback } from './src/seasonPassUi.js';
+import { initSeasonPassUI, cancelXpFeedback } from './src/seasonPassUi.js';
 import { preloadEnemy3dTemplates } from './src/enemy3dOverlay.js';
 import { initVoiceCallouts } from './src/voiceCallouts.js';
 import { multiplayerLobby } from './src/multiplayerLobby.js';
@@ -340,7 +340,6 @@ function setAppPhase(phase) {
     debugLog.info('PHASE', `${previousPhase ?? 'none'} -> ${phase}: ${phaseLabels[phase] ?? 'application state changed'}`);
     syncSteamInputPhase();
     syncSteamTimelinePhase(phase);
-    if (phase === 'splash' || phase === 'menu') flushQueuedSeasonPassToasts();
     const isGameplay = phase === 'gameplay';
     document.documentElement.classList.toggle('phase-gameplay', isGameplay);
     document.documentElement.classList.toggle('phase-menu', !isGameplay);
