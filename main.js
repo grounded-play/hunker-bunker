@@ -7568,7 +7568,7 @@ let qaToolsEnabled = false;
 const electronApiPresent = Boolean(window.electronAPI);
 let developerToolsAuthorized = canUseDeveloperTools({ electronApiPresent, qaToolsEnabled });
 
-function setDebugMode(active) {
+function setDebugMode(active, { syncConsole = true } = {}) {
     const enabled = Boolean(active) && developerToolsAuthorized;
     if (enabled) {
         document.body.classList.add('show-debug');
@@ -7580,6 +7580,9 @@ function setDebugMode(active) {
         mainDebugToggle.checked = enabled;
         mainDebugToggle.disabled = !developerToolsAuthorized;
     }
+    if (syncConsole && debugLog.visible !== enabled) {
+        debugLog.toggle(enabled);
+    }
     const seedHUD = document.getElementById('hud-run-seed');
     if (seedHUD) {
         if (enabled && activeRunSeed !== null) {
@@ -7590,6 +7593,16 @@ function setDebugMode(active) {
         }
     }
 }
+
+window.addEventListener('hb-debug-console-visibility', (event) => {
+    const visible = Boolean(event.detail?.visible);
+    if (visible && !developerToolsAuthorized) {
+        debugLog.toggle(false);
+        return;
+    }
+    state.settings.debug = visible;
+    setDebugMode(visible, { syncConsole: false });
+});
 
 if (window.electronAPI?.getQaToolsEnabled) {
     window.electronAPI.getQaToolsEnabled()
@@ -7623,13 +7636,10 @@ let fpsLastTime = performance.now();
 let fpsRafId = null;
 
 function sampleFPS() {
-    if (!document.body.classList.contains('show-debug')) {
-        fpsRafId = null;
-        return;
-    }
     fpsFrames++;
     fpsRafId = requestAnimationFrame(sampleFPS);
 }
+fpsRafId = requestAnimationFrame(sampleFPS);
 
 const debugGrantResourcesBtn = document.getElementById('debug-grant-resources');
 const debugGodModeBtn = document.getElementById('debug-god-mode');
@@ -7656,6 +7666,8 @@ debugGodModeBtn?.addEventListener('click', () => {
 
 // ── Dev Console & Steam Test Harness ────────────────────────────
 function logDevConsole(text, type = 'normal') {
+    const level = type === 'error' ? 'error' : type === 'system' ? 'debug' : 'info';
+    debugLog[level]('DEV', text);
     const logContainer = document.getElementById('dev-console-log');
     if (!logContainer) return;
     const line = document.createElement('div');
@@ -8181,6 +8193,11 @@ function executeDevCommand(input) {
         case 'metrics':
             result = devGetLayoutMetrics();
             break;
+        case 'typo':
+        case 'typography':
+            document.body.classList.toggle('show-typo');
+            result = `Typography diagnostics ${document.body.classList.contains('show-typo') ? 'ON' : 'OFF'}.`;
+            break;
         case 'ringplan':
         case 'ringlock': {
             // Phase 6.1/6.2 live diagnostic: inspects the current run's
@@ -8250,6 +8267,12 @@ function executeDevCommand(input) {
         case 'codexall':
         case 'unlock_codex':
             result = devUnlockAllCodex();
+            break;
+        case 'polish_all':
+        case 'polishes_all':
+            unlockAllPolishes();
+            renderOperatorPolishUi();
+            result = `Unlocked all ${OPERATOR_POLISHES.length} operator polishes.`;
             break;
         case 'skins':
         case 'skins_all':
@@ -8464,6 +8487,13 @@ window.__DEBUG__ = {
     log: (msg, type = 'system') => logDevConsole(msg, type)
 };
 
+debugLog.setAchievementOptions(ACHIEVEMENT_DEFS);
+debugLog.syncToolSettings({
+    resolution: state.settings.resolutionPreset || 'deck',
+    uiScale: state.settings.uiScale || 100,
+    textFloor: state.settings.textFloor || 18
+});
+
 
 function openDevConsoleModal() {
     if (!developerToolsAuthorized) {
@@ -8471,10 +8501,7 @@ function openDevConsoleModal() {
         return;
     }
     setDebugMode(true);
-    const modal = document.getElementById('dev-console-modal');
-    if (!modal) return;
-    modal.classList.remove('hidden');
-    modal.setAttribute('aria-hidden', 'false');
+    debugLog.setAchievementOptions(ACHIEVEMENT_DEFS);
     populateDevAchievementDropdowns();
     if (window.electronAPI?.getSteamDiagnostics) {
         window.electronAPI.getSteamDiagnostics().then((diagnostics) => {
@@ -8491,26 +8518,15 @@ function openDevConsoleModal() {
         });
     }
 
-    const resSelect = document.getElementById('dev-res-select');
-    if (resSelect) resSelect.value = state.settings.resolutionPreset || 'deck';
-    const uiScaleSelect = document.getElementById('dev-uiscale-select');
-    if (uiScaleSelect) uiScaleSelect.value = String(state.settings.uiScale || 100);
-    const textFloorSelect = document.getElementById('dev-textfloor-select');
-    if (textFloorSelect) textFloorSelect.value = String(state.settings.textFloor || 18);
-
-    const input = document.getElementById('dev-console-input');
-    if (input) {
-        input.value = '';
-        input.focus();
-    }
+    debugLog.syncToolSettings({
+        resolution: state.settings.resolutionPreset || 'deck',
+        uiScale: state.settings.uiScale || 100,
+        textFloor: state.settings.textFloor || 18
+    });
 }
 
 function closeDevConsoleModal() {
-    const modal = document.getElementById('dev-console-modal');
-    if (modal) {
-        modal.classList.add('hidden');
-        modal.setAttribute('aria-hidden', 'true');
-    }
+    if (debugLog.visible) debugLog.toggle(false);
 }
 
 function populateDevAchievementDropdowns() {
@@ -8668,11 +8684,6 @@ devConsoleInput?.addEventListener('keydown', (e) => {
 
 if (fpsDisplay) {
     setInterval(() => {
-        if (!document.body.classList.contains('show-debug')) {
-            fpsFrames = 0;
-            fpsLastTime = performance.now();
-            return;
-        }
         if (fpsRafId === null) {
             fpsFrames = 0;
             fpsLastTime = performance.now();
@@ -8681,7 +8692,9 @@ if (fpsDisplay) {
         }
         const now = performance.now();
         const elapsedSeconds = Math.max((now - fpsLastTime) / 1000, 0.001);
-        fpsDisplay.textContent = `FPS: ${Math.round(fpsFrames / elapsedSeconds)}`;
+        const fps = Math.round(fpsFrames / elapsedSeconds);
+        window.__hb_fps = fps;
+        fpsDisplay.textContent = `FPS: ${fps}`;
         fpsFrames = 0;
         fpsLastTime = now;
     }, 1000);
@@ -9825,22 +9838,7 @@ document.addEventListener('keydown', (event) => {
     }
 
     if (event.code === 'Backquote' || event.key === '`' || event.key === '~') {
-        if (!developerToolsAuthorized) {
-            setDebugMode(false);
-            return;
-        }
-        const activeTag = document.activeElement?.tagName?.toLowerCase();
-        if (activeTag === 'input' && document.activeElement?.id !== 'dev-console-input') {
-            return;
-        }
-        if (activeTag === 'textarea') return;
-        event.preventDefault();
-        const devModal = document.getElementById('dev-console-modal');
-        if (devModal && !devModal.classList.contains('hidden')) {
-            closeDevConsoleModal();
-        } else {
-            openDevConsoleModal();
-        }
+        // The capture-phase listener in DebugLogger owns the unified ~ panel.
         return;
     }
 

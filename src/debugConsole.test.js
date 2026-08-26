@@ -98,6 +98,27 @@ describe('debugConsole', () => {
         expect(debugLog.maxLogs).toBe(2500);
     });
 
+    it('starts with the captured log collapsed and reports live FPS/enemy telemetry', () => {
+        const statsEl = { textContent: '' };
+        debugLog.logsExpanded = false;
+        debugLog.statsEl = statsEl;
+        globalThis.window.__hb_fps = 58;
+        globalThis.window.threeGame = {
+            playerVitals: { hp: 73 },
+            scatterSprites: [
+                { userData: { type: 'cybersnail', isEnemy: true } },
+                { userData: { type: 'crawler', isEnemy: true, burstTriggered: true } },
+                { userData: { type: 'crate' } }
+            ],
+            isEnemyType: (type) => ['cybersnail', 'crawler'].includes(type)
+        };
+
+        debugLog.updateStats();
+
+        expect(debugLog.logsExpanded).toBe(false);
+        expect(statsEl.textContent).toBe('FPS: 58 | ENEMIES: 1 | HP: 73');
+    });
+
     it('keeps the complete session journal when the visible console is cleared', () => {
         const start = debugLog.sessionLogs.length;
         debugLog.info('BOOT', 'renderer starting');

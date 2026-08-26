@@ -187,9 +187,10 @@ body {
   z-index: 100000 !important;
 }
 
-.show-debug #debug-toolbar {
-  display: flex;
-}
+/* The ~ console is the single debug control surface. The legacy floating
+   toolbar remains in the DOM for compatibility with older automation, but no
+   longer renders as a second set of controls. */
+.show-debug #debug-toolbar { display: none; }
 
 /* Telemetry and legends must never create an invisible click shield over the
    game. Only the toolbar's actual form controls are interactive. */
