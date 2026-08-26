@@ -1165,7 +1165,11 @@ export class ThreeGame {
 
         this.chunkSize = CHUNK_SIZE;
         this.chunkCellCount = (this.chunkSize - 1) / 2;
-        this.disableFogOfWar = true;
+        // Fog is part of the authored gameplay silhouette: it hides the edge
+        // of the resident chunk neighborhood and keeps unexplored rooms from
+        // reading like abruptly unloaded geometry. The debug `fog` command can
+        // still disable it explicitly, but every run starts with fog enabled.
+        this.disableFogOfWar = false;
         // Stream/render a 5x5 neighborhood. Mounting remains frame-budgeted,
         // so this grows the safety buffer without rebuilding all 25 chunks in
         // one blocking startup frame.
@@ -6889,10 +6893,13 @@ export class ThreeGame {
         if (this.adaptiveGameplayPerformanceMode === nextEnabled) return false;
 
         this.adaptiveGameplayPerformanceMode = nextEnabled;
-        this.gameplayPostProcessingEnabled = !nextEnabled;
+        // Adaptive quality may lower the render resolution, but it must not
+        // remove the authored DOF/tilt-shift treatment. Bypassing the composer
+        // made the start-of-run handoff look like lighting and fog had unloaded.
+        this.gameplayPostProcessingEnabled = true;
         if (this.renderer?.shadowMap) {
             // Keep the shadow variant stable while adaptive mode lowers pixel
-            // cost/post-processing. Toggling shadowMap at runtime caused a
+            // cost. Toggling shadowMap at runtime caused a
             // visible lighting drop and texture/shader shimmer on some drivers.
             this.renderer.shadowMap.enabled = this.performanceProfile === 'gameplay';
         }
@@ -6918,8 +6925,8 @@ export class ThreeGame {
                 reason,
                 fps: Number.isFinite(fps) ? Math.round(fps * 10) / 10 : null,
                 pixelRatio: targetPixelRatio,
-                shadows: false,
-                postprocessing: false,
+                shadows: Boolean(this.renderer?.shadowMap?.enabled),
+                postprocessing: true,
                 visibleChunkRadius: this.visibleChunkRadius ?? null,
                 renderer: this.getPerformanceDiagnosticsSnapshot?.() ?? null
             };
@@ -7023,9 +7030,7 @@ export class ThreeGame {
         const span = beginPerfPhase(label, this.getPerformanceDiagnosticsSnapshot());
         const gpuQueryStarted = this.gpuFrameTimer?.beginFrame?.() ?? false;
         try {
-            if (this.composer
-                && this.performanceProfile === 'gameplay'
-                && this.gameplayPostProcessingEnabled !== false) {
+            if (this.composer && this.performanceProfile === 'gameplay') {
                 this.composer.render();
             }
             else this.renderer.render(this.scene, this.camera);
@@ -7219,8 +7224,8 @@ export class ThreeGame {
             return;
         }
 
-        // Preserve every neighboring room and actor. Frame pressure now sheds
-        // only cosmetic postprocessing/shadows/resolution cost.
+        // Preserve every neighboring room, actor, light, fog, and DOF pass.
+        // Frame pressure is handled by lowering render resolution only.
         this.updateAdaptiveGameplayQuality?.(rawFrameDelta);
         this.visibleChunkRadius = this.defaultVisibleChunkRadius;
 
@@ -20510,8 +20515,7 @@ export class ThreeGame {
         if (!overlay || !this.player || !this.camera) return;
 
         const isGameplay = this.performanceProfile === 'gameplay'
-            && !this.loadingPaused
-            && !this.adaptiveGameplayPerformanceMode;
+            && !this.loadingPaused;
         overlay.classList.toggle('is-active', isGameplay);
 
         if (!isGameplay) return;

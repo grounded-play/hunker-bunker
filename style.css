@@ -3732,11 +3732,12 @@ input:checked+.slider:before {
 
 /* Settings remains keyboard/Deck navigable at enlarged UI scales. */
 .settings-modal-content {
-  padding: calc(var(--vu) * 3) calc(var(--vu) * 3.5) !important;
+  padding: 0 calc(var(--vu) * 3.5) calc(var(--vu) * 3) calc(var(--vu) * 3.5) !important;
   width: min(calc(var(--vu) * 80), 86%) !important;
   max-height: 82% !important;
   box-sizing: border-box !important;
   overflow-y: auto !important;
+  overflow-x: hidden !important;
   scrollbar-width: thin !important;
   scrollbar-color: var(--accent-primary) rgba(0, 0, 0, 0.4) !important;
   scrollbar-gutter: stable;
@@ -3759,11 +3760,13 @@ input:checked+.slider:before {
   align-items: center;
   justify-content: space-between;
   min-height: calc(var(--vu) * 6.5);
-  margin: calc(var(--vu) * -1.2) calc(var(--vu) * -1.2) calc(var(--vu) * 2.5);
-  padding: calc(var(--vu) * 1.2) calc(var(--vu) * 1.2) calc(var(--vu) * 1.5);
-  background: linear-gradient(180deg, #171b20 72%, rgba(23, 27, 32, 0.94));
+  margin: 0 calc(var(--vu) * -3.5) calc(var(--vu) * 2.5) calc(var(--vu) * -3.5);
+  padding: calc(var(--vu) * 2.2) calc(var(--vu) * 3.5) calc(var(--vu) * 1.5) calc(var(--vu) * 3.5);
+  background: #171b20;
+  border-top-left-radius: 11px;
+  border-top-right-radius: 11px;
   border-bottom: 2px solid rgba(255, 169, 46, 0.72);
-  box-shadow: 0 12px 18px rgba(0, 0, 0, 0.48);
+  box-shadow: 0 12px 18px rgba(0, 0, 0, 0.6);
 }
 
 .settings-sticky-header .modal-title {
