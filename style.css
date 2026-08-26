@@ -1370,6 +1370,11 @@ body {
   box-shadow: 0 4px 18px rgba(0, 229, 255, 0.45);
 }
 
+.title-menu:hover .title-menu-btn:not(:hover) {
+  outline: none !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4) !important;
+}
+
 .title-menu-btn:disabled {
   opacity: 0.25;
   cursor: not-allowed;
@@ -2522,9 +2527,9 @@ body:not(.controller-mode) .title-menu-btn:focus:not(:focus-visible) {
 .controller-mode .save-data-code:focus,
 .hero-select-back-btn:focus-visible,
 .controller-mode .hero-select-back-btn:focus {
-  outline: 2px solid rgba(46, 196, 182, 0.9);
-  outline-offset: 3px;
-  box-shadow: 0 0 12px rgba(46, 196, 182, 0.4);
+  outline: 1px solid rgba(0, 229, 255, 0.85);
+  outline-offset: 1px;
+  box-shadow: 0 0 6px rgba(0, 229, 255, 0.25);
 }
 
 .char-info {
