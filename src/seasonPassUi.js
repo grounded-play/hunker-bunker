@@ -51,9 +51,8 @@ function showSeasonPassToast(title, blurb) {
     renderSeasonPassToast(title, blurb);
 }
 
-// Called from main.js's setAppPhase once the player is actually back on the
 // Season-screen feedback is kept out of gameplay, doors, and cutscenes. It is
-// queued until the player opens the Season Pass modal.
+// queued until the player explicitly opens the Season Pass modal.
 export function flushQueuedSeasonPassToasts() {
     if (!isSeasonPassModalOpen() || queuedSeasonPassToasts.length === 0) return;
     const queued = queuedSeasonPassToasts.splice(0, queuedSeasonPassToasts.length);
