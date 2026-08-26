@@ -10,6 +10,63 @@ export const ACTION_SETS = Object.freeze({
     ARCHIVE: 'archive'
 });
 
+// Ordered from the most specific/topmost transient surface to the broadest
+// application screens. getControllerFocusRoot() selects the first visible
+// entry, so child reveals and scene viewers must precede their parent modal.
+// Keep this list as the single runtime/test inventory for full-controller
+// menu coverage; see docs/menu-input-navigation-contract.md.
+export const MENU_FOCUS_ROOT_IDS = Object.freeze([
+    'virtual-keyboard-overlay',
+    'progression-reward-overlay',
+    'vault-reveal-overlay',
+    'mature-audit-scene-viewer',
+    'progression-scene-viewer',
+    'qa-nexus-modal',
+    'wanderer-encounter-modal',
+    'hb-debug-console',
+    'dev-console-modal',
+    'confirm-modal',
+    'reset-save-confirm-modal',
+    'quit-confirm-modal',
+    'audio-mixer-popup',
+    'save-data-popup',
+    'controls-popup',
+    'settings-popup',
+    'about-modal',
+    'archive-log-detail-modal',
+    'archive-modal',
+    'codex-detail-modal',
+    'codex-modal',
+    'achievements-modal',
+    'roster-modal',
+    'fabrication-modal',
+    'elevator-choice-modal',
+    'archive-sims-modal',
+    'lore-modal',
+    'season-pass-modal',
+    'steam-vault-modal',
+    'player-trade-modal',
+    'multiplayer-modal',
+    'mature-content-audit-modal',
+    'progression-walkthrough-modal',
+    'operator-polish-modal',
+    'tactical-map-modal',
+    'base-turret-modal',
+    'demo-end-modal',
+    'game-over-modal',
+    'camp-choice-modal',
+    'leader-conversation-modal',
+    'npc-dialogue-modal',
+    'mothership-dialogue',
+    'console-terminal-modal',
+    'o2-generator-modal',
+    'snail-encounter-modal',
+    'armory-screen',
+    'rgb-root',
+    'splash',
+    'menu'
+]);
+
 const VALID_SETS = new Set(Object.values(ACTION_SETS));
 
 export function actionSetForAppPhase(phase) {

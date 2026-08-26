@@ -683,6 +683,7 @@ export function handleSeasonPassKeyDown(event) {
 
     if (event.code === 'Escape') {
         event.preventDefault();
+        event.stopPropagation();
         closeSeasonPassModal();
         return;
     }

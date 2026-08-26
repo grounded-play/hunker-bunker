@@ -95,6 +95,7 @@ describe('createArmoryUi', () => {
     let onEmbark;
     let onBack;
     let onOpenVault;
+    let onOpenSettings;
 
     beforeEach(() => {
         container = createMockElement('div');
@@ -112,6 +113,7 @@ describe('createArmoryUi', () => {
         onEmbark = vi.fn();
         onBack = vi.fn();
         onOpenVault = vi.fn();
+        onOpenSettings = vi.fn();
     });
 
     it('throws when container is missing', () => {
@@ -126,12 +128,14 @@ describe('createArmoryUi', () => {
             onEmbark,
             onBack,
             onOpenVault,
+            onOpenSettings,
             ownership: ownAll()
         });
 
         ui.setClass('SCOUT');
         expect(container.innerHTML).toContain('SECTOR ZERO TACTICAL BENCH');
         expect(container.innerHTML).toContain('class="class-tab active" data-class="scout"');
+        expect(container.innerHTML).toContain('id="armory-settings-btn"');
         expect(container.innerHTML).toContain('id="armory-archetype-select"');
         expect(container.innerHTML).toContain('id="armory-chassis-select"');
         expect(container.innerHTML).toContain('WEAPON SHEEN / TACTICAL FINISH');
@@ -140,6 +144,10 @@ describe('createArmoryUi', () => {
         expect(container.innerHTML).toContain('id="armory-charm-select"');
         expect(container.innerHTML).toContain('id="armory-mod1-select"');
         expect(container.innerHTML).toContain('id="armory-mod2-select"');
+
+        const settingsBtn = container.querySelector('#armory-settings-btn');
+        settingsBtn.click();
+        expect(onOpenSettings).toHaveBeenCalledTimes(1);
     });
 
     it('updates loadout and triggers scene updates when selecting equipment', () => {

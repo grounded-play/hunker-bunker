@@ -100,6 +100,7 @@ export function createArmoryUi({
     onEmbark,
     onBack,
     onOpenVault,
+    onOpenSettings,
     ownership
 }) {
     if (!container) throw new Error('Armory UI requires a container DOM element');
@@ -188,6 +189,7 @@ export function createArmoryUi({
                             ${ownership.isUnlockAll() ? '✓ ALL SKINS UNLOCKED' : '⚡ UNLOCK ALL SKINS (DEBUG)'}
                         </button>
                         <span class="status-cycle-hint">[Q / E CYCLE]</span>
+                        <button type="button" class="calibrate-btn open-settings-btn armory-settings-btn" id="armory-settings-btn" title="Open Settings" aria-label="Open Settings">⚙</button>
                     </div>
                 </header>
 
@@ -437,6 +439,15 @@ export function createArmoryUi({
         container.querySelector?.('#armory-btn-embark')?.addEventListener?.('click', () => {
             playSound('ui_upgrade_weapon1');
             onEmbark?.();
+        });
+
+        container.querySelector?.('#armory-settings-btn')?.addEventListener?.('click', () => {
+            playSound('ui_click_confirm1');
+            if (onOpenSettings) {
+                onOpenSettings();
+            } else {
+                document.querySelector('#menu .open-settings-btn')?.click?.();
+            }
         });
 
         container.querySelector?.('#armory-polish-btn')?.addEventListener?.('click', () => {

@@ -113,6 +113,8 @@ body {
   min-height: var(--vh-actual, 100dvh);
   width: 100vw;
   width: var(--vw-actual, 100vw);
+  max-width: 100vw;
+  max-height: var(--vh-actual, 100dvh);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -138,6 +140,9 @@ body {
   --game-bottom-gutter: clamp(20px, 4vh, 48px);
   width: min(var(--vw-actual, 100vw), calc(var(--vh-actual, 100dvh) * 160 / 100));
   height: min(var(--vh-actual, 100dvh), calc(var(--vw-actual, 100vw) * 100 / 160));
+  max-width: 100vw;
+  max-height: var(--vh-actual, 100dvh);
+  aspect-ratio: 8 / 5;
   background: var(--bg-dark);
   position: relative;
   overflow: hidden;
@@ -306,13 +311,41 @@ body {
 #cabinet-bezel {
   position: absolute;
   inset: 0;
-  border: calc(var(--vu) * 2) solid #1a1a1a;
-  outline: 1px solid rgba(255, 255, 255, 0.1);
-  outline-offset: calc(var(--vu) * -1);
-  box-shadow: inset 0 0 150px rgba(0, 0, 0, 0.9), 0 0 50px rgba(0, 0, 0, 1);
+  border: max(1px, calc(var(--vu) * 0.16)) solid rgba(128, 145, 151, 0.2);
+  outline: 1px solid rgba(255, 159, 28, 0.09);
+  outline-offset: calc(var(--vu) * -0.65);
+  background:
+    linear-gradient(90deg, rgba(46, 196, 182, 0.16), transparent 12%, transparent 88%, rgba(255, 159, 28, 0.14)) top / 100% 1px no-repeat,
+    linear-gradient(90deg, rgba(255, 159, 28, 0.12), transparent 18%, transparent 82%, rgba(46, 196, 182, 0.12)) bottom / 100% 1px no-repeat;
+  box-shadow:
+    inset 0 0 0 1px rgba(0, 0, 0, 0.72),
+    inset 0 0 calc(var(--vu) * 2.8) rgba(0, 0, 0, 0.4),
+    0 0 calc(var(--vu) * 1.2) rgba(0, 0, 0, 0.45);
   pointer-events: none;
   z-index: 9999;
-  border-radius: 20px;
+  border-radius: clamp(6px, calc(var(--vu) * 1.1), 12px);
+}
+
+#cabinet-bezel::before,
+#cabinet-bezel::after {
+  content: "";
+  position: absolute;
+  width: calc(var(--vu) * 4.5);
+  height: calc(var(--vu) * 1.2);
+  top: calc(var(--vu) * 0.8);
+  opacity: 0.42;
+  border-top: 1px solid var(--accent-secondary);
+}
+
+#cabinet-bezel::before {
+  left: calc(var(--vu) * 0.9);
+  border-left: 1px solid var(--accent-secondary);
+}
+
+#cabinet-bezel::after {
+  right: calc(var(--vu) * 0.9);
+  border-right: 1px solid var(--accent-primary);
+  border-top-color: var(--accent-primary);
 }
 
 /* --- Loading Screen (Pre-Splash) --- */
@@ -19007,6 +19040,33 @@ body.show-debug .map-tool-btn--debug { display: inline-flex; }
   background: rgba(16, 185, 129, 0.18);
   border-color: #10b981;
   color: #34d399;
+}
+
+.armory-settings-btn {
+  font-size: calc(var(--vu) * 2.2);
+  padding: calc(var(--vu) * 0.25) calc(var(--vu) * 0.85);
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--armory-accent);
+  border: 1px solid var(--armory-border);
+  background: rgba(0, 0, 0, 0.4);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.armory-settings-btn:hover {
+  background: var(--armory-glow);
+  border-color: var(--armory-accent);
+  color: #ffffff;
+  box-shadow: 0 0 12px var(--armory-glow);
+  transform: translateY(-1px);
+}
+
+.armory-settings-btn:active {
+  transform: translateY(1px);
 }
 
 .armory-operator-status .status-label {

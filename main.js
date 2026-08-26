@@ -38,6 +38,7 @@ import { mapBrowserGamepad } from './src/browserGamepad.js';
 import { getControllerGlyphLabel } from './src/inputGlyphs.js';
 import {
     ACTION_SETS,
+    MENU_FOCUS_ROOT_IDS,
     actionSetForAppPhase,
     createActionRouter,
     hasControllerContinuePress,
@@ -379,48 +380,7 @@ const STEAM_INPUT_PROMPT_IDS = Object.freeze([
     'black-box-hud-prompt'
 ]);
 
-const STEAM_INPUT_FOCUS_ROOT_IDS = Object.freeze([
-    'virtual-keyboard-overlay',
-    'dev-console-modal',
-    'confirm-modal',
-    'reset-save-confirm-modal',
-    'quit-confirm-modal',
-    'audio-mixer-popup',
-    'save-data-popup',
-    'controls-popup',
-    'settings-popup',
-    'about-modal',
-    'archive-log-detail-modal',
-    'archive-modal',
-    'codex-detail-modal',
-    'codex-modal',
-    'achievements-modal',
-    'roster-modal',
-    'fabrication-modal',
-    'elevator-choice-modal',
-    'archive-sims-modal',
-    'lore-modal',
-    'season-pass-modal',
-    'armory-screen',
-    'steam-vault-modal',
-    'player-trade-modal',
-    'multiplayer-modal',
-    'mature-content-audit-modal',
-    'operator-polish-modal',
-    'tactical-map-modal',
-    'base-turret-modal',
-    'demo-end-modal',
-    'game-over-modal',
-    'camp-choice-modal',
-    'leader-conversation-modal',
-    'mothership-dialogue',
-    'console-terminal-modal',
-    'o2-generator-modal',
-    'snail-encounter-modal',
-    'rgb-root',
-    'splash',
-    'menu'
-]);
+const STEAM_INPUT_FOCUS_ROOT_IDS = MENU_FOCUS_ROOT_IDS;
 
 function closeModalWithAnimation(modal, onComplete, { exitClass = '', duration = 280 } = {}) {
     if (!modal || modal.classList.contains('hidden') || modal.classList.contains('is-exiting')) {
@@ -644,13 +604,15 @@ function getVisibleControllerFocusables(root = document) {
         'textarea:not([disabled])',
         'select:not([disabled])',
         'a[href]',
-        '[role="button"]',
         '[tabindex]:not([tabindex="-1"])'
     ].join(', ');
     return Array.from(root.querySelectorAll(selector)).filter((element) => {
         if (!isElementVisible(element)) return false;
-        if (element.closest('.hidden')) return false;
-        if (element.getAttribute('aria-hidden') === 'true') return false;
+        if (element.disabled || element.getAttribute('aria-disabled') === 'true') return false;
+        if (element.closest('.hidden, [hidden], [inert]')) return false;
+        if (element.closest('[aria-hidden="true"]')) return false;
+        const style = window.getComputedStyle(element);
+        if (style.display === 'none' || style.visibility === 'hidden') return false;
         return true;
     });
 }
@@ -1369,6 +1331,7 @@ function activateControllerFocusedElement() {
 }
 
 function dispatchControllerEscape() {
+    const rootBeforeEscape = getControllerFocusRoot();
     const escapeEvent = new KeyboardEvent('keydown', {
         key: 'Escape',
         code: 'Escape',
@@ -1376,6 +1339,39 @@ function dispatchControllerEscape() {
         cancelable: true
     });
     document.dispatchEvent(escapeEvent);
+
+    // Some newer and developer-only overlays predate the centralized Escape
+    // switch below. If nobody closed the active surface, make Steam B and
+    // keyboard Escape use its explicit close/cancel/back affordance.
+    queueMicrotask(() => {
+        if (!rootBeforeEscape || !isModalFocusRoot(rootBeforeEscape)) return;
+        if (rootBeforeEscape.classList.contains('hidden')
+            || rootBeforeEscape.classList.contains('is-exiting')
+            || rootBeforeEscape.getAttribute('aria-hidden') === 'true'
+            || !isElementVisible(rootBeforeEscape)) return;
+        getControllerBackTarget(rootBeforeEscape)?.click?.();
+    });
+}
+
+function getControllerBackTarget(root) {
+    if (!root) return null;
+    const selectors = [
+        '[data-menu-back]',
+        '.close-modal:not([disabled])',
+        '#hb-console-close',
+        '#archive-sims-modal-close',
+        '#confirm-no',
+        '#reset-save-cancel',
+        '#quit-cancel-btn',
+        '#armory-btn-back',
+        '#net-back-btn',
+        '#trade-cancel-btn'
+    ];
+    for (const selector of selectors) {
+        const target = root.querySelector(selector);
+        if (target && !target.disabled && isElementVisible(target)) return target;
+    }
+    return null;
 }
 
 function triggerControllerPauseAction() {
@@ -6107,24 +6103,12 @@ function installHudCompass() {
 function syncStageMetrics() {
     if (!gameViewport) return;
 
-    let width = window.innerWidth;
-    let height = window.innerHeight;
-
-    const targetRes = state?.settings?.resolutionPreset;
-    if (targetRes && targetRes !== 'auto') {
-        const presets = {
-            'deck': { w: 1280, h: 800 },
-            '720p': { w: 1280, h: 720 },
-            '1080p': { w: 1920, h: 1080 },
-            '1440p': { w: 2560, h: 1440 },
-            '4k': { w: 3840, h: 2160 }
-        };
-        const selected = presets[targetRes];
-        if (selected) {
-            width = selected.w;
-            height = selected.h;
-        }
-    }
+    // CSS layout must always contain itself inside the real host viewport.
+    // resolutionPreset is a rendering/quality preference, not permission to
+    // make the DOM 1280px wide on a browser that is only 1055 CSS pixels wide
+    // (a common high-DPI desktop case when emulating the Steam Deck preset).
+    const width = window.innerWidth;
+    const height = window.innerHeight;
 
     document.documentElement.style.setProperty('--vw-actual', `${width}px`);
     document.documentElement.style.setProperty('--vh-actual', `${height}px`);
@@ -7351,6 +7335,7 @@ function ensureArmoryInitialized() {
                 onEmbark: () => closeArmoryScreen({ embark: true }),
                 onBack: () => closeArmoryScreen({ embark: false }),
                 onOpenVault: () => openSteamVaultModal(),
+                onOpenSettings: () => openSettingsModal(),
                 ownership: getOwnershipStore()
             });
         })();
@@ -8931,6 +8916,13 @@ if (settingsBtns.length > 0 && settingsPopup) {
     });
 }
 
+document.addEventListener('click', (event) => {
+    const btn = event.target?.closest?.('.open-settings-btn');
+    if (btn && settingsPopup && settingsPopup.classList.contains('hidden')) {
+        openSettingsModal();
+    }
+});
+
 if (abortBtn) {
     abortBtn.addEventListener('click', () => {
         const confirmModal = document.getElementById('confirm-modal');
@@ -9871,6 +9863,8 @@ document.addEventListener('keydown', (event) => {
     }
 
     if (event.key === 'Escape') {
+        if (event.defaultPrevented) return;
+
         const virtualKeyboardOverlay = document.getElementById('virtual-keyboard-overlay');
         if (virtualKeyboardOverlay && !virtualKeyboardOverlay.classList.contains('hidden')) {
             closeVirtualKeyboard();
@@ -10008,9 +10002,23 @@ document.addEventListener('keydown', (event) => {
             return;
         }
 
+        const codexDetailModal = document.getElementById('codex-detail-modal');
+        if (codexDetailModal && !codexDetailModal.classList.contains('hidden')) {
+            closeCodexDetailModal();
+            event.preventDefault();
+            return;
+        }
+
         const codexModal = document.getElementById('codex-modal');
         if (codexModal && !codexModal.classList.contains('hidden')) {
             closeCodexModal();
+            event.preventDefault();
+            return;
+        }
+
+        const achievementsModal = document.getElementById('achievements-modal');
+        if (achievementsModal && !achievementsModal.classList.contains('hidden')) {
+            document.getElementById('close-achievements-modal')?.click();
             event.preventDefault();
             return;
         }
@@ -10029,9 +10037,9 @@ document.addEventListener('keydown', (event) => {
             return;
         }
 
-        const armoryScreen = document.getElementById('armory-screen');
-        if (armoryScreen && !armoryScreen.classList.contains('hidden')) {
-            document.getElementById('armory-btn-back')?.click();
+        const operatorPolishModal = document.getElementById('operator-polish-modal');
+        if (operatorPolishModal && !operatorPolishModal.classList.contains('hidden')) {
+            setOperatorPolishModalOpen(false);
             event.preventDefault();
             return;
         }
@@ -10040,6 +10048,23 @@ document.addEventListener('keydown', (event) => {
         if (rosterModal && !rosterModal.classList.contains('hidden')) {
             rosterModal.classList.add('hidden');
             rosterModal.setAttribute('aria-hidden', 'true');
+            event.preventDefault();
+            return;
+        }
+
+        const armoryScreen = document.getElementById('armory-screen');
+        if (armoryScreen && !armoryScreen.classList.contains('hidden')) {
+            document.getElementById('armory-btn-back')?.click();
+            event.preventDefault();
+            return;
+        }
+
+        const activeMenuRoot = getControllerFocusRoot();
+        const fallbackBackTarget = isModalFocusRoot(activeMenuRoot)
+            ? getControllerBackTarget(activeMenuRoot)
+            : null;
+        if (fallbackBackTarget) {
+            fallbackBackTarget.click();
             event.preventDefault();
             return;
         }
