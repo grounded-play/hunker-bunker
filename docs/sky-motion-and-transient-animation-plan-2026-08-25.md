@@ -31,6 +31,10 @@ Two art notes, neither blocking:
 
 A comet holds 8 frames at 12fps -- 0.67s -- but crosses the sky over ~20s, and the art brief has its tail lengthening across the crossing. So `sheetTimeForTransient` **stretches** once-mode and hold-mode atlases across the transient's lifetime, while loop-mode atlases (the tumbling satellite) play at their true frame rate, because stretching a rotation over a 30s pass would look frozen. Conflating the sheet's timeline with the transient's is the mistake this function exists to prevent.
 
+### Trigger fade-out (shipped 2026-08-26)
+
+Trigger animations never loop; they run once and fade out over their tail rather than cutting on the last frame. Implemented as `transientEnvelope` (pure, in `skyTransients.js`) applied in `resolveSkyTransients`, with per-asset tail lengths — 14% for lightning, 30–34% for narrative beats, 24% default. See `docs/sky-fx-animation-classes-2026-08-26.md` §2b.
+
 ### Still to tune (visual, not correctness)
 
 - The comet reads as a compact fireball rather than a tailed comet -- likely angular size and additive gain, not the art.

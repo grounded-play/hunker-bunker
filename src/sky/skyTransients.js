@@ -51,6 +51,13 @@ const TRANSIENT_SIZES = Object.freeze({
 });
 
 const DEFAULT_EVENT_SIZE = 0.34;
+
+// Trigger animations never loop -- they run once and leave. Rather than
+// cutting on the last frame, the tail fades so the effect dies out of the sky
+// instead of blinking off it. The lead-in is much shorter: a comet should
+// arrive promptly, but it must not pop into existence at full strength.
+const ENVELOPE_FADE_IN = 0.06;
+const ENVELOPE_FADE_OUT = 0.24;
 const GAP_MIN = 90;
 const GAP_MAX = 260;
 
@@ -172,4 +179,25 @@ export function sheetTimeForTransient(definition, { progress = 0, elapsedInTrans
 export function anchorDirectionFor(anchor, skyState, pathDirection) {
     if (anchor === 'primary-sun') return skyState?.sunDirection ?? pathDirection;
     return ANCHOR_DIRECTIONS[anchor] ?? pathDirection;
+}
+
+// Appearance envelope over a trigger animation's lifetime, independent of the
+// frames themselves. The art already dims toward its final frames on most
+// atlases; this guarantees the effect reaches zero regardless of where a given
+// sheet's last frame happens to land, so nothing ever vanishes mid-brightness.
+export function transientEnvelope(progress, {
+    fadeIn = ENVELOPE_FADE_IN,
+    fadeOut = ENVELOPE_FADE_OUT
+} = {}) {
+    if (!(progress > 0) || progress >= 1) return 0;
+    // smoothstep at both ends: a linear ramp reads as a mechanical dimmer,
+    // especially on the additive atlases where brightness is the whole effect.
+    const rise = fadeIn > 0 ? smoothstepUnit(progress / fadeIn) : 1;
+    const fall = fadeOut > 0 ? smoothstepUnit((1 - progress) / fadeOut) : 1;
+    return Math.min(rise, fall);
+}
+
+function smoothstepUnit(value) {
+    const t = value < 0 ? 0 : value > 1 ? 1 : value;
+    return t * t * (3 - 2 * t);
 }

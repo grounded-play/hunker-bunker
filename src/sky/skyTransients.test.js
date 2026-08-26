@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { SKY_SHEETS } from './skySheets.js';
-import { createTransientSchedule, resolveActiveTransients, SCHEDULED_TRANSIENT_IDS, sheetTimeForTransient, anchorDirectionFor } from './skyTransients.js';
+import { createTransientSchedule, resolveActiveTransients, SCHEDULED_TRANSIENT_IDS, sheetTimeForTransient, anchorDirectionFor, transientEnvelope } from './skyTransients.js';
 
 const schedule = createTransientSchedule(4242);
 const active = (elapsedSeconds, events = []) =>
@@ -171,5 +171,54 @@ describe('anchorDirectionFor', () => {
     it('falls back to the supplied path direction for unanchored effects', () => {
         const path = { x: 0, y: 0.5, z: 0.866 };
         expect(anchorDirectionFor('center', skyState, path)).toBe(path);
+    });
+});
+
+describe('transientEnvelope', () => {
+    it('fades a trigger animation out over its final frames rather than cutting', () => {
+        expect(transientEnvelope(1)).toBeCloseTo(0, 6);
+        expect(transientEnvelope(0.97)).toBeLessThan(0.5);
+        expect(transientEnvelope(0.99)).toBeLessThan(transientEnvelope(0.95));
+    });
+
+    it('holds full strength through the body of the animation', () => {
+        for (const progress of [0.3, 0.5, 0.6]) {
+            expect(transientEnvelope(progress)).toBeCloseTo(1, 6);
+        }
+    });
+
+    it('eases in at the start so a trigger never pops onto the screen', () => {
+        expect(transientEnvelope(0)).toBeCloseTo(0, 6);
+        expect(transientEnvelope(0.02)).toBeLessThan(1);
+        expect(transientEnvelope(0.02)).toBeGreaterThan(0);
+    });
+
+    it('decreases monotonically once the fade-out has begun', () => {
+        let previous = 1;
+        for (let p = 0.8; p <= 1; p += 0.01) {
+            const value = transientEnvelope(p);
+            expect(value).toBeLessThanOrEqual(previous + 1e-9);
+            previous = value;
+        }
+    });
+
+    it('never leaves the unit range, even outside the lifetime', () => {
+        for (let p = -0.5; p <= 1.5; p += 0.01) {
+            const value = transientEnvelope(p);
+            expect(value).toBeGreaterThanOrEqual(0);
+            expect(value).toBeLessThanOrEqual(1);
+        }
+    });
+
+    it('reads zero once the animation is over, so nothing lingers', () => {
+        expect(transientEnvelope(1.2)).toBe(0);
+    });
+
+    it('lets a slow beat start fading earlier than a lightning strike', () => {
+        // A shorter fadeOut begins LATER: at 90% through, a strike with a 5%
+        // tail is still at full strength while a beat with a 40% tail has been
+        // dimming for a quarter of its life.
+        expect(transientEnvelope(0.9, { fadeOut: 0.05 })).toBeCloseTo(1, 6);
+        expect(transientEnvelope(0.9, { fadeOut: 0.4 })).toBeLessThan(0.5);
     });
 });

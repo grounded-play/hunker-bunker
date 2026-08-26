@@ -260,3 +260,54 @@ describe('resolveSkyTransients', () => {
         expect(build({ transients: [] })).toEqual([]);
     });
 });
+
+describe('resolveSkyTransients fade-out', () => {
+    const base = {
+        key: 'scheduled:100',
+        sheetId: 'sky_fx_comet_longtail',
+        elapsedInTransient: 10,
+        angularSize: 0.18,
+        direction: { x: 0, y: 0.7, z: 0.71 }
+    };
+    const at = (progress, sheetId = base.sheetId) => resolveSkyTransients({
+        ...baseState,
+        sunDirection: { x: 0, y: 1, z: 0 },
+        transients: [{ ...base, sheetId, progress }]
+    })[0];
+
+    it('runs a trigger animation at full strength through its middle', () => {
+        expect(at(0.5).opacity).toBeCloseTo(1, 5);
+    });
+
+    it('fades the final frames out instead of cutting them off', () => {
+        expect(at(0.95).opacity).toBeLessThan(at(0.75).opacity);
+        expect(at(0.995).opacity).toBeLessThan(0.1);
+    });
+
+    it('eases in so a trigger never pops onto the screen at full brightness', () => {
+        expect(at(0.01).opacity).toBeLessThan(1);
+        expect(at(0.01).opacity).toBeGreaterThan(0);
+    });
+
+    it('fades a looping tumbler out too, even though its frames keep cycling', () => {
+        // The satellite's frames loop, but its pass through the sky does not --
+        // the envelope governs presence, the cycle governs frames.
+        expect(at(0.98, 'sky_fx_satellite_tumble').opacity)
+            .toBeLessThan(at(0.5, 'sky_fx_satellite_tumble').opacity);
+    });
+
+    it('gives lightning a snappier tail than a slow narrative beat', () => {
+        // A strike that lingered would stop reading as a strike.
+        expect(at(0.85, 'sky_fx_lightning_fork').opacity)
+            .toBeGreaterThan(at(0.85, 'sky_fx_mothership_transit').opacity);
+    });
+
+    it('never emits an opacity outside the unit range', () => {
+        for (let p = 0; p <= 1; p += 0.02) {
+            const entry = at(p);
+            if (!entry) continue;
+            expect(entry.opacity).toBeGreaterThanOrEqual(0);
+            expect(entry.opacity).toBeLessThanOrEqual(1);
+        }
+    });
+});

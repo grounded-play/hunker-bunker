@@ -8,7 +8,7 @@
 // docs/sky-layer-and-weather-asset-catalog-2026-08-25.md section 2.
 
 import { SKY_SHEETS, frameRectFor } from './skySheets.js';
-import { sheetTimeForTransient, anchorDirectionFor } from './skyTransients.js';
+import { sheetTimeForTransient, anchorDirectionFor, transientEnvelope } from './skyTransients.js';
 
 const SKY_DIR = '/sky';
 
@@ -173,6 +173,18 @@ export function resolveSkyBodies(skyState) {
         });
 }
 
+// How long each trigger animation spends fading out, as a fraction of its own
+// lifetime. A lightning strike that lingered would stop reading as a strike;
+// a narrative beat that snapped off would read as a dropped frame.
+const TRANSIENT_FADE_OUT = Object.freeze({
+    sky_fx_lightning_fork: 0.14,
+    sky_fx_lightning_sheet: 0.14,
+    sky_fx_lightning_crawler: 0.14,
+    sky_fx_mothership_transit: 0.34,
+    sky_fx_sun_gutter: 0.30,
+    sky_fx_spore_bloom_zenith: 0.30
+});
+
 // Active transients as billboard entries. Every animation atlas ships un-keyed
 // on black, so they are additive without exception -- there is no keyed variant
 // to branch on the way the celestial bodies have.
@@ -192,11 +204,20 @@ export function resolveSkyTransients(skyState) {
                 direction: anchorDirectionFor(definition.anchor, skyState, transient.direction),
                 angularSize: transient.angularSize,
                 blend: 'additive',
-                // Heavy weather hides everything above the cloud deck, except
-                // the lightning that belongs to the storm itself.
-                opacity: definition.renderAs?.includes('storm')
-                    ? 1
-                    : clamp01(1 - stormDensity * 0.85)
+                // Two independent things gate visibility. The envelope governs
+                // PRESENCE across the animation's lifetime -- triggers never
+                // loop, they run once and fade out, so the effect dies out of
+                // the sky rather than blinking off it. Weather governs whether
+                // anything above the cloud deck can be seen at all.
+                opacity: clamp01(
+                    transientEnvelope(transient.progress, {
+                        fadeOut: TRANSIENT_FADE_OUT[transient.sheetId]
+                    })
+                    // Lightning belongs to the storm, so it is not hidden by it.
+                    * (definition.renderAs?.includes('storm')
+                        ? 1
+                        : 1 - stormDensity * 0.85)
+                )
             };
         });
 }
