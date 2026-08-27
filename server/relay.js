@@ -78,10 +78,13 @@ function sanitizeString(value, maxLen = 32, fallback = 'AGENT') {
 // above rather than trusting shape or type.
 function sanitizeLoadout(value) {
     if (!value || typeof value !== 'object') return null;
-    return {
+    const sanitized = {
         weapon: sanitizeString(value.weapon, 40, 'UNARMED'),
         hasCharm: Boolean(value.hasCharm)
     };
+    if (value.chassisSkinId) sanitized.chassisSkinId = sanitizeString(value.chassisSkinId, 64, '');
+    if (value.polishColor) sanitized.polishColor = sanitizeString(value.polishColor, 32, '');
+    return sanitized;
 }
 
 export const sessionTelemetry = {

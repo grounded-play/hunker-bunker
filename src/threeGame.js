@@ -4398,6 +4398,8 @@ export class ThreeGame {
             id: playerData.id,
             callsign: playerData.callsign || 'OPERATIVE',
             opClass,
+            chassisSkinId: playerData.chassisSkinId || playerData.loadout?.chassisSkinId || null,
+            polishColor: playerData.polishColor || playerData.loadout?.polishColor || null,
             mesh: group,
             sprite,
             targetPos: new THREE.Vector3(group.position.x, group.position.y, group.position.z),
@@ -4438,25 +4440,46 @@ export class ThreeGame {
         remote.overlayLoading = true;
 
         const classVisuals = {
-            SCOUT: { weaponArchetype: 'talon' },
+            SCOUT: {
+                modelUrl: '/3d/scouting-scout/Scout.game.glb',
+                animationModelUrl: '/3d/scouting-scout/Scout.game.glb',
+                animationBonePrefix: 'mixamorig',
+                weaponArchetype: 'talon',
+                allowStatic: true
+            },
             ENGINEER: {
                 modelUrl: '/3d/runtime/engineer-rigged-gestures.glb',
                 animationModelUrl: '/3d/scouting-scout/Scout.game.glb',
                 animationBonePrefix: 'mixamorig',
-                weaponArchetype: 'tesla_lock'
+                weaponArchetype: 'tesla_lock',
+                allowStatic: true
             },
             TANK: {
                 modelUrl: '/3d/runtime/tank-rigged.glb',
                 animationModelUrl: '/3d/scouting-scout/Scout.game.glb',
                 animationBonePrefix: 'mixamorig',
                 weaponArchetype: 'siege_breaker',
-                weaponMount: { position: [0.03, 0.02, 0.03] }
+                weaponMount: { position: [0.03, 0.02, 0.03] },
+                allowStatic: true
             }
         };
+
+        const chassisSkinId = remote.chassisSkinId;
+        const chassisModelUrl = chassisSkinId ? CHASSIS_SKIN_MODELS[String(chassisSkinId)] : null;
+        if (chassisModelUrl && classVisuals[remote.opClass]) {
+            classVisuals[remote.opClass] = {
+                ...classVisuals[remote.opClass],
+                modelUrl: chassisModelUrl,
+                animationModelUrl: '/3d/scouting-scout/Scout.game.glb',
+                animationBonePrefix: 'mixamorig',
+                allowStatic: true
+            };
+        }
 
         try {
             const overlay = await createPlayer3dOverlay({
                 targetHeight: (this.playerSpriteScale || 1.6) * 0.98,
+                allowStatic: true,
                 ...classVisuals[remote.opClass]
             });
             if (this.remotePlayers?.get(remote.id) !== remote || !remote.mesh.parent) {
@@ -4467,6 +4490,9 @@ export class ThreeGame {
             remote.mesh.add(overlay.root);
             remote.overlay = overlay;
             remote.sprite.visible = false;
+            if (remote.polishColor) {
+                overlay.setOperatorPolish?.(remote.polishColor);
+            }
             if (typeof window !== 'undefined' && window.hbLog) {
                 window.hbLog('MULTIPLAYER', 'info', 'remote-avatar-3d-ready', {
                     playerId: remote.id,
@@ -4547,11 +4573,14 @@ export class ThreeGame {
     handleRemotePlayerDamaged(data) {
         if (!data) return;
         if (data.targetId === this.netSocket?.id) {
-            // Local player was hit in PvP. Was this.takePlayerDamage?.(...) --
-            // that method never existed (Sprint 24 audit finding), so this
-            // branch silently never fired even on the rare occasion something
-            // emitted playerDamage.
-            this.takeDamage?.(data.damage || 10, 'pvp-rival');
+            // Local player was hit in PvP.
+            // Server damage is emitted on a 100-point scale (e.g. PVP_WEAPON_DAMAGE = 10).
+            // Convert to player vitals scale (3-4 hearts) so local player takes 1 heart per standard hit instead of dying in one shot.
+            const serverDamage = data.damage || 10;
+            const damageHearts = serverDamage >= 10
+                ? Math.max(1, Math.round((serverDamage / 100) * (this.playerVitals?.maxHp || 3)))
+                : serverDamage;
+            this.takeDamage?.(damageHearts, 'pvp-rival');
         } else if (this.remotePlayers?.has(data.targetId)) {
             const remote = this.remotePlayers.get(data.targetId);
             remote.hp = Math.max(0, remote.hp - (data.damage || 10));
@@ -4740,18 +4769,24 @@ export class ThreeGame {
                 // broadcast in playerMove -- mirrors updatePlayerSpriteAnimation
                 // but writes into this remote's own cloned texture.
                 const speedSq = remote.vx * remote.vx + remote.vz * remote.vz;
-                const isMoving = remote.animState === 'run' && speedSq > 0.0001;
+                const posDeltaDist = mesh.position.distanceTo(remote.targetPos);
+                const isMoving = remote.animState === 'run' || remote.animState === 'walk' || speedSq > 0.0001 || posDeltaDist > 0.02;
+                const moveDirX = Math.abs(remote.vx) > 0.001 ? remote.vx : (remote.targetPos.x - mesh.position.x);
+                const moveDirZ = Math.abs(remote.vz) > 0.001 ? remote.vz : (remote.targetPos.z - mesh.position.z);
+                const groundSpeed = Math.hypot(moveDirX, moveDirZ) || 3.6;
+
                 remote.overlay?.update?.(delta, {
                     isFalling: false,
                     isReloading: false,
                     isMoving,
-                    isSprinting: isMoving,
+                    isSprinting: remote.animState === 'run' || speedSq > 8.0,
                     isInjured: remote.hp < remote.maxHp * 0.4,
                     hasAim: false,
-                    moveX: 0,
-                    moveZ: 0,
-                    aimX: 0,
-                    aimZ: 0
+                    moveX: moveDirX,
+                    moveZ: moveDirZ,
+                    aimX: moveDirX,
+                    aimZ: moveDirZ,
+                    groundSpeed
                 });
                 if (isMoving) {
                     remote.facingRow = this.getFacingRow(remote.vx, remote.vz);
