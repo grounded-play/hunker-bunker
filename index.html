@@ -2081,29 +2081,20 @@
         <!-- Section 1: Display & Graphics -->
         <div class="settings-category-group">
           <div class="settings-category-header">DISPLAY & GRAPHICS</div>
-          <div class="setting-item">
-            <span>STAGE RESOLUTION</span>
-            <select id="setting-resolution" class="settings-select">
-              <option value="auto">AUTO (WINDOW FIT)</option>
-              <option value="deck" selected>STEAM DECK (1280×800 - 16:10)</option>
-              <option value="720p">720p HD (1280×720 - 16:9)</option>
-              <option value="1080p">1080p FHD (1920×1080 - 16:9)</option>
-              <option value="1440p">1440p QHD (2560×1440 - 16:9)</option>
-              <option value="4k">4K UHD (3840×2160 - 16:9)</option>
-            </select>
-          </div>
+          <!-- Stage Resolution was a developer layout label, not a renderer
+               setting. Keep the internal dev-console preset, but do not offer
+               an inert control in player settings. -->
           <div class="setting-item">
             <span>NIGHT VISION (NO FOG/NIGHT)</span>
             <label class="toggle"><input type="checkbox" id="main-nightvision-toggle"> <span class="slider"></span></label>
           </div>
-          <div class="setting-item">
-            <span>CAMERA SHAKE</span>
-            <label class="toggle"><input type="checkbox" id="setting-shake-toggle"> <span class="slider"></span></label>
-          </div>
-          <div class="setting-item">
+          <!-- Camera Shake had no camera-effect consumer. Re-add only with a
+               real runtime implementation. -->
+          <div class="setting-item hidden" id="debug-overlay-setting-row">
             <span>DEBUG OVERLAY</span>
             <label class="toggle"><input type="checkbox" id="main-debug-toggle"> <span class="slider"></span></label>
           </div>
+          <!-- Debug Overlay is revealed only after QA authorization. -->
         </div>
 
         <!-- Section 2: Audio & Voice -->
@@ -2122,10 +2113,8 @@
         <!-- Section 3: Gameplay & Accessibility -->
         <div class="settings-category-group">
           <div class="settings-category-header">GAMEPLAY & ACCESSIBILITY</div>
-          <div class="setting-item">
-            <span>RUN DIFFICULTY</span>
-            <span id="setting-difficulty-val" class="setting-val-display">STANDARD</span>
-          </div>
+          <!-- Run Difficulty was a hardcoded readout with no selectable or
+               runtime difficulty system, so it is intentionally not shown. -->
           <div class="setting-item">
             <span>UI ACCESSIBILITY SCALE</span>
             <select id="setting-ui-scale" class="settings-select">
@@ -2236,12 +2225,10 @@
           </div>
           <div class="setting-item">
             <span>STEAM CLOUD SYNC</span>
-            <span id="setting-steam-cloud-status" class="setting-val-display" style="color: var(--accent-secondary, #2ec4b6);">SYNCED (AUTO-CLOUD)</span>
+            <span id="setting-steam-cloud-status" class="setting-val-display" data-state="checking">CHECKING…</span>
           </div>
-          <div class="setting-item setting-item--action">
-            <span>MATURE CONTENT AUDIT</span>
-            <button type="button" class="calibrate-btn settings-action-btn" id="open-mature-audit-btn" title="Steam Reviewer Compliance Suite (F9)">INSPECT (F9)</button>
-          </div>
+          <!-- Mature Content Audit is a reviewer/QA tool reachable through
+               its authorized F9 workflow; it is not a player setting. -->
           <div class="setting-item setting-item--action">
             <span>SAVE DATA</span>
             <button type="button" class="calibrate-btn settings-action-btn" id="open-save-data">OPEN</button>

@@ -1535,6 +1535,16 @@ body {
   letter-spacing: 1px;
 }
 
+#setting-steam-cloud-status[data-state='checking'],
+#setting-steam-cloud-status[data-state='unavailable'],
+#setting-steam-cloud-status[data-state='offline'] {
+  color: var(--text-muted);
+}
+
+#setting-steam-cloud-status[data-state='disabled'] {
+  color: var(--warning, #ffb347);
+}
+
 .global-skip-btn {
   position: absolute;
   top: calc(var(--vu) * 3);

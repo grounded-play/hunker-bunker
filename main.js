@@ -210,6 +210,7 @@ if (aboutSysVer) {
 const mainDebugToggle = document.getElementById('main-debug-toggle');
 const mainNightVisionToggle = document.getElementById('main-nightvision-toggle');
 const mainCommentaryToggle = document.getElementById('main-commentary-toggle');
+const steamCloudSettingsStatus = document.getElementById('setting-steam-cloud-status');
 const gameViewport = document.getElementById('game-viewport');
 const gameStageContainer = document.getElementById('game-container');
 const desktopCompass = document.getElementById('desktop-compass');
@@ -740,7 +741,7 @@ function getPreferredControllerFocusTarget(root, focusables) {
             ?? focusables[0];
     }
     if (root?.id === 'settings-popup') {
-        return focusables.find((element) => element.id === 'setting-resolution')
+        return focusables.find((element) => element.id === 'main-nightvision-toggle')
             ?? focusables.find((element) => element.closest?.('.setting-item'))
             ?? focusables[0];
     }
@@ -1913,8 +1914,10 @@ function handleSteamGameplayInput(controller) {
     const width = window.innerWidth || 1280;
     const height = window.innerHeight || 800;
     if (!controllerAimCursor) controllerAimCursor = { x: width / 2, y: height / 2 };
-    const deltaX = aimX * 14 + (Number(controller.cameraDelta?.x) || 0) * 0.55;
-    const deltaY = aimY * 14 + (Number(controller.cameraDelta?.y) || 0) * 0.55;
+    const aimSensitivity = Math.min(2, Math.max(0.5, Number(state.settings.aimSensitivity) || 1));
+    const invertAimSign = state.settings.invertAimY ? -1 : 1;
+    const deltaX = (aimX * 14 + (Number(controller.cameraDelta?.x) || 0) * 0.55) * aimSensitivity;
+    const deltaY = (aimY * 14 + (Number(controller.cameraDelta?.y) || 0) * 0.55) * aimSensitivity * invertAimSign;
     if (!thirdPersonCamera && Math.hypot(deltaX, deltaY) > 0.01) {
         controllerAimCursor.x = Math.min(width - 8, Math.max(8, controllerAimCursor.x + deltaX));
         controllerAimCursor.y = Math.min(height - 8, Math.max(8, controllerAimCursor.y + deltaY));
@@ -2179,6 +2182,15 @@ const state = {
         fullscreen: false,
         nightVision: false,
         commentary: false,
+        resolutionPreset: ['auto', 'deck', '720p', '1080p', '1440p', '4k'].includes(localStorage.getItem('hb_resolution_preset'))
+            ? localStorage.getItem('hb_resolution_preset')
+            : 'deck',
+        uiScale: [100, 115, 130, 150].includes(Number(localStorage.getItem('hb_ui_scale')))
+            ? Number(localStorage.getItem('hb_ui_scale'))
+            : 100,
+        textFloor: [16, 18, 20, 22, 24].includes(Number(localStorage.getItem('hb_text_floor')))
+            ? Number(localStorage.getItem('hb_text_floor'))
+            : 18,
         cameraMode: localStorage.getItem('hb_camera_mode') === 'isometric' ? 'isometric' : 'third-person',
         cameraDistance: ['close', 'standard', 'wide'].includes(localStorage.getItem('hb_camera_distance'))
             ? localStorage.getItem('hb_camera_distance')
@@ -7689,6 +7701,7 @@ let developerToolsAuthorized = canUseDeveloperTools({ electronApiPresent, qaTool
 
 function setDebugMode(active, { syncConsole = true } = {}) {
     const enabled = Boolean(active) && developerToolsAuthorized;
+    mainDebugToggle?.closest('.setting-item')?.classList.toggle('hidden', !developerToolsAuthorized);
     if (enabled) {
         document.body.classList.add('show-debug');
     } else {
@@ -7732,7 +7745,9 @@ if (window.electronAPI?.getQaToolsEnabled) {
                 electronApiPresent,
                 qaToolsEnabled
             });
-            if (!developerToolsAuthorized) {
+            if (developerToolsAuthorized) {
+                setDebugMode(state.settings.debug);
+            } else {
                 state.settings.debug = false;
                 setDebugMode(false);
                 closeDevConsoleModal();
@@ -7745,6 +7760,8 @@ if (window.electronAPI?.getQaToolsEnabled) {
                 electronApiPresent,
                 qaToolsEnabled
             });
+            state.settings.debug = false;
+            setDebugMode(false);
         });
 }
 
@@ -8910,9 +8927,6 @@ function openSettingsModal() {
     if (mainNightVisionToggle) mainNightVisionToggle.checked = !!state.settings.nightVision;
     if (mainCommentaryToggle) mainCommentaryToggle.checked = !!state.settings.commentary;
 
-    const resSelect = document.getElementById('setting-resolution');
-    if (resSelect) resSelect.value = state.settings.resolutionPreset || 'deck';
-
     const uiScaleSelect = document.getElementById('setting-ui-scale');
     if (uiScaleSelect) uiScaleSelect.value = String(state.settings.uiScale || 100);
 
@@ -8921,9 +8935,6 @@ function openSettingsModal() {
 
     const txtSpeedSelect = document.getElementById('setting-text-speed');
     if (txtSpeedSelect) txtSpeedSelect.value = state.settings.textSpeed || 'normal';
-
-    const shakeToggle = document.getElementById('setting-shake-toggle');
-    if (shakeToggle) shakeToggle.checked = state.settings.shakeEnabled !== false;
 
     const cbToggle = document.getElementById('setting-colorblind-toggle');
     if (cbToggle) cbToggle.checked = !!state.settings.colorblindAssist;
@@ -8946,11 +8957,7 @@ function openSettingsModal() {
     if (crosshairColor) crosshairColor.value = state.settings.crosshairColor || DEFAULT_CROSSHAIR_COLOR;
     syncCrosshairColorControls();
 
-    const diffVal = document.getElementById('setting-difficulty-val');
-    if (diffVal) {
-        const difficulty = window.game?.difficulty || state.settings.difficulty || 'standard';
-        diffVal.textContent = difficulty.toUpperCase();
-    }
+    updateSteamCloudSettingsStatus(window.__hbSteamStatus);
 
     syncAudioMixerUI(state.settings.audioMix);
     setAudioMixerOpen(false);
@@ -8958,9 +8965,6 @@ function openSettingsModal() {
     setResetSaveConfirmOpen(false);
 }
 
-document.getElementById('setting-resolution')?.addEventListener('change', (e) => {
-    devSetResolution(e.target.value);
-});
 document.getElementById('setting-ui-scale')?.addEventListener('change', (e) => {
     devSetUiScale(e.target.value);
 });
@@ -12807,6 +12811,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Touch controls were removed with the Steam Deck-first migration; clear
     // any persisted preference so stale saves don't carry dead settings.
     localStorage.removeItem('hunker_touch_controls_enabled');
+    localStorage.removeItem('hunker_shake_enabled');
+    localStorage.removeItem('hunker_difficulty');
 
     const storedNightVision = localStorage.getItem('hunker_nightvision_enabled');
     if (storedNightVision !== null) {
@@ -13064,9 +13070,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Load new settings
     state.settings.textSpeed = localStorage.getItem('hunker_text_speed') || 'normal';
-    state.settings.shakeEnabled = localStorage.getItem('hunker_shake_enabled') !== 'false';
     state.settings.colorblindAssist = localStorage.getItem('hunker_colorblind_assist') === 'true';
-    state.settings.difficulty = localStorage.getItem('hunker_difficulty') || 'standard';
     state.settings.commentary = localStorage.getItem(COMMENTARY_STORAGE_KEY) === 'true';
     if (mainCommentaryToggle) {
         mainCommentaryToggle.checked = state.settings.commentary;
@@ -13084,14 +13088,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         settingTextSpeed.addEventListener('change', (e) => {
             state.settings.textSpeed = e.target.value;
             localStorage.setItem('hunker_text_speed', state.settings.textSpeed);
-        });
-    }
-
-    const settingShakeToggle = document.getElementById('setting-shake-toggle');
-    if (settingShakeToggle) {
-        settingShakeToggle.addEventListener('change', (e) => {
-            state.settings.shakeEnabled = e.target.checked;
-            localStorage.setItem('hunker_shake_enabled', String(state.settings.shakeEnabled));
         });
     }
 
@@ -13809,10 +13805,31 @@ function formatSteamStatus(info, health) {
     return `${steamLine}\n${backendLine}\n${cloudLine}`;
 }
 
+function updateSteamCloudSettingsStatus(info) {
+    if (!steamCloudSettingsStatus) return;
+    const cloud = info?.cloud;
+    let text = 'NOT AVAILABLE (WEB BUILD)';
+    let status = 'unavailable';
+    if (info?.active && cloud?.available) {
+        const enabled = cloud.enabledForAccount && cloud.enabledForApp;
+        text = enabled ? 'READY (AUTO-CLOUD)' : 'DISABLED IN STEAM';
+        status = enabled ? 'ready' : 'disabled';
+    } else if (info?.active) {
+        text = 'UNAVAILABLE';
+    } else if (window.electronAPI) {
+        text = 'STEAM OFFLINE';
+        status = 'offline';
+    }
+    steamCloudSettingsStatus.textContent = text;
+    steamCloudSettingsStatus.dataset.state = status;
+}
+
 async function refreshSteamBridgeStatus({ waitForBackend = true } = {}) {
     if (!window.electronAPI) {
         console.log('[STEAM] Environment: Web browser (Electron API absent)');
         setSteamDebugStatus('STEAM: WEB BUILD\nBACKEND: OFF', 'offline');
+        window.__hbSteamStatus = { active: false, cloud: null };
+        updateSteamCloudSettingsStatus(window.__hbSteamStatus);
         return null;
     }
 
@@ -13867,6 +13884,7 @@ async function refreshSteamBridgeStatus({ waitForBackend = true } = {}) {
             authConfigured: Boolean(health?.steam?.authConfigured)
         }
     };
+    updateSteamCloudSettingsStatus(window.__hbSteamStatus);
 
     const identityLogKey = JSON.stringify({
         active: Boolean(info?.active),
