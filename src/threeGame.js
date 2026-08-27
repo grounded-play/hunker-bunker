@@ -16272,7 +16272,6 @@ export class ThreeGame {
         if (this.cinematicLock) return false; // untouchable during scripted sequences
         if (this.isInPocket) return false; // untouchable while resolving a fall inside a pocket
         if (this.iFrameTimer > 0 && reason !== 'abyss') return false;
-        if (this.missionState?.status === 'inactive') return false;
         if (sourceX != null && sourceZ != null && this.player?.position) {
             const containmentClamped = shouldBlockAttackPath(
                 { x: sourceX, z: sourceZ },
@@ -17456,7 +17455,6 @@ export class ThreeGame {
             this.emitO2State();
             return;
         }
-        if (this.missionState?.status === 'inactive') return;
 
         const previousO2 = this.playerVitals.o2;
         const generatorState = this.getO2GeneratorState();
@@ -28459,12 +28457,6 @@ export class ThreeGame {
 
         const tileX = Math.round(x);
         const tileY = Math.round(z);
-
-        // Canyon/cliff cells are void, not floor. The previous collision path
-        // only rejected '#' walls, so some canyon tiles could be crossed until
-        // the separate fall-radius check happened to catch the player.
-        const tile = this.getTileType(tileX, tileY);
-        if (tile === EXTERIOR_CANYON_TILE || tile === CLIFF_TILE) return false;
 
         for (let offsetY = -2; offsetY <= 2; offsetY++) {
             for (let offsetX = -2; offsetX <= 2; offsetX++) {
