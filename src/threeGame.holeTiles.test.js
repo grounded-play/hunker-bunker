@@ -225,6 +225,42 @@ describe('isHoleTile / mountChunk agreement', () => {
         expect(stalker.userData.aiMode).toBe('hunt');
     });
 
+    it('makes an emerged stalker damage and visibly affect the player on contact', () => {
+        vi.stubGlobal('window', {
+            dispatchEvent: vi.fn(),
+            AudioManager: { playMetalStress: vi.fn() }
+        });
+        const stalker = new THREE.Sprite(new THREE.SpriteMaterial());
+        stalker.position.set(0.9, 0.08, 0);
+        stalker.userData = {
+            type: 'mycelium_stalker',
+            aiMode: 'hunt',
+            attackCooldown: 0,
+            vx: 0,
+            vz: 0
+        };
+        const takeDamage = vi.fn(() => true);
+        const fakeThis = {
+            player: { position: { x: 0, z: 0 } },
+            isPlayerDead: false,
+            canEnemyTargetPlayer: () => true,
+            getCurrentContainmentOptions: () => ({ containmentZones: [], doors: [] }),
+            isSnailTileWalkable: () => true,
+            faceSpriteFromDir: vi.fn(),
+            takeDamage,
+            spawnToxicSporePuddle: vi.fn(),
+            triggerCameraShake: vi.fn()
+        };
+
+        ThreeGame.prototype.updateChargerOrStalkerBehavior.call(fakeThis, stalker, 0.016, { isStalker: true });
+
+        expect(takeDamage).toHaveBeenCalledWith(1, 'mycelium_stalker', stalker.position.x, stalker.position.z);
+        expect(fakeThis.spawnToxicSporePuddle).toHaveBeenCalled();
+        expect(fakeThis.triggerCameraShake).toHaveBeenCalled();
+        expect(stalker.userData.attackCooldown).toBe(1);
+        vi.unstubAllGlobals();
+    });
+
     it('defaults enemy X-ray ghost to natural sprite material color instead of red injury tint', () => {
         const fakeThis = {
             scene: { add: vi.fn() },

@@ -421,10 +421,11 @@ export class DebugLogger {
             <div style="display: flex; align-items: center; gap: 6px; padding: 5px 12px; background: rgba(14, 24, 38, 0.75); border-bottom: 1px solid rgba(0, 240, 255, 0.15); flex-wrap: wrap;">
                 <span style="color: #ffaa44; font-size: 10px; font-weight: bold; margin-right: 4px;">QUICK CHEATS:</span>
                 <button id="hb-quick-god" class="hb-cmd-btn hb-cheat-btn" title="Toggle Godmode (Invulnerability)">⚡ GOD</button>
+                <button id="hb-quick-ammo" class="hb-cmd-btn hb-cheat-btn" style="background: rgba(255, 170, 0, 0.15); border-color: #ffaa00; color: #ffaa00;" title="Toggle Unlimited Ammo (Infinite Clip &amp; Cache)">♾️ AMMO</button>
                 <button id="hb-quick-noclip" class="hb-cmd-btn hb-cheat-btn" style="background: rgba(34, 211, 238, 0.15); border-color: #22d3ee; color: #22d3ee;" title="Toggle Noclip (Ghost Fly through walls, Zero Collision, 3.5x Speed)">👻 NOCLIP / FLY</button>
                 <button id="hb-quick-heal" class="hb-cmd-btn hb-cheat-btn" title="Refill HP and Oxygen">❤️ HEAL</button>
                 <button id="hb-quick-speed" class="hb-cmd-btn hb-cheat-btn" title="Boost Sprint Traversal Speed">🚀 SPEED</button>
-                <button id="hb-quick-resources" class="hb-cmd-btn hb-cheat-btn" title="Grant +250 Tech, +150 Coin, +75 Med, +75 Shells">💎 +500$</button>
+                <button id="hb-quick-resources" class="hb-cmd-btn hb-cheat-btn" title="Grant 999,999 Tech, Coin, Med, Shells, Ammo">💎 +999K$</button>
                 <button id="hb-quick-nuke" class="hb-cmd-btn hb-cheat-btn" title="Purge all hostiles from active sector">💥 NUKE</button>
                 <span style="color: #00f0ff; font-size: 10px; font-weight: bold; margin-left: 8px; margin-right: 4px;">PROVING GROUNDS:</span>
                 <button id="hb-quick-tp-nexus" class="hb-cmd-btn hb-cheat-btn" style="background: rgba(46, 196, 182, 0.2); border-color: #2ec4b6; color: #2ec4b6;" title="Open QA Nexus Command Terminal">⚙️ NEXUS</button>
@@ -557,6 +558,7 @@ export class DebugLogger {
 
         // Quick Cheats & Teleport Action Toolbar Listeners
         const quickGodBtn = overlay.querySelector('#hb-quick-god');
+        const quickAmmoBtn = overlay.querySelector('#hb-quick-ammo');
         const quickNoclipBtn = overlay.querySelector('#hb-quick-noclip');
         const quickHealBtn = overlay.querySelector('#hb-quick-heal');
         const quickSpeedBtn = overlay.querySelector('#hb-quick-speed');
@@ -564,6 +566,7 @@ export class DebugLogger {
         const quickNukeBtn = overlay.querySelector('#hb-quick-nuke');
 
         if (quickGodBtn) quickGodBtn.onclick = () => this.executeCommand('god');
+        if (quickAmmoBtn) quickAmmoBtn.onclick = () => this.executeCommand('ammo');
         if (quickNoclipBtn) quickNoclipBtn.onclick = () => this.executeCommand('noclip');
         if (quickHealBtn) quickHealBtn.onclick = () => this.executeCommand('heal');
         if (quickSpeedBtn) {
@@ -575,7 +578,7 @@ export class DebugLogger {
                 }
             };
         }
-        if (quickResBtn) quickResBtn.onclick = () => this.executeCommand('give tech 250');
+        if (quickResBtn) quickResBtn.onclick = () => this.executeCommand('give all');
         if (quickNukeBtn) quickNukeBtn.onclick = () => this.executeCommand('nuke');
 
         const quickTpNexus = overlay.querySelector('#hb-quick-tp-nexus');
@@ -950,10 +953,11 @@ export class DebugLogger {
   • exportlogs [json|txt] - Download the complete log captured since launch
   • demo [start|mark <label>|stop] - Mark a friend-demo session/checkpoint
   • god                   - Toggle player invincibility
+  • ammo (or infammo)     - Toggle unlimited ammo (infinite clip & cache)
   • heal                  - Fully restore player Health & Oxygen
   • tp <x> <z>            - Teleport player to target tile
   • spawn <type>          - Spawn enemy (cybersnail, cryosnail, sporesnail, crawler, queen)
-  • give <resource> <qty> - Add tech, coin, or med resources
+  • give [res|all] [qty]  - Add tech, coin, med, shells, ammo, or 'all' (999K)
   • biome <active|cryo|bio>- Force environment biome transition
   • fps                   - Display current WebGL performance stats
   • loglevel <level>      - Set min log level (debug|info|warn|error)
@@ -1023,6 +1027,23 @@ export class DebugLogger {
                     this.warn('CMD', 'Game or player vitals not active');
                 }
                 break;
+
+            case 'ammo':
+            case 'unlimitedammo':
+            case 'infiniteammo':
+            case 'infammo': {
+                const targetGame = game || win?.game;
+                if (targetGame?.toggleUnlimitedAmmo) {
+                    const active = targetGame.toggleUnlimitedAmmo();
+                    this.info('CHEAT', `Unlimited ammo ${active ? 'ONLINE [Infinite Clip & Cache]' : 'OFFLINE [Normal Ammo Physics]'}`);
+                } else if (typeof win?.devToggleUnlimitedAmmo === 'function') {
+                    const msg = win.devToggleUnlimitedAmmo();
+                    this.info('CHEAT', msg);
+                } else {
+                    this.warn('CMD', 'Unlimited ammo unavailable (Game instance not active)');
+                }
+                break;
+            }
 
             case 'noclip':
             case 'fly':
@@ -1189,16 +1210,45 @@ export class DebugLogger {
                 }
                 break;
 
-            case 'give':
-                if (game?.addRunResource) {
-                    const res = parts[1] || 'tech';
-                    const amt = parseInt(parts[2], 10) || 50;
+            case 'give': {
+                const res = (parts[1] || 'all').toLowerCase();
+                const amt = parseInt(parts[2], 10) || (res === 'all' || res === 'money' || res === 'infinite' || res === 'resources' ? 999999 : 500);
+                if (res === 'all' || res === 'money' || res === 'infinite' || res === 'resources') {
+                    if (typeof win?.devGrantResources === 'function') {
+                        const msg = win.devGrantResources();
+                        this.info('GIVE', msg);
+                    } else {
+                        win?.bankManager?.deposit?.({ tech: amt, coin: amt, med: amt, ammo: amt });
+                        win?.bankManager?.addShells?.(amt);
+                        game?.addRunResource?.('tech', amt);
+                        game?.addRunResource?.('coin', amt);
+                        game?.addRunResource?.('med', amt);
+                        game?.addRunResource?.('ammo', amt);
+                        this.info('GIVE', `Added ${amt} Tech, Coin, Med, Shells, and Ammo.`);
+                    }
+                } else if (res === 'shells' || res === 'shell') {
+                    win?.bankManager?.addShells?.(amt);
+                    game?.bank?.addShells?.(amt);
+                    this.info('GIVE', `Added ${amt} shells`);
+                } else if (res === 'ammo') {
+                    if (win?.pickupCounterState) {
+                        win.pickupCounterState.ammo = (win.pickupCounterState.ammo ?? 0) + amt;
+                        win.renderPickupCounter?.();
+                    }
+                    win?.bankManager?.deposit?.({ ammo: amt });
+                    game?.addRunResource?.('ammo', amt);
+                    this.info('GIVE', `Added ${amt} ammo`);
+                } else if (game?.addRunResource) {
                     game.addRunResource(res, amt);
                     this.info('GIVE', `Added ${amt} ${res}`);
+                } else if (win?.bankManager) {
+                    win.bankManager.deposit({ [res]: amt });
+                    this.info('GIVE', `Deposited ${amt} ${res} to bank`);
                 } else {
                     this.warn('CMD', 'Resource system unavailable');
                 }
                 break;
+            }
 
             case 'biome':
                 if (game?.forceBiome) {

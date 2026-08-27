@@ -36,6 +36,7 @@ export function createQaNexusModal() {
                 <span class="qa-telemetry-pill" id="qa-pill-coords">LOC: (0.0, 0.0)</span>
                 <span class="qa-telemetry-pill" id="qa-pill-noclip">NOCLIP: OFF</span>
                 <span class="qa-telemetry-pill" id="qa-pill-god">GOD: OFF</span>
+                <span class="qa-telemetry-pill" id="qa-pill-ammo">AMMO: NORMAL</span>
                 <span class="qa-telemetry-pill" id="qa-pill-hp">HP: 100/100</span>
             </div>
 
@@ -95,8 +96,9 @@ export function createQaNexusModal() {
                     <div class="qa-btn-row">
                         <button class="qa-action-btn qa-action-btn--cyan" id="qa-cheat-noclip">👻 NOCLIP (3.5x FLY)</button>
                         <button class="qa-action-btn" id="qa-cheat-god">⚡ GOD MODE</button>
+                        <button class="qa-action-btn qa-action-btn--amber" id="qa-cheat-ammo">♾️ UNLIMITED AMMO</button>
                         <button class="qa-action-btn" id="qa-cheat-heal">❤️ FULL HEAL</button>
-                        <button class="qa-action-btn qa-action-btn--amber" id="qa-cheat-res">💎 +500$ SALVAGE</button>
+                        <button class="qa-action-btn qa-action-btn--amber" id="qa-cheat-res">💎 +999K$ SALVAGE &amp; SHELLS</button>
                         <button class="qa-action-btn qa-action-btn--red" id="qa-cheat-nuke">💥 PURGE ENEMIES</button>
                     </div>
 
@@ -179,6 +181,16 @@ function bindNexusListeners(modal) {
         updateNexusTelemetry();
     });
 
+    modal.querySelector('#qa-cheat-ammo')?.addEventListener('click', () => {
+        const game = window.game || window.threeGame;
+        if (game?.toggleUnlimitedAmmo) {
+            game.toggleUnlimitedAmmo();
+        } else if (typeof window.devToggleUnlimitedAmmo === 'function') {
+            window.devToggleUnlimitedAmmo();
+        }
+        updateNexusTelemetry();
+    });
+
     modal.querySelector('#qa-cheat-heal')?.addEventListener('click', () => {
         const game = window.game || window.threeGame;
         game?.healPlayer?.(999);
@@ -245,6 +257,13 @@ export function updateNexusTelemetry() {
         const active = Boolean(game?.godMode);
         godPill.textContent = `GOD: ${active ? 'ON' : 'OFF'}`;
         godPill.classList.toggle('qa-pill--active', active);
+    }
+
+    const ammoPill = nexusModalEl.querySelector('#qa-pill-ammo');
+    if (ammoPill) {
+        const active = Boolean(game?.unlimitedAmmo);
+        ammoPill.textContent = `AMMO: ${active ? 'INF' : 'NORMAL'}`;
+        ammoPill.classList.toggle('qa-pill--active', active);
     }
 
     const hpPill = nexusModalEl.querySelector('#qa-pill-hp');

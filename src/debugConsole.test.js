@@ -222,4 +222,40 @@ describe('debugConsole', () => {
         debugLog.executeCommand('campsim');
         expect(campsOpened).toBe(true);
     });
+
+    it('executes ammo command and toggles unlimited ammo on game instance', () => {
+        let ammoToggled = false;
+        globalThis.window.threeGame = {
+            toggleUnlimitedAmmo: () => {
+                ammoToggled = true;
+                return true;
+            }
+        };
+
+        debugLog.executeCommand('ammo');
+        expect(ammoToggled).toBe(true);
+        const lastLog = debugLog.logs[debugLog.logs.length - 1];
+        expect(lastLog.message).toContain('Unlimited ammo');
+        expect(lastLog.message).toContain('ONLINE');
+    });
+
+    it('executes give all and give shells commands', () => {
+        let grantCalled = false;
+        globalThis.window.devGrantResources = () => {
+            grantCalled = true;
+            return 'Granted 999,999 Tech, Coin, Med, Ammo, Shells, Max HP & Max O₂.';
+        };
+
+        debugLog.executeCommand('give all');
+        expect(grantCalled).toBe(true);
+        const lastLog = debugLog.logs[debugLog.logs.length - 1];
+        expect(lastLog.message).toContain('999,999');
+
+        let shellsDeposited = 0;
+        globalThis.window.bankManager = {
+            addShells: (amt) => { shellsDeposited += amt; }
+        };
+        debugLog.executeCommand('give shells 500');
+        expect(shellsDeposited).toBe(500);
+    });
 });

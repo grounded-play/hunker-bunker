@@ -1463,6 +1463,11 @@ function activateControllerFocusedElement() {
             // build, or not running through Big Picture) — fall back to the
             // in-engine on-screen keyboard so controller-only play can still
             // edit this field, per Full Controller Support requirements.
+            // Only for controller input: openSteamGamepadTextInputForElement
+            // already refuses in keyboard mode, and a player who pressed Enter
+            // on a physical keyboard wants to type into the field, not to have
+            // an on-screen keyboard steal focus from under their next keystroke.
+            if (!isSteamControllerInputActive()) return;
             openVirtualKeyboardForElement(activeElement, { description, maxCharacters });
         });
         return true;

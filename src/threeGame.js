@@ -1437,6 +1437,7 @@ export class ThreeGame {
         this.weaponClipSize = WEAPON_CLIP_SIZE;
         this.weaponUpgradeBonuses = { shotDamage: 0, speedAdd: 0, shotAmount: 0 };
         this.weaponClipAmmo = this.weaponClipSize;
+        this.unlimitedAmmo = false;
         this.weaponReloading = false;
         this.weaponReloadTimer = 0;
         this.weaponReloadDuration = WEAPON_RELOAD_DURATION;
@@ -5651,7 +5652,7 @@ export class ThreeGame {
             return false;
         }
 
-        if (this.weaponReloading) {
+        if (this.weaponReloading && !this.unlimitedAmmo) {
             presentationTelemetry.emit('WEAPON', PRESENTATION_EVENTS.WEAPON.SHOT_BLOCKED, { reason: 'reloading', clip: this.weaponClipAmmo, reserve: this.getAvailableAmmo() });
             this.playThrottledUiError('_lastReloadBlockedCueAt', { volume: 0.34, playbackRate: 1.05 });
             return false;
@@ -5660,7 +5661,7 @@ export class ThreeGame {
             presentationTelemetry.emit('WEAPON', PRESENTATION_EVENTS.WEAPON.SHOT_BLOCKED, { reason: 'fire_cooldown', cooldownRemaining: this.weaponFireCooldown });
             return false;
         }
-        if (this.weaponClipAmmo <= 0) {
+        if (this.weaponClipAmmo <= 0 && !this.unlimitedAmmo) {
             const availableAmmo = this.getAvailableAmmo();
             if (availableAmmo < 1) {
                 window.AudioManager?.play('weapon_dry_fire', { volume: 0.45 });
@@ -5678,7 +5679,11 @@ export class ThreeGame {
             return false;
         }
 
-        this.weaponClipAmmo = Math.max(0, this.weaponClipAmmo - 1);
+        if (this.unlimitedAmmo) {
+            this.weaponClipAmmo = this.weaponClipSize;
+        } else {
+            this.weaponClipAmmo = Math.max(0, this.weaponClipAmmo - 1);
+        }
         let fireCd = WEAPON_FIRE_COOLDOWN;
         this.weaponFireCooldown = fireCd;
         this.emitWeaponClipState();
@@ -5708,7 +5713,7 @@ export class ThreeGame {
 
         window.AudioManager?.play('weapon_fire_sidearm', { volume: 0.34 });
 
-        if (this.weaponClipAmmo <= 0) {
+        if (this.weaponClipAmmo <= 0 && !this.unlimitedAmmo) {
             this.requestReload();
         }
         return true;
@@ -15211,7 +15216,8 @@ export class ThreeGame {
                 cache: this.getAvailableAmmo(),
                 reloading: this.weaponReloading,
                 reloadProgress,
-                autoRefillProgress
+                autoRefillProgress,
+                unlimitedAmmo: Boolean(this.unlimitedAmmo)
             }
         }));
     }
@@ -15818,6 +15824,27 @@ export class ThreeGame {
 
     toggleNoclip(speedMultiplier = 3.5) {
         return this.setNoclip(!this.noclip, speedMultiplier);
+    }
+
+    setUnlimitedAmmo(enabled = false) {
+        this.unlimitedAmmo = Boolean(enabled);
+        if (this.unlimitedAmmo) {
+            this.weaponClipAmmo = this.weaponClipSize;
+            this.weaponReloading = false;
+            this.weaponReloadTimer = 0;
+            this.weaponAmmoRefillTimer = 0;
+        }
+        this.emitWeaponClipState();
+        window.dispatchEvent(new CustomEvent('unlimited-ammo-toggled', {
+            detail: {
+                enabled: this.unlimitedAmmo
+            }
+        }));
+        return this.unlimitedAmmo;
+    }
+
+    toggleUnlimitedAmmo() {
+        return this.setUnlimitedAmmo(!this.unlimitedAmmo);
     }
 
     healPlayer(amount = 1, { skipQueensMilkPenalty = false } = {}) {
@@ -19451,6 +19478,7 @@ export class ThreeGame {
     }
 
     getAvailableAmmo() {
+        if (this.unlimitedAmmo) return 9999;
         return Number.isFinite(window.pickupCounterState?.ammo)
             ? Math.max(0, Math.floor(window.pickupCounterState.ammo))
             : 0;
@@ -26516,17 +26544,28 @@ export class ThreeGame {
 
         this.faceSpriteFromDir(sprite, data.vx, dx);
 
-        // Contact attack check
-        if (distToPlayer <= 0.95 && (data.attackCooldown ?? 0) <= 0) {
+        // Contact attack check. Recompute after movement so a stalker that
+        // crosses into the player this frame lands the hit immediately rather
+        // than visually overlapping without effect until a later tick.
+        const contactDistance = Math.hypot(
+            this.player.position.x - sprite.position.x,
+            this.player.position.z - sprite.position.z
+        );
+        if (contactDistance <= SNAIL_ATTACK_RADIUS && (data.attackCooldown ?? 0) <= 0) {
             data.attackCooldown = 1.0;
+            const reason = isStalker ? 'mycelium_stalker' : 'bio_charger';
             const hitApplied = this.takeDamage(
                 isStalker ? 1 : 2,
-                isStalker ? 'mycelium_stalker' : 'bio_charger',
+                reason,
                 sprite.position.x,
                 sprite.position.z
             );
             if (hitApplied) {
                 if (isStalker) this.spawnToxicSporePuddle(sprite.position.x, sprite.position.z, false);
+                if (typeof window !== 'undefined') {
+                    window.dispatchEvent(new CustomEvent('player-hit', { detail: { reason } }));
+                }
+                this.triggerCameraShake?.(isStalker ? 0.16 : 0.24, 0.28);
                 window.AudioManager?.playMetalStress?.({ volume: 0.35, playbackRate: 1.4, force: true });
             }
         } else {

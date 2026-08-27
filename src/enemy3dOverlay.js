@@ -35,9 +35,14 @@ const MODEL_CONFIG = {
 
 const templates = new Map();
 const LOCOMOTION_URL = '/3d/scouting-scout/Scout.game.glb';
+const RIGGED_LOCOMOTION_TYPES = new Set(['crawler', 'mycelium_stalker', 'bio_charger']);
 
 export function hasEnemy3dModel(type) {
     return Boolean(MODEL_CONFIG[type]);
+}
+
+export function usesRiggedEnemyLocomotion(type) {
+    return RIGGED_LOCOMOTION_TYPES.has(type);
 }
 
 // Boss/queen encounters are rare, once-per-run, and already a big cinematic
@@ -125,7 +130,7 @@ function normalizeRoot(root, height) {
 export async function createEnemy3dVisual(type) {
     const config = MODEL_CONFIG[type];
     if (!config) return null;
-    const isHumanoidMonster = type === 'crawler' || type === 'mycelium_stalker' || type === 'bio_charger';
+    const isHumanoidMonster = usesRiggedEnemyLocomotion(type);
     const [gltf, locomotion] = await Promise.all([
         loadTemplate(config.url),
         isHumanoidMonster ? loadTemplate(LOCOMOTION_URL) : Promise.resolve(null)
@@ -148,38 +153,71 @@ export async function createEnemy3dVisual(type) {
     });
     root.scale.setScalar(0.05);
     let mixer = null;
-    const embeddedClip = gltf.animations?.find((clip) => /walk|run|idle|layer0/i.test(clip.name)) ?? gltf.animations?.[0];
-    if (embeddedClip) {
+    let idleAction = null;
+    let locomotionAction = null;
+
+    // The hole-spawned stalker model contains only a "hangingIdle" clip. It
+    // shares the player's Mixamo skeleton, so selecting that embedded clip as
+    // its locomotion left the legs dangling while the enemy slid at the
+    // player. Retarget the same authored idle/run pack used by the player's
+    // rig, and blend it from rest to travel based on actual world movement.
+    if (isHumanoidMonster && locomotion) {
         try {
             mixer = new THREE.AnimationMixer(model);
-            mixer.clipAction(embeddedClip).play();
+            const retarget = (name) => {
+                const source = locomotion.animations.find((clip) => clip.name === name);
+                if (!source) return null;
+                const clip = source.clone();
+                for (const track of clip.tracks) {
+                    track.name = track.name.replace('mixamorig1', 'mixamorig');
+                }
+                // Compatible Mixamo rigs can share bone rotations. Source-rig
+                // position/scale tracks contain different limb measurements
+                // and would stretch or displace the monster mesh.
+                clip.tracks = clip.tracks.filter((track) => {
+                    const separator = track.name.lastIndexOf('.');
+                    const nodeName = separator >= 0 ? track.name.slice(0, separator) : track.name;
+                    const property = separator >= 0 ? track.name.slice(separator + 1) : '';
+                    return property === 'quaternion' && Boolean(model.getObjectByName(nodeName));
+                });
+                return clip.tracks.length > 0 ? clip : null;
+            };
+            const idleClip = retarget('idle') ?? retarget('heroIdle');
+            const travelClip = retarget('run') ?? retarget('walk');
+            if (idleClip) idleAction = mixer.clipAction(idleClip).setEffectiveWeight(1).play();
+            if (travelClip) locomotionAction = mixer.clipAction(travelClip).setEffectiveWeight(0).play();
+            if (!idleAction && !locomotionAction) mixer = null;
         } catch {
             mixer = null;
+            idleAction = null;
+            locomotionAction = null;
         }
     }
-    if (!mixer && locomotion) {
-        const source = locomotion.animations.find((clip) => clip.name === 'run' || clip.name === 'walk');
-        if (source) {
-            const clip = source.clone();
-            for (const track of clip.tracks) {
-                track.name = track.name.replace('mixamorig1', 'mixamorig');
-                if (!/Hips\.position$/i.test(track.name) || track.getValueSize() !== 3) continue;
-                const anchorX = track.values[0];
-                const anchorY = track.values[1];
-                for (let index = 0; index < track.values.length; index += 3) {
-                    track.values[index] = anchorX;
-                    track.values[index + 1] = anchorY;
-                }
-            }
+
+    if (!mixer) {
+        const embeddedClip = gltf.animations?.find((clip) => /walk|run|idle|layer0/i.test(clip.name)) ?? gltf.animations?.[0];
+        if (embeddedClip) {
             try {
                 mixer = new THREE.AnimationMixer(model);
-                mixer.clipAction(clip).play();
+                locomotionAction = mixer.clipAction(embeddedClip).play();
             } catch {
                 mixer = null;
+                locomotionAction = null;
             }
         }
     }
-    return { root, mixer, age: 0, yaw: 0, lastX: null, lastZ: null, hasMixer: Boolean(mixer) };
+    return {
+        root,
+        mixer,
+        idleAction,
+        locomotionAction,
+        locomotionWeight: 0,
+        age: 0,
+        yaw: 0,
+        lastX: null,
+        lastZ: null,
+        hasMixer: Boolean(mixer)
+    };
 }
 
 export function updateEnemy3dVisual(visual, sprite, delta, time = 0) {
@@ -202,14 +240,25 @@ export function updateEnemy3dVisual(visual, sprite, delta, time = 0) {
     visual.lastX = x;
     visual.lastZ = z;
     visual.age += delta;
-    visual.mixer?.update(delta);
     const emerge = THREE.MathUtils.smoothstep(visual.age, 0, 0.65);
     const dead = Boolean(sprite.userData?.burstTriggered);
     const deathScale = dead ? Math.max(0, 1 - (sprite.userData.burstTimer ?? 0) * 2.5) : 1;
     visual.root.visible = deathScale > 0 && (sprite.material?.opacity ?? 1) > 0.03;
 
     // Procedural run locomotion / stride bob if moving
-    const isMoving = speed > 0.1;
+    const isMoving = speed > 0.1 && !sprite.userData?.holeEmergence;
+    if (visual.idleAction && visual.locomotionAction) {
+        visual.locomotionWeight = THREE.MathUtils.damp(
+            visual.locomotionWeight ?? 0,
+            isMoving ? 1 : 0,
+            12,
+            delta
+        );
+        visual.idleAction.setEffectiveWeight(1 - visual.locomotionWeight);
+        visual.locomotionAction.setEffectiveWeight(visual.locomotionWeight);
+        visual.locomotionAction.setEffectiveTimeScale(THREE.MathUtils.clamp(speed / 2.3, 0.7, 1.45));
+    }
+    visual.mixer?.update(delta);
     const runBounce = isMoving ? Math.abs(Math.sin(visual.age * 12)) * 0.12 : 0;
     const runLean = isMoving ? 0.14 : 0;
     const runTilt = isMoving ? Math.sin(visual.age * 6) * 0.06 : 0;
