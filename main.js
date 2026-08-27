@@ -7612,8 +7612,10 @@ if (dailyOpsBtn) {
             saveDailyOpsRecord({ attempted: true, completed: false, date: getTodayDateString() });
             _isDailyOpsRun = true;
             if (window.game) {
+                // Retain the date-derived Daily Ops theme, but roll a fresh
+                // topology for every deployment instead of pinning one layout.
                 window.game.globalSeedOffset = getDailySeedInt();
-                window.game.fixedRunEntropy = true;
+                window.game.fixedRunEntropy = false;
             }
             document.body.classList.add('mission-intro-active');
             const deploymentHold = suspendGameForFullscreenVideo();

@@ -15,4 +15,13 @@ describe('run entropy', () => {
         expect(seeds.size).toBe(8);
         expect([...seeds].every((seed) => seed > 0)).toBe(true);
     });
+
+    it('never repeats the explicitly supplied previous deployment seed', () => {
+        let previous = createFreshRunEntropy();
+        for (let i = 0; i < 32; i += 1) {
+            const next = createFreshRunEntropy(previous);
+            expect(next).not.toBe(previous);
+            previous = next;
+        }
+    });
 });

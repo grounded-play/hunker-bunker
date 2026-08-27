@@ -200,6 +200,7 @@ describe('wall decals and showroom gallery', () => {
         expect(decal.material.depthWrite).toBe(false);
         expect(decal.material.side).toBe(THREE.DoubleSide);
         expect(decal.position.z).toBeCloseTo(8 - 0.5 + 0.02);
+        expect(decal.geometry.parameters.width).toBeLessThanOrEqual(0.96);
 
         // Test explicit West wall face (normal faces East: nx=1, nz=0)
         const westDecal = ThreeGame.prototype.createScatterInstance.call(game, {

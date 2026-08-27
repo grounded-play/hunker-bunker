@@ -9056,7 +9056,13 @@ export class ThreeGame {
         }
 
         // 11. Check Camps & Camp Leaders
-        const actionable = this.getActionableCampAt?.(worldPoint.x, worldPoint.z);
+        let actionable = this.getActionableCampAt?.(worldPoint.x, worldPoint.z);
+        if (actionable?.action === 'talk') {
+            const camp = actionable.camp;
+            const leaderX = (camp?.pos?.x ?? camp?.tileX ?? camp?.x ?? 0) + (camp?.npcPos?.x ?? 0);
+            const leaderZ = (camp?.pos?.z ?? camp?.tileZ ?? camp?.z ?? 0) + (camp?.npcPos?.z ?? 0);
+            if (Math.hypot(worldPoint.x - leaderX, worldPoint.z - leaderZ) > 1.45) actionable = null;
+        }
         if (actionable) {
             const campLabel = actionable.camp?.leaderName ? `TALK: ${actionable.camp.leaderName.toUpperCase()}` : (actionable.camp?.label?.toUpperCase() || 'CAMP');
             return {
@@ -9064,7 +9070,7 @@ export class ThreeGame {
                 targetId: 'camp',
                 badgeLabel: campLabel,
                 kicker: 'OUTPOST SETTLEMENT // SURVIVOR',
-                title: actionable.camp?.leaderName ? `COMMANDER ${actionable.camp.leaderName.toUpperCase()}` : 'OUTPOST HABITATION',
+                title: actionable.camp?.leaderName?.toUpperCase() || 'OUTPOST HABITATION',
                 subtitle: 'FACTION: EXPEDITION SURVIVORS',
                 coords: { x: tileX, z: tileZ },
                 distance: playerDist,
@@ -9084,15 +9090,15 @@ export class ThreeGame {
                     return {
                         type: 'camp',
                         targetId: 'camp',
-                        badgeLabel: camp.leaderName ? `TALK: ${camp.leaderName.toUpperCase()}` : 'CAMP',
+                        badgeLabel: camp.label?.toUpperCase() || 'CAMP',
                         kicker: 'OUTPOST SETTLEMENT // SURVIVOR',
-                        title: camp.leaderName ? `COMMANDER ${camp.leaderName.toUpperCase()}` : 'SURVIVOR PERIMETER',
+                        title: camp.label?.toUpperCase() || 'SURVIVOR PERIMETER',
                         subtitle: 'FACTION: ALLIED FORCES',
                         coords: { x: tileX, z: tileZ },
                         distance: pDist,
                         integrity: 100,
                         promptKey: 'E',
-                        promptText: 'APPROACH'
+                        promptText: 'AIM AT CAMP LEADER'
                     };
                 }
             }
@@ -12354,14 +12360,31 @@ export class ThreeGame {
 
     getRadialMazePlan() {
         if (!this.radialMazePlan) {
-            this.radialMazePlan = generateRadialMazeExpedition(
-                ((this.runEntropy ?? 0) ^ (this.globalSeedOffset ?? 0) ^ 0x52494e47) >>> 0
-            );
+            let candidate = null;
+            let signature = null;
+            for (let attempt = 0; attempt < 32; attempt += 1) {
+                const seed = ((this.runEntropy ?? 0) ^ (this.globalSeedOffset ?? 0) ^ 0x52494e47) >>> 0;
+                candidate = generateRadialMazeExpedition(seed);
+                signature = this.getRadialLayoutSignature(candidate);
+                if (this.fixedRunEntropy || signature !== this._previousRadialLayoutSignature) break;
+                this.runEntropy = createFreshRunEntropy(this.runEntropy);
+            }
+            this.radialMazePlan = candidate;
+            this._currentRadialLayoutSignature = signature;
             if (this.radialMazePlan && !this.radialMazePlan.crossings) {
                 this.radialMazePlan.crossings = buildRingCrossingPlan(this.radialMazePlan);
             }
         }
         return this.radialMazePlan;
+    }
+
+    getRadialLayoutSignature(plan) {
+        if (!plan) return null;
+        return JSON.stringify({
+            nodes: (plan.nodes ?? []).map(({ id, chunkX, chunkY, x, z }) => [id, chunkX, chunkY, x, z]),
+            clusters: (plan.roomClusters ?? []).map(({ id, chunkX, chunkY, ring }) => [id, chunkX, chunkY, ring]),
+            routes: plan.topology?.routeEdges ?? []
+        });
     }
 
     getRegionalRouteTopology() {
@@ -16451,6 +16474,11 @@ export class ThreeGame {
     }
 
     clearLoadedChunksForRunReset() {
+        if (this.radialMazePlan) {
+            this._previousRadialLayoutSignature = this._currentRadialLayoutSignature
+                ?? this.getRadialLayoutSignature?.(this.radialMazePlan)
+                ?? null;
+        }
         for (const group of this.chunkMeshes.values()) {
             this.disposeChunkGroupResources(group);
             this.chunkGroups.remove(group);
@@ -16576,7 +16604,9 @@ export class ThreeGame {
             this._hiveKinKills = 0;
             this._tankShockGuardUsed = false;
             this.cinematicLock = false;
-            this.runEntropy = this.fixedRunEntropy ? 0 : createFreshRunEntropy();
+            this.runEntropy = this.fixedRunEntropy
+                ? 0
+                : createFreshRunEntropy(this.runEntropy);
             this.clearBlackBoxMarker();
             this._blackBoxState = blackBoxStore.load();
             this._initClassPassives();
@@ -22103,15 +22133,22 @@ export class ThreeGame {
                 if (tileChar === EXTERIOR_CANYON_TILE) {
                     if (this.floorGeometry && this.voidMaterial) {
                         instMatrix.compose(
-                            new THREE.Vector3(worldX, -10, worldZ),
+                            // Keep a dark mask immediately below the rim. The
+                            // old -10 plane sat behind the horizon from common
+                            // camera angles, exposing the bright sky instead.
+                            new THREE.Vector3(worldX, -0.18, worldZ),
                             floorRotation,
                             new THREE.Vector3(1, 1, 1)
                         );
                         voidPatchMatrices.push(instMatrix.clone());
                     }
                     const hasWalkableOrWall = (dx, dy) => {
-                        const char = grid[localY + dy]?.[localX + dx];
-                        return char === '.' || char === 'D' || char === '#' || char === 'C';
+                        const localChar = grid[localY + dy]?.[localX + dx];
+                        const cachedChar = localChar ?? this.getCachedTileType?.(worldX + dx, worldZ + dy);
+                        const char = cachedChar ?? this.getTileType?.(worldX + dx, worldZ + dy);
+                        return char !== null
+                            && char !== undefined
+                            && char !== EXTERIOR_CANYON_TILE;
                     };
                     const bKey = this.getBiomeKeyForWorldPosition?.(worldX, worldZ) ?? BIOME_KEYS.ACTIVE;
                     if (hasWalkableOrWall(0, -1)) {
@@ -23818,7 +23855,9 @@ export class ThreeGame {
             // placement.tiltX (a distortion meant for 3D organic props like stalagmites/junk
             // piles, not a flat wall-mounted 2D plane). Reusing it here silently stretched
             // otherwise-square textures up to ~8% non-uniformly.
-            const decalWidth = Math.max(1.0, scaleX * 1.4);
+            // Keep environmental decals inside a single wall panel. Large
+            // room-prop scales previously turned them into freestanding slabs.
+            const decalWidth = THREE.MathUtils.clamp(scaleX * 0.82, 0.62, 0.96);
             const decalHeight = decalWidth;
             const wallDecalGeo = new THREE.PlaneGeometry(decalWidth, decalHeight);
             const decalMesh = new THREE.Mesh(wallDecalGeo, material);
@@ -24609,7 +24648,35 @@ export class ThreeGame {
         );
         root.add(body);
         root.userData.fogMaterials = this.cloneMaterialsForFogOfWar(root);
+        this.applyPickupRarityVisuals(root);
         return root;
+    }
+
+    applyPickupRarityVisuals(pickup) {
+        const body = pickup?.userData?.body;
+        const rarityColor = pickup?.userData?.rarity?.color;
+        if (!body || !Number.isFinite(rarityColor)) return;
+        const accent = new THREE.Color(rarityColor);
+        const dynamicObjects = new Set([
+            pickup.userData.shadow,
+            pickup.userData.glow,
+            pickup.userData.burst
+        ]);
+        body.traverse((child) => {
+            if (dynamicObjects.has(child) || !child.material) return;
+            const materials = Array.isArray(child.material) ? child.material : [child.material];
+            for (const material of materials) {
+                material.color?.lerp?.(accent, 0.58);
+                if (material.emissive) {
+                    material.emissive.lerp(accent, 0.72);
+                    material.emissiveIntensity = Math.max(
+                        material.emissiveIntensity ?? 0,
+                        pickup.userData.rarity.emissiveIntensity ?? 0.95
+                    );
+                }
+                material.userData.pickupRarityColor = rarityColor;
+            }
+        });
     }
 
     cloneMaterialsForFogOfWar(root) {
