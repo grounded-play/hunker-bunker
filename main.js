@@ -9020,6 +9020,24 @@ document.getElementById('setting-invert-y-toggle')?.addEventListener('change', (
     state.settings.invertAimY = Boolean(e.target.checked);
     persistSettings();
 });
+mainDebugToggle?.addEventListener('change', (e) => {
+    const enabled = Boolean(e.target.checked);
+    state.settings.debug = enabled;
+    setDebugMode(enabled, { syncConsole: true });
+});
+mainNightVisionToggle?.addEventListener('change', (e) => {
+    const enabled = Boolean(e.target.checked);
+    state.settings.nightVision = enabled;
+    localStorage.setItem('hunker_nightvision_enabled', String(enabled));
+    if (window.game) {
+        window.game.nightVision = enabled;
+    }
+});
+mainCommentaryToggle?.addEventListener('change', (e) => {
+    const enabled = Boolean(e.target.checked);
+    state.settings.commentary = enabled;
+    localStorage.setItem(COMMENTARY_STORAGE_KEY, String(enabled));
+});
 function setCrosshairColor(value) {
     const color = String(value || '').toLowerCase();
     if (!/^#[0-9a-f]{6}$/.test(color)) return;
