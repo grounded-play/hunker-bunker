@@ -164,6 +164,40 @@ describe('browser gamepad mapping', () => {
         expect(mapped.menuTabRight).toBe(true);
     });
 
+    // The Steam layout drives gameplay movement from the analog `move` action,
+    // and the D-pad is a digital source. Folding it into the same vector is what
+    // makes the D-pad walk the player exactly like the left stick.
+    it('moves the player from the D-pad when the left stick is neutral', () => {
+        const buttons = Array.from({ length: 16 }, () => button(false));
+        buttons[13] = button(true);
+        buttons[14] = button(true);
+
+        const mapped = mapBrowserGamepad({ index: 0, id: 'Xbox Wireless Controller', axes: [0, 0, 0, 0], buttons });
+
+        expect(mapped.move).toEqual({ x: -1, y: 1 });
+        expect(mapped.active).toBe(true);
+    });
+
+    it('lets a pushed left stick win over the D-pad on each axis', () => {
+        const buttons = Array.from({ length: 16 }, () => button(false));
+        buttons[12] = button(true);
+        buttons[15] = button(true);
+
+        const mapped = mapBrowserGamepad({ index: 0, id: 'Xbox Wireless Controller', axes: [-0.6, 0, 0, 0], buttons });
+
+        expect(mapped.move.x).toBeCloseTo(-0.6, 5);
+        expect(mapped.move.y).toBe(-1);
+    });
+
+    it('leaves camera aim alone when only the D-pad is pressed', () => {
+        const buttons = Array.from({ length: 16 }, () => button(false));
+        buttons[12] = button(true);
+
+        const mapped = mapBrowserGamepad({ index: 0, id: 'Xbox Wireless Controller', axes: [0, 0, 0, 0], buttons });
+
+        expect(mapped.camera).toEqual({ x: 0, y: 0 });
+    });
+
     it('infers common controller prompt families from browser ids', () => {
         expect(inferBrowserGamepadType('DualSense Wireless Controller')).toBe('PS5Controller');
         expect(inferBrowserGamepadType('DUALSHOCK 4')).toBe('PS4Controller');

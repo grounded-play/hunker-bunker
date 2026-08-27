@@ -3,16 +3,16 @@
     "version" "3"
     "game" "Hunker Bunker"
     "title" "Official Hunker Bunker Controls"
-    "description" "Left Stick Move · Right Stick Aim/Pointer · A/RT Confirm menus · A Interact · B Dodge/Back · X Reload · Y Smash · LB Scan · RB Map · LT Sprint · RT Fire · Menu Pause."
+    "description" "Left Stick / D-Pad Move · Right Stick Aim/Pointer · A/RT Confirm menus · A Interact · B Dodge/Back · X Reload · Y Smash · LB Scan · RB Map · LT Sprint · RT Fire · Menu Pause."
     "controller_type" "controller_ps5"
-    "major_revision" "9"
+    "major_revision" "10"
     "minor_revision" "0"
     "localization"
     {
         "english"
         {
             "title" "Official Hunker Bunker Controls"
-            "description" "Left Stick Move · Right Stick Aim/Pointer · A/RT Confirm menus · A Interact · B Dodge/Back · X Reload · Y Smash · LB Scan · RB Map · LT Sprint · RT Fire · Menu Pause."
+            "description" "Left Stick / D-Pad Move · Right Stick Aim/Pointer · A/RT Confirm menus · A Interact · B Dodge/Back · X Reload · Y Smash · LB Scan · RB Map · LT Sprint · RT Fire · Menu Pause."
         }
     }
     "group"
@@ -345,6 +345,20 @@
         "gameactions"
         {
             "gameplay" "camera_mouse"
+        }
+    }
+    "group"
+    {
+        "id" "18"
+        "mode" "joystick_move"
+        "inputs" { }
+        "settings"
+        {
+            "deadzone_inner_radius" "6000"
+        }
+        "gameactions"
+        {
+            "gameplay" "move"
         }
     }
     "group"
@@ -687,6 +701,7 @@
             "13" "left_trigger active"
             "14" "right_trigger active"
             "15" "switch active"
+            "18" "dpad active"
         }
     }
     "preset"

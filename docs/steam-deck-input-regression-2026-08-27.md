@@ -42,7 +42,7 @@ or camera defect:
   Numeric Steam item IDs and opaque community IDs now retain their correct type
   when option selection is rebuilt.
 - A and RT are both Confirm in menus. RT remains Fire in gameplay. The official
-  Steam layout revision is now `9.0`, forcing the reworked mapping to replace
+  Steam layout revision was `9.0` here, forcing the reworked mapping to replace
   incompatible older official configurations.
 
 | Context | Left stick / D-pad | Right stick | A | RT |
@@ -60,3 +60,74 @@ or camera defect:
 - Existing browser gameplay movement and right-stick aim E2E tests remain the
   runtime safety net. A physical Steam Deck pass is still required for hardware
   acceptance; automated tests do not claim that sign-off.
+
+## Follow-up: gameplay pinned to the menu action set (same day)
+
+The three fixes above did not restore Deck gameplay. A second, independent
+defect was still holding every native control hostage.
+
+### Symptom
+
+On a Deck the player could not move at all, and A opened the tactical map
+instead of performing Interact.
+
+### Root cause
+
+`syncSteamInputPhase()` in `main.js` decided "is a menu surface open?" by
+testing only for the `hidden` class on each entry of `MENU_FOCUS_ROOT_IDS`.
+`hb-debug-console` was added to that list in `51548fa`, and that overlay is
+mounted on `DOMContentLoaded` in every build and hides itself with an inline
+`display: none` — it never carries the `hidden` class. Every frame of every
+session therefore evaluated `modalMenuOpen === true`, so the game asked Steam
+Input for the `menu` action set for the entire run, and mirrored that phase
+back into `steamInputState.phase`.
+
+Both symptoms follow from that single fact:
+
+- `getPrimaryControllerSnapshot()` (`electron/main.cjs`) only reads the `move`
+  and `camera` analog actions in the `gameplay`/`archive` phases, and only the
+  `gameplay` preset binds them at all. In the menu set the sticks report
+  nothing, so the player cannot move.
+- `handleSteamInputSnapshot()` gates gameplay routing on
+  `steamInputState.phase === 'gameplay'`, so live gameplay was routed to
+  `handleSteamMenuInput()`. There A is `menu_confirm`, which clicks the focused
+  or cursor-hovered HUD control — the map.
+
+The browser Gamepad fallback was unaffected because its loop keys off
+`appPhase` directly, which is why desktop-browser play still worked and the
+existing E2E movement test still passed.
+
+### Fix
+
+`isFocusRootOpen()` is now the single shared predicate for "this focus root is
+open", used by both `getControllerFocusRoot()` and `syncSteamInputPhase()`. It
+requires the element to lack `hidden` *and* to actually render
+(`getClientRects().length > 0`), so a mounted-but-invisible overlay can no
+longer force the menu action set. `window.__hbSteamInputPhaseRequest` exposes
+the requested action set for hardware and E2E diagnosis.
+
+### Regression coverage
+
+`tests/e2e/steam-input-action-set.spec.js` boots a live run and asserts the
+game requests the `gameplay` action set. It fails on the pre-fix build with
+`Received: "menu"`.
+
+## Follow-up: D-pad parity with the left stick
+
+The D-pad was bound in the `menu` and `archive` presets but had **no source
+binding at all** in the `gameplay` preset, so it went dead the moment a run
+started. It now drives the same analog `move` action as the left stick, via a
+`joystick_move` group (id 18) bound to the `dpad` source — the same shape the
+archive preset already uses to drive `archive_focus` from the D-pad.
+
+The browser Gamepad fallback had the matching gap: buttons 12–15 fed only the
+`menu*` fields, never `move`. `mapBrowserGamepad` now folds the D-pad into the
+move vector, with a pushed stick winning per axis so the two cannot sum into a
+phantom diagonal.
+
+Menu navigation already had parity and is unchanged: the left stick's group 2
+and the D-pad's group 1 both emit `menu_up`/`menu_down`/`menu_left`/`menu_right`.
+
+The official Steam layout revision is now `10.0`. The major bump is deliberate:
+it forces Steam to replace any cached `9.0` config, which would otherwise still
+be missing the gameplay D-pad binding.

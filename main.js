@@ -512,11 +512,14 @@ window.HunkerInputState = {
 function syncSteamInputPhase(phaseOverride = null) {
     const modalMenuOpen = appPhase !== 'archive' && STEAM_INPUT_FOCUS_ROOT_IDS.some((id) => {
         if (id === 'rgb-root' || id === 'splash' || id === 'menu') return false;
-        const element = document.getElementById(id);
-        return Boolean(element && !element.classList.contains('hidden'));
+        return isFocusRootOpen(document.getElementById(id));
     });
     const effectivePhase = phaseOverride
         ?? (modalMenuOpen ? 'menu' : appPhase);
+    // Exposed for hardware/E2E diagnosis: this is the action set the game is
+    // asking Steam Input to activate, which is what decides whether the sticks
+    // report `move`/`camera` at all.
+    window.__hbSteamInputPhaseRequest = effectivePhase;
     mainActionRouter.setActionSet(actionSetForAppPhase(effectivePhase));
     if (effectivePhase !== lastRequestedSteamInputPhase) {
         lastRequestedSteamInputPhase = effectivePhase;
@@ -625,6 +628,17 @@ function isElementVisible(element) {
     return Boolean(element && element.getClientRects().length > 0);
 }
 
+// A focus root only counts as open when it is actually on screen. Several
+// surfaces in MENU_FOCUS_ROOT_IDS are mounted for the whole session and hide
+// themselves with `display: none` rather than the `hidden` class (#hb-debug-console
+// is the always-mounted example), so the class alone is not a usable test --
+// relying on it pinned the game in the menu Steam Input action set forever.
+function isFocusRootOpen(element) {
+    return Boolean(element)
+        && !element.classList.contains('hidden')
+        && isElementVisible(element);
+}
+
 function getVisibleControllerFocusables(root = document) {
     if (!root) return [];
     const selector = [
@@ -711,9 +725,7 @@ function adjustSelectValue(element, direction) {
 function getControllerFocusRoot() {
     for (const id of STEAM_INPUT_FOCUS_ROOT_IDS) {
         const element = document.getElementById(id);
-        if (element && !element.classList.contains('hidden') && isElementVisible(element)) {
-            return element;
-        }
+        if (isFocusRootOpen(element)) return element;
     }
 
     if (document.body.classList.contains('mission-intro-active')) {

@@ -37,8 +37,15 @@ export function mapBrowserGamepad(gamepad, {
 
     const buttons = Array.from(gamepad.buttons ?? []);
     const axes = Array.from(gamepad.axes ?? []);
-    const moveX = normalizeGamepadAxis(axes[0], deadzone);
-    const moveY = normalizeGamepadAxis(axes[1], deadzone);
+    const stickMoveX = normalizeGamepadAxis(axes[0], deadzone);
+    const stickMoveY = normalizeGamepadAxis(axes[1], deadzone);
+    // The D-pad walks the player exactly like the left stick. It is digital, so
+    // it contributes a full-deflection unit on each axis, and a pushed stick
+    // wins per axis rather than the two summing into a diagonal.
+    const dpadMoveX = (readButton(buttons, 15) ? 1 : 0) - (readButton(buttons, 14) ? 1 : 0);
+    const dpadMoveY = (readButton(buttons, 13) ? 1 : 0) - (readButton(buttons, 12) ? 1 : 0);
+    const moveX = stickMoveX || dpadMoveX;
+    const moveY = stickMoveY || dpadMoveY;
     const cameraX = normalizeGamepadAxis(axes[2], deadzone);
     const cameraY = normalizeGamepadAxis(axes[3], deadzone);
     const menuX = normalizeGamepadAxis(axes[0], menuDeadzone);
