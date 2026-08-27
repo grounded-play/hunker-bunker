@@ -270,6 +270,7 @@ export async function createArmoryScene(canvas) {
 
         const configs = {
             SCOUT: {
+                modelUrl: '/3d/scouting-scout/Scout.game.glb',
                 targetHeight: 1.85,
                 idleActionName: 'heroIdle',
                 weaponVisible: false
@@ -298,7 +299,16 @@ export async function createArmoryScene(canvas) {
         const customModel = chassisSkinId && CHASSIS_SKIN_GLB_MAP[chassisSkinId]
             ? CHASSIS_SKIN_GLB_MAP[chassisSkinId]
             : null;
-        const config = customModel ? { ...baseConfig, modelUrl: customModel } : baseConfig;
+        const config = customModel ? {
+            ...baseConfig,
+            modelUrl: customModel,
+            animationModelUrl: '/3d/scouting-scout/Scout.game.glb',
+            animationBonePrefix: 'mixamorig',
+            allowStatic: true
+        } : {
+            ...baseConfig,
+            allowStatic: true
+        };
 
         try {
             const overlay = await createPlayer3dOverlay(config);

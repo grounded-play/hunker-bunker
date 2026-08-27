@@ -7542,6 +7542,7 @@ async function runMissionIntroSequence({ deploymentHold = null } = {}) {
         document.body.classList.remove('hud-hidden');
         game?.setCinematicLock?.(false);
         game?.setInputEnabled?.(true);
+        game?.setGodMode?.(Boolean(debugGodModeActive));
         // The mission intro is the outer owner of the deployment rendering
         // hold. Nested class/video skips can settle their suspend callbacks in
         // a different order, leaving the reference-counted helper restored to
@@ -12248,9 +12249,6 @@ function triggerDoorTransition(onClosed, onOpened, doorKey, options = {}) {
         onOpeningStart = null
     } = options;
     const overlay = transitionOverlay || document.getElementById('transition-overlay');
-    const transitionGame = window.game;
-    const transitionGodMode = transitionGame ? Boolean(transitionGame.godMode) : false;
-    let transitionGodModeActive = false;
 
     // Clear any previous transition timers to prevent old animation phases
     // from firing in the middle of a new transition.
@@ -12270,20 +12268,10 @@ function triggerDoorTransition(onClosed, onOpened, doorKey, options = {}) {
         return timer;
     };
 
-    const enableTransitionProtection = () => {
-        if (!transitionGame || transitionGodModeActive) return;
-        transitionGame.setGodMode?.(true);
-        transitionGodModeActive = true;
-    };
     const finishOpened = () => {
         if (activeDoorTransitionId !== currentTransitionId) return;
-        if (transitionGame && transitionGodModeActive) {
-            transitionGame.setGodMode?.(transitionGodMode);
-            transitionGodModeActive = false;
-        }
         if (onOpened) onOpened();
     };
-    enableTransitionProtection();
     if (!overlay) {
         if (onClosed) void onClosed();
         if (onOpeningStart) onOpeningStart();

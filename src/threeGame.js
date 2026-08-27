@@ -1250,6 +1250,7 @@ export class ThreeGame {
         this._sprintMoveSpeedMult = 1.0;
         this._sprintO2DrainMult = 1.0;
         this._wasSprinting = false;
+        this.godMode = false;
         this.noclip = false;
         this.noclipSpeedMult = 3.5;
         this.activeTurret = null;
@@ -4119,11 +4120,15 @@ export class ThreeGame {
             if (chassisModelUrl && classVisuals[overlayType]) {
                 classVisuals[overlayType] = {
                     ...classVisuals[overlayType],
-                    modelUrl: chassisModelUrl
+                    modelUrl: chassisModelUrl,
+                    animationModelUrl: '/3d/scouting-scout/Scout.game.glb',
+                    animationBonePrefix: 'mixamorig',
+                    allowStatic: true
                 };
             }
             const overlay = await createPlayer3dOverlay({
                 targetHeight: this.playerSpriteScale * 0.98,
+                allowStatic: true,
                 ...classVisuals[overlayType]
             });
             if (this.player !== playerRoot || this.playerType !== overlayType) {
