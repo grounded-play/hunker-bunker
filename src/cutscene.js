@@ -42,9 +42,14 @@ export class CutsceneManager {
         this.starStreamTimer = 0;
         this.spriteCache = new Map();
         this.allowSkip = true;
+        this.gamepadPollInterval = null;
         this.handleSkipKey = (event) => {
             if (!this.allowSkip) return;
-            if (event.code !== 'Escape' && event.code !== 'Space') return;
+            event.preventDefault();
+            this.finishActiveRun(true);
+        };
+        this.handleOverlayPointer = (event) => {
+            if (!this.allowSkip) return;
             event.preventDefault();
             this.finishActiveRun(true);
         };
@@ -94,6 +99,25 @@ export class CutsceneManager {
         this.positionElement(this.wreckEl, impact.x, impact.y, 'translate(-50%, -50%) rotate(22deg) scale(1.05)');
 
         window.addEventListener('keydown', this.handleSkipKey);
+        this.overlayEl.addEventListener('pointerup', this.handleOverlayPointer);
+
+        let lastGamepadPressed = false;
+        this.gamepadPollInterval = setInterval(() => {
+            if (this.activeRunId !== runId) {
+                clearInterval(this.gamepadPollInterval);
+                return;
+            }
+            if (typeof navigator !== 'undefined' && navigator.getGamepads) {
+                const pads = navigator.getGamepads() || [];
+                const anyPressed = Array.from(pads).some((gp) => gp?.connected && gp?.buttons?.some((b) => b?.pressed));
+                if (anyPressed && !lastGamepadPressed) {
+                    lastGamepadPressed = true;
+                    this.finishActiveRun(true);
+                } else if (!anyPressed) {
+                    lastGamepadPressed = false;
+                }
+            }
+        }, 50);
 
         this.queue(runId, 30, () => {
             this.overlayEl.classList.add('is-visible');
@@ -144,18 +168,32 @@ export class CutsceneManager {
         this.clearStarField();
         this.clearParticles();
         window.removeEventListener('keydown', this.handleSkipKey);
+        this.overlayEl?.removeEventListener('pointerup', this.handleOverlayPointer);
+        if (this.gamepadPollInterval) {
+            clearInterval(this.gamepadPollInterval);
+            this.gamepadPollInterval = null;
+        }
+
+        if (skipped) {
+            window.AudioManager?.stopActiveVoice?.(0.08);
+            if (typeof window !== 'undefined' && window.speechSynthesis) {
+                window.speechSynthesis.cancel();
+            }
+        }
 
         if (this.viewportEl) {
             this.viewportEl.classList.remove('cutscene-shake');
         }
 
-        this.overlayEl.classList.remove('is-active', 'is-visible', 'is-fading', 'is-flash', 'is-falling', 'is-impact');
-        this.overlayEl.classList.add('hidden');
-        this.overlayEl.setAttribute('aria-hidden', 'true');
+        this.overlayEl?.classList.remove('is-active', 'is-visible', 'is-fading', 'is-flash', 'is-falling', 'is-impact');
+        this.overlayEl?.classList.add('hidden');
+        this.overlayEl?.setAttribute('aria-hidden', 'true');
 
-        this.shipEl.style.transition = 'none';
-        this.shipEl.style.opacity = '0';
-        this.wreckEl.classList.add('hidden');
+        if (this.shipEl) {
+            this.shipEl.style.transition = 'none';
+            this.shipEl.style.opacity = '0';
+        }
+        this.wreckEl?.classList.add('hidden');
 
         this.activeRunId = 0;
         const resolve = this.resolveRun;

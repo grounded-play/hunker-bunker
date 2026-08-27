@@ -6808,32 +6808,53 @@ function playClassIntroSequence(playerType = 'SCOUT') {
             playVideoSource(launchBase, cleanupAndResolve);
         }
 
-        function onKey(event) {
-            if (!inputArmed && event.key !== 'Escape') return;
-            event.preventDefault();
-            if (event.key === 'Escape' || step === 'launch') {
+        let lastInputTime = 0;
+        const handleAdvance = () => {
+            const now = Date.now();
+            if (now - lastInputTime < 300) return;
+            lastInputTime = now;
+            if (step === 'launch') {
                 cleanupAndResolve();
             } else {
                 startLaunchStep();
+            }
+        };
+
+        function onKey(event) {
+            if (!inputArmed && event.key !== 'Escape') return;
+            event.preventDefault();
+            if (event.key === 'Escape') {
+                cleanupAndResolve();
+            } else {
+                handleAdvance();
             }
         }
 
         function onPointerUp(event) {
             if (!inputArmed) return;
             event.preventDefault();
-            if (step === 'launch') {
-                cleanupAndResolve();
-            } else {
-                startLaunchStep();
-            }
+            handleAdvance();
         }
 
         window.addEventListener('keydown', onKey);
         overlay.addEventListener('pointerup', onPointerUp);
 
+        let lastGamepadPressed = false;
         checkSkipInterval = setInterval(() => {
             if (window.skipAllIntro) {
                 cleanupAndResolve();
+                return;
+            }
+            if (!inputArmed) return;
+            if (typeof navigator !== 'undefined' && navigator.getGamepads) {
+                const pads = navigator.getGamepads() || [];
+                const anyPressed = Array.from(pads).some((gp) => gp?.connected && gp?.buttons?.some((b) => b?.pressed));
+                if (anyPressed && !lastGamepadPressed) {
+                    lastGamepadPressed = true;
+                    handleAdvance();
+                } else if (!anyPressed) {
+                    lastGamepadPressed = false;
+                }
             }
         }, 50);
 
@@ -7016,12 +7037,24 @@ function playCutsceneVideo(base, options = {}) {
         let fadingOut = false;
         let guardTimer = 0;
 
+        let checkGamepadInterval = null;
         const finish = ({ skipped = false } = {}) => {
             if (settled) return;
             settled = true;
+            if (checkGamepadInterval) {
+                clearInterval(checkGamepadInterval);
+                checkGamepadInterval = null;
+            }
             window.clearTimeout(guardTimer);
             window.removeEventListener('keydown', onKey);
             overlay.removeEventListener('pointerup', onPointer);
+
+            if (skipped) {
+                window.AudioManager?.stopActiveVoice?.(0.08);
+                if (typeof window !== 'undefined' && window.speechSynthesis) {
+                    window.speechSynthesis.cancel();
+                }
+            }
 
             const hasDoorCutoff = typeof onDoorCutoff === 'function';
             if (hasDoorCutoff) {
@@ -7069,6 +7102,24 @@ function playCutsceneVideo(base, options = {}) {
             event.preventDefault();
             finish({ skipped: true });
         };
+
+        let lastGamepadPressed = false;
+        checkGamepadInterval = setInterval(() => {
+            if (settled) {
+                clearInterval(checkGamepadInterval);
+                return;
+            }
+            if (typeof navigator !== 'undefined' && navigator.getGamepads) {
+                const pads = navigator.getGamepads() || [];
+                const anyPressed = Array.from(pads).some((gp) => gp?.connected && gp?.buttons?.some((b) => b?.pressed));
+                if (anyPressed && !lastGamepadPressed) {
+                    lastGamepadPressed = true;
+                    finish({ skipped: true });
+                } else if (!anyPressed) {
+                    lastGamepadPressed = false;
+                }
+            }
+        }, 50);
 
         video.addEventListener('timeupdate', () => {
             if (!fadingOut && Number.isFinite(video.duration) && video.duration > 0) {
@@ -7371,6 +7422,11 @@ async function runMissionIntroSequence({ deploymentHold = null } = {}) {
             () => {
                 cutsceneManager?.finishActiveRun?.(true);
                 dialogueManager?.cancelDialogue?.();
+                dialogueManager?.cancelTutorial?.();
+                window.AudioManager?.stopActiveVoice?.(0.08);
+                if (typeof window !== 'undefined' && window.speechSynthesis) {
+                    window.speechSynthesis.cancel();
+                }
                 resumeIntroRendering?.();
                 resumeIntroRendering = null;
                 document.body.classList.remove('mission-intro-active');
@@ -7382,6 +7438,11 @@ async function runMissionIntroSequence({ deploymentHold = null } = {}) {
         );
         cutsceneManager?.finishActiveRun?.(true);
         dialogueManager?.cancelDialogue?.();
+        dialogueManager?.cancelTutorial?.();
+        window.AudioManager?.stopActiveVoice?.(0.08);
+        if (typeof window !== 'undefined' && window.speechSynthesis) {
+            window.speechSynthesis.cancel();
+        }
     };
 
     if (skipBtn) {
@@ -12177,6 +12238,9 @@ function preloadDoorAssets() {
     }
 }
 
+let activeDoorTransitionId = 0;
+let activeDoorTimeouts = [];
+
 function triggerDoorTransition(onClosed, onOpened, doorKey, options = {}) {
     const {
         waitForClosedWork = false,
@@ -12187,12 +12251,32 @@ function triggerDoorTransition(onClosed, onOpened, doorKey, options = {}) {
     const transitionGame = window.game;
     const transitionGodMode = transitionGame ? Boolean(transitionGame.godMode) : false;
     let transitionGodModeActive = false;
+
+    // Clear any previous transition timers to prevent old animation phases
+    // from firing in the middle of a new transition.
+    activeDoorTransitionId++;
+    const currentTransitionId = activeDoorTransitionId;
+    for (const timer of activeDoorTimeouts) {
+        window.clearTimeout(timer);
+    }
+    activeDoorTimeouts = [];
+
+    const scheduleDoorTimeout = (fn, delay) => {
+        const timer = window.setTimeout(() => {
+            if (activeDoorTransitionId !== currentTransitionId) return;
+            fn();
+        }, delay);
+        activeDoorTimeouts.push(timer);
+        return timer;
+    };
+
     const enableTransitionProtection = () => {
         if (!transitionGame || transitionGodModeActive) return;
         transitionGame.setGodMode?.(true);
         transitionGodModeActive = true;
     };
     const finishOpened = () => {
+        if (activeDoorTransitionId !== currentTransitionId) return;
         if (transitionGame && transitionGodModeActive) {
             transitionGame.setGodMode?.(transitionGodMode);
             transitionGodModeActive = false;
@@ -12214,6 +12298,10 @@ function triggerDoorTransition(onClosed, onOpened, doorKey, options = {}) {
 
     syncStageMetrics();
 
+    // Reset any previous animation classes cleanly
+    overlay.classList.remove('closing-v', 'opening-h', 'active');
+    void overlay.offsetWidth;
+
     // 1. Prepare for vertical close
     overlay.classList.add('visible');
     overlay.classList.add('closing-v');
@@ -12225,7 +12313,9 @@ function triggerDoorTransition(onClosed, onOpened, doorKey, options = {}) {
 
     // 2. Start closing after double RAF frame-settle
     requestAnimationFrame(() => {
+        if (activeDoorTransitionId !== currentTransitionId) return;
         requestAnimationFrame(() => {
+            if (activeDoorTransitionId !== currentTransitionId) return;
             overlay.classList.add('active');
             AudioManager.play('door_slam_vertical', { volume: 0.4 });
             AudioManager.play('door_gears_spin', { volume: 0.25 });
@@ -12233,11 +12323,12 @@ function triggerDoorTransition(onClosed, onOpened, doorKey, options = {}) {
     });
 
     // 3. Once closed, swap content and prepare horizontal open
-    setTimeout(() => {
+    scheduleDoorTimeout(() => {
         spawnSmoke(0, 0, 30, true); // Slam smoke
         const closedWork = onClosed ? onClosed() : null;
 
         const openDoors = () => {
+            if (activeDoorTransitionId !== currentTransitionId) return;
             // Swap classes
             overlay.classList.remove('closing-v', 'active');
             overlay.classList.add('opening-h');
@@ -12246,27 +12337,16 @@ function triggerDoorTransition(onClosed, onOpened, doorKey, options = {}) {
             void overlay.offsetWidth;
 
             requestAnimationFrame(() => {
+                if (activeDoorTransitionId !== currentTransitionId) return;
                 requestAnimationFrame(() => {
+                    if (activeDoorTransitionId !== currentTransitionId) return;
                     // 4. Start opening after a small "hold" gap
-                    setTimeout(() => {
+                    scheduleDoorTimeout(() => {
                         spawnSmoke(0, 0, 30, false); // Separation smoke
                         overlay.classList.add('active');
                         AudioManager.play('door_slide_horiz', { volume: 0.4 });
                         AudioManager.play('door_gears_spin', { volume: 0.25 });
 
-                        // onOpeningStart fires here, alongside the 'active'
-                        // class that actually triggers the CSS transition --
-                        // NOT immediately after the forced reflow above.
-                        // Callers use this hook to insert a lot of DOM (a
-                        // fullscreen video overlay, mission-intro UI); doing
-                        // that between the reflow and the double-RAF that
-                        // commits the door's "closed" starting position can
-                        // make the browser coalesce the style changes and
-                        // skip the transition entirely -- the doors jump
-                        // straight to their end state (effectively
-                        // vanishing) instead of visibly sliding open. Firing
-                        // it here, once the transition is already underway,
-                        // avoids that race.
                         if (onOpeningStart) {
                             try {
                                 onOpeningStart();
@@ -12278,13 +12358,13 @@ function triggerDoorTransition(onClosed, onOpened, doorKey, options = {}) {
                         // Opening owns the reveal. Do not transfer control or
                         // start intro work until the panels have visibly
                         // completed their 800ms travel.
-                        setTimeout(() => {
+                        scheduleDoorTimeout(() => {
                             finishOpened();
                         }, 800);
                     }, openingHoldMs);
 
                     // 5. Cleanup
-                    setTimeout(() => {
+                    scheduleDoorTimeout(() => {
                         overlay.classList.remove('visible', 'opening-h', 'active');
                     }, openingHoldMs + 900);
                 });

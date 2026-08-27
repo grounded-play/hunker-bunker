@@ -164,6 +164,10 @@ export class DialogueManager {
                 event.preventDefault();
                 if (this.isTyping) {
                     this.completeTypingInstantly = true;
+                    window.AudioManager?.stopActiveVoice?.(0.08);
+                    if (typeof window !== 'undefined' && window.speechSynthesis) {
+                        window.speechSynthesis.cancel();
+                    }
                 } else if (this.choicesEl && !this.choicesEl.classList.contains('hidden')) {
                     const active = document.activeElement;
                     if (active === this.tutorialBtn || (this.tutorialBtn?.classList.contains('selected') && active !== this.skipBtn)) {
@@ -551,7 +555,10 @@ export class DialogueManager {
         this.activeDialogueRunId = 0;
         this.activeChoiceResolver?.('skip');
         this.activeChoiceResolver = null;
-        window.AudioManager?.stopActiveVoice?.(0.12);
+        window.AudioManager?.stopActiveVoice?.(0.08);
+        if (typeof window !== 'undefined' && window.speechSynthesis) {
+            window.speechSynthesis.cancel();
+        }
 
         this.cleanupDialogueListeners();
         this.panelEl?.classList.remove('is-open', 'is-closing');
@@ -607,6 +614,10 @@ export class DialogueManager {
     cancelTutorial() {
         if (!this.activeTutorialRunId) return;
         this.activeTutorialRunId = 0;
+        window.AudioManager?.stopActiveVoice?.(0.08);
+        if (typeof window !== 'undefined' && window.speechSynthesis) {
+            window.speechSynthesis.cancel();
+        }
         window.objectiveRegistry?.resolveObjective?.('tutorial:onboarding', 'abandoned');
         this.hideTutorialPrompt();
         document.querySelectorAll('.tutorial-prompt[data-tutorial-stack-card="true"]').forEach((prompt) => {
@@ -1272,11 +1283,72 @@ export class DialogueManager {
         this.handlePanelClick = () => {
             if (this.isTyping) {
                 this.completeTypingInstantly = true;
+                window.AudioManager?.stopActiveVoice?.(0.08);
+                if (typeof window !== 'undefined' && window.speechSynthesis) {
+                    window.speechSynthesis.cancel();
+                }
             } else {
                 this.skipPause = true;
             }
         };
         this.panelEl?.addEventListener('click', this.handlePanelClick);
+
+        let lastGamepadBtnState = false;
+        this.dialogueGamepadInterval = setInterval(() => {
+            if (!this.activeDialogueRunId) {
+                clearInterval(this.dialogueGamepadInterval);
+                this.dialogueGamepadInterval = null;
+                return;
+            }
+            if (typeof navigator !== 'undefined' && navigator.getGamepads) {
+                const pads = navigator.getGamepads() || [];
+                const pad = Array.from(pads).find((gp) => gp?.connected);
+                if (!pad || !pad.buttons) return;
+
+                const isAPressed = Boolean(pad.buttons[0]?.pressed);
+                const isBPressed = Boolean(pad.buttons[1]?.pressed || pad.buttons[9]?.pressed);
+                const isUpPressed = Boolean(pad.buttons[12]?.pressed || (pad.axes && pad.axes[1] < -0.5));
+                const isDownPressed = Boolean(pad.buttons[13]?.pressed || (pad.axes && pad.axes[1] > 0.5));
+
+                if ((isAPressed || isBPressed) && !lastGamepadBtnState) {
+                    lastGamepadBtnState = true;
+                    if (this.isTyping) {
+                        this.completeTypingInstantly = true;
+                        window.AudioManager?.stopActiveVoice?.(0.08);
+                        if (typeof window !== 'undefined' && window.speechSynthesis) {
+                            window.speechSynthesis.cancel();
+                        }
+                    } else if (isBPressed) {
+                        this.requestSkip();
+                    } else if (this.choicesEl && !this.choicesEl.classList.contains('hidden')) {
+                        const active = document.activeElement;
+                        if (active === this.tutorialBtn || (this.tutorialBtn?.classList.contains('selected') && active !== this.skipBtn)) {
+                            this.resolveChoice('tutorial');
+                        } else {
+                            this.resolveChoice('skip');
+                        }
+                    } else {
+                        this.skipPause = true;
+                    }
+                } else if (isUpPressed && !lastGamepadBtnState) {
+                    lastGamepadBtnState = true;
+                    if (this.choicesEl && !this.choicesEl.classList.contains('hidden')) {
+                        this.skipBtn?.focus();
+                        this.skipBtn?.classList.add('selected');
+                        this.tutorialBtn?.classList.remove('selected');
+                    }
+                } else if (isDownPressed && !lastGamepadBtnState) {
+                    lastGamepadBtnState = true;
+                    if (this.choicesEl && !this.choicesEl.classList.contains('hidden') && this.tutorialBtn && !this.tutorialBtn.classList.contains('hidden')) {
+                        this.tutorialBtn?.focus();
+                        this.tutorialBtn?.classList.add('selected');
+                        this.skipBtn?.classList.remove('selected');
+                    }
+                } else if (!isAPressed && !isBPressed && !isUpPressed && !isDownPressed) {
+                    lastGamepadBtnState = false;
+                }
+            }
+        }, 50);
     }
 
     cleanupDialogueListeners() {
@@ -1284,6 +1356,10 @@ export class DialogueManager {
         if (this.handlePanelClick) {
             this.panelEl?.removeEventListener('click', this.handlePanelClick);
             this.handlePanelClick = null;
+        }
+        if (this.dialogueGamepadInterval) {
+            clearInterval(this.dialogueGamepadInterval);
+            this.dialogueGamepadInterval = null;
         }
     }
 }
