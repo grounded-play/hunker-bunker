@@ -159,6 +159,86 @@ test.describe('controller-ready modal focus', () => {
         await page.evaluate(() => { navigator.getGamepads = () => []; });
     });
 
+    // A on a dropdown opens a real option list: D-pad moves through it, A
+    // commits, B cancels. Chromium/Electron will not reliably open a native
+    // <select> popup from a synthetic controller click, hence our own overlay.
+    test('confirm opens the dropdown picker and commits the chosen option', async ({ page }) => {
+        await bootToTitleSplash(page);
+        await page.locator('#title-settings-btn').click();
+
+        const sensitivity = page.locator('#setting-aim-sensitivity');
+        await sensitivity.focus();
+        await sensitivity.selectOption('1.0');
+
+        const overlay = page.locator('#select-picker-overlay');
+        await expect(overlay).toBeHidden();
+
+        await page.keyboard.press('Enter');
+        await expect(overlay).toBeVisible();
+
+        // The picker opens focused on the value the dropdown currently holds.
+        await expect(page.locator('#select-picker-list .select-picker-option.is-current')).toBeFocused();
+
+        await page.keyboard.press('ArrowDown');
+        const chosen = await page.evaluate(() => document.activeElement?.textContent?.trim());
+        await page.keyboard.press('Enter');
+
+        await expect(overlay).toBeHidden();
+        await expect(sensitivity).not.toHaveValue('1.0');
+        expect(await sensitivity.evaluate((el) => el.options[el.selectedIndex].textContent.trim())).toBe(chosen);
+        // Focus returns to the dropdown, not to a control inside the closed overlay.
+        await expect(sensitivity).toBeFocused();
+    });
+
+    test('backing out of the dropdown picker leaves the value untouched', async ({ page }) => {
+        await bootToTitleSplash(page);
+        await page.locator('#title-settings-btn').click();
+
+        const sensitivity = page.locator('#setting-aim-sensitivity');
+        await sensitivity.focus();
+        await sensitivity.selectOption('1.0');
+
+        await page.keyboard.press('Enter');
+        await expect(page.locator('#select-picker-overlay')).toBeVisible();
+        await page.keyboard.press('ArrowDown');
+        await page.keyboard.press('ArrowDown');
+        await page.keyboard.press('Escape');
+
+        await expect(page.locator('#select-picker-overlay')).toBeHidden();
+        await expect(sensitivity).toHaveValue('1.0');
+        await expect(sensitivity).toBeFocused();
+        // The settings modal itself must survive: B cancels the picker only.
+        await expect(page.locator('#settings-popup')).toBeVisible();
+    });
+
+    test('a focused dropdown no longer swallows vertical controller navigation', async ({ page }) => {
+        await bootToTitleSplash(page);
+        await page.locator('#title-settings-btn').click();
+
+        const sensitivity = page.locator('#setting-aim-sensitivity');
+        await sensitivity.focus();
+        const before = await sensitivity.inputValue();
+
+        await page.evaluate(() => {
+            const buttons = Array.from({ length: 17 }, () => ({ pressed: false, value: 0 }));
+            buttons[13] = { pressed: true, value: 1 };
+            const pad = {
+                id: 'Xbox Wireless Controller (STANDARD GAMEPAD)',
+                index: 0,
+                connected: true,
+                mapping: 'standard',
+                axes: [0, 0, 0, 0],
+                buttons
+            };
+            navigator.getGamepads = () => [pad];
+        });
+
+        await expect(sensitivity).not.toBeFocused();
+        await expect(sensitivity).toHaveValue(before);
+
+        await page.evaluate(() => { navigator.getGamepads = () => []; });
+    });
+
     test('Armory dropdown keeps focus when an equipment change re-renders it', async ({ page }) => {
         await bootToOperatorMenu(page);
         const rosterConfirm = page.locator('#roster-confirm-btn');

@@ -722,6 +722,106 @@ function adjustSelectValue(element, direction) {
     return true;
 }
 
+// ── Controller dropdown picker ────────────────────────────────
+// Chromium/Electron will not reliably open a native <select> popup from a
+// synthetic controller click, so A on a focused dropdown opens #select-picker-overlay
+// instead. Every option is rendered as a real <button>, which means the existing
+// controller focus system does all the navigating: D-pad moves between options,
+// A clicks one, and B routes through dispatchControllerEscape() like any other
+// modal. Nothing is committed to the <select> until an option is clicked, so
+// backing out genuinely cancels.
+let selectPickerTargetElement = null;
+
+function isSelectPickerOpen() {
+    const overlay = document.getElementById('select-picker-overlay');
+    return Boolean(overlay && !overlay.classList.contains('hidden'));
+}
+
+function describeSelectForPicker(select) {
+    const labelledBy = select.getAttribute('aria-labelledby');
+    const labelText = (labelledBy && document.getElementById(labelledBy)?.textContent)
+        || select.getAttribute('aria-label')
+        || (select.id && document.querySelector(`label[for="${CSS.escape(select.id)}"]`)?.textContent)
+        || select.closest('.setting-item, .armory-row, .armory-slot')?.querySelector('label, .setting-label, .armory-label')?.textContent
+        || 'Select option';
+    return labelText.trim().replace(/[:\s]+$/, '').toUpperCase();
+}
+
+function openSelectPickerForElement(element) {
+    const select = element?.matches?.('select') ? element : element?.querySelector?.('select');
+    if (!select || !select.options?.length) return false;
+    const overlay = document.getElementById('select-picker-overlay');
+    const list = document.getElementById('select-picker-list');
+    if (!overlay || !list) return false;
+
+    selectPickerTargetElement = select;
+
+    const label = document.getElementById('select-picker-label');
+    if (label) label.textContent = describeSelectForPicker(select);
+
+    list.replaceChildren();
+    let focusTarget = null;
+    Array.from(select.options).forEach((option, index) => {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'select-picker-option';
+        button.textContent = option.textContent;
+        button.dataset.optionIndex = String(index);
+        button.setAttribute('role', 'option');
+        // Locked Armory inventory arrives as disabled options. Rendering them
+        // disabled keeps the real inventory visible while getVisibleControllerFocusables
+        // skips them, instead of hiding that the item exists at all.
+        if (option.disabled) button.disabled = true;
+        const isCurrent = index === select.selectedIndex;
+        if (isCurrent) {
+            button.classList.add('is-current');
+            button.setAttribute('aria-selected', 'true');
+            if (!option.disabled) focusTarget = button;
+        }
+        button.addEventListener('click', () => commitSelectPickerOption(index));
+        list.appendChild(button);
+    });
+
+    overlay.classList.remove('hidden');
+    overlay.setAttribute('aria-hidden', 'false');
+    focusControllerTarget(focusTarget ?? getVisibleControllerFocusables(list)[0] ?? list);
+    return true;
+}
+
+function commitSelectPickerOption(index) {
+    const select = selectPickerTargetElement;
+    if (!select) return;
+    const option = select.options?.[index];
+    // Close before dispatching: surfaces such as the Armory re-render their
+    // controls from the change handler, and the restored focus has to land on
+    // the dropdown rather than on a button inside a closing overlay.
+    closeSelectPicker();
+    if (!option || option.disabled) return;
+    if (select.selectedIndex !== index) {
+        select.selectedIndex = index;
+        select.dispatchEvent(new Event('input', { bubbles: true }));
+        select.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+    window.AudioManager?.play?.('fx_menu_hover', { volume: 0.2, bus: 'sfx' });
+}
+
+function closeSelectPicker() {
+    const overlay = document.getElementById('select-picker-overlay');
+    if (overlay) {
+        overlay.classList.add('hidden');
+        overlay.setAttribute('aria-hidden', 'true');
+    }
+    document.getElementById('select-picker-list')?.replaceChildren();
+    const target = selectPickerTargetElement;
+    selectPickerTargetElement = null;
+    // The dropdown may have been replaced by a re-render while the picker was
+    // open; fall back to its id so focus still returns to the same control.
+    const restored = target?.isConnected
+        ? target
+        : (target?.id ? document.getElementById(target.id) : null);
+    if (restored) focusControllerTarget(restored);
+}
+
 function getControllerFocusRoot() {
     for (const id of STEAM_INPUT_FOCUS_ROOT_IDS) {
         const element = document.getElementById(id);
@@ -1326,6 +1426,7 @@ function initVirtualKeyboard() {
             if (key) handleVirtualKeyboardKey(key);
         }
     });
+    document.getElementById('select-picker-close')?.addEventListener('click', () => closeSelectPicker());
     document.getElementById('virtual-keyboard-close')?.addEventListener('click', () => closeVirtualKeyboard());
 }
 
@@ -1373,10 +1474,9 @@ function activateControllerFocusedElement() {
     }
 
     // Chromium/Electron does not reliably open a native <select> popup from a
-    // synthetic controller click. Cycle to the next enabled choice instead so
-    // A (and menu-confirm RT) always performs a visible, deterministic action.
+    // synthetic controller click, so A opens our own option list instead.
     if (activeElement.matches?.('select')) {
-        return adjustSelectValue(activeElement, 1);
+        return openSelectPickerForElement(activeElement);
     }
 
     if (typeof activeElement.click === 'function') {
@@ -1679,10 +1779,13 @@ function handleSteamMenuInput(actions) {
     const moved = Boolean(actions.up || actions.down || actions.left || actions.right);
     const activeElement = document.activeElement;
     const horizontalDirection = actions.left ? -1 : actions.right ? 1 : 0;
-    const selectDirection = actions.left || actions.up ? -1 : actions.right || actions.down ? 1 : 0;
-    const controlAdjusted = Boolean(activeElement && (
-        (horizontalDirection && adjustRangeInputValue(activeElement, horizontalDirection))
-        || (selectDirection && adjustSelectValue(activeElement, selectDirection))
+    // Left/right quick-adjusts the focused control; up/down always moves focus.
+    // Letting up/down adjust a <select> too meant a focused dropdown swallowed
+    // vertical navigation, so focus could never leave it -- and A now opens the
+    // full option list anyway, which is the discoverable way to change one.
+    const controlAdjusted = Boolean(activeElement && horizontalDirection && (
+        adjustRangeInputValue(activeElement, horizontalDirection)
+        || adjustSelectValue(activeElement, horizontalDirection)
     ));
 
     const root = getControllerFocusRoot();
@@ -1713,7 +1816,7 @@ function handleSteamMenuInput(actions) {
             if (clickable) {
                 if (clickable.tagName === 'SELECT') {
                     clickable.focus();
-                    adjustSelectValue(clickable, 1);
+                    openSelectPickerForElement(clickable);
                 } else if (typeof clickable.click === 'function') {
                     clickable.click();
                 } else {
@@ -3134,6 +3237,7 @@ function consumeSessionAmmoCache(amount = 1) {
 }
 
 function renderWeaponClipState(detail = {}) {
+    const isUnlimited = Boolean(detail.unlimitedAmmo ?? window.game?.unlimitedAmmo);
     const clip = Number.isFinite(detail.clip) ? Math.max(0, Math.floor(detail.clip)) : 0;
     const maxClip = Number.isFinite(detail.maxClip) ? Math.max(1, Math.floor(detail.maxClip)) : 6;
     const cache = Number.isFinite(detail.cache) ? Math.max(0, Math.floor(detail.cache)) : pickupCounterState.ammo;
@@ -3147,13 +3251,13 @@ function renderWeaponClipState(detail = {}) {
     const refilling = !reloading && autoRefillProgress > 0;
 
     if (weaponClipCurrent) {
-        weaponClipCurrent.textContent = String(clip);
+        weaponClipCurrent.textContent = isUnlimited ? '∞' : String(clip);
     }
     if (weaponClipMax) {
         weaponClipMax.textContent = String(maxClip);
     }
     if (weaponAmmoCache) {
-        weaponAmmoCache.textContent = `CACHE ${cache}/${activeAmmoCapacity}`;
+        weaponAmmoCache.textContent = isUnlimited ? `CACHE ∞/${activeAmmoCapacity}` : `CACHE ${cache}/${activeAmmoCapacity}`;
     }
     if (weaponReloadBar) {
         weaponReloadBar.style.transform = `scaleX(${reloading ? reloadProgress : refilling ? autoRefillProgress : 0})`;
@@ -7791,25 +7895,20 @@ fpsRafId = requestAnimationFrame(sampleFPS);
 
 const debugGrantResourcesBtn = document.getElementById('debug-grant-resources');
 const debugGodModeBtn = document.getElementById('debug-god-mode');
+const debugUnlimitedAmmoBtn = document.getElementById('debug-unlimited-ammo');
 let debugGodModeActive = false;
+let debugUnlimitedAmmoActive = false;
 
 debugGrantResourcesBtn?.addEventListener('click', () => {
-    bankManager.deposit({ tech: 250, coin: 150, med: 75 });
-    bankManager.addShells(75);
-    window.game?.healPlayer?.(99, { skipQueensMilkPenalty: true });
-    window.game?.adjustOxygen?.(100);
-    window.game?.renderConsoleBanking?.(window.game?.activeInteractiveConsole);
-    renderFabricationModal();
-    updateMenuCommandStatuses();
-    showBiomePrompt('> DEBUG: SALVAGE, SHELLS, HP, AND O₂ GRANTED.');
+    devGrantResources();
 });
 
 debugGodModeBtn?.addEventListener('click', () => {
-    debugGodModeActive = !debugGodModeActive;
-    window.game?.setGodMode?.(debugGodModeActive);
-    debugGodModeBtn.classList.toggle('debug-btn--active', debugGodModeActive);
-    debugGodModeBtn.textContent = debugGodModeActive ? 'GOD✓' : 'GOD';
-    showBiomePrompt(`> DEBUG: GOD MODE ${debugGodModeActive ? 'ONLINE' : 'OFFLINE'}.`);
+    devToggleGodMode();
+});
+
+debugUnlimitedAmmoBtn?.addEventListener('click', () => {
+    devToggleUnlimitedAmmo();
 });
 
 // ── Dev Console & Steam Test Harness ────────────────────────────
@@ -7908,14 +8007,23 @@ function devResetAchievements() {
 }
 
 function devGrantResources() {
-    bankManager.deposit({ tech: 250, coin: 150, med: 75 });
-    bankManager.addShells(75);
-    window.game?.healPlayer?.(99, { skipQueensMilkPenalty: true });
-    window.game?.adjustOxygen?.(100);
+    bankManager.deposit({ tech: 999999, coin: 999999, med: 999999, ammo: 999999 });
+    bankManager.addShells(999999);
+    pickupCounterState.health = 999999;
+    pickupCounterState.med = 999999;
+    pickupCounterState.ammo = 999999;
+    pickupCounterState.tech = 999999;
+    pickupCounterState.coin = 999999;
+    pickupCounterState.shells = bankManager.getShells?.() ?? 999999;
+    recomputePickupTotal();
+    renderPickupCounter();
+    window.game?.healPlayer?.(999999, { skipQueensMilkPenalty: true });
+    window.game?.adjustOxygen?.(999999);
     window.game?.renderConsoleBanking?.(window.game?.activeInteractiveConsole);
     renderFabricationModal();
     updateMenuCommandStatuses();
-    return 'Granted 250 Tech, 150 Coin, 75 Med, 75 Shells, Max HP & Max O₂.';
+    showBiomePrompt('> DEBUG: 999,999 TECH, COIN, MED, SHELLS & AMMO GRANTED.');
+    return 'Granted 999,999 Tech, Coin, Med, Ammo, Shells, Max HP & Max O₂.';
 }
 
 function devToggleGodMode() {
@@ -7927,6 +8035,25 @@ function devToggleGodMode() {
     }
     return `God mode ${debugGodModeActive ? 'ONLINE (Invulnerable)' : 'OFFLINE'}.`;
 }
+
+function devToggleUnlimitedAmmo() {
+    const game = window.game || window.threeGame;
+    if (game?.toggleUnlimitedAmmo) {
+        debugUnlimitedAmmoActive = game.toggleUnlimitedAmmo();
+    } else {
+        debugUnlimitedAmmoActive = !debugUnlimitedAmmoActive;
+        game?.setUnlimitedAmmo?.(debugUnlimitedAmmoActive);
+    }
+    if (debugUnlimitedAmmoBtn) {
+        debugUnlimitedAmmoBtn.classList.toggle('debug-btn--active', debugUnlimitedAmmoActive);
+        debugUnlimitedAmmoBtn.textContent = debugUnlimitedAmmoActive ? 'AMMO✓' : 'AMMO';
+    }
+    renderWeaponClipState({ unlimitedAmmo: debugUnlimitedAmmoActive });
+    showBiomePrompt?.(`> DEBUG: UNLIMITED AMMO ${debugUnlimitedAmmoActive ? 'ONLINE [Infinite Clip & Cache]' : 'OFFLINE'}.`);
+    return `Unlimited Ammo ${debugUnlimitedAmmoActive ? 'ONLINE (Infinite Clip & Cache)' : 'OFFLINE'}.`;
+}
+window.devToggleUnlimitedAmmo = devToggleUnlimitedAmmo;
+if (window.__DEBUG__) window.__DEBUG__.toggleUnlimitedAmmo = devToggleUnlimitedAmmo;
 
 let debugNoclipActive = false;
 
@@ -8632,6 +8759,8 @@ window.__DEBUG__ = {
     nukeEnemies: () => devKillSnails(),
     heal: () => devHealPlayer(),
     grantResources: () => devGrantResources(),
+    toggleGodMode: () => devToggleGodMode(),
+    toggleUnlimitedAmmo: () => devToggleUnlimitedAmmo(),
     log: (msg, type = 'system') => logDevConsole(msg, type)
 };
 
@@ -10033,6 +10162,14 @@ document.addEventListener('keydown', (event) => {
 
     if (event.key === 'Escape') {
         if (event.defaultPrevented) return;
+
+        // Topmost transient surface wins. Closing without committing is what
+        // makes B a real cancel rather than a second way to pick a value.
+        if (isSelectPickerOpen()) {
+            closeSelectPicker();
+            event.preventDefault();
+            return;
+        }
 
         const virtualKeyboardOverlay = document.getElementById('virtual-keyboard-overlay');
         if (virtualKeyboardOverlay && !virtualKeyboardOverlay.classList.contains('hidden')) {

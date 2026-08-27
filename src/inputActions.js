@@ -16,6 +16,7 @@ export const ACTION_SETS = Object.freeze({
 // Keep this list as the single runtime/test inventory for full-controller
 // menu coverage; see docs/menu-input-navigation-contract.md.
 export const MENU_FOCUS_ROOT_IDS = Object.freeze([
+    'select-picker-overlay',
     'virtual-keyboard-overlay',
     'progression-reward-overlay',
     'vault-reveal-overlay',

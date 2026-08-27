@@ -6,7 +6,10 @@ const ALLOWED_EMPTY_SURFACES = new Set([
     // These application hosts populate only while their standalone runtime is
     // mounted. Their registration/order is covered by the unit contract; the
     // runtime-specific E2E specs exercise their generated controls.
-    'rgb-root'
+    'rgb-root',
+    // Built from the <option>s of whichever dropdown opened it, so it is empty
+    // until then. controller-focus.spec.js exercises its generated buttons.
+    'select-picker-overlay'
 ]);
 
 test.describe('complete menu keyboard and Steam Deck reachability', () => {

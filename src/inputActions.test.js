@@ -23,6 +23,12 @@ describe('menu focus surface registry', () => {
             .toBeLessThan(MENU_FOCUS_ROOT_IDS.indexOf('armory-screen'));
         expect(MENU_FOCUS_ROOT_IDS.indexOf('settings-popup'))
             .toBeLessThan(MENU_FOCUS_ROOT_IDS.indexOf('armory-screen'));
+        // The dropdown picker opens on top of whichever surface owns the
+        // <select> it was opened for -- including the on-screen keyboard's
+        // parent modals -- so it has to win the focus-root search outright.
+        expect(MENU_FOCUS_ROOT_IDS[0]).toBe('select-picker-overlay');
+        expect(MENU_FOCUS_ROOT_IDS.indexOf('select-picker-overlay'))
+            .toBeLessThan(MENU_FOCUS_ROOT_IDS.indexOf('virtual-keyboard-overlay'));
     });
 
     it.each([

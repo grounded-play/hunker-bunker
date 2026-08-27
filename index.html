@@ -131,6 +131,7 @@
       </button>
       <button id="debug-grant-resources" class="debug-btn" title="Grant test salvage and shells">+$</button>
       <button id="debug-god-mode" class="debug-btn" title="Toggle god mode">GOD</button>
+      <button id="debug-unlimited-ammo" class="debug-btn" title="Toggle unlimited ammo debug cheat">AMMO</button>
       <button id="debug-open-console" class="debug-btn" title="Open Dev Console (`~`)">&gt;_</button>
       <button id="debug-launch-rgb" class="debug-btn" title="Launch RGB Minigame">◈ RGB</button>
       <select id="debug-achievement-select" class="dev-select" title="Trigger Steam Achievement">
@@ -2681,6 +2682,27 @@
     <!-- Controller-only On-Screen Keyboard: fallback for text fields (e.g.
          Operator Callsign) when Steam's native gamepad text input isn't
          available (outside Steam Big Picture / non-Steam build). -->
+    <!-- Controller dropdown picker. Chromium/Electron will not reliably open a
+         native <select> popup from a synthetic controller click, so A on a
+         focused dropdown opens this list instead. Each option is a real
+         <button>, which is what lets the existing controller focus system do
+         the navigating. Populated at open time by openSelectPickerForElement. -->
+    <div id="select-picker-overlay" class="modal hidden" aria-hidden="true">
+      <div class="modal-content select-picker-content">
+        <div class="settings-sticky-header">
+          <div>
+            <h2 class="modal-title" id="select-picker-label">SELECT OPTION</h2>
+          </div>
+          <button class="close-modal" id="select-picker-close" aria-label="Close option picker">&times;</button>
+        </div>
+        <div class="select-picker-list" id="select-picker-list" role="listbox" aria-labelledby="select-picker-label"></div>
+        <div class="select-picker-hint" aria-hidden="true">
+          <span><span class="select-picker-glyph">A</span> SELECT</span>
+          <span><span class="select-picker-glyph">B</span> BACK</span>
+        </div>
+      </div>
+    </div>
+
     <div id="virtual-keyboard-overlay" class="modal hidden" aria-hidden="true">
       <div class="modal-content virtual-keyboard-content">
         <div class="settings-sticky-header">

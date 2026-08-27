@@ -18344,6 +18344,97 @@ body.show-debug .map-tool-btn--debug { display: inline-flex; }
 }
 
 /* Controller-only on-screen keyboard (fallback text entry) */
+/* Controller dropdown picker. Mirrors the on-screen keyboard's overlay
+   treatment so the two controller-only surfaces read as one family. */
+.select-picker-content {
+  width: min(94vw, 460px);
+  background: rgba(10, 12, 16, 0.97);
+  border: 1px solid var(--accent-secondary, #2ec4b6);
+  box-shadow: 0 0 35px rgba(46, 196, 182, 0.25), 0 20px 50px rgba(0, 0, 0, 0.85);
+}
+
+.select-picker-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  /* Long lists (resolution, class rosters) scroll instead of running off the
+     panel; focusControllerTarget scrolls the highlighted row into view. */
+  max-height: min(52vh, 420px);
+  overflow-y: auto;
+  scrollbar-width: thin;
+  margin: 10px 0 14px 0;
+}
+
+.select-picker-option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  text-align: left;
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  padding: 10px 12px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 4px;
+  color: #ffffff;
+  cursor: pointer;
+}
+
+.select-picker-option:hover,
+.select-picker-option:focus-visible {
+  background: var(--accent-secondary, #2ec4b6);
+  color: #000000;
+  outline: none;
+}
+
+.select-picker-option[disabled] {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* Marks the value the dropdown currently holds, so the list still reads
+   correctly once the highlight has moved somewhere else. */
+.select-picker-option::before {
+  content: '';
+  flex: 0 0 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: transparent;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.35);
+}
+
+.select-picker-option.is-current::before {
+  background: var(--accent-secondary, #2ec4b6);
+  box-shadow: none;
+}
+
+.select-picker-option.is-current:focus-visible::before {
+  background: #000000;
+}
+
+.select-picker-hint {
+  display: flex;
+  justify-content: center;
+  gap: 18px;
+  font-family: 'Space Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.select-picker-glyph {
+  display: inline-block;
+  min-width: 16px;
+  text-align: center;
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  border-radius: 3px;
+  padding: 0 3px;
+  margin-right: 4px;
+}
+
 .virtual-keyboard-content {
   width: min(94vw, 620px);
   background: rgba(10, 12, 16, 0.97);
