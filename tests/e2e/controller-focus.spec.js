@@ -159,6 +159,26 @@ test.describe('controller-ready modal focus', () => {
         await page.evaluate(() => { navigator.getGamepads = () => []; });
     });
 
+    test('Armory dropdown keeps focus when an equipment change re-renders it', async ({ page }) => {
+        await bootToOperatorMenu(page);
+        const rosterConfirm = page.locator('#roster-confirm-btn');
+        if (await rosterConfirm.isVisible().catch(() => false)) await rosterConfirm.click();
+        await page.locator('#start-game').click();
+        await expect(page.locator('#armory-screen')).toBeVisible({ timeout: 30_000 });
+
+        // Chassis always contains Standard plus unlocked community skins; some
+        // classes intentionally expose only one weapon archetype.
+        const chassis = page.locator('#armory-chassis-select');
+        await chassis.focus();
+        const before = await chassis.inputValue();
+        const next = await chassis.locator('option:not([disabled])').nth(1).getAttribute('value');
+        expect(next).toBeTruthy();
+        await chassis.selectOption(next);
+
+        await expect(chassis).not.toHaveValue(before);
+        await expect(chassis).toBeFocused();
+    });
+
     test('controller can choose a visible right-stick sensitivity preset', async ({ page }) => {
         await bootToTitleSplash(page);
         await page.locator('#title-settings-btn').click();

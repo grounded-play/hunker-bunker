@@ -20,7 +20,7 @@ const controllerTypes = [
 // aligned with the gameplay preset below instead of duplicating a device image
 // inside the game's loading screen.
 const OFFICIAL_LAYOUT_TITLE = 'Official Hunker Bunker Controls';
-const OFFICIAL_LAYOUT_DESCRIPTION = 'Left Stick Move · Right Stick Aim/Pointer · A Interact · B Dodge/Back · X Reload · Y Smash · LB Scan · RB Map · LT Sprint · RT Fire · Menu Pause.';
+const OFFICIAL_LAYOUT_DESCRIPTION = 'Left Stick Move · Right Stick Aim/Pointer · A/RT Confirm menus · A Interact · B Dodge/Back · X Reload · Y Smash · LB Scan · RB Map · LT Sprint · RT Fire · Menu Pause.';
 
 function binding(actionSet, action, title) {
     return `"binding" "game_action ${actionSet} ${action}, ${title}"`;
@@ -188,7 +188,7 @@ function buildControllerConfig(controllerType) {
             right: ['menu_right', 'Right']
         }),
         triggerGroup(3, 'menu', 'menu_tab_left', 'Previous Tab'),
-        triggerGroup(4, 'menu', 'menu_tab_right', 'Next Tab'),
+        triggerGroup(4, 'menu', 'menu_confirm', 'Confirm'),
         switchesGroup(5, 'menu', {
             button_escape: ['pause', 'Pause'],
             button_menu: ['pause', 'Settings / Pause'],
@@ -298,8 +298,8 @@ function buildControllerConfig(controllerType) {
     "title" "${OFFICIAL_LAYOUT_TITLE}"
     "description" "${OFFICIAL_LAYOUT_DESCRIPTION}"
     "controller_type" "${controllerType}"
-    "major_revision" "8"
-    "minor_revision" "1"
+    "major_revision" "9"
+    "minor_revision" "0"
     "localization"
     {
         "english"

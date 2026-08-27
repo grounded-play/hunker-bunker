@@ -174,6 +174,13 @@ describe('createActionRouter', () => {
         expect(second.confirm).toBe(false);
     });
 
+    it('treats right-trigger fire as menu confirm for fallback layouts', () => {
+        const router = createActionRouter();
+        const held = padSnapshot({ fire: true });
+        expect(router.deriveActions(held).actions.confirm).toBe(true);
+        expect(router.deriveActions(held).actions.confirm).toBe(false);
+    });
+
     it('does not treat back/scan as tab navigation, since they share a physical button in the browser fallback', () => {
         // mapBrowserGamepad's east face button (index 1) drives both `scan` and
         // `menuBack` at once. Tab navigation must stay off dedicated bumper

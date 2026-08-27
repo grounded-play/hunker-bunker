@@ -16,9 +16,9 @@ second path and must never be the only way to reach or activate a control.
 | Intent | Keyboard | Steam Deck / controller |
 | --- | --- | --- |
 | Move focus | WASD or arrow keys | D-pad or left stick menu actions |
-| Activate | Enter or Space | A / Confirm |
+| Activate | Enter or Space | A or RT / Confirm |
 | Back or close | Escape | B / Back |
-| Change a slider/select | A/D or Left/Right while focused | Left/Right |
+| Change a slider/select | A/D or Left/Right while focused | Any direction while focused; A/RT advances |
 | Change tabs | Focus tabs normally; Q/E where surfaced | LB/RB tab actions |
 | Pointer fallback | Mouse | Right stick virtual pointer + A |
 | Enter text | Activate the focused field | Steam keyboard, with in-game keyboard fallback |

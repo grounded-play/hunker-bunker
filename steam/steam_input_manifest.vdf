@@ -4,8 +4,8 @@
     // reworked enough that old user configs are unusable — Steam then force-updates
     // players onto the current official config. minor_revision is for additive
     // actions and localization tweaks. Read back via GetDeviceBindingRevision.
-    "major_revision" "8"
-    "minor_revision" "1"
+    "major_revision" "9"
+    "minor_revision" "0"
     "configurations"
     {
         "controller_neptune"

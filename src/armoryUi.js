@@ -150,6 +150,13 @@ export function createArmoryUi({
     }
 
     function render() {
+        // Equipment changes rebuild the Armory markup. Preserve controller
+        // focus across that rebuild or the first dropdown adjustment throws
+        // focus back to the start of the screen and makes subsequent inputs
+        // appear dead on Steam Deck.
+        const focusedControlId = typeof document !== 'undefined' && container.contains?.(document.activeElement)
+            ? document.activeElement?.id
+            : null;
         const cls = activeClass.toLowerCase();
         const loadout = loadoutManager.getClassLoadout(cls);
         const archetype = loadout.archetypeId || DEFAULT_ARCHETYPES[cls];
@@ -353,6 +360,9 @@ export function createArmoryUi({
         `;
 
         bindEvents();
+        if (focusedControlId) {
+            container.querySelector?.(`#${focusedControlId}`)?.focus?.({ preventScroll: true });
+        }
     }
 
     function bindEvents() {

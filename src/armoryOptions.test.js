@@ -57,6 +57,19 @@ describe('buildEquipOptions', () => {
         expect(opts[0].selected).toBe(true);
     });
 
+    it('preserves opaque community skin ids as the selected option', () => {
+        const opts = buildEquipOptions({
+            ids: ['comm_tank_abg', 'comm_tank_foxhole_shadow'],
+            selectedId: 'comm_tank_foxhole_shadow',
+            ownership: storeWith()
+        });
+        expect(opts.find((o) => o.id === 'comm_tank_foxhole_shadow')).toMatchObject({
+            selected: true,
+            disabled: false
+        });
+        expect(opts.find((o) => o.id === 'comm_tank_abg').selected).toBe(false);
+    });
+
     it('keeps an equipped-but-unowned item visible and selected rather than silently dropping it', () => {
         // Reconciliation should have cleared this, but if it is still equipped
         // the dropdown must show what is actually on the operator.

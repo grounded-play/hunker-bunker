@@ -3,16 +3,16 @@
     "version" "3"
     "game" "Hunker Bunker"
     "title" "Official Hunker Bunker Controls"
-    "description" "Left Stick Move · Right Stick Aim/Pointer · A Interact · B Dodge/Back · X Reload · Y Smash · LB Scan · RB Map · LT Sprint · RT Fire · Menu Pause."
+    "description" "Left Stick Move · Right Stick Aim/Pointer · A/RT Confirm menus · A Interact · B Dodge/Back · X Reload · Y Smash · LB Scan · RB Map · LT Sprint · RT Fire · Menu Pause."
     "controller_type" "controller_ps4"
-    "major_revision" "8"
-    "minor_revision" "1"
+    "major_revision" "9"
+    "minor_revision" "0"
     "localization"
     {
         "english"
         {
             "title" "Official Hunker Bunker Controls"
-            "description" "Left Stick Move · Right Stick Aim/Pointer · A Interact · B Dodge/Back · X Reload · Y Smash · LB Scan · RB Map · LT Sprint · RT Fire · Menu Pause."
+            "description" "Left Stick Move · Right Stick Aim/Pointer · A/RT Confirm menus · A Interact · B Dodge/Back · X Reload · Y Smash · LB Scan · RB Map · LT Sprint · RT Fire · Menu Pause."
         }
     }
     "group"
@@ -189,7 +189,7 @@
                     {
                         "bindings"
                         {
-                            "binding" "game_action menu menu_tab_right, Next Tab"
+                            "binding" "game_action menu menu_confirm, Confirm"
                         }
                     }
                 } }

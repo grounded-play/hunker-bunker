@@ -34,7 +34,7 @@ import { syncSteamStats } from './src/steamStats.js';
 import { loadRgbSave, saveRgbSave, markUnlocked as markRgbUnlocked, shouldUnlockRgb, unlockChapter as unlockRgbChapter, isChapterUnlocked as isRgbChapterUnlocked } from './src/minigames/rgb/save.js';
 import { mountRgb } from './src/minigames/rgb/runtime.js';
 import { ENDINGS as RGB_ENDINGS, CHAPTERS as RGB_CHAPTERS, CHAPTER_ORDER as RGB_CHAPTER_ORDER } from './src/minigames/rgb/content.js';
-import { mapBrowserGamepad } from './src/browserGamepad.js';
+import { mapBrowserGamepad, mergeBrowserAnalogFallback } from './src/browserGamepad.js';
 import { getControllerGlyphLabel } from './src/inputGlyphs.js';
 import {
     ACTION_SETS,
@@ -689,7 +689,16 @@ function adjustSelectValue(element, direction) {
     const select = element?.matches?.('select') ? element : element?.querySelector?.('select');
     if (!select || !select.options?.length) return false;
     const currentIndex = Math.max(0, select.selectedIndex);
-    const nextIndex = wrapMenuIndex(currentIndex, direction, select.options.length);
+    let nextIndex = currentIndex;
+    // Locked Armory inventory is represented by disabled options. Skip those
+    // instead of landing on an item the loadout guard will immediately reject.
+    for (let offset = 1; offset <= select.options.length; offset += 1) {
+        const candidate = wrapMenuIndex(currentIndex, direction * offset, select.options.length);
+        if (!select.options[candidate]?.disabled) {
+            nextIndex = candidate;
+            break;
+        }
+    }
     if (nextIndex === select.selectedIndex) return true;
     select.selectedIndex = nextIndex;
     select.dispatchEvent(new Event('input', { bubbles: true }));
@@ -1350,6 +1359,13 @@ function activateControllerFocusedElement() {
         return true;
     }
 
+    // Chromium/Electron does not reliably open a native <select> popup from a
+    // synthetic controller click. Cycle to the next enabled choice instead so
+    // A (and menu-confirm RT) always performs a visible, deterministic action.
+    if (activeElement.matches?.('select')) {
+        return adjustSelectValue(activeElement, 1);
+    }
+
     if (typeof activeElement.click === 'function') {
         activeElement.click();
         return true;
@@ -1494,18 +1510,12 @@ function handleSteamInputSnapshot(snapshot = {}) {
         return;
     }
 
-    // Preserve movement on Deck configurations where Steam exposes the aim
-    // action but leaves the native move action neutral. Only borrow Chromium's
-    // physical left-stick axes; all buttons and aiming remain native actions.
-    if (steamInputState.phase === 'gameplay' && Math.hypot(
-        Number(activeController.move?.x) || 0,
-        Number(activeController.move?.y) || 0
-    ) <= 0.18) {
-        const browserMovement = getBrowserGamepadControllers().find((controller) => (
-            Math.hypot(Number(controller.move?.x) || 0, Number(controller.move?.y) || 0) > 0.18
-        ));
-        if (browserMovement) activeController = { ...activeController, move: browserMovement.move };
-    }
+    // Native Steam Input can still emit buttons while a stale official/user
+    // layout leaves either analog action neutral. In that mixed state the
+    // all-or-nothing browser fallback never wins, so merge both sticks
+    // independently. This applies in menus too: right stick remains the
+    // pointer and left stick remains a navigation/pointer fallback.
+    activeController = mergeBrowserAnalogFallback(activeController, getBrowserGamepadControllers());
 
     steamInputPrevControllers.set(activeController.handle, steamInputPrevControllers.get(activeController.handle) ?? {});
 
@@ -1656,9 +1666,10 @@ function handleSteamMenuInput(actions) {
     const moved = Boolean(actions.up || actions.down || actions.left || actions.right);
     const activeElement = document.activeElement;
     const horizontalDirection = actions.left ? -1 : actions.right ? 1 : 0;
-    const controlAdjusted = Boolean(activeElement && horizontalDirection && (
-        adjustRangeInputValue(activeElement, horizontalDirection)
-        || adjustSelectValue(activeElement, horizontalDirection)
+    const selectDirection = actions.left || actions.up ? -1 : actions.right || actions.down ? 1 : 0;
+    const controlAdjusted = Boolean(activeElement && (
+        (horizontalDirection && adjustRangeInputValue(activeElement, horizontalDirection))
+        || (selectDirection && adjustSelectValue(activeElement, selectDirection))
     ));
 
     const root = getControllerFocusRoot();
@@ -1689,6 +1700,7 @@ function handleSteamMenuInput(actions) {
             if (clickable) {
                 if (clickable.tagName === 'SELECT') {
                     clickable.focus();
+                    adjustSelectValue(clickable, 1);
                 } else if (typeof clickable.click === 'function') {
                     clickable.click();
                 } else {

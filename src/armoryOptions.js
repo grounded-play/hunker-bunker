@@ -18,9 +18,14 @@ export function buildEquipOptions({
 } = {}) {
     if (!ownership) throw new Error('buildEquipOptions requires an ownership store');
 
-    const selected = selectedId === null || selectedId === undefined || selectedId === ''
+    const selectedText = selectedId === null || selectedId === undefined
+        ? ''
+        : String(selectedId).trim();
+    const selected = selectedText === ''
         ? null
-        : Number(selectedId);
+        : /^-?\d+$/.test(selectedText)
+            ? Number(selectedText)
+            : selectedText;
 
     const options = [];
     for (const rawId of ids) {

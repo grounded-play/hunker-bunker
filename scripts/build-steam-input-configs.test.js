@@ -22,10 +22,10 @@ describe('buildSteamInputConfigs', () => {
         expect(outputs).toHaveLength(7);
         const deck = fs.readFileSync(path.join(destination, 'controller_neptune.vdf'), 'utf8');
         expect(deck).toContain('"controller_type" "controller_neptune"');
-        expect(deck).toContain('"major_revision" "8"');
-        expect(deck).toContain('"minor_revision" "1"');
+        expect(deck).toContain('"major_revision" "9"');
+        expect(deck).toContain('"minor_revision" "0"');
         expect(deck).toContain('"title" "Official Hunker Bunker Controls"');
-        expect(deck).toContain('LB Scan · RB Map · LT Sprint · RT Fire · Menu Pause.');
+        expect(deck).toContain('A/RT Confirm menus');
         expect(deck).toContain('"name" "menu"');
         expect(deck).toContain('"name" "gameplay"');
         expect(deck).toContain('"name" "archive"');
@@ -73,6 +73,7 @@ describe('buildSteamInputConfigs', () => {
         expect(deck).toMatch(/"button_b"[\s\S]*?game_action gameplay dash, Dodge/);
         expect(deck).toMatch(/"button_a"[\s\S]*?game_action gameplay interact, Interact/);
         expect(deck).toMatch(/"button_menu"[\s\S]*?game_action menu pause, Settings \/ Pause/);
+        expect(deck).toMatch(/"id" "4"[\s\S]*?game_action menu menu_confirm, Confirm/);
     });
 
     it('maps PlayStation touchpads in menu and archive without inventing pads for Xbox', () => {

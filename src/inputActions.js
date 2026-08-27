@@ -154,7 +154,10 @@ export function createActionRouter() {
             down: edge('menu_down', pad.menuDown),
             left: edge('menu_left', pad.menuLeft),
             right: edge('menu_right', pad.menuRight),
-            confirm: edge('menu_confirm', pad.menuConfirm),
+            // `fire` is RT in the browser fallback. Native layouts bind RT to
+            // menu_confirm directly; accepting either keeps the semantics
+            // identical while stale Steam layouts are being replaced.
+            confirm: edge('menu_confirm', pad.menuConfirm || pad.fire),
             back: edge('menu_back', pad.menuBack),
             // Dedicated bumper fields (kept separate from scan/fire/menuBack,
             // which share buttons with each other in the browser fallback).

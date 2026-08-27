@@ -3,6 +3,7 @@ import {
     inferBrowserGamepadType,
     isGamepadButtonPressed,
     mapBrowserGamepad,
+    mergeBrowserAnalogFallback,
     normalizeGamepadAxis
 } from './browserGamepad.js';
 
@@ -67,6 +68,44 @@ describe('browser gamepad mapping', () => {
             pause: true,
             menuConfirm: true
         });
+    });
+
+    it('maps right trigger to both gameplay fire and menu confirm', () => {
+        const buttons = Array.from({ length: 17 }, () => button(false));
+        buttons[7] = button(false, 0.8);
+
+        const mapped = mapBrowserGamepad({ index: 0, id: 'Steam Deck', axes: [0, 0, 0, 0], buttons });
+
+        expect(mapped.fire).toBe(true);
+        expect(mapped.menuConfirm).toBe(true);
+    });
+
+    it('fills each missing native stick independently from the browser view', () => {
+        const native = {
+            handle: 'native:1',
+            move: { x: 0, y: 0 },
+            camera: { x: 0, y: 0 },
+            interact: true
+        };
+        const browser = [{
+            move: { x: 0.75, y: -0.25 },
+            camera: { x: -0.6, y: 0.4 }
+        }];
+
+        expect(mergeBrowserAnalogFallback(native, browser)).toEqual({
+            ...native,
+            move: browser[0].move,
+            camera: browser[0].camera
+        });
+    });
+
+    it('keeps a working native stick while rescuing only the neutral one', () => {
+        const native = { move: { x: 0.5, y: 0 }, camera: { x: 0, y: 0 } };
+        const browser = [{ move: { x: -0.9, y: 0 }, camera: { x: 0.7, y: 0.2 } }];
+        const merged = mergeBrowserAnalogFallback(native, browser);
+
+        expect(merged.move).toBe(native.move);
+        expect(merged.camera).toBe(browser[0].camera);
     });
 
     it('maps gameplay scan and tactical map to the left and right bumpers', () => {
