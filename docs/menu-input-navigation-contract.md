@@ -27,6 +27,8 @@ Focus wraps instead of becoming lost. Opening a surface assigns a deterministic
 initial target. Closing it restores the invoking control when that control still
 exists. Hidden, disabled, inert, and `aria-hidden` controls are excluded from the
 focus route. A modal traps Tab and directional navigation inside its own surface.
+Touch input hides the tactical mouse icon immediately and suppresses Chromium's
+post-tap compatibility mouse events; a later real mouse move restores it.
 
 ## Surface registry
 

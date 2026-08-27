@@ -12557,6 +12557,8 @@ function initTacticalCursor() {
     let curY = mouseY;
     let targetScale = 1.0;
     let curScale = 1.0;
+    let suppressCompatibilityMouseUntil = 0;
+    let currentHoverTarget = null;
     const LERP_FACTOR = 0.15; // authentic retro mechanical delay
     let hasMoved = false;
     const isInsideGameViewport = (clientX, clientY) => {
@@ -12576,6 +12578,15 @@ function initTacticalCursor() {
         // Ensure clientX and clientY are valid, finite numbers
         if (typeof e.clientX !== 'number' || typeof e.clientY !== 'number') return;
         if (isNaN(e.clientX) || isNaN(e.clientY) || !isFinite(e.clientX) || !isFinite(e.clientY)) return;
+
+        // Chromium emits compatibility mouse events after touchscreen taps.
+        // Without this guard that synthetic mousemove immediately resurrects
+        // the tactical mouse icon at the finger position after we hide it.
+        if (performance.now() < suppressCompatibilityMouseUntil) {
+            cursor.classList.add('cursor-fade-out');
+            document.documentElement.classList.remove('custom-cursor-enabled');
+            return;
+        }
 
         // Filter out simulated browser events (common on clicks/focus transitions)
         // that report false (0,0) or extremely small coordinates on either axis.
@@ -12634,8 +12645,23 @@ function initTacticalCursor() {
     }
     requestAnimationFrame(updateCursorPosition);
 
+    function hideCursorForTouch() {
+        // Compatibility mouse events normally land within a few milliseconds,
+        // but Gamescope/Chromium can delay them across a frame boundary.
+        suppressCompatibilityMouseUntil = performance.now() + 800;
+        cursor.classList.add('cursor-fade-out');
+        cursor.classList.remove('cursor-clicking', 'cursor-hovering');
+        document.documentElement.classList.remove('custom-cursor-enabled');
+        currentHoverTarget = null;
+        targetScale = 1.0;
+        updateGameplayCrosshair(mouseX, mouseY, false);
+    }
+
     window.addEventListener('pointerdown', (e) => {
-        if (e.pointerType === 'touch') return;
+        if (e.pointerType === 'touch') {
+            hideCursorForTouch();
+            return;
+        }
 
         cursor.classList.add('cursor-clicking');
         targetScale = 0.72; // Snap scale down on press and hold
@@ -12652,12 +12678,17 @@ function initTacticalCursor() {
     });
 
     window.addEventListener('pointerup', (e) => {
-        if (e.pointerType === 'touch') return;
+        if (e.pointerType === 'touch') {
+            hideCursorForTouch();
+            return;
+        }
         cursor.classList.remove('cursor-clicking');
         targetScale = 1.0; // Restore full scale on release
     });
 
-    let currentHoverTarget = null;
+    window.addEventListener('pointercancel', (e) => {
+        if (e.pointerType === 'touch') hideCursorForTouch();
+    });
 
     function handleHoverTargetSync(rawTarget, { playBlip = false } = {}) {
         const target = resolveInteractiveFocusTarget(rawTarget);
