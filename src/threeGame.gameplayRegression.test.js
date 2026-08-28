@@ -49,6 +49,38 @@ describe('Gameplay regressions: damage, oxygen, and cliff falling', () => {
         });
     });
 
+    describe('PvP damage scale conversion', () => {
+        it('converts a standard 10-point server hit to one local heart', () => {
+            const fakeGame = {
+                netSocket: { id: 'local-player' },
+                playerVitals: { hp: 3, maxHp: 3 },
+                takeDamage: vi.fn()
+            };
+
+            ThreeGame.prototype.handleRemotePlayerDamaged.call(fakeGame, {
+                targetId: 'local-player',
+                damage: 10
+            });
+
+            expect(fakeGame.takeDamage).toHaveBeenCalledWith(1, 'pvp-rival');
+        });
+
+        it('preserves legacy damage values already expressed in hearts', () => {
+            const fakeGame = {
+                netSocket: { id: 'local-player' },
+                playerVitals: { hp: 3, maxHp: 3 },
+                takeDamage: vi.fn()
+            };
+
+            ThreeGame.prototype.handleRemotePlayerDamaged.call(fakeGame, {
+                targetId: 'local-player',
+                damage: 2
+            });
+
+            expect(fakeGame.takeDamage).toHaveBeenCalledWith(2, 'pvp-rival');
+        });
+    });
+
     describe('updateVitals oxygen drain with inactive mission', () => {
         it('depletes oxygen over time when outside safe bubble even if missionState is inactive', () => {
             const fakeGame = {
@@ -122,6 +154,12 @@ describe('Gameplay regressions: damage, oxygen, and cliff falling', () => {
 
             // Stepped over cliff at (1, 0)
             expect(fakeGame.isPlayerOverAnyHole(1.0, 0.0)).toBe(true);
+
+            // Crossing the rendered lip must start the fall immediately;
+            // waiting until the tile center makes the edge feel like an
+            // invisible wall or leaves a narrow walkable shelf over the void.
+            expect(fakeGame.isPlayerOverAnyHole(0.51, 0.0)).toBe(true);
+            expect(fakeGame.isPlayerOverAnyHole(0.47, 0.0)).toBe(false);
 
             // Stepped over canyon at (2, 0)
             expect(fakeGame.isPlayerOverAnyHole(2.0, 0.0)).toBe(true);

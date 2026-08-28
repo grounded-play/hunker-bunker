@@ -248,6 +248,7 @@ describe('isHoleTile / mountChunk agreement', () => {
             isSnailTileWalkable: () => true,
             faceSpriteFromDir: vi.fn(),
             takeDamage,
+            applySnailContactKnockback: vi.fn(),
             spawnToxicSporePuddle: vi.fn(),
             triggerCameraShake: vi.fn()
         };
@@ -255,6 +256,7 @@ describe('isHoleTile / mountChunk agreement', () => {
         ThreeGame.prototype.updateChargerOrStalkerBehavior.call(fakeThis, stalker, 0.016, { isStalker: true });
 
         expect(takeDamage).toHaveBeenCalledWith(1, 'mycelium_stalker', stalker.position.x, stalker.position.z);
+        expect(fakeThis.applySnailContactKnockback).toHaveBeenCalledWith(stalker, stalker.userData);
         expect(fakeThis.spawnToxicSporePuddle).toHaveBeenCalled();
         expect(fakeThis.triggerCameraShake).toHaveBeenCalled();
         expect(stalker.userData.attackCooldown).toBe(1);

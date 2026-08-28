@@ -26520,6 +26520,22 @@ export class ThreeGame {
             return;
         }
 
+        // Contact attacks use the same collision-aware separation as snails.
+        // Finish that short recoil before resuming pursuit so a stalker cannot
+        // remain centered inside the player's capsule after landing a hit.
+        if ((data.knockbackTimer ?? 0) > 0) {
+            const nextX = sprite.position.x + (data.knockbackVx ?? 0) * delta;
+            const nextZ = sprite.position.z + (data.knockbackVz ?? 0) * delta;
+            if (this.isSnailTileWalkable(Math.round(nextX), Math.round(nextZ))) {
+                sprite.position.x = nextX;
+                sprite.position.z = nextZ;
+            }
+            data.knockbackTimer = Math.max(0, data.knockbackTimer - delta);
+            data.vx = 0;
+            data.vz = 0;
+            return;
+        }
+
         const dx = this.player.position.x - sprite.position.x;
         const dz = this.player.position.z - sprite.position.z;
         const distToPlayer = Math.hypot(dx, dz);
@@ -26599,6 +26615,7 @@ export class ThreeGame {
                 sprite.position.z
             );
             if (hitApplied) {
+                this.applySnailContactKnockback?.(sprite, data);
                 if (isStalker) this.spawnToxicSporePuddle(sprite.position.x, sprite.position.z, false);
                 if (typeof window !== 'undefined') {
                     window.dispatchEvent(new CustomEvent('player-hit', { detail: { reason } }));
@@ -28732,7 +28749,11 @@ export class ThreeGame {
                 z: tileY,
                 scale: 1,
                 rotationZ: 0,
-                fallRadius: 0.20,
+                // Rounded tile selection switches to this void cell at the
+                // half-tile lip. Cover that footprint so the fall starts as
+                // soon as the player crosses the rendered edge, not only
+                // after reaching the center of empty space.
+                fallRadius: 0.52,
                 lethal: true,
                 exteriorCanyon: true
             };
@@ -28744,7 +28765,7 @@ export class ThreeGame {
                 z: tileY,
                 scale: 1,
                 rotationZ: 0,
-                fallRadius: 0.20,
+                fallRadius: 0.52,
                 lethal: true,
                 exteriorCanyon: true,
                 cliff: true
