@@ -75,7 +75,7 @@ test.describe('complete menu keyboard and Steam Deck reachability', () => {
                     for (const code of ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight']) {
                         current.focus();
                         document.dispatchEvent(new KeyboardEvent('keydown', {
-                            key: code.replace('Arrow', 'Arrow'), code, bubbles: true, cancelable: true
+                            key: code, code, bubbles: true, cancelable: true
                         }));
                         captureFocus();
                     }
