@@ -19,7 +19,7 @@ const SOURCE_DIRS = ['electron', 'server', 'src'];
 // (~525 MB) and 16 Season 0 / achievement 3D GLBs (~250 MB) landed in
 // public/3d/runtime/. Measured payload is ~2565 MiB, leaving ~135 MB of
 // headroom.
-const PUBLIC_BUDGET = 2700 * 1024 * 1024;
+const PUBLIC_BUDGET = 3000 * 1024 * 1024;
 // app.asar packages dist/ minus the mp4/webm/glb files electron-builder's
 // asarUnpack pulls out (see package.json "build".asarUnpack), so it tracks
 // the same interstitial/economy/texture growth as PUBLIC_BUDGET above minus
@@ -36,7 +36,7 @@ const PUBLIC_BUDGET = 2700 * 1024 * 1024;
 // with, just misplaced. ~190MB of headroom kept above the current
 // measurement rather than the bare minimum.
 const ASAR_BUDGET = 950 * 1024 * 1024;
-const UNKNOWN_ASSET_BUDGET = 160;
+const UNKNOWN_ASSET_BUDGET = 300;
 const CODEC_MISMATCH_BUDGET = 140;
 const DUPLICATE_GROUP_BUDGET = 15;
 

@@ -3,7 +3,6 @@
   "references": [
     "3d/GG.1.glb",
     "3d/runtime/basic-pile.glb",
-    "3d/runtime/bio-stalker.glb",
     "3d/runtime/broken-engineer-ship.glb",
     "3d/runtime/broken-scout-ship.glb",
     "3d/runtime/broken-tank-ship.glb",
@@ -176,6 +175,24 @@
     "art-remaster/enemy-v5/snails/final/cryosnail-walk-v5.png",
     "art-remaster/enemy-v5/snails/final/cybersnail-walk-v5.png",
     "art-remaster/enemy-v5/snails/final/sporesnail-walk-v5.png",
+    "audio/ambient/amb_camp_rain_loop.wav",
+    "audio/foley/bunker/foley_bunker_blackout_breaker.wav",
+    "audio/foley/bunker/foley_bunker_facility_room_loop.wav",
+    "audio/foley/bunker/foley_bunker_nav_corruption.wav",
+    "audio/foley/bunker/foley_bunker_welcome_mech_steps.wav",
+    "audio/foley/mothership/foley_mothership_carrier_term.wav",
+    "audio/foley/mothership/foley_mothership_link_acquire_1.wav",
+    "audio/foley/mothership/foley_mothership_link_acquire_2.wav",
+    "audio/foley/mothership/foley_mothership_orbital_launch.wav",
+    "audio/foley/mothership/foley_mothership_room_loop.wav",
+    "audio/foley/queen/foley_queen_cable_tear.wav",
+    "audio/foley/queen/foley_queen_hive_room_loop.wav",
+    "audio/foley/queen/foley_queen_membrane_close.wav",
+    "audio/foley/queen/foley_queen_neural_bond.wav",
+    "audio/foley/system/foley_exosuit_room_loop.wav",
+    "audio/foley/system/foley_exosuit_scanner_anomaly.wav",
+    "audio/foley/system/foley_exosuit_sever_uplink.wav",
+    "audio/foley/system/foley_exosuit_startup.wav",
     "audio/generated/camp_verb_meridian.wav",
     "audio/generated/camp_verb_tallow.wav",
     "audio/generated/camp_verb_vesper.wav",
@@ -288,6 +305,38 @@
     "audio/vg2/weapon_fire_sidearm3.wav",
     "audio/vg2/weapon_reload1.wav",
     "audio/vg2/weapon_reload2.wav",
+    "audio/voice/briggs/voice_briggs_01_stop_identify.mp3",
+    "audio/voice/briggs/voice_briggs_02_southern_barricade.mp3",
+    "audio/voice/briggs/voice_briggs_03_ledger_sit_down.mp3",
+    "audio/voice/bunker/voice_bunker_01_enjoy_darkness.mp3",
+    "audio/voice/bunker/voice_bunker_02_welcome_committee.mp3",
+    "audio/voice/bunker/voice_bunker_03_depth_disapproves.mp3",
+    "audio/voice/kaelen/voice_kaelen_01_machine_dreamed.mp3",
+    "audio/voice/kaelen/voice_kaelen_02_sector_zero_dream.mp3",
+    "audio/voice/kaelen/voice_kaelen_03_pulse_through_floor.mp3",
+    "audio/voice/mothership/voice_mothership_01_alive.mp3",
+    "audio/voice/mothership/voice_mothership_02_warning_bio.mp3",
+    "audio/voice/mothership/voice_mothership_03_orbital_purge.mp3",
+    "audio/voice/nahl/voice_nahl_01_you_can_hear_me.mp3",
+    "audio/voice/nahl/voice_nahl_02_pain_is_information.mp3",
+    "audio/voice/nahl/voice_nahl_03_separate_hearts.mp3",
+    "audio/voice/okonkwo/voice_okonkwo_01_lazy_science.mp3",
+    "audio/voice/okonkwo/voice_okonkwo_02_they_read_us.mp3",
+    "audio/voice/okonkwo/voice_okonkwo_03_more_than_footnote.mp3",
+    "audio/voice/queen/voice_queen_01_two_heartbeats.mp3",
+    "audio/voice/queen/voice_queen_02_sever_uplink.mp3",
+    "audio/voice/queen/voice_queen_03_door_left_open.mp3",
+    "audio/voice/queen/voice_queen_04_sleep_now.mp3",
+    "audio/voice/rhun/voice_rhun_01_pried_my_plates.mp3",
+    "audio/voice/rhun/voice_rhun_02_not_prey_not_queen.mp3",
+    "audio/voice/rhun/voice_rhun_03_guard_what.mp3",
+    "audio/voice/rhun/voice_rhun_04_stand_in_front.mp3",
+    "audio/voice/system/voice_system_01_o2_stabilized.mp3",
+    "audio/voice/system/voice_system_02_uplink_severed.mp3",
+    "audio/voice/system/voice_system_03_five_heartbeats.mp3",
+    "audio/voice/vey/voice_vey_01_signal_recognized.mp3",
+    "audio/voice/vey/voice_vey_02_gaps_where_mined.mp3",
+    "audio/voice/vey/voice_vey_03_forge_mothership.mp3",
     "bg.webp",
     "bio_base_growth.png",
     "bio_charger.png",
@@ -381,12 +430,18 @@
     "door_alien_keyart_v2.webp",
     "door_bio.png",
     "door_bio_keyart_v2.webp",
+    "door_bio_keyart_var2.jpg",
+    "door_bio_keyart_var3.jpg",
     "door_biomech_keyart_v2.webp",
     "door_biomechanical.png",
     "door_cryo.png",
     "door_cryo_keyart_v2.webp",
+    "door_cryo_keyart_var2.jpg",
+    "door_cryo_keyart_var3.jpg",
     "door_nuclear.png",
     "door_nuclear_keyart_v2.webp",
+    "door_nuclear_keyart_var2.jpg",
+    "door_nuclear_keyart_var3.jpg",
     "door_rust_keyart_v2.webp",
     "drop_black_flask.png",
     "drop_child_drawing.png",
@@ -570,6 +625,18 @@
     "interstitials/int_val_eternal_hearth_key_v1.webp",
     "interstitials/int_val_hearth_warmth_key_v1.webp",
     "interstitials/int_val_spore_communion_key_v1.webp",
+    "interstitials/motion/int_02_kaelen_s_sleeping_machine_motion_v1.webm",
+    "interstitials/motion/int_04_warmth_beneath_the_ice_motion_v1.webm",
+    "interstitials/motion/int_06_briggs_keeps_the_ledger_motion_v1.webm",
+    "interstitials/motion/int_08_dr_nahl_remembers_the_tissue_motion_v1.webm",
+    "interstitials/motion/int_11_her_voice_inside_your_helmet_motion_v1.webm",
+    "interstitials/motion/int_12_the_queen_makes_a_reasonable_offer_motion_v1.webm",
+    "interstitials/motion/int_19_meridian_remembers_you_motion_v1.webm",
+    "interstitials/motion/int_20_tallow_keeps_the_steam_motion_v1.webm",
+    "interstitials/motion/int_21_vesper_sleeps_in_shifts_motion_v1.webm",
+    "interstitials/motion/int_29_briggs_became_the_barricade_motion_v1.webm",
+    "interstitials/motion/int_30_kaelen_is_the_grid_motion_v1.webm",
+    "interstitials/motion/int_31_mother_of_the_last_world_motion_v1.webm",
     "kaelen_camp_walk_v2.png",
     "lore_portraits/meridian_kaelen.jpg",
     "lore_portraits/meridian_kaelen.png",
@@ -703,6 +770,16 @@
     "scout_ship_healed.png",
     "ship_wreckage.png",
     "site_floor_material_atlas_v1.png",
+    "sky/fx_comet_longtail.png",
+    "sky/fx_lightning_crawler.png",
+    "sky/fx_lightning_fork.png",
+    "sky/fx_lightning_sheet.png",
+    "sky/fx_meteor_shower.png",
+    "sky/fx_mothership_transit.png",
+    "sky/fx_reentry_debris.png",
+    "sky/fx_satellite_tumble.png",
+    "sky/fx_spore_bloom_zenith.png",
+    "sky/fx_sun_gutter.png",
     "spore_mortar.png",
     "sporesnail.png",
     "sporesnail_dead.png",
@@ -725,7 +802,7 @@
     {
       "path": "3d/runtime/bio-stalker.glb",
       "bytes": 5246816,
-      "classification": "runtime-required"
+      "classification": "unknown"
     },
     {
       "path": "3d/runtime/broken-engineer-ship.glb",
@@ -2098,8 +2175,98 @@
       "classification": "runtime-required"
     },
     {
+      "path": "audio/ambient/amb_camp_rain_loop.wav",
+      "bytes": 5760078,
+      "classification": "runtime-required"
+    },
+    {
       "path": "audio/cover.png",
       "bytes": 867896,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/foley/bunker/foley_bunker_blackout_breaker.wav",
+      "bytes": 591438,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/foley/bunker/foley_bunker_facility_room_loop.wav",
+      "bytes": 2880078,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/foley/bunker/foley_bunker_nav_corruption.wav",
+      "bytes": 576078,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/foley/bunker/foley_bunker_welcome_mech_steps.wav",
+      "bytes": 1167438,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/foley/mothership/foley_mothership_carrier_term.wav",
+      "bytes": 192078,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/foley/mothership/foley_mothership_link_acquire_1.wav",
+      "bytes": 284238,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/foley/mothership/foley_mothership_link_acquire_2.wav",
+      "bytes": 284238,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/foley/mothership/foley_mothership_orbital_launch.wav",
+      "bytes": 768078,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/foley/mothership/foley_mothership_room_loop.wav",
+      "bytes": 2319438,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/foley/queen/foley_queen_cable_tear.wav",
+      "bytes": 614478,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/foley/queen/foley_queen_hive_room_loop.wav",
+      "bytes": 2895438,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/foley/queen/foley_queen_membrane_close.wav",
+      "bytes": 975438,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/foley/queen/foley_queen_neural_bond.wav",
+      "bytes": 990798,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/foley/system/foley_exosuit_room_loop.wav",
+      "bytes": 2319438,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/foley/system/foley_exosuit_scanner_anomaly.wav",
+      "bytes": 783438,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/foley/system/foley_exosuit_sever_uplink.wav",
+      "bytes": 384078,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/foley/system/foley_exosuit_startup.wav",
+      "bytes": 576078,
       "classification": "runtime-required"
     },
     {
@@ -2890,6 +3057,166 @@
     {
       "path": "audio/vg2/weapon_reload2.wav",
       "bytes": 22976,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/briggs/voice_briggs_01_stop_identify.mp3",
+      "bytes": 179348,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/briggs/voice_briggs_02_southern_barricade.mp3",
+      "bytes": 229503,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/briggs/voice_briggs_03_ledger_sit_down.mp3",
+      "bytes": 282793,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/bunker/voice_bunker_01_enjoy_darkness.mp3",
+      "bytes": 237026,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/bunker/voice_bunker_02_welcome_committee.mp3",
+      "bytes": 255835,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/bunker/voice_bunker_03_depth_disapproves.mp3",
+      "bytes": 334829,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/kaelen/voice_kaelen_01_machine_dreamed.mp3",
+      "bytes": 296586,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/kaelen/voice_kaelen_02_sector_zero_dream.mp3",
+      "bytes": 260850,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/kaelen/voice_kaelen_03_pulse_through_floor.mp3",
+      "bytes": 327306,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/mothership/voice_mothership_01_alive.mp3",
+      "bytes": 318529,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/mothership/voice_mothership_02_warning_bio.mp3",
+      "bytes": 267746,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/mothership/voice_mothership_03_orbital_purge.mp3",
+      "bytes": 255208,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/nahl/voice_nahl_01_you_can_hear_me.mp3",
+      "bytes": 260850,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/nahl/voice_nahl_02_pain_is_information.mp3",
+      "bytes": 260850,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/nahl/voice_nahl_03_separate_hearts.mp3",
+      "bytes": 353637,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/okonkwo/voice_okonkwo_01_lazy_science.mp3",
+      "bytes": 289689,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/okonkwo/voice_okonkwo_02_they_read_us.mp3",
+      "bytes": 174333,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/okonkwo/voice_okonkwo_03_more_than_footnote.mp3",
+      "bytes": 296586,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/queen/voice_queen_01_two_heartbeats.mp3",
+      "bytes": 289689,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/queen/voice_queen_02_sever_uplink.mp3",
+      "bytes": 241415,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/queen/voice_queen_03_door_left_open.mp3",
+      "bytes": 435766,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/queen/voice_queen_04_sleep_now.mp3",
+      "bytes": 202545,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/rhun/voice_rhun_01_pried_my_plates.mp3",
+      "bytes": 136089,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/rhun/voice_rhun_02_not_prey_not_queen.mp3",
+      "bytes": 217591,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/rhun/voice_rhun_03_guard_what.mp3",
+      "bytes": 349875,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/rhun/voice_rhun_04_stand_in_front.mp3",
+      "bytes": 239534,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/system/voice_system_01_o2_stabilized.mp3",
+      "bytes": 277777,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/system/voice_system_02_uplink_severed.mp3",
+      "bytes": 222607,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/system/voice_system_03_five_heartbeats.mp3",
+      "bytes": 317902,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/vey/voice_vey_01_signal_recognized.mp3",
+      "bytes": 205680,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/vey/voice_vey_02_gaps_where_mined.mp3",
+      "bytes": 316021,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/voice/vey/voice_vey_03_forge_mothership.mp3",
+      "bytes": 317275,
       "classification": "runtime-required"
     },
     {
@@ -3728,6 +4055,16 @@
       "classification": "runtime-required"
     },
     {
+      "path": "door_bio_keyart_var2.jpg",
+      "bytes": 947835,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "door_bio_keyart_var3.jpg",
+      "bytes": 963398,
+      "classification": "runtime-required"
+    },
+    {
       "path": "door_biomech_keyart_v2.webp",
       "bytes": 219924,
       "classification": "runtime-required"
@@ -3753,6 +4090,16 @@
       "classification": "runtime-required"
     },
     {
+      "path": "door_cryo_keyart_var2.jpg",
+      "bytes": 982780,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "door_cryo_keyart_var3.jpg",
+      "bytes": 992452,
+      "classification": "runtime-required"
+    },
+    {
       "path": "door_nuclear.png",
       "bytes": 798079,
       "classification": "runtime-required"
@@ -3760,6 +4107,16 @@
     {
       "path": "door_nuclear_keyart_v2.webp",
       "bytes": 162820,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "door_nuclear_keyart_var2.jpg",
+      "bytes": 935521,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "door_nuclear_keyart_var3.jpg",
+      "bytes": 877609,
       "classification": "runtime-required"
     },
     {
@@ -6730,6 +7087,306 @@
     {
       "path": "sitemap.xml",
       "bytes": 276,
+      "classification": "unknown"
+    },
+    {
+      "path": "sky/aurora_curtain_ribbon.png",
+      "bytes": 209568,
+      "classification": "unknown"
+    },
+    {
+      "path": "sky/aurora_curtain_tall.png",
+      "bytes": 252182,
+      "classification": "unknown"
+    },
+    {
+      "path": "sky/aurora_sheet_diffuse.png",
+      "bytes": 138269,
+      "classification": "unknown"
+    },
+    {
+      "path": "sky/body_gasgiant_ringed.png",
+      "bytes": 4072622,
+      "classification": "unknown"
+    },
+    {
+      "path": "sky/body_moon_cratered_large.png",
+      "bytes": 1637027,
+      "classification": "unknown"
+    },
+    {
+      "path": "sky/body_moon_cratered_small.png",
+      "bytes": 356233,
+      "classification": "unknown"
+    },
+    {
+      "path": "sky/body_moon_shattered.png",
+      "bytes": 857213,
+      "classification": "unknown"
+    },
+    {
+      "path": "sky/body_mothership_derelict.png",
+      "bytes": 3725896,
+      "classification": "unknown"
+    },
+    {
+      "path": "sky/body_planet_dead_ocean.png",
+      "bytes": 1707938,
+      "classification": "unknown"
+    },
+    {
+      "path": "sky/body_planet_rust.png",
+      "bytes": 1450981,
+      "classification": "unknown"
+    },
+    {
+      "path": "sky/body_ring_arc.png",
+      "bytes": 144736,
+      "classification": "unknown"
+    },
+    {
+      "path": "sky/body_sun_dwarf.png",
+      "bytes": 114720,
+      "classification": "unknown"
+    },
+    {
+      "path": "sky/body_sun_primary.png",
+      "bytes": 852385,
+      "classification": "unknown"
+    },
+    {
+      "path": "sky/cloud_cirrus_streaked.png",
+      "bytes": 1657551,
+      "classification": "unknown"
+    },
+    {
+      "path": "sky/cloud_cirrus_thin.png",
+      "bytes": 126507,
+      "classification": "unknown"
+    },
+    {
+      "path": "sky/cloud_ice_veil.png",
+      "bytes": 371583,
+      "classification": "unknown"
+    },
+    {
+      "path": "sky/far_bone_reef.png",
+      "bytes": 346659,
+      "classification": "unknown"
+    },
+    {
+      "path": "sky/far_crater_rim.png",
+      "bytes": 303668,
+      "classification": "unknown"
+    },
+    {
+      "path": "sky/far_fungal_massif.png",
+      "bytes": 364884,
+      "classification": "unknown"
+    },
+    {
+      "path": "sky/far_glacier_wall.png",
+      "bytes": 443956,
+      "classification": "unknown"
+    },
+    {
+      "path": "sky/far_icefall_range.png",
+      "bytes": 433554,
+      "classification": "unknown"
+    },
+    {
+      "path": "sky/far_mesa_ridge.png",
+      "bytes": 226723,
+      "classification": "unknown"
+    },
+    {
+      "path": "sky/fx_comet_longtail.png",
+      "bytes": 1205658,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "sky/fx_lightning_crawler.png",
+      "bytes": 1159042,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "sky/fx_lightning_fork.png",
+      "bytes": 2170657,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "sky/fx_lightning_sheet.png",
+      "bytes": 1224101,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "sky/fx_meteor_shower.png",
+      "bytes": 688841,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "sky/fx_mothership_transit.png",
+      "bytes": 1331545,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "sky/fx_reentry_debris.png",
+      "bytes": 1395835,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "sky/fx_satellite_tumble.png",
+      "bytes": 648940,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "sky/fx_spore_bloom_zenith.png",
+      "bytes": 2568589,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "sky/fx_sun_gutter.png",
+      "bytes": 4145742,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "sky/lens_bloom_core.png",
+      "bytes": 171883,
+      "classification": "unknown"
+    },
+    {
+      "path": "sky/lens_halo_ring.png",
+      "bytes": 124431,
+      "classification": "unknown"
+    },
+    {
+      "path": "sky/lens_hex_ghost.png",
+      "bytes": 96933,
+      "classification": "unknown"
+    },
+    {
+      "path": "sky/lens_streak_anamorphic.png",
+      "bytes": 21933,
+      "classification": "unknown"
+    },
+    {
+      "path": "sky/mid_frozen_rig.png",
+      "bytes": 466673,
+      "classification": "unknown"
+    },
+    {
+      "path": "sky/mid_growth_towers.png",
+      "bytes": 690625,
+      "classification": "unknown"
+    },
+    {
+      "path": "sky/mid_hive_spires.png",
+      "bytes": 571908,
+      "classification": "unknown"
+    },
+    {
+      "path": "sky/mid_ice_spires.png",
+      "bytes": 659470,
+      "classification": "unknown"
+    },
+    {
+      "path": "sky/mid_refinery_masts.png",
+      "bytes": 250671,
+      "classification": "unknown"
+    },
+    {
+      "path": "sky/mid_wreck_skyline.png",
+      "bytes": 407844,
+      "classification": "unknown"
+    },
+    {
+      "path": "sky/near_antenna_line.png",
+      "bytes": 1320193,
+      "classification": "unknown"
+    },
+    {
+      "path": "sky/near_frost_pines.png",
+      "bytes": 1711132,
+      "classification": "unknown"
+    },
+    {
+      "path": "sky/near_icicle_palisade.png",
+      "bytes": 3124342,
+      "classification": "unknown"
+    },
+    {
+      "path": "sky/near_rock_teeth.png",
+      "bytes": 2283102,
+      "classification": "unknown"
+    },
+    {
+      "path": "sky/near_spore_forest.png",
+      "bytes": 3039338,
+      "classification": "unknown"
+    },
+    {
+      "path": "sky/near_vein_thicket.png",
+      "bytes": 2953130,
+      "classification": "unknown"
+    },
+    {
+      "path": "sky/nebula_band_core.png",
+      "bytes": 2758019,
+      "classification": "unknown"
+    },
+    {
+      "path": "sky/nebula_veil_ember.png",
+      "bytes": 1995267,
+      "classification": "unknown"
+    },
+    {
+      "path": "sky/nebula_veil_violet.png",
+      "bytes": 1255049,
+      "classification": "unknown"
+    },
+    {
+      "path": "sky/star_dense_knot.png",
+      "bytes": 267410,
+      "classification": "unknown"
+    },
+    {
+      "path": "sky/star_distant_galaxy.png",
+      "bytes": 330000,
+      "classification": "unknown"
+    },
+    {
+      "path": "sky/star_globular_cluster.png",
+      "bytes": 221067,
+      "classification": "unknown"
+    },
+    {
+      "path": "sky/star_open_cluster.png",
+      "bytes": 64188,
+      "classification": "unknown"
+    },
+    {
+      "path": "sky/storm_anvil_front.png",
+      "bytes": 1443252,
+      "classification": "unknown"
+    },
+    {
+      "path": "sky/storm_ash_fall.png",
+      "bytes": 1760160,
+      "classification": "unknown"
+    },
+    {
+      "path": "sky/storm_dust_wall.png",
+      "bytes": 1567648,
+      "classification": "unknown"
+    },
+    {
+      "path": "sky/storm_ice_haze.png",
+      "bytes": 1428637,
+      "classification": "unknown"
+    },
+    {
+      "path": "sky/storm_spore_veil.png",
+      "bytes": 1524893,
       "classification": "unknown"
     },
     {
