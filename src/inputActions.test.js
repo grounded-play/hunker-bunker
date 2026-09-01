@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
     ACTION_SETS,
+    MENU_FOCUS_ROOT_IDS,
     actionSetForAppPhase,
     createActionRouter,
     hasControllerContinuePress,
@@ -8,6 +9,45 @@ import {
     wrapMenuIndex,
     shouldPreferBrowserGamepad
 } from './inputActions.js';
+
+describe('menu focus surface registry', () => {
+    it('has unique roots ordered with transient reveals before parent menus', () => {
+        expect(new Set(MENU_FOCUS_ROOT_IDS).size).toBe(MENU_FOCUS_ROOT_IDS.length);
+        expect(MENU_FOCUS_ROOT_IDS.indexOf('progression-reward-overlay'))
+            .toBeLessThan(MENU_FOCUS_ROOT_IDS.indexOf('season-pass-modal'));
+        expect(MENU_FOCUS_ROOT_IDS.indexOf('vault-reveal-overlay'))
+            .toBeLessThan(MENU_FOCUS_ROOT_IDS.indexOf('steam-vault-modal'));
+        expect(MENU_FOCUS_ROOT_IDS.indexOf('operator-polish-modal'))
+            .toBeLessThan(MENU_FOCUS_ROOT_IDS.indexOf('armory-screen'));
+        expect(MENU_FOCUS_ROOT_IDS.indexOf('steam-vault-modal'))
+            .toBeLessThan(MENU_FOCUS_ROOT_IDS.indexOf('armory-screen'));
+        expect(MENU_FOCUS_ROOT_IDS.indexOf('settings-popup'))
+            .toBeLessThan(MENU_FOCUS_ROOT_IDS.indexOf('armory-screen'));
+        // The dropdown picker opens on top of whichever surface owns the
+        // <select> it was opened for -- including the on-screen keyboard's
+        // parent modals -- so it has to win the focus-root search outright.
+        expect(MENU_FOCUS_ROOT_IDS[0]).toBe('select-picker-overlay');
+        expect(MENU_FOCUS_ROOT_IDS.indexOf('select-picker-overlay'))
+            .toBeLessThan(MENU_FOCUS_ROOT_IDS.indexOf('virtual-keyboard-overlay'));
+    });
+
+    it.each([
+        'splash',
+        'menu',
+        'settings-popup',
+        'controls-popup',
+        'armory-screen',
+        'multiplayer-modal',
+        'season-pass-modal',
+        'progression-reward-overlay',
+        'npc-dialogue-modal',
+        'wanderer-encounter-modal',
+        'hb-debug-console',
+        'rgb-root'
+    ])('registers the %s interactive surface', (id) => {
+        expect(MENU_FOCUS_ROOT_IDS).toContain(id);
+    });
+});
 
 function padSnapshot(overrides = {}) {
     return {
@@ -138,6 +178,13 @@ describe('createActionRouter', () => {
         const second = router.deriveActions(held).actions;
         expect(second.up).toBe(false);
         expect(second.confirm).toBe(false);
+    });
+
+    it('treats right-trigger fire as menu confirm for fallback layouts', () => {
+        const router = createActionRouter();
+        const held = padSnapshot({ fire: true });
+        expect(router.deriveActions(held).actions.confirm).toBe(true);
+        expect(router.deriveActions(held).actions.confirm).toBe(false);
     });
 
     it('does not treat back/scan as tab navigation, since they share a physical button in the browser fallback', () => {

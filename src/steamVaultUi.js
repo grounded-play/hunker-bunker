@@ -300,6 +300,8 @@ export function initSteamVaultUI() {
         window.addEventListener('keydown', (e) => {
             if (modal.classList.contains('hidden')) return;
             if (e.key === 'Escape') {
+                e.preventDefault();
+                e.stopPropagation();
                 closeModal();
                 return;
             }

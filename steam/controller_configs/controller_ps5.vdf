@@ -2,17 +2,17 @@
 {
     "version" "3"
     "game" "Hunker Bunker"
-    "title" "Official Hunker Bunker Layout"
-    "description" "Twin-stick layout: right stick pointer/aim, A interact, B dodge, X reload, Y smash, RT fire."
+    "title" "Official Hunker Bunker Controls"
+    "description" "Left Stick / D-Pad Move · Right Stick Aim/Pointer · A/RT Confirm menus · A Interact · B Dodge/Back · X Reload · Y Smash · LB Scan · RB Map · LT Sprint · RT Fire · Menu Pause."
     "controller_type" "controller_ps5"
-    "major_revision" "8"
+    "major_revision" "10"
     "minor_revision" "0"
     "localization"
     {
         "english"
         {
-            "title" "Official Hunker Bunker Layout"
-            "description" "Twin-stick layout: right stick pointer/aim, A interact, B dodge, X reload, Y smash, RT fire."
+            "title" "Official Hunker Bunker Controls"
+            "description" "Left Stick / D-Pad Move · Right Stick Aim/Pointer · A/RT Confirm menus · A Interact · B Dodge/Back · X Reload · Y Smash · LB Scan · RB Map · LT Sprint · RT Fire · Menu Pause."
         }
     }
     "group"
@@ -189,7 +189,7 @@
                     {
                         "bindings"
                         {
-                            "binding" "game_action menu menu_tab_right, Next Tab"
+                            "binding" "game_action menu menu_confirm, Confirm"
                         }
                     }
                 } }
@@ -345,6 +345,20 @@
         "gameactions"
         {
             "gameplay" "camera_mouse"
+        }
+    }
+    "group"
+    {
+        "id" "18"
+        "mode" "joystick_move"
+        "inputs" { }
+        "settings"
+        {
+            "deadzone_inner_radius" "6000"
+        }
+        "gameactions"
+        {
+            "gameplay" "move"
         }
     }
     "group"
@@ -687,6 +701,7 @@
             "13" "left_trigger active"
             "14" "right_trigger active"
             "15" "switch active"
+            "18" "dpad active"
         }
     }
     "preset"

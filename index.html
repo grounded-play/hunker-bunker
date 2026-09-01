@@ -111,6 +111,7 @@
       <span class="gameplay-crosshair__tick gameplay-crosshair__tick--right"></span>
       <span class="gameplay-crosshair__tick gameplay-crosshair__tick--bottom"></span>
       <span class="gameplay-crosshair__tick gameplay-crosshair__tick--left"></span>
+      <span class="gameplay-crosshair__label" aria-live="polite"></span>
     </div>
     <div id="debug-toolbar">
       <div id="fps-counter">FPS: --</div>
@@ -130,6 +131,7 @@
       </button>
       <button id="debug-grant-resources" class="debug-btn" title="Grant test salvage and shells">+$</button>
       <button id="debug-god-mode" class="debug-btn" title="Toggle god mode">GOD</button>
+      <button id="debug-unlimited-ammo" class="debug-btn" title="Toggle unlimited ammo debug cheat">AMMO</button>
       <button id="debug-open-console" class="debug-btn" title="Open Dev Console (`~`)">&gt;_</button>
       <button id="debug-launch-rgb" class="debug-btn" title="Launch RGB Minigame">◈ RGB</button>
       <select id="debug-achievement-select" class="dev-select" title="Trigger Steam Achievement">
@@ -139,38 +141,31 @@
       <button id="debug-unlock-all-ach" class="dev-btn dev-btn--warn" title="Unlock All Achievements">★ ACH ALL</button>
       <button id="debug-unlock-all-codex" class="dev-btn dev-btn--accent" title="Unlock All Codex Entries">❑ CODEX ALL</button>
       <button id="debug-unlock-all-polishes" class="dev-btn dev-btn--accent" title="Unlock All Operator Polishes">◆ POLISH ALL</button>
+      <button id="debug-unlock-all-skins" class="dev-btn dev-btn--accent" title="Unlock All Weapon &amp; Chassis Skins">⚡ SKINS ALL</button>
     </div>
     <div id="cabinet-bezel"></div>
 
     <!-- Loading Screen (Pre-Splash) -->
     <div id="loading-screen">
+      <aside class="loader-system-info" aria-label="Build and developer information">
+        <div class="loader-system-info__label" id="loader-system-info-label">
+          <span>SYSTEM BUILD</span>
+          <span class="loader-system-info__time" id="loader-build-time"></span>
+        </div>
+        <div class="loader-version-tag" id="loader-version-tag">BUILD DEV // LOADING REVISION…</div>
+        <div class="loader-debug-hint"><kbd>~</kbd><span>DEV CONSOLE</span></div>
+      </aside>
       <div class="loader-content">
         <div class="loader-briefing-avatar hidden" id="loader-briefing-avatar">
           <img id="loader-briefing-avatar-img" src="/lore_portraits/survivor_08.webp" alt="" />
           <div class="loader-briefing-avatar__scanline"></div>
         </div>
         <div class="loader-title">INITIALIZING SYSTEMS</div>
-        <div class="loader-version-tag" id="loader-version-tag">BUILD DEV // LOADING REVISION…</div>
         <div class="loader-bar-container">
           <div class="loader-bar"></div>
         </div>
         <div class="loader-briefing-speaker hidden" id="loader-briefing-speaker">MOTHERSHIP COMMAND</div>
         <div class="loader-status">CONNECTING TO TACTICAL NETWORK...</div>
-        <div class="loader-control-reference" aria-label="Steam Deck controls">
-          <div class="loader-control-reference__title">STEAM DECK // FIELD INPUTS</div>
-          <svg class="loader-control-reference__diagram" viewBox="0 0 520 150" role="img" aria-label="Steam Deck controls: left stick move, right stick aim, D-pad navigate, A accept, B back, triggers fire and alternate fire, bumpers tabs, touchpads pointer and camera, menu settings">
-            <g class="deck-shell"><rect x="4" y="18" width="512" height="114" rx="38"/><path d="M98 18v114M422 18v114"/></g>
-            <g class="deck-control deck-stick"><circle cx="62" cy="74" r="19"/><circle cx="62" cy="74" r="7"/></g>
-            <g class="deck-control deck-stick"><circle cx="458" cy="74" r="19"/><circle cx="458" cy="74" r="7"/></g>
-            <g class="deck-control deck-dpad"><path d="M142 58h9v-9h12v9h9v12h-9v9h-12v-9h-9z"/></g>
-            <g class="deck-control deck-face"><circle cx="382" cy="61" r="7"/><circle cx="399" cy="78" r="7"/><circle cx="365" cy="78" r="7"/><circle cx="382" cy="95" r="7"/></g>
-            <g class="deck-control deck-touch"><rect x="188" y="38" width="50" height="22" rx="8"/><rect x="282" y="38" width="50" height="22" rx="8"/></g>
-            <g class="deck-control deck-bumpers"><path d="M110 30h42M368 30h42M108 119h44M368 119h44"/></g>
-            <g class="deck-labels"><text x="62" y="146">MOVE</text><text x="458" y="146">AIM</text><text x="157" y="146">NAV</text><text x="382" y="146">A ACCEPT</text><text x="214" y="31">POINTER</text><text x="306" y="31">CAMERA</text><text x="128" y="16">LB / LT</text><text x="392" y="16">RB / RT</text></g>
-          </svg>
-          <div class="loader-control-reference__legend">A ACCEPT / INTERACT · B BACK / DODGE · RT FIRE · LT ALT AIM · MENU SETTINGS · VIEW MAP</div>
-        </div>
-        <div class="loader-debug-hint" style="font-size: 10px; color: var(--text-muted, #556677); margin-top: 8px; letter-spacing: 1px; text-transform: uppercase;">[ PRESS ~ FOR DEV CONSOLE ]</div>
       </div>
     </div>
 
@@ -179,7 +174,8 @@
     <!-- Splash Screen (Monolithic) -->
     <div id="splash" class="hidden">
       <!-- Steam Account Profile Badge -->
-      <div id="splash-steam-badge" class="steam-account-badge" title="Click to open Steam Overlay profile">
+      <div id="splash-steam-badge" class="steam-account-badge" role="button" tabindex="0"
+        aria-label="Open Steam profile" title="Click to open Steam Overlay profile">
         <div class="steam-account-badge__icon">
           <svg class="steam-icon-svg" viewBox="0 0 24 24" fill="currentColor">
             <path d="M12 2a10 10 0 0 0-10 10c0 4.7 3.2 8.6 7.6 9.6l3-4.3a3.3 3.3 0 0 1-.3-1.3c0-.3 0-.6.1-.9L9 13a2.5 2.5 0 0 1-2.5-2.5A2.5 2.5 0 0 1 9 8a2.5 2.5 0 0 1 2.5 2.5c0 .3 0 .6-.1.9l3.4 2.2c.4-.2.9-.3 1.4-.3a3.5 3.5 0 1 1-3.5 3.5c0-.4.1-.8.2-1.2l-2.9 4.1A10 10 0 0 0 12 22a10 10 0 0 0 10-10A10 10 0 0 0 12 2z"/>
@@ -333,10 +329,18 @@
                 </div>
               </div>
               <div class="menu-header-actions">
-                <div class="menu-command-column" aria-label="Operations commands">
+                <div class="menu-command-column" aria-label="Operations and Steam commands">
                   <div class="menu-command">
                     <button class="start-btn start-btn--daily" id="daily-ops-btn" title="One attempt per day — fixed world seed">DAILY OPS</button>
                     <div class="menu-command__status daily-ops-status" id="daily-ops-status"></div>
+                  </div>
+                  <div class="menu-command">
+                    <button class="start-btn start-btn--roster" id="roster-btn" title="Operator roster — callsign and equipped loadout">▣ ROSTER</button>
+                    <div class="menu-command__status" id="roster-command-status">0 / 0 ARSENAL</div>
+                  </div>
+                  <div class="menu-command" id="steam-vault-command">
+                    <button class="start-btn start-btn--vault" id="steam-vault-btn" title="Steam Vault — view Steam-owned cosmetics">◈ STEAM VAULT</button>
+                    <div class="menu-command__status" id="vault-command-status">OFFLINE</div>
                   </div>
                   <div class="menu-command hidden" id="archive-sims-command">
                     <button class="start-btn start-btn--archive-sims" id="archive-sims-btn" title="Archive Simulations — unlockable story mini-games">◈ ARCHIVE SIMS</button>
@@ -346,12 +350,8 @@
                     <button class="start-btn start-btn--fab" id="fabrication-btn" title="Fabrication Bay — print gear from salvage (unlocks once the base is powered)">◇ FAB BAY</button>
                     <div class="menu-command__status" id="fab-command-status">0 / 0 PRINTED</div>
                   </div>
-                  <div class="menu-command">
-                    <button class="start-btn start-btn--roster" id="roster-btn" title="Operator roster — callsign and equipped loadout">▣ ROSTER</button>
-                    <div class="menu-command__status" id="roster-command-status">0 / 0 ARSENAL</div>
-                  </div>
                 </div>
-                <div class="menu-command-column" aria-label="Records and Steam commands">
+                <div class="menu-command-column" aria-label="Records and Dossier commands">
                   <div class="menu-command">
                     <button class="start-btn start-btn--archive" id="archive-btn" title="Bunker Archive — discovered lore logs">◈ ARCHIVE</button>
                     <div class="menu-command__status" id="archive-command-status">0 / 27 LOGS</div>
@@ -360,17 +360,13 @@
                     <button class="start-btn start-btn--codex" id="codex-btn" title="Field Codex — catalogued hostiles, infrastructure, and phenomena">❑ CODEX</button>
                     <div class="menu-command__status" id="codex-command-status">0 / 0 INTEL</div>
                   </div>
-                  <div class="menu-command hidden" id="achievements-command">
-                    <button class="start-btn start-btn--achievements" id="achievements-btn" title="Achievement records — unlocked run milestones">ACHIEVEMENTS</button>
-                    <div class="menu-command__status" id="achievements-command-status">LOCKED</div>
-                  </div>
-                  <div class="menu-command" id="steam-vault-command">
-                    <button class="start-btn start-btn--vault" id="steam-vault-btn" title="Steam Vault — view Steam-owned cosmetics">◈ STEAM VAULT</button>
-                    <div class="menu-command__status" id="vault-command-status">OFFLINE</div>
-                  </div>
                   <div class="menu-command" id="season-pass-command">
                     <button class="start-btn start-btn--dossier" id="season-pass-btn" title="Tactical Dossier — Season 0 battle pass progression">◈ DOSSIER</button>
                     <div class="menu-command__status" id="season-pass-command-status">TIER 0 / 50</div>
+                  </div>
+                  <div class="menu-command hidden" id="achievements-command">
+                    <button class="start-btn start-btn--achievements" id="achievements-btn" title="Achievement records — unlocked run milestones">ACHIEVEMENTS</button>
+                    <div class="menu-command__status" id="achievements-command-status">LOCKED</div>
                   </div>
                 </div>
               </div>
@@ -1586,6 +1582,7 @@
             <button id="dev-btn-unlock-ach" class="dev-btn">UNLOCK ACH</button>
             <button id="dev-btn-unlock-all-ach" class="dev-btn dev-btn--warn">UNLOCK ALL ACH</button>
             <button id="dev-btn-unlock-all-codex" class="dev-btn dev-btn--accent">UNLOCK ALL CODEX</button>
+            <button id="dev-btn-unlock-all-skins" class="dev-btn dev-btn--accent">UNLOCK ALL SKINS</button>
             <button id="dev-btn-reset-save" class="dev-btn dev-btn--danger">RESET SAVE</button>
           </div>
           <div class="dev-quick-group">
@@ -2085,29 +2082,20 @@
         <!-- Section 1: Display & Graphics -->
         <div class="settings-category-group">
           <div class="settings-category-header">DISPLAY & GRAPHICS</div>
-          <div class="setting-item">
-            <span>STAGE RESOLUTION</span>
-            <select id="setting-resolution" class="settings-select">
-              <option value="auto">AUTO (WINDOW FIT)</option>
-              <option value="deck" selected>STEAM DECK (1280×800 - 16:10)</option>
-              <option value="720p">720p HD (1280×720 - 16:9)</option>
-              <option value="1080p">1080p FHD (1920×1080 - 16:9)</option>
-              <option value="1440p">1440p QHD (2560×1440 - 16:9)</option>
-              <option value="4k">4K UHD (3840×2160 - 16:9)</option>
-            </select>
-          </div>
+          <!-- Stage Resolution was a developer layout label, not a renderer
+               setting. Keep the internal dev-console preset, but do not offer
+               an inert control in player settings. -->
           <div class="setting-item">
             <span>NIGHT VISION (NO FOG/NIGHT)</span>
             <label class="toggle"><input type="checkbox" id="main-nightvision-toggle"> <span class="slider"></span></label>
           </div>
-          <div class="setting-item">
-            <span>CAMERA SHAKE</span>
-            <label class="toggle"><input type="checkbox" id="setting-shake-toggle"> <span class="slider"></span></label>
-          </div>
-          <div class="setting-item">
+          <!-- Camera Shake had no camera-effect consumer. Re-add only with a
+               real runtime implementation. -->
+          <div class="setting-item hidden" id="debug-overlay-setting-row">
             <span>DEBUG OVERLAY</span>
             <label class="toggle"><input type="checkbox" id="main-debug-toggle"> <span class="slider"></span></label>
           </div>
+          <!-- Debug Overlay is revealed only after QA authorization. -->
         </div>
 
         <!-- Section 2: Audio & Voice -->
@@ -2126,10 +2114,8 @@
         <!-- Section 3: Gameplay & Accessibility -->
         <div class="settings-category-group">
           <div class="settings-category-header">GAMEPLAY & ACCESSIBILITY</div>
-          <div class="setting-item">
-            <span>RUN DIFFICULTY</span>
-            <span id="setting-difficulty-val" class="setting-val-display">STANDARD</span>
-          </div>
+          <!-- Run Difficulty was a hardcoded readout with no selectable or
+               runtime difficulty system, so it is intentionally not shown. -->
           <div class="setting-item">
             <span>UI ACCESSIBILITY SCALE</span>
             <select id="setting-ui-scale" class="settings-select">
@@ -2158,7 +2144,30 @@
             </select>
           </div>
           <div class="setting-item">
-            <span>RIGHT STICK AIM SPEED</span>
+            <span>GAMEPLAY CAMERA</span>
+            <select id="setting-camera-mode" class="settings-select" aria-label="Gameplay camera">
+              <option value="third-person" selected>THIRD-PERSON — SHOULDER</option>
+              <option value="isometric">ISOMETRIC — CLASSIC</option>
+            </select>
+          </div>
+          <div class="setting-item">
+            <span>CAMERA DISTANCE</span>
+            <select id="setting-camera-distance" class="settings-select" aria-label="Third-person camera distance">
+              <option value="close" selected>CLOSE</option>
+              <option value="standard">STANDARD</option>
+              <option value="wide">WIDE</option>
+            </select>
+          </div>
+          <div class="setting-item">
+            <span>CAMERA FOLLOW</span>
+            <select id="setting-camera-follow" class="settings-select" aria-label="Third-person camera follow responsiveness">
+              <option value="tight" selected>TIGHT</option>
+              <option value="balanced">BALANCED</option>
+              <option value="smooth">SMOOTH / CINEMATIC</option>
+            </select>
+          </div>
+          <div class="setting-item">
+            <span>TURN / AIM SPEED</span>
             <div class="settings-choice-control">
               <select id="setting-aim-sensitivity" class="settings-select" aria-label="Right stick aim speed">
               <option value="0.5">50% (SLOW)</option>
@@ -2217,12 +2226,10 @@
           </div>
           <div class="setting-item">
             <span>STEAM CLOUD SYNC</span>
-            <span id="setting-steam-cloud-status" class="setting-val-display" style="color: var(--accent-secondary, #2ec4b6);">SYNCED (AUTO-CLOUD)</span>
+            <span id="setting-steam-cloud-status" class="setting-val-display" data-state="checking">CHECKING…</span>
           </div>
-          <div class="setting-item setting-item--action">
-            <span>MATURE CONTENT AUDIT</span>
-            <button type="button" class="calibrate-btn settings-action-btn" id="open-mature-audit-btn" title="Steam Reviewer Compliance Suite (F9)">INSPECT (F9)</button>
-          </div>
+          <!-- Mature Content Audit is a reviewer/QA tool reachable through
+               its authorized F9 workflow; it is not a player setting. -->
           <div class="setting-item setting-item--action">
             <span>SAVE DATA</span>
             <button type="button" class="calibrate-btn settings-action-btn" id="open-save-data">OPEN</button>
@@ -2675,6 +2682,27 @@
     <!-- Controller-only On-Screen Keyboard: fallback for text fields (e.g.
          Operator Callsign) when Steam's native gamepad text input isn't
          available (outside Steam Big Picture / non-Steam build). -->
+    <!-- Controller dropdown picker. Chromium/Electron will not reliably open a
+         native <select> popup from a synthetic controller click, so A on a
+         focused dropdown opens this list instead. Each option is a real
+         <button>, which is what lets the existing controller focus system do
+         the navigating. Populated at open time by openSelectPickerForElement. -->
+    <div id="select-picker-overlay" class="modal hidden" aria-hidden="true">
+      <div class="modal-content select-picker-content">
+        <div class="settings-sticky-header">
+          <div>
+            <h2 class="modal-title" id="select-picker-label">SELECT OPTION</h2>
+          </div>
+          <button class="close-modal" id="select-picker-close" aria-label="Close option picker">&times;</button>
+        </div>
+        <div class="select-picker-list" id="select-picker-list" role="listbox" aria-labelledby="select-picker-label"></div>
+        <div class="select-picker-hint" aria-hidden="true">
+          <span><span class="select-picker-glyph">A</span> SELECT</span>
+          <span><span class="select-picker-glyph">B</span> BACK</span>
+        </div>
+      </div>
+    </div>
+
     <div id="virtual-keyboard-overlay" class="modal hidden" aria-hidden="true">
       <div class="modal-content virtual-keyboard-content">
         <div class="settings-sticky-header">

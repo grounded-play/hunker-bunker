@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { getCampClassMapping } from './act2.js';
 import { applyBlackChromaKey } from './textureKeying.js';
 import { assetUrl } from './assetUrl.js';
+import { syncWorld3dReplacement } from './world3dOverlay.js';
 import { campWorkerVisualForHumanState, selectCampWorkerStateCue, updateCampWorkersHumanStates } from './campHumanBehavior.js';
 import { CAMP_AFTERMATH_FORTIFIED_LEVEL } from './campEconomy.js';
 
@@ -493,12 +494,24 @@ export class SurvivorCamp {
         this.npcSprite = new THREE.Sprite(this.npcMaterial);
         this.npcSprite.position.set(this.npcPos.x, 0.75, this.npcPos.z);
         this.npcSprite.scale.set(this.leaderIsBoss ? 1.85 : 1.5, this.leaderIsBoss ? 1.85 : 1.5, 1.0);
+
+        let leader3dType = 'npc_martha';
+        if (/kaelen/i.test(this.leaderName)) leader3dType = 'npc_kaelen';
+        else if (/briggs/i.test(this.leaderName)) leader3dType = 'npc_briggs';
+        else if (/nahl|scientist/i.test(this.leaderName)) leader3dType = 'npc_nahl';
+        else if (/val/i.test(this.leaderName)) leader3dType = 'npc_val';
+        else if (/aria/i.test(this.leaderName)) leader3dType = 'npc_aria';
+        else if (/queen/i.test(this.leaderName)) leader3dType = 'npc_queen';
+        else if (this.leaderClass === 'TANK') leader3dType = 'npc_briggs';
+        else if (this.leaderClass === 'ENGINEER') leader3dType = 'npc_kaelen';
+
         this.npcSprite.userData = {
             kind: 'camp-leader',
             campId: this.id,
             leader: this.leaderName,
             classId: this.leaderClassId,
-            isBoss: this.leaderIsBoss
+            isBoss: this.leaderIsBoss,
+            world3dModelType: leader3dType
         };
         group.add(this.npcSprite);
 
@@ -1083,6 +1096,7 @@ export class SurvivorCamp {
                 this.npcTexture.offset.set(frame * 0.25, (3 - this.npcFacingRow) * 0.25);
             }
             this.npcSprite.position.set(this.npcPos.x, 0.75, this.npcPos.z);
+            syncWorld3dReplacement(this.npcSprite);
         }
 
         // docs/human-ai-activation-plan.md Slice 3: per-worker (not

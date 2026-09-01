@@ -22,7 +22,10 @@ describe('buildSteamInputConfigs', () => {
         expect(outputs).toHaveLength(7);
         const deck = fs.readFileSync(path.join(destination, 'controller_neptune.vdf'), 'utf8');
         expect(deck).toContain('"controller_type" "controller_neptune"');
-        expect(deck).toContain('"major_revision" "8"');
+        expect(deck).toContain('"major_revision" "10"');
+        expect(deck).toContain('"minor_revision" "0"');
+        expect(deck).toContain('"title" "Official Hunker Bunker Controls"');
+        expect(deck).toContain('A/RT Confirm menus');
         expect(deck).toContain('"name" "menu"');
         expect(deck).toContain('"name" "gameplay"');
         expect(deck).toContain('"name" "archive"');
@@ -63,9 +66,34 @@ describe('buildSteamInputConfigs', () => {
         expect(deck).not.toContain('gyro active');
         expect(deck).toMatch(/"left_bumper"[\s\S]*?game_action gameplay scan/);
         expect(deck).toMatch(/"right_bumper"[\s\S]*?game_action gameplay toggle_map/);
+        expect(deck).toMatch(/"edge"[\s\S]*?game_action gameplay sprint, Sprint/);
+        expect(deck).toMatch(/"edge"[\s\S]*?game_action gameplay fire, Fire/);
+        expect(deck).toMatch(/"button_x"[\s\S]*?game_action gameplay reload, Reload/);
+        expect(deck).toMatch(/"button_y"[\s\S]*?game_action gameplay ability, Smash/);
         expect(deck).toMatch(/"button_b"[\s\S]*?game_action gameplay dash, Dodge/);
         expect(deck).toMatch(/"button_a"[\s\S]*?game_action gameplay interact, Interact/);
         expect(deck).toMatch(/"button_menu"[\s\S]*?game_action menu pause, Settings \/ Pause/);
+        expect(deck).toMatch(/"id" "4"[\s\S]*?game_action menu menu_confirm, Confirm/);
+    });
+
+    // The D-pad was bound in the menu and archive presets but had no source
+    // binding at all in gameplay, so it was dead the moment a run started. It
+    // now drives the same analog `move` action as the left stick, the way the
+    // archive preset already drives `archive_focus` from the D-pad.
+    it('walks the player from the D-pad in gameplay, like the left stick', () => {
+        const destination = fs.mkdtempSync(path.join(os.tmpdir(), 'hb-input-configs-'));
+        tempDirs.push(destination);
+
+        buildSteamInputConfigs({ destination });
+
+        for (const file of ['controller_neptune.vdf', 'controller_xboxone.vdf', 'controller_ps5.vdf']) {
+            const config = fs.readFileSync(path.join(destination, file), 'utf8');
+            expect(config, file).toContain('"18" "dpad active"');
+            expect(config, file).toMatch(/"id" "18"[\s\S]*?"mode" "joystick_move"[\s\S]*?"gameplay" "move"/);
+            // The menu preset keeps its own digital D-pad; gameplay movement
+            // must not steal it.
+            expect(config, file).toContain('"1" "dpad active"');
+        }
     });
 
     it('maps PlayStation touchpads in menu and archive without inventing pads for Xbox', () => {

@@ -27,7 +27,35 @@ test.describe('gameplay facing yaw (mouse + gamepad)', () => {
         expect(turnedYaw).not.toBeCloseTo(initialYaw, 2);
     });
 
-    test('gamepad right-stick moves the visible aim crosshair and updates facingYaw', async ({ page }) => {
+    test('third-person mouse aim keeps the camera still in center and edge-turns progressively', async ({ page }) => {
+        test.setTimeout(180_000);
+        await bootToOperatorMenu(page);
+        await startRunAndSkipIntro(page);
+
+        const canvas = page.locator('#game-container canvas').first();
+        const box = await canvas.boundingBox();
+        expect(box).not.toBeNull();
+        await page.evaluate(() => {
+            window.game.setCameraMode('third-person');
+            window.game._cameraTurnVelocity = 0;
+            window.game._mouseEdgeTurnInput = 0;
+        });
+
+        await page.mouse.move(box.x + box.width * 0.45, box.y + box.height * 0.5);
+        await page.waitForTimeout(250);
+        const centeredStart = await page.evaluate(() => window.game.cameraAzimuth);
+        await page.mouse.move(box.x + box.width * 0.62, box.y + box.height * 0.45);
+        await page.waitForTimeout(350);
+        const centeredEnd = await page.evaluate(() => window.game.cameraAzimuth);
+        expect(centeredEnd).toBeCloseTo(centeredStart, 2);
+
+        await page.mouse.move(box.x + box.width * 0.9, box.y + box.height * 0.5);
+        await page.waitForTimeout(500);
+        const edgeTurned = await page.evaluate(() => window.game.cameraAzimuth);
+        expect(edgeTurned).not.toBeCloseTo(centeredEnd, 2);
+    });
+
+    test('gamepad right-stick turns third-person facing while the crosshair stays centered', async ({ page }) => {
         test.setTimeout(180_000);
         await bootToOperatorMenu(page);
         await startRunAndSkipIntro(page);
@@ -72,10 +100,10 @@ test.describe('gameplay facing yaw (mouse + gamepad)', () => {
         expect(rightUp.crosshairHidden, 'the fixed gameplay crosshair should be visible').toBe(false);
         expect(rightUp.facingYaw).not.toBeCloseTo(yawBefore, 2);
         expect(leftDown.facingYaw).not.toBeCloseTo(rightUp.facingYaw, 2);
-        expect(Math.abs(rightUp.crosshairCenterX - viewport.width / 2)).toBeGreaterThan(4);
-        expect(Math.abs(rightUp.crosshairCenterY - viewport.height / 2)).toBeGreaterThan(4);
-        expect(rightUp.crosshairCenterX).not.toBeCloseTo(leftDown.crosshairCenterX, 0);
-        expect(rightUp.crosshairCenterY).not.toBeCloseTo(leftDown.crosshairCenterY, 0);
+        expect(rightUp.crosshairCenterX).toBeCloseTo(viewport.width / 2, 0);
+        expect(rightUp.crosshairCenterY).toBeCloseTo(viewport.height / 2, 0);
+        expect(leftDown.crosshairCenterX).toBeCloseTo(rightUp.crosshairCenterX, 0);
+        expect(leftDown.crosshairCenterY).toBeCloseTo(rightUp.crosshairCenterY, 0);
     });
 
     test('WASD movement is screen-relative regardless of facing direction', async ({ page }) => {

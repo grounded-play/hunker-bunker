@@ -23,6 +23,9 @@ export class DebugLogger {
         this._flushHandle = null;
         this.subscribers = new Set();
         this.visible = false;
+        this.logsExpanded = false;
+        this.achievementDefinitions = [];
+        this.toolSettings = { resolution: 'deck', uiScale: 100, textFloor: 18 };
         this.currentFilter = 'ALL';
         this.categoryFilter = 'ALL';
         this.searchTerm = '';
@@ -329,7 +332,7 @@ export class DebugLogger {
             top: '0',
             left: '0',
             right: '0',
-            height: '480px',
+            height: 'auto',
             maxHeight: '80vh',
             backgroundColor: 'rgba(10, 14, 20, 0.94)',
             backdropFilter: 'blur(10px)',
@@ -345,12 +348,53 @@ export class DebugLogger {
         });
 
         overlay.innerHTML = `
-            <div style="display: flex; align-items: center; justify-content: space-between; padding: 6px 12px; background: rgba(0, 240, 255, 0.08); border-bottom: 1px solid rgba(0, 240, 255, 0.2);">
+            <div style="display: flex; align-items: center; justify-content: space-between; padding: 6px 12px; background: rgba(0, 240, 255, 0.08); border-bottom: 1px solid rgba(0, 240, 255, 0.2); flex-wrap: wrap; gap: 8px;">
                 <div style="display: flex; align-items: center; gap: 12px;">
                     <span style="color: #00f0ff; font-weight: bold; letter-spacing: 1px;">⚙ HUNKER BUNKER DEV CONSOLE (~)</span>
-                    <span id="hb-console-stats" style="color: #6688aa; font-size: 11px;">FPS: -- | ENTITIES: --</span>
+                    <span id="hb-console-stats" style="color: #88aacc; font-size: 11px;">FPS: -- | ENEMIES: -- | HP: --</span>
                 </div>
                 <div style="display: flex; align-items: center; gap: 8px;">
+                    <button id="hb-console-toggle-logs" class="hb-cmd-btn" aria-expanded="false" title="Expand captured logs and filters">LOGS ▸</button>
+                    <button id="hb-main-layout" class="hb-cmd-btn" title="Show stage and viewport metrics">LAYOUT</button>
+                    <button id="hb-main-typo" class="hb-cmd-btn" title="Toggle typography diagnostics">TYPO</button>
+                    <button id="hb-main-rgb" class="hb-cmd-btn" title="Launch RGB minigame">◈ RGB</button>
+                    <button id="hb-main-reset-save" class="hb-cmd-btn" title="Open full save reset confirmation">RESET SAVE</button>
+                    <button id="hb-console-close" style="background: none; border: none; color: #ff5566; font-weight: bold; cursor: pointer; font-size: 14px; padding: 0 4px;">✕</button>
+                </div>
+            </div>
+            <div id="hb-console-tools" style="display: flex; align-items: center; gap: 6px; padding: 5px 12px; background: rgba(14, 24, 38, 0.75); border-bottom: 1px solid rgba(0, 240, 255, 0.15); flex-wrap: wrap;">
+                <span style="color: #ffaa44; font-size: 10px; font-weight: bold; margin-right: 4px;">TOOLS:</span>
+                <select id="hb-main-achievement" class="hb-cmd-btn" title="Unlock one achievement"><option value="">ACHIEVEMENT…</option></select>
+                <button id="hb-main-unlock-ach" class="hb-cmd-btn">UNLOCK ACH</button>
+                <button id="hb-main-ach-all" class="hb-cmd-btn">ACH ALL</button>
+                <button id="hb-main-codex-all" class="hb-cmd-btn">CODEX ALL</button>
+                <button id="hb-main-polish-all" class="hb-cmd-btn">POLISH ALL</button>
+                <button id="hb-main-skins-all" class="hb-cmd-btn">SKINS ALL</button>
+                <select id="hb-main-rgb-chapter" class="hb-cmd-btn" title="RGB chapter">
+                    <option value="parking_lot">RGB CH 1</option><option value="warehouse">RGB CH 2</option>
+                    <option value="incident_review">RGB CH 3</option><option value="medi_kiosk">RGB CH 4</option>
+                    <option value="server_room">RGB CH 5</option><option value="sector_four">RGB CH 6</option>
+                </select>
+                <button id="hb-main-rgb-chapter-run" class="hb-cmd-btn">JUMP RGB</button>
+                <select id="hb-main-teleport" class="hb-cmd-btn" title="Teleport or open a proving ground">
+                    <option value="">TELEPORT…</option><option value="nexus">QA NEXUS</option><option value="museum">W1 COLONNADE</option>
+                    <option value="showroom">SHOWROOM</option><option value="tilegrid">W2 GRID</option><option value="bosses">W3 BOSSES</option>
+                    <option value="campsim">W4 CAMP LAB</option><option value="crash">CRASH SITE</option><option value="camp">SURVIVOR CAMP</option>
+                    <option value="hive">HIVE</option><option value="queen">CAVE QUEEN</option>
+                </select>
+                <select id="hb-main-resolution" class="hb-cmd-btn" title="Stage resolution">
+                    <option value="auto">RES AUTO</option><option value="deck">RES DECK</option><option value="720p">RES 720P</option>
+                    <option value="1080p">RES 1080P</option><option value="1440p">RES 1440P</option><option value="4k">RES 4K</option>
+                </select>
+                <select id="hb-main-ui-scale" class="hb-cmd-btn" title="UI scale">
+                    <option value="100">UI 100%</option><option value="115">UI 115%</option><option value="130">UI 130%</option><option value="150">UI 150%</option>
+                </select>
+                <select id="hb-main-text-floor" class="hb-cmd-btn" title="Minimum text size">
+                    <option value="16">TEXT 16PX</option><option value="18">TEXT 18PX</option><option value="20">TEXT 20PX</option><option value="22">TEXT 22PX</option><option value="24">TEXT 24PX</option>
+                </select>
+            </div>
+            <div id="hb-console-log-panel" style="display: none; flex: 1; min-height: 0; flex-direction: column;">
+              <div style="display: flex; align-items: center; gap: 8px; padding: 5px 12px; background: rgba(8, 15, 24, 0.9); border-bottom: 1px solid rgba(0, 240, 255, 0.15); flex-wrap: wrap;">
                     <button id="hb-filter-all" class="hb-cmd-btn active">ALL</button>
                     <button id="hb-filter-debug" class="hb-cmd-btn">DEBUG</button>
                     <button id="hb-filter-info" class="hb-cmd-btn">INFO</button>
@@ -371,16 +415,17 @@ export class DebugLogger {
                     <button id="hb-console-autoscroll" class="hb-cmd-btn active">AUTO-SCROLL: ON</button>
                     <button id="hb-console-export" class="hb-cmd-btn" title="Download the complete log captured since launch">EXPORT SESSION</button>
                     <button id="hb-console-clear" class="hb-cmd-btn">CLEAR</button>
-                    <button id="hb-console-close" style="background: none; border: none; color: #ff5566; font-weight: bold; cursor: pointer; font-size: 14px; padding: 0 4px;">✕</button>
-                </div>
+              </div>
+              <div id="hb-console-logs" style="flex: 1; overflow-y: auto; padding: 8px 12px; display: flex; flex-direction: column; gap: 3px; scroll-behavior: smooth;"></div>
             </div>
             <div style="display: flex; align-items: center; gap: 6px; padding: 5px 12px; background: rgba(14, 24, 38, 0.75); border-bottom: 1px solid rgba(0, 240, 255, 0.15); flex-wrap: wrap;">
                 <span style="color: #ffaa44; font-size: 10px; font-weight: bold; margin-right: 4px;">QUICK CHEATS:</span>
                 <button id="hb-quick-god" class="hb-cmd-btn hb-cheat-btn" title="Toggle Godmode (Invulnerability)">⚡ GOD</button>
+                <button id="hb-quick-ammo" class="hb-cmd-btn hb-cheat-btn" style="background: rgba(255, 170, 0, 0.15); border-color: #ffaa00; color: #ffaa00;" title="Toggle Unlimited Ammo (Infinite Clip &amp; Cache)">♾️ AMMO</button>
                 <button id="hb-quick-noclip" class="hb-cmd-btn hb-cheat-btn" style="background: rgba(34, 211, 238, 0.15); border-color: #22d3ee; color: #22d3ee;" title="Toggle Noclip (Ghost Fly through walls, Zero Collision, 3.5x Speed)">👻 NOCLIP / FLY</button>
                 <button id="hb-quick-heal" class="hb-cmd-btn hb-cheat-btn" title="Refill HP and Oxygen">❤️ HEAL</button>
                 <button id="hb-quick-speed" class="hb-cmd-btn hb-cheat-btn" title="Boost Sprint Traversal Speed">🚀 SPEED</button>
-                <button id="hb-quick-resources" class="hb-cmd-btn hb-cheat-btn" title="Grant +250 Tech, +150 Coin, +75 Med, +75 Shells">💎 +500$</button>
+                <button id="hb-quick-resources" class="hb-cmd-btn hb-cheat-btn" title="Grant 999,999 Tech, Coin, Med, Shells, Ammo">💎 +999K$</button>
                 <button id="hb-quick-nuke" class="hb-cmd-btn hb-cheat-btn" title="Purge all hostiles from active sector">💥 NUKE</button>
                 <span style="color: #00f0ff; font-size: 10px; font-weight: bold; margin-left: 8px; margin-right: 4px;">PROVING GROUNDS:</span>
                 <button id="hb-quick-tp-nexus" class="hb-cmd-btn hb-cheat-btn" style="background: rgba(46, 196, 182, 0.2); border-color: #2ec4b6; color: #2ec4b6;" title="Open QA Nexus Command Terminal">⚙️ NEXUS</button>
@@ -391,7 +436,6 @@ export class DebugLogger {
                 <button id="hb-quick-tp-camps" class="hb-cmd-btn hb-nav-btn" title="Wing 4: Camp Testing Lab (15000, 9500)">⛺ W4: CAMP</button>
                 <button id="hb-quick-tp-crash" class="hb-cmd-btn hb-nav-btn" title="Teleport back to crash origin">🚀 CRASH</button>
             </div>
-            <div id="hb-console-logs" style="flex: 1; overflow-y: auto; padding: 8px 12px; display: flex; flex-direction: column; gap: 3px; scroll-behavior: smooth;"></div>
             <div style="display: flex; align-items: center; padding: 6px 12px; background: rgba(0, 0, 0, 0.4); border-top: 1px solid rgba(255, 255, 255, 0.1);">
                 <span style="color: #00f0ff; margin-right: 8px; font-weight: bold;">&gt;</span>
                 <input id="hb-console-input" type="text" placeholder="Type a command (help, noclip, god, heal, speed, tp x z, spawn enemy, give tech 100, clear, or JS expr)..." style="flex: 1; background: transparent; border: none; outline: none; color: #00ffff; font-family: inherit; font-size: 12px;" />
@@ -441,6 +485,48 @@ export class DebugLogger {
         this.statsEl = overlay.querySelector('#hb-console-stats');
         this.searchEl = overlay.querySelector('#hb-console-search');
 
+        const runMainCommand = (command) => {
+            if (typeof window.__DEBUG__?.runCommand === 'function') {
+                window.__DEBUG__.runCommand(command);
+            } else {
+                this.warn('CMD', 'Main debug command bridge is not ready yet.');
+            }
+        };
+
+        const logPanel = overlay.querySelector('#hb-console-log-panel');
+        const toggleLogsBtn = overlay.querySelector('#hb-console-toggle-logs');
+        toggleLogsBtn.onclick = () => {
+            this.logsExpanded = !this.logsExpanded;
+            logPanel.style.display = this.logsExpanded ? 'flex' : 'none';
+            overlay.style.height = this.logsExpanded ? '480px' : 'auto';
+            toggleLogsBtn.textContent = this.logsExpanded ? 'LOGS ▾' : 'LOGS ▸';
+            toggleLogsBtn.setAttribute('aria-expanded', String(this.logsExpanded));
+            if (this.logsExpanded) this.renderAllLogs();
+        };
+
+        overlay.querySelector('#hb-main-layout').onclick = () => runMainCommand('layout');
+        overlay.querySelector('#hb-main-typo').onclick = () => runMainCommand('typo');
+        overlay.querySelector('#hb-main-rgb').onclick = () => runMainCommand('rgb');
+        overlay.querySelector('#hb-main-reset-save').onclick = () => runMainCommand('reset_save');
+        overlay.querySelector('#hb-main-unlock-ach').onclick = () => {
+            const key = overlay.querySelector('#hb-main-achievement').value;
+            if (key) runMainCommand(`unlock ${key}`);
+        };
+        overlay.querySelector('#hb-main-ach-all').onclick = () => runMainCommand('unlock_all');
+        overlay.querySelector('#hb-main-codex-all').onclick = () => runMainCommand('codex_all');
+        overlay.querySelector('#hb-main-polish-all').onclick = () => runMainCommand('polish_all');
+        overlay.querySelector('#hb-main-skins-all').onclick = () => runMainCommand('skins_all');
+        overlay.querySelector('#hb-main-rgb-chapter-run').onclick = () => runMainCommand(`rgb ${overlay.querySelector('#hb-main-rgb-chapter').value}`);
+        overlay.querySelector('#hb-main-teleport').onchange = (event) => {
+            if (event.target.value) runMainCommand(`tp ${event.target.value}`);
+            event.target.value = '';
+        };
+        overlay.querySelector('#hb-main-resolution').onchange = (event) => runMainCommand(`resolution ${event.target.value}`);
+        overlay.querySelector('#hb-main-ui-scale').onchange = (event) => runMainCommand(`uiscale ${event.target.value}`);
+        overlay.querySelector('#hb-main-text-floor').onchange = (event) => runMainCommand(`textfloor ${event.target.value}`);
+        this.setAchievementOptions(this.achievementDefinitions);
+        this.syncToolSettings(this.toolSettings);
+
         // Button Listeners
         overlay.querySelector('#hb-console-close').onclick = () => this.toggle(false);
         overlay.querySelector('#hb-console-clear').onclick = () => this.clear();
@@ -472,6 +558,7 @@ export class DebugLogger {
 
         // Quick Cheats & Teleport Action Toolbar Listeners
         const quickGodBtn = overlay.querySelector('#hb-quick-god');
+        const quickAmmoBtn = overlay.querySelector('#hb-quick-ammo');
         const quickNoclipBtn = overlay.querySelector('#hb-quick-noclip');
         const quickHealBtn = overlay.querySelector('#hb-quick-heal');
         const quickSpeedBtn = overlay.querySelector('#hb-quick-speed');
@@ -479,6 +566,7 @@ export class DebugLogger {
         const quickNukeBtn = overlay.querySelector('#hb-quick-nuke');
 
         if (quickGodBtn) quickGodBtn.onclick = () => this.executeCommand('god');
+        if (quickAmmoBtn) quickAmmoBtn.onclick = () => this.executeCommand('ammo');
         if (quickNoclipBtn) quickNoclipBtn.onclick = () => this.executeCommand('noclip');
         if (quickHealBtn) quickHealBtn.onclick = () => this.executeCommand('heal');
         if (quickSpeedBtn) {
@@ -490,7 +578,7 @@ export class DebugLogger {
                 }
             };
         }
-        if (quickResBtn) quickResBtn.onclick = () => this.executeCommand('give tech 250');
+        if (quickResBtn) quickResBtn.onclick = () => this.executeCommand('give all');
         if (quickNukeBtn) quickNukeBtn.onclick = () => this.executeCommand('nuke');
 
         const quickTpNexus = overlay.querySelector('#hb-quick-tp-nexus');
@@ -611,10 +699,13 @@ export class DebugLogger {
         // Global ~ (Backquote) Listener
         window.addEventListener('keydown', (e) => {
             if (e.code === 'Backquote' || e.key === '`' || e.key === '~') {
-                // If console is visible or user pressed ~, toggle overlay
                 e.preventDefault();
-                e.stopPropagation();
+                e.stopImmediatePropagation();
                 this.toggle(!this.visible);
+            } else if (e.key === 'Escape' && this.visible) {
+                e.preventDefault();
+                e.stopImmediatePropagation();
+                this.toggle(false);
             }
         }, true);
 
@@ -641,6 +732,30 @@ export class DebugLogger {
                 }
             }
         }
+        if (typeof window !== 'undefined' && typeof window.dispatchEvent === 'function' && typeof CustomEvent === 'function') {
+            window.dispatchEvent(new CustomEvent('hb-debug-console-visibility', { detail: { visible: this.visible } }));
+        }
+    }
+
+    setAchievementOptions(definitions = []) {
+        this.achievementDefinitions = Array.from(definitions);
+        const select = this.overlayEl?.querySelector('#hb-main-achievement');
+        if (!select) return;
+        select.replaceChildren(new Option('ACHIEVEMENT…', ''));
+        for (const definition of definitions) {
+            select.add(new Option(`${definition.title} (${definition.key})`, definition.key));
+        }
+    }
+
+    syncToolSettings({ resolution = 'deck', uiScale = 100, textFloor = 18 } = {}) {
+        this.toolSettings = { resolution, uiScale, textFloor };
+        const setValue = (selector, value) => {
+            const control = this.overlayEl?.querySelector(selector);
+            if (control) control.value = String(value);
+        };
+        setValue('#hb-main-resolution', resolution);
+        setValue('#hb-main-ui-scale', uiScale);
+        setValue('#hb-main-text-floor', textFloor);
     }
 
     clear() {
@@ -812,9 +927,14 @@ export class DebugLogger {
     updateStats() {
         if (!this.statsEl) return;
         const fps = window.__hb_fps ?? '--';
-        const entities = window.threeGame?.scatterObjects?.length ?? '--';
-        const playerHp = window.threeGame?.playerVitals?.health ? Math.round(window.threeGame.playerVitals.health) : '--';
-        this.statsEl.textContent = `FPS: ${fps} | HP: ${playerHp} | ENTITIES: ${entities}`;
+        const game = window.game || window.threeGame;
+        const enemies = Array.isArray(game?.scatterSprites)
+            ? game.scatterSprites.filter((sprite) => !sprite?.userData?.burstTriggered && (
+                sprite?.userData?.isEnemy === true || game.isEnemyType?.(sprite?.userData?.type)
+            )).length
+            : '--';
+        const playerHp = Number.isFinite(game?.playerVitals?.hp) ? Math.round(game.playerVitals.hp) : '--';
+        this.statsEl.textContent = `FPS: ${fps} | ENEMIES: ${enemies} | HP: ${playerHp}`;
     }
 
     executeCommand(cmd) {
@@ -833,10 +953,11 @@ export class DebugLogger {
   • exportlogs [json|txt] - Download the complete log captured since launch
   • demo [start|mark <label>|stop] - Mark a friend-demo session/checkpoint
   • god                   - Toggle player invincibility
+  • ammo (or infammo)     - Toggle unlimited ammo (infinite clip & cache)
   • heal                  - Fully restore player Health & Oxygen
   • tp <x> <z>            - Teleport player to target tile
   • spawn <type>          - Spawn enemy (cybersnail, cryosnail, sporesnail, crawler, queen)
-  • give <resource> <qty> - Add tech, coin, or med resources
+  • give [res|all] [qty]  - Add tech, coin, med, shells, ammo, or 'all' (999K)
   • biome <active|cryo|bio>- Force environment biome transition
   • fps                   - Display current WebGL performance stats
   • loglevel <level>      - Set min log level (debug|info|warn|error)
@@ -906,6 +1027,23 @@ export class DebugLogger {
                     this.warn('CMD', 'Game or player vitals not active');
                 }
                 break;
+
+            case 'ammo':
+            case 'unlimitedammo':
+            case 'infiniteammo':
+            case 'infammo': {
+                const targetGame = game || win?.game;
+                if (targetGame?.toggleUnlimitedAmmo) {
+                    const active = targetGame.toggleUnlimitedAmmo();
+                    this.info('CHEAT', `Unlimited ammo ${active ? 'ONLINE [Infinite Clip & Cache]' : 'OFFLINE [Normal Ammo Physics]'}`);
+                } else if (typeof win?.devToggleUnlimitedAmmo === 'function') {
+                    const msg = win.devToggleUnlimitedAmmo();
+                    this.info('CHEAT', msg);
+                } else {
+                    this.warn('CMD', 'Unlimited ammo unavailable (Game instance not active)');
+                }
+                break;
+            }
 
             case 'noclip':
             case 'fly':
@@ -1072,16 +1210,45 @@ export class DebugLogger {
                 }
                 break;
 
-            case 'give':
-                if (game?.addRunResource) {
-                    const res = parts[1] || 'tech';
-                    const amt = parseInt(parts[2], 10) || 50;
+            case 'give': {
+                const res = (parts[1] || 'all').toLowerCase();
+                const amt = parseInt(parts[2], 10) || (res === 'all' || res === 'money' || res === 'infinite' || res === 'resources' ? 999999 : 500);
+                if (res === 'all' || res === 'money' || res === 'infinite' || res === 'resources') {
+                    if (typeof win?.devGrantResources === 'function') {
+                        const msg = win.devGrantResources();
+                        this.info('GIVE', msg);
+                    } else {
+                        win?.bankManager?.deposit?.({ tech: amt, coin: amt, med: amt, ammo: amt });
+                        win?.bankManager?.addShells?.(amt);
+                        game?.addRunResource?.('tech', amt);
+                        game?.addRunResource?.('coin', amt);
+                        game?.addRunResource?.('med', amt);
+                        game?.addRunResource?.('ammo', amt);
+                        this.info('GIVE', `Added ${amt} Tech, Coin, Med, Shells, and Ammo.`);
+                    }
+                } else if (res === 'shells' || res === 'shell') {
+                    win?.bankManager?.addShells?.(amt);
+                    game?.bank?.addShells?.(amt);
+                    this.info('GIVE', `Added ${amt} shells`);
+                } else if (res === 'ammo') {
+                    if (win?.pickupCounterState) {
+                        win.pickupCounterState.ammo = (win.pickupCounterState.ammo ?? 0) + amt;
+                        win.renderPickupCounter?.();
+                    }
+                    win?.bankManager?.deposit?.({ ammo: amt });
+                    game?.addRunResource?.('ammo', amt);
+                    this.info('GIVE', `Added ${amt} ammo`);
+                } else if (game?.addRunResource) {
                     game.addRunResource(res, amt);
                     this.info('GIVE', `Added ${amt} ${res}`);
+                } else if (win?.bankManager) {
+                    win.bankManager.deposit({ [res]: amt });
+                    this.info('GIVE', `Deposited ${amt} ${res} to bank`);
                 } else {
                     this.warn('CMD', 'Resource system unavailable');
                 }
                 break;
+            }
 
             case 'biome':
                 if (game?.forceBiome) {

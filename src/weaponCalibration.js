@@ -9,6 +9,7 @@ const WEAPON_CALIBRATION = Object.freeze({
         gameplay: Object.freeze({ targetSize: 0.62, minScale: 0.008, maxScale: 1.4, framingRadius: 0.72 }),
         armory: Object.freeze({ targetSize: 1.15, minScale: 0.012, maxScale: 2.2, framingRadius: 1.25 }),
         reward: Object.freeze({ targetSize: 0.92, minScale: 0.01, maxScale: 1.8, framingRadius: 1.05 }),
+        armoryRotation: Object.freeze([0, 0, 0]),
         rotation: Object.freeze([0, -Math.PI / 2, -Math.PI / 2]),
         position: Object.freeze([0.03, 0.02, -0.10]),
         forwardAxis: '+Z',
@@ -18,6 +19,7 @@ const WEAPON_CALIBRATION = Object.freeze({
         gameplay: Object.freeze({ targetSize: 0.58, minScale: 0.008, maxScale: 1.35, framingRadius: 0.68 }),
         armory: Object.freeze({ targetSize: 1.06, minScale: 0.012, maxScale: 2.1, framingRadius: 1.18 }),
         reward: Object.freeze({ targetSize: 0.86, minScale: 0.01, maxScale: 1.75, framingRadius: 1.0 }),
+        armoryRotation: Object.freeze([0, 0, 0]),
         rotation: Object.freeze([0, -Math.PI / 2, -Math.PI / 2]),
         position: Object.freeze([0.03, 0.02, -0.10]),
         forwardAxis: '+Z',
@@ -27,6 +29,7 @@ const WEAPON_CALIBRATION = Object.freeze({
         gameplay: Object.freeze({ targetSize: 0.64, minScale: 0.008, maxScale: 1.45, framingRadius: 0.76 }),
         armory: Object.freeze({ targetSize: 1.18, minScale: 0.012, maxScale: 2.25, framingRadius: 1.3 }),
         reward: Object.freeze({ targetSize: 0.95, minScale: 0.01, maxScale: 1.9, framingRadius: 1.1 }),
+        armoryRotation: Object.freeze([0, 0, 0]),
         rotation: Object.freeze([0, -Math.PI / 2, -Math.PI / 2]),
         position: Object.freeze([0.035, 0.02, -0.11]),
         forwardAxis: '+Z',
@@ -36,6 +39,7 @@ const WEAPON_CALIBRATION = Object.freeze({
         gameplay: Object.freeze({ targetSize: 0.7, minScale: 0.008, maxScale: 1.55, framingRadius: 0.84 }),
         armory: Object.freeze({ targetSize: 1.28, minScale: 0.012, maxScale: 2.45, framingRadius: 1.42 }),
         reward: Object.freeze({ targetSize: 1.03, minScale: 0.01, maxScale: 2.05, framingRadius: 1.2 }),
+        armoryRotation: Object.freeze([0, 0, 0]),
         rotation: Object.freeze([0, -Math.PI / 2, -Math.PI / 2]),
         position: Object.freeze([0.045, 0.025, -0.13]),
         forwardAxis: '+Z',
@@ -45,6 +49,7 @@ const WEAPON_CALIBRATION = Object.freeze({
         gameplay: Object.freeze({ targetSize: 0.62, minScale: 0.008, maxScale: 1.4, framingRadius: 0.74 }),
         armory: Object.freeze({ targetSize: 1.12, minScale: 0.012, maxScale: 2.15, framingRadius: 1.22 }),
         reward: Object.freeze({ targetSize: 0.9, minScale: 0.01, maxScale: 1.82, framingRadius: 1.04 }),
+        armoryRotation: Object.freeze([0, 0, 0]),
         rotation: Object.freeze([0, -Math.PI / 2, -Math.PI / 2]),
         position: Object.freeze([0.035, 0.025, -0.11]),
         forwardAxis: '+Z',
@@ -67,7 +72,10 @@ export function getWeaponCalibration(archetypeId, context = 'gameplay') {
         archetype,
         context: profileContext,
         ...profile[profileContext],
-        rotation: [...profile.rotation],
+        // Imported weapon sources are authored horizontally on the X axis.
+        // Gameplay needs the hand-alignment turn below, while the Armory is a
+        // free-standing turntable and should preserve that horizontal pose.
+        rotation: [...(profileContext === 'armory' ? profile.armoryRotation : profile.rotation)],
         position: [...profile.position],
         forwardAxis: profile.forwardAxis,
         anchor: profile.anchor

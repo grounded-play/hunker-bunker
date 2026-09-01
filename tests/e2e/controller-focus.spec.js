@@ -12,7 +12,13 @@ test.describe('controller-ready modal focus', () => {
         await expect(page.locator('#roster-btn')).toBeFocused();
 
         await page.keyboard.press('KeyS');
+        await expect(page.locator('#steam-vault-btn')).toBeFocused();
+
+        await page.keyboard.press('KeyS');
         await expect(page.locator('#start-game')).toBeFocused();
+
+        await page.keyboard.press('KeyW');
+        await expect(page.locator('#steam-vault-btn')).toBeFocused();
 
         await page.keyboard.press('KeyW');
         await expect(page.locator('#roster-btn')).toBeFocused();
@@ -26,14 +32,30 @@ test.describe('controller-ready modal focus', () => {
         await page.keyboard.press('KeyD');
         await expect(page.locator('.char-selection .char-card.selected')).toBeFocused();
 
+        // Navigate down the hero stack through all cards to the back button
+        await page.locator('.char-selection .char-card[data-type="SCOUT"]').focus();
+        await page.keyboard.press('KeyS');
+        await expect(page.locator('.char-selection .char-card[data-type="TANK"]')).toBeFocused();
+
+        await page.keyboard.press('KeyS');
+        await expect(page.locator('.char-selection .char-card[data-type="ENGINEER"]')).toBeFocused();
+
+        await page.keyboard.press('KeyS');
+        await expect(page.locator('#hero-select-back-btn')).toBeFocused();
+
+        await page.keyboard.press('KeyW');
+        await expect(page.locator('.char-selection .char-card[data-type="ENGINEER"]')).toBeFocused();
+
+        await page.locator('#hero-select-back-btn').focus();
         await page.keyboard.press('KeyA');
-        await expect(page.locator('#hero-polish-btn')).toBeFocused();
+        await expect(page.locator('#start-game')).toBeFocused();
+
+        await page.locator('#steam-vault-btn').focus();
+        await page.keyboard.press('KeyD');
+        await expect(page.locator('#season-pass-btn')).toBeFocused();
 
         await page.keyboard.press('KeyA');
-        await expect(page.locator('#codex-btn')).toBeFocused();
-
-        await page.keyboard.press('KeyA');
-        await expect(page.locator('#roster-btn')).toBeFocused();
+        await expect(page.locator('#steam-vault-btn')).toBeFocused();
     });
 
     test('operator polish picker uses a spatial WASD grid', async ({ page }) => {
@@ -137,6 +159,106 @@ test.describe('controller-ready modal focus', () => {
         await page.evaluate(() => { navigator.getGamepads = () => []; });
     });
 
+    // A on a dropdown opens a real option list: D-pad moves through it, A
+    // commits, B cancels. Chromium/Electron will not reliably open a native
+    // <select> popup from a synthetic controller click, hence our own overlay.
+    test('confirm opens the dropdown picker and commits the chosen option', async ({ page }) => {
+        await bootToTitleSplash(page);
+        await page.locator('#title-settings-btn').click();
+
+        const sensitivity = page.locator('#setting-aim-sensitivity');
+        await sensitivity.focus();
+        await sensitivity.selectOption('1.0');
+
+        const overlay = page.locator('#select-picker-overlay');
+        await expect(overlay).toBeHidden();
+
+        await page.keyboard.press('Enter');
+        await expect(overlay).toBeVisible();
+
+        // The picker opens focused on the value the dropdown currently holds.
+        await expect(page.locator('#select-picker-list .select-picker-option.is-current')).toBeFocused();
+
+        await page.keyboard.press('ArrowDown');
+        const chosen = await page.evaluate(() => document.activeElement?.textContent?.trim());
+        await page.keyboard.press('Enter');
+
+        await expect(overlay).toBeHidden();
+        await expect(sensitivity).not.toHaveValue('1.0');
+        expect(await sensitivity.evaluate((el) => el.options[el.selectedIndex].textContent.trim())).toBe(chosen);
+        // Focus returns to the dropdown, not to a control inside the closed overlay.
+        await expect(sensitivity).toBeFocused();
+    });
+
+    test('backing out of the dropdown picker leaves the value untouched', async ({ page }) => {
+        await bootToTitleSplash(page);
+        await page.locator('#title-settings-btn').click();
+
+        const sensitivity = page.locator('#setting-aim-sensitivity');
+        await sensitivity.focus();
+        await sensitivity.selectOption('1.0');
+
+        await page.keyboard.press('Enter');
+        await expect(page.locator('#select-picker-overlay')).toBeVisible();
+        await page.keyboard.press('ArrowDown');
+        await page.keyboard.press('ArrowDown');
+        await page.keyboard.press('Escape');
+
+        await expect(page.locator('#select-picker-overlay')).toBeHidden();
+        await expect(sensitivity).toHaveValue('1.0');
+        await expect(sensitivity).toBeFocused();
+        // The settings modal itself must survive: B cancels the picker only.
+        await expect(page.locator('#settings-popup')).toBeVisible();
+    });
+
+    test('a focused dropdown no longer swallows vertical controller navigation', async ({ page }) => {
+        await bootToTitleSplash(page);
+        await page.locator('#title-settings-btn').click();
+
+        const sensitivity = page.locator('#setting-aim-sensitivity');
+        await sensitivity.focus();
+        const before = await sensitivity.inputValue();
+
+        await page.evaluate(() => {
+            const buttons = Array.from({ length: 17 }, () => ({ pressed: false, value: 0 }));
+            buttons[13] = { pressed: true, value: 1 };
+            const pad = {
+                id: 'Xbox Wireless Controller (STANDARD GAMEPAD)',
+                index: 0,
+                connected: true,
+                mapping: 'standard',
+                axes: [0, 0, 0, 0],
+                buttons
+            };
+            navigator.getGamepads = () => [pad];
+        });
+
+        await expect(sensitivity).not.toBeFocused();
+        await expect(sensitivity).toHaveValue(before);
+
+        await page.evaluate(() => { navigator.getGamepads = () => []; });
+    });
+
+    test('Armory dropdown keeps focus when an equipment change re-renders it', async ({ page }) => {
+        await bootToOperatorMenu(page);
+        const rosterConfirm = page.locator('#roster-confirm-btn');
+        if (await rosterConfirm.isVisible().catch(() => false)) await rosterConfirm.click();
+        await page.locator('#start-game').click();
+        await expect(page.locator('#armory-screen')).toBeVisible({ timeout: 30_000 });
+
+        // Chassis always contains Standard plus unlocked community skins; some
+        // classes intentionally expose only one weapon archetype.
+        const chassis = page.locator('#armory-chassis-select');
+        await chassis.focus();
+        const before = await chassis.inputValue();
+        const next = await chassis.locator('option:not([disabled])').nth(1).getAttribute('value');
+        expect(next).toBeTruthy();
+        await chassis.selectOption(next);
+
+        await expect(chassis).not.toHaveValue(before);
+        await expect(chassis).toBeFocused();
+    });
+
     test('controller can choose a visible right-stick sensitivity preset', async ({ page }) => {
         await bootToTitleSplash(page);
         await page.locator('#title-settings-btn').click();
@@ -234,5 +356,42 @@ test.describe('controller-ready modal focus', () => {
 
         await expect(page.locator('#base-turret-modal')).toBeVisible();
         await expect(page.locator('#close-base-turret-modal')).toBeFocused();
+    });
+
+    test('pointer hover updates active focus and moves highlight across main menu buttons', async ({ page }) => {
+        await bootToTitleSplash(page);
+        await expect(page.locator('#title-newrun-btn')).toBeFocused();
+
+        await page.locator('#title-settings-btn').hover();
+        await expect(page.locator('#title-settings-btn')).toBeFocused();
+
+        await page.locator('#title-about-btn').hover();
+        await expect(page.locator('#title-about-btn')).toBeFocused();
+
+        await page.locator('#title-quit-btn').hover();
+        await expect(page.locator('#title-quit-btn')).toBeFocused();
+
+        await page.locator('#title-newrun-btn').hover();
+        await expect(page.locator('#title-newrun-btn')).toBeFocused();
+    });
+
+    test('main menu buttons are navigable via arrow keys and WASD', async ({ page }) => {
+        await bootToTitleSplash(page);
+        await expect(page.locator('#title-newrun-btn')).toBeFocused();
+
+        await page.keyboard.press('ArrowDown');
+        await expect(page.locator('#title-achievements-btn')).toBeFocused();
+
+        await page.keyboard.press('ArrowDown');
+        await expect(page.locator('#title-settings-btn')).toBeFocused();
+
+        await page.keyboard.press('ArrowDown');
+        await expect(page.locator('#title-about-btn')).toBeFocused();
+
+        await page.keyboard.press('ArrowDown');
+        await expect(page.locator('#title-quit-btn')).toBeFocused();
+
+        await page.keyboard.press('ArrowUp');
+        await expect(page.locator('#title-about-btn')).toBeFocused();
     });
 });

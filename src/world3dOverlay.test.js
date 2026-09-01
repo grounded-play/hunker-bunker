@@ -45,4 +45,13 @@ describe('world 3D replacement catalog', () => {
         expect(root.rotation.y).toBeCloseTo(0.4 + WORLD_3D_FACING_YAW);
         expect(root.visible).toBe(true);
     });
+
+    it('exposes preload list with valid model types and safely runs preload', async () => {
+        const { COMMON_WORLD_3D_MODEL_TYPES, preloadWorld3dModels } = await import('./world3dOverlay.js');
+        expect(COMMON_WORLD_3D_MODEL_TYPES.length).toBeGreaterThan(10);
+        for (const type of COMMON_WORLD_3D_MODEL_TYPES) {
+            expect(hasWorld3dModel(type)).toBe(true);
+        }
+        await expect(preloadWorld3dModels([])).resolves.not.toThrow();
+    });
 });

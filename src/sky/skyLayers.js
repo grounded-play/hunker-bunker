@@ -1,0 +1,294 @@
+// Which textures make up the sky this frame, and how each one blends.
+//
+// Pure: returns a plain description that skyDome.js turns into meshes. Keeping
+// the selection logic here means biome/weather/opacity rules are testable
+// without a GPU, and the THREE layer stays a dumb renderer of this output.
+//
+// Layer ids, radii and parallax factors follow
+// docs/sky-layer-and-weather-asset-catalog-2026-08-25.md section 2.
+
+import { SKY_SHEETS, frameRectFor } from './skySheets.js';
+import { SPRITE_MODES } from './skySpriteMaterial.js';
+import { sheetTimeForTransient, anchorDirectionFor, transientEnvelope } from './skyTransients.js';
+
+const SKY_DIR = '/sky';
+
+// Additive layers ignore their alpha channel entirely. Two different kinds of
+// art land here and the same rule fixes both (catalog section 1c): the batch-2
+// nebulae and stars were green-keyed to a near-binary alpha, which would throw
+// away their soft falloff, while the batch-3/4 suns, ring, aurora and lens
+// elements ship un-keyed on black with alpha uniformly 255. Both are correct
+// when blended additively against black and read from RGB alone.
+export const ADDITIVE_LAYER_IDS = Object.freeze([
+    'deepfield',
+    'stars',
+    'aurora'
+]);
+
+// Which layers move, and how. Cloud and storm decks are blown downwind; aurora
+// undulates along its own curtain instead, because aurora is not carried by
+// wind and scrolling it sideways reads as sliding cloth. Deep space and the
+// horizon bands never move -- one is too far away to drift on a human
+// timescale, the other is terrain.
+export const CLOUD_MOTION = Object.freeze({
+    aurora: 'shimmer',
+    highcloud: 'drift',
+    stormdeck: 'drift'
+});
+
+export const SKY_LAYERS = Object.freeze([
+    { id: 'deepfield', renderOrder: -60, parallax: 0.0, band: 'dome' },
+    { id: 'stars', renderOrder: -59, parallax: 0.0, band: 'dome' },
+    { id: 'aurora', renderOrder: -52, parallax: 0.03, band: 'upper' },
+    { id: 'highcloud', renderOrder: -48, parallax: 0.06, band: 'upper' },
+    { id: 'stormdeck', renderOrder: -44, parallax: 0.12, band: 'upper' },
+    { id: 'horizon.far', renderOrder: -40, parallax: 0.22, band: 'horizon' },
+    { id: 'horizon.mid', renderOrder: -36, parallax: 0.38, band: 'horizon' },
+    { id: 'horizon.near', renderOrder: -32, parallax: 0.62, band: 'horizon' }
+]);
+
+const LAYER_BY_ID = new Map(SKY_LAYERS.map((layer) => [layer.id, layer]));
+
+// Horizon bands per biome. `far` and `mid` are grayscale luminance masks tinted
+// at runtime; `near` ships as RGBA but came back near-monochrome, so it takes a
+// gentler tint rather than a regeneration pass (catalog section 1c).
+const HORIZON_SETS = Object.freeze({
+    active: { far: 'far_mesa_ridge', mid: 'mid_wreck_skyline', near: 'near_rock_teeth' },
+    cryo: { far: 'far_glacier_wall', mid: 'mid_frozen_rig', near: 'near_frost_pines' },
+    bio: { far: 'far_fungal_massif', mid: 'mid_hive_spires', near: 'near_spore_forest' }
+});
+
+const STORM_DECKS = Object.freeze({
+    rainstorm: 'storm_dust_wall',
+    snow: 'storm_ice_haze',
+    spore_drift: 'storm_spore_veil',
+    fog_gust: 'storm_ash_fall'
+});
+
+const DEEP_FIELD_TEXTURE = 'nebula_band_core';
+const STAR_TEXTURE = 'star_dense_knot';
+const AURORA_TEXTURE = 'aurora_curtain_tall';
+const HIGH_CLOUD_TEXTURE = 'cloud_cirrus_thin';
+
+const clamp01 = (value) => (value < 0 ? 0 : value > 1 ? 1 : value);
+
+function makeLayer(id, textureName, opacity, extras = {}) {
+    const definition = LAYER_BY_ID.get(id);
+    const additive = ADDITIVE_LAYER_IDS.includes(id);
+    const cloudMode = CLOUD_MOTION[id] ?? null;
+    return {
+        layerId: id,
+        animated: cloudMode !== null,
+        cloudMode,
+        url: `${SKY_DIR}/${textureName}.png`,
+        renderOrder: definition.renderOrder,
+        parallax: definition.parallax,
+        band: definition.band,
+        blend: additive ? 'additive' : 'alpha',
+        // Additive layers read RGB only -- see ADDITIVE_LAYER_IDS above.
+        ignoreAlpha: additive,
+        opacity: clamp01(opacity),
+        ...extras
+    };
+}
+
+export function resolveSkyLayers({ biomeKey = 'active', skyState } = {}) {
+    const {
+        starOpacity = 0,
+        stormDensity = 0,
+        weatherState = 'clear',
+        dayFactor = 0,
+        horizonColor = { r: 1, g: 1, b: 1 }
+    } = skyState ?? {};
+
+    const horizons = HORIZON_SETS[biomeKey] ?? HORIZON_SETS.active;
+    // Additive gains are deliberately well under 1: these layers stack, and the
+    // painted nebula art is bright enough that unattenuated it washes the whole
+    // night sky to white.
+    const layers = [
+        makeLayer('deepfield', DEEP_FIELD_TEXTURE, starOpacity * 0.42),
+        makeLayer('stars', STAR_TEXTURE, starOpacity * 0.30),
+        // Aurora is a night phenomenon and a storm hides it.
+        makeLayer('aurora', AURORA_TEXTURE, starOpacity * 0.22 * (1 - stormDensity)),
+        // High cloud is only readable against a lit sky.
+        makeLayer('highcloud', HIGH_CLOUD_TEXTURE, dayFactor * 0.6 * (1 - stormDensity * 0.7))
+    ];
+
+    const stormTexture = STORM_DECKS[weatherState];
+    if (stormTexture && stormDensity > 0) {
+        layers.push(makeLayer('stormdeck', stormTexture, stormDensity * 0.95));
+    }
+
+    // The three horizon bands are always present -- they meet the terrain edge,
+    // so dropping one would leave a visible seam rather than a subtler sky.
+    layers.push(makeLayer('horizon.far', horizons.far, 1, { tint: horizonColor }));
+    layers.push(makeLayer('horizon.mid', horizons.mid, 1, { tint: horizonColor }));
+    layers.push(makeLayer('horizon.near', horizons.near, 1, { tint: horizonColor, tintStrength: 0.35 }));
+
+    return layers
+        .filter((layer) => layer.opacity > 0)
+        .sort((a, b) => a.renderOrder - b.renderOrder);
+}
+
+// Celestial body textures. Catalog L3 splits this layer by nature rather than
+// by kind: suns and the ring arc are pure emitted light shipped un-keyed on
+// black, so they blend additively; moons, planets and the derelict are opaque
+// lit solids shipped green-keyed, so they alpha-blend.
+const BODY_TEXTURES = Object.freeze({
+    sky_body_sun_primary: 'body_sun_primary',
+    sky_body_sun_dwarf: 'body_sun_dwarf',
+    sky_body_ring_arc: 'body_ring_arc',
+    sky_body_moon_cratered_large: 'body_moon_cratered_large',
+    sky_body_moon_cratered_small: 'body_moon_cratered_small',
+    sky_body_moon_shattered: 'body_moon_shattered',
+    sky_body_planet_rust: 'body_planet_rust',
+    sky_body_planet_dead_ocean: 'body_planet_dead_ocean',
+    sky_body_gasgiant_ringed: 'body_gasgiant_ringed',
+    sky_body_mothership_derelict: 'body_mothership_derelict'
+});
+
+// Surface motion per body, decided asset by asset rather than as a blanket
+// rule (docs/sky-fx-animation-classes-2026-08-26.md section 3d).
+//
+// Moons and terrestrial planets get NOTHING on purpose: they are tidally
+// locked or far enough away that rotation is invisible, and the art already
+// carries a baked terminator that a procedural one would fight. Faking motion
+// on them would look worse than leaving them still. What sells those is
+// extinction, below, which applies to every body.
+export const BODY_SPRITE_MODES = Object.freeze({
+    sky_body_sun_primary: SPRITE_MODES.GRANULATION,
+    sky_body_sun_dwarf: SPRITE_MODES.GRANULATION,
+    sky_body_ring_arc: SPRITE_MODES.SCINTILLATE,
+    sky_body_moon_cratered_large: SPRITE_MODES.NONE,
+    sky_body_moon_cratered_small: SPRITE_MODES.NONE,
+    sky_body_moon_shattered: SPRITE_MODES.NONE,
+    sky_body_planet_rust: SPRITE_MODES.NONE,
+    sky_body_planet_dead_ocean: SPRITE_MODES.NONE,
+    // These two are the only bodies that earn an atlas: the gas giant's rings
+    // cross its disc so it cannot be scrolled, and the derelict's silhouette
+    // changes as it tumbles. Until those atlases exist they render as stills.
+    sky_body_gasgiant_ringed: SPRITE_MODES.NONE,
+    sky_body_mothership_derelict: SPRITE_MODES.NONE
+});
+
+// Rigid-body tumble, for bodies whose orientation genuinely changes.
+//
+// Only the derelict qualifies. A sphere looks identical from every angle, so a
+// planet or moon has nothing to tumble; the derelict is a long hull that rolls
+// and foreshortens as it turns. Deliberately a runtime transform rather than an
+// atlas: roll and foreshortening ARE transforms, so frames would only make them
+// step, and a genuine silhouette change would need renders that cannot be
+// derived from the single still we have.
+//
+// The two periods are deliberately coprime-ish so the motion never resolves
+// into one mechanical oscillation.
+const BODY_TUMBLE = Object.freeze({
+    sky_body_mothership_derelict: Object.freeze({
+        rollPeriod: 47,
+        rollAmplitude: 0.20,
+        squashPeriod: 71,
+        squashAmplitude: 0.22
+    })
+});
+
+// Atmospheric extinction: a body low in the sky is seen through far more air,
+// so it dims and warms. Physically real, costs nothing, and does more for
+// believability on the static bodies than any fake surface motion would.
+const EXTINCTION_HORIZON_DIM = 0.45;
+const EXTINCTION_BLUE_LOSS = 0.42;
+const EXTINCTION_GREEN_LOSS = 0.18;
+
+function extinctionFor(elevation) {
+    // 1 at the zenith, 0 at the horizon.
+    const height = clamp01(elevation);
+    const airmass = Math.pow(1 - height, 2.2);
+    return {
+        dim: 1 - airmass * EXTINCTION_HORIZON_DIM,
+        tint: {
+            r: 1,
+            g: clamp01(1 - airmass * EXTINCTION_GREEN_LOSS),
+            b: clamp01(1 - airmass * EXTINCTION_BLUE_LOSS)
+        }
+    };
+}
+
+const ADDITIVE_BODY_IDS = Object.freeze([
+    'sky_body_sun_primary',
+    'sky_body_sun_dwarf',
+    'sky_body_ring_arc'
+]);
+
+export function resolveSkyBodies(skyState) {
+    const { bodies = [], dayFactor = 0, stormDensity = 0 } = skyState ?? {};
+
+    return bodies
+        .filter((body) => BODY_TEXTURES[body.assetId])
+        .map((body) => {
+            const additive = ADDITIVE_BODY_IDS.includes(body.assetId);
+            // A sun burns through daylight; a moon or planet washes out in it.
+            // Thin atmosphere, so they never disappear entirely at noon.
+            const daylightFade = additive ? 1 : clamp01(1 - dayFactor * 0.78);
+            const extinction = extinctionFor(body.direction?.y ?? 1);
+            return {
+                key: body.assetId,
+                url: `${SKY_DIR}/${BODY_TEXTURES[body.assetId]}.png`,
+                direction: body.direction,
+                angularSize: body.angularSize,
+                blend: additive ? 'additive' : 'alpha',
+                spriteMode: BODY_SPRITE_MODES[body.assetId] ?? SPRITE_MODES.NONE,
+                radiusScale: body.radiusScale ?? 1,
+                ...(BODY_TUMBLE[body.assetId] ? { tumble: BODY_TUMBLE[body.assetId] } : {}),
+                tint: extinction.tint,
+                opacity: clamp01(daylightFade * (1 - stormDensity) * extinction.dim)
+            };
+        });
+}
+
+// How long each trigger animation spends fading out, as a fraction of its own
+// lifetime. A lightning strike that lingered would stop reading as a strike;
+// a narrative beat that snapped off would read as a dropped frame.
+const TRANSIENT_FADE_OUT = Object.freeze({
+    sky_fx_lightning_fork: 0.14,
+    sky_fx_lightning_sheet: 0.14,
+    sky_fx_lightning_crawler: 0.14,
+    sky_fx_mothership_transit: 0.34,
+    sky_fx_sun_gutter: 0.30,
+    sky_fx_spore_bloom_zenith: 0.30
+});
+
+// Active transients as billboard entries. Every animation atlas ships un-keyed
+// on black, so they are additive without exception -- there is no keyed variant
+// to branch on the way the celestial bodies have.
+export function resolveSkyTransients(skyState) {
+    const { transients = [], stormDensity = 0 } = skyState ?? {};
+
+    return transients
+        .filter((transient) => SKY_SHEETS[transient.sheetId])
+        .map((transient) => {
+            const definition = SKY_SHEETS[transient.sheetId];
+            return {
+                key: transient.key,
+                url: definition.url,
+                // The sheet's own timeline is not the transient's lifetime;
+                // sheetTimeForTransient reconciles them.
+                frameRect: frameRectFor(definition, sheetTimeForTransient(definition, transient)),
+                direction: anchorDirectionFor(definition.anchor, skyState, transient.direction),
+                angularSize: transient.angularSize,
+                blend: 'additive',
+                // Two independent things gate visibility. The envelope governs
+                // PRESENCE across the animation's lifetime -- triggers never
+                // loop, they run once and fade out, so the effect dies out of
+                // the sky rather than blinking off it. Weather governs whether
+                // anything above the cloud deck can be seen at all.
+                opacity: clamp01(
+                    transientEnvelope(transient.progress, {
+                        fadeOut: TRANSIENT_FADE_OUT[transient.sheetId]
+                    })
+                    // Lightning belongs to the storm, so it is not hidden by it.
+                    * (definition.renderAs?.includes('storm')
+                        ? 1
+                        : 1 - stormDensity * 0.85)
+                )
+            };
+        });
+}

@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { dismissProgressionReward, presentRewardStage } from './seasonPassUi.js';
+import { dismissProgressionReward, presentRewardStage, shouldPresentProgressionReward } from './seasonPassUi.js';
 
 function createClassList(initial = []) {
     const values = new Set(initial);
@@ -62,6 +62,12 @@ afterEach(() => {
 });
 
 describe('Season Pass reward ceremony DOM lifecycle', () => {
+    it('only presents unclaimed rewards while the Season screen is open', () => {
+        expect(shouldPresentProgressionReward({ seasonScreenOpen: true, claimable: true })).toBe(true);
+        expect(shouldPresentProgressionReward({ seasonScreenOpen: false, claimable: true })).toBe(false);
+        expect(shouldPresentProgressionReward({ seasonScreenOpen: true, claimable: false })).toBe(false);
+    });
+
     it('moves from reveal to confirmation and resets cleanly on dismiss', () => {
         const dom = installCeremonyDom();
         const ending = { family: 'charm' };

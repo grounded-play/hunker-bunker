@@ -99,7 +99,7 @@ describe('world polish', () => {
 
         ThreeGame.prototype.syncVisibleChunks.call(game);
 
-        expect(processPendingChunkMounts).toHaveBeenCalledWith(1);
+        expect(processPendingChunkMounts).toHaveBeenCalledWith(1, expect.objectContaining({ maxDurationMs: expect.any(Number) }));
     });
 
     it('mounts 3x3, hides recently departed chunks, and restores them before distant eviction', () => {

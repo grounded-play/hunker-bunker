@@ -34,10 +34,11 @@ import { syncSteamStats } from './src/steamStats.js';
 import { loadRgbSave, saveRgbSave, markUnlocked as markRgbUnlocked, shouldUnlockRgb, unlockChapter as unlockRgbChapter, isChapterUnlocked as isRgbChapterUnlocked } from './src/minigames/rgb/save.js';
 import { mountRgb } from './src/minigames/rgb/runtime.js';
 import { ENDINGS as RGB_ENDINGS, CHAPTERS as RGB_CHAPTERS, CHAPTER_ORDER as RGB_CHAPTER_ORDER } from './src/minigames/rgb/content.js';
-import { mapBrowserGamepad } from './src/browserGamepad.js';
+import { mapBrowserGamepad, mergeBrowserAnalogFallback } from './src/browserGamepad.js';
 import { getControllerGlyphLabel } from './src/inputGlyphs.js';
 import {
     ACTION_SETS,
+    MENU_FOCUS_ROOT_IDS,
     actionSetForAppPhase,
     createActionRouter,
     hasControllerContinuePress,
@@ -52,7 +53,7 @@ import { createScoutHeroPreview } from './src/scoutHeroPreview.js';
 import { createArmoryScene } from './src/armoryScene.js';
 import { createArmoryUi } from './src/armoryUi.js';
 import { initSteamVaultUI, loadVaultData, openSteamVaultModal, showSteamDropToast, renderSteamMilestoneGrants, grantVaultItem, resetDevVaultInventory, setDevInfiniteCacheMode, isDevInfiniteCacheMode, STEAM_ITEM_CATALOG } from './src/steamVaultUi.js';
-import { initSeasonPassUI, flushQueuedSeasonPassToasts, cancelXpFeedback } from './src/seasonPassUi.js';
+import { initSeasonPassUI, cancelXpFeedback } from './src/seasonPassUi.js';
 import { preloadEnemy3dTemplates } from './src/enemy3dOverlay.js';
 import { initVoiceCallouts } from './src/voiceCallouts.js';
 import { multiplayerLobby } from './src/multiplayerLobby.js';
@@ -111,6 +112,8 @@ const splash = document.getElementById('splash');
 const menu = document.getElementById('menu');
 const loadingScreen = document.getElementById('loading-screen');
 const loaderVersionTag = document.getElementById('loader-version-tag');
+const loaderBuildTime = document.getElementById('loader-build-time');
+const loaderSystemInfoLabel = document.getElementById('loader-system-info-label');
 const transitionOverlay = document.getElementById('transition-overlay');
 const loaderTitle = document.querySelector('.loader-title');
 const loaderBar = document.querySelector('.loader-bar');
@@ -158,19 +161,45 @@ const buildInfo = typeof __HB_BUILD_INFO__ === 'object'
         commit: 'unknown',
         branch: 'unknown',
         dirty: true,
-        steamBuild: ''
+        steamBuild: '',
+        builtAt: ''
     });
+
+function formatBuildTimestamp(raw) {
+    if (!raw) return '';
+    try {
+        const d = new Date(raw);
+        if (Number.isNaN(d.getTime())) return String(raw);
+        const pad = (n) => String(n).padStart(2, '0');
+        const year = d.getFullYear();
+        const month = pad(d.getMonth() + 1);
+        const day = pad(d.getDate());
+        const hours = pad(d.getHours());
+        const mins = pad(d.getMinutes());
+        return `${year}-${month}-${day} ${hours}:${mins}`;
+    } catch {
+        return String(raw);
+    }
+}
+
 const buildCommitLabel = `${buildInfo.commit}${buildInfo.dirty ? '-dirty' : ''}`;
 const pipelineBuildLabel = buildInfo.steamBuild ? ` // PIPELINE ${buildInfo.steamBuild}` : '';
 const branchName = buildInfo.branch ? buildInfo.branch.replace(/^dev\//i, '').toUpperCase() : '';
 const sprintLabel = branchName
     ? (branchName.startsWith('SPRINT') ? branchName.replace('-', ' ') : branchName)
     : '';
+const buildTimestampLabel = formatBuildTimestamp(buildInfo.builtAt);
 const loadingVersionText = `${sprintLabel ? `${sprintLabel} // ` : ''}${buildCommitLabel}${pipelineBuildLabel}`;
-const canonicalVersionText = `BUILD ${buildInfo.version} // ${buildCommitLabel} // ${buildInfo.branch}${pipelineBuildLabel}`;
+const canonicalVersionText = `BUILD ${buildInfo.version} // ${buildCommitLabel} // ${buildInfo.branch}${pipelineBuildLabel}${buildTimestampLabel ? ` // ${buildTimestampLabel}` : ''}`;
 if (loaderVersionTag) {
     loaderVersionTag.textContent = loadingVersionText;
     loaderVersionTag.title = `Built ${buildInfo.builtAt ?? 'unknown time'}`;
+}
+if (loaderBuildTime) {
+    loaderBuildTime.textContent = buildTimestampLabel;
+    loaderBuildTime.title = `Built ${buildInfo.builtAt ?? 'unknown time'}`;
+} else if (loaderSystemInfoLabel && buildTimestampLabel) {
+    loaderSystemInfoLabel.textContent = `SYSTEM BUILD // ${buildTimestampLabel}`;
 }
 const aboutSysVer = document.getElementById('about-modal-sys-ver');
 if (aboutSysVer) {
@@ -181,6 +210,7 @@ if (aboutSysVer) {
 const mainDebugToggle = document.getElementById('main-debug-toggle');
 const mainNightVisionToggle = document.getElementById('main-nightvision-toggle');
 const mainCommentaryToggle = document.getElementById('main-commentary-toggle');
+const steamCloudSettingsStatus = document.getElementById('setting-steam-cloud-status');
 const gameViewport = document.getElementById('game-viewport');
 const gameStageContainer = document.getElementById('game-container');
 const desktopCompass = document.getElementById('desktop-compass');
@@ -340,7 +370,6 @@ function setAppPhase(phase) {
     debugLog.info('PHASE', `${previousPhase ?? 'none'} -> ${phase}: ${phaseLabels[phase] ?? 'application state changed'}`);
     syncSteamInputPhase();
     syncSteamTimelinePhase(phase);
-    if (phase === 'splash' || phase === 'menu') flushQueuedSeasonPassToasts();
     const isGameplay = phase === 'gameplay';
     document.documentElement.classList.toggle('phase-gameplay', isGameplay);
     document.documentElement.classList.toggle('phase-menu', !isGameplay);
@@ -380,48 +409,7 @@ const STEAM_INPUT_PROMPT_IDS = Object.freeze([
     'black-box-hud-prompt'
 ]);
 
-const STEAM_INPUT_FOCUS_ROOT_IDS = Object.freeze([
-    'virtual-keyboard-overlay',
-    'dev-console-modal',
-    'confirm-modal',
-    'reset-save-confirm-modal',
-    'quit-confirm-modal',
-    'audio-mixer-popup',
-    'save-data-popup',
-    'controls-popup',
-    'settings-popup',
-    'about-modal',
-    'archive-log-detail-modal',
-    'archive-modal',
-    'codex-detail-modal',
-    'codex-modal',
-    'achievements-modal',
-    'roster-modal',
-    'fabrication-modal',
-    'elevator-choice-modal',
-    'archive-sims-modal',
-    'lore-modal',
-    'season-pass-modal',
-    'armory-screen',
-    'steam-vault-modal',
-    'player-trade-modal',
-    'multiplayer-modal',
-    'mature-content-audit-modal',
-    'operator-polish-modal',
-    'tactical-map-modal',
-    'base-turret-modal',
-    'demo-end-modal',
-    'game-over-modal',
-    'camp-choice-modal',
-    'leader-conversation-modal',
-    'mothership-dialogue',
-    'console-terminal-modal',
-    'o2-generator-modal',
-    'snail-encounter-modal',
-    'rgb-root',
-    'splash',
-    'menu'
-]);
+const STEAM_INPUT_FOCUS_ROOT_IDS = MENU_FOCUS_ROOT_IDS;
 
 function closeModalWithAnimation(modal, onComplete, { exitClass = '', duration = 280 } = {}) {
     if (!modal || modal.classList.contains('hidden') || modal.classList.contains('is-exiting')) {
@@ -524,11 +512,14 @@ window.HunkerInputState = {
 function syncSteamInputPhase(phaseOverride = null) {
     const modalMenuOpen = appPhase !== 'archive' && STEAM_INPUT_FOCUS_ROOT_IDS.some((id) => {
         if (id === 'rgb-root' || id === 'splash' || id === 'menu') return false;
-        const element = document.getElementById(id);
-        return Boolean(element && !element.classList.contains('hidden'));
+        return isFocusRootOpen(document.getElementById(id));
     });
     const effectivePhase = phaseOverride
         ?? (modalMenuOpen ? 'menu' : appPhase);
+    // Exposed for hardware/E2E diagnosis: this is the action set the game is
+    // asking Steam Input to activate, which is what decides whether the sticks
+    // report `move`/`camera` at all.
+    window.__hbSteamInputPhaseRequest = effectivePhase;
     mainActionRouter.setActionSet(actionSetForAppPhase(effectivePhase));
     if (effectivePhase !== lastRequestedSteamInputPhase) {
         lastRequestedSteamInputPhase = effectivePhase;
@@ -637,6 +628,17 @@ function isElementVisible(element) {
     return Boolean(element && element.getClientRects().length > 0);
 }
 
+// A focus root only counts as open when it is actually on screen. Several
+// surfaces in MENU_FOCUS_ROOT_IDS are mounted for the whole session and hide
+// themselves with `display: none` rather than the `hidden` class (#hb-debug-console
+// is the always-mounted example), so the class alone is not a usable test --
+// relying on it pinned the game in the menu Steam Input action set forever.
+function isFocusRootOpen(element) {
+    return Boolean(element)
+        && !element.classList.contains('hidden')
+        && isElementVisible(element);
+}
+
 function getVisibleControllerFocusables(root = document) {
     if (!root) return [];
     const selector = [
@@ -645,13 +647,15 @@ function getVisibleControllerFocusables(root = document) {
         'textarea:not([disabled])',
         'select:not([disabled])',
         'a[href]',
-        '[role="button"]',
         '[tabindex]:not([tabindex="-1"])'
     ].join(', ');
     return Array.from(root.querySelectorAll(selector)).filter((element) => {
         if (!isElementVisible(element)) return false;
-        if (element.closest('.hidden')) return false;
-        if (element.getAttribute('aria-hidden') === 'true') return false;
+        if (element.disabled || element.getAttribute('aria-disabled') === 'true') return false;
+        if (element.closest('.hidden, [hidden], [inert]')) return false;
+        if (element.closest('[aria-hidden="true"]')) return false;
+        const style = window.getComputedStyle(element);
+        if (style.display === 'none' || style.visibility === 'hidden') return false;
         return true;
     });
 }
@@ -700,7 +704,16 @@ function adjustSelectValue(element, direction) {
     const select = element?.matches?.('select') ? element : element?.querySelector?.('select');
     if (!select || !select.options?.length) return false;
     const currentIndex = Math.max(0, select.selectedIndex);
-    const nextIndex = wrapMenuIndex(currentIndex, direction, select.options.length);
+    let nextIndex = currentIndex;
+    // Locked Armory inventory is represented by disabled options. Skip those
+    // instead of landing on an item the loadout guard will immediately reject.
+    for (let offset = 1; offset <= select.options.length; offset += 1) {
+        const candidate = wrapMenuIndex(currentIndex, direction * offset, select.options.length);
+        if (!select.options[candidate]?.disabled) {
+            nextIndex = candidate;
+            break;
+        }
+    }
     if (nextIndex === select.selectedIndex) return true;
     select.selectedIndex = nextIndex;
     select.dispatchEvent(new Event('input', { bubbles: true }));
@@ -709,12 +722,110 @@ function adjustSelectValue(element, direction) {
     return true;
 }
 
+// ── Controller dropdown picker ────────────────────────────────
+// Chromium/Electron will not reliably open a native <select> popup from a
+// synthetic controller click, so A on a focused dropdown opens #select-picker-overlay
+// instead. Every option is rendered as a real <button>, which means the existing
+// controller focus system does all the navigating: D-pad moves between options,
+// A clicks one, and B routes through dispatchControllerEscape() like any other
+// modal. Nothing is committed to the <select> until an option is clicked, so
+// backing out genuinely cancels.
+let selectPickerTargetElement = null;
+
+function isSelectPickerOpen() {
+    const overlay = document.getElementById('select-picker-overlay');
+    return Boolean(overlay && !overlay.classList.contains('hidden'));
+}
+
+function describeSelectForPicker(select) {
+    const labelledBy = select.getAttribute('aria-labelledby');
+    const labelText = (labelledBy && document.getElementById(labelledBy)?.textContent)
+        || select.getAttribute('aria-label')
+        || (select.id && document.querySelector(`label[for="${CSS.escape(select.id)}"]`)?.textContent)
+        || select.closest('.setting-item, .armory-row, .armory-slot')?.querySelector('label, .setting-label, .armory-label')?.textContent
+        || 'Select option';
+    return labelText.trim().replace(/[:\s]+$/, '').toUpperCase();
+}
+
+function openSelectPickerForElement(element) {
+    const select = element?.matches?.('select') ? element : element?.querySelector?.('select');
+    if (!select || !select.options?.length) return false;
+    const overlay = document.getElementById('select-picker-overlay');
+    const list = document.getElementById('select-picker-list');
+    if (!overlay || !list) return false;
+
+    selectPickerTargetElement = select;
+
+    const label = document.getElementById('select-picker-label');
+    if (label) label.textContent = describeSelectForPicker(select);
+
+    list.replaceChildren();
+    let focusTarget = null;
+    Array.from(select.options).forEach((option, index) => {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'select-picker-option';
+        button.textContent = option.textContent;
+        button.dataset.optionIndex = String(index);
+        button.setAttribute('role', 'option');
+        // Locked Armory inventory arrives as disabled options. Rendering them
+        // disabled keeps the real inventory visible while getVisibleControllerFocusables
+        // skips them, instead of hiding that the item exists at all.
+        if (option.disabled) button.disabled = true;
+        const isCurrent = index === select.selectedIndex;
+        if (isCurrent) {
+            button.classList.add('is-current');
+            button.setAttribute('aria-selected', 'true');
+            if (!option.disabled) focusTarget = button;
+        }
+        button.addEventListener('click', () => commitSelectPickerOption(index));
+        list.appendChild(button);
+    });
+
+    overlay.classList.remove('hidden');
+    overlay.setAttribute('aria-hidden', 'false');
+    focusControllerTarget(focusTarget ?? getVisibleControllerFocusables(list)[0] ?? list);
+    return true;
+}
+
+function commitSelectPickerOption(index) {
+    const select = selectPickerTargetElement;
+    if (!select) return;
+    const option = select.options?.[index];
+    // Close before dispatching: surfaces such as the Armory re-render their
+    // controls from the change handler, and the restored focus has to land on
+    // the dropdown rather than on a button inside a closing overlay.
+    closeSelectPicker();
+    if (!option || option.disabled) return;
+    if (select.selectedIndex !== index) {
+        select.selectedIndex = index;
+        select.dispatchEvent(new Event('input', { bubbles: true }));
+        select.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+    window.AudioManager?.play?.('fx_menu_hover', { volume: 0.2, bus: 'sfx' });
+}
+
+function closeSelectPicker() {
+    const overlay = document.getElementById('select-picker-overlay');
+    if (overlay) {
+        overlay.classList.add('hidden');
+        overlay.setAttribute('aria-hidden', 'true');
+    }
+    document.getElementById('select-picker-list')?.replaceChildren();
+    const target = selectPickerTargetElement;
+    selectPickerTargetElement = null;
+    // The dropdown may have been replaced by a re-render while the picker was
+    // open; fall back to its id so focus still returns to the same control.
+    const restored = target?.isConnected
+        ? target
+        : (target?.id ? document.getElementById(target.id) : null);
+    if (restored) focusControllerTarget(restored);
+}
+
 function getControllerFocusRoot() {
     for (const id of STEAM_INPUT_FOCUS_ROOT_IDS) {
         const element = document.getElementById(id);
-        if (element && !element.classList.contains('hidden') && isElementVisible(element)) {
-            return element;
-        }
+        if (isFocusRootOpen(element)) return element;
     }
 
     if (document.body.classList.contains('mission-intro-active')) {
@@ -742,7 +853,7 @@ function getPreferredControllerFocusTarget(root, focusables) {
             ?? focusables[0];
     }
     if (root?.id === 'settings-popup') {
-        return focusables.find((element) => element.id === 'setting-resolution')
+        return focusables.find((element) => element.id === 'main-nightvision-toggle')
             ?? focusables.find((element) => element.closest?.('.setting-item'))
             ?? focusables[0];
     }
@@ -801,6 +912,43 @@ function centerSettingsFocusTarget(target) {
     const maxScroll = Math.max(0, scroller.scrollHeight - scroller.clientHeight);
     scroller.scrollTop = Math.min(maxScroll, Math.max(0, rowCenterInScroller - desiredCenter));
     return true;
+}
+
+const MENU_INTERACTIVE_SELECTOR = [
+    'button:not([disabled])',
+    'input:not([disabled])',
+    'select:not([disabled])',
+    'textarea:not([disabled])',
+    'a[href]',
+    '[role="button"]',
+    '[tabindex]:not([tabindex="-1"])',
+    '.char-card',
+    '.setting-item',
+    '.title-menu-btn',
+    '.start-btn',
+    '.hero-select-back-btn',
+    '.armory-btn',
+    '.armory-select',
+    '.class-tab',
+    '.toggle',
+    '.calibrate-btn',
+    '.close-modal',
+    '.about-btn',
+    '.abort-btn',
+    '.game-over-btn',
+    '.hero-polish-slot',
+    '.operator-polish-chip',
+    '.deck-focus-target'
+].join(', ');
+
+function resolveInteractiveFocusTarget(element) {
+    if (!element) return null;
+    const item = element.closest?.(MENU_INTERACTIVE_SELECTOR);
+    if (!item || item.disabled || item.closest?.('.hidden')) return null;
+    if (item.matches?.('button, select, input, textarea, a, .char-card, .hero-polish-slot, .hero-select-back-btn, [tabindex]:not([tabindex="-1"])')) {
+        return item;
+    }
+    return item.querySelector?.('button:not([disabled]), select:not([disabled]), input:not([disabled]), textarea:not([disabled]), a[href], [tabindex]:not([tabindex="-1"])') || item;
 }
 
 function focusControllerTarget(target, { playHover = false } = {}) {
@@ -895,6 +1043,7 @@ function moveHeroSelectPanelFocus(code) {
     const settingsButton = active?.closest?.('.menu-corner-settings .open-settings-btn');
     const selectedHero = document.querySelector('.char-selection .char-card.selected')
         ?? document.querySelector('.char-selection .char-card');
+    const heroBackBtn = document.getElementById('hero-select-back-btn');
 
     if (settingsButton) {
         const target = isLeft
@@ -905,10 +1054,10 @@ function moveHeroSelectPanelFocus(code) {
 
     if (initializeButton) {
         if (isRight) {
-            return focusControllerTarget(document.getElementById('hero-polish-btn'), { playHover: true });
+            return focusControllerTarget(document.getElementById('hero-polish-btn') ?? selectedHero, { playHover: true });
         }
         if (isDown) {
-            return selectedHero ? focusControllerTarget(selectedHero, { playHover: true }) : true;
+            return (selectedHero || heroBackBtn) ? focusControllerTarget(selectedHero ?? heroBackBtn, { playHover: true }) : true;
         }
         const visibleCommands = getVisibleControllerFocusables(document.querySelector('.menu-header-actions'));
         const target = lastHeroMenuCommandFocus && visibleCommands.includes(lastHeroMenuCommandFocus)
@@ -921,27 +1070,33 @@ function moveHeroSelectPanelFocus(code) {
         lastHeroMenuCommandFocus = active;
         if (!isRight) return true;
         const target = document.getElementById('hero-polish-btn')
-            ?? document.querySelector('.char-selection .char-card.selected')
-            ?? document.querySelector('.char-selection .char-card')
+            ?? selectedHero
             ?? document.getElementById('start-game');
         return target ? focusControllerTarget(target, { playHover: true }) : true;
     }
 
     if (heroRail) {
-        const cards = getVisibleControllerFocusables(heroRail).filter((element) => element.classList.contains('char-card'));
-        const index = Math.max(0, cards.indexOf(active));
+        const focusableElements = getVisibleControllerFocusables(heroRail);
+        const index = Math.max(0, focusableElements.indexOf(active));
         let target = null;
-        if (isUp && index === 0) target = document.querySelector('#menu .menu-corner-settings .open-settings-btn');
-        else if (isUp) target = cards[index - 1];
-        else if (isDown) target = cards[index + 1] ?? document.getElementById('start-game');
-        else if (isLeft) target = document.getElementById('hero-polish-btn');
-        else if (isRight) target = document.querySelector('#menu .menu-corner-settings .open-settings-btn');
+        if (isUp) {
+            if (index === 0) target = document.querySelector('#menu .menu-corner-settings .open-settings-btn');
+            else target = focusableElements[index - 1];
+        } else if (isDown) {
+            if (index < focusableElements.length - 1) target = focusableElements[index + 1];
+            else target = document.getElementById('start-game');
+        } else if (isLeft) {
+            if (active === heroBackBtn) target = document.getElementById('start-game');
+            else target = document.getElementById('hero-polish-btn');
+        } else if (isRight) {
+            target = document.querySelector('#menu .menu-corner-settings .open-settings-btn');
+        }
         return target ? focusControllerTarget(target, { playHover: true }) : true;
     }
 
     if (previewRail) {
         const target = isRight
-            ? (selectedHero ?? document.getElementById('start-game'))
+            ? (selectedHero ?? heroBackBtn ?? document.getElementById('start-game'))
             : isLeft
                 ? (lastHeroMenuCommandFocus ?? getVisibleControllerFocusables(document.querySelector('.menu-header-actions'))[0])
                 : isUp
@@ -1271,6 +1426,7 @@ function initVirtualKeyboard() {
             if (key) handleVirtualKeyboardKey(key);
         }
     });
+    document.getElementById('select-picker-close')?.addEventListener('click', () => closeSelectPicker());
     document.getElementById('virtual-keyboard-close')?.addEventListener('click', () => closeVirtualKeyboard());
 }
 
@@ -1307,6 +1463,11 @@ function activateControllerFocusedElement() {
             // build, or not running through Big Picture) — fall back to the
             // in-engine on-screen keyboard so controller-only play can still
             // edit this field, per Full Controller Support requirements.
+            // Only for controller input: openSteamGamepadTextInputForElement
+            // already refuses in keyboard mode, and a player who pressed Enter
+            // on a physical keyboard wants to type into the field, not to have
+            // an on-screen keyboard steal focus from under their next keystroke.
+            if (!isSteamControllerInputActive()) return;
             openVirtualKeyboardForElement(activeElement, { description, maxCharacters });
         });
         return true;
@@ -1315,6 +1476,12 @@ function activateControllerFocusedElement() {
     if (isRangeInputElement(activeElement)) {
         focusControllerTarget(activeElement);
         return true;
+    }
+
+    // Chromium/Electron does not reliably open a native <select> popup from a
+    // synthetic controller click, so A opens our own option list instead.
+    if (activeElement.matches?.('select')) {
+        return openSelectPickerForElement(activeElement);
     }
 
     if (typeof activeElement.click === 'function') {
@@ -1326,6 +1493,7 @@ function activateControllerFocusedElement() {
 }
 
 function dispatchControllerEscape() {
+    const rootBeforeEscape = getControllerFocusRoot();
     const escapeEvent = new KeyboardEvent('keydown', {
         key: 'Escape',
         code: 'Escape',
@@ -1333,6 +1501,39 @@ function dispatchControllerEscape() {
         cancelable: true
     });
     document.dispatchEvent(escapeEvent);
+
+    // Some newer and developer-only overlays predate the centralized Escape
+    // switch below. If nobody closed the active surface, make Steam B and
+    // keyboard Escape use its explicit close/cancel/back affordance.
+    queueMicrotask(() => {
+        if (!rootBeforeEscape || !isModalFocusRoot(rootBeforeEscape)) return;
+        if (rootBeforeEscape.classList.contains('hidden')
+            || rootBeforeEscape.classList.contains('is-exiting')
+            || rootBeforeEscape.getAttribute('aria-hidden') === 'true'
+            || !isElementVisible(rootBeforeEscape)) return;
+        getControllerBackTarget(rootBeforeEscape)?.click?.();
+    });
+}
+
+function getControllerBackTarget(root) {
+    if (!root) return null;
+    const selectors = [
+        '[data-menu-back]',
+        '.close-modal:not([disabled])',
+        '#hb-console-close',
+        '#archive-sims-modal-close',
+        '#confirm-no',
+        '#reset-save-cancel',
+        '#quit-cancel-btn',
+        '#armory-btn-back',
+        '#net-back-btn',
+        '#trade-cancel-btn'
+    ];
+    for (const selector of selectors) {
+        const target = root.querySelector(selector);
+        if (target && !target.disabled && isElementVisible(target)) return target;
+    }
+    return null;
 }
 
 function triggerControllerPauseAction() {
@@ -1427,18 +1628,12 @@ function handleSteamInputSnapshot(snapshot = {}) {
         return;
     }
 
-    // Preserve movement on Deck configurations where Steam exposes the aim
-    // action but leaves the native move action neutral. Only borrow Chromium's
-    // physical left-stick axes; all buttons and aiming remain native actions.
-    if (steamInputState.phase === 'gameplay' && Math.hypot(
-        Number(activeController.move?.x) || 0,
-        Number(activeController.move?.y) || 0
-    ) <= 0.18) {
-        const browserMovement = getBrowserGamepadControllers().find((controller) => (
-            Math.hypot(Number(controller.move?.x) || 0, Number(controller.move?.y) || 0) > 0.18
-        ));
-        if (browserMovement) activeController = { ...activeController, move: browserMovement.move };
-    }
+    // Native Steam Input can still emit buttons while a stale official/user
+    // layout leaves either analog action neutral. In that mixed state the
+    // all-or-nothing browser fallback never wins, so merge both sticks
+    // independently. This applies in menus too: right stick remains the
+    // pointer and left stick remains a navigation/pointer fallback.
+    activeController = mergeBrowserAnalogFallback(activeController, getBrowserGamepadControllers());
 
     steamInputPrevControllers.set(activeController.handle, steamInputPrevControllers.get(activeController.handle) ?? {});
 
@@ -1589,6 +1784,10 @@ function handleSteamMenuInput(actions) {
     const moved = Boolean(actions.up || actions.down || actions.left || actions.right);
     const activeElement = document.activeElement;
     const horizontalDirection = actions.left ? -1 : actions.right ? 1 : 0;
+    // Left/right quick-adjusts the focused control; up/down always moves focus.
+    // Letting up/down adjust a <select> too meant a focused dropdown swallowed
+    // vertical navigation, so focus could never leave it -- and A now opens the
+    // full option list anyway, which is the discoverable way to change one.
     const controlAdjusted = Boolean(activeElement && horizontalDirection && (
         adjustRangeInputValue(activeElement, horizontalDirection)
         || adjustSelectValue(activeElement, horizontalDirection)
@@ -1622,6 +1821,7 @@ function handleSteamMenuInput(actions) {
             if (clickable) {
                 if (clickable.tagName === 'SELECT') {
                     clickable.focus();
+                    openSelectPickerForElement(clickable);
                 } else if (typeof clickable.click === 'function') {
                     clickable.click();
                 } else {
@@ -1704,6 +1904,7 @@ function applyReticleState(crosshair) {
     // duplicating the raycast or editing Lane B's file.
     const tacticalCursor = document.getElementById('tactical-cursor');
     const target = targetFromCursorClasses(tacticalCursor ? Array.from(tacticalCursor.classList) : []);
+    const targetLabel = tacticalCursor?.querySelector('.cursor-interact-badge')?.textContent?.trim() ?? '';
     const { state, visible, reason, hiddenReason } = selectReticleState({
         target,
         blockedReason: reticleBlockedReason,
@@ -1715,10 +1916,18 @@ function applyReticleState(crosshair) {
     crosshair.dataset.reticleState = state;
     if (reason) crosshair.dataset.reticleReason = reason;
     else delete crosshair.dataset.reticleReason;
+    const label = crosshair.querySelector('.gameplay-crosshair__label');
+    const visibleLabel = reason ? String(reason).replaceAll('_', ' ').toUpperCase() : targetLabel;
+    if (label) label.textContent = visibleLabel;
+    crosshair.classList.toggle('has-label', Boolean(visibleLabel));
     // §16 wanted menu open/close and input-blocked in the log. Deriving them
     // from the same gate the reticle already consults covers every modal at
     // once, and carries the visibility snapshot that log16 could not produce.
     const blockingOverlay = Boolean(window.game?.hasBlockingGameplayOverlay?.());
+    document.documentElement.classList.toggle(
+        'gameplay-menu-cursor',
+        blockingOverlay && appPhase === 'gameplay'
+    );
     const overlayTransition = describeOverlayTransition(lastBlockingOverlay, blockingOverlay);
     if (overlayTransition) {
         const M = PRESENTATION_EVENTS.MENU;
@@ -1819,14 +2028,17 @@ function handleSteamGameplayInput(controller) {
     if (window.game?.setVirtualInput) {
         window.game.setVirtualInput(moveX, -moveY);
     }
-    // The right stick and trackpad move one screen-space aim point. Movement
-    // remains independent, so strafing never steals the shot direction.
+    const thirdPersonCamera = window.game?.cameraMode === 'third-person';
+    // Classic mode moves a free tactical aim point. Third-person mode keeps
+    // the reticle centered and lets this same stick turn actor + camera.
     const width = window.innerWidth || 1280;
     const height = window.innerHeight || 800;
     if (!controllerAimCursor) controllerAimCursor = { x: width / 2, y: height / 2 };
-    const deltaX = aimX * 14 + (Number(controller.cameraDelta?.x) || 0) * 0.55;
-    const deltaY = aimY * 14 + (Number(controller.cameraDelta?.y) || 0) * 0.55;
-    if (Math.hypot(deltaX, deltaY) > 0.01) {
+    const aimSensitivity = Math.min(2, Math.max(0.5, Number(state.settings.aimSensitivity) || 1));
+    const invertAimSign = state.settings.invertAimY ? -1 : 1;
+    const deltaX = (aimX * 14 + (Number(controller.cameraDelta?.x) || 0) * 0.55) * aimSensitivity;
+    const deltaY = (aimY * 14 + (Number(controller.cameraDelta?.y) || 0) * 0.55) * aimSensitivity * invertAimSign;
+    if (!thirdPersonCamera && Math.hypot(deltaX, deltaY) > 0.01) {
         controllerAimCursor.x = Math.min(width - 8, Math.max(8, controllerAimCursor.x + deltaX));
         controllerAimCursor.y = Math.min(height - 8, Math.max(8, controllerAimCursor.y + deltaY));
         window.game?.updateAimFromClient?.(controllerAimCursor.x, controllerAimCursor.y, {
@@ -1834,7 +2046,12 @@ function handleSteamGameplayInput(controller) {
             persistDuration: 2.0
         });
     }
-    updateVirtualGamepadCursorPosition(controllerAimCursor.x, controllerAimCursor.y, true);
+    if (thirdPersonCamera) {
+        controllerAimCursor.x = width / 2;
+        controllerAimCursor.y = height / 2;
+        window.game?.checkHoverInteractable?.(controllerAimCursor.x, controllerAimCursor.y);
+    }
+    updateVirtualGamepadCursorPosition(controllerAimCursor.x, controllerAimCursor.y, !thirdPersonCamera);
     updateGameplayCrosshair(controllerAimCursor.x, controllerAimCursor.y, true);
     window.game?.setCameraRotationInput?.(aimX);
 
@@ -2085,6 +2302,22 @@ const state = {
         fullscreen: false,
         nightVision: false,
         commentary: false,
+        resolutionPreset: ['auto', 'deck', '720p', '1080p', '1440p', '4k'].includes(localStorage.getItem('hb_resolution_preset'))
+            ? localStorage.getItem('hb_resolution_preset')
+            : 'deck',
+        uiScale: [100, 115, 130, 150].includes(Number(localStorage.getItem('hb_ui_scale')))
+            ? Number(localStorage.getItem('hb_ui_scale'))
+            : 100,
+        textFloor: [16, 18, 20, 22, 24].includes(Number(localStorage.getItem('hb_text_floor')))
+            ? Number(localStorage.getItem('hb_text_floor'))
+            : 18,
+        cameraMode: localStorage.getItem('hb_camera_mode') === 'isometric' ? 'isometric' : 'third-person',
+        cameraDistance: ['close', 'standard', 'wide'].includes(localStorage.getItem('hb_camera_distance'))
+            ? localStorage.getItem('hb_camera_distance')
+            : 'close',
+        cameraFollow: ['tight', 'balanced', 'smooth'].includes(localStorage.getItem('hb_camera_follow'))
+            ? localStorage.getItem('hb_camera_follow')
+            : 'tight',
         aimSensitivity: parseFloat(localStorage.getItem('hb_aim_sensitivity') || '1.0'),
         invertAimY: localStorage.getItem('hb_invert_aim_y') === 'true',
         crosshairColor: /^#[0-9a-f]{6}$/i.test(localStorage.getItem(CROSSHAIR_COLOR_STORAGE_KEY) ?? '')
@@ -3009,6 +3242,7 @@ function consumeSessionAmmoCache(amount = 1) {
 }
 
 function renderWeaponClipState(detail = {}) {
+    const isUnlimited = Boolean(detail.unlimitedAmmo ?? window.game?.unlimitedAmmo);
     const clip = Number.isFinite(detail.clip) ? Math.max(0, Math.floor(detail.clip)) : 0;
     const maxClip = Number.isFinite(detail.maxClip) ? Math.max(1, Math.floor(detail.maxClip)) : 6;
     const cache = Number.isFinite(detail.cache) ? Math.max(0, Math.floor(detail.cache)) : pickupCounterState.ammo;
@@ -3022,13 +3256,13 @@ function renderWeaponClipState(detail = {}) {
     const refilling = !reloading && autoRefillProgress > 0;
 
     if (weaponClipCurrent) {
-        weaponClipCurrent.textContent = String(clip);
+        weaponClipCurrent.textContent = isUnlimited ? '∞' : String(clip);
     }
     if (weaponClipMax) {
         weaponClipMax.textContent = String(maxClip);
     }
     if (weaponAmmoCache) {
-        weaponAmmoCache.textContent = `CACHE ${cache}/${activeAmmoCapacity}`;
+        weaponAmmoCache.textContent = isUnlimited ? `CACHE ∞/${activeAmmoCapacity}` : `CACHE ${cache}/${activeAmmoCapacity}`;
     }
     if (weaponReloadBar) {
         weaponReloadBar.style.transform = `scaleX(${reloading ? reloadProgress : refilling ? autoRefillProgress : 0})`;
@@ -3516,7 +3750,9 @@ function pumpRadioQueue() {
     }
 
     const now = typeof performance !== 'undefined' ? performance.now() : Date.now();
-    const wait = Math.max(0, RADIO_MIN_GAP_MS - (now - lastRadioRenderAt));
+    const remainingVoiceSec = window.AudioManager?.getActiveVoiceDurationRemaining?.() ?? 0;
+    const requiredGapMs = Math.max(RADIO_MIN_GAP_MS, Math.round(remainingVoiceSec * 1000) + 400);
+    const wait = Math.max(0, requiredGapMs - (now - lastRadioRenderAt));
     if (wait > 0) {
         radioPumpTimer = window.setTimeout(pumpRadioQueue, wait);
         return;
@@ -3526,7 +3762,9 @@ function pumpRadioQueue() {
     lastRadioRenderAt = now;
     renderRadioTransmission(rawText);
     if (radioQueue.length) {
-        radioPumpTimer = window.setTimeout(pumpRadioQueue, RADIO_MIN_GAP_MS);
+        const nextVoiceSec = window.AudioManager?.getActiveVoiceDurationRemaining?.() ?? 0;
+        const nextGapMs = Math.max(RADIO_MIN_GAP_MS, Math.round(nextVoiceSec * 1000) + 400);
+        radioPumpTimer = window.setTimeout(pumpRadioQueue, nextGapMs);
     }
 }
 
@@ -6038,24 +6276,12 @@ function installHudCompass() {
 function syncStageMetrics() {
     if (!gameViewport) return;
 
-    let width = window.innerWidth;
-    let height = window.innerHeight;
-
-    const targetRes = state?.settings?.resolutionPreset;
-    if (targetRes && targetRes !== 'auto') {
-        const presets = {
-            'deck': { w: 1280, h: 800 },
-            '720p': { w: 1280, h: 720 },
-            '1080p': { w: 1920, h: 1080 },
-            '1440p': { w: 2560, h: 1440 },
-            '4k': { w: 3840, h: 2160 }
-        };
-        const selected = presets[targetRes];
-        if (selected) {
-            width = selected.w;
-            height = selected.h;
-        }
-    }
+    // CSS layout must always contain itself inside the real host viewport.
+    // resolutionPreset is a rendering/quality preference, not permission to
+    // make the DOM 1280px wide on a browser that is only 1055 CSS pixels wide
+    // (a common high-DPI desktop case when emulating the Steam Deck preset).
+    const width = window.innerWidth;
+    const height = window.innerHeight;
 
     document.documentElement.style.setProperty('--vw-actual', `${width}px`);
     document.documentElement.style.setProperty('--vh-actual', `${height}px`);
@@ -6136,6 +6362,14 @@ function installStageLayoutSync() {
 }
 
 function getSelectedHeroType() {
+    if (armoryUiInstance?.getActiveClass) {
+        const armoryClass = armoryUiInstance.getActiveClass();
+        if (armoryClass) return armoryClass.toUpperCase();
+    }
+    if (loadout?.getActiveClass) {
+        const loadoutClass = loadout.getActiveClass();
+        if (loadoutClass) return loadoutClass.toUpperCase();
+    }
     const selected = document.querySelector('.char-card.selected');
     return selected?.getAttribute('data-type') || window.game?.playerType || getSavedHeroType();
 }
@@ -6574,32 +6808,53 @@ function playClassIntroSequence(playerType = 'SCOUT') {
             playVideoSource(launchBase, cleanupAndResolve);
         }
 
-        function onKey(event) {
-            if (!inputArmed && event.key !== 'Escape') return;
-            event.preventDefault();
-            if (event.key === 'Escape' || step === 'launch') {
+        let lastInputTime = 0;
+        const handleAdvance = () => {
+            const now = Date.now();
+            if (now - lastInputTime < 300) return;
+            lastInputTime = now;
+            if (step === 'launch') {
                 cleanupAndResolve();
             } else {
                 startLaunchStep();
+            }
+        };
+
+        function onKey(event) {
+            if (!inputArmed && event.key !== 'Escape') return;
+            event.preventDefault();
+            if (event.key === 'Escape') {
+                cleanupAndResolve();
+            } else {
+                handleAdvance();
             }
         }
 
         function onPointerUp(event) {
             if (!inputArmed) return;
             event.preventDefault();
-            if (step === 'launch') {
-                cleanupAndResolve();
-            } else {
-                startLaunchStep();
-            }
+            handleAdvance();
         }
 
         window.addEventListener('keydown', onKey);
         overlay.addEventListener('pointerup', onPointerUp);
 
+        let lastGamepadPressed = false;
         checkSkipInterval = setInterval(() => {
             if (window.skipAllIntro) {
                 cleanupAndResolve();
+                return;
+            }
+            if (!inputArmed) return;
+            if (typeof navigator !== 'undefined' && navigator.getGamepads) {
+                const pads = navigator.getGamepads() || [];
+                const anyPressed = Array.from(pads).some((gp) => gp?.connected && gp?.buttons?.some((b) => b?.pressed));
+                if (anyPressed && !lastGamepadPressed) {
+                    lastGamepadPressed = true;
+                    handleAdvance();
+                } else if (!anyPressed) {
+                    lastGamepadPressed = false;
+                }
             }
         }, 50);
 
@@ -6782,16 +7037,46 @@ function playCutsceneVideo(base, options = {}) {
         let fadingOut = false;
         let guardTimer = 0;
 
+        let checkGamepadInterval = null;
         const finish = ({ skipped = false } = {}) => {
             if (settled) return;
             settled = true;
+            if (checkGamepadInterval) {
+                clearInterval(checkGamepadInterval);
+                checkGamepadInterval = null;
+            }
             window.clearTimeout(guardTimer);
             window.removeEventListener('keydown', onKey);
             overlay.removeEventListener('pointerup', onPointer);
-            if (typeof onDoorCutoff === 'function') {
-                onDoorCutoff();
+
+            if (skipped) {
+                window.AudioManager?.stopActiveVoice?.(0.08);
+                if (typeof window !== 'undefined' && window.speechSynthesis) {
+                    window.speechSynthesis.cancel();
+                }
             }
-            overlay.classList.add('is-closing');
+
+            const hasDoorCutoff = typeof onDoorCutoff === 'function';
+            if (hasDoorCutoff) {
+                try {
+                    onDoorCutoff();
+                } catch (err) {
+                    console.error('onDoorCutoff error:', err);
+                }
+            }
+
+            if (skipHint) {
+                skipHint.style.display = 'none';
+            }
+
+            if (!hasDoorCutoff) {
+                overlay.classList.add('is-closing');
+            }
+
+            // When a door transition is closing over the cutscene (e.g. DoorIntro),
+            // keep the video visible behind the closing panels throughout their 850ms
+            // travel so the doors close cleanly over the footage instead of cutting away.
+            const cleanupDelay = hasDoorCutoff ? 850 : (skipped ? 150 : 280);
 
             setTimeout(() => {
                 overlay.style.display = 'none';
@@ -6805,7 +7090,7 @@ function playCutsceneVideo(base, options = {}) {
                 overlay.remove();
                 resumeGame();
                 resolve({ played, skipped });
-            }, skipped ? 150 : 280);
+            }, cleanupDelay);
         };
 
         const onKey = (event) => {
@@ -6818,6 +7103,24 @@ function playCutsceneVideo(base, options = {}) {
             finish({ skipped: true });
         };
 
+        let lastGamepadPressed = false;
+        checkGamepadInterval = setInterval(() => {
+            if (settled) {
+                clearInterval(checkGamepadInterval);
+                return;
+            }
+            if (typeof navigator !== 'undefined' && navigator.getGamepads) {
+                const pads = navigator.getGamepads() || [];
+                const anyPressed = Array.from(pads).some((gp) => gp?.connected && gp?.buttons?.some((b) => b?.pressed));
+                if (anyPressed && !lastGamepadPressed) {
+                    lastGamepadPressed = true;
+                    finish({ skipped: true });
+                } else if (!anyPressed) {
+                    lastGamepadPressed = false;
+                }
+            }
+        }, 50);
+
         video.addEventListener('timeupdate', () => {
             if (!fadingOut && Number.isFinite(video.duration) && video.duration > 0) {
                 const doorCutoffTime = (base === 'DoorIntro' || base.includes('DoorIntro') || base.includes('intro'))
@@ -6826,10 +7129,7 @@ function playCutsceneVideo(base, options = {}) {
 
                 if (video.currentTime >= doorCutoffTime) {
                     fadingOut = true;
-                    if (typeof onDoorCutoff === 'function') {
-                        onDoorCutoff();
-                    }
-                    setTimeout(() => finish({ skipped: false }), 200);
+                    finish({ skipped: false });
                 }
             }
         });
@@ -7108,15 +7408,46 @@ async function runMissionIntroSequence({ deploymentHold = null } = {}) {
 
     // Set up global skip button
     window.skipAllIntro = false;
+    let isSkippingWithDoor = false;
     const skipBtn = document.getElementById('global-skip-intro-btn');
+
+    const triggerSkipDoorTransition = () => {
+        if (window.skipAllIntro) return;
+        window.skipAllIntro = true;
+        if (skipBtn) skipBtn.classList.add('hidden');
+        if (isSkippingWithDoor) return;
+        isSkippingWithDoor = true;
+
+        triggerDoorTransition(
+            () => {
+                cutsceneManager?.finishActiveRun?.(true);
+                dialogueManager?.cancelDialogue?.();
+                dialogueManager?.cancelTutorial?.();
+                window.AudioManager?.stopActiveVoice?.(0.08);
+                if (typeof window !== 'undefined' && window.speechSynthesis) {
+                    window.speechSynthesis.cancel();
+                }
+                resumeIntroRendering?.();
+                resumeIntroRendering = null;
+                document.body.classList.remove('mission-intro-active');
+            },
+            () => {
+                isSkippingWithDoor = false;
+            },
+            playerType
+        );
+        cutsceneManager?.finishActiveRun?.(true);
+        dialogueManager?.cancelDialogue?.();
+        dialogueManager?.cancelTutorial?.();
+        window.AudioManager?.stopActiveVoice?.(0.08);
+        if (typeof window !== 'undefined' && window.speechSynthesis) {
+            window.speechSynthesis.cancel();
+        }
+    };
+
     if (skipBtn) {
         skipBtn.classList.remove('hidden');
-        skipBtn.onclick = () => {
-            window.skipAllIntro = true;
-            skipBtn.classList.add('hidden');
-            cutsceneManager?.finishActiveRun?.(true);
-            dialogueManager?.cancelDialogue?.();
-        };
+        skipBtn.onclick = triggerSkipDoorTransition;
     }
 
     try {
@@ -7148,21 +7479,28 @@ async function runMissionIntroSequence({ deploymentHold = null } = {}) {
         if (skipBtn) skipBtn.classList.add('hidden');
 
         const startTutorial = choice === 'tutorial' && !window.skipAllIntro;
-        document.body.classList.add('hud-hidden');
-        await new Promise((resolve) => {
-            triggerDoorTransition(
-                // The panels are fully closed: make the prepared world the
-                // scene behind them, but keep cinematic invulnerability and
-                // input lock until the 800ms opening animation is complete.
-                () => {
-                    resumeIntroRendering?.();
-                    resumeIntroRendering = null;
-                    document.body.classList.remove('mission-intro-active');
-                },
-                resolve
-            );
-        });
-        document.body.classList.remove('hud-hidden');
+        if (!isSkippingWithDoor) {
+            document.body.classList.add('hud-hidden');
+            await new Promise((resolve) => {
+                triggerDoorTransition(
+                    // The panels are fully closed: make the prepared world the
+                    // scene behind them, but keep cinematic invulnerability and
+                    // input lock until the 800ms opening animation is complete.
+                    () => {
+                        resumeIntroRendering?.();
+                        resumeIntroRendering = null;
+                        document.body.classList.remove('mission-intro-active');
+                    },
+                    resolve,
+                    playerType
+                );
+            });
+            document.body.classList.remove('hud-hidden');
+        } else {
+            resumeIntroRendering?.();
+            resumeIntroRendering = null;
+            document.body.classList.remove('mission-intro-active');
+        }
         game?.setCinematicLock?.(false);
 
         if (startTutorial) {
@@ -7204,6 +7542,7 @@ async function runMissionIntroSequence({ deploymentHold = null } = {}) {
         document.body.classList.remove('hud-hidden');
         game?.setCinematicLock?.(false);
         game?.setInputEnabled?.(true);
+        game?.setGodMode?.(Boolean(debugGodModeActive));
         // The mission intro is the outer owner of the deployment rendering
         // hold. Nested class/video skips can settle their suspend callbacks in
         // a different order, leaving the reference-counted helper restored to
@@ -7282,6 +7621,21 @@ function ensureArmoryInitialized() {
                 onEmbark: () => closeArmoryScreen({ embark: true }),
                 onBack: () => closeArmoryScreen({ embark: false }),
                 onOpenVault: () => openSteamVaultModal(),
+                onOpenSettings: () => openSettingsModal(),
+                onClassChange: (cls) => {
+                    saveHeroType(cls);
+                    document.querySelectorAll('.char-card').forEach((card) => {
+                        if (card.getAttribute('data-type') === cls) {
+                            card.classList.add('selected');
+                        } else {
+                            card.classList.remove('selected');
+                        }
+                    });
+                    updateHeroStats(cls);
+                    if (window.game) {
+                        window.game.playerType = cls;
+                    }
+                },
                 ownership: getOwnershipStore()
             });
         })();
@@ -7290,23 +7644,30 @@ function ensureArmoryInitialized() {
 }
 
 function closeArmoryScreen({ embark }) {
-    document.getElementById('armory-screen')?.classList.add('hidden');
-    // The Armory owns a renderer loop and loaded GLB scene graph. Tear it down
-    // on every exit, including RETURN TO MAIN MENU; leaving it alive behind the
-    // menu kept a hidden canvas rendering and retained its textures/geometry.
-    armorySceneInstance?.dispose?.();
-    armorySceneInstance = null;
-    armoryUiInstance = null;
-    armoryInitPromise = null;
-    if (embark) {
-        const action = pendingArmoryEmbarkAction;
-        pendingArmoryEmbarkAction = null;
-        action?.();
-    } else {
-        menu?.classList.remove('hidden');
-        setAppPhase('menu');
-        pendingArmoryEmbarkAction = null;
-    }
+    const playerType = getSelectedHeroType();
+    triggerDoorTransition(
+        () => {
+            document.getElementById('armory-screen')?.classList.add('hidden');
+            // The Armory owns a renderer loop and loaded GLB scene graph. Tear it down
+            // on every exit, including RETURN TO MAIN MENU; leaving it alive behind the
+            // menu kept a hidden canvas rendering and retained its textures/geometry.
+            armorySceneInstance?.dispose?.();
+            armorySceneInstance = null;
+            armoryUiInstance = null;
+            armoryInitPromise = null;
+            if (embark) {
+                const action = pendingArmoryEmbarkAction;
+                pendingArmoryEmbarkAction = null;
+                action?.();
+            } else {
+                menu?.classList.remove('hidden');
+                setAppPhase('menu');
+                pendingArmoryEmbarkAction = null;
+            }
+        },
+        undefined,
+        playerType
+    );
 }
 
 // Wraps a run-launch action (launchStandardRun or the Daily Ops flow) so it
@@ -7315,20 +7676,33 @@ function closeArmoryScreen({ embark }) {
 // re-gear for a boss-continuation run,
 // same reasoning as the existing Mothership-dialogue skip inside
 // runMissionIntroSequence).
-async function openArmoryGate(embarkAction) {
+async function openArmoryGate(embarkAction, { skipDoor = false } = {}) {
     if (isAct2RunActive()) {
         embarkAction();
         return;
     }
     pendingArmoryEmbarkAction = embarkAction;
-    await ensureArmoryInitialized();
     const playerType = getSelectedHeroType();
-    splash?.classList.add('hidden');
-    menu?.classList.add('hidden');
-    document.getElementById('armory-screen')?.classList.remove('hidden');
-    setAppPhase('armory');
-    armoryUiInstance.setClass(playerType);
-    armorySceneInstance.resize();
+
+    const mountArmory = async () => {
+        await ensureArmoryInitialized();
+        splash?.classList.add('hidden');
+        menu?.classList.add('hidden');
+        document.getElementById('armory-screen')?.classList.remove('hidden');
+        setAppPhase('armory');
+        armoryUiInstance?.setClass(playerType);
+        armorySceneInstance?.resize();
+    };
+
+    if (skipDoor) {
+        await mountArmory();
+    } else {
+        triggerDoorTransition(
+            () => mountArmory(),
+            undefined,
+            playerType
+        );
+    }
 }
 
 function launchStandardRun({ resetBank = false, playIntro = false } = {}) {
@@ -7388,7 +7762,7 @@ function launchStandardRun({ resetBank = false, playIntro = false } = {}) {
                 window.game?.setInputEnabled?.(true);
             }
         },
-        undefined,
+        playerType,
         {
             waitForClosedWork: true,
             openingHoldMs: 160,
@@ -7412,15 +7786,23 @@ if (startBtn) {
         // multiplayerLobby.js's finalizeDeploy / gameController.js's
         // startMultiplayerRun) -- solo and multiplayer end up at the exact
         // same launch action either way, only the path there differs.
-        openArmoryGate(() => {
+        const openDeploymentBriefing = () => {
             multiplayerLobby.openModal({
                 onLaunch: () => launchStandardRun({ resetBank: true, playIntro: true }),
                 onCancel: () => {
-                    menu?.classList.remove('hidden');
-                    setAppPhase('menu');
+                    const playerType = getSelectedHeroType();
+                    triggerDoorTransition(
+                        () => {
+                            multiplayerLobby.closeModal();
+                            void openArmoryGate(openDeploymentBriefing, { skipDoor: true });
+                        },
+                        undefined,
+                        playerType
+                    );
                 }
             });
-        });
+        };
+        openArmoryGate(openDeploymentBriefing);
     });
 }
 
@@ -7437,8 +7819,10 @@ if (dailyOpsBtn) {
             saveDailyOpsRecord({ attempted: true, completed: false, date: getTodayDateString() });
             _isDailyOpsRun = true;
             if (window.game) {
+                // Retain the date-derived Daily Ops theme, but roll a fresh
+                // topology for every deployment instead of pinning one layout.
                 window.game.globalSeedOffset = getDailySeedInt();
-                window.game.fixedRunEntropy = true;
+                window.game.fixedRunEntropy = false;
             }
             document.body.classList.add('mission-intro-active');
             const deploymentHold = suspendGameForFullscreenVideo();
@@ -7498,8 +7882,9 @@ let qaToolsEnabled = false;
 const electronApiPresent = Boolean(window.electronAPI);
 let developerToolsAuthorized = canUseDeveloperTools({ electronApiPresent, qaToolsEnabled });
 
-function setDebugMode(active) {
+function setDebugMode(active, { syncConsole = true } = {}) {
     const enabled = Boolean(active) && developerToolsAuthorized;
+    mainDebugToggle?.closest('.setting-item')?.classList.toggle('hidden', !developerToolsAuthorized);
     if (enabled) {
         document.body.classList.add('show-debug');
     } else {
@@ -7509,6 +7894,9 @@ function setDebugMode(active) {
     if (mainDebugToggle) {
         mainDebugToggle.checked = enabled;
         mainDebugToggle.disabled = !developerToolsAuthorized;
+    }
+    if (syncConsole && debugLog.visible !== enabled) {
+        debugLog.toggle(enabled);
     }
     const seedHUD = document.getElementById('hud-run-seed');
     if (seedHUD) {
@@ -7521,6 +7909,16 @@ function setDebugMode(active) {
     }
 }
 
+window.addEventListener('hb-debug-console-visibility', (event) => {
+    const visible = Boolean(event.detail?.visible);
+    if (visible && !developerToolsAuthorized) {
+        debugLog.toggle(false);
+        return;
+    }
+    state.settings.debug = visible;
+    setDebugMode(visible, { syncConsole: false });
+});
+
 if (window.electronAPI?.getQaToolsEnabled) {
     window.electronAPI.getQaToolsEnabled()
         .then((enabled) => {
@@ -7530,7 +7928,9 @@ if (window.electronAPI?.getQaToolsEnabled) {
                 electronApiPresent,
                 qaToolsEnabled
             });
-            if (!developerToolsAuthorized) {
+            if (developerToolsAuthorized) {
+                setDebugMode(state.settings.debug);
+            } else {
                 state.settings.debug = false;
                 setDebugMode(false);
                 closeDevConsoleModal();
@@ -7543,6 +7943,8 @@ if (window.electronAPI?.getQaToolsEnabled) {
                 electronApiPresent,
                 qaToolsEnabled
             });
+            state.settings.debug = false;
+            setDebugMode(false);
         });
 }
 
@@ -7553,39 +7955,33 @@ let fpsLastTime = performance.now();
 let fpsRafId = null;
 
 function sampleFPS() {
-    if (!document.body.classList.contains('show-debug')) {
-        fpsRafId = null;
-        return;
-    }
     fpsFrames++;
     fpsRafId = requestAnimationFrame(sampleFPS);
 }
+fpsRafId = requestAnimationFrame(sampleFPS);
 
 const debugGrantResourcesBtn = document.getElementById('debug-grant-resources');
 const debugGodModeBtn = document.getElementById('debug-god-mode');
+const debugUnlimitedAmmoBtn = document.getElementById('debug-unlimited-ammo');
 let debugGodModeActive = false;
+let debugUnlimitedAmmoActive = false;
 
 debugGrantResourcesBtn?.addEventListener('click', () => {
-    bankManager.deposit({ tech: 250, coin: 150, med: 75 });
-    bankManager.addShells(75);
-    window.game?.healPlayer?.(99, { skipQueensMilkPenalty: true });
-    window.game?.adjustOxygen?.(100);
-    window.game?.renderConsoleBanking?.(window.game?.activeInteractiveConsole);
-    renderFabricationModal();
-    updateMenuCommandStatuses();
-    showBiomePrompt('> DEBUG: SALVAGE, SHELLS, HP, AND O₂ GRANTED.');
+    devGrantResources();
 });
 
 debugGodModeBtn?.addEventListener('click', () => {
-    debugGodModeActive = !debugGodModeActive;
-    window.game?.setGodMode?.(debugGodModeActive);
-    debugGodModeBtn.classList.toggle('debug-btn--active', debugGodModeActive);
-    debugGodModeBtn.textContent = debugGodModeActive ? 'GOD✓' : 'GOD';
-    showBiomePrompt(`> DEBUG: GOD MODE ${debugGodModeActive ? 'ONLINE' : 'OFFLINE'}.`);
+    devToggleGodMode();
+});
+
+debugUnlimitedAmmoBtn?.addEventListener('click', () => {
+    devToggleUnlimitedAmmo();
 });
 
 // ── Dev Console & Steam Test Harness ────────────────────────────
 function logDevConsole(text, type = 'normal') {
+    const level = type === 'error' ? 'error' : type === 'system' ? 'debug' : 'info';
+    debugLog[level]('DEV', text);
     const logContainer = document.getElementById('dev-console-log');
     if (!logContainer) return;
     const line = document.createElement('div');
@@ -7626,7 +8022,10 @@ function devSetCosmeticUnlockAll(arg) {
         ? !store.isUnlockAll()
         : !['0', 'off', 'false', 'no'].includes(String(arg).toLowerCase());
     store.setUnlockAll(next);
-    return `Cosmetic UNLOCK ALL ${next ? 'ENABLED' : 'DISABLED'} (equip override; ownership unchanged)`;
+    if (next) {
+        unlockAllPolishes();
+    }
+    return `ALL WEAPON & CHASSIS SKINS ${next ? 'UNLOCKED' : 'LOCKED'} (equip override)`;
 }
 
 // B9: clears economy state only. Settings, achievements and codex progress live
@@ -7675,14 +8074,23 @@ function devResetAchievements() {
 }
 
 function devGrantResources() {
-    bankManager.deposit({ tech: 250, coin: 150, med: 75 });
-    bankManager.addShells(75);
-    window.game?.healPlayer?.(99, { skipQueensMilkPenalty: true });
-    window.game?.adjustOxygen?.(100);
+    bankManager.deposit({ tech: 999999, coin: 999999, med: 999999, ammo: 999999 });
+    bankManager.addShells(999999);
+    pickupCounterState.health = 999999;
+    pickupCounterState.med = 999999;
+    pickupCounterState.ammo = 999999;
+    pickupCounterState.tech = 999999;
+    pickupCounterState.coin = 999999;
+    pickupCounterState.shells = bankManager.getShells?.() ?? 999999;
+    recomputePickupTotal();
+    renderPickupCounter();
+    window.game?.healPlayer?.(999999, { skipQueensMilkPenalty: true });
+    window.game?.adjustOxygen?.(999999);
     window.game?.renderConsoleBanking?.(window.game?.activeInteractiveConsole);
     renderFabricationModal();
     updateMenuCommandStatuses();
-    return 'Granted 250 Tech, 150 Coin, 75 Med, 75 Shells, Max HP & Max O₂.';
+    showBiomePrompt('> DEBUG: 999,999 TECH, COIN, MED, SHELLS & AMMO GRANTED.');
+    return 'Granted 999,999 Tech, Coin, Med, Ammo, Shells, Max HP & Max O₂.';
 }
 
 function devToggleGodMode() {
@@ -7694,6 +8102,25 @@ function devToggleGodMode() {
     }
     return `God mode ${debugGodModeActive ? 'ONLINE (Invulnerable)' : 'OFFLINE'}.`;
 }
+
+function devToggleUnlimitedAmmo() {
+    const game = window.game || window.threeGame;
+    if (game?.toggleUnlimitedAmmo) {
+        debugUnlimitedAmmoActive = game.toggleUnlimitedAmmo();
+    } else {
+        debugUnlimitedAmmoActive = !debugUnlimitedAmmoActive;
+        game?.setUnlimitedAmmo?.(debugUnlimitedAmmoActive);
+    }
+    if (debugUnlimitedAmmoBtn) {
+        debugUnlimitedAmmoBtn.classList.toggle('debug-btn--active', debugUnlimitedAmmoActive);
+        debugUnlimitedAmmoBtn.textContent = debugUnlimitedAmmoActive ? 'AMMO✓' : 'AMMO';
+    }
+    renderWeaponClipState({ unlimitedAmmo: debugUnlimitedAmmoActive });
+    showBiomePrompt?.(`> DEBUG: UNLIMITED AMMO ${debugUnlimitedAmmoActive ? 'ONLINE [Infinite Clip & Cache]' : 'OFFLINE'}.`);
+    return `Unlimited Ammo ${debugUnlimitedAmmoActive ? 'ONLINE (Infinite Clip & Cache)' : 'OFFLINE'}.`;
+}
+window.devToggleUnlimitedAmmo = devToggleUnlimitedAmmo;
+if (window.__DEBUG__) window.__DEBUG__.toggleUnlimitedAmmo = devToggleUnlimitedAmmo;
 
 let debugNoclipActive = false;
 
@@ -7744,6 +8171,15 @@ function persistSettings() {
         }
         if (state.settings.aimSensitivity != null) {
             localStorage.setItem('hb_aim_sensitivity', String(state.settings.aimSensitivity));
+        }
+        if (state.settings.cameraMode) {
+            localStorage.setItem('hb_camera_mode', state.settings.cameraMode);
+        }
+        if (state.settings.cameraDistance) {
+            localStorage.setItem('hb_camera_distance', state.settings.cameraDistance);
+        }
+        if (state.settings.cameraFollow) {
+            localStorage.setItem('hb_camera_follow', state.settings.cameraFollow);
         }
         if (state.settings.invertAimY != null) {
             localStorage.setItem('hb_invert_aim_y', String(state.settings.invertAimY));
@@ -8099,6 +8535,11 @@ function executeDevCommand(input) {
         case 'metrics':
             result = devGetLayoutMetrics();
             break;
+        case 'typo':
+        case 'typography':
+            document.body.classList.toggle('show-typo');
+            result = `Typography diagnostics ${document.body.classList.contains('show-typo') ? 'ON' : 'OFF'}.`;
+            break;
         case 'ringplan':
         case 'ringlock': {
             // Phase 6.1/6.2 live diagnostic: inspects the current run's
@@ -8169,6 +8610,17 @@ function executeDevCommand(input) {
         case 'unlock_codex':
             result = devUnlockAllCodex();
             break;
+        case 'polish_all':
+        case 'polishes_all':
+            unlockAllPolishes();
+            renderOperatorPolishUi();
+            result = `Unlocked all ${OPERATOR_POLISHES.length} operator polishes.`;
+            break;
+        case 'skins':
+        case 'skins_all':
+        case 'unlock_skins':
+        case 'unlock_all_skins':
+        case 'cosmetics':
         case 'cosmetics_all':
         case 'unlock_cosmetics':
             result = devSetCosmeticUnlockAll(arg);
@@ -8374,8 +8826,17 @@ window.__DEBUG__ = {
     nukeEnemies: () => devKillSnails(),
     heal: () => devHealPlayer(),
     grantResources: () => devGrantResources(),
+    toggleGodMode: () => devToggleGodMode(),
+    toggleUnlimitedAmmo: () => devToggleUnlimitedAmmo(),
     log: (msg, type = 'system') => logDevConsole(msg, type)
 };
+
+debugLog.setAchievementOptions(ACHIEVEMENT_DEFS);
+debugLog.syncToolSettings({
+    resolution: state.settings.resolutionPreset || 'deck',
+    uiScale: state.settings.uiScale || 100,
+    textFloor: state.settings.textFloor || 18
+});
 
 
 function openDevConsoleModal() {
@@ -8384,10 +8845,7 @@ function openDevConsoleModal() {
         return;
     }
     setDebugMode(true);
-    const modal = document.getElementById('dev-console-modal');
-    if (!modal) return;
-    modal.classList.remove('hidden');
-    modal.setAttribute('aria-hidden', 'false');
+    debugLog.setAchievementOptions(ACHIEVEMENT_DEFS);
     populateDevAchievementDropdowns();
     if (window.electronAPI?.getSteamDiagnostics) {
         window.electronAPI.getSteamDiagnostics().then((diagnostics) => {
@@ -8404,26 +8862,15 @@ function openDevConsoleModal() {
         });
     }
 
-    const resSelect = document.getElementById('dev-res-select');
-    if (resSelect) resSelect.value = state.settings.resolutionPreset || 'deck';
-    const uiScaleSelect = document.getElementById('dev-uiscale-select');
-    if (uiScaleSelect) uiScaleSelect.value = String(state.settings.uiScale || 100);
-    const textFloorSelect = document.getElementById('dev-textfloor-select');
-    if (textFloorSelect) textFloorSelect.value = String(state.settings.textFloor || 18);
-
-    const input = document.getElementById('dev-console-input');
-    if (input) {
-        input.value = '';
-        input.focus();
-    }
+    debugLog.syncToolSettings({
+        resolution: state.settings.resolutionPreset || 'deck',
+        uiScale: state.settings.uiScale || 100,
+        textFloor: state.settings.textFloor || 18
+    });
 }
 
 function closeDevConsoleModal() {
-    const modal = document.getElementById('dev-console-modal');
-    if (modal) {
-        modal.classList.add('hidden');
-        modal.setAttribute('aria-hidden', 'true');
-    }
+    if (debugLog.visible) debugLog.toggle(false);
 }
 
 function populateDevAchievementDropdowns() {
@@ -8480,12 +8927,20 @@ document.getElementById('debug-unlock-all-codex')?.addEventListener('click', () 
     const res = devUnlockAllCodex();
     showBiomePrompt(`> DEBUG: ${res}`);
 });
+document.getElementById('debug-unlock-all-skins')?.addEventListener('click', () => {
+    const res = devSetCosmeticUnlockAll();
+    showBiomePrompt(`> DEBUG: ${res}`);
+});
 document.getElementById('dev-btn-unlock-all-ach')?.addEventListener('click', () => {
     const res = devUnlockAllAchievements();
     logDevConsole(res, 'success');
 });
 document.getElementById('dev-btn-unlock-all-codex')?.addEventListener('click', () => {
     const res = devUnlockAllCodex();
+    logDevConsole(res, 'success');
+});
+document.getElementById('dev-btn-unlock-all-skins')?.addEventListener('click', () => {
+    const res = devSetCosmeticUnlockAll();
     logDevConsole(res, 'success');
 });
 document.getElementById('dev-btn-reset-save')?.addEventListener('click', () => {
@@ -8573,11 +9028,6 @@ devConsoleInput?.addEventListener('keydown', (e) => {
 
 if (fpsDisplay) {
     setInterval(() => {
-        if (!document.body.classList.contains('show-debug')) {
-            fpsFrames = 0;
-            fpsLastTime = performance.now();
-            return;
-        }
         if (fpsRafId === null) {
             fpsFrames = 0;
             fpsLastTime = performance.now();
@@ -8586,7 +9036,9 @@ if (fpsDisplay) {
         }
         const now = performance.now();
         const elapsedSeconds = Math.max((now - fpsLastTime) / 1000, 0.001);
-        fpsDisplay.textContent = `FPS: ${Math.round(fpsFrames / elapsedSeconds)}`;
+        const fps = Math.round(fpsFrames / elapsedSeconds);
+        window.__hb_fps = fps;
+        fpsDisplay.textContent = `FPS: ${fps}`;
         fpsFrames = 0;
         fpsLastTime = now;
     }, 1000);
@@ -8683,9 +9135,6 @@ function openSettingsModal() {
     if (mainNightVisionToggle) mainNightVisionToggle.checked = !!state.settings.nightVision;
     if (mainCommentaryToggle) mainCommentaryToggle.checked = !!state.settings.commentary;
 
-    const resSelect = document.getElementById('setting-resolution');
-    if (resSelect) resSelect.value = state.settings.resolutionPreset || 'deck';
-
     const uiScaleSelect = document.getElementById('setting-ui-scale');
     if (uiScaleSelect) uiScaleSelect.value = String(state.settings.uiScale || 100);
 
@@ -8695,15 +9144,19 @@ function openSettingsModal() {
     const txtSpeedSelect = document.getElementById('setting-text-speed');
     if (txtSpeedSelect) txtSpeedSelect.value = state.settings.textSpeed || 'normal';
 
-    const shakeToggle = document.getElementById('setting-shake-toggle');
-    if (shakeToggle) shakeToggle.checked = state.settings.shakeEnabled !== false;
-
     const cbToggle = document.getElementById('setting-colorblind-toggle');
     if (cbToggle) cbToggle.checked = !!state.settings.colorblindAssist;
 
     const aimSensSelect = document.getElementById('setting-aim-sensitivity');
     if (aimSensSelect) aimSensSelect.value = String(state.settings.aimSensitivity ?? 1.0);
     syncAimSensitivityControls();
+
+    const cameraModeSelect = document.getElementById('setting-camera-mode');
+    if (cameraModeSelect) cameraModeSelect.value = state.settings.cameraMode || 'third-person';
+    const cameraDistanceSelect = document.getElementById('setting-camera-distance');
+    if (cameraDistanceSelect) cameraDistanceSelect.value = state.settings.cameraDistance || 'close';
+    const cameraFollowSelect = document.getElementById('setting-camera-follow');
+    if (cameraFollowSelect) cameraFollowSelect.value = state.settings.cameraFollow || 'tight';
 
     const invertYToggle = document.getElementById('setting-invert-y-toggle');
     if (invertYToggle) invertYToggle.checked = !!state.settings.invertAimY;
@@ -8712,11 +9165,7 @@ function openSettingsModal() {
     if (crosshairColor) crosshairColor.value = state.settings.crosshairColor || DEFAULT_CROSSHAIR_COLOR;
     syncCrosshairColorControls();
 
-    const diffVal = document.getElementById('setting-difficulty-val');
-    if (diffVal) {
-        const difficulty = window.game?.difficulty || state.settings.difficulty || 'standard';
-        diffVal.textContent = difficulty.toUpperCase();
-    }
+    updateSteamCloudSettingsStatus(window.__hbSteamStatus);
 
     syncAudioMixerUI(state.settings.audioMix);
     setAudioMixerOpen(false);
@@ -8724,9 +9173,6 @@ function openSettingsModal() {
     setResetSaveConfirmOpen(false);
 }
 
-document.getElementById('setting-resolution')?.addEventListener('change', (e) => {
-    devSetResolution(e.target.value);
-});
 document.getElementById('setting-ui-scale')?.addEventListener('change', (e) => {
     devSetUiScale(e.target.value);
 });
@@ -8736,6 +9182,31 @@ document.getElementById('setting-text-floor')?.addEventListener('change', (e) =>
 document.getElementById('setting-aim-sensitivity')?.addEventListener('change', (e) => {
     state.settings.aimSensitivity = parseFloat(e.target.value) || 1.0;
     syncAimSensitivityControls();
+    persistSettings();
+});
+document.getElementById('setting-camera-mode')?.addEventListener('change', (e) => {
+    state.settings.cameraMode = e.target.value === 'isometric' ? 'isometric' : 'third-person';
+    window.game?.setCameraMode?.(state.settings.cameraMode);
+    persistSettings();
+});
+function applyCameraTuningSettings() {
+    window.game?.setCameraTuning?.({
+        distance: state.settings.cameraDistance,
+        follow: state.settings.cameraFollow
+    });
+}
+document.getElementById('setting-camera-distance')?.addEventListener('change', (e) => {
+    state.settings.cameraDistance = ['close', 'standard', 'wide'].includes(e.target.value)
+        ? e.target.value
+        : 'close';
+    applyCameraTuningSettings();
+    persistSettings();
+});
+document.getElementById('setting-camera-follow')?.addEventListener('change', (e) => {
+    state.settings.cameraFollow = ['tight', 'balanced', 'smooth'].includes(e.target.value)
+        ? e.target.value
+        : 'tight';
+    applyCameraTuningSettings();
     persistSettings();
 });
 
@@ -8760,6 +9231,24 @@ document.querySelectorAll('[data-aim-sensitivity]').forEach((button) => {
 document.getElementById('setting-invert-y-toggle')?.addEventListener('change', (e) => {
     state.settings.invertAimY = Boolean(e.target.checked);
     persistSettings();
+});
+mainDebugToggle?.addEventListener('change', (e) => {
+    const enabled = Boolean(e.target.checked);
+    state.settings.debug = enabled;
+    setDebugMode(enabled, { syncConsole: true });
+});
+mainNightVisionToggle?.addEventListener('change', (e) => {
+    const enabled = Boolean(e.target.checked);
+    state.settings.nightVision = enabled;
+    localStorage.setItem('hunker_nightvision_enabled', String(enabled));
+    if (window.game) {
+        window.game.nightVision = enabled;
+    }
+});
+mainCommentaryToggle?.addEventListener('change', (e) => {
+    const enabled = Boolean(e.target.checked);
+    state.settings.commentary = enabled;
+    localStorage.setItem(COMMENTARY_STORAGE_KEY, String(enabled));
 });
 function setCrosshairColor(value) {
     const color = String(value || '').toLowerCase();
@@ -8791,6 +9280,13 @@ if (settingsBtns.length > 0 && settingsPopup) {
         btn.addEventListener('click', openSettingsModal);
     });
 }
+
+document.addEventListener('click', (event) => {
+    const btn = event.target?.closest?.('.open-settings-btn');
+    if (btn && settingsPopup && settingsPopup.classList.contains('hidden')) {
+        openSettingsModal();
+    }
+});
 
 if (abortBtn) {
     abortBtn.addEventListener('click', () => {
@@ -9698,22 +10194,7 @@ document.addEventListener('keydown', (event) => {
     }
 
     if (event.code === 'Backquote' || event.key === '`' || event.key === '~') {
-        if (!developerToolsAuthorized) {
-            setDebugMode(false);
-            return;
-        }
-        const activeTag = document.activeElement?.tagName?.toLowerCase();
-        if (activeTag === 'input' && document.activeElement?.id !== 'dev-console-input') {
-            return;
-        }
-        if (activeTag === 'textarea') return;
-        event.preventDefault();
-        const devModal = document.getElementById('dev-console-modal');
-        if (devModal && !devModal.classList.contains('hidden')) {
-            closeDevConsoleModal();
-        } else {
-            openDevConsoleModal();
-        }
+        // The capture-phase listener in DebugLogger owns the unified ~ panel.
         return;
     }
 
@@ -9747,6 +10228,16 @@ document.addEventListener('keydown', (event) => {
     }
 
     if (event.key === 'Escape') {
+        if (event.defaultPrevented) return;
+
+        // Topmost transient surface wins. Closing without committing is what
+        // makes B a real cancel rather than a second way to pick a value.
+        if (isSelectPickerOpen()) {
+            closeSelectPicker();
+            event.preventDefault();
+            return;
+        }
+
         const virtualKeyboardOverlay = document.getElementById('virtual-keyboard-overlay');
         if (virtualKeyboardOverlay && !virtualKeyboardOverlay.classList.contains('hidden')) {
             closeVirtualKeyboard();
@@ -9884,9 +10375,23 @@ document.addEventListener('keydown', (event) => {
             return;
         }
 
+        const codexDetailModal = document.getElementById('codex-detail-modal');
+        if (codexDetailModal && !codexDetailModal.classList.contains('hidden')) {
+            closeCodexDetailModal();
+            event.preventDefault();
+            return;
+        }
+
         const codexModal = document.getElementById('codex-modal');
         if (codexModal && !codexModal.classList.contains('hidden')) {
             closeCodexModal();
+            event.preventDefault();
+            return;
+        }
+
+        const achievementsModal = document.getElementById('achievements-modal');
+        if (achievementsModal && !achievementsModal.classList.contains('hidden')) {
+            document.getElementById('close-achievements-modal')?.click();
             event.preventDefault();
             return;
         }
@@ -9905,9 +10410,9 @@ document.addEventListener('keydown', (event) => {
             return;
         }
 
-        const armoryScreen = document.getElementById('armory-screen');
-        if (armoryScreen && !armoryScreen.classList.contains('hidden')) {
-            document.getElementById('armory-btn-back')?.click();
+        const operatorPolishModal = document.getElementById('operator-polish-modal');
+        if (operatorPolishModal && !operatorPolishModal.classList.contains('hidden')) {
+            setOperatorPolishModalOpen(false);
             event.preventDefault();
             return;
         }
@@ -9916,6 +10421,23 @@ document.addEventListener('keydown', (event) => {
         if (rosterModal && !rosterModal.classList.contains('hidden')) {
             rosterModal.classList.add('hidden');
             rosterModal.setAttribute('aria-hidden', 'true');
+            event.preventDefault();
+            return;
+        }
+
+        const armoryScreen = document.getElementById('armory-screen');
+        if (armoryScreen && !armoryScreen.classList.contains('hidden')) {
+            document.getElementById('armory-btn-back')?.click();
+            event.preventDefault();
+            return;
+        }
+
+        const activeMenuRoot = getControllerFocusRoot();
+        const fallbackBackTarget = isModalFocusRoot(activeMenuRoot)
+            ? getControllerBackTarget(activeMenuRoot)
+            : null;
+        if (fallbackBackTarget) {
+            fallbackBackTarget.click();
             event.preventDefault();
             return;
         }
@@ -10327,6 +10849,9 @@ function renderCodexModal() {
             const card = document.createElement('div');
             card.className = `codex-card${known ? ' codex-card--unlocked' : ' codex-card--locked'}`;
             if (known) {
+                card.setAttribute('role', 'button');
+                card.setAttribute('tabindex', '0');
+                card.setAttribute('aria-label', `View intel record for ${entry.name}`);
                 card.innerHTML = `
                     <div class="codex-card__header">
                       <div class="codex-card__name">${entry.name}</div>
@@ -10336,6 +10861,11 @@ function renderCodexModal() {
                     <div class="codex-card__hint">CLICK TO VIEW INTEL DOSSIER & ARTWORK</div>
                 `;
                 card.addEventListener('click', () => openCodexDetailModal(entry.id));
+                card.addEventListener('keydown', (event) => {
+                    if (event.code !== 'Enter' && event.code !== 'Space') return;
+                    event.preventDefault();
+                    openCodexDetailModal(entry.id);
+                });
             } else {
                 card.innerHTML = `
                     <div class="codex-card__name">??? — UNCATALOGUED</div>
@@ -10810,6 +11340,7 @@ window.addEventListener('camp-choice-open', async (event) => {
 // choice modal, without opening the choice modal itself.
 window.addEventListener('camp-first-contact', async (event) => {
     await songInterstitial.show(selectCampInterstitial(event?.detail ?? {}));
+    event?.detail?.onComplete?.();
 });
 
 const leaderConversationModal = document.getElementById('leader-conversation-modal');
@@ -11621,79 +12152,44 @@ setupClickOutside('settings-popup', () => {
 
 setupClickOutside('save-data-popup', () => setSaveDataOpen(false));
 
-setupClickOutside('reset-save-confirm-modal', () => setResetSaveConfirmOpen(false));
-
-setupClickOutside('camp-choice-modal', closeCampChoiceModal);
-
-setupClickOutside('confirm-modal', () => {
-    const confirmModal = document.getElementById('confirm-modal');
-    if (confirmModal) confirmModal.classList.add('hidden');
-});
-
-setupClickOutside('console-terminal-modal', () => {
-    window.game?.closeConsoleModal?.();
-});
-
-if (mainDebugToggle) {
-    mainDebugToggle.addEventListener('change', (e) => {
-        state.settings.debug = e.target.checked;
-        setDebugMode(state.settings.debug);
-    });
-}
-
-if (mainNightVisionToggle) {
-    mainNightVisionToggle.addEventListener('change', (e) => {
-        state.settings.nightVision = e.target.checked;
-        localStorage.setItem('hunker_nightvision_enabled', String(state.settings.nightVision));
-        if (window.game) {
-            window.game.nightVision = state.settings.nightVision;
-        }
-    });
-}
-
-if (mainFsToggle) {
-    mainFsToggle.addEventListener('change', (e) => {
-        state.settings.fullscreen = e.target.checked;
-
-        if (state.settings.fullscreen) {
-            document.documentElement.requestFullscreen().catch(() => { });
-        } else {
-            if (document.fullscreenElement) {
-                document.exitFullscreen().catch(() => { });
-            }
-        }
-    });
-}
-
-if (mainCommentaryToggle) {
-    mainCommentaryToggle.addEventListener('change', (e) => {
-        state.settings.commentary = e.target.checked;
-        localStorage.setItem(COMMENTARY_STORAGE_KEY, String(state.settings.commentary));
-        if (state.settings.commentary) {
-            showDeveloperCommentary('run_start', {}, { once: false });
-        }
-    });
-}
-
 function getDoorImage(key) {
     const CLASS_DOORS = {
-        'SCOUT': '/door_bio_keyart_v2.webp',
-        'TANK': '/door_nuclear_keyart_v2.webp',
-        'ENGINEER': '/door_cryo_keyart_v2.webp'
+        'SCOUT': [
+            '/door_bio_keyart_v2.webp',
+            '/door_bio_keyart_var2.jpg',
+            '/door_bio_keyart_var3.jpg'
+        ],
+        'TANK': [
+            '/door_nuclear_keyart_v2.webp',
+            '/door_nuclear_keyart_var2.jpg',
+            '/door_nuclear_keyart_var3.jpg'
+        ],
+        'ENGINEER': [
+            '/door_cryo_keyart_v2.webp',
+            '/door_cryo_keyart_var2.jpg',
+            '/door_cryo_keyart_var3.jpg'
+        ]
     };
     const SPECIAL_DOORS = {
         'base': '/door_biomech_keyart_v2.webp',
         'win': '/door_alien_keyart_v2.webp',
         'lose': '/door_rust_keyart_v2.webp'
     };
+    const pickDoor = (entry) => {
+        if (Array.isArray(entry)) {
+            return entry[Math.floor(Math.random() * entry.length)];
+        }
+        return entry;
+    };
+
     if (key === 'win') return assetUrl(SPECIAL_DOORS.win);
     if (key === 'lose') return assetUrl(SPECIAL_DOORS.lose);
     if (key === 'base') return assetUrl(SPECIAL_DOORS.base);
-    if (CLASS_DOORS[key]) return assetUrl(CLASS_DOORS[key]);
+    if (CLASS_DOORS[key]) return assetUrl(pickDoor(CLASS_DOORS[key]));
 
     // Automatically determine door image based on active/preview class
-    const activeClass = window.game?.playerType || activePreviewType || 'SCOUT';
-    return assetUrl(CLASS_DOORS[activeClass] || SPECIAL_DOORS.base);
+    const activeClass = window.game?.playerType || (typeof getSelectedHeroType === 'function' ? getSelectedHeroType() : null) || activePreviewType || 'SCOUT';
+    return assetUrl(pickDoor(CLASS_DOORS[activeClass]) || SPECIAL_DOORS.base);
 }
 
 function getMapDoorImage(key) {
@@ -11714,8 +12210,14 @@ function preloadDoorAssets() {
     const doorImages = [
         '/door_biomech_keyart_v2.webp',
         '/door_bio_keyart_v2.webp',
+        '/door_bio_keyart_var2.jpg',
+        '/door_bio_keyart_var3.jpg',
         '/door_nuclear_keyart_v2.webp',
+        '/door_nuclear_keyart_var2.jpg',
+        '/door_nuclear_keyart_var3.jpg',
         '/door_cryo_keyart_v2.webp',
+        '/door_cryo_keyart_var2.jpg',
+        '/door_cryo_keyart_var3.jpg',
         '/door_alien_keyart_v2.webp',
         '/door_rust_keyart_v2.webp',
         '/door_bio.png',
@@ -11737,6 +12239,9 @@ function preloadDoorAssets() {
     }
 }
 
+let activeDoorTransitionId = 0;
+let activeDoorTimeouts = [];
+
 function triggerDoorTransition(onClosed, onOpened, doorKey, options = {}) {
     const {
         waitForClosedWork = false,
@@ -11744,22 +12249,29 @@ function triggerDoorTransition(onClosed, onOpened, doorKey, options = {}) {
         onOpeningStart = null
     } = options;
     const overlay = transitionOverlay || document.getElementById('transition-overlay');
-    const transitionGame = window.game;
-    const transitionGodMode = transitionGame ? Boolean(transitionGame.godMode) : false;
-    let transitionGodModeActive = false;
-    const enableTransitionProtection = () => {
-        if (!transitionGame || transitionGodModeActive) return;
-        transitionGame.setGodMode?.(true);
-        transitionGodModeActive = true;
+
+    // Clear any previous transition timers to prevent old animation phases
+    // from firing in the middle of a new transition.
+    activeDoorTransitionId++;
+    const currentTransitionId = activeDoorTransitionId;
+    for (const timer of activeDoorTimeouts) {
+        window.clearTimeout(timer);
+    }
+    activeDoorTimeouts = [];
+
+    const scheduleDoorTimeout = (fn, delay) => {
+        const timer = window.setTimeout(() => {
+            if (activeDoorTransitionId !== currentTransitionId) return;
+            fn();
+        }, delay);
+        activeDoorTimeouts.push(timer);
+        return timer;
     };
+
     const finishOpened = () => {
-        if (transitionGame && transitionGodModeActive) {
-            transitionGame.setGodMode?.(transitionGodMode);
-            transitionGodModeActive = false;
-        }
+        if (activeDoorTransitionId !== currentTransitionId) return;
         if (onOpened) onOpened();
     };
-    enableTransitionProtection();
     if (!overlay) {
         if (onClosed) void onClosed();
         if (onOpeningStart) onOpeningStart();
@@ -11774,6 +12286,10 @@ function triggerDoorTransition(onClosed, onOpened, doorKey, options = {}) {
 
     syncStageMetrics();
 
+    // Reset any previous animation classes cleanly
+    overlay.classList.remove('closing-v', 'opening-h', 'active');
+    void overlay.offsetWidth;
+
     // 1. Prepare for vertical close
     overlay.classList.add('visible');
     overlay.classList.add('closing-v');
@@ -11785,7 +12301,9 @@ function triggerDoorTransition(onClosed, onOpened, doorKey, options = {}) {
 
     // 2. Start closing after double RAF frame-settle
     requestAnimationFrame(() => {
+        if (activeDoorTransitionId !== currentTransitionId) return;
         requestAnimationFrame(() => {
+            if (activeDoorTransitionId !== currentTransitionId) return;
             overlay.classList.add('active');
             AudioManager.play('door_slam_vertical', { volume: 0.4 });
             AudioManager.play('door_gears_spin', { volume: 0.25 });
@@ -11793,11 +12311,12 @@ function triggerDoorTransition(onClosed, onOpened, doorKey, options = {}) {
     });
 
     // 3. Once closed, swap content and prepare horizontal open
-    setTimeout(() => {
+    scheduleDoorTimeout(() => {
         spawnSmoke(0, 0, 30, true); // Slam smoke
         const closedWork = onClosed ? onClosed() : null;
 
         const openDoors = () => {
+            if (activeDoorTransitionId !== currentTransitionId) return;
             // Swap classes
             overlay.classList.remove('closing-v', 'active');
             overlay.classList.add('opening-h');
@@ -11806,27 +12325,16 @@ function triggerDoorTransition(onClosed, onOpened, doorKey, options = {}) {
             void overlay.offsetWidth;
 
             requestAnimationFrame(() => {
+                if (activeDoorTransitionId !== currentTransitionId) return;
                 requestAnimationFrame(() => {
+                    if (activeDoorTransitionId !== currentTransitionId) return;
                     // 4. Start opening after a small "hold" gap
-                    setTimeout(() => {
+                    scheduleDoorTimeout(() => {
                         spawnSmoke(0, 0, 30, false); // Separation smoke
                         overlay.classList.add('active');
                         AudioManager.play('door_slide_horiz', { volume: 0.4 });
                         AudioManager.play('door_gears_spin', { volume: 0.25 });
 
-                        // onOpeningStart fires here, alongside the 'active'
-                        // class that actually triggers the CSS transition --
-                        // NOT immediately after the forced reflow above.
-                        // Callers use this hook to insert a lot of DOM (a
-                        // fullscreen video overlay, mission-intro UI); doing
-                        // that between the reflow and the double-RAF that
-                        // commits the door's "closed" starting position can
-                        // make the browser coalesce the style changes and
-                        // skip the transition entirely -- the doors jump
-                        // straight to their end state (effectively
-                        // vanishing) instead of visibly sliding open. Firing
-                        // it here, once the transition is already underway,
-                        // avoids that race.
                         if (onOpeningStart) {
                             try {
                                 onOpeningStart();
@@ -11838,13 +12346,13 @@ function triggerDoorTransition(onClosed, onOpened, doorKey, options = {}) {
                         // Opening owns the reveal. Do not transfer control or
                         // start intro work until the panels have visibly
                         // completed their 800ms travel.
-                        setTimeout(() => {
+                        scheduleDoorTimeout(() => {
                             finishOpened();
                         }, 800);
                     }, openingHoldMs);
 
                     // 5. Cleanup
-                    setTimeout(() => {
+                    scheduleDoorTimeout(() => {
                         overlay.classList.remove('visible', 'opening-h', 'active');
                     }, openingHoldMs + 900);
                 });
@@ -12293,6 +12801,8 @@ function initTacticalCursor() {
     let curY = mouseY;
     let targetScale = 1.0;
     let curScale = 1.0;
+    let suppressCompatibilityMouseUntil = 0;
+    let currentHoverTarget = null;
     const LERP_FACTOR = 0.15; // authentic retro mechanical delay
     let hasMoved = false;
     const isInsideGameViewport = (clientX, clientY) => {
@@ -12313,6 +12823,15 @@ function initTacticalCursor() {
         if (typeof e.clientX !== 'number' || typeof e.clientY !== 'number') return;
         if (isNaN(e.clientX) || isNaN(e.clientY) || !isFinite(e.clientX) || !isFinite(e.clientY)) return;
 
+        // Chromium emits compatibility mouse events after touchscreen taps.
+        // Without this guard that synthetic mousemove immediately resurrects
+        // the tactical mouse icon at the finger position after we hide it.
+        if (performance.now() < suppressCompatibilityMouseUntil) {
+            cursor.classList.add('cursor-fade-out');
+            document.documentElement.classList.remove('custom-cursor-enabled');
+            return;
+        }
+
         // Filter out simulated browser events (common on clicks/focus transitions)
         // that report false (0,0) or extremely small coordinates on either axis.
         if (e.clientX < 8 || e.clientY < 8) return;
@@ -12329,7 +12848,9 @@ function initTacticalCursor() {
         mouseX = e.clientX;
         mouseY = e.clientY;
 
-        if (!isInsideGameViewport(mouseX, mouseY)) {
+        const menuNavigationActive = appPhase !== 'gameplay'
+            || Boolean(window.game?.hasBlockingGameplayOverlay?.());
+        if (!menuNavigationActive && !isInsideGameViewport(mouseX, mouseY)) {
             cursor.classList.add('cursor-fade-out');
             document.documentElement.classList.remove('custom-cursor-enabled');
             updateGameplayCrosshair(mouseX, mouseY, false);
@@ -12368,8 +12889,23 @@ function initTacticalCursor() {
     }
     requestAnimationFrame(updateCursorPosition);
 
+    function hideCursorForTouch() {
+        // Compatibility mouse events normally land within a few milliseconds,
+        // but Gamescope/Chromium can delay them across a frame boundary.
+        suppressCompatibilityMouseUntil = performance.now() + 800;
+        cursor.classList.add('cursor-fade-out');
+        cursor.classList.remove('cursor-clicking', 'cursor-hovering');
+        document.documentElement.classList.remove('custom-cursor-enabled');
+        currentHoverTarget = null;
+        targetScale = 1.0;
+        updateGameplayCrosshair(mouseX, mouseY, false);
+    }
+
     window.addEventListener('pointerdown', (e) => {
-        if (e.pointerType === 'touch') return;
+        if (e.pointerType === 'touch') {
+            hideCursorForTouch();
+            return;
+        }
 
         cursor.classList.add('cursor-clicking');
         targetScale = 0.72; // Snap scale down on press and hold
@@ -12386,32 +12922,47 @@ function initTacticalCursor() {
     });
 
     window.addEventListener('pointerup', (e) => {
-        if (e.pointerType === 'touch') return;
+        if (e.pointerType === 'touch') {
+            hideCursorForTouch();
+            return;
+        }
         cursor.classList.remove('cursor-clicking');
         targetScale = 1.0; // Restore full scale on release
     });
 
-    let currentHoverTarget = null;
+    window.addEventListener('pointercancel', (e) => {
+        if (e.pointerType === 'touch') hideCursorForTouch();
+    });
 
-    document.addEventListener('pointerover', (e) => {
-        const target = e.target.closest('button, .char-card, .toggle, .calibrate-btn, .close-modal, .about-btn, a, input, select, .class-tab, .armory-btn, .armory-select, .deck-focus-target, .setting-item');
-        if (target) {
-            if (currentHoverTarget !== target) {
-                currentHoverTarget = target;
-                cursor.classList.add('cursor-hovering');
-                if (typeof focusControllerTarget === 'function' && document.activeElement !== target) {
-                    focusControllerTarget(target, { playHover: false });
-                }
-                // Play in-universe hover click blip
+    function handleHoverTargetSync(rawTarget, { playBlip = false } = {}) {
+        const target = resolveInteractiveFocusTarget(rawTarget);
+        if (!target) return null;
+        if (currentHoverTarget !== target) {
+            currentHoverTarget = target;
+            cursor.classList.add('cursor-hovering');
+            if (document.activeElement !== target) {
+                focusControllerTarget(target, { playHover: false });
+            }
+            if (playBlip) {
                 AudioManager.play('ui_hover', { volume: 0.12, varyPitch: true });
             }
         }
+        return target;
+    }
+
+    document.addEventListener('pointerover', (e) => {
+        handleHoverTargetSync(e.target, { playBlip: true });
+    });
+
+    document.addEventListener('pointermove', (e) => {
+        if (e.pointerType && e.pointerType !== 'mouse' && e.pointerType !== 'pen') return;
+        handleHoverTargetSync(e.target, { playBlip: false });
     });
 
     document.addEventListener('pointerout', (e) => {
-        const target = e.target.closest('button, .char-card, .toggle, .calibrate-btn, .close-modal, .about-btn, a, input, select, .class-tab, .armory-btn, .armory-select, .deck-focus-target, .setting-item');
+        const target = resolveInteractiveFocusTarget(e.target);
         if (target) {
-            const related = e.relatedTarget ? e.relatedTarget.closest('button, .char-card, .toggle, .calibrate-btn, .close-modal, .about-btn, a, input, select, .class-tab, .armory-btn, .armory-select, .deck-focus-target, .setting-item') : null;
+            const related = resolveInteractiveFocusTarget(e.relatedTarget);
             if (related !== currentHoverTarget) {
                 currentHoverTarget = related;
                 if (!related) {
@@ -12482,6 +13033,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Touch controls were removed with the Steam Deck-first migration; clear
     // any persisted preference so stale saves don't carry dead settings.
     localStorage.removeItem('hunker_touch_controls_enabled');
+    localStorage.removeItem('hunker_shake_enabled');
+    localStorage.removeItem('hunker_difficulty');
 
     const storedNightVision = localStorage.getItem('hunker_nightvision_enabled');
     if (storedNightVision !== null) {
@@ -12739,9 +13292,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Load new settings
     state.settings.textSpeed = localStorage.getItem('hunker_text_speed') || 'normal';
-    state.settings.shakeEnabled = localStorage.getItem('hunker_shake_enabled') !== 'false';
     state.settings.colorblindAssist = localStorage.getItem('hunker_colorblind_assist') === 'true';
-    state.settings.difficulty = localStorage.getItem('hunker_difficulty') || 'standard';
     state.settings.commentary = localStorage.getItem(COMMENTARY_STORAGE_KEY) === 'true';
     if (mainCommentaryToggle) {
         mainCommentaryToggle.checked = state.settings.commentary;
@@ -12759,14 +13310,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         settingTextSpeed.addEventListener('change', (e) => {
             state.settings.textSpeed = e.target.value;
             localStorage.setItem('hunker_text_speed', state.settings.textSpeed);
-        });
-    }
-
-    const settingShakeToggle = document.getElementById('setting-shake-toggle');
-    if (settingShakeToggle) {
-        settingShakeToggle.addEventListener('change', (e) => {
-            state.settings.shakeEnabled = e.target.checked;
-            localStorage.setItem('hunker_shake_enabled', String(state.settings.shakeEnabled));
         });
     }
 
@@ -12912,7 +13455,87 @@ document.addEventListener('DOMContentLoaded', async () => {
                     { key: 'fx_tank_shockwave', url: '/audio/vg2/fx_tank_shockwave.wav' },
                     { key: 'fx_engineer_turret', url: '/audio/vg2/fx_engineer_turret.wav' },
                     { key: 'fx_levelup', url: '/audio/vg2/fx_levelup.wav' },
-                    { key: 'fx_achievement', url: '/audio/vg2/fx_achievement.wav' }
+                    { key: 'fx_achievement', url: '/audio/vg2/fx_achievement.wav' },
+
+                    // Starter Camp Ambient Weather Bed
+                    { key: 'amb_camp_rain_loop', url: '/audio/ambient/amb_camp_rain_loop.wav' },
+
+                    // Foley Set 01: Mothership Comms
+                    { key: 'foley_mothership_room_loop', url: '/audio/foley/mothership/foley_mothership_room_loop.wav' },
+                    { key: 'foley_mothership_link_acquire_1', url: '/audio/foley/mothership/foley_mothership_link_acquire_1.wav' },
+                    { key: 'foley_mothership_link_acquire_2', url: '/audio/foley/mothership/foley_mothership_link_acquire_2.wav' },
+                    { key: 'foley_mothership_orbital_launch', url: '/audio/foley/mothership/foley_mothership_orbital_launch.wav' },
+                    { key: 'foley_mothership_carrier_term', url: '/audio/foley/mothership/foley_mothership_carrier_term.wav' },
+
+                    // Foley Set 02: Exosuit / System Interior
+                    { key: 'foley_exosuit_room_loop', url: '/audio/foley/system/foley_exosuit_room_loop.wav' },
+                    { key: 'foley_exosuit_startup', url: '/audio/foley/system/foley_exosuit_startup.wav' },
+                    { key: 'foley_exosuit_scanner_anomaly', url: '/audio/foley/system/foley_exosuit_scanner_anomaly.wav' },
+                    { key: 'foley_exosuit_sever_uplink', url: '/audio/foley/system/foley_exosuit_sever_uplink.wav' },
+
+                    // Foley Set 03: Bunker / Facilities
+                    { key: 'foley_bunker_facility_room_loop', url: '/audio/foley/bunker/foley_bunker_facility_room_loop.wav' },
+                    { key: 'foley_bunker_blackout_breaker', url: '/audio/foley/bunker/foley_bunker_blackout_breaker.wav' },
+                    { key: 'foley_bunker_welcome_mech_steps', url: '/audio/foley/bunker/foley_bunker_welcome_mech_steps.wav' },
+                    { key: 'foley_bunker_nav_corruption', url: '/audio/foley/bunker/foley_bunker_nav_corruption.wav' },
+
+                    // Foley Set 04: Queen Hive Chamber
+                    { key: 'foley_queen_hive_room_loop', url: '/audio/foley/queen/foley_queen_hive_room_loop.wav' },
+                    { key: 'foley_queen_neural_bond', url: '/audio/foley/queen/foley_queen_neural_bond.wav' },
+                    { key: 'foley_queen_cable_tear', url: '/audio/foley/queen/foley_queen_cable_tear.wav' },
+                    { key: 'foley_queen_membrane_close', url: '/audio/foley/queen/foley_queen_membrane_close.wav' },
+
+                    // Character Voices: Mothership Command
+                    { key: 'voice_mothership_01_alive', url: '/audio/voice/mothership/voice_mothership_01_alive.mp3' },
+                    { key: 'voice_mothership_02_warning_bio', url: '/audio/voice/mothership/voice_mothership_02_warning_bio.mp3' },
+                    { key: 'voice_mothership_03_orbital_purge', url: '/audio/voice/mothership/voice_mothership_03_orbital_purge.mp3' },
+
+                    // Character Voices: System / Exosuit
+                    { key: 'voice_system_01_o2_stabilized', url: '/audio/voice/system/voice_system_01_o2_stabilized.mp3' },
+                    { key: 'voice_system_02_uplink_severed', url: '/audio/voice/system/voice_system_02_uplink_severed.mp3' },
+                    { key: 'voice_system_03_five_heartbeats', url: '/audio/voice/system/voice_system_03_five_heartbeats.mp3' },
+
+                    // Character Voices: Bunker / Facilities Director
+                    { key: 'voice_bunker_01_enjoy_darkness', url: '/audio/voice/bunker/voice_bunker_01_enjoy_darkness.mp3' },
+                    { key: 'voice_bunker_02_welcome_committee', url: '/audio/voice/bunker/voice_bunker_02_welcome_committee.mp3' },
+                    { key: 'voice_bunker_03_depth_disapproves', url: '/audio/voice/bunker/voice_bunker_03_depth_disapproves.mp3' },
+
+                    // Character Voices: The Queen
+                    { key: 'voice_queen_01_two_heartbeats', url: '/audio/voice/queen/voice_queen_01_two_heartbeats.mp3' },
+                    { key: 'voice_queen_02_sever_uplink', url: '/audio/voice/queen/voice_queen_02_sever_uplink.mp3' },
+                    { key: 'voice_queen_03_door_left_open', url: '/audio/voice/queen/voice_queen_03_door_left_open.mp3' },
+                    { key: 'voice_queen_04_sleep_now', url: '/audio/voice/queen/voice_queen_04_sleep_now.mp3' },
+
+                    // Character Voices: Commander Briggs
+                    { key: 'voice_briggs_01_stop_identify', url: '/audio/voice/briggs/voice_briggs_01_stop_identify.mp3' },
+                    { key: 'voice_briggs_02_southern_barricade', url: '/audio/voice/briggs/voice_briggs_02_southern_barricade.mp3' },
+                    { key: 'voice_briggs_03_ledger_sit_down', url: '/audio/voice/briggs/voice_briggs_03_ledger_sit_down.mp3' },
+
+                    // Character Voices: Overseer Kaelen
+                    { key: 'voice_kaelen_01_machine_dreamed', url: '/audio/voice/kaelen/voice_kaelen_01_machine_dreamed.mp3' },
+                    { key: 'voice_kaelen_02_sector_zero_dream', url: '/audio/voice/kaelen/voice_kaelen_02_sector_zero_dream.mp3' },
+                    { key: 'voice_kaelen_03_pulse_through_floor', url: '/audio/voice/kaelen/voice_kaelen_03_pulse_through_floor.mp3' },
+
+                    // Character Voices: Dr. Okonkwo-Vass
+                    { key: 'voice_okonkwo_01_lazy_science', url: '/audio/voice/okonkwo/voice_okonkwo_01_lazy_science.mp3' },
+                    { key: 'voice_okonkwo_02_they_read_us', url: '/audio/voice/okonkwo/voice_okonkwo_02_they_read_us.mp3' },
+                    { key: 'voice_okonkwo_03_more_than_footnote', url: '/audio/voice/okonkwo/voice_okonkwo_03_more_than_footnote.mp3' },
+
+                    // Character Voices: Nahl, the Suture
+                    { key: 'voice_nahl_01_you_can_hear_me', url: '/audio/voice/nahl/voice_nahl_01_you_can_hear_me.mp3' },
+                    { key: 'voice_nahl_02_pain_is_information', url: '/audio/voice/nahl/voice_nahl_02_pain_is_information.mp3' },
+                    { key: 'voice_nahl_03_separate_hearts', url: '/audio/voice/nahl/voice_nahl_03_separate_hearts.mp3' },
+
+                    // Character Voices: Vey, the Listener
+                    { key: 'voice_vey_01_signal_recognized', url: '/audio/voice/vey/voice_vey_01_signal_recognized.mp3' },
+                    { key: 'voice_vey_02_gaps_where_mined', url: '/audio/voice/vey/voice_vey_02_gaps_where_mined.mp3' },
+                    { key: 'voice_vey_03_forge_mothership', url: '/audio/voice/vey/voice_vey_03_forge_mothership.mp3' },
+
+                    // Character Voices: Rhun, the Shield
+                    { key: 'voice_rhun_01_pried_my_plates', url: '/audio/voice/rhun/voice_rhun_01_pried_my_plates.mp3' },
+                    { key: 'voice_rhun_02_not_prey_not_queen', url: '/audio/voice/rhun/voice_rhun_02_not_prey_not_queen.mp3' },
+                    { key: 'voice_rhun_03_guard_what', url: '/audio/voice/rhun/voice_rhun_03_guard_what.mp3' },
+                    { key: 'voice_rhun_04_stand_in_front', url: '/audio/voice/rhun/voice_rhun_04_stand_in_front.mp3' }
                 ]
             };
 
@@ -12942,6 +13565,11 @@ document.addEventListener('DOMContentLoaded', async () => {
                     act2Manager
                 });
                 window.game.setOperatorPolish?.(getSelectedPolish().color);
+                window.game.setCameraMode?.(state.settings.cameraMode);
+                window.game.setCameraTuning?.({
+                    distance: state.settings.cameraDistance,
+                    follow: state.settings.cameraFollow
+                });
                 window.game.nightVision = state.settings.nightVision;
                 traceBootPhase('three-constructor-ready', {
                     pixelRatio: window.game.renderer?.getPixelRatio?.(),
@@ -12989,16 +13617,15 @@ document.addEventListener('DOMContentLoaded', async () => {
     const renderLoaderLogs = (newLog = null) => {
         if (!loaderStatus) return;
         if (newLog && !logs.includes(newLog)) {
-            logs.push(newLog);
+            logs.unshift(newLog);
             if (logs.length > maxLogs) {
-                logs.shift();
+                logs.pop();
             }
         }
-        loaderStatus.innerHTML = logs.map((log, idx) => {
-            const distance = logs.length - 1 - idx;
-            const opacities = [1.0, 0.65, 0.4, 0.2, 0.08];
-            const opacity = opacities[distance] ?? 0.05;
-            return `<div style="opacity: ${opacity}; line-height: 1.4; transition: opacity 0.15s ease;">${log}</div>`;
+        loaderStatus.innerHTML = logs.map((log, distance) => {
+            const opacities = [1.0, 0.6, 0.35, 0.18, 0.06];
+            const opacity = opacities[distance] ?? 0.04;
+            return `<div style="opacity: ${opacity}; line-height: 1.4; transition: opacity 0.2s ease, transform 0.2s ease;">${log}</div>`;
         }).join('');
     };
 
@@ -13109,7 +13736,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                         playCutsceneVideo('DoorIntro', { onDoorCutoff: triggerClosingDoors })
                             .then(triggerClosingDoors)
                             .catch(async () => {
-                                await playCutsceneVideo('scout-intro').catch(() => null);
+                                await playCutsceneVideo('scout-intro', { onDoorCutoff: triggerClosingDoors }).catch(() => null);
                                 triggerClosingDoors();
                             });
                     }
@@ -13400,10 +14027,31 @@ function formatSteamStatus(info, health) {
     return `${steamLine}\n${backendLine}\n${cloudLine}`;
 }
 
+function updateSteamCloudSettingsStatus(info) {
+    if (!steamCloudSettingsStatus) return;
+    const cloud = info?.cloud;
+    let text = 'NOT AVAILABLE (WEB BUILD)';
+    let status = 'unavailable';
+    if (info?.active && cloud?.available) {
+        const enabled = cloud.enabledForAccount && cloud.enabledForApp;
+        text = enabled ? 'READY (AUTO-CLOUD)' : 'DISABLED IN STEAM';
+        status = enabled ? 'ready' : 'disabled';
+    } else if (info?.active) {
+        text = 'UNAVAILABLE';
+    } else if (window.electronAPI) {
+        text = 'STEAM OFFLINE';
+        status = 'offline';
+    }
+    steamCloudSettingsStatus.textContent = text;
+    steamCloudSettingsStatus.dataset.state = status;
+}
+
 async function refreshSteamBridgeStatus({ waitForBackend = true } = {}) {
     if (!window.electronAPI) {
         console.log('[STEAM] Environment: Web browser (Electron API absent)');
         setSteamDebugStatus('STEAM: WEB BUILD\nBACKEND: OFF', 'offline');
+        window.__hbSteamStatus = { active: false, cloud: null };
+        updateSteamCloudSettingsStatus(window.__hbSteamStatus);
         return null;
     }
 
@@ -13458,6 +14106,7 @@ async function refreshSteamBridgeStatus({ waitForBackend = true } = {}) {
             authConfigured: Boolean(health?.steam?.authConfigured)
         }
     };
+    updateSteamCloudSettingsStatus(window.__hbSteamStatus);
 
     const identityLogKey = JSON.stringify({
         active: Boolean(info?.active),

@@ -1,0 +1,316 @@
+import { describe, expect, it, beforeEach } from 'vitest';
+import * as THREE from 'three';
+import { createSkyBillboardPool } from './skyBillboards.js';
+import { SKY_SHEETS, frameRectFor } from './skySheets.js';
+
+function stubLoader() {
+    const loaded = [];
+    return {
+        loaded,
+        load(url) {
+            loaded.push(url);
+            const texture = new THREE.Texture();
+            texture.userData = { url };
+            return texture;
+        }
+    };
+}
+
+let loader;
+let pool;
+beforeEach(() => {
+    loader = stubLoader();
+    pool = createSkyBillboardPool({ textureLoader: loader, capacity: 4 });
+});
+
+const entry = (over = {}) => ({
+    key: 'a',
+    url: '/sky/body_moon_cratered_large.png',
+    direction: { x: 0, y: 1, z: 0 },
+    angularSize: 0.1,
+    blend: 'alpha',
+    opacity: 1,
+    ...over
+});
+
+describe('createSkyBillboardPool', () => {
+    it('preallocates its whole capacity so no frame ever allocates a mesh', () => {
+        expect(pool.group.children.length).toBe(4);
+    });
+
+    it('hides unused slots rather than removing them', () => {
+        pool.sync([entry()], 50);
+        expect(pool.group.children.filter((c) => c.visible).length).toBe(1);
+        expect(pool.group.children.length).toBe(4);
+    });
+
+    it('reuses the same meshes across syncs', () => {
+        pool.sync([entry()], 50);
+        const first = pool.group.children[0];
+        pool.sync([entry(), entry({ key: 'b' })], 50);
+        expect(pool.group.children[0]).toBe(first);
+        expect(pool.group.children.length).toBe(4);
+    });
+
+    it('drops entries beyond capacity instead of growing or throwing', () => {
+        const entries = Array.from({ length: 9 }, (_, i) => entry({ key: `k${i}` }));
+        expect(() => pool.sync(entries, 50)).not.toThrow();
+        expect(pool.group.children.filter((c) => c.visible).length).toBe(4);
+    });
+});
+
+describe('skyBillboard placement', () => {
+    it('places a body along its direction at the dome radius', () => {
+        pool.sync([entry({ direction: { x: 0, y: 1, z: 0 } })], 50);
+        const mesh = pool.group.children[0];
+        expect(mesh.position.y).toBeCloseTo(50, 4);
+        expect(mesh.position.x).toBeCloseTo(0, 4);
+    });
+
+    it('hides anything below the horizon', () => {
+        pool.sync([entry({ direction: { x: 0, y: -0.6, z: 0.8 } })], 50);
+        expect(pool.group.children[0].visible).toBe(false);
+    });
+
+    it('scales the quad with the body angular size', () => {
+        pool.sync([entry({ angularSize: 0.05 })], 50);
+        const small = pool.group.children[0].scale.x;
+        pool.sync([entry({ angularSize: 0.2 })], 50);
+        expect(pool.group.children[0].scale.x).toBeGreaterThan(small);
+    });
+
+    it('faces each billboard back toward the viewer at the dome centre', () => {
+        pool.sync([entry({ direction: { x: 1, y: 0.2, z: 0 } })], 50);
+        const mesh = pool.group.children[0];
+        const normal = new THREE.Vector3(0, 0, 1).applyQuaternion(mesh.quaternion);
+        const viewAxis = mesh.position.clone().normalize();
+        // The quad must be face-on to the viewer at the dome centre: its normal
+        // lies along the view axis. lookAt points +Z AT the target, so the dot
+        // is -1 rather than +1 -- the magnitude is what matters, and the
+        // material is DoubleSide so either facing renders.
+        expect(Math.abs(normal.dot(viewAxis))).toBeGreaterThan(0.99);
+    });
+});
+
+describe('skyBillboard tumble motion', () => {
+    const tumbling = (over = {}) => entry({
+        direction: { x: 0, y: 0.2, z: 0.98 },
+        tumble: { rollPeriod: 40, rollAmplitude: 0.22, squashPeriod: 63, squashAmplitude: 0.18 },
+        ...over
+    });
+
+    it('rolls a tumbling body over time', () => {
+        pool.sync([tumbling()], 50, 0);
+        const first = pool.group.children[0].rotation.z;
+        pool.sync([tumbling()], 50, 12);
+        expect(pool.group.children[0].rotation.z).not.toBeCloseTo(first, 4);
+    });
+
+    it('foreshortens the body on a different period than it rolls', () => {
+        // Matching periods make the motion read as one mechanical oscillation
+        // rather than as a tumble.
+        pool.sync([tumbling()], 50, 0);
+        const wide = pool.group.children[0].scale.x / pool.group.children[0].scale.y;
+        pool.sync([tumbling()], 50, 31);
+        const narrow = pool.group.children[0].scale.x / pool.group.children[0].scale.y;
+        expect(wide).not.toBeCloseTo(narrow, 3);
+    });
+
+    it('never inverts or collapses the body while foreshortening', () => {
+        for (let t = 0; t < 130; t += 1.5) {
+            pool.sync([tumbling()], 50, t);
+            const mesh = pool.group.children[0];
+            expect(mesh.scale.x).toBeGreaterThan(0);
+            expect(mesh.scale.x / mesh.scale.y).toBeGreaterThan(0.5);
+            expect(mesh.scale.x / mesh.scale.y).toBeLessThanOrEqual(1.0001);
+        }
+    });
+
+    it('keeps the roll within its stated amplitude', () => {
+        // rotation.z is the Euler decomposition of the FULL orientation, which
+        // already carries lookAt's own z term -- so the roll has to be measured
+        // as the angle away from the untumbled facing.
+        const reference = createSkyBillboardPool({ textureLoader: stubLoader(), capacity: 1 });
+        for (let t = 0; t < 130; t += 1.5) {
+            pool.sync([tumbling()], 50, t);
+            reference.sync([tumbling({ tumble: null })], 50, t);
+            const angle = pool.group.children[0].quaternion
+                .angleTo(reference.group.children[0].quaternion);
+            expect(angle).toBeLessThanOrEqual(0.221);
+        }
+    });
+
+    it('leaves bodies without a tumble perfectly still', () => {
+        pool.sync([entry()], 50, 0);
+        const still = pool.group.children[0].rotation.z;
+        pool.sync([entry()], 50, 40);
+        expect(pool.group.children[0].rotation.z).toBeCloseTo(still, 6);
+    });
+});
+
+describe('skyBillboard depth layering', () => {
+    it('places a nearer body on a smaller shell than a far one', () => {
+        // Everything on one shell reads as a flat decal; tiering gives the sky
+        // a front-to-back depth read.
+        pool.sync([
+            entry({ key: 'near', direction: { x: 0, y: 1, z: 0 }, radiusScale: 0.86 }),
+            entry({ key: 'far', direction: { x: 0, y: 1, z: 0 }, radiusScale: 1.0 })
+        ], 50);
+        const [near, far] = pool.group.children;
+        expect(near.position.y).toBeLessThan(far.position.y);
+    });
+
+    it('defaults to the full radius when no tier is given', () => {
+        pool.sync([entry({ direction: { x: 0, y: 1, z: 0 } })], 50);
+        expect(pool.group.children[0].position.y).toBeCloseTo(50, 4);
+    });
+
+    it('scales a body by its angular size independently of its shell', () => {
+        pool.sync([entry({ angularSize: 0.1, radiusScale: 0.86 })], 50);
+        const nearScale = pool.group.children[0].scale.x;
+        pool.sync([entry({ angularSize: 0.1, radiusScale: 1.0 })], 50);
+        // Same angular size must subtend the same apparent size regardless of
+        // which shell it sits on, or tiering would silently resize bodies.
+        expect(pool.group.children[0].scale.x / 1.0)
+            .toBeCloseTo(nearScale / 0.86, 4);
+    });
+});
+
+describe('skyBillboard sprite material', () => {
+    it('uses the two-cell sprite material so slow bodies can cross-fade', () => {
+        pool.sync([entry()], 50);
+        expect(pool.group.children[0].material).toBeInstanceOf(THREE.ShaderMaterial);
+        expect(pool.group.children[0].material.uniforms.uMix).toBeDefined();
+    });
+
+    it('passes a procedural surface mode through to the shader', () => {
+        pool.sync([entry({ spriteMode: 1 })], 50);
+        expect(pool.group.children[0].material.uniforms.uMode.value).toBe(1);
+    });
+
+    it('cross-fades when a second frame window is supplied', () => {
+        pool.sync([entry({
+            frameRect: { offsetX: 0, offsetY: 0.5, repeatX: 0.25, repeatY: 0.5 },
+            frameRectB: { offsetX: 0.25, offsetY: 0.5, repeatX: 0.25, repeatY: 0.5 },
+            frameMix: 0.6
+        })], 50);
+        expect(pool.group.children[0].material.uniforms.uMix.value).toBeCloseTo(0.6, 6);
+    });
+
+    it('advances time so procedural surfaces animate', () => {
+        pool.sync([entry({ spriteMode: 2 })], 50, 7.5);
+        expect(pool.group.children[0].material.uniforms.uTime.value).toBeCloseTo(7.5, 6);
+    });
+
+    it('applies the extinction tint from the entry', () => {
+        pool.sync([entry({ tint: { r: 1, g: 0.8, b: 0.6 } })], 50);
+        expect(pool.group.children[0].material.uniforms.uTint.value.b).toBeCloseTo(0.6, 5);
+    });
+});
+
+describe('skyBillboard materials', () => {
+    it('blends emissive bodies additively', () => {
+        pool.sync([entry({ url: '/sky/body_sun_primary.png', blend: 'additive' })], 50);
+        expect(pool.group.children[0].material.blending).toBe(THREE.AdditiveBlending);
+    });
+
+    it('alpha-blends the green-keyed solid bodies', () => {
+        pool.sync([entry()], 50);
+        expect(pool.group.children[0].material.blending).toBe(THREE.NormalBlending);
+    });
+
+    it('never writes depth, and stays behind world geometry', () => {
+        pool.sync([entry()], 50);
+        const { material } = pool.group.children[0];
+        expect(material.depthWrite).toBe(false);
+        expect(material.depthTest).toBe(true);
+        expect(material.fog).toBe(false);
+    });
+});
+
+describe('skyBillboard sheet frames', () => {
+    const sheet = SKY_SHEETS.sky_fx_comet_longtail;
+
+    it('windows the atlas down to the requested frame', () => {
+        // frameRectFor takes ELAPSED SECONDS, not progress -- at 12fps this is
+        // frame 6 of the comet. The window lives in the material now, not on
+        // the texture, because the shader needs two windows at once.
+        const rect = frameRectFor(sheet, 6 / sheet.fps);
+        pool.sync([entry({ url: '/sky/fx_comet_longtail.png', frameRect: rect })], 50);
+        const { uRectA } = pool.group.children[0].material.uniforms;
+        expect(uRectA.value.z).toBeCloseTo(rect.repeatX, 6);
+        expect(uRectA.value.x).toBeCloseTo(rect.offsetX, 6);
+    });
+
+    it('lets two slots share one atlas while showing different frames', () => {
+        // The frame window is per-material, so a shared texture object cannot
+        // cause the two to fight -- and the atlas uploads once, not twice.
+        const url = '/sky/fx_comet_longtail.png';
+        pool.sync([
+            entry({ key: 'a', url, frameRect: frameRectFor(sheet, 0) }),
+            entry({ key: 'b', url, frameRect: frameRectFor(sheet, 5 / sheet.fps) })
+        ], 50);
+        const [a, b] = pool.group.children;
+        expect(a.material.uniforms.uMap.value).toBe(b.material.uniforms.uMap.value);
+        expect(a.material.uniforms.uRectA.value.x)
+            .not.toBeCloseTo(b.material.uniforms.uRectA.value.x, 6);
+    });
+});
+
+describe('skyBillboard async texture loading', () => {
+    // TextureLoader.load returns immediately and fills in .image later. Any
+    // per-slot copy taken before that lands must still end up with the pixels,
+    // or the billboard renders as nothing forever.
+    function deferredLoader() {
+        const pending = [];
+        return {
+            pending,
+            load(url) {
+                const texture = new THREE.Texture();
+                texture.userData = { url };
+                pending.push(texture);
+                return texture;
+            },
+            finishLoading(width = 2048, height = 1024) {
+                for (const texture of pending) {
+                    texture.image = { width, height };
+                    texture.needsUpdate = true;
+                    texture.dispatchEvent?.({ type: 'update' });
+                }
+            }
+        };
+    }
+
+    it('still shows the image when the texture finishes loading after the sync', () => {
+        const loader = deferredLoader();
+        const slow = createSkyBillboardPool({ textureLoader: loader, capacity: 2 });
+        slow.sync([entry({ url: '/sky/fx_comet_longtail.png' })], 50);
+        loader.finishLoading();
+        expect(slow.group.children[0].material.uniforms.uMap.value.image?.width).toBe(2048);
+    });
+
+    it('shows the image for two slots sharing one atlas', () => {
+        const loader = deferredLoader();
+        const slow = createSkyBillboardPool({ textureLoader: loader, capacity: 2 });
+        const url = '/sky/fx_comet_longtail.png';
+        slow.sync([entry({ key: 'a', url }), entry({ key: 'b', url })], 50);
+        loader.finishLoading();
+        for (const mesh of slow.group.children) {
+            expect(mesh.material.uniforms.uMap.value.image?.width).toBe(2048);
+        }
+    });
+});
+
+describe('skyBillboard disposal', () => {
+    it('releases every geometry and material it created', () => {
+        pool.sync([entry()], 50);
+        const disposed = [];
+        for (const child of pool.group.children) {
+            child.geometry.dispose = () => disposed.push('geometry');
+            child.material.dispose = () => disposed.push('material');
+        }
+        pool.dispose();
+        expect(disposed.length).toBe(8);
+        expect(pool.group.children.length).toBe(0);
+    });
+});

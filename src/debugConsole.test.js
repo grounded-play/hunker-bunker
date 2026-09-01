@@ -98,6 +98,27 @@ describe('debugConsole', () => {
         expect(debugLog.maxLogs).toBe(2500);
     });
 
+    it('starts with the captured log collapsed and reports live FPS/enemy telemetry', () => {
+        const statsEl = { textContent: '' };
+        debugLog.logsExpanded = false;
+        debugLog.statsEl = statsEl;
+        globalThis.window.__hb_fps = 58;
+        globalThis.window.threeGame = {
+            playerVitals: { hp: 73 },
+            scatterSprites: [
+                { userData: { type: 'cybersnail', isEnemy: true } },
+                { userData: { type: 'crawler', isEnemy: true, burstTriggered: true } },
+                { userData: { type: 'crate' } }
+            ],
+            isEnemyType: (type) => ['cybersnail', 'crawler'].includes(type)
+        };
+
+        debugLog.updateStats();
+
+        expect(debugLog.logsExpanded).toBe(false);
+        expect(statsEl.textContent).toBe('FPS: 58 | ENEMIES: 1 | HP: 73');
+    });
+
     it('keeps the complete session journal when the visible console is cleared', () => {
         const start = debugLog.sessionLogs.length;
         debugLog.info('BOOT', 'renderer starting');
@@ -200,5 +221,41 @@ describe('debugConsole', () => {
 
         debugLog.executeCommand('campsim');
         expect(campsOpened).toBe(true);
+    });
+
+    it('executes ammo command and toggles unlimited ammo on game instance', () => {
+        let ammoToggled = false;
+        globalThis.window.threeGame = {
+            toggleUnlimitedAmmo: () => {
+                ammoToggled = true;
+                return true;
+            }
+        };
+
+        debugLog.executeCommand('ammo');
+        expect(ammoToggled).toBe(true);
+        const lastLog = debugLog.logs[debugLog.logs.length - 1];
+        expect(lastLog.message).toContain('Unlimited ammo');
+        expect(lastLog.message).toContain('ONLINE');
+    });
+
+    it('executes give all and give shells commands', () => {
+        let grantCalled = false;
+        globalThis.window.devGrantResources = () => {
+            grantCalled = true;
+            return 'Granted 999,999 Tech, Coin, Med, Ammo, Shells, Max HP & Max O₂.';
+        };
+
+        debugLog.executeCommand('give all');
+        expect(grantCalled).toBe(true);
+        const lastLog = debugLog.logs[debugLog.logs.length - 1];
+        expect(lastLog.message).toContain('999,999');
+
+        let shellsDeposited = 0;
+        globalThis.window.bankManager = {
+            addShells: (amt) => { shellsDeposited += amt; }
+        };
+        debugLog.executeCommand('give shells 500');
+        expect(shellsDeposited).toBe(500);
     });
 });

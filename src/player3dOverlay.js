@@ -350,8 +350,34 @@ function makeClipInPlace(source) {
 
 function retargetMixamoClip(source, fromPrefix, toPrefix, targetRoot) {
     const clip = source.clone();
+
+    // Check what bone prefix targetRoot actually uses
+    let detectedPrefix = toPrefix;
+    let bareBones = false;
+    targetRoot.traverse((obj) => {
+        if (obj.isBone) {
+            if (obj.name.startsWith('mixamorig:')) {
+                detectedPrefix = 'mixamorig:';
+            } else if (obj.name.startsWith('mixamorig1:')) {
+                detectedPrefix = 'mixamorig1:';
+            } else if (obj.name.startsWith('mixamorig1')) {
+                detectedPrefix = 'mixamorig1';
+            } else if (obj.name.startsWith('mixamorig')) {
+                detectedPrefix = 'mixamorig';
+            } else if (['Hips', 'Spine', 'Head', 'RightArm'].includes(obj.name)) {
+                bareBones = true;
+            }
+        }
+    });
+
     for (const track of clip.tracks) {
-        track.name = track.name.replace(fromPrefix, toPrefix);
+        if (bareBones) {
+            track.name = track.name.replace(/^mixamorig1:?/, '').replace(/^mixamorig:?/, '');
+        } else if (detectedPrefix) {
+            track.name = track.name.replace(/^mixamorig1:?/, detectedPrefix).replace(/^mixamorig:?/, detectedPrefix);
+        } else if (toPrefix) {
+            track.name = track.name.replace(fromPrefix, toPrefix);
+        }
     }
     // Some Mixamo downloads omit finger chains or auxiliary bones. Feeding
     // those tracks to AnimationMixer produces a warning every frame/action.
@@ -395,8 +421,8 @@ export function computeOperatorPolishMaterialState(baseColor, baseRoughness, bas
 }
 
 export async function createPlayer3dOverlay({
-    targetHeight = 1.55,
-    idleActionName = 'idle',
+    targetHeight = 1.85,
+    idleActionName = 'heroIdle',
     weaponVisible = true,
     weaponEnabled = true,
     weaponArchetype = 'gg1',
@@ -500,6 +526,7 @@ export async function createPlayer3dOverlay({
         const retargeted = retarget
             ? retargetMixamoClip(sourceClip, 'mixamorig1', animationBonePrefix, root)
             : sourceClip;
+        if (!retargeted) continue;
         const clip = makeClipInPlace(retargeted);
         const action = mixer.clipAction(clip);
         if (ONE_SHOTS.has(clip.name)) {
@@ -509,12 +536,20 @@ export async function createPlayer3dOverlay({
         actions.set(clip.name, action);
     }
     if (!actions.has(idleActionName) && !allowStatic) {
-        throw new Error(`Character GLB is missing its ${idleActionName} animation`);
+        const fallbackAction = actions.has('idle')
+            ? 'idle'
+            : (actions.has('heroIdle') ? 'heroIdle' : (actions.size > 0 ? actions.keys().next().value : null));
+        if (fallbackAction) {
+            idleActionName = fallbackAction;
+        }
     }
-    const idleActions = [...new Set(['idle', 'heroIdle', idleActionName])].filter((name) => actions.has(name));
+    const activeIdleName = actions.has(idleActionName)
+        ? idleActionName
+        : (actions.has('idle') ? 'idle' : (actions.has('heroIdle') ? 'heroIdle' : (actions.size > 0 ? actions.keys().next().value : null)));
+    const idleActions = activeIdleName ? [activeIdleName] : [];
     const blendableActions = [
         ...idleActions,
-        ...BLENDABLE_ACTIONS.filter((name) => name !== 'idle')
+        ...BLENDABLE_ACTIONS.filter((name) => name !== 'idle' && name !== activeIdleName && actions.has(name))
     ];
     let forcedName = null;
     let forcedTimer = 0;

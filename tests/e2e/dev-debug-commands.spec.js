@@ -71,6 +71,12 @@ test.describe('Dev/debug surfaces: toolbar quick actions', () => {
 
         await page.locator('#debug-unlock-all-polishes').click();
         await page.waitForTimeout(200);
+
+        await page.locator('#debug-unlock-all-skins').click();
+        await page.waitForTimeout(200);
+        const skinsUnlocked = await page.evaluate(() => window.itemOwnership?.isUnlockAll?.());
+        expect(skinsUnlocked).toBe(true);
+
         // No throw is the primary assertion here (event-loop still alive).
         const stillAlive = await page.evaluate(() => typeof window.game === 'object');
         expect(stillAlive).toBe(true);

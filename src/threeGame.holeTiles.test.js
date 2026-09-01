@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
+import * as THREE from 'three';
 import { ThreeGame } from './threeGame.js';
 
 // getHoleCutForLandform is the single source of truth mountChunk's render
@@ -136,6 +137,130 @@ describe('isHoleTile / mountChunk agreement', () => {
         expect(fakeThis.isFilledHoleTile(hole.x, hole.y)).toBe(true);
         expect(fakeThis.canOccupyPosition(hole.x, hole.y)).toBe(true);
         expect(fakeThis.isSnailTileWalkable(hole.x, hole.y)).toBe(true);
+    });
+
+    it('hides the repaired member of the instanced hole batch and adds a sealed floor patch', () => {
+        const fakeThis = makeFakeHoleGame();
+        fakeThis.getWallKey = ThreeGame.prototype.getWallKey;
+        fakeThis.isHoleTile = ThreeGame.prototype.isHoleTile;
+        fakeThis.filledHoleKeys = new Set();
+        fakeThis.floorGeometry = new THREE.PlaneGeometry(1, 1);
+        fakeThis.floorMaterial = new THREE.MeshBasicMaterial();
+        fakeThis.holeMaterial = new THREE.MeshBasicMaterial();
+        fakeThis.scatterSprites = [];
+        const hole = findFirstHole(fakeThis);
+        const key = `${hole.x},${hole.y}`;
+        const group = new THREE.Group();
+        const batch = new THREE.InstancedMesh(fakeThis.floorGeometry, fakeThis.holeMaterial, 1);
+        batch.setMatrixAt(0, new THREE.Matrix4().makeTranslation(hole.x, 0.01, hole.y));
+        batch.userData = { isLethalPit: true, holeOverlayKeys: [key] };
+        group.add(batch);
+        fakeThis.chunkMeshes = new Map([['0,0', group]]);
+
+        expect(ThreeGame.prototype.fillHoleAt.call(fakeThis, hole.x, hole.y)).toBe(true);
+
+        const repairedMatrix = new THREE.Matrix4();
+        batch.getMatrixAt(0, repairedMatrix);
+        expect(new THREE.Vector3().setFromMatrixScale(repairedMatrix).length()).toBe(0);
+        expect(group.children.some((child) => (
+            child.userData?.isFilledHolePatch && child.userData?.wallKey === key
+        ))).toBe(true);
+    });
+
+    it('faces the hole and plays the player repair action on a successful interaction', () => {
+        const trigger = vi.fn();
+        const fakeThis = {
+            player: { position: { x: 0, z: 0 } },
+            player3dOverlay: { trigger },
+            isGameplayInputActive: () => true,
+            isHoleTile: (x, z) => x === 1 && z === 0,
+            fillHoleAt: vi.fn(() => true),
+            updateFacingYaw: vi.fn()
+        };
+
+        expect(ThreeGame.prototype.interactWithHoleTile.call(fakeThis)).toBe(true);
+        expect(fakeThis.updateFacingYaw).toHaveBeenCalledWith(Math.PI / 2);
+        expect(trigger).toHaveBeenCalledWith('melee', 0.85);
+    });
+
+    it('launches a vent creature onto a walkable neighboring tile before it hunts', () => {
+        const parent = new THREE.Group();
+        const vent = new THREE.Sprite(new THREE.SpriteMaterial());
+        vent.position.set(4, 0.08, 7);
+        vent.userData = { type: 'fungal_spore_vent', scatterKey: 'vent:4,7' };
+        parent.add(vent);
+        const stalker = new THREE.Sprite(new THREE.SpriteMaterial());
+        stalker.userData = { baseY: 0.08, baseScaleX: 1.15, baseScaleY: 1.15 };
+        const fakeThis = {
+            player: { position: { x: 8, z: 7 } },
+            scene: parent,
+            scatterSprites: [vent],
+            isSnailTileWalkable: (x, z) => x === 5 && z === 7,
+            canOccupyPosition: () => true,
+            findFungalVentLandingPosition: ThreeGame.prototype.findFungalVentLandingPosition,
+            spawnGearPoofEffect: vi.fn(),
+            spawnToxicSporePuddle: vi.fn(),
+            createScatterInstance: vi.fn(() => stalker)
+        };
+
+        const result = ThreeGame.prototype.eruptFungalVent.call(fakeThis, vent, { fromHole: true });
+
+        expect(result).toBe(stalker);
+        expect(fakeThis.scatterSprites).toEqual([stalker]);
+        expect(stalker.userData.aiMode).toBe('emerging');
+        expect(stalker.userData.holeEmergence).toMatchObject({
+            startX: 4,
+            startZ: 7,
+            landingX: 5,
+            landingZ: 7,
+            fromRepair: true
+        });
+
+        fakeThis.isPlayerDead = false;
+        fakeThis.faceSpriteFromDir = vi.fn();
+        ThreeGame.prototype.updateChargerOrStalkerBehavior.call(fakeThis, stalker, 0.68, { isStalker: true });
+        expect(stalker.position.x).toBe(5);
+        expect(stalker.position.z).toBe(7);
+        expect(stalker.userData.holeEmergence).toBeNull();
+        expect(stalker.userData.aiMode).toBe('hunt');
+    });
+
+    it('makes an emerged stalker damage and visibly affect the player on contact', () => {
+        vi.stubGlobal('window', {
+            dispatchEvent: vi.fn(),
+            AudioManager: { playMetalStress: vi.fn() }
+        });
+        const stalker = new THREE.Sprite(new THREE.SpriteMaterial());
+        stalker.position.set(0.9, 0.08, 0);
+        stalker.userData = {
+            type: 'mycelium_stalker',
+            aiMode: 'hunt',
+            attackCooldown: 0,
+            vx: 0,
+            vz: 0
+        };
+        const takeDamage = vi.fn(() => true);
+        const fakeThis = {
+            player: { position: { x: 0, z: 0 } },
+            isPlayerDead: false,
+            canEnemyTargetPlayer: () => true,
+            getCurrentContainmentOptions: () => ({ containmentZones: [], doors: [] }),
+            isSnailTileWalkable: () => true,
+            faceSpriteFromDir: vi.fn(),
+            takeDamage,
+            applySnailContactKnockback: vi.fn(),
+            spawnToxicSporePuddle: vi.fn(),
+            triggerCameraShake: vi.fn()
+        };
+
+        ThreeGame.prototype.updateChargerOrStalkerBehavior.call(fakeThis, stalker, 0.016, { isStalker: true });
+
+        expect(takeDamage).toHaveBeenCalledWith(1, 'mycelium_stalker', stalker.position.x, stalker.position.z);
+        expect(fakeThis.applySnailContactKnockback).toHaveBeenCalledWith(stalker, stalker.userData);
+        expect(fakeThis.spawnToxicSporePuddle).toHaveBeenCalled();
+        expect(fakeThis.triggerCameraShake).toHaveBeenCalled();
+        expect(stalker.userData.attackCooldown).toBe(1);
+        vi.unstubAllGlobals();
     });
 
     it('defaults enemy X-ray ghost to natural sprite material color instead of red injury tint', () => {

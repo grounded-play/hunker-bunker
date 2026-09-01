@@ -2,6 +2,7 @@ import { AudioManager } from './audio.js';
 import { assetUrl } from './assetUrl.js';
 import { buildEquipOptions } from './armoryOptions.js';
 import { ITEM_TYPE, getCatalogIdsByType } from './itemOwnership.js';
+import { unlockAllPolishes } from './operatorPolishes.js';
 import {
     ARCHETYPE_SKINS,
     CLASS_ARCHETYPES,
@@ -99,6 +100,8 @@ export function createArmoryUi({
     onEmbark,
     onBack,
     onOpenVault,
+    onOpenSettings,
+    onClassChange,
     ownership
 }) {
     if (!container) throw new Error('Armory UI requires a container DOM element');
@@ -147,6 +150,13 @@ export function createArmoryUi({
     }
 
     function render() {
+        // Equipment changes rebuild the Armory markup. Preserve controller
+        // focus across that rebuild or the first dropdown adjustment throws
+        // focus back to the start of the screen and makes subsequent inputs
+        // appear dead on Steam Deck.
+        const focusedControlId = typeof document !== 'undefined' && container.contains?.(document.activeElement)
+            ? document.activeElement?.id
+            : null;
         const cls = activeClass.toLowerCase();
         const loadout = loadoutManager.getClassLoadout(cls);
         const archetype = loadout.archetypeId || DEFAULT_ARCHETYPES[cls];
@@ -183,145 +193,155 @@ export function createArmoryUi({
                             <button type="button" class="class-tab ${cls === 'tank' ? 'active' : ''}" data-class="tank">▰ TANK</button>
                             <button type="button" class="class-tab ${cls === 'engineer' ? 'active' : ''}" data-class="engineer">⚙ ENGINEER</button>
                         </div>
+                        <button type="button" class="armory-debug-skins-btn ${ownership.isUnlockAll() ? 'active' : ''}" id="armory-debug-unlock-skins-btn" title="Toggle debug unlock for all weapon/chassis skins, charms, and polishes">
+                            ${ownership.isUnlockAll() ? '✓ ALL SKINS UNLOCKED' : '⚡ UNLOCK ALL SKINS (DEBUG)'}
+                        </button>
                         <span class="status-cycle-hint">[Q / E CYCLE]</span>
+                        <button type="button" class="calibrate-btn open-settings-btn armory-settings-btn" id="armory-settings-btn" title="Open Settings" aria-label="Open Settings">⚙</button>
                     </div>
                 </header>
 
                 <div class="armory-main-layout">
-                    <!-- SUIT BENCH (LEFT) -->
-                    <section class="armory-panel suit-bench-panel" aria-label="Suit Bench">
-                        <div class="panel-header">
-                            <span class="panel-icon">🛡️</span>
-                            <h2>OPERATOR EXOSUIT RIG</h2>
-                        </div>
-                        <div class="bench-field">
-                            <label>CHASSIS SPECIFICATION</label>
-                            <div class="field-value">${activeClass.toUpperCase()} MK-IV SUB-ZERO PRESSURIZED</div>
-                        </div>
-                        <div class="bench-row-two-col">
-                            <div class="bench-field">
-                                <label>EXOSUIT CHASSIS SKIN</label>
-                                <select id="armory-chassis-select" class="armory-select">
-                                    <option value="">[STANDARD CLASS CHASSIS]</option>
-                                    ${optionsHtml(allowedChassisSkins, chassisSkinId)}
-                                </select>
+                    <!-- 3D MODEL PREVIEW & LIVE READOUT (LEFT / CENTER) -->
+                    <div class="armory-stage-column">
+                        <aside class="armory-stage-readout" aria-label="Live Armory Preview">
+                            <div class="armory-stage-readout__info">
+                                <div class="armory-stage-readout__eyebrow">◈ LIVE STAGE PREVIEW</div>
+                                <div class="armory-stage-readout__title">${activeClass.toUpperCase()} // ${ARCHETYPE_NAMES[archetype] || archetype}</div>
+                                <div class="armory-stage-readout__details">
+                                    <span class="armory-stage-readout__chip"><b>FINISH:</b> ${selectedFinish}</span>
+                                    <span class="armory-stage-readout__chip"><b>CHASSIS:</b> ${chassisSkinId ? (CATALOG_ITEMS[chassisSkinId]?.name || chassisSkinId) : 'STANDARD'}</span>
+                                </div>
                             </div>
-                            <div class="bench-field">
-                                <label>SHOULDER PATCH &amp; INSIGNIA</label>
-                                <select id="armory-decal-select" class="armory-select">
-                                    <option value="">[DEFAULT CLASS INSIGNIA]</option>
-                                    ${optionsHtml(
-                                        getCatalogIdsByType(ITEM_TYPE.DECAL),
-                                        loadoutManager.getEquippedDecalId?.() ?? loadoutManager.state?.suit?.decalId
-                                    )}
-                                </select>
+                            <button type="button" class="armory-stage-readout__polish" id="armory-polish-btn">
+                                <span class="armory-stage-readout__polish-swatch" aria-hidden="true"></span>
+                                <span><small>OPERATOR SHEEN</small><b>OPEN SUIT TINT MATRIX</b></span>
+                            </button>
+                            <div class="armory-stage-readout__hint">DRAG 3D STAGE TO INSPECT OPERATOR &amp; WEAPON</div>
+                        </aside>
+                    </div>
+
+                    <!-- CUSTOMIZATION SIDEBAR (RIGHT COLUMN) -->
+                    <div class="armory-controls-sidebar">
+                        <!-- WEAPON BENCH (UPPER RIGHT) -->
+                        <section class="armory-panel weapon-bench-panel" aria-label="Weapon Bench">
+                            <div class="panel-header">
+                                <span class="panel-icon">⚔️</span>
+                                <h2>BALLISTIC BENCH &amp; OVERCLOCKS</h2>
                             </div>
-                        </div>
-                        <div class="telemetry-box">
-                            <div class="telemetry-title">SUIT TELEMETRY STATUS</div>
-                            <div class="telemetry-item"><span>Thermal Cryo-Mesh:</span> <strong>NOMINAL 100%</strong></div>
-                            <div class="telemetry-item"><span>Radiation Seal:</span> <strong>ACTIVE</strong></div>
-                            <div class="telemetry-item"><span>Turntable Staging:</span> <strong>360° DRAG ORBIT</strong></div>
-                        </div>
-                    </section>
 
-                    <!-- WEAPON BENCH (RIGHT / CENTER) -->
-                    <aside class="armory-stage-readout" aria-label="Live Armory Preview">
-                        <div class="armory-stage-readout__info">
-                            <div class="armory-stage-readout__eyebrow">◈ LIVE STAGE PREVIEW</div>
-                            <div class="armory-stage-readout__title">${activeClass.toUpperCase()} // ${ARCHETYPE_NAMES[archetype] || archetype}</div>
-                            <div class="armory-stage-readout__details">
-                                <span class="armory-stage-readout__chip"><b>FINISH:</b> ${selectedFinish}</span>
-                                <span class="armory-stage-readout__chip"><b>CHASSIS:</b> ${chassisSkinId ? (CATALOG_ITEMS[chassisSkinId]?.name || chassisSkinId) : 'STANDARD'}</span>
-                            </div>
-                        </div>
-                        <button type="button" class="armory-stage-readout__polish" id="armory-polish-btn">
-                            <span class="armory-stage-readout__polish-swatch" aria-hidden="true"></span>
-                            <span><small>OPERATOR SHEEN</small><b>OPEN SUIT TINT MATRIX</b></span>
-                        </button>
-                        <div class="armory-stage-readout__hint">DRAG 3D STAGE TO INSPECT OPERATOR &amp; WEAPON</div>
-                    </aside>
-
-                    <section class="armory-panel weapon-bench-panel" aria-label="Weapon Bench">
-                        <div class="panel-header">
-                            <span class="panel-icon">⚔️</span>
-                            <h2>BALLISTIC BENCH &amp; OVERCLOCKS</h2>
-                        </div>
-
-                        <!-- WEAPON ARCHETYPE -->
-                        <div class="bench-field">
-                            <label>PRIMARY WEAPON PLATFORM</label>
-                            <select id="armory-archetype-select" class="armory-select">
-                                ${allowedArchetypes.map((id) => `
-                                    <option value="${id}" ${archetype === id ? 'selected' : ''}>
-                                        ${ARCHETYPE_NAMES[id] || id.replace(/_/g, ' ').toUpperCase()}
-                                    </option>
-                                `).join('')}
-                            </select>
-                        </div>
-
-                        <!-- 3D WEAPON SKIN -->
-                        <div class="bench-field">
-                            <label>WEAPON SHEEN / TACTICAL FINISH</label>
-                            <select id="armory-skin-select" class="armory-select">
-                                <option value="">[STANDARD FACTORY FINISH]</option>
-                                ${optionsHtml(allowedSkins, loadout.skinId)}
-                            </select>
-                        </div>
-
-                        <div class="bench-row-two-col">
-                            <!-- CHARM -->
+                            <!-- WEAPON ARCHETYPE -->
                             <div class="bench-field">
-                                <label>TACTICAL CHARM</label>
-                                <select id="armory-charm-select" class="armory-select">
-                                    <option value="">[NO CHARM ATTACHED]</option>
-                                    ${optionsHtml(getCatalogIdsByType(ITEM_TYPE.CHARM), loadout.charmId)}
-                                </select>
-                            </div>
-                        </div>
-
-                        <div class="bench-row-two-col">
-                            <!-- RIG MOD 1 -->
-                            <div class="bench-field">
-                                <label>OVERCLOCK — BAY A</label>
-                                <select id="armory-mod1-select" class="armory-select">
-                                    <option value="">[EMPTY OVERCLOCK BAY A]</option>
-                                    ${optionsHtml(getCatalogIdsByType(ITEM_TYPE.MOD), loadout.mod1Id)}
+                                <label>PRIMARY WEAPON PLATFORM</label>
+                                <select id="armory-archetype-select" class="armory-select">
+                                    ${allowedArchetypes.map((id) => `
+                                        <option value="${id}" ${archetype === id ? 'selected' : ''}>
+                                            ${ARCHETYPE_NAMES[id] || id.replace(/_/g, ' ').toUpperCase()}
+                                        </option>
+                                    `).join('')}
                                 </select>
                             </div>
 
-                            <!-- RIG MOD 2 -->
+                            <!-- 3D WEAPON SKIN -->
                             <div class="bench-field">
-                                <label>OVERCLOCK — BAY B</label>
-                                <select id="armory-mod2-select" class="armory-select">
-                                    <option value="">[EMPTY OVERCLOCK BAY B]</option>
-                                    ${optionsHtml(getCatalogIdsByType(ITEM_TYPE.MOD), loadout.mod2Id)}
+                                <label>WEAPON SHEEN / TACTICAL FINISH</label>
+                                <select id="armory-skin-select" class="armory-select">
+                                    <option value="">[STANDARD FACTORY FINISH]</option>
+                                    ${optionsHtml(allowedSkins, loadout.skinId)}
                                 </select>
                             </div>
-                        </div>
 
-                        <!-- ACTIVE MODIFIERS TELEMETRY -->
-                        <div class="modifiers-summary">
-                            <div class="modifiers-title">◈ ACTIVE COMBAT OVERCLOCKS</div>
-                            <div class="modifiers-badges">
-                                <span class="mod-badge ${modifiers.scrapMagnetRadiusBonus > 0 ? 'active' : ''}">
-                                    🧲 Magnet: +${Math.round(modifiers.scrapMagnetRadiusBonus * 100)}%
-                                </span>
-                                <span class="mod-badge ${modifiers.cryoDurationMultiplier > 1.0 ? 'active' : ''}">
-                                    ❄️ Cryo: +${Math.round((modifiers.cryoDurationMultiplier - 1.0) * 100)}%
-                                </span>
-                                <span class="mod-badge ${modifiers.kineticPierceBonus > 0 ? 'active' : ''}">
-                                    🎯 Pierce: +${modifiers.kineticPierceBonus}
-                                </span>
-                                <span class="mod-badge ${modifiers.gasDamageReduction > 0 ? 'active' : ''}">
-                                    ☣️ Gas: -${Math.round(modifiers.gasDamageReduction * 100)}%
-                                </span>
-                                <span class="mod-badge ${modifiers.dashRefundOnMultiKill ? 'active' : ''}">
-                                    ⚡ Dash Refund: ${modifiers.dashRefundOnMultiKill ? 'READY' : 'OFF'}
-                                </span>
+                            <div class="bench-row-two-col">
+                                <!-- CHARM -->
+                                <div class="bench-field">
+                                    <label>TACTICAL CHARM</label>
+                                    <select id="armory-charm-select" class="armory-select">
+                                        <option value="">[NO CHARM ATTACHED]</option>
+                                        ${optionsHtml(getCatalogIdsByType(ITEM_TYPE.CHARM), loadout.charmId)}
+                                    </select>
+                                </div>
                             </div>
-                        </div>
-                    </section>
+
+                            <div class="bench-row-two-col">
+                                <!-- RIG MOD 1 -->
+                                <div class="bench-field">
+                                    <label>OVERCLOCK — BAY A</label>
+                                    <select id="armory-mod1-select" class="armory-select">
+                                        <option value="">[EMPTY OVERCLOCK BAY A]</option>
+                                        ${optionsHtml(getCatalogIdsByType(ITEM_TYPE.MOD), loadout.mod1Id)}
+                                    </select>
+                                </div>
+
+                                <!-- RIG MOD 2 -->
+                                <div class="bench-field">
+                                    <label>OVERCLOCK — BAY B</label>
+                                    <select id="armory-mod2-select" class="armory-select">
+                                        <option value="">[EMPTY OVERCLOCK BAY B]</option>
+                                        ${optionsHtml(getCatalogIdsByType(ITEM_TYPE.MOD), loadout.mod2Id)}
+                                    </select>
+                                </div>
+                            </div>
+
+                            <!-- ACTIVE MODIFIERS TELEMETRY -->
+                            <div class="modifiers-summary">
+                                <div class="modifiers-title">◈ ACTIVE COMBAT OVERCLOCKS</div>
+                                <div class="modifiers-badges">
+                                    <span class="mod-badge ${modifiers.scrapMagnetRadiusBonus > 0 ? 'active' : ''}">
+                                        🧲 Magnet: +${Math.round(modifiers.scrapMagnetRadiusBonus * 100)}%
+                                    </span>
+                                    <span class="mod-badge ${modifiers.cryoDurationMultiplier > 1.0 ? 'active' : ''}">
+                                        ❄️ Cryo: +${Math.round((modifiers.cryoDurationMultiplier - 1.0) * 100)}%
+                                    </span>
+                                    <span class="mod-badge ${modifiers.kineticPierceBonus > 0 ? 'active' : ''}">
+                                        🎯 Pierce: +${modifiers.kineticPierceBonus}
+                                    </span>
+                                    <span class="mod-badge ${modifiers.gasDamageReduction > 0 ? 'active' : ''}">
+                                        ☣️ Gas: -${Math.round(modifiers.gasDamageReduction * 100)}%
+                                    </span>
+                                    <span class="mod-badge ${modifiers.dashRefundOnMultiKill ? 'active' : ''}">
+                                        ⚡ Dash Refund: ${modifiers.dashRefundOnMultiKill ? 'READY' : 'OFF'}
+                                    </span>
+                                </div>
+                            </div>
+                        </section>
+
+                        <!-- SUIT BENCH (LOWER RIGHT) -->
+                        <section class="armory-panel suit-bench-panel" aria-label="Suit Bench">
+                            <div class="panel-header">
+                                <span class="panel-icon">🛡️</span>
+                                <h2>OPERATOR EXOSUIT RIG</h2>
+                            </div>
+                            <div class="bench-field">
+                                <label>CHASSIS SPECIFICATION</label>
+                                <div class="field-value">${activeClass.toUpperCase()} MK-IV SUB-ZERO PRESSURIZED</div>
+                            </div>
+                            <div class="bench-row-two-col">
+                                <div class="bench-field">
+                                    <label>EXOSUIT CHASSIS SKIN</label>
+                                    <select id="armory-chassis-select" class="armory-select">
+                                        <option value="">[STANDARD CLASS CHASSIS]</option>
+                                        ${optionsHtml(allowedChassisSkins, chassisSkinId)}
+                                    </select>
+                                </div>
+                                <div class="bench-field">
+                                    <label>SHOULDER PATCH &amp; INSIGNIA</label>
+                                    <select id="armory-decal-select" class="armory-select">
+                                        <option value="">[DEFAULT CLASS INSIGNIA]</option>
+                                        ${optionsHtml(
+                                            getCatalogIdsByType(ITEM_TYPE.DECAL),
+                                            loadoutManager.getEquippedDecalId?.() ?? loadoutManager.state?.suit?.decalId
+                                        )}
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="telemetry-box">
+                                <div class="telemetry-title">SUIT TELEMETRY STATUS</div>
+                                <div class="telemetry-item"><span>Thermal Cryo-Mesh:</span> <strong>NOMINAL 100%</strong></div>
+                                <div class="telemetry-item"><span>Radiation Seal:</span> <strong>ACTIVE</strong></div>
+                                <div class="telemetry-item"><span>Turntable Staging:</span> <strong>360° DRAG ORBIT</strong></div>
+                            </div>
+                        </section>
+                    </div>
                 </div>
 
                 <!-- FOOTER NAVIGATION -->
@@ -340,6 +360,9 @@ export function createArmoryUi({
         `;
 
         bindEvents();
+        if (focusedControlId) {
+            container.querySelector?.(`#${focusedControlId}`)?.focus?.({ preventScroll: true });
+        }
     }
 
     function bindEvents() {
@@ -429,9 +452,28 @@ export function createArmoryUi({
             onEmbark?.();
         });
 
+        container.querySelector?.('#armory-settings-btn')?.addEventListener?.('click', () => {
+            playSound('ui_click_confirm1');
+            if (onOpenSettings) {
+                onOpenSettings();
+            } else {
+                document.querySelector('#menu .open-settings-btn')?.click?.();
+            }
+        });
+
         container.querySelector?.('#armory-polish-btn')?.addEventListener?.('click', () => {
             playSound('ui_click_confirm1');
             document.getElementById('hero-polish-btn')?.click?.();
+        });
+
+        container.querySelector?.('#armory-debug-unlock-skins-btn')?.addEventListener?.('click', () => {
+            const next = !ownership.isUnlockAll();
+            ownership.setUnlockAll(next);
+            if (next) {
+                unlockAllPolishes();
+            }
+            playSound('ui_click_confirm1');
+            render();
         });
 
         // Steam Deck / Keyboard controller shortcuts for Armory screen
@@ -473,6 +515,9 @@ export function createArmoryUi({
         armoryScene?.setClass(activeClass, compatibleChassisSkin);
         armoryScene?.updateFromLoadout(loadoutManager, activeClass);
         render();
+        if (typeof onClassChange === 'function') {
+            onClassChange(activeClass.toUpperCase());
+        }
     }
 
     // Requirement A4: an item granted while the Armory is on screen (a cache
@@ -481,6 +526,9 @@ export function createArmoryUi({
 
     return {
         setClass,
+        getActiveClass() {
+            return activeClass;
+        },
         refresh() {
             render();
         },

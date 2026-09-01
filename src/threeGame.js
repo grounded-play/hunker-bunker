@@ -51,6 +51,11 @@ export const TiltShiftPassShader = {
 import { assetUrl } from './assetUrl.js';
 import { getItemCatalogEntry } from './steamVaultUi.js';
 import { wrapAngle, planarBasisFromOffsetAzimuth, aimVectorFromYaw } from './cameraYaw.js';
+import { THIRD_PERSON_CAMERA, clampCameraPositionToHit, computeMouseEdgeTurn, getCrosshairMovementBasis, getThirdPersonCameraPose } from './thirdPersonCamera.js';
+import { createSkyProfile } from './sky/skyProfile.js';
+import { computeSkyState } from './sky/skyState.js';
+import { createSkyRig } from './sky/skyDome.js';
+import { SKY_SHEETS } from './sky/skySheets.js';
 import { MULTIPLAYER_SPAWN_MODES, hashSeed, partitionCrashPlanPlayers } from './multiplayerCrashPlanner.js';
 import { multiplayerLobby } from './multiplayerLobby.js';
 import { BankManager, O2_GENERATOR_UPGRADES, BASE_TURRET_UPGRADES, BASE_TURRET_REPAIR_COST, TIER2_UPGRADE_ORDER, TIER2_UPGRADE_CONFIGS, WEAPON_UPGRADE_ORDER, WEAPON_UPGRADES_CONFIG, CLASS_SKILL_TREES, shellPriceOf } from './bank.js';
@@ -136,7 +141,7 @@ import { blackBoxStore } from './blackBox.js';
 import { runCheckpointStore } from './runCheckpoint.js';
 import { CHASSIS_SKIN_MODELS, createPlayer3dOverlay, ENGINEER_GESTURES } from './player3dOverlay.js';
 import { createEnemy3dVisual, disposeEnemy3dVisual, updateEnemy3dVisual } from './enemy3dOverlay.js';
-import { createWorld3dModel, hasWorld3dModel, syncWorld3dReplacement } from './world3dOverlay.js';
+import { createWorld3dModel, hasWorld3dModel, preloadWorld3dModels, syncWorld3dReplacement } from './world3dOverlay.js';
 import { computeTrailPosition } from './companionFollow.js';
 import { SNAIL_ENCOUNTER_CONSTANTS } from './snailEncounter.js';
 import { createUniversalEncounter, resolveEncounterAction } from './universalEncounter.js';
@@ -596,6 +601,18 @@ const FEATURE_MILESTONE_BOSSES = true;
 // active particle count (<= cap), point size/color/opacity, fall/drift velocity
 // ranges, and a fog-far multiplier for reduced visibility.
 const FEATURE_WEATHER = true;
+// Sky rig key-light placement. Elevation floor keeps the sun from lighting the
+// world from below once it sets; distance matches the original static key light
+// so the existing shadow-camera extents stay valid.
+const SKY_MIN_KEY_LIGHT_ELEVATION = 0.35;
+const SKY_KEY_LIGHT_DISTANCE = 22;
+// Added to the key light on a lightning frame. updateDayNightCycle resets
+// intensity every frame, so this cannot build up.
+const SKY_FLASH_LIGHT_BOOST = 2.6;
+// How long a director-fired sky beat stays on screen when no duration is given.
+// The atlases hold only a fraction of a second of frames; they are stretched
+// across this instead (see sheetTimeForTransient).
+const SKY_TRANSIENT_DEFAULT_SECONDS = 18;
 const WEATHER_PARTICLE_CAP = 240;
 const WEATHER_FIELD_RADIUS = 20;   // half-extent of the box that follows the player
 const WEATHER_FIELD_HEIGHT = 9;
@@ -1148,7 +1165,11 @@ export class ThreeGame {
 
         this.chunkSize = CHUNK_SIZE;
         this.chunkCellCount = (this.chunkSize - 1) / 2;
-        this.disableFogOfWar = true;
+        // Fog is part of the authored gameplay silhouette: it hides the edge
+        // of the resident chunk neighborhood and keeps unexplored rooms from
+        // reading like abruptly unloaded geometry. The debug `fog` command can
+        // still disable it explicitly, but every run starts with fog enabled.
+        this.disableFogOfWar = false;
         // Stream/render a 5x5 neighborhood. Mounting remains frame-budgeted,
         // so this grows the safety buffer without rebuilding all 25 chunks in
         // one blocking startup frame.
@@ -1229,6 +1250,7 @@ export class ThreeGame {
         this._sprintMoveSpeedMult = 1.0;
         this._sprintO2DrainMult = 1.0;
         this._wasSprinting = false;
+        this.godMode = false;
         this.noclip = false;
         this.noclipSpeedMult = 3.5;
         this.activeTurret = null;
@@ -1238,6 +1260,14 @@ export class ThreeGame {
         this.cameraAzimuth = Math.atan2(8, 8);
         this.cameraRotationInput = 0;
         this._cameraOrbitPointerDelta = 0;
+        this.cameraMode = 'third-person';
+        this._thirdPersonCameraRaycaster = new THREE.Raycaster();
+        this.cameraDistancePreset = 'close';
+        this.cameraFollowPreset = 'tight';
+        this.cameraFollowRate = 26;
+        this.thirdPersonCameraConfig = { ...THIRD_PERSON_CAMERA, distance: 3.05, shoulder: 0.48 };
+        this._mouseEdgeTurnInput = 0;
+        this._cameraTurnVelocity = 0;
         this.cameraOffset = new THREE.Vector3(
             this.cameraOrbitRadius * Math.sin(this.cameraAzimuth),
             this.cameraLift,
@@ -1408,6 +1438,7 @@ export class ThreeGame {
         this.weaponClipSize = WEAPON_CLIP_SIZE;
         this.weaponUpgradeBonuses = { shotDamage: 0, speedAdd: 0, shotAmount: 0 };
         this.weaponClipAmmo = this.weaponClipSize;
+        this.unlimitedAmmo = false;
         this.weaponReloading = false;
         this.weaponReloadTimer = 0;
         this.weaponReloadDuration = WEAPON_RELOAD_DURATION;
@@ -1555,9 +1586,11 @@ export class ThreeGame {
         if (typeof window !== 'undefined') window.lineDirector = this.lineDirector;
         this._syncedRunModifier = null;
 
-        this.camera = new THREE.OrthographicCamera(-10, 10, 10, -10, 0.1, 100);
-        this.camera.position.copy(this.cameraOffset);
-        this.camera.lookAt(0, 0, 0);
+        this.orthographicCamera = new THREE.OrthographicCamera(-10, 10, 10, -10, 0.1, 100);
+        this.orthographicCamera.position.copy(this.cameraOffset);
+        this.orthographicCamera.lookAt(0, 0, 0);
+        this.perspectiveCamera = new THREE.PerspectiveCamera(THIRD_PERSON_CAMERA.fieldOfView, 1, 0.08, 160);
+        this.camera = this.orthographicCamera;
 
         this.setupMenuGyroListeners();
 
@@ -3159,6 +3192,7 @@ export class ThreeGame {
         this.invisibleMaterial = new THREE.MeshBasicMaterial({ visible: false });
 
         this.setupLighting();
+        this.setupSkyRig();
         this.setupWorld();
         this.setupPlayer();
         this.setupMultiplayerNetwork();
@@ -4086,11 +4120,15 @@ export class ThreeGame {
             if (chassisModelUrl && classVisuals[overlayType]) {
                 classVisuals[overlayType] = {
                     ...classVisuals[overlayType],
-                    modelUrl: chassisModelUrl
+                    modelUrl: chassisModelUrl,
+                    animationModelUrl: '/3d/scouting-scout/Scout.game.glb',
+                    animationBonePrefix: 'mixamorig',
+                    allowStatic: true
                 };
             }
             const overlay = await createPlayer3dOverlay({
                 targetHeight: this.playerSpriteScale * 0.98,
+                allowStatic: true,
                 ...classVisuals[overlayType]
             });
             if (this.player !== playerRoot || this.playerType !== overlayType) {
@@ -4360,6 +4398,8 @@ export class ThreeGame {
             id: playerData.id,
             callsign: playerData.callsign || 'OPERATIVE',
             opClass,
+            chassisSkinId: playerData.chassisSkinId || playerData.loadout?.chassisSkinId || null,
+            polishColor: playerData.polishColor || playerData.loadout?.polishColor || null,
             mesh: group,
             sprite,
             targetPos: new THREE.Vector3(group.position.x, group.position.y, group.position.z),
@@ -4400,25 +4440,46 @@ export class ThreeGame {
         remote.overlayLoading = true;
 
         const classVisuals = {
-            SCOUT: { weaponArchetype: 'talon' },
+            SCOUT: {
+                modelUrl: '/3d/scouting-scout/Scout.game.glb',
+                animationModelUrl: '/3d/scouting-scout/Scout.game.glb',
+                animationBonePrefix: 'mixamorig',
+                weaponArchetype: 'talon',
+                allowStatic: true
+            },
             ENGINEER: {
                 modelUrl: '/3d/runtime/engineer-rigged-gestures.glb',
                 animationModelUrl: '/3d/scouting-scout/Scout.game.glb',
                 animationBonePrefix: 'mixamorig',
-                weaponArchetype: 'tesla_lock'
+                weaponArchetype: 'tesla_lock',
+                allowStatic: true
             },
             TANK: {
                 modelUrl: '/3d/runtime/tank-rigged.glb',
                 animationModelUrl: '/3d/scouting-scout/Scout.game.glb',
                 animationBonePrefix: 'mixamorig',
                 weaponArchetype: 'siege_breaker',
-                weaponMount: { position: [0.03, 0.02, 0.03] }
+                weaponMount: { position: [0.03, 0.02, 0.03] },
+                allowStatic: true
             }
         };
+
+        const chassisSkinId = remote.chassisSkinId;
+        const chassisModelUrl = chassisSkinId ? CHASSIS_SKIN_MODELS[String(chassisSkinId)] : null;
+        if (chassisModelUrl && classVisuals[remote.opClass]) {
+            classVisuals[remote.opClass] = {
+                ...classVisuals[remote.opClass],
+                modelUrl: chassisModelUrl,
+                animationModelUrl: '/3d/scouting-scout/Scout.game.glb',
+                animationBonePrefix: 'mixamorig',
+                allowStatic: true
+            };
+        }
 
         try {
             const overlay = await createPlayer3dOverlay({
                 targetHeight: (this.playerSpriteScale || 1.6) * 0.98,
+                allowStatic: true,
                 ...classVisuals[remote.opClass]
             });
             if (this.remotePlayers?.get(remote.id) !== remote || !remote.mesh.parent) {
@@ -4429,6 +4490,9 @@ export class ThreeGame {
             remote.mesh.add(overlay.root);
             remote.overlay = overlay;
             remote.sprite.visible = false;
+            if (remote.polishColor) {
+                overlay.setOperatorPolish?.(remote.polishColor);
+            }
             if (typeof window !== 'undefined' && window.hbLog) {
                 window.hbLog('MULTIPLAYER', 'info', 'remote-avatar-3d-ready', {
                     playerId: remote.id,
@@ -4509,11 +4573,14 @@ export class ThreeGame {
     handleRemotePlayerDamaged(data) {
         if (!data) return;
         if (data.targetId === this.netSocket?.id) {
-            // Local player was hit in PvP. Was this.takePlayerDamage?.(...) --
-            // that method never existed (Sprint 24 audit finding), so this
-            // branch silently never fired even on the rare occasion something
-            // emitted playerDamage.
-            this.takeDamage?.(data.damage || 10, 'pvp-rival');
+            // Local player was hit in PvP.
+            // Server damage is emitted on a 100-point scale (e.g. PVP_WEAPON_DAMAGE = 10).
+            // Convert to player vitals scale (3-4 hearts) so local player takes 1 heart per standard hit instead of dying in one shot.
+            const serverDamage = data.damage || 10;
+            const damageHearts = serverDamage >= 10
+                ? Math.max(1, Math.round((serverDamage / 100) * (this.playerVitals?.maxHp || 3)))
+                : serverDamage;
+            this.takeDamage?.(damageHearts, 'pvp-rival');
         } else if (this.remotePlayers?.has(data.targetId)) {
             const remote = this.remotePlayers.get(data.targetId);
             remote.hp = Math.max(0, remote.hp - (data.damage || 10));
@@ -4702,18 +4769,24 @@ export class ThreeGame {
                 // broadcast in playerMove -- mirrors updatePlayerSpriteAnimation
                 // but writes into this remote's own cloned texture.
                 const speedSq = remote.vx * remote.vx + remote.vz * remote.vz;
-                const isMoving = remote.animState === 'run' && speedSq > 0.0001;
+                const posDeltaDist = mesh.position.distanceTo(remote.targetPos);
+                const isMoving = remote.animState === 'run' || remote.animState === 'walk' || speedSq > 0.0001 || posDeltaDist > 0.02;
+                const moveDirX = Math.abs(remote.vx) > 0.001 ? remote.vx : (remote.targetPos.x - mesh.position.x);
+                const moveDirZ = Math.abs(remote.vz) > 0.001 ? remote.vz : (remote.targetPos.z - mesh.position.z);
+                const groundSpeed = Math.hypot(moveDirX, moveDirZ) || 3.6;
+
                 remote.overlay?.update?.(delta, {
                     isFalling: false,
                     isReloading: false,
                     isMoving,
-                    isSprinting: isMoving,
+                    isSprinting: remote.animState === 'run' || speedSq > 8.0,
                     isInjured: remote.hp < remote.maxHp * 0.4,
                     hasAim: false,
-                    moveX: 0,
-                    moveZ: 0,
-                    aimX: 0,
-                    aimZ: 0
+                    moveX: moveDirX,
+                    moveZ: moveDirZ,
+                    aimX: moveDirX,
+                    aimZ: moveDirZ,
+                    groundSpeed
                 });
                 if (isMoving) {
                     remote.facingRow = this.getFacingRow(remote.vx, remote.vz);
@@ -5223,18 +5296,24 @@ export class ThreeGame {
                 const rect = this.renderer.domElement.getBoundingClientRect();
                 const aimClientX = rect.left + rect.width / 2;
                 const aimClientY = rect.top + rect.height / 2;
+                this._mouseEdgeTurnInput = 0;
                 if (movementX || movementY) {
-                    this.updateFacingYaw(this.facingYaw - movementX * 0.005);
+                    if (this.cameraMode === 'third-person') {
+                        this._cameraOrbitPointerDelta += movementX;
+                    } else {
+                        this.updateFacingYaw(this.facingYaw - movementX * 0.005);
+                    }
                 }
                 // Pointer lock has no meaningful client coordinates, but the
                 // camera-centre ray is still the real aim ray. Resolve it on
                 // every locked move so hostile, pickup, and interactable
                 // reticle states do not silently fall back to neutral.
-                window.updateGameplayCrosshair?.(aimClientX, aimClientY, true);
                 this.checkHoverInteractable(aimClientX, aimClientY);
+                window.updateGameplayCrosshair?.(aimClientX, aimClientY, true);
                 return;
             }
             if (this._cameraOrbitPointerHeld) {
+                this._mouseEdgeTurnInput = 0;
                 const dragX = event.clientX - this._canvasTapStartX;
                 if (Math.abs(dragX) > 1) {
                     this._cameraOrbitPointerDragged = true;
@@ -5245,14 +5324,20 @@ export class ThreeGame {
             }
             this.lastMouseClientX = event.clientX;
             this.lastMouseClientY = event.clientY;
+            if (this.cameraMode === 'third-person') {
+                const rect = this.renderer.domElement.getBoundingClientRect();
+                this._mouseEdgeTurnInput = computeMouseEdgeTurn(event.clientX, rect.left, rect.width);
+            } else {
+                this._mouseEdgeTurnInput = 0;
+            }
 
             // Direct tactical crosshair aim: turn player to face mouse pointer in world
             this.updateAimFromClient(event.clientX, event.clientY, {
                 keepMouseActive: true,
                 persistDuration: 0
             });
-            window.updateGameplayCrosshair?.(event.clientX, event.clientY, true);
             this.checkHoverInteractable(event.clientX, event.clientY);
+            window.updateGameplayCrosshair?.(event.clientX, event.clientY, true);
         };
 
         this.handleCanvasTap = (event) => {
@@ -5279,6 +5364,7 @@ export class ThreeGame {
         this.handleCanvasPointerCancel = (event) => {
             this._cameraOrbitPointerHeld = false;
             this._cameraOrbitPointerDragged = false;
+            this._mouseEdgeTurnInput = 0;
             this.endHeldFire();
             try {
                 this.renderer.domElement.releasePointerCapture?.(event.pointerId);
@@ -5606,7 +5692,7 @@ export class ThreeGame {
             return false;
         }
 
-        if (this.weaponReloading) {
+        if (this.weaponReloading && !this.unlimitedAmmo) {
             presentationTelemetry.emit('WEAPON', PRESENTATION_EVENTS.WEAPON.SHOT_BLOCKED, { reason: 'reloading', clip: this.weaponClipAmmo, reserve: this.getAvailableAmmo() });
             this.playThrottledUiError('_lastReloadBlockedCueAt', { volume: 0.34, playbackRate: 1.05 });
             return false;
@@ -5615,7 +5701,7 @@ export class ThreeGame {
             presentationTelemetry.emit('WEAPON', PRESENTATION_EVENTS.WEAPON.SHOT_BLOCKED, { reason: 'fire_cooldown', cooldownRemaining: this.weaponFireCooldown });
             return false;
         }
-        if (this.weaponClipAmmo <= 0) {
+        if (this.weaponClipAmmo <= 0 && !this.unlimitedAmmo) {
             const availableAmmo = this.getAvailableAmmo();
             if (availableAmmo < 1) {
                 window.AudioManager?.play('weapon_dry_fire', { volume: 0.45 });
@@ -5633,7 +5719,11 @@ export class ThreeGame {
             return false;
         }
 
-        this.weaponClipAmmo = Math.max(0, this.weaponClipAmmo - 1);
+        if (this.unlimitedAmmo) {
+            this.weaponClipAmmo = this.weaponClipSize;
+        } else {
+            this.weaponClipAmmo = Math.max(0, this.weaponClipAmmo - 1);
+        }
         let fireCd = WEAPON_FIRE_COOLDOWN;
         this.weaponFireCooldown = fireCd;
         this.emitWeaponClipState();
@@ -5663,7 +5753,7 @@ export class ThreeGame {
 
         window.AudioManager?.play('weapon_fire_sidearm', { volume: 0.34 });
 
-        if (this.weaponClipAmmo <= 0) {
+        if (this.weaponClipAmmo <= 0 && !this.unlimitedAmmo) {
             this.requestReload();
         }
         return true;
@@ -5780,6 +5870,10 @@ export class ThreeGame {
             return;
         }
         this.cameraRotationInput = THREE.MathUtils.clamp(Number(value) || 0, -1, 1);
+        if (Math.abs(this.cameraRotationInput) > 0.01) {
+            this.mouseAimActive = false;
+            this._mouseEdgeTurnInput = 0;
+        }
     }
 
     setVirtualInputSprint(active = false) {
@@ -5852,6 +5946,8 @@ export class ThreeGame {
         this.virtualInput.z = 0;
         this.isMoving = false;
         this.mouseAimActive = false;
+        this._mouseEdgeTurnInput = 0;
+        this._cameraTurnVelocity = 0;
         this.endHeldFire();
         this._aimResetTimer = 0;
         this.lastMouseClientX = null;
@@ -6624,10 +6720,14 @@ export class ThreeGame {
             this.renderer.setPixelRatio(targetPixelRatio);
         }
 
-        this.camera.left = -viewSize * aspect;
-        this.camera.right = viewSize * aspect;
-        this.camera.top = viewSize;
-        this.camera.bottom = -viewSize;
+        if (this.camera.isPerspectiveCamera) {
+            this.camera.aspect = aspect;
+        } else {
+            this.camera.left = -viewSize * aspect;
+            this.camera.right = viewSize * aspect;
+            this.camera.top = viewSize;
+            this.camera.bottom = -viewSize;
+        }
         this.camera.updateProjectionMatrix();
 
         this.renderer.setSize(width, height, false);
@@ -6719,6 +6819,7 @@ export class ThreeGame {
         const nextProfile = profile === 'gameplay' ? 'gameplay' : 'menu';
         if (this.performanceProfile === nextProfile) return;
         this.performanceProfile = nextProfile;
+        this.selectActiveCamera();
         // Adaptive mode is sticky only for the current combat run. Returning
         // to menu restores presentation quality; a later run evaluates its
         // own hardware/frame pressure from a clean state.
@@ -6797,6 +6898,38 @@ export class ThreeGame {
         this.emitLightingTelemetry?.('profile-change', { nextProfile });
     }
 
+    selectActiveCamera() {
+        const nextCamera = this.performanceProfile === 'gameplay' && this.cameraMode === 'third-person'
+            ? this.perspectiveCamera
+            : this.orthographicCamera;
+        if (!nextCamera || this.camera === nextCamera) return;
+        this.camera = nextCamera;
+        if (this.renderPass) this.renderPass.camera = nextCamera;
+        this.snapCameraToPlayer();
+    }
+
+    setCameraMode(mode = 'third-person') {
+        this.cameraMode = mode === 'isometric' ? 'isometric' : 'third-person';
+        this.selectActiveCamera();
+        this.resize();
+        return this.cameraMode;
+    }
+
+    setCameraTuning({ distance = this.cameraDistancePreset, follow = this.cameraFollowPreset } = {}) {
+        const distanceByPreset = { close: 3.05, standard: 3.65, wide: 4.35 };
+        const shoulderByPreset = { close: 0.48, standard: 0.58, wide: 0.68 };
+        const followRateByPreset = { smooth: 10, balanced: 17, tight: 26 };
+        this.cameraDistancePreset = distanceByPreset[distance] ? distance : 'close';
+        this.cameraFollowPreset = followRateByPreset[follow] ? follow : 'tight';
+        this.cameraFollowRate = followRateByPreset[this.cameraFollowPreset];
+        this.thirdPersonCameraConfig.distance = distanceByPreset[this.cameraDistancePreset];
+        this.thirdPersonCameraConfig.shoulder = shoulderByPreset[this.cameraDistancePreset];
+        if (this.performanceProfile === 'gameplay' && this.cameraMode === 'third-person') {
+            this.snapCameraToPlayer();
+        }
+        return { distance: this.cameraDistancePreset, follow: this.cameraFollowPreset };
+    }
+
     setAdaptiveGameplayPerformanceMode(enabled = true, {
         reason = 'sustained-low-fps',
         fps = null
@@ -6805,10 +6938,13 @@ export class ThreeGame {
         if (this.adaptiveGameplayPerformanceMode === nextEnabled) return false;
 
         this.adaptiveGameplayPerformanceMode = nextEnabled;
-        this.gameplayPostProcessingEnabled = !nextEnabled;
+        // Adaptive quality may lower the render resolution, but it must not
+        // remove the authored DOF/tilt-shift treatment. Bypassing the composer
+        // made the start-of-run handoff look like lighting and fog had unloaded.
+        this.gameplayPostProcessingEnabled = true;
         if (this.renderer?.shadowMap) {
             // Keep the shadow variant stable while adaptive mode lowers pixel
-            // cost/post-processing. Toggling shadowMap at runtime caused a
+            // cost. Toggling shadowMap at runtime caused a
             // visible lighting drop and texture/shader shimmer on some drivers.
             this.renderer.shadowMap.enabled = this.performanceProfile === 'gameplay';
         }
@@ -6834,8 +6970,8 @@ export class ThreeGame {
                 reason,
                 fps: Number.isFinite(fps) ? Math.round(fps * 10) / 10 : null,
                 pixelRatio: targetPixelRatio,
-                shadows: false,
-                postprocessing: false,
+                shadows: Boolean(this.renderer?.shadowMap?.enabled),
+                postprocessing: true,
                 visibleChunkRadius: this.visibleChunkRadius ?? null,
                 renderer: this.getPerformanceDiagnosticsSnapshot?.() ?? null
             };
@@ -6939,9 +7075,7 @@ export class ThreeGame {
         const span = beginPerfPhase(label, this.getPerformanceDiagnosticsSnapshot());
         const gpuQueryStarted = this.gpuFrameTimer?.beginFrame?.() ?? false;
         try {
-            if (this.composer
-                && this.performanceProfile === 'gameplay'
-                && this.gameplayPostProcessingEnabled !== false) {
+            if (this.composer && this.performanceProfile === 'gameplay') {
                 this.composer.render();
             }
             else this.renderer.render(this.scene, this.camera);
@@ -7135,8 +7269,8 @@ export class ThreeGame {
             return;
         }
 
-        // Preserve every neighboring room and actor. Frame pressure now sheds
-        // only cosmetic postprocessing/shadows/resolution cost.
+        // Preserve every neighboring room, actor, light, fog, and DOF pass.
+        // Frame pressure is handled by lowering render resolution only.
         this.updateAdaptiveGameplayQuality?.(rawFrameDelta);
         this.visibleChunkRadius = this.defaultVisibleChunkRadius;
 
@@ -7178,6 +7312,9 @@ export class ThreeGame {
             fp.measure('updateBiomeEnvironment', () => this.updateBiomeEnvironment({ delta }));
             fp.measure('updateWeather', () => this.updateWeather(delta));
             fp.measure('updateDayNightCycle', () => this.updateDayNightCycle(delta));
+            // After updateDayNightCycle: it resets fog colour from the biome
+            // palette every frame, so the sky has to take the last word on it.
+            fp.measure('updateSky', () => this.updateSky(delta));
             fp.measure('updateTerminalClockTick', () => this.updateTerminalClockTick(now));
             fp.measure('updatePickups', () => this.updatePickups(delta, now));
             fp.measure('updateScatter', () => this.updateScatter(delta, now));
@@ -8401,6 +8538,8 @@ export class ThreeGame {
             const rib = new THREE.Mesh(geometry, material);
             rib.position.set(horizontal ? ribOffset : 0, 0, horizontal ? 0 : ribOffset);
             rib.rotation.y = horizontal ? 0 : Math.PI / 2;
+            rib.castShadow = false;
+            rib.receiveShadow = true;
             rib.userData = { isDoorDecoration: true, decorationType: 'rib' };
             ribGroup.add(rib);
         }
@@ -8962,7 +9101,13 @@ export class ThreeGame {
         }
 
         // 11. Check Camps & Camp Leaders
-        const actionable = this.getActionableCampAt?.(worldPoint.x, worldPoint.z);
+        let actionable = this.getActionableCampAt?.(worldPoint.x, worldPoint.z);
+        if (actionable?.action === 'talk') {
+            const camp = actionable.camp;
+            const leaderX = (camp?.pos?.x ?? camp?.tileX ?? camp?.x ?? 0) + (camp?.npcPos?.x ?? 0);
+            const leaderZ = (camp?.pos?.z ?? camp?.tileZ ?? camp?.z ?? 0) + (camp?.npcPos?.z ?? 0);
+            if (Math.hypot(worldPoint.x - leaderX, worldPoint.z - leaderZ) > 1.45) actionable = null;
+        }
         if (actionable) {
             const campLabel = actionable.camp?.leaderName ? `TALK: ${actionable.camp.leaderName.toUpperCase()}` : (actionable.camp?.label?.toUpperCase() || 'CAMP');
             return {
@@ -8970,7 +9115,7 @@ export class ThreeGame {
                 targetId: 'camp',
                 badgeLabel: campLabel,
                 kicker: 'OUTPOST SETTLEMENT // SURVIVOR',
-                title: actionable.camp?.leaderName ? `COMMANDER ${actionable.camp.leaderName.toUpperCase()}` : 'OUTPOST HABITATION',
+                title: actionable.camp?.leaderName?.toUpperCase() || 'OUTPOST HABITATION',
                 subtitle: 'FACTION: EXPEDITION SURVIVORS',
                 coords: { x: tileX, z: tileZ },
                 distance: playerDist,
@@ -8990,15 +9135,15 @@ export class ThreeGame {
                     return {
                         type: 'camp',
                         targetId: 'camp',
-                        badgeLabel: camp.leaderName ? `TALK: ${camp.leaderName.toUpperCase()}` : 'CAMP',
+                        badgeLabel: camp.label?.toUpperCase() || 'CAMP',
                         kicker: 'OUTPOST SETTLEMENT // SURVIVOR',
-                        title: camp.leaderName ? `COMMANDER ${camp.leaderName.toUpperCase()}` : 'SURVIVOR PERIMETER',
+                        title: camp.label?.toUpperCase() || 'SURVIVOR PERIMETER',
                         subtitle: 'FACTION: ALLIED FORCES',
                         coords: { x: tileX, z: tileZ },
                         distance: pDist,
                         integrity: 100,
                         promptKey: 'E',
-                        promptText: 'APPROACH'
+                        promptText: 'AIM AT CAMP LEADER'
                     };
                 }
             }
@@ -12260,14 +12405,31 @@ export class ThreeGame {
 
     getRadialMazePlan() {
         if (!this.radialMazePlan) {
-            this.radialMazePlan = generateRadialMazeExpedition(
-                ((this.runEntropy ?? 0) ^ (this.globalSeedOffset ?? 0) ^ 0x52494e47) >>> 0
-            );
+            let candidate = null;
+            let signature = null;
+            for (let attempt = 0; attempt < 32; attempt += 1) {
+                const seed = ((this.runEntropy ?? 0) ^ (this.globalSeedOffset ?? 0) ^ 0x52494e47) >>> 0;
+                candidate = generateRadialMazeExpedition(seed);
+                signature = this.getRadialLayoutSignature(candidate);
+                if (this.fixedRunEntropy || signature !== this._previousRadialLayoutSignature) break;
+                this.runEntropy = createFreshRunEntropy(this.runEntropy);
+            }
+            this.radialMazePlan = candidate;
+            this._currentRadialLayoutSignature = signature;
             if (this.radialMazePlan && !this.radialMazePlan.crossings) {
                 this.radialMazePlan.crossings = buildRingCrossingPlan(this.radialMazePlan);
             }
         }
         return this.radialMazePlan;
+    }
+
+    getRadialLayoutSignature(plan) {
+        if (!plan) return null;
+        return JSON.stringify({
+            nodes: (plan.nodes ?? []).map(({ id, chunkX, chunkY, x, z }) => [id, chunkX, chunkY, x, z]),
+            clusters: (plan.roomClusters ?? []).map(({ id, chunkX, chunkY, ring }) => [id, chunkX, chunkY, ring]),
+            routes: plan.topology?.routeEdges ?? []
+        });
     }
 
     getRegionalRouteTopology() {
@@ -12692,6 +12854,21 @@ export class ThreeGame {
             camp.setStatus(record.status);
             camp.setDiscovered(record.discovered);
             camp.setSuspicion(record.suspicion ?? 0);
+
+            if (camp.npcSprite) {
+                const modelType = camp.npcSprite.userData?.world3dModelType || 'npc_martha';
+                this.setupWorld3dReplacement(camp.npcSprite, modelType, { owner: camp, ownerKey: 'npc3d' });
+            }
+            if (camp.propSprites?.crates) {
+                this.setupWorld3dReplacement(camp.propSprites.crates, 'prop_camp_crates');
+            }
+            if (camp.propSprites?.cookfire) {
+                this.setupWorld3dReplacement(camp.propSprites.cookfire, 'prop_camp_cookfire');
+            }
+            for (const sb of camp.sandbagSprites ?? []) {
+                this.setupWorld3dReplacement(sb, 'prop_camp_sandbags');
+            }
+
             return camp;
         });
         this.ensureCampCivilians();
@@ -12705,6 +12882,7 @@ export class ThreeGame {
     ensureCampCivilians() {
         for (const civ of this.campCivilians) {
             if (civ.sprite) this.scene.remove(civ.sprite);
+            if (civ.sprite?.userData?.world3dRoot) this.scene.remove(civ.sprite.userData.world3dRoot);
         }
         this.campCivilians = [];
         for (const camp of this.camps) {
@@ -12733,6 +12911,8 @@ export class ThreeGame {
                 sprite.userData = { sheetSprite: true, sheetTime: Math.random() * 4, sheetRow: 0 };
                 sprite.renderOrder = 5;
                 this.scene.add(sprite);
+                const modelType = i % 2 === 0 ? 'npc_civilian_miner' : 'npc_civilian_researcher';
+                this.setupWorld3dReplacement(sprite, modelType);
                 this.campCivilians.push({
                     sprite,
                     campId: camp.id,
@@ -12750,6 +12930,9 @@ export class ThreeGame {
             if (!camp || !sprite) continue;
             const alive = camp.revealed && !camp.destroyed && camp.status !== 'culled';
             sprite.visible = alive;
+            if (sprite.userData?.world3dRoot) {
+                sprite.userData.world3dRoot.visible = alive;
+            }
             if (!alive) continue;
             const dx = civ.target.x - sprite.position.x;
             const dz = civ.target.z - sprite.position.z;
@@ -12773,6 +12956,7 @@ export class ThreeGame {
                 sprite.position.z += dirZ * 0.55 * delta;
                 this.updateSheetSpriteFrame(sprite, dirX, dirZ, delta);
             }
+            syncWorld3dReplacement(sprite);
         }
     }
 
@@ -14210,9 +14394,13 @@ export class ThreeGame {
                     detail: {
                         campId: camp.id,
                         campLabel: camp.label,
-                        campState: this.getCampRecord(camp.id)
+                        campState: this.getCampRecord(camp.id),
+                        onComplete: () => {
+                            this.talkToLeader('camp', camp);
+                        }
                     }
                 }));
+                return true;
             }
             return this.talkToLeader('camp', camp);
         }
@@ -15068,7 +15256,8 @@ export class ThreeGame {
                 cache: this.getAvailableAmmo(),
                 reloading: this.weaponReloading,
                 reloadProgress,
-                autoRefillProgress
+                autoRefillProgress,
+                unlimitedAmmo: Boolean(this.unlimitedAmmo)
             }
         }));
     }
@@ -15677,6 +15866,27 @@ export class ThreeGame {
         return this.setNoclip(!this.noclip, speedMultiplier);
     }
 
+    setUnlimitedAmmo(enabled = false) {
+        this.unlimitedAmmo = Boolean(enabled);
+        if (this.unlimitedAmmo) {
+            this.weaponClipAmmo = this.weaponClipSize;
+            this.weaponReloading = false;
+            this.weaponReloadTimer = 0;
+            this.weaponAmmoRefillTimer = 0;
+        }
+        this.emitWeaponClipState();
+        window.dispatchEvent(new CustomEvent('unlimited-ammo-toggled', {
+            detail: {
+                enabled: this.unlimitedAmmo
+            }
+        }));
+        return this.unlimitedAmmo;
+    }
+
+    toggleUnlimitedAmmo() {
+        return this.setUnlimitedAmmo(!this.unlimitedAmmo);
+    }
+
     healPlayer(amount = 1, { skipQueensMilkPenalty = false } = {}) {
         if (this.isPlayerDead) return;
         // "Queen's Milk": human-sourced healing hurts instead. Every current
@@ -16102,7 +16312,6 @@ export class ThreeGame {
         if (this.cinematicLock) return false; // untouchable during scripted sequences
         if (this.isInPocket) return false; // untouchable while resolving a fall inside a pocket
         if (this.iFrameTimer > 0 && reason !== 'abyss') return false;
-        if (this.missionState?.status === 'inactive') return false;
         if (sourceX != null && sourceZ != null && this.player?.position) {
             const containmentClamped = shouldBlockAttackPath(
                 { x: sourceX, z: sourceZ },
@@ -16331,6 +16540,11 @@ export class ThreeGame {
     }
 
     clearLoadedChunksForRunReset() {
+        if (this.radialMazePlan) {
+            this._previousRadialLayoutSignature = this._currentRadialLayoutSignature
+                ?? this.getRadialLayoutSignature?.(this.radialMazePlan)
+                ?? null;
+        }
         for (const group of this.chunkMeshes.values()) {
             this.disposeChunkGroupResources(group);
             this.chunkGroups.remove(group);
@@ -16456,7 +16670,9 @@ export class ThreeGame {
             this._hiveKinKills = 0;
             this._tankShockGuardUsed = false;
             this.cinematicLock = false;
-            this.runEntropy = this.fixedRunEntropy ? 0 : createFreshRunEntropy();
+            this.runEntropy = this.fixedRunEntropy
+                ? 0
+                : createFreshRunEntropy(this.runEntropy);
             this.clearBlackBoxMarker();
             this._blackBoxState = blackBoxStore.load();
             this._initClassPassives();
@@ -17279,7 +17495,6 @@ export class ThreeGame {
             this.emitO2State();
             return;
         }
-        if (this.missionState?.status === 'inactive') return;
 
         const previousO2 = this.playerVitals.o2;
         const generatorState = this.getO2GeneratorState();
@@ -17525,8 +17740,16 @@ export class ThreeGame {
         const keyAxisZ = (this.keys.down ? 1 : 0) - (this.keys.up ? 1 : 0);
         const screenAxisX = THREE.MathUtils.clamp(keyAxisX + this.virtualInput.x, -1, 1);
         const screenAxisZ = THREE.MathUtils.clamp(keyAxisZ + this.virtualInput.z, -1, 1);
-        const moveAxisX = (this.cameraPlanarRight.x * screenAxisX) + (this.cameraPlanarForward.x * -screenAxisZ);
-        const moveAxisZ = (this.cameraPlanarRight.y * screenAxisX) + (this.cameraPlanarForward.y * -screenAxisZ);
+        const crosshairGuidesMovement = this.cameraMode === 'third-person' && this.mouseAimActive;
+        const crosshairBasis = crosshairGuidesMovement
+            ? getCrosshairMovementBasis(this.aimDirX, this.aimDirZ)
+            : null;
+        const moveForwardX = crosshairBasis?.forwardX ?? this.cameraPlanarForward.x;
+        const moveForwardZ = crosshairBasis?.forwardZ ?? this.cameraPlanarForward.y;
+        const moveRightX = crosshairBasis?.rightX ?? this.cameraPlanarRight.x;
+        const moveRightZ = crosshairBasis?.rightZ ?? this.cameraPlanarRight.y;
+        const moveAxisX = (moveRightX * screenAxisX) + (moveForwardX * -screenAxisZ);
+        const moveAxisZ = (moveRightZ * screenAxisX) + (moveForwardZ * -screenAxisZ);
         const isMoving = Boolean(moveAxisX || moveAxisZ);
         let moveDirX = this.aimDirX || 1;
         let moveDirZ = this.aimDirZ || 0;
@@ -18111,6 +18334,119 @@ export class ThreeGame {
             const ss = String(secs % 60).padStart(2, '0');
             survEl.textContent = `${mm}:${ss}`;
         }
+    }
+
+    // ── Sky (docs/sky-layer-and-weather-asset-catalog-2026-08-25.md) ──
+    //
+    // The sky used to be a flat scene.background colour lerped toward the biome
+    // fog. The third-person camera (FOV 58, near-level gaze) put the horizon on
+    // screen for most of a run and made that the largest unpainted surface in
+    // the game.
+    //
+    // The rig is camera-locked, so the perspective camera's 160-unit far plane
+    // never clips it, and it is seeded from runEntropy -- co-op peers already
+    // share that seed, so they agree on the sky with nothing on the wire.
+    setupSkyRig() {
+        if (this.skyRig) return;
+        this.skyProfile = createSkyProfile(this.runEntropy);
+        this.skyElapsedSeconds = 0;
+        // Director-fired sky beats (mothership transit, spore bloom, the dying
+        // sun). Never scheduled -- a run must not spoil them at random.
+        this.skyEvents = [];
+        this.skyRig = createSkyRig({});
+        this.scene.add(this.skyRig.group);
+        // Built before warmUpShaderPrograms() runs so the base dome's shader is
+        // compiled behind the loading screen rather than on the first outdoor
+        // frame -- see that function's comment on composer-vs-canvas cache keys.
+    }
+
+    teardownSkyRig() {
+        if (!this.skyRig) return;
+        this.scene.remove(this.skyRig.group);
+        this.skyRig.dispose();
+        this.skyRig = null;
+    }
+
+    updateSky(delta = 0.016) {
+        if (!this.skyRig || !this.skyProfile) return;
+
+        this.skyElapsedSeconds = (this.skyElapsedSeconds ?? 0) + delta;
+        const { cryoMix = 0, bioMix = 0 } = this.biomeMixState ?? {};
+        // Drop finished beats before computing, so the queue cannot grow for
+        // the length of a run.
+        this.skyEvents = (this.skyEvents ?? []).filter(
+            (event) => this.skyElapsedSeconds <= event.startedAt + event.duration
+        );
+
+        const skyState = computeSkyState({
+            profile: this.skyProfile,
+            timeOfDay: this.timeOfDay,
+            elapsedSeconds: this.skyElapsedSeconds,
+            cryoMix,
+            bioMix,
+            events: this.skyEvents
+        });
+        this.skyState = skyState;
+
+        this.skyRig.update({
+            skyState,
+            biomeKey: this.currentBiomeKey,
+            cameraPosition: this.camera?.position ?? null,
+            // The rig accumulates its own cloud clock from this, so the sky
+            // freezes with the game rather than jumping across a pause.
+            delta
+        });
+
+        // The world dissolves into its own sky instead of a mismatched grey.
+        // updateDayNightCycle still owns fog near/far; this only owns colour.
+        if (this.scene?.fog) {
+            this.scene.fog.color.setRGB(
+                skyState.horizonColor.r,
+                skyState.horizonColor.g,
+                skyState.horizonColor.b
+            );
+        }
+
+        // The sun becomes the key light's actual direction. Elevation is clamped
+        // so the light never comes from underground at night -- intensity is
+        // what makes night dark, and updateDayNightCycle already owns that.
+        if (this.directionalLight) {
+            const { x, y, z } = skyState.sunDirection;
+            const elevation = Math.max(y, SKY_MIN_KEY_LIGHT_ELEVATION);
+            const horizontal = Math.hypot(x, z) || 1;
+            const scale = SKY_KEY_LIGHT_DISTANCE / Math.hypot(horizontal, elevation);
+            this.directionalLight.position.set(x * scale, elevation * scale, z * scale);
+        }
+
+        this.applySkyFlash(skyState.flash);
+    }
+
+    // Fire a narrative sky beat. Returns false rather than queueing an atlas
+    // the manifest does not know, so a typo in a director script cannot leave
+    // an invisible entry occupying a billboard slot for the rest of the run.
+    playSkyTransient(sheetId, { duration = null } = {}) {
+        const definition = SKY_SHEETS[sheetId];
+        if (!definition) {
+            debugLog.warn('SKY', `Unknown sky transient requested: ${sheetId}`);
+            return false;
+        }
+        this.skyEvents = this.skyEvents ?? [];
+        this.skyEvents.push({
+            sheetId,
+            startedAt: this.skyElapsedSeconds ?? 0,
+            // Default to a readable screen time rather than the atlas's own
+            // frame duration, which is well under a second for most sheets.
+            duration: duration ?? SKY_TRANSIENT_DEFAULT_SECONDS
+        });
+        return true;
+    }
+
+    // A lightning strike has to reach out of the sky or it reads as a decal on
+    // the backdrop. updateDayNightCycle rewrites intensity from scratch every
+    // frame, so adding here never accumulates.
+    applySkyFlash(flash = 0) {
+        if (!flash || !this.directionalLight) return;
+        this.directionalLight.intensity += flash * SKY_FLASH_LIGHT_BOOST;
     }
 
     updateDayNightCycle(delta) {
@@ -19180,6 +19516,7 @@ export class ThreeGame {
     }
 
     getAvailableAmmo() {
+        if (this.unlimitedAmmo) return 9999;
         return Number.isFinite(window.pickupCounterState?.ammo)
             ? Math.max(0, Math.floor(window.pickupCounterState.ammo))
             : 0;
@@ -20109,13 +20446,40 @@ export class ThreeGame {
         const pointerOrbitDelta = this._cameraOrbitPointerDelta ?? 0;
         this._cameraOrbitPointerDelta = 0;
         const stickOrbit = this.cameraRotationInput ?? 0;
+        if (this.performanceProfile === 'gameplay' && this.cameraMode === 'third-person') {
+            const turnSensitivity = THREE.MathUtils.clamp(
+                Number(globalThis.window?.state?.settings?.aimSensitivity) || 1,
+                0.5,
+                2
+            );
+            const edgeTurn = this._mouseEdgeTurnInput ?? 0;
+            const desiredVelocity = ((stickOrbit * 2.35) + (edgeTurn * 1.85)) * turnSensitivity;
+            const velocityBlend = 1 - Math.exp(-delta * Math.max(7, this.cameraFollowRate * 0.55));
+            this._cameraTurnVelocity += (desiredVelocity - this._cameraTurnVelocity) * velocityBlend;
+            if (Math.abs(desiredVelocity) < 0.0001 && Math.abs(this._cameraTurnVelocity) < 0.005) {
+                this._cameraTurnVelocity = 0;
+            }
+            const pointerTurn = pointerOrbitDelta * 0.0045 * turnSensitivity;
+            this.cameraAzimuth = wrapAngle(
+                this.cameraAzimuth + (this._cameraTurnVelocity * delta) + pointerTurn
+            );
+            // Controller and pointer-lock input use a centered reticle, so the
+            // operator follows the camera. Free mouse aim remains independent.
+            const pointerLocked = typeof document !== 'undefined'
+                && document.pointerLockElement === this.renderer?.domElement;
+            if (Math.abs(stickOrbit) > 0.01 || pointerLocked) {
+                this.updateFacingYaw(wrapAngle(this.cameraAzimuth + Math.PI));
+            }
+        }
         if (this.performanceProfile === 'gameplay' && (Math.abs(stickOrbit) > 0.01 || pointerOrbitDelta)) {
             // Right-stick orbit: preserve the classic isometric height and
             // radius while rotating the camera and screen-relative movement
             // axes around the operator.
-            this.cameraAzimuth = wrapAngle(
-                this.cameraAzimuth + (stickOrbit * delta * 2.8) + (pointerOrbitDelta * 0.008)
-            );
+            if (this.cameraMode !== 'third-person') {
+                this.cameraAzimuth = wrapAngle(
+                    this.cameraAzimuth + (stickOrbit * delta * 2.8) + (pointerOrbitDelta * 0.008)
+                );
+            }
         }
         const camBasis = planarBasisFromOffsetAzimuth(this.cameraAzimuth);
         this.cameraPlanarForward.set(camBasis.forward.x, camBasis.forward.y);
@@ -20125,6 +20489,23 @@ export class ThreeGame {
             this.cameraLift,
             this.cameraOrbitRadius * Math.cos(this.cameraAzimuth)
         );
+
+        if (this.performanceProfile === 'gameplay' && this.cameraMode === 'third-person') {
+            this.updateThirdPersonCamera(delta);
+            if (this.mouseAimActive
+                && Number.isFinite(this.lastMouseClientX)
+                && Number.isFinite(this.lastMouseClientY)) {
+                this.camera.updateMatrixWorld?.();
+                this.updateAimFromClient(this.lastMouseClientX, this.lastMouseClientY, {
+                    keepMouseActive: true,
+                    persistDuration: 0
+                });
+                this.checkHoverInteractable(this.lastMouseClientX, this.lastMouseClientY);
+                window.updateGameplayCrosshair?.(this.lastMouseClientX, this.lastMouseClientY, true);
+            }
+            this.updateTiltShiftAndBokeh(delta);
+            return;
+        }
 
         const target = new THREE.Vector3(
             this.player.position.x + this.cameraOffset.x,
@@ -20173,6 +20554,34 @@ export class ThreeGame {
         this.updateTiltShiftAndBokeh(delta);
     }
 
+    updateThirdPersonCamera(delta, { immediate = false } = {}) {
+        const pose = getThirdPersonCameraPose({
+            playerPosition: this.player.position,
+            planarForward: this.cameraPlanarForward,
+            planarRight: this.cameraPlanarRight,
+            config: this.thirdPersonCameraConfig
+        });
+        const ray = pose.position.clone().sub(pose.focus);
+        const rayLength = ray.length();
+        let resolvedPosition = pose.position;
+        if (rayLength > 0.001 && this.wallMeshes?.length) {
+            this._thirdPersonCameraRaycaster.set(pose.focus, ray.normalize());
+            this._thirdPersonCameraRaycaster.near = 0;
+            this._thirdPersonCameraRaycaster.far = rayLength;
+            const hit = this._thirdPersonCameraRaycaster.intersectObjects(this.wallMeshes, false)[0];
+            if (hit) resolvedPosition = clampCameraPositionToHit(pose.focus, pose.position, hit.distance);
+        }
+        const blend = immediate ? 1 : 1 - Math.exp(-delta * this.cameraFollowRate);
+        this.camera.position.lerp(resolvedPosition, blend);
+        if (this._cameraShakeTimer > 0) {
+            this._cameraShakeTimer -= delta;
+            const intensity = this._cameraShakeIntensity * Math.max(0, this._cameraShakeTimer / 0.35);
+            this.camera.position.x += (Math.random() - 0.5) * intensity;
+            this.camera.position.y += (Math.random() - 0.5) * intensity * 0.45;
+        }
+        this.camera.lookAt(pose.lookAt);
+    }
+
     snapCameraToPlayer() {
         if (!this.player || !this.camera) return;
         const camBasis = planarBasisFromOffsetAzimuth(this.cameraAzimuth);
@@ -20183,6 +20592,11 @@ export class ThreeGame {
             this.cameraLift,
             this.cameraOrbitRadius * Math.cos(this.cameraAzimuth)
         );
+        if (this.performanceProfile === 'gameplay' && this.cameraMode === 'third-person') {
+            this.updateThirdPersonCamera(0, { immediate: true });
+            this.updateTiltShiftAndBokeh(0.016);
+            return;
+        }
         this.camera.position.set(
             this.player.position.x + this.cameraOffset.x,
             this.player.position.y + this.cameraOffset.y,
@@ -20197,8 +20611,7 @@ export class ThreeGame {
         if (!overlay || !this.player || !this.camera) return;
 
         const isGameplay = this.performanceProfile === 'gameplay'
-            && !this.loadingPaused
-            && !this.adaptiveGameplayPerformanceMode;
+            && !this.loadingPaused;
         overlay.classList.toggle('is-active', isGameplay);
 
         if (!isGameplay) return;
@@ -20328,8 +20741,8 @@ export class ThreeGame {
                     // prefetch remains throttled, but still gets an occasional
                     // slot so the next boundary is staged before arrival.
                     ? (hasMissingVisibleChunk || this._slowFrameChunkMountTick % 8 === 0 ? 1 : 0)
-                    : this.maxChunkMountsPerFrame;
-        this.processPendingChunkMounts(chunkMountLimit);
+                    : Math.min(1, this.maxChunkMountsPerFrame ?? 1);
+        this.processPendingChunkMounts(chunkMountLimit, { maxDurationMs: CHUNK_MOUNT_BATCH_BUDGET_MS });
 
         for (const [key, group] of this.chunkMeshes.entries()) {
             if (resident.has(key)) {
@@ -20487,12 +20900,15 @@ export class ThreeGame {
         return mounted;
     }
 
-    async prepareVisibleChunksForGameplay({ batchSize = 3, onProgress = null } = {}) {
+    async prepareVisibleChunksForGameplay({ batchSize = 2, onProgress = null } = {}) {
         if (this.performanceProfile !== 'gameplay' || !this.player) return;
+
+        // Preload common 3D world models in background during chunk staging & warmup
+        const preloadPromise = preloadWorld3dModels().catch(() => null);
 
         // Deployment only needs the visible 3x3 set. Directional prefetch is
         // a runtime concern and must not inflate the covered startup workload.
-        this.syncVisibleChunks(true, { prefetch: false });
+        this.syncVisibleChunks(true, { prefetch: false, processLimit: 0 });
         const initialPending = this.pendingChunkMounts.length;
         debugLog.info('STREAM', 'Initial chunk staging started', {
             chunks: initialPending,
@@ -20504,13 +20920,6 @@ export class ThreeGame {
 
         while (this.pendingChunkMounts.length > 0) {
             const before = this.pendingChunkMounts.length;
-            // docs/perf-chunk-mount-plan-2026-08-20.md Track A: batchSize
-            // stays as the upper bound for cheap chunks, but
-            // CHUNK_MOUNT_BATCH_BUDGET_MS stops this call early if the
-            // chunks turned out to be expensive, so up to `batchSize`
-            // large chunks can no longer stack into one uninterrupted
-            // long task -- the actual mechanism behind the up-to-996ms
-            // spikes seen in a real playtest (docs/logs/log8.json).
             this.processPendingChunkMounts(batchSize, { maxDurationMs: CHUNK_MOUNT_BATCH_BUDGET_MS });
             mounted += Math.max(0, before - this.pendingChunkMounts.length);
             const total = Math.max(1, initialPending);
@@ -20518,7 +20927,8 @@ export class ThreeGame {
             await new Promise((resolve) => requestAnimationFrame(resolve));
         }
 
-        this.syncVisibleChunks(true, { prefetch: false });
+        // Rebuild visibility registries from already-mounted chunks WITHOUT re-queueing
+        this.syncVisibleChunks(false, { prefetch: false, processLimit: 0 });
 
         // Must precede the warm-up: the pool's 8 lights are part of the light
         // count the warm-up needs to compile against, and creating them later
@@ -20526,6 +20936,8 @@ export class ThreeGame {
         // and force exactly the recompile this is all here to avoid.
         this._ensureEnvLightPool();
         this.warmUpShaderPrograms();
+
+        await preloadPromise;
 
         onProgress?.(1);
         debugLog.info('STREAM', 'Initial chunk staging ready', {
@@ -21645,6 +22057,11 @@ export class ThreeGame {
         // since renderOrder/shadow flags are pool-wide, not per-instance)
         // loses nothing gameplay-relevant.
         const holeOverlayMatrices = [];
+        // Parallel IDs let a live repair hide one member of this instanced
+        // batch.  Before this metadata existed fillHoleAt still searched for
+        // the old per-hole Mesh, so collision changed while the black hole art
+        // remained visible until the whole chunk was remounted.
+        const holeOverlayKeys = [];
         const flatOverlayMatrices = [];
 
         const addCanyonDropSkirt = (posX, posZ, rotY, biomeKey) => {
@@ -21782,15 +22199,22 @@ export class ThreeGame {
                 if (tileChar === EXTERIOR_CANYON_TILE) {
                     if (this.floorGeometry && this.voidMaterial) {
                         instMatrix.compose(
-                            new THREE.Vector3(worldX, -10, worldZ),
+                            // Keep a dark mask immediately below the rim. The
+                            // old -10 plane sat behind the horizon from common
+                            // camera angles, exposing the bright sky instead.
+                            new THREE.Vector3(worldX, -0.18, worldZ),
                             floorRotation,
                             new THREE.Vector3(1, 1, 1)
                         );
                         voidPatchMatrices.push(instMatrix.clone());
                     }
                     const hasWalkableOrWall = (dx, dy) => {
-                        const char = grid[localY + dy]?.[localX + dx];
-                        return char === '.' || char === 'D' || char === '#' || char === 'C';
+                        const localChar = grid[localY + dy]?.[localX + dx];
+                        const cachedChar = localChar ?? this.getCachedTileType?.(worldX + dx, worldZ + dy);
+                        const char = cachedChar ?? this.getTileType?.(worldX + dx, worldZ + dy);
+                        return char !== null
+                            && char !== undefined
+                            && char !== EXTERIOR_CANYON_TILE;
                     };
                     const bKey = this.getBiomeKeyForWorldPosition?.(worldX, worldZ) ?? BIOME_KEYS.ACTIVE;
                     if (hasWalkableOrWall(0, -1)) {
@@ -21870,6 +22294,8 @@ export class ThreeGame {
                         statusMaterial
                     );
                     statusBar.position.y = 0.42;
+                    statusBar.castShadow = false;
+                    statusBar.receiveShadow = false;
                     doorMesh.add(statusBar);
                     doorMesh.userData.proceduralDoorStatusMaterial = statusMaterial;
                     doorMesh.userData.proceduralDoorStatusBar = statusBar;
@@ -21887,6 +22313,8 @@ export class ThreeGame {
                             statusMaterial
                         );
                         button.position.set(panelWorldX, 0.82, panelWorldZ + 0.125);
+                        button.castShadow = false;
+                        button.receiveShadow = false;
                         button.userData = {
                             isProceduralDoorControl: true,
                             proceduralDoorId: persistedDoor?.id ?? null
@@ -21909,6 +22337,7 @@ export class ThreeGame {
                         floorRotation,
                         new THREE.Vector3(0.5, 0.5, 1)
                     ));
+                    holeOverlayKeys.push(this.getWallKey(worldX, worldZ));
                     continue;
                 }
                 if (
@@ -21947,6 +22376,7 @@ export class ThreeGame {
                         new THREE.Quaternion().setFromEuler(new THREE.Euler(-Math.PI / 2, 0, holeInfo.rotationZ)),
                         new THREE.Vector3(holeInfo.scale, holeInfo.scale, 1)
                     ));
+                    holeOverlayKeys.push(this.getWallKey(worldX, worldZ));
 
                     // Seeded chance (~40%) to spawn a Fungal Spore Vent (Stage 1 Fungal Enemy) on hole tiles
                     if (wallTypeRng() < 0.40) {
@@ -22143,7 +22573,7 @@ export class ThreeGame {
             holeOverlayInstanced.instanceMatrix.needsUpdate = true;
             holeOverlayInstanced.renderOrder = 2;
             holeOverlayInstanced.receiveShadow = true;
-            holeOverlayInstanced.userData = { isLethalPit: true };
+            holeOverlayInstanced.userData = { isLethalPit: true, holeOverlayKeys };
             group.add(holeOverlayInstanced);
         }
 
@@ -23491,7 +23921,9 @@ export class ThreeGame {
             // placement.tiltX (a distortion meant for 3D organic props like stalagmites/junk
             // piles, not a flat wall-mounted 2D plane). Reusing it here silently stretched
             // otherwise-square textures up to ~8% non-uniformly.
-            const decalWidth = Math.max(1.0, scaleX * 1.4);
+            // Keep environmental decals inside a single wall panel. Large
+            // room-prop scales previously turned them into freestanding slabs.
+            const decalWidth = THREE.MathUtils.clamp(scaleX * 0.82, 0.62, 0.96);
             const decalHeight = decalWidth;
             const wallDecalGeo = new THREE.PlaneGeometry(decalWidth, decalHeight);
             const decalMesh = new THREE.Mesh(wallDecalGeo, material);
@@ -24282,7 +24714,35 @@ export class ThreeGame {
         );
         root.add(body);
         root.userData.fogMaterials = this.cloneMaterialsForFogOfWar(root);
+        this.applyPickupRarityVisuals(root);
         return root;
+    }
+
+    applyPickupRarityVisuals(pickup) {
+        const body = pickup?.userData?.body;
+        const rarityColor = pickup?.userData?.rarity?.color;
+        if (!body || !Number.isFinite(rarityColor)) return;
+        const accent = new THREE.Color(rarityColor);
+        const dynamicObjects = new Set([
+            pickup.userData.shadow,
+            pickup.userData.glow,
+            pickup.userData.burst
+        ]);
+        body.traverse((child) => {
+            if (dynamicObjects.has(child) || !child.material) return;
+            const materials = Array.isArray(child.material) ? child.material : [child.material];
+            for (const material of materials) {
+                material.color?.lerp?.(accent, 0.58);
+                if (material.emissive) {
+                    material.emissive.lerp(accent, 0.72);
+                    material.emissiveIntensity = Math.max(
+                        material.emissiveIntensity ?? 0,
+                        pickup.userData.rarity.emissiveIntensity ?? 0.95
+                    );
+                }
+                material.userData.pickupRarityColor = rarityColor;
+            }
+        });
     }
 
     cloneMaterialsForFogOfWar(root) {
@@ -25929,22 +26389,48 @@ export class ThreeGame {
         }
     }
 
-    eruptFungalVent(sprite) {
+    findFungalVentLandingPosition(x, z) {
+        const candidates = [
+            [1, 0], [-1, 0], [0, 1], [0, -1],
+            [1, 1], [1, -1], [-1, 1], [-1, -1],
+            [2, 0], [-2, 0], [0, 2], [0, -2]
+        ].map(([dx, dz]) => ({ x: Math.round(x) + dx, z: Math.round(z) + dz }));
+        if (this.player) {
+            candidates.sort((a, b) => (
+                Math.hypot(a.x - this.player.position.x, a.z - this.player.position.z)
+                - Math.hypot(b.x - this.player.position.x, b.z - this.player.position.z)
+            ));
+        }
+        return candidates.find((candidate) => (
+            this.isSnailTileWalkable?.(candidate.x, candidate.z)
+            && (this.canOccupyPosition?.(candidate.x, candidate.z) ?? true)
+        )) ?? { x, z };
+    }
+
+    eruptFungalVent(sprite, { fromHole = false } = {}) {
         const x = sprite.position.x;
         const z = sprite.position.z;
         const parent = sprite.parent || this.scene;
+        const landing = this.findFungalVentLandingPosition(x, z);
 
         // Visual and sound effects for Stage 2 emergence
         this.spawnGearPoofEffect(x, z, 'bio_spores');
         this.spawnToxicSporePuddle(x, z, false);
-        window.AudioManager?.playMetalStress?.({ volume: 0.55, playbackRate: 2.1, force: true });
+        if (typeof window !== 'undefined') {
+            window.AudioManager?.play?.('hive_spores_puff', { volume: 0.62, playbackRate: 1.15, bus: 'sfx' });
+            window.AudioManager?.playMetalStress?.({ volume: 0.55, playbackRate: 2.1, force: true });
+        }
 
         // Remove static vent sprite
         const idx = this.scatterSprites.indexOf(sprite);
-        if (idx !== -1) this.scatterSprites.splice(idx, 1);
+        sprite.userData.burstTriggered = true;
+        disposeEnemy3dVisual(sprite.userData?.enemy3dVisual);
+        sprite.userData?.world3dRoot?.removeFromParent?.();
         if (sprite.parent) sprite.parent.remove(sprite);
+        sprite.material?.dispose?.();
 
-        // Erupt Stage 2: Mycelium Stalker
+        // Erupt Stage 2 at the hole center, then arc onto an adjacent walkable
+        // tile before normal chase collision/pathing takes over.
         const placement = {
             x,
             z,
@@ -25960,14 +26446,60 @@ export class ThreeGame {
         };
         const stalker = this.createScatterInstance(placement);
         if (stalker) {
+            stalker.userData.holeEmergence = {
+                startX: x,
+                startZ: z,
+                landingX: landing.x,
+                landingZ: landing.z,
+                elapsed: 0,
+                duration: 0.68,
+                fromRepair: fromHole
+            };
+            stalker.userData.aiMode = 'emerging';
             parent.add(stalker);
-            this.scatterSprites.push(stalker);
+            // Replace in place so erupting during the scatter update loop
+            // does not shift the next enemy backward and skip its frame.
+            if (idx !== -1) this.scatterSprites.splice(idx, 1, stalker);
+            else this.scatterSprites.push(stalker);
+            if (typeof window !== 'undefined') {
+                window.dispatchEvent(new CustomEvent('fungal-vent-erupted', {
+                    detail: { x, z, landingX: landing.x, landingZ: landing.z, fromRepair: fromHole }
+                }));
+            }
+        } else if (idx !== -1) {
+            this.scatterSprites.splice(idx, 1);
         }
+        return stalker ?? null;
     }
 
     updateChargerOrStalkerBehavior(sprite, delta, { isStalker = false } = {}) {
         const data = sprite.userData;
         if (!this.player || this.isPlayerDead) return;
+
+        if (data.holeEmergence) {
+            const emergence = data.holeEmergence;
+            emergence.elapsed = Math.min(emergence.duration, emergence.elapsed + delta);
+            const t = emergence.duration > 0 ? emergence.elapsed / emergence.duration : 1;
+            const eased = 1 - Math.pow(1 - t, 3);
+            sprite.position.x = THREE.MathUtils.lerp(emergence.startX, emergence.landingX, eased);
+            sprite.position.z = THREE.MathUtils.lerp(emergence.startZ, emergence.landingZ, eased);
+            sprite.position.y = (data.baseY ?? 0.08) + Math.sin(t * Math.PI) * 1.15;
+            const squash = 0.78 + Math.sin(t * Math.PI) * 0.3;
+            sprite.scale.set(
+                (data.baseScaleX ?? 1) * squash,
+                (data.baseScaleY ?? 1) * (0.9 + Math.sin(t * Math.PI) * 0.24),
+                1
+            );
+            this.faceSpriteFromDir?.(sprite, emergence.landingX - emergence.startX);
+            if (t >= 1) {
+                sprite.position.set(emergence.landingX, data.baseY ?? 0.08, emergence.landingZ);
+                sprite.scale.set(data.baseScaleX ?? 1, data.baseScaleY ?? 1, 1);
+                data.holeEmergence = null;
+                data.aiMode = 'hunt';
+                data.attackCooldown = Math.max(data.attackCooldown ?? 0, 0.25);
+            }
+            return;
+        }
 
         if (data.staggerState) {
             const events = tickStaggerState(data.staggerState, delta);
@@ -25985,6 +26517,22 @@ export class ThreeGame {
             data.vx = (data.vx ?? 0) * 0.5;
             data.vz = (data.vz ?? 0) * 0.5;
             data.attackCooldown = Math.max(0, (data.attackCooldown ?? 0) - delta);
+            return;
+        }
+
+        // Contact attacks use the same collision-aware separation as snails.
+        // Finish that short recoil before resuming pursuit so a stalker cannot
+        // remain centered inside the player's capsule after landing a hit.
+        if ((data.knockbackTimer ?? 0) > 0) {
+            const nextX = sprite.position.x + (data.knockbackVx ?? 0) * delta;
+            const nextZ = sprite.position.z + (data.knockbackVz ?? 0) * delta;
+            if (this.isSnailTileWalkable(Math.round(nextX), Math.round(nextZ))) {
+                sprite.position.x = nextX;
+                sprite.position.z = nextZ;
+            }
+            data.knockbackTimer = Math.max(0, data.knockbackTimer - delta);
+            data.vx = 0;
+            data.vz = 0;
             return;
         }
 
@@ -26050,17 +26598,29 @@ export class ThreeGame {
 
         this.faceSpriteFromDir(sprite, data.vx, dx);
 
-        // Contact attack check
-        if (distToPlayer <= 0.95 && (data.attackCooldown ?? 0) <= 0) {
+        // Contact attack check. Recompute after movement so a stalker that
+        // crosses into the player this frame lands the hit immediately rather
+        // than visually overlapping without effect until a later tick.
+        const contactDistance = Math.hypot(
+            this.player.position.x - sprite.position.x,
+            this.player.position.z - sprite.position.z
+        );
+        if (contactDistance <= SNAIL_ATTACK_RADIUS && (data.attackCooldown ?? 0) <= 0) {
             data.attackCooldown = 1.0;
+            const reason = isStalker ? 'mycelium_stalker' : 'bio_charger';
             const hitApplied = this.takeDamage(
                 isStalker ? 1 : 2,
-                isStalker ? 'mycelium_stalker' : 'bio_charger',
+                reason,
                 sprite.position.x,
                 sprite.position.z
             );
             if (hitApplied) {
+                this.applySnailContactKnockback?.(sprite, data);
                 if (isStalker) this.spawnToxicSporePuddle(sprite.position.x, sprite.position.z, false);
+                if (typeof window !== 'undefined') {
+                    window.dispatchEvent(new CustomEvent('player-hit', { detail: { reason } }));
+                }
+                this.triggerCameraShake?.(isStalker ? 0.16 : 0.24, 0.28);
                 window.AudioManager?.playMetalStress?.({ volume: 0.35, playbackRate: 1.4, force: true });
             }
         } else {
@@ -27955,12 +28515,6 @@ export class ThreeGame {
         const tileX = Math.round(x);
         const tileY = Math.round(z);
 
-        // Canyon/cliff cells are void, not floor. The previous collision path
-        // only rejected '#' walls, so some canyon tiles could be crossed until
-        // the separate fall-radius check happened to catch the player.
-        const tile = this.getTileType(tileX, tileY);
-        if (tile === EXTERIOR_CANYON_TILE || tile === CLIFF_TILE) return false;
-
         for (let offsetY = -2; offsetY <= 2; offsetY++) {
             for (let offsetX = -2; offsetX <= 2; offsetX++) {
                 const checkX = tileX + offsetX;
@@ -28195,7 +28749,11 @@ export class ThreeGame {
                 z: tileY,
                 scale: 1,
                 rotationZ: 0,
-                fallRadius: 0.20,
+                // Rounded tile selection switches to this void cell at the
+                // half-tile lip. Cover that footprint so the fall starts as
+                // soon as the player crosses the rendered edge, not only
+                // after reaching the center of empty space.
+                fallRadius: 0.52,
                 lethal: true,
                 exteriorCanyon: true
             };
@@ -28207,7 +28765,7 @@ export class ThreeGame {
                 z: tileY,
                 scale: 1,
                 rotationZ: 0,
-                fallRadius: 0.20,
+                fallRadius: 0.52,
                 lethal: true,
                 exteriorCanyon: true,
                 cliff: true
@@ -28254,34 +28812,60 @@ export class ThreeGame {
         const key = this.getWallKey ? this.getWallKey(tileX, tileZ) : `${tileX},${tileZ}`;
         if (this.filledHoleKeys.has(key)) return false;
         if (typeof this.getTileType === 'function' && this.getTileType(tileX, tileZ) === EXTERIOR_CANYON_TILE) return false;
-        if (!this.isHoleTile(tileX, tileZ)) return false;
+        const holeInfo = this.getHoleVisualInfo?.(tileX, tileZ)
+            ?? (this.isHoleTile?.(tileX, tileZ) ? { x: tileX, z: tileZ } : null);
+        if (!holeInfo) return false;
 
         this.filledHoleKeys.add(key);
 
         if (this.chunkMeshes) {
             for (const group of this.chunkMeshes.values()) {
                 if (!group?.children) continue;
+                let groupContainsHole = false;
                 for (let i = group.children.length - 1; i >= 0; i--) {
                     const child = group.children[i];
-                    if (child.material === this.holeMaterial) {
+                    const instanceIndex = child.userData?.holeOverlayKeys?.indexOf?.(key) ?? -1;
+                    if (instanceIndex >= 0 && child.isInstancedMesh) {
+                        // Keep the batch allocation stable and collapse only
+                        // this repaired instance. setMatrixAt is the supported
+                        // way to mutate one member of an InstancedMesh.
+                        child.setMatrixAt(instanceIndex, new THREE.Matrix4().makeScale(0, 0, 0));
+                        child.instanceMatrix.needsUpdate = true;
+                        groupContainsHole = true;
+                        break;
+                    }
+                    // Compatibility for chunks mounted by the older,
+                    // pre-instancing renderer.
+                    if (!child.isInstancedMesh && child.material === this.holeMaterial) {
                         const dx = Math.abs(child.position.x - tileX);
                         const dz = Math.abs(child.position.z - tileZ);
                         if (dx < 0.9 && dz < 0.9) {
                             group.remove(child);
-                            child.geometry?.dispose?.();
-
-                            const filledPatch = new THREE.Mesh(this.floorGeometry, this.floorMaterial);
-                            filledPatch.rotation.x = -Math.PI / 2;
-                            filledPatch.position.set(tileX, 0.005, tileZ);
-                            filledPatch.receiveShadow = true;
-                            filledPatch.userData = { isFilledHolePatch: true, wallKey: key };
-                            group.add(filledPatch);
+                            groupContainsHole = true;
                             break;
                         }
                     }
                 }
+                if (groupContainsHole && !group.children.some((child) => child.userData?.wallKey === key)) {
+                    const filledPatch = new THREE.Mesh(this.floorGeometry, this.floorMaterial);
+                    filledPatch.rotation.x = -Math.PI / 2;
+                    filledPatch.position.set(tileX, 0.018, tileZ);
+                    filledPatch.receiveShadow = true;
+                    filledPatch.userData = { isFilledHolePatch: true, wallKey: key };
+                    group.add(filledPatch);
+                }
             }
         }
+
+        // A vent is the creature's sealed Stage-1 shell. Repairing underneath
+        // it must force the Stage-2 creature out; otherwise the now-safe hole
+        // leaves the enemy apparently embedded in its old nest forever.
+        const lurkingVent = this.scatterSprites?.find((sprite) => (
+            sprite?.userData?.type === 'fungal_spore_vent'
+            && !sprite.userData.burstTriggered
+            && Math.hypot(sprite.position.x - tileX, sprite.position.z - tileZ) < 0.75
+        ));
+        if (lurkingVent) this.eruptFungalVent?.(lurkingVent, { fromHole: true });
 
         this.spawnPhysicalBurst?.(tileX, tileZ, {
             color: 0x7c6853,
@@ -28299,6 +28883,12 @@ export class ThreeGame {
             rise: 0.15
         });
         if (typeof window !== 'undefined') {
+            // Positive repair confirmation layered over the dirt/metal impact.
+            window.AudioManager?.play?.('ui_upgrade_weapon', {
+                volume: 0.48,
+                playbackRate: 0.82,
+                bus: 'sfx'
+            });
             window.AudioManager?.playMetalStress?.({ volume: 0.4, playbackRate: 0.8, force: true });
             window.dispatchEvent?.(new CustomEvent('hole-filled', {
                 detail: { x: tileX, z: tileZ }
@@ -28320,7 +28910,16 @@ export class ThreeGame {
                 const hx = cx + dx;
                 const hz = cz + dz;
                 if (Math.hypot(px - hx, pz - hz) <= 2.0 && this.isHoleTile(hx, hz)) {
-                    return this.fillHoleAt(hx, hz);
+                    const yaw = Math.atan2(hx - px, hz - pz);
+                    this.updateFacingYaw?.(yaw);
+                    const repaired = this.fillHoleAt(hx, hz);
+                    if (repaired) {
+                        // Every runtime chassis carries this compact forward
+                        // swing; facing the hole makes it read as tamping or
+                        // hammering the repair instead of a combat strike.
+                        this.player3dOverlay?.trigger?.('melee', 0.85);
+                    }
+                    return repaired;
                 }
             }
         }

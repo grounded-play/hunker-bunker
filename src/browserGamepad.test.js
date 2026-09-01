@@ -3,6 +3,7 @@ import {
     inferBrowserGamepadType,
     isGamepadButtonPressed,
     mapBrowserGamepad,
+    mergeBrowserAnalogFallback,
     normalizeGamepadAxis
 } from './browserGamepad.js';
 
@@ -69,6 +70,44 @@ describe('browser gamepad mapping', () => {
         });
     });
 
+    it('maps right trigger to both gameplay fire and menu confirm', () => {
+        const buttons = Array.from({ length: 17 }, () => button(false));
+        buttons[7] = button(false, 0.8);
+
+        const mapped = mapBrowserGamepad({ index: 0, id: 'Steam Deck', axes: [0, 0, 0, 0], buttons });
+
+        expect(mapped.fire).toBe(true);
+        expect(mapped.menuConfirm).toBe(true);
+    });
+
+    it('fills each missing native stick independently from the browser view', () => {
+        const native = {
+            handle: 'native:1',
+            move: { x: 0, y: 0 },
+            camera: { x: 0, y: 0 },
+            interact: true
+        };
+        const browser = [{
+            move: { x: 0.75, y: -0.25 },
+            camera: { x: -0.6, y: 0.4 }
+        }];
+
+        expect(mergeBrowserAnalogFallback(native, browser)).toEqual({
+            ...native,
+            move: browser[0].move,
+            camera: browser[0].camera
+        });
+    });
+
+    it('keeps a working native stick while rescuing only the neutral one', () => {
+        const native = { move: { x: 0.5, y: 0 }, camera: { x: 0, y: 0 } };
+        const browser = [{ move: { x: -0.9, y: 0 }, camera: { x: 0.7, y: 0.2 } }];
+        const merged = mergeBrowserAnalogFallback(native, browser);
+
+        expect(merged.move).toBe(native.move);
+        expect(merged.camera).toBe(browser[0].camera);
+    });
+
     it('maps gameplay scan and tactical map to the left and right bumpers', () => {
         const buttons = Array.from({ length: 17 }, () => button(false));
         buttons[4] = button(true);
@@ -123,6 +162,40 @@ describe('browser gamepad mapping', () => {
 
         expect(mapped.menuTabLeft).toBe(true);
         expect(mapped.menuTabRight).toBe(true);
+    });
+
+    // The Steam layout drives gameplay movement from the analog `move` action,
+    // and the D-pad is a digital source. Folding it into the same vector is what
+    // makes the D-pad walk the player exactly like the left stick.
+    it('moves the player from the D-pad when the left stick is neutral', () => {
+        const buttons = Array.from({ length: 16 }, () => button(false));
+        buttons[13] = button(true);
+        buttons[14] = button(true);
+
+        const mapped = mapBrowserGamepad({ index: 0, id: 'Xbox Wireless Controller', axes: [0, 0, 0, 0], buttons });
+
+        expect(mapped.move).toEqual({ x: -1, y: 1 });
+        expect(mapped.active).toBe(true);
+    });
+
+    it('lets a pushed left stick win over the D-pad on each axis', () => {
+        const buttons = Array.from({ length: 16 }, () => button(false));
+        buttons[12] = button(true);
+        buttons[15] = button(true);
+
+        const mapped = mapBrowserGamepad({ index: 0, id: 'Xbox Wireless Controller', axes: [-0.6, 0, 0, 0], buttons });
+
+        expect(mapped.move.x).toBeCloseTo(-0.6, 5);
+        expect(mapped.move.y).toBe(-1);
+    });
+
+    it('leaves camera aim alone when only the D-pad is pressed', () => {
+        const buttons = Array.from({ length: 16 }, () => button(false));
+        buttons[12] = button(true);
+
+        const mapped = mapBrowserGamepad({ index: 0, id: 'Xbox Wireless Controller', axes: [0, 0, 0, 0], buttons });
+
+        expect(mapped.camera).toEqual({ x: 0, y: 0 });
     });
 
     it('infers common controller prompt families from browser ids', () => {

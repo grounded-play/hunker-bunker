@@ -143,7 +143,12 @@ export function getLocalLoadoutSummary(opClass) {
     if (typeof window === 'undefined' || !window.loadout) return null;
     const weapon = window.loadout.getEquippedLabel?.(window.fabricator, opClass) ?? 'UNARMED';
     const hasCharm = Boolean(window.loadout.getEquippedCharmId?.(opClass));
-    return { weapon, hasCharm };
+    const chassisSkinId = window.loadout.getEquippedChassisSkinId?.() ?? null;
+    const polishColor = window.loadout.getEquippedOperatorPolish?.(opClass) ?? null;
+    const summary = { weapon, hasCharm };
+    if (chassisSkinId) summary.chassisSkinId = chassisSkinId;
+    if (polishColor) summary.polishColor = polishColor;
+    return summary;
 }
 
 const PLAYABLE_OPERATOR_CLASSES = Object.freeze(['SCOUT', 'TANK', 'ENGINEER']);

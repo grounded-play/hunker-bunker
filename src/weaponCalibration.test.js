@@ -14,6 +14,8 @@ describe('weapon calibration profiles', () => {
             expect(profile.gameplay.targetSize).toBeGreaterThan(0);
             expect(profile.armory.targetSize).toBeGreaterThan(profile.gameplay.targetSize);
             expect(profile.reward.targetSize).toBeGreaterThan(profile.gameplay.targetSize);
+            expect(profile.armory.rotation).toEqual([0, 0, 0]);
+            expect(profile.gameplay.rotation).not.toEqual(profile.armory.rotation);
         }
     });
 

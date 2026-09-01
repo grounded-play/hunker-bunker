@@ -54,7 +54,17 @@ export const WORLD_3D_MODELS = Object.freeze({
     npc_alien_rhun: { url: '/3d/runtime/new3ds/npc_alien_rhun.glb', height: 1.95, yaw: 0 },
     npc_alien_vey: { url: '/3d/runtime/new3ds/npc_alien_vey.glb', height: 1.70, yaw: 0 },
     npc_civilian_miner: { url: '/3d/runtime/new3ds/npc_civilian_miner.glb', height: 1.80, yaw: 0 },
-    npc_civilian_researcher: { url: '/3d/runtime/new3ds/npc_civilian_researcher.glb', height: 1.75, yaw: 0 }
+    npc_civilian_researcher: { url: '/3d/runtime/new3ds/npc_civilian_researcher.glb', height: 1.75, yaw: 0 },
+    npc_martha: { url: '/3d/runtime/new3ds/npc_martha.glb', height: 1.75, yaw: 0 },
+    npc_kaelen: { url: '/3d/runtime/new3ds/npc_kaelen.glb', height: 1.80, yaw: 0 },
+    npc_briggs: { url: '/3d/runtime/new3ds/chassis_trench_warden_heavy.glb', height: 1.85, yaw: 0 },
+    npc_val: { url: '/3d/runtime/new3ds/npc_val.glb', height: 1.75, yaw: 0 },
+    npc_nahl: { url: '/3d/runtime/new3ds/npc_nahl.glb', height: 1.75, yaw: 0 },
+    npc_aria: { url: '/3d/runtime/new3ds/npc_aria.glb', height: 1.80, yaw: 0 },
+    npc_queen: { url: '/3d/runtime/new3ds/npc_queen.glb', height: 2.10, yaw: 0 },
+    prop_camp_cookfire: { url: '/3d/runtime/new3ds/prop_fabricator_workstation.glb', height: 0.85, yaw: 0 },
+    prop_camp_crates: { url: '/3d/runtime/new3ds/prop_bunker_supplies.glb', height: 0.75, yaw: 0 },
+    prop_camp_sandbags: { url: '/3d/runtime/new3ds/prop_security_barricade.glb', height: 0.82, yaw: 0 }
 });
 
 const templates = new Map();
@@ -111,6 +121,50 @@ export function hasWorld3dModel(type) {
     return Boolean(WORLD_3D_MODELS[type]);
 }
 
+export const COMMON_WORLD_3D_MODEL_TYPES = Object.freeze([
+    'broken_scout_ship',
+    'broken_tank_ship',
+    'broken_engineer_ship',
+    'base_console',
+    'o2_generator',
+    'hull_matrix',
+    'radar',
+    'fusion_generator',
+    'basic_pile',
+    'storage_locker',
+    'frozen_tanker',
+    'bunker_junk_rare',
+    'bunker_junk_uncommon',
+    'prop_bunker_supplies',
+    'prop_security_barricade',
+    'prop_conduit_hub',
+    'prop_specimen_tank',
+    'prop_ammo_crate_stack',
+    'prop_base_defense_turret',
+    'prop_body_empty_exosuit',
+    'prop_body_human_frozen',
+    'cybersnail_dead',
+    'npc_martha',
+    'npc_kaelen',
+    'npc_briggs',
+    'npc_alien_rhun',
+    'npc_alien_vey',
+    'npc_nahl',
+    'npc_val',
+    'npc_queen'
+]);
+
+export async function preloadWorld3dModels(types = COMMON_WORLD_3D_MODEL_TYPES) {
+    const promises = [];
+    for (const type of types) {
+        const config = WORLD_3D_MODELS[type];
+        if (config?.url) {
+            promises.push(loadTemplate(config.url).catch(() => null));
+        }
+    }
+    await Promise.allSettled(promises);
+}
+
 // Keep a replacement attached to the sprite that still owns gameplay state.
 // The sprite can move after a GLB request starts (the O2 generator's boot
 // animation does exactly that), so copying its transform only once at load
@@ -124,3 +178,4 @@ export function syncWorld3dReplacement(source, { scale = 1, visible } = {}) {
     root.visible = visible ?? Boolean(source.userData.world3dDesiredVisible);
     return true;
 }
+

@@ -16,6 +16,12 @@ const controllerTypes = [
     'controller_generic'
 ];
 
+// This text is shown by Valve's controller-layout UI before launch. Keep it
+// aligned with the gameplay preset below instead of duplicating a device image
+// inside the game's loading screen.
+const OFFICIAL_LAYOUT_TITLE = 'Official Hunker Bunker Controls';
+const OFFICIAL_LAYOUT_DESCRIPTION = 'Left Stick / D-Pad Move · Right Stick Aim/Pointer · A/RT Confirm menus · A Interact · B Dodge/Back · X Reload · Y Smash · LB Scan · RB Map · LT Sprint · RT Fire · Menu Pause.';
+
 function binding(actionSet, action, title) {
     return `"binding" "game_action ${actionSet} ${action}, ${title}"`;
 }
@@ -182,7 +188,7 @@ function buildControllerConfig(controllerType) {
             right: ['menu_right', 'Right']
         }),
         triggerGroup(3, 'menu', 'menu_tab_left', 'Previous Tab'),
-        triggerGroup(4, 'menu', 'menu_tab_right', 'Next Tab'),
+        triggerGroup(4, 'menu', 'menu_confirm', 'Confirm'),
         switchesGroup(5, 'menu', {
             button_escape: ['pause', 'Pause'],
             button_menu: ['pause', 'Settings / Pause'],
@@ -203,6 +209,10 @@ function buildControllerConfig(controllerType) {
         // Retained for custom trackpad/gyro layouts. The official preset uses
         // the right stick's direct aim vector below.
         mouseGroup(17, 'gameplay', 'camera_mouse'),
+        // The D-pad walks the player exactly like the left stick. A digital
+        // source feeding a joystick_move group is the same shape the archive
+        // preset already uses for archive_focus.
+        analogGroup(18, 'gameplay', 'move'),
         triggerGroup(13, 'gameplay', 'sprint', 'Sprint'),
         triggerGroup(14, 'gameplay', 'fire', 'Fire'),
         switchesGroup(15, 'gameplay', gameplaySwitches),
@@ -259,7 +269,8 @@ function buildControllerConfig(controllerType) {
         12: 'right_joystick',
         13: 'left_trigger',
         14: 'right_trigger',
-        15: 'switch'
+        15: 'switch',
+        18: 'dpad'
     };
     const archiveSources = {
         20: 'button_diamond',
@@ -289,17 +300,17 @@ function buildControllerConfig(controllerType) {
 {
     "version" "3"
     "game" "Hunker Bunker"
-    "title" "Official Hunker Bunker Layout"
-    "description" "Twin-stick layout: right stick pointer/aim, A interact, B dodge, X reload, Y smash, RT fire."
+    "title" "${OFFICIAL_LAYOUT_TITLE}"
+    "description" "${OFFICIAL_LAYOUT_DESCRIPTION}"
     "controller_type" "${controllerType}"
-    "major_revision" "8"
+    "major_revision" "10"
     "minor_revision" "0"
     "localization"
     {
         "english"
         {
-            "title" "Official Hunker Bunker Layout"
-            "description" "Twin-stick layout: right stick pointer/aim, A interact, B dodge, X reload, Y smash, RT fire."
+            "title" "${OFFICIAL_LAYOUT_TITLE}"
+            "description" "${OFFICIAL_LAYOUT_DESCRIPTION}"
         }
     }
     ${groups.join('\n    ')}

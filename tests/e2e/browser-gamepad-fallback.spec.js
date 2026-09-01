@@ -65,4 +65,44 @@ test.describe('Browser Gamepad fallback', () => {
 
         expect(consoleErrors, `unexpected console errors: ${consoleErrors.join('\n')}`).toEqual([]);
     });
+
+    // The D-pad had no gameplay binding in the Steam layout and never fed the
+    // browser fallback's move vector either, so it was dead during a run. It
+    // must now walk the player exactly like the left stick.
+    test('the D-pad walks the player like the left stick', async ({ page }) => {
+        test.setTimeout(180_000);
+        await bootToOperatorMenu(page);
+        await startRunAndSkipIntro(page);
+
+        const before = await page.evaluate(() => ({
+            x: window.game.player.position.x,
+            z: window.game.player.position.z
+        }));
+
+        // Sticks dead centre; only D-pad right (button 15) held.
+        await page.evaluate(() => {
+            const buttons = Array.from({ length: 17 }, () => ({ pressed: false, value: 0 }));
+            buttons[15] = { pressed: true, value: 1 };
+            const fakeGamepad = {
+                id: 'Xbox Wireless Controller (STANDARD GAMEPAD)',
+                index: 0,
+                connected: true,
+                mapping: 'standard',
+                axes: [0, 0, 0, 0],
+                buttons
+            };
+            navigator.getGamepads = () => [fakeGamepad];
+        });
+        await page.waitForTimeout(600);
+
+        const after = await page.evaluate(() => ({
+            x: window.game.player.position.x,
+            z: window.game.player.position.z
+        }));
+        const moved = Math.hypot(after.x - before.x, after.z - before.z);
+        expect(moved, 'a held D-pad direction should move the player').toBeGreaterThan(0.05);
+
+        await page.evaluate(() => { navigator.getGamepads = () => []; });
+        await page.waitForTimeout(300);
+    });
 });
