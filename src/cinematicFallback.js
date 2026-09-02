@@ -153,6 +153,7 @@ export function getDeathCinematicSpec(reason = 'hazard') {
     else if (rawKey.includes('queen')) key = 'queen';
     else if (rawKey.includes('ship')) key = 'ship';
     else if (rawKey.includes('poison') || rawKey.includes('spore') || rawKey.includes('bio')) key = 'biohazard';
+    else if (rawKey.includes('squad')) key = 'combat';
     else if (rawKey.includes('abort')) key = 'mission-abort';
     else if (
         rawKey.includes('projectile')

@@ -37,6 +37,7 @@ describe('cinematic still fallback specs', () => {
         expect(getDeathCinematicSpec('o2-depletion').images).toEqual(DEATH_CINEMATICS.oxygen.images);
         expect(getDeathCinematicSpec('queen-shockwave').images).toEqual(DEATH_CINEMATICS.queen.images);
         expect(getDeathCinematicSpec('enemy-projectile').images).toEqual(DEATH_CINEMATICS.combat.images);
+        expect(getDeathCinematicSpec('squad-wipe').images).toEqual(DEATH_CINEMATICS.combat.images);
         expect(getDeathCinematicSpec('something-new').images).toEqual(DEATH_CINEMATICS.hazard.images);
         expect(getDeathCinematicSpec('something-new').id).toBe('death-hazard');
     });

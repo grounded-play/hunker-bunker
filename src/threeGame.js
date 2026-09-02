@@ -4623,6 +4623,16 @@ export class ThreeGame {
         remote.hp = 0;
         window.showToastNotification?.(`SQUADMATE DOWN: ${remote.callsign}`);
         window.AudioManager?.play?.('ui_error', { volume: 0.4 });
+        this.resolveCoopSquadWipe?.();
+    }
+
+    resolveCoopSquadWipe() {
+        if (!this.isMultiplayer || this.multiplayerMode === 'pvp') return false;
+        if (!this.isPlayerDowned || this.isPlayerDead || !this.remotePlayers?.size) return false;
+        if (![...this.remotePlayers.values()].every((remote) => remote.isDown)) return false;
+
+        this.handleDeath('squad-wipe');
+        return true;
     }
 
     // Sprint 26: the receiving end of handleExtraction's netSocket.emit
@@ -16450,6 +16460,7 @@ export class ThreeGame {
             this.netSocket.emit('playerDowned', {});
         }
         window.dispatchEvent(new CustomEvent('player-downed', { detail: { reason } }));
+        this.resolveCoopSquadWipe?.();
     }
 
     revivePlayerFromDowned(reviverCallsign = 'SQUADMATE') {
@@ -16494,6 +16505,9 @@ export class ThreeGame {
         if (this.isPlayerDead) return;
         if (this.performanceProfile && this.performanceProfile !== 'gameplay') return;
         this.isPlayerDead = true;
+        // A downed co-op operator becomes fully dead on a squad wipe or
+        // manual abort. Do not carry the revive-only guard into a retry.
+        this.isPlayerDowned = false;
         // A real death is now gracefully recorded via blackBoxStore.recordDeath
         // below -- the crash-only checkpoint has nothing left to add.
         runCheckpointStore.clear();

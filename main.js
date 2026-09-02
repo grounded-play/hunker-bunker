@@ -4269,6 +4269,7 @@ function generateDeathReport(stats, reason) {
         'enemy-projectile':   '> CAUSE: HOSTILE KINETIC IMPACT — ENEMY PROJECTILE',
         'sentinel':           '> CAUSE: HOSTILE PROJECTILE — SENTINEL FIRE',
         'ship-destroyed':     '> CAUSE: SHIP STRUCTURAL FAILURE — HULL INTEGRITY ZERO',
+        'squad-wipe':         '> CAUSE: SQUAD SIGNAL LOSS — ALL OPERATORS DOWN',
         'mission-abort':      '> CAUSE: CONTRACT TERMINATED BY OPERATOR — RECOVERY BAG FILED',
         'frost-shockwave':    '> CAUSE: CRYO HAZARD — THERMAL SHOCKWAVE IMPACT',
         'queen-shockwave':    '> CAUSE: TITAN IMPACT — HIVE QUEEN SHOCKWAVE',
