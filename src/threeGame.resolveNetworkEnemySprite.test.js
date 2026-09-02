@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { ThreeGame } from './threeGame.js';
 
 // Sprint 26 item 4: replace nearest-position enemy matching with stable
@@ -76,5 +76,44 @@ describe('ThreeGame.resolveNetworkEnemySprite', () => {
         });
 
         expect(result).toBeNull();
+    });
+
+    it('applies host enemy position and HP snapshots on a co-op guest', () => {
+        const target = makeSprite({ scatterKey: 'chunk:2,2:0:crawler', type: 'crawler', x: 2, z: 3 });
+        target.userData.hp = 3;
+        const fake = {
+            isMultiplayerHost: false,
+            multiplayerMode: 'coop',
+            scatterSprites: [target]
+        };
+
+        const applied = ThreeGame.prototype.handleEnemyStateSnapshot.call(fake, {
+            enemies: [{
+                scatterKey: 'chunk:2,2:0:crawler', enemyType: 'crawler',
+                x: 12, z: 13, hp: 2, burstTriggered: false
+            }]
+        });
+
+        expect(applied).toBe(true);
+        expect(target.position).toMatchObject({ x: 12, z: 13 });
+        expect(target.userData.hp).toBe(2);
+    });
+
+    it('forwards a validated guest hit when the enemy is outside the host mounted chunks', () => {
+        const emit = vi.fn();
+        const fake = {
+            isMultiplayerHost: true,
+            scatterSprites: [],
+            netSocket: { emit },
+            resolveNetworkEnemySprite: () => null
+        };
+        const report = {
+            reporterId: 'guest-player', scatterKey: '9,9:0:crawler',
+            enemyType: 'crawler', x: 100, z: 100, damage: 1
+        };
+
+        ThreeGame.prototype.handleEnemyHitReported.call(fake, report);
+
+        expect(emit).toHaveBeenCalledWith('enemyDamage', report);
     });
 });

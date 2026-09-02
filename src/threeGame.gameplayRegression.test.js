@@ -83,7 +83,10 @@ describe('Gameplay regressions: damage, oxygen, and cliff falling', () => {
 
     describe('co-op squad wipe', () => {
         it('ends the run when a remote down event leaves every squad member downed', () => {
-            const remote = { callsign: 'RAVEN-7', hp: 100, isDown: false };
+            const remote = {
+                callsign: 'RAVEN-7', hp: 100, isDown: false,
+                overlay: { setDowned: vi.fn() }
+            };
             const fakeGame = {
                 isMultiplayer: true,
                 multiplayerMode: 'coop',
@@ -97,6 +100,7 @@ describe('Gameplay regressions: damage, oxygen, and cliff falling', () => {
             ThreeGame.prototype.handleRemotePlayerDowned.call(fakeGame, 'remote-player');
 
             expect(remote).toMatchObject({ hp: 0, isDown: true });
+            expect(remote.overlay.setDowned).toHaveBeenCalledWith(true);
             expect(fakeGame.handleDeath).toHaveBeenCalledWith('squad-wipe');
         });
 
@@ -112,6 +116,7 @@ describe('Gameplay regressions: damage, oxygen, and cliff falling', () => {
                 emitHealthState: vi.fn(),
                 setInputEnabled: vi.fn(),
                 closeConsoleModal: vi.fn(),
+                player3dOverlay: { setDowned: vi.fn() },
                 handleDeath: vi.fn(),
                 resolveCoopSquadWipe: ThreeGame.prototype.resolveCoopSquadWipe
             };
@@ -119,6 +124,7 @@ describe('Gameplay regressions: damage, oxygen, and cliff falling', () => {
             ThreeGame.prototype.enterDownedState.call(fakeGame, 'mycelium_stalker');
 
             expect(fakeGame.netSocket.emit).toHaveBeenCalledWith('playerDowned', {});
+            expect(fakeGame.player3dOverlay.setDowned).toHaveBeenCalledWith(true);
             expect(fakeGame.handleDeath).toHaveBeenCalledWith('squad-wipe');
         });
 
@@ -139,6 +145,26 @@ describe('Gameplay regressions: damage, oxygen, and cliff falling', () => {
 
             expect(wiped).toBe(false);
             expect(fakeGame.handleDeath).not.toHaveBeenCalled();
+        });
+    });
+
+    describe('remote operator polish', () => {
+        it('applies a newly received polish only to that remote operator', () => {
+            const spriteSet = vi.fn();
+            const overlaySet = vi.fn();
+            const remote = {
+                polishColor: '#ffffff',
+                sprite: { material: { color: { set: spriteSet } } },
+                overlay: { setOperatorPolish: overlaySet }
+            };
+
+            ThreeGame.prototype.updateRemotePlayerAppearance.call({}, remote, {
+                loadout: { polishColor: '#ff6262' }
+            });
+
+            expect(remote.polishColor).toBe('#ff6262');
+            expect(spriteSet).toHaveBeenCalledWith('#ff6262');
+            expect(overlaySet).toHaveBeenCalledWith('#ff6262');
         });
     });
 

@@ -103,6 +103,8 @@ export function planMultiplayerCrashSites({
         const spawnZ = baseSpawn.z + offset.z;
         const opClass = rosterInfo.opClass || classCycle[i % classCycle.length];
         const callsign = rosterInfo.callsign || (i === 0 ? 'HOST' : `OPERATIVE-${i + 1}`);
+        const chassisSkinId = rosterInfo.chassisSkinId || rosterInfo.loadout?.chassisSkinId || null;
+        const polishColor = rosterInfo.polishColor || rosterInfo.loadout?.polishColor || null;
 
         players.push({
             index: i,
@@ -110,6 +112,8 @@ export function planMultiplayerCrashSites({
             isHost: i === 0,
             callsign,
             opClass,
+            chassisSkinId,
+            polishColor,
             spawnX,
             spawnZ,
             chunkX: Math.floor(spawnX / CHUNK_SIZE),

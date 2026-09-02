@@ -564,6 +564,7 @@ export async function createPlayer3dOverlay({
         return match;
     }).filter(Boolean);
     const smoothedWeights = Object.fromEntries([...actions.keys()].map((name) => [name, 0]));
+    const downedActionName = ['defeat', 'rejected', 'fall'].find((name) => actions.has(name)) ?? null;
     const injuredVariantActions = Object.values(INJURED_LOCOMOTION_VARIANTS).filter((name) => actions.has(name));
     for (const name of [...blendableActions, ...injuredVariantActions]) {
         actions.get(name)?.setEffectiveWeight(0).play();
@@ -595,6 +596,25 @@ export async function createPlayer3dOverlay({
             forcedName = name;
             forcedTimer = duration ?? actions.get(name).getClip().duration;
             actions.get(name).reset().setEffectiveWeight(0).play();
+        },
+        clearTrigger(name = null) {
+            if (!forcedName || (name && forcedName !== name)) return;
+            actions.get(forcedName)?.fadeOut(0.12);
+            forcedName = null;
+            forcedTimer = 0;
+        },
+        setDowned(downed) {
+            if (downed) {
+                if (!downedActionName || (forcedName === downedActionName && forcedTimer === Number.POSITIVE_INFINITY)) return;
+                forcedName = downedActionName;
+                forcedTimer = Number.POSITIVE_INFINITY;
+                actions.get(downedActionName).reset().setEffectiveWeight(0).play();
+                return;
+            }
+            if (forcedName !== downedActionName) return;
+            actions.get(downedActionName)?.fadeOut(0.12);
+            forcedName = null;
+            forcedTimer = 0;
         },
         update(delta, state) {
             // Hips and legs follow travel. When stationary, the whole body can
@@ -629,7 +649,9 @@ export async function createPlayer3dOverlay({
                 // walk/run clips they do not carry.
                 targets = { idle: 1 };
             }
-            const locomotionScale = forcedName && !state.isFalling ? 0.62 : 1;
+            const locomotionScale = forcedTimer === Number.POSITIVE_INFINITY
+                ? 0
+                : (forcedName && !state.isFalling ? 0.62 : 1);
             const activeIdleAction = actions.has(state.idleActionName)
                 ? state.idleActionName
                 : idleActionName;

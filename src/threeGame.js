@@ -4171,6 +4171,7 @@ export class ThreeGame {
         this.netSocket = session.socket || null;
         this.multiplayerLocalPlayerId = this.netSocket?.id || session.localPlayerId || null;
         this.lastNetBroadcastTime = 0;
+        this.lastEnemyStateBroadcastTime = 0;
         // Sprint 24 Milestone A item 5 (docs/sprint24-multiplayer-runtime-2026-08-19.md):
         // captured by the lobby from the server's currentPlayers roster (the
         // only point the server tells a client its own isHost status) and
@@ -4239,6 +4240,7 @@ export class ThreeGame {
             this.netSocket.on('playerExtractedBroadcast', (data) => this.handleRemotePlayerExtracted(data));
             this.netSocket.on('enemyDamaged', (data) => this.handleRemoteEnemyDamage(data));
             this.netSocket.on('enemyHitReported', (data) => this.handleEnemyHitReported(data));
+            this.netSocket.on('enemyStateSnapshot', (data) => this.handleEnemyStateSnapshot(data));
             this.netSocket.on('playerDisconnected', (id) => this.removeRemotePlayer(id));
             this.netSocket.on('newPlayer', (player) => this.getOrCreateRemotePlayer(player));
             // Sprint 26: server/relay.js's disconnect handler now promotes a
@@ -4301,6 +4303,7 @@ export class ThreeGame {
             this.netSocket.off('playerExtractedBroadcast');
             this.netSocket.off('enemyDamaged');
             this.netSocket.off('enemyHitReported');
+            this.netSocket.off('enemyStateSnapshot');
             this.netSocket.off('playerDisconnected');
             this.netSocket.off('newPlayer');
             this.netSocket.off('hostChanged');
@@ -4313,6 +4316,7 @@ export class ThreeGame {
         this.multiplayerLocalPlayerId = null;
         this.isMultiplayerHost = false;
         this.lastNetBroadcastTime = 0;
+        this.lastEnemyStateBroadcastTime = 0;
         // Sprint 26: undoes setupMultiplayerNetwork's world-seed sync (see
         // its own comment) -- without this, a solo run started after a
         // multiplayer match in the same tab would keep generating worlds
@@ -4326,7 +4330,9 @@ export class ThreeGame {
     getOrCreateRemotePlayer(playerData) {
         if (!playerData || !playerData.id) return null;
         if (this.remotePlayers?.has(playerData.id)) {
-            return this.remotePlayers.get(playerData.id);
+            const remote = this.remotePlayers.get(playerData.id);
+            this.updateRemotePlayerAppearance(remote, playerData);
+            return remote;
         }
         this.remotePlayers ??= new Map();
 
@@ -4337,6 +4343,7 @@ export class ThreeGame {
 
         const opClass = playerData.opClass || 'SCOUT';
         const isPvP = this.multiplayerMode === 'pvp';
+        const polishColor = playerData.polishColor || playerData.loadout?.polishColor || '#ffffff';
         const themeColor = isPvP ? 0xff4444 : (playerData.color || (opClass === 'SCOUT' ? 0x7dff5a : (opClass === 'TANK' ? 0xffb700 : 0x00e5ff)));
 
         // Real class chassis sprite, matching how the local player's own
@@ -4357,9 +4364,10 @@ export class ThreeGame {
             spriteMat.map = classMaterial.map.clone();
             spriteMat.map.needsUpdate = true;
         }
-        if (isPvP) {
-            spriteMat.color.setHex(themeColor);
-        }
+        // Operator polish is personal identity, not team coloring. Rival
+        // readability stays on the red nameplate while their chassis keeps
+        // the tint they selected; enemy NPC materials are never touched.
+        spriteMat.color.set(polishColor);
         const sprite = new THREE.Sprite(spriteMat);
         sprite.center.set(0.5, 0);
         sprite.position.set(0, 0.4, 0);
@@ -4399,7 +4407,7 @@ export class ThreeGame {
             callsign: playerData.callsign || 'OPERATIVE',
             opClass,
             chassisSkinId: playerData.chassisSkinId || playerData.loadout?.chassisSkinId || null,
-            polishColor: playerData.polishColor || playerData.loadout?.polishColor || null,
+            polishColor,
             mesh: group,
             sprite,
             targetPos: new THREE.Vector3(group.position.x, group.position.y, group.position.z),
@@ -4432,6 +4440,16 @@ export class ThreeGame {
             });
         }
         return remote;
+    }
+
+    updateRemotePlayerAppearance(remote, playerData = {}) {
+        if (!remote) return;
+        const polishColor = playerData.polishColor || playerData.loadout?.polishColor || remote.polishColor || '#ffffff';
+        if (polishColor !== remote.polishColor) {
+            remote.polishColor = polishColor;
+            remote.sprite?.material?.color?.set?.(polishColor);
+            remote.overlay?.setOperatorPolish?.(polishColor);
+        }
     }
 
     async setupRemotePlayer3dOverlay(remote) {
@@ -4490,9 +4508,8 @@ export class ThreeGame {
             remote.mesh.add(overlay.root);
             remote.overlay = overlay;
             remote.sprite.visible = false;
-            if (remote.polishColor) {
-                overlay.setOperatorPolish?.(remote.polishColor);
-            }
+            overlay.setOperatorPolish?.(remote.polishColor || '#ffffff');
+            if (remote.isDown) overlay.setDowned?.(true);
             if (typeof window !== 'undefined' && window.hbLog) {
                 window.hbLog('MULTIPLAYER', 'info', 'remote-avatar-3d-ready', {
                     playerId: remote.id,
@@ -4612,6 +4629,7 @@ export class ThreeGame {
         const remote = this.remotePlayers.get(data.targetId);
         remote.isDown = false;
         remote.hp = remote.maxHp;
+        remote.overlay?.setDowned?.(false);
         window.showToastNotification?.(`SQUADMATE REVIVED: ${remote.callsign}`);
         window.AudioManager?.play?.('fx_level_up', { volume: 0.4 });
     }
@@ -4621,6 +4639,7 @@ export class ThreeGame {
         const remote = this.remotePlayers.get(playerId);
         remote.isDown = true;
         remote.hp = 0;
+        remote.overlay?.setDowned?.(true);
         window.showToastNotification?.(`SQUADMATE DOWN: ${remote.callsign}`);
         window.AudioManager?.play?.('ui_error', { volume: 0.4 });
         this.resolveCoopSquadWipe?.();
@@ -4729,8 +4748,55 @@ export class ThreeGame {
         if (!data || !Number.isFinite(data.x) || !Number.isFinite(data.z) || !(data.damage > 0)) return;
         const sprite = this.resolveNetworkEnemySprite(data);
         if (sprite) {
-            this.applyPlayerDamageToEnemy(sprite, data.damage);
+            this.applyPlayerDamageToEnemy(sprite, data.damage, { reporterId: data.reporterId });
+        } else {
+            // The squad can be farther apart than the host's mounted chunk
+            // radius. Preserve the already relay-validated guest hit even
+            // when this host has not instantiated that deterministic enemy.
+            this.netSocket?.emit('enemyDamage', { ...data, reporterId: data.reporterId });
         }
+    }
+
+    broadcastEnemyStateSnapshot(now = Date.now()) {
+        if (!this.netSocket || !this.isMultiplayerHost || this.multiplayerMode === 'pvp') return false;
+        if (now - (this.lastEnemyStateBroadcastTime ?? 0) < 100) return false;
+        this.lastEnemyStateBroadcastTime = now;
+        const enemies = [];
+        for (const sprite of this.scatterSprites ?? []) {
+            if (!this.isEnemyType(sprite.userData?.type) || !sprite.userData?.scatterKey || sprite.userData?.isDisplayModel) continue;
+            enemies.push({
+                scatterKey: sprite.userData.scatterKey,
+                enemyType: sprite.userData.type,
+                x: sprite.position.x,
+                z: sprite.position.z,
+                hp: Number.isFinite(sprite.userData.hp) ? sprite.userData.hp : null,
+                burstTriggered: Boolean(sprite.userData.burstTriggered)
+            });
+            if (enemies.length >= 256) break;
+        }
+        if (!enemies.length) return false;
+        this.netSocket.emit('enemyState', { enemies });
+        return true;
+    }
+
+    handleEnemyStateSnapshot(data) {
+        if (this.isMultiplayerHost || this.multiplayerMode === 'pvp' || !Array.isArray(data?.enemies)) return false;
+        let applied = 0;
+        for (const state of data.enemies) {
+            if (!state?.scatterKey) continue;
+            const sprite = (this.scatterSprites ?? []).find((candidate) => candidate.userData?.scatterKey === state.scatterKey);
+            if (!sprite?.userData) continue;
+            if (Number.isFinite(state.x)) sprite.position.x = state.x;
+            if (Number.isFinite(state.z)) sprite.position.z = state.z;
+            if (state.burstTriggered && !sprite.userData.burstTriggered) {
+                const remainingHp = Math.max(1, sprite.userData.hp || 1);
+                this.damageSnail(sprite, remainingHp);
+            } else if (Number.isFinite(state.hp) && state.hp >= 0) {
+                sprite.userData.hp = state.hp;
+            }
+            applied += 1;
+        }
+        return applied > 0;
     }
 
     removeRemotePlayer(id) {
@@ -4760,6 +4826,7 @@ export class ThreeGame {
                 });
             }
         }
+        this.broadcastEnemyStateSnapshot?.(now);
 
         // 2. Interpolate and animate remote players
         if (this.remotePlayers?.size) {
@@ -11887,7 +11954,7 @@ export class ThreeGame {
         if (spawned) window.AudioManager?.playMetalStress?.({ volume: 0.5, playbackRate: 0.5, force: true });
     }
 
-    applyPlayerDamageToEnemy(sprite, amount, { fromNetwork = false } = {}) {
+    applyPlayerDamageToEnemy(sprite, amount, { fromNetwork = false, reporterId = null } = {}) {
         if (sprite?.userData?.isDestructibleProp) {
             this.damageScatterProp(sprite, amount);
             return;
@@ -11922,7 +11989,7 @@ export class ThreeGame {
             // the exact key isn't found locally (e.g. that chunk hasn't
             // mounted there yet), so this is additive, not a breaking
             // protocol change.
-            const payload = { enemyType: sprite.userData.type, scatterKey: sprite.userData.scatterKey ?? null, x: sprite.position.x, z: sprite.position.z, damage: amount };
+            const payload = { enemyType: sprite.userData.type, scatterKey: sprite.userData.scatterKey ?? null, x: sprite.position.x, z: sprite.position.z, damage: amount, reporterId };
             if (this.isMultiplayerHost) {
                 // The host's own local detection is immediately canonical.
                 this.netSocket.emit('enemyDamage', payload);
@@ -15160,6 +15227,8 @@ export class ThreeGame {
         this.playerVitals.o2 = this.playerVitals.maxO2;
         this.playerVitals.o2HealthTimer = 0;
         this.isPlayerDead = false;
+        this.isPlayerDowned = false;
+        this.player3dOverlay?.setDowned?.(false);
         this.o2DispatchTimer = 0;
         this._lastLoopStepKey = null;
 
@@ -16446,7 +16515,7 @@ export class ThreeGame {
     // co-op downed/revive state. Deliberately does not run any of
     // handleDeath()'s side effects (black box, death curtain, game-over
     // screen) -- being downed in co-op is meant to be recoverable, not a run
-    // ender, unless nobody revives you (not yet implemented -- see doc).
+    // ender while any teammate remains standing.
     enterDownedState(reason = 'hazard') {
         if (this.isPlayerDowned || this.isPlayerDead) return;
         this.isPlayerDowned = true;
@@ -16456,6 +16525,7 @@ export class ThreeGame {
         this.closeConsoleModal?.();
         window.showToastNotification?.('YOU ARE DOWNED -- AWAIT REVIVAL');
         window.AudioManager?.play?.('ui_error', { volume: 0.5 });
+        this.player3dOverlay?.setDowned?.(true);
         if (this.netSocket) {
             this.netSocket.emit('playerDowned', {});
         }
@@ -16469,6 +16539,7 @@ export class ThreeGame {
         this.playerVitals.hp = Math.max(1, Math.round((this.playerVitals.maxHp || 100) * 0.5));
         this.emitHealthState?.();
         this.setInputEnabled?.(true);
+        this.player3dOverlay?.setDowned?.(false);
         window.showToastNotification?.(`REVIVED BY ${String(reviverCallsign || 'SQUADMATE').toUpperCase()}`);
         window.AudioManager?.play?.('fx_level_up', { volume: 0.5 });
         window.dispatchEvent(new CustomEvent('player-revived-self'));
@@ -19412,12 +19483,8 @@ export class ThreeGame {
     setOperatorPolish(color = '#ffffff') {
         const parsed = new THREE.Color(color);
         this._playerPolishHex = parsed.getHex();
-        for (const material of Object.values(this.playerMaterials ?? {})) {
-            material.color?.setHex(this._playerPolishHex);
-        }
-        for (const material of Object.values(this.playerTorsoMaterials ?? {})) {
-            material.color?.setHex(this._playerPolishHex);
-        }
+        this.playerMaterials?.[this.playerType]?.color?.setHex(this._playerPolishHex);
+        this.playerTorsoMaterials?.[this.playerType]?.color?.setHex(this._playerPolishHex);
         this.player3dOverlay?.setOperatorPolish?.(this._playerPolishHex);
         if (this.suitFillLight?.color) this.suitFillLight.color.copy(parsed);
     }
