@@ -140,6 +140,15 @@ import { describeDialogueProgress, leaderKeyFromName, nextDialogueBeat, isFinalS
 import { blackBoxStore } from './blackBox.js';
 import { runCheckpointStore } from './runCheckpoint.js';
 import { CHASSIS_SKIN_MODELS, createPlayer3dOverlay, ENGINEER_GESTURES } from './player3dOverlay.js';
+
+export const MAYOR_TINA_PLAYER_VISUAL = Object.freeze({
+    modelUrl: '/3d/runtime/secrets/mayor-tina-rigged.glb',
+    animationModelUrl: '/3d/scouting-scout/Scout.game.glb',
+    animationBonePrefix: 'mixamorig',
+    idleActionName: 'idle',
+    weaponEnabled: false,
+    allowStatic: false
+});
 import { createEnemy3dVisual, disposeEnemy3dVisual, updateEnemy3dVisual } from './enemy3dOverlay.js';
 import { createWorld3dModel, hasWorld3dModel, preloadWorld3dModels, syncWorld3dReplacement } from './world3dOverlay.js';
 import { computeTrailPosition } from './companionFollow.js';
@@ -1588,6 +1597,7 @@ export class ThreeGame {
             mayorRoot: null,
             teacupRoot: null,
             originalOverlay: null,
+            transformedOverlay: null,
             loadPromise: null,
             lastSirenAt: 0,
             calloutIndex: 0
@@ -4255,9 +4265,30 @@ export class ThreeGame {
         return true;
     }
 
-    completeMayorTinaTransformation() {
+    createMayorTinaPlayerOverlay() {
+        return createPlayer3dOverlay({
+            targetHeight: this.playerSpriteScale * 0.98,
+            ...MAYOR_TINA_PLAYER_VISUAL
+        });
+    }
+
+    async completeMayorTinaTransformation() {
         const encounter = this.mayorTinaEncounter;
         if (!encounter || encounter.phase !== 'transforming' || !encounter.mayorRoot || !this.player) return false;
+        let mayorOverlay;
+        try {
+            mayorOverlay = await this.createMayorTinaPlayerOverlay();
+        } catch (error) {
+            console.warn('[mayor-tina-secret] rigged player model unavailable', error);
+            encounter.phase = 'idle';
+            this.cinematicLock = false;
+            this.setInputEnabled(true);
+            return false;
+        }
+        if (this.mayorTinaEncounter !== encounter || encounter.phase !== 'transforming' || !this.player) {
+            mayorOverlay.dispose();
+            return false;
+        }
         const originalOverlay = this.player3dOverlay;
         if (originalOverlay?.root) {
             originalOverlay.setDowned?.(true);
@@ -4269,32 +4300,18 @@ export class ThreeGame {
             encounter.originalOverlay = originalOverlay;
         }
 
-        const mayorRoot = encounter.mayorRoot;
-        mayorRoot.removeFromParent();
-        mayorRoot.position.set(this.playerSpriteLead, 0.12, this.playerSpriteLead);
-        mayorRoot.rotation.set(0, this.facingYaw || 0, 0);
-        mayorRoot.scale.setScalar(1);
-        this.player.add(mayorRoot);
-        const staticMayorOverlay = {
-            root: mayorRoot,
-            update: (delta, state = {}) => {
-                const x = state.isMoving ? state.moveX : state.aimX;
-                const z = state.isMoving ? state.moveZ : state.aimZ;
-                if (Math.hypot(x || 0, z || 0) > 0.0001) {
-                    const target = Math.atan2(x, z);
-                    mayorRoot.rotation.y += Math.atan2(
-                        Math.sin(target - mayorRoot.rotation.y),
-                        Math.cos(target - mayorRoot.rotation.y)
-                    ) * (1 - Math.exp(-delta * 14));
-                }
-            },
-            trigger() {},
-            clearTrigger() {},
-            setDowned() {},
-            setOperatorPolish() {},
-            dispose() { mayorRoot.removeFromParent(); }
-        };
-        this.player3dOverlay = staticMayorOverlay;
+        // The teacup is the lure/bath, not a permanent world prop. Remove it
+        // behind the second closed-door beat so the transformed reveal leaves
+        // only the discarded operator body and the player-controlled Mayor.
+        encounter.teacupRoot?.removeFromParent?.();
+        encounter.mayorRoot.removeFromParent();
+        mayorOverlay.root.position.x += this.playerSpriteLead;
+        mayorOverlay.root.position.y += 0.12;
+        mayorOverlay.root.position.z += this.playerSpriteLead;
+        mayorOverlay.root.rotation.y = this.facingYaw || 0;
+        this.player.add(mayorOverlay.root);
+        this.player3dOverlay = mayorOverlay;
+        encounter.transformedOverlay = mayorOverlay;
         if (this.playerSprite) this.playerSprite.visible = false;
         encounter.phase = 'transformed';
         this.showBunkerLine('TEACUP SIREN: LOOKING VERY MAYORAL, YOUR HONOR.');
@@ -4313,7 +4330,8 @@ export class ThreeGame {
         const encounter = this.mayorTinaEncounter;
         if (!encounter) return;
         if (encounter.phase === 'transformed' && encounter.originalOverlay?.root && this.player) {
-            this.player3dOverlay?.root?.removeFromParent?.();
+            encounter.transformedOverlay?.dispose?.();
+            encounter.transformedOverlay = null;
             const original = encounter.originalOverlay;
             original.root.removeFromParent();
             original.root.position.set(this.playerSpriteLead, 0.12, this.playerSpriteLead);
@@ -4323,7 +4341,8 @@ export class ThreeGame {
             this.player3dOverlay = original;
             encounter.originalOverlay = null;
         } else if (encounter.phase === 'transformed') {
-            this.player3dOverlay?.dispose?.();
+            encounter.transformedOverlay?.dispose?.();
+            encounter.transformedOverlay = null;
             this.player3dOverlay = null;
             void this.setupPlayer3dCosmeticOverlay();
         }
@@ -4332,8 +4351,10 @@ export class ThreeGame {
         encounter.calloutIndex = 0;
         const position = this.getMayorTinaEncounterPosition();
         if (encounter.teacupRoot) {
+            encounter.teacupRoot.removeFromParent();
             encounter.teacupRoot.position.set(position.x, 0, position.z);
             encounter.teacupRoot.visible = this.performanceProfile === 'gameplay';
+            this.scene.add(encounter.teacupRoot);
         }
         if (encounter.mayorRoot) {
             encounter.mayorRoot.removeFromParent();
@@ -31021,6 +31042,7 @@ export class ThreeGame {
         }
         this.clearBlackBoxMarker();
         this.mayorTinaEncounter?.originalOverlay?.dispose?.();
+        this.mayorTinaEncounter?.transformedOverlay?.dispose?.();
         this.mayorTinaEncounter?.mayorRoot?.removeFromParent?.();
         this.mayorTinaEncounter?.teacupRoot?.removeFromParent?.();
         if (this.playerForwardSpotLight) {

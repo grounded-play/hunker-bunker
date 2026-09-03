@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { ThreeGame } from './threeGame.js';
+import { MAYOR_TINA_PLAYER_VISUAL, ThreeGame } from './threeGame.js';
 import { WORLD_3D_MODELS } from './world3dOverlay.js';
 
 describe('Mayor Tina secret encounter', () => {
@@ -39,6 +39,16 @@ describe('Mayor Tina secret encounter', () => {
         expect(WORLD_3D_MODELS.secret_teacup_roach.height).toBeGreaterThan(0);
     });
 
+    it('uses the rigged Mayor mesh with the normal Scout locomotion pack', () => {
+        expect(MAYOR_TINA_PLAYER_VISUAL).toMatchObject({
+            modelUrl: '/3d/runtime/secrets/mayor-tina-rigged.glb',
+            animationModelUrl: '/3d/scouting-scout/Scout.game.glb',
+            animationBonePrefix: 'mixamorig',
+            weaponEnabled: false,
+            allowStatic: false
+        });
+    });
+
     it('keeps the validation placement just outside the first room for every run seed', () => {
         for (const runEntropy of [0, 1, 2, 99999]) {
             const position = ThreeGame.prototype.getMayorTinaEncounterPosition.call({ runEntropy });
@@ -65,7 +75,7 @@ describe('Mayor Tina secret encounter', () => {
         expect(window.dispatchEvent.mock.calls[0][0].type).toBe('mayor-tina-transform-requested');
     });
 
-    it('leaves the original operator downed and makes Mayor Tina the controlled overlay', () => {
+    it('leaves the original operator downed and makes rigged Mayor Tina the controlled overlay', async () => {
         const scene = new THREE.Scene();
         const player = new THREE.Group();
         player.position.set(9, 0, 1.55);
@@ -79,6 +89,14 @@ describe('Mayor Tina secret encounter', () => {
         };
         const mayorRoot = new THREE.Group();
         scene.add(mayorRoot);
+        const transformedRoot = new THREE.Group();
+        const transformedOverlay = {
+            root: transformedRoot,
+            actions: new Map([['walk', {}], ['run', {}]]),
+            dispose: vi.fn()
+        };
+        const teacupRoot = new THREE.Group();
+        scene.add(teacupRoot);
         const game = {
             scene,
             player,
@@ -86,15 +104,19 @@ describe('Mayor Tina secret encounter', () => {
             playerSprite: { visible: true },
             playerSpriteLead: 0.08,
             facingYaw: 0,
-            mayorTinaEncounter: { phase: 'transforming', mayorRoot },
+            mayorTinaEncounter: { phase: 'transforming', mayorRoot, teacupRoot },
+            createMayorTinaPlayerOverlay: vi.fn(async () => transformedOverlay),
             showBunkerLine: vi.fn()
         };
 
-        expect(ThreeGame.prototype.completeMayorTinaTransformation.call(game)).toBe(true);
+        await expect(ThreeGame.prototype.completeMayorTinaTransformation.call(game)).resolves.toBe(true);
         expect(originalOverlay.setDowned).toHaveBeenCalledWith(true);
         expect(originalRoot.parent).toBe(scene);
-        expect(mayorRoot.parent).toBe(player);
-        expect(game.player3dOverlay.root).toBe(mayorRoot);
+        expect(mayorRoot.parent).toBe(null);
+        expect(teacupRoot.parent).toBe(null);
+        expect(transformedRoot.parent).toBe(player);
+        expect(game.player3dOverlay).toBe(transformedOverlay);
+        expect(game.mayorTinaEncounter.transformedOverlay).toBe(transformedOverlay);
         expect(game.mayorTinaEncounter.phase).toBe('transformed');
         expect(game.playerSprite.visible).toBe(false);
     });

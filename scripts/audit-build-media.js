@@ -7,6 +7,7 @@ const requiredMedia = [
     'Cockroach_transform.mp4',
     'Cockroach_transform.webm',
     '3d/runtime/secrets/mayor-tina.glb',
+    '3d/runtime/secrets/mayor-tina-rigged.glb',
     '3d/runtime/secrets/teacup-roach.glb',
     'door_biomech_keyart_v2.webp',
     'door_bio_keyart_v2.webp',

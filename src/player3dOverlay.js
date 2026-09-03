@@ -348,7 +348,7 @@ function makeClipInPlace(source) {
     return clip;
 }
 
-function retargetMixamoClip(source, fromPrefix, toPrefix, targetRoot) {
+export function retargetMixamoClip(source, fromPrefix, toPrefix, targetRoot) {
     const clip = source.clone();
 
     // Check what bone prefix targetRoot actually uses
@@ -374,7 +374,10 @@ function retargetMixamoClip(source, fromPrefix, toPrefix, targetRoot) {
         if (bareBones) {
             track.name = track.name.replace(/^mixamorig1:?/, '').replace(/^mixamorig:?/, '');
         } else if (detectedPrefix) {
-            track.name = track.name.replace(/^mixamorig1:?/, detectedPrefix).replace(/^mixamorig:?/, detectedPrefix);
+            // Replace the source prefix exactly once. Chaining both variants
+            // turns an already-compatible mixamorig1 bone into mixamorig11 and
+            // silently filters every locomotion track from the clip.
+            track.name = track.name.replace(/^(?:mixamorig1:?|mixamorig:?)/, detectedPrefix);
         } else if (toPrefix) {
             track.name = track.name.replace(fromPrefix, toPrefix);
         }
