@@ -4855,6 +4855,47 @@ window.addEventListener('player-respawned', () => {
     }
 });
 
+// One-shot validation secret: the in-world interaction owns gameplay state;
+// this shell owns the same full-screen doors/video language as every other
+// cinematic. The second close begins while the final movie frame is still up,
+// then the hidden world swap happens only once the doors are fully shut.
+let mayorTinaSequenceActive = false;
+window.addEventListener('mayor-tina-transform-requested', () => {
+    const game = window.game;
+    if (!game || mayorTinaSequenceActive) return;
+    mayorTinaSequenceActive = true;
+
+    let closingForTransformation = false;
+    const closeForTransformation = () => {
+        if (closingForTransformation) return;
+        closingForTransformation = true;
+        triggerDoorTransition(
+            () => game.completeMayorTinaTransformation?.(),
+            () => {
+                game.finishMayorTinaTransformationSequence?.();
+                mayorTinaSequenceActive = false;
+            },
+            'alien',
+            { waitForClosedWork: true, openingHoldMs: 240 }
+        );
+    };
+
+    triggerDoorTransition(
+        null,
+        null,
+        'alien',
+        {
+            openingHoldMs: 180,
+            onOpeningStart: () => {
+                playCutsceneVideo('/Cockroach_transform.mp4', {
+                    onDoorCutoff: closeForTransformation,
+                    tone: 'event'
+                }).catch(closeForTransformation);
+            }
+        }
+    );
+});
+
 window.addEventListener('mission-objective-complete', (event) => {
     const type = event?.detail?.type ?? '';
     const uplinkReady = Boolean(event?.detail?.uplinkReady);
@@ -6966,11 +7007,21 @@ function playCutsceneVideo(base, options = {}) {
             sources.push('/DoorIntro.webm', '/DoorIntro.mp4');
         }
         if (base.startsWith('/')) {
-            sources.push(base);
-            // Uses slice instead of a regex literal ending in the webm extension here —
-            // scripts/audit-retail-assets.js's asset-reference scanner misread that kind of
-            // pattern (leading slash immediately before the extension) as a file path.
-            if (base.endsWith('.webm')) sources.push(`${base.slice(0, -'.webm'.length)}.mp4`);
+            // Explicit root media can still carry both desktop-Electron WebM
+            // and browser-friendly MP4 variants. Prefer the codec this
+            // Chromium build claims to support and retain the other as the
+            // native <source> fallback.
+            if (base.endsWith('.webm') || base.endsWith('.mp4')) {
+                const stem = base.endsWith('.webm')
+                    ? base.slice(0, -'.webm'.length)
+                    : base.slice(0, -'.mp4'.length);
+                const webm = `${stem}.webm`;
+                const mp4 = `${stem}.mp4`;
+                const prefersMp4 = Boolean(video.canPlayType('video/mp4'));
+                sources.push(...(prefersMp4 ? [mp4, webm] : [webm, mp4]));
+            } else {
+                sources.push(base);
+            }
         } else if (base.startsWith('int_') || base.includes('interstitial')) {
             sources.push(`/interstitials/motion/${base}.webm`, `/interstitials/motion/${base}.mp4`);
         }

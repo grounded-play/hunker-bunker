@@ -1579,6 +1579,19 @@ export class ThreeGame {
         this._blackBoxMarkerPromptActive = false;
         this._blackBoxState = blackBoxStore.load();
         this._corruptedOperatorSpawnedForTimestamp = 0;
+        // Validation placement for the one-shot Mayor Tina secret. It is kept
+        // scene-attached (like corpses/companions), because chunk registries
+        // are rebuilt as the player crosses boundaries. Multiplayer stays out
+        // of scope until the identity swap has an authoritative network state.
+        this.mayorTinaEncounter = {
+            phase: 'idle',
+            mayorRoot: null,
+            teacupRoot: null,
+            originalOverlay: null,
+            loadPromise: null,
+            lastSirenAt: 0,
+            calloutIndex: 0
+        };
         // The Bunker Director: one pressure brain that reacts to the player's
         // greed/struggle by pulling existing levers (doc 11 §4.A).
         this.bunkerDirector = new BunkerDirector();
@@ -4151,6 +4164,188 @@ export class ThreeGame {
         }
     }
 
+    getMayorTinaEncounterPosition() {
+        // Just beyond the north wall of the authored crash room. A tiny
+        // seed-derived lateral shift keeps the discovery feeling odd/random,
+        // while all validation runs still find it immediately after door one.
+        const offset = ((Math.abs(this.runEntropy || 0) % 3) - 1) * 0.48;
+        return { x: CRASH_SITE_CENTER + offset, z: 1.55 };
+    }
+
+    async setupMayorTinaEncounter() {
+        const encounter = this.mayorTinaEncounter;
+        if (!encounter || this.isMultiplayer || encounter.phase !== 'idle') return false;
+        if (encounter.mayorRoot && encounter.teacupRoot) {
+            encounter.mayorRoot.visible = this.performanceProfile === 'gameplay';
+            encounter.teacupRoot.visible = this.performanceProfile === 'gameplay';
+            return true;
+        }
+        if (encounter.loadPromise) return encounter.loadPromise;
+
+        encounter.loadPromise = Promise.all([
+            this.createWorld3dModel('secret_mayor_tina'),
+            this.createWorld3dModel('secret_teacup_roach')
+        ]).then(([mayorRoot, teacupRoot]) => {
+            if (!mayorRoot || !teacupRoot || this.mayorTinaEncounter !== encounter) return false;
+            const position = this.getMayorTinaEncounterPosition();
+            // The cup is Mayor Tina's extremely questionable bath. Tina sits
+            // slightly inside it; both remain separately readable from above.
+            teacupRoot.position.set(position.x, 0, position.z);
+            mayorRoot.position.set(position.x, 0.43, position.z - 0.03);
+            mayorRoot.scale.setScalar(0.68);
+            mayorRoot.visible = this.performanceProfile === 'gameplay';
+            teacupRoot.visible = this.performanceProfile === 'gameplay';
+            this.scene.add(teacupRoot, mayorRoot);
+            encounter.mayorRoot = mayorRoot;
+            encounter.teacupRoot = teacupRoot;
+            return true;
+        }).catch((error) => {
+            console.warn('[mayor-tina-secret] models unavailable', error);
+            return false;
+        }).finally(() => {
+            encounter.loadPromise = null;
+        });
+        return encounter.loadPromise;
+    }
+
+    updateMayorTinaEncounter(now = performance.now()) {
+        const encounter = this.mayorTinaEncounter;
+        const prompt = document.getElementById('mayor-tina-hud-prompt');
+        if (!encounter || encounter.phase !== 'idle' || this.isMultiplayer || !this.player || !encounter.mayorRoot) {
+            prompt?.classList.add('hidden');
+            prompt?.classList.remove('visible');
+            return;
+        }
+        const position = this.getMayorTinaEncounterPosition();
+        const distance = Math.hypot(this.player.position.x - position.x, this.player.position.z - position.z);
+        const inRange = distance < 2.45;
+        prompt?.classList.toggle('hidden', !inRange);
+        prompt?.classList.toggle('visible', inRange);
+        if (inRange) {
+            const key = prompt?.querySelector('.prompt-key');
+            if (key) key.textContent = this.getPromptKeyLabel('E');
+        }
+
+        // The roach cup behaves like a cheap siren: it detects the player at
+        // long range, chirps, and cat-calls them toward the secret only once
+        // per cooldown instead of spamming the dialogue deck every frame.
+        if (distance < 11 && now - encounter.lastSirenAt > 6500) {
+            const lines = [
+                'TEACUP SIREN: HEY, HOTSHOT. THE MAYOR IS TAKING VISITORS.',
+                'TEACUP SIREN: NICE EXOSUIT, STRANGER. COME CLOSER.',
+                'TEACUP SIREN: PSST. YES, YOU. MAYOR TINA SAVED YOU A SEAT.'
+            ];
+            this.showBunkerLine(lines[encounter.calloutIndex % lines.length]);
+            encounter.calloutIndex += 1;
+            encounter.lastSirenAt = now;
+            window.AudioManager?.play?.('camp_lockdown_alarm', { volume: 0.18, playbackRate: 1.65, bus: 'sfx' });
+        }
+    }
+
+    interactWithMayorTina() {
+        const encounter = this.mayorTinaEncounter;
+        if (!encounter || encounter.phase !== 'idle' || this.isMultiplayer || !this.player || !encounter.mayorRoot) return false;
+        const position = this.getMayorTinaEncounterPosition();
+        if (Math.hypot(this.player.position.x - position.x, this.player.position.z - position.z) >= 2.45) return false;
+        encounter.phase = 'transforming';
+        this.cinematicLock = true;
+        this.setInputEnabled(false);
+        document.getElementById('mayor-tina-hud-prompt')?.classList.add('hidden');
+        window.dispatchEvent(new CustomEvent('mayor-tina-transform-requested'));
+        return true;
+    }
+
+    completeMayorTinaTransformation() {
+        const encounter = this.mayorTinaEncounter;
+        if (!encounter || encounter.phase !== 'transforming' || !encounter.mayorRoot || !this.player) return false;
+        const originalOverlay = this.player3dOverlay;
+        if (originalOverlay?.root) {
+            originalOverlay.setDowned?.(true);
+            this.scene.attach(originalOverlay.root);
+            originalOverlay.root.rotation.z = Math.PI / 2;
+            originalOverlay.root.updateMatrixWorld(true);
+            const bounds = new THREE.Box3().setFromObject(originalOverlay.root);
+            if (Number.isFinite(bounds.min.y)) originalOverlay.root.position.y += 0.04 - bounds.min.y;
+            encounter.originalOverlay = originalOverlay;
+        }
+
+        const mayorRoot = encounter.mayorRoot;
+        mayorRoot.removeFromParent();
+        mayorRoot.position.set(this.playerSpriteLead, 0.12, this.playerSpriteLead);
+        mayorRoot.rotation.set(0, this.facingYaw || 0, 0);
+        mayorRoot.scale.setScalar(1);
+        this.player.add(mayorRoot);
+        const staticMayorOverlay = {
+            root: mayorRoot,
+            update: (delta, state = {}) => {
+                const x = state.isMoving ? state.moveX : state.aimX;
+                const z = state.isMoving ? state.moveZ : state.aimZ;
+                if (Math.hypot(x || 0, z || 0) > 0.0001) {
+                    const target = Math.atan2(x, z);
+                    mayorRoot.rotation.y += Math.atan2(
+                        Math.sin(target - mayorRoot.rotation.y),
+                        Math.cos(target - mayorRoot.rotation.y)
+                    ) * (1 - Math.exp(-delta * 14));
+                }
+            },
+            trigger() {},
+            clearTrigger() {},
+            setDowned() {},
+            setOperatorPolish() {},
+            dispose() { mayorRoot.removeFromParent(); }
+        };
+        this.player3dOverlay = staticMayorOverlay;
+        if (this.playerSprite) this.playerSprite.visible = false;
+        encounter.phase = 'transformed';
+        this.showBunkerLine('TEACUP SIREN: LOOKING VERY MAYORAL, YOUR HONOR.');
+        window.dispatchEvent(new CustomEvent('mayor-tina-transformed'));
+        return true;
+    }
+
+    finishMayorTinaTransformationSequence() {
+        if (this.mayorTinaEncounter?.phase !== 'transformed') return false;
+        this.cinematicLock = false;
+        this.setInputEnabled(true);
+        return true;
+    }
+
+    resetMayorTinaEncounter() {
+        const encounter = this.mayorTinaEncounter;
+        if (!encounter) return;
+        if (encounter.phase === 'transformed' && encounter.originalOverlay?.root && this.player) {
+            this.player3dOverlay?.root?.removeFromParent?.();
+            const original = encounter.originalOverlay;
+            original.root.removeFromParent();
+            original.root.position.set(this.playerSpriteLead, 0.12, this.playerSpriteLead);
+            original.root.rotation.set(0, 0, 0);
+            original.setDowned?.(false);
+            this.player.add(original.root);
+            this.player3dOverlay = original;
+            encounter.originalOverlay = null;
+        } else if (encounter.phase === 'transformed') {
+            this.player3dOverlay?.dispose?.();
+            this.player3dOverlay = null;
+            void this.setupPlayer3dCosmeticOverlay();
+        }
+        encounter.phase = 'idle';
+        encounter.lastSirenAt = 0;
+        encounter.calloutIndex = 0;
+        const position = this.getMayorTinaEncounterPosition();
+        if (encounter.teacupRoot) {
+            encounter.teacupRoot.position.set(position.x, 0, position.z);
+            encounter.teacupRoot.visible = this.performanceProfile === 'gameplay';
+        }
+        if (encounter.mayorRoot) {
+            encounter.mayorRoot.removeFromParent();
+            encounter.mayorRoot.position.set(position.x, 0.43, position.z - 0.03);
+            encounter.mayorRoot.rotation.set(0, 0, 0);
+            encounter.mayorRoot.scale.setScalar(0.68);
+            encounter.mayorRoot.visible = this.performanceProfile === 'gameplay';
+            this.scene.add(encounter.mayorRoot);
+        }
+        this.cinematicLock = false;
+    }
+
     // Sprint 26: accepts an explicit session now (src/gameController.js's
     // startMultiplayerRun passes one), so this doesn't have to rely solely
     // on reading globals -- falls back to the pre-existing global/lobby
@@ -5524,6 +5719,8 @@ export class ThreeGame {
         this.blackBoxPromptEl?.addEventListener('pointerup', this.handlePromptTap);
         this.baseTurretPromptEl = document.getElementById('base-turret-hud-prompt');
         this.baseTurretPromptEl?.addEventListener('pointerup', this.handlePromptTap);
+        this.mayorTinaPromptEl = document.getElementById('mayor-tina-hud-prompt');
+        this.mayorTinaPromptEl?.addEventListener('pointerup', this.handlePromptTap);
         this.renderer.domElement.addEventListener('pointerdown', this.handleCanvasPointerDown);
         this.renderer.domElement.addEventListener('contextmenu', this.handleCanvasContextMenu);
         this.renderer.domElement.addEventListener('pointermove', this.handleCanvasPointerMove);
@@ -5578,6 +5775,7 @@ export class ThreeGame {
 
     triggerGameplayInteract() {
         if (!this.isGameplayInputActive()) return false;
+        if (this.interactWithMayorTina()) return true;
         if (this.interactWithNearestShipStation()) return true;
         // Every check below used to run with its result discarded, so a press
         // near nothing interactable was silent -- no success, no "nothing
@@ -6919,6 +7117,7 @@ export class ThreeGame {
             this.virtualInput.x = 0;
             this.virtualInput.z = 0;
             this._menuShowcaseTimer = 0;
+            void this.setupMayorTinaEncounter();
         } else if (nextProfile === 'menu') {
             // Menu showrooms are presentation-only. Remove any live combat
             // state before their render loop starts so shots cannot continue
@@ -7400,6 +7599,7 @@ export class ThreeGame {
             fp.measure('updateLoreDrops', () => this.updateLoreDrops(delta));
             fp.measure('updateBuildSiteBeacon', () => this.updateBuildSiteBeacon(now));
             fp.measure('updateConsoles', () => this.updateConsoles(delta, now));
+            fp.measure('updateMayorTinaEncounter', () => this.updateMayorTinaEncounter?.(now));
             fp.measure('updateLoreTerminals', () => this.updateLoreTerminals());
             fp.measure('baseLights.update', () => this.baseLights?.update(delta));
             fp.measure('foundry.update', () => this.foundry?.update(delta));
@@ -16758,6 +16958,7 @@ export class ThreeGame {
             this.runEntropy = this.fixedRunEntropy
                 ? 0
                 : createFreshRunEntropy(this.runEntropy);
+            this.resetMayorTinaEncounter();
             this.clearBlackBoxMarker();
             this._blackBoxState = blackBoxStore.load();
             this._initClassPassives();
@@ -30717,6 +30918,7 @@ export class ThreeGame {
         this.foundryPromptEl?.removeEventListener('pointerup', this.handlePromptTap);
         this.blackBoxPromptEl?.removeEventListener('pointerup', this.handlePromptTap);
         this.baseTurretPromptEl?.removeEventListener('pointerup', this.handlePromptTap);
+        this.mayorTinaPromptEl?.removeEventListener('pointerup', this.handlePromptTap);
         window.removeEventListener('o2-generator-upgraded', this._onBaseItemRepaired);
         window.removeEventListener('goal-unlocked', this._onBaseItemRepaired);
         window.removeEventListener('goal-upgraded', this._onBaseItemRepaired);
@@ -30818,6 +31020,9 @@ export class ThreeGame {
             this.scene.remove(this.playerEmitterGlow);
         }
         this.clearBlackBoxMarker();
+        this.mayorTinaEncounter?.originalOverlay?.dispose?.();
+        this.mayorTinaEncounter?.mayorRoot?.removeFromParent?.();
+        this.mayorTinaEncounter?.teacupRoot?.removeFromParent?.();
         if (this.playerForwardSpotLight) {
             this.scene.remove(this.playerForwardSpotLight);
         }

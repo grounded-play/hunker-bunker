@@ -10674,6 +10674,12 @@ body.mission-intro-active #game-container canvas {
   opacity: 1;
 }
 
+.mayor-tina-hud-prompt {
+  border-color: rgba(255, 73, 183, 0.72) !important;
+  color: #ffb4df !important;
+  box-shadow: 0 0 16px rgba(255, 42, 157, 0.34), inset 0 0 9px rgba(255, 42, 157, 0.08) !important;
+}
+
 .o2-generator-hud-prompt {
   position: absolute !important;
   top: calc(var(--vu) * 12) !important;
