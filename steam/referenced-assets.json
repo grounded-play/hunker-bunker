@@ -4927,22 +4927,22 @@
     },
     {
       "path": "economy/decal_cryo_phoenix.png",
-      "bytes": 34933,
+      "bytes": 111805,
       "classification": "runtime-required"
     },
     {
       "path": "economy/decal_cryo_phoenix_large.png",
-      "bytes": 77323,
+      "bytes": 412131,
       "classification": "runtime-required"
     },
     {
       "path": "economy/decal_cyber_skull_tactical_pin.png",
-      "bytes": 28961,
+      "bytes": 122008,
       "classification": "runtime-required"
     },
     {
       "path": "economy/decal_cyber_skull_tactical_pin_large.png",
-      "bytes": 63625,
+      "bytes": 457983,
       "classification": "runtime-required"
     },
     {
@@ -4957,32 +4957,32 @@
     },
     {
       "path": "economy/decal_radiation_trefoil.png",
-      "bytes": 10191,
+      "bytes": 114678,
       "classification": "runtime-required"
     },
     {
       "path": "economy/decal_radiation_trefoil_large.png",
-      "bytes": 21025,
+      "bytes": 432277,
       "classification": "runtime-required"
     },
     {
       "path": "economy/decal_sporesnail_hunter_crest.png",
-      "bytes": 20784,
+      "bytes": 145682,
       "classification": "runtime-required"
     },
     {
       "path": "economy/decal_sporesnail_hunter_crest_large.png",
-      "bytes": 43573,
+      "bytes": 552873,
       "classification": "runtime-required"
     },
     {
       "path": "economy/decal_subzero_pioneer.png",
-      "bytes": 22591,
+      "bytes": 64260,
       "classification": "runtime-required"
     },
     {
       "path": "economy/decal_subzero_pioneer_large.png",
-      "bytes": 50476,
+      "bytes": 239485,
       "classification": "runtime-required"
     },
     {

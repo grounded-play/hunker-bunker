@@ -31,14 +31,15 @@ export function createOperatorPatch(root, { targetHeight = 1.85, loader = new TH
         ray.set(start, forward.clone().negate());
         return ray.intersectObjects(bodyMeshes, false)[0];
     };
-    const width = targetHeight * 0.085;
-    const thickness = targetHeight * 0.0025;
-    const gap = targetHeight * 0.001;
+    const width = targetHeight * 0.082;
+    const thickness = targetHeight * 0.0035;
+    const gap = targetHeight * 0.0006;
     // Corners also sample the armor, preventing a flat patch cutting into a
-    // curved breastplate. At most a few millimeters of fabric stand-off remain.
+    // curved breastplate. Keeps the patch snug against the chest plate without floating.
     const hits = [[0, 0], [-0.35, -0.35], [0.35, -0.35], [-0.35, 0.35], [0.35, 0.35]]
         .map(([x, y]) => sample(x * width, y * width)).filter(Boolean);
-    const depth = hits.length ? Math.max(...hits.map((hit) => hit.point.clone().sub(anchor).dot(forward))) : targetHeight * 0.075;
+    const measuredDepth = hits.length ? Math.max(...hits.map((hit) => hit.point.clone().sub(anchor).dot(forward))) : targetHeight * 0.028;
+    const depth = THREE.MathUtils.clamp(measuredDepth, targetHeight * 0.02, targetHeight * 0.038);
     anchor.addScaledVector(forward, depth + gap + thickness / 2);
 
     const mount = new THREE.Group();
@@ -48,17 +49,34 @@ export function createOperatorPatch(root, { targetHeight = 1.85, loader = new TH
     mount.position.copy(anchor);
     mount.quaternion.copy(rotation);
     const backing = new THREE.Mesh(
-        new RoundedBoxGeometry(width * 0.9, width * 0.9, thickness, 2, thickness * 0.4),
-        new THREE.MeshStandardMaterial({ color: 0x181d22, roughness: 0.96, metalness: 0, depthTest: true, depthWrite: true })
+        new RoundedBoxGeometry(width * 0.94, width * 0.94, thickness, 2, thickness * 0.35),
+        new THREE.MeshStandardMaterial({
+            color: 0x14181c,
+            roughness: 0.92,
+            metalness: 0.1,
+            depthTest: true,
+            depthWrite: true
+        })
     );
     backing.name = 'PatchClothBacking';
-    const face = new THREE.Mesh(new THREE.PlaneGeometry(width, width), new THREE.MeshStandardMaterial({
-        roughness: 0.95, metalness: 0, alphaTest: 0.15, side: THREE.FrontSide, depthTest: true, depthWrite: true
-    }));
+    const face = new THREE.Mesh(
+        new THREE.PlaneGeometry(width, width),
+        new THREE.MeshStandardMaterial({
+            roughness: 0.85,
+            metalness: 0.08,
+            transparent: true,
+            alphaTest: 0.05,
+            side: THREE.FrontSide,
+            depthTest: true,
+            depthWrite: true
+        })
+    );
     face.name = 'PatchArtwork';
-    face.position.z = thickness / 2 + targetHeight * 0.0002;
+    face.position.z = thickness / 2 + 0.0006;
     for (const mesh of [backing, face]) {
         mesh.userData.isOperatorPatch = true;
+        mesh.castShadow = true;
+        mesh.receiveShadow = true;
         mesh.renderOrder = 7;
         mesh.frustumCulled = false;
         mount.add(mesh);

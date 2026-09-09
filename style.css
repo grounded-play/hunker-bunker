@@ -34,6 +34,12 @@
   --scrollbar-thumb-hover: rgba(46, 196, 182, 0.72);
   --design-width: 160;
   --design-height: 100;
+  --vw-actual: 100vw;
+  --vh-actual: 100dvh;
+  --ui-scale-multiplier: 1;
+  --vu: min(calc(var(--vw-actual, 100vw) / 160), calc(var(--vh-actual, 100dvh) / 100));
+  --vu-text: calc(var(--vu) * var(--ui-scale-multiplier, 1));
+  --stage-px: calc(var(--vu) / 8);
   /* Safe-frame + type floor tokens, per
      docs/steam-deck-first-display-and-input-spec.md. Values are logical
      1280x800-stage pixels; --stage-px converts them to host px at runtime
@@ -121,8 +127,9 @@ body {
 }
 
 #game-viewport {
-  --vu: 1px;
+  --vu: min(calc(var(--vw-actual, 100vw) / 160), calc(var(--vh-actual, 100dvh) / 100));
   --vu-text: calc(var(--vu) * var(--ui-scale-multiplier, 1));
+  --stage-px: calc(var(--vu) / 8);
   --gutter: calc(var(--vu) * 4);
   --font-xl: calc(var(--vu-text) * 18);
   --font-lg: calc(var(--vu-text) * 6);

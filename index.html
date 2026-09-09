@@ -99,9 +99,46 @@
           }
         };
       }
+
+      // Synchronously compute initial responsive stage layout tokens so the loading
+      // screen never flashes at 1px / unscaled size before main.js evaluates.
+      try {
+        var w = window.innerWidth || (document.documentElement && document.documentElement.clientWidth) || 1280;
+        var h = window.innerHeight || (document.documentElement && document.documentElement.clientHeight) || 800;
+        var bu = Math.min(w / 160, h / 100);
+        var scale = window.localStorage ? window.localStorage.getItem('hb_ui_scale') : null;
+        var mult = (Number(scale) || 100) / 100;
+        var root = document.documentElement;
+        if (root && root.style) {
+          root.style.setProperty('--vw-actual', w + 'px');
+          root.style.setProperty('--vh-actual', h + 'px');
+          root.style.setProperty('--vu', bu + 'px');
+          root.style.setProperty('--vu-text', (bu * mult) + 'px');
+          root.style.setProperty('--ui-scale-multiplier', String(mult));
+          root.style.setProperty('--stage-px', (bu / 8) + 'px');
+        }
+      } catch (e) {}
     })();
   </script>
   <div id="game-viewport">
+    <script>
+      (function () {
+        try {
+          var w = window.innerWidth || 1280;
+          var h = window.innerHeight || 800;
+          var bu = Math.min(w / 160, h / 100);
+          var scale = window.localStorage ? window.localStorage.getItem('hb_ui_scale') : null;
+          var mult = (Number(scale) || 100) / 100;
+          var vp = document.getElementById('game-viewport');
+          if (vp && vp.style) {
+            vp.style.setProperty('--vu', bu + 'px');
+            vp.style.setProperty('--vu-text', (bu * mult) + 'px');
+            vp.style.setProperty('--ui-scale-multiplier', String(mult));
+            vp.style.setProperty('--stage-px', (bu / 8) + 'px');
+          }
+        } catch (e) {}
+      })();
+    </script>
     <button id="global-skip-intro-btn" class="global-skip-btn hidden">SKIP INTRO</button>
     <div id="damage-vignette-layer" class="hidden">
       <div id="hit-indicator-wedge"></div>
