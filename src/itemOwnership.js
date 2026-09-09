@@ -102,9 +102,9 @@ for (const [achievementKey, rewardId] of Object.entries(ACHIEVEMENT_COSMETIC_REW
     const title = ACHIEVEMENT_TITLE_BY_KEY.get(achievementKey) ?? achievementKey.replace(/_/g, ' ').toUpperCase();
     MERGED_CATALOG.set(id, Object.freeze({
         itemdefid: id,
-        name: `${title} Chassis`,
+        name: `${title} ${{ '5002': 'Carbine', '5006': 'Autocannon', '5009': 'Arc Driver', '5010': 'Arc Driver' }[String(id)] ?? 'Chassis'}`,
         rarity: 'rare',
-        type: ITEM_TYPE.CHASSIS,
+        type: ['5002', '5006', '5009', '5010'].includes(String(id)) ? ITEM_TYPE.SKIN : ITEM_TYPE.CHASSIS,
         source: 'achievement',
         achievementKey
     }));

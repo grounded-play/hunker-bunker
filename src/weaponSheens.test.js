@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
     WEAPON_SHEENS,
+    reconcileSheenUnlocks,
     SHEEN_UNLOCK_BY_MILESTONE,
     getUnlockedSheenIds,
     getSelectedSheen,
@@ -81,4 +82,16 @@ describe('weaponSheens', () => {
         const ids = new Set(WEAPON_SHEENS.map((s) => s.id));
         for (const id of Object.values(SHEEN_UNLOCK_BY_MILESTONE)) expect(ids.has(id)).toBe(true);
     });
+});
+
+
+it('backfills sheens from real persisted career and world records without changing selection', () => {
+    const storage = memoryStorage();
+    reconcileSheenUnlocks({ achievements: { scouts_honor: { at: 123 }, hunkered: { at: 456 } },
+        world: { dishBuilt: true, queenStatus: 'killed', camps: [{ aided: true }, { status: 'turned' }] } }, storage);
+    expect([...getUnlockedSheenIds(storage)].sort((a,b) => a-b)).toEqual([0, 1, 2, 3, 4, 10, 11]);
+    expect(getSelectedSheen(storage).id).toBe(0);
+    expect(selectSheen(10, storage).name).toBe('VOID ANODIZE');
+    reconcileSheenUnlocks({}, storage);
+    expect(getSelectedSheen(storage).id).toBe(10);
 });

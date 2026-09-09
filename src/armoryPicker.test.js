@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { scrambleName, buildPickerTiles, deriveIconFromModelUrl, resolveItemIcon } from './armoryPicker.js';
+import { calculatePickerLayout, scrambleName, buildPickerTiles, deriveIconFromModelUrl, resolveItemIcon } from './armoryPicker.js';
 
 // docs/planning/armory-ui-overhaul-2026-09-09.md Phase 1.
 describe('scrambleName', () => {
@@ -131,5 +131,21 @@ describe('icon resolution', () => {
 
     it('returns null when neither source knows the item', () => {
         expect(resolveItemIcon('nope')).toBeNull();
+    });
+});
+
+
+describe('single-screen equipment grids', () => {
+    it('fits every offered list at desktop and handheld landscape sizes', () => {
+        for (const [width, height] of [[1280, 720], [1280, 800], [1431, 781], [1920, 1080]]) {
+            for (let count = 1; count <= 40; count++) {
+                const layout = calculatePickerLayout(count, width, height);
+                const totalHeight = layout.rows * (layout.art + 48) + (layout.rows - 1) * 8 + 160;
+                expect(layout.width).toBeLessThanOrEqual(width - 64);
+                expect(totalHeight).toBeLessThanOrEqual(height - 48);
+                expect(layout.columns * layout.rows).toBeGreaterThanOrEqual(count);
+                expect(layout.art).toBeGreaterThanOrEqual(60);
+            }
+        }
     });
 });

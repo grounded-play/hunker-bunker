@@ -102,6 +102,20 @@ export function unlockSheenForMilestone(milestoneKey, storage = null) {
     return id === undefined ? false : unlockSheen(id, storage);
 }
 
+// Existing careers must not have to repeat a one-time achievement to earn a tint.
+export function reconcileSheenUnlocks({ achievements = {}, world = {} } = {}, storage = null) {
+    const worldFlags = { ...world,
+        campAided: world.campAided || world.camps?.some((camp) => camp.aided),
+        campTurned: world.campTurned || world.camps?.some((camp) => camp.turned || camp.status === 'turned'),
+        queenKilled: world.queenKilled || world.queenStatus === 'killed'
+    };
+    for (const [milestone, id] of Object.entries(SHEEN_UNLOCK_BY_MILESTONE)) {
+        const [kind, key] = milestone.split(':');
+        if (kind === 'achievement' ? achievements[key] : worldFlags[key]) unlockSheen(id, storage);
+    }
+    return getUnlockedSheenIds(storage);
+}
+
 export function unlockAllSheens(storage = null) {
     try {
         storageOrDefault(storage)?.setItem(

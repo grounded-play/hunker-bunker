@@ -1,9 +1,8 @@
 import { AudioManager } from './audio.js';
 import { assetUrl } from './assetUrl.js';
 import { buildEquipOptions } from './armoryOptions.js';
-import { buildPickerTiles, resolveItemIcon } from './armoryPicker.js';
-import { WEAPON_ARCHETYPES, WEAPON_SKIN_MESHES, CHASSIS_SKIN_MODELS } from './player3dOverlay.js';
-import { CHARM_GLB_MAP, MOD_GLB_MAP } from './armoryScene.js';
+import { buildPickerTiles, calculatePickerLayout } from './armoryPicker.js';
+import { getArmoryIcon, ARMORY_WEAPON_NAMES } from './armoryAssets.js';
 import {
     WEAPON_SHEENS,
     getSelectedSheen,
@@ -96,12 +95,7 @@ export const CATALOG_ITEMS = Object.freeze({
     '4159': { name: 'Deep Core Shard (Token)', rarity: 'uncommon', type: 'shard', icon: '/economy/relic_common.png' }
 });
 
-const ARCHETYPE_NAMES = Object.freeze({
-    talon: 'Vector-9 Talon SMG',
-    talon_c: 'Talon-C Carbine',
-    siege_breaker: 'Siege-Breaker 50 Autocannon',
-    tesla_lock: 'Tesla-Lock MK-IV Arc Driver'
-});
+const ARCHETYPE_NAMES = ARMORY_WEAPON_NAMES;
 
 export function createArmoryUi({
     container,
@@ -145,31 +139,6 @@ export function createArmoryUi({
     // frame via ARCHETYPE_SKINS).
     const FRAME_PREFIX = 'frame:';
 
-    // Which model an item renders, so its tile can show the matching economy
-    // art without a second hand-maintained icon list.
-    function modelUrlForItem(id) {
-        const key = String(id);
-        // Factory frames are namespaced `frame:<archetypeId>` and resolve
-        // against the archetype map rather than the itemdef catalog.
-        if (key.startsWith(FRAME_PREFIX)) {
-            return WEAPON_ARCHETYPES[key.slice(FRAME_PREFIX.length)] ?? null;
-        }
-        return WEAPON_SKIN_MESHES[key]
-            ?? CHARM_GLB_MAP[key]
-            ?? MOD_GLB_MAP[key]
-            ?? CHASSIS_SKIN_MODELS[key]
-            ?? null;
-    }
-
-    // Community chassis skins live under /3d/runtime/community/ and ship no
-    // economy PNG of their own, so they borrow their class's chassis art the
-    // same way steamVaultUi's catalog entry does.
-    const COMMUNITY_CLASS_ICON = Object.freeze({
-        scout: '/economy/chassis_cryo_vanguard_scout.png',
-        tank: '/economy/chassis_trench_warden_heavy.png',
-        engineer: '/economy/chassis_subterran_drill_engineer.png'
-    });
-
     // The slot buttons used to read names straight out of this file's local
     // CATALOG_ITEMS, which covers skins/charms/mods/chassis but no decals -- so
     // a fitted decal rendered as a bare itemdef id ("2003"). The shared
@@ -178,22 +147,11 @@ export function createArmoryUi({
         if (!id) return fallback;
         return CATALOG_ITEMS[id]?.name
             ?? getCatalogEntry(id)?.name
-            ?? String(id);
+            ?? 'UNKNOWN EQUIPMENT';
     }
 
     function iconForItem(id) {
-        const key = String(id);
-        if (key.startsWith('comm_')) {
-            const cls = key.split('_')[1];
-            return COMMUNITY_CLASS_ICON[cls] ?? null;
-        }
-        const entry = getCatalogEntry(id);
-        return resolveItemIcon(key, {
-            // itemOwnership's catalog carries icon paths for the families this
-            // file's local map never listed (decals in particular).
-            explicitIcon: CATALOG_ITEMS[id]?.icon ?? entry?.localImg ?? entry?.icon ?? null,
-            modelUrlFor: modelUrlForItem
-        });
+        return getArmoryIcon(id, CATALOG_ITEMS[id]?.icon);
     }
 
     // Art that 404s must degrade to the initials fallback, not to the browser's
@@ -247,7 +205,7 @@ export function createArmoryUi({
         return {
             weapon: {
                 title: 'PRIMARY WEAPON',
-                subtitle: 'FRAME + FIELDED MODEL // LOCKED WEAPONS REQUIRE FIELD MILESTONES',
+                subtitle: 'CHOOSE YOUR PRIMARY WEAPON // FIELD REWARDS REVEAL LOCKED ITEMS',
                 options: () => weaponFieldOptions(cls, loadout, allowedArchetypes),
                 current: () => (loadout.weaponSkinId
                     ? String(loadout.weaponSkinId)
@@ -257,13 +215,17 @@ export function createArmoryUi({
                     : `${ARCHETYPE_NAMES[loadout.archetypeId] || String(loadout.archetypeId).toUpperCase()} — FACTORY ISSUE`),
                 apply: (value) => {
                     if (value.startsWith(FRAME_PREFIX)) {
+                        if (!allowedArchetypes.includes(value.slice(FRAME_PREFIX.length))) return false;
                         loadoutManager.setArchetype(cls, value.slice(FRAME_PREFIX.length));
                         loadoutManager.equipWeaponSkin(cls, null);
                         return true;
                     }
                     const arch = archetypeForSkin(value);
-                    if (arch) loadoutManager.setArchetype(cls, arch);
-                    return equipGuard(value, (v) => loadoutManager.equipWeaponSkin(cls, v));
+                    if (!arch || !allowedArchetypes.includes(arch)) return false;
+                    return equipGuard(value, (v) => {
+                        loadoutManager.setArchetype(cls, arch);
+                        loadoutManager.equipWeaponSkin(cls, v);
+                    });
                 },
                 sound: 'sfx_charm_clink_light',
                 after: () => armoryScene?.updateFromLoadout(loadoutManager, cls)
@@ -365,8 +327,9 @@ export function createArmoryUi({
         if (!field) return '';
         const currentId = field.current();
         const icon = iconForItem(currentId);
+        const swatch = fieldKey === 'sheen' ? getSelectedSheen().color : null;
         return `<button type="button" class="armory-slot" id="armory-slot-${fieldKey}" data-field="${fieldKey}">
-            <span class="armory-slot__art">${icon
+            <span class="armory-slot__art">${swatch ? `<span class="armory-tile__swatch" style="--tile-swatch:${swatch}"></span>` : icon
                 ? `<img src="${assetUrl(icon)}" alt="" loading="lazy">`
                 : '<span class="armory-slot__art-empty"></span>'}</span>
             <span class="armory-slot__body">
@@ -386,18 +349,14 @@ export function createArmoryUi({
     // fits the modal without scrolling: few items get big boxes, a long list
     // (community chassis skins run past thirty) shrinks to fit instead of
     // spilling into a scrollbar.
-    function pickerColumns(count) {
-        if (count <= 4) return Math.max(2, count);
-        return Math.min(9, Math.max(4, Math.ceil(Math.sqrt(count * 1.7))));
-    }
 
     function pickerHtml(pickerId, options, { noneLabel = null, selectedId = null } = {}) {
         const tiles = buildPickerTiles(options, { iconFor: iconForItem });
         const swatchById = new Map((options ?? []).map((o) => [String(o.id), o.swatch ?? null]));
-        const columns = pickerColumns(tiles.length + (noneLabel ? 1 : 0));
+        const layout = calculatePickerLayout(tiles.length + (noneLabel ? 1 : 0), globalThis.innerWidth || 1280, globalThis.innerHeight || 800);
         const noneTile = noneLabel
             ? `<button type="button" class="armory-tile armory-tile--none${!selectedId ? ' is-selected' : ''}"
-                    data-value="" aria-label="${noneLabel}">
+                    data-value="" aria-pressed="${!selectedId}" aria-label="${noneLabel}">
                     <span class="armory-tile__art armory-tile__art--empty"></span>
                     <span class="armory-tile__name">${noneLabel}</span>
                </button>`
@@ -415,6 +374,7 @@ export function createArmoryUi({
             return `<button type="button"
                     class="armory-tile${tile.locked ? ' is-locked' : ''}${tile.selected ? ' is-selected' : ''}"
                     data-value="${tile.id}"
+                    aria-pressed="${tile.selected}"
                     data-rarity="${rarity}"
                     ${tile.locked ? 'aria-disabled="true"' : ''}
                     aria-label="${tile.ariaLabel}"
@@ -424,7 +384,7 @@ export function createArmoryUi({
                     ${tile.devUnlocked ? '<span class="armory-tile__badge">DEV UNLOCK</span>' : ''}
                 </button>`;
         }).join('');
-        return `<div class="armory-picker" id="${pickerId}" role="listbox" style="--picker-cols:${columns}">${noneTile}${body}</div>`;
+        return `<div class="armory-picker" id="${pickerId}" role="group" aria-label="Equipment options" style="--picker-cols:${layout.columns};--picker-art:${layout.art}px;--picker-width:${layout.width}px">${noneTile}${body}</div>`;
     }
 
     // Which slot's modal is open, so a re-render can restore it. render()
@@ -433,10 +393,12 @@ export function createArmoryUi({
     let openField = null;
 
     function closePickerModal() {
+        const fieldKey = openField;
         openField = null;
         const modal = container.querySelector?.('#armory-picker-modal');
         modal?.classList?.add?.('hidden');
         modal?.setAttribute?.('aria-hidden', 'true');
+        if (fieldKey) container.querySelector?.(`#armory-slot-${fieldKey}`)?.focus?.({ preventScroll: true });
     }
 
     function openPickerModal(fieldKey) {
@@ -468,6 +430,7 @@ export function createArmoryUi({
         modal.setAttribute?.('aria-hidden', 'false');
         wireTileArtFallbacks();
         bindPickerGrid();
+        container.querySelector?.('.armory-tile.is-selected')?.focus?.({ preventScroll: true });
     }
 
     // Defence in depth behind the `disabled` attribute: a change event can
@@ -497,7 +460,7 @@ export function createArmoryUi({
         const archetype = loadout.archetypeId || DEFAULT_ARCHETYPES[cls];
         const modifiers = loadoutManager.getActiveModifiers(cls);
         const chassisSkinId = loadoutManager.getEquippedChassisSkinId?.();
-        const selectedFinish = loadout.weaponSkinId ? (CATALOG_ITEMS[loadout.weaponSkinId]?.name || loadout.weaponSkinId) : 'FACTORY ISSUE';
+        const selectedWeapon = pickerFields().weapon.currentName();
 
         const hasActiveOverclocks = Boolean(
             (modifiers.scrapMagnetRadiusBonus > 0) ||
@@ -549,8 +512,8 @@ export function createArmoryUi({
                                 <div class="armory-stage-readout__eyebrow">◈ LIVE STAGE PREVIEW</div>
                                 <div class="armory-stage-readout__title">${activeClass.toUpperCase()} // ${ARCHETYPE_NAMES[archetype] || archetype}</div>
                                 <div class="armory-stage-readout__details">
-                                    <span class="armory-stage-readout__chip"><b>WEAPON:</b> ${selectedFinish}</span>
-                                    <span class="armory-stage-readout__chip"><b>CHASSIS:</b> ${chassisSkinId ? (CATALOG_ITEMS[chassisSkinId]?.name || chassisSkinId) : 'STANDARD'}</span>
+                                    <span class="armory-stage-readout__chip"><b>WEAPON:</b> ${selectedWeapon}</span>
+                                    <span class="armory-stage-readout__chip"><b>CHASSIS:</b> ${nameForItem(chassisSkinId, 'STANDARD')}</span>
                                 </div>
                             </div>
                             <button type="button" class="armory-stage-readout__polish" id="armory-polish-btn">
@@ -584,6 +547,7 @@ export function createArmoryUi({
                                 ${slotHtml('weapon')}
                             </div>
 
+                            <div class="bench-row-two-col">
                             <!-- WEAPON SHEEN: a real tint now, not a mesh swap -->
                             <div class="bench-field">
                                 <label>WEAPON SHEEN</label>
@@ -596,6 +560,7 @@ export function createArmoryUi({
                                 ${slotHtml('charm')}
                             </div>
 
+                            </div>
                             <div class="bench-row-two-col">
                                 <!-- RIG MOD 1 -->
                                 <div class="bench-field">
@@ -660,11 +625,7 @@ export function createArmoryUi({
                                 </span>
                                 <h2>OPERATOR EXOSUIT RIG</h2>
                             </div>
-                            <div class="bench-field">
-                                <label>CHASSIS SPECIFICATION</label>
-                                <div class="field-value">${activeClass.toUpperCase()} MK-IV SUB-ZERO PRESSURIZED</div>
-                            </div>
-                            <div class="bench-stack">
+                            <div class="bench-stack bench-row-two-col">
                                 <div class="bench-field">
                                     <label>EXOSUIT CHASSIS SKIN</label>
                                     ${slotHtml('chassis')}
@@ -698,7 +659,7 @@ export function createArmoryUi({
                 </footer>
 
                 <!-- Shared tile picker, mirroring the operator sheen modal. -->
-                <div id="armory-picker-modal" class="modal hidden armory-picker-modal" aria-hidden="true">
+                <div id="armory-picker-modal" class="modal hidden armory-picker-modal" role="dialog" aria-modal="true" aria-labelledby="armory-picker-title" aria-hidden="true">
                     <div class="modal-content armory-picker-modal-content">
                         <div class="terminal-scanline"></div>
                         <button class="close-modal" id="armory-picker-close" aria-label="Close">×</button>
@@ -728,6 +689,33 @@ export function createArmoryUi({
     // tiles are refused here AND by equipGuard, so a hand-edited DOM still
     // cannot equip something unearned.
     function bindPickerGrid() {
+        const grid = container.querySelector?.('#armory-picker-grid');
+        const tiles = [...(grid?.querySelectorAll?.('.armory-tile') ?? [])];
+        for (const tile of tiles) {
+            const showDetails = () => {
+                const locked = tile.classList.contains('is-locked');
+                const field = pickerFields()[openField];
+                const entry = getCatalogEntry(tile.dataset.value);
+                const sheen = WEAPON_SHEENS.find((s) => `sheen:${s.id}` === tile.dataset.value);
+                const name = container.querySelector?.('#armory-picker-readout-name');
+                const state = container.querySelector?.('#armory-picker-readout-state');
+                if (name) name.textContent = locked ? 'UNKNOWN EQUIPMENT' : tile.getAttribute('aria-label');
+                if (state) state.textContent = locked
+                    ? (sheen?.hint ?? (entry?.source === 'achievement' ? 'Earn its field achievement to reveal.' : 'Unlock through field rewards.'))
+                    : field?.current() === tile.dataset.value ? 'EQUIPPED' : 'SELECT TO EQUIP';
+            };
+            tile.addEventListener('focus', showDetails);
+            tile.addEventListener('mouseenter', showDetails);
+        }
+        grid?.addEventListener?.('keydown', (event) => {
+            const index = tiles.indexOf(event.target);
+            const columns = Number(grid.style.getPropertyValue('--picker-cols')) || 1;
+            const offset = { ArrowLeft: -1, ArrowRight: 1, ArrowUp: -columns, ArrowDown: columns }[event.key];
+            if (offset === undefined || index < 0) return;
+            event.preventDefault();
+            event.stopPropagation();
+            tiles[Math.max(0, Math.min(tiles.length - 1, index + offset))]?.focus();
+        });
         container.querySelector?.('#armory-picker-grid')?.addEventListener?.('click', (event) => {
             const tile = event.target.closest?.('.armory-tile');
             if (!tile) return;
@@ -741,8 +729,10 @@ export function createArmoryUi({
             if (!field.apply(value)) return;
             playSound(field.sound);
             field.after?.(value);
+            const selectedField = openField;
             closePickerModal();
             render();
+            container.querySelector?.(`#armory-slot-${selectedField}`)?.focus?.({ preventScroll: true });
         });
     }
 
@@ -808,7 +798,7 @@ export function createArmoryUi({
             ownership.setUnlockAll(next);
             if (next) {
                 unlockAllPolishes();
-            unlockAllSheens();
+                unlockAllSheens();
             }
             playSound('ui_click_confirm1');
             render();
@@ -821,6 +811,23 @@ export function createArmoryUi({
                 const screen = document?.getElementById?.('armory-screen');
                 if (!screen || screen.classList?.contains?.('hidden') || screen.style?.display === 'none') return;
 
+                if (openField) {
+                    if (event.key === 'Escape') {
+                        event.preventDefault();
+                        event.stopImmediatePropagation();
+                        closePickerModal();
+                    } else if (event.key === 'Tab') {
+                        const modal = container.querySelector?.('#armory-picker-modal');
+                        const buttons = [...(modal?.querySelectorAll?.('button') ?? [])];
+                        const index = buttons.indexOf(document.activeElement);
+                        const next = (index + (event.shiftKey ? -1 : 1) + buttons.length) % buttons.length;
+                        event.preventDefault();
+                        buttons[next]?.focus();
+                    } else if (['KeyQ', 'KeyE', 'Enter', 'Space'].includes(event.code)) {
+                        event.stopImmediatePropagation();
+                    }
+                    return;
+                }
                 const classes = ['scout', 'tank', 'engineer'];
                 const currentIdx = classes.indexOf(activeClass.toLowerCase());
 
@@ -838,7 +845,7 @@ export function createArmoryUi({
                     playSound('ui_click_confirm1');
                     return;
                 }
-            });
+            }, true);
         }
     }
 
@@ -850,6 +857,7 @@ export function createArmoryUi({
         const compatibleChassisSkin = (CLASS_CHASSIS_SKINS[activeClass] || []).includes(chassisSkinId)
             ? chassisSkinId
             : null;
+        closePickerModal();
         armoryScene?.setClass(activeClass, compatibleChassisSkin);
         armoryScene?.updateFromLoadout(loadoutManager, activeClass);
         render();
@@ -857,6 +865,11 @@ export function createArmoryUi({
             onClassChange(activeClass.toUpperCase());
         }
     }
+
+    function resizePicker() {
+        if (openField) openPickerModal(openField);
+    }
+    globalThis.addEventListener?.('resize', resizePicker);
 
     // Requirement A4: an item granted while the Armory is on screen (a cache
     // opened in the Vault tab, a tier claimed) has to appear immediately.
@@ -872,6 +885,7 @@ export function createArmoryUi({
         },
         destroy() {
             unsubscribeOwnership();
+            globalThis.removeEventListener?.('resize', resizePicker);
         }
     };
 }

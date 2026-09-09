@@ -17,9 +17,8 @@ import { fileURLToPath } from 'node:url';
 
 import { ITEM_TYPE, getCatalogIdsByType, getCatalogEntry } from '../src/itemOwnership.js';
 import { CATALOG_ITEMS } from '../src/armoryUi.js';
-import { WEAPON_ARCHETYPES, WEAPON_SKIN_MESHES, CHASSIS_SKIN_MODELS } from '../src/player3dOverlay.js';
-import { CHARM_GLB_MAP, MOD_GLB_MAP } from '../src/armoryScene.js';
-import { deriveIconFromModelUrl } from '../src/armoryPicker.js';
+import { getArmoryModel, getArmoryIcon, getArmoryOfferedIds, ARMORY_WEAPON_NAMES } from '../src/armoryAssets.js';
+import { ARMORY_PREVIEWS } from '../src/data/armoryPreviews.js';
 import { runChromaGreenScan, CHROMA_GREEN_ALLOWLIST } from './audit-chroma-green.js';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -31,28 +30,8 @@ const MD_REPORT = path.join(ROOT, 'docs/reports/armory-asset-gaps.md');
 // legitimately sit around 0.05-0.25.
 const GREEN_SUSPECT_RATIO = 0.35;
 
-const COMMUNITY_CLASS_ICON = {
-    scout: '/economy/chassis_cryo_vanguard_scout.png',
-    tank: '/economy/chassis_trench_warden_heavy.png',
-    engineer: '/economy/chassis_subterran_drill_engineer.png'
-};
-
-function modelUrlFor(id) {
-    const key = String(id);
-    if (key.startsWith('frame:')) return WEAPON_ARCHETYPES[key.slice(6)] ?? null;
-    return WEAPON_SKIN_MESHES[key] ?? CHARM_GLB_MAP[key] ?? MOD_GLB_MAP[key] ?? CHASSIS_SKIN_MODELS[key] ?? null;
-}
-
-function iconFor(id) {
-    const key = String(id);
-    if (key.startsWith('comm_')) return COMMUNITY_CLASS_ICON[key.split('_')[1]] ?? null;
-    const entry = getCatalogEntry(id);
-    return CATALOG_ITEMS[key]?.icon
-        ?? entry?.localImg
-        ?? entry?.icon
-        ?? deriveIconFromModelUrl(modelUrlFor(key))
-        ?? null;
-}
+function modelUrlFor(id) { return getArmoryModel(id); }
+function iconFor(id) { return getArmoryIcon(id, CATALOG_ITEMS[String(id)]?.icon); }
 
 function publicExists(webPath) {
     if (!webPath) return false;
@@ -62,11 +41,9 @@ function publicExists(webPath) {
 // Every id the Armory can offer, grouped the way the bench groups them.
 function collectArmoryIds() {
     const groups = {
-        'weapon frame': Object.keys(WEAPON_ARCHETYPES).map((a) => `frame:${a}`),
-        weapon: getCatalogIdsByType(ITEM_TYPE.SKIN),
+        ...getArmoryOfferedIds(),
         charm: getCatalogIdsByType(ITEM_TYPE.CHARM),
         overclock: getCatalogIdsByType(ITEM_TYPE.MOD),
-        chassis: getCatalogIdsByType(ITEM_TYPE.CHASSIS),
         decal: getCatalogIdsByType(ITEM_TYPE.DECAL)
     };
     return groups;
@@ -87,7 +64,7 @@ export function auditArmoryAssets() {
             const id = String(rawId);
             const isFrame = id.startsWith('frame:');
             const entry = isFrame ? null : getCatalogEntry(rawId);
-            const name = CATALOG_ITEMS[id]?.name ?? entry?.name ?? null;
+            const name = isFrame ? ARMORY_WEAPON_NAMES[id.slice(6)] : CATALOG_ITEMS[id]?.name ?? entry?.name ?? null;
             const icon = iconFor(id);
             const iconExists = publicExists(icon);
             const model = modelUrlFor(id);
@@ -98,12 +75,15 @@ export function auditArmoryAssets() {
                 group,
                 id,
                 name,
-                missingName: !isFrame && !name,
+                missingName: !name,
                 icon,
                 iconExists,
                 missingIcon: !icon || !iconExists,
                 model,
-                missingModel: !model,
+                missingModel: group !== 'decal' && !publicExists(model),
+                modelRequired: group !== 'decal',
+                needsModelRedo: id === 'frame:talon_c',
+                previewSource: ARMORY_PREVIEWS[id]?.source ?? 'catalog-art',
                 greenRatio,
                 greenSuspect: greenRatio >= GREEN_SUSPECT_RATIO,
                 allowlistedGreen: icon ? CHROMA_GREEN_ALLOWLIST.has(`public${icon}`) : false
@@ -117,6 +97,7 @@ export function auditArmoryAssets() {
         missingName: rows.filter((r) => r.missingName).length,
         missingIcon: rows.filter((r) => r.missingIcon).length,
         missingModel: rows.filter((r) => r.missingModel).length,
+        needsModelRedo: rows.filter((r) => r.needsModelRedo).length,
         greenSuspect: rows.filter((r) => r.greenSuspect).length,
         rows
     };
@@ -135,15 +116,17 @@ function renderMarkdown(report) {
 Status: generated | Updated: ${report.timestamp.slice(0, 10)}
 | Regenerate: \`npm run audit:armory-assets\`
 
-Derived from the same catalogs the Armory renders from, so this cannot drift
-from what the player sees on the bench.
+Uses the same item lists and preview resolver as the Armory. Model paths are
+checked on disk. Transparent model renders replace the previous shared chassis
+pictures and green-backed icons; source artwork is retained unchanged.
 
 | Check | Count |
 | --- | ---: |
 | Items offered | ${report.total} |
 | **No name** (renders as a bare itemdef id) | **${report.missingName}** |
 | **No icon on disk** (tile falls back to initials) | **${report.missingIcon}** |
-| No 3D model | ${report.missingModel} |
+| Missing required 3D model | ${report.missingModel} |
+| Existing model needs visual replacement | ${report.needsModelRedo} |
 | **Icon looks like an un-keyed green screen** (≥${GREEN_SUSPECT_RATIO * 100}% green) | **${report.greenSuspect}** |
 
 ## 1. Missing names — needs a catalog entry
@@ -174,13 +157,27 @@ ${table(rows.filter((r) => r.greenSuspect), [
         ['Green', (r) => `${Math.round(r.greenRatio * 100)}%`],
         ['Allowlisted', (r) => (r.allowlistedGreen ? 'yes' : 'no')]
     ])}
-## 4. Missing 3D models
+## 4. Missing required 3D models
+
+These rewards use the factory model until a unique model is authored. Their
+previews are existing achievement emblems, not pictures of invented equipment.
+Decals are intentionally 2D and do not need a model.
 
 ${table(rows.filter((r) => r.missingModel), [
         ['Group', (r) => r.group],
         ['Id', (r) => `\`${r.id}\``],
         ['Name', (r) => r.name ?? '—']
-    ])}`;
+    ])}
+## 5. Existing models that need replacement
+
+| Item | Current limitation | Next asset task |
+| --- | --- | --- |
+| Talon-C Carbine (\`frame:talon_c\`) | The shipped factory model is a blockout with simple untextured parts. The new preview accurately shows this proxy. | Author a finished, textured carbine model, preserve its grip and charm socket calibration, then regenerate its preview. |
+
+This is a visual-review finding, separate from missing-file checks. The four
+previous green-backed charm/module icons now use transparent model renders;
+original source artwork is retained and may still be used by other screens.
+`;
 }
 
 function main() {

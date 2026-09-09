@@ -19,5 +19,7 @@ Status: canonical process index · Owner: repository maintainers · Updated:
   antigravity Armory plan and covers the weapon-identity, tile-menu and
   weapon-sheen asks that followed it.
 
+- [Armory continuation](armory-continuation-2026-09-09.md) records the completed no-scroll layout, accurate previews, and deployed weapon sheen/charm work. Remaining model production is tracked in the roadmap and generated asset inventory.
+
 Closed plans are evidence, not a backlog. Unfinished work must be deliberately
 copied into the roadmap with an owner/acceptance condition or explicitly cut.

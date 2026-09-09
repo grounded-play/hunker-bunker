@@ -1,0 +1,297 @@
+/* ── Armory slot buttons & tile pickers ───────────────────────────────
+   docs/planning/armory-ui-overhaul-2026-09-09.md Phase 1/2/3.
+
+   Built on the same tokens as the operator sheen picker (--vu, --font-xs,
+   Space Mono) so the bench and the sheen modal read as one system. Every
+   grid fits its modal without scrolling: the column count is set per-list in
+   armoryUi.js from the item count, so a long list shrinks its boxes instead
+   of growing a scrollbar. Boxes stay square via aspect-ratio, so the grid is
+   even whatever the list length. */
+.armory-slot {
+  display: flex;
+  align-items: center;
+  gap: calc(var(--vu) * 1);
+  width: 100%;
+  padding: calc(var(--vu) * 0.7) calc(var(--vu) * 1);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 5px;
+  background: rgba(8, 12, 15, 0.92);
+  color: rgba(255, 255, 255, 0.86);
+  font: 800 calc(var(--font-xs) * 0.8) / 1.15 'Space Mono', monospace;
+  cursor: pointer;
+  text-align: left;
+  transition: border-color 120ms ease, box-shadow 120ms ease;
+}
+
+.armory-slot:hover,
+.armory-slot:focus-visible {
+  border-color: rgba(0, 229, 255, 0.55);
+  box-shadow: 0 0 calc(var(--vu) * 1.2) rgba(0, 229, 255, 0.25);
+  outline: none;
+}
+
+.armory-slot__art {
+  flex: 0 0 auto;
+  width: calc(var(--vu) * 3.6);
+  height: calc(var(--vu) * 3.6);
+  display: grid;
+  place-items: center;
+  border-radius: 3px;
+  background: rgba(4, 8, 12, 0.9);
+  overflow: hidden;
+}
+
+.armory-slot__art img { width: 100%; height: 100%; object-fit: contain; }
+
+.armory-slot__art-empty {
+  width: 100%;
+  height: 100%;
+  background: repeating-linear-gradient(45deg,
+    rgba(255, 255, 255, 0.08) 0 4px, transparent 4px 8px);
+}
+
+.armory-slot__body {
+  display: flex;
+  flex: 1 1 auto;
+  align-items: center;
+  justify-content: space-between;
+  gap: calc(var(--vu) * 0.8);
+  min-width: 0;
+}
+
+.armory-slot__name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.armory-slot__hint {
+  flex: 0 0 auto;
+  color: #b8f4ff;
+  font-size: calc(var(--font-xs) * 0.58);
+  letter-spacing: 0.12em;
+  opacity: 0.8;
+}
+
+/* ── Picker modal ─────────────────────────────────────────────────── */
+.armory-picker-modal-content {
+  width: min(90vw, calc(var(--vu) * 78));
+  padding: calc(var(--vu) * 3);
+  border-color: rgba(0, 229, 255, 0.42) !important;
+}
+
+.armory-picker-title {
+  color: #b8f4ff;
+  font-size: calc(var(--vu) * 3.2);
+  font-weight: 900;
+  letter-spacing: 0.1em;
+}
+
+.armory-picker-subtitle {
+  margin: calc(var(--vu) * 0.6) 0 calc(var(--vu) * 2);
+  color: var(--text-muted);
+  font: 700 var(--font-xs) / 1.3 'Space Mono', monospace;
+  letter-spacing: 0.07em;
+}
+
+.armory-picker-readout {
+  display: flex;
+  justify-content: space-between;
+  margin-top: calc(var(--vu) * 1.5);
+  padding-top: calc(var(--vu) * 1);
+  border-top: 1px solid rgba(0, 229, 255, 0.2);
+  color: #b8f4ff;
+  font: 800 var(--font-xs) / 1 'Space Mono', monospace;
+}
+
+/* ── Tile grid ────────────────────────────────────────────────────── */
+.armory-picker {
+  display: grid;
+  grid-template-columns: repeat(var(--picker-cols, 5), minmax(0, 1fr));
+  gap: calc(var(--vu) * 0.8);
+  /* No max-height and no overflow: the column count already guarantees fit. */
+}
+
+.armory-tile {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--vu) * 0.5);
+  padding: calc(var(--vu) * 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 5px;
+  background: rgba(8, 12, 15, 0.92);
+  color: rgba(255, 255, 255, 0.76);
+  font: 800 calc(var(--font-xs) * 0.6) / 1.15 'Space Mono', monospace;
+  cursor: pointer;
+  transition: border-color 120ms ease, box-shadow 120ms ease;
+}
+
+.armory-tile:hover:not(.is-locked),
+.armory-tile:focus-visible {
+  border-color: rgba(0, 229, 255, 0.55);
+  box-shadow: 0 0 calc(var(--vu) * 1.2) rgba(0, 229, 255, 0.28);
+  outline: none;
+}
+
+.armory-tile.is-selected {
+  border-color: #00e5ff;
+  box-shadow: 0 0 calc(var(--vu) * 1.5) rgba(0, 229, 255, 0.45);
+  color: #ffffff;
+}
+
+.armory-tile__art {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1 / 1;   /* even boxes at any column count */
+  display: grid;
+  place-items: center;
+  border-radius: 3px;
+  background: rgba(4, 8, 12, 0.9);
+  overflow: hidden;
+}
+
+.armory-tile__art img { width: 100%; height: 100%; object-fit: contain; }
+
+.armory-tile__swatch {
+  width: 100%;
+  height: 100%;
+  background: var(--tile-swatch, #ffffff);
+  box-shadow: inset 0 0 calc(var(--vu) * 1.2) rgba(255, 255, 255, 0.5);
+}
+
+.armory-tile__art--empty {
+  width: 100%;
+  height: 100%;
+  background: repeating-linear-gradient(45deg,
+    rgba(255, 255, 255, 0.08) 0 4px, transparent 4px 8px);
+}
+
+.armory-tile__art-fallback {
+  color: rgba(255, 255, 255, 0.45);
+  letter-spacing: 0.06em;
+}
+
+.armory-tile__name {
+  text-align: center;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  min-height: 2.3em;   /* two lines reserved, so rows stay aligned */
+}
+
+/* Locked: visible, shapeless, nameless. Enough blur to destroy detail,
+   little enough that the silhouette still reads. */
+.armory-tile.is-locked {
+  cursor: not-allowed;
+  color: rgba(255, 255, 255, 0.3);
+}
+
+.armory-tile.is-locked .armory-tile__art img {
+  filter: blur(4px) grayscale(0.85) brightness(0.7) contrast(1.1);
+  transform: scale(1.15);
+  opacity: 0.75;
+}
+
+.armory-tile.is-locked .armory-tile__swatch {
+  filter: grayscale(1) brightness(0.28);
+}
+
+.armory-tile__glyph {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: calc(var(--vu) * 2.4);
+  font-weight: 900;
+  text-shadow: 0 2px calc(var(--vu) * 1) rgba(0, 0, 0, 0.9);
+}
+
+.armory-tile__badge {
+  position: absolute;
+  top: calc(var(--vu) * 0.4);
+  right: calc(var(--vu) * 0.4);
+  padding: 0 calc(var(--vu) * 0.4);
+  border-radius: 3px;
+  background: #ffd15a;
+  color: #0a1420;
+  font-size: calc(var(--font-xs) * 0.5);
+  letter-spacing: 0.08em;
+}
+
+.armory-tile[data-rarity="rare"] { border-left: 2px solid #58a6ff; }
+.armory-tile[data-rarity="epic"] { border-left: 2px solid #b886ff; }
+.armory-tile[data-rarity="legendary"] { border-left: 2px solid #ffd15a; }
+
+.bench-stack {
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--vu) * 1.2);
+}
+/* Compact bench: all fitted slots share one screen, including the suit. */
+#armory-screen .armory-main-layout { grid-template-columns: minmax(0, 1fr) clamp(340px, 31vw, 440px); }
+#armory-screen .armory-controls-sidebar { overflow: visible; gap: 10px; align-self: stretch; }
+#armory-screen .armory-panel { padding: 8px 12px; gap: 6px; flex-shrink: 0; }
+#armory-screen .panel-header h2 { font-size: 16px; line-height: 1.15; letter-spacing: .06em; }
+#armory-screen .bench-field label { font-size: 10px; line-height: 1.3; }
+#armory-screen .bench-stack { display: grid; gap: 8px; }
+#armory-screen .armory-slot { min-height: 48px; padding: 5px; gap: 8px; font-size: 11px; }
+#armory-screen .armory-slot__art { width: 34px; height: 34px; }
+#armory-screen .armory-slot__name { white-space: normal; overflow-wrap: anywhere; line-height: 1.2; }
+#armory-screen .armory-slot__hint { font-size: 8px; }
+#armory-screen .bench-row-two-col .armory-slot__hint { display: none; }
+#armory-screen .modifiers-summary { padding-top: 7px; margin-top: 0; }
+#armory-screen .modifiers-title, #armory-screen .telemetry-title { font-size: 10px; }
+#armory-screen .modifiers-standby { gap: 8px; padding: 6px; }
+#armory-screen .standby-desc, #armory-screen .mod-badge { font-size: 9px; line-height: 1.25; }
+#armory-screen .telemetry-box { padding: 7px 9px; }
+#armory-screen .telemetry-item { font-size: 10px; line-height: 1.3; }
+#armory-screen .field-value { font-size: 10px; }
+#armory-screen .armory-stage-readout { flex-wrap: wrap; padding: 9px 12px; gap: 8px; max-width: 600px; }
+#armory-screen .armory-stage-readout__title { font-size: 13px; line-height: 1.3; white-space: normal; }
+#armory-screen .armory-stage-readout__details { font-size: 10px; line-height: 1.4; flex-wrap: wrap; }
+#armory-screen .armory-stage-readout__hint { display: none; }
+#armory-screen .armory-title { font-size: clamp(18px, 1.45vw, 22px); letter-spacing: .05em; }
+#armory-screen .armory-tag { font-size: 9px; }
+#armory-screen .armory-title-box { max-width: 48%; }
+
+/* Equal cards sized against the actual viewport by calculatePickerLayout. */
+#armory-picker-modal .armory-picker-modal-content {
+  width: fit-content; max-width: calc(100vw - 48px); max-height: calc(100vh - 32px);
+  margin: 0; padding: 24px !important; overflow: visible; box-sizing: border-box;
+  background: linear-gradient(145deg, rgba(9, 19, 28, .98), rgba(4, 9, 15, .99));
+  color: var(--text-primary); border: 1px solid var(--armory-accent, #00e5ff) !important;
+}
+#armory-picker-modal .armory-picker-title { font-size: 22px; line-height: 1.2; padding-right: 32px; }
+#armory-picker-modal .armory-picker-subtitle { font-size: 10px; margin: 8px 0 16px; line-height: 1.3; }
+#armory-picker-modal .armory-picker { gap: 8px; grid-template-columns: repeat(var(--picker-cols), calc(var(--picker-art) + 12px)); }
+#armory-picker-modal .armory-tile { padding: 5px; gap: 5px; min-width: 0; font-size: 10px; line-height: 1.25; border-radius: 4px; }
+#armory-picker-modal .armory-tile__art { width: var(--picker-art); height: var(--picker-art); aspect-ratio: auto; }
+#armory-picker-modal .armory-tile__name { height: 30px; min-height: 30px; line-height: 15px; overflow-wrap: anywhere; }
+#armory-picker-modal .armory-tile__badge { font-size: 7px; }
+#armory-picker-modal .armory-picker-readout { max-width: 100%; min-height: 40px; gap: 8px; margin-top: 12px; padding-top: 10px; font-size: 11px; line-height: 1.35; flex-direction: column; }
+#armory-picker-readout-name { max-width: 100%; overflow-wrap: anywhere; }
+#armory-picker-readout-state { color: var(--text-muted); font-size: 10px; }
+#armory-picker-modal .armory-tile.is-selected { border-color: var(--armory-accent, #00e5ff); }
+#armory-picker-modal .armory-tile__swatch { background: linear-gradient(140deg, #ffffff55, transparent 45%, #00000099), var(--tile-swatch); }
+@media (max-height: 740px) {
+  #armory-screen .armory-panel { padding: 7px 10px; gap: 6px; }
+  #armory-screen .armory-slot { min-height: 48px; padding: 5px; }
+  #armory-screen .telemetry-box { display: flex; flex-wrap: wrap; gap: 4px 10px; }
+  #armory-screen .telemetry-title { width: 100%; }
+  #armory-screen .telemetry-item { gap: 6px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  #armory-picker-modal .armory-tile, #armory-screen .armory-slot { transition: none; }
+}
+
+#armory-picker-grid { justify-content: center; }
+#armory-picker-modal .close-modal { top: 12px; right: 12px; width: 28px; height: 28px; font-size: 20px; }
+#armory-screen .telemetry-box { display: flex; flex-wrap: wrap; gap: 4px 10px; }
+#armory-screen .telemetry-title { width: 100%; }
+#armory-screen .telemetry-item { gap: 6px; }
+#armory-screen .armory-stage-readout { display: grid; grid-template-columns: minmax(0, 1fr) auto; width: min(100%, 600px); }
+
+#armory-screen .bench-row-two-col .armory-slot { flex: 1; }

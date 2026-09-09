@@ -8,25 +8,14 @@ import {
     WEAPON_ARCHETYPES,
     WEAPON_SKIN_MESHES
 } from './player3dOverlay.js';
-import { DEFAULT_ARCHETYPES } from './loadout.js';
-import { getItemCatalogEntry } from './steamVaultUi.js';
+import { getCatalogEntry as getItemCatalogEntry } from './itemOwnership.js';
 import { getCharmSocketTransform, resolveCharmModelOffset } from './charmSockets.js';
+import { applyWeaponSheen as tintWeapon, disposeWeaponSheen } from './weaponSheenMaterial.js';
+import { getSelectedSheen } from './weaponSheens.js';
 import { getWeaponScaleForBounds, getWeaponCalibration } from './weaponCalibration.js';
 
-export const CHARM_GLB_MAP = Object.freeze({
-    '4130': '/3d/runtime/new3ds/charm_mini_cryo_core.glb',
-    '4131': '/3d/runtime/new3ds/charm_spent_50cal.glb',
-    '4132': '/3d/runtime/new3ds/charm_sporesnail_pearl.glb',
-    '4133': '/3d/runtime/new3ds/charm_trench_whistle.glb',
-    '4134': '/3d/runtime/new3ds/charm_glitched_ram.glb',
-    '4135': '/3d/runtime/new3ds/charm_geodetic_compass.glb',
-    '4136': '/3d/runtime/new3ds/charm_mini_drone_bobble.glb',
-    // 4137/4138: Hyper3D Rodin AI-generated via Blender MCP (docs/season-zero-protocol/08 §5
-    // item 1) — same generation pipeline as the rest of this map, textured, matching quality.
-    '4137': '/3d/runtime/new3ds/charm_amber_bio_flask.glb',
-    '4138': '/3d/runtime/new3ds/charm_dark_matter.glb',
-    '4139': '/3d/runtime/new3ds/charm_golden_sub_bunker_key.glb'
-});
+import { CHARM_GLB_MAP } from './charmModels.js';
+export { CHARM_GLB_MAP } from './charmModels.js';
 
 export const MOD_GLB_MAP = Object.freeze({
     '4140': '/3d/runtime/new3ds/mod_cryo_capacitor.glb',
@@ -269,7 +258,7 @@ export async function createArmoryScene(canvas) {
 
     // Operator Polish (colorway) and the shoulder-patch decal are both real,
     // already-shipped systems -- setOperatorPolish() is wired to the in-run
-    // player and the title-screen hero preview, and playerDecalSprite renders
+    // player and the title-screen hero preview, and the torso patch renders
     // in-run -- but neither was ever connected to the Armory's own operator
     // preview (docs/armory-layout-and-cosmetic-preview-plan-2026-08-19.md #3).
     // Stored here (not just applied once) because loadOperatorModel rebuilds
@@ -280,57 +269,11 @@ export async function createArmoryScene(canvas) {
     // Stored like the operator polish, and for the same reason: the weapon mesh
     // is rebuilt from scratch on every frame/skin change, so the tint has to be
     // re-applied to the new material rather than set once.
-    let currentSheenColor = 0xffffff;
+    let currentSheenColor = getSelectedSheen().color;
     let currentDecalId = null;
-    let decalSprite = null;
-
-    // Chest-mounted, matching src/threeGame.js's playerDecalSprite placement
-    // convention (same relative height/forward offset), but each class's real
-    // 3D chassis has its own chest bulge/depth (TANK's armor protrudes far
-    // more than SCOUT's), and a sprite tested against real mesh depth
-    // (depthTest: true, needed so the badge still hides when the operator is
-    // rotated to face away) disappears if it sits behind that surface. Anchors
-    // tuned per class via live-screenshot iteration rather than one shared
-    // offset that only worked for SCOUT.
-    const DECAL_ANCHORS = {
-        SCOUT: { x: 0.16, y: 1.3, z: 0.14 },
-        ENGINEER: { x: 0.16, y: 1.3, z: 0.16 },
-        TANK: { x: 0.18, y: 1.38, z: 0.34 }
-    };
-
     function applyDecalSprite(decalId) {
-        if (decalSprite) {
-            decalSprite.material?.map?.dispose?.();
-            decalSprite.material?.dispose?.();
-            decalSprite.removeFromParent();
-            decalSprite = null;
-        }
-        if (!decalId || !currentOverlay?.root) return;
-        const catalog = getItemCatalogEntry(decalId);
-        const iconPath = catalog?.localImg || catalog?.img;
-        if (!iconPath) return;
-        // normalizeModel() (player3dOverlay.js) scales the raw GLB (exported
-        // in centimeter-ish units) up to targetHeight meters via root.scale --
-        // confirmed live at ~184.9x for these operator rigs. DECAL_ANCHORS
-        // below is expressed in the same "world meters" terms as targetHeight
-        // (e.g. chest at y~1.3 out of a ~1.85-1.95 tall operator), so it has
-        // to be divided back down by that same factor before being used as a
-        // position/scale local to root -- otherwise (as first shipped) the
-        // sprite lands ~200 units away in space, nowhere near the model.
-        const rootScale = currentOverlay.root.scale.x || 1;
-        const anchor = DECAL_ANCHORS[activeClass] || DECAL_ANCHORS.SCOUT;
-        const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ transparent: true, opacity: 0, depthTest: false, depthWrite: false }));
-        sprite.center.set(0.5, 0.5);
-        sprite.position.set(anchor.x / rootScale, anchor.y / rootScale, anchor.z / rootScale);
-        sprite.scale.set(0.16 / rootScale, 0.16 / rootScale, 1);
-        sprite.renderOrder = 7;
-        new THREE.TextureLoader().load(assetUrl(iconPath), (texture) => {
-            sprite.material.map = texture;
-            sprite.material.opacity = 1;
-            sprite.material.needsUpdate = true;
-        });
-        currentOverlay.root.add(sprite);
-        decalSprite = sprite;
+        const catalog = decalId ? getItemCatalogEntry(decalId) : null;
+        currentOverlay?.setPatchImage(catalog?.localImg || catalog?.img || null);
     }
 
     async function loadOperatorModel(classType, chassisSkinId = null) {
@@ -389,7 +332,7 @@ export async function createArmoryScene(canvas) {
 
         try {
             const overlay = await createPlayer3dOverlay(config);
-            if (gen !== loadGen) return;
+            if (gen !== loadGen) { overlay.dispose(); return; }
             currentOverlay = overlay;
             overlay.root.rotation.y = 0.35; // Angle slightly toward center weapon bench
             overlay.root.traverse((child) => {
@@ -427,20 +370,7 @@ export async function createArmoryScene(canvas) {
     // instead of flattening the model to one colour. Cloning the material first
     // keeps the tint off any other mesh sharing it.
     function applyWeaponSheen() {
-        if (!currentWeaponMesh) return;
-        currentWeaponMesh.traverse?.((child) => {
-            if (!child.isMesh || !child.material) return;
-            const materials = Array.isArray(child.material) ? child.material : [child.material];
-            for (const material of materials) {
-                if (!material?.color) continue;
-                if (!material.userData.hbBaseColor) {
-                    material.userData.hbBaseColor = material.color.clone();
-                }
-                material.color.copy(material.userData.hbBaseColor).multiplyScalar(1);
-                material.color.multiply(new THREE.Color(currentSheenColor));
-                material.needsUpdate = true;
-            }
-        });
+        tintWeapon(currentWeaponMesh, currentSheenColor);
     }
 
     const weaponPivot = new THREE.Group();
@@ -479,6 +409,8 @@ export async function createArmoryScene(canvas) {
     weaponPivot.add(mod2Socket);
 
     let currentCharmMesh = null;
+    let charmLoadGen = 0;
+    const modLoadGen = { 1: 0, 2: 0 };
     let currentMod1Mesh = null;
     let currentMod2Mesh = null;
 
@@ -514,9 +446,11 @@ export async function createArmoryScene(canvas) {
 
             if (currentWeaponMesh) {
                 weaponPivot.remove(currentWeaponMesh);
+                disposeWeaponSheen(currentWeaponMesh);
             }
 
             const model = gltf.scene.clone(true);
+            tintWeapon(model, currentSheenColor);
             // Normalize weapon scale for prominent bench inspection
             const bbox = new THREE.Box3().setFromObject(model);
             const size = bbox.getSize(new THREE.Vector3());
@@ -551,6 +485,7 @@ export async function createArmoryScene(canvas) {
     }
 
     async function loadCharmAsset(charmItemdefId) {
+        const gen = ++charmLoadGen;
         if (!charmItemdefId || !CHARM_GLB_MAP[String(charmItemdefId)]) {
             if (currentCharmMesh) {
                 charmSocket.remove(currentCharmMesh);
@@ -562,6 +497,7 @@ export async function createArmoryScene(canvas) {
         const url = CHARM_GLB_MAP[String(charmItemdefId)];
         try {
             const gltf = await loadArmoryGltfCached(gltfLoader, url);
+            if (gen !== charmLoadGen) return;
             if (currentCharmMesh) charmSocket.remove(currentCharmMesh);
 
             const model = gltf.scene.clone(true);
@@ -588,6 +524,7 @@ export async function createArmoryScene(canvas) {
     }
 
     async function loadModAsset(slot, modItemdefId) {
+        const gen = ++modLoadGen[slot];
         const socket = slot === 2 ? mod2Socket : mod1Socket;
         const current = slot === 2 ? currentMod2Mesh : currentMod1Mesh;
 
@@ -601,6 +538,7 @@ export async function createArmoryScene(canvas) {
         const url = MOD_GLB_MAP[String(modItemdefId)];
         try {
             const gltf = await loadArmoryGltfCached(gltfLoader, url);
+            if (gen !== modLoadGen[slot]) return;
             if (slot === 2 && currentMod2Mesh) mod2Socket.remove(currentMod2Mesh);
             if (slot === 1 && currentMod1Mesh) mod1Socket.remove(currentMod1Mesh);
 
@@ -755,8 +693,7 @@ export async function createArmoryScene(canvas) {
             if (edgeMat?.color) edgeMat.color.setHex(accentColor);
 
             await loadOperatorModel(classType, chassisSkinId);
-            const defaultArch = DEFAULT_ARCHETYPES[cls] || 'talon';
-            await loadWeaponAsset(defaultArch, null);
+            // updateFromLoadout owns weapon selection; a late operator load must not reset it.
         },
         async setChassisSkin(chassisSkinId, classType = activeClass) {
             await loadOperatorModel(classType, chassisSkinId);
@@ -794,6 +731,13 @@ export async function createArmoryScene(canvas) {
         resize,
         dispose() {
             isRunning = false;
+            loadGen++;
+            weaponLoadGen++;
+            charmLoadGen++;
+            modLoadGen[1]++;
+            modLoadGen[2]++;
+            currentOverlay?.dispose?.();
+            disposeWeaponSheen(currentWeaponMesh);
             canvas.removeEventListener('pointerdown', onPointerDown);
             window.removeEventListener('pointermove', onPointerMove);
             window.removeEventListener('pointerup', onPointerUp);

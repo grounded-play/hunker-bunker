@@ -161,11 +161,16 @@
     "Scout.full_v2.png",
     "Tank.full_v2.png",
     "Tank.walk_v4.png",
+    "ach_archivist.png",
     "ach_ending_alien_exodus.jpg",
     "ach_ending_empty_husk.jpg",
     "ach_ending_failed_carrier.jpg",
     "ach_ending_mothership_infection.jpg",
     "ach_ending_outed_escape.jpg",
+    "ach_ghost.png",
+    "ach_hunkered.png",
+    "ach_kin.png",
+    "ach_quick_study.png",
     "alien_nahl_walk.png",
     "alien_proto_crawler_walk.png",
     "alien_proto_crawler_walk_v2.png",
@@ -461,6 +466,85 @@
     "drop_resin_locket.png",
     "drop_security_log.png",
     "drop_survey_probe.png",
+    "economy/armory/4100.png",
+    "economy/armory/4101.png",
+    "economy/armory/4102.png",
+    "economy/armory/4103.png",
+    "economy/armory/4104.png",
+    "economy/armory/4105.png",
+    "economy/armory/4106.png",
+    "economy/armory/4107.png",
+    "economy/armory/4108.png",
+    "economy/armory/4109.png",
+    "economy/armory/4110.png",
+    "economy/armory/4111.png",
+    "economy/armory/4112.png",
+    "economy/armory/4113.png",
+    "economy/armory/4114.png",
+    "economy/armory/4115.png",
+    "economy/armory/4116.png",
+    "economy/armory/4117.png",
+    "economy/armory/4118.png",
+    "economy/armory/4119.png",
+    "economy/armory/4130.png",
+    "economy/armory/4131.png",
+    "economy/armory/4132.png",
+    "economy/armory/4133.png",
+    "economy/armory/4134.png",
+    "economy/armory/4135.png",
+    "economy/armory/4136.png",
+    "economy/armory/4137.png",
+    "economy/armory/4138.png",
+    "economy/armory/4139.png",
+    "economy/armory/4140.png",
+    "economy/armory/4141.png",
+    "economy/armory/4142.png",
+    "economy/armory/4143.png",
+    "economy/armory/4144.png",
+    "economy/armory/4145.png",
+    "economy/armory/4146.png",
+    "economy/armory/4147.png",
+    "economy/armory/5003.png",
+    "economy/armory/5004.png",
+    "economy/armory/5005.png",
+    "economy/armory/5007.png",
+    "economy/armory/5008.png",
+    "economy/armory/5011.png",
+    "economy/armory/5012.png",
+    "economy/armory/comm_eng_abg.png",
+    "economy/armory/comm_eng_afro_crash.png",
+    "economy/armory/comm_eng_apex.png",
+    "economy/armory/comm_eng_corpo_shadow_runner.png",
+    "economy/armory/comm_eng_foxhole_shadow.png",
+    "economy/armory/comm_eng_neural_weaver.png",
+    "economy/armory/comm_eng_sil.png",
+    "economy/armory/comm_eng_soft_manic_architect_gf.png",
+    "economy/armory/comm_eng_swim.png",
+    "economy/armory/comm_eng_toxic_apex_chrysalis.png",
+    "economy/armory/comm_scount_sil.png",
+    "economy/armory/comm_scout_abg.png",
+    "economy/armory/comm_scout_apex.png",
+    "economy/armory/comm_scout_corpo_shadow_runner.png",
+    "economy/armory/comm_scout_foxhole_shadow.png",
+    "economy/armory/comm_scout_soft_manic_infiltrator_gf.png",
+    "economy/armory/comm_scout_swim.png",
+    "economy/armory/comm_scout_tank_crash.png",
+    "economy/armory/comm_scout_toxic_apex_chrysalis.png",
+    "economy/armory/comm_scout_xeno_stalker.png",
+    "economy/armory/comm_tank_abg.png",
+    "economy/armory/comm_tank_afro_crash.png",
+    "economy/armory/comm_tank_apex.png",
+    "economy/armory/comm_tank_brood_matron.png",
+    "economy/armory/comm_tank_chubby_protective_hacker_gf.png",
+    "economy/armory/comm_tank_corpo_shadow_runner.png",
+    "economy/armory/comm_tank_foxhole_shadow.png",
+    "economy/armory/comm_tank_sil.png",
+    "economy/armory/comm_tank_swim.png",
+    "economy/armory/comm_tank_toxic_apex_chrysalis.png",
+    "economy/armory/frame-siege_breaker.png",
+    "economy/armory/frame-talon.png",
+    "economy/armory/frame-talon_c.png",
+    "economy/armory/frame-tesla_lock.png",
     "economy/cache_deep_relic.png",
     "economy/cache_deep_relic_large.png",
     "economy/cache_key.png",
@@ -4204,6 +4288,401 @@
     {
       "path": "drop_survey_probe.png",
       "bytes": 213634,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/armory/4100.png",
+      "bytes": 31219,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/armory/4101.png",
+      "bytes": 54794,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/armory/4102.png",
+      "bytes": 42702,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/armory/4103.png",
+      "bytes": 47934,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/armory/4104.png",
+      "bytes": 31732,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/armory/4105.png",
+      "bytes": 54851,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/armory/4106.png",
+      "bytes": 55558,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/armory/4107.png",
+      "bytes": 38566,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/armory/4108.png",
+      "bytes": 47533,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/armory/4109.png",
+      "bytes": 15550,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/armory/4110.png",
+      "bytes": 15816,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/armory/4111.png",
+      "bytes": 35807,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/armory/4112.png",
+      "bytes": 52517,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/armory/4113.png",
+      "bytes": 41736,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/armory/4114.png",
+      "bytes": 55648,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/armory/4115.png",
+      "bytes": 23286,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/armory/4116.png",
+      "bytes": 41957,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/armory/4117.png",
+      "bytes": 54603,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/armory/4118.png",
+      "bytes": 38527,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/armory/4119.png",
+      "bytes": 31049,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/armory/4130.png",
+      "bytes": 76737,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/armory/4131.png",
+      "bytes": 30052,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/armory/4132.png",
+      "bytes": 55645,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/armory/4133.png",
+      "bytes": 50134,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/armory/4134.png",
+      "bytes": 33575,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/armory/4135.png",
+      "bytes": 99922,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/armory/4136.png",
+      "bytes": 56270,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/armory/4137.png",
+      "bytes": 26390,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/armory/4138.png",
+      "bytes": 76474,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/armory/4139.png",
+      "bytes": 43831,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/armory/4140.png",
+      "bytes": 61716,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/armory/4141.png",
+      "bytes": 134874,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/armory/4142.png",
+      "bytes": 111102,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/armory/4143.png",
+      "bytes": 117920,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/armory/4144.png",
+      "bytes": 112250,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/armory/4145.png",
+      "bytes": 42049,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/armory/4146.png",
+      "bytes": 94956,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/armory/4147.png",
+      "bytes": 142661,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/armory/5003.png",
+      "bytes": 49682,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/armory/5004.png",
+      "bytes": 43962,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/armory/5005.png",
+      "bytes": 65644,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/armory/5007.png",
+      "bytes": 55187,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/armory/5008.png",
+      "bytes": 60961,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/armory/5011.png",
+      "bytes": 49499,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/armory/5012.png",
+      "bytes": 49615,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/armory/comm_eng_abg.png",
+      "bytes": 55439,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/armory/comm_eng_afro_crash.png",
+      "bytes": 34363,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/armory/comm_eng_apex.png",
+      "bytes": 45890,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/armory/comm_eng_corpo_shadow_runner.png",
+      "bytes": 35907,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/armory/comm_eng_foxhole_shadow.png",
+      "bytes": 40833,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/armory/comm_eng_neural_weaver.png",
+      "bytes": 61788,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/armory/comm_eng_sil.png",
+      "bytes": 39301,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/armory/comm_eng_soft_manic_architect_gf.png",
+      "bytes": 70850,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/armory/comm_eng_swim.png",
+      "bytes": 60044,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/armory/comm_eng_toxic_apex_chrysalis.png",
+      "bytes": 44945,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/armory/comm_scount_sil.png",
+      "bytes": 47850,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/armory/comm_scout_abg.png",
+      "bytes": 61066,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/armory/comm_scout_apex.png",
+      "bytes": 37898,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/armory/comm_scout_corpo_shadow_runner.png",
+      "bytes": 30380,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/armory/comm_scout_foxhole_shadow.png",
+      "bytes": 41881,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/armory/comm_scout_soft_manic_infiltrator_gf.png",
+      "bytes": 60357,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/armory/comm_scout_swim.png",
+      "bytes": 52776,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/armory/comm_scout_tank_crash.png",
+      "bytes": 39397,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/armory/comm_scout_toxic_apex_chrysalis.png",
+      "bytes": 37620,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/armory/comm_scout_xeno_stalker.png",
+      "bytes": 38772,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/armory/comm_tank_abg.png",
+      "bytes": 50984,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/armory/comm_tank_afro_crash.png",
+      "bytes": 35695,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/armory/comm_tank_apex.png",
+      "bytes": 75700,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/armory/comm_tank_brood_matron.png",
+      "bytes": 79882,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/armory/comm_tank_chubby_protective_hacker_gf.png",
+      "bytes": 59376,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/armory/comm_tank_corpo_shadow_runner.png",
+      "bytes": 31037,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/armory/comm_tank_foxhole_shadow.png",
+      "bytes": 48740,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/armory/comm_tank_sil.png",
+      "bytes": 51384,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/armory/comm_tank_swim.png",
+      "bytes": 80124,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/armory/comm_tank_toxic_apex_chrysalis.png",
+      "bytes": 48469,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/armory/frame-siege_breaker.png",
+      "bytes": 55172,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/armory/frame-talon.png",
+      "bytes": 39143,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/armory/frame-talon_c.png",
+      "bytes": 7377,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/armory/frame-tesla_lock.png",
+      "bytes": 60399,
       "classification": "runtime-required"
     },
     {

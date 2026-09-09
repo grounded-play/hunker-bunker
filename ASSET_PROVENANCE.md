@@ -189,3 +189,13 @@ Sprint 30 does not need to hand-document every historical file before any other 
 4. resolve any `blocked` retail assets before release promotion;
 5. move or classify temporary/source assets deliberately;
 6. keep Steam AI disclosure derived from this evidence rather than memory.
+
+
+## Armory preview derivatives — 2026-09-09
+
+- Runtime derivatives: `public/economy/armory/*.png`, 79 transparent 320×320 model renders, 4,213,332 bytes total.
+- Sources: the existing weapon, chassis, community operator, charm and overclock GLBs mapped in `src/data/armoryPreviews.js`. Original model files and source artwork are retained unchanged.
+- Method: deterministic Three.js lighting/camera render through `scripts/render-armory-previews.mjs`; no new image-generation service, stock art or external art source was used for these derivatives. They inherit the provenance and AI-disclosure status of their source models.
+- Five rewards without unique models use existing achievement emblem PNGs. The manifest identifies those entries as `achievement-emblem`; it does not imply a finished model.
+- Evidence: `docs/reports/armory-asset-gaps.md` and `docs/reports/armory-implementation-2026-09-09.md`. The Armory now uses model renders in place of four chroma-green-backed icons. The factory Talon-C blockout and five unauthored reward models remain explicit art backlog.
+- State: integrated and browser-tested derivatives; no change to the underlying source assets' retail/provenance status.

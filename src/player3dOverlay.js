@@ -1,3 +1,4 @@
+import { createOperatorPatch } from './operatorPatch.js';
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.js';
@@ -5,7 +6,9 @@ import { clone as cloneSkeleton } from 'three/examples/jsm/utils/SkeletonUtils.j
 import { assetUrl } from './assetUrl.js';
 import { recordAssetLoad } from './assetLoadTelemetry.js';
 import { getWeaponCalibration, getWeaponScaleForBounds } from './weaponCalibration.js';
-import { getCharmSocketTransform } from './charmSockets.js';
+import { getCharmSocketTransform, resolveCharmModelOffset } from './charmSockets.js';
+import { applyWeaponSheen } from './weaponSheenMaterial.js';
+import { CHARM_GLB_MAP } from './charmModels.js';
 
 // The 2D-to-3D generation pipeline's gltf-transform optimize pass applies
 // EXT_meshopt_compression; GLTFLoader throws "setMeshoptDecoder must be called
@@ -128,19 +131,19 @@ function loadCharacterTemplate(url) {
     return characterTemplates.get(url);
 }
 
-function loadWeaponTemplate(url) {
+function loadWeaponTemplate(url, group = 'weapon') {
     if (weaponTemplates.has(url)) {
-        recordAssetLoad(url, { group: 'weapon', cacheHit: true });
+        recordAssetLoad(url, { group, cacheHit: true });
         return weaponTemplates.get(url);
     }
     const started = performance.now();
     if (!weaponTemplates.has(url)) {
         const promise = createGltfLoader().loadAsync(assetUrl(url)).catch((err) => {
-            recordAssetLoad(url, { group: 'weapon', status: 'failed', durationMs: performance.now() - started, error: err });
+            recordAssetLoad(url, { group, status: 'failed', durationMs: performance.now() - started, error: err });
             weaponTemplates.delete(url);
             throw err;
         }).then((gltf) => {
-            recordAssetLoad(url, { group: 'weapon', durationMs: performance.now() - started });
+            recordAssetLoad(url, { group, durationMs: performance.now() - started });
             return gltf;
         });
         weaponTemplates.set(url, promise);
@@ -156,7 +159,12 @@ function loadWeaponTemplate(url) {
 // material swap on the archetype mesh — see WEAPON_SKIN_MESHES and worklog task 6. If skinId
 // is given and mapped, it takes priority over archetypeId for which mesh loads; on failure it
 // falls back to the archetype mesh, then to GG1, same chain as the archetype-only path.
-export async function createClassWeapon(archetypeId, { position = null, skinId = null } = {}) {
+export async function createClassWeapon(archetypeId, { position = null, skinId = null, sheenColor = 0xffffff, charmId = null } = {}) {
+    const charmUrl = CHARM_GLB_MAP[String(charmId)];
+    const charmTemplate = charmUrl ? loadWeaponTemplate(charmUrl, 'charm').catch((error) => {
+        console.warn('[player-3d-overlay] charm unavailable; keeping the weapon', error);
+        return null;
+    }) : Promise.resolve(null);
     const skinUrl = skinId ? WEAPON_SKIN_MESHES[skinId] : null;
     const archetypeUrl = WEAPON_ARCHETYPES[archetypeId] ?? WEAPON_URL;
     const url = skinUrl ?? archetypeUrl;
@@ -167,12 +175,13 @@ export async function createClassWeapon(archetypeId, { position = null, skinId =
         if (url === WEAPON_URL) throw err;
         if (url === skinUrl) {
             console.warn(`[player-3d-overlay] weapon skin "${skinId}" (${url}) failed to load; falling back to archetype "${archetypeId}"`, err);
-            return createClassWeapon(archetypeId, { position, skinId: null });
+            return createClassWeapon(archetypeId, { position, skinId: null, sheenColor, charmId });
         }
         console.warn(`[player-3d-overlay] weapon archetype "${archetypeId}" (${url}) failed to load; falling back to GG1`, err);
         template = await loadWeaponTemplate(WEAPON_URL);
     }
     const weapon = template.scene.clone(true);
+    applyWeaponSheen(weapon, sheenColor);
     weapon.name = archetypeId ? `ClassWeapon_${archetypeId}${skinUrl === url ? `_skin${skinId}` : ''}` : 'ScoutGG1';
     weapon.updateMatrixWorld(true);
     const bounds = new THREE.Box3().setFromObject(weapon);
@@ -204,6 +213,21 @@ export async function createClassWeapon(archetypeId, { position = null, skinId =
     charmSocket.userData.anchor = socketTransform.anchor;
     weapon.add(charmSocket);
     weapon.userData.charmSocket = charmSocket;
+    const charmGltf = await charmTemplate;
+    if (charmGltf) {
+        const charm = charmGltf.scene.clone(true);
+        charm.name = `WeaponCharm_${charmId}`;
+        charm.userData.charmId = String(charmId);
+        const bounds = new THREE.Box3().setFromObject(charm);
+        const size = bounds.getSize(new THREE.Vector3()).length();
+        charm.scale.multiplyScalar(0.1 / Math.max(size, 0.001));
+        charm.updateMatrixWorld(true);
+        charm.position.fromArray(resolveCharmModelOffset(new THREE.Box3().setFromObject(charm)));
+        // Independent materials keep the gun's sheen off the trophy and its template.
+        applyWeaponSheen(charm, 0xffffff);
+        charm.traverse((mesh) => { if (mesh.isMesh) mesh.castShadow = true; });
+        charmSocket.add(charm);
+    }
     return weapon;
 }
 
@@ -455,6 +479,8 @@ export async function createPlayer3dOverlay({
         object.renderOrder = 7;
     });
 
+    const chestPatch = createOperatorPatch(root, { targetHeight });
+
     let rightHand = root.getObjectByName('mixamorig1:RightHand')
         ?? root.getObjectByName('mixamorig1RightHand');
     if (!rightHand) {
@@ -489,7 +515,7 @@ export async function createPlayer3dOverlay({
     const materialClones = new Map();
     const polishMaterials = [];
     root.traverse((object) => {
-        if (!object.isMesh || !object.material) return;
+        if (!object.isMesh || !object.material || object.userData.isOperatorPatch) return;
         let ancestor = object;
         while (ancestor && ancestor !== root) {
             if (ancestor === weapon) return;
@@ -577,6 +603,8 @@ export async function createPlayer3dOverlay({
         root,
         actions,
         weapon,
+        patch: chestPatch.root,
+        setPatchImage(path) { chestPatch.setImage(path); },
         setOperatorPolish(color = 0xffffff) {
             for (const state of polishMaterials) {
                 const polished = computeOperatorPolishMaterialState(
@@ -709,6 +737,7 @@ export async function createPlayer3dOverlay({
             for (const bone of upperBodyBones) bone.rotation.y += turnPerBone;
         },
         dispose() {
+            chestPatch.dispose();
             mixer.stopAllAction();
             root.traverse((object) => {
                 object.geometry?.dispose?.();

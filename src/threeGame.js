@@ -7,6 +7,7 @@ import { createFrameProfiler } from './frameProfiler.js';
 import { createGpuFrameTimer } from './gpuFrameTimer.js';
 import { beginPerfPhase } from './perfPhases.js';
 import { usesGameplayFocusEffects } from './gameplayPresentation.js';
+import { getSelectedSheen } from './weaponSheens.js';
 import { captureHardwareCapabilities, createGpuMemoryTracker } from './gpuMemoryBudget.js';
 import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
 import { ShaderPass } from 'three/examples/jsm/postprocessing/ShaderPass.js';
@@ -3976,17 +3977,6 @@ export class ThreeGame {
         this.playerTorsoSprite.visible = false;
         this.player.add(this.playerTorsoSprite);
 
-        // Season 0 cosmetic player decal (itemdefs 4120-4129, docs/game-audit-lane-split-and-worklog.md
-        // §3b) — previously equippable via the Armory but never actually rendered anywhere.
-        // Small chest-mounted billboard sprite, hidden until a decal texture loads.
-        this.playerDecalSprite = new THREE.Sprite(new THREE.SpriteMaterial({ transparent: true, opacity: 0, depthTest: true }));
-        this.playerDecalSprite.center.set(0.5, 0.5);
-        this.playerDecalSprite.position.set(this.playerSpriteLead + 0.16, this.playerHeight * 0.62, this.playerSpriteLead - 0.05);
-        this.playerDecalSprite.scale.set(0.22, 0.22, 1);
-        this.playerDecalSprite.renderOrder = 7;
-        this.playerDecalSprite.visible = false;
-        this.player.add(this.playerDecalSprite);
-
         // Legs face movement, torso faces aim — tracked separately.
         this.torsoFacingRow = this.currentFacingRow;
 
@@ -4023,34 +4013,11 @@ export class ThreeGame {
         this.updatePlayerDecalSprite();
     }
 
-    // Season 0 cosmetic player decal (see this.playerDecalSprite's creation comment above).
-    // Reads the equipped decal once at spawn, same timing as setupPlayer3dCosmeticOverlay()'s
-    // weapon skin read — cosmetics are fixed for the run, re-read on the next spawn.
+    // Cosmetics are re-read at spawn and attached to the loaded torso rig.
     updatePlayerDecalSprite() {
-        const sprite = this.playerDecalSprite;
-        if (!sprite) return;
         const decalId = window.loadout?.getEquippedDecalId?.();
-        if (!decalId) {
-            sprite.visible = false;
-            sprite.material.opacity = 0;
-            return;
-        }
-        const catalog = getItemCatalogEntry(decalId);
-        const iconPath = catalog?.localImg || catalog?.img;
-        if (!iconPath) {
-            sprite.visible = false;
-            sprite.material.opacity = 0;
-            return;
-        }
-        new THREE.TextureLoader().load(assetUrl(iconPath), (texture) => {
-            if (sprite.material.map) sprite.material.map.dispose();
-            sprite.material.map = texture;
-            sprite.material.opacity = 1;
-            sprite.material.needsUpdate = true;
-            sprite.visible = true;
-        }, undefined, () => {
-            sprite.visible = false;
-        });
+        const catalog = decalId ? getItemCatalogEntry(decalId) : null;
+        this.player3dOverlay?.setPatchImage?.(catalog?.localImg || catalog?.img || null);
     }
 
     async setupPlayer3dCosmeticOverlay() {
@@ -4070,7 +4037,7 @@ export class ThreeGame {
             const classVisuals = {
                 SCOUT: {
                     weaponArchetype: archetypeFor('talon'),
-                    weaponMount: { skinId: skinIdFor() }
+                    weaponMount: { skinId: skinIdFor(), sheenColor: getSelectedSheen().color, charmId: window.loadout?.getEquippedCharmId?.(this.playerType) ?? null }
                 },
                 ENGINEER: {
                     modelUrl: '/3d/runtime/engineer-rigged-gestures.glb',
@@ -4078,7 +4045,7 @@ export class ThreeGame {
                     animationBonePrefix: 'mixamorig',
                     weaponEnabled: true,
                     weaponArchetype: archetypeFor('tesla_lock'),
-                    weaponMount: { skinId: skinIdFor() }
+                    weaponMount: { skinId: skinIdFor(), sheenColor: getSelectedSheen().color, charmId: window.loadout?.getEquippedCharmId?.(this.playerType) ?? null }
                 },
                 TANK: {
                     modelUrl: '/3d/runtime/tank-rigged.glb',
@@ -4086,7 +4053,7 @@ export class ThreeGame {
                     animationBonePrefix: 'mixamorig',
                     weaponEnabled: true,
                     weaponArchetype: archetypeFor('siege_breaker'),
-                    weaponMount: { position: [0.03, 0.02, 0.03], skinId: skinIdFor() }
+                    weaponMount: { position: [0.03, 0.02, 0.03], skinId: skinIdFor(), sheenColor: getSelectedSheen().color, charmId: window.loadout?.getEquippedCharmId?.(this.playerType) ?? null }
                 }
             };
             const chassisSkinId = window.loadout?.getEquippedChassisSkinId?.();
@@ -4116,6 +4083,7 @@ export class ThreeGame {
             overlay.root.position.z += this.playerSpriteLead;
             playerRoot.add(overlay.root);
             this.player3dOverlay = overlay;
+            this.updatePlayerDecalSprite();
             overlay.setOperatorPolish(this._playerPolishHex ?? 0xffffff);
             // Hide only after the GLB is ready. A load failure leaves the proven
             // 2D sprite visible as the automatic fallback.

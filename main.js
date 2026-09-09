@@ -65,6 +65,7 @@ import { sideStoryManager, SIDE_STORIES_CONFIG, SIDE_STORY_STATUS } from './src/
 import { matureContentAudit } from './src/matureContentAudit.js';
 import { progressionWalkthrough } from './src/progressionWalkthrough.js';
 import { renderGameOverLeaderboard } from './src/leaderboardUi.js';
+import { unlockSheenForMilestone, reconcileSheenUnlocks } from './src/weaponSheens.js';
 import { OPERATOR_POLISHES, getSelectedPolish, getUnlockedPolishIds, selectPolish, unlockAllPolishes, unlockMilestonePolish } from './src/operatorPolishes.js';
 import { createOwnershipStore } from './src/itemOwnership.js';
 import { STARTING_RUN_AMMO, CLASS_AMMO_CAPACITY } from './src/data/ammoEconomy.js';
@@ -7865,6 +7866,7 @@ function returnFromHeroSelectToTitle() {
 // Inserted between class-select (menu) and run launch. Active Act 2
 // continuation runs bypass it so a boss-continuation run does not re-gear.
 let armorySceneInstance = null;
+reconcileSheenUnlocks({ achievements: achievementEngine.getState().unlocked, world: act2Manager.getState() });
 let armoryUiInstance = null;
 let armoryInitPromise = null;
 let pendingArmoryEmbarkAction = null;
@@ -14493,6 +14495,7 @@ const STEAM_ACHIEVEMENT_ITEM_MAP = Object.freeze({
 window.addEventListener('achievement-unlocked', (event) => {
     const key = event?.detail?.key;
     if (!key) return;
+    unlockSheenForMilestone(`achievement:${key}`);
     const polishGrant = unlockMilestonePolish(`achievement:${key}`);
     if (!polishGrant.unlocked) return;
     renderOperatorPolishUi();
@@ -14500,6 +14503,7 @@ window.addEventListener('achievement-unlocked', (event) => {
 });
 
 function grantWorldMilestonePolish(milestone) {
+    unlockSheenForMilestone(milestone);
     const polishGrant = unlockMilestonePolish(milestone);
     if (!polishGrant.unlocked) return;
     renderOperatorPolishUi();

@@ -11,6 +11,21 @@
 
 const SCRAMBLE_ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
 
+// Reserve room for title, instructions, name and unlock hint before sizing art.
+export function calculatePickerLayout(count, width = 1280, height = 800) {
+    const availableWidth = Math.min(1040, width - 64);
+    const availableHeight = height - 48;
+    let best = null;
+    for (let columns = 1; columns <= Math.min(12, Math.max(1, count)); columns++) {
+        const rows = Math.ceil(Math.max(1, count) / columns);
+        const art = Math.floor(Math.min(160,
+            (availableWidth - 48 - (columns - 1) * 8) / columns - 12,
+            (availableHeight - 160 - (rows - 1) * 8) / rows - 48));
+        if (!best || art > best.art || (art === best.art && rows < best.rows)) best = { columns, rows, art };
+    }
+    return { ...best, width: best.columns * (best.art + 12) + (best.columns - 1) * 8 + 48 };
+}
+
 // Separators are preserved rather than scrambled: keeping spaces, hyphens and
 // ampersands in place holds the word shape, so a locked tile occupies the same
 // space as its unlocked self and the grid never reflows on unlock.

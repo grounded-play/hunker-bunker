@@ -1,8 +1,10 @@
 # Armory UI Overhaul — Weapon Identity, Tile Menus & Sheens
 
-Status: in progress | Owner: Claude | Updated: 2026-09-09
+Status: historical baseline | Owner: Claude | Updated: 2026-09-09
 | Supersedes: `~/.gemini/antigravity-ide/brain/7880ab41-.../implementation_plan.md` (Armory UI Overhaul & 3D Stage Visual Polish)
 | Branch: `fix/mayor-tina-and-astra-plan` — dev branch only
+
+> Continued and superseded by [Armory continuation](armory-continuation-2026-09-09.md). See its verified report for current behavior; the limitations below describe the earlier baseline.
 
 ## 1. Where this picks up
 
