@@ -4,7 +4,7 @@
 
 **Active Development Branch:** `dev/sprint-30`
 
-**Current Working Version:** `v2.3.1-beta` (`2.3.1-beta` in `package.json`)
+**Current Working Version:** `v2.3.2-beta` (`2.3.2-beta` in `package.json`)
 
 **Latest Tagged Baseline:** `v2.3.1-beta` at Sprint 29 integration commit `959239c`
 
@@ -37,6 +37,7 @@ $$\textbf{v[MAJOR].[MINOR].[PATCH]-[PRE-RELEASE]}$$
 | **v2.2.0-beta** | Sprint 26 (`dev/sprint-26`) | 2026-08-20 | [PR #38](https://github.com/grounded-play/hunker-bunker/pull/38) | Steamworks stats (8/8 synced), Steam Cloud save bridge, self-hosted TLS auth backend (`steam.tuesdaycinema.club`), Depth Contract initial wiring, host failover. |
 | **v2.3.0-beta** | Sprint 28 (`dev/sprint-28`) | 2026-08-23 | [PR #40](https://github.com/grounded-play/hunker-bunker/pull/40) (`030a8f9`) | **46 new 3D models** (30 community chassis skins + 16 Season 0 assets), redesigned 3-column Armory with class backgrounds, Wanderer companion system, Steam Deck twin-stick aiming preset, mid-run crash recovery (`runCheckpoint.js`), GPU frame profiler, all 8 transformative relics. |
 | **v2.3.1-beta** | Sprint 29 (`dev/sprint-29`) | 2026-08-24 | `959239c` on `mothership` | Presentation telemetry and fixes, 11 optimized runtime models, reward/XP feedback, lighting reports, weapon/charm calibration, locomotion cadence, and chroma-green auditing. |
+| **v2.3.2-beta** | `fix/mayor-tina-and-astra-plan` | 2026-09-09 | PR to `mothership` | 3D chest-mounted operator patches snug on breastplate (`mixamorig1Spine2`), high-fidelity transparent RGBA decals (4120, 4121, 4122, 4124, 4125), startup UI scale flash fix, Mayor Tina seeded placement/facing, squad-wipe co-op handling, retail asset payload repair, and full test expansion (2,623 tests across 293 files). |
 | **Next version: undecided** | Sprint 30 (`dev/sprint-30`) | *In progress* | Branch from `959239c` | Choose the version only after accepted Sprint 30 scope is known. |
 
 ---

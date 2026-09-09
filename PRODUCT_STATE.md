@@ -5,9 +5,9 @@ and worklogs are evidence or history; they do not override this file. Update a
 row when its implementation or acceptance state changes and link to evidence
 instead of duplicating it here.
 
-Last verified: 2026-08-24 · Sprint 30 · `dev/sprint-30` · `v2.3.1-beta`
+Last verified: 2026-09-09 · Sprint 30 · `dev/sprint-30` · `v2.3.2-beta`
 
-Partial re-verification: 2026-09-08 · `fix/mayor-tina-and-astra-plan` from `69f31eb` · `v2.3.1-beta`. The encounter, diagnostics, payload, save/quest/depth caveats, and automated-suite rows below were reviewed in [the September 8 audit](docs/reports/astra-game-review-2026-09-08.md) and [first implementation report](docs/reports/astra-first-implementation-2026-09-08.md). Other acceptance rows retain their earlier scope and date.
+Partial re-verification: 2026-09-09 · `fix/mayor-tina-and-astra-plan` from `69f31eb` · `v2.3.2-beta`. The encounter, diagnostics, payload, save/quest/depth caveats, 3D operator chest patches, startup UI scaling, and automated-suite rows below were reviewed in [the September 8 audit](docs/reports/astra-game-review-2026-09-08.md), [first implementation report](docs/reports/astra-first-implementation-2026-09-08.md), and [September 9 report](docs/reports/operator-patches-and-ui-scale-2026-09-09.md). Other acceptance rows retain their earlier scope and date.
 
 Status vocabulary:
 
@@ -28,14 +28,14 @@ Status vocabulary:
 | Steam backend | Production TLS service and Steam session path have been verified previously at `steam.tuesdaycinema.club`; trusted leaderboard/store/inventory paths are implemented. | Re-run production smoke tests before release; commerce remains disabled pending approval/configuration. |
 | Steam Cloud and stats | Save bridge and all 8 stat definitions are wired and automated. | A real two-machine Cloud conflict/offline round-trip remains open. |
 | Steam Deck and input | Twin-stick aiming and 7 Steam Input configurations are bundled. | Physical Deck frame pacing, navigation, glyph, suspend/resume, and haptics sign-off remains open. |
-| 3D runtime and Armory | The September 9 [Armory continuation](docs/reports/armory-implementation-2026-09-09.md) adds 79 transparent model previews, no-scroll item dialogs, consistent names, and independent weapon sheen plus fitted charms in deployment. All 84 tested class/picker/viewport combinations fit. | Five reward models and a finished Talon-C model remain in the asset inventory; broader environment and hardware acceptance remain open. |
+| 3D runtime and Armory | The September 9 [Armory continuation](docs/reports/armory-implementation-2026-09-09.md) and [operator patch update](docs/reports/operator-patches-and-ui-scale-2026-09-09.md) add 79 transparent model previews, no-scroll item dialogs, 3D chest-mounted patches snug on breastplate (`mixamorig1Spine2`) with front-side culling and depth occlusion, high-detail transparent RGBA decals (4120, 4121, 4122, 4124, 4125), and independent weapon sheen plus fitted charms in deployment. All 84 tested class/picker/viewport combinations fit. | Five reward models and a finished Talon-C model remain in the asset inventory; broader environment and hardware acceptance remain open. |
 | Wanderers | Six archetype families, companion following, buffs, and milestone gates are active. | `advanceQuest()` has no non-test runtime caller. Quest completion, feedback, persistence, and balance remain open. |
 | Save recovery | `src/runCheckpoint.js` supports interrupted-run salvage recovery, not restoration of the full expedition world. | Packaged crash/restart and Steam Cloud interaction tests remain open. |
 | Performance diagnostics | GPU queries now reset across menu/gameplay transitions; EMA is labeled; world-model load latency and synchronous clone/prepare spans are recorded separately. | Log 19's 346 MB / 2.03 ms final values describe a menu snapshot, not proven gameplay improvement. The 8.574 s deployment stall still needs a packaged causal trace; Deck acceptance remains open. |
 | Mayor Tina | Seeded encounter moved to X 9, Z -14 through -20; cup and Tina turn 180° about Y. Browser approach, transformation, and transformed movement verified; sampled generation probe passed 100 seeds. | Full natural approach and packaged visual sign-off remain open. |
 | Retail asset budget | Two texture-only derivatives preserve geometry and reduce public payload to 2,793,737,892 bytes; the unchanged 2,700 MiB gate and generated presubmit checks pass. | 37,417,308 bytes of headroom remain. This web/source audit does not certify a Steam package or clear asset rights. |
-| Presentation | Sprint 29 closed reticle, menu isolation telemetry, XP/reward feedback, lighting reporting, weapon/charm calibration, audio diagnostics, and walk cadence gaps. | Desktop 16:9 and 1280×800 human visual sign-off remains open. |
-| Automated suite | `npm test` passes **2,620 tests across 292 files** as of 2026-09-09; lint, presubmit, and production web/media build pass. | Hardware-only behavior and a full expedition are not covered by this count. |
+| Presentation | Sprint 29 closed reticle, menu isolation telemetry, XP/reward feedback, lighting reporting, weapon/charm calibration, audio diagnostics, and walk cadence gaps. September 9 resolved the startup microscopic scaling flash via synchronous inline layout tokens and responsive CSS calculation. | Desktop 16:9 and 1280×800 human visual sign-off remains open. |
+| Automated suite | `npm test` passes **2,623 tests across 293 files** as of 2026-09-09; lint, presubmit, and production web/media build pass. | Hardware-only behavior and a full expedition are not covered by this count. |
 
 ## Current milestone
 

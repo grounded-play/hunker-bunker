@@ -10,7 +10,9 @@ The immediate requested change is to move Mayor Tina farther along the opening r
 
 “Astra” is the review name requested by the project owner. This document does not claim a comparison experiment against other models. Its value must come from reproducible findings, explicit changes, and witnessed improvements.
 
-Implementation update, September 8: the owner authorized proceeding after this plan was saved. Mayor Tina's placement/facing is implemented and verified. The first broader batch corrected Log 19 interpretation, isolated GPU samples by rendering profile, added world-model latency and synchronous spans, and repaired the retail payload gate with two texture-only derivatives. Evidence is recorded in `docs/reports/astra-game-review-2026-09-08.md` and `docs/reports/astra-first-implementation-2026-09-08.md`. Unchecked program outcomes below remain open; this update does not promote the supplement to a second active sprint.
+Implementation update, September 8: the owner authorized proceeding after this plan was saved. Mayor Tina's placement/facing is implemented and verified. The first broader batch corrected Log 19 interpretation, isolated GPU samples by rendering profile, added world-model latency and synchronous spans, and repaired the retail payload gate with two texture-only derivatives. Evidence is recorded in `docs/reports/astra-game-review-2026-09-08.md` and `docs/reports/astra-first-implementation-2026-09-08.md`.
+
+Implementation update, September 9: The second batch implemented 3D physical chest patches (`mixamorig1Spine2`) with front-side culling and depth occlusion, high-fidelity transparent RGBA decals (4120, 4121, 4122, 4124, 4125), eliminated the startup microscopic UI scaling flash via synchronous inline metrics tokens, resolved rogue menu transmissions, polished tactical HUD readability, and added co-op squad wipe handling. Verified with 2,623 passing tests across 293 files and clean presubmit checks. Evidence recorded in `docs/reports/operator-patches-and-ui-scale-2026-09-09.md` and `docs/reports/armory-implementation-2026-09-09.md`. Unchecked program outcomes below remain open; this update does not promote the supplement to a second active sprint.
 
 This is a detailed execution supplement to `docs/planning/sprint-30.md` and `docs/planning/repository-roadmap.md`. It does not create a second active sprint or silently replace the repository's current planning authority.
 
@@ -80,25 +82,25 @@ The implementation rule is to improve a complete player action at a time. Every 
 
 P0 means data corruption, a repeatable hard lock, or a broken mandatory path. P1 means a severe stall, unusable supported control path, misleading core mechanic, or blocked release gate. P2 means comprehension, balance, presentation, or content completion. P3 means optional expansion.
 
-| Work package | Priority | Depends on | Primary owner | Evidence needed |
-| --- | --- | --- | --- | --- |
-| TINA-01 placement/facing | P2 | Saved plan and placement inspection | Codex | Focused tests + browser encounter route |
-| TRUTH-01 current evidence register | P1 | Review baseline | Codex + maintainer | Corrected phase-specific facts |
-| PERF-01 stall attribution and loading schedule | P1 | TRUTH-01 | Runtime engineer | Packaged traces before/after |
-| ASSET-01 payload gate and media reliability | P1 | Asset inventory | Runtime/art owner | Audit, content playback, visual comparisons |
-| BOOT-01 startup/overlay ownership | P1 | Baseline route | Runtime/UI engineer | Clean-profile and repeat-start E2E |
-| SAVE-01 crash recovery and conflict semantics | P1 | Truthful save contract | Runtime + platform owner | Process-crash and two-machine evidence |
-| COOP-01 expedition authority acceptance | P1 | Existing fixes preserved | Network engineer + two-account tester | Complete package-to-relay route |
-| HUD-01 objective/readability pass | P2 | BOOT-01 | UI/gameplay engineer | Rectangle checks + human comprehension |
-| COMBAT-01 class/counterplay pass | P2 | PERF-01 baseline | Gameplay designer | Class/encounter matrix |
-| DEPTH-01 truthful risk/reward consumers | P1/P2 | Combat event contract | Gameplay engineer | Runtime effect + presentation tests |
-| QUEST-01 one complete Wanderer | P2 | Objective/reward contracts | Gameplay engineer | Natural objective completion and reload |
-| WORLD-01 useful variety and reachability | P2 | Stable route evidence | World designer | Seed portfolio + player routes |
-| STORY-01 factions/endings payoff | P2 | Stable run and quest state | Narrative/gameplay owner | Branch route and ending proof |
-| INPUT-01 controller/accessibility acceptance | P1 for broken critical actions | BOOT/HUD | UI engineer + hardware tester | Full controller route + physical Deck |
-| PRESENT-01 camera/art/audio coherence | P2 | PERF/HUD budgets | Art/audio/runtime owners | Matched visual/audio captures |
-| ARCH-01 bounded extraction | P2 | Characterized seams | Runtime engineer | Existing callers migrated, old path removed |
-| RELEASE-01 exact-build proof | P1 | All critical gates | Maintainer + QA | Candidate artifact + accepted evidence |
+| Work package | Priority | Status | Depends on | Primary owner | Evidence needed |
+| --- | --- | --- | --- | --- | --- |
+| TINA-01 placement/facing | P2 | Completed (2026-09-08) | Saved plan and placement inspection | Codex | Focused tests + browser encounter route |
+| TRUTH-01 current evidence register | P1 | Completed (2026-09-08) | Review baseline | Codex + maintainer | Corrected phase-specific facts |
+| ASSET-01 payload gate and media reliability | P1 | Completed (2026-09-08) | Asset inventory | Runtime/art owner | Audit, content playback, visual comparisons |
+| BOOT-01 startup/overlay ownership | P1 | Completed (2026-09-09) | Baseline route | Runtime/UI engineer | Clean-profile, frame 0 CSS layout tokens, startup scale fix |
+| HUD-01 objective/readability pass | P2 | Completed (2026-09-09) | BOOT-01 | UI/gameplay engineer | Tactical visor HUD relayout, emoji removal, gun framing |
+| PRESENT-01 camera/art/audio coherence | P2 | Completed (2026-09-09) | PERF/HUD budgets | Art/audio/runtime owners | 3D chest patches, high-detail transparent decals, voice profiles |
+| COOP-01 expedition authority acceptance | P1 | In Progress | Existing fixes preserved | Network engineer + two-account tester | Squad-wipe automated termination fixed; 2-account expedition open |
+| PERF-01 stall attribution and loading schedule | P1 | Open | TRUTH-01 | Runtime engineer | Packaged traces before/after |
+| SAVE-01 crash recovery and conflict semantics | P1 | Open | Truthful save contract | Runtime + platform owner | Process-crash and two-machine evidence |
+| COMBAT-01 class/counterplay pass | P2 | Open | PERF-01 baseline | Gameplay designer | Class/encounter matrix |
+| DEPTH-01 truthful risk/reward consumers | P1/P2 | Open | Combat event contract | Gameplay engineer | Runtime effect + presentation tests |
+| QUEST-01 one complete Wanderer | P2 | Open | Objective/reward contracts | Gameplay engineer | Natural objective completion and reload |
+| WORLD-01 useful variety and reachability | P2 | Open | Stable route evidence | World designer | Seed portfolio + player routes |
+| STORY-01 factions/endings payoff | P2 | Open | Stable run and quest state | Narrative/gameplay owner | Branch route and ending proof |
+| INPUT-01 controller/accessibility acceptance | P1 for broken critical actions | Open | BOOT/HUD | UI engineer + hardware tester | Full controller route + physical Deck |
+| ARCH-01 bounded extraction | P2 | Open | Characterized seams | Runtime engineer | Existing callers migrated, old path removed |
+| RELEASE-01 exact-build proof | P1 | Open | All critical gates | Maintainer + QA | Candidate artifact + accepted evidence |
 
 ## 6. TRUTH-01 — establish one reliable current-state register
 
