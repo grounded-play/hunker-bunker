@@ -122,6 +122,7 @@ export function createGpuFrameTimer(gl, {
             supported,
             latestMs: latestMs == null ? null : Math.round(latestMs * 100) / 100,
             averageMs: averageMs == null ? null : Math.round(averageMs * 100) / 100,
+            averageKind: 'exponential-moving-average',
             maxMs: Math.round(maxMs * 100) / 100,
             samples,
             pendingQueries: pending.length + (activeQuery ? 1 : 0),
@@ -131,6 +132,9 @@ export function createGpuFrameTimer(gl, {
     }
 
     function reset() {
+        // Queries can resolve several frames later. Discard them at a profile
+        // boundary so a menu sample cannot become a gameplay measurement.
+        discardQueries();
         latestMs = null;
         averageMs = null;
         maxMs = 0;
@@ -139,8 +143,7 @@ export function createGpuFrameTimer(gl, {
         disjointEvents = 0;
     }
 
-    function dispose() {
-        if (disposed) return;
+    function discardQueries() {
         if (activeQuery) {
             try {
                 gl.endQuery(ext.TIME_ELAPSED_EXT);
@@ -151,6 +154,11 @@ export function createGpuFrameTimer(gl, {
             activeQuery = null;
         }
         discardPending();
+    }
+
+    function dispose() {
+        if (disposed) return;
+        discardQueries();
         disposed = true;
     }
 

@@ -5,6 +5,8 @@ import * as THREE from 'three';
 import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
 import { createFrameProfiler } from './frameProfiler.js';
 import { createGpuFrameTimer } from './gpuFrameTimer.js';
+import { beginPerfPhase } from './perfPhases.js';
+import { usesGameplayFocusEffects } from './gameplayPresentation.js';
 import { captureHardwareCapabilities, createGpuMemoryTracker } from './gpuMemoryBudget.js';
 import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
 import { ShaderPass } from 'three/examples/jsm/postprocessing/ShaderPass.js';
@@ -161,6 +163,7 @@ import { getDialogueLine, getSuitRegister } from './data/dialogueLines.js';
 import { getEnemyStats } from './data/enemies.js';
 import { DEPTH_TIER_NAMES, getDepthLootConfig } from './data/loot.js';
 import { applyO2EfficiencyPenalty, describeCrossing, applySalvageMultiplier, getDepthContract } from './depthContract.js';
+import { ELITE_IDENTITY, isEliteForLoot, rollElitePromotion } from './eliteEnemies.js';
 import { BunkerDirector } from './director.js';
 import { LineDirector } from './lineDirector.js';
 import { DIRECTOR_AMBIENT_LINES } from './data/lineDirectorPools.js';
@@ -177,7 +180,8 @@ import { CAMP_QUESTS } from './data/campQuests.js';
 import { humanityDecayProgress } from './vitals.js';
 import { applyCampPayoutEffects } from './runModifiers.js';
 import { WandererManager, isWandererEligible } from './wandererSystem.js';
-import { renderWandererModal } from './wandererModal.js';
+import { renderWandererModal, closeWandererModal } from './wandererModal.js';
+import { FOXHOLE_CONTRACT, HACKER_CONTRACT, HYBRID_CONTRACT, getSurvivorContractSteps } from './survivorContract.js';
 import { createWanderer3dInstance } from './wanderer3d.js';
 import { applyBlackChromaKey, applyGreenChromaKey } from './textureKeying.js';
 import { getCachedKeyedImage, putCachedKeyedImage } from './keyedTextureCache.js';
@@ -211,7 +215,8 @@ import {
     getScrapCyclerReloadEffect,
     getVesperDoctrineReloadEffect,
     getQueensMilkAlienContactHeal,
-    getQueensMilkHumanHealPenalty
+    getQueensMilkHumanHealPenalty,
+    applyIncomingDamageModifiers
 } from './runDrops.js';
 import { buildUnifiedSkillTree, getTreeConnectors } from './skillTree.js';
 import { pickLoreDropForSite, getFoundLoreKeys, markLoreDropFound, LORE_DROPS } from './loreDrops.js';
@@ -363,60 +368,6 @@ const GOAL_CARD_CONFIGS = Object.freeze([
         lockedStatusText: 'LOCKED — INSTALL RADAR NODE FIRST'
     })
 ]);
-// docs/perf-chunk-mount-plan-2026-08-20.md: window.__hbLastPerfPhase's
-// original design assumed "since JS is single-threaded, by the time the
-// longtask callback runs it still names whichever [phase] was most
-// recently active" (see the comment at its write sites) -- true only if
-// SOME tagged operation ran recently. Live-tested with Playwright against
-// a real idle menu screen: this tag can go stale for minutes (no
-// chunk-mount/gear-poof event fires while just sitting on the title/
-// loadout/armory screens), and every unrelated long task in that window
-// -- including a real 3.9s and a real 6.5s one, cause still unknown --
-// was silently misattributed to a chunk mount from minutes earlier.
-// tagPerfPhase() timestamps every write so the reader (main.js) can reject
-// a stale tag instead of trusting it unconditionally.
-function tagPerfPhase(phase) {
-    if (typeof window === 'undefined') return;
-    window.__hbLastPerfPhase = phase;
-    window.__hbLastPerfPhaseAt = performance.now();
-}
-
-// Sprint 28 Lane F: bounded synchronous phase history for packaged-build
-// long-task attribution. The Long Task API has no stack information, so the
-// completed span timeline is the diagnostic bridge between a stall and the
-// operation that occupied the main thread.
-function beginPerfPhase(phase, context = {}) {
-    if (typeof window === 'undefined' || typeof performance === 'undefined') {
-        return { end: () => null };
-    }
-    const startMs = performance.now();
-    const stack = window.__hbPerfPhaseStack ?? (window.__hbPerfPhaseStack = []);
-    const span = { phase, startMs, context };
-    stack.push(span);
-    tagPerfPhase(phase);
-    let ended = false;
-    return {
-        end: (result = null) => {
-            if (ended) return result;
-            ended = true;
-            const endMs = performance.now();
-            const index = stack.lastIndexOf(span);
-            if (index >= 0) stack.splice(index, 1);
-            const history = window.__hbPerfPhaseHistory ?? (window.__hbPerfPhaseHistory = []);
-            history.push({
-                phase,
-                startMs: Math.round(startMs * 10) / 10,
-                durationMs: Math.round((endMs - startMs) * 10) / 10,
-                context
-            });
-            if (history.length > 64) history.splice(0, history.length - 64);
-            const parent = stack[stack.length - 1];
-            if (parent) tagPerfPhase(parent.phase);
-            return result;
-        }
-    };
-}
-
 function setSpriteSheetFrame(texture, columns, rows, frameIndex = 0) {
     if (!texture || columns <= 0 || rows <= 0) return;
 
@@ -1588,7 +1539,7 @@ export class ThreeGame {
         this._blackBoxMarkerPromptActive = false;
         this._blackBoxState = blackBoxStore.load();
         this._corruptedOperatorSpawnedForTimestamp = 0;
-        // Validation placement for the one-shot Mayor Tina secret. It is kept
+        // Seeded discovery placement for the one-shot Mayor Tina secret. It is kept
         // scene-attached (like corpses/companions), because chunk registries
         // are rebuilt as the player crosses boundaries. Multiplayer stays out
         // of scope until the identity swap has an authoritative network state.
@@ -4175,11 +4126,11 @@ export class ThreeGame {
     }
 
     getMayorTinaEncounterPosition() {
-        // Just beyond the north wall of the authored crash room. A tiny
-        // seed-derived lateral shift keeps the discovery feeling odd/random,
-        // while all validation runs still find it immediately after door one.
-        const offset = ((Math.abs(this.runEntropy || 0) % 3) - 1) * 0.48;
-        return { x: CRASH_SITE_CENTER + offset, z: 1.55 };
+        // Farther down the three-wide north approach, before its first bend.
+        // Pick once per seed rather than rolling during the per-frame query:
+        // the models, siren, and interaction must agree on a stable position.
+        const offset = ((this.runEntropy || 0) >>> 0) % 7;
+        return { x: CRASH_SITE_CENTER, z: -14 - offset };
     }
 
     async setupMayorTinaEncounter() {
@@ -4201,7 +4152,11 @@ export class ThreeGame {
             // The cup is Mayor Tina's extremely questionable bath. Tina sits
             // slightly inside it; both remain separately readable from above.
             teacupRoot.position.set(position.x, 0, position.z);
+            teacupRoot.rotation.y = Math.PI;
             mayorRoot.position.set(position.x, 0.43, position.z - 0.03);
+            // Turn the encounter toward the player's approach from the south.
+            // The child model's normalization yaw and player rig stay intact.
+            mayorRoot.rotation.y = Math.PI;
             mayorRoot.scale.setScalar(0.68);
             mayorRoot.visible = this.performanceProfile === 'gameplay';
             teacupRoot.visible = this.performanceProfile === 'gameplay';
@@ -4353,13 +4308,14 @@ export class ThreeGame {
         if (encounter.teacupRoot) {
             encounter.teacupRoot.removeFromParent();
             encounter.teacupRoot.position.set(position.x, 0, position.z);
+            encounter.teacupRoot.rotation.y = Math.PI;
             encounter.teacupRoot.visible = this.performanceProfile === 'gameplay';
             this.scene.add(encounter.teacupRoot);
         }
         if (encounter.mayorRoot) {
             encounter.mayorRoot.removeFromParent();
             encounter.mayorRoot.position.set(position.x, 0.43, position.z - 0.03);
-            encounter.mayorRoot.rotation.set(0, 0, 0);
+            encounter.mayorRoot.rotation.set(0, Math.PI, 0);
             encounter.mayorRoot.scale.setScalar(0.68);
             encounter.mayorRoot.visible = this.performanceProfile === 'gameplay';
             this.scene.add(encounter.mayorRoot);
@@ -5933,6 +5889,13 @@ export class ThreeGame {
         };
     }
 
+    resetRunDrops() {
+        this.runOverclocks = [];
+        this.runRelics = [];
+        this.activeSynergies = [];
+        window.dispatchEvent(new CustomEvent('in-run-drops-reset', { detail: { timestamp: Date.now() } }));
+    }
+
     spawnPhysicalLootDrop(x, z, item) {
         if (!item || !this.scene) return;
         const mesh = new THREE.Mesh(
@@ -6229,6 +6192,7 @@ export class ThreeGame {
             || isVisible('archive-sims-modal')
             || isVisible('steam-vault-modal')
             || isVisible('operator-polish-modal')
+            || isVisible('wanderer-encounter-modal')
             || isVisible('snail-encounter-modal');
     }
 
@@ -7114,6 +7078,7 @@ export class ThreeGame {
     setPerformanceProfile(profile = 'menu') {
         const nextProfile = profile === 'gameplay' ? 'gameplay' : 'menu';
         if (this.performanceProfile === nextProfile) return;
+        this.gpuFrameTimer?.reset?.();
         this.performanceProfile = nextProfile;
         this.selectActiveCamera();
         // Adaptive mode is sticky only for the current combat run. Returning
@@ -7140,6 +7105,7 @@ export class ThreeGame {
             this._menuShowcaseTimer = 0;
             void this.setupMayorTinaEncounter();
         } else if (nextProfile === 'menu') {
+            this.clearCompanions?.();
             // Menu showrooms are presentation-only. Remove any live combat
             // state before their render loop starts so shots cannot continue
             // into retained scenery and produce off-screen hit audio.
@@ -7173,7 +7139,7 @@ export class ThreeGame {
         }
         this.tiltShiftOverlay?.classList.toggle(
             'is-active',
-            nextProfile === 'gameplay' && !this.adaptiveGameplayPerformanceMode
+            usesGameplayFocusEffects(this)
         );
         if (this.chunkGroups) {
             this.chunkGroups.visible = nextProfile === 'gameplay';
@@ -7238,7 +7204,7 @@ export class ThreeGame {
         // Adaptive quality may lower the render resolution, but it must not
         // remove the authored DOF/tilt-shift treatment. Bypassing the composer
         // made the start-of-run handoff look like lighting and fog had unloaded.
-        this.gameplayPostProcessingEnabled = true;
+        this.gameplayPostProcessingEnabled = !nextEnabled;
         if (this.renderer?.shadowMap) {
             // Keep the shadow variant stable while adaptive mode lowers pixel
             // cost. Toggling shadowMap at runtime caused a
@@ -7247,7 +7213,7 @@ export class ThreeGame {
         }
         this.tiltShiftOverlay?.classList?.toggle?.(
             'is-active',
-            this.performanceProfile === 'gameplay'
+            usesGameplayFocusEffects(this)
         );
 
         const basePixelRatio = this.gameplayPixelRatio ?? 1;
@@ -7372,7 +7338,7 @@ export class ThreeGame {
         const span = beginPerfPhase(label, this.getPerformanceDiagnosticsSnapshot());
         const gpuQueryStarted = this.gpuFrameTimer?.beginFrame?.() ?? false;
         try {
-            if (this.composer && this.performanceProfile === 'gameplay') {
+            if (this.composer && usesGameplayFocusEffects(this)) {
                 this.composer.render();
             }
             else this.renderer.render(this.scene, this.camera);
@@ -8245,6 +8211,10 @@ export class ThreeGame {
                 window.dispatchEvent(new CustomEvent('lore-terminal-read', {
                     detail: { loreKey: sprite.userData.loreKey, loreText: sprite.userData.loreText }
                 }));
+                this.syncSurvivorContract?.({
+                    type: 'terminal-decrypted',
+                    id: `terminal:${sprite.userData.loreKey || `${Math.round(sprite.position.x)},${Math.round(sprite.position.z)}`}`
+                });
                 window.AudioManager?.play('ui_scan_ping', { volume: 0.35, playbackRate: 0.65, bus: 'sfx' });
                 return;
             }
@@ -9742,7 +9712,10 @@ export class ThreeGame {
 
     showBunkerLine(text) {
         if (!text) return;
-        window.dispatchEvent(new CustomEvent('bunker-line', { detail: { text } }));
+        if (this.performanceProfile === 'menu') return;
+        if (typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent('bunker-line', { detail: { text } }));
+        }
     }
 
     buildLineDirectorContext(overrides = {}) {
@@ -12919,6 +12892,10 @@ export class ThreeGame {
         window.dispatchEvent(new CustomEvent('shell-collected', {
             detail: { gained: 4, total: this.bank?.getShells?.() ?? 0, isBoss: false }
         }));
+        this.syncSurvivorContract?.({
+            type: 'hive-harvested',
+            id: `hive-harvest:${hive.id}:${harvestCycle}`
+        });
         return true;
     }
 
@@ -14046,6 +14023,9 @@ export class ThreeGame {
             this.scatterSprites = this.scatterSprites.filter((s) => s !== sprite);
         }
         this.act2.completeCampQuest(aq.campId, aq.quest.id, 1);
+        this.syncSurvivorContract?.({
+            type: 'camp-complete', id: `camp:${aq.campId}:${aq.quest.id}`
+        });
         if (camp) {
             const record = this.getCampRecord(camp.id);
             camp.setStatus(record?.status ?? 'alive');
@@ -14522,7 +14502,14 @@ export class ThreeGame {
     }
 
     checkWandererSpawning() {
-        if (this.activeWanderer || !this.player || this.isPlayerDead) return;
+        if (this.performanceProfile !== 'gameplay' || this.loadingPaused || !this.player || this.isPlayerDead) return;
+        if (this._wandererLoad || this._companionLoad || this.activeWanderer) return;
+        const companion = this.wandererManager?.getActiveCompanion?.();
+        if (companion) {
+            if (!(this.companions ?? []).some((entry) => entry.isWanderer)) void this.addHumanoidCompanion(companion);
+            return;
+        }
+        if (this._wandererResolvedForRun) return;
         const bankState = this.bank?.getState?.() || {};
         const eligible = isWandererEligible({
             bank: this.bank,
@@ -14539,11 +14526,13 @@ export class ThreeGame {
         });
         if (!wanderer) return;
 
-        this.spawnCrashSiteWanderer(wanderer);
+        void this.spawnCrashSiteWanderer(wanderer);
     }
 
     async spawnCrashSiteWanderer(wanderer) {
-        if (!wanderer || this.activeWanderer) return;
+        if (!wanderer || this.activeWanderer || this._wandererLoad || this._wandererResolvedForRun) return;
+        const token = {};
+        this._wandererLoad = token;
         const activeShip = this.activeInteractiveConsole || this.ship || { tileX: 0, tileZ: 0 };
         const spawnX = (activeShip.tileX ?? 0) + 2.5;
         const spawnZ = (activeShip.tileZ ?? 0) + 1.8;
@@ -14553,6 +14542,13 @@ export class ThreeGame {
             actionKey: wanderer.actionKey,
             scale: 0.85
         });
+
+        if (this._wandererLoad !== token || this.performanceProfile !== 'gameplay' || this.isPlayerDead) {
+            instance3d?.dispose?.();
+            if (this._wandererLoad === token) this._wandererLoad = null;
+            return;
+        }
+        this._wandererLoad = null;
 
         if (instance3d && instance3d.root) {
             instance3d.root.position.set(spawnX, 0, spawnZ);
@@ -14614,12 +14610,12 @@ export class ThreeGame {
     }
 
     async handleWandererBefriend(wanderer) {
+        if (!this.activeWanderer || this._wandererResolvedForRun) return;
+        this._wandererResolvedForRun = true;
         const res = this.wandererManager?.befriend?.(wanderer);
         if (!res) return;
 
         this.showBunkerLine(`${wanderer.name.toUpperCase()} HAS JOINED YOUR SQUAD.`);
-        await this.addHumanoidCompanion(wanderer);
-
         if (this.activeWanderer?.instance3d?.root) {
             this.scene.remove(this.activeWanderer.instance3d.root);
             this.activeWanderer.instance3d.dispose?.();
@@ -14627,16 +14623,17 @@ export class ThreeGame {
         this.activeWanderer = null;
         this._wandererPromptLabel = null;
         window.dispatchEvent(new CustomEvent('camp-prompt-clear'));
+        await this.addHumanoidCompanion(wanderer);
     }
 
     handleWandererChaseOff(wanderer) {
+        if (!this.activeWanderer || this._wandererResolvedForRun) return;
+        this._wandererResolvedForRun = true;
         const res = this.wandererManager?.chaseOff?.(wanderer);
         if (!res) return;
 
-        this.showBunkerLine(`SURVIVOR CHASED OFF. RECOVERED ${res.lootGranted?.scrap || 35} SALVAGE SCRAP.`);
-        if (this.bank && res.lootGranted?.scrap) {
-            this.bank.deposit?.({ scrap: res.lootGranted.scrap, tech: res.lootGranted.tech || 0 });
-        }
+        this.bank?.deposit?.(res.lootGranted ?? {});
+        this.showBunkerLine('SURVIVOR DEPARTED. SUPPLY CACHE BANKED.');
         this.spawnGearPoofEffect(wanderer.x, wanderer.z, 'bunker_junk_rare');
 
         if (this.activeWanderer?.instance3d?.root) {
@@ -14649,11 +14646,21 @@ export class ThreeGame {
     }
 
     async addHumanoidCompanion(wanderer) {
+        if (this._companionLoad) return;
+        const token = {};
+        this._companionLoad = token;
         const companion3d = await createWanderer3dInstance({
             glbUrl: wanderer.glbUrl,
             actionKey: wanderer.actionKey,
             scale: 0.85
         });
+
+        if (this._companionLoad !== token || this.performanceProfile !== 'gameplay' || this.isPlayerDead) {
+            companion3d?.dispose?.();
+            if (this._companionLoad === token) this._companionLoad = null;
+            return;
+        }
+        this._companionLoad = null;
 
         const posX = this.player ? this.player.position.x : 0;
         const posZ = this.player ? this.player.position.z : 0;
@@ -14662,6 +14669,11 @@ export class ThreeGame {
             this.scene.add(companion3d.root);
         }
 
+        for (const previous of this.companions ?? []) {
+            if (!previous.isWanderer) continue;
+            previous.instance3d?.root?.removeFromParent();
+            previous.instance3d?.dispose?.();
+        }
         this.companions = (this.companions || []).filter((c) => !c.isWanderer);
         this.companions.push({
             isWanderer: true,
@@ -14671,6 +14683,56 @@ export class ThreeGame {
             currentHp: 100,
             maxHp: 100
         });
+        this.syncSurvivorContract();
+    }
+
+    syncSurvivorContract(event = null) {
+        const manager = this.wandererManager;
+        if (!manager) return;
+        const result = event ? manager.recordQuestEvent(event) : null;
+        try {
+            const delivered = manager.deliverPendingRewards(this.bank);
+            if (delivered.length) {
+                if (delivered.includes(HYBRID_CONTRACT.id)) {
+                    this.showBunkerLine('SYMBIOTIC GENESIS COMPLETE — 18 SHELLS BANKED.');
+                }
+                if (delivered.includes(HACKER_CONTRACT.id)) {
+                    this.showBunkerLine('OVERRIDE THE CORE COMPLETE — 15 SHELLS BANKED.');
+                }
+                if (delivered.includes(FOXHOLE_CONTRACT.id)) {
+                    this.showBunkerLine('LEAVE NO ONE BEHIND COMPLETE — 12 SHELLS BANKED.');
+                }
+            }
+        } catch {
+            this.showBunkerLine('SURVIVOR REWARD SAVED AS PENDING. RETRY ON YOUR NEXT DEPLOYMENT.');
+        }
+        const quest = manager.state.activeQuest;
+        if (!quest) {
+            window.objectiveRegistry?.resolveObjective?.(`survivor:${FOXHOLE_CONTRACT.id}`, 'complete');
+            window.objectiveRegistry?.resolveObjective?.(`survivor:${HACKER_CONTRACT.id}`, 'complete');
+            window.objectiveRegistry?.resolveObjective?.(`survivor:${HYBRID_CONTRACT.id}`, 'complete');
+            return;
+        }
+
+        const id = `survivor:${quest.id}`;
+        const accompanied = manager.getActiveCompanion()?.familyId === quest.familyId;
+        const companionName = quest.familyId === 'manic_hacker'
+            ? 'Hacker GF'
+            : (quest.familyId === 'species_hybrid' ? 'Chrysalis' : 'Foxhole');
+        window.objectiveRegistry?.trackObjective?.({
+            id, source: 'survivor', label: quest.title, priority: 35,
+            current: quest.progress, target: quest.targetCount,
+            steps: getSurvivorContractSteps(quest.id, quest.progress), persistent: true,
+            status: accompanied ? 'active' : 'blocked',
+            blockedReason: accompanied ? null : `Recruit ${companionName} to continue this contract.`
+        });
+        if (result && quest.id === FOXHOLE_CONTRACT.id && quest.progress === 8) {
+            this.showBunkerLine('ROUTE SECURED. HELP A CAMP TO COMPLETE FOXHOLE’S CONTRACT.');
+        } else if (result && quest.id === HACKER_CONTRACT.id && quest.progress === 2) {
+            this.showBunkerLine('TWO TERMINALS OVERRIDDEN. ONE CORE MAINFRAME LEFT.');
+        } else if (result && quest.id === HYBRID_CONTRACT.id && quest.progress === 2) {
+            this.showBunkerLine('TWO HIVE SAMPLES HARVESTED. ONE THRESHOLD LEFT.');
+        }
     }
 
     interactWithAct2Camp() {
@@ -16645,6 +16707,7 @@ export class ThreeGame {
         }
         const previousHp = this.playerVitals.hp;
         let effectiveAmount = amount;
+        effectiveAmount = applyIncomingDamageModifiers(effectiveAmount, this.runOverclocks, this.runRelics);
         if (typeof window !== 'undefined' && window.npcDialogueTreeManager?.activePerks?.has?.('arias_psychic_mind_caress') && ['poison', 'hazard-zone', 'bio', 'sporesnail'].includes(reason)) {
             effectiveAmount *= 0.8;
         }
@@ -16936,6 +16999,7 @@ export class ThreeGame {
         this.updatePlayerForwardLight(1, { immediate: true });
 
         if (resetRunState) {
+            this.resetRunDrops();
             this.resetBunkerBlastDoor();
             this.runStartTime = Date.now();
             this.totalDistanceTravelled = 0;
@@ -18179,6 +18243,9 @@ export class ThreeGame {
         } else {
             this.footstepTimer = 0;
         }
+
+        // Menu showroom isolation: do not run mission, extraction, or elevator logic during menu showcase
+        if (this.performanceProfile === 'menu') return;
 
         // Survey mission: complete when player reaches target depth from ship
         if (this.missionState?.type === 'survey' && this.missionState.status === 'active') {
@@ -19537,7 +19604,14 @@ export class ThreeGame {
         const depthTier = this.getDepthTier(chunkX, chunkY);
         this.currentDepthTier = depthTier;
 
-        if (depthTier > this.maxDepthTierReached) {
+        // getSpawnTile() parks the menu showcase in chunk (100, 100) to keep it
+        // blank, and getDepthTier() measures distance from chunk (0, 0) -- so
+        // simply sitting on the title screen used to record tier 3 (ABYSS) into
+        // the persistent arc signals before the player had ever deployed, which
+        // is what put "DEPTH ABYSS" on an otherwise all-zero operator profile.
+        // currentDepthTier above stays truthful for live systems; only the
+        // career signal is gated on actually being in a run.
+        if (depthTier > this.maxDepthTierReached && this.performanceProfile === 'gameplay') {
             this.maxDepthTierReached = depthTier;
             this.arcManager?.recordSignal?.({ deepestDepthTier: depthTier });
             this.arcManager?.evaluate?.();
@@ -20913,8 +20987,7 @@ export class ThreeGame {
         const overlay = this.tiltShiftOverlay;
         if (!overlay || !this.player || !this.camera) return;
 
-        const isGameplay = this.performanceProfile === 'gameplay'
-            && !this.loadingPaused;
+        const isGameplay = usesGameplayFocusEffects(this);
         overlay.classList.toggle('is-active', isGameplay);
 
         if (!isGameplay) return;
@@ -24123,7 +24196,17 @@ export class ThreeGame {
                 phase: random() * Math.PI * 2,
                 opacity,
                 biomeTint: (finalType === 'cybersnail' || finalType === 'sporesnail' || finalType === 'cryosnail') ? (SNAIL_BIOME_TINTS[chunkBiomeKey] ?? 0xffffff) : undefined,
-                spawnedEnraged: (finalType === 'cybersnail' || finalType === 'sporesnail') && (depthTierForScatter >= 3 || Boolean(templateCfg?.forceEnragedSnails))
+                spawnedEnraged: (finalType === 'cybersnail' || finalType === 'sporesnail') && (depthTierForScatter >= 3 || Boolean(templateCfg?.forceEnragedSnails)),
+                // Depth Contract eliteSpawnChance, finally consulted. The roll
+                // is drawn from the chunk's seeded generator for every
+                // placement -- eligible or not -- so the stream advances by a
+                // fixed amount per placement and the elite set is reproducible
+                // from the seed alone. Ring I's contract chance is 0, so the
+                // opening ring stays free of promotions by construction.
+                spawnedElite: rollElitePromotion(depthTierForScatter + 1, random(), {
+                    type: finalType,
+                    isDisplayModel: Boolean(p.isDisplayModel)
+                })
             });
         }
 
@@ -24562,12 +24645,21 @@ export class ThreeGame {
 
             const isBoss = placement.isBoss || placement.type.startsWith('boss_');
             const isPreEnraged = Boolean(placement.spawnedEnraged) || isBoss;
+            // Depth Contract rank, decided once at placement generation from
+            // the seeded roll. Distinct from isPreEnraged: see eliteEnemies.js.
+            const isElite = Boolean(placement.spawnedElite) && !isBoss;
+            if (isElite) {
+                // Colour is the secondary cue only -- an elite must be
+                // readable by silhouette and by sound before it is wounded.
+                clonedMat.color.setHex(ELITE_IDENTITY.tint);
+            }
             const sprite = new THREE.Sprite(clonedMat);
             sprite.center.set(0.5, 0);
             sprite.position.set(placement.x, anchoredY, placement.z);
             sprite.frustumCulled = false;
             sprite.renderOrder = isBoss ? 8 : 6;
-            sprite.scale.set(scaleX, scaleY, 1);
+            const eliteScale = isElite ? ELITE_IDENTITY.scaleMultiplier : 1;
+            sprite.scale.set(scaleX * eliteScale, scaleY * eliteScale, 1);
 
             // Per-type HP/speed now live in src/data/enemies.js (behaviour-preserving).
             const _enemyStats = getEnemyStats(placement.type, { maxHp: SNAIL_MAX_HP, speed: SNAIL_MOVE_SPEED });
@@ -24592,6 +24684,10 @@ export class ThreeGame {
                 const threatScale = getDepthThreatScale(depth);
                 maxHp = Math.max(1, Math.round(maxHp * threatScale.hp));
                 speed *= threatScale.speed;
+                if (isElite) {
+                    maxHp = Math.max(1, Math.round(maxHp * ELITE_IDENTITY.hpMultiplier));
+                    speed *= ELITE_IDENTITY.speedMultiplier;
+                }
             }
 
             const staggerState = (!isBoss && ENEMY_STAGGER_DEFS[placement.type])
@@ -24623,6 +24719,7 @@ export class ThreeGame {
                 maxHp: maxHp,
                 speed: speed,
                 enraged: isPreEnraged,
+                isElite,
                 facingSign: 1,
                 pathNodes: null,
                 pathIndex: 0,
@@ -24634,7 +24731,7 @@ export class ThreeGame {
                 attackCooldown: 0,
                 bossAttackTimer: 0,
                 sporeEmitTimer: 0,
-                biomeTint: tintColor,
+                biomeTint: isElite ? ELITE_IDENTITY.tint : tintColor,
                 sporesnailFight,
                 staggerState
             };
@@ -25603,7 +25700,10 @@ export class ThreeGame {
                 }));
             }
         }
-        const isElite = Boolean(sprite.userData.enraged || sprite.userData.isSentinel);
+        // Depth Contract elite rank, not the last-stand `enraged` flag --
+        // see eliteEnemies.js for why reading `enraged` here inflated the
+        // ordinary drop rate from 0.12 to 0.65.
+        const isElite = isEliteForLoot(sprite.userData);
         const isBossEnemy = Boolean(sprite.userData.isHiveHarvestBoss || sprite.userData.isBoss);
         // docs/design/one-more-ring-design-pillars.md item 1 (Sprint 28):
         // deeper rings bias this roll toward relics (see runDrops.js's
@@ -25697,6 +25797,9 @@ export class ThreeGame {
                 sourceGoalKey: sprite.userData.sourceGoalKey ?? null
             }
         }));
+        this.syncSurvivorContract?.({
+            type: 'enemy-killed', id: `kill:${this.runEntropy}:${this.snailsKilledThisRun}`
+        });
     }
 
     spawnEnemyCorpse(enemySprite) {
@@ -25793,6 +25896,14 @@ export class ThreeGame {
     }
 
     clearCompanions() {
+        this._wandererLoad = null;
+        this._companionLoad = null;
+        this._wandererResolvedForRun = false;
+        this.activeWanderer?.instance3d?.root?.removeFromParent();
+        this.activeWanderer?.instance3d?.dispose?.();
+        this.activeWanderer = null;
+        this._wandererPromptLabel = null;
+        closeWandererModal();
         for (const companion of this.companions ?? []) {
             companion.sprite?.parent?.remove(companion.sprite);
             companion.sprite?.material?.dispose?.();
@@ -27147,6 +27258,16 @@ export class ThreeGame {
     // Companions (befriended snails, src/snailEncounter.js's 'befriend'
     // outcome) follow the player and periodically damage nearby hostile
     // snails. One companion at a time — see design doc's Companion section.
+    hasCompanionFireLane(from, to) {
+        const steps = Math.ceil(Math.hypot(to.x - from.x, to.z - from.z) / 0.4);
+        for (let i = 1; i < steps; i += 1) {
+            const t = i / steps;
+            if (!this.isSnailTileWalkable(Math.round(from.x + (to.x - from.x) * t),
+                Math.round(from.z + (to.z - from.z) * t))) return false;
+        }
+        return true;
+    }
+
     updateCompanions(delta) {
         if (!this.player || this.isPlayerDead || !Array.isArray(this.companions) || this.companions.length === 0) return;
 
@@ -27168,23 +27289,30 @@ export class ThreeGame {
                 const toTrailX = trail.x - root.position.x;
                 const toTrailZ = trail.z - root.position.z;
                 const dist = Math.hypot(toTrailX, toTrailZ);
-                if (dist > 0.1) {
+                if (dist > 16) {
+                    root.position.copy(this.player.position);
+                } else if (dist > 0.1) {
                     const step = Math.min(dist, 2.5 * delta);
-                    root.position.x += (toTrailX / dist) * step;
-                    root.position.z += (toTrailZ / dist) * step;
+                    const nextX = root.position.x + (toTrailX / dist) * step;
+                    const nextZ = root.position.z + (toTrailZ / dist) * step;
+                    if (this.isSnailTileWalkable(Math.round(nextX), Math.round(nextZ))) {
+                        root.position.x = nextX;
+                        root.position.z = nextZ;
+                    }
                     root.rotation.y = Math.atan2(toTrailX, toTrailZ);
                 }
                 companion.instance3d.update(delta);
 
                 companion.assistCooldown = Math.max(0, (companion.assistCooldown ?? 0) - delta);
                 if (companion.assistCooldown <= 0) {
+                    companion.assistCooldown = 0.25;
                     let nearestHostile = null;
                     let nearestDist = 8.0;
                     for (const other of this.scatterSprites || []) {
-                        if (!other?.userData || other.userData?.isCompanion || other.userData?.dead) continue;
-                        if (!other.userData.hp && !['cybersnail', 'cryosnail', 'sporesnail', 'crawler'].includes(other.userData.type)) continue;
+                        if (!this.isEnemyType(other?.userData?.type) || other.userData.isCompanion
+                            || other.userData.dead || other.userData.burstTriggered || other.userData.isDisplayModel) continue;
                         const d = Math.hypot(other.position.x - root.position.x, other.position.z - root.position.z);
-                        if (d < nearestDist) {
+                        if (d < nearestDist && this.hasCompanionFireLane(root.position, other.position)) {
                             nearestDist = d;
                             nearestHostile = other;
                         }
@@ -27194,7 +27322,9 @@ export class ThreeGame {
                         this.spawnMuzzleFlash?.(root.position.x, 1.0, root.position.z);
                         const cd = companion.wanderer?.assistAbility?.cooldown || 12;
                         companion.assistCooldown = cd;
-                        this.showBunkerLine(`[COMPANION] ${companion.wanderer?.name || 'SURVIVOR'} ACTIVATED ${companion.wanderer?.assistAbility?.name || 'SUPPORT FIRE'}!`);
+                        this.spawnPhysicalBurst?.(nearestHostile.position.x, nearestHostile.position.z, {
+                            color: 0x67e3e1, count: 3, upward: 0.1, spread: 0.3
+                        });
                     }
                 }
                 continue;
@@ -30926,6 +31056,7 @@ export class ThreeGame {
     }
 
     destroy() {
+        this.clearCompanions();
         this.applyMilestoneBossRuntimeEvent?.({ type: MILESTONE_BOSS_EVENT_TYPES.QUIT });
         this.renderer.setAnimationLoop(null);
         this.resetWeaponState({ emit: false });

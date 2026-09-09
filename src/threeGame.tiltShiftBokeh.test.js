@@ -11,7 +11,7 @@ describe('ThreeGame - WebGL Camera Tilt-Shift Shader Pass', () => {
         expect(TiltShiftPassShader.uniforms).toHaveProperty('dir');
     });
 
-    it('updates focus CSS variables and shader uniforms in gameplay mode', () => {
+    it('updates focus CSS variables and shader uniforms in isometric gameplay', () => {
         const overlayStyleMap = new Map();
         const fakeOverlay = {
             classList: {
@@ -32,6 +32,7 @@ describe('ThreeGame - WebGL Camera Tilt-Shift Shader Pass', () => {
             tiltShiftPassV: fakePassV,
             tiltShiftPassH: fakePassH,
             performanceProfile: 'gameplay',
+            cameraMode: 'isometric',
             loadingPaused: false,
             _tiltShiftFocusX: 50,
             _tiltShiftFocusY: 50,
@@ -75,7 +76,7 @@ describe('ThreeGame - WebGL Camera Tilt-Shift Shader Pass', () => {
         expect(fakeOverlay._active).toBe(false);
     });
 
-    it('keeps the active overlay state in adaptive gameplay mode', () => {
+    it('disables the overlay in adaptive gameplay mode', () => {
         const fakeOverlay = {
             classList: {
                 toggle: (cls, state) => {
@@ -89,6 +90,7 @@ describe('ThreeGame - WebGL Camera Tilt-Shift Shader Pass', () => {
             performanceProfile: 'gameplay',
             loadingPaused: false,
             adaptiveGameplayPerformanceMode: true,
+            cameraMode: 'isometric',
             _tiltShiftFocusX: 50,
             _tiltShiftFocusY: 50,
             _tiltShiftProjectVec: new THREE.Vector3(),
@@ -97,6 +99,6 @@ describe('ThreeGame - WebGL Camera Tilt-Shift Shader Pass', () => {
         };
 
         ThreeGame.prototype.updateTiltShiftAndBokeh.call(fakeGame, 0.016);
-        expect(fakeOverlay._active).toBe(true);
+        expect(fakeOverlay._active).toBe(false);
     });
 });

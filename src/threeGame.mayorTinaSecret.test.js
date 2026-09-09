@@ -49,13 +49,51 @@ describe('Mayor Tina secret encounter', () => {
         });
     });
 
-    it('keeps the validation placement just outside the first room for every run seed', () => {
-        for (const runEntropy of [0, 1, 2, 99999]) {
+    it('places the encounter farther down the approach and keeps it stable for each seed', () => {
+        const positions = new Set();
+        for (const runEntropy of [0, 1, 2, 3, 4, 5, 6, 99999, -1, 0xffffffff]) {
             const position = ThreeGame.prototype.getMayorTinaEncounterPosition.call({ runEntropy });
-            expect(position.x).toBeGreaterThanOrEqual(8.5);
-            expect(position.x).toBeLessThanOrEqual(9.5);
-            expect(position.z).toBe(1.55);
+            expect(position.x).toBe(9);
+            expect(position.z).toBeGreaterThanOrEqual(-20);
+            expect(position.z).toBeLessThanOrEqual(-14);
+            expect(Math.hypot(position.x - 9, position.z - 9)).toBeGreaterThanOrEqual(23);
+            expect(ThreeGame.prototype.getMayorTinaEncounterPosition.call({ runEntropy })).toEqual(position);
+            positions.add(position.z);
         }
+        expect(positions.size).toBe(7);
+    });
+
+    it('keeps both encounter models facing the approach after repeated setup and a new-run reset', async () => {
+        const mayorRoot = new THREE.Group();
+        const teacupRoot = new THREE.Group();
+        const normalizedModel = new THREE.Group();
+        normalizedModel.rotation.y = Math.PI;
+        mayorRoot.add(normalizedModel);
+        const game = {
+            runEntropy: 0,
+            performanceProfile: 'gameplay',
+            scene: new THREE.Scene(),
+            mayorTinaEncounter: { phase: 'idle', lastSirenAt: 0, calloutIndex: 0 },
+            createWorld3dModel: vi.fn(async (type) => type === 'secret_mayor_tina' ? mayorRoot : teacupRoot),
+            getMayorTinaEncounterPosition: ThreeGame.prototype.getMayorTinaEncounterPosition
+        };
+        await expect(ThreeGame.prototype.setupMayorTinaEncounter.call(game)).resolves.toBe(true);
+        await expect(ThreeGame.prototype.setupMayorTinaEncounter.call(game)).resolves.toBe(true);
+        expect(game.createWorld3dModel).toHaveBeenCalledTimes(2);
+        expect(mayorRoot.rotation.y).toBe(Math.PI);
+        expect(teacupRoot.rotation.y).toBe(Math.PI);
+        expect(normalizedModel.rotation.y).toBe(Math.PI);
+        expect(mayorRoot.position.z).toBeCloseTo(-14.03);
+        expect(teacupRoot.position.z).toBe(-14);
+
+        game.runEntropy = 6;
+        ThreeGame.prototype.resetMayorTinaEncounter.call(game);
+        expect(mayorRoot.rotation.y).toBe(Math.PI);
+        expect(teacupRoot.rotation.y).toBe(Math.PI);
+        expect(normalizedModel.rotation.y).toBe(Math.PI);
+        expect(mayorRoot.position.z).toBeCloseTo(-20.03);
+        expect(teacupRoot.position.z).toBe(-20);
+        expect(game.scene.children).toHaveLength(2);
     });
 
     it('locks input and requests the door cinematic when the player interacts nearby', () => {

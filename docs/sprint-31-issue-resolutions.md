@@ -1,5 +1,9 @@
 # Sprint 31 Catch-ups: Issue Resolutions
 
+Status: historical summary with corrected performance interpretation | Owner: repository maintainers | Updated: 2026-09-08 | Review: before release acceptance
+
+The short Log 19 session is evidence for the observed route, not full expedition, Cloud-conflict, or hardware certification. Its earlier GPU-improvement and synchronous-fetch attribution claims were corrected below after inspecting raw entry contexts. See [the corrected analysis](reports/sprint-31-coop-log19-and-performance-analysis-2026-09-02.md) and [the September 8 implementation report](reports/astra-first-implementation-2026-09-08.md) for the current scope. The earlier asset cleanup is historical: September 8 found renewed payload debt and repaired it with two texture-only derivatives.
+
 This document outlines the resolutions and verification findings for the outstanding issues addressed before finalizing the v2.3.1-beta release, incorporating empirical packaged Steam runtime evidence from `docs/logs/log19.json`.
 
 ## Issue #50: Reduce retail payload debt and restore meaningful asset-audit guardrails
@@ -21,10 +25,10 @@ This document outlines the resolutions and verification findings for the outstan
 
 **Problem:** Initial packaged profiling from Sprint 31 (`docs/logs/log18.json`) reported 1.10 GiB of GPU memory, ~39.6 average FPS, and 45 long tasks over 100 ms on an RTX 2070 SUPER.
 **Status & Verification:**
-1. **GPU Memory Reduction:** In `docs/logs/log19.json` on the identical hardware (RTX 2070 SUPER, Windows 10), estimated GPU memory fell from **1.10 GiB to 346.1 MB** (a 68.5% decrease), with texture memory dropping from 1.00 GiB to 329.1 MB.
-2. **GPU Render Times:** GPU frame render times averaged **2.03 ms** across 1,900 samples during live gameplay/menu rendering.
+1. **GPU Memory:** The final 346,149,762-byte estimate belongs to performance profile `menu`, at a 480×480 drawing buffer. Gameplay contexts in entry 476 show 1,144,131,122 bytes. A comparable gameplay reduction is not established.
+2. **GPU Render Times:** The final 2.03 ms is an exponential moving average in a menu snapshot; the sample counter is 1,900. It is not a session arithmetic mean or an FPS measurement. Earlier gameplay contexts show smoothed values around 25–27 ms.
 3. **Long Tasks:** Tasks exceeding 100 ms dropped from 45 down to 19.
-4. **Stall Root Cause Attribution:** The log identified a major **8,574 ms freeze** during sector deployment (15:17:08). This was directly attributed to synchronous fetching of 5 props from `app.asar.unpacked/dist/3d/runtime/new3ds/` (`prop_base_defense_turret.glb`, `cybersnail_dead.glb`, `bunker_junk_rare.glb`, `prop_body_human_frozen.glb`, `prop_conduit_hub.glb`) taking ~10.27s. Remediation can now target asynchronous/background pre-staging for these assets.
+4. **Stall Attribution Remains Open:** The 8,574 ms task begins at 62,733 ms, with no active phase and no overlapping recorded chunk span. Several roughly 10.27 s asset completions are correlated with it. The loader already uses asynchronous `loadAsync`; those elapsed durations do not prove synchronous fetch caused the stall. September 8 adds separate load-latency and clone/prepare diagnostics; a packaged CPU trace is still required before selecting a causal fix.
 
 ## Issue #51 & Co-op Certification (#45): Synchronized Steam Multiplayer and Damage Scaling
 

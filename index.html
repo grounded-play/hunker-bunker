@@ -8,6 +8,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;700;900&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/style.css?v=1242_v33">
+  <link rel="stylesheet" href="/src/styles/expeditionHud.css">
   <link rel="icon" type="image/png" href="/favicon.png" />
   <title>HUNKER BUNKER | TACTICAL COMMAND</title>
 
@@ -1158,6 +1159,18 @@
 
     <!-- Live HUD (Post-Initialization) -->
     <div id="ui" class="hidden">
+      <!-- Diegetic Visor HUD Framing & Telemetry -->
+      <div class="hud-visor-frame" aria-hidden="true">
+        <span class="hud-visor-bracket hud-visor-bracket--tl"></span>
+        <span class="hud-visor-bracket hud-visor-bracket--tr"></span>
+        <span class="hud-visor-bracket hud-visor-bracket--bl"></span>
+        <span class="hud-visor-bracket hud-visor-bracket--br"></span>
+        <div class="hud-visor-telemetry">
+          <span class="hud-visor-telemetry__tag">EXOSUIT // MARK-IV PRESSURIZED</span>
+          <span class="hud-visor-telemetry__grid-mark">◈ 44.10°N // 12.80°W</span>
+        </div>
+      </div>
+
       <div class="level-indicator">
         <span class="level-indicator__title">BUNKER LEVEL</span>
         <span id="level-num">0</span>

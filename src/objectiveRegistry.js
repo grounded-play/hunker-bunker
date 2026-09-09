@@ -42,7 +42,11 @@ export class ObjectiveRegistry {
             current: Number.isFinite(detail.current) ? detail.current : (existing?.current ?? 0),
             target: Number.isFinite(detail.target) ? detail.target : (existing?.target ?? 1),
             priority: Number.isFinite(detail.priority) ? detail.priority : (existing?.priority ?? 50),
-            compass: detail.compass ? { x: detail.compass.x, z: detail.compass.z } : null,
+            // Progress-only updates must preserve the live compass target;
+            // an explicit null is the caller's way to clear it.
+            compass: Object.prototype.hasOwnProperty.call(detail, 'compass')
+                ? (detail.compass ? { x: detail.compass.x, z: detail.compass.z } : null)
+                : (existing?.compass ? { ...existing.compass } : null),
             steps: Array.isArray(detail.steps) ? detail.steps.map(s => ({ label: s.label, done: Boolean(s.done) })) : (existing?.steps ?? []),
             status,
             blockedReason: status === 'blocked' ? (detail.blockedReason ?? existing?.blockedReason ?? null) : null,

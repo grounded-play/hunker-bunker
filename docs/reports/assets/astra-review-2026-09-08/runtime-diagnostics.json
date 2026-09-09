@@ -1,0 +1,523 @@
+{
+  "environment": "Windows Chrome via SSH loopback to Vite on mountain; not packaged",
+  "profile": "gameplay",
+  "inputActive": true,
+  "tina": {
+    "x": 9,
+    "z": -15
+  },
+  "profileResets": [
+    {
+      "from": "menu",
+      "before": {
+        "supported": true,
+        "latestMs": 3.37,
+        "averageMs": 1.33,
+        "averageKind": "exponential-moving-average",
+        "maxMs": 49.8,
+        "samples": 663,
+        "pendingQueries": 0,
+        "droppedFrames": 0,
+        "disjointEvents": 0
+      },
+      "after": {
+        "supported": true,
+        "latestMs": null,
+        "averageMs": null,
+        "averageKind": "exponential-moving-average",
+        "maxMs": 0,
+        "samples": 0,
+        "pendingQueries": 0,
+        "droppedFrames": 0,
+        "disjointEvents": 0
+      }
+    }
+  ],
+  "worldLoadSummary": {
+    "count": 35,
+    "failures": 0,
+    "attempts": 35,
+    "cacheHits": 50
+  },
+  "worldModelSpans": [
+    {
+      "phase": "world-model:clone",
+      "startMs": 329303.1,
+      "durationMs": 0.3,
+      "context": {
+        "type": "npc_kaelen",
+        "url": "/3d/runtime/new3ds/npc_kaelen.glb"
+      }
+    },
+    {
+      "phase": "world-model:prepare",
+      "startMs": 329303.4,
+      "durationMs": 17.1,
+      "context": {
+        "type": "npc_kaelen",
+        "url": "/3d/runtime/new3ds/npc_kaelen.glb"
+      }
+    },
+    {
+      "phase": "world-model:clone",
+      "startMs": 329320.5,
+      "durationMs": 0.1,
+      "context": {
+        "type": "prop_camp_crates",
+        "url": "/3d/runtime/new3ds/prop_bunker_supplies.glb"
+      }
+    },
+    {
+      "phase": "world-model:prepare",
+      "startMs": 329320.6,
+      "durationMs": 0,
+      "context": {
+        "type": "prop_camp_crates",
+        "url": "/3d/runtime/new3ds/prop_bunker_supplies.glb"
+      }
+    },
+    {
+      "phase": "world-model:clone",
+      "startMs": 329320.6,
+      "durationMs": 0,
+      "context": {
+        "type": "prop_camp_cookfire",
+        "url": "/3d/runtime/new3ds/prop_fabricator_workstation.glb"
+      }
+    },
+    {
+      "phase": "world-model:prepare",
+      "startMs": 329320.6,
+      "durationMs": 0,
+      "context": {
+        "type": "prop_camp_cookfire",
+        "url": "/3d/runtime/new3ds/prop_fabricator_workstation.glb"
+      }
+    },
+    {
+      "phase": "world-model:clone",
+      "startMs": 329320.6,
+      "durationMs": 0,
+      "context": {
+        "type": "prop_camp_sandbags",
+        "url": "/3d/runtime/new3ds/prop_security_barricade.glb"
+      }
+    },
+    {
+      "phase": "world-model:prepare",
+      "startMs": 329320.6,
+      "durationMs": 0,
+      "context": {
+        "type": "prop_camp_sandbags",
+        "url": "/3d/runtime/new3ds/prop_security_barricade.glb"
+      }
+    },
+    {
+      "phase": "world-model:clone",
+      "startMs": 329320.6,
+      "durationMs": 0.1,
+      "context": {
+        "type": "prop_camp_sandbags",
+        "url": "/3d/runtime/new3ds/prop_security_barricade.glb"
+      }
+    },
+    {
+      "phase": "world-model:prepare",
+      "startMs": 329320.7,
+      "durationMs": 0,
+      "context": {
+        "type": "prop_camp_sandbags",
+        "url": "/3d/runtime/new3ds/prop_security_barricade.glb"
+      }
+    },
+    {
+      "phase": "world-model:clone",
+      "startMs": 329320.7,
+      "durationMs": 0,
+      "context": {
+        "type": "prop_camp_sandbags",
+        "url": "/3d/runtime/new3ds/prop_security_barricade.glb"
+      }
+    },
+    {
+      "phase": "world-model:prepare",
+      "startMs": 329320.7,
+      "durationMs": 0,
+      "context": {
+        "type": "prop_camp_sandbags",
+        "url": "/3d/runtime/new3ds/prop_security_barricade.glb"
+      }
+    },
+    {
+      "phase": "world-model:clone",
+      "startMs": 329320.7,
+      "durationMs": 0.2,
+      "context": {
+        "type": "npc_martha",
+        "url": "/3d/runtime/new3ds/npc_martha.glb"
+      }
+    },
+    {
+      "phase": "world-model:prepare",
+      "startMs": 329320.9,
+      "durationMs": 13.5,
+      "context": {
+        "type": "npc_martha",
+        "url": "/3d/runtime/new3ds/npc_martha.glb"
+      }
+    },
+    {
+      "phase": "world-model:clone",
+      "startMs": 329334.4,
+      "durationMs": 0.1,
+      "context": {
+        "type": "prop_camp_crates",
+        "url": "/3d/runtime/new3ds/prop_bunker_supplies.glb"
+      }
+    },
+    {
+      "phase": "world-model:prepare",
+      "startMs": 329334.5,
+      "durationMs": 0,
+      "context": {
+        "type": "prop_camp_crates",
+        "url": "/3d/runtime/new3ds/prop_bunker_supplies.glb"
+      }
+    },
+    {
+      "phase": "world-model:clone",
+      "startMs": 329334.5,
+      "durationMs": 0,
+      "context": {
+        "type": "prop_camp_cookfire",
+        "url": "/3d/runtime/new3ds/prop_fabricator_workstation.glb"
+      }
+    },
+    {
+      "phase": "world-model:prepare",
+      "startMs": 329334.5,
+      "durationMs": 0,
+      "context": {
+        "type": "prop_camp_cookfire",
+        "url": "/3d/runtime/new3ds/prop_fabricator_workstation.glb"
+      }
+    },
+    {
+      "phase": "world-model:clone",
+      "startMs": 329334.5,
+      "durationMs": 0,
+      "context": {
+        "type": "prop_camp_sandbags",
+        "url": "/3d/runtime/new3ds/prop_security_barricade.glb"
+      }
+    },
+    {
+      "phase": "world-model:prepare",
+      "startMs": 329334.5,
+      "durationMs": 0,
+      "context": {
+        "type": "prop_camp_sandbags",
+        "url": "/3d/runtime/new3ds/prop_security_barricade.glb"
+      }
+    },
+    {
+      "phase": "world-model:clone",
+      "startMs": 329334.5,
+      "durationMs": 0,
+      "context": {
+        "type": "prop_camp_sandbags",
+        "url": "/3d/runtime/new3ds/prop_security_barricade.glb"
+      }
+    },
+    {
+      "phase": "world-model:prepare",
+      "startMs": 329334.5,
+      "durationMs": 0,
+      "context": {
+        "type": "prop_camp_sandbags",
+        "url": "/3d/runtime/new3ds/prop_security_barricade.glb"
+      }
+    },
+    {
+      "phase": "world-model:clone",
+      "startMs": 329334.5,
+      "durationMs": 0,
+      "context": {
+        "type": "prop_camp_sandbags",
+        "url": "/3d/runtime/new3ds/prop_security_barricade.glb"
+      }
+    },
+    {
+      "phase": "world-model:prepare",
+      "startMs": 329334.5,
+      "durationMs": 0,
+      "context": {
+        "type": "prop_camp_sandbags",
+        "url": "/3d/runtime/new3ds/prop_security_barricade.glb"
+      }
+    },
+    {
+      "phase": "world-model:clone",
+      "startMs": 329334.5,
+      "durationMs": 0.4,
+      "context": {
+        "type": "npc_briggs",
+        "url": "/3d/runtime/new3ds/chassis_trench_warden_heavy.glb"
+      }
+    },
+    {
+      "phase": "world-model:prepare",
+      "startMs": 329334.9,
+      "durationMs": 14,
+      "context": {
+        "type": "npc_briggs",
+        "url": "/3d/runtime/new3ds/chassis_trench_warden_heavy.glb"
+      }
+    },
+    {
+      "phase": "world-model:clone",
+      "startMs": 329348.9,
+      "durationMs": 0,
+      "context": {
+        "type": "prop_camp_crates",
+        "url": "/3d/runtime/new3ds/prop_bunker_supplies.glb"
+      }
+    },
+    {
+      "phase": "world-model:prepare",
+      "startMs": 329348.9,
+      "durationMs": 0,
+      "context": {
+        "type": "prop_camp_crates",
+        "url": "/3d/runtime/new3ds/prop_bunker_supplies.glb"
+      }
+    },
+    {
+      "phase": "world-model:clone",
+      "startMs": 329349,
+      "durationMs": 0,
+      "context": {
+        "type": "prop_camp_cookfire",
+        "url": "/3d/runtime/new3ds/prop_fabricator_workstation.glb"
+      }
+    },
+    {
+      "phase": "world-model:prepare",
+      "startMs": 329349,
+      "durationMs": 0,
+      "context": {
+        "type": "prop_camp_cookfire",
+        "url": "/3d/runtime/new3ds/prop_fabricator_workstation.glb"
+      }
+    },
+    {
+      "phase": "world-model:clone",
+      "startMs": 329349,
+      "durationMs": 0,
+      "context": {
+        "type": "prop_camp_sandbags",
+        "url": "/3d/runtime/new3ds/prop_security_barricade.glb"
+      }
+    },
+    {
+      "phase": "world-model:prepare",
+      "startMs": 329349,
+      "durationMs": 0.1,
+      "context": {
+        "type": "prop_camp_sandbags",
+        "url": "/3d/runtime/new3ds/prop_security_barricade.glb"
+      }
+    },
+    {
+      "phase": "world-model:clone",
+      "startMs": 329349.1,
+      "durationMs": 0,
+      "context": {
+        "type": "prop_camp_sandbags",
+        "url": "/3d/runtime/new3ds/prop_security_barricade.glb"
+      }
+    },
+    {
+      "phase": "world-model:prepare",
+      "startMs": 329349.1,
+      "durationMs": 0,
+      "context": {
+        "type": "prop_camp_sandbags",
+        "url": "/3d/runtime/new3ds/prop_security_barricade.glb"
+      }
+    },
+    {
+      "phase": "world-model:clone",
+      "startMs": 329349.1,
+      "durationMs": 0,
+      "context": {
+        "type": "prop_camp_sandbags",
+        "url": "/3d/runtime/new3ds/prop_security_barricade.glb"
+      }
+    },
+    {
+      "phase": "world-model:prepare",
+      "startMs": 329349.1,
+      "durationMs": 0,
+      "context": {
+        "type": "prop_camp_sandbags",
+        "url": "/3d/runtime/new3ds/prop_security_barricade.glb"
+      }
+    },
+    {
+      "phase": "world-model:clone",
+      "startMs": 329349.1,
+      "durationMs": 0,
+      "context": {
+        "type": "npc_civilian_miner",
+        "url": "/3d/runtime/new3ds/npc_civilian_miner.glb"
+      }
+    },
+    {
+      "phase": "world-model:prepare",
+      "startMs": 329349.1,
+      "durationMs": 0,
+      "context": {
+        "type": "npc_civilian_miner",
+        "url": "/3d/runtime/new3ds/npc_civilian_miner.glb"
+      }
+    },
+    {
+      "phase": "world-model:clone",
+      "startMs": 329349.1,
+      "durationMs": 0.1,
+      "context": {
+        "type": "npc_civilian_researcher",
+        "url": "/3d/runtime/new3ds/npc_civilian_researcher.glb"
+      }
+    },
+    {
+      "phase": "world-model:prepare",
+      "startMs": 329349.2,
+      "durationMs": 0,
+      "context": {
+        "type": "npc_civilian_researcher",
+        "url": "/3d/runtime/new3ds/npc_civilian_researcher.glb"
+      }
+    },
+    {
+      "phase": "world-model:clone",
+      "startMs": 329349.2,
+      "durationMs": 0.1,
+      "context": {
+        "type": "npc_civilian_miner",
+        "url": "/3d/runtime/new3ds/npc_civilian_miner.glb"
+      }
+    },
+    {
+      "phase": "world-model:prepare",
+      "startMs": 329349.3,
+      "durationMs": 0,
+      "context": {
+        "type": "npc_civilian_miner",
+        "url": "/3d/runtime/new3ds/npc_civilian_miner.glb"
+      }
+    },
+    {
+      "phase": "world-model:clone",
+      "startMs": 329349.3,
+      "durationMs": 0.1,
+      "context": {
+        "type": "npc_civilian_researcher",
+        "url": "/3d/runtime/new3ds/npc_civilian_researcher.glb"
+      }
+    },
+    {
+      "phase": "world-model:prepare",
+      "startMs": 329349.4,
+      "durationMs": 0,
+      "context": {
+        "type": "npc_civilian_researcher",
+        "url": "/3d/runtime/new3ds/npc_civilian_researcher.glb"
+      }
+    },
+    {
+      "phase": "world-model:clone",
+      "startMs": 329349.4,
+      "durationMs": 0,
+      "context": {
+        "type": "npc_civilian_miner",
+        "url": "/3d/runtime/new3ds/npc_civilian_miner.glb"
+      }
+    },
+    {
+      "phase": "world-model:prepare",
+      "startMs": 329349.4,
+      "durationMs": 0,
+      "context": {
+        "type": "npc_civilian_miner",
+        "url": "/3d/runtime/new3ds/npc_civilian_miner.glb"
+      }
+    },
+    {
+      "phase": "world-model:clone",
+      "startMs": 329349.4,
+      "durationMs": 0.1,
+      "context": {
+        "type": "npc_civilian_researcher",
+        "url": "/3d/runtime/new3ds/npc_civilian_researcher.glb"
+      }
+    },
+    {
+      "phase": "world-model:prepare",
+      "startMs": 329349.5,
+      "durationMs": 0,
+      "context": {
+        "type": "npc_civilian_researcher",
+        "url": "/3d/runtime/new3ds/npc_civilian_researcher.glb"
+      }
+    },
+    {
+      "phase": "world-model:clone",
+      "startMs": 332191.6,
+      "durationMs": 0.1,
+      "context": {
+        "type": "secret_mayor_tina",
+        "url": "/3d/runtime/secrets/mayor-tina.glb"
+      }
+    },
+    {
+      "phase": "world-model:prepare",
+      "startMs": 332191.7,
+      "durationMs": 0.1,
+      "context": {
+        "type": "secret_mayor_tina",
+        "url": "/3d/runtime/secrets/mayor-tina.glb"
+      }
+    },
+    {
+      "phase": "world-model:clone",
+      "startMs": 332285.3,
+      "durationMs": 0.1,
+      "context": {
+        "type": "secret_teacup_roach",
+        "url": "/3d/runtime/secrets/teacup-roach.glb"
+      }
+    },
+    {
+      "phase": "world-model:prepare",
+      "startMs": 332285.4,
+      "durationMs": 0.1,
+      "context": {
+        "type": "secret_teacup_roach",
+        "url": "/3d/runtime/secrets/teacup-roach.glb"
+      }
+    }
+  ],
+  "gpu": {
+    "supported": true,
+    "latestMs": 25.27,
+    "averageMs": 26.94,
+    "averageKind": "exponential-moving-average",
+    "maxMs": 569.54,
+    "samples": 578,
+    "pendingQueries": 1,
+    "droppedFrames": 0,
+    "disjointEvents": 0
+  }
+}

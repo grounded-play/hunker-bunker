@@ -185,9 +185,21 @@ export class CutsceneManager {
             this.viewportEl.classList.remove('cutscene-shake');
         }
 
-        this.overlayEl?.classList.remove('is-active', 'is-visible', 'is-fading', 'is-flash', 'is-falling', 'is-impact');
-        this.overlayEl?.classList.add('hidden');
-        this.overlayEl?.setAttribute('aria-hidden', 'true');
+        this.overlayEl?.classList.remove('is-active', 'is-visible', 'is-flash', 'is-falling', 'is-impact');
+        if (!skipped && this.overlayEl) {
+            this.overlayEl.classList.add('is-fading');
+            const overlay = this.overlayEl;
+            setTimeout(() => {
+                if (this.activeRunId === 0 && overlay) {
+                    overlay.classList.add('hidden');
+                    overlay.classList.remove('is-fading');
+                    overlay.setAttribute('aria-hidden', 'true');
+                }
+            }, 320);
+        } else {
+            this.overlayEl?.classList.add('hidden');
+            this.overlayEl?.setAttribute('aria-hidden', 'true');
+        }
 
         if (this.shipEl) {
             this.shipEl.style.transition = 'none';

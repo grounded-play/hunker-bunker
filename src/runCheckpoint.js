@@ -15,6 +15,8 @@
 // so the *existing*, already-shipped black-box recovery flow (walk to the
 // marker, recover salvage, patrol-risk) is the only recovery UX a player
 // ever sees, whether they died or crashed.
+import { blackBoxStore } from './blackBox.js';
+
 const STORAGE_KEY = 'hb_run_checkpoint_v1';
 
 function cloneSalvage(salvage = {}) {
@@ -88,3 +90,39 @@ export function hasRecoverableSalvage(checkpoint) {
 export const runCheckpointStore = createRunCheckpointStorage({
     storage: typeof window !== 'undefined' ? window.localStorage : null
 });
+
+/**
+ * Idempotently convert an interrupted run's checkpoint snapshot into a
+ * standard black-box recovery marker on boot. Clears the checkpoint
+ * immediately so subsequent calls or boots cannot duplicate salvage.
+ *
+ * @param {Object} [options]
+ * @param {Object} [options.checkpointStore]
+ * @param {Object} [options.deathStore]
+ * @returns {boolean} True if a checkpoint was found and cleared, false otherwise.
+ */
+export function recoverCrashedRunCheckpoint({
+    checkpointStore = runCheckpointStore,
+    deathStore = blackBoxStore
+} = {}) {
+    try {
+        const checkpoint = checkpointStore?.load?.();
+        if (!checkpoint) return false;
+        if (hasRecoverableSalvage(checkpoint)) {
+            const { tech, coin, med } = checkpoint.salvage;
+            deathStore?.recordDeath?.({
+                x: checkpoint.x,
+                z: checkpoint.z,
+                depth: checkpoint.depth,
+                classType: checkpoint.classType,
+                salvage: checkpoint.salvage,
+                cause: 'crash-recovered',
+                log: `Operator ${checkpoint.classType} signal lost mid-expedition (unexpected shutdown). Recoverable salvage: ${tech} TECH / ${coin} COIN / ${med} MED.`
+            });
+        }
+        checkpointStore?.clear?.();
+        return true;
+    } catch {
+        return false;
+    }
+}

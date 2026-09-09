@@ -3,6 +3,8 @@
 **Status:** Canonical asset-governance policy / incomplete coverage ledger
 **Last verified:** 2026-08-24
 
+**Derivative update:** 2026-09-08 — the two overclock texture derivatives below were recorded; this is not a full-ledger rights re-verification.
+
 This file records the current provenance policy and the asset classes that have actually been reconciled. It must **not** be interpreted as proof that every asset currently in the repository has complete creator/license/AI-disclosure metadata.
 
 Sprint 30 identified a real coverage gap: Hunker Bunker now contains a much larger 3D, audio, UI, store/marketing, community-skin, and generated-art footprint than the earlier version of this document tracked.
@@ -86,6 +88,15 @@ These are **coverage gaps**, not accusations that the assets lack commercial rig
 
 ### 3D runtime / Armory / community chassis
 
+#### September 8 texture-only derivatives
+
+| Runtime asset | Retained input | Transformation and verification | Rights state |
+| --- | --- | --- | --- |
+| `public/3d/runtime/new3ds/mod_symbiotic_adrenaline_pump.glb` | `art/source/3d/astra-texture-budget-2026-09-08/mod_symbiotic_adrenaline_pump.glb` | Existing runtime input retained byte-for-byte; embedded PNG textures resized from 4096 to 1024 pixels with glTF Transform CLI 4.5.0 `resize`. Geometry/accessor content unchanged; 40,393,748 → 5,478,680 bytes. | `needs-review` — original creator, method, and redistribution basis remain unresolved. |
+| `public/3d/runtime/new3ds/mod_echo_location_transceiver.glb` | `art/source/3d/astra-texture-budget-2026-09-08/mod_echo_location_transceiver.glb` | Same texture-only process; 30,854,568 → 4,479,148 bytes. Geometry/accessor content unchanged. | `needs-review` — original creator, method, and redistribution basis remain unresolved. |
+
+Codex performed this derivative operation at the project owner's request. The retained inputs are pre-optimization runtime copies, not newly discovered original artist masters. No new generative content or rights clearance is asserted. Visual comparison, validation, byte totals, and reproduction instructions are in [the first implementation report](docs/reports/astra-first-implementation-2026-09-08.md).
+
 Sprint 28 integrated dozens of 3D chassis/weapon/cosmetic assets and Sprint 29 added further runtime models and calibration work. The existing asset/backlog docs describe integration and aesthetic intent, but this root ledger does not currently provide complete creator/source/method/rights records for those families.
 
 **Action:** build a bounded 3D ledger keyed to the actual runtime catalog, distinguishing:
@@ -113,6 +124,19 @@ Steam capsules, library art, trailer/media assets, social/promotional art, and o
 The Steam review process has explicitly asked for accurate AI disclosure. The project should track generated/AI-assisted assets at source time instead of reconstructing the answer during submission.
 
 **Action:** for every new generated/AI-assisted visual family, record tool/model when known, source prompt/workflow location if retained, human modifications, and final runtime/marketing derivative.
+
+#### September 9 lore and survivor portraits
+
+| Runtime asset | Production method | Source date | Rights / disclosure state | Purpose / notes |
+| --- | --- | --- | --- | --- |
+| `public/lore_portraits/mayor_tina.webp` | Generative-AI + pixelation/format conversion via ffmpeg | 2026-09-09 | `generated-disclosed` | Mayor Tina (cockroach in teacup) radio transmission and bunker dialogue portrait. |
+| `public/lore_portraits/bunker_announcer.webp` | Generative-AI + pixelation/format conversion via ffmpeg | 2026-09-09 | `generated-disclosed` | Bunker AI central broadcast terminal transmission portrait. |
+| `public/lore_portraits/survivor_foxhole.webp` | Generative-AI + pixelation/format conversion via ffmpeg | 2026-09-09 | `generated-disclosed` | Foxhole buddy wanderer encounter modal & dialogue portrait. |
+| `public/lore_portraits/survivor_hacker.webp` | Generative-AI + pixelation/format conversion via ffmpeg | 2026-09-09 | `generated-disclosed` | Glitch / hacker wanderer encounter modal & dialogue portrait. |
+| `public/lore_portraits/survivor_corpo.webp` | Generative-AI + pixelation/format conversion via ffmpeg | 2026-09-09 | `generated-disclosed` | Corpo runner wanderer encounter modal & dialogue portrait. |
+| `public/lore_portraits/survivor_crash_queen.webp` | Generative-AI + pixelation/format conversion via ffmpeg | 2026-09-09 | `generated-disclosed` | Crash queen wanderer encounter modal & dialogue portrait. |
+| `public/lore_portraits/survivor_abg.webp` | Generative-AI + pixelation/format conversion via ffmpeg | 2026-09-09 | `generated-disclosed` | Armored battle grunt wanderer encounter modal & dialogue portrait. |
+| `public/lore_portraits/survivor_hybrid.webp` | Generative-AI + pixelation/format conversion via ffmpeg | 2026-09-09 | `generated-disclosed` | Cybernetic chimera wanderer encounter modal & dialogue portrait. |
 
 ### Temporary working assets
 

@@ -15,7 +15,8 @@ import {
     getScrapCyclerReloadEffect,
     getVesperDoctrineReloadEffect,
     getQueensMilkAlienContactHeal,
-    getQueensMilkHumanHealPenalty
+    getQueensMilkHumanHealPenalty,
+    applyIncomingDamageModifiers
 } from './runDrops.js';
 
 describe('runDrops', () => {
@@ -68,7 +69,10 @@ describe('runDrops', () => {
             // pool-index roll (0, first item) should be a WEAPON_OVERCLOCKS entry, the
             // same as it would be without any Depth Contract involvement at all.
             const drop = rollEnemyLootDrop(sequence([0.05, 0.05, 0.99, 0]), { ring: 5 });
-            const unbiasedPool = [...WEAPON_OVERCLOCKS, ...SUIT_RELICS].filter((i) => i.rarity === DROP_RARITIES.RARE);
+            // Same filter the live roll applies: unimplemented entries are not
+            // reward candidates. The assertion is still about relic-narrowing.
+            const unbiasedPool = [...WEAPON_OVERCLOCKS, ...SUIT_RELICS]
+                .filter((i) => i.implemented !== false && i.rarity === DROP_RARITIES.RARE);
             expect(drop?.id).toBe(unbiasedPool[0].id);
         });
     });
@@ -137,6 +141,25 @@ describe('runDrops', () => {
         const relic = SUIT_RELICS.find((r) => r.id === 'parasitic_magazine');
         expect(applyParasiticMagazineKill({ clipAmmo: 2, clipSize: 6, maxO2: 100 }, [relic]))
             .toEqual({ clipAmmo: 3, maxO2: 95 });
+    });
+
+    // docs/planning/depth-01-elite-and-relic-lane-2026-09-09.md D6: the O2
+    // penalty must be charged only by the relic that actually refunds the
+    // round. maxO2PenaltyPercent is a shared stat key, and Punctured Lung
+    // carries it as a ONE-TIME equip cost (applyPuncturedLungCapacity) --
+    // reading it here re-charged that 40% on every single kill.
+    it('does not re-charge a one-time capacity cost from another relic on each kill', () => {
+        const lung = SUIT_RELICS.find((r) => r.id === 'punctured_lung');
+        expect(applyParasiticMagazineKill({ clipAmmo: 2, clipSize: 6, maxO2: 60 }, [lung]))
+            .toEqual({ clipAmmo: 2, maxO2: 60 });
+    });
+
+    it('charges the Parasitic Magazine cost once per kill and nothing more', () => {
+        const para = SUIT_RELICS.find((r) => r.id === 'parasitic_magazine');
+        const lung = SUIT_RELICS.find((r) => r.id === 'punctured_lung');
+        // Both equipped: only the magazine's own 5% applies per kill.
+        expect(applyParasiticMagazineKill({ clipAmmo: 0, clipSize: 6, maxO2: 60 }, [para, lung]))
+            .toEqual({ clipAmmo: 1, maxO2: 57 });
     });
 
     it('drops enemy aggro only when False Telemetry is critical and proc succeeds', () => {
@@ -209,5 +232,67 @@ describe('runDrops', () => {
             expect(getQueensMilkHumanHealPenalty(10, [])).toBeNull();
             expect(getQueensMilkHumanHealPenalty(0, [relic])).toBeNull();
         });
+    });
+
+    describe('applyIncomingDamageModifiers (Glass Cannon Core / takenDamageMult)', () => {
+        const glassCannon = WEAPON_OVERCLOCKS.find((o) => o.id === 'glass_cannon_core');
+
+        it('returns original damage when no modifiers are equipped', () => {
+            expect(applyIncomingDamageModifiers(20, [], [])).toBe(20);
+            expect(applyIncomingDamageModifiers(0, [glassCannon], [])).toBe(0);
+        });
+
+        it('multiplies incoming damage by takenDamageMult when glass_cannon_core is equipped', () => {
+            expect(glassCannon).toBeDefined();
+            expect(glassCannon.stats.takenDamageMult).toBe(1.5);
+            // 20 * 1.5 = 30
+            expect(applyIncomingDamageModifiers(20, [glassCannon], [])).toBe(30);
+        });
+
+        it('ignores invalid, non-finite, or non-positive multipliers', () => {
+            const badMod = { stats: { takenDamageMult: -1 } };
+            const zeroMod = { stats: { takenDamageMult: 0 } };
+            const nanMod = { stats: { takenDamageMult: NaN } };
+            expect(applyIncomingDamageModifiers(20, [badMod, zeroMod, nanMod], [])).toBe(20);
+        });
+    });
+
+    // docs/planning/depth-01-elite-and-relic-lane-2026-09-09.md D6 /
+    // Astra plan section 23: "existing incomplete promises are connected
+    // through gameplay or removed from player-facing claims until ready".
+    //
+    // Nine of the nineteen catalog entries declare an effect nothing reads --
+    // three carry stat keys with no consumer anywhere (slowMult, maxBounces,
+    // poisonDuration/tickDamage) and six carry no stats at all. Granting one as
+    // a reward hands the player an item that does literally nothing. They stay
+    // in the catalog so the Vault and the debug museum can still show them; the
+    // live drop roll skips them until their effect exists.
+    it('never rolls an unimplemented item as a reward', () => {
+        const always = () => 0; // pass every chance gate, take the first pool entry
+        for (let i = 0; i < 200; i++) {
+            const drop = rollEnemyLootDrop(() => (i % 97) / 97, { isElite: true, ring: 5 });
+            if (drop) expect(drop.implemented, `${drop.id} is not implemented`).not.toBe(false);
+        }
+        expect(rollEnemyLootDrop(always, { isBoss: true })?.implemented).not.toBe(false);
+    });
+
+    it('marks exactly the entries with no runtime consumer', () => {
+        const inert = [...WEAPON_OVERCLOCKS, ...SUIT_RELICS]
+            .filter((item) => item.implemented === false)
+            .map((item) => item.id)
+            .sort();
+        expect(inert).toEqual([
+            'bio_vampirism', 'caustic_payload', 'chitin_membrane', 'cryo_rime',
+            'pheromone_aura', 'plasma_bounce', 'shatter_engine', 'synapse_pulse',
+            'tesla_thrusters'
+        ]);
+    });
+
+    it('still leaves a usable reward pool at every rarity it can roll', () => {
+        const live = [...WEAPON_OVERCLOCKS, ...SUIT_RELICS].filter((i) => i.implemented !== false);
+        expect(live.length).toBe(10);
+        for (const rarity of ['common', 'rare', 'mythic', 'corrupted']) {
+            expect(live.some((i) => i.rarity === rarity), `no live ${rarity} reward`).toBe(true);
+        }
     });
 });

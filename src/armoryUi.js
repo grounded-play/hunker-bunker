@@ -1,7 +1,17 @@
 import { AudioManager } from './audio.js';
 import { assetUrl } from './assetUrl.js';
 import { buildEquipOptions } from './armoryOptions.js';
-import { ITEM_TYPE, getCatalogIdsByType } from './itemOwnership.js';
+import { buildPickerTiles, resolveItemIcon } from './armoryPicker.js';
+import { WEAPON_ARCHETYPES, WEAPON_SKIN_MESHES, CHASSIS_SKIN_MODELS } from './player3dOverlay.js';
+import { CHARM_GLB_MAP, MOD_GLB_MAP } from './armoryScene.js';
+import {
+    WEAPON_SHEENS,
+    getSelectedSheen,
+    getUnlockedSheenIds,
+    selectSheen,
+    unlockAllSheens
+} from './weaponSheens.js';
+import { ITEM_TYPE, getCatalogIdsByType, getCatalogEntry } from './itemOwnership.js';
 import { unlockAllPolishes } from './operatorPolishes.js';
 import {
     ARCHETYPE_SKINS,
@@ -124,15 +134,340 @@ export function createArmoryUi({
     // rendered, but an unearned one comes back `disabled` from
     // buildEquipOptions() and is labelled so the reason is visible rather than
     // the item simply being missing from the list.
-    function optionsHtml(ids, selectedId) {
-        return buildEquipOptions({ ids, selectedId, ownership })
-            .map((opt) => `<option value="${opt.id}"`
-                + `${opt.selected ? ' selected' : ''}`
-                + `${opt.disabled ? ' disabled' : ''}`
-                + ` data-owned="${opt.owned}"`
-                + ` class="armory-option${opt.owned ? '' : ' armory-option--locked'}">`
-                + `${opt.label}</option>`)
-            .join('');
+    // docs/planning/armory-ui-overhaul-2026-09-09.md Phase 1/2: every bench
+    // control is a slot button that opens the shared tile modal, exactly the
+    // way the operator sheen picker works. Frames and fielded weapons are one
+    // control: a weapon IS a frame plus a mesh, and making the player set them
+    // separately was the source of the "finish" confusion.
+    //
+    // Weapon values are namespaced: `frame:<archetypeId>` is the factory frame
+    // for that archetype, a bare itemdef id is a skin-weapon (which implies its
+    // frame via ARCHETYPE_SKINS).
+    const FRAME_PREFIX = 'frame:';
+
+    // Which model an item renders, so its tile can show the matching economy
+    // art without a second hand-maintained icon list.
+    function modelUrlForItem(id) {
+        const key = String(id);
+        // Factory frames are namespaced `frame:<archetypeId>` and resolve
+        // against the archetype map rather than the itemdef catalog.
+        if (key.startsWith(FRAME_PREFIX)) {
+            return WEAPON_ARCHETYPES[key.slice(FRAME_PREFIX.length)] ?? null;
+        }
+        return WEAPON_SKIN_MESHES[key]
+            ?? CHARM_GLB_MAP[key]
+            ?? MOD_GLB_MAP[key]
+            ?? CHASSIS_SKIN_MODELS[key]
+            ?? null;
+    }
+
+    // Community chassis skins live under /3d/runtime/community/ and ship no
+    // economy PNG of their own, so they borrow their class's chassis art the
+    // same way steamVaultUi's catalog entry does.
+    const COMMUNITY_CLASS_ICON = Object.freeze({
+        scout: '/economy/chassis_cryo_vanguard_scout.png',
+        tank: '/economy/chassis_trench_warden_heavy.png',
+        engineer: '/economy/chassis_subterran_drill_engineer.png'
+    });
+
+    // The slot buttons used to read names straight out of this file's local
+    // CATALOG_ITEMS, which covers skins/charms/mods/chassis but no decals -- so
+    // a fitted decal rendered as a bare itemdef id ("2003"). The shared
+    // itemOwnership catalog knows them all, so it is the fallback.
+    function nameForItem(id, fallback) {
+        if (!id) return fallback;
+        return CATALOG_ITEMS[id]?.name
+            ?? getCatalogEntry(id)?.name
+            ?? String(id);
+    }
+
+    function iconForItem(id) {
+        const key = String(id);
+        if (key.startsWith('comm_')) {
+            const cls = key.split('_')[1];
+            return COMMUNITY_CLASS_ICON[cls] ?? null;
+        }
+        const entry = getCatalogEntry(id);
+        return resolveItemIcon(key, {
+            // itemOwnership's catalog carries icon paths for the families this
+            // file's local map never listed (decals in particular).
+            explicitIcon: CATALOG_ITEMS[id]?.icon ?? entry?.localImg ?? entry?.icon ?? null,
+            modelUrlFor: modelUrlForItem
+        });
+    }
+
+    // Art that 404s must degrade to the initials fallback, not to the browser's
+    // broken-image glyph. Attached after render rather than as an inline
+    // onerror so no inline handler is needed.
+    function wireTileArtFallbacks() {
+        const images = container.querySelectorAll?.('.armory-tile__art img') ?? [];
+        for (const img of images) {
+            img.addEventListener?.('error', () => {
+                img.style?.setProperty?.('display', 'none');
+                const fallback = img.parentElement?.querySelector?.('.armory-tile__art-fallback');
+                fallback?.style?.setProperty?.('display', 'grid');
+            }, { once: true });
+        }
+    }
+
+    function archetypeForSkin(skinId) {
+        const wanted = String(skinId);
+        for (const [arch, ids] of Object.entries(ARCHETYPE_SKINS)) {
+            if (ids.map(String).includes(wanted)) return arch;
+        }
+        return null;
+    }
+
+    function weaponFieldOptions(cls, loadout, allowedArchetypes) {
+        const options = [];
+        for (const arch of allowedArchetypes) {
+            options.push({
+                id: `${FRAME_PREFIX}${arch}`,
+                name: `${ARCHETYPE_NAMES[arch] || arch.replace(/_/g, ' ').toUpperCase()} — FACTORY ISSUE`,
+                owned: true,
+                disabled: false,
+                selected: loadout.archetypeId === arch && !loadout.weaponSkinId
+            });
+            const skinIds = (ARCHETYPE_SKINS[arch] || []);
+            for (const opt of buildEquipOptions({ ids: skinIds, selectedId: loadout.weaponSkinId, ownership })) {
+                options.push(opt);
+            }
+        }
+        return options;
+    }
+
+    // One descriptor per bench control: what the modal lists, what is currently
+    // in the slot, and what equipping does. Everything else about the modal is
+    // shared.
+    function pickerFields() {
+        const cls = activeClass.toLowerCase();
+        const loadout = loadoutManager.getClassLoadout(cls);
+        const allowedArchetypes = CLASS_ARCHETYPES[cls] || [DEFAULT_ARCHETYPES[cls]];
+        const decalId = loadoutManager.getEquippedDecalId?.() ?? loadoutManager.state?.suit?.decalId;
+        return {
+            weapon: {
+                title: 'PRIMARY WEAPON',
+                subtitle: 'FRAME + FIELDED MODEL // LOCKED WEAPONS REQUIRE FIELD MILESTONES',
+                options: () => weaponFieldOptions(cls, loadout, allowedArchetypes),
+                current: () => (loadout.weaponSkinId
+                    ? String(loadout.weaponSkinId)
+                    : `${FRAME_PREFIX}${loadout.archetypeId}`),
+                currentName: () => (loadout.weaponSkinId
+                    ? nameForItem(loadout.weaponSkinId, '')
+                    : `${ARCHETYPE_NAMES[loadout.archetypeId] || String(loadout.archetypeId).toUpperCase()} — FACTORY ISSUE`),
+                apply: (value) => {
+                    if (value.startsWith(FRAME_PREFIX)) {
+                        loadoutManager.setArchetype(cls, value.slice(FRAME_PREFIX.length));
+                        loadoutManager.equipWeaponSkin(cls, null);
+                        return true;
+                    }
+                    const arch = archetypeForSkin(value);
+                    if (arch) loadoutManager.setArchetype(cls, arch);
+                    return equipGuard(value, (v) => loadoutManager.equipWeaponSkin(cls, v));
+                },
+                sound: 'sfx_charm_clink_light',
+                after: () => armoryScene?.updateFromLoadout(loadoutManager, cls)
+            },
+            sheen: {
+                title: 'WEAPON SHEEN',
+                subtitle: 'TINT MATRIX // LOCKED SHEENS REQUIRE FIELD MILESTONES',
+                // Sheens are not catalog items: they carry their own unlock
+                // store, so the options are built here rather than through
+                // buildEquipOptions.
+                options: () => {
+                    const unlocked = getUnlockedSheenIds();
+                    const current = getSelectedSheen().id;
+                    return WEAPON_SHEENS.map((sheen) => ({
+                        id: `sheen:${sheen.id}`,
+                        name: sheen.name,
+                        owned: unlocked.has(sheen.id),
+                        disabled: !unlocked.has(sheen.id),
+                        selected: sheen.id === current,
+                        swatch: sheen.color
+                    }));
+                },
+                current: () => `sheen:${getSelectedSheen().id}`,
+                currentName: () => getSelectedSheen().name,
+                apply: (value) => {
+                    const id = Number(String(value).replace('sheen:', ''));
+                    const next = selectSheen(id);
+                    if (!next) {
+                        playSound('sfx_ui_denied');
+                        return false;
+                    }
+                    armoryScene?.setWeaponSheen?.(next.color);
+                    return true;
+                },
+                sound: 'sfx_charm_clink_light',
+                after: () => {}
+            },
+            charm: {
+                title: 'TACTICAL CHARM',
+                subtitle: 'WEAPON-MOUNTED TROPHY // SWINGS ON ITS SOCKET',
+                noneLabel: 'NO CHARM',
+                ids: () => getCatalogIdsByType(ITEM_TYPE.CHARM),
+                current: () => (loadout.charmId ? String(loadout.charmId) : ''),
+                currentName: () => nameForItem(loadout.charmId, 'NO CHARM'),
+                apply: (value) => equipGuard(value, (v) => loadoutManager.equipCharm(cls, v)),
+                sound: 'sfx_charm_clink_heavy',
+                after: () => armoryScene?.updateFromLoadout(loadoutManager, cls)
+            },
+            mod1: {
+                title: 'OVERCLOCK — BAY A',
+                subtitle: 'RIG MODULE // ALTERS FIELD BEHAVIOUR',
+                noneLabel: 'EMPTY BAY A',
+                ids: () => getCatalogIdsByType(ITEM_TYPE.MOD),
+                current: () => (loadout.mod1Id ? String(loadout.mod1Id) : ''),
+                currentName: () => nameForItem(loadout.mod1Id, 'EMPTY BAY A'),
+                apply: (value) => equipGuard(value, (v) => loadoutManager.equipRigModule(cls, 1, v)),
+                sound: 'sfx_overclock_socket',
+                after: () => armoryScene?.updateFromLoadout(loadoutManager, cls)
+            },
+            mod2: {
+                title: 'OVERCLOCK — BAY B',
+                subtitle: 'RIG MODULE // ALTERS FIELD BEHAVIOUR',
+                noneLabel: 'EMPTY BAY B',
+                ids: () => getCatalogIdsByType(ITEM_TYPE.MOD),
+                current: () => (loadout.mod2Id ? String(loadout.mod2Id) : ''),
+                currentName: () => nameForItem(loadout.mod2Id, 'EMPTY BAY B'),
+                apply: (value) => equipGuard(value, (v) => loadoutManager.equipRigModule(cls, 2, v)),
+                sound: 'sfx_overclock_socket',
+                after: () => armoryScene?.updateFromLoadout(loadoutManager, cls)
+            },
+            chassis: {
+                title: 'EXOSUIT CHASSIS SKIN',
+                subtitle: 'OPERATOR SHELL // WORN ON DEPLOYMENT',
+                noneLabel: 'STANDARD CHASSIS',
+                ids: () => CLASS_CHASSIS_SKINS[cls] || [],
+                current: () => (loadoutManager.getEquippedChassisSkinId() ? String(loadoutManager.getEquippedChassisSkinId()) : ''),
+                currentName: () => nameForItem(loadoutManager.getEquippedChassisSkinId(), 'STANDARD CHASSIS'),
+                apply: (value) => equipGuard(value || null, (v) => loadoutManager.equipChassisSkin(v)),
+                sound: 'sfx_overclock_socket',
+                after: (value) => armoryScene?.setChassisSkin?.(value || null, cls)
+            },
+            decal: {
+                title: 'SHOULDER PATCH & INSIGNIA',
+                subtitle: 'UNIT MARKING // SHOULDER PLATE',
+                noneLabel: 'DEFAULT INSIGNIA',
+                ids: () => getCatalogIdsByType(ITEM_TYPE.DECAL),
+                current: () => (decalId ? String(decalId) : ''),
+                currentName: () => nameForItem(decalId, 'DEFAULT INSIGNIA'),
+                apply: (value) => equipGuard(value, (v) => loadoutManager.equipDecal(v)),
+                sound: 'sfx_charm_clink_light',
+                after: (value) => armoryScene?.setDecal(value || null)
+            }
+        };
+    }
+
+    // The closed slot: current selection's art and name, plus a CHANGE hint.
+    function slotHtml(fieldKey) {
+        const field = pickerFields()[fieldKey];
+        if (!field) return '';
+        const currentId = field.current();
+        const icon = iconForItem(currentId);
+        return `<button type="button" class="armory-slot" id="armory-slot-${fieldKey}" data-field="${fieldKey}">
+            <span class="armory-slot__art">${icon
+                ? `<img src="${assetUrl(icon)}" alt="" loading="lazy">`
+                : '<span class="armory-slot__art-empty"></span>'}</span>
+            <span class="armory-slot__body">
+                <span class="armory-slot__name">${field.currentName()}</span>
+                <span class="armory-slot__hint">CHANGE</span>
+            </span>
+        </button>`;
+    }
+
+    // docs/planning/armory-ui-overhaul-2026-09-09.md Phase 1: tile menus in
+    // place of <select>. A dropdown cannot show what an item looks like and
+    // names every locked entry outright, which gives away the unlock. Tiles
+    // show the art and withhold the name -- locked ones are blurred, marked `?`
+    // and carry a deterministic scramble of the real name so the grid keeps its
+    // shape. Ownership still comes from buildEquipOptions/equipGuard.
+    // Column count is derived from how many tiles there are so the grid always
+    // fits the modal without scrolling: few items get big boxes, a long list
+    // (community chassis skins run past thirty) shrinks to fit instead of
+    // spilling into a scrollbar.
+    function pickerColumns(count) {
+        if (count <= 4) return Math.max(2, count);
+        return Math.min(9, Math.max(4, Math.ceil(Math.sqrt(count * 1.7))));
+    }
+
+    function pickerHtml(pickerId, options, { noneLabel = null, selectedId = null } = {}) {
+        const tiles = buildPickerTiles(options, { iconFor: iconForItem });
+        const swatchById = new Map((options ?? []).map((o) => [String(o.id), o.swatch ?? null]));
+        const columns = pickerColumns(tiles.length + (noneLabel ? 1 : 0));
+        const noneTile = noneLabel
+            ? `<button type="button" class="armory-tile armory-tile--none${!selectedId ? ' is-selected' : ''}"
+                    data-value="" aria-label="${noneLabel}">
+                    <span class="armory-tile__art armory-tile__art--empty"></span>
+                    <span class="armory-tile__name">${noneLabel}</span>
+               </button>`
+            : '';
+        const body = tiles.map((tile) => {
+            const rarity = CATALOG_ITEMS[tile.id]?.rarity ?? 'common';
+            const swatch = swatchById.get(tile.id);
+            const initials = tile.locked ? '' : (tile.realName.match(/[A-Z0-9]/g)?.slice(0, 3).join('') || '');
+            const art = swatch
+                ? `<span class="armory-tile__swatch" style="--tile-swatch:${swatch}"></span>`
+                : (tile.icon
+                    ? `<img src="${assetUrl(tile.icon)}" alt="" loading="lazy">`
+                        + `<span class="armory-tile__art-fallback" style="display:none">${initials}</span>`
+                    : `<span class="armory-tile__art-fallback">${initials}</span>`);
+            return `<button type="button"
+                    class="armory-tile${tile.locked ? ' is-locked' : ''}${tile.selected ? ' is-selected' : ''}"
+                    data-value="${tile.id}"
+                    data-rarity="${rarity}"
+                    ${tile.locked ? 'aria-disabled="true"' : ''}
+                    aria-label="${tile.ariaLabel}"
+                    title="${tile.locked ? 'Locked' : tile.realName}">
+                    <span class="armory-tile__art">${art}${tile.locked ? '<span class="armory-tile__glyph">?</span>' : ''}</span>
+                    <span class="armory-tile__name">${tile.name}</span>
+                    ${tile.devUnlocked ? '<span class="armory-tile__badge">DEV UNLOCK</span>' : ''}
+                </button>`;
+        }).join('');
+        return `<div class="armory-picker" id="${pickerId}" role="listbox" style="--picker-cols:${columns}">${noneTile}${body}</div>`;
+    }
+
+    // Which slot's modal is open, so a re-render can restore it. render()
+    // rewrites the whole container, so the modal has to be reopened rather
+    // than merely left in the DOM.
+    let openField = null;
+
+    function closePickerModal() {
+        openField = null;
+        const modal = container.querySelector?.('#armory-picker-modal');
+        modal?.classList?.add?.('hidden');
+        modal?.setAttribute?.('aria-hidden', 'true');
+    }
+
+    function openPickerModal(fieldKey) {
+        const field = pickerFields()[fieldKey];
+        if (!field) return;
+        openField = fieldKey;
+        const modal = container.querySelector?.('#armory-picker-modal');
+        if (!modal) return;
+        const selectedId = field.current();
+        const options = field.options
+            ? field.options()
+            : buildEquipOptions({ ids: field.ids(), selectedId, ownership });
+        const titleEl = container.querySelector?.('#armory-picker-title');
+        const subEl = container.querySelector?.('#armory-picker-subtitle');
+        const gridWrap = container.querySelector?.('#armory-picker-body');
+        const readName = container.querySelector?.('#armory-picker-readout-name');
+        const readState = container.querySelector?.('#armory-picker-readout-state');
+        if (titleEl) titleEl.textContent = `◆ ${field.title}`;
+        if (subEl) subEl.textContent = field.subtitle ?? '';
+        if (gridWrap) {
+            gridWrap.innerHTML = pickerHtml('armory-picker-grid', options, {
+                noneLabel: field.noneLabel ?? null,
+                selectedId
+            });
+        }
+        if (readName) readName.textContent = field.currentName();
+        if (readState) readState.textContent = 'EQUIPPED';
+        modal.classList?.remove?.('hidden');
+        modal.setAttribute?.('aria-hidden', 'false');
+        wireTileArtFallbacks();
+        bindPickerGrid();
     }
 
     // Defence in depth behind the `disabled` attribute: a change event can
@@ -161,11 +496,16 @@ export function createArmoryUi({
         const loadout = loadoutManager.getClassLoadout(cls);
         const archetype = loadout.archetypeId || DEFAULT_ARCHETYPES[cls];
         const modifiers = loadoutManager.getActiveModifiers(cls);
-        const allowedArchetypes = CLASS_ARCHETYPES[cls] || [archetype];
-        const allowedSkins = ARCHETYPE_SKINS[archetype] || [];
-        const allowedChassisSkins = CLASS_CHASSIS_SKINS[cls] || [];
         const chassisSkinId = loadoutManager.getEquippedChassisSkinId?.();
-        const selectedFinish = loadout.weaponSkinId ? (CATALOG_ITEMS[loadout.weaponSkinId]?.name || loadout.weaponSkinId) : 'STANDARD FACTORY FINISH';
+        const selectedFinish = loadout.weaponSkinId ? (CATALOG_ITEMS[loadout.weaponSkinId]?.name || loadout.weaponSkinId) : 'FACTORY ISSUE';
+
+        const hasActiveOverclocks = Boolean(
+            (modifiers.scrapMagnetRadiusBonus > 0) ||
+            (modifiers.cryoDurationMultiplier > 1.0) ||
+            (modifiers.kineticPierceBonus > 0) ||
+            (modifiers.gasDamageReduction > 0) ||
+            modifiers.dashRefundOnMultiKill
+        );
 
         if (typeof document !== 'undefined') {
             const screen = document.getElementById('armory-screen');
@@ -189,12 +529,12 @@ export function createArmoryUi({
                     </div>
                     <div class="armory-operator-status">
                         <div class="armory-class-tabs" role="tablist">
-                            <button type="button" class="class-tab ${cls === 'scout' ? 'active' : ''}" data-class="scout">↗ SCOUT</button>
+                            <button type="button" class="class-tab ${cls === 'scout' ? 'active' : ''}" data-class="scout">◈ SCOUT</button>
                             <button type="button" class="class-tab ${cls === 'tank' ? 'active' : ''}" data-class="tank">▰ TANK</button>
-                            <button type="button" class="class-tab ${cls === 'engineer' ? 'active' : ''}" data-class="engineer">⚙ ENGINEER</button>
+                            <button type="button" class="class-tab ${cls === 'engineer' ? 'active' : ''}" data-class="engineer">◆ ENGINEER</button>
                         </div>
                         <button type="button" class="armory-debug-skins-btn ${ownership.isUnlockAll() ? 'active' : ''}" id="armory-debug-unlock-skins-btn" title="Toggle debug unlock for all weapon/chassis skins, charms, and polishes">
-                            ${ownership.isUnlockAll() ? '✓ ALL SKINS UNLOCKED' : '⚡ UNLOCK ALL SKINS (DEBUG)'}
+                            ${ownership.isUnlockAll() ? '✓ ALL SKINS UNLOCKED' : '[DEBUG] UNLOCK ALL SKINS'}
                         </button>
                         <span class="status-cycle-hint">[Q / E CYCLE]</span>
                         <button type="button" class="calibrate-btn open-settings-btn armory-settings-btn" id="armory-settings-btn" title="Open Settings" aria-label="Open Settings">⚙</button>
@@ -209,7 +549,7 @@ export function createArmoryUi({
                                 <div class="armory-stage-readout__eyebrow">◈ LIVE STAGE PREVIEW</div>
                                 <div class="armory-stage-readout__title">${activeClass.toUpperCase()} // ${ARCHETYPE_NAMES[archetype] || archetype}</div>
                                 <div class="armory-stage-readout__details">
-                                    <span class="armory-stage-readout__chip"><b>FINISH:</b> ${selectedFinish}</span>
+                                    <span class="armory-stage-readout__chip"><b>WEAPON:</b> ${selectedFinish}</span>
                                     <span class="armory-stage-readout__chip"><b>CHASSIS:</b> ${chassisSkinId ? (CATALOG_ITEMS[chassisSkinId]?.name || chassisSkinId) : 'STANDARD'}</span>
                                 </div>
                             </div>
@@ -226,112 +566,112 @@ export function createArmoryUi({
                         <!-- WEAPON BENCH (UPPER RIGHT) -->
                         <section class="armory-panel weapon-bench-panel" aria-label="Weapon Bench">
                             <div class="panel-header">
-                                <span class="panel-icon">⚔️</span>
+                                <span class="panel-icon" aria-hidden="true">
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                        <circle cx="12" cy="12" r="9"/>
+                                        <line x1="12" y1="3" x2="12" y2="7"/>
+                                        <line x1="12" y1="17" x2="12" y2="21"/>
+                                        <line x1="3" y1="12" x2="7" y2="12"/>
+                                        <line x1="17" y1="12" x2="21" y2="12"/>
+                                    </svg>
+                                </span>
                                 <h2>BALLISTIC BENCH &amp; OVERCLOCKS</h2>
                             </div>
 
-                            <!-- WEAPON ARCHETYPE -->
+                            <!-- PRIMARY WEAPON: frame + fielded model in one slot -->
                             <div class="bench-field">
-                                <label>PRIMARY WEAPON PLATFORM</label>
-                                <select id="armory-archetype-select" class="armory-select">
-                                    ${allowedArchetypes.map((id) => `
-                                        <option value="${id}" ${archetype === id ? 'selected' : ''}>
-                                            ${ARCHETYPE_NAMES[id] || id.replace(/_/g, ' ').toUpperCase()}
-                                        </option>
-                                    `).join('')}
-                                </select>
+                                <label>PRIMARY WEAPON</label>
+                                ${slotHtml('weapon')}
                             </div>
 
-                            <!-- 3D WEAPON SKIN -->
+                            <!-- WEAPON SHEEN: a real tint now, not a mesh swap -->
                             <div class="bench-field">
-                                <label>WEAPON SHEEN / TACTICAL FINISH</label>
-                                <select id="armory-skin-select" class="armory-select">
-                                    <option value="">[STANDARD FACTORY FINISH]</option>
-                                    ${optionsHtml(allowedSkins, loadout.skinId)}
-                                </select>
+                                <label>WEAPON SHEEN</label>
+                                ${slotHtml('sheen')}
                             </div>
 
-                            <div class="bench-row-two-col">
-                                <!-- CHARM -->
-                                <div class="bench-field">
-                                    <label>TACTICAL CHARM</label>
-                                    <select id="armory-charm-select" class="armory-select">
-                                        <option value="">[NO CHARM ATTACHED]</option>
-                                        ${optionsHtml(getCatalogIdsByType(ITEM_TYPE.CHARM), loadout.charmId)}
-                                    </select>
-                                </div>
+                            <!-- CHARM -->
+                            <div class="bench-field">
+                                <label>TACTICAL CHARM</label>
+                                ${slotHtml('charm')}
                             </div>
 
                             <div class="bench-row-two-col">
                                 <!-- RIG MOD 1 -->
                                 <div class="bench-field">
                                     <label>OVERCLOCK — BAY A</label>
-                                    <select id="armory-mod1-select" class="armory-select">
-                                        <option value="">[EMPTY OVERCLOCK BAY A]</option>
-                                        ${optionsHtml(getCatalogIdsByType(ITEM_TYPE.MOD), loadout.mod1Id)}
-                                    </select>
+                                    ${slotHtml('mod1')}
                                 </div>
 
                                 <!-- RIG MOD 2 -->
                                 <div class="bench-field">
                                     <label>OVERCLOCK — BAY B</label>
-                                    <select id="armory-mod2-select" class="armory-select">
-                                        <option value="">[EMPTY OVERCLOCK BAY B]</option>
-                                        ${optionsHtml(getCatalogIdsByType(ITEM_TYPE.MOD), loadout.mod2Id)}
-                                    </select>
+                                    ${slotHtml('mod2')}
                                 </div>
                             </div>
 
                             <!-- ACTIVE MODIFIERS TELEMETRY -->
                             <div class="modifiers-summary">
                                 <div class="modifiers-title">◈ ACTIVE COMBAT OVERCLOCKS</div>
-                                <div class="modifiers-badges">
-                                    <span class="mod-badge ${modifiers.scrapMagnetRadiusBonus > 0 ? 'active' : ''}">
-                                        🧲 Magnet: +${Math.round(modifiers.scrapMagnetRadiusBonus * 100)}%
-                                    </span>
-                                    <span class="mod-badge ${modifiers.cryoDurationMultiplier > 1.0 ? 'active' : ''}">
-                                        ❄️ Cryo: +${Math.round((modifiers.cryoDurationMultiplier - 1.0) * 100)}%
-                                    </span>
-                                    <span class="mod-badge ${modifiers.kineticPierceBonus > 0 ? 'active' : ''}">
-                                        🎯 Pierce: +${modifiers.kineticPierceBonus}
-                                    </span>
-                                    <span class="mod-badge ${modifiers.gasDamageReduction > 0 ? 'active' : ''}">
-                                        ☣️ Gas: -${Math.round(modifiers.gasDamageReduction * 100)}%
-                                    </span>
-                                    <span class="mod-badge ${modifiers.dashRefundOnMultiKill ? 'active' : ''}">
-                                        ⚡ Dash Refund: ${modifiers.dashRefundOnMultiKill ? 'READY' : 'OFF'}
-                                    </span>
-                                </div>
+                                ${hasActiveOverclocks ? `
+                                    <div class="modifiers-badges">
+                                        ${modifiers.scrapMagnetRadiusBonus > 0 ? `
+                                            <span class="mod-badge active">
+                                                <span class="mod-tag">[MAG]</span> Magnet: +${Math.round(modifiers.scrapMagnetRadiusBonus * 100)}%
+                                            </span>
+                                        ` : ''}
+                                        ${modifiers.cryoDurationMultiplier > 1.0 ? `
+                                            <span class="mod-badge active">
+                                                <span class="mod-tag">[CRYO]</span> Cryo: +${Math.round((modifiers.cryoDurationMultiplier - 1.0) * 100)}%
+                                            </span>
+                                        ` : ''}
+                                        ${modifiers.kineticPierceBonus > 0 ? `
+                                            <span class="mod-badge active">
+                                                <span class="mod-tag">[PRC]</span> Pierce: +${modifiers.kineticPierceBonus}
+                                            </span>
+                                        ` : ''}
+                                        ${modifiers.gasDamageReduction > 0 ? `
+                                            <span class="mod-badge active">
+                                                <span class="mod-tag">[BIO]</span> Gas Resist: -${Math.round(modifiers.gasDamageReduction * 100)}%
+                                            </span>
+                                        ` : ''}
+                                        ${modifiers.dashRefundOnMultiKill ? `
+                                            <span class="mod-badge active">
+                                                <span class="mod-tag">[DASH]</span> Multi-Kill Dash Refund: ACTIVE
+                                            </span>
+                                        ` : ''}
+                                    </div>
+                                ` : `
+                                    <div class="modifiers-standby">
+                                        <span class="standby-status-pill">STANDBY</span>
+                                        <span class="standby-desc">NO OVERCLOCKS LINKED // BAYS A &amp; B READY</span>
+                                    </div>
+                                `}
                             </div>
                         </section>
 
                         <!-- SUIT BENCH (LOWER RIGHT) -->
                         <section class="armory-panel suit-bench-panel" aria-label="Suit Bench">
                             <div class="panel-header">
-                                <span class="panel-icon">🛡️</span>
+                                <span class="panel-icon" aria-hidden="true">
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                                    </svg>
+                                </span>
                                 <h2>OPERATOR EXOSUIT RIG</h2>
                             </div>
                             <div class="bench-field">
                                 <label>CHASSIS SPECIFICATION</label>
                                 <div class="field-value">${activeClass.toUpperCase()} MK-IV SUB-ZERO PRESSURIZED</div>
                             </div>
-                            <div class="bench-row-two-col">
+                            <div class="bench-stack">
                                 <div class="bench-field">
                                     <label>EXOSUIT CHASSIS SKIN</label>
-                                    <select id="armory-chassis-select" class="armory-select">
-                                        <option value="">[STANDARD CLASS CHASSIS]</option>
-                                        ${optionsHtml(allowedChassisSkins, chassisSkinId)}
-                                    </select>
+                                    ${slotHtml('chassis')}
                                 </div>
                                 <div class="bench-field">
                                     <label>SHOULDER PATCH &amp; INSIGNIA</label>
-                                    <select id="armory-decal-select" class="armory-select">
-                                        <option value="">[DEFAULT CLASS INSIGNIA]</option>
-                                        ${optionsHtml(
-                                            getCatalogIdsByType(ITEM_TYPE.DECAL),
-                                            loadoutManager.getEquippedDecalId?.() ?? loadoutManager.state?.suit?.decalId
-                                        )}
-                                    </select>
+                                    ${slotHtml('decal')}
                                 </div>
                             </div>
                             <div class="telemetry-box">
@@ -356,73 +696,70 @@ export function createArmoryUi({
                         EMBARK TO BUNKER &gt;&gt; <span class="btn-keyhint">[ENTER / A]</span>
                     </button>
                 </footer>
+
+                <!-- Shared tile picker, mirroring the operator sheen modal. -->
+                <div id="armory-picker-modal" class="modal hidden armory-picker-modal" aria-hidden="true">
+                    <div class="modal-content armory-picker-modal-content">
+                        <div class="terminal-scanline"></div>
+                        <button class="close-modal" id="armory-picker-close" aria-label="Close">×</button>
+                        <div class="armory-picker-title" id="armory-picker-title">◆ SELECT</div>
+                        <div class="armory-picker-subtitle" id="armory-picker-subtitle"></div>
+                        <div id="armory-picker-body"></div>
+                        <div class="armory-picker-readout">
+                            <span id="armory-picker-readout-name"></span>
+                            <span id="armory-picker-readout-state"></span>
+                        </div>
+                    </div>
+                </div>
             </div>
         `;
 
         bindEvents();
+        // A re-render rebuilds the container, so a modal that was open has to
+        // be reopened rather than merely surviving in the DOM.
+        if (openField) openPickerModal(openField);
         if (focusedControlId) {
             container.querySelector?.(`#${focusedControlId}`)?.focus?.({ preventScroll: true });
         }
     }
 
+    // One delegated click handler on the modal grid. Tiles carry their id in
+    // `data-value`; the empty-string tile is the "none equipped" entry. Locked
+    // tiles are refused here AND by equipGuard, so a hand-edited DOM still
+    // cannot equip something unearned.
+    function bindPickerGrid() {
+        container.querySelector?.('#armory-picker-grid')?.addEventListener?.('click', (event) => {
+            const tile = event.target.closest?.('.armory-tile');
+            if (!tile) return;
+            if (tile.classList.contains('is-locked')) {
+                playSound('sfx_ui_denied');
+                return;
+            }
+            const field = pickerFields()[openField];
+            if (!field) return;
+            const value = tile.dataset.value ?? '';
+            if (!field.apply(value)) return;
+            playSound(field.sound);
+            field.after?.(value);
+            closePickerModal();
+            render();
+        });
+    }
+
     function bindEvents() {
-        const cls = activeClass.toLowerCase();
-
-        // Archetype switch
-        container.querySelector('#armory-archetype-select')?.addEventListener('change', (e) => {
-            loadoutManager.setArchetype(cls, e.target.value);
-            playSound('sfx_overclock_socket');
-            armoryScene?.updateFromLoadout(loadoutManager, cls);
-            render();
+        // Every bench control opens the shared tile modal.
+        for (const fieldKey of ['weapon', 'sheen', 'charm', 'mod1', 'mod2', 'chassis', 'decal']) {
+            container.querySelector?.(`#armory-slot-${fieldKey}`)?.addEventListener?.('click', () => {
+                playSound('ui_click');
+                openPickerModal(fieldKey);
+            });
+        }
+        container.querySelector?.('#armory-picker-close')?.addEventListener?.('click', () => {
+            playSound('ui_click');
+            closePickerModal();
         });
-
-        // Weapon Skin switch
-        container.querySelector('#armory-skin-select')?.addEventListener('change', (e) => {
-            if (!equipGuard(e.target.value, (v) => loadoutManager.equipWeaponSkin(cls, v))) return;
-            playSound('sfx_charm_clink_light');
-            armoryScene?.updateFromLoadout(loadoutManager, cls);
-            render();
-        });
-
-        // Operator chassis skin switch
-        container.querySelector('#armory-chassis-select')?.addEventListener('change', (e) => {
-            const chassisSkinId = e.target.value || null;
-            if (!equipGuard(chassisSkinId, (v) => loadoutManager.equipChassisSkin(v))) return;
-            playSound('sfx_overclock_socket');
-            armoryScene?.setChassisSkin?.(chassisSkinId, cls);
-            render();
-        });
-
-        // Charm switch
-        container.querySelector('#armory-charm-select')?.addEventListener('change', (e) => {
-            if (!equipGuard(e.target.value, (v) => loadoutManager.equipCharm(cls, v))) return;
-            playSound('sfx_charm_clink_heavy');
-            armoryScene?.updateFromLoadout(loadoutManager, cls);
-            render();
-        });
-
-        // Mod 1 switch
-        container.querySelector('#armory-mod1-select')?.addEventListener('change', (e) => {
-            if (!equipGuard(e.target.value, (v) => loadoutManager.equipRigModule(cls, 1, v))) return;
-            playSound('sfx_overclock_socket');
-            armoryScene?.updateFromLoadout(loadoutManager, cls);
-            render();
-        });
-
-        // Mod 2 switch
-        container.querySelector('#armory-mod2-select')?.addEventListener('change', (e) => {
-            if (!equipGuard(e.target.value, (v) => loadoutManager.equipRigModule(cls, 2, v))) return;
-            playSound('sfx_overclock_socket');
-            armoryScene?.updateFromLoadout(loadoutManager, cls);
-            render();
-        });
-
-        // Decal switch
-        container.querySelector('#armory-decal-select')?.addEventListener('change', (e) => {
-            if (!equipGuard(e.target.value, (v) => loadoutManager.equipDecal(v))) return;
-            armoryScene?.setDecal(e.target.value || null);
-            playSound('sfx_charm_clink_light');
-            render();
+        container.querySelector?.('#armory-picker-modal')?.addEventListener?.('click', (event) => {
+            if (event.target?.id === 'armory-picker-modal') closePickerModal();
         });
 
         // Class tabs
@@ -471,6 +808,7 @@ export function createArmoryUi({
             ownership.setUnlockAll(next);
             if (next) {
                 unlockAllPolishes();
+            unlockAllSheens();
             }
             playSound('ui_click_confirm1');
             render();

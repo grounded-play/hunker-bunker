@@ -72,3 +72,45 @@ describe('ThreeGame.emitDepthTierChanged Depth Contract wiring', () => {
         expect(event.detail.crossing).toBeDefined();
     });
 });
+
+// User report 2026-09-09: a brand-new profile showed "DEPTH ABYSS" beside
+// zeroed run/death/time stats. getSpawnTile() deliberately parks the menu
+// showcase in chunk (100, 100) to keep it blank, and getDepthTier() measures
+// distance from chunk (0, 0) -- so the animation loop's chunk-visibility pass
+// recorded tier 3 into the persistent arc signals while the player was still
+// sitting on the title screen, before a run had ever started.
+describe('ThreeGame.updateDepthTierProgress menu guard', () => {
+    function fakeGame(performanceProfile) {
+        return {
+            performanceProfile,
+            maxDepthTierReached: 0,
+            getDepthTier: (x, z) => (Math.hypot(x, z) >= 9 ? 3 : 0),
+            getDepthTierName: () => 'ABYSS',
+            arcManager: { recordSignal: vi.fn(), evaluate: vi.fn() },
+            emitDepthTierChanged: vi.fn()
+        };
+    }
+
+    it('does not record depth progression from the menu showcase chunk', () => {
+        const fake = fakeGame('menu');
+        ThreeGame.prototype.updateDepthTierProgress.call(fake, 100, 100);
+        expect(fake.arcManager.recordSignal).not.toHaveBeenCalled();
+        expect(fake.maxDepthTierReached).toBe(0);
+        expect(fake.emitDepthTierChanged).not.toHaveBeenCalled();
+    });
+
+    it('still records real gameplay depth', () => {
+        const fake = fakeGame('gameplay');
+        ThreeGame.prototype.updateDepthTierProgress.call(fake, 100, 100);
+        expect(fake.arcManager.recordSignal).toHaveBeenCalledWith({ deepestDepthTier: 3 });
+        expect(fake.maxDepthTierReached).toBe(3);
+    });
+
+    it('still tracks the current tier in the menu, it just does not persist it', () => {
+        // currentDepthTier drives live systems (O2 drain, salvage, elite rolls)
+        // and must stay truthful; only the persisted career signal is gated.
+        const fake = fakeGame('menu');
+        ThreeGame.prototype.updateDepthTierProgress.call(fake, 100, 100);
+        expect(fake.currentDepthTier).toBe(3);
+    });
+});

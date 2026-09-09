@@ -146,10 +146,14 @@
     "3d/runtime/parasite.glb",
     "3d/runtime/queen.glb",
     "3d/runtime/radar.glb",
+    "3d/runtime/secrets/mayor-tina-rigged.glb",
+    "3d/runtime/secrets/mayor-tina.glb",
+    "3d/runtime/secrets/teacup-roach.glb",
     "3d/runtime/spore-snail-boss.glb",
     "3d/runtime/storage-locker.glb",
     "3d/runtime/tank-rigged.glb",
     "3d/scouting-scout/Scout.game.glb",
+    "Cockroach_transform.mp4",
     "DoorIntro.mp4",
     "DoorIntro.webm",
     "Eng.Full_v2.png",
@@ -638,6 +642,8 @@
     "interstitials/motion/int_30_kaelen_is_the_grid_motion_v1.webm",
     "interstitials/motion/int_31_mother_of_the_last_world_motion_v1.webm",
     "kaelen_camp_walk_v2.png",
+    "lore_portraits/bunker_announcer.webp",
+    "lore_portraits/mayor_tina.webp",
     "lore_portraits/meridian_kaelen.jpg",
     "lore_portraits/meridian_kaelen.png",
     "lore_portraits/queen_00.webp",
@@ -648,10 +654,16 @@
     "lore_portraits/survivor_04.webp",
     "lore_portraits/survivor_05.webp",
     "lore_portraits/survivor_06.webp",
+    "lore_portraits/survivor_07.webp",
     "lore_portraits/survivor_08.webp",
-    "lore_portraits/survivor_09.webp",
     "lore_portraits/survivor_10.webp",
     "lore_portraits/survivor_11.webp",
+    "lore_portraits/survivor_abg.webp",
+    "lore_portraits/survivor_corpo.webp",
+    "lore_portraits/survivor_crash_queen.webp",
+    "lore_portraits/survivor_foxhole.webp",
+    "lore_portraits/survivor_hacker.webp",
+    "lore_portraits/survivor_hybrid.webp",
     "lore_portraits/tallow_martha.png",
     "lore_portraits/tallow_martha.webp",
     "lore_portraits/vesper_briggs.png",
@@ -1206,7 +1218,7 @@
     },
     {
       "path": "3d/runtime/new3ds/mod_echo_location_transceiver.glb",
-      "bytes": 30854568,
+      "bytes": 4479148,
       "classification": "runtime-required"
     },
     {
@@ -1221,7 +1233,7 @@
     },
     {
       "path": "3d/runtime/new3ds/mod_symbiotic_adrenaline_pump.glb",
-      "bytes": 40393748,
+      "bytes": 5478680,
       "classification": "runtime-required"
     },
     {
@@ -1520,6 +1532,21 @@
       "classification": "runtime-required"
     },
     {
+      "path": "3d/runtime/secrets/mayor-tina-rigged.glb",
+      "bytes": 6018488,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/secrets/mayor-tina.glb",
+      "bytes": 5297812,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/secrets/teacup-roach.glb",
+      "bytes": 5722292,
+      "classification": "runtime-required"
+    },
+    {
       "path": "3d/runtime/spore-snail-boss.glb",
       "bytes": 5822668,
       "classification": "runtime-required"
@@ -1538,6 +1565,16 @@
       "path": "3d/scouting-scout/Scout.game.glb",
       "bytes": 7948504,
       "classification": "runtime-required"
+    },
+    {
+      "path": "Cockroach_transform.mp4",
+      "bytes": 6896148,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "Cockroach_transform.webm",
+      "bytes": 2148216,
+      "classification": "unknown"
     },
     {
       "path": "DoorIntro.mp4",
@@ -5755,6 +5792,16 @@
       "classification": "runtime-required"
     },
     {
+      "path": "lore_portraits/bunker_announcer.webp",
+      "bytes": 6466,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "lore_portraits/mayor_tina.webp",
+      "bytes": 11430,
+      "classification": "runtime-required"
+    },
+    {
       "path": "lore_portraits/meridian_kaelen.jpg",
       "bytes": 994213,
       "classification": "runtime-required"
@@ -5827,6 +5874,36 @@
     {
       "path": "lore_portraits/survivor_11.webp",
       "bytes": 3790,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "lore_portraits/survivor_abg.webp",
+      "bytes": 8580,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "lore_portraits/survivor_corpo.webp",
+      "bytes": 9226,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "lore_portraits/survivor_crash_queen.webp",
+      "bytes": 11868,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "lore_portraits/survivor_foxhole.webp",
+      "bytes": 10386,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "lore_portraits/survivor_hacker.webp",
+      "bytes": 11162,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "lore_portraits/survivor_hybrid.webp",
+      "bytes": 12026,
       "classification": "runtime-required"
     },
     {

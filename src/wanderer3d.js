@@ -38,8 +38,15 @@ export async function createWanderer3dInstance({
         const gltf = await loadWandererGltf(glbUrl);
         if (gltf && gltf.scene) {
             const clonedScene = cloneSkeleton(gltf.scene);
-            clonedScene.scale.setScalar(scale);
-            clonedScene.position.set(0, 0, 0);
+            const ownedMaterials = new Set();
+            clonedScene.updateMatrixWorld(true);
+            const bounds = new THREE.Box3().setFromObject(clonedScene);
+            const height = Math.max(0.001, bounds.max.y - bounds.min.y);
+            clonedScene.scale.multiplyScalar((1.8 * scale / 0.85) / height);
+            clonedScene.updateMatrixWorld(true);
+            bounds.setFromObject(clonedScene);
+            const center = bounds.getCenter(new THREE.Vector3());
+            clonedScene.position.add(new THREE.Vector3(-center.x, -bounds.min.y, -center.z));
 
             // Traverse and ensure shadows/materials
             clonedScene.traverse((child) => {
@@ -47,7 +54,13 @@ export async function createWanderer3dInstance({
                     child.castShadow = true;
                     child.receiveShadow = true;
                     if (child.material) {
-                        child.material.roughness = Math.max(0.3, child.material.roughness || 0.6);
+                        const cloneMaterial = (source) => {
+                            const material = source.clone();
+                            ownedMaterials.add(material);
+                            return material;
+                        };
+                        child.material = Array.isArray(child.material)
+                            ? child.material.map(cloneMaterial) : cloneMaterial(child.material);
                     }
                 }
             });
@@ -76,6 +89,9 @@ export async function createWanderer3dInstance({
                 },
                 dispose: () => {
                     if (mixer) mixer.stopAllAction();
+                    mixer?.uncacheRoot(clonedScene);
+                    for (const material of ownedMaterials) material.dispose();
+                    ownedMaterials.clear();
                 }
             };
         }

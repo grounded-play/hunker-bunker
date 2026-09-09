@@ -1,3 +1,5 @@
+import { SURVIVOR_REWARDS } from './survivorContract.js';
+
 const STORAGE_KEY = 'hb_bank';
 const BANK_SCHEMA_VERSION = 8;
 
@@ -366,6 +368,7 @@ function createDefaultState() {
         baseTurretHp: 100,
         weaponUpgrades: createDefaultWeaponUpgrades(),
         unlockedSkills: [],
+        claimedSurvivorRewards: [],
         shells: 0
     };
 }
@@ -457,6 +460,10 @@ function toSerializableState(raw) {
     base.tech = clampCount(raw.tech);
     base.coin = clampCount(raw.coin);
     base.shells = clampCount(raw.shells);
+    base.claimedSurvivorRewards = [...new Set(
+        (Array.isArray(raw.claimedSurvivorRewards) ? raw.claimedSurvivorRewards : [])
+            .filter((id) => Object.hasOwn(SURVIVOR_REWARDS, id))
+    )];
     base.foundryActivated = Boolean(raw.foundryActivated);
 
     let derivedLevel = 0;
@@ -543,7 +550,8 @@ function cloneState(state) {
         unlockedSkills: [
             ...(state.unlockedSkills ?? [])
         ],
-        shells: clampCount(state.shells)
+        shells: clampCount(state.shells),
+        claimedSurvivorRewards: [...(state.claimedSurvivorRewards ?? [])]
     };
 }
 
@@ -650,6 +658,23 @@ export class BankManager {
 
     getShells() {
         return clampCount(this.state.shells);
+    }
+
+    claimSurvivorReward(contractId) {
+        const reward = SURVIVOR_REWARDS[contractId];
+        if (!reward || this.state.claimedSurvivorRewards.includes(contractId)) return false;
+        const next = toSerializableState({
+            ...this.state,
+            shells: this.getShells() + reward.shells,
+            claimedSurvivorRewards: [...this.state.claimedSurvivorRewards, contractId]
+        });
+        // Persist currency and receipt together. A failed write leaves the
+        // live balance untouched and the contract can retry its pending grant.
+        this.storage?.setItem(this.storageKey, JSON.stringify(next));
+        this.state = next;
+        emit('shells-changed', { shells: next.shells, gained: reward.shells, bank: this.getState() });
+        emit('bank-updated', { bank: this.getState() });
+        return true;
     }
 
     addShells(amount = 0) {

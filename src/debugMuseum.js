@@ -215,6 +215,31 @@ export async function openDebugMuseum(game) {
     // watches pedestals fill in as each category's assets finish loading.
     game.player.position.set(MUSEUM_ORIGIN.x - 4, 0, MUSEUM_ORIGIN.z);
     if (typeof game.setGodMode === 'function') game.setGodMode(true);
+    // The museum is a QA space, not a level. Nothing here should stop you
+    // walking: chunk streaming still mounts real terrain around the player at
+    // these coordinates, and canOccupyPosition rejects any tile the generator
+    // marked '#'. noclip is the existing bypass for exactly that check --
+    // speed 1 rather than its 3.5 default, so movement stays normal and only
+    // the collision goes away.
+    if (typeof game.setNoclip === 'function') game.setNoclip(true, 1);
+    // ...and nothing here should be visible except what this function spawned.
+    // chunkGroups holds the whole generated world (terrain, walls, scatter),
+    // so one flag hides all of it -- the same lever the pocket mechanic uses.
+    if (game.chunkGroups) {
+        group.userData.restoreChunkGroupsVisible = game.chunkGroups.visible;
+        game.chunkGroups.visible = false;
+    }
+    // The biome sky rig paints a lit horizon and cloud layers behind
+    // everything. That is world dressing too -- a QA backdrop should be flat
+    // so an exhibit's own silhouette and colour are what you are judging.
+    if (game.skyRig?.group) {
+        group.userData.restoreSkyVisible = game.skyRig.group.visible;
+        game.skyRig.group.visible = false;
+    }
+    if (game.scene.background?.isColor) {
+        group.userData.restoreBackground = game.scene.background.clone();
+        game.scene.background.setHex(0x0b0d0f);
+    }
 
     // Studio lighting for museum corridor
     const ambient = new THREE.AmbientLight(0xffffff, 1.4);
@@ -223,22 +248,27 @@ export async function openDebugMuseum(game) {
     sunLight.position.set(MUSEUM_ORIGIN.x + 40, 40, MUSEUM_ORIGIN.z - 20);
     group.add(sunLight);
 
-    // Exhibition walkway floor
+    // Exhibition floor: the same grid backdrop as the hero-select showroom
+    // (threeGame.js's createMenuGridTexture / menuShowroomFloor), rather than
+    // a dark metal strip plus a GridHelper drawn on top of it. Square and
+    // oversized instead of a 14-wide corridor, so there is room to walk
+    // around an exhibit and view it from any side.
     const corridorLength = 280;
-    const floorGeo = new THREE.PlaneGeometry(corridorLength, 14);
-    const floorMat = new THREE.MeshStandardMaterial({
-        color: 0x081018,
-        roughness: 0.35,
-        metalness: 0.8
-    });
-    const floor = new THREE.Mesh(floorGeo, floorMat);
+    const floorSize = corridorLength + 60;
+    const gridTexture = game.createMenuGridTexture?.();
+    if (gridTexture) {
+        // The hero-select floor is 96 units at 8 repeats. Match that density
+        // so the squares stay the same real-world size on a much larger plane.
+        gridTexture.repeat?.set?.(floorSize / 12, floorSize / 12);
+    }
+    const floorMat = gridTexture
+        ? new THREE.MeshBasicMaterial({ map: gridTexture, transparent: true, opacity: 0.92 })
+        : new THREE.MeshBasicMaterial({ color: 0x101316 });
+    const floor = new THREE.Mesh(new THREE.PlaneGeometry(floorSize, floorSize), floorMat);
+    floor.name = 'debug-museum-floor';
     floor.rotation.x = -Math.PI / 2;
     floor.position.set(MUSEUM_ORIGIN.x + corridorLength * 0.5 - 10, -0.01, MUSEUM_ORIGIN.z);
     group.add(floor);
-
-    const grid = new THREE.GridHelper(corridorLength, Math.floor(corridorLength / 2), 0x00f0ff, 0x112233);
-    grid.position.set(MUSEUM_ORIGIN.x + corridorLength * 0.5 - 10, 0.005, MUSEUM_ORIGIN.z);
-    group.add(grid);
 
     const loader = createMuseumGltfLoader();
     const glbCache = new Map();
@@ -380,6 +410,16 @@ export function closeDebugMuseum(game) {
     }
     const group = game?.scene?.getObjectByName('debug-museum');
     if (!group) return false;
+    if (game.chunkGroups) {
+        game.chunkGroups.visible = group.userData.restoreChunkGroupsVisible ?? true;
+    }
+    if (game.skyRig?.group) {
+        game.skyRig.group.visible = group.userData.restoreSkyVisible ?? true;
+    }
+    if (group.userData.restoreBackground && game.scene.background?.isColor) {
+        game.scene.background.copy(group.userData.restoreBackground);
+    }
+    if (typeof game.setNoclip === 'function') game.setNoclip(false);
     group.traverse((child) => {
         child.material?.map?.dispose?.();
         child.material?.dispose?.();

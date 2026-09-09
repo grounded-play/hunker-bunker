@@ -101,3 +101,41 @@ describe('ArcStateManager', () => {
         ]);
     });
 });
+
+// User report 2026-09-09: a fresh profile showed "DEPTH ABYSS". See
+// clearUnearnedDepthSignal's comment for why the value got there.
+describe('ArcStateManager.clearUnearnedDepthSignal', () => {
+    function managerWithDepth(tier) {
+        const manager = new ArcStateManager({ storage: memoryStorage() });
+        manager.recordSignal({ deepestDepthTier: tier });
+        return manager;
+    }
+
+    it('clears a depth recorded by a player who has never finished a run', () => {
+        const manager = managerWithDepth(3);
+        expect(manager.getState().signals.deepestDepthTier).toBe(3);
+        manager.clearUnearnedDepthSignal(false);
+        expect(manager.getState().signals.deepestDepthTier).toBe(0);
+    });
+
+    it('leaves an earned depth alone', () => {
+        const manager = managerWithDepth(3);
+        manager.clearUnearnedDepthSignal(true);
+        expect(manager.getState().signals.deepestDepthTier).toBe(3);
+    });
+
+    it('is a no-op when there is nothing to clear', () => {
+        const manager = new ArcStateManager({ storage: memoryStorage() });
+        expect(manager.clearUnearnedDepthSignal(false).signals.deepestDepthTier).toBe(0);
+    });
+
+    it('does not disturb the other signals', () => {
+        const manager = managerWithDepth(3);
+        manager.recordSignal({ snailsKilled: 4, heardCaveSignal: true });
+        manager.clearUnearnedDepthSignal(false);
+        const signals = manager.getState().signals;
+        expect(signals.deepestDepthTier).toBe(0);
+        expect(signals.snailsKilled).toBe(4);
+        expect(signals.heardCaveSignal).toBe(true);
+    });
+});

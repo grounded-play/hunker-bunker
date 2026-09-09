@@ -6646,6 +6646,21 @@ html.boot-cursor-hidden #tactical-cursor {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.8), 0 0 8px rgba(82, 183, 136, 0.4);
 }
 
+/* --- Menu Isolation: Suppress in-game dialogue, radio transmissions, and prompts while in menu --- */
+html.phase-menu .hud-notification-stack,
+html.phase-menu #mothership-dialogue,
+html.phase-menu #leader-conversation-modal,
+html.phase-menu #npc-dialogue-modal,
+html.phase-menu #wanderer-encounter-modal,
+html.phase-menu #tutorial-prompt,
+html.phase-menu .radio-transmission-prompt,
+html.phase-menu .commentary-toast {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
 /* --- Menu, Dialogue & Story Mode Cursor Reticle --- */
 html.phase-menu #tactical-cursor .cursor-bracket,
 html.in-dialogue #tactical-cursor .cursor-bracket,
@@ -19084,7 +19099,14 @@ body.show-debug .map-tool-btn--debug { display: inline-flex; }
 .armory-title-box {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 3px;
+  background: rgba(4, 10, 18, 0.85);
+  border: 1px solid var(--armory-border);
+  border-left: 3px solid var(--armory-accent);
+  padding: 6px 14px;
+  border-radius: 6px;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 0 20px rgba(0, 0, 0, 0.6);
 }
 
 .armory-tag {
@@ -19209,9 +19231,9 @@ body.show-debug .map-tool-btn--debug { display: inline-flex; }
 
 .armory-main-layout {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(calc(var(--vu) * 36), calc(var(--vu) * 44));
+  grid-template-columns: minmax(0, 1fr) minmax(400px, calc(var(--vu) * 48));
   align-items: stretch;
-  gap: calc(var(--vu) * 2);
+  gap: calc(var(--vu) * 2.4);
   min-height: 0;
   height: 100%;
   pointer-events: none;
@@ -19247,21 +19269,22 @@ body.show-debug .map-tool-btn--debug { display: inline-flex; }
 
 .armory-stage-readout {
   align-self: center;
-  width: min(100%, calc(var(--vu) * 52));
+  width: min(100%, calc(var(--vu) * 64));
+  max-width: 560px;
   margin-bottom: calc(var(--vu) * 0.4);
-  padding: calc(var(--vu) * 0.7) calc(var(--vu) * 1.2);
+  padding: calc(var(--vu) * 0.8) calc(var(--vu) * 1.4);
   display: flex;
   flex-direction: row;
   align-items: center;
   justify-content: space-between;
-  gap: calc(var(--vu) * 1.0);
+  gap: calc(var(--vu) * 1.2);
   pointer-events: auto;
-  background: linear-gradient(160deg, rgba(5, 14, 23, 0.85), rgba(3, 7, 13, 0.75));
-  border: 1px solid var(--armory-border);
-  border-bottom: 2px solid var(--armory-accent);
-  border-radius: 6px;
-  box-shadow: 0 0 20px var(--armory-glow), inset 0 0 16px rgba(0, 0, 0, 0.4);
-  backdrop-filter: blur(8px);
+  background: linear-gradient(160deg, rgba(5, 14, 23, 0.92), rgba(3, 7, 13, 0.88));
+  border: 1.5px solid var(--armory-border);
+  border-bottom: 2.5px solid var(--armory-accent);
+  border-radius: 8px;
+  box-shadow: 0 0 24px var(--armory-glow), inset 0 0 16px rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(10px);
 }
 
 .armory-stage-readout__info {
@@ -19275,15 +19298,15 @@ body.show-debug .map-tool-btn--debug { display: inline-flex; }
   color: var(--armory-accent);
   font-weight: 800;
   font-family: 'Space Mono', monospace;
-  font-size: calc(var(--font-xs) * 0.62);
+  font-size: calc(var(--font-xs) * 0.72);
   letter-spacing: 0.08em;
 }
 
 .armory-stage-readout__title {
   color: #fff;
   font-weight: 900;
-  font-size: calc(var(--font-xs) * 0.82);
-  line-height: 1.2;
+  font-size: calc(var(--font-xs) * 0.95);
+  line-height: 1.25;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -19291,9 +19314,9 @@ body.show-debug .map-tool-btn--debug { display: inline-flex; }
 
 .armory-stage-readout__details {
   display: flex;
-  gap: 8px;
+  gap: 10px;
   font-family: 'Space Mono', monospace;
-  font-size: calc(var(--font-xs) * 0.62);
+  font-size: calc(var(--font-xs) * 0.72);
   color: var(--text-muted);
 }
 
@@ -19433,21 +19456,21 @@ body.show-debug .map-tool-btn--debug { display: inline-flex; }
 
 .bench-field label {
   font-family: 'Outfit', sans-serif;
-  font-size: calc(var(--font-xs) * 0.64);
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  color: var(--text-muted);
+  font-size: calc(var(--font-xs) * 0.78);
+  font-weight: 800;
+  letter-spacing: 0.09em;
+  color: #94a3b8;
 }
 
 .field-value {
   font-family: 'Outfit', sans-serif;
-  font-size: calc(var(--font-xs) * 0.76);
-  font-weight: 700;
-  color: var(--text-main);
-  background: rgba(255, 255, 255, 0.04);
-  padding: 4px 8px;
-  border-radius: 4px;
-  border: 1px solid var(--border-subtle);
+  font-size: calc(var(--font-xs) * 0.88);
+  font-weight: 800;
+  color: #f1f5f9;
+  background: rgba(10, 18, 30, 0.8);
+  padding: 6px 10px;
+  border-radius: 5px;
+  border: 1px solid var(--armory-border);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -19455,35 +19478,35 @@ body.show-debug .map-tool-btn--debug { display: inline-flex; }
 
 .armory-select {
   font-family: 'Space Mono', 'Outfit', monospace;
-  font-size: calc(var(--font-xs) * 0.72);
+  font-size: 12px;
   font-weight: 700;
   letter-spacing: 0.03em;
-  color: var(--armory-accent);
-  background-color: rgba(10, 16, 26, 0.95);
+  color: #ffffff;
+  background-color: rgba(10, 18, 30, 0.96);
   background-image: var(--armory-arrow-svg);
   background-repeat: no-repeat;
-  background-position: right 8px center;
+  background-position: right 10px center;
   border: 1.5px solid var(--armory-border);
-  border-radius: 5px;
-  padding: 6px 24px 6px 8px;
+  border-radius: 6px;
+  padding: 8px 30px 8px 10px;
   outline: none;
   cursor: pointer;
   appearance: none;
   -webkit-appearance: none;
   transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
   max-width: 100%;
-  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.6);
+  box-shadow: inset 0 1px 4px rgba(0, 0, 0, 0.7);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
 .armory-select option {
-  background: #080e18;
+  background: #08101a;
   color: #fdfffc;
   font-family: 'Space Mono', monospace;
-  font-size: 11px;
-  padding: 6px 8px;
+  font-size: 12px;
+  padding: 8px 10px;
 }
 
 .armory-select:hover {
@@ -19507,64 +19530,94 @@ body.show-debug .map-tool-btn--debug { display: inline-flex; }
 }
 
 .telemetry-box {
-  background: rgba(0, 0, 0, 0.45);
-  border: 1px solid var(--armory-border);
+  background: rgba(5, 12, 22, 0.92);
+  border: 1.5px solid var(--armory-border);
   border-radius: 6px;
-  padding: 6px 10px;
+  padding: 8px 12px;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 5px;
+  box-shadow: inset 0 0 14px rgba(0, 0, 0, 0.7);
 }
 
 .telemetry-title {
   font-family: 'Outfit', sans-serif;
-  font-size: 9px;
+  font-size: 10.5px;
   font-weight: 800;
   letter-spacing: 0.12em;
   color: var(--armory-accent);
-  margin-bottom: 2px;
+  margin-bottom: 3px;
 }
 
 .telemetry-item {
   display: flex;
   justify-content: space-between;
   font-family: 'Outfit', sans-serif;
-  font-size: 9.5px;
-  color: var(--text-muted);
+  font-size: 11.5px;
+  color: #94a3b8;
 }
 
 .telemetry-item strong {
-  color: var(--text-main);
+  color: #f1f5f9;
+  font-weight: 800;
 }
 
 .modifiers-summary {
   margin-top: 2px;
-  background: rgba(0, 0, 0, 0.45);
-  border: 1px solid var(--armory-border);
+  background: rgba(5, 12, 22, 0.92);
+  border: 1.5px solid var(--armory-border);
   border-radius: 6px;
-  padding: 6px 10px;
+  padding: 8px 12px;
+  box-shadow: inset 0 0 14px rgba(0, 0, 0, 0.7);
 }
 
 .modifiers-title {
   font-family: 'Outfit', sans-serif;
-  font-size: 9px;
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  color: var(--armory-accent);
+  margin-bottom: 6px;
+}
+
+.modifiers-standby {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 3px 0;
+}
+
+.standby-status-pill {
+  font-family: 'Outfit', sans-serif;
+  font-size: 9.5px;
   font-weight: 800;
   letter-spacing: 0.08em;
   color: var(--armory-accent);
-  margin-bottom: 4px;
+  background: rgba(0, 240, 255, 0.12);
+  border: 1px solid var(--armory-border);
+  padding: 2px 7px;
+  border-radius: 3px;
+  text-transform: uppercase;
+}
+
+.standby-desc {
+  font-family: 'Space Mono', monospace;
+  font-size: 10px;
+  color: var(--text-muted);
+  letter-spacing: 0.03em;
 }
 
 .modifiers-badges {
   display: flex;
   flex-wrap: wrap;
-  gap: 4px;
+  gap: 6px;
 }
 
 .mod-badge {
   font-family: 'Outfit', sans-serif;
-  font-size: 9px;
+  font-size: 10.5px;
   font-weight: 700;
-  padding: 3px 6px;
+  padding: 4px 8px;
   border-radius: 4px;
   background: rgba(255, 255, 255, 0.04);
   color: var(--text-muted);
@@ -19572,10 +19625,17 @@ body.show-debug .map-tool-btn--debug { display: inline-flex; }
 }
 
 .mod-badge.active {
-  background: rgba(255, 255, 255, 0.08);
-  color: var(--armory-accent);
+  background: rgba(0, 240, 255, 0.1);
+  color: #f1f5f9;
   border-color: var(--armory-border);
   box-shadow: 0 0 10px var(--armory-glow);
+}
+
+.mod-tag {
+  font-family: 'Space Mono', monospace;
+  font-weight: 900;
+  color: var(--armory-accent);
+  margin-right: 3px;
 }
 
 .armory-footer {
@@ -20435,4 +20495,237 @@ body.colorblind-assist #net-mode-pvp-btn.active {
   border-color: #c084fc !important;
   background: rgba(192, 132, 252, 0.16) !important;
   box-shadow: 0 0 24px rgba(192, 132, 252, 0.35) !important;
+}
+
+/* ── Armory slot buttons & tile pickers ───────────────────────────────
+   docs/planning/armory-ui-overhaul-2026-09-09.md Phase 1/2/3.
+
+   Built on the same tokens as the operator sheen picker (--vu, --font-xs,
+   Space Mono) so the bench and the sheen modal read as one system. Every
+   grid fits its modal without scrolling: the column count is set per-list in
+   armoryUi.js from the item count, so a long list shrinks its boxes instead
+   of growing a scrollbar. Boxes stay square via aspect-ratio, so the grid is
+   even whatever the list length. */
+.armory-slot {
+  display: flex;
+  align-items: center;
+  gap: calc(var(--vu) * 1);
+  width: 100%;
+  padding: calc(var(--vu) * 0.7) calc(var(--vu) * 1);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 5px;
+  background: rgba(8, 12, 15, 0.92);
+  color: rgba(255, 255, 255, 0.86);
+  font: 800 calc(var(--font-xs) * 0.8) / 1.15 'Space Mono', monospace;
+  cursor: pointer;
+  text-align: left;
+  transition: border-color 120ms ease, box-shadow 120ms ease;
+}
+
+.armory-slot:hover,
+.armory-slot:focus-visible {
+  border-color: rgba(0, 229, 255, 0.55);
+  box-shadow: 0 0 calc(var(--vu) * 1.2) rgba(0, 229, 255, 0.25);
+  outline: none;
+}
+
+.armory-slot__art {
+  flex: 0 0 auto;
+  width: calc(var(--vu) * 3.6);
+  height: calc(var(--vu) * 3.6);
+  display: grid;
+  place-items: center;
+  border-radius: 3px;
+  background: rgba(4, 8, 12, 0.9);
+  overflow: hidden;
+}
+
+.armory-slot__art img { width: 100%; height: 100%; object-fit: contain; }
+
+.armory-slot__art-empty {
+  width: 100%;
+  height: 100%;
+  background: repeating-linear-gradient(45deg,
+    rgba(255, 255, 255, 0.08) 0 4px, transparent 4px 8px);
+}
+
+.armory-slot__body {
+  display: flex;
+  flex: 1 1 auto;
+  align-items: center;
+  justify-content: space-between;
+  gap: calc(var(--vu) * 0.8);
+  min-width: 0;
+}
+
+.armory-slot__name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.armory-slot__hint {
+  flex: 0 0 auto;
+  color: #b8f4ff;
+  font-size: calc(var(--font-xs) * 0.58);
+  letter-spacing: 0.12em;
+  opacity: 0.8;
+}
+
+/* ── Picker modal ─────────────────────────────────────────────────── */
+.armory-picker-modal-content {
+  width: min(90vw, calc(var(--vu) * 78));
+  padding: calc(var(--vu) * 3);
+  border-color: rgba(0, 229, 255, 0.42) !important;
+}
+
+.armory-picker-title {
+  color: #b8f4ff;
+  font-size: calc(var(--vu) * 3.2);
+  font-weight: 900;
+  letter-spacing: 0.1em;
+}
+
+.armory-picker-subtitle {
+  margin: calc(var(--vu) * 0.6) 0 calc(var(--vu) * 2);
+  color: var(--text-muted);
+  font: 700 var(--font-xs) / 1.3 'Space Mono', monospace;
+  letter-spacing: 0.07em;
+}
+
+.armory-picker-readout {
+  display: flex;
+  justify-content: space-between;
+  margin-top: calc(var(--vu) * 1.5);
+  padding-top: calc(var(--vu) * 1);
+  border-top: 1px solid rgba(0, 229, 255, 0.2);
+  color: #b8f4ff;
+  font: 800 var(--font-xs) / 1 'Space Mono', monospace;
+}
+
+/* ── Tile grid ────────────────────────────────────────────────────── */
+.armory-picker {
+  display: grid;
+  grid-template-columns: repeat(var(--picker-cols, 5), minmax(0, 1fr));
+  gap: calc(var(--vu) * 0.8);
+  /* No max-height and no overflow: the column count already guarantees fit. */
+}
+
+.armory-tile {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--vu) * 0.5);
+  padding: calc(var(--vu) * 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 5px;
+  background: rgba(8, 12, 15, 0.92);
+  color: rgba(255, 255, 255, 0.76);
+  font: 800 calc(var(--font-xs) * 0.6) / 1.15 'Space Mono', monospace;
+  cursor: pointer;
+  transition: border-color 120ms ease, box-shadow 120ms ease;
+}
+
+.armory-tile:hover:not(.is-locked),
+.armory-tile:focus-visible {
+  border-color: rgba(0, 229, 255, 0.55);
+  box-shadow: 0 0 calc(var(--vu) * 1.2) rgba(0, 229, 255, 0.28);
+  outline: none;
+}
+
+.armory-tile.is-selected {
+  border-color: #00e5ff;
+  box-shadow: 0 0 calc(var(--vu) * 1.5) rgba(0, 229, 255, 0.45);
+  color: #ffffff;
+}
+
+.armory-tile__art {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1 / 1;   /* even boxes at any column count */
+  display: grid;
+  place-items: center;
+  border-radius: 3px;
+  background: rgba(4, 8, 12, 0.9);
+  overflow: hidden;
+}
+
+.armory-tile__art img { width: 100%; height: 100%; object-fit: contain; }
+
+.armory-tile__swatch {
+  width: 100%;
+  height: 100%;
+  background: var(--tile-swatch, #ffffff);
+  box-shadow: inset 0 0 calc(var(--vu) * 1.2) rgba(255, 255, 255, 0.5);
+}
+
+.armory-tile__art--empty {
+  width: 100%;
+  height: 100%;
+  background: repeating-linear-gradient(45deg,
+    rgba(255, 255, 255, 0.08) 0 4px, transparent 4px 8px);
+}
+
+.armory-tile__art-fallback {
+  color: rgba(255, 255, 255, 0.45);
+  letter-spacing: 0.06em;
+}
+
+.armory-tile__name {
+  text-align: center;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  min-height: 2.3em;   /* two lines reserved, so rows stay aligned */
+}
+
+/* Locked: visible, shapeless, nameless. Enough blur to destroy detail,
+   little enough that the silhouette still reads. */
+.armory-tile.is-locked {
+  cursor: not-allowed;
+  color: rgba(255, 255, 255, 0.3);
+}
+
+.armory-tile.is-locked .armory-tile__art img {
+  filter: blur(4px) grayscale(0.85) brightness(0.7) contrast(1.1);
+  transform: scale(1.15);
+  opacity: 0.75;
+}
+
+.armory-tile.is-locked .armory-tile__swatch {
+  filter: grayscale(1) brightness(0.28);
+}
+
+.armory-tile__glyph {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: calc(var(--vu) * 2.4);
+  font-weight: 900;
+  text-shadow: 0 2px calc(var(--vu) * 1) rgba(0, 0, 0, 0.9);
+}
+
+.armory-tile__badge {
+  position: absolute;
+  top: calc(var(--vu) * 0.4);
+  right: calc(var(--vu) * 0.4);
+  padding: 0 calc(var(--vu) * 0.4);
+  border-radius: 3px;
+  background: #ffd15a;
+  color: #0a1420;
+  font-size: calc(var(--font-xs) * 0.5);
+  letter-spacing: 0.08em;
+}
+
+.armory-tile[data-rarity="rare"] { border-left: 2px solid #58a6ff; }
+.armory-tile[data-rarity="epic"] { border-left: 2px solid #b886ff; }
+.armory-tile[data-rarity="legendary"] { border-left: 2px solid #ffd15a; }
+
+.bench-stack {
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--vu) * 1.2);
 }
