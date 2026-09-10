@@ -33,13 +33,13 @@ export function createOperatorPatch(root, { targetHeight = 1.85, loader = new TH
     };
     const width = targetHeight * 0.082;
     const thickness = targetHeight * 0.0035;
-    const gap = targetHeight * 0.0006;
+    const gap = targetHeight * 0.004;
     // Corners also sample the armor, preventing a flat patch cutting into a
-    // curved breastplate. Keeps the patch snug against the chest plate without floating.
+    // curved breastplate. Respect measured armor depth, with a small clearance for animation.
     const hits = [[0, 0], [-0.35, -0.35], [0.35, -0.35], [-0.35, 0.35], [0.35, 0.35]]
         .map(([x, y]) => sample(x * width, y * width)).filter(Boolean);
     const measuredDepth = hits.length ? Math.max(...hits.map((hit) => hit.point.clone().sub(anchor).dot(forward))) : targetHeight * 0.028;
-    const depth = THREE.MathUtils.clamp(measuredDepth, targetHeight * 0.02, targetHeight * 0.038);
+    const depth = THREE.MathUtils.clamp(measuredDepth, targetHeight * 0.02, targetHeight * 0.16);
     anchor.addScaledVector(forward, depth + gap + thickness / 2);
 
     const mount = new THREE.Group();

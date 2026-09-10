@@ -3,6 +3,8 @@
 // Toggleable via `~` (Tilde / Backquote key). Captures console.log/warn/error/debug,
 // accepts cheat & diagnostic commands, and offers level/category filtering.
 
+import { deliverSessionLog, describeDevice, uploadSessionLog } from './sessionLogSink.js';
+
 export class DebugLogger {
     constructor() {
         this.logs = [];
@@ -847,6 +849,37 @@ export class DebugLogger {
         const body = this.serializeSession(normalizedFormat);
         const stamp = new Date().toISOString().replace(/[:.]/g, '-');
         const filename = `hunker-bunker-session-${stamp}.${normalizedFormat}`;
+
+        // Pick the best destination for wherever this build is running. Only if
+        // none is available do we fall back to the browser download, which is
+        // the path that made Deck exports painful and PC exports hard to find.
+        deliverSessionLog(body, filename, {
+            electronAPI: globalThis.electronAPI ?? null,
+            isDev: Boolean(import.meta?.env?.DEV)
+        }).then((result) => {
+            if (result.ok && result.method === 'electron') {
+                this.info('SESSION', `Session written to disk: ${result.path}`);
+                this.info('SESSION', 'Run `logsdir` to open the folder, or `uploadlogs` to send it to the server.');
+                return;
+            }
+            if (result.ok && result.method === 'dev-server') {
+                this.info('SESSION', `Session written to ${result.path} in the repo (${result.bytes} bytes)`);
+                return;
+            }
+            if (result.error) this.warn('SESSION', result.error);
+            this.downloadSessionBlob(body, filename, normalizedFormat);
+        }).catch((err) => {
+            this.warn('SESSION', `Delivery failed: ${String(err?.message ?? err)}`);
+            this.downloadSessionBlob(body, filename, normalizedFormat);
+        });
+
+        this.info('SESSION', `Session capture prepared: ${filename} (${this.sessionLogs.length} entries)`);
+        return filename;
+    }
+
+    // Last-resort browser download.
+    downloadSessionBlob(body, filename, normalizedFormat = 'json') {
+        if (typeof document === 'undefined') return null;
         const blob = new Blob([body], {
             type: normalizedFormat === 'json' ? 'application/json' : 'text/plain'
         });
@@ -854,10 +887,62 @@ export class DebugLogger {
         const anchor = document.createElement('a');
         anchor.href = url;
         anchor.download = filename;
+        // The anchor MUST be in the document before click(). A detached <a> is
+        // a no-op in Firefox and some Electron contexts -- one of the two
+        // reasons the export silently produced no file at all.
+        anchor.rel = 'noopener';
+        anchor.style.display = 'none';
+        document.body.appendChild(anchor);
         anchor.click();
-        window.setTimeout(() => URL.revokeObjectURL(url), 0);
-        this.info('SESSION', `Session capture saved: ${filename} (${this.sessionLogs.length} entries)`);
+        // The other reason: revoking on a 0ms timer can pull the blob out from
+        // under a download that has not committed yet.
+        window.setTimeout(() => {
+            anchor.remove();
+            URL.revokeObjectURL(url);
+        }, 30000);
+        this.info('SESSION', `Browser download started: ${filename}`);
         return filename;
+    }
+
+    // Push the capture to the shared backend so Deck and PC logs from one play
+    // session end up in the same directory.
+    uploadSession(format = 'json') {
+        const normalizedFormat = format === 'txt' ? 'txt' : 'json';
+        const body = this.serializeSession(normalizedFormat);
+        const stamp = new Date().toISOString().replace(/[:.]/g, '-');
+        const filename = `hunker-bunker-session-${stamp}.${normalizedFormat}`;
+        const win = globalThis;
+        const backendUrl = win?.electronAPI?.backendUrl
+            || win?.__HB_BACKEND_URL__
+            || (import.meta?.env?.DEV ? win?.location?.origin : '');
+
+        this.info('SESSION', `Uploading ${filename} to ${backendUrl || '(no backend configured)'}...`);
+        uploadSessionLog(body, filename, {
+            backendUrl,
+            token: win?.electronAPI?.logUploadToken || win?.__HB_LOG_UPLOAD_TOKEN__ || '',
+            device: describeDevice(win)
+        }).then((result) => {
+            if (result.ok) {
+                this.info('SESSION', `Uploaded as ${result.filename} (${result.bytes} bytes) -> ${result.url}`);
+            } else {
+                this.warn('SESSION', result.error ?? 'upload failed');
+            }
+        }).catch((err) => {
+            this.warn('SESSION', `Upload failed: ${String(err?.message ?? err)}`);
+        });
+        return filename;
+    }
+
+    openSessionLogDir() {
+        const api = globalThis.electronAPI;
+        if (typeof api?.openSessionLogDir !== 'function') {
+            this.warn('SESSION', 'Log folder is only available in the desktop build.');
+            return;
+        }
+        api.openSessionLogDir().then((res) => {
+            if (res?.ok) this.info('SESSION', `Log folder: ${res.path}`);
+            else this.warn('SESSION', res?.error ?? 'could not open log folder');
+        });
     }
 
     buildLogRow(entry) {
@@ -950,7 +1035,9 @@ export class DebugLogger {
   • help                  - Show this command manual
   • steam [status|recheck]- Perform Steamworks integration & backend diagnostic check
   • clear                 - Clear dev log history
-  • exportlogs [json|txt] - Download the complete log captured since launch
+  • exportlogs [json|txt] - Save the session log (desktop: straight to disk; dev: ./logs)
+  • uploadlogs [json|txt] - Send the session log to the shared backend server
+  • logsdir               - Open the local session-log folder (desktop build)
   • demo [start|mark <label>|stop] - Mark a friend-demo session/checkpoint
   • god                   - Toggle player invincibility
   • ammo (or infammo)     - Toggle unlimited ammo (infinite clip & cache)
@@ -1016,6 +1103,16 @@ export class DebugLogger {
             case 'exportlogs':
             case 'savelogs':
                 this.exportSession(parts[1]?.toLowerCase() === 'txt' ? 'txt' : 'json');
+                break;
+
+            case 'uploadlogs':
+            case 'sendlogs':
+                this.uploadSession(parts[1]?.toLowerCase() === 'txt' ? 'txt' : 'json');
+                break;
+
+            case 'logsdir':
+            case 'openlogs':
+                this.openSessionLogDir();
                 break;
 
             case 'god':

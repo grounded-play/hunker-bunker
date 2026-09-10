@@ -77,12 +77,11 @@ describe('runDrops', () => {
         });
     });
 
-    it('computes superconductor arc synergy when cryo and tesla items are equipped', () => {
+    it('does not claim an unimplemented elemental synergy', () => {
         const cryoItem = WEAPON_OVERCLOCKS.find((item) => item.element === 'cryo');
         const teslaItem = SUIT_RELICS.find((item) => item.element === 'tesla');
         const synergies = computeActiveSynergies([cryoItem, teslaItem]);
-        expect(synergies).toHaveLength(1);
-        expect(synergies[0].id).toBe('superconductor');
+        expect(synergies).toEqual([]);
     });
 
     it('returns empty synergies if elements do not match combination criteria', () => {
@@ -282,7 +281,7 @@ describe('runDrops', () => {
             .map((item) => item.id)
             .sort();
         expect(inert).toEqual([
-            'bio_vampirism', 'caustic_payload', 'chitin_membrane', 'cryo_rime',
+            'bio_vampirism', 'caustic_payload', 'cryo_rime',
             'pheromone_aura', 'plasma_bounce', 'shatter_engine', 'synapse_pulse',
             'tesla_thrusters'
         ]);
@@ -290,7 +289,7 @@ describe('runDrops', () => {
 
     it('still leaves a usable reward pool at every rarity it can roll', () => {
         const live = [...WEAPON_OVERCLOCKS, ...SUIT_RELICS].filter((i) => i.implemented !== false);
-        expect(live.length).toBe(10);
+        expect(live.length).toBe(11);
         for (const rarity of ['common', 'rare', 'mythic', 'corrupted']) {
             expect(live.some((i) => i.rarity === rarity), `no live ${rarity} reward`).toBe(true);
         }

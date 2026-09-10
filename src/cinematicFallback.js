@@ -96,21 +96,21 @@ export const EVENT_CINEMATICS = Object.freeze({
         images: Object.freeze(['/cutscenes/poster-art/event-o2-generator-upgraded.png'])
     }),
     boss_encounter_cryosnail: Object.freeze({
-        kicker: 'PERIMETER BREACH // HOSTILE SIGNATURE',
-        title: 'THE ICE SENDS SOMETHING BACK',
-        body: 'A cryosnail-class hostile converges on your position.',
+        kicker: 'PERIMETER BREACH // FROST TITAN',
+        title: 'ABSOLUTE ZERO HAS A SHELL',
+        body: 'Sub-zero vapor rolls across the floor. An ancient cryosnail-class titan converges on your position.',
         images: Object.freeze(['/cutscenes/poster-art/event-boss-cryosnail.png'])
     }),
     boss_encounter_cybersnail: Object.freeze({
-        kicker: 'PERIMETER BREACH // HOSTILE SIGNATURE',
-        title: 'THE GRID ANSWERS WITH TEETH',
-        body: 'A cybersnail-class hostile converges on your position.',
+        kicker: 'PERIMETER BREACH // CYBERNETIC TITAN',
+        title: 'A SNAIL BLOCKS THE HALLWAY',
+        body: 'Hydraulic cylinders hiss as a colossal armored carapace descends. Red targeting lasers sweep the corridor.',
         images: Object.freeze(['/cutscenes/poster-art/event-boss-cybersnail.png'])
     }),
     boss_encounter_sporesnail: Object.freeze({
-        kicker: 'PERIMETER BREACH // HOSTILE SIGNATURE',
-        title: 'THE BLOOM LEARNED TO HUNT',
-        body: 'A sporesnail-class hostile converges on your position.',
+        kicker: 'PERIMETER BREACH // FUNGAL TITAN',
+        title: 'THE BLOOM THAT HUNTS',
+        body: 'Bioluminescent spore clouds billow through the dark air. A fungal titan stalks toward your bunker.',
         images: Object.freeze(['/cutscenes/poster-art/event-boss-sporesnail.png'])
     })
 });

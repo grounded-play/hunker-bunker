@@ -384,7 +384,7 @@
 #ui .pickup-counter-panel,
 #game-container.fullscreen-mode ~ #ui .pickup-counter-panel {
   position: absolute !important;
-  top: 86px !important;
+  top: 132px !important;
   left: 16px !important;
   right: auto !important;
   bottom: auto !important;
@@ -450,11 +450,11 @@
 #ui .desktop-compass,
 .desktop-compass {
   position: absolute !important;
-  top: 280px !important;
+  top: auto !important;
   left: 16px !important;
   right: auto !important;
-  bottom: auto !important;
-  width: clamp(145px, 14.5vw, 185px) !important;
+  bottom: 16px !important;
+  width: 224px !important;
   padding: 10px 12px !important;
   background: rgba(8, 14, 21, 0.94) !important;
   border: 1.5px solid rgba(0, 229, 255, 0.35) !important;
@@ -513,8 +513,8 @@
 
 .desktop-compass__ring {
   position: relative !important;
-  width: 48px !important;
-  height: 48px !important;
+  width: 28px !important;
+  height: 28px !important;
   border: 1.5px solid rgba(0, 229, 255, 0.45) !important;
   border-radius: 50% !important;
   flex-shrink: 0 !important;
@@ -896,4 +896,58 @@
     transition: none !important;
     animation: none !important;
   }
+}
+
+
+/* September 10: one navigation surface, quieter rails, unobstructed center. */
+#hud-blueprint-canvas { display: block; width: 100%; height: auto; border: 1px solid #183941; border-radius: 3px; margin: 7px 0; }
+.map-inspection-slot .tactical-telemeter-box { position: static; width: 100%; max-width: none; margin: 8px 0 0; padding: 9px 0 0; border: 0; border-top: 1px solid #22414a; border-radius: 0; box-shadow: none; background: transparent; transform: none; font-size: 10px; }
+.map-inspection-slot .telemeter-scanline { display: none; }
+.map-inspection-slot #telemeter-kicker { font-size: 9px; letter-spacing: .08em; }
+.map-inspection-slot #telemeter-title { font-size: 11px; white-space: normal; line-height: 1.4; }
+.map-inspection-slot #telemeter-subtitle { font-size: 9px; white-space: normal; }
+.map-inspection-slot #telemeter-coords { font-size: 9px; }
+#expanded-map-info { margin-bottom: 16px; }
+.desktop-compass .desktop-compass__face { gap: 8px; }
+.desktop-compass .desktop-compass__ring { width: 28px; height: 28px; flex: 0 0 28px; }
+.desktop-compass .desktop-compass__readout { flex: 1; flex-direction: row; gap: 12px; }
+.desktop-compass .desktop-compass__row { gap: 6px; font-size: 10px; }
+.tactical-map-modal-content { padding: clamp(14px, 2vw, 24px); border-radius: 8px; }
+.tactical-map-body { min-height: 0; grid-template-columns: minmax(0, 1fr) 240px; gap: 16px; }
+.tactical-map-sidebar { padding: 14px; }
+.tactical-map-legend-item { font-size: 11px; margin-bottom: 9px; }
+.tactical-map-title { font-size: clamp(18px, 2vw, 26px); }
+.tactical-map-toolbar { padding: 8px; gap: 6px; }
+.tactical-map-keyhints { font-size: 10px; }
+@media (min-width: 901px) {
+  .desktop-compass { width: clamp(200px, 18vw, 260px); padding: 10px; bottom: 18px; border: 1px solid #28515b; border-left: 2px solid #41b9c8; border-radius: 5px; background: rgba(5, 14, 19, .92); }
+  .desktop-compass__header { font-size: 10px; letter-spacing: .1em; }
+  .level-indicator { width: 172px; padding: 9px 11px; border-radius: 5px; }
+  .pickup-counter-panel { top: 132px; width: 172px; padding: 8px 11px; }
+  .pickup-counter-panel__row { padding: 2px 0; font-size: 11px; }
+  .hud-header { left: 208px; gap: 7px; }
+  .weapon-status-panel, .ship-status-panel, .vitals-panel--topbar, .class-ability-panel { border-radius: 5px; box-shadow: none; }
+}
+@media (max-height: 800px) and (min-width: 901px) {
+  .desktop-compass { width: 200px; bottom: 12px; padding: 8px; }
+  #hud-blueprint-canvas { max-height: 104px; object-fit: cover; }
+  .pickup-counter-panel { top: 118px; }
+  .map-inspection-slot #telemeter-kicker, #hud-map-info #telemeter-subtitle { display: none; }
+  .tactical-map-sidebar { padding: 10px; }
+  .tactical-map-legend-item { margin-bottom: 5px; }
+}
+@media (max-width: 900px) {
+  .tactical-map-body { grid-template-columns: minmax(0, 1fr) 190px; gap: 10px; }
+  .tactical-map-legend-item { font-size: 10px; }
+}
+
+#ui .desktop-compass__readout { display: flex; flex-direction: row !important; gap: 14px !important; }
+#ui .desktop-compass__ring { flex-basis: 28px; }
+.map-inspection-slot .telemeter-main-row { flex-wrap: wrap; gap: 3px; }
+.map-inspection-slot .telemeter-stats-row { flex-wrap: wrap; gap: 4px; }
+#ui #hud-map-info .tactical-telemeter-box, #expanded-map-info .tactical-telemeter-box { position: static !important; width: 100% !important; padding: 8px 0 0 !important; transform: none !important; }
+#ui #hud-map-info .telemeter-title, #expanded-map-info .telemeter-title { white-space: normal; overflow-wrap: anywhere; }
+@media (max-height: 800px) {
+  .tactical-map-sidebar { gap: 8px; }
+  .tactical-map-legend-item { margin-bottom: 2px; }
 }

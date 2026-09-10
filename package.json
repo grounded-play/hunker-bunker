@@ -63,7 +63,8 @@
     "package-soundtrack": "node scripts/build-soundtrack-metadata.js && node scripts/package-soundtrack.js",
     "cinematics:stills": "node scripts/build-cinematic-still-videos.js",
     "trailer:capture": "playwright test --config=tests/e2e/trailer/trailer.playwright.config.js",
-    "trailer:build": "node scripts/build-trailer.js"
+    "trailer:build": "node scripts/build-trailer.js",
+    "logs:fetch": "node scripts/fetch-session-logs.mjs"
   },
   "build": {
     "appId": "com.icecave.hunkerbunker",
@@ -111,23 +112,23 @@
   "devDependencies": {
     "@eslint/js": "^10.0.1",
     "@lhci/cli": "^0.15.1",
-    "@playwright/test": "^1.62.1",
+    "@playwright/test": "^1.63.0",
     "@types/three": "^0.185.4",
-    "@vitest/coverage-v8": "^4.1.10",
+    "@vitest/coverage-v8": "^5.0.0",
     "concurrently": "^10.0.3",
     "cross-env": "^10.1.0",
-    "electron": "^44.0.0",
+    "electron": "^44.3.0",
     "electron-builder": "^26.15.3",
-    "eslint": "^10.9.0",
-    "globals": "^17.11.0",
+    "eslint": "^10.10.0",
+    "globals": "^17.12.0",
     "nodemon": "^3.1.14",
     "vite": "^8.1.5",
-    "vitest": "^4.1.10",
+    "vitest": "^5.0.0",
     "wait-on": "^9.1.0"
   },
   "dependencies": {
     "express": "^5.2.1",
-    "express-rate-limit": "^8.6.2",
+    "express-rate-limit": "^8.7.0",
     "socket.io": "^4.8.3",
     "socket.io-client": "^4.8.3",
     "steamworks.js": "^0.4.0",

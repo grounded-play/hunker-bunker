@@ -1,0 +1,192 @@
+// Shared session-log drop box.
+//
+// The in-game console can export a session capture, but every delivery path it
+// had was local to the machine that produced it: a browser blob download on PC
+// and a native save dialog under Electron, which is close to unusable on a
+// Steam Deck in Gaming Mode. That makes collecting a Deck log and a PC log for
+// the same play session unnecessarily manual.
+//
+// This gives both a single destination on the server the group already plays
+// on, so logs from every device land in one directory and can be listed and
+// read back for review.
+//
+// Storage is plain files on disk, deliberately: a session log is write-once,
+// read-rarely, and useful to `scp` or `cat` directly. It does not belong in the
+// game database.
+
+import express from 'express';
+import fs from 'node:fs/promises';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { createRateLimitMiddleware } from './rateLimit.js';
+
+const here = path.dirname(fileURLToPath(import.meta.url));
+
+// Ceiling on a single capture AFTER decompression -- body-parser applies its
+// limit to the inflated stream, so this bounds a decompression bomb as well as
+// an honest upload. A real session capture runs to ~70 MB of repetitive JSON
+// (docs/logs/log20.json is 68 MB), which gzips to a few MB on the wire, so this
+// leaves headroom for a long session without inviting an unbounded one.
+export const MAX_LOG_BYTES = 128 * 1024 * 1024;
+
+export function sessionLogDir() {
+    return process.env.HB_SESSION_LOG_DIR || path.join(here, 'session-logs');
+}
+
+// Client-supplied names are untrusted. Keep a readable name where possible,
+// but never let one escape the log directory or collide destructively.
+export function safeLogName(rawName, { now = Date.now(), random = Math.random } = {}) {
+    const cleaned = String(rawName ?? '')
+        .replace(/[^a-zA-Z0-9._-]/g, '')
+        // Collapse dot runs and strip leading dots. Separators are already gone
+        // by this point, but a name of ".." would still resolve to the parent
+        // directory once joined, and a leading dot only makes a hidden file.
+        .replace(/\.{2,}/g, '.')
+        .replace(/^\.+/, '')
+        .slice(0, 120);
+    const suffix = `${now.toString(36)}-${Math.floor(random() * 1e6).toString(36)}`;
+    if (!cleaned) return `session-${suffix}.json`;
+    const dot = cleaned.lastIndexOf('.');
+    const stem = dot > 0 ? cleaned.slice(0, dot) : cleaned;
+    const ext = dot > 0 ? cleaned.slice(dot) : '.json';
+    return `${stem}-${suffix}${ext}`;
+}
+
+// Node gives a repeated header as an array, so every header read here has to
+// collapse to a single string first. Without this a client could send
+// `x-hb-log-name` twice and hand downstream code an array where it expects text.
+function headerValue(raw) {
+    const value = Array.isArray(raw) ? raw[0] : raw;
+    return typeof value === 'string' ? value : '';
+}
+
+// Shared secret for uploads. Optional for a LAN or dev box, but **required in
+// production**: this endpoint writes caller-supplied bytes to disk, so leaving
+// it open to the internet is an arbitrary-file-upload and disk-exhaustion
+// surface. Failing closed is the right default -- an unauthenticated public
+// drop box is not something anyone should get by forgetting to set a variable.
+export function isLogUploadOpen(env = process.env) {
+    return String(env.NODE_ENV ?? '').toLowerCase() !== 'production' && !env.HB_LOG_UPLOAD_TOKEN;
+}
+
+function tokenGuard(req, res, next) {
+    const expected = process.env.HB_LOG_UPLOAD_TOKEN;
+    if (!expected) {
+        if (isLogUploadOpen()) return next();
+        res.status(503).json({
+            ok: false,
+            error: 'log uploads are disabled: set HB_LOG_UPLOAD_TOKEN on this host'
+        });
+        return;
+    }
+    const supplied = headerValue(req.headers['x-hb-log-token']);
+    if (supplied === expected) return next();
+    res.status(401).json({ ok: false, error: 'bad or missing log token' });
+}
+
+export function attachSessionLogRoutes(app) {
+    const limiter = createRateLimitMiddleware({ windowMs: 60_000, max: 30 });
+
+    // Raw parser: the body is already-serialized JSON or text from the game.
+    // Re-parsing it would only risk rejecting a capture we still want to keep.
+    // body-parser inflates a gzipped body and applies `limit` to the stream it
+    // reads -- i.e. to the DECOMPRESSED bytes. That is the ceiling that matters:
+    // it bounds a decompression bomb, not just the wire payload.
+    const raw = express.raw({ type: '*/*', limit: MAX_LOG_BYTES });
+
+    app.post('/logs/session', limiter, tokenGuard, raw, async (req, res) => {
+        try {
+            // express.raw() always yields a Buffer for a body it parsed. Anything
+            // else means a different parser ran first (or none did), and coercing
+            // an object or array would silently persist garbage like
+            // "[object Object]" instead of the capture.
+            if (!Buffer.isBuffer(req.body)) {
+                res.status(400).json({ ok: false, error: 'expected a raw body' });
+                return;
+            }
+            // Decode to text and re-encode from a value this function built. The
+            // bytes finally written are never the request object itself, so
+            // `.length` below is unambiguously a byte count rather than
+            // whatever an array or string would have meant.
+            const received = req.body.toString('utf8');
+            if (!received.length) {
+                res.status(400).json({ ok: false, error: 'empty body' });
+                return;
+            }
+
+            // Captures are read back by tooling, so store something guaranteed
+            // parseable. A well-formed capture is normalized; anything else is
+            // preserved verbatim inside an envelope rather than dropped, since a
+            // malformed log is often exactly the one worth looking at. Either
+            // way the file content is serialized here, not relayed from the
+            // request.
+            let stored;
+            try {
+                stored = JSON.stringify(JSON.parse(received));
+            } catch {
+                stored = JSON.stringify({
+                    format: 'text',
+                    note: 'Body was not valid JSON; preserved verbatim.',
+                    content: received
+                });
+            }
+            const body = Buffer.from(stored, 'utf8');
+            const dir = path.resolve(sessionLogDir());
+            await fs.mkdir(dir, { recursive: true });
+            const filename = safeLogName(headerValue(req.headers['x-hb-log-name']));
+            // safeLogName already strips separators and dot segments; resolving
+            // and re-checking against dir + separator is the belt-and-braces
+            // containment check, since this writes attacker-influenced bytes to
+            // an attacker-influenced name.
+            const target = path.resolve(dir, filename);
+            if (target !== dir && !target.startsWith(dir + path.sep)) {
+                res.status(400).json({ ok: false, error: 'bad name' });
+                return;
+            }
+            await fs.writeFile(target, body);
+
+            // Device/platform is free-form and only used to tell captures apart
+            // in a listing; it is never trusted for anything else.
+            const device = headerValue(req.headers['x-hb-log-device']).replace(/[^\w .:-]/g, '').slice(0, 64);
+            console.info('[hb-session-log]', JSON.stringify({
+                filename, bytes: body.length, device: device || undefined
+            }));
+            res.json({ ok: true, filename, bytes: body.length, path: `/logs/session/${filename}` });
+        } catch (err) {
+            res.status(500).json({ ok: false, error: String(err?.message ?? err) });
+        }
+    });
+
+    app.get('/logs/session', limiter, async (_req, res) => {
+        try {
+            const dir = sessionLogDir();
+            await fs.mkdir(dir, { recursive: true });
+            const names = await fs.readdir(dir);
+            const entries = await Promise.all(names.map(async (name) => {
+                const stat = await fs.stat(path.join(dir, name));
+                return { name, bytes: stat.size, modified: stat.mtime.toISOString() };
+            }));
+            entries.sort((a, b) => b.modified.localeCompare(a.modified));
+            res.json({ ok: true, dir, count: entries.length, entries });
+        } catch (err) {
+            res.status(500).json({ ok: false, error: String(err?.message ?? err) });
+        }
+    });
+
+    app.get('/logs/session/:name', limiter, async (req, res) => {
+        try {
+            const dir = sessionLogDir();
+            // Resolve then confirm containment, so ../ cannot read outside dir.
+            const resolvedDir = path.resolve(dir);
+            const target = path.resolve(resolvedDir, path.basename(String(req.params.name)));
+            if (target !== resolvedDir && !target.startsWith(resolvedDir + path.sep)) {
+                res.status(400).json({ ok: false, error: 'bad name' });
+                return;
+            }
+            const body = await fs.readFile(target, 'utf8');
+            res.type('application/json').send(body);
+        } catch {
+            res.status(404).json({ ok: false, error: 'not found' });
+        }
+    });
+}

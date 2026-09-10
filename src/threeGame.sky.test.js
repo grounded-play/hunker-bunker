@@ -21,6 +21,7 @@ function buildFakeGame(overrides = {}) {
         // has to carry collaborating methods explicitly.
         applySkyFlash: ThreeGame.prototype.applySkyFlash,
         playSkyTransient: ThreeGame.prototype.playSkyTransient,
+        updateDirectionalShadowFrustum: ThreeGame.prototype.updateDirectionalShadowFrustum,
         skyEvents: [],
         ...overrides
     };

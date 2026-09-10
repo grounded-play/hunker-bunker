@@ -6,6 +6,7 @@ import { attachSteamAuthRoutes } from './steamAuth.js';
 import { attachSteamLeaderboardRoutes } from './steamLeaderboards.js';
 import { attachSteamInventoryRoutes } from './steamInventory.js';
 import { attachSteamStoreRoutes } from './steamStore.js';
+import { attachSessionLogRoutes } from './sessionLogs.js';
 import { auditSteamBackendEnv, formatBackendEnvIssue } from './backendEnvAudit.js';
 
 const backendEnvAudit = auditSteamBackendEnv(process.env);
@@ -49,6 +50,11 @@ app.use((req, res, next) => {
     }
     next();
 });
+// Session-log uploads must be registered BEFORE the global JSON parser: the
+// capture is already-serialized JSON and can be megabytes, so letting
+// express.json() at it both truncates it against the 16kb API limit and hands
+// the route a parsed object instead of the original bytes.
+attachSessionLogRoutes(app);
 app.use(express.json({ limit: '16kb' }));
 app.use('/steam', (req, res, next) => {
     const startedAt = Date.now();

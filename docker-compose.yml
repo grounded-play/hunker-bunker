@@ -22,6 +22,12 @@ services:
       - HB_STEAM_MICROTXN_ENABLED=${HB_STEAM_MICROTXN_ENABLED:-0}
       - HB_STEAM_STORE_MOCK_PURCHASES=0
       - HB_STEAM_DROP_COOLDOWN_SECONDS=60
+      # Session-log drop box. Lives under the existing data volume so captures
+      # uploaded from a PC or a Steam Deck survive a container rebuild.
+      # Set HB_LOG_UPLOAD_TOKEN to require a shared secret; unset means any
+      # client that can reach the host may upload.
+      - HB_SESSION_LOG_DIR=/app/server/data/session-logs
+      - HB_LOG_UPLOAD_TOKEN=${HB_LOG_UPLOAD_TOKEN:-}
     volumes:
       - ./server/data:/app/server/data
     networks:

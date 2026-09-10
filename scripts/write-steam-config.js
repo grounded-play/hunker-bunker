@@ -6,7 +6,12 @@ import { pathToFileURL } from 'node:url';
 export const DEFAULT_STEAM_CONFIG = Object.freeze({
     backendUrl: 'http://localhost:3001',
     appId: 4957040,
-    authIdentity: 'hunker-bunker-backend'
+    authIdentity: 'hunker-bunker-backend',
+    // Shared secret for the session-log drop box. Shipped with the build, so it
+    // is not a real secret -- it exists to stop an anonymous stranger POSTing at
+    // the endpoint, not to authenticate a player. Empty means uploads are only
+    // possible against a host that has no token configured.
+    logUploadToken: ''
 });
 
 function cleanString(value, fallback) {
@@ -57,6 +62,7 @@ export function requireRemoteSteamBackend(config) {
 export function buildSteamConfig(env = process.env) {
     const config = {
         backendUrl: normalizeBackendUrl(env.HB_STEAM_BACKEND_URL),
+        logUploadToken: cleanString(env.HB_LOG_UPLOAD_TOKEN, DEFAULT_STEAM_CONFIG.logUploadToken),
         appId: normalizeSteamAppId(env.HB_STEAM_APPID),
         authIdentity: cleanString(env.HB_STEAM_AUTH_IDENTITY, DEFAULT_STEAM_CONFIG.authIdentity)
     };

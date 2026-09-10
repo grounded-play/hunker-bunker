@@ -39,8 +39,18 @@ describe('write-steam-config', () => {
         })).toEqual({
             backendUrl: 'https://steam.example.test',
             appId: 4957040,
-            authIdentity: 'release-identity'
+            authIdentity: 'release-identity',
+            // Absent from the env means uploads only work against a host that
+            // has no token configured -- never a baked-in default.
+            logUploadToken: ''
         });
+    });
+
+    it('carries the session-log upload token through to the bundled config', () => {
+        expect(buildSteamConfig({
+            HB_STEAM_BACKEND_URL: 'https://steam.example.test',
+            HB_LOG_UPLOAD_TOKEN: '  abc123  '
+        }).logUploadToken).toBe('abc123');
     });
 
     it('can require a non-local HTTPS backend for release packaging', () => {

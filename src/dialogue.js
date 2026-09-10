@@ -368,8 +368,9 @@ export class DialogueManager {
         // Configure choices to show a single button
         this.setSkipChoiceCopy('[A] ACKNOWLEDGED. GET READY.', 'CLOSE AND DEFEND BASE');
 
-        // Hide tutorial button for this dialogue
+        // Hide tutorial button for this dialogue and style for single centered choice
         if (this.tutorialBtn) this.tutorialBtn.classList.add('hidden');
+        this.choicesEl.classList.add('mothership-dialogue-choices--single');
 
         this.choicesEl.classList.remove('hidden');
         requestAnimationFrame(() => {
@@ -389,6 +390,7 @@ export class DialogueManager {
 
         // Restore original labels
         this.restoreSkipChoiceCopy();
+        this.choicesEl.classList.remove('mothership-dialogue-choices--single');
         if (this.tutorialBtn) this.tutorialBtn.classList.remove('hidden');
 
         if (!this.isDialogueRunActive(runId)) return;
@@ -701,7 +703,14 @@ export class DialogueManager {
                     <div class="mothership-line__text"></div>
                 </div>
             `;
-            row.querySelector('.mothership-line__portrait').src = assetUrl(speaker.portrait);
+            const portraitEl = row.querySelector('.mothership-line__portrait');
+            if (portraitEl) {
+                portraitEl.onerror = () => {
+                    portraitEl.onerror = null;
+                    portraitEl.src = assetUrl('/lore_portraits/survivor_00.webp');
+                };
+                portraitEl.src = assetUrl(speaker.portrait);
+            }
             row.querySelector('.mothership-line__speaker').textContent = speaker.name;
         }
 
@@ -871,7 +880,13 @@ export class DialogueManager {
 
             if (stablePortraitEl) {
                 const img = stablePortraitEl.querySelector('.dialogue-stable-portrait__img');
-                if (img) img.src = assetUrl(speakerInfo.portrait);
+                if (img) {
+                    img.onerror = () => {
+                        img.onerror = null;
+                        img.src = assetUrl('/lore_portraits/survivor_00.webp');
+                    };
+                    img.src = assetUrl(speakerInfo.portrait);
+                }
                 const nameEl = stablePortraitEl.querySelector('.dialogue-stable-portrait__name');
                 if (nameEl) nameEl.textContent = speakerInfo.name;
                 stablePortraitEl.classList.remove('hidden');

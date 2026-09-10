@@ -8,7 +8,8 @@ const path = require('node:path');
 const DEFAULT_STEAM_CONFIG = Object.freeze({
     backendUrl: 'http://localhost:3001',
     appId: 4957040,
-    authIdentity: 'hunker-bunker-backend'
+    authIdentity: 'hunker-bunker-backend',
+    logUploadToken: ''
 });
 
 function readBundledSteamConfig() {
@@ -323,6 +324,13 @@ try {
 
 contextBridge.exposeInMainWorld('electronAPI', {
     quitApp: () => ipcRenderer.send('hb:quitApp'),
+    // Session log export straight to disk -- no save dialog. The blob/<a download>
+    // path the browser build uses opens a native picker here, which is not
+    // workable on a Steam Deck in Gaming Mode.
+    // Shipped alongside backendUrl so `uploadlogs` can reach a token-gated host.
+    logUploadToken: BUNDLED_STEAM_CONFIG.logUploadToken ?? '',
+    writeSessionLog: (filename, body) => ipcRenderer.invoke('hb:writeSessionLog', filename, body),
+    openSessionLogDir: () => ipcRenderer.invoke('hb:openSessionLogDir'),
     getSaveData: () => ipcRenderer.invoke('hb:getSaveData'),
     onSaveDataChanged: (key, value) => ipcRenderer.send('hb:saveDataChanged', key, value),
     onSaveDataRemoved: (key) => ipcRenderer.send('hb:saveDataRemoved', key),

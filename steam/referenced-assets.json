@@ -597,6 +597,8 @@
     "economy/decal_cyber_skull_tactical_pin_large.png",
     "economy/decal_grand_marshal_relic_crest.png",
     "economy/decal_grand_marshal_relic_crest_large.png",
+    "economy/decal_queen_slayer_gold_seal.png",
+    "economy/decal_queen_slayer_gold_seal_large.png",
     "economy/decal_radiation_trefoil.png",
     "economy/decal_radiation_trefoil_large.png",
     "economy/decal_sporesnail_hunter_crest.png",
@@ -698,6 +700,18 @@
     "ice_base_rock.png",
     "ice_grunge_snow.png",
     "ice_wall_glacier.png",
+    "interstitials/int_02_kaelen_s_sleeping_machine_key_v1.mp4",
+    "interstitials/int_04_warmth_beneath_the_ice_key_v1.mp4",
+    "interstitials/int_06_briggs_keeps_the_ledger_key_v1.mp4",
+    "interstitials/int_08_dr_nahl_remembers_the_tissue_key_v1.mp4",
+    "interstitials/int_11_her_voice_inside_your_helmet_key_v1.mp4",
+    "interstitials/int_12_the_queen_makes_a_reasonable_offer_key_v1.mp4",
+    "interstitials/int_19_meridian_remembers_you_key_v1.mp4",
+    "interstitials/int_20_tallow_keeps_the_steam_key_v1.mp4",
+    "interstitials/int_21_vesper_sleeps_in_shifts_key_v1.mp4",
+    "interstitials/int_29_briggs_became_the_barricade_key_v1.mp4",
+    "interstitials/int_30_kaelen_is_the_grid_key_v1.mp4",
+    "interstitials/int_31_mother_of_the_last_world_key_v1.mp4",
     "interstitials/int_aria_queens_mark_key_v1.webp",
     "interstitials/int_aria_silk_trance_key_v1.webp",
     "interstitials/int_aria_whispers_abyss_key_v1.webp",
@@ -4897,22 +4911,22 @@
     },
     {
       "path": "economy/decal_ancient_core_glyphs.png",
-      "bytes": 15522,
+      "bytes": 120346,
       "classification": "runtime-required"
     },
     {
       "path": "economy/decal_ancient_core_glyphs_large.png",
-      "bytes": 33606,
+      "bytes": 479792,
       "classification": "runtime-required"
     },
     {
       "path": "economy/decal_bunker404_lost_squad.png",
-      "bytes": 18385,
+      "bytes": 121187,
       "classification": "runtime-required"
     },
     {
       "path": "economy/decal_bunker404_lost_squad_large.png",
-      "bytes": 41338,
+      "bytes": 454007,
       "classification": "runtime-required"
     },
     {
@@ -4947,12 +4961,22 @@
     },
     {
       "path": "economy/decal_grand_marshal_relic_crest.png",
-      "bytes": 21764,
+      "bytes": 125144,
       "classification": "runtime-required"
     },
     {
       "path": "economy/decal_grand_marshal_relic_crest_large.png",
-      "bytes": 50613,
+      "bytes": 470284,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/decal_queen_slayer_gold_seal.png",
+      "bytes": 134436,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/decal_queen_slayer_gold_seal_large.png",
+      "bytes": 501815,
       "classification": "runtime-required"
     },
     {
@@ -4987,12 +5011,12 @@
     },
     {
       "path": "economy/decal_void_horizon_sigil.png",
-      "bytes": 35110,
+      "bytes": 131301,
       "classification": "runtime-required"
     },
     {
       "path": "economy/decal_void_horizon_sigil_large.png",
-      "bytes": 75642,
+      "bytes": 488036,
       "classification": "runtime-required"
     },
     {
@@ -5676,8 +5700,18 @@
       "classification": "unknown"
     },
     {
+      "path": "interstitials/int_01_someone_is_still_alive_key_v1.mp4",
+      "bytes": 6205608,
+      "classification": "runtime-required"
+    },
+    {
       "path": "interstitials/int_01_someone_is_still_alive_key_v1.webp",
       "bytes": 68598,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "interstitials/int_02_kaelen_s_sleeping_machine_key_v1.mp4",
+      "bytes": 8282853,
       "classification": "runtime-required"
     },
     {
@@ -5686,8 +5720,18 @@
       "classification": "runtime-required"
     },
     {
+      "path": "interstitials/int_03_the_math_is_beautiful_now_key_v1.mp4",
+      "bytes": 8505266,
+      "classification": "runtime-required"
+    },
+    {
       "path": "interstitials/int_03_the_math_is_beautiful_now_key_v1.webp",
       "bytes": 152332,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "interstitials/int_04_warmth_beneath_the_ice_key_v1.mp4",
+      "bytes": 7180538,
       "classification": "runtime-required"
     },
     {
@@ -5696,8 +5740,18 @@
       "classification": "runtime-required"
     },
     {
+      "path": "interstitials/int_05_the_pipes_are_singing_key_v1.mp4",
+      "bytes": 9665825,
+      "classification": "runtime-required"
+    },
+    {
       "path": "interstitials/int_05_the_pipes_are_singing_key_v1.webp",
       "bytes": 105398,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "interstitials/int_06_briggs_keeps_the_ledger_key_v1.mp4",
+      "bytes": 8603484,
       "classification": "runtime-required"
     },
     {
@@ -5706,8 +5760,18 @@
       "classification": "runtime-required"
     },
     {
+      "path": "interstitials/int_07_your_name_was_written_twice_key_v1.mp4",
+      "bytes": 6523322,
+      "classification": "runtime-required"
+    },
+    {
       "path": "interstitials/int_07_your_name_was_written_twice_key_v1.webp",
       "bytes": 89540,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "interstitials/int_08_dr_nahl_remembers_the_tissue_key_v1.mp4",
+      "bytes": 8853498,
       "classification": "runtime-required"
     },
     {
@@ -5716,8 +5780,18 @@
       "classification": "runtime-required"
     },
     {
+      "path": "interstitials/int_09_mothership_customer_support_key_v1.mp4",
+      "bytes": 8940257,
+      "classification": "runtime-required"
+    },
+    {
       "path": "interstitials/int_09_mothership_customer_support_key_v1.webp",
       "bytes": 120726,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "interstitials/int_10_mothership_is_not_feeling_well_key_v1.mp4",
+      "bytes": 11308780,
       "classification": "runtime-required"
     },
     {
@@ -5726,8 +5800,18 @@
       "classification": "runtime-required"
     },
     {
+      "path": "interstitials/int_11_her_voice_inside_your_helmet_key_v1.mp4",
+      "bytes": 9383728,
+      "classification": "runtime-required"
+    },
+    {
       "path": "interstitials/int_11_her_voice_inside_your_helmet_key_v1.webp",
       "bytes": 100424,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "interstitials/int_12_the_queen_makes_a_reasonable_offer_key_v1.mp4",
+      "bytes": 8928628,
       "classification": "runtime-required"
     },
     {
@@ -5736,8 +5820,18 @@
       "classification": "runtime-required"
     },
     {
+      "path": "interstitials/int_13_a_snail_blocks_the_hallway_key_v1.mp4",
+      "bytes": 7994570,
+      "classification": "runtime-required"
+    },
+    {
       "path": "interstitials/int_13_a_snail_blocks_the_hallway_key_v1.webp",
       "bytes": 118872,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "interstitials/int_14_cold_enough_to_think_key_v1.mp4",
+      "bytes": 12347982,
       "classification": "runtime-required"
     },
     {
@@ -5746,8 +5840,18 @@
       "classification": "runtime-required"
     },
     {
+      "path": "interstitials/int_15_the_spores_know_your_name_key_v1.mp4",
+      "bytes": 14059035,
+      "classification": "runtime-required"
+    },
+    {
       "path": "interstitials/int_15_the_spores_know_your_name_key_v1.webp",
       "bytes": 156756,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "interstitials/int_16_we_could_avoid_doing_this_key_v1.mp4",
+      "bytes": 5906919,
       "classification": "runtime-required"
     },
     {
@@ -5756,8 +5860,18 @@
       "classification": "runtime-required"
     },
     {
+      "path": "interstitials/int_17_it_understands_the_gun_key_v1.mp4",
+      "bytes": 7052743,
+      "classification": "runtime-required"
+    },
+    {
       "path": "interstitials/int_17_it_understands_the_gun_key_v1.webp",
       "bytes": 130298,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "interstitials/int_18_the_creature_lets_you_pass_key_v1.mp4",
+      "bytes": 9183476,
       "classification": "runtime-required"
     },
     {
@@ -5766,8 +5880,18 @@
       "classification": "runtime-required"
     },
     {
+      "path": "interstitials/int_19_meridian_remembers_you_key_v1.mp4",
+      "bytes": 14294231,
+      "classification": "runtime-required"
+    },
+    {
       "path": "interstitials/int_19_meridian_remembers_you_key_v1.webp",
       "bytes": 121986,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "interstitials/int_20_tallow_keeps_the_steam_key_v1.mp4",
+      "bytes": 8823888,
       "classification": "runtime-required"
     },
     {
@@ -5776,8 +5900,18 @@
       "classification": "runtime-required"
     },
     {
+      "path": "interstitials/int_21_vesper_sleeps_in_shifts_key_v1.mp4",
+      "bytes": 7647184,
+      "classification": "runtime-required"
+    },
+    {
       "path": "interstitials/int_21_vesper_sleeps_in_shifts_key_v1.webp",
       "bytes": 82480,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "interstitials/int_22_you_robbed_the_only_people_left_key_v1.mp4",
+      "bytes": 8532810,
       "classification": "runtime-required"
     },
     {
@@ -5786,8 +5920,18 @@
       "classification": "runtime-required"
     },
     {
+      "path": "interstitials/int_23_they_still_have_their_faces_key_v1.mp4",
+      "bytes": 7968052,
+      "classification": "runtime-required"
+    },
+    {
       "path": "interstitials/int_23_they_still_have_their_faces_key_v1.webp",
       "bytes": 120494,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "interstitials/int_24_nobody_says_goodbye_key_v1.mp4",
+      "bytes": 5659997,
       "classification": "runtime-required"
     },
     {
@@ -5796,8 +5940,18 @@
       "classification": "runtime-required"
     },
     {
+      "path": "interstitials/int_25_gigawatt_goliath_key_v1.mp4",
+      "bytes": 11447642,
+      "classification": "runtime-required"
+    },
+    {
       "path": "interstitials/int_25_gigawatt_goliath_key_v1.webp",
       "bytes": 178144,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "interstitials/int_26_absolute_zero_has_a_shell_key_v1.mp4",
+      "bytes": 8207651,
       "classification": "runtime-required"
     },
     {
@@ -5806,8 +5960,18 @@
       "classification": "runtime-required"
     },
     {
+      "path": "interstitials/int_27_the_bloom_that_hunts_key_v1.mp4",
+      "bytes": 11829236,
+      "classification": "runtime-required"
+    },
+    {
       "path": "interstitials/int_27_the_bloom_that_hunts_key_v1.webp",
       "bytes": 143284,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "interstitials/int_28_martha_runs_faster_now_key_v1.mp4",
+      "bytes": 8442110,
       "classification": "runtime-required"
     },
     {
@@ -5816,8 +5980,18 @@
       "classification": "runtime-required"
     },
     {
+      "path": "interstitials/int_29_briggs_became_the_barricade_key_v1.mp4",
+      "bytes": 5012028,
+      "classification": "runtime-required"
+    },
+    {
       "path": "interstitials/int_29_briggs_became_the_barricade_key_v1.webp",
       "bytes": 93346,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "interstitials/int_30_kaelen_is_the_grid_key_v1.mp4",
+      "bytes": 17439242,
       "classification": "runtime-required"
     },
     {
@@ -5826,8 +6000,18 @@
       "classification": "runtime-required"
     },
     {
+      "path": "interstitials/int_31_mother_of_the_last_world_key_v1.mp4",
+      "bytes": 10837581,
+      "classification": "runtime-required"
+    },
+    {
       "path": "interstitials/int_31_mother_of_the_last_world_key_v1.webp",
       "bytes": 124926,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "interstitials/int_32_black_box_stain_key_v1.mp4",
+      "bytes": 9223148,
       "classification": "runtime-required"
     },
     {
@@ -5941,18 +6125,8 @@
       "classification": "runtime-required"
     },
     {
-      "path": "interstitials/motion/int_01_someone_is_still_alive_motion_v1.mp4",
-      "bytes": 6205608,
-      "classification": "runtime-required"
-    },
-    {
       "path": "interstitials/motion/int_01_someone_is_still_alive_motion_v1.webm",
       "bytes": 2790610,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "interstitials/motion/int_02_kaelen_s_sleeping_machine_motion_v1.mp4",
-      "bytes": 8282853,
       "classification": "runtime-required"
     },
     {
@@ -5961,18 +6135,8 @@
       "classification": "runtime-required"
     },
     {
-      "path": "interstitials/motion/int_03_the_math_is_beautiful_now_motion_v1.mp4",
-      "bytes": 8505266,
-      "classification": "runtime-required"
-    },
-    {
       "path": "interstitials/motion/int_03_the_math_is_beautiful_now_motion_v1.webm",
       "bytes": 4560608,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "interstitials/motion/int_04_warmth_beneath_the_ice_motion_v1.mp4",
-      "bytes": 7180538,
       "classification": "runtime-required"
     },
     {
@@ -5981,18 +6145,8 @@
       "classification": "runtime-required"
     },
     {
-      "path": "interstitials/motion/int_05_the_pipes_are_singing_motion_v1.mp4",
-      "bytes": 9665825,
-      "classification": "runtime-required"
-    },
-    {
       "path": "interstitials/motion/int_05_the_pipes_are_singing_motion_v1.webm",
       "bytes": 5239483,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "interstitials/motion/int_06_briggs_keeps_the_ledger_motion_v1.mp4",
-      "bytes": 8603484,
       "classification": "runtime-required"
     },
     {
@@ -6001,18 +6155,8 @@
       "classification": "runtime-required"
     },
     {
-      "path": "interstitials/motion/int_07_your_name_was_written_twice_motion_v1.mp4",
-      "bytes": 6523322,
-      "classification": "runtime-required"
-    },
-    {
       "path": "interstitials/motion/int_07_your_name_was_written_twice_motion_v1.webm",
       "bytes": 3336521,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "interstitials/motion/int_08_dr_nahl_remembers_the_tissue_motion_v1.mp4",
-      "bytes": 8853498,
       "classification": "runtime-required"
     },
     {
@@ -6021,18 +6165,8 @@
       "classification": "runtime-required"
     },
     {
-      "path": "interstitials/motion/int_09_mothership_customer_support_motion_v1.mp4",
-      "bytes": 8940257,
-      "classification": "runtime-required"
-    },
-    {
       "path": "interstitials/motion/int_09_mothership_customer_support_motion_v1.webm",
       "bytes": 5215025,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "interstitials/motion/int_10_mothership_is_not_feeling_well_motion_v1.mp4",
-      "bytes": 11308780,
       "classification": "runtime-required"
     },
     {
@@ -6041,18 +6175,8 @@
       "classification": "runtime-required"
     },
     {
-      "path": "interstitials/motion/int_11_her_voice_inside_your_helmet_motion_v1.mp4",
-      "bytes": 9383728,
-      "classification": "runtime-required"
-    },
-    {
       "path": "interstitials/motion/int_11_her_voice_inside_your_helmet_motion_v1.webm",
       "bytes": 5354158,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "interstitials/motion/int_12_the_queen_makes_a_reasonable_offer_motion_v1.mp4",
-      "bytes": 8928628,
       "classification": "runtime-required"
     },
     {
@@ -6061,18 +6185,8 @@
       "classification": "runtime-required"
     },
     {
-      "path": "interstitials/motion/int_13_a_snail_blocks_the_hallway_motion_v1.mp4",
-      "bytes": 7994570,
-      "classification": "runtime-required"
-    },
-    {
       "path": "interstitials/motion/int_13_a_snail_blocks_the_hallway_motion_v1.webm",
       "bytes": 4599406,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "interstitials/motion/int_14_cold_enough_to_think_motion_v1.mp4",
-      "bytes": 12347982,
       "classification": "runtime-required"
     },
     {
@@ -6081,18 +6195,8 @@
       "classification": "runtime-required"
     },
     {
-      "path": "interstitials/motion/int_15_the_spores_know_your_name_motion_v1.mp4",
-      "bytes": 14059035,
-      "classification": "runtime-required"
-    },
-    {
       "path": "interstitials/motion/int_15_the_spores_know_your_name_motion_v1.webm",
       "bytes": 9079290,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "interstitials/motion/int_16_we_could_avoid_doing_this_motion_v1.mp4",
-      "bytes": 5906919,
       "classification": "runtime-required"
     },
     {
@@ -6101,18 +6205,8 @@
       "classification": "runtime-required"
     },
     {
-      "path": "interstitials/motion/int_17_it_understands_the_gun_motion_v1.mp4",
-      "bytes": 7052743,
-      "classification": "runtime-required"
-    },
-    {
       "path": "interstitials/motion/int_17_it_understands_the_gun_motion_v1.webm",
       "bytes": 3650593,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "interstitials/motion/int_18_the_creature_lets_you_pass_motion_v1.mp4",
-      "bytes": 9183476,
       "classification": "runtime-required"
     },
     {
@@ -6121,18 +6215,8 @@
       "classification": "runtime-required"
     },
     {
-      "path": "interstitials/motion/int_19_meridian_remembers_you_motion_v1.mp4",
-      "bytes": 14294231,
-      "classification": "runtime-required"
-    },
-    {
       "path": "interstitials/motion/int_19_meridian_remembers_you_motion_v1.webm",
       "bytes": 9032567,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "interstitials/motion/int_20_tallow_keeps_the_steam_motion_v1.mp4",
-      "bytes": 8823888,
       "classification": "runtime-required"
     },
     {
@@ -6141,18 +6225,8 @@
       "classification": "runtime-required"
     },
     {
-      "path": "interstitials/motion/int_21_vesper_sleeps_in_shifts_motion_v1.mp4",
-      "bytes": 7647184,
-      "classification": "runtime-required"
-    },
-    {
       "path": "interstitials/motion/int_21_vesper_sleeps_in_shifts_motion_v1.webm",
       "bytes": 4041361,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "interstitials/motion/int_22_you_robbed_the_only_people_left_motion_v1.mp4",
-      "bytes": 8532810,
       "classification": "runtime-required"
     },
     {
@@ -6161,18 +6235,8 @@
       "classification": "runtime-required"
     },
     {
-      "path": "interstitials/motion/int_23_they_still_have_their_faces_motion_v1.mp4",
-      "bytes": 7968052,
-      "classification": "runtime-required"
-    },
-    {
       "path": "interstitials/motion/int_23_they_still_have_their_faces_motion_v1.webm",
       "bytes": 3786334,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "interstitials/motion/int_24_nobody_says_goodbye_motion_v1.mp4",
-      "bytes": 5659997,
       "classification": "runtime-required"
     },
     {
@@ -6181,18 +6245,8 @@
       "classification": "runtime-required"
     },
     {
-      "path": "interstitials/motion/int_25_gigawatt_goliath_motion_v1.mp4",
-      "bytes": 11447642,
-      "classification": "runtime-required"
-    },
-    {
       "path": "interstitials/motion/int_25_gigawatt_goliath_motion_v1.webm",
       "bytes": 7094947,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "interstitials/motion/int_26_absolute_zero_has_a_shell_motion_v1.mp4",
-      "bytes": 8207651,
       "classification": "runtime-required"
     },
     {
@@ -6201,18 +6255,8 @@
       "classification": "runtime-required"
     },
     {
-      "path": "interstitials/motion/int_27_the_bloom_that_hunts_motion_v1.mp4",
-      "bytes": 11829236,
-      "classification": "runtime-required"
-    },
-    {
       "path": "interstitials/motion/int_27_the_bloom_that_hunts_motion_v1.webm",
       "bytes": 7090124,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "interstitials/motion/int_28_martha_runs_faster_now_motion_v1.mp4",
-      "bytes": 8442110,
       "classification": "runtime-required"
     },
     {
@@ -6221,18 +6265,8 @@
       "classification": "runtime-required"
     },
     {
-      "path": "interstitials/motion/int_29_briggs_became_the_barricade_motion_v1.mp4",
-      "bytes": 5012028,
-      "classification": "runtime-required"
-    },
-    {
       "path": "interstitials/motion/int_29_briggs_became_the_barricade_motion_v1.webm",
       "bytes": 2342114,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "interstitials/motion/int_30_kaelen_is_the_grid_motion_v1.mp4",
-      "bytes": 17439242,
       "classification": "runtime-required"
     },
     {
@@ -6241,18 +6275,8 @@
       "classification": "runtime-required"
     },
     {
-      "path": "interstitials/motion/int_31_mother_of_the_last_world_motion_v1.mp4",
-      "bytes": 10837581,
-      "classification": "runtime-required"
-    },
-    {
       "path": "interstitials/motion/int_31_mother_of_the_last_world_motion_v1.webm",
       "bytes": 6437194,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "interstitials/motion/int_32_black_box_stain_motion_v1.mp4",
-      "bytes": 9223148,
       "classification": "runtime-required"
     },
     {

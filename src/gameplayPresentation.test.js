@@ -4,10 +4,15 @@ import { ThreeGame } from './threeGame.js';
 
 describe('gameplay focus policy', () => {
     const normal = { performanceProfile: 'gameplay', cameraMode: 'isometric' };
-    it('keeps the perspective camera sharp and preserves the isometric effect', () => {
+
+    // G01: the shipped default camera is third-person (threeGame.js sets it, and
+    // main.js persists it), so gating focus effects on isometric meant a
+    // default-settings player never rendered through the composer at all.
+    it('runs focus effects in both shipped cameras', () => {
         expect(usesGameplayFocusEffects(normal)).toBe(true);
-        expect(usesGameplayFocusEffects({ ...normal, cameraMode: 'third-person' })).toBe(false);
+        expect(usesGameplayFocusEffects({ ...normal, cameraMode: 'third-person' })).toBe(true);
     });
+
     it.each([
         { performanceProfile: 'menu' }, { loadingPaused: true },
         { adaptiveGameplayPerformanceMode: true }, { gameplayPostProcessingEnabled: false }
@@ -16,5 +21,15 @@ describe('gameplay focus policy', () => {
         ThreeGame.prototype.renderWithPerf.call(game);
         expect(game.renderer.render).toHaveBeenCalledOnce();
         expect(game.composer.render).not.toHaveBeenCalled();
+    });
+
+    it.each([
+        { performanceProfile: 'gameplay', cameraMode: 'isometric' },
+        { performanceProfile: 'gameplay', cameraMode: 'third-person' }
+    ])('renders through the composer when %j', (state) => {
+        const game = { ...state, renderer: { render: vi.fn() }, composer: { render: vi.fn() }, getPerformanceDiagnosticsSnapshot: () => ({}) };
+        ThreeGame.prototype.renderWithPerf.call(game);
+        expect(game.composer.render).toHaveBeenCalledOnce();
+        expect(game.renderer.render).not.toHaveBeenCalled();
     });
 });

@@ -130,7 +130,7 @@ describe('updateCamera third-person steering', () => {
             cameraDistancePreset: 'standard',
             cameraFollowPreset: 'balanced',
             cameraFollowRate: 17,
-            thirdPersonCameraConfig: { distance: 3.65, shoulder: 0.58 },
+            thirdPersonCameraConfig: { distance: 6.2, shoulder: 0.4 },
             performanceProfile: 'menu',
             cameraMode: 'third-person'
         };
@@ -141,7 +141,8 @@ describe('updateCamera third-person steering', () => {
         });
 
         expect(selected).toEqual({ distance: 'close', follow: 'tight' });
-        expect(game.thirdPersonCameraConfig.distance).toBeCloseTo(3.05, 2);
+        // Mirrors the `close` preset in threeGame's distanceByPreset table.
+        expect(game.thirdPersonCameraConfig.distance).toBeCloseTo(5.4, 2);
         expect(game.cameraFollowRate).toBe(26);
 
         const fallback = ThreeGame.prototype.setCameraTuning.call(game, {

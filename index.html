@@ -903,6 +903,7 @@
             <div class="tactical-map-scanline"></div>
           </div>
           <div class="tactical-map-sidebar">
+            <div id="expanded-map-info" class="map-inspection-slot"></div>
             <div class="tactical-map-legend-title">BLUEPRINT LEGEND</div>
             <div class="tactical-map-legend-item">
               <span class="legend-chip legend-chip--home">🏠</span>
@@ -1214,14 +1215,16 @@
         <span id="level-num">0</span>
         <span id="biome-label" class="level-indicator__biome">ACTIVE SECTOR</span>
         <span id="hud-run-seed" class="level-indicator__seed hidden">SEED: —</span>
+        <div id="hud-run-cards" class="run-card-strip hidden" aria-label="Active run pressure"></div>
       </div>
 
       <!-- Desktop Compass HUD (shown only on PC) -->
       <div id="desktop-compass" class="desktop-compass hidden" role="button" tabindex="0" title="Click or press M to toggle Tactical Map" aria-label="Tactical Compass (Click to open map)">
         <div class="desktop-compass__header">
-          <span>NAV-LINK: ACTIVE</span>
+          <span>TACTICAL MAP</span>
           <span class="desktop-compass__hint">[MAP / M]</span>
         </div>
+        <canvas id="hud-blueprint-canvas" width="300" height="180" aria-label="Explored tactical map"></canvas>
         <div class="desktop-compass__face">
           <div class="desktop-compass__ring">
             <div class="desktop-compass__arrow" id="desktop-compass-arrow"></div>
@@ -1245,6 +1248,7 @@
             </div>
           </div>
         </div>
+        <div id="hud-map-info" class="map-inspection-slot"></div>
       </div>
       <div class="header-bar hud-header">
         <div class="hud-header__center">
@@ -1403,6 +1407,7 @@
           </div>
 
           <div class="game-over-bank-note" id="go-bank-note">BANKED RESOURCES PRESERVED</div>
+          <div class="game-over-bank-note game-over-bank-note--cards" id="go-run-cards">RUN PRESSURE: NONE</div>
           <div class="game-over-bank-note game-over-bank-note--recoverable" id="go-recoverable-note">BLACK BOX: NONE</div>
           <div class="game-over-bank-note game-over-bank-note--steam hidden" id="go-steam-grant-note"></div>
 

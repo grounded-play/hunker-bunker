@@ -73,7 +73,7 @@ export const CATALOG_ITEMS = Object.freeze({
     '4123': { name: 'Bunker 404 Lost Squad Decal', rarity: 'rare', type: 'decal' },
     '4124': { name: 'Cyber-Skull Tactical Pin', rarity: 'rare', type: 'decal' },
     '4125': { name: 'Cryo-Phoenix Insignia', rarity: 'rare', type: 'decal' },
-    '4126': { name: 'Queen Slayer Gold Seal', rarity: 'epic', type: 'decal', icon: '/economy/emblem_queen_slayer.png' },
+    '4126': { name: 'Queen Slayer Gold Seal', rarity: 'epic', type: 'decal', icon: '/economy/decal_queen_slayer_gold_seal.png' },
     '4127': { name: 'Void Horizon Sigil', rarity: 'epic', type: 'decal' },
     '4128': { name: 'Ancient Core Glyphs', rarity: 'epic', type: 'decal' },
     '4129': { name: 'Grand Marshal Relic Crest', rarity: 'legendary', type: 'decal' },

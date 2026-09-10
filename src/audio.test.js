@@ -130,3 +130,16 @@ describe('AudioManager Voice Channel & Soundsets Toggle', () => {
         expect(resultNone).toBeNull();
     });
 });
+
+
+describe('elite suit warning', () => {
+    it('respects mute and audio-unlock settings', () => {
+        AudioManager.init();
+        AudioManager.isUnlocked = false;
+        expect(AudioManager.playEliteWarning()).toBe(false);
+        AudioManager.isUnlocked = true; AudioManager.globalMuted = true;
+        expect(AudioManager.playEliteWarning()).toBe(false);
+        AudioManager.globalMuted = false;
+        expect(AudioManager.playEliteWarning()).toBe(true);
+    });
+});

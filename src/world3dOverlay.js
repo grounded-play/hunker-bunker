@@ -197,5 +197,11 @@ export function syncWorld3dReplacement(source, { scale = 1, visible } = {}) {
     root.rotation.y = (source.material?.rotation ?? 0) + WORLD_3D_FACING_YAW;
     root.scale.setScalar(Math.max(0, Number.isFinite(scale) ? scale : 1));
     root.visible = visible ?? Boolean(source.userData.world3dDesiredVisible);
+    // Once a replacement exists the flat sprite must never draw again, or the
+    // billboard renders *inside* the model. Callers legitimately flip
+    // `source.visible` while animating (the O2 generator rise sets it every
+    // frame), so hiding it here -- the single funnel every frame goes through
+    // -- is more reliable than expecting each caller to remember.
+    source.visible = false;
     return true;
 }

@@ -5,7 +5,7 @@
 
 import { io as connectSocketIo } from 'socket.io-client';
 import { planMultiplayerCrashSites } from './multiplayerCrashPlanner.js';
-import { startMultiplayerRun } from './gameController.js';
+import { clearMultiplayerSession, startMultiplayerRun } from './gameController.js';
 import { getSelectedPolish } from './operatorPolishes.js';
 import {
     createSteamLobby,
@@ -927,6 +927,16 @@ export class MultiplayerLobby {
             // No relay session, no roster, no crash-plan/multiplayer session
             // to set up -- SOLO is the Armory-embark launch action Armory
             // itself already captured, invoked directly.
+            //
+            // Drop anything a previous co-op/PvP run left behind first. Only
+            // the title "NEW RUN" and Daily Ops buttons cleared it, so
+            // deploying SOLO from the Armory after a co-op run kept
+            // window.activeMultiplayerSession and game.isMultiplayer set --
+            // the solo run then behaved as multiplayer, with stale socket
+            // listeners still mutating its state. This is the
+            // "definitely-solo run-start path" gameController.js's own
+            // comment says should call it.
+            clearMultiplayerSession();
             window.AudioManager?.play?.('fx_menu_confirm', { volume: 0.4, bus: 'sfx' });
             this.closeModal();
             const launch = this.onLaunch;

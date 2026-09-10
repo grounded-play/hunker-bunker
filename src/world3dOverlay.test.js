@@ -46,6 +46,42 @@ describe('world 3D replacement catalog', () => {
         expect(root.visible).toBe(true);
     });
 
+    // A sprite and its 3D replacement must never both be drawable. When the
+    // O2 generator's flat sprite stayed visible after the GLB was parented, the
+    // billboard rendered *inside* the model. sync is the one funnel every
+    // animation frame goes through, so it is the right place to enforce it.
+    it('hides the source sprite whenever a 3D replacement exists', () => {
+        const source = new THREE.Sprite(new THREE.SpriteMaterial());
+        const root = new THREE.Object3D();
+        source.userData.world3dRoot = root;
+        source.userData.world3dDesiredVisible = true;
+        source.visible = true;
+
+        syncWorld3dReplacement(source, { scale: 1 });
+
+        expect(source.visible).toBe(false);
+        expect(root.visible).toBe(true);
+    });
+
+    it('leaves a sprite alone when it has no 3D replacement', () => {
+        const source = new THREE.Sprite(new THREE.SpriteMaterial());
+        source.visible = true;
+        expect(syncWorld3dReplacement(source, { scale: 1 })).toBe(false);
+        expect(source.visible).toBe(true);
+    });
+
+    // Reappearing mid-animation must re-hide the sprite too, not just once.
+    it('keeps the sprite hidden across repeated syncs', () => {
+        const source = new THREE.Sprite(new THREE.SpriteMaterial());
+        source.userData.world3dRoot = new THREE.Object3D();
+        source.userData.world3dDesiredVisible = true;
+        for (const scale of [0, 0.5, 1]) {
+            source.visible = true; // something upstream turns it back on
+            syncWorld3dReplacement(source, { scale, visible: true });
+            expect(source.visible).toBe(false);
+        }
+    });
+
     it('exposes preload list with valid model types and safely runs preload', async () => {
         const { COMMON_WORLD_3D_MODEL_TYPES, preloadWorld3dModels } = await import('./world3dOverlay.js');
         expect(COMMON_WORLD_3D_MODEL_TYPES.length).toBeGreaterThan(10);

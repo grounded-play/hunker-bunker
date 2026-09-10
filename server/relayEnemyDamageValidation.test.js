@@ -206,7 +206,10 @@ describe('Server Relay: co-op enemy-hit-sync validation', () => {
         const snapshot = await snapshotPromise;
         expect(snapshot?.enemies).toEqual([{
             scatterKey: '1,1:0:crawler', enemyType: 'crawler',
-            x: 12, z: 13, hp: 2, burstTriggered: false
+            x: 12, z: 13, hp: 2, burstTriggered: false,
+            // Carried so a peer can recreate a host-owned boss it has never
+            // seen; an ordinary crawler reports the defaults.
+            isBoss: false, scale: null
         }]);
 
         const rejectedPromise = waitForEvent(host, 'enemyStateSnapshot', 300);

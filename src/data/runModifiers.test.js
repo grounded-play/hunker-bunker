@@ -9,7 +9,10 @@ describe('runModifiers', () => {
             'patrol_surge',
             'ice_collapse',
             'camp_paranoia',
-            'egg_instability'
+            'egg_instability',
+            'hunter_pack',
+            'sensor_ghosts',
+            'grid_flicker'
         ]);
         for (const modifier of RUN_MODIFIERS) {
             expect(typeof modifier.title).toBe('string');

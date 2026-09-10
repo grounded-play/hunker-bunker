@@ -1,3 +1,8 @@
+import { createRelicPickup, animateRelicPickup, createImpactBurst, disposeExpeditionEffect } from './expeditionVfx.js';
+import { TraumaManager, create3DMuzzleFlash, WEAPON_TRAUMA_TABLE } from './combatJuice.js';
+import { PickupMagnet, PickupComboTracker } from './lootJuice.js';
+import { BiomeAtmosphereSystem } from './ambientDrift.js';
+import { KillstreakFeedbackSystem } from './gameplayTactileVfx.js';
 import { CHUNK_SIZE, TILE_SIZE } from './tileCatalog.js';
 import { getControllerGlyphLabel } from './inputGlyphs.js';
 
@@ -17,7 +22,8 @@ export const TiltShiftPassShader = {
         tDiffuse: { value: null },
         focusY: { value: 0.5 },
         focusRange: { value: 0.38 },
-        blurAmount: { value: 0.0035 },
+        blurAmount: { value: 4.2 },
+        texelSize: { value: new THREE.Vector2(1 / 1280, 1 / 800) },
         dir: { value: new THREE.Vector2(0, 1) }
     },
     vertexShader: `
@@ -33,20 +39,47 @@ export const TiltShiftPassShader = {
         uniform float focusRange;
         uniform float blurAmount;
         uniform vec2 dir;
+        uniform vec2 texelSize;
         varying vec2 vUv;
 
         void main() {
             float dist = abs(vUv.y - focusY);
-            float factor = smoothstep(focusRange * 0.2, focusRange * 1.8, dist);
-            vec2 step = dir * (blurAmount * factor);
+            float normDist = clamp(dist / max(0.01, focusRange), 0.0, 3.0);
+            float factor = smoothstep(1.0, 1.7, normDist);
+            factor = factor * factor;
+
+            vec2 step = dir * texelSize * (blurAmount * factor);
+            float chroma = factor * 0.0016;
+
+            const float w0 = 0.286;
+            const float w1 = 0.201;
+            const float w2 = 0.106;
+            const float w3 = 0.050;
+
             vec4 color = vec4(0.0);
-            color += texture2D(tDiffuse, vUv - step * 3.0) * 0.09;
-            color += texture2D(tDiffuse, vUv - step * 2.0) * 0.16;
-            color += texture2D(tDiffuse, vUv - step * 1.0) * 0.25;
-            color += texture2D(tDiffuse, vUv) * 0.30;
-            color += texture2D(tDiffuse, vUv + step * 1.0) * 0.25;
-            color += texture2D(tDiffuse, vUv + step * 2.0) * 0.16;
-            color += texture2D(tDiffuse, vUv + step * 3.0) * 0.09;
+            color += texture2D(tDiffuse, vUv) * w0;
+
+            vec2 uv1P = vUv + step * 1.0;
+            vec2 uv1M = vUv - step * 1.0;
+            color.r += (texture2D(tDiffuse, uv1P + vec2(chroma, 0.0)).r + texture2D(tDiffuse, uv1M + vec2(chroma, 0.0)).r) * w1;
+            color.g += (texture2D(tDiffuse, uv1P).g + texture2D(tDiffuse, uv1M).g) * w1;
+            color.b += (texture2D(tDiffuse, uv1P - vec2(chroma, 0.0)).b + texture2D(tDiffuse, uv1M - vec2(chroma, 0.0)).b) * w1;
+            color.a += (texture2D(tDiffuse, uv1P).a + texture2D(tDiffuse, uv1M).a) * w1;
+
+            vec2 uv2P = vUv + step * 2.0;
+            vec2 uv2M = vUv - step * 2.0;
+            color.r += (texture2D(tDiffuse, uv2P + vec2(chroma * 1.6, 0.0)).r + texture2D(tDiffuse, uv2M + vec2(chroma * 1.6, 0.0)).r) * w2;
+            color.g += (texture2D(tDiffuse, uv2P).g + texture2D(tDiffuse, uv2M).g) * w2;
+            color.b += (texture2D(tDiffuse, uv2P - vec2(chroma * 1.6, 0.0)).b + texture2D(tDiffuse, uv2M - vec2(chroma * 1.6, 0.0)).b) * w2;
+            color.a += (texture2D(tDiffuse, uv2P).a + texture2D(tDiffuse, uv2M).a) * w2;
+
+            vec2 uv3P = vUv + step * 3.0;
+            vec2 uv3M = vUv - step * 3.0;
+            color.r += (texture2D(tDiffuse, uv3P + vec2(chroma * 2.2, 0.0)).r + texture2D(tDiffuse, uv3M + vec2(chroma * 2.2, 0.0)).r) * w3;
+            color.g += (texture2D(tDiffuse, uv3P).g + texture2D(tDiffuse, uv3M).g) * w3;
+            color.b += (texture2D(tDiffuse, uv3P - vec2(chroma * 2.2, 0.0)).b + texture2D(tDiffuse, uv3M - vec2(chroma * 2.2, 0.0)).b) * w3;
+            color.a += (texture2D(tDiffuse, uv3P).a + texture2D(tDiffuse, uv3M).a) * w3;
+
             gl_FragColor = color;
         }
     `
@@ -153,7 +186,7 @@ export const MAYOR_TINA_PLAYER_VISUAL = Object.freeze({
     allowStatic: false
 });
 import { createEnemy3dVisual, disposeEnemy3dVisual, updateEnemy3dVisual } from './enemy3dOverlay.js';
-import { createWorld3dModel, hasWorld3dModel, preloadWorld3dModels, syncWorld3dReplacement } from './world3dOverlay.js';
+import { WORLD_3D_FACING_YAW, createWorld3dModel, hasWorld3dModel, preloadWorld3dModels, syncWorld3dReplacement } from './world3dOverlay.js';
 import { computeTrailPosition } from './companionFollow.js';
 import { SNAIL_ENCOUNTER_CONSTANTS } from './snailEncounter.js';
 import { createUniversalEncounter, resolveEncounterAction } from './universalEncounter.js';
@@ -165,6 +198,7 @@ import { getEnemyStats } from './data/enemies.js';
 import { DEPTH_TIER_NAMES, getDepthLootConfig } from './data/loot.js';
 import { applyO2EfficiencyPenalty, describeCrossing, applySalvageMultiplier, getDepthContract } from './depthContract.js';
 import { ELITE_IDENTITY, isEliteForLoot, rollElitePromotion } from './eliteEnemies.js';
+import { applyCarapaceProtection, isInBioSlime } from './runRelicEffects.js';
 import { BunkerDirector } from './director.js';
 import { LineDirector } from './lineDirector.js';
 import { DIRECTOR_AMBIENT_LINES } from './data/lineDirectorPools.js';
@@ -182,7 +216,7 @@ import { humanityDecayProgress } from './vitals.js';
 import { applyCampPayoutEffects } from './runModifiers.js';
 import { WandererManager, isWandererEligible } from './wandererSystem.js';
 import { renderWandererModal, closeWandererModal } from './wandererModal.js';
-import { FOXHOLE_CONTRACT, HACKER_CONTRACT, HYBRID_CONTRACT, getSurvivorContractSteps } from './survivorContract.js';
+import { FOXHOLE_CONTRACT, HACKER_CONTRACT, HYBRID_CONTRACT, SURVIVOR_CONTRACTS, getSurvivorContractSteps } from './survivorContract.js';
 import { createWanderer3dInstance } from './wanderer3d.js';
 import { applyBlackChromaKey, applyGreenChromaKey } from './textureKeying.js';
 import { getCachedKeyedImage, putCachedKeyedImage } from './keyedTextureCache.js';
@@ -546,6 +580,13 @@ const PROCEDURAL_DOOR_OPEN_RADIUS = 2.7;
 const PROCEDURAL_DOOR_CLOSE_RADIUS = 3.6;
 const BOSS_WALL_BREAK_COOLDOWN = 0.42;
 const BOSS_WALL_BREAK_DAMAGE = 999;
+// Co-op friendly fire shoves a squadmate along the bullet's travel direction
+// instead of damaging them: enough to move someone out of a doorway, not enough
+// to fling them off a ledge.
+const FRIENDLY_FIRE_PUSH_DISTANCE = 0.55;
+// Squadmate avatars are roughly player-sized; keep the catch radius forgiving
+// enough that a shove reads as intentional rather than pixel-perfect.
+const SQUADMATE_HIT_RADIUS = 0.55;
 
 // --- Sprint 10 combat tuning / feature flags ---
 const FEATURE_WALL_DECALS = true;
@@ -1216,7 +1257,7 @@ export class ThreeGame {
         this.noclipSpeedMult = 3.5;
         this.activeTurret = null;
         this.turretCooldownTimer = 0;
-        this.cameraLift = 10;
+        this.cameraLift = 12.5;
         this.cameraOrbitRadius = Math.hypot(8, 8);
         this.cameraAzimuth = Math.atan2(8, 8);
         this.cameraRotationInput = 0;
@@ -1226,7 +1267,7 @@ export class ThreeGame {
         this.cameraDistancePreset = 'close';
         this.cameraFollowPreset = 'tight';
         this.cameraFollowRate = 26;
-        this.thirdPersonCameraConfig = { ...THIRD_PERSON_CAMERA, distance: 3.05, shoulder: 0.48 };
+        this.thirdPersonCameraConfig = { ...THIRD_PERSON_CAMERA, distance: 5.4, lift: 5.8, lookAhead: 1.8, shoulder: 0.3 };
         this._mouseEdgeTurnInput = 0;
         this._cameraTurnVelocity = 0;
         this.cameraOffset = new THREE.Vector3(
@@ -1425,6 +1466,11 @@ export class ThreeGame {
         this._threatAudioTimer = 0;
         this._cameraShakeTimer = 0;
         this._cameraShakeIntensity = 0;
+        this.traumaManager = new TraumaManager();
+        this.killstreakFeedback = new KillstreakFeedbackSystem();
+        this.pickupMagnet = new PickupMagnet();
+        this.pickupComboTracker = new PickupComboTracker();
+        this.biomeAtmosphere = null;
         this.visitedChunks = new Set();
         this.totalDistanceTravelled = 0;
         this.maxDepthTierReached = 0;
@@ -3169,6 +3215,7 @@ export class ThreeGame {
         this.setupLighting();
         this.setupSkyRig();
         this.setupWorld();
+        this.biomeAtmosphere = new BiomeAtmosphereSystem(this.scene);
         this.setupPlayer();
         this.setupMultiplayerNetwork();
         this.setupInput();
@@ -3179,27 +3226,35 @@ export class ThreeGame {
     }
 
     setupLighting() {
-        const ambientLight = new THREE.AmbientLight(0xffffff, 1.9);
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.85);
         this.scene.add(ambientLight);
         this.ambientLight = ambientLight;
 
-        const fillLight = new THREE.HemisphereLight(0x6b8db3, 0x07090c, 0.8);
+        const fillLight = new THREE.HemisphereLight(0x6b8db3, 0x07090c, 0.55);
         this.scene.add(fillLight);
         this.fillLight = fillLight;
 
-        const directionalLight = new THREE.DirectionalLight(0xd6e7ff, 2.3);
+        const directionalLight = new THREE.DirectionalLight(0xd6e7ff, 2.5);
         directionalLight.position.set(10, 18, 8);
         directionalLight.castShadow = true;
         directionalLight.shadow.mapSize.width = 1024;
         directionalLight.shadow.mapSize.height = 1024;
         directionalLight.shadow.camera.near = 0.5;
-        directionalLight.shadow.camera.far = 40;
-        directionalLight.shadow.camera.left = -14;
-        directionalLight.shadow.camera.right = 14;
-        directionalLight.shadow.camera.top = 14;
-        directionalLight.shadow.camera.bottom = -14;
+        directionalLight.shadow.camera.far = 50;
+        directionalLight.shadow.camera.left = -16;
+        directionalLight.shadow.camera.right = 16;
+        directionalLight.shadow.camera.top = 16;
+        directionalLight.shadow.camera.bottom = -16;
+        directionalLight.shadow.bias = -0.0004;
+        directionalLight.shadow.normalBias = 0.02;
+
+        this.directionalLightTarget = new THREE.Object3D();
+        this.scene.add(this.directionalLightTarget);
+        directionalLight.target = this.directionalLightTarget;
+
         this.scene.add(directionalLight);
         this.directionalLight = directionalLight;
+        this._sunOffset = { x: 10, y: 18, z: 8 };
 
         const playerGlow = new THREE.PointLight(PLAYER_COLORS[this.playerType] ?? 0xffffff, 3.8, 11.5, 1.65);
         playerGlow.position.set(0, 1.6, 0);
@@ -3215,6 +3270,22 @@ export class ThreeGame {
             playerGlow: playerGlow.intensity
         };
         this.baseFogRange = { near: this.scene.fog?.near ?? 10, far: this.scene.fog?.far ?? 28 };
+    }
+
+    updateDirectionalShadowFrustum() {
+        if (!this.directionalLight) return;
+        const targetX = this.player?.position?.x ?? 0;
+        const targetY = this.player?.position?.y ?? 0;
+        const targetZ = this.player?.position?.z ?? 0;
+        if (this.directionalLightTarget) {
+            this.directionalLightTarget.position.set(targetX, targetY, targetZ);
+        }
+        const offset = this._sunOffset ?? { x: 10, y: 18, z: 8 };
+        this.directionalLight.position.set(
+            targetX + offset.x,
+            targetY + offset.y,
+            targetZ + offset.z
+        );
     }
 
     createMenuGridTexture() {
@@ -3601,6 +3672,18 @@ export class ThreeGame {
             // wreck and every locked module here caused a large parse queue and
             // delayed the visible ship/console by many seconds.
             if (ship.type === this.playerType) this.setupActiveShip3dReplacements(ship);
+        }
+
+        // LAG-01: Build the dormant base flood-light grid during world setup so the
+        // 8 PointLights are present in the scene graph from the start (intensity 0, visible true).
+        // This ensures Three.js compiles lit materials during scene setup rather than causing a
+        // 10.5-second shader recompile freeze in the middle of gameplay when O2 is repaired.
+        if (this.baseLights && !this.baseLights.built) {
+            const activeShip = this.getActiveShip();
+            if (activeShip && Number.isFinite(activeShip.tileX) && Number.isFinite(activeShip.tileZ)) {
+                const color = PLAYER_COLORS[this.playerType] ?? 0xffffff;
+                this.baseLights.build(activeShip.tileX, activeShip.tileZ, 3.9, color);
+            }
         }
 
         this.syncPersistentUpgrades();
@@ -4381,6 +4464,8 @@ export class ThreeGame {
             this.netSocket.on('enemyDamaged', (data) => this.handleRemoteEnemyDamage(data));
             this.netSocket.on('enemyHitReported', (data) => this.handleEnemyHitReported(data));
             this.netSocket.on('enemyStateSnapshot', (data) => this.handleEnemyStateSnapshot(data));
+            this.netSocket.on('worldEventBroadcast', (data) => this.handleSharedWorldEvent(data));
+            this.netSocket.on('playerNudged', (data) => this.handlePlayerNudged(data));
             this.netSocket.on('playerDisconnected', (id) => this.removeRemotePlayer(id));
             this.netSocket.on('newPlayer', (player) => this.getOrCreateRemotePlayer(player));
             // Sprint 26: server/relay.js's disconnect handler now promotes a
@@ -4444,6 +4529,8 @@ export class ThreeGame {
             this.netSocket.off('enemyDamaged');
             this.netSocket.off('enemyHitReported');
             this.netSocket.off('enemyStateSnapshot');
+            this.netSocket.off('worldEventBroadcast');
+            this.netSocket.off('playerNudged');
             this.netSocket.off('playerDisconnected');
             this.netSocket.off('newPlayer');
             this.netSocket.off('hostChanged');
@@ -4451,6 +4538,10 @@ export class ThreeGame {
         }
         this.isMultiplayer = false;
         this.multiplayerMode = null;
+        // Shared world beats are deduped per session. Without clearing, a
+        // second co-op run would treat a beat it already saw (the O2 build,
+        // say) as a replay and silently skip it.
+        this._appliedWorldEvents = null;
         this.multiplayerRoomCode = null;
         this.multiplayerCrashPlan = null;
         this.multiplayerLocalPlayerId = null;
@@ -4910,7 +5001,9 @@ export class ThreeGame {
                 x: sprite.position.x,
                 z: sprite.position.z,
                 hp: Number.isFinite(sprite.userData.hp) ? sprite.userData.hp : null,
-                burstTriggered: Boolean(sprite.userData.burstTriggered)
+                burstTriggered: Boolean(sprite.userData.burstTriggered),
+                isBoss: Boolean(sprite.userData.isBoss),
+                scale: Number.isFinite(sprite.userData.baseScaleX) ? sprite.userData.baseScaleX : null
             });
             if (enemies.length >= 256) break;
         }
@@ -4919,12 +5012,162 @@ export class ThreeGame {
         return true;
     }
 
+    // Recreate a host-owned boss locally so a peer can see and be hurt by it.
+    // Purely visual/collision: the host stays authoritative for its position and
+    // HP, which arrive in the same snapshot that created it.
+    // Announce a beat that changes the shared world. Milestone events used to be
+    // purely local, so one player repairing the O2 generator produced nothing at
+    // all on the other client -- no cutscene, no generator rise, no boss.
+    // A squadmate's bullet shoves rather than hurts. Applied by the target's own
+    // client so nobody argues over position authority -- the wire only carries
+    // the impulse.
+    // Slide the player along a direction, per axis, so walls still block the
+    // push. Same approach as the snail contact knockback rather than a second
+    // movement system.
+    // A local round overlapping a remote squadmate's avatar. Co-op only: PvP
+    // keeps real damage, and a solo run has no squadmates to hit.
+    checkProjectileSquadmateHit(projectile) {
+        if (!this.isMultiplayer || this.multiplayerMode === 'pvp') return null;
+        if (!this.remotePlayers?.size || projectile?.isEnemy) return null;
+        const px = projectile.mesh.position.x;
+        const pz = projectile.mesh.position.z;
+        for (const [id, remote] of this.remotePlayers) {
+            const mesh = remote?.mesh;
+            if (!mesh || mesh.visible === false || remote.isDowned) continue;
+            const distance = Math.hypot(px - mesh.position.x, pz - mesh.position.z);
+            if (distance <= SQUADMATE_HIT_RADIUS) return { id, remote };
+        }
+        return null;
+    }
+
+    // Send the shove along the round's own travel direction, so a squadmate is
+    // pushed the way the bullet was going rather than away from the shooter.
+    nudgeSquadmate(squadmate, projectile) {
+        if (!squadmate?.id || !this.netSocket) return false;
+        const vx = projectile?.vx ?? 0;
+        const vz = projectile?.vz ?? 0;
+        const length = Math.hypot(vx, vz);
+        if (length <= 1e-4) return false;
+        this.netSocket.emit('playerNudge', {
+            targetId: squadmate.id,
+            dirX: vx / length,
+            dirZ: vz / length,
+            force: 1
+        });
+        return true;
+    }
+
+    pushPlayerAlong(dirX, dirZ, distance) {
+        if (!this.player || !Number.isFinite(distance) || distance <= 0) return false;
+        const pushX = dirX * distance;
+        const pushZ = dirZ * distance;
+        let moved = false;
+        if (this.canOccupyPosition(this.player.position.x + pushX, this.player.position.z)) {
+            this.player.position.x += pushX;
+            moved = true;
+        }
+        if (this.canOccupyPosition(this.player.position.x, this.player.position.z + pushZ)) {
+            this.player.position.z += pushZ;
+            moved = true;
+        }
+        return moved;
+    }
+
+    handlePlayerNudged(data) {
+        if (!data || data.targetId !== this.multiplayerLocalPlayerId) return false;
+        if (this.multiplayerMode === 'pvp' || !this.player || this.isPlayerDead) return false;
+        const dirX = Number(data.dirX);
+        const dirZ = Number(data.dirZ);
+        if (!Number.isFinite(dirX) || !Number.isFinite(dirZ)) return false;
+        const length = Math.hypot(dirX, dirZ);
+        if (length <= 1e-4) return false;
+        const force = Number.isFinite(data.force) ? Math.max(0, Math.min(4, data.force)) : 1;
+        this.pushPlayerAlong(dirX / length, dirZ / length, FRIENDLY_FIRE_PUSH_DISTANCE * force);
+        window.AudioManager?.play?.('ui_error', { volume: 0.25 });
+        return true;
+    }
+
+    broadcastSharedWorldEvent(event, detail = {}) {
+        if (!this.isMultiplayer || !this.netSocket || !event) return false;
+        this.netSocket.emit('worldEvent', { event, detail });
+        return true;
+    }
+
+    // Apply a beat announced by anyone in the room, including our own echo, so
+    // every client runs it from one ordering. `_appliedWorldEvents` keeps a beat
+    // idempotent: the originator has usually already run its local effects.
+    handleSharedWorldEvent(data) {
+        const event = data?.event;
+        if (!event) return false;
+        const detail = data?.detail ?? {};
+        const isEcho = data?.originId && data.originId === this.multiplayerLocalPlayerId;
+
+        this._appliedWorldEvents = this._appliedWorldEvents ?? new Set();
+        const dedupeKey = `${event}:${detail.level ?? ''}:${detail.goalKey ?? ''}`;
+        if (this._appliedWorldEvents.has(dedupeKey)) return false;
+        this._appliedWorldEvents.add(dedupeKey);
+
+        // The originator already ran the beat locally when it fired; replaying it
+        // would double the cutscene and the boss.
+        if (isEcho) return false;
+
+        if (typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent(event, {
+                detail: { ...detail, fromRemote: true }
+            }));
+        }
+        return true;
+    }
+
+    materializeRemoteBoss(state) {
+        if (!state?.scatterKey || !state.enemyType || !this.scatterMaterials?.[state.enemyType]) return null;
+        if (!Number.isFinite(state.x) || !Number.isFinite(state.z)) return null;
+        const chunkX = Math.floor(state.x / this.chunkSize);
+        const chunkY = Math.floor(state.z / this.chunkSize);
+        const group = this.chunkMeshes?.get(`${chunkX},${chunkY}`);
+        if (!group) return null; // Chunk not mounted yet; a later snapshot retries.
+
+        const boss = this.createScatterInstance({
+            x: state.x,
+            z: state.z,
+            type: state.enemyType,
+            scatterKey: state.scatterKey,
+            scale: Number.isFinite(state.scale) ? state.scale : 3.2,
+            rotation: 0,
+            tiltX: 0,
+            tiltZ: 0,
+            elevation: 0.1,
+            groupType: 'boss',
+            phase: 0,
+            opacity: 1,
+            isBoss: true
+        });
+        if (!boss) return null;
+        boss.userData.isRemoteReplica = true;
+        if (Number.isFinite(state.hp)) {
+            boss.userData.hp = state.hp;
+            boss.userData.maxHp = Math.max(state.hp, boss.userData.maxHp ?? state.hp);
+        }
+        group.add(boss);
+        this.scatterSprites.push(boss);
+        return boss;
+    }
+
     handleEnemyStateSnapshot(data) {
         if (this.isMultiplayerHost || this.multiplayerMode === 'pvp' || !Array.isArray(data?.enemies)) return false;
         let applied = 0;
         for (const state of data.enemies) {
             if (!state?.scatterKey) continue;
-            const sprite = (this.scatterSprites ?? []).find((candidate) => candidate.userData?.scatterKey === state.scatterKey);
+            let sprite = (this.scatterSprites ?? []).find((candidate) => candidate.userData?.scatterKey === state.scatterKey);
+            // A peer could previously only UPDATE enemies it already had, never
+            // create one -- so a milestone boss staged on the host stayed
+            // invisible on every other client for the whole fight. Bosses are
+            // materialized on demand; ordinary enemies deliberately are not,
+            // because each client owns its own local population and spawning
+            // every snail the host sees would double it.
+            if (!sprite?.userData && state.isBoss && !state.burstTriggered) {
+                sprite = this.materializeRemoteBoss?.(state) ?? null;
+            }
             if (!sprite?.userData) continue;
             if (Number.isFinite(state.x)) sprite.position.x = state.x;
             if (Number.isFinite(state.z)) sprite.position.z = state.z;
@@ -5031,6 +5274,10 @@ export class ThreeGame {
             const visual = await createEnemy3dVisual(sprite.userData.type);
             if (!visual || sprite.userData.burstTriggered) return;
             sprite.userData.enemy3dVisual = visual;
+            if (sprite.parent && visual.root) {
+                sprite.parent.add(visual.root);
+                visual.root.position.copy(sprite.position);
+            }
             sprite.visible = false;
         } catch (error) {
             console.warn(`[enemy-3d-overlay] ${sprite.userData.type} unavailable; keeping sprite`, error);
@@ -5050,7 +5297,10 @@ export class ThreeGame {
             const root = await (this.createWorld3dModel?.(modelType) ?? createWorld3dModel(modelType));
             if (!root || !source.parent) return;
             root.position.copy(source.position);
-            root.rotation.y = source.material?.rotation ?? 0;
+            // Must match syncWorld3dReplacement, which adds WORLD_3D_FACING_YAW.
+            // Without it the model faced one way when it loaded and snapped
+            // 180 degrees on the next frame's sync.
+            root.rotation.y = (source.material?.rotation ?? 0) + WORLD_3D_FACING_YAW;
             root.visible = owner ? Boolean(owner.isVisible) : source.visible;
             source.parent.add(root);
             root.userData.world3dSource = source;
@@ -5644,10 +5894,25 @@ export class ThreeGame {
                 return;
             }
             this._o2MilestoneBossQueued = true;
+            // Co-op: the milestone is a world beat, not a local one. Without this
+            // the other client saw no cutscene, no generator rise and no boss.
+            // `fromRemote` marks a beat we are replaying, so we do not echo it back.
+            if (!event?.detail?.fromRemote) {
+                this.broadcastSharedWorldEvent?.('o2-generator-upgraded', {
+                    level: event?.detail?.level ?? 1,
+                    goalKey: 'o2Bubble'
+                });
+            }
+            this.applyMilestoneBossRuntimeEvent({
+                type: MILESTONE_BOSS_EVENT_TYPES.GOAL_BUILT,
+                goalKey: 'o2Bubble'
+            });
+            this.reconcileAuthoredWorldProgression?.();
             const bossType = MILESTONE_BOSS_FOR_GOAL.o2Bubble;
-            setTimeout(() => {
-                try { this.renderer?.compile?.(this.scene, this.camera); } catch { /* best effort */ }
-            }, 50);
+            if (event?.detail?.orchestrated) {
+                // When choreographed by main.js, main handles the door and reveal sequence.
+                return;
+            }
             setTimeout(() => {
                 this.startO2StartupSequence(bossType);
             }, 100);
@@ -5831,7 +6096,7 @@ export class ThreeGame {
     }
 
     equipRunDrop(drop) {
-        if (!drop) return;
+        if (!drop || drop.implemented === false || [...this.runOverclocks, ...this.runRelics].some((item) => item.id === drop.id)) return false;
         if (drop.type === 'overclock') {
             this.runOverclocks.push(drop);
         } else {
@@ -5845,6 +6110,7 @@ export class ThreeGame {
         this.activeSynergies = computeActiveSynergies([...this.runOverclocks, ...this.runRelics]);
         window.AudioManager?.play?.('ui_confirm', { volume: 0.8 });
         window.dispatchEvent(new CustomEvent('in-run-drop-equipped', { detail: { drop, synergies: this.activeSynergies } }));
+        return true;
     }
 
     getRunDropsInfo() {
@@ -5858,6 +6124,12 @@ export class ThreeGame {
     }
 
     resetRunDrops() {
+        this._carapaceArmorCredit = 0;
+        this._seenEliteContacts = new Set();
+        this._eliteContactCooldown = 0;
+        this._eliteContactScan = 0;
+        for (const pickup of this.inRunLootDrops ?? []) disposeExpeditionEffect(pickup);
+        this.inRunLootDrops = [];
         this.runOverclocks = [];
         this.runRelics = [];
         this.activeSynergies = [];
@@ -5866,16 +6138,8 @@ export class ThreeGame {
 
     spawnPhysicalLootDrop(x, z, item) {
         if (!item || !this.scene) return;
-        const mesh = new THREE.Mesh(
-            this.rewardGlowGeometry,
-            new THREE.MeshBasicMaterial({
-                color: item.rarity === 'corrupted' ? 0xff2244 : (item.rarity === 'mythic' ? 0xffaa00 : 0x00e5ff),
-                side: THREE.DoubleSide
-            })
-        );
-        mesh.position.set(x, 0.05, z);
-        mesh.rotation.x = -Math.PI / 2;
-        mesh.userData = { item, isLootPickup: true };
+        const mesh = createRelicPickup(item);
+        mesh.position.set(x, (this.getTerrainHeightAt?.(x, z) ?? 0) + 0.05, z);
         this.scene.add(mesh);
         this.inRunLootDrops.push(mesh);
     }
@@ -7147,8 +7411,8 @@ export class ThreeGame {
     }
 
     setCameraTuning({ distance = this.cameraDistancePreset, follow = this.cameraFollowPreset } = {}) {
-        const distanceByPreset = { close: 3.05, standard: 3.65, wide: 4.35 };
-        const shoulderByPreset = { close: 0.48, standard: 0.58, wide: 0.68 };
+        const distanceByPreset = { close: 5.4, standard: 6.2, wide: 7.2 };
+        const shoulderByPreset = { close: 0.3, standard: 0.4, wide: 0.5 };
         const followRateByPreset = { smooth: 10, balanced: 17, tight: 26 };
         this.cameraDistancePreset = distanceByPreset[distance] ? distance : 'close';
         this.cameraFollowPreset = followRateByPreset[follow] ? follow : 'tight';
@@ -7521,6 +7785,7 @@ export class ThreeGame {
         fp.measure('updateCompanions', () => this.updateCompanions(delta));
         fp.measure('updateEnvLightBudget', () => this.updateEnvLightBudget?.(delta));
         fp.measure('updateTransientEffects', () => this.updateTransientEffects(delta, now));
+        this.killstreakFeedback?.update(delta);
         fp.measure('updateHiddenPlayerMarker', () => this.updateHiddenPlayerMarker(now));
         fp.measure('updateVitals', () => this.updateVitals(delta));
         fp.measure('updateO2StartupSequence', () => this.updateO2StartupSequence(delta));
@@ -7541,6 +7806,7 @@ export class ThreeGame {
             fp.measure('updateBunkerBlastDoor', () => this.updateBunkerBlastDoor(delta));
             fp.measure('updateProceduralDoors', () => this.updateProceduralDoors?.(delta));
             fp.measure('updateBiomeEnvironment', () => this.updateBiomeEnvironment({ delta }));
+            fp.measure('updateBiomeAtmosphere', () => this.biomeAtmosphere?.update(delta, this.player ? this.player.position : { x: 0, y: 0, z: 0 }));
             fp.measure('updateWeather', () => this.updateWeather(delta));
             fp.measure('updateDayNightCycle', () => this.updateDayNightCycle(delta));
             // After updateDayNightCycle: it resets fog colour from the biome
@@ -7588,7 +7854,7 @@ export class ThreeGame {
             && this.getActiveO2GeneratorDistance() <= (generatorState?.radius ?? 0);
         const snapshot = {
             hpFrac: (this.playerVitals?.hp ?? 1) / Math.max(1, this.playerVitals?.maxHp ?? 1),
-            o2Frac: (this.playerVitals?.o2 ?? 100) / 100,
+            o2Frac: (this.playerVitals?.o2 ?? 100) / Math.max(1, this.playerVitals?.maxO2 ?? 100),
             depth: this.getActiveO2GeneratorDistance?.() ?? 0,
             inSafeField,
             patrolBias: Boolean(cardEffects.spawnBias?.patrolBias) || this.currentRunModifier?.id === 'patrol_surge',
@@ -7648,6 +7914,16 @@ export class ThreeGame {
             default:
                 break;
         }
+    }
+
+    // CAMP PARANOIA promises "bond work pays twice as much". Camp quests pay in
+    // bond, not resources, so bond is what the card's questPayMult multiplies.
+    // Rounded up so a x2 on the standard single-bond quest is a visible +2
+    // rather than disappearing into a fraction.
+    getCampQuestBondDelta(baseDelta = 1) {
+        const mult = Number(this.getRunCardEffects?.()?.questPayMult);
+        if (!Number.isFinite(mult) || mult <= 0) return baseDelta;
+        return Math.max(baseDelta, Math.ceil(baseDelta * mult));
     }
 
     getRunCardEffects() {
@@ -10365,6 +10641,7 @@ export class ThreeGame {
             buyBtn.classList.add(canAfford ? 'btn-state--available' : 'btn-state--insufficient');
 
             buyBtn.onclick = () => {
+                this.closeConsoleModal();
                 if (activeGoal.type === 'o2') {
                     this.attemptO2GeneratorUpgrade(ship);
                 } else if (activeGoal.type === 'goal' && activeGoal.cardConfig) {
@@ -10735,6 +11012,7 @@ export class ThreeGame {
             return;
         }
 
+        this.closeConsoleModal();
         this.syncPersistentUpgrades();
         this.ensureO2BubbleVisualState();
         this.emitO2State();
@@ -11661,6 +11939,19 @@ export class ThreeGame {
         else this.baseLights.ignite(cx, cz, radius, color);
     }
 
+    playO2GeneratorWorldReveal() {
+        return new Promise((resolve) => {
+            const ship = this.getActiveShip();
+            if (ship?.tileX != null && ship?.tileZ != null && typeof this.centerCameraOnPosition === 'function') {
+                this.centerCameraOnPosition(ship.tileX, ship.tileZ);
+            }
+            this._onO2StartupSequenceComplete = () => {
+                resolve();
+            };
+            this.startO2StartupSequence(MILESTONE_BOSS_FOR_GOAL.o2Bubble);
+        });
+    }
+
     startO2StartupSequence(bossType) {
         this.createO2BubbleObjects();
         if (this.o2BubbleObjects) {
@@ -11761,7 +12052,13 @@ export class ThreeGame {
                 this.o2StartupPhase = 'dialogue';
                 this.o2StartupTime = 0;
                 this.o2StartupSequenceActive = false; // end 3D animation phase
-                this.triggerO2ClassDialogue(this._pendingO2BossType);
+                if (typeof this._onO2StartupSequenceComplete === 'function') {
+                    const cb = this._onO2StartupSequenceComplete;
+                    this._onO2StartupSequenceComplete = null;
+                    cb();
+                } else {
+                    this.triggerO2ClassDialogue(this._pendingO2BossType);
+                }
             }
         }
     }
@@ -13990,7 +14287,7 @@ export class ThreeGame {
             sprite.geometry?.dispose?.();
             this.scatterSprites = this.scatterSprites.filter((s) => s !== sprite);
         }
-        this.act2.completeCampQuest(aq.campId, aq.quest.id, 1);
+        this.act2.completeCampQuest(aq.campId, aq.quest.id, this.getCampQuestBondDelta?.(1) ?? 1);
         this.syncSurvivorContract?.({
             type: 'camp-complete', id: `camp:${aq.campId}:${aq.quest.id}`
         });
@@ -14661,6 +14958,10 @@ export class ThreeGame {
         try {
             const delivered = manager.deliverPendingRewards(this.bank);
             if (delivered.length) {
+                for (const contractId of delivered) {
+                    const line = SURVIVOR_CONTRACTS[contractId]?.completionLine;
+                    if (line) this.showBunkerLine(line);
+                }
                 if (delivered.includes(HYBRID_CONTRACT.id)) {
                     this.showBunkerLine('SYMBIOTIC GENESIS COMPLETE — 18 SHELLS BANKED.');
                 }
@@ -14675,18 +14976,20 @@ export class ThreeGame {
             this.showBunkerLine('SURVIVOR REWARD SAVED AS PENDING. RETRY ON YOUR NEXT DEPLOYMENT.');
         }
         const quest = manager.state.activeQuest;
-        if (!quest) {
-            window.objectiveRegistry?.resolveObjective?.(`survivor:${FOXHOLE_CONTRACT.id}`, 'complete');
-            window.objectiveRegistry?.resolveObjective?.(`survivor:${HACKER_CONTRACT.id}`, 'complete');
-            window.objectiveRegistry?.resolveObjective?.(`survivor:${HYBRID_CONTRACT.id}`, 'complete');
-            return;
+        for (const contract of Object.values(SURVIVOR_CONTRACTS)) {
+            if (quest?.id !== contract.id) {
+                window.objectiveRegistry?.resolveObjective?.(`survivor:${contract.id}`,
+                    manager.state.completedQuests?.[contract.id] ? 'complete' : 'paused');
+            }
         }
+        if (!quest) return;
 
         const id = `survivor:${quest.id}`;
         const accompanied = manager.getActiveCompanion()?.familyId === quest.familyId;
-        const companionName = quest.familyId === 'manic_hacker'
-            ? 'Hacker GF'
-            : (quest.familyId === 'species_hybrid' ? 'Chrysalis' : 'Foxhole');
+        const companionName = {
+            manic_hacker: 'Hacker GF', species_hybrid: 'Chrysalis', foxhole_buddy: 'Foxhole',
+            corpo_runner: 'Corpo', crash_queen: 'Crash Queen', abg_tripper: 'Tripper'
+        }[quest.familyId] || 'your companion';
         window.objectiveRegistry?.trackObjective?.({
             id, source: 'survivor', label: quest.title, priority: 35,
             current: quest.progress, target: quest.targetCount,
@@ -14694,6 +14997,10 @@ export class ThreeGame {
             status: accompanied ? 'active' : 'blocked',
             blockedReason: accompanied ? null : `Recruit ${companionName} to continue this contract.`
         });
+        if (result && quest.stages) {
+            const next = getSurvivorContractSteps(quest.id, quest.progress).find((step) => !step.done);
+            if (next) this.showBunkerLine(`${companionName.toUpperCase()}: ${next.label}.`);
+        }
         if (result && quest.id === FOXHOLE_CONTRACT.id && quest.progress === 8) {
             this.showBunkerLine('ROUTE SECURED. HELP A CAMP TO COMPLETE FOXHOLE’S CONTRACT.');
         } else if (result && quest.id === HACKER_CONTRACT.id && quest.progress === 2) {
@@ -14829,7 +15136,7 @@ export class ThreeGame {
                 return true;
             }
             this.bank.spendShells(cost);
-            this.act2.completeCampQuest(camp.id, this.getCampFavorQuestId(record), 1);
+            this.act2.completeCampQuest(camp.id, this.getCampFavorQuestId(record), this.getCampQuestBondDelta?.(1) ?? 1);
             const next = this.getCampRecord(camp.id);
             camp.setStatus(next?.status ?? 'alive');
             this.spawnGearPoofEffect(camp.pos.x, camp.pos.z, 'bunker_junk_rare');
@@ -16699,9 +17006,23 @@ export class ThreeGame {
             const baseDelay = 4.0;
             this.shieldRechargeDelayTimer = baseDelay * (this.loadoutMods?.shieldRechargeDelayMultiplier ?? 1.0);
         }
-        const damage = Math.max(0, Math.round(effectiveAmount));
+        const hasCarapace = (this.runRelics ?? []).some((relic) => relic.id === 'chitin_membrane');
+        if (!hasCarapace) this._carapaceArmorCredit = 0;
+        const carapace = applyCarapaceProtection(effectiveAmount, this._carapaceArmorCredit ?? 0,
+            hasCarapace && !['o2-depletion', 'abyss', 'fall', 'queens-milk-backlash'].includes(reason)
+                && isInBioSlime(this.player?.position, this.scatterSprites, this.dynamicPuddles));
+        this._carapaceArmorCredit = carapace.credit;
+        const damage = carapace.damage;
+        if (carapace.absorbed > 0) {
+            window.AudioManager?.play?.('ui_scan_ping', { volume: 0.22, playbackRate: 0.8 });
+            window.dispatchEvent(new CustomEvent('player-blocked', { detail: { reason, relic: 'chitin_membrane', absorbed: carapace.absorbed } }));
+            this.tintPlayerSprites?.(0x8dd5ad);
+            setTimeout(() => this.tintPlayerSprites?.(this._playerPolishHex ?? 0xffffff), 120);
+        }
         this.playerVitals.hp = Math.max(0, this.playerVitals.hp - damage);
         if (this.playerVitals.hp === previousHp) {
+            // A real armor block still consumes the attacker's contact cooldown.
+            if (carapace.absorbed > 0) return true;
             if (this.playerShieldMax > 0) {
                 // Fully shield-absorbed hit — no HP change, but give real feedback so the
                 // mechanic doesn't read as broken/unresponsive.
@@ -16938,6 +17259,7 @@ export class ThreeGame {
     }
 
     respawnPlayer({ resetRunState = true, skipEffects = false, deferChunkMount = false } = {}) {
+        if (resetRunState) this.resetRunDrops();
         this.resetVitalsForRun({ emit: false });
         this.resetWeaponState({ emit: false });
         this.mouseAimActive = false;
@@ -16967,7 +17289,6 @@ export class ThreeGame {
         this.updatePlayerForwardLight(1, { immediate: true });
 
         if (resetRunState) {
-            this.resetRunDrops();
             this.resetBunkerBlastDoor();
             this.runStartTime = Date.now();
             this.totalDistanceTravelled = 0;
@@ -18034,11 +18355,10 @@ export class ThreeGame {
             for (let i = this.inRunLootDrops.length - 1; i >= 0; i--) {
                 const dropMesh = this.inRunLootDrops[i];
                 if (!dropMesh) continue;
+                animateRelicPickup(dropMesh, delta);
                 const dist = Math.hypot(this.player.position.x - dropMesh.position.x, this.player.position.z - dropMesh.position.z);
                 if (dist < 0.85) {
-                    this.scene?.remove(dropMesh);
-                    dropMesh.geometry?.dispose?.();
-                    dropMesh.material?.dispose?.();
+                    disposeExpeditionEffect(dropMesh);
                     this.inRunLootDrops.splice(i, 1);
                     this.equipRunDrop(dropMesh.userData.item);
                 }
@@ -18177,6 +18497,7 @@ export class ThreeGame {
         }
         this.updatePlayerForwardLight(delta, { directionX: lightDirX, directionZ: lightDirZ });
         this.playerMarker.position.set(this.player.position.x, this.playerMarkerHeight, this.player.position.z);
+        this.updateDirectionalShadowFrustum();
         if (this.isPositionInPuddle(this.player.position.x, this.player.position.z)) {
             this.wetFootprintTrailTime = WET_FOOTPRINT_TRAIL_SECONDS;
         } else {
@@ -18484,7 +18805,16 @@ export class ThreeGame {
     }
 
     getBiomeKeyFromDistance(distanceFromAnchor) {
-        if (distanceFromAnchor >= BIOME_THRESHOLD_BIO) {
+        // SPORE BLOOM's "bio growth thickens routes" was carried by a biomeBias
+        // key nothing read. Biome is chosen purely by distance from the anchor,
+        // so pulling the BIO threshold inward by the bias is what "thicker bio
+        // territory" actually means here -- a legible geometry change, not a
+        // hidden stat.
+        const bioBias = Number(this.getRunCardEffects?.()?.biomeBias?.bio);
+        const bioThreshold = Number.isFinite(bioBias) && bioBias > 0
+            ? BIOME_THRESHOLD_BIO / bioBias
+            : BIOME_THRESHOLD_BIO;
+        if (distanceFromAnchor >= bioThreshold) {
             return BIOME_KEYS.BIO;
         }
 
@@ -18627,6 +18957,7 @@ export class ThreeGame {
         this.currentBiomeO2DrainMult = BIOME_O2_DRAIN_MULTIPLIERS[nextBiomeKey] ?? 1;
         if (nextBiomeKey !== this.currentBiomeKey || forceEvent) {
             this.currentBiomeKey = nextBiomeKey;
+            this.biomeAtmosphere?.setBiome(nextBiomeKey);
             this.emitBiomeChanged(nextBiomeKey, distanceFromAnchor);
         }
     }
@@ -18757,7 +19088,8 @@ export class ThreeGame {
             const elevation = Math.max(y, SKY_MIN_KEY_LIGHT_ELEVATION);
             const horizontal = Math.hypot(x, z) || 1;
             const scale = SKY_KEY_LIGHT_DISTANCE / Math.hypot(horizontal, elevation);
-            this.directionalLight.position.set(x * scale, elevation * scale, z * scale);
+            this._sunOffset = { x: x * scale, y: elevation * scale, z: z * scale };
+            this.updateDirectionalShadowFrustum?.();
         }
 
         this.applySkyFlash(skyState.flash);
@@ -18816,7 +19148,7 @@ export class ThreeGame {
             this.fillLight.intensity *= Math.min(1, weatherLightMult + 0.06);
         }
 
-        const minAmbientFloor = 0.65;
+        const minAmbientFloor = 0.45;
         if (this.ambientLight.intensity < minAmbientFloor) {
             this.ambientLight.intensity = minAmbientFloor;
         }
@@ -18858,9 +19190,9 @@ export class ThreeGame {
         // Keep night visibility screen-radial. Three.js fog is camera-depth
         // based in this isometric view, which makes the top of the canvas darker
         // than the bottom and makes "up-screen" flashlight aim feel weaker.
-        // The darkness canvas owns night falloff; fog stays mostly atmospheric.
-        this.scene.fog.near = this.nightVision ? 1000 : lerp(this.baseFogRange.near * 4.0, this.baseFogRange.near * 1.05, dayBlend);
-        this.scene.fog.far = this.nightVision ? 10000 : lerp(this.baseFogRange.far * 12.0, this.baseFogRange.far * 1.25, dayBlend);
+        // Radial darkness handles the suit; tighter atmospheric fog hides distant chunk edges.
+        this.scene.fog.near = this.nightVision ? 1000 : lerp(this.baseFogRange.near * 0.9, this.baseFogRange.near * 1.05, dayBlend);
+        this.scene.fog.far = this.nightVision ? 10000 : lerp(this.baseFogRange.far * 0.95, this.baseFogRange.far * 1.15, dayBlend);
 
         // Weather can further reduce visibility (applied multiplicatively; day/night
         // resets fog each frame so this never accumulates).
@@ -19562,8 +19894,23 @@ export class ThreeGame {
             tier,
             label: this.getDepthTierName(tier)
         };
+        if (isCrossing && tier > 0 && this.performanceProfile === 'gameplay' && !this.loadingPaused) {
+            this.syncSurvivorContract?.({ type: 'depth-crossed', id: `depth-tier:${tier}` });
+        }
         if (isCrossing) {
             detail.crossing = describeCrossing(Math.max(1, tier), tier + 1);
+            this.cameraShakeIntensity = Math.max(this.cameraShakeIntensity ?? 0, 0.45);
+            this.cameraShakeDuration = Math.max(this.cameraShakeDuration ?? 0, 0.55);
+            if (this.player) {
+                this.spawnTextureBurstEffect?.(this.player.position.x, this.player.position.z, {
+                    textureKey: 'fx_steam_puff',
+                    color: 0x6ee7b7,
+                    count: 6,
+                    baseScale: 0.8,
+                    duration: 0.6,
+                    speed: 0.4
+                });
+            }
         }
         window.dispatchEvent(new CustomEvent('depth-tier-changed', { detail }));
     }
@@ -20115,32 +20462,60 @@ export class ThreeGame {
         let coreColor = options.color ?? (isEnemy ? 0xff4a4a : classColor);
         let glowColor = options.glowColor ?? (isEnemy ? 0xff0000 : classColor);
         // Season 0 Emerald Void Tracer Rounds mutator (itemdef 4152, docs/season-zero-protocol/03 §5)
-        const tracerFxId = window.loadout?.state?.tracerFxId;
+        const tracerFxId = typeof window !== 'undefined' ? window.loadout?.state?.tracerFxId : null;
         if (!isEnemy && (tracerFxId === '4152' || tracerFxId === 'fx_emerald_void_tracer' || options.tracerFx === 'emerald')) {
             coreColor = 0x10b981;
             glowColor = 0x34d399;
         }
 
+        const heading = -Math.atan2(vz, vx);
+        group.rotation.y = heading;
+
+        // Directional needle capsule geometry
+        // Core: White-hot ballistic slug along local X
+        const coreLength = Math.max(0.24, radius * 4.2);
+        const coreRadius = Math.max(0.02, radius * 0.55);
+        const coreGeo = new THREE.CylinderGeometry(coreRadius * 0.6, coreRadius, coreLength, 6);
+        coreGeo.rotateZ(Math.PI / 2);
         const core = new THREE.Mesh(
-            new THREE.SphereGeometry(radius, 8, 8),
+            coreGeo,
             new THREE.MeshBasicMaterial({
-                color: coreColor,
+                color: 0xffffff,
                 transparent: true,
                 opacity: 0.95
             })
         );
-        const glow = new THREE.Mesh(
-            new THREE.SphereGeometry(radius * 2.8, 6, 6),
+        core.renderOrder = 26;
+
+        // Plasma outer sheath with additive blending
+        const sheathGeo = new THREE.CylinderGeometry(coreRadius * 1.6, coreRadius * 2.2, coreLength * 1.15, 6);
+        sheathGeo.rotateZ(Math.PI / 2);
+        const sheath = new THREE.Mesh(
+            sheathGeo,
             new THREE.MeshBasicMaterial({
-                color: glowColor,
+                color: coreColor,
                 transparent: true,
-                opacity: 0.28,
+                opacity: 0.75,
+                blending: THREE.AdditiveBlending,
                 depthWrite: false
             })
         );
-        core.renderOrder = 25;
+        sheath.renderOrder = 25;
+
+        // Radial bloom glow
+        const glow = new THREE.Mesh(
+            new THREE.SphereGeometry(radius * 2.4, 6, 6),
+            new THREE.MeshBasicMaterial({
+                color: glowColor,
+                transparent: true,
+                opacity: 0.32,
+                blending: THREE.AdditiveBlending,
+                depthWrite: false
+            })
+        );
         glow.renderOrder = 24;
-        group.add(core, glow);
+
+        group.add(core, sheath, glow);
 
         let tracerMaterial = null;
         if (!isEnemy && (tracerFxId === '4152' || tracerFxId === 'fx_emerald_void_tracer' || options.tracerFx === 'emerald')) {
@@ -20152,10 +20527,27 @@ export class ThreeGame {
             });
             const tracerRibbon = new THREE.Mesh(new THREE.PlaneGeometry(0.95, radius * 2.2), tracerMaterial);
             tracerRibbon.rotation.x = -Math.PI / 2;
-            tracerRibbon.position.x = -Math.sign(vx || 1) * 0.32;
+            tracerRibbon.position.x = -0.42;
             tracerRibbon.renderOrder = 23;
-            group.rotation.y = -Math.atan2(vz, vx);
             group.add(tracerRibbon);
+        } else {
+            // Ballistic speed streak ribbon trailing behind the slug
+            const ribbonLength = Math.max(0.55, coreLength * 2.5);
+            const ribbonMesh = new THREE.Mesh(
+                new THREE.PlaneGeometry(ribbonLength, radius * 1.8),
+                new THREE.MeshBasicMaterial({
+                    color: coreColor,
+                    transparent: true,
+                    opacity: 0.45,
+                    blending: THREE.AdditiveBlending,
+                    depthWrite: false,
+                    side: THREE.DoubleSide
+                })
+            );
+            ribbonMesh.rotation.x = -Math.PI / 2;
+            ribbonMesh.position.x = -ribbonLength * 0.48;
+            ribbonMesh.renderOrder = 23;
+            group.add(ribbonMesh);
         }
         group.position.set(x, 0.42, z);
         this.scene.add(group);
@@ -20303,90 +20695,22 @@ export class ThreeGame {
         const isCryo = muzzleFxId === '4153' || muzzleFxId === 'fx_cryo_shockwave_muzzle';
         const color = isCryo ? 0x9beaff : 0xffd27a;
 
-        const effect = new THREE.Group();
-        const flash = new THREE.Mesh(
-            new THREE.CircleGeometry(isCryo ? 0.22 : 0.14, 10),
-            new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.9, depthWrite: false })
-        );
-        flash.rotation.x = -Math.PI / 2;
-        flash.userData = { isGlow: true };
-        effect.add(flash);
-
-        // docs/log5-dynamic-light-shader-runaway-findings-2026-08-19.md: this used
-        // to also add a real THREE.PointLight per shot (removed after 90ms via
-        // setTimeout). Every unique combination of "which lights currently affect
-        // a given material" forces three.js to compile a brand new shader program
-        // (WebGLPrograms bakes light count/type into its program cache key), and
-        // since this fires on every single bullet, it was the single largest
-        // driver of renderer.info.programs growing without bound during combat --
-        // confirmed live via CPU profiling (64 programs at boot -> 213+ after 65s
-        // of ordinary play, 112 of them "physical"/lit-material variants differing
-        // only in light combination). A second, larger, additive-blended unlit
-        // circle gives a similar "flash lights up the area" look without ever
-        // touching the standard lighting model, so it can't grow the program
-        // cache at all. Both circles share updateTransientEffects()'s existing
-        // isGlow fade logic (src/threeGame.js:25861), no new update path needed.
-        const glow = new THREE.Mesh(
-            new THREE.CircleGeometry(isCryo ? 0.55 : 0.4, 10),
-            new THREE.MeshBasicMaterial({
-                color,
-                transparent: true,
-                opacity: 0.5,
-                depthWrite: false,
-                blending: THREE.AdditiveBlending
-            })
-        );
-        glow.rotation.x = -Math.PI / 2;
-        glow.userData = { isGlow: true };
-        effect.add(glow);
-
-        if (isCryo) {
-            for (let i = 0; i < 8; i++) {
-                const shard = new THREE.Mesh(
-                    new THREE.PlaneGeometry(0.08 + Math.random() * 0.1, 0.22 + Math.random() * 0.22),
-                    new THREE.MeshBasicMaterial({ color: i % 2 ? 0xd9f7ff : 0x67e8f9, transparent: true, opacity: 0.85, depthWrite: false, blending: THREE.AdditiveBlending })
-                );
-                shard.rotation.x = -Math.PI / 2;
-                shard.rotation.z = Math.random() * Math.PI;
-                shard.position.set((Math.random() - 0.5) * 0.12, 0.06, (Math.random() - 0.5) * 0.12);
-                shard.userData = { vx: (Math.random() - 0.5) * 1.6, vz: (Math.random() - 0.5) * 1.6, vy: 0.04 + Math.random() * 0.12, growth: 2.5 };
-                effect.add(shard);
-            }
-        }
-
-        effect.position.set(x, 0.42, z);
+        const effect = create3DMuzzleFlash({
+            color,
+            isCryo,
+            camera: this.camera
+        });
+        effect.position.set(x, 0.45, z);
         effect.renderOrder = 31;
-        effect.userData = { age: 0, duration: isCryo ? 0.16 : 0.09 };
         this.scene.add(effect);
         this.transientEffects.push(effect);
+
+        this.traumaManager?.addTrauma(WEAPON_TRAUMA_TABLE.rifle || 0.12);
     }
 
     spawnProjectileImpactEffect(x, z) {
-        const effect = new THREE.Group();
-        for (let i = 0; i < 4; i++) {
-            const spark = new THREE.Mesh(
-                new THREE.CircleGeometry(0.04 + Math.random() * 0.04, 5),
-                new THREE.MeshBasicMaterial({
-                    color: 0xffe08f,
-                    transparent: true,
-                    opacity: 0.9,
-                    depthWrite: false
-                })
-            );
-            spark.rotation.x = -Math.PI / 2;
-            spark.position.set((Math.random() - 0.5) * 0.1, 0.05 + Math.random() * 0.06, (Math.random() - 0.5) * 0.1);
-            spark.renderOrder = 30;
-            spark.userData = {
-                vx: (Math.random() - 0.5) * 0.6,
-                vz: (Math.random() - 0.5) * 0.6,
-                vy: 0.18 + Math.random() * 0.14,
-                growth: 0,
-                isSpark: true
-            };
-            effect.add(spark);
-        }
-        effect.position.set(x, 0, z);
-        effect.userData = { age: 0, duration: 0.18 };
+        const effect = createImpactBurst();
+        effect.position.set(x, (this.getTerrainHeightAt?.(x, z) ?? 0), z);
         this.scene.add(effect);
         this.transientEffects.push(effect);
     }
@@ -20507,6 +20831,110 @@ export class ThreeGame {
                 for (const p of particles) p.mesh.material.dispose();
             }
         });
+    }
+
+    spawnEnemyDeathBurst(x, z, type = 'snail', isBoss = false) {
+        if (!this.scene) return;
+        const terrainY = (this.getTerrainHeightAt?.(x, z) ?? 0);
+
+        const isCryo = (typeof type === 'string' && type.includes('cryo')) || false;
+        const isBio = (typeof type === 'string' && (type.includes('spore') || type.includes('bio'))) || false;
+        const isJunk = (typeof type === 'string' && type.startsWith('bunker_junk')) || false;
+
+        let primaryColor = 0x475569; // chitin dark grey
+        let accentColor = 0xf97316;  // kinetic sparks orange
+        let shockColor = 0xff9944;
+        let puffKey = 'fx_spark_burst';
+
+        if (isCryo) {
+            primaryColor = 0x88ccff;
+            accentColor = 0xdbeafe;
+            shockColor = 0x49dfff;
+            puffKey = 'fx_steam_puff';
+        } else if (isBio) {
+            primaryColor = 0x84cc16;
+            accentColor = 0x4d7c0f;
+            shockColor = 0xa3e635;
+            puffKey = 'fx_toxic_cloud';
+        } else if (isJunk) {
+            primaryColor = 0x94a3b8;
+            accentColor = 0xf59e0b;
+            shockColor = 0xfacc15;
+            puffKey = 'fx_spark_burst';
+        }
+
+        // 1. Biomechanical / physical debris shards
+        const shardCount = isBoss ? 28 : 12;
+        this.spawnPhysicalBurst(x, z, {
+            color: primaryColor,
+            count: shardCount,
+            upward: isBoss ? 0.32 : 0.22,
+            spread: isBoss ? 2.4 : 1.6
+        });
+        if (!isCryo) {
+            this.spawnPhysicalBurst(x, z, {
+                color: accentColor,
+                count: Math.max(4, Math.floor(shardCount * 0.4)),
+                upward: isBoss ? 0.28 : 0.18,
+                spread: isBoss ? 2.0 : 1.3
+            });
+        }
+
+        // 2. Expanding ground shockwave ring
+        const ringGeo = new THREE.RingGeometry(0.08, 0.16, 24);
+        const ringMat = new THREE.MeshBasicMaterial({
+            color: shockColor,
+            transparent: true,
+            opacity: 0.85,
+            depthWrite: false,
+            side: THREE.DoubleSide,
+            blending: THREE.AdditiveBlending
+        });
+        const ringMesh = new THREE.Mesh(ringGeo, ringMat);
+        ringMesh.rotation.x = -Math.PI / 2;
+        ringMesh.position.set(x, terrainY + 0.04, z);
+        this.scene.add(ringMesh);
+
+        const maxScale = isBoss ? 4.8 : 2.6;
+        const ringDuration = 0.28;
+        this.transientEffects.push({
+            mesh: ringMesh,
+            age: 0,
+            duration: ringDuration,
+            update(delta) {
+                this.age += delta;
+                const progress = Math.min(this.age / ringDuration, 1);
+                const s = 1 + progress * (maxScale - 1);
+                ringMesh.scale.set(s, s, s);
+                ringMat.opacity = 0.85 * (1 - progress);
+            },
+            dispose() {
+                ringGeo.dispose();
+                ringMat.dispose();
+            }
+        });
+
+        // 3. Vapor puff
+        if (this.scatterMaterials?.[puffKey]) {
+            this.spawnTextureBurstEffect(x, z, {
+                textureKey: puffKey,
+                color: primaryColor,
+                count: isBoss ? 4 : 2,
+                baseScale: isBoss ? 0.8 : 0.45,
+                duration: 0.38
+            });
+        }
+
+        // 4. Visceral hitstop
+        this.hitstopTimer = isBoss ? 90 : 45;
+
+        // 5. Impact audio
+        if (typeof window !== 'undefined') {
+            window.AudioManager?.play?.('enemy_hit_soft', {
+                volume: isBoss ? 0.6 : 0.4,
+                playbackRate: isBoss ? 0.75 : 1.25
+            });
+        }
     }
 
     // Fading scorch decal flush against a wall face. Capped + recycled to protect frame time.
@@ -20704,6 +21132,18 @@ export class ThreeGame {
                     continue;
                 }
 
+                // Co-op friendly fire: shove a squadmate instead of hurting them.
+                // The shove is authored by the shooter but applied on the target's
+                // own client, so positions never fight. The round is consumed so
+                // it visibly stops on them rather than passing through.
+                const squadmate = this.checkProjectileSquadmateHit?.(projectile);
+                if (squadmate) {
+                    this.nudgeSquadmate(squadmate, projectile);
+                    this.spawnProjectileImpactEffect(projectile.mesh.position.x, projectile.mesh.position.z);
+                    toRemove.add(projectile);
+                    continue;
+                }
+
                 const destructibleProp = this.checkProjectileDestructiblePropHit(projectile);
                 if (destructibleProp) {
                     this.damageScatterProp(destructibleProp, projectile.damage);
@@ -20882,6 +21322,14 @@ export class ThreeGame {
             this.camera.position.x += (Math.random() - 0.5) * intensity;
             this.camera.position.z += (Math.random() - 0.5) * intensity;
         }
+        if (this.traumaManager) {
+            const trauma = this.traumaManager.update(delta);
+            this.camera.position.x += trauma.offsetX;
+            this.camera.position.y += trauma.offsetY;
+            this.camera.position.z += trauma.offsetZ;
+            this.camera.rotation.z += trauma.roll;
+            this.camera.rotation.x += trauma.pitch;
+        }
 
         const lookAtX = this.player.position.x + (this._menuParallaxX || 0) * 0.35;
         const lookAtY = this.player.position.y + 0.4 + (this._menuParallaxY || 0) * 0.35;
@@ -20923,6 +21371,14 @@ export class ThreeGame {
             const intensity = this._cameraShakeIntensity * Math.max(0, this._cameraShakeTimer / 0.35);
             this.camera.position.x += (Math.random() - 0.5) * intensity;
             this.camera.position.y += (Math.random() - 0.5) * intensity * 0.45;
+        }
+        if (this.traumaManager) {
+            const trauma = this.traumaManager.update(delta);
+            this.camera.position.x += trauma.offsetX;
+            this.camera.position.y += trauma.offsetY;
+            this.camera.position.z += trauma.offsetZ;
+            this.camera.rotation.z += trauma.roll;
+            this.camera.rotation.x += trauma.pitch;
         }
         this.camera.lookAt(pose.lookAt);
     }
@@ -20980,6 +21436,19 @@ export class ThreeGame {
         overlay.style.setProperty('--focus-x', `${this._tiltShiftFocusX.toFixed(2)}%`);
         overlay.style.setProperty('--focus-y', `${this._tiltShiftFocusY.toFixed(2)}%`);
 
+        // Protect both the operator and the aim lead, including during focus
+        // smoothing. Blur radius is in drawing-buffer pixels on both axes.
+        this._tiltShiftProjectVec.copy(this.player.position).project(this.camera);
+        const playerY = this._tiltShiftProjectVec.y * 0.5 + 0.5;
+        const focusY = 1 - this._tiltShiftFocusY / 100;
+        const sharpRange = Math.min(0.45, Math.max(0.16, Math.abs(playerY - focusY) + 0.07, Math.abs(1 - targetY / 100 - focusY) + 0.07));
+        const width = this.renderer?.domElement?.width || this.container?.clientWidth || 1280;
+        const height = this.renderer?.domElement?.height || this.container?.clientHeight || 800;
+        for (const pass of [this.tiltShiftPassV, this.tiltShiftPassH]) {
+            if (pass?.uniforms?.focusRange) pass.uniforms.focusRange.value = sharpRange;
+            pass?.uniforms?.texelSize?.value.set(1 / width, 1 / height);
+        }
+
         // Update WebGL TiltShiftShader uniforms (0 at bottom, 1 at top in UV space)
         const focusNormY = Math.min(0.95, Math.max(0.05, 1.0 - (this._tiltShiftFocusY / 100)));
         if (this.tiltShiftPassV?.uniforms?.focusY) {
@@ -20993,6 +21462,7 @@ export class ThreeGame {
     triggerCameraShake(intensity = 0.18, duration = 0.35) {
         this._cameraShakeIntensity = Math.max(this._cameraShakeIntensity, intensity);
         this._cameraShakeTimer = Math.max(this._cameraShakeTimer, duration);
+        this.traumaManager?.addTrauma(Math.min(1.0, intensity * 2.2));
     }
 
     syncVisibleChunks(force = false, { prefetch = !force, processLimit = null } = {}) {
@@ -22043,6 +22513,20 @@ export class ThreeGame {
         const tileZ = Math.round(nextZ);
         if (this.getTileType(tileX, tileZ) !== '#') return false;
         if (this.isHoleTile(tileX, tileZ)) return false;
+
+        if (
+            this.bunkerBlastDoorState
+            && !this.bunkerBlastDoorState.destroyed
+            && tileZ === this.bunkerBlastDoorState.doorZ
+            && tileX >= this.bunkerBlastDoorState.startTileX
+            && tileX <= this.bunkerBlastDoorState.endTileX
+        ) {
+            this.destroyBunkerBlastDoor({ source: 'boss' });
+            data.wallBreakCooldown = BOSS_WALL_BREAK_COOLDOWN;
+            data.pathNodes = null;
+            data.pathRetargetTimer = 0;
+            return true;
+        }
 
         const wall = this.findWallMeshAt(tileX, tileZ);
         if (wall) {
@@ -23965,7 +24449,18 @@ export class ThreeGame {
         let hasSentinelThisChunk = false;
         let hasLoreTerminalThisChunk = false;
         const depthTierForScatter = this.getDepthTier(chunkX, chunkY);
-        const snailSpawnConfig = SNAIL_DEPTH_SPAWN[Math.min(depthTierForScatter, SNAIL_DEPTH_SPAWN.length - 1)];
+        const baseSnailSpawnConfig = SNAIL_DEPTH_SPAWN[Math.min(depthTierForScatter, SNAIL_DEPTH_SPAWN.length - 1)];
+        // PATROL SURGE promises "hostile routing tightens". spawnBias.patrolBias
+        // already fed the director, but the card's snailDensityMult had no
+        // consumer, so the blurb's density half was text only. Scale both the
+        // per-chunk budget and the roll chance so the promised delta is real.
+        const snailDensityMult = Number(this.getRunCardEffects?.()?.spawnBias?.snailDensityMult);
+        const snailSpawnConfig = Number.isFinite(snailDensityMult) && snailDensityMult > 0
+            ? {
+                maxCount: Math.max(0, Math.round(baseSnailSpawnConfig.maxCount * snailDensityMult)),
+                chance: Math.min(1, baseSnailSpawnConfig.chance * snailDensityMult)
+            }
+            : baseSnailSpawnConfig;
         // Proto enemies are landform-native: crawlers nest in ruins, spitters
         // guard crater rims. Run-director cards can bias the rate (contract:
         // director.cardEffects.spawnBias, number or { proto } — defensive
@@ -25605,6 +26100,14 @@ export class ThreeGame {
 
         sprite.userData.burstTriggered = true;
         sprite.userData.burstTimer = 0;
+        this.spawnEnemyDeathBurst?.(sprite.position.x, sprite.position.z, sprite.userData.type, isBoss);
+        this.traumaManager?.addTrauma(isBoss ? (WEAPON_TRAUMA_TABLE.bossSlam || 0.6) : (WEAPON_TRAUMA_TABLE.enemyKill || 0.22));
+        this.killstreakFeedback?.registerKill({
+            worldX: sprite.position.x,
+            worldZ: sprite.position.z,
+            enemyType: sprite.userData.type,
+            isBoss
+        });
         if (sprite.userData.scatterKey) this.killedEnemyScatterKeys.add(sprite.userData.scatterKey);
         this.snailsKilledThisRun = (this.snailsKilledThisRun ?? 0) + 1;
 
@@ -25659,7 +26162,7 @@ export class ThreeGame {
         this.arcManager?.evaluate?.();
         // Post-turn, wild snails are family. Killing them upsets the queen —
         // the first kill each run stings, then every fifth.
-        if (this.isAct2Active() && !sprite.userData.campDefenderId && !sprite.userData.isHiveHarvestBoss) {
+        if (this.isAct2Active?.() && !sprite.userData.campDefenderId && !sprite.userData.isHiveHarvestBoss) {
             this._hiveKinKills = (this._hiveKinKills ?? 0) + 1;
             if (this._hiveKinKills === 1 || this._hiveKinKills % 5 === 0) {
                 this.act2?.recordQueenObedience?.(-1);
@@ -25676,7 +26179,10 @@ export class ThreeGame {
         // docs/design/one-more-ring-design-pillars.md item 1 (Sprint 28):
         // deeper rings bias this roll toward relics (see runDrops.js's
         // rollEnemyLootDrop / rollsRareRelic).
-        const drop = rollEnemyLootDrop(Math.random, { isElite, isBoss: isBossEnemy, ring: (this.currentDepthTier ?? 0) + 1 });
+        const drop = rollEnemyLootDrop(Math.random, {
+            isElite, isBoss: isBossEnemy, ring: (this.currentDepthTier ?? 0) + 1,
+            excludedIds: [...(this.runOverclocks ?? []), ...(this.runRelics ?? []), ...(this.inRunLootDrops ?? []).map((pickup) => pickup.userData.item)].map((item) => item.id)
+        });
         if (drop) {
             this.spawnPhysicalLootDrop?.(sprite.position?.x ?? 0, sprite.position?.z ?? 0, drop);
         }
@@ -26355,6 +26861,21 @@ export class ThreeGame {
             && !sprite?.userData?.campDefenderId
             && !sprite?.userData?.isHiveHarvestBoss
             && !sprite?.userData?.shotByPlayer;
+    }
+
+    // How close counts as "touching" this enemy. The fixed 2.4x boss radius
+    // happens to cover today's 3.2-4.4 boss scales, but nothing guaranteed
+    // that: scale a boss up and its own body would extend past its contact
+    // reach, making the biggest boss the safest to stand inside. Reach is now
+    // tied to the body and floored at the old value, so ordinary snails are
+    // unchanged and a future larger boss stays dangerous to touch.
+    getSnailContactReach(data = {}) {
+        const base = SNAIL_ATTACK_RADIUS * (data.isBoss ? 2.4 : 1.0);
+        if (!data.isBoss) return base;
+        // Half the sprite's world width is the visible body edge; a player
+        // whose own radius overlaps that edge is touching the boss.
+        const bodyEdge = Math.max(data.baseScaleX ?? 0, data.baseScaleY ?? 0) * 0.5;
+        return Math.max(base, bodyEdge + (this.playerRadius ?? 0.38));
     }
 
     selectSnailTarget(sprite, activeShip) {
@@ -27288,6 +27809,9 @@ export class ThreeGame {
                     if (nearestHostile) {
                         this.applyPlayerDamageToEnemy(nearestHostile, 2);
                         this.spawnMuzzleFlash?.(root.position.x, 1.0, root.position.z);
+                        if (typeof window !== 'undefined' && window.AudioManager) {
+                            window.AudioManager.play?.('turret_fire', { volume: 0.35, playbackRate: 1.1 });
+                        }
                         const cd = companion.wanderer?.assistAbility?.cooldown || 12;
                         companion.assistCooldown = cd;
                         this.spawnPhysicalBurst?.(nearestHostile.position.x, nearestHostile.position.z, {
@@ -27676,7 +28200,9 @@ export class ThreeGame {
             data.aiMode = target.mode;
             data.targetType = target.type;
             if (previousMode !== 'hunt' && target.mode === 'hunt' && target.type === 'player') {
-                window.AudioManager?.play('ui_scan_ping', { volume: 0.2, playbackRate: 0.55, bus: 'sfx' });
+                if (typeof window !== 'undefined') {
+                    window.AudioManager?.play('ui_scan_ping', { volume: 0.2, playbackRate: 0.55, bus: 'sfx' });
+                }
             }
             data.pathRetargetTimer = target.mode === 'hunt'
                 ? SNAIL_PATH_RECALC_MIN + Math.random() * (SNAIL_PATH_RECALC_MAX - SNAIL_PATH_RECALC_MIN)
@@ -27709,9 +28235,22 @@ export class ThreeGame {
         if (moveDistance > 0.001 && data.knockbackTimer <= 0) {
             const dirX = toGoalX / moveDistance;
             const dirZ = toGoalZ / moveDistance;
-            const step = Math.min(moveDistance, (data.speed ?? SNAIL_MOVE_SPEED) * delta);
+            // ...and the card's snailSpeedMult half, likewise previously inert.
+            const speedMult = Number(this.getRunCardEffects?.()?.spawnBias?.snailSpeedMult);
+            const snailSpeed = (data.speed ?? SNAIL_MOVE_SPEED)
+                * (Number.isFinite(speedMult) && speedMult > 0 ? speedMult : 1);
+            const step = Math.min(moveDistance, snailSpeed * delta);
             const nextX = sprite.position.x + dirX * step;
             const nextZ = sprite.position.z + dirZ * step;
+
+            // If a boss is advancing toward a destructible wall or blast door, smash it
+            if (data.isBoss && (data.wallBreakCooldown ?? 0) <= 0) {
+                const forwardTileX = Math.round(sprite.position.x + dirX * 0.75);
+                const forwardTileZ = Math.round(sprite.position.z + dirZ * 0.75);
+                if (this.getTileType?.(forwardTileX, forwardTileZ) === '#' && !this.isHoleTile?.(forwardTileX, forwardTileZ)) {
+                    this.tryBossBreakWall(sprite, forwardTileX, forwardTileZ);
+                }
+            }
 
             let moved = false;
             if (this.isSnailTileWalkable(Math.round(nextX), Math.round(nextZ))) {
@@ -27893,11 +28432,38 @@ export class ThreeGame {
             return;
         }
 
-        const attackRadius = SNAIL_ATTACK_RADIUS * (data.isBoss ? 2.4 : 1.0);
+        const attackRadius = this.getSnailContactReach?.(data)
+            ?? (SNAIL_ATTACK_RADIUS * (data.isBoss ? 2.4 : 1.0));
+
+        // Body contact is physical, not tactical. A milestone boss beelining
+        // for the ship would previously let the player stand inside it and take
+        // nothing, because damage was gated on `target.type === 'player'`.
+        // Touching a boss hurts regardless of what it is currently angry at.
+        // Tracked on its own cooldown so it cannot starve the ship attack.
+        data.playerContactCooldown = Math.max(0, (data.playerContactCooldown ?? 0) - delta);
+        if (data.isBoss && this.player && !this.isPlayerDead
+            && target.type !== 'player'
+            && data.playerContactCooldown <= 0
+            && !this.isHiveKinPassive?.(sprite)) {
+            const contactDistance = Math.hypot(
+                this.player.position.x - sprite.position.x,
+                this.player.position.z - sprite.position.z
+            );
+            if (contactDistance <= attackRadius) {
+                data.playerContactCooldown = SNAIL_ATTACK_COOLDOWN;
+                const applied = this.takeDamage(2, data.type, sprite.position.x, sprite.position.z);
+                if (applied !== false) {
+                    this.applySnailContactKnockback(sprite, data);
+                    if (data.type === 'boss_cryosnail') this.applyPlayerSlow(2.5);
+                }
+            }
+        }
+
         if (distanceToTarget <= attackRadius && data.attackCooldown <= 0) {
             data.attackCooldown = SNAIL_ATTACK_COOLDOWN;
             const damage = data.isBoss ? 2 : 1;
             if (target.type === 'player') {
+                data.playerContactCooldown = SNAIL_ATTACK_COOLDOWN;
                 const damageApplied = this.takeDamage(damage, data.type, sprite.position.x, sprite.position.z);
                 if (damageApplied !== false) {
                     this.applySnailContactKnockback(sprite, data);
@@ -27921,7 +28487,9 @@ export class ThreeGame {
                     this.applySnailShipKnockback(sprite, data, activeShip);
                 }
             }
-            window.AudioManager?.playMetalStress?.({ volume: 0.24, playbackRate: 1.1, force: true });
+            if (typeof window !== 'undefined') {
+                window.AudioManager?.playMetalStress?.({ volume: 0.24, playbackRate: 1.1, force: true });
+            }
         }
     }
 
@@ -28107,7 +28675,43 @@ export class ThreeGame {
         this.pickupMeshes = allPickups;
     }
 
+    updateEliteContactFeedback(delta) {
+        if (!this.player || this.isPlayerDead || this.loadingPaused
+            || this.performanceProfile !== 'gameplay' || !this.isGameplayInputActive()) return;
+        this._eliteContactCooldown = Math.max(0, (this._eliteContactCooldown ?? 0) - delta);
+        this._eliteContactScan = (this._eliteContactScan ?? 0) - delta;
+        if (this._eliteContactCooldown > 0 || this._eliteContactScan > 0) return;
+        this._eliteContactScan = 0.5;
+        this._seenEliteContacts ??= new Set();
+        this._eliteContactPoint ??= new THREE.Vector3();
+        let nearest = null;
+        let nearestDistance = 10;
+        for (const enemy of this.scatterSprites ?? []) {
+            const data = enemy.userData;
+            if (!data?.isElite || data.isBoss || data.isDisplayModel || data.isCompanion
+                || data.burstTriggered || !(data.hp > 0) || !enemy.visible) continue;
+            const key = data.scatterKey ?? enemy.uuid;
+            if (this._seenEliteContacts.has(key)) continue;
+            const distance = Math.hypot(enemy.position.x - this.player.position.x,
+                enemy.position.z - this.player.position.z);
+            if (distance >= nearestDistance || Math.abs(enemy.position.y - this.player.position.y) > 3) continue;
+            if (!this.camera) continue;
+            this._eliteContactPoint.copy(enemy.position).project(this.camera);
+            const point = this._eliteContactPoint;
+            if (Math.abs(point.x) > 1 || Math.abs(point.y) > 1 || point.z < -1 || point.z > 1) continue;
+            if (!this.hasCompanionFireLane(this.player.position, enemy.position)) continue;
+            nearest = enemy;
+            nearestDistance = distance;
+        }
+        if (!nearest) return;
+        this._seenEliteContacts.add(nearest.userData.scatterKey ?? nearest.uuid);
+        this._eliteContactCooldown = 12;
+        window.AudioManager?.playEliteWarning?.();
+        this.showBunkerLine('SUIT: ELITE CONTACT. REINFORCED HOSTILE — KEEP AN ESCAPE ROUTE.');
+    }
+
     updateScatter(delta, now) {
+        this.updateEliteContactFeedback(delta);
         const time = now * 0.001;
         const activeShip = this.getActiveShip();
         const previousContainmentOptions = this._frameContainmentOptions;
@@ -28772,6 +29376,17 @@ export class ThreeGame {
                 continue;
             }
 
+            if (typeof effect.userData?.update === 'function') {
+                const finished = effect.userData.update(delta);
+                this.applyFogOfWarOpacity(
+                    effect,
+                    this.getFogOfWarVisibility(effect.position.x, effect.position.z),
+                    { captureCurrent: true }
+                );
+                if (finished) removals.push(effect);
+                continue;
+            }
+
             effect.userData.age += delta;
             const t = Math.min(effect.userData.age / effect.userData.duration, 1);
 
@@ -28782,12 +29397,14 @@ export class ThreeGame {
                     continue;
                 }
 
-                child.position.x += child.userData.vx * delta;
-                child.position.z += child.userData.vz * delta;
-                child.position.y += child.userData.vy * delta;
-                child.scale.setScalar(1 + t * child.userData.growth);
+                child.position.x += (child.userData?.vx ?? 0) * delta;
+                child.position.z += (child.userData?.vz ?? 0) * delta;
+                child.position.y += (child.userData?.vy ?? 0) * delta;
+                child.scale.setScalar(1 + t * (child.userData?.growth ?? 0));
                 if (child.userData?.isSpore) {
                     child.material.opacity = (1 - t) * 0.9;
+                } else if (child.userData?.isSpark) {
+                    child.material.opacity = (1 - t) * (child.userData?.baseOpacity ?? 0.95);
                 } else {
                     child.material.opacity = (1 - t) * 0.45;
                 }
@@ -28814,6 +29431,9 @@ export class ThreeGame {
                 }
                 this.scene.remove(effect.mesh);
             } else {
+                if (typeof effect.userData?.dispose === 'function') {
+                    effect.userData.dispose();
+                }
                 effect.traverse((child) => {
                     child.material?.dispose?.();
                     child.geometry?.dispose?.();
@@ -31061,6 +31681,8 @@ export class ThreeGame {
         this.renderer.domElement.removeEventListener('pointerleave', this.handleCanvasPointerCancel);
         this.darknessOverlay?.remove?.();
         this.tiltShiftOverlay?.remove?.();
+        this.killstreakFeedback?.dispose?.();
+        this.killstreakFeedback = null;
         Object.values(this.playerMaterials ?? {}).forEach((material) => material.dispose());
         Object.values(this.playerTextures ?? {}).forEach((texture) => texture.dispose());
         Object.values(this.playerTorsoMaterials ?? {}).forEach((material) => material.dispose());

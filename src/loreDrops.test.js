@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import {
     LORE_DROPS,
     LORE_DROP_SITES,
+    LORE_STAGES,
     pickLoreDropForSite,
     getFoundLoreKeys,
     markLoreDropFound,
@@ -40,6 +41,19 @@ describe('LORE_DROPS table', () => {
         }
     });
 
+    // STORY-02: a drop is only worth carrying home if it changes what the
+    // player does next. Every entry states a place, risk, opportunity or
+    // relationship, and that lead is composed into the text the reader modal
+    // already shows -- so it reaches the player through existing wiring.
+    it('gives every drop a narrative stage and a lead', () => {
+        for (const drop of LORE_DROPS) {
+            expect(LORE_STAGES).toContain(drop.stage);
+            expect(drop.lead.length).toBeGreaterThan(20);
+            expect(drop.text.endsWith(drop.lead)).toBe(true);
+            expect(drop.text.startsWith(drop.body)).toBe(true);
+        }
+    });
+
     it('covers every site family with at least one drop', () => {
         for (const site of LORE_DROP_SITES) {
             expect(LORE_DROPS.some((d) => d.site === site)).toBe(true);
@@ -63,6 +77,30 @@ describe('pickLoreDropForSite', () => {
         const partial = found.slice(0, found.length - 1);
         const drop = pickLoreDropForSite(mulberry32(7), 'hive', partial);
         expect(drop.key).toBe(found[found.length - 1]);
+    });
+
+    // STORY-02: setup before payoff. Random rarity rolls could hand a player
+    // the queen's moult shard before anything established that the hive keeps
+    // records at all, which reads as disconnected fragments rather than a
+    // story. Selection now drains the earliest unfound stage in a site's pool
+    // before offering a later one.
+    it('offers the earliest unfound stage for a site', () => {
+        for (let seed = 1; seed <= 60; seed++) {
+            const drop = pickLoreDropForSite(mulberry32(seed), 'hive');
+            const pool = LORE_DROPS.filter((d) => d.site === 'hive' || d.site === 'anywhere');
+            const earliest = Math.min(...pool.map((d) => d.stage));
+            expect(drop.stage).toBe(earliest);
+        }
+    });
+
+    it('advances to later stages only once earlier ones are exhausted', () => {
+        const pool = LORE_DROPS.filter((d) => d.site === 'cave' || d.site === 'anywhere');
+        const stages = [...new Set(pool.map((d) => d.stage))].sort((a, b) => a - b);
+        expect(stages.length).toBeGreaterThan(1);
+
+        const found = pool.filter((d) => d.stage === stages[0]).map((d) => d.key);
+        const drop = pickLoreDropForSite(mulberry32(3), 'cave', found);
+        expect(drop.stage).toBe(stages[1]);
     });
 
     it('is deterministic for a given random stream', () => {

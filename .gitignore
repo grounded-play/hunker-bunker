@@ -141,3 +141,6 @@ test-results/
 # code and EDL in git, not the media itself.
 trailer/raw/
 dist/trailer/
+
+# Server-side session-log drop box (in-game console uploads)
+server/session-logs/
