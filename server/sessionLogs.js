@@ -78,17 +78,39 @@ export function attachSessionLogRoutes(app) {
         try {
             // express.raw() always yields a Buffer for a body it parsed. Anything
             // else means a different parser ran first (or none did), and coercing
-            // an object or array with String() would silently persist garbage
-            // like "[object Object]" instead of the capture.
-            const body = req.body;
-            if (!Buffer.isBuffer(body)) {
+            // an object or array would silently persist garbage like
+            // "[object Object]" instead of the capture.
+            if (!Buffer.isBuffer(req.body)) {
                 res.status(400).json({ ok: false, error: 'expected a raw body' });
                 return;
             }
-            if (!body.length) {
+            // Decode to text and re-encode from a value this function built. The
+            // bytes finally written are never the request object itself, so
+            // `.length` below is unambiguously a byte count rather than
+            // whatever an array or string would have meant.
+            const received = req.body.toString('utf8');
+            if (!received.length) {
                 res.status(400).json({ ok: false, error: 'empty body' });
                 return;
             }
+
+            // Captures are read back by tooling, so store something guaranteed
+            // parseable. A well-formed capture is normalized; anything else is
+            // preserved verbatim inside an envelope rather than dropped, since a
+            // malformed log is often exactly the one worth looking at. Either
+            // way the file content is serialized here, not relayed from the
+            // request.
+            let stored;
+            try {
+                stored = JSON.stringify(JSON.parse(received));
+            } catch {
+                stored = JSON.stringify({
+                    format: 'text',
+                    note: 'Body was not valid JSON; preserved verbatim.',
+                    content: received
+                });
+            }
+            const body = Buffer.from(stored, 'utf8');
             const dir = path.resolve(sessionLogDir());
             await fs.mkdir(dir, { recursive: true });
             const filename = safeLogName(headerValue(req.headers['x-hb-log-name']));

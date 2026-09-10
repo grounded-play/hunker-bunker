@@ -40,15 +40,45 @@ const post = (body, headers = {}) => fetch(`${url}/logs/session`, {
 });
 
 describe('POST /logs/session', () => {
-    it('stores a capture byte-for-byte', async () => {
+    it('stores a capture without losing any of its content', async () => {
         const payload = '{"logs":[{"m":"hello"}]}';
         const res = await post(payload, { 'x-hb-log-name': 'session.json' });
         const data = await res.json();
 
         expect(data.ok).toBe(true);
-        expect(data.bytes).toBe(Buffer.byteLength(payload));
         const written = await fs.readFile(path.join(dir, data.filename), 'utf8');
-        expect(written).toBe(payload);
+        expect(JSON.parse(written)).toEqual(JSON.parse(payload));
+    });
+
+    // The stored bytes are serialized by the route, never relayed from the
+    // request object -- that is both the CodeQL taint barrier and a guarantee
+    // that tooling can always parse what it reads back.
+    it('normalizes a valid capture to parseable JSON', async () => {
+        const res = await post('{  "logs" : [ {"m":"x"} ]  }', { 'x-hb-log-name': 'messy.json' });
+        const data = await res.json();
+
+        const written = await fs.readFile(path.join(dir, data.filename), 'utf8');
+        expect(() => JSON.parse(written)).not.toThrow();
+        expect(JSON.parse(written)).toEqual({ logs: [{ m: 'x' }] });
+    });
+
+    // A damaged log is often the interesting one, so keep it rather than drop
+    // it -- but keep it inside an envelope so the file is still parseable.
+    it('preserves a malformed body verbatim inside a JSON envelope', async () => {
+        const res = await post('not json at all {{{', { 'x-hb-log-name': 'broken.json' });
+        const data = await res.json();
+        expect(data.ok).toBe(true);
+
+        const written = JSON.parse(await fs.readFile(path.join(dir, data.filename), 'utf8'));
+        expect(written.format).toBe('text');
+        expect(written.content).toBe('not json at all {{{');
+    });
+
+    it('reports the stored byte count, not the received one', async () => {
+        const res = await post('{  "a" :  1  }');
+        const data = await res.json();
+        const written = await fs.readFile(path.join(dir, data.filename), 'utf8');
+        expect(data.bytes).toBe(Buffer.byteLength(written));
     });
 
     it('rejects an empty body instead of writing a stub file', async () => {
@@ -87,7 +117,7 @@ describe('POST /logs/session', () => {
         expect(listing.count).toBe(1);
 
         const body = await (await fetch(`${url}/logs/session/${listing.entries[0].name}`)).text();
-        expect(body).toBe('{"logs":[]}');
+        expect(JSON.parse(body)).toEqual({ logs: [] });
     });
 
     it('refuses to read a traversal path back out', async () => {

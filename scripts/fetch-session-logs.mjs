@@ -53,16 +53,25 @@ function safeLocalName(name) {
 async function download(name) {
     const res = await fetch(`${BASE}/logs/session/${encodeURIComponent(name)}`, { headers });
     if (!res.ok) throw new Error(`download failed for ${name}: HTTP ${res.status}`);
-    const body = await res.text();
-    await mkdir(OUT_DIR, { recursive: true });
+    const received = await res.text();
+    // Parse and re-serialize rather than piping the response straight to disk.
+    // The backend stores validated JSON, so anything that fails here means the
+    // capture is damaged and is worth flagging rather than silently saving.
+    let contents;
+    try {
+        contents = `${JSON.stringify(JSON.parse(received), null, 2)}\n`;
+    } catch {
+        throw new Error(`${name} is not valid JSON; refusing to save a damaged capture`);
+    }
 
+    await mkdir(OUT_DIR, { recursive: true });
     const outDir = path.resolve(OUT_DIR);
     const target = path.resolve(outDir, safeLocalName(name));
     if (target !== outDir && !target.startsWith(outDir + path.sep)) {
         throw new Error(`refusing to write outside ${outDir}: ${name}`);
     }
-    await writeFile(target, body, 'utf8');
-    return { target, bytes: Buffer.byteLength(body, 'utf8') };
+    await writeFile(target, contents, 'utf8');
+    return { target, bytes: Buffer.byteLength(contents, 'utf8') };
 }
 
 const human = (bytes) => (bytes > 1024 * 1024
