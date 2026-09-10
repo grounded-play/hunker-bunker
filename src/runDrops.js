@@ -428,7 +428,13 @@ export function getQueensMilkHumanHealPenalty(healAmount, equippedRelics = []) {
 
 // Element combinations are not active effects until their runtime consumers
 // exist. Keep the API stable without announcing bonuses the game cannot apply.
-export function computeActiveSynergies() {
+//
+// The equipped list is accepted (and both the runtime caller in threeGame.js
+// and the tests pass it) so that wiring synergies up later is a body change
+// rather than a signature change. Declaring it also stops every caller reading
+// as passing a superfluous argument to a zero-arity function.
+export function computeActiveSynergies(equippedItems = []) {
+    void equippedItems;
     return [];
 }
 

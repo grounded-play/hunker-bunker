@@ -40,12 +40,27 @@ async function listLogs() {
     return data;
 }
 
+// The listing comes from the network, so a name in it is untrusted: a hostile
+// or compromised backend could return "../../.ssh/authorized_keys" and have this
+// script write outside OUT_DIR. Reduce to a bare filename, then confirm the
+// resolved path really is inside the download directory before writing.
+function safeLocalName(name) {
+    const base = path.basename(String(name ?? '')).replace(/[^A-Za-z0-9._-]/g, '');
+    const cleaned = base.replace(/^\.+/, '');
+    return cleaned || `session-${Date.now()}.json`;
+}
+
 async function download(name) {
     const res = await fetch(`${BASE}/logs/session/${encodeURIComponent(name)}`, { headers });
     if (!res.ok) throw new Error(`download failed for ${name}: HTTP ${res.status}`);
     const body = await res.text();
     await mkdir(OUT_DIR, { recursive: true });
-    const target = path.join(OUT_DIR, name);
+
+    const outDir = path.resolve(OUT_DIR);
+    const target = path.resolve(outDir, safeLocalName(name));
+    if (target !== outDir && !target.startsWith(outDir + path.sep)) {
+        throw new Error(`refusing to write outside ${outDir}: ${name}`);
+    }
     await writeFile(target, body, 'utf8');
     return { target, bytes: Buffer.byteLength(body, 'utf8') };
 }

@@ -70,18 +70,26 @@ for (const f of prodFiles) {
 deadModules.sort((a, b) => b.lines - a.lines);
 
 // 2. Exported functions/classes with no production caller.
+// Escape every RegExp metacharacter, not just `$`. Identifiers matched below
+// cannot currently contain anything else, but a partial escape is the kind of
+// thing that silently becomes wrong when the pattern it feeds is widened, and
+// `\` in particular would corrupt the built expression rather than match.
+function escapeRegExp(literal) {
+    return String(literal).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
 const exportRe = /export\s+(?:async\s+)?(?:function\*?|class)\s+([A-Za-z_$][\w$]*)/g;
 const deadExports = [];
 for (const f of prodFiles) {
     const src = prod.get(f);
     for (const m of src.matchAll(exportRe)) {
         const name = m[1];
-        const word = new RegExp(`\\b${name.replace(/\$/g, '\\$')}\\b`, 'g');
+        const word = new RegExp(`\\b${escapeRegExp(name)}\\b`, 'g');
         const self = (src.match(word) || []).length - 1;
         let external = 0;
         for (const [g, gs] of prod) {
             if (g === f) continue;
-            if (new RegExp(`\\b${name.replace(/\$/g, '\\$')}\\b`).test(gs)) external++;
+            if (new RegExp(`\\b${escapeRegExp(name)}\\b`).test(gs)) external++;
         }
         if (external === 0 && self === 0 && !new RegExp(`\\b${name}\\b`).test(html)) {
             deadExports.push({

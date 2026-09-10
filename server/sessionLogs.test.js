@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import path from 'node:path';
 import { safeLogName, sessionLogDir, MAX_LOG_BYTES } from './sessionLogs.js';
 
 describe('safeLogName', () => {
@@ -52,6 +53,36 @@ describe('sessionLogDir', () => {
         delete process.env.HB_SESSION_LOG_DIR;
         expect(sessionLogDir()).toMatch(/server[/\\]session-logs$/);
         if (prev !== undefined) process.env.HB_SESSION_LOG_DIR = prev;
+    });
+});
+
+// CodeQL flagged both of these as Critical/High on PR #61.
+describe('hostile input hardening', () => {
+    // A repeated header arrives as an array, so anything reading one has to
+    // collapse it first or downstream code gets a type it never expected.
+    it('reduces a duplicated filename header to a single safe name', () => {
+        const name = safeLogName(['first.json', 'second.json'][0]);
+        expect(name).not.toContain(',');
+        expect(name.endsWith('.json')).toBe(true);
+    });
+
+    // A name of ".." would resolve to the parent directory once joined.
+    it('never produces a name that escapes its directory', () => {
+        const hostile = ['..', '../..', '....//', '../../etc/passwd', '/etc/passwd', '.\\..\\win.ini'];
+        for (const raw of hostile) {
+            const name = safeLogName(raw);
+            const dir = path.resolve('/tmp/hb-log-containment');
+            const target = path.resolve(dir, name);
+            expect(target.startsWith(dir + path.sep), `${raw} -> ${name}`).toBe(true);
+        }
+    });
+
+    it('keeps a name that is only dots from collapsing to nothing dangerous', () => {
+        for (const raw of ['...', '.', '..']) {
+            const name = safeLogName(raw);
+            expect(name).not.toBe('');
+            expect(name.startsWith('.')).toBe(false);
+        }
     });
 });
 

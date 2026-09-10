@@ -49,12 +49,20 @@ export function safeLogName(rawName, { now = Date.now(), random = Math.random } 
     return `${stem}-${suffix}${ext}`;
 }
 
+// Node gives a repeated header as an array, so every header read here has to
+// collapse to a single string first. Without this a client could send
+// `x-hb-log-name` twice and hand downstream code an array where it expects text.
+function headerValue(raw) {
+    const value = Array.isArray(raw) ? raw[0] : raw;
+    return typeof value === 'string' ? value : '';
+}
+
 // Optional shared secret. Unset means open, which is right for a LAN/dev box;
 // set HB_LOG_UPLOAD_TOKEN on a public host.
 function tokenGuard(req, res, next) {
     const expected = process.env.HB_LOG_UPLOAD_TOKEN;
     if (!expected) return next();
-    const supplied = req.headers['x-hb-log-token'];
+    const supplied = headerValue(req.headers['x-hb-log-token']);
     if (supplied === expected) return next();
     res.status(401).json({ ok: false, error: 'bad or missing log token' });
 }
@@ -68,21 +76,36 @@ export function attachSessionLogRoutes(app) {
 
     app.post('/logs/session', limiter, tokenGuard, raw, async (req, res) => {
         try {
-            const body = Buffer.isBuffer(req.body) ? req.body : Buffer.from(String(req.body ?? ''));
+            // express.raw() always yields a Buffer for a body it parsed. Anything
+            // else means a different parser ran first (or none did), and coercing
+            // an object or array with String() would silently persist garbage
+            // like "[object Object]" instead of the capture.
+            const body = req.body;
+            if (!Buffer.isBuffer(body)) {
+                res.status(400).json({ ok: false, error: 'expected a raw body' });
+                return;
+            }
             if (!body.length) {
                 res.status(400).json({ ok: false, error: 'empty body' });
                 return;
             }
-            const dir = sessionLogDir();
+            const dir = path.resolve(sessionLogDir());
             await fs.mkdir(dir, { recursive: true });
-            const filename = safeLogName(req.headers['x-hb-log-name']);
-            const target = path.join(dir, filename);
-            if (!target.startsWith(dir)) throw new Error('path escape');
+            const filename = safeLogName(headerValue(req.headers['x-hb-log-name']));
+            // safeLogName already strips separators and dot segments; resolving
+            // and re-checking against dir + separator is the belt-and-braces
+            // containment check, since this writes attacker-influenced bytes to
+            // an attacker-influenced name.
+            const target = path.resolve(dir, filename);
+            if (target !== dir && !target.startsWith(dir + path.sep)) {
+                res.status(400).json({ ok: false, error: 'bad name' });
+                return;
+            }
             await fs.writeFile(target, body);
 
             // Device/platform is free-form and only used to tell captures apart
             // in a listing; it is never trusted for anything else.
-            const device = String(req.headers['x-hb-log-device'] ?? '').replace(/[^\w .:-]/g, '').slice(0, 64);
+            const device = headerValue(req.headers['x-hb-log-device']).replace(/[^\w .:-]/g, '').slice(0, 64);
             console.info('[hb-session-log]', JSON.stringify({
                 filename, bytes: body.length, device: device || undefined
             }));
@@ -112,8 +135,9 @@ export function attachSessionLogRoutes(app) {
         try {
             const dir = sessionLogDir();
             // Resolve then confirm containment, so ../ cannot read outside dir.
-            const target = path.resolve(dir, path.basename(String(req.params.name)));
-            if (!target.startsWith(path.resolve(dir))) {
+            const resolvedDir = path.resolve(dir);
+            const target = path.resolve(resolvedDir, path.basename(String(req.params.name)));
+            if (target !== resolvedDir && !target.startsWith(resolvedDir + path.sep)) {
                 res.status(400).json({ ok: false, error: 'bad name' });
                 return;
             }
