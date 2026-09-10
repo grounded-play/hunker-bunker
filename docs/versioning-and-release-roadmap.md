@@ -4,9 +4,9 @@
 
 **Active Development Branch:** `dev/sprint-30`
 
-**Current Working Version:** `v2.3.2-beta` (`2.3.2-beta` in `package.json`)
+**Current Working Version:** `v2.4.0-beta` (`2.4.0-beta` in `package.json`, branch `dev/sprint-33`)
 
-**Latest Tagged Baseline:** `v2.3.1-beta` at Sprint 29 integration commit `959239c`
+**Latest Tagged Baseline:** `v2.4.0-beta` at Sprint 33 integration on `mothership`
 
 **Main Branch:** `mothership`
 
@@ -38,6 +38,7 @@ $$\textbf{v[MAJOR].[MINOR].[PATCH]-[PRE-RELEASE]}$$
 | **v2.3.0-beta** | Sprint 28 (`dev/sprint-28`) | 2026-08-23 | [PR #40](https://github.com/grounded-play/hunker-bunker/pull/40) (`030a8f9`) | **46 new 3D models** (30 community chassis skins + 16 Season 0 assets), redesigned 3-column Armory with class backgrounds, Wanderer companion system, Steam Deck twin-stick aiming preset, mid-run crash recovery (`runCheckpoint.js`), GPU frame profiler, all 8 transformative relics. |
 | **v2.3.1-beta** | Sprint 29 (`dev/sprint-29`) | 2026-08-24 | `959239c` on `mothership` | Presentation telemetry and fixes, 11 optimized runtime models, reward/XP feedback, lighting reports, weapon/charm calibration, locomotion cadence, and chroma-green auditing. |
 | **v2.3.2-beta** | `fix/mayor-tina-and-astra-plan` | 2026-09-09 | PR to `mothership` | 3D chest-mounted operator patches snug on breastplate (`mixamorig1Spine2`), high-fidelity transparent RGBA decals (4120, 4121, 4122, 4124, 4125), startup UI scale flash fix, Mayor Tina seeded placement/facing, squad-wipe co-op handling, retail asset payload repair, and full test expansion (2,623 tests across 293 files). |
+| **v2.4.0-beta** | Sprint 33 (`dev/sprint-33`) | 2026-09-10 | [PR #61](https://github.com/grounded-play/hunker-bunker/pull/61) | Co-op shared world events and enemy materialization (a host-staged boss was invisible to peers), friendly-fire shove, solo runs no longer inheriting a co-op session; the 21.4 s O₂-build stall removed (two synchronous whole-scene shader recompiles); post-processing re-enabled in the shipped camera; run-card deck variety and inert effect keys resolved; session-log export fixed on PC and Steam Deck with a server drop box; upload endpoint closed and 6 dependency advisories patched; unwired-code audit and detector. 2,826 tests across 318 files. |
 | **Next version: undecided** | Sprint 30 (`dev/sprint-30`) | *In progress* | Branch from `959239c` | Choose the version only after accepted Sprint 30 scope is known. |
 
 ---

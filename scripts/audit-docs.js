@@ -73,11 +73,11 @@ for (const [relativePath, source] of contents) {
 
 const packageJson = JSON.parse(fs.readFileSync(path.join(root, 'package.json')));
 const version = packageJson.version;
-const expectedVersion = '2.3.2-beta';
-const expectedBranch = 'dev/sprint-30';
-if (version !== expectedVersion) {
-  errors.push(`package.json: expected Sprint 30 version ${expectedVersion}, found ${version}`);
-}
+// package.json is the single source of truth for the version. This used to be a
+// hardcoded literal that had to be edited in lockstep with every bump, which is
+// exactly the drift this audit exists to catch.
+const expectedVersion = version;
+const expectedBranch = 'dev/sprint-33';
 
 const synchronizedFiles = [
   'PRODUCT_STATE.md',
@@ -95,8 +95,9 @@ for (const relativePath of synchronizedFiles) {
 }
 
 const indexHtml = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
-if (!indexHtml.includes('SYS VER: 2.3.2-BETA // ACTIVE')) {
-  errors.push('index.html: in-game version label is not synchronized');
+const expectedSysVer = `SYS VER: ${expectedVersion.toUpperCase()} // ACTIVE`;
+if (!indexHtml.includes(expectedSysVer)) {
+  errors.push(`index.html: in-game version label is not synchronized (expected "${expectedSysVer}")`);
 }
 
 const planningDir = path.join(root, 'docs/planning');

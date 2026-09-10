@@ -5,7 +5,7 @@ and worklogs are evidence or history; they do not override this file. Update a
 row when its implementation or acceptance state changes and link to evidence
 instead of duplicating it here.
 
-Last verified: 2026-09-09 · Sprint 30 · `dev/sprint-30` · `v2.3.2-beta`
+Last verified: 2026-09-10 · Sprint 33 · `dev/sprint-33` · `v2.4.0-beta`
 
 Partial re-verification: 2026-09-09 · `fix/mayor-tina-and-astra-plan` from `69f31eb` · `v2.3.2-beta`. The encounter, diagnostics, payload, save/quest/depth caveats, 3D operator chest patches, startup UI scaling, and automated-suite rows below were reviewed in [the September 8 audit](docs/reports/astra-game-review-2026-09-08.md), [first implementation report](docs/reports/astra-first-implementation-2026-09-08.md), and [September 9 report](docs/reports/operator-patches-and-ui-scale-2026-09-09.md). Other acceptance rows retain their earlier scope and date.
 
