@@ -1,6 +1,17 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { ObjectiveRegistry } from './objectiveRegistry.js';
 
+describe('compass continuity', () => {
+    it('keeps navigation on progress updates and accepts an explicit clear', () => {
+        const registry = new ObjectiveRegistry();
+        registry.trackObjective({ id: 'route', label: 'Help the camp', compass: { x: 20, z: 30 }, target: 8 });
+        registry.trackObjective({ id: 'route', current: 3 });
+        expect(registry.getCompassTarget()).toMatchObject({ x: 20, z: 30 });
+        registry.trackObjective({ id: 'route', compass: null });
+        expect(registry.getCompassTarget()).toBeNull();
+    });
+});
+
 describe('ObjectiveRegistry', () => {
     let registry;
 

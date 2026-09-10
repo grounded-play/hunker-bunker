@@ -26,6 +26,16 @@ describe('Debug Hallway Museum', () => {
         mockGame = {
             scene,
             player,
+            chunkGroups: Object.assign(new THREE.Group(), { visible: true }),
+            setNoclip: vi.fn(),
+            skyRig: { group: Object.assign(new THREE.Group(), { visible: true }) },
+            setGodMode: vi.fn(),
+            createMenuGridTexture: vi.fn(() => {
+                const t = new THREE.Texture();
+                t.wrapS = THREE.RepeatWrapping;
+                t.wrapT = THREE.RepeatWrapping;
+                return t;
+            }),
             createScatterInstance: vi.fn((placement) => {
                 const mesh = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshBasicMaterial());
                 mesh.position.set(placement.x, placement.elevation ?? 0, placement.z);
@@ -113,5 +123,67 @@ describe('Debug Hallway Museum', () => {
             child.material?.dispose?.();
         });
         texture.dispose();
+    });
+
+    // User request 2026-09-09: the museum is a QA space. It needs a clean
+    // grid floor like the hero-select backdrop, only the exhibits it spawned,
+    // and no wall stopping you walking around.
+    it('uses the hero-select grid texture for its floor', async () => {
+        await openDebugMuseum(mockGame);
+        expect(mockGame.createMenuGridTexture).toHaveBeenCalled();
+
+        const group = scene.getObjectByName('debug-museum');
+        const floor = group.getObjectByName('debug-museum-floor');
+        expect(floor).toBeDefined();
+        expect(floor.material.map).toBeTruthy();
+        // Laid flat, and square rather than a 14-wide corridor so there is
+        // room to walk around the exhibits instead of only along them.
+        expect(floor.rotation.x).toBeCloseTo(-Math.PI / 2);
+        expect(floor.geometry.parameters.height).toBe(floor.geometry.parameters.width);
+    });
+
+    it('adds no GridHelper of its own, since the floor texture is the grid', async () => {
+        await openDebugMuseum(mockGame);
+        const group = scene.getObjectByName('debug-museum');
+        let helpers = 0;
+        group.traverse((child) => { if (child.isGridHelper) helpers++; });
+        expect(helpers).toBe(0);
+    });
+
+    it('hides world chunks so only the exhibits are visible, and restores them on close', async () => {
+        await openDebugMuseum(mockGame);
+        expect(mockGame.chunkGroups.visible).toBe(false);
+
+        closeDebugMuseum(mockGame);
+        expect(mockGame.chunkGroups.visible).toBe(true);
+    });
+
+    it('hides the biome sky rig so the backdrop is flat, and restores it on close', async () => {
+        scene.background = new THREE.Color(0x336699);
+        await openDebugMuseum(mockGame);
+        expect(mockGame.skyRig.group.visible).toBe(false);
+        expect(scene.background.getHex()).toBe(0x0b0d0f);
+
+        closeDebugMuseum(mockGame);
+        expect(mockGame.skyRig.group.visible).toBe(true);
+        expect(scene.background.getHex()).toBe(0x336699);
+    });
+
+    it('enables noclip at normal speed so no wall blocks the tour', async () => {
+        await openDebugMuseum(mockGame);
+        expect(mockGame.setNoclip).toHaveBeenCalledWith(true, 1);
+    });
+
+    it('turns noclip back off on close', async () => {
+        await openDebugMuseum(mockGame);
+        mockGame.setNoclip.mockClear();
+        closeDebugMuseum(mockGame);
+        expect(mockGame.setNoclip).toHaveBeenCalledWith(false);
+    });
+
+    it('survives a game without the optional debug hooks', async () => {
+        const bare = { scene, player, createScatterInstance: mockGame.createScatterInstance };
+        await expect(openDebugMuseum(bare)).resolves.toBe(true);
+        expect(() => closeDebugMuseum(bare)).not.toThrow();
     });
 });

@@ -1,0 +1,22 @@
+{
+  "passed": true,
+  "errors": [],
+  "fitted": {
+    "loadout": {
+      "archetypeId": "tesla_lock",
+      "weaponSkinId": "4103",
+      "charmId": "4138",
+      "mod1Id": "4142",
+      "mod2Id": null,
+      "craftedWeaponId": null
+    },
+    "sheen": "7"
+  },
+  "deployed": {
+    "name": "ClassWeapon_tesla_lock_skin4103",
+    "sheen": "#ff6262",
+    "charmMounted": true
+  },
+  "afterReload": 7,
+  "matrix": []
+}

@@ -320,6 +320,9 @@ export class DialogueManager {
         if (!this.dialogEl || !this.panelEl || !this.bodyEl || !this.choicesEl) {
             return;
         }
+        if (typeof window !== 'undefined' && typeof window.isGameplayPhase === 'function' && !window.isGameplayPhase()) {
+            return;
+        }
 
         this.cancelDialogue();
 
@@ -396,6 +399,9 @@ export class DialogueManager {
 
     async openBriefTransmission({ playerType = 'SCOUT', lines = [] } = {}) {
         if (!this.dialogEl || !this.panelEl || !this.bodyEl || !this.choicesEl) return;
+        if (typeof window !== 'undefined' && typeof window.isGameplayPhase === 'function' && !window.isGameplayPhase()) {
+            return;
+        }
         if (this.activeDialogueRunId) {
             // Another dialogue owns the panel — wait for it to finish instead of
             // silently dropping this transmission (the old behavior lost text).
@@ -465,6 +471,9 @@ export class DialogueManager {
 
     async startTutorialSequence({ game } = {}) {
         if (!game || !this.tutorialPromptEl) {
+            return;
+        }
+        if (typeof window !== 'undefined' && typeof window.isGameplayPhase === 'function' && !window.isGameplayPhase()) {
             return;
         }
 
@@ -760,38 +769,43 @@ export class DialogueManager {
         let name;
         let portrait;
 
-        if (/^(SYSTEM|WARNING|ALERT|CAUTION):/.test(text)) {
+        if (/^(TEACUP SIREN|MAYOR TINA):/i.test(text)) {
+            name = 'MAYOR TINA (TEACUP SIREN)';
+            portrait = '/lore_portraits/mayor_tina.webp';
+            cleanText = text.replace(/^(TEACUP SIREN|MAYOR TINA):\s*/i, '');
+        } else if (/^(SYSTEM|WARNING|ALERT|CAUTION):/.test(text)) {
             name = 'EXOSUIT OS';
             portrait = '/lore_portraits/survivor_04.webp';
             cleanText = text.replace(/^(SYSTEM|WARNING|ALERT|CAUTION):\s*/, '');
         } else if (/^(BUNKER|FACILITIES):/.test(text)) {
             name = 'BUNKER AUTO-ANNOUNCER';
-            portrait = '/lore_portraits/survivor_08.webp';
+            portrait = '/lore_portraits/bunker_announcer.webp';
             cleanText = text.replace(/^(BUNKER|FACILITIES):\s*/, '');
         } else if (text.startsWith('MOTHERSHIP:')) {
             name = 'MOTHERSHIP COMMAND';
             portrait = '/lore_portraits/survivor_00.webp';
             cleanText = text.replace(/^MOTHERSHIP:\s*/, '');
-        } else if (text.startsWith('SISTER MARTHA:')) {
+        } else if (text.startsWith('SISTER MARTHA:') || text.startsWith('MARTHA:')) {
             name = 'SISTER MARTHA';
             portrait = '/lore_portraits/tallow_martha.webp';
-            cleanText = text.replace(/^SISTER MARTHA:\s*/, '');
-        } else if (text.startsWith('COMMANDER BRIGGS:')) {
+            cleanText = text.replace(/^(SISTER MARTHA|MARTHA):\s*/, '');
+        } else if (text.startsWith('COMMANDER BRIGGS:') || text.startsWith('BRIGGS:')) {
             name = 'COMMANDER BRIGGS';
             portrait = '/lore_portraits/vesper_briggs.webp';
-            cleanText = text.replace(/^COMMANDER BRIGGS:\s*/, '');
-        } else if (text.startsWith('OVERSEER KAELEN:')) {
+            cleanText = text.replace(/^(COMMANDER BRIGGS|BRIGGS):\s*/, '');
+        } else if (text.startsWith('OVERSEER KAELEN:') || text.startsWith('KAELEN:')) {
             name = 'OVERSEER KAELEN';
             portrait = '/lore_portraits/meridian_kaelen.jpg';
-            cleanText = text.replace(/^OVERSEER KAELEN:\s*/, '');
-        } else if (/^(KAELEN|MARTHA|BRIGGS|NAHL|VEY|RHUN):/.test(text)) {
+            cleanText = text.replace(/^(OVERSEER KAELEN|KAELEN):\s*/, '');
+        } else if (/^(DR\.\s*OKONKWO|OKONKWO):/i.test(text)) {
+            name = 'DR. OKONKWO-VASS';
+            portrait = '/lore_portraits/survivor_10.webp';
+            cleanText = text.replace(/^(DR\.\s*OKONKWO|OKONKWO):\s*/i, '');
+        } else if (/^(NAHL|VEY|RHUN):/.test(text)) {
             const speakerMap = {
-                KAELEN: { name: 'OVERSEER KAELEN', portrait: '/lore_portraits/survivor_10.webp' },
-                MARTHA: { name: 'SISTER MARTHA', portrait: '/lore_portraits/survivor_09.webp' },
-                BRIGGS: { name: 'COMMANDER BRIGGS', portrait: '/lore_portraits/survivor_06.webp' },
                 NAHL: { name: 'NAHL, THE SUTURE', portrait: '/lore_portraits/survivor_05.webp' },
                 VEY: { name: 'VEY, THE LISTENER', portrait: '/lore_portraits/survivor_11.webp' },
-                RHUN: { name: 'RHUN, THE SHIELD', portrait: '/lore_portraits/queen_00.webp' }
+                RHUN: { name: 'RHUN, THE SHIELD', portrait: '/lore_portraits/survivor_06.webp' }
             };
             const prefix = text.split(':')[0];
             const mapped = speakerMap[prefix];
@@ -802,6 +816,30 @@ export class DialogueManager {
             name = 'THE QUEEN';
             portrait = '/lore_portraits/queen_00.webp';
             cleanText = text.replace(/^QUEEN:\s*/, '');
+        } else if (text.startsWith('FOXHOLE:') || text.startsWith('FOXHOLE SHADOW:') || text.startsWith('VASQUEZ:')) {
+            name = 'FOXHOLE SHADOW';
+            portrait = '/lore_portraits/survivor_foxhole.webp';
+            cleanText = text.replace(/^(FOXHOLE|FOXHOLE SHADOW|VASQUEZ):\s*/, '');
+        } else if (text.startsWith('HACKER:') || text.startsWith('MANIC HACKER:')) {
+            name = 'MANIC HACKER GF';
+            portrait = '/lore_portraits/survivor_hacker.webp';
+            cleanText = text.replace(/^(HACKER|MANIC HACKER):\s*/, '');
+        } else if (text.startsWith('CORPO:') || text.startsWith('CORPO RUNNER:')) {
+            name = 'CORPO SHADOW RUNNER';
+            portrait = '/lore_portraits/survivor_corpo.webp';
+            cleanText = text.replace(/^(CORPO|CORPO RUNNER):\s*/, '');
+        } else if (text.startsWith('CRASH QUEEN:')) {
+            name = 'CRASH SURVIVOR QUEEN';
+            portrait = '/lore_portraits/survivor_crash_queen.webp';
+            cleanText = text.replace(/^CRASH QUEEN:\s*/, '');
+        } else if (text.startsWith('ABG:') || text.startsWith('SPACE ABG:')) {
+            name = 'SPACE ABG TRIPPER';
+            portrait = '/lore_portraits/survivor_abg.webp';
+            cleanText = text.replace(/^(ABG|SPACE ABG):\s*/, '');
+        } else if (text.startsWith('HYBRID:') || text.startsWith('SPECIES CHRYSALIS:')) {
+            name = 'SPECIES CHRYSALIS';
+            portrait = '/lore_portraits/survivor_hybrid.webp';
+            cleanText = text.replace(/^(HYBRID|SPECIES CHRYSALIS):\s*/, '');
         } else {
             if (playerType === 'TANK') {
                 name = 'TANK OPERATOR LINK';

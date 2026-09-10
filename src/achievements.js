@@ -71,6 +71,14 @@ export const ACHIEVEMENT_DEFS = freezeDeep([
         title: 'HUNKERED',
         blurb: 'Survive a single run past twenty minutes.',
         icon: 'hunkered',
+        // maxRunMs is already tracked for the career readout, so the player's
+        // best run so far is exactly the progress toward this. Reported in
+        // whole minutes: a seconds-accurate bar would tick every frame of a
+        // long run without telling the player anything more.
+        progress: (state) => ({
+            current: Math.min(20, Math.floor((state.stats.maxRunMs ?? 0) / 60000)),
+            target: 20
+        }),
         check: (_state, event) => event.name === 'run-end'
             && Number(event.detail?.runMs ?? 0) >= 20 * 60 * 1000
     },

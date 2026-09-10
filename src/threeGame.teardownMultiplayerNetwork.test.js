@@ -27,6 +27,7 @@ describe('ThreeGame.teardownMultiplayerNetwork', () => {
             multiplayerLocalPlayerId: 'local-player',
             isMultiplayerHost: true,
             lastNetBroadcastTime: 12345,
+            lastEnemyStateBroadcastTime: 12345,
             // Sprint 26: setupMultiplayerNetwork's world-seed sync (see its
             // own comment / threeGame.setupMultiplayerNetworkSeedSync.test.js)
             // pins these for the match -- teardown must undo them too, or a
@@ -50,6 +51,7 @@ describe('ThreeGame.teardownMultiplayerNetwork', () => {
         expect(fake.multiplayerLocalPlayerId).toBeNull();
         expect(fake.isMultiplayerHost).toBe(false);
         expect(fake.lastNetBroadcastTime).toBe(0);
+        expect(fake.lastEnemyStateBroadcastTime).toBe(0);
     });
 
     it('resets the world-generation seed sync so a later solo run does not inherit the match seed', () => {
@@ -78,7 +80,7 @@ describe('ThreeGame.teardownMultiplayerNetwork', () => {
         // listeners registered on the underlying socket after "teardown."
         const expectedEvents = [
             'playerMoved', 'playerFired', 'playerDamaged', 'playerRevived',
-            'playerDownedBroadcast', 'playerExtractedBroadcast', 'enemyDamaged', 'enemyHitReported',
+            'playerDownedBroadcast', 'playerExtractedBroadcast', 'enemyDamaged', 'enemyHitReported', 'enemyStateSnapshot',
             'playerDisconnected', 'newPlayer', 'hostChanged'
         ];
         expect(fake._socketOffCalls.sort()).toEqual([...expectedEvents].sort());

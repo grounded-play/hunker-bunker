@@ -29,7 +29,7 @@ const LEADER_IDENTITIES = Object.freeze({
     scientist: Object.freeze({
         id: 'scientist',
         name: 'Dr. Nahl',
-        portrait: '/lore_portraits/survivor_04.webp',
+        portrait: '/lore_portraits/survivor_05.webp',
         sprite: '/civilian_researcher_walk.png',
         classId: 'ENGINEER',
         accent: '#c4a7ff',
@@ -38,7 +38,7 @@ const LEADER_IDENTITIES = Object.freeze({
     val: Object.freeze({
         id: 'val',
         name: 'Val',
-        portrait: '/lore_portraits/survivor_08.webp',
+        portrait: '/lore_portraits/survivor_07.webp',
         sprite: '/civilian_researcher_walk.png',
         classId: 'ENGINEER',
         accent: '#ff8800',

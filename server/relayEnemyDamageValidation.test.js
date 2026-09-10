@@ -151,4 +151,66 @@ describe('Server Relay: co-op enemy-hit-sync validation', () => {
         expect(event.damage).toBe(2);
         expect(event.attackerId).toBe(attacker.id);
     });
+
+    it('validates a host-confirmed guest hit against the guest position', async () => {
+        ({ httpServer, url } = await startTestServer());
+        const roomCode = 'ENEMY-GUEST-HIT-TEST';
+
+        const host = await connectClient(url);
+        const guest = await connectClient(url);
+        sockets.push(host, guest);
+        host.emit('joinRoom', { roomCode, callsign: 'HOST', opClass: 'TANK' });
+        await waitForEvent(host, 'currentPlayers');
+        guest.emit('joinRoom', { roomCode, callsign: 'GUEST', opClass: 'SCOUT' });
+        await waitForEvent(guest, 'currentPlayers');
+
+        const moved = waitForEvent(host, 'playerMoved');
+        guest.emit('playerMove', { x: 100, z: 100 });
+        await moved;
+
+        const reportedPromise = waitForEvent(host, 'enemyHitReported');
+        guest.emit('enemyHitReport', {
+            x: 101, z: 100, damage: 2, enemyType: 'crawler', scatterKey: '1,1:0:crawler'
+        });
+        const reported = await reportedPromise;
+        expect(reported?.reporterId).toBe(guest.id);
+
+        const damagedPromise = waitForEvent(guest, 'enemyDamaged');
+        host.emit('enemyDamage', reported);
+        const damaged = await damagedPromise;
+
+        expect(damaged).not.toBeNull();
+        expect(damaged.scatterKey).toBe('1,1:0:crawler');
+        expect(damaged.damage).toBe(2);
+    });
+
+    it('relays canonical host enemy snapshots and rejects guest snapshots', async () => {
+        ({ httpServer, url } = await startTestServer());
+        const roomCode = 'ENEMY-SNAPSHOT-TEST';
+
+        const host = await connectClient(url);
+        const guest = await connectClient(url);
+        sockets.push(host, guest);
+        host.emit('joinRoom', { roomCode, callsign: 'HOST', opClass: 'TANK' });
+        await waitForEvent(host, 'currentPlayers');
+        guest.emit('joinRoom', { roomCode, callsign: 'GUEST', opClass: 'SCOUT' });
+        await waitForEvent(guest, 'currentPlayers');
+
+        const snapshotPromise = waitForEvent(guest, 'enemyStateSnapshot');
+        host.emit('enemyState', {
+            enemies: [{
+                scatterKey: '1,1:0:crawler', enemyType: 'crawler',
+                x: 12, z: 13, hp: 2, burstTriggered: false
+            }]
+        });
+        const snapshot = await snapshotPromise;
+        expect(snapshot?.enemies).toEqual([{
+            scatterKey: '1,1:0:crawler', enemyType: 'crawler',
+            x: 12, z: 13, hp: 2, burstTriggered: false
+        }]);
+
+        const rejectedPromise = waitForEvent(host, 'enemyStateSnapshot', 300);
+        guest.emit('enemyState', { enemies: snapshot.enemies });
+        expect(await rejectedPromise).toBeNull();
+    });
 });

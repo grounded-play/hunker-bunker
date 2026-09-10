@@ -70,6 +70,9 @@ export async function startRunAndSkipIntro(page) {
     while (Date.now() < deadline) {
         ready = await page.evaluate(() => {
             window.skipAllIntro = true;
+            if (typeof window.isGameplayReady === 'function') {
+                return window.isGameplayReady();
+            }
             const game = window.game;
             return game?.performanceProfile === 'gameplay'
                 && game?.inputEnabled === true

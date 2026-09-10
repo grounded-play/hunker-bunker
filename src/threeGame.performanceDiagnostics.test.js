@@ -8,6 +8,35 @@ afterEach(() => {
 });
 
 describe('ThreeGame performance diagnostics', () => {
+    it('resets GPU measurements only when the rendering profile changes', () => {
+        globalThis.window = {};
+        const fake = {
+            performanceProfile: 'menu',
+            gpuFrameTimer: { reset: vi.fn() },
+            selectActiveCamera: vi.fn(),
+            _flushDeferredAtlasProcessors: vi.fn(),
+            setupMayorTinaEncounter: vi.fn(),
+            virtualInput: {},
+            defaultVisibleChunkRadius: 1,
+            gameplayPixelRatio: 1,
+            menuPixelRatio: 1,
+            renderer: { getPixelRatio: () => 1, shadowMap: {} },
+            resize: vi.fn(),
+            resetWeaponState: vi.fn(),
+            getSpawnTile: () => ({ x: 0, y: 0 }),
+            clearLoadedChunksForRunReset: vi.fn(),
+            resetAct2World: vi.fn()
+        };
+        ThreeGame.prototype.setPerformanceProfile.call(fake, 'menu');
+        expect(fake.gpuFrameTimer.reset).not.toHaveBeenCalled();
+        ThreeGame.prototype.setPerformanceProfile.call(fake, 'gameplay');
+        expect(fake.gpuFrameTimer.reset).toHaveBeenCalledOnce();
+        ThreeGame.prototype.setPerformanceProfile.call(fake, 'gameplay');
+        expect(fake.gpuFrameTimer.reset).toHaveBeenCalledOnce();
+        ThreeGame.prototype.setPerformanceProfile.call(fake, 'menu');
+        expect(fake.gpuFrameTimer.reset).toHaveBeenCalledTimes(2);
+    });
+
     it('records a completed render phase with bounded context history', () => {
         globalThis.window = {
             __hbPerfPhaseHistory: [],

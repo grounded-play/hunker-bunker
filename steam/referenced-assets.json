@@ -146,10 +146,14 @@
     "3d/runtime/parasite.glb",
     "3d/runtime/queen.glb",
     "3d/runtime/radar.glb",
+    "3d/runtime/secrets/mayor-tina-rigged.glb",
+    "3d/runtime/secrets/mayor-tina.glb",
+    "3d/runtime/secrets/teacup-roach.glb",
     "3d/runtime/spore-snail-boss.glb",
     "3d/runtime/storage-locker.glb",
     "3d/runtime/tank-rigged.glb",
     "3d/scouting-scout/Scout.game.glb",
+    "Cockroach_transform.mp4",
     "DoorIntro.mp4",
     "DoorIntro.webm",
     "Eng.Full_v2.png",
@@ -157,11 +161,16 @@
     "Scout.full_v2.png",
     "Tank.full_v2.png",
     "Tank.walk_v4.png",
+    "ach_archivist.png",
     "ach_ending_alien_exodus.jpg",
     "ach_ending_empty_husk.jpg",
     "ach_ending_failed_carrier.jpg",
     "ach_ending_mothership_infection.jpg",
     "ach_ending_outed_escape.jpg",
+    "ach_ghost.png",
+    "ach_hunkered.png",
+    "ach_kin.png",
+    "ach_quick_study.png",
     "alien_nahl_walk.png",
     "alien_proto_crawler_walk.png",
     "alien_proto_crawler_walk_v2.png",
@@ -457,6 +466,85 @@
     "drop_resin_locket.png",
     "drop_security_log.png",
     "drop_survey_probe.png",
+    "economy/armory/4100.png",
+    "economy/armory/4101.png",
+    "economy/armory/4102.png",
+    "economy/armory/4103.png",
+    "economy/armory/4104.png",
+    "economy/armory/4105.png",
+    "economy/armory/4106.png",
+    "economy/armory/4107.png",
+    "economy/armory/4108.png",
+    "economy/armory/4109.png",
+    "economy/armory/4110.png",
+    "economy/armory/4111.png",
+    "economy/armory/4112.png",
+    "economy/armory/4113.png",
+    "economy/armory/4114.png",
+    "economy/armory/4115.png",
+    "economy/armory/4116.png",
+    "economy/armory/4117.png",
+    "economy/armory/4118.png",
+    "economy/armory/4119.png",
+    "economy/armory/4130.png",
+    "economy/armory/4131.png",
+    "economy/armory/4132.png",
+    "economy/armory/4133.png",
+    "economy/armory/4134.png",
+    "economy/armory/4135.png",
+    "economy/armory/4136.png",
+    "economy/armory/4137.png",
+    "economy/armory/4138.png",
+    "economy/armory/4139.png",
+    "economy/armory/4140.png",
+    "economy/armory/4141.png",
+    "economy/armory/4142.png",
+    "economy/armory/4143.png",
+    "economy/armory/4144.png",
+    "economy/armory/4145.png",
+    "economy/armory/4146.png",
+    "economy/armory/4147.png",
+    "economy/armory/5003.png",
+    "economy/armory/5004.png",
+    "economy/armory/5005.png",
+    "economy/armory/5007.png",
+    "economy/armory/5008.png",
+    "economy/armory/5011.png",
+    "economy/armory/5012.png",
+    "economy/armory/comm_eng_abg.png",
+    "economy/armory/comm_eng_afro_crash.png",
+    "economy/armory/comm_eng_apex.png",
+    "economy/armory/comm_eng_corpo_shadow_runner.png",
+    "economy/armory/comm_eng_foxhole_shadow.png",
+    "economy/armory/comm_eng_neural_weaver.png",
+    "economy/armory/comm_eng_sil.png",
+    "economy/armory/comm_eng_soft_manic_architect_gf.png",
+    "economy/armory/comm_eng_swim.png",
+    "economy/armory/comm_eng_toxic_apex_chrysalis.png",
+    "economy/armory/comm_scount_sil.png",
+    "economy/armory/comm_scout_abg.png",
+    "economy/armory/comm_scout_apex.png",
+    "economy/armory/comm_scout_corpo_shadow_runner.png",
+    "economy/armory/comm_scout_foxhole_shadow.png",
+    "economy/armory/comm_scout_soft_manic_infiltrator_gf.png",
+    "economy/armory/comm_scout_swim.png",
+    "economy/armory/comm_scout_tank_crash.png",
+    "economy/armory/comm_scout_toxic_apex_chrysalis.png",
+    "economy/armory/comm_scout_xeno_stalker.png",
+    "economy/armory/comm_tank_abg.png",
+    "economy/armory/comm_tank_afro_crash.png",
+    "economy/armory/comm_tank_apex.png",
+    "economy/armory/comm_tank_brood_matron.png",
+    "economy/armory/comm_tank_chubby_protective_hacker_gf.png",
+    "economy/armory/comm_tank_corpo_shadow_runner.png",
+    "economy/armory/comm_tank_foxhole_shadow.png",
+    "economy/armory/comm_tank_sil.png",
+    "economy/armory/comm_tank_swim.png",
+    "economy/armory/comm_tank_toxic_apex_chrysalis.png",
+    "economy/armory/frame-siege_breaker.png",
+    "economy/armory/frame-talon.png",
+    "economy/armory/frame-talon_c.png",
+    "economy/armory/frame-tesla_lock.png",
     "economy/cache_deep_relic.png",
     "economy/cache_deep_relic_large.png",
     "economy/cache_key.png",
@@ -638,6 +726,8 @@
     "interstitials/motion/int_30_kaelen_is_the_grid_motion_v1.webm",
     "interstitials/motion/int_31_mother_of_the_last_world_motion_v1.webm",
     "kaelen_camp_walk_v2.png",
+    "lore_portraits/bunker_announcer.webp",
+    "lore_portraits/mayor_tina.webp",
     "lore_portraits/meridian_kaelen.jpg",
     "lore_portraits/meridian_kaelen.png",
     "lore_portraits/queen_00.webp",
@@ -648,10 +738,16 @@
     "lore_portraits/survivor_04.webp",
     "lore_portraits/survivor_05.webp",
     "lore_portraits/survivor_06.webp",
+    "lore_portraits/survivor_07.webp",
     "lore_portraits/survivor_08.webp",
-    "lore_portraits/survivor_09.webp",
     "lore_portraits/survivor_10.webp",
     "lore_portraits/survivor_11.webp",
+    "lore_portraits/survivor_abg.webp",
+    "lore_portraits/survivor_corpo.webp",
+    "lore_portraits/survivor_crash_queen.webp",
+    "lore_portraits/survivor_foxhole.webp",
+    "lore_portraits/survivor_hacker.webp",
+    "lore_portraits/survivor_hybrid.webp",
     "lore_portraits/tallow_martha.png",
     "lore_portraits/tallow_martha.webp",
     "lore_portraits/vesper_briggs.png",
@@ -798,11 +894,6 @@
       "path": "3d/runtime/basic-pile.glb",
       "bytes": 5649512,
       "classification": "runtime-required"
-    },
-    {
-      "path": "3d/runtime/bio-stalker.glb",
-      "bytes": 5246816,
-      "classification": "unknown"
     },
     {
       "path": "3d/runtime/broken-engineer-ship.glb",
@@ -998,11 +1089,6 @@
       "path": "3d/runtime/engineer-rigged-gestures.glb",
       "bytes": 6357192,
       "classification": "runtime-required"
-    },
-    {
-      "path": "3d/runtime/engineer-vanguard.glb",
-      "bytes": 5167428,
-      "classification": "unknown"
     },
     {
       "path": "3d/runtime/frozen-tanker.glb",
@@ -1216,7 +1302,7 @@
     },
     {
       "path": "3d/runtime/new3ds/mod_echo_location_transceiver.glb",
-      "bytes": 30854568,
+      "bytes": 4479148,
       "classification": "runtime-required"
     },
     {
@@ -1231,7 +1317,7 @@
     },
     {
       "path": "3d/runtime/new3ds/mod_symbiotic_adrenaline_pump.glb",
-      "bytes": 40393748,
+      "bytes": 5478680,
       "classification": "runtime-required"
     },
     {
@@ -1530,6 +1616,21 @@
       "classification": "runtime-required"
     },
     {
+      "path": "3d/runtime/secrets/mayor-tina-rigged.glb",
+      "bytes": 6018488,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/secrets/mayor-tina.glb",
+      "bytes": 5297812,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/secrets/teacup-roach.glb",
+      "bytes": 5722292,
+      "classification": "runtime-required"
+    },
+    {
       "path": "3d/runtime/spore-snail-boss.glb",
       "bytes": 5822668,
       "classification": "runtime-required"
@@ -1548,6 +1649,16 @@
       "path": "3d/scouting-scout/Scout.game.glb",
       "bytes": 7948504,
       "classification": "runtime-required"
+    },
+    {
+      "path": "Cockroach_transform.mp4",
+      "bytes": 6896148,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "Cockroach_transform.webm",
+      "bytes": 2148216,
+      "classification": "unknown"
     },
     {
       "path": "DoorIntro.mp4",
@@ -1570,19 +1681,9 @@
       "classification": "runtime-required"
     },
     {
-      "path": "Eng.Intro.gif",
-      "bytes": 7404804,
-      "classification": "unknown"
-    },
-    {
       "path": "Eng.walk_v4.png",
       "bytes": 1516521,
       "classification": "runtime-required"
-    },
-    {
-      "path": "Scout.Intro.gif",
-      "bytes": 8282353,
-      "classification": "unknown"
     },
     {
       "path": "Scout.full.jpeg",
@@ -1593,16 +1694,6 @@
       "path": "Scout.full_v2.png",
       "bytes": 447724,
       "classification": "runtime-required"
-    },
-    {
-      "path": "Scout.walk_v4.png",
-      "bytes": 1977156,
-      "classification": "unknown"
-    },
-    {
-      "path": "Tank.Intro.gif",
-      "bytes": 8742231,
-      "classification": "unknown"
     },
     {
       "path": "Tank.full.jpeg",
@@ -1622,62 +1713,62 @@
     {
       "path": "ach_archivist.jpg",
       "bytes": 636638,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "ach_archivist.png",
       "bytes": 684691,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "ach_archivist_locked.jpg",
       "bytes": 128764,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "ach_archivist_locked.png",
       "bytes": 245457,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "ach_cartographer.jpg",
       "bytes": 567348,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "ach_cartographer.png",
       "bytes": 610238,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "ach_cartographer_locked.jpg",
       "bytes": 106738,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "ach_cartographer_locked.png",
       "bytes": 206565,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "ach_chen_thirteenth.jpg",
       "bytes": 616161,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "ach_chen_thirteenth.png",
       "bytes": 667510,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "ach_chen_thirteenth_locked.jpg",
       "bytes": 121118,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "ach_chen_thirteenth_locked.png",
       "bytes": 198770,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "ach_ending_alien_exodus.jpg",
@@ -1687,57 +1778,57 @@
     {
       "path": "ach_ending_alien_exodus.png",
       "bytes": 700626,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "ach_ending_alien_exodus_locked.jpg",
       "bytes": 135598,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "ach_ending_alien_exodus_locked.png",
       "bytes": 236297,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "ach_ending_carriers_bargain.jpg",
       "bytes": 720954,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "ach_ending_carriers_bargain.png",
       "bytes": 773475,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "ach_ending_carriers_bargain_locked.jpg",
       "bytes": 157157,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "ach_ending_carriers_bargain_locked.png",
       "bytes": 285637,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "ach_ending_clean_escape.jpg",
       "bytes": 596774,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "ach_ending_clean_escape.png",
       "bytes": 649318,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "ach_ending_clean_escape_locked.jpg",
       "bytes": 122759,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "ach_ending_clean_escape_locked.png",
       "bytes": 194093,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "ach_ending_empty_husk.jpg",
@@ -1747,17 +1838,17 @@
     {
       "path": "ach_ending_empty_husk.png",
       "bytes": 798803,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "ach_ending_empty_husk_locked.jpg",
       "bytes": 166790,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "ach_ending_empty_husk_locked.png",
       "bytes": 326576,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "ach_ending_failed_carrier.jpg",
@@ -1767,57 +1858,57 @@
     {
       "path": "ach_ending_failed_carrier.png",
       "bytes": 673521,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "ach_ending_failed_carrier_locked.jpg",
       "bytes": 134845,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "ach_ending_failed_carrier_locked.png",
       "bytes": 290225,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "ach_ending_full_brood.jpg",
       "bytes": 611566,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "ach_ending_full_brood.png",
       "bytes": 655861,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "ach_ending_full_brood_locked.jpg",
       "bytes": 116942,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "ach_ending_full_brood_locked.png",
       "bytes": 202071,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "ach_ending_mixed_crew.jpg",
       "bytes": 714082,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "ach_ending_mixed_crew.png",
       "bytes": 772820,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "ach_ending_mixed_crew_locked.jpg",
       "bytes": 152547,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "ach_ending_mixed_crew_locked.png",
       "bytes": 260944,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "ach_ending_mothership_infection.jpg",
@@ -1827,17 +1918,17 @@
     {
       "path": "ach_ending_mothership_infection.png",
       "bytes": 843433,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "ach_ending_mothership_infection_locked.jpg",
       "bytes": 174860,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "ach_ending_mothership_infection_locked.png",
       "bytes": 287113,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "ach_ending_outed_escape.jpg",
@@ -1847,267 +1938,267 @@
     {
       "path": "ach_ending_outed_escape.png",
       "bytes": 648511,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "ach_ending_outed_escape_locked.jpg",
       "bytes": 111370,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "ach_ending_outed_escape_locked.png",
       "bytes": 220619,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "ach_ending_scorched_sky.jpg",
       "bytes": 580931,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "ach_ending_scorched_sky.png",
       "bytes": 622382,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "ach_ending_scorched_sky_locked.jpg",
       "bytes": 103139,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "ach_ending_scorched_sky_locked.png",
       "bytes": 198099,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "ach_gentle_drill.jpg",
       "bytes": 591393,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "ach_gentle_drill.png",
       "bytes": 638214,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "ach_gentle_drill_locked.jpg",
       "bytes": 168109,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "ach_gentle_drill_locked.png",
       "bytes": 287715,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "ach_ghost.jpg",
       "bytes": 522667,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "ach_ghost.png",
       "bytes": 557916,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "ach_ghost_locked.jpg",
       "bytes": 88047,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "ach_ghost_locked.png",
       "bytes": 158778,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "ach_hardened.jpg",
       "bytes": 568547,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "ach_hardened.png",
       "bytes": 600589,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "ach_hardened_locked.jpg",
       "bytes": 111191,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "ach_hardened_locked.png",
       "bytes": 208768,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "ach_hunkered.jpg",
       "bytes": 705655,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "ach_hunkered.png",
       "bytes": 749157,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "ach_hunkered_locked.jpg",
       "bytes": 147510,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "ach_hunkered_locked.png",
       "bytes": 296215,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "ach_kin.jpg",
       "bytes": 649178,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "ach_kin.png",
       "bytes": 696900,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "ach_kin_locked.jpg",
       "bytes": 141554,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "ach_kin_locked.png",
       "bytes": 250867,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "ach_locked.jpg",
       "bytes": 642239,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "ach_locked.png",
       "bytes": 698498,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "ach_quick_study.jpg",
       "bytes": 665959,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "ach_quick_study.png",
       "bytes": 724151,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "ach_quick_study_locked.jpg",
       "bytes": 141333,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "ach_quick_study_locked.png",
       "bytes": 241171,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "ach_reyes_courier.jpg",
       "bytes": 719981,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "ach_reyes_courier.png",
       "bytes": 764899,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "ach_reyes_courier_locked.jpg",
       "bytes": 164778,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "ach_reyes_courier_locked.png",
       "bytes": 325942,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "ach_slay_the_queen.jpg",
       "bytes": 579603,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "ach_slay_the_queen.png",
       "bytes": 618598,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "ach_slay_the_queen_locked.jpg",
       "bytes": 107264,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "ach_slay_the_queen_locked.png",
       "bytes": 201421,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "ach_victory_engineer.jpg",
       "bytes": 725293,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "ach_victory_engineer.png",
       "bytes": 786208,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "ach_victory_engineer_locked.jpg",
       "bytes": 153116,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "ach_victory_engineer_locked.png",
       "bytes": 289844,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "ach_victory_scout.jpg",
       "bytes": 501044,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "ach_victory_scout.png",
       "bytes": 541666,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "ach_victory_scout_locked.jpg",
       "bytes": 81536,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "ach_victory_scout_locked.png",
       "bytes": 141461,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "ach_victory_tank.jpg",
       "bytes": 582161,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "ach_victory_tank.png",
       "bytes": 622644,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "ach_victory_tank_locked.jpg",
       "bytes": 108139,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "ach_victory_tank_locked.png",
       "bytes": 202051,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "alien_nahl_walk.png",
@@ -4200,6 +4291,401 @@
       "classification": "runtime-required"
     },
     {
+      "path": "economy/armory/4100.png",
+      "bytes": 31219,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/armory/4101.png",
+      "bytes": 54794,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/armory/4102.png",
+      "bytes": 42702,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/armory/4103.png",
+      "bytes": 47934,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/armory/4104.png",
+      "bytes": 31732,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/armory/4105.png",
+      "bytes": 54851,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/armory/4106.png",
+      "bytes": 55558,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/armory/4107.png",
+      "bytes": 38566,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/armory/4108.png",
+      "bytes": 47533,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/armory/4109.png",
+      "bytes": 15550,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/armory/4110.png",
+      "bytes": 15816,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/armory/4111.png",
+      "bytes": 35807,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/armory/4112.png",
+      "bytes": 52517,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/armory/4113.png",
+      "bytes": 41736,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/armory/4114.png",
+      "bytes": 55648,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/armory/4115.png",
+      "bytes": 23286,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/armory/4116.png",
+      "bytes": 41957,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/armory/4117.png",
+      "bytes": 54603,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/armory/4118.png",
+      "bytes": 38527,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/armory/4119.png",
+      "bytes": 31049,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/armory/4130.png",
+      "bytes": 76737,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/armory/4131.png",
+      "bytes": 30052,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/armory/4132.png",
+      "bytes": 55645,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/armory/4133.png",
+      "bytes": 50134,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/armory/4134.png",
+      "bytes": 33575,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/armory/4135.png",
+      "bytes": 99922,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/armory/4136.png",
+      "bytes": 56270,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/armory/4137.png",
+      "bytes": 26390,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/armory/4138.png",
+      "bytes": 76474,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/armory/4139.png",
+      "bytes": 43831,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/armory/4140.png",
+      "bytes": 61716,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/armory/4141.png",
+      "bytes": 134874,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/armory/4142.png",
+      "bytes": 111102,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/armory/4143.png",
+      "bytes": 117920,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/armory/4144.png",
+      "bytes": 112250,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/armory/4145.png",
+      "bytes": 42049,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/armory/4146.png",
+      "bytes": 94956,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/armory/4147.png",
+      "bytes": 142661,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/armory/5003.png",
+      "bytes": 49682,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/armory/5004.png",
+      "bytes": 43962,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/armory/5005.png",
+      "bytes": 65644,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/armory/5007.png",
+      "bytes": 55187,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/armory/5008.png",
+      "bytes": 60961,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/armory/5011.png",
+      "bytes": 49499,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/armory/5012.png",
+      "bytes": 49615,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/armory/comm_eng_abg.png",
+      "bytes": 55439,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/armory/comm_eng_afro_crash.png",
+      "bytes": 34363,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/armory/comm_eng_apex.png",
+      "bytes": 45890,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/armory/comm_eng_corpo_shadow_runner.png",
+      "bytes": 35907,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/armory/comm_eng_foxhole_shadow.png",
+      "bytes": 40833,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/armory/comm_eng_neural_weaver.png",
+      "bytes": 61788,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/armory/comm_eng_sil.png",
+      "bytes": 39301,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/armory/comm_eng_soft_manic_architect_gf.png",
+      "bytes": 70850,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/armory/comm_eng_swim.png",
+      "bytes": 60044,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/armory/comm_eng_toxic_apex_chrysalis.png",
+      "bytes": 44945,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/armory/comm_scount_sil.png",
+      "bytes": 47850,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/armory/comm_scout_abg.png",
+      "bytes": 61066,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/armory/comm_scout_apex.png",
+      "bytes": 37898,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/armory/comm_scout_corpo_shadow_runner.png",
+      "bytes": 30380,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/armory/comm_scout_foxhole_shadow.png",
+      "bytes": 41881,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/armory/comm_scout_soft_manic_infiltrator_gf.png",
+      "bytes": 60357,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/armory/comm_scout_swim.png",
+      "bytes": 52776,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/armory/comm_scout_tank_crash.png",
+      "bytes": 39397,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/armory/comm_scout_toxic_apex_chrysalis.png",
+      "bytes": 37620,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/armory/comm_scout_xeno_stalker.png",
+      "bytes": 38772,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/armory/comm_tank_abg.png",
+      "bytes": 50984,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/armory/comm_tank_afro_crash.png",
+      "bytes": 35695,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/armory/comm_tank_apex.png",
+      "bytes": 75700,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/armory/comm_tank_brood_matron.png",
+      "bytes": 79882,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/armory/comm_tank_chubby_protective_hacker_gf.png",
+      "bytes": 59376,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/armory/comm_tank_corpo_shadow_runner.png",
+      "bytes": 31037,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/armory/comm_tank_foxhole_shadow.png",
+      "bytes": 48740,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/armory/comm_tank_sil.png",
+      "bytes": 51384,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/armory/comm_tank_swim.png",
+      "bytes": 80124,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/armory/comm_tank_toxic_apex_chrysalis.png",
+      "bytes": 48469,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/armory/frame-siege_breaker.png",
+      "bytes": 55172,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/armory/frame-talon.png",
+      "bytes": 39143,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/armory/frame-talon_c.png",
+      "bytes": 7377,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/armory/frame-tesla_lock.png",
+      "bytes": 60399,
+      "classification": "runtime-required"
+    },
+    {
       "path": "economy/cache_deep_relic.png",
       "bytes": 69147,
       "classification": "runtime-required"
@@ -4441,22 +4927,22 @@
     },
     {
       "path": "economy/decal_cryo_phoenix.png",
-      "bytes": 34933,
+      "bytes": 111805,
       "classification": "runtime-required"
     },
     {
       "path": "economy/decal_cryo_phoenix_large.png",
-      "bytes": 77323,
+      "bytes": 412131,
       "classification": "runtime-required"
     },
     {
       "path": "economy/decal_cyber_skull_tactical_pin.png",
-      "bytes": 28961,
+      "bytes": 122008,
       "classification": "runtime-required"
     },
     {
       "path": "economy/decal_cyber_skull_tactical_pin_large.png",
-      "bytes": 63625,
+      "bytes": 457983,
       "classification": "runtime-required"
     },
     {
@@ -4471,32 +4957,32 @@
     },
     {
       "path": "economy/decal_radiation_trefoil.png",
-      "bytes": 10191,
+      "bytes": 114678,
       "classification": "runtime-required"
     },
     {
       "path": "economy/decal_radiation_trefoil_large.png",
-      "bytes": 21025,
+      "bytes": 432277,
       "classification": "runtime-required"
     },
     {
       "path": "economy/decal_sporesnail_hunter_crest.png",
-      "bytes": 20784,
+      "bytes": 145682,
       "classification": "runtime-required"
     },
     {
       "path": "economy/decal_sporesnail_hunter_crest_large.png",
-      "bytes": 43573,
+      "bytes": 552873,
       "classification": "runtime-required"
     },
     {
       "path": "economy/decal_subzero_pioneer.png",
-      "bytes": 22591,
+      "bytes": 64260,
       "classification": "runtime-required"
     },
     {
       "path": "economy/decal_subzero_pioneer_large.png",
-      "bytes": 50476,
+      "bytes": 239485,
       "classification": "runtime-required"
     },
     {
@@ -5785,6 +6271,16 @@
       "classification": "runtime-required"
     },
     {
+      "path": "lore_portraits/bunker_announcer.webp",
+      "bytes": 6466,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "lore_portraits/mayor_tina.webp",
+      "bytes": 11430,
+      "classification": "runtime-required"
+    },
+    {
       "path": "lore_portraits/meridian_kaelen.jpg",
       "bytes": 994213,
       "classification": "runtime-required"
@@ -5857,6 +6353,36 @@
     {
       "path": "lore_portraits/survivor_11.webp",
       "bytes": 3790,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "lore_portraits/survivor_abg.webp",
+      "bytes": 8580,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "lore_portraits/survivor_corpo.webp",
+      "bytes": 9226,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "lore_portraits/survivor_crash_queen.webp",
+      "bytes": 11868,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "lore_portraits/survivor_foxhole.webp",
+      "bytes": 10386,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "lore_portraits/survivor_hacker.webp",
+      "bytes": 11162,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "lore_portraits/survivor_hybrid.webp",
+      "bytes": 12026,
       "classification": "runtime-required"
     },
     {
@@ -7092,112 +7618,112 @@
     {
       "path": "sky/aurora_curtain_ribbon.png",
       "bytes": 209568,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "sky/aurora_curtain_tall.png",
       "bytes": 252182,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "sky/aurora_sheet_diffuse.png",
       "bytes": 138269,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "sky/body_gasgiant_ringed.png",
       "bytes": 4072622,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "sky/body_moon_cratered_large.png",
       "bytes": 1637027,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "sky/body_moon_cratered_small.png",
       "bytes": 356233,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "sky/body_moon_shattered.png",
       "bytes": 857213,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "sky/body_mothership_derelict.png",
       "bytes": 3725896,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "sky/body_planet_dead_ocean.png",
       "bytes": 1707938,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "sky/body_planet_rust.png",
       "bytes": 1450981,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "sky/body_ring_arc.png",
       "bytes": 144736,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "sky/body_sun_dwarf.png",
       "bytes": 114720,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "sky/body_sun_primary.png",
       "bytes": 852385,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "sky/cloud_cirrus_streaked.png",
       "bytes": 1657551,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "sky/cloud_cirrus_thin.png",
       "bytes": 126507,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "sky/cloud_ice_veil.png",
       "bytes": 371583,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "sky/far_bone_reef.png",
       "bytes": 346659,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "sky/far_crater_rim.png",
       "bytes": 303668,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "sky/far_fungal_massif.png",
       "bytes": 364884,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "sky/far_glacier_wall.png",
       "bytes": 443956,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "sky/far_icefall_range.png",
       "bytes": 433554,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "sky/far_mesa_ridge.png",
       "bytes": 226723,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "sky/fx_comet_longtail.png",
@@ -7252,142 +7778,142 @@
     {
       "path": "sky/lens_bloom_core.png",
       "bytes": 171883,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "sky/lens_halo_ring.png",
       "bytes": 124431,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "sky/lens_hex_ghost.png",
       "bytes": 96933,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "sky/lens_streak_anamorphic.png",
       "bytes": 21933,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "sky/mid_frozen_rig.png",
       "bytes": 466673,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "sky/mid_growth_towers.png",
       "bytes": 690625,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "sky/mid_hive_spires.png",
       "bytes": 571908,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "sky/mid_ice_spires.png",
       "bytes": 659470,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "sky/mid_refinery_masts.png",
       "bytes": 250671,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "sky/mid_wreck_skyline.png",
       "bytes": 407844,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "sky/near_antenna_line.png",
       "bytes": 1320193,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "sky/near_frost_pines.png",
       "bytes": 1711132,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "sky/near_icicle_palisade.png",
       "bytes": 3124342,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "sky/near_rock_teeth.png",
       "bytes": 2283102,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "sky/near_spore_forest.png",
       "bytes": 3039338,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "sky/near_vein_thicket.png",
       "bytes": 2953130,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "sky/nebula_band_core.png",
       "bytes": 2758019,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "sky/nebula_veil_ember.png",
       "bytes": 1995267,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "sky/nebula_veil_violet.png",
       "bytes": 1255049,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "sky/star_dense_knot.png",
       "bytes": 267410,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "sky/star_distant_galaxy.png",
       "bytes": 330000,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "sky/star_globular_cluster.png",
       "bytes": 221067,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "sky/star_open_cluster.png",
       "bytes": 64188,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "sky/storm_anvil_front.png",
       "bytes": 1443252,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "sky/storm_ash_fall.png",
       "bytes": 1760160,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "sky/storm_dust_wall.png",
       "bytes": 1567648,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "sky/storm_ice_haze.png",
       "bytes": 1428637,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "sky/storm_spore_veil.png",
       "bytes": 1524893,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "spore_mortar.png",

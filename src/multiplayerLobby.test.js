@@ -721,7 +721,7 @@ describe('MultiplayerLobby', () => {
 
             const summary = getLocalLoadoutSummary('TANK');
 
-            expect(summary).toEqual({ weapon: 'RAILGUN MK.II', hasCharm: true });
+            expect(summary).toEqual({ weapon: 'RAILGUN MK.II', hasCharm: true, polishColor: '#ffffff' });
             expect(getEquippedLabel).toHaveBeenCalledWith(globalThis.window.fabricator, 'TANK');
             expect(getEquippedCharmId).toHaveBeenCalledWith('TANK');
         });
@@ -733,7 +733,22 @@ describe('MultiplayerLobby', () => {
                 fabricator: {}
             };
 
-            expect(getLocalLoadoutSummary('SCOUT')).toEqual({ weapon: 'SIDEARM', hasCharm: false });
+            expect(getLocalLoadoutSummary('SCOUT')).toEqual({ weapon: 'SIDEARM', hasCharm: false, polishColor: '#ffffff' });
+        });
+
+        it('includes the selected operator polish color for remote rendering', () => {
+            originalWindow = globalThis.window;
+            const values = new Map([
+                ['hb_operator_polishes_v1', '[7]'],
+                ['hb_operator_polish_selected_v1', '7']
+            ]);
+            globalThis.window = {
+                localStorage: { getItem: (key) => values.get(key) ?? null },
+                loadout: { getEquippedLabel: () => 'SIDEARM', getEquippedCharmId: () => null },
+                fabricator: {}
+            };
+
+            expect(getLocalLoadoutSummary('SCOUT').polishColor).toBe('#ff6262');
         });
 
         it('returns null when there is no live loadout manager yet (very early boot)', () => {
@@ -761,7 +776,7 @@ describe('MultiplayerLobby', () => {
             lobby.fallbackLocalSession();
 
             const self = [...lobby.players.values()].find((p) => p.isSelf);
-            expect(self.loadout).toEqual({ weapon: 'ARC WELDER', hasCharm: true });
+            expect(self.loadout).toEqual({ weapon: 'ARC WELDER', hasCharm: true, polishColor: '#ffffff' });
         });
 
         // A remote player's loadout arriving via the real currentPlayers/

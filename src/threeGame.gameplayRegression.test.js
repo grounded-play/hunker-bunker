@@ -81,6 +81,93 @@ describe('Gameplay regressions: damage, oxygen, and cliff falling', () => {
         });
     });
 
+    describe('co-op squad wipe', () => {
+        it('ends the run when a remote down event leaves every squad member downed', () => {
+            const remote = {
+                callsign: 'RAVEN-7', hp: 100, isDown: false,
+                overlay: { setDowned: vi.fn() }
+            };
+            const fakeGame = {
+                isMultiplayer: true,
+                multiplayerMode: 'coop',
+                isPlayerDowned: true,
+                isPlayerDead: false,
+                remotePlayers: new Map([['remote-player', remote]]),
+                handleDeath: vi.fn(),
+                resolveCoopSquadWipe: ThreeGame.prototype.resolveCoopSquadWipe
+            };
+
+            ThreeGame.prototype.handleRemotePlayerDowned.call(fakeGame, 'remote-player');
+
+            expect(remote).toMatchObject({ hp: 0, isDown: true });
+            expect(remote.overlay.setDowned).toHaveBeenCalledWith(true);
+            expect(fakeGame.handleDeath).toHaveBeenCalledWith('squad-wipe');
+        });
+
+        it('ends the run when the local player goes down after every teammate', () => {
+            const fakeGame = {
+                isMultiplayer: true,
+                multiplayerMode: 'coop',
+                isPlayerDowned: false,
+                isPlayerDead: false,
+                playerVitals: { hp: 0, maxHp: 3 },
+                remotePlayers: new Map([['remote-player', { isDown: true }]]),
+                netSocket: { emit: vi.fn() },
+                emitHealthState: vi.fn(),
+                setInputEnabled: vi.fn(),
+                closeConsoleModal: vi.fn(),
+                player3dOverlay: { setDowned: vi.fn() },
+                handleDeath: vi.fn(),
+                resolveCoopSquadWipe: ThreeGame.prototype.resolveCoopSquadWipe
+            };
+
+            ThreeGame.prototype.enterDownedState.call(fakeGame, 'mycelium_stalker');
+
+            expect(fakeGame.netSocket.emit).toHaveBeenCalledWith('playerDowned', {});
+            expect(fakeGame.player3dOverlay.setDowned).toHaveBeenCalledWith(true);
+            expect(fakeGame.handleDeath).toHaveBeenCalledWith('squad-wipe');
+        });
+
+        it('keeps the local player revivable while any teammate is still standing', () => {
+            const fakeGame = {
+                isMultiplayer: true,
+                multiplayerMode: 'coop',
+                isPlayerDowned: true,
+                isPlayerDead: false,
+                remotePlayers: new Map([
+                    ['downed-player', { isDown: true }],
+                    ['standing-player', { isDown: false }]
+                ]),
+                handleDeath: vi.fn()
+            };
+
+            const wiped = ThreeGame.prototype.resolveCoopSquadWipe.call(fakeGame);
+
+            expect(wiped).toBe(false);
+            expect(fakeGame.handleDeath).not.toHaveBeenCalled();
+        });
+    });
+
+    describe('remote operator polish', () => {
+        it('applies a newly received polish only to that remote operator', () => {
+            const spriteSet = vi.fn();
+            const overlaySet = vi.fn();
+            const remote = {
+                polishColor: '#ffffff',
+                sprite: { material: { color: { set: spriteSet } } },
+                overlay: { setOperatorPolish: overlaySet }
+            };
+
+            ThreeGame.prototype.updateRemotePlayerAppearance.call({}, remote, {
+                loadout: { polishColor: '#ff6262' }
+            });
+
+            expect(remote.polishColor).toBe('#ff6262');
+            expect(spriteSet).toHaveBeenCalledWith('#ff6262');
+            expect(overlaySet).toHaveBeenCalledWith('#ff6262');
+        });
+    });
+
     describe('updateVitals oxygen drain with inactive mission', () => {
         it('depletes oxygen over time when outside safe bubble even if missionState is inactive', () => {
             const fakeGame = {

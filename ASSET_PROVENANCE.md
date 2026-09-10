@@ -3,6 +3,8 @@
 **Status:** Canonical asset-governance policy / incomplete coverage ledger
 **Last verified:** 2026-08-24
 
+**Derivative update:** 2026-09-08 — the two overclock texture derivatives below were recorded; this is not a full-ledger rights re-verification.
+
 This file records the current provenance policy and the asset classes that have actually been reconciled. It must **not** be interpreted as proof that every asset currently in the repository has complete creator/license/AI-disclosure metadata.
 
 Sprint 30 identified a real coverage gap: Hunker Bunker now contains a much larger 3D, audio, UI, store/marketing, community-skin, and generated-art footprint than the earlier version of this document tracked.
@@ -76,6 +78,7 @@ The following entries were already explicitly tracked before Sprint 30. Their pr
 | `item_phone` | RGB Mini-Game | `public/minigames/rgb/items/item_phone.png` | Cracked phone illustration. | `needs-review` |
 | `item_wire_cutters` | RGB Mini-Game | `public/minigames/rgb/items/item_wire_cutters.png` | Insulated tool illustration. | `needs-review` |
 | `drop_*` (14 lore collectibles) | World Lore Drops | `public/drop_*.png` | Earlier ledger explicitly records generative image creation followed by chroma-green extraction/matte/despill into 512px alpha PNG runtime assets. | `generated-disclosed`; itemized source/model/tool metadata still needs reconciliation. |
+| `Mayor.Tina.glb`, `Teacup.Roach.glb`, `Cockroach_transform.mp4` and optimized runtime derivatives | Mayor Tina Secret Encounter | Sources: `art/source/3d/uploads-mayor-tina/*.glb`; runtime: `public/3d/runtime/secrets/*.glb`, `public/Cockroach_transform.{mp4,webm}` | User-supplied source assets integrated on 2026-09-03. Runtime GLBs are decimated/texture-bounded derivatives; `mayor-tina-rigged.glb` is additionally skinned to the existing Scout/Mixamo locomotion skeleton; WebM is a format-only transcode of the supplied MP4 for Linux/Electron playback. Creator/tool/license details were not supplied with the files. | `needs-review` — confirm creator, generation method, commercial redistribution rights, and any AI disclosure before retail approval. |
 
 ---
 
@@ -84,6 +87,15 @@ The following entries were already explicitly tracked before Sprint 30. Their pr
 These are **coverage gaps**, not accusations that the assets lack commercial rights.
 
 ### 3D runtime / Armory / community chassis
+
+#### September 8 texture-only derivatives
+
+| Runtime asset | Retained input | Transformation and verification | Rights state |
+| --- | --- | --- | --- |
+| `public/3d/runtime/new3ds/mod_symbiotic_adrenaline_pump.glb` | `art/source/3d/astra-texture-budget-2026-09-08/mod_symbiotic_adrenaline_pump.glb` | Existing runtime input retained byte-for-byte; embedded PNG textures resized from 4096 to 1024 pixels with glTF Transform CLI 4.5.0 `resize`. Geometry/accessor content unchanged; 40,393,748 → 5,478,680 bytes. | `needs-review` — original creator, method, and redistribution basis remain unresolved. |
+| `public/3d/runtime/new3ds/mod_echo_location_transceiver.glb` | `art/source/3d/astra-texture-budget-2026-09-08/mod_echo_location_transceiver.glb` | Same texture-only process; 30,854,568 → 4,479,148 bytes. Geometry/accessor content unchanged. | `needs-review` — original creator, method, and redistribution basis remain unresolved. |
+
+Codex performed this derivative operation at the project owner's request. The retained inputs are pre-optimization runtime copies, not newly discovered original artist masters. No new generative content or rights clearance is asserted. Visual comparison, validation, byte totals, and reproduction instructions are in [the first implementation report](docs/reports/astra-first-implementation-2026-09-08.md).
 
 Sprint 28 integrated dozens of 3D chassis/weapon/cosmetic assets and Sprint 29 added further runtime models and calibration work. The existing asset/backlog docs describe integration and aesthetic intent, but this root ledger does not currently provide complete creator/source/method/rights records for those families.
 
@@ -112,6 +124,19 @@ Steam capsules, library art, trailer/media assets, social/promotional art, and o
 The Steam review process has explicitly asked for accurate AI disclosure. The project should track generated/AI-assisted assets at source time instead of reconstructing the answer during submission.
 
 **Action:** for every new generated/AI-assisted visual family, record tool/model when known, source prompt/workflow location if retained, human modifications, and final runtime/marketing derivative.
+
+#### September 9 lore and survivor portraits
+
+| Runtime asset | Production method | Source date | Rights / disclosure state | Purpose / notes |
+| --- | --- | --- | --- | --- |
+| `public/lore_portraits/mayor_tina.webp` | Generative-AI + pixelation/format conversion via ffmpeg | 2026-09-09 | `generated-disclosed` | Mayor Tina (cockroach in teacup) radio transmission and bunker dialogue portrait. |
+| `public/lore_portraits/bunker_announcer.webp` | Generative-AI + pixelation/format conversion via ffmpeg | 2026-09-09 | `generated-disclosed` | Bunker AI central broadcast terminal transmission portrait. |
+| `public/lore_portraits/survivor_foxhole.webp` | Generative-AI + pixelation/format conversion via ffmpeg | 2026-09-09 | `generated-disclosed` | Foxhole buddy wanderer encounter modal & dialogue portrait. |
+| `public/lore_portraits/survivor_hacker.webp` | Generative-AI + pixelation/format conversion via ffmpeg | 2026-09-09 | `generated-disclosed` | Glitch / hacker wanderer encounter modal & dialogue portrait. |
+| `public/lore_portraits/survivor_corpo.webp` | Generative-AI + pixelation/format conversion via ffmpeg | 2026-09-09 | `generated-disclosed` | Corpo runner wanderer encounter modal & dialogue portrait. |
+| `public/lore_portraits/survivor_crash_queen.webp` | Generative-AI + pixelation/format conversion via ffmpeg | 2026-09-09 | `generated-disclosed` | Crash queen wanderer encounter modal & dialogue portrait. |
+| `public/lore_portraits/survivor_abg.webp` | Generative-AI + pixelation/format conversion via ffmpeg | 2026-09-09 | `generated-disclosed` | Armored battle grunt wanderer encounter modal & dialogue portrait. |
+| `public/lore_portraits/survivor_hybrid.webp` | Generative-AI + pixelation/format conversion via ffmpeg | 2026-09-09 | `generated-disclosed` | Cybernetic chimera wanderer encounter modal & dialogue portrait. |
 
 ### Temporary working assets
 
@@ -164,3 +189,13 @@ Sprint 30 does not need to hand-document every historical file before any other 
 4. resolve any `blocked` retail assets before release promotion;
 5. move or classify temporary/source assets deliberately;
 6. keep Steam AI disclosure derived from this evidence rather than memory.
+
+
+## Armory preview derivatives — 2026-09-09
+
+- Runtime derivatives: `public/economy/armory/*.png`, 79 transparent 320×320 model renders, 4,213,332 bytes total.
+- Sources: the existing weapon, chassis, community operator, charm and overclock GLBs mapped in `src/data/armoryPreviews.js`. Original model files and source artwork are retained unchanged.
+- Method: deterministic Three.js lighting/camera render through `scripts/render-armory-previews.mjs`; no new image-generation service, stock art or external art source was used for these derivatives. They inherit the provenance and AI-disclosure status of their source models.
+- Five rewards without unique models use existing achievement emblem PNGs. The manifest identifies those entries as `achievement-emblem`; it does not imply a finished model.
+- Evidence: `docs/reports/armory-asset-gaps.md` and `docs/reports/armory-implementation-2026-09-09.md`. The Armory now uses model renders in place of four chroma-green-backed icons. The factory Talon-C blockout and five unauthored reward models remain explicit art backlog.
+- State: integrated and browser-tested derivatives; no change to the underlying source assets' retail/provenance status.

@@ -1,0 +1,899 @@
+/* ==========================================================================
+   EXPEDITION HUD: TACTICAL COMMAND VISOR & DIEGETIC INTERFACE
+   Elevates the in-game HUD to the retro-futuristic arcade aesthetic of the
+   Armory menu, centering the 3D viewport and resolving corner collisions.
+   ========================================================================== */
+
+/* --- Centered 3D Game Viewport --- */
+#game-container.fullscreen-mode {
+  position: absolute !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  max-width: 100% !important;
+  max-height: 100% !important;
+  top: 0 !important;
+  left: 0 !important;
+  transform: none !important;
+  border: 1px solid rgba(255, 159, 28, 0.22);
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: inset 0 0 100px rgba(0, 0, 0, 0.75);
+}
+
+/* --- Exosuit Visor HUD Framing & Diegetic Underlays --- */
+.hud-visor-frame {
+  position: absolute;
+  inset: 12px;
+  pointer-events: none;
+  z-index: 100;
+  border-radius: 8px;
+}
+
+.hud-visor-bracket {
+  position: absolute;
+  width: 22px;
+  height: 22px;
+  border-color: rgba(255, 159, 28, 0.45);
+  border-style: solid;
+  pointer-events: none;
+  filter: drop-shadow(0 0 4px rgba(255, 159, 28, 0.3));
+}
+
+.hud-visor-bracket--tl {
+  top: 0;
+  left: 0;
+  border-width: 2px 0 0 2px;
+}
+
+.hud-visor-bracket--tr {
+  top: 0;
+  right: 0;
+  border-width: 2px 2px 0 0;
+}
+
+.hud-visor-bracket--bl {
+  bottom: 0;
+  left: 0;
+  border-width: 0 0 2px 2px;
+}
+
+.hud-visor-bracket--br {
+  bottom: 0;
+  right: 0;
+  border-width: 0 2px 2px 0;
+}
+
+.hud-visor-telemetry {
+  position: absolute;
+  bottom: 6px;
+  right: 14px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  font-family: 'Space Mono', monospace;
+  font-size: 9px;
+  color: rgba(255, 159, 28, 0.5);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  pointer-events: none;
+}
+
+/* --- Settings Cog: Dedicated Top-Right Anchor --- */
+#ui .hud-corner-settings,
+#game-container.fullscreen-mode ~ #ui .hud-corner-settings {
+  position: absolute !important;
+  top: 14px !important;
+  right: 16px !important;
+  left: auto !important;
+  bottom: auto !important;
+  z-index: 17100 !important;
+}
+
+#ui .hud-corner-settings .calibrate-btn {
+  width: 38px;
+  height: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(9, 14, 20, 0.92);
+  border: 1.5px solid rgba(255, 159, 28, 0.38);
+  border-radius: 6px;
+  color: #ff9f1c;
+  font-size: 16px;
+  cursor: pointer;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.6), inset 0 0 8px rgba(255, 159, 28, 0.08);
+  transition: border-color 0.2s, box-shadow 0.2s, background 0.2s, transform 0.15s;
+}
+
+#ui .hud-corner-settings .calibrate-btn:hover {
+  background: rgba(255, 159, 28, 0.18);
+  border-color: #ff9f1c;
+  box-shadow: 0 0 14px rgba(255, 159, 28, 0.45);
+  transform: scale(1.04);
+}
+
+/* --- Top Header: Clear Boundaries & No Corner Overlap --- */
+#ui .hud-header,
+#game-container.fullscreen-mode ~ #ui .hud-header {
+  position: absolute !important;
+  top: 14px !important;
+  left: clamp(145px, 14vw, 195px) !important;
+  right: 68px !important;
+  padding: 0 !important;
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+  gap: 10px !important;
+  z-index: 16800 !important;
+  pointer-events: none !important;
+}
+
+#ui .hud-header__center {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  flex-shrink: 1;
+}
+
+#ui .hud-header__right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  flex-shrink: 0;
+}
+
+/* Glass Status Panels */
+#ui .weapon-status-panel,
+#ui .ship-status-panel,
+#ui .vitals-panel--topbar,
+#ui .class-ability-panel {
+  background: rgba(8, 14, 21, 0.9);
+  border: 1px solid rgba(255, 159, 28, 0.28);
+  border-radius: 6px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.6), inset 0 0 0 1px rgba(255, 255, 255, 0.04);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  pointer-events: auto;
+  box-sizing: border-box;
+}
+
+/* Weapon Status */
+#ui .weapon-status-panel {
+  padding: 6px 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 38px;
+}
+
+#ui .weapon-status-panel__title {
+  font-family: 'Outfit', sans-serif;
+  font-weight: 700;
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  color: #ff9f1c;
+  text-transform: uppercase;
+}
+
+#ui .weapon-status-panel__ammo {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
+#ui .weapon-status-panel__clip {
+  font-family: 'Space Mono', monospace;
+  font-size: 14px;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+#ui .weapon-status-panel__cache {
+  font-family: 'Space Mono', monospace;
+  font-size: 10px;
+  color: #8899a6;
+}
+
+/* Ship Integrity */
+#ui .ship-status-panel {
+  padding: 6px 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 38px;
+}
+
+#ui .ship-status-panel__title {
+  font-family: 'Outfit', sans-serif;
+  font-weight: 700;
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  color: #67e3e1;
+  text-transform: uppercase;
+}
+
+#ui .ship-status-panel__track {
+  width: 60px;
+  height: 6px;
+  background: rgba(103, 227, 225, 0.15);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+#ui .ship-status-panel__bar {
+  background: linear-gradient(90deg, #429f9e, #67e3e1);
+  box-shadow: 0 0 6px rgba(103, 227, 225, 0.5);
+  height: 100%;
+}
+
+#ui .ship-status-panel__value {
+  font-family: 'Space Mono', monospace;
+  font-size: 11px;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+/* Vitals Panel */
+#ui .vitals-panel--topbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 12px;
+  border-color: rgba(0, 229, 255, 0.32);
+  min-height: 38px;
+}
+
+#ui .vitals-panel__title {
+  font-family: 'Outfit', sans-serif;
+  font-weight: 900;
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  color: #00e5ff;
+}
+
+#ui .vitals-panel__hearts {
+  display: flex;
+  gap: 3px;
+  font-size: 13px;
+}
+
+#ui .heart--full {
+  color: #ff3355;
+  text-shadow: 0 0 6px rgba(255, 51, 85, 0.7);
+}
+
+#ui .vitals-panel__o2-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+#ui .vitals-panel__o2-label {
+  font-family: 'Outfit', sans-serif;
+  font-weight: 700;
+  font-size: 11px;
+  color: #00e5ff;
+}
+
+#ui .vitals-panel__o2-bar-track {
+  width: 50px;
+  height: 6px;
+  background: rgba(0, 229, 255, 0.15);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+#ui .vitals-panel__o2-bar {
+  background: linear-gradient(90deg, #00b4d8, #00e5ff);
+  box-shadow: 0 0 6px rgba(0, 229, 255, 0.6);
+  height: 100%;
+}
+
+#ui .vitals-panel__o2-pct {
+  font-family: 'Space Mono', monospace;
+  font-size: 11px;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+/* Ability & Radar Panels: Compact & Proportionate */
+#ui .class-ability-panel {
+  height: 38px;
+  padding: 4px 10px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  border-color: rgba(255, 159, 28, 0.35);
+  flex-shrink: 0;
+}
+
+#ui #radar-scan-panel {
+  border-color: rgba(0, 210, 255, 0.35) !important;
+}
+
+#ui #radar-scan-panel .class-ability-panel__name {
+  color: #00d2ff !important;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+}
+
+#ui .class-ability-panel__key {
+  display: flex;
+  align-items: center;
+}
+
+#ui .class-ability-panel__bar-track {
+  width: 36px;
+  min-width: 24px;
+  height: 4px;
+}
+
+/* --- Left Column: Bunker Level Badge --- */
+#ui .level-indicator {
+  position: absolute !important;
+  top: 14px !important;
+  left: 16px !important;
+  width: clamp(118px, 12vw, 150px) !important;
+  padding: 7px 12px !important;
+  background: rgba(8, 14, 21, 0.92) !important;
+  border: 1px solid rgba(255, 159, 28, 0.38) !important;
+  border-left: 3px solid #ff9f1c !important;
+  border-radius: 0 6px 6px 0 !important;
+  box-shadow: 0 2px 14px rgba(0, 0, 0, 0.6), inset 0 0 10px rgba(255, 159, 28, 0.06) !important;
+  backdrop-filter: blur(4px) !important;
+  -webkit-backdrop-filter: blur(4px) !important;
+  z-index: 16800 !important;
+  pointer-events: none !important;
+  box-sizing: border-box !important;
+}
+
+#ui .level-indicator__title {
+  font-family: 'Outfit', sans-serif !important;
+  font-size: 9px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.16em !important;
+  color: #ff9f1c !important;
+  text-transform: uppercase !important;
+  display: block !important;
+  margin-bottom: 2px !important;
+}
+
+#ui #level-num {
+  font-family: 'Outfit', sans-serif !important;
+  font-size: 18px !important;
+  font-weight: 900 !important;
+  color: #ffffff !important;
+  line-height: 1 !important;
+  display: block !important;
+}
+
+#ui .level-indicator__biome {
+  font-family: 'Space Mono', monospace !important;
+  font-size: 9px !important;
+  letter-spacing: 0.08em !important;
+  color: #8899a6 !important;
+  text-transform: uppercase !important;
+  display: block !important;
+  margin-top: 3px !important;
+}
+
+/* --- Left Column: Loot Manifest --- */
+#ui .pickup-counter-panel,
+#game-container.fullscreen-mode ~ #ui .pickup-counter-panel {
+  position: absolute !important;
+  top: 86px !important;
+  left: 16px !important;
+  right: auto !important;
+  bottom: auto !important;
+  width: clamp(118px, 12vw, 150px) !important;
+  padding: 10px 12px !important;
+  background: rgba(8, 14, 21, 0.92) !important;
+  border: 1px solid rgba(255, 159, 28, 0.3) !important;
+  border-radius: 6px !important;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.65), inset 0 0 12px rgba(255, 159, 28, 0.04) !important;
+  backdrop-filter: blur(4px) !important;
+  -webkit-backdrop-filter: blur(4px) !important;
+  z-index: 16800 !important;
+  pointer-events: none !important;
+  box-sizing: border-box !important;
+}
+
+#ui .pickup-counter-panel__title {
+  font-family: 'Outfit', sans-serif !important;
+  font-size: 11px !important;
+  font-weight: 900 !important;
+  letter-spacing: 0.16em !important;
+  color: #ff9f1c !important;
+  text-transform: uppercase !important;
+  border-bottom: 1px solid rgba(255, 159, 28, 0.2) !important;
+  padding-bottom: 5px !important;
+  margin-bottom: 8px !important;
+}
+
+#ui .pickup-counter-panel__row {
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+  padding: 2px 0 !important;
+  font-size: 11px !important;
+  font-family: 'Outfit', sans-serif !important;
+  color: #cbd5e1 !important;
+}
+
+#ui .pickup-counter-panel__row--total {
+  font-weight: 900 !important;
+  color: #ff9f1c !important;
+  margin-bottom: 4px !important;
+}
+
+#ui .pickup-counter-panel__row--total #pickup-count-total {
+  font-size: 14px !important;
+  font-family: 'Space Mono', monospace !important;
+  color: #ffffff !important;
+}
+
+#ui .pickup-counter-panel__icon {
+  margin-right: 5px !important;
+  font-size: 10px !important;
+}
+
+#ui .pickup-counter-panel__row span[id^="pickup-count-"] {
+  font-family: 'Space Mono', monospace !important;
+  font-weight: 700 !important;
+  color: #eff9fa !important;
+}
+
+/* --- Left Column: Tactical Sonar Compass Radar --- */
+#ui .desktop-compass,
+.desktop-compass {
+  position: absolute !important;
+  top: 280px !important;
+  left: 16px !important;
+  right: auto !important;
+  bottom: auto !important;
+  width: clamp(145px, 14.5vw, 185px) !important;
+  padding: 10px 12px !important;
+  background: rgba(8, 14, 21, 0.94) !important;
+  border: 1.5px solid rgba(0, 229, 255, 0.35) !important;
+  border-left: 3px solid #00e5ff !important;
+  border-radius: 0 6px 6px 0 !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.7), inset 0 0 14px rgba(0, 229, 255, 0.08) !important;
+  backdrop-filter: blur(4px) !important;
+  -webkit-backdrop-filter: blur(4px) !important;
+  pointer-events: auto !important;
+  cursor: pointer !important;
+  z-index: 16800 !important;
+  box-sizing: border-box !important;
+  transition: border-color 0.2s, box-shadow 0.2s, transform 0.15s !important;
+}
+
+.desktop-compass:hover {
+  border-color: #00e5ff !important;
+  box-shadow: 0 4px 24px rgba(0, 229, 255, 0.3), inset 0 0 18px rgba(0, 229, 255, 0.15) !important;
+  transform: translateX(2px) !important;
+}
+
+.desktop-compass__header {
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+  border-bottom: 1px solid rgba(0, 229, 255, 0.2) !important;
+  padding-bottom: 5px !important;
+  margin-bottom: 8px !important;
+}
+
+.desktop-compass__header span:first-child {
+  font-family: 'Outfit', sans-serif !important;
+  font-size: 9px !important;
+  font-weight: 900 !important;
+  letter-spacing: 0.14em !important;
+  color: #00e5ff !important;
+  text-transform: uppercase !important;
+}
+
+.desktop-compass__hint {
+  font-family: 'Space Mono', monospace !important;
+  font-size: 8px !important;
+  font-weight: 700 !important;
+  color: #00e5ff !important;
+  background: rgba(0, 229, 255, 0.15) !important;
+  border: 1px solid rgba(0, 229, 255, 0.4) !important;
+  border-radius: 3px !important;
+  padding: 1px 4px !important;
+}
+
+.desktop-compass__face {
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+}
+
+.desktop-compass__ring {
+  position: relative !important;
+  width: 48px !important;
+  height: 48px !important;
+  border: 1.5px solid rgba(0, 229, 255, 0.45) !important;
+  border-radius: 50% !important;
+  flex-shrink: 0 !important;
+  background: radial-gradient(circle, rgba(0, 229, 255, 0.08) 0%, rgba(0, 229, 255, 0.02) 50%, transparent 70%) !important;
+  box-shadow: 0 0 10px rgba(0, 229, 255, 0.15), inset 0 0 8px rgba(0, 229, 255, 0.1) !important;
+}
+
+.desktop-compass__ring::before {
+  content: '';
+  position: absolute;
+  inset: 8px;
+  border: 1px dashed rgba(0, 229, 255, 0.35);
+  border-radius: 50%;
+}
+
+.desktop-compass__ring::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 4px;
+  height: 4px;
+  transform: translate(-50%, -50%);
+  background: #00e5ff;
+  border-radius: 50%;
+  box-shadow: 0 0 6px #00e5ff;
+}
+
+.desktop-compass__arrow {
+  position: absolute !important;
+  inset: 2px !important;
+  pointer-events: none !important;
+  transform-origin: 50% 50% !important;
+  transition: transform 0.1s ease-out !important;
+}
+
+.desktop-compass__arrow::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 0;
+  border-left: 5px solid transparent;
+  border-right: 5px solid transparent;
+  border-bottom: 9px solid #00e5ff;
+  filter: drop-shadow(0 0 5px #00e5ff);
+}
+
+.desktop-compass__radar-arrow {
+  position: absolute !important;
+  inset: 2px !important;
+  pointer-events: none !important;
+  transform-origin: 50% 50% !important;
+  transition: transform 0.1s ease-out !important;
+}
+
+.desktop-compass__radar-arrow::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 0;
+  border-left: 5px solid transparent;
+  border-right: 5px solid transparent;
+  border-bottom: 9px solid #ff3344;
+  filter: drop-shadow(0 0 6px #ff3344);
+}
+
+.desktop-compass__readout {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 4px !important;
+  flex-grow: 1 !important;
+}
+
+.desktop-compass__row {
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: baseline !important;
+  font-family: 'Space Mono', monospace !important;
+  font-size: 10px !important;
+}
+
+.desktop-compass__label {
+  color: #8899a6 !important;
+  font-size: 9px !important;
+  letter-spacing: 0.08em !important;
+}
+
+.desktop-compass__value {
+  color: #eff9fa !important;
+  font-weight: 700 !important;
+  text-shadow: 0 0 4px rgba(0, 229, 255, 0.4) !important;
+}
+
+/* --- Right Lane: Action Prompts & Mission Stack --- */
+.hud-mission-stack {
+  position: absolute !important;
+  top: 68px !important;
+  right: 18px !important;
+  left: auto !important;
+  width: min(340px, 32vw) !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: flex-end !important;
+  gap: 8px !important;
+  z-index: 16800 !important;
+  pointer-events: none !important;
+}
+
+.hud-action-prompt:not(.hidden) {
+  display: flex !important;
+  align-items: center !important;
+  gap: 12px !important;
+  padding: 8px 14px !important;
+  background: rgba(9, 16, 23, 0.94) !important;
+  border: 1px solid rgba(255, 159, 28, 0.42) !important;
+  border-right: 3px solid #ff9f1c !important;
+  border-radius: 4px !important;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.65), inset 0 0 10px rgba(255, 159, 28, 0.06) !important;
+  backdrop-filter: blur(4px) !important;
+  -webkit-backdrop-filter: blur(4px) !important;
+  pointer-events: auto !important;
+  animation: prompt-slide-in 0.22s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  box-sizing: border-box !important;
+}
+
+@keyframes prompt-slide-in {
+  from { opacity: 0; transform: translateX(14px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+.hud-action-prompt .prompt-key {
+  font-family: 'Space Mono', monospace !important;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  color: #ff9f1c !important;
+  background: rgba(255, 159, 28, 0.16) !important;
+  border: 1px solid rgba(255, 159, 28, 0.5) !important;
+  border-radius: 3px !important;
+  padding: 3px 7px !important;
+  letter-spacing: 0.05em !important;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3) !important;
+  flex-shrink: 0 !important;
+}
+
+.hud-action-prompt .prompt-text {
+  font-family: 'Outfit', sans-serif !important;
+  font-size: 12px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.1em !important;
+  color: #eff9fa !important;
+  text-transform: uppercase !important;
+}
+
+/* Mission Progress HUD */
+.mission-progress-hud:not(.hidden) {
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+  padding: 8px 14px !important;
+  background: rgba(9, 16, 23, 0.94) !important;
+  border: 1px solid rgba(255, 159, 28, 0.35) !important;
+  border-radius: 4px !important;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.65) !important;
+  pointer-events: auto !important;
+  box-sizing: border-box !important;
+}
+
+.mission-progress-hud__icon {
+  color: #ff9f1c !important;
+  font-size: 12px !important;
+}
+
+.mission-progress-hud__text {
+  font-family: 'Outfit', sans-serif !important;
+  font-size: 12px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.1em !important;
+  color: #eff9fa !important;
+  text-transform: uppercase !important;
+}
+
+/* Biome HUD Prompt */
+.biome-hud-prompt:not(.hidden) {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  padding: 6px 12px !important;
+  background: rgba(9, 16, 23, 0.92) !important;
+  border: 1px solid rgba(103, 227, 225, 0.35) !important;
+  border-radius: 4px !important;
+}
+
+.biome-hud-prompt__icon {
+  font-family: 'Space Mono', monospace !important;
+  font-size: 9px !important;
+  color: #67e3e1 !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.1em !important;
+}
+
+.biome-hud-prompt__text {
+  font-family: 'Outfit', sans-serif !important;
+  font-size: 11px !important;
+  color: #eff9fa !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.08em !important;
+}
+
+/* Strict hidden override for all HUD components */
+.hidden,
+#ui .hidden,
+.hud-mission-stack .hidden,
+.desktop-compass.hidden,
+.loop-step-hud.hidden,
+.hud-action-prompt.hidden,
+.mission-progress-hud.hidden,
+.biome-hud-prompt.hidden {
+  display: none !important;
+}
+
+/* Objective Tracker Items */
+.objective-tracker__item {
+  padding: 12px 14px;
+  border: 1px solid #596777;
+  background: rgba(8, 16, 23, 0.94);
+  border-radius: 4px;
+}
+
+.objective-tracker__item--prio-high {
+  border-left: 3px solid #67e3e1;
+  border-color: #427877;
+}
+
+.objective-tracker__eyebrow {
+  color: #85a3af;
+  font: 700 10px/1.4 'Outfit', sans-serif;
+  letter-spacing: 1.8px;
+  margin-bottom: 4px;
+}
+
+.objective-tracker__label {
+  color: #eff9fa;
+  font-size: clamp(12px, 1vw, 16px);
+  line-height: 1.4;
+  letter-spacing: .3px;
+  overflow-wrap: anywhere;
+}
+
+.objective-tracker__progress {
+  flex-shrink: 0;
+  font-size: 11px;
+  background: #23333d;
+  padding: 4px 6px;
+}
+
+.objective-tracker__blocker {
+  color: #ffd29a;
+  font-size: 12px;
+  line-height: 1.45;
+  margin: 6px 0 0;
+}
+
+.objective-tracker__item.is-blocked {
+  border-left-color: #ffb968;
+}
+
+.objective-tracker__meter {
+  display: block;
+  width: 100%;
+  height: 5px;
+  border: 0;
+  accent-color: #67e3e1;
+  margin-top: 8px;
+}
+
+.objective-tracker__meter::-webkit-progress-bar {
+  background: #27363f;
+  border-radius: 3px;
+}
+
+.objective-tracker__meter::-webkit-progress-value {
+  background: #67e3e1;
+  border-radius: 3px;
+}
+
+.objective-tracker__step {
+  font-size: 12px;
+  line-height: 1.45;
+  letter-spacing: .2px;
+}
+
+/* --- Center Bottom: Loop Step Directive Cue --- */
+.loop-step-hud {
+  position: absolute !important;
+  bottom: 24px !important;
+  left: 50% !important;
+  transform: translateX(-50%) !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+  padding: 8px 22px !important;
+  background: rgba(8, 16, 24, 0.94) !important;
+  border: 1.5px solid rgba(0, 229, 255, 0.75) !important;
+  border-radius: 999px !important;
+  box-shadow: 0 0 22px rgba(0, 229, 255, 0.28), inset 0 0 10px rgba(0, 229, 255, 0.1) !important;
+  backdrop-filter: blur(4px) !important;
+  -webkit-backdrop-filter: blur(4px) !important;
+  z-index: 17000 !important;
+  pointer-events: none !important;
+  max-width: 86vw !important;
+  box-sizing: border-box !important;
+  animation: directive-pulse 3s infinite alternate ease-in-out !important;
+}
+
+@keyframes directive-pulse {
+  from { box-shadow: 0 0 16px rgba(0, 229, 255, 0.2), inset 0 0 8px rgba(0, 229, 255, 0.08); }
+  to { box-shadow: 0 0 28px rgba(0, 229, 255, 0.4), inset 0 0 14px rgba(0, 229, 255, 0.18); }
+}
+
+.loop-step-hud__chevron {
+  color: #00e5ff !important;
+  font-size: 14px !important;
+  text-shadow: 0 0 8px #00e5ff !important;
+}
+
+.loop-step-hud__text {
+  font-family: 'Outfit', sans-serif !important;
+  font-size: 13px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.14em !important;
+  color: #eff9fa !important;
+  text-transform: uppercase !important;
+}
+
+/* --- Modals & Encounters --- */
+#wanderer-encounter-modal {
+  overflow-y: auto;
+  padding: 20px;
+  box-sizing: border-box;
+}
+
+#wanderer-encounter-modal > div {
+  max-height: 90%;
+  overflow-y: auto;
+}
+
+/* --- Responsive Adaptations --- */
+@media (max-width: 1400px) {
+  #ui .vitals-panel--topbar .vitals-panel__title { display: none; }
+  #ui .class-ability-panel__key { display: none; }
+  #ui .class-ability-panel__name { font-size: 10px; letter-spacing: .2px; }
+  #ui .hud-header { gap: 6px !important; }
+}
+
+@media (max-width: 1050px) {
+  #ui .hud-header {
+    left: 140px !important;
+    right: 56px !important;
+    gap: 5px !important;
+  }
+  #ui .weapon-status-panel, #ui .ship-status-panel { padding: 4px 8px !important; }
+  #ui .vitals-panel--topbar { padding: 4px 8px !important; }
+  #ui .class-ability-panel { height: 32px !important; padding: 4px 6px !important; }
+  .hud-mission-stack { width: min(300px, 36vw) !important; }
+  .objective-tracker__item { padding: 9px 10px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .objective-tracker__item,
+  .gameplay-tilt-shift,
+  .loop-step-hud,
+  .hud-action-prompt {
+    transition: none !important;
+    animation: none !important;
+  }
+}

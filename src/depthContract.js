@@ -111,3 +111,22 @@ export function describeCrossing(fromRing, toRing) {
         directorAggressionBonusDelta: to.directorAggressionBonus - from.directorAggressionBonus
     };
 }
+
+// The crossing ritual's player-facing summary. Lived as a private function
+// in main.js until DEPTH-01; moved here so it can be tested and so it stays
+// next to the contract it describes.
+//
+// It reports only terms the game actually applies. eliteSpawnChance was
+// omitted for exactly that reason -- nothing rolled it. It is included now
+// that eliteEnemies.js consults it at placement generation.
+export function formatCrossingDeltaSummary(crossing) {
+    if (!crossing) return '';
+    const pct = (value) => `${value >= 0 ? '+' : ''}${Math.round(value * 100)}%`;
+    const parts = [];
+    if (crossing.salvageMultiplierDelta) parts.push(`SALVAGE ${pct(crossing.salvageMultiplierDelta)}`);
+    if (crossing.o2EfficiencyPenaltyDelta) parts.push(`O2 EFFICIENCY ${pct(-crossing.o2EfficiencyPenaltyDelta)}`);
+    if (crossing.directorAggressionBonusDelta) parts.push(`DIRECTOR PRESSURE +${crossing.directorAggressionBonusDelta}`);
+    if (crossing.rareRelicChanceDelta) parts.push(`RARE SALVAGE ODDS ${pct(crossing.rareRelicChanceDelta)}`);
+    if (crossing.eliteSpawnChanceDelta) parts.push(`ELITE THREAT ${pct(crossing.eliteSpawnChanceDelta)}`);
+    return parts.length ? ` // ${parts.join(' // ')}` : '';
+}

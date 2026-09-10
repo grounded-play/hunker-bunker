@@ -239,7 +239,11 @@ test.describe('controller-ready modal focus', () => {
         await page.evaluate(() => { navigator.getGamepads = () => []; });
     });
 
-    test('Armory dropdown keeps focus when an equipment change re-renders it', async ({ page }) => {
+    // docs/planning/armory-ui-overhaul-2026-09-09.md Phase 1/2: the bench's
+    // dropdowns became slot buttons that open a shared tile modal, so this now
+    // covers the same ground through that interaction -- an equipment change
+    // re-renders the bench, and the slot must survive it showing the new item.
+    test('Armory slot updates when an equipment change re-renders the bench', async ({ page }) => {
         await bootToOperatorMenu(page);
         const rosterConfirm = page.locator('#roster-confirm-btn');
         if (await rosterConfirm.isVisible().catch(() => false)) await rosterConfirm.click();
@@ -248,15 +252,18 @@ test.describe('controller-ready modal focus', () => {
 
         // Chassis always contains Standard plus unlocked community skins; some
         // classes intentionally expose only one weapon archetype.
-        const chassis = page.locator('#armory-chassis-select');
-        await chassis.focus();
-        const before = await chassis.inputValue();
-        const next = await chassis.locator('option:not([disabled])').nth(1).getAttribute('value');
-        expect(next).toBeTruthy();
-        await chassis.selectOption(next);
+        const slot = page.locator('#armory-slot-chassis');
+        const before = await slot.locator('.armory-slot__name').textContent();
 
-        await expect(chassis).not.toHaveValue(before);
-        await expect(chassis).toBeFocused();
+        await slot.click();
+        await expect(page.locator('#armory-picker-modal')).toBeVisible();
+        const tile = page.locator('#armory-picker-grid .armory-tile:not(.is-locked):not(.armory-tile--none)').first();
+        await expect(tile).toBeVisible();
+        await tile.click();
+
+        // The modal closes and the slot reports the new fitting.
+        await expect(page.locator('#armory-picker-modal')).toBeHidden();
+        await expect(slot.locator('.armory-slot__name')).not.toHaveText(before ?? '');
     });
 
     test('controller can choose a visible right-stick sensitivity preset', async ({ page }) => {

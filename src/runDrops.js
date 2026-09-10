@@ -26,7 +26,7 @@ export const WEAPON_OVERCLOCKS = Object.freeze([
         stats: { extraBullets: 2, spreadAngle: 0.22, damageMult: 0.75 }
     },
     {
-        id: 'cryo_rime',
+        id: 'cryo_rime', implemented: false,
         type: DROP_TYPES.OVERCLOCK,
         name: 'Cryo Rime Injector',
         rarity: DROP_RARITIES.RARE,
@@ -35,7 +35,7 @@ export const WEAPON_OVERCLOCKS = Object.freeze([
         stats: { slowDuration: 2.5, slowMult: 0.5 }
     },
     {
-        id: 'plasma_bounce',
+        id: 'plasma_bounce', implemented: false,
         type: DROP_TYPES.OVERCLOCK,
         name: 'Plasma Arc Coils',
         rarity: DROP_RARITIES.RARE,
@@ -44,7 +44,7 @@ export const WEAPON_OVERCLOCKS = Object.freeze([
         stats: { maxBounces: 2 }
     },
     {
-        id: 'caustic_payload',
+        id: 'caustic_payload', implemented: false,
         type: DROP_TYPES.OVERCLOCK,
         name: 'Caustic Spore Payload',
         rarity: DROP_RARITIES.MYTHIC,
@@ -80,7 +80,7 @@ export const TRANSFORMATIVE_RELIC_IDS = Object.freeze([
 
 export const SUIT_RELICS = Object.freeze([
     {
-        id: 'shatter_engine',
+        id: 'shatter_engine', implemented: false,
         type: DROP_TYPES.RELIC,
         name: 'Shatter Engine',
         rarity: DROP_RARITIES.RARE,
@@ -88,7 +88,7 @@ export const SUIT_RELICS = Object.freeze([
         element: 'cryo'
     },
     {
-        id: 'bio_vampirism',
+        id: 'bio_vampirism', implemented: false,
         type: DROP_TYPES.RELIC,
         name: 'Bio-Vampiric Membrane',
         rarity: DROP_RARITIES.MYTHIC,
@@ -96,7 +96,7 @@ export const SUIT_RELICS = Object.freeze([
         element: 'bio'
     },
     {
-        id: 'tesla_thrusters',
+        id: 'tesla_thrusters', implemented: false,
         type: DROP_TYPES.RELIC,
         name: 'Tesla Dash Coils',
         rarity: DROP_RARITIES.RARE,
@@ -104,7 +104,7 @@ export const SUIT_RELICS = Object.freeze([
         element: 'tesla'
     },
     {
-        id: 'pheromone_aura',
+        id: 'pheromone_aura', implemented: false,
         type: DROP_TYPES.RELIC,
         name: 'Hive Pheromone Aura',
         rarity: DROP_RARITIES.MYTHIC,
@@ -112,7 +112,7 @@ export const SUIT_RELICS = Object.freeze([
         element: 'bio'
     },
     {
-        id: 'chitin_membrane',
+        id: 'chitin_membrane', implemented: false,
         type: DROP_TYPES.RELIC,
         name: 'Carapace Membrane',
         rarity: DROP_RARITIES.RARE,
@@ -120,7 +120,7 @@ export const SUIT_RELICS = Object.freeze([
         element: 'bio'
     },
     {
-        id: 'synapse_pulse',
+        id: 'synapse_pulse', implemented: false,
         type: DROP_TYPES.RELIC,
         name: 'Synapse Dash Pulse',
         rarity: DROP_RARITIES.RARE,
@@ -231,7 +231,16 @@ export function rollEnemyLootDrop(random, { isElite = false, isBoss = false, rin
         rarity = rarityRoll < 0.1 ? DROP_RARITIES.RARE : DROP_RARITIES.COMMON;
     }
 
-    let pool = [...WEAPON_OVERCLOCKS, ...SUIT_RELICS].filter((item) => item.rarity === rarity);
+    // `implemented: false` entries declare an effect that nothing in the
+    // runtime reads -- three carry stat keys with no consumer anywhere, six
+    // carry no stats at all. They stay in the catalog so the Vault and the
+    // debug museum can still display them, but handing one to a player as a
+    // reward gives them an item that does nothing, so the reward roll skips
+    // them until their effect exists. Astra plan section 23: incomplete
+    // promises are connected through gameplay or removed from player-facing
+    // claims until ready.
+    let pool = [...WEAPON_OVERCLOCKS, ...SUIT_RELICS]
+        .filter((item) => item.implemented !== false && item.rarity === rarity);
     // Depth Contract's rareRelicChance (design doc: "chance a reward-tier
     // drop rolls a relic instead of a common/useful item") biases this roll
     // toward the relic half of the pool specifically, not just a higher
@@ -244,7 +253,7 @@ export function rollEnemyLootDrop(random, { isElite = false, isBoss = false, rin
         if (relicsOnly.length) pool = relicsOnly;
     }
 
-    if (!pool.length) return WEAPON_OVERCLOCKS[0];
+    if (!pool.length) return WEAPON_OVERCLOCKS.find((item) => item.implemented !== false) ?? null;
     return pool[Math.floor(random() * pool.length)];
 }
 
@@ -283,13 +292,26 @@ export function applyPuncturedLungKillO2(currentO2 = 0, equippedRelics = [], max
     return Math.min(maxO2, Math.max(0, nextO2));
 }
 
+// The per-kill half of "Kills refill the magazine but permanently reduce
+// maximum oxygen". Both terms are charged by the SAME relic: the refund and
+// the penalty are read off one entry, not summed independently across the
+// loadout.
+//
+// maxO2PenaltyPercent is a shared stat key and Punctured Lung carries it too
+// -- but as a one-time equip cost, charged once through
+// applyPuncturedLungCapacity at equip and recomputed from base 100 in
+// resetVitalsForRun. Reading the key here without checking whose it was
+// re-charged that 40% on every kill, compounding: a Punctured Lung run lost
+// max O2 to 2.8 of 100 within six kills. See
+// docs/reports/relic-behavior-matrix-2026-09-09.md.
 export function applyParasiticMagazineKill({ clipAmmo = 0, clipSize = 0, maxO2 = 100 } = {}, equippedRelics = []) {
     let nextClipAmmo = clipAmmo;
     let nextMaxO2 = maxO2;
     for (const relic of equippedRelics) {
         const refund = Number(relic?.stats?.killAmmoRefund);
+        if (!Number.isFinite(refund) || refund <= 0) continue;
+        nextClipAmmo = Math.min(clipSize, nextClipAmmo + refund);
         const penalty = Number(relic?.stats?.maxO2PenaltyPercent);
-        if (Number.isFinite(refund) && refund > 0) nextClipAmmo = Math.min(clipSize, nextClipAmmo + refund);
         if (Number.isFinite(penalty) && penalty > 0) nextMaxO2 *= Math.max(0, 1 - (penalty / 100));
     }
     return { clipAmmo: nextClipAmmo, maxO2: Math.max(1, nextMaxO2) };
@@ -420,3 +442,22 @@ export function computeActiveSynergies(equippedItems = []) {
     }
     return synergies;
 }
+
+export function applyIncomingDamageModifiers(baseDamage = 0, runOverclocks = [], runRelics = []) {
+    if (!Number.isFinite(baseDamage) || baseDamage <= 0) return 0;
+    let damage = baseDamage;
+    for (const mod of runOverclocks ?? []) {
+        const mult = Number(mod?.stats?.takenDamageMult);
+        if (Number.isFinite(mult) && mult > 0) {
+            damage *= mult;
+        }
+    }
+    for (const relic of runRelics ?? []) {
+        const mult = Number(relic?.stats?.takenDamageMult);
+        if (Number.isFinite(mult) && mult > 0) {
+            damage *= mult;
+        }
+    }
+    return damage;
+}
+

@@ -21,7 +21,10 @@ describe('multiplayerCrashPlanner', () => {
             mode: MULTIPLAYER_SPAWN_MODES.COOP,
             playerRoster: [
                 { id: 'host-1', callsign: 'VIPER', opClass: 'SCOUT' },
-                { id: 'peer-2', callsign: 'TITAN', opClass: 'TANK' }
+                {
+                    id: 'peer-2', callsign: 'TITAN', opClass: 'TANK',
+                    loadout: { chassisSkinId: '4114', polishColor: '#ffd15a' }
+                }
             ]
         });
 
@@ -37,6 +40,8 @@ describe('multiplayerCrashPlanner', () => {
         expect(p2.spawnX).not.toBe(p1.spawnX);
         expect(p2.callsign).toBe('TITAN');
         expect(p2.opClass).toBe('TANK');
+        expect(p2.chassisSkinId).toBe('4114');
+        expect(p2.polishColor).toBe('#ffd15a');
 
         expect(plan.breachCorridors.length).toBe(1);
         expect(plan.breachCorridors[0].corridorArchetype).toBe('distress_conduit');

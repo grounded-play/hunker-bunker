@@ -1,7 +1,7 @@
 # Sprint 30 — Acceptance, Coherence, and Repository Control
 
-Status: active plan · Owner: repository maintainers · Updated: 2026-08-24 ·
-Branch: `dev/sprint-30` · Working baseline: `v2.3.1-beta` · Release target:
+Status: active plan · Owner: repository maintainers · Updated: 2026-09-09 ·
+Branch: `dev/sprint-30` · Working baseline: `v2.3.2-beta` · Release target:
 decide at scope lock
 
 ## Thesis

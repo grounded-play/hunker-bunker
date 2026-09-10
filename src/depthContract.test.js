@@ -8,7 +8,8 @@ import {
     rollsElite,
     rollsRareRelic,
     applyO2EfficiencyPenalty,
-    describeCrossing
+    describeCrossing,
+    formatCrossingDeltaSummary
 } from './depthContract.js';
 
 // docs/design/one-more-ring-design-pillars.md item 1: the Depth Contract is
@@ -77,5 +78,42 @@ describe('depthContract', () => {
         const retreat = describeCrossing(3, 1);
         expect(retreat.salvageMultiplierDelta).toBeLessThan(0);
         expect(retreat.o2EfficiencyPenaltyDelta).toBeLessThanOrEqual(0);
+    });
+});
+
+// docs/planning/depth-01-elite-and-relic-lane-2026-09-09.md D3: the crossing
+// summary previously lived as a private, untested function in main.js and
+// omitted the one field with no consumer. Now that eliteSpawnChance is
+// connected, the announcement can honestly include it.
+describe('formatCrossingDeltaSummary', () => {
+    it('says nothing when nothing changed', () => {
+        expect(formatCrossingDeltaSummary(describeCrossing(1, 1))).toBe('');
+        expect(formatCrossingDeltaSummary(null)).toBe('');
+        expect(formatCrossingDeltaSummary(undefined)).toBe('');
+    });
+
+    it('announces the elite chance the game now actually rolls', () => {
+        const summary = formatCrossingDeltaSummary(describeCrossing(1, 2));
+        expect(summary).toContain('ELITE');
+        expect(summary).toContain('+8%');
+    });
+
+    it('reports every changed term of the bet', () => {
+        const summary = formatCrossingDeltaSummary(describeCrossing(2, 3));
+        expect(summary).toContain('SALVAGE');
+        expect(summary).toContain('O2 EFFICIENCY');
+        expect(summary).toContain('DIRECTOR PRESSURE');
+        expect(summary).toContain('RARE SALVAGE ODDS');
+        expect(summary).toContain('ELITE');
+    });
+
+    it('shows the O2 penalty as the loss it is', () => {
+        // o2EfficiencyPenaltyDelta is positive when things get worse, so the
+        // player-facing number is negated.
+        expect(formatCrossingDeltaSummary(describeCrossing(1, 2))).toContain('O2 EFFICIENCY -5%');
+    });
+
+    it('keeps the leading separator so callers can append it to a label', () => {
+        expect(formatCrossingDeltaSummary(describeCrossing(1, 2)).startsWith(' // ')).toBe(true);
     });
 });

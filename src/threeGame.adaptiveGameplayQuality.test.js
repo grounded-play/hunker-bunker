@@ -43,7 +43,7 @@ describe('ThreeGame adaptive gameplay quality', () => {
         ThreeGame.prototype.updateAdaptiveGameplayQuality.call(fake, 1 / 60);
 
         expect(fake.adaptiveGameplayPerformanceMode).toBe(true);
-        expect(fake.gameplayPostProcessingEnabled).toBe(true);
+        expect(fake.gameplayPostProcessingEnabled).toBe(false);
         expect(fake.renderer.shadowMap.enabled).toBe(true);
         expect(fake.renderer.setPixelRatio).toHaveBeenCalledWith(0.85);
         expect(fake.visibleChunkRadius).toBe(fake.defaultVisibleChunkRadius);
@@ -75,11 +75,13 @@ describe('ThreeGame adaptive gameplay quality', () => {
         expect(fake.adaptiveGameplayPerformanceMode).toBe(false);
     });
 
-    it('keeps the composer active after adaptive mode engages', () => {
+    it('bypasses the composer after adaptive mode engages', () => {
         const composer = { render: vi.fn() };
         const renderer = { render: vi.fn() };
         const fake = {
             performanceProfile: 'gameplay',
+            cameraMode: 'isometric',
+            adaptiveGameplayPerformanceMode: true,
             gameplayPostProcessingEnabled: true,
             composer,
             renderer,
@@ -90,7 +92,7 @@ describe('ThreeGame adaptive gameplay quality', () => {
 
         ThreeGame.prototype.renderWithPerf.call(fake);
 
-        expect(composer.render).toHaveBeenCalledOnce();
-        expect(renderer.render).not.toHaveBeenCalled();
+        expect(composer.render).not.toHaveBeenCalled();
+        expect(renderer.render).toHaveBeenCalledOnce();
     });
 });

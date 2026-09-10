@@ -50,6 +50,7 @@ export const MENU_FOCUS_ROOT_IDS = Object.freeze([
     'multiplayer-modal',
     'mature-content-audit-modal',
     'progression-walkthrough-modal',
+    'armory-picker-modal',
     'operator-polish-modal',
     'tactical-map-modal',
     'base-turret-modal',

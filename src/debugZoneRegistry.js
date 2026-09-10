@@ -55,7 +55,7 @@ export function listDebugZones() {
 // against the actual source files, not the plan doc's hand-picked numbers) so new zones can't
 // silently collide with them.
 registerDebugZone('debugShowroom', { originX: 9500 + 160, originZ: 9500 + 160, width: 320, depth: 320 }); // SHOWROOM_CHUNK 500,500 * chunkSize 19 = 9500; floor centered at origin + floorSize(320)*0.5
-registerDebugZone('debugMuseum', { originX: 9000 + 130, originZ: 9000, width: 300, depth: 20 }); // MUSEUM_ORIGIN (9000,9000), corridorLength 280 extending +X
+registerDebugZone('debugMuseum', { originX: 9000 + 130, originZ: 9000, width: 340, depth: 340 }); // MUSEUM_ORIGIN (9000,9000); floor is now a 340x340 grid pad centred on the +X corridor, not a 14-wide strip, so there is room to walk around each exhibit
 
 // New zones from docs/debug-gallery-and-architectural-grid-expansion-plan.md — placed to NOT
 // collide with the zones above or each other. Wing 1 (the asset colonnade) deliberately

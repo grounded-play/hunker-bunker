@@ -6,6 +6,7 @@
 import { io as connectSocketIo } from 'socket.io-client';
 import { planMultiplayerCrashSites } from './multiplayerCrashPlanner.js';
 import { startMultiplayerRun } from './gameController.js';
+import { getSelectedPolish } from './operatorPolishes.js';
 import {
     createSteamLobby,
     joinSteamLobby,
@@ -132,9 +133,9 @@ export function resolveRelayUrl() {
 
 // docs/multiplayer-flow-and-lobby-bugs-2026-08-20.md Phase 3: a small,
 // display-only summary of the LOCAL player's current loadout -- equipped
-// weapon label + whether a charm is equipped, not the full loadout (mods,
-// skins, decals stay purely local; nothing here ever feeds gameplay logic,
-// only the roster display and Phase 4's squad-composition cutscene).
+// weapon label + whether a charm is equipped, plus the visual-only chassis
+// and polish identity required to render this operator on every client.
+// Nothing here feeds gameplay stats or damage logic.
 // window.loadout/window.fabricator are the same module-scoped singletons
 // main.js already exposes for this exact purpose (armory UI, HUD). null
 // outside a real game session (no window.loadout yet, e.g. very early boot)
@@ -144,7 +145,7 @@ export function getLocalLoadoutSummary(opClass) {
     const weapon = window.loadout.getEquippedLabel?.(window.fabricator, opClass) ?? 'UNARMED';
     const hasCharm = Boolean(window.loadout.getEquippedCharmId?.(opClass));
     const chassisSkinId = window.loadout.getEquippedChassisSkinId?.() ?? null;
-    const polishColor = window.loadout.getEquippedOperatorPolish?.(opClass) ?? null;
+    const polishColor = getSelectedPolish(window.localStorage).color;
     const summary = { weapon, hasCharm };
     if (chassisSkinId) summary.chassisSkinId = chassisSkinId;
     if (polishColor) summary.polishColor = polishColor;

@@ -7,7 +7,9 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;700;900&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/style.css?v=1242_v33">
+  <link rel="stylesheet" href="/style.css">
+  <link rel="stylesheet" href="/src/styles/expeditionHud.css">
+  <link rel="stylesheet" href="/src/styles/armory.css">
   <link rel="icon" type="image/png" href="/favicon.png" />
   <title>HUNKER BUNKER | TACTICAL COMMAND</title>
 
@@ -97,9 +99,46 @@
           }
         };
       }
+
+      // Synchronously compute initial responsive stage layout tokens so the loading
+      // screen never flashes at 1px / unscaled size before main.js evaluates.
+      try {
+        var w = window.innerWidth || (document.documentElement && document.documentElement.clientWidth) || 1280;
+        var h = window.innerHeight || (document.documentElement && document.documentElement.clientHeight) || 800;
+        var bu = Math.min(w / 160, h / 100);
+        var scale = window.localStorage ? window.localStorage.getItem('hb_ui_scale') : null;
+        var mult = (Number(scale) || 100) / 100;
+        var root = document.documentElement;
+        if (root && root.style) {
+          root.style.setProperty('--vw-actual', w + 'px');
+          root.style.setProperty('--vh-actual', h + 'px');
+          root.style.setProperty('--vu', bu + 'px');
+          root.style.setProperty('--vu-text', (bu * mult) + 'px');
+          root.style.setProperty('--ui-scale-multiplier', String(mult));
+          root.style.setProperty('--stage-px', (bu / 8) + 'px');
+        }
+      } catch (e) {}
     })();
   </script>
   <div id="game-viewport">
+    <script>
+      (function () {
+        try {
+          var w = window.innerWidth || 1280;
+          var h = window.innerHeight || 800;
+          var bu = Math.min(w / 160, h / 100);
+          var scale = window.localStorage ? window.localStorage.getItem('hb_ui_scale') : null;
+          var mult = (Number(scale) || 100) / 100;
+          var vp = document.getElementById('game-viewport');
+          if (vp && vp.style) {
+            vp.style.setProperty('--vu', bu + 'px');
+            vp.style.setProperty('--vu-text', (bu * mult) + 'px');
+            vp.style.setProperty('--ui-scale-multiplier', String(mult));
+            vp.style.setProperty('--stage-px', (bu / 8) + 'px');
+          }
+        } catch (e) {}
+      })();
+    </script>
     <button id="global-skip-intro-btn" class="global-skip-btn hidden">SKIP INTRO</button>
     <div id="damage-vignette-layer" class="hidden">
       <div id="hit-indicator-wedge"></div>
@@ -299,7 +338,7 @@
 
         <div class="credits-footer">
           <span class="credits-footer-thankyou">THANK YOU FOR DEPLOYING</span>
-          <span id="about-modal-sys-ver" class="credits-footer-ver">SYS VER: 2.3.1-BETA // ACTIVE</span>
+          <span id="about-modal-sys-ver" class="credits-footer-ver">SYS VER: 2.3.2-BETA // ACTIVE</span>
         </div>
       </div>
     </div>
@@ -1158,6 +1197,18 @@
 
     <!-- Live HUD (Post-Initialization) -->
     <div id="ui" class="hidden">
+      <!-- Diegetic Visor HUD Framing & Telemetry -->
+      <div class="hud-visor-frame" aria-hidden="true">
+        <span class="hud-visor-bracket hud-visor-bracket--tl"></span>
+        <span class="hud-visor-bracket hud-visor-bracket--tr"></span>
+        <span class="hud-visor-bracket hud-visor-bracket--bl"></span>
+        <span class="hud-visor-bracket hud-visor-bracket--br"></span>
+        <div class="hud-visor-telemetry">
+          <span class="hud-visor-telemetry__tag">EXOSUIT // MARK-IV PRESSURIZED</span>
+          <span class="hud-visor-telemetry__grid-mark">◈ 44.10°N // 12.80°W</span>
+        </div>
+      </div>
+
       <div class="level-indicator">
         <span class="level-indicator__title">BUNKER LEVEL</span>
         <span id="level-num">0</span>
@@ -1495,6 +1546,11 @@
       <div id="scientist-hud-prompt" class="lore-hud-prompt hud-action-prompt hidden">
         <span class="prompt-key">PRESS E</span>
         <span class="prompt-text">TALK TO DR. OKONKWO-VASS</span>
+      </div>
+
+      <div id="mayor-tina-hud-prompt" class="lore-hud-prompt hud-action-prompt mayor-tina-hud-prompt hidden">
+        <span class="prompt-key">PRESS E</span>
+        <span class="prompt-text">TALK TO MAYOR TINA</span>
       </div>
 
       <div id="black-box-hud-prompt" class="lore-hud-prompt black-box-hud-prompt hidden">

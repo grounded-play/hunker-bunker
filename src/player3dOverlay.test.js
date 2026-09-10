@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import * as THREE from 'three';
 import {
     ENGINEER_GESTURES,
     INJURED_LOCOMOTION_VARIANTS,
@@ -6,6 +7,7 @@ import {
     computeLocomotionWeights,
     computeLocomotionTimeScale,
     resolveGameplayCharmSocket,
+    retargetMixamoClip,
     computeOverlayYaw,
     computeUpperBodyAimOffset,
     selectLocomotionActionName,
@@ -13,6 +15,25 @@ import {
 } from './player3dOverlay.js';
 
 describe('player 3D cosmetic overlay', () => {
+    it('retargets an already-compatible mixamorig1 clip without doubling its prefix', () => {
+        const root = new THREE.Group();
+        const hips = new THREE.Bone();
+        hips.name = 'mixamorig1Hips';
+        root.add(hips);
+        const source = new THREE.AnimationClip('walk', 1, [
+            new THREE.QuaternionKeyframeTrack(
+                'mixamorig1Hips.quaternion',
+                [0, 1],
+                [0, 0, 0, 1, 0, 0.2, 0, 0.98]
+            )
+        ]);
+
+        const result = retargetMixamoClip(source, 'mixamorig1', 'mixamorig', root);
+
+        expect(result.tracks).toHaveLength(1);
+        expect(result.tracks[0].name).toBe('mixamorig1Hips.quaternion');
+    });
+
     it('exposes the Engineer gesture pack for showroom pose cycling', () => {
         expect(ENGINEER_GESTURES).toContain('engineerThoughtful');
         expect(ENGINEER_GESTURES).toContain('engineerAcknowledge');

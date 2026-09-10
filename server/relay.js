@@ -53,6 +53,7 @@ const PVE_HIT_RANGE = PVP_WEAPON_RANGE;
 // a single PvP gun's fire-rate never can, so a PvP-tight limit would risk
 // false-rejecting real simultaneous hits.
 const PVE_MIN_HIT_INTERVAL_MS = MIN_FIRE_INTERVAL_MS;
+const PVE_STATE_MIN_INTERVAL_MS = 75;
 
 function sanitizeCoord(value) {
     if (typeof value !== 'number' || !Number.isFinite(value)) return null;
@@ -71,9 +72,9 @@ function sanitizeString(value, maxLen = 32, fallback = 'AGENT') {
 
 // docs/multiplayer-flow-and-lobby-bugs-2026-08-20.md Phase 3: a small,
 // display-only summary of each player's equipped weapon/charm -- not the
-// full loadout (mods, skins, decals stay purely local, no gameplay logic
-// anywhere reads this), just enough for the roster and the squad-composition
-// cutscene (Phase 4) to show what each operative brought. Untrusted client
+// full loadout (mods and decals stay local, and no gameplay logic reads this),
+// just enough for the roster/cutscene and remote operator chassis/polish.
+// Untrusted client
 // input, so every field gets the same defensive treatment as callsign/opClass
 // above rather than trusting shape or type.
 function sanitizeLoadout(value) {
@@ -279,6 +280,7 @@ export function attachRelay(server, { allowedOrigins = [] } = {}) {
             mode: 'coop',
             lastWeaponHitAt: 0,
             lastEnemyHitAt: 0,
+            lastEnemyStateAt: 0,
             // Ready-up gate (see matchDeploy below): previously nonexistent --
             // any single socket emitting matchDeploy instantly launched the
             // whole room for everyone, with no wait for other players.
@@ -640,7 +642,7 @@ export function attachRelay(server, { allowedOrigins = [] } = {}) {
         // history says it actually is, and is it claiming hits faster than
         // physically possible. Returns a clamped, validated { x, z, damage,
         // enemyType } or null if the claim should be dropped.
-        function validateEnemyHitClaim(dmgData) {
+        function validateEnemyHitClaim(dmgData, { positionPlayer = player, enforceRateLimit = true } = {}) {
             if (!dmgData || typeof dmgData !== 'object') return null;
             const x = sanitizeCoord(dmgData.x);
             const z = sanitizeCoord(dmgData.z);
@@ -649,12 +651,12 @@ export function attachRelay(server, { allowedOrigins = [] } = {}) {
             if (damage <= 0) return null;
 
             const now = Date.now();
-            if (now - (player.lastEnemyHitAt || 0) < PVE_MIN_HIT_INTERVAL_MS) return null;
+            if (enforceRateLimit && now - (positionPlayer.lastEnemyHitAt || 0) < PVE_MIN_HIT_INTERVAL_MS) return null;
 
-            const dist = Math.hypot(x - player.x, z - player.z);
+            const dist = Math.hypot(x - positionPlayer.x, z - positionPlayer.z);
             if (dist > PVE_HIT_RANGE) return null;
 
-            player.lastEnemyHitAt = now;
+            if (enforceRateLimit) positionPlayer.lastEnemyHitAt = now;
             const enemyType = sanitizeString(dmgData.enemyType, 32, 'unknown');
             // Sprint 26: pass-through only, not validated against anything --
             // the server doesn't track enemy state to check it against (see
@@ -680,7 +682,17 @@ export function attachRelay(server, { allowedOrigins = [] } = {}) {
         // tracking, out of scope for "don't attempt headless server
         // simulation yet"), it just refuses to relay an implausible claim.
         socket.on('enemyDamage', (dmgData) => {
-            const claim = validateEnemyHitClaim(dmgData);
+            if (!player.isHost) return;
+            const reporterId = sanitizeString(dmgData?.reporterId, 64, '') || null;
+            const reporter = reporterId ? players.get(reporterId) : null;
+            if (reporterId && (!reporter || reporter.roomCode !== player.roomCode)) return;
+            // Guest reports were already range/rate validated on receipt.
+            // When the host echoes the canonical result, validate its enemy
+            // position against the original shooter rather than the host.
+            const claim = validateEnemyHitClaim(dmgData, {
+                positionPlayer: reporter || player,
+                enforceRateLimit: !reporter
+            });
             if (!claim) return;
             const { x, z, damage, enemyType, scatterKey } = claim;
 
@@ -694,6 +706,34 @@ export function attachRelay(server, { allowedOrigins = [] } = {}) {
                     damage
                 });
             }
+        });
+
+        // The host owns the canonical live transforms for deterministic
+        // enemy IDs. Generation seed sync alone cannot keep AI positions in
+        // lockstep because each client targets a different local operator.
+        socket.on('enemyState', (data = {}) => {
+            if (!player.roomCode || !player.isHost || player.mode === 'pvp') return;
+            if (!Array.isArray(data.enemies)) return;
+            const now = Date.now();
+            if (now - player.lastEnemyStateAt < PVE_STATE_MIN_INTERVAL_MS) return;
+            player.lastEnemyStateAt = now;
+            const enemies = data.enemies.slice(0, 256).flatMap((state) => {
+                if (!state || typeof state !== 'object') return [];
+                const scatterKey = sanitizeString(state.scatterKey, 64, '');
+                const enemyType = sanitizeString(state.enemyType, 32, '');
+                const x = sanitizeCoord(state.x);
+                const z = sanitizeCoord(state.z);
+                if (!scatterKey || !enemyType || x === null || z === null) return [];
+                return [{
+                    scatterKey,
+                    enemyType,
+                    x,
+                    z,
+                    hp: Number.isFinite(state.hp) ? Math.max(0, Math.min(10000, state.hp)) : null,
+                    burstTriggered: Boolean(state.burstTriggered)
+                }];
+            });
+            socket.to(player.roomCode).emit('enemyStateSnapshot', { enemies, timestamp: now });
         });
 
         // Sprint 24 Milestone A item 5: a non-host client's candidate enemy

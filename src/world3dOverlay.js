@@ -3,6 +3,8 @@ import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.js';
 import { clone as cloneSkeleton } from 'three/examples/jsm/utils/SkeletonUtils.js';
 import { assetUrl } from './assetUrl.js';
+import { recordAssetLoad } from './assetLoadTelemetry.js';
+import { measurePerfPhase } from './perfPhases.js';
 
 // docs/armory-and-class-weapons-worklog.md — gltf-transform's optimize pass applies
 // EXT_meshopt_compression; GLTFLoader throws without this registered first.
@@ -62,6 +64,8 @@ export const WORLD_3D_MODELS = Object.freeze({
     npc_nahl: { url: '/3d/runtime/new3ds/npc_nahl.glb', height: 1.75, yaw: 0 },
     npc_aria: { url: '/3d/runtime/new3ds/npc_aria.glb', height: 1.80, yaw: 0 },
     npc_queen: { url: '/3d/runtime/new3ds/npc_queen.glb', height: 2.10, yaw: 0 },
+    secret_mayor_tina: { url: '/3d/runtime/secrets/mayor-tina.glb', height: 1.72, yaw: Math.PI },
+    secret_teacup_roach: { url: '/3d/runtime/secrets/teacup-roach.glb', height: 1.18, yaw: Math.PI },
     prop_camp_cookfire: { url: '/3d/runtime/new3ds/prop_fabricator_workstation.glb', height: 0.85, yaw: 0 },
     prop_camp_crates: { url: '/3d/runtime/new3ds/prop_bunker_supplies.glb', height: 0.75, yaw: 0 },
     prop_camp_sandbags: { url: '/3d/runtime/new3ds/prop_security_barricade.glb', height: 0.82, yaw: 0 }
@@ -72,11 +76,23 @@ export const WORLD_3D_FACING_YAW = Math.PI;
 
 function loadTemplate(url) {
     if (!templates.has(url)) {
-        const promise = createGltfLoader().loadAsync(assetUrl(url)).catch((err) => {
+        const startedAt = performance.now();
+        // This is end-to-end asynchronous loader latency (including parsing
+        // and decode), not a synchronous phase or proof of main-thread work.
+        const promise = createGltfLoader().loadAsync(assetUrl(url)).then((gltf) => {
+            recordAssetLoad(url, { group: 'world-model', durationMs: performance.now() - startedAt });
+            return gltf;
+        }).catch((err) => {
+            recordAssetLoad(url, {
+                group: 'world-model', status: 'failed', error: err,
+                durationMs: performance.now() - startedAt
+            });
             templates.delete(url);
             throw err;
         });
         templates.set(url, promise);
+    } else {
+        recordAssetLoad(url, { group: 'world-model', status: 'shared', cacheHit: true });
     }
     return templates.get(url);
 }
@@ -85,7 +101,12 @@ export async function createWorld3dModel(type) {
     const config = WORLD_3D_MODELS[type];
     if (!config) return null;
     const gltf = await loadTemplate(config.url);
-    const model = cloneSkeleton(gltf.scene);
+    const context = { type, url: config.url };
+    const model = measurePerfPhase('world-model:clone', context, () => cloneSkeleton(gltf.scene));
+    return measurePerfPhase('world-model:prepare', context, () => prepareWorld3dModel(model, type, config));
+}
+
+function prepareWorld3dModel(model, type, config) {
     model.updateMatrixWorld(true);
     const bounds = new THREE.Box3().setFromObject(model);
     const size = bounds.getSize(new THREE.Vector3());
@@ -178,4 +199,3 @@ export function syncWorld3dReplacement(source, { scale = 1, visible } = {}) {
     root.visible = visible ?? Boolean(source.userData.world3dDesiredVisible);
     return true;
 }
-

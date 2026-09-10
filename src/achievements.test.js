@@ -215,3 +215,30 @@ describe('achievement persistence wrappers', () => {
         expect(engine.getState().unlocked.kin.unlockedAt).toBe(99);
     });
 });
+
+// User report 2026-09-09: most achievements showed no progress at all. HUNKERED
+// tracks a target the state already knows about, so it can show one.
+describe('HUNKERED progress', () => {
+    const def = ACHIEVEMENT_DEFS.find((d) => d.key === 'hunkered');
+
+    it('reports whole minutes of the best run so far', () => {
+        const state = migrateAchievements(null);
+        state.stats.maxRunMs = 10 * 60 * 1000;
+        expect(getAchievementProgress(def, state)).toEqual({ current: 10, target: 20 });
+    });
+
+    it('starts at zero and never exceeds its target', () => {
+        const fresh = migrateAchievements(null);
+        expect(getAchievementProgress(def, fresh)).toEqual({ current: 0, target: 20 });
+        const long = migrateAchievements(null);
+        long.stats.maxRunMs = 90 * 60 * 1000;
+        expect(getAchievementProgress(def, long)).toEqual({ current: 20, target: 20 });
+    });
+
+    it('still only unlocks on a run-end that actually passed twenty minutes', () => {
+        const state = migrateAchievements(null);
+        state.stats.maxRunMs = 25 * 60 * 1000;
+        expect(def.check(state, { name: 'run-end', detail: { runMs: 19 * 60 * 1000 } })).toBe(false);
+        expect(def.check(state, { name: 'run-end', detail: { runMs: 21 * 60 * 1000 } })).toBe(true);
+    });
+});

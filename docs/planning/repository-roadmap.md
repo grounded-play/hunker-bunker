@@ -98,3 +98,12 @@ Sprint 31 should be chosen from the failures and evidence produced by Sprint 30,
 not precommitted now. If acceptance is clean, begin Horizon B with the Wanderer
 vertical slice and general objective grammar. If acceptance fails, Sprint 31 is
 the stabilization sprint for the measured blockers.
+
+
+## Armory remaining model production
+
+Owner: repository maintainers / asset production. Recorded 2026-09-09 after the Armory continuation.
+
+- Author unique models for GHOST Chassis (5001), QUICK STUDY Carbine (5002), HUNKERED Autocannon (5006), ARCHIVIST Arc Driver (5009) and KIN Arc Driver (5010).
+- Replace the factory Talon-C Carbine blockout with finished textured art.
+- Acceptance: mapped runtime models render correctly on the bench and in deployment; weapon grip/charm sockets remain calibrated; transparent previews are regenerated; the [Armory asset inventory](../reports/armory-asset-gaps.md) no longer lists these model gaps. The existing emblems/factory fallbacks are not model completion.

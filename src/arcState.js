@@ -150,6 +150,31 @@ export class ArcStateManager {
         return this.save();
     }
 
+    // One-time repair for saves polluted before the menu guard existed.
+    //
+    // getSpawnTile() parks the menu showcase in chunk (100, 100) and
+    // getDepthTier() measures from chunk (0, 0), so every profile that ever
+    // reached the title screen recorded deepestDepthTier 3 without playing.
+    // recordSignal only ever raises this value, so it could never come back
+    // down on its own.
+    //
+    // Only safe to clear when the player has genuinely never finished a run --
+    // then any recorded depth must be menu pollution. A player with real run
+    // history keeps whatever they earned, even if some of it was inflated;
+    // there is no separate record to reconcile against, and silently lowering
+    // an earned number would be worse than leaving it high.
+    clearUnearnedDepthSignal(hasRunHistory) {
+        if (hasRunHistory) return this.getState();
+        const signals = normalizeSignals(this.state.signals);
+        if (!(signals.deepestDepthTier > 0)) return this.getState();
+        this.state = {
+            ...this.state,
+            signals: { ...signals, deepestDepthTier: 0 }
+        };
+        this.save();
+        return this.getState();
+    }
+
     evaluate(event = null, random = Math.random) {
         const from = this.state.arcState;
         const to = evaluateArcTransition(from, { ...this.state.signals, event }, random);

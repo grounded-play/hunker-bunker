@@ -5,6 +5,9 @@ import * as THREE from 'three';
 import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
 import { createFrameProfiler } from './frameProfiler.js';
 import { createGpuFrameTimer } from './gpuFrameTimer.js';
+import { beginPerfPhase } from './perfPhases.js';
+import { usesGameplayFocusEffects } from './gameplayPresentation.js';
+import { getSelectedSheen } from './weaponSheens.js';
 import { captureHardwareCapabilities, createGpuMemoryTracker } from './gpuMemoryBudget.js';
 import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
 import { ShaderPass } from 'three/examples/jsm/postprocessing/ShaderPass.js';
@@ -140,6 +143,15 @@ import { describeDialogueProgress, leaderKeyFromName, nextDialogueBeat, isFinalS
 import { blackBoxStore } from './blackBox.js';
 import { runCheckpointStore } from './runCheckpoint.js';
 import { CHASSIS_SKIN_MODELS, createPlayer3dOverlay, ENGINEER_GESTURES } from './player3dOverlay.js';
+
+export const MAYOR_TINA_PLAYER_VISUAL = Object.freeze({
+    modelUrl: '/3d/runtime/secrets/mayor-tina-rigged.glb',
+    animationModelUrl: '/3d/scouting-scout/Scout.game.glb',
+    animationBonePrefix: 'mixamorig',
+    idleActionName: 'idle',
+    weaponEnabled: false,
+    allowStatic: false
+});
 import { createEnemy3dVisual, disposeEnemy3dVisual, updateEnemy3dVisual } from './enemy3dOverlay.js';
 import { createWorld3dModel, hasWorld3dModel, preloadWorld3dModels, syncWorld3dReplacement } from './world3dOverlay.js';
 import { computeTrailPosition } from './companionFollow.js';
@@ -152,6 +164,7 @@ import { getDialogueLine, getSuitRegister } from './data/dialogueLines.js';
 import { getEnemyStats } from './data/enemies.js';
 import { DEPTH_TIER_NAMES, getDepthLootConfig } from './data/loot.js';
 import { applyO2EfficiencyPenalty, describeCrossing, applySalvageMultiplier, getDepthContract } from './depthContract.js';
+import { ELITE_IDENTITY, isEliteForLoot, rollElitePromotion } from './eliteEnemies.js';
 import { BunkerDirector } from './director.js';
 import { LineDirector } from './lineDirector.js';
 import { DIRECTOR_AMBIENT_LINES } from './data/lineDirectorPools.js';
@@ -168,7 +181,8 @@ import { CAMP_QUESTS } from './data/campQuests.js';
 import { humanityDecayProgress } from './vitals.js';
 import { applyCampPayoutEffects } from './runModifiers.js';
 import { WandererManager, isWandererEligible } from './wandererSystem.js';
-import { renderWandererModal } from './wandererModal.js';
+import { renderWandererModal, closeWandererModal } from './wandererModal.js';
+import { FOXHOLE_CONTRACT, HACKER_CONTRACT, HYBRID_CONTRACT, getSurvivorContractSteps } from './survivorContract.js';
 import { createWanderer3dInstance } from './wanderer3d.js';
 import { applyBlackChromaKey, applyGreenChromaKey } from './textureKeying.js';
 import { getCachedKeyedImage, putCachedKeyedImage } from './keyedTextureCache.js';
@@ -202,7 +216,8 @@ import {
     getScrapCyclerReloadEffect,
     getVesperDoctrineReloadEffect,
     getQueensMilkAlienContactHeal,
-    getQueensMilkHumanHealPenalty
+    getQueensMilkHumanHealPenalty,
+    applyIncomingDamageModifiers
 } from './runDrops.js';
 import { buildUnifiedSkillTree, getTreeConnectors } from './skillTree.js';
 import { pickLoreDropForSite, getFoundLoreKeys, markLoreDropFound, LORE_DROPS } from './loreDrops.js';
@@ -354,60 +369,6 @@ const GOAL_CARD_CONFIGS = Object.freeze([
         lockedStatusText: 'LOCKED — INSTALL RADAR NODE FIRST'
     })
 ]);
-// docs/perf-chunk-mount-plan-2026-08-20.md: window.__hbLastPerfPhase's
-// original design assumed "since JS is single-threaded, by the time the
-// longtask callback runs it still names whichever [phase] was most
-// recently active" (see the comment at its write sites) -- true only if
-// SOME tagged operation ran recently. Live-tested with Playwright against
-// a real idle menu screen: this tag can go stale for minutes (no
-// chunk-mount/gear-poof event fires while just sitting on the title/
-// loadout/armory screens), and every unrelated long task in that window
-// -- including a real 3.9s and a real 6.5s one, cause still unknown --
-// was silently misattributed to a chunk mount from minutes earlier.
-// tagPerfPhase() timestamps every write so the reader (main.js) can reject
-// a stale tag instead of trusting it unconditionally.
-function tagPerfPhase(phase) {
-    if (typeof window === 'undefined') return;
-    window.__hbLastPerfPhase = phase;
-    window.__hbLastPerfPhaseAt = performance.now();
-}
-
-// Sprint 28 Lane F: bounded synchronous phase history for packaged-build
-// long-task attribution. The Long Task API has no stack information, so the
-// completed span timeline is the diagnostic bridge between a stall and the
-// operation that occupied the main thread.
-function beginPerfPhase(phase, context = {}) {
-    if (typeof window === 'undefined' || typeof performance === 'undefined') {
-        return { end: () => null };
-    }
-    const startMs = performance.now();
-    const stack = window.__hbPerfPhaseStack ?? (window.__hbPerfPhaseStack = []);
-    const span = { phase, startMs, context };
-    stack.push(span);
-    tagPerfPhase(phase);
-    let ended = false;
-    return {
-        end: (result = null) => {
-            if (ended) return result;
-            ended = true;
-            const endMs = performance.now();
-            const index = stack.lastIndexOf(span);
-            if (index >= 0) stack.splice(index, 1);
-            const history = window.__hbPerfPhaseHistory ?? (window.__hbPerfPhaseHistory = []);
-            history.push({
-                phase,
-                startMs: Math.round(startMs * 10) / 10,
-                durationMs: Math.round((endMs - startMs) * 10) / 10,
-                context
-            });
-            if (history.length > 64) history.splice(0, history.length - 64);
-            const parent = stack[stack.length - 1];
-            if (parent) tagPerfPhase(parent.phase);
-            return result;
-        }
-    };
-}
-
 function setSpriteSheetFrame(texture, columns, rows, frameIndex = 0) {
     if (!texture || columns <= 0 || rows <= 0) return;
 
@@ -1579,6 +1540,20 @@ export class ThreeGame {
         this._blackBoxMarkerPromptActive = false;
         this._blackBoxState = blackBoxStore.load();
         this._corruptedOperatorSpawnedForTimestamp = 0;
+        // Seeded discovery placement for the one-shot Mayor Tina secret. It is kept
+        // scene-attached (like corpses/companions), because chunk registries
+        // are rebuilt as the player crosses boundaries. Multiplayer stays out
+        // of scope until the identity swap has an authoritative network state.
+        this.mayorTinaEncounter = {
+            phase: 'idle',
+            mayorRoot: null,
+            teacupRoot: null,
+            originalOverlay: null,
+            transformedOverlay: null,
+            loadPromise: null,
+            lastSirenAt: 0,
+            calloutIndex: 0
+        };
         // The Bunker Director: one pressure brain that reacts to the player's
         // greed/struggle by pulling existing levers (doc 11 §4.A).
         this.bunkerDirector = new BunkerDirector();
@@ -4002,17 +3977,6 @@ export class ThreeGame {
         this.playerTorsoSprite.visible = false;
         this.player.add(this.playerTorsoSprite);
 
-        // Season 0 cosmetic player decal (itemdefs 4120-4129, docs/game-audit-lane-split-and-worklog.md
-        // §3b) — previously equippable via the Armory but never actually rendered anywhere.
-        // Small chest-mounted billboard sprite, hidden until a decal texture loads.
-        this.playerDecalSprite = new THREE.Sprite(new THREE.SpriteMaterial({ transparent: true, opacity: 0, depthTest: true }));
-        this.playerDecalSprite.center.set(0.5, 0.5);
-        this.playerDecalSprite.position.set(this.playerSpriteLead + 0.16, this.playerHeight * 0.62, this.playerSpriteLead - 0.05);
-        this.playerDecalSprite.scale.set(0.22, 0.22, 1);
-        this.playerDecalSprite.renderOrder = 7;
-        this.playerDecalSprite.visible = false;
-        this.player.add(this.playerDecalSprite);
-
         // Legs face movement, torso faces aim — tracked separately.
         this.torsoFacingRow = this.currentFacingRow;
 
@@ -4049,34 +4013,11 @@ export class ThreeGame {
         this.updatePlayerDecalSprite();
     }
 
-    // Season 0 cosmetic player decal (see this.playerDecalSprite's creation comment above).
-    // Reads the equipped decal once at spawn, same timing as setupPlayer3dCosmeticOverlay()'s
-    // weapon skin read — cosmetics are fixed for the run, re-read on the next spawn.
+    // Cosmetics are re-read at spawn and attached to the loaded torso rig.
     updatePlayerDecalSprite() {
-        const sprite = this.playerDecalSprite;
-        if (!sprite) return;
         const decalId = window.loadout?.getEquippedDecalId?.();
-        if (!decalId) {
-            sprite.visible = false;
-            sprite.material.opacity = 0;
-            return;
-        }
-        const catalog = getItemCatalogEntry(decalId);
-        const iconPath = catalog?.localImg || catalog?.img;
-        if (!iconPath) {
-            sprite.visible = false;
-            sprite.material.opacity = 0;
-            return;
-        }
-        new THREE.TextureLoader().load(assetUrl(iconPath), (texture) => {
-            if (sprite.material.map) sprite.material.map.dispose();
-            sprite.material.map = texture;
-            sprite.material.opacity = 1;
-            sprite.material.needsUpdate = true;
-            sprite.visible = true;
-        }, undefined, () => {
-            sprite.visible = false;
-        });
+        const catalog = decalId ? getItemCatalogEntry(decalId) : null;
+        this.player3dOverlay?.setPatchImage?.(catalog?.localImg || catalog?.img || null);
     }
 
     async setupPlayer3dCosmeticOverlay() {
@@ -4096,7 +4037,7 @@ export class ThreeGame {
             const classVisuals = {
                 SCOUT: {
                     weaponArchetype: archetypeFor('talon'),
-                    weaponMount: { skinId: skinIdFor() }
+                    weaponMount: { skinId: skinIdFor(), sheenColor: getSelectedSheen().color, charmId: window.loadout?.getEquippedCharmId?.(this.playerType) ?? null }
                 },
                 ENGINEER: {
                     modelUrl: '/3d/runtime/engineer-rigged-gestures.glb',
@@ -4104,7 +4045,7 @@ export class ThreeGame {
                     animationBonePrefix: 'mixamorig',
                     weaponEnabled: true,
                     weaponArchetype: archetypeFor('tesla_lock'),
-                    weaponMount: { skinId: skinIdFor() }
+                    weaponMount: { skinId: skinIdFor(), sheenColor: getSelectedSheen().color, charmId: window.loadout?.getEquippedCharmId?.(this.playerType) ?? null }
                 },
                 TANK: {
                     modelUrl: '/3d/runtime/tank-rigged.glb',
@@ -4112,7 +4053,7 @@ export class ThreeGame {
                     animationBonePrefix: 'mixamorig',
                     weaponEnabled: true,
                     weaponArchetype: archetypeFor('siege_breaker'),
-                    weaponMount: { position: [0.03, 0.02, 0.03], skinId: skinIdFor() }
+                    weaponMount: { position: [0.03, 0.02, 0.03], skinId: skinIdFor(), sheenColor: getSelectedSheen().color, charmId: window.loadout?.getEquippedCharmId?.(this.playerType) ?? null }
                 }
             };
             const chassisSkinId = window.loadout?.getEquippedChassisSkinId?.();
@@ -4142,6 +4083,7 @@ export class ThreeGame {
             overlay.root.position.z += this.playerSpriteLead;
             playerRoot.add(overlay.root);
             this.player3dOverlay = overlay;
+            this.updatePlayerDecalSprite();
             overlay.setOperatorPolish(this._playerPolishHex ?? 0xffffff);
             // Hide only after the GLB is ready. A load failure leaves the proven
             // 2D sprite visible as the automatic fallback.
@@ -4149,6 +4091,204 @@ export class ThreeGame {
         } catch (error) {
             console.warn('[player-3d-overlay] unavailable; keeping the 2D player', error);
         }
+    }
+
+    getMayorTinaEncounterPosition() {
+        // Farther down the three-wide north approach, before its first bend.
+        // Pick once per seed rather than rolling during the per-frame query:
+        // the models, siren, and interaction must agree on a stable position.
+        const offset = ((this.runEntropy || 0) >>> 0) % 7;
+        return { x: CRASH_SITE_CENTER, z: -14 - offset };
+    }
+
+    async setupMayorTinaEncounter() {
+        const encounter = this.mayorTinaEncounter;
+        if (!encounter || this.isMultiplayer || encounter.phase !== 'idle') return false;
+        if (encounter.mayorRoot && encounter.teacupRoot) {
+            encounter.mayorRoot.visible = this.performanceProfile === 'gameplay';
+            encounter.teacupRoot.visible = this.performanceProfile === 'gameplay';
+            return true;
+        }
+        if (encounter.loadPromise) return encounter.loadPromise;
+
+        encounter.loadPromise = Promise.all([
+            this.createWorld3dModel('secret_mayor_tina'),
+            this.createWorld3dModel('secret_teacup_roach')
+        ]).then(([mayorRoot, teacupRoot]) => {
+            if (!mayorRoot || !teacupRoot || this.mayorTinaEncounter !== encounter) return false;
+            const position = this.getMayorTinaEncounterPosition();
+            // The cup is Mayor Tina's extremely questionable bath. Tina sits
+            // slightly inside it; both remain separately readable from above.
+            teacupRoot.position.set(position.x, 0, position.z);
+            teacupRoot.rotation.y = Math.PI;
+            mayorRoot.position.set(position.x, 0.43, position.z - 0.03);
+            // Turn the encounter toward the player's approach from the south.
+            // The child model's normalization yaw and player rig stay intact.
+            mayorRoot.rotation.y = Math.PI;
+            mayorRoot.scale.setScalar(0.68);
+            mayorRoot.visible = this.performanceProfile === 'gameplay';
+            teacupRoot.visible = this.performanceProfile === 'gameplay';
+            this.scene.add(teacupRoot, mayorRoot);
+            encounter.mayorRoot = mayorRoot;
+            encounter.teacupRoot = teacupRoot;
+            return true;
+        }).catch((error) => {
+            console.warn('[mayor-tina-secret] models unavailable', error);
+            return false;
+        }).finally(() => {
+            encounter.loadPromise = null;
+        });
+        return encounter.loadPromise;
+    }
+
+    updateMayorTinaEncounter(now = performance.now()) {
+        const encounter = this.mayorTinaEncounter;
+        const prompt = document.getElementById('mayor-tina-hud-prompt');
+        if (!encounter || encounter.phase !== 'idle' || this.isMultiplayer || !this.player || !encounter.mayorRoot) {
+            prompt?.classList.add('hidden');
+            prompt?.classList.remove('visible');
+            return;
+        }
+        const position = this.getMayorTinaEncounterPosition();
+        const distance = Math.hypot(this.player.position.x - position.x, this.player.position.z - position.z);
+        const inRange = distance < 2.45;
+        prompt?.classList.toggle('hidden', !inRange);
+        prompt?.classList.toggle('visible', inRange);
+        if (inRange) {
+            const key = prompt?.querySelector('.prompt-key');
+            if (key) key.textContent = this.getPromptKeyLabel('E');
+        }
+
+        // The roach cup behaves like a cheap siren: it detects the player at
+        // long range, chirps, and cat-calls them toward the secret only once
+        // per cooldown instead of spamming the dialogue deck every frame.
+        if (distance < 11 && now - encounter.lastSirenAt > 6500) {
+            const lines = [
+                'TEACUP SIREN: HEY, HOTSHOT. THE MAYOR IS TAKING VISITORS.',
+                'TEACUP SIREN: NICE EXOSUIT, STRANGER. COME CLOSER.',
+                'TEACUP SIREN: PSST. YES, YOU. MAYOR TINA SAVED YOU A SEAT.'
+            ];
+            this.showBunkerLine(lines[encounter.calloutIndex % lines.length]);
+            encounter.calloutIndex += 1;
+            encounter.lastSirenAt = now;
+            window.AudioManager?.play?.('camp_lockdown_alarm', { volume: 0.18, playbackRate: 1.65, bus: 'sfx' });
+        }
+    }
+
+    interactWithMayorTina() {
+        const encounter = this.mayorTinaEncounter;
+        if (!encounter || encounter.phase !== 'idle' || this.isMultiplayer || !this.player || !encounter.mayorRoot) return false;
+        const position = this.getMayorTinaEncounterPosition();
+        if (Math.hypot(this.player.position.x - position.x, this.player.position.z - position.z) >= 2.45) return false;
+        encounter.phase = 'transforming';
+        this.cinematicLock = true;
+        this.setInputEnabled(false);
+        document.getElementById('mayor-tina-hud-prompt')?.classList.add('hidden');
+        window.dispatchEvent(new CustomEvent('mayor-tina-transform-requested'));
+        return true;
+    }
+
+    createMayorTinaPlayerOverlay() {
+        return createPlayer3dOverlay({
+            targetHeight: this.playerSpriteScale * 0.98,
+            ...MAYOR_TINA_PLAYER_VISUAL
+        });
+    }
+
+    async completeMayorTinaTransformation() {
+        const encounter = this.mayorTinaEncounter;
+        if (!encounter || encounter.phase !== 'transforming' || !encounter.mayorRoot || !this.player) return false;
+        let mayorOverlay;
+        try {
+            mayorOverlay = await this.createMayorTinaPlayerOverlay();
+        } catch (error) {
+            console.warn('[mayor-tina-secret] rigged player model unavailable', error);
+            encounter.phase = 'idle';
+            this.cinematicLock = false;
+            this.setInputEnabled(true);
+            return false;
+        }
+        if (this.mayorTinaEncounter !== encounter || encounter.phase !== 'transforming' || !this.player) {
+            mayorOverlay.dispose();
+            return false;
+        }
+        const originalOverlay = this.player3dOverlay;
+        if (originalOverlay?.root) {
+            originalOverlay.setDowned?.(true);
+            this.scene.attach(originalOverlay.root);
+            originalOverlay.root.rotation.z = Math.PI / 2;
+            originalOverlay.root.updateMatrixWorld(true);
+            const bounds = new THREE.Box3().setFromObject(originalOverlay.root);
+            if (Number.isFinite(bounds.min.y)) originalOverlay.root.position.y += 0.04 - bounds.min.y;
+            encounter.originalOverlay = originalOverlay;
+        }
+
+        // The teacup is the lure/bath, not a permanent world prop. Remove it
+        // behind the second closed-door beat so the transformed reveal leaves
+        // only the discarded operator body and the player-controlled Mayor.
+        encounter.teacupRoot?.removeFromParent?.();
+        encounter.mayorRoot.removeFromParent();
+        mayorOverlay.root.position.x += this.playerSpriteLead;
+        mayorOverlay.root.position.y += 0.12;
+        mayorOverlay.root.position.z += this.playerSpriteLead;
+        mayorOverlay.root.rotation.y = this.facingYaw || 0;
+        this.player.add(mayorOverlay.root);
+        this.player3dOverlay = mayorOverlay;
+        encounter.transformedOverlay = mayorOverlay;
+        if (this.playerSprite) this.playerSprite.visible = false;
+        encounter.phase = 'transformed';
+        this.showBunkerLine('TEACUP SIREN: LOOKING VERY MAYORAL, YOUR HONOR.');
+        window.dispatchEvent(new CustomEvent('mayor-tina-transformed'));
+        return true;
+    }
+
+    finishMayorTinaTransformationSequence() {
+        if (this.mayorTinaEncounter?.phase !== 'transformed') return false;
+        this.cinematicLock = false;
+        this.setInputEnabled(true);
+        return true;
+    }
+
+    resetMayorTinaEncounter() {
+        const encounter = this.mayorTinaEncounter;
+        if (!encounter) return;
+        if (encounter.phase === 'transformed' && encounter.originalOverlay?.root && this.player) {
+            encounter.transformedOverlay?.dispose?.();
+            encounter.transformedOverlay = null;
+            const original = encounter.originalOverlay;
+            original.root.removeFromParent();
+            original.root.position.set(this.playerSpriteLead, 0.12, this.playerSpriteLead);
+            original.root.rotation.set(0, 0, 0);
+            original.setDowned?.(false);
+            this.player.add(original.root);
+            this.player3dOverlay = original;
+            encounter.originalOverlay = null;
+        } else if (encounter.phase === 'transformed') {
+            encounter.transformedOverlay?.dispose?.();
+            encounter.transformedOverlay = null;
+            this.player3dOverlay = null;
+            void this.setupPlayer3dCosmeticOverlay();
+        }
+        encounter.phase = 'idle';
+        encounter.lastSirenAt = 0;
+        encounter.calloutIndex = 0;
+        const position = this.getMayorTinaEncounterPosition();
+        if (encounter.teacupRoot) {
+            encounter.teacupRoot.removeFromParent();
+            encounter.teacupRoot.position.set(position.x, 0, position.z);
+            encounter.teacupRoot.rotation.y = Math.PI;
+            encounter.teacupRoot.visible = this.performanceProfile === 'gameplay';
+            this.scene.add(encounter.teacupRoot);
+        }
+        if (encounter.mayorRoot) {
+            encounter.mayorRoot.removeFromParent();
+            encounter.mayorRoot.position.set(position.x, 0.43, position.z - 0.03);
+            encounter.mayorRoot.rotation.set(0, Math.PI, 0);
+            encounter.mayorRoot.scale.setScalar(0.68);
+            encounter.mayorRoot.visible = this.performanceProfile === 'gameplay';
+            this.scene.add(encounter.mayorRoot);
+        }
+        this.cinematicLock = false;
     }
 
     // Sprint 26: accepts an explicit session now (src/gameController.js's
@@ -4171,6 +4311,7 @@ export class ThreeGame {
         this.netSocket = session.socket || null;
         this.multiplayerLocalPlayerId = this.netSocket?.id || session.localPlayerId || null;
         this.lastNetBroadcastTime = 0;
+        this.lastEnemyStateBroadcastTime = 0;
         // Sprint 24 Milestone A item 5 (docs/sprint24-multiplayer-runtime-2026-08-19.md):
         // captured by the lobby from the server's currentPlayers roster (the
         // only point the server tells a client its own isHost status) and
@@ -4239,6 +4380,7 @@ export class ThreeGame {
             this.netSocket.on('playerExtractedBroadcast', (data) => this.handleRemotePlayerExtracted(data));
             this.netSocket.on('enemyDamaged', (data) => this.handleRemoteEnemyDamage(data));
             this.netSocket.on('enemyHitReported', (data) => this.handleEnemyHitReported(data));
+            this.netSocket.on('enemyStateSnapshot', (data) => this.handleEnemyStateSnapshot(data));
             this.netSocket.on('playerDisconnected', (id) => this.removeRemotePlayer(id));
             this.netSocket.on('newPlayer', (player) => this.getOrCreateRemotePlayer(player));
             // Sprint 26: server/relay.js's disconnect handler now promotes a
@@ -4301,6 +4443,7 @@ export class ThreeGame {
             this.netSocket.off('playerExtractedBroadcast');
             this.netSocket.off('enemyDamaged');
             this.netSocket.off('enemyHitReported');
+            this.netSocket.off('enemyStateSnapshot');
             this.netSocket.off('playerDisconnected');
             this.netSocket.off('newPlayer');
             this.netSocket.off('hostChanged');
@@ -4313,6 +4456,7 @@ export class ThreeGame {
         this.multiplayerLocalPlayerId = null;
         this.isMultiplayerHost = false;
         this.lastNetBroadcastTime = 0;
+        this.lastEnemyStateBroadcastTime = 0;
         // Sprint 26: undoes setupMultiplayerNetwork's world-seed sync (see
         // its own comment) -- without this, a solo run started after a
         // multiplayer match in the same tab would keep generating worlds
@@ -4326,7 +4470,9 @@ export class ThreeGame {
     getOrCreateRemotePlayer(playerData) {
         if (!playerData || !playerData.id) return null;
         if (this.remotePlayers?.has(playerData.id)) {
-            return this.remotePlayers.get(playerData.id);
+            const remote = this.remotePlayers.get(playerData.id);
+            this.updateRemotePlayerAppearance(remote, playerData);
+            return remote;
         }
         this.remotePlayers ??= new Map();
 
@@ -4337,6 +4483,7 @@ export class ThreeGame {
 
         const opClass = playerData.opClass || 'SCOUT';
         const isPvP = this.multiplayerMode === 'pvp';
+        const polishColor = playerData.polishColor || playerData.loadout?.polishColor || '#ffffff';
         const themeColor = isPvP ? 0xff4444 : (playerData.color || (opClass === 'SCOUT' ? 0x7dff5a : (opClass === 'TANK' ? 0xffb700 : 0x00e5ff)));
 
         // Real class chassis sprite, matching how the local player's own
@@ -4357,9 +4504,10 @@ export class ThreeGame {
             spriteMat.map = classMaterial.map.clone();
             spriteMat.map.needsUpdate = true;
         }
-        if (isPvP) {
-            spriteMat.color.setHex(themeColor);
-        }
+        // Operator polish is personal identity, not team coloring. Rival
+        // readability stays on the red nameplate while their chassis keeps
+        // the tint they selected; enemy NPC materials are never touched.
+        spriteMat.color.set(polishColor);
         const sprite = new THREE.Sprite(spriteMat);
         sprite.center.set(0.5, 0);
         sprite.position.set(0, 0.4, 0);
@@ -4399,7 +4547,7 @@ export class ThreeGame {
             callsign: playerData.callsign || 'OPERATIVE',
             opClass,
             chassisSkinId: playerData.chassisSkinId || playerData.loadout?.chassisSkinId || null,
-            polishColor: playerData.polishColor || playerData.loadout?.polishColor || null,
+            polishColor,
             mesh: group,
             sprite,
             targetPos: new THREE.Vector3(group.position.x, group.position.y, group.position.z),
@@ -4432,6 +4580,16 @@ export class ThreeGame {
             });
         }
         return remote;
+    }
+
+    updateRemotePlayerAppearance(remote, playerData = {}) {
+        if (!remote) return;
+        const polishColor = playerData.polishColor || playerData.loadout?.polishColor || remote.polishColor || '#ffffff';
+        if (polishColor !== remote.polishColor) {
+            remote.polishColor = polishColor;
+            remote.sprite?.material?.color?.set?.(polishColor);
+            remote.overlay?.setOperatorPolish?.(polishColor);
+        }
     }
 
     async setupRemotePlayer3dOverlay(remote) {
@@ -4490,9 +4648,8 @@ export class ThreeGame {
             remote.mesh.add(overlay.root);
             remote.overlay = overlay;
             remote.sprite.visible = false;
-            if (remote.polishColor) {
-                overlay.setOperatorPolish?.(remote.polishColor);
-            }
+            overlay.setOperatorPolish?.(remote.polishColor || '#ffffff');
+            if (remote.isDown) overlay.setDowned?.(true);
             if (typeof window !== 'undefined' && window.hbLog) {
                 window.hbLog('MULTIPLAYER', 'info', 'remote-avatar-3d-ready', {
                     playerId: remote.id,
@@ -4612,6 +4769,7 @@ export class ThreeGame {
         const remote = this.remotePlayers.get(data.targetId);
         remote.isDown = false;
         remote.hp = remote.maxHp;
+        remote.overlay?.setDowned?.(false);
         window.showToastNotification?.(`SQUADMATE REVIVED: ${remote.callsign}`);
         window.AudioManager?.play?.('fx_level_up', { volume: 0.4 });
     }
@@ -4621,8 +4779,19 @@ export class ThreeGame {
         const remote = this.remotePlayers.get(playerId);
         remote.isDown = true;
         remote.hp = 0;
+        remote.overlay?.setDowned?.(true);
         window.showToastNotification?.(`SQUADMATE DOWN: ${remote.callsign}`);
         window.AudioManager?.play?.('ui_error', { volume: 0.4 });
+        this.resolveCoopSquadWipe?.();
+    }
+
+    resolveCoopSquadWipe() {
+        if (!this.isMultiplayer || this.multiplayerMode === 'pvp') return false;
+        if (!this.isPlayerDowned || this.isPlayerDead || !this.remotePlayers?.size) return false;
+        if (![...this.remotePlayers.values()].every((remote) => remote.isDown)) return false;
+
+        this.handleDeath('squad-wipe');
+        return true;
     }
 
     // Sprint 26: the receiving end of handleExtraction's netSocket.emit
@@ -4719,8 +4888,55 @@ export class ThreeGame {
         if (!data || !Number.isFinite(data.x) || !Number.isFinite(data.z) || !(data.damage > 0)) return;
         const sprite = this.resolveNetworkEnemySprite(data);
         if (sprite) {
-            this.applyPlayerDamageToEnemy(sprite, data.damage);
+            this.applyPlayerDamageToEnemy(sprite, data.damage, { reporterId: data.reporterId });
+        } else {
+            // The squad can be farther apart than the host's mounted chunk
+            // radius. Preserve the already relay-validated guest hit even
+            // when this host has not instantiated that deterministic enemy.
+            this.netSocket?.emit('enemyDamage', { ...data, reporterId: data.reporterId });
         }
+    }
+
+    broadcastEnemyStateSnapshot(now = Date.now()) {
+        if (!this.netSocket || !this.isMultiplayerHost || this.multiplayerMode === 'pvp') return false;
+        if (now - (this.lastEnemyStateBroadcastTime ?? 0) < 100) return false;
+        this.lastEnemyStateBroadcastTime = now;
+        const enemies = [];
+        for (const sprite of this.scatterSprites ?? []) {
+            if (!this.isEnemyType(sprite.userData?.type) || !sprite.userData?.scatterKey || sprite.userData?.isDisplayModel) continue;
+            enemies.push({
+                scatterKey: sprite.userData.scatterKey,
+                enemyType: sprite.userData.type,
+                x: sprite.position.x,
+                z: sprite.position.z,
+                hp: Number.isFinite(sprite.userData.hp) ? sprite.userData.hp : null,
+                burstTriggered: Boolean(sprite.userData.burstTriggered)
+            });
+            if (enemies.length >= 256) break;
+        }
+        if (!enemies.length) return false;
+        this.netSocket.emit('enemyState', { enemies });
+        return true;
+    }
+
+    handleEnemyStateSnapshot(data) {
+        if (this.isMultiplayerHost || this.multiplayerMode === 'pvp' || !Array.isArray(data?.enemies)) return false;
+        let applied = 0;
+        for (const state of data.enemies) {
+            if (!state?.scatterKey) continue;
+            const sprite = (this.scatterSprites ?? []).find((candidate) => candidate.userData?.scatterKey === state.scatterKey);
+            if (!sprite?.userData) continue;
+            if (Number.isFinite(state.x)) sprite.position.x = state.x;
+            if (Number.isFinite(state.z)) sprite.position.z = state.z;
+            if (state.burstTriggered && !sprite.userData.burstTriggered) {
+                const remainingHp = Math.max(1, sprite.userData.hp || 1);
+                this.damageSnail(sprite, remainingHp);
+            } else if (Number.isFinite(state.hp) && state.hp >= 0) {
+                sprite.userData.hp = state.hp;
+            }
+            applied += 1;
+        }
+        return applied > 0;
     }
 
     removeRemotePlayer(id) {
@@ -4750,6 +4966,7 @@ export class ThreeGame {
                 });
             }
         }
+        this.broadcastEnemyStateSnapshot?.(now);
 
         // 2. Interpolate and animate remote players
         if (this.remotePlayers?.size) {
@@ -5447,6 +5664,8 @@ export class ThreeGame {
         this.blackBoxPromptEl?.addEventListener('pointerup', this.handlePromptTap);
         this.baseTurretPromptEl = document.getElementById('base-turret-hud-prompt');
         this.baseTurretPromptEl?.addEventListener('pointerup', this.handlePromptTap);
+        this.mayorTinaPromptEl = document.getElementById('mayor-tina-hud-prompt');
+        this.mayorTinaPromptEl?.addEventListener('pointerup', this.handlePromptTap);
         this.renderer.domElement.addEventListener('pointerdown', this.handleCanvasPointerDown);
         this.renderer.domElement.addEventListener('contextmenu', this.handleCanvasContextMenu);
         this.renderer.domElement.addEventListener('pointermove', this.handleCanvasPointerMove);
@@ -5501,6 +5720,7 @@ export class ThreeGame {
 
     triggerGameplayInteract() {
         if (!this.isGameplayInputActive()) return false;
+        if (this.interactWithMayorTina()) return true;
         if (this.interactWithNearestShipStation()) return true;
         // Every check below used to run with its result discarded, so a press
         // near nothing interactable was silent -- no success, no "nothing
@@ -5635,6 +5855,13 @@ export class ThreeGame {
             poolOverclocks: WEAPON_OVERCLOCKS,
             poolRelics: SUIT_RELICS
         };
+    }
+
+    resetRunDrops() {
+        this.runOverclocks = [];
+        this.runRelics = [];
+        this.activeSynergies = [];
+        window.dispatchEvent(new CustomEvent('in-run-drops-reset', { detail: { timestamp: Date.now() } }));
     }
 
     spawnPhysicalLootDrop(x, z, item) {
@@ -5933,6 +6160,7 @@ export class ThreeGame {
             || isVisible('archive-sims-modal')
             || isVisible('steam-vault-modal')
             || isVisible('operator-polish-modal')
+            || isVisible('wanderer-encounter-modal')
             || isVisible('snail-encounter-modal');
     }
 
@@ -6818,6 +7046,7 @@ export class ThreeGame {
     setPerformanceProfile(profile = 'menu') {
         const nextProfile = profile === 'gameplay' ? 'gameplay' : 'menu';
         if (this.performanceProfile === nextProfile) return;
+        this.gpuFrameTimer?.reset?.();
         this.performanceProfile = nextProfile;
         this.selectActiveCamera();
         // Adaptive mode is sticky only for the current combat run. Returning
@@ -6842,7 +7071,9 @@ export class ThreeGame {
             this.virtualInput.x = 0;
             this.virtualInput.z = 0;
             this._menuShowcaseTimer = 0;
+            void this.setupMayorTinaEncounter();
         } else if (nextProfile === 'menu') {
+            this.clearCompanions?.();
             // Menu showrooms are presentation-only. Remove any live combat
             // state before their render loop starts so shots cannot continue
             // into retained scenery and produce off-screen hit audio.
@@ -6876,7 +7107,7 @@ export class ThreeGame {
         }
         this.tiltShiftOverlay?.classList.toggle(
             'is-active',
-            nextProfile === 'gameplay' && !this.adaptiveGameplayPerformanceMode
+            usesGameplayFocusEffects(this)
         );
         if (this.chunkGroups) {
             this.chunkGroups.visible = nextProfile === 'gameplay';
@@ -6941,7 +7172,7 @@ export class ThreeGame {
         // Adaptive quality may lower the render resolution, but it must not
         // remove the authored DOF/tilt-shift treatment. Bypassing the composer
         // made the start-of-run handoff look like lighting and fog had unloaded.
-        this.gameplayPostProcessingEnabled = true;
+        this.gameplayPostProcessingEnabled = !nextEnabled;
         if (this.renderer?.shadowMap) {
             // Keep the shadow variant stable while adaptive mode lowers pixel
             // cost. Toggling shadowMap at runtime caused a
@@ -6950,7 +7181,7 @@ export class ThreeGame {
         }
         this.tiltShiftOverlay?.classList?.toggle?.(
             'is-active',
-            this.performanceProfile === 'gameplay'
+            usesGameplayFocusEffects(this)
         );
 
         const basePixelRatio = this.gameplayPixelRatio ?? 1;
@@ -7075,7 +7306,7 @@ export class ThreeGame {
         const span = beginPerfPhase(label, this.getPerformanceDiagnosticsSnapshot());
         const gpuQueryStarted = this.gpuFrameTimer?.beginFrame?.() ?? false;
         try {
-            if (this.composer && this.performanceProfile === 'gameplay') {
+            if (this.composer && usesGameplayFocusEffects(this)) {
                 this.composer.render();
             }
             else this.renderer.render(this.scene, this.camera);
@@ -7323,6 +7554,7 @@ export class ThreeGame {
             fp.measure('updateLoreDrops', () => this.updateLoreDrops(delta));
             fp.measure('updateBuildSiteBeacon', () => this.updateBuildSiteBeacon(now));
             fp.measure('updateConsoles', () => this.updateConsoles(delta, now));
+            fp.measure('updateMayorTinaEncounter', () => this.updateMayorTinaEncounter?.(now));
             fp.measure('updateLoreTerminals', () => this.updateLoreTerminals());
             fp.measure('baseLights.update', () => this.baseLights?.update(delta));
             fp.measure('foundry.update', () => this.foundry?.update(delta));
@@ -7947,6 +8179,10 @@ export class ThreeGame {
                 window.dispatchEvent(new CustomEvent('lore-terminal-read', {
                     detail: { loreKey: sprite.userData.loreKey, loreText: sprite.userData.loreText }
                 }));
+                this.syncSurvivorContract?.({
+                    type: 'terminal-decrypted',
+                    id: `terminal:${sprite.userData.loreKey || `${Math.round(sprite.position.x)},${Math.round(sprite.position.z)}`}`
+                });
                 window.AudioManager?.play('ui_scan_ping', { volume: 0.35, playbackRate: 0.65, bus: 'sfx' });
                 return;
             }
@@ -9444,7 +9680,10 @@ export class ThreeGame {
 
     showBunkerLine(text) {
         if (!text) return;
-        window.dispatchEvent(new CustomEvent('bunker-line', { detail: { text } }));
+        if (this.performanceProfile === 'menu') return;
+        if (typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent('bunker-line', { detail: { text } }));
+        }
     }
 
     buildLineDirectorContext(overrides = {}) {
@@ -11877,7 +12116,7 @@ export class ThreeGame {
         if (spawned) window.AudioManager?.playMetalStress?.({ volume: 0.5, playbackRate: 0.5, force: true });
     }
 
-    applyPlayerDamageToEnemy(sprite, amount, { fromNetwork = false } = {}) {
+    applyPlayerDamageToEnemy(sprite, amount, { fromNetwork = false, reporterId = null } = {}) {
         if (sprite?.userData?.isDestructibleProp) {
             this.damageScatterProp(sprite, amount);
             return;
@@ -11912,7 +12151,7 @@ export class ThreeGame {
             // the exact key isn't found locally (e.g. that chunk hasn't
             // mounted there yet), so this is additive, not a breaking
             // protocol change.
-            const payload = { enemyType: sprite.userData.type, scatterKey: sprite.userData.scatterKey ?? null, x: sprite.position.x, z: sprite.position.z, damage: amount };
+            const payload = { enemyType: sprite.userData.type, scatterKey: sprite.userData.scatterKey ?? null, x: sprite.position.x, z: sprite.position.z, damage: amount, reporterId };
             if (this.isMultiplayerHost) {
                 // The host's own local detection is immediately canonical.
                 this.netSocket.emit('enemyDamage', payload);
@@ -12621,6 +12860,10 @@ export class ThreeGame {
         window.dispatchEvent(new CustomEvent('shell-collected', {
             detail: { gained: 4, total: this.bank?.getShells?.() ?? 0, isBoss: false }
         }));
+        this.syncSurvivorContract?.({
+            type: 'hive-harvested',
+            id: `hive-harvest:${hive.id}:${harvestCycle}`
+        });
         return true;
     }
 
@@ -13748,6 +13991,9 @@ export class ThreeGame {
             this.scatterSprites = this.scatterSprites.filter((s) => s !== sprite);
         }
         this.act2.completeCampQuest(aq.campId, aq.quest.id, 1);
+        this.syncSurvivorContract?.({
+            type: 'camp-complete', id: `camp:${aq.campId}:${aq.quest.id}`
+        });
         if (camp) {
             const record = this.getCampRecord(camp.id);
             camp.setStatus(record?.status ?? 'alive');
@@ -14224,7 +14470,14 @@ export class ThreeGame {
     }
 
     checkWandererSpawning() {
-        if (this.activeWanderer || !this.player || this.isPlayerDead) return;
+        if (this.performanceProfile !== 'gameplay' || this.loadingPaused || !this.player || this.isPlayerDead) return;
+        if (this._wandererLoad || this._companionLoad || this.activeWanderer) return;
+        const companion = this.wandererManager?.getActiveCompanion?.();
+        if (companion) {
+            if (!(this.companions ?? []).some((entry) => entry.isWanderer)) void this.addHumanoidCompanion(companion);
+            return;
+        }
+        if (this._wandererResolvedForRun) return;
         const bankState = this.bank?.getState?.() || {};
         const eligible = isWandererEligible({
             bank: this.bank,
@@ -14241,11 +14494,13 @@ export class ThreeGame {
         });
         if (!wanderer) return;
 
-        this.spawnCrashSiteWanderer(wanderer);
+        void this.spawnCrashSiteWanderer(wanderer);
     }
 
     async spawnCrashSiteWanderer(wanderer) {
-        if (!wanderer || this.activeWanderer) return;
+        if (!wanderer || this.activeWanderer || this._wandererLoad || this._wandererResolvedForRun) return;
+        const token = {};
+        this._wandererLoad = token;
         const activeShip = this.activeInteractiveConsole || this.ship || { tileX: 0, tileZ: 0 };
         const spawnX = (activeShip.tileX ?? 0) + 2.5;
         const spawnZ = (activeShip.tileZ ?? 0) + 1.8;
@@ -14255,6 +14510,13 @@ export class ThreeGame {
             actionKey: wanderer.actionKey,
             scale: 0.85
         });
+
+        if (this._wandererLoad !== token || this.performanceProfile !== 'gameplay' || this.isPlayerDead) {
+            instance3d?.dispose?.();
+            if (this._wandererLoad === token) this._wandererLoad = null;
+            return;
+        }
+        this._wandererLoad = null;
 
         if (instance3d && instance3d.root) {
             instance3d.root.position.set(spawnX, 0, spawnZ);
@@ -14316,12 +14578,12 @@ export class ThreeGame {
     }
 
     async handleWandererBefriend(wanderer) {
+        if (!this.activeWanderer || this._wandererResolvedForRun) return;
+        this._wandererResolvedForRun = true;
         const res = this.wandererManager?.befriend?.(wanderer);
         if (!res) return;
 
         this.showBunkerLine(`${wanderer.name.toUpperCase()} HAS JOINED YOUR SQUAD.`);
-        await this.addHumanoidCompanion(wanderer);
-
         if (this.activeWanderer?.instance3d?.root) {
             this.scene.remove(this.activeWanderer.instance3d.root);
             this.activeWanderer.instance3d.dispose?.();
@@ -14329,16 +14591,17 @@ export class ThreeGame {
         this.activeWanderer = null;
         this._wandererPromptLabel = null;
         window.dispatchEvent(new CustomEvent('camp-prompt-clear'));
+        await this.addHumanoidCompanion(wanderer);
     }
 
     handleWandererChaseOff(wanderer) {
+        if (!this.activeWanderer || this._wandererResolvedForRun) return;
+        this._wandererResolvedForRun = true;
         const res = this.wandererManager?.chaseOff?.(wanderer);
         if (!res) return;
 
-        this.showBunkerLine(`SURVIVOR CHASED OFF. RECOVERED ${res.lootGranted?.scrap || 35} SALVAGE SCRAP.`);
-        if (this.bank && res.lootGranted?.scrap) {
-            this.bank.deposit?.({ scrap: res.lootGranted.scrap, tech: res.lootGranted.tech || 0 });
-        }
+        this.bank?.deposit?.(res.lootGranted ?? {});
+        this.showBunkerLine('SURVIVOR DEPARTED. SUPPLY CACHE BANKED.');
         this.spawnGearPoofEffect(wanderer.x, wanderer.z, 'bunker_junk_rare');
 
         if (this.activeWanderer?.instance3d?.root) {
@@ -14351,11 +14614,21 @@ export class ThreeGame {
     }
 
     async addHumanoidCompanion(wanderer) {
+        if (this._companionLoad) return;
+        const token = {};
+        this._companionLoad = token;
         const companion3d = await createWanderer3dInstance({
             glbUrl: wanderer.glbUrl,
             actionKey: wanderer.actionKey,
             scale: 0.85
         });
+
+        if (this._companionLoad !== token || this.performanceProfile !== 'gameplay' || this.isPlayerDead) {
+            companion3d?.dispose?.();
+            if (this._companionLoad === token) this._companionLoad = null;
+            return;
+        }
+        this._companionLoad = null;
 
         const posX = this.player ? this.player.position.x : 0;
         const posZ = this.player ? this.player.position.z : 0;
@@ -14364,6 +14637,11 @@ export class ThreeGame {
             this.scene.add(companion3d.root);
         }
 
+        for (const previous of this.companions ?? []) {
+            if (!previous.isWanderer) continue;
+            previous.instance3d?.root?.removeFromParent();
+            previous.instance3d?.dispose?.();
+        }
         this.companions = (this.companions || []).filter((c) => !c.isWanderer);
         this.companions.push({
             isWanderer: true,
@@ -14373,6 +14651,56 @@ export class ThreeGame {
             currentHp: 100,
             maxHp: 100
         });
+        this.syncSurvivorContract();
+    }
+
+    syncSurvivorContract(event = null) {
+        const manager = this.wandererManager;
+        if (!manager) return;
+        const result = event ? manager.recordQuestEvent(event) : null;
+        try {
+            const delivered = manager.deliverPendingRewards(this.bank);
+            if (delivered.length) {
+                if (delivered.includes(HYBRID_CONTRACT.id)) {
+                    this.showBunkerLine('SYMBIOTIC GENESIS COMPLETE — 18 SHELLS BANKED.');
+                }
+                if (delivered.includes(HACKER_CONTRACT.id)) {
+                    this.showBunkerLine('OVERRIDE THE CORE COMPLETE — 15 SHELLS BANKED.');
+                }
+                if (delivered.includes(FOXHOLE_CONTRACT.id)) {
+                    this.showBunkerLine('LEAVE NO ONE BEHIND COMPLETE — 12 SHELLS BANKED.');
+                }
+            }
+        } catch {
+            this.showBunkerLine('SURVIVOR REWARD SAVED AS PENDING. RETRY ON YOUR NEXT DEPLOYMENT.');
+        }
+        const quest = manager.state.activeQuest;
+        if (!quest) {
+            window.objectiveRegistry?.resolveObjective?.(`survivor:${FOXHOLE_CONTRACT.id}`, 'complete');
+            window.objectiveRegistry?.resolveObjective?.(`survivor:${HACKER_CONTRACT.id}`, 'complete');
+            window.objectiveRegistry?.resolveObjective?.(`survivor:${HYBRID_CONTRACT.id}`, 'complete');
+            return;
+        }
+
+        const id = `survivor:${quest.id}`;
+        const accompanied = manager.getActiveCompanion()?.familyId === quest.familyId;
+        const companionName = quest.familyId === 'manic_hacker'
+            ? 'Hacker GF'
+            : (quest.familyId === 'species_hybrid' ? 'Chrysalis' : 'Foxhole');
+        window.objectiveRegistry?.trackObjective?.({
+            id, source: 'survivor', label: quest.title, priority: 35,
+            current: quest.progress, target: quest.targetCount,
+            steps: getSurvivorContractSteps(quest.id, quest.progress), persistent: true,
+            status: accompanied ? 'active' : 'blocked',
+            blockedReason: accompanied ? null : `Recruit ${companionName} to continue this contract.`
+        });
+        if (result && quest.id === FOXHOLE_CONTRACT.id && quest.progress === 8) {
+            this.showBunkerLine('ROUTE SECURED. HELP A CAMP TO COMPLETE FOXHOLE’S CONTRACT.');
+        } else if (result && quest.id === HACKER_CONTRACT.id && quest.progress === 2) {
+            this.showBunkerLine('TWO TERMINALS OVERRIDDEN. ONE CORE MAINFRAME LEFT.');
+        } else if (result && quest.id === HYBRID_CONTRACT.id && quest.progress === 2) {
+            this.showBunkerLine('TWO HIVE SAMPLES HARVESTED. ONE THRESHOLD LEFT.');
+        }
     }
 
     interactWithAct2Camp() {
@@ -15150,6 +15478,8 @@ export class ThreeGame {
         this.playerVitals.o2 = this.playerVitals.maxO2;
         this.playerVitals.o2HealthTimer = 0;
         this.isPlayerDead = false;
+        this.isPlayerDowned = false;
+        this.player3dOverlay?.setDowned?.(false);
         this.o2DispatchTimer = 0;
         this._lastLoopStepKey = null;
 
@@ -16345,6 +16675,7 @@ export class ThreeGame {
         }
         const previousHp = this.playerVitals.hp;
         let effectiveAmount = amount;
+        effectiveAmount = applyIncomingDamageModifiers(effectiveAmount, this.runOverclocks, this.runRelics);
         if (typeof window !== 'undefined' && window.npcDialogueTreeManager?.activePerks?.has?.('arias_psychic_mind_caress') && ['poison', 'hazard-zone', 'bio', 'sporesnail'].includes(reason)) {
             effectiveAmount *= 0.8;
         }
@@ -16436,7 +16767,7 @@ export class ThreeGame {
     // co-op downed/revive state. Deliberately does not run any of
     // handleDeath()'s side effects (black box, death curtain, game-over
     // screen) -- being downed in co-op is meant to be recoverable, not a run
-    // ender, unless nobody revives you (not yet implemented -- see doc).
+    // ender while any teammate remains standing.
     enterDownedState(reason = 'hazard') {
         if (this.isPlayerDowned || this.isPlayerDead) return;
         this.isPlayerDowned = true;
@@ -16446,10 +16777,12 @@ export class ThreeGame {
         this.closeConsoleModal?.();
         window.showToastNotification?.('YOU ARE DOWNED -- AWAIT REVIVAL');
         window.AudioManager?.play?.('ui_error', { volume: 0.5 });
+        this.player3dOverlay?.setDowned?.(true);
         if (this.netSocket) {
             this.netSocket.emit('playerDowned', {});
         }
         window.dispatchEvent(new CustomEvent('player-downed', { detail: { reason } }));
+        this.resolveCoopSquadWipe?.();
     }
 
     revivePlayerFromDowned(reviverCallsign = 'SQUADMATE') {
@@ -16458,6 +16791,7 @@ export class ThreeGame {
         this.playerVitals.hp = Math.max(1, Math.round((this.playerVitals.maxHp || 100) * 0.5));
         this.emitHealthState?.();
         this.setInputEnabled?.(true);
+        this.player3dOverlay?.setDowned?.(false);
         window.showToastNotification?.(`REVIVED BY ${String(reviverCallsign || 'SQUADMATE').toUpperCase()}`);
         window.AudioManager?.play?.('fx_level_up', { volume: 0.5 });
         window.dispatchEvent(new CustomEvent('player-revived-self'));
@@ -16494,6 +16828,9 @@ export class ThreeGame {
         if (this.isPlayerDead) return;
         if (this.performanceProfile && this.performanceProfile !== 'gameplay') return;
         this.isPlayerDead = true;
+        // A downed co-op operator becomes fully dead on a squad wipe or
+        // manual abort. Do not carry the revive-only guard into a retry.
+        this.isPlayerDowned = false;
         // A real death is now gracefully recorded via blackBoxStore.recordDeath
         // below -- the crash-only checkpoint has nothing left to add.
         runCheckpointStore.clear();
@@ -16630,6 +16967,7 @@ export class ThreeGame {
         this.updatePlayerForwardLight(1, { immediate: true });
 
         if (resetRunState) {
+            this.resetRunDrops();
             this.resetBunkerBlastDoor();
             this.runStartTime = Date.now();
             this.totalDistanceTravelled = 0;
@@ -16673,6 +17011,7 @@ export class ThreeGame {
             this.runEntropy = this.fixedRunEntropy
                 ? 0
                 : createFreshRunEntropy(this.runEntropy);
+            this.resetMayorTinaEncounter();
             this.clearBlackBoxMarker();
             this._blackBoxState = blackBoxStore.load();
             this._initClassPassives();
@@ -17872,6 +18211,9 @@ export class ThreeGame {
         } else {
             this.footstepTimer = 0;
         }
+
+        // Menu showroom isolation: do not run mission, extraction, or elevator logic during menu showcase
+        if (this.performanceProfile === 'menu') return;
 
         // Survey mission: complete when player reaches target depth from ship
         if (this.missionState?.type === 'survey' && this.missionState.status === 'active') {
@@ -19230,7 +19572,14 @@ export class ThreeGame {
         const depthTier = this.getDepthTier(chunkX, chunkY);
         this.currentDepthTier = depthTier;
 
-        if (depthTier > this.maxDepthTierReached) {
+        // getSpawnTile() parks the menu showcase in chunk (100, 100) to keep it
+        // blank, and getDepthTier() measures distance from chunk (0, 0) -- so
+        // simply sitting on the title screen used to record tier 3 (ABYSS) into
+        // the persistent arc signals before the player had ever deployed, which
+        // is what put "DEPTH ABYSS" on an otherwise all-zero operator profile.
+        // currentDepthTier above stays truthful for live systems; only the
+        // career signal is gated on actually being in a run.
+        if (depthTier > this.maxDepthTierReached && this.performanceProfile === 'gameplay') {
             this.maxDepthTierReached = depthTier;
             this.arcManager?.recordSignal?.({ deepestDepthTier: depthTier });
             this.arcManager?.evaluate?.();
@@ -19398,12 +19747,8 @@ export class ThreeGame {
     setOperatorPolish(color = '#ffffff') {
         const parsed = new THREE.Color(color);
         this._playerPolishHex = parsed.getHex();
-        for (const material of Object.values(this.playerMaterials ?? {})) {
-            material.color?.setHex(this._playerPolishHex);
-        }
-        for (const material of Object.values(this.playerTorsoMaterials ?? {})) {
-            material.color?.setHex(this._playerPolishHex);
-        }
+        this.playerMaterials?.[this.playerType]?.color?.setHex(this._playerPolishHex);
+        this.playerTorsoMaterials?.[this.playerType]?.color?.setHex(this._playerPolishHex);
         this.player3dOverlay?.setOperatorPolish?.(this._playerPolishHex);
         if (this.suitFillLight?.color) this.suitFillLight.color.copy(parsed);
     }
@@ -20610,8 +20955,7 @@ export class ThreeGame {
         const overlay = this.tiltShiftOverlay;
         if (!overlay || !this.player || !this.camera) return;
 
-        const isGameplay = this.performanceProfile === 'gameplay'
-            && !this.loadingPaused;
+        const isGameplay = usesGameplayFocusEffects(this);
         overlay.classList.toggle('is-active', isGameplay);
 
         if (!isGameplay) return;
@@ -23820,7 +24164,17 @@ export class ThreeGame {
                 phase: random() * Math.PI * 2,
                 opacity,
                 biomeTint: (finalType === 'cybersnail' || finalType === 'sporesnail' || finalType === 'cryosnail') ? (SNAIL_BIOME_TINTS[chunkBiomeKey] ?? 0xffffff) : undefined,
-                spawnedEnraged: (finalType === 'cybersnail' || finalType === 'sporesnail') && (depthTierForScatter >= 3 || Boolean(templateCfg?.forceEnragedSnails))
+                spawnedEnraged: (finalType === 'cybersnail' || finalType === 'sporesnail') && (depthTierForScatter >= 3 || Boolean(templateCfg?.forceEnragedSnails)),
+                // Depth Contract eliteSpawnChance, finally consulted. The roll
+                // is drawn from the chunk's seeded generator for every
+                // placement -- eligible or not -- so the stream advances by a
+                // fixed amount per placement and the elite set is reproducible
+                // from the seed alone. Ring I's contract chance is 0, so the
+                // opening ring stays free of promotions by construction.
+                spawnedElite: rollElitePromotion(depthTierForScatter + 1, random(), {
+                    type: finalType,
+                    isDisplayModel: Boolean(p.isDisplayModel)
+                })
             });
         }
 
@@ -24259,12 +24613,21 @@ export class ThreeGame {
 
             const isBoss = placement.isBoss || placement.type.startsWith('boss_');
             const isPreEnraged = Boolean(placement.spawnedEnraged) || isBoss;
+            // Depth Contract rank, decided once at placement generation from
+            // the seeded roll. Distinct from isPreEnraged: see eliteEnemies.js.
+            const isElite = Boolean(placement.spawnedElite) && !isBoss;
+            if (isElite) {
+                // Colour is the secondary cue only -- an elite must be
+                // readable by silhouette and by sound before it is wounded.
+                clonedMat.color.setHex(ELITE_IDENTITY.tint);
+            }
             const sprite = new THREE.Sprite(clonedMat);
             sprite.center.set(0.5, 0);
             sprite.position.set(placement.x, anchoredY, placement.z);
             sprite.frustumCulled = false;
             sprite.renderOrder = isBoss ? 8 : 6;
-            sprite.scale.set(scaleX, scaleY, 1);
+            const eliteScale = isElite ? ELITE_IDENTITY.scaleMultiplier : 1;
+            sprite.scale.set(scaleX * eliteScale, scaleY * eliteScale, 1);
 
             // Per-type HP/speed now live in src/data/enemies.js (behaviour-preserving).
             const _enemyStats = getEnemyStats(placement.type, { maxHp: SNAIL_MAX_HP, speed: SNAIL_MOVE_SPEED });
@@ -24289,6 +24652,10 @@ export class ThreeGame {
                 const threatScale = getDepthThreatScale(depth);
                 maxHp = Math.max(1, Math.round(maxHp * threatScale.hp));
                 speed *= threatScale.speed;
+                if (isElite) {
+                    maxHp = Math.max(1, Math.round(maxHp * ELITE_IDENTITY.hpMultiplier));
+                    speed *= ELITE_IDENTITY.speedMultiplier;
+                }
             }
 
             const staggerState = (!isBoss && ENEMY_STAGGER_DEFS[placement.type])
@@ -24320,6 +24687,7 @@ export class ThreeGame {
                 maxHp: maxHp,
                 speed: speed,
                 enraged: isPreEnraged,
+                isElite,
                 facingSign: 1,
                 pathNodes: null,
                 pathIndex: 0,
@@ -24331,7 +24699,7 @@ export class ThreeGame {
                 attackCooldown: 0,
                 bossAttackTimer: 0,
                 sporeEmitTimer: 0,
-                biomeTint: tintColor,
+                biomeTint: isElite ? ELITE_IDENTITY.tint : tintColor,
                 sporesnailFight,
                 staggerState
             };
@@ -25300,7 +25668,10 @@ export class ThreeGame {
                 }));
             }
         }
-        const isElite = Boolean(sprite.userData.enraged || sprite.userData.isSentinel);
+        // Depth Contract elite rank, not the last-stand `enraged` flag --
+        // see eliteEnemies.js for why reading `enraged` here inflated the
+        // ordinary drop rate from 0.12 to 0.65.
+        const isElite = isEliteForLoot(sprite.userData);
         const isBossEnemy = Boolean(sprite.userData.isHiveHarvestBoss || sprite.userData.isBoss);
         // docs/design/one-more-ring-design-pillars.md item 1 (Sprint 28):
         // deeper rings bias this roll toward relics (see runDrops.js's
@@ -25394,6 +25765,9 @@ export class ThreeGame {
                 sourceGoalKey: sprite.userData.sourceGoalKey ?? null
             }
         }));
+        this.syncSurvivorContract?.({
+            type: 'enemy-killed', id: `kill:${this.runEntropy}:${this.snailsKilledThisRun}`
+        });
     }
 
     spawnEnemyCorpse(enemySprite) {
@@ -25490,6 +25864,14 @@ export class ThreeGame {
     }
 
     clearCompanions() {
+        this._wandererLoad = null;
+        this._companionLoad = null;
+        this._wandererResolvedForRun = false;
+        this.activeWanderer?.instance3d?.root?.removeFromParent();
+        this.activeWanderer?.instance3d?.dispose?.();
+        this.activeWanderer = null;
+        this._wandererPromptLabel = null;
+        closeWandererModal();
         for (const companion of this.companions ?? []) {
             companion.sprite?.parent?.remove(companion.sprite);
             companion.sprite?.material?.dispose?.();
@@ -26844,6 +27226,16 @@ export class ThreeGame {
     // Companions (befriended snails, src/snailEncounter.js's 'befriend'
     // outcome) follow the player and periodically damage nearby hostile
     // snails. One companion at a time — see design doc's Companion section.
+    hasCompanionFireLane(from, to) {
+        const steps = Math.ceil(Math.hypot(to.x - from.x, to.z - from.z) / 0.4);
+        for (let i = 1; i < steps; i += 1) {
+            const t = i / steps;
+            if (!this.isSnailTileWalkable(Math.round(from.x + (to.x - from.x) * t),
+                Math.round(from.z + (to.z - from.z) * t))) return false;
+        }
+        return true;
+    }
+
     updateCompanions(delta) {
         if (!this.player || this.isPlayerDead || !Array.isArray(this.companions) || this.companions.length === 0) return;
 
@@ -26865,23 +27257,30 @@ export class ThreeGame {
                 const toTrailX = trail.x - root.position.x;
                 const toTrailZ = trail.z - root.position.z;
                 const dist = Math.hypot(toTrailX, toTrailZ);
-                if (dist > 0.1) {
+                if (dist > 16) {
+                    root.position.copy(this.player.position);
+                } else if (dist > 0.1) {
                     const step = Math.min(dist, 2.5 * delta);
-                    root.position.x += (toTrailX / dist) * step;
-                    root.position.z += (toTrailZ / dist) * step;
+                    const nextX = root.position.x + (toTrailX / dist) * step;
+                    const nextZ = root.position.z + (toTrailZ / dist) * step;
+                    if (this.isSnailTileWalkable(Math.round(nextX), Math.round(nextZ))) {
+                        root.position.x = nextX;
+                        root.position.z = nextZ;
+                    }
                     root.rotation.y = Math.atan2(toTrailX, toTrailZ);
                 }
                 companion.instance3d.update(delta);
 
                 companion.assistCooldown = Math.max(0, (companion.assistCooldown ?? 0) - delta);
                 if (companion.assistCooldown <= 0) {
+                    companion.assistCooldown = 0.25;
                     let nearestHostile = null;
                     let nearestDist = 8.0;
                     for (const other of this.scatterSprites || []) {
-                        if (!other?.userData || other.userData?.isCompanion || other.userData?.dead) continue;
-                        if (!other.userData.hp && !['cybersnail', 'cryosnail', 'sporesnail', 'crawler'].includes(other.userData.type)) continue;
+                        if (!this.isEnemyType(other?.userData?.type) || other.userData.isCompanion
+                            || other.userData.dead || other.userData.burstTriggered || other.userData.isDisplayModel) continue;
                         const d = Math.hypot(other.position.x - root.position.x, other.position.z - root.position.z);
-                        if (d < nearestDist) {
+                        if (d < nearestDist && this.hasCompanionFireLane(root.position, other.position)) {
                             nearestDist = d;
                             nearestHostile = other;
                         }
@@ -26891,7 +27290,9 @@ export class ThreeGame {
                         this.spawnMuzzleFlash?.(root.position.x, 1.0, root.position.z);
                         const cd = companion.wanderer?.assistAbility?.cooldown || 12;
                         companion.assistCooldown = cd;
-                        this.showBunkerLine(`[COMPANION] ${companion.wanderer?.name || 'SURVIVOR'} ACTIVATED ${companion.wanderer?.assistAbility?.name || 'SUPPORT FIRE'}!`);
+                        this.spawnPhysicalBurst?.(nearestHostile.position.x, nearestHostile.position.z, {
+                            color: 0x67e3e1, count: 3, upward: 0.1, spread: 0.3
+                        });
                     }
                 }
                 continue;
@@ -30623,6 +31024,7 @@ export class ThreeGame {
     }
 
     destroy() {
+        this.clearCompanions();
         this.applyMilestoneBossRuntimeEvent?.({ type: MILESTONE_BOSS_EVENT_TYPES.QUIT });
         this.renderer.setAnimationLoop(null);
         this.resetWeaponState({ emit: false });
@@ -30636,6 +31038,7 @@ export class ThreeGame {
         this.foundryPromptEl?.removeEventListener('pointerup', this.handlePromptTap);
         this.blackBoxPromptEl?.removeEventListener('pointerup', this.handlePromptTap);
         this.baseTurretPromptEl?.removeEventListener('pointerup', this.handlePromptTap);
+        this.mayorTinaPromptEl?.removeEventListener('pointerup', this.handlePromptTap);
         window.removeEventListener('o2-generator-upgraded', this._onBaseItemRepaired);
         window.removeEventListener('goal-unlocked', this._onBaseItemRepaired);
         window.removeEventListener('goal-upgraded', this._onBaseItemRepaired);
@@ -30737,6 +31140,10 @@ export class ThreeGame {
             this.scene.remove(this.playerEmitterGlow);
         }
         this.clearBlackBoxMarker();
+        this.mayorTinaEncounter?.originalOverlay?.dispose?.();
+        this.mayorTinaEncounter?.transformedOverlay?.dispose?.();
+        this.mayorTinaEncounter?.mayorRoot?.removeFromParent?.();
+        this.mayorTinaEncounter?.teacupRoot?.removeFromParent?.();
         if (this.playerForwardSpotLight) {
             this.scene.remove(this.playerForwardSpotLight);
         }

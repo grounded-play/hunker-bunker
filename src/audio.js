@@ -534,7 +534,11 @@ export class AudioManager {
         let priority = options.priority !== undefined ? options.priority : 3;
         if (speakerName.includes('BRIGGS') || speakerName.includes('MARTHA') || speakerName.includes('KAELEN')
             || speakerName.includes('NAHL') || speakerName.includes('VEY') || speakerName.includes('RHUN')
-            || speakerName.includes('QUEEN') || speakerName.includes('OKONKWO')) {
+            || speakerName.includes('QUEEN') || speakerName.includes('OKONKWO')
+            || speakerName.includes('TINA') || speakerName.includes('SIREN')
+            || speakerName.includes('HACKER') || speakerName.includes('FOXHOLE')
+            || speakerName.includes('CORPO') || speakerName.includes('CRASH QUEEN')
+            || speakerName.includes('ABG') || speakerName.includes('HYBRID')) {
             priority = 1;
         } else if (speakerName.includes('MOTHERSHIP') || speakerName.includes('SYSTEM') || speakerName.includes('EXOSUIT') || speakerName.includes('BUNKER')) {
             priority = 3;
@@ -649,7 +653,23 @@ export class AudioManager {
         let filterFreq = 1200;
         let duration = 0.14;
 
-        if (speakerName.includes('MOTHERSHIP')) {
+        if (speakerName.includes('TINA') || speakerName.includes('TEACUP') || speakerName.includes('SIREN')) {
+            baseFreq = 960; endFreq = 1320; waveType = 'sine'; filterFreq = 3200; duration = 0.11;
+        } else if (speakerName.includes('HACKER')) {
+            baseFreq = 580; endFreq = 740; waveType = 'square'; filterFreq = 2400; duration = 0.09;
+        } else if (speakerName.includes('CORPO')) {
+            baseFreq = 220; endFreq = 190; waveType = 'sawtooth'; filterFreq = 1100; duration = 0.13;
+        } else if (speakerName.includes('FOXHOLE') || speakerName.includes('VASQUEZ')) {
+            baseFreq = 180; endFreq = 150; waveType = 'triangle'; filterFreq = 950; duration = 0.15;
+        } else if (speakerName.includes('CRASH QUEEN')) {
+            baseFreq = 410; endFreq = 350; waveType = 'sine'; filterFreq = 2200; duration = 0.18;
+        } else if (speakerName.includes('ABG')) {
+            baseFreq = 520; endFreq = 640; waveType = 'triangle'; filterFreq = 2600; duration = 0.10;
+        } else if (speakerName.includes('HYBRID') || speakerName.includes('CHRYSALIS')) {
+            baseFreq = 150; endFreq = 190; waveType = 'sine'; filterFreq = 1600; duration = 0.22;
+        } else if (speakerName.includes('OKONKWO')) {
+            baseFreq = 180; endFreq = 155; waveType = 'triangle'; filterFreq = 1200; duration = 0.16;
+        } else if (speakerName.includes('MOTHERSHIP')) {
             baseFreq = 380; endFreq = 260; waveType = 'sawtooth'; filterFreq = 1400; duration = 0.16;
         } else if (speakerName.includes('EXOSUIT') || speakerName.includes('SYSTEM')) {
             baseFreq = 520; endFreq = 440; waveType = 'triangle'; filterFreq = 2200; duration = 0.12;

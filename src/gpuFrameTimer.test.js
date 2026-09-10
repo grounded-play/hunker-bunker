@@ -69,6 +69,42 @@ describe('createGpuFrameTimer', () => {
         expect(timer.snapshot()).toMatchObject({ pendingQueries: 1, droppedFrames: 1 });
     });
 
+    it('discards delayed results on reset before collecting the next profile', () => {
+        const { gl, states } = createMockGl();
+        const timer = createGpuFrameTimer(gl);
+        timer.beginFrame();
+        timer.endFrame();
+        const oldQuery = [...states.keys()][0];
+        timer.reset();
+        states.set(oldQuery, { available: true, result: 90_000_000 });
+        expect(timer.snapshot()).toMatchObject({ samples: 0, averageMs: null, pendingQueries: 0 });
+        expect(gl.deleteQuery).toHaveBeenCalledWith(oldQuery);
+
+        timer.beginFrame();
+        timer.endFrame();
+        const newQuery = [...states.keys()][1];
+        states.set(newQuery, { available: true, result: 5_000_000 });
+        expect(timer.snapshot()).toMatchObject({
+            samples: 1, latestMs: 5, averageMs: 5, maxMs: 5,
+            averageKind: 'exponential-moving-average'
+        });
+    });
+
+    it('ends an active query on reset and can start a fresh frame', () => {
+        const { gl, states } = createMockGl();
+        const timer = createGpuFrameTimer(gl);
+        timer.beginFrame();
+        const oldQuery = [...states.keys()][0];
+        timer.reset();
+        expect(gl.endQuery).toHaveBeenCalledOnce();
+        expect(gl.deleteQuery).toHaveBeenCalledWith(oldQuery);
+        expect(timer.endFrame()).toBe(false);
+        expect(timer.beginFrame()).toBe(true);
+        timer.dispose();
+        timer.dispose();
+        expect(gl.deleteQuery).toHaveBeenCalledTimes(2);
+    });
+
     it('discards invalid results after a GPU disjoint event', () => {
         const { gl, setDisjoint } = createMockGl();
         const timer = createGpuFrameTimer(gl);

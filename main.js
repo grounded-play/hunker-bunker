@@ -17,8 +17,9 @@ import { getDeathCinematicSpec, getEventCinematicSpec, normalizeCinematicStillSp
 import { DialogueManager } from './src/dialogue.js';
 import { VitalsHUD } from './src/vitals.js';
 import { blackBoxStore } from './src/blackBox.js';
-import { runCheckpointStore, hasRecoverableSalvage } from './src/runCheckpoint.js';
+import { runCheckpointStore, recoverCrashedRunCheckpoint } from './src/runCheckpoint.js';
 import { codexStore, getClassWreckageLog, recordSpecimen0047OriginIfFound } from './src/codex.js';
+import { formatCrossingDeltaSummary } from './src/depthContract.js';
 import { CODEX_ENTRIES, CODEX_CATEGORIES, getCodexEntry, CODEX_TOTAL, LORE_METADATA } from './src/data/codex.js';
 import { pickRunModifier } from './src/data/runModifiers.js';
 import { pickMissionBriefing } from './src/data/missions.js';
@@ -64,6 +65,7 @@ import { sideStoryManager, SIDE_STORIES_CONFIG, SIDE_STORY_STATUS } from './src/
 import { matureContentAudit } from './src/matureContentAudit.js';
 import { progressionWalkthrough } from './src/progressionWalkthrough.js';
 import { renderGameOverLeaderboard } from './src/leaderboardUi.js';
+import { unlockSheenForMilestone, reconcileSheenUnlocks } from './src/weaponSheens.js';
 import { OPERATOR_POLISHES, getSelectedPolish, getUnlockedPolishIds, selectPolish, unlockAllPolishes, unlockMilestonePolish } from './src/operatorPolishes.js';
 import { createOwnershipStore } from './src/itemOwnership.js';
 import { STARTING_RUN_AMMO, CLASS_AMMO_CAPACITY } from './src/data/ammoEconomy.js';
@@ -71,6 +73,7 @@ import { explainEnding, formatManifestBlocker } from './src/endingExplanations.j
 import { SongInterstitialController, selectCampInterstitial } from './src/songInterstitials.js';
 import { dialogueReactionForLine, preloadLeaderMedia, resolveLeaderIdentity } from './src/leaderIdentity.js';
 import { openQaNexusModal, closeQaNexusModal } from './src/debugQaNexus.js';
+import { openDebugMuseum, closeDebugMuseum } from './src/debugMuseum.js';
 import { openDebugTileGrid, closeDebugTileGrid } from './src/debugTileGrid.js';
 import { openDebugBossArenas, closeDebugBossArenas } from './src/debugBossArenas.js';
 import { openDebugCampSimulator, closeDebugCampSimulator } from './src/debugCampSimulator.js';
@@ -327,6 +330,34 @@ function isGameplayHudActive() {
 }
 window.isGameplayHudActive = isGameplayHudActive;
 
+function isGameplayReady() {
+    const game = window.game;
+    return Boolean(
+        isGameplayPhase()
+        && isGameplayHudActive()
+        && game?.performanceProfile === 'gameplay'
+        && game?.inputEnabled === true
+        && game?.loadingPaused === false
+        && !game?.hasBlockingGameplayOverlay?.()
+        && (game?.container?.clientWidth ?? 0) > 0
+        && (game?.container?.clientHeight ?? 0) > 0
+    );
+}
+window.isGameplayReady = isGameplayReady;
+
+function notifyGameplayReady() {
+    if (typeof window === 'undefined') return;
+    window.dispatchEvent(new CustomEvent('gameplay-ready', {
+        detail: {
+            timestamp: Date.now(),
+            appPhase: document.body?.dataset?.appPhase ?? 'gameplay',
+            playerType: window.game?.playerType ?? getSelectedHeroType(),
+            seed: activeRunSeed
+        }
+    }));
+}
+window.notifyGameplayReady = notifyGameplayReady;
+
 function clearLoaderBriefingMode() {
     loadingScreen?.classList.remove('briefing-mode', 'tactical-mode');
     loaderBriefingAvatar?.classList.add('hidden');
@@ -397,6 +428,23 @@ function setAppPhase(phase) {
         hideBiomePrompt();
         clearLoaderBriefingMode();
         window.game?.setInputEnabled?.(false);
+
+        // Menu isolation: ensure all in-flight dialogues and notifications are torn down
+        dialogueManager?.cancelDialogue?.();
+        dialogueManager?.cancelTutorial?.();
+        closeLeaderConversation();
+        if (window.npcDialogueTreeManager?.activeTree) {
+            window.npcDialogueTreeManager.closeDialogue();
+        }
+        document.getElementById('wanderer-encounter-modal')?.remove();
+        document.getElementById('npc-dialogue-modal')?.classList.add('hidden');
+        document.getElementById('mothership-dialogue')?.classList.add('hidden');
+        document.getElementById('leader-conversation-modal')?.classList.add('hidden');
+        const notificationStack = document.querySelector('.hud-notification-stack');
+        if (notificationStack) {
+            notificationStack.querySelectorAll('.radio-transmission-prompt:not(#radio-transmission-prompt), .commentary-toast')
+                .forEach((card) => card.remove());
+        }
     }
     updateQueensLedgerHUD();
 }
@@ -2730,9 +2778,10 @@ function refreshCareerStats() {
         depthEl.textContent = `DEPTH ${depthName}`;
     }
     if (menuHistoryEl) {
+        // Was also OR-ing two keys the game never writes; see hasCareerHistory().
         const hasHistory = totalSeconds > 0 || deaths > 0 || tier > 0
-            || localStorage.getItem('hb_run_stats_v1') !== null
-            || localStorage.getItem('hb_bank_v1') !== null;
+            || (Number(stats.runCount) || 0) > 0
+            || (Number(stats.totalKills) || 0) > 0;
         menuHistoryEl.textContent = hasHistory
             ? `LONGEST ${mm}:${ss} · DEPTH ${depthName} · DEATHS ${deaths}`
             : 'NEW OPERATOR // NO RUN HISTORY';
@@ -2767,6 +2816,52 @@ async function renderTitleProfilePortrait(playerType) {
         frameWidth,
         frameHeight
     );
+}
+
+// Assigned by the title-screen setup below. Held at module scope so the
+// return-to-title paths and the achievement recorders can re-probe save data
+// and repaint the profile HUD without reaching into that closure.
+let refreshTitleScreenState = () => refreshCareerStats();
+
+// Does this operator have a career worth showing? Deliberately separate from
+// "is there a save to continue": banked salvage or a recoverable black box make
+// CONTINUE meaningful, but they put nothing in the ACTIVE OPERATOR PROFILE
+// readout, which reports runs/deaths/longest-run/depth. Showing that panel with
+// every field reading zero is worse than not showing it.
+//
+// Note both previous probes tested `hb_run_stats_v1` and `hb_bank_v1` for
+// existence. Neither key is written anywhere in the game -- the bank's key is
+// `hb_bank` -- so those terms only ever fired for a test that wrote them by
+// hand. Real signals only, and content rather than key presence.
+// True once the player has actually completed a run. Deliberately excludes the
+// arc depth signal, which is the value being repaired below.
+function hasFinishedARun() {
+    try {
+        const stats = achievementEngine.getState().stats ?? {};
+        return (Number(stats.runCount) || 0) > 0
+            || (Number(stats.totalDeaths) || 0) > 0
+            || (Number(stats.totalKills) || 0) > 0
+            || (Number(stats.maxRunMs) || 0) > 0
+            || (Number(stats.victories) || 0) > 0;
+    } catch {
+        return false;
+    }
+}
+
+function hasCareerHistory() {
+    try {
+        const stats = achievementEngine.getState().stats ?? {};
+        const depthTier = arcManager.getState().signals.deepestDepthTier ?? 0;
+        return (Number(stats.runCount) || 0) > 0
+            || (Number(stats.totalDeaths) || 0) > 0
+            || (Number(stats.totalKills) || 0) > 0
+            || (Number(stats.maxRunMs) || 0) > 0
+            || (Number(stats.victories) || 0) > 0
+            || depthTier > 0
+            || hasAnyUnlock(achievementEngine.getState());
+    } catch {
+        return false;
+    }
 }
 
 function refreshTitleProfileHud(hasSave = true) {
@@ -3506,46 +3601,118 @@ function hideBiomePrompt() {
 
 function parseRadioTransmission(rawText = '') {
     let sender;
-    let text = String(rawText ?? '');
+    let text = String(rawText ?? '').trim();
     let portrait;
     const activeClass = window.game?.playerType || 'SCOUT';
 
-    if (text.startsWith('> MOTHERSHIP:')) {
+    // Normalize any prepended ">" markers
+    let clean = text.replace(/^>+\s*/, '').trim();
+
+    // If wrapped in BUNKER: prefix, check if there is an inner speaker prefix like TEACUP SIREN:
+    if (/^BUNKER:\s*/i.test(clean)) {
+        const inner = clean.replace(/^BUNKER:\s*/i, '').trim();
+        if (/^(TEACUP SIREN|MAYOR TINA|SURVIVOR|FOXHOLE|HACKER|CORPO|CRASH QUEEN|ABG|HYBRID|OKONKWO|MARTHA|BRIGGS|KAELEN|QUEEN|MOTHERSHIP|SYSTEM):/i.test(inner)) {
+            clean = inner;
+        }
+    }
+
+    if (/^(TEACUP SIREN|MAYOR TINA):/i.test(clean)) {
+        sender = "MAYOR TINA (TEACUP SIREN)";
+        text = clean.replace(/^(TEACUP SIREN|MAYOR TINA):\s*/i, '').trim();
+        portrait = "/lore_portraits/mayor_tina.webp";
+    } else if (/^MOTHERSHIP:/i.test(clean)) {
         sender = "MOTHERSHIP COMMAND";
-        text = text.replace('> MOTHERSHIP:', '').trim();
+        text = clean.replace(/^MOTHERSHIP:\s*/i, '').trim();
         portrait = "/lore_portraits/survivor_00.webp";
-    } else if (text.startsWith('> BUNKER:')) {
+    } else if (/^SISTER MARTHA:/i.test(clean)) {
+        sender = "SISTER MARTHA";
+        text = clean.replace(/^SISTER MARTHA:\s*/i, '').trim();
+        portrait = "/lore_portraits/tallow_martha.webp";
+    } else if (/^COMMANDER BRIGGS:/i.test(clean)) {
+        sender = "COMMANDER BRIGGS";
+        text = clean.replace(/^COMMANDER BRIGGS:\s*/i, '').trim();
+        portrait = "/lore_portraits/vesper_briggs.webp";
+    } else if (/^OVERSEER KAELEN:/i.test(clean)) {
+        sender = "OVERSEER KAELEN";
+        text = clean.replace(/^OVERSEER KAELEN:\s*/i, '').trim();
+        portrait = "/lore_portraits/meridian_kaelen.jpg";
+    } else if (/^(DR\.\s*OKONKWO|OKONKWO):/i.test(clean)) {
+        sender = "DR. OKONKWO-VASS";
+        text = clean.replace(/^(DR\.\s*OKONKWO|OKONKWO):\s*/i, '').trim();
+        portrait = "/lore_portraits/survivor_10.webp";
+    } else if (/^(FOXHOLE SHADOW|FOXHOLE|VASQUEZ):/i.test(clean)) {
+        sender = "FOXHOLE SHADOW";
+        text = clean.replace(/^(FOXHOLE SHADOW|FOXHOLE|VASQUEZ):\s*/i, '').trim();
+        portrait = "/lore_portraits/survivor_foxhole.webp";
+    } else if (/^(MANIC HACKER|HACKER):/i.test(clean)) {
+        sender = "MANIC HACKER GF";
+        text = clean.replace(/^(MANIC HACKER|HACKER):\s*/i, '').trim();
+        portrait = "/lore_portraits/survivor_hacker.webp";
+    } else if (/^(CORPO RUNNER|CORPO):/i.test(clean)) {
+        sender = "CORPO SHADOW RUNNER";
+        text = clean.replace(/^(CORPO RUNNER|CORPO):\s*/i, '').trim();
+        portrait = "/lore_portraits/survivor_corpo.webp";
+    } else if (/^CRASH QUEEN:/i.test(clean)) {
+        sender = "CRASH SURVIVOR QUEEN";
+        text = clean.replace(/^CRASH QUEEN:\s*/i, '').trim();
+        portrait = "/lore_portraits/survivor_crash_queen.webp";
+    } else if (/^(SPACE ABG|ABG):/i.test(clean)) {
+        sender = "SPACE ABG TRIPPER";
+        text = clean.replace(/^(SPACE ABG|ABG):\s*/i, '').trim();
+        portrait = "/lore_portraits/survivor_abg.webp";
+    } else if (/^(SPECIES CHRYSALIS|HYBRID):/i.test(clean)) {
+        sender = "SPECIES CHRYSALIS";
+        text = clean.replace(/^(SPECIES CHRYSALIS|HYBRID):\s*/i, '').trim();
+        portrait = "/lore_portraits/survivor_hybrid.webp";
+    } else if (/^SURVIVOR TRANSMISSION:/i.test(clean)) {
+        sender = "SURVIVOR TRANSMISSION";
+        text = clean.replace(/^SURVIVOR TRANSMISSION:\s*/i, '').trim();
+        if (/hacker/i.test(clean)) portrait = "/lore_portraits/survivor_hacker.webp";
+        else if (/corpo/i.test(clean)) portrait = "/lore_portraits/survivor_corpo.webp";
+        else if (/crash|queen/i.test(clean)) portrait = "/lore_portraits/survivor_crash_queen.webp";
+        else if (/abg|tripper/i.test(clean)) portrait = "/lore_portraits/survivor_abg.webp";
+        else if (/hybrid|chrysalis/i.test(clean)) portrait = "/lore_portraits/survivor_hybrid.webp";
+        else portrait = "/lore_portraits/survivor_foxhole.webp";
+    } else if (/^QUEEN:/i.test(clean)) {
+        sender = "THE QUEEN";
+        text = clean.replace(/^QUEEN:\s*/i, '').trim();
+        portrait = "/lore_portraits/queen_00.webp";
+    } else if (/^(BUNKER|FACILITIES):/i.test(clean)) {
         sender = "BUNKER AUTO-ANNOUNCER";
-        text = text.replace('> BUNKER:', '').trim();
-        portrait = "/lore_portraits/survivor_08.webp";
-    } else if (text.startsWith('> SCOUT:')) {
+        text = clean.replace(/^(BUNKER|FACILITIES):\s*/i, '').trim();
+        portrait = "/lore_portraits/bunker_announcer.webp";
+    } else if (/^SCOUT:/i.test(clean)) {
         sender = "SCOUT OPERATOR";
-        text = text.replace('> SCOUT:', '').trim();
+        text = clean.replace(/^SCOUT:\s*/i, '').trim();
         portrait = "/lore_portraits/survivor_01.webp";
-    } else if (text.startsWith('> TANK:')) {
+    } else if (/^TANK:/i.test(clean)) {
         sender = "TANK OPERATOR";
-        text = text.replace('> TANK:', '').trim();
+        text = clean.replace(/^TANK:\s*/i, '').trim();
         portrait = "/lore_portraits/survivor_02.webp";
-    } else if (text.startsWith('> ENGINEER:')) {
+    } else if (/^ENGINEER:/i.test(clean)) {
         sender = "ENGINEER OPERATOR";
-        text = text.replace('> ENGINEER:', '').trim();
+        text = clean.replace(/^ENGINEER:\s*/i, '').trim();
         portrait = "/lore_portraits/survivor_03.webp";
-    } else if (text.startsWith('> SYSTEM:') || text.startsWith('SYSTEM:')) {
+    } else if (/^(SYSTEM|EXOSUIT):/i.test(clean)) {
         sender = "EXOSUIT OS";
-        text = text.replace('> SYSTEM:', '').replace('SYSTEM:', '').trim();
+        text = clean.replace(/^(SYSTEM|EXOSUIT):\s*/i, '').trim();
         portrait = "/lore_portraits/survivor_04.webp";
     } else if (activeClass === 'SCOUT') {
         sender = "SCOUT OPERATOR";
         portrait = "/lore_portraits/survivor_01.webp";
+        text = clean;
     } else if (activeClass === 'TANK') {
         sender = "TANK OPERATOR";
         portrait = "/lore_portraits/survivor_02.webp";
+        text = clean;
     } else if (activeClass === 'ENGINEER') {
         sender = "ENGINEER OPERATOR";
         portrait = "/lore_portraits/survivor_03.webp";
+        text = clean;
     } else {
         sender = "EXOSUIT OS";
         portrait = "/lore_portraits/survivor_04.webp";
+        text = clean;
     }
 
     return { sender, text, portrait };
@@ -3651,6 +3818,7 @@ function isCommentaryModeEnabled() {
 }
 
 function showDeveloperCommentary(key, detail = {}, { once = true } = {}) {
+    if (!isGameplayPhase() || !isGameplayHudActive()) return false;
     if (!isCommentaryModeEnabled()) return false;
     const entry = COMMENTARY_ENTRIES[key];
     if (!entry) return false;
@@ -3910,15 +4078,12 @@ function maybeShowCaveSignalTransmission() {
 // actual reward/danger tradeoff. `crossing` (only present on a genuine
 // crossing, see threeGame.js's emitDepthTierChanged) makes that bet
 // legible instead of a silent number change.
+// DEPTH-01: the body moved to depthContract.js so it can be tested next to
+// the contract it describes. The elite term was correctly dropped from this
+// summary while eliteSpawnChance had no consumer; eliteEnemies.js now rolls
+// it at placement generation, so the shared formatter states it again.
 function formatDepthCrossingDelta(crossing) {
-    if (!crossing) return '';
-    const pct = (value) => `${value >= 0 ? '+' : ''}${Math.round(value * 100)}%`;
-    const parts = [];
-    if (crossing.salvageMultiplierDelta) parts.push(`SALVAGE ${pct(crossing.salvageMultiplierDelta)}`);
-    if (crossing.o2EfficiencyPenaltyDelta) parts.push(`O2 EFFICIENCY ${pct(-crossing.o2EfficiencyPenaltyDelta)}`);
-    if (crossing.eliteSpawnChanceDelta) parts.push(`HOSTILE THREAT ${pct(crossing.eliteSpawnChanceDelta)}`);
-    if (crossing.rareRelicChanceDelta) parts.push(`RARE SALVAGE ODDS ${pct(crossing.rareRelicChanceDelta)}`);
-    return parts.length ? ` // ${parts.join(' // ')}` : '';
+    return formatCrossingDeltaSummary(crossing);
 }
 
 let lastReportedDepthTier = 0;
@@ -4269,6 +4434,7 @@ function generateDeathReport(stats, reason) {
         'enemy-projectile':   '> CAUSE: HOSTILE KINETIC IMPACT — ENEMY PROJECTILE',
         'sentinel':           '> CAUSE: HOSTILE PROJECTILE — SENTINEL FIRE',
         'ship-destroyed':     '> CAUSE: SHIP STRUCTURAL FAILURE — HULL INTEGRITY ZERO',
+        'squad-wipe':         '> CAUSE: SQUAD SIGNAL LOSS — ALL OPERATORS DOWN',
         'mission-abort':      '> CAUSE: CONTRACT TERMINATED BY OPERATOR — RECOVERY BAG FILED',
         'frost-shockwave':    '> CAUSE: CRYO HAZARD — THERMAL SHOCKWAVE IMPACT',
         'queen-shockwave':    '> CAUSE: TITAN IMPACT — HIVE QUEEN SHOCKWAVE',
@@ -4854,6 +5020,47 @@ window.addEventListener('player-respawned', () => {
     }
 });
 
+// One-shot validation secret: the in-world interaction owns gameplay state;
+// this shell owns the same full-screen doors/video language as every other
+// cinematic. The second close begins while the final movie frame is still up,
+// then the hidden world swap happens only once the doors are fully shut.
+let mayorTinaSequenceActive = false;
+window.addEventListener('mayor-tina-transform-requested', () => {
+    const game = window.game;
+    if (!game || mayorTinaSequenceActive) return;
+    mayorTinaSequenceActive = true;
+
+    let closingForTransformation = false;
+    const closeForTransformation = () => {
+        if (closingForTransformation) return;
+        closingForTransformation = true;
+        triggerDoorTransition(
+            () => game.completeMayorTinaTransformation?.(),
+            () => {
+                game.finishMayorTinaTransformationSequence?.();
+                mayorTinaSequenceActive = false;
+            },
+            'alien',
+            { waitForClosedWork: true, openingHoldMs: 240 }
+        );
+    };
+
+    triggerDoorTransition(
+        null,
+        null,
+        'alien',
+        {
+            openingHoldMs: 180,
+            onOpeningStart: () => {
+                playCutsceneVideo('/Cockroach_transform.mp4', {
+                    onDoorCutoff: closeForTransformation,
+                    tone: 'event'
+                }).catch(closeForTransformation);
+            }
+        }
+    );
+});
+
 window.addEventListener('mission-objective-complete', (event) => {
     const type = event?.detail?.type ?? '';
     const uplinkReady = Boolean(event?.detail?.uplinkReady);
@@ -5230,10 +5437,19 @@ function handleAchievementUnlocks(newUnlocks = [], { delayMs = 0 } = {}) {
     });
 }
 
+// The title-screen career readout and the operator profile HUD are derived
+// from achievement stats, but nothing told them when those stats moved -- they
+// only ever rendered at boot, so a run's deaths/longest-run never appeared
+// until the next launch. One event, dispatched by both recorders, drives them.
+function announceAchievementStatsChanged() {
+    window.dispatchEvent(new CustomEvent('achievement-stats-changed'));
+}
+
 function recordAchievementEvent(name, detail = {}, options = {}) {
     const result = achievementEngine.recordEvent(name, detail);
     handleAchievementUnlocks(result.newUnlocks, options);
     syncSteamStats(result.state, window.electronAPI?.setStat);
+    announceAchievementStatsChanged();
     return result;
 }
 
@@ -5241,6 +5457,7 @@ function recordAchievementRunEnd(stats = {}, options = {}) {
     const result = achievementEngine.recordRunEnd(stats);
     handleAchievementUnlocks(result.newUnlocks, options);
     syncSteamStats(result.state, window.electronAPI?.setStat);
+    announceAchievementStatsChanged();
     return result;
 }
 
@@ -5370,6 +5587,17 @@ function installAchievementsUi() {
 }
 installAchievementsUi();
 
+// `shell-collected` and friends fire constantly during a run, and this repaints
+// title-screen DOM. Only do the work when the title is actually on screen --
+// the return-to-title paths refresh it explicitly, so a run's worth of skipped
+// updates costs nothing.
+for (const signal of ['achievement-stats-changed', 'bank-deposited']) {
+    window.addEventListener(signal, () => {
+        if (splash?.classList.contains('hidden') !== false) return;
+        refreshTitleScreenState();
+    });
+}
+
 [
     'act2-milestone',
     'player-suspicion-changed',
@@ -5494,6 +5722,7 @@ document.getElementById('close-lore-modal')?.addEventListener('click', closeLore
 
 // ── Reactive Mothership ───────────────────────────────────────
 function fireMothershipReactiveLine(trigger) {
+    if (!isGameplayPhase() || !isGameplayHudActive() || isResettingRun) return;
     const context = window.game?.buildLineDirectorContext?.() ?? {};
     const line = window.lineDirector?.requestLine(`mothership:${trigger}`, context, MOTHERSHIP_REACTIVE_LINES);
     if (line) showBiomePrompt(line.text);
@@ -5543,8 +5772,15 @@ window.addEventListener('mission-objective-complete', () => {
 });
 
 window.addEventListener('bunker-line', (event) => {
+    if (!isGameplayPhase() || !isGameplayHudActive() || isResettingRun) return;
     const text = event?.detail?.text;
-    if (text) showBiomePrompt(`> BUNKER: ${text}`);
+    if (!text) return;
+    const trimmed = String(text).trim();
+    if (/^(TEACUP SIREN|MAYOR TINA|SURVIVOR|MOTHERSHIP|SYSTEM|FOXHOLE|CORPO|HACKER|CRASH QUEEN|ABG|HYBRID|OKONKWO|MARTHA|BRIGGS|KAELEN|QUEEN):/i.test(trimmed)) {
+        showBiomePrompt(`> ${trimmed}`);
+    } else {
+        showBiomePrompt(`> BUNKER: ${trimmed}`);
+    }
 });
 
 window.addEventListener('black-box-marker-active', () => {
@@ -5691,14 +5927,36 @@ function renderObjectiveTracker(activeObjectives) {
 
         const labelSpan = document.createElement('span');
         labelSpan.className = 'objective-tracker__label';
-        labelSpan.innerHTML = `<span class="objective-tracker__icon">◈</span>${obj.label}`;
+        labelSpan.textContent = obj.label;
 
         const progSpan = document.createElement('span');
         progSpan.className = 'objective-tracker__progress';
-        progSpan.textContent = obj.target > 1 ? `${obj.current}/${obj.target}` : (obj.current >= obj.target ? '100%' : 'ACTIVE');
+        progSpan.textContent = obj.status === 'blocked' ? 'BLOCKED'
+            : obj.target > 1 ? `${obj.current}/${obj.target}` : 'ACTIVE';
+
+        const eyebrow = document.createElement('div');
+        eyebrow.className = 'objective-tracker__eyebrow';
+        eyebrow.textContent = index === 0 ? 'NEXT OBJECTIVE' : 'ALSO TRACKING';
+        item.appendChild(eyebrow);
+        item.classList.toggle('is-blocked', obj.status === 'blocked');
 
         header.append(labelSpan, progSpan);
         item.appendChild(header);
+
+        if (obj.status === 'blocked' && obj.blockedReason) {
+            const reason = document.createElement('p');
+            reason.className = 'objective-tracker__blocker';
+            reason.textContent = obj.blockedReason;
+            item.appendChild(reason);
+        }
+        if (index === 0 && obj.target > 1) {
+            const progress = document.createElement('progress');
+            progress.className = 'objective-tracker__meter';
+            progress.max = obj.target;
+            progress.value = Math.max(0, Math.min(obj.target, obj.current));
+            progress.setAttribute('aria-label', `${obj.label} progress`);
+            item.appendChild(progress);
+        }
 
         if (Array.isArray(obj.steps) && obj.steps.length > 0 && index === 0) {
             const stepsDiv = document.createElement('div');
@@ -6087,6 +6345,7 @@ if (gameOverTryAgain) {
             },
             () => {
                 window.game?.setInputEnabled?.(true);
+                notifyGameplayReady();
             },
             undefined,
             { waitForClosedWork: true, openingHoldMs: 160 }
@@ -6965,11 +7224,21 @@ function playCutsceneVideo(base, options = {}) {
             sources.push('/DoorIntro.webm', '/DoorIntro.mp4');
         }
         if (base.startsWith('/')) {
-            sources.push(base);
-            // Uses slice instead of a regex literal ending in the webm extension here —
-            // scripts/audit-retail-assets.js's asset-reference scanner misread that kind of
-            // pattern (leading slash immediately before the extension) as a file path.
-            if (base.endsWith('.webm')) sources.push(`${base.slice(0, -'.webm'.length)}.mp4`);
+            // Explicit root media can still carry both desktop-Electron WebM
+            // and browser-friendly MP4 variants. Prefer the codec this
+            // Chromium build claims to support and retain the other as the
+            // native <source> fallback.
+            if (base.endsWith('.webm') || base.endsWith('.mp4')) {
+                const stem = base.endsWith('.webm')
+                    ? base.slice(0, -'.webm'.length)
+                    : base.slice(0, -'.mp4'.length);
+                const webm = `${stem}.webm`;
+                const mp4 = `${stem}.mp4`;
+                const prefersMp4 = Boolean(video.canPlayType('video/mp4'));
+                sources.push(...(prefersMp4 ? [mp4, webm] : [webm, mp4]));
+            } else {
+                sources.push(base);
+            }
         } else if (base.startsWith('int_') || base.includes('interstitial')) {
             sources.push(`/interstitials/motion/${base}.webm`, `/interstitials/motion/${base}.mp4`);
         }
@@ -7543,6 +7812,7 @@ async function runMissionIntroSequence({ deploymentHold = null } = {}) {
         game?.setCinematicLock?.(false);
         game?.setInputEnabled?.(true);
         game?.setGodMode?.(Boolean(debugGodModeActive));
+        notifyGameplayReady();
         // The mission intro is the outer owner of the deployment rendering
         // hold. Nested class/video skips can settle their suspend callbacks in
         // a different order, leaving the reference-counted helper restored to
@@ -7582,6 +7852,7 @@ function returnFromHeroSelectToTitle() {
         () => {
             menu?.classList.add('hidden');
             splash?.classList.remove('hidden');
+            refreshTitleScreenState();
             setAppPhase('splash');
             window.game?.setPerformanceProfile?.('menu');
             transitionToMenuMusic();
@@ -7595,6 +7866,7 @@ function returnFromHeroSelectToTitle() {
 // Inserted between class-select (menu) and run launch. Active Act 2
 // continuation runs bypass it so a boss-continuation run does not re-gear.
 let armorySceneInstance = null;
+reconcileSheenUnlocks({ achievements: achievementEngine.getState().unlocked, world: act2Manager.getState() });
 let armoryUiInstance = null;
 let armoryInitPromise = null;
 let pendingArmoryEmbarkAction = null;
@@ -7760,6 +8032,7 @@ function launchStandardRun({ resetBank = false, playIntro = false } = {}) {
         () => {
             if (!playIntro) {
                 window.game?.setInputEnabled?.(true);
+                notifyGameplayReady();
             }
         },
         playerType,
@@ -8785,8 +9058,11 @@ window.__DEBUG__ = {
     teleport: (target, options) => {
         const game = window.game;
         if (!game) return Promise.reject(new Error('Game not initialized'));
-        if (target === 'showroom' || target === 'gallery' || target === 'museum') {
+        if (target === 'showroom' || target === 'gallery') {
             return openDebugShowroom();
+        }
+        if (target === 'museum' || target === 'colonnade' || target === 'wing1') {
+            return openDebugMuseum(game);
         }
         if (typeof target === 'object' && target !== null && Number.isFinite(target.x) && Number.isFinite(target.z)) {
             return Promise.resolve(game.teleportPlayerTo(target.x, target.z, options));
@@ -8808,7 +9084,11 @@ window.__DEBUG__ = {
     getStats: () => window.game?.getComprehensiveDebugStats?.() ?? null,
     getRunSeed: () => window.game?.runEntropy ?? 0,
     openShowroom: () => window.__DEBUG__.teleport('showroom'),
-    openMuseum: () => window.__DEBUG__.teleport('museum'),
+    openMuseum: () => openDebugMuseum(window.game),
+    // Records a run end straight into the achievement engine, for QA of the
+    // career readout and progress bars without playing a full expedition.
+    recordRunEnd: (stats = {}) => recordAchievementRunEnd(stats).state,
+    closeMuseum: () => closeDebugMuseum(window.game),
     getState: () => ({
         appPhase,
         playerType: window.game?.playerType,
@@ -9739,6 +10019,7 @@ function setupNpcDialogueEvents() {
     });
 
     window.openNpcDialogueTree = async (treeId) => {
+        if (!isGameplayPhase() || !isGameplayHudActive()) return null;
         setupNpcDialogueEvents();
         const node = npcDialogueTreeManager.startDialogue(treeId);
         if (node?.interstitial && typeof window.playSideStoryInterstitial === 'function') {
@@ -11377,6 +11658,9 @@ function renderLeaderConversationLine() {
     leaderConversation3d.react(reaction);
     const atEnd = leaderConversationLineIndex >= leaderConversationLines.length - 1;
     if (leaderConversationContinue) leaderConversationContinue.textContent = atEnd ? 'FINISH CONVERSATION' : 'CONTINUE';
+    if (raw && typeof window !== 'undefined' && window.AudioManager?.playVoiceForMessage) {
+        window.AudioManager.playVoiceForMessage({ name: leaderConversationIdentity?.name || 'LEADER' }, raw);
+    }
 }
 
 function closeLeaderConversation() {
@@ -11401,12 +11685,57 @@ leaderConversationLeave?.addEventListener('click', closeLeaderConversation);
 leaderConversationClose?.addEventListener('click', closeLeaderConversation);
 
 window.addEventListener('leader-dialogue', async (event) => {
+    if (!isGameplayPhase() || !isGameplayHudActive() || isResettingRun) return;
     const detail = event?.detail ?? {};
     const identity = resolveLeaderIdentity(detail);
     leaderConversationIdentity = identity;
-    leaderConversationLines = (detail.lines ?? []).map((line) => String(line ?? '')).filter(Boolean);
+    const { beatType, leaderName, leaderClassId } = detail;
+    let lines = (detail.lines ?? []).map((line) => String(line ?? '')).filter(Boolean);
+
+    // Check Reyes letter delivery for Briggs
+    const memory = getWorldMemory();
+    const hasReyesLetter = memory?.logsFound?.includes('C11');
+    const talkingToBriggs = String(leaderName ?? identity?.name ?? '').toUpperCase().includes('BRIGGS')
+        || String(leaderClassId ?? identity?.classId ?? '').toUpperCase() === 'TANK';
+    if (hasReyesLetter && talkingToBriggs && !memory?.storyFlags?.reyesLetterDelivered) {
+        if (memory.storyFlags) memory.storyFlags.reyesLetterDelivered = true;
+        saveWorldMemory(memory);
+        lines = [
+            ...lines,
+            'BRIGGS: REYES WROTE THIS? SHE ALWAYS SAID SHE WOULD MAKE IT HOME ON PAPER IF NOT IN PERSON.',
+            'BRIGGS: WE DO NOT HAVE A FUNERAL DETAIL. WE HAVE A LINE TO HOLD. I WILL HOLD IT FOR HER.'
+        ];
+        window.dispatchEvent(new CustomEvent('reyes-letter-delivered', {
+            detail: { leaderName: leaderName ?? identity?.name ?? 'Commander Briggs', loreKey: 'C11' }
+        }));
+    }
+
+    if (beatType === 'advance') {
+        window.AudioManager?.play?.('ui_scan_ping', { volume: 0.4, playbackRate: 0.9 });
+    }
+    if ((leaderName === 'Dr. Okonkwo-Vass' || identity?.name?.includes('Okonkwo')) && beatType === 'advance' && detail.stage === 2) {
+        objectiveRegistry?.trackObjective?.({
+            id: 'befriend-a-snail',
+            source: 'camp-quest',
+            label: 'BEFRIEND A SNAIL',
+            current: 0,
+            target: 1
+        });
+    }
+
+    leaderConversationLines = lines;
     leaderConversationLineIndex = 0;
-    if (!leaderConversationLines.length || !leaderConversationModal) return;
+    if (!leaderConversationLines.length) return;
+
+    if (!leaderConversationModal) {
+        ensureMissionManagers();
+        void dialogueManager?.openBriefTransmission({
+            playerType: window.game?.playerType ?? getSelectedHeroType(),
+            lines
+        });
+        return;
+    }
+
     preloadLeaderMedia(identity);
     leaderConversationModal.style.setProperty('--leader-accent', identity.accent);
     if (leaderConversationName) leaderConversationName.textContent = identity.name;
@@ -11601,44 +11930,7 @@ window.addEventListener('act2-apex-threat-spawned', (event) => {
     showBiomePrompt(`WARNING: ${title}${source} — ESCALATION ACTIVE.`);
 });
 
-window.addEventListener('leader-dialogue', (event) => {
-    const { beatType, leaderName, leaderClassId } = event?.detail ?? {};
-    let lines = [...(event?.detail?.lines ?? [])];
-    if (!lines.length) return;
-    const memory = getWorldMemory();
-    const hasReyesLetter = memory.logsFound.includes('C11');
-    const talkingToBriggs = String(leaderName ?? '').toUpperCase().includes('BRIGGS')
-        || String(leaderClassId ?? '').toUpperCase() === 'TANK';
-    if (hasReyesLetter && talkingToBriggs && !memory.storyFlags.reyesLetterDelivered) {
-        memory.storyFlags.reyesLetterDelivered = true;
-        saveWorldMemory(memory);
-        lines = [
-            ...lines,
-            'BRIGGS: REYES WROTE THIS? SHE ALWAYS SAID SHE WOULD MAKE IT HOME ON PAPER IF NOT IN PERSON.',
-            'BRIGGS: WE DO NOT HAVE A FUNERAL DETAIL. WE HAVE A LINE TO HOLD. I WILL HOLD IT FOR HER.'
-        ];
-        window.dispatchEvent(new CustomEvent('reyes-letter-delivered', {
-            detail: { leaderName: leaderName ?? 'Commander Briggs', loreKey: 'C11' }
-        }));
-    }
-    ensureMissionManagers();
-    void dialogueManager?.openBriefTransmission({
-        playerType: window.game?.playerType ?? getSelectedHeroType(),
-        lines
-    });
-    if (beatType === 'advance') {
-        window.AudioManager?.play?.('ui_scan_ping', { volume: 0.4, playbackRate: 0.9 });
-    }
-    if (leaderName === 'Dr. Okonkwo-Vass' && beatType === 'advance' && event?.detail?.stage === 2) {
-        objectiveRegistry.trackObjective({
-            id: 'befriend-a-snail',
-            source: 'camp-quest',
-            label: 'BEFRIEND A SNAIL',
-            current: 0,
-            target: 1
-        });
-    }
-});
+
 
 document.getElementById('snail-encounter-fight-btn')?.addEventListener('click', () => {
     window.game?.handleSnailEncounterFight?.();
@@ -12976,34 +13268,6 @@ function initTacticalCursor() {
 // docs/sprint28plan.md Lane D: if a run-in-progress checkpoint is still on
 // disk at boot, the previous session never reached a graceful end (death,
 // extraction, or a fresh NEW RUN all clear it -- see src/threeGame.js's
-// handleDeath/handleExtraction and startNewTacticalRunFlow below) -- proof
-// of a crash, force-quit, or tab-close mid-run. Convert it into a normal
-// black-box death-stain entry (same recovery flow a real death already
-// uses) so a crash degrades to "died with recoverable salvage" instead of
-// silent total loss. A checkpoint with no salvage yet is just cleared --
-// nothing to recover, no point spawning an empty marker.
-function recoverCrashedRunCheckpoint() {
-    try {
-        const checkpoint = runCheckpointStore.load();
-        if (!checkpoint) return;
-        if (hasRecoverableSalvage(checkpoint)) {
-            const { tech, coin, med } = checkpoint.salvage;
-            blackBoxStore.recordDeath({
-                x: checkpoint.x,
-                z: checkpoint.z,
-                depth: checkpoint.depth,
-                classType: checkpoint.classType,
-                salvage: checkpoint.salvage,
-                cause: 'crash-recovered',
-                log: `Operator ${checkpoint.classType} signal lost mid-expedition (unexpected shutdown). Recoverable salvage: ${tech} TECH / ${coin} COIN / ${med} MED.`
-            });
-        }
-        runCheckpointStore.clear();
-    } catch {
-        // Best effort -- never block boot on this.
-    }
-}
-
 // Initial State Setup
 document.addEventListener('DOMContentLoaded', async () => {
     traceBootPhase('dom-content-loaded', {
@@ -13201,10 +13465,16 @@ document.addEventListener('DOMContentLoaded', async () => {
         try {
             const bankState = window.bankManager?.getState?.() ?? {};
             const hasBanked = (Number(bankState.tech) > 0 || Number(bankState.coin) > 0 || Number(bankState.med) > 0);
-            const hasUnlocks = hasAnyUnlock(getAchievementProgress());
+            // Was `hasAnyUnlock(getAchievementProgress())` -- called with no
+            // def and no state, that helper always returns null, so this term
+            // was permanently false and a player whose only progress was
+            // achievements got no CONTINUE button and no operator profile.
+            const hasUnlocks = hasAnyUnlock(achievementEngine.getState());
             const hasBlackBox = Boolean(blackBoxStore.load()?.active);
-            const hasRunStats = localStorage.getItem('hb_run_stats_v1') !== null || localStorage.getItem('hb_bank_v1') !== null;
-            return hasBanked || hasUnlocks || hasBlackBox || hasRunStats;
+            // `hb_run_stats_v1` / `hb_bank_v1` used to be OR-ed in here by
+            // existence. The game writes neither key, so they never
+            // contributed anything; a real career now counts instead.
+            return hasBanked || hasUnlocks || hasBlackBox || hasCareerHistory();
         } catch {
             return false;
         }
@@ -13221,8 +13491,15 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (titleSwitchClassBtn) {
             titleSwitchClassBtn.classList.toggle('hidden', !hasSave);
         }
-        refreshTitleProfileHud(hasSave);
+        // Two different questions: CONTINUE asks whether there is anything to
+        // resume, the profile panel asks whether there is anything to report.
+        refreshTitleProfileHud(hasCareerHistory());
     };
+    // Repair profiles saved before the menu guard landed: sitting on the title
+    // screen used to record ABYSS into the persistent arc signals. Safe only
+    // for a player who has never finished a run -- see clearUnearnedDepthSignal.
+    arcManager.clearUnearnedDepthSignal(hasFinishedARun());
+    refreshTitleScreenState = updateContinueButtonState;
     updateContinueButtonState();
 
     // docs/multiplayer-flow-and-lobby-bugs-2026-08-20.md Phase 1: named so
@@ -13702,6 +13979,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                 triggerDoorTransition(
                     () => {
                         if (splash) splash.classList.remove('hidden');
+                        // Returning from a finished run: deaths, longest run and
+                        // depth have all just moved.
+                        refreshTitleScreenState();
                         setAppPhase('splash');
                         window.game?.setLoadingPaused?.(false);
                         transitionToMenuMusic();
@@ -14215,6 +14495,7 @@ const STEAM_ACHIEVEMENT_ITEM_MAP = Object.freeze({
 window.addEventListener('achievement-unlocked', (event) => {
     const key = event?.detail?.key;
     if (!key) return;
+    unlockSheenForMilestone(`achievement:${key}`);
     const polishGrant = unlockMilestonePolish(`achievement:${key}`);
     if (!polishGrant.unlocked) return;
     renderOperatorPolishUi();
@@ -14222,6 +14503,7 @@ window.addEventListener('achievement-unlocked', (event) => {
 });
 
 function grantWorldMilestonePolish(milestone) {
+    unlockSheenForMilestone(milestone);
     const polishGrant = unlockMilestonePolish(milestone);
     if (!polishGrant.unlocked) return;
     renderOperatorPolishUi();
