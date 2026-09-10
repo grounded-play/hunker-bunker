@@ -1,203 +1,188 @@
-# Cosmetic Loadout as Gameplay — Chassis, Charms and Patches
+# Free-to-Play Loadout Design — Earned Function, Paid Cosmetics
 
 Status: design proposal, **not implemented** · Date: 2026-09-10 · Branch: `dev/sprint-34`
-Baseline: `v2.4.0-beta` · Owner: gameplay design
+Baseline: `v2.4.0-beta` · Owner: gameplay design + product
 
-## 1. What this is for
+## 1. The constraint that shapes everything
 
-Chassis, charms and patches are currently equippable and completely inert. This
-turns all three into real build decisions with the same shape as the run-drop
-overclocks: **something gets better and something gets worse.** No slot becomes
-a flat upgrade, because a flat upgrade is not a decision.
+Hunker Bunker is free-to-play, and **anything purchasable must be cosmetic
+only.** That single rule decides where every effect in this document is allowed
+to live, and it inverts the obvious approach: the functional layer cannot ride
+on the Steam Inventory catalog, because **all 71 catalog items are `tradable`
+and 64 are `marketable`.**
 
-This document is deliberately design-only. Nothing here is built yet, and no
-effect below should be shipped until it has a named runtime consumer.
+## 2. Finding: there is a live pay-to-win exposure today
 
-## 2. Current state, verified
+Items **4140–4147** are `tradable: true, marketable: true` — buyable for real
+money on the Steam Market — and their published store descriptions promise
+explicit mechanical advantage:
 
-| Slot | Exists in `loadout.js` | Gameplay effect today |
+| ID | Name | Published promise |
 | --- | --- | --- |
-| `archetypeId` (weapon family) | yes | selects allowed skins only |
-| `skinId` (weapon skin) | yes | render only |
-| `charmId` | yes | render only (`weaponMount.charmId`) |
-| `suit.decalId` (patch) | yes | render only (`applyDecalSprite`) |
-| `chassisSkinId` | yes | render only |
-| `rigModule` (slots 1..n) | yes | **no consumer at all** |
+| 4140 | Cryo-Capacitor Overclock | +8% Cryo Freeze Duration on elemental attacks |
+| 4141 | Magnetic Scavenger Coil | +20% Scrap & Salvage Magnet Pull Radius |
+| 4142 | Bio-Hazard Filter Vent | −12% Damage from Spore & Acid Gas Clouds |
+| 4143 | Kinetic Impact Bushing | +1 Piercing Penetration on kinetic rounds |
+| 4144 | Thermal Heat Exchanger | +10% Faster Shield Recharge Rate |
+| 4145 | Echo-Location Transceiver | Pings hidden rooms & chests within 15m |
+| 4146 | Symbiotic Adrenaline Pump | +15% Move Speed for 4s below 25% HP |
+| 4147 | Zero-Point Flux Overdrive | 5 kills in 3s refunds a Dash/Sprint charge |
 
-Run-drop items are the exception and the model to copy: `SUIT_RELICS` (14) and
-`WEAPON_OVERCLOCKS` (5) carry a `stats` bag read by named functions in
-`src/runDrops.js` (`applyIncomingDamageModifiers`, `getScrapCyclerReloadEffect`,
-and so on).
+The charms, chassis and patches are the opposite: their descriptions are purely
+visual ("Tiny frosted core venting microscopic cold vapor"). **The charms were
+never the problem. The Overdrives are.**
 
-The reference trade, already shipped and working:
+None of these effects are currently wired, so nothing is unbalanced in play
+today — but the *store copy* already sells the advantage, which is the part
+Valve reads and which `npm run steam:claims:check` exists to police.
 
-```js
-{ id: 'split_shot', name: 'Split-Shot Core',
-  stats: { extraBullets: 2, spreadAngle: 0.22, damageMult: 0.75 } }
-```
+**Decision (owner, 2026-09-10): make 4140–4147 earned-only.** Strip
+`tradable`/`marketable`, keep the promised effects, move them to the earned
+track below. Requires a Steam inventory schema change and re-upload.
 
-Three bullets instead of one, each hitting for 75%. That is the template.
+## 3. The two-track model
 
-## 3. Design rules
-
-These come directly from what has already gone wrong in this repo.
-
-1. **Every effect key must have a runtime consumer before it ships.** Ten
-   run-card effect keys were live in player-facing text with zero consumers
-   (`docs/reports/gameplay-implementation-gap-audit-2026-09-10.md`). Items ship
-   `implemented: false` and stay out of the reward pool until wired.
-2. **Every item is a trade.** If an item has no downside it is a power creep
-   tax on everyone who did not equip it.
-3. **The three layers must not overlap.** Chassis is a strategy, charm is a
-   tactic, patch is a condition. If two layers both grant "+damage", the build
-   is arithmetic rather than a decision.
-4. **Downsides must be legible in play**, not just on a stat sheet. "Reload is
-   0.4s slower" is felt; "-3% armour scalar" is not.
-5. **No stacking of the same knob past a stated cap**, so a three-layer stack
-   cannot trivialise a fight.
-
-## 4. The three layers
-
-| Layer | Slot count | Decision horizon | Character |
-| --- | --- | --- | --- |
-| **Chassis** | 1 | whole run, chosen at deploy | Redefines the class's rhythm. Largest swing both ways. |
-| **Charm** | 1 | whole run, chosen at deploy | One sharp knob up, one down. |
-| **Patch** | 1 | whole run, earned identity | Conditional or triggered — pays out when you play a certain way. |
-
-A build is therefore: *how I move* (chassis) × *what I lean on* (charm) ×
-*how I earn it back* (patch).
-
-## 5. Chassis — 8 items
-
-Chassis is the biggest commitment: a movement/survivability identity that
-changes how a class is played. Numbers are opening proposals for playtest.
-
-| ID | Name | Upside | Downside |
-| --- | --- | --- | --- |
-| 4112 | Sub-Terran Drill Engineer | Destructible walls break in one hit; +25% salvage from destroyed props | −15% move speed |
-| 4113 | Cryo-Vanguard Scout | +20% move speed; immune to cryo slow | −1 max HP (min 1) |
-| 4114 | Trench Warden Heavy | +2 max HP; knockback taken halved | −20% move speed; reload +0.3s |
-| 4115 | Void Commando Recon | Radar range +40%; enemies aggro 25% later | −25% clip size |
-| 4116 | Bio-Synthesizer Harness | O₂ drains 25% slower | Healing received −40% |
-| 4117 | Dreadnought Exo-Juggernaut | +3 max HP; contact damage taken −50% | −30% move speed; cannot sprint |
-| 4118 | Cyber-Spectre Infiltrator | Sprint is silent, halves aggro radius while sprinting | −2 max HP; +30% damage taken while stationary |
-| 4119 | Hive-Lord Symbiote Exosuit | Alien contact heals instead of harms; hive sites do not aggro | Human camps refuse trade; humanity drifts hostile |
-
-4119 is deliberately a *story* trade, not a stat one — it hands the player the
-alien path and closes the human one. It should be the rarest and the most
-opinionated thing in the game.
-
-## 6. Charms — 10 items
-
-One knob up, one down, small enough to combine freely with any chassis.
-
-| ID | Name | Upside | Downside |
-| --- | --- | --- | --- |
-| 4130 | Mini Cryo-Core | Shots apply a brief chill (10% slow) | −10% fire rate |
-| 4131 | Spent 50-Cal Casing | +15% damage | −1 clip size |
-| 4132 | Sporesnail Pearl | +1 relic drop chance tier | −10% max O₂ |
-| 4133 | Trench Whistle | Nearby squadmates gain +10% reload speed | −10% own reload speed |
-| 4134 | Glitched RAM Card | Reload cancels 0.3s earlier | 8% chance a reload jams (double time) |
-| 4135 | Geodetic Compass | Reveals the next objective at all times | Compass corruption events last twice as long |
-| 4136 | Miniaturized Drone Bobble | Auto-collects salvage within 4u | −15% salvage value |
-| 4137 | Amber Bio-Flask | Heal 1 HP on ring crossing | O₂ cost of crossing +20% |
-| 4138 | Dark Matter Micro-Singularity | Kills pull nearby drops to the player | Kills also pull nearby *enemies* 2u toward you |
-| 4139 | Golden Sub-Bunker Key | Opens one locked cache per run | Opening it spawns an elite |
-
-4133 is the only co-op-facing charm: it costs you to help the squad. Worth
-having exactly one, so co-op has a reason to coordinate loadouts.
-
-## 7. Patches — conditional identity
-
-Patches are earned emblems, so they should pay out for *playing like the thing
-you earned*. They are conditional rather than passive: no effect until a
-condition holds, then a real one.
-
-| ID | Name | Condition → effect |
+| | **Track A — Earned** | **Track B — Paid** |
 | --- | --- | --- |
-| 2000/2001/2002 | Class Victory Patches | While playing that class: first death per run leaves you at 1 HP instead of dying (once) |
-| 2003 | Queen Slayer Emblem | +25% damage to bosses; −10% to everything else |
-| 2004 | Archivist Emblem | Lore drops grant salvage; −1 starting clip |
-| 4120 | Sub-Zero Pioneer | Immune to environmental cold; −15% fire resistance |
-| 4121 | Radiation Trefoil | Hazard zones deal no damage; −1 max HP |
-| 4122 | Sporesnail Hunter Crest | +30% damage to sporesnails; −15% to all others |
-| 4123 | Bunker 404 Lost Squad | Revive a downed squadmate 50% faster; −20% own revive speed |
-| 4126 | Queen Slayer Gold Seal | Boss kills restore 25% O₂; bosses gain +20% HP |
-| 4127 | Void Horizon Sigil | Below 25% HP: +30% move speed | (no separate downside — the condition is the cost) |
-| 4128 | Ancient Core Glyphs | Relics found are one rarity tier higher; −1 relic slot |
-| 4129 | Grand Marshal Relic Crest | Start each run with one random relic; it is always `corrupted` rarity |
+| Contains | every gameplay effect | every visual |
+| Slots | `mod1Id`, `mod2Id` (rig modules) | `chassisSkinId`, `skinId`, `charmId`, `decalId`, `sheen`, `hud` |
+| Tradable | **never** | yes |
+| Obtained | shells · achievements · Deep Core Shards · depth | keys, shards, bundles |
 
-## 8. Mechanical contract
+The clean fit: **`loadout.js` already has two rig-module slots — `mod1Id` and
+`mod2Id` — read by nothing at all.** They are the natural, already-designed home
+for earned function, and using them means charms/patches/chassis stay exactly
+what their art and descriptions already say they are: cosmetics.
 
-Reuse the existing shape rather than inventing a parallel one.
+So the answer to "charms should work like the overdrives" is to invert it: the
+**Overdrives become the functional slot**, earned rather than sold, and charms
+stay cosmetic.
 
-```js
-// src/data/cosmeticEffects.js  (new)
-export const CHASSIS_EFFECTS = Object.freeze({
-    4113: { id: 'cryo_vanguard', implemented: false,
-            stats: { moveSpeedMult: 1.20, cryoSlowImmune: true, maxHpDelta: -1 } }
-});
-```
+## 4. Track A — Rig Modules (earned, never sold)
 
-- `implemented: false` until a named consumer exists, mirroring `runDrops.js`.
-- Effects resolve through **one** aggregator, so caps and stacking live in a
-  single place:
+Two equipped slots. Every module is a trade, on the shape overclocks already
+use (`split_shot`: +2 bullets, ×0.75 damage).
 
-```js
-// src/cosmeticLoadoutEffects.js  (new)
-export function resolveEquippedEffects({ chassisId, charmId, patchId }) { … }
-```
+### 4a. The eight existing Overdrives, re-homed
 
-- `threeGame.js` reads the resolved bag once at run start, exactly as it already
-  does for `runOverclocks`/`runRelics`.
-- A whole-catalog test asserts every declared key appears in a documented
-  consumer allowlist — the guard that now protects the run-card deck.
+Effects as published, with a downside added so each is a decision:
 
-## 9. Skill/ability layer
-
-Two of these want an *active* rather than a passive, which the game has no slot
-for yet. Proposal: chassis may grant **one active ability** on a shared cooldown,
-bound to the existing ability input.
-
-| Chassis | Ability | Cooldown | Cost |
+| ID | Name | Upside (as published) | Added cost |
 | --- | --- | --- | --- |
-| 4117 Dreadnought | **Bulwark** — negate all damage for 2s, cannot move | 45s | 5% O₂ |
-| 4118 Cyber-Spectre | **Phase** — pass through enemies for 3s | 40s | 5% O₂ |
-| 4119 Hive-Lord | **Brood Call** — nearby aliens fight for you for 8s | 60s | 10% O₂ |
+| 4140 | Cryo-Capacitor | +8% cryo freeze duration | −10% fire rate |
+| 4141 | Magnetic Scavenger | +20% pickup radius | −15% salvage value |
+| 4142 | Bio-Hazard Filter | −12% gas damage | −1 max HP |
+| 4143 | Kinetic Impact Bushing | +1 pierce | −20% clip size |
+| 4144 | Thermal Heat Exchanger | +10% shield recharge | recharge delay +0.5s |
+| 4145 | Echo-Location | pings caches within 15m | ping also aggros within 15m |
+| 4146 | Adrenaline Pump | +15% speed below 25% HP | −1 max HP |
+| 4147 | Zero-Point Flux | 5 kills in 3s refunds a dash | dash cost +25% otherwise |
 
-Everything else stays passive. Three actives is enough to make chassis feel
-distinct without turning the game into a cooldown rotation.
+### 4b. Eight new modules, one per unlock path
 
-## 10. Implementation order
+Since all four unlock paths are in scope, each should have modules that can
+*only* come from it — that is what makes a path worth engaging with.
 
-1. **Contract first.** `cosmeticEffects.js` + `resolveEquippedEffects()` +
-   the allowlist test, with every item `implemented: false`. Nothing changes
-   in play; the seam exists and is proven.
-2. **Charms.** Smallest, most isolated knobs; most reuse existing consumers
-   (fire rate, clip size, damage) so few new seams are needed.
-3. **Chassis passives.** Movement, HP and O₂ knobs.
-4. **Patches.** Conditional effects need event hooks; do them once the passive
-   path is proven.
-5. **Chassis actives.** New input/cooldown surface — last, and only if 1–4 land
-   cleanly.
+| Name | Effect | Cost | Unlock path |
+| --- | --- | --- | --- |
+| Ballast Plating | +2 max HP | −15% move speed | Shells |
+| Scrap Furnace | Destroyed props drop salvage | −10% fire rate | Shells |
+| Queen's Bane | +25% boss damage | −10% to all else | **Achievement:** kill the Queen |
+| Archivist Lens | Lore drops grant salvage | −1 starting clip | **Achievement:** 10 lore drops |
+| Shard Conduit | +1 relic rarity tier | −10% max O₂ | Deep Core Shards |
+| Duplicate Refiner | Duplicate relics become shards | −15% salvage | Deep Core Shards |
+| Pressure Seal | O₂ drains 25% slower | healing −40% | **Depth:** reach ring 4 |
+| Deep Anchor | Ring crossings cost no O₂ | crossings spawn an elite | **Depth:** reach ring 6 |
 
-Each phase flips `implemented: true` only for the items it actually wired.
+Sixteen modules across two slots gives real build variety without a
+combinatorial explosion.
 
-## 11. Acceptance
+## 5. Track B — Cosmetics, and the new sets
 
-- No item is player-visible as "active" while `implemented: false`.
-- The catalog test fails on any effect key without a consumer.
-- Three distinct viable builds demonstrated in play, not asserted in a unit test.
-- No single knob exceeds its stated cap when chassis + charm + patch stack.
-- Every downside is observable in a recorded run, not only in the stat bag.
+Current cosmetic inventory: 13 weapon skins, 8 chassis skins, 30 community
+player skins, 16 patches/decals, 10 charms, 6 themes/HUD/tracers/muzzles. Once
+the Overdrives leave for Track A, **every remaining catalog item is cosmetic**,
+which is exactly where the F2P rule wants them.
 
-## 12. Open questions for the owner
+### 5a. Sets, not loose items
 
-1. **Are these Steam Inventory items?** If chassis/charms are tradable and now
-   affect gameplay, that is pay-to-win unless they are earned in-game. This is
-   the single biggest decision here and it is a product call, not a design one.
-2. **One patch slot or several?** The list above assumes one.
-3. **Should chassis be class-locked?** 4112 reads Engineer, 4113 reads Scout.
-   Locking them deepens class identity; leaving them open allows odd builds.
-4. **Does 4119's faction lockout conflict with Act 2 endings?** It likely closes
-   ending branches, which may be intended or may be a trap.
+The gap is not raw count — it is that cosmetics do not currently *coordinate*.
+A **Set** is one visual identity spanning every slot, which is what makes a
+bundle worth buying and a drop worth chasing:
+
+> operator skin + weapon skin + charm + patch + weapon sheen + tracer + HUD theme
+
+Seven pieces per set. Six proposed sets, 42 new cosmetics:
+
+| Set | Identity | Reads from |
+| --- | --- | --- |
+| **Deep Frost** | Blue-white rime, fogged visor, frost tracers | Cryo biome |
+| **Rust & Bone** | Scavenged plate, bone charms, dull orange tracers | Trench survivors |
+| **Hive Chitin** | Living carapace, spore muzzle bloom, green HUD | Alien faction |
+| **Horizon Corporate** | Clean white/teal, corporate seal, pristine HUD | Horizon backstory |
+| **Bunker 404** | Glitched textures, corrupted HUD, static tracers | Lost squad lore |
+| **Grand Marshal** | Gold and meteorite alloy, laurel patch, amber CRT | Prestige / endgame |
+
+Each set already has an anchor item in the catalog (4120 Sub-Zero Pioneer, 4104
+Rust & Bone Carbine, 4119 Hive-Lord, 4127 Void Horizon, 4123 Bunker 404, 4129
+Grand Marshal Crest), so the sets are extensions of established identities
+rather than inventions.
+
+### 5b. Player skins on the free currency
+
+Per the brief, player skins must be obtainable **without** paying:
+
+- **Deep Core Shards** (4159) already exist as the free duplicate token —
+  "100 shards = any item". Extend the dispensary so shards buy **set pieces
+  directly**, not only cache keys. A free player grinding shards reaches any
+  cosmetic; a paying player gets there faster.
+- **Set bundles** (paid): all 7 pieces at a discount versus loose purchase.
+- **Partial-set drops** from caches, so shards accumulate toward completion.
+
+This keeps the paid proposition honest — *speed and convenience, never power* —
+which is the only version of F2P monetisation compatible with the rule in §1.
+
+## 6. Design rules carried forward
+
+1. **Every effect key ships `implemented: false` until it has a named runtime
+   consumer.** Ten run-card keys were previously live in player-facing text
+   with nothing reading them
+   (`docs/reports/gameplay-implementation-gap-audit-2026-09-10.md`).
+2. **Every module is a trade.** No flat upgrades.
+3. **Cosmetics never carry stats. Modules never carry visuals.** The moment a
+   set piece grants an effect, the F2P rule is broken again.
+4. Downsides must be **felt in play**, not just present in a stat bag.
+5. No knob stacks past a stated cap across the two module slots.
+
+## 7. Implementation order
+
+1. **Schema correction first.** Strip `tradable`/`marketable` from 4140–4147,
+   regenerate `steam/inventory_schema_hunker_bunker.json`, re-upload. Until this
+   lands, the store sells advantage. Nothing else here is urgent by comparison.
+2. **Contract.** `src/data/rigModules.js` + `resolveEquippedModules()` +
+   the allowlist test, everything `implemented: false`. No behaviour change.
+3. **Unlock ledger.** Persist which modules a profile has earned, across the
+   four paths, in the existing save contract.
+4. **Wire modules** in effect-family order: weapon knobs → survivability →
+   economy → conditional.
+5. **Cosmetic sets** — art production, independent of 1–4 and parallelisable.
+6. **Shard dispensary extension** so set pieces are shard-purchasable.
+
+## 8. Acceptance
+
+- No `tradable` item grants any gameplay effect. A test asserts this over the
+  whole catalog, so it cannot regress.
+- No module is player-visible as active while `implemented: false`.
+- Every module effect key resolves to a named consumer.
+- A free-only account can reach any cosmetic through shards; demonstrated, not
+  assumed.
+- Three distinct viable module builds demonstrated in play.
+
+## 9. Still open
+
+- **Do the eight re-homed Overdrives keep their names?** They read as purchases
+  ("Overclock", "Overdrive"); earned items may want earned-sounding names.
+- **Are already-granted 4140–4147 entitlements honoured** for players who own
+  them, or refunded? A real question if any were distributed.
+- Per-set pricing and shard cost per piece.
+- Whether `mod2Id` unlocks immediately or is itself a progression reward.
