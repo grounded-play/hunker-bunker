@@ -22,9 +22,12 @@ import { createRateLimitMiddleware } from './rateLimit.js';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 
-// Cap a single upload. Session captures are capped at 2500 entries client-side,
-// so this is generous; it exists to stop a broken client filling the disk.
-export const MAX_LOG_BYTES = 32 * 1024 * 1024;
+// Ceiling on a single capture AFTER decompression -- body-parser applies its
+// limit to the inflated stream, so this bounds a decompression bomb as well as
+// an honest upload. A real session capture runs to ~70 MB of repetitive JSON
+// (docs/logs/log20.json is 68 MB), which gzips to a few MB on the wire, so this
+// leaves headroom for a long session without inviting an unbounded one.
+export const MAX_LOG_BYTES = 128 * 1024 * 1024;
 
 export function sessionLogDir() {
     return process.env.HB_SESSION_LOG_DIR || path.join(here, 'session-logs');
@@ -57,11 +60,25 @@ function headerValue(raw) {
     return typeof value === 'string' ? value : '';
 }
 
-// Optional shared secret. Unset means open, which is right for a LAN/dev box;
-// set HB_LOG_UPLOAD_TOKEN on a public host.
+// Shared secret for uploads. Optional for a LAN or dev box, but **required in
+// production**: this endpoint writes caller-supplied bytes to disk, so leaving
+// it open to the internet is an arbitrary-file-upload and disk-exhaustion
+// surface. Failing closed is the right default -- an unauthenticated public
+// drop box is not something anyone should get by forgetting to set a variable.
+export function isLogUploadOpen(env = process.env) {
+    return String(env.NODE_ENV ?? '').toLowerCase() !== 'production' && !env.HB_LOG_UPLOAD_TOKEN;
+}
+
 function tokenGuard(req, res, next) {
     const expected = process.env.HB_LOG_UPLOAD_TOKEN;
-    if (!expected) return next();
+    if (!expected) {
+        if (isLogUploadOpen()) return next();
+        res.status(503).json({
+            ok: false,
+            error: 'log uploads are disabled: set HB_LOG_UPLOAD_TOKEN on this host'
+        });
+        return;
+    }
     const supplied = headerValue(req.headers['x-hb-log-token']);
     if (supplied === expected) return next();
     res.status(401).json({ ok: false, error: 'bad or missing log token' });
@@ -72,6 +89,9 @@ export function attachSessionLogRoutes(app) {
 
     // Raw parser: the body is already-serialized JSON or text from the game.
     // Re-parsing it would only risk rejecting a capture we still want to keep.
+    // body-parser inflates a gzipped body and applies `limit` to the stream it
+    // reads -- i.e. to the DECOMPRESSED bytes. That is the ceiling that matters:
+    // it bounds a decompression bomb, not just the wire payload.
     const raw = express.raw({ type: '*/*', limit: MAX_LOG_BYTES });
 
     app.post('/logs/session', limiter, tokenGuard, raw, async (req, res) => {

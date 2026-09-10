@@ -92,8 +92,19 @@ export async function uploadSessionLog(body, filename, {
     if (token) headers['x-hb-log-token'] = token;
     if (device) headers['x-hb-log-device'] = device;
 
+    // A real session capture is tens of megabytes of highly repetitive JSON.
+    // Sending it raw would blow past any sane server limit, so compress when the
+    // browser can -- and fall back to the raw body when it cannot, rather than
+    // failing the upload.
+    let payload = body;
+    const compressed = await gzipIfPossible(body);
+    if (compressed) {
+        payload = compressed;
+        headers['content-encoding'] = 'gzip';
+    }
+
     try {
-        const res = await doFetch(url, { method: 'POST', headers, body });
+        const res = await doFetch(url, { method: 'POST', headers, body: payload });
         if (!res?.ok) {
             let detail = '';
             try { detail = JSON.stringify(await res.json()); } catch { /* body may be empty */ }
@@ -103,6 +114,19 @@ export async function uploadSessionLog(body, filename, {
         return { ok: Boolean(data?.ok), ...data, url };
     } catch (err) {
         return { ok: false, error: `upload failed: ${String(err?.message ?? err)}` };
+    }
+}
+
+// CompressionStream is available in every browser and Electron build we ship
+// to; returning null when it is not lets the caller send the capture uncompressed.
+export async function gzipIfPossible(text, { CompressionStreamImpl = globalThis.CompressionStream, ResponseImpl = globalThis.Response } = {}) {
+    if (typeof CompressionStreamImpl !== 'function' || typeof ResponseImpl !== 'function') return null;
+    try {
+        const stream = new ResponseImpl(text).body?.pipeThrough(new CompressionStreamImpl('gzip'));
+        if (!stream) return null;
+        return await new ResponseImpl(stream).blob();
+    } catch {
+        return null;
     }
 }
 

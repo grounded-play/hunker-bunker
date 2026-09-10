@@ -919,7 +919,7 @@ export class DebugLogger {
         this.info('SESSION', `Uploading ${filename} to ${backendUrl || '(no backend configured)'}...`);
         uploadSessionLog(body, filename, {
             backendUrl,
-            token: win?.__HB_LOG_UPLOAD_TOKEN__ ?? '',
+            token: win?.electronAPI?.logUploadToken || win?.__HB_LOG_UPLOAD_TOKEN__ || '',
             device: describeDevice(win)
         }).then((result) => {
             if (result.ok) {

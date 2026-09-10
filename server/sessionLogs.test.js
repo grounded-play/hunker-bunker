@@ -89,8 +89,13 @@ describe('hostile input hardening', () => {
 describe('upload limit', () => {
     // The global express.json limit is 16kb; a session capture is far larger,
     // which is why this route parses raw with its own bound.
-    it('allows captures far larger than the 16kb API body limit', () => {
-        expect(MAX_LOG_BYTES).toBeGreaterThan(16 * 1024);
-        expect(MAX_LOG_BYTES).toBeLessThanOrEqual(64 * 1024 * 1024);
+    // A real capture is ~68 MB of repetitive JSON (docs/logs/log20.json), so the
+    // ceiling has to clear that or `uploadlogs` fails on exactly the sessions
+    // worth reviewing. body-parser applies it to the decompressed stream, so it
+    // also bounds a decompression bomb.
+    it('clears a real session capture but stays bounded', () => {
+        const realCaptureBytes = 68 * 1024 * 1024;
+        expect(MAX_LOG_BYTES).toBeGreaterThan(realCaptureBytes);
+        expect(MAX_LOG_BYTES).toBeLessThanOrEqual(256 * 1024 * 1024);
     });
 });
