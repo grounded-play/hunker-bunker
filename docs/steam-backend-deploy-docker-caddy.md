@@ -103,6 +103,49 @@ successfully authenticate, submit a live leaderboard score, synchronize
 Cloud saves, or receive a real Inventory grant. Those require an installed
 Steam acceptance pass.
 
+## Deployment layout — where things actually live
+
+There are **two compose files and they are not the same file**. This has caused
+confusion, so it is written down:
+
+| | Production | In-repo |
+| --- | --- | --- |
+| File | `~/server/compose.yaml` | `docker-compose.yml` |
+| Service name | `hunker-bunker-backend` | `backend` |
+| Secrets | `env_file: backend.env` | inline `environment:` |
+| Data | named volume `hunker-bunker-data` | bind mount `./server/data` |
+| Port | bound to `127.0.0.1:3001` | `expose` only |
+
+**`~/server` is not a git checkout.** It holds only `compose.yaml`,
+`Caddyfile`, `backend.env` and helper scripts. Its build context points at the
+repo working tree:
+
+```yaml
+build:
+  context: /home/caveman/Desktop/icecave/hunker-bunker
+```
+
+So `docker compose up -d --build` from `~/server` builds **whatever is
+currently checked out in the repo** — including uncommitted changes. Editing
+the repo's `docker-compose.yml` does **not** affect production; environment
+changes for the live host belong in `~/server/backend.env`.
+
+Deploy:
+
+```bash
+cd ~/server && docker compose up -d --build
+```
+
+Session captures land on the `hunker-bunker-data` volume, which on this host
+resolves to `/var/lib/docker/volumes/hunker-bunker-data/_data/session-logs`.
+Read them without root via the container or the API:
+
+```bash
+docker exec hunker-bunker-backend ls -l /app/server/data/session-logs
+npm run logs:fetch              # list what has arrived
+npm run logs:fetch -- --all     # download into ./logs for review
+```
+
 ## Session log drop box
 
 The in-game debug console (`~`) can push a session capture to this backend so
@@ -121,7 +164,9 @@ Configured by two variables:
 - `HB_SESSION_LOG_DIR` — where captures are written. Keep it under
   `/app/server/data` so it sits on the persistent volume and survives a
   `--build` redeploy. Defaults to `server/session-logs` beside the code, which
-  would **not** persist in a container.
+  would **not** persist in a container. Set in `~/server/backend.env` on the
+  live host (added 2026-09-10); the repo compose file is not what production
+  reads.
 - `HB_LOG_UPLOAD_TOKEN` — optional shared secret. Unset means any client that
   can reach the host may upload, which is fine for a private box. Set it on a
   publicly reachable backend; the game sends it as `x-hb-log-token`.
