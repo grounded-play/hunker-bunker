@@ -45,6 +45,7 @@ const clamp01 = (v) => Math.max(0, Math.min(1, v));
 export function chooseDirectorAction(snapshot = {}, random = Math.random) {
     const {
         hpFrac = 1,
+        o2Frac = 1,
         depth = 0,
         inSafeField = false,
         secondsSinceThreat = 999,
@@ -61,6 +62,10 @@ export function chooseDirectorAction(snapshot = {}, random = Math.random) {
     if (hpFrac <= 0.34) {
         return random() < 0.3 ? 'mercy' : 'none';
     }
+
+    // Oxygen is already a lethal clock. Do not add fresh harassment while
+    // the player is on reserve; existing enemies and drain still apply.
+    if (o2Frac <= 0.2) return 'none';
 
     // Recently pressured → let the moment breathe (rare taunt only).
     if (secondsSinceThreat < threatGap) {

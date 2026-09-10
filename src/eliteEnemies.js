@@ -51,11 +51,8 @@ const ELIGIBLE = new Set(ELITE_ELIGIBLE_TYPES);
 // a secondary channel and is deliberately not SNAIL_ENRAGED_TINT (0xff4a4a),
 // so "promoted" and "making its last stand" never read as the same state.
 //
-// An audio cue is deliberately NOT part of this yet. No registered sound in
-// the current bank fits an elite, and minting a procedural one regenerates
-// steam/referenced-assets.json and steam/retail-asset-report.json, which are
-// held by the in-flight ASSET-01 work. Tracked as an open follow-up rather
-// than shipped as a silent gap -- see the DEPTH-01 report.
+// Nearby visible elites receive a rate-limited suit warning in ThreeGame.
+// Procedural audio uses the existing SFX bus and needs no media payload.
 export const ELITE_IDENTITY = Object.freeze({
     scaleMultiplier: 1.35,
     hpMultiplier: 1.8,

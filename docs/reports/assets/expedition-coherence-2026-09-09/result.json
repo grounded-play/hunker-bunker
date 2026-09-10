@@ -1,0 +1,22 @@
+{
+  "passed": true,
+  "runtime": {
+    "baseline": 100,
+    "reduced": 60,
+    "duplicate": 60,
+    "restored": 100,
+    "pending": 0,
+    "shape": {
+      "name": "RunBuildPickup",
+      "children": 3,
+      "depthTest": true
+    }
+  },
+  "constantColorAfterTwoPasses": [
+    64,
+    128,
+    192,
+    255
+  ],
+  "errors": []
+}

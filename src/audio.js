@@ -55,6 +55,7 @@ export class AudioManager {
     // Tension multiplier sits between the music sources and the user music
     // slider (musicGain) so runtime intensity and the user mix no longer fight.
     static musicTensionGain = audioCtx.createGain();
+    static environmentFilter = typeof audioCtx.createBiquadFilter === 'function' ? audioCtx.createBiquadFilter() : null;
 
     static campRainSource = null;
     static activeDialogueStage = null;
@@ -86,8 +87,18 @@ export class AudioManager {
     static init() {
         this.masterGain.connect(audioCtx.destination);
         this.sfxGain.connect(this.masterGain);
-        this.worldGain.connect(this.masterGain);
-        this.musicGain.connect(this.masterGain);
+
+        if (this.environmentFilter && typeof this.environmentFilter.connect === 'function') {
+            this.environmentFilter.type = 'lowpass';
+            if (this.environmentFilter.frequency) this.environmentFilter.frequency.value = 22000;
+            this.worldGain.connect(this.environmentFilter);
+            this.musicGain.connect(this.environmentFilter);
+            this.environmentFilter.connect(this.masterGain);
+        } else {
+            this.worldGain.connect(this.masterGain);
+            this.musicGain.connect(this.masterGain);
+        }
+
         this.voiceGain.connect(this.masterGain);
         this.foleyGain.connect(this.masterGain);
         this.rainGain.connect(this.worldGain);
@@ -104,6 +115,16 @@ export class AudioManager {
         // Start mid-tension so music is clearly audible from the first frame.
         this.musicTensionGain.gain.value = 0.6;
         this.stopActiveVoice(0);
+    }
+
+    static setLowPassMuffle(enabled = true, targetFreq = 420) {
+        if (!this.environmentFilter || !this.environmentFilter.frequency) return;
+        const freq = enabled ? targetFreq : 22000;
+        if (typeof this.environmentFilter.frequency.setTargetAtTime === 'function') {
+            this.environmentFilter.frequency.setTargetAtTime(freq, audioCtx.currentTime || 0, 0.28);
+        } else {
+            this.environmentFilter.frequency.value = freq;
+        }
     }
 
     static async unlock() {
@@ -976,6 +997,27 @@ export class AudioManager {
         });
         if (result) this._lastMetalStressAt = now;
         return result;
+    }
+
+    // Two restrained suit tones, routed through the existing SFX volume/mute bus.
+    static playEliteWarning() {
+        if (this.globalMuted || !this.isUnlocked || !audioCtx || !this.sfxGain) return false;
+        const now = audioCtx.currentTime;
+        for (const [offset, frequency] of [[0, 440], [0.18, 660]]) {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(frequency, now + offset);
+            osc.connect(gain);
+            gain.connect(this.sfxGain);
+            gain.gain.setValueAtTime(0.001, now + offset);
+            gain.gain.linearRampToValueAtTime(0.075, now + offset + 0.02);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + offset + 0.16);
+            osc.onended = () => { osc.disconnect(); gain.disconnect(); };
+            osc.start(now + offset);
+            osc.stop(now + offset + 0.18);
+        }
+        return true;
     }
 
     static playProceduralHover(options = {}) {

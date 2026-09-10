@@ -103,6 +103,41 @@ successfully authenticate, submit a live leaderboard score, synchronize
 Cloud saves, or receive a real Inventory grant. Those require an installed
 Steam acceptance pass.
 
+## Session log drop box
+
+The in-game debug console (`~`) can push a session capture to this backend so
+PC and Steam Deck logs from the same play session land in one directory
+instead of in a browser's Downloads folder or behind a native save dialog on
+the Deck.
+
+| Route | Purpose |
+| --- | --- |
+| `POST /logs/session` | Upload a capture. Body is the raw serialized log; `x-hb-log-name` and `x-hb-log-device` headers label it. |
+| `GET /logs/session` | List stored captures, newest first. |
+| `GET /logs/session/:name` | Read one back for review. |
+
+Configured by two variables:
+
+- `HB_SESSION_LOG_DIR` — where captures are written. Keep it under
+  `/app/server/data` so it sits on the persistent volume and survives a
+  `--build` redeploy. Defaults to `server/session-logs` beside the code, which
+  would **not** persist in a container.
+- `HB_LOG_UPLOAD_TOKEN` — optional shared secret. Unset means any client that
+  can reach the host may upload, which is fine for a private box. Set it on a
+  publicly reachable backend; the game sends it as `x-hb-log-token`.
+
+Uploads are rate limited (30/minute) and capped at 32 MB each. Caddy already
+reverse-proxies every path to the backend, so no proxy change is needed.
+
+Verify after deploying:
+
+```bash
+curl https://steam.tuesdaycinema.club/logs/session
+```
+
+A JSON body with `"ok":true` means the route is live. A `404` means the
+container is still running an older build.
+
 ## Deployment Commands
 
 ### 1. Build and Start Containers

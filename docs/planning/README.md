@@ -21,5 +21,13 @@ Status: canonical process index · Owner: repository maintainers · Updated:
 
 - [Armory continuation](armory-continuation-2026-09-09.md) records the completed no-scroll layout, accurate previews, and deployed weapon sheen/charm work. Remaining model production is tracked in the roadmap and generated asset inventory.
 
+- [Roguelike VFX, lighting, and gameplay plan](roguelike-vfx-lighting-and-gameplay-plan-2026-09-09.md) defines the sensory and combat enhancement plan: dynamic shadow tracking, atmospheric lighting contrast, tilt-shift diorama bokeh, ballistic projectile tracers, biomechanical death bursts, and roguelike run loop polish.
+
 Closed plans are evidence, not a backlog. Unfinished work must be deliberately
 copied into the roadmap with an owner/acceptance condition or explicitly cut.
+
+- [Expedition coherence execution plan](expedition-coherence-plan-2026-09-09.md) — current-code review, run boundaries, oxygen pacing, story feedback, focus and procedural effects.
+- [Gameplay juice, sensory feedback, and tactile polish plan](gameplay-juice-and-polish-plan-2026-09-10.md) — camera trauma, 3D muzzle blasts, loot magnetism, pickup combos, ambient biome drift, and survival tension.
+- [O2 milestone cinematic doors and boss destruction plan](o2-cinematic-doors-and-boss-destruction-plan-2026-09-10.md) — objective blast doors, video playback, 3D generator rise, screen rumble, boss encounter video, 3D boss model visibility, and wall destruction.
+- [O2 generator stall and sequence fix plan](o2-generator-sequence-fix-2026-09-10.md) — fixes 21.4s shader recompile freeze, builds floodlights at world setup, removes misplaced compile, closes menu instantly, orchestrates door sequence, and adds framed text backing.
+

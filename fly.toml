@@ -14,6 +14,8 @@ primary_region = "iad"
   HB_STEAM_MICROTXN_ENABLED = "0"
   HB_STEAM_STORE_ENABLED = "0"
   HB_STEAM_DROP_COOLDOWN_SECONDS = "60"
+  # Session-log drop box, on the mounted hb_data volume so captures persist.
+  HB_SESSION_LOG_DIR = "/app/server/data/session-logs"
 
 [mounts]
   source = "hb_data"

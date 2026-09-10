@@ -542,6 +542,37 @@ body {
   -webkit-backdrop-filter: blur(5px);
 }
 
+/* UI-01: tactical text needs its own ground, not just the screen dim behind it.
+   When a cutscene is playing the dim sits over the video, so a bright frame
+   left the title and status washed out and unreadable. Giving the content a
+   framed backing plate -- the same treatment over-door-loader already uses --
+   means the copy stays legible against the brightest frame of a video as well
+   as against ordinary gameplay. The plate is opaque enough to carry text on
+   its own rather than relying on whatever happens to be behind it. */
+#loading-screen.tactical-mode .loader-content {
+  width: min(calc(var(--vu) * 70), 72vw);
+  padding: calc(var(--vu) * 2.2) calc(var(--vu) * 3);
+  background:
+    linear-gradient(180deg, rgba(4, 10, 12, 0.88), rgba(2, 6, 8, 0.78)),
+    repeating-linear-gradient(90deg, rgba(111, 213, 214, 0.07) 0 1px, transparent 1px 18px);
+  border: 1px solid rgba(111, 213, 214, 0.42);
+  box-shadow:
+    0 0 calc(var(--vu) * 2.4) rgba(0, 0, 0, 0.55),
+    inset 0 0 calc(var(--vu) * 1.2) rgba(111, 213, 214, 0.07);
+}
+
+#loading-screen.tactical-mode .loader-title,
+#loading-screen.tactical-mode .loader-status {
+  /* A hard shadow keeps glyph edges readable even where the plate is thinnest. */
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.9);
+}
+
+@media (max-width: 720px) {
+  #loading-screen.tactical-mode .loader-content {
+    width: min(calc(var(--vu) * 88), 88vw);
+  }
+}
+
 #loading-screen.over-door-loader {
   z-index: 250250;
   background: transparent;
@@ -2114,16 +2145,20 @@ body {
   will-change: opacity;
 }
 
+/* Grade only -- no blur here. This rule used to also run
+   `backdrop-filter: blur(2.5px) saturate(0.88)` over a radial mask, which
+   fought the GPU TiltShiftPassShader: that pass defocuses on a horizontal band
+   around focusY, this one defocused on a radius around the projected player.
+   Two disagreeing focus geometries read as mud rather than as a focal plane,
+   and backdrop-filter re-composites the whole canvas every frame to do it. The
+   shader now owns defocus; the overlay keeps only the vignette that frames the
+   action plane, so it costs one gradient. */
 .gameplay-tilt-shift::after {
   content: "";
   position: absolute;
   inset: -5%;
   display: block;
-  background: radial-gradient(ellipse 42% 38% at var(--focus-x) var(--focus-y), transparent 0 52%, rgba(4, 8, 12, 0.08) 72%, rgba(0, 0, 0, 0.3) 100%);
-  backdrop-filter: blur(2.5px) saturate(0.88);
-  -webkit-backdrop-filter: blur(2.5px) saturate(0.88);
-  -webkit-mask-image: radial-gradient(ellipse 42% 38% at var(--focus-x) var(--focus-y), transparent 0 52%, #000 100%);
-  mask-image: radial-gradient(ellipse 42% 38% at var(--focus-x) var(--focus-y), transparent 0 52%, #000 100%);
+  background: radial-gradient(ellipse 42% 38% at var(--focus-x) var(--focus-y), transparent 0 52%, rgba(4, 8, 12, 0.14) 72%, rgba(0, 0, 0, 0.42) 100%);
 }
 
 .gameplay-tilt-shift.is-active {
@@ -7782,6 +7817,17 @@ body.mission-intro-active #game-container canvas {
   transform: translateY(0);
 }
 
+.mothership-dialogue-choices.mothership-dialogue-choices--single {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.mothership-dialogue-choices.mothership-dialogue-choices--single .choice-card {
+  max-width: min(100%, calc(var(--vu) * 44));
+  width: 100%;
+}
+
 .choice-card {
   font-family: 'Outfit', sans-serif;
   text-align: left;
@@ -12937,7 +12983,7 @@ button.archive-log-entry:active {
 .class-intro-overlay {
   position: absolute;
   inset: 0;
-  z-index: 12000;
+  z-index: 25000;
   background-color: #000;
   background-image: var(--class-intro-poster, none);
   background-position: center;
@@ -12953,6 +12999,18 @@ button.archive-log-entry:active {
   border-radius: 0;
   transition: opacity 0.26s ease;
   pointer-events: auto;
+}
+
+body.cutscene-video-active .loop-step-hud,
+body.cutscene-video-active #loop-step-hud,
+body.cutscene-video-active .radio-transmission-prompt,
+body.cutscene-video-active #radio-transmission-prompt,
+body.cutscene-video-active .lore-hud-prompt,
+body.cutscene-video-active .hud-action-prompt,
+body.cutscene-video-active .tactical-overlay {
+  display: none !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
 }
 
 .class-intro-overlay.is-closing {
@@ -13099,67 +13157,97 @@ button.archive-log-entry:active {
   position: absolute;
   inset: 0;
   background:
-    linear-gradient(180deg, rgba(0, 0, 0, 0.16) 30%, rgba(0, 0, 0, 0.88) 100%),
-    linear-gradient(90deg, rgba(0, 0, 0, 0.62) 0%, transparent 58%);
+    radial-gradient(ellipse at top right, rgba(0, 0, 0, 0.75) 0%, transparent 60%),
+    linear-gradient(180deg, rgba(0, 0, 0, 0.35) 0%, transparent 35%),
+    linear-gradient(0deg, rgba(0, 0, 0, 0.55) 0%, transparent 30%);
   pointer-events: none;
 }
 
 .cinematic-still-copy {
   position: absolute;
-  left: clamp(24px, 5vw, 78px);
-  right: clamp(24px, 12vw, 160px);
-  bottom: clamp(48px, 10vh, 118px);
-  max-width: 760px;
+  top: clamp(28px, 5vh, 48px);
+  right: clamp(24px, 4vw, 56px);
+  left: auto;
+  bottom: auto;
+  max-width: min(520px, calc(100vw - 48px));
   text-align: left;
-  background: rgba(6, 10, 14, 0.72);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  padding: clamp(16px, 2.5vw, 24px) clamp(20px, 3vw, 30px);
+  background: linear-gradient(135deg, rgba(8, 14, 22, 0.92), rgba(3, 7, 12, 0.96));
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  padding: clamp(16px, 2vw, 22px) clamp(20px, 2.5vw, 26px);
   border-radius: 8px;
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.75), 0 0 0 1px rgba(0, 0, 0, 0.6);
+  border: 1px solid rgba(0, 240, 255, 0.35);
+  border-top: 2px solid #00f0ff;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.85), 0 0 28px rgba(0, 240, 255, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.15);
+  z-index: 10;
 }
 
 .cinematic-still-overlay--death .cinematic-still-copy {
-  border-left: 3px solid #ff5c4d;
-  border-color: rgba(255, 92, 77, 0.32);
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.82), 0 0 24px rgba(255, 92, 77, 0.14), 0 0 0 1px rgba(0, 0, 0, 0.6);
+  border: 1px solid rgba(255, 92, 77, 0.4);
+  border-top: 2px solid #ff5c4d;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.85), 0 0 28px rgba(255, 92, 77, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.12);
 }
 
 .cinematic-still-kicker {
-  margin-bottom: 8px;
-  color: var(--accent-secondary);
+  margin-bottom: 6px;
+  color: #00f0ff;
   font-family: 'Space Mono', monospace;
-  font-size: clamp(11px, calc(var(--vu) * 1.3), 16px);
+  font-size: clamp(11px, calc(var(--vu) * 1.2), 14px);
   font-weight: 700;
-  letter-spacing: 0.16em;
+  letter-spacing: 0.18em;
   text-transform: uppercase;
-  text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000, 0 2px 10px rgba(0, 0, 0, 0.9);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  text-shadow: 0 0 10px rgba(0, 240, 255, 0.6);
+}
+
+.cinematic-still-kicker::before {
+  content: '';
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #00f0ff;
+  box-shadow: 0 0 8px #00f0ff;
+  flex-shrink: 0;
 }
 
 .cinematic-still-overlay--death .cinematic-still-kicker {
   color: #ff5c4d;
+  text-shadow: 0 0 10px rgba(255, 92, 77, 0.6);
+}
+
+.cinematic-still-overlay--death .cinematic-still-kicker::before {
+  background: #ff5c4d;
+  box-shadow: 0 0 8px #ff5c4d;
 }
 
 .cinematic-still-title {
-  max-width: 22ch;
+  max-width: 26ch;
   font-family: 'Outfit', sans-serif;
-  font-size: clamp(28px, calc(var(--vu) * 4.8), 60px);
+  font-size: clamp(22px, calc(var(--vu) * 3.4), 36px);
   font-weight: 900;
-  letter-spacing: 0.035em;
-  line-height: 1.02;
+  letter-spacing: 0.04em;
+  line-height: 1.1;
   text-transform: uppercase;
-  text-shadow: -1.5px -1.5px 0 #000, 1.5px -1.5px 0 #000, -1.5px 1.5px 0 #000, 1.5px 1.5px 0 #000, 0 4px 16px rgba(0, 0, 0, 0.95);
+  color: #ffffff !important;
+  margin: 4px 0 8px 0;
+  text-shadow: 0 0 20px rgba(0, 240, 255, 0.4), 0 2px 8px rgba(0, 0, 0, 0.95);
+}
+
+.cinematic-still-overlay--death .cinematic-still-title {
+  text-shadow: 0 0 20px rgba(255, 92, 77, 0.5), 0 2px 8px rgba(0, 0, 0, 0.95);
 }
 
 .cinematic-still-body {
-  max-width: 56ch;
-  margin-top: 12px;
-  color: rgba(242, 245, 244, 0.9);
+  max-width: 48ch;
+  margin-top: 8px;
+  color: rgba(225, 240, 255, 0.94) !important;
   font-family: 'Space Mono', monospace;
-  font-size: clamp(13px, calc(var(--vu) * 1.65), 19px);
-  line-height: 1.45;
-  text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000, 0 2px 8px rgba(0, 0, 0, 0.9);
+  font-size: clamp(12px, calc(var(--vu) * 1.4), 15px);
+  line-height: 1.55;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.9);
 }
 
 .cinematic-still-skip {
@@ -20503,3 +20591,119 @@ body.colorblind-assist #net-mode-pvp-btn.active {
   background: rgba(192, 132, 252, 0.16) !important;
   box-shadow: 0 0 24px rgba(192, 132, 252, 0.35) !important;
 }
+
+/* ROGUE-02: the run's active pressure cards, shown in the level indicator so
+   the player can read the bargain they are playing under. Colour carries the
+   card type, but the label always states it in words -- type is never the only
+   cue. Hover/long-press exposes the card's blurb via title. */
+.run-card-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 4px;
+  max-width: 240px;
+}
+
+.run-card-chip {
+  font-size: 9px;
+  letter-spacing: 0.06em;
+  padding: 2px 6px;
+  border-radius: 2px;
+  border: 1px solid currentColor;
+  background: rgba(6, 10, 14, 0.72);
+  white-space: nowrap;
+  line-height: 1.35;
+}
+
+.run-card-chip--world { color: #7fd4ff; }
+.run-card-chip--faction { color: #ffc46b; }
+.run-card-chip--threat { color: #ff8b7a; }
+
+.game-over-bank-note--cards {
+  color: #9fb4c4;
+  letter-spacing: 0.05em;
+}
+
+/* --- High-Impact Combat Killstreak Accolades --- */
+.killstreak-container {
+  position: fixed;
+  top: 18%;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1050;
+  pointer-events: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.killstreak-banner {
+  background: rgba(5, 12, 20, 0.88);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1.5px solid #38bdf8;
+  border-radius: 4px;
+  padding: 8px 24px;
+  text-align: center;
+  box-shadow: 0 0 25px rgba(56, 189, 248, 0.4), inset 0 0 15px rgba(56, 189, 248, 0.2);
+  animation: killstreak-pop-in 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+  transition: opacity 0.4s ease, transform 0.4s ease;
+}
+
+.killstreak-banner-boss {
+  border-width: 2px;
+  padding: 12px 32px;
+  animation: killstreak-boss-pop-in 0.45s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+
+.killstreak-title {
+  font-family: 'Rajdhani', monospace, sans-serif;
+  font-size: 20px;
+  font-weight: 900;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  line-height: 1.1;
+  text-shadow: 0 0 12px currentColor;
+}
+
+.killstreak-subtitle {
+  font-family: 'Share Tech Mono', monospace, sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  color: #e2e8f0;
+  margin-top: 3px;
+  opacity: 0.92;
+}
+
+.killstreak-fadeout {
+  opacity: 0;
+  transform: translateY(-12px) scale(0.96);
+}
+
+@keyframes killstreak-pop-in {
+  0% {
+    opacity: 0;
+    transform: translateY(16px) scale(0.85);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes killstreak-boss-pop-in {
+  0% {
+    opacity: 0;
+    transform: translateY(24px) scale(0.75);
+  }
+  60% {
+    transform: translateY(-4px) scale(1.05);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+

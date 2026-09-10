@@ -3,7 +3,7 @@
 // AND the first milestone boss is defeated.
 
 import { COMMUNITY_SKINS } from './data/communitySkins.js';
-import { FOXHOLE_CONTRACT, HACKER_CONTRACT, HYBRID_CONTRACT, SURVIVOR_REWARDS } from './survivorContract.js';
+import { FOXHOLE_CONTRACT, HACKER_CONTRACT, HYBRID_CONTRACT, SURVIVOR_REWARDS, SURVIVOR_CONTRACTS, CONTRACT_BY_FAMILY } from './survivorContract.js';
 
 export const WANDERER_STORAGE_KEY = 'hb_wanderer_state_v1';
 
@@ -20,13 +20,7 @@ export const WANDERER_ARCHETYPES = Object.freeze({
         passiveBuff: { name: 'Cyber Overclock', desc: '+15% Hack Speed & Laser Trap Radar' },
         assistAbility: { name: 'EMP Glitch Burst', cooldown: 18, desc: 'Stuns robotic enemies and disables traps for 4s.' },
         chaseLoot: { scrap: 35, tech: 3 },
-        quest: {
-            id: 'quest_hacker_core',
-            title: 'Override the Core',
-            desc: 'Decrypt 3 corrupted mainframe terminals in Stratum 2.',
-            targetCount: 3,
-            rewardSkinId: 'comm_scout_soft_manic_infiltrator_gf'
-        }
+        quest: CONTRACT_BY_FAMILY.manic_hacker
     },
     corpo_runner: {
         familyId: 'corpo_runner',
@@ -40,13 +34,7 @@ export const WANDERER_ARCHETYPES = Object.freeze({
         passiveBuff: { name: 'Bounty Ledger', desc: '+20% Scrap & Relic Fragment Yield' },
         assistAbility: { name: 'Precision Mark', cooldown: 20, desc: 'Marks the strongest target, increasing critical damage taken by +35% for 6s.' },
         chaseLoot: { scrap: 45, coin: 4 },
-        quest: {
-            id: 'quest_corpo_severance',
-            title: 'Severance Package',
-            desc: 'Recover the executive data-slate from the Horizon sub-vault.',
-            targetCount: 1,
-            rewardSkinId: 'comm_tank_corpo_shadow_runner'
-        }
+        quest: CONTRACT_BY_FAMILY.corpo_runner
     },
     foxhole_buddy: {
         familyId: 'foxhole_buddy',
@@ -60,13 +48,7 @@ export const WANDERER_ARCHETYPES = Object.freeze({
         passiveBuff: { name: 'Foxhole Discipline', desc: '+10% Max Health & +20% Knockback Resistance' },
         assistAbility: { name: 'Covering Fire', cooldown: 15, desc: 'Unleashes suppressing kinetic fire, staggering swarms in a wide cone.' },
         chaseLoot: { scrap: 30, med: 3 },
-        quest: {
-            id: 'quest_foxhole_tags',
-            title: 'Leave No One Behind',
-            desc: 'Recover 4 fallen soldier dog tags from overrun forward bunkers.',
-            targetCount: 4,
-            rewardSkinId: 'comm_scout_foxhole_shadow'
-        }
+        quest: CONTRACT_BY_FAMILY.foxhole_buddy
     },
     crash_queen: {
         familyId: 'crash_queen',
@@ -80,13 +62,7 @@ export const WANDERER_ARCHETYPES = Object.freeze({
         passiveBuff: { name: 'Regal Resonance', desc: '+15% Shield Recharge Rate & +10% Max Shield' },
         assistAbility: { name: 'Supercharged Barrier', cooldown: 25, desc: 'Projects an invulnerable 3m kinetic barrier dome for 4s when HP drops low.' },
         chaseLoot: { scrap: 40, tech: 4 },
-        quest: {
-            id: 'quest_crash_beacon',
-            title: 'Beacon in the Dark',
-            desc: 'Repair the 2 crashed drop-ship solar arrays in the deep sector.',
-            targetCount: 2,
-            rewardSkinId: 'comm_tank_afro_crash'
-        }
+        quest: CONTRACT_BY_FAMILY.crash_queen
     },
     abg_tripper: {
         familyId: 'abg_tripper',
@@ -100,13 +76,7 @@ export const WANDERER_ARCHETYPES = Object.freeze({
         passiveBuff: { name: 'Neon Rush', desc: '+12% Movement Speed & +1 Dash Charge' },
         assistAbility: { name: 'Flash-Vibe Flare', cooldown: 16, desc: 'Fires a strobe flare that blinds and slows all nearby enemies by 50% for 5s.' },
         chaseLoot: { scrap: 35, coin: 5 },
-        quest: {
-            id: 'quest_abg_vinyl',
-            title: 'VIP Access',
-            desc: 'Find the secret subterranean lounge room and retrieve the Golden Vinyl.',
-            targetCount: 1,
-            rewardSkinId: 'comm_scout_abg'
-        }
+        quest: CONTRACT_BY_FAMILY.abg_tripper
     },
     species_hybrid: {
         familyId: 'species_hybrid',
@@ -120,13 +90,7 @@ export const WANDERER_ARCHETYPES = Object.freeze({
         passiveBuff: { name: 'Symbiotic Adaptation', desc: '+25% Toxin & Acid Resistance, Regenerates 1 HP every 30s' },
         assistAbility: { name: 'Bio-Silk Entangle', cooldown: 22, desc: 'Shoots living silk webbing that roots and suffocates the target for 4s.' },
         chaseLoot: { scrap: 50, med: 5 },
-        quest: {
-            id: 'quest_species_genesis',
-            title: 'Symbiotic Genesis',
-            desc: 'Harvest 5 intact bio-spore pods from hive chambers without damaging hive nodes.',
-            targetCount: 5,
-            rewardSkinId: 'comm_scount_sil'
-        }
+        quest: CONTRACT_BY_FAMILY.species_hybrid
     }
 });
 
@@ -164,6 +128,7 @@ export function createDefaultWandererState() {
         activeQuest: null,
         questProgress: 0,
         questEventIds: [],
+        contractProgress: {},
         pendingRewards: [],
         history: []
     };
@@ -190,28 +155,33 @@ export class WandererManager {
                     }
                     if (!state.completedQuests || typeof state.completedQuests !== 'object') state.completedQuests = {};
                     if (!WANDERER_ARCHETYPES[state.activeCompanion?.familyId]) state.activeCompanion = null;
-                    if (state.activeQuest?.id === 'quest_foxhole_tags') {
-                        state.activeQuest = { ...FOXHOLE_CONTRACT, progress: 0 };
-                        state.questProgress = 0;
-                        state.questEventIds = [];
-                    } else if (state.activeQuest?.id === 'quest_hacker_core') {
-                        state.activeQuest = { ...HACKER_CONTRACT, progress: 0 };
-                        state.questProgress = 0;
-                        state.questEventIds = [];
-                    } else if (state.activeQuest?.id === 'quest_species_genesis') {
-                        state.activeQuest = { ...HYBRID_CONTRACT, progress: 0 };
-                        state.questProgress = 0;
-                        state.questEventIds = [];
-                    } else if (state.activeQuest?.id !== FOXHOLE_CONTRACT.id && state.activeQuest?.id !== HACKER_CONTRACT.id && state.activeQuest?.id !== HYBRID_CONTRACT.id) {
+                    const progress = state.contractProgress;
+                    state.contractProgress = {};
+                    for (const [id, template] of Object.entries(SURVIVOR_CONTRACTS)) {
+                        const saved = progress?.[id];
+                        if (!saved || typeof saved !== 'object') continue;
+                        state.contractProgress[id] = {
+                            progress: Math.min(template.targetCount, Math.max(0, Math.floor(Number(saved.progress) || 0))),
+                            eventIds: Array.isArray(saved.eventIds) ? saved.eventIds.filter((id) => typeof id === 'string' && id.length <= 200).slice(-16) : []
+                        };
+                    }
+                    const legacy = {
+                        quest_foxhole_tags: FOXHOLE_CONTRACT.id, quest_hacker_core: HACKER_CONTRACT.id,
+                        quest_species_genesis: HYBRID_CONTRACT.id, quest_corpo_severance: CONTRACT_BY_FAMILY.corpo_runner.id,
+                        quest_crash_beacon: CONTRACT_BY_FAMILY.crash_queen.id, quest_abg_vinyl: CONTRACT_BY_FAMILY.abg_tripper.id
+                    };
+                    const oldId = state.activeQuest?.id;
+                    const template = SURVIVOR_CONTRACTS[legacy[oldId] || oldId];
+                    if (template) {
+                        const amount = legacy[oldId] ? 0 : Math.min(template.targetCount, Math.max(0, Math.floor(Number(state.activeQuest.progress) || 0)));
+                        state.activeQuest = { ...template, progress: amount };
+                        state.questProgress = amount;
+                        if (legacy[oldId]) state.questEventIds = [];
+                        state.contractProgress[template.id] = { progress: amount, eventIds: [...state.questEventIds] };
+                    } else {
                         state.activeQuest = null;
                         state.questProgress = 0;
-                    }
-                    if (state.activeQuest) {
-                        const template = state.activeQuest.id === HACKER_CONTRACT.id
-                            ? HACKER_CONTRACT
-                            : (state.activeQuest.id === HYBRID_CONTRACT.id ? HYBRID_CONTRACT : FOXHOLE_CONTRACT);
-                        state.activeQuest = { ...template, progress: Math.min(template.targetCount, Math.max(0, Math.floor(Number(state.activeQuest.progress) || 0))) };
-                        state.questProgress = state.activeQuest.progress;
+                        state.questEventIds = [];
                     }
                     return state;
                 }
@@ -223,6 +193,10 @@ export class WandererManager {
     }
 
     save() {
+        const quest = this.state.activeQuest;
+        if (quest && SURVIVOR_CONTRACTS[quest.id]) {
+            this.state.contractProgress[quest.id] = { progress: quest.progress || 0, eventIds: [...this.state.questEventIds] };
+        }
         try {
             this.storage?.setItem(WANDERER_STORAGE_KEY, JSON.stringify(this.state));
         } catch {
@@ -259,17 +233,16 @@ export class WandererManager {
             actionKey: skinMeta ? skinMeta.actionKey : 'salute',
             greeting: archetype.greeting,
             question: archetype.question,
-            dialogueBefriend: archetype.dialogueBefriend,
+            dialogueBefriend: this.state.completedQuests[CONTRACT_BY_FAMILY[archetype.familyId].id]
+                ? (CONTRACT_BY_FAMILY[archetype.familyId].reunionLine || archetype.dialogueBefriend)
+                : archetype.dialogueBefriend,
             dialogueChase: archetype.dialogueChase,
             passiveBuff: archetype.passiveBuff,
             assistAbility: archetype.assistAbility,
             chaseLoot: archetype.chaseLoot,
             // Only offer contracts with live objectives and a delivered reward.
-            quest: archetype.familyId === 'foxhole_buddy'
-                ? { ...FOXHOLE_CONTRACT }
-                : (archetype.familyId === 'manic_hacker'
-                    ? { ...HACKER_CONTRACT }
-                    : (archetype.familyId === 'species_hybrid' ? { ...HYBRID_CONTRACT } : null))
+            quest: this.state.completedQuests[CONTRACT_BY_FAMILY[archetype.familyId].id]
+                ? null : { ...CONTRACT_BY_FAMILY[archetype.familyId] }
         };
     }
 
@@ -293,12 +266,16 @@ export class WandererManager {
             maxHp: 100
         };
 
-        if (wanderer.quest && !this.state.completedQuests[wanderer.quest.id]
-            && this.state.activeQuest?.id !== wanderer.quest.id) {
-            this.state.activeQuest = {
-                ...wanderer.quest,
-                progress: 0
-            };
+        // Save the outgoing contract before selecting the incoming one.
+        this.save();
+        const contract = CONTRACT_BY_FAMILY[wanderer.familyId];
+        if (contract && !this.state.completedQuests[contract.id]) {
+            const saved = this.state.contractProgress[contract.id];
+            this.state.activeQuest = { ...contract, progress: saved?.progress ?? 0 };
+            this.state.questProgress = this.state.activeQuest.progress;
+            this.state.questEventIds = [...(saved?.eventIds ?? [])];
+        } else {
+            this.state.activeQuest = null;
             this.state.questProgress = 0;
             this.state.questEventIds = [];
         }
@@ -360,6 +337,9 @@ export class WandererManager {
             if (Object.hasOwn(SURVIVOR_REWARDS, this.state.activeQuest.id)) {
                 this.state.pendingRewards = [...new Set([...(this.state.pendingRewards ?? []), this.state.activeQuest.id])];
             }
+            this.state.contractProgress[this.state.activeQuest.id] = {
+                progress: this.state.activeQuest.progress, eventIds: [...this.state.questEventIds]
+            };
             const completed = { ...this.state.activeQuest };
             this.state.activeQuest = null;
             this.state.questProgress = 0;
@@ -379,6 +359,16 @@ export class WandererManager {
         const quest = this.state.activeQuest;
         if (!quest || !this.state.activeCompanion) return null;
         if (typeof id !== 'string' || !id || id.length > 200) return null;
+
+        const stages = SURVIVOR_CONTRACTS[quest.id]?.stages;
+        if (stages) {
+            if (this.state.activeCompanion.familyId !== quest.familyId || this.state.questEventIds.includes(id)) return null;
+            let threshold = 0;
+            const stage = stages.find((entry) => { threshold += entry.count; return (quest.progress || 0) < threshold; });
+            if (!stage || stage.type !== type) return null;
+            this.state.questEventIds = [...this.state.questEventIds, id].slice(-16);
+            return this.advanceQuest(1);
+        }
 
         if (quest.id === FOXHOLE_CONTRACT.id && this.state.activeCompanion.familyId === 'foxhole_buddy') {
             const progress = quest.progress || 0;

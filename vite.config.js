@@ -1,6 +1,8 @@
 import { defineConfig } from 'vite';
 import { execFileSync } from 'node:child_process';
-import { readFileSync } from 'node:fs';
+import { Buffer } from 'node:buffer';
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 
 const readGit = (args, fallback) => {
   try {
@@ -54,6 +56,60 @@ export default defineConfig({
     }
   },
   plugins: [{
+    // Dev-only log sink. The in-game console's EXPORT SESSION used to have one
+    // delivery mechanism -- a browser blob download -- which lands in whatever
+    // the browser calls Downloads, under a name you then have to go find. That
+    // is useless for handing a session log to someone for review, and on the
+    // Steam Deck it opens a native save dialog that is close to unusable in
+    // Gaming Mode. This gives `npm run dev` a real, predictable target: the
+    // console POSTs here and the file lands in ./logs/ in the repo.
+    //
+    // Dev server only -- it never exists in a production build.
+    name: 'hunker-bunker-log-sink',
+    configureServer(server) {
+      const logDir = resolve(import.meta.dirname, 'logs');
+      server.middlewares.use('/__hb/logs', (req, res) => {
+        if (req.method !== 'POST') {
+          res.statusCode = 405;
+          res.end('POST only');
+          return;
+        }
+        const chunks = [];
+        let bytes = 0;
+        req.on('data', (c) => {
+          bytes += c.length;
+          // A runaway session should fail loudly rather than eat memory.
+          if (bytes > 64 * 1024 * 1024) {
+            res.statusCode = 413;
+            res.end(JSON.stringify({ ok: false, error: 'log too large' }));
+            req.destroy();
+            return;
+          }
+          chunks.push(c);
+        });
+        req.on('end', () => {
+          if (res.writableEnded) return;
+          try {
+            const raw = Buffer.concat(chunks).toString('utf8');
+            const name = String(req.headers['x-hb-log-name'] ?? '')
+              // Never let a client-supplied name escape ./logs/.
+              .replace(/[^a-zA-Z0-9._-]/g, '');
+            const filename = name || `hunker-bunker-session-${Date.now()}.json`;
+            mkdirSync(logDir, { recursive: true });
+            const target = resolve(logDir, filename);
+            if (!target.startsWith(logDir)) throw new Error('path escape');
+            writeFileSync(target, raw, 'utf8');
+            server.config.logger.info(`[hb-logs] wrote ${target} (${raw.length} bytes)`);
+            res.setHeader('content-type', 'application/json');
+            res.end(JSON.stringify({ ok: true, path: `logs/${filename}`, bytes: raw.length }));
+          } catch (err) {
+            res.statusCode = 500;
+            res.end(JSON.stringify({ ok: false, error: String(err?.message ?? err) }));
+          }
+        });
+      });
+    }
+  }, {
     name: 'hunker-bunker-build-info',
     generateBundle() {
       this.emitFile({

@@ -1,3 +1,6 @@
+import { crossingGuidance, expeditionDebrief } from './src/expeditionFeedback.js';
+import { formatRunCardBadges, summarizeRunCards } from './src/runCardHud.js';
+import { cutsceneCutoffTime } from './src/cutsceneTiming.js';
 /* global __HB_BUILD_INFO__ */
 import { AudioManager } from './src/audio.js';
 import { assetUrl } from './src/assetUrl.js';
@@ -2431,6 +2434,8 @@ let fullscreenVideoCanvasVisibility = '';
 function suspendGameForFullscreenVideo() {
     const game = window.game;
     if (fullscreenVideoSuspendDepth === 0) {
+        document.body.classList.add('cutscene-video-active');
+        hideBiomePrompt();
         fullscreenVideoWasPaused = Boolean(game?.loadingPaused);
         const canvas = game?.renderer?.domElement;
         if (canvas) {
@@ -2448,6 +2453,7 @@ function suspendGameForFullscreenVideo() {
         fullscreenVideoSuspendDepth = Math.max(0, fullscreenVideoSuspendDepth - 1);
         if (fullscreenVideoSuspendDepth > 0) return;
 
+        document.body.classList.remove('cutscene-video-active');
         const activeGame = window.game;
         const canvas = activeGame?.renderer?.domElement;
         if (canvas) canvas.style.visibility = fullscreenVideoCanvasVisibility;
@@ -4095,6 +4101,7 @@ window.addEventListener('depth-tier-changed', (event) => {
         const label = event?.detail?.label ?? `DEPTH ${tier}`;
         AudioManager.play('ui_boot', { volume: 0.28, playbackRate: 0.78 + tier * 0.06, bus: 'sfx' });
         showBiomePrompt(`> DEPTH: ${label}${formatDepthCrossingDelta(event?.detail?.crossing)}`);
+        showRadioTransmission(`SUIT: ${crossingGuidance(window.game?.playerVitals)}`);
         maybeShowCaveSignalTransmission();
     }
 });
@@ -4417,10 +4424,14 @@ function refreshLastContractor() {
 function generateDeathReport(stats, reason) {
     const biome = stats.biomeLabel ?? 'ACTIVE SECTOR';
     const depth = stats.distanceTravelled ?? 0;
+    const depthTier = stats.depthTierName ?? `DEPTH ${stats.depthTier ?? 0}`;
     const box = blackBoxStore.load();
     const salvage = box.active ? box.salvage : null;
     const recoverable = salvage
         ? ` // RECOVERABLE: ${salvage.tech ?? 0} TECH / ${salvage.coin ?? 0} COIN / ${salvage.med ?? 0} MED`
+        : '';
+    const boxCoord = (box.active && box.x != null && box.z != null)
+        ? ` // BLACK BOX LOC: [${Math.round(box.x)}, ${Math.round(box.z)}]`
         : '';
     const causeMap = {
         'o2-depletion':       '> CAUSE: EXOSUIT ATMOSPHERIC FAILURE — O₂ RESERVES EXHAUSTED',
@@ -4458,7 +4469,8 @@ function generateDeathReport(stats, reason) {
         }
     }
     return [
-        `> LAST POS: ${biome} // DIST: ${Math.round(depth)}u // BANKED: ${stats.totalPickups ?? 0}${recoverable} // THREATS: ${stats.snailsKilled ?? 0}`,
+        `> TELEMETRY: ${biome} // TIER: ${depthTier} // DIST: ${Math.round(depth)}u // THREATS PURGED: ${stats.snailsKilled ?? 0}`,
+        `> CARGO: ${stats.totalPickups ?? 0} UNITS BANKED${recoverable}${boxCoord}`,
         cause
     ].join('\n');
 }
@@ -4565,9 +4577,13 @@ function showGameOverScreen(stats, { isVictory = false, deathReason = 'hazard' }
     const subtitle = document.querySelector('.game-over-subtitle');
     if (title) title.textContent = isVictory ? 'EXTRACTION COMPLETE' : 'EXOSUIT FAILURE';
     if (subtitle) {
-        const report = isVictory
+        const outcomeReport = isVictory
             ? `> MISSION: ${stats.missionLabel ?? 'COMPLETE'}. RETURNING TO MOTHERSHIP.`
             : generateDeathReport(stats, deathReason);
+        const report = `${outcomeReport}\n\n${expeditionDebrief({
+            victory: isVictory, reason: deathReason,
+            buildCount: (window.game?.runRelics?.length ?? 0) + (window.game?.runOverclocks?.length ?? 0)
+        })}`;
         subtitle.innerHTML = '';
         subtitle.style.whiteSpace = 'pre-wrap';
         let charIdx = 0;
@@ -4722,6 +4738,11 @@ function showGameOverScreen(stats, { isVictory = false, deathReason = 'hazard' }
     if (archiveRow) archiveRow.classList.toggle('hidden', logsFound === 0);
     if (archiveText) archiveText.textContent = `LOGS RECOVERED: ${logsFound}/${ALL_LORE_KEYS.length}`;
 
+    // Two runs with identical stats still read differently if the player is
+    // told which pressure they were carrying.
+    const runCardNote = document.getElementById('go-run-cards');
+    if (runCardNote) runCardNote.textContent = summarizeRunCards(activeRunCards);
+
     const modal = document.getElementById('game-over-modal');
     if (modal) {
         modal.classList.remove('hidden');
@@ -4758,6 +4779,20 @@ window.addEventListener('run-cards-drawn', (event) => {
         } else {
             seedHUD.classList.add('hidden');
         }
+    }
+    // ROGUE-02: show the terms of the run's bargain. The seed above is debug
+    // only; these are the cards the player is actually living with.
+    const cardStrip = document.getElementById('hud-run-cards');
+    if (cardStrip) {
+        const badges = formatRunCardBadges(activeRunCards);
+        cardStrip.replaceChildren(...badges.map((badge) => {
+            const chip = document.createElement('span');
+            chip.className = `run-card-chip run-card-chip--${badge.type}`;
+            chip.textContent = badge.label;
+            chip.title = badge.blurb;
+            return chip;
+        }));
+        cardStrip.classList.toggle('hidden', badges.length === 0);
     }
     updateQueensLedgerHUD();
 });
@@ -5087,11 +5122,19 @@ window.addEventListener('goal-unlocked', (event) => {
 });
 
 window.addEventListener('o2-generator-upgraded', (event) => {
-    if (event?.detail?.level === 1) return;
-    const line = getDialogueLine('majorUpgrade', Math.random, getActiveSuitDialogueContext());
-    if (line) showBiomePrompt(`> BUNKER: ${line}`);
+    // Level 1 is the milestone build: it runs its own startup sequence, boss
+    // warning and dialogue, so the generic "major upgrade" bunker chatter would
+    // just talk over them. The *cutscene* is a different matter -- it is the
+    // establishing beat for that milestone, and returning early here meant
+    // event-o2-generator-upgraded.webm never played on the one build it was
+    // authored for. Suppress the chatter, keep the video.
+    const isMilestoneBuild = event?.detail?.level === 1;
+    if (!isMilestoneBuild) {
+        const line = getDialogueLine('majorUpgrade', Math.random, getActiveSuitDialogueContext());
+        if (line) showBiomePrompt(`> BUNKER: ${line}`);
+    }
     playAuthoredEventOnce('o2_generator_upgraded', {
-        videoBase: 'event-o2-generator-upgraded',
+        videoBase: 'int_04_warmth_beneath_the_ice',
         eventDetail: event?.detail ?? {}
     });
 });
@@ -7195,15 +7238,29 @@ function playCutsceneVideo(base, options = {}) {
             window.hbLog('AUDIO', 'info', `Playing cutscene video: ${base}`);
         }
 
+        const CUTSCENE_UPGRADE_MAP = {
+            'event-o2-generator-upgraded': 'int_04_warmth_beneath_the_ice',
+            'event-boss-encounter-cybersnail': 'int_13_a_snail_blocks_the_hallway',
+            'event-boss-encounter-cryosnail': 'int_26_absolute_zero_has_a_shell',
+            'event-boss-encounter-sporesnail': 'int_27_the_bloom_that_hunts',
+            'boss_encounter_cybersnail': 'int_13_a_snail_blocks_the_hallway',
+            'boss_encounter_cryosnail': 'int_26_absolute_zero_has_a_shell',
+            'boss_encounter_sporesnail': 'int_27_the_bloom_that_hunts'
+        };
+        const resolvedBase = CUTSCENE_UPGRADE_MAP[base] || base;
+
         const host = getCutsceneVideoHost();
         const overlay = document.createElement('div');
         const activeTone = tone || fallback?.tone || 'event';
         overlay.className = `class-intro-overlay cinematic-still-overlay--${activeTone}`;
-        if (base === 'DoorIntro' || base.includes('DoorIntro')) {
+        if (resolvedBase === 'DoorIntro' || resolvedBase.includes('DoorIntro')) {
             overlay.style.backgroundColor = '#000000';
             overlay.style.setProperty('--class-intro-poster', 'none');
+        } else if (resolvedBase.startsWith('int_')) {
+            const cleanSlug = resolvedBase.replace(/(_key_v1|_motion_v1)?\.(mp4|webm)$/, '').replace(/(_key_v1|_motion_v1)$/, '');
+            overlay.style.setProperty('--class-intro-poster', `url('${assetUrl(`/interstitials/${cleanSlug}_key_v1.webp`)}')`);
         } else {
-            const posterUrl = base.includes('/') || base.endsWith('.mp4') ? '/title_key_art_v2.png' : `/cutscenes/${base}-poster.jpg`;
+            const posterUrl = resolvedBase.includes('/') || resolvedBase.endsWith('.mp4') ? '/title_key_art_v2.png' : `/cutscenes/${resolvedBase}-poster.jpg`;
             overlay.style.setProperty('--class-intro-poster', `url('${assetUrl(posterUrl)}')`);
         }
 
@@ -7217,39 +7274,40 @@ function playCutsceneVideo(base, options = {}) {
         video.controls = false;
         video.preload = 'auto';
 
+        const prefersMp4 = Boolean(video.canPlayType('video/mp4'));
         const sources = [];
-        if (base === 'DoorIntro' || base === '/DoorIntro.mp4' || base === 'DoorIntro.mp4') {
-            // webm first so browsers without H.264 support (Linux Electron
-            // builds commonly lack it) pick it up via native <source> fallback.
+        if (resolvedBase === 'DoorIntro' || resolvedBase === '/DoorIntro.mp4' || resolvedBase === 'DoorIntro.mp4') {
             sources.push('/DoorIntro.webm', '/DoorIntro.mp4');
         }
-        if (base.startsWith('/')) {
-            // Explicit root media can still carry both desktop-Electron WebM
-            // and browser-friendly MP4 variants. Prefer the codec this
-            // Chromium build claims to support and retain the other as the
-            // native <source> fallback.
-            if (base.endsWith('.webm') || base.endsWith('.mp4')) {
-                const stem = base.endsWith('.webm')
-                    ? base.slice(0, -'.webm'.length)
-                    : base.slice(0, -'.mp4'.length);
+        if (resolvedBase.startsWith('int_')) {
+            const cleanSlug = resolvedBase.replace(/(_key_v1|_motion_v1)?\.(mp4|webm)$/, '').replace(/(_key_v1|_motion_v1)$/, '');
+            const mp4Path = `/interstitials/${cleanSlug}_key_v1.mp4`;
+            const webmPath = `/interstitials/motion/${cleanSlug}_motion_v1.webm`;
+            sources.push(...(prefersMp4 ? [mp4Path, webmPath] : [webmPath, mp4Path]));
+        }
+        if (resolvedBase.startsWith('/')) {
+            if (resolvedBase.endsWith('.webm') || resolvedBase.endsWith('.mp4')) {
+                const stem = resolvedBase.endsWith('.webm')
+                    ? resolvedBase.slice(0, -'.webm'.length)
+                    : resolvedBase.slice(0, -'.mp4'.length);
                 const webm = `${stem}.webm`;
                 const mp4 = `${stem}.mp4`;
-                const prefersMp4 = Boolean(video.canPlayType('video/mp4'));
                 sources.push(...(prefersMp4 ? [mp4, webm] : [webm, mp4]));
             } else {
-                sources.push(base);
+                sources.push(resolvedBase);
             }
-        } else if (base.startsWith('int_') || base.includes('interstitial')) {
-            sources.push(`/interstitials/motion/${base}.webm`, `/interstitials/motion/${base}.mp4`);
         }
         sources.push(
-            `/cutscenes/${base}.webm`,
-            `/cutscenes/${base}.mp4`,
-            `/interstitials/motion/${base}.webm`,
-            `/interstitials/motion/${base}.mp4`,
-            `/${base}.mp4`,
-            `/${base}.webm`
+            `/cutscenes/${resolvedBase}.webm`,
+            `/cutscenes/${resolvedBase}.mp4`,
+            `/interstitials/motion/${resolvedBase}.webm`,
+            `/interstitials/motion/${resolvedBase}.mp4`,
+            `/${resolvedBase}.mp4`,
+            `/${resolvedBase}.webm`
         );
+        if (base !== resolvedBase) {
+            sources.push(`/cutscenes/${base}.webm`, `/cutscenes/${base}.mp4`);
+        }
 
         for (const src of [...new Set(sources)]) {
             const sourceEl = document.createElement('source');
@@ -7261,7 +7319,7 @@ function playCutsceneVideo(base, options = {}) {
 
         const skipHint = document.createElement('div');
         skipHint.className = 'class-intro-skip cinematic-still-skip';
-        skipHint.textContent = 'PRESS ANY BUTTON / KEY TO SKIP';
+        skipHint.textContent = 'PRESS SPACE / ENTER TO SKIP';
 
         // Render text overlay on top of video when kicker/title/body are provided
         const resolvedKicker = kicker || fallback?.kicker || '';
@@ -7362,12 +7420,16 @@ function playCutsceneVideo(base, options = {}) {
             }, cleanupDelay);
         };
 
+        const overlayMountTime = Date.now();
         const onKey = (event) => {
+            if (event.code !== 'Space' && event.code !== 'Enter' && event.code !== 'Escape') return;
+            if (Date.now() - overlayMountTime < 450) return;
             event.preventDefault();
             finish({ skipped: true });
         };
 
         const onPointer = (event) => {
+            if (Date.now() - overlayMountTime < 600) return;
             event.preventDefault();
             finish({ skipped: true });
         };
@@ -7378,6 +7440,7 @@ function playCutsceneVideo(base, options = {}) {
                 clearInterval(checkGamepadInterval);
                 return;
             }
+            if (Date.now() - overlayMountTime < 600) return;
             if (typeof navigator !== 'undefined' && navigator.getGamepads) {
                 const pads = navigator.getGamepads() || [];
                 const anyPressed = Array.from(pads).some((gp) => gp?.connected && gp?.buttons?.some((b) => b?.pressed));
@@ -7391,15 +7454,14 @@ function playCutsceneVideo(base, options = {}) {
         }, 50);
 
         video.addEventListener('timeupdate', () => {
-            if (!fadingOut && Number.isFinite(video.duration) && video.duration > 0) {
-                const doorCutoffTime = (base === 'DoorIntro' || base.includes('DoorIntro') || base.includes('intro'))
-                    ? Math.min(video.duration * 0.40, 3.2)
-                    : (video.duration - 0.5);
-
-                if (video.currentTime >= doorCutoffTime) {
-                    fadingOut = true;
-                    finish({ skipped: false });
-                }
+            if (fadingOut) return;
+            // The opening is the only clip that is deliberately trimmed (it runs
+            // under the closing blast doors). Everything else plays in full --
+            // see src/cutsceneTiming.js, which owns and tests this rule.
+            const cutoff = cutsceneCutoffTime(base, video.duration);
+            if (cutoff !== null && video.currentTime >= cutoff) {
+                fadingOut = true;
+                finish({ skipped: false });
             }
         });
 
@@ -7408,6 +7470,13 @@ function playCutsceneVideo(base, options = {}) {
         video.addEventListener('loadeddata', () => {
             played = true;
             video.style.opacity = '1';
+            const playPromise = video.play?.();
+            if (playPromise?.catch) {
+                playPromise.catch(() => {
+                    video.muted = true;
+                    video.play?.().catch(() => {});
+                });
+            }
         }, { once: true });
 
         overlay.addEventListener('pointerup', onPointer);
@@ -7541,12 +7610,38 @@ function playCinematicStills(rawSpec = {}) {
     });
 }
 
-async function playCinematicBeat({
-    videoBase = null,
-    fallback = null
-} = {}) {
+async function playCinematicBeat(options = {}) {
+    if (Array.isArray(options)) {
+        let lastResult = null;
+        for (const item of options) {
+            lastResult = await playCinematicBeat(item);
+            if (lastResult?.skipped) break;
+        }
+        return lastResult;
+    }
+    if (options?.sequence && Array.isArray(options.sequence)) {
+        let lastResult = null;
+        for (const item of options.sequence) {
+            lastResult = await playCinematicBeat(item);
+            if (lastResult?.skipped) break;
+        }
+        return lastResult;
+    }
+    const {
+        videoBase = null,
+        fallback = null,
+        playSequence = false
+    } = options;
     const spec = fallback ? normalizeCinematicStillSpec(fallback) : null;
     const targetVideo = videoBase || spec?.id || null;
+
+    // When playSequence is true, play the still first, then play the video right after!
+    if (playSequence && spec && targetVideo) {
+        const stillResult = await playCinematicStills(spec);
+        if (stillResult?.skipped) return stillResult;
+        return playCutsceneVideo(targetVideo, { ...spec, fallback: spec });
+    }
+
     if (targetVideo) {
         const result = await playCutsceneVideo(targetVideo, { ...spec, fallback: spec });
         if (result?.played || result?.skipped) return result;
@@ -11185,12 +11280,18 @@ window.addEventListener('o2-startup-sequence-started', (event) => {
     });
 });
 const MILESTONE_BOSS_CINEMATIC_SUFFIXES = new Set(['cryosnail', 'cybersnail', 'sporesnail']);
+const MILESTONE_BOSS_INTERSTITIAL_MAP = {
+    cybersnail: 'int_13_a_snail_blocks_the_hallway',
+    cryosnail: 'int_26_absolute_zero_has_a_shell',
+    sporesnail: 'int_27_the_bloom_that_hunts'
+};
 window.addEventListener('milestone-boss-warning', (event) => {
     showBiomePrompt('> ALERT: PERIMETER BREACH — LARGE HOSTILE SIGNATURE CLOSING <');
     const bossType = String(event?.detail?.type ?? '').replace(/^boss_/, '');
-    const suffix = MILESTONE_BOSS_CINEMATIC_SUFFIXES.has(bossType) ? bossType : 'cryosnail';
+    const suffix = MILESTONE_BOSS_CINEMATIC_SUFFIXES.has(bossType) ? bossType : 'cybersnail';
+    const videoBase = MILESTONE_BOSS_INTERSTITIAL_MAP[suffix] || `event-boss-encounter-${suffix}`;
     playAuthoredEventOnce(`boss_encounter_${suffix}`, {
-        videoBase: `event-boss-encounter-${suffix}`,
+        videoBase,
         eventDetail: event?.detail ?? {}
     });
 });

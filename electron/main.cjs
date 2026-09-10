@@ -7,7 +7,7 @@
 //   3. Achievement forwarding from the renderer's `achievement-unlocked`.
 // Dev mode (ELECTRON_DEV=1) loads the Vite dev server; production loads dist/.
 
-const { app, BrowserWindow, ipcMain } = require('electron');
+const { app, BrowserWindow, ipcMain, shell } = require('electron');
 
 // docs/steam-lobby-integration-plan-2026-08-20.md step 1: Steam's "Join
 // Game" launches a second OS process with `+connect_lobby <id>` when a
@@ -55,6 +55,7 @@ if (process.platform === 'linux') {
 
 const path = require('node:path');
 const fs = require('node:fs');
+const fsp = require('node:fs/promises');
 const crypto = require('node:crypto');
 const {
     sanitizeSaveData,
@@ -743,6 +744,44 @@ function scheduleFlush() {
     if (saveTimer) clearTimeout(saveTimer);
     saveTimer = setTimeout(flushSaveFile, 400);
 }
+
+// Session log export. The renderer's browser path for this is an <a download>
+// blob, which in Electron raises a native save dialog -- effectively unusable
+// on a Steam Deck in Gaming Mode, where there is no comfortable file picker.
+// Writing straight to a known directory means the Deck just produces a file,
+// and the console prints its full path so it can be copied off the device.
+const sessionLogDir = () => path.join(app.getPath('userData'), 'logs');
+
+ipcMain.handle('hb:writeSessionLog', async (_event, filename, body) => {
+    try {
+        // The renderer supplies the name; never let it escape the log dir.
+        const safeName = String(filename ?? '')
+            .replace(/[^a-zA-Z0-9._-]/g, '')
+            || `hunker-bunker-session-${Date.now()}.json`;
+        const dir = sessionLogDir();
+        const target = path.join(dir, safeName);
+        if (!target.startsWith(dir)) throw new Error('path escape');
+        const text = typeof body === 'string' ? body : String(body ?? '');
+        await fsp.mkdir(dir, { recursive: true });
+        await fsp.writeFile(target, text, 'utf8');
+        return { ok: true, path: target, bytes: Buffer.byteLength(text, 'utf8') };
+    } catch (err) {
+        return { ok: false, error: String(err?.message ?? err) };
+    }
+});
+
+// Let the player open the folder straight from the console, so retrieving a
+// Deck log does not require knowing where userData lives.
+ipcMain.handle('hb:openSessionLogDir', async () => {
+    try {
+        const dir = sessionLogDir();
+        await fsp.mkdir(dir, { recursive: true });
+        await shell.openPath(dir);
+        return { ok: true, path: dir };
+    } catch (err) {
+        return { ok: false, error: String(err?.message ?? err) };
+    }
+});
 
 ipcMain.handle('hb:getSaveData', () => loadSaveFile());
 // Synchronous variant for the preload: the save MUST be in localStorage
