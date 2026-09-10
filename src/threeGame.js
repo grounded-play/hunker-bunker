@@ -22,7 +22,7 @@ export const TiltShiftPassShader = {
         tDiffuse: { value: null },
         focusY: { value: 0.5 },
         focusRange: { value: 0.38 },
-        blurAmount: { value: 2.4 },
+        blurAmount: { value: 4.2 },
         texelSize: { value: new THREE.Vector2(1 / 1280, 1 / 800) },
         dir: { value: new THREE.Vector2(0, 1) }
     },
@@ -45,7 +45,7 @@ export const TiltShiftPassShader = {
         void main() {
             float dist = abs(vUv.y - focusY);
             float normDist = clamp(dist / max(0.01, focusRange), 0.0, 3.0);
-            float factor = smoothstep(0.7, 1.8, normDist);
+            float factor = smoothstep(1.0, 1.7, normDist);
             factor = factor * factor;
 
             vec2 step = dir * texelSize * (blurAmount * factor);
@@ -1257,7 +1257,7 @@ export class ThreeGame {
         this.noclipSpeedMult = 3.5;
         this.activeTurret = null;
         this.turretCooldownTimer = 0;
-        this.cameraLift = 10;
+        this.cameraLift = 12.5;
         this.cameraOrbitRadius = Math.hypot(8, 8);
         this.cameraAzimuth = Math.atan2(8, 8);
         this.cameraRotationInput = 0;
@@ -1267,7 +1267,7 @@ export class ThreeGame {
         this.cameraDistancePreset = 'close';
         this.cameraFollowPreset = 'tight';
         this.cameraFollowRate = 26;
-        this.thirdPersonCameraConfig = { ...THIRD_PERSON_CAMERA, distance: 3.05, shoulder: 0.48 };
+        this.thirdPersonCameraConfig = { ...THIRD_PERSON_CAMERA, distance: 5.4, lift: 5.8, lookAhead: 1.8, shoulder: 0.3 };
         this._mouseEdgeTurnInput = 0;
         this._cameraTurnVelocity = 0;
         this.cameraOffset = new THREE.Vector3(
@@ -4538,6 +4538,10 @@ export class ThreeGame {
         }
         this.isMultiplayer = false;
         this.multiplayerMode = null;
+        // Shared world beats are deduped per session. Without clearing, a
+        // second co-op run would treat a beat it already saw (the O2 build,
+        // say) as a replay and silently skip it.
+        this._appliedWorldEvents = null;
         this.multiplayerRoomCode = null;
         this.multiplayerCrashPlan = null;
         this.multiplayerLocalPlayerId = null;
@@ -7407,8 +7411,8 @@ export class ThreeGame {
     }
 
     setCameraTuning({ distance = this.cameraDistancePreset, follow = this.cameraFollowPreset } = {}) {
-        const distanceByPreset = { close: 3.05, standard: 3.65, wide: 4.35 };
-        const shoulderByPreset = { close: 0.48, standard: 0.58, wide: 0.68 };
+        const distanceByPreset = { close: 5.4, standard: 6.2, wide: 7.2 };
+        const shoulderByPreset = { close: 0.3, standard: 0.4, wide: 0.5 };
         const followRateByPreset = { smooth: 10, balanced: 17, tight: 26 };
         this.cameraDistancePreset = distanceByPreset[distance] ? distance : 'close';
         this.cameraFollowPreset = followRateByPreset[follow] ? follow : 'tight';
@@ -19186,9 +19190,9 @@ export class ThreeGame {
         // Keep night visibility screen-radial. Three.js fog is camera-depth
         // based in this isometric view, which makes the top of the canvas darker
         // than the bottom and makes "up-screen" flashlight aim feel weaker.
-        // The darkness canvas owns night falloff; fog stays mostly atmospheric.
-        this.scene.fog.near = this.nightVision ? 1000 : lerp(this.baseFogRange.near * 4.0, this.baseFogRange.near * 1.05, dayBlend);
-        this.scene.fog.far = this.nightVision ? 10000 : lerp(this.baseFogRange.far * 12.0, this.baseFogRange.far * 1.25, dayBlend);
+        // Radial darkness handles the suit; tighter atmospheric fog hides distant chunk edges.
+        this.scene.fog.near = this.nightVision ? 1000 : lerp(this.baseFogRange.near * 0.9, this.baseFogRange.near * 1.05, dayBlend);
+        this.scene.fog.far = this.nightVision ? 10000 : lerp(this.baseFogRange.far * 0.95, this.baseFogRange.far * 1.15, dayBlend);
 
         // Weather can further reduce visibility (applied multiplicatively; day/night
         // resets fog each frame so this never accumulates).

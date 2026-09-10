@@ -6551,6 +6551,8 @@ function updateHudCompass() {
 
 function installHudCompass() {
     if (!desktopCompassArrow || !desktopCompassDistance) return;
+    const info = document.getElementById('tactical-telemeter-box');
+    if (info) document.getElementById('hud-map-info')?.append(info);
 
     if (desktopCompass && !desktopCompass.dataset.clickBound) {
         desktopCompass.dataset.clickBound = 'true';
@@ -6569,6 +6571,14 @@ function installHudCompass() {
     const step = () => {
         syncHudCompassVisibility();
         updateHudCompass();
+        const now = performance.now();
+        if (!desktopCompass.classList.contains('hidden') && now - (step.lastMapDraw ?? 0) >= 200) {
+            drawTacticalMapOverlay('hud-blueprint-canvas', true);
+            if (document.getElementById('tactical-telemeter-box')?.classList.contains('hidden')) {
+                window.game?.updateTacticalTelemeter?.(null);
+            }
+            step.lastMapDraw = now;
+        }
         requestAnimationFrame(step);
     };
 
@@ -10204,8 +10214,9 @@ function pollTacticalMapGamepadInput() {
     if (pad.buttons?.[5]?.pressed) adjustTacticalMapZoom(0.02);
 }
 
-function drawTacticalMapOverlay() {
-    const canvas = document.getElementById('tactical-map-canvas');
+function drawTacticalMapOverlay(canvasId = 'tactical-map-canvas', compact = false) {
+    const view = compact ? { zoom: 2.6, panX: 0, panY: 0, debugRevealAll: false } : tacticalMapState;
+    const canvas = document.getElementById(canvasId);
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
@@ -10232,17 +10243,17 @@ function drawTacticalMapOverlay() {
     const detailedChunks = mapState.detailedChunks ?? [];
     const discoveredKeys = new Set(detailedChunks.map((chunk) => chunk.key));
 
-    const tileStatEl = document.getElementById('map-stat-tiles');
+    const tileStatEl = compact ? null : document.getElementById('map-stat-tiles');
     if (tileStatEl) tileStatEl.textContent = String(detailedChunks.length);
-    const signalStatEl = document.getElementById('map-stat-signals');
+    const signalStatEl = compact ? null : document.getElementById('map-stat-signals');
     if (signalStatEl) signalStatEl.textContent = String(landmarks.length);
 
     // World-space blueprint coordinates keep home base at the canvas center.
     // Panning is an explicit user offset, never an implicit explored-bounds
     // shift, so discovery can expand without making the map jump around.
-    const cellSize = 2.2 * tacticalMapState.zoom;
-    const offsetX = width / 2 - home.x * cellSize + tacticalMapState.panX;
-    const offsetY = height / 2 - home.z * cellSize + tacticalMapState.panY;
+    const cellSize = 2.2 * view.zoom;
+    const offsetX = width / 2 - (compact ? player.x : home.x) * cellSize + view.panX;
+    const offsetY = height / 2 - (compact ? player.z : home.z) * cellSize + view.panY;
     const worldToMap = (x, z) => ({ x: x * cellSize + offsetX, y: z * cellSize + offsetY });
 
     // Grid lines background
@@ -10265,7 +10276,7 @@ function drawTacticalMapOverlay() {
     // Debug uses the lightweight regional plan rather than generating every
     // 49x49 gameplay chunk. It reveals the complete macro route without
     // causing the same procedural-generation hitch the map is diagnosing.
-    if (tacticalMapState.debugRevealAll) {
+    if (view.debugRevealAll) {
         ctx.lineWidth = Math.max(1, cellSize * 0.7);
         ctx.strokeStyle = 'rgba(255, 176, 32, 0.42)';
         for (const edge of mapState.routeEdges ?? []) {
@@ -10347,7 +10358,7 @@ function drawTacticalMapOverlay() {
     // Landmarks (including Home Base)
     for (const landmark of landmarks) {
         const landmarkKey = `${Math.floor(landmark.x / chunkSize)},${Math.floor(landmark.z / chunkSize)}`;
-        if (landmark.type !== 'home_base' && !tacticalMapState.debugRevealAll && !discoveredKeys.has(landmarkKey)) continue;
+        if (landmark.type !== 'home_base' && !view.debugRevealAll && !discoveredKeys.has(landmarkKey)) continue;
         const point = worldToMap(landmark.x, landmark.z);
         const lx = point.x;
         const ly = point.y;
@@ -10372,25 +10383,25 @@ function drawTacticalMapOverlay() {
 
             ctx.fillStyle = '#ffd700';
             ctx.font = 'bold 11px Space Mono, monospace';
-            ctx.fillText(landmark.label ?? 'HOME BASE', lx, ly + 20);
+            if (!compact) ctx.fillText(landmark.label ?? 'HOME BASE', lx, ly + 20);
         } else if (landmark.type === 'camp') {
             ctx.fillStyle = '#ffaa00';
             ctx.fillText('⛺', lx, ly);
             ctx.fillStyle = '#d0e0f0';
             ctx.font = '10px Space Mono, monospace';
-            ctx.fillText(landmark.label ?? '', lx, ly + 14);
+            if (!compact) ctx.fillText(landmark.label ?? '', lx, ly + 14);
         } else if (landmark.type === 'hive') {
             ctx.fillStyle = '#ff0055';
             ctx.fillText('⚡', lx, ly);
             ctx.fillStyle = '#d0e0f0';
             ctx.font = '10px Space Mono, monospace';
-            ctx.fillText(landmark.label ?? '', lx, ly + 14);
+            if (!compact) ctx.fillText(landmark.label ?? '', lx, ly + 14);
         } else {
             ctx.fillStyle = '#a040ff';
             ctx.fillText('★', lx, ly);
             ctx.fillStyle = '#d0e0f0';
             ctx.font = '10px Space Mono, monospace';
-            ctx.fillText(landmark.label ?? '', lx, ly + 14);
+            if (!compact) ctx.fillText(landmark.label ?? '', lx, ly + 14);
         }
     }
 
@@ -10438,7 +10449,7 @@ function drawTacticalMapOverlay() {
 
     if (px >= -20 && px <= width + 20 && py >= -20 && py <= height + 20) {
         const time = Date.now() * 0.003;
-        const pulseRadius = 12 + Math.sin(time) * 4;
+        const pulseRadius = (compact ? 7 : 12) + Math.sin(time) * 2;
         ctx.beginPath();
         ctx.arc(px, py, pulseRadius, 0, Math.PI * 2);
         ctx.strokeStyle = 'rgba(0, 255, 170, 0.4)';
@@ -10468,7 +10479,7 @@ function drawTacticalMapOverlay() {
     ctx.font = '10px Space Mono, monospace';
     ctx.fillStyle = 'rgba(0, 229, 255, 0.6)';
     ctx.textAlign = 'left';
-    ctx.fillText(`ZOOM: ${tacticalMapState.zoom.toFixed(1)}x`, 12, height - 12);
+    if (!compact) ctx.fillText(`ZOOM: ${view.zoom.toFixed(1)}x`, 12, height - 12);
 }
 
 function toggleTacticalMapModal(forceState) {
@@ -10485,6 +10496,8 @@ function toggleTacticalMapModal(forceState) {
     // === false) is always allowed so an in-progress close can't get stuck.
     if (shouldOpen && appPhase !== 'gameplay') return;
 
+    const info = document.getElementById('tactical-telemeter-box');
+    document.getElementById(shouldOpen ? 'expanded-map-info' : 'hud-map-info')?.append(info);
     if (shouldOpen) {
         modal.classList.remove('hidden');
         modal.setAttribute('aria-hidden', 'false');
@@ -13646,6 +13659,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (titleContinueBtn) {
         titleContinueBtn.addEventListener('click', () => {
             if (!checkHasSaveData()) return;
+            // Same stale-session leak as NEW RUN above: CONTINUE launches a
+            // run directly, so resuming a save after a co-op match in the
+            // same tab would carry that session -- and its still-registered
+            // socket listeners -- into a solo run. CONTINUE is never part of
+            // multiplayer's own #start-game deploy chain, so clearing is safe.
+            clearMultiplayerSession();
             launchStandardRun({ resetBank: false, playIntro: false });
         });
     }

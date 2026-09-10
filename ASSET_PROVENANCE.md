@@ -199,3 +199,10 @@ Sprint 30 does not need to hand-document every historical file before any other 
 - Five rewards without unique models use existing achievement emblem PNGs. The manifest identifies those entries as `achievement-emblem`; it does not imply a finished model.
 - Evidence: `docs/reports/armory-asset-gaps.md` and `docs/reports/armory-implementation-2026-09-09.md`. The Armory now uses model renders in place of four chroma-green-backed icons. The factory Talon-C blockout and five unauthored reward models remain explicit art backlog.
 - State: integrated and browser-tested derivatives; no change to the underlying source assets' retail/provenance status.
+
+
+## September 10, 2026 — replacement operator insignia
+
+Five original images generated with OpenAI ImageGen for this repository: Bunker 404 Lost Squad (4123), Queen Slayer Gold Seal (4126), Void Horizon Sigil (4127), Ancient Core Glyphs (4128), Grand Marshal Relic Crest (4129). Prompts requested single transparent sci-fi fabric/metal badges; no third-party source artwork used. Runtime files are 256px and 512px PNG derivatives, retaining generated alpha. Queen Slayer Gold Seal has its own new file pair and no longer aliases the red Queen Slayer Emblem. No external marketplace rights or publication approval is inferred from generation.
+
+The legacy `chroma/` source slot for these five replacements also stores the original transparent master; no green-screen derivative is required or used.

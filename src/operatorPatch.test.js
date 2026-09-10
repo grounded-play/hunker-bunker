@@ -56,8 +56,9 @@ describe('createOperatorPatch', () => {
 
         expect(patch.root.position.x).toBeGreaterThan(0);
         expect(patch.root.position.z).toBeGreaterThan(0);
-        // Snug distance in front of spine (between 3cm and 8cm)
-        expect(patch.root.position.z).toBeLessThan(0.09);
+        // The fixture chest surface is at z=0.15; the backing must clear it.
+        expect(patch.root.position.z).toBeGreaterThan(0.15);
+        expect(patch.root.position.z).toBeLessThan(0.17);
     });
 
     it('loads patch images and manages texture lifecycle', () => {

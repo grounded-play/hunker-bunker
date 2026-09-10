@@ -903,6 +903,7 @@
             <div class="tactical-map-scanline"></div>
           </div>
           <div class="tactical-map-sidebar">
+            <div id="expanded-map-info" class="map-inspection-slot"></div>
             <div class="tactical-map-legend-title">BLUEPRINT LEGEND</div>
             <div class="tactical-map-legend-item">
               <span class="legend-chip legend-chip--home">🏠</span>
@@ -1220,9 +1221,10 @@
       <!-- Desktop Compass HUD (shown only on PC) -->
       <div id="desktop-compass" class="desktop-compass hidden" role="button" tabindex="0" title="Click or press M to toggle Tactical Map" aria-label="Tactical Compass (Click to open map)">
         <div class="desktop-compass__header">
-          <span>NAV-LINK: ACTIVE</span>
+          <span>TACTICAL MAP</span>
           <span class="desktop-compass__hint">[MAP / M]</span>
         </div>
+        <canvas id="hud-blueprint-canvas" width="300" height="180" aria-label="Explored tactical map"></canvas>
         <div class="desktop-compass__face">
           <div class="desktop-compass__ring">
             <div class="desktop-compass__arrow" id="desktop-compass-arrow"></div>
@@ -1246,6 +1248,7 @@
             </div>
           </div>
         </div>
+        <div id="hud-map-info" class="map-inspection-slot"></div>
       </div>
       <div class="header-bar hud-header">
         <div class="hud-header__center">

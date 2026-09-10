@@ -415,15 +415,15 @@ const catalog = {
         "desc": "Embossed gold seal celebrating brood queen termination.",
         "tradable": true,
         "marketable": true,
-        "img": "https://hunkerbunker.netlify.app/economy/emblem_queen_slayer.png",
-        "localImg": "/economy/emblem_queen_slayer.png",
-        "localImgLarge": "/economy/emblem_queen_slayer_large.png"
+        "img": "https://hunkerbunker.netlify.app/economy/decal_queen_slayer_gold_seal.png",
+        "localImg": "/economy/decal_queen_slayer_gold_seal.png",
+        "localImgLarge": "/economy/decal_queen_slayer_gold_seal_large.png"
     },
     "4127": {
         "itemdefid": 4127,
         "name": "Void Horizon Sigil",
         "rarity": "epic",
-        "desc": "Animated cosmic void circle that distorts ambient light.",
+        "desc": "Orbital violet-thread sigil surrounding an obsidian event horizon.",
         "tradable": true,
         "marketable": true,
         "img": "https://hunkerbunker.netlify.app/economy/decal_void_horizon_sigil.png",
@@ -445,7 +445,7 @@ const catalog = {
         "itemdefid": 4129,
         "name": "Grand Marshal Relic Crest",
         "rarity": "legendary",
-        "desc": "Crowned double-headed eagle cast in solid meteorite alloy.",
+        "desc": "Gilded marshal eagle and amber core framed by a meteorite-alloy laurel.",
         "tradable": true,
         "marketable": true,
         "img": "https://hunkerbunker.netlify.app/economy/decal_grand_marshal_relic_crest.png",

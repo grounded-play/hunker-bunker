@@ -64,6 +64,24 @@ describe('shared world events', () => {
         expect(dispatched).toHaveLength(0);
     });
 
+    // The dedupe set is per session: a second co-op run must be able to run
+    // the same beat again, not treat it as an already-seen replay.
+    it('forgets applied beats when the network is torn down', () => {
+        const { game, dispatched } = netGame();
+        const beat = { event: 'o2-generator-upgraded', detail: { level: 1 }, originId: 'them' };
+        ThreeGame.prototype.handleSharedWorldEvent.call(game, beat);
+        expect(dispatched).toHaveLength(1);
+
+        Object.assign(game, {
+            remotePlayers: new Map(), scene: { remove: vi.fn() },
+            netSocket: { off: vi.fn(), disconnect: vi.fn(), close: vi.fn() }
+        });
+        ThreeGame.prototype.teardownMultiplayerNetwork.call(game);
+
+        ThreeGame.prototype.handleSharedWorldEvent.call(game, beat);
+        expect(dispatched).toHaveLength(2);
+    });
+
     it('applies a given beat only once', () => {
         const { game, dispatched } = netGame();
         const beat = { event: 'o2-generator-upgraded', detail: { level: 1 }, originId: 'them' };
