@@ -81,6 +81,8 @@ describe('ThreeGame.teardownMultiplayerNetwork', () => {
         const expectedEvents = [
             'playerMoved', 'playerFired', 'playerDamaged', 'playerRevived',
             'playerDownedBroadcast', 'playerExtractedBroadcast', 'enemyDamaged', 'enemyHitReported', 'enemyStateSnapshot',
+            // Co-op shared world beats and the friendly-fire shove.
+            'worldEventBroadcast', 'playerNudged',
             'playerDisconnected', 'newPlayer', 'hostChanged'
         ];
         expect(fake._socketOffCalls.sort()).toEqual([...expectedEvents].sort());

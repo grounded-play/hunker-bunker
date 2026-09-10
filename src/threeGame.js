@@ -580,6 +580,13 @@ const PROCEDURAL_DOOR_OPEN_RADIUS = 2.7;
 const PROCEDURAL_DOOR_CLOSE_RADIUS = 3.6;
 const BOSS_WALL_BREAK_COOLDOWN = 0.42;
 const BOSS_WALL_BREAK_DAMAGE = 999;
+// Co-op friendly fire shoves a squadmate along the bullet's travel direction
+// instead of damaging them: enough to move someone out of a doorway, not enough
+// to fling them off a ledge.
+const FRIENDLY_FIRE_PUSH_DISTANCE = 0.55;
+// Squadmate avatars are roughly player-sized; keep the catch radius forgiving
+// enough that a shove reads as intentional rather than pixel-perfect.
+const SQUADMATE_HIT_RADIUS = 0.55;
 
 // --- Sprint 10 combat tuning / feature flags ---
 const FEATURE_WALL_DECALS = true;
@@ -4457,6 +4464,8 @@ export class ThreeGame {
             this.netSocket.on('enemyDamaged', (data) => this.handleRemoteEnemyDamage(data));
             this.netSocket.on('enemyHitReported', (data) => this.handleEnemyHitReported(data));
             this.netSocket.on('enemyStateSnapshot', (data) => this.handleEnemyStateSnapshot(data));
+            this.netSocket.on('worldEventBroadcast', (data) => this.handleSharedWorldEvent(data));
+            this.netSocket.on('playerNudged', (data) => this.handlePlayerNudged(data));
             this.netSocket.on('playerDisconnected', (id) => this.removeRemotePlayer(id));
             this.netSocket.on('newPlayer', (player) => this.getOrCreateRemotePlayer(player));
             // Sprint 26: server/relay.js's disconnect handler now promotes a
@@ -4520,6 +4529,8 @@ export class ThreeGame {
             this.netSocket.off('enemyDamaged');
             this.netSocket.off('enemyHitReported');
             this.netSocket.off('enemyStateSnapshot');
+            this.netSocket.off('worldEventBroadcast');
+            this.netSocket.off('playerNudged');
             this.netSocket.off('playerDisconnected');
             this.netSocket.off('newPlayer');
             this.netSocket.off('hostChanged');
@@ -4986,7 +4997,9 @@ export class ThreeGame {
                 x: sprite.position.x,
                 z: sprite.position.z,
                 hp: Number.isFinite(sprite.userData.hp) ? sprite.userData.hp : null,
-                burstTriggered: Boolean(sprite.userData.burstTriggered)
+                burstTriggered: Boolean(sprite.userData.burstTriggered),
+                isBoss: Boolean(sprite.userData.isBoss),
+                scale: Number.isFinite(sprite.userData.baseScaleX) ? sprite.userData.baseScaleX : null
             });
             if (enemies.length >= 256) break;
         }
@@ -4995,12 +5008,162 @@ export class ThreeGame {
         return true;
     }
 
+    // Recreate a host-owned boss locally so a peer can see and be hurt by it.
+    // Purely visual/collision: the host stays authoritative for its position and
+    // HP, which arrive in the same snapshot that created it.
+    // Announce a beat that changes the shared world. Milestone events used to be
+    // purely local, so one player repairing the O2 generator produced nothing at
+    // all on the other client -- no cutscene, no generator rise, no boss.
+    // A squadmate's bullet shoves rather than hurts. Applied by the target's own
+    // client so nobody argues over position authority -- the wire only carries
+    // the impulse.
+    // Slide the player along a direction, per axis, so walls still block the
+    // push. Same approach as the snail contact knockback rather than a second
+    // movement system.
+    // A local round overlapping a remote squadmate's avatar. Co-op only: PvP
+    // keeps real damage, and a solo run has no squadmates to hit.
+    checkProjectileSquadmateHit(projectile) {
+        if (!this.isMultiplayer || this.multiplayerMode === 'pvp') return null;
+        if (!this.remotePlayers?.size || projectile?.isEnemy) return null;
+        const px = projectile.mesh.position.x;
+        const pz = projectile.mesh.position.z;
+        for (const [id, remote] of this.remotePlayers) {
+            const mesh = remote?.mesh;
+            if (!mesh || mesh.visible === false || remote.isDowned) continue;
+            const distance = Math.hypot(px - mesh.position.x, pz - mesh.position.z);
+            if (distance <= SQUADMATE_HIT_RADIUS) return { id, remote };
+        }
+        return null;
+    }
+
+    // Send the shove along the round's own travel direction, so a squadmate is
+    // pushed the way the bullet was going rather than away from the shooter.
+    nudgeSquadmate(squadmate, projectile) {
+        if (!squadmate?.id || !this.netSocket) return false;
+        const vx = projectile?.vx ?? 0;
+        const vz = projectile?.vz ?? 0;
+        const length = Math.hypot(vx, vz);
+        if (length <= 1e-4) return false;
+        this.netSocket.emit('playerNudge', {
+            targetId: squadmate.id,
+            dirX: vx / length,
+            dirZ: vz / length,
+            force: 1
+        });
+        return true;
+    }
+
+    pushPlayerAlong(dirX, dirZ, distance) {
+        if (!this.player || !Number.isFinite(distance) || distance <= 0) return false;
+        const pushX = dirX * distance;
+        const pushZ = dirZ * distance;
+        let moved = false;
+        if (this.canOccupyPosition(this.player.position.x + pushX, this.player.position.z)) {
+            this.player.position.x += pushX;
+            moved = true;
+        }
+        if (this.canOccupyPosition(this.player.position.x, this.player.position.z + pushZ)) {
+            this.player.position.z += pushZ;
+            moved = true;
+        }
+        return moved;
+    }
+
+    handlePlayerNudged(data) {
+        if (!data || data.targetId !== this.multiplayerLocalPlayerId) return false;
+        if (this.multiplayerMode === 'pvp' || !this.player || this.isPlayerDead) return false;
+        const dirX = Number(data.dirX);
+        const dirZ = Number(data.dirZ);
+        if (!Number.isFinite(dirX) || !Number.isFinite(dirZ)) return false;
+        const length = Math.hypot(dirX, dirZ);
+        if (length <= 1e-4) return false;
+        const force = Number.isFinite(data.force) ? Math.max(0, Math.min(4, data.force)) : 1;
+        this.pushPlayerAlong(dirX / length, dirZ / length, FRIENDLY_FIRE_PUSH_DISTANCE * force);
+        window.AudioManager?.play?.('ui_error', { volume: 0.25 });
+        return true;
+    }
+
+    broadcastSharedWorldEvent(event, detail = {}) {
+        if (!this.isMultiplayer || !this.netSocket || !event) return false;
+        this.netSocket.emit('worldEvent', { event, detail });
+        return true;
+    }
+
+    // Apply a beat announced by anyone in the room, including our own echo, so
+    // every client runs it from one ordering. `_appliedWorldEvents` keeps a beat
+    // idempotent: the originator has usually already run its local effects.
+    handleSharedWorldEvent(data) {
+        const event = data?.event;
+        if (!event) return false;
+        const detail = data?.detail ?? {};
+        const isEcho = data?.originId && data.originId === this.multiplayerLocalPlayerId;
+
+        this._appliedWorldEvents = this._appliedWorldEvents ?? new Set();
+        const dedupeKey = `${event}:${detail.level ?? ''}:${detail.goalKey ?? ''}`;
+        if (this._appliedWorldEvents.has(dedupeKey)) return false;
+        this._appliedWorldEvents.add(dedupeKey);
+
+        // The originator already ran the beat locally when it fired; replaying it
+        // would double the cutscene and the boss.
+        if (isEcho) return false;
+
+        if (typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent(event, {
+                detail: { ...detail, fromRemote: true }
+            }));
+        }
+        return true;
+    }
+
+    materializeRemoteBoss(state) {
+        if (!state?.scatterKey || !state.enemyType || !this.scatterMaterials?.[state.enemyType]) return null;
+        if (!Number.isFinite(state.x) || !Number.isFinite(state.z)) return null;
+        const chunkX = Math.floor(state.x / this.chunkSize);
+        const chunkY = Math.floor(state.z / this.chunkSize);
+        const group = this.chunkMeshes?.get(`${chunkX},${chunkY}`);
+        if (!group) return null; // Chunk not mounted yet; a later snapshot retries.
+
+        const boss = this.createScatterInstance({
+            x: state.x,
+            z: state.z,
+            type: state.enemyType,
+            scatterKey: state.scatterKey,
+            scale: Number.isFinite(state.scale) ? state.scale : 3.2,
+            rotation: 0,
+            tiltX: 0,
+            tiltZ: 0,
+            elevation: 0.1,
+            groupType: 'boss',
+            phase: 0,
+            opacity: 1,
+            isBoss: true
+        });
+        if (!boss) return null;
+        boss.userData.isRemoteReplica = true;
+        if (Number.isFinite(state.hp)) {
+            boss.userData.hp = state.hp;
+            boss.userData.maxHp = Math.max(state.hp, boss.userData.maxHp ?? state.hp);
+        }
+        group.add(boss);
+        this.scatterSprites.push(boss);
+        return boss;
+    }
+
     handleEnemyStateSnapshot(data) {
         if (this.isMultiplayerHost || this.multiplayerMode === 'pvp' || !Array.isArray(data?.enemies)) return false;
         let applied = 0;
         for (const state of data.enemies) {
             if (!state?.scatterKey) continue;
-            const sprite = (this.scatterSprites ?? []).find((candidate) => candidate.userData?.scatterKey === state.scatterKey);
+            let sprite = (this.scatterSprites ?? []).find((candidate) => candidate.userData?.scatterKey === state.scatterKey);
+            // A peer could previously only UPDATE enemies it already had, never
+            // create one -- so a milestone boss staged on the host stayed
+            // invisible on every other client for the whole fight. Bosses are
+            // materialized on demand; ordinary enemies deliberately are not,
+            // because each client owns its own local population and spawning
+            // every snail the host sees would double it.
+            if (!sprite?.userData && state.isBoss && !state.burstTriggered) {
+                sprite = this.materializeRemoteBoss?.(state) ?? null;
+            }
             if (!sprite?.userData) continue;
             if (Number.isFinite(state.x)) sprite.position.x = state.x;
             if (Number.isFinite(state.z)) sprite.position.z = state.z;
@@ -5727,6 +5890,15 @@ export class ThreeGame {
                 return;
             }
             this._o2MilestoneBossQueued = true;
+            // Co-op: the milestone is a world beat, not a local one. Without this
+            // the other client saw no cutscene, no generator rise and no boss.
+            // `fromRemote` marks a beat we are replaying, so we do not echo it back.
+            if (!event?.detail?.fromRemote) {
+                this.broadcastSharedWorldEvent?.('o2-generator-upgraded', {
+                    level: event?.detail?.level ?? 1,
+                    goalKey: 'o2Bubble'
+                });
+            }
             this.applyMilestoneBossRuntimeEvent({
                 type: MILESTONE_BOSS_EVENT_TYPES.GOAL_BUILT,
                 goalKey: 'o2Bubble'
@@ -20953,6 +21125,18 @@ export class ThreeGame {
                     } else {
                         toRemove.add(projectile);
                     }
+                    continue;
+                }
+
+                // Co-op friendly fire: shove a squadmate instead of hurting them.
+                // The shove is authored by the shooter but applied on the target's
+                // own client, so positions never fight. The round is consumed so
+                // it visibly stops on them rather than passing through.
+                const squadmate = this.checkProjectileSquadmateHit?.(projectile);
+                if (squadmate) {
+                    this.nudgeSquadmate(squadmate, projectile);
+                    this.spawnProjectileImpactEffect(projectile.mesh.position.x, projectile.mesh.position.z);
+                    toRemove.add(projectile);
                     continue;
                 }
 

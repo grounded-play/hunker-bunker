@@ -54,6 +54,12 @@ const PVE_HIT_RANGE = PVP_WEAPON_RANGE;
 // false-rejecting real simultaneous hits.
 const PVE_MIN_HIT_INTERVAL_MS = MIN_FIRE_INTERVAL_MS;
 const PVE_STATE_MIN_INTERVAL_MS = 75;
+// A world beat is a rare, deliberate event (a goal built, a boss staged), so a
+// low ceiling is generous while still bounding a misbehaving client.
+const WORLD_EVENT_MAX_PER_SECOND = 8;
+const WORLD_EVENT_MAX_DETAIL_BYTES = 4096;
+// Cap on a friendly-fire shove so a rapid-fire weapon cannot fling a squadmate.
+const PLAYER_NUDGE_MAX_FORCE = 4;
 
 function sanitizeCoord(value) {
     if (typeof value !== 'number' || !Number.isFinite(value)) return null;
@@ -578,6 +584,70 @@ export function attachRelay(server, { allowedOrigins = [] } = {}) {
         });
 
         // Co-Op Revival relay
+        // Shared world events. Milestone beats -- a goal being built, its
+        // cutscene, its retaliation boss -- were entirely local to whoever
+        // clicked: the relay had no channel for them at all, so one player
+        // repairing the O2 generator produced nothing on the other client.
+        // Anything that changes the shared world has to reach the whole room.
+        //
+        // Deliberately relayed rather than validated: the payload is a small
+        // named beat plus opaque detail, and the client decides what to do with
+        // it. `io.to` rather than `socket.to` so the sender also gets one
+        // canonical ordering of events, matching playerRevive above.
+        socket.on('worldEvent', (payload = {}) => {
+            if (!player.roomCode || !payload || typeof payload !== 'object') return;
+            const eventName = sanitizeString(payload.event, 64, '');
+            if (!eventName) return;
+
+            const now = Date.now();
+            // Cheap flood guard: a world beat is a rare, deliberate thing.
+            player.recentWorldEvents = (player.recentWorldEvents ?? []).filter((t) => now - t < 1000);
+            if (player.recentWorldEvents.length >= WORLD_EVENT_MAX_PER_SECOND) return;
+            player.recentWorldEvents.push(now);
+
+            let detail = null;
+            try {
+                // Bound the payload so a client cannot relay arbitrary bulk.
+                const encoded = JSON.stringify(payload.detail ?? {});
+                if (encoded.length <= WORLD_EVENT_MAX_DETAIL_BYTES) detail = JSON.parse(encoded);
+            } catch { detail = null; }
+
+            logRelayEvent('WORLD_EVENT', { roomCode: player.roomCode, originId: socket.id, event: eventName });
+            io.to(player.roomCode).emit('worldEventBroadcast', {
+                event: eventName,
+                detail: detail ?? {},
+                originId: socket.id,
+                timestamp: now
+            });
+        });
+
+        // Friendly fire in co-op shoves a squadmate instead of hurting them.
+        // The push is applied by the *target's* own client so nobody fights
+        // over position authority; this only carries the impulse.
+        socket.on('playerNudge', (payload = {}) => {
+            if (!player.roomCode || !payload || typeof payload !== 'object') return;
+            if (player.mode === 'pvp') return; // PvP uses real damage, not shoves.
+            const targetId = sanitizeString(payload.targetId, 64, '');
+            if (!targetId || targetId === socket.id) return;
+
+            const dirX = sanitizeCoord(payload.dirX);
+            const dirZ = sanitizeCoord(payload.dirZ);
+            if (dirX === null || dirZ === null) return;
+
+            const force = Number.isFinite(payload.force)
+                ? Math.max(0, Math.min(PLAYER_NUDGE_MAX_FORCE, payload.force))
+                : 1;
+
+            io.to(player.roomCode).emit('playerNudged', {
+                attackerId: socket.id,
+                targetId,
+                dirX,
+                dirZ,
+                force,
+                timestamp: Date.now()
+            });
+        });
+
         socket.on('playerRevive', (reviveData) => {
             if (!reviveData || typeof reviveData !== 'object') return;
             const targetId = sanitizeString(reviveData.targetId, 64, '');
@@ -730,7 +800,12 @@ export function attachRelay(server, { allowedOrigins = [] } = {}) {
                     x,
                     z,
                     hp: Number.isFinite(state.hp) ? Math.max(0, Math.min(10000, state.hp)) : null,
-                    burstTriggered: Boolean(state.burstTriggered)
+                    burstTriggered: Boolean(state.burstTriggered),
+                    // A peer can only update enemies it already has locally, so a
+                    // host-spawned boss was invisible to everyone else. These let
+                    // it recreate one faithfully.
+                    isBoss: Boolean(state.isBoss),
+                    scale: Number.isFinite(state.scale) ? Math.max(0.1, Math.min(12, state.scale)) : null
                 }];
             });
             socket.to(player.roomCode).emit('enemyStateSnapshot', { enemies, timestamp: now });
