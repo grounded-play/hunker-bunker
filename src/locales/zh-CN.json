@@ -130,7 +130,10 @@
       "language": "LANGUAGE / 语言 / ЯЗЫК",
       "language_hint": "选择您偏好的界面和字幕语言。",
       "dpad_hint": "方向键 ◀ ▶ 调整",
-      "gore": "血腥效果（肢解）"
+      "gore": "血腥效果（肢解）",
+      "subtitle_size": "字幕大小",
+      "subtitle_backdrop": "字幕背景",
+      "contrast": "界面对比度"
     },
     "action": {
       "open": "打开",
@@ -169,7 +172,17 @@
       "turn_75": "75%（轻）",
       "turn_125": "125%（快）",
       "turn_150": "150%（很快）",
-      "turn_200": "200%（极速）"
+      "turn_200": "200%（极速）",
+      "sub_small": "小",
+      "sub_medium": "中（默认）",
+      "sub_large": "大",
+      "sub_xlarge": "特大",
+      "backdrop_off": "关闭",
+      "backdrop_dim": "半透明（默认）",
+      "backdrop_solid": "不透明",
+      "contrast_normal": "标准（默认）",
+      "contrast_high": "高",
+      "contrast_max": "最高（无扫描线）"
     },
     "aria": {
       "language_select": "游戏语言",

@@ -35,6 +35,13 @@ import { ArcStateManager } from './src/arcState.js';
 import { CaveRevealController } from './src/caveReveal.js';
 import { Act2Manager, ACT2_ENDING_CUTSCENES, ACT2_LINES, getAct2EndingLines, pickAct2Ending, buildAct2Manifest } from './src/act2.js';
 import { isDemoBuild, isGoreEnabled, setGoreEnabled } from './src/featureFlags.js';
+import {
+    loadAccessibilitySettings,
+    applyAccessibilitySettings,
+    setSubtitleSize,
+    setSubtitleBackdrop,
+    setContrast
+} from './src/accessibilitySettings.js';
 import { ACHIEVEMENT_DEFS, AchievementEngine, getAchievementProgress, getSecretGateState, hasAnyUnlock, saveAchievements } from './src/achievements.js';
 import { STEAM_RUN_SCORE_FINALIZED_EVENT, buildSteamRunScorePayload, dispatchSteamRunScoreFinalized } from './src/steam/steamEvents.js';
 import { syncSteamStats } from './src/steamStats.js';
@@ -9573,6 +9580,14 @@ function openSettingsModal() {
     const goreToggle = document.getElementById('setting-gore-toggle');
     if (goreToggle) goreToggle.checked = isGoreEnabled();
 
+    const a11y = loadAccessibilitySettings();
+    const subtitleSizeSelect = document.getElementById('setting-subtitle-size');
+    if (subtitleSizeSelect) subtitleSizeSelect.value = a11y.subtitleSize;
+    const subtitleBackdropSelect = document.getElementById('setting-subtitle-backdrop');
+    if (subtitleBackdropSelect) subtitleBackdropSelect.value = a11y.subtitleBackdrop;
+    const contrastSelect = document.getElementById('setting-contrast');
+    if (contrastSelect) contrastSelect.value = a11y.contrast;
+
     const langSelect = document.getElementById('setting-language-select');
     if (langSelect) langSelect.value = getLocale();
     syncLanguageSelectControls(getLocale());
@@ -9715,6 +9730,21 @@ goreToggleEl?.addEventListener('change', (e) => {
 // openSettingsModal() re-syncs on every open; this covers the window before
 // the player ever opens Settings, so the DOM never disagrees with the flag.
 if (goreToggleEl) goreToggleEl.checked = isGoreEnabled();
+
+// Accessibility controls apply on change rather than on close, so a player
+// adjusting subtitle size mid-conversation sees it take effect on the line
+// they are reading. Applied once at boot for the same reason the gore toggle
+// is: the markup defaults are not the saved preference.
+document.getElementById('setting-subtitle-size')?.addEventListener('change', (e) => {
+    setSubtitleSize(e.target.value);
+});
+document.getElementById('setting-subtitle-backdrop')?.addEventListener('change', (e) => {
+    setSubtitleBackdrop(e.target.value);
+});
+document.getElementById('setting-contrast')?.addEventListener('change', (e) => {
+    setContrast(e.target.value);
+});
+applyAccessibilitySettings(loadAccessibilitySettings());
 function setCrosshairColor(value) {
     const color = String(value || '').toLowerCase();
     if (!/^#[0-9a-f]{6}$/.test(color)) return;

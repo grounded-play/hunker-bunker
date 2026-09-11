@@ -21292,3 +21292,78 @@ body.colorblind-assist #net-mode-pvp-btn.active {
 @media (prefers-reduced-motion: reduce) {
     .progression-reward-overlay *, .season-pass-progress-fill { animation: none !important; transition: none !important; }
 }
+
+/* ── Accessibility: subtitle sizing, backdrop, and contrast ──────────
+   Backs the Steam store accessibility tags. State lives in
+   src/accessibilitySettings.js; appearance lives here. Both custom
+   properties carry defaults so dialogue styles correctly even if the
+   settings module never runs (a fresh profile mid-cutscene, say). */
+:root {
+  --hb-subtitle-scale: 1;
+  --hb-subtitle-backdrop: rgba(4, 8, 14, 0.55);
+}
+
+/* Subtitle size multiplies the existing clamp rather than replacing it, so
+   the responsive floor and ceiling still apply at every setting. */
+.mothership-line__text {
+  font-size: clamp(
+    calc(20px * var(--hb-subtitle-scale)),
+    calc(var(--vu) * 3.4 * var(--hb-subtitle-scale)),
+    calc(40px * var(--hb-subtitle-scale))
+  );
+}
+
+/* The backdrop sits on the text itself, not the panel, so it tracks the
+   line box and stays useful over bright scene content. */
+.mothership-line__body {
+  background: var(--hb-subtitle-backdrop);
+  border-radius: 6px;
+  padding: calc(var(--vu) * 0.6) calc(var(--vu) * 0.9);
+  transition: background 140ms ease;
+}
+
+/* ── Contrast Controls ──────────────────────────────────────────────
+   Two levels above normal. `high` lifts panel opacity and drops text
+   shadows that soften glyph edges; `max` also removes the scanline and
+   flicker overlays, which are the single biggest legibility cost in the
+   terminal UI for low-vision players. */
+body.contrast-high .mothership-dialogue-body,
+body.contrast-high .modal-content,
+body.contrast-high .settings-modal-panel {
+  background: rgba(2, 5, 10, 0.94);
+  border-color: rgba(var(--terminal-glow-rgb), 0.55);
+}
+
+body.contrast-high .mothership-line__text,
+body.contrast-high .setting-item > span,
+body.contrast-high .settings-category-header {
+  color: #ffffff;
+  text-shadow: none;
+}
+
+body.contrast-max .mothership-dialogue-body,
+body.contrast-max .modal-content,
+body.contrast-max .settings-modal-panel {
+  background: #000000;
+  border-color: #ffffff;
+}
+
+body.contrast-max .mothership-line__text,
+body.contrast-max .setting-item > span,
+body.contrast-max .settings-category-header,
+body.contrast-max .modal-title {
+  color: #ffffff;
+  text-shadow: none;
+  letter-spacing: 0.06em;
+}
+
+body.contrast-max .terminal-scanline,
+body.contrast-max .terminal-flicker {
+  display: none;
+}
+
+body.contrast-max .vitals-panel,
+body.contrast-max .hud-panel {
+  background: #000000;
+  border-color: #ffffff;
+}

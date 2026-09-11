@@ -130,7 +130,10 @@
       "language": "LANGUAGE / 语言 / ЯЗЫК",
       "language_hint": "Choose your preferred interface and subtitle language.",
       "dpad_hint": "D-PAD ◀ ▶ TO ADJUST",
-      "gore": "GORE EFFECTS (DISMEMBERMENT)"
+      "gore": "GORE EFFECTS (DISMEMBERMENT)",
+      "subtitle_size": "SUBTITLE SIZE",
+      "subtitle_backdrop": "SUBTITLE BACKGROUND",
+      "contrast": "HUD CONTRAST"
     },
     "action": {
       "open": "OPEN",
@@ -169,7 +172,17 @@
       "turn_75": "75% (LIGHT)",
       "turn_125": "125% (FAST)",
       "turn_150": "150% (VERY FAST)",
-      "turn_200": "200% (HYPER)"
+      "turn_200": "200% (HYPER)",
+      "sub_small": "SMALL",
+      "sub_medium": "MEDIUM (DEFAULT)",
+      "sub_large": "LARGE",
+      "sub_xlarge": "EXTRA LARGE",
+      "backdrop_off": "OFF",
+      "backdrop_dim": "DIMMED (DEFAULT)",
+      "backdrop_solid": "SOLID",
+      "contrast_normal": "NORMAL (DEFAULT)",
+      "contrast_high": "HIGH",
+      "contrast_max": "MAXIMUM (NO SCANLINES)"
     },
     "aria": {
       "language_select": "Game language",

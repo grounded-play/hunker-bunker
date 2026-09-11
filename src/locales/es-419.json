@@ -130,7 +130,10 @@
       "language": "LANGUAGE / 语言 / ЯЗЫК",
       "language_hint": "Elige tu idioma preferido para la interfaz y los subtítulos.",
       "dpad_hint": "D-PAD ◀ ▶ PARA AJUSTAR",
-      "gore": "EFECTOS DE SANGRE (DESMEMBRAMIENTO)"
+      "gore": "EFECTOS DE SANGRE (DESMEMBRAMIENTO)",
+      "subtitle_size": "TAMAÑO DE SUBTÍTULOS",
+      "subtitle_backdrop": "FONDO DE SUBTÍTULOS",
+      "contrast": "CONTRASTE DE INTERFAZ"
     },
     "action": {
       "open": "ABRIR",
@@ -169,7 +172,17 @@
       "turn_75": "75% (SUAVE)",
       "turn_125": "125% (RÁPIDA)",
       "turn_150": "150% (MUY RÁPIDA)",
-      "turn_200": "200% (HÍPER)"
+      "turn_200": "200% (HÍPER)",
+      "sub_small": "PEQUEÑO",
+      "sub_medium": "MEDIANO (PREDET.)",
+      "sub_large": "GRANDE",
+      "sub_xlarge": "MUY GRANDE",
+      "backdrop_off": "DESACTIVADO",
+      "backdrop_dim": "ATENUADO (PREDET.)",
+      "backdrop_solid": "SÓLIDO",
+      "contrast_normal": "NORMAL (PREDET.)",
+      "contrast_high": "ALTO",
+      "contrast_max": "MÁXIMO (SIN LÍNEAS DE BARRIDO)"
     },
     "aria": {
       "language_select": "Idioma del juego",

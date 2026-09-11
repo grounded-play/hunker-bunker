@@ -2292,6 +2292,31 @@
             <span data-i18n="ui.settings.gore">GORE EFFECTS (DISMEMBERMENT)</span>
             <label class="toggle"><input type="checkbox" id="setting-gore-toggle" checked> <span class="slider"></span></label>
           </div>
+          <div class="setting-item">
+            <span data-i18n="ui.settings.subtitle_size">SUBTITLE SIZE</span>
+            <select id="setting-subtitle-size" class="settings-select">
+              <option value="small" data-i18n="ui.opt.sub_small">SMALL</option>
+              <option value="medium" selected data-i18n="ui.opt.sub_medium">MEDIUM (DEFAULT)</option>
+              <option value="large" data-i18n="ui.opt.sub_large">LARGE</option>
+              <option value="xlarge" data-i18n="ui.opt.sub_xlarge">EXTRA LARGE</option>
+            </select>
+          </div>
+          <div class="setting-item">
+            <span data-i18n="ui.settings.subtitle_backdrop">SUBTITLE BACKGROUND</span>
+            <select id="setting-subtitle-backdrop" class="settings-select">
+              <option value="off" data-i18n="ui.opt.backdrop_off">OFF</option>
+              <option value="dim" selected data-i18n="ui.opt.backdrop_dim">DIMMED (DEFAULT)</option>
+              <option value="solid" data-i18n="ui.opt.backdrop_solid">SOLID</option>
+            </select>
+          </div>
+          <div class="setting-item">
+            <span data-i18n="ui.settings.contrast">HUD CONTRAST</span>
+            <select id="setting-contrast" class="settings-select">
+              <option value="normal" selected data-i18n="ui.opt.contrast_normal">NORMAL (DEFAULT)</option>
+              <option value="high" data-i18n="ui.opt.contrast_high">HIGH</option>
+              <option value="max" data-i18n="ui.opt.contrast_max">MAXIMUM (NO SCANLINES)</option>
+            </select>
+          </div>
           <div class="setting-item setting-item--action">
             <span data-i18n="ui.settings.desktop_controls">DESKTOP CONTROLS</span>
             <button type="button" class="calibrate-btn settings-action-btn" id="open-controls" data-i18n="ui.action.remap">REMAP</button>

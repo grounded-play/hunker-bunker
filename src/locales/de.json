@@ -130,7 +130,10 @@
       "language": "LANGUAGE / 语言 / ЯЗЫК",
       "language_hint": "Wählen Sie Ihre bevorzugte Sprachausgabe für Menüs und Untertitel.",
       "dpad_hint": "STEUERKREUZ ◀ ▶ ZUM ANPASSEN",
-      "gore": "GORE-EFFEKTE (ZERSTÜCKELUNG)"
+      "gore": "GORE-EFFEKTE (ZERSTÜCKELUNG)",
+      "subtitle_size": "UNTERTITELGRÖSSE",
+      "subtitle_backdrop": "UNTERTITEL-HINTERGRUND",
+      "contrast": "HUD-KONTRAST"
     },
     "action": {
       "open": "ÖFFNEN",
@@ -169,7 +172,17 @@
       "turn_75": "75% (LEICHT)",
       "turn_125": "125% (SCHNELL)",
       "turn_150": "150% (SEHR SCHNELL)",
-      "turn_200": "200% (HYPER)"
+      "turn_200": "200% (HYPER)",
+      "sub_small": "KLEIN",
+      "sub_medium": "MITTEL (STANDARD)",
+      "sub_large": "GROSS",
+      "sub_xlarge": "SEHR GROSS",
+      "backdrop_off": "AUS",
+      "backdrop_dim": "ABGEDUNKELT (STANDARD)",
+      "backdrop_solid": "DECKEND",
+      "contrast_normal": "NORMAL (STANDARD)",
+      "contrast_high": "HOCH",
+      "contrast_max": "MAXIMUM (OHNE SCANLINES)"
     },
     "aria": {
       "language_select": "Spielsprache",

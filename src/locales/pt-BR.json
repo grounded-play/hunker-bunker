@@ -130,7 +130,10 @@
       "language": "LANGUAGE / 语言 / ЯЗЫК",
       "language_hint": "Escolha o idioma preferido para a interface e legendas.",
       "dpad_hint": "D-PAD ◀ ▶ PARA AJUSTAR",
-      "gore": "EFEITOS DE SANGUE (DESMEMBRAMENTO)"
+      "gore": "EFEITOS DE SANGUE (DESMEMBRAMENTO)",
+      "subtitle_size": "TAMANHO DAS LEGENDAS",
+      "subtitle_backdrop": "FUNDO DAS LEGENDAS",
+      "contrast": "CONTRASTE DO HUD"
     },
     "action": {
       "open": "ABRIR",
@@ -169,7 +172,17 @@
       "turn_75": "75% (LEVE)",
       "turn_125": "125% (RÁPIDA)",
       "turn_150": "150% (MUITO RÁPIDA)",
-      "turn_200": "200% (HIPER)"
+      "turn_200": "200% (HIPER)",
+      "sub_small": "PEQUENO",
+      "sub_medium": "MÉDIO (PADRÃO)",
+      "sub_large": "GRANDE",
+      "sub_xlarge": "MUITO GRANDE",
+      "backdrop_off": "DESLIGADO",
+      "backdrop_dim": "ESCURECIDO (PADRÃO)",
+      "backdrop_solid": "SÓLIDO",
+      "contrast_normal": "NORMAL (PADRÃO)",
+      "contrast_high": "ALTO",
+      "contrast_max": "MÁXIMO (SEM LINHAS DE VARREDURA)"
     },
     "aria": {
       "language_select": "Idioma do jogo",

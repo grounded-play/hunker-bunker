@@ -1,0 +1,165 @@
+import { describe, expect, it, beforeEach, afterEach, vi } from 'vitest';
+import {
+    SUBTITLE_SIZES,
+    SUBTITLE_BACKDROPS,
+    CONTRAST_LEVELS,
+    SUBTITLE_SIZE_KEY,
+    SUBTITLE_BACKDROP_KEY,
+    CONTRAST_KEY,
+    loadAccessibilitySettings,
+    applyAccessibilitySettings,
+    setSubtitleSize,
+    setSubtitleBackdrop,
+    setContrast
+} from './accessibilitySettings.js';
+
+function fakeDoc() {
+    const classes = new Set();
+    const props = new Map();
+    return {
+        body: {
+            classList: {
+                add: (c) => classes.add(c),
+                remove: (...cs) => cs.forEach((c) => classes.delete(c)),
+                contains: (c) => classes.has(c)
+            }
+        },
+        documentElement: {
+            style: {
+                setProperty: (k, v) => props.set(k, v),
+                getPropertyValue: (k) => props.get(k) ?? ''
+            }
+        },
+        _classes: classes,
+        _props: props
+    };
+}
+
+describe('accessibility settings', () => {
+    let store;
+
+    beforeEach(() => {
+        store = {};
+        vi.stubGlobal('window', {
+            localStorage: {
+                getItem: (k) => (k in store ? store[k] : null),
+                setItem: (k, v) => { store[k] = String(v); },
+                removeItem: (k) => { delete store[k]; }
+            }
+        });
+    });
+
+    afterEach(() => vi.unstubAllGlobals());
+
+    describe('loadAccessibilitySettings', () => {
+        it('defaults to the least intrusive option for each control', () => {
+            const s = loadAccessibilitySettings();
+            expect(s.subtitleSize).toBe('medium');
+            expect(s.subtitleBackdrop).toBe('dim');
+            expect(s.contrast).toBe('normal');
+        });
+
+        it('reads persisted values back', () => {
+            store[SUBTITLE_SIZE_KEY] = 'xlarge';
+            store[SUBTITLE_BACKDROP_KEY] = 'solid';
+            store[CONTRAST_KEY] = 'max';
+            expect(loadAccessibilitySettings()).toEqual({
+                subtitleSize: 'xlarge',
+                subtitleBackdrop: 'solid',
+                contrast: 'max'
+            });
+        });
+
+        it('falls back to defaults for values not in the allowed set', () => {
+            // A hand-edited or stale storage value must not put the UI into a
+            // state no CSS rule matches, which would silently unstyle dialogue.
+            store[SUBTITLE_SIZE_KEY] = 'enormous';
+            store[CONTRAST_KEY] = '../../etc';
+            const s = loadAccessibilitySettings();
+            expect(s.subtitleSize).toBe('medium');
+            expect(s.contrast).toBe('normal');
+        });
+
+        it('survives storage being unavailable', () => {
+            vi.stubGlobal('window', {
+                get localStorage() { throw new Error('blocked'); }
+            });
+            expect(() => loadAccessibilitySettings()).not.toThrow();
+            expect(loadAccessibilitySettings().subtitleSize).toBe('medium');
+        });
+    });
+
+    describe('applyAccessibilitySettings', () => {
+        it('drives subtitle size and backdrop through CSS custom properties', () => {
+            const doc = fakeDoc();
+            applyAccessibilitySettings({ subtitleSize: 'xlarge', subtitleBackdrop: 'solid', contrast: 'normal' }, doc);
+            expect(doc._props.get('--hb-subtitle-scale')).toBeTruthy();
+            expect(doc._props.get('--hb-subtitle-backdrop')).toBeTruthy();
+        });
+
+        it('scales monotonically from small to extra large', () => {
+            const scaleFor = (size) => {
+                const doc = fakeDoc();
+                applyAccessibilitySettings({ ...loadAccessibilitySettings(), subtitleSize: size }, doc);
+                return parseFloat(doc._props.get('--hb-subtitle-scale'));
+            };
+            const scales = SUBTITLE_SIZES.map(scaleFor);
+            for (let i = 1; i < scales.length; i++) {
+                expect(scales[i]).toBeGreaterThan(scales[i - 1]);
+            }
+        });
+
+        it('makes the backdrop fully transparent only when set to off', () => {
+            const doc = fakeDoc();
+            applyAccessibilitySettings({ ...loadAccessibilitySettings(), subtitleBackdrop: 'off' }, doc);
+            expect(doc._props.get('--hb-subtitle-backdrop')).toBe('transparent');
+        });
+
+        it('applies exactly one contrast class at a time', () => {
+            const doc = fakeDoc();
+            applyAccessibilitySettings({ ...loadAccessibilitySettings(), contrast: 'high' }, doc);
+            expect(doc._classes.has('contrast-high')).toBe(true);
+            // Switching must clear the previous level, not stack them.
+            applyAccessibilitySettings({ ...loadAccessibilitySettings(), contrast: 'max' }, doc);
+            expect(doc._classes.has('contrast-high')).toBe(false);
+            expect(doc._classes.has('contrast-max')).toBe(true);
+            applyAccessibilitySettings({ ...loadAccessibilitySettings(), contrast: 'normal' }, doc);
+            expect(doc._classes.has('contrast-high')).toBe(false);
+            expect(doc._classes.has('contrast-max')).toBe(false);
+        });
+
+        it('is a safe no-op without a document', () => {
+            expect(() => applyAccessibilitySettings(loadAccessibilitySettings(), null)).not.toThrow();
+        });
+    });
+
+    describe('setters', () => {
+        it('persist and return the normalized value', () => {
+            const doc = fakeDoc();
+            expect(setSubtitleSize('large', doc)).toBe('large');
+            expect(store[SUBTITLE_SIZE_KEY]).toBe('large');
+            expect(setSubtitleBackdrop('off', doc)).toBe('off');
+            expect(store[SUBTITLE_BACKDROP_KEY]).toBe('off');
+            expect(setContrast('max', doc)).toBe('max');
+            expect(store[CONTRAST_KEY]).toBe('max');
+        });
+
+        it('reject junk without persisting it', () => {
+            const doc = fakeDoc();
+            expect(setContrast('nonsense', doc)).toBe('normal');
+            expect(store[CONTRAST_KEY]).toBe('normal');
+        });
+
+        it('apply immediately so the change is visible without reopening Settings', () => {
+            const doc = fakeDoc();
+            setContrast('high', doc);
+            expect(doc._classes.has('contrast-high')).toBe(true);
+        });
+    });
+
+    it('exposes option lists that match what the Settings selects offer', () => {
+        expect(SUBTITLE_SIZES).toEqual(['small', 'medium', 'large', 'xlarge']);
+        expect(SUBTITLE_BACKDROPS).toEqual(['off', 'dim', 'solid']);
+        expect(CONTRAST_LEVELS).toEqual(['normal', 'high', 'max']);
+    });
+});

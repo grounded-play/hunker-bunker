@@ -130,7 +130,10 @@
       "language": "LANGUAGE / 语言 / ЯЗЫК",
       "language_hint": "インターフェースと字幕の表示言語を選択してください。",
       "dpad_hint": "十字キー ◀ ▶ で調整",
-      "gore": "ゴア表現（部位欠損）"
+      "gore": "ゴア表現（部位欠損）",
+      "subtitle_size": "字幕サイズ",
+      "subtitle_backdrop": "字幕の背景",
+      "contrast": "HUDコントラスト"
     },
     "action": {
       "open": "開く",
@@ -169,7 +172,17 @@
       "turn_75": "75%（軽め）",
       "turn_125": "125%（速い）",
       "turn_150": "150%（非常に速い）",
-      "turn_200": "200%（ハイパー）"
+      "turn_200": "200%（ハイパー）",
+      "sub_small": "小",
+      "sub_medium": "中（標準）",
+      "sub_large": "大",
+      "sub_xlarge": "特大",
+      "backdrop_off": "オフ",
+      "backdrop_dim": "半透明（標準）",
+      "backdrop_solid": "不透明",
+      "contrast_normal": "標準（既定）",
+      "contrast_high": "高",
+      "contrast_max": "最大（走査線なし）"
     },
     "aria": {
       "language_select": "ゲーム言語",
