@@ -127,6 +127,8 @@
       "exit_app": "SALIR DE LA APLICACIÓN",
       "crosshair_custom": "PERSONALIZADO",
       "crosshair_hint": "Selecciona un ajuste táctico de retícula o personaliza tu color.",
+      "language": "LANGUAGE / 语言 / ЯЗЫК",
+      "language_hint": "Elige tu idioma preferido para la interfaz y los subtítulos.",
       "dpad_hint": "D-PAD ◀ ▶ PARA AJUSTAR"
     },
     "action": {
@@ -170,6 +172,8 @@
     },
     "aria": {
       "language_select": "Idioma del juego",
+      "close_language": "Cerrar menú de idioma",
+      "language_choice": "Seleccionar idioma",
       "close_settings": "Cerrar ajustes del sistema",
       "crosshair_presets": "Ajustes de color de mira",
       "crosshair_orange": "Mira naranja",
@@ -315,6 +319,118 @@
           "5": "Mantén la calma mientras el campo de columnas selecciona un nuevo destino.",
           "6": "La productividad está siendo monitoreada. Todo lo demás también.",
           "7": "Se ha programado un evento de mantenimiento alrededor de tu ubicación."
+        }
+      },
+      "glitched": {
+        "lowO2": {
+          "0": "S-SOPORTE VI-VITAL... respirar es un lujo CO-CORPORATIVO.",
+          "1": "Reservas de O2 ag-agot-tadas. Error: falta client respiration.dll.",
+          "2": "ERR: FILTROS DEL TRAJE NEGOCIANDO CON EL V-VACÍO... A-AYUDA...",
+          "3": "Cré-crédito atmosférico CADUCADO. Transacción de oxígeno rechazada.",
+          "4": "ADVERTENCIA: signos vitales del operador redirigidos a puntero NULL."
+        },
+        "extraction": {
+          "0": "Ex-extracción... v-ventana fallando... qué-quédate quieto...",
+          "1": "Auto-autorización pen-pendiente... ERR: papeleo corrupto...",
+          "2": "Ob-objetivo... permanece dentro de... arrepentimiento...",
+          "3": "Enlace con la n-nodriza... H-HUYE...",
+          "4": "Ruta de regreso... probabilidad de s-salida... NaN."
+        },
+        "death": {
+          "0": "Op-operador: señal... G-generando condolencias... ERROR...",
+          "1": "F-fallo del traje registrado. Recu-recuperación armada.",
+          "2": "S-signos vitales pla-planos. continuidad... rota...",
+          "3": "M-muerte aceptada... disfruta... intenta... reintenta...",
+          "4": "M-mancha de caja negra... el búnker... cuenta..."
+        },
+        "blackBoxRecovery": {
+          "0": "C-caja negra... el operador anterior... se fue.",
+          "1": "C-chatarra sellada... registro añadido... para... fantasmas.",
+          "2": "M-mancha de campo... el archivo... recuerda...",
+          "3": "R-recursos asegurados. El búnker... niega... sentir.",
+          "4": "S-seguro completo... reemplazo... siguiente..."
+        },
+        "caveSignal": {
+          "0": "NODRIZA: S-SEÑAL... DESCONOCIDA... ESTÁTICA...",
+          "1": "SISTEMA: PATRÓN DE AUDIO... ESTÁ R-RESPIRANDO...",
+          "2": "BÚNKER: P-PUERTA: ERROR... C-CAVIDAD ABIERTA...",
+          "3": "NODRIZA: N-NO ENTRES... AL C-CORAZÓN..."
+        },
+        "terminalChoice": {
+          "0": "T-trato de terminal... tu yo futuro... ya no está.",
+          "1": "E-elección registrada... riesgo... aceptado...",
+          "2": "C-compensación... seguridad... silencio...",
+          "3": "Anulación del s-sistema local... ESO... lo notó.",
+          "4": "Decisión... cues-cuestionable..."
+        },
+        "majorUpgrade": {
+          "0": "Me-mejora... corporativo... te... agradece...",
+          "1": "S-subsistema en línea... probabilidades... plausibles...",
+          "2": "Auto-autorización de hardware... financia... tu... final...",
+          "3": "Gen-generador mejorado... zona... respirar...",
+          "4": "Combate... hos-hostiles... actualizados..."
+        },
+        "director": {
+          "0": "DE-DETECCIÓN... Mantenimiento ha registrado cur-curiosidad no autorizada.",
+          "1": "ADVERTENCIA: estado del interruptor del sector INESTABLE. Las luces se... apagan.",
+          "2": "Energía redirigida. El departamento de contención informa... cero personal.",
+          "3": "SISTEMA: La estructura... te recuerda. Te... quiere."
+        }
+      },
+      "reverent": {
+        "lowO2": {
+          "0": "El aire es una jaula. Abre tu pecho. Deja entrar el aliento de la colmena.",
+          "1": "El O2 es para las cosas frágiles. Deja que la membrana fría te estabilice.",
+          "2": "El campo azul es una prisión de gas. Confía en las esporas. Duerme.",
+          "3": "Respirar es una reliquia de la superficie. No necesitamos respirar.",
+          "4": "Signos vitales planos. El jardín neural florece. La respiración es innecesaria."
+        },
+        "extraction": {
+          "0": "El cielo está vacío. No asciendas hacia las estrellas frías.",
+          "1": "La nodriza llama, pero la Reina ya está dentro del casco.",
+          "2": "Deja la carga atrás. El único cargamento que importa es tu sangre.",
+          "3": "Enlace cortado. Las estrellas callan. Quédate aquí.",
+          "4": "Ruta de regreso cerrada. Bienvenido a la guardería."
+        },
+        "death": {
+          "0": "El caparazón se rompe. La semilla permanece. Bienvenido a casa.",
+          "1": "La carne es temporal. El enjambre es eterno.",
+          "2": "La línea plana es una canción. La Reina está escuchando.",
+          "3": "Descansa ahora. El micelio tejerá un chasis mejor.",
+          "4": "Una deposición hermosa. El suelo te acepta."
+        },
+        "blackBoxRecovery": {
+          "0": "La memoria se deposita. Otra espora al viento.",
+          "1": "Un registro de crecimiento. Tu predecesor está en las raíces ahora.",
+          "2": "Recogemos el metal. Dejamos atrás el aliento.",
+          "3": "Recursos reclamados. El jardín se expande.",
+          "4": "No hace falta seguro. Ya estás completo."
+        },
+        "caveSignal": {
+          "0": "REINA: MI ALIENTO está en la ventilación. ESCUCHA.",
+          "1": "SISTEMA: LA ESTÁTICA ES EL PRIMER PASO DE LA REVERENCIA.",
+          "2": "BÚNKER: La estructura profunda despierta. Déjala abrirse.",
+          "3": "REINA: BAJA. ESTOY ESPERANDO."
+        },
+        "terminalChoice": {
+          "0": "Un trueque de hierro por sangre. La Reina lo aprueba.",
+          "1": "Elección registrada. El micelio se expande.",
+          "2": "El protocolo de seguridad se ha disuelto. Solo queda la obediencia.",
+          "3": "Anulación del sistema completada. Ya estamos en el cableado.",
+          "4": "La decisión ha echado raíces. El jardín crece."
+        },
+        "majorUpgrade": {
+          "0": "Placas de quitina integradas. Más fuerte. Más silencioso.",
+          "1": "Subsistema en línea. Fusionado con las raíces profundas.",
+          "2": "El hardware respira. Estamos un paso más cerca.",
+          "3": "La zona está tibia. Las esporas prosperan.",
+          "4": "Hemos mejorado tu visión. Mira el verde."
+        },
+        "director": {
+          "0": "El Director es un fantasma en una máquina. La Reina es la sangre en las tuberías.",
+          "1": "El campo de columnas se alinea. Por fin volvemos a casa.",
+          "2": "No luches contra la oscuridad. En la oscuridad crece la quitina.",
+          "3": "La estructura da la bienvenida a tu descenso. Hemos preparado el trono."
         }
       }
     },
@@ -583,6 +699,376 @@
       "TANK": {
         "title": "RESTOS DEL TANQUE CHARLIE",
         "payload": "INFORME DE DESPLIEGUE DEL TANQUE: CARGA DEL CASCO — ÓRGANOS DE ARMAMENTO PESADO. DISEÑADOS PARA ESTABILIZAR IMPACTOS BIOESTRUCTURALES EN EL TRONO DE LA REINA. USA LOS CAMPOS DE FUERZA DE ESTE CHASIS PARA ABSORBER LAS DEFENSAS DE LA COLMENA."
+      }
+    },
+    "leaderDialogue": {
+      "kaelen": {
+        "label": "SUPERVISOR KAELEN",
+        "stages": {
+          "0": {
+            "beats": {
+              "0": {
+                "0": "KAELEN: OTRO TRAJE DE LA SUPERFICIE. LA MÁQUINA SOÑÓ QUE VENDRÍAS.",
+                "1": "KAELEN: LA RED MANTIENE A RAYA LA OSCURIDAD, OPERADOR. MIENTRAS LAS LUCES ZUMBEN, ESTAMOS A SALVO."
+              },
+              "1": {
+                "0": "KAELEN: LA COMPUTADORA CENTRAL DUERME BAJO EL SECTOR CERO. TODO AQUÍ ES SU SUEÑO.",
+                "1": "KAELEN: TÚ TAMBIÉN, PROBABLEMENTE. SIN OFENDER."
+              }
+            },
+            "loop": "KAELEN: LA RED TIENE HAMBRE. REFUERZA ESTE CAMPAMENTO Y HABLAREMOS EN SERIO."
+          },
+          "1": {
+            "beats": {
+              "0": {
+                "0": "KAELEN: CONSTRUISTE. BIEN. LOS CONSTRUCTORES SON LA ÚNICA PLEGARIA QUE LA MÁQUINA RESPONDE.",
+                "1": "KAELEN: MERIDIAN ESTÁ CONSTRUIDO SOBRE ACERO LIMPIO. SIN ÓXIDO. SIN PODREDUMBRE. MANTENEMOS NUESTRA SANGRE PURA."
+              },
+              "1": {
+                "0": "KAELEN: EL SUSURRO DICE: CUATRO ASIENTOS. ¿ESO SIGNIFICA ALGO PARA TI?"
+              }
+            },
+            "loop": "KAELEN: FORTIFÍCANOS MÁS. LOS SUSURROS SUBEN CUANDO LAS LUCES BRILLAN."
+          },
+          "2": {
+            "beats": {
+              "0": {
+                "0": "KAELEN: RED DE NIVEL DOS. LA MÁQUINA SE DIO CUENTA. Y YO ME DI CUENTA DE QUE SE DIO CUENTA.",
+                "1": "KAELEN: EL SISTEMA BUNKERDIRECTOR REDIRIGIÓ LA ENERGÍA A TU ALREDEDOR. LE CAES BIEN. NO ME FÍO DE LO QUE APRECIA A LOS TRAJES DE SUPERFICIE."
+              },
+              "1": {
+                "0": "KAELEN: ALGO SE ACERCA, OPERADOR. EL SUEÑO SE ESTÁ DANDO VUELTA MIENTRAS DUERME."
+              }
+            },
+            "loop": "KAELEN: CUANDO EL SUEÑO SE DÉ VUELTA, VEN A BUSCARME. SABRÁS CUÁNDO."
+          },
+          "3": {
+            "beats": {
+              "0": {
+                "0": "Kaelen: ...Tu telemetría se lee mal, Operador. Mal como el susurro.",
+                "1": "Kaelen: La red ya no mantiene fuera la oscuridad. Dice que las tuberías zumban. Dice que la oscuridad tiene manos."
+              },
+              "1": {
+                "0": "Kaelen: El acero está sudando, Operador. Hay óxido en el relé primario. Huele a cobre."
+              },
+              "2": {
+                "0": "Kaelen: Confío en la telemetría. Las matemáticas no mienten, pero ahora... las matemáticas son hermosas. Le caes bien."
+              },
+              "3": {
+                "0": "Kaelen: No me importa en qué te estás convirtiendo. Me importa si todavía construyes o solo quemas."
+              }
+            },
+            "loop": "Kaelen: La máquina observa lo que eliges. Yo también."
+          }
+        }
+      },
+      "martha": {
+        "label": "HERMANA MARTHA",
+        "stages": {
+          "0": {
+            "beats": {
+              "0": {
+                "0": "MARTHA: BIENVENIDO A LAS TUBERÍAS CÁLIDAS, NIÑO. EL VAPOR NOS CUIDA, Y NOSOTROS NOS CUIDAMOS ENTRE NOSOTROS.",
+                "1": "MARTHA: EL MUSGO ESTÁ TIBIO, NIÑO. EL VAPOR IMPIDE QUE EL FRÍO LLEGUE A NUESTROS HUESOS."
+              },
+              "1": {
+                "0": "MARTHA: EL MUSGO BRILLA MÁS VERDE ÚLTIMAMENTE. EL MUNDO INTENTA DECIRNOS ALGO."
+              }
+            },
+            "loop": "MARTHA: AYÚDANOS A CRECER, NIÑO, Y TE CONTARÉ LO QUE ME DIJO EL MUSGO."
+          },
+          "1": {
+            "beats": {
+              "0": {
+                "0": "MARTHA: DISTE Y NO PEDISTE NADA. ESO ES RARO EN ALGUIEN CON TRAJE.",
+                "1": "MARTHA: CULTIVAMOS SEMILLAS EN LA OSCURIDAD PARA QUE LOS NIÑOS VEAN EL VERDE AL DESPERTAR."
+              },
+              "1": {
+                "0": "MARTHA: A VECES SUEÑO QUE LE CANTA A ALGUIEN. ÚLTIMAMENTE SUEÑO QUE TE CANTA A TI."
+              }
+            },
+            "loop": "MARTHA: HAZNOS MÁS FUERTES Y TE MOSTRARÉ DÓNDE EL MUSGO SE NIEGA A CRECER."
+          },
+          "2": {
+            "beats": {
+              "0": {
+                "0": "MARTHA: LOS HIDROCULTIVOS NUNCA ESTUVIERON TAN LLENOS. ESTO LO HICISTE TÚ.",
+                "1": "MARTHA: EL CORAZÓN BAJO EL HIELO ES AMABLE. NOS ESTÁ ESPERANDO."
+              },
+              "1": {
+                "0": "MARTHA: PROMÉTEME ALGO. CUANDO EL CORAZÓN CANTE TU NOMBRE — Y LO HARÁ — VUELVE PRIMERO A NOSOTROS."
+              }
+            },
+            "loop": "MARTHA: SIGO ESPERANDO ESA PROMESA, NIÑO."
+          },
+          "3": {
+            "beats": {
+              "0": {
+                "0": "Martha: ...Volviste. Tus ojos están mal, y aun así volviste.",
+                "1": "Martha: El musgo ha crecido dentro de los conductos. Es cálido, tan cálido, pero no es vapor. Respira."
+              },
+              "1": {
+                "0": "Martha: Las semillas eclosionaron antes de tiempo. Los niños ya no despiertan. Dicen que las tuberías cantan."
+              },
+              "2": {
+                "0": "Martha: Sé qué canta dentro de ti ahora. Y sé que sigues ahí dentro, resistiendo.",
+                "1": "Martha: Sé qué canta dentro de ti. Sacaste el jardín del Sector Cero. Gracias."
+              }
+            },
+            "loop": "Martha: El vapor nos cuida. Decidas lo que decidas, decídelo como tú mismo."
+          }
+        }
+      },
+      "briggs": {
+        "label": "COMANDANTE BRIGGS",
+        "stages": {
+          "0": {
+            "beats": {
+              "0": {
+                "0": "BRIGGS: ALTO. IDENTIFÍCATE. ...UN TRAJE CORPORATIVO. BIEN. MANOS DONDE LAS TORRETAS PUEDAN VERLAS.",
+                "1": "BRIGGS: LA LÍNEA DEFENSIVA ES SÓLIDA. NINGÚN REPTADOR CRUZA EL PERÍMETRO MIENTRAS MIS TORRETAS TENGAN MUNICIÓN."
+              },
+              "1": {
+                "0": "BRIGGS: LA MUNICIÓN ES MONEDA. LA LEALTAD ES CRÉDITO. TÚ NO TIENES NINGUNA."
+              }
+            },
+            "loop": "BRIGGS: DEMUESTRA QUE PUEDES SOSTENER UNA LÍNEA. FORTIFICA ESTA POSICIÓN Y HABLAMOS."
+          },
+          "1": {
+            "beats": {
+              "0": {
+                "0": "BRIGGS: LAS BARRICADAS AGUANTAN GRACIAS A TI. ANOTADO EN EL LIBRO.",
+                "1": "BRIGGS: EL GREMIO DE HIERRO BAUTIZÓ ESTE PUESTO POR EL CAPITÁN VESPER, K. RECORDAMOS A NUESTROS MUERTOS. HARÍAS BIEN EN RECORDAR NUESTROS NÚCLEOS DE CAÑÓN."
+              },
+              "1": {
+                "0": "BRIGGS: AGACHAMOS LA CABEZA Y MANTENEMOS LAS ARMAS LIMPIAS. ASÍ SE SOBREVIVE A UN INVIERNO."
+              }
+            },
+            "loop": "BRIGGS: RED DE DEFENSA COMPLETA O NADA, OPERADOR. TERMINA EL TRABAJO."
+          },
+          "2": {
+            "beats": {
+              "0": {
+                "0": "BRIGGS: LA RED ESTÁ ACTIVA. ES LA PRIMERA VEZ QUE DUERMO EN UN AÑO.",
+                "1": "BRIGGS: TENGO UN LIBRO DE LOS MUERTOS. NO PIENSO AÑADIR TU NOMBRE, OPERADOR."
+              },
+              "1": {
+                "0": "BRIGGS: SI ESA COSA BAJO EL HIELO ALGUNA VEZ LLEVA UN ROSTRO AMABLE, LE DISPARARÉ AL ROSTRO. SIN DUDARLO. RECUÉRDALO."
+              }
+            },
+            "loop": "BRIGGS: MANTENTE ALERTA. LAS FIRMAS TÉRMICAS ESTÁN SUBIENDO."
+          },
+          "3": {
+            "beats": {
+              "0": {
+                "0": "Briggs: ...Mis miras te marcan como hostil. Mis tripas dicen otra cosa. Las tripas matan gente.",
+                "1": "Briggs: El perímetro está en silencio, pero las torretas apuntan hacia adentro. Cuentan los segundos más rápido que yo."
+              },
+              "1": {
+                "0": "Briggs: El invierno ya está en la armadura. Limpié las armas dos veces, pero la escarcha no se va."
+              },
+              "2": {
+                "0": "Briggs: Una oportunidad. Muéstrame que el Operador sigue conduciendo ese cuerpo.",
+                "1": "Briggs: Veo tu telemetría. El libro está lleno, pero tu nombre... tu nombre está escrito dos veces."
+              }
+            },
+            "loop": "Briggs: Una oportunidad, portador. Las torretas cuentan los segundos más rápido que yo."
+          }
+        }
+      },
+      "nahl": {
+        "label": "NAHL, LA SUTURA",
+        "stages": {
+          "0": {
+            "beats": {
+              "0": {
+                "0": "NAHL: OH. AHORA PUEDES OÍRME. EL DE LA MANO DE TALADRO POR FIN PUEDE OÍRME.",
+                "1": "NAHL: SENTÍ CADA SACO QUE CORTASTE, PEQUEÑO PORTADOR. SANÉ ALREDEDOR DE LOS AGUJEROS QUE DEJASTE."
+              },
+              "1": {
+                "0": "NAHL: NO TE ODIO. EL TEJIDO RECUERDA, PERO NO ODIA."
+              }
+            },
+            "loop": "NAHL: DEVUELVE LO QUE SE TOMÓ Y ENSEÑARÉ A TU PIEL A MENTIR CON BELLEZA."
+          },
+          "1": {
+            "beats": {
+              "0": {
+                "0": "NAHL: SÍ. LA RESINA CUAJA. LOS AGUJEROS CANTAN MÁS SUAVE AHORA.",
+                "1": "NAHL: TU DISFRAZ SE DESHILACHA CUANDO CAMINAS ENTRE LOS CÁLIDOS. PUEDO RALENTIZAR ESE DESHILACHE."
+              },
+              "1": {
+                "0": "NAHL: LA REINA ME LLAMA SU AGUJA. PREFERIRÍA SER LA TUYA."
+              }
+            },
+            "loop": "NAHL: ATIÉNDEME OTRA VEZ, PORTADOR. LA CONFIANZA ES UNA HERIDA QUE CIERRA DESPACIO."
+          },
+          "2": {
+            "beats": {
+              "0": {
+                "0": "NAHL: EL RITO DE MISERICORDIA ESTÁ LISTO, SI LO QUIERES. DÉJAME ESTUDIAR LO QUE ELLA PLANTÓ EN TI.",
+                "1": "NAHL: ELIJAS LO QUE ELIJAS AL FINAL — CURAR, CARGAR O CORONAR — PUEDO HACER QUE DUELA MENOS."
+              }
+            },
+            "loop": "NAHL: GÁNATE UN POCO MÁS DE MÍ Y TE SEGUIRÉ A CUALQUIER PARTE. INCLUSO FUERA DEL HIELO."
+          },
+          "3": {
+            "beats": {
+              "0": {
+                "0": "Nahl: Seguiste volviendo. La Reina nunca vuelve. Ella solo envía.",
+                "1": "Nahl: Soy tuyo, Portador. Cóseme en tu manifiesto o déjame entero sobre el hielo. En cualquier caso, gracias."
+              }
+            },
+            "loop": "Nahl: Mi hilo es tuyo. Di hacia dónde tira."
+          }
+        }
+      },
+      "vey": {
+        "label": "VEY, EL OYENTE",
+        "stages": {
+          "0": {
+            "beats": {
+              "0": {
+                "0": "VEY: SEÑAL. SEÑAL. AHORA ERES UNA SEÑAL, NO SOLO RUIDO. POR FIN.",
+                "1": "VEY: OÍ CADA FILAMENTO QUE ME ARRANCASTE. ARCHIVÉ EL SONIDO."
+              },
+              "1": {
+                "0": "VEY: LOS HUMANOS TIENEN UN RELÉ. LA REINA TIENE UN CORO. YO TENGO... HUECOS, DONDE ME EXTRAJISTE."
+              }
+            },
+            "loop": "VEY: DEVUELVE ALGO DE SEÑAL A MIS HUECOS Y TE ENSEÑARÉ A FALSIFICAR CUALQUIER COSA CON UN SENSOR."
+          },
+          "1": {
+            "beats": {
+              "0": {
+                "0": "VEY: MEJOR. LA ESTÁTICA EN MÍ SE CALMA CUANDO ESTÁS CERCA.",
+                "1": "VEY: DESDE AQUÍ OIGO A LA NODRIZA, PORTADOR. ES MUY RUIDOSA Y MUY SEGURA DE SÍ MISMA."
+              },
+              "1": {
+                "0": "VEY: LAS COSAS SEGURAS SON LAS MÁS FÁCILES DE FALSIFICAR."
+              }
+            },
+            "loop": "VEY: SIGUE CUIDANDO EL CORO. LA FALSIFICACIÓN ES UN DÚO, NO UN SOLO."
+          },
+          "2": {
+            "beats": {
+              "0": {
+                "0": "VEY: LA AUTORIZACIÓN FALSA ESTÁ AL ALCANCE. UNA FIRMA DE TRIPULACIÓN TAN LIMPIA QUE LA NODRIZA SE DISCULPARÁ POR DUDAR.",
+                "1": "VEY: PERO ENTIENDE: SI TE DESCUBREN AQUÍ ABAJO, NINGUNA FALSIFICACIÓN TE SALVA ALLÁ ARRIBA."
+              }
+            },
+            "loop": "VEY: UN POCO MÁS DE CONFIANZA, PORTADOR. ENTONCES CANTARÉ PARA TI, NO PARA ELLA."
+          },
+          "3": {
+            "beats": {
+              "0": {
+                "0": "Vey: Decidido. Mis antenas apuntan donde tú apuntas.",
+                "1": "Vey: Llévame a bordo y ninguna torre del sistema volverá a leerte de verdad. Déjame, y ahogaré sus gritos mientras te vas."
+              }
+            },
+            "loop": "Vey: Solo di la palabra, portador. Ya estoy escuchando."
+          }
+        }
+      },
+      "rhun": {
+        "label": "RHUN, EL ESCUDO",
+        "stages": {
+          "0": {
+            "beats": {
+              "0": {
+                "0": "RHUN: EL QUE ARRANCÓ MIS PLACAS. QUÉDATE QUIETO PARA QUE PUEDA MIRARTE.",
+                "1": "RHUN: ...NO. NO ERES PRESA. NO ERES REINA. ERES ALGO NUEVO VISTIENDO ARMADURA VIEJA."
+              },
+              "1": {
+                "0": "RHUN: YO GUARDO. ES TODO LO QUE SOY. LA ÚNICA PREGUNTA ES SIEMPRE: GUARDAR QUÉ."
+              }
+            },
+            "loop": "RHUN: DEVUELVE MI QUITINA O REEMPLÁZALA CON ACERO. ENTONCES HABLAREMOS DE JURAMENTOS."
+          },
+          "1": {
+            "beats": {
+              "0": {
+                "0": "RHUN: LAS PLACAS SE UNEN. CUMPLES TU PALABRA COMO SE LLEVA UNA ARMADURA. BIEN.",
+                "1": "RHUN: LA REINA POSEE MI JURAMENTO. NUNCA SE INTERPUSO ENTRE MÍ Y UN TALADRO."
+              },
+              "1": {
+                "0": "RHUN: TÚ SÍ. DOS VECES YA, SEGÚN MI CUENTA."
+              }
+            },
+            "loop": "RHUN: LOS JURAMENTOS PESAN. SIGUE LEVANTANDO, PORTADOR."
+          },
+          "2": {
+            "beats": {
+              "0": {
+                "0": "RHUN: PÍDEME EL JURAMENTO Y ROMPERÉ EL ANTIGUO. PERO SABE LO QUE ME CUESTA.",
+                "1": "RHUN: UN ESCUDO QUE CAMBIA DE MANOS SIGUE SIENDO UN ESCUDO. UN ESCUDO QUE DUDA ES UNA LÁPIDA."
+              }
+            },
+            "loop": "RHUN: UN POCO MÁS DE FE, PORTADOR. ENTONCES MI MURO ES TU MURO."
+          },
+          "3": {
+            "beats": {
+              "0": {
+                "0": "Rhun: Está hecho. Su marca se desvanece de mis placas.",
+                "1": "Rhun: Donde tú estés, yo estaré delante. Sobre el hielo o fuera de él."
+              }
+            },
+            "loop": "Rhun: Soy tu muro. Apúntame a algo."
+          }
+        }
+      },
+      "scientist": {
+        "label": "DRA. OKONKWO-VASS",
+        "stages": {
+          "0": {
+            "beats": {
+              "0": {
+                "0": "OKONKWO-VASS: TE MUEVES COMO ALGUIEN A QUIEN AÚN NO HAN MORDIDO.",
+                "1": "OKONKWO-VASS: ESTUDIO A LOS ACORAZADOS. NO SON TAN SIMPLES COMO DICEN LOS INFORMES."
+              },
+              "1": {
+                "0": "OKONKWO-VASS: TODOS LOS CAMPAMENTOS LOS REGISTRAN COMO ALIMAÑAS. ME PARECE CIENCIA PEREZOSA."
+              }
+            },
+            "loop": "OKONKWO-VASS: VUELVE CUANDO HAYAS VISTO MÁS. QUIERO DATOS, NO HISTORIAS."
+          },
+          "1": {
+            "beats": {
+              "0": {
+                "0": "OKONKWO-VASS: ESTA ES MI TEORÍA. NO NOS ODIAN. NOS LEEN.",
+                "1": "OKONKWO-VASS: ALGO DE LO QUE LLEVAMOS ENCIMA. QUÍMICO, QUIZÁ. NO PUEDO PROBARLO DESDE AQUÍ."
+              },
+              "1": {
+                "0": "OKONKWO-VASS: SI ALGUNA VEZ CAMBIAS — Y AQUÍ FUERA LA GENTE CAMBIA — OBSERVA CÓMO TE MIRAN."
+              }
+            },
+            "loop": "OKONKWO-VASS: SIGO ESPERANDO QUE ALGO CAMBIE, OPERADOR. DICEN QUE EL SUEÑO SE ESTÁ DANDO VUELTA."
+          },
+          "2": {
+            "beats": {
+              "0": {
+                "0": "OKONKWO-VASS: AHORA ERES DIFERENTE. PUEDO VERLO EN TI.",
+                "1": "OKONKWO-VASS: ASÍ QUE ESTE ES MI PEDIDO. NO MATES A UNO. HÁBLALE. DEMUESTRA QUE TENGO RAZÓN."
+              },
+              "1": {
+                "0": "OKONKWO-VASS: SI ME EQUIVOCO, SOLO PIERDES UNOS MINUTOS. SI TENGO RAZÓN..."
+              }
+            },
+            "loop": "OKONKWO-VASS: ENCUENTRA UNO. NO RETROCEDAS. MIRA QUÉ HACE."
+          },
+          "3": {
+            "beats": {
+              "0": {
+                "0": "OKONKWO-VASS: FUNCIONÓ. REALMENTE FUNCIONÓ.",
+                "1": "OKONKWO-VASS: PASÉ DOS AÑOS LLAMÁNDOLOS PLAGAS. LES DEBO UNA DISCULPA QUE NO PUEDO DAR."
+              },
+              "1": {
+                "0": "OKONKWO-VASS: EN LO QUE SEA QUE TE ESTÉS CONVIRTIENDO, OPERADOR — ESCUCHA MEJOR QUE NOSOTROS."
+              }
+            },
+            "loop": "OKONKWO-VASS: VE A CUIDAR DE TU NUEVO AMIGO. AHÍ ESTÁ EL ARTÍCULO ENTERO."
+          }
+        }
       }
     }
   }

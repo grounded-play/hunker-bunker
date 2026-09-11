@@ -127,6 +127,8 @@
       "exit_app": "EXIT APPLICATION",
       "crosshair_custom": "CUSTOM",
       "crosshair_hint": "Select a tactical reticle preset or configure a custom color.",
+      "language": "LANGUAGE / 语言 / ЯЗЫК",
+      "language_hint": "Choose your preferred interface and subtitle language.",
       "dpad_hint": "D-PAD ◀ ▶ TO ADJUST"
     },
     "action": {
@@ -170,6 +172,8 @@
     },
     "aria": {
       "language_select": "Game language",
+      "close_language": "Close language menu",
+      "language_choice": "Select language",
       "close_settings": "Close system settings",
       "crosshair_presets": "Crosshair color presets",
       "crosshair_orange": "Orange crosshair",

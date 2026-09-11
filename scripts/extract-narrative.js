@@ -15,7 +15,7 @@
  * keys that locale is still missing, each with the English source text, ready
  * to send to a translator and paste back into src/locales/<locale>.json.
  */
-import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -91,12 +91,19 @@ for (const locale of LOCALES) {
     const pct = Math.round(((keys.length - missing.length) / keys.length) * 100);
     console.log(`  ${locale.padEnd(7)} ${String(keys.length - missing.length).padStart(4)}/${keys.length}  ${pct}%`);
 
-    if (handoff && locale !== 'en' && missing.length) {
+    if (handoff && locale !== 'en') {
         const dir = join(ROOT, 'docs/localization/handoff');
-        mkdirSync(dir, { recursive: true });
-        const payload = {};
-        for (const key of missing) setPath(payload, key, flat[key]);
-        writeFileSync(join(dir, `${locale}.json`), `${JSON.stringify(payload, null, 2)}\n`);
+        const file = join(dir, `${locale}.json`);
+        if (missing.length) {
+            mkdirSync(dir, { recursive: true });
+            const payload = {};
+            for (const key of missing) setPath(payload, key, flat[key]);
+            writeFileSync(file, `${JSON.stringify(payload, null, 2)}\n`);
+        } else if (existsSync(file)) {
+            // Fully translated: drop the stale request file rather than
+            // leaving a finished locale looking like outstanding work.
+            rmSync(file);
+        }
     }
 }
 

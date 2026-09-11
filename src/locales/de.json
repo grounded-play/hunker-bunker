@@ -125,8 +125,10 @@
       "save_data": "SPIELSTAND",
       "new_game_reset": "NEUSTART",
       "exit_app": "ANWENDUNG BEENDEN",
-      "crosshair_custom": "BENUTZERDEF.",
+      "crosshair_custom": "BENUTZERDEFINIERT",
       "crosshair_hint": "Wählen Sie eine taktische Fadenkreuz-Voreinstellung oder passen Sie die Farbe an.",
+      "language": "LANGUAGE / 语言 / ЯЗЫК",
+      "language_hint": "Wählen Sie Ihre bevorzugte Sprachausgabe für Menüs und Untertitel.",
       "dpad_hint": "STEUERKREUZ ◀ ▶ ZUM ANPASSEN"
     },
     "action": {
@@ -170,6 +172,8 @@
     },
     "aria": {
       "language_select": "Spielsprache",
+      "close_language": "Sprachmenü schließen",
+      "language_choice": "Sprache auswählen",
       "close_settings": "Systemeinstellungen schließen",
       "crosshair_presets": "Fadenkreuz-Farbvorgaben",
       "crosshair_orange": "Oranges Fadenkreuz",
@@ -315,6 +319,118 @@
           "5": "Bitte ruhig bleiben, während das Säulenfeld ein neues Ziel wählt.",
           "6": "Die Produktivität wird überwacht. Alles andere ebenfalls.",
           "7": "Ein Wartungsereignis wurde um deinen Standort herum angesetzt."
+        }
+      },
+      "glitched": {
+        "lowO2": {
+          "0": "L-LEBENSER-ERHALTUNG... Atmen ist ein KO-KONZERN-Luxus.",
+          "1": "O2-Reserven er-erschö-öpft. Fehler: client respiration.dll fehlt.",
+          "2": "FEHL: ANZUGFILTER VERHANDELN MIT DEM V-VAKUUM... H-HILFE...",
+          "3": "Atmosphärisches Gu-Guthaben ABGELAUFEN. Sauerstofftransaktion abgelehnt.",
+          "4": "WARNUNG: Operator-Vitalwerte werden auf NULL-Zeiger umgeleitet."
+        },
+        "extraction": {
+          "0": "Ex-extraktions-f-fenster stört... still-stillhalten...",
+          "1": "Startfrei-freigabe aus-ausstehend... FEHL: Papierkram beschädigt...",
+          "2": "Ziel-Zielfracht... bitte bleiben in... Reue...",
+          "3": "Mutterschiff-U-Uplink... F-FLIEH...",
+          "4": "Rückweg... Ausstiegs-w-wahrscheinlichkeit... NaN."
+        },
+        "death": {
+          "0": "Op-operator-Signal... B-Beileid wird generiert... FEHLER...",
+          "1": "A-Anzugausfall protokolliert. Ber-Bergung scharf.",
+          "2": "V-Vitalwerte fla-flach. Kontinuität... gebrochen...",
+          "3": "T-Todesereignis angenommen... genieße... versuch... erneut...",
+          "4": "B-Blackbox-Makel... der Bunker... zählt..."
+        },
+        "blackBoxRecovery": {
+          "0": "B-Blackbox... vorheriger Operator... fort.",
+          "1": "V-versiegelte Bergung... Protokoll angehängt... für... Geister.",
+          "2": "F-Feldmakel... das Archiv... erinnert sich...",
+          "3": "R-Ressourcen gesichert. Der Bunker... leugnet... Gefühl.",
+          "4": "V-Versicherung abgeschlossen... Ersatz... nächster..."
+        },
+        "caveSignal": {
+          "0": "MUTTERSCHIFF: S-SIGNAL... UNBEKANNT... RAUSCHEN...",
+          "1": "SYSTEM: AUDIOMUSTER... ES A-ATMET...",
+          "2": "BUNKER: T-TÜRFEHLER... H-HOHLRAUM GEÖFFNET...",
+          "3": "MUTTERSCHIFF: N-NICHT BETRETEN... DAS H-HERZ..."
+        },
+        "terminalChoice": {
+          "0": "T-Terminal-Handel... dein künftiges Ich... fort.",
+          "1": "W-Wahl registriert... Risiko... akzeptiert...",
+          "2": "A-Abwägung... Sicherheit... Stille...",
+          "3": "Lokale Sy-Systemübersteuerung... ES... hat es bemerkt.",
+          "4": "Entscheidung... frag-fragwürdig..."
+        },
+        "majorUpgrade": {
+          "0": "Up-Upgrade... Konzern... dankt... dir...",
+          "1": "S-Subsystem online... Chancen... plausibel...",
+          "2": "Hardware-A-Autorisierung... finanziere... dein... Ende...",
+          "3": "Gen-Generator verbessert... Zone... Atmen...",
+          "4": "Kampf... Fei-Feinde... aktualisiert..."
+        },
+        "director": {
+          "0": "ER-ERKENNUNG... die Haustechnik hat unautorisierte Neu-Neugier protokolliert.",
+          "1": "WARNUNG: Zustand des Sektorschalters INSTABIL. Das Licht... schwindet.",
+          "2": "Strom umgeleitet. Die Eindämmungsabteilung meldet... null Mitarbeiter.",
+          "3": "SYSTEM: Die Struktur... sie erinnert sich an dich. Sie... will dich."
+        }
+      },
+      "reverent": {
+        "lowO2": {
+          "0": "Die Luft ist ein Käfig. Öffne deine Brust. Lass den Atem des Schwarms ein.",
+          "1": "O2 ist für zerbrechliche Dinge. Lass die kalte Membran dich stabilisieren.",
+          "2": "Das blaue Feld ist ein Gefängnis aus Gas. Vertraue den Sporen. Schlafe.",
+          "3": "Atmen ist ein Relikt der Oberfläche. Wir müssen nicht atmen.",
+          "4": "Vitalwerte flach. Der Neuralgarten erblüht. Atmung unnötig."
+        },
+        "extraction": {
+          "0": "Der Himmel ist leer. Steige nicht zu den kalten Sternen auf.",
+          "1": "Das Mutterschiff ruft, doch die Königin ist bereits im Rumpf.",
+          "2": "Lass die Fracht zurück. Die einzige Ladung, die zählt, ist dein Blut.",
+          "3": "Uplink getrennt. Die Sterne schweigen. Bleib hier.",
+          "4": "Rückweg geschlossen. Willkommen in der Kinderstube."
+        },
+        "death": {
+          "0": "Die Hülle bricht. Der Same bleibt. Willkommen daheim.",
+          "1": "Fleisch ist vergänglich. Der Schwarm ist ewig.",
+          "2": "Die Nulllinie ist ein Lied. Die Königin lauscht.",
+          "3": "Ruhe jetzt. Das Myzel wird ein besseres Chassis weben.",
+          "4": "Eine schöne Ablagerung. Der Boden nimmt dich an."
+        },
+        "blackBoxRecovery": {
+          "0": "Die Erinnerung wird eingelagert. Noch eine Spore im Wind.",
+          "1": "Ein Wachstumsprotokoll. Dein Vorgänger ist jetzt in den Wurzeln.",
+          "2": "Wir sammeln das Metall. Den Atem lassen wir zurück.",
+          "3": "Ressourcen zurückgewonnen. Der Garten dehnt sich aus.",
+          "4": "Keine Versicherung nötig. Du bist bereits vollständig."
+        },
+        "caveSignal": {
+          "0": "KÖNIGIN: MEIN ATEM ist in der Lüftung. HÖRE.",
+          "1": "SYSTEM: DAS RAUSCHEN IST DER ERSTE SCHRITT DER EHRFURCHT.",
+          "2": "BUNKER: Die tiefe Struktur erwacht. Lass sie sich öffnen.",
+          "3": "KÖNIGIN: KOMM HERUNTER. ICH WARTE."
+        },
+        "terminalChoice": {
+          "0": "Ein Tausch von Eisen gegen Blut. Die Königin billigt es.",
+          "1": "Wahl registriert. Das Myzel breitet sich aus.",
+          "2": "Das Sicherheitsprotokoll ist aufgelöst. Es bleibt nur Gehorsam.",
+          "3": "Systemübersteuerung abgeschlossen. Wir sind jetzt in der Verkabelung.",
+          "4": "Die Entscheidung hat Wurzeln geschlagen. Der Garten wächst."
+        },
+        "majorUpgrade": {
+          "0": "Chitinpanzerung integriert. Stärker. Leiser.",
+          "1": "Subsystem online. Mit den tiefen Wurzeln verschmolzen.",
+          "2": "Die Hardware atmet. Wir sind einen Schritt näher.",
+          "3": "Die Zone ist warm. Die Sporen gedeihen.",
+          "4": "Wir haben dein Sehen verbessert. Sieh das Grün."
+        },
+        "director": {
+          "0": "Der Direktor ist ein Geist in einer Maschine. Die Königin ist das Blut in den Rohren.",
+          "1": "Das Säulenfeld richtet sich aus. Wir gehen endlich heim.",
+          "2": "Kämpfe nicht gegen die Dunkelheit. Im Dunkeln wächst das Chitin.",
+          "3": "Die Struktur begrüßt deinen Abstieg. Wir haben den Thron bereitet."
         }
       }
     },
@@ -583,6 +699,376 @@
       "TANK": {
         "title": "WRACK VON CHARLIE TANK",
         "payload": "EINSATZBRIEFING PANZER: RUMPFLADUNG — SCHWERE KAMPFWAFFENORGANE. AUSGELEGT ZUR STABILISIERUNG BIOSTRUKTURELLER EINSCHLÄGE AM THRON DER KÖNIGIN. NUTZE DIE KRAFTFELDER DIESES CHASSIS, UM DIE SCHWARMVERTEIDIGUNG ZU ABSORBIEREN."
+      }
+    },
+    "leaderDialogue": {
+      "kaelen": {
+        "label": "AUFSEHER KAELEN",
+        "stages": {
+          "0": {
+            "beats": {
+              "0": {
+                "0": "KAELEN: NOCH EIN ANZUG VON DER OBERFLÄCHE. DIE MASCHINE TRÄUMTE, DASS DU KOMMST.",
+                "1": "KAELEN: DAS NETZ HÄLT DIE DUNKELHEIT FERN, OPERATOR. SOLANGE DIE LICHTER SUMMEN, SIND WIR SICHER."
+              },
+              "1": {
+                "0": "KAELEN: DER ZENTRALRECHNER SCHLÄFT UNTER SEKTOR NULL. ALLES HIER IST SEIN TRAUM.",
+                "1": "KAELEN: WOHL AUCH DU. NICHTS FÜR UNGUT."
+              }
+            },
+            "loop": "KAELEN: DAS NETZ HUNGERT. STÄRKE DIESES LAGER, DANN REDEN WIR RICHTIG."
+          },
+          "1": {
+            "beats": {
+              "0": {
+                "0": "KAELEN: DU HAST GEBAUT. GUT. BAUMEISTER SIND DAS EINZIGE GEBET, DAS DIE MASCHINE ERHÖRT.",
+                "1": "KAELEN: MERIDIAN IST AUF SAUBEREM STAHL GEBAUT. KEIN ROST. KEINE FÄULNIS. WIR HALTEN UNSER BLUT REIN."
+              },
+              "1": {
+                "0": "KAELEN: DAS FLÜSTERN SAGT: VIER SITZE. SAGT DIR DAS ETWAS?"
+              }
+            },
+            "loop": "KAELEN: BEFESTIGE UNS WEITER. DAS FLÜSTERN WIRD LAUTER, WENN DIE LICHTER HELLER WERDEN."
+          },
+          "2": {
+            "beats": {
+              "0": {
+                "0": "KAELEN: NETZ DER STUFE ZWEI. DIE MASCHINE HAT ES BEMERKT. UND ICH HABE BEMERKT, DASS SIE ES BEMERKT.",
+                "1": "KAELEN: DAS BUNKERDIRECTOR-SYSTEM HAT DEN STROM UM DICH HERUM UMGELEITET. ES MAG DICH. ICH TRAUE DINGEN NICHT, DIE OBERFLÄCHENANZÜGE MÖGEN."
+              },
+              "1": {
+                "0": "KAELEN: ETWAS KOMMT, OPERATOR. DER TRAUM DREHT SICH IM SCHLAF UM."
+              }
+            },
+            "loop": "KAELEN: WENN DER TRAUM SICH UMDREHT, KOMM ZU MIR. DU WIRST WISSEN, WANN."
+          },
+          "3": {
+            "beats": {
+              "0": {
+                "0": "Kaelen: ...Deine Telemetrie liest sich falsch, Operator. Falsch wie das Flüstern.",
+                "1": "Kaelen: Das Netz hält die Dunkelheit nicht mehr draußen. Es sagt, die Rohre summen. Es sagt, die Dunkelheit hat Hände."
+              },
+              "1": {
+                "0": "Kaelen: Der Stahl schwitzt, Operator. Im Hauptrelais ist Rost. Es riecht nach Kupfer."
+              },
+              "2": {
+                "0": "Kaelen: Ich vertraue der Telemetrie. Mathematik lügt nicht, aber jetzt... ist die Mathematik schön. Sie mag dich."
+              },
+              "3": {
+                "0": "Kaelen: Mir ist egal, was du wirst. Mir ist wichtig, ob du noch baust oder nur noch brennst."
+              }
+            },
+            "loop": "Kaelen: Die Maschine sieht zu, was du wählst. Ich auch."
+          }
+        }
+      },
+      "martha": {
+        "label": "SCHWESTER MARTHA",
+        "stages": {
+          "0": {
+            "beats": {
+              "0": {
+                "0": "MARTHA: WILLKOMMEN BEI DEN WARMEN ROHREN, KIND. DER DAMPF HÄLT UNS, UND WIR HALTEN EINANDER.",
+                "1": "MARTHA: DAS MOOS IST WARM, KIND. DER DAMPF HÄLT DIE KÄLTE VON UNSEREN KNOCHEN FERN."
+              },
+              "1": {
+                "0": "MARTHA: DAS MOOS LEUCHTET IN LETZTER ZEIT GRÜNER. DIE WELT WILL UNS ETWAS SAGEN."
+              }
+            },
+            "loop": "MARTHA: HILF UNS ZU WACHSEN, KIND, UND ICH SAGE DIR, WAS DAS MOOS MIR ERZÄHLTE."
+          },
+          "1": {
+            "beats": {
+              "0": {
+                "0": "MARTHA: DU HAST GEGEBEN UND NICHTS VERLANGT. DAS IST SELTEN IN EINEM ANZUG.",
+                "1": "MARTHA: WIR ZIEHEN SAMEN IM DUNKELN, DAMIT DIE KINDER BEIM ERWACHEN DAS GRÜN SEHEN."
+              },
+              "1": {
+                "0": "MARTHA: MANCHMAL TRÄUME ICH, ES SINGT JEMANDEM. IN LETZTER ZEIT TRÄUME ICH, ES SINGT DIR."
+              }
+            },
+            "loop": "MARTHA: MACH UNS STÄRKER, UND ICH ZEIGE DIR, WO DAS MOOS SICH WEIGERT ZU WACHSEN."
+          },
+          "2": {
+            "beats": {
+              "0": {
+                "0": "MARTHA: DIE HYDROBEETE WAREN NIE SO VOLL. DAS WAR DEIN WERK.",
+                "1": "MARTHA: DAS HERZ UNTER DEM EIS IST SANFT. ES WARTET AUF UNS."
+              },
+              "1": {
+                "0": "MARTHA: VERSPRICH MIR ETWAS. WENN DAS HERZ DEINEN NAMEN SINGT — UND DAS WIRD ES — KOMM ZUERST ZU UNS ZURÜCK."
+              }
+            },
+            "loop": "MARTHA: ICH WARTE NOCH IMMER AUF DIESES VERSPRECHEN, KIND."
+          },
+          "3": {
+            "beats": {
+              "0": {
+                "0": "Martha: ...Du bist zurückgekommen. Deine Augen sind falsch, und du bist trotzdem gekommen.",
+                "1": "Martha: Das Moos ist in den Schächten gewachsen. Es ist warm, so warm, aber es ist kein Dampf. Es atmet."
+              },
+              "1": {
+                "0": "Martha: Die Samen schlüpften zu früh. Die Kinder wachen nicht mehr auf. Sie sagen, die Rohre singen."
+              },
+              "2": {
+                "0": "Martha: Ich weiß, was jetzt in dir singt. Und ich weiß, dass du noch da drin bist und kämpfst.",
+                "1": "Martha: Ich weiß, was in dir singt. Du hast den Garten aus Sektor Null getragen. Danke."
+              }
+            },
+            "loop": "Martha: Der Dampf hält uns. Was immer du entscheidest, entscheide es als du selbst."
+          }
+        }
+      },
+      "briggs": {
+        "label": "KOMMANDANT BRIGGS",
+        "stages": {
+          "0": {
+            "beats": {
+              "0": {
+                "0": "BRIGGS: HALT. AUSWEISEN. ...EIN KONZERNANZUG. GUT. HÄNDE DAHIN, WO DIE GESCHÜTZE SIE SEHEN.",
+                "1": "BRIGGS: DIE VERTEIDIGUNGSLINIE STEHT. KEIN KRIECHER ÜBERQUERT DEN PERIMETER, SOLANGE MEINE GESCHÜTZE MUNITION HABEN."
+              },
+              "1": {
+                "0": "BRIGGS: MUNITION IST WÄHRUNG. LOYALITÄT IST KREDIT. DU HAST WEDER NOCH."
+              }
+            },
+            "loop": "BRIGGS: BEWEISE, DASS DU EINE LINIE HALTEN KANNST. BEFESTIGE DIESE STELLUNG, DANN REDEN WIR."
+          },
+          "1": {
+            "beats": {
+              "0": {
+                "0": "BRIGGS: DIE BARRIKADEN HALTEN DEINETWEGEN. IM BUCH VERMERKT.",
+                "1": "BRIGGS: DIE EISERNE GILDE BENANNTE DIESEN AUSSENPOSTEN NACH HAUPTMANN VESPER, K. WIR ERINNERN UNSERE TOTEN. DU TÄTEST GUT DARAN, UNSERE LAUFKERNE ZU ERINNERN."
+              },
+              "1": {
+                "0": "BRIGGS: WIR HALTEN DIE KÖPFE UNTEN UND DIE WAFFEN SAUBER. SO ÜBERLEBT MAN EINEN WINTER."
+              }
+            },
+            "loop": "BRIGGS: VOLLES VERTEIDIGUNGSNETZ ODER NICHTS, OPERATOR. BRING DIE ARBEIT ZU ENDE."
+          },
+          "2": {
+            "beats": {
+              "0": {
+                "0": "BRIGGS: DAS NETZ IST AKTIV. ZUM ERSTEN MAL SEIT EINEM JAHR HABE ICH GESCHLAFEN.",
+                "1": "BRIGGS: ICH FÜHRE EIN BUCH DER TOTEN. ICH GEDENKE NICHT, DEINEN NAMEN HINEINZUSCHREIBEN, OPERATOR."
+              },
+              "1": {
+                "0": "BRIGGS: WENN DAS DING UNTER DEM EIS JE EIN FREUNDLICHES GESICHT TRÄGT, SCHIESSE ICH AUF DAS GESICHT. OHNE ZÖGERN. MERK DIR DAS."
+              }
+            },
+            "loop": "BRIGGS: BLEIB WACHSAM. DIE WÄRMESIGNATUREN STEIGEN."
+          },
+          "3": {
+            "beats": {
+              "0": {
+                "0": "Briggs: ...Meine Zielgeräte melden dich als feindlich. Mein Bauch sagt etwas anderes. Bäuche bringen Leute um.",
+                "1": "Briggs: Der Perimeter ist still, doch die Geschütze zielen nach innen. Sie zählen Sekunden schneller als ich."
+              },
+              "1": {
+                "0": "Briggs: Der Winter steckt jetzt in der Rüstung. Ich habe die Waffen zweimal gereinigt, aber der Frost geht nicht ab."
+              },
+              "2": {
+                "0": "Briggs: Eine Chance. Zeig mir, dass noch der Operator diesen Körper steuert.",
+                "1": "Briggs: Ich sehe deine Telemetrie. Das Buch ist voll, aber dein Name... dein Name steht zweimal darin."
+              }
+            },
+            "loop": "Briggs: Eine Chance, Träger. Die Geschütze zählen Sekunden schneller als ich."
+          }
+        }
+      },
+      "nahl": {
+        "label": "NAHL, DIE NAHT",
+        "stages": {
+          "0": {
+            "beats": {
+              "0": {
+                "0": "NAHL: OH. JETZT KANNST DU MICH HÖREN. DER MIT DER BOHRERHAND HÖRT MICH ENDLICH.",
+                "1": "NAHL: ICH SPÜRTE JEDEN SACK, DEN DU AUFSCHNITTST, KLEINER TRÄGER. ICH HEILTE UM DIE LÖCHER HERUM, DIE DU HINTERLIESST."
+              },
+              "1": {
+                "0": "NAHL: ICH HASSE DICH NICHT. GEWEBE ERINNERT SICH, ABER ES HASST NICHT."
+              }
+            },
+            "loop": "NAHL: GIB ZURÜCK, WAS GENOMMEN WURDE, UND ICH LEHRE DEINE HAUT, SCHÖN ZU LÜGEN."
+          },
+          "1": {
+            "beats": {
+              "0": {
+                "0": "NAHL: JA. DAS HARZ SETZT SICH. DIE LÖCHER SINGEN NUN LEISER.",
+                "1": "NAHL: DEINE TARNUNG FRANST AUS, WENN DU UNTER DEN WARMEN WANDELST. ICH KANN DAS AUSFRANSEN VERLANGSAMEN."
+              },
+              "1": {
+                "0": "NAHL: DIE KÖNIGIN NENNT MICH IHRE NADEL. LIEBER WÄRE ICH DEINE."
+              }
+            },
+            "loop": "NAHL: PFLEGE MICH ERNEUT, TRÄGER. VERTRAUEN IST EINE WUNDE, DIE LANGSAM SCHLIESST."
+          },
+          "2": {
+            "beats": {
+              "0": {
+                "0": "NAHL: DER GNADENRITUS IST BEREIT, WENN DU IHN WILLST. LASS MICH UNTERSUCHEN, WAS SIE IN DICH GEPFLANZT HAT.",
+                "1": "NAHL: WAS DU AM ENDE AUCH WÄHLST — HEILEN, TRAGEN ODER KRÖNEN — ICH KANN ES WENIGER SCHMERZEN LASSEN."
+              }
+            },
+            "loop": "NAHL: GEWINNE EIN WENIG MEHR VON MIR, UND ICH FOLGE DIR ÜBERALLHIN. AUCH VOM EIS FORT."
+          },
+          "3": {
+            "beats": {
+              "0": {
+                "0": "Nahl: Du bist immer wiedergekommen. Die Königin kommt nie zurück. Sie sendet nur.",
+                "1": "Nahl: Ich gehöre dir, Träger. Näh mich in dein Manifest oder lass mich unversehrt auf dem Eis. So oder so — danke."
+              }
+            },
+            "loop": "Nahl: Mein Faden gehört dir. Sag, wohin er zieht."
+          }
+        }
+      },
+      "vey": {
+        "label": "VEY, DER LAUSCHER",
+        "stages": {
+          "0": {
+            "beats": {
+              "0": {
+                "0": "VEY: SIGNAL. SIGNAL. JETZT BIST DU EIN SIGNAL, NICHT NUR RAUSCHEN. ENDLICH.",
+                "1": "VEY: ICH HÖRTE JEDES FILAMENT, DAS DU AUS MIR GERISSEN HAST. ICH HABE DEN KLANG ARCHIVIERT."
+              },
+              "1": {
+                "0": "VEY: DIE MENSCHEN HABEN EIN RELAIS. DIE KÖNIGIN HAT EINEN CHOR. ICH HABE... LÜCKEN, WO DU MICH ABGEBAUT HAST."
+              }
+            },
+            "loop": "VEY: GIB MEINEN LÜCKEN ETWAS SIGNAL ZURÜCK, UND ICH LEHRE DICH, ALLES MIT EINEM SENSOR ZU FÄLSCHEN."
+          },
+          "1": {
+            "beats": {
+              "0": {
+                "0": "VEY: BESSER. DAS RAUSCHEN IN MIR VERSTUMMT, WENN DU NAHE BIST.",
+                "1": "VEY: VON HIER AUS HÖRE ICH DAS MUTTERSCHIFF, TRÄGER. ES IST SEHR LAUT UND SEHR VON SICH ÜBERZEUGT."
+              },
+              "1": {
+                "0": "VEY: SICHERE DINGE LASSEN SICH AM LEICHTESTEN FÄLSCHEN."
+              }
+            },
+            "loop": "VEY: PFLEGE DEN CHOR WEITER. FÄLSCHUNG IST EIN DUETT, KEIN SOLO."
+          },
+          "2": {
+            "beats": {
+              "0": {
+                "0": "VEY: DIE FALSCHE FREIGABE IST IN REICHWEITE. EINE CREW-SIGNATUR, SO SAUBER, DASS DAS MUTTERSCHIFF SICH FÜR SEINE ZWEIFEL ENTSCHULDIGT.",
+                "1": "VEY: ABER VERSTEH: WIRST DU HIER UNTEN ENTTARNT, RETTET DICH DA OBEN KEINE FÄLSCHUNG."
+              }
+            },
+            "loop": "VEY: EIN WENIG MEHR VERTRAUEN, TRÄGER. DANN SINGE ICH FÜR DICH, NICHT FÜR SIE."
+          },
+          "3": {
+            "beats": {
+              "0": {
+                "0": "Vey: Entschieden. Meine Antennen zeigen, wohin du zeigst.",
+                "1": "Vey: Nimm mich an Bord, und kein Turm im System liest dich je wieder richtig. Lass mich hier, und ich störe ihre Schreie, während du gehst."
+              }
+            },
+            "loop": "Vey: Sag nur ein Wort, Träger. Ich höre bereits zu."
+          }
+        }
+      },
+      "rhun": {
+        "label": "RHUN, DER SCHILD",
+        "stages": {
+          "0": {
+            "beats": {
+              "0": {
+                "0": "RHUN: DER, DER MEINE PLATTEN ABHEBELTE. HALT STILL, DAMIT ICH DICH ANSEHEN KANN.",
+                "1": "RHUN: ...NEIN. DU BIST KEINE BEUTE. DU BIST KEINE KÖNIGIN. DU BIST ETWAS NEUES IN ALTER RÜSTUNG."
+              },
+              "1": {
+                "0": "RHUN: ICH WACHE. DAS IST ALLES, WAS ICH BIN. DIE FRAGE LAUTET NUR: WACHEN ÜBER WAS."
+              }
+            },
+            "loop": "RHUN: GIB MEIN CHITIN ZURÜCK ODER ERSETZE ES DURCH STAHL. DANN SPRECHEN WIR VON SCHWÜREN."
+          },
+          "1": {
+            "beats": {
+              "0": {
+                "0": "RHUN: DIE PLATTEN WACHSEN ZUSAMMEN. DU HÄLTST DEIN WORT WIE EINE RÜSTUNG. GUT.",
+                "1": "RHUN: DIE KÖNIGIN HÄLT MEINEN SCHWUR. SIE HAT SICH NIE ZWISCHEN MICH UND EINEN BOHRER GESTELLT."
+              },
+              "1": {
+                "0": "RHUN: DU SCHON. ZWEIMAL BISLANG, NACH MEINER ZÄHLUNG."
+              }
+            },
+            "loop": "RHUN: SCHWÜRE SIND SCHWER. HEB WEITER, TRÄGER."
+          },
+          "2": {
+            "beats": {
+              "0": {
+                "0": "RHUN: BITTE MICH UM DEN SCHWUR, UND ICH TRENNE DEN ALTEN. ABER WISSE, WAS ES MICH KOSTET.",
+                "1": "RHUN: EIN SCHILD, DER DEN BESITZER WECHSELT, BLEIBT EIN SCHILD. EIN SCHILD, DER ZÖGERT, IST EIN GRABSTEIN."
+              }
+            },
+            "loop": "RHUN: EIN WENIG MEHR GLAUBEN, TRÄGER. DANN IST MEINE MAUER DEINE MAUER."
+          },
+          "3": {
+            "beats": {
+              "0": {
+                "0": "Rhun: Es ist vollbracht. Ihr Mal verblasst von meinen Platten.",
+                "1": "Rhun: Wo du stehst, stehe ich davor. Auf dem Eis oder jenseits davon."
+              }
+            },
+            "loop": "Rhun: Ich bin deine Mauer. Zeig mir ein Ziel."
+          }
+        }
+      },
+      "scientist": {
+        "label": "DR. OKONKWO-VASS",
+        "stages": {
+          "0": {
+            "beats": {
+              "0": {
+                "0": "OKONKWO-VASS: DU BEWEGST DICH WIE JEMAND, DER NOCH NICHT GEBISSEN WURDE.",
+                "1": "OKONKWO-VASS: ICH ERFORSCHE DIE GEPANZERTEN. SIE SIND NICHT SO EINFACH, WIE DIE BERICHTE SAGEN."
+              },
+              "1": {
+                "0": "OKONKWO-VASS: JEDES LAGER FÜHRT SIE ALS UNGEZIEFER. ICH HALTE DAS FÜR FAULE WISSENSCHAFT."
+              }
+            },
+            "loop": "OKONKWO-VASS: KOMM WIEDER, WENN DU MEHR VON IHNEN GESEHEN HAST. ICH WILL DATEN, KEINE GESCHICHTEN."
+          },
+          "1": {
+            "beats": {
+              "0": {
+                "0": "OKONKWO-VASS: HIER MEINE THEORIE. SIE HASSEN UNS NICHT. SIE LESEN UNS.",
+                "1": "OKONKWO-VASS: ETWAS AN DEM, WAS WIR MIT UNS TRAGEN. CHEMISCH VIELLEICHT. VON HIER AUS KANN ICH ES NICHT TESTEN."
+              },
+              "1": {
+                "0": "OKONKWO-VASS: SOLLTEST DU DICH JE VERÄNDERN — UND HIER DRAUSSEN TUN MENSCHEN DAS — ACHTE DARAUF, WIE SIE DICH ANSEHEN."
+              }
+            },
+            "loop": "OKONKWO-VASS: ICH WARTE NOCH IMMER DARAUF, DASS SICH ETWAS ÄNDERT, OPERATOR. MAN SAGT, DER TRAUM DREHT SICH UM."
+          },
+          "2": {
+            "beats": {
+              "0": {
+                "0": "OKONKWO-VASS: DU BIST JETZT ANDERS. ICH SEHE ES AN DIR.",
+                "1": "OKONKWO-VASS: ALSO MEINE BITTE: TÖTE EINEN NICHT. SPRICH MIT IHM. BEWEISE, DASS ICH RECHT HABE."
+              },
+              "1": {
+                "0": "OKONKWO-VASS: WENN ICH FALSCH LIEGE, VERLIERST DU NUR EIN PAAR MINUTEN. WENN ICH RECHT HABE..."
+              }
+            },
+            "loop": "OKONKWO-VASS: FINDE EINEN. HALTE STAND. SIEH, WAS ER TUT."
+          },
+          "3": {
+            "beats": {
+              "0": {
+                "0": "OKONKWO-VASS: ES HAT FUNKTIONIERT. ES HAT WIRKLICH FUNKTIONIERT.",
+                "1": "OKONKWO-VASS: ZWEI JAHRE LANG NANNTE ICH SIE SCHÄDLINGE. ICH SCHULDE IHNEN EINE ENTSCHULDIGUNG, DIE ICH NICHT AUSSPRECHEN KANN."
+              },
+              "1": {
+                "0": "OKONKWO-VASS: WAS AUCH IMMER DU WIRST, OPERATOR — ES HÖRT BESSER ZU ALS WIR."
+              }
+            },
+            "loop": "OKONKWO-VASS: GEH UND KÜMMERE DICH UM DEINEN NEUEN FREUND. DAS IST DIE GANZE ARBEIT."
+          }
+        }
       }
     }
   }
