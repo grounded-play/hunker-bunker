@@ -67,6 +67,7 @@
     "trailer:capture": "playwright test --config=tests/e2e/trailer/trailer.playwright.config.js",
     "trailer:build": "node scripts/build-trailer.js",
     "logs:fetch": "node scripts/fetch-session-logs.mjs",
+    "logs:analyze": "node scripts/analyze-session-logs.mjs",
     "audit:economy-icons": "python3 scripts/fix-chroma-economy-icons.py --check"
   },
   "build": {
