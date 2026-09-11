@@ -50,7 +50,15 @@ describe('debug museum coverage', () => {
             'prop_camp_cot', 'prop_camp_crate', 'prop_hive_resin_sac',
             'scatter_bolts', 'scatter_cable_coil',
             'state_barricade_improvised_1', 'state_growth_overrun_1',
-            'body_empty_exosuit', 'body_frozen_human'
+            'body_empty_exosuit', 'body_frozen_human',
+            'arch_bulkhead_frame', 'arch_deco_archway_grand_01', 'arch_deco_archway_grand_02',
+            'arch_deco_archway_grand_03', 'arch_deco_archway_grand_04', 'arch_niche_shrine',
+            'arch_pillar_buttress_01', 'arch_pillar_buttress_02', 'arch_pillar_buttress_03',
+            'arch_pillar_buttress_04', 'arch_rib_ceiling_vault_01', 'arch_rib_ceiling_vault_02',
+            'arch_rib_ceiling_vault_03', 'arch_window_stained', 'fixture_clock_dead',
+            'fixture_sconce_vine', 'state_column_shattered', 'state_wall_breached_01',
+            'state_wall_breached_02', 'state_wall_breached_03',
+            'decal_floor_medallion_01', 'decal_floor_grate_01', 'decal_wall_panel_grille_01'
         ]) {
             expect(showroomTypes.has(type), type).toBe(true);
         }

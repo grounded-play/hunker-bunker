@@ -6,28 +6,43 @@ export const LIVED_IN_DECALS = Object.freeze({
         'decal_bio_sample_spill', 'decal_worker_sleep_roll',
         'decal_scorch_bloom', 'decal_rust_bleed_1',
         'decal_rust_bleed_2', 'decal_water_stain',
-        'decal_graffiti_tally_1', 'decal_graffiti_tally_2'
+        'decal_graffiti_tally_1', 'decal_graffiti_tally_2',
+        'decal_floor_medallion_01', 'decal_floor_medallion_02',
+        'decal_floor_medallion_03', 'decal_floor_medallion_04',
+        'decal_floor_grate_01', 'decal_floor_grate_02',
+        'decal_floor_grate_03', 'decal_floor_grate_04',
+        'decal_wall_panel_grille_01', 'decal_wall_panel_grille_02',
+        'decal_wall_panel_relief', 'decal_mirror_tarnished',
+        'decal_lacquer_blister_01', 'decal_friction_burn'
     ]),
     cryo: Object.freeze([
         'decal_emergency_oxygen_nest', 'decal_failed_decon_kit',
         'decal_barricade_last_stand', 'decal_childlike_cave_map',
         'decal_worker_sleep_roll', 'decal_abandoned_meal_tray',
         'decal_frost_bloom_1', 'decal_frost_bloom_2',
-        'decal_water_stain', 'decal_hand_smears_1'
+        'decal_water_stain', 'decal_hand_smears_1',
+        'decal_condensation_run', 'decal_fluid_seep',
+        'decal_floor_grate_01', 'decal_wall_panel_grille_03'
     ]),
     bio: Object.freeze([
         'decal_maintenance_shrine', 'decal_childlike_cave_map',
         'decal_bio_sample_spill', 'decal_worker_sleep_roll',
         'decal_abandoned_meal_tray', 'decal_growth_creep_1',
         'decal_growth_creep_2', 'decal_vine_iron_shadow_1',
-        'decal_vine_iron_shadow_2', 'decal_grease_pool'
+        'decal_vine_iron_shadow_2', 'decal_grease_pool',
+        'decal_flesh_press', 'decal_bite_marks_02',
+        'decal_bite_marks_03', 'decal_spore_stain_01',
+        'decal_spore_stain_02', 'decal_spore_stain_03'
     ]),
     camp: Object.freeze([
         'decal_abandoned_meal_tray', 'decal_emergency_oxygen_nest',
         'decal_maintenance_shrine', 'decal_barricade_last_stand',
         'decal_childlike_cave_map', 'decal_worker_sleep_roll',
         'decal_hand_smears_2', 'decal_graffiti_tally_1',
-        'decal_scorch_bloom', 'decal_grease_pool'
+        'decal_scorch_bloom', 'decal_grease_pool',
+        'decal_lacquer_blister_02', 'decal_lacquer_blister_03',
+        'decal_friction_burn', 'decal_mirror_tarnished',
+        'decal_bite_marks_02'
     ])
 });
 
@@ -41,9 +56,13 @@ export const ROOM_THEME_CATALOG = Object.freeze([
         floorStyle: 'bunker-standard',
         doorStyle: 'bunker',
         signatureProps: ['prop_bunker_supplies'],
-        largeProps: ['prop_cyber_junction', 'prop_conduit_hub', 'decal_wall_breach', 'decal_meridian_stencil'],
+        largeProps: [
+            'prop_cyber_junction', 'prop_conduit_hub', 'decal_wall_breach', 'decal_meridian_stencil',
+            'arch_bulkhead_frame', 'arch_deco_archway_grand_01', 'arch_rib_ceiling_vault_01', 'state_column_shattered'
+        ],
         smallProps: ['scatter_cable_coil', 'scatter_bolts', 'prop_torn_warning_poster', 'decal_bullet_holes', 'prop_blood_trail', 'decal_hazard_stripes', 'decal_footprints_mud'],
         ambientProps: LIVED_IN_DECALS.bunker,
+        rareProps: ['arch_niche_shrine'],
         encounterProfile: 'standard'
     },
     {
@@ -58,7 +77,7 @@ export const ROOM_THEME_CATALOG = Object.freeze([
         largeProps: ['prop_engineering_bench', 'prop_cyber_junction', 'prop_tesla_coil_node', 'decal_wall_breach'],
         smallProps: ['scatter_cable_coil', 'scatter_bolts', 'prop_torn_warning_poster', 'scatter_biomech_debris', 'scatter_broken_drone', 'decal_oil_spill_patch', 'decal_hazard_stripes'],
         ambientProps: LIVED_IN_DECALS.bunker,
-        rareProps: ['scatter_horizon_black_box', 'decal_machine_cult_shrine'],
+        rareProps: ['scatter_horizon_black_box', 'decal_machine_cult_shrine', 'fixture_clock_dead'],
         encounterProfile: 'utility'
     },
     {
@@ -84,7 +103,10 @@ export const ROOM_THEME_CATALOG = Object.freeze([
         floorStyle: 'bunker-security',
         doorStyle: 'security',
         signatureProps: ['prop_security_locker', 'prop_ammo_crate_stack'],
-        largeProps: ['prop_security_barricade', 'prop_laser_trap_emitter', 'prop_cyber_junction', 'decal_claw_scratches'],
+        largeProps: [
+            'prop_security_barricade', 'prop_laser_trap_emitter', 'prop_cyber_junction', 'decal_claw_scratches',
+            'arch_pillar_buttress_01', 'arch_deco_archway_grand_02', 'state_wall_breached_01'
+        ],
         smallProps: ['scatter_bolts', 'decal_hazard_stripes', 'decal_bullet_holes'],
         ambientProps: LIVED_IN_DECALS.bunker,
         encounterProfile: 'security'
@@ -127,7 +149,10 @@ export const ROOM_THEME_CATALOG = Object.freeze([
         floorStyle: 'cryo-tile',
         doorStyle: 'cryo-security',
         signatureProps: ['prop_ruptured_coolant_pump', 'prop_fusion_generator', 'prop_o2_filter_vat'],
-        largeProps: ['prop_engineering_bench', 'prop_cyber_junction', 'prop_tesla_coil_node'],
+        largeProps: [
+            'prop_engineering_bench', 'prop_cyber_junction', 'prop_tesla_coil_node',
+            'arch_pillar_buttress_02', 'arch_deco_archway_grand_03', 'state_wall_breached_02'
+        ],
         smallProps: ['scatter_cryo_shards', 'scatter_coolant_puddle', 'decal_oil_spill_patch', 'decal_hazard_stripes'],
         ambientProps: LIVED_IN_DECALS.cryo,
         encounterProfile: 'security'
@@ -141,8 +166,11 @@ export const ROOM_THEME_CATALOG = Object.freeze([
         floorStyle: 'bio-resin',
         doorStyle: 'resin',
         signatureProps: ['prop_alien_respiratory_vent', 'prop_spore_colony', 'prop_biomech_respirator'],
-        largeProps: ['prop_alien_feeding_basin', 'prop_hive_resin_sac', 'prop_biomech_incubator', 'decal_spore_growth_patch'],
-        smallProps: ['prop_cave_spores', 'prop_cave_webs', 'decal_tallow_symbol'],
+        largeProps: [
+            'prop_alien_feeding_basin', 'prop_hive_resin_sac', 'prop_biomech_incubator', 'decal_spore_growth_patch',
+            'arch_pillar_buttress_04', 'arch_rib_ceiling_vault_02'
+        ],
+        smallProps: ['prop_cave_spores', 'prop_cave_webs', 'decal_tallow_symbol', 'fixture_sconce_vine'],
         ambientProps: LIVED_IN_DECALS.bio,
         rareProps: ['decal_tallow_herb_cache'],
         encounterProfile: 'bio-standard'
@@ -156,8 +184,11 @@ export const ROOM_THEME_CATALOG = Object.freeze([
         floorStyle: 'bio-hive',
         doorStyle: 'hive',
         signatureProps: ['prop_alien_feeding_basin', 'prop_cave_eggs_intact', 'prop_biomech_incubator'],
-        largeProps: ['prop_alien_respiratory_vent', 'prop_biomech_sphincter_trap', 'prop_hive_resin_sac', 'prop_cave_hive_wounded', 'decal_hive_growth', 'decal_spore_growth_patch'],
-        smallProps: ['prop_cave_eggs_hatched', 'prop_cave_webs', 'scatter_hive_eggs', 'prop_blood_trail', 'decal_claw_scratches'],
+        largeProps: [
+            'prop_alien_respiratory_vent', 'prop_biomech_sphincter_trap', 'prop_hive_resin_sac', 'prop_cave_hive_wounded',
+            'decal_hive_growth', 'decal_spore_growth_patch', 'arch_rib_ceiling_vault_03', 'state_wall_breached_03'
+        ],
+        smallProps: ['prop_cave_eggs_hatched', 'prop_cave_webs', 'scatter_hive_eggs', 'prop_blood_trail', 'decal_claw_scratches', 'fixture_sconce_vine'],
         ambientProps: LIVED_IN_DECALS.bio,
         encounterProfile: 'bio-nest-guard'
     },
@@ -173,7 +204,7 @@ export const ROOM_THEME_CATALOG = Object.freeze([
         largeProps: ['prop_fusion_generator', 'prop_conduit_hub', 'prop_tesla_coil_node'],
         smallProps: ['scatter_cable_coil', 'scatter_bolts', 'decal_oil_spill_patch', 'decal_meridian_stencil'],
         ambientProps: LIVED_IN_DECALS.bunker,
-        rareProps: ['decal_machine_cult_shrine'],
+        rareProps: ['decal_machine_cult_shrine', 'fixture_clock_dead'],
         encounterProfile: 'utility'
     },
     {
@@ -231,7 +262,8 @@ export const ROOM_THEME_CATALOG = Object.freeze([
         signatureProps: ['prop_camp_crates', 'prop_camp_cookfire_lit', 'prop_ammo_crate_stack'],
         largeProps: [
             'prop_camp_sandbags', 'scatter_broken_drone', 'prop_camp_cot',
-            'prop_camp_crate', 'prop_camp_cookfire_doused'
+            'prop_camp_crate', 'prop_camp_cookfire_doused', 'arch_bulkhead_frame',
+            'state_column_shattered'
         ],
         smallProps: [
             'prop_camp_bedrolls', 'scatter_cable_coil', 'scatter_bolts', 'scatter_camp_supplies',
@@ -239,7 +271,7 @@ export const ROOM_THEME_CATALOG = Object.freeze([
             'decal_footprints_mud', 'decal_meridian_stencil'
         ],
         ambientProps: LIVED_IN_DECALS.camp,
-        rareProps: ['decal_tallow_herb_cache', 'prop_iron_guild_dogtags'],
+        rareProps: ['decal_tallow_herb_cache', 'prop_iron_guild_dogtags', 'arch_niche_shrine'],
         encounterProfile: 'safe'
     },
     {
@@ -251,10 +283,10 @@ export const ROOM_THEME_CATALOG = Object.freeze([
         floorStyle: 'storage',
         doorStyle: 'security',
         signatureProps: ['prop_bunker_supplies', 'prop_ammo_crate_stack'],
-        largeProps: ['prop_camp_crates'],
+        largeProps: ['prop_camp_crates', 'arch_deco_archway_grand_04', 'arch_pillar_buttress_03'],
         smallProps: ['scatter_bolts', 'decal_hazard_stripes', 'decal_meridian_stencil'],
         ambientProps: LIVED_IN_DECALS.bunker,
-        rareProps: ['scatter_horizon_black_box'],
+        rareProps: ['scatter_horizon_black_box', 'arch_window_stained', 'arch_niche_shrine'],
         encounterProfile: 'safe'
     }
 ]);

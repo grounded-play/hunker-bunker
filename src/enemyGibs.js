@@ -20,6 +20,9 @@ import { isGoreEnabled } from './featureFlags.js';
 
 export const GIB_CHUNK_COUNT = 8;
 
+/** Scene-graph name given to each corpse's debris group. */
+export const GIB_GROUP_NAME = 'enemy-gibs';
+
 /** Relaxation passes applied after seeding; see fractureGeometry. */
 const LLOYD_PASSES = 4;
 
@@ -277,7 +280,7 @@ export function getGibChunks(type, sourceGeometry, count = GIB_CHUNK_COUNT) {
     const cached = gibCache.get(type);
     if (cached) return cached;
 
-    let chunks = [];
+    let chunks;
     try {
         chunks = fractureGeometry(sourceGeometry?.(), count);
     } catch (err) {
@@ -340,6 +343,8 @@ export function spawnEnemyGibs(game, sprite, { direction = null, isBoss = false 
 
     root.updateMatrixWorld(true);
     const group = new THREE.Group();
+    // Named so browser tests can find a corpse's debris in the live scene.
+    group.name = GIB_GROUP_NAME;
     group.position.setFromMatrixPosition(root.matrixWorld);
     group.quaternion.setFromRotationMatrix(root.matrixWorld);
     group.scale.setFromMatrixScale(root.matrixWorld);

@@ -568,7 +568,19 @@ const FLOOR_OVERLAY_TYPES = new Set([
     'decal_growth_creep_2',
     'decal_frost_bloom_1',
     'decal_frost_bloom_2',
-    'decal_scorch_bloom'
+    'decal_scorch_bloom',
+    'decal_floor_medallion_01',
+    'decal_floor_medallion_02',
+    'decal_floor_medallion_03',
+    'decal_floor_medallion_04',
+    'decal_floor_grate_01',
+    'decal_floor_grate_02',
+    'decal_floor_grate_03',
+    'decal_floor_grate_04',
+    'decal_friction_burn',
+    'decal_flesh_press',
+    'decal_fluid_seep',
+    'decal_condensation_run'
 ]);
 const WALL_DECAL_TYPES = new Set([
     'decal_wall_breach',
@@ -589,7 +601,20 @@ const WALL_DECAL_TYPES = new Set([
     'decal_vine_iron_shadow_1',
     'decal_vine_iron_shadow_2',
     'decal_graffiti_tally_1',
-    'decal_graffiti_tally_2'
+    'decal_graffiti_tally_2',
+    'decal_wall_panel_grille_01',
+    'decal_wall_panel_grille_02',
+    'decal_wall_panel_grille_03',
+    'decal_wall_panel_relief',
+    'decal_mirror_tarnished',
+    'decal_lacquer_blister_01',
+    'decal_lacquer_blister_02',
+    'decal_lacquer_blister_03',
+    'decal_bite_marks_02',
+    'decal_bite_marks_03',
+    'decal_spore_stain_01',
+    'decal_spore_stain_02',
+    'decal_spore_stain_03'
 ]);
 const isFloorOverlayType = (type) => FLOOR_OVERLAY_TYPES.has(type);
 const isWallDecalType = (type) => WALL_DECAL_TYPES.has(type);
@@ -2358,7 +2383,32 @@ export class ThreeGame {
             decal_scorch_bloom: this.loadKeyedSpriteTexture('/decal_scorch_bloom.png', 14),
             decal_vine_iron_shadow_1: this.loadKeyedSpriteTexture('/decal_vine_iron_shadow_1.png', 14),
             decal_vine_iron_shadow_2: this.loadKeyedSpriteTexture('/decal_vine_iron_shadow_2.png', 14),
-            decal_water_stain: this.loadKeyedSpriteTexture('/decal_water_stain.png', 14)
+            decal_water_stain: this.loadKeyedSpriteTexture('/decal_water_stain.png', 14),
+            decal_floor_medallion_01: this.loadKeyedSpriteTexture('/decal_floor_medallion_01.png', 14),
+            decal_floor_medallion_02: this.loadKeyedSpriteTexture('/decal_floor_medallion_02.png', 14),
+            decal_floor_medallion_03: this.loadKeyedSpriteTexture('/decal_floor_medallion_03.png', 14),
+            decal_floor_medallion_04: this.loadKeyedSpriteTexture('/decal_floor_medallion_04.png', 14),
+            decal_floor_grate_01: this.loadKeyedSpriteTexture('/decal_floor_grate_01.png', 14),
+            decal_floor_grate_02: this.loadKeyedSpriteTexture('/decal_floor_grate_02.png', 14),
+            decal_floor_grate_03: this.loadKeyedSpriteTexture('/decal_floor_grate_03.png', 14),
+            decal_floor_grate_04: this.loadKeyedSpriteTexture('/decal_floor_grate_04.png', 14),
+            decal_friction_burn: this.loadKeyedSpriteTexture('/decal_friction_burn.png', 14),
+            decal_flesh_press: this.loadKeyedSpriteTexture('/decal_flesh_press.png', 14),
+            decal_fluid_seep: this.loadKeyedSpriteTexture('/decal_fluid_seep.png', 14),
+            decal_condensation_run: this.loadKeyedSpriteTexture('/decal_condensation_run.png', 14),
+            decal_wall_panel_grille_01: this.loadKeyedSpriteTexture('/decal_wall_panel_grille_01.png', 14),
+            decal_wall_panel_grille_02: this.loadKeyedSpriteTexture('/decal_wall_panel_grille_02.png', 14),
+            decal_wall_panel_grille_03: this.loadKeyedSpriteTexture('/decal_wall_panel_grille_03.png', 14),
+            decal_wall_panel_relief: this.loadKeyedSpriteTexture('/decal_wall_panel_relief.png', 14),
+            decal_mirror_tarnished: this.loadKeyedSpriteTexture('/decal_mirror_tarnished.png', 14),
+            decal_lacquer_blister_01: this.loadKeyedSpriteTexture('/decal_lacquer_blister_01.png', 14),
+            decal_lacquer_blister_02: this.loadKeyedSpriteTexture('/decal_lacquer_blister_02.png', 14),
+            decal_lacquer_blister_03: this.loadKeyedSpriteTexture('/decal_lacquer_blister_03.png', 14),
+            decal_bite_marks_02: this.loadKeyedSpriteTexture('/decal_bite_marks_02.png', 14),
+            decal_bite_marks_03: this.loadKeyedSpriteTexture('/decal_bite_marks_03.png', 14),
+            decal_spore_stain_01: this.loadKeyedSpriteTexture('/decal_spore_stain_01.png', 14),
+            decal_spore_stain_02: this.loadKeyedSpriteTexture('/decal_spore_stain_02.png', 14),
+            decal_spore_stain_03: this.loadKeyedSpriteTexture('/decal_spore_stain_03.png', 14)
         };
         for (const [type, path] of Object.entries(GENERATED_ROOM_PROP_PATHS)) {
             this.scatterTextures[type] = this.loadKeyedSpriteTexture(path, 14);
