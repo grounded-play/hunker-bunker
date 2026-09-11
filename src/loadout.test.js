@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { LoadoutManager, DEFAULT_WEAPON_LABEL } from './loadout.js';
+import { LoadoutManager, DEFAULT_WEAPON_LABEL, ARCHETYPE_SKINS, CLASS_CHASSIS_SKINS } from './loadout.js';
 import { getRecipe } from './fabricator.js';
 
 function makeStorage() {
@@ -186,5 +186,27 @@ describe('LoadoutManager', () => {
         expect(lo.getEquippedCharmId('scout')).toBe('4130');
         expect(lo.getEquippedSkinId('scout')).toBeNull();
         expect(lo.getEquippedDecalId()).toBeNull();
+    });
+
+    it('maps Deep Core Melter to Tank and registers Sprint 34 weapons and chassis', () => {
+        // Deep Core Melter (4107) belongs to Tank (siege_breaker)
+        expect(ARCHETYPE_SKINS.siege_breaker).toContain('4107');
+        expect(ARCHETYPE_SKINS.tesla_lock).not.toContain('4107');
+
+        // Sprint 34 weapon skins
+        expect(ARCHETYPE_SKINS.talon).toContain('4201'); // Deep Frost
+        expect(ARCHETYPE_SKINS.talon).toContain('4222'); // Horizon Corporate
+        expect(ARCHETYPE_SKINS.siege_breaker).toContain('4208'); // Rust & Bone
+        expect(ARCHETYPE_SKINS.siege_breaker).toContain('4229'); // Bunker 404
+        expect(ARCHETYPE_SKINS.tesla_lock).toContain('4215'); // Hive Chitin
+        expect(ARCHETYPE_SKINS.tesla_lock).toContain('4236'); // Grand Marshal
+
+        // Sprint 34 chassis skins
+        expect(CLASS_CHASSIS_SKINS.scout).toContain('4200');
+        expect(CLASS_CHASSIS_SKINS.scout).toContain('4221');
+        expect(CLASS_CHASSIS_SKINS.tank).toContain('4207');
+        expect(CLASS_CHASSIS_SKINS.tank).toContain('4228');
+        expect(CLASS_CHASSIS_SKINS.engineer).toContain('4214');
+        expect(CLASS_CHASSIS_SKINS.engineer).toContain('4235');
     });
 });

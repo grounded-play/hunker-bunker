@@ -8,6 +8,7 @@ import { recordAssetLoad } from './assetLoadTelemetry.js';
 import { getWeaponCalibration, getWeaponScaleForBounds } from './weaponCalibration.js';
 import { getCharmSocketTransform, resolveCharmModelOffset } from './charmSockets.js';
 import { applyWeaponSheen } from './weaponSheenMaterial.js';
+import { isMaterialFinish, applyWeaponMaterialFinish } from './weaponFinishMaterial.js';
 import { CHARM_GLB_MAP } from './charmModels.js';
 
 // The 2D-to-3D generation pipeline's gltf-transform optimize pass applies
@@ -167,10 +168,11 @@ function loadWeaponTemplate(url, group = 'weapon') {
 // Falls back to the GG1 reference weapon if an archetype's .glb isn't in place yet, so this
 // function is safe to call with any archetypeId today, before task 2's assets land.
 //
-// Weapon skins (opts.skinId) are whole separate meshes in the live asset pipeline, not a
-// material swap on the archetype mesh — see WEAPON_SKIN_MESHES and worklog task 6. If skinId
-// is given and mapped, it takes priority over archetypeId for which mesh loads; on failure it
-// falls back to the archetype mesh, then to GG1, same chain as the archetype-only path.
+// Two-Tier Weapon Cosmetic Pipeline:
+// Tier 1: Pure material finishes (Hazard Stripe, Sub-Zero, Obsidian Shard, Glitched Circuit)
+// apply directly onto the class's base weapon mesh (WEAPON_ARCHETYPES[archetypeId]).
+// Tier 2: Bespoke exotic meshes (Biolume Spore Sprayer, Deep Core Melter, Deep Frost, etc.)
+// load their dedicated 3D GLB model via WEAPON_SKIN_MESHES.
 export async function createClassWeapon(archetypeId, { position = null, skinId = null, sheenColor = 0xffffff, charmId = null } = {}) {
     const charmUrl = CHARM_GLB_MAP[String(charmId)];
     const charmTemplate = charmUrl ? loadWeaponTemplate(charmUrl, 'charm').catch((error) => {
@@ -193,6 +195,9 @@ export async function createClassWeapon(archetypeId, { position = null, skinId =
         template = await loadWeaponTemplate(WEAPON_URL);
     }
     const weapon = template.scene.clone(true);
+    if (skinId && isMaterialFinish(skinId)) {
+        applyWeaponMaterialFinish(weapon, skinId);
+    }
     applyWeaponSheen(weapon, sheenColor);
     weapon.name = archetypeId ? `ClassWeapon_${archetypeId}${skinUrl === url ? `_skin${skinId}` : ''}` : 'ScoutGG1';
     weapon.updateMatrixWorld(true);

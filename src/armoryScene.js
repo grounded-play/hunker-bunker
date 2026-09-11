@@ -11,6 +11,7 @@ import {
 import { getCatalogEntry as getItemCatalogEntry } from './itemOwnership.js';
 import { getCharmSocketTransform, resolveCharmModelOffset } from './charmSockets.js';
 import { applyWeaponSheen as tintWeapon, disposeWeaponSheen } from './weaponSheenMaterial.js';
+import { isMaterialFinish, applyWeaponMaterialFinish, disposeWeaponMaterialFinish } from './weaponFinishMaterial.js';
 import { getSelectedSheen } from './weaponSheens.js';
 import { getWeaponScaleForBounds, getWeaponCalibration } from './weaponCalibration.js';
 
@@ -440,7 +441,8 @@ export async function createArmoryScene(canvas) {
     async function loadWeaponAsset(archetypeId, skinItemdefId) {
         const gen = ++weaponLoadGen;
         applyCharmSocket(archetypeId);
-        let url = WEAPON_SKIN_GLB_MAP[String(skinItemdefId)] || WEAPON_ARCHETYPE_GLBS[archetypeId] || FALLBACK_WEAPON_GLB;
+        const isFinish = isMaterialFinish(skinItemdefId);
+        let url = (!isFinish && WEAPON_SKIN_GLB_MAP[String(skinItemdefId)]) || WEAPON_ARCHETYPE_GLBS[archetypeId] || FALLBACK_WEAPON_GLB;
 
         try {
             let gltf;
@@ -455,9 +457,13 @@ export async function createArmoryScene(canvas) {
             if (currentWeaponMesh) {
                 weaponPivot.remove(currentWeaponMesh);
                 disposeWeaponSheen(currentWeaponMesh);
+                disposeWeaponMaterialFinish(currentWeaponMesh);
             }
 
             const model = gltf.scene.clone(true);
+            if (isFinish) {
+                applyWeaponMaterialFinish(model, skinItemdefId);
+            }
             tintWeapon(model, currentSheenColor);
             // Normalize weapon scale for prominent bench inspection
             const bbox = new THREE.Box3().setFromObject(model);

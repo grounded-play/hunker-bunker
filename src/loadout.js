@@ -26,16 +26,16 @@ export const CLASS_ARCHETYPES = Object.freeze({
 // merely recolor it. Additional catalog chassis can be added here when their
 // corresponding runtime GLBs land.
 export const CLASS_CHASSIS_SKINS = Object.freeze({
-    scout: ['4113', '4115', '4118', '5001', '5003', '5004', ...(COMMUNITY_CLASS_MAP?.scout || [])],
-    tank: ['4114', '4117', '4119', '5005', '5007', '5008', ...(COMMUNITY_CLASS_MAP?.tank || [])],
-    engineer: ['4112', '4116', '5011', '5012', ...(COMMUNITY_CLASS_MAP?.engineer || [])]
+    scout: ['4113', '4115', '4118', '4200', '4221', '5001', '5003', '5004', ...(COMMUNITY_CLASS_MAP?.scout || [])],
+    tank: ['4114', '4117', '4119', '4207', '4228', '5005', '5007', '5008', ...(COMMUNITY_CLASS_MAP?.tank || [])],
+    engineer: ['4112', '4116', '4214', '4235', '5011', '5012', ...(COMMUNITY_CLASS_MAP?.engineer || [])]
 });
 
 export const ARCHETYPE_SKINS = Object.freeze({
-    talon: ['4100', '4105'],
+    talon: ['4100', '4105', '4201', '4222'],
     talon_c: ['4101', '4104', '4108', '4110', '5002'],
-    siege_breaker: ['4102', '4106', '5006'],
-    tesla_lock: ['4103', '4107', '4109', '4111', '5009', '5010']
+    siege_breaker: ['4102', '4106', '4107', '4208', '4229', '5006'],
+    tesla_lock: ['4103', '4109', '4111', '4215', '4236', '5009', '5010']
 });
 
 function normalizeClassId(classId) {
