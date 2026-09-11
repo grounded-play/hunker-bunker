@@ -38,7 +38,14 @@ Valve reads and which `npm run steam:claims:check` exists to police.
 
 **Decision (owner, 2026-09-10): make 4140–4147 earned-only.** Strip
 `tradable`/`marketable`, keep the promised effects, move them to the earned
-track below. Requires a Steam inventory schema change and re-upload.
+track below.
+
+**Done, 2026-09-10.** `tradable` and `marketable` are `false` on all eight in
+`steam/inventory_schema_hunker_bunker.json`, and `src/data/steamItemCatalog.js`
+was regenerated from it. `src/data/steamItemCatalog.f2p.test.js` now guards the
+*rule* rather than those eight ids: no sellable item may carry a description
+that promises a mechanical effect. **The Steam inventory schema still needs
+re-uploading to Steamworks** before the store reflects it.
 
 ## 3. The two-track model
 
