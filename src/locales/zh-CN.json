@@ -126,6 +126,7 @@
       "new_game_reset": "重置新游戏",
       "exit_app": "退出程序",
       "crosshair_custom": "自定义",
+      "crosshair_hint": "选择战术准星预设或自定义颜色。",
       "dpad_hint": "方向键 ◀ ▶ 调整"
     },
     "action": {
@@ -134,7 +135,8 @@
       "reset": "重置",
       "export_copy": "导出并复制",
       "import_data": "导入数据",
-      "save_settings": "保存设置"
+      "save_settings": "保存设置",
+      "done": "完成"
     },
     "modal": {
       "controls": "操作设置"
@@ -184,6 +186,73 @@
       "aim_speed": "右摇杆瞄准速度",
       "aim_speed_presets": "右摇杆瞄准速度预设",
       "callsign_input": "操作员呼号"
+    },
+    "armory": {
+      "tag": "◈ 地底任务前军械库 // 零号区",
+      "title": "零号区战术工作台",
+      "title_accent": "// 装备配置",
+      "tab_scout": "◈ 侦察兵",
+      "tab_tank": "▰ 重装兵",
+      "tab_engineer": "◆ 工程兵",
+      "cycle_hint": "[Q / E 切换]",
+      "stage_eyebrow": "◈ 实时舞台预览",
+      "weapon_label": "武器：",
+      "chassis_label": "机体：",
+      "sheen_kicker": "操作员光泽",
+      "sheen_cta": "打开装甲色调矩阵",
+      "stage_hint": "拖动 3D 舞台以查看操作员与武器",
+      "bench_title": "弹道工作台与超频",
+      "f_primary": "主武器",
+      "f_sheen": "武器光泽",
+      "f_charm": "战术挂件",
+      "f_tracer": "弹道曳光",
+      "f_bay_a": "超频 — A 槽",
+      "f_bay_b": "超频 — B 槽",
+      "mods_title": "◈ 生效中的战斗超频",
+      "standby": "待机",
+      "standby_desc": "未连接超频 // A、B 槽就绪",
+      "rig_title": "操作员外骨骼装具",
+      "f_chassis": "外骨骼机体皮肤",
+      "f_patch": "肩章与徽记",
+      "f_hud": "战术 HUD 主题",
+      "telemetry_title": "装甲遥测状态",
+      "tel_thermal": "低温热网：",
+      "tel_thermal_val": "正常 100%",
+      "tel_rad": "辐射密封：",
+      "tel_rad_val": "启用",
+      "tel_turntable": "转台展示：",
+      "tel_turntable_val": "360° 拖动环绕",
+      "btn_return": "← 返回主菜单",
+      "btn_vault": "STEAM 保险库与制造舱",
+      "btn_embark": "前往地堡 >>",
+      "picker_title": "◆ 选择",
+      "aria_settings": "打开设置",
+      "equipped": "已装备",
+      "select_to_equip": "选择以装备",
+      "unknown_equipment": "未知装备",
+      "locked_achievement": "完成对应的战场成就以解锁。",
+      "locked_rewards": "通过战场奖励解锁。"
+    },
+    "roster": {
+      "title": "▣ 操作员档案 // 部署遥测",
+      "deepest_sector": "最深区段：",
+      "total_distance": "总距离：",
+      "hostiles": "敌对目标：",
+      "black_box": "黑匣子：",
+      "patch": "徽章：",
+      "decal": "贴花：",
+      "finish": "涂装：",
+      "hint": "在制造舱制造武器后即可在此装备。在 STEAM 保险库中自定义外观。",
+      "confirm": "确认并部署",
+      "randomize": "随机呼号"
+    },
+    "dlg": {
+      "channel": "母舰上行链路 7 号频道",
+      "skip_aria": "跳过对话",
+      "choice_skip_label": "[A] 明白，出发。",
+      "choice_skip_hint": "跳过教程",
+      "choice_tutorial_label": "[B] 先给我讲一遍规程。",
+      "choice_tutorial_hint": "开始教程"
     }
   }
 }

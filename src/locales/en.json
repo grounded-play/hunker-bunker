@@ -126,6 +126,7 @@
       "new_game_reset": "NEW GAME RESET",
       "exit_app": "EXIT APPLICATION",
       "crosshair_custom": "CUSTOM",
+      "crosshair_hint": "Select a tactical reticle preset or configure a custom color.",
       "dpad_hint": "D-PAD ◀ ▶ TO ADJUST"
     },
     "action": {
@@ -134,7 +135,8 @@
       "reset": "RESET",
       "export_copy": "EXPORT + COPY",
       "import_data": "IMPORT DATA",
-      "save_settings": "SAVE SETTINGS"
+      "save_settings": "SAVE SETTINGS",
+      "done": "DONE"
     },
     "modal": {
       "controls": "CONTROLS"
@@ -184,6 +186,73 @@
       "aim_speed": "Right stick aim speed",
       "aim_speed_presets": "Right stick aim speed presets",
       "callsign_input": "Operator callsign"
+    },
+    "armory": {
+      "tag": "◈ SUB-TERRAN PRE-MISSION ARMORY // SECTOR ZERO",
+      "title": "SECTOR ZERO TACTICAL BENCH",
+      "title_accent": "// LOADOUT",
+      "tab_scout": "◈ SCOUT",
+      "tab_tank": "▰ TANK",
+      "tab_engineer": "◆ ENGINEER",
+      "cycle_hint": "[Q / E CYCLE]",
+      "stage_eyebrow": "◈ LIVE STAGE PREVIEW",
+      "weapon_label": "WEAPON:",
+      "chassis_label": "CHASSIS:",
+      "sheen_kicker": "OPERATOR SHEEN",
+      "sheen_cta": "OPEN SUIT TINT MATRIX",
+      "stage_hint": "DRAG 3D STAGE TO INSPECT OPERATOR & WEAPON",
+      "bench_title": "BALLISTIC BENCH & OVERCLOCKS",
+      "f_primary": "PRIMARY WEAPON",
+      "f_sheen": "WEAPON SHEEN",
+      "f_charm": "TACTICAL CHARM",
+      "f_tracer": "PROJECTILE TRACER",
+      "f_bay_a": "OVERCLOCK — BAY A",
+      "f_bay_b": "OVERCLOCK — BAY B",
+      "mods_title": "◈ ACTIVE COMBAT OVERCLOCKS",
+      "standby": "STANDBY",
+      "standby_desc": "NO OVERCLOCKS LINKED // BAYS A & B READY",
+      "rig_title": "OPERATOR EXOSUIT RIG",
+      "f_chassis": "EXOSUIT CHASSIS SKIN",
+      "f_patch": "SHOULDER PATCH & INSIGNIA",
+      "f_hud": "TACTICAL HUD THEME",
+      "telemetry_title": "SUIT TELEMETRY STATUS",
+      "tel_thermal": "Thermal Cryo-Mesh:",
+      "tel_thermal_val": "NOMINAL 100%",
+      "tel_rad": "Radiation Seal:",
+      "tel_rad_val": "ACTIVE",
+      "tel_turntable": "Turntable Staging:",
+      "tel_turntable_val": "360° DRAG ORBIT",
+      "btn_return": "← RETURN TO MAIN MENU",
+      "btn_vault": "STEAM VAULT & FAB BAY",
+      "btn_embark": "EMBARK TO BUNKER >>",
+      "picker_title": "◆ SELECT",
+      "aria_settings": "Open Settings",
+      "equipped": "EQUIPPED",
+      "select_to_equip": "SELECT TO EQUIP",
+      "unknown_equipment": "UNKNOWN EQUIPMENT",
+      "locked_achievement": "Earn its field achievement to reveal.",
+      "locked_rewards": "Unlock through field rewards."
+    },
+    "roster": {
+      "title": "▣ OPERATOR DOSSIER // DEPLOYMENT TELEMETRY",
+      "deepest_sector": "DEEPEST SECTOR:",
+      "total_distance": "TOTAL DISTANCE:",
+      "hostiles": "HOSTILES:",
+      "black_box": "BLACK BOX:",
+      "patch": "PATCH:",
+      "decal": "DECAL:",
+      "finish": "FINISH:",
+      "hint": "Fabricate weapons in the FAB BAY to equip them here. Customize cosmetics in the STEAM VAULT.",
+      "confirm": "CONFIRM & DEPLOY",
+      "randomize": "Randomize Callsign"
+    },
+    "dlg": {
+      "channel": "MOTHERSHIP UPLINK CHANNEL 7",
+      "skip_aria": "Skip dialogue",
+      "choice_skip_label": "[A] UNDERSTOOD. MOVING OUT.",
+      "choice_skip_hint": "SKIP TUTORIAL",
+      "choice_tutorial_label": "[B] RUN ME THROUGH PROTOCOLS FIRST.",
+      "choice_tutorial_hint": "START TUTORIAL"
     }
   }
 }

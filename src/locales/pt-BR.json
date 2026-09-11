@@ -126,6 +126,7 @@
       "new_game_reset": "REINÍCIO DE JOGO",
       "exit_app": "SAIR DO APLICATIVO",
       "crosshair_custom": "PERSONALIZADO",
+      "crosshair_hint": "Selecione uma predefinição tática de retícula ou personalize sua cor.",
       "dpad_hint": "D-PAD ◀ ▶ PARA AJUSTAR"
     },
     "action": {
@@ -134,7 +135,8 @@
       "reset": "REDEFINIR",
       "export_copy": "EXPORTAR + COPIAR",
       "import_data": "IMPORTAR DADOS",
-      "save_settings": "SALVAR CONFIGURAÇÕES"
+      "save_settings": "SALVAR CONFIGURAÇÕES",
+      "done": "CONCLUÍDO"
     },
     "modal": {
       "controls": "CONTROLES"
@@ -184,6 +186,73 @@
       "aim_speed": "Velocidade de mira do analógico direito",
       "aim_speed_presets": "Predefinições de velocidade de mira do analógico direito",
       "callsign_input": "Codinome do operador"
+    },
+    "armory": {
+      "tag": "◈ ARSENAL SUBTERRÂNEO PRÉ-MISSÃO // SETOR ZERO",
+      "title": "BANCADA TÁTICA DO SETOR ZERO",
+      "title_accent": "// EQUIPAMENTO",
+      "tab_scout": "◈ BATEDOR",
+      "tab_tank": "▰ TANQUE",
+      "tab_engineer": "◆ ENGENHEIRO",
+      "cycle_hint": "[Q / E ALTERNAR]",
+      "stage_eyebrow": "◈ PRÉVIA AO VIVO",
+      "weapon_label": "ARMA:",
+      "chassis_label": "CHASSI:",
+      "sheen_kicker": "BRILHO DO OPERADOR",
+      "sheen_cta": "ABRIR MATRIZ DE TINTA",
+      "stage_hint": "ARRASTE O PALCO 3D PARA INSPECIONAR OPERADOR E ARMA",
+      "bench_title": "BANCADA BALÍSTICA E OVERCLOCKS",
+      "f_primary": "ARMA PRIMÁRIA",
+      "f_sheen": "BRILHO DE ARMA",
+      "f_charm": "PINGENTE TÁTICO",
+      "f_tracer": "TRAÇADOR DE PROJÉTIL",
+      "f_bay_a": "OVERCLOCK — BAIA A",
+      "f_bay_b": "OVERCLOCK — BAIA B",
+      "mods_title": "◈ OVERCLOCKS DE COMBATE ATIVOS",
+      "standby": "EM ESPERA",
+      "standby_desc": "NENHUM OVERCLOCK VINCULADO // BAIAS A E B PRONTAS",
+      "rig_title": "EQUIPAMENTO DE EXOTRAJE",
+      "f_chassis": "APARÊNCIA DO CHASSI",
+      "f_patch": "INSÍGNIA DE OMBRO",
+      "f_hud": "TEMA DE HUD TÁTICO",
+      "telemetry_title": "STATUS DE TELEMETRIA DO TRAJE",
+      "tel_thermal": "Malha criotérmica:",
+      "tel_thermal_val": "NOMINAL 100%",
+      "tel_rad": "Vedação antirradiação:",
+      "tel_rad_val": "ATIVO",
+      "tel_turntable": "Plataforma giratória:",
+      "tel_turntable_val": "ÓRBITA 360° ARRASTANDO",
+      "btn_return": "← VOLTAR AO MENU PRINCIPAL",
+      "btn_vault": "COFRE STEAM E OFICINA",
+      "btn_embark": "EMBARCAR PARA O BÚNKER >>",
+      "picker_title": "◆ SELECIONAR",
+      "aria_settings": "Abrir configurações",
+      "equipped": "EQUIPADO",
+      "select_to_equip": "SELECIONE PARA EQUIPAR",
+      "unknown_equipment": "EQUIPAMENTO DESCONHECIDO",
+      "locked_achievement": "Conquiste a conquista de campo para revelar.",
+      "locked_rewards": "Desbloqueie com recompensas de campo."
+    },
+    "roster": {
+      "title": "▣ DOSSIÊ DO OPERADOR // TELEMETRIA DE IMPLANTAÇÃO",
+      "deepest_sector": "SETOR MAIS PROFUNDO:",
+      "total_distance": "DISTÂNCIA TOTAL:",
+      "hostiles": "HOSTIS:",
+      "black_box": "CAIXA-PRETA:",
+      "patch": "INSÍGNIA:",
+      "decal": "EMBLEMA:",
+      "finish": "PINTURA:",
+      "hint": "Fabrique armas na OFICINA para equipá-las aqui. Personalize cosméticos no COFRE STEAM.",
+      "confirm": "CONFIRMAR E IMPLANTAR",
+      "randomize": "Codinome aleatório"
+    },
+    "dlg": {
+      "channel": "CANAL 7 DE UPLINK DA NAVE-MÃE",
+      "skip_aria": "Pular diálogo",
+      "choice_skip_label": "[A] ENTENDIDO. SEGUINDO.",
+      "choice_skip_hint": "PULAR TUTORIAL",
+      "choice_tutorial_label": "[B] ME EXPLIQUE OS PROTOCOLOS ANTES.",
+      "choice_tutorial_hint": "INICIAR TUTORIAL"
     }
   }
 }

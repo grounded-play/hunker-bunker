@@ -126,6 +126,7 @@
       "new_game_reset": "REINICIO DE PARTIDA",
       "exit_app": "SALIR DE LA APLICACIÓN",
       "crosshair_custom": "PERSONALIZADO",
+      "crosshair_hint": "Selecciona un ajuste táctico de retícula o personaliza tu color.",
       "dpad_hint": "D-PAD ◀ ▶ PARA AJUSTAR"
     },
     "action": {
@@ -134,7 +135,8 @@
       "reset": "REINICIAR",
       "export_copy": "EXPORTAR + COPIAR",
       "import_data": "IMPORTAR DATOS",
-      "save_settings": "GUARDAR AJUSTES"
+      "save_settings": "GUARDAR AJUSTES",
+      "done": "LISTO"
     },
     "modal": {
       "controls": "CONTROLES"
@@ -184,6 +186,73 @@
       "aim_speed": "Velocidad de apuntado del stick derecho",
       "aim_speed_presets": "Ajustes de velocidad de apuntado del stick derecho",
       "callsign_input": "Indicativo del operador"
+    },
+    "armory": {
+      "tag": "◈ ARMERÍA SUBTERRÁNEA PREMISIÓN // SECTOR CERO",
+      "title": "BANCO TÁCTICO DEL SECTOR CERO",
+      "title_accent": "// EQUIPAMIENTO",
+      "tab_scout": "◈ EXPLORADOR",
+      "tab_tank": "▰ TANQUE",
+      "tab_engineer": "◆ INGENIERO",
+      "cycle_hint": "[Q / E CAMBIAR]",
+      "stage_eyebrow": "◈ VISTA PREVIA EN VIVO",
+      "weapon_label": "ARMA:",
+      "chassis_label": "CHASIS:",
+      "sheen_kicker": "BRILLO DEL OPERADOR",
+      "sheen_cta": "ABRIR MATRIZ DE TINTE",
+      "stage_hint": "ARRASTRA LA ESCENA 3D PARA INSPECCIONAR OPERADOR Y ARMA",
+      "bench_title": "BANCO BALÍSTICO Y SOBRECARGAS",
+      "f_primary": "ARMA PRINCIPAL",
+      "f_sheen": "BRILLO DE ARMA",
+      "f_charm": "AMULETO TÁCTICO",
+      "f_tracer": "TRAZADOR DE PROYECTILES",
+      "f_bay_a": "SOBRECARGA — BAHÍA A",
+      "f_bay_b": "SOBRECARGA — BAHÍA B",
+      "mods_title": "◈ SOBRECARGAS DE COMBATE ACTIVAS",
+      "standby": "EN ESPERA",
+      "standby_desc": "SIN SOBRECARGAS VINCULADAS // BAHÍAS A Y B LISTAS",
+      "rig_title": "EQUIPO DE EXOTRAJE",
+      "f_chassis": "ASPECTO DEL CHASIS",
+      "f_patch": "PARCHE E INSIGNIA",
+      "f_hud": "TEMA DE HUD TÁCTICO",
+      "telemetry_title": "ESTADO DE TELEMETRÍA DEL TRAJE",
+      "tel_thermal": "Malla criotérmica:",
+      "tel_thermal_val": "NOMINAL 100%",
+      "tel_rad": "Sello antirradiación:",
+      "tel_rad_val": "ACTIVO",
+      "tel_turntable": "Plataforma giratoria:",
+      "tel_turntable_val": "ÓRBITA 360° ARRASTRANDO",
+      "btn_return": "← VOLVER AL MENÚ PRINCIPAL",
+      "btn_vault": "BÓVEDA DE STEAM Y TALLER",
+      "btn_embark": "EMBARCAR AL BÚNKER >>",
+      "picker_title": "◆ SELECCIONAR",
+      "aria_settings": "Abrir ajustes",
+      "equipped": "EQUIPADO",
+      "select_to_equip": "SELECCIONAR PARA EQUIPAR",
+      "unknown_equipment": "EQUIPO DESCONOCIDO",
+      "locked_achievement": "Consigue su logro de campo para revelarlo.",
+      "locked_rewards": "Se desbloquea con recompensas de campo."
+    },
+    "roster": {
+      "title": "▣ EXPEDIENTE DEL OPERADOR // TELEMETRÍA DE DESPLIEGUE",
+      "deepest_sector": "SECTOR MÁS PROFUNDO:",
+      "total_distance": "DISTANCIA TOTAL:",
+      "hostiles": "HOSTILES:",
+      "black_box": "CAJA NEGRA:",
+      "patch": "PARCHE:",
+      "decal": "CALCOMANÍA:",
+      "finish": "ACABADO:",
+      "hint": "Fabrica armas en el TALLER para equiparlas aquí. Personaliza cosméticos en la BÓVEDA DE STEAM.",
+      "confirm": "CONFIRMAR Y DESPLEGAR",
+      "randomize": "Indicativo aleatorio"
+    },
+    "dlg": {
+      "channel": "CANAL 7 DE ENLACE CON LA NODRIZA",
+      "skip_aria": "Omitir diálogo",
+      "choice_skip_label": "[A] ENTENDIDO. EN MARCHA.",
+      "choice_skip_hint": "OMITIR TUTORIAL",
+      "choice_tutorial_label": "[B] REPÁSAME LOS PROTOCOLOS PRIMERO.",
+      "choice_tutorial_hint": "INICIAR TUTORIAL"
     }
   }
 }

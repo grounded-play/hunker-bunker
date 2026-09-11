@@ -126,6 +126,7 @@
       "new_game_reset": "NEUSTART",
       "exit_app": "ANWENDUNG BEENDEN",
       "crosshair_custom": "BENUTZERDEF.",
+      "crosshair_hint": "Wählen Sie eine taktische Fadenkreuz-Voreinstellung oder passen Sie die Farbe an.",
       "dpad_hint": "STEUERKREUZ ◀ ▶ ZUM ANPASSEN"
     },
     "action": {
@@ -134,7 +135,8 @@
       "reset": "ZURÜCKSETZEN",
       "export_copy": "EXPORT + KOPIEREN",
       "import_data": "DATEN IMPORTIEREN",
-      "save_settings": "EINSTELLUNGEN SPEICHERN"
+      "save_settings": "EINSTELLUNGEN SPEICHERN",
+      "done": "FERTIG"
     },
     "modal": {
       "controls": "STEUERUNG"
@@ -184,6 +186,73 @@
       "aim_speed": "Zielgeschwindigkeit rechter Stick",
       "aim_speed_presets": "Vorgaben für Zielgeschwindigkeit rechter Stick",
       "callsign_input": "Operator-Rufzeichen"
+    },
+    "armory": {
+      "tag": "◈ SUBTERRANES EINSATZARSENAL // SEKTOR NULL",
+      "title": "TAKTISCHE WERKBANK SEKTOR NULL",
+      "title_accent": "// AUSRÜSTUNG",
+      "tab_scout": "◈ SPÄHER",
+      "tab_tank": "▰ PANZER",
+      "tab_engineer": "◆ INGENIEUR",
+      "cycle_hint": "[Q / E WECHSELN]",
+      "stage_eyebrow": "◈ LIVE-VORSCHAU",
+      "weapon_label": "WAFFE:",
+      "chassis_label": "CHASSIS:",
+      "sheen_kicker": "OPERATOR-GLANZ",
+      "sheen_cta": "FARBMATRIX ÖFFNEN",
+      "stage_hint": "3D-BÜHNE ZIEHEN, UM OPERATOR & WAFFE ZU PRÜFEN",
+      "bench_title": "BALLISTIKBANK & ÜBERTAKTUNG",
+      "f_primary": "PRIMÄRWAFFE",
+      "f_sheen": "WAFFENGLANZ",
+      "f_charm": "TAKTISCHER ANHÄNGER",
+      "f_tracer": "GESCHOSS-LEUCHTSPUR",
+      "f_bay_a": "ÜBERTAKTUNG — SCHACHT A",
+      "f_bay_b": "ÜBERTAKTUNG — SCHACHT B",
+      "mods_title": "◈ AKTIVE KAMPF-ÜBERTAKTUNGEN",
+      "standby": "BEREITSCHAFT",
+      "standby_desc": "KEINE ÜBERTAKTUNG VERBUNDEN // SCHÄCHTE A & B BEREIT",
+      "rig_title": "OPERATOR-EXOSKELETT",
+      "f_chassis": "EXOSKELETT-CHASSIS-SKIN",
+      "f_patch": "SCHULTERAUFNÄHER & ABZEICHEN",
+      "f_hud": "TAKTISCHES HUD-DESIGN",
+      "telemetry_title": "ANZUG-TELEMETRIESTATUS",
+      "tel_thermal": "Thermo-Kryogewebe:",
+      "tel_thermal_val": "NORMAL 100%",
+      "tel_rad": "Strahlungssiegel:",
+      "tel_rad_val": "AKTIV",
+      "tel_turntable": "Drehbühne:",
+      "tel_turntable_val": "360°-ZIEHORBIT",
+      "btn_return": "← ZURÜCK ZUM HAUPTMENÜ",
+      "btn_vault": "STEAM-TRESOR & FERTIGUNG",
+      "btn_embark": "ZUM BUNKER AUFBRECHEN >>",
+      "picker_title": "◆ AUSWÄHLEN",
+      "aria_settings": "Einstellungen öffnen",
+      "equipped": "AUSGERÜSTET",
+      "select_to_equip": "ZUM AUSRÜSTEN WÄHLEN",
+      "unknown_equipment": "UNBEKANNTE AUSRÜSTUNG",
+      "locked_achievement": "Erringe den zugehörigen Felderfolg, um es freizulegen.",
+      "locked_rewards": "Durch Feldbelohnungen freischalten."
+    },
+    "roster": {
+      "title": "▣ OPERATOR-DOSSIER // EINSATZTELEMETRIE",
+      "deepest_sector": "TIEFSTER SEKTOR:",
+      "total_distance": "GESAMTSTRECKE:",
+      "hostiles": "FEINDE:",
+      "black_box": "BLACKBOX:",
+      "patch": "AUFNÄHER:",
+      "decal": "ABZEICHEN:",
+      "finish": "LACKIERUNG:",
+      "hint": "Fertige Waffen in der FERTIGUNG, um sie hier auszurüsten. Kosmetik im STEAM-TRESOR anpassen.",
+      "confirm": "BESTÄTIGEN & EINSETZEN",
+      "randomize": "Rufzeichen zufällig"
+    },
+    "dlg": {
+      "channel": "MUTTERSCHIFF-UPLINK KANAL 7",
+      "skip_aria": "Dialog überspringen",
+      "choice_skip_label": "[A] VERSTANDEN. AUFBRUCH.",
+      "choice_skip_hint": "TUTORIAL ÜBERSPRINGEN",
+      "choice_tutorial_label": "[B] ERST DIE PROTOKOLLE DURCHGEHEN.",
+      "choice_tutorial_hint": "TUTORIAL STARTEN"
     }
   }
 }

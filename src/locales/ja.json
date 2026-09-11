@@ -126,6 +126,7 @@
       "new_game_reset": "ニューゲームリセット",
       "exit_app": "アプリを終了",
       "crosshair_custom": "カスタム",
+      "crosshair_hint": "タクティカル照準プリセットを選択するか、カスタムカラーを設定します。",
       "dpad_hint": "十字キー ◀ ▶ で調整"
     },
     "action": {
@@ -134,7 +135,8 @@
       "reset": "リセット",
       "export_copy": "エクスポート＋コピー",
       "import_data": "データ読み込み",
-      "save_settings": "設定を保存"
+      "save_settings": "設定を保存",
+      "done": "完了"
     },
     "modal": {
       "controls": "操作設定"
@@ -184,6 +186,73 @@
       "aim_speed": "右スティックのエイム速度",
       "aim_speed_presets": "右スティックのエイム速度プリセット",
       "callsign_input": "オペレーターコールサイン"
+    },
+    "armory": {
+      "tag": "◈ 地下プレミッション兵器庫 // セクターゼロ",
+      "title": "セクターゼロ戦術ベンチ",
+      "title_accent": "// ロードアウト",
+      "tab_scout": "◈ スカウト",
+      "tab_tank": "▰ タンク",
+      "tab_engineer": "◆ エンジニア",
+      "cycle_hint": "[Q / E 切替]",
+      "stage_eyebrow": "◈ ライブステージプレビュー",
+      "weapon_label": "武器：",
+      "chassis_label": "機体：",
+      "sheen_kicker": "オペレーターシャイン",
+      "sheen_cta": "スーツ色調マトリクスを開く",
+      "stage_hint": "3Dステージをドラッグしてオペレーターと武器を確認",
+      "bench_title": "弾道ベンチとオーバークロック",
+      "f_primary": "メイン武器",
+      "f_sheen": "ウェポンシャイン",
+      "f_charm": "タクティカルチャーム",
+      "f_tracer": "弾道トレーサー",
+      "f_bay_a": "オーバークロック — ベイA",
+      "f_bay_b": "オーバークロック — ベイB",
+      "mods_title": "◈ 有効な戦闘オーバークロック",
+      "standby": "スタンバイ",
+      "standby_desc": "オーバークロック未接続 // ベイA・B 準備完了",
+      "rig_title": "オペレーター外骨格リグ",
+      "f_chassis": "外骨格機体スキン",
+      "f_patch": "ショルダーパッチと記章",
+      "f_hud": "戦術HUDテーマ",
+      "telemetry_title": "スーツテレメトリ状態",
+      "tel_thermal": "サーマルクライオメッシュ：",
+      "tel_thermal_val": "正常 100%",
+      "tel_rad": "放射線シール：",
+      "tel_rad_val": "作動中",
+      "tel_turntable": "ターンテーブル：",
+      "tel_turntable_val": "360°ドラッグ回転",
+      "btn_return": "← メインメニューへ戻る",
+      "btn_vault": "STEAMヴォールトと製造ベイ",
+      "btn_embark": "バンカーへ出発 >>",
+      "picker_title": "◆ 選択",
+      "aria_settings": "設定を開く",
+      "equipped": "装備中",
+      "select_to_equip": "選択して装備",
+      "unknown_equipment": "未知の装備",
+      "locked_achievement": "対応する実績を解除すると表示されます。",
+      "locked_rewards": "フィールド報酬で解除されます。"
+    },
+    "roster": {
+      "title": "▣ オペレーター記録 // 展開テレメトリ",
+      "deepest_sector": "最深セクター：",
+      "total_distance": "総距離：",
+      "hostiles": "敵対勢力：",
+      "black_box": "ブラックボックス：",
+      "patch": "パッチ：",
+      "decal": "デカール：",
+      "finish": "スキン：",
+      "hint": "製造ベイで武器を製作するとここで装備できます。外観はSTEAMヴォールトでカスタマイズできます。",
+      "confirm": "確認して出撃",
+      "randomize": "コールサインをランダム化"
+    },
+    "dlg": {
+      "channel": "マザーシップ通信チャンネル7",
+      "skip_aria": "会話をスキップ",
+      "choice_skip_label": "[A] 了解。出発する。",
+      "choice_skip_hint": "チュートリアルをスキップ",
+      "choice_tutorial_label": "[B] まず手順を確認したい。",
+      "choice_tutorial_hint": "チュートリアルを開始"
     }
   }
 }

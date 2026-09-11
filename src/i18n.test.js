@@ -246,16 +246,36 @@ describe('i18n Localization Engine', () => {
         });
     });
 
-    describe('index.html markup coverage', () => {
-        const html = readFileSync(
-            fileURLToPath(new URL('../index.html', import.meta.url)),
-            'utf8'
-        );
-        const keys = [...html.matchAll(/data-i18n(?:-[a-z-]+)?="([^"]+)"/g)]
-            .map((m) => m[1]);
+    describe('markup coverage', () => {
+        // Annotations live both in index.html and in the template literals
+        // that JS modules assign to innerHTML, so both are scanned.
+        const sources = [
+            '../index.html',
+            './armoryUi.js'
+        ].map((rel) => readFileSync(fileURLToPath(new URL(rel, import.meta.url)), 'utf8'));
+
+        const keys = [...new Set(
+            sources.flatMap((src) => [...src.matchAll(/data-i18n(?:-[a-z-]+)?="([^"]+)"/g)]
+                .map((m) => m[1]))
+        )];
 
         it('annotates the shipped UI', () => {
             expect(keys.length).toBeGreaterThan(0);
+        });
+
+        it('translates armory markup at render time, not only on locale change', () => {
+            // applyStaticTranslations must run right after each innerHTML
+            // assignment; without it an armory opened while a non-English
+            // locale is active renders in English until the player toggles
+            // language. Guards the wiring, which the key checks cannot see.
+            const armory = readFileSync(
+                fileURLToPath(new URL('./armoryUi.js', import.meta.url)),
+                'utf8'
+            );
+            const assignments = [...armory.matchAll(/\.innerHTML = /g)].length;
+            const applications = [...armory.matchAll(/applyStaticTranslations\(/g)].length;
+            expect(assignments).toBeGreaterThan(0);
+            expect(applications).toBeGreaterThanOrEqual(assignments);
         });
 
         it('resolves every annotated key in every locale', () => {

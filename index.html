@@ -579,18 +579,18 @@
         <div class="terminal-scanline"></div>
         <div class="roster-header">
           <button class="close-modal" id="close-roster-modal">×</button>
-          <div class="roster-title" id="roster-title-label">▣ OPERATOR DOSSIER // DEPLOYMENT TELEMETRY</div>
+          <div class="roster-title" id="roster-title-label" data-i18n="ui.roster.title">▣ OPERATOR DOSSIER // DEPLOYMENT TELEMETRY</div>
           <div class="roster-id-row">
             <label class="roster-callsign-label" for="roster-callsign-input">CALLSIGN:</label>
             <input type="text" id="roster-callsign-input" class="operator-callsign-input" maxlength="16" placeholder="AGENT-01" autocomplete="off" spellcheck="false">
-            <button type="button" class="dev-btn dev-btn--accent" id="roster-randomize-btn" title="Randomize Callsign">🎲 RANDOM</button>
+            <button type="button" class="dev-btn dev-btn--accent" id="roster-randomize-btn" title="Randomize Callsign" data-i18n-title="ui.roster.randomize">🎲 RANDOM</button>
           </div>
           <!-- Run Telemetry Summary Block -->
           <div id="roster-run-telemetry" class="roster-run-telemetry">
-            <div class="roster-telemetry-chip"><span class="label">DEEPEST SECTOR:</span> <b id="roster-stat-depth">SECTOR 0</b></div>
-            <div class="roster-telemetry-chip"><span class="label">TOTAL DISTANCE:</span> <b id="roster-stat-distance">0u</b></div>
-            <div class="roster-telemetry-chip"><span class="label">HOSTILES:</span> <b id="roster-stat-kills">0 ELIMINATED</b></div>
-            <div class="roster-telemetry-chip"><span class="label">BLACK BOX:</span> <b id="roster-stat-blackbox">NONE</b></div>
+            <div class="roster-telemetry-chip"><span class="label" data-i18n="ui.roster.deepest_sector">DEEPEST SECTOR:</span> <b id="roster-stat-depth">SECTOR 0</b></div>
+            <div class="roster-telemetry-chip"><span class="label" data-i18n="ui.roster.total_distance">TOTAL DISTANCE:</span> <b id="roster-stat-distance">0u</b></div>
+            <div class="roster-telemetry-chip"><span class="label" data-i18n="ui.roster.hostiles">HOSTILES:</span> <b id="roster-stat-kills">0 ELIMINATED</b></div>
+            <div class="roster-telemetry-chip"><span class="label" data-i18n="ui.roster.black_box">BLACK BOX:</span> <b id="roster-stat-blackbox">NONE</b></div>
           </div>
           <div class="roster-sub-bar">
             <div class="roster-stat" id="roster-fab-count">ARSENAL: 0 / 0 SCHEMATICS FABRICATED</div>
@@ -602,18 +602,18 @@
         <div class="roster-section-label">EQUIPPED STEAM COSMETICS</div>
         <div id="roster-cosmetics-row" class="roster-cosmetics-row">
           <div class="roster-cosmetic-chip">
-            <span class="label">PATCH:</span> <span id="roster-equipped-patch">NONE</span>
+            <span class="label" data-i18n="ui.roster.patch">PATCH:</span> <span id="roster-equipped-patch">NONE</span>
           </div>
           <div class="roster-cosmetic-chip">
-            <span class="label">DECAL:</span> <span id="roster-equipped-decal">NONE</span>
+            <span class="label" data-i18n="ui.roster.decal">DECAL:</span> <span id="roster-equipped-decal">NONE</span>
           </div>
           <div class="roster-cosmetic-chip">
-            <span class="label">FINISH:</span> <span id="roster-equipped-weapon-finish">NONE</span>
+            <span class="label" data-i18n="ui.roster.finish">FINISH:</span> <span id="roster-equipped-weapon-finish">NONE</span>
           </div>
         </div>
-        <div class="roster-hint" id="roster-hint">Fabricate weapons in the FAB BAY to equip them here. Customize cosmetics in the STEAM VAULT.</div>
+        <div class="roster-hint" id="roster-hint" data-i18n="ui.roster.hint">Fabricate weapons in the FAB BAY to equip them here. Customize cosmetics in the STEAM VAULT.</div>
         <div class="roster-footer-actions">
-          <button type="button" class="start-btn roster-confirm-btn" id="roster-confirm-btn">CONFIRM & DEPLOY</button>
+          <button type="button" class="start-btn roster-confirm-btn" id="roster-confirm-btn" data-i18n="ui.roster.confirm">CONFIRM & DEPLOY</button>
         </div>
       </div>
     </div>
@@ -2267,20 +2267,15 @@
             <span data-i18n="ui.settings.invert_y">INVERT AIM Y-AXIS</span>
             <label class="toggle"><input type="checkbox" id="setting-invert-y-toggle"> <span class="slider"></span></label>
           </div>
-          <div class="setting-item">
-            <span data-i18n="ui.settings.crosshair_color">CROSSHAIR COLOR</span>
-            <div class="crosshair-color-controls">
-              <div id="crosshair-color-presets" data-i18n-aria-label="ui.aria.crosshair_presets" class="crosshair-color-presets" role="group" aria-label="Crosshair color presets">
-                <button type="button" class="crosshair-color-swatch" data-crosshair-color="#ff9f1c" data-i18n-aria-label="ui.aria.crosshair_orange" style="--swatch-color:#ff9f1c" aria-label="Orange crosshair"></button>
-                <button type="button" class="crosshair-color-swatch" data-crosshair-color="#ffffff" data-i18n-aria-label="ui.aria.crosshair_white" style="--swatch-color:#ffffff" aria-label="White crosshair"></button>
-                <button type="button" class="crosshair-color-swatch" data-crosshair-color="#39ff88" data-i18n-aria-label="ui.aria.crosshair_green" style="--swatch-color:#39ff88" aria-label="Green crosshair"></button>
-                <button type="button" class="crosshair-color-swatch" data-crosshair-color="#2ec4ff" data-i18n-aria-label="ui.aria.crosshair_cyan" style="--swatch-color:#2ec4ff" aria-label="Cyan crosshair"></button>
-                <button type="button" class="crosshair-color-swatch" data-crosshair-color="#ffe14a" data-i18n-aria-label="ui.aria.crosshair_yellow" style="--swatch-color:#ffe14a" aria-label="Yellow crosshair"></button>
-                <button type="button" class="crosshair-color-swatch" data-crosshair-color="#ff4f64" data-i18n-aria-label="ui.aria.crosshair_red" style="--swatch-color:#ff4f64" aria-label="Red crosshair"></button>
-                <button type="button" class="crosshair-color-swatch" data-crosshair-color="#d76bff" data-i18n-aria-label="ui.aria.crosshair_purple" style="--swatch-color:#d76bff" aria-label="Purple crosshair"></button>
-              </div>
-              <label class="crosshair-custom-color"><span data-i18n="ui.settings.crosshair_custom">CUSTOM</span> <input type="color" id="setting-crosshair-color" data-i18n-aria-label="ui.aria.crosshair_custom" class="settings-color-picker" value="#ff9f1c" aria-label="Custom crosshair color"></label>
+          <div class="setting-item setting-item--action">
+            <div class="setting-label-with-badge">
+              <span data-i18n="ui.settings.crosshair_color">CROSSHAIR COLOR</span>
+              <span class="setting-color-preview-badge" id="crosshair-preview-badge" title="Active crosshair color">
+                <span class="crosshair-preview-dot" id="crosshair-badge-dot"></span>
+                <span class="crosshair-preview-text" id="crosshair-badge-text">#FF9F1C</span>
+              </span>
             </div>
+            <button type="button" class="calibrate-btn settings-action-btn" id="open-crosshair-color" data-i18n="ui.action.open">OPEN</button>
           </div>
           <div class="setting-item">
             <span data-i18n="ui.settings.colorblind">COLORBLIND ASSIST</span>
@@ -2341,6 +2336,31 @@
       </div>
     </div>
 
+    <div id="crosshair-color-popup" class="modal audio-mixer-modal hidden" aria-hidden="true">
+      <div class="modal-content audio-mixer-panel crosshair-color-panel">
+        <button class="close-modal audio-mixer-close" id="close-crosshair-color" aria-label="Close crosshair color menu">×</button>
+        <h2 class="modal-title" data-i18n="ui.settings.crosshair_color">CROSSHAIR COLOR</h2>
+        <p class="crosshair-color-hint" data-i18n="ui.settings.crosshair_hint">Select a tactical reticle preset or configure a custom color.</p>
+        <div class="crosshair-color-modal-body">
+          <div id="crosshair-color-presets" data-i18n-aria-label="ui.aria.crosshair_presets" class="crosshair-color-presets crosshair-color-presets--modal" role="group" aria-label="Crosshair color presets">
+            <button type="button" class="crosshair-color-swatch" data-crosshair-color="#ff9f1c" data-i18n-aria-label="ui.aria.crosshair_orange" style="--swatch-color:#ff9f1c" aria-label="Orange crosshair"></button>
+            <button type="button" class="crosshair-color-swatch" data-crosshair-color="#ffffff" data-i18n-aria-label="ui.aria.crosshair_white" style="--swatch-color:#ffffff" aria-label="White crosshair"></button>
+            <button type="button" class="crosshair-color-swatch" data-crosshair-color="#39ff88" data-i18n-aria-label="ui.aria.crosshair_green" style="--swatch-color:#39ff88" aria-label="Green crosshair"></button>
+            <button type="button" class="crosshair-color-swatch" data-crosshair-color="#2ec4ff" data-i18n-aria-label="ui.aria.crosshair_cyan" style="--swatch-color:#2ec4ff" aria-label="Cyan crosshair"></button>
+            <button type="button" class="crosshair-color-swatch" data-crosshair-color="#ffe14a" data-i18n-aria-label="ui.aria.crosshair_yellow" style="--swatch-color:#ffe14a" aria-label="Yellow crosshair"></button>
+            <button type="button" class="crosshair-color-swatch" data-crosshair-color="#ff4f64" data-i18n-aria-label="ui.aria.crosshair_red" style="--swatch-color:#ff4f64" aria-label="Red crosshair"></button>
+            <button type="button" class="crosshair-color-swatch" data-crosshair-color="#d76bff" data-i18n-aria-label="ui.aria.crosshair_purple" style="--swatch-color:#d76bff" aria-label="Purple crosshair"></button>
+          </div>
+          <div class="crosshair-custom-row">
+            <label class="crosshair-custom-color"><span data-i18n="ui.settings.crosshair_custom">CUSTOM</span> <input type="color" id="setting-crosshair-color" data-i18n-aria-label="ui.aria.crosshair_custom" class="settings-color-picker" value="#ff9f1c" aria-label="Custom crosshair color"></label>
+          </div>
+        </div>
+        <div class="audio-mixer-actions crosshair-color-actions">
+          <button type="button" class="settings-action-btn settings-action-btn--save" id="save-crosshair-color" data-i18n="ui.action.done">DONE</button>
+        </div>
+      </div>
+    </div>
+
     <div id="audio-mixer-popup" class="modal audio-mixer-modal hidden">
       <div class="modal-content audio-mixer-panel">
         <button class="close-modal audio-mixer-close" id="close-audio-mixer">×</button>
@@ -2391,12 +2411,12 @@
 
     <div id="mothership-dialogue" class="modal hidden" aria-hidden="true">
       <div class="modal-content console-terminal-content mothership-dialogue-panel" id="mothership-dialogue-panel">
-        <button class="close-modal mothership-close-btn" id="close-mothership-dialogue" aria-label="Skip dialogue">×</button>
+        <button class="close-modal mothership-close-btn" id="close-mothership-dialogue" aria-label="Skip dialogue" data-i18n-aria-label="ui.dlg.skip_aria">×</button>
         <div class="terminal-scanline"></div>
         <div class="terminal-flicker"></div>
 
         <div class="terminal-header">
-          <div class="terminal-title">MOTHERSHIP UPLINK CHANNEL 7</div>
+          <div class="terminal-title" data-i18n="ui.dlg.channel">MOTHERSHIP UPLINK CHANNEL 7</div>
           <div class="terminal-class-badge" id="mothership-class-badge">SCOUT LINK [ENCRYPTED]</div>
         </div>
 
@@ -2413,12 +2433,12 @@
 
         <div id="mothership-dialogue-choices" class="mothership-dialogue-choices hidden">
           <button id="mothership-choice-skip" class="choice-card">
-            <span class="choice-card__label">[A] UNDERSTOOD. MOVING OUT.</span>
-            <span class="choice-card__hint">SKIP TUTORIAL</span>
+            <span class="choice-card__label" data-i18n="ui.dlg.choice_skip_label">[A] UNDERSTOOD. MOVING OUT.</span>
+            <span class="choice-card__hint" data-i18n="ui.dlg.choice_skip_hint">SKIP TUTORIAL</span>
           </button>
           <button id="mothership-choice-tutorial" class="choice-card">
-            <span class="choice-card__label">[B] RUN ME THROUGH PROTOCOLS FIRST.</span>
-            <span class="choice-card__hint">START TUTORIAL</span>
+            <span class="choice-card__label" data-i18n="ui.dlg.choice_tutorial_label">[B] RUN ME THROUGH PROTOCOLS FIRST.</span>
+            <span class="choice-card__hint" data-i18n="ui.dlg.choice_tutorial_hint">START TUTORIAL</span>
           </button>
         </div>
       </div>
