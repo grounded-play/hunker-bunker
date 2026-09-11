@@ -1,0 +1,80 @@
+{
+  "common": {
+    "ok": "Aceptar",
+    "cancel": "Cancelar",
+    "close": "Cerrar",
+    "back": "Volver",
+    "confirm": "Confirmar",
+    "apply": "Aplicar",
+    "loading": "Cargando...",
+    "save": "Guardar",
+    "saved": "Guardado",
+    "equipped": "Equipado",
+    "locked": "Bloqueado",
+    "unlocked": "Desbloqueado"
+  },
+  "menu": {
+    "play": "DESPLEGAR OPERATIVO",
+    "resume": "REANUDAR MISIÓN",
+    "armory": "ARMERÍA Y EQUIPAMIENTO",
+    "vault": "BÓVEDA DE STEAM",
+    "settings": "CONFIGURACIÓN",
+    "multiplayer": "COOPERATIVO DE ESCUADRÓN",
+    "quit": "SALIR AL ESCRITORIO",
+    "version": "Versión {version}"
+  },
+  "classes": {
+    "all": "Todas las clases",
+    "scout": "Explorador",
+    "tank": "Tanque",
+    "engineer": "Ingeniero"
+  },
+  "rarity": {
+    "common": "Común",
+    "uncommon": "Poco común",
+    "rare": "Raro",
+    "epic": "Épico",
+    "legendary": "Legendario",
+    "sealed": "Sellado",
+    "encrypted": "Cifrado"
+  },
+  "hud": {
+    "shield": "ESCUDO",
+    "hull": "BLINDAJE",
+    "ammo": "MUNICIÓN",
+    "dash": "IMPULSO",
+    "overclock": "SOBRECARGA",
+    "objective": "DIRECTIVA PRINCIPAL",
+    "depth": "NIVEL DE ESTRATO",
+    "sector": "SECTOR",
+    "bunker_alert": "ALERTA DEL BÚNKER"
+  },
+  "dialogue": {
+    "mothership_intro": "NAVE NODRIZA: Descenso detectado. Mantengan la formación.",
+    "mothership_caution": "NAVE NODRIZA: Precaución. Firma de extracción rastreada. Patrullas en camino.",
+    "operator_down": "OPERATIVO CAÍDO. Dron de rescate desplegado.",
+    "black_box_guard": "NAVE NODRIZA: Derrota al operativo corrupto para asegurar la caja negra.",
+    "black_box_authorized": "Operativo corrupto neutralizado. Recuperación de caja negra autorizada.",
+    "extraction_forming": "Enlace de extracción en curso. Intenta no morir durante el papeleo.",
+    "elite_contact": "TRAJE: Contacto de élite. Hostil blindado — mantén una ruta de escape."
+  },
+  "settings": {
+    "title": "CONFIGURACIÓN DEL SISTEMA",
+    "language": "Idioma (Language)",
+    "audio": "Audio",
+    "master_volume": "Volumen maestro",
+    "sfx_volume": "Volumen de efectos",
+    "music_volume": "Volumen de música",
+    "subtitles": "Subtítulos",
+    "video": "Pantalla y gráficos",
+    "screen_shake": "Sacudida de pantalla",
+    "controls": "Controles"
+  },
+  "vault": {
+    "title": "BÓVEDA E INVENTARIO DE STEAM",
+    "keys_available": "Llaves de descifrado disponibles: {count}",
+    "get_keys": "CONSEGUIR LLAVES EN LA TIENDA",
+    "open_cache": "DESCIFRAR ALIJO DE RELIQUIA",
+    "disclosed_odds": "Probabilidades criptográficas públicas"
+  }
+}

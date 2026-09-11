@@ -1,0 +1,80 @@
+{
+  "common": {
+    "ok": "OK",
+    "cancel": "Cancel",
+    "close": "Close",
+    "back": "Back",
+    "confirm": "Confirm",
+    "apply": "Apply",
+    "loading": "Loading...",
+    "save": "Save",
+    "saved": "Saved",
+    "equipped": "Equipped",
+    "locked": "Locked",
+    "unlocked": "Unlocked"
+  },
+  "menu": {
+    "play": "DEPLOY OPERATIVE",
+    "resume": "RESUME MISSION",
+    "armory": "ARMORY & LOADOUT",
+    "vault": "STEAM VAULT",
+    "settings": "SETTINGS",
+    "multiplayer": "SQUAD CO-OP",
+    "quit": "ABORT TO DESKTOP",
+    "version": "Version {version}"
+  },
+  "classes": {
+    "all": "All Classes",
+    "scout": "Scout",
+    "tank": "Tank",
+    "engineer": "Engineer"
+  },
+  "rarity": {
+    "common": "Common",
+    "uncommon": "Uncommon",
+    "rare": "Rare",
+    "epic": "Epic",
+    "legendary": "Legendary",
+    "sealed": "Sealed",
+    "encrypted": "Encrypted"
+  },
+  "hud": {
+    "shield": "SHIELD",
+    "hull": "HULL",
+    "ammo": "AMMO",
+    "dash": "DASH",
+    "overclock": "OVERCLOCK",
+    "objective": "PRIMARY DIRECTIVE",
+    "depth": "STRATUM TIER",
+    "sector": "SECTOR",
+    "bunker_alert": "BUNKER ALERT"
+  },
+  "dialogue": {
+    "mothership_intro": "MOTHERSHIP: DESCENT DETECTED. MAINTAIN FORMATION.",
+    "mothership_caution": "MOTHERSHIP: CAUTION. RECOVERY SIGNATURE TRACKED. PATROLS INBOUND.",
+    "operator_down": "OPERATOR COMPROMISED. RECOVERY DRONE DISPATCHED.",
+    "black_box_guard": "MOTHERSHIP: DEFEAT THE CORRUPTED OPERATOR TO SECURE THE BLACK BOX.",
+    "black_box_authorized": "CORRUPTED OPERATOR NEUTRALIZED. BLACK BOX RECOVERY NOW AUTHORIZED.",
+    "extraction_forming": "EXTRACTION UPLINK FORMING. TRY NOT TO DIE DURING PAPERWORK.",
+    "elite_contact": "SUIT: ELITE CONTACT. REINFORCED HOSTILE — KEEP AN ESCAPE ROUTE."
+  },
+  "settings": {
+    "title": "SYSTEM CONFIGURATION",
+    "language": "Language",
+    "audio": "Audio",
+    "master_volume": "Master Volume",
+    "sfx_volume": "SFX Volume",
+    "music_volume": "Music Volume",
+    "subtitles": "Subtitles",
+    "video": "Display & Graphics",
+    "screen_shake": "Screen Shake",
+    "controls": "Controls"
+  },
+  "vault": {
+    "title": "STEAM VAULT & INVENTORY",
+    "keys_available": "Decryption Keys Available: {count}",
+    "get_keys": "GET KEYS IN ITEM STORE",
+    "open_cache": "DECRYPT DEEP RELIC CACHE",
+    "disclosed_odds": "Disclosed Cryptographic Odds"
+  }
+}

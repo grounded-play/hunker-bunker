@@ -1,0 +1,80 @@
+{
+  "common": {
+    "ok": "OK",
+    "cancel": "Abbrechen",
+    "close": "Schließen",
+    "back": "Zurück",
+    "confirm": "Bestätigen",
+    "apply": "Anwenden",
+    "loading": "Wird geladen...",
+    "save": "Speichern",
+    "saved": "Gespeichert",
+    "equipped": "Ausgerüstet",
+    "locked": "Gesperrt",
+    "unlocked": "Freigeschaltet"
+  },
+  "menu": {
+    "play": "AGENT ENTSENDEN",
+    "resume": "MISSION FORTSETZEN",
+    "armory": "WAFFENKAMMER & LOADOUT",
+    "vault": "STEAM-TRESER",
+    "settings": "EINSTELLUNGEN",
+    "multiplayer": "SQUAD-KOOP",
+    "quit": "ZUM DESKTOP BEENDEN",
+    "version": "Version {version}"
+  },
+  "classes": {
+    "all": "Alle Klassen",
+    "scout": "Späher",
+    "tank": "Panzer",
+    "engineer": "Ingenieur"
+  },
+  "rarity": {
+    "common": "Gewöhnlich",
+    "uncommon": "Ungewöhnlich",
+    "rare": "Selten",
+    "epic": "Episch",
+    "legendary": "Legendär",
+    "sealed": "Versiegelt",
+    "encrypted": "Verschlüsselt"
+  },
+  "hud": {
+    "shield": "SCHILD",
+    "hull": "RUMPF",
+    "ammo": "MUNITION",
+    "dash": "SPURT",
+    "overclock": "ÜBERTAKTER",
+    "objective": "HAUPTDIREKTIVE",
+    "depth": "SCHICHTSTUFE",
+    "sector": "SEKTOR",
+    "bunker_alert": "BUNKER-ALARM"
+  },
+  "dialogue": {
+    "mothership_intro": "MUTTERSCHIFF: Abstieg erfasst. Formation halten.",
+    "mothership_caution": "MUTTERSCHIFF: Vorsicht. Bergungssignatur verfolgt. Patrouillen nähern sich.",
+    "operator_down": "AGENT AUSGESCHALTET. Bergungsdrohne entsandt.",
+    "black_box_guard": "MUTTERSCHIFF: Eliminiere den korrumpierten Agenten, um die Blackbox zu sichern.",
+    "black_box_authorized": "Korrupter Agent neutralisiert. Bergung der Blackbox autorisiert.",
+    "extraction_forming": "Extraktionsverbindung wird aufgebaut. Bitte während des Papierkrams nicht sterben.",
+    "elite_contact": "ANZUG: Elite-Kontakt. Verstärkter Feind — Rückzugsweg freihalten."
+  },
+  "settings": {
+    "title": "SYSTEMKONFIGURATION",
+    "language": "Sprache (Language)",
+    "audio": "Audio",
+    "master_volume": "Gesamtlautstärke",
+    "sfx_volume": "Effektlautstärke",
+    "music_volume": "Musiklautstärke",
+    "subtitles": "Untertitel",
+    "video": "Anzeige & Grafik",
+    "screen_shake": "Bildschirmwackeln",
+    "controls": "Steuerung"
+  },
+  "vault": {
+    "title": "STEAM-TRESER & INVENTAR",
+    "keys_available": "Verfügbare Entschlüsselungsschlüssel: {count}",
+    "get_keys": "SCHLÜSSEL IM ITEM STORE KAUFEN",
+    "open_cache": "TIEFEN-RELIKTE-CACHE ENTSCHLÜSSELN",
+    "disclosed_odds": "Offengelegte kryptografische Wahrscheinlichkeiten"
+  }
+}

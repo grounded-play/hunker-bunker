@@ -84,6 +84,7 @@ import { openDebugTileGrid, closeDebugTileGrid } from './src/debugTileGrid.js';
 import { openDebugBossArenas, closeDebugBossArenas } from './src/debugBossArenas.js';
 import { openDebugCampSimulator, closeDebugCampSimulator } from './src/debugCampSimulator.js';
 import { LeaderConversation3d } from './src/leaderConversation3d.js';
+import { getLocale, setLocale, t as i18nT, getAvailableLocales } from './src/i18n.js';
 import {
     computeTopologyDistances,
     findConflictingChunkReservations,
@@ -9557,6 +9558,9 @@ function openSettingsModal() {
     if (mainNightVisionToggle) mainNightVisionToggle.checked = !!state.settings.nightVision;
     if (mainCommentaryToggle) mainCommentaryToggle.checked = !!state.settings.commentary;
 
+    const langSelect = document.getElementById('setting-language-select');
+    if (langSelect) langSelect.value = getLocale();
+
     const uiScaleSelect = document.getElementById('setting-ui-scale');
     if (uiScaleSelect) uiScaleSelect.value = String(state.settings.uiScale || 100);
 
@@ -9594,6 +9598,11 @@ function openSettingsModal() {
     setSaveDataOpen(false);
     setResetSaveConfirmOpen(false);
 }
+
+document.getElementById('setting-language-select')?.addEventListener('change', (e) => {
+    setLocale(e.target.value);
+});
+window.i18n = { getLocale, setLocale, t: i18nT, getAvailableLocales };
 
 document.getElementById('setting-ui-scale')?.addEventListener('change', (e) => {
     devSetUiScale(e.target.value);
