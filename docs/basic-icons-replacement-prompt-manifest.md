@@ -46,7 +46,7 @@ All weapons in the game already have dedicated 3D runtime GLB models in `public/
 | **`4102`** | **Tectonic Driller Shotgun** | Tank | `skin_tectonic_driller.glb` | `skin_tectonic_driller.png` | 3D Model Exists (Icon upgrade prompt below) |
 | **`4103`** | **Cryo-Plasma Arc Driver** | Engineer | `skin_engineer_cryo_plasma.glb` | `skin_engineer_cryo_plasma.png` | 3D Rendered |
 | **`4104`** | **Rust & Bone Trench Carbine** | Scout | `skin_rust_bone_trench.glb` | `skin_rust_bone_trench.png` | 3D Model Exists (Icon upgrade prompt below) |
-| **`4105`** | **Obsidian Shard Revolver** | Scout | `skin_obsidian_shard.glb` | `skin_obsidian_shard.png` | 3D Model Exists (Icon upgrade prompt below) |
+| **`4105`** | **Obsidian Shard Sidearm** | Scout | `skin_obsidian_shard.glb` | `skin_obsidian_shard.png` | 3D Model Exists (Icon upgrade prompt below) |
 | **`4106`** | **Biolume Spore Sprayer** | Tank | `skin_biolume_spore_sprayer.glb` | `skin_biolume_spore_sprayer.png` | 3D Model Exists (Icon upgrade prompt below) |
 | **`4107`** | **Deep Core Melter** | Tank | `skin_tank_deep_core_melter.glb` | `skin_tank_deep_core_melter.png` | 3D Rendered |
 | **`4108`** | **Glitched Circuit Bolter** | Scout | `skin_glitched_circuit_bolter.glb` | `skin_glitched_circuit_bolter.png` | 3D Model Exists (Icon upgrade prompt below) |
@@ -193,7 +193,7 @@ Full side-profile 3D game asset render of a heavy combat shotgun weapon finish f
 [4104 - Rust & Bone Trench Carbine]
 Full side-profile 3D game asset render of a subterranean trench carbine weapon finish floating in empty dark space, muzzle pointing left. Heavily pitted rusted cast-iron receiver, polished ivory alien bone stock and foregrip with subtle green bioluminescent mineral veins, worn leather cord wrapping. Studio lighting, octane render, clean isolated asset, no text, 1:1 aspect ratio.
 
-[4105 - Obsidian Shard Revolver]
+[4105 - Obsidian Shard Sidearm]
 Full side-profile 3D game asset render of a heavy magnum revolver weapon finish floating in empty dark space, muzzle pointing left. Polished volcanic obsidian glass frame with razor-sharp beveled edges, folded Damascus steel cylinder, glowing purple micro-fracture veins. Studio lighting, octane render, clean isolated asset, no text, 1:1 aspect ratio.
 
 [4106 - Biolume Spore Sprayer]

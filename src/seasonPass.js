@@ -68,7 +68,7 @@ export const TIER_REWARDS = Object.freeze([
     { free: item(4156, '25x Cryo-Alloy Ingots', 25), premium: item(4134, 'Glitched RAM Card Charm') },
     { free: null, premium: item(4115, 'Void Commando Recon') },
     { free: null, premium: item(4144, 'Thermal Heat Exchanger') },
-    { free: cache(), premium: item(4105, 'Obsidian Shard Revolver') },
+    { free: cache(), premium: item(4105, 'Obsidian Shard Sidearm') },
     { free: null, premium: item(4135, 'Geodetic Compass Charm') },
     { free: item(4159, '20x Deep Core Shards', 20), premium: item(4125, 'Cryo-Phoenix Insignia') },
     { free: null, premium: item(4116, 'Bio-Synthesizer Medic') },

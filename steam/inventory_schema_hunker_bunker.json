@@ -178,10 +178,10 @@
     {
       "itemdefid": 4001,
       "type": "item",
-      "name": "Cache Key",
-      "name_english": "Cache Key",
-      "description": "Opens a single Deep Relic Cache. Purchased with real money through the in-game store; never drops for free.",
-      "description_english": "Opens a single Deep Relic Cache. Purchased with real money through the in-game store; never drops for free.",
+      "name": "Relic Decryption Key",
+      "name_english": "Relic Decryption Key",
+      "description": "Opens a single Deep Relic Cache. Purchased through the Steam Item Store; never drops for free.",
+      "description_english": "Opens a single Deep Relic Cache. Purchased through the Steam Item Store; never drops for free.",
       "icon_url": "https://hunkerbunker.netlify.app/economy/cache_key.png",
       "icon_url_large": "https://hunkerbunker.netlify.app/economy/cache_key_large.png",
       "background_color": "292524",
@@ -288,10 +288,10 @@
     {
       "itemdefid": 4105,
       "type": "item",
-      "name": "Obsidian Shard Revolver",
-      "name_english": "Obsidian Shard Revolver",
-      "description": "Polished volcanic glass receiver with Damascus steel cylinder.",
-      "description_english": "Polished volcanic glass receiver with Damascus steel cylinder.",
+      "name": "Obsidian Shard Sidearm",
+      "name_english": "Obsidian Shard Sidearm",
+      "description": "Polished volcanic glass receiver with Damascus steel accents.",
+      "description_english": "Polished volcanic glass receiver with Damascus steel accents.",
       "icon_url": "https://hunkerbunker.netlify.app/economy/skin_obsidian_shard.png",
       "icon_url_large": "https://hunkerbunker.netlify.app/economy/skin_obsidian_shard_large.png",
       "background_color": "0c4a6e",
@@ -331,7 +331,7 @@
       "tradable": true,
       "marketable": true,
       "item_slot": "CosmeticWeapon",
-      "tags": "rarity:epic;class:engineer;slot:weapon_finish;season:0"
+      "tags": "rarity:epic;class:tank;slot:weapon_finish;season:0"
     },
     {
       "itemdefid": 4108,

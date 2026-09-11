@@ -113,9 +113,9 @@ const catalog = {
     },
     "4001": {
         "itemdefid": 4001,
-        "name": "Cache Key",
+        "name": "Relic Decryption Key",
         "rarity": "key",
-        "desc": "Opens a single Deep Relic Cache. Purchased with real money through the in-game store; never drops for free.",
+        "desc": "Opens a single Deep Relic Cache. Purchased through the Steam Item Store; never drops for free.",
         "tradable": true,
         "marketable": true,
         "img": "https://hunkerbunker.netlify.app/economy/cache_key.png",
@@ -179,9 +179,9 @@ const catalog = {
     },
     "4105": {
         "itemdefid": 4105,
-        "name": "Obsidian Shard Revolver",
+        "name": "Obsidian Shard Sidearm",
         "rarity": "rare",
-        "desc": "Polished volcanic glass receiver with Damascus steel cylinder.",
+        "desc": "Polished volcanic glass receiver with Damascus steel accents.",
         "tradable": true,
         "marketable": true,
         "img": "https://hunkerbunker.netlify.app/economy/skin_obsidian_shard.png",
