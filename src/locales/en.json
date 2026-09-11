@@ -76,5 +76,66 @@
     "get_keys": "GET KEYS IN ITEM STORE",
     "open_cache": "DECRYPT DEEP RELIC CACHE",
     "disclosed_odds": "Disclosed Cryptographic Odds"
+  },
+  "ui": {
+    "menu": {
+      "continue": "CONTINUE",
+      "switch_class": "SWITCH CLASS",
+      "new_run": "NEW RUN",
+      "achievements": "ACHIEVEMENTS",
+      "settings": "SETTINGS",
+      "about": "ABOUT",
+      "quit": "QUIT GAME"
+    },
+    "hub": {
+      "daily_ops": "DAILY OPS",
+      "roster": "▣ ROSTER",
+      "vault": "◈ STEAM VAULT",
+      "archive_sims": "◈ ARCHIVE SIMS",
+      "fab_bay": "◇ FAB BAY",
+      "archive": "◈ ARCHIVE",
+      "codex": "❑ CODEX",
+      "dossier": "◈ DOSSIER",
+      "achievements": "ACHIEVEMENTS",
+      "initialize": "INITIALIZE"
+    },
+    "settings": {
+      "title": "SYSTEM SETTINGS",
+      "cat_display": "DISPLAY & GRAPHICS",
+      "night_vision": "NIGHT VISION (NO FOG/NIGHT)",
+      "debug_overlay": "DEBUG OVERLAY",
+      "cat_audio": "AUDIO & VOICE",
+      "audio_mixer": "AUDIO MIXER",
+      "commentary": "COMMENTARY MODE",
+      "cat_gameplay": "GAMEPLAY & ACCESSIBILITY",
+      "ui_scale": "UI ACCESSIBILITY SCALE",
+      "text_floor": "MINIMUM TEXT FLOOR",
+      "text_speed": "TEXT SPEED",
+      "camera_mode": "GAMEPLAY CAMERA",
+      "camera_distance": "CAMERA DISTANCE",
+      "camera_follow": "CAMERA FOLLOW",
+      "turn_speed": "TURN / AIM SPEED",
+      "invert_y": "INVERT AIM Y-AXIS",
+      "crosshair_color": "CROSSHAIR COLOR",
+      "colorblind": "COLORBLIND ASSIST",
+      "desktop_controls": "DESKTOP CONTROLS",
+      "cat_operator": "OPERATOR & SYSTEM DATA",
+      "callsign": "OPERATOR CALLSIGN",
+      "cloud_sync": "STEAM CLOUD SYNC",
+      "save_data": "SAVE DATA",
+      "new_game_reset": "NEW GAME RESET",
+      "exit_app": "EXIT APPLICATION"
+    },
+    "action": {
+      "open": "OPEN",
+      "remap": "REMAP",
+      "reset": "RESET",
+      "export_copy": "EXPORT + COPY",
+      "import_data": "IMPORT DATA",
+      "save_settings": "SAVE SETTINGS"
+    },
+    "modal": {
+      "controls": "CONTROLS"
+    }
   }
 }

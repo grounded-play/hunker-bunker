@@ -76,5 +76,66 @@
     "get_keys": "OBTER CHAVES NA LOJA",
     "open_cache": "DECODIFICAR CAIXA DE RELÍQUIA",
     "disclosed_odds": "Probabilidades criptográficas divulgadas"
+  },
+  "ui": {
+    "menu": {
+      "continue": "CONTINUAR",
+      "switch_class": "TROCAR CLASSE",
+      "new_run": "NOVA INCURSÃO",
+      "achievements": "CONQUISTAS",
+      "settings": "CONFIGURAÇÕES",
+      "about": "SOBRE",
+      "quit": "SAIR DO JOGO"
+    },
+    "hub": {
+      "daily_ops": "OPS DIÁRIAS",
+      "roster": "▣ ELENCO",
+      "vault": "◈ COFRE STEAM",
+      "archive_sims": "◈ SIMS DE ARQUIVO",
+      "fab_bay": "◇ OFICINA",
+      "archive": "◈ ARQUIVO",
+      "codex": "❑ CODEX",
+      "dossier": "◈ DOSSIÊ",
+      "achievements": "CONQUISTAS",
+      "initialize": "INICIALIZAR"
+    },
+    "settings": {
+      "title": "CONFIGURAÇÕES DO SISTEMA",
+      "cat_display": "VÍDEO E GRÁFICOS",
+      "night_vision": "VISÃO NOTURNA (SEM NÉVOA/NOITE)",
+      "debug_overlay": "SOBREPOSIÇÃO DE DEPURAÇÃO",
+      "cat_audio": "ÁUDIO E VOZ",
+      "audio_mixer": "MIXER DE ÁUDIO",
+      "commentary": "MODO COMENTÁRIO",
+      "cat_gameplay": "JOGABILIDADE E ACESSIBILIDADE",
+      "ui_scale": "ESCALA DA INTERFACE",
+      "text_floor": "TAMANHO MÍNIMO DE TEXTO",
+      "text_speed": "VELOCIDADE DO TEXTO",
+      "camera_mode": "CÂMERA DE JOGO",
+      "camera_distance": "DISTÂNCIA DA CÂMERA",
+      "camera_follow": "SEGUIMENTO DA CÂMERA",
+      "turn_speed": "VELOCIDADE DE GIRO / MIRA",
+      "invert_y": "INVERTER EIXO Y",
+      "crosshair_color": "COR DA MIRA",
+      "colorblind": "ASSISTÊNCIA DALTÔNICA",
+      "desktop_controls": "CONTROLES DE DESKTOP",
+      "cat_operator": "OPERADOR E DADOS DO SISTEMA",
+      "callsign": "CODINOME DO OPERADOR",
+      "cloud_sync": "SINCRONIZAÇÃO STEAM CLOUD",
+      "save_data": "DADOS SALVOS",
+      "new_game_reset": "REINÍCIO DE JOGO",
+      "exit_app": "SAIR DO APLICATIVO"
+    },
+    "action": {
+      "open": "ABRIR",
+      "remap": "REMAPEAR",
+      "reset": "REDEFINIR",
+      "export_copy": "EXPORTAR + COPIAR",
+      "import_data": "IMPORTAR DADOS",
+      "save_settings": "SALVAR CONFIGURAÇÕES"
+    },
+    "modal": {
+      "controls": "CONTROLES"
+    }
   }
 }

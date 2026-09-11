@@ -76,5 +76,66 @@
     "get_keys": "在道具商店获取钥匙",
     "open_cache": "解密深层遗物物资箱",
     "disclosed_odds": "公开密码学开箱概率"
+  },
+  "ui": {
+    "menu": {
+      "continue": "继续游戏",
+      "switch_class": "更换职业",
+      "new_run": "新的征程",
+      "achievements": "成就",
+      "settings": "设置",
+      "about": "关于",
+      "quit": "退出游戏"
+    },
+    "hub": {
+      "daily_ops": "每日行动",
+      "roster": "▣ 名册",
+      "vault": "◈ STEAM 保险库",
+      "archive_sims": "◈ 档案模拟",
+      "fab_bay": "◇ 制造舱",
+      "archive": "◈ 档案",
+      "codex": "❑ 图鉴",
+      "dossier": "◈ 战术档案",
+      "achievements": "成就",
+      "initialize": "启动部署"
+    },
+    "settings": {
+      "title": "系统设置",
+      "cat_display": "显示与画面",
+      "night_vision": "夜视（无雾／无夜晚）",
+      "debug_overlay": "调试浮层",
+      "cat_audio": "音频与语音",
+      "audio_mixer": "音频混音器",
+      "commentary": "解说模式",
+      "cat_gameplay": "玩法与无障碍",
+      "ui_scale": "界面无障碍缩放",
+      "text_floor": "最小字号下限",
+      "text_speed": "文本速度",
+      "camera_mode": "游戏视角",
+      "camera_distance": "镜头距离",
+      "camera_follow": "镜头跟随",
+      "turn_speed": "转向／瞄准速度",
+      "invert_y": "反转瞄准 Y 轴",
+      "crosshair_color": "准星颜色",
+      "colorblind": "色盲辅助",
+      "desktop_controls": "键鼠操作",
+      "cat_operator": "操作员与系统数据",
+      "callsign": "操作员呼号",
+      "cloud_sync": "STEAM 云同步",
+      "save_data": "存档数据",
+      "new_game_reset": "重置新游戏",
+      "exit_app": "退出程序"
+    },
+    "action": {
+      "open": "打开",
+      "remap": "重新映射",
+      "reset": "重置",
+      "export_copy": "导出并复制",
+      "import_data": "导入数据",
+      "save_settings": "保存设置"
+    },
+    "modal": {
+      "controls": "操作设置"
+    }
   }
 }

@@ -76,5 +76,66 @@
     "get_keys": "SCHLÜSSEL IM ITEM STORE KAUFEN",
     "open_cache": "TIEFEN-RELIKTE-CACHE ENTSCHLÜSSELN",
     "disclosed_odds": "Offengelegte kryptografische Wahrscheinlichkeiten"
+  },
+  "ui": {
+    "menu": {
+      "continue": "FORTSETZEN",
+      "switch_class": "KLASSE WECHSELN",
+      "new_run": "NEUER DURCHLAUF",
+      "achievements": "ERFOLGE",
+      "settings": "EINSTELLUNGEN",
+      "about": "ÜBER",
+      "quit": "SPIEL BEENDEN"
+    },
+    "hub": {
+      "daily_ops": "TAGESEINSATZ",
+      "roster": "▣ KADER",
+      "vault": "◈ STEAM-TRESOR",
+      "archive_sims": "◈ ARCHIV-SIMS",
+      "fab_bay": "◇ FERTIGUNG",
+      "archive": "◈ ARCHIV",
+      "codex": "❑ KODEX",
+      "dossier": "◈ DOSSIER",
+      "achievements": "ERFOLGE",
+      "initialize": "INITIALISIEREN"
+    },
+    "settings": {
+      "title": "SYSTEMEINSTELLUNGEN",
+      "cat_display": "ANZEIGE & GRAFIK",
+      "night_vision": "NACHTSICHT (OHNE NEBEL/NACHT)",
+      "debug_overlay": "DEBUG-OVERLAY",
+      "cat_audio": "AUDIO & SPRACHE",
+      "audio_mixer": "AUDIO-MIXER",
+      "commentary": "KOMMENTARMODUS",
+      "cat_gameplay": "GAMEPLAY & BARRIEREFREIHEIT",
+      "ui_scale": "UI-SKALIERUNG",
+      "text_floor": "MINDESTTEXTGRÖSSE",
+      "text_speed": "TEXTGESCHWINDIGKEIT",
+      "camera_mode": "SPIELKAMERA",
+      "camera_distance": "KAMERAABSTAND",
+      "camera_follow": "KAMERAVERFOLGUNG",
+      "turn_speed": "DREH-/ZIELGESCHWINDIGKEIT",
+      "invert_y": "Y-ACHSE INVERTIEREN",
+      "crosshair_color": "FADENKREUZFARBE",
+      "colorblind": "FARBENBLINDHEITSHILFE",
+      "desktop_controls": "DESKTOP-STEUERUNG",
+      "cat_operator": "OPERATOR & SYSTEMDATEN",
+      "callsign": "OPERATOR-RUFZEICHEN",
+      "cloud_sync": "STEAM-CLOUD-SYNC",
+      "save_data": "SPIELSTAND",
+      "new_game_reset": "NEUSTART",
+      "exit_app": "ANWENDUNG BEENDEN"
+    },
+    "action": {
+      "open": "ÖFFNEN",
+      "remap": "NEU BELEGEN",
+      "reset": "ZURÜCKSETZEN",
+      "export_copy": "EXPORT + KOPIEREN",
+      "import_data": "DATEN IMPORTIEREN",
+      "save_settings": "EINSTELLUNGEN SPEICHERN"
+    },
+    "modal": {
+      "controls": "STEUERUNG"
+    }
   }
 }

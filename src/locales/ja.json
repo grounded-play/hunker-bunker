@@ -76,5 +76,66 @@
     "get_keys": "アイテムストアでキーを入手",
     "open_cache": "深層レリックコンテナを解読",
     "disclosed_odds": "公開された暗号化ドロップ確率"
+  },
+  "ui": {
+    "menu": {
+      "continue": "つづきから",
+      "switch_class": "クラス変更",
+      "new_run": "ニューラン",
+      "achievements": "実績",
+      "settings": "設定",
+      "about": "クレジット",
+      "quit": "ゲーム終了"
+    },
+    "hub": {
+      "daily_ops": "デイリー作戦",
+      "roster": "▣ 名簿",
+      "vault": "◈ STEAMヴォールト",
+      "archive_sims": "◈ アーカイブシム",
+      "fab_bay": "◇ 製造ベイ",
+      "archive": "◈ アーカイブ",
+      "codex": "❑ コーデックス",
+      "dossier": "◈ ドシエ",
+      "achievements": "実績",
+      "initialize": "開始"
+    },
+    "settings": {
+      "title": "システム設定",
+      "cat_display": "表示とグラフィック",
+      "night_vision": "ナイトビジョン（霧・夜間なし）",
+      "debug_overlay": "デバッグ表示",
+      "cat_audio": "オーディオと音声",
+      "audio_mixer": "オーディオミキサー",
+      "commentary": "実況モード",
+      "cat_gameplay": "ゲームプレイとアクセシビリティ",
+      "ui_scale": "UIスケール",
+      "text_floor": "最小文字サイズ",
+      "text_speed": "テキスト速度",
+      "camera_mode": "ゲームカメラ",
+      "camera_distance": "カメラ距離",
+      "camera_follow": "カメラ追従",
+      "turn_speed": "旋回・エイム速度",
+      "invert_y": "エイムY軸反転",
+      "crosshair_color": "クロスヘア色",
+      "colorblind": "色覚サポート",
+      "desktop_controls": "デスクトップ操作",
+      "cat_operator": "オペレーターとシステムデータ",
+      "callsign": "オペレーターコールサイン",
+      "cloud_sync": "STEAMクラウド同期",
+      "save_data": "セーブデータ",
+      "new_game_reset": "ニューゲームリセット",
+      "exit_app": "アプリを終了"
+    },
+    "action": {
+      "open": "開く",
+      "remap": "再割り当て",
+      "reset": "リセット",
+      "export_copy": "エクスポート＋コピー",
+      "import_data": "データ読み込み",
+      "save_settings": "設定を保存"
+    },
+    "modal": {
+      "controls": "操作設定"
+    }
   }
 }

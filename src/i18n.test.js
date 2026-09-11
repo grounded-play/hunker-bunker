@@ -1,6 +1,10 @@
 import { describe, expect, it, beforeEach, afterEach, vi } from 'vitest';
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import {
     t,
+    hasKey,
+    applyStaticTranslations,
     getLocale,
     setLocale,
     getAvailableLocales,
@@ -167,6 +171,103 @@ describe('i18n Localization Engine', () => {
                 expect(langKeys).toEqual(baseKeys);
             });
         }
+    });
+
+    describe('applyStaticTranslations', () => {
+        // The suite runs in vitest's node environment, so there is no real
+        // DOM. A minimal stand-in exercises the same traversal the browser
+        // takes without pulling jsdom into the dependency tree.
+        function fakeElement(attrs, text = '') {
+            return {
+                attrs: { ...attrs },
+                textContent: text,
+                getAttribute(name) {
+                    return Object.prototype.hasOwnProperty.call(this.attrs, name)
+                        ? this.attrs[name]
+                        : null;
+                },
+                setAttribute(name, value) {
+                    this.attrs[name] = value;
+                }
+            };
+        }
+
+        function fakeRoot(elements) {
+            return {
+                querySelectorAll(selector) {
+                    const attr = selector.slice(1, -1);
+                    return elements.filter((el) => el.getAttribute(attr) !== null);
+                }
+            };
+        }
+
+        it('replaces textContent for known keys', () => {
+            const el = fakeElement({ 'data-i18n': 'ui.menu.new_run' }, 'NEW RUN');
+            setLocale('de');
+            const applied = applyStaticTranslations(fakeRoot([el]));
+            expect(applied).toBe(1);
+            expect(el.textContent).toBe('NEUER DURCHLAUF');
+        });
+
+        it('translates annotated attributes', () => {
+            const el = fakeElement({
+                'data-i18n-title': 'ui.hub.codex',
+                title: 'Field Codex'
+            });
+            setLocale('ja');
+            applyStaticTranslations(fakeRoot([el]));
+            expect(el.getAttribute('title')).toBe('❑ コーデックス');
+        });
+
+        it('leaves authored English in place for unknown keys', () => {
+            const el = fakeElement({ 'data-i18n': 'ui.nope.missing' }, 'ORIGINAL');
+            setLocale('ru');
+            const applied = applyStaticTranslations(fakeRoot([el]));
+            expect(applied).toBe(0);
+            expect(el.textContent).toBe('ORIGINAL');
+        });
+
+        it('re-translates the same element when the locale changes again', () => {
+            const el = fakeElement({ 'data-i18n': 'ui.menu.settings' }, 'SETTINGS');
+            const root = fakeRoot([el]);
+
+            setLocale('pt-BR');
+            applyStaticTranslations(root);
+            expect(el.textContent).toBe('CONFIGURAÇÕES');
+
+            setLocale('zh-CN');
+            applyStaticTranslations(root);
+            expect(el.textContent).toBe('设置');
+        });
+
+        it('returns 0 for a root that cannot be queried', () => {
+            expect(applyStaticTranslations(null)).toBe(0);
+            expect(applyStaticTranslations({})).toBe(0);
+        });
+    });
+
+    describe('index.html markup coverage', () => {
+        const html = readFileSync(
+            fileURLToPath(new URL('../index.html', import.meta.url)),
+            'utf8'
+        );
+        const keys = [...html.matchAll(/data-i18n(?:-[a-z-]+)?="([^"]+)"/g)]
+            .map((m) => m[1]);
+
+        it('annotates the shipped UI', () => {
+            expect(keys.length).toBeGreaterThan(0);
+        });
+
+        it('resolves every annotated key in every locale', () => {
+            const unresolved = [];
+            for (const locale of getAvailableLocales()) {
+                setLocale(locale.code);
+                for (const key of keys) {
+                    if (!hasKey(key)) unresolved.push(`${locale.code}:${key}`);
+                }
+            }
+            expect(unresolved).toEqual([]);
+        });
     });
 
     describe('getAvailableLocales', () => {

@@ -276,13 +276,13 @@
         </section>
 
         <div class="title-menu">
-          <button class="title-menu-btn" id="title-continue-btn" disabled>CONTINUE</button>
-          <button class="title-menu-btn title-menu-btn--secondary hidden" id="title-switch-class-btn">SWITCH CLASS</button>
-          <button class="title-menu-btn" id="title-newrun-btn">NEW RUN</button>
-          <button class="title-menu-btn" id="title-achievements-btn">ACHIEVEMENTS</button>
-          <button class="title-menu-btn" id="title-settings-btn">SETTINGS</button>
-          <button class="title-menu-btn" id="title-about-btn">ABOUT</button>
-          <button class="title-menu-btn title-menu-btn--quit" id="title-quit-btn">QUIT GAME</button>
+          <button class="title-menu-btn" id="title-continue-btn" data-i18n="ui.menu.continue" disabled>CONTINUE</button>
+          <button class="title-menu-btn title-menu-btn--secondary hidden" id="title-switch-class-btn" data-i18n="ui.menu.switch_class">SWITCH CLASS</button>
+          <button class="title-menu-btn" id="title-newrun-btn" data-i18n="ui.menu.new_run">NEW RUN</button>
+          <button class="title-menu-btn" id="title-achievements-btn" data-i18n="ui.menu.achievements">ACHIEVEMENTS</button>
+          <button class="title-menu-btn" id="title-settings-btn" data-i18n="ui.menu.settings">SETTINGS</button>
+          <button class="title-menu-btn" id="title-about-btn" data-i18n="ui.menu.about">ABOUT</button>
+          <button class="title-menu-btn title-menu-btn--quit" id="title-quit-btn" data-i18n="ui.menu.quit">QUIT GAME</button>
         </div>
       </div>
     </div>
@@ -370,46 +370,46 @@
               <div class="menu-header-actions">
                 <div class="menu-command-column" aria-label="Operations and Steam commands">
                   <div class="menu-command">
-                    <button class="start-btn start-btn--daily" id="daily-ops-btn" title="One attempt per day — fixed world seed">DAILY OPS</button>
+                    <button class="start-btn start-btn--daily" id="daily-ops-btn" data-i18n="ui.hub.daily_ops" title="One attempt per day — fixed world seed">DAILY OPS</button>
                     <div class="menu-command__status daily-ops-status" id="daily-ops-status"></div>
                   </div>
                   <div class="menu-command">
-                    <button class="start-btn start-btn--roster" id="roster-btn" title="Operator roster — callsign and equipped loadout">▣ ROSTER</button>
+                    <button class="start-btn start-btn--roster" id="roster-btn" data-i18n="ui.hub.roster" title="Operator roster — callsign and equipped loadout">▣ ROSTER</button>
                     <div class="menu-command__status" id="roster-command-status">0 / 0 ARSENAL</div>
                   </div>
                   <div class="menu-command" id="steam-vault-command">
-                    <button class="start-btn start-btn--vault" id="steam-vault-btn" title="Steam Vault — view Steam-owned cosmetics">◈ STEAM VAULT</button>
+                    <button class="start-btn start-btn--vault" id="steam-vault-btn" data-i18n="ui.hub.vault" title="Steam Vault — view Steam-owned cosmetics">◈ STEAM VAULT</button>
                     <div class="menu-command__status" id="vault-command-status">OFFLINE</div>
                   </div>
                   <div class="menu-command hidden" id="archive-sims-command">
-                    <button class="start-btn start-btn--archive-sims" id="archive-sims-btn" title="Archive Simulations — unlockable story mini-games">◈ ARCHIVE SIMS</button>
+                    <button class="start-btn start-btn--archive-sims" id="archive-sims-btn" data-i18n="ui.hub.archive_sims" title="Archive Simulations — unlockable story mini-games">◈ ARCHIVE SIMS</button>
                     <div class="menu-command__status" id="archive-sims-command-status">RGB</div>
                   </div>
                   <div class="menu-command menu-command--fab hidden" id="fabrication-command">
-                    <button class="start-btn start-btn--fab" id="fabrication-btn" title="Fabrication Bay — print gear from salvage (unlocks once the base is powered)">◇ FAB BAY</button>
+                    <button class="start-btn start-btn--fab" id="fabrication-btn" data-i18n="ui.hub.fab_bay" title="Fabrication Bay — print gear from salvage (unlocks once the base is powered)">◇ FAB BAY</button>
                     <div class="menu-command__status" id="fab-command-status">0 / 0 PRINTED</div>
                   </div>
                 </div>
                 <div class="menu-command-column" aria-label="Records and Dossier commands">
                   <div class="menu-command">
-                    <button class="start-btn start-btn--archive" id="archive-btn" title="Bunker Archive — discovered lore logs">◈ ARCHIVE</button>
+                    <button class="start-btn start-btn--archive" id="archive-btn" data-i18n="ui.hub.archive" title="Bunker Archive — discovered lore logs">◈ ARCHIVE</button>
                     <div class="menu-command__status" id="archive-command-status">0 / 27 LOGS</div>
                   </div>
                   <div class="menu-command">
-                    <button class="start-btn start-btn--codex" id="codex-btn" title="Field Codex — catalogued hostiles, infrastructure, and phenomena">❑ CODEX</button>
+                    <button class="start-btn start-btn--codex" id="codex-btn" data-i18n="ui.hub.codex" title="Field Codex — catalogued hostiles, infrastructure, and phenomena">❑ CODEX</button>
                     <div class="menu-command__status" id="codex-command-status">0 / 0 INTEL</div>
                   </div>
                   <div class="menu-command" id="season-pass-command">
-                    <button class="start-btn start-btn--dossier" id="season-pass-btn" title="Tactical Dossier — Beta Season 1 progression">◈ DOSSIER</button>
+                    <button class="start-btn start-btn--dossier" id="season-pass-btn" data-i18n="ui.hub.dossier" title="Tactical Dossier — Beta Season 1 progression">◈ DOSSIER</button>
                     <div class="menu-command__status" id="season-pass-command-status">TIER 0 / 50</div>
                   </div>
                   <div class="menu-command hidden" id="achievements-command">
-                    <button class="start-btn start-btn--achievements" id="achievements-btn" title="Achievement records — unlocked run milestones">ACHIEVEMENTS</button>
+                    <button class="start-btn start-btn--achievements" id="achievements-btn" data-i18n="ui.hub.achievements" title="Achievement records — unlocked run milestones">ACHIEVEMENTS</button>
                     <div class="menu-command__status" id="achievements-command-status">LOCKED</div>
                   </div>
                 </div>
               </div>
-              <button class="start-btn map-initialize-btn" id="start-game">INITIALIZE</button>
+              <button class="start-btn map-initialize-btn" id="start-game" data-i18n="ui.hub.initialize">INITIALIZE</button>
               <div class="module-scanline"></div>
             </div>
 
@@ -2137,25 +2137,25 @@
     <div id="settings-popup" class="modal hidden">
       <div class="modal-content settings-modal-panel">
         <div class="settings-sticky-header">
-          <h2 class="modal-title">SYSTEM SETTINGS</h2>
+          <h2 class="modal-title" data-i18n="ui.settings.title">SYSTEM SETTINGS</h2>
           <button class="close-modal" id="close-settings" aria-label="Close system settings">×</button>
         </div>
 
         <div class="settings-modal-content">
           <!-- Section 1: Display & Graphics -->
         <div class="settings-category-group">
-          <div class="settings-category-header">DISPLAY & GRAPHICS</div>
+          <div class="settings-category-header" data-i18n="ui.settings.cat_display">DISPLAY & GRAPHICS</div>
           <!-- Stage Resolution was a developer layout label, not a renderer
                setting. Keep the internal dev-console preset, but do not offer
                an inert control in player settings. -->
           <div class="setting-item">
-            <span>NIGHT VISION (NO FOG/NIGHT)</span>
+            <span data-i18n="ui.settings.night_vision">NIGHT VISION (NO FOG/NIGHT)</span>
             <label class="toggle"><input type="checkbox" id="main-nightvision-toggle"> <span class="slider"></span></label>
           </div>
           <!-- Camera Shake had no camera-effect consumer. Re-add only with a
                real runtime implementation. -->
           <div class="setting-item hidden" id="debug-overlay-setting-row">
-            <span>DEBUG OVERLAY</span>
+            <span data-i18n="ui.settings.debug_overlay">DEBUG OVERLAY</span>
             <label class="toggle"><input type="checkbox" id="main-debug-toggle"> <span class="slider"></span></label>
           </div>
           <!-- Debug Overlay is revealed only after QA authorization. -->
@@ -2163,20 +2163,20 @@
 
         <!-- Section 2: Audio & Voice -->
         <div class="settings-category-group">
-          <div class="settings-category-header">AUDIO & VOICE</div>
+          <div class="settings-category-header" data-i18n="ui.settings.cat_audio">AUDIO & VOICE</div>
           <div class="setting-item setting-item--action">
-            <span>AUDIO MIXER</span>
-            <button type="button" class="calibrate-btn settings-action-btn" id="open-audio-mixer">OPEN</button>
+            <span data-i18n="ui.settings.audio_mixer">AUDIO MIXER</span>
+            <button type="button" class="calibrate-btn settings-action-btn" id="open-audio-mixer" data-i18n="ui.action.open">OPEN</button>
           </div>
           <div class="setting-item">
-            <span>COMMENTARY MODE</span>
+            <span data-i18n="ui.settings.commentary">COMMENTARY MODE</span>
             <label class="toggle"><input type="checkbox" id="main-commentary-toggle"> <span class="slider"></span></label>
           </div>
         </div>
 
         <!-- Section 3: Gameplay & Accessibility -->
         <div class="settings-category-group">
-          <div class="settings-category-header">GAMEPLAY & ACCESSIBILITY</div>
+          <div class="settings-category-header" data-i18n="ui.settings.cat_gameplay">GAMEPLAY & ACCESSIBILITY</div>
           <div class="setting-item">
             <span>LANGUAGE / 语言 / ЯЗЫК</span>
             <select id="setting-language-select" class="settings-select" aria-label="Game language">
@@ -2192,7 +2192,7 @@
           <!-- Run Difficulty was a hardcoded readout with no selectable or
                runtime difficulty system, so it is intentionally not shown. -->
           <div class="setting-item">
-            <span>UI ACCESSIBILITY SCALE</span>
+            <span data-i18n="ui.settings.ui_scale">UI ACCESSIBILITY SCALE</span>
             <select id="setting-ui-scale" class="settings-select">
               <option value="100" selected>100% (STANDARD)</option>
               <option value="115">115% (LARGE)</option>
@@ -2201,7 +2201,7 @@
             </select>
           </div>
           <div class="setting-item">
-            <span>MINIMUM TEXT FLOOR</span>
+            <span data-i18n="ui.settings.text_floor">MINIMUM TEXT FLOOR</span>
             <select id="setting-text-floor" class="settings-select">
               <option value="16">16px (COMPACT)</option>
               <option value="18" selected>18px (DECK DEFAULT)</option>
@@ -2211,7 +2211,7 @@
             </select>
           </div>
           <div class="setting-item">
-            <span>TEXT SPEED</span>
+            <span data-i18n="ui.settings.text_speed">TEXT SPEED</span>
             <select id="setting-text-speed" class="settings-select">
               <option value="normal">NORMAL</option>
               <option value="fast">FAST</option>
@@ -2219,14 +2219,14 @@
             </select>
           </div>
           <div class="setting-item">
-            <span>GAMEPLAY CAMERA</span>
+            <span data-i18n="ui.settings.camera_mode">GAMEPLAY CAMERA</span>
             <select id="setting-camera-mode" class="settings-select" aria-label="Gameplay camera">
               <option value="third-person" selected>THIRD-PERSON — SHOULDER</option>
               <option value="isometric">ISOMETRIC — CLASSIC</option>
             </select>
           </div>
           <div class="setting-item">
-            <span>CAMERA DISTANCE</span>
+            <span data-i18n="ui.settings.camera_distance">CAMERA DISTANCE</span>
             <select id="setting-camera-distance" class="settings-select" aria-label="Third-person camera distance">
               <option value="close" selected>CLOSE</option>
               <option value="standard">STANDARD</option>
@@ -2234,7 +2234,7 @@
             </select>
           </div>
           <div class="setting-item">
-            <span>CAMERA FOLLOW</span>
+            <span data-i18n="ui.settings.camera_follow">CAMERA FOLLOW</span>
             <select id="setting-camera-follow" class="settings-select" aria-label="Third-person camera follow responsiveness">
               <option value="tight" selected>TIGHT</option>
               <option value="balanced">BALANCED</option>
@@ -2242,7 +2242,7 @@
             </select>
           </div>
           <div class="setting-item">
-            <span>TURN / AIM SPEED</span>
+            <span data-i18n="ui.settings.turn_speed">TURN / AIM SPEED</span>
             <div class="settings-choice-control">
               <select id="setting-aim-sensitivity" class="settings-select" aria-label="Right stick aim speed">
               <option value="0.5">50% (SLOW)</option>
@@ -2264,11 +2264,11 @@
             </div>
           </div>
           <div class="setting-item">
-            <span>INVERT AIM Y-AXIS</span>
+            <span data-i18n="ui.settings.invert_y">INVERT AIM Y-AXIS</span>
             <label class="toggle"><input type="checkbox" id="setting-invert-y-toggle"> <span class="slider"></span></label>
           </div>
           <div class="setting-item">
-            <span>CROSSHAIR COLOR</span>
+            <span data-i18n="ui.settings.crosshair_color">CROSSHAIR COLOR</span>
             <div class="crosshair-color-controls">
               <div id="crosshair-color-presets" class="crosshair-color-presets" role="group" aria-label="Crosshair color presets">
                 <button type="button" class="crosshair-color-swatch" data-crosshair-color="#ff9f1c" style="--swatch-color:#ff9f1c" aria-label="Orange crosshair"></button>
@@ -2283,39 +2283,39 @@
             </div>
           </div>
           <div class="setting-item">
-            <span>COLORBLIND ASSIST</span>
+            <span data-i18n="ui.settings.colorblind">COLORBLIND ASSIST</span>
             <label class="toggle"><input type="checkbox" id="setting-colorblind-toggle"> <span class="slider"></span></label>
           </div>
           <div class="setting-item setting-item--action">
-            <span>DESKTOP CONTROLS</span>
-            <button type="button" class="calibrate-btn settings-action-btn" id="open-controls">REMAP</button>
+            <span data-i18n="ui.settings.desktop_controls">DESKTOP CONTROLS</span>
+            <button type="button" class="calibrate-btn settings-action-btn" id="open-controls" data-i18n="ui.action.remap">REMAP</button>
           </div>
         </div>
 
         <!-- Section 4: Operator & System Data -->
         <div class="settings-category-group">
-          <div class="settings-category-header">OPERATOR & SYSTEM DATA</div>
+          <div class="settings-category-header" data-i18n="ui.settings.cat_operator">OPERATOR & SYSTEM DATA</div>
           <div class="setting-item setting-item--operator">
-            <span>OPERATOR CALLSIGN</span>
+            <span data-i18n="ui.settings.callsign">OPERATOR CALLSIGN</span>
             <input type="text" id="operator-callsign" class="operator-callsign-input" maxlength="16" placeholder="AGENT" autocomplete="off" spellcheck="false" aria-label="Operator callsign">
           </div>
           <div class="setting-item">
-            <span>STEAM CLOUD SYNC</span>
+            <span data-i18n="ui.settings.cloud_sync">STEAM CLOUD SYNC</span>
             <span id="setting-steam-cloud-status" class="setting-val-display" data-state="checking">CHECKING…</span>
           </div>
           <!-- Mature Content Audit is a reviewer/QA tool reachable through
                its authorized F9 workflow; it is not a player setting. -->
           <div class="setting-item setting-item--action">
-            <span>SAVE DATA</span>
-            <button type="button" class="calibrate-btn settings-action-btn" id="open-save-data">OPEN</button>
+            <span data-i18n="ui.settings.save_data">SAVE DATA</span>
+            <button type="button" class="calibrate-btn settings-action-btn" id="open-save-data" data-i18n="ui.action.open">OPEN</button>
           </div>
           <div class="setting-item setting-item--action setting-item--danger">
-            <span>NEW GAME RESET</span>
-            <button type="button" class="calibrate-btn settings-action-btn settings-action-btn--reset" id="open-reset-save">RESET</button>
+            <span data-i18n="ui.settings.new_game_reset">NEW GAME RESET</span>
+            <button type="button" class="calibrate-btn settings-action-btn settings-action-btn--reset" id="open-reset-save" data-i18n="ui.action.reset">RESET</button>
           </div>
           <div class="setting-item setting-item--action setting-item--danger">
-            <span>EXIT APPLICATION</span>
-            <button type="button" class="calibrate-btn settings-action-btn settings-action-btn--quit" id="open-quit-confirm">QUIT GAME</button>
+            <span data-i18n="ui.settings.exit_app">EXIT APPLICATION</span>
+            <button type="button" class="calibrate-btn settings-action-btn settings-action-btn--quit" id="open-quit-confirm" data-i18n="ui.menu.quit">QUIT GAME</button>
           </div>
         </div>
 
@@ -2329,14 +2329,14 @@
     <div id="save-data-popup" class="modal audio-mixer-modal hidden">
       <div class="modal-content audio-mixer-panel save-data-panel">
         <button class="close-modal audio-mixer-close" id="close-save-data">×</button>
-        <h2 class="modal-title">SAVE DATA</h2>
+        <h2 class="modal-title" data-i18n="ui.settings.save_data">SAVE DATA</h2>
         <p class="save-data-hint">Export a portable save code or paste one below to restore progress. Importing overwrites current data on this device.</p>
         <label class="save-data-code-label" for="save-data-code">PORTABLE SAVE CODE</label>
         <textarea id="save-data-code" class="save-data-code" rows="5" placeholder="EXPORT OR PASTE SAVE CODE" autocomplete="off" spellcheck="false"></textarea>
         <div class="save-data-status" id="save-data-status" role="status" aria-live="polite"></div>
         <div class="audio-mixer-actions save-data-actions">
-          <button type="button" class="settings-action-btn settings-action-btn--save" id="export-save" title="Generate and copy a portable save code">EXPORT + COPY</button>
-          <button type="button" class="settings-action-btn settings-action-btn--reset" id="import-save" title="Restore progress from the pasted save code">IMPORT DATA</button>
+          <button type="button" class="settings-action-btn settings-action-btn--save" id="export-save" data-i18n="ui.action.export_copy" title="Generate and copy a portable save code">EXPORT + COPY</button>
+          <button type="button" class="settings-action-btn settings-action-btn--reset" id="import-save" data-i18n="ui.action.import_data" title="Restore progress from the pasted save code">IMPORT DATA</button>
         </div>
       </div>
     </div>
@@ -2344,7 +2344,7 @@
     <div id="audio-mixer-popup" class="modal audio-mixer-modal hidden">
       <div class="modal-content audio-mixer-panel">
         <button class="close-modal audio-mixer-close" id="close-audio-mixer">×</button>
-        <h2 class="modal-title">AUDIO MIXER</h2>
+        <h2 class="modal-title" data-i18n="ui.settings.audio_mixer">AUDIO MIXER</h2>
         <label class="audio-slider-row" for="audio-master-slider">
           <span class="audio-slider-row__label">MASTER</span>
           <input type="range" id="audio-master-slider" min="0" max="100" step="1" value="100">
@@ -2370,7 +2370,7 @@
           <label class="toggle"><input type="checkbox" id="audio-voice-toggle" checked> <span class="slider"></span></label>
         </label>
         <div class="audio-mixer-actions">
-          <button type="button" class="settings-action-btn settings-action-btn--save" id="save-audio-mix">SAVE SETTINGS</button>
+          <button type="button" class="settings-action-btn settings-action-btn--save" id="save-audio-mix" data-i18n="ui.action.save_settings">SAVE SETTINGS</button>
         </div>
       </div>
     </div>
@@ -2378,13 +2378,13 @@
     <div id="controls-popup" class="modal controls-modal hidden">
       <div class="modal-content controls-panel">
         <button class="close-modal controls-close" id="close-controls">×</button>
-        <h2 class="modal-title">CONTROLS</h2>
+        <h2 class="modal-title" data-i18n="ui.modal.controls">CONTROLS</h2>
         <p class="controls-hint"><strong>STEAM DECK:</strong> Left stick moves or navigates · Right stick aims and controls the visible pointer · A accepts/interacts · B backs out/dodges · Menu opens settings.</p>
         <p class="controls-hint"><strong>DESKTOP:</strong> Click a slot, then press a key to bind it. ESC cancels.</p>
         <div class="controls-list" id="controls-list"></div>
         <div class="controls-actions">
-          <button type="button" class="settings-action-btn settings-action-btn--reset" id="reset-controls">RESET</button>
-          <button type="button" class="settings-action-btn settings-action-btn--save" id="save-controls">SAVE SETTINGS</button>
+          <button type="button" class="settings-action-btn settings-action-btn--reset" id="reset-controls" data-i18n="ui.action.reset">RESET</button>
+          <button type="button" class="settings-action-btn settings-action-btn--save" id="save-controls" data-i18n="ui.action.save_settings">SAVE SETTINGS</button>
         </div>
       </div>
     </div>

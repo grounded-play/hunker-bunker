@@ -76,5 +76,66 @@
     "get_keys": "КУПИТЬ КЛЮЧИ В МАГАЗИНЕ",
     "open_cache": "ДЕШИФРОВАТЬ КОНТЕЙНЕР",
     "disclosed_odds": "Открытые вероятности шифрования"
+  },
+  "ui": {
+    "menu": {
+      "continue": "ПРОДОЛЖИТЬ",
+      "switch_class": "СМЕНИТЬ КЛАСС",
+      "new_run": "НОВЫЙ ЗАБЕГ",
+      "achievements": "ДОСТИЖЕНИЯ",
+      "settings": "НАСТРОЙКИ",
+      "about": "ОБ ИГРЕ",
+      "quit": "ВЫЙТИ ИЗ ИГРЫ"
+    },
+    "hub": {
+      "daily_ops": "ЕЖЕДНЕВНАЯ ОПЕРАЦИЯ",
+      "roster": "▣ СОСТАВ",
+      "vault": "◈ ХРАНИЛИЩЕ STEAM",
+      "archive_sims": "◈ АРХИВНЫЕ СИМУЛЯЦИИ",
+      "fab_bay": "◇ ЦЕХ СБОРКИ",
+      "archive": "◈ АРХИВ",
+      "codex": "❑ КОДЕКС",
+      "dossier": "◈ ДОСЬЕ",
+      "achievements": "ДОСТИЖЕНИЯ",
+      "initialize": "ЗАПУСК"
+    },
+    "settings": {
+      "title": "СИСТЕМНЫЕ НАСТРОЙКИ",
+      "cat_display": "ЭКРАН И ГРАФИКА",
+      "night_vision": "НОЧНОЕ ВИДЕНИЕ (БЕЗ ТУМАНА/НОЧИ)",
+      "debug_overlay": "ОТЛАДОЧНЫЙ ОВЕРЛЕЙ",
+      "cat_audio": "ЗВУК И ГОЛОС",
+      "audio_mixer": "МИКШЕР",
+      "commentary": "РЕЖИМ КОММЕНТАРИЕВ",
+      "cat_gameplay": "ИГРОВОЙ ПРОЦЕСС И ДОСТУПНОСТЬ",
+      "ui_scale": "МАСШТАБ ИНТЕРФЕЙСА",
+      "text_floor": "МИНИМАЛЬНЫЙ РАЗМЕР ТЕКСТА",
+      "text_speed": "СКОРОСТЬ ТЕКСТА",
+      "camera_mode": "ИГРОВАЯ КАМЕРА",
+      "camera_distance": "ДИСТАНЦИЯ КАМЕРЫ",
+      "camera_follow": "СЛЕЖЕНИЕ КАМЕРЫ",
+      "turn_speed": "СКОРОСТЬ ПОВОРОТА / ПРИЦЕЛА",
+      "invert_y": "ИНВЕРСИЯ ОСИ Y",
+      "crosshair_color": "ЦВЕТ ПРИЦЕЛА",
+      "colorblind": "ПОМОЩЬ ДАЛЬТОНИКАМ",
+      "desktop_controls": "УПРАВЛЕНИЕ НА ПК",
+      "cat_operator": "ОПЕРАТОР И СИСТЕМНЫЕ ДАННЫЕ",
+      "callsign": "ПОЗЫВНОЙ ОПЕРАТОРА",
+      "cloud_sync": "СИНХРОНИЗАЦИЯ STEAM CLOUD",
+      "save_data": "ДАННЫЕ СОХРАНЕНИЯ",
+      "new_game_reset": "СБРОС ДЛЯ НОВОЙ ИГРЫ",
+      "exit_app": "ВЫХОД ИЗ ПРИЛОЖЕНИЯ"
+    },
+    "action": {
+      "open": "ОТКРЫТЬ",
+      "remap": "ПЕРЕНАЗНАЧИТЬ",
+      "reset": "СБРОС",
+      "export_copy": "ЭКСПОРТ + КОПИЯ",
+      "import_data": "ИМПОРТ ДАННЫХ",
+      "save_settings": "СОХРАНИТЬ НАСТРОЙКИ"
+    },
+    "modal": {
+      "controls": "УПРАВЛЕНИЕ"
+    }
   }
 }

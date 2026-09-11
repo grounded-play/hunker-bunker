@@ -76,5 +76,66 @@
     "get_keys": "CONSEGUIR LLAVES EN LA TIENDA",
     "open_cache": "DESCIFRAR ALIJO DE RELIQUIA",
     "disclosed_odds": "Probabilidades criptográficas públicas"
+  },
+  "ui": {
+    "menu": {
+      "continue": "CONTINUAR",
+      "switch_class": "CAMBIAR CLASE",
+      "new_run": "NUEVA PARTIDA",
+      "achievements": "LOGROS",
+      "settings": "AJUSTES",
+      "about": "ACERCA DE",
+      "quit": "SALIR DEL JUEGO"
+    },
+    "hub": {
+      "daily_ops": "OPS DIARIAS",
+      "roster": "▣ PLANTILLA",
+      "vault": "◈ BÓVEDA DE STEAM",
+      "archive_sims": "◈ SIMS DE ARCHIVO",
+      "fab_bay": "◇ TALLER",
+      "archive": "◈ ARCHIVO",
+      "codex": "❑ CODEX",
+      "dossier": "◈ EXPEDIENTE",
+      "achievements": "LOGROS",
+      "initialize": "INICIALIZAR"
+    },
+    "settings": {
+      "title": "AJUSTES DEL SISTEMA",
+      "cat_display": "PANTALLA Y GRÁFICOS",
+      "night_vision": "VISIÓN NOCTURNA (SIN NIEBLA/NOCHE)",
+      "debug_overlay": "SUPERPOSICIÓN DE DEPURACIÓN",
+      "cat_audio": "AUDIO Y VOZ",
+      "audio_mixer": "MEZCLADOR DE AUDIO",
+      "commentary": "MODO COMENTARIOS",
+      "cat_gameplay": "JUGABILIDAD Y ACCESIBILIDAD",
+      "ui_scale": "ESCALA DE INTERFAZ",
+      "text_floor": "TAMAÑO MÍNIMO DE TEXTO",
+      "text_speed": "VELOCIDAD DE TEXTO",
+      "camera_mode": "CÁMARA DE JUEGO",
+      "camera_distance": "DISTANCIA DE CÁMARA",
+      "camera_follow": "SEGUIMIENTO DE CÁMARA",
+      "turn_speed": "VELOCIDAD DE GIRO / APUNTADO",
+      "invert_y": "INVERTIR EJE Y",
+      "crosshair_color": "COLOR DE MIRA",
+      "colorblind": "ASISTENCIA DALTÓNICA",
+      "desktop_controls": "CONTROLES DE ESCRITORIO",
+      "cat_operator": "OPERADOR Y DATOS DEL SISTEMA",
+      "callsign": "INDICATIVO DEL OPERADOR",
+      "cloud_sync": "SINCRONIZACIÓN STEAM CLOUD",
+      "save_data": "DATOS GUARDADOS",
+      "new_game_reset": "REINICIO DE PARTIDA",
+      "exit_app": "SALIR DE LA APLICACIÓN"
+    },
+    "action": {
+      "open": "ABRIR",
+      "remap": "REASIGNAR",
+      "reset": "REINICIAR",
+      "export_copy": "EXPORTAR + COPIAR",
+      "import_data": "IMPORTAR DATOS",
+      "save_settings": "GUARDAR AJUSTES"
+    },
+    "modal": {
+      "controls": "CONTROLES"
+    }
   }
 }

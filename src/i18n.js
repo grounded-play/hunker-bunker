@@ -165,5 +165,60 @@ export function t(key, vars = {}, fallback = null) {
     return interpolate(val, vars);
 }
 
+export function hasKey(key) {
+    if (!key) return false;
+    const dict = DICTIONARIES[currentLocale] ?? DICTIONARIES['en'];
+    if (getNestedValue(dict, key) !== undefined) return true;
+    return getNestedValue(DICTIONARIES['en'], key) !== undefined;
+}
+
+// Attributes that carry user-visible text and can be keyed from markup with
+// data-i18n-<attr>, e.g. data-i18n-title="ui.hub.codex".
+const TRANSLATABLE_ATTRS = Object.freeze(['title', 'aria-label', 'placeholder']);
+
+/**
+ * Translate every element in `root` carrying a data-i18n (textContent) or
+ * data-i18n-<attr> annotation. Unknown keys are skipped so the authored
+ * English in the markup survives rather than being replaced by the key.
+ * Returns the number of substitutions applied.
+ */
+export function applyStaticTranslations(root = (typeof document !== 'undefined' ? document : null)) {
+    if (!root || typeof root.querySelectorAll !== 'function') return 0;
+    let applied = 0;
+
+    for (const el of root.querySelectorAll('[data-i18n]')) {
+        const key = el.getAttribute('data-i18n');
+        if (!hasKey(key)) continue;
+        el.textContent = t(key);
+        applied += 1;
+    }
+
+    for (const attr of TRANSLATABLE_ATTRS) {
+        for (const el of root.querySelectorAll(`[data-i18n-${attr}]`)) {
+            const key = el.getAttribute(`data-i18n-${attr}`);
+            if (!hasKey(key)) continue;
+            el.setAttribute(attr, t(key));
+            applied += 1;
+        }
+    }
+
+    return applied;
+}
+
 // Auto-initialize locale on module load
 currentLocale = detectInitialLocale();
+
+// Keep static markup in sync: translate once the document is parsed, and again
+// whenever the player changes language, so switching never needs a reload.
+if (typeof window !== 'undefined' && typeof document !== 'undefined') {
+    window.addEventListener('locale-changed', () => {
+        applyStaticTranslations();
+    });
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', () => {
+            applyStaticTranslations();
+        }, { once: true });
+    } else {
+        applyStaticTranslations();
+    }
+}

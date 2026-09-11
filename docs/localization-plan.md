@@ -41,15 +41,34 @@ same strings serve both until there is regional VO.
 Detection order is correct for a Steam title: saved preference →
 `electronAPI.steam.getCurrentGameLanguage()` → `navigator.language` → `en`.
 
-### The gap
+### Wiring (landed)
 
-**The engine is inert.** There are zero `t()` call sites outside
-`i18n.js`/`i18n.test.js`, and zero `locale-changed` listeners. Changing the
-language in Settings updates a variable, writes localStorage, and fires an
-event nobody handles. No visible text changes.
+The engine was initially inert — no `t()` call sites, no `locale-changed`
+listeners — so switching language changed no visible text. That is now closed
+for the static UI:
 
-62 keys are translated against roughly **3,300 candidate user-facing strings**.
-Extraction is ~2% done, and it is the bulk of the remaining work.
+- `applyStaticTranslations(root)` in `src/i18n.js` translates every element
+  carrying `data-i18n` (textContent) or `data-i18n-<attr>`
+  (`title`/`aria-label`/`placeholder`). Unknown keys are **skipped**, so the
+  authored English in markup survives rather than being replaced by a raw key.
+- The module self-wires: it translates on `DOMContentLoaded` and re-runs on
+  every `locale-changed`. Switching language never needs a reload.
+- 55 elements in `index.html` are annotated — the title menu, the hub launch
+  buttons, and the whole Settings modal including its category headers and
+  action buttons.
+- The catalog grew from 62 to **111 keys**, all seven locales key-identical.
+
+Verified in a real browser against the production build: all seven locales
+swap live, both through `window.i18n.setLocale()` and through the Settings
+`<select>`, and the choice persists to `hb_locale`.
+
+### The remaining gap
+
+111 keys against roughly **3,300 candidate user-facing strings**. The static
+chrome is done; what remains is text written from JavaScript at runtime —
+HUD readouts, notifications, objective lines, Armory/Vault panels — plus all
+Tier 2 narrative. Those cannot use `data-i18n` and need `t()` at each write
+site.
 
 ## Tiering
 
@@ -101,10 +120,10 @@ String concentration, measured:
 
 Order of work:
 
-1. **`index.html` first.** Static markup, no render-loop coupling. Add
-   `data-i18n="key"` attributes and a single `applyStaticTranslations()` pass
-   run on load and on `locale-changed`. This alone proves the switcher visibly
-   works.
+1. ~~**`index.html` first.**~~ **Done.** `data-i18n` attributes plus a single
+   `applyStaticTranslations()` pass on load and on `locale-changed`. Remaining
+   in this file: `<option>` values inside the Settings selects (camera, text
+   speed, UI scale), and the Armory/Vault/game-over panels.
 2. **`main.js` menu/settings/modal copy.** Mostly one-shot renders.
 3. **`armoryUi.js`, `multiplayerLobby.js`, `songInterstitials.js`.** Panel
    renders that already re-run on open.
@@ -122,9 +141,12 @@ Follow the existing `en.json` shape: `common.*`, `menu.*`, `classes.*`,
 
 ## Known risks
 
-- **No `locale-changed` listeners.** Until step 1 above lands, the setting is a
-  no-op. Either wire the static pass or hide the selector — shipping a language
-  picker that does nothing is worse than not shipping one.
+- **Placeholder keys that match no shipped string.** The original `menu.*` and
+  `dialogue.*` namespaces were authored against UI text that does not exist in
+  `index.html` (`menu.play` = "DEPLOY OPERATIVE"; the real button is "NEW RUN").
+  They are translated but unused. The `ui.*` namespace is keyed against actual
+  markup. Do not add call sites for the placeholder keys without first checking
+  the string is real.
 - **String caching in render loops.** Any `const LABEL = '...'` at module scope
   becomes untranslatable at runtime. Convert to a `t()` call at use site.
 - **Layout overflow.** German and Russian run 25–35% longer than English; the
@@ -145,14 +167,17 @@ npm run build
 
 Add to `src/i18n.test.js` as extraction proceeds:
 
-1. Key parity across all seven locale files (no missing, no extra).
-2. Every `data-i18n` attribute in `index.html` resolves to a real key.
-3. `setLocale()` on an unsupported code returns `false` and leaves the locale
-   unchanged.
+1. ~~Key parity across all seven locale files.~~ Covered.
+2. ~~Every `data-i18n` attribute in `index.html` resolves to a real key~~ —
+   covered, and asserted against **all seven** locales, so a key added to
+   markup without a translation fails the suite.
+3. ~~`setLocale()` on an unsupported code returns `false`.~~ Covered.
+4. New: as `t()` call sites land in JS, assert the keys they use exist.
 
 Manual:
 
 - Switch to `de` in Settings; confirm menus re-render without a reload.
+  (Automated equivalent covered by the markup-coverage test.)
 - Switch to `zh-CN`; confirm CJK glyphs render and no HUD row overflows.
 - Reload; confirm `hb_locale` restored the choice.
 - Steam build: confirm `getCurrentGameLanguage()` seeds the locale on a fresh
