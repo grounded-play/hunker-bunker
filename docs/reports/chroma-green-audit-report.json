@@ -1,6 +1,6 @@
 {
-  "timestamp": "2026-09-11T05:07:37.669Z",
-  "scannedCount": 72,
+  "timestamp": "2026-09-11T05:15:58.066Z",
+  "scannedCount": 64,
   "unallowedCount": 0,
   "allowlistCount": 105,
   "unallowed": [],
@@ -342,18 +342,6 @@
       "height": 512
     },
     {
-      "file": "public/economy/mod_kinetic_impact_large.png",
-      "ratio": 0.5513,
-      "width": 512,
-      "height": 512
-    },
-    {
-      "file": "public/economy/mod_bio_hazard_filter.png",
-      "ratio": 0.5332,
-      "width": 256,
-      "height": 256
-    },
-    {
       "file": "public/economy/charm_dark_matter_chroma.jpg",
       "ratio": 0.7196,
       "width": 1024,
@@ -366,28 +354,10 @@
       "height": 1024
     },
     {
-      "file": "public/economy/mod_thermal_heat_exchanger_large.png",
-      "ratio": 0.6107,
-      "width": 512,
-      "height": 512
-    },
-    {
       "file": "public/economy/mod_thermal_heat_exchanger_chroma.jpg",
       "ratio": 0.787,
       "width": 1024,
       "height": 559
-    },
-    {
-      "file": "public/economy/charm_dark_matter.png",
-      "ratio": 0.7181,
-      "width": 256,
-      "height": 256
-    },
-    {
-      "file": "public/economy/mod_thermal_heat_exchanger.png",
-      "ratio": 0.6085,
-      "width": 256,
-      "height": 256
     },
     {
       "file": "public/economy/mod_bio_hazard_filter_chroma.jpg",
@@ -396,28 +366,10 @@
       "height": 1024
     },
     {
-      "file": "public/economy/charm_dark_matter_large.png",
-      "ratio": 0.7169,
-      "width": 512,
-      "height": 512
-    },
-    {
       "file": "public/economy/mod_kinetic_impact_chroma.jpg",
       "ratio": 0.7541,
       "width": 1024,
       "height": 559
-    },
-    {
-      "file": "public/economy/mod_kinetic_impact.png",
-      "ratio": 0.5518,
-      "width": 256,
-      "height": 256
-    },
-    {
-      "file": "public/economy/mod_bio_hazard_filter_large.png",
-      "ratio": 0.534,
-      "width": 512,
-      "height": 512
     },
     {
       "file": "public/schematics/schematic_06.webp",

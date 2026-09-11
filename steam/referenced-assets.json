@@ -5096,7 +5096,7 @@
     },
     {
       "path": "economy/charm_dark_matter.png",
-      "bytes": 94470,
+      "bytes": 79696,
       "classification": "runtime-required"
     },
     {
@@ -5106,7 +5106,7 @@
     },
     {
       "path": "economy/charm_dark_matter_large.png",
-      "bytes": 339878,
+      "bytes": 255093,
       "classification": "runtime-required"
     },
     {
@@ -5691,7 +5691,7 @@
     },
     {
       "path": "economy/mod_bio_hazard_filter.png",
-      "bytes": 113587,
+      "bytes": 91040,
       "classification": "runtime-required"
     },
     {
@@ -5701,7 +5701,7 @@
     },
     {
       "path": "economy/mod_bio_hazard_filter_large.png",
-      "bytes": 404376,
+      "bytes": 302907,
       "classification": "runtime-required"
     },
     {
@@ -5726,7 +5726,7 @@
     },
     {
       "path": "economy/mod_kinetic_impact.png",
-      "bytes": 94738,
+      "bytes": 77679,
       "classification": "runtime-required"
     },
     {
@@ -5736,7 +5736,7 @@
     },
     {
       "path": "economy/mod_kinetic_impact_large.png",
-      "bytes": 302587,
+      "bytes": 239175,
       "classification": "runtime-required"
     },
     {
@@ -5761,7 +5761,7 @@
     },
     {
       "path": "economy/mod_thermal_heat_exchanger.png",
-      "bytes": 87130,
+      "bytes": 71797,
       "classification": "runtime-required"
     },
     {
@@ -5771,7 +5771,7 @@
     },
     {
       "path": "economy/mod_thermal_heat_exchanger_large.png",
-      "bytes": 288784,
+      "bytes": 232739,
       "classification": "runtime-required"
     },
     {
