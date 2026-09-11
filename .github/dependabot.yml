@@ -36,9 +36,9 @@ updates:
         patterns:
           - "*"
 
-  # Runtime base image declared by the root Dockerfile.
+  # Runtime base image declared by deploy/Dockerfile.
   - package-ecosystem: "docker"
-    directory: "/"
+    directory: "/deploy"
     schedule:
       interval: "weekly"
       day: "monday"

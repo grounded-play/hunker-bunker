@@ -25,7 +25,7 @@ describe('buildSteamInputConfigs', () => {
         expect(deck).toContain('"major_revision" "10"');
         expect(deck).toContain('"minor_revision" "0"');
         expect(deck).toContain('"title" "Official Hunker Bunker Controls"');
-        expect(deck).toContain('A/RT Confirm menus');
+        expect(deck).toContain('D-Pad Map/Scan/Reload/Smash');
         expect(deck).toContain('"name" "menu"');
         expect(deck).toContain('"name" "gameplay"');
         expect(deck).toContain('"name" "archive"');
@@ -76,11 +76,12 @@ describe('buildSteamInputConfigs', () => {
         expect(deck).toMatch(/"id" "4"[\s\S]*?game_action menu menu_confirm, Confirm/);
     });
 
-    // The D-pad was bound in the menu and archive presets but had no source
-    // binding at all in gameplay, so it was dead the moment a run started. It
-    // now drives the same analog `move` action as the left stick, the way the
-    // archive preset already drives `archive_focus` from the D-pad.
-    it('walks the player from the D-pad in gameplay, like the left stick', () => {
+    // The D-pad previously fed the same movement vector as the left stick,
+    // which made the layout advertise twin-movement inputs. It now carries
+    // secondary gameplay actions (Map, Scan, Reload, Smash), leaving movement
+    // exclusively to the left analog stick so the game presents as a true
+    // dual-analog gamepad.
+    it('maps secondary gameplay actions to the D-pad, keeping movement on the left stick', () => {
         const destination = fs.mkdtempSync(path.join(os.tmpdir(), 'hb-input-configs-'));
         tempDirs.push(destination);
 
@@ -89,10 +90,15 @@ describe('buildSteamInputConfigs', () => {
         for (const file of ['controller_neptune.vdf', 'controller_xboxone.vdf', 'controller_ps5.vdf']) {
             const config = fs.readFileSync(path.join(destination, file), 'utf8');
             expect(config, file).toContain('"18" "dpad active"');
-            expect(config, file).toMatch(/"id" "18"[\s\S]*?"mode" "joystick_move"[\s\S]*?"gameplay" "move"/);
-            // The menu preset keeps its own digital D-pad; gameplay movement
+            expect(config, file).toMatch(/"id" "18"[\s\S]*?"mode" "dpad"[\s\S]*?game_action gameplay toggle_map/);
+            expect(config, file).toMatch(/"id" "18"[\s\S]*?"mode" "dpad"[\s\S]*?game_action gameplay scan/);
+            expect(config, file).toMatch(/"id" "18"[\s\S]*?"mode" "dpad"[\s\S]*?game_action gameplay reload/);
+            expect(config, file).toMatch(/"id" "18"[\s\S]*?"mode" "dpad"[\s\S]*?game_action gameplay ability/);
+            // The menu preset keeps its own digital D-pad; gameplay actions
             // must not steal it.
             expect(config, file).toContain('"1" "dpad active"');
+            // Movement belongs to the left stick (group 11), not the D-pad.
+            expect(config, file).toMatch(/"id" "11"[\s\S]*?"mode" "joystick_move"[\s\S]*?"gameplay" "move"/);
         }
     });
 

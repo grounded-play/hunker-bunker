@@ -11,6 +11,7 @@ import {
 import { getCatalogEntry as getItemCatalogEntry } from './itemOwnership.js';
 import { getCharmSocketTransform, resolveCharmModelOffset } from './charmSockets.js';
 import { applyWeaponSheen as tintWeapon, disposeWeaponSheen } from './weaponSheenMaterial.js';
+import { isMaterialFinish, applyWeaponMaterialFinish, disposeWeaponMaterialFinish } from './weaponFinishMaterial.js';
 import { getSelectedSheen } from './weaponSheens.js';
 import { getWeaponScaleForBounds, getWeaponCalibration } from './weaponCalibration.js';
 
@@ -26,7 +27,15 @@ export const MOD_GLB_MAP = Object.freeze({
     '4144': '/3d/runtime/new3ds/mod_thermal_heat_exchanger.glb',
     '4145': '/3d/runtime/new3ds/mod_echo_location_transceiver.glb',
     '4146': '/3d/runtime/new3ds/mod_symbiotic_adrenaline_pump.glb',
-    '4147': '/3d/runtime/new3ds/mod_zero_point_flux.glb'
+    '4147': '/3d/runtime/new3ds/mod_zero_point_flux.glb',
+    '4160': '/3d/runtime/new3ds/mod_ballast_plating.glb',
+    '4161': '/3d/runtime/new3ds/mod_scrap_furnace.glb',
+    '4162': '/3d/runtime/new3ds/mod_queens_bane.glb',
+    '4163': '/3d/runtime/new3ds/mod_archivist_lens.glb',
+    '4164': '/3d/runtime/new3ds/mod_shard_conduit.glb',
+    '4165': '/3d/runtime/new3ds/mod_duplicate_refiner.glb',
+    '4166': '/3d/runtime/new3ds/mod_pressure_seal.glb',
+    '4167': '/3d/runtime/new3ds/mod_deep_anchor.glb'
 });
 
 export const CHASSIS_SKIN_GLB_MAP = CHASSIS_SKIN_MODELS;
@@ -432,7 +441,8 @@ export async function createArmoryScene(canvas) {
     async function loadWeaponAsset(archetypeId, skinItemdefId) {
         const gen = ++weaponLoadGen;
         applyCharmSocket(archetypeId);
-        let url = WEAPON_SKIN_GLB_MAP[String(skinItemdefId)] || WEAPON_ARCHETYPE_GLBS[archetypeId] || FALLBACK_WEAPON_GLB;
+        const isFinish = isMaterialFinish(skinItemdefId);
+        let url = (!isFinish && WEAPON_SKIN_GLB_MAP[String(skinItemdefId)]) || WEAPON_ARCHETYPE_GLBS[archetypeId] || FALLBACK_WEAPON_GLB;
 
         try {
             let gltf;
@@ -447,9 +457,13 @@ export async function createArmoryScene(canvas) {
             if (currentWeaponMesh) {
                 weaponPivot.remove(currentWeaponMesh);
                 disposeWeaponSheen(currentWeaponMesh);
+                disposeWeaponMaterialFinish(currentWeaponMesh);
             }
 
             const model = gltf.scene.clone(true);
+            if (isFinish) {
+                applyWeaponMaterialFinish(model, skinItemdefId);
+            }
             tintWeapon(model, currentSheenColor);
             // Normalize weapon scale for prominent bench inspection
             const bbox = new THREE.Box3().setFromObject(model);

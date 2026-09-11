@@ -47,4 +47,11 @@ describe('deployed weapon equipment', () => {
         expect(weapon.children[0].isMesh).toBe(true);
         expect(weapon.userData.weaponSheen).toBe('#ff6262');
     });
+
+    it('applies material finish PBR properties to deployed weapons', async () => {
+        vi.spyOn(GLTFLoader.prototype, 'loadAsync').mockImplementation(async () => model());
+        const weapon = await createClassWeapon('talon', { skinId: '4101', sheenColor: '#ffffff' });
+        expect(weapon.userData.weaponFinish).toBe('4101');
+        expect(weapon.children[0].material.roughness).toBe(0.65);
+    });
 });

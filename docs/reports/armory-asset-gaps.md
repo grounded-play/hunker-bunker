@@ -1,6 +1,6 @@
 # Armory Asset Gaps
 
-Status: generated | Updated: 2026-09-09
+Status: generated | Updated: 2026-09-11
 | Regenerate: `npm run audit:armory-assets`
 
 Uses the same item lists and preview resolver as the Armory. Model paths are
@@ -9,7 +9,7 @@ pictures and green-backed icons; source artwork is retained unchanged.
 
 | Check | Count |
 | --- | ---: |
-| Items offered | 100 |
+| Items offered | 120 |
 | **No name** (renders as a bare itemdef id) | **0** |
 | **No icon on disk** (tile falls back to initials) | **0** |
 | Missing required 3D model | 5 |

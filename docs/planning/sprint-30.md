@@ -1,10 +1,10 @@
 # Sprint 30 — Acceptance, Coherence, and Repository Control
 
 Status: active plan · Owner: repository maintainers · Updated: 2026-09-10 ·
-Branch: `dev/sprint-33` · Working baseline: `v2.4.0-beta` · Release target:
+Branch: `dev/sprint-34` · Working baseline: `v2.4.0-beta` · Release target:
 decide at scope lock
 
-Sprint 30 remains the active acceptance program. Sprint 33 shipped as
+Sprint 30 remains the active acceptance program. Sprint 33/34 shipped as
 [`v2.4.0-beta`](../releases/v2.4.0-beta.md) alongside it; its Proof Run,
 two-account co-op, Deck and Cloud acceptance items are still open here.
 

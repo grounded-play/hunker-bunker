@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { deliverSessionLog, uploadSessionLog } from './sessionLogSink.js';
+import { deliverSessionLog, exportSessionLog, uploadSessionLog } from './sessionLogSink.js';
 
 const BODY = '{"logs":[]}';
 const NAME = 'hunker-bunker-session-x.json';
@@ -102,3 +102,111 @@ describe('uploadSessionLog', () => {
         expect(result.error).toMatch(/backend/i);
     });
 });
+
+describe('exportSessionLog', () => {
+    it('uploads to server when upload succeeds without saving locally', async () => {
+        const fetchImpl = vi.fn().mockResolvedValue({
+            ok: true,
+            json: async () => ({ ok: true, filename: 'uploaded-session.json', bytes: 42 })
+        });
+        const writeSessionLog = vi.fn();
+
+        const result = await exportSessionLog(BODY, NAME, {
+            backendUrl: 'https://steam.tuesdaycinema.club',
+            fetchImpl,
+            electronAPI: { writeSessionLog }
+        });
+
+        expect(result.ok).toBe(true);
+        expect(result.method).toBe('upload');
+        expect(result.uploaded).toBe(true);
+        expect(result.filename).toBe('uploaded-session.json');
+        expect(result.bytes).toBe(42);
+        expect(writeSessionLog).not.toHaveBeenCalled();
+    });
+
+    it('falls back to local save (electron) if server upload fails', async () => {
+        const fetchImpl = vi.fn().mockResolvedValue({
+            ok: false,
+            status: 503,
+            json: async () => ({ error: 'service unavailable' })
+        });
+        const writeSessionLog = vi.fn().mockResolvedValue({
+            ok: true,
+            path: '/local/logs/hunker-bunker-session-x.json',
+            bytes: 11
+        });
+
+        const result = await exportSessionLog(BODY, NAME, {
+            backendUrl: 'https://steam.tuesdaycinema.club',
+            fetchImpl,
+            electronAPI: { writeSessionLog }
+        });
+
+        expect(result.ok).toBe(true);
+        expect(result.method).toBe('electron');
+        expect(result.uploaded).toBe(false);
+        expect(result.uploadError).toContain('503');
+        expect(result.path).toBe('/local/logs/hunker-bunker-session-x.json');
+        expect(writeSessionLog).toHaveBeenCalledWith(NAME, BODY);
+    });
+
+    it('falls back to dev-server local sink if server upload throws a network error', async () => {
+        const fetchImpl = vi.fn()
+            // First call: upload to server throws network error
+            .mockRejectedValueOnce(new Error('Failed to fetch'))
+            // Second call: dev sink succeeds
+            .mockResolvedValueOnce({
+                ok: true,
+                json: async () => ({ ok: true, path: 'logs/hunker-bunker-session-x.json', bytes: 11 })
+            });
+
+        const result = await exportSessionLog(BODY, NAME, {
+            backendUrl: 'https://steam.tuesdaycinema.club',
+            fetchImpl,
+            isDev: true
+        });
+
+        expect(result.ok).toBe(true);
+        expect(result.method).toBe('dev-server');
+        expect(result.uploaded).toBe(false);
+        expect(result.uploadError).toContain('Failed to fetch');
+        expect(result.path).toBe('logs/hunker-bunker-session-x.json');
+    });
+
+    it('falls back to browser download if upload fails and no local bridge exists', async () => {
+        const fetchImpl = vi.fn().mockResolvedValue({
+            ok: false,
+            status: 500,
+            json: async () => ({ error: 'internal error' })
+        });
+
+        const result = await exportSessionLog(BODY, NAME, {
+            backendUrl: 'https://steam.tuesdaycinema.club',
+            fetchImpl
+        });
+
+        expect(result.method).toBe('download');
+        expect(result.uploaded).toBe(false);
+        expect(result.uploadError).toContain('500');
+    });
+
+    it('saves locally directly when no backendUrl is provided', async () => {
+        const writeSessionLog = vi.fn().mockResolvedValue({
+            ok: true,
+            path: '/local/logs/test.json',
+            bytes: 11
+        });
+
+        const result = await exportSessionLog(BODY, NAME, {
+            backendUrl: '',
+            electronAPI: { writeSessionLog }
+        });
+
+        expect(result.ok).toBe(true);
+        expect(result.method).toBe('electron');
+        expect(result.uploaded).toBe(false);
+        expect(writeSessionLog).toHaveBeenCalledWith(NAME, BODY);
+    });
+});
+

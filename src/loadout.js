@@ -26,16 +26,16 @@ export const CLASS_ARCHETYPES = Object.freeze({
 // merely recolor it. Additional catalog chassis can be added here when their
 // corresponding runtime GLBs land.
 export const CLASS_CHASSIS_SKINS = Object.freeze({
-    scout: ['4113', '4115', '4118', '5001', '5003', '5004', ...(COMMUNITY_CLASS_MAP?.scout || [])],
-    tank: ['4114', '4117', '4119', '5005', '5007', '5008', ...(COMMUNITY_CLASS_MAP?.tank || [])],
-    engineer: ['4112', '4116', '5011', '5012', ...(COMMUNITY_CLASS_MAP?.engineer || [])]
+    scout: ['4113', '4115', '4118', '4200', '4221', '5001', '5003', '5004', ...(COMMUNITY_CLASS_MAP?.scout || [])],
+    tank: ['4114', '4117', '4119', '4207', '4228', '5005', '5007', '5008', ...(COMMUNITY_CLASS_MAP?.tank || [])],
+    engineer: ['4112', '4116', '4214', '4235', '5011', '5012', ...(COMMUNITY_CLASS_MAP?.engineer || [])]
 });
 
 export const ARCHETYPE_SKINS = Object.freeze({
-    talon: ['4100', '4105'],
+    talon: ['4100', '4105', '4201', '4222'],
     talon_c: ['4101', '4104', '4108', '4110', '5002'],
-    siege_breaker: ['4102', '4106', '5006'],
-    tesla_lock: ['4103', '4107', '4109', '4111', '5009', '5010']
+    siege_breaker: ['4102', '4106', '4107', '4208', '4229', '5006'],
+    tesla_lock: ['4103', '4109', '4111', '4215', '4236', '5009', '5010']
 });
 
 function normalizeClassId(classId) {
@@ -364,7 +364,23 @@ export class LoadoutManager {
             shieldRechargeDelayMultiplier: 1.0,
             hiddenRoomDetectionRange: 0,
             lowHpSpeedBoostActive: false,
-            dashRefundOnMultiKill: false
+            dashRefundOnMultiKill: false,
+            maxHealthBonus: 0,
+            moveSpeedMultiplier: 1.0,
+            propsDropSalvage: false,
+            fireRateMultiplier: 1.0,
+            bossDamageMultiplier: 1.0,
+            nonBossDamageMultiplier: 1.0,
+            loreDropsGrantSalvage: false,
+            clipSizeBonus: 0,
+            relicRarityTierBonus: 0,
+            maxOxygenMultiplier: 1.0,
+            duplicateRelicsToShards: false,
+            salvageValueMultiplier: 1.0,
+            oxygenDrainMultiplier: 1.0,
+            healingMultiplier: 1.0,
+            ringCrossingFreeO2: false,
+            ringCrossingSpawnsElite: false
         };
 
         const lo = this.getClassLoadout(classId);
@@ -395,6 +411,38 @@ export class LoadoutManager {
                     break;
                 case '4147': // Zero-Point Flux Overdrive
                     mods.dashRefundOnMultiKill = true;
+                    break;
+                case '4160': // Ballast Plating (+2 max HP, -15% move speed)
+                    mods.maxHealthBonus += 2;
+                    mods.moveSpeedMultiplier *= 0.85;
+                    break;
+                case '4161': // Scrap Furnace (Destroyed props drop salvage, -10% fire rate)
+                    mods.propsDropSalvage = true;
+                    mods.fireRateMultiplier *= 0.90;
+                    break;
+                case '4162': // Queen's Bane (+25% boss damage, -10% to all else)
+                    mods.bossDamageMultiplier *= 1.25;
+                    mods.nonBossDamageMultiplier *= 0.90;
+                    break;
+                case '4163': // Archivist Lens (Lore drops grant salvage, -1 starting clip)
+                    mods.loreDropsGrantSalvage = true;
+                    mods.clipSizeBonus -= 1;
+                    break;
+                case '4164': // Shard Conduit (+1 relic rarity tier, -10% max O2)
+                    mods.relicRarityTierBonus += 1;
+                    mods.maxOxygenMultiplier *= 0.90;
+                    break;
+                case '4165': // Duplicate Refiner (Duplicate relics become shards, -15% salvage)
+                    mods.duplicateRelicsToShards = true;
+                    mods.salvageValueMultiplier *= 0.85;
+                    break;
+                case '4166': // Pressure Seal (O2 drains 25% slower, -40% healing)
+                    mods.oxygenDrainMultiplier *= 0.75;
+                    mods.healingMultiplier *= 0.60;
+                    break;
+                case '4167': // Deep Anchor (Ring crossings cost no O2, crossings spawn an elite)
+                    mods.ringCrossingFreeO2 = true;
+                    mods.ringCrossingSpawnsElite = true;
                     break;
             }
         }

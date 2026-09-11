@@ -27,7 +27,7 @@
     "audit:chroma-green:check": "node scripts/audit-chroma-green.js --check",
     "audit:docs": "node scripts/audit-docs.js",
     "presubmit": "npm run presubmit:generated",
-    "presubmit:generated": "npm run steam:claims:check && npm run audio:plan-sfx:check && npm run audit:retail-assets:check && npm run steam:item-catalog:check && npm run audit:soundtrack && npm run audit:chroma-green:check",
+    "presubmit:generated": "npm run steam:claims:check && npm run audio:plan-sfx:check && npm run audit:retail-assets:check && npm run steam:item-catalog:check && npm run audit:soundtrack && npm run audit:chroma-green:check && npm run audit:economy-icons",
     "audio:plan-sfx": "node scripts/generate-plan-sfx.js",
     "audio:plan-sfx:check": "node scripts/generate-plan-sfx.js --check",
     "preview": "vite preview",
@@ -64,7 +64,8 @@
     "cinematics:stills": "node scripts/build-cinematic-still-videos.js",
     "trailer:capture": "playwright test --config=tests/e2e/trailer/trailer.playwright.config.js",
     "trailer:build": "node scripts/build-trailer.js",
-    "logs:fetch": "node scripts/fetch-session-logs.mjs"
+    "logs:fetch": "node scripts/fetch-session-logs.mjs",
+    "audit:economy-icons": "python3 scripts/fix-chroma-economy-icons.py --check"
   },
   "build": {
     "appId": "com.icecave.hunkerbunker",

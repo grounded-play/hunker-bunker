@@ -544,7 +544,7 @@
     "sellableItems": [
       {
         "itemdefid": 4001,
-        "name": "Cache Key",
+        "name": "Relic Decryption Key",
         "priceCategory": "1;VLV100",
         "storeTags": "featured;keys;cache_key"
       }

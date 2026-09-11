@@ -8,6 +8,7 @@ import { recordAssetLoad } from './assetLoadTelemetry.js';
 import { getWeaponCalibration, getWeaponScaleForBounds } from './weaponCalibration.js';
 import { getCharmSocketTransform, resolveCharmModelOffset } from './charmSockets.js';
 import { applyWeaponSheen } from './weaponSheenMaterial.js';
+import { isMaterialFinish, applyWeaponMaterialFinish } from './weaponFinishMaterial.js';
 import { CHARM_GLB_MAP } from './charmModels.js';
 
 // The 2D-to-3D generation pipeline's gltf-transform optimize pass applies
@@ -54,7 +55,13 @@ export const WEAPON_SKIN_MESHES = {
     4108: '/3d/runtime/new3ds/skin_glitched_circuit_bolter.glb',  // Glitched Circuit Bolter
     4109: '/3d/runtime/new3ds/skin_void_walker_beam.glb',         // Void-Walker Beam Cannon
     4110: '/3d/runtime/new3ds/skin_queen_carapace_carbine.glb',   // Queen's Carapace Carbine (Capstone)
-    4111: '/3d/runtime/new3ds/skin_solar_flare_antimatter.glb'    // Solar Flare Antimatter Rifle
+    4111: '/3d/runtime/new3ds/skin_solar_flare_antimatter.glb',   // Solar Flare Antimatter Rifle
+    4201: '/3d/runtime/new3ds/skin_deep_frost.glb',               // Deep Frost Weapon Skin
+    4208: '/3d/runtime/new3ds/skin_rust_bone.glb',                // Rust & Bone Weapon Skin
+    4215: '/3d/runtime/new3ds/skin_hive_chitin.glb',              // Hive Chitin Weapon Skin
+    4222: '/3d/runtime/new3ds/skin_horizon_corporate.glb',        // Horizon Corporate Weapon Skin
+    4229: '/3d/runtime/new3ds/skin_bunker404.glb',                // Bunker 404 Weapon Skin
+    4236: '/3d/runtime/new3ds/skin_grand_marshal.glb'             // Grand Marshal Weapon Skin
 };
 
 import { COMMUNITY_GESTURES, COMMUNITY_GLB_MAP } from './data/communitySkins.js';
@@ -70,6 +77,12 @@ export const CHASSIS_SKIN_MODELS = Object.freeze({
     '4117': '/3d/runtime/new3ds/chassis_dreadnought_exo_juggernaut.glb',
     '4118': '/3d/runtime/new3ds/chassis_cyber_spectre_infiltrator.glb',
     '4119': '/3d/runtime/new3ds/chassis_hive_lord_symbiote.glb',
+    '4200': '/3d/runtime/new3ds/chassis_deep_frost.glb',
+    '4207': '/3d/runtime/new3ds/chassis_rust_bone.glb',
+    '4214': '/3d/runtime/new3ds/chassis_hive_chitin.glb',
+    '4221': '/3d/runtime/new3ds/chassis_horizon_corporate.glb',
+    '4228': '/3d/runtime/new3ds/chassis_bunker404.glb',
+    '4235': '/3d/runtime/new3ds/chassis_grand_marshal.glb',
     '5003': '/3d/runtime/new3ds/chassis_scout_cartographer.glb',
     '5004': '/3d/runtime/new3ds/chassis_scout_pioneer_courier.glb',
     '5005': '/3d/runtime/new3ds/chassis_tank_old_iron.glb',
@@ -155,10 +168,11 @@ function loadWeaponTemplate(url, group = 'weapon') {
 // Falls back to the GG1 reference weapon if an archetype's .glb isn't in place yet, so this
 // function is safe to call with any archetypeId today, before task 2's assets land.
 //
-// Weapon skins (opts.skinId) are whole separate meshes in the live asset pipeline, not a
-// material swap on the archetype mesh — see WEAPON_SKIN_MESHES and worklog task 6. If skinId
-// is given and mapped, it takes priority over archetypeId for which mesh loads; on failure it
-// falls back to the archetype mesh, then to GG1, same chain as the archetype-only path.
+// Two-Tier Weapon Cosmetic Pipeline:
+// Tier 1: Pure material finishes (Hazard Stripe, Sub-Zero, Obsidian Shard, Glitched Circuit)
+// apply directly onto the class's base weapon mesh (WEAPON_ARCHETYPES[archetypeId]).
+// Tier 2: Bespoke exotic meshes (Biolume Spore Sprayer, Deep Core Melter, Deep Frost, etc.)
+// load their dedicated 3D GLB model via WEAPON_SKIN_MESHES.
 export async function createClassWeapon(archetypeId, { position = null, skinId = null, sheenColor = 0xffffff, charmId = null } = {}) {
     const charmUrl = CHARM_GLB_MAP[String(charmId)];
     const charmTemplate = charmUrl ? loadWeaponTemplate(charmUrl, 'charm').catch((error) => {
@@ -181,6 +195,9 @@ export async function createClassWeapon(archetypeId, { position = null, skinId =
         template = await loadWeaponTemplate(WEAPON_URL);
     }
     const weapon = template.scene.clone(true);
+    if (skinId && isMaterialFinish(skinId)) {
+        applyWeaponMaterialFinish(weapon, skinId);
+    }
     applyWeaponSheen(weapon, sheenColor);
     weapon.name = archetypeId ? `ClassWeapon_${archetypeId}${skinUrl === url ? `_skin${skinId}` : ''}` : 'ScoutGG1';
     weapon.updateMatrixWorld(true);

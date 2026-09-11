@@ -17,8 +17,22 @@ const SOURCE_DIRS = ['electron', 'server', 'src'];
 // runtime assets without allowing the ignored high-resolution sources in.
 // Raised 1800->2700 MiB after Sprint 28's 30 community 3D operator skins
 // (~525 MB) and 16 Season 0 / achievement 3D GLBs (~250 MB) landed in
-// public/3d/runtime/. Measured payload is ~2565 MiB, leaving ~135 MB of
-// headroom.
+// public/3d/runtime/.
+// Sprint 34's 26 new item icons pushed the measurement 6.4 MB PAST this
+// ceiling. The budget was deliberately NOT raised: an audit found 24.8 MB of
+// byte-identical duplicate files in public/, and removing the 10.5 MB of those
+// that were genuinely redundant (unreferenced placeholder textures, and still
+// frames that duplicated a video poster the player already downloads) brought
+// the payload back under it. Prefer that kind of fix -- the duplicate-group
+// count below is the early warning that it is available.
+//
+// The remaining duplicate groups are DELIBERATE and must not be collapsed:
+// sentinel_A.glb, alien_proto_crawler_A.glb and C6-B.mp4 are placeholders
+// holding a slot for art that has not been produced yet, so they are supposed
+// to stop matching their twin.
+//
+// Headroom after that work is only ~2.7 MB, so the next asset drop of any size
+// needs a real decision rather than another sweep.
 const PUBLIC_BUDGET = 2700 * 1024 * 1024;
 // app.asar packages dist/ minus the mp4/webm/glb files electron-builder's
 // asarUnpack pulls out (see package.json "build".asarUnpack), so it tracks

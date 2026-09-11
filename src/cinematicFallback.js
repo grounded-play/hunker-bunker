@@ -64,6 +64,9 @@ export const DEATH_CINEMATICS = Object.freeze({
     })
 });
 
+// Four of these events point at the video poster JPG under cutscenes/ rather
+// than a poster-art PNG: the two files were byte-identical, and the poster is
+// the one the video path already warms, so the PNG was pure duplicate payload.
 export const EVENT_CINEMATICS = Object.freeze({
     foundry_discovered: Object.freeze({
         kicker: 'BUNKER SYSTEM // INDUSTRIAL HEART',
@@ -93,25 +96,25 @@ export const EVENT_CINEMATICS = Object.freeze({
         kicker: 'BUNKER SYSTEM // LIFE SUPPORT',
         title: 'THE AIR HOLDS A LITTLE LONGER',
         body: 'Oxygen reclamation comes back online. The safe bubble widens around what you rebuilt.',
-        images: Object.freeze(['/cutscenes/poster-art/event-o2-generator-upgraded.png'])
+        images: Object.freeze(['/cutscenes/event-o2-generator-upgraded-poster.jpg'])
     }),
     boss_encounter_cryosnail: Object.freeze({
         kicker: 'PERIMETER BREACH // FROST TITAN',
         title: 'ABSOLUTE ZERO HAS A SHELL',
         body: 'Sub-zero vapor rolls across the floor. An ancient cryosnail-class titan converges on your position.',
-        images: Object.freeze(['/cutscenes/poster-art/event-boss-cryosnail.png'])
+        images: Object.freeze(['/cutscenes/event-boss-encounter-cryosnail-poster.jpg'])
     }),
     boss_encounter_cybersnail: Object.freeze({
         kicker: 'PERIMETER BREACH // CYBERNETIC TITAN',
         title: 'A SNAIL BLOCKS THE HALLWAY',
         body: 'Hydraulic cylinders hiss as a colossal armored carapace descends. Red targeting lasers sweep the corridor.',
-        images: Object.freeze(['/cutscenes/poster-art/event-boss-cybersnail.png'])
+        images: Object.freeze(['/cutscenes/event-boss-encounter-cybersnail-poster.jpg'])
     }),
     boss_encounter_sporesnail: Object.freeze({
         kicker: 'PERIMETER BREACH // FUNGAL TITAN',
         title: 'THE BLOOM THAT HUNTS',
         body: 'Bioluminescent spore clouds billow through the dark air. A fungal titan stalks toward your bunker.',
-        images: Object.freeze(['/cutscenes/poster-art/event-boss-sporesnail.png'])
+        images: Object.freeze(['/cutscenes/event-boss-encounter-sporesnail-poster.jpg'])
     })
 });
 

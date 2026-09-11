@@ -23,7 +23,13 @@ export const WEAPON_SHEENS = Object.freeze([
     { id: 8, name: 'OXIDE ROSE', color: '#d77b83', hint: 'Reach the reveal without harming a hive.' },
     { id: 9, name: 'BROOD MAGENTA', color: '#ff62d3', hint: 'Reach maximum bond with a hive.' },
     { id: 10, name: 'VOID ANODIZE', color: '#b886ff', hint: 'Defeat the Queen in single combat.' },
-    { id: 11, name: 'BLACK ICE', color: '#45556b', hint: 'Survive one run for twenty minutes.' }
+    { id: 11, name: 'BLACK ICE', color: '#45556b', hint: 'Survive one run for twenty minutes.' },
+    { id: 12, name: 'DEEP FROST', color: '#a5f3fc', itemdefid: 4204, hint: 'Set piece: Deep Frost weapon sheen.' },
+    { id: 13, name: 'RUST & BONE', color: '#ea580c', itemdefid: 4211, hint: 'Set piece: Rust & Bone weapon sheen.' },
+    { id: 14, name: 'HIVE CHITIN', color: '#84cc16', itemdefid: 4218, hint: 'Set piece: Hive Chitin weapon sheen.' },
+    { id: 15, name: 'HORIZON TEAL', color: '#14b8a6', itemdefid: 4225, hint: 'Set piece: Horizon Corporate weapon sheen.' },
+    { id: 16, name: 'BUNKER 404', color: '#d946ef', itemdefid: 4232, hint: 'Set piece: Bunker 404 weapon sheen.' },
+    { id: 17, name: 'GRAND MARSHAL', color: '#f59e0b', itemdefid: 4239, hint: 'Set piece: Grand Marshal weapon sheen.' }
 ]);
 
 export const SHEEN_UNLOCK_BY_MILESTONE = Object.freeze({
@@ -51,8 +57,16 @@ function storageOrDefault(storage) {
 export function getUnlockedSheenIds(storage = null) {
     try {
         const parsed = JSON.parse(storageOrDefault(storage)?.getItem(STORAGE_UNLOCKED) ?? '[]');
-        return new Set([0, ...(Array.isArray(parsed) ? parsed : [])]
+        const set = new Set([0, ...(Array.isArray(parsed) ? parsed : [])]
             .filter((id) => Number.isInteger(id) && id >= 0 && id < MAX_ID));
+        if (typeof window !== 'undefined' && window.itemOwnership) {
+            for (const sheen of WEAPON_SHEENS) {
+                if (sheen.itemdefid && window.itemOwnership.canEquip(sheen.itemdefid)) {
+                    set.add(sheen.id);
+                }
+            }
+        }
+        return set;
     } catch {
         return new Set([0]);
     }

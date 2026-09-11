@@ -2663,7 +2663,19 @@ const HUD_THEME_PRESETS = {
     4150: { '--hud-primary': '#f59e0b', '--hud-secondary': '#fde68a', '--hud-glow': 'rgba(245, 158, 11, 0.4)', '--hud-scanline': '#d97706', '--hud-border': 'rgba(245, 158, 11, 0.62)', '--hud-panel': 'rgba(55, 30, 4, 0.84)', '--hud-warning': '#fb7185' }, // Amber CRT
     4151: { '--hud-primary': '#10b981', '--hud-secondary': '#a7f3d0', '--hud-glow': 'rgba(16, 185, 129, 0.4)', '--hud-scanline': '#059669', '--hud-border': 'rgba(16, 185, 129, 0.62)', '--hud-panel': 'rgba(2, 44, 34, 0.84)', '--hud-warning': '#fbbf24' }, // Emerald Radar
     hudtheme_amber_crt: { '--hud-primary': '#f59e0b', '--hud-secondary': '#fde68a', '--hud-glow': 'rgba(245, 158, 11, 0.4)', '--hud-scanline': '#d97706', '--hud-border': 'rgba(245, 158, 11, 0.62)', '--hud-panel': 'rgba(55, 30, 4, 0.84)', '--hud-warning': '#fb7185' },
-    hudtheme_emerald_radar: { '--hud-primary': '#10b981', '--hud-secondary': '#a7f3d0', '--hud-glow': 'rgba(16, 185, 129, 0.4)', '--hud-scanline': '#059669', '--hud-border': 'rgba(16, 185, 129, 0.62)', '--hud-panel': 'rgba(2, 44, 34, 0.84)', '--hud-warning': '#fbbf24' }
+    hudtheme_emerald_radar: { '--hud-primary': '#10b981', '--hud-secondary': '#a7f3d0', '--hud-glow': 'rgba(16, 185, 129, 0.4)', '--hud-scanline': '#059669', '--hud-border': 'rgba(16, 185, 129, 0.62)', '--hud-panel': 'rgba(2, 44, 34, 0.84)', '--hud-warning': '#fbbf24' },
+    4206: { '--hud-primary': '#a5f3fc', '--hud-secondary': '#e0f2fe', '--hud-glow': 'rgba(165, 243, 252, 0.4)', '--hud-scanline': '#0891b2', '--hud-border': 'rgba(165, 243, 252, 0.62)', '--hud-panel': 'rgba(8, 47, 73, 0.88)', '--hud-warning': '#f43f5e' }, // Deep Frost
+    hudtheme_deep_frost: { '--hud-primary': '#a5f3fc', '--hud-secondary': '#e0f2fe', '--hud-glow': 'rgba(165, 243, 252, 0.4)', '--hud-scanline': '#0891b2', '--hud-border': 'rgba(165, 243, 252, 0.62)', '--hud-panel': 'rgba(8, 47, 73, 0.88)', '--hud-warning': '#f43f5e' },
+    4213: { '--hud-primary': '#ea580c', '--hud-secondary': '#fed7aa', '--hud-glow': 'rgba(234, 88, 12, 0.4)', '--hud-scanline': '#9a3412', '--hud-border': 'rgba(234, 88, 12, 0.62)', '--hud-panel': 'rgba(43, 20, 10, 0.88)', '--hud-warning': '#ef4444' }, // Rust & Bone
+    hudtheme_rust_bone: { '--hud-primary': '#ea580c', '--hud-secondary': '#fed7aa', '--hud-glow': 'rgba(234, 88, 12, 0.4)', '--hud-scanline': '#9a3412', '--hud-border': 'rgba(234, 88, 12, 0.62)', '--hud-panel': 'rgba(43, 20, 10, 0.88)', '--hud-warning': '#ef4444' },
+    4220: { '--hud-primary': '#84cc16', '--hud-secondary': '#d9f99d', '--hud-glow': 'rgba(132, 204, 22, 0.4)', '--hud-scanline': '#4d7c0f', '--hud-border': 'rgba(132, 204, 22, 0.62)', '--hud-panel': 'rgba(26, 46, 5, 0.88)', '--hud-warning': '#eab308' }, // Hive Chitin
+    hudtheme_hive_chitin: { '--hud-primary': '#84cc16', '--hud-secondary': '#d9f99d', '--hud-glow': 'rgba(132, 204, 22, 0.4)', '--hud-scanline': '#4d7c0f', '--hud-border': 'rgba(132, 204, 22, 0.62)', '--hud-panel': 'rgba(26, 46, 5, 0.88)', '--hud-warning': '#eab308' },
+    4227: { '--hud-primary': '#14b8a6', '--hud-secondary': '#ccfbf1', '--hud-glow': 'rgba(20, 184, 166, 0.35)', '--hud-scanline': '#0f766e', '--hud-border': 'rgba(20, 184, 166, 0.55)', '--hud-panel': 'rgba(15, 23, 42, 0.92)', '--hud-warning': '#f97316' }, // Horizon Corporate
+    hudtheme_horizon_corporate: { '--hud-primary': '#14b8a6', '--hud-secondary': '#ccfbf1', '--hud-glow': 'rgba(20, 184, 166, 0.35)', '--hud-scanline': '#0f766e', '--hud-border': 'rgba(20, 184, 166, 0.55)', '--hud-panel': 'rgba(15, 23, 42, 0.92)', '--hud-warning': '#f97316' },
+    4234: { '--hud-primary': '#d946ef', '--hud-secondary': '#fae8ff', '--hud-glow': 'rgba(217, 70, 239, 0.45)', '--hud-scanline': '#a21caf', '--hud-border': 'rgba(217, 70, 239, 0.65)', '--hud-panel': 'rgba(38, 10, 42, 0.90)', '--hud-warning': '#f43f5e' }, // Bunker 404
+    hudtheme_bunker404: { '--hud-primary': '#d946ef', '--hud-secondary': '#fae8ff', '--hud-glow': 'rgba(217, 70, 239, 0.45)', '--hud-scanline': '#a21caf', '--hud-border': 'rgba(217, 70, 239, 0.65)', '--hud-panel': 'rgba(38, 10, 42, 0.90)', '--hud-warning': '#f43f5e' },
+    4241: { '--hud-primary': '#f59e0b', '--hud-secondary': '#fef3c7', '--hud-glow': 'rgba(245, 158, 11, 0.45)', '--hud-scanline': '#b45309', '--hud-border': 'rgba(245, 158, 11, 0.70)', '--hud-panel': 'rgba(30, 24, 12, 0.90)', '--hud-warning': '#dc2626' }, // Grand Marshal
+    hudtheme_grand_marshal: { '--hud-primary': '#f59e0b', '--hud-secondary': '#fef3c7', '--hud-glow': 'rgba(245, 158, 11, 0.45)', '--hud-scanline': '#b45309', '--hud-border': 'rgba(245, 158, 11, 0.70)', '--hud-panel': 'rgba(30, 24, 12, 0.90)', '--hud-warning': '#dc2626' }
 };
 const HUD_THEME_VARS = ['--hud-primary', '--hud-secondary', '--hud-glow', '--hud-scanline', '--hud-border', '--hud-panel', '--hud-warning'];
 function applyHudThemeFromLoadout() {
@@ -12581,12 +12593,7 @@ function getDoorImage(key) {
         'win': '/door_alien_keyart_v2.webp',
         'lose': '/door_rust_keyart_v2.webp'
     };
-    const pickDoor = (entry) => {
-        if (Array.isArray(entry)) {
-            return entry[Math.floor(Math.random() * entry.length)];
-        }
-        return entry;
-    };
+    const pickDoor = (entries) => entries[Math.floor(Math.random() * entries.length)];
 
     if (key === 'win') return assetUrl(SPECIAL_DOORS.win);
     if (key === 'lose') return assetUrl(SPECIAL_DOORS.lose);
@@ -12595,7 +12602,8 @@ function getDoorImage(key) {
 
     // Automatically determine door image based on active/preview class
     const activeClass = window.game?.playerType || (typeof getSelectedHeroType === 'function' ? getSelectedHeroType() : null) || activePreviewType || 'SCOUT';
-    return assetUrl(pickDoor(CLASS_DOORS[activeClass]) || SPECIAL_DOORS.base);
+    const doors = CLASS_DOORS[activeClass];
+    return assetUrl(doors ? pickDoor(doors) : SPECIAL_DOORS.base);
 }
 
 function getMapDoorImage(key) {
@@ -13753,7 +13761,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                     '/bio_grunge_spores.png',
                     '/bio_wall_veins.png',
                     '/ice_base_rock.png',
-                    '/ice_grunge_snow.png',
                     '/ice_wall_glacier.png',
                     '/bunker_junk.png',
                     '/bunker_junk_uncommon.png',
@@ -13968,6 +13975,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     follow: state.settings.cameraFollow
                 });
                 window.game.nightVision = state.settings.nightVision;
+                applyHudThemeFromLoadout();
                 traceBootPhase('three-constructor-ready', {
                     pixelRatio: window.game.renderer?.getPixelRatio?.(),
                     profile: window.game.performanceProfile

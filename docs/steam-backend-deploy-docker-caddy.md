@@ -31,9 +31,9 @@ SQLite Database / Docker Volume (`hunker-bunker-data:/app/server/data/db_storage
 ## Configuration Files
 
 The repository includes:
-- `Dockerfile`: Builds the production Node.js 22 runtime container.
-- `docker-compose.yml`: Defines the `backend` and `caddy` services.
-- `Caddyfile`: Maps `steam.tuesdaycinema.club` to `backend:3001` with automatic Let's Encrypt / ZeroSSL TLS certificates.
+- `deploy/Dockerfile`: Builds the production Node.js 22 runtime container. Its build context is the repository root, so `.dockerignore` stays there.
+- `deploy/docker-compose.yml`: Defines the `backend` and `caddy` services. It pins `name: hunker-bunker`, so the project keeps the same containers and the same `hunker-bunker_caddy_data` certificate volume it had when this file sat at the repository root.
+- `deploy/Caddyfile`: Maps `steam.tuesdaycinema.club` to `backend:3001` with automatic Let's Encrypt / ZeroSSL TLS certificates.
 
 ## Location & Version-Controlled Setup
 
@@ -110,7 +110,7 @@ confusion, so it is written down:
 
 | | Production | In-repo |
 | --- | --- | --- |
-| File | `~/server/compose.yaml` | `docker-compose.yml` |
+| File | `~/server/compose.yaml` | `deploy/docker-compose.yml` |
 | Service name | `hunker-bunker-backend` | `backend` |
 | Secrets | `env_file: backend.env` | inline `environment:` |
 | Data | named volume `hunker-bunker-data` | bind mount `./server/data` |
@@ -127,7 +127,7 @@ build:
 
 So `docker compose up -d --build` from `~/server` builds **whatever is
 currently checked out in the repo** — including uncommitted changes. Editing
-the repo's `docker-compose.yml` does **not** affect production; environment
+the repo's `deploy/docker-compose.yml` does **not** affect production; environment
 changes for the live host belong in `~/server/backend.env`.
 
 Deploy:

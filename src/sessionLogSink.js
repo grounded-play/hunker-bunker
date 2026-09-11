@@ -141,3 +141,73 @@ export function describeDevice(win = globalThis) {
     else if (/Mac OS/i.test(ua)) parts.push('mac');
     return parts.join('-') || 'unknown';
 }
+
+/**
+ * Export a session capture: tries to upload to the remote server first, and if
+ * that fails (network error, server down, unconfigured, or rejected), falls
+ * back to saving locally via deliverSessionLog.
+ */
+export async function exportSessionLog(body, filename, {
+    backendUrl = '',
+    fetchImpl = null,
+    token = '',
+    device = '',
+    electronAPI = null,
+    isDev = false
+} = {}) {
+    const base = String(backendUrl ?? '').trim();
+    if (base) {
+        try {
+            const uploadResult = await uploadSessionLog(body, filename, {
+                backendUrl: base,
+                fetchImpl,
+                token,
+                device
+            });
+            if (uploadResult.ok) {
+                return {
+                    ok: true,
+                    method: 'upload',
+                    uploaded: true,
+                    filename: uploadResult.filename ?? filename,
+                    bytes: uploadResult.bytes,
+                    url: uploadResult.url ?? `${base.replace(/\/+$/, '')}/logs/session/${uploadResult.filename ?? filename}`,
+                    path: uploadResult.path
+                };
+            }
+            const localResult = await deliverSessionLog(body, filename, {
+                electronAPI,
+                fetchImpl,
+                isDev
+            });
+            return {
+                ...localResult,
+                uploaded: false,
+                uploadError: uploadResult.error || 'upload failed'
+            };
+        } catch (err) {
+            const localResult = await deliverSessionLog(body, filename, {
+                electronAPI,
+                fetchImpl,
+                isDev
+            });
+            return {
+                ...localResult,
+                uploaded: false,
+                uploadError: String(err?.message ?? err)
+            };
+        }
+    }
+
+    const localResult = await deliverSessionLog(body, filename, {
+        electronAPI,
+        fetchImpl,
+        isDev
+    });
+    return {
+        ...localResult,
+        uploaded: false,
+        uploadError: 'no backend url configured'
+    };
+}
+

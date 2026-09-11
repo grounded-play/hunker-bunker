@@ -4,7 +4,7 @@ Start here instead of searching every Markdown file. The repository contains a
 large historical record; only the documents in **Current truth** and **Current
 planning** are expected to describe today without qualification.
 
-Last reviewed: 2026-08-24 · Owner: repository maintainers
+Last reviewed: 2026-09-10 · Owner: repository maintainers · Baseline: Sprint 34 (`dev/sprint-34`, `v2.4.0-beta`)
 
 ## Current truth
 
@@ -16,7 +16,7 @@ Last reviewed: 2026-08-24 · Owner: repository maintainers
 | Who owns each runtime boundary? | [Runtime system map](architecture/system-map.md) |
 | Which deployment path is active? | [Deployment topology](architecture/deployment-topology.md) |
 | How are versions and releases handled? | [Versioning and release roadmap](versioning-and-release-roadmap.md) |
-| What does a contributor need? | [Contributing](../CONTRIBUTING.md) |
+| What does a contributor need? | [Contributing](../.github/CONTRIBUTING.md) |
 
 ## Maintained references
 
@@ -41,8 +41,14 @@ was made, but they do not define current status. Older material belongs under
 [the archive](archive/README.md); existing loose historical files remain in
 place until a link-preserving archive pass moves them.
 
-## Sprint 30 evidence inputs
+## Sprint and release evidence inputs
 
+- [v2.4.0-beta release notes](releases/v2.4.0-beta.md)
+  details co-op world events, enemy sync, O₂ shader stall fix, and presentation coherence.
+- [Expedition coherence report](reports/expedition-coherence-2026-09-09.md)
+  documents 3D visual FX, O₂ pacing, and color fidelity.
+- [Gameplay implementation & diorama gap audit](reports/gameplay-implementation-gap-audit-2026-09-10.md)
+  measures dynamic shadow tracking, diorama bokeh, and ballistic projectile feedback.
 - [Sprint 28–29 carry-forward audit](reports/sprint-28-29-carry-forward-audit-2026-08-24.md)
   reconciles original commitments with their highest honest evidence state.
 - [Pre-Sprint-30 technical-debt audit](pre-sprint-30-technical-debt-audit-2026-08-24.md)

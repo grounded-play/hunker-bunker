@@ -164,21 +164,35 @@ describe('browser gamepad mapping', () => {
         expect(mapped.menuTabRight).toBe(true);
     });
 
-    // The Steam layout drives gameplay movement from the analog `move` action,
-    // and the D-pad is a digital source. Folding it into the same vector is what
-    // makes the D-pad walk the player exactly like the left stick.
-    it('moves the player from the D-pad when the left stick is neutral', () => {
+    // Movement is the left stick alone. The D-pad previously fed the same
+    // vector, which made the published Steam layout read as a twin-movement
+    // config rather than a dual-analog gamepad; it now carries secondary
+    // actions, matching controller_neptune.vdf group 18 so the same controller
+    // behaves identically on Deck and desktop.
+    it('does not move the player from the D-pad', () => {
         const buttons = Array.from({ length: 16 }, () => button(false));
         buttons[13] = button(true);
         buttons[14] = button(true);
 
         const mapped = mapBrowserGamepad({ index: 0, id: 'Xbox Wireless Controller', axes: [0, 0, 0, 0], buttons });
 
-        expect(mapped.move).toEqual({ x: -1, y: 1 });
-        expect(mapped.active).toBe(true);
+        expect(mapped.move).toEqual({ x: 0, y: 0 });
     });
 
-    it('lets a pushed left stick win over the D-pad on each axis', () => {
+    it('maps each D-pad direction to its secondary gameplay action', () => {
+        const press = (index) => {
+            const buttons = Array.from({ length: 16 }, () => button(false));
+            buttons[index] = button(true);
+            return mapBrowserGamepad({ index: 0, id: 'Xbox Wireless Controller', axes: [0, 0, 0, 0], buttons });
+        };
+
+        expect(press(12).toggleMap).toBe(true);  // up    -> Tactical Map
+        expect(press(13).scan).toBe(true);       // down  -> Scan
+        expect(press(14).reload).toBe(true);     // left  -> Reload
+        expect(press(15).ability).toBe(true);    // right -> Smash
+    });
+
+    it('keeps the left stick as the only movement source', () => {
         const buttons = Array.from({ length: 16 }, () => button(false));
         buttons[12] = button(true);
         buttons[15] = button(true);
@@ -186,7 +200,7 @@ describe('browser gamepad mapping', () => {
         const mapped = mapBrowserGamepad({ index: 0, id: 'Xbox Wireless Controller', axes: [-0.6, 0, 0, 0], buttons });
 
         expect(mapped.move.x).toBeCloseTo(-0.6, 5);
-        expect(mapped.move.y).toBe(-1);
+        expect(mapped.move.y).toBe(0);
     });
 
     it('leaves camera aim alone when only the D-pad is pressed', () => {

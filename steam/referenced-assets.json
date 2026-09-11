@@ -46,27 +46,41 @@
     "3d/runtime/hull-matrix.glb",
     "3d/runtime/new3ds/alien_proto_crawler.glb",
     "3d/runtime/new3ds/alien_proto_crawler_A.glb",
+    "3d/runtime/new3ds/body_empty_exosuit.glb",
+    "3d/runtime/new3ds/body_frozen_human.glb",
     "3d/runtime/new3ds/boss_corrupted_briggs.glb",
     "3d/runtime/new3ds/boss_corrupted_martha.glb",
     "3d/runtime/new3ds/bunker_junk_rare.glb",
     "3d/runtime/new3ds/bunker_junk_uncommon.glb",
     "3d/runtime/new3ds/charm_amber_bio_flask.glb",
+    "3d/runtime/new3ds/charm_bunker404.glb",
     "3d/runtime/new3ds/charm_dark_matter.glb",
+    "3d/runtime/new3ds/charm_deep_frost.glb",
     "3d/runtime/new3ds/charm_geodetic_compass.glb",
     "3d/runtime/new3ds/charm_glitched_ram.glb",
     "3d/runtime/new3ds/charm_golden_sub_bunker_key.glb",
+    "3d/runtime/new3ds/charm_grand_marshal.glb",
+    "3d/runtime/new3ds/charm_hive_chitin.glb",
+    "3d/runtime/new3ds/charm_horizon_corporate.glb",
     "3d/runtime/new3ds/charm_mini_cryo_core.glb",
     "3d/runtime/new3ds/charm_mini_drone_bobble.glb",
+    "3d/runtime/new3ds/charm_rust_bone.glb",
     "3d/runtime/new3ds/charm_spent_50cal.glb",
     "3d/runtime/new3ds/charm_sporesnail_pearl.glb",
     "3d/runtime/new3ds/charm_trench_whistle.glb",
     "3d/runtime/new3ds/chassis_bio_synthesizer_medic.glb",
+    "3d/runtime/new3ds/chassis_bunker404.glb",
     "3d/runtime/new3ds/chassis_cryo_vanguard_scout.glb",
     "3d/runtime/new3ds/chassis_cyber_spectre_infiltrator.glb",
+    "3d/runtime/new3ds/chassis_deep_frost.glb",
     "3d/runtime/new3ds/chassis_dreadnought_exo_juggernaut.glb",
     "3d/runtime/new3ds/chassis_engineer_chen_undying.glb",
     "3d/runtime/new3ds/chassis_engineer_exodus_vanguard.glb",
+    "3d/runtime/new3ds/chassis_grand_marshal.glb",
+    "3d/runtime/new3ds/chassis_hive_chitin.glb",
     "3d/runtime/new3ds/chassis_hive_lord_symbiote.glb",
+    "3d/runtime/new3ds/chassis_horizon_corporate.glb",
+    "3d/runtime/new3ds/chassis_rust_bone.glb",
     "3d/runtime/new3ds/chassis_scout_cartographer.glb",
     "3d/runtime/new3ds/chassis_scout_pioneer_courier.glb",
     "3d/runtime/new3ds/chassis_subterran_drill_engineer.glb",
@@ -81,11 +95,19 @@
     "3d/runtime/new3ds/gun_scout_talon_c.glb",
     "3d/runtime/new3ds/gun_scout_vector9_talon.glb",
     "3d/runtime/new3ds/gun_tank_siege_breaker50.glb",
+    "3d/runtime/new3ds/mod_archivist_lens.glb",
+    "3d/runtime/new3ds/mod_ballast_plating.glb",
     "3d/runtime/new3ds/mod_bio_hazard_filter.glb",
     "3d/runtime/new3ds/mod_cryo_capacitor.glb",
+    "3d/runtime/new3ds/mod_deep_anchor.glb",
+    "3d/runtime/new3ds/mod_duplicate_refiner.glb",
     "3d/runtime/new3ds/mod_echo_location_transceiver.glb",
     "3d/runtime/new3ds/mod_kinetic_impact.glb",
     "3d/runtime/new3ds/mod_magnetic_scavenger.glb",
+    "3d/runtime/new3ds/mod_pressure_seal.glb",
+    "3d/runtime/new3ds/mod_queens_bane.glb",
+    "3d/runtime/new3ds/mod_scrap_furnace.glb",
+    "3d/runtime/new3ds/mod_shard_conduit.glb",
     "3d/runtime/new3ds/mod_symbiotic_adrenaline_pump.glb",
     "3d/runtime/new3ds/mod_thermal_heat_exchanger.glb",
     "3d/runtime/new3ds/mod_zero_point_flux.glb",
@@ -112,11 +134,14 @@
     "3d/runtime/new3ds/prop_body_human_frozen.glb",
     "3d/runtime/new3ds/prop_broken_specimen_tank.glb",
     "3d/runtime/new3ds/prop_bunker_supplies.glb",
+    "3d/runtime/new3ds/prop_camp_cot.glb",
+    "3d/runtime/new3ds/prop_camp_crate.glb",
     "3d/runtime/new3ds/prop_cave_bones.glb",
     "3d/runtime/new3ds/prop_cave_queen_throne.glb",
     "3d/runtime/new3ds/prop_conduit_hub.glb",
     "3d/runtime/new3ds/prop_diagnostic_console.glb",
     "3d/runtime/new3ds/prop_fabricator_workstation.glb",
+    "3d/runtime/new3ds/prop_hive_resin_sac.glb",
     "3d/runtime/new3ds/prop_laser_trap_emitter.glb",
     "3d/runtime/new3ds/prop_medical_bed.glb",
     "3d/runtime/new3ds/prop_o2_filter_vat.glb",
@@ -125,15 +150,23 @@
     "3d/runtime/new3ds/prop_surgical_cart.glb",
     "3d/runtime/new3ds/prop_tesla_coil_node.glb",
     "3d/runtime/new3ds/prop_vital_monitor.glb",
+    "3d/runtime/new3ds/scatter_bolts.glb",
+    "3d/runtime/new3ds/scatter_cable_coil.glb",
     "3d/runtime/new3ds/sentinel.glb",
     "3d/runtime/new3ds/sentinel_A.glb",
     "3d/runtime/new3ds/sentinel_B.glb",
     "3d/runtime/new3ds/skin_biolume_spore_sprayer.glb",
+    "3d/runtime/new3ds/skin_bunker404.glb",
+    "3d/runtime/new3ds/skin_deep_frost.glb",
     "3d/runtime/new3ds/skin_engineer_cryo_plasma.glb",
     "3d/runtime/new3ds/skin_glitched_circuit_bolter.glb",
+    "3d/runtime/new3ds/skin_grand_marshal.glb",
     "3d/runtime/new3ds/skin_hazard_stripe_smg.glb",
+    "3d/runtime/new3ds/skin_hive_chitin.glb",
+    "3d/runtime/new3ds/skin_horizon_corporate.glb",
     "3d/runtime/new3ds/skin_obsidian_shard.glb",
     "3d/runtime/new3ds/skin_queen_carapace_carbine.glb",
+    "3d/runtime/new3ds/skin_rust_bone.glb",
     "3d/runtime/new3ds/skin_rust_bone_trench.glb",
     "3d/runtime/new3ds/skin_scout_frostbite.glb",
     "3d/runtime/new3ds/skin_solar_flare_antimatter.glb",
@@ -142,6 +175,10 @@
     "3d/runtime/new3ds/skin_void_walker_beam.glb",
     "3d/runtime/new3ds/spore_mortar.glb",
     "3d/runtime/new3ds/sporesnail.glb",
+    "3d/runtime/new3ds/state_barricade_improvised_1.glb",
+    "3d/runtime/new3ds/state_barricade_improvised_2.glb",
+    "3d/runtime/new3ds/state_growth_overrun_1.glb",
+    "3d/runtime/new3ds/state_growth_overrun_2.glb",
     "3d/runtime/o2-generator.glb",
     "3d/runtime/parasite.glb",
     "3d/runtime/queen.glb",
@@ -391,6 +428,10 @@
     "cryo_wall_conduit_normal.png",
     "cryosnail.png",
     "cryosnail_dead.png",
+    "cutscenes/event-boss-encounter-cryosnail-poster.jpg",
+    "cutscenes/event-boss-encounter-cybersnail-poster.jpg",
+    "cutscenes/event-boss-encounter-sporesnail-poster.jpg",
+    "cutscenes/event-o2-generator-upgraded-poster.jpg",
     "cutscenes/poster-art/death-abyss.png",
     "cutscenes/poster-art/death-biohazard.png",
     "cutscenes/poster-art/death-combat.png",
@@ -401,13 +442,9 @@
     "cutscenes/poster-art/death-queen.png",
     "cutscenes/poster-art/death-ship.png",
     "cutscenes/poster-art/event-black-box-recovered.png",
-    "cutscenes/poster-art/event-boss-cryosnail.png",
-    "cutscenes/poster-art/event-boss-cybersnail.png",
-    "cutscenes/poster-art/event-boss-sporesnail.png",
     "cutscenes/poster-art/event-cave-revealed-1.png",
     "cutscenes/poster-art/event-cave-revealed-2.png",
     "cutscenes/poster-art/event-foundry-discovered.png",
-    "cutscenes/poster-art/event-o2-generator-upgraded.png",
     "cutscenes/poster-art/event-queen-encounter.png",
     "cybersnail.png",
     "cybersnail_dead.png",
@@ -421,6 +458,15 @@
     "decal_emergency_oxygen_nest.png",
     "decal_failed_decon_kit.png",
     "decal_footprints_mud.png",
+    "decal_frost_bloom_1.png",
+    "decal_frost_bloom_2.png",
+    "decal_graffiti_tally_1.png",
+    "decal_graffiti_tally_2.png",
+    "decal_grease_pool.png",
+    "decal_growth_creep_1.png",
+    "decal_growth_creep_2.png",
+    "decal_hand_smears_1.png",
+    "decal_hand_smears_2.png",
     "decal_hazard_stripes.png",
     "decal_hive_growth.png",
     "decal_machine_cult_shrine.png",
@@ -428,11 +474,17 @@
     "decal_meridian_stencil.png",
     "decal_oil_spill_patch.png",
     "decal_pod_312_breach.png",
+    "decal_rust_bleed_1.png",
+    "decal_rust_bleed_2.png",
     "decal_scars.png",
+    "decal_scorch_bloom.png",
     "decal_spore_growth_patch.png",
     "decal_tallow_herb_cache.png",
     "decal_tallow_symbol.png",
+    "decal_vine_iron_shadow_1.png",
+    "decal_vine_iron_shadow_2.png",
     "decal_wall_breach.png",
+    "decal_water_stain.png",
     "decal_worker_sleep_roll.png",
     "door.png",
     "door.webp",
@@ -551,18 +603,30 @@
     "economy/cache_key_large.png",
     "economy/charm_amber_bio_flask.png",
     "economy/charm_amber_bio_flask_large.png",
+    "economy/charm_bunker404.png",
+    "economy/charm_bunker404_large.png",
     "economy/charm_dark_matter.png",
     "economy/charm_dark_matter_large.png",
+    "economy/charm_deep_frost.png",
+    "economy/charm_deep_frost_large.png",
     "economy/charm_geodetic_compass.png",
     "economy/charm_geodetic_compass_large.png",
     "economy/charm_glitched_ram.png",
     "economy/charm_glitched_ram_large.png",
     "economy/charm_golden_sub_bunker_key.png",
     "economy/charm_golden_sub_bunker_key_large.png",
+    "economy/charm_grand_marshal.png",
+    "economy/charm_grand_marshal_large.png",
+    "economy/charm_hive_chitin.png",
+    "economy/charm_hive_chitin_large.png",
+    "economy/charm_horizon_corporate.png",
+    "economy/charm_horizon_corporate_large.png",
     "economy/charm_mini_cryo_core.png",
     "economy/charm_mini_cryo_core_large.png",
     "economy/charm_mini_drone_bobble.png",
     "economy/charm_mini_drone_bobble_large.png",
+    "economy/charm_rust_bone.png",
+    "economy/charm_rust_bone_large.png",
     "economy/charm_spent_50cal.png",
     "economy/charm_spent_50cal_large.png",
     "economy/charm_sporesnail_pearl.png",
@@ -571,14 +635,26 @@
     "economy/charm_trench_whistle_large.png",
     "economy/chassis_bio_synthesizer_medic.png",
     "economy/chassis_bio_synthesizer_medic_large.png",
+    "economy/chassis_bunker404.png",
+    "economy/chassis_bunker404_large.png",
     "economy/chassis_cryo_vanguard_scout.png",
     "economy/chassis_cryo_vanguard_scout_large.png",
     "economy/chassis_cyber_spectre_infiltrator.png",
     "economy/chassis_cyber_spectre_infiltrator_large.png",
+    "economy/chassis_deep_frost.png",
+    "economy/chassis_deep_frost_large.png",
     "economy/chassis_dreadnought_exo_juggernaut.png",
     "economy/chassis_dreadnought_exo_juggernaut_large.png",
+    "economy/chassis_grand_marshal.png",
+    "economy/chassis_grand_marshal_large.png",
+    "economy/chassis_hive_chitin.png",
+    "economy/chassis_hive_chitin_large.png",
     "economy/chassis_hive_lord_symbiote.png",
     "economy/chassis_hive_lord_symbiote_large.png",
+    "economy/chassis_horizon_corporate.png",
+    "economy/chassis_horizon_corporate_large.png",
+    "economy/chassis_rust_bone.png",
+    "economy/chassis_rust_bone_large.png",
     "economy/chassis_subterran_drill_engineer.png",
     "economy/chassis_subterran_drill_engineer_large.png",
     "economy/chassis_trench_warden_heavy.png",
@@ -617,28 +693,92 @@
     "economy/fx_cryo_shockwave_muzzle_large.png",
     "economy/fx_emerald_void_tracer.png",
     "economy/fx_emerald_void_tracer_large.png",
+    "economy/fx_sheen_bunker404.png",
+    "economy/fx_sheen_bunker404_large.png",
+    "economy/fx_sheen_deep_frost.png",
+    "economy/fx_sheen_deep_frost_large.png",
+    "economy/fx_sheen_grand_marshal.png",
+    "economy/fx_sheen_grand_marshal_large.png",
+    "economy/fx_sheen_hive_chitin.png",
+    "economy/fx_sheen_hive_chitin_large.png",
+    "economy/fx_sheen_horizon_corporate.png",
+    "economy/fx_sheen_horizon_corporate_large.png",
+    "economy/fx_sheen_rust_bone.png",
+    "economy/fx_sheen_rust_bone_large.png",
+    "economy/fx_tracer_bunker404.png",
+    "economy/fx_tracer_bunker404_large.png",
+    "economy/fx_tracer_deep_frost.png",
+    "economy/fx_tracer_deep_frost_large.png",
+    "economy/fx_tracer_grand_marshal.png",
+    "economy/fx_tracer_grand_marshal_large.png",
+    "economy/fx_tracer_hive_chitin.png",
+    "economy/fx_tracer_hive_chitin_large.png",
+    "economy/fx_tracer_horizon_corporate.png",
+    "economy/fx_tracer_horizon_corporate_large.png",
+    "economy/fx_tracer_rust_bone.png",
+    "economy/fx_tracer_rust_bone_large.png",
     "economy/hudtheme_amber_crt.png",
     "economy/hudtheme_amber_crt_large.png",
+    "economy/hudtheme_bunker404.png",
+    "economy/hudtheme_bunker404_large.png",
+    "economy/hudtheme_deep_frost.png",
+    "economy/hudtheme_deep_frost_large.png",
     "economy/hudtheme_emerald_radar.png",
     "economy/hudtheme_emerald_radar_large.png",
+    "economy/hudtheme_grand_marshal.png",
+    "economy/hudtheme_grand_marshal_large.png",
+    "economy/hudtheme_hive_chitin.png",
+    "economy/hudtheme_hive_chitin_large.png",
+    "economy/hudtheme_horizon_corporate.png",
+    "economy/hudtheme_horizon_corporate_large.png",
+    "economy/hudtheme_rust_bone.png",
+    "economy/hudtheme_rust_bone_large.png",
+    "economy/mod_archivist_lens.png",
+    "economy/mod_archivist_lens_large.png",
+    "economy/mod_ballast_plating.png",
+    "economy/mod_ballast_plating_large.png",
     "economy/mod_bio_hazard_filter.png",
     "economy/mod_bio_hazard_filter_large.png",
     "economy/mod_cryo_capacitor.png",
     "economy/mod_cryo_capacitor_large.png",
+    "economy/mod_deep_anchor.png",
+    "economy/mod_deep_anchor_large.png",
+    "economy/mod_duplicate_refiner.png",
+    "economy/mod_duplicate_refiner_large.png",
     "economy/mod_echo_location_transceiver.png",
     "economy/mod_echo_location_transceiver_large.png",
     "economy/mod_kinetic_impact.png",
     "economy/mod_kinetic_impact_large.png",
     "economy/mod_magnetic_scavenger.png",
     "economy/mod_magnetic_scavenger_large.png",
+    "economy/mod_pressure_seal.png",
+    "economy/mod_pressure_seal_large.png",
+    "economy/mod_queens_bane.png",
+    "economy/mod_queens_bane_large.png",
+    "economy/mod_scrap_furnace.png",
+    "economy/mod_scrap_furnace_large.png",
+    "economy/mod_shard_conduit.png",
+    "economy/mod_shard_conduit_large.png",
     "economy/mod_symbiotic_adrenaline_pump.png",
     "economy/mod_symbiotic_adrenaline_pump_large.png",
     "economy/mod_thermal_heat_exchanger.png",
     "economy/mod_thermal_heat_exchanger_large.png",
     "economy/mod_zero_point_flux.png",
     "economy/mod_zero_point_flux_large.png",
+    "economy/patch_bunker404.png",
+    "economy/patch_bunker404_large.png",
+    "economy/patch_deep_frost.png",
+    "economy/patch_deep_frost_large.png",
     "economy/patch_engineer.png",
     "economy/patch_engineer_large.png",
+    "economy/patch_grand_marshal.png",
+    "economy/patch_grand_marshal_large.png",
+    "economy/patch_hive_chitin.png",
+    "economy/patch_hive_chitin_large.png",
+    "economy/patch_horizon_corporate.png",
+    "economy/patch_horizon_corporate_large.png",
+    "economy/patch_rust_bone.png",
+    "economy/patch_rust_bone_large.png",
     "economy/patch_scout.png",
     "economy/patch_scout_large.png",
     "economy/patch_tank.png",
@@ -659,16 +799,28 @@
     "economy/relic_rare_large.png",
     "economy/skin_biolume_spore_sprayer.png",
     "economy/skin_biolume_spore_sprayer_large.png",
+    "economy/skin_bunker404.png",
+    "economy/skin_bunker404_large.png",
+    "economy/skin_deep_frost.png",
+    "economy/skin_deep_frost_large.png",
     "economy/skin_engineer_cryo_plasma.png",
     "economy/skin_engineer_cryo_plasma_large.png",
     "economy/skin_glitched_circuit_bolter.png",
     "economy/skin_glitched_circuit_bolter_large.png",
+    "economy/skin_grand_marshal.png",
+    "economy/skin_grand_marshal_large.png",
     "economy/skin_hazard_stripe_smg.png",
     "economy/skin_hazard_stripe_smg_large.png",
+    "economy/skin_hive_chitin.png",
+    "economy/skin_hive_chitin_large.png",
+    "economy/skin_horizon_corporate.png",
+    "economy/skin_horizon_corporate_large.png",
     "economy/skin_obsidian_shard.png",
     "economy/skin_obsidian_shard_large.png",
     "economy/skin_queen_carapace_carbine.png",
     "economy/skin_queen_carapace_carbine_large.png",
+    "economy/skin_rust_bone.png",
+    "economy/skin_rust_bone_large.png",
     "economy/skin_rust_bone_trench.png",
     "economy/skin_rust_bone_trench_large.png",
     "economy/skin_scout_frostbite.png",
@@ -698,7 +850,6 @@
     "fx_spark_burst.svg",
     "fx_steam_puff.svg",
     "ice_base_rock.png",
-    "ice_grunge_snow.png",
     "ice_wall_glacier.png",
     "interstitials/int_02_kaelen_s_sleeping_machine_key_v1.mp4",
     "interstitials/int_04_warmth_beneath_the_ice_key_v1.mp4",
@@ -743,7 +894,6 @@
     "lore_portraits/bunker_announcer.webp",
     "lore_portraits/mayor_tina.webp",
     "lore_portraits/meridian_kaelen.jpg",
-    "lore_portraits/meridian_kaelen.png",
     "lore_portraits/queen_00.webp",
     "lore_portraits/survivor_00.webp",
     "lore_portraits/survivor_01.webp",
@@ -1126,7 +1276,17 @@
     },
     {
       "path": "3d/runtime/new3ds/alien_proto_crawler_A.glb",
-      "bytes": 5088468,
+      "bytes": 4582244,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/body_empty_exosuit.glb",
+      "bytes": 161972,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/body_frozen_human.glb",
+      "bytes": 162296,
       "classification": "runtime-required"
     },
     {
@@ -1155,8 +1315,18 @@
       "classification": "runtime-required"
     },
     {
+      "path": "3d/runtime/new3ds/charm_bunker404.glb",
+      "bytes": 145780,
+      "classification": "runtime-required"
+    },
+    {
       "path": "3d/runtime/new3ds/charm_dark_matter.glb",
       "bytes": 1360896,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/charm_deep_frost.glb",
+      "bytes": 137816,
       "classification": "runtime-required"
     },
     {
@@ -1175,6 +1345,21 @@
       "classification": "runtime-required"
     },
     {
+      "path": "3d/runtime/new3ds/charm_grand_marshal.glb",
+      "bytes": 162452,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/charm_hive_chitin.glb",
+      "bytes": 141200,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/charm_horizon_corporate.glb",
+      "bytes": 128476,
+      "classification": "runtime-required"
+    },
+    {
       "path": "3d/runtime/new3ds/charm_mini_cryo_core.glb",
       "bytes": 1992748,
       "classification": "runtime-required"
@@ -1182,6 +1367,11 @@
     {
       "path": "3d/runtime/new3ds/charm_mini_drone_bobble.glb",
       "bytes": 1898800,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/charm_rust_bone.glb",
+      "bytes": 135196,
       "classification": "runtime-required"
     },
     {
@@ -1205,6 +1395,11 @@
       "classification": "runtime-required"
     },
     {
+      "path": "3d/runtime/new3ds/chassis_bunker404.glb",
+      "bytes": 564432,
+      "classification": "runtime-required"
+    },
+    {
       "path": "3d/runtime/new3ds/chassis_cryo_vanguard_scout.glb",
       "bytes": 3405192,
       "classification": "runtime-required"
@@ -1212,6 +1407,11 @@
     {
       "path": "3d/runtime/new3ds/chassis_cyber_spectre_infiltrator.glb",
       "bytes": 16163084,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/chassis_deep_frost.glb",
+      "bytes": 550604,
       "classification": "runtime-required"
     },
     {
@@ -1230,8 +1430,28 @@
       "classification": "runtime-required"
     },
     {
+      "path": "3d/runtime/new3ds/chassis_grand_marshal.glb",
+      "bytes": 545888,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/chassis_hive_chitin.glb",
+      "bytes": 515468,
+      "classification": "runtime-required"
+    },
+    {
       "path": "3d/runtime/new3ds/chassis_hive_lord_symbiote.glb",
       "bytes": 17337132,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/chassis_horizon_corporate.glb",
+      "bytes": 539760,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/chassis_rust_bone.glb",
+      "bytes": 594936,
       "classification": "runtime-required"
     },
     {
@@ -1305,6 +1525,16 @@
       "classification": "runtime-required"
     },
     {
+      "path": "3d/runtime/new3ds/mod_archivist_lens.glb",
+      "bytes": 159244,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/mod_ballast_plating.glb",
+      "bytes": 154544,
+      "classification": "runtime-required"
+    },
+    {
       "path": "3d/runtime/new3ds/mod_bio_hazard_filter.glb",
       "bytes": 1862176,
       "classification": "runtime-required"
@@ -1312,6 +1542,16 @@
     {
       "path": "3d/runtime/new3ds/mod_cryo_capacitor.glb",
       "bytes": 1975092,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/mod_deep_anchor.glb",
+      "bytes": 162752,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/mod_duplicate_refiner.glb",
+      "bytes": 134296,
       "classification": "runtime-required"
     },
     {
@@ -1327,6 +1567,26 @@
     {
       "path": "3d/runtime/new3ds/mod_magnetic_scavenger.glb",
       "bytes": 2129132,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/mod_pressure_seal.glb",
+      "bytes": 191012,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/mod_queens_bane.glb",
+      "bytes": 153076,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/mod_scrap_furnace.glb",
+      "bytes": 170468,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/mod_shard_conduit.glb",
+      "bytes": 191468,
       "classification": "runtime-required"
     },
     {
@@ -1460,6 +1720,16 @@
       "classification": "runtime-required"
     },
     {
+      "path": "3d/runtime/new3ds/prop_camp_cot.glb",
+      "bytes": 159716,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/prop_camp_crate.glb",
+      "bytes": 140772,
+      "classification": "runtime-required"
+    },
+    {
       "path": "3d/runtime/new3ds/prop_cave_bones.glb",
       "bytes": 4435296,
       "classification": "runtime-required"
@@ -1482,6 +1752,11 @@
     {
       "path": "3d/runtime/new3ds/prop_fabricator_workstation.glb",
       "bytes": 1296028,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/prop_hive_resin_sac.glb",
+      "bytes": 118528,
       "classification": "runtime-required"
     },
     {
@@ -1525,13 +1800,23 @@
       "classification": "runtime-required"
     },
     {
+      "path": "3d/runtime/new3ds/scatter_bolts.glb",
+      "bytes": 173400,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/scatter_cable_coil.glb",
+      "bytes": 144164,
+      "classification": "runtime-required"
+    },
+    {
       "path": "3d/runtime/new3ds/sentinel.glb",
       "bytes": 5822928,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/sentinel_A.glb",
-      "bytes": 5822928,
+      "bytes": 5368360,
       "classification": "runtime-required"
     },
     {
@@ -1545,6 +1830,16 @@
       "classification": "runtime-required"
     },
     {
+      "path": "3d/runtime/new3ds/skin_bunker404.glb",
+      "bytes": 219836,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/skin_deep_frost.glb",
+      "bytes": 199680,
+      "classification": "runtime-required"
+    },
+    {
       "path": "3d/runtime/new3ds/skin_engineer_cryo_plasma.glb",
       "bytes": 541968,
       "classification": "runtime-required"
@@ -1555,8 +1850,23 @@
       "classification": "runtime-required"
     },
     {
+      "path": "3d/runtime/new3ds/skin_grand_marshal.glb",
+      "bytes": 183584,
+      "classification": "runtime-required"
+    },
+    {
       "path": "3d/runtime/new3ds/skin_hazard_stripe_smg.glb",
       "bytes": 4500836,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/skin_hive_chitin.glb",
+      "bytes": 162528,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/skin_horizon_corporate.glb",
+      "bytes": 196052,
       "classification": "runtime-required"
     },
     {
@@ -1567,6 +1877,11 @@
     {
       "path": "3d/runtime/new3ds/skin_queen_carapace_carbine.glb",
       "bytes": 11966464,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/skin_rust_bone.glb",
+      "bytes": 170424,
       "classification": "runtime-required"
     },
     {
@@ -1607,6 +1922,26 @@
     {
       "path": "3d/runtime/new3ds/sporesnail.glb",
       "bytes": 5308636,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/state_barricade_improvised_1.glb",
+      "bytes": 165760,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/state_barricade_improvised_2.glb",
+      "bytes": 163108,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/state_growth_overrun_1.glb",
+      "bytes": 163080,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/state_growth_overrun_2.glb",
+      "bytes": 150168,
       "classification": "runtime-required"
     },
     {
@@ -3915,21 +4250,6 @@
       "classification": "runtime-required"
     },
     {
-      "path": "cutscenes/poster-art/event-boss-cryosnail.png",
-      "bytes": 957651,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "cutscenes/poster-art/event-boss-cybersnail.png",
-      "bytes": 883557,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "cutscenes/poster-art/event-boss-sporesnail.png",
-      "bytes": 991045,
-      "classification": "runtime-required"
-    },
-    {
       "path": "cutscenes/poster-art/event-cave-revealed-1.png",
       "bytes": 891193,
       "classification": "runtime-required"
@@ -3942,11 +4262,6 @@
     {
       "path": "cutscenes/poster-art/event-foundry-discovered.png",
       "bytes": 2688052,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "cutscenes/poster-art/event-o2-generator-upgraded.png",
-      "bytes": 973147,
       "classification": "runtime-required"
     },
     {
@@ -4065,6 +4380,51 @@
       "classification": "runtime-required"
     },
     {
+      "path": "decal_frost_bloom_1.png",
+      "bytes": 263704,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "decal_frost_bloom_2.png",
+      "bytes": 211098,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "decal_graffiti_tally_1.png",
+      "bytes": 316748,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "decal_graffiti_tally_2.png",
+      "bytes": 375738,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "decal_grease_pool.png",
+      "bytes": 95138,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "decal_growth_creep_1.png",
+      "bytes": 235357,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "decal_growth_creep_2.png",
+      "bytes": 232753,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "decal_hand_smears_1.png",
+      "bytes": 283484,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "decal_hand_smears_2.png",
+      "bytes": 322009,
+      "classification": "runtime-required"
+    },
+    {
       "path": "decal_hazard_stripes.png",
       "bytes": 213478,
       "classification": "runtime-required"
@@ -4100,8 +4460,23 @@
       "classification": "runtime-required"
     },
     {
+      "path": "decal_rust_bleed_1.png",
+      "bytes": 263185,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "decal_rust_bleed_2.png",
+      "bytes": 386341,
+      "classification": "runtime-required"
+    },
+    {
       "path": "decal_scars.png",
       "bytes": 1565757,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "decal_scorch_bloom.png",
+      "bytes": 187083,
       "classification": "runtime-required"
     },
     {
@@ -4120,8 +4495,23 @@
       "classification": "runtime-required"
     },
     {
+      "path": "decal_vine_iron_shadow_1.png",
+      "bytes": 162574,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "decal_vine_iron_shadow_2.png",
+      "bytes": 138633,
+      "classification": "runtime-required"
+    },
+    {
       "path": "decal_wall_breach.png",
       "bytes": 1930665,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "decal_water_stain.png",
+      "bytes": 132507,
       "classification": "runtime-required"
     },
     {
@@ -4735,8 +5125,18 @@
       "classification": "runtime-required"
     },
     {
+      "path": "economy/charm_bunker404.png",
+      "bytes": 81147,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/charm_bunker404_large.png",
+      "bytes": 350599,
+      "classification": "runtime-required"
+    },
+    {
       "path": "economy/charm_dark_matter.png",
-      "bytes": 94470,
+      "bytes": 79696,
       "classification": "runtime-required"
     },
     {
@@ -4746,7 +5146,17 @@
     },
     {
       "path": "economy/charm_dark_matter_large.png",
-      "bytes": 339878,
+      "bytes": 255093,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/charm_deep_frost.png",
+      "bytes": 80600,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/charm_deep_frost_large.png",
+      "bytes": 347353,
       "classification": "runtime-required"
     },
     {
@@ -4780,6 +5190,36 @@
       "classification": "runtime-required"
     },
     {
+      "path": "economy/charm_grand_marshal.png",
+      "bytes": 69214,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/charm_grand_marshal_large.png",
+      "bytes": 281527,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/charm_hive_chitin.png",
+      "bytes": 69963,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/charm_hive_chitin_large.png",
+      "bytes": 271628,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/charm_horizon_corporate.png",
+      "bytes": 50129,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/charm_horizon_corporate_large.png",
+      "bytes": 217908,
+      "classification": "runtime-required"
+    },
+    {
       "path": "economy/charm_mini_cryo_core.png",
       "bytes": 121579,
       "classification": "runtime-required"
@@ -4797,6 +5237,16 @@
     {
       "path": "economy/charm_mini_drone_bobble_large.png",
       "bytes": 331219,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/charm_rust_bone.png",
+      "bytes": 70071,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/charm_rust_bone_large.png",
+      "bytes": 299314,
       "classification": "runtime-required"
     },
     {
@@ -4840,6 +5290,16 @@
       "classification": "runtime-required"
     },
     {
+      "path": "economy/chassis_bunker404.png",
+      "bytes": 92555,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/chassis_bunker404_large.png",
+      "bytes": 372160,
+      "classification": "runtime-required"
+    },
+    {
       "path": "economy/chassis_cryo_vanguard_scout.png",
       "bytes": 15228,
       "classification": "runtime-required"
@@ -4860,6 +5320,16 @@
       "classification": "runtime-required"
     },
     {
+      "path": "economy/chassis_deep_frost.png",
+      "bytes": 102523,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/chassis_deep_frost_large.png",
+      "bytes": 428048,
+      "classification": "runtime-required"
+    },
+    {
       "path": "economy/chassis_dreadnought_exo_juggernaut.png",
       "bytes": 14205,
       "classification": "runtime-required"
@@ -4870,6 +5340,26 @@
       "classification": "runtime-required"
     },
     {
+      "path": "economy/chassis_grand_marshal.png",
+      "bytes": 76550,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/chassis_grand_marshal_large.png",
+      "bytes": 308201,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/chassis_hive_chitin.png",
+      "bytes": 88885,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/chassis_hive_chitin_large.png",
+      "bytes": 365224,
+      "classification": "runtime-required"
+    },
+    {
       "path": "economy/chassis_hive_lord_symbiote.png",
       "bytes": 24688,
       "classification": "runtime-required"
@@ -4877,6 +5367,26 @@
     {
       "path": "economy/chassis_hive_lord_symbiote_large.png",
       "bytes": 57804,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/chassis_horizon_corporate.png",
+      "bytes": 79310,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/chassis_horizon_corporate_large.png",
+      "bytes": 318273,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/chassis_rust_bone.png",
+      "bytes": 112857,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/chassis_rust_bone_large.png",
+      "bytes": 460769,
       "classification": "runtime-required"
     },
     {
@@ -5051,22 +5561,142 @@
     },
     {
       "path": "economy/fx_cryo_shockwave_muzzle.png",
-      "bytes": 34118,
+      "bytes": 115636,
       "classification": "runtime-required"
     },
     {
       "path": "economy/fx_cryo_shockwave_muzzle_large.png",
-      "bytes": 81288,
+      "bytes": 436364,
       "classification": "runtime-required"
     },
     {
       "path": "economy/fx_emerald_void_tracer.png",
-      "bytes": 14443,
+      "bytes": 86121,
       "classification": "runtime-required"
     },
     {
       "path": "economy/fx_emerald_void_tracer_large.png",
-      "bytes": 32254,
+      "bytes": 341007,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/fx_sheen_bunker404.png",
+      "bytes": 111046,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/fx_sheen_bunker404_large.png",
+      "bytes": 437699,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/fx_sheen_deep_frost.png",
+      "bytes": 100119,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/fx_sheen_deep_frost_large.png",
+      "bytes": 396505,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/fx_sheen_grand_marshal.png",
+      "bytes": 108578,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/fx_sheen_grand_marshal_large.png",
+      "bytes": 408488,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/fx_sheen_hive_chitin.png",
+      "bytes": 107678,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/fx_sheen_hive_chitin_large.png",
+      "bytes": 409327,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/fx_sheen_horizon_corporate.png",
+      "bytes": 72304,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/fx_sheen_horizon_corporate_large.png",
+      "bytes": 285434,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/fx_sheen_rust_bone.png",
+      "bytes": 111130,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/fx_sheen_rust_bone_large.png",
+      "bytes": 441786,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/fx_tracer_bunker404.png",
+      "bytes": 105505,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/fx_tracer_bunker404_large.png",
+      "bytes": 418930,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/fx_tracer_deep_frost.png",
+      "bytes": 105368,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/fx_tracer_deep_frost_large.png",
+      "bytes": 395112,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/fx_tracer_grand_marshal.png",
+      "bytes": 84296,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/fx_tracer_grand_marshal_large.png",
+      "bytes": 335318,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/fx_tracer_hive_chitin.png",
+      "bytes": 99043,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/fx_tracer_hive_chitin_large.png",
+      "bytes": 388814,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/fx_tracer_horizon_corporate.png",
+      "bytes": 55345,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/fx_tracer_horizon_corporate_large.png",
+      "bytes": 220612,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/fx_tracer_rust_bone.png",
+      "bytes": 111746,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/fx_tracer_rust_bone_large.png",
+      "bytes": 416679,
       "classification": "runtime-required"
     },
     {
@@ -5131,27 +5761,107 @@
     },
     {
       "path": "economy/hudtheme_amber_crt.png",
-      "bytes": 16444,
+      "bytes": 83755,
       "classification": "runtime-required"
     },
     {
       "path": "economy/hudtheme_amber_crt_large.png",
-      "bytes": 37846,
+      "bytes": 346721,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/hudtheme_bunker404.png",
+      "bytes": 132696,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/hudtheme_bunker404_large.png",
+      "bytes": 499535,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/hudtheme_deep_frost.png",
+      "bytes": 124063,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/hudtheme_deep_frost_large.png",
+      "bytes": 476333,
       "classification": "runtime-required"
     },
     {
       "path": "economy/hudtheme_emerald_radar.png",
-      "bytes": 33694,
+      "bytes": 93873,
       "classification": "runtime-required"
     },
     {
       "path": "economy/hudtheme_emerald_radar_large.png",
-      "bytes": 78886,
+      "bytes": 358674,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/hudtheme_grand_marshal.png",
+      "bytes": 125672,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/hudtheme_grand_marshal_large.png",
+      "bytes": 487123,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/hudtheme_hive_chitin.png",
+      "bytes": 120472,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/hudtheme_hive_chitin_large.png",
+      "bytes": 451012,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/hudtheme_horizon_corporate.png",
+      "bytes": 69233,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/hudtheme_horizon_corporate_large.png",
+      "bytes": 284077,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/hudtheme_rust_bone.png",
+      "bytes": 109255,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/hudtheme_rust_bone_large.png",
+      "bytes": 420617,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/mod_archivist_lens.png",
+      "bytes": 95785,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/mod_archivist_lens_large.png",
+      "bytes": 385539,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/mod_ballast_plating.png",
+      "bytes": 112176,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/mod_ballast_plating_large.png",
+      "bytes": 437531,
       "classification": "runtime-required"
     },
     {
       "path": "economy/mod_bio_hazard_filter.png",
-      "bytes": 113587,
+      "bytes": 91040,
       "classification": "runtime-required"
     },
     {
@@ -5161,7 +5871,7 @@
     },
     {
       "path": "economy/mod_bio_hazard_filter_large.png",
-      "bytes": 404376,
+      "bytes": 302907,
       "classification": "runtime-required"
     },
     {
@@ -5172,6 +5882,26 @@
     {
       "path": "economy/mod_cryo_capacitor_large.png",
       "bytes": 346990,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/mod_deep_anchor.png",
+      "bytes": 100053,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/mod_deep_anchor_large.png",
+      "bytes": 402396,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/mod_duplicate_refiner.png",
+      "bytes": 93586,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/mod_duplicate_refiner_large.png",
+      "bytes": 381520,
       "classification": "runtime-required"
     },
     {
@@ -5186,7 +5916,7 @@
     },
     {
       "path": "economy/mod_kinetic_impact.png",
-      "bytes": 94738,
+      "bytes": 77679,
       "classification": "runtime-required"
     },
     {
@@ -5196,7 +5926,7 @@
     },
     {
       "path": "economy/mod_kinetic_impact_large.png",
-      "bytes": 302587,
+      "bytes": 239175,
       "classification": "runtime-required"
     },
     {
@@ -5210,18 +5940,58 @@
       "classification": "runtime-required"
     },
     {
+      "path": "economy/mod_pressure_seal.png",
+      "bytes": 113499,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/mod_pressure_seal_large.png",
+      "bytes": 449014,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/mod_queens_bane.png",
+      "bytes": 85775,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/mod_queens_bane_large.png",
+      "bytes": 341587,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/mod_scrap_furnace.png",
+      "bytes": 100403,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/mod_scrap_furnace_large.png",
+      "bytes": 388184,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/mod_shard_conduit.png",
+      "bytes": 100921,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/mod_shard_conduit_large.png",
+      "bytes": 392997,
+      "classification": "runtime-required"
+    },
+    {
       "path": "economy/mod_symbiotic_adrenaline_pump.png",
-      "bytes": 15116,
+      "bytes": 100418,
       "classification": "runtime-required"
     },
     {
       "path": "economy/mod_symbiotic_adrenaline_pump_large.png",
-      "bytes": 33487,
+      "bytes": 395555,
       "classification": "runtime-required"
     },
     {
       "path": "economy/mod_thermal_heat_exchanger.png",
-      "bytes": 87130,
+      "bytes": 71797,
       "classification": "runtime-required"
     },
     {
@@ -5231,7 +6001,7 @@
     },
     {
       "path": "economy/mod_thermal_heat_exchanger_large.png",
-      "bytes": 288784,
+      "bytes": 232739,
       "classification": "runtime-required"
     },
     {
@@ -5245,6 +6015,26 @@
       "classification": "runtime-required"
     },
     {
+      "path": "economy/patch_bunker404.png",
+      "bytes": 123615,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/patch_bunker404_large.png",
+      "bytes": 473040,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/patch_deep_frost.png",
+      "bytes": 146025,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/patch_deep_frost_large.png",
+      "bytes": 546519,
+      "classification": "runtime-required"
+    },
+    {
       "path": "economy/patch_engineer.png",
       "bytes": 79527,
       "classification": "runtime-required"
@@ -5252,6 +6042,46 @@
     {
       "path": "economy/patch_engineer_large.png",
       "bytes": 285757,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/patch_grand_marshal.png",
+      "bytes": 124175,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/patch_grand_marshal_large.png",
+      "bytes": 490128,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/patch_hive_chitin.png",
+      "bytes": 111018,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/patch_hive_chitin_large.png",
+      "bytes": 423931,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/patch_horizon_corporate.png",
+      "bytes": 60740,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/patch_horizon_corporate_large.png",
+      "bytes": 241478,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/patch_rust_bone.png",
+      "bytes": 127638,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/patch_rust_bone_large.png",
+      "bytes": 482886,
       "classification": "runtime-required"
     },
     {
@@ -5355,6 +6185,26 @@
       "classification": "runtime-required"
     },
     {
+      "path": "economy/skin_bunker404.png",
+      "bytes": 64825,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/skin_bunker404_large.png",
+      "bytes": 248371,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/skin_deep_frost.png",
+      "bytes": 73084,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/skin_deep_frost_large.png",
+      "bytes": 293543,
+      "classification": "runtime-required"
+    },
+    {
       "path": "economy/skin_engineer_cryo_plasma.png",
       "bytes": 60663,
       "classification": "runtime-required"
@@ -5380,6 +6230,16 @@
       "classification": "runtime-required"
     },
     {
+      "path": "economy/skin_grand_marshal.png",
+      "bytes": 55122,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/skin_grand_marshal_large.png",
+      "bytes": 226806,
+      "classification": "runtime-required"
+    },
+    {
       "path": "economy/skin_hazard_stripe_smg.png",
       "bytes": 40857,
       "classification": "runtime-required"
@@ -5387,6 +6247,26 @@
     {
       "path": "economy/skin_hazard_stripe_smg_large.png",
       "bytes": 131582,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/skin_hive_chitin.png",
+      "bytes": 69663,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/skin_hive_chitin_large.png",
+      "bytes": 278289,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/skin_horizon_corporate.png",
+      "bytes": 38192,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/skin_horizon_corporate_large.png",
+      "bytes": 157324,
       "classification": "runtime-required"
     },
     {
@@ -5407,6 +6287,16 @@
     {
       "path": "economy/skin_queen_carapace_carbine_large.png",
       "bytes": 287314,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/skin_rust_bone.png",
+      "bytes": 70082,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/skin_rust_bone_large.png",
+      "bytes": 309805,
       "classification": "runtime-required"
     },
     {
@@ -5432,11 +6322,6 @@
     {
       "path": "economy/skin_scout_frostbite_source.jpg",
       "bytes": 65336,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "economy/skin_scout_talon_c.png",
-      "bytes": 364349,
       "classification": "runtime-required"
     },
     {
@@ -5486,22 +6371,22 @@
     },
     {
       "path": "economy/voicepack_aura.png",
-      "bytes": 38928,
+      "bytes": 107810,
       "classification": "runtime-required"
     },
     {
       "path": "economy/voicepack_aura_large.png",
-      "bytes": 95164,
+      "bytes": 416161,
       "classification": "runtime-required"
     },
     {
       "path": "economy/voicepack_soviet_commander.png",
-      "bytes": 38744,
+      "bytes": 93926,
       "classification": "runtime-required"
     },
     {
       "path": "economy/voicepack_soviet_commander_large.png",
-      "bytes": 86460,
+      "bytes": 371077,
       "classification": "runtime-required"
     },
     {
@@ -5620,23 +6505,8 @@
       "classification": "unknown"
     },
     {
-      "path": "hive_carapace_site.png",
-      "bytes": 824675,
-      "classification": "unknown"
-    },
-    {
       "path": "hive_interior.png",
       "bytes": 1025298,
-      "classification": "unknown"
-    },
-    {
-      "path": "hive_relay_site.png",
-      "bytes": 2005627,
-      "classification": "unknown"
-    },
-    {
-      "path": "hive_suture_site.png",
-      "bytes": 1869367,
       "classification": "unknown"
     },
     {
@@ -5652,11 +6522,6 @@
     {
       "path": "ice_base_rock.png",
       "bytes": 2153267,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "ice_grunge_snow.png",
-      "bytes": 1232083,
       "classification": "runtime-required"
     },
     {
@@ -6310,11 +7175,6 @@
       "classification": "runtime-required"
     },
     {
-      "path": "lore_portraits/meridian_kaelen.png",
-      "bytes": 994213,
-      "classification": "runtime-required"
-    },
-    {
       "path": "lore_portraits/queen_00.webp",
       "bytes": 81630,
       "classification": "runtime-required"
@@ -6461,7 +7321,7 @@
     },
     {
       "path": "minigames/rgb/ASSET_PROVENANCE.md",
-      "bytes": 8663,
+      "bytes": 8668,
       "classification": "runtime-required"
     },
     {

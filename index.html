@@ -2134,13 +2134,14 @@
 
     <!-- Settings Modal -->
     <div id="settings-popup" class="modal hidden">
-      <div class="modal-content settings-modal-content">
+      <div class="modal-content settings-modal-panel">
         <div class="settings-sticky-header">
           <h2 class="modal-title">SYSTEM SETTINGS</h2>
           <button class="close-modal" id="close-settings" aria-label="Close system settings">×</button>
         </div>
 
-        <!-- Section 1: Display & Graphics -->
+        <div class="settings-modal-content">
+          <!-- Section 1: Display & Graphics -->
         <div class="settings-category-group">
           <div class="settings-category-header">DISPLAY & GRAPHICS</div>
           <!-- Stage Resolution was a developer layout label, not a renderer
@@ -2308,7 +2309,7 @@
         <div class="modal-actions" style="margin-top: calc(var(--vu) * 4); border-top: 1px solid var(--border-subtle); padding-top: calc(var(--vu) * 3); display: flex; justify-content: center;">
           <button class="abort-btn hidden" id="abort-mission">ABORT MISSION</button>
         </div>
-
+        </div>
       </div>
     </div>
 

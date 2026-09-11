@@ -2,7 +2,7 @@ const LEADER_IDENTITIES = Object.freeze({
     kaelen: Object.freeze({
         id: 'kaelen',
         name: 'Overseer Kaelen',
-        portrait: '/lore_portraits/meridian_kaelen.png',
+        portrait: '/lore_portraits/meridian_kaelen.jpg',
         sprite: '/kaelen_camp_walk_v2.png',
         classId: 'ENGINEER',
         accent: '#52e5ff',

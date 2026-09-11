@@ -5,7 +5,7 @@ and worklogs are evidence or history; they do not override this file. Update a
 row when its implementation or acceptance state changes and link to evidence
 instead of duplicating it here.
 
-Last verified: 2026-09-10 · Sprint 33 · `dev/sprint-33` · `v2.4.0-beta`
+Last verified: 2026-09-10 · Sprint 34 · `dev/sprint-34` · `v2.4.0-beta`
 
 Partial re-verification: 2026-09-09 · `fix/mayor-tina-and-astra-plan` from `69f31eb` · `v2.3.2-beta`. The encounter, diagnostics, payload, save/quest/depth caveats, 3D operator chest patches, startup UI scaling, and automated-suite rows below were reviewed in [the September 8 audit](docs/reports/astra-game-review-2026-09-08.md), [first implementation report](docs/reports/astra-first-implementation-2026-09-08.md), and [September 9 report](docs/reports/operator-patches-and-ui-scale-2026-09-09.md). Other acceptance rows retain their earlier scope and date.
 
@@ -35,7 +35,7 @@ Status vocabulary:
 | Mayor Tina | Seeded encounter moved to X 9, Z -14 through -20; cup and Tina turn 180° about Y. Browser approach, transformation, and transformed movement verified; sampled generation probe passed 100 seeds. | Full natural approach and packaged visual sign-off remain open. |
 | Retail asset budget | Two texture-only derivatives preserve geometry and reduce public payload to 2,793,737,892 bytes; the unchanged 2,700 MiB gate and generated presubmit checks pass. | 37,417,308 bytes of headroom remain. This web/source audit does not certify a Steam package or clear asset rights. |
 | Presentation | Sprint 29 closed reticle, menu isolation telemetry, XP/reward feedback, lighting reporting, weapon/charm calibration, audio diagnostics, and walk cadence gaps. September 9 resolved startup scaling. September 10 added upgraded tilt-shift diorama bokeh (quadratic falloff, chromatic dispersion, 7-sample Gaussian filter, 4.5px backdrop blur), dynamic directional shadow tracking following player position, 3.2:1 contrast lighting, 3D ballistic tracers, multi-stage biomechanical enemy death bursts, quadratic camera trauma shake, 3D additive muzzle flash, and tactical killstreak accolades. | Desktop 16:9 and 1280×800 human visual sign-off remains open. |
-| Automated suite | `npm test` passes **2,734 tests across 308 files** as of 2026-09-10; lint (0 errors), doc audit (12 canonical files, 289 non-archive markdown files), presubmit, and production web/media build pass cleanly. | Hardware-only behavior and a full expedition are not covered by this count. |
+| Automated suite | `npm test` passes **2,849 tests across 322 files** as of 2026-09-10; lint (0 errors), doc audit (12 canonical files, 299 non-archive markdown files), presubmit, and production web/media build pass cleanly. | Hardware-only behavior and a full expedition are not covered by this count. |
 
 ## Current milestone
 

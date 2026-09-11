@@ -11,5 +11,11 @@ export const CHARM_GLB_MAP = Object.freeze({
     // item 1) — same generation pipeline as the rest of this map, textured, matching quality.
     '4137': '/3d/runtime/new3ds/charm_amber_bio_flask.glb',
     '4138': '/3d/runtime/new3ds/charm_dark_matter.glb',
-    '4139': '/3d/runtime/new3ds/charm_golden_sub_bunker_key.glb'
+    '4139': '/3d/runtime/new3ds/charm_golden_sub_bunker_key.glb',
+    '4202': '/3d/runtime/new3ds/charm_deep_frost.glb',
+    '4209': '/3d/runtime/new3ds/charm_rust_bone.glb',
+    '4216': '/3d/runtime/new3ds/charm_hive_chitin.glb',
+    '4223': '/3d/runtime/new3ds/charm_horizon_corporate.glb',
+    '4230': '/3d/runtime/new3ds/charm_bunker404.glb',
+    '4237': '/3d/runtime/new3ds/charm_grand_marshal.glb'
 });

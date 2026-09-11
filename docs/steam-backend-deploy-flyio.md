@@ -9,14 +9,14 @@ This is the smallest path to a real backend instead of a local
 Fly.io was chosen because it's a single binary CLI, free-tier friendly for
 a small Express/Socket.IO service, and needs no container registry setup.
 If you'd rather use a different host (Render, a VPS, Railway), the
-`Dockerfile` at the repo root is portable to any of them — only this doc
-and the `fly.toml` are Fly-specific.
+`deploy/Dockerfile` is portable to any of them — only this doc
+and `deploy/fly.toml` are Fly-specific.
 
 ## What ships in the image
 
 Only `server/` and production `dependencies` — not the game client (that
 ships inside the Electron/Steam depot), not `devDependencies` (vite,
-electron, electron-builder, eslint, vitest). See `Dockerfile`.
+electron, electron-builder, eslint, vitest). See `deploy/Dockerfile`.
 
 One caveat: `steamworks.js` is listed under `dependencies` in
 `package.json` because the Electron main process needs it, but the backend
@@ -32,14 +32,14 @@ curl -L https://fly.io/install.sh | sh   # installs the flyctl CLI
 fly auth login
 ```
 
-Pick a real app name (the `fly.toml` placeholder `hunker-bunker-steam-backend`
+Pick a real app name (the `deploy/fly.toml` placeholder `hunker-bunker-steam-backend`
 is almost certainly taken or wrong for your account) and create it:
 
 ```bash
 fly apps create <your-app-name>
 ```
 
-Update `app = "..."` in `fly.toml` to match.
+Update `app = "..."` in `deploy/fly.toml` to match.
 
 ## Persistent storage (do this before any real purchase/leaderboard traffic)
 
@@ -51,7 +51,7 @@ on every deploy or restart without a volume:
 fly volumes create hb_data --size 1 --region iad
 ```
 
-`fly.toml` already mounts that volume at `/app/server/data` and sets
+`deploy/fly.toml` already mounts that volume at `/app/server/data` and sets
 `HB_DB_STORAGE_PATH=/app/server/data/db_storage.json`.
 
 This is still a single JSON file with an in-process write queue, fine for
@@ -60,7 +60,7 @@ survive concurrent machines or serious write volume.
 
 ## Secrets
 
-Never commit these. Set them on Fly, not in `fly.toml`:
+Never commit these. Set them on Fly, not in `deploy/fly.toml`:
 
 ```bash
 fly secrets set \

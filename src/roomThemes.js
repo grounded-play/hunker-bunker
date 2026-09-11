@@ -3,22 +3,31 @@ export const LIVED_IN_DECALS = Object.freeze({
         'decal_abandoned_meal_tray', 'decal_emergency_oxygen_nest',
         'decal_maintenance_shrine', 'decal_failed_decon_kit',
         'decal_barricade_last_stand', 'decal_childlike_cave_map',
-        'decal_bio_sample_spill', 'decal_worker_sleep_roll'
+        'decal_bio_sample_spill', 'decal_worker_sleep_roll',
+        'decal_scorch_bloom', 'decal_rust_bleed_1',
+        'decal_rust_bleed_2', 'decal_water_stain',
+        'decal_graffiti_tally_1', 'decal_graffiti_tally_2'
     ]),
     cryo: Object.freeze([
         'decal_emergency_oxygen_nest', 'decal_failed_decon_kit',
         'decal_barricade_last_stand', 'decal_childlike_cave_map',
-        'decal_worker_sleep_roll', 'decal_abandoned_meal_tray'
+        'decal_worker_sleep_roll', 'decal_abandoned_meal_tray',
+        'decal_frost_bloom_1', 'decal_frost_bloom_2',
+        'decal_water_stain', 'decal_hand_smears_1'
     ]),
     bio: Object.freeze([
         'decal_maintenance_shrine', 'decal_childlike_cave_map',
         'decal_bio_sample_spill', 'decal_worker_sleep_roll',
-        'decal_abandoned_meal_tray'
+        'decal_abandoned_meal_tray', 'decal_growth_creep_1',
+        'decal_growth_creep_2', 'decal_vine_iron_shadow_1',
+        'decal_vine_iron_shadow_2', 'decal_grease_pool'
     ]),
     camp: Object.freeze([
         'decal_abandoned_meal_tray', 'decal_emergency_oxygen_nest',
         'decal_maintenance_shrine', 'decal_barricade_last_stand',
-        'decal_childlike_cave_map', 'decal_worker_sleep_roll'
+        'decal_childlike_cave_map', 'decal_worker_sleep_roll',
+        'decal_hand_smears_2', 'decal_graffiti_tally_1',
+        'decal_scorch_bloom', 'decal_grease_pool'
     ])
 });
 
