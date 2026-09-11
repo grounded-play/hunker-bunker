@@ -33,11 +33,12 @@ describe('multiplayerCrashPlanner', () => {
 
         const [p1, p2] = plan.players;
         expect(p1.spawnX).toBe(DEFAULT_BASE_SPAWN.x);
-        expect(p1.spawnZ).toBe(DEFAULT_BASE_SPAWN.z);
+        expect(p1.spawnZ).toBe(DEFAULT_BASE_SPAWN.z - 4);
         expect(p1.callsign).toBe('VIPER');
         expect(p1.opClass).toBe('SCOUT');
 
         expect(p2.spawnX).not.toBe(p1.spawnX);
+        expect(Math.hypot(p2.spawnX - p1.spawnX, p2.spawnZ - p1.spawnZ)).toBeGreaterThanOrEqual(4);
         expect(p2.callsign).toBe('TITAN');
         expect(p2.opClass).toBe('TANK');
         expect(p2.chassisSkinId).toBe('4114');
@@ -62,6 +63,11 @@ describe('multiplayerCrashPlanner', () => {
         expect(plan.breachCorridors.length).toBe(1);
         expect(plan.breachCorridors[0].corridorArchetype).toBe('contested_breach');
         expect(plan.breachCorridors[0].label).toBe('CONTESTED ZONE');
+        expect(plan.players.every((player) => Math.hypot(
+            player.spawnX - DEFAULT_BASE_SPAWN.x,
+            player.spawnZ - DEFAULT_BASE_SPAWN.z
+        ) === 6)).toBe(true);
+        expect(plan.players.some((player) => player.spawnX === 47 && player.spawnZ === 47)).toBe(false);
     });
 
     it('clamps player count safely between 1 and 4', () => {

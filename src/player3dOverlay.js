@@ -466,7 +466,7 @@ export function computeOperatorPolishMaterialState(baseColor, baseRoughness, bas
 
 export async function createPlayer3dOverlay({
     targetHeight = 1.85,
-    idleActionName = 'heroIdle',
+    idleActionName = 'idle',
     weaponVisible = true,
     weaponEnabled = true,
     weaponArchetype = 'gg1',
@@ -592,10 +592,10 @@ export async function createPlayer3dOverlay({
     const activeIdleName = actions.has(idleActionName)
         ? idleActionName
         : (actions.has('idle') ? 'idle' : (actions.has('heroIdle') ? 'heroIdle' : (actions.size > 0 ? actions.keys().next().value : null)));
-    const idleActions = activeIdleName ? [activeIdleName] : [];
+    const idleActions = [...new Set([activeIdleName, 'idle', 'heroIdle'])].filter((name) => actions.has(name));
     const blendableActions = [
         ...idleActions,
-        ...BLENDABLE_ACTIONS.filter((name) => name !== 'idle' && name !== activeIdleName && actions.has(name))
+        ...BLENDABLE_ACTIONS.filter((name) => !idleActions.includes(name) && actions.has(name))
     ];
     let forcedName = null;
     let forcedTimer = 0;

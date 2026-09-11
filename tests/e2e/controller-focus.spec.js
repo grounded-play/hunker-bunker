@@ -358,6 +358,7 @@ test.describe('controller-ready modal focus', () => {
             const popup = document.getElementById('settings-popup');
             const focusables = Array.from(popup.querySelectorAll('button:not([disabled]), input:not([disabled]), select:not([disabled])'));
             return focusables
+                .filter(el => el.checkVisibility())
                 .map(el => el.id || el.getAttribute('data-language-code') || '')
                 .filter(id => String(id).includes('language') && !id.includes('choice'));
         });
@@ -368,6 +369,11 @@ test.describe('controller-ready modal focus', () => {
         await trigger.click();
         const popup = page.locator('#language-select-popup');
         await expect(popup).toBeVisible();
+        await expect.poll(() => page.evaluate(() => {
+            const settings = document.getElementById('settings-popup');
+            const language = document.getElementById('language-select-popup');
+            return Number(getComputedStyle(language).zIndex) > Number(getComputedStyle(settings).zIndex);
+        })).toBe(true);
         await expect.poll(() => page.evaluate(() => (
             document.getElementById('language-select-popup')?.contains(document.activeElement)
         ))).toBe(true);

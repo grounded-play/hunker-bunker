@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
+import { resolveSafeSpawn } from './safeSpawn.js';
 import { ThreeGame } from './threeGame.js';
 import { hashSeed } from './multiplayerCrashPlanner.js';
 
@@ -22,7 +23,15 @@ describe('ThreeGame.setupMultiplayerNetwork world-seed sync', () => {
             remotePlayers: new Map(),
             fixedRunEntropy: false,
             globalSeedOffset: 0,
-            runEntropy: 12345 // pretend a prior solo run left a real value here
+            runEntropy: 12345, // pretend a prior solo run left a real value here
+            // The real method validates a spawn against the floor before the
+            // player is placed on it (see resolveSpawnPoint / safeSpawn.js).
+            // The fake uses the real resolver with an all-clear world so these
+            // specs keep asserting plan plumbing, not terrain.
+            isPlayerOverAnyHole: () => false,
+            resolveSpawnPoint(x, z) {
+                return resolveSafeSpawn({ x, z }, { isBlocked: (cx, cz) => this.isPlayerOverAnyHole(cx, cz) });
+            }
         };
     }
 

@@ -74,21 +74,25 @@ export function planMultiplayerCrashSites({
     // Base Sector Alpha (Host / Player 0)
     const baseSpawn = { x: DEFAULT_BASE_SPAWN.x, z: DEFAULT_BASE_SPAWN.y ?? DEFAULT_BASE_SPAWN.z };
 
-    // Offsets for subsequent crash pods
-    // In Co-Op: pods crash in adjacent rooms (~28-36m away) for collaborative linkup
-    // In PvP: pods crash on opposite sides of the contested breach sector
+    // Keep every initial pod on the authored crash-site apron. The previous
+    // 28/38-unit offsets could place peers in procedural void (47,47 in the
+    // 2026-09-11 Steam Deck session). Cardinal points also keep every chassis
+    // clear of the wreck at the exact 9,9 anchor and clear of one another.
     const coopOffsets = [
-        { x: 0, z: 0 },
-        { x: 28, z: 0 },
-        { x: 0, z: 28 },
-        { x: 28, z: 28 }
+        { x: 0, z: -4 },
+        { x: 4, z: 0 },
+        { x: 0, z: 4 },
+        { x: -4, z: 0 }
     ];
 
+    // PvP keeps a wider opening separation while remaining inside the same
+    // known-good authored area. Terrain validation at placement time is the
+    // final authority for both modes.
     const pvpOffsets = [
-        { x: 0, z: 0 },
-        { x: 38, z: 38 },
-        { x: 38, z: 0 },
-        { x: 0, z: 38 }
+        { x: 0, z: -6 },
+        { x: 6, z: 0 },
+        { x: 0, z: 6 },
+        { x: -6, z: 0 }
     ];
 
     const offsets = mode === MULTIPLAYER_SPAWN_MODES.PVP ? pvpOffsets : coopOffsets;

@@ -10,7 +10,12 @@ describe('ThreeGame remote player visibility', () => {
             playerSpriteScale: 1.6,
             scene: { add: vi.fn() },
             setRemoteSpriteFrame: vi.fn(),
-            setupRemotePlayer3dOverlay: vi.fn()
+            setupRemotePlayer3dOverlay: vi.fn(),
+            // Remote avatars go through the same spawn validation as the local
+            // player (see resolveSpawnPoint). An all-clear world keeps this spec
+            // about avatar construction rather than terrain.
+            isPlayerOverAnyHole: () => false,
+            resolveSpawnPoint: (x, z) => ({ x, z, moved: false, exhausted: false })
         };
 
         const remote = ThreeGame.prototype.getOrCreateRemotePlayer.call(game, {

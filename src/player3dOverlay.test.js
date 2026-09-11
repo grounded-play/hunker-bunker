@@ -115,6 +115,13 @@ describe('player 3D cosmetic overlay', () => {
         expect(selectLocomotionActionName('idle', true, true)).toBe('injuredIdle');
     });
 
+    it('maps stationary state to armed idle and redirects to injured idle when hurt', () => {
+        const stationary = computeLocomotionWeights({ isMoving: false });
+        expect(stationary).toEqual({ idle: 1 });
+        expect(selectLocomotionActionName('idle', false, true)).toBe('idle');
+        expect(selectLocomotionActionName('idle', true, true)).toBe('injuredIdle');
+    });
+
     it('does not redirect directions the injured pack has no clip for', () => {
         expect(selectLocomotionActionName('backward', true, false)).toBe('backward');
         expect(selectLocomotionActionName('strafeLeft', true, false)).toBe('strafeLeft');

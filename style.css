@@ -3052,10 +3052,10 @@ body:not(.controller-mode) .title-menu-btn:focus:not(:focus-visible) {
   display: flex;
   flex-direction: column;
   gap: clamp(8px, calc(var(--vu) * 1.0), 14px);
-  max-height: calc(100dvh - 28px) !important;
+  max-height: 100% !important;
   border-radius: 10px !important;
   overflow-y: auto;
-  scrollbar-width: none;
+  scrollbar-width: thin;
 }
 
 .game-over-header {
@@ -3290,14 +3290,67 @@ body:not(.controller-mode) .title-menu-btn:focus:not(:focus-visible) {
 }
 
 .game-over-content::-webkit-scrollbar {
-  width: 0;
+  width: 5px;
 }
 .game-over-content::-webkit-scrollbar-track {
-  background: transparent;
+  background: rgba(0, 0, 0, 0.25);
 }
 .game-over-content::-webkit-scrollbar-thumb {
-  background: rgba(220, 38, 38, 0.35);
-  border-radius: 2px;
+  background: rgba(220, 38, 38, 0.4);
+  border-radius: 3px;
+}
+
+@media (max-height: 850px) and (min-width: 800px) {
+  .game-over-content {
+    width: min(calc(var(--vu) * 132), 92vw) !important;
+    max-height: 100% !important;
+    padding: clamp(8px, calc(var(--vu) * 1.5), 14px) !important;
+    gap: clamp(6px, calc(var(--vu) * 0.8), 10px);
+  }
+
+  .game-over-header {
+    padding-bottom: 4px;
+  }
+
+  .game-over-title {
+    font-size: clamp(20px, calc(var(--vu) * 3.4), 28px);
+  }
+
+  .game-over-subtitle {
+    margin-top: 4px;
+    padding: 6px 10px;
+    font-size: clamp(9px, calc(var(--vu) * 1.1), 11px) !important;
+    line-height: 1.35 !important;
+  }
+
+  .game-over-report {
+    padding: 6px 10px;
+    gap: 6px;
+  }
+
+  .game-over-stat-block {
+    padding: 5px 8px;
+    gap: 2px;
+  }
+
+  .game-over-actions {
+    padding-top: 6px;
+    gap: 12px;
+  }
+
+  .game-over-btn {
+    height: clamp(38px, calc(var(--vu) * 4.6), 44px) !important;
+    font-size: 13px !important;
+  }
+
+  .go-leaderboard-container {
+    margin-top: 4px;
+    padding: 6px 10px;
+  }
+
+  .go-leaderboard-list {
+    max-height: 72px;
+  }
 }
 
 @media (max-width: 620px) {
@@ -3781,10 +3834,17 @@ input:checked+.slider:before {
   z-index: 100010;
 }
 
+/* Sub-panels opened FROM Settings must stack above it. Keyed by role rather
+   than by id: the previous per-id list silently excluded #language-select-popup
+   when it was added, so the language picker opened behind Settings. Any future
+   sub-panel gets correct stacking by wearing the class. */
 #audio-mixer-popup,
 #save-data-popup,
-#controls-popup {
-  z-index: 100020;
+#controls-popup,
+#language-select-popup,
+#crosshair-color-popup,
+.settings-subpanel {
+  z-index: 100020 !important;
 }
 
 /* Settings remains keyboard/Deck navigable at enlarged UI scales. */
@@ -19440,7 +19500,9 @@ body.show-debug .map-tool-btn--debug { display: inline-flex; }
   inset: 0;
   z-index: 10;
   display: grid;
-  grid-template-rows: auto 1fr auto;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  max-height: 100%;
+  box-sizing: border-box;
   gap: calc(var(--vu) * 1.6);
   padding: calc(var(--vu) * 3.2) calc(var(--vu) * 4);
   pointer-events: none;
@@ -20041,6 +20103,9 @@ body.show-debug .map-tool-btn--debug { display: inline-flex; }
   align-items: center;
   gap: 16px;
   pointer-events: auto;
+  position: relative;
+  z-index: 2;
+  flex: 0 0 auto;
 }
 
 .armory-btn {
@@ -21366,4 +21431,156 @@ body.contrast-max .vitals-panel,
 body.contrast-max .hud-panel {
   background: #000000;
   border-color: #ffffff;
+}
+
+/* Steam Deck is 1280x800: compact the complete, populated debrief at that
+   height and keep its actions in view if translated copy still needs scroll. */
+@media (min-width: 900px) and (max-height: 850px) {
+  #game-over-modal {
+    padding: 8px;
+    box-sizing: border-box;
+  }
+
+  .game-over-content {
+    width: min(calc(var(--vu) * 120), 96vw) !important;
+    max-height: calc(100dvh - 16px) !important;
+    padding: 10px 14px !important;
+    gap: 6px;
+  }
+
+  .game-over-header {
+    padding-bottom: 5px;
+  }
+
+  .game-over-title {
+    font-size: clamp(22px, calc(var(--vu) * 3.5), 34px);
+    letter-spacing: 2px;
+  }
+
+  .game-over-subtitle {
+    margin-top: 4px;
+    padding: 6px 10px;
+    font-size: 10px !important;
+    line-height: 1.3 !important;
+  }
+
+  .game-over-report {
+    padding: 7px 9px;
+    gap: 5px 7px;
+  }
+
+  .game-over-section-label {
+    margin: 0;
+    font-size: 9px;
+  }
+
+  .game-over-stat-block {
+    min-height: 0;
+    padding: 5px 7px;
+    gap: 2px;
+  }
+
+  .game-over-stat-label {
+    font-size: 9px;
+  }
+
+  .game-over-stat-value,
+  .game-over-stat-block--value-only .game-over-stat-value {
+    font-size: 16px;
+  }
+
+  .game-over-bank-note,
+  .return-manifest {
+    margin-top: 0;
+    padding: 4px 8px;
+    font-size: 9px;
+    line-height: 1.25;
+  }
+
+  .game-over-act2-summary {
+    margin-top: 4px;
+    padding: 7px;
+  }
+
+  .game-over-score-section {
+    margin-top: 0;
+    padding-top: 4px;
+    gap: 4px 10px;
+  }
+
+  .go-leaderboard-container {
+    margin-top: 0;
+    padding: 5px 8px;
+  }
+
+  .game-over-actions {
+    position: sticky;
+    bottom: -10px;
+    z-index: 2;
+    margin: 0 -6px -4px;
+    padding: 6px 6px 4px;
+    gap: 10px;
+    background: rgba(10, 13, 16, 0.98);
+  }
+
+  .game-over-btn,
+  .game-over-btn.start-btn,
+  .game-over-btn.abort-btn {
+    height: 40px !important;
+    font-size: 13px !important;
+  }
+}
+
+/* ── Playtest fixes 2026-09-11 — see docs/reports/playtest-bugs-2026-09-11.md ──
+
+   Operator screen: .map-box is `flex: 0 0 auto` with no height cap, so it grew
+   with its command column. At nine entries (DAILY OPS through ACHIEVEMENTS) the
+   box outgrew the viewport and carried INITIALIZE -- which sits after the column
+   -- off the bottom edge, with no scroll affordance to reach it.
+
+   The command list scrolls; the deploy button never does. An action the player
+   must reach to start a run does not belong in a scrolling region. */
+.map-box {
+  max-height: calc(100dvh - calc(var(--vu) * 6));
+  min-height: 0;
+}
+
+.menu-command-column {
+  min-height: 0;
+  flex: 1 1 auto;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  overscroll-behavior: contain;
+}
+
+.map-initialize-btn {
+  flex: 0 0 auto;
+}
+
+/* Game over: the panel already capped itself to the viewport and scrolled, but
+   the actions row scrolled with it, so on a short screen the buttons sat below
+   the fold of an element that looked complete. The existing height breakpoint
+   is max-height 520px, which never fires on a Steam Deck's 800px panel.
+   Pinning the actions row means the buttons are reachable at any height. */
+.game-over-actions {
+  position: sticky;
+  bottom: calc(var(--vu) * -0.2);
+  z-index: 2;
+  background: linear-gradient(180deg, rgba(10, 13, 16, 0) 0%, rgba(10, 13, 16, 0.96) 28%);
+  padding-top: calc(var(--vu) * 1.2);
+  padding-bottom: calc(var(--vu) * 0.4);
+}
+
+/* Steam Deck is the primary handheld target at 1280x800; its panel is taller
+   than the 520px breakpoint above but shorter than a desktop monitor, so it
+   previously matched no height rule at all. */
+@media (max-height: 820px) {
+  .game-over-content {
+    max-height: calc(100dvh - 16px) !important;
+    gap: clamp(4px, calc(var(--vu) * 0.7), 9px);
+  }
+
+  .map-box {
+    max-height: calc(100dvh - calc(var(--vu) * 3));
+  }
 }

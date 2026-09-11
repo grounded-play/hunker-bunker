@@ -188,6 +188,7 @@ export const MAYOR_TINA_PLAYER_VISUAL = Object.freeze({
 });
 import { createEnemy3dVisual, disposeEnemy3dVisual, updateEnemy3dVisual } from './enemy3dOverlay.js';
 import { spawnEnemyGibs } from './enemyGibs.js';
+import { resolveSafeSpawn } from './safeSpawn.js';
 import { WORLD_3D_FACING_YAW, createWorld3dModel, hasWorld3dModel, preloadWorld3dModels, syncWorld3dReplacement } from './world3dOverlay.js';
 import { computeTrailPosition } from './companionFollow.js';
 import { SNAIL_ENCOUNTER_CONSTANTS } from './snailEncounter.js';
@@ -4205,6 +4206,7 @@ export class ThreeGame {
             const skinIdFor = () => window.loadout?.getEquippedSkinId?.(this.playerType) ?? null;
             const classVisuals = {
                 SCOUT: {
+                    idleActionName: 'idle',
                     weaponArchetype: archetypeFor('talon'),
                     weaponMount: { skinId: skinIdFor(), sheenColor: getSelectedSheen().color, charmId: window.loadout?.getEquippedCharmId?.(this.playerType) ?? null }
                 },
@@ -4212,6 +4214,7 @@ export class ThreeGame {
                     modelUrl: '/3d/runtime/engineer-rigged-gestures.glb',
                     animationModelUrl: '/3d/scouting-scout/Scout.game.glb',
                     animationBonePrefix: 'mixamorig',
+                    idleActionName: 'idle',
                     weaponEnabled: true,
                     weaponArchetype: archetypeFor('tesla_lock'),
                     weaponMount: { skinId: skinIdFor(), sheenColor: getSelectedSheen().color, charmId: window.loadout?.getEquippedCharmId?.(this.playerType) ?? null }
@@ -4220,6 +4223,7 @@ export class ThreeGame {
                     modelUrl: '/3d/runtime/tank-rigged.glb',
                     animationModelUrl: '/3d/scouting-scout/Scout.game.glb',
                     animationBonePrefix: 'mixamorig',
+                    idleActionName: 'idle',
                     weaponEnabled: true,
                     weaponArchetype: archetypeFor('siege_breaker'),
                     weaponMount: { position: [0.03, 0.02, 0.03], skinId: skinIdFor(), sheenColor: getSelectedSheen().color, charmId: window.loadout?.getEquippedCharmId?.(this.playerType) ?? null }
@@ -4534,8 +4538,11 @@ export class ThreeGame {
         if (crashParticipants.localPlayer && this.player) {
             const myInfo = crashParticipants.localPlayer;
             if (myInfo && Number.isFinite(myInfo.spawnX) && Number.isFinite(myInfo.spawnZ)) {
-                this.player.position.x = myInfo.spawnX;
-                this.player.position.z = myInfo.spawnZ;
+                const safe = this.resolveSpawnPoint(myInfo.spawnX, myInfo.spawnZ);
+                this.player.position.x = safe.x;
+                this.player.position.z = safe.z;
+                if (this.playerGlow) this.playerGlow.position.set(safe.x, 1.6, safe.z);
+                if (this.playerMarker) this.playerMarker.position.set(safe.x, this.playerMarkerHeight || 2.5, safe.z);
             }
         }
 
@@ -4654,9 +4661,17 @@ export class ThreeGame {
         this.remotePlayers ??= new Map();
 
         const group = new THREE.Group();
-        const spawnX = playerData.spawnX ?? playerData.x ?? 9;
-        const spawnZ = playerData.spawnZ ?? playerData.z ?? 9;
-        group.position.set(spawnX, 0, spawnZ);
+        const requestedSpawnX = playerData.spawnX ?? playerData.x ?? 9;
+        const requestedSpawnZ = playerData.spawnZ ?? playerData.z ?? 9;
+        const avoidPositions = [];
+        if (this.player?.position) avoidPositions.push(this.player.position);
+        if (this.remotePlayers) {
+            for (const r of this.remotePlayers.values()) {
+                if (r?.mesh?.position) avoidPositions.push(r.mesh.position);
+            }
+        }
+        const spawn = this.resolveSpawnPoint(requestedSpawnX, requestedSpawnZ, { avoidPositions });
+        group.position.set(spawn.x, 0, spawn.z);
 
         const opClass = playerData.opClass || 'SCOUT';
         const isPvP = this.multiplayerMode === 'pvp';
@@ -4779,6 +4794,7 @@ export class ThreeGame {
                 modelUrl: '/3d/scouting-scout/Scout.game.glb',
                 animationModelUrl: '/3d/scouting-scout/Scout.game.glb',
                 animationBonePrefix: 'mixamorig',
+                idleActionName: 'idle',
                 weaponArchetype: 'talon',
                 allowStatic: true
             },
@@ -4786,6 +4802,7 @@ export class ThreeGame {
                 modelUrl: '/3d/runtime/engineer-rigged-gestures.glb',
                 animationModelUrl: '/3d/scouting-scout/Scout.game.glb',
                 animationBonePrefix: 'mixamorig',
+                idleActionName: 'idle',
                 weaponArchetype: 'tesla_lock',
                 allowStatic: true
             },
@@ -4793,6 +4810,7 @@ export class ThreeGame {
                 modelUrl: '/3d/runtime/tank-rigged.glb',
                 animationModelUrl: '/3d/scouting-scout/Scout.game.glb',
                 animationBonePrefix: 'mixamorig',
+                idleActionName: 'idle',
                 weaponArchetype: 'siege_breaker',
                 weaponMount: { position: [0.03, 0.02, 0.03] },
                 allowStatic: true
@@ -5440,6 +5458,7 @@ export class ThreeGame {
                     isSprinting: remote.animState === 'run' || speedSq > 8.0,
                     isInjured: remote.hp < remote.maxHp * 0.4,
                     hasAim: false,
+                    idleActionName: 'idle',
                     moveX: moveDirX,
                     moveZ: moveDirZ,
                     aimX: moveDirX,
@@ -17544,10 +17563,14 @@ export class ThreeGame {
             this.player.rotation.set(0, 0, 0);
         }
 
-        const spawn = this.getSpawnTile();
-        this.player.position.set(spawn.x, 0, spawn.y);
-        this.playerGlow.position.set(spawn.x, 1.6, spawn.y);
-        this.playerMarker.position.set(spawn.x, this.playerMarkerHeight, spawn.y);
+        const rawSpawn = this.getSpawnTile();
+        // getSpawnTile returns the multiplayer crash-plan point unchanged, so an
+        // unsafe plan coordinate produced an unbreakable loop: fall, respawn on
+        // the same tile, fall again. Validating here breaks it at the source.
+        const spawn = this.resolveSpawnPoint(rawSpawn.x, rawSpawn.y);
+        this.player.position.set(spawn.x, 0, spawn.z);
+        this.playerGlow.position.set(spawn.x, 1.6, spawn.z);
+        this.playerMarker.position.set(spawn.x, this.playerMarkerHeight, spawn.z);
         this.updatePlayerForwardLight(1, { immediate: true });
 
         if (resetRunState) {
@@ -18530,6 +18553,7 @@ export class ThreeGame {
             this.player3dOverlay?.update(delta, {
                 isFalling: true,
                 isMoving: false,
+                idleActionName: 'idle',
                 isInjured: this.isPlayerInjured(),
                 hasAim: this.hasActiveAim,
                 moveX: 0,
@@ -20272,6 +20296,7 @@ export class ThreeGame {
                 isReloading: this.weaponReloading,
                 isMoving: visualMoving,
                 isSprinting,
+                idleActionName: 'idle',
                 // Sprint 29 §10: the walk cadence has to know how fast the
                 // player is actually travelling, or the same clip plays for a
                 // 2.6-speed TANK and a 4.8-speed SCOUT and at least one of them
@@ -30377,6 +30402,45 @@ export class ThreeGame {
         return true;
     }
 
+    /**
+     * Validate a spawn coordinate against the world before placing anyone on it.
+     *
+     * Spawn points come from fixed offset tables that know nothing about the
+     * terrain generated for a seed (see src/multiplayerCrashPlanner.js), so a
+     * point can land over a void. isPlayerOverAnyHole is the same test the
+     * frame loop uses to decide whether a walking player falls. The ordinary
+     * movement collision test also rejects wrecks, modules, props and walls,
+     * preventing a player from materializing inside the ship.
+     *
+     * Returns { x, z }. Never throws and never returns a non-finite pair.
+     */
+    resolveSpawnPoint(x, z, { avoidPositions = [] } = {}) {
+        const result = resolveSafeSpawn({ x, z }, {
+            isBlocked: (cx, cz) => {
+                if (this.isPlayerOverAnyHole(cx, cz)) return true;
+                if (!this.canOccupyPosition(cx, cz)) return true;
+                if (Array.isArray(avoidPositions)) {
+                    for (const pos of avoidPositions) {
+                        if (pos && Number.isFinite(pos.x) && Number.isFinite(pos.z)) {
+                            if (Math.hypot(cx - pos.x, cz - pos.z) < 1.6) return true;
+                        }
+                    }
+                }
+                return false;
+            }
+        });
+        if (result.moved) {
+            window.hbLog?.('MULTIPLAYER', 'warn', 'spawn-relocated', {
+                from: { x, z }, to: { x: result.x, z: result.z }
+            });
+        } else if (result.exhausted) {
+            // Worth shouting about: the whole search radius was void, which
+            // means the plan put someone well outside the generated world.
+            window.hbLog?.('MULTIPLAYER', 'warn', 'spawn-no-safe-tile', { x, z });
+        }
+        return result;
+    }
+
     isPlayerOverAnyHole(px, pz) {
         const cx = Math.round(px);
         const cz = Math.round(pz);
@@ -32057,8 +32121,8 @@ export class ThreeGame {
                 }
             }
             return {
-                x: CRASH_SITE_CENTER + offset.x,
-                y: CRASH_SITE_CENTER + offset.y
+                x: 7.4 + offset.x,
+                y: 11.8 + offset.y
             };
         }
         if (this.crashedShips) {
@@ -32072,8 +32136,8 @@ export class ThreeGame {
             }
         }
         return {
-            x: CRASH_SITE_CENTER,
-            y: CRASH_SITE_CENTER
+            x: 7.4,
+            y: 11.8
         };
     }
 

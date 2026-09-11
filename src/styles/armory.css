@@ -176,6 +176,7 @@
   text-align: center;
   display: -webkit-box;
   -webkit-line-clamp: 2;
+  line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
   min-height: 2.3em;   /* two lines reserved, so rows stay aligned */
@@ -232,7 +233,23 @@
 }
 /* Compact bench: all fitted slots share one screen, including the suit. */
 #armory-screen .armory-main-layout { grid-template-columns: minmax(0, 1fr) clamp(340px, 31vw, 440px); }
-#armory-screen .armory-controls-sidebar { overflow: visible; gap: 10px; align-self: stretch; }
+#armory-screen .armory-controls-sidebar {
+  overflow-x: hidden;
+  overflow-y: auto;
+  gap: 10px;
+  align-self: stretch;
+  min-height: 0;
+  max-height: 100%;
+  scrollbar-width: thin;
+  scrollbar-color: var(--armory-border, rgba(0, 240, 255, 0.4)) transparent;
+}
+#armory-screen .armory-controls-sidebar::-webkit-scrollbar {
+  width: 5px;
+}
+#armory-screen .armory-controls-sidebar::-webkit-scrollbar-thumb {
+  background: var(--armory-border, rgba(0, 240, 255, 0.4));
+  border-radius: 3px;
+}
 #armory-screen .armory-panel { padding: 8px 12px; gap: 6px; flex-shrink: 0; }
 #armory-screen .panel-header h2 { font-size: 16px; line-height: 1.15; letter-spacing: .06em; }
 #armory-screen .bench-field label { font-size: 10px; line-height: 1.3; }
