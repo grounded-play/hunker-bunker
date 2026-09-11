@@ -20,7 +20,7 @@ const controllerTypes = [
 // aligned with the gameplay preset below instead of duplicating a device image
 // inside the game's loading screen.
 const OFFICIAL_LAYOUT_TITLE = 'Official Hunker Bunker Controls';
-const OFFICIAL_LAYOUT_DESCRIPTION = 'Left Stick / D-Pad Move · Right Stick Aim/Pointer · A/RT Confirm menus · A Interact · B Dodge/Back · X Reload · Y Smash · LB Scan · RB Map · LT Sprint · RT Fire · Menu Pause.';
+const OFFICIAL_LAYOUT_DESCRIPTION = 'Left Stick Move · Right Stick Aim · A Interact · B Dodge · X Reload · Y Smash · D-Pad Map/Scan/Reload/Smash · LB Scan · RB Map · LT Sprint · RT Fire · Menu Pause.';
 
 function binding(actionSet, action, title) {
     return `"binding" "game_action ${actionSet} ${action}, ${title}"`;
@@ -206,13 +206,22 @@ function buildControllerConfig(controllerType) {
         }),
         analogGroup(11, 'gameplay', 'move'),
         analogGroup(12, 'gameplay', 'camera'),
-        // Retained for custom trackpad/gyro layouts. The official preset uses
-        // the right stick's direct aim vector below.
+        // Not in the official preset, but kept so the manifest-declared
+        // camera_mouse action (polled in electron/main.cjs) has a group a user
+        // can bind trackpad or gyro aim to in a custom layout. Removing it makes
+        // the manifest declare an action no config can reach.
         mouseGroup(17, 'gameplay', 'camera_mouse'),
-        // The D-pad walks the player exactly like the left stick. A digital
-        // source feeding a joystick_move group is the same shape the archive
-        // preset already uses for archive_focus.
-        analogGroup(18, 'gameplay', 'move'),
+        // The D-pad carries secondary gameplay functions rather than a second
+        // movement vector, so the official layout reads as a true dual-analog
+        // gamepad. Only actions the runtime already polls in electron/main.cjs
+        // are bound here -- a binding for an action nothing reads is a promise
+        // the game cannot keep.
+        dpadGroup(18, 'gameplay', {
+            up: ['toggle_map', 'Tactical Map'],
+            down: ['scan', 'Scan'],
+            left: ['reload', 'Reload'],
+            right: ['ability', 'Smash']
+        }),
         triggerGroup(13, 'gameplay', 'sprint', 'Sprint'),
         triggerGroup(14, 'gameplay', 'fire', 'Fire'),
         switchesGroup(15, 'gameplay', gameplaySwitches),
@@ -242,8 +251,12 @@ function buildControllerConfig(controllerType) {
                 left: ['menu_left', 'Left'],
                 right: ['menu_right', 'Right']
             }),
+            // Same reasoning as group 17: menu_pointer_mouse is manifest
+            // declared, so it needs a bindable group even though the official
+            // preset drives the menu pointer from the right stick. Group 16
+            // (a second gameplay 'move') was genuinely redundant and is gone --
+            // 'move' is already bound on group 11.
             mouseGroup(8, 'menu', 'menu_pointer_mouse'),
-            analogGroup(16, 'gameplay', 'move'),
             analogGroup(26, 'archive', 'archive_focus'),
             analogGroup(27, 'archive', 'archive_focus')
         );

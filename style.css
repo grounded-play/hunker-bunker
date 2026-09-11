@@ -3783,42 +3783,36 @@ input:checked+.slider:before {
 }
 
 /* Settings remains keyboard/Deck navigable at enlarged UI scales. */
-.settings-modal-content {
-  padding: 0 calc(var(--vu) * 3.5) calc(var(--vu) * 3) calc(var(--vu) * 3.5) !important;
+.modal-content.settings-modal-panel {
+  padding: 0 !important;
   width: min(calc(var(--vu) * 80), 86%) !important;
   max-height: 82% !important;
   box-sizing: border-box !important;
-  overflow-y: auto !important;
-  overflow-x: hidden !important;
-  scrollbar-width: thin !important;
-  scrollbar-color: var(--accent-primary) rgba(0, 0, 0, 0.4) !important;
-  scrollbar-gutter: stable;
-  scroll-padding-top: calc(var(--vu) * 7);
-  scroll-padding-bottom: calc(var(--vu) * 3);
-  border: 1px solid var(--accent-primary);
-  box-shadow: 0 0 45px rgba(255, 159, 28, 0.15), 0 0 90px rgba(0, 0, 0, 0.85);
-}
-
-.settings-modal-content::-webkit-scrollbar {
-  display: block !important;
-  width: 10px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  overflow: hidden !important;
+  border: 1px solid var(--accent-primary) !important;
+  border-radius: 12px !important;
+  background: #171b20 !important;
+  box-shadow: 0 0 45px rgba(255, 159, 28, 0.15), 0 0 90px rgba(0, 0, 0, 0.85) !important;
 }
 
 .settings-sticky-header {
-  position: sticky;
-  top: 0;
-  z-index: 12;
+  position: relative;
+  flex: 0 0 auto;
+  width: 100%;
   display: flex;
   align-items: center;
   justify-content: space-between;
   min-height: calc(var(--vu) * 6.5);
-  margin: 0 calc(var(--vu) * -3.5) calc(var(--vu) * 2.5) calc(var(--vu) * -3.5);
+  margin: 0;
   padding: calc(var(--vu) * 2.2) calc(var(--vu) * 3.5) calc(var(--vu) * 1.5) calc(var(--vu) * 3.5);
   background: #171b20;
   border-top-left-radius: 11px;
   border-top-right-radius: 11px;
   border-bottom: 2px solid rgba(255, 169, 46, 0.72);
   box-shadow: 0 12px 18px rgba(0, 0, 0, 0.6);
+  box-sizing: border-box;
 }
 
 .settings-sticky-header .modal-title {
@@ -3835,6 +3829,57 @@ input:checked+.slider:before {
   margin-left: calc(var(--vu) * 2);
   background: #222a32;
   border-color: rgba(143, 221, 255, 0.75);
+}
+
+.settings-modal-panel .settings-modal-content,
+.settings-modal-content {
+  flex: 1 1 auto;
+  width: 100%;
+  min-height: 0;
+  box-sizing: border-box !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  scrollbar-width: thin !important;
+  scrollbar-color: var(--accent-primary) rgba(0, 0, 0, 0.4) !important;
+  scrollbar-gutter: stable;
+  scroll-padding-top: calc(var(--vu) * 2);
+  scroll-padding-bottom: calc(var(--vu) * 3);
+  padding: calc(var(--vu) * 2) calc(var(--vu) * 3.5) calc(var(--vu) * 3) calc(var(--vu) * 3.5) !important;
+  border: none !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  background: transparent !important;
+}
+
+.settings-modal-panel .settings-modal-content::-webkit-scrollbar,
+.settings-modal-content::-webkit-scrollbar {
+  display: block !important;
+  width: 10px !important;
+}
+
+.settings-modal-panel .settings-modal-content::-webkit-scrollbar-track,
+.settings-modal-content::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.4) !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+}
+
+.settings-modal-panel .settings-modal-content::-webkit-scrollbar-thumb,
+.settings-modal-content::-webkit-scrollbar-thumb {
+  background: var(--accent-primary) !important;
+  border-radius: 4px !important;
+  border: none !important;
+}
+
+.settings-modal-panel .settings-modal-content::-webkit-scrollbar-thumb:hover,
+.settings-modal-content::-webkit-scrollbar-thumb:hover {
+  background: var(--accent-primary-hover, #ffb347) !important;
+}
+
+.settings-modal-panel .settings-modal-content::-webkit-scrollbar-button:vertical:end:increment,
+.settings-modal-content::-webkit-scrollbar-button:vertical:end:increment {
+  display: block !important;
+  height: 12px !important;
 }
 
 .settings-category-group {
@@ -15523,6 +15568,9 @@ body.cutscene-video-active .tactical-overlay {
   .modal-content {
     max-height: 94vh !important;
     padding: calc(var(--vu) * 0.8) !important;
+  }
+  .modal-content.settings-modal-panel {
+    padding: 0 !important;
   }
   .vault-modal-content {
     grid-template-rows: auto 1fr;

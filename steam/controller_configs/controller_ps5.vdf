@@ -3,7 +3,7 @@
     "version" "3"
     "game" "Hunker Bunker"
     "title" "Official Hunker Bunker Controls"
-    "description" "Left Stick / D-Pad Move · Right Stick Aim/Pointer · A/RT Confirm menus · A Interact · B Dodge/Back · X Reload · Y Smash · LB Scan · RB Map · LT Sprint · RT Fire · Menu Pause."
+    "description" "Left Stick Move · Right Stick Aim · A Interact · B Dodge · X Reload · Y Smash · D-Pad Map/Scan/Reload/Smash · LB Scan · RB Map · LT Sprint · RT Fire · Menu Pause."
     "controller_type" "controller_ps5"
     "major_revision" "10"
     "minor_revision" "0"
@@ -12,7 +12,7 @@
         "english"
         {
             "title" "Official Hunker Bunker Controls"
-            "description" "Left Stick / D-Pad Move · Right Stick Aim/Pointer · A/RT Confirm menus · A Interact · B Dodge/Back · X Reload · Y Smash · LB Scan · RB Map · LT Sprint · RT Fire · Menu Pause."
+            "description" "Left Stick Move · Right Stick Aim · A Interact · B Dodge · X Reload · Y Smash · D-Pad Map/Scan/Reload/Smash · LB Scan · RB Map · LT Sprint · RT Fire · Menu Pause."
         }
     }
     "group"
@@ -350,15 +350,49 @@
     "group"
     {
         "id" "18"
-        "mode" "joystick_move"
-        "inputs" { }
-        "settings"
+        "mode" "dpad"
+        "inputs"
         {
-            "deadzone_inner_radius" "6000"
-        }
-        "gameactions"
-        {
-            "gameplay" "move"
+            "dpad_north" { "activators"
+                {
+                    "Full_Press"
+                    {
+                        "bindings"
+                        {
+                            "binding" "game_action gameplay toggle_map, Tactical Map"
+                        }
+                    }
+                } }
+            "dpad_south" { "activators"
+                {
+                    "Full_Press"
+                    {
+                        "bindings"
+                        {
+                            "binding" "game_action gameplay scan, Scan"
+                        }
+                    }
+                } }
+            "dpad_east" { "activators"
+                {
+                    "Full_Press"
+                    {
+                        "bindings"
+                        {
+                            "binding" "game_action gameplay ability, Smash"
+                        }
+                    }
+                } }
+            "dpad_west" { "activators"
+                {
+                    "Full_Press"
+                    {
+                        "bindings"
+                        {
+                            "binding" "game_action gameplay reload, Reload"
+                        }
+                    }
+                } }
         }
     }
     "group"

@@ -781,6 +781,72 @@ const catalog = {
         "img": "https://hunkerbunker.netlify.app/economy/reagent_deep_core_shard.png",
         "localImg": "/economy/reagent_deep_core_shard.png",
         "localImgLarge": "/economy/reagent_deep_core_shard_large.png"
+    },
+    "4203": {
+        "itemdefid": 4203,
+        "name": "Deep Frost Patch",
+        "rarity": "rare",
+        "desc": "Embroidered bone-white ice crown motif with pale cyan fracture lines and frayed edges.",
+        "tradable": true,
+        "marketable": true,
+        "img": "https://hunkerbunker.netlify.app/economy/patch_deep_frost.png",
+        "localImg": "/economy/patch_deep_frost.png",
+        "localImgLarge": "/economy/patch_deep_frost_large.png"
+    },
+    "4210": {
+        "itemdefid": 4210,
+        "name": "Rust & Bone Patch",
+        "rarity": "rare",
+        "desc": "Rough hessian backing with hand-stitched bone motif and dull ember thread.",
+        "tradable": true,
+        "marketable": true,
+        "img": "https://hunkerbunker.netlify.app/economy/patch_rust_bone.png",
+        "localImg": "/economy/patch_rust_bone.png",
+        "localImgLarge": "/economy/patch_rust_bone_large.png"
+    },
+    "4217": {
+        "itemdefid": 4217,
+        "name": "Hive Chitin Patch",
+        "rarity": "rare",
+        "desc": "Thin dried alien carapace plate with pulsing green veining forming a hive queen.",
+        "tradable": true,
+        "marketable": true,
+        "img": "https://hunkerbunker.netlify.app/economy/patch_hive_chitin.png",
+        "localImg": "/economy/patch_hive_chitin.png",
+        "localImgLarge": "/economy/patch_hive_chitin_large.png"
+    },
+    "4224": {
+        "itemdefid": 4224,
+        "name": "Horizon Corporate Patch",
+        "rarity": "rare",
+        "desc": "Crisp white twill with cold teal laser-cut embroidery forming a clean horizon mark.",
+        "tradable": true,
+        "marketable": true,
+        "img": "https://hunkerbunker.netlify.app/economy/patch_horizon_corporate.png",
+        "localImg": "/economy/patch_horizon_corporate.png",
+        "localImgLarge": "/economy/patch_horizon_corporate_large.png"
+    },
+    "4231": {
+        "itemdefid": 4231,
+        "name": "Bunker 404 Patch",
+        "rarity": "epic",
+        "desc": "Black twill with magenta thread forming a glitched squad insignia with displaced blocks.",
+        "tradable": true,
+        "marketable": true,
+        "img": "https://hunkerbunker.netlify.app/economy/patch_bunker404.png",
+        "localImg": "/economy/patch_bunker404.png",
+        "localImgLarge": "/economy/patch_bunker404_large.png"
+    },
+    "4238": {
+        "itemdefid": 4238,
+        "name": "Grand Marshal Patch",
+        "rarity": "legendary",
+        "desc": "Deep black velvet backing with dense amber gold bullion embroidery in a laurel relic crest.",
+        "tradable": true,
+        "marketable": true,
+        "img": "https://hunkerbunker.netlify.app/economy/patch_grand_marshal.png",
+        "localImg": "/economy/patch_grand_marshal.png",
+        "localImgLarge": "/economy/patch_grand_marshal_large.png"
     }
 };
 

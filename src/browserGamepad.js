@@ -39,13 +39,12 @@ export function mapBrowserGamepad(gamepad, {
     const axes = Array.from(gamepad.axes ?? []);
     const stickMoveX = normalizeGamepadAxis(axes[0], deadzone);
     const stickMoveY = normalizeGamepadAxis(axes[1], deadzone);
-    // The D-pad walks the player exactly like the left stick. It is digital, so
-    // it contributes a full-deflection unit on each axis, and a pushed stick
-    // wins per axis rather than the two summing into a diagonal.
-    const dpadMoveX = (readButton(buttons, 15) ? 1 : 0) - (readButton(buttons, 14) ? 1 : 0);
-    const dpadMoveY = (readButton(buttons, 13) ? 1 : 0) - (readButton(buttons, 12) ? 1 : 0);
-    const moveX = stickMoveX || dpadMoveX;
-    const moveY = stickMoveY || dpadMoveY;
+    // The D-pad no longer walks the player. It carries secondary gameplay
+    // actions instead, matching the official Steam Input layout
+    // (controller_neptune.vdf group 18) so the same physical controller behaves
+    // identically on Deck and on desktop. Movement is the left stick only.
+    const moveX = stickMoveX;
+    const moveY = stickMoveY;
     const cameraX = normalizeGamepadAxis(axes[2], deadzone);
     const cameraY = normalizeGamepadAxis(axes[3], deadzone);
     const menuX = normalizeGamepadAxis(axes[0], menuDeadzone);
@@ -63,17 +62,20 @@ export function mapBrowserGamepad(gamepad, {
         cameraDelta: { x: 0, y: 0 },
         fire: readButton(buttons, 7),
         interact: readButton(buttons, 0),
-        reload: readButton(buttons, 2),
+        reload: readButton(buttons, 2) || readButton(buttons, 14),
         melee: readButton(buttons, 3),
         // Y is the gameplay smash action and the archive Inventory action.
         // Keep both semantic fields populated so action-set routing can choose
         // the meaning without losing the browser fallback on Steam Deck.
-        ability: readButton(buttons, 3),
+        ability: readButton(buttons, 3) || readButton(buttons, 15),
         dash: readButton(buttons, 1),
-        scan: readButton(buttons, 4),
+        // D-pad directions mirror the official layout's gameplay bindings:
+        // up Map, down Scan, left Reload, right Smash.
+        scan: readButton(buttons, 4) || readButton(buttons, 13),
         sprint: readButton(buttons, 6),
         pause: readButton(buttons, 9),
-        toggleMap: readButton(buttons, 5) || readButton(buttons, 8) || readButton(buttons, 16),
+        toggleMap: readButton(buttons, 5) || readButton(buttons, 8) || readButton(buttons, 16)
+            || readButton(buttons, 12),
         menuUp: readButton(buttons, 12) || menuY < 0,
         menuDown: readButton(buttons, 13) || menuY > 0,
         menuLeft: readButton(buttons, 14) || menuX < 0,

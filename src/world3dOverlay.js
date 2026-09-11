@@ -68,7 +68,18 @@ export const WORLD_3D_MODELS = Object.freeze({
     secret_teacup_roach: { url: '/3d/runtime/secrets/teacup-roach.glb', height: 1.18, yaw: Math.PI },
     prop_camp_cookfire: { url: '/3d/runtime/new3ds/prop_fabricator_workstation.glb', height: 0.85, yaw: 0 },
     prop_camp_crates: { url: '/3d/runtime/new3ds/prop_bunker_supplies.glb', height: 0.75, yaw: 0 },
-    prop_camp_sandbags: { url: '/3d/runtime/new3ds/prop_security_barricade.glb', height: 0.82, yaw: 0 }
+    prop_camp_sandbags: { url: '/3d/runtime/new3ds/prop_security_barricade.glb', height: 0.82, yaw: 0 },
+    prop_camp_cot: { url: '/3d/runtime/new3ds/prop_camp_cot.glb', height: 0.65, yaw: 0 },
+    prop_camp_crate: { url: '/3d/runtime/new3ds/prop_camp_crate.glb', height: 0.75, yaw: 0 },
+    prop_hive_resin_sac: { url: '/3d/runtime/new3ds/prop_hive_resin_sac.glb', height: 1.10, yaw: 0 },
+    scatter_bolts: { url: '/3d/runtime/new3ds/scatter_bolts.glb', height: 0.25, yaw: 0 },
+    scatter_cable_coil: { url: '/3d/runtime/new3ds/scatter_cable_coil.glb', height: 0.30, yaw: 0 },
+    state_barricade_improvised_1: { url: '/3d/runtime/new3ds/state_barricade_improvised_1.glb', height: 0.85, yaw: 0 },
+    state_barricade_improvised_2: { url: '/3d/runtime/new3ds/state_barricade_improvised_2.glb', height: 0.85, yaw: 0 },
+    state_growth_overrun_1: { url: '/3d/runtime/new3ds/state_growth_overrun_1.glb', height: 1.20, yaw: 0 },
+    state_growth_overrun_2: { url: '/3d/runtime/new3ds/state_growth_overrun_2.glb', height: 1.20, yaw: 0 },
+    body_empty_exosuit: { url: '/3d/runtime/new3ds/body_empty_exosuit.glb', height: 0.75, yaw: 0 },
+    body_frozen_human: { url: '/3d/runtime/new3ds/body_frozen_human.glb', height: 0.75, yaw: 0 }
 });
 
 const templates = new Map();

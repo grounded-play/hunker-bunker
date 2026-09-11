@@ -560,7 +560,13 @@ const FLOOR_OVERLAY_TYPES = new Set([
     'scatter_horizon_black_box',
     'prop_camp_bedrolls',
     'prop_blood_trail',
-    'prop_iron_guild_dogtags'
+    'prop_iron_guild_dogtags',
+    'decal_grease_pool',
+    'decal_growth_creep_1',
+    'decal_growth_creep_2',
+    'decal_frost_bloom_1',
+    'decal_frost_bloom_2',
+    'decal_scorch_bloom'
 ]);
 const WALL_DECAL_TYPES = new Set([
     'decal_wall_breach',
@@ -572,7 +578,16 @@ const WALL_DECAL_TYPES = new Set([
     'decal_machine_cult_shrine',
     'decal_pod_312_breach',
     'prop_torn_warning_poster',
-    'decal_scars'
+    'decal_scars',
+    'decal_hand_smears_1',
+    'decal_hand_smears_2',
+    'decal_rust_bleed_1',
+    'decal_rust_bleed_2',
+    'decal_water_stain',
+    'decal_vine_iron_shadow_1',
+    'decal_vine_iron_shadow_2',
+    'decal_graffiti_tally_1',
+    'decal_graffiti_tally_2'
 ]);
 const isFloorOverlayType = (type) => FLOOR_OVERLAY_TYPES.has(type);
 const isWallDecalType = (type) => WALL_DECAL_TYPES.has(type);
@@ -2322,7 +2337,23 @@ export class ThreeGame {
             scatter_horizon_black_box: this.loadKeyedSpriteTexture('/scatter_horizon_black_box.png', 14),
             prop_iron_guild_dogtags: this.loadKeyedSpriteTexture('/prop_iron_guild_dogtags.png', 14),
 
-            prop_camp_cookfire_lit: this.loadKeyedSpriteTexture('/prop_camp_cookfire_lit.png', 14)
+            prop_camp_cookfire_lit: this.loadKeyedSpriteTexture('/prop_camp_cookfire_lit.png', 14),
+
+            decal_frost_bloom_1: this.loadKeyedSpriteTexture('/decal_frost_bloom_1.png', 14),
+            decal_frost_bloom_2: this.loadKeyedSpriteTexture('/decal_frost_bloom_2.png', 14),
+            decal_graffiti_tally_1: this.loadKeyedSpriteTexture('/decal_graffiti_tally_1.png', 14),
+            decal_graffiti_tally_2: this.loadKeyedSpriteTexture('/decal_graffiti_tally_2.png', 14),
+            decal_grease_pool: this.loadKeyedSpriteTexture('/decal_grease_pool.png', 14),
+            decal_growth_creep_1: this.loadKeyedSpriteTexture('/decal_growth_creep_1.png', 14),
+            decal_growth_creep_2: this.loadKeyedSpriteTexture('/decal_growth_creep_2.png', 14),
+            decal_hand_smears_1: this.loadKeyedSpriteTexture('/decal_hand_smears_1.png', 14),
+            decal_hand_smears_2: this.loadKeyedSpriteTexture('/decal_hand_smears_2.png', 14),
+            decal_rust_bleed_1: this.loadKeyedSpriteTexture('/decal_rust_bleed_1.png', 14),
+            decal_rust_bleed_2: this.loadKeyedSpriteTexture('/decal_rust_bleed_2.png', 14),
+            decal_scorch_bloom: this.loadKeyedSpriteTexture('/decal_scorch_bloom.png', 14),
+            decal_vine_iron_shadow_1: this.loadKeyedSpriteTexture('/decal_vine_iron_shadow_1.png', 14),
+            decal_vine_iron_shadow_2: this.loadKeyedSpriteTexture('/decal_vine_iron_shadow_2.png', 14),
+            decal_water_stain: this.loadKeyedSpriteTexture('/decal_water_stain.png', 14)
         };
         for (const [type, path] of Object.entries(GENERATED_ROOM_PROP_PATHS)) {
             this.scatterTextures[type] = this.loadKeyedSpriteTexture(path, 14);
