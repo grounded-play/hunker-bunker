@@ -129,7 +129,8 @@
       "crosshair_hint": "Wählen Sie eine taktische Fadenkreuz-Voreinstellung oder passen Sie die Farbe an.",
       "language": "LANGUAGE / 语言 / ЯЗЫК",
       "language_hint": "Wählen Sie Ihre bevorzugte Sprachausgabe für Menüs und Untertitel.",
-      "dpad_hint": "STEUERKREUZ ◀ ▶ ZUM ANPASSEN"
+      "dpad_hint": "STEUERKREUZ ◀ ▶ ZUM ANPASSEN",
+      "gore": "GORE-EFFEKTE (ZERSTÜCKELUNG)"
     },
     "action": {
       "open": "ÖFFNEN",

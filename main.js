@@ -34,7 +34,7 @@ import { MOTHERSHIP_REACTIVE_LINES } from './src/data/lineDirectorPools.js';
 import { ArcStateManager } from './src/arcState.js';
 import { CaveRevealController } from './src/caveReveal.js';
 import { Act2Manager, ACT2_ENDING_CUTSCENES, ACT2_LINES, getAct2EndingLines, pickAct2Ending, buildAct2Manifest } from './src/act2.js';
-import { isDemoBuild } from './src/featureFlags.js';
+import { isDemoBuild, isGoreEnabled, setGoreEnabled } from './src/featureFlags.js';
 import { ACHIEVEMENT_DEFS, AchievementEngine, getAchievementProgress, getSecretGateState, hasAnyUnlock, saveAchievements } from './src/achievements.js';
 import { STEAM_RUN_SCORE_FINALIZED_EVENT, buildSteamRunScorePayload, dispatchSteamRunScoreFinalized } from './src/steam/steamEvents.js';
 import { syncSteamStats } from './src/steamStats.js';
@@ -9558,6 +9558,9 @@ function openSettingsModal() {
     if (mainNightVisionToggle) mainNightVisionToggle.checked = !!state.settings.nightVision;
     if (mainCommentaryToggle) mainCommentaryToggle.checked = !!state.settings.commentary;
 
+    const goreToggle = document.getElementById('setting-gore-toggle');
+    if (goreToggle) goreToggle.checked = isGoreEnabled();
+
     const langSelect = document.getElementById('setting-language-select');
     if (langSelect) langSelect.value = getLocale();
 
@@ -9681,6 +9684,18 @@ mainCommentaryToggle?.addEventListener('change', (e) => {
     state.settings.commentary = enabled;
     localStorage.setItem(COMMENTARY_STORAGE_KEY, String(enabled));
 });
+
+// Gore keeps its own persistence (hb_gore) instead of riding on state.settings:
+// featureFlags is read from modules that never see the settings object --
+// enemyGibs is called from deep inside threeGame's enemy death path.
+const goreToggleEl = document.getElementById('setting-gore-toggle');
+goreToggleEl?.addEventListener('change', (e) => {
+    setGoreEnabled(Boolean(e.target.checked));
+});
+// The markup default is `checked`, but the saved preference is the truth.
+// openSettingsModal() re-syncs on every open; this covers the window before
+// the player ever opens Settings, so the DOM never disagrees with the flag.
+if (goreToggleEl) goreToggleEl.checked = isGoreEnabled();
 function setCrosshairColor(value) {
     const color = String(value || '').toLowerCase();
     if (!/^#[0-9a-f]{6}$/.test(color)) return;

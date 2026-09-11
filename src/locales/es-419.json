@@ -129,7 +129,8 @@
       "crosshair_hint": "Selecciona un ajuste táctico de retícula o personaliza tu color.",
       "language": "LANGUAGE / 语言 / ЯЗЫК",
       "language_hint": "Elige tu idioma preferido para la interfaz y los subtítulos.",
-      "dpad_hint": "D-PAD ◀ ▶ PARA AJUSTAR"
+      "dpad_hint": "D-PAD ◀ ▶ PARA AJUSTAR",
+      "gore": "EFECTOS DE SANGRE (DESMEMBRAMIENTO)"
     },
     "action": {
       "open": "ABRIR",

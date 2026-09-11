@@ -129,7 +129,8 @@
       "crosshair_hint": "Select a tactical reticle preset or configure a custom color.",
       "language": "LANGUAGE / 语言 / ЯЗЫК",
       "language_hint": "Choose your preferred interface and subtitle language.",
-      "dpad_hint": "D-PAD ◀ ▶ TO ADJUST"
+      "dpad_hint": "D-PAD ◀ ▶ TO ADJUST",
+      "gore": "GORE EFFECTS (DISMEMBERMENT)"
     },
     "action": {
       "open": "OPEN",

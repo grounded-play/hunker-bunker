@@ -129,7 +129,8 @@
       "crosshair_hint": "选择战术准星预设或自定义颜色。",
       "language": "LANGUAGE / 语言 / ЯЗЫК",
       "language_hint": "选择您偏好的界面和字幕语言。",
-      "dpad_hint": "方向键 ◀ ▶ 调整"
+      "dpad_hint": "方向键 ◀ ▶ 调整",
+      "gore": "血腥效果（肢解）"
     },
     "action": {
       "open": "打开",
