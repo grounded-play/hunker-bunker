@@ -124,7 +124,8 @@ def planned():
 
 def main():
     check = '--check' in sys.argv
-    schema = json.load(open(SCHEMA))
+    with open(SCHEMA, 'r', encoding='utf-8') as f:
+        schema = json.load(f)
     have = {i['itemdefid'] for i in schema['items']}
     plan = planned()
     missing = [p for p in plan if p[0] not in have]
@@ -151,8 +152,9 @@ def main():
         print(f'  added {item_id} {item["name"]:34} -> {slug}.png')
 
     schema['items'].sort(key=lambda i: i['itemdefid'])
-    json.dump(schema, open(SCHEMA, 'w'), indent=2, ensure_ascii=False)
-    open(SCHEMA, 'a').write('\n')
+    with open(SCHEMA, 'w', encoding='utf-8') as f:
+        json.dump(schema, f, indent=2, ensure_ascii=False)
+        f.write('\n')
     print(f'[sprint34-defs] added {len(missing)} definitions')
     return 0
 

@@ -27,7 +27,6 @@ Run: blender --background --python scripts/blender/build_enemy_variant_meshes.py
 """
 
 import bpy
-import bmesh
 import math
 import os
 

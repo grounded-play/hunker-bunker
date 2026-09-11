@@ -6,9 +6,7 @@
 - Exports runtime GLB assets to public/3d/runtime/new3ds/
 """
 import os
-import math
 import bpy
-from mathutils import Matrix, Vector
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
 SOURCE_DIR = os.path.join(ROOT, 'art', 'source', '3d', 'sprint34-raw')

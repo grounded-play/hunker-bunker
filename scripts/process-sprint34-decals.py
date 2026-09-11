@@ -3,8 +3,7 @@
 into clean transparent RGBA PNGs in public/.
 """
 import os
-import glob
-from PIL import Image, ImageFilter
+from PIL import Image
 import numpy as np
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))

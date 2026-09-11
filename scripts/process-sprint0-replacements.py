@@ -15,7 +15,6 @@ Generates the 4 required standard production resolutions:
   - steam/store/item_icons/chroma/<slug>_chroma.png (1254x1254 RGBA)
 """
 import os
-import sys
 from PIL import Image
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))

@@ -107,7 +107,6 @@ def main():
         chroma_img.save(chroma_path, "PNG", optimize=True)
 
         size_256_kb = os.path.getsize(out_256) / 1024
-        size_512_kb = os.path.getsize(out_512) / 1024
         print(f"Processed {itemdef}.jpeg -> {slug}.png ({size_256_kb:.1f} KB), large, master, chroma")
         count += 1
 
