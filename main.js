@@ -12593,12 +12593,7 @@ function getDoorImage(key) {
         'win': '/door_alien_keyart_v2.webp',
         'lose': '/door_rust_keyart_v2.webp'
     };
-    const pickDoor = (entry) => {
-        if (Array.isArray(entry)) {
-            return entry[Math.floor(Math.random() * entry.length)];
-        }
-        return entry;
-    };
+    const pickDoor = (entries) => entries[Math.floor(Math.random() * entries.length)];
 
     if (key === 'win') return assetUrl(SPECIAL_DOORS.win);
     if (key === 'lose') return assetUrl(SPECIAL_DOORS.lose);
@@ -12607,7 +12602,8 @@ function getDoorImage(key) {
 
     // Automatically determine door image based on active/preview class
     const activeClass = window.game?.playerType || (typeof getSelectedHeroType === 'function' ? getSelectedHeroType() : null) || activePreviewType || 'SCOUT';
-    return assetUrl(pickDoor(CLASS_DOORS[activeClass]) || SPECIAL_DOORS.base);
+    const doors = CLASS_DOORS[activeClass];
+    return assetUrl(doors ? pickDoor(doors) : SPECIAL_DOORS.base);
 }
 
 function getMapDoorImage(key) {
