@@ -106,29 +106,31 @@ All player class chassis outfits have fully functional runtime 3D GLB models wir
 | **`2004`** | **Archivist Emblem** | `emblem_archivist` | Emblem | High-Res Emblem Graphic |
 | **`2100`** | **Carbon Fiber Decal** | `decal_carbon` | Decal | Carbon Weave Graphic |
 
-### B. Season 0 Player Decals & Crests (Itemdefs 4120–4129)
-| Itemdef | Decal / Crest Name | File Slug (`public/economy/`) | Rarity | Current State |
+### B. Season 0 Player Decals & Crests (Itemdefs 4120–4129) — ALL COMPLETED & LIVE
+All 10 player decals and crests have already been brought in as photorealistic 3D game assets, rendered onto the operator's chest bone with physical backing plates (`src/operatorPatch.js`), and are fully equippable in the Loadout / Armory:
+
+| Itemdef | Decal / Crest Name | File Slug (`public/economy/`) | Rarity | Visual Asset State |
 | :--- | :--- | :--- | :--- | :--- |
-| **`4120`** | **Sub-Zero Pioneer Patch** | `decal_subzero_pioneer` | Uncommon | Procedural Vector SVG |
-| **`4121`** | **Radiation Trefoil Emblem** | `decal_radiation_trefoil` | Uncommon | Procedural Vector SVG |
-| **`4122`** | **Sporesnail Hunter Crest** | `decal_sporesnail_hunter_crest` | Uncommon | Procedural Vector SVG |
-| **`4123`** | **Bunker 404 Lost Squad Decal** | `decal_bunker404_lost_squad` | Rare | Procedural Vector SVG |
-| **`4124`** | **Cyber-Skull Tactical Pin** | `decal_cyber_skull_tactical_pin` | Rare | Procedural Vector SVG |
-| **`4125`** | **Cryo-Phoenix Insignia** | `decal_cryo_phoenix` | Rare | Procedural Vector SVG |
-| **`4126`** | **Queen Slayer Gold Seal** | `decal_queen_slayer_gold_seal` | Epic | High-Res Embossed Gold Seal |
-| **`4127`** | **Void Horizon Sigil** | `decal_void_horizon_sigil` | Epic | Procedural Vector SVG |
-| **`4128`** | **Ancient Core Glyphs** | `decal_ancient_core_glyphs` | Epic | Procedural Vector SVG |
-| **`4129`** | **Grand Marshal Relic Crest** | `decal_grand_marshal_relic_crest` | Legendary | Procedural Vector SVG |
+| **`4120`** | **Sub-Zero Pioneer Patch** | `decal_subzero_pioneer` | Uncommon | ✅ High-Detail Embroidered Mountain Patch (Live in Loadout) |
+| **`4121`** | **Radiation Trefoil Emblem** | `decal_radiation_trefoil` | Uncommon | ✅ Riveted Carbon-Metal Hazard Badge (Live in Loadout) |
+| **`4122`** | **Sporesnail Hunter Crest** | `decal_sporesnail_hunter_crest` | Uncommon | ✅ Glowing Emerald Snail Unit 7 Patch (Live in Loadout) |
+| **`4123`** | **Bunker 404 Lost Squad Decal** | `decal_bunker404_lost_squad` | Rare | ✅ Armored 404 Tactical Fighter Crest (Live in Loadout) |
+| **`4124`** | **Cyber-Skull Tactical Pin** | `decal_cyber_skull_tactical_pin` | Rare | ✅ Chrome Cybernetic Skull with Cyan Optic (Live in Loadout) |
+| **`4125`** | **Cryo-Phoenix Insignia** | `decal_cryo_phoenix` | Rare | ✅ Crystalline Glacial Ice Phoenix Patch (Live in Loadout) |
+| **`4126`** | **Queen Slayer Gold Seal** | `decal_queen_slayer_gold_seal` | Epic | ✅ Embossed Antique Gold Royal Wax Seal (Live in Loadout) |
+| **`4127`** | **Void Horizon Sigil** | `decal_void_horizon_sigil` | Epic | ✅ Cosmic Purple Void Accretion Astrolabe (Live in Loadout) |
+| **`4128`** | **Ancient Core Glyphs** | `decal_ancient_core_glyphs` | Epic | ✅ Basalt Alien Stone Rune Tablet (Live in Loadout) |
+| **`4129`** | **Grand Marshal Relic Crest** | `decal_grand_marshal_relic_crest` | Legendary | ✅ Antique Gold Imperial Double-Headed Eagle (Live in Loadout) |
 
 ### C. Sprint 34 Thematic Set Patches (Itemdefs 4203–4238)
 | Itemdef | Patch Name | File Slug (`public/economy/`) | Set | Visual Status |
 | :--- | :--- | :--- | :--- | :--- |
-| **`4203`** | **Deep Frost Patch** | `patch_deep_frost` | Deep Frost | ✅ 100% Complete High-Res |
-| **`4210`** | **Rust & Bone Patch** | `patch_rust_bone` | Rust & Bone | ✅ 100% Complete High-Res |
-| **`4217`** | **Hive Chitin Patch** | `patch_hive_chitin` | Hive Chitin | ✅ 100% Complete High-Res |
-| **`4224`** | **Horizon Corporate Patch** | `patch_horizon_corporate` | Horizon Corporate | ✅ 100% Complete High-Res |
-| **`4231`** | **Bunker 404 Patch** | `patch_bunker404` | Bunker 404 | ✅ 100% Complete High-Res |
-| **`4238`** | **Grand Marshal Patch** | `patch_grand_marshal` | Grand Marshal | ✅ 100% Complete High-Res |
+| **`4203`** | **Deep Frost Patch** | `patch_deep_frost` | Deep Frost | ✅ 100% Complete High-Res (Live in Loadout) |
+| **`4210`** | **Rust & Bone Patch** | `patch_rust_bone` | Rust & Bone | ✅ 100% Complete High-Res (Live in Loadout) |
+| **`4217`** | **Hive Chitin Patch** | `patch_hive_chitin` | Hive Chitin | ✅ 100% Complete High-Res (Live in Loadout) |
+| **`4224`** | **Horizon Corporate Patch** | `patch_horizon_corporate` | Horizon Corporate | ✅ 100% Complete High-Res (Live in Loadout) |
+| **`4231`** | **Bunker 404 Patch** | `patch_bunker404` | Bunker 404 | ✅ 100% Complete High-Res (Live in Loadout) |
+| **`4238`** | **Grand Marshal Patch** | `patch_grand_marshal` | Grand Marshal | ✅ 100% Complete High-Res (Live in Loadout) |
 
 ### D. In-World Environmental Surface Decals (32 Decals in `public/`)
 These are ambient decals mapped to floor/wall surfaces via `src/roomThemes.js` and `src/threeGame.js`:
@@ -150,38 +152,9 @@ These are ambient decals mapped to floor/wall surfaces via `src/roomThemes.js` a
 
 ## 5. Outstanding Production Prompts (Queue for Generation)
 
-### Remaining Decals & Crests (Priority 3)
+The **only** remaining items using legacy placeholder line-drawing vectors are the **8 Season 0 Chassis Outfits** (`4112–4119`), plus optional cosmetic upgrades for the 7 Season 0 weapon icons.
 
-```text
-[4120 - Sub-Zero Pioneer Patch]
-High-detail 3D game asset render of an embroidered tactical military velcro morale patch floating in empty dark space. Thick stitched navy-blue and slate fabric border, finely stitched silver and cyan mountain peak with two crossed climbing ice axes, realistic fabric weave texture, tactile embroidery thread luster. Studio lighting, octane render, clean isolated asset, no text, 1:1 aspect ratio.
-
-[4121 - Radiation Trefoil Emblem]
-High-detail 3D game asset render of a weathered cast-metal hazard badge floating in empty dark space. Chipped yellow industrial hazard paint over heavy pitted cast iron, deep embossed black radiation trefoil emblem, industrial rivet fasteners in the corners, subtle rust along the edges. Studio lighting, octane render, clean isolated asset, no text, 1:1 aspect ratio.
-
-[4122 - Sporesnail Hunter Crest]
-High-detail 3D game asset render of a hunting veteran crest pin floating in empty dark space. Iridescent polished alien snail shell with glowing emerald and pearl swirls, mounted on a dark gunmetal mechanical claw badge with tiny bioluminescent spore nodes. Studio lighting, octane render, clean isolated asset, no text, 1:1 aspect ratio.
-
-[4123 - Bunker 404 Lost Squad Decal]
-High-detail 3D game asset render of a subterranean military squad memorial medallion floating in empty dark space. Matte-black carbon shield, engraved red hazard warning stripes, a carved industrial drill bit insignia in worn titanium, battle damage scratches and scorched edges. Studio lighting, octane render, clean isolated asset, no text, 1:1 aspect ratio.
-
-[4124 - Cyber-Skull Tactical Pin]
-High-detail 3D game asset render of an aggressive cybernetic skull badge floating in empty dark space. Polished dark chrome skull with faceted carbon-fiber cheekplates, glowing cyan optical sensor lenses with a subtle digital targeting reticle over the left eye, gold connection pins. Studio lighting, octane render, clean isolated asset, no text, 1:1 aspect ratio.
-
-[4125 - Cryo-Phoenix Insignia]
-High-detail 3D game asset render of an ornate ice phoenix emblem floating in empty dark space. Carved translucent glacial blue ice and polished white gold, stylized rising wings with crystalline ice flares and frost vapor wisps. Studio lighting, octane render, clean isolated asset, no text, 1:1 aspect ratio.
-
-[4127 - Void Horizon Sigil]
-High-detail 3D game asset render of an alien cosmic sigil floating in empty dark space. Deep obsidian black core ring with an orbiting distorted violet gravitational accretion disk, pulsing purple energy runes engraved into dark metal. Studio lighting, octane render, clean isolated asset, no text, 1:1 aspect ratio.
-
-[4128 - Ancient Core Glyphs]
-High-detail 3D game asset render of an ancient subterranean alien stone relic tablet floating in empty dark space. Weathered dark basalt slab with deeply carved alien geometric hieroglyphs glowing with pulsing electric-cyan energy from within the stone fissures. Studio lighting, octane render, clean isolated asset, no text, 1:1 aspect ratio.
-
-[4129 - Grand Marshal Relic Crest]
-High-detail 3D game asset render of an imperial military crest floating in empty dark space. Solid antique gold and meteorite iron double-headed eagle emblem, adorned with a regal crown, holding an orbital scepter and power sphere, intricate filigree and polished luster. Studio lighting, octane render, clean isolated asset, no text, 1:1 aspect ratio.
-```
-
-### Remaining Chassis Outfits (Priority 4)
+### Remaining Chassis Outfits (Priority 1 — Currently Flat Vector Art)
 
 ```text
 [4112 - Sub-Terran Drill Engineer]
@@ -209,7 +182,7 @@ Full-body 3D game character asset render of a cybernetic stealth operative chass
 Full-body 3D game character asset render of an alien-human hybrid symbiotic power armor floating in empty dark space. Organic iridescent violet chitin plates fused with forged dark steel framing, horned bio-carapace helmet with glowing green multifaceted eyes, pulsing organic vascular conduits. Studio lighting, octane render, clean isolated asset, no text, 1:1 aspect ratio.
 ```
 
-### Remaining Weapon Skin Icons (Priority 5)
+### Remaining Weapon Skin Icons (Priority 2 — Optional Octane Renders)
 
 ```text
 [4101 - Hazard Stripe SMG]
