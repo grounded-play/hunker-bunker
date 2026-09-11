@@ -269,14 +269,38 @@ export class BountyManager {
         let changed = false;
 
         if (this.state.dailyKey !== todayDaily) {
+            // Auto-settle completed dailies before rotating so player never loses earned XP
+            for (const b of this.state.dailies) {
+                if (b.completed && !b.claimed) {
+                    b.claimed = true;
+                    if (typeof window !== 'undefined' && window.seasonPass?.addXp) {
+                        window.seasonPass.addXp(b.xp, 'daily_bounty_autosettle');
+                    }
+                }
+            }
             this.state.dailyKey = todayDaily;
             this.state.dailies = this.generateDailies(todayDaily);
             changed = true;
         }
 
         if (this.state.weeklyKey !== currentWeekly) {
+            // Auto-settle completed weeklies
+            for (const b of this.state.weeklies) {
+                if (b.completed && !b.claimed) {
+                    b.claimed = true;
+                    if (typeof window !== 'undefined' && window.seasonPass?.addXp) {
+                        window.seasonPass.addXp(b.xp, 'weekly_directive_autosettle');
+                    }
+                }
+            }
+            // Retain incomplete weeklies for late starters
+            const remainingWeeklies = this.state.weeklies.filter((b) => !b.completed);
+            const newWeeklies = this.generateWeeklies(currentWeekly);
+            const existingIds = new Set(remainingWeeklies.map((b) => b.id));
+            const fresh = newWeeklies.filter((b) => !existingIds.has(b.id));
+
             this.state.weeklyKey = currentWeekly;
-            this.state.weeklies = this.generateWeeklies(currentWeekly);
+            this.state.weeklies = [...remainingWeeklies, ...fresh];
             changed = true;
         }
 

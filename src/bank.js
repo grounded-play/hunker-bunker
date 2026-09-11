@@ -1,4 +1,5 @@
 import { SURVIVOR_REWARDS } from './survivorContract.js';
+import { BANK_CURRENCY_KEYS, describeBankTransaction } from './economyReceipt.js';
 
 const STORAGE_KEY = 'hb_bank';
 const BANK_SCHEMA_VERSION = 8;
@@ -369,6 +370,8 @@ function createDefaultState() {
         weaponUpgrades: createDefaultWeaponUpgrades(),
         unlockedSkills: [],
         claimedSurvivorRewards: [],
+        seasonReceipts: [],
+        fabricationOrders: {},
         shells: 0
     };
 }
@@ -464,6 +467,8 @@ function toSerializableState(raw) {
         (Array.isArray(raw.claimedSurvivorRewards) ? raw.claimedSurvivorRewards : [])
             .filter((id) => Object.hasOwn(SURVIVOR_REWARDS, id))
     )];
+    base.seasonReceipts = [...new Set((Array.isArray(raw.seasonReceipts) ? raw.seasonReceipts : []).filter(id => typeof id === 'string'))];
+    base.fabricationOrders = Object.fromEntries(Object.entries(raw.fabricationOrders ?? {}).filter(([id, at]) => typeof id === 'string' && Number.isSafeInteger(at) && at > 0));
     base.foundryActivated = Boolean(raw.foundryActivated);
 
     let derivedLevel = 0;
@@ -551,7 +556,9 @@ function cloneState(state) {
             ...(state.unlockedSkills ?? [])
         ],
         shells: clampCount(state.shells),
-        claimedSurvivorRewards: [...(state.claimedSurvivorRewards ?? [])]
+        claimedSurvivorRewards: [...(state.claimedSurvivorRewards ?? [])],
+        seasonReceipts: [...(state.seasonReceipts ?? [])],
+        fabricationOrders: { ...(state.fabricationOrders ?? {}) }
     };
 }
 
@@ -584,6 +591,7 @@ export class BankManager {
     load() {
         if (!this.storage) {
             this.state = createDefaultState();
+            this.committedState = cloneState(this.state);
             return this.getState();
         }
 
@@ -591,27 +599,90 @@ export class BankManager {
             const raw = this.storage.getItem(this.storageKey);
             if (!raw) {
                 this.state = createDefaultState();
+                this.committedState = cloneState(this.state);
                 return this.getState();
             }
 
             const parsed = migrateBank(JSON.parse(raw));
             this.state = toSerializableState(parsed);
+            this.committedState = cloneState(this.state);
             return this.getState();
         } catch {
             this.state = createDefaultState();
+            this.committedState = cloneState(this.state);
             return this.getState();
         }
     }
 
     save(nextState = this.state) {
-        this.state = toSerializableState(nextState);
-
-        if (!this.storage) {
-            return this.getState();
+        const previous = this.committedState ?? createDefaultState();
+        const next = toSerializableState(nextState);
+        try {
+            this.storage?.setItem(this.storageKey, JSON.stringify(next));
+        } catch (error) {
+            // Some legacy callers mutate state before save. Restore the last
+            // committed snapshot so a failed write cannot burn or mint locally.
+            this.state = cloneState(previous);
+            throw error;
         }
-
-        this.storage.setItem(this.storageKey, JSON.stringify(this.state));
+        this.state = next;
+        this.committedState = cloneState(next);
+        const transaction = describeBankTransaction(previous, next);
+        if (BANK_CURRENCY_KEYS.some(key => transaction.earned[key] || transaction.spent[key])) {
+            emit('bank-transaction', transaction);
+        }
         return this.getState();
+    }
+
+    depositSeasonReward(amounts, receiptId) {
+        if (!receiptId || !Object.entries(amounts).every(([key, amount]) => BANK_CURRENCY_KEYS.includes(key)
+            && Number.isSafeInteger(amount) && amount >= 0)) return { ok: false };
+        // Reload before a cross-tab delivery; callers hold the season lock.
+        if (this.storage) this.load();
+        if (this.state.seasonReceipts.includes(receiptId)) return { ok: true, duplicate: true };
+        const next = this.getState();
+        for (const [key, amount] of Object.entries(amounts)) {
+            if (!Number.isSafeInteger(next[key] + amount)) return { ok: false };
+            next[key] += amount;
+        }
+        next.seasonReceipts.push(receiptId);
+        this.save(next);
+        emit('bank-updated', { bank: this.getState() });
+        return { ok: true };
+    }
+
+    queueFabrication(id, cost, completeAt) {
+        if (!id || !Number.isSafeInteger(completeAt) || completeAt <= 0) return null;
+        if (this.storage) this.load();
+        if (this.state.fabricationOrders[id]) return this.state.fabricationOrders[id];
+        if (!Object.entries(cost).every(([key, value]) => BANK_CURRENCY_KEYS.includes(key)
+            && Number.isSafeInteger(value) && value >= 0) || !this.canAfford(cost)) return null;
+        const next = this.getState();
+        for (const [key, value] of Object.entries(cost)) next[key] -= value;
+        next.fabricationOrders[id] = completeAt;
+        this.save(next);
+        emit('bank-updated', { bank: this.getState() });
+        return completeAt;
+    }
+
+    exchange(debit = {}, credit = {}) {
+        const valid = amounts => amounts && typeof amounts === 'object' && !Array.isArray(amounts)
+            && Object.entries(amounts).every(([key, amount]) => BANK_CURRENCY_KEYS.includes(key)
+                && Number.isSafeInteger(amount) && amount >= 0);
+        if (!valid(debit) || !valid(credit)) return false;
+        const next = this.getState();
+        for (const key of BANK_CURRENCY_KEYS) {
+            if (next[key] < (debit[key] ?? 0)) return false;
+            const value = next[key] - (debit[key] ?? 0) + (credit[key] ?? 0);
+            if (!Number.isSafeInteger(value)) return false;
+            next[key] = value;
+        }
+        this.save(next);
+        if ((debit.shells ?? 0) || (credit.shells ?? 0)) {
+            emit('shells-changed', { shells: next.shells, spent: debit.shells ?? 0, gained: credit.shells ?? 0, bank: this.getState() });
+        }
+        emit('bank-updated', { bank: this.getState() });
+        return true;
     }
 
     getState() {
@@ -670,8 +741,7 @@ export class BankManager {
         });
         // Persist currency and receipt together. A failed write leaves the
         // live balance untouched and the contract can retry its pending grant.
-        this.storage?.setItem(this.storageKey, JSON.stringify(next));
-        this.state = next;
+        this.save(next);
         emit('shells-changed', { shells: next.shells, gained: reward.shells, bank: this.getState() });
         emit('bank-updated', { bank: this.getState() });
         return true;
@@ -754,9 +824,12 @@ export class BankManager {
 
     activateFoundry() {
         if (this.isFoundryActivated()) return true;
-        if (!this.spend(FOUNDRY_ACTIVATION_COST)) return false;
-        this.state.foundryActivated = true;
-        this.save();
+        if (!this.canAfford(FOUNDRY_ACTIVATION_COST)) return false;
+        const next = this.getState();
+        for (const [key, amount] of Object.entries(FOUNDRY_ACTIVATION_COST)) next[key] -= amount;
+        next.foundryActivated = true;
+        this.save(next);
+        emit('bank-updated', { bank: this.getState() });
         emit('foundry-activated', { bank: this.getState() });
         return true;
     }

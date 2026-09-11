@@ -1,4 +1,5 @@
 import { crossingGuidance, expeditionDebrief } from './src/expeditionFeedback.js';
+import { runO2MilestoneChoreography } from './src/o2CinematicDoors.js';
 import { formatRunCardBadges, summarizeRunCards } from './src/runCardHud.js';
 import { cutsceneCutoffTime } from './src/cutsceneTiming.js';
 /* global __HB_BUILD_INFO__ */
@@ -11,6 +12,8 @@ import { presentationTelemetry, PRESENTATION_EVENTS } from './src/presentationTe
 import { canUseDeveloperTools } from './src/devToolsAccess.js';
 import { ObjectiveRegistry } from './src/objectiveRegistry.js';
 import { BankManager, FOUNDRY_ACTIVATION_COST } from './src/bank.js';
+import { ExpeditionReceipt } from './src/economyReceipt.js';
+import { renderReturnManifest } from './src/returnManifest.js';
 import { FabricatorManager, FAB_RECIPES, FAB_SPIN_COST, FABRICATOR_SITE_MAX_USES } from './src/fabricator.js';
 import { ProfileManager, clearSaveData, exportSaveCode, importSaveCode } from './src/profile.js';
 import { LoadoutManager } from './src/loadout.js';
@@ -25,7 +28,7 @@ import { codexStore, getClassWreckageLog, recordSpecimen0047OriginIfFound } from
 import { formatCrossingDeltaSummary } from './src/depthContract.js';
 import { CODEX_ENTRIES, CODEX_CATEGORIES, getCodexEntry, CODEX_TOTAL, LORE_METADATA } from './src/data/codex.js';
 import { pickRunModifier } from './src/data/runModifiers.js';
-import { pickMissionBriefing } from './src/data/missions.js';
+import { nextSeasonExpedition } from './src/data/seasonOneExpeditions.js';
 import { DIALOGUE_LINES, getDialogueLine } from './src/data/dialogueLines.js';
 import { MOTHERSHIP_REACTIVE_LINES } from './src/data/lineDirectorPools.js';
 import { ArcStateManager } from './src/arcState.js';
@@ -57,7 +60,7 @@ import { createScoutHeroPreview } from './src/scoutHeroPreview.js';
 import { createArmoryScene } from './src/armoryScene.js';
 import { createArmoryUi } from './src/armoryUi.js';
 import { initSteamVaultUI, loadVaultData, openSteamVaultModal, showSteamDropToast, renderSteamMilestoneGrants, grantVaultItem, resetDevVaultInventory, setDevInfiniteCacheMode, isDevInfiniteCacheMode, STEAM_ITEM_CATALOG } from './src/steamVaultUi.js';
-import { initSeasonPassUI, cancelXpFeedback } from './src/seasonPassUi.js';
+import { initSeasonPassUI, cancelXpFeedback, beginSeasonRun, getSeasonRunSummary } from './src/seasonPassUi.js';
 import { preloadEnemy3dTemplates } from './src/enemy3dOverlay.js';
 import { initVoiceCallouts } from './src/voiceCallouts.js';
 import { multiplayerLobby } from './src/multiplayerLobby.js';
@@ -2616,10 +2619,12 @@ const pickupCounterState = {
 };
 let activeAmmoCapacity = CLASS_AMMO_CAPACITY.SCOUT;
 const bankManager = new BankManager();
+const expeditionReceipt = new ExpeditionReceipt();
+window.addEventListener('bank-transaction', (event) => expeditionReceipt.record(event.detail));
 
 window.bankManager = bankManager;
 
-const fabricator = new FabricatorManager();
+const fabricator = new FabricatorManager({ bank: bankManager });
 window.fabricator = fabricator;
 
 const profile = new ProfileManager();
@@ -4377,24 +4382,14 @@ document.getElementById('debug-unlock-all-polishes')?.addEventListener('click', 
 });
 
 // ---- Game Over Screen ----
-function assignMission(bankState) {
-    const unlocks = bankState?.unlocks ?? {};
-    const totalUnlocks = Object.values(unlocks).filter(Boolean).length;
-    // Labels vary per type from src/data/missions.js; types/targets stay fixed so
-    // the run lifecycle is unchanged (doc 11 §2/§3.4).
-    if (totalUnlocks === 0) {
-        return { type: 'retrieval', label: pickMissionBriefing('retrieval'), targetKills: 0, targetDepth: 0 };
-    } else if (totalUnlocks < 3) {
-        return { type: 'survey', label: pickMissionBriefing('survey'), targetKills: 0, targetDepth: 65 };
-    }
-    const idx = (totalUnlocks + Math.floor(Date.now() / 86400000)) % 4;
-    const missions = [
-        { type: 'retrieval', label: pickMissionBriefing('retrieval'), targetKills: 0, targetDepth: 0 },
-        { type: 'survey', label: pickMissionBriefing('survey'), targetKills: 0, targetDepth: 145 },
-        { type: 'elimination', label: pickMissionBriefing('elimination'), targetKills: 6, targetDepth: 0 },
-        { type: 'mapping', label: pickMissionBriefing('mapping'), targetKills: 0, targetDepth: 0 }
-    ];
-    return missions[idx];
+function assignMission() {
+    const key = 'hb_season_one_expedition_history';
+    let history = [];
+    try { history = JSON.parse(localStorage.getItem(key) ?? '[]'); } catch { /* new history */ }
+    if (!Array.isArray(history)) history = [];
+    const mission = nextSeasonExpedition(history);
+    localStorage.setItem(key, JSON.stringify([...history, mission.id].slice(-2)));
+    return mission;
 }
 
 // Surface a prior contractor's black box at the base/menu so failure is a
@@ -4480,11 +4475,29 @@ function generateDeathReport(stats, reason) {
             cause = '> CAUSE: EXOSUIT FAILURE — SUIT INTEGRITY COLLAPSE';
         }
     }
+    const deposited = window.game?.runDepositedResources ?? { tech: 0, coin: 0, med: 0 };
     return [
         `> TELEMETRY: ${biome} // TIER: ${depthTier} // DIST: ${Math.round(depth)}u // THREATS PURGED: ${stats.snailsKilled ?? 0}`,
-        `> CARGO: ${stats.totalPickups ?? 0} UNITS BANKED${recoverable}${boxCoord}`,
+        `> CARGO BANKED: ${deposited.tech ?? 0} TECH / ${deposited.coin ?? 0} COIN / ${deposited.med ?? 0} MED${recoverable}${boxCoord}`,
         cause
     ].join('\n');
+}
+
+function getNextActionSuggestion(bankState) {
+    if (!bankState) return null;
+    if (!fabricator.isFabricated('scatter_rep')) {
+        if (fabricator.isPrinting('scatter_rep')) return 'SCATTER REPEATER PRINTING — OPEN FAB BAY';
+        const missing = fabMissingResourceText({ tech: 12, coin: 6 }, bankState);
+        return missing ? `FIELD PRINT: SCATTER REPEATER — ${missing}` : 'SCATTER REPEATER READY TO PRINT — 12 TECH / 6 COIN IN FAB BAY';
+    }
+    if (!bankState.foundryActivated) {
+        const missing = fabMissingResourceText(FOUNDRY_ACTIVATION_COST, bankState);
+        return missing ? `FOUNDRY ACTIVATION: ${missing}` : 'ACTIVATE FOUNDRY — 25 TECH / 10 COIN / 5 MED';
+    }
+    const printing = FAB_RECIPES.find(recipe => fabricator.isPrinting(recipe.id));
+    if (printing) return `${printing.name} IS PRINTING — CHECK FAB BAY`;
+    if (fabricator.getFabricatedCount() > 0) return 'OPEN ARMORY — EQUIP YOUR FABRICATED GEAR';
+    return 'OPEN FAB BAY — CHOOSE YOUR FIRST WEAPON';
 }
 
 function formatRunTime(ms) {
@@ -4569,12 +4582,13 @@ function showGameOverScreen(stats, { isVictory = false, deathReason = 'hazard' }
         grantNoteEl.classList.add('hidden');
     }
     const box = blackBoxStore.load();
-    const banked = stats.totalPickups ?? 0;
-    if (bankNote) {
-        bankNote.textContent = isVictory
-            ? `BANKED THIS RUN: ${banked} TOTAL STORED`
-            : `BANKED BEFORE FAILURE: ${banked} TOTAL STORED`;
-    }
+    const bankState = bankManager.getState();
+    renderReturnManifest(bankNote, expeditionReceipt.finish(), bankState, {
+        victory: isVictory,
+        classType: window.game?.playerType ?? getSelectedHeroType(),
+        nextAction: getNextActionSuggestion(bankState),
+        season: getSeasonRunSummary()
+    });
     if (recoverableNote) {
         const s = box.active ? box.salvage : null;
         recoverableNote.textContent = s
@@ -4915,6 +4929,8 @@ function resetRunToStartingState({
         }
 
         runStartTime = Date.now();
+        expeditionReceipt.begin(runStartTime, bankManager.getState());
+        void beginSeasonRun(`local:${crypto.randomUUID()}`, 0);
         resetCommentaryRunState();
         showDeveloperCommentary('run_start');
         recordSteamTimelineEvent('run_start', 'Run Started', `${window.game?.playerType ?? getSelectedHeroType()} deployed into the bunker.`, {
@@ -5134,20 +5150,24 @@ window.addEventListener('goal-unlocked', (event) => {
 });
 
 window.addEventListener('o2-generator-upgraded', (event) => {
-    // Level 1 is the milestone build: it runs its own startup sequence, boss
-    // warning and dialogue, so the generic "major upgrade" bunker chatter would
-    // just talk over them. The *cutscene* is a different matter -- it is the
-    // establishing beat for that milestone, and returning early here meant
-    // event-o2-generator-upgraded.webm never played on the one build it was
-    // authored for. Suppress the chatter, keep the video.
+    // Level 1 is the milestone build: it runs the choreographed 8-beat sequence
+    // (blast doors close -> action video -> doors close -> 3D reveal -> generator rise & lights
+    // -> camera shake & warning broadcast -> doors close -> boss video -> final door reveal to combat).
     const isMilestoneBuild = event?.detail?.level === 1;
     if (!isMilestoneBuild) {
         const line = getDialogueLine('majorUpgrade', Math.random, getActiveSuitDialogueContext());
         if (line) showBiomePrompt(`> BUNKER: ${line}`);
+        playAuthoredEventOnce('o2_generator_upgraded', {
+            videoBase: 'int_04_warmth_beneath_the_ice',
+            eventDetail: event?.detail ?? {}
+        });
+        return;
     }
-    playAuthoredEventOnce('o2_generator_upgraded', {
-        videoBase: 'int_04_warmth_beneath_the_ice',
-        eventDetail: event?.detail ?? {}
+    void runO2MilestoneChoreography({
+        game: window.game,
+        triggerDoorTransition,
+        playCutsceneVideo,
+        showTacticalOverlay
     });
 });
 
@@ -10935,6 +10955,34 @@ function fabMissingResourceText(cost, bank = bankManager.getState()) {
     return missing.length ? `NEED ${missing.join(' / ')}` : '';
 }
 
+function renderFieldPrint(grid, bank) {
+    const recipe = FAB_RECIPES.find(entry => entry.id === 'scatter_rep');
+    const cost = fabricator.getEffectiveCost(recipe);
+    const fabricated = fabricator.isFabricated(recipe.id);
+    const printing = fabricator.isPrinting(recipe.id);
+    const equipped = loadout.getEquippedId() === recipe.id;
+    const panel = document.createElement('div');
+    panel.className = 'fab-activation-panel';
+    panel.innerHTML = `<div class="fab-activation-panel__kicker">GUARANTEED FIELD PRINT · ALL CLASSES</div>
+        <div class="fab-activation-panel__title">SCATTER REPEATER</div>
+        <p>Three close-range projectiles per shot; shorter reach. Equip for your next deployment. No Foundry activation needed for this field schematic.</p>
+        <div class="fab-activation-panel__cost">${fabCostText(cost, bank, { showHaveNeed: !bankManager.canAfford(cost) })}</div>`;
+    const button = document.createElement('button');
+    button.id = 'season-field-print';
+    button.className = 'fab-card__btn';
+    button.textContent = fabricated ? (equipped ? 'EQUIPPED FOR NEXT RUN ✓' : 'EQUIP SCATTER REPEATER') : printing ? 'PRINTING…' : bankManager.canAfford(cost) ? 'PRINT SCATTER REPEATER' : fabMissingResourceText(cost, bank);
+    button.disabled = printing || equipped || (!fabricated && !bankManager.canAfford(cost));
+    button.addEventListener('click', () => {
+        try {
+            if (fabricated) { loadout.equip(recipe.id, fabricator); syncEquippedWeaponLabel(); }
+            else { fabricator.startPrint(recipe.id, bankManager); startFabTicker(); }
+            renderFabricationModal();
+        } catch { button.textContent = 'SAVE PENDING — REOPEN FAB BAY TO RECOVER'; }
+    });
+    panel.appendChild(button);
+    grid.appendChild(panel);
+}
+
 function renderFoundryActivationPanel(grid, bank) {
     const activated = bankManager.isFoundryActivated();
     if (activated) return false;
@@ -10985,6 +11033,7 @@ function renderFabricationModal() {
 
     const rollPanel = document.getElementById('fab-roll-panel');
     grid.innerHTML = '';
+    renderFieldPrint(grid, bank);
     if (renderFoundryActivationPanel(grid, bank)) {
         rollPanel?.classList.add('hidden');
         setTxt('fab-summary', `FOUNDRY ACTIVATION: ${fabCostText(FOUNDRY_ACTIVATION_COST, bank, { showHaveNeed: !bankManager.canActivateFoundry() })}`);
@@ -11155,8 +11204,7 @@ function closeFabricationModal() {
 function refreshFabAccess() {
     const fabCmd = document.getElementById('fabrication-command');
     if (!fabCmd) return;
-    const activated = bankManager.isFoundryActivated();
-    fabCmd.classList.toggle('hidden', !activated);
+    fabCmd.classList.remove('hidden');
     const btn = document.getElementById('fabrication-btn');
     if (btn) btn.textContent = '◇ FAB BAY';
     updateMenuCommandStatuses();
@@ -12447,7 +12495,6 @@ function renderRosterModal(mode = 'continue') {
     grid.innerHTML = '';
     if (fabbed === 0) {
         // Single compact slot with one Fabricate button when 0 weapons are fabricated
-        const isFoundryUnlocked = bankManager.isFoundryActivated();
 
         const emptyCard = document.createElement('div');
         emptyCard.className = 'roster-weapon-empty-slot';
@@ -12468,9 +12515,7 @@ function renderRosterModal(mode = 'continue') {
 
         const sub = document.createElement('div');
         sub.className = 'roster-empty-sub';
-        sub.textContent = isFoundryUnlocked
-            ? 'Visit the Fabrication Bay to print sidearms from bunker salvage.'
-            : 'Power the base generator to unlock the Fabrication Bay.';
+        sub.textContent = 'Print a guaranteed Scatter Repeater for 12 Tech / 6 Coin in the Fab Bay.';
 
         textGroup.appendChild(title);
         textGroup.appendChild(sub);
@@ -12480,17 +12525,11 @@ function renderRosterModal(mode = 'continue') {
 
         const fabBtn = document.createElement('button');
         fabBtn.className = 'roster-weapon__btn roster-weapon__btn--single-fab';
-        if (isFoundryUnlocked) {
-            fabBtn.textContent = '+ OPEN FAB BAY';
-            fabBtn.addEventListener('click', () => {
-                window.AudioManager?.play?.('ui_click', { volume: 0.5 });
-                openFabricationModal();
-            });
-        } else {
-            fabBtn.textContent = 'FAB BAY LOCKED';
-            fabBtn.disabled = true;
-            fabBtn.classList.add('roster-weapon__btn--locked');
-        }
+        fabBtn.textContent = '+ OPEN FAB BAY';
+        fabBtn.addEventListener('click', () => {
+            window.AudioManager?.play?.('ui_click', { volume: 0.5 });
+            openFabricationModal();
+        });
         emptyCard.appendChild(fabBtn);
         grid.appendChild(emptyCard);
     } else {

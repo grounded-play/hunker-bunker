@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import * as THREE from 'three';
 import { BaseLights } from './baseLights.js';
+import { runO2MilestoneChoreography, O2_CHOREOGRAPHY_PHASES } from './o2CinematicDoors.js';
 
 // LAG-01 regression guard.
 //
@@ -99,5 +100,130 @@ describe('LAG-01 — base light grid must not change the scene light set at igni
 
         lights.ignite(40, -25, 6);
         expect(countLights(scene)).toBe(before);
+    });
+});
+
+describe('O2 Milestone Cinematic Doors and Video Choreography (SEQ-01)', () => {
+    it('defines all required progression phases in chronological sequence', () => {
+        expect(O2_CHOREOGRAPHY_PHASES).toMatchObject({
+            INIT: 'init',
+            LOCK: 'lock',
+            DOORS_CLOSE_GENERATOR: 'doors_close_generator',
+            VIDEO_GENERATOR: 'video_generator',
+            DOORS_CLOSE_REVEAL: 'doors_close_reveal',
+            DOORS_OPEN_3D: 'doors_open_3d',
+            GENERATOR_RISE_3D: 'generator_rise_3d',
+            SCREEN_SHAKE_WARNING: 'screen_shake_warning',
+            DOORS_CLOSE_BOSS: 'doors_close_boss',
+            VIDEO_BOSS: 'video_boss',
+            DOORS_OPEN_COMBAT: 'doors_open_combat',
+            COMPLETE: 'complete'
+        });
+    });
+
+    it('executes the complete 8-beat sequence in strict non-overlapping order', async () => {
+        const events = [];
+        const phases = [];
+
+        const fakeGame = {
+            closeConsoleModal: () => events.push('closeConsoleModal'),
+            setInputEnabled: (enabled) => events.push(`setInputEnabled:${enabled}`),
+            setCinematicLock: (locked) => events.push(`setCinematicLock:${locked}`),
+            getActiveO2GeneratorPosition: () => ({ x: 10, z: 20 }),
+            cameraTarget: { x: 0, z: 0 },
+            startO2StartupSequence: (bossType, { onComplete, skipDialogue }) => {
+                events.push(`startO2StartupSequence:${bossType}:skipDialogue=${skipDialogue}`);
+                if (onComplete) onComplete();
+            },
+            triggerCameraShake: (intensity, duration) => {
+                events.push(`triggerCameraShake:${intensity}:${duration}`);
+            },
+            spawnMilestoneBoss: (bossType, meta) => {
+                events.push(`spawnMilestoneBoss:${bossType}:${meta.sourceGoalKey}`);
+            }
+        };
+
+        const fakeTriggerDoorTransition = (onClosed, onOpened, key, options) => {
+            events.push(`doorTransition:close:${key}`);
+            if (onClosed) onClosed();
+            if (options?.onOpeningStart) options.onOpeningStart();
+            events.push(`doorTransition:open:${key}`);
+            if (onOpened) onOpened();
+        };
+
+        const fakePlayCutsceneVideo = (video, options) => {
+            events.push(`playCutsceneVideo:${video}`);
+            if (options?.onDoorCutoff) options.onDoorCutoff();
+            return Promise.resolve({ played: true });
+        };
+
+        const fakeShowTacticalOverlay = (spec) => {
+            events.push(`showTacticalOverlay:${spec.title}`);
+        };
+
+        const result = await runO2MilestoneChoreography({
+            game: fakeGame,
+            triggerDoorTransition: fakeTriggerDoorTransition,
+            playCutsceneVideo: fakePlayCutsceneVideo,
+            showTacticalOverlay: fakeShowTacticalOverlay,
+            shakePauseMs: 0,
+            onPhaseChange: (phase) => phases.push(phase)
+        });
+
+        expect(result).toEqual({ ok: true });
+
+        // Verify phase flow
+        expect(phases).toEqual([
+            'init',
+            'lock',
+            'doors_close_generator',
+            'video_generator',
+            'doors_close_reveal',
+            'doors_open_3d',
+            'generator_rise_3d',
+            'screen_shake_warning',
+            'doors_close_boss',
+            'video_boss',
+            'doors_open_combat',
+            'complete'
+        ]);
+
+        // Verify beat order:
+        // 1. Lock and close modal
+        expect(events[0]).toBe('closeConsoleModal');
+        expect(events[1]).toBe('setInputEnabled:false');
+        expect(events[2]).toBe('setCinematicLock:true');
+
+        // 2 & 3. Door closes and opens to upgrade video
+        expect(events).toContain('playCutsceneVideo:event-o2-generator-upgraded');
+
+        // 4 & 5. Camera recenters onto generator position
+        expect(fakeGame.cameraTarget).toEqual({ x: 10, z: 20 });
+
+        // 6. 3D generator rise
+        expect(events).toContain('startO2StartupSequence:boss_cybersnail:skipDialogue=true');
+
+        // 7. Screen rumble & tactical warning
+        expect(events).toContain('triggerCameraShake:0.35:0.7');
+        expect(events).toContain('showTacticalOverlay:SEISMIC ANOMALY');
+
+        // 8. Boss cutscene video
+        expect(events).toContain('playCutsceneVideo:event-boss-encounter-cybersnail');
+
+        // 9. Boss spawns in 3D, unlocks input
+        expect(events).toContain('spawnMilestoneBoss:boss_cybersnail:o2Bubble');
+        expect(events[events.length - 2]).toBe('setCinematicLock:false');
+        expect(events[events.length - 1]).toBe('setInputEnabled:true');
+    });
+
+    it('handles headless execution gracefully without game, DOM, or video player', async () => {
+        const result = await runO2MilestoneChoreography({
+            game: null,
+            triggerDoorTransition: null,
+            playCutsceneVideo: null,
+            showTacticalOverlay: null,
+            shakePauseMs: 0
+        });
+        expect(result).toEqual({ ok: true });
     });
 });

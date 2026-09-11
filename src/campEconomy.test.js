@@ -234,3 +234,43 @@ describe('Camp Aftermath Disposition (docs/sprint-22-systems-breakdown/03-factio
         expect(summary.reason.length).toBeGreaterThan(0);
     });
 });
+
+describe('Camp Economy Anti-Arbitrage Invariants', () => {
+    it('guarantees buy cost strictly exceeds sell payout across all camps, classes, and bond levels', () => {
+        const camps = ['camp_meridian', 'camp_tallow', 'camp_vesper'];
+        const classes = ['SCOUT', 'TANK', 'ENGINEER'];
+        const levels = [0, 1, 2, 3];
+        const bonds = [0, 1, 2, 3, 4, 5];
+
+        const buyPrices = { coin: [], tech: [], med: [] };
+        const sellPayouts = { coin: [], tech: [], med: [] };
+
+        for (const campId of camps) {
+            for (const playerType of classes) {
+                for (const level of levels) {
+                    for (const bond of bonds) {
+                        const trades = getCampTrades({ id: campId, level, bond }, playerType);
+                        for (const trade of trades) {
+                            if (trade.id.startsWith('buy_')) {
+                                const commodity = Object.keys(trade.receive)[0];
+                                const perUnit = trade.give.shells / trade.receive[commodity];
+                                buyPrices[commodity].push(perUnit);
+                            } else if (trade.id.startsWith('sell_')) {
+                                const commodity = Object.keys(trade.give)[0];
+                                const perUnit = trade.receive.shells / trade.give[commodity];
+                                sellPayouts[commodity].push(perUnit);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        for (const commodity of ['coin', 'tech', 'med']) {
+            const minBuy = Math.min(...buyPrices[commodity]);
+            const maxSell = Math.max(...sellPayouts[commodity]);
+            expect(minBuy).toBeGreaterThan(maxSell);
+        }
+    });
+});
+

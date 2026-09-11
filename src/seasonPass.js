@@ -1,233 +1,349 @@
-// ── Season 0 Tactical Dossier — Battle Pass Progression ──────────────────
-// Source of truth for the reward schedule: docs/season-zero-protocol/
-// 04-battle-pass-and-progression-tiers.md §2-3. This module owns XP storage,
-// tier math, and claim state; it does not grant items itself — callers pass
-// a `grant(reward)` function (see src/seasonPassUi.js) so this stays testable
-// without touching the DOM/inventory.
+// ── Beta Season 1: Deep Crust Protocol — Tactical Dossier ──────────────────
+// Source of truth: docs/hunker-bunker-beta-season-1-plan.md §4, §6.
+//
+// 30 Ranks @ 1,500 XP / Rank = 45,000 XP total.
+// Free Track: every rank has a reward (10 cosmetics + 20 supply bundles).
+// Classified Dossier: 10 premium cosmetics + purchase grant (4101 Hazard Stripe SMG).
+// Dual-track progression with retry-safe idempotent receipt tracking.
 
-export const XP_PER_TIER = 5000;
-export const TOTAL_TIERS = 50;
-export const STORAGE_KEY = 'hb_season_pass_v1';
+import { SEASON_ONE, releasedSeasonWeeks, seasonDirectives } from './data/seasonOneConfig.js';
+import { getSeasonOneCosmetic } from './data/seasonOneCatalog.js';
 
-// XP awarded per gameplay milestone (doc 04 §2).
-export const XP_SOURCES = Object.freeze({
-    roomCleared: 50,
-    eliteNestPurged: 250,
-    floorCleared: 1000,
-    bossDefeated: 2500,
-    dailyBounty: 1500,
-    weeklyDirective: 7500
-});
+export const XP_PER_TIER = SEASON_ONE.xpPerRank;
+export const TOTAL_TIERS = 30;
+export const STORAGE_KEY = 'hb_season_deep_crust_beta_1_v1';
+export const LEGACY_STORAGE_KEY = 'hb_season_pass_v1';
 
-// Reward descriptor shapes:
-//   { kind: 'item', itemdefid, qty, label }   — Steam-catalog-style item (skin/charm/decal/mod/etc)
-//   { kind: 'currency', currency, qty, label } — in-run economy currency, not itemdef-backed
-//   { kind: 'cache', itemdefid, qty, label }   — Deep Relic Cache (reuses the existing 4000/4001
-//                                                 sandbox cache+key itemdefs already used by
-//                                                 src/steamVaultUi.js's crate-opening flow)
-// `label` is always present so the UI can render something even when `itemdefid` isn't yet
-// registered in src/data/steamItemCatalog.js (most of the 4100-4159 season catalog isn't — that's
-// a known gap in the generated Steam schema, not something this module papers over).
-function item(itemdefid, label, qty = 1) {
-    return { kind: 'item', itemdefid, qty, label };
-}
-function currency(currencyId, qty, label) {
-    return { kind: 'currency', currency: currencyId, qty, label };
-}
-function cache(label = 'Deep Relic Cache') {
-    return { kind: 'cache', itemdefid: 4000, qty: 1, label };
-}
-function key(label = 'Relic Decryption Key') {
-    return { kind: 'item', itemdefid: 4154, qty: 1, label };
-}
-
-// One entry per tier (index 0 = Tier 1 ... index 49 = Tier 50). `free`/`premium` are a reward
-// descriptor or null (no reward that tier on that track). Transcribed from doc 04 §3.
-export const TIER_REWARDS = Object.freeze([
-    { free: currency('scrap', 500, '500x Fabrication Scrap'), premium: item(4100, 'Sub-Zero Frostbite Sidearm') },
-    { free: null, premium: item(4130, 'Mini Cryo-Core Charm') },
-    { free: item(4120, 'Sub-Zero Pioneer Patch'), premium: key() },
-    { free: null, premium: item(4140, 'Cryo-Capacitor Overclock') },
-    { free: cache(), premium: item(4101, 'Hazard Stripe SMG') },
-    { free: null, premium: item(4121, 'Radiation Trefoil Emblem') },
-    { free: item(4156, '20x Cryo-Alloy Ingots', 20), premium: item(4131, 'Spent 50-Cal Casing Charm') },
-    { free: null, premium: item(4112, 'Sub-Terran Drill Engineer') },
-    { free: null, premium: item(4141, 'Magnetic Scavenger Coil') },
-    { free: cache(), premium: item(4113, 'Cryo-Vanguard Scout') },
-    { free: null, premium: item(4102, 'Tectonic Driller Shotgun') },
-    { free: item(4159, '10x Deep Core Shards', 10), premium: item(4132, 'Sporesnail Pearl Charm') },
-    { free: null, premium: item(4122, 'Sporesnail Hunter Crest') },
-    { free: null, premium: item(4142, 'Bio-Hazard Filter Vent') },
-    { free: key(), premium: item(4103, 'Cryo-Plasma Railgun') },
-    { free: null, premium: item(4114, 'Trench Warden Heavy') },
-    { free: currency('scrap', 500, '500x Fabrication Scrap'), premium: item(4133, 'Trench Whistle Charm') },
-    { free: null, premium: item(4150, 'Amber CRT Monitor Theme') },
-    { free: item(4123, 'Bunker 404 Lost Squad Decal'), premium: item(4143, 'Kinetic Impact Bushing') },
-    { free: cache(), premium: item(4104, 'Rust & Bone Trench Carbine') },
-    { free: null, premium: item(4124, 'Cyber-Skull Tactical Pin') },
-    { free: item(4156, '25x Cryo-Alloy Ingots', 25), premium: item(4134, 'Glitched RAM Card Charm') },
-    { free: null, premium: item(4115, 'Void Commando Recon') },
-    { free: null, premium: item(4144, 'Thermal Heat Exchanger') },
-    { free: cache(), premium: item(4105, 'Obsidian Shard Sidearm') },
-    { free: null, premium: item(4135, 'Geodetic Compass Charm') },
-    { free: item(4159, '20x Deep Core Shards', 20), premium: item(4125, 'Cryo-Phoenix Insignia') },
-    { free: null, premium: item(4116, 'Bio-Synthesizer Medic') },
-    { free: null, premium: item(4148, 'Soviet Sub-Commander Radio') },
-    { free: key(), premium: item(4106, 'Biolume Spore Sprayer') },
-    { free: null, premium: item(4151, 'Emerald Radar Phosphor HUD') },
-    { free: currency('scrap', 1000, '1000x Fabrication Scrap'), premium: item(4136, 'Miniaturized Drone Bobble') },
-    { free: null, premium: item(4145, 'Echo-Location Transceiver') },
-    { free: null, premium: item(4126, 'Queen Slayer Gold Seal') },
-    { free: cache(), premium: item(4107, 'Deep Core Melter') },
-    { free: null, premium: item(4137, 'Amber Bio-Flask Charm') },
-    { free: item(4156, '50x Cryo-Alloy Ingots', 50), premium: item(4117, 'Dreadnought Exo-Juggernaut') },
-    { free: null, premium: item(4146, 'Symbiotic Adrenaline Pump') },
-    { free: null, premium: item(4127, 'Void Horizon Sigil') },
-    { free: cache(), premium: item(4108, 'Glitched Circuit Bolter') },
-    { free: null, premium: item(4149, "Synthesized AI Unit 'AURA'") },
-    { free: item(4159, '50x Deep Core Shards', 50), premium: item(4138, 'Dark Matter Singularity Charm') },
-    { free: null, premium: item(4128, 'Ancient Core Glyphs Decal') },
-    { free: null, premium: item(4118, 'Cyber-Spectre Infiltrator') },
-    { free: key(), premium: item(4109, 'Void-Walker Beam Cannon') },
-    { free: null, premium: item(4152, 'Emerald Void Tracer Rounds') },
-    { free: null, premium: item(4153, 'Cryo Shockwave Muzzle Flare') },
-    { free: item(4159, '50x Deep Core Shards', 50), premium: item(4147, 'Zero-Point Flux Overdrive') },
-    { free: null, premium: item(4139, 'Golden Sub-Bunker Key Charm') },
-    { free: item(4110, "Queen's Carapace Carbine"), premium: item(4119, 'Hive-Lord Symbiote Exosuit') }
+export const PASS_CHAPTERS = Object.freeze([
+    { id: 'cold_start', name: 'Cold Start', startTier: 1, endTier: 10 },
+    { id: 'signal_below', name: 'Signal Below', startTier: 11, endTier: 20 },
+    { id: 'living_core', name: 'The Living Core', startTier: 21, endTier: 30 }
 ]);
 
-function createDefaultState() {
+// XP awarded per gameplay milestone (docs/hunker-bunker-beta-season-1-plan.md §7).
+export const XP_SOURCES = Object.freeze({
+    roomCleared: 50, depthCrossed: 250, qualifyingExtraction: 300,
+    bossDefeated: 500, weeklyDirective: 1000, onboarding: 1000
+});
+
+// Reward descriptors:
+function item(itemdefid, label, qty = 1) {
+    return Object.freeze({ kind: 'item', itemdefid, qty, label: getSeasonOneCosmetic(itemdefid)?.name ?? label });
+}
+function supply(tech = 5, coin = 2, med = 1, label = 'Supply Bundle (5 Tech, 2 Coin, 1 Med)') {
+    return { kind: 'supply_bundle', tech, coin, med, qty: 1, label };
+}
+function classChoice() {
     return {
-        version: 1,
-        xp: 0,
-        hasPremium: false,
-        claimedFree: [],
-        claimedPremium: []
+        kind: 'class_choice',
+        choices: [4112, 4113, 4114],
+        qty: 1,
+        label: 'Class Choice: Drill Engineer (4112) / Vanguard Scout (4113) / Trench Warden (4114)'
     };
 }
 
+// Purchase grant immediately available upon unlocking Classified Dossier
+export const PURCHASE_GRANT = Object.freeze(item(4101, 'Hazard Stripe SMG'));
+
+// Canonical 30-rank schedule (Beta Season 1 Deep Crust Protocol §6)
+export const TIER_REWARDS = Object.freeze([
+    // Chapter 1: Cold Start (Ranks 1–10)
+    { free: item(4120, 'Sub-Zero Pioneer Patch'), premium: null },                                // Rank 1
+    { free: supply(), premium: null },                                                            // Rank 2
+    { free: item(4130, 'Mini Cryo-Core Charm'), premium: item(4121, 'Radiation Trefoil Emblem') },// Rank 3
+    { free: supply(), premium: null },                                                            // Rank 4
+    { free: supply(), premium: null },                                                            // Rank 5
+    { free: item(4100, 'Sub-Zero Frostbite Sidearm'), premium: item(4131, 'Spent 50-Cal Casing Charm') }, // Rank 6
+    { free: supply(), premium: null },                                                            // Rank 7
+    { free: supply(), premium: null },                                                            // Rank 8
+    { free: item(4122, 'Sporesnail Hunter Crest'), premium: item(4103, 'Cryo-Plasma Arc Driver') }, // Rank 9
+    { free: supply(), premium: null },                                                            // Rank 10
+
+    // Chapter 2: Signal Below (Ranks 11–20)
+    { free: supply(), premium: null },                                                            // Rank 11
+    { free: item(4132, 'Sporesnail Pearl Charm'), premium: item(4124, 'Cyber-Skull Tactical Pin') }, // Rank 12
+    { free: supply(), premium: null },                                                            // Rank 13
+    { free: supply(), premium: null },                                                            // Rank 14
+    { free: classChoice(), premium: item(4116, 'Bio-Synthesizer Harness') },                     // Rank 15
+    { free: supply(), premium: null },                                                            // Rank 16
+    { free: supply(), premium: null },                                                            // Rank 17
+    { free: item(4104, 'Rust & Bone Trench Carbine'), premium: item(4134, 'Glitched RAM Card Charm') }, // Rank 18
+    { free: supply(), premium: null },                                                            // Rank 19
+    { free: supply(), premium: null },                                                            // Rank 20
+
+    // Chapter 3: The Living Core (Ranks 21–30)
+    { free: item(4135, 'Geodetic Compass Charm'), premium: item(4115, 'Void Commando Recon') },    // Rank 21
+    { free: supply(), premium: null },                                                            // Rank 22
+    { free: supply(), premium: null },                                                            // Rank 23
+    { free: supply(), premium: null },                                                            // Rank 24
+    { free: item(4125, 'Cryo-Phoenix Insignia'), premium: item(4138, 'Dark Matter Micro-Singularity Charm') }, // Rank 25
+    { free: supply(), premium: null },                                                            // Rank 26
+    { free: supply(), premium: null },                                                            // Rank 27
+    { free: supply(), premium: null },                                                            // Rank 28
+    { free: supply(), premium: null },                                                            // Rank 29
+    { free: item(4110, "Queen's Carapace Carbine"), premium: item(4119, 'Hive-Lord Symbiote Exosuit') } // Rank 30
+]);
+
+
+const copy = value => JSON.parse(JSON.stringify(value));
+const validTrack = track => track === 'free' || track === 'premium';
+const noAward = source => ({ xpAwarded: 0, source, tiersCrossed: [] });
+function createDefaultState() {
+    return { seasonId: SEASON_ONE.id, version: SEASON_ONE.version, xp: 0,
+        events: [], runs: {}, activeRunId: null, directives: {}, receipts: {},
+        onboarding: {}, pinnedTarget: null, fragments: { common: 0, rareWeeks: [] } };
+}
+
+// Local progression only. Never accepted as evidence for a Steam grant or purchase.
+// All changes persist before publishing state; callers serialize browser mutations
+// with the Web Locks API. Delivery adapters additionally deduplicate at the sink.
 export class SeasonPassManager {
-    constructor({ storage = null } = {}) {
+    constructor({ storage = null, now = () => Date.now(), entitlement = null } = {}) {
         this.storage = storage ?? (typeof window !== 'undefined' ? window.localStorage : null);
+        this.now = now;
+        this.entitlement = entitlement;
         this.state = this.load();
     }
 
     load() {
-        try {
-            const raw = this.storage?.getItem(STORAGE_KEY);
-            if (raw) {
-                const parsed = JSON.parse(raw);
-                if (parsed && typeof parsed === 'object' && parsed.version === 1) {
-                    return {
-                        ...createDefaultState(),
-                        ...parsed,
-                        claimedFree: Array.isArray(parsed.claimedFree) ? parsed.claimedFree : [],
-                        claimedPremium: Array.isArray(parsed.claimedPremium) ? parsed.claimedPremium : []
-                    };
-                }
-            }
-        } catch {
-            // fall through to defaults
+        const raw = this.storage?.getItem(STORAGE_KEY);
+        if (!raw) return createDefaultState();
+        const parsed = JSON.parse(raw);
+        if (parsed?.seasonId !== SEASON_ONE.id || parsed.version !== SEASON_ONE.version
+            || !Number.isSafeInteger(parsed.xp) || parsed.xp < 0) {
+            throw new Error('Season save is incompatible. Preserve it for recovery.');
         }
-        return createDefaultState();
+        return { ...createDefaultState(), ...parsed };
     }
 
-    save() {
-        try {
-            this.storage?.setItem(STORAGE_KEY, JSON.stringify(this.state));
-        } catch {
-            // best-effort
-        }
+    refresh() { if (this.storage) this.state = this.load(); return this.state; }
+    save(next = this.state) {
+        this.storage?.setItem(STORAGE_KEY, JSON.stringify(next));
+        this.state = next;
     }
-
-    getTotalXp() {
-        return this.state.xp;
+    mutate(callback) {
+        this.refresh();
+        const next = copy(this.state);
+        const result = callback(next);
+        this.save(next);
+        return result;
     }
-
-    // Returns { xpAwarded } so callers (e.g. a HUD toast) know what to show,
-    // even though the running total is the source of truth for tier math.
-    addXp(amount, source = 'unknown') {
-        const awarded = Math.max(0, Math.floor(amount) || 0);
-        if (awarded === 0) return { xpAwarded: 0, source };
-        const beforeTier = this.getCurrentTier();
-        this.state.xp += awarded;
-        this.save();
-        const afterTier = this.getCurrentTier();
-        return {
-            xpAwarded: awarded,
-            source,
-            tiersCrossed: Array.from({ length: Math.max(0, afterTier - beforeTier) }, (_, index) => beforeTier + index + 1)
-        };
-    }
-
-    getCurrentTier() {
-        return Math.min(TOTAL_TIERS, Math.floor(this.state.xp / XP_PER_TIER));
-    }
-
-    // 1-indexed tier progress within the *next* unearned tier (0 once maxed).
+    getTotalXp() { return this.state.xp; }
+    getCurrentTier() { return Math.min(TOTAL_TIERS, Math.floor(this.state.xp / XP_PER_TIER)); }
     getTierProgress() {
         const tier = this.getCurrentTier();
-        if (tier >= TOTAL_TIERS) {
-            return { tier, xpIntoTier: 0, xpForNextTier: 0, fraction: 1 };
+        const xpIntoTier = tier === TOTAL_TIERS ? 0 : this.state.xp % XP_PER_TIER;
+        return { tier, xpIntoTier, xpForNextTier: tier === TOTAL_TIERS ? 0 : XP_PER_TIER,
+            fraction: tier === TOTAL_TIERS ? 1 : xpIntoTier / XP_PER_TIER };
+    }
+    // Entitlement is supplied by a verified service adapter, never persisted as a
+    // self-asserted premium flag. Production adapter remains disabled for this beta.
+    hasPremium() { return this.entitlement?.seasonId === SEASON_ONE.id && this.entitlement?.verified === true && this.entitlement?.owned === true; }
+    setPremium() { return false; }
+    setVerifiedEntitlement(entitlement) { this.entitlement = entitlement; }
+    getReleasedWeeks() { return releasedSeasonWeeks(this.now()); }
+
+    award(next, amount, source) {
+        const before = Math.min(TOTAL_TIERS, Math.floor(next.xp / XP_PER_TIER));
+        const previousXp = next.xp;
+        next.xp = Math.min(TOTAL_TIERS * XP_PER_TIER, next.xp + amount);
+        const after = Math.min(TOTAL_TIERS, Math.floor(next.xp / XP_PER_TIER));
+        return { xpAwarded: next.xp - previousXp, source,
+            tiersCrossed: Array.from({ length: after - before }, (_, index) => before + index + 1) };
+    }
+    addXp(amount, source = 'unknown', eventId = null) {
+        if (!Number.isSafeInteger(amount) || amount <= 0) return noAward(source);
+        return this.mutate(next => {
+            if (eventId && next.events.includes(eventId)) return noAward(source);
+            if (eventId) next.events.push(eventId);
+            return this.award(next, amount, source);
+        });
+    }
+    beginRun(runId, initialDepth = 0) {
+        if (typeof runId !== 'string' || !runId) return false;
+        return this.mutate(next => {
+            if (next.runs[runId]) return false;
+            const previous = next.runs[next.activeRunId];
+            if (previous?.status === 'active') previous.status = 'abandoned';
+            next.activeRunId = runId;
+            next.runs[runId] = { status: 'active', objectives: [], depths: [], bosses: [],
+                initialDepth, xpBefore: next.xp, xpAfter: next.xp };
+            return true;
+        });
+    }
+    progressDirectives(next, kind) {
+        let xp = 0;
+        for (const directive of seasonDirectives(this.getReleasedWeeks())) {
+            if (directive.kind !== kind) continue;
+            const progress = next.directives[directive.id] ?? 0;
+            if (progress >= directive.target) continue;
+            next.directives[directive.id] = progress + 1;
+            if (progress + 1 === directive.target) xp += directive.xp;
         }
-        const xpIntoTier = this.state.xp - tier * XP_PER_TIER;
-        return { tier, xpIntoTier, xpForNextTier: XP_PER_TIER, fraction: xpIntoTier / XP_PER_TIER };
+        for (let week = 1; week <= this.getReleasedWeeks(); week++) {
+            const set = seasonDirectives(week).filter(entry => entry.week === week);
+            if (set.every(entry => next.directives[entry.id] >= entry.target) && !next.fragments.rareWeeks.includes(week)) {
+                next.fragments.rareWeeks.push(week);
+                this.intent(next, `fragment:rare:${week}`, { kind: 'item', itemdefid: 1100, qty: 1, label: 'Rare Relic Fragment' });
+            }
+        }
+        return xp;
     }
-
-    hasPremium() {
-        return Boolean(this.state.hasPremium);
+    recordActivity(id) {
+        if (typeof id !== 'string' || !id) return noAward('activity');
+        return this.mutate(next => {
+            const key = `activity:${id}`;
+            if (next.events.includes(key)) return noAward('activity');
+            next.events.push(key);
+            return this.award(next, this.progressDirectives(next, 'activity'), 'activity');
+        });
     }
-
-    setPremium(owned) {
-        this.state.hasPremium = Boolean(owned);
-        this.save();
+    recordEvent({ runId, kind, id, tier, crossing = false } = {}) {
+        if (!['objective', 'depth', 'boss', 'activity'].includes(kind) || typeof id !== 'string' || !id) return noAward(kind);
+        return this.mutate(next => {
+            const run = next.runs[runId];
+            if (!run || run.status !== 'active' || next.activeRunId !== runId) return noAward(kind);
+            const eventKey = `${runId}:${kind}:${id}`;
+            if (next.events.includes(eventKey)) return noAward(kind);
+            let xp = 0;
+            if (kind === 'depth') {
+                if (!crossing || !Number.isInteger(tier) || tier <= run.initialDepth || tier > 3 || run.depths.includes(tier)) return noAward(kind);
+                run.depths.push(tier);
+                xp = XP_SOURCES.depthCrossed;
+            } else if (kind === 'objective') {
+                if (run.objectives.includes(id)) return noAward(kind);
+                run.objectives.push(id);
+                if (run.objectives.length <= 6) xp = XP_SOURCES.roomCleared;
+                if (!next.onboarding.objective) {
+                    next.onboarding.objective = true;
+                    xp += XP_SOURCES.onboarding;
+                    this.intent(next, 'onboarding:supplies', { kind: 'supply_bundle', tech: 20, coin: 10, med: 5, qty: 1, label: 'First objective supplies: 20 Tech / 10 Coin / 5 Med' });
+                }
+            } else if (kind === 'boss') {
+                if (run.bosses.includes(id)) return noAward(kind);
+                run.bosses.push(id);
+                xp = XP_SOURCES.bossDefeated;
+            }
+            next.events.push(eventKey);
+            xp += this.progressDirectives(next, kind);
+            const result = this.award(next, xp, kind);
+            run.xpAfter = next.xp;
+            return result;
+        });
     }
-
-    isClaimed(tierNumber, track) {
-        const list = track === 'premium' ? this.state.claimedPremium : this.state.claimedFree;
-        return list.includes(tierNumber);
+    settleRun(runId, outcome) {
+        if (!['extracted', 'failed', 'abandoned'].includes(outcome)) return noAward('settlement');
+        return this.mutate(next => {
+            const run = next.runs[runId];
+            if (!run || run.status !== 'active') return noAward('settlement');
+            const qualifying = outcome === 'extracted' && run.objectives.length >= 3;
+            run.status = outcome;
+            run.extractionBonus = qualifying ? XP_SOURCES.qualifyingExtraction : 0;
+            if (qualifying && next.fragments.common < this.getReleasedWeeks() * SEASON_ONE.commonPerWeek) {
+                next.fragments.common++;
+                this.intent(next, `fragment:common:${runId}`, { kind: 'item', itemdefid: 1000, qty: 1, label: 'Common Relic Fragment' });
+            }
+            const result = this.award(next, run.extractionBonus, 'settlement');
+            run.xpAfter = next.xp;
+            return result;
+        });
     }
-
-    getReward(tierNumber, track) {
-        const row = TIER_REWARDS[tierNumber - 1];
-        if (!row) return null;
-        return track === 'premium' ? row.premium : row.free;
+    completeOnboarding(stage, target = null) {
+        if (!['target', 'fabricated', 'equipped'].includes(stage)) return noAward('onboarding');
+        return this.mutate(next => {
+            if (stage === 'target' && target) next.pinnedTarget = target;
+            if (next.onboarding[stage]) return noAward('onboarding');
+            next.onboarding[stage] = true;
+            let xp = stage === 'target' ? XP_SOURCES.onboarding : 0;
+            if (next.onboarding.fabricated && next.onboarding.equipped && !next.onboarding.usefulLoop) {
+                next.onboarding.usefulLoop = true;
+                xp += XP_SOURCES.onboarding;
+            }
+            return this.award(next, xp, 'onboarding');
+        });
     }
-
-    canClaim(tierNumber, track) {
-        if (tierNumber < 1 || tierNumber > TOTAL_TIERS) return false;
-        if (tierNumber > this.getCurrentTier()) return false;
-        if (track === 'premium' && !this.hasPremium()) return false;
-        if (this.isClaimed(tierNumber, track)) return false;
-        return Boolean(this.getReward(tierNumber, track));
+    getActiveWeeklies() {
+        return seasonDirectives(this.getReleasedWeeks()).map(entry => {
+            const progress = this.state.directives[entry.id] ?? 0;
+            return { ...entry, progress, completed: progress >= entry.target, claimed: progress >= entry.target };
+        });
     }
-
-    // Marks the tier claimed and returns its reward descriptor for the caller to actually grant
-    // (via src/seasonPassUi.js, which knows how to hand items/currency to the rest of the game).
-    // Returns null without mutating state if the tier isn't claimable right now.
-    claim(tierNumber, track) {
-        if (!this.canClaim(tierNumber, track)) return null;
-        const reward = this.getReward(tierNumber, track);
-        const list = track === 'premium' ? this.state.claimedPremium : this.state.claimedFree;
-        list.push(tierNumber);
-        this.save();
-        return reward;
+    getReward(tier, track) {
+        if (!validTrack(track) || !Number.isInteger(tier)) return null;
+        if (tier === 0 && track === 'premium') return PURCHASE_GRANT;
+        return TIER_REWARDS[tier - 1]?.[track] ?? null;
     }
-
-    // Every currently-unclaimed, currently-claimable reward across both tracks — used to badge
-    // the menu button ("3 rewards ready") and to drive a "claim all" action.
+    claimKey(tier, track) { return `rank:${tier}:${track}`; }
+    isClaimed(tier, track) { return this.state.receipts[this.claimKey(tier, track)]?.status === 'confirmed'; }
+    canClaim(tier, track) {
+        return Boolean(this.getReward(tier, track)) && tier <= this.getCurrentTier()
+            && (track !== 'premium' || this.hasPremium()) && !this.isClaimed(tier, track);
+    }
+    intent(next, key, reward, details = {}) {
+        if (!next.receipts[key]) next.receipts[key] = {
+            id: `${SEASON_ONE.id}:${key}`, key, reward, ...details, status: 'pending'
+        };
+        return copy(next.receipts[key]);
+    }
+    claim(tier, track, { selectedChoice = null, ownedChoices = [] } = {}) {
+        this.refresh();
+        if (!this.canClaim(tier, track)) return null;
+        const key = this.claimKey(tier, track);
+        const existing = this.state.receipts[key];
+        if (existing) return { ...existing.reward, receiptId: existing.id };
+        let reward = this.getReward(tier, track);
+        if (reward.kind === 'class_choice') {
+            const unowned = reward.choices.filter(id => !ownedChoices.includes(id));
+            if (!(unowned.length ? unowned : reward.choices).includes(selectedChoice)) return null;
+            reward = { ...reward, selectedItemdefid: selectedChoice, itemdefid: selectedChoice,
+                label: getSeasonOneCosmetic(selectedChoice).name };
+        }
+        const receipt = this.mutate(next => this.intent(next, key, reward, { tier, track }));
+        return { ...receipt.reward, receiptId: receipt.id };
+    }
+    claimPurchaseGrant() { return this.claim(0, 'premium'); }
+    getPendingClaims() { return Object.values(this.state.receipts).filter(entry => entry.status !== 'confirmed').map(copy); }
+    resolvePendingClaim(id, status = 'confirmed') {
+        if (!['confirmed', 'pending', 'failed'].includes(status)) return false;
+        return this.mutate(next => {
+            const receipt = Object.values(next.receipts).find(entry => entry.id === id);
+            if (!receipt || receipt.status === 'confirmed') return false;
+            receipt.status = status;
+            return true;
+        });
+    }
+    async settleRewards(deliver) {
+        this.refresh();
+        for (const { tier, track } of this.getClaimableTiers()) {
+            if (this.getReward(tier, track).kind !== 'class_choice') this.claim(tier, track);
+        }
+        if (this.hasPremium()) this.claimPurchaseGrant();
+        const results = [];
+        for (const receipt of this.getPendingClaims()) {
+            if (receipt.track === 'premium' && !this.hasPremium()) continue;
+            try {
+                const result = await deliver(receipt.reward, receipt.id);
+                if (result?.ok === true) this.resolvePendingClaim(receipt.id);
+                results.push({ id: receipt.id, ...result });
+            } catch { results.push({ id: receipt.id, ok: false, reason: 'delivery_pending' }); }
+        }
+        return results;
+    }
     getClaimableTiers() {
-        const currentTier = this.getCurrentTier();
-        const claimable = [];
-        for (let t = 1; t <= currentTier; t++) {
-            if (this.canClaim(t, 'free')) claimable.push({ tier: t, track: 'free' });
-            if (this.canClaim(t, 'premium')) claimable.push({ tier: t, track: 'premium' });
+        const result = [];
+        for (let tier = 1; tier <= this.getCurrentTier(); tier++) {
+            for (const track of ['free', 'premium']) if (this.canClaim(tier, track)) result.push({ tier, track });
         }
-        return claimable;
+        return result;
     }
+    getChapterForTier(tier) { return PASS_CHAPTERS.find(ch => tier >= ch.startTier && tier <= ch.endTier) ?? null; }
+    reset() { this.entitlement = null; this.save(createDefaultState()); }
+}
 
-    reset() {
-        this.state = createDefaultState();
-        this.save();
-    }
+let localQueue = Promise.resolve();
+export function withSeasonLock(action) {
+    if (globalThis.navigator?.locks?.request) return navigator.locks.request(STORAGE_KEY, action);
+    const result = localQueue.then(action);
+    localQueue = result.catch(() => {});
+    return result;
 }

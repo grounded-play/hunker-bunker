@@ -20759,3 +20759,42 @@ body.colorblind-assist #net-mode-pvp-btn.active {
     transform: translateY(0) scale(1);
   }
 }
+
+/* Beta Season 1: exact expedition receipt in the operator's class color. */
+.return-manifest {
+  --manifest-accent: #67e8f9;
+  grid-column: 1 / -1;
+  padding: 12px 14px;
+  border: 1px solid #344b55;
+  border-left: 3px solid var(--manifest-accent);
+  background: linear-gradient(120deg, #14242b, #10191f);
+  color: #deebee;
+  font-family: 'Space Mono', monospace;
+  font-size: clamp(11px, 1.05vw, 13px);
+  border-radius: 4px;
+}
+.return-manifest[data-class="TANK"] { --manifest-accent: #ffb347; }
+.return-manifest[data-class="ENGINEER"] { --manifest-accent: #67e8ac; }
+.return-manifest__heading { display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap; color: var(--manifest-accent); font-weight: 700; letter-spacing: 1px; margin-bottom: 9px; }
+.return-manifest__columns, .return-manifest__row { display: grid; grid-template-columns: 1.3fr repeat(3, 1fr); gap: 8px; align-items: center; }
+.return-manifest__columns { color: #a8bdc5; font-size: 10px; padding-bottom: 4px; }
+.return-manifest__row { padding: 5px 0; border-top: 1px solid #2b3e47; font-variant-numeric: tabular-nums; }
+.return-manifest__columns > :not(:first-child), .return-manifest__row > :not(:first-child) { text-align: right; overflow-wrap: anywhere; }
+.return-manifest__gain { color: var(--manifest-accent); }
+.return-manifest__footnote { font-size: 11px; line-height: 1.5; color: #aec0c7; margin-top: 8px; }
+.return-manifest__next { color: var(--manifest-accent); margin-top: 10px; padding-top: 8px; border-top: 1px solid #344b55; }
+
+/* Beta Season 1: shared terminal surfaces, no new media payload. */
+.season-one-note { color: #b7ccd2; font-size: 12px; line-height: 1.55; margin: 8px 0; overflow-wrap: anywhere; }
+.season-one-chapter { color: #9ee7df; font-size: 16px; letter-spacing: 1px; padding: 18px 0 8px; }
+.season-pass-slot { min-width: 0; flex-wrap: wrap; }
+.season-pass-slot__label { overflow-wrap: anywhere; }
+.season-pass-slot .season-pass-claim-btn { white-space: normal; line-height: 1.4; }
+.season-pass-tabs { flex-wrap: wrap; }
+@media (max-height: 820px) {
+    #season-pass-modal .season-pass-content { max-height: 92vh; }
+    #season-pass-progress-summary .season-one-note { margin: 4px 0; font-size: 11px; }
+}
+@media (prefers-reduced-motion: reduce) {
+    .progression-reward-overlay *, .season-pass-progress-fill { animation: none !important; transition: none !important; }
+}

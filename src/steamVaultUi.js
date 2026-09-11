@@ -1,3 +1,4 @@
+import { LocalVaultLedger } from './localVaultLedger.js';
 /**
  * Steam Vault & Store UI Frontend Implementation
  * Extracted from main.js for modular UI architecture.
@@ -116,7 +117,7 @@ function readDevVaultInventory() {
     if (!isBrowserSandbox()) return null;
     try {
         const parsed = JSON.parse(window.localStorage?.getItem(DEV_VAULT_STORAGE_KEY) ?? 'null');
-        return Array.isArray(parsed) ? parsed : null;
+        return Array.isArray(parsed) ? parsed : (Array.isArray(parsed?.items) ? parsed.items : null);
     } catch {
         return null;
     }
@@ -125,7 +126,9 @@ function readDevVaultInventory() {
 function persistDevVaultInventory() {
     if (!isBrowserSandbox()) return;
     try {
-        window.localStorage?.setItem(DEV_VAULT_STORAGE_KEY, JSON.stringify(vaultItems));
+        const ledger = new LocalVaultLedger(window.localStorage);
+        const record = ledger.read();
+        ledger.save({ ...record, items: vaultItems });
     } catch {
         // Sandbox persistence is best effort in private browsing.
     }
@@ -230,6 +233,36 @@ export function showSteamDropToast(itemdefid, quantity = 1) {
             window.updateHudNotificationDeck();
         }
     });
+}
+
+export function getLocalSeasonInventory() {
+    return !window.electronAPI ? new LocalVaultLedger(window.localStorage).read() : { items: [], receipts: {} };
+}
+
+function applyLocalSeasonInventory(items) {
+    vaultItems = items;
+    syncDevOwnership();
+    reconcileCosmeticsOwnership(vaultItems);
+    renderInventoryGrid();
+    updateOpenCacheAvailability();
+}
+
+export function deliverLocalSeasonReward(reward, receiptId) {
+    if (window.electronAPI) return { ok: false, reason: 'verified_service_required' };
+    if (reward.kind === 'supply_bundle') {
+        return window.bankManager?.depositSeasonReward({ tech: reward.tech, coin: reward.coin, med: reward.med }, receiptId)
+            ?? { ok: false, reason: 'bank_unavailable' };
+    }
+    const result = new LocalVaultLedger(window.localStorage).grant(reward.itemdefid, reward.qty ?? 1, receiptId);
+    if (result.ok) applyLocalSeasonInventory(result.items);
+    return result;
+}
+
+export function craftLocalSeasonRecipe(recipeId, options) {
+    if (window.electronAPI) return { ok: false, reason: 'verified_service_required' };
+    const result = new LocalVaultLedger(window.localStorage).craft(recipeId, options);
+    if (result.ok) applyLocalSeasonInventory(result.items);
+    return result;
 }
 
 // Adds an item to the local sandbox inventory (same pattern as openDeepRelicCache()'s
@@ -426,14 +459,14 @@ export async function loadVaultData() {
 
         // Fetch Inventory
         const result = await window.electronAPI.refreshSteamInventory().catch(() => null);
-        if (result?.ok && Array.isArray(result.inventory) && result.inventory.length > 0) {
+        if (result?.ok && Array.isArray(result.inventory)) {
             vaultItems = result.inventory;
             // Feed the unified ownership store (src/itemOwnership.js) so the
             // Armory gates on the same entitlements the Vault renders. Only the
             // real service response is pushed here -- the sandbox fallback below
             // is not an entitlement and must not read as one.
             window.itemOwnership?.setSteamInventory(result.inventory);
-        } else if (vaultItems.length === 0) {
+        } else if (isBrowserSandbox() && vaultItems.length === 0) {
             vaultItems = readDevVaultInventory() ?? [
                 { itemId: 'sandbox_4000', itemdefid: 4000, quantity: 2 },
                 { itemId: 'sandbox_4001', itemdefid: 4001, quantity: 2 },

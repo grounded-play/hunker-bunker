@@ -131,3 +131,69 @@ export function planDispensaryRedeem(vaultItems = [], targetItemdefid, catalogLo
     if (getShardBalance(vaultItems) < cost) return { ok: false, reason: 'insufficient_shards' };
     return { ok: true, cost, targetItemdefid, rarity: cat.rarity };
 }
+
+// ── Beta Season 1 Deterministic Relic Fragment Workshop (doc §8) ──
+export const COMMON_FRAGMENT_ITEMDEFID = 1000;
+export const RARE_FRAGMENT_ITEMDEFID = 1100;
+
+export const DETERMINISTIC_RECIPES = Object.freeze({
+    2100: {
+        id: 2100,
+        name: 'Carbon Fiber Decal',
+        outputItemdefid: 2100,
+        ingredients: Object.freeze([
+            { itemdefid: COMMON_FRAGMENT_ITEMDEFID, quantity: 5 }
+        ]),
+        seasonMaxRedemptions: 1
+    },
+    2200: {
+        id: 2200,
+        name: 'Chrome Plated Sidearm',
+        outputItemdefid: 2200,
+        ingredients: Object.freeze([
+            { itemdefid: COMMON_FRAGMENT_ITEMDEFID, quantity: 10 },
+            { itemdefid: RARE_FRAGMENT_ITEMDEFID, quantity: 2 }
+        ]),
+        seasonMaxRedemptions: 1
+    }
+});
+
+export function getItemCount(vaultItems = [], itemdefid) {
+    return vaultItems.filter(i => Number(i.itemdefid) === Number(itemdefid))
+        .reduce((total, item) => total + (Number.isSafeInteger(item.quantity) && item.quantity > 0 ? item.quantity : 0), 0);
+}
+
+export function planDeterministicCraft(recipeId, vaultItems = [], craftedHistory = []) {
+    recipeId = Number(recipeId);
+    const recipe = Object.hasOwn(DETERMINISTIC_RECIPES, recipeId) ? DETERMINISTIC_RECIPES[recipeId] : null;
+    if (!recipe) return { ok: false, reason: 'unknown_recipe' };
+
+    const redemptionsSoFar = craftedHistory.filter((id) => id === recipeId).length;
+    if (redemptionsSoFar >= recipe.seasonMaxRedemptions) {
+        return { ok: false, reason: 'season_limit_reached' };
+    }
+
+    const alreadyOwned = vaultItems.some((i) => i.itemdefid === recipe.outputItemdefid && Number(i.quantity) > 0);
+
+    for (const req of recipe.ingredients) {
+        const available = getItemCount(vaultItems, req.itemdefid);
+        if (available < req.quantity) {
+            return {
+                ok: false,
+                reason: 'insufficient_fragments',
+                missing: req.itemdefid,
+                required: req.quantity,
+                available
+            };
+        }
+    }
+
+    return {
+        ok: true,
+        recipeId,
+        outputItemdefid: recipe.outputItemdefid,
+        ingredients: recipe.ingredients,
+        alreadyOwned
+    };
+}
+

@@ -1,3 +1,4 @@
+import { getFieldWeaponProfile } from './fieldWeapon.js';
 import { createRelicPickup, animateRelicPickup, createImpactBurst, disposeExpeditionEffect } from './expeditionVfx.js';
 import { TraumaManager, create3DMuzzleFlash, WEAPON_TRAUMA_TABLE } from './combatJuice.js';
 import { PickupMagnet, PickupComboTracker } from './lootJuice.js';
@@ -5943,7 +5944,7 @@ export class ThreeGame {
             });
             this.reconcileAuthoredWorldProgression?.();
             const bossType = MILESTONE_BOSS_FOR_GOAL.o2Bubble;
-            if (event?.detail?.orchestrated) {
+            if (event?.detail?.orchestrated || event?.detail?.level === 1) {
                 // When choreographed by main.js, main handles the door and reveal sequence.
                 return;
             }
@@ -6249,7 +6250,7 @@ export class ThreeGame {
         } else {
             this.weaponClipAmmo = Math.max(0, this.weaponClipAmmo - 1);
         }
-        let fireCd = WEAPON_FIRE_COOLDOWN;
+        let fireCd = WEAPON_FIRE_COOLDOWN * (this.fieldWeapon?.cooldownMultiplier ?? 1);
         this.weaponFireCooldown = fireCd;
         this.emitWeaponClipState();
 
@@ -11874,6 +11875,8 @@ export class ThreeGame {
     // Translate persisted weapon-upgrade levels into the live combat tuning used by
     // spawnPlayerShot() and the reload/clip logic. Called whenever upgrades change.
     applyWeaponUpgrades() {
+        const craftedId = typeof window !== 'undefined' ? window.loadout?.getEquippedId?.(this.playerType) : null;
+        this.fieldWeapon = getFieldWeaponProfile(craftedId, typeof window !== 'undefined' && window.fabricator?.isFabricated?.(craftedId));
         const levels = this.bank?.getWeaponUpgrades?.() ?? {};
         const ammoCapacity = Math.max(0, Math.floor(levels.ammoCapacity ?? 0));
         const shotSpeed = Math.max(0, Math.floor(levels.shotSpeed ?? 0));
@@ -11992,7 +11995,10 @@ export class ThreeGame {
         });
     }
 
-    startO2StartupSequence(bossType) {
+    startO2StartupSequence(bossType, options = {}) {
+        const { onComplete = null, skipDialogue = false } = options;
+        this._onO2StartupSequenceComplete = onComplete;
+        this._skipO2Dialogue = skipDialogue;
         this.createO2BubbleObjects();
         if (this.o2BubbleObjects) {
             this.o2BubbleObjects.light.visible = false;
@@ -12096,7 +12102,7 @@ export class ThreeGame {
                     const cb = this._onO2StartupSequenceComplete;
                     this._onO2StartupSequenceComplete = null;
                     cb();
-                } else {
+                } else if (!this._skipO2Dialogue) {
                     this.triggerO2ClassDialogue(this._pendingO2BossType);
                 }
             }
@@ -14994,7 +15000,18 @@ export class ThreeGame {
     syncSurvivorContract(event = null) {
         const manager = this.wandererManager;
         if (!manager) return;
+        const previousQuest = manager.state.activeQuest ? { ...manager.state.activeQuest } : null;
         const result = event ? manager.recordQuestEvent(event) : null;
+        const currentQuest = manager.state.activeQuest;
+        if (previousQuest && result) {
+            const beforeSteps = getSurvivorContractSteps(previousQuest.id, previousQuest.progress);
+            const afterSteps = getSurvivorContractSteps(previousQuest.id, currentQuest?.id === previousQuest.id ? currentQuest.progress : previousQuest.targetCount);
+            afterSteps.forEach((step, index) => {
+                if (step.done && !beforeSteps[index]?.done) {
+                    window.dispatchEvent(new CustomEvent('season-companion-stage-complete', { detail: { id: `${previousQuest.id}:stage:${index}` } }));
+                }
+            });
+        }
         try {
             const delivered = manager.deliverPendingRewards(this.bank);
             if (delivered.length) {
@@ -20403,7 +20420,7 @@ export class ThreeGame {
 
         // Stacked multipliers (reload, overclocks, high-ground) can land on a
         // fractional value — round to a whole hit, never dealing less than 1.
-        damage = Math.max(1, Math.round(damage));
+        damage = Math.max(1, Math.round(damage * (this.fieldWeapon?.damageMultiplier ?? 1)));
 
         let speed = PROJECTILE_SPEED + (bonuses?.speedAdd ?? 0);
 
@@ -20411,9 +20428,9 @@ export class ThreeGame {
         this.triggerCameraShake?.(0.04, 0.08);
 
         const shotAmount = (FEATURE_MULTISHOT ? (bonuses?.shotAmount ?? 0) : 0) + extraBullets;
-        const spreads = extraBullets > 0
+        const spreads = this.fieldWeapon?.spreads ?? (extraBullets > 0
             ? [-spreadAngle, 0, spreadAngle]
-            : MULTISHOT_SPREADS[Math.min(shotAmount, MULTISHOT_SPREADS.length - 1)];
+            : MULTISHOT_SPREADS[Math.min(shotAmount, MULTISHOT_SPREADS.length - 1)]);
 
         const fireOne = (dx, dz) => {
             const desiredOffset = 0.62;
@@ -20468,7 +20485,7 @@ export class ThreeGame {
                 z: spawnZ,
                 vx: dx * speed,
                 vz: dz * speed,
-                ttl: PROJECTILE_TTL,
+                ttl: PROJECTILE_TTL * (this.fieldWeapon?.lifetimeMultiplier ?? 1),
                 damage,
                 radius: PROJECTILE_RADIUS
             });
@@ -26345,6 +26362,7 @@ export class ThreeGame {
             detail: {
                 type: sprite.userData.type,
                 totalKills: this.snailsKilledThisRun,
+                encounterId: sprite.uuid,
                 isBoss,
                 isMilestone: Boolean(sprite.userData.isMilestone),
                 sourceGoalKey: sprite.userData.sourceGoalKey ?? null

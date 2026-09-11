@@ -32,7 +32,7 @@ export const CLASS_CHASSIS_SKINS = Object.freeze({
 });
 
 export const ARCHETYPE_SKINS = Object.freeze({
-    talon: ['4100', '4105', '4201', '4222'],
+    talon: ['2200', '4100', '4105', '4201', '4222'],
     talon_c: ['4101', '4104', '4108', '4110', '5002'],
     siege_breaker: ['4102', '4106', '4107', '4208', '4229', '5006'],
     tesla_lock: ['4103', '4109', '4111', '4215', '4236', '5009', '5010']
@@ -210,6 +210,9 @@ export class LoadoutManager {
         if (fabricator && !fabricator.isFabricated(id)) return false;
         loadout.craftedWeaponId = id;
         this.save();
+        if (fabricator?.isFabricated(id) && typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent('fabricated-weapon-equipped', { detail: { id, classId: cls } }));
+        }
         return true;
     }
 
