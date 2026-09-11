@@ -33,6 +33,11 @@ const MODEL_CONFIG = {
     boss_queen: { url: '/3d/runtime/queen.glb', height: 2.35, yaw: Math.PI }
 };
 
+// Exported so the variant wiring and its coverage checks can resolve a type
+// to the mesh it actually loads, rather than assuming one GLB per name --
+// several types deliberately share an export.
+export const ENEMY_3D_MODELS = MODEL_CONFIG;
+
 const templates = new Map();
 const LOCOMOTION_URL = '/3d/scouting-scout/Scout.game.glb';
 const RIGGED_LOCOMOTION_TYPES = new Set(['crawler', 'mycelium_stalker', 'bio_charger']);

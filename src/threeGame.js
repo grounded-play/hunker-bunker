@@ -194,7 +194,7 @@ import { startEncounterTransition } from './snailEncounterTransition.js';
 import { cappedPixelRatio } from './renderScale.js';
 import { pickTerminalEvent } from './data/terminalEvents.js';
 import { getDialogueLine, getSuitRegister } from './data/dialogueLines.js';
-import { getEnemyStats } from './data/enemies.js';
+import { getEnemyStats, pickEnemyVariant } from './data/enemies.js';
 import { DEPTH_TIER_NAMES, getDepthLootConfig } from './data/loot.js';
 import { applyO2EfficiencyPenalty, describeCrossing, applySalvageMultiplier, getDepthContract } from './depthContract.js';
 import { ELITE_IDENTITY, isEliteForLoot, rollElitePromotion } from './eliteEnemies.js';
@@ -5305,7 +5305,7 @@ export class ThreeGame {
         if (!sprite?.userData || sprite.userData.enemy3dLoading || sprite.userData.enemy3dVisual) return;
         sprite.userData.enemy3dLoading = true;
         try {
-            const visual = await createEnemy3dVisual(sprite.userData.type);
+            const visual = await createEnemy3dVisual(sprite.userData.modelVariant ?? sprite.userData.type);
             if (!visual || sprite.userData.burstTriggered) return;
             sprite.userData.enemy3dVisual = visual;
             if (sprite.parent && visual.root) {
@@ -25116,23 +25116,33 @@ export class ThreeGame {
             sprite.frustumCulled = false;
             sprite.renderOrder = 6;
             sprite.scale.set(scaleX * 1.1, scaleY * 1.1, 1);
+            // Sentinels have their own spawn branch, so they never reached the
+            // generic path's variant/stat lookup: all three sentinel meshes
+            // went unused and every sentinel took the flat SENTINEL_MAX_HP.
+            // Resolve a variant here too, and let its authored HP apply.
+            // Speed is deliberately NOT taken from the variant -- a sentinel is
+            // a stationary turret and never reads userData.speed.
+            const modelVariant = pickEnemyVariant('sentinel', placement.x * 31 + placement.z * 17);
+            const sentinelHp = getEnemyStats(modelVariant, { maxHp: SENTINEL_MAX_HP, speed: 0 }).maxHp;
             sprite.userData = {
                 isScatter: true,
                 isEnemy: true,
                 isBoss: false,
                 type: 'sentinel',
+                modelVariant,
                 scatterKey: placement.scatterKey,
                 baseY: anchoredY,
                 burstTriggered: false,
                 burstTimer: 0,
-                hp: SENTINEL_MAX_HP,
-                maxHp: SENTINEL_MAX_HP,
+                hp: sentinelHp,
+                maxHp: sentinelHp,
                 fireCooldown: SENTINEL_FIRE_COOLDOWN * (0.5 + Math.random() * 0.8),
                 detectRadius: SENTINEL_DETECT_RADIUS,
                 active: false,
                 biomeTint: 0xffdd44,
                 staggerState: createEnemyStaggerState(ENEMY_STAGGER_DEFS.sentinel)
             };
+            this.setupEnemy3dCosmeticOverlay(sprite);
             return sprite;
         }
 
@@ -25181,8 +25191,16 @@ export class ThreeGame {
             const eliteScale = isElite ? ELITE_IDENTITY.scaleMultiplier : 1;
             sprite.scale.set(scaleX * eliteScale, scaleY * eliteScale, 1);
 
-            // Per-type HP/speed now live in src/data/enemies.js (behaviour-preserving).
-            const _enemyStats = getEnemyStats(placement.type, { maxHp: SNAIL_MAX_HP, speed: SNAIL_MOVE_SPEED });
+            // Resolve the concrete mesh variant for families that have one
+            // (sentinel -> sentinel_A/_B, alien_proto_crawler -> base/_A).
+            // Seeded from world position so co-op peers, which build their own
+            // sprites from shared placement data, agree on the same variant.
+            // Families without a pool return the type unchanged.
+            const modelVariant = pickEnemyVariant(placement.type, placement.x * 31 + placement.z * 17);
+            // Per-type HP/speed live in src/data/enemies.js. Keyed by VARIANT,
+            // not family: bare `sentinel` has no entry, so keying by family
+            // silently gave every sentinel the 2 HP snail baseline.
+            const _enemyStats = getEnemyStats(modelVariant, { maxHp: SNAIL_MAX_HP, speed: SNAIL_MOVE_SPEED });
             let maxHp = _enemyStats.maxHp;
             let speed = _enemyStats.speed;
             const hadExplicitMaxHp = Number.isFinite(placement.maxHp);
@@ -25221,6 +25239,10 @@ export class ThreeGame {
                 isBoss: isBoss,
                 biome: placement.type.includes('cryo') ? 'cryo' : placement.type.includes('spore') ? 'bio' : 'active',
                 type: placement.type,
+                // Which mesh this instance renders. Everything else -- combat,
+                // codex, death strings -- keys off `type`, so the family stays
+                // the single source of behaviour.
+                modelVariant,
                 scatterKey: placement.scatterKey,
                 groupType: placement.groupType,
                 sheetSprite: Boolean(sheetLayout),
