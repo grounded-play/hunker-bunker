@@ -196,6 +196,22 @@ def export_all_formats(master_img, slug):
 
     return out_256, out_512
 
+def clean_4219(img):
+    cleaned = img.copy()
+    bottom_bar = img.crop((140, 880, 880, 920))
+    bottom_bar_f = bottom_bar.transpose(Image.FLIP_TOP_BOTTOM)
+    cleaned.paste(bottom_bar_f, (140, 105))
+    return cleaned
+
+TRACER_TRANSFORMS = {
+    4205: lambda img: img.transpose(Image.FLIP_LEFT_RIGHT),
+    4212: lambda img: img.transpose(Image.ROTATE_180),
+    4219: lambda img: clean_4219(img.transpose(Image.ROTATE_180)),
+    4226: lambda img: img.transpose(Image.FLIP_LEFT_RIGHT),
+    4233: lambda img: img.transpose(Image.FLIP_LEFT_RIGHT),
+    4240: lambda img: img.transpose(Image.ROTATE_270),
+}
+
 def main():
     force_scaffold = '--scaffold' in sys.argv
     processed = 0
@@ -204,6 +220,8 @@ def main():
         src = find_source_image(itemdef, slug)
         if src and not force_scaffold:
             raw = Image.open(src)
+            if itemdef in TRACER_TRANSFORMS:
+                raw = TRACER_TRANSFORMS[itemdef](raw)
             img = raw.convert('RGBA')
             origin = f"direct scaled from {os.path.basename(src)}"
         else:
