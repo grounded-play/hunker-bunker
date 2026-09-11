@@ -144,3 +144,8 @@ dist/trailer/
 
 # Server-side session-log drop box (in-game console uploads)
 server/session-logs/
+
+# Raw art staging. The FX icon pipeline reads uploads from here, but public/
+# ships, so raw multi-megabyte GLBs must never live under it. Sources belong in
+# art/source/ (already ignored above).
+public/3D Objects/

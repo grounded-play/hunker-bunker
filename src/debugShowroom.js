@@ -53,7 +53,36 @@ export const SHOWROOM_CATEGORIES = Object.freeze({
         'prop_body_empty_exosuit',
         'prop_body_human_frozen'
     ],
+    // Sprint 34 world art. These were registered in WORLD_3D_MODELS and used in
+    // world generation, but never listed here -- so they were invisible in the
+    // debug museum and could only be checked by finding one in a live run.
+    CAMP_PROPS: [
+        'prop_camp_cookfire',
+        'prop_camp_crates',
+        'prop_camp_sandbags',
+        'prop_camp_cot',
+        'prop_camp_crate',
+        'prop_hive_resin_sac'
+    ],
+    // Easter-egg assets. Only reachable in a live run by finding them, which
+    // makes them the hardest things in the game to visually verify -- and the
+    // debug gallery is already debug-gated, so nothing is spoiled for players.
+    SECRETS: [
+        'secret_mayor_tina',
+        'secret_teacup_roach'
+    ],
+    // Aftermath variants: what a room looks like after something happened in it.
+    AFTERMATH_STATES: [
+        'state_barricade_improvised_1',
+        'state_barricade_improvised_2',
+        'state_growth_overrun_1',
+        'state_growth_overrun_2',
+        'body_empty_exosuit',
+        'body_frozen_human'
+    ],
     SETPIECES: [
+        'scatter_bolts',
+        'scatter_cable_coil',
         'broken_scout_ship',
         'broken_tank_ship',
         'broken_engineer_ship',
