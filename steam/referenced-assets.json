@@ -428,6 +428,10 @@
     "cryo_wall_conduit_normal.png",
     "cryosnail.png",
     "cryosnail_dead.png",
+    "cutscenes/event-boss-encounter-cryosnail-poster.jpg",
+    "cutscenes/event-boss-encounter-cybersnail-poster.jpg",
+    "cutscenes/event-boss-encounter-sporesnail-poster.jpg",
+    "cutscenes/event-o2-generator-upgraded-poster.jpg",
     "cutscenes/poster-art/death-abyss.png",
     "cutscenes/poster-art/death-biohazard.png",
     "cutscenes/poster-art/death-combat.png",
@@ -438,13 +442,9 @@
     "cutscenes/poster-art/death-queen.png",
     "cutscenes/poster-art/death-ship.png",
     "cutscenes/poster-art/event-black-box-recovered.png",
-    "cutscenes/poster-art/event-boss-cryosnail.png",
-    "cutscenes/poster-art/event-boss-cybersnail.png",
-    "cutscenes/poster-art/event-boss-sporesnail.png",
     "cutscenes/poster-art/event-cave-revealed-1.png",
     "cutscenes/poster-art/event-cave-revealed-2.png",
     "cutscenes/poster-art/event-foundry-discovered.png",
-    "cutscenes/poster-art/event-o2-generator-upgraded.png",
     "cutscenes/poster-art/event-queen-encounter.png",
     "cybersnail.png",
     "cybersnail_dead.png",
@@ -850,7 +850,6 @@
     "fx_spark_burst.svg",
     "fx_steam_puff.svg",
     "ice_base_rock.png",
-    "ice_grunge_snow.png",
     "ice_wall_glacier.png",
     "interstitials/int_02_kaelen_s_sleeping_machine_key_v1.mp4",
     "interstitials/int_04_warmth_beneath_the_ice_key_v1.mp4",
@@ -895,7 +894,6 @@
     "lore_portraits/bunker_announcer.webp",
     "lore_portraits/mayor_tina.webp",
     "lore_portraits/meridian_kaelen.jpg",
-    "lore_portraits/meridian_kaelen.png",
     "lore_portraits/queen_00.webp",
     "lore_portraits/survivor_00.webp",
     "lore_portraits/survivor_01.webp",
@@ -4252,21 +4250,6 @@
       "classification": "runtime-required"
     },
     {
-      "path": "cutscenes/poster-art/event-boss-cryosnail.png",
-      "bytes": 957651,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "cutscenes/poster-art/event-boss-cybersnail.png",
-      "bytes": 883557,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "cutscenes/poster-art/event-boss-sporesnail.png",
-      "bytes": 991045,
-      "classification": "runtime-required"
-    },
-    {
       "path": "cutscenes/poster-art/event-cave-revealed-1.png",
       "bytes": 891193,
       "classification": "runtime-required"
@@ -4279,11 +4262,6 @@
     {
       "path": "cutscenes/poster-art/event-foundry-discovered.png",
       "bytes": 2688052,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "cutscenes/poster-art/event-o2-generator-upgraded.png",
-      "bytes": 973147,
       "classification": "runtime-required"
     },
     {
@@ -5593,12 +5571,12 @@
     },
     {
       "path": "economy/fx_emerald_void_tracer.png",
-      "bytes": 14443,
+      "bytes": 86121,
       "classification": "runtime-required"
     },
     {
       "path": "economy/fx_emerald_void_tracer_large.png",
-      "bytes": 32254,
+      "bytes": 341007,
       "classification": "runtime-required"
     },
     {
@@ -5783,12 +5761,12 @@
     },
     {
       "path": "economy/hudtheme_amber_crt.png",
-      "bytes": 16444,
+      "bytes": 83755,
       "classification": "runtime-required"
     },
     {
       "path": "economy/hudtheme_amber_crt_large.png",
-      "bytes": 37846,
+      "bytes": 346721,
       "classification": "runtime-required"
     },
     {
@@ -5813,12 +5791,12 @@
     },
     {
       "path": "economy/hudtheme_emerald_radar.png",
-      "bytes": 33694,
+      "bytes": 93873,
       "classification": "runtime-required"
     },
     {
       "path": "economy/hudtheme_emerald_radar_large.png",
-      "bytes": 78886,
+      "bytes": 358674,
       "classification": "runtime-required"
     },
     {
@@ -6003,12 +5981,12 @@
     },
     {
       "path": "economy/mod_symbiotic_adrenaline_pump.png",
-      "bytes": 15116,
+      "bytes": 100418,
       "classification": "runtime-required"
     },
     {
       "path": "economy/mod_symbiotic_adrenaline_pump_large.png",
-      "bytes": 33487,
+      "bytes": 395555,
       "classification": "runtime-required"
     },
     {
@@ -6347,11 +6325,6 @@
       "classification": "runtime-required"
     },
     {
-      "path": "economy/skin_scout_talon_c.png",
-      "bytes": 364349,
-      "classification": "runtime-required"
-    },
-    {
       "path": "economy/skin_solar_flare_antimatter.png",
       "bytes": 47456,
       "classification": "runtime-required"
@@ -6398,22 +6371,22 @@
     },
     {
       "path": "economy/voicepack_aura.png",
-      "bytes": 38928,
+      "bytes": 107810,
       "classification": "runtime-required"
     },
     {
       "path": "economy/voicepack_aura_large.png",
-      "bytes": 95164,
+      "bytes": 416161,
       "classification": "runtime-required"
     },
     {
       "path": "economy/voicepack_soviet_commander.png",
-      "bytes": 38744,
+      "bytes": 93926,
       "classification": "runtime-required"
     },
     {
       "path": "economy/voicepack_soviet_commander_large.png",
-      "bytes": 86460,
+      "bytes": 371077,
       "classification": "runtime-required"
     },
     {
@@ -6532,23 +6505,8 @@
       "classification": "unknown"
     },
     {
-      "path": "hive_carapace_site.png",
-      "bytes": 824675,
-      "classification": "unknown"
-    },
-    {
       "path": "hive_interior.png",
       "bytes": 1025298,
-      "classification": "unknown"
-    },
-    {
-      "path": "hive_relay_site.png",
-      "bytes": 2005627,
-      "classification": "unknown"
-    },
-    {
-      "path": "hive_suture_site.png",
-      "bytes": 1869367,
       "classification": "unknown"
     },
     {
@@ -6564,11 +6522,6 @@
     {
       "path": "ice_base_rock.png",
       "bytes": 2153267,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "ice_grunge_snow.png",
-      "bytes": 1232083,
       "classification": "runtime-required"
     },
     {
@@ -7218,11 +7171,6 @@
     },
     {
       "path": "lore_portraits/meridian_kaelen.jpg",
-      "bytes": 994213,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "lore_portraits/meridian_kaelen.png",
       "bytes": 994213,
       "classification": "runtime-required"
     },

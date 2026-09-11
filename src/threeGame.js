@@ -942,13 +942,16 @@ const BIOME_TERRAIN_TEXTURE_PATHS = Object.freeze({
         wallSide: '/cryo_wall_conduit.png',
         wallTop: '/cryo_base_frost.png',
         wallGrunge: '/cryo_grunge_rime.png',
+        // ice_grunge_snow.png was a byte-identical copy of cryo_grunge_rime.png,
+        // so the fallback grunge was never a distinct texture. The rest of the
+        // fallback set is genuinely different art.
         fallback: Object.freeze({
             floorBase: '/ice_base_rock.png',
-            floorGrunge: '/ice_grunge_snow.png',
+            floorGrunge: '/cryo_grunge_rime.png',
             floorDetail: '/ice_wall_glacier.png',
             wallSide: '/ice_wall_glacier.png',
             wallTop: '/ice_base_rock.png',
-            wallGrunge: '/ice_grunge_snow.png'
+            wallGrunge: '/cryo_grunge_rime.png'
         })
     }),
     [BIOME_KEYS.BIO]: Object.freeze({

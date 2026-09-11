@@ -13765,7 +13765,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                     '/bio_grunge_spores.png',
                     '/bio_wall_veins.png',
                     '/ice_base_rock.png',
-                    '/ice_grunge_snow.png',
                     '/ice_wall_glacier.png',
                     '/bunker_junk.png',
                     '/bunker_junk_uncommon.png',

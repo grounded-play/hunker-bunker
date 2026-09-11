@@ -8,14 +8,14 @@
     "duplicateGroups": 15
   },
   "measured": {
-    "publicBytes": 2837830323,
-    "publicFileCount": 1574
+    "publicBytes": 2829008471,
+    "publicFileCount": 1564
   },
   "classifications": {
-    "runtime-required": 1521,
+    "runtime-required": 1514,
     "source-reference": 0,
     "generated-intermediate": 0,
-    "unknown": 53
+    "unknown": 50
   },
   "missingReferences": [],
   "invalidMedia": [],
@@ -291,32 +291,12 @@
       "detected": ".jpg"
     },
     {
-      "path": "cutscenes/poster-art/event-boss-cryosnail.png",
-      "extension": ".png",
-      "detected": ".jpg"
-    },
-    {
-      "path": "cutscenes/poster-art/event-boss-cybersnail.png",
-      "extension": ".png",
-      "detected": ".jpg"
-    },
-    {
-      "path": "cutscenes/poster-art/event-boss-sporesnail.png",
-      "extension": ".png",
-      "detected": ".jpg"
-    },
-    {
       "path": "cutscenes/poster-art/event-cave-revealed-1.png",
       "extension": ".png",
       "detected": ".jpg"
     },
     {
       "path": "cutscenes/poster-art/event-cave-revealed-2.png",
-      "extension": ".png",
-      "detected": ".jpg"
-    },
-    {
-      "path": "cutscenes/poster-art/event-o2-generator-upgraded.png",
       "extension": ".png",
       "detected": ".jpg"
     },
@@ -416,11 +396,6 @@
       "detected": ".jpg"
     },
     {
-      "path": "hive_carapace_site.png",
-      "extension": ".png",
-      "detected": ".jpg"
-    },
-    {
       "path": "hive_interior.png",
       "extension": ".png",
       "detected": ".jpg"
@@ -447,11 +422,6 @@
     },
     {
       "path": "kaelen_camp_walk_v2.png",
-      "extension": ".png",
-      "detected": ".jpg"
-    },
-    {
-      "path": "lore_portraits/meridian_kaelen.png",
       "extension": ".png",
       "detected": ".jpg"
     },
@@ -647,76 +617,6 @@
       ]
     },
     {
-      "sha256": "a2472109ccf5427f049ad86ffab8e8f136692e1c1ed72091594f420ff5a25606",
-      "files": [
-        "bio_base_growth.png",
-        "hive_suture_site.png"
-      ]
-    },
-    {
-      "sha256": "f4cd5feb814f384d77bff4c63d2b8412025da65fbd41f0afaa5bdb392c8c8d27",
-      "files": [
-        "bio_wall_veins.png",
-        "hive_relay_site.png"
-      ]
-    },
-    {
-      "sha256": "9eca9041fa572515ae018b7501b5bb4a81f7954ba4bfb6fa4ae42a5a3a7dce54",
-      "files": [
-        "bunker_base_metal.png",
-        "hive_carapace_site.png"
-      ]
-    },
-    {
-      "sha256": "de2b5e8fb5eab4369d3609c512a2711e03d42699bdfa4440542dbec1c6a240c9",
-      "files": [
-        "cryo_grunge_rime.png",
-        "ice_grunge_snow.png"
-      ]
-    },
-    {
-      "sha256": "c66e3bee676829bba23be3a2b9f511a6bf098fdd40a9f2c5570f8ae0f2cfa9ae",
-      "files": [
-        "cutscenes/event-boss-encounter-cryosnail-poster.jpg",
-        "cutscenes/poster-art/event-boss-cryosnail.png"
-      ]
-    },
-    {
-      "sha256": "1db2f2930a7ef2967314ab3cab1a463bc069fd33f32207615d9c255bc7e70b59",
-      "files": [
-        "cutscenes/event-boss-encounter-cybersnail-poster.jpg",
-        "cutscenes/poster-art/event-boss-cybersnail.png"
-      ]
-    },
-    {
-      "sha256": "e34a47db5f098beee3184218dec8f0620b7d4560f51fcb920439fdc9d52b2a41",
-      "files": [
-        "cutscenes/event-boss-encounter-sporesnail-poster.jpg",
-        "cutscenes/poster-art/event-boss-sporesnail.png"
-      ]
-    },
-    {
-      "sha256": "3df71e5a7e7d88a5b6d2a8b18c564401b2f419c1360d6ba22d8306e97e0b78d5",
-      "files": [
-        "cutscenes/event-o2-generator-upgraded-poster.jpg",
-        "cutscenes/poster-art/event-o2-generator-upgraded.png"
-      ]
-    },
-    {
-      "sha256": "376f82eba835a5437fa7cb2d50ee4a8e36e83d20ffd4db6dc7db72e808bd16bb",
-      "files": [
-        "economy/gun_scout_talon_c.png",
-        "economy/skin_scout_talon_c.png"
-      ]
-    },
-    {
-      "sha256": "716798ee725171e5b19d81d708e66e7b39e0b28a6939d151f56afe8858be8643",
-      "files": [
-        "lore_portraits/meridian_kaelen.jpg",
-        "lore_portraits/meridian_kaelen.png"
-      ]
-    },
-    {
       "sha256": "cc9655c87efbfeb86e0aa6856b7d0f55790964c990b1073f2378205dc6ee409a",
       "files": [
         "lore_portraits/survivor_06.webp",
@@ -740,7 +640,5 @@
       ]
     }
   ],
-  "failures": [
-    "public payload exceeds 2831155200 bytes"
-  ]
+  "failures": []
 }

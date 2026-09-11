@@ -306,7 +306,7 @@ export const NPC_DIALOGUE_TREES = Object.freeze({
         id: 'overseer_kaelen',
         name: 'Overseer Kaelen',
         faction: 'CAMP MERIDIAN // POWER GRID SUBSTATION',
-        portrait: 'public/lore_portraits/meridian_kaelen.png',
+        portrait: 'public/lore_portraits/meridian_kaelen.jpg',
         icon: '⚡',
         themeColor: '#00e5ff',
         initialNode: 'kaelen_greeting',
