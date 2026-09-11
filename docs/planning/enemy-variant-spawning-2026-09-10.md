@@ -95,13 +95,55 @@ identical stats, so only the mesh differs.
 | `src/enemy3dOverlay.js` | exports `ENEMY_3D_MODELS` so the catalog is testable |
 | `src/enemyVariants.test.js` | 8 tests: catalog coverage, stats coverage, the D2 rule, determinism, passthrough, both variants reachable, the HP fix |
 
+## Follow-up: giving the variants something to show (same day)
+
+Wiring the spawning was only half of it — both `_A` meshes were byte-identical
+to their base, so an enemy that resolved to `sentinel_A` still looked exactly
+like one that resolved to `sentinel`. `scripts/blender/build_enemy_variant_meshes.py`
+now derives them.
+
+**D5 — Shape in the mesh, colour in the engine.**
+Silhouette is changed by moving existing vertices (scale, taper, a radial
+bulge). Colour is a `tint` entry in `enemy3dOverlay`'s `MODEL_CONFIG`, which
+multiplies the material colour at load — the existing cryosnail-on-cybersnail
+pattern. Tint costs no payload and cannot damage the scan textures.
+
+**D6 — Never add geometry to these meshes.**
+The first attempt joined cones and cylinders on as sensor spires and dorsal
+spines. A test render showed them as floating, untextured grey primitives:
+these are photoscan assets and new geometry has no place in their UV layout. It
+looked markedly worse than the duplicate it was meant to fix. The rebuilt script
+only ever moves vertices that are already there, so the texture, normals and UVs
+survive intact. **Do not reintroduce primitive greebling here.**
+
+**D7 — Keep added height small.**
+`normalizeRoot()` scales each model to a fixed `config.height`, so anything that
+raises the bounding box shrinks the body to compensate. The first sentinel_A was
+70% taller and would have rendered with a body ~40% smaller than its base.
+
+Resulting silhouettes, all three sentinels now separable:
+
+| mesh | width | depth | height | reads as |
+|---|---|---|---|---|
+| `sentinel` | 0.774 | 0.646 | 0.796 | the middle |
+| `sentinel_A` | 0.60 | 0.45 | 0.92 | narrow, tapered, mass carried low |
+| `sentinel_B` | 0.852 | 0.871 | 0.728 | broad and squat |
+| `alien_proto_crawler` | 0.670 | 1.136 | 0.367 | long and lean |
+| `alien_proto_crawler_A` | 0.82 | 0.98 | 0.40 | broad, stocky, swollen abdomen |
+
+Config heights were spread to match (`_A` 1.18, base 1.25, `_B` 1.32) so the
+weight difference reads before the player shoots anything. Tints: `_A` cold blue
+`0x9fc4dd`, `_B` warm rust `0xd8b48c`, crawler `_A` bone `0xc2a887`.
+
+Both rebuilt meshes came out *smaller* than their base (5.11 vs 5.55 MB,
+4.36 vs 4.85 MB), so this returned ~0.9 MB of retail payload rather than costing
+any. The script is deterministic — a rebuild is a no-op in git.
+
 ## Known-remaining
 
-- **`sentinel_A.glb` is still a byte-copy of `sentinel.glb`.** Until that art
-  lands, `sentinel_A` and the base look identical in play; only `sentinel_B` is
-  visually distinct. Same for `alien_proto_crawler_A`.
-- **These are the duplicate groups the retail audit will keep reporting**, and
-  that is correct — `scripts/audit-retail-assets.js` now documents that they are
-  deliberate and must not be collapsed.
+- **Duplicate-group count is down to one over 100 KB** (`C6-A.mp4` /
+  `C6-B.mp4`, still a deliberate placeholder pair). The sentinel and crawler
+  groups are gone because the variants are genuinely different files now.
 - **`isEnemyType()` was left alone.** Under D1 no variant string ever reaches it,
   so widening the whitelist would be dead code.
+- **Retail headroom is ~2.7 MB.** Unchanged by this work in net terms.

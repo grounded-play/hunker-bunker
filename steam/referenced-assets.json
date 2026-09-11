@@ -1276,7 +1276,7 @@
     },
     {
       "path": "3d/runtime/new3ds/alien_proto_crawler_A.glb",
-      "bytes": 5088468,
+      "bytes": 4582244,
       "classification": "runtime-required"
     },
     {
@@ -1816,7 +1816,7 @@
     },
     {
       "path": "3d/runtime/new3ds/sentinel_A.glb",
-      "bytes": 5822928,
+      "bytes": 5368360,
       "classification": "runtime-required"
     },
     {

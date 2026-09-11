@@ -1,3 +1,5 @@
+import { createHash } from 'node:crypto';
+import { readFile } from 'node:fs/promises';
 import { describe, expect, it } from 'vitest';
 import { ENEMY_STATS, ENEMY_VARIANTS, getEnemyStats, pickEnemyVariant } from './data/enemies.js';
 import { ENEMY_3D_MODELS } from './enemy3dOverlay.js';
@@ -66,5 +68,33 @@ describe('enemy model variants', () => {
         const rolled = ENEMY_VARIANTS.sentinel.map((v) => getEnemyStats(v, fallback).maxHp);
         expect(rolled).toEqual([4, 5]);
         expect(rolled.every((hp) => hp !== fallback.maxHp)).toBe(true);
+    });
+
+    // The variants originally shipped as byte-identical copies of their base
+    // export, so resolving to sentinel_A looked exactly like resolving to
+    // sentinel and the whole variant system was invisible in play. The meshes
+    // are now derived by scripts/blender/build_enemy_variant_meshes.py.
+    it('renders a mesh that is actually distinct from the family base', async () => {
+        const digest = async (url) => {
+            const file = new URL(`../public${url}`, import.meta.url);
+            return createHash('sha256').update(await readFile(file)).digest('hex');
+        };
+        for (const [family, pool] of Object.entries(ENEMY_VARIANTS)) {
+            const seen = new Map();
+            for (const variant of pool) {
+                seen.set(variant, await digest(ENEMY_3D_MODELS[variant].url));
+            }
+            // Against each other...
+            expect(new Set(seen.values()).size, family).toBe(pool.length);
+            // ...and against the family's own mesh when it has one it does not
+            // share, which is the case the original bug hid.
+            const baseUrl = ENEMY_3D_MODELS[family]?.url;
+            if (baseUrl && !pool.some((v) => ENEMY_3D_MODELS[v].url === baseUrl)) {
+                const baseDigest = await digest(baseUrl);
+                for (const [variant, hash] of seen) {
+                    expect(hash, `${variant} duplicates ${family}`).not.toBe(baseDigest);
+                }
+            }
+        }
     });
 });

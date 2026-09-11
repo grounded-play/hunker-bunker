@@ -23,11 +23,18 @@ const MODEL_CONFIG = {
     boss_sporesnail: { url: '/3d/runtime/spore-snail-boss.glb', height: 1.95, yaw: Math.PI / 2 },
     crawler: { url: '/3d/runtime/parasite.glb', height: 1.15, yaw: Math.PI },
     alien_proto_crawler: { url: '/3d/runtime/new3ds/alien_proto_crawler.glb', height: 0.95, yaw: 0 },
-    alien_proto_crawler_A: { url: '/3d/runtime/new3ds/alien_proto_crawler_A.glb', height: 0.95, yaw: 0 },
+    // Variant tinting rides here rather than in the mesh: the GLB carries a
+    // photoscan texture set, and `tint` multiplies the material colour at load
+    // without touching it (the same trick cryosnail plays on the cybersnail
+    // mesh). Shape differences live in the GLB, colour differences live here.
+    alien_proto_crawler_A: { url: '/3d/runtime/new3ds/alien_proto_crawler_A.glb', height: 0.98, yaw: 0, tint: 0xc2a887 },
     alien_proto_spitter: { url: '/3d/runtime/new3ds/alien_proto_crawler_A.glb', height: 0.95, yaw: 0 },
     sentinel: { url: '/3d/runtime/new3ds/sentinel.glb', height: 1.25, yaw: 0 },
-    sentinel_A: { url: '/3d/runtime/new3ds/sentinel_A.glb', height: 1.25, yaw: 0 },
-    sentinel_B: { url: '/3d/runtime/new3ds/sentinel_B.glb', height: 1.25, yaw: 0 },
+    // Lighter, faster scout variant (4 HP vs sentinel_B's 5) -- rendered a
+    // touch shorter as well, so the weight difference reads before it is shot.
+    sentinel_A: { url: '/3d/runtime/new3ds/sentinel_A.glb', height: 1.18, yaw: 0, tint: 0x9fc4dd },
+    // Heavy variant: biggest of the three, warm rust cast against _A's cold one.
+    sentinel_B: { url: '/3d/runtime/new3ds/sentinel_B.glb', height: 1.32, yaw: 0, tint: 0xd8b48c },
     mycelium_stalker: { url: '/3d/runtime/community/scout_xeno_stalker.glb', height: 1.35, yaw: 0 },
     bio_charger: { url: '/3d/runtime/community/scout_xeno_stalker.glb', height: 1.45, yaw: 0 },
     boss_queen: { url: '/3d/runtime/queen.glb', height: 2.35, yaw: Math.PI }
