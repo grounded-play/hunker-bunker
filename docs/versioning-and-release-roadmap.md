@@ -26,6 +26,20 @@ $$\textbf{v[MAJOR].[MINOR].[PATCH]-[PRE-RELEASE]}$$
   - `-rc.N`: Release candidates locked for pre-launch validation and Steam depot certification.
   - *(no tag)*: Final production builds published to Steam default branch.
 
+### Standing rules
+
+**The project is in permanent beta.** `-beta` stays on the version until there
+is a deliberate decision to ship to the Steam default branch. Do not strip it
+because a build is called a "release build" — that phrase means a real,
+shippable build, not a production tag. Only `-rc.N` and untagged carry release
+semantics, and neither is reached by ordinary sprint work.
+
+**Every PR gets a version bump.** Default to a PATCH bump; that is what nearly
+all PRs are. Reserve MINOR for a sprint's headline deliverable (the scale of
+v2.3.0-beta's 46 models and Armory rebuild) and MAJOR for engine-level leaps.
+Bump `package.json` and `package-lock.json` together (`npm version <v>
+--no-git-tag-version`), update the header above, and add a ledger row below.
+
 ---
 
 ## 2. Release & Sprint History Ledger
