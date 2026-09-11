@@ -20,21 +20,35 @@ import { t } from './i18n.js';
  * t()'s own fallback chain, so a partially translated locale is safe to ship.
  */
 
+// Keys that would reach Object.prototype if assigned onto a plain object.
+// The catalogs here are our own frozen source modules, so this is not
+// reachable today -- but these walkers copy key-by-key from data into fresh
+// objects, which is the shape of a prototype-pollution sink, and the guard
+// costs nothing. Flagged by CodeQL as js/prototype-polluting-function.
+const UNSAFE_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
+
+function isSafeKey(key) {
+    return !UNSAFE_KEYS.has(key);
+}
+
 const registry = [];
 
 function deepUnfreeze(value) {
     if (Array.isArray(value)) return value.map(deepUnfreeze);
     if (value && typeof value === 'object') {
-        const out = {};
-        for (const [k, v] of Object.entries(value)) out[k] = deepUnfreeze(v);
-        return out;
+        const out = Object.create(null);
+        for (const [k, v] of Object.entries(value)) {
+            if (!isSafeKey(k)) continue;
+            out[k] = deepUnfreeze(v);
+        }
+        return Object.assign({}, out);
     }
     return value;
 }
 
 function translateInto(namespace, source, target, skip, path = []) {
     for (const [key, value] of Object.entries(source)) {
-        if (skip.has(key)) continue;
+        if (skip.has(key) || !isSafeKey(key)) continue;
         const next = [...path, key];
         if (typeof value === 'string') {
             target[key] = t(`${namespace}.${next.join('.')}`, {}, value);
@@ -71,7 +85,7 @@ export function refreshCatalogs() {
 export function flattenCatalog(namespace, source, { skip = [] } = {}, path = [], out = {}) {
     const skipSet = skip instanceof Set ? skip : new Set(skip);
     for (const [key, value] of Object.entries(source)) {
-        if (skipSet.has(key)) continue;
+        if (skipSet.has(key) || !isSafeKey(key)) continue;
         const next = [...path, key];
         if (typeof value === 'string') {
             out[`${namespace}.${next.join('.')}`] = value;

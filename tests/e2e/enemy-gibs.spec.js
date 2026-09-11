@@ -15,11 +15,11 @@ import { startRunAndSkipIntro } from './helpers.js';
 // in the live scene -- and they should start passing as soon as the boot helper
 // is repaired, with no changes needed here. If you are the one who fixed the
 // helper: run this spec, it is the outstanding verification for the gib system.
- The Vitest suite covers the
-// fracture maths against synthetic geometry; what it cannot reach is the part
-// that actually matters here — that a real enemy, with a real GLB loaded by
-// enemy3dOverlay, comes apart in the live scene when it dies, and that the
-// Settings toggle genuinely suppresses it.
+//
+// The Vitest suite covers the fracture maths against synthetic geometry; what
+// it cannot reach is the part that actually matters here — that a real enemy,
+// with a real GLB loaded by enemy3dOverlay, comes apart in the live scene when
+// it dies, and that the Settings toggle genuinely suppresses it.
 test.describe('enemy dismemberment', () => {
     test.beforeEach(async ({ page }) => {
         await startRunAndSkipIntro(page);

@@ -98,3 +98,22 @@ describe('narrative catalogs', () => {
         expect(narrative.codexEntries['0'].blurb).toBe(CODEX_ENTRIES[0].blurb);
     });
 });
+
+describe('prototype pollution', () => {
+    it('does not let a catalog key reach Object.prototype', () => {
+        // These walkers copy key-by-key from data into fresh objects, which is
+        // the shape CodeQL flags as a pollution sink. Source data is ours and
+        // frozen, so this is defence in depth rather than a live hole.
+        const hostile = JSON.parse('{"__proto__": {"polluted": true}, "safe": "ok"}');
+        const live = localizeCatalog('narrative.__hostile', hostile);
+        expect({}.polluted).toBeUndefined();
+        expect(Object.prototype.polluted).toBeUndefined();
+        expect(live.safe).toBe('ok');
+    });
+
+    it('keeps unsafe keys out of flattened output', () => {
+        const hostile = JSON.parse('{"constructor": "nope", "real": "yes"}');
+        const flat = flattenCatalog('x', hostile);
+        expect(flat).toEqual({ 'x.real': 'yes' });
+    });
+});

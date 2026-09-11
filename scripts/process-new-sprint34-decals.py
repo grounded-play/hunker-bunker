@@ -3,7 +3,6 @@
 into clean transparent RGBA PNGs in public/ with optimized palettes.
 """
 import os
-import sys
 from PIL import Image
 import numpy as np
 
