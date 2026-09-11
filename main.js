@@ -238,6 +238,18 @@ const saveDataPopup = document.getElementById('save-data-popup');
 const closeSaveDataBtn = document.getElementById('close-save-data');
 const saveDataCode = document.getElementById('save-data-code');
 const saveDataStatus = document.getElementById('save-data-status');
+const openCrosshairColorBtn = document.getElementById('open-crosshair-color');
+const crosshairColorPopup = document.getElementById('crosshair-color-popup');
+const closeCrosshairColorBtn = document.getElementById('close-crosshair-color');
+const saveCrosshairColorBtn = document.getElementById('save-crosshair-color');
+const crosshairBadgeDot = document.getElementById('crosshair-badge-dot');
+const crosshairBadgeText = document.getElementById('crosshair-badge-text');
+const openLanguageSelectBtn = document.getElementById('open-language-select');
+const languageSelectPopup = document.getElementById('language-select-popup');
+const closeLanguageSelectBtn = document.getElementById('close-language-select');
+const saveLanguageSelectBtn = document.getElementById('save-language-select');
+const languageBadgeFlag = document.getElementById('language-badge-flag');
+const languageBadgeText = document.getElementById('language-badge-text');
 const openResetSaveBtn = document.getElementById('open-reset-save');
 const resetSaveConfirmModal = document.getElementById('reset-save-confirm-modal');
 const resetSaveConfirmBtn = document.getElementById('reset-save-confirm');
@@ -9563,6 +9575,7 @@ function openSettingsModal() {
 
     const langSelect = document.getElementById('setting-language-select');
     if (langSelect) langSelect.value = getLocale();
+    syncLanguageSelectControls(getLocale());
 
     const uiScaleSelect = document.getElementById('setting-ui-scale');
     if (uiScaleSelect) uiScaleSelect.value = String(state.settings.uiScale || 100);
@@ -9600,10 +9613,16 @@ function openSettingsModal() {
     setAudioMixerOpen(false);
     setSaveDataOpen(false);
     setResetSaveConfirmOpen(false);
+    setCrosshairColorOpen(false);
+    setLanguageSelectOpen(false);
 }
 
 document.getElementById('setting-language-select')?.addEventListener('change', (e) => {
     setLocale(e.target.value);
+    syncLanguageSelectControls(e.target.value);
+});
+window.addEventListener('locale-changed', (e) => {
+    syncLanguageSelectControls(e.detail?.locale || getLocale());
 });
 window.i18n = { getLocale, setLocale, t: i18nT, getAvailableLocales };
 
@@ -9712,7 +9731,40 @@ function syncCrosshairColorControls() {
     document.querySelectorAll('[data-crosshair-color]').forEach((button) => {
         button.setAttribute('aria-pressed', String(button.dataset.crosshairColor === selected));
     });
+    if (crosshairBadgeDot) {
+        crosshairBadgeDot.style.background = selected;
+        crosshairBadgeDot.style.boxShadow = `0 0 6px ${selected}`;
+    }
+    if (crosshairBadgeText) {
+        crosshairBadgeText.textContent = selected.toUpperCase();
+    }
 }
+
+function setCrosshairColorOpen(isOpen) {
+    if (!crosshairColorPopup) return;
+    const wasOpen = !crosshairColorPopup.classList.contains('hidden');
+    crosshairColorPopup.classList.toggle('hidden', !isOpen);
+    crosshairColorPopup.setAttribute('aria-hidden', isOpen ? 'false' : 'true');
+    if (isOpen) {
+        const selectedSwatch = crosshairColorPopup.querySelector('[data-crosshair-color][aria-pressed="true"]')
+            || crosshairColorPopup.querySelector('[data-crosshair-color]')
+            || saveCrosshairColorBtn;
+        selectedSwatch?.focus();
+    } else if (wasOpen && settingsPopup && !settingsPopup.classList.contains('hidden')) {
+        openCrosshairColorBtn?.focus();
+    }
+}
+
+openCrosshairColorBtn?.addEventListener('click', () => {
+    setCrosshairColorOpen(true);
+});
+closeCrosshairColorBtn?.addEventListener('click', () => {
+    setCrosshairColorOpen(false);
+});
+saveCrosshairColorBtn?.addEventListener('click', () => {
+    setCrosshairColorOpen(false);
+    window.AudioManager?.play?.('ui_click', { volume: 0.5 });
+});
 
 document.getElementById('setting-crosshair-color')?.addEventListener('input', (e) => {
     setCrosshairColor(e.target.value);
@@ -9720,6 +9772,68 @@ document.getElementById('setting-crosshair-color')?.addEventListener('input', (e
 document.querySelectorAll('[data-crosshair-color]').forEach((button) => {
     button.addEventListener('click', () => setCrosshairColor(button.dataset.crosshairColor));
 });
+
+function syncLanguageSelectControls(localeCode) {
+    const activeLocale = localeCode || getLocale() || 'en';
+    const langSelect = document.getElementById('setting-language-select');
+    if (langSelect && langSelect.value !== activeLocale) {
+        langSelect.value = activeLocale;
+    }
+    const buttons = document.querySelectorAll('.language-choice-btn');
+    buttons.forEach((button) => {
+        const isSelected = button.dataset.languageCode === activeLocale;
+        button.setAttribute('aria-checked', String(isSelected));
+    });
+    if (languageBadgeText) {
+        const activeItem = getAvailableLocales().find(l => l.code === activeLocale);
+        languageBadgeText.textContent = (activeItem?.name || activeLocale).toUpperCase();
+    }
+    if (languageBadgeFlag) {
+        const activeBtn = document.querySelector(`.language-choice-btn[data-language-code="${activeLocale}"]`);
+        const activeSvg = activeBtn?.querySelector('.language-flag-svg');
+        if (activeSvg) {
+            languageBadgeFlag.innerHTML = activeSvg.outerHTML;
+        }
+    }
+}
+
+function setLanguageSelectOpen(isOpen) {
+    if (!languageSelectPopup) return;
+    const wasOpen = !languageSelectPopup.classList.contains('hidden');
+    languageSelectPopup.classList.toggle('hidden', !isOpen);
+    languageSelectPopup.setAttribute('aria-hidden', isOpen ? 'false' : 'true');
+    if (isOpen) {
+        const selectedOption = languageSelectPopup.querySelector('.language-choice-btn[aria-checked="true"]')
+            || languageSelectPopup.querySelector('.language-choice-btn')
+            || saveLanguageSelectBtn;
+        selectedOption?.focus();
+    } else if (wasOpen && settingsPopup && !settingsPopup.classList.contains('hidden')) {
+        openLanguageSelectBtn?.focus();
+    }
+}
+
+openLanguageSelectBtn?.addEventListener('click', () => {
+    syncLanguageSelectControls(getLocale());
+    setLanguageSelectOpen(true);
+});
+closeLanguageSelectBtn?.addEventListener('click', () => {
+    setLanguageSelectOpen(false);
+});
+saveLanguageSelectBtn?.addEventListener('click', () => {
+    setLanguageSelectOpen(false);
+    window.AudioManager?.play?.('ui_click', { volume: 0.5 });
+});
+document.querySelectorAll('.language-choice-btn').forEach((button) => {
+    button.addEventListener('click', () => {
+        const code = button.dataset.languageCode;
+        if (code) {
+            setLocale(code);
+            syncLanguageSelectControls(code);
+            window.AudioManager?.play?.('ui_click', { volume: 0.5 });
+        }
+    });
+});
+
 
 if (settingsBtns.length > 0 && settingsPopup) {
     settingsBtns.forEach(btn => {
@@ -9758,6 +9872,8 @@ if (confirmYes) {
         if (settingsPopup) settingsPopup.classList.add('hidden');
         setAudioMixerOpen(false);
         setSaveDataOpen(false);
+        setCrosshairColorOpen(false);
+        setLanguageSelectOpen(false);
         cutsceneManager?.finishActiveRun(true);
         dialogueManager?.cancelDialogue();
         dialogueManager?.cancelTutorial();
@@ -9783,6 +9899,8 @@ if (closeSettings && settingsPopup) {
         setAudioMixerOpen(false);
         setSaveDataOpen(false);
         setResetSaveConfirmOpen(false);
+        setCrosshairColorOpen(false);
+        setLanguageSelectOpen(false);
     });
 }
 
@@ -9823,6 +9941,8 @@ saveDataCode?.addEventListener('focus', () => {
 function openFullSaveResetConfirm() {
     setAudioMixerOpen(false);
     setSaveDataOpen(false);
+    setCrosshairColorOpen(false);
+    setLanguageSelectOpen(false);
     setResetSaveConfirmOpen(true);
     window.AudioManager?.play?.('ui_click', { volume: 0.5 });
 }
@@ -9848,6 +9968,8 @@ resetSaveConfirmBtn?.addEventListener('click', () => {
     settingsPopup?.classList.add('hidden');
     setAudioMixerOpen(false);
     setSaveDataOpen(false);
+    setCrosshairColorOpen(false);
+    setLanguageSelectOpen(false);
     console.info(`Reset save data: cleared ${removed} record(s).`);
     window.setTimeout(() => window.location.reload(), 350);
 });
@@ -10762,6 +10884,20 @@ document.addEventListener('keydown', (event) => {
             return;
         }
 
+        const crosshairColorPopup = document.getElementById('crosshair-color-popup');
+        if (crosshairColorPopup && !crosshairColorPopup.classList.contains('hidden')) {
+            setCrosshairColorOpen(false);
+            event.preventDefault();
+            return;
+        }
+
+        const languagePopup = document.getElementById('language-select-popup');
+        if (languagePopup && !languagePopup.classList.contains('hidden')) {
+            setLanguageSelectOpen(false);
+            event.preventDefault();
+            return;
+        }
+
         const settingsPopup = document.getElementById('settings-popup');
         if (settingsPopup && !settingsPopup.classList.contains('hidden')) {
             settingsPopup.classList.add('hidden');
@@ -10770,6 +10906,8 @@ document.addEventListener('keydown', (event) => {
             setAudioMixerOpen(false);
             setSaveDataOpen(false);
             setResetSaveConfirmOpen(false);
+            setCrosshairColorOpen(false);
+            setLanguageSelectOpen(false);
             event.preventDefault();
             return;
         }
@@ -12637,10 +12775,14 @@ setupClickOutside('settings-popup', () => {
         setAudioMixerOpen(false);
         setSaveDataOpen(false);
         setResetSaveConfirmOpen(false);
+        setCrosshairColorOpen(false);
+        setLanguageSelectOpen(false);
     }
 });
 
 setupClickOutside('save-data-popup', () => setSaveDataOpen(false));
+setupClickOutside('crosshair-color-popup', () => setCrosshairColorOpen(false));
+setupClickOutside('language-select-popup', () => setLanguageSelectOpen(false));
 
 function getDoorImage(key) {
     const CLASS_DOORS = {
@@ -13480,6 +13622,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     setDebugMode(state.settings.debug);
     installAudioMixerControls();
     setAudioMixerOpen(false);
+    setCrosshairColorOpen(false);
+    setLanguageSelectOpen(false);
+    syncLanguageSelectControls(getLocale());
     loadAudioMixSettings();
     loadKeyBindings();
     setupControlsModal();

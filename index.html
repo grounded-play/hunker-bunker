@@ -2177,9 +2177,16 @@
         <!-- Section 3: Gameplay & Accessibility -->
         <div class="settings-category-group">
           <div class="settings-category-header" data-i18n="ui.settings.cat_gameplay">GAMEPLAY & ACCESSIBILITY</div>
-          <div class="setting-item">
-            <span>LANGUAGE / 语言 / ЯЗЫК</span>
-            <select id="setting-language-select" data-i18n-aria-label="ui.aria.language_select" class="settings-select" aria-label="Game language">
+          <div class="setting-item setting-item--action">
+            <div class="setting-label-with-badge">
+              <span data-i18n="ui.settings.language">LANGUAGE / 语言 / ЯЗЫК</span>
+              <span class="setting-color-preview-badge setting-language-preview-badge" id="language-preview-badge" title="Active language">
+                <span class="language-preview-flag" id="language-badge-flag"></span>
+                <span class="language-preview-text" id="language-badge-text">ENGLISH</span>
+              </span>
+            </div>
+            <button type="button" class="calibrate-btn settings-action-btn" id="open-language-select" data-i18n="ui.action.open">OPEN</button>
+            <select id="setting-language-select" data-i18n-aria-label="ui.aria.language_select" class="settings-select visually-hidden" aria-label="Game language" tabindex="-1" aria-hidden="true" style="display:none">
               <option value="en" selected>English</option>
               <option value="zh-CN">简体中文 (Simplified Chinese)</option>
               <option value="ru">Русский (Russian)</option>
@@ -2361,6 +2368,180 @@
         </div>
         <div class="audio-mixer-actions crosshair-color-actions">
           <button type="button" class="settings-action-btn settings-action-btn--save" id="save-crosshair-color" data-i18n="ui.action.done">DONE</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="language-select-popup" class="modal audio-mixer-modal hidden" aria-hidden="true">
+      <div class="modal-content audio-mixer-panel language-select-panel">
+        <button class="close-modal audio-mixer-close" id="close-language-select" data-i18n-aria-label="ui.aria.close_language" aria-label="Close language menu">×</button>
+        <h2 class="modal-title" data-i18n="ui.settings.language">LANGUAGE / 语言 / ЯЗЫК</h2>
+        <p class="crosshair-color-hint language-select-hint" data-i18n="ui.settings.language_hint">Choose your preferred interface and subtitle language.</p>
+        <div class="language-select-modal-body">
+          <div id="language-select-grid" class="language-select-grid" role="radiogroup" data-i18n-aria-label="ui.aria.language_select" aria-label="Game language">
+            <!-- English -->
+            <button type="button" class="language-choice-btn" data-language-code="en" role="radio" aria-checked="true" aria-label="English">
+              <span class="language-flag-wrap">
+                <svg class="language-flag-svg" viewBox="0 0 640 480" width="36" height="26" aria-hidden="true">
+                  <rect width="640" height="480" fill="#b22234"/>
+                  <path stroke="#fff" stroke-width="37" d="M0 55.4h640M0 129.2h640M0 203.1h640M0 276.9h640M0 350.8h640M0 424.6h640"/>
+                  <rect width="256" height="258.5" fill="#3c3b6e"/>
+                  <g fill="#fff">
+                    <polygon points="32,24 35,33 44,33 37,38 40,47 32,42 24,47 27,38 20,33 29,33"/>
+                    <polygon points="75,24 78,33 87,33 80,38 83,47 75,42 67,47 70,38 63,33 72,33"/>
+                    <polygon points="118,24 121,33 130,33 123,38 126,47 118,42 110,47 113,38 106,33 115,33"/>
+                    <polygon points="161,24 164,33 173,33 166,38 169,47 161,42 153,47 156,38 149,33 158,33"/>
+                    <polygon points="204,24 207,33 216,33 209,38 212,47 204,42 196,47 199,38 192,33 201,33"/>
+                    <polygon points="53.5,58 56.5,67 65.5,67 58.5,72 61.5,81 53.5,76 45.5,81 48.5,72 41.5,67 50.5,67"/>
+                    <polygon points="96.5,58 99.5,67 108.5,67 101.5,72 104.5,81 96.5,76 88.5,81 91.5,72 84.5,67 93.5,67"/>
+                    <polygon points="139.5,58 142.5,67 151.5,67 144.5,72 147.5,81 139.5,76 131.5,81 134.5,72 127.5,67 136.5,67"/>
+                    <polygon points="182.5,58 185.5,67 194.5,67 187.5,72 190.5,81 182.5,76 174.5,81 177.5,72 170.5,67 179.5,67"/>
+                    <polygon points="32,92 35,101 44,101 37,106 40,115 32,110 24,115 27,106 20,101 29,101"/>
+                    <polygon points="75,92 78,101 87,101 80,106 83,115 75,110 67,115 70,106 63,101 72,101"/>
+                    <polygon points="118,92 121,101 130,101 123,106 126,115 118,110 110,115 113,106 106,101 115,101"/>
+                    <polygon points="161,92 164,101 173,101 166,106 169,115 161,110 153,115 156,106 149,101 158,101"/>
+                    <polygon points="204,92 207,101 216,101 209,106 212,115 204,110 196,115 199,106 192,101 201,101"/>
+                    <polygon points="53.5,126 56.5,135 65.5,135 58.5,140 61.5,149 53.5,144 45.5,149 48.5,140 41.5,135 50.5,135"/>
+                    <polygon points="96.5,126 99.5,135 108.5,135 101.5,140 104.5,149 96.5,144 88.5,149 91.5,140 84.5,135 93.5,135"/>
+                    <polygon points="139.5,126 142.5,135 151.5,135 144.5,140 147.5,149 139.5,144 131.5,149 134.5,140 127.5,135 136.5,135"/>
+                    <polygon points="182.5,126 185.5,135 194.5,135 187.5,140 190.5,149 182.5,144 174.5,149 177.5,140 170.5,135 179.5,135"/>
+                    <polygon points="32,160 35,169 44,169 37,174 40,183 32,178 24,183 27,174 20,169 29,169"/>
+                    <polygon points="75,160 78,169 87,169 80,174 83,183 75,178 67,183 70,174 63,169 72,169"/>
+                    <polygon points="118,160 121,169 130,169 123,174 126,183 118,178 110,183 113,174 106,169 115,169"/>
+                    <polygon points="161,160 164,169 173,169 166,174 169,183 161,178 153,183 156,174 149,169 158,169"/>
+                    <polygon points="204,160 207,169 216,169 209,174 212,183 204,178 196,183 199,174 192,169 201,169"/>
+                    <polygon points="53.5,194 56.5,203 65.5,203 58.5,208 61.5,217 53.5,212 45.5,217 48.5,208 41.5,203 50.5,203"/>
+                    <polygon points="96.5,194 99.5,203 108.5,203 101.5,208 104.5,217 96.5,212 88.5,217 91.5,208 84.5,203 93.5,203"/>
+                    <polygon points="139.5,194 142.5,203 151.5,203 144.5,208 147.5,217 139.5,212 131.5,217 134.5,208 127.5,203 136.5,203"/>
+                    <polygon points="182.5,194 185.5,203 194.5,203 187.5,208 190.5,217 182.5,212 174.5,217 177.5,208 170.5,203 179.5,203"/>
+                    <polygon points="32,228 35,237 44,237 37,242 40,251 32,246 24,251 27,242 20,237 29,237"/>
+                    <polygon points="75,228 78,237 87,237 80,242 83,251 75,246 67,251 70,242 63,237 72,237"/>
+                    <polygon points="118,228 121,237 130,237 123,242 126,251 118,246 110,251 113,242 106,237 115,237"/>
+                    <polygon points="161,228 164,237 173,237 166,242 169,251 161,246 153,251 156,242 149,237 158,237"/>
+                    <polygon points="204,228 207,237 216,237 209,242 212,251 204,246 196,251 199,242 192,237 201,237"/>
+                  </g>
+                </svg>
+              </span>
+              <div class="language-choice-info">
+                <span class="language-choice-name">English</span>
+                <span class="language-choice-region">GLOBAL / EN</span>
+              </div>
+              <span class="language-choice-indicator" aria-hidden="true">✔</span>
+            </button>
+
+            <!-- 简体中文 -->
+            <button type="button" class="language-choice-btn" data-language-code="zh-CN" role="radio" aria-checked="false" aria-label="简体中文">
+              <span class="language-flag-wrap">
+                <svg class="language-flag-svg" viewBox="0 0 640 480" width="36" height="26" aria-hidden="true">
+                  <rect width="640" height="480" fill="#de2910"/>
+                  <g fill="#ffde00">
+                    <polygon points="100,60 112,98 152,98 120,121 132,159 100,136 68,159 80,121 48,98 88,98"/>
+                    <polygon points="200,32 204,44 216,44 207,51 210,63 200,56 190,63 193,51 184,44 196,44" transform="rotate(23 200 48)"/>
+                    <polygon points="240,72 244,84 256,84 247,91 250,103 240,96 230,103 233,91 224,84 236,84" transform="rotate(45 240 88)"/>
+                    <polygon points="240,132 244,144 256,144 247,151 250,163 240,156 230,163 233,151 224,144 236,144" transform="rotate(0 240 148)"/>
+                    <polygon points="200,172 204,184 216,184 207,191 210,203 200,196 190,203 193,191 184,184 196,184" transform="rotate(-20 200 188)"/>
+                  </g>
+                </svg>
+              </span>
+              <div class="language-choice-info">
+                <span class="language-choice-name">简体中文</span>
+                <span class="language-choice-region">CHINA / ZH-CN</span>
+              </div>
+              <span class="language-choice-indicator" aria-hidden="true">✔</span>
+            </button>
+
+            <!-- Русский -->
+            <button type="button" class="language-choice-btn" data-language-code="ru" role="radio" aria-checked="false" aria-label="Русский">
+              <span class="language-flag-wrap">
+                <svg class="language-flag-svg" viewBox="0 0 640 480" width="36" height="26" aria-hidden="true">
+                  <rect width="640" height="160" fill="#ffffff"/>
+                  <rect y="160" width="640" height="160" fill="#0039a6"/>
+                  <rect y="320" width="640" height="160" fill="#d52b1e"/>
+                </svg>
+              </span>
+              <div class="language-choice-info">
+                <span class="language-choice-name">Русский</span>
+                <span class="language-choice-region">RUSSIA / RU</span>
+              </div>
+              <span class="language-choice-indicator" aria-hidden="true">✔</span>
+            </button>
+
+            <!-- Español (Latinoamérica) -->
+            <button type="button" class="language-choice-btn" data-language-code="es-419" role="radio" aria-checked="false" aria-label="Español (Latinoamérica)">
+              <span class="language-flag-wrap">
+                <svg class="language-flag-svg" viewBox="0 0 640 480" width="36" height="26" aria-hidden="true">
+                  <rect width="213.3" height="480" fill="#006847"/>
+                  <rect x="213.3" width="213.4" height="480" fill="#ffffff"/>
+                  <rect x="426.7" width="213.3" height="480" fill="#ce1126"/>
+                  <circle cx="320" cy="240" r="42" fill="#cda851"/>
+                  <circle cx="320" cy="240" r="34" fill="#936c28"/>
+                  <path d="M295 240 Q320 270 345 240 Q320 252 295 240Z" fill="#006847"/>
+                  <ellipse cx="320" cy="232" rx="14" ry="18" fill="#5c4314"/>
+                  <polygon points="320,214 326,224 314,224" fill="#f8c300"/>
+                </svg>
+              </span>
+              <div class="language-choice-info">
+                <span class="language-choice-name">Español</span>
+                <span class="language-choice-region">LATAM / ES-419</span>
+              </div>
+              <span class="language-choice-indicator" aria-hidden="true">✔</span>
+            </button>
+
+            <!-- Deutsch -->
+            <button type="button" class="language-choice-btn" data-language-code="de" role="radio" aria-checked="false" aria-label="Deutsch">
+              <span class="language-flag-wrap">
+                <svg class="language-flag-svg" viewBox="0 0 640 480" width="36" height="26" aria-hidden="true">
+                  <rect width="640" height="160" fill="#000000"/>
+                  <rect y="160" width="640" height="160" fill="#dd0000"/>
+                  <rect y="320" width="640" height="160" fill="#ffce00"/>
+                </svg>
+              </span>
+              <div class="language-choice-info">
+                <span class="language-choice-name">Deutsch</span>
+                <span class="language-choice-region">GERMANY / DE</span>
+              </div>
+              <span class="language-choice-indicator" aria-hidden="true">✔</span>
+            </button>
+
+            <!-- 日本語 -->
+            <button type="button" class="language-choice-btn" data-language-code="ja" role="radio" aria-checked="false" aria-label="日本語">
+              <span class="language-flag-wrap">
+                <svg class="language-flag-svg" viewBox="0 0 640 480" width="36" height="26" aria-hidden="true">
+                  <rect width="640" height="480" fill="#ffffff"/>
+                  <circle cx="320" cy="240" r="144" fill="#bc002d"/>
+                </svg>
+              </span>
+              <div class="language-choice-info">
+                <span class="language-choice-name">日本語</span>
+                <span class="language-choice-region">JAPAN / JA</span>
+              </div>
+              <span class="language-choice-indicator" aria-hidden="true">✔</span>
+            </button>
+
+            <!-- Português (Brasil) -->
+            <button type="button" class="language-choice-btn" data-language-code="pt-BR" role="radio" aria-checked="false" aria-label="Português (Brasil)">
+              <span class="language-flag-wrap">
+                <svg class="language-flag-svg" viewBox="0 0 640 480" width="36" height="26" aria-hidden="true">
+                  <rect width="640" height="480" fill="#009b3a"/>
+                  <polygon points="320,54 578,240 320,426 62,240" fill="#fedf00"/>
+                  <circle cx="320" cy="240" r="102" fill="#002776"/>
+                  <path d="M222 258 C248 214 340 210 418 250 C340 220 252 226 222 258 Z" fill="#ffffff"/>
+                  <circle cx="304" cy="254" r="3" fill="#ffffff"/>
+                  <circle cx="324" cy="266" r="3" fill="#ffffff"/>
+                  <circle cx="340" cy="250" r="3" fill="#ffffff"/>
+                  <circle cx="316" cy="282" r="3" fill="#ffffff"/>
+                </svg>
+              </span>
+              <div class="language-choice-info">
+                <span class="language-choice-name">Português</span>
+                <span class="language-choice-region">BRAZIL / PT-BR</span>
+              </div>
+              <span class="language-choice-indicator" aria-hidden="true">✔</span>
+            </button>
+          </div>
+        </div>
+        <div class="audio-mixer-actions crosshair-color-actions">
+          <button type="button" class="settings-action-btn settings-action-btn--save" id="save-language-select" data-i18n="ui.action.done">DONE</button>
         </div>
       </div>
     </div>
