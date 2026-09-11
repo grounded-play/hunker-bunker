@@ -12845,7 +12845,7 @@ function getDoorImage(key) {
     if (CLASS_DOORS[key]) return assetUrl(pickDoor(CLASS_DOORS[key]));
 
     // Automatically determine door image based on active/preview class
-    const activeClass = window.game?.playerType || (typeof getSelectedHeroType === 'function' ? getSelectedHeroType() : null) || activePreviewType || 'SCOUT';
+    const activeClass = window.game?.playerType || getSelectedHeroType() || activePreviewType || 'SCOUT';
     const doors = CLASS_DOORS[activeClass];
     return assetUrl(doors ? pickDoor(doors) : SPECIAL_DOORS.base);
 }
