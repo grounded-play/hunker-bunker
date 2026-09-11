@@ -4124,6 +4124,255 @@ input:checked+.slider:before {
   gap: 8px;
 }
 
+.setting-label-with-badge {
+  display: flex;
+  align-items: center;
+  gap: calc(var(--vu) * 1.5);
+  flex-wrap: wrap;
+}
+
+.setting-color-preview-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 8px;
+  background: rgba(0, 0, 0, 0.45);
+  border: 1px solid rgba(255, 159, 28, 0.35);
+  border-radius: 4px;
+}
+
+.crosshair-preview-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--crosshair-color, #ff9f1c);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  box-shadow: 0 0 6px var(--crosshair-color, #ff9f1c);
+  flex-shrink: 0;
+}
+
+.crosshair-preview-text {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: max(11px, calc(var(--font-xs) * 0.8));
+  color: var(--text-main, #e8eff7);
+  letter-spacing: 0.06em;
+}
+
+.crosshair-color-panel {
+  width: min(calc(var(--vu) * 62), 92%);
+  text-align: center;
+}
+
+.crosshair-color-hint {
+  margin: 0;
+  font-family: 'Outfit', sans-serif;
+  font-size: calc(var(--font-sm) * 0.8);
+  letter-spacing: 0.06em;
+  line-height: 1.45;
+  text-transform: uppercase;
+  color: rgba(255, 243, 220, 0.6);
+  text-align: center;
+}
+
+.crosshair-color-modal-body {
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--vu) * 2.5);
+  margin-top: calc(var(--vu) * 1.5);
+  align-items: center;
+}
+
+.crosshair-color-presets--modal {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 10px;
+  width: 100%;
+  max-width: 380px;
+}
+
+.crosshair-color-presets--modal .crosshair-color-swatch {
+  min-width: 36px;
+  min-height: 36px;
+  aspect-ratio: 1;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.crosshair-color-presets--modal .crosshair-color-swatch:hover {
+  transform: scale(1.1);
+  box-shadow: 0 0 10px var(--swatch-color);
+}
+
+.crosshair-custom-row {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+  padding-top: calc(var(--vu) * 0.8);
+}
+
+.setting-language-preview-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 3px 8px;
+  background: rgba(0, 0, 0, 0.45);
+  border: 1px solid rgba(46, 196, 255, 0.35);
+  border-radius: 4px;
+}
+
+.language-preview-flag {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 15px;
+  border-radius: 2px;
+  overflow: hidden;
+  box-shadow: 0 0 4px rgba(0, 0, 0, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  flex-shrink: 0;
+  background: #111;
+}
+
+.language-preview-flag svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+}
+
+.language-preview-text {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: max(11px, calc(var(--font-xs) * 0.8));
+  color: var(--text-main, #e8eff7);
+  letter-spacing: 0.06em;
+}
+
+/* Language Select Sub-Menu Modal */
+.language-select-panel {
+  width: min(calc(var(--vu) * 76), 94%);
+  text-align: center;
+}
+
+.language-select-hint {
+  margin-bottom: calc(var(--vu) * 1.5);
+}
+
+.language-select-modal-body {
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--vu) * 2);
+  margin-top: calc(var(--vu) * 1.5);
+  width: 100%;
+}
+
+.language-select-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 12px;
+  width: 100%;
+  max-width: 640px;
+  margin: 0 auto;
+}
+
+.language-choice-btn {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: rgba(14, 25, 42, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 6px;
+  padding: 10px 14px;
+  cursor: pointer;
+  color: var(--text-main, #e8eff7);
+  text-align: left;
+  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  position: relative;
+  outline: none;
+}
+
+.language-choice-btn:hover {
+  background: rgba(26, 45, 75, 0.95);
+  border-color: var(--accent-primary, #ff9f1c);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+
+.language-choice-btn:focus-visible {
+  border-color: #ffe14a;
+  outline: 2px solid #ffe14a;
+  outline-offset: 2px;
+  box-shadow: 0 0 12px rgba(255, 225, 74, 0.4);
+}
+
+.language-choice-btn[aria-checked="true"] {
+  background: rgba(255, 159, 28, 0.15);
+  border-color: var(--accent-primary, #ff9f1c);
+  box-shadow: inset 0 0 14px rgba(255, 159, 28, 0.25), 0 0 10px rgba(255, 159, 28, 0.35);
+}
+
+.language-choice-btn[aria-checked="true"] .language-choice-indicator {
+  color: #39ff88;
+  opacity: 1;
+  text-shadow: 0 0 6px #39ff88;
+}
+
+.language-flag-wrap {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 28px;
+  border-radius: 3px;
+  overflow: hidden;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  flex-shrink: 0;
+  background: #111;
+}
+
+.language-flag-wrap svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+}
+
+.language-choice-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+
+.language-choice-name {
+  font-family: 'Share Tech Mono', 'Outfit', sans-serif;
+  font-size: max(14px, calc(var(--font-sm) * 0.95));
+  font-weight: 700;
+  color: #ffffff;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.language-choice-region {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: max(10px, calc(var(--font-xs) * 0.75));
+  color: rgba(232, 239, 247, 0.6);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.language-choice-indicator {
+  font-size: 16px;
+  font-weight: bold;
+  color: rgba(255, 255, 255, 0.2);
+  opacity: 0.3;
+  margin-left: auto;
+  transition: all 0.18s ease;
+}
+
 .modal-content {
   background: var(--bg-panel);
   color: var(--text-main, #e8eff7) !important;
@@ -20758,4 +21007,363 @@ body.colorblind-assist #net-mode-pvp-btn.active {
     opacity: 1;
     transform: translateY(0) scale(1);
   }
+}
+
+/* Beta Season 1: exact expedition receipt in the operator's class color. */
+.return-manifest {
+  --manifest-accent: #67e8f9;
+  grid-column: 1 / -1;
+  padding: 12px 14px;
+  border: 1px solid #344b55;
+  border-left: 3px solid var(--manifest-accent);
+  background: linear-gradient(120deg, #14242b, #10191f);
+  color: #deebee;
+  font-family: 'Space Mono', monospace;
+  font-size: clamp(11px, 1.05vw, 13px);
+  border-radius: 4px;
+}
+.return-manifest[data-class="TANK"] { --manifest-accent: #ffb347; }
+.return-manifest[data-class="ENGINEER"] { --manifest-accent: #67e8ac; }
+.return-manifest__heading { display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap; color: var(--manifest-accent); font-weight: 700; letter-spacing: 1px; margin-bottom: 9px; }
+.return-manifest__columns, .return-manifest__row { display: grid; grid-template-columns: 1.3fr repeat(3, 1fr); gap: 8px; align-items: center; }
+.return-manifest__columns { color: #a8bdc5; font-size: 10px; padding-bottom: 4px; }
+.return-manifest__row { padding: 5px 0; border-top: 1px solid #2b3e47; font-variant-numeric: tabular-nums; }
+.return-manifest__columns > :not(:first-child), .return-manifest__row > :not(:first-child) { text-align: right; overflow-wrap: anywhere; }
+.return-manifest__gain { color: var(--manifest-accent); }
+.return-manifest__footnote { font-size: 11px; line-height: 1.5; color: #aec0c7; margin-top: 8px; }
+.return-manifest__next { color: var(--manifest-accent); margin-top: 10px; padding-top: 8px; border-top: 1px solid #344b55; }
+
+/* Beta Season 1: shared terminal surfaces, no new media payload. */
+.season-one-note { color: #b7ccd2; font-size: 12px; line-height: 1.55; margin: 8px 0; overflow-wrap: anywhere; }
+.season-one-chapter { color: #9ee7df; font-size: 16px; letter-spacing: 1px; padding: 18px 0 8px; }
+.season-pass-slot { min-width: 0; flex-wrap: wrap; }
+.season-pass-slot__label { overflow-wrap: anywhere; }
+.season-pass-slot .season-pass-claim-btn { white-space: normal; line-height: 1.4; }
+.season-pass-tabs { flex-wrap: wrap; }
+
+/* Tactical Dossier Decluttered Telemetry & Dispatch Drawer */
+.season-pass-chip--sync {
+  background: rgba(34, 211, 238, 0.12);
+  color: #22d3ee;
+  border: 1px solid rgba(34, 211, 238, 0.35);
+}
+.season-pass-chip--preview {
+  background: rgba(234, 179, 8, 0.12);
+  color: #fbbf24;
+  border: 1px solid rgba(234, 179, 8, 0.35);
+}
+.season-dispatch-drawer {
+  background: rgba(14, 24, 38, 0.6);
+  border: 1px solid rgba(var(--season-glow-rgb), 0.2);
+  border-left: 3px solid #ff9f1c;
+  border-radius: 6px;
+  padding: 6px 12px;
+  margin: 4px auto;
+  max-width: 900px;
+  width: 100%;
+  box-sizing: border-box;
+  transition: all 0.2s ease;
+}
+.season-dispatch-drawer[open] {
+  background: rgba(14, 24, 38, 0.9);
+  border-color: rgba(var(--season-glow-rgb), 0.45);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+}
+.season-dispatch-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  cursor: pointer;
+  font-family: 'Space Mono', monospace;
+  font-size: 11px;
+  color: #f1f5f9;
+  list-style: none;
+  user-select: none;
+}
+.season-dispatch-summary::-webkit-details-marker {
+  display: none;
+}
+.dispatch-kicker {
+  color: #ff9f1c;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  white-space: nowrap;
+}
+.dispatch-title {
+  color: #e2e8f0;
+  font-weight: 700;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: left;
+}
+.dispatch-toggle {
+  color: #94a3b8;
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  padding: 2px 6px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 3px;
+}
+.dispatch-body {
+  padding-top: 8px;
+  margin-top: 6px;
+  border-top: 1px dashed rgba(255, 255, 255, 0.1);
+  color: #cbd5e1;
+  font-family: 'Space Mono', monospace;
+  font-size: 11px;
+  line-height: 1.5;
+  text-align: left;
+  max-width: 80ch;
+}
+.season-delivery-alert {
+  font-family: 'Space Mono', monospace;
+  font-size: 11px;
+  color: #fca5a5;
+  background: rgba(239, 68, 68, 0.15);
+  border: 1px solid rgba(239, 68, 68, 0.4);
+  border-radius: 4px;
+  padding: 4px 10px;
+  margin: 4px auto;
+  text-align: center;
+}
+.season-tab-telemetry-bar {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+  padding: 6px 12px;
+  margin-bottom: 12px;
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 6px;
+  font-family: 'Space Mono', monospace;
+  font-size: 11px;
+}
+.telemetry-pill {
+  color: #94a3b8;
+  letter-spacing: 0.05em;
+}
+.telemetry-pill strong {
+  color: #38bdf8;
+  font-weight: 800;
+}
+.bounty-card__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+.bounty-xp-badge {
+  font-family: 'Space Mono', monospace;
+  font-size: 10px;
+  font-weight: 800;
+  padding: 2px 6px;
+  border-radius: 3px;
+  background: rgba(255, 159, 28, 0.2);
+  color: #ffb238;
+  border: 1px solid rgba(255, 159, 28, 0.4);
+  white-space: nowrap;
+}
+.bounty-card__desc {
+  color: #94a3b8;
+  font-size: 11px;
+  line-height: 1.4;
+  margin: 4px 0 8px 0;
+  max-width: 60ch;
+}
+.bounty-card__meter-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.bounty-card__meter {
+  flex: 1;
+  height: 5px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 999px;
+  overflow: hidden;
+}
+.bounty-card__fill {
+  height: 100%;
+  background: #2ec4b6;
+  transition: width 0.3s ease;
+}
+.bounty-card__count {
+  font-family: 'Space Mono', monospace;
+  font-size: 10px;
+  color: #cbd5e1;
+  font-weight: 700;
+}
+.fragment-ledger-bar {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 12px;
+  margin-bottom: 14px;
+}
+.fragment-pill {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 6px;
+  background: rgba(14, 24, 38, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  font-family: 'Space Mono', monospace;
+}
+.fragment-pill--common { border-left: 3px solid #94a3b8; }
+.fragment-pill--rare { border-left: 3px solid #38bdf8; }
+.fragment-icon { font-size: 14px; }
+.fragment-label { font-size: 10px; color: #94a3b8; font-weight: 700; letter-spacing: 0.06em; }
+.fragment-val { font-size: 14px; color: #ffffff; margin-left: auto; font-weight: 800; }
+.fragment-cap { font-size: 9px; color: #64748b; margin-left: 6px; }
+.recipe-cost-pill {
+  font-family: 'Space Mono', monospace;
+  font-size: 10px;
+  padding: 2px 6px;
+  border-radius: 3px;
+  background: rgba(56, 189, 248, 0.15);
+  color: #38bdf8;
+  border: 1px solid rgba(56, 189, 248, 0.35);
+  white-space: nowrap;
+}
+.class-choice-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  align-items: flex-end;
+}
+.class-choice-btns {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+.season-pass-claim-btn--choice {
+  font-size: 10px !important;
+  padding: 3px 8px !important;
+}
+.season-pass-slot__state--preview {
+  color: #fbbf24 !important;
+  opacity: 0.85;
+}
+.return-manifest__dossier-pills {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  font-family: 'Space Mono', monospace;
+  font-size: 11px;
+}
+.manifest-pill {
+  padding: 2px 8px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+.manifest-pill--tag {
+  color: #ff9f1c;
+  font-weight: 800;
+  border-color: rgba(255, 159, 28, 0.4);
+  background: rgba(255, 159, 28, 0.15);
+}
+.manifest-pill--xp {
+  color: #2ec4b6;
+  font-weight: 800;
+  border-color: rgba(46, 196, 182, 0.4);
+  background: rgba(46, 196, 182, 0.15);
+}
+.manifest-pill--bonus {
+  color: #eab308;
+  font-weight: 800;
+  border-color: rgba(234, 179, 8, 0.4);
+  background: rgba(234, 179, 8, 0.15);
+}
+.manifest-pill--sync {
+  color: #94a3b8;
+  font-size: 10px;
+}
+
+@media (max-height: 820px) {
+    #season-pass-modal .season-pass-content { max-height: 92vh; }
+    #season-pass-progress-summary .season-one-note { margin: 4px 0; font-size: 11px; }
+}
+@media (prefers-reduced-motion: reduce) {
+    .progression-reward-overlay *, .season-pass-progress-fill { animation: none !important; transition: none !important; }
+}
+
+/* ── Accessibility: subtitle sizing, backdrop, and contrast ──────────
+   Backs the Steam store accessibility tags. State lives in
+   src/accessibilitySettings.js; appearance lives here. Both custom
+   properties carry defaults so dialogue styles correctly even if the
+   settings module never runs (a fresh profile mid-cutscene, say). */
+:root {
+  --hb-subtitle-scale: 1;
+  --hb-subtitle-backdrop: rgba(4, 8, 14, 0.55);
+}
+
+/* Subtitle size multiplies the existing clamp rather than replacing it, so
+   the responsive floor and ceiling still apply at every setting. */
+.mothership-line__text {
+  font-size: clamp(
+    calc(20px * var(--hb-subtitle-scale)),
+    calc(var(--vu) * 3.4 * var(--hb-subtitle-scale)),
+    calc(40px * var(--hb-subtitle-scale))
+  );
+}
+
+/* The backdrop sits on the text itself, not the panel, so it tracks the
+   line box and stays useful over bright scene content. */
+.mothership-line__body {
+  background: var(--hb-subtitle-backdrop);
+  border-radius: 6px;
+  padding: calc(var(--vu) * 0.6) calc(var(--vu) * 0.9);
+  transition: background 140ms ease;
+}
+
+/* ── Contrast Controls ──────────────────────────────────────────────
+   Two levels above normal. `high` lifts panel opacity and drops text
+   shadows that soften glyph edges; `max` also removes the scanline and
+   flicker overlays, which are the single biggest legibility cost in the
+   terminal UI for low-vision players. */
+body.contrast-high .mothership-dialogue-body,
+body.contrast-high .modal-content,
+body.contrast-high .settings-modal-panel {
+  background: rgba(2, 5, 10, 0.94);
+  border-color: rgba(var(--terminal-glow-rgb), 0.55);
+}
+
+body.contrast-high .mothership-line__text,
+body.contrast-high .setting-item > span,
+body.contrast-high .settings-category-header {
+  color: #ffffff;
+  text-shadow: none;
+}
+
+body.contrast-max .mothership-dialogue-body,
+body.contrast-max .modal-content,
+body.contrast-max .settings-modal-panel {
+  background: #000000;
+  border-color: #ffffff;
+}
+
+body.contrast-max .mothership-line__text,
+body.contrast-max .setting-item > span,
+body.contrast-max .settings-category-header,
+body.contrast-max .modal-title {
+  color: #ffffff;
+  text-shadow: none;
+  letter-spacing: 0.06em;
+}
+
+body.contrast-max .terminal-scanline,
+body.contrast-max .terminal-flicker {
+  display: none;
+}
+
+body.contrast-max .vitals-panel,
+body.contrast-max .hud-panel {
+  background: #000000;
+  border-color: #ffffff;
 }

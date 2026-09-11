@@ -276,13 +276,13 @@
         </section>
 
         <div class="title-menu">
-          <button class="title-menu-btn" id="title-continue-btn" disabled>CONTINUE</button>
-          <button class="title-menu-btn title-menu-btn--secondary hidden" id="title-switch-class-btn">SWITCH CLASS</button>
-          <button class="title-menu-btn" id="title-newrun-btn">NEW RUN</button>
-          <button class="title-menu-btn" id="title-achievements-btn">ACHIEVEMENTS</button>
-          <button class="title-menu-btn" id="title-settings-btn">SETTINGS</button>
-          <button class="title-menu-btn" id="title-about-btn">ABOUT</button>
-          <button class="title-menu-btn title-menu-btn--quit" id="title-quit-btn">QUIT GAME</button>
+          <button class="title-menu-btn" id="title-continue-btn" data-i18n="ui.menu.continue" disabled>CONTINUE</button>
+          <button class="title-menu-btn title-menu-btn--secondary hidden" id="title-switch-class-btn" data-i18n="ui.menu.switch_class">SWITCH CLASS</button>
+          <button class="title-menu-btn" id="title-newrun-btn" data-i18n="ui.menu.new_run">NEW RUN</button>
+          <button class="title-menu-btn" id="title-achievements-btn" data-i18n="ui.menu.achievements">ACHIEVEMENTS</button>
+          <button class="title-menu-btn" id="title-settings-btn" data-i18n="ui.menu.settings">SETTINGS</button>
+          <button class="title-menu-btn" id="title-about-btn" data-i18n="ui.menu.about">ABOUT</button>
+          <button class="title-menu-btn title-menu-btn--quit" id="title-quit-btn" data-i18n="ui.menu.quit">QUIT GAME</button>
         </div>
       </div>
     </div>
@@ -370,46 +370,46 @@
               <div class="menu-header-actions">
                 <div class="menu-command-column" aria-label="Operations and Steam commands">
                   <div class="menu-command">
-                    <button class="start-btn start-btn--daily" id="daily-ops-btn" title="One attempt per day — fixed world seed">DAILY OPS</button>
+                    <button class="start-btn start-btn--daily" id="daily-ops-btn" data-i18n="ui.hub.daily_ops" title="One attempt per day — fixed world seed">DAILY OPS</button>
                     <div class="menu-command__status daily-ops-status" id="daily-ops-status"></div>
                   </div>
                   <div class="menu-command">
-                    <button class="start-btn start-btn--roster" id="roster-btn" title="Operator roster — callsign and equipped loadout">▣ ROSTER</button>
+                    <button class="start-btn start-btn--roster" id="roster-btn" data-i18n="ui.hub.roster" title="Operator roster — callsign and equipped loadout">▣ ROSTER</button>
                     <div class="menu-command__status" id="roster-command-status">0 / 0 ARSENAL</div>
                   </div>
                   <div class="menu-command" id="steam-vault-command">
-                    <button class="start-btn start-btn--vault" id="steam-vault-btn" title="Steam Vault — view Steam-owned cosmetics">◈ STEAM VAULT</button>
+                    <button class="start-btn start-btn--vault" id="steam-vault-btn" data-i18n="ui.hub.vault" title="Steam Vault — view Steam-owned cosmetics">◈ STEAM VAULT</button>
                     <div class="menu-command__status" id="vault-command-status">OFFLINE</div>
                   </div>
                   <div class="menu-command hidden" id="archive-sims-command">
-                    <button class="start-btn start-btn--archive-sims" id="archive-sims-btn" title="Archive Simulations — unlockable story mini-games">◈ ARCHIVE SIMS</button>
+                    <button class="start-btn start-btn--archive-sims" id="archive-sims-btn" data-i18n="ui.hub.archive_sims" title="Archive Simulations — unlockable story mini-games">◈ ARCHIVE SIMS</button>
                     <div class="menu-command__status" id="archive-sims-command-status">RGB</div>
                   </div>
                   <div class="menu-command menu-command--fab hidden" id="fabrication-command">
-                    <button class="start-btn start-btn--fab" id="fabrication-btn" title="Fabrication Bay — print gear from salvage (unlocks once the base is powered)">◇ FAB BAY</button>
+                    <button class="start-btn start-btn--fab" id="fabrication-btn" data-i18n="ui.hub.fab_bay" title="Fabrication Bay — print gear from salvage (unlocks once the base is powered)">◇ FAB BAY</button>
                     <div class="menu-command__status" id="fab-command-status">0 / 0 PRINTED</div>
                   </div>
                 </div>
                 <div class="menu-command-column" aria-label="Records and Dossier commands">
                   <div class="menu-command">
-                    <button class="start-btn start-btn--archive" id="archive-btn" title="Bunker Archive — discovered lore logs">◈ ARCHIVE</button>
+                    <button class="start-btn start-btn--archive" id="archive-btn" data-i18n="ui.hub.archive" title="Bunker Archive — discovered lore logs">◈ ARCHIVE</button>
                     <div class="menu-command__status" id="archive-command-status">0 / 27 LOGS</div>
                   </div>
                   <div class="menu-command">
-                    <button class="start-btn start-btn--codex" id="codex-btn" title="Field Codex — catalogued hostiles, infrastructure, and phenomena">❑ CODEX</button>
+                    <button class="start-btn start-btn--codex" id="codex-btn" data-i18n="ui.hub.codex" title="Field Codex — catalogued hostiles, infrastructure, and phenomena">❑ CODEX</button>
                     <div class="menu-command__status" id="codex-command-status">0 / 0 INTEL</div>
                   </div>
                   <div class="menu-command" id="season-pass-command">
-                    <button class="start-btn start-btn--dossier" id="season-pass-btn" title="Tactical Dossier — Season 0 battle pass progression">◈ DOSSIER</button>
+                    <button class="start-btn start-btn--dossier" id="season-pass-btn" data-i18n="ui.hub.dossier" title="Tactical Dossier — Beta Season 1 progression">◈ DOSSIER</button>
                     <div class="menu-command__status" id="season-pass-command-status">TIER 0 / 50</div>
                   </div>
                   <div class="menu-command hidden" id="achievements-command">
-                    <button class="start-btn start-btn--achievements" id="achievements-btn" title="Achievement records — unlocked run milestones">ACHIEVEMENTS</button>
+                    <button class="start-btn start-btn--achievements" id="achievements-btn" data-i18n="ui.hub.achievements" title="Achievement records — unlocked run milestones">ACHIEVEMENTS</button>
                     <div class="menu-command__status" id="achievements-command-status">LOCKED</div>
                   </div>
                 </div>
               </div>
-              <button class="start-btn map-initialize-btn" id="start-game">INITIALIZE</button>
+              <button class="start-btn map-initialize-btn" id="start-game" data-i18n="ui.hub.initialize">INITIALIZE</button>
               <div class="module-scanline"></div>
             </div>
 
@@ -544,7 +544,7 @@
         <div class="terminal-scanline"></div>
         <div class="season-pass-header">
           <button class="close-modal" id="close-season-pass-modal" aria-label="Close Tactical Dossier">×</button>
-          <div class="season-pass-header-kicker">◈ SUB-TERRAN SECTOR OPERATIONS // SEASON 0</div>
+          <div class="season-pass-header-kicker">◈ SUB-TERRAN SECTOR OPERATIONS // BETA SEASON 1</div>
           <div class="season-pass-title">TACTICAL DOSSIER <span class="season-pass-title-accent">& DIRECTIVES</span></div>
           <div id="season-pass-progress-summary" class="season-pass-progress-summary"></div>
         </div>
@@ -579,18 +579,18 @@
         <div class="terminal-scanline"></div>
         <div class="roster-header">
           <button class="close-modal" id="close-roster-modal">×</button>
-          <div class="roster-title" id="roster-title-label">▣ OPERATOR DOSSIER // DEPLOYMENT TELEMETRY</div>
+          <div class="roster-title" id="roster-title-label" data-i18n="ui.roster.title">▣ OPERATOR DOSSIER // DEPLOYMENT TELEMETRY</div>
           <div class="roster-id-row">
             <label class="roster-callsign-label" for="roster-callsign-input">CALLSIGN:</label>
             <input type="text" id="roster-callsign-input" class="operator-callsign-input" maxlength="16" placeholder="AGENT-01" autocomplete="off" spellcheck="false">
-            <button type="button" class="dev-btn dev-btn--accent" id="roster-randomize-btn" title="Randomize Callsign">🎲 RANDOM</button>
+            <button type="button" class="dev-btn dev-btn--accent" id="roster-randomize-btn" title="Randomize Callsign" data-i18n-title="ui.roster.randomize">🎲 RANDOM</button>
           </div>
           <!-- Run Telemetry Summary Block -->
           <div id="roster-run-telemetry" class="roster-run-telemetry">
-            <div class="roster-telemetry-chip"><span class="label">DEEPEST SECTOR:</span> <b id="roster-stat-depth">SECTOR 0</b></div>
-            <div class="roster-telemetry-chip"><span class="label">TOTAL DISTANCE:</span> <b id="roster-stat-distance">0u</b></div>
-            <div class="roster-telemetry-chip"><span class="label">HOSTILES:</span> <b id="roster-stat-kills">0 ELIMINATED</b></div>
-            <div class="roster-telemetry-chip"><span class="label">BLACK BOX:</span> <b id="roster-stat-blackbox">NONE</b></div>
+            <div class="roster-telemetry-chip"><span class="label" data-i18n="ui.roster.deepest_sector">DEEPEST SECTOR:</span> <b id="roster-stat-depth">SECTOR 0</b></div>
+            <div class="roster-telemetry-chip"><span class="label" data-i18n="ui.roster.total_distance">TOTAL DISTANCE:</span> <b id="roster-stat-distance">0u</b></div>
+            <div class="roster-telemetry-chip"><span class="label" data-i18n="ui.roster.hostiles">HOSTILES:</span> <b id="roster-stat-kills">0 ELIMINATED</b></div>
+            <div class="roster-telemetry-chip"><span class="label" data-i18n="ui.roster.black_box">BLACK BOX:</span> <b id="roster-stat-blackbox">NONE</b></div>
           </div>
           <div class="roster-sub-bar">
             <div class="roster-stat" id="roster-fab-count">ARSENAL: 0 / 0 SCHEMATICS FABRICATED</div>
@@ -602,18 +602,18 @@
         <div class="roster-section-label">EQUIPPED STEAM COSMETICS</div>
         <div id="roster-cosmetics-row" class="roster-cosmetics-row">
           <div class="roster-cosmetic-chip">
-            <span class="label">PATCH:</span> <span id="roster-equipped-patch">NONE</span>
+            <span class="label" data-i18n="ui.roster.patch">PATCH:</span> <span id="roster-equipped-patch">NONE</span>
           </div>
           <div class="roster-cosmetic-chip">
-            <span class="label">DECAL:</span> <span id="roster-equipped-decal">NONE</span>
+            <span class="label" data-i18n="ui.roster.decal">DECAL:</span> <span id="roster-equipped-decal">NONE</span>
           </div>
           <div class="roster-cosmetic-chip">
-            <span class="label">FINISH:</span> <span id="roster-equipped-weapon-finish">NONE</span>
+            <span class="label" data-i18n="ui.roster.finish">FINISH:</span> <span id="roster-equipped-weapon-finish">NONE</span>
           </div>
         </div>
-        <div class="roster-hint" id="roster-hint">Fabricate weapons in the FAB BAY to equip them here. Customize cosmetics in the STEAM VAULT.</div>
+        <div class="roster-hint" id="roster-hint" data-i18n="ui.roster.hint">Fabricate weapons in the FAB BAY to equip them here. Customize cosmetics in the STEAM VAULT.</div>
         <div class="roster-footer-actions">
-          <button type="button" class="start-btn roster-confirm-btn" id="roster-confirm-btn">CONFIRM & DEPLOY</button>
+          <button type="button" class="start-btn roster-confirm-btn" id="roster-confirm-btn" data-i18n="ui.roster.confirm">CONFIRM & DEPLOY</button>
         </div>
       </div>
     </div>
@@ -677,7 +677,7 @@
         <div class="terminal-scanline"></div>
         <div class="vault-header">
           <button class="close-modal" id="close-steam-vault-modal" aria-label="Close Steam Vault">×</button>
-          <div class="vault-header-kicker">◈ SECURE STEAM INVENTORY & ITEM DISPENSARY // APPID 4957040</div>
+          <div class="vault-header-kicker">◈ APPID 4957040 // SECURE DISPENSARY</div>
           <div class="vault-title">◈ STEAM VAULT <span class="vault-title-accent">// ITEM DISPATCH</span></div>
           <div class="vault-callsign-row">
             <span class="vault-callsign" id="vault-player-name">OFFLINE OPERATOR</span>
@@ -713,8 +713,7 @@
               </div>
               <div class="vault-details-name" id="vault-details-name">SELECT AN ITEM</div>
               <div class="vault-details-rarity" id="vault-details-rarity">—</div>
-              <div class="vault-details-desc" id="vault-details-desc">Select any item from the grid to view Steam ownership details.</div>
-              <div class="vault-steam-disclaimer">All items and cosmetics are securely managed through your linked Steam account.</div>
+              <div class="vault-details-desc" id="vault-details-desc">Select an item to view Steam ownership and trade metadata.</div>
               <div class="vault-details-meta">
                 <span class="vault-meta-tag" id="vault-meta-tradable">TRADABLE</span>
                 <span class="vault-meta-tag" id="vault-meta-marketable">MARKETABLE</span>
@@ -733,10 +732,11 @@
             <div class="vault-store-intro">
               <div class="vault-store-intro__badges">
                 <span class="vault-notice-badge">🛡️ STEAM SECURED</span>
-                <span class="vault-notice-badge vault-notice-badge--odds">⚖️ TRANSPARENT ODDS</span>
+                <span class="vault-notice-badge vault-notice-badge--odds">⚖️ 100% DISCLOSED ODDS</span>
+                <span class="vault-notice-badge">📦 F2P IN-GAME DROPS</span>
               </div>
               <div class="vault-store-intro__body">
-                <strong>Deep Relic Caches</strong> drop free during play. <strong>Cache Keys</strong> are sold to decrypt caches. Roll rates match exact server tables.
+                <strong>DEEP RELIC CACHES</strong> decrypt with <strong>CACHE KEYS</strong> · Rates match server tables.
               </div>
             </div>
 
@@ -767,7 +767,7 @@
               <div class="vault-store-open-row">
                 <div class="vault-store-open-info">
                   <span class="vault-store-open-icon">◈</span>
-                  <span class="vault-store-open-status" id="vault-store-open-status">No Cache + Key pair detected in your inventory.</span>
+                  <span class="vault-store-open-status" id="vault-store-open-status">Key & Cache required for decryption.</span>
                 </div>
                 <button class="start-btn vault-store-open-btn hidden" id="vault-store-open-btn">◈ OPEN DEEP RELIC CACHE</button>
               </div>
@@ -789,10 +789,11 @@
             <div class="vault-store-intro">
               <div class="vault-store-intro__badges">
                 <span class="vault-notice-badge">🔥 TRADE-UP SMELTING</span>
-                <span class="vault-notice-badge vault-notice-badge--odds">⚖️ 5:1 GUARANTEED TIER-UP</span>
+                <span class="vault-notice-badge vault-notice-badge--odds">⚖️ 5:1 TIER UPGRADE</span>
+                <span class="vault-notice-badge">◈ PERMANENT MERGE</span>
               </div>
               <div class="vault-store-intro__body">
-                Combine 5 owned items of the same rarity into 1 guaranteed item at the next rarity tier. Consumed items are permanently removed from your inventory.
+                <strong>5× SAME-TIER ITEMS</strong> ➔ <strong>1× NEXT-TIER ITEM</strong> · Consumed items are removed.
               </div>
             </div>
 
@@ -814,7 +815,7 @@
               <div class="vault-store-open-row">
                 <div class="vault-store-open-info">
                   <span class="vault-store-open-icon">◈</span>
-                  <span class="vault-store-open-status" id="vault-smelter-status">Duplicate unboxes award bonus Shards. Spend them here on specific items.</span>
+                  <span class="vault-store-open-status" id="vault-smelter-status">Bonus Shards from duplicate unboxes are redeemable here.</span>
                 </div>
               </div>
               <div class="vault-smelter-grid" id="vault-dispensary-grid"></div>
@@ -1406,7 +1407,7 @@
             </div>
           </div>
 
-          <div class="game-over-bank-note" id="go-bank-note">BANKED RESOURCES PRESERVED</div>
+          <section class="return-manifest" id="go-bank-note" aria-label="Expedition earnings and bank balances">BANKED RESOURCES PRESERVED</section>
           <div class="game-over-bank-note game-over-bank-note--cards" id="go-run-cards">RUN PRESSURE: NONE</div>
           <div class="game-over-bank-note game-over-bank-note--recoverable" id="go-recoverable-note">BLACK BOX: NONE</div>
           <div class="game-over-bank-note game-over-bank-note--steam hidden" id="go-steam-grant-note"></div>
@@ -2136,25 +2137,25 @@
     <div id="settings-popup" class="modal hidden">
       <div class="modal-content settings-modal-panel">
         <div class="settings-sticky-header">
-          <h2 class="modal-title">SYSTEM SETTINGS</h2>
-          <button class="close-modal" id="close-settings" aria-label="Close system settings">×</button>
+          <h2 class="modal-title" data-i18n="ui.settings.title">SYSTEM SETTINGS</h2>
+          <button class="close-modal" id="close-settings" data-i18n-aria-label="ui.aria.close_settings" aria-label="Close system settings">×</button>
         </div>
 
         <div class="settings-modal-content">
           <!-- Section 1: Display & Graphics -->
         <div class="settings-category-group">
-          <div class="settings-category-header">DISPLAY & GRAPHICS</div>
+          <div class="settings-category-header" data-i18n="ui.settings.cat_display">DISPLAY & GRAPHICS</div>
           <!-- Stage Resolution was a developer layout label, not a renderer
                setting. Keep the internal dev-console preset, but do not offer
                an inert control in player settings. -->
           <div class="setting-item">
-            <span>NIGHT VISION (NO FOG/NIGHT)</span>
+            <span data-i18n="ui.settings.night_vision">NIGHT VISION (NO FOG/NIGHT)</span>
             <label class="toggle"><input type="checkbox" id="main-nightvision-toggle"> <span class="slider"></span></label>
           </div>
           <!-- Camera Shake had no camera-effect consumer. Re-add only with a
                real runtime implementation. -->
           <div class="setting-item hidden" id="debug-overlay-setting-row">
-            <span>DEBUG OVERLAY</span>
+            <span data-i18n="ui.settings.debug_overlay">DEBUG OVERLAY</span>
             <label class="toggle"><input type="checkbox" id="main-debug-toggle"> <span class="slider"></span></label>
           </div>
           <!-- Debug Overlay is revealed only after QA authorization. -->
@@ -2162,84 +2163,103 @@
 
         <!-- Section 2: Audio & Voice -->
         <div class="settings-category-group">
-          <div class="settings-category-header">AUDIO & VOICE</div>
+          <div class="settings-category-header" data-i18n="ui.settings.cat_audio">AUDIO & VOICE</div>
           <div class="setting-item setting-item--action">
-            <span>AUDIO MIXER</span>
-            <button type="button" class="calibrate-btn settings-action-btn" id="open-audio-mixer">OPEN</button>
+            <span data-i18n="ui.settings.audio_mixer">AUDIO MIXER</span>
+            <button type="button" class="calibrate-btn settings-action-btn" id="open-audio-mixer" data-i18n="ui.action.open">OPEN</button>
           </div>
           <div class="setting-item">
-            <span>COMMENTARY MODE</span>
+            <span data-i18n="ui.settings.commentary">COMMENTARY MODE</span>
             <label class="toggle"><input type="checkbox" id="main-commentary-toggle"> <span class="slider"></span></label>
           </div>
         </div>
 
         <!-- Section 3: Gameplay & Accessibility -->
         <div class="settings-category-group">
-          <div class="settings-category-header">GAMEPLAY & ACCESSIBILITY</div>
+          <div class="settings-category-header" data-i18n="ui.settings.cat_gameplay">GAMEPLAY & ACCESSIBILITY</div>
+          <div class="setting-item setting-item--action">
+            <div class="setting-label-with-badge">
+              <span data-i18n="ui.settings.language">LANGUAGE / 语言 / ЯЗЫК</span>
+              <span class="setting-color-preview-badge setting-language-preview-badge" id="language-preview-badge" title="Active language">
+                <span class="language-preview-flag" id="language-badge-flag"></span>
+                <span class="language-preview-text" id="language-badge-text">ENGLISH</span>
+              </span>
+            </div>
+            <button type="button" class="calibrate-btn settings-action-btn" id="open-language-select" data-i18n="ui.action.open">OPEN</button>
+            <select id="setting-language-select" data-i18n-aria-label="ui.aria.language_select" class="settings-select visually-hidden" aria-label="Game language" tabindex="-1" aria-hidden="true" style="display:none">
+              <option value="en" selected>English</option>
+              <option value="zh-CN">简体中文 (Simplified Chinese)</option>
+              <option value="ru">Русский (Russian)</option>
+              <option value="es-419">Español (Latinoamérica)</option>
+              <option value="de">Deutsch (German)</option>
+              <option value="ja">日本語 (Japanese)</option>
+              <option value="pt-BR">Português (Brasil)</option>
+            </select>
+          </div>
           <!-- Run Difficulty was a hardcoded readout with no selectable or
                runtime difficulty system, so it is intentionally not shown. -->
           <div class="setting-item">
-            <span>UI ACCESSIBILITY SCALE</span>
+            <span data-i18n="ui.settings.ui_scale">UI ACCESSIBILITY SCALE</span>
             <select id="setting-ui-scale" class="settings-select">
-              <option value="100" selected>100% (STANDARD)</option>
-              <option value="115">115% (LARGE)</option>
-              <option value="130">130% (EXTRA LARGE)</option>
-              <option value="150">150% (MAX ACCESSIBILITY)</option>
+              <option value="100" selected data-i18n="ui.opt.scale_100">100% (STANDARD)</option>
+              <option value="115" data-i18n="ui.opt.scale_115">115% (LARGE)</option>
+              <option value="130" data-i18n="ui.opt.scale_130">130% (EXTRA LARGE)</option>
+              <option value="150" data-i18n="ui.opt.scale_150">150% (MAX ACCESSIBILITY)</option>
             </select>
           </div>
           <div class="setting-item">
-            <span>MINIMUM TEXT FLOOR</span>
+            <span data-i18n="ui.settings.text_floor">MINIMUM TEXT FLOOR</span>
             <select id="setting-text-floor" class="settings-select">
-              <option value="16">16px (COMPACT)</option>
-              <option value="18" selected>18px (DECK DEFAULT)</option>
-              <option value="20">20px (LARGE)</option>
-              <option value="22">22px (EXTRA LARGE)</option>
-              <option value="24">24px (MAX CLARITY)</option>
+              <option value="16" data-i18n="ui.opt.text_16">16px (COMPACT)</option>
+              <option value="18" selected data-i18n="ui.opt.text_18">18px (DECK DEFAULT)</option>
+              <option value="20" data-i18n="ui.opt.text_20">20px (LARGE)</option>
+              <option value="22" data-i18n="ui.opt.text_22">22px (EXTRA LARGE)</option>
+              <option value="24" data-i18n="ui.opt.text_24">24px (MAX CLARITY)</option>
             </select>
           </div>
           <div class="setting-item">
-            <span>TEXT SPEED</span>
+            <span data-i18n="ui.settings.text_speed">TEXT SPEED</span>
             <select id="setting-text-speed" class="settings-select">
-              <option value="normal">NORMAL</option>
-              <option value="fast">FAST</option>
-              <option value="instant">INSTANT</option>
+              <option value="normal" data-i18n="ui.opt.speed_normal">NORMAL</option>
+              <option value="fast" data-i18n="ui.opt.speed_fast">FAST</option>
+              <option value="instant" data-i18n="ui.opt.speed_instant">INSTANT</option>
             </select>
           </div>
           <div class="setting-item">
-            <span>GAMEPLAY CAMERA</span>
-            <select id="setting-camera-mode" class="settings-select" aria-label="Gameplay camera">
-              <option value="third-person" selected>THIRD-PERSON — SHOULDER</option>
-              <option value="isometric">ISOMETRIC — CLASSIC</option>
+            <span data-i18n="ui.settings.camera_mode">GAMEPLAY CAMERA</span>
+            <select id="setting-camera-mode" data-i18n-aria-label="ui.aria.camera_mode" class="settings-select" aria-label="Gameplay camera">
+              <option value="third-person" selected data-i18n="ui.opt.cam_third">THIRD-PERSON — SHOULDER</option>
+              <option value="isometric" data-i18n="ui.opt.cam_iso">ISOMETRIC — CLASSIC</option>
             </select>
           </div>
           <div class="setting-item">
-            <span>CAMERA DISTANCE</span>
-            <select id="setting-camera-distance" class="settings-select" aria-label="Third-person camera distance">
-              <option value="close" selected>CLOSE</option>
-              <option value="standard">STANDARD</option>
-              <option value="wide">WIDE</option>
+            <span data-i18n="ui.settings.camera_distance">CAMERA DISTANCE</span>
+            <select id="setting-camera-distance" data-i18n-aria-label="ui.aria.camera_distance" class="settings-select" aria-label="Third-person camera distance">
+              <option value="close" selected data-i18n="ui.opt.dist_close">CLOSE</option>
+              <option value="standard" data-i18n="ui.opt.dist_standard">STANDARD</option>
+              <option value="wide" data-i18n="ui.opt.dist_wide">WIDE</option>
             </select>
           </div>
           <div class="setting-item">
-            <span>CAMERA FOLLOW</span>
-            <select id="setting-camera-follow" class="settings-select" aria-label="Third-person camera follow responsiveness">
-              <option value="tight" selected>TIGHT</option>
-              <option value="balanced">BALANCED</option>
-              <option value="smooth">SMOOTH / CINEMATIC</option>
+            <span data-i18n="ui.settings.camera_follow">CAMERA FOLLOW</span>
+            <select id="setting-camera-follow" data-i18n-aria-label="ui.aria.camera_follow" class="settings-select" aria-label="Third-person camera follow responsiveness">
+              <option value="tight" selected data-i18n="ui.opt.follow_tight">TIGHT</option>
+              <option value="balanced" data-i18n="ui.opt.follow_balanced">BALANCED</option>
+              <option value="smooth" data-i18n="ui.opt.follow_smooth">SMOOTH / CINEMATIC</option>
             </select>
           </div>
           <div class="setting-item">
-            <span>TURN / AIM SPEED</span>
+            <span data-i18n="ui.settings.turn_speed">TURN / AIM SPEED</span>
             <div class="settings-choice-control">
-              <select id="setting-aim-sensitivity" class="settings-select" aria-label="Right stick aim speed">
-              <option value="0.5">50% (SLOW)</option>
-              <option value="0.75">75% (LIGHT)</option>
-              <option value="1.0" selected>100% (STANDARD)</option>
-              <option value="1.25">125% (FAST)</option>
-              <option value="1.5">150% (VERY FAST)</option>
-              <option value="2.0">200% (HYPER)</option>
+              <select id="setting-aim-sensitivity" data-i18n-aria-label="ui.aria.aim_speed" class="settings-select" aria-label="Right stick aim speed">
+              <option value="0.5" data-i18n="ui.opt.turn_50">50% (SLOW)</option>
+              <option value="0.75" data-i18n="ui.opt.turn_75">75% (LIGHT)</option>
+              <option value="1.0" selected data-i18n="ui.opt.scale_100">100% (STANDARD)</option>
+              <option value="1.25" data-i18n="ui.opt.turn_125">125% (FAST)</option>
+              <option value="1.5" data-i18n="ui.opt.turn_150">150% (VERY FAST)</option>
+              <option value="2.0" data-i18n="ui.opt.turn_200">200% (HYPER)</option>
               </select>
-              <div class="sensitivity-presets" role="group" aria-label="Right stick aim speed presets">
+              <div class="sensitivity-presets" role="group" data-i18n-aria-label="ui.aria.aim_speed_presets" aria-label="Right stick aim speed presets">
                 <button type="button" data-aim-sensitivity="0.5">50%</button>
                 <button type="button" data-aim-sensitivity="0.75">75%</button>
                 <button type="button" data-aim-sensitivity="1">100%</button>
@@ -2247,62 +2267,86 @@
                 <button type="button" data-aim-sensitivity="1.5">150%</button>
                 <button type="button" data-aim-sensitivity="2">200%</button>
               </div>
-              <span class="settings-controller-hint">D-PAD ◀ ▶ TO ADJUST</span>
+              <span class="settings-controller-hint" data-i18n="ui.settings.dpad_hint">D-PAD ◀ ▶ TO ADJUST</span>
             </div>
           </div>
           <div class="setting-item">
-            <span>INVERT AIM Y-AXIS</span>
+            <span data-i18n="ui.settings.invert_y">INVERT AIM Y-AXIS</span>
             <label class="toggle"><input type="checkbox" id="setting-invert-y-toggle"> <span class="slider"></span></label>
           </div>
-          <div class="setting-item">
-            <span>CROSSHAIR COLOR</span>
-            <div class="crosshair-color-controls">
-              <div id="crosshair-color-presets" class="crosshair-color-presets" role="group" aria-label="Crosshair color presets">
-                <button type="button" class="crosshair-color-swatch" data-crosshair-color="#ff9f1c" style="--swatch-color:#ff9f1c" aria-label="Orange crosshair"></button>
-                <button type="button" class="crosshair-color-swatch" data-crosshair-color="#ffffff" style="--swatch-color:#ffffff" aria-label="White crosshair"></button>
-                <button type="button" class="crosshair-color-swatch" data-crosshair-color="#39ff88" style="--swatch-color:#39ff88" aria-label="Green crosshair"></button>
-                <button type="button" class="crosshair-color-swatch" data-crosshair-color="#2ec4ff" style="--swatch-color:#2ec4ff" aria-label="Cyan crosshair"></button>
-                <button type="button" class="crosshair-color-swatch" data-crosshair-color="#ffe14a" style="--swatch-color:#ffe14a" aria-label="Yellow crosshair"></button>
-                <button type="button" class="crosshair-color-swatch" data-crosshair-color="#ff4f64" style="--swatch-color:#ff4f64" aria-label="Red crosshair"></button>
-                <button type="button" class="crosshair-color-swatch" data-crosshair-color="#d76bff" style="--swatch-color:#d76bff" aria-label="Purple crosshair"></button>
-              </div>
-              <label class="crosshair-custom-color">CUSTOM <input type="color" id="setting-crosshair-color" class="settings-color-picker" value="#ff9f1c" aria-label="Custom crosshair color"></label>
+          <div class="setting-item setting-item--action">
+            <div class="setting-label-with-badge">
+              <span data-i18n="ui.settings.crosshair_color">CROSSHAIR COLOR</span>
+              <span class="setting-color-preview-badge" id="crosshair-preview-badge" title="Active crosshair color">
+                <span class="crosshair-preview-dot" id="crosshair-badge-dot"></span>
+                <span class="crosshair-preview-text" id="crosshair-badge-text">#FF9F1C</span>
+              </span>
             </div>
+            <button type="button" class="calibrate-btn settings-action-btn" id="open-crosshair-color" data-i18n="ui.action.open">OPEN</button>
           </div>
           <div class="setting-item">
-            <span>COLORBLIND ASSIST</span>
+            <span data-i18n="ui.settings.colorblind">COLORBLIND ASSIST</span>
             <label class="toggle"><input type="checkbox" id="setting-colorblind-toggle"> <span class="slider"></span></label>
           </div>
+          <div class="setting-item">
+            <span data-i18n="ui.settings.gore">GORE EFFECTS (DISMEMBERMENT)</span>
+            <label class="toggle"><input type="checkbox" id="setting-gore-toggle" checked> <span class="slider"></span></label>
+          </div>
+          <div class="setting-item">
+            <span data-i18n="ui.settings.subtitle_size">SUBTITLE SIZE</span>
+            <select id="setting-subtitle-size" class="settings-select">
+              <option value="small" data-i18n="ui.opt.sub_small">SMALL</option>
+              <option value="medium" selected data-i18n="ui.opt.sub_medium">MEDIUM (DEFAULT)</option>
+              <option value="large" data-i18n="ui.opt.sub_large">LARGE</option>
+              <option value="xlarge" data-i18n="ui.opt.sub_xlarge">EXTRA LARGE</option>
+            </select>
+          </div>
+          <div class="setting-item">
+            <span data-i18n="ui.settings.subtitle_backdrop">SUBTITLE BACKGROUND</span>
+            <select id="setting-subtitle-backdrop" class="settings-select">
+              <option value="off" data-i18n="ui.opt.backdrop_off">OFF</option>
+              <option value="dim" selected data-i18n="ui.opt.backdrop_dim">DIMMED (DEFAULT)</option>
+              <option value="solid" data-i18n="ui.opt.backdrop_solid">SOLID</option>
+            </select>
+          </div>
+          <div class="setting-item">
+            <span data-i18n="ui.settings.contrast">HUD CONTRAST</span>
+            <select id="setting-contrast" class="settings-select">
+              <option value="normal" selected data-i18n="ui.opt.contrast_normal">NORMAL (DEFAULT)</option>
+              <option value="high" data-i18n="ui.opt.contrast_high">HIGH</option>
+              <option value="max" data-i18n="ui.opt.contrast_max">MAXIMUM (NO SCANLINES)</option>
+            </select>
+          </div>
           <div class="setting-item setting-item--action">
-            <span>DESKTOP CONTROLS</span>
-            <button type="button" class="calibrate-btn settings-action-btn" id="open-controls">REMAP</button>
+            <span data-i18n="ui.settings.desktop_controls">DESKTOP CONTROLS</span>
+            <button type="button" class="calibrate-btn settings-action-btn" id="open-controls" data-i18n="ui.action.remap">REMAP</button>
           </div>
         </div>
 
         <!-- Section 4: Operator & System Data -->
         <div class="settings-category-group">
-          <div class="settings-category-header">OPERATOR & SYSTEM DATA</div>
+          <div class="settings-category-header" data-i18n="ui.settings.cat_operator">OPERATOR & SYSTEM DATA</div>
           <div class="setting-item setting-item--operator">
-            <span>OPERATOR CALLSIGN</span>
-            <input type="text" id="operator-callsign" class="operator-callsign-input" maxlength="16" placeholder="AGENT" autocomplete="off" spellcheck="false" aria-label="Operator callsign">
+            <span data-i18n="ui.settings.callsign">OPERATOR CALLSIGN</span>
+            <input type="text" id="operator-callsign" data-i18n-aria-label="ui.aria.callsign_input" class="operator-callsign-input" maxlength="16" placeholder="AGENT" autocomplete="off" spellcheck="false" aria-label="Operator callsign">
           </div>
           <div class="setting-item">
-            <span>STEAM CLOUD SYNC</span>
+            <span data-i18n="ui.settings.cloud_sync">STEAM CLOUD SYNC</span>
             <span id="setting-steam-cloud-status" class="setting-val-display" data-state="checking">CHECKING…</span>
           </div>
           <!-- Mature Content Audit is a reviewer/QA tool reachable through
                its authorized F9 workflow; it is not a player setting. -->
           <div class="setting-item setting-item--action">
-            <span>SAVE DATA</span>
-            <button type="button" class="calibrate-btn settings-action-btn" id="open-save-data">OPEN</button>
+            <span data-i18n="ui.settings.save_data">SAVE DATA</span>
+            <button type="button" class="calibrate-btn settings-action-btn" id="open-save-data" data-i18n="ui.action.open">OPEN</button>
           </div>
           <div class="setting-item setting-item--action setting-item--danger">
-            <span>NEW GAME RESET</span>
-            <button type="button" class="calibrate-btn settings-action-btn settings-action-btn--reset" id="open-reset-save">RESET</button>
+            <span data-i18n="ui.settings.new_game_reset">NEW GAME RESET</span>
+            <button type="button" class="calibrate-btn settings-action-btn settings-action-btn--reset" id="open-reset-save" data-i18n="ui.action.reset">RESET</button>
           </div>
           <div class="setting-item setting-item--action setting-item--danger">
-            <span>EXIT APPLICATION</span>
-            <button type="button" class="calibrate-btn settings-action-btn settings-action-btn--quit" id="open-quit-confirm">QUIT GAME</button>
+            <span data-i18n="ui.settings.exit_app">EXIT APPLICATION</span>
+            <button type="button" class="calibrate-btn settings-action-btn settings-action-btn--quit" id="open-quit-confirm" data-i18n="ui.menu.quit">QUIT GAME</button>
           </div>
         </div>
 
@@ -2316,14 +2360,213 @@
     <div id="save-data-popup" class="modal audio-mixer-modal hidden">
       <div class="modal-content audio-mixer-panel save-data-panel">
         <button class="close-modal audio-mixer-close" id="close-save-data">×</button>
-        <h2 class="modal-title">SAVE DATA</h2>
+        <h2 class="modal-title" data-i18n="ui.settings.save_data">SAVE DATA</h2>
         <p class="save-data-hint">Export a portable save code or paste one below to restore progress. Importing overwrites current data on this device.</p>
         <label class="save-data-code-label" for="save-data-code">PORTABLE SAVE CODE</label>
         <textarea id="save-data-code" class="save-data-code" rows="5" placeholder="EXPORT OR PASTE SAVE CODE" autocomplete="off" spellcheck="false"></textarea>
         <div class="save-data-status" id="save-data-status" role="status" aria-live="polite"></div>
         <div class="audio-mixer-actions save-data-actions">
-          <button type="button" class="settings-action-btn settings-action-btn--save" id="export-save" title="Generate and copy a portable save code">EXPORT + COPY</button>
-          <button type="button" class="settings-action-btn settings-action-btn--reset" id="import-save" title="Restore progress from the pasted save code">IMPORT DATA</button>
+          <button type="button" class="settings-action-btn settings-action-btn--save" id="export-save" data-i18n="ui.action.export_copy" title="Generate and copy a portable save code">EXPORT + COPY</button>
+          <button type="button" class="settings-action-btn settings-action-btn--reset" id="import-save" data-i18n="ui.action.import_data" title="Restore progress from the pasted save code">IMPORT DATA</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="crosshair-color-popup" class="modal audio-mixer-modal hidden" aria-hidden="true">
+      <div class="modal-content audio-mixer-panel crosshair-color-panel">
+        <button class="close-modal audio-mixer-close" id="close-crosshair-color" aria-label="Close crosshair color menu">×</button>
+        <h2 class="modal-title" data-i18n="ui.settings.crosshair_color">CROSSHAIR COLOR</h2>
+        <p class="crosshair-color-hint" data-i18n="ui.settings.crosshair_hint">Select a tactical reticle preset or configure a custom color.</p>
+        <div class="crosshair-color-modal-body">
+          <div id="crosshair-color-presets" data-i18n-aria-label="ui.aria.crosshair_presets" class="crosshair-color-presets crosshair-color-presets--modal" role="group" aria-label="Crosshair color presets">
+            <button type="button" class="crosshair-color-swatch" data-crosshair-color="#ff9f1c" data-i18n-aria-label="ui.aria.crosshair_orange" style="--swatch-color:#ff9f1c" aria-label="Orange crosshair"></button>
+            <button type="button" class="crosshair-color-swatch" data-crosshair-color="#ffffff" data-i18n-aria-label="ui.aria.crosshair_white" style="--swatch-color:#ffffff" aria-label="White crosshair"></button>
+            <button type="button" class="crosshair-color-swatch" data-crosshair-color="#39ff88" data-i18n-aria-label="ui.aria.crosshair_green" style="--swatch-color:#39ff88" aria-label="Green crosshair"></button>
+            <button type="button" class="crosshair-color-swatch" data-crosshair-color="#2ec4ff" data-i18n-aria-label="ui.aria.crosshair_cyan" style="--swatch-color:#2ec4ff" aria-label="Cyan crosshair"></button>
+            <button type="button" class="crosshair-color-swatch" data-crosshair-color="#ffe14a" data-i18n-aria-label="ui.aria.crosshair_yellow" style="--swatch-color:#ffe14a" aria-label="Yellow crosshair"></button>
+            <button type="button" class="crosshair-color-swatch" data-crosshair-color="#ff4f64" data-i18n-aria-label="ui.aria.crosshair_red" style="--swatch-color:#ff4f64" aria-label="Red crosshair"></button>
+            <button type="button" class="crosshair-color-swatch" data-crosshair-color="#d76bff" data-i18n-aria-label="ui.aria.crosshair_purple" style="--swatch-color:#d76bff" aria-label="Purple crosshair"></button>
+          </div>
+          <div class="crosshair-custom-row">
+            <label class="crosshair-custom-color"><span data-i18n="ui.settings.crosshair_custom">CUSTOM</span> <input type="color" id="setting-crosshair-color" data-i18n-aria-label="ui.aria.crosshair_custom" class="settings-color-picker" value="#ff9f1c" aria-label="Custom crosshair color"></label>
+          </div>
+        </div>
+        <div class="audio-mixer-actions crosshair-color-actions">
+          <button type="button" class="settings-action-btn settings-action-btn--save" id="save-crosshair-color" data-i18n="ui.action.done">DONE</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="language-select-popup" class="modal audio-mixer-modal hidden" aria-hidden="true">
+      <div class="modal-content audio-mixer-panel language-select-panel">
+        <button class="close-modal audio-mixer-close" id="close-language-select" data-i18n-aria-label="ui.aria.close_language" aria-label="Close language menu">×</button>
+        <h2 class="modal-title" data-i18n="ui.settings.language">LANGUAGE / 语言 / ЯЗЫК</h2>
+        <p class="crosshair-color-hint language-select-hint" data-i18n="ui.settings.language_hint">Choose your preferred interface and subtitle language.</p>
+        <div class="language-select-modal-body">
+          <div id="language-select-grid" class="language-select-grid" role="radiogroup" data-i18n-aria-label="ui.aria.language_select" aria-label="Game language">
+            <!-- English -->
+            <button type="button" class="language-choice-btn" data-language-code="en" role="radio" aria-checked="true" aria-label="English">
+              <span class="language-flag-wrap">
+                <svg class="language-flag-svg" viewBox="0 0 640 480" width="36" height="26" aria-hidden="true">
+                  <rect width="640" height="480" fill="#b22234"/>
+                  <path stroke="#fff" stroke-width="37" d="M0 55.4h640M0 129.2h640M0 203.1h640M0 276.9h640M0 350.8h640M0 424.6h640"/>
+                  <rect width="256" height="258.5" fill="#3c3b6e"/>
+                  <g fill="#fff">
+                    <polygon points="32,24 35,33 44,33 37,38 40,47 32,42 24,47 27,38 20,33 29,33"/>
+                    <polygon points="75,24 78,33 87,33 80,38 83,47 75,42 67,47 70,38 63,33 72,33"/>
+                    <polygon points="118,24 121,33 130,33 123,38 126,47 118,42 110,47 113,38 106,33 115,33"/>
+                    <polygon points="161,24 164,33 173,33 166,38 169,47 161,42 153,47 156,38 149,33 158,33"/>
+                    <polygon points="204,24 207,33 216,33 209,38 212,47 204,42 196,47 199,38 192,33 201,33"/>
+                    <polygon points="53.5,58 56.5,67 65.5,67 58.5,72 61.5,81 53.5,76 45.5,81 48.5,72 41.5,67 50.5,67"/>
+                    <polygon points="96.5,58 99.5,67 108.5,67 101.5,72 104.5,81 96.5,76 88.5,81 91.5,72 84.5,67 93.5,67"/>
+                    <polygon points="139.5,58 142.5,67 151.5,67 144.5,72 147.5,81 139.5,76 131.5,81 134.5,72 127.5,67 136.5,67"/>
+                    <polygon points="182.5,58 185.5,67 194.5,67 187.5,72 190.5,81 182.5,76 174.5,81 177.5,72 170.5,67 179.5,67"/>
+                    <polygon points="32,92 35,101 44,101 37,106 40,115 32,110 24,115 27,106 20,101 29,101"/>
+                    <polygon points="75,92 78,101 87,101 80,106 83,115 75,110 67,115 70,106 63,101 72,101"/>
+                    <polygon points="118,92 121,101 130,101 123,106 126,115 118,110 110,115 113,106 106,101 115,101"/>
+                    <polygon points="161,92 164,101 173,101 166,106 169,115 161,110 153,115 156,106 149,101 158,101"/>
+                    <polygon points="204,92 207,101 216,101 209,106 212,115 204,110 196,115 199,106 192,101 201,101"/>
+                    <polygon points="53.5,126 56.5,135 65.5,135 58.5,140 61.5,149 53.5,144 45.5,149 48.5,140 41.5,135 50.5,135"/>
+                    <polygon points="96.5,126 99.5,135 108.5,135 101.5,140 104.5,149 96.5,144 88.5,149 91.5,140 84.5,135 93.5,135"/>
+                    <polygon points="139.5,126 142.5,135 151.5,135 144.5,140 147.5,149 139.5,144 131.5,149 134.5,140 127.5,135 136.5,135"/>
+                    <polygon points="182.5,126 185.5,135 194.5,135 187.5,140 190.5,149 182.5,144 174.5,149 177.5,140 170.5,135 179.5,135"/>
+                    <polygon points="32,160 35,169 44,169 37,174 40,183 32,178 24,183 27,174 20,169 29,169"/>
+                    <polygon points="75,160 78,169 87,169 80,174 83,183 75,178 67,183 70,174 63,169 72,169"/>
+                    <polygon points="118,160 121,169 130,169 123,174 126,183 118,178 110,183 113,174 106,169 115,169"/>
+                    <polygon points="161,160 164,169 173,169 166,174 169,183 161,178 153,183 156,174 149,169 158,169"/>
+                    <polygon points="204,160 207,169 216,169 209,174 212,183 204,178 196,183 199,174 192,169 201,169"/>
+                    <polygon points="53.5,194 56.5,203 65.5,203 58.5,208 61.5,217 53.5,212 45.5,217 48.5,208 41.5,203 50.5,203"/>
+                    <polygon points="96.5,194 99.5,203 108.5,203 101.5,208 104.5,217 96.5,212 88.5,217 91.5,208 84.5,203 93.5,203"/>
+                    <polygon points="139.5,194 142.5,203 151.5,203 144.5,208 147.5,217 139.5,212 131.5,217 134.5,208 127.5,203 136.5,203"/>
+                    <polygon points="182.5,194 185.5,203 194.5,203 187.5,208 190.5,217 182.5,212 174.5,217 177.5,208 170.5,203 179.5,203"/>
+                    <polygon points="32,228 35,237 44,237 37,242 40,251 32,246 24,251 27,242 20,237 29,237"/>
+                    <polygon points="75,228 78,237 87,237 80,242 83,251 75,246 67,251 70,242 63,237 72,237"/>
+                    <polygon points="118,228 121,237 130,237 123,242 126,251 118,246 110,251 113,242 106,237 115,237"/>
+                    <polygon points="161,228 164,237 173,237 166,242 169,251 161,246 153,251 156,242 149,237 158,237"/>
+                    <polygon points="204,228 207,237 216,237 209,242 212,251 204,246 196,251 199,242 192,237 201,237"/>
+                  </g>
+                </svg>
+              </span>
+              <div class="language-choice-info">
+                <span class="language-choice-name">English</span>
+                <span class="language-choice-region">GLOBAL / EN</span>
+              </div>
+              <span class="language-choice-indicator" aria-hidden="true">✔</span>
+            </button>
+
+            <!-- 简体中文 -->
+            <button type="button" class="language-choice-btn" data-language-code="zh-CN" role="radio" aria-checked="false" aria-label="简体中文">
+              <span class="language-flag-wrap">
+                <svg class="language-flag-svg" viewBox="0 0 640 480" width="36" height="26" aria-hidden="true">
+                  <rect width="640" height="480" fill="#de2910"/>
+                  <g fill="#ffde00">
+                    <polygon points="100,60 112,98 152,98 120,121 132,159 100,136 68,159 80,121 48,98 88,98"/>
+                    <polygon points="200,32 204,44 216,44 207,51 210,63 200,56 190,63 193,51 184,44 196,44" transform="rotate(23 200 48)"/>
+                    <polygon points="240,72 244,84 256,84 247,91 250,103 240,96 230,103 233,91 224,84 236,84" transform="rotate(45 240 88)"/>
+                    <polygon points="240,132 244,144 256,144 247,151 250,163 240,156 230,163 233,151 224,144 236,144" transform="rotate(0 240 148)"/>
+                    <polygon points="200,172 204,184 216,184 207,191 210,203 200,196 190,203 193,191 184,184 196,184" transform="rotate(-20 200 188)"/>
+                  </g>
+                </svg>
+              </span>
+              <div class="language-choice-info">
+                <span class="language-choice-name">简体中文</span>
+                <span class="language-choice-region">CHINA / ZH-CN</span>
+              </div>
+              <span class="language-choice-indicator" aria-hidden="true">✔</span>
+            </button>
+
+            <!-- Русский -->
+            <button type="button" class="language-choice-btn" data-language-code="ru" role="radio" aria-checked="false" aria-label="Русский">
+              <span class="language-flag-wrap">
+                <svg class="language-flag-svg" viewBox="0 0 640 480" width="36" height="26" aria-hidden="true">
+                  <rect width="640" height="160" fill="#ffffff"/>
+                  <rect y="160" width="640" height="160" fill="#0039a6"/>
+                  <rect y="320" width="640" height="160" fill="#d52b1e"/>
+                </svg>
+              </span>
+              <div class="language-choice-info">
+                <span class="language-choice-name">Русский</span>
+                <span class="language-choice-region">RUSSIA / RU</span>
+              </div>
+              <span class="language-choice-indicator" aria-hidden="true">✔</span>
+            </button>
+
+            <!-- Español (Latinoamérica) -->
+            <button type="button" class="language-choice-btn" data-language-code="es-419" role="radio" aria-checked="false" aria-label="Español (Latinoamérica)">
+              <span class="language-flag-wrap">
+                <svg class="language-flag-svg" viewBox="0 0 640 480" width="36" height="26" aria-hidden="true">
+                  <rect width="213.3" height="480" fill="#006847"/>
+                  <rect x="213.3" width="213.4" height="480" fill="#ffffff"/>
+                  <rect x="426.7" width="213.3" height="480" fill="#ce1126"/>
+                  <circle cx="320" cy="240" r="42" fill="#cda851"/>
+                  <circle cx="320" cy="240" r="34" fill="#936c28"/>
+                  <path d="M295 240 Q320 270 345 240 Q320 252 295 240Z" fill="#006847"/>
+                  <ellipse cx="320" cy="232" rx="14" ry="18" fill="#5c4314"/>
+                  <polygon points="320,214 326,224 314,224" fill="#f8c300"/>
+                </svg>
+              </span>
+              <div class="language-choice-info">
+                <span class="language-choice-name">Español</span>
+                <span class="language-choice-region">LATAM / ES-419</span>
+              </div>
+              <span class="language-choice-indicator" aria-hidden="true">✔</span>
+            </button>
+
+            <!-- Deutsch -->
+            <button type="button" class="language-choice-btn" data-language-code="de" role="radio" aria-checked="false" aria-label="Deutsch">
+              <span class="language-flag-wrap">
+                <svg class="language-flag-svg" viewBox="0 0 640 480" width="36" height="26" aria-hidden="true">
+                  <rect width="640" height="160" fill="#000000"/>
+                  <rect y="160" width="640" height="160" fill="#dd0000"/>
+                  <rect y="320" width="640" height="160" fill="#ffce00"/>
+                </svg>
+              </span>
+              <div class="language-choice-info">
+                <span class="language-choice-name">Deutsch</span>
+                <span class="language-choice-region">GERMANY / DE</span>
+              </div>
+              <span class="language-choice-indicator" aria-hidden="true">✔</span>
+            </button>
+
+            <!-- 日本語 -->
+            <button type="button" class="language-choice-btn" data-language-code="ja" role="radio" aria-checked="false" aria-label="日本語">
+              <span class="language-flag-wrap">
+                <svg class="language-flag-svg" viewBox="0 0 640 480" width="36" height="26" aria-hidden="true">
+                  <rect width="640" height="480" fill="#ffffff"/>
+                  <circle cx="320" cy="240" r="144" fill="#bc002d"/>
+                </svg>
+              </span>
+              <div class="language-choice-info">
+                <span class="language-choice-name">日本語</span>
+                <span class="language-choice-region">JAPAN / JA</span>
+              </div>
+              <span class="language-choice-indicator" aria-hidden="true">✔</span>
+            </button>
+
+            <!-- Português (Brasil) -->
+            <button type="button" class="language-choice-btn" data-language-code="pt-BR" role="radio" aria-checked="false" aria-label="Português (Brasil)">
+              <span class="language-flag-wrap">
+                <svg class="language-flag-svg" viewBox="0 0 640 480" width="36" height="26" aria-hidden="true">
+                  <rect width="640" height="480" fill="#009b3a"/>
+                  <polygon points="320,54 578,240 320,426 62,240" fill="#fedf00"/>
+                  <circle cx="320" cy="240" r="102" fill="#002776"/>
+                  <path d="M222 258 C248 214 340 210 418 250 C340 220 252 226 222 258 Z" fill="#ffffff"/>
+                  <circle cx="304" cy="254" r="3" fill="#ffffff"/>
+                  <circle cx="324" cy="266" r="3" fill="#ffffff"/>
+                  <circle cx="340" cy="250" r="3" fill="#ffffff"/>
+                  <circle cx="316" cy="282" r="3" fill="#ffffff"/>
+                </svg>
+              </span>
+              <div class="language-choice-info">
+                <span class="language-choice-name">Português</span>
+                <span class="language-choice-region">BRAZIL / PT-BR</span>
+              </div>
+              <span class="language-choice-indicator" aria-hidden="true">✔</span>
+            </button>
+          </div>
+        </div>
+        <div class="audio-mixer-actions crosshair-color-actions">
+          <button type="button" class="settings-action-btn settings-action-btn--save" id="save-language-select" data-i18n="ui.action.done">DONE</button>
         </div>
       </div>
     </div>
@@ -2331,7 +2574,7 @@
     <div id="audio-mixer-popup" class="modal audio-mixer-modal hidden">
       <div class="modal-content audio-mixer-panel">
         <button class="close-modal audio-mixer-close" id="close-audio-mixer">×</button>
-        <h2 class="modal-title">AUDIO MIXER</h2>
+        <h2 class="modal-title" data-i18n="ui.settings.audio_mixer">AUDIO MIXER</h2>
         <label class="audio-slider-row" for="audio-master-slider">
           <span class="audio-slider-row__label">MASTER</span>
           <input type="range" id="audio-master-slider" min="0" max="100" step="1" value="100">
@@ -2357,7 +2600,7 @@
           <label class="toggle"><input type="checkbox" id="audio-voice-toggle" checked> <span class="slider"></span></label>
         </label>
         <div class="audio-mixer-actions">
-          <button type="button" class="settings-action-btn settings-action-btn--save" id="save-audio-mix">SAVE SETTINGS</button>
+          <button type="button" class="settings-action-btn settings-action-btn--save" id="save-audio-mix" data-i18n="ui.action.save_settings">SAVE SETTINGS</button>
         </div>
       </div>
     </div>
@@ -2365,25 +2608,25 @@
     <div id="controls-popup" class="modal controls-modal hidden">
       <div class="modal-content controls-panel">
         <button class="close-modal controls-close" id="close-controls">×</button>
-        <h2 class="modal-title">CONTROLS</h2>
+        <h2 class="modal-title" data-i18n="ui.modal.controls">CONTROLS</h2>
         <p class="controls-hint"><strong>STEAM DECK:</strong> Left stick moves or navigates · Right stick aims and controls the visible pointer · A accepts/interacts · B backs out/dodges · Menu opens settings.</p>
         <p class="controls-hint"><strong>DESKTOP:</strong> Click a slot, then press a key to bind it. ESC cancels.</p>
         <div class="controls-list" id="controls-list"></div>
         <div class="controls-actions">
-          <button type="button" class="settings-action-btn settings-action-btn--reset" id="reset-controls">RESET</button>
-          <button type="button" class="settings-action-btn settings-action-btn--save" id="save-controls">SAVE SETTINGS</button>
+          <button type="button" class="settings-action-btn settings-action-btn--reset" id="reset-controls" data-i18n="ui.action.reset">RESET</button>
+          <button type="button" class="settings-action-btn settings-action-btn--save" id="save-controls" data-i18n="ui.action.save_settings">SAVE SETTINGS</button>
         </div>
       </div>
     </div>
 
     <div id="mothership-dialogue" class="modal hidden" aria-hidden="true">
       <div class="modal-content console-terminal-content mothership-dialogue-panel" id="mothership-dialogue-panel">
-        <button class="close-modal mothership-close-btn" id="close-mothership-dialogue" aria-label="Skip dialogue">×</button>
+        <button class="close-modal mothership-close-btn" id="close-mothership-dialogue" aria-label="Skip dialogue" data-i18n-aria-label="ui.dlg.skip_aria">×</button>
         <div class="terminal-scanline"></div>
         <div class="terminal-flicker"></div>
 
         <div class="terminal-header">
-          <div class="terminal-title">MOTHERSHIP UPLINK CHANNEL 7</div>
+          <div class="terminal-title" data-i18n="ui.dlg.channel">MOTHERSHIP UPLINK CHANNEL 7</div>
           <div class="terminal-class-badge" id="mothership-class-badge">SCOUT LINK [ENCRYPTED]</div>
         </div>
 
@@ -2400,12 +2643,12 @@
 
         <div id="mothership-dialogue-choices" class="mothership-dialogue-choices hidden">
           <button id="mothership-choice-skip" class="choice-card">
-            <span class="choice-card__label">[A] UNDERSTOOD. MOVING OUT.</span>
-            <span class="choice-card__hint">SKIP TUTORIAL</span>
+            <span class="choice-card__label" data-i18n="ui.dlg.choice_skip_label">[A] UNDERSTOOD. MOVING OUT.</span>
+            <span class="choice-card__hint" data-i18n="ui.dlg.choice_skip_hint">SKIP TUTORIAL</span>
           </button>
           <button id="mothership-choice-tutorial" class="choice-card">
-            <span class="choice-card__label">[B] RUN ME THROUGH PROTOCOLS FIRST.</span>
-            <span class="choice-card__hint">START TUTORIAL</span>
+            <span class="choice-card__label" data-i18n="ui.dlg.choice_tutorial_label">[B] RUN ME THROUGH PROTOCOLS FIRST.</span>
+            <span class="choice-card__hint" data-i18n="ui.dlg.choice_tutorial_hint">START TUTORIAL</span>
           </button>
         </div>
       </div>

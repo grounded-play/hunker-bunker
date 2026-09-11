@@ -90,6 +90,7 @@ export function getFinishTexture(type) {
 }
 
 export const FINISH_DEFINITIONS = Object.freeze({
+    '2200': { name: 'Chrome Plated Sidearm', color: 0xdce6ed, metalness: 1, roughness: 0.14, emissive: '#000000', emissiveIntensity: 0 },
     // 4100 Sub-Zero Frostbite (Scout)
     '4100': {
         name: 'Sub-Zero Frostbite',

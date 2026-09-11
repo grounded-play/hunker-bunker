@@ -10,6 +10,7 @@ import {
     countByRarity,
     getShardBalance,
     planDispensaryRedeem,
+    planDeterministicCraft,
     planIngotPackPurchase,
     planSmelt,
     resolveDuplicateGrant
@@ -132,3 +133,57 @@ describe('craftingMatrix: Quartermaster Ingot Pack purchase', () => {
         expect(planIngotPackPurchase(null)).toEqual({ ok: false, reason: 'insufficient_tech' });
     });
 });
+
+describe('craftingMatrix: Beta Season 1 Deterministic Fragment Workshop', () => {
+    it('plans recipe 2100 consuming 5 Common Relic Fragments', () => {
+        const vaultItems = [{ itemdefid: 1000, quantity: 5 }];
+        const plan = planDeterministicCraft(2100, vaultItems);
+        expect(plan.ok).toBe(true);
+        expect(plan.outputItemdefid).toBe(2100);
+        expect(plan.ingredients).toEqual([{ itemdefid: 1000, quantity: 5 }]);
+        expect(plan.alreadyOwned).toBe(false);
+    });
+
+    it('warns when recipe 2100 output is already owned', () => {
+        const vaultItems = [
+            { itemdefid: 1000, quantity: 5 },
+            { itemdefid: 2100, quantity: 1 }
+        ];
+        const plan = planDeterministicCraft(2100, vaultItems);
+        expect(plan.ok).toBe(true);
+        expect(plan.alreadyOwned).toBe(true);
+    });
+
+    it('plans recipe 2200 consuming 10 Common + 2 Rare Fragments', () => {
+        const vaultItems = [
+            { itemdefid: 1000, quantity: 12 },
+            { itemdefid: 1100, quantity: 3 }
+        ];
+        const plan = planDeterministicCraft(2200, vaultItems);
+        expect(plan.ok).toBe(true);
+        expect(plan.outputItemdefid).toBe(2200);
+        expect(plan.ingredients).toEqual([
+            { itemdefid: 1000, quantity: 10 },
+            { itemdefid: 1100, quantity: 2 }
+        ]);
+    });
+
+    it('rejects craft when fragments are insufficient', () => {
+        const vaultItems = [
+            { itemdefid: 1000, quantity: 9 },
+            { itemdefid: 1100, quantity: 1 }
+        ];
+        const plan = planDeterministicCraft(2200, vaultItems);
+        expect(plan.ok).toBe(false);
+        expect(plan.reason).toBe('insufficient_fragments');
+    });
+
+    it('enforces season max redemptions limit (max 1 craft per season)', () => {
+        const vaultItems = [{ itemdefid: 1000, quantity: 20 }];
+        const history = [2100]; // Already crafted once
+        const plan = planDeterministicCraft(2100, vaultItems, history);
+        expect(plan.ok).toBe(false);
+        expect(plan.reason).toBe('season_limit_reached');
+    });
+});
+

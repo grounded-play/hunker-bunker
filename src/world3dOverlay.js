@@ -79,7 +79,27 @@ export const WORLD_3D_MODELS = Object.freeze({
     state_growth_overrun_1: { url: '/3d/runtime/new3ds/state_growth_overrun_1.glb', height: 1.20, yaw: 0 },
     state_growth_overrun_2: { url: '/3d/runtime/new3ds/state_growth_overrun_2.glb', height: 1.20, yaw: 0 },
     body_empty_exosuit: { url: '/3d/runtime/new3ds/body_empty_exosuit.glb', height: 0.75, yaw: 0 },
-    body_frozen_human: { url: '/3d/runtime/new3ds/body_frozen_human.glb', height: 0.75, yaw: 0 }
+    body_frozen_human: { url: '/3d/runtime/new3ds/body_frozen_human.glb', height: 0.75, yaw: 0 },
+    arch_bulkhead_frame: { url: '/3d/runtime/new3ds/arch_bulkhead_frame.glb', height: 2.2, yaw: 0 },
+    arch_deco_archway_grand_01: { url: '/3d/runtime/new3ds/arch_deco_archway_grand_01.glb', height: 2.6, yaw: 0 },
+    arch_deco_archway_grand_02: { url: '/3d/runtime/new3ds/arch_deco_archway_grand_02.glb', height: 2.6, yaw: 0 },
+    arch_deco_archway_grand_03: { url: '/3d/runtime/new3ds/arch_deco_archway_grand_03.glb', height: 2.6, yaw: 0 },
+    arch_deco_archway_grand_04: { url: '/3d/runtime/new3ds/arch_deco_archway_grand_04.glb', height: 2.6, yaw: 0 },
+    arch_niche_shrine: { url: '/3d/runtime/new3ds/arch_niche_shrine.glb', height: 1.8, yaw: 0 },
+    arch_pillar_buttress_01: { url: '/3d/runtime/new3ds/arch_pillar_buttress_01.glb', height: 2.2, yaw: 0 },
+    arch_pillar_buttress_02: { url: '/3d/runtime/new3ds/arch_pillar_buttress_02.glb', height: 2.2, yaw: 0 },
+    arch_pillar_buttress_03: { url: '/3d/runtime/new3ds/arch_pillar_buttress_03.glb', height: 2.2, yaw: 0 },
+    arch_pillar_buttress_04: { url: '/3d/runtime/new3ds/arch_pillar_buttress_04.glb', height: 2.2, yaw: 0 },
+    arch_rib_ceiling_vault_01: { url: '/3d/runtime/new3ds/arch_rib_ceiling_vault_01.glb', height: 2.4, yaw: 0 },
+    arch_rib_ceiling_vault_02: { url: '/3d/runtime/new3ds/arch_rib_ceiling_vault_02.glb', height: 2.4, yaw: 0 },
+    arch_rib_ceiling_vault_03: { url: '/3d/runtime/new3ds/arch_rib_ceiling_vault_03.glb', height: 2.4, yaw: 0 },
+    arch_window_stained: { url: '/3d/runtime/new3ds/arch_window_stained.glb', height: 1.9, yaw: 0 },
+    fixture_clock_dead: { url: '/3d/runtime/new3ds/fixture_clock_dead.glb', height: 0.7, yaw: 0 },
+    fixture_sconce_vine: { url: '/3d/runtime/new3ds/fixture_sconce_vine.glb', height: 0.65, yaw: 0 },
+    state_column_shattered: { url: '/3d/runtime/new3ds/state_column_shattered.glb', height: 1.6, yaw: 0 },
+    state_wall_breached_01: { url: '/3d/runtime/new3ds/state_wall_breached_01.glb', height: 2.0, yaw: 0 },
+    state_wall_breached_02: { url: '/3d/runtime/new3ds/state_wall_breached_02.glb', height: 2.0, yaw: 0 },
+    state_wall_breached_03: { url: '/3d/runtime/new3ds/state_wall_breached_03.glb', height: 2.0, yaw: 0 }
 });
 
 const templates = new Map();

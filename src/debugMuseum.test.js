@@ -101,10 +101,10 @@ describe('Debug Hallway Museum', () => {
 
     it('keeps all decal families in the debug catalog and mounts wall decals on the panel face', () => {
         expect(SHOWROOM_CATEGORIES.COSMETIC_PLAYER_DECALS).toHaveLength(10);
-        // Nine core wall decal types plus prop_torn_warning_poster, which is
-        // explicitly mounted through the same wall-decal production path.
-        expect(SHOWROOM_CATEGORIES.WALL_DECALS).toHaveLength(10);
-        expect(SHOWROOM_CATEGORIES.FLOOR_DECALS).toHaveLength(13);
+        // Wall decals: 10 original + 9 earlier sprint 34 + 13 new sprint 34 = 32
+        expect(SHOWROOM_CATEGORIES.WALL_DECALS).toHaveLength(32);
+        // Floor decals: 13 original + 6 earlier sprint 34 + 12 new sprint 34 = 31
+        expect(SHOWROOM_CATEGORIES.FLOOR_DECALS).toHaveLength(31);
 
         const texture = new THREE.Texture();
         const display = createDebugWallDecalDisplay({ scatterTextures: { decal_hazard_stripes: texture } }, 'decal_hazard_stripes', {

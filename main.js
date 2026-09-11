@@ -1,4 +1,5 @@
 import { crossingGuidance, expeditionDebrief } from './src/expeditionFeedback.js';
+import { runO2MilestoneChoreography } from './src/o2CinematicDoors.js';
 import { formatRunCardBadges, summarizeRunCards } from './src/runCardHud.js';
 import { cutsceneCutoffTime } from './src/cutsceneTiming.js';
 /* global __HB_BUILD_INFO__ */
@@ -11,6 +12,8 @@ import { presentationTelemetry, PRESENTATION_EVENTS } from './src/presentationTe
 import { canUseDeveloperTools } from './src/devToolsAccess.js';
 import { ObjectiveRegistry } from './src/objectiveRegistry.js';
 import { BankManager, FOUNDRY_ACTIVATION_COST } from './src/bank.js';
+import { ExpeditionReceipt } from './src/economyReceipt.js';
+import { renderReturnManifest } from './src/returnManifest.js';
 import { FabricatorManager, FAB_RECIPES, FAB_SPIN_COST, FABRICATOR_SITE_MAX_USES } from './src/fabricator.js';
 import { ProfileManager, clearSaveData, exportSaveCode, importSaveCode } from './src/profile.js';
 import { LoadoutManager } from './src/loadout.js';
@@ -25,13 +28,20 @@ import { codexStore, getClassWreckageLog, recordSpecimen0047OriginIfFound } from
 import { formatCrossingDeltaSummary } from './src/depthContract.js';
 import { CODEX_ENTRIES, CODEX_CATEGORIES, getCodexEntry, CODEX_TOTAL, LORE_METADATA } from './src/data/codex.js';
 import { pickRunModifier } from './src/data/runModifiers.js';
-import { pickMissionBriefing } from './src/data/missions.js';
+import { nextSeasonExpedition } from './src/data/seasonOneExpeditions.js';
 import { DIALOGUE_LINES, getDialogueLine } from './src/data/dialogueLines.js';
 import { MOTHERSHIP_REACTIVE_LINES } from './src/data/lineDirectorPools.js';
 import { ArcStateManager } from './src/arcState.js';
 import { CaveRevealController } from './src/caveReveal.js';
 import { Act2Manager, ACT2_ENDING_CUTSCENES, ACT2_LINES, getAct2EndingLines, pickAct2Ending, buildAct2Manifest } from './src/act2.js';
-import { isDemoBuild } from './src/featureFlags.js';
+import { isDemoBuild, isGoreEnabled, setGoreEnabled } from './src/featureFlags.js';
+import {
+    loadAccessibilitySettings,
+    applyAccessibilitySettings,
+    setSubtitleSize,
+    setSubtitleBackdrop,
+    setContrast
+} from './src/accessibilitySettings.js';
 import { ACHIEVEMENT_DEFS, AchievementEngine, getAchievementProgress, getSecretGateState, hasAnyUnlock, saveAchievements } from './src/achievements.js';
 import { STEAM_RUN_SCORE_FINALIZED_EVENT, buildSteamRunScorePayload, dispatchSteamRunScoreFinalized } from './src/steam/steamEvents.js';
 import { syncSteamStats } from './src/steamStats.js';
@@ -57,7 +67,7 @@ import { createScoutHeroPreview } from './src/scoutHeroPreview.js';
 import { createArmoryScene } from './src/armoryScene.js';
 import { createArmoryUi } from './src/armoryUi.js';
 import { initSteamVaultUI, loadVaultData, openSteamVaultModal, showSteamDropToast, renderSteamMilestoneGrants, grantVaultItem, resetDevVaultInventory, setDevInfiniteCacheMode, isDevInfiniteCacheMode, STEAM_ITEM_CATALOG } from './src/steamVaultUi.js';
-import { initSeasonPassUI, cancelXpFeedback } from './src/seasonPassUi.js';
+import { initSeasonPassUI, cancelXpFeedback, beginSeasonRun, getSeasonRunSummary } from './src/seasonPassUi.js';
 import { preloadEnemy3dTemplates } from './src/enemy3dOverlay.js';
 import { initVoiceCallouts } from './src/voiceCallouts.js';
 import { multiplayerLobby } from './src/multiplayerLobby.js';
@@ -81,6 +91,7 @@ import { openDebugTileGrid, closeDebugTileGrid } from './src/debugTileGrid.js';
 import { openDebugBossArenas, closeDebugBossArenas } from './src/debugBossArenas.js';
 import { openDebugCampSimulator, closeDebugCampSimulator } from './src/debugCampSimulator.js';
 import { LeaderConversation3d } from './src/leaderConversation3d.js';
+import { getLocale, setLocale, t as i18nT, getAvailableLocales } from './src/i18n.js';
 import {
     computeTopologyDistances,
     findConflictingChunkReservations,
@@ -234,6 +245,18 @@ const saveDataPopup = document.getElementById('save-data-popup');
 const closeSaveDataBtn = document.getElementById('close-save-data');
 const saveDataCode = document.getElementById('save-data-code');
 const saveDataStatus = document.getElementById('save-data-status');
+const openCrosshairColorBtn = document.getElementById('open-crosshair-color');
+const crosshairColorPopup = document.getElementById('crosshair-color-popup');
+const closeCrosshairColorBtn = document.getElementById('close-crosshair-color');
+const saveCrosshairColorBtn = document.getElementById('save-crosshair-color');
+const crosshairBadgeDot = document.getElementById('crosshair-badge-dot');
+const crosshairBadgeText = document.getElementById('crosshair-badge-text');
+const openLanguageSelectBtn = document.getElementById('open-language-select');
+const languageSelectPopup = document.getElementById('language-select-popup');
+const closeLanguageSelectBtn = document.getElementById('close-language-select');
+const saveLanguageSelectBtn = document.getElementById('save-language-select');
+const languageBadgeFlag = document.getElementById('language-badge-flag');
+const languageBadgeText = document.getElementById('language-badge-text');
 const openResetSaveBtn = document.getElementById('open-reset-save');
 const resetSaveConfirmModal = document.getElementById('reset-save-confirm-modal');
 const resetSaveConfirmBtn = document.getElementById('reset-save-confirm');
@@ -2616,10 +2639,12 @@ const pickupCounterState = {
 };
 let activeAmmoCapacity = CLASS_AMMO_CAPACITY.SCOUT;
 const bankManager = new BankManager();
+const expeditionReceipt = new ExpeditionReceipt();
+window.addEventListener('bank-transaction', (event) => expeditionReceipt.record(event.detail));
 
 window.bankManager = bankManager;
 
-const fabricator = new FabricatorManager();
+const fabricator = new FabricatorManager({ bank: bankManager });
 window.fabricator = fabricator;
 
 const profile = new ProfileManager();
@@ -2637,6 +2662,7 @@ let ownershipStore = null;
 function getOwnershipStore() {
     if (!ownershipStore) {
         ownershipStore = createOwnershipStore({
+            allowLocalInventory: !window.electronAPI,
             storage: (() => {
                 try {
                     return typeof localStorage !== 'undefined' ? localStorage : null;
@@ -4377,24 +4403,14 @@ document.getElementById('debug-unlock-all-polishes')?.addEventListener('click', 
 });
 
 // ---- Game Over Screen ----
-function assignMission(bankState) {
-    const unlocks = bankState?.unlocks ?? {};
-    const totalUnlocks = Object.values(unlocks).filter(Boolean).length;
-    // Labels vary per type from src/data/missions.js; types/targets stay fixed so
-    // the run lifecycle is unchanged (doc 11 §2/§3.4).
-    if (totalUnlocks === 0) {
-        return { type: 'retrieval', label: pickMissionBriefing('retrieval'), targetKills: 0, targetDepth: 0 };
-    } else if (totalUnlocks < 3) {
-        return { type: 'survey', label: pickMissionBriefing('survey'), targetKills: 0, targetDepth: 65 };
-    }
-    const idx = (totalUnlocks + Math.floor(Date.now() / 86400000)) % 4;
-    const missions = [
-        { type: 'retrieval', label: pickMissionBriefing('retrieval'), targetKills: 0, targetDepth: 0 },
-        { type: 'survey', label: pickMissionBriefing('survey'), targetKills: 0, targetDepth: 145 },
-        { type: 'elimination', label: pickMissionBriefing('elimination'), targetKills: 6, targetDepth: 0 },
-        { type: 'mapping', label: pickMissionBriefing('mapping'), targetKills: 0, targetDepth: 0 }
-    ];
-    return missions[idx];
+function assignMission() {
+    const key = 'hb_season_one_expedition_history';
+    let history = [];
+    try { history = JSON.parse(localStorage.getItem(key) ?? '[]'); } catch { /* new history */ }
+    if (!Array.isArray(history)) history = [];
+    const mission = nextSeasonExpedition(history);
+    localStorage.setItem(key, JSON.stringify([...history, mission.id].slice(-2)));
+    return mission;
 }
 
 // Surface a prior contractor's black box at the base/menu so failure is a
@@ -4480,11 +4496,29 @@ function generateDeathReport(stats, reason) {
             cause = '> CAUSE: EXOSUIT FAILURE — SUIT INTEGRITY COLLAPSE';
         }
     }
+    const deposited = window.game?.runDepositedResources ?? { tech: 0, coin: 0, med: 0 };
     return [
         `> TELEMETRY: ${biome} // TIER: ${depthTier} // DIST: ${Math.round(depth)}u // THREATS PURGED: ${stats.snailsKilled ?? 0}`,
-        `> CARGO: ${stats.totalPickups ?? 0} UNITS BANKED${recoverable}${boxCoord}`,
+        `> CARGO BANKED: ${deposited.tech ?? 0} TECH / ${deposited.coin ?? 0} COIN / ${deposited.med ?? 0} MED${recoverable}${boxCoord}`,
         cause
     ].join('\n');
+}
+
+function getNextActionSuggestion(bankState) {
+    if (!bankState) return null;
+    if (!fabricator.isFabricated('scatter_rep')) {
+        if (fabricator.isPrinting('scatter_rep')) return 'SCATTER REPEATER PRINTING — OPEN FAB BAY';
+        const missing = fabMissingResourceText({ tech: 12, coin: 6 }, bankState);
+        return missing ? `FIELD PRINT: SCATTER REPEATER — ${missing}` : 'SCATTER REPEATER READY TO PRINT — 12 TECH / 6 COIN IN FAB BAY';
+    }
+    if (!bankState.foundryActivated) {
+        const missing = fabMissingResourceText(FOUNDRY_ACTIVATION_COST, bankState);
+        return missing ? `FOUNDRY ACTIVATION: ${missing}` : 'ACTIVATE FOUNDRY — 25 TECH / 10 COIN / 5 MED';
+    }
+    const printing = FAB_RECIPES.find(recipe => fabricator.isPrinting(recipe.id));
+    if (printing) return `${printing.name} IS PRINTING — CHECK FAB BAY`;
+    if (fabricator.getFabricatedCount() > 0) return 'OPEN ARMORY — EQUIP YOUR FABRICATED GEAR';
+    return 'OPEN FAB BAY — CHOOSE YOUR FIRST WEAPON';
 }
 
 function formatRunTime(ms) {
@@ -4569,12 +4603,13 @@ function showGameOverScreen(stats, { isVictory = false, deathReason = 'hazard' }
         grantNoteEl.classList.add('hidden');
     }
     const box = blackBoxStore.load();
-    const banked = stats.totalPickups ?? 0;
-    if (bankNote) {
-        bankNote.textContent = isVictory
-            ? `BANKED THIS RUN: ${banked} TOTAL STORED`
-            : `BANKED BEFORE FAILURE: ${banked} TOTAL STORED`;
-    }
+    const bankState = bankManager.getState();
+    renderReturnManifest(bankNote, expeditionReceipt.finish(), bankState, {
+        victory: isVictory,
+        classType: window.game?.playerType ?? getSelectedHeroType(),
+        nextAction: getNextActionSuggestion(bankState),
+        season: getSeasonRunSummary()
+    });
     if (recoverableNote) {
         const s = box.active ? box.salvage : null;
         recoverableNote.textContent = s
@@ -4915,6 +4950,8 @@ function resetRunToStartingState({
         }
 
         runStartTime = Date.now();
+        expeditionReceipt.begin(runStartTime, bankManager.getState());
+        void beginSeasonRun(`local:${crypto.randomUUID()}`, 0);
         resetCommentaryRunState();
         showDeveloperCommentary('run_start');
         recordSteamTimelineEvent('run_start', 'Run Started', `${window.game?.playerType ?? getSelectedHeroType()} deployed into the bunker.`, {
@@ -4928,7 +4965,11 @@ function resetRunToStartingState({
         });
         const act2Run = isAct2RunActive();
         currentMission = act2Run ? null : assignMission(bankManager.getState());
-        currentRunModifier = pickRunModifier();
+        const runModifierSeed = (window.game?.isMultiplayer || window.activeMultiplayerSession)
+            && (window.activeMultiplayerSession?.seed || window.game?.multiplayerRoomCode)
+            ? `run-${window.activeMultiplayerSession?.seed || window.game?.multiplayerRoomCode}`
+            : undefined;
+        currentRunModifier = pickRunModifier(Math.random, runModifierSeed ? { seed: runModifierSeed } : {});
 
         resetPickupCounter();
         window.game?.respawnPlayer?.({ resetRunState: true, skipEffects, deferChunkMount });
@@ -5134,20 +5175,24 @@ window.addEventListener('goal-unlocked', (event) => {
 });
 
 window.addEventListener('o2-generator-upgraded', (event) => {
-    // Level 1 is the milestone build: it runs its own startup sequence, boss
-    // warning and dialogue, so the generic "major upgrade" bunker chatter would
-    // just talk over them. The *cutscene* is a different matter -- it is the
-    // establishing beat for that milestone, and returning early here meant
-    // event-o2-generator-upgraded.webm never played on the one build it was
-    // authored for. Suppress the chatter, keep the video.
+    // Level 1 is the milestone build: it runs the choreographed 8-beat sequence
+    // (blast doors close -> action video -> doors close -> 3D reveal -> generator rise & lights
+    // -> camera shake & warning broadcast -> doors close -> boss video -> final door reveal to combat).
     const isMilestoneBuild = event?.detail?.level === 1;
     if (!isMilestoneBuild) {
         const line = getDialogueLine('majorUpgrade', Math.random, getActiveSuitDialogueContext());
         if (line) showBiomePrompt(`> BUNKER: ${line}`);
+        playAuthoredEventOnce('o2_generator_upgraded', {
+            videoBase: 'int_04_warmth_beneath_the_ice',
+            eventDetail: event?.detail ?? {}
+        });
+        return;
     }
-    playAuthoredEventOnce('o2_generator_upgraded', {
-        videoBase: 'int_04_warmth_beneath_the_ice',
-        eventDetail: event?.detail ?? {}
+    void runO2MilestoneChoreography({
+        game: window.game,
+        triggerDoorTransition,
+        playCutsceneVideo,
+        showTacticalOverlay
     });
 });
 
@@ -7895,7 +7940,7 @@ async function runMissionIntroSequence({ deploymentHold = null } = {}) {
 
         // Show mission briefing after door transition
         if (currentMission?.label) {
-            window.setTimeout(() => showBiomePrompt(`MISSION: ${currentMission.label}`), 400);
+            window.setTimeout(() => showBiomePrompt(`MISSION: ${currentMission.label}${currentMission.decision ? ' — ' + currentMission.decision : ''}`), 400);
             if (currentRunModifier?.title) {
                 window.setTimeout(() => showBiomePrompt(`MODIFIER: ${currentRunModifier.title}`), 1400);
             }
@@ -9532,6 +9577,21 @@ function openSettingsModal() {
     if (mainNightVisionToggle) mainNightVisionToggle.checked = !!state.settings.nightVision;
     if (mainCommentaryToggle) mainCommentaryToggle.checked = !!state.settings.commentary;
 
+    const goreToggle = document.getElementById('setting-gore-toggle');
+    if (goreToggle) goreToggle.checked = isGoreEnabled();
+
+    const a11y = loadAccessibilitySettings();
+    const subtitleSizeSelect = document.getElementById('setting-subtitle-size');
+    if (subtitleSizeSelect) subtitleSizeSelect.value = a11y.subtitleSize;
+    const subtitleBackdropSelect = document.getElementById('setting-subtitle-backdrop');
+    if (subtitleBackdropSelect) subtitleBackdropSelect.value = a11y.subtitleBackdrop;
+    const contrastSelect = document.getElementById('setting-contrast');
+    if (contrastSelect) contrastSelect.value = a11y.contrast;
+
+    const langSelect = document.getElementById('setting-language-select');
+    if (langSelect) langSelect.value = getLocale();
+    syncLanguageSelectControls(getLocale());
+
     const uiScaleSelect = document.getElementById('setting-ui-scale');
     if (uiScaleSelect) uiScaleSelect.value = String(state.settings.uiScale || 100);
 
@@ -9568,7 +9628,18 @@ function openSettingsModal() {
     setAudioMixerOpen(false);
     setSaveDataOpen(false);
     setResetSaveConfirmOpen(false);
+    setCrosshairColorOpen(false);
+    setLanguageSelectOpen(false);
 }
+
+document.getElementById('setting-language-select')?.addEventListener('change', (e) => {
+    setLocale(e.target.value);
+    syncLanguageSelectControls(e.target.value);
+});
+window.addEventListener('locale-changed', (e) => {
+    syncLanguageSelectControls(e.detail?.locale || getLocale());
+});
+window.i18n = { getLocale, setLocale, t: i18nT, getAvailableLocales };
 
 document.getElementById('setting-ui-scale')?.addEventListener('change', (e) => {
     devSetUiScale(e.target.value);
@@ -9647,6 +9718,33 @@ mainCommentaryToggle?.addEventListener('change', (e) => {
     state.settings.commentary = enabled;
     localStorage.setItem(COMMENTARY_STORAGE_KEY, String(enabled));
 });
+
+// Gore keeps its own persistence (hb_gore) instead of riding on state.settings:
+// featureFlags is read from modules that never see the settings object --
+// enemyGibs is called from deep inside threeGame's enemy death path.
+const goreToggleEl = document.getElementById('setting-gore-toggle');
+goreToggleEl?.addEventListener('change', (e) => {
+    setGoreEnabled(Boolean(e.target.checked));
+});
+// The markup default is `checked`, but the saved preference is the truth.
+// openSettingsModal() re-syncs on every open; this covers the window before
+// the player ever opens Settings, so the DOM never disagrees with the flag.
+if (goreToggleEl) goreToggleEl.checked = isGoreEnabled();
+
+// Accessibility controls apply on change rather than on close, so a player
+// adjusting subtitle size mid-conversation sees it take effect on the line
+// they are reading. Applied once at boot for the same reason the gore toggle
+// is: the markup defaults are not the saved preference.
+document.getElementById('setting-subtitle-size')?.addEventListener('change', (e) => {
+    setSubtitleSize(e.target.value);
+});
+document.getElementById('setting-subtitle-backdrop')?.addEventListener('change', (e) => {
+    setSubtitleBackdrop(e.target.value);
+});
+document.getElementById('setting-contrast')?.addEventListener('change', (e) => {
+    setContrast(e.target.value);
+});
+applyAccessibilitySettings(loadAccessibilitySettings());
 function setCrosshairColor(value) {
     const color = String(value || '').toLowerCase();
     if (!/^#[0-9a-f]{6}$/.test(color)) return;
@@ -9663,7 +9761,40 @@ function syncCrosshairColorControls() {
     document.querySelectorAll('[data-crosshair-color]').forEach((button) => {
         button.setAttribute('aria-pressed', String(button.dataset.crosshairColor === selected));
     });
+    if (crosshairBadgeDot) {
+        crosshairBadgeDot.style.background = selected;
+        crosshairBadgeDot.style.boxShadow = `0 0 6px ${selected}`;
+    }
+    if (crosshairBadgeText) {
+        crosshairBadgeText.textContent = selected.toUpperCase();
+    }
 }
+
+function setCrosshairColorOpen(isOpen) {
+    if (!crosshairColorPopup) return;
+    const wasOpen = !crosshairColorPopup.classList.contains('hidden');
+    crosshairColorPopup.classList.toggle('hidden', !isOpen);
+    crosshairColorPopup.setAttribute('aria-hidden', isOpen ? 'false' : 'true');
+    if (isOpen) {
+        const selectedSwatch = crosshairColorPopup.querySelector('[data-crosshair-color][aria-pressed="true"]')
+            || crosshairColorPopup.querySelector('[data-crosshair-color]')
+            || saveCrosshairColorBtn;
+        selectedSwatch?.focus();
+    } else if (wasOpen && settingsPopup && !settingsPopup.classList.contains('hidden')) {
+        openCrosshairColorBtn?.focus();
+    }
+}
+
+openCrosshairColorBtn?.addEventListener('click', () => {
+    setCrosshairColorOpen(true);
+});
+closeCrosshairColorBtn?.addEventListener('click', () => {
+    setCrosshairColorOpen(false);
+});
+saveCrosshairColorBtn?.addEventListener('click', () => {
+    setCrosshairColorOpen(false);
+    window.AudioManager?.play?.('ui_click', { volume: 0.5 });
+});
 
 document.getElementById('setting-crosshair-color')?.addEventListener('input', (e) => {
     setCrosshairColor(e.target.value);
@@ -9671,6 +9802,68 @@ document.getElementById('setting-crosshair-color')?.addEventListener('input', (e
 document.querySelectorAll('[data-crosshair-color]').forEach((button) => {
     button.addEventListener('click', () => setCrosshairColor(button.dataset.crosshairColor));
 });
+
+function syncLanguageSelectControls(localeCode) {
+    const activeLocale = localeCode || getLocale() || 'en';
+    const langSelect = document.getElementById('setting-language-select');
+    if (langSelect && langSelect.value !== activeLocale) {
+        langSelect.value = activeLocale;
+    }
+    const buttons = document.querySelectorAll('.language-choice-btn');
+    buttons.forEach((button) => {
+        const isSelected = button.dataset.languageCode === activeLocale;
+        button.setAttribute('aria-checked', String(isSelected));
+    });
+    if (languageBadgeText) {
+        const activeItem = getAvailableLocales().find(l => l.code === activeLocale);
+        languageBadgeText.textContent = (activeItem?.name || activeLocale).toUpperCase();
+    }
+    if (languageBadgeFlag) {
+        const activeBtn = document.querySelector(`.language-choice-btn[data-language-code="${activeLocale}"]`);
+        const activeSvg = activeBtn?.querySelector('.language-flag-svg');
+        if (activeSvg) {
+            languageBadgeFlag.innerHTML = activeSvg.outerHTML;
+        }
+    }
+}
+
+function setLanguageSelectOpen(isOpen) {
+    if (!languageSelectPopup) return;
+    const wasOpen = !languageSelectPopup.classList.contains('hidden');
+    languageSelectPopup.classList.toggle('hidden', !isOpen);
+    languageSelectPopup.setAttribute('aria-hidden', isOpen ? 'false' : 'true');
+    if (isOpen) {
+        const selectedOption = languageSelectPopup.querySelector('.language-choice-btn[aria-checked="true"]')
+            || languageSelectPopup.querySelector('.language-choice-btn')
+            || saveLanguageSelectBtn;
+        selectedOption?.focus();
+    } else if (wasOpen && settingsPopup && !settingsPopup.classList.contains('hidden')) {
+        openLanguageSelectBtn?.focus();
+    }
+}
+
+openLanguageSelectBtn?.addEventListener('click', () => {
+    syncLanguageSelectControls(getLocale());
+    setLanguageSelectOpen(true);
+});
+closeLanguageSelectBtn?.addEventListener('click', () => {
+    setLanguageSelectOpen(false);
+});
+saveLanguageSelectBtn?.addEventListener('click', () => {
+    setLanguageSelectOpen(false);
+    window.AudioManager?.play?.('ui_click', { volume: 0.5 });
+});
+document.querySelectorAll('.language-choice-btn').forEach((button) => {
+    button.addEventListener('click', () => {
+        const code = button.dataset.languageCode;
+        if (code) {
+            setLocale(code);
+            syncLanguageSelectControls(code);
+            window.AudioManager?.play?.('ui_click', { volume: 0.5 });
+        }
+    });
+});
+
 
 if (settingsBtns.length > 0 && settingsPopup) {
     settingsBtns.forEach(btn => {
@@ -9709,6 +9902,8 @@ if (confirmYes) {
         if (settingsPopup) settingsPopup.classList.add('hidden');
         setAudioMixerOpen(false);
         setSaveDataOpen(false);
+        setCrosshairColorOpen(false);
+        setLanguageSelectOpen(false);
         cutsceneManager?.finishActiveRun(true);
         dialogueManager?.cancelDialogue();
         dialogueManager?.cancelTutorial();
@@ -9734,6 +9929,8 @@ if (closeSettings && settingsPopup) {
         setAudioMixerOpen(false);
         setSaveDataOpen(false);
         setResetSaveConfirmOpen(false);
+        setCrosshairColorOpen(false);
+        setLanguageSelectOpen(false);
     });
 }
 
@@ -9774,6 +9971,8 @@ saveDataCode?.addEventListener('focus', () => {
 function openFullSaveResetConfirm() {
     setAudioMixerOpen(false);
     setSaveDataOpen(false);
+    setCrosshairColorOpen(false);
+    setLanguageSelectOpen(false);
     setResetSaveConfirmOpen(true);
     window.AudioManager?.play?.('ui_click', { volume: 0.5 });
 }
@@ -9799,6 +9998,8 @@ resetSaveConfirmBtn?.addEventListener('click', () => {
     settingsPopup?.classList.add('hidden');
     setAudioMixerOpen(false);
     setSaveDataOpen(false);
+    setCrosshairColorOpen(false);
+    setLanguageSelectOpen(false);
     console.info(`Reset save data: cleared ${removed} record(s).`);
     window.setTimeout(() => window.location.reload(), 350);
 });
@@ -10713,6 +10914,20 @@ document.addEventListener('keydown', (event) => {
             return;
         }
 
+        const crosshairColorPopup = document.getElementById('crosshair-color-popup');
+        if (crosshairColorPopup && !crosshairColorPopup.classList.contains('hidden')) {
+            setCrosshairColorOpen(false);
+            event.preventDefault();
+            return;
+        }
+
+        const languagePopup = document.getElementById('language-select-popup');
+        if (languagePopup && !languagePopup.classList.contains('hidden')) {
+            setLanguageSelectOpen(false);
+            event.preventDefault();
+            return;
+        }
+
         const settingsPopup = document.getElementById('settings-popup');
         if (settingsPopup && !settingsPopup.classList.contains('hidden')) {
             settingsPopup.classList.add('hidden');
@@ -10721,6 +10936,8 @@ document.addEventListener('keydown', (event) => {
             setAudioMixerOpen(false);
             setSaveDataOpen(false);
             setResetSaveConfirmOpen(false);
+            setCrosshairColorOpen(false);
+            setLanguageSelectOpen(false);
             event.preventDefault();
             return;
         }
@@ -10935,6 +11152,34 @@ function fabMissingResourceText(cost, bank = bankManager.getState()) {
     return missing.length ? `NEED ${missing.join(' / ')}` : '';
 }
 
+function renderFieldPrint(grid, bank) {
+    const recipe = FAB_RECIPES.find(entry => entry.id === 'scatter_rep');
+    const cost = fabricator.getEffectiveCost(recipe);
+    const fabricated = fabricator.isFabricated(recipe.id);
+    const printing = fabricator.isPrinting(recipe.id);
+    const equipped = loadout.getEquippedId() === recipe.id;
+    const panel = document.createElement('div');
+    panel.className = 'fab-activation-panel';
+    panel.innerHTML = `<div class="fab-activation-panel__kicker">GUARANTEED FIELD PRINT · ALL CLASSES</div>
+        <div class="fab-activation-panel__title">SCATTER REPEATER</div>
+        <p>Three close-range projectiles per shot; shorter reach. Equip for your next deployment. No Foundry activation needed for this field schematic.</p>
+        <div class="fab-activation-panel__cost">${fabCostText(cost, bank, { showHaveNeed: !bankManager.canAfford(cost) })}</div>`;
+    const button = document.createElement('button');
+    button.id = 'season-field-print';
+    button.className = 'fab-card__btn';
+    button.textContent = fabricated ? (equipped ? 'EQUIPPED FOR NEXT RUN ✓' : 'EQUIP SCATTER REPEATER') : printing ? 'PRINTING…' : bankManager.canAfford(cost) ? 'PRINT SCATTER REPEATER' : fabMissingResourceText(cost, bank);
+    button.disabled = printing || equipped || (!fabricated && !bankManager.canAfford(cost));
+    button.addEventListener('click', () => {
+        try {
+            if (fabricated) { loadout.equip(recipe.id, fabricator); syncEquippedWeaponLabel(); }
+            else { fabricator.startPrint(recipe.id, bankManager); startFabTicker(); }
+            renderFabricationModal();
+        } catch { button.textContent = 'SAVE PENDING — REOPEN FAB BAY TO RECOVER'; }
+    });
+    panel.appendChild(button);
+    grid.appendChild(panel);
+}
+
 function renderFoundryActivationPanel(grid, bank) {
     const activated = bankManager.isFoundryActivated();
     if (activated) return false;
@@ -10985,6 +11230,7 @@ function renderFabricationModal() {
 
     const rollPanel = document.getElementById('fab-roll-panel');
     grid.innerHTML = '';
+    renderFieldPrint(grid, bank);
     if (renderFoundryActivationPanel(grid, bank)) {
         rollPanel?.classList.add('hidden');
         setTxt('fab-summary', `FOUNDRY ACTIVATION: ${fabCostText(FOUNDRY_ACTIVATION_COST, bank, { showHaveNeed: !bankManager.canActivateFoundry() })}`);
@@ -11155,8 +11401,7 @@ function closeFabricationModal() {
 function refreshFabAccess() {
     const fabCmd = document.getElementById('fabrication-command');
     if (!fabCmd) return;
-    const activated = bankManager.isFoundryActivated();
-    fabCmd.classList.toggle('hidden', !activated);
+    fabCmd.classList.remove('hidden');
     const btn = document.getElementById('fabrication-btn');
     if (btn) btn.textContent = '◇ FAB BAY';
     updateMenuCommandStatuses();
@@ -11166,6 +11411,10 @@ document.getElementById('fabrication-btn')?.addEventListener('click', openFabric
 document.getElementById('close-fabrication-modal')?.addEventListener('click', closeFabricationModal);
 setupClickOutside('fabrication-modal', closeFabricationModal);
 window.addEventListener('o2-generator-upgraded', refreshFabAccess);
+window.addEventListener('bank-updated', () => {
+    const modal = document.getElementById('fabrication-modal');
+    if (modal && !modal.classList.contains('hidden') && !fabRollSpinning) renderFabricationModal();
+});
 refreshFabAccess();
 
 // Base death-thread banner (doc 11 §4.D): show a prior contractor's black box at
@@ -12447,7 +12696,6 @@ function renderRosterModal(mode = 'continue') {
     grid.innerHTML = '';
     if (fabbed === 0) {
         // Single compact slot with one Fabricate button when 0 weapons are fabricated
-        const isFoundryUnlocked = bankManager.isFoundryActivated();
 
         const emptyCard = document.createElement('div');
         emptyCard.className = 'roster-weapon-empty-slot';
@@ -12468,9 +12716,7 @@ function renderRosterModal(mode = 'continue') {
 
         const sub = document.createElement('div');
         sub.className = 'roster-empty-sub';
-        sub.textContent = isFoundryUnlocked
-            ? 'Visit the Fabrication Bay to print sidearms from bunker salvage.'
-            : 'Power the base generator to unlock the Fabrication Bay.';
+        sub.textContent = 'Print a guaranteed Scatter Repeater for 12 Tech / 6 Coin in the Fab Bay.';
 
         textGroup.appendChild(title);
         textGroup.appendChild(sub);
@@ -12480,17 +12726,11 @@ function renderRosterModal(mode = 'continue') {
 
         const fabBtn = document.createElement('button');
         fabBtn.className = 'roster-weapon__btn roster-weapon__btn--single-fab';
-        if (isFoundryUnlocked) {
-            fabBtn.textContent = '+ OPEN FAB BAY';
-            fabBtn.addEventListener('click', () => {
-                window.AudioManager?.play?.('ui_click', { volume: 0.5 });
-                openFabricationModal();
-            });
-        } else {
-            fabBtn.textContent = 'FAB BAY LOCKED';
-            fabBtn.disabled = true;
-            fabBtn.classList.add('roster-weapon__btn--locked');
-        }
+        fabBtn.textContent = '+ OPEN FAB BAY';
+        fabBtn.addEventListener('click', () => {
+            window.AudioManager?.play?.('ui_click', { volume: 0.5 });
+            openFabricationModal();
+        });
         emptyCard.appendChild(fabBtn);
         grid.appendChild(emptyCard);
     } else {
@@ -12565,10 +12805,14 @@ setupClickOutside('settings-popup', () => {
         setAudioMixerOpen(false);
         setSaveDataOpen(false);
         setResetSaveConfirmOpen(false);
+        setCrosshairColorOpen(false);
+        setLanguageSelectOpen(false);
     }
 });
 
 setupClickOutside('save-data-popup', () => setSaveDataOpen(false));
+setupClickOutside('crosshair-color-popup', () => setCrosshairColorOpen(false));
+setupClickOutside('language-select-popup', () => setLanguageSelectOpen(false));
 
 function getDoorImage(key) {
     const CLASS_DOORS = {
@@ -13408,6 +13652,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     setDebugMode(state.settings.debug);
     installAudioMixerControls();
     setAudioMixerOpen(false);
+    setCrosshairColorOpen(false);
+    setLanguageSelectOpen(false);
+    syncLanguageSelectControls(getLocale());
     loadAudioMixSettings();
     loadKeyBindings();
     setupControlsModal();

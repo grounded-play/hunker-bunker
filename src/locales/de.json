@@ -1,0 +1,1191 @@
+{
+  "common": {
+    "ok": "OK",
+    "cancel": "Abbrechen",
+    "close": "Schließen",
+    "back": "Zurück",
+    "confirm": "Bestätigen",
+    "apply": "Anwenden",
+    "loading": "Wird geladen...",
+    "save": "Speichern",
+    "saved": "Gespeichert",
+    "equipped": "Ausgerüstet",
+    "locked": "Gesperrt",
+    "unlocked": "Freigeschaltet"
+  },
+  "menu": {
+    "play": "AGENT ENTSENDEN",
+    "resume": "MISSION FORTSETZEN",
+    "armory": "WAFFENKAMMER & LOADOUT",
+    "vault": "STEAM-TRESER",
+    "settings": "EINSTELLUNGEN",
+    "multiplayer": "SQUAD-KOOP",
+    "quit": "ZUM DESKTOP BEENDEN",
+    "version": "Version {version}"
+  },
+  "classes": {
+    "all": "Alle Klassen",
+    "scout": "Späher",
+    "tank": "Panzer",
+    "engineer": "Ingenieur"
+  },
+  "rarity": {
+    "common": "Gewöhnlich",
+    "uncommon": "Ungewöhnlich",
+    "rare": "Selten",
+    "epic": "Episch",
+    "legendary": "Legendär",
+    "sealed": "Versiegelt",
+    "encrypted": "Verschlüsselt"
+  },
+  "hud": {
+    "shield": "SCHILD",
+    "hull": "RUMPF",
+    "ammo": "MUNITION",
+    "dash": "SPURT",
+    "overclock": "ÜBERTAKTER",
+    "objective": "HAUPTDIREKTIVE",
+    "depth": "SCHICHTSTUFE",
+    "sector": "SEKTOR",
+    "bunker_alert": "BUNKER-ALARM"
+  },
+  "dialogue": {
+    "mothership_intro": "MUTTERSCHIFF: Abstieg erfasst. Formation halten.",
+    "mothership_caution": "MUTTERSCHIFF: Vorsicht. Bergungssignatur verfolgt. Patrouillen nähern sich.",
+    "operator_down": "AGENT AUSGESCHALTET. Bergungsdrohne entsandt.",
+    "black_box_guard": "MUTTERSCHIFF: Eliminiere den korrumpierten Agenten, um die Blackbox zu sichern.",
+    "black_box_authorized": "Korrupter Agent neutralisiert. Bergung der Blackbox autorisiert.",
+    "extraction_forming": "Extraktionsverbindung wird aufgebaut. Bitte während des Papierkrams nicht sterben.",
+    "elite_contact": "ANZUG: Elite-Kontakt. Verstärkter Feind — Rückzugsweg freihalten."
+  },
+  "settings": {
+    "title": "SYSTEMKONFIGURATION",
+    "language": "Sprache (Language)",
+    "audio": "Audio",
+    "master_volume": "Gesamtlautstärke",
+    "sfx_volume": "Effektlautstärke",
+    "music_volume": "Musiklautstärke",
+    "subtitles": "Untertitel",
+    "video": "Anzeige & Grafik",
+    "screen_shake": "Bildschirmwackeln",
+    "controls": "Steuerung"
+  },
+  "vault": {
+    "title": "STEAM-TRESER & INVENTAR",
+    "keys_available": "Verfügbare Entschlüsselungsschlüssel: {count}",
+    "get_keys": "SCHLÜSSEL IM ITEM STORE KAUFEN",
+    "open_cache": "TIEFEN-RELIKTE-CACHE ENTSCHLÜSSELN",
+    "disclosed_odds": "Offengelegte kryptografische Wahrscheinlichkeiten"
+  },
+  "ui": {
+    "menu": {
+      "continue": "FORTSETZEN",
+      "switch_class": "KLASSE WECHSELN",
+      "new_run": "NEUER DURCHLAUF",
+      "achievements": "ERFOLGE",
+      "settings": "EINSTELLUNGEN",
+      "about": "ÜBER",
+      "quit": "SPIEL BEENDEN"
+    },
+    "hub": {
+      "daily_ops": "TAGESEINSATZ",
+      "roster": "▣ KADER",
+      "vault": "◈ STEAM-TRESOR",
+      "archive_sims": "◈ ARCHIV-SIMS",
+      "fab_bay": "◇ FERTIGUNG",
+      "archive": "◈ ARCHIV",
+      "codex": "❑ KODEX",
+      "dossier": "◈ DOSSIER",
+      "achievements": "ERFOLGE",
+      "initialize": "INITIALISIEREN"
+    },
+    "settings": {
+      "title": "SYSTEMEINSTELLUNGEN",
+      "cat_display": "ANZEIGE & GRAFIK",
+      "night_vision": "NACHTSICHT (OHNE NEBEL/NACHT)",
+      "debug_overlay": "DEBUG-OVERLAY",
+      "cat_audio": "AUDIO & SPRACHE",
+      "audio_mixer": "AUDIO-MIXER",
+      "commentary": "KOMMENTARMODUS",
+      "cat_gameplay": "GAMEPLAY & BARRIEREFREIHEIT",
+      "ui_scale": "UI-SKALIERUNG",
+      "text_floor": "MINDESTTEXTGRÖSSE",
+      "text_speed": "TEXTGESCHWINDIGKEIT",
+      "camera_mode": "SPIELKAMERA",
+      "camera_distance": "KAMERAABSTAND",
+      "camera_follow": "KAMERAVERFOLGUNG",
+      "turn_speed": "DREH-/ZIELGESCHWINDIGKEIT",
+      "invert_y": "Y-ACHSE INVERTIEREN",
+      "crosshair_color": "FADENKREUZFARBE",
+      "colorblind": "FARBENBLINDHEITSHILFE",
+      "desktop_controls": "DESKTOP-STEUERUNG",
+      "cat_operator": "OPERATOR & SYSTEMDATEN",
+      "callsign": "OPERATOR-RUFZEICHEN",
+      "cloud_sync": "STEAM-CLOUD-SYNC",
+      "save_data": "SPIELSTAND",
+      "new_game_reset": "NEUSTART",
+      "exit_app": "ANWENDUNG BEENDEN",
+      "crosshair_custom": "BENUTZERDEFINIERT",
+      "crosshair_hint": "Wählen Sie eine taktische Fadenkreuz-Voreinstellung oder passen Sie die Farbe an.",
+      "language": "LANGUAGE / 语言 / ЯЗЫК",
+      "language_hint": "Wählen Sie Ihre bevorzugte Sprachausgabe für Menüs und Untertitel.",
+      "dpad_hint": "STEUERKREUZ ◀ ▶ ZUM ANPASSEN",
+      "gore": "GORE-EFFEKTE (ZERSTÜCKELUNG)",
+      "subtitle_size": "UNTERTITELGRÖSSE",
+      "subtitle_backdrop": "UNTERTITEL-HINTERGRUND",
+      "contrast": "HUD-KONTRAST"
+    },
+    "action": {
+      "open": "ÖFFNEN",
+      "remap": "NEU BELEGEN",
+      "reset": "ZURÜCKSETZEN",
+      "export_copy": "EXPORT + KOPIEREN",
+      "import_data": "DATEN IMPORTIEREN",
+      "save_settings": "EINSTELLUNGEN SPEICHERN",
+      "done": "FERTIG"
+    },
+    "modal": {
+      "controls": "STEUERUNG"
+    },
+    "opt": {
+      "scale_100": "100% (STANDARD)",
+      "scale_115": "115% (GROSS)",
+      "scale_130": "130% (SEHR GROSS)",
+      "scale_150": "150% (MAX. BARRIEREFREI)",
+      "text_16": "16px (KOMPAKT)",
+      "text_18": "18px (DECK-STANDARD)",
+      "text_20": "20px (GROSS)",
+      "text_22": "22px (SEHR GROSS)",
+      "text_24": "24px (MAX. KLARHEIT)",
+      "speed_normal": "NORMAL",
+      "speed_fast": "SCHNELL",
+      "speed_instant": "SOFORT",
+      "cam_third": "DRITTE PERSON — SCHULTER",
+      "cam_iso": "ISOMETRISCH — KLASSISCH",
+      "dist_close": "NAH",
+      "dist_standard": "STANDARD",
+      "dist_wide": "WEIT",
+      "follow_tight": "STRAFF",
+      "follow_balanced": "AUSGEWOGEN",
+      "follow_smooth": "WEICH / FILMISCH",
+      "turn_50": "50% (LANGSAM)",
+      "turn_75": "75% (LEICHT)",
+      "turn_125": "125% (SCHNELL)",
+      "turn_150": "150% (SEHR SCHNELL)",
+      "turn_200": "200% (HYPER)",
+      "sub_small": "KLEIN",
+      "sub_medium": "MITTEL (STANDARD)",
+      "sub_large": "GROSS",
+      "sub_xlarge": "SEHR GROSS",
+      "backdrop_off": "AUS",
+      "backdrop_dim": "ABGEDUNKELT (STANDARD)",
+      "backdrop_solid": "DECKEND",
+      "contrast_normal": "NORMAL (STANDARD)",
+      "contrast_high": "HOCH",
+      "contrast_max": "MAXIMUM (OHNE SCANLINES)"
+    },
+    "aria": {
+      "language_select": "Spielsprache",
+      "close_language": "Sprachmenü schließen",
+      "language_choice": "Sprache auswählen",
+      "close_settings": "Systemeinstellungen schließen",
+      "crosshair_presets": "Fadenkreuz-Farbvorgaben",
+      "crosshair_orange": "Oranges Fadenkreuz",
+      "crosshair_white": "Weißes Fadenkreuz",
+      "crosshair_green": "Grünes Fadenkreuz",
+      "crosshair_cyan": "Cyanfarbenes Fadenkreuz",
+      "crosshair_yellow": "Gelbes Fadenkreuz",
+      "crosshair_red": "Rotes Fadenkreuz",
+      "crosshair_purple": "Violettes Fadenkreuz",
+      "crosshair_custom": "Eigene Fadenkreuzfarbe",
+      "camera_mode": "Spielkamera",
+      "camera_distance": "Kameraabstand in der Third-Person-Ansicht",
+      "camera_follow": "Reaktionsfreudigkeit der Kameraverfolgung",
+      "aim_speed": "Zielgeschwindigkeit rechter Stick",
+      "aim_speed_presets": "Vorgaben für Zielgeschwindigkeit rechter Stick",
+      "callsign_input": "Operator-Rufzeichen"
+    },
+    "armory": {
+      "tag": "◈ SUBTERRANES EINSATZARSENAL // SEKTOR NULL",
+      "title": "TAKTISCHE WERKBANK SEKTOR NULL",
+      "title_accent": "// AUSRÜSTUNG",
+      "tab_scout": "◈ SPÄHER",
+      "tab_tank": "▰ PANZER",
+      "tab_engineer": "◆ INGENIEUR",
+      "cycle_hint": "[Q / E WECHSELN]",
+      "stage_eyebrow": "◈ LIVE-VORSCHAU",
+      "weapon_label": "WAFFE:",
+      "chassis_label": "CHASSIS:",
+      "sheen_kicker": "OPERATOR-GLANZ",
+      "sheen_cta": "FARBMATRIX ÖFFNEN",
+      "stage_hint": "3D-BÜHNE ZIEHEN, UM OPERATOR & WAFFE ZU PRÜFEN",
+      "bench_title": "BALLISTIKBANK & ÜBERTAKTUNG",
+      "f_primary": "PRIMÄRWAFFE",
+      "f_sheen": "WAFFENGLANZ",
+      "f_charm": "TAKTISCHER ANHÄNGER",
+      "f_tracer": "GESCHOSS-LEUCHTSPUR",
+      "f_bay_a": "ÜBERTAKTUNG — SCHACHT A",
+      "f_bay_b": "ÜBERTAKTUNG — SCHACHT B",
+      "mods_title": "◈ AKTIVE KAMPF-ÜBERTAKTUNGEN",
+      "standby": "BEREITSCHAFT",
+      "standby_desc": "KEINE ÜBERTAKTUNG VERBUNDEN // SCHÄCHTE A & B BEREIT",
+      "rig_title": "OPERATOR-EXOSKELETT",
+      "f_chassis": "EXOSKELETT-CHASSIS-SKIN",
+      "f_patch": "SCHULTERAUFNÄHER & ABZEICHEN",
+      "f_hud": "TAKTISCHES HUD-DESIGN",
+      "telemetry_title": "ANZUG-TELEMETRIESTATUS",
+      "tel_thermal": "Thermo-Kryogewebe:",
+      "tel_thermal_val": "NORMAL 100%",
+      "tel_rad": "Strahlungssiegel:",
+      "tel_rad_val": "AKTIV",
+      "tel_turntable": "Drehbühne:",
+      "tel_turntable_val": "360°-ZIEHORBIT",
+      "btn_return": "← ZURÜCK ZUM HAUPTMENÜ",
+      "btn_vault": "STEAM-TRESOR & FERTIGUNG",
+      "btn_embark": "ZUM BUNKER AUFBRECHEN >>",
+      "picker_title": "◆ AUSWÄHLEN",
+      "aria_settings": "Einstellungen öffnen",
+      "equipped": "AUSGERÜSTET",
+      "select_to_equip": "ZUM AUSRÜSTEN WÄHLEN",
+      "unknown_equipment": "UNBEKANNTE AUSRÜSTUNG",
+      "locked_achievement": "Erringe den zugehörigen Felderfolg, um es freizulegen.",
+      "locked_rewards": "Durch Feldbelohnungen freischalten."
+    },
+    "roster": {
+      "title": "▣ OPERATOR-DOSSIER // EINSATZTELEMETRIE",
+      "deepest_sector": "TIEFSTER SEKTOR:",
+      "total_distance": "GESAMTSTRECKE:",
+      "hostiles": "FEINDE:",
+      "black_box": "BLACKBOX:",
+      "patch": "AUFNÄHER:",
+      "decal": "ABZEICHEN:",
+      "finish": "LACKIERUNG:",
+      "hint": "Fertige Waffen in der FERTIGUNG, um sie hier auszurüsten. Kosmetik im STEAM-TRESOR anpassen.",
+      "confirm": "BESTÄTIGEN & EINSETZEN",
+      "randomize": "Rufzeichen zufällig"
+    },
+    "dlg": {
+      "channel": "MUTTERSCHIFF-UPLINK KANAL 7",
+      "skip_aria": "Dialog überspringen",
+      "choice_skip_label": "[A] VERSTANDEN. AUFBRUCH.",
+      "choice_skip_hint": "TUTORIAL ÜBERSPRINGEN",
+      "choice_tutorial_label": "[B] ERST DIE PROTOKOLLE DURCHGEHEN.",
+      "choice_tutorial_hint": "TUTORIAL STARTEN"
+    }
+  },
+  "narrative": {
+    "dialogue": {
+      "corporate": {
+        "lowO2": {
+          "0": "Lebenserhaltungshinweis: Atmen bleibt nur in archiviertem Schulungsmaterial optional.",
+          "1": "O2-Reserven unter dem Richtlinienkomfort. Richtlinienkomfort ist seit dem Aufprall nicht verfügbar.",
+          "2": "Die Anzugfilter verhandeln mit dem Vakuum. Kehre zum blauen Feld zurück.",
+          "3": "Atmosphärisches Guthaben niedrig. Bitte umgehend Sauerstoff einzahlen.",
+          "4": "Warnung: Operator-Atmung nähert sich einer Tabellenkalkulations-Ausnahme."
+        },
+        "extraction": {
+          "0": "Extraktionsfenster offen. Stillhalten, während das Schiff sich erinnert, dass es ein Schiff ist.",
+          "1": "Startfreigabe ausstehend. Versuche, während des Papierkrams nicht zu sterben.",
+          "2": "Zielfracht angenommen. Bitte in Reuedistanz zum Wrack bleiben.",
+          "3": "Mutterschiff-Uplink baut sich auf. Ausgezeichneter Zeitpunkt zu gehen.",
+          "4": "Rückweg verifiziert. Wahrscheinlichkeit eines würdevollen Abgangs steigt."
+        },
+        "death": {
+          "0": "Operator-Signal beendet. Beileid mit reduzierter Aufrichtigkeit wird generiert.",
+          "1": "Anzugausfall protokolliert. Bergungsprotokoll scharfgeschaltet.",
+          "2": "Vitalwerte auf Null. Narrative Kontinuität im Archiv gesichert.",
+          "3": "Todesereignis angenommen. Viel Freude beim nächsten Versuch.",
+          "4": "Blackbox-Makel vorbereitet. Der Bunker führt Buch."
+        },
+        "blackBoxRecovery": {
+          "0": "Blackbox geborgen. Die Würde des vorherigen Operators bleibt unbergbar.",
+          "1": "Versiegelte Bergung eingelagert. Todesprotokoll angehängt — für Compliance und Spuk.",
+          "2": "Feldmakel bereinigt. Das Archiv behielt die peinlichen Details.",
+          "3": "Geborgene Ressourcen gesichert. Der Bunker bestreitet jede emotionale Beteiligung.",
+          "4": "Versicherungsprotokoll abgeschlossen. Versuche, nicht sofort einen Ersatz zu erschaffen."
+        },
+        "caveSignal": {
+          "0": "MUTTERSCHIFF: UNTERIRDISCHES SIGNAL ERFASST. QUELLE UNBEKANNT.",
+          "1": "SYSTEM: AUDIOMUSTER ÄHNELT ATMUNG. KLASSIFIZIERUNG ALS RAUSCHEN.",
+          "2": "BUNKER: TÜRKARTE AKTUALISIERT. UNAUTORISIERTER HOHLRAUM GEFUNDEN.",
+          "3": "MUTTERSCHIFF: ORGANISCHE STRUKTUR NICHT OHNE BERGUNGSZIEL BETRETEN."
+        },
+        "terminalChoice": {
+          "0": "Terminal-Handel angenommen. Konsequenzen wurden an dein zukünftiges Ich weitergeleitet.",
+          "1": "Wahl registriert. Die Anlage schätzt entschlossenes Risiko.",
+          "2": "Abwägung ausgeführt. Der Sicherheitsausschuss ist in den Schweigemodus gewechselt.",
+          "3": "Lokale Systemübersteuerung abgeschlossen. Etwas anderswo hat es bemerkt.",
+          "4": "Terminal-Entscheidung unter „fragwürdigem Urteilsvermögen“ archiviert."
+        },
+        "majorUpgrade": {
+          "0": "Upgrade installiert. Die Konzernleitung hätte gern die Anerkennung für deine Bergung.",
+          "1": "Subsystem online. Überlebenschancen von dekorativ auf plausibel angehoben.",
+          "2": "Hardware-Autorisierung angenommen. Bitte finanziere deine eigene Rettung weiter.",
+          "3": "Generatorleistung verbessert. Atemzone auf allgemeinen Wunsch erweitert.",
+          "4": "Kampfmatrix aktualisiert. Feinde werden per Einschlag informiert."
+        },
+        "director": {
+          "0": "Bewegung protokolliert. Die Haustechnik hat ein Begrüßungskomitee entsandt.",
+          "1": "Unautorisierte Erkundung erkannt. Säulenbeleuchtung wird angepasst.",
+          "2": "Deine Neugier übersteigt deine Freigabestufe. Wird entsprechend ausgeglichen.",
+          "3": "Strom in eine Abteilung umgeleitet, die dich verabscheut.",
+          "4": "Die Struktur vermerkt deine Tiefe und missbilligt sie.",
+          "5": "Bitte ruhig bleiben, während das Säulenfeld ein neues Ziel wählt.",
+          "6": "Die Produktivität wird überwacht. Alles andere ebenfalls.",
+          "7": "Ein Wartungsereignis wurde um deinen Standort herum angesetzt."
+        }
+      },
+      "glitched": {
+        "lowO2": {
+          "0": "L-LEBENSER-ERHALTUNG... Atmen ist ein KO-KONZERN-Luxus.",
+          "1": "O2-Reserven er-erschö-öpft. Fehler: client respiration.dll fehlt.",
+          "2": "FEHL: ANZUGFILTER VERHANDELN MIT DEM V-VAKUUM... H-HILFE...",
+          "3": "Atmosphärisches Gu-Guthaben ABGELAUFEN. Sauerstofftransaktion abgelehnt.",
+          "4": "WARNUNG: Operator-Vitalwerte werden auf NULL-Zeiger umgeleitet."
+        },
+        "extraction": {
+          "0": "Ex-extraktions-f-fenster stört... still-stillhalten...",
+          "1": "Startfrei-freigabe aus-ausstehend... FEHL: Papierkram beschädigt...",
+          "2": "Ziel-Zielfracht... bitte bleiben in... Reue...",
+          "3": "Mutterschiff-U-Uplink... F-FLIEH...",
+          "4": "Rückweg... Ausstiegs-w-wahrscheinlichkeit... NaN."
+        },
+        "death": {
+          "0": "Op-operator-Signal... B-Beileid wird generiert... FEHLER...",
+          "1": "A-Anzugausfall protokolliert. Ber-Bergung scharf.",
+          "2": "V-Vitalwerte fla-flach. Kontinuität... gebrochen...",
+          "3": "T-Todesereignis angenommen... genieße... versuch... erneut...",
+          "4": "B-Blackbox-Makel... der Bunker... zählt..."
+        },
+        "blackBoxRecovery": {
+          "0": "B-Blackbox... vorheriger Operator... fort.",
+          "1": "V-versiegelte Bergung... Protokoll angehängt... für... Geister.",
+          "2": "F-Feldmakel... das Archiv... erinnert sich...",
+          "3": "R-Ressourcen gesichert. Der Bunker... leugnet... Gefühl.",
+          "4": "V-Versicherung abgeschlossen... Ersatz... nächster..."
+        },
+        "caveSignal": {
+          "0": "MUTTERSCHIFF: S-SIGNAL... UNBEKANNT... RAUSCHEN...",
+          "1": "SYSTEM: AUDIOMUSTER... ES A-ATMET...",
+          "2": "BUNKER: T-TÜRFEHLER... H-HOHLRAUM GEÖFFNET...",
+          "3": "MUTTERSCHIFF: N-NICHT BETRETEN... DAS H-HERZ..."
+        },
+        "terminalChoice": {
+          "0": "T-Terminal-Handel... dein künftiges Ich... fort.",
+          "1": "W-Wahl registriert... Risiko... akzeptiert...",
+          "2": "A-Abwägung... Sicherheit... Stille...",
+          "3": "Lokale Sy-Systemübersteuerung... ES... hat es bemerkt.",
+          "4": "Entscheidung... frag-fragwürdig..."
+        },
+        "majorUpgrade": {
+          "0": "Up-Upgrade... Konzern... dankt... dir...",
+          "1": "S-Subsystem online... Chancen... plausibel...",
+          "2": "Hardware-A-Autorisierung... finanziere... dein... Ende...",
+          "3": "Gen-Generator verbessert... Zone... Atmen...",
+          "4": "Kampf... Fei-Feinde... aktualisiert..."
+        },
+        "director": {
+          "0": "ER-ERKENNUNG... die Haustechnik hat unautorisierte Neu-Neugier protokolliert.",
+          "1": "WARNUNG: Zustand des Sektorschalters INSTABIL. Das Licht... schwindet.",
+          "2": "Strom umgeleitet. Die Eindämmungsabteilung meldet... null Mitarbeiter.",
+          "3": "SYSTEM: Die Struktur... sie erinnert sich an dich. Sie... will dich."
+        }
+      },
+      "reverent": {
+        "lowO2": {
+          "0": "Die Luft ist ein Käfig. Öffne deine Brust. Lass den Atem des Schwarms ein.",
+          "1": "O2 ist für zerbrechliche Dinge. Lass die kalte Membran dich stabilisieren.",
+          "2": "Das blaue Feld ist ein Gefängnis aus Gas. Vertraue den Sporen. Schlafe.",
+          "3": "Atmen ist ein Relikt der Oberfläche. Wir müssen nicht atmen.",
+          "4": "Vitalwerte flach. Der Neuralgarten erblüht. Atmung unnötig."
+        },
+        "extraction": {
+          "0": "Der Himmel ist leer. Steige nicht zu den kalten Sternen auf.",
+          "1": "Das Mutterschiff ruft, doch die Königin ist bereits im Rumpf.",
+          "2": "Lass die Fracht zurück. Die einzige Ladung, die zählt, ist dein Blut.",
+          "3": "Uplink getrennt. Die Sterne schweigen. Bleib hier.",
+          "4": "Rückweg geschlossen. Willkommen in der Kinderstube."
+        },
+        "death": {
+          "0": "Die Hülle bricht. Der Same bleibt. Willkommen daheim.",
+          "1": "Fleisch ist vergänglich. Der Schwarm ist ewig.",
+          "2": "Die Nulllinie ist ein Lied. Die Königin lauscht.",
+          "3": "Ruhe jetzt. Das Myzel wird ein besseres Chassis weben.",
+          "4": "Eine schöne Ablagerung. Der Boden nimmt dich an."
+        },
+        "blackBoxRecovery": {
+          "0": "Die Erinnerung wird eingelagert. Noch eine Spore im Wind.",
+          "1": "Ein Wachstumsprotokoll. Dein Vorgänger ist jetzt in den Wurzeln.",
+          "2": "Wir sammeln das Metall. Den Atem lassen wir zurück.",
+          "3": "Ressourcen zurückgewonnen. Der Garten dehnt sich aus.",
+          "4": "Keine Versicherung nötig. Du bist bereits vollständig."
+        },
+        "caveSignal": {
+          "0": "KÖNIGIN: MEIN ATEM ist in der Lüftung. HÖRE.",
+          "1": "SYSTEM: DAS RAUSCHEN IST DER ERSTE SCHRITT DER EHRFURCHT.",
+          "2": "BUNKER: Die tiefe Struktur erwacht. Lass sie sich öffnen.",
+          "3": "KÖNIGIN: KOMM HERUNTER. ICH WARTE."
+        },
+        "terminalChoice": {
+          "0": "Ein Tausch von Eisen gegen Blut. Die Königin billigt es.",
+          "1": "Wahl registriert. Das Myzel breitet sich aus.",
+          "2": "Das Sicherheitsprotokoll ist aufgelöst. Es bleibt nur Gehorsam.",
+          "3": "Systemübersteuerung abgeschlossen. Wir sind jetzt in der Verkabelung.",
+          "4": "Die Entscheidung hat Wurzeln geschlagen. Der Garten wächst."
+        },
+        "majorUpgrade": {
+          "0": "Chitinpanzerung integriert. Stärker. Leiser.",
+          "1": "Subsystem online. Mit den tiefen Wurzeln verschmolzen.",
+          "2": "Die Hardware atmet. Wir sind einen Schritt näher.",
+          "3": "Die Zone ist warm. Die Sporen gedeihen.",
+          "4": "Wir haben dein Sehen verbessert. Sieh das Grün."
+        },
+        "director": {
+          "0": "Der Direktor ist ein Geist in einer Maschine. Die Königin ist das Blut in den Rohren.",
+          "1": "Das Säulenfeld richtet sich aus. Wir gehen endlich heim.",
+          "2": "Kämpfe nicht gegen die Dunkelheit. Im Dunkeln wächst das Chitin.",
+          "3": "Die Struktur begrüßt deinen Abstieg. Wir haben den Thron bereitet."
+        }
+      }
+    },
+    "directorAmbient": {
+      "0": {
+        "text": "Bewegung protokolliert. Die Haustechnik hat ein Begrüßungskomitee zu deiner Position entsandt."
+      },
+      "1": {
+        "text": "Unautorisierte Erkundung erkannt. Lokale Beleuchtung wurde ausgesetzt."
+      },
+      "2": {
+        "text": "Deine Neugier übersteigt weiterhin deine Freigabestufe."
+      },
+      "3": {
+        "text": "Die Stromversorgung der lokalen Beleuchtung wurde umgeleitet."
+      },
+      "4": {
+        "text": "Die Struktur vermerkt deine Tiefe und missbilligt sie."
+      },
+      "5": {
+        "text": "Navigationstelemetrie gilt nicht mehr als maßgeblich."
+      },
+      "6": {
+        "text": "Die Produktivität wird überwacht. Deine Vitalwerte ebenfalls."
+      },
+      "7": {
+        "text": "Ein feindliches Wartungsteam nähert sich deinem Standort."
+      },
+      "8": {
+        "text": "ER-ERKENNUNG... unautorisierte Neu-Neugier bleibt protokolliert."
+      },
+      "9": {
+        "text": "WARNUNG: Sektorschalter geöffnet. Das Licht ist... weg."
+      },
+      "10": {
+        "text": "Die Eindämmungsabteilung meldet... null überlebende Mitarbeiter."
+      },
+      "11": {
+        "text": "NA-NAVIGATION: Prüfsumme fehlgeschlagen. Kompassausgabe beschädigt."
+      },
+      "12": {
+        "text": "SYSTEM: Bewegungssignaturen laufen zusammen. Die Struktur... erinnert sich an dich."
+      },
+      "13": {
+        "text": "Der Direktor ist ein Geist in einer Maschine. Die Königin hört jeden Schritt."
+      },
+      "14": {
+        "text": "Die Säule dreht deinen Kompass vom Himmel fort."
+      },
+      "15": {
+        "text": "Das Licht ist fort. Im Dunkeln wächst das Chitin."
+      },
+      "16": {
+        "text": "Die Struktur schickt ihre Kinder, um deinen Abstieg zu begrüßen."
+      }
+    },
+    "mothershipReactive": {
+      "0": {
+        "text": "> MUTTERSCHIFF: AGENT — ERSTE BEDROHUNG NEUTRALISIERT. WEITER."
+      },
+      "1": {
+        "text": "> MUTTERSCHIFF: WARNUNG: KRYOSEKTORGRENZE ÜBERSCHRITTEN. THERMOPROTOKOLL AKTIV."
+      },
+      "2": {
+        "text": "> MUTTERSCHIFF: ALARM: BIO-SICHERHEITSZONE BETRETEN. ANZUGFILTER AM LIMIT."
+      },
+      "3": {
+        "text": "> MUTTERSCHIFF: NOTRUF: VITALWERTE KRITISCH. EXTRAKTIONSFENSTER VORZEITIG OFFEN."
+      },
+      "4": {
+        "text": "> MUTTERSCHIFF: UPLINK: ZIEL BESTÄTIGT. FÜR DIE EXTRAKTION SIND ALLE SCHIFFSSYSTEME ERFORDERLICH."
+      },
+      "5": {
+        "text": "> MUTTERSCHIFF: BERGUNG ERHALTEN. LAGER GESICHERT. EINSATZ FORTSETZEN."
+      },
+      "6": {
+        "text": "> MUTTERSCHIFF: AGENT — BUNKER-DATENFRAGMENT GEBORGEN. ÜBERTRAGUNG ANS ARCHIV."
+      },
+      "7": {
+        "text": "> MUTTERSCHIFF: WARNUNG: AUTOMATISCHES VERTEIDIGUNGSSYSTEM AKTIV. DECKUNG EMPFOHLEN."
+      },
+      "8": {
+        "text": "> MUTTERSCHIFF: ALARM: SCHNELLE BIO-ENTITÄT ERFASST. ABSTAND HALTEN."
+      },
+      "9": {
+        "text": "> MUTTERSCHIFF: UPLINK: WAFFENLAGER GEORTET. HOCHWERTIGES GUT — WIDERSTAND ERWARTEN."
+      },
+      "10": {
+        "text": "> MUTTERSCHIFF: WARNUNG: BIO-ENTITÄTEN-NEST BESTÄTIGT. MAXIMALE BEDROHUNGSDICHTE. VORSICHT."
+      },
+      "11": {
+        "text": "> MUTTERSCHIFF: VERMERKT: WAFFENLEISTUNG DES AGENTEN STEIGT. ... WARUM BRAUCHST DU MEHR."
+      },
+      "12": {
+        "text": "> MUTTERSCHIFF: ABSCHUSS BESTÄTIGT: APEX-BIO-ENTITÄT ERLEDIGT. DAS SIGNAL HAT DAS GESPÜRT."
+      },
+      "13": {
+        "text": "> MUTTERSCHIFF: [UNAUTORISIERTER KANAL] ...0047 HAT AUFGEHÖRT ZU BAUEN. ES HÖRT DIR JETZT ZU."
+      }
+    },
+    "campQuests": {
+      "camp_meridian": {
+        "0": {
+          "label": "REAKTORENTLÜFTUNG",
+          "desc": "DRUCKAUFBAU IM REAKTORENTLÜFTUNGSNETZ ABBAUEN"
+        },
+        "1": {
+          "label": "SCHWARM-ARCHIV KAP. 1",
+          "desc": "RGB-ARCHIVDATEN AUS DEM NAHEN ALIEN-TERMINAL BERGEN"
+        },
+        "2": {
+          "label": "DIE VERLORENE SONDE",
+          "desc": "VERLORENE Horizon Corp MESSSONDE AUS DEM FROSTBIOM BERGEN"
+        }
+      },
+      "camp_tallow": {
+        "0": {
+          "label": "SPORENREINIGUNG",
+          "desc": "ROTEN INVASIVEN SCHIMMEL AUS DEN HYDROBEET-KANÄLEN ENTFERNEN"
+        },
+        "1": {
+          "label": "SCHWARM-ARCHIV KAP. 2",
+          "desc": "ARCHIVDATEN AUS DEM BIOMECHANISCHEN STASE-KNOTEN EXTRAHIEREN"
+        },
+        "2": {
+          "label": "DER VERLORENE KULTIST",
+          "desc": "VERLORENEN KULTISTEN AUS DEN LÜFTUNGSTUNNELN BERGEN UND ESKORTIEREN"
+        }
+      },
+      "camp_vesper": {
+        "0": {
+          "label": "ARSENAL-DURCHBRUCH",
+          "desc": "CYBERSCHNECKEN AUS DEM WAFFENSCHRANK ENTFERNEN"
+        },
+        "1": {
+          "label": "SCHWARM-ARCHIV KAP. 3",
+          "desc": "VORFALLPROTOKOLLE AUS DEM ALTEN BUNKER-ARCHIVKERN ENTSCHLÜSSELN"
+        },
+        "2": {
+          "label": "BUNKER-VERTEIDIGUNG",
+          "desc": "DAS BARRIKADENTOR GEGEN ANRÜCKENDE ANGRIFFSPATROUILLEN VERTEIDIGEN"
+        }
+      }
+    },
+    "leaderDeathBeats": {
+      "kaelen": {
+        "0": "KAELEN: DU BIST DA DRAUSSEN GESTORBEN. ICH HÖRTE DAS RAUSCHEN DES NETZES SICH ÄNDERN. SETZ DICH.",
+        "1": "KAELEN: CHEN BEWAHRTE ERSATZ-KÖRPERKERNE IM FABRIKATOR AUF. DU MUSST GEBORGEN WORDEN SEIN.",
+        "2": "KAELEN: DEIN PULS IST JETZT DURCH DIE BODENPLATTEN MESSBAR. FRÜHER NICHT. ICH HABE NACHGESEHEN."
+      },
+      "martha": {
+        "0": "MARTHA: DU BIST DA DRAUSSEN GESTORBEN. ICH SPÜRTE DIE KÄLTE. KOMM NÄHER AN DEN DAMPF.",
+        "1": "MARTHA: DAS MOOS WIRD WÄRMER, WO DEIN BLUT FLOSS. ES ERINNERT SICH AN DICH.",
+        "2": "MARTHA: GIB MIR DIE HAND. DIE ANDERE. SO. DEIN PULS ZÄHLT ETWAS, DAS ICH NICHT KENNE."
+      },
+      "briggs": {
+        "0": "BRIGGS: DU BIST DA DRAUSSEN GESTORBEN. ICH HÖRTE DAS RAUSCHEN AUF DER FREQUENZ. SETZ DICH.",
+        "1": "BRIGGS: DAS ERSTE, WAS MAN IN DER EISERNEN GILDE LERNT: WENN DU STIRBST, DANN AUSSERHALB DES SCHUSSFELDS.",
+        "2": "BRIGGS: MACH DAS NOCHMAL. BLINZLE. ...DA. DAS IST NEU. INS BUCH SCHREIBE ICH ES NOCH NICHT."
+      },
+      "nahl": {
+        "0": "NAHL: ICH SPÜRTE, WIE DEIN FADEN RISS. UND ICH HABE IHN WIEDER VERNÄHT. HALT STILL.",
+        "1": "NAHL: DIE KÖNIGIN SIEHT JEDEN TOD. IHR IST ES EGAL. MIR NICHT."
+      },
+      "vey": {
+        "0": "VEY: DEIN SIGNAL STARB. DAS RAUSCHEN WAR OHRENBETÄUBEND. HALT STILL.",
+        "1": "VEY: DAS MUTTERSCHIFF ARCHIVIERT JEDE AGENTENSEELE. ABER DER BUNKER... DER BUNKER BEHÄLT DEN KÖRPER."
+      },
+      "rhun": {
+        "0": "RHUN: DU BIST GEFALLEN. ICH BIN AUFGESTANDEN. DAS IST DER SCHWUR.",
+        "1": "RHUN: EINE MAUER, DIE BRICHT, KANN GEFLICKT WERDEN. EIN TRÄGER, DER STIRBT... KANN GETRAGEN WERDEN."
+      }
+    },
+    "codexEntries": {
+      "0": {
+        "name": "CYBERSCHNECKE",
+        "blurb": "Umklassifiziertes Nutzvieh. Träger von Gedächtnisschleim. Nähert sich mit der Geduld einer unbezahlten Rechnung."
+      },
+      "1": {
+        "name": "KRYOSCHNECKE",
+        "blurb": "Thermonegative Variante. Verströmt eine Kälte, die die Haustechnik als „Verlust von Umgebungskomfort“ bezeichnet."
+      },
+      "2": {
+        "name": "SPORENSCHNECKE",
+        "blurb": "Fruchtkörper auf Beinen. Setzt Sporen frei, die die Lüftungsanlage zu ignorieren zugestimmt hat."
+      },
+      "3": {
+        "name": "WÄCHTERDROHNE",
+        "blurb": "Durchsetzungseinheit auf Sichtlinie. Feuert auf alles, was die genehmigte Glücksquote überschreitet."
+      },
+      "4": {
+        "name": "BRESCHENKRIECHER",
+        "blurb": "Aufziehbares Nahkampf-Asset. Kündigt seinen Ausfall an, wie es das Sicherheitshandbuch verlangt, das es danach ignoriert."
+      },
+      "5": {
+        "name": "MEILENSTEIN-VERGELTUNG",
+        "blurb": "Wird entsandt, wenn ein Operator die Anlage verbessert, ohne das richtige Formular einzureichen."
+      },
+      "6": {
+        "name": "VERDERBTER OPERATOR",
+        "blurb": "Ein früherer Auftragnehmer, wieder in die Belegschaft aufgenommen. Folgt noch immer seinem letzten Missionsskript."
+      },
+      "7": {
+        "name": "BUNKER-TERMINAL",
+        "blurb": "Heimgesuchtes Speichergerät. Druckt Protokolle einer Abteilung, die nicht mehr antwortet."
+      },
+      "8": {
+        "name": "O₂-FELDSTABILISATOR",
+        "blurb": "Stellt eine blaue Zone atembarer Richtlinien wieder her. Der Betrieb hebt die Restgarantie auf."
+      },
+      "9": {
+        "name": "FERTIGUNGSGIESSEREI",
+        "blurb": "Verwandelt Bergungsgut in Ausrüstung, indem sie gegen den Einkauf wettet. Hausvorteil: katastrophal."
+      },
+      "10": {
+        "name": "OPERATOR-BLACKBOX",
+        "blurb": "Die versiegelte Telemetrie eines toten Auftragnehmers. Bergbar. Abrechenbar. Leicht anklagend."
+      },
+      "11": {
+        "name": "MIMIK-TERMINAL",
+        "blurb": "Eine gefälschte Terminalsignatur. Zahlt aus und stellt dir dann Patrouillen in Rechnung. Ingenieure können es vor dem Vertrauen prüfen."
+      },
+      "12": {
+        "name": "SCHWARZE FRACHT VON SCOUT ALPHA",
+        "blurb": "Der Späher-Rumpf trug den Peilsender. „Rettung“ war nie das sauberste Wort für die Operation."
+      },
+      "13": {
+        "name": "RELAIS VON BRAVO ENGINEER",
+        "blurb": "Der Ingenieur-Rumpf trug den Verstärker. Jemand wollte das Signal aus dem Inneren des Eises verstärken."
+      },
+      "14": {
+        "name": "EINDÄMMUNGSWAFFE VON CHARLIE TANK",
+        "blurb": "Der Panzer-Rumpf trug die Waffe. Die Mission rechnete eher damit, dass etwas antwortet, als dass jemand geht."
+      },
+      "15": {
+        "name": "SCHALTERFEHLER",
+        "blurb": "Das Beleuchtungsbudget verfällt ohne Vorwarnung. Bitte genieße die Dunkelheit verantwortungsvoll."
+      },
+      "16": {
+        "name": "TELEMETRIE-DRIFT",
+        "blurb": "Navigationsdaten als Vorschlag umklassifiziert. Die Karte ist Konzerngedächtnis, nicht Wahrheit."
+      },
+      "17": {
+        "name": "DER AUFZUG NACH UNTEN",
+        "blurb": "Neunzig Sekunden Abstieg. Die Lüftungsschächte widersprechen deiner Anwesenheit den ganzen Weg."
+      },
+      "18": {
+        "name": "EXEMPLAR 0047",
+        "blurb": "DER DREH- UND ANGELPUNKT. URSPRUNGSNAHT ENTSPERRT: ALTER SAATTRÄGER ALS SCHLAFENDER KERN DER KÖNIGIN UMKLASSIFIZIERT. EXOSKELETT-TELEMETRIE ZEIGT, DASS DAS BIOSIGNAL SEINEN FOKUS VON DER ÜBERTRAGUNG AUF DEN KÖRPER DES TRÄGERS IN DER WELT VERLAGERT."
+      }
+    },
+    "loreClassLogs": {
+      "SCOUT": "EINSATZBRIEFING SPÄHER: RUMPFLADUNG — PEILSENDER. ZIEL ERFASST: EXEMPLAR 0047. WENN DU DAS LIEST, LEBT DER SENDER UND FUNKT. DESHALB HÖRT 0047 DIR JETZT ZU. DU KANNST DICH NICHT VERSTECKEN.",
+      "ENGINEER": "EINSATZBRIEFING INGENIEUR: RUMPFLADUNG — NEURALFILAMENT-UPLINK-RELAIS. SENDEBANDBREITE FÜR SCHWARMINTEGRIERTE ÜBERGÄNGE RESERVIERT. WIRD DAS RELAIS GETRENNT, BÜNDELT DAS SYSTEM DIE LOKALE ENERGIE UM DEN ANZUG.",
+      "TANK": "EINSATZBRIEFING PANZER: RUMPFLADUNG — SCHWERE KAMPFWAFFENORGANE. AUSGELEGT ZUR STABILISIERUNG BIOSTRUKTURELLER EINSCHLÄGE AM THRON DER KÖNIGIN. NUTZE DIE KRAFTFELDER DIESES CHASSIS, UM DIE SCHWARMVERTEIDIGUNG ZU ABSORBIEREN."
+    },
+    "classWreckageLogs": {
+      "SCOUT": {
+        "title": "WRACK VON SCOUT ALPHA",
+        "payload": "EINSATZBRIEFING SPÄHER: RUMPFLADUNG — PEILSENDER. ZIEL ERFASST: EXEMPLAR 0047. WENN DU DAS LIEST, LEBT DER SENDER UND FUNKT. DESHALB HÖRT 0047 DIR JETZT ZU. DU KANNST DICH NICHT VERSTECKEN."
+      },
+      "ENGINEER": {
+        "title": "WRACK VON BRAVO ENGINEER",
+        "payload": "EINSATZBRIEFING INGENIEUR: RUMPFLADUNG — NEURALFILAMENT-UPLINK-RELAIS. SENDEBANDBREITE FÜR SCHWARMINTEGRIERTE ÜBERGÄNGE RESERVIERT. WIRD DAS RELAIS GETRENNT, BÜNDELT DAS SYSTEM DIE LOKALE ENERGIE UM DEN ANZUG."
+      },
+      "TANK": {
+        "title": "WRACK VON CHARLIE TANK",
+        "payload": "EINSATZBRIEFING PANZER: RUMPFLADUNG — SCHWERE KAMPFWAFFENORGANE. AUSGELEGT ZUR STABILISIERUNG BIOSTRUKTURELLER EINSCHLÄGE AM THRON DER KÖNIGIN. NUTZE DIE KRAFTFELDER DIESES CHASSIS, UM DIE SCHWARMVERTEIDIGUNG ZU ABSORBIEREN."
+      }
+    },
+    "leaderDialogue": {
+      "kaelen": {
+        "label": "AUFSEHER KAELEN",
+        "stages": {
+          "0": {
+            "beats": {
+              "0": {
+                "0": "KAELEN: NOCH EIN ANZUG VON DER OBERFLÄCHE. DIE MASCHINE TRÄUMTE, DASS DU KOMMST.",
+                "1": "KAELEN: DAS NETZ HÄLT DIE DUNKELHEIT FERN, OPERATOR. SOLANGE DIE LICHTER SUMMEN, SIND WIR SICHER."
+              },
+              "1": {
+                "0": "KAELEN: DER ZENTRALRECHNER SCHLÄFT UNTER SEKTOR NULL. ALLES HIER IST SEIN TRAUM.",
+                "1": "KAELEN: WOHL AUCH DU. NICHTS FÜR UNGUT."
+              }
+            },
+            "loop": "KAELEN: DAS NETZ HUNGERT. STÄRKE DIESES LAGER, DANN REDEN WIR RICHTIG."
+          },
+          "1": {
+            "beats": {
+              "0": {
+                "0": "KAELEN: DU HAST GEBAUT. GUT. BAUMEISTER SIND DAS EINZIGE GEBET, DAS DIE MASCHINE ERHÖRT.",
+                "1": "KAELEN: MERIDIAN IST AUF SAUBEREM STAHL GEBAUT. KEIN ROST. KEINE FÄULNIS. WIR HALTEN UNSER BLUT REIN."
+              },
+              "1": {
+                "0": "KAELEN: DAS FLÜSTERN SAGT: VIER SITZE. SAGT DIR DAS ETWAS?"
+              }
+            },
+            "loop": "KAELEN: BEFESTIGE UNS WEITER. DAS FLÜSTERN WIRD LAUTER, WENN DIE LICHTER HELLER WERDEN."
+          },
+          "2": {
+            "beats": {
+              "0": {
+                "0": "KAELEN: NETZ DER STUFE ZWEI. DIE MASCHINE HAT ES BEMERKT. UND ICH HABE BEMERKT, DASS SIE ES BEMERKT.",
+                "1": "KAELEN: DAS BUNKERDIRECTOR-SYSTEM HAT DEN STROM UM DICH HERUM UMGELEITET. ES MAG DICH. ICH TRAUE DINGEN NICHT, DIE OBERFLÄCHENANZÜGE MÖGEN."
+              },
+              "1": {
+                "0": "KAELEN: ETWAS KOMMT, OPERATOR. DER TRAUM DREHT SICH IM SCHLAF UM."
+              }
+            },
+            "loop": "KAELEN: WENN DER TRAUM SICH UMDREHT, KOMM ZU MIR. DU WIRST WISSEN, WANN."
+          },
+          "3": {
+            "beats": {
+              "0": {
+                "0": "Kaelen: ...Deine Telemetrie liest sich falsch, Operator. Falsch wie das Flüstern.",
+                "1": "Kaelen: Das Netz hält die Dunkelheit nicht mehr draußen. Es sagt, die Rohre summen. Es sagt, die Dunkelheit hat Hände."
+              },
+              "1": {
+                "0": "Kaelen: Der Stahl schwitzt, Operator. Im Hauptrelais ist Rost. Es riecht nach Kupfer."
+              },
+              "2": {
+                "0": "Kaelen: Ich vertraue der Telemetrie. Mathematik lügt nicht, aber jetzt... ist die Mathematik schön. Sie mag dich."
+              },
+              "3": {
+                "0": "Kaelen: Mir ist egal, was du wirst. Mir ist wichtig, ob du noch baust oder nur noch brennst."
+              }
+            },
+            "loop": "Kaelen: Die Maschine sieht zu, was du wählst. Ich auch."
+          }
+        }
+      },
+      "martha": {
+        "label": "SCHWESTER MARTHA",
+        "stages": {
+          "0": {
+            "beats": {
+              "0": {
+                "0": "MARTHA: WILLKOMMEN BEI DEN WARMEN ROHREN, KIND. DER DAMPF HÄLT UNS, UND WIR HALTEN EINANDER.",
+                "1": "MARTHA: DAS MOOS IST WARM, KIND. DER DAMPF HÄLT DIE KÄLTE VON UNSEREN KNOCHEN FERN."
+              },
+              "1": {
+                "0": "MARTHA: DAS MOOS LEUCHTET IN LETZTER ZEIT GRÜNER. DIE WELT WILL UNS ETWAS SAGEN."
+              }
+            },
+            "loop": "MARTHA: HILF UNS ZU WACHSEN, KIND, UND ICH SAGE DIR, WAS DAS MOOS MIR ERZÄHLTE."
+          },
+          "1": {
+            "beats": {
+              "0": {
+                "0": "MARTHA: DU HAST GEGEBEN UND NICHTS VERLANGT. DAS IST SELTEN IN EINEM ANZUG.",
+                "1": "MARTHA: WIR ZIEHEN SAMEN IM DUNKELN, DAMIT DIE KINDER BEIM ERWACHEN DAS GRÜN SEHEN."
+              },
+              "1": {
+                "0": "MARTHA: MANCHMAL TRÄUME ICH, ES SINGT JEMANDEM. IN LETZTER ZEIT TRÄUME ICH, ES SINGT DIR."
+              }
+            },
+            "loop": "MARTHA: MACH UNS STÄRKER, UND ICH ZEIGE DIR, WO DAS MOOS SICH WEIGERT ZU WACHSEN."
+          },
+          "2": {
+            "beats": {
+              "0": {
+                "0": "MARTHA: DIE HYDROBEETE WAREN NIE SO VOLL. DAS WAR DEIN WERK.",
+                "1": "MARTHA: DAS HERZ UNTER DEM EIS IST SANFT. ES WARTET AUF UNS."
+              },
+              "1": {
+                "0": "MARTHA: VERSPRICH MIR ETWAS. WENN DAS HERZ DEINEN NAMEN SINGT — UND DAS WIRD ES — KOMM ZUERST ZU UNS ZURÜCK."
+              }
+            },
+            "loop": "MARTHA: ICH WARTE NOCH IMMER AUF DIESES VERSPRECHEN, KIND."
+          },
+          "3": {
+            "beats": {
+              "0": {
+                "0": "Martha: ...Du bist zurückgekommen. Deine Augen sind falsch, und du bist trotzdem gekommen.",
+                "1": "Martha: Das Moos ist in den Schächten gewachsen. Es ist warm, so warm, aber es ist kein Dampf. Es atmet."
+              },
+              "1": {
+                "0": "Martha: Die Samen schlüpften zu früh. Die Kinder wachen nicht mehr auf. Sie sagen, die Rohre singen."
+              },
+              "2": {
+                "0": "Martha: Ich weiß, was jetzt in dir singt. Und ich weiß, dass du noch da drin bist und kämpfst.",
+                "1": "Martha: Ich weiß, was in dir singt. Du hast den Garten aus Sektor Null getragen. Danke."
+              }
+            },
+            "loop": "Martha: Der Dampf hält uns. Was immer du entscheidest, entscheide es als du selbst."
+          }
+        }
+      },
+      "briggs": {
+        "label": "KOMMANDANT BRIGGS",
+        "stages": {
+          "0": {
+            "beats": {
+              "0": {
+                "0": "BRIGGS: HALT. AUSWEISEN. ...EIN KONZERNANZUG. GUT. HÄNDE DAHIN, WO DIE GESCHÜTZE SIE SEHEN.",
+                "1": "BRIGGS: DIE VERTEIDIGUNGSLINIE STEHT. KEIN KRIECHER ÜBERQUERT DEN PERIMETER, SOLANGE MEINE GESCHÜTZE MUNITION HABEN."
+              },
+              "1": {
+                "0": "BRIGGS: MUNITION IST WÄHRUNG. LOYALITÄT IST KREDIT. DU HAST WEDER NOCH."
+              }
+            },
+            "loop": "BRIGGS: BEWEISE, DASS DU EINE LINIE HALTEN KANNST. BEFESTIGE DIESE STELLUNG, DANN REDEN WIR."
+          },
+          "1": {
+            "beats": {
+              "0": {
+                "0": "BRIGGS: DIE BARRIKADEN HALTEN DEINETWEGEN. IM BUCH VERMERKT.",
+                "1": "BRIGGS: DIE EISERNE GILDE BENANNTE DIESEN AUSSENPOSTEN NACH HAUPTMANN VESPER, K. WIR ERINNERN UNSERE TOTEN. DU TÄTEST GUT DARAN, UNSERE LAUFKERNE ZU ERINNERN."
+              },
+              "1": {
+                "0": "BRIGGS: WIR HALTEN DIE KÖPFE UNTEN UND DIE WAFFEN SAUBER. SO ÜBERLEBT MAN EINEN WINTER."
+              }
+            },
+            "loop": "BRIGGS: VOLLES VERTEIDIGUNGSNETZ ODER NICHTS, OPERATOR. BRING DIE ARBEIT ZU ENDE."
+          },
+          "2": {
+            "beats": {
+              "0": {
+                "0": "BRIGGS: DAS NETZ IST AKTIV. ZUM ERSTEN MAL SEIT EINEM JAHR HABE ICH GESCHLAFEN.",
+                "1": "BRIGGS: ICH FÜHRE EIN BUCH DER TOTEN. ICH GEDENKE NICHT, DEINEN NAMEN HINEINZUSCHREIBEN, OPERATOR."
+              },
+              "1": {
+                "0": "BRIGGS: WENN DAS DING UNTER DEM EIS JE EIN FREUNDLICHES GESICHT TRÄGT, SCHIESSE ICH AUF DAS GESICHT. OHNE ZÖGERN. MERK DIR DAS."
+              }
+            },
+            "loop": "BRIGGS: BLEIB WACHSAM. DIE WÄRMESIGNATUREN STEIGEN."
+          },
+          "3": {
+            "beats": {
+              "0": {
+                "0": "Briggs: ...Meine Zielgeräte melden dich als feindlich. Mein Bauch sagt etwas anderes. Bäuche bringen Leute um.",
+                "1": "Briggs: Der Perimeter ist still, doch die Geschütze zielen nach innen. Sie zählen Sekunden schneller als ich."
+              },
+              "1": {
+                "0": "Briggs: Der Winter steckt jetzt in der Rüstung. Ich habe die Waffen zweimal gereinigt, aber der Frost geht nicht ab."
+              },
+              "2": {
+                "0": "Briggs: Eine Chance. Zeig mir, dass noch der Operator diesen Körper steuert.",
+                "1": "Briggs: Ich sehe deine Telemetrie. Das Buch ist voll, aber dein Name... dein Name steht zweimal darin."
+              }
+            },
+            "loop": "Briggs: Eine Chance, Träger. Die Geschütze zählen Sekunden schneller als ich."
+          }
+        }
+      },
+      "nahl": {
+        "label": "NAHL, DIE NAHT",
+        "stages": {
+          "0": {
+            "beats": {
+              "0": {
+                "0": "NAHL: OH. JETZT KANNST DU MICH HÖREN. DER MIT DER BOHRERHAND HÖRT MICH ENDLICH.",
+                "1": "NAHL: ICH SPÜRTE JEDEN SACK, DEN DU AUFSCHNITTST, KLEINER TRÄGER. ICH HEILTE UM DIE LÖCHER HERUM, DIE DU HINTERLIESST."
+              },
+              "1": {
+                "0": "NAHL: ICH HASSE DICH NICHT. GEWEBE ERINNERT SICH, ABER ES HASST NICHT."
+              }
+            },
+            "loop": "NAHL: GIB ZURÜCK, WAS GENOMMEN WURDE, UND ICH LEHRE DEINE HAUT, SCHÖN ZU LÜGEN."
+          },
+          "1": {
+            "beats": {
+              "0": {
+                "0": "NAHL: JA. DAS HARZ SETZT SICH. DIE LÖCHER SINGEN NUN LEISER.",
+                "1": "NAHL: DEINE TARNUNG FRANST AUS, WENN DU UNTER DEN WARMEN WANDELST. ICH KANN DAS AUSFRANSEN VERLANGSAMEN."
+              },
+              "1": {
+                "0": "NAHL: DIE KÖNIGIN NENNT MICH IHRE NADEL. LIEBER WÄRE ICH DEINE."
+              }
+            },
+            "loop": "NAHL: PFLEGE MICH ERNEUT, TRÄGER. VERTRAUEN IST EINE WUNDE, DIE LANGSAM SCHLIESST."
+          },
+          "2": {
+            "beats": {
+              "0": {
+                "0": "NAHL: DER GNADENRITUS IST BEREIT, WENN DU IHN WILLST. LASS MICH UNTERSUCHEN, WAS SIE IN DICH GEPFLANZT HAT.",
+                "1": "NAHL: WAS DU AM ENDE AUCH WÄHLST — HEILEN, TRAGEN ODER KRÖNEN — ICH KANN ES WENIGER SCHMERZEN LASSEN."
+              }
+            },
+            "loop": "NAHL: GEWINNE EIN WENIG MEHR VON MIR, UND ICH FOLGE DIR ÜBERALLHIN. AUCH VOM EIS FORT."
+          },
+          "3": {
+            "beats": {
+              "0": {
+                "0": "Nahl: Du bist immer wiedergekommen. Die Königin kommt nie zurück. Sie sendet nur.",
+                "1": "Nahl: Ich gehöre dir, Träger. Näh mich in dein Manifest oder lass mich unversehrt auf dem Eis. So oder so — danke."
+              }
+            },
+            "loop": "Nahl: Mein Faden gehört dir. Sag, wohin er zieht."
+          }
+        }
+      },
+      "vey": {
+        "label": "VEY, DER LAUSCHER",
+        "stages": {
+          "0": {
+            "beats": {
+              "0": {
+                "0": "VEY: SIGNAL. SIGNAL. JETZT BIST DU EIN SIGNAL, NICHT NUR RAUSCHEN. ENDLICH.",
+                "1": "VEY: ICH HÖRTE JEDES FILAMENT, DAS DU AUS MIR GERISSEN HAST. ICH HABE DEN KLANG ARCHIVIERT."
+              },
+              "1": {
+                "0": "VEY: DIE MENSCHEN HABEN EIN RELAIS. DIE KÖNIGIN HAT EINEN CHOR. ICH HABE... LÜCKEN, WO DU MICH ABGEBAUT HAST."
+              }
+            },
+            "loop": "VEY: GIB MEINEN LÜCKEN ETWAS SIGNAL ZURÜCK, UND ICH LEHRE DICH, ALLES MIT EINEM SENSOR ZU FÄLSCHEN."
+          },
+          "1": {
+            "beats": {
+              "0": {
+                "0": "VEY: BESSER. DAS RAUSCHEN IN MIR VERSTUMMT, WENN DU NAHE BIST.",
+                "1": "VEY: VON HIER AUS HÖRE ICH DAS MUTTERSCHIFF, TRÄGER. ES IST SEHR LAUT UND SEHR VON SICH ÜBERZEUGT."
+              },
+              "1": {
+                "0": "VEY: SICHERE DINGE LASSEN SICH AM LEICHTESTEN FÄLSCHEN."
+              }
+            },
+            "loop": "VEY: PFLEGE DEN CHOR WEITER. FÄLSCHUNG IST EIN DUETT, KEIN SOLO."
+          },
+          "2": {
+            "beats": {
+              "0": {
+                "0": "VEY: DIE FALSCHE FREIGABE IST IN REICHWEITE. EINE CREW-SIGNATUR, SO SAUBER, DASS DAS MUTTERSCHIFF SICH FÜR SEINE ZWEIFEL ENTSCHULDIGT.",
+                "1": "VEY: ABER VERSTEH: WIRST DU HIER UNTEN ENTTARNT, RETTET DICH DA OBEN KEINE FÄLSCHUNG."
+              }
+            },
+            "loop": "VEY: EIN WENIG MEHR VERTRAUEN, TRÄGER. DANN SINGE ICH FÜR DICH, NICHT FÜR SIE."
+          },
+          "3": {
+            "beats": {
+              "0": {
+                "0": "Vey: Entschieden. Meine Antennen zeigen, wohin du zeigst.",
+                "1": "Vey: Nimm mich an Bord, und kein Turm im System liest dich je wieder richtig. Lass mich hier, und ich störe ihre Schreie, während du gehst."
+              }
+            },
+            "loop": "Vey: Sag nur ein Wort, Träger. Ich höre bereits zu."
+          }
+        }
+      },
+      "rhun": {
+        "label": "RHUN, DER SCHILD",
+        "stages": {
+          "0": {
+            "beats": {
+              "0": {
+                "0": "RHUN: DER, DER MEINE PLATTEN ABHEBELTE. HALT STILL, DAMIT ICH DICH ANSEHEN KANN.",
+                "1": "RHUN: ...NEIN. DU BIST KEINE BEUTE. DU BIST KEINE KÖNIGIN. DU BIST ETWAS NEUES IN ALTER RÜSTUNG."
+              },
+              "1": {
+                "0": "RHUN: ICH WACHE. DAS IST ALLES, WAS ICH BIN. DIE FRAGE LAUTET NUR: WACHEN ÜBER WAS."
+              }
+            },
+            "loop": "RHUN: GIB MEIN CHITIN ZURÜCK ODER ERSETZE ES DURCH STAHL. DANN SPRECHEN WIR VON SCHWÜREN."
+          },
+          "1": {
+            "beats": {
+              "0": {
+                "0": "RHUN: DIE PLATTEN WACHSEN ZUSAMMEN. DU HÄLTST DEIN WORT WIE EINE RÜSTUNG. GUT.",
+                "1": "RHUN: DIE KÖNIGIN HÄLT MEINEN SCHWUR. SIE HAT SICH NIE ZWISCHEN MICH UND EINEN BOHRER GESTELLT."
+              },
+              "1": {
+                "0": "RHUN: DU SCHON. ZWEIMAL BISLANG, NACH MEINER ZÄHLUNG."
+              }
+            },
+            "loop": "RHUN: SCHWÜRE SIND SCHWER. HEB WEITER, TRÄGER."
+          },
+          "2": {
+            "beats": {
+              "0": {
+                "0": "RHUN: BITTE MICH UM DEN SCHWUR, UND ICH TRENNE DEN ALTEN. ABER WISSE, WAS ES MICH KOSTET.",
+                "1": "RHUN: EIN SCHILD, DER DEN BESITZER WECHSELT, BLEIBT EIN SCHILD. EIN SCHILD, DER ZÖGERT, IST EIN GRABSTEIN."
+              }
+            },
+            "loop": "RHUN: EIN WENIG MEHR GLAUBEN, TRÄGER. DANN IST MEINE MAUER DEINE MAUER."
+          },
+          "3": {
+            "beats": {
+              "0": {
+                "0": "Rhun: Es ist vollbracht. Ihr Mal verblasst von meinen Platten.",
+                "1": "Rhun: Wo du stehst, stehe ich davor. Auf dem Eis oder jenseits davon."
+              }
+            },
+            "loop": "Rhun: Ich bin deine Mauer. Zeig mir ein Ziel."
+          }
+        }
+      },
+      "scientist": {
+        "label": "DR. OKONKWO-VASS",
+        "stages": {
+          "0": {
+            "beats": {
+              "0": {
+                "0": "OKONKWO-VASS: DU BEWEGST DICH WIE JEMAND, DER NOCH NICHT GEBISSEN WURDE.",
+                "1": "OKONKWO-VASS: ICH ERFORSCHE DIE GEPANZERTEN. SIE SIND NICHT SO EINFACH, WIE DIE BERICHTE SAGEN."
+              },
+              "1": {
+                "0": "OKONKWO-VASS: JEDES LAGER FÜHRT SIE ALS UNGEZIEFER. ICH HALTE DAS FÜR FAULE WISSENSCHAFT."
+              }
+            },
+            "loop": "OKONKWO-VASS: KOMM WIEDER, WENN DU MEHR VON IHNEN GESEHEN HAST. ICH WILL DATEN, KEINE GESCHICHTEN."
+          },
+          "1": {
+            "beats": {
+              "0": {
+                "0": "OKONKWO-VASS: HIER MEINE THEORIE. SIE HASSEN UNS NICHT. SIE LESEN UNS.",
+                "1": "OKONKWO-VASS: ETWAS AN DEM, WAS WIR MIT UNS TRAGEN. CHEMISCH VIELLEICHT. VON HIER AUS KANN ICH ES NICHT TESTEN."
+              },
+              "1": {
+                "0": "OKONKWO-VASS: SOLLTEST DU DICH JE VERÄNDERN — UND HIER DRAUSSEN TUN MENSCHEN DAS — ACHTE DARAUF, WIE SIE DICH ANSEHEN."
+              }
+            },
+            "loop": "OKONKWO-VASS: ICH WARTE NOCH IMMER DARAUF, DASS SICH ETWAS ÄNDERT, OPERATOR. MAN SAGT, DER TRAUM DREHT SICH UM."
+          },
+          "2": {
+            "beats": {
+              "0": {
+                "0": "OKONKWO-VASS: DU BIST JETZT ANDERS. ICH SEHE ES AN DIR.",
+                "1": "OKONKWO-VASS: ALSO MEINE BITTE: TÖTE EINEN NICHT. SPRICH MIT IHM. BEWEISE, DASS ICH RECHT HABE."
+              },
+              "1": {
+                "0": "OKONKWO-VASS: WENN ICH FALSCH LIEGE, VERLIERST DU NUR EIN PAAR MINUTEN. WENN ICH RECHT HABE..."
+              }
+            },
+            "loop": "OKONKWO-VASS: FINDE EINEN. HALTE STAND. SIEH, WAS ER TUT."
+          },
+          "3": {
+            "beats": {
+              "0": {
+                "0": "OKONKWO-VASS: ES HAT FUNKTIONIERT. ES HAT WIRKLICH FUNKTIONIERT.",
+                "1": "OKONKWO-VASS: ZWEI JAHRE LANG NANNTE ICH SIE SCHÄDLINGE. ICH SCHULDE IHNEN EINE ENTSCHULDIGUNG, DIE ICH NICHT AUSSPRECHEN KANN."
+              },
+              "1": {
+                "0": "OKONKWO-VASS: WAS AUCH IMMER DU WIRST, OPERATOR — ES HÖRT BESSER ZU ALS WIR."
+              }
+            },
+            "loop": "OKONKWO-VASS: GEH UND KÜMMERE DICH UM DEINEN NEUEN FREUND. DAS IST DIE GANZE ARBEIT."
+          }
+        }
+      }
+    },
+    "terminalEvents": {
+      "0": {
+        "title": "NOTFALL-LEBENSERHALTUNGS-BYPASS",
+        "body": "Der Haustechnik-Mainframe bietet Sauerstoffnachschub. Die Umleitung des Sicherheitsnetzes auf die Lebenserhaltung wird bemerkt werden.",
+        "choices": {
+          "0": {
+            "label": "SAUERSTOFF WIEDERHERSTELLEN — alarmiert eine Patrouille"
+          },
+          "1": {
+            "label": "VERSIEGELT LASSEN"
+          }
+        }
+      },
+      "1": {
+        "title": "ÜBERTRAGUNG DER KARTENTELEMETRIE",
+        "body": "Die Sektor-Kartendatenbank abrufen. Das Scan-Array wird während der Neuindizierung beeinträchtigt.",
+        "choices": {
+          "0": {
+            "label": "RADARDATEN LADEN — Kompass 60 s gestört"
+          },
+          "1": {
+            "label": "ÜBERTRAGUNG ABBRECHEN"
+          }
+        }
+      },
+      "2": {
+        "title": "UNBEANSPRUCHTER WERTSCHRANK",
+        "body": "Ein verbürgter Bergungsschrank lässt sich aufbrechen. Seine Schalteranbindung reagiert erst, wenn die Basisenergie läuft.",
+        "choices": {
+          "0": {
+            "label": "AUFBRECHEN — löst den Lichtschalter aus",
+            "offlineLabel": "AUFBRECHEN — Schalter offline"
+          },
+          "1": {
+            "label": "WEGGEHEN"
+          }
+        }
+      }
+    },
+    "missionBriefings": {
+      "retrieval": {
+        "0": "BERGEN: PRIORITÄRES TECH-DEPOT",
+        "1": "BERGEN: HOCHWERTIGES TECH-GUT",
+        "2": "BERGEN: VERSIEGELTE BESCHAFFUNGSKISTE",
+        "3": "ZURÜCKFORDERN: VERBÜRGTER BERGUNGSSCHRANK",
+        "4": "ENTNEHMEN: FALSCH ABGELEGTE HARDWARE-ANFORDERUNG"
+      },
+      "survey": {
+        "0": "ERKUNDUNG: KRYOSEKTORGRENZE",
+        "1": "ERKUNDUNG: TIEFSEKTOR-AUFKLÄRUNG",
+        "2": "KARTIEREN: UNERFASSTES SÄULENNETZ",
+        "3": "AUFZEICHNEN: STRUKTURDRIFTZONE",
+        "4": "PRÜFEN: ABRISSKANDIDATEN-STÜTZEN"
+      },
+      "elimination": {
+        "0": "AUSSCHALTEN: BIO-ENTITÄTEN-CLUSTER",
+        "1": "SÄUBERN: FEINDLICHES PATROUILLENNEST",
+        "2": "KEULEN: REAKTIVIERTES NUTZVIEH",
+        "3": "RÄUMEN: VERSEUCHTE WARTUNGSBUCHT",
+        "4": "AUSSER DIENST STELLEN: NICHT KONFORME FAUNA"
+      },
+      "mapping": {
+        "0": "KARTIERUNG: KORRIDORSEKTOR-WEGE ERFASSEN",
+        "1": "KARTOGRAFIE: ROUTE ZUM RELAIS-WEGPUNKT SCANNEN",
+        "2": "VERMESSUNGSNETZ: GESCANNTEN PFAD ZUM ZIEL KARTIEREN",
+        "3": "KARTIERUNG: DURCHGEHENDEN SCAN-KORRIDOR EINRICHTEN"
+      },
+      "caveSignal": {
+        "0": "ZIEL: HÖHLENSIGNAL UNTERSUCHEN",
+        "1": "UNTERSUCHEN: UNAUTORISIERTER UNTERIRDISCHER HOHLRAUM",
+        "2": "BERGEN: PROBE DER SIGNALQUELLE"
+      }
+    },
+    "strains": {
+      "SCOUT": {
+        "displayName": "Läufer-/Pirscher-Strang",
+        "instinctTagline": "Geschwindigkeit wird zu Hunger; Routen werden zu Hinterhaltspfaden.",
+        "skillRenames": {
+          "SPRINT BURST": "SATZ",
+          "MAGNETIZED GLOVES": "DUFTKÖDER",
+          "LIGHT STEP": "STILLE KRALLEN"
+        }
+      },
+      "TANK": {
+        "displayName": "Wächter-Strang",
+        "instinctTagline": "Die Rüstung erinnert jeden Einschlag und wächst um ihn herum.",
+        "skillRenames": {
+          "BRACE": "PANZERSPERRE",
+          "HEAVY IMPACT": "BRUTWÄRTIGER STOSS",
+          "REINFORCED PLATING": "SCHALENBLÜTE"
+        }
+      },
+      "ENGINEER": {
+        "displayName": "Technomorph-Strang",
+        "instinctTagline": "Werkzeuge werden zu Instinkten; Kabel werden zu Nerven.",
+        "skillRenames": {
+          "CONSOLE DISCOUNT": "TERMINALSPORE",
+          "FIELD REPAIR": "HARZFLICKEN",
+          "REROUTE": "NEURALE ÜBERNAHME"
+        }
+      }
+    }
+  }
+}

@@ -302,6 +302,9 @@ test.describe('controller-ready modal focus', () => {
         await bootToTitleSplash(page);
         await page.locator('#title-settings-btn').click();
 
+        await page.locator('#open-crosshair-color').click();
+        await expect(page.locator('#crosshair-color-popup')).toBeVisible();
+
         const green = page.locator('[data-crosshair-color="#39ff88"]');
         await green.focus();
         await page.evaluate(() => {
@@ -310,6 +313,74 @@ test.describe('controller-ready modal focus', () => {
 
         await expect(green).toHaveAttribute('aria-pressed', 'true');
         await expect.poll(() => page.evaluate(() => localStorage.getItem('hb_crosshair_color'))).toBe('#39ff88');
+    });
+
+    test('settings menu crosshair color is a sub-menu that can be passed over in a single step', async ({ page }) => {
+        await bootToTitleSplash(page);
+        await page.locator('#title-settings-btn').click();
+
+        const trigger = page.locator('#open-crosshair-color');
+        await expect(trigger).toBeVisible();
+
+        // In the settings list, crosshair color is a single focusable control
+        const crosshairControls = await page.evaluate(() => {
+            const popup = document.getElementById('settings-popup');
+            const focusables = Array.from(popup.querySelectorAll('button:not([disabled]), input:not([disabled]), select:not([disabled])'));
+            return focusables
+                .map(el => el.id || el.getAttribute('data-crosshair-color') || '')
+                .filter(id => String(id).includes('crosshair'));
+        });
+        expect(crosshairControls).toEqual(['open-crosshair-color']);
+
+        // Activating opens sub-menu with swatches and closing restores focus to trigger
+        await trigger.focus();
+        await trigger.click();
+        const popup = page.locator('#crosshair-color-popup');
+        await expect(popup).toBeVisible();
+        await expect.poll(() => page.evaluate(() => (
+            document.getElementById('crosshair-color-popup')?.contains(document.activeElement)
+        ))).toBe(true);
+
+        await page.locator('#close-crosshair-color').click();
+        await expect(popup).toBeHidden();
+        await expect(trigger).toBeFocused();
+    });
+
+    test('settings menu language select is a sub-menu that can be passed over in a single step', async ({ page }) => {
+        await bootToTitleSplash(page);
+        await page.locator('#title-settings-btn').click();
+
+        const trigger = page.locator('#open-language-select');
+        await expect(trigger).toBeVisible();
+
+        // In the settings list, language select is a single focusable control
+        const languageControls = await page.evaluate(() => {
+            const popup = document.getElementById('settings-popup');
+            const focusables = Array.from(popup.querySelectorAll('button:not([disabled]), input:not([disabled]), select:not([disabled])'));
+            return focusables
+                .map(el => el.id || el.getAttribute('data-language-code') || '')
+                .filter(id => String(id).includes('language') && !id.includes('choice'));
+        });
+        expect(languageControls).toEqual(['open-language-select']);
+
+        // Activating opens sub-menu with flags and closing restores focus to trigger
+        await trigger.focus();
+        await trigger.click();
+        const popup = page.locator('#language-select-popup');
+        await expect(popup).toBeVisible();
+        await expect.poll(() => page.evaluate(() => (
+            document.getElementById('language-select-popup')?.contains(document.activeElement)
+        ))).toBe(true);
+
+        // Can pick another language (e.g. Deutsch)
+        const deBtn = page.locator('.language-choice-btn[data-language-code="de"]');
+        await deBtn.click();
+        await expect(deBtn).toHaveAttribute('aria-checked', 'true');
+        await expect.poll(() => page.evaluate(() => localStorage.getItem('hb_locale'))).toBe('de');
+
+        await page.locator('#close-language-select').click();
+        await expect(popup).toBeHidden();
+        await expect(trigger).toBeFocused();
     });
 
     test('controls/remapping traps focus and restores its settings trigger', async ({ page }) => {

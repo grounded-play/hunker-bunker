@@ -127,6 +127,9 @@ export class ObjectiveRegistry {
         });
         if (this.history.length > HISTORY_LIMIT) this.history.shift();
         this.objectives.delete(id);
+        if (outcome === 'complete' && typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent('season-objective-complete', { detail: { id: obj.id, source: obj.source } }));
+        }
         this.notify();
     }
 

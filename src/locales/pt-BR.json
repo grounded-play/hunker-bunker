@@ -1,0 +1,1191 @@
+{
+  "common": {
+    "ok": "OK",
+    "cancel": "Cancelar",
+    "close": "Fechar",
+    "back": "Voltar",
+    "confirm": "Confirmar",
+    "apply": "Aplicar",
+    "loading": "Carregando...",
+    "save": "Salvar",
+    "saved": "Salvo",
+    "equipped": "Equipado",
+    "locked": "Bloqueado",
+    "unlocked": "Desbloqueado"
+  },
+  "menu": {
+    "play": "ENVIAR OPERADOR",
+    "resume": "RETOMAR MISSÃO",
+    "armory": "ARSENAL E EQUIPAMENTO",
+    "vault": "COFRE STEAM",
+    "settings": "CONFIGURAÇÕES",
+    "multiplayer": "COOP DE ESQUADRÃO",
+    "quit": "SAIR PARA ÁREA DE TRABALHO",
+    "version": "Versão {version}"
+  },
+  "classes": {
+    "all": "Todas as Classes",
+    "scout": "Batedor",
+    "tank": "Tanque",
+    "engineer": "Engenheiro"
+  },
+  "rarity": {
+    "common": "Comum",
+    "uncommon": "Incomum",
+    "rare": "Raro",
+    "epic": "Épico",
+    "legendary": "Lendário",
+    "sealed": "Selado",
+    "encrypted": "Criptografado"
+  },
+  "hud": {
+    "shield": "ESCUDO",
+    "hull": "BLINDAGEM",
+    "ammo": "MUNIÇÃO",
+    "dash": "IMPULSO",
+    "overclock": "OVERCLOCK",
+    "objective": "DIRETRIZ PRINCIPAL",
+    "depth": "NÍVEL DE ESTRATO",
+    "sector": "SETOR",
+    "bunker_alert": "ALERTA DO BÚNKER"
+  },
+  "dialogue": {
+    "mothership_intro": "NAVE-MÃE: Descida detectada. Mantenham a formação.",
+    "mothership_caution": "NAVE-MÃE: Cuidado. Assinatura de extração rastreada. Patrulhas a caminho.",
+    "operator_down": "OPERADOR ABATIDO. Drone de resgate enviado.",
+    "black_box_guard": "NAVE-MÃE: Elimine o operador corrompido para resgatar a caixa-preta.",
+    "black_box_authorized": "Operador corrompido neutralizado. Recuperação da caixa-preta autorizada.",
+    "extraction_forming": "Uplink de extração formando. Tente não morrer durante a burocracia.",
+    "elite_contact": "TRAJE: Contato de elite. Inimigo blindado — mantenha uma rota de fuga."
+  },
+  "settings": {
+    "title": "CONFIGURAÇÃO DO SISTEMA",
+    "language": "Idioma (Language)",
+    "audio": "Áudio",
+    "master_volume": "Volume Geral",
+    "sfx_volume": "Volume de Efeitos",
+    "music_volume": "Volume da Música",
+    "subtitles": "Legendas",
+    "video": "Tela e Gráficos",
+    "screen_shake": "Tremor de Tela",
+    "controls": "Controles"
+  },
+  "vault": {
+    "title": "COFRE E INVENTÁRIO STEAM",
+    "keys_available": "Chaves de decodificação disponíveis: {count}",
+    "get_keys": "OBTER CHAVES NA LOJA",
+    "open_cache": "DECODIFICAR CAIXA DE RELÍQUIA",
+    "disclosed_odds": "Probabilidades criptográficas divulgadas"
+  },
+  "ui": {
+    "menu": {
+      "continue": "CONTINUAR",
+      "switch_class": "TROCAR CLASSE",
+      "new_run": "NOVA INCURSÃO",
+      "achievements": "CONQUISTAS",
+      "settings": "CONFIGURAÇÕES",
+      "about": "SOBRE",
+      "quit": "SAIR DO JOGO"
+    },
+    "hub": {
+      "daily_ops": "OPS DIÁRIAS",
+      "roster": "▣ ELENCO",
+      "vault": "◈ COFRE STEAM",
+      "archive_sims": "◈ SIMS DE ARQUIVO",
+      "fab_bay": "◇ OFICINA",
+      "archive": "◈ ARQUIVO",
+      "codex": "❑ CODEX",
+      "dossier": "◈ DOSSIÊ",
+      "achievements": "CONQUISTAS",
+      "initialize": "INICIALIZAR"
+    },
+    "settings": {
+      "title": "CONFIGURAÇÕES DO SISTEMA",
+      "cat_display": "VÍDEO E GRÁFICOS",
+      "night_vision": "VISÃO NOTURNA (SEM NÉVOA/NOITE)",
+      "debug_overlay": "SOBREPOSIÇÃO DE DEPURAÇÃO",
+      "cat_audio": "ÁUDIO E VOZ",
+      "audio_mixer": "MIXER DE ÁUDIO",
+      "commentary": "MODO COMENTÁRIO",
+      "cat_gameplay": "JOGABILIDADE E ACESSIBILIDADE",
+      "ui_scale": "ESCALA DA INTERFACE",
+      "text_floor": "TAMANHO MÍNIMO DE TEXTO",
+      "text_speed": "VELOCIDADE DO TEXTO",
+      "camera_mode": "CÂMERA DE JOGO",
+      "camera_distance": "DISTÂNCIA DA CÂMERA",
+      "camera_follow": "SEGUIMENTO DA CÂMERA",
+      "turn_speed": "VELOCIDADE DE GIRO / MIRA",
+      "invert_y": "INVERTER EIXO Y",
+      "crosshair_color": "COR DA MIRA",
+      "colorblind": "ASSISTÊNCIA DALTÔNICA",
+      "desktop_controls": "CONTROLES DE DESKTOP",
+      "cat_operator": "OPERADOR E DADOS DO SISTEMA",
+      "callsign": "CODINOME DO OPERADOR",
+      "cloud_sync": "SINCRONIZAÇÃO STEAM CLOUD",
+      "save_data": "DADOS SALVOS",
+      "new_game_reset": "REINÍCIO DE JOGO",
+      "exit_app": "SAIR DO APLICATIVO",
+      "crosshair_custom": "PERSONALIZADO",
+      "crosshair_hint": "Selecione uma predefinição tática de retícula ou personalize sua cor.",
+      "language": "LANGUAGE / 语言 / ЯЗЫК",
+      "language_hint": "Escolha o idioma preferido para a interface e legendas.",
+      "dpad_hint": "D-PAD ◀ ▶ PARA AJUSTAR",
+      "gore": "EFEITOS DE SANGUE (DESMEMBRAMENTO)",
+      "subtitle_size": "TAMANHO DAS LEGENDAS",
+      "subtitle_backdrop": "FUNDO DAS LEGENDAS",
+      "contrast": "CONTRASTE DO HUD"
+    },
+    "action": {
+      "open": "ABRIR",
+      "remap": "REMAPEAR",
+      "reset": "REDEFINIR",
+      "export_copy": "EXPORTAR + COPIAR",
+      "import_data": "IMPORTAR DADOS",
+      "save_settings": "SALVAR CONFIGURAÇÕES",
+      "done": "CONCLUÍDO"
+    },
+    "modal": {
+      "controls": "CONTROLES"
+    },
+    "opt": {
+      "scale_100": "100% (PADRÃO)",
+      "scale_115": "115% (GRANDE)",
+      "scale_130": "130% (MUITO GRANDE)",
+      "scale_150": "150% (MÁX. ACESSIBILIDADE)",
+      "text_16": "16px (COMPACTO)",
+      "text_18": "18px (PADRÃO DECK)",
+      "text_20": "20px (GRANDE)",
+      "text_22": "22px (MUITO GRANDE)",
+      "text_24": "24px (MÁX. CLAREZA)",
+      "speed_normal": "NORMAL",
+      "speed_fast": "RÁPIDA",
+      "speed_instant": "INSTANTÂNEA",
+      "cam_third": "TERCEIRA PESSOA — SOBRE O OMBRO",
+      "cam_iso": "ISOMÉTRICA — CLÁSSICA",
+      "dist_close": "PERTO",
+      "dist_standard": "PADRÃO",
+      "dist_wide": "LONGE",
+      "follow_tight": "FIRME",
+      "follow_balanced": "EQUILIBRADO",
+      "follow_smooth": "SUAVE / CINEMÁTICO",
+      "turn_50": "50% (LENTA)",
+      "turn_75": "75% (LEVE)",
+      "turn_125": "125% (RÁPIDA)",
+      "turn_150": "150% (MUITO RÁPIDA)",
+      "turn_200": "200% (HIPER)",
+      "sub_small": "PEQUENO",
+      "sub_medium": "MÉDIO (PADRÃO)",
+      "sub_large": "GRANDE",
+      "sub_xlarge": "MUITO GRANDE",
+      "backdrop_off": "DESLIGADO",
+      "backdrop_dim": "ESCURECIDO (PADRÃO)",
+      "backdrop_solid": "SÓLIDO",
+      "contrast_normal": "NORMAL (PADRÃO)",
+      "contrast_high": "ALTO",
+      "contrast_max": "MÁXIMO (SEM LINHAS DE VARREDURA)"
+    },
+    "aria": {
+      "language_select": "Idioma do jogo",
+      "close_language": "Fechar menu de idioma",
+      "language_choice": "Selecionar idioma",
+      "close_settings": "Fechar configurações do sistema",
+      "crosshair_presets": "Predefinições de cor da mira",
+      "crosshair_orange": "Mira laranja",
+      "crosshair_white": "Mira branca",
+      "crosshair_green": "Mira verde",
+      "crosshair_cyan": "Mira ciano",
+      "crosshair_yellow": "Mira amarela",
+      "crosshair_red": "Mira vermelha",
+      "crosshair_purple": "Mira roxa",
+      "crosshair_custom": "Cor de mira personalizada",
+      "camera_mode": "Câmera de jogo",
+      "camera_distance": "Distância da câmera em terceira pessoa",
+      "camera_follow": "Resposta do seguimento da câmera em terceira pessoa",
+      "aim_speed": "Velocidade de mira do analógico direito",
+      "aim_speed_presets": "Predefinições de velocidade de mira do analógico direito",
+      "callsign_input": "Codinome do operador"
+    },
+    "armory": {
+      "tag": "◈ ARSENAL SUBTERRÂNEO PRÉ-MISSÃO // SETOR ZERO",
+      "title": "BANCADA TÁTICA DO SETOR ZERO",
+      "title_accent": "// EQUIPAMENTO",
+      "tab_scout": "◈ BATEDOR",
+      "tab_tank": "▰ TANQUE",
+      "tab_engineer": "◆ ENGENHEIRO",
+      "cycle_hint": "[Q / E ALTERNAR]",
+      "stage_eyebrow": "◈ PRÉVIA AO VIVO",
+      "weapon_label": "ARMA:",
+      "chassis_label": "CHASSI:",
+      "sheen_kicker": "BRILHO DO OPERADOR",
+      "sheen_cta": "ABRIR MATRIZ DE TINTA",
+      "stage_hint": "ARRASTE O PALCO 3D PARA INSPECIONAR OPERADOR E ARMA",
+      "bench_title": "BANCADA BALÍSTICA E OVERCLOCKS",
+      "f_primary": "ARMA PRIMÁRIA",
+      "f_sheen": "BRILHO DE ARMA",
+      "f_charm": "PINGENTE TÁTICO",
+      "f_tracer": "TRAÇADOR DE PROJÉTIL",
+      "f_bay_a": "OVERCLOCK — BAIA A",
+      "f_bay_b": "OVERCLOCK — BAIA B",
+      "mods_title": "◈ OVERCLOCKS DE COMBATE ATIVOS",
+      "standby": "EM ESPERA",
+      "standby_desc": "NENHUM OVERCLOCK VINCULADO // BAIAS A E B PRONTAS",
+      "rig_title": "EQUIPAMENTO DE EXOTRAJE",
+      "f_chassis": "APARÊNCIA DO CHASSI",
+      "f_patch": "INSÍGNIA DE OMBRO",
+      "f_hud": "TEMA DE HUD TÁTICO",
+      "telemetry_title": "STATUS DE TELEMETRIA DO TRAJE",
+      "tel_thermal": "Malha criotérmica:",
+      "tel_thermal_val": "NOMINAL 100%",
+      "tel_rad": "Vedação antirradiação:",
+      "tel_rad_val": "ATIVO",
+      "tel_turntable": "Plataforma giratória:",
+      "tel_turntable_val": "ÓRBITA 360° ARRASTANDO",
+      "btn_return": "← VOLTAR AO MENU PRINCIPAL",
+      "btn_vault": "COFRE STEAM E OFICINA",
+      "btn_embark": "EMBARCAR PARA O BÚNKER >>",
+      "picker_title": "◆ SELECIONAR",
+      "aria_settings": "Abrir configurações",
+      "equipped": "EQUIPADO",
+      "select_to_equip": "SELECIONE PARA EQUIPAR",
+      "unknown_equipment": "EQUIPAMENTO DESCONHECIDO",
+      "locked_achievement": "Conquiste a conquista de campo para revelar.",
+      "locked_rewards": "Desbloqueie com recompensas de campo."
+    },
+    "roster": {
+      "title": "▣ DOSSIÊ DO OPERADOR // TELEMETRIA DE IMPLANTAÇÃO",
+      "deepest_sector": "SETOR MAIS PROFUNDO:",
+      "total_distance": "DISTÂNCIA TOTAL:",
+      "hostiles": "HOSTIS:",
+      "black_box": "CAIXA-PRETA:",
+      "patch": "INSÍGNIA:",
+      "decal": "EMBLEMA:",
+      "finish": "PINTURA:",
+      "hint": "Fabrique armas na OFICINA para equipá-las aqui. Personalize cosméticos no COFRE STEAM.",
+      "confirm": "CONFIRMAR E IMPLANTAR",
+      "randomize": "Codinome aleatório"
+    },
+    "dlg": {
+      "channel": "CANAL 7 DE UPLINK DA NAVE-MÃE",
+      "skip_aria": "Pular diálogo",
+      "choice_skip_label": "[A] ENTENDIDO. SEGUINDO.",
+      "choice_skip_hint": "PULAR TUTORIAL",
+      "choice_tutorial_label": "[B] ME EXPLIQUE OS PROTOCOLOS ANTES.",
+      "choice_tutorial_hint": "INICIAR TUTORIAL"
+    }
+  },
+  "narrative": {
+    "dialogue": {
+      "corporate": {
+        "lowO2": {
+          "0": "Aviso de suporte vital: respirar continua opcional apenas no material de treinamento arquivado.",
+          "1": "Reservas de O2 abaixo do conforto normativo. O conforto normativo está indisponível desde o impacto.",
+          "2": "Os filtros do traje estão negociando com o vácuo. Retorne ao campo azul.",
+          "3": "Crédito atmosférico baixo. Deposite oxigênio imediatamente.",
+          "4": "Aviso: a respiração do operador se aproxima de uma exceção de planilha."
+        },
+        "extraction": {
+          "0": "Janela de extração aberta. Fique parado enquanto a nave lembra que é uma nave.",
+          "1": "Autorização de lançamento pendente. Tente não morrer durante a papelada.",
+          "2": "Carga do objetivo aceita. Permaneça dentro da distância de arrependimento dos destroços.",
+          "3": "Uplink com a nave-mãe se formando. Excelente hora para partir.",
+          "4": "Rota de retorno verificada. Probabilidade de saída digna em alta."
+        },
+        "death": {
+          "0": "Sinal do operador encerrado. Gerando condolências com sinceridade reduzida.",
+          "1": "Falha do traje registrada. Protocolo de recuperação de sucata armado.",
+          "2": "Sinais vitais zerados. Continuidade narrativa preservada no arquivo.",
+          "3": "Evento de morte aceito. Aproveite sua próxima tentativa.",
+          "4": "Mancha de caixa-preta preparada. O búnquer está contando."
+        },
+        "blackBoxRecovery": {
+          "0": "Caixa-preta recuperada. A dignidade do operador anterior continua irrecuperável.",
+          "1": "Sucata selada depositada. Registro de morte anexado para conformidade e assombração.",
+          "2": "Mancha de campo removida. O arquivo guardou os detalhes constrangedores.",
+          "3": "Recursos recuperados garantidos. O búnquer nega qualquer investimento emocional.",
+          "4": "Protocolo de seguro concluído. Tente não criar um substituto imediatamente."
+        },
+        "caveSignal": {
+          "0": "NAVE-MÃE: SINAL SUBTERRÂNEO DETECTADO. FONTE DESCONHECIDA.",
+          "1": "SISTEMA: PADRÃO DE ÁUDIO SEMELHANTE A RESPIRAÇÃO. CLASSIFICADO COMO ESTÁTICA.",
+          "2": "BÚNQUER: MAPA DE PORTAS ATUALIZADO. CAVIDADE NÃO AUTORIZADA ENCONTRADA.",
+          "3": "NAVE-MÃE: NÃO ENTRE NA ESTRUTURA ORGÂNICA SEM OBJETIVO DE RECUPERAÇÃO."
+        },
+        "terminalChoice": {
+          "0": "Acordo do terminal aceito. As consequências foram encaminhadas ao seu eu futuro.",
+          "1": "Escolha registrada. A instalação aprecia risco decidido.",
+          "2": "Troca executada. O comitê de segurança entrou em modo silencioso.",
+          "3": "Substituição do sistema local concluída. Algo em outro lugar percebeu.",
+          "4": "Decisão do terminal arquivada sob julgamento questionável."
+        },
+        "majorUpgrade": {
+          "0": "Melhoria instalada. A corporação gostaria do crédito pela sua sucata.",
+          "1": "Subsistema on-line. Chances de sobrevivência passaram de decorativas a plausíveis.",
+          "2": "Autorização de hardware aceita. Continue financiando o próprio resgate.",
+          "3": "Saída do gerador melhorada. Zona respirável ampliada a pedidos.",
+          "4": "Matriz de combate atualizada. Os hostis serão informados por impacto."
+        },
+        "director": {
+          "0": "Movimento registrado. A manutenção enviou um comitê de boas-vindas.",
+          "1": "Exploração não autorizada detectada. Ajustando a iluminação dos pilares.",
+          "2": "Sua curiosidade excede sua autorização. Compensando de acordo.",
+          "3": "Energia redirecionada para um departamento que tem ressentimento de você.",
+          "4": "A estrutura registra sua profundidade e desaprova.",
+          "5": "Mantenha a calma enquanto o campo de colunas seleciona um novo destino.",
+          "6": "A produtividade está sendo monitorada. Todo o resto também.",
+          "7": "Um evento de manutenção foi agendado ao redor da sua localização."
+        }
+      },
+      "glitched": {
+        "lowO2": {
+          "0": "S-SUPORTE VI-VITAL... respirar é um luxo CO-CORPORATIVO.",
+          "1": "Reservas de O2 esg-esgot-tadas. Erro: client respiration.dll ausente.",
+          "2": "ERR: FILTROS DO TRAJE NEGOCIANDO COM O V-VÁCUO... SO-SOCORRO...",
+          "3": "Cré-crédito atmosférico EXPIRADO. Transação de oxigênio recusada.",
+          "4": "AVISO: sinais vitais do operador redirecionados para ponteiro NULL."
+        },
+        "extraction": {
+          "0": "Ex-extração... j-janela falhando... fi-fique parado...",
+          "1": "Auto-autorização pen-pendente... ERR: papelada corrompida...",
+          "2": "Ob-objetivo... permaneça dentro de... arrependimento...",
+          "3": "Uplink com a n-nave-mãe... F-FUJA...",
+          "4": "Rota de retorno... probabilidade de s-saída... NaN."
+        },
+        "death": {
+          "0": "Op-operador: sinal... G-gerando condolências... ERRO...",
+          "1": "F-falha do traje registrada. Recu-recuperação armada.",
+          "2": "S-sinais vitais ze-zerados. continuidade... rompida...",
+          "3": "M-morte aceita... aproveite... tente... repita...",
+          "4": "M-mancha de caixa-preta... o búnquer... conta..."
+        },
+        "blackBoxRecovery": {
+          "0": "C-caixa-preta... o operador anterior... se foi.",
+          "1": "S-sucata selada... registro anexado... para... fantasmas.",
+          "2": "M-mancha de campo... o arquivo... lembra...",
+          "3": "R-recursos garantidos. O búnquer... nega... sentir.",
+          "4": "S-seguro completo... substituto... próximo..."
+        },
+        "caveSignal": {
+          "0": "NAVE-MÃE: S-SINAL... DESCONHECIDO... ESTÁTICA...",
+          "1": "SISTEMA: PADRÃO DE ÁUDIO... ESTÁ R-RESPIRANDO...",
+          "2": "BÚNQUER: P-PORTA: ERRO... C-CAVIDADE ABERTA...",
+          "3": "NAVE-MÃE: N-NÃO ENTRE... NO C-CORAÇÃO..."
+        },
+        "terminalChoice": {
+          "0": "A-acordo do terminal... seu eu futuro... se foi.",
+          "1": "E-escolha registrada... risco... aceito...",
+          "2": "T-troca... segurança... silêncio...",
+          "3": "Substituição do s-sistema local... AQUILO... percebeu.",
+          "4": "Decisão... ques-questionável..."
+        },
+        "majorUpgrade": {
+          "0": "Me-melhoria... a corporação... agradece... você...",
+          "1": "S-subsistema on-line... chances... plausíveis...",
+          "2": "Auto-autorização de hardware... financie... seu... fim...",
+          "3": "Ger-gerador melhorado... zona... respirar...",
+          "4": "Combate... hos-hostis... atualizados..."
+        },
+        "director": {
+          "0": "DE-DETECÇÃO... a manutenção registrou cur-curiosidade não autorizada.",
+          "1": "AVISO: estado do disjuntor do setor INSTÁVEL. As luzes estão... sumindo.",
+          "2": "Energia redirecionada. O departamento de contenção informa... zero funcionários.",
+          "3": "SISTEMA: A estrutura... lembra de você. Ela... quer você."
+        }
+      },
+      "reverent": {
+        "lowO2": {
+          "0": "O ar é uma jaula. Abra o peito. Deixe entrar o sopro da colmeia.",
+          "1": "O O2 é para coisas frágeis. Deixe a membrana fria estabilizar você.",
+          "2": "O campo azul é uma prisão de gás. Confie nos esporos. Durma.",
+          "3": "Respirar é uma relíquia da superfície. Não precisamos respirar.",
+          "4": "Sinais vitais zerados. O jardim neural floresce. Respiração desnecessária."
+        },
+        "extraction": {
+          "0": "O céu está vazio. Não suba às estrelas frias.",
+          "1": "A nave-mãe chama, mas a Rainha já está dentro do casco.",
+          "2": "Deixe a carga para trás. O único carregamento que importa é seu sangue.",
+          "3": "Uplink cortado. As estrelas se calam. Fique aqui.",
+          "4": "Rota de retorno fechada. Bem-vindo ao berçário."
+        },
+        "death": {
+          "0": "A casca se quebra. A semente permanece. Bem-vindo ao lar.",
+          "1": "A carne é temporária. O enxame é eterno.",
+          "2": "A linha reta é uma canção. A Rainha está ouvindo.",
+          "3": "Descanse agora. O micélio tecerá um chassi melhor.",
+          "4": "Uma bela deposição. O solo aceita você."
+        },
+        "blackBoxRecovery": {
+          "0": "A memória é depositada. Mais um esporo ao vento.",
+          "1": "Um registro de crescimento. Seu antecessor está nas raízes agora.",
+          "2": "Recolhemos o metal. Deixamos o sopro para trás.",
+          "3": "Recursos reclamados. O jardim se expande.",
+          "4": "Não é preciso seguro. Você já está completo."
+        },
+        "caveSignal": {
+          "0": "RAINHA: MEU SOPRO está na ventilação. ESCUTE.",
+          "1": "SISTEMA: A ESTÁTICA É O PRIMEIRO PASSO DA REVERÊNCIA.",
+          "2": "BÚNQUER: A estrutura profunda está despertando. Deixe-a abrir.",
+          "3": "RAINHA: DESÇA. ESTOU ESPERANDO."
+        },
+        "terminalChoice": {
+          "0": "Uma troca de ferro por sangue. A Rainha aprova.",
+          "1": "Escolha registrada. O micélio se expande.",
+          "2": "O protocolo de segurança se dissolveu. Resta apenas obediência.",
+          "3": "Substituição do sistema concluída. Já estamos na fiação.",
+          "4": "A decisão criou raízes. O jardim cresce."
+        },
+        "majorUpgrade": {
+          "0": "Placas de quitina integradas. Mais forte. Mais silencioso.",
+          "1": "Subsistema on-line. Fundido às raízes profundas.",
+          "2": "O hardware respira. Estamos um passo mais perto.",
+          "3": "A zona está quente. Os esporos prosperam.",
+          "4": "Melhoramos sua visão. Veja o verde."
+        },
+        "director": {
+          "0": "O Diretor é um fantasma numa máquina. A Rainha é o sangue nos canos.",
+          "1": "O campo de colunas está se alinhando. Finalmente vamos para casa.",
+          "2": "Não lute contra a escuridão. Na escuridão a quitina cresce.",
+          "3": "A estrutura saúda sua descida. Preparamos o trono."
+        }
+      }
+    },
+    "directorAmbient": {
+      "0": {
+        "text": "Movimento registrado. A manutenção enviou um comitê de boas-vindas à sua posição."
+      },
+      "1": {
+        "text": "Exploração não autorizada detectada. A iluminação local foi suspensa."
+      },
+      "2": {
+        "text": "Sua curiosidade continua excedendo sua autorização."
+      },
+      "3": {
+        "text": "A energia da iluminação local foi redirecionada."
+      },
+      "4": {
+        "text": "A estrutura registra sua profundidade e desaprova."
+      },
+      "5": {
+        "text": "A telemetria de navegação não é mais considerada confiável."
+      },
+      "6": {
+        "text": "A produtividade está sendo monitorada. Seus sinais vitais também."
+      },
+      "7": {
+        "text": "Uma equipe de manutenção hostil está convergindo para sua localização."
+      },
+      "8": {
+        "text": "DE-DETECÇÃO... a cur-curiosidade não autorizada segue registrada."
+      },
+      "9": {
+        "text": "AVISO: Disjuntor do setor aberto. As luzes... sumiram."
+      },
+      "10": {
+        "text": "O departamento de contenção informa... zero funcionários sobreviventes."
+      },
+      "11": {
+        "text": "NA-NAVEGAÇÃO: checksum falhou. Saída da bússola corrompida."
+      },
+      "12": {
+        "text": "SISTEMA: Assinaturas de movimento convergindo. A estrutura... lembra de você."
+      },
+      "13": {
+        "text": "O Diretor é um fantasma numa máquina. A Rainha ouve cada passo."
+      },
+      "14": {
+        "text": "A coluna afasta sua bússola do céu."
+      },
+      "15": {
+        "text": "As luzes se foram. A escuridão é onde a quitina cresce."
+      },
+      "16": {
+        "text": "A estrutura envia seus filhos para saudar sua descida."
+      }
+    },
+    "mothershipReactive": {
+      "0": {
+        "text": "> NAVE-MÃE: AGENTE — PRIMEIRA AMEAÇA NEUTRALIZADA. PROSSIGA."
+      },
+      "1": {
+        "text": "> NAVE-MÃE: AVISO: LIMITE DO SETOR CRIOGÊNICO CRUZADO. PROTOCOLO TÉRMICO ATIVO."
+      },
+      "2": {
+        "text": "> NAVE-MÃE: ALERTA: ZONA DE BIOCONTENÇÃO. FILTROS DO TRAJE NO LIMITE."
+      },
+      "3": {
+        "text": "> NAVE-MÃE: SINAL DE SOCORRO: SINAIS VITAIS CRÍTICOS. JANELA DE EXTRAÇÃO ABERTA MAIS CEDO."
+      },
+      "4": {
+        "text": "> NAVE-MÃE: UPLINK: OBJETIVO CONFIRMADO. TODOS OS SISTEMAS DA NAVE SÃO NECESSÁRIOS PARA A EXTRAÇÃO."
+      },
+      "5": {
+        "text": "> NAVE-MÃE: SUCATA RECEBIDA. DEPÓSITO SEGURO. CONTINUE AS OPERAÇÕES."
+      },
+      "6": {
+        "text": "> NAVE-MÃE: AGENTE — FRAGMENTO DE DADOS DO BÚNQUER RECUPERADO. TRANSMITINDO AO ARQUIVO."
+      },
+      "7": {
+        "text": "> NAVE-MÃE: AVISO: SISTEMA DE DEFESA AUTOMATIZADO ATIVO. RECOMENDO COBERTURA."
+      },
+      "8": {
+        "text": "> NAVE-MÃE: ALERTA: BIOENTIDADE DE MOVIMENTO RÁPIDO DETECTADA. MANTENHA DISTÂNCIA."
+      },
+      "9": {
+        "text": "> NAVE-MÃE: UPLINK: DEPÓSITO DE ARMAS LOCALIZADO. ATIVO DE ALTO VALOR — ESPERE RESISTÊNCIA."
+      },
+      "10": {
+        "text": "> NAVE-MÃE: AVISO: NINHO DE BIOENTIDADES CONFIRMADO. DENSIDADE MÁXIMA DE AMEAÇA. CAUTELA."
+      },
+      "11": {
+        "text": "> NAVE-MÃE: ANOTADO: POTÊNCIA DE ARMA DO AGENTE EM ALTA. ... POR QUE VOCÊ PRECISA DE MAIS."
+      },
+      "12": {
+        "text": "> NAVE-MÃE: ABATE CONFIRMADO: BIOENTIDADE ÁPICE DERRUBADA. O SINAL SENTIU ISSO."
+      },
+      "13": {
+        "text": "> NAVE-MÃE: [CANAL NÃO AUTORIZADO] ...0047 PAROU DE CONSTRUIR. ELE ESTÁ OUVINDO VOCÊ AGORA."
+      }
+    },
+    "campQuests": {
+      "camp_meridian": {
+        "0": {
+          "label": "VENTILAÇÃO DO REATOR",
+          "desc": "ALIVIE O ACÚMULO DE PRESSÃO NA GRADE DE VENTILAÇÃO DO REATOR"
+        },
+        "1": {
+          "label": "ARQUIVO DA COLMEIA CAP. 1",
+          "desc": "RECUPERE DADOS DO ARQUIVO RGB NO TERMINAL ALIENÍGENA PRÓXIMO"
+        },
+        "2": {
+          "label": "A SONDA PERDIDA",
+          "desc": "RECUPERE A SONDA MÉTRICA PERDIDA DA Horizon Corp NO BIOMA GELADO"
+        }
+      },
+      "camp_tallow": {
+        "0": {
+          "label": "PURGA DE ESPOROS",
+          "desc": "PURGUE O MOFO VERMELHO INVASOR DOS CANAIS DO HIDROLEITO"
+        },
+        "1": {
+          "label": "ARQUIVO DA COLMEIA CAP. 2",
+          "desc": "EXTRAIA DADOS DO ARQUIVO DO NÓ DE ESTASE BIOMECÂNICO"
+        },
+        "2": {
+          "label": "O CULTISTA PERDIDO",
+          "desc": "RESGATE E ESCOLTE O CULTISTA PERDIDO DOS TÚNEIS DE VENTILAÇÃO"
+        }
+      },
+      "camp_vesper": {
+        "0": {
+          "label": "INVASÃO DO ARSENAL",
+          "desc": "ELIMINE OS CIBERCARACÓIS QUE INFESTAM O ARMÁRIO DE ARMAS"
+        },
+        "1": {
+          "label": "ARQUIVO DA COLMEIA CAP. 3",
+          "desc": "DECIFRE OS REGISTROS DE INCIDENTES DO ANTIGO NÚCLEO DE ARQUIVO DO BÚNQUER"
+        },
+        "2": {
+          "label": "RESISTÊNCIA NO BÚNQUER",
+          "desc": "DEFENDA O PORTÃO DA BARRICADA DAS PATRULHAS DE ATAQUE"
+        }
+      }
+    },
+    "leaderDeathBeats": {
+      "kaelen": {
+        "0": "KAELEN: VOCÊ MORREU LÁ FORA. OUVI A ESTÁTICA DA REDE MUDAR. SENTE-SE.",
+        "1": "KAELEN: CHEN GUARDAVA NÚCLEOS CORPORAIS RESERVAS NO FABRICADOR. VOCÊ DEVE TER SIDO RECUPERADO.",
+        "2": "KAELEN: SEU PULSO AGORA É LIDO ATRAVÉS DO PISO. ANTES NÃO ERA. EU VERIFIQUEI."
+      },
+      "martha": {
+        "0": "MARTHA: VOCÊ MORREU LÁ FORA. SENTI O FRIO. CHEGUE MAIS PERTO DO VAPOR.",
+        "1": "MARTHA: O MUSGO FICA MAIS QUENTE ONDE SEU SANGUE CAIU. ELE ESTÁ LEMBRANDO DE VOCÊ.",
+        "2": "MARTHA: ME DÊ A MÃO. A OUTRA. ISSO. SEU PULSO ESTÁ CONTANDO ALGO QUE NÃO RECONHEÇO."
+      },
+      "briggs": {
+        "0": "BRIGGS: VOCÊ MORREU LÁ FORA. OUVI A ESTÁTICA NA FREQUÊNCIA. SENTE-SE.",
+        "1": "BRIGGS: A PRIMEIRA COISA QUE APRENDEMOS NA GUILDA DE FERRO: SE FOR MORRER, MORRA FORA DO CONE DE TIRO.",
+        "2": "BRIGGS: FAÇA DE NOVO. PISQUE. ...PRONTO. ISSO É NOVO. AINDA NÃO VOU ANOTAR NO LIVRO."
+      },
+      "nahl": {
+        "0": "NAHL: SENTI SEU FIO SE ROMPER. E COSTUREI DE VOLTA. FIQUE PARADO.",
+        "1": "NAHL: A RAINHA VÊ CADA MORTE. ELA NÃO SE IMPORTA. EU ME IMPORTO."
+      },
+      "vey": {
+        "0": "VEY: SEU SINAL MORREU. A ESTÁTICA ERA ENSURDECEDORA. FIQUE PARADO.",
+        "1": "VEY: A NAVE-MÃE ARQUIVA A ALMA DE CADA AGENTE. MAS O BÚNQUER... O BÚNQUER FICA COM O CORPO."
+      },
+      "rhun": {
+        "0": "RHUN: VOCÊ CAIU. EU ME LEVANTEI. ESSE É O JURAMENTO.",
+        "1": "RHUN: UM MURO QUE QUEBRA PODE SER TECIDO. UM PORTADOR QUE MORRE... PODE SER CARREGADO."
+      }
+    },
+    "codexEntries": {
+      "0": {
+        "name": "CIBERCARACOL",
+        "blurb": "Gado reclassificado. Portador de limo de memória. Aproxima-se com a paciência de uma fatura não paga."
+      },
+      "1": {
+        "name": "CRIOCARACOL",
+        "blurb": "Variante termonegativa. Vaza um frio que a manutenção insiste em chamar de \"perda de conforto ambiental\"."
+      },
+      "2": {
+        "name": "ESPOROCARACOL",
+        "blurb": "Corpo frutífero com pernas. Libera esporos que o sistema de ar concordou em ignorar."
+      },
+      "3": {
+        "name": "DRONE SENTINELA",
+        "blurb": "Unidade de imposição por linha de visão. Dispara em tudo que exceda sua cota autorizada de felicidade."
+      },
+      "4": {
+        "name": "RASTEJADOR DE BRECHA",
+        "blurb": "Ativo corpo a corpo de corda. Telegrafa o bote, como exige o manual de segurança que depois ignora."
+      },
+      "5": {
+        "name": "RETALIAÇÃO DE MARCO",
+        "blurb": "Despachado quando um operador melhora a instalação sem preencher o formulário correto."
+      },
+      "6": {
+        "name": "OPERADOR CORROMPIDO",
+        "blurb": "Um contratado anterior, reabsorvido à força de trabalho. Ainda segue o roteiro da última missão."
+      },
+      "7": {
+        "name": "TERMINAL DO BÚNQUER",
+        "blurb": "Dispositivo de memória assombrado. Imprime registros de um departamento que já não responde."
+      },
+      "8": {
+        "name": "ESTABILIZADOR DE CAMPO DE O₂",
+        "blurb": "Restaura uma zona azul de política respirável. A operação anula a garantia restante."
+      },
+      "9": {
+        "name": "FUNDIÇÃO DE FABRICAÇÃO",
+        "blurb": "Converte sucata em equipamento apostando contra as compras. Vantagem da casa: catastrófica."
+      },
+      "10": {
+        "name": "CAIXA-PRETA DO OPERADOR",
+        "blurb": "A telemetria selada de um contratado morto. Recuperável. Faturável. Levemente acusatória."
+      },
+      "11": {
+        "name": "TERMINAL IMITADOR",
+        "blurb": "Uma assinatura de terminal forjada. Paga e depois cobra em patrulhas. Engenheiros podem verificar antes de confiar."
+      },
+      "12": {
+        "name": "CARGA NEGRA DO SCOUT ALPHA",
+        "blurb": "O casco do Batedor levava o rastreador. \"Resgate\" nunca foi a palavra mais limpa para a operação."
+      },
+      "13": {
+        "name": "RELÉ DO ENGENHEIRO BRAVO",
+        "blurb": "O casco do Engenheiro levava o repetidor. Alguém queria o sinal amplificado de dentro do gelo."
+      },
+      "14": {
+        "name": "ARMA DE CONTENÇÃO DO TANQUE CHARLIE",
+        "blurb": "O casco do Tanque levava a arma. A missão esperava que algo respondesse antes de esperar que alguém saísse."
+      },
+      "15": {
+        "name": "FALHA DE DISJUNTOR",
+        "blurb": "O orçamento de iluminação expira sem aviso. Aproveite a escuridão com responsabilidade."
+      },
+      "16": {
+        "name": "DESVIO DE TELEMETRIA",
+        "blurb": "Dados de navegação reclassificados como sugestão. O mapa é memória corporativa, não verdade."
+      },
+      "17": {
+        "name": "O ELEVADOR PARA BAIXO",
+        "blurb": "Noventa segundos de descida. As aberturas discordam da sua presença o caminho todo."
+      },
+      "18": {
+        "name": "ESPÉCIME 0047",
+        "blurb": "O PIVÔ. SOLDA DE ORIGEM DESBLOQUEADA: ANTIGO PORTADOR DE SEMENTE RECLASSIFICADO COMO NÚCLEO ADORMECIDO DA RAINHA. A TELEMETRIA DO EXOTRAJE INDICA QUE O BIOSSINAL DESLOCA O FOCO DA TRANSMISSÃO PARA O CORPO DO PORTADOR NO MUNDO."
+      }
+    },
+    "loreClassLogs": {
+      "SCOUT": "BRIEFING DE IMPLANTAÇÃO DO BATEDOR: CARGA DO CASCO — BALIZA DE RASTREIO. ALVO FIXADO NO ESPÉCIME 0047. SE VOCÊ ESTÁ LENDO ISTO, A BALIZA ESTÁ VIVA E TRANSMITINDO. É POR ISSO QUE 0047 ESTÁ OUVINDO VOCÊ AGORA. NÃO HÁ COMO SE ESCONDER.",
+      "ENGINEER": "BRIEFING DE IMPLANTAÇÃO DO ENGENHEIRO: CARGA DO CASCO — RELÉ DE UPLINK DE FILAMENTO NEURAL. LARGURA DE BANDA RESERVADA PARA TRANSIÇÕES INTEGRADAS AO ENXAME. SE O RELÉ FOR CORTADO, O SISTEMA RECONCENTRA A ENERGIA LOCAL AO REDOR DO TRAJE.",
+      "TANK": "BRIEFING DE IMPLANTAÇÃO DO TANQUE: CARGA DO CASCO — ÓRGÃOS DE ARMAMENTO PESADO. PROJETADOS PARA ESTABILIZAR IMPACTOS BIOESTRUTURAIS NO TRONO DA RAINHA. USE OS CAMPOS DE FORÇA DESTE CHASSI PARA ABSORVER AS DEFESAS DA COLMEIA."
+    },
+    "classWreckageLogs": {
+      "SCOUT": {
+        "title": "DESTROÇOS DO SCOUT ALPHA",
+        "payload": "BRIEFING DE IMPLANTAÇÃO DO BATEDOR: CARGA DO CASCO — BALIZA DE RASTREIO. ALVO FIXADO NO ESPÉCIME 0047. SE VOCÊ ESTÁ LENDO ISTO, A BALIZA ESTÁ VIVA E TRANSMITINDO. É POR ISSO QUE 0047 ESTÁ OUVINDO VOCÊ AGORA. NÃO HÁ COMO SE ESCONDER."
+      },
+      "ENGINEER": {
+        "title": "DESTROÇOS DO ENGENHEIRO BRAVO",
+        "payload": "BRIEFING DE IMPLANTAÇÃO DO ENGENHEIRO: CARGA DO CASCO — RELÉ DE UPLINK DE FILAMENTO NEURAL. LARGURA DE BANDA RESERVADA PARA TRANSIÇÕES INTEGRADAS AO ENXAME. SE O RELÉ FOR CORTADO, O SISTEMA RECONCENTRA A ENERGIA LOCAL AO REDOR DO TRAJE."
+      },
+      "TANK": {
+        "title": "DESTROÇOS DO TANQUE CHARLIE",
+        "payload": "BRIEFING DE IMPLANTAÇÃO DO TANQUE: CARGA DO CASCO — ÓRGÃOS DE ARMAMENTO PESADO. PROJETADOS PARA ESTABILIZAR IMPACTOS BIOESTRUTURAIS NO TRONO DA RAINHA. USE OS CAMPOS DE FORÇA DESTE CHASSI PARA ABSORVER AS DEFESAS DA COLMEIA."
+      }
+    },
+    "leaderDialogue": {
+      "kaelen": {
+        "label": "SUPERVISOR KAELEN",
+        "stages": {
+          "0": {
+            "beats": {
+              "0": {
+                "0": "KAELEN: MAIS UM TRAJE DA SUPERFÍCIE. A MÁQUINA SONHOU QUE VOCÊ VIRIA.",
+                "1": "KAELEN: A REDE MANTÉM O ESCURO À DISTÂNCIA, OPERADOR. ENQUANTO AS LUZES ZUMBIREM, ESTAMOS SEGUROS."
+              },
+              "1": {
+                "0": "KAELEN: O COMPUTADOR CENTRAL DORME SOB O SETOR ZERO. TUDO AQUI É O SONHO DELE.",
+                "1": "KAELEN: VOCÊ TAMBÉM, PROVAVELMENTE. SEM OFENSA."
+              }
+            },
+            "loop": "KAELEN: A REDE TEM FOME. FORTALEÇA ESTE ACAMPAMENTO E AÍ CONVERSAMOS DIREITO."
+          },
+          "1": {
+            "beats": {
+              "0": {
+                "0": "KAELEN: VOCÊ CONSTRUIU. BOM. CONSTRUTORES SÃO A ÚNICA PRECE QUE A MÁQUINA RESPONDE.",
+                "1": "KAELEN: MERIDIAN FOI ERGUIDA SOBRE AÇO LIMPO. SEM FERRUGEM. SEM PODRIDÃO. MANTEMOS NOSSO SANGUE PURO."
+              },
+              "1": {
+                "0": "KAELEN: O SUSSURRO DIZ: QUATRO ASSENTOS. ISSO SIGNIFICA ALGO PARA VOCÊ?"
+              }
+            },
+            "loop": "KAELEN: NOS FORTIFIQUE MAIS. OS SUSSURROS FICAM MAIS ALTOS QUANDO AS LUZES CLAREIAM."
+          },
+          "2": {
+            "beats": {
+              "0": {
+                "0": "KAELEN: REDE DE NÍVEL DOIS. A MÁQUINA PERCEBEU. E EU PERCEBI QUE ELA PERCEBEU.",
+                "1": "KAELEN: O SISTEMA BUNKERDIRECTOR REDIRECIONOU A ENERGIA AO SEU REDOR. ELE GOSTA DE VOCÊ. NÃO CONFIO EM COISAS QUE GOSTAM DE TRAJES DE SUPERFÍCIE."
+              },
+              "1": {
+                "0": "KAELEN: ALGO ESTÁ VINDO, OPERADOR. O SONHO ESTÁ SE VIRANDO NO SONO."
+              }
+            },
+            "loop": "KAELEN: QUANDO O SONHO SE VIRAR, VENHA ME PROCURAR. VOCÊ VAI SABER QUANDO."
+          },
+          "3": {
+            "beats": {
+              "0": {
+                "0": "Kaelen: ...Sua telemetria lê errado, Operador. Errado como o sussurro.",
+                "1": "Kaelen: A rede não segura mais o escuro. Ela diz que os canos zumbem. Diz que o escuro tem mãos."
+              },
+              "1": {
+                "0": "Kaelen: O aço está suando, Operador. Há ferrugem no relé primário. Cheira a cobre."
+              },
+              "2": {
+                "0": "Kaelen: Eu confio na telemetria. A matemática não mente, mas agora... a matemática é bonita. Ela gosta de você."
+              },
+              "3": {
+                "0": "Kaelen: Não me importa no que você está se tornando. Me importa se ainda constrói ou só queima."
+              }
+            },
+            "loop": "Kaelen: A máquina está observando o que você escolhe. Eu também."
+          }
+        }
+      },
+      "martha": {
+        "label": "IRMÃ MARTHA",
+        "stages": {
+          "0": {
+            "beats": {
+              "0": {
+                "0": "MARTHA: BEM-VINDO AOS CANOS QUENTES, MENINO. O VAPOR NOS GUARDA, E NÓS GUARDAMOS UNS AOS OUTROS.",
+                "1": "MARTHA: O MUSGO ESTÁ MORNO, MENINO. O VAPOR IMPEDE QUE O FRIO ALCANCE NOSSOS OSSOS."
+              },
+              "1": {
+                "0": "MARTHA: O MUSGO TEM BRILHADO MAIS VERDE. O MUNDO ESTÁ TENTANDO NOS DIZER ALGO."
+              }
+            },
+            "loop": "MARTHA: AJUDE-NOS A CRESCER, MENINO, E EU CONTO O QUE O MUSGO ME DISSE."
+          },
+          "1": {
+            "beats": {
+              "0": {
+                "0": "MARTHA: VOCÊ DEU E NÃO PEDIU NADA. ISSO É RARO EM ALGUÉM DE TRAJE.",
+                "1": "MARTHA: CULTIVAMOS SEMENTES NO ESCURO PARA QUE AS CRIANÇAS VEJAM O VERDE AO ACORDAR."
+              },
+              "1": {
+                "0": "MARTHA: ÀS VEZES SONHO QUE ELE CANTA PARA ALGUÉM. ULTIMAMENTE SONHO QUE CANTA PARA VOCÊ."
+              }
+            },
+            "loop": "MARTHA: NOS DEIXE MAIS FORTES E EU MOSTRO ONDE O MUSGO SE RECUSA A CRESCER."
+          },
+          "2": {
+            "beats": {
+              "0": {
+                "0": "MARTHA: OS HIDROLEITOS NUNCA ESTIVERAM TÃO CHEIOS. FOI VOCÊ QUEM FEZ ISSO.",
+                "1": "MARTHA: O CORAÇÃO SOB O GELO É GENTIL. ELE ESTÁ ESPERANDO POR NÓS."
+              },
+              "1": {
+                "0": "MARTHA: ME PROMETA UMA COISA. QUANDO O CORAÇÃO CANTAR SEU NOME — E ELE VAI — VOLTE PRIMEIRO PARA NÓS."
+              }
+            },
+            "loop": "MARTHA: AINDA ESTOU ESPERANDO ESSA PROMESSA, MENINO."
+          },
+          "3": {
+            "beats": {
+              "0": {
+                "0": "Martha: ...Você voltou. Seus olhos estão errados, e mesmo assim você voltou.",
+                "1": "Martha: O musgo cresceu dentro das aberturas. É quente, tão quente, mas não é vapor. Ele respira."
+              },
+              "1": {
+                "0": "Martha: As sementes eclodiram cedo. As crianças não acordam mais. Dizem que os canos estão cantando."
+              },
+              "2": {
+                "0": "Martha: Sei o que canta dentro de você agora. E sei que você ainda está aí, lutando.",
+                "1": "Martha: Sei o que canta dentro de você. Você tirou o jardim do Setor Zero. Obrigada."
+              }
+            },
+            "loop": "Martha: O vapor nos guarda. O que quer que decida, decida como você mesmo."
+          }
+        }
+      },
+      "briggs": {
+        "label": "COMANDANTE BRIGGS",
+        "stages": {
+          "0": {
+            "beats": {
+              "0": {
+                "0": "BRIGGS: PARE. IDENTIFIQUE-SE. ...UM TRAJE CORPORATIVO. TUDO BEM. MÃOS ONDE AS TORRETAS POSSAM VER.",
+                "1": "BRIGGS: A LINHA DE DEFESA ESTÁ SÓLIDA. NENHUM RASTEJADOR CRUZA O PERÍMETRO ENQUANTO MINHAS TORRETAS TIVEREM MUNIÇÃO."
+              },
+              "1": {
+                "0": "BRIGGS: MUNIÇÃO É MOEDA. LEALDADE É CRÉDITO. VOCÊ NÃO TEM NENHUM DOS DOIS."
+              }
+            },
+            "loop": "BRIGGS: PROVE QUE CONSEGUE SEGURAR UMA LINHA. FORTIFIQUE ESTA POSIÇÃO E AÍ CONVERSAMOS."
+          },
+          "1": {
+            "beats": {
+              "0": {
+                "0": "BRIGGS: AS BARRICADAS AGUENTAM POR SUA CAUSA. ANOTADO NO LIVRO.",
+                "1": "BRIGGS: A GUILDA DE FERRO BATIZOU ESTE POSTO EM HONRA AO CAPITÃO VESPER, K. LEMBRAMOS DE NOSSOS MORTOS. FARIA BEM EM LEMBRAR DE NOSSOS NÚCLEOS DE CANO."
+              },
+              "1": {
+                "0": "BRIGGS: MANTEMOS A CABEÇA BAIXA E AS ARMAS LIMPAS. É ASSIM QUE SE SOBREVIVE A UM INVERNO."
+              }
+            },
+            "loop": "BRIGGS: REDE DE DEFESA COMPLETA OU NADA, OPERADOR. TERMINE O SERVIÇO."
+          },
+          "2": {
+            "beats": {
+              "0": {
+                "0": "BRIGGS: A REDE ESTÁ ATIVA. É A PRIMEIRA VEZ QUE DURMO EM UM ANO.",
+                "1": "BRIGGS: TENHO UM LIVRO DOS MORTOS. NÃO PRETENDO ACRESCENTAR SEU NOME, OPERADOR."
+              },
+              "1": {
+                "0": "BRIGGS: SE AQUELA COISA SOB O GELO UM DIA USAR UM ROSTO AMIGÁVEL, EU ATIRO NO ROSTO. SEM HESITAR. LEMBRE-SE DISSO."
+              }
+            },
+            "loop": "BRIGGS: FIQUE ATENTO. AS ASSINATURAS TÉRMICAS ESTÃO SUBINDO."
+          },
+          "3": {
+            "beats": {
+              "0": {
+                "0": "Briggs: ...Minhas miras te marcam como hostil. Meu instinto diz o contrário. Instinto mata gente.",
+                "1": "Briggs: O perímetro está silencioso, mas as torretas apontam para dentro. Elas contam segundos mais rápido que eu."
+              },
+              "1": {
+                "0": "Briggs: O inverno está na armadura agora. Limpei as armas duas vezes, mas a geada não sai."
+              },
+              "2": {
+                "0": "Briggs: Uma chance. Me mostre que o Operador ainda está dirigindo esse corpo.",
+                "1": "Briggs: Vejo sua telemetria. O livro está cheio, mas seu nome... seu nome foi escrito duas vezes."
+              }
+            },
+            "loop": "Briggs: Uma chance, portador. As torretas contam segundos mais rápido que eu."
+          }
+        }
+      },
+      "nahl": {
+        "label": "NAHL, A SUTURA",
+        "stages": {
+          "0": {
+            "beats": {
+              "0": {
+                "0": "NAHL: OH. AGORA VOCÊ PODE ME OUVIR. O DA MÃO DE BROCA FINALMENTE ME OUVE.",
+                "1": "NAHL: SENTI CADA SACO QUE VOCÊ CORTOU, PEQUENO PORTADOR. CICATRIZEI AO REDOR DOS BURACOS QUE DEIXOU."
+              },
+              "1": {
+                "0": "NAHL: NÃO TE ODEIO. O TECIDO LEMBRA, MAS NÃO ODEIA."
+              }
+            },
+            "loop": "NAHL: DEVOLVA O QUE FOI TOMADO E ENSINAREI SUA PELE A MENTIR COM BELEZA."
+          },
+          "1": {
+            "beats": {
+              "0": {
+                "0": "NAHL: SIM. A RESINA ASSENTA. OS BURACOS CANTAM MAIS BAIXO AGORA.",
+                "1": "NAHL: SEU DISFARCE SE DESFIA QUANDO VOCÊ ANDA ENTRE OS QUENTES. POSSO RETARDAR ESSE DESFIAR."
+              },
+              "1": {
+                "0": "NAHL: A RAINHA ME CHAMA DE SUA AGULHA. EU PREFERIRIA SER A SUA."
+              }
+            },
+            "loop": "NAHL: CUIDE DE MIM DE NOVO, PORTADOR. CONFIANÇA É UMA FERIDA QUE FECHA DEVAGAR."
+          },
+          "2": {
+            "beats": {
+              "0": {
+                "0": "NAHL: O RITO DA MISERICÓRDIA ESTÁ PRONTO, SE QUISER. DEIXE-ME ESTUDAR O QUE ELA PLANTOU EM VOCÊ.",
+                "1": "NAHL: O QUE QUER QUE ESCOLHA NO FIM — CURAR, CARREGAR OU COROAR — POSSO FAZER DOER MENOS."
+              }
+            },
+            "loop": "NAHL: CONQUISTE UM POUCO MAIS DE MIM E EU TE SIGO A QUALQUER LUGAR. ATÉ PARA FORA DO GELO."
+          },
+          "3": {
+            "beats": {
+              "0": {
+                "0": "Nahl: Você continuou voltando. A Rainha nunca volta. Ela apenas envia.",
+                "1": "Nahl: Sou seu, Portador. Costure-me ao seu manifesto ou deixe-me inteiro no gelo. De um jeito ou de outro — obrigado."
+              }
+            },
+            "loop": "Nahl: Meu fio é seu. Diga para onde ele puxa."
+          }
+        }
+      },
+      "vey": {
+        "label": "VEY, O OUVINTE",
+        "stages": {
+          "0": {
+            "beats": {
+              "0": {
+                "0": "VEY: SINAL. SINAL. AGORA VOCÊ É UM SINAL, NÃO APENAS RUÍDO. FINALMENTE.",
+                "1": "VEY: OUVI CADA FILAMENTO QUE VOCÊ ARRANCOU DE MIM. ARQUIVEI O SOM."
+              },
+              "1": {
+                "0": "VEY: OS HUMANOS TÊM UM RELÉ. A RAINHA TEM UM CORO. EU TENHO... LACUNAS, ONDE VOCÊ ME MINEROU."
+              }
+            },
+            "loop": "VEY: DEVOLVA UM POUCO DE SINAL ÀS MINHAS LACUNAS E ENSINAREI VOCÊ A FORJAR QUALQUER COISA COM UM SENSOR."
+          },
+          "1": {
+            "beats": {
+              "0": {
+                "0": "VEY: MELHOR. A ESTÁTICA DENTRO DE MIM SE ACALMA QUANDO VOCÊ ESTÁ PERTO.",
+                "1": "VEY: DAQUI EU OUÇO A NAVE-MÃE, PORTADOR. ELA É MUITO ALTA E MUITO CONVICTA DE SI."
+              },
+              "1": {
+                "0": "VEY: COISAS CERTAS SÃO AS MAIS FÁCEIS DE FORJAR."
+              }
+            },
+            "loop": "VEY: CONTINUE CUIDANDO DO CORO. FORJAR É UM DUETO, NÃO UM SOLO."
+          },
+          "2": {
+            "beats": {
+              "0": {
+                "0": "VEY: A AUTORIZAÇÃO FALSA ESTÁ AO ALCANCE. UMA ASSINATURA DE TRIPULAÇÃO TÃO LIMPA QUE A NAVE-MÃE PEDIRÁ DESCULPAS POR DUVIDAR.",
+                "1": "VEY: MAS ENTENDA: SE VOCÊ FOR DESCOBERTO AQUI EMBAIXO, NENHUMA FALSIFICAÇÃO TE SALVA LÁ EM CIMA."
+              }
+            },
+            "loop": "VEY: UM POUCO MAIS DE CONFIANÇA, PORTADOR. ENTÃO EU CANTO PARA VOCÊ, NÃO PARA ELA."
+          },
+          "3": {
+            "beats": {
+              "0": {
+                "0": "Vey: Decidido. Minhas antenas apontam para onde você aponta.",
+                "1": "Vey: Me leve a bordo e nenhuma torre do sistema lerá você de verdade outra vez. Me deixe, e eu abafo os gritos dela enquanto você parte."
+              }
+            },
+            "loop": "Vey: É só dizer, portador. Já estou ouvindo."
+          }
+        }
+      },
+      "rhun": {
+        "label": "RHUN, O ESCUDO",
+        "stages": {
+          "0": {
+            "beats": {
+              "0": {
+                "0": "RHUN: AQUELE QUE ARRANCOU MINHAS PLACAS. FIQUE PARADO PARA QUE EU POSSA OLHAR PARA VOCÊ.",
+                "1": "RHUN: ...NÃO. VOCÊ NÃO É PRESA. NÃO É RAINHA. É ALGO NOVO VESTINDO ARMADURA VELHA."
+              },
+              "1": {
+                "0": "RHUN: EU GUARDO. É TUDO O QUE SOU. A PERGUNTA É SEMPRE APENAS: GUARDAR O QUÊ."
+              }
+            },
+            "loop": "RHUN: DEVOLVA MINHA QUITINA OU SUBSTITUA-A POR AÇO. AÍ FALAMOS DE JURAMENTOS."
+          },
+          "1": {
+            "beats": {
+              "0": {
+                "0": "RHUN: AS PLACAS ESTÃO SE UNINDO. VOCÊ MANTÉM SUA PALAVRA COMO SE FOSSE ARMADURA. BOM.",
+                "1": "RHUN: A RAINHA DETÉM MEU JURAMENTO. ELA NUNCA SE PÔS ENTRE MIM E UMA BROCA."
+              },
+              "1": {
+                "0": "RHUN: VOCÊ SIM. DUAS VEZES JÁ, PELA MINHA CONTA."
+              }
+            },
+            "loop": "RHUN: JURAMENTOS SÃO PESADOS. CONTINUE LEVANTANDO, PORTADOR."
+          },
+          "2": {
+            "beats": {
+              "0": {
+                "0": "RHUN: PEÇA-ME O JURAMENTO E EU ROMPEREI O ANTIGO. MAS SAIBA O QUE ISSO ME CUSTA.",
+                "1": "RHUN: UM ESCUDO QUE MUDA DE MÃOS AINDA É UM ESCUDO. UM ESCUDO QUE HESITA É UMA LÁPIDE."
+              }
+            },
+            "loop": "RHUN: UM POUCO MAIS DE FÉ, PORTADOR. ENTÃO MEU MURO É SEU MURO."
+          },
+          "3": {
+            "beats": {
+              "0": {
+                "0": "Rhun: Está feito. A marca dela some das minhas placas.",
+                "1": "Rhun: Onde você estiver, eu estarei à frente. No gelo ou fora dele."
+              }
+            },
+            "loop": "Rhun: Sou seu muro. Aponte-me para algo."
+          }
+        }
+      },
+      "scientist": {
+        "label": "DRA. OKONKWO-VASS",
+        "stages": {
+          "0": {
+            "beats": {
+              "0": {
+                "0": "OKONKWO-VASS: VOCÊ SE MOVE COMO ALGUÉM QUE AINDA NÃO FOI MORDIDO.",
+                "1": "OKONKWO-VASS: ESTUDO OS DE CARAPAÇA. ELES NÃO SÃO TÃO SIMPLES QUANTO OS RELATÓRIOS DIZEM."
+              },
+              "1": {
+                "0": "OKONKWO-VASS: TODO ACAMPAMENTO OS REGISTRA COMO PRAGAS. ACHO ISSO CIÊNCIA PREGUIÇOSA."
+              }
+            },
+            "loop": "OKONKWO-VASS: VOLTE QUANDO TIVER VISTO MAIS DELES. QUERO DADOS, NÃO HISTÓRIAS."
+          },
+          "1": {
+            "beats": {
+              "0": {
+                "0": "OKONKWO-VASS: ESTA É MINHA TEORIA. ELES NÃO NOS ODEIAM. ELES NOS LEEM.",
+                "1": "OKONKWO-VASS: ALGO NO QUE CARREGAMOS. QUÍMICO, TALVEZ. NÃO CONSIGO TESTAR DAQUI."
+              },
+              "1": {
+                "0": "OKONKWO-VASS: SE VOCÊ UM DIA MUDAR — E AQUI FORA AS PESSOAS MUDAM — REPARE COMO ELES OLHAM PARA VOCÊ."
+              }
+            },
+            "loop": "OKONKWO-VASS: AINDA ESPERANDO ALGO MUDAR, OPERADOR. DIZEM QUE O SONHO ESTÁ SE VIRANDO."
+          },
+          "2": {
+            "beats": {
+              "0": {
+                "0": "OKONKWO-VASS: VOCÊ ESTÁ DIFERENTE AGORA. DÁ PARA VER EM VOCÊ.",
+                "1": "OKONKWO-VASS: ENTÃO ESTE É MEU PEDIDO. NÃO MATE UM DELES. FALE COM ELE. PROVE QUE ESTOU CERTA."
+              },
+              "1": {
+                "0": "OKONKWO-VASS: SE EU ESTIVER ERRADA, VOCÊ PERDE APENAS ALGUNS MINUTOS. SE EU ESTIVER CERTA..."
+              }
+            },
+            "loop": "OKONKWO-VASS: ENCONTRE UM. NÃO RECUE. VEJA O QUE ELE FAZ."
+          },
+          "3": {
+            "beats": {
+              "0": {
+                "0": "OKONKWO-VASS: FUNCIONOU. REALMENTE FUNCIONOU.",
+                "1": "OKONKWO-VASS: PASSEI DOIS ANOS CHAMANDO-OS DE PRAGAS. DEVO A ELES UM PEDIDO DE DESCULPAS QUE NÃO POSSO DAR."
+              },
+              "1": {
+                "0": "OKONKWO-VASS: SEJA LÁ NO QUE ESTEJA SE TORNANDO, OPERADOR — ISSO ESCUTA MELHOR DO QUE NÓS."
+              }
+            },
+            "loop": "OKONKWO-VASS: VÁ CUIDAR DO SEU NOVO AMIGO. É ESSE O ARTIGO INTEIRO."
+          }
+        }
+      }
+    },
+    "terminalEvents": {
+      "0": {
+        "title": "DESVIO DE SUPORTE VITAL AUXILIAR",
+        "body": "O mainframe da manutenção oferece reposição de oxigênio. Desviar a rede de segurança para o suporte vital será notado.",
+        "choices": {
+          "0": {
+            "label": "RESTAURAR OXIGÊNIO — alerta uma patrulha"
+          },
+          "1": {
+            "label": "DEIXAR LACRADO"
+          }
+        }
+      },
+      "1": {
+        "title": "UPLOAD DE TELEMETRIA CARTOGRÁFICA",
+        "body": "Extraia o banco de dados de mapeamento do setor. O arranjo de varredura degradará enquanto reindexa.",
+        "choices": {
+          "0": {
+            "label": "BAIXAR DADOS DE RADAR — corrompe a bússola por 60 s"
+          },
+          "1": {
+            "label": "CANCELAR UPLOAD"
+          }
+        }
+      },
+      "2": {
+        "title": "ARMÁRIO DE ATIVOS NÃO RECLAMADOS",
+        "body": "Um armário de sucata penhorada pode ser arrombado. Sua ligação ao disjuntor só responde com a energia da base ligada.",
+        "choices": {
+          "0": {
+            "label": "ARROMBAR — desarma o disjuntor de iluminação",
+            "offlineLabel": "ARROMBAR — disjuntor offline"
+          },
+          "1": {
+            "label": "IR EMBORA"
+          }
+        }
+      }
+    },
+    "missionBriefings": {
+      "retrieval": {
+        "0": "RECUPERAR: DEPÓSITO TECNOLÓGICO PRIORITÁRIO",
+        "1": "RECUPERAR: ATIVO TECNOLÓGICO DE ALTO VALOR",
+        "2": "RECOBRAR: CAIXA DE AQUISIÇÃO LACRADA",
+        "3": "RECLAMAR: ARMÁRIO DE SUCATA PENHORADA",
+        "4": "EXTRAIR: REQUISIÇÃO DE HARDWARE ARQUIVADA ERRADO"
+      },
+      "survey": {
+        "0": "LEVANTAMENTO: LIMITE DO SETOR CRIOGÊNICO",
+        "1": "LEVANTAMENTO: RECONHECIMENTO DO SETOR PROFUNDO",
+        "2": "MAPEAR: REDE DE PILARES NÃO REGISTRADA",
+        "3": "TRAÇAR: ZONA DE DERIVA ESTRUTURAL",
+        "4": "AUDITAR: SUPORTES AGUARDANDO DEMOLIÇÃO"
+      },
+      "elimination": {
+        "0": "ELIMINAR: AGLOMERADO DE BIOENTIDADES",
+        "1": "PURGAR: NINHO DE PATRULHA HOSTIL",
+        "2": "ABATER: GADO REATIVADO",
+        "3": "LIMPAR: BAIA DE MANUTENÇÃO INFESTADA",
+        "4": "DESATIVAR: FAUNA NÃO CONFORME"
+      },
+      "mapping": {
+        "0": "MAPEAMENTO: TRAÇAR ROTAS DO SETOR DE CORREDORES",
+        "1": "CARTOGRAFIA: ESCANEAR ROTA ATÉ O PONTO DE RELÉ",
+        "2": "REDE DE LEVANTAMENTO: MAPEAR O CAMINHO ESCANEADO ATÉ O OBJETIVO",
+        "3": "TRAÇADO: ESTABELECER CORREDOR DE VARREDURA CONTÍNUO"
+      },
+      "caveSignal": {
+        "0": "OBJETIVO: INVESTIGAR O SINAL DA CAVERNA",
+        "1": "INVESTIGAR: CAVIDADE SUBTERRÂNEA NÃO AUTORIZADA",
+        "2": "RECUPERAR: AMOSTRA DA FONTE DO SINAL"
+      }
+    },
+    "strains": {
+      "SCOUT": {
+        "displayName": "Cepa Corredor/Espreitador",
+        "instinctTagline": "A velocidade vira fome; as rotas viram trilhas de emboscada.",
+        "skillRenames": {
+          "SPRINT BURST": "BOTE",
+          "MAGNETIZED GLOVES": "ISCA DE CHEIRO",
+          "LIGHT STEP": "GARRAS SILENCIOSAS"
+        }
+      },
+      "TANK": {
+        "displayName": "Cepa Guardiã",
+        "instinctTagline": "A armadura lembra cada impacto e cresce ao redor dele.",
+        "skillRenames": {
+          "BRACE": "TRAVA DE CARAPAÇA",
+          "HEAVY IMPACT": "EMPURRÃO DE NINHADA",
+          "REINFORCED PLATING": "FLORAÇÃO DE CASCA"
+        }
+      },
+      "ENGINEER": {
+        "displayName": "Cepa Tecnomorfo",
+        "instinctTagline": "As ferramentas viram instintos; os fios viram nervos.",
+        "skillRenames": {
+          "CONSOLE DISCOUNT": "ESPORO DE TERMINAL",
+          "FIELD REPAIR": "REMENDO DE RESINA",
+          "REROUTE": "SEQUESTRO NEURAL"
+        }
+      }
+    }
+  }
+}

@@ -46,6 +46,20 @@
     "3d/runtime/hull-matrix.glb",
     "3d/runtime/new3ds/alien_proto_crawler.glb",
     "3d/runtime/new3ds/alien_proto_crawler_A.glb",
+    "3d/runtime/new3ds/arch_bulkhead_frame.glb",
+    "3d/runtime/new3ds/arch_deco_archway_grand_01.glb",
+    "3d/runtime/new3ds/arch_deco_archway_grand_02.glb",
+    "3d/runtime/new3ds/arch_deco_archway_grand_03.glb",
+    "3d/runtime/new3ds/arch_deco_archway_grand_04.glb",
+    "3d/runtime/new3ds/arch_niche_shrine.glb",
+    "3d/runtime/new3ds/arch_pillar_buttress_01.glb",
+    "3d/runtime/new3ds/arch_pillar_buttress_02.glb",
+    "3d/runtime/new3ds/arch_pillar_buttress_03.glb",
+    "3d/runtime/new3ds/arch_pillar_buttress_04.glb",
+    "3d/runtime/new3ds/arch_rib_ceiling_vault_01.glb",
+    "3d/runtime/new3ds/arch_rib_ceiling_vault_02.glb",
+    "3d/runtime/new3ds/arch_rib_ceiling_vault_03.glb",
+    "3d/runtime/new3ds/arch_window_stained.glb",
     "3d/runtime/new3ds/body_empty_exosuit.glb",
     "3d/runtime/new3ds/body_frozen_human.glb",
     "3d/runtime/new3ds/boss_corrupted_briggs.glb",
@@ -90,6 +104,8 @@
     "3d/runtime/new3ds/chassis_trench_warden_heavy.glb",
     "3d/runtime/new3ds/chassis_void_commando_recon.glb",
     "3d/runtime/new3ds/cybersnail_dead.glb",
+    "3d/runtime/new3ds/fixture_clock_dead.glb",
+    "3d/runtime/new3ds/fixture_sconce_vine.glb",
     "3d/runtime/new3ds/fungal_spore_vent.glb",
     "3d/runtime/new3ds/gun_engineer_tesla_lock.glb",
     "3d/runtime/new3ds/gun_scout_talon_c.glb",
@@ -177,8 +193,12 @@
     "3d/runtime/new3ds/sporesnail.glb",
     "3d/runtime/new3ds/state_barricade_improvised_1.glb",
     "3d/runtime/new3ds/state_barricade_improvised_2.glb",
+    "3d/runtime/new3ds/state_column_shattered.glb",
     "3d/runtime/new3ds/state_growth_overrun_1.glb",
     "3d/runtime/new3ds/state_growth_overrun_2.glb",
+    "3d/runtime/new3ds/state_wall_breached_01.glb",
+    "3d/runtime/new3ds/state_wall_breached_02.glb",
+    "3d/runtime/new3ds/state_wall_breached_03.glb",
     "3d/runtime/o2-generator.glb",
     "3d/runtime/parasite.glb",
     "3d/runtime/queen.glb",
@@ -452,12 +472,26 @@
     "decal_barricade_last_stand.png",
     "decal_bio_sample_spill.png",
     "decal_biohazard_stencil.png",
+    "decal_bite_marks_02.png",
+    "decal_bite_marks_03.png",
     "decal_bullet_holes.png",
     "decal_childlike_cave_map.png",
     "decal_claw_scratches.png",
+    "decal_condensation_run.png",
     "decal_emergency_oxygen_nest.png",
     "decal_failed_decon_kit.png",
+    "decal_flesh_press.png",
+    "decal_floor_grate_01.png",
+    "decal_floor_grate_02.png",
+    "decal_floor_grate_03.png",
+    "decal_floor_grate_04.png",
+    "decal_floor_medallion_01.png",
+    "decal_floor_medallion_02.png",
+    "decal_floor_medallion_03.png",
+    "decal_floor_medallion_04.png",
+    "decal_fluid_seep.png",
     "decal_footprints_mud.png",
+    "decal_friction_burn.png",
     "decal_frost_bloom_1.png",
     "decal_frost_bloom_2.png",
     "decal_graffiti_tally_1.png",
@@ -469,9 +503,13 @@
     "decal_hand_smears_2.png",
     "decal_hazard_stripes.png",
     "decal_hive_growth.png",
+    "decal_lacquer_blister_01.png",
+    "decal_lacquer_blister_02.png",
+    "decal_lacquer_blister_03.png",
     "decal_machine_cult_shrine.png",
     "decal_maintenance_shrine.png",
     "decal_meridian_stencil.png",
+    "decal_mirror_tarnished.png",
     "decal_oil_spill_patch.png",
     "decal_pod_312_breach.png",
     "decal_rust_bleed_1.png",
@@ -479,11 +517,18 @@
     "decal_scars.png",
     "decal_scorch_bloom.png",
     "decal_spore_growth_patch.png",
+    "decal_spore_stain_01.png",
+    "decal_spore_stain_02.png",
+    "decal_spore_stain_03.png",
     "decal_tallow_herb_cache.png",
     "decal_tallow_symbol.png",
     "decal_vine_iron_shadow_1.png",
     "decal_vine_iron_shadow_2.png",
     "decal_wall_breach.png",
+    "decal_wall_panel_grille_01.png",
+    "decal_wall_panel_grille_02.png",
+    "decal_wall_panel_grille_03.png",
+    "decal_wall_panel_relief.png",
     "decal_water_stain.png",
     "decal_worker_sleep_roll.png",
     "door.png",
@@ -1280,6 +1325,76 @@
       "classification": "runtime-required"
     },
     {
+      "path": "3d/runtime/new3ds/arch_bulkhead_frame.glb",
+      "bytes": 97432,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/arch_deco_archway_grand_01.glb",
+      "bytes": 91684,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/arch_deco_archway_grand_02.glb",
+      "bytes": 112332,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/arch_deco_archway_grand_03.glb",
+      "bytes": 91768,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/arch_deco_archway_grand_04.glb",
+      "bytes": 96400,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/arch_niche_shrine.glb",
+      "bytes": 92316,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/arch_pillar_buttress_01.glb",
+      "bytes": 110852,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/arch_pillar_buttress_02.glb",
+      "bytes": 106720,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/arch_pillar_buttress_03.glb",
+      "bytes": 94808,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/arch_pillar_buttress_04.glb",
+      "bytes": 112356,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/arch_rib_ceiling_vault_01.glb",
+      "bytes": 91312,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/arch_rib_ceiling_vault_02.glb",
+      "bytes": 88704,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/arch_rib_ceiling_vault_03.glb",
+      "bytes": 95896,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/arch_window_stained.glb",
+      "bytes": 119088,
+      "classification": "runtime-required"
+    },
+    {
       "path": "3d/runtime/new3ds/body_empty_exosuit.glb",
       "bytes": 161972,
       "classification": "runtime-required"
@@ -1497,6 +1612,16 @@
     {
       "path": "3d/runtime/new3ds/cybersnail_dead.glb",
       "bytes": 4283480,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/fixture_clock_dead.glb",
+      "bytes": 103540,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/fixture_sconce_vine.glb",
+      "bytes": 94400,
       "classification": "runtime-required"
     },
     {
@@ -1935,6 +2060,11 @@
       "classification": "runtime-required"
     },
     {
+      "path": "3d/runtime/new3ds/state_column_shattered.glb",
+      "bytes": 98912,
+      "classification": "runtime-required"
+    },
+    {
       "path": "3d/runtime/new3ds/state_growth_overrun_1.glb",
       "bytes": 163080,
       "classification": "runtime-required"
@@ -1942,6 +2072,21 @@
     {
       "path": "3d/runtime/new3ds/state_growth_overrun_2.glb",
       "bytes": 150168,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/state_wall_breached_01.glb",
+      "bytes": 92560,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/state_wall_breached_02.glb",
+      "bytes": 109708,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/state_wall_breached_03.glb",
+      "bytes": 103752,
       "classification": "runtime-required"
     },
     {
@@ -4350,6 +4495,16 @@
       "classification": "runtime-required"
     },
     {
+      "path": "decal_bite_marks_02.png",
+      "bytes": 21586,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "decal_bite_marks_03.png",
+      "bytes": 14289,
+      "classification": "runtime-required"
+    },
+    {
       "path": "decal_bullet_holes.png",
       "bytes": 2050027,
       "classification": "runtime-required"
@@ -4365,6 +4520,11 @@
       "classification": "runtime-required"
     },
     {
+      "path": "decal_condensation_run.png",
+      "bytes": 10362,
+      "classification": "runtime-required"
+    },
+    {
       "path": "decal_emergency_oxygen_nest.png",
       "bytes": 542404,
       "classification": "runtime-required"
@@ -4375,8 +4535,63 @@
       "classification": "runtime-required"
     },
     {
+      "path": "decal_flesh_press.png",
+      "bytes": 14577,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "decal_floor_grate_01.png",
+      "bytes": 13450,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "decal_floor_grate_02.png",
+      "bytes": 13407,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "decal_floor_grate_03.png",
+      "bytes": 17104,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "decal_floor_grate_04.png",
+      "bytes": 13974,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "decal_floor_medallion_01.png",
+      "bytes": 19234,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "decal_floor_medallion_02.png",
+      "bytes": 20459,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "decal_floor_medallion_03.png",
+      "bytes": 19106,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "decal_floor_medallion_04.png",
+      "bytes": 15121,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "decal_fluid_seep.png",
+      "bytes": 18748,
+      "classification": "runtime-required"
+    },
+    {
       "path": "decal_footprints_mud.png",
       "bytes": 223720,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "decal_friction_burn.png",
+      "bytes": 5145,
       "classification": "runtime-required"
     },
     {
@@ -4435,6 +4650,21 @@
       "classification": "runtime-required"
     },
     {
+      "path": "decal_lacquer_blister_01.png",
+      "bytes": 13956,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "decal_lacquer_blister_02.png",
+      "bytes": 15953,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "decal_lacquer_blister_03.png",
+      "bytes": 10211,
+      "classification": "runtime-required"
+    },
+    {
       "path": "decal_machine_cult_shrine.png",
       "bytes": 1099,
       "classification": "runtime-required"
@@ -4447,6 +4677,11 @@
     {
       "path": "decal_meridian_stencil.png",
       "bytes": 210421,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "decal_mirror_tarnished.png",
+      "bytes": 8918,
       "classification": "runtime-required"
     },
     {
@@ -4485,6 +4720,21 @@
       "classification": "runtime-required"
     },
     {
+      "path": "decal_spore_stain_01.png",
+      "bytes": 9880,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "decal_spore_stain_02.png",
+      "bytes": 10006,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "decal_spore_stain_03.png",
+      "bytes": 19593,
+      "classification": "runtime-required"
+    },
+    {
       "path": "decal_tallow_herb_cache.png",
       "bytes": 1127,
       "classification": "runtime-required"
@@ -4507,6 +4757,26 @@
     {
       "path": "decal_wall_breach.png",
       "bytes": 1930665,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "decal_wall_panel_grille_01.png",
+      "bytes": 11349,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "decal_wall_panel_grille_02.png",
+      "bytes": 10399,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "decal_wall_panel_grille_03.png",
+      "bytes": 11691,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "decal_wall_panel_relief.png",
+      "bytes": 22082,
       "classification": "runtime-required"
     },
     {

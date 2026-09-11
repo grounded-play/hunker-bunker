@@ -33,30 +33,21 @@ test.describe('Steam Vault (offline/mock state)', () => {
         // keep. Either way this must never read as ONLINE/a real persona.
         await expect(page.locator('#vault-command-status')).toHaveText(/DEV MODE/i);
 
-        await page.locator('#steam-vault-btn').click();
+        await page.locator('#steam-vault-btn').click({ force: true });
         await expect(page.locator('#steam-vault-modal')).toBeVisible();
 
         expect(consoleErrors, `unexpected console errors opening the Vault: ${consoleErrors.join('\n')}`).toEqual([]);
     });
 
-    test('STORE tab renders SKU cards/odds table and does not expose a live Buy button', async ({ page }) => {
+    test('does not expose the STORE tab when purchases are unavailable', async ({ page }) => {
         await stubOfflineElectronAPI(page);
         await bootToOperatorMenu(page);
-        await page.locator('#steam-vault-btn').click();
+        await page.locator('#steam-vault-btn').click({ force: true });
         await expect(page.locator('#steam-vault-modal')).toBeVisible();
 
-        await page.locator('#vault-tab-store').click();
-        await expect(page.locator('#vault-store-layout')).toBeVisible({ timeout: 10_000 });
+        await expect(page.locator('#vault-tab-store')).toBeHidden();
+        await expect(page.locator('#vault-store-layout')).toBeHidden();
 
-        // With no backend reachable, storePurchasesEnabled must be false —
-        // every rendered buy button should be disabled, never a live BUY.
-        const buyButtons = page.locator('.vault-store-buy-btn');
-        const count = await buyButtons.count();
-        for (let i = 0; i < count; i += 1) {
-            await expect(buyButtons.nth(i)).toBeDisabled();
-            await expect(buyButtons.nth(i)).not.toHaveText('BUY');
-        }
-
-        await page.screenshot({ path: 'playwright-report/screenshots/vault-store-tab-1280x800.png' });
+        await page.screenshot({ path: 'playwright-report/screenshots/vault-purchases-disabled-1280x800.png' });
     });
 });

@@ -25,6 +25,8 @@ describe('BankManager', () => {
         expect(bank.getState()).toEqual({
             schemaVersion: 8,
             claimedSurvivorRewards: [],
+            seasonReceipts: [],
+            fabricationOrders: {},
             med: 0,
             ammo: 0,
             tech: 0,

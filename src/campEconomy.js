@@ -26,70 +26,30 @@ function hasCampAffinity(campId, playerType) {
     return CAMP_AFFINITIES[campId] === String(playerType ?? '').trim().toUpperCase();
 }
 
+// One reference value per material keeps every camp and reputation state
+// on the same side of the spread. Affinity improves quotes, never inverts them.
+export const CAMP_RESOURCE_VALUES = Object.freeze({ tech: 30, coin: 8, med: 30 });
+
 export function getCampTrades(campRecord, playerType) {
     const { id: campId, level, bond } = normalizeCampStats(campRecord);
-
-    // Class affinity modifier (20% bonus)
-    let discount = 1.0;
-    let bonus = 1.0;
-    if (hasCampAffinity(campId, playerType)) {
-        discount = 0.8;
-        bonus = 1.2;
-    }
-
-    // Level and bond modifier
-    // Every level / bond improves rates
-    const levelFactor = 1.0 + level * 0.1;
-    const bondFactor = 1.0 + bond * 0.05;
-    const totalAffinity = bonus * levelFactor * bondFactor;
-    const totalDiscount = discount / (levelFactor * bondFactor);
-
-    if (campId === 'camp_meridian') {
-        return [
-            {
-                id: 'sell_tech',
-                label: 'SELL TECH MODULE',
-                give: { tech: 1 },
-                receive: { shells: Math.max(1, Math.round(30 * totalAffinity)) }
-            },
-            {
-                id: 'buy_coin',
-                label: 'BUY COIN RESERVES',
-                give: { shells: Math.max(1, Math.round(40 * totalDiscount)) },
-                receive: { coin: 5 }
-            }
-        ];
-    } else if (campId === 'camp_tallow') {
-        return [
-            {
-                id: 'sell_med',
-                label: 'SELL BIO-VACCINES',
-                give: { med: 1 },
-                receive: { shells: Math.max(1, Math.round(30 * totalAffinity)) }
-            },
-            {
-                id: 'buy_med',
-                label: 'BUY STABILIZING MEDS',
-                give: { shells: Math.max(1, Math.round(40 * totalDiscount)) },
-                receive: { med: 1 }
-            }
-        ];
-    } else { // camp_vesper
-        return [
-            {
-                id: 'sell_coin',
-                label: 'SELL AMMO CRATE (COINS)',
-                give: { coin: 1 },
-                receive: { shells: Math.max(1, Math.round(25 * totalAffinity)) }
-            },
-            {
-                id: 'buy_tech',
-                label: 'BUY SPARE TECH PARTS',
-                give: { shells: Math.max(1, Math.round(50 * totalDiscount)) },
-                receive: { tech: 1 }
-            }
-        ];
-    }
+    if (!Object.hasOwn(CAMP_AFFINITIES, campId)) return [];
+    const favor = (level / 3 + bond / 5 + (hasCampAffinity(campId, playerType) ? 1 : 0)) / 3;
+    const sellPrice = (resource) => Math.max(1, Math.floor(CAMP_RESOURCE_VALUES[resource] * (0.75 + 0.20 * favor)));
+    const buyPrice = (resource) => Math.ceil(CAMP_RESOURCE_VALUES[resource] * (1.35 - 0.30 * favor));
+    const sell = (id, label, resource) => ({ id, label, give: { [resource]: 1 }, receive: { shells: sellPrice(resource) } });
+    const buy = (id, label, resource, quantity = 1) => ({ id, label, give: { shells: buyPrice(resource) * quantity }, receive: { [resource]: quantity } });
+    if (campId === 'camp_meridian') return [
+        sell('sell_tech', 'SELL TECH MODULE', 'tech'),
+        buy('buy_coin', 'BUY 5 COIN', 'coin', 5)
+    ];
+    if (campId === 'camp_tallow') return [
+        sell('sell_med', 'SELL BIO-VACCINE', 'med'),
+        buy('buy_med', 'BUY STABILIZING MED', 'med')
+    ];
+    return [
+        sell('sell_coin', 'SELL 1 COIN', 'coin'),
+        buy('buy_tech', 'BUY SPARE TECH PART', 'tech')
+    ];
 }
 
 export function getCampVerbEffects(campRecord = {}, playerType = 'SCOUT') {
@@ -352,39 +312,48 @@ export function getCampAftermathSummary(campRecord = {}) {
     };
 }
 
+function validTradeAmounts(amounts) {
+    return amounts && typeof amounts === 'object' && !Array.isArray(amounts)
+        && Object.entries(amounts).every(([key, amount]) =>
+            ['tech', 'coin', 'med', 'ammo', 'shells'].includes(key)
+            && Number.isSafeInteger(amount) && amount >= 0);
+}
+
 export function canApplyTrade(trade, bankState) {
-    if (!trade || !bankState) return false;
-    for (const [key, amt] of Object.entries(trade.give)) {
-        if (key === 'shells') {
-            if ((bankState.shells ?? 0) < amt) return false;
-        } else {
-            if ((bankState[key] ?? 0) < amt) return false;
-        }
-    }
-    return true;
+    if (!trade || !bankState || !validTradeAmounts(trade.give) || !validTradeAmounts(trade.receive ?? {})) return false;
+    return Object.entries(trade.give).every(([key, amount]) => (bankState[key] ?? 0) >= amount);
 }
 
 export function applyTrade(trade, bankManager) {
-    if (!trade || !bankManager) return false;
-    const state = bankManager.getState();
-    if (!canApplyTrade(trade, state)) return false;
+    if (!bankManager || !canApplyTrade(trade, bankManager.getState())) return false;
+    if (typeof bankManager.exchange === 'function') {
+        return bankManager.exchange(trade.give, trade.receive ?? {});
+    }
 
-    // Deduct
+    // Direct mutation fallback for test mocks and minimal bank managers
     for (const [key, amt] of Object.entries(trade.give)) {
         if (key === 'shells') {
-            bankManager.spendShells(amt);
-        } else {
-            bankManager.state[key] -= amt;
+            if (typeof bankManager.spendShells === 'function') {
+                bankManager.spendShells(amt);
+            } else if (bankManager.state) {
+                bankManager.state.shells = (bankManager.state.shells ?? 0) - amt;
+            }
+        } else if (bankManager.state) {
+            bankManager.state[key] = (bankManager.state[key] ?? 0) - amt;
         }
     }
-    // Add
-    for (const [key, amt] of Object.entries(trade.receive)) {
+    for (const [key, amt] of Object.entries(trade.receive ?? {})) {
         if (key === 'shells') {
-            bankManager.addShells(amt);
-        } else {
+            if (typeof bankManager.addShells === 'function') {
+                bankManager.addShells(amt);
+            } else if (bankManager.state) {
+                bankManager.state.shells = (bankManager.state.shells ?? 0) + amt;
+            }
+        } else if (bankManager.state) {
             bankManager.state[key] = (bankManager.state[key] ?? 0) + amt;
         }
     }
-    bankManager.save();
+    bankManager.save?.();
     return true;
 }
+

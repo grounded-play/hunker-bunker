@@ -1,10 +1,10 @@
 # Hunker Bunker Versioning Strategy & Release Roadmap
 
-**Current Active Sprint:** Sprint 34
+**Current Active Sprint:** Sprint 35
 
-**Active Development Branch:** `dev/sprint-34`
+**Active Development Branch:** `dev/sprint-35`
 
-**Current Working Version:** `v2.4.0-beta` (`2.4.0-beta` in `package.json`, branch `dev/sprint-34`)
+**Current Working Version:** `v2.4.1-beta` (`2.4.1-beta` in `package.json`, branch `dev/sprint-35`)
 
 **Latest Tagged Baseline:** `v2.4.0-beta` at Sprint 33/34 integration on `mothership`
 
@@ -26,6 +26,20 @@ $$\textbf{v[MAJOR].[MINOR].[PATCH]-[PRE-RELEASE]}$$
   - `-rc.N`: Release candidates locked for pre-launch validation and Steam depot certification.
   - *(no tag)*: Final production builds published to Steam default branch.
 
+### Standing rules
+
+**The project is in permanent beta.** `-beta` stays on the version until there
+is a deliberate decision to ship to the Steam default branch. Do not strip it
+because a build is called a "release build" — that phrase means a real,
+shippable build, not a production tag. Only `-rc.N` and untagged carry release
+semantics, and neither is reached by ordinary sprint work.
+
+**Every PR gets a version bump.** Default to a PATCH bump; that is what nearly
+all PRs are. Reserve MINOR for a sprint's headline deliverable (the scale of
+v2.3.0-beta's 46 models and Armory rebuild) and MAJOR for engine-level leaps.
+Bump `package.json` and `package-lock.json` together (`npm version <v>
+--no-git-tag-version`), update the header above, and add a ledger row below.
+
 ---
 
 ## 2. Release & Sprint History Ledger
@@ -39,6 +53,7 @@ $$\textbf{v[MAJOR].[MINOR].[PATCH]-[PRE-RELEASE]}$$
 | **v2.3.1-beta** | Sprint 29 (`dev/sprint-29`) | 2026-08-24 | `959239c` on `mothership` | Presentation telemetry and fixes, 11 optimized runtime models, reward/XP feedback, lighting reports, weapon/charm calibration, locomotion cadence, and chroma-green auditing. |
 | **v2.3.2-beta** | `fix/mayor-tina-and-astra-plan` | 2026-09-09 | PR to `mothership` | 3D chest-mounted operator patches snug on breastplate (`mixamorig1Spine2`), high-fidelity transparent RGBA decals (4120, 4121, 4122, 4124, 4125), startup UI scale flash fix, Mayor Tina seeded placement/facing, squad-wipe co-op handling, retail asset payload repair, and full test expansion (2,623 tests across 293 files). |
 | **v2.4.0-beta** | Sprint 33 (`dev/sprint-33`) | 2026-09-10 | [PR #61](https://github.com/grounded-play/hunker-bunker/pull/61) | Co-op shared world events and enemy materialization (a host-staged boss was invisible to peers), friendly-fire shove, solo runs no longer inheriting a co-op session; the 21.4 s O₂-build stall removed (two synchronous whole-scene shader recompiles); post-processing re-enabled in the shipped camera; run-card deck variety and inert effect keys resolved; session-log export fixed on PC and Steam Deck with a server drop box; upload endpoint closed and 6 dependency advisories patched; unwired-code audit and detector. 2,826 tests across 318 files. |
+| **v2.4.1-beta** | Sprint 35 (`dev/sprint-35`) | 2026-09-11 | PR to `mothership` | **Full localization**: live language switching across 7 locales (en, zh-CN, ru, es-419, de, ja, pt-BR) with a `data-i18n` markup contract and self-wiring static pass; 218 UI keys covering menus, Settings, Armory, roster and dialogue chrome; 399 narrative strings extracted into runtime-swappable catalogs and translated to 100% in every locale; Steam item-tag matrix prepared for Steamworks entry. **Enemy dismemberment**: enemies break into ~8 physical chunks fractured at runtime from their GLBs (Lloyd-balanced, cached per type, prewarmed off the death frame), with blood burst, ground splat, and a localized gore toggle; corpse/shell economy untouched. 2,989 tests across 330 files. |
 | **v2.4.0-beta (Active)** | Sprint 34 (`dev/sprint-34`) | *In progress* | Active development branch | Two-tier weapon finish pipeline, Season 0 & Sprint 34 cosmetic catalog registration, diorama VFX, co-op sync, 2,849 passing tests. |
 
 ---

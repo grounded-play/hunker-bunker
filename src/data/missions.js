@@ -1,3 +1,5 @@
+import { localizeCatalog } from '../i18nCatalog.js';
+
 // ── Mission briefings (data) ──────────────────────────────────
 // doc 11 §2 (mission variety) + §3.4 (content pipeline). The run lifecycle
 // already supports the retrieval / survey / elimination mission TYPES; this
@@ -5,7 +7,7 @@
 // in the bunker's procurement-bureaucracy register. Targets/types stay in the
 // game logic — this is purely the briefing text.
 
-export const MISSION_BRIEFINGS = Object.freeze({
+export const MISSION_BRIEFINGS = localizeCatalog('narrative.missionBriefings', Object.freeze({
     retrieval: Object.freeze([
         'RETRIEVE: PRIORITY TECH CACHE',
         'RETRIEVE: HIGH-VALUE TECH ASSET',
@@ -38,7 +40,7 @@ export const MISSION_BRIEFINGS = Object.freeze({
         'SURVEY NETWORK: MAP SCANNED PATHWAY TO OBJECTIVE',
         'CHARTING: ESTABLISH CONTINUOUS SCAN CORRIDOR'
     ])
-});
+}));
 
 export function pickMissionBriefing(type, random = Math.random) {
     const pool = MISSION_BRIEFINGS[type];

@@ -86,11 +86,14 @@ function normalizeObjective(objective = {}) {
 }
 
 export class FabricatorManager {
-    constructor({ storage = null, storageKey = STORAGE_KEY, now = () => Date.now() } = {}) {
+    constructor({ storage = null, storageKey = STORAGE_KEY, now = () => Date.now(), bank = null } = {}) {
         this.storage = storage ?? (typeof window !== 'undefined' ? window.localStorage : null);
         this.storageKey = storageKey;
         this.now = now;
+        this.bank = bank;
         this.state = this.load();
+        this.committedState = JSON.parse(JSON.stringify(this.state));
+        this.recoverPrints(bank);
     }
 
     load() {
@@ -111,8 +114,16 @@ export class FabricatorManager {
     save() {
         try {
             this.storage?.setItem(this.storageKey, JSON.stringify(this.state));
-        } catch {
-            // best-effort; storage may be unavailable
+            this.committedState = JSON.parse(JSON.stringify(this.state));
+        } catch (error) {
+            this.state = JSON.parse(JSON.stringify(this.committedState));
+            throw error;
+        }
+    }
+
+    recoverPrints(bank = this.bank) {
+        for (const [id, completeAt] of Object.entries(bank?.getState?.().fabricationOrders ?? {})) {
+            if (getRecipe(id) && !this.isFabricated(id)) this.state.prints[id] = completeAt;
         }
     }
 
@@ -283,9 +294,12 @@ export class FabricatorManager {
         if (!recipe) return null;
         if (this.isFabricated(id) || this.isPrinting(id)) return null;
         const cost = this.getEffectiveCost(recipe);
-        if (!bank?.spend(cost)) return null;
-
-        this.state.prints[id] = this.now() + recipe.printSeconds * 1000;
+        const completeAt = bank?.queueFabrication
+            ? bank.queueFabrication(id, cost, this.now() + recipe.printSeconds * 1000)
+            : bank?.spend(cost) ? this.now() + recipe.printSeconds * 1000 : null;
+        if (!completeAt) return null;
+        this.bank = bank;
+        this.state.prints[id] = completeAt;
         this.save();
         emit('fabrication-started', { id, recipe });
         return recipe;
@@ -294,6 +308,7 @@ export class FabricatorManager {
     // Advance all in-flight prints; completed ones become fabricated.
     // Returns the list of ids that finished on this tick.
     tickPrints() {
+        this.recoverPrints();
         const finished = [];
         const now = this.now();
         for (const id of Object.keys(this.state.prints)) {

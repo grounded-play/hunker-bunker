@@ -1,3 +1,4 @@
+import { LocalVaultLedger } from './localVaultLedger.js';
 /**
  * Steam Vault & Store UI Frontend Implementation
  * Extracted from main.js for modular UI architecture.
@@ -100,6 +101,7 @@ let storeDisabledReason = 'catalog_unavailable';
 let storeHostedItemStore = null;
 
 let vaultItems = [];
+let vaultSteamAccount = null;
 let selectedVaultItem = null;
 let marketEligibility = 'unknown';
 let marketEligibilityReason = null;
@@ -116,7 +118,7 @@ function readDevVaultInventory() {
     if (!isBrowserSandbox()) return null;
     try {
         const parsed = JSON.parse(window.localStorage?.getItem(DEV_VAULT_STORAGE_KEY) ?? 'null');
-        return Array.isArray(parsed) ? parsed : null;
+        return Array.isArray(parsed) ? parsed : (Array.isArray(parsed?.items) ? parsed.items : null);
     } catch {
         return null;
     }
@@ -125,7 +127,9 @@ function readDevVaultInventory() {
 function persistDevVaultInventory() {
     if (!isBrowserSandbox()) return;
     try {
-        window.localStorage?.setItem(DEV_VAULT_STORAGE_KEY, JSON.stringify(vaultItems));
+        const ledger = new LocalVaultLedger(window.localStorage);
+        const record = ledger.read();
+        ledger.save({ ...record, items: vaultItems });
     } catch {
         // Sandbox persistence is best effort in private browsing.
     }
@@ -232,12 +236,43 @@ export function showSteamDropToast(itemdefid, quantity = 1) {
     });
 }
 
+export function getLocalSeasonInventory() {
+    return !window.electronAPI ? new LocalVaultLedger(window.localStorage).read() : { items: [], receipts: {} };
+}
+
+function applyLocalSeasonInventory(items) {
+    vaultItems = items;
+    syncDevOwnership();
+    reconcileCosmeticsOwnership(vaultItems);
+    renderInventoryGrid();
+    updateOpenCacheAvailability();
+}
+
+export function deliverLocalSeasonReward(reward, receiptId) {
+    if (window.electronAPI) return { ok: false, reason: 'verified_service_required' };
+    if (reward.kind === 'supply_bundle') {
+        return window.bankManager?.depositSeasonReward({ tech: reward.tech, coin: reward.coin, med: reward.med }, receiptId)
+            ?? { ok: false, reason: 'bank_unavailable' };
+    }
+    const result = new LocalVaultLedger(window.localStorage).grant(reward.itemdefid, reward.qty ?? 1, receiptId);
+    if (result.ok) applyLocalSeasonInventory(result.items);
+    return result;
+}
+
+export function craftLocalSeasonRecipe(recipeId, options) {
+    if (window.electronAPI) return { ok: false, reason: 'verified_service_required' };
+    const result = new LocalVaultLedger(window.localStorage).craft(recipeId, options);
+    if (result.ok) applyLocalSeasonInventory(result.items);
+    return result;
+}
+
 // Adds an item to the local sandbox inventory (same pattern as openDeepRelicCache()'s
 // !window.electronAPI branch) without going through a real Steam Inventory Service
 // transaction. Used by anything that grants an item outside of crate-opening — currently
 // Season Pass tier claims (src/seasonPassUi.js). Real Electron/Steam builds should route
 // grants through the actual inventory service instead once that's wired for this source.
 export function grantVaultItem(itemdefid, quantity = 1) {
+    if (isBrowserSandbox()) vaultItems = readDevVaultInventory() ?? vaultItems;
     const existing = vaultItems.find((i) => i.itemdefid === itemdefid);
     if (existing) {
         existing.quantity += quantity;
@@ -307,7 +342,7 @@ export function initSteamVaultUI() {
             }
             if (e.code === 'KeyQ') {
                 e.preventDefault();
-                const tabs = [tabInventory, tabStore, tabSmelter].filter(Boolean);
+                const tabs = [tabInventory, tabStore, tabSmelter].filter((tab) => tab && !tab.classList.contains('hidden'));
                 const currentIdx = tabs.findIndex((t) => t.classList.contains('active'));
                 const prevIdx = (currentIdx - 1 + tabs.length) % tabs.length;
                 tabs[prevIdx]?.click();
@@ -316,7 +351,7 @@ export function initSteamVaultUI() {
             }
             if (e.code === 'KeyE') {
                 e.preventDefault();
-                const tabs = [tabInventory, tabStore, tabSmelter].filter(Boolean);
+                const tabs = [tabInventory, tabStore, tabSmelter].filter((tab) => tab && !tab.classList.contains('hidden'));
                 const currentIdx = tabs.findIndex((t) => t.classList.contains('active'));
                 const nextIdx = (currentIdx + 1) % tabs.length;
                 tabs[nextIdx]?.click();
@@ -343,6 +378,21 @@ export function initSteamVaultUI() {
         activeBtn?.classList.add('active');
         activeLayout?.classList.remove('hidden');
     };
+
+    // A disabled backend means this retail build does not offer purchases.
+    // Remove the priced Store surface entirely so it cannot be mistaken for an
+    // unverified in-app-purchase implementation during Steam review.
+    loadStoreCatalog().then(() => {
+        const storeVisible = storePurchasesEnabled;
+        tabStore?.classList.toggle('hidden', !storeVisible);
+        if (!storeVisible) {
+            storeLayout?.classList.add('hidden');
+            if (tabStore?.classList.contains('active')) activateTab(tabInventory, inventoryLayout);
+        }
+    }).catch(() => {
+        tabStore?.classList.add('hidden');
+        storeLayout?.classList.add('hidden');
+    });
 
     tabInventory?.addEventListener('click', () => {
         activateTab(tabInventory, inventoryLayout);
@@ -406,6 +456,13 @@ export async function loadVaultData() {
     if (window.electronAPI) {
         // Fetch Identity
         const identity = await window.electronAPI.getSteamIdentity().catch(() => null);
+        const account = identity?.active ? identity.steamId64 : null;
+        if (account !== vaultSteamAccount || !account) {
+            vaultItems = [];
+            window.itemOwnership?.setSteamInventory([]);
+            reconcileCosmeticsOwnership([]);
+            vaultSteamAccount = account;
+        }
 
         // Fetch Market Eligibility
         const marketCheck = window.electronAPI.getSteamMarketEligibility
@@ -426,41 +483,24 @@ export async function loadVaultData() {
 
         // Fetch Inventory
         const result = await window.electronAPI.refreshSteamInventory().catch(() => null);
-        if (result?.ok && Array.isArray(result.inventory) && result.inventory.length > 0) {
+        if (result?.ok && Array.isArray(result.inventory)) {
             vaultItems = result.inventory;
             // Feed the unified ownership store (src/itemOwnership.js) so the
             // Armory gates on the same entitlements the Vault renders. Only the
             // real service response is pushed here -- the sandbox fallback below
             // is not an entitlement and must not read as one.
             window.itemOwnership?.setSteamInventory(result.inventory);
-        } else if (vaultItems.length === 0) {
-            vaultItems = readDevVaultInventory() ?? [
-                { itemId: 'sandbox_4000', itemdefid: 4000, quantity: 2 },
-                { itemId: 'sandbox_4001', itemdefid: 4001, quantity: 2 },
-                { itemId: 'sandbox_2000', itemdefid: 2000, quantity: 1 },
-                { itemId: 'sandbox_2003', itemdefid: 2003, quantity: 1 },
-                { itemId: 'sandbox_2100', itemdefid: 2100, quantity: 1 }
-            ];
         }
         reconcileCosmeticsOwnership(vaultItems);
         renderInventoryGrid();
         updateOpenCacheAvailability();
     } else {
         setMarketEligibilityFromResult({ ok: false, reason: 'unsupported' });
-        if (playerEl) playerEl.textContent = 'SANDBOX OPERATOR';
-        if (statusEl) statusEl.textContent = 'SANDBOX ACTIVE';
-        if (commandStatus) commandStatus.textContent = 'SANDBOX';
-        if (vaultItems.length === 0) {
-            vaultItems = readDevVaultInventory() ?? [
-                { itemId: 'sandbox_4000', itemdefid: 4000, quantity: 2 },
-                { itemId: 'sandbox_4001', itemdefid: 4001, quantity: 2 },
-                { itemId: 'sandbox_2000', itemdefid: 2000, quantity: 1 },
-                { itemId: 'sandbox_2003', itemdefid: 2003, quantity: 1 },
-                { itemId: 'sandbox_2100', itemdefid: 2100, quantity: 1 }
-            ];
-            persistDevVaultInventory();
-            reconcileCosmeticsOwnership(vaultItems);
-        }
+        if (playerEl) playerEl.textContent = 'LOCAL OPERATOR';
+        if (statusEl) statusEl.textContent = 'LOCAL BETA — BROWSER SAVE';
+        if (commandStatus) commandStatus.textContent = 'LOCAL';
+        vaultItems = readDevVaultInventory() ?? [];
+        reconcileCosmeticsOwnership(vaultItems);
         syncDevOwnership();
         renderInventoryGrid();
         updateOpenCacheAvailability();
@@ -640,14 +680,10 @@ export async function loadStoreCatalog() {
     }
     storeCatalog = FALLBACK_STORE_SKUS;
     storeOdds = FALLBACK_STORE_ODDS;
-    storePurchasesEnabled = true;
-    storePurchaseMode = 'mock';
-    storeDisabledReason = null;
-    storeHostedItemStore = {
-        enabled: true,
-        url: 'https://store.steampowered.com/itemstore/4957040/',
-        mode: 'beta'
-    };
+    storePurchasesEnabled = false;
+    storePurchaseMode = 'disabled';
+    storeDisabledReason = 'steam_store_disabled';
+    storeHostedItemStore = null;
 }
 
 function formatStoreDisabledReason(reason) {
@@ -760,6 +796,15 @@ export function renderOddsTable() {
 }
 
 export async function purchaseKeys(sku) {
+    if (!storePurchasesEnabled) {
+        const statusEl = document.getElementById('vault-store-open-status');
+        if (statusEl) {
+            statusEl.classList.remove('hidden');
+            statusEl.textContent = 'Steam Store purchases are offline for this build.';
+        }
+        return;
+    }
+
     if (!window.electronAPI?.purchaseSteamKeys) {
         const skuInfo = storeCatalog?.find((s) => s.sku === sku) || { keys: 1 };
         const keyCount = skuInfo.keys || 1;
@@ -782,15 +827,6 @@ export async function purchaseKeys(sku) {
             statusEl.textContent = `Sandbox purchase verified: +${keyCount} Relic Key(s) added!`;
         }
         showSteamDropToast(4001, keyCount);
-        return;
-    }
-
-    if (!storePurchasesEnabled) {
-        const statusEl = document.getElementById('vault-store-open-status');
-        if (statusEl) {
-            statusEl.classList.remove('hidden');
-            statusEl.textContent = 'Steam Store purchases are offline for this build.';
-        }
         return;
     }
 
@@ -852,7 +888,7 @@ export function updateOpenCacheAvailability() {
     } else {
         if (statusEl) {
             statusEl.classList.remove('hidden');
-            statusEl.textContent = 'No Cache + Key pair detected in your inventory.';
+            statusEl.textContent = 'Key & Cache required for decryption.';
         }
         btn?.classList.add('hidden');
     }
@@ -1040,7 +1076,7 @@ export function renderSmelterPanel() {
             card.className = 'vault-smelter-card';
             card.innerHTML = `
                 <div class="vault-smelter-card__title" style="color:${getRarityColor(rarity)}">${rarity.toUpperCase()} → ${NEXT_TIER_LABEL[rarity]}</div>
-                <div class="vault-smelter-card__sub">Owned: ${owned} / 5 required</div>
+                <div class="vault-smelter-card__sub">OWNED: ${owned} / 5</div>
                 <button class="vault-smelter-card__btn" ${eligible ? '' : 'disabled'} data-smelt-rarity="${rarity}">SMELT 5x ${rarity.toUpperCase()}</button>
             `;
             card.querySelector('button')?.addEventListener('click', () => handleSmeltClick(rarity));
@@ -1058,7 +1094,7 @@ export function renderSmelterPanel() {
         ingotCard.className = 'vault-smelter-card';
         ingotCard.innerHTML = `
             <div class="vault-smelter-card__title" style="color:${getRarityColor('uncommon')}">Cryo-Alloy Ingot Pack (x${INGOT_PACK_QUANTITY})</div>
-            <div class="vault-smelter-card__sub">${INGOT_PACK_COST.tech} Tech — Quartermaster, unlimited</div>
+            <div class="vault-smelter-card__sub">${INGOT_PACK_COST.tech} Tech · Quartermaster</div>
             <button class="vault-smelter-card__btn" ${ingotAffordable ? '' : 'disabled'} id="vault-quartermaster-ingot-btn">PURCHASE</button>
         `;
         ingotCard.querySelector('button')?.addEventListener('click', handleIngotPackPurchase);
@@ -1080,7 +1116,7 @@ export function renderSmelterPanel() {
             card.className = 'vault-smelter-card';
             card.innerHTML = `
                 <div class="vault-smelter-card__title" style="color:${getRarityColor(cat.rarity)}">${cat.name}</div>
-                <div class="vault-smelter-card__sub">${cost} Shards (${cat.rarity})</div>
+                <div class="vault-smelter-card__sub">${cost} Shards · ${cat.rarity.toUpperCase()}</div>
                 <button class="vault-smelter-card__btn" ${affordable ? '' : 'disabled'} data-dispense-id="${itemdefid}">REDEEM</button>
             `;
             card.querySelector('button')?.addEventListener('click', () => handleDispensaryRedeem(itemdefid));

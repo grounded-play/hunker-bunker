@@ -1,6 +1,8 @@
+import { localizeCatalog } from '../i18nCatalog.js';
+
 const CLASS_IDS = Object.freeze(['SCOUT', 'TANK', 'ENGINEER']);
 
-export const STRAIN_BY_CLASS = Object.freeze({
+export const STRAIN_BY_CLASS = localizeCatalog('narrative.strains', Object.freeze({
     SCOUT: Object.freeze({
         strainId: 'RUNNER',
         displayName: 'Runner/Stalker Strain',
@@ -34,7 +36,7 @@ export const STRAIN_BY_CLASS = Object.freeze({
             'FIELD REPAIR': 'RESIN PATCH'
         })
     })
-});
+}), { skip: ['strainId', 'startingMutationBranch'] });
 
 function clampCount(value) {
     return Math.max(0, Math.floor(Number(value) || 0));

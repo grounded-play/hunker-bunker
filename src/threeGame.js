@@ -1,3 +1,4 @@
+import { getFieldWeaponProfile } from './fieldWeapon.js';
 import { createRelicPickup, animateRelicPickup, createImpactBurst, disposeExpeditionEffect } from './expeditionVfx.js';
 import { TraumaManager, create3DMuzzleFlash, WEAPON_TRAUMA_TABLE } from './combatJuice.js';
 import { PickupMagnet, PickupComboTracker } from './lootJuice.js';
@@ -186,6 +187,7 @@ export const MAYOR_TINA_PLAYER_VISUAL = Object.freeze({
     allowStatic: false
 });
 import { createEnemy3dVisual, disposeEnemy3dVisual, updateEnemy3dVisual } from './enemy3dOverlay.js';
+import { spawnEnemyGibs } from './enemyGibs.js';
 import { WORLD_3D_FACING_YAW, createWorld3dModel, hasWorld3dModel, preloadWorld3dModels, syncWorld3dReplacement } from './world3dOverlay.js';
 import { computeTrailPosition } from './companionFollow.js';
 import { SNAIL_ENCOUNTER_CONSTANTS } from './snailEncounter.js';
@@ -566,7 +568,19 @@ const FLOOR_OVERLAY_TYPES = new Set([
     'decal_growth_creep_2',
     'decal_frost_bloom_1',
     'decal_frost_bloom_2',
-    'decal_scorch_bloom'
+    'decal_scorch_bloom',
+    'decal_floor_medallion_01',
+    'decal_floor_medallion_02',
+    'decal_floor_medallion_03',
+    'decal_floor_medallion_04',
+    'decal_floor_grate_01',
+    'decal_floor_grate_02',
+    'decal_floor_grate_03',
+    'decal_floor_grate_04',
+    'decal_friction_burn',
+    'decal_flesh_press',
+    'decal_fluid_seep',
+    'decal_condensation_run'
 ]);
 const WALL_DECAL_TYPES = new Set([
     'decal_wall_breach',
@@ -587,7 +601,20 @@ const WALL_DECAL_TYPES = new Set([
     'decal_vine_iron_shadow_1',
     'decal_vine_iron_shadow_2',
     'decal_graffiti_tally_1',
-    'decal_graffiti_tally_2'
+    'decal_graffiti_tally_2',
+    'decal_wall_panel_grille_01',
+    'decal_wall_panel_grille_02',
+    'decal_wall_panel_grille_03',
+    'decal_wall_panel_relief',
+    'decal_mirror_tarnished',
+    'decal_lacquer_blister_01',
+    'decal_lacquer_blister_02',
+    'decal_lacquer_blister_03',
+    'decal_bite_marks_02',
+    'decal_bite_marks_03',
+    'decal_spore_stain_01',
+    'decal_spore_stain_02',
+    'decal_spore_stain_03'
 ]);
 const isFloorOverlayType = (type) => FLOOR_OVERLAY_TYPES.has(type);
 const isWallDecalType = (type) => WALL_DECAL_TYPES.has(type);
@@ -2356,7 +2383,32 @@ export class ThreeGame {
             decal_scorch_bloom: this.loadKeyedSpriteTexture('/decal_scorch_bloom.png', 14),
             decal_vine_iron_shadow_1: this.loadKeyedSpriteTexture('/decal_vine_iron_shadow_1.png', 14),
             decal_vine_iron_shadow_2: this.loadKeyedSpriteTexture('/decal_vine_iron_shadow_2.png', 14),
-            decal_water_stain: this.loadKeyedSpriteTexture('/decal_water_stain.png', 14)
+            decal_water_stain: this.loadKeyedSpriteTexture('/decal_water_stain.png', 14),
+            decal_floor_medallion_01: this.loadKeyedSpriteTexture('/decal_floor_medallion_01.png', 14),
+            decal_floor_medallion_02: this.loadKeyedSpriteTexture('/decal_floor_medallion_02.png', 14),
+            decal_floor_medallion_03: this.loadKeyedSpriteTexture('/decal_floor_medallion_03.png', 14),
+            decal_floor_medallion_04: this.loadKeyedSpriteTexture('/decal_floor_medallion_04.png', 14),
+            decal_floor_grate_01: this.loadKeyedSpriteTexture('/decal_floor_grate_01.png', 14),
+            decal_floor_grate_02: this.loadKeyedSpriteTexture('/decal_floor_grate_02.png', 14),
+            decal_floor_grate_03: this.loadKeyedSpriteTexture('/decal_floor_grate_03.png', 14),
+            decal_floor_grate_04: this.loadKeyedSpriteTexture('/decal_floor_grate_04.png', 14),
+            decal_friction_burn: this.loadKeyedSpriteTexture('/decal_friction_burn.png', 14),
+            decal_flesh_press: this.loadKeyedSpriteTexture('/decal_flesh_press.png', 14),
+            decal_fluid_seep: this.loadKeyedSpriteTexture('/decal_fluid_seep.png', 14),
+            decal_condensation_run: this.loadKeyedSpriteTexture('/decal_condensation_run.png', 14),
+            decal_wall_panel_grille_01: this.loadKeyedSpriteTexture('/decal_wall_panel_grille_01.png', 14),
+            decal_wall_panel_grille_02: this.loadKeyedSpriteTexture('/decal_wall_panel_grille_02.png', 14),
+            decal_wall_panel_grille_03: this.loadKeyedSpriteTexture('/decal_wall_panel_grille_03.png', 14),
+            decal_wall_panel_relief: this.loadKeyedSpriteTexture('/decal_wall_panel_relief.png', 14),
+            decal_mirror_tarnished: this.loadKeyedSpriteTexture('/decal_mirror_tarnished.png', 14),
+            decal_lacquer_blister_01: this.loadKeyedSpriteTexture('/decal_lacquer_blister_01.png', 14),
+            decal_lacquer_blister_02: this.loadKeyedSpriteTexture('/decal_lacquer_blister_02.png', 14),
+            decal_lacquer_blister_03: this.loadKeyedSpriteTexture('/decal_lacquer_blister_03.png', 14),
+            decal_bite_marks_02: this.loadKeyedSpriteTexture('/decal_bite_marks_02.png', 14),
+            decal_bite_marks_03: this.loadKeyedSpriteTexture('/decal_bite_marks_03.png', 14),
+            decal_spore_stain_01: this.loadKeyedSpriteTexture('/decal_spore_stain_01.png', 14),
+            decal_spore_stain_02: this.loadKeyedSpriteTexture('/decal_spore_stain_02.png', 14),
+            decal_spore_stain_03: this.loadKeyedSpriteTexture('/decal_spore_stain_03.png', 14)
         };
         for (const [type, path] of Object.entries(GENERATED_ROOM_PROP_PATHS)) {
             this.scatterTextures[type] = this.loadKeyedSpriteTexture(path, 14);
@@ -5137,13 +5189,122 @@ export class ThreeGame {
         const isEcho = data?.originId && data.originId === this.multiplayerLocalPlayerId;
 
         this._appliedWorldEvents = this._appliedWorldEvents ?? new Set();
-        const dedupeKey = `${event}:${detail.level ?? ''}:${detail.goalKey ?? ''}`;
-        if (this._appliedWorldEvents.has(dedupeKey)) return false;
-        this._appliedWorldEvents.add(dedupeKey);
+
+        let dedupeKey = null;
+        if (event === 'wall-destroyed') {
+            dedupeKey = `${event}:${detail.wallKey ?? `${detail.worldX},${detail.worldZ}`}`;
+        } else if (event === 'bunker-door-toggled' || event === 'procedural-door-toggled' || event === 'bunker-line' || event === 'enemy-projectile-spawned') {
+            // Door toggles are stateful transitions guarded by their respective states below;
+            // bunker-line and enemy-projectile-spawned stream continuously without static dedupe blocking.
+        } else if (event === 'pickup-collected') {
+            dedupeKey = `${event}:${detail.pickupId ?? `${Math.round(detail.x)},${Math.round(detail.z)}`}`;
+        } else if (event === 'maze-access-granted') {
+            dedupeKey = `${event}:${detail.sourceId ?? detail.requirement?.id ?? detail.requirement?.type ?? ''}`;
+        } else if (event === 'black-box-recovered') {
+            dedupeKey = `${event}:${detail.recovered?.recoveredAt ?? 'active'}`;
+        } else if (event === 'lore-terminal-read') {
+            dedupeKey = `${event}:${detail.loreKey}`;
+        } else {
+            dedupeKey = `${event}:${detail.level ?? ''}:${detail.goalKey ?? ''}`;
+        }
+
+        if (dedupeKey) {
+            if (this._appliedWorldEvents.has(dedupeKey)) return false;
+            this._appliedWorldEvents.add(dedupeKey);
+        }
 
         // The originator already ran the beat locally when it fired; replaying it
         // would double the cutscene and the boss.
         if (isEcho) return false;
+
+        if (event === 'bunker-door-toggled') {
+            if (this.bunkerBlastDoorState && typeof detail.open === 'boolean') {
+                if (this.bunkerBlastDoorState.open !== detail.open) {
+                    this.toggleBunkerBlastDoor({ fromRemote: true });
+                }
+            }
+        } else if (event === 'procedural-door-toggled') {
+            const doorId = detail.doorId;
+            const door = this.proceduralDoorStates?.get(doorId);
+            if (door && door.state !== detail.state) {
+                const next = { ...door, state: detail.state };
+                this.proceduralDoorStates.set(doorId, next);
+                const mesh = this.proceduralDoorMeshes?.get(doorId);
+                if (mesh && detail.unlocked) mesh.userData.indestructible = false;
+                window.AudioManager?.playMetalStress?.({
+                    volume: 0.42,
+                    playbackRate: next.state === 'open' ? 1.35 : 0.82,
+                    force: true
+                });
+            }
+        } else if (event === 'wall-destroyed') {
+            const worldX = detail.worldX;
+            const worldZ = detail.worldZ;
+            if (Number.isFinite(worldX) && Number.isFinite(worldZ)) {
+                const wall = this.findWallMeshAt?.(worldX, worldZ);
+                if (wall && !wall.userData?.destroyed) {
+                    this.destroyWall(wall, { source: detail.source || 'remote_player', fromRemote: true, force: true });
+                } else {
+                    this.markWallTileDestroyed?.(worldX, worldZ);
+                }
+            }
+        } else if (event === 'enemy-projectile-spawned') {
+            this.spawnProjectile({
+                x: detail.x,
+                z: detail.z,
+                vx: detail.vx,
+                vz: detail.vz,
+                ttl: detail.ttl,
+                damage: detail.damage,
+                radius: detail.radius,
+                isEnemy: true,
+                options: {
+                    ...(detail.options || {}),
+                    fromRemote: true
+                }
+            });
+        } else if (event === 'bunker-line') {
+            if (typeof detail.text === 'string' && detail.text) {
+                this.showBunkerLine(detail.text, { fromRemote: true });
+            }
+        } else if (event === 'pickup-collected') {
+            const px = Number(detail.x);
+            const pz = Number(detail.z);
+            if (Number.isFinite(px) && Number.isFinite(pz)) {
+                const target = (this.pickupMeshes ?? []).find((p) => {
+                    if (p.userData?.pickupId && detail.pickupId && p.userData.pickupId === detail.pickupId) return true;
+                    return Math.hypot(p.position.x - px, p.position.z - pz) <= 0.8;
+                });
+                if (target && target.userData?.state !== 'collecting') {
+                    target.userData.state = 'collecting';
+                    target.userData.collectProgress = 1;
+                    target.userData.collectedReported = true;
+                    target.userData.fromRemote = true;
+                    this.disposePickup?.(target);
+                }
+            }
+        } else if (event === 'maze-access-granted') {
+            if (detail.requirement && this.mazeAccessState) {
+                grantAccess(this.mazeAccessState, detail.requirement);
+                if (detail.requirement?.type === 'objective') {
+                    this.completeRingCrossingMission?.(detail.requirement.id);
+                }
+            }
+        } else if (event === 'black-box-recovered') {
+            this.clearBlackBoxMarker?.();
+            this._blackBoxState = null;
+            this.arcManager?.recordSignal?.({ blackBoxesRecovered: 1 });
+            this.arcManager?.evaluate?.();
+        } else if (event === 'lore-terminal-read') {
+            if (detail.loreKey) {
+                this._readLoreKeys = this._readLoreKeys ?? new Set();
+                this._readLoreKeys.add(detail.loreKey);
+                this.syncSurvivorContract?.({
+                    type: 'terminal-decrypted',
+                    id: `terminal:${detail.loreKey}`
+                });
+            }
+        }
 
         if (typeof window !== 'undefined') {
             window.dispatchEvent(new CustomEvent(event, {
@@ -5161,12 +5322,13 @@ export class ThreeGame {
         const group = this.chunkMeshes?.get(`${chunkX},${chunkY}`);
         if (!group) return null; // Chunk not mounted yet; a later snapshot retries.
 
-        const boss = this.createScatterInstance({
+        const scale = Number.isFinite(state.scale) ? state.scale : 3.2;
+        const enemy = this.createScatterInstance({
             x: state.x,
             z: state.z,
             type: state.enemyType,
             scatterKey: state.scatterKey,
-            scale: Number.isFinite(state.scale) ? state.scale : 3.2,
+            scale,
             rotation: 0,
             tiltX: 0,
             tiltZ: 0,
@@ -5176,15 +5338,15 @@ export class ThreeGame {
             opacity: 1,
             isBoss: true
         });
-        if (!boss) return null;
-        boss.userData.isRemoteReplica = true;
+        if (!enemy) return null;
+        enemy.userData.isRemoteReplica = true;
         if (Number.isFinite(state.hp)) {
-            boss.userData.hp = state.hp;
-            boss.userData.maxHp = Math.max(state.hp, boss.userData.maxHp ?? state.hp);
+            enemy.userData.hp = state.hp;
+            enemy.userData.maxHp = Math.max(state.hp, enemy.userData.maxHp ?? state.hp);
         }
-        group.add(boss);
-        this.scatterSprites.push(boss);
-        return boss;
+        group.add(enemy);
+        this.scatterSprites.push(enemy);
+        return enemy;
     }
 
     handleEnemyStateSnapshot(data) {
@@ -5193,18 +5355,20 @@ export class ThreeGame {
         for (const state of data.enemies) {
             if (!state?.scatterKey) continue;
             let sprite = (this.scatterSprites ?? []).find((candidate) => candidate.userData?.scatterKey === state.scatterKey);
-            // A peer could previously only UPDATE enemies it already had, never
-            // create one -- so a milestone boss staged on the host stayed
-            // invisible on every other client for the whole fight. Bosses are
-            // materialized on demand; ordinary enemies deliberately are not,
-            // because each client owns its own local population and spawning
-            // every snail the host sees would double it.
             if (!sprite?.userData && state.isBoss && !state.burstTriggered) {
                 sprite = this.materializeRemoteBoss?.(state) ?? null;
             }
             if (!sprite?.userData) continue;
-            if (Number.isFinite(state.x)) sprite.position.x = state.x;
-            if (Number.isFinite(state.z)) sprite.position.z = state.z;
+            if (Number.isFinite(state.x) && Number.isFinite(state.z)) {
+                sprite.userData.netTargetX = state.x;
+                sprite.userData.netTargetZ = state.z;
+                const currentDist = Math.hypot(sprite.position.x - state.x, sprite.position.z - state.z);
+                if (currentDist > 6.0 || typeof sprite.userData.lastNetUpdate !== 'number') {
+                    sprite.position.x = state.x;
+                    sprite.position.z = state.z;
+                }
+                sprite.userData.lastNetUpdate = Date.now();
+            }
             if (state.burstTriggered && !sprite.userData.burstTriggered) {
                 const remainingHp = Math.max(1, sprite.userData.hp || 1);
                 this.damageSnail(sprite, remainingHp);
@@ -5943,7 +6107,7 @@ export class ThreeGame {
             });
             this.reconcileAuthoredWorldProgression?.();
             const bossType = MILESTONE_BOSS_FOR_GOAL.o2Bubble;
-            if (event?.detail?.orchestrated) {
+            if (event?.detail?.orchestrated || event?.detail?.level === 1) {
                 // When choreographed by main.js, main handles the door and reveal sequence.
                 return;
             }
@@ -6249,7 +6413,7 @@ export class ThreeGame {
         } else {
             this.weaponClipAmmo = Math.max(0, this.weaponClipAmmo - 1);
         }
-        let fireCd = WEAPON_FIRE_COOLDOWN;
+        let fireCd = WEAPON_FIRE_COOLDOWN * (this.fieldWeapon?.cooldownMultiplier ?? 1);
         this.weaponFireCooldown = fireCd;
         this.emitWeaponClipState();
 
@@ -8450,6 +8614,9 @@ export class ThreeGame {
         window.AudioManager?.play('class_lock', { volume: 0.56, playbackRate: 0.76, bus: 'sfx' });
         this.arcManager?.recordSignal?.({ blackBoxesRecovered: 1 });
         this.arcManager?.evaluate?.();
+        if (this.isMultiplayer) {
+            this.broadcastSharedWorldEvent?.('black-box-recovered', { recovered });
+        }
         window.dispatchEvent(new CustomEvent('black-box-recovered', { detail: recovered }));
         return true;
     }
@@ -8492,6 +8659,12 @@ export class ThreeGame {
             );
             if (dist < 2.2) {
                 this._readLoreKeys.add(sprite.userData.loreKey);
+                if (this.isMultiplayer) {
+                    this.broadcastSharedWorldEvent?.('lore-terminal-read', {
+                        loreKey: sprite.userData.loreKey,
+                        loreText: sprite.userData.loreText
+                    });
+                }
                 window.dispatchEvent(new CustomEvent('lore-terminal-read', {
                     detail: { loreKey: sprite.userData.loreKey, loreText: sprite.userData.loreText }
                 }));
@@ -8732,11 +8905,24 @@ export class ThreeGame {
         if (!this.bunkerBlastDoorGroup || !this.bunkerBlastDoorState) return;
 
         const state = this.bunkerBlastDoorState;
-        if (this.player && this.isGameplayInputActive() && !state.destroyed) {
-            const distance = Math.hypot(
+        if (this.isGameplayInputActive() && !state.destroyed) {
+            let distance = this.player ? Math.hypot(
                 this.player.position.x - (state.doorCenterX ?? 9),
                 this.player.position.z - state.doorZ
-            );
+            ) : Infinity;
+
+            if (this.remotePlayers) {
+                for (const remote of this.remotePlayers.values()) {
+                    if (remote?.mesh?.position) {
+                        const d = Math.hypot(
+                            remote.mesh.position.x - (state.doorCenterX ?? 9),
+                            remote.mesh.position.z - state.doorZ
+                        );
+                        if (d < distance) distance = d;
+                    }
+                }
+            }
+
             if (!state.open && distance <= PROCEDURAL_DOOR_OPEN_RADIUS) this.toggleBunkerBlastDoor();
             else if (state.open && distance >= PROCEDURAL_DOOR_CLOSE_RADIUS) this.toggleBunkerBlastDoor();
         }
@@ -8766,7 +8952,7 @@ export class ThreeGame {
             this.exteriorButtonXrayMarker.scale.set(pulseScale, pulseScale, 1.0);
         }
 
-        const promptEl = document.getElementById('console-hud-prompt');
+        const promptEl = typeof document !== 'undefined' ? document.getElementById('console-hud-prompt') : null;
         const actionText = promptEl?.querySelector('.prompt-text');
         if (actionText?.textContent?.includes('BLAST DOOR')) {
             promptEl.classList.add('hidden');
@@ -8774,7 +8960,7 @@ export class ThreeGame {
         }
     }
 
-    toggleBunkerBlastDoor() {
+    toggleBunkerBlastDoor({ fromRemote = false } = {}) {
         if (!this.bunkerBlastDoorState || this.bunkerBlastDoorState.destroyed) return;
         const state = this.bunkerBlastDoorState;
         state.open = !state.open;
@@ -8796,8 +8982,12 @@ export class ThreeGame {
         });
 
         window.dispatchEvent(new CustomEvent('bunker-door-toggled', {
-            detail: { open: state.open }
+            detail: { open: state.open, fromRemote }
         }));
+
+        if (!fromRemote && this.isMultiplayer) {
+            this.broadcastSharedWorldEvent('bunker-door-toggled', { open: state.open });
+        }
     }
 
     openBunkerBlastDoor() {
@@ -8907,7 +9097,7 @@ export class ThreeGame {
         return record ? (this.proceduralDoorStates.get(record.id) ?? record) : null;
     }
 
-    interactWithProceduralDoor() {
+    interactWithProceduralDoor({ fromRemote = false } = {}) {
         if (!this.player || !this.isGameplayInputActive()) return false;
         let nearest = null;
         for (const door of this.proceduralDoorStates.values()) {
@@ -8936,6 +9126,13 @@ export class ThreeGame {
                 playbackRate: next.state === 'open' ? 1.35 : 0.82,
                 force: true
             });
+            if (!fromRemote && this.isMultiplayer) {
+                this.broadcastSharedWorldEvent('procedural-door-toggled', {
+                    doorId: next.id,
+                    state: next.state,
+                    unlocked
+                });
+            }
         }
         return true;
     }
@@ -8955,6 +9152,12 @@ export class ThreeGame {
                     this.completeRingCrossingMission?.(source.requirement.id);
                 }
                 if (granted) {
+                    if (this.isMultiplayer) {
+                        this.broadcastSharedWorldEvent?.('maze-access-granted', {
+                            sourceId: source.id,
+                            requirement: source.requirement
+                        });
+                    }
                     window.dispatchEvent(new CustomEvent('maze-access-granted', {
                         detail: {
                             sourceId: source.id,
@@ -9994,11 +10197,14 @@ export class ThreeGame {
         });
     }
 
-    showBunkerLine(text) {
+    showBunkerLine(text, { fromRemote = false } = {}) {
         if (!text) return;
         if (this.performanceProfile === 'menu') return;
+        if (!fromRemote && this.isMultiplayer) {
+            this.broadcastSharedWorldEvent?.('bunker-line', { text });
+        }
         if (typeof window !== 'undefined') {
-            window.dispatchEvent(new CustomEvent('bunker-line', { detail: { text } }));
+            window.dispatchEvent(new CustomEvent('bunker-line', { detail: { text, fromRemote } }));
         }
     }
 
@@ -11874,6 +12080,8 @@ export class ThreeGame {
     // Translate persisted weapon-upgrade levels into the live combat tuning used by
     // spawnPlayerShot() and the reload/clip logic. Called whenever upgrades change.
     applyWeaponUpgrades() {
+        const craftedId = typeof window !== 'undefined' ? window.loadout?.getEquippedId?.(this.playerType) : null;
+        this.fieldWeapon = getFieldWeaponProfile(craftedId, typeof window !== 'undefined' && window.fabricator?.isFabricated?.(craftedId));
         const levels = this.bank?.getWeaponUpgrades?.() ?? {};
         const ammoCapacity = Math.max(0, Math.floor(levels.ammoCapacity ?? 0));
         const shotSpeed = Math.max(0, Math.floor(levels.shotSpeed ?? 0));
@@ -11992,7 +12200,10 @@ export class ThreeGame {
         });
     }
 
-    startO2StartupSequence(bossType) {
+    startO2StartupSequence(bossType, options = {}) {
+        const { onComplete = null, skipDialogue = false } = options;
+        this._onO2StartupSequenceComplete = onComplete;
+        this._skipO2Dialogue = skipDialogue;
         this.createO2BubbleObjects();
         if (this.o2BubbleObjects) {
             this.o2BubbleObjects.light.visible = false;
@@ -12096,7 +12307,7 @@ export class ThreeGame {
                     const cb = this._onO2StartupSequenceComplete;
                     this._onO2StartupSequenceComplete = null;
                     cb();
-                } else {
+                } else if (!this._skipO2Dialogue) {
                     this.triggerO2ClassDialogue(this._pendingO2BossType);
                 }
             }
@@ -14994,7 +15205,18 @@ export class ThreeGame {
     syncSurvivorContract(event = null) {
         const manager = this.wandererManager;
         if (!manager) return;
+        const previousQuest = manager.state.activeQuest ? { ...manager.state.activeQuest } : null;
         const result = event ? manager.recordQuestEvent(event) : null;
+        const currentQuest = manager.state.activeQuest;
+        if (previousQuest && result) {
+            const beforeSteps = getSurvivorContractSteps(previousQuest.id, previousQuest.progress);
+            const afterSteps = getSurvivorContractSteps(previousQuest.id, currentQuest?.id === previousQuest.id ? currentQuest.progress : previousQuest.targetCount);
+            afterSteps.forEach((step, index) => {
+                if (step.done && !beforeSteps[index]?.done) {
+                    window.dispatchEvent(new CustomEvent('season-companion-stage-complete', { detail: { id: `${previousQuest.id}:stage:${index}` } }));
+                }
+            });
+        }
         try {
             const delivered = manager.deliverPendingRewards(this.bank);
             if (delivered.length) {
@@ -20403,7 +20625,7 @@ export class ThreeGame {
 
         // Stacked multipliers (reload, overclocks, high-ground) can land on a
         // fractional value — round to a whole hit, never dealing less than 1.
-        damage = Math.max(1, Math.round(damage));
+        damage = Math.max(1, Math.round(damage * (this.fieldWeapon?.damageMultiplier ?? 1)));
 
         let speed = PROJECTILE_SPEED + (bonuses?.speedAdd ?? 0);
 
@@ -20411,9 +20633,9 @@ export class ThreeGame {
         this.triggerCameraShake?.(0.04, 0.08);
 
         const shotAmount = (FEATURE_MULTISHOT ? (bonuses?.shotAmount ?? 0) : 0) + extraBullets;
-        const spreads = extraBullets > 0
+        const spreads = this.fieldWeapon?.spreads ?? (extraBullets > 0
             ? [-spreadAngle, 0, spreadAngle]
-            : MULTISHOT_SPREADS[Math.min(shotAmount, MULTISHOT_SPREADS.length - 1)];
+            : MULTISHOT_SPREADS[Math.min(shotAmount, MULTISHOT_SPREADS.length - 1)]);
 
         const fireOne = (dx, dz) => {
             const desiredOffset = 0.62;
@@ -20468,7 +20690,7 @@ export class ThreeGame {
                 z: spawnZ,
                 vx: dx * speed,
                 vz: dz * speed,
-                ttl: PROJECTILE_TTL,
+                ttl: PROJECTILE_TTL * (this.fieldWeapon?.lifetimeMultiplier ?? 1),
                 damage,
                 radius: PROJECTILE_RADIUS
             });
@@ -20497,6 +20719,28 @@ export class ThreeGame {
         attackerId = null,
         options = {}
     }) {
+        if (isEnemy && this.isMultiplayer) {
+            if (!this.isMultiplayerHost && !options.fromRemote) {
+                return null;
+            }
+            if (this.isMultiplayerHost && !options.fromRemote) {
+                this.broadcastSharedWorldEvent?.('enemy-projectile-spawned', {
+                    x,
+                    z,
+                    vx,
+                    vz,
+                    ttl,
+                    damage,
+                    radius,
+                    options: {
+                        color: options.color,
+                        glowColor: options.glowColor,
+                        tracerFx: options.tracerFx
+                    }
+                });
+            }
+        }
+
         const group = new THREE.Group();
         const classColor = PLAYER_COLORS[this.playerType] ?? 0xffe08f;
         let coreColor = options.color ?? (isEnemy ? 0xff4a4a : classColor);
@@ -20612,6 +20856,7 @@ export class ThreeGame {
         // FIFO-evict the oldest active projectile once at the cap, same
         // cleanup path expiry already uses, instead of letting the pool grow
         // without bound.
+        this.activeProjectiles = this.activeProjectiles ?? [];
         if (this.activeProjectiles.length >= MAX_ACTIVE_PROJECTILES) {
             const oldest = this.activeProjectiles.shift();
             if (oldest) this.destroyProjectile(oldest);
@@ -22418,7 +22663,7 @@ export class ThreeGame {
         return this.wallMeshes.find((wall) => wall?.userData?.wallKey === key && !wall.userData.destroyed) ?? null;
     }
 
-    destroyWall(wall, { source = 'player', burstColor = 0xb8c2c9, force = false } = {}) {
+    destroyWall(wall, { source = 'player', burstColor = 0xb8c2c9, force = false, fromRemote = false } = {}) {
         const span = beginPerfPhase('wall:destroy', {
             source,
             wallKey: wall?.userData?.wallKey ?? null,
@@ -22476,8 +22721,16 @@ export class ThreeGame {
         });
         this.triggerCameraShake?.(source === 'boss' ? 0.22 : 0.08, source === 'boss' ? 0.28 : 0.14);
         window.dispatchEvent(new CustomEvent('wall-destroyed', {
-            detail: { source, x: coord.tileX, z: coord.tileZ }
+            detail: { source, x: coord.tileX, z: coord.tileZ, fromRemote }
         }));
+        if (!fromRemote && this.isMultiplayer) {
+            this.broadcastSharedWorldEvent('wall-destroyed', {
+                worldX: coord.tileX,
+                worldZ: coord.tileZ,
+                wallKey: wall.userData?.wallKey ?? null,
+                source
+            });
+        }
         span.end(true);
         return true;
     }
@@ -24253,7 +24506,6 @@ export class ThreeGame {
             return [];
         }
         const random = this.createSeededRandom(((this.hashTile(chunkX * 523 + 43, chunkY * 859 + 71) ^ (this.runEntropy ?? 0)) >>> 0));
-        const spawn = this.getSpawnTile();
         const roomTypes = this.getRoomTypeGrid(chunkX, chunkY);
         const wfcMeta = this.wfcMetadataCache?.get(`${chunkX},${chunkY}`);
         const authoredRoomCells = new Set(
@@ -24263,6 +24515,19 @@ export class ThreeGame {
         );
         const candidates = [];
 
+        // Deterministic clearing check for crash site center and all crashed ships across all clients
+        const isNearSpawnClearing = (worldX, worldZ) => {
+            if (Math.hypot(worldX - CRASH_SITE_CENTER, worldZ - CRASH_SITE_CENTER) <= 9.0) return true;
+            if (this.crashedShips) {
+                for (const ship of this.crashedShips) {
+                    const shipX = ship.tileX + (ship.consoleOffset?.x || 0);
+                    const shipZ = ship.tileZ + (ship.consoleOffset?.z || 0) + 1.2;
+                    if (Math.hypot(worldX - shipX, worldZ - shipZ) <= 9.0) return true;
+                }
+            }
+            return false;
+        };
+
         // Find walkable candidates in this chunk
         for (let localY = 0; localY < this.chunkSize; localY++) {
             for (let localX = 0; localX < this.chunkSize; localX++) {
@@ -24270,12 +24535,9 @@ export class ThreeGame {
 
                 const worldX = chunkX * this.chunkSize + localX;
                 const worldZ = chunkY * this.chunkSize + localY;
-                const dx = worldX - spawn.x;
-                const dz = worldZ - spawn.y;
-                const distToSpawn = Math.sqrt(dx * dx + dz * dz);
 
-                // Keep the entire ship/start room clear of general scatter.
-                if (distToSpawn <= 9.0) continue;
+                // Keep the entire ship/start room clear of general scatter deterministically for all clients
+                if (isNearSpawnClearing(worldX, worldZ)) continue;
 
                 candidates.push({
                     localX,
@@ -24533,7 +24795,7 @@ export class ThreeGame {
 
             // Determine asset type based on weighted roll.
             const roll = random();
-            const distFromSpawn = Math.hypot(p.x - spawn.x, p.z - spawn.y);
+            const distFromSpawn = Math.hypot(p.x - CRASH_SITE_CENTER, p.z - CRASH_SITE_CENTER);
             const localPX = Math.round(p.x - chunkX * this.chunkSize);
             const localPZ = Math.round(p.z - chunkY * this.chunkSize);
             const pRoomType = roomTypes?.[localPZ]?.[localPX] ?? null;
@@ -25912,6 +26174,16 @@ export class ThreeGame {
                         const pickupType = pickup.userData.type ?? 'unknown';
                         const rarity = pickup.userData.rarity?.key ?? null;
 
+                        if (this.isMultiplayer && !pickup.userData.fromRemote) {
+                            this.broadcastSharedWorldEvent?.('pickup-collected', {
+                                x: pickup.position.x,
+                                z: pickup.position.z,
+                                pickupId: pickup.userData.pickupId ?? null,
+                                type: pickupType,
+                                rarity
+                            });
+                        }
+
                         // Retrieval mission: first legendary weapon collected completes objective
                         if (this.missionState?.type === 'retrieval' && this.missionState.status === 'active') {
                             if (pickupType === 'weapon' && rarity === 'legendary') {
@@ -26179,6 +26451,26 @@ export class ThreeGame {
 
         sprite.userData.burstTriggered = true;
         sprite.userData.burstTimer = 0;
+        // Dismemberment rides on top of the existing burst rather than
+        // replacing it: it declines for sprite-only enemies, for models that
+        // will not fracture, and when the player has gore switched off, and
+        // the burst has to look right in all three cases. Bosses are held back
+        // until the normal-enemy tuning is settled -- a 2.35-unit queen in
+        // eight pieces reads comic, not lethal.
+        if (!isBoss) {
+            // Away-from-player rather than a threaded-through hit normal:
+            // damageSnail has no direction argument and every caller would
+            // have to grow one for a difference the eye cannot pick out.
+            const px = this.player?.position?.x ?? sprite.position.x;
+            const pz = this.player?.position?.z ?? sprite.position.z;
+            const dx = sprite.position.x - px;
+            const dz = sprite.position.z - pz;
+            const len = Math.hypot(dx, dz) || 1;
+            spawnEnemyGibs(this, sprite, {
+                direction: { x: dx / len, z: dz / len },
+                isBoss
+            });
+        }
         this.spawnEnemyDeathBurst?.(sprite.position.x, sprite.position.z, sprite.userData.type, isBoss);
         this.traumaManager?.addTrauma(isBoss ? (WEAPON_TRAUMA_TABLE.bossSlam || 0.6) : (WEAPON_TRAUMA_TABLE.enemyKill || 0.22));
         this.killstreakFeedback?.registerKill({
@@ -26345,6 +26637,7 @@ export class ThreeGame {
             detail: {
                 type: sprite.userData.type,
                 totalKills: this.snailsKilledThisRun,
+                encounterId: sprite.uuid,
                 isBoss,
                 isMilestone: Boolean(sprite.userData.isMilestone),
                 sourceGoalKey: sprite.userData.sourceGoalKey ?? null
@@ -26963,9 +27256,25 @@ export class ThreeGame {
             && this.canEnemyTargetPlayer?.(sprite) !== false) {
             targets.push({
                 type: 'player',
+                id: 'local',
                 x: this.player.position.x,
                 z: this.player.position.z
             });
+        }
+        if (this.isMultiplayer && this.remotePlayers) {
+            for (const [peerId, remote] of this.remotePlayers.entries()) {
+                if (!remote || remote.isDead) continue;
+                const rx = remote.mesh?.position?.x ?? remote.x;
+                const rz = remote.mesh?.position?.z ?? remote.z;
+                if (Number.isFinite(rx) && Number.isFinite(rz)) {
+                    targets.push({
+                        type: 'player',
+                        id: peerId,
+                        x: rx,
+                        z: rz
+                    });
+                }
+            }
         }
         if (activeShip && activeShip.hp > 0) {
             targets.push({
@@ -26988,7 +27297,7 @@ export class ThreeGame {
         }
 
         if (sprite.userData.shotByPlayer) {
-            const playerTarget = targets.find(t => t.type === 'player');
+            const playerTarget = targets.filter(t => t.type === 'player').sort((a, b) => a.distance - b.distance)[0];
             if (playerTarget && playerTarget.distance <= 12.0) {
                 return { ...playerTarget, mode: 'hunt', goalX: playerTarget.x, goalZ: playerTarget.z };
             } else {
@@ -27637,6 +27946,14 @@ export class ThreeGame {
                     const doorKey = this.getWallKey ? this.getWallKey(tx, tz) : `${tx},${tz}`;
                     if (!this.destroyedWallKeys?.has(doorKey)) {
                         this.markWallTileDestroyed(tx, tz);
+                        if (this.isMultiplayer) {
+                            this.broadcastSharedWorldEvent?.('wall-destroyed', {
+                                worldX: tx,
+                                worldZ: tz,
+                                wallKey: doorKey,
+                                source: 'biomechanical_door'
+                            });
+                        }
                         this.spawnGearPoofEffect(tx, tz, 'bunker_junk');
                         window.AudioManager?.play('ui_scan_ping', { volume: 0.35, playbackRate: 1.8, bus: 'sfx' });
                         return true;
@@ -28255,6 +28572,22 @@ export class ThreeGame {
             }
         }
         data.knockbackTimer = Math.max(0, (data.knockbackTimer ?? 0) - delta);
+
+        if (this.isMultiplayer && !this.isMultiplayerHost) {
+            if (Number.isFinite(data.netTargetX) && Number.isFinite(data.netTargetZ)) {
+                const moveStep = Math.min(delta * 12, 1);
+                const oldX = sprite.position.x;
+                const oldZ = sprite.position.z;
+                sprite.position.x = THREE.MathUtils.lerp(sprite.position.x, data.netTargetX, moveStep);
+                sprite.position.z = THREE.MathUtils.lerp(sprite.position.z, data.netTargetZ, moveStep);
+                const stepX = sprite.position.x - oldX;
+                const stepZ = sprite.position.z - oldZ;
+                if (data.sheetSprite && (Math.abs(stepX) > 0.001 || Math.abs(stepZ) > 0.001)) {
+                    this.updateSheetSpriteFrame(sprite, stepX, stepZ, delta, true);
+                }
+            }
+            return;
+        }
 
         const target = this.selectSnailTarget(sprite, activeShip);
         if (!target) return;
@@ -31680,6 +32013,52 @@ export class ThreeGame {
             return {
                 x: 100 * this.chunkSize + centerCell * 2 + 1,
                 y: 100 * this.chunkSize + centerCell * 2 + 1
+            };
+        }
+        if (this.isMultiplayer) {
+            if (this.multiplayerCrashPlan?.players?.length) {
+                const crashParticipants = partitionCrashPlanPlayers(
+                    this.multiplayerCrashPlan.players,
+                    {
+                        localPlayerId: this.multiplayerLocalPlayerId,
+                        isHost: this.isMultiplayerHost
+                    }
+                );
+                const myInfo = crashParticipants.localPlayer;
+                if (myInfo && Number.isFinite(myInfo.spawnX) && Number.isFinite(myInfo.spawnZ)) {
+                    return {
+                        x: myInfo.spawnX,
+                        y: myInfo.spawnZ
+                    };
+                }
+            }
+
+            let slotIndex = 0;
+            if (!this.isMultiplayerHost) {
+                const guestHash = Math.abs(hashSeed(this.multiplayerLocalPlayerId || 'guest'));
+                slotIndex = (guestHash % 4) + 1;
+            }
+            const formationOffsets = [
+                { x: 0, y: 0 },
+                { x: 2.5, y: 0 },
+                { x: -2.5, y: 0 },
+                { x: 0, y: 2.5 },
+                { x: 0, y: -2.5 }
+            ];
+            const offset = formationOffsets[slotIndex % formationOffsets.length];
+
+            if (this.crashedShips) {
+                const ship = this.crashedShips.find(s => s.type === this.playerType);
+                if (ship) {
+                    return {
+                        x: ship.tileX + (ship.consoleOffset?.x || 0) + offset.x,
+                        y: ship.tileZ + (ship.consoleOffset?.z || 0) + 1.2 + offset.y
+                    };
+                }
+            }
+            return {
+                x: CRASH_SITE_CENTER + offset.x,
+                y: CRASH_SITE_CENTER + offset.y
             };
         }
         if (this.crashedShips) {

@@ -1,3 +1,5 @@
+import { localizeCatalog } from '../i18nCatalog.js';
+
 // ── Leader dialogue ladders (Elden Ring grammar) ──────────────
 // Each of the six leaders has staged dialogue. Within a stage you talk
 // through its beats one visit at a time; when the beats are exhausted you get
@@ -11,7 +13,7 @@
 export const DIALOGUE_FINAL_STAGE = 3;
 
 // requirements: level (camp), bond (camp/hive), postReveal (act2 begun)
-export const LEADER_DIALOGUE = Object.freeze({
+export const LEADER_DIALOGUE = localizeCatalog('narrative.leaderDialogue', Object.freeze({
     kaelen: {
         label: 'OVERSEER KAELEN',
         stages: [
@@ -262,7 +264,7 @@ export const LEADER_DIALOGUE = Object.freeze({
             }
         ]
     }
-});
+}), { skip: ['next'] });
 
 export const LEADER_KEYS = Object.freeze(Object.keys(LEADER_DIALOGUE));
 
@@ -277,7 +279,7 @@ export const LEADER_KEYS = Object.freeze(Object.keys(LEADER_DIALOGUE));
 // restraint, not declaration). Also fixes a pre-existing stray lowercase
 // mid-caps-line typo in kaelen/briggs's first line ("I HEARD the..." ->
 // "I HEARD THE...") caught while touching this block.
-export const LEADER_DEATH_BEATS = Object.freeze({
+export const LEADER_DEATH_BEATS = localizeCatalog('narrative.leaderDeathBeats', Object.freeze({
     kaelen: [
         'KAELEN: YOU DIED OUT THERE. I HEARD THE GRID STATIC CHANGE. SIT DOWN.',
         'KAELEN: CHEN KEPT SPARE BODY CORES IN THE FABRICATOR. YOU MUST HAVE BEEN RETRIEVED.',
@@ -296,7 +298,7 @@ export const LEADER_DEATH_BEATS = Object.freeze({
     nahl: ['NAHL: I FELT YOUR THREAD SEVER. AND I STITCHED IT BACK. SIT STILL.', 'NAHL: THE QUEEN SEES EVERY DEATH. SHE DOES NOT CARE. I DO.'],
     vey: ['VEY: YOUR SIGNAL DIED. THE STATIC WAS DEAFENING. SIT STILL.', 'VEY: THE MOTHERSHIP ARCHIVES EVERY AGENT SOUL. BUT THE BUNKER... THE BUNKER KEEPS THE BODY.'],
     rhun: ['RHUN: YOU FELL. I STOOD UP. THAT IS THE OATH.', 'RHUN: A WALL THAT BREAKS CAN BE KNIT. A CARRIER THAT DIES... CAN BE CARRIED.']
-});
+}));
 
 // Resolve a leader key from a display name like 'Sister Martha'.
 export function leaderKeyFromName(name = '') {

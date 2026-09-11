@@ -1,0 +1,4621 @@
+{
+  "rules": {
+    "id": "deep-crust-beta-1",
+    "version": 1,
+    "name": "Deep Crust Protocol",
+    "featuredStart": "2026-09-11T00:00:00Z",
+    "featuredWeeks": 8,
+    "ranks": 30,
+    "xpPerRank": 1500,
+    "archivePolicy": "finish-later",
+    "commerceEnabled": false,
+    "steamEmissionsEnabled": false,
+    "commonPerWeek": 3,
+    "commonSeasonLimit": 24,
+    "rareSeasonLimit": 8
+  },
+  "supply": {
+    "tech": 100,
+    "coin": 40,
+    "med": 20
+  },
+  "featured": [
+    {
+      "id": 4120,
+      "name": "Sub-Zero Pioneer Patch",
+      "track": "free",
+      "rank": 1,
+      "compatibility": "all",
+      "icon": "/economy/decal_subzero_pioneer.png",
+      "iconExists": true,
+      "model": null,
+      "modelExists": false,
+      "presentation": "Chest patch using canonical icon"
+    },
+    {
+      "id": 4130,
+      "name": "Mini Cryo-Core Charm",
+      "track": "free",
+      "rank": 3,
+      "compatibility": "all",
+      "icon": "/economy/charm_mini_cryo_core.png",
+      "iconExists": true,
+      "model": "/3d/runtime/new3ds/charm_mini_cryo_core.glb",
+      "modelExists": true,
+      "presentation": "Authored model"
+    },
+    {
+      "id": 4100,
+      "name": "Sub-Zero Frostbite Sidearm",
+      "track": "free",
+      "rank": 6,
+      "compatibility": "talon",
+      "icon": "/economy/skin_scout_frostbite.png",
+      "iconExists": true,
+      "model": "/3d/runtime/new3ds/skin_scout_frostbite.glb",
+      "modelExists": true,
+      "presentation": "Procedural weapon finish"
+    },
+    {
+      "id": 4122,
+      "name": "Sporesnail Hunter Crest",
+      "track": "free",
+      "rank": 9,
+      "compatibility": "all",
+      "icon": "/economy/decal_sporesnail_hunter_crest.png",
+      "iconExists": true,
+      "model": null,
+      "modelExists": false,
+      "presentation": "Chest patch using canonical icon"
+    },
+    {
+      "id": 4132,
+      "name": "Sporesnail Pearl",
+      "track": "free",
+      "rank": 12,
+      "compatibility": "all",
+      "icon": "/economy/charm_sporesnail_pearl.png",
+      "iconExists": true,
+      "model": "/3d/runtime/new3ds/charm_sporesnail_pearl.glb",
+      "modelExists": true,
+      "presentation": "Authored model"
+    },
+    {
+      "id": 4112,
+      "name": "Sub-Terran Drill Engineer",
+      "track": "free",
+      "rank": 15,
+      "compatibility": "ENGINEER",
+      "icon": "/economy/chassis_subterran_drill_engineer.png",
+      "iconExists": true,
+      "model": "/3d/runtime/new3ds/chassis_subterran_drill_engineer.glb",
+      "modelExists": true,
+      "presentation": "Authored model"
+    },
+    {
+      "id": 4113,
+      "name": "Cryo-Vanguard Scout",
+      "track": "free",
+      "rank": 15,
+      "compatibility": "SCOUT",
+      "icon": "/economy/chassis_cryo_vanguard_scout.png",
+      "iconExists": true,
+      "model": "/3d/runtime/new3ds/chassis_cryo_vanguard_scout.glb",
+      "modelExists": true,
+      "presentation": "Authored model"
+    },
+    {
+      "id": 4114,
+      "name": "Trench Warden Heavy",
+      "track": "free",
+      "rank": 15,
+      "compatibility": "TANK",
+      "icon": "/economy/chassis_trench_warden_heavy.png",
+      "iconExists": true,
+      "model": "/3d/runtime/new3ds/chassis_trench_warden_heavy.glb",
+      "modelExists": true,
+      "presentation": "Authored model"
+    },
+    {
+      "id": 4104,
+      "name": "Rust & Bone Trench Carbine",
+      "track": "free",
+      "rank": 18,
+      "compatibility": "talon_c",
+      "icon": "/economy/skin_rust_bone_trench.png",
+      "iconExists": true,
+      "model": "/3d/runtime/new3ds/skin_rust_bone_trench.glb",
+      "modelExists": true,
+      "presentation": "Authored model"
+    },
+    {
+      "id": 4135,
+      "name": "Geodetic Compass",
+      "track": "free",
+      "rank": 21,
+      "compatibility": "all",
+      "icon": "/economy/charm_geodetic_compass.png",
+      "iconExists": true,
+      "model": "/3d/runtime/new3ds/charm_geodetic_compass.glb",
+      "modelExists": true,
+      "presentation": "Authored model"
+    },
+    {
+      "id": 4125,
+      "name": "Cryo-Phoenix Insignia",
+      "track": "free",
+      "rank": 25,
+      "compatibility": "all",
+      "icon": "/economy/decal_cryo_phoenix.png",
+      "iconExists": true,
+      "model": null,
+      "modelExists": false,
+      "presentation": "Chest patch using canonical icon"
+    },
+    {
+      "id": 4110,
+      "name": "Queen's Carapace Carbine",
+      "track": "free",
+      "rank": 30,
+      "compatibility": "talon_c",
+      "icon": "/economy/skin_queen_carapace_carbine.png",
+      "iconExists": true,
+      "model": "/3d/runtime/new3ds/skin_queen_carapace_carbine.glb",
+      "modelExists": true,
+      "presentation": "Authored model"
+    },
+    {
+      "id": 4101,
+      "name": "Hazard Stripe SMG",
+      "track": "premium",
+      "rank": "purchase",
+      "compatibility": "talon_c",
+      "icon": "/economy/skin_hazard_stripe_smg.png",
+      "iconExists": true,
+      "model": "/3d/runtime/new3ds/skin_hazard_stripe_smg.glb",
+      "modelExists": true,
+      "presentation": "Procedural weapon finish"
+    },
+    {
+      "id": 4121,
+      "name": "Radiation Trefoil Emblem",
+      "track": "premium",
+      "rank": 3,
+      "compatibility": "all",
+      "icon": "/economy/decal_radiation_trefoil.png",
+      "iconExists": true,
+      "model": null,
+      "modelExists": false,
+      "presentation": "Chest patch using canonical icon"
+    },
+    {
+      "id": 4131,
+      "name": "Spent 50-Cal Casing",
+      "track": "premium",
+      "rank": 6,
+      "compatibility": "all",
+      "icon": "/economy/charm_spent_50cal.png",
+      "iconExists": true,
+      "model": "/3d/runtime/new3ds/charm_spent_50cal.glb",
+      "modelExists": true,
+      "presentation": "Authored model"
+    },
+    {
+      "id": 4103,
+      "name": "Cryo-Plasma Arc Driver",
+      "track": "premium",
+      "rank": 9,
+      "compatibility": "tesla_lock",
+      "icon": "/economy/skin_engineer_cryo_plasma.png",
+      "iconExists": true,
+      "model": "/3d/runtime/new3ds/skin_engineer_cryo_plasma.glb",
+      "modelExists": true,
+      "presentation": "Authored model"
+    },
+    {
+      "id": 4124,
+      "name": "Cyber-Skull Tactical Pin",
+      "track": "premium",
+      "rank": 12,
+      "compatibility": "all",
+      "icon": "/economy/decal_cyber_skull_tactical_pin.png",
+      "iconExists": true,
+      "model": null,
+      "modelExists": false,
+      "presentation": "Chest patch using canonical icon"
+    },
+    {
+      "id": 4116,
+      "name": "Bio-Synthesizer Harness",
+      "track": "premium",
+      "rank": 15,
+      "compatibility": "ENGINEER",
+      "icon": "/economy/chassis_bio_synthesizer_medic.png",
+      "iconExists": true,
+      "model": "/3d/runtime/new3ds/chassis_bio_synthesizer_medic.glb",
+      "modelExists": true,
+      "presentation": "Authored model"
+    },
+    {
+      "id": 4134,
+      "name": "Glitched RAM Card",
+      "track": "premium",
+      "rank": 18,
+      "compatibility": "all",
+      "icon": "/economy/charm_glitched_ram.png",
+      "iconExists": true,
+      "model": "/3d/runtime/new3ds/charm_glitched_ram.glb",
+      "modelExists": true,
+      "presentation": "Authored model"
+    },
+    {
+      "id": 4115,
+      "name": "Void Commando Recon",
+      "track": "premium",
+      "rank": 21,
+      "compatibility": "SCOUT",
+      "icon": "/economy/chassis_void_commando_recon.png",
+      "iconExists": true,
+      "model": "/3d/runtime/new3ds/chassis_void_commando_recon.glb",
+      "modelExists": true,
+      "presentation": "Authored model"
+    },
+    {
+      "id": 4138,
+      "name": "Dark Matter Micro-Singularity",
+      "track": "premium",
+      "rank": 25,
+      "compatibility": "all",
+      "icon": "/economy/charm_dark_matter.png",
+      "iconExists": true,
+      "model": "/3d/runtime/new3ds/charm_dark_matter.glb",
+      "modelExists": true,
+      "presentation": "Authored model"
+    },
+    {
+      "id": 4119,
+      "name": "Hive-Lord Symbiote Exosuit",
+      "track": "premium",
+      "rank": 30,
+      "compatibility": "TANK",
+      "icon": "/economy/chassis_hive_lord_symbiote.png",
+      "iconExists": true,
+      "model": "/3d/runtime/new3ds/chassis_hive_lord_symbiote.glb",
+      "modelExists": true,
+      "presentation": "Authored model"
+    },
+    {
+      "id": 2100,
+      "name": "Carbon Fiber Decal",
+      "track": "workshop",
+      "rank": "workshop",
+      "compatibility": "all",
+      "icon": "/economy/decal_carbon.png",
+      "iconExists": true,
+      "model": null,
+      "modelExists": false,
+      "presentation": "Chest patch using canonical icon"
+    },
+    {
+      "id": 2200,
+      "name": "Chrome Plated Sidearm",
+      "track": "workshop",
+      "rank": "workshop",
+      "compatibility": "talon",
+      "icon": "/economy/finish_chrome.png",
+      "iconExists": true,
+      "model": null,
+      "modelExists": false,
+      "presentation": "Procedural weapon finish"
+    }
+  ],
+  "assetGaps": [],
+  "tradeRanges": {
+    "tech": {
+      "minBuy": 32,
+      "maxSell": 28
+    },
+    "coin": {
+      "minBuy": 9,
+      "maxSell": 7
+    },
+    "med": {
+      "minBuy": 32,
+      "maxSell": 28
+    }
+  },
+  "scenarios": [
+    {
+      "sessionsWeekly": 2,
+      "successRate": 0.4,
+      "joinWeek": 1,
+      "directives": true,
+      "intake": "low",
+      "veteran": false,
+      "sessions": 32,
+      "hours": 21.3,
+      "ranks": {
+        "3": 2,
+        "15": 10,
+        "30": 32
+      },
+      "balance": {
+        "tech": 243,
+        "coin": 130,
+        "med": 52,
+        "shells": 160
+      },
+      "common": 12,
+      "rare": 8
+    },
+    {
+      "sessionsWeekly": 2,
+      "successRate": 0.4,
+      "joinWeek": 1,
+      "directives": true,
+      "intake": "low",
+      "veteran": true,
+      "sessions": 32,
+      "hours": 21.3,
+      "ranks": {
+        "3": 2,
+        "15": 10,
+        "30": 32
+      },
+      "balance": {
+        "tech": 280,
+        "coin": 146,
+        "med": 57,
+        "shells": 660
+      },
+      "common": 12,
+      "rare": 8
+    },
+    {
+      "sessionsWeekly": 2,
+      "successRate": 0.4,
+      "joinWeek": 1,
+      "directives": true,
+      "intake": "high",
+      "veteran": false,
+      "sessions": 32,
+      "hours": 21.3,
+      "ranks": {
+        "3": 2,
+        "15": 10,
+        "30": 32
+      },
+      "balance": {
+        "tech": 723,
+        "coin": 418,
+        "med": 180,
+        "shells": 960
+      },
+      "common": 12,
+      "rare": 8
+    },
+    {
+      "sessionsWeekly": 2,
+      "successRate": 0.4,
+      "joinWeek": 1,
+      "directives": true,
+      "intake": "high",
+      "veteran": true,
+      "sessions": 32,
+      "hours": 21.3,
+      "ranks": {
+        "3": 2,
+        "15": 10,
+        "30": 32
+      },
+      "balance": {
+        "tech": 760,
+        "coin": 434,
+        "med": 185,
+        "shells": 1460
+      },
+      "common": 12,
+      "rare": 8
+    },
+    {
+      "sessionsWeekly": 2,
+      "successRate": 0.4,
+      "joinWeek": 1,
+      "directives": false,
+      "intake": "low",
+      "veteran": false,
+      "sessions": 74,
+      "hours": 49.3,
+      "ranks": {
+        "3": 3,
+        "15": 35,
+        "30": 74
+      },
+      "balance": {
+        "tech": 453,
+        "coin": 256,
+        "med": 94,
+        "shells": 370
+      },
+      "common": 24,
+      "rare": 0
+    },
+    {
+      "sessionsWeekly": 2,
+      "successRate": 0.4,
+      "joinWeek": 1,
+      "directives": false,
+      "intake": "low",
+      "veteran": true,
+      "sessions": 74,
+      "hours": 49.3,
+      "ranks": {
+        "3": 3,
+        "15": 35,
+        "30": 74
+      },
+      "balance": {
+        "tech": 490,
+        "coin": 272,
+        "med": 99,
+        "shells": 870
+      },
+      "common": 24,
+      "rare": 0
+    },
+    {
+      "sessionsWeekly": 2,
+      "successRate": 0.4,
+      "joinWeek": 1,
+      "directives": false,
+      "intake": "high",
+      "veteran": false,
+      "sessions": 74,
+      "hours": 49.3,
+      "ranks": {
+        "3": 3,
+        "15": 35,
+        "30": 74
+      },
+      "balance": {
+        "tech": 1563,
+        "coin": 922,
+        "med": 390,
+        "shells": 2220
+      },
+      "common": 24,
+      "rare": 0
+    },
+    {
+      "sessionsWeekly": 2,
+      "successRate": 0.4,
+      "joinWeek": 1,
+      "directives": false,
+      "intake": "high",
+      "veteran": true,
+      "sessions": 74,
+      "hours": 49.3,
+      "ranks": {
+        "3": 3,
+        "15": 35,
+        "30": 74
+      },
+      "balance": {
+        "tech": 1600,
+        "coin": 938,
+        "med": 395,
+        "shells": 2720
+      },
+      "common": 24,
+      "rare": 0
+    },
+    {
+      "sessionsWeekly": 2,
+      "successRate": 0.4,
+      "joinWeek": 5,
+      "directives": true,
+      "intake": "low",
+      "veteran": false,
+      "sessions": 32,
+      "hours": 21.3,
+      "ranks": {
+        "3": 1,
+        "15": 4,
+        "30": 32
+      },
+      "balance": {
+        "tech": 243,
+        "coin": 130,
+        "med": 52,
+        "shells": 160
+      },
+      "common": 12,
+      "rare": 8
+    },
+    {
+      "sessionsWeekly": 2,
+      "successRate": 0.4,
+      "joinWeek": 5,
+      "directives": true,
+      "intake": "low",
+      "veteran": true,
+      "sessions": 32,
+      "hours": 21.3,
+      "ranks": {
+        "3": 1,
+        "15": 4,
+        "30": 32
+      },
+      "balance": {
+        "tech": 280,
+        "coin": 146,
+        "med": 57,
+        "shells": 660
+      },
+      "common": 12,
+      "rare": 8
+    },
+    {
+      "sessionsWeekly": 2,
+      "successRate": 0.4,
+      "joinWeek": 5,
+      "directives": true,
+      "intake": "high",
+      "veteran": false,
+      "sessions": 32,
+      "hours": 21.3,
+      "ranks": {
+        "3": 1,
+        "15": 4,
+        "30": 32
+      },
+      "balance": {
+        "tech": 723,
+        "coin": 418,
+        "med": 180,
+        "shells": 960
+      },
+      "common": 12,
+      "rare": 8
+    },
+    {
+      "sessionsWeekly": 2,
+      "successRate": 0.4,
+      "joinWeek": 5,
+      "directives": true,
+      "intake": "high",
+      "veteran": true,
+      "sessions": 32,
+      "hours": 21.3,
+      "ranks": {
+        "3": 1,
+        "15": 4,
+        "30": 32
+      },
+      "balance": {
+        "tech": 760,
+        "coin": 434,
+        "med": 185,
+        "shells": 1460
+      },
+      "common": 12,
+      "rare": 8
+    },
+    {
+      "sessionsWeekly": 2,
+      "successRate": 0.4,
+      "joinWeek": 5,
+      "directives": false,
+      "intake": "low",
+      "veteran": false,
+      "sessions": 74,
+      "hours": 49.3,
+      "ranks": {
+        "3": 3,
+        "15": 35,
+        "30": 74
+      },
+      "balance": {
+        "tech": 453,
+        "coin": 256,
+        "med": 94,
+        "shells": 370
+      },
+      "common": 24,
+      "rare": 0
+    },
+    {
+      "sessionsWeekly": 2,
+      "successRate": 0.4,
+      "joinWeek": 5,
+      "directives": false,
+      "intake": "low",
+      "veteran": true,
+      "sessions": 74,
+      "hours": 49.3,
+      "ranks": {
+        "3": 3,
+        "15": 35,
+        "30": 74
+      },
+      "balance": {
+        "tech": 490,
+        "coin": 272,
+        "med": 99,
+        "shells": 870
+      },
+      "common": 24,
+      "rare": 0
+    },
+    {
+      "sessionsWeekly": 2,
+      "successRate": 0.4,
+      "joinWeek": 5,
+      "directives": false,
+      "intake": "high",
+      "veteran": false,
+      "sessions": 74,
+      "hours": 49.3,
+      "ranks": {
+        "3": 3,
+        "15": 35,
+        "30": 74
+      },
+      "balance": {
+        "tech": 1563,
+        "coin": 922,
+        "med": 390,
+        "shells": 2220
+      },
+      "common": 24,
+      "rare": 0
+    },
+    {
+      "sessionsWeekly": 2,
+      "successRate": 0.4,
+      "joinWeek": 5,
+      "directives": false,
+      "intake": "high",
+      "veteran": true,
+      "sessions": 74,
+      "hours": 49.3,
+      "ranks": {
+        "3": 3,
+        "15": 35,
+        "30": 74
+      },
+      "balance": {
+        "tech": 1600,
+        "coin": 938,
+        "med": 395,
+        "shells": 2720
+      },
+      "common": 24,
+      "rare": 0
+    },
+    {
+      "sessionsWeekly": 2,
+      "successRate": 0.6,
+      "joinWeek": 1,
+      "directives": true,
+      "intake": "low",
+      "veteran": false,
+      "sessions": 29,
+      "hours": 19.3,
+      "ranks": {
+        "3": 2,
+        "15": 10,
+        "30": 29
+      },
+      "balance": {
+        "tech": 228,
+        "coin": 121,
+        "med": 49,
+        "shells": 145
+      },
+      "common": 17,
+      "rare": 8
+    },
+    {
+      "sessionsWeekly": 2,
+      "successRate": 0.6,
+      "joinWeek": 1,
+      "directives": true,
+      "intake": "low",
+      "veteran": true,
+      "sessions": 29,
+      "hours": 19.3,
+      "ranks": {
+        "3": 2,
+        "15": 10,
+        "30": 29
+      },
+      "balance": {
+        "tech": 265,
+        "coin": 137,
+        "med": 54,
+        "shells": 645
+      },
+      "common": 17,
+      "rare": 8
+    },
+    {
+      "sessionsWeekly": 2,
+      "successRate": 0.6,
+      "joinWeek": 1,
+      "directives": true,
+      "intake": "high",
+      "veteran": false,
+      "sessions": 29,
+      "hours": 19.3,
+      "ranks": {
+        "3": 2,
+        "15": 10,
+        "30": 29
+      },
+      "balance": {
+        "tech": 663,
+        "coin": 382,
+        "med": 165,
+        "shells": 870
+      },
+      "common": 17,
+      "rare": 8
+    },
+    {
+      "sessionsWeekly": 2,
+      "successRate": 0.6,
+      "joinWeek": 1,
+      "directives": true,
+      "intake": "high",
+      "veteran": true,
+      "sessions": 29,
+      "hours": 19.3,
+      "ranks": {
+        "3": 2,
+        "15": 10,
+        "30": 29
+      },
+      "balance": {
+        "tech": 700,
+        "coin": 398,
+        "med": 170,
+        "shells": 1370
+      },
+      "common": 17,
+      "rare": 8
+    },
+    {
+      "sessionsWeekly": 2,
+      "successRate": 0.6,
+      "joinWeek": 1,
+      "directives": false,
+      "intake": "low",
+      "veteran": false,
+      "sessions": 67,
+      "hours": 44.7,
+      "ranks": {
+        "3": 3,
+        "15": 32,
+        "30": 67
+      },
+      "balance": {
+        "tech": 418,
+        "coin": 235,
+        "med": 87,
+        "shells": 335
+      },
+      "common": 24,
+      "rare": 0
+    },
+    {
+      "sessionsWeekly": 2,
+      "successRate": 0.6,
+      "joinWeek": 1,
+      "directives": false,
+      "intake": "low",
+      "veteran": true,
+      "sessions": 67,
+      "hours": 44.7,
+      "ranks": {
+        "3": 3,
+        "15": 32,
+        "30": 67
+      },
+      "balance": {
+        "tech": 455,
+        "coin": 251,
+        "med": 92,
+        "shells": 835
+      },
+      "common": 24,
+      "rare": 0
+    },
+    {
+      "sessionsWeekly": 2,
+      "successRate": 0.6,
+      "joinWeek": 1,
+      "directives": false,
+      "intake": "high",
+      "veteran": false,
+      "sessions": 67,
+      "hours": 44.7,
+      "ranks": {
+        "3": 3,
+        "15": 32,
+        "30": 67
+      },
+      "balance": {
+        "tech": 1423,
+        "coin": 838,
+        "med": 355,
+        "shells": 2010
+      },
+      "common": 24,
+      "rare": 0
+    },
+    {
+      "sessionsWeekly": 2,
+      "successRate": 0.6,
+      "joinWeek": 1,
+      "directives": false,
+      "intake": "high",
+      "veteran": true,
+      "sessions": 67,
+      "hours": 44.7,
+      "ranks": {
+        "3": 3,
+        "15": 32,
+        "30": 67
+      },
+      "balance": {
+        "tech": 1460,
+        "coin": 854,
+        "med": 360,
+        "shells": 2510
+      },
+      "common": 24,
+      "rare": 0
+    },
+    {
+      "sessionsWeekly": 2,
+      "successRate": 0.6,
+      "joinWeek": 5,
+      "directives": true,
+      "intake": "low",
+      "veteran": false,
+      "sessions": 29,
+      "hours": 19.3,
+      "ranks": {
+        "3": 1,
+        "15": 4,
+        "30": 29
+      },
+      "balance": {
+        "tech": 228,
+        "coin": 121,
+        "med": 49,
+        "shells": 145
+      },
+      "common": 17,
+      "rare": 8
+    },
+    {
+      "sessionsWeekly": 2,
+      "successRate": 0.6,
+      "joinWeek": 5,
+      "directives": true,
+      "intake": "low",
+      "veteran": true,
+      "sessions": 29,
+      "hours": 19.3,
+      "ranks": {
+        "3": 1,
+        "15": 4,
+        "30": 29
+      },
+      "balance": {
+        "tech": 265,
+        "coin": 137,
+        "med": 54,
+        "shells": 645
+      },
+      "common": 17,
+      "rare": 8
+    },
+    {
+      "sessionsWeekly": 2,
+      "successRate": 0.6,
+      "joinWeek": 5,
+      "directives": true,
+      "intake": "high",
+      "veteran": false,
+      "sessions": 29,
+      "hours": 19.3,
+      "ranks": {
+        "3": 1,
+        "15": 4,
+        "30": 29
+      },
+      "balance": {
+        "tech": 663,
+        "coin": 382,
+        "med": 165,
+        "shells": 870
+      },
+      "common": 17,
+      "rare": 8
+    },
+    {
+      "sessionsWeekly": 2,
+      "successRate": 0.6,
+      "joinWeek": 5,
+      "directives": true,
+      "intake": "high",
+      "veteran": true,
+      "sessions": 29,
+      "hours": 19.3,
+      "ranks": {
+        "3": 1,
+        "15": 4,
+        "30": 29
+      },
+      "balance": {
+        "tech": 700,
+        "coin": 398,
+        "med": 170,
+        "shells": 1370
+      },
+      "common": 17,
+      "rare": 8
+    },
+    {
+      "sessionsWeekly": 2,
+      "successRate": 0.6,
+      "joinWeek": 5,
+      "directives": false,
+      "intake": "low",
+      "veteran": false,
+      "sessions": 67,
+      "hours": 44.7,
+      "ranks": {
+        "3": 3,
+        "15": 32,
+        "30": 67
+      },
+      "balance": {
+        "tech": 418,
+        "coin": 235,
+        "med": 87,
+        "shells": 335
+      },
+      "common": 24,
+      "rare": 0
+    },
+    {
+      "sessionsWeekly": 2,
+      "successRate": 0.6,
+      "joinWeek": 5,
+      "directives": false,
+      "intake": "low",
+      "veteran": true,
+      "sessions": 67,
+      "hours": 44.7,
+      "ranks": {
+        "3": 3,
+        "15": 32,
+        "30": 67
+      },
+      "balance": {
+        "tech": 455,
+        "coin": 251,
+        "med": 92,
+        "shells": 835
+      },
+      "common": 24,
+      "rare": 0
+    },
+    {
+      "sessionsWeekly": 2,
+      "successRate": 0.6,
+      "joinWeek": 5,
+      "directives": false,
+      "intake": "high",
+      "veteran": false,
+      "sessions": 67,
+      "hours": 44.7,
+      "ranks": {
+        "3": 3,
+        "15": 32,
+        "30": 67
+      },
+      "balance": {
+        "tech": 1423,
+        "coin": 838,
+        "med": 355,
+        "shells": 2010
+      },
+      "common": 24,
+      "rare": 0
+    },
+    {
+      "sessionsWeekly": 2,
+      "successRate": 0.6,
+      "joinWeek": 5,
+      "directives": false,
+      "intake": "high",
+      "veteran": true,
+      "sessions": 67,
+      "hours": 44.7,
+      "ranks": {
+        "3": 3,
+        "15": 32,
+        "30": 67
+      },
+      "balance": {
+        "tech": 1460,
+        "coin": 854,
+        "med": 360,
+        "shells": 2510
+      },
+      "common": 24,
+      "rare": 0
+    },
+    {
+      "sessionsWeekly": 2,
+      "successRate": 0.8,
+      "joinWeek": 1,
+      "directives": true,
+      "intake": "low",
+      "veteran": false,
+      "sessions": 27,
+      "hours": 18,
+      "ranks": {
+        "3": 2,
+        "15": 10,
+        "30": 27
+      },
+      "balance": {
+        "tech": 218,
+        "coin": 115,
+        "med": 47,
+        "shells": 135
+      },
+      "common": 21,
+      "rare": 8
+    },
+    {
+      "sessionsWeekly": 2,
+      "successRate": 0.8,
+      "joinWeek": 1,
+      "directives": true,
+      "intake": "low",
+      "veteran": true,
+      "sessions": 27,
+      "hours": 18,
+      "ranks": {
+        "3": 2,
+        "15": 10,
+        "30": 27
+      },
+      "balance": {
+        "tech": 255,
+        "coin": 131,
+        "med": 52,
+        "shells": 635
+      },
+      "common": 21,
+      "rare": 8
+    },
+    {
+      "sessionsWeekly": 2,
+      "successRate": 0.8,
+      "joinWeek": 1,
+      "directives": true,
+      "intake": "high",
+      "veteran": false,
+      "sessions": 27,
+      "hours": 18,
+      "ranks": {
+        "3": 2,
+        "15": 10,
+        "30": 27
+      },
+      "balance": {
+        "tech": 623,
+        "coin": 358,
+        "med": 155,
+        "shells": 810
+      },
+      "common": 21,
+      "rare": 8
+    },
+    {
+      "sessionsWeekly": 2,
+      "successRate": 0.8,
+      "joinWeek": 1,
+      "directives": true,
+      "intake": "high",
+      "veteran": true,
+      "sessions": 27,
+      "hours": 18,
+      "ranks": {
+        "3": 2,
+        "15": 10,
+        "30": 27
+      },
+      "balance": {
+        "tech": 660,
+        "coin": 374,
+        "med": 160,
+        "shells": 1310
+      },
+      "common": 21,
+      "rare": 8
+    },
+    {
+      "sessionsWeekly": 2,
+      "successRate": 0.8,
+      "joinWeek": 1,
+      "directives": false,
+      "intake": "low",
+      "veteran": false,
+      "sessions": 62,
+      "hours": 41.3,
+      "ranks": {
+        "3": 3,
+        "15": 29,
+        "30": 62
+      },
+      "balance": {
+        "tech": 393,
+        "coin": 220,
+        "med": 82,
+        "shells": 310
+      },
+      "common": 24,
+      "rare": 0
+    },
+    {
+      "sessionsWeekly": 2,
+      "successRate": 0.8,
+      "joinWeek": 1,
+      "directives": false,
+      "intake": "low",
+      "veteran": true,
+      "sessions": 62,
+      "hours": 41.3,
+      "ranks": {
+        "3": 3,
+        "15": 29,
+        "30": 62
+      },
+      "balance": {
+        "tech": 430,
+        "coin": 236,
+        "med": 87,
+        "shells": 810
+      },
+      "common": 24,
+      "rare": 0
+    },
+    {
+      "sessionsWeekly": 2,
+      "successRate": 0.8,
+      "joinWeek": 1,
+      "directives": false,
+      "intake": "high",
+      "veteran": false,
+      "sessions": 62,
+      "hours": 41.3,
+      "ranks": {
+        "3": 3,
+        "15": 29,
+        "30": 62
+      },
+      "balance": {
+        "tech": 1323,
+        "coin": 778,
+        "med": 330,
+        "shells": 1860
+      },
+      "common": 24,
+      "rare": 0
+    },
+    {
+      "sessionsWeekly": 2,
+      "successRate": 0.8,
+      "joinWeek": 1,
+      "directives": false,
+      "intake": "high",
+      "veteran": true,
+      "sessions": 62,
+      "hours": 41.3,
+      "ranks": {
+        "3": 3,
+        "15": 29,
+        "30": 62
+      },
+      "balance": {
+        "tech": 1360,
+        "coin": 794,
+        "med": 335,
+        "shells": 2360
+      },
+      "common": 24,
+      "rare": 0
+    },
+    {
+      "sessionsWeekly": 2,
+      "successRate": 0.8,
+      "joinWeek": 5,
+      "directives": true,
+      "intake": "low",
+      "veteran": false,
+      "sessions": 27,
+      "hours": 18,
+      "ranks": {
+        "3": 1,
+        "15": 4,
+        "30": 27
+      },
+      "balance": {
+        "tech": 218,
+        "coin": 115,
+        "med": 47,
+        "shells": 135
+      },
+      "common": 21,
+      "rare": 8
+    },
+    {
+      "sessionsWeekly": 2,
+      "successRate": 0.8,
+      "joinWeek": 5,
+      "directives": true,
+      "intake": "low",
+      "veteran": true,
+      "sessions": 27,
+      "hours": 18,
+      "ranks": {
+        "3": 1,
+        "15": 4,
+        "30": 27
+      },
+      "balance": {
+        "tech": 255,
+        "coin": 131,
+        "med": 52,
+        "shells": 635
+      },
+      "common": 21,
+      "rare": 8
+    },
+    {
+      "sessionsWeekly": 2,
+      "successRate": 0.8,
+      "joinWeek": 5,
+      "directives": true,
+      "intake": "high",
+      "veteran": false,
+      "sessions": 27,
+      "hours": 18,
+      "ranks": {
+        "3": 1,
+        "15": 4,
+        "30": 27
+      },
+      "balance": {
+        "tech": 623,
+        "coin": 358,
+        "med": 155,
+        "shells": 810
+      },
+      "common": 21,
+      "rare": 8
+    },
+    {
+      "sessionsWeekly": 2,
+      "successRate": 0.8,
+      "joinWeek": 5,
+      "directives": true,
+      "intake": "high",
+      "veteran": true,
+      "sessions": 27,
+      "hours": 18,
+      "ranks": {
+        "3": 1,
+        "15": 4,
+        "30": 27
+      },
+      "balance": {
+        "tech": 660,
+        "coin": 374,
+        "med": 160,
+        "shells": 1310
+      },
+      "common": 21,
+      "rare": 8
+    },
+    {
+      "sessionsWeekly": 2,
+      "successRate": 0.8,
+      "joinWeek": 5,
+      "directives": false,
+      "intake": "low",
+      "veteran": false,
+      "sessions": 62,
+      "hours": 41.3,
+      "ranks": {
+        "3": 3,
+        "15": 29,
+        "30": 62
+      },
+      "balance": {
+        "tech": 393,
+        "coin": 220,
+        "med": 82,
+        "shells": 310
+      },
+      "common": 24,
+      "rare": 0
+    },
+    {
+      "sessionsWeekly": 2,
+      "successRate": 0.8,
+      "joinWeek": 5,
+      "directives": false,
+      "intake": "low",
+      "veteran": true,
+      "sessions": 62,
+      "hours": 41.3,
+      "ranks": {
+        "3": 3,
+        "15": 29,
+        "30": 62
+      },
+      "balance": {
+        "tech": 430,
+        "coin": 236,
+        "med": 87,
+        "shells": 810
+      },
+      "common": 24,
+      "rare": 0
+    },
+    {
+      "sessionsWeekly": 2,
+      "successRate": 0.8,
+      "joinWeek": 5,
+      "directives": false,
+      "intake": "high",
+      "veteran": false,
+      "sessions": 62,
+      "hours": 41.3,
+      "ranks": {
+        "3": 3,
+        "15": 29,
+        "30": 62
+      },
+      "balance": {
+        "tech": 1323,
+        "coin": 778,
+        "med": 330,
+        "shells": 1860
+      },
+      "common": 24,
+      "rare": 0
+    },
+    {
+      "sessionsWeekly": 2,
+      "successRate": 0.8,
+      "joinWeek": 5,
+      "directives": false,
+      "intake": "high",
+      "veteran": true,
+      "sessions": 62,
+      "hours": 41.3,
+      "ranks": {
+        "3": 3,
+        "15": 29,
+        "30": 62
+      },
+      "balance": {
+        "tech": 1360,
+        "coin": 794,
+        "med": 335,
+        "shells": 2360
+      },
+      "common": 24,
+      "rare": 0
+    },
+    {
+      "sessionsWeekly": 3,
+      "successRate": 0.4,
+      "joinWeek": 1,
+      "directives": true,
+      "intake": "low",
+      "veteran": false,
+      "sessions": 32,
+      "hours": 21.3,
+      "ranks": {
+        "3": 2,
+        "15": 13,
+        "30": 32
+      },
+      "balance": {
+        "tech": 243,
+        "coin": 130,
+        "med": 52,
+        "shells": 160
+      },
+      "common": 12,
+      "rare": 8
+    },
+    {
+      "sessionsWeekly": 3,
+      "successRate": 0.4,
+      "joinWeek": 1,
+      "directives": true,
+      "intake": "low",
+      "veteran": true,
+      "sessions": 32,
+      "hours": 21.3,
+      "ranks": {
+        "3": 2,
+        "15": 13,
+        "30": 32
+      },
+      "balance": {
+        "tech": 280,
+        "coin": 146,
+        "med": 57,
+        "shells": 660
+      },
+      "common": 12,
+      "rare": 8
+    },
+    {
+      "sessionsWeekly": 3,
+      "successRate": 0.4,
+      "joinWeek": 1,
+      "directives": true,
+      "intake": "high",
+      "veteran": false,
+      "sessions": 32,
+      "hours": 21.3,
+      "ranks": {
+        "3": 2,
+        "15": 13,
+        "30": 32
+      },
+      "balance": {
+        "tech": 723,
+        "coin": 418,
+        "med": 180,
+        "shells": 960
+      },
+      "common": 12,
+      "rare": 8
+    },
+    {
+      "sessionsWeekly": 3,
+      "successRate": 0.4,
+      "joinWeek": 1,
+      "directives": true,
+      "intake": "high",
+      "veteran": true,
+      "sessions": 32,
+      "hours": 21.3,
+      "ranks": {
+        "3": 2,
+        "15": 13,
+        "30": 32
+      },
+      "balance": {
+        "tech": 760,
+        "coin": 434,
+        "med": 185,
+        "shells": 1460
+      },
+      "common": 12,
+      "rare": 8
+    },
+    {
+      "sessionsWeekly": 3,
+      "successRate": 0.4,
+      "joinWeek": 1,
+      "directives": false,
+      "intake": "low",
+      "veteran": false,
+      "sessions": 74,
+      "hours": 49.3,
+      "ranks": {
+        "3": 3,
+        "15": 35,
+        "30": 74
+      },
+      "balance": {
+        "tech": 453,
+        "coin": 256,
+        "med": 94,
+        "shells": 370
+      },
+      "common": 24,
+      "rare": 0
+    },
+    {
+      "sessionsWeekly": 3,
+      "successRate": 0.4,
+      "joinWeek": 1,
+      "directives": false,
+      "intake": "low",
+      "veteran": true,
+      "sessions": 74,
+      "hours": 49.3,
+      "ranks": {
+        "3": 3,
+        "15": 35,
+        "30": 74
+      },
+      "balance": {
+        "tech": 490,
+        "coin": 272,
+        "med": 99,
+        "shells": 870
+      },
+      "common": 24,
+      "rare": 0
+    },
+    {
+      "sessionsWeekly": 3,
+      "successRate": 0.4,
+      "joinWeek": 1,
+      "directives": false,
+      "intake": "high",
+      "veteran": false,
+      "sessions": 74,
+      "hours": 49.3,
+      "ranks": {
+        "3": 3,
+        "15": 35,
+        "30": 74
+      },
+      "balance": {
+        "tech": 1563,
+        "coin": 922,
+        "med": 390,
+        "shells": 2220
+      },
+      "common": 24,
+      "rare": 0
+    },
+    {
+      "sessionsWeekly": 3,
+      "successRate": 0.4,
+      "joinWeek": 1,
+      "directives": false,
+      "intake": "high",
+      "veteran": true,
+      "sessions": 74,
+      "hours": 49.3,
+      "ranks": {
+        "3": 3,
+        "15": 35,
+        "30": 74
+      },
+      "balance": {
+        "tech": 1600,
+        "coin": 938,
+        "med": 395,
+        "shells": 2720
+      },
+      "common": 24,
+      "rare": 0
+    },
+    {
+      "sessionsWeekly": 3,
+      "successRate": 0.4,
+      "joinWeek": 5,
+      "directives": true,
+      "intake": "low",
+      "veteran": false,
+      "sessions": 32,
+      "hours": 21.3,
+      "ranks": {
+        "3": 1,
+        "15": 5,
+        "30": 32
+      },
+      "balance": {
+        "tech": 243,
+        "coin": 130,
+        "med": 52,
+        "shells": 160
+      },
+      "common": 12,
+      "rare": 8
+    },
+    {
+      "sessionsWeekly": 3,
+      "successRate": 0.4,
+      "joinWeek": 5,
+      "directives": true,
+      "intake": "low",
+      "veteran": true,
+      "sessions": 32,
+      "hours": 21.3,
+      "ranks": {
+        "3": 1,
+        "15": 5,
+        "30": 32
+      },
+      "balance": {
+        "tech": 280,
+        "coin": 146,
+        "med": 57,
+        "shells": 660
+      },
+      "common": 12,
+      "rare": 8
+    },
+    {
+      "sessionsWeekly": 3,
+      "successRate": 0.4,
+      "joinWeek": 5,
+      "directives": true,
+      "intake": "high",
+      "veteran": false,
+      "sessions": 32,
+      "hours": 21.3,
+      "ranks": {
+        "3": 1,
+        "15": 5,
+        "30": 32
+      },
+      "balance": {
+        "tech": 723,
+        "coin": 418,
+        "med": 180,
+        "shells": 960
+      },
+      "common": 12,
+      "rare": 8
+    },
+    {
+      "sessionsWeekly": 3,
+      "successRate": 0.4,
+      "joinWeek": 5,
+      "directives": true,
+      "intake": "high",
+      "veteran": true,
+      "sessions": 32,
+      "hours": 21.3,
+      "ranks": {
+        "3": 1,
+        "15": 5,
+        "30": 32
+      },
+      "balance": {
+        "tech": 760,
+        "coin": 434,
+        "med": 185,
+        "shells": 1460
+      },
+      "common": 12,
+      "rare": 8
+    },
+    {
+      "sessionsWeekly": 3,
+      "successRate": 0.4,
+      "joinWeek": 5,
+      "directives": false,
+      "intake": "low",
+      "veteran": false,
+      "sessions": 74,
+      "hours": 49.3,
+      "ranks": {
+        "3": 3,
+        "15": 35,
+        "30": 74
+      },
+      "balance": {
+        "tech": 453,
+        "coin": 256,
+        "med": 94,
+        "shells": 370
+      },
+      "common": 24,
+      "rare": 0
+    },
+    {
+      "sessionsWeekly": 3,
+      "successRate": 0.4,
+      "joinWeek": 5,
+      "directives": false,
+      "intake": "low",
+      "veteran": true,
+      "sessions": 74,
+      "hours": 49.3,
+      "ranks": {
+        "3": 3,
+        "15": 35,
+        "30": 74
+      },
+      "balance": {
+        "tech": 490,
+        "coin": 272,
+        "med": 99,
+        "shells": 870
+      },
+      "common": 24,
+      "rare": 0
+    },
+    {
+      "sessionsWeekly": 3,
+      "successRate": 0.4,
+      "joinWeek": 5,
+      "directives": false,
+      "intake": "high",
+      "veteran": false,
+      "sessions": 74,
+      "hours": 49.3,
+      "ranks": {
+        "3": 3,
+        "15": 35,
+        "30": 74
+      },
+      "balance": {
+        "tech": 1563,
+        "coin": 922,
+        "med": 390,
+        "shells": 2220
+      },
+      "common": 24,
+      "rare": 0
+    },
+    {
+      "sessionsWeekly": 3,
+      "successRate": 0.4,
+      "joinWeek": 5,
+      "directives": false,
+      "intake": "high",
+      "veteran": true,
+      "sessions": 74,
+      "hours": 49.3,
+      "ranks": {
+        "3": 3,
+        "15": 35,
+        "30": 74
+      },
+      "balance": {
+        "tech": 1600,
+        "coin": 938,
+        "med": 395,
+        "shells": 2720
+      },
+      "common": 24,
+      "rare": 0
+    },
+    {
+      "sessionsWeekly": 3,
+      "successRate": 0.6,
+      "joinWeek": 1,
+      "directives": true,
+      "intake": "low",
+      "veteran": false,
+      "sessions": 29,
+      "hours": 19.3,
+      "ranks": {
+        "3": 2,
+        "15": 12,
+        "30": 29
+      },
+      "balance": {
+        "tech": 228,
+        "coin": 121,
+        "med": 49,
+        "shells": 145
+      },
+      "common": 17,
+      "rare": 8
+    },
+    {
+      "sessionsWeekly": 3,
+      "successRate": 0.6,
+      "joinWeek": 1,
+      "directives": true,
+      "intake": "low",
+      "veteran": true,
+      "sessions": 29,
+      "hours": 19.3,
+      "ranks": {
+        "3": 2,
+        "15": 12,
+        "30": 29
+      },
+      "balance": {
+        "tech": 265,
+        "coin": 137,
+        "med": 54,
+        "shells": 645
+      },
+      "common": 17,
+      "rare": 8
+    },
+    {
+      "sessionsWeekly": 3,
+      "successRate": 0.6,
+      "joinWeek": 1,
+      "directives": true,
+      "intake": "high",
+      "veteran": false,
+      "sessions": 29,
+      "hours": 19.3,
+      "ranks": {
+        "3": 2,
+        "15": 12,
+        "30": 29
+      },
+      "balance": {
+        "tech": 663,
+        "coin": 382,
+        "med": 165,
+        "shells": 870
+      },
+      "common": 17,
+      "rare": 8
+    },
+    {
+      "sessionsWeekly": 3,
+      "successRate": 0.6,
+      "joinWeek": 1,
+      "directives": true,
+      "intake": "high",
+      "veteran": true,
+      "sessions": 29,
+      "hours": 19.3,
+      "ranks": {
+        "3": 2,
+        "15": 12,
+        "30": 29
+      },
+      "balance": {
+        "tech": 700,
+        "coin": 398,
+        "med": 170,
+        "shells": 1370
+      },
+      "common": 17,
+      "rare": 8
+    },
+    {
+      "sessionsWeekly": 3,
+      "successRate": 0.6,
+      "joinWeek": 1,
+      "directives": false,
+      "intake": "low",
+      "veteran": false,
+      "sessions": 67,
+      "hours": 44.7,
+      "ranks": {
+        "3": 3,
+        "15": 32,
+        "30": 67
+      },
+      "balance": {
+        "tech": 418,
+        "coin": 235,
+        "med": 87,
+        "shells": 335
+      },
+      "common": 24,
+      "rare": 0
+    },
+    {
+      "sessionsWeekly": 3,
+      "successRate": 0.6,
+      "joinWeek": 1,
+      "directives": false,
+      "intake": "low",
+      "veteran": true,
+      "sessions": 67,
+      "hours": 44.7,
+      "ranks": {
+        "3": 3,
+        "15": 32,
+        "30": 67
+      },
+      "balance": {
+        "tech": 455,
+        "coin": 251,
+        "med": 92,
+        "shells": 835
+      },
+      "common": 24,
+      "rare": 0
+    },
+    {
+      "sessionsWeekly": 3,
+      "successRate": 0.6,
+      "joinWeek": 1,
+      "directives": false,
+      "intake": "high",
+      "veteran": false,
+      "sessions": 67,
+      "hours": 44.7,
+      "ranks": {
+        "3": 3,
+        "15": 32,
+        "30": 67
+      },
+      "balance": {
+        "tech": 1423,
+        "coin": 838,
+        "med": 355,
+        "shells": 2010
+      },
+      "common": 24,
+      "rare": 0
+    },
+    {
+      "sessionsWeekly": 3,
+      "successRate": 0.6,
+      "joinWeek": 1,
+      "directives": false,
+      "intake": "high",
+      "veteran": true,
+      "sessions": 67,
+      "hours": 44.7,
+      "ranks": {
+        "3": 3,
+        "15": 32,
+        "30": 67
+      },
+      "balance": {
+        "tech": 1460,
+        "coin": 854,
+        "med": 360,
+        "shells": 2510
+      },
+      "common": 24,
+      "rare": 0
+    },
+    {
+      "sessionsWeekly": 3,
+      "successRate": 0.6,
+      "joinWeek": 5,
+      "directives": true,
+      "intake": "low",
+      "veteran": false,
+      "sessions": 29,
+      "hours": 19.3,
+      "ranks": {
+        "3": 1,
+        "15": 5,
+        "30": 29
+      },
+      "balance": {
+        "tech": 228,
+        "coin": 121,
+        "med": 49,
+        "shells": 145
+      },
+      "common": 17,
+      "rare": 8
+    },
+    {
+      "sessionsWeekly": 3,
+      "successRate": 0.6,
+      "joinWeek": 5,
+      "directives": true,
+      "intake": "low",
+      "veteran": true,
+      "sessions": 29,
+      "hours": 19.3,
+      "ranks": {
+        "3": 1,
+        "15": 5,
+        "30": 29
+      },
+      "balance": {
+        "tech": 265,
+        "coin": 137,
+        "med": 54,
+        "shells": 645
+      },
+      "common": 17,
+      "rare": 8
+    },
+    {
+      "sessionsWeekly": 3,
+      "successRate": 0.6,
+      "joinWeek": 5,
+      "directives": true,
+      "intake": "high",
+      "veteran": false,
+      "sessions": 29,
+      "hours": 19.3,
+      "ranks": {
+        "3": 1,
+        "15": 5,
+        "30": 29
+      },
+      "balance": {
+        "tech": 663,
+        "coin": 382,
+        "med": 165,
+        "shells": 870
+      },
+      "common": 17,
+      "rare": 8
+    },
+    {
+      "sessionsWeekly": 3,
+      "successRate": 0.6,
+      "joinWeek": 5,
+      "directives": true,
+      "intake": "high",
+      "veteran": true,
+      "sessions": 29,
+      "hours": 19.3,
+      "ranks": {
+        "3": 1,
+        "15": 5,
+        "30": 29
+      },
+      "balance": {
+        "tech": 700,
+        "coin": 398,
+        "med": 170,
+        "shells": 1370
+      },
+      "common": 17,
+      "rare": 8
+    },
+    {
+      "sessionsWeekly": 3,
+      "successRate": 0.6,
+      "joinWeek": 5,
+      "directives": false,
+      "intake": "low",
+      "veteran": false,
+      "sessions": 67,
+      "hours": 44.7,
+      "ranks": {
+        "3": 3,
+        "15": 32,
+        "30": 67
+      },
+      "balance": {
+        "tech": 418,
+        "coin": 235,
+        "med": 87,
+        "shells": 335
+      },
+      "common": 24,
+      "rare": 0
+    },
+    {
+      "sessionsWeekly": 3,
+      "successRate": 0.6,
+      "joinWeek": 5,
+      "directives": false,
+      "intake": "low",
+      "veteran": true,
+      "sessions": 67,
+      "hours": 44.7,
+      "ranks": {
+        "3": 3,
+        "15": 32,
+        "30": 67
+      },
+      "balance": {
+        "tech": 455,
+        "coin": 251,
+        "med": 92,
+        "shells": 835
+      },
+      "common": 24,
+      "rare": 0
+    },
+    {
+      "sessionsWeekly": 3,
+      "successRate": 0.6,
+      "joinWeek": 5,
+      "directives": false,
+      "intake": "high",
+      "veteran": false,
+      "sessions": 67,
+      "hours": 44.7,
+      "ranks": {
+        "3": 3,
+        "15": 32,
+        "30": 67
+      },
+      "balance": {
+        "tech": 1423,
+        "coin": 838,
+        "med": 355,
+        "shells": 2010
+      },
+      "common": 24,
+      "rare": 0
+    },
+    {
+      "sessionsWeekly": 3,
+      "successRate": 0.6,
+      "joinWeek": 5,
+      "directives": false,
+      "intake": "high",
+      "veteran": true,
+      "sessions": 67,
+      "hours": 44.7,
+      "ranks": {
+        "3": 3,
+        "15": 32,
+        "30": 67
+      },
+      "balance": {
+        "tech": 1460,
+        "coin": 854,
+        "med": 360,
+        "shells": 2510
+      },
+      "common": 24,
+      "rare": 0
+    },
+    {
+      "sessionsWeekly": 3,
+      "successRate": 0.8,
+      "joinWeek": 1,
+      "directives": true,
+      "intake": "low",
+      "veteran": false,
+      "sessions": 27,
+      "hours": 18,
+      "ranks": {
+        "3": 2,
+        "15": 12,
+        "30": 27
+      },
+      "balance": {
+        "tech": 218,
+        "coin": 115,
+        "med": 47,
+        "shells": 135
+      },
+      "common": 21,
+      "rare": 8
+    },
+    {
+      "sessionsWeekly": 3,
+      "successRate": 0.8,
+      "joinWeek": 1,
+      "directives": true,
+      "intake": "low",
+      "veteran": true,
+      "sessions": 27,
+      "hours": 18,
+      "ranks": {
+        "3": 2,
+        "15": 12,
+        "30": 27
+      },
+      "balance": {
+        "tech": 255,
+        "coin": 131,
+        "med": 52,
+        "shells": 635
+      },
+      "common": 21,
+      "rare": 8
+    },
+    {
+      "sessionsWeekly": 3,
+      "successRate": 0.8,
+      "joinWeek": 1,
+      "directives": true,
+      "intake": "high",
+      "veteran": false,
+      "sessions": 27,
+      "hours": 18,
+      "ranks": {
+        "3": 2,
+        "15": 12,
+        "30": 27
+      },
+      "balance": {
+        "tech": 623,
+        "coin": 358,
+        "med": 155,
+        "shells": 810
+      },
+      "common": 21,
+      "rare": 8
+    },
+    {
+      "sessionsWeekly": 3,
+      "successRate": 0.8,
+      "joinWeek": 1,
+      "directives": true,
+      "intake": "high",
+      "veteran": true,
+      "sessions": 27,
+      "hours": 18,
+      "ranks": {
+        "3": 2,
+        "15": 12,
+        "30": 27
+      },
+      "balance": {
+        "tech": 660,
+        "coin": 374,
+        "med": 160,
+        "shells": 1310
+      },
+      "common": 21,
+      "rare": 8
+    },
+    {
+      "sessionsWeekly": 3,
+      "successRate": 0.8,
+      "joinWeek": 1,
+      "directives": false,
+      "intake": "low",
+      "veteran": false,
+      "sessions": 62,
+      "hours": 41.3,
+      "ranks": {
+        "3": 3,
+        "15": 29,
+        "30": 62
+      },
+      "balance": {
+        "tech": 393,
+        "coin": 220,
+        "med": 82,
+        "shells": 310
+      },
+      "common": 24,
+      "rare": 0
+    },
+    {
+      "sessionsWeekly": 3,
+      "successRate": 0.8,
+      "joinWeek": 1,
+      "directives": false,
+      "intake": "low",
+      "veteran": true,
+      "sessions": 62,
+      "hours": 41.3,
+      "ranks": {
+        "3": 3,
+        "15": 29,
+        "30": 62
+      },
+      "balance": {
+        "tech": 430,
+        "coin": 236,
+        "med": 87,
+        "shells": 810
+      },
+      "common": 24,
+      "rare": 0
+    },
+    {
+      "sessionsWeekly": 3,
+      "successRate": 0.8,
+      "joinWeek": 1,
+      "directives": false,
+      "intake": "high",
+      "veteran": false,
+      "sessions": 62,
+      "hours": 41.3,
+      "ranks": {
+        "3": 3,
+        "15": 29,
+        "30": 62
+      },
+      "balance": {
+        "tech": 1323,
+        "coin": 778,
+        "med": 330,
+        "shells": 1860
+      },
+      "common": 24,
+      "rare": 0
+    },
+    {
+      "sessionsWeekly": 3,
+      "successRate": 0.8,
+      "joinWeek": 1,
+      "directives": false,
+      "intake": "high",
+      "veteran": true,
+      "sessions": 62,
+      "hours": 41.3,
+      "ranks": {
+        "3": 3,
+        "15": 29,
+        "30": 62
+      },
+      "balance": {
+        "tech": 1360,
+        "coin": 794,
+        "med": 335,
+        "shells": 2360
+      },
+      "common": 24,
+      "rare": 0
+    },
+    {
+      "sessionsWeekly": 3,
+      "successRate": 0.8,
+      "joinWeek": 5,
+      "directives": true,
+      "intake": "low",
+      "veteran": false,
+      "sessions": 27,
+      "hours": 18,
+      "ranks": {
+        "3": 1,
+        "15": 5,
+        "30": 27
+      },
+      "balance": {
+        "tech": 218,
+        "coin": 115,
+        "med": 47,
+        "shells": 135
+      },
+      "common": 21,
+      "rare": 8
+    },
+    {
+      "sessionsWeekly": 3,
+      "successRate": 0.8,
+      "joinWeek": 5,
+      "directives": true,
+      "intake": "low",
+      "veteran": true,
+      "sessions": 27,
+      "hours": 18,
+      "ranks": {
+        "3": 1,
+        "15": 5,
+        "30": 27
+      },
+      "balance": {
+        "tech": 255,
+        "coin": 131,
+        "med": 52,
+        "shells": 635
+      },
+      "common": 21,
+      "rare": 8
+    },
+    {
+      "sessionsWeekly": 3,
+      "successRate": 0.8,
+      "joinWeek": 5,
+      "directives": true,
+      "intake": "high",
+      "veteran": false,
+      "sessions": 27,
+      "hours": 18,
+      "ranks": {
+        "3": 1,
+        "15": 5,
+        "30": 27
+      },
+      "balance": {
+        "tech": 623,
+        "coin": 358,
+        "med": 155,
+        "shells": 810
+      },
+      "common": 21,
+      "rare": 8
+    },
+    {
+      "sessionsWeekly": 3,
+      "successRate": 0.8,
+      "joinWeek": 5,
+      "directives": true,
+      "intake": "high",
+      "veteran": true,
+      "sessions": 27,
+      "hours": 18,
+      "ranks": {
+        "3": 1,
+        "15": 5,
+        "30": 27
+      },
+      "balance": {
+        "tech": 660,
+        "coin": 374,
+        "med": 160,
+        "shells": 1310
+      },
+      "common": 21,
+      "rare": 8
+    },
+    {
+      "sessionsWeekly": 3,
+      "successRate": 0.8,
+      "joinWeek": 5,
+      "directives": false,
+      "intake": "low",
+      "veteran": false,
+      "sessions": 62,
+      "hours": 41.3,
+      "ranks": {
+        "3": 3,
+        "15": 29,
+        "30": 62
+      },
+      "balance": {
+        "tech": 393,
+        "coin": 220,
+        "med": 82,
+        "shells": 310
+      },
+      "common": 24,
+      "rare": 0
+    },
+    {
+      "sessionsWeekly": 3,
+      "successRate": 0.8,
+      "joinWeek": 5,
+      "directives": false,
+      "intake": "low",
+      "veteran": true,
+      "sessions": 62,
+      "hours": 41.3,
+      "ranks": {
+        "3": 3,
+        "15": 29,
+        "30": 62
+      },
+      "balance": {
+        "tech": 430,
+        "coin": 236,
+        "med": 87,
+        "shells": 810
+      },
+      "common": 24,
+      "rare": 0
+    },
+    {
+      "sessionsWeekly": 3,
+      "successRate": 0.8,
+      "joinWeek": 5,
+      "directives": false,
+      "intake": "high",
+      "veteran": false,
+      "sessions": 62,
+      "hours": 41.3,
+      "ranks": {
+        "3": 3,
+        "15": 29,
+        "30": 62
+      },
+      "balance": {
+        "tech": 1323,
+        "coin": 778,
+        "med": 330,
+        "shells": 1860
+      },
+      "common": 24,
+      "rare": 0
+    },
+    {
+      "sessionsWeekly": 3,
+      "successRate": 0.8,
+      "joinWeek": 5,
+      "directives": false,
+      "intake": "high",
+      "veteran": true,
+      "sessions": 62,
+      "hours": 41.3,
+      "ranks": {
+        "3": 3,
+        "15": 29,
+        "30": 62
+      },
+      "balance": {
+        "tech": 1360,
+        "coin": 794,
+        "med": 335,
+        "shells": 2360
+      },
+      "common": 24,
+      "rare": 0
+    },
+    {
+      "sessionsWeekly": 5,
+      "successRate": 0.4,
+      "joinWeek": 1,
+      "directives": true,
+      "intake": "low",
+      "veteran": false,
+      "sessions": 36,
+      "hours": 24,
+      "ranks": {
+        "3": 2,
+        "15": 17,
+        "30": 36
+      },
+      "balance": {
+        "tech": 263,
+        "coin": 142,
+        "med": 56,
+        "shells": 180
+      },
+      "common": 14,
+      "rare": 7
+    },
+    {
+      "sessionsWeekly": 5,
+      "successRate": 0.4,
+      "joinWeek": 1,
+      "directives": true,
+      "intake": "low",
+      "veteran": true,
+      "sessions": 36,
+      "hours": 24,
+      "ranks": {
+        "3": 2,
+        "15": 17,
+        "30": 36
+      },
+      "balance": {
+        "tech": 300,
+        "coin": 158,
+        "med": 61,
+        "shells": 680
+      },
+      "common": 14,
+      "rare": 7
+    },
+    {
+      "sessionsWeekly": 5,
+      "successRate": 0.4,
+      "joinWeek": 1,
+      "directives": true,
+      "intake": "high",
+      "veteran": false,
+      "sessions": 36,
+      "hours": 24,
+      "ranks": {
+        "3": 2,
+        "15": 17,
+        "30": 36
+      },
+      "balance": {
+        "tech": 803,
+        "coin": 466,
+        "med": 200,
+        "shells": 1080
+      },
+      "common": 14,
+      "rare": 7
+    },
+    {
+      "sessionsWeekly": 5,
+      "successRate": 0.4,
+      "joinWeek": 1,
+      "directives": true,
+      "intake": "high",
+      "veteran": true,
+      "sessions": 36,
+      "hours": 24,
+      "ranks": {
+        "3": 2,
+        "15": 17,
+        "30": 36
+      },
+      "balance": {
+        "tech": 840,
+        "coin": 482,
+        "med": 205,
+        "shells": 1580
+      },
+      "common": 14,
+      "rare": 7
+    },
+    {
+      "sessionsWeekly": 5,
+      "successRate": 0.4,
+      "joinWeek": 1,
+      "directives": false,
+      "intake": "low",
+      "veteran": false,
+      "sessions": 74,
+      "hours": 49.3,
+      "ranks": {
+        "3": 3,
+        "15": 35,
+        "30": 74
+      },
+      "balance": {
+        "tech": 453,
+        "coin": 256,
+        "med": 94,
+        "shells": 370
+      },
+      "common": 24,
+      "rare": 0
+    },
+    {
+      "sessionsWeekly": 5,
+      "successRate": 0.4,
+      "joinWeek": 1,
+      "directives": false,
+      "intake": "low",
+      "veteran": true,
+      "sessions": 74,
+      "hours": 49.3,
+      "ranks": {
+        "3": 3,
+        "15": 35,
+        "30": 74
+      },
+      "balance": {
+        "tech": 490,
+        "coin": 272,
+        "med": 99,
+        "shells": 870
+      },
+      "common": 24,
+      "rare": 0
+    },
+    {
+      "sessionsWeekly": 5,
+      "successRate": 0.4,
+      "joinWeek": 1,
+      "directives": false,
+      "intake": "high",
+      "veteran": false,
+      "sessions": 74,
+      "hours": 49.3,
+      "ranks": {
+        "3": 3,
+        "15": 35,
+        "30": 74
+      },
+      "balance": {
+        "tech": 1563,
+        "coin": 922,
+        "med": 390,
+        "shells": 2220
+      },
+      "common": 24,
+      "rare": 0
+    },
+    {
+      "sessionsWeekly": 5,
+      "successRate": 0.4,
+      "joinWeek": 1,
+      "directives": false,
+      "intake": "high",
+      "veteran": true,
+      "sessions": 74,
+      "hours": 49.3,
+      "ranks": {
+        "3": 3,
+        "15": 35,
+        "30": 74
+      },
+      "balance": {
+        "tech": 1600,
+        "coin": 938,
+        "med": 395,
+        "shells": 2720
+      },
+      "common": 24,
+      "rare": 0
+    },
+    {
+      "sessionsWeekly": 5,
+      "successRate": 0.4,
+      "joinWeek": 5,
+      "directives": true,
+      "intake": "low",
+      "veteran": false,
+      "sessions": 32,
+      "hours": 21.3,
+      "ranks": {
+        "3": 1,
+        "15": 7,
+        "30": 32
+      },
+      "balance": {
+        "tech": 243,
+        "coin": 130,
+        "med": 52,
+        "shells": 160
+      },
+      "common": 12,
+      "rare": 8
+    },
+    {
+      "sessionsWeekly": 5,
+      "successRate": 0.4,
+      "joinWeek": 5,
+      "directives": true,
+      "intake": "low",
+      "veteran": true,
+      "sessions": 32,
+      "hours": 21.3,
+      "ranks": {
+        "3": 1,
+        "15": 7,
+        "30": 32
+      },
+      "balance": {
+        "tech": 280,
+        "coin": 146,
+        "med": 57,
+        "shells": 660
+      },
+      "common": 12,
+      "rare": 8
+    },
+    {
+      "sessionsWeekly": 5,
+      "successRate": 0.4,
+      "joinWeek": 5,
+      "directives": true,
+      "intake": "high",
+      "veteran": false,
+      "sessions": 32,
+      "hours": 21.3,
+      "ranks": {
+        "3": 1,
+        "15": 7,
+        "30": 32
+      },
+      "balance": {
+        "tech": 723,
+        "coin": 418,
+        "med": 180,
+        "shells": 960
+      },
+      "common": 12,
+      "rare": 8
+    },
+    {
+      "sessionsWeekly": 5,
+      "successRate": 0.4,
+      "joinWeek": 5,
+      "directives": true,
+      "intake": "high",
+      "veteran": true,
+      "sessions": 32,
+      "hours": 21.3,
+      "ranks": {
+        "3": 1,
+        "15": 7,
+        "30": 32
+      },
+      "balance": {
+        "tech": 760,
+        "coin": 434,
+        "med": 185,
+        "shells": 1460
+      },
+      "common": 12,
+      "rare": 8
+    },
+    {
+      "sessionsWeekly": 5,
+      "successRate": 0.4,
+      "joinWeek": 5,
+      "directives": false,
+      "intake": "low",
+      "veteran": false,
+      "sessions": 74,
+      "hours": 49.3,
+      "ranks": {
+        "3": 3,
+        "15": 35,
+        "30": 74
+      },
+      "balance": {
+        "tech": 453,
+        "coin": 256,
+        "med": 94,
+        "shells": 370
+      },
+      "common": 24,
+      "rare": 0
+    },
+    {
+      "sessionsWeekly": 5,
+      "successRate": 0.4,
+      "joinWeek": 5,
+      "directives": false,
+      "intake": "low",
+      "veteran": true,
+      "sessions": 74,
+      "hours": 49.3,
+      "ranks": {
+        "3": 3,
+        "15": 35,
+        "30": 74
+      },
+      "balance": {
+        "tech": 490,
+        "coin": 272,
+        "med": 99,
+        "shells": 870
+      },
+      "common": 24,
+      "rare": 0
+    },
+    {
+      "sessionsWeekly": 5,
+      "successRate": 0.4,
+      "joinWeek": 5,
+      "directives": false,
+      "intake": "high",
+      "veteran": false,
+      "sessions": 74,
+      "hours": 49.3,
+      "ranks": {
+        "3": 3,
+        "15": 35,
+        "30": 74
+      },
+      "balance": {
+        "tech": 1563,
+        "coin": 922,
+        "med": 390,
+        "shells": 2220
+      },
+      "common": 24,
+      "rare": 0
+    },
+    {
+      "sessionsWeekly": 5,
+      "successRate": 0.4,
+      "joinWeek": 5,
+      "directives": false,
+      "intake": "high",
+      "veteran": true,
+      "sessions": 74,
+      "hours": 49.3,
+      "ranks": {
+        "3": 3,
+        "15": 35,
+        "30": 74
+      },
+      "balance": {
+        "tech": 1600,
+        "coin": 938,
+        "med": 395,
+        "shells": 2720
+      },
+      "common": 24,
+      "rare": 0
+    },
+    {
+      "sessionsWeekly": 5,
+      "successRate": 0.6,
+      "joinWeek": 1,
+      "directives": true,
+      "intake": "low",
+      "veteran": false,
+      "sessions": 34,
+      "hours": 22.7,
+      "ranks": {
+        "3": 2,
+        "15": 16,
+        "30": 34
+      },
+      "balance": {
+        "tech": 253,
+        "coin": 136,
+        "med": 54,
+        "shells": 170
+      },
+      "common": 20,
+      "rare": 7
+    },
+    {
+      "sessionsWeekly": 5,
+      "successRate": 0.6,
+      "joinWeek": 1,
+      "directives": true,
+      "intake": "low",
+      "veteran": true,
+      "sessions": 34,
+      "hours": 22.7,
+      "ranks": {
+        "3": 2,
+        "15": 16,
+        "30": 34
+      },
+      "balance": {
+        "tech": 290,
+        "coin": 152,
+        "med": 59,
+        "shells": 670
+      },
+      "common": 20,
+      "rare": 7
+    },
+    {
+      "sessionsWeekly": 5,
+      "successRate": 0.6,
+      "joinWeek": 1,
+      "directives": true,
+      "intake": "high",
+      "veteran": false,
+      "sessions": 34,
+      "hours": 22.7,
+      "ranks": {
+        "3": 2,
+        "15": 16,
+        "30": 34
+      },
+      "balance": {
+        "tech": 763,
+        "coin": 442,
+        "med": 190,
+        "shells": 1020
+      },
+      "common": 20,
+      "rare": 7
+    },
+    {
+      "sessionsWeekly": 5,
+      "successRate": 0.6,
+      "joinWeek": 1,
+      "directives": true,
+      "intake": "high",
+      "veteran": true,
+      "sessions": 34,
+      "hours": 22.7,
+      "ranks": {
+        "3": 2,
+        "15": 16,
+        "30": 34
+      },
+      "balance": {
+        "tech": 800,
+        "coin": 458,
+        "med": 195,
+        "shells": 1520
+      },
+      "common": 20,
+      "rare": 7
+    },
+    {
+      "sessionsWeekly": 5,
+      "successRate": 0.6,
+      "joinWeek": 1,
+      "directives": false,
+      "intake": "low",
+      "veteran": false,
+      "sessions": 67,
+      "hours": 44.7,
+      "ranks": {
+        "3": 3,
+        "15": 32,
+        "30": 67
+      },
+      "balance": {
+        "tech": 418,
+        "coin": 235,
+        "med": 87,
+        "shells": 335
+      },
+      "common": 24,
+      "rare": 0
+    },
+    {
+      "sessionsWeekly": 5,
+      "successRate": 0.6,
+      "joinWeek": 1,
+      "directives": false,
+      "intake": "low",
+      "veteran": true,
+      "sessions": 67,
+      "hours": 44.7,
+      "ranks": {
+        "3": 3,
+        "15": 32,
+        "30": 67
+      },
+      "balance": {
+        "tech": 455,
+        "coin": 251,
+        "med": 92,
+        "shells": 835
+      },
+      "common": 24,
+      "rare": 0
+    },
+    {
+      "sessionsWeekly": 5,
+      "successRate": 0.6,
+      "joinWeek": 1,
+      "directives": false,
+      "intake": "high",
+      "veteran": false,
+      "sessions": 67,
+      "hours": 44.7,
+      "ranks": {
+        "3": 3,
+        "15": 32,
+        "30": 67
+      },
+      "balance": {
+        "tech": 1423,
+        "coin": 838,
+        "med": 355,
+        "shells": 2010
+      },
+      "common": 24,
+      "rare": 0
+    },
+    {
+      "sessionsWeekly": 5,
+      "successRate": 0.6,
+      "joinWeek": 1,
+      "directives": false,
+      "intake": "high",
+      "veteran": true,
+      "sessions": 67,
+      "hours": 44.7,
+      "ranks": {
+        "3": 3,
+        "15": 32,
+        "30": 67
+      },
+      "balance": {
+        "tech": 1460,
+        "coin": 854,
+        "med": 360,
+        "shells": 2510
+      },
+      "common": 24,
+      "rare": 0
+    },
+    {
+      "sessionsWeekly": 5,
+      "successRate": 0.6,
+      "joinWeek": 5,
+      "directives": true,
+      "intake": "low",
+      "veteran": false,
+      "sessions": 29,
+      "hours": 19.3,
+      "ranks": {
+        "3": 1,
+        "15": 6,
+        "30": 29
+      },
+      "balance": {
+        "tech": 228,
+        "coin": 121,
+        "med": 49,
+        "shells": 145
+      },
+      "common": 17,
+      "rare": 8
+    },
+    {
+      "sessionsWeekly": 5,
+      "successRate": 0.6,
+      "joinWeek": 5,
+      "directives": true,
+      "intake": "low",
+      "veteran": true,
+      "sessions": 29,
+      "hours": 19.3,
+      "ranks": {
+        "3": 1,
+        "15": 6,
+        "30": 29
+      },
+      "balance": {
+        "tech": 265,
+        "coin": 137,
+        "med": 54,
+        "shells": 645
+      },
+      "common": 17,
+      "rare": 8
+    },
+    {
+      "sessionsWeekly": 5,
+      "successRate": 0.6,
+      "joinWeek": 5,
+      "directives": true,
+      "intake": "high",
+      "veteran": false,
+      "sessions": 29,
+      "hours": 19.3,
+      "ranks": {
+        "3": 1,
+        "15": 6,
+        "30": 29
+      },
+      "balance": {
+        "tech": 663,
+        "coin": 382,
+        "med": 165,
+        "shells": 870
+      },
+      "common": 17,
+      "rare": 8
+    },
+    {
+      "sessionsWeekly": 5,
+      "successRate": 0.6,
+      "joinWeek": 5,
+      "directives": true,
+      "intake": "high",
+      "veteran": true,
+      "sessions": 29,
+      "hours": 19.3,
+      "ranks": {
+        "3": 1,
+        "15": 6,
+        "30": 29
+      },
+      "balance": {
+        "tech": 700,
+        "coin": 398,
+        "med": 170,
+        "shells": 1370
+      },
+      "common": 17,
+      "rare": 8
+    },
+    {
+      "sessionsWeekly": 5,
+      "successRate": 0.6,
+      "joinWeek": 5,
+      "directives": false,
+      "intake": "low",
+      "veteran": false,
+      "sessions": 67,
+      "hours": 44.7,
+      "ranks": {
+        "3": 3,
+        "15": 32,
+        "30": 67
+      },
+      "balance": {
+        "tech": 418,
+        "coin": 235,
+        "med": 87,
+        "shells": 335
+      },
+      "common": 24,
+      "rare": 0
+    },
+    {
+      "sessionsWeekly": 5,
+      "successRate": 0.6,
+      "joinWeek": 5,
+      "directives": false,
+      "intake": "low",
+      "veteran": true,
+      "sessions": 67,
+      "hours": 44.7,
+      "ranks": {
+        "3": 3,
+        "15": 32,
+        "30": 67
+      },
+      "balance": {
+        "tech": 455,
+        "coin": 251,
+        "med": 92,
+        "shells": 835
+      },
+      "common": 24,
+      "rare": 0
+    },
+    {
+      "sessionsWeekly": 5,
+      "successRate": 0.6,
+      "joinWeek": 5,
+      "directives": false,
+      "intake": "high",
+      "veteran": false,
+      "sessions": 67,
+      "hours": 44.7,
+      "ranks": {
+        "3": 3,
+        "15": 32,
+        "30": 67
+      },
+      "balance": {
+        "tech": 1423,
+        "coin": 838,
+        "med": 355,
+        "shells": 2010
+      },
+      "common": 24,
+      "rare": 0
+    },
+    {
+      "sessionsWeekly": 5,
+      "successRate": 0.6,
+      "joinWeek": 5,
+      "directives": false,
+      "intake": "high",
+      "veteran": true,
+      "sessions": 67,
+      "hours": 44.7,
+      "ranks": {
+        "3": 3,
+        "15": 32,
+        "30": 67
+      },
+      "balance": {
+        "tech": 1460,
+        "coin": 854,
+        "med": 360,
+        "shells": 2510
+      },
+      "common": 24,
+      "rare": 0
+    },
+    {
+      "sessionsWeekly": 5,
+      "successRate": 0.8,
+      "joinWeek": 1,
+      "directives": true,
+      "intake": "low",
+      "veteran": false,
+      "sessions": 32,
+      "hours": 21.3,
+      "ranks": {
+        "3": 2,
+        "15": 16,
+        "30": 32
+      },
+      "balance": {
+        "tech": 243,
+        "coin": 130,
+        "med": 52,
+        "shells": 160
+      },
+      "common": 19,
+      "rare": 7
+    },
+    {
+      "sessionsWeekly": 5,
+      "successRate": 0.8,
+      "joinWeek": 1,
+      "directives": true,
+      "intake": "low",
+      "veteran": true,
+      "sessions": 32,
+      "hours": 21.3,
+      "ranks": {
+        "3": 2,
+        "15": 16,
+        "30": 32
+      },
+      "balance": {
+        "tech": 280,
+        "coin": 146,
+        "med": 57,
+        "shells": 660
+      },
+      "common": 19,
+      "rare": 7
+    },
+    {
+      "sessionsWeekly": 5,
+      "successRate": 0.8,
+      "joinWeek": 1,
+      "directives": true,
+      "intake": "high",
+      "veteran": false,
+      "sessions": 32,
+      "hours": 21.3,
+      "ranks": {
+        "3": 2,
+        "15": 16,
+        "30": 32
+      },
+      "balance": {
+        "tech": 723,
+        "coin": 418,
+        "med": 180,
+        "shells": 960
+      },
+      "common": 19,
+      "rare": 7
+    },
+    {
+      "sessionsWeekly": 5,
+      "successRate": 0.8,
+      "joinWeek": 1,
+      "directives": true,
+      "intake": "high",
+      "veteran": true,
+      "sessions": 32,
+      "hours": 21.3,
+      "ranks": {
+        "3": 2,
+        "15": 16,
+        "30": 32
+      },
+      "balance": {
+        "tech": 760,
+        "coin": 434,
+        "med": 185,
+        "shells": 1460
+      },
+      "common": 19,
+      "rare": 7
+    },
+    {
+      "sessionsWeekly": 5,
+      "successRate": 0.8,
+      "joinWeek": 1,
+      "directives": false,
+      "intake": "low",
+      "veteran": false,
+      "sessions": 62,
+      "hours": 41.3,
+      "ranks": {
+        "3": 3,
+        "15": 29,
+        "30": 62
+      },
+      "balance": {
+        "tech": 393,
+        "coin": 220,
+        "med": 82,
+        "shells": 310
+      },
+      "common": 24,
+      "rare": 0
+    },
+    {
+      "sessionsWeekly": 5,
+      "successRate": 0.8,
+      "joinWeek": 1,
+      "directives": false,
+      "intake": "low",
+      "veteran": true,
+      "sessions": 62,
+      "hours": 41.3,
+      "ranks": {
+        "3": 3,
+        "15": 29,
+        "30": 62
+      },
+      "balance": {
+        "tech": 430,
+        "coin": 236,
+        "med": 87,
+        "shells": 810
+      },
+      "common": 24,
+      "rare": 0
+    },
+    {
+      "sessionsWeekly": 5,
+      "successRate": 0.8,
+      "joinWeek": 1,
+      "directives": false,
+      "intake": "high",
+      "veteran": false,
+      "sessions": 62,
+      "hours": 41.3,
+      "ranks": {
+        "3": 3,
+        "15": 29,
+        "30": 62
+      },
+      "balance": {
+        "tech": 1323,
+        "coin": 778,
+        "med": 330,
+        "shells": 1860
+      },
+      "common": 24,
+      "rare": 0
+    },
+    {
+      "sessionsWeekly": 5,
+      "successRate": 0.8,
+      "joinWeek": 1,
+      "directives": false,
+      "intake": "high",
+      "veteran": true,
+      "sessions": 62,
+      "hours": 41.3,
+      "ranks": {
+        "3": 3,
+        "15": 29,
+        "30": 62
+      },
+      "balance": {
+        "tech": 1360,
+        "coin": 794,
+        "med": 335,
+        "shells": 2360
+      },
+      "common": 24,
+      "rare": 0
+    },
+    {
+      "sessionsWeekly": 5,
+      "successRate": 0.8,
+      "joinWeek": 5,
+      "directives": true,
+      "intake": "low",
+      "veteran": false,
+      "sessions": 27,
+      "hours": 18,
+      "ranks": {
+        "3": 1,
+        "15": 6,
+        "30": 27
+      },
+      "balance": {
+        "tech": 218,
+        "coin": 115,
+        "med": 47,
+        "shells": 135
+      },
+      "common": 21,
+      "rare": 8
+    },
+    {
+      "sessionsWeekly": 5,
+      "successRate": 0.8,
+      "joinWeek": 5,
+      "directives": true,
+      "intake": "low",
+      "veteran": true,
+      "sessions": 27,
+      "hours": 18,
+      "ranks": {
+        "3": 1,
+        "15": 6,
+        "30": 27
+      },
+      "balance": {
+        "tech": 255,
+        "coin": 131,
+        "med": 52,
+        "shells": 635
+      },
+      "common": 21,
+      "rare": 8
+    },
+    {
+      "sessionsWeekly": 5,
+      "successRate": 0.8,
+      "joinWeek": 5,
+      "directives": true,
+      "intake": "high",
+      "veteran": false,
+      "sessions": 27,
+      "hours": 18,
+      "ranks": {
+        "3": 1,
+        "15": 6,
+        "30": 27
+      },
+      "balance": {
+        "tech": 623,
+        "coin": 358,
+        "med": 155,
+        "shells": 810
+      },
+      "common": 21,
+      "rare": 8
+    },
+    {
+      "sessionsWeekly": 5,
+      "successRate": 0.8,
+      "joinWeek": 5,
+      "directives": true,
+      "intake": "high",
+      "veteran": true,
+      "sessions": 27,
+      "hours": 18,
+      "ranks": {
+        "3": 1,
+        "15": 6,
+        "30": 27
+      },
+      "balance": {
+        "tech": 660,
+        "coin": 374,
+        "med": 160,
+        "shells": 1310
+      },
+      "common": 21,
+      "rare": 8
+    },
+    {
+      "sessionsWeekly": 5,
+      "successRate": 0.8,
+      "joinWeek": 5,
+      "directives": false,
+      "intake": "low",
+      "veteran": false,
+      "sessions": 62,
+      "hours": 41.3,
+      "ranks": {
+        "3": 3,
+        "15": 29,
+        "30": 62
+      },
+      "balance": {
+        "tech": 393,
+        "coin": 220,
+        "med": 82,
+        "shells": 310
+      },
+      "common": 24,
+      "rare": 0
+    },
+    {
+      "sessionsWeekly": 5,
+      "successRate": 0.8,
+      "joinWeek": 5,
+      "directives": false,
+      "intake": "low",
+      "veteran": true,
+      "sessions": 62,
+      "hours": 41.3,
+      "ranks": {
+        "3": 3,
+        "15": 29,
+        "30": 62
+      },
+      "balance": {
+        "tech": 430,
+        "coin": 236,
+        "med": 87,
+        "shells": 810
+      },
+      "common": 24,
+      "rare": 0
+    },
+    {
+      "sessionsWeekly": 5,
+      "successRate": 0.8,
+      "joinWeek": 5,
+      "directives": false,
+      "intake": "high",
+      "veteran": false,
+      "sessions": 62,
+      "hours": 41.3,
+      "ranks": {
+        "3": 3,
+        "15": 29,
+        "30": 62
+      },
+      "balance": {
+        "tech": 1323,
+        "coin": 778,
+        "med": 330,
+        "shells": 1860
+      },
+      "common": 24,
+      "rare": 0
+    },
+    {
+      "sessionsWeekly": 5,
+      "successRate": 0.8,
+      "joinWeek": 5,
+      "directives": false,
+      "intake": "high",
+      "veteran": true,
+      "sessions": 62,
+      "hours": 41.3,
+      "ranks": {
+        "3": 3,
+        "15": 29,
+        "30": 62
+      },
+      "balance": {
+        "tech": 1360,
+        "coin": 794,
+        "med": 335,
+        "shells": 2360
+      },
+      "common": 24,
+      "rare": 0
+    }
+  ],
+  "allocation": [
+    {
+      "id": 1000,
+      "name": "Common Relic Fragment",
+      "type": "material",
+      "role": "Finite local workshop ingredient; Steam issuance disabled"
+    },
+    {
+      "id": 1100,
+      "name": "Rare Relic Fragment",
+      "type": "material",
+      "role": "Finite local workshop ingredient; Steam issuance disabled"
+    },
+    {
+      "id": 2000,
+      "name": "Scout Victory Patch",
+      "type": "decal",
+      "role": "Legacy inventory; not a featured season reward"
+    },
+    {
+      "id": 2001,
+      "name": "Tank Victory Patch",
+      "type": "decal",
+      "role": "Legacy inventory; not a featured season reward"
+    },
+    {
+      "id": 2002,
+      "name": "Engineer Victory Patch",
+      "type": "decal",
+      "role": "Legacy inventory; not a featured season reward"
+    },
+    {
+      "id": 2003,
+      "name": "Queen Slayer Emblem",
+      "type": "decal",
+      "role": "Legacy inventory; not a featured season reward"
+    },
+    {
+      "id": 2004,
+      "name": "Archivist Emblem",
+      "type": "decal",
+      "role": "Legacy inventory; not a featured season reward"
+    },
+    {
+      "id": 2100,
+      "name": "Carbon Fiber Decal",
+      "type": "decal",
+      "role": "workshop: workshop"
+    },
+    {
+      "id": 2200,
+      "name": "Chrome Plated Sidearm",
+      "type": "skin",
+      "role": "workshop: workshop"
+    },
+    {
+      "id": 4000,
+      "name": "Deep Relic Cache",
+      "type": "container",
+      "role": "Excluded from new season emissions; preserve legacy ownership"
+    },
+    {
+      "id": 4001,
+      "name": "Relic Decryption Key",
+      "type": "key",
+      "role": "Excluded from new season emissions; preserve legacy ownership"
+    },
+    {
+      "id": 4100,
+      "name": "Sub-Zero Frostbite Sidearm",
+      "type": "skin",
+      "role": "free: 6"
+    },
+    {
+      "id": 4101,
+      "name": "Hazard Stripe SMG",
+      "type": "skin",
+      "role": "premium: purchase"
+    },
+    {
+      "id": 4102,
+      "name": "Tectonic Driller Shotgun",
+      "type": "skin",
+      "role": "Legacy inventory; not a featured season reward"
+    },
+    {
+      "id": 4103,
+      "name": "Cryo-Plasma Arc Driver",
+      "type": "skin",
+      "role": "premium: 9"
+    },
+    {
+      "id": 4104,
+      "name": "Rust & Bone Trench Carbine",
+      "type": "skin",
+      "role": "free: 18"
+    },
+    {
+      "id": 4105,
+      "name": "Obsidian Shard Sidearm",
+      "type": "skin",
+      "role": "Legacy inventory; not a featured season reward"
+    },
+    {
+      "id": 4106,
+      "name": "Biolume Spore Sprayer",
+      "type": "skin",
+      "role": "Legacy inventory; not a featured season reward"
+    },
+    {
+      "id": 4107,
+      "name": "Deep Core Melter",
+      "type": "skin",
+      "role": "Legacy inventory; not a featured season reward"
+    },
+    {
+      "id": 4108,
+      "name": "Glitched Circuit Bolter",
+      "type": "skin",
+      "role": "Legacy inventory; not a featured season reward"
+    },
+    {
+      "id": 4109,
+      "name": "Void-Walker Beam Cannon",
+      "type": "skin",
+      "role": "Legacy inventory; not a featured season reward"
+    },
+    {
+      "id": 4110,
+      "name": "Queen's Carapace Carbine",
+      "type": "skin",
+      "role": "free: 30"
+    },
+    {
+      "id": 4111,
+      "name": "Solar Flare Antimatter Rifle",
+      "type": "skin",
+      "role": "Legacy inventory; not a featured season reward"
+    },
+    {
+      "id": 4112,
+      "name": "Sub-Terran Drill Engineer",
+      "type": "chassis",
+      "role": "free: 15"
+    },
+    {
+      "id": 4113,
+      "name": "Cryo-Vanguard Scout",
+      "type": "chassis",
+      "role": "free: 15"
+    },
+    {
+      "id": 4114,
+      "name": "Trench Warden Heavy",
+      "type": "chassis",
+      "role": "free: 15"
+    },
+    {
+      "id": 4115,
+      "name": "Void Commando Recon",
+      "type": "chassis",
+      "role": "premium: 21"
+    },
+    {
+      "id": 4116,
+      "name": "Bio-Synthesizer Harness",
+      "type": "chassis",
+      "role": "premium: 15"
+    },
+    {
+      "id": 4117,
+      "name": "Dreadnought Exo-Juggernaut",
+      "type": "chassis",
+      "role": "Legacy inventory; not a featured season reward"
+    },
+    {
+      "id": 4118,
+      "name": "Cyber-Spectre Infiltrator",
+      "type": "chassis",
+      "role": "Legacy inventory; not a featured season reward"
+    },
+    {
+      "id": 4119,
+      "name": "Hive-Lord Symbiote Exosuit",
+      "type": "chassis",
+      "role": "premium: 30"
+    },
+    {
+      "id": 4120,
+      "name": "Sub-Zero Pioneer Patch",
+      "type": "decal",
+      "role": "free: 1"
+    },
+    {
+      "id": 4121,
+      "name": "Radiation Trefoil Emblem",
+      "type": "decal",
+      "role": "premium: 3"
+    },
+    {
+      "id": 4122,
+      "name": "Sporesnail Hunter Crest",
+      "type": "decal",
+      "role": "free: 9"
+    },
+    {
+      "id": 4123,
+      "name": "Bunker 404 Lost Squad Decal",
+      "type": "decal",
+      "role": "Legacy inventory; not a featured season reward"
+    },
+    {
+      "id": 4124,
+      "name": "Cyber-Skull Tactical Pin",
+      "type": "decal",
+      "role": "premium: 12"
+    },
+    {
+      "id": 4125,
+      "name": "Cryo-Phoenix Insignia",
+      "type": "decal",
+      "role": "free: 25"
+    },
+    {
+      "id": 4126,
+      "name": "Queen Slayer Gold Seal",
+      "type": "decal",
+      "role": "Legacy inventory; not a featured season reward"
+    },
+    {
+      "id": 4127,
+      "name": "Void Horizon Sigil",
+      "type": "decal",
+      "role": "Legacy inventory; not a featured season reward"
+    },
+    {
+      "id": 4128,
+      "name": "Ancient Core Glyphs",
+      "type": "decal",
+      "role": "Legacy inventory; not a featured season reward"
+    },
+    {
+      "id": 4129,
+      "name": "Grand Marshal Relic Crest",
+      "type": "decal",
+      "role": "Legacy inventory; not a featured season reward"
+    },
+    {
+      "id": 4130,
+      "name": "Mini Cryo-Core Charm",
+      "type": "charm",
+      "role": "free: 3"
+    },
+    {
+      "id": 4131,
+      "name": "Spent 50-Cal Casing",
+      "type": "charm",
+      "role": "premium: 6"
+    },
+    {
+      "id": 4132,
+      "name": "Sporesnail Pearl",
+      "type": "charm",
+      "role": "free: 12"
+    },
+    {
+      "id": 4133,
+      "name": "Trench Whistle",
+      "type": "charm",
+      "role": "Legacy inventory; not a featured season reward"
+    },
+    {
+      "id": 4134,
+      "name": "Glitched RAM Card",
+      "type": "charm",
+      "role": "premium: 18"
+    },
+    {
+      "id": 4135,
+      "name": "Geodetic Compass",
+      "type": "charm",
+      "role": "free: 21"
+    },
+    {
+      "id": 4136,
+      "name": "Miniaturized Drone Bobble",
+      "type": "charm",
+      "role": "Legacy inventory; not a featured season reward"
+    },
+    {
+      "id": 4137,
+      "name": "Amber Bio-Flask",
+      "type": "charm",
+      "role": "Legacy inventory; not a featured season reward"
+    },
+    {
+      "id": 4138,
+      "name": "Dark Matter Micro-Singularity",
+      "type": "charm",
+      "role": "premium: 25"
+    },
+    {
+      "id": 4139,
+      "name": "Golden Sub-Bunker Key",
+      "type": "charm",
+      "role": "Legacy inventory; not a featured season reward"
+    },
+    {
+      "id": 4140,
+      "name": "Cryo-Capacitor Overclock",
+      "type": "mod",
+      "role": "Excluded from new season emissions; preserve legacy ownership"
+    },
+    {
+      "id": 4141,
+      "name": "Magnetic Scavenger Coil",
+      "type": "mod",
+      "role": "Excluded from new season emissions; preserve legacy ownership"
+    },
+    {
+      "id": 4142,
+      "name": "Bio-Hazard Filter Vent",
+      "type": "mod",
+      "role": "Excluded from new season emissions; preserve legacy ownership"
+    },
+    {
+      "id": 4143,
+      "name": "Kinetic Impact Bushing",
+      "type": "mod",
+      "role": "Excluded from new season emissions; preserve legacy ownership"
+    },
+    {
+      "id": 4144,
+      "name": "Thermal Heat Exchanger",
+      "type": "mod",
+      "role": "Excluded from new season emissions; preserve legacy ownership"
+    },
+    {
+      "id": 4145,
+      "name": "Echo-Location Transceiver",
+      "type": "mod",
+      "role": "Excluded from new season emissions; preserve legacy ownership"
+    },
+    {
+      "id": 4146,
+      "name": "Symbiotic Adrenaline Pump",
+      "type": "mod",
+      "role": "Excluded from new season emissions; preserve legacy ownership"
+    },
+    {
+      "id": 4147,
+      "name": "Zero-Point Flux Overdrive",
+      "type": "mod",
+      "role": "Excluded from new season emissions; preserve legacy ownership"
+    },
+    {
+      "id": 4148,
+      "name": "Soviet Sub-Commander Radio",
+      "type": "audio",
+      "role": "Excluded from new season emissions; preserve legacy ownership"
+    },
+    {
+      "id": 4149,
+      "name": "Synthesized AI Unit 'AURA'",
+      "type": "audio",
+      "role": "Excluded from new season emissions; preserve legacy ownership"
+    },
+    {
+      "id": 4150,
+      "name": "Amber CRT Monitor Theme",
+      "type": "hud",
+      "role": "Excluded from new season emissions; preserve legacy ownership"
+    },
+    {
+      "id": 4151,
+      "name": "Emerald Radar Phosphor HUD",
+      "type": "hud",
+      "role": "Excluded from new season emissions; preserve legacy ownership"
+    },
+    {
+      "id": 4152,
+      "name": "Emerald Void Tracer Rounds",
+      "type": "vfx",
+      "role": "Excluded from new season emissions; preserve legacy ownership"
+    },
+    {
+      "id": 4153,
+      "name": "Cryo Shockwave Muzzle Flare",
+      "type": "vfx",
+      "role": "Excluded from new season emissions; preserve legacy ownership"
+    },
+    {
+      "id": 4154,
+      "name": "Relic Decryption Key (Earned)",
+      "type": "key",
+      "role": "Excluded from new season emissions; preserve legacy ownership"
+    },
+    {
+      "id": 4155,
+      "name": "5x Relic Key Master Pack",
+      "type": "key_bundle",
+      "role": "Excluded from new season emissions; preserve legacy ownership"
+    },
+    {
+      "id": 4156,
+      "name": "Cryo-Alloy Ingot",
+      "type": "reagent",
+      "role": "Excluded from new season emissions; preserve legacy ownership"
+    },
+    {
+      "id": 4157,
+      "name": "Deep Sub-Core Matrix",
+      "type": "reagent",
+      "role": "Excluded from new season emissions; preserve legacy ownership"
+    },
+    {
+      "id": 4158,
+      "name": "Refined Ambergris Catalyst",
+      "type": "reagent",
+      "role": "Excluded from new season emissions; preserve legacy ownership"
+    },
+    {
+      "id": 4159,
+      "name": "Deep Core Shard (Token)",
+      "type": "shard",
+      "role": "Excluded from new season emissions; preserve legacy ownership"
+    },
+    {
+      "id": 4160,
+      "name": "Ballast Plating",
+      "type": "mod",
+      "role": "Excluded from new season emissions; preserve legacy ownership"
+    },
+    {
+      "id": 4161,
+      "name": "Scrap Furnace",
+      "type": "mod",
+      "role": "Excluded from new season emissions; preserve legacy ownership"
+    },
+    {
+      "id": 4162,
+      "name": "Queen's Bane",
+      "type": "mod",
+      "role": "Permanent achievement path; readiness remains separate"
+    },
+    {
+      "id": 4163,
+      "name": "Archivist Lens",
+      "type": "mod",
+      "role": "Permanent achievement path; readiness remains separate"
+    },
+    {
+      "id": 4164,
+      "name": "Shard Conduit",
+      "type": "mod",
+      "role": "Excluded from new season emissions; preserve legacy ownership"
+    },
+    {
+      "id": 4165,
+      "name": "Duplicate Refiner",
+      "type": "mod",
+      "role": "Excluded from new season emissions; preserve legacy ownership"
+    },
+    {
+      "id": 4166,
+      "name": "Pressure Seal",
+      "type": "mod",
+      "role": "Excluded from new season emissions; preserve legacy ownership"
+    },
+    {
+      "id": 4167,
+      "name": "Deep Anchor",
+      "type": "mod",
+      "role": "Excluded from new season emissions; preserve legacy ownership"
+    },
+    {
+      "id": 4200,
+      "name": "Deep Frost Operator Skin",
+      "type": "chassis",
+      "role": "Legacy inventory; not a featured season reward"
+    },
+    {
+      "id": 4201,
+      "name": "Deep Frost Weapon Skin",
+      "type": "skin",
+      "role": "Legacy inventory; not a featured season reward"
+    },
+    {
+      "id": 4202,
+      "name": "Deep Frost Charm",
+      "type": "charm",
+      "role": "Legacy inventory; not a featured season reward"
+    },
+    {
+      "id": 4203,
+      "name": "Deep Frost Patch",
+      "type": "decal",
+      "role": "Legacy inventory; not a featured season reward"
+    },
+    {
+      "id": 4204,
+      "name": "Deep Frost Sheen",
+      "type": "vfx",
+      "role": "Excluded from new season emissions; preserve legacy ownership"
+    },
+    {
+      "id": 4205,
+      "name": "Deep Frost Tracer Rounds",
+      "type": "vfx",
+      "role": "Excluded from new season emissions; preserve legacy ownership"
+    },
+    {
+      "id": 4206,
+      "name": "Deep Frost HUD Theme",
+      "type": "hud",
+      "role": "Excluded from new season emissions; preserve legacy ownership"
+    },
+    {
+      "id": 4207,
+      "name": "Rust & Bone Operator Skin",
+      "type": "chassis",
+      "role": "Legacy inventory; not a featured season reward"
+    },
+    {
+      "id": 4208,
+      "name": "Rust & Bone Weapon Skin",
+      "type": "skin",
+      "role": "Legacy inventory; not a featured season reward"
+    },
+    {
+      "id": 4209,
+      "name": "Rust & Bone Charm",
+      "type": "charm",
+      "role": "Legacy inventory; not a featured season reward"
+    },
+    {
+      "id": 4210,
+      "name": "Rust & Bone Patch",
+      "type": "decal",
+      "role": "Legacy inventory; not a featured season reward"
+    },
+    {
+      "id": 4211,
+      "name": "Rust & Bone Sheen",
+      "type": "vfx",
+      "role": "Excluded from new season emissions; preserve legacy ownership"
+    },
+    {
+      "id": 4212,
+      "name": "Rust & Bone Tracer Rounds",
+      "type": "vfx",
+      "role": "Excluded from new season emissions; preserve legacy ownership"
+    },
+    {
+      "id": 4213,
+      "name": "Rust & Bone HUD Theme",
+      "type": "hud",
+      "role": "Excluded from new season emissions; preserve legacy ownership"
+    },
+    {
+      "id": 4214,
+      "name": "Hive Chitin Operator Skin",
+      "type": "chassis",
+      "role": "Legacy inventory; not a featured season reward"
+    },
+    {
+      "id": 4215,
+      "name": "Hive Chitin Weapon Skin",
+      "type": "skin",
+      "role": "Legacy inventory; not a featured season reward"
+    },
+    {
+      "id": 4216,
+      "name": "Hive Chitin Charm",
+      "type": "charm",
+      "role": "Legacy inventory; not a featured season reward"
+    },
+    {
+      "id": 4217,
+      "name": "Hive Chitin Patch",
+      "type": "decal",
+      "role": "Legacy inventory; not a featured season reward"
+    },
+    {
+      "id": 4218,
+      "name": "Hive Chitin Sheen",
+      "type": "vfx",
+      "role": "Excluded from new season emissions; preserve legacy ownership"
+    },
+    {
+      "id": 4219,
+      "name": "Hive Chitin Tracer Rounds",
+      "type": "vfx",
+      "role": "Excluded from new season emissions; preserve legacy ownership"
+    },
+    {
+      "id": 4220,
+      "name": "Hive Chitin HUD Theme",
+      "type": "hud",
+      "role": "Excluded from new season emissions; preserve legacy ownership"
+    },
+    {
+      "id": 4221,
+      "name": "Horizon Corporate Operator Skin",
+      "type": "chassis",
+      "role": "Legacy inventory; not a featured season reward"
+    },
+    {
+      "id": 4222,
+      "name": "Horizon Corporate Weapon Skin",
+      "type": "skin",
+      "role": "Legacy inventory; not a featured season reward"
+    },
+    {
+      "id": 4223,
+      "name": "Horizon Corporate Charm",
+      "type": "charm",
+      "role": "Legacy inventory; not a featured season reward"
+    },
+    {
+      "id": 4224,
+      "name": "Horizon Corporate Patch",
+      "type": "decal",
+      "role": "Legacy inventory; not a featured season reward"
+    },
+    {
+      "id": 4225,
+      "name": "Horizon Corporate Sheen",
+      "type": "vfx",
+      "role": "Excluded from new season emissions; preserve legacy ownership"
+    },
+    {
+      "id": 4226,
+      "name": "Horizon Corporate Tracer Rounds",
+      "type": "vfx",
+      "role": "Excluded from new season emissions; preserve legacy ownership"
+    },
+    {
+      "id": 4227,
+      "name": "Horizon Corporate HUD Theme",
+      "type": "hud",
+      "role": "Excluded from new season emissions; preserve legacy ownership"
+    },
+    {
+      "id": 4228,
+      "name": "Bunker 404 Operator Skin",
+      "type": "chassis",
+      "role": "Legacy inventory; not a featured season reward"
+    },
+    {
+      "id": 4229,
+      "name": "Bunker 404 Weapon Skin",
+      "type": "skin",
+      "role": "Legacy inventory; not a featured season reward"
+    },
+    {
+      "id": 4230,
+      "name": "Bunker 404 Charm",
+      "type": "charm",
+      "role": "Legacy inventory; not a featured season reward"
+    },
+    {
+      "id": 4231,
+      "name": "Bunker 404 Patch",
+      "type": "decal",
+      "role": "Legacy inventory; not a featured season reward"
+    },
+    {
+      "id": 4232,
+      "name": "Bunker 404 Sheen",
+      "type": "vfx",
+      "role": "Excluded from new season emissions; preserve legacy ownership"
+    },
+    {
+      "id": 4233,
+      "name": "Bunker 404 Tracer Rounds",
+      "type": "vfx",
+      "role": "Excluded from new season emissions; preserve legacy ownership"
+    },
+    {
+      "id": 4234,
+      "name": "Bunker 404 HUD Theme",
+      "type": "hud",
+      "role": "Excluded from new season emissions; preserve legacy ownership"
+    },
+    {
+      "id": 4235,
+      "name": "Grand Marshal Operator Skin",
+      "type": "chassis",
+      "role": "Legacy inventory; not a featured season reward"
+    },
+    {
+      "id": 4236,
+      "name": "Grand Marshal Weapon Skin",
+      "type": "skin",
+      "role": "Legacy inventory; not a featured season reward"
+    },
+    {
+      "id": 4237,
+      "name": "Grand Marshal Charm",
+      "type": "charm",
+      "role": "Legacy inventory; not a featured season reward"
+    },
+    {
+      "id": 4238,
+      "name": "Grand Marshal Patch",
+      "type": "decal",
+      "role": "Legacy inventory; not a featured season reward"
+    },
+    {
+      "id": 4239,
+      "name": "Grand Marshal Sheen",
+      "type": "vfx",
+      "role": "Excluded from new season emissions; preserve legacy ownership"
+    },
+    {
+      "id": 4240,
+      "name": "Grand Marshal Tracer Rounds",
+      "type": "vfx",
+      "role": "Excluded from new season emissions; preserve legacy ownership"
+    },
+    {
+      "id": 4241,
+      "name": "Grand Marshal HUD Theme",
+      "type": "hud",
+      "role": "Excluded from new season emissions; preserve legacy ownership"
+    },
+    {
+      "id": 5001,
+      "name": "GHOST Chassis",
+      "type": "chassis",
+      "role": "Permanent achievement path; readiness remains separate"
+    },
+    {
+      "id": 5002,
+      "name": "QUICK STUDY Carbine",
+      "type": "skin",
+      "role": "Permanent achievement path; readiness remains separate"
+    },
+    {
+      "id": 5003,
+      "name": "CARTOGRAPHER Chassis",
+      "type": "chassis",
+      "role": "Permanent achievement path; readiness remains separate"
+    },
+    {
+      "id": 5004,
+      "name": "REYES COURIER Chassis",
+      "type": "chassis",
+      "role": "Permanent achievement path; readiness remains separate"
+    },
+    {
+      "id": 5005,
+      "name": "HARDENED Chassis",
+      "type": "chassis",
+      "role": "Permanent achievement path; readiness remains separate"
+    },
+    {
+      "id": 5006,
+      "name": "HUNKERED Autocannon",
+      "type": "skin",
+      "role": "Permanent achievement path; readiness remains separate"
+    },
+    {
+      "id": 5007,
+      "name": "FULL BROOD Chassis",
+      "type": "chassis",
+      "role": "Permanent achievement path; readiness remains separate"
+    },
+    {
+      "id": 5008,
+      "name": "GENTLE DRILL Chassis",
+      "type": "chassis",
+      "role": "Permanent achievement path; readiness remains separate"
+    },
+    {
+      "id": 5009,
+      "name": "ARCHIVIST Arc Driver",
+      "type": "skin",
+      "role": "Permanent achievement path; readiness remains separate"
+    },
+    {
+      "id": 5010,
+      "name": "KIN Arc Driver",
+      "type": "skin",
+      "role": "Permanent achievement path; readiness remains separate"
+    },
+    {
+      "id": 5011,
+      "name": "CHEN'S THIRTEENTH Chassis",
+      "type": "chassis",
+      "role": "Permanent achievement path; readiness remains separate"
+    },
+    {
+      "id": 5012,
+      "name": "ALIEN EXODUS Chassis",
+      "type": "chassis",
+      "role": "Permanent achievement path; readiness remains separate"
+    },
+    {
+      "id": "comm_scout_foxhole_shadow",
+      "name": "Scout: Foxhole Shadow",
+      "type": "chassis",
+      "role": "Default community identity — preserve free access"
+    },
+    {
+      "id": "comm_scout_abg",
+      "name": "Scout: Space ABG",
+      "type": "chassis",
+      "role": "Default community identity — preserve free access"
+    },
+    {
+      "id": "comm_scout_corpo_shadow_runner",
+      "name": "Scout: Corpo Shadow Runner",
+      "type": "chassis",
+      "role": "Default community identity — preserve free access"
+    },
+    {
+      "id": "comm_scout_xeno_stalker",
+      "name": "Scout: Xeno-Stalker",
+      "type": "chassis",
+      "role": "Default community identity — preserve free access"
+    },
+    {
+      "id": "comm_scout_swim",
+      "name": "Scout: Zero-G Swimsuit",
+      "type": "chassis",
+      "role": "Default community identity — preserve free access"
+    },
+    {
+      "id": "comm_scout_toxic_apex_chrysalis",
+      "name": "Scout: Toxic Apex Chrysalis",
+      "type": "chassis",
+      "role": "Default community identity — preserve free access"
+    },
+    {
+      "id": "comm_scount_sil",
+      "name": "Scout: Species Sil",
+      "type": "chassis",
+      "role": "Default community identity — preserve free access"
+    },
+    {
+      "id": "comm_scout_apex",
+      "name": "Scout: Apex Chrysalis",
+      "type": "chassis",
+      "role": "Default community identity — preserve free access"
+    },
+    {
+      "id": "comm_scout_soft_manic_infiltrator_gf",
+      "name": "Scout: Soft Manic Hacker GF",
+      "type": "chassis",
+      "role": "Default community identity — preserve free access"
+    },
+    {
+      "id": "comm_tank_abg",
+      "name": "Tank: Space ABG",
+      "type": "chassis",
+      "role": "Default community identity — preserve free access"
+    },
+    {
+      "id": "comm_tank_chubby_protective_hacker_gf",
+      "name": "Tank: Protective Hacker GF",
+      "type": "chassis",
+      "role": "Default community identity — preserve free access"
+    },
+    {
+      "id": "comm_tank_sil",
+      "name": "Tank: Species Sil",
+      "type": "chassis",
+      "role": "Default community identity — preserve free access"
+    },
+    {
+      "id": "comm_scout_tank_crash",
+      "name": "Tank: Crash Survivor Queen",
+      "type": "chassis",
+      "role": "Default community identity — preserve free access"
+    },
+    {
+      "id": "comm_tank_corpo_shadow_runner",
+      "name": "Tank: Corpo Executive Warden",
+      "type": "chassis",
+      "role": "Default community identity — preserve free access"
+    },
+    {
+      "id": "comm_tank_swim",
+      "name": "Tank: Zero-G Heavy Diver",
+      "type": "chassis",
+      "role": "Default community identity — preserve free access"
+    },
+    {
+      "id": "comm_tank_brood_matron",
+      "name": "Tank: Brood Matron",
+      "type": "chassis",
+      "role": "Default community identity — preserve free access"
+    },
+    {
+      "id": "comm_tank_foxhole_shadow",
+      "name": "Tank: Foxhole Shadow",
+      "type": "chassis",
+      "role": "Default community identity — preserve free access"
+    },
+    {
+      "id": "comm_tank_afro_crash",
+      "name": "Tank: Afro Crash Survivor",
+      "type": "chassis",
+      "role": "Default community identity — preserve free access"
+    },
+    {
+      "id": "comm_tank_apex",
+      "name": "Tank: Apex Chrysalis",
+      "type": "chassis",
+      "role": "Default community identity — preserve free access"
+    },
+    {
+      "id": "comm_tank_toxic_apex_chrysalis",
+      "name": "Tank: Toxic Apex Chrysalis",
+      "type": "chassis",
+      "role": "Default community identity — preserve free access"
+    },
+    {
+      "id": "comm_eng_toxic_apex_chrysalis",
+      "name": "Engineer: Toxic Apex Chrysalis",
+      "type": "chassis",
+      "role": "Default community identity — preserve free access"
+    },
+    {
+      "id": "comm_eng_abg",
+      "name": "Engineer: Space ABG",
+      "type": "chassis",
+      "role": "Default community identity — preserve free access"
+    },
+    {
+      "id": "comm_eng_sil",
+      "name": "Engineer: Species Sil",
+      "type": "chassis",
+      "role": "Default community identity — preserve free access"
+    },
+    {
+      "id": "comm_eng_corpo_shadow_runner",
+      "name": "Engineer: Chief Architect",
+      "type": "chassis",
+      "role": "Default community identity — preserve free access"
+    },
+    {
+      "id": "comm_eng_soft_manic_architect_gf",
+      "name": "Engineer: Soft Manic Architect GF",
+      "type": "chassis",
+      "role": "Default community identity — preserve free access"
+    },
+    {
+      "id": "comm_eng_afro_crash",
+      "name": "Engineer: Afro Crash Survivor",
+      "type": "chassis",
+      "role": "Default community identity — preserve free access"
+    },
+    {
+      "id": "comm_eng_swim",
+      "name": "Engineer: Zero-G Hydro-Rig",
+      "type": "chassis",
+      "role": "Default community identity — preserve free access"
+    },
+    {
+      "id": "comm_eng_foxhole_shadow",
+      "name": "Engineer: Foxhole Shadow",
+      "type": "chassis",
+      "role": "Default community identity — preserve free access"
+    },
+    {
+      "id": "comm_eng_neural_weaver",
+      "name": "Engineer: Neural Weaver",
+      "type": "chassis",
+      "role": "Default community identity — preserve free access"
+    },
+    {
+      "id": "comm_eng_apex",
+      "name": "Engineer: Apex Chrysalis",
+      "type": "chassis",
+      "role": "Default community identity — preserve free access"
+    }
+  ]
+}

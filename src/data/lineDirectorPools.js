@@ -1,9 +1,11 @@
+import { localizeCatalog } from '../i18nCatalog.js';
+
 // Tagged line pools consumed by src/lineDirector.js. Content is migrated
 // (not moved) from src/data/dialogueLines.js's `director` pools and
 // main.js's Mothership Reactive `lines` object — see
 // docs/superpowers/specs/2026-08-02-line-director-overhaul-design.md.
 
-export const DIRECTOR_AMBIENT_LINES = Object.freeze([
+export const DIRECTOR_AMBIENT_LINES = localizeCatalog('narrative.directorAmbient', Object.freeze([
     // corporate
     { id: 'director_welcome_committee', register: 'corporate', text: 'Movement logged. Facilities has dispatched a welcome committee to your position.', tags: { eventTrigger: null, directorActions: ['patrol'], cooldownClass: 'director_ambient', minRepeatSeconds: 90 } },
     { id: 'director_pillar_lighting', register: 'corporate', text: 'Unauthorized exploration detected. Local lighting has been suspended.', tags: { eventTrigger: null, directorActions: ['lightsout'], depthTier: { min: 1 }, cooldownClass: 'director_ambient', minRepeatSeconds: 90 } },
@@ -26,7 +28,7 @@ export const DIRECTOR_AMBIENT_LINES = Object.freeze([
     { id: 'director_reverent_column', register: 'reverent', text: 'The column turns your compass away from the sky.', tags: { eventTrigger: null, directorActions: ['corrupt'], cooldownClass: 'director_ambient', minRepeatSeconds: 90 } },
     { id: 'director_reverent_darkness', register: 'reverent', text: 'The lights are gone. The dark is where the chitin grows.', tags: { eventTrigger: null, directorActions: ['lightsout'], cooldownClass: 'director_ambient', minRepeatSeconds: 90 } },
     { id: 'director_reverent_descent', register: 'reverent', text: 'The structure sends its children to welcome your descent.', tags: { eventTrigger: null, directorActions: ['patrol'], depthTier: { min: 2 }, cooldownClass: 'director_ambient', minRepeatSeconds: 90 } }
-]);
+]), { skip: ['id', 'register', 'tags', 'cooldownClass'] });
 
 const MOTHERSHIP_CRITICAL_IDS = new Set(['mothership_hp_critical', 'mothership_objective_found', 'mothership_first_boss']);
 
@@ -44,7 +46,7 @@ function mothershipLine(id, trigger, text) {
     };
 }
 
-export const MOTHERSHIP_REACTIVE_LINES = Object.freeze([
+export const MOTHERSHIP_REACTIVE_LINES = localizeCatalog('narrative.mothershipReactive', Object.freeze([
     mothershipLine('mothership_first_kill', 'first_kill', 'AGENT — FIRST THREAT NEUTRALIZED. PROCEED.'),
     mothershipLine('mothership_first_cryo', 'first_cryo', 'WARNING: CRYO SECTOR BOUNDARY CROSSED. THERMAL PROTOCOL ACTIVE.'),
     mothershipLine('mothership_first_bio', 'first_bio', 'ALERT: BIO-CONTAINMENT ZONE ENTERED. SUIT FILTERS AT LIMIT.'),
@@ -59,4 +61,4 @@ export const MOTHERSHIP_REACTIVE_LINES = Object.freeze([
     mothershipLine('mothership_weapon_calibrated', 'weapon_calibrated', 'NOTED: AGENT WEAPON OUTPUT RISING. ... WHY DO YOU NEED MORE.'),
     mothershipLine('mothership_first_boss', 'first_boss', 'CONFIRMED KILL: APEX BIO-ENTITY DOWN. THE SIGNAL FELT THAT.'),
     mothershipLine('mothership_specimen_notices', 'specimen_notices', '[UNAUTHORIZED CHANNEL] ...0047 HAS STOPPED BUILDING. IT IS LISTENING TO YOU NOW.')
-]);
+]), { skip: ['id', 'tags'] });

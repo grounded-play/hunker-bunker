@@ -89,4 +89,40 @@ describe('Bounty & Directive System', () => {
         expect(getDailyDateKey(d)).toBe('2026-08-17');
         expect(getWeeklyDateKey(d)).toMatch(/^2026-W\d{2}$/);
     });
+
+    it('auto-settles completed bounties on rotation so earned XP is never lost', () => {
+        const storage = createMockStorage();
+        const manager = new BountyManager({ storage });
+        const mockPass = { addXp: vi.fn() };
+        globalThis.window = { seasonPass: mockPass };
+
+        // Mark a daily as completed but unclaimed
+        manager.state.dailies[0].completed = true;
+        manager.state.dailies[0].claimed = false;
+        const xp = manager.state.dailies[0].xp;
+
+        // Force daily rotation
+        manager.state.dailyKey = '2026-01-01';
+        manager.checkRotation();
+
+        expect(mockPass.addXp).toHaveBeenCalledWith(xp, 'daily_bounty_autosettle');
+    });
+
+    it('retains incomplete weeklies across rotation for late starters', () => {
+        const storage = createMockStorage();
+        const manager = new BountyManager({ storage });
+
+        // Progress an incomplete weekly
+        manager.state.weeklies[0].progress = 10;
+        manager.state.weeklies[0].completed = false;
+        const oldId = manager.state.weeklies[0].id;
+
+        // Force weekly rotation
+        manager.state.weeklyKey = '2026-W01';
+        manager.checkRotation();
+
+        // The old incomplete weekly must still exist in weeklies
+        expect(manager.state.weeklies.some((w) => w.id === oldId)).toBe(true);
+    });
 });
+

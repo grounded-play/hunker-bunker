@@ -1,4 +1,5 @@
 import { AudioManager } from './audio.js';
+import { t, applyStaticTranslations } from './i18n.js';
 import { assetUrl } from './assetUrl.js';
 import { buildEquipOptions } from './armoryOptions.js';
 import { buildPickerTiles, calculatePickerLayout } from './armoryPicker.js';
@@ -445,9 +446,10 @@ export function createArmoryUi({
                 noneLabel: field.noneLabel ?? null,
                 selectedId
             });
+            applyStaticTranslations(gridWrap);
         }
         if (readName) readName.textContent = field.currentName();
-        if (readState) readState.textContent = 'EQUIPPED';
+        if (readState) readState.textContent = t('ui.armory.equipped');
         modal.classList?.remove?.('hidden');
         modal.setAttribute?.('aria-hidden', 'false');
         wireTileArtFallbacks();
@@ -509,20 +511,20 @@ export function createArmoryUi({
                 <div class="terminal-scanline"></div>
                 <header class="armory-header">
                     <div class="armory-title-box">
-                        <span class="armory-tag">◈ SUB-TERRAN PRE-MISSION ARMORY // SECTOR ZERO</span>
-                        <h1 class="armory-title">SECTOR ZERO TACTICAL BENCH <span class="armory-title-accent">// LOADOUT</span></h1>
+                        <span class="armory-tag" data-i18n="ui.armory.tag">◈ SUB-TERRAN PRE-MISSION ARMORY // SECTOR ZERO</span>
+                        <h1 class="armory-title"><span data-i18n="ui.armory.title">SECTOR ZERO TACTICAL BENCH</span> <span class="armory-title-accent" data-i18n="ui.armory.title_accent">// LOADOUT</span></h1>
                     </div>
                     <div class="armory-operator-status">
                         <div class="armory-class-tabs" role="tablist">
-                            <button type="button" class="class-tab ${cls === 'scout' ? 'active' : ''}" data-class="scout">◈ SCOUT</button>
-                            <button type="button" class="class-tab ${cls === 'tank' ? 'active' : ''}" data-class="tank">▰ TANK</button>
-                            <button type="button" class="class-tab ${cls === 'engineer' ? 'active' : ''}" data-class="engineer">◆ ENGINEER</button>
+                            <button type="button" class="class-tab ${cls === 'scout' ? 'active' : ''}" data-class="scout" data-i18n="ui.armory.tab_scout">◈ SCOUT</button>
+                            <button type="button" class="class-tab ${cls === 'tank' ? 'active' : ''}" data-class="tank" data-i18n="ui.armory.tab_tank">▰ TANK</button>
+                            <button type="button" class="class-tab ${cls === 'engineer' ? 'active' : ''}" data-class="engineer" data-i18n="ui.armory.tab_engineer">◆ ENGINEER</button>
                         </div>
                         <button type="button" class="armory-debug-skins-btn ${ownership.isUnlockAll() ? 'active' : ''}" id="armory-debug-unlock-skins-btn" title="Toggle debug unlock for all weapon/chassis skins, charms, and polishes">
                             ${ownership.isUnlockAll() ? '✓ ALL SKINS UNLOCKED' : '[DEBUG] UNLOCK ALL SKINS'}
                         </button>
-                        <span class="status-cycle-hint">[Q / E CYCLE]</span>
-                        <button type="button" class="calibrate-btn open-settings-btn armory-settings-btn" id="armory-settings-btn" title="Open Settings" aria-label="Open Settings">⚙</button>
+                        <span class="status-cycle-hint" data-i18n="ui.armory.cycle_hint">[Q / E CYCLE]</span>
+                        <button type="button" class="calibrate-btn open-settings-btn armory-settings-btn" id="armory-settings-btn" title="Open Settings" aria-label="Open Settings" data-i18n-title="ui.armory.aria_settings" data-i18n-aria-label="ui.armory.aria_settings">⚙</button>
                     </div>
                 </header>
 
@@ -531,18 +533,18 @@ export function createArmoryUi({
                     <div class="armory-stage-column">
                         <aside class="armory-stage-readout" aria-label="Live Armory Preview">
                             <div class="armory-stage-readout__info">
-                                <div class="armory-stage-readout__eyebrow">◈ LIVE STAGE PREVIEW</div>
+                                <div class="armory-stage-readout__eyebrow" data-i18n="ui.armory.stage_eyebrow">◈ LIVE STAGE PREVIEW</div>
                                 <div class="armory-stage-readout__title">${activeClass.toUpperCase()} // ${ARCHETYPE_NAMES[archetype] || archetype}</div>
                                 <div class="armory-stage-readout__details">
-                                    <span class="armory-stage-readout__chip"><b>WEAPON:</b> ${selectedWeapon}</span>
-                                    <span class="armory-stage-readout__chip"><b>CHASSIS:</b> ${nameForItem(chassisSkinId, 'STANDARD')}</span>
+                                    <span class="armory-stage-readout__chip"><b data-i18n="ui.armory.weapon_label">WEAPON:</b> ${selectedWeapon}</span>
+                                    <span class="armory-stage-readout__chip"><b data-i18n="ui.armory.chassis_label">CHASSIS:</b> ${nameForItem(chassisSkinId, 'STANDARD')}</span>
                                 </div>
                             </div>
                             <button type="button" class="armory-stage-readout__polish" id="armory-polish-btn">
                                 <span class="armory-stage-readout__polish-swatch" aria-hidden="true"></span>
-                                <span><small>OPERATOR SHEEN</small><b>OPEN SUIT TINT MATRIX</b></span>
+                                <span><small data-i18n="ui.armory.sheen_kicker">OPERATOR SHEEN</small><b data-i18n="ui.armory.sheen_cta">OPEN SUIT TINT MATRIX</b></span>
                             </button>
-                            <div class="armory-stage-readout__hint">DRAG 3D STAGE TO INSPECT OPERATOR &amp; WEAPON</div>
+                            <div class="armory-stage-readout__hint" data-i18n="ui.armory.stage_hint">DRAG 3D STAGE TO INSPECT OPERATOR &amp; WEAPON</div>
                         </aside>
                     </div>
 
@@ -560,25 +562,25 @@ export function createArmoryUi({
                                         <line x1="17" y1="12" x2="21" y2="12"/>
                                     </svg>
                                 </span>
-                                <h2>BALLISTIC BENCH &amp; OVERCLOCKS</h2>
+                                <h2 data-i18n="ui.armory.bench_title">BALLISTIC BENCH &amp; OVERCLOCKS</h2>
                             </div>
 
                             <!-- PRIMARY WEAPON: frame + fielded model in one slot -->
                             <div class="bench-field">
-                                <label>PRIMARY WEAPON</label>
+                                <label data-i18n="ui.armory.f_primary">PRIMARY WEAPON</label>
                                 ${slotHtml('weapon')}
                             </div>
 
                             <div class="bench-row-two-col">
                             <!-- WEAPON SHEEN: a real tint now, not a mesh swap -->
                             <div class="bench-field">
-                                <label>WEAPON SHEEN</label>
+                                <label data-i18n="ui.armory.f_sheen">WEAPON SHEEN</label>
                                 ${slotHtml('sheen')}
                             </div>
 
                             <!-- CHARM -->
                             <div class="bench-field">
-                                <label>TACTICAL CHARM</label>
+                                <label data-i18n="ui.armory.f_charm">TACTICAL CHARM</label>
                                 ${slotHtml('charm')}
                             </div>
 
@@ -586,27 +588,27 @@ export function createArmoryUi({
 
                             <!-- PROJECTILE TRACER -->
                             <div class="bench-field">
-                                <label>PROJECTILE TRACER</label>
+                                <label data-i18n="ui.armory.f_tracer">PROJECTILE TRACER</label>
                                 ${slotHtml('tracer')}
                             </div>
 
                             <div class="bench-row-two-col">
                                 <!-- RIG MOD 1 -->
                                 <div class="bench-field">
-                                    <label>OVERCLOCK — BAY A</label>
+                                    <label data-i18n="ui.armory.f_bay_a">OVERCLOCK — BAY A</label>
                                     ${slotHtml('mod1')}
                                 </div>
 
                                 <!-- RIG MOD 2 -->
                                 <div class="bench-field">
-                                    <label>OVERCLOCK — BAY B</label>
+                                    <label data-i18n="ui.armory.f_bay_b">OVERCLOCK — BAY B</label>
                                     ${slotHtml('mod2')}
                                 </div>
                             </div>
 
                             <!-- ACTIVE MODIFIERS TELEMETRY -->
                             <div class="modifiers-summary">
-                                <div class="modifiers-title">◈ ACTIVE COMBAT OVERCLOCKS</div>
+                                <div class="modifiers-title" data-i18n="ui.armory.mods_title">◈ ACTIVE COMBAT OVERCLOCKS</div>
                                 ${hasActiveOverclocks ? `
                                     <div class="modifiers-badges">
                                         ${modifiers.scrapMagnetRadiusBonus > 0 ? `
@@ -637,8 +639,8 @@ export function createArmoryUi({
                                     </div>
                                 ` : `
                                     <div class="modifiers-standby">
-                                        <span class="standby-status-pill">STANDBY</span>
-                                        <span class="standby-desc">NO OVERCLOCKS LINKED // BAYS A &amp; B READY</span>
+                                        <span class="standby-status-pill" data-i18n="ui.armory.standby">STANDBY</span>
+                                        <span class="standby-desc" data-i18n="ui.armory.standby_desc">NO OVERCLOCKS LINKED // BAYS A &amp; B READY</span>
                                     </div>
                                 `}
                             </div>
@@ -652,27 +654,27 @@ export function createArmoryUi({
                                         <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
                                     </svg>
                                 </span>
-                                <h2>OPERATOR EXOSUIT RIG</h2>
+                                <h2 data-i18n="ui.armory.rig_title">OPERATOR EXOSUIT RIG</h2>
                             </div>
                             <div class="bench-stack bench-row-two-col">
                                 <div class="bench-field">
-                                    <label>EXOSUIT CHASSIS SKIN</label>
+                                    <label data-i18n="ui.armory.f_chassis">EXOSUIT CHASSIS SKIN</label>
                                     ${slotHtml('chassis')}
                                 </div>
                                 <div class="bench-field">
-                                    <label>SHOULDER PATCH &amp; INSIGNIA</label>
+                                    <label data-i18n="ui.armory.f_patch">SHOULDER PATCH &amp; INSIGNIA</label>
                                     ${slotHtml('decal')}
                                 </div>
                             </div>
                             <div class="bench-field" style="margin-top: 6px;">
-                                <label>TACTICAL HUD THEME</label>
+                                <label data-i18n="ui.armory.f_hud">TACTICAL HUD THEME</label>
                                 ${slotHtml('hud')}
                             </div>
                             <div class="telemetry-box">
-                                <div class="telemetry-title">SUIT TELEMETRY STATUS</div>
-                                <div class="telemetry-item"><span>Thermal Cryo-Mesh:</span> <strong>NOMINAL 100%</strong></div>
-                                <div class="telemetry-item"><span>Radiation Seal:</span> <strong>ACTIVE</strong></div>
-                                <div class="telemetry-item"><span>Turntable Staging:</span> <strong>360° DRAG ORBIT</strong></div>
+                                <div class="telemetry-title" data-i18n="ui.armory.telemetry_title">SUIT TELEMETRY STATUS</div>
+                                <div class="telemetry-item"><span data-i18n="ui.armory.tel_thermal">Thermal Cryo-Mesh:</span> <strong data-i18n="ui.armory.tel_thermal_val">NOMINAL 100%</strong></div>
+                                <div class="telemetry-item"><span data-i18n="ui.armory.tel_rad">Radiation Seal:</span> <strong data-i18n="ui.armory.tel_rad_val">ACTIVE</strong></div>
+                                <div class="telemetry-item"><span data-i18n="ui.armory.tel_turntable">Turntable Staging:</span> <strong data-i18n="ui.armory.tel_turntable_val">360° DRAG ORBIT</strong></div>
                             </div>
                         </section>
                     </div>
@@ -681,13 +683,13 @@ export function createArmoryUi({
                 <!-- FOOTER NAVIGATION -->
                 <footer class="armory-footer">
                     <button id="armory-btn-back" class="armory-btn secondary-btn" title="Return to Main Menu Briefing Console">
-                        ← RETURN TO MAIN MENU <span class="btn-keyhint">[ESC]</span>
+                        <span data-i18n="ui.armory.btn_return">← RETURN TO MAIN MENU</span> <span class="btn-keyhint">[ESC]</span>
                     </button>
                     <button id="armory-btn-vault" class="armory-btn tertiary-btn">
-                        STEAM VAULT &amp; FAB BAY <span class="btn-keyhint">[V]</span>
+                        <span data-i18n="ui.armory.btn_vault">STEAM VAULT &amp; FAB BAY</span> <span class="btn-keyhint">[V]</span>
                     </button>
                     <button id="armory-btn-embark" class="armory-btn primary-btn embark-glow">
-                        EMBARK TO BUNKER &gt;&gt; <span class="btn-keyhint">[ENTER / A]</span>
+                        <span data-i18n="ui.armory.btn_embark">EMBARK TO BUNKER &gt;&gt;</span> <span class="btn-keyhint">[ENTER / A]</span>
                     </button>
                 </footer>
 
@@ -696,7 +698,7 @@ export function createArmoryUi({
                     <div class="modal-content armory-picker-modal-content">
                         <div class="terminal-scanline"></div>
                         <button class="close-modal" id="armory-picker-close" aria-label="Close">×</button>
-                        <div class="armory-picker-title" id="armory-picker-title">◆ SELECT</div>
+                        <div class="armory-picker-title" id="armory-picker-title" data-i18n="ui.armory.picker_title">◆ SELECT</div>
                         <div class="armory-picker-subtitle" id="armory-picker-subtitle"></div>
                         <div id="armory-picker-body"></div>
                         <div class="armory-picker-readout">
@@ -707,6 +709,10 @@ export function createArmoryUi({
                 </div>
             </div>
         `;
+        // Markup above ships authored English; translate it in place so a render
+        // while a non-English locale is active is localised immediately. Later
+        // locale changes are picked up by the global locale-changed listener.
+        applyStaticTranslations(container);
 
         bindEvents();
         // A re-render rebuilds the container, so a modal that was open has to
@@ -732,10 +738,14 @@ export function createArmoryUi({
                 const sheen = WEAPON_SHEENS.find((s) => `sheen:${s.id}` === tile.dataset.value);
                 const name = container.querySelector?.('#armory-picker-readout-name');
                 const state = container.querySelector?.('#armory-picker-readout-state');
-                if (name) name.textContent = locked ? 'UNKNOWN EQUIPMENT' : tile.getAttribute('aria-label');
+                if (name) name.textContent = locked ? t('ui.armory.unknown_equipment') : tile.getAttribute('aria-label');
                 if (state) state.textContent = locked
-                    ? (sheen?.hint ?? (entry?.source === 'achievement' ? 'Earn its field achievement to reveal.' : 'Unlock through field rewards.'))
-                    : field?.current() === tile.dataset.value ? 'EQUIPPED' : 'SELECT TO EQUIP';
+                    ? (sheen?.hint ?? (entry?.source === 'achievement'
+                        ? t('ui.armory.locked_achievement')
+                        : t('ui.armory.locked_rewards')))
+                    : field?.current() === tile.dataset.value
+                        ? t('ui.armory.equipped')
+                        : t('ui.armory.select_to_equip');
             };
             tile.addEventListener('focus', showDetails);
             tile.addEventListener('mouseenter', showDetails);
