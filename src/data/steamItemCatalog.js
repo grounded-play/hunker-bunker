@@ -782,6 +782,127 @@ const catalog = {
         "localImg": "/economy/reagent_deep_core_shard.png",
         "localImgLarge": "/economy/reagent_deep_core_shard_large.png"
     },
+    "4160": {
+        "itemdefid": 4160,
+        "name": "Ballast Plating",
+        "rarity": "uncommon",
+        "desc": "Counterweight suit plating. Heavier, and harder to move.",
+        "tradable": false,
+        "marketable": false,
+        "img": "https://hunkerbunker.netlify.app/economy/mod_ballast_plating.png",
+        "localImg": "/economy/mod_ballast_plating.png",
+        "localImgLarge": "/economy/mod_ballast_plating_large.png"
+    },
+    "4161": {
+        "itemdefid": 4161,
+        "name": "Scrap Furnace",
+        "rarity": "uncommon",
+        "desc": "Back-mounted smelter that renders salvage on the spot.",
+        "tradable": false,
+        "marketable": false,
+        "img": "https://hunkerbunker.netlify.app/economy/mod_scrap_furnace.png",
+        "localImg": "/economy/mod_scrap_furnace.png",
+        "localImgLarge": "/economy/mod_scrap_furnace_large.png"
+    },
+    "4162": {
+        "itemdefid": 4162,
+        "name": "Queen's Bane",
+        "rarity": "legendary",
+        "desc": "Barbed injector grown from carapace and surgical steel.",
+        "tradable": false,
+        "marketable": false,
+        "img": "https://hunkerbunker.netlify.app/economy/mod_queens_bane.png",
+        "localImg": "/economy/mod_queens_bane.png",
+        "localImgLarge": "/economy/mod_queens_bane_large.png"
+    },
+    "4163": {
+        "itemdefid": 4163,
+        "name": "Archivist Lens",
+        "rarity": "rare",
+        "desc": "Antique monocular scanning lens on an articulated arm.",
+        "tradable": false,
+        "marketable": false,
+        "img": "https://hunkerbunker.netlify.app/economy/mod_archivist_lens.png",
+        "localImg": "/economy/mod_archivist_lens.png",
+        "localImgLarge": "/economy/mod_archivist_lens_large.png"
+    },
+    "4164": {
+        "itemdefid": 4164,
+        "name": "Shard Conduit",
+        "rarity": "rare",
+        "desc": "Crystal routing module that runs cold to the touch.",
+        "tradable": false,
+        "marketable": false,
+        "img": "https://hunkerbunker.netlify.app/economy/mod_shard_conduit.png",
+        "localImg": "/economy/mod_shard_conduit.png",
+        "localImgLarge": "/economy/mod_shard_conduit_large.png"
+    },
+    "4165": {
+        "itemdefid": 4165,
+        "name": "Duplicate Refiner",
+        "rarity": "rare",
+        "desc": "Matter reclamation drum. Unglamorous, and effective.",
+        "tradable": false,
+        "marketable": false,
+        "img": "https://hunkerbunker.netlify.app/economy/mod_duplicate_refiner.png",
+        "localImg": "/economy/mod_duplicate_refiner.png",
+        "localImgLarge": "/economy/mod_duplicate_refiner_large.png"
+    },
+    "4166": {
+        "itemdefid": 4166,
+        "name": "Pressure Seal",
+        "rarity": "epic",
+        "desc": "Chest rebreather diaphragm that sits mid-breath.",
+        "tradable": false,
+        "marketable": false,
+        "img": "https://hunkerbunker.netlify.app/economy/mod_pressure_seal.png",
+        "localImg": "/economy/mod_pressure_seal.png",
+        "localImgLarge": "/economy/mod_pressure_seal_large.png"
+    },
+    "4167": {
+        "itemdefid": 4167,
+        "name": "Deep Anchor",
+        "rarity": "epic",
+        "desc": "Descent anchor that has been deeper than it should have.",
+        "tradable": false,
+        "marketable": false,
+        "img": "https://hunkerbunker.netlify.app/economy/mod_deep_anchor.png",
+        "localImg": "/economy/mod_deep_anchor.png",
+        "localImgLarge": "/economy/mod_deep_anchor_large.png"
+    },
+    "4200": {
+        "itemdefid": 4200,
+        "name": "Deep Frost Operator Skin",
+        "rarity": "rare",
+        "desc": "Full operator chassis finish in the Deep Frost identity.",
+        "tradable": true,
+        "marketable": true,
+        "img": "https://hunkerbunker.netlify.app/economy/chassis_deep_frost.png",
+        "localImg": "/economy/chassis_deep_frost.png",
+        "localImgLarge": "/economy/chassis_deep_frost_large.png"
+    },
+    "4201": {
+        "itemdefid": 4201,
+        "name": "Deep Frost Weapon Skin",
+        "rarity": "rare",
+        "desc": "Weapon plating finish in the Deep Frost identity.",
+        "tradable": true,
+        "marketable": true,
+        "img": "https://hunkerbunker.netlify.app/economy/skin_deep_frost.png",
+        "localImg": "/economy/skin_deep_frost.png",
+        "localImgLarge": "/economy/skin_deep_frost_large.png"
+    },
+    "4202": {
+        "itemdefid": 4202,
+        "name": "Deep Frost Charm",
+        "rarity": "rare",
+        "desc": "Hanging weapon charm in the Deep Frost identity.",
+        "tradable": true,
+        "marketable": true,
+        "img": "https://hunkerbunker.netlify.app/economy/charm_deep_frost.png",
+        "localImg": "/economy/charm_deep_frost.png",
+        "localImgLarge": "/economy/charm_deep_frost_large.png"
+    },
     "4203": {
         "itemdefid": 4203,
         "name": "Deep Frost Patch",
@@ -825,6 +946,39 @@ const catalog = {
         "img": "https://hunkerbunker.netlify.app/economy/hudtheme_deep_frost.png",
         "localImg": "/economy/hudtheme_deep_frost.png",
         "localImgLarge": "/economy/hudtheme_deep_frost_large.png"
+    },
+    "4207": {
+        "itemdefid": 4207,
+        "name": "Rust & Bone Operator Skin",
+        "rarity": "rare",
+        "desc": "Full operator chassis finish in the Rust & Bone identity.",
+        "tradable": true,
+        "marketable": true,
+        "img": "https://hunkerbunker.netlify.app/economy/chassis_rust_bone.png",
+        "localImg": "/economy/chassis_rust_bone.png",
+        "localImgLarge": "/economy/chassis_rust_bone_large.png"
+    },
+    "4208": {
+        "itemdefid": 4208,
+        "name": "Rust & Bone Weapon Skin",
+        "rarity": "rare",
+        "desc": "Weapon plating finish in the Rust & Bone identity.",
+        "tradable": true,
+        "marketable": true,
+        "img": "https://hunkerbunker.netlify.app/economy/skin_rust_bone.png",
+        "localImg": "/economy/skin_rust_bone.png",
+        "localImgLarge": "/economy/skin_rust_bone_large.png"
+    },
+    "4209": {
+        "itemdefid": 4209,
+        "name": "Rust & Bone Charm",
+        "rarity": "rare",
+        "desc": "Hanging weapon charm in the Rust & Bone identity.",
+        "tradable": true,
+        "marketable": true,
+        "img": "https://hunkerbunker.netlify.app/economy/charm_rust_bone.png",
+        "localImg": "/economy/charm_rust_bone.png",
+        "localImgLarge": "/economy/charm_rust_bone_large.png"
     },
     "4210": {
         "itemdefid": 4210,
@@ -870,6 +1024,39 @@ const catalog = {
         "localImg": "/economy/hudtheme_rust_bone.png",
         "localImgLarge": "/economy/hudtheme_rust_bone_large.png"
     },
+    "4214": {
+        "itemdefid": 4214,
+        "name": "Hive Chitin Operator Skin",
+        "rarity": "rare",
+        "desc": "Full operator chassis finish in the Hive Chitin identity.",
+        "tradable": true,
+        "marketable": true,
+        "img": "https://hunkerbunker.netlify.app/economy/chassis_hive_chitin.png",
+        "localImg": "/economy/chassis_hive_chitin.png",
+        "localImgLarge": "/economy/chassis_hive_chitin_large.png"
+    },
+    "4215": {
+        "itemdefid": 4215,
+        "name": "Hive Chitin Weapon Skin",
+        "rarity": "rare",
+        "desc": "Weapon plating finish in the Hive Chitin identity.",
+        "tradable": true,
+        "marketable": true,
+        "img": "https://hunkerbunker.netlify.app/economy/skin_hive_chitin.png",
+        "localImg": "/economy/skin_hive_chitin.png",
+        "localImgLarge": "/economy/skin_hive_chitin_large.png"
+    },
+    "4216": {
+        "itemdefid": 4216,
+        "name": "Hive Chitin Charm",
+        "rarity": "rare",
+        "desc": "Hanging weapon charm in the Hive Chitin identity.",
+        "tradable": true,
+        "marketable": true,
+        "img": "https://hunkerbunker.netlify.app/economy/charm_hive_chitin.png",
+        "localImg": "/economy/charm_hive_chitin.png",
+        "localImgLarge": "/economy/charm_hive_chitin_large.png"
+    },
     "4217": {
         "itemdefid": 4217,
         "name": "Hive Chitin Patch",
@@ -913,6 +1100,39 @@ const catalog = {
         "img": "https://hunkerbunker.netlify.app/economy/hudtheme_hive_chitin.png",
         "localImg": "/economy/hudtheme_hive_chitin.png",
         "localImgLarge": "/economy/hudtheme_hive_chitin_large.png"
+    },
+    "4221": {
+        "itemdefid": 4221,
+        "name": "Horizon Corporate Operator Skin",
+        "rarity": "rare",
+        "desc": "Full operator chassis finish in the Horizon Corporate identity.",
+        "tradable": true,
+        "marketable": true,
+        "img": "https://hunkerbunker.netlify.app/economy/chassis_horizon_corporate.png",
+        "localImg": "/economy/chassis_horizon_corporate.png",
+        "localImgLarge": "/economy/chassis_horizon_corporate_large.png"
+    },
+    "4222": {
+        "itemdefid": 4222,
+        "name": "Horizon Corporate Weapon Skin",
+        "rarity": "rare",
+        "desc": "Weapon plating finish in the Horizon Corporate identity.",
+        "tradable": true,
+        "marketable": true,
+        "img": "https://hunkerbunker.netlify.app/economy/skin_horizon_corporate.png",
+        "localImg": "/economy/skin_horizon_corporate.png",
+        "localImgLarge": "/economy/skin_horizon_corporate_large.png"
+    },
+    "4223": {
+        "itemdefid": 4223,
+        "name": "Horizon Corporate Charm",
+        "rarity": "rare",
+        "desc": "Hanging weapon charm in the Horizon Corporate identity.",
+        "tradable": true,
+        "marketable": true,
+        "img": "https://hunkerbunker.netlify.app/economy/charm_horizon_corporate.png",
+        "localImg": "/economy/charm_horizon_corporate.png",
+        "localImgLarge": "/economy/charm_horizon_corporate_large.png"
     },
     "4224": {
         "itemdefid": 4224,
@@ -958,6 +1178,39 @@ const catalog = {
         "localImg": "/economy/hudtheme_horizon_corporate.png",
         "localImgLarge": "/economy/hudtheme_horizon_corporate_large.png"
     },
+    "4228": {
+        "itemdefid": 4228,
+        "name": "Bunker 404 Operator Skin",
+        "rarity": "epic",
+        "desc": "Full operator chassis finish in the Bunker 404 identity.",
+        "tradable": true,
+        "marketable": true,
+        "img": "https://hunkerbunker.netlify.app/economy/chassis_bunker404.png",
+        "localImg": "/economy/chassis_bunker404.png",
+        "localImgLarge": "/economy/chassis_bunker404_large.png"
+    },
+    "4229": {
+        "itemdefid": 4229,
+        "name": "Bunker 404 Weapon Skin",
+        "rarity": "epic",
+        "desc": "Weapon plating finish in the Bunker 404 identity.",
+        "tradable": true,
+        "marketable": true,
+        "img": "https://hunkerbunker.netlify.app/economy/skin_bunker404.png",
+        "localImg": "/economy/skin_bunker404.png",
+        "localImgLarge": "/economy/skin_bunker404_large.png"
+    },
+    "4230": {
+        "itemdefid": 4230,
+        "name": "Bunker 404 Charm",
+        "rarity": "epic",
+        "desc": "Hanging weapon charm in the Bunker 404 identity.",
+        "tradable": true,
+        "marketable": true,
+        "img": "https://hunkerbunker.netlify.app/economy/charm_bunker404.png",
+        "localImg": "/economy/charm_bunker404.png",
+        "localImgLarge": "/economy/charm_bunker404_large.png"
+    },
     "4231": {
         "itemdefid": 4231,
         "name": "Bunker 404 Patch",
@@ -1001,6 +1254,39 @@ const catalog = {
         "img": "https://hunkerbunker.netlify.app/economy/hudtheme_bunker404.png",
         "localImg": "/economy/hudtheme_bunker404.png",
         "localImgLarge": "/economy/hudtheme_bunker404_large.png"
+    },
+    "4235": {
+        "itemdefid": 4235,
+        "name": "Grand Marshal Operator Skin",
+        "rarity": "legendary",
+        "desc": "Full operator chassis finish in the Grand Marshal identity.",
+        "tradable": true,
+        "marketable": true,
+        "img": "https://hunkerbunker.netlify.app/economy/chassis_grand_marshal.png",
+        "localImg": "/economy/chassis_grand_marshal.png",
+        "localImgLarge": "/economy/chassis_grand_marshal_large.png"
+    },
+    "4236": {
+        "itemdefid": 4236,
+        "name": "Grand Marshal Weapon Skin",
+        "rarity": "legendary",
+        "desc": "Weapon plating finish in the Grand Marshal identity.",
+        "tradable": true,
+        "marketable": true,
+        "img": "https://hunkerbunker.netlify.app/economy/skin_grand_marshal.png",
+        "localImg": "/economy/skin_grand_marshal.png",
+        "localImgLarge": "/economy/skin_grand_marshal_large.png"
+    },
+    "4237": {
+        "itemdefid": 4237,
+        "name": "Grand Marshal Charm",
+        "rarity": "legendary",
+        "desc": "Hanging weapon charm in the Grand Marshal identity.",
+        "tradable": true,
+        "marketable": true,
+        "img": "https://hunkerbunker.netlify.app/economy/charm_grand_marshal.png",
+        "localImg": "/economy/charm_grand_marshal.png",
+        "localImgLarge": "/economy/charm_grand_marshal_large.png"
     },
     "4238": {
         "itemdefid": 4238,

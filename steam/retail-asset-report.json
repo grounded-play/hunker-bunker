@@ -8,11 +8,11 @@
     "duplicateGroups": 15
   },
   "measured": {
-    "publicBytes": 2826969443,
-    "publicFileCount": 1522
+    "publicBytes": 2837830323,
+    "publicFileCount": 1574
   },
   "classifications": {
-    "runtime-required": 1469,
+    "runtime-required": 1521,
     "source-reference": 0,
     "generated-intermediate": 0,
     "unknown": 53
@@ -740,5 +740,7 @@
       ]
     }
   ],
-  "failures": []
+  "failures": [
+    "public payload exceeds 2831155200 bytes"
+  ]
 }

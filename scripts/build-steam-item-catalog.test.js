@@ -1,4 +1,5 @@
 import fs from 'node:fs';
+import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import {
     buildRendererCatalog,
@@ -11,7 +12,12 @@ const schema = JSON.parse(fs.readFileSync('steam/inventory_schema_hunker_bunker.
 describe('Steam renderer catalog generation', () => {
     it('projects only visible renderer-safe item metadata', () => {
         const catalog = buildRendererCatalog(schema);
-        expect(Object.keys(catalog)).toHaveLength(95);
+        // Derived from the schema rather than pinned: this count grows every
+        // time an item ships, and a literal here only ever fails for that.
+        const visible = JSON.parse(
+            fs.readFileSync(path.join(import.meta.dirname, '..', 'steam/inventory_schema_hunker_bunker.json'), 'utf8')
+        ).items.filter((item) => item.type === 'item').length;
+        expect(Object.keys(catalog)).toHaveLength(visible);
         expect(catalog[1000]).toMatchObject({
             name: 'Common Relic Fragment',
             rarity: 'common',
