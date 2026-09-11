@@ -66,7 +66,35 @@ All weapons in the game already have dedicated 3D runtime GLB models in `public/
 
 ---
 
-## 3. Complete Crests, Patches, Decals & Seals Master Mapping
+## 3. Complete Chassis Outfits Master Mapping (3D Models & Icons)
+
+All player class chassis outfits have fully functional runtime 3D GLB models wired in `src/player3dOverlay.js` (`CHASSIS_SKIN_MODELS`):
+
+### A. Season 0 Chassis Outfits (Itemdefs 4112–4119)
+| Itemdef | Chassis Outfit Name | Class | 3D Runtime Mesh (`public/3d/runtime/new3ds/`) | 2D Economy Icon Slug | Icon Status |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **`4112`** | **Sub-Terran Drill Engineer** | Engineer | `chassis_subterran_drill_engineer.glb` | `chassis_subterran_drill_engineer` | 3D Mesh Exists (Icon upgrade prompt below) |
+| **`4113`** | **Cryo-Vanguard Scout** | Scout | `chassis_cryo_vanguard_scout.glb` | `chassis_cryo_vanguard_scout` | 3D Mesh Exists (Icon upgrade prompt below) |
+| **`4114`** | **Trench Warden Heavy** | Tank | `chassis_trench_warden_heavy.glb` | `chassis_trench_warden_heavy` | 3D Mesh Exists (Icon upgrade prompt below) |
+| **`4115`** | **Void Commando Recon** | Scout | `chassis_void_commando_recon.glb` | `chassis_void_commando_recon` | 3D Mesh Exists (Icon upgrade prompt below) |
+| **`4116`** | **Bio-Synthesizer Medic** | Support | `chassis_bio_synthesizer_medic.glb` | `chassis_bio_synthesizer_medic` | 3D Mesh Exists (Icon upgrade prompt below) |
+| **`4117`** | **Dreadnought Exo-Juggernaut** | Tank | `chassis_dreadnought_exo_juggernaut.glb` | `chassis_dreadnought_exo_juggernaut` | 3D Mesh Exists (Icon upgrade prompt below) |
+| **`4118`** | **Cyber-Spectre Infiltrator** | Scout | `chassis_cyber_spectre_infiltrator.glb` | `chassis_cyber_spectre_infiltrator` | 3D Mesh Exists (Icon upgrade prompt below) |
+| **`4119`** | **Hive-Lord Symbiote Exosuit** | Tank | `chassis_hive_lord_symbiote.glb` | `chassis_hive_lord_symbiote` | 3D Mesh Exists (Icon upgrade prompt below) |
+
+### B. Sprint 34 Thematic Set Chassis Outfits (Itemdefs 4200–4235)
+| Itemdef | Chassis Outfit Name | Set | 3D Runtime Mesh (`public/3d/runtime/new3ds/`) | 2D Economy Icon Slug | Status |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **`4200`** | **Deep Frost Scout Chassis** | Deep Frost | `chassis_deep_frost.glb` | `chassis_deep_frost` | ✅ 100% Complete High-Res |
+| **`4207`** | **Rust & Bone Tank Chassis** | Rust & Bone | `chassis_rust_bone.glb` | `chassis_rust_bone` | ✅ 100% Complete High-Res |
+| **`4214`** | **Hive Chitin Engineer Chassis** | Hive Chitin | `chassis_hive_chitin.glb` | `chassis_hive_chitin` | ✅ 100% Complete High-Res |
+| **`4221`** | **Horizon Corporate Scout Chassis** | Horizon Corporate | `chassis_horizon_corporate.glb` | `chassis_horizon_corporate` | ✅ 100% Complete High-Res |
+| **`4228`** | **Bunker 404 Tank Chassis** | Bunker 404 | `chassis_bunker404.glb` | `chassis_bunker404` | ✅ 100% Complete High-Res |
+| **`4235`** | **Grand Marshal Engineer Chassis** | Grand Marshal | `chassis_grand_marshal.glb` | `chassis_grand_marshal` | ✅ 100% Complete High-Res |
+
+---
+
+## 4. Complete Crests, Patches, Decals & Seals Master Mapping
 
 ### A. Base Game & Economy Patches
 | Itemdef | Crest / Patch Name | File Slug (`public/economy/`) | Type | Visual Status |
@@ -120,7 +148,7 @@ These are ambient decals mapped to floor/wall surfaces via `src/roomThemes.js` a
 
 ---
 
-## 4. Outstanding Production Prompts (Queue for Generation)
+## 5. Outstanding Production Prompts (Queue for Generation)
 
 ### Remaining Decals & Crests (Priority 3)
 
