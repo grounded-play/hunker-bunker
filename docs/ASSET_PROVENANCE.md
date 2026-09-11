@@ -95,7 +95,7 @@ These are **coverage gaps**, not accusations that the assets lack commercial rig
 | `public/3d/runtime/new3ds/mod_symbiotic_adrenaline_pump.glb` | `art/source/3d/astra-texture-budget-2026-09-08/mod_symbiotic_adrenaline_pump.glb` | Existing runtime input retained byte-for-byte; embedded PNG textures resized from 4096 to 1024 pixels with glTF Transform CLI 4.5.0 `resize`. Geometry/accessor content unchanged; 40,393,748 → 5,478,680 bytes. | `needs-review` — original creator, method, and redistribution basis remain unresolved. |
 | `public/3d/runtime/new3ds/mod_echo_location_transceiver.glb` | `art/source/3d/astra-texture-budget-2026-09-08/mod_echo_location_transceiver.glb` | Same texture-only process; 30,854,568 → 4,479,148 bytes. Geometry/accessor content unchanged. | `needs-review` — original creator, method, and redistribution basis remain unresolved. |
 
-Codex performed this derivative operation at the project owner's request. The retained inputs are pre-optimization runtime copies, not newly discovered original artist masters. No new generative content or rights clearance is asserted. Visual comparison, validation, byte totals, and reproduction instructions are in [the first implementation report](docs/reports/astra-first-implementation-2026-09-08.md).
+Codex performed this derivative operation at the project owner's request. The retained inputs are pre-optimization runtime copies, not newly discovered original artist masters. No new generative content or rights clearance is asserted. Visual comparison, validation, byte totals, and reproduction instructions are in [the first implementation report](reports/astra-first-implementation-2026-09-08.md).
 
 Sprint 28 integrated dozens of 3D chassis/weapon/cosmetic assets and Sprint 29 added further runtime models and calibration work. The existing asset/backlog docs describe integration and aesthetic intent, but this root ledger does not currently provide complete creator/source/method/rights records for those families.
 
@@ -140,7 +140,7 @@ The Steam review process has explicitly asked for accurate AI disclosure. The pr
 
 ### Temporary working assets
 
-`tmp/lore-drop-chroma/` currently contains large working PNGs. `tmp/` is not an acceptable durable provenance/source-master namespace.
+`art/lore-drop-chroma/` holds these working PNGs. They previously sat in a root-level `tmp/`, which was neither a durable provenance namespace nor something that belonged in the repository root.
 
 **Action:** compare against runtime finals and source history, then either:
 

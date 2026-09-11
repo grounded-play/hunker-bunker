@@ -20,17 +20,25 @@
 
 🎮 **[Play Live Browser Build](https://hunkerbunker.netlify.app/)** • 💬 **[Join Discord Server](https://discord.gg/XXwwz3rauu)** • 📚 **[Documentation Map](docs/README.md)**
 
-> **Status (2026-08-24):** Sprint 30 is the current planning and acceptance sprint on `dev/sprint-30`, working from the `v2.3.1-beta` Sprint 29 baseline. The next version will be selected only after Sprint 30 scope and acceptance are known. Steam lobby, Cloud, Deck, packaged-build, and co-op claims still have human or real-hardware acceptance gates; see [Product State](PRODUCT_STATE.md) for the exact distinction.
+> **Status (2026-09-10):** Sprint 34 is active on `dev/sprint-34`, developing from the `v2.4.0-beta` baseline. Current features include the two-tier weapon cosmetic pipeline, complete Season 0 & Sprint 34 catalog registration, real-time diorama VFX, shared co-op events, and 3D armory weapon calibration. Steam lobby, Cloud, Deck, packaged-build, and co-op claims continue through rigorous human and hardware acceptance gates; see [Product State](PRODUCT_STATE.md) for the exact distinction.
 >
-> Verified locally on 2026-08-24: **2,152 passing tests across 256 files**. See [Sprint 30](docs/planning/sprint-30.md) for current work and [`docs/releases/`](docs/releases/) for tagged releases.
+> Verified locally on 2026-09-10: **2,849 passing tests across 322 files** (100% green test suite). See [`docs/releases/v2.4.0-beta.md`](docs/releases/v2.4.0-beta.md), [Product State](PRODUCT_STATE.md), and [`docs/planning/`](docs/planning/) for current work and tagged releases.
 
 ---
 
-## 📸 Sector Zero Teaser
+## 📸 Sector Zero Visual Showcase
 
-| Ice-Locked Perimeter | Subterranean Tactical Run | Hostile Sector Contacts |
+### 🎮 Recent Playthrough Captures
+
+| Tactical Bunker Run (Isometric) | Hostile Sector Engagement (Perspective) | 3D Armory & Weapon Bench |
 | :---: | :---: | :---: |
-| <img src="./public/title_key_art_v2.png" alt="Sector Zero Perimeter" width="380"> | <img src="./public/hunker_bunker_hero.png" alt="Tactical Run" width="380"> | <img src="./public/cutscenes/poster-art/death-combat.png" alt="Hostile Contacts" width="380"> |
+| <img src="./docs/reports/assets/expedition-coherence-2026-09-09/gameplay-isometric.png" alt="Isometric Tactical Run with O2 Survival HUD" width="380"> | <img src="./docs/reports/assets/expedition-coherence-2026-09-09/gameplay-perspective.png" alt="Perspective Combat with Tilt-Shift Diorama" width="380"> | <img src="./docs/reports/assets/armory-stage-2026-09-09.png" alt="3D Tactical Armory Workbench" width="380"> |
+
+### 🌌 Deep Crust Lore & Interstitials
+
+| Warmth Beneath the Ice | Gigawatt Goliath (Apex Threat) | The Cave Was Breathing |
+| :---: | :---: | :---: |
+| <img src="./public/interstitials/int_04_warmth_beneath_the_ice_key_v1.webp" alt="Warmth Beneath the Ice Subterranean Outpost" width="380"> | <img src="./public/interstitials/int_25_gigawatt_goliath_key_v1.webp" alt="Gigawatt Goliath Biomechanical Boss Encounter" width="380"> | <img src="./public/interstitials/int_33_the_cave_was_breathing_key_v1.webp" alt="The Cave Was Breathing Deep Crust Caverns" width="380"> |
 
 ---
 
@@ -121,7 +129,7 @@ feedback has directly shaped classes, endings, and the economy in this repo.
 
 **Contributors** — this is a real MIT-licensed open-source project, not a
 mirror. Bug fixes, balance tuning, new content, tooling — all welcome.
-1. Read [`CONTRIBUTING.md`](CONTRIBUTING.md) for the fork/branch/PR workflow.
+1. Read [`CONTRIBUTING.md`](.github/CONTRIBUTING.md) for the fork/branch/PR workflow.
 2. Check [open issues](https://github.com/grounded-play/hunker-bunker/issues) for
    something to grab, or file a [bug report](https://github.com/grounded-play/hunker-bunker/issues/new?template=bug_report.md) /
    [feature request](https://github.com/grounded-play/hunker-bunker/issues/new?template=feature_request.md).

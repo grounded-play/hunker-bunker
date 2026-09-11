@@ -25,9 +25,9 @@ First off, thank you for considering contributing to Hunker Bunker! It's people 
 
 ## Documentation and Verification
 
-- Start with [`docs/README.md`](docs/README.md) and treat
-  [`PRODUCT_STATE.md`](PRODUCT_STATE.md) as current truth.
-- Follow [`docs/documentation-system.md`](docs/documentation-system.md) for
+- Start with [`docs/README.md`](../docs/README.md) and treat
+  [`PRODUCT_STATE.md`](../PRODUCT_STATE.md) as current truth.
+- Follow [`docs/documentation-system.md`](../docs/documentation-system.md) for
   lifecycle, placement, naming, and sprint-close rules.
 - Run `npm run audit:docs` after changing Markdown, sprint/version references,
   or canonical links.

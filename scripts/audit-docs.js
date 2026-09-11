@@ -6,7 +6,7 @@ const root = process.cwd();
 const canonicalFiles = [
   'README.md',
   'PRODUCT_STATE.md',
-  'CONTRIBUTING.md',
+  '.github/CONTRIBUTING.md',
   'docs/README.md',
   'docs/architecture/system-map.md',
   'docs/documentation-system.md',
@@ -77,7 +77,7 @@ const version = packageJson.version;
 // hardcoded literal that had to be edited in lockstep with every bump, which is
 // exactly the drift this audit exists to catch.
 const expectedVersion = version;
-const expectedBranch = 'dev/sprint-33';
+const expectedBranch = 'dev/sprint-34';
 
 const synchronizedFiles = [
   'PRODUCT_STATE.md',

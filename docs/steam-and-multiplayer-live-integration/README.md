@@ -2,7 +2,7 @@
 
 **App ID**: `4957040` (Hunker Bunker)  
 **Relay Backend**: `https://steam.tuesdaycinema.club` / `http://localhost:3001`  
-**Current Branch / Target**: `dev/sprint23` / Packaged Desktop & Web Builds  
+**Current Branch / Target**: `dev/sprint-34` (`v2.4.0-beta`) / Packaged Desktop & Web Builds  
 
 ---
 

@@ -120,7 +120,7 @@ originally shipped as generated Pillow placeholders (see
 `scripts/generate-rgb-item-placeholders.py`, still available for reuse).
 All three have since been replaced with final halftone/graphic-novel
 illustration art matching `item_calibration_notebook.png`'s treatment — see
-the root-level `ASSET_PROVENANCE.md` for the current, authoritative status
+the repository `docs/ASSET_PROVENANCE.md` for the current, authoritative status
 of every RGB item icon. Nothing under `public/minigames/rgb/items/` is a
 placeholder as of this entry.
 
