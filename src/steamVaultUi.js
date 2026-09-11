@@ -342,7 +342,7 @@ export function initSteamVaultUI() {
             }
             if (e.code === 'KeyQ') {
                 e.preventDefault();
-                const tabs = [tabInventory, tabStore, tabSmelter].filter(Boolean);
+                const tabs = [tabInventory, tabStore, tabSmelter].filter((tab) => tab && !tab.classList.contains('hidden'));
                 const currentIdx = tabs.findIndex((t) => t.classList.contains('active'));
                 const prevIdx = (currentIdx - 1 + tabs.length) % tabs.length;
                 tabs[prevIdx]?.click();
@@ -351,7 +351,7 @@ export function initSteamVaultUI() {
             }
             if (e.code === 'KeyE') {
                 e.preventDefault();
-                const tabs = [tabInventory, tabStore, tabSmelter].filter(Boolean);
+                const tabs = [tabInventory, tabStore, tabSmelter].filter((tab) => tab && !tab.classList.contains('hidden'));
                 const currentIdx = tabs.findIndex((t) => t.classList.contains('active'));
                 const nextIdx = (currentIdx + 1) % tabs.length;
                 tabs[nextIdx]?.click();
@@ -378,6 +378,21 @@ export function initSteamVaultUI() {
         activeBtn?.classList.add('active');
         activeLayout?.classList.remove('hidden');
     };
+
+    // A disabled backend means this retail build does not offer purchases.
+    // Remove the priced Store surface entirely so it cannot be mistaken for an
+    // unverified in-app-purchase implementation during Steam review.
+    loadStoreCatalog().then(() => {
+        const storeVisible = storePurchasesEnabled;
+        tabStore?.classList.toggle('hidden', !storeVisible);
+        if (!storeVisible) {
+            storeLayout?.classList.add('hidden');
+            if (tabStore?.classList.contains('active')) activateTab(tabInventory, inventoryLayout);
+        }
+    }).catch(() => {
+        tabStore?.classList.add('hidden');
+        storeLayout?.classList.add('hidden');
+    });
 
     tabInventory?.addEventListener('click', () => {
         activateTab(tabInventory, inventoryLayout);
@@ -665,14 +680,10 @@ export async function loadStoreCatalog() {
     }
     storeCatalog = FALLBACK_STORE_SKUS;
     storeOdds = FALLBACK_STORE_ODDS;
-    storePurchasesEnabled = true;
-    storePurchaseMode = 'mock';
-    storeDisabledReason = null;
-    storeHostedItemStore = {
-        enabled: true,
-        url: 'https://store.steampowered.com/itemstore/4957040/',
-        mode: 'beta'
-    };
+    storePurchasesEnabled = false;
+    storePurchaseMode = 'disabled';
+    storeDisabledReason = 'steam_store_disabled';
+    storeHostedItemStore = null;
 }
 
 function formatStoreDisabledReason(reason) {
@@ -785,6 +796,15 @@ export function renderOddsTable() {
 }
 
 export async function purchaseKeys(sku) {
+    if (!storePurchasesEnabled) {
+        const statusEl = document.getElementById('vault-store-open-status');
+        if (statusEl) {
+            statusEl.classList.remove('hidden');
+            statusEl.textContent = 'Steam Store purchases are offline for this build.';
+        }
+        return;
+    }
+
     if (!window.electronAPI?.purchaseSteamKeys) {
         const skuInfo = storeCatalog?.find((s) => s.sku === sku) || { keys: 1 };
         const keyCount = skuInfo.keys || 1;
@@ -807,15 +827,6 @@ export async function purchaseKeys(sku) {
             statusEl.textContent = `Sandbox purchase verified: +${keyCount} Relic Key(s) added!`;
         }
         showSteamDropToast(4001, keyCount);
-        return;
-    }
-
-    if (!storePurchasesEnabled) {
-        const statusEl = document.getElementById('vault-store-open-status');
-        if (statusEl) {
-            statusEl.classList.remove('hidden');
-            statusEl.textContent = 'Steam Store purchases are offline for this build.';
-        }
         return;
     }
 
