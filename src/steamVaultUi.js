@@ -101,6 +101,7 @@ let storeDisabledReason = 'catalog_unavailable';
 let storeHostedItemStore = null;
 
 let vaultItems = [];
+let vaultSteamAccount = null;
 let selectedVaultItem = null;
 let marketEligibility = 'unknown';
 let marketEligibilityReason = null;
@@ -271,6 +272,7 @@ export function craftLocalSeasonRecipe(recipeId, options) {
 // Season Pass tier claims (src/seasonPassUi.js). Real Electron/Steam builds should route
 // grants through the actual inventory service instead once that's wired for this source.
 export function grantVaultItem(itemdefid, quantity = 1) {
+    if (isBrowserSandbox()) vaultItems = readDevVaultInventory() ?? vaultItems;
     const existing = vaultItems.find((i) => i.itemdefid === itemdefid);
     if (existing) {
         existing.quantity += quantity;
@@ -439,6 +441,13 @@ export async function loadVaultData() {
     if (window.electronAPI) {
         // Fetch Identity
         const identity = await window.electronAPI.getSteamIdentity().catch(() => null);
+        const account = identity?.active ? identity.steamId64 : null;
+        if (account !== vaultSteamAccount || !account) {
+            vaultItems = [];
+            window.itemOwnership?.setSteamInventory([]);
+            reconcileCosmeticsOwnership([]);
+            vaultSteamAccount = account;
+        }
 
         // Fetch Market Eligibility
         const marketCheck = window.electronAPI.getSteamMarketEligibility
@@ -466,34 +475,17 @@ export async function loadVaultData() {
             // real service response is pushed here -- the sandbox fallback below
             // is not an entitlement and must not read as one.
             window.itemOwnership?.setSteamInventory(result.inventory);
-        } else if (isBrowserSandbox() && vaultItems.length === 0) {
-            vaultItems = readDevVaultInventory() ?? [
-                { itemId: 'sandbox_4000', itemdefid: 4000, quantity: 2 },
-                { itemId: 'sandbox_4001', itemdefid: 4001, quantity: 2 },
-                { itemId: 'sandbox_2000', itemdefid: 2000, quantity: 1 },
-                { itemId: 'sandbox_2003', itemdefid: 2003, quantity: 1 },
-                { itemId: 'sandbox_2100', itemdefid: 2100, quantity: 1 }
-            ];
         }
         reconcileCosmeticsOwnership(vaultItems);
         renderInventoryGrid();
         updateOpenCacheAvailability();
     } else {
         setMarketEligibilityFromResult({ ok: false, reason: 'unsupported' });
-        if (playerEl) playerEl.textContent = 'SANDBOX OPERATOR';
-        if (statusEl) statusEl.textContent = 'SANDBOX ACTIVE';
-        if (commandStatus) commandStatus.textContent = 'SANDBOX';
-        if (vaultItems.length === 0) {
-            vaultItems = readDevVaultInventory() ?? [
-                { itemId: 'sandbox_4000', itemdefid: 4000, quantity: 2 },
-                { itemId: 'sandbox_4001', itemdefid: 4001, quantity: 2 },
-                { itemId: 'sandbox_2000', itemdefid: 2000, quantity: 1 },
-                { itemId: 'sandbox_2003', itemdefid: 2003, quantity: 1 },
-                { itemId: 'sandbox_2100', itemdefid: 2100, quantity: 1 }
-            ];
-            persistDevVaultInventory();
-            reconcileCosmeticsOwnership(vaultItems);
-        }
+        if (playerEl) playerEl.textContent = 'LOCAL OPERATOR';
+        if (statusEl) statusEl.textContent = 'LOCAL BETA — BROWSER SAVE';
+        if (commandStatus) commandStatus.textContent = 'LOCAL';
+        vaultItems = readDevVaultInventory() ?? [];
+        reconcileCosmeticsOwnership(vaultItems);
         syncDevOwnership();
         renderInventoryGrid();
         updateOpenCacheAvailability();
@@ -885,7 +877,7 @@ export function updateOpenCacheAvailability() {
     } else {
         if (statusEl) {
             statusEl.classList.remove('hidden');
-            statusEl.textContent = 'No Cache + Key pair detected in your inventory.';
+            statusEl.textContent = 'Key & Cache required for decryption.';
         }
         btn?.classList.add('hidden');
     }
@@ -1073,7 +1065,7 @@ export function renderSmelterPanel() {
             card.className = 'vault-smelter-card';
             card.innerHTML = `
                 <div class="vault-smelter-card__title" style="color:${getRarityColor(rarity)}">${rarity.toUpperCase()} → ${NEXT_TIER_LABEL[rarity]}</div>
-                <div class="vault-smelter-card__sub">Owned: ${owned} / 5 required</div>
+                <div class="vault-smelter-card__sub">OWNED: ${owned} / 5</div>
                 <button class="vault-smelter-card__btn" ${eligible ? '' : 'disabled'} data-smelt-rarity="${rarity}">SMELT 5x ${rarity.toUpperCase()}</button>
             `;
             card.querySelector('button')?.addEventListener('click', () => handleSmeltClick(rarity));
@@ -1091,7 +1083,7 @@ export function renderSmelterPanel() {
         ingotCard.className = 'vault-smelter-card';
         ingotCard.innerHTML = `
             <div class="vault-smelter-card__title" style="color:${getRarityColor('uncommon')}">Cryo-Alloy Ingot Pack (x${INGOT_PACK_QUANTITY})</div>
-            <div class="vault-smelter-card__sub">${INGOT_PACK_COST.tech} Tech — Quartermaster, unlimited</div>
+            <div class="vault-smelter-card__sub">${INGOT_PACK_COST.tech} Tech · Quartermaster</div>
             <button class="vault-smelter-card__btn" ${ingotAffordable ? '' : 'disabled'} id="vault-quartermaster-ingot-btn">PURCHASE</button>
         `;
         ingotCard.querySelector('button')?.addEventListener('click', handleIngotPackPurchase);
@@ -1113,7 +1105,7 @@ export function renderSmelterPanel() {
             card.className = 'vault-smelter-card';
             card.innerHTML = `
                 <div class="vault-smelter-card__title" style="color:${getRarityColor(cat.rarity)}">${cat.name}</div>
-                <div class="vault-smelter-card__sub">${cost} Shards (${cat.rarity})</div>
+                <div class="vault-smelter-card__sub">${cost} Shards · ${cat.rarity.toUpperCase()}</div>
                 <button class="vault-smelter-card__btn" ${affordable ? '' : 'disabled'} data-dispense-id="${itemdefid}">REDEEM</button>
             `;
             card.querySelector('button')?.addEventListener('click', () => handleDispensaryRedeem(itemdefid));

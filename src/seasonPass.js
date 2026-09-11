@@ -102,7 +102,8 @@ export class SeasonPassManager {
         this.storage = storage ?? (typeof window !== 'undefined' ? window.localStorage : null);
         this.now = now;
         this.entitlement = entitlement;
-        this.state = this.load();
+        try { this.state = this.load(); }
+        catch { this.state = createDefaultState(); }
     }
 
     load() {

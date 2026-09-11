@@ -17,19 +17,7 @@
     "generated-intermediate": 0,
     "unknown": 50
   },
-  "missingReferences": [
-    "economy/chassis_bio_synthesizer.png",
-    "economy/chassis_cryo_vanguard.png",
-    "economy/chassis_subterran_drill.png",
-    "economy/chassis_trench_warden.png",
-    "economy/chassis_void_commando.png",
-    "economy/decal_cyber_skull.png",
-    "economy/finish_cryo_plasma.png",
-    "economy/finish_hazard_stripe.png",
-    "economy/finish_queens_carapace.png",
-    "economy/finish_rust_and_bone.png",
-    "economy/finish_subzero_frostbite.png"
-  ],
+  "missingReferences": [],
   "invalidMedia": [],
   "codecMismatches": [
     {
@@ -638,7 +626,5 @@
       ]
     }
   ],
-  "failures": [
-    "missing runtime assets: 11"
-  ]
+  "failures": []
 }

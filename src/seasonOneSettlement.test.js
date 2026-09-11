@@ -201,3 +201,26 @@ describe('Reward delivery and deterministic workshop recovery', () => {
         expect(store.getItem(LOCAL_VAULT_KEY)).toBe(before);
     });
 });
+
+describe('preserved save and completed delivery history', () => {
+    it('preserves an unreadable season save and refuses to overwrite it', () => {
+        const store = storage();
+        store.setItem(STORAGE_KEY, '{interrupted');
+        const pass = manager(store);
+        expect(() => pass.addXp(1000)).toThrow();
+        expect(store.getItem(STORAGE_KEY)).toBe('{interrupted');
+    });
+    it('never reissues a delivered item removed from inventory', async () => {
+        const store = storage();
+        const pass = manager(store);
+        const vault = new LocalVaultLedger(store);
+        const deliver = (reward, key) => vault.grant(reward.itemdefid, reward.qty, key);
+        pass.addXp(1500);
+        await pass.settleRewards(deliver);
+        const record = vault.read();
+        record.items = [];
+        vault.save(record);
+        await manager(store).settleRewards(deliver);
+        expect(vault.read().items).toEqual([]);
+    });
+});

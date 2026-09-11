@@ -152,3 +152,15 @@ describe('resolveCeremonyKeyAction', () => {
         expect(resolveCeremonyKeyAction({ code: 'KeyQ', revealStage: null })).toBe(null);
     });
 });
+
+describe('asynchronous receipt delivery', () => {
+    it('waits for delivery confirmation before showing or sounding a reward', async () => {
+        let deliver;
+        const { flow, calls } = flowHarness({ grant: () => new Promise(resolve => { deliver = resolve; }) });
+        const pending = flow.run({ actionKey: 'pending', item: { itemdefid: 4120 } });
+        expect(calls).not.toContain('present:reveal');
+        deliver({ ok: true });
+        expect((await pending).ok).toBe(true);
+        expect(calls).toContain('present:reveal');
+    });
+});

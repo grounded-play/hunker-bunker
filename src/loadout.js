@@ -83,6 +83,7 @@ export class LoadoutManager {
         this.storage = storage ?? (typeof window !== 'undefined' ? window.localStorage : null);
         this.activeClassId = 'scout';
         this.state = this.load();
+        this.committedState = JSON.parse(JSON.stringify(this.state));
     }
 
     setActiveClass(classId) {
@@ -161,8 +162,10 @@ export class LoadoutManager {
     save() {
         try {
             this.storage?.setItem(STORAGE_KEY_V2, JSON.stringify(this.state));
-        } catch {
-            // best-effort
+            this.committedState = JSON.parse(JSON.stringify(this.state));
+        } catch (error) {
+            this.state = JSON.parse(JSON.stringify(this.committedState ?? createDefaultLoadoutState()));
+            throw error;
         }
     }
 

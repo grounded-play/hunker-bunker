@@ -1,7 +1,7 @@
 import { createRewardRevealFlow, mountRewardPreview, resolveCeremonyKeyAction } from './rewardReveal.js';
 import { presentationTelemetry, PRESENTATION_EVENTS } from './presentationTelemetry.js';
 import { createXpAggregator, selectXpSound } from './xpFeedback.js';
-// ── Season 0 Tactical Dossier — UI & Live Wiring ──────────────────────────
+// ── Beta Season 1 Tactical Dossier — UI & Live Wiring ──────────────────────────
 // Renders the battle pass modal and wires real gameplay events (see
 // docs/armory-and-class-weapons-worklog.md for the research trail) to XP
 // awards. Reward granting reuses steamVaultUi.js's sandbox inventory pattern
@@ -25,7 +25,7 @@ let deliveryMessage = '';
 
 function runSeasonAction(action) {
     return withSeasonLock(async () => {
-        const result = action?.();
+        const result = await action?.();
         if (result?.xpAwarded) presentXp(result);
         const deliveries = await seasonPass.settleRewards(deliverLocalSeasonReward);
         deliveryMessage = deliveries.some(entry => !entry.ok) ? 'Delivery pending — progress is saved. Retry from this Dossier.' : '';
@@ -210,7 +210,7 @@ const rewardRevealFlow = createRewardRevealFlow({
         const tier = Number(overlay?.dataset.tier);
         const track = overlay?.dataset.track;
         return withSeasonLock(async () => {
-            const reward = seasonPass.getReward(tier, track);
+            const reward = seasonPass.state.receipts[seasonPass.claimKey(tier, track)]?.reward ?? seasonPass.getReward(tier, track);
             if (seasonPass.isClaimed(tier, track)) return { ok: true, reward };
             const intent = seasonPass.claim(tier, track);
             if (!intent) return { ok: false, reason: 'choice-or-entitlement-required' };
@@ -274,7 +274,7 @@ export function claimProgressionReward() {
     // (§7's pending state), on top of the flow's own in-flight guard.
     const claimBtn = overlay?.querySelector('#progression-claim-btn');
     if (claimBtn) claimBtn.disabled = true;
-    const reward = seasonPass.getReward(tier, track);
+    const reward = seasonPass.state.receipts[seasonPass.claimKey(tier, track)]?.reward ?? seasonPass.getReward(tier, track);
     const reveal = rewardRevealFlow.run({ actionKey: `reward:${tier}:${track}`, item: reward }).then((result) => {
         if (!result.ok) {
             // Nothing was granted, so nothing is being revealed -- restore the
@@ -386,9 +386,14 @@ export function wireSeasonPassXpEvents() {
         void runSeasonAction(() => seasonPass.recordEvent({ runId, ...detail }));
     };
     window.addEventListener('season-objective-complete', ({ detail }) => {
-        if (!['mission', 'story', 'camp-quest', 'black-box'].includes(detail?.source)) return;
+        if (!['mission', 'story', 'camp-quest', 'black-box', 'survivor'].includes(detail?.source)) return;
         record({ kind: 'objective', id: detail.id });
         if (detail.source === 'camp-quest') record({ kind: 'activity', id: `camp:${detail.id}` });
+    });
+    window.addEventListener('lore-terminal-read', ({ detail }) => {
+        if (detail?.loreKey && window.game?._readLoreKeys?.has(detail.loreKey)) {
+            record({ kind: 'objective', id: `terminal:${detail.loreKey}` });
+        }
     });
     window.addEventListener('enemy-killed', ({ detail }) => {
         if (detail?.isBoss && detail.encounterId) record({ kind: 'boss', id: detail.encounterId });
@@ -445,9 +450,10 @@ function updateMenuStatus() {
 
 function compatibilityText(reward) {
     const item = getSeasonOneCosmetic(reward.itemdefid);
-    if (!item) return reward.kind === 'supply_bundle' ? 'Banked for your next run' : 'Choose one compatible class chassis';
-    const labels = { talon: 'Scout Talon sidearm', talon_c: 'Scout Talon-C carbine', tesla_lock: 'Engineer Tesla Lock', SCOUT: 'Scout', TANK: 'Tank', ENGINEER: 'Engineer', all: 'All classes' };
-    return `${labels[item.compatibility] ?? item.compatibility}${item.category === 'weapon_finish' ? ' — finish only; base weapon separate' : ''}`;
+    if (!item) return reward.kind === 'supply_bundle' ? 'Banked supplies' : 'Class chassis choice';
+    const labels = { talon: 'Scout Talon SMG', talon_c: 'Scout Talon-C', tesla_lock: 'Engineer Tesla Lock', SCOUT: 'Scout', TANK: 'Tank', ENGINEER: 'Engineer', all: 'Universal' };
+    const base = labels[item.compatibility] ?? item.compatibility;
+    return item.category === 'weapon_finish' ? `${base} (Finish)` : base;
 }
 
 function renderRewardVisual(reward) {
@@ -458,7 +464,7 @@ function renderRewardVisual(reward) {
 }
 
 function equipStatus(item) {
-    if (!item || !window.itemOwnership?.isOwned(item.itemdefid)) return 'Inventory refresh pending';
+    if (!item || !window.itemOwnership?.isOwned(item.itemdefid)) return 'Refresh pending';
     const cls = window.loadout?.getActiveClass?.()?.toUpperCase();
     if (item.category === 'chassis' && item.compatibility !== cls) return `Requires ${item.compatibility}`;
     if (item.category === 'weapon_finish' && window.loadout?.getActiveArchetype?.() !== item.compatibility) return `Requires ${compatibilityText(item)}`;
@@ -485,23 +491,23 @@ function renderTierCard(tier) {
         const pending = seasonPass.state.receipts[seasonPass.claimKey(tier, track)];
         let action = '<span class="season-pass-slot__state">Locked</span>';
         if (claimed) {
-            action = `<span class="season-pass-slot__state">${reward.itemdefid ? window.itemOwnership?.isOwned(reward.itemdefid) ? 'Owned ✓' : 'Delivered · no longer owned' : 'Banked ✓'}</span><button class="season-pass-claim-btn" data-reveal="${tier}" data-track="${track}">View reward</button>`;
+            action = `<span class="season-pass-slot__state">${reward.itemdefid ? window.itemOwnership?.isOwned(reward.itemdefid) ? 'Owned ✓' : 'Delivered (Unowned)' : 'Banked ✓'}</span><button class="season-pass-claim-btn" data-reveal="${tier}" data-track="${track}">View</button>`;
             if (reward.itemdefid && window.itemOwnership?.isOwned(reward.itemdefid)) {
                 const reason = equipStatus(getSeasonOneCosmetic(reward.itemdefid));
-                action += `<button class="season-pass-claim-btn" data-equip="${reward.itemdefid}" ${reason ? 'disabled' : ''}>${reason ?? 'Equip for next run'}</button>`;
+                action += `<button class="season-pass-claim-btn" data-equip="${reward.itemdefid}" ${reason ? 'disabled' : ''}>${reason ?? 'Equip for run'}</button>`;
             }
         } else if (pending) {
-            action = '<button class="season-pass-claim-btn" data-retry>Delivery pending — retry</button>';
+            action = '<button class="season-pass-claim-btn" data-retry>Pending — retry</button>';
         } else if (available && reward.kind === 'class_choice') {
             const unowned = SEASON_ONE_CLASS_CHOICES.filter(id => !window.itemOwnership?.isOwned(id));
-            action = `<span class="season-pass-slot__state">Choice required — choose one${unowned.length ? '' : ' (all owned; one duplicate)'}</span>`
-                + SEASON_ONE_CLASS_CHOICES.map(id => `<button class="season-pass-claim-btn" data-choice="${id}" ${unowned.length && !unowned.includes(id) ? 'disabled' : ''}>${getSeasonOneCosmetic(id).compatibility}: ${getSeasonOneCosmetic(id).name}${!unowned.includes(id) ? ' — owned' : ''}</button>`).join('');
+            action = `<div class="class-choice-wrap"><span class="season-pass-slot__state">CHOOSE:</span><div class="class-choice-btns">`
+                + SEASON_ONE_CLASS_CHOICES.map(id => `<button class="season-pass-claim-btn season-pass-claim-btn--choice" data-choice="${id}" ${unowned.length && !unowned.includes(id) ? 'disabled' : ''}>${getSeasonOneCosmetic(id).compatibility}${!unowned.includes(id) ? ' ✓' : ''}</button>`).join('') + `</div></div>`;
         } else if (track === 'premium') {
-            action = '<span class="season-pass-slot__state">Classified preview — purchase unavailable</span>';
+            action = '<span class="season-pass-slot__state season-pass-slot__state--preview">CLASSIFIED</span>';
         } else if (available) {
-            action = '<button class="season-pass-claim-btn" data-retry>Available — deliver</button>';
+            action = '<button class="season-pass-claim-btn" data-retry>Deliver</button>';
         } else if (reward.itemdefid) {
-            action += `<button class="season-pass-claim-btn" data-pin="${reward.itemdefid}">Track this reward</button>`;
+            action += `<button class="season-pass-claim-btn" data-pin="${reward.itemdefid}">Track</button>`;
         }
         return `<div class="season-pass-slot season-pass-slot--${track} season-pass-slot--${claimed ? 'claimed' : available ? 'claimable' : 'locked'}">
             <div class="season-pass-slot__reward">${renderRewardVisual(reward)}<div><div class="season-pass-slot__label">${reward.label}</div><div class="season-one-note">${compatibilityText(reward)}</div></div></div>${action}</div>`;
@@ -517,35 +523,73 @@ function renderSeasonPassBody() {
     const week = seasonPass.getReleasedWeeks();
     const dispatch = WEEKLY_DISPATCHES[Math.max(0, week - 1)];
     const retroactive = 1 + TIER_REWARDS.slice(0, progress.tier).filter(row => row.premium).length;
+
     summary.innerHTML = `<div class="season-pass-telemetry-row">
-        <div class="season-pass-chip">RANK ${progress.tier} / ${TOTAL_TIERS}</div>
-        <div class="season-pass-chip">${seasonPass.getTotalXp().toLocaleString()} XP</div>
+        <div class="season-pass-chip season-pass-chip--tier">RANK ${progress.tier} / ${TOTAL_TIERS}</div>
+        <div class="season-pass-chip season-pass-chip--xp">${seasonPass.getTotalXp().toLocaleString()} XP</div>
         <div class="season-pass-progress-bar-wrap"><div class="season-pass-progress-bar"><div class="season-pass-progress-fill" style="width:${Math.round(progress.fraction * 100)}%"></div></div>
-        <span class="season-pass-xp-next">${progress.tier === TOTAL_TIERS ? 'DOSSIER COMPLETE' : `${progress.xpIntoTier} / ${XP_PER_TIER} XP`}</span></div></div>
-        <p class="season-one-note">BETA SEASON 1 · ${window.electronAPI ? 'Season delivery awaits verified service support' : 'Local progress — saved in this browser'} · Both tracks remain finishable after week 8.</p>
-        <p class="season-one-note">${dispatch.title}: ${dispatch.text}</p>
-        <p class="season-one-note">Classified preview: 10 cosmetics, including ${retroactive} at your current rank. Same XP, resources and gameplay. Purchase unavailable.</p>
-        <p class="season-one-note" role="status">${deliveryMessage}</p>
-        <div class="season-pass-tabs">${[['tiers', 'Dossier'], ['bounties', 'Retained directives'], ['workshop', 'Fragment workshop']].map(([id, label]) => `<button class="season-pass-tab-btn ${activeTab === id ? 'active' : ''}" data-tab="${id}">${label}</button>`).join('')}</div>`;
+        <span class="season-pass-xp-next">${progress.tier === TOTAL_TIERS ? 'DOSSIER COMPLETE' : `${progress.xpIntoTier} / ${XP_PER_TIER} XP`}</span></div>
+        <div class="season-pass-chip season-pass-chip--sync">${window.electronAPI ? '● STEAM SYNC' : '● LOCAL SYNC'}</div>
+        <div class="season-pass-chip season-pass-chip--preview" title="10 cosmetics on classified track (retroactive unlock)">10 CLASSIFIED (${retroactive} READY)</div>
+    </div>
+    <details class="season-dispatch-drawer">
+        <summary class="season-dispatch-summary">
+            <span class="dispatch-kicker">◈ FIELD DISPATCH // WEEK ${week}</span>
+            <span class="dispatch-title">${dispatch.title}</span>
+            <span class="dispatch-toggle">EXPAND ▾</span>
+        </summary>
+        <div class="dispatch-body">${dispatch.text}</div>
+    </details>
+    ${deliveryMessage ? `<div class="season-delivery-alert" role="status">◈ ${deliveryMessage}</div>` : ''}
+    <div class="season-pass-tabs">${[['tiers', 'Dossier'], ['bounties', 'Directives'], ['workshop', 'Fragment Workshop']].map(([id, label]) => `<button class="season-pass-tab-btn ${activeTab === id ? 'active' : ''}" data-tab="${id}">${label}</button>`).join('')}</div>`;
+
     summary.querySelectorAll('[data-tab]').forEach(btn => btn.addEventListener('click', () => { activeTab = btn.dataset.tab; renderSeasonPassBody(); }));
+
     if (activeTab === 'tiers') {
-        body.innerHTML = `<div class="season-pass-tier-list">${PASS_CHAPTERS.map(chapter => `<h3 class="season-one-chapter">${chapter.name} · ${chapter.startTier}–${chapter.endTier}</h3><div class="season-pass-tier-header-row"><div>RANK</div><div>FREE</div><div>CLASSIFIED PREVIEW</div></div>${Array.from({ length: 10 }, (_, i) => renderTierCard(chapter.startTier + i)).join('')}`).join('')}</div>`;
+        body.innerHTML = `<div class="season-pass-tier-list">${PASS_CHAPTERS.map(chapter => `<h3 class="season-one-chapter">${chapter.name} · ${chapter.startTier}–${chapter.endTier}</h3><div class="season-pass-tier-header-row"><div>RANK</div><div>FREE TRACK</div><div>CLASSIFIED TRACK</div></div>${Array.from({ length: 10 }, (_, i) => renderTierCard(chapter.startTier + i)).join('')}`).join('')}</div>`;
     } else if (activeTab === 'bounties') {
-        body.innerHTML = `<p class="season-one-note">${week * 3} of 24 directives released. Earned XP settles automatically; unfinished directives stay available. No daily streak.</p>`
-            + Array.from({ length: week }, (_, index) => `<h3 class="season-one-chapter">Week ${index + 1} · ${WEEKLY_DISPATCHES[index].title}</h3><div class="bounty-grid">${seasonPass.getActiveWeeklies().filter(d => d.week === index + 1).map(d => `<div class="bounty-card ${d.completed ? 'completed' : ''}"><div class="bounty-card__title">${d.title}</div><p>${d.desc}</p><div>${d.progress} / ${d.target} · ${d.completed ? '1,000 XP retained ✓' : '1,000 XP'}</div></div>`).join('')}</div>`).join('');
+        body.innerHTML = `<div class="season-tab-telemetry-bar">
+            <span class="telemetry-pill">DIRECTIVES: <strong>${week * 3} / 24</strong></span>
+            <span class="telemetry-pill">SETTLEMENT: <strong>AUTO-RETAINED</strong></span>
+            <span class="telemetry-pill">EXPIRATION: <strong>PERMANENT</strong></span>
+        </div>`
+            + Array.from({ length: week }, (_, index) => `<h3 class="season-one-chapter">Week ${index + 1} · ${WEEKLY_DISPATCHES[index].title}</h3><div class="bounty-grid">${seasonPass.getActiveWeeklies().filter(d => d.week === index + 1).map(d => `<div class="bounty-card ${d.completed ? 'completed' : ''}"><div class="bounty-card__header"><div class="bounty-card__title">${d.title}</div><span class="bounty-xp-badge">${d.completed ? '1,000 XP ✓' : '+1,000 XP'}</span></div><p class="bounty-card__desc">${d.desc}</p><div class="bounty-card__meter-wrap"><div class="bounty-card__meter"><div class="bounty-card__fill" style="width:${Math.min(100, Math.round((d.progress / d.target) * 100))}%"></div></div><span class="bounty-card__count">${d.progress} / ${d.target}</span></div></div>`).join('')}</div>`).join('');
     } else {
         const inventory = getLocalSeasonInventory();
-        body.innerHTML = `<p class="season-one-note">${getItemCount(inventory.items, 1000)} Common · ${getItemCount(inventory.items, 1100)} Rare fragments. Local cosmetic recipes. Common allowance: ${seasonPass.state.fragments.common} / ${week * 3} earned; maximum 24. Rare: one per completed weekly set, maximum 8.</p>`
+        const commonCount = getItemCount(inventory.items, 1000);
+        const rareCount = getItemCount(inventory.items, 1100);
+        body.innerHTML = `<div class="fragment-ledger-bar">
+            <div class="fragment-pill fragment-pill--common">
+                <span class="fragment-icon">⬢</span>
+                <span class="fragment-label">COMMON FRAGMENTS</span>
+                <strong class="fragment-val">${commonCount}</strong>
+                <span class="fragment-cap">ALLOWANCE: ${seasonPass.state.fragments.common} / ${week * 3} (MAX 24)</span>
+            </div>
+            <div class="fragment-pill fragment-pill--rare">
+                <span class="fragment-icon">◈</span>
+                <span class="fragment-label">RARE FRAGMENTS</span>
+                <strong class="fragment-val">${rareCount}</strong>
+                <span class="fragment-cap">ALLOWANCE: MAX 8 (1/WEEK)</span>
+            </div>
+        </div>`
             + `<div class="bounty-grid">${Object.values(DETERMINISTIC_RECIPES).map(recipe => {
                 const crafted = inventory.receipts[`${SEASON_ONE.id}:craft:${recipe.id}`];
                 const owned = getItemCount(inventory.items, recipe.outputItemdefid) > 0;
                 const missing = recipe.ingredients.some(i => getItemCount(inventory.items, i.itemdefid) < i.quantity);
                 const cost = recipe.ingredients.map(i => `${i.quantity} ${i.itemdefid === 1000 ? 'Common' : 'Rare'}`).join(' + ');
-                return `<div class="bounty-card"><div class="bounty-card__title">${recipe.name}</div><p>${cost} → 1 cosmetic · Once per season</p><p>${compatibilityText({ itemdefid: recipe.outputItemdefid })}</p><button class="season-pass-claim-btn" data-craft="${recipe.id}" data-owned="${owned}" ${crafted || missing || window.electronAPI ? 'disabled' : ''}>${crafted ? 'Crafted ✓' : window.electronAPI ? 'Verified service required' : missing ? `Missing fragments — needs ${cost}` : owned ? 'Already owned — craft one duplicate' : 'Craft cosmetic'}</button></div>`;
+                return `<div class="bounty-card">
+                    <div class="bounty-card__header">
+                        <div class="bounty-card__title">${recipe.name}</div>
+                        <span class="recipe-cost-pill">${cost}</span>
+                    </div>
+                    <p class="bounty-card__desc">${compatibilityText({ itemdefid: recipe.outputItemdefid })} · Once per season</p>
+                    <button class="season-pass-claim-btn" data-craft="${recipe.id}" data-owned="${owned}" ${crafted || missing || window.electronAPI ? 'disabled' : ''}>${crafted ? 'Crafted ✓' : window.electronAPI ? 'Service required' : missing ? 'Missing fragments' : owned ? 'Craft duplicate' : 'Craft cosmetic'}</button>
+                </div>`;
             }).join('')}</div>`;
     }
     body.querySelectorAll('[data-equip]').forEach(btn => btn.addEventListener('click', () => {
-        if (equipSeasonItem(Number(btn.dataset.equip))) btn.textContent = 'Equipped ✓';
+        try { if (equipSeasonItem(Number(btn.dataset.equip))) btn.textContent = 'Equipped ✓'; }
+        catch { btn.textContent = 'Retry'; }
     }));
     body.querySelectorAll('[data-retry]').forEach(btn => btn.addEventListener('click', () => { void runSeasonAction(); }));
     body.querySelectorAll('[data-pin]').forEach(btn => btn.addEventListener('click', () => {
@@ -604,7 +648,8 @@ export function handleSeasonPassKeyDown(event) {
             revealStage: ceremony.dataset.revealStage ?? null
         });
         if (action) event.preventDefault();
-        if (action === 'claim') claimProgressionReward();
+        if (event.code === 'Escape' && seasonPass.isClaimed(Number(ceremony.dataset.tier), ceremony.dataset.track)) dismissProgressionReward();
+        else if (action === 'claim') claimProgressionReward();
         else if (action === 'continue') dismissProgressionReward();
         return;
     }
@@ -637,6 +682,6 @@ export function initSeasonPassUI() {
     });
     window.addEventListener('keydown', handleSeasonPassKeyDown);
     wireSeasonPassXpEvents();
-    if (!window.electronAPI) void loadVaultData().then(() => runSeasonAction());
+    if (!window.electronAPI) void loadVaultData().then(() => runSeasonAction()).catch(() => { deliveryMessage = 'Local inventory unavailable — delivery will retry from Dossier.'; });
     updateMenuStatus();
 }

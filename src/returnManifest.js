@@ -15,11 +15,17 @@ export function renderReturnManifest(element, receipt, bank, { victory = false, 
             <div class="return-manifest__row" aria-label="${LABELS[key]}: ${receipt ? `${earned[key]} earned, ${spent[key]} spent,` : 'run receipt unavailable,'} ${balance[key]} banked">
                 <span>${LABELS[key]}</span><span class="return-manifest__gain">${receipt ? '+' + earned[key] : '—'}</span><span>${receipt ? '−' + spent[key] : '—'}</span><strong>${balance[key]}</strong>
             </div>`).join('')}
-        <div class="return-manifest__footnote">${receipt ? 'Earned and spent during this expedition. Bank now includes previous savings.' : 'Run receipt unavailable. Your saved bank is shown.'} ${victory ? 'Ready for your next deployment.' : 'Failure does not remove banked resources.'}</div>`;
+        <div class="return-manifest__footnote">${receipt ? 'Expedition earnings consolidated with bunker reserve.' : 'Run receipt unavailable. Your saved bank is shown.'} ${victory ? 'Ready for next deployment.' : 'Bank assets preserved on failure.'}</div>`;
     if (season && Number.isSafeInteger(season.xpBefore)) {
         const progress = document.createElement('div');
-        progress.className = 'return-manifest__next';
-        progress.textContent = `DOSSIER: ${season.xpBefore} → ${season.xpAfter} XP retained. ${season.extractionBonus ? `Extraction bonus: +${season.extractionBonus} XP.` : 'Extraction bonus not earned.'} ${season.pending ? `${season.pending} deliveries pending — retry in Dossier.` : 'No pending deliveries.'}`;
+        progress.className = 'return-manifest__next return-manifest__next--dossier';
+        const gain = season.xpAfter - season.xpBefore;
+        progress.innerHTML = `<div class="return-manifest__dossier-pills">
+            <span class="manifest-pill manifest-pill--tag">DOSSIER</span>
+            <span class="manifest-pill manifest-pill--xp">+${gain >= 0 ? gain : 0} XP (${season.xpBefore} → ${season.xpAfter})</span>
+            ${season.extractionBonus ? `<span class="manifest-pill manifest-pill--bonus">+${season.extractionBonus} BONUS</span>` : ''}
+            <span class="manifest-pill manifest-pill--sync">${season.pending ? `${season.pending} PENDING` : 'SYNCED ✓'}</span>
+        </div>`;
         element.appendChild(progress);
     }
     if (nextAction) {

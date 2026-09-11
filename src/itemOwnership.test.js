@@ -283,3 +283,22 @@ describe('non-Steam item sources', () => {
         expect(store.isOwned('comm_scout_foxhole_shadow')).toBe(true);
     });
 });
+
+describe('Steam ownership excludes browser inventory', () => {
+    it('ignores persisted browser and debug grants when local inventory is disabled', () => {
+        const data = new Map([
+            ['hb_dev_item_grants_v1', JSON.stringify({ 4120: 1 })],
+            ['hb_dev_unlock_all_cosmetics_v1', 'true']
+        ]);
+        const store = createOwnershipStore({ storage: { getItem: key => data.get(key) ?? null }, allowLocalInventory: false });
+        expect(store.isOwned(4120)).toBe(false);
+        expect(store.canEquip(4120)).toBe(false);
+        expect(store.grantDev(4120)).toBe(false);
+        store.setDevInventory([{ itemdefid: 4120, quantity: 1 }]);
+        store.setSteamInventory([{ itemdefid: 4120, quantity: 1 }]);
+        expect(store.isOwned(4120)).toBe(true);
+        store.setSteamInventory([]);
+        expect(store.isOwned(4120)).toBe(false);
+        expect(data.has('hb_dev_item_grants_v1')).toBe(true);
+    });
+});

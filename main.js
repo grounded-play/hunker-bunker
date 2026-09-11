@@ -2642,6 +2642,7 @@ let ownershipStore = null;
 function getOwnershipStore() {
     if (!ownershipStore) {
         ownershipStore = createOwnershipStore({
+            allowLocalInventory: !window.electronAPI,
             storage: (() => {
                 try {
                     return typeof localStorage !== 'undefined' ? localStorage : null;
@@ -7915,7 +7916,7 @@ async function runMissionIntroSequence({ deploymentHold = null } = {}) {
 
         // Show mission briefing after door transition
         if (currentMission?.label) {
-            window.setTimeout(() => showBiomePrompt(`MISSION: ${currentMission.label}`), 400);
+            window.setTimeout(() => showBiomePrompt(`MISSION: ${currentMission.label}${currentMission.decision ? ' — ' + currentMission.decision : ''}`), 400);
             if (currentRunModifier?.title) {
                 window.setTimeout(() => showBiomePrompt(`MODIFIER: ${currentRunModifier.title}`), 1400);
             }
@@ -11214,6 +11215,10 @@ document.getElementById('fabrication-btn')?.addEventListener('click', openFabric
 document.getElementById('close-fabrication-modal')?.addEventListener('click', closeFabricationModal);
 setupClickOutside('fabrication-modal', closeFabricationModal);
 window.addEventListener('o2-generator-upgraded', refreshFabAccess);
+window.addEventListener('bank-updated', () => {
+    const modal = document.getElementById('fabrication-modal');
+    if (modal && !modal.classList.contains('hidden') && !fabRollSpinning) renderFabricationModal();
+});
 refreshFabAccess();
 
 // Base death-thread banner (doc 11 §4.D): show a prior contractor's black box at

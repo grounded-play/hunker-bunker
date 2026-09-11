@@ -25,7 +25,7 @@ export function releasedSeasonWeeks(now = Date.now(), config = SEASON_ONE) {
 
 export function seasonDirectives(weeks) {
     return WEEKLY_DISPATCHES.slice(0, weeks).flatMap(({ week }) => [
-        { id: `week:${week}:objectives`, week, kind: 'objective', target: 8, title: 'Field Work', desc: 'Complete 8 distinct expedition objectives.' },
+        { id: `week:${week}:objectives`, week, kind: 'objective', target: 8, title: 'Field Work', desc: 'Complete 8 distinct expedition objectives or decrypt field terminals.' },
         { id: `week:${week}:depth`, week, kind: 'depth', target: 2, title: 'Forward Survey', desc: 'Make 2 first forward depth crossings.' },
         { id: `week:${week}:activity`, week, kind: 'activity', target: 1, title: 'Useful Work', desc: 'Fabricate gear, advance a companion stage, or complete a camp objective.' }
     ].map(entry => ({ ...entry, xp: 1000 })));

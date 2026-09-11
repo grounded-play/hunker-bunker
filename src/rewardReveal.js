@@ -76,7 +76,7 @@ export function createRewardRevealFlow({ telemetry, grant, mountPreview, playSou
             const E = PRESENTATION_EVENTS.REWARD;
             telemetry.emitOnce('REWARD', E.CLAIM_START, { actionKey }, actionKey);
 
-            const granted = grant();
+            const granted = await grant();
             if (!granted?.ok) {
                 return { ok: false, reason: granted?.reason ?? 'grant-refused' };
             }

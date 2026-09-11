@@ -173,7 +173,7 @@ function readJson(storage, key) {
  *                 never touch a real localStorage, and so a headless/server
  *                 context can pass null.
  */
-export function createOwnershipStore({ storage = null } = {}) {
+export function createOwnershipStore({ storage = null, allowLocalInventory = true } = {}) {
     // Steam-side entitlements. Deliberately NOT persisted: writing them to
     // local storage would make entitlement forgeable with a devtools one-liner.
     // They are re-fetched from the inventory service on every boot.
@@ -191,7 +191,7 @@ export function createOwnershipStore({ storage = null } = {}) {
     const subscribers = new Set();
 
     const persistedGrants = readJson(storage, DEV_GRANTS_STORAGE_KEY);
-    if (persistedGrants && typeof persistedGrants === 'object') {
+    if (allowLocalInventory && persistedGrants && typeof persistedGrants === 'object') {
         for (const [key, qty] of Object.entries(persistedGrants)) {
             const id = toId(key);
             const amount = Number(qty);
@@ -202,7 +202,7 @@ export function createOwnershipStore({ storage = null } = {}) {
             devQuantities.set(id, amount);
         }
     }
-    unlockAll = readJson(storage, UNLOCK_ALL_STORAGE_KEY) === true;
+    unlockAll = allowLocalInventory && readJson(storage, UNLOCK_ALL_STORAGE_KEY) === true;
 
     function persistDevGrants() {
         if (!storage) return;
@@ -241,6 +241,7 @@ export function createOwnershipStore({ storage = null } = {}) {
         },
 
         grantDev(itemdefid, quantity = 1) {
+            if (!allowLocalInventory) return false;
             const id = toId(itemdefid);
             const amount = Number(quantity);
             if (id === null || !MERGED_CATALOG.has(id)) return false;
@@ -252,6 +253,7 @@ export function createOwnershipStore({ storage = null } = {}) {
         },
 
         setDevInventory(inventory = []) {
+            if (!allowLocalInventory) return;
             devQuantities = new Map();
             for (const item of Array.isArray(inventory) ? inventory : []) {
                 const id = toId(item?.itemdefid);
@@ -304,6 +306,7 @@ export function createOwnershipStore({ storage = null } = {}) {
         },
 
         setUnlockAll(enabled) {
+            if (!allowLocalInventory) return;
             unlockAll = Boolean(enabled);
             if (storage) {
                 try {
