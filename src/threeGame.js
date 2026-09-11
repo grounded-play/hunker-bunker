@@ -187,6 +187,7 @@ export const MAYOR_TINA_PLAYER_VISUAL = Object.freeze({
     allowStatic: false
 });
 import { createEnemy3dVisual, disposeEnemy3dVisual, updateEnemy3dVisual } from './enemy3dOverlay.js';
+import { spawnEnemyGibs } from './enemyGibs.js';
 import { WORLD_3D_FACING_YAW, createWorld3dModel, hasWorld3dModel, preloadWorld3dModels, syncWorld3dReplacement } from './world3dOverlay.js';
 import { computeTrailPosition } from './companionFollow.js';
 import { SNAIL_ENCOUNTER_CONSTANTS } from './snailEncounter.js';
@@ -26400,6 +26401,26 @@ export class ThreeGame {
 
         sprite.userData.burstTriggered = true;
         sprite.userData.burstTimer = 0;
+        // Dismemberment rides on top of the existing burst rather than
+        // replacing it: it declines for sprite-only enemies, for models that
+        // will not fracture, and when the player has gore switched off, and
+        // the burst has to look right in all three cases. Bosses are held back
+        // until the normal-enemy tuning is settled -- a 2.35-unit queen in
+        // eight pieces reads comic, not lethal.
+        if (!isBoss) {
+            // Away-from-player rather than a threaded-through hit normal:
+            // damageSnail has no direction argument and every caller would
+            // have to grow one for a difference the eye cannot pick out.
+            const px = this.player?.position?.x ?? sprite.position.x;
+            const pz = this.player?.position?.z ?? sprite.position.z;
+            const dx = sprite.position.x - px;
+            const dz = sprite.position.z - pz;
+            const len = Math.hypot(dx, dz) || 1;
+            spawnEnemyGibs(this, sprite, {
+                direction: { x: dx / len, z: dz / len },
+                isBoss
+            });
+        }
         this.spawnEnemyDeathBurst?.(sprite.position.x, sprite.position.z, sprite.userData.type, isBoss);
         this.traumaManager?.addTrauma(isBoss ? (WEAPON_TRAUMA_TABLE.bossSlam || 0.6) : (WEAPON_TRAUMA_TABLE.enemyKill || 0.22));
         this.killstreakFeedback?.registerKill({

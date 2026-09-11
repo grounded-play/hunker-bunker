@@ -3,6 +3,7 @@ import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.js';
 import { clone as cloneSkeleton } from 'three/examples/jsm/utils/SkeletonUtils.js';
 import { assetUrl } from './assetUrl.js';
+import { prewarmEnemyGibs } from './enemyGibs.js';
 
 // docs/armory-and-class-weapons-worklog.md — gltf-transform's optimize pass applies
 // EXT_meshopt_compression; GLTFLoader throws without this registered first.
@@ -106,6 +107,10 @@ export async function preloadEnemy3dTemplates(game = null) {
                 const visual = await createEnemy3dVisual(type);
                 if (visual?.root) {
                     await game.renderer.compileAsync(visual.root, game.camera, game.scene);
+                    // Same reasoning as the shader prewarm: fracturing a 30k
+                    // triangle model costs ~100ms, and paying that on the frame
+                    // an enemy dies is a visible hitch. Do it here instead.
+                    prewarmEnemyGibs(type, visual.root);
                 }
             } catch (err) {
                 console.warn(`[enemy-3d-overlay] shader prewarm failed for ${type}`, err);
