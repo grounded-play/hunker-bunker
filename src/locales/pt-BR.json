@@ -124,7 +124,9 @@
       "cloud_sync": "SINCRONIZAÇÃO STEAM CLOUD",
       "save_data": "DADOS SALVOS",
       "new_game_reset": "REINÍCIO DE JOGO",
-      "exit_app": "SAIR DO APLICATIVO"
+      "exit_app": "SAIR DO APLICATIVO",
+      "crosshair_custom": "PERSONALIZADO",
+      "dpad_hint": "D-PAD ◀ ▶ PARA AJUSTAR"
     },
     "action": {
       "open": "ABRIR",
@@ -136,6 +138,52 @@
     },
     "modal": {
       "controls": "CONTROLES"
+    },
+    "opt": {
+      "scale_100": "100% (PADRÃO)",
+      "scale_115": "115% (GRANDE)",
+      "scale_130": "130% (MUITO GRANDE)",
+      "scale_150": "150% (MÁX. ACESSIBILIDADE)",
+      "text_16": "16px (COMPACTO)",
+      "text_18": "18px (PADRÃO DECK)",
+      "text_20": "20px (GRANDE)",
+      "text_22": "22px (MUITO GRANDE)",
+      "text_24": "24px (MÁX. CLAREZA)",
+      "speed_normal": "NORMAL",
+      "speed_fast": "RÁPIDA",
+      "speed_instant": "INSTANTÂNEA",
+      "cam_third": "TERCEIRA PESSOA — SOBRE O OMBRO",
+      "cam_iso": "ISOMÉTRICA — CLÁSSICA",
+      "dist_close": "PERTO",
+      "dist_standard": "PADRÃO",
+      "dist_wide": "LONGE",
+      "follow_tight": "FIRME",
+      "follow_balanced": "EQUILIBRADO",
+      "follow_smooth": "SUAVE / CINEMÁTICO",
+      "turn_50": "50% (LENTA)",
+      "turn_75": "75% (LEVE)",
+      "turn_125": "125% (RÁPIDA)",
+      "turn_150": "150% (MUITO RÁPIDA)",
+      "turn_200": "200% (HIPER)"
+    },
+    "aria": {
+      "language_select": "Idioma do jogo",
+      "close_settings": "Fechar configurações do sistema",
+      "crosshair_presets": "Predefinições de cor da mira",
+      "crosshair_orange": "Mira laranja",
+      "crosshair_white": "Mira branca",
+      "crosshair_green": "Mira verde",
+      "crosshair_cyan": "Mira ciano",
+      "crosshair_yellow": "Mira amarela",
+      "crosshair_red": "Mira vermelha",
+      "crosshair_purple": "Mira roxa",
+      "crosshair_custom": "Cor de mira personalizada",
+      "camera_mode": "Câmera de jogo",
+      "camera_distance": "Distância da câmera em terceira pessoa",
+      "camera_follow": "Resposta do seguimento da câmera em terceira pessoa",
+      "aim_speed": "Velocidade de mira do analógico direito",
+      "aim_speed_presets": "Predefinições de velocidade de mira do analógico direito",
+      "callsign_input": "Codinome do operador"
     }
   }
 }

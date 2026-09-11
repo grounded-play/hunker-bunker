@@ -124,7 +124,9 @@
       "cloud_sync": "STEAM 云同步",
       "save_data": "存档数据",
       "new_game_reset": "重置新游戏",
-      "exit_app": "退出程序"
+      "exit_app": "退出程序",
+      "crosshair_custom": "自定义",
+      "dpad_hint": "方向键 ◀ ▶ 调整"
     },
     "action": {
       "open": "打开",
@@ -136,6 +138,52 @@
     },
     "modal": {
       "controls": "操作设置"
+    },
+    "opt": {
+      "scale_100": "100%（标准）",
+      "scale_115": "115%（大）",
+      "scale_130": "130%（特大）",
+      "scale_150": "150%（最大无障碍）",
+      "text_16": "16px（紧凑）",
+      "text_18": "18px（Deck 默认）",
+      "text_20": "20px（大）",
+      "text_22": "22px（特大）",
+      "text_24": "24px（最高清晰度）",
+      "speed_normal": "正常",
+      "speed_fast": "快速",
+      "speed_instant": "瞬间",
+      "cam_third": "第三人称 — 过肩",
+      "cam_iso": "等距视角 — 经典",
+      "dist_close": "近",
+      "dist_standard": "标准",
+      "dist_wide": "远",
+      "follow_tight": "紧凑",
+      "follow_balanced": "均衡",
+      "follow_smooth": "平滑／电影感",
+      "turn_50": "50%（慢）",
+      "turn_75": "75%（轻）",
+      "turn_125": "125%（快）",
+      "turn_150": "150%（很快）",
+      "turn_200": "200%（极速）"
+    },
+    "aria": {
+      "language_select": "游戏语言",
+      "close_settings": "关闭系统设置",
+      "crosshair_presets": "准星颜色预设",
+      "crosshair_orange": "橙色准星",
+      "crosshair_white": "白色准星",
+      "crosshair_green": "绿色准星",
+      "crosshair_cyan": "青色准星",
+      "crosshair_yellow": "黄色准星",
+      "crosshair_red": "红色准星",
+      "crosshair_purple": "紫色准星",
+      "crosshair_custom": "自定义准星颜色",
+      "camera_mode": "游戏视角",
+      "camera_distance": "第三人称镜头距离",
+      "camera_follow": "第三人称镜头跟随灵敏度",
+      "aim_speed": "右摇杆瞄准速度",
+      "aim_speed_presets": "右摇杆瞄准速度预设",
+      "callsign_input": "操作员呼号"
     }
   }
 }

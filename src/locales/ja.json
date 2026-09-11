@@ -124,7 +124,9 @@
       "cloud_sync": "STEAMクラウド同期",
       "save_data": "セーブデータ",
       "new_game_reset": "ニューゲームリセット",
-      "exit_app": "アプリを終了"
+      "exit_app": "アプリを終了",
+      "crosshair_custom": "カスタム",
+      "dpad_hint": "十字キー ◀ ▶ で調整"
     },
     "action": {
       "open": "開く",
@@ -136,6 +138,52 @@
     },
     "modal": {
       "controls": "操作設定"
+    },
+    "opt": {
+      "scale_100": "100%（標準）",
+      "scale_115": "115%（大）",
+      "scale_130": "130%（特大）",
+      "scale_150": "150%（最大アクセシビリティ）",
+      "text_16": "16px（コンパクト）",
+      "text_18": "18px（Deck標準）",
+      "text_20": "20px（大）",
+      "text_22": "22px（特大）",
+      "text_24": "24px（最大の見やすさ）",
+      "speed_normal": "ふつう",
+      "speed_fast": "はやい",
+      "speed_instant": "瞬時",
+      "cam_third": "三人称 — ショルダー",
+      "cam_iso": "アイソメトリック — クラシック",
+      "dist_close": "近い",
+      "dist_standard": "標準",
+      "dist_wide": "広い",
+      "follow_tight": "タイト",
+      "follow_balanced": "バランス",
+      "follow_smooth": "スムーズ・シネマティック",
+      "turn_50": "50%（遅い）",
+      "turn_75": "75%（軽め）",
+      "turn_125": "125%（速い）",
+      "turn_150": "150%（非常に速い）",
+      "turn_200": "200%（ハイパー）"
+    },
+    "aria": {
+      "language_select": "ゲーム言語",
+      "close_settings": "システム設定を閉じる",
+      "crosshair_presets": "クロスヘア色プリセット",
+      "crosshair_orange": "オレンジのクロスヘア",
+      "crosshair_white": "白のクロスヘア",
+      "crosshair_green": "緑のクロスヘア",
+      "crosshair_cyan": "シアンのクロスヘア",
+      "crosshair_yellow": "黄のクロスヘア",
+      "crosshair_red": "赤のクロスヘア",
+      "crosshair_purple": "紫のクロスヘア",
+      "crosshair_custom": "カスタムクロスヘア色",
+      "camera_mode": "ゲームカメラ",
+      "camera_distance": "三人称カメラの距離",
+      "camera_follow": "三人称カメラ追従の応答性",
+      "aim_speed": "右スティックのエイム速度",
+      "aim_speed_presets": "右スティックのエイム速度プリセット",
+      "callsign_input": "オペレーターコールサイン"
     }
   }
 }

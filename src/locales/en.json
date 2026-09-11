@@ -124,7 +124,9 @@
       "cloud_sync": "STEAM CLOUD SYNC",
       "save_data": "SAVE DATA",
       "new_game_reset": "NEW GAME RESET",
-      "exit_app": "EXIT APPLICATION"
+      "exit_app": "EXIT APPLICATION",
+      "crosshair_custom": "CUSTOM",
+      "dpad_hint": "D-PAD ◀ ▶ TO ADJUST"
     },
     "action": {
       "open": "OPEN",
@@ -136,6 +138,52 @@
     },
     "modal": {
       "controls": "CONTROLS"
+    },
+    "opt": {
+      "scale_100": "100% (STANDARD)",
+      "scale_115": "115% (LARGE)",
+      "scale_130": "130% (EXTRA LARGE)",
+      "scale_150": "150% (MAX ACCESSIBILITY)",
+      "text_16": "16px (COMPACT)",
+      "text_18": "18px (DECK DEFAULT)",
+      "text_20": "20px (LARGE)",
+      "text_22": "22px (EXTRA LARGE)",
+      "text_24": "24px (MAX CLARITY)",
+      "speed_normal": "NORMAL",
+      "speed_fast": "FAST",
+      "speed_instant": "INSTANT",
+      "cam_third": "THIRD-PERSON — SHOULDER",
+      "cam_iso": "ISOMETRIC — CLASSIC",
+      "dist_close": "CLOSE",
+      "dist_standard": "STANDARD",
+      "dist_wide": "WIDE",
+      "follow_tight": "TIGHT",
+      "follow_balanced": "BALANCED",
+      "follow_smooth": "SMOOTH / CINEMATIC",
+      "turn_50": "50% (SLOW)",
+      "turn_75": "75% (LIGHT)",
+      "turn_125": "125% (FAST)",
+      "turn_150": "150% (VERY FAST)",
+      "turn_200": "200% (HYPER)"
+    },
+    "aria": {
+      "language_select": "Game language",
+      "close_settings": "Close system settings",
+      "crosshair_presets": "Crosshair color presets",
+      "crosshair_orange": "Orange crosshair",
+      "crosshair_white": "White crosshair",
+      "crosshair_green": "Green crosshair",
+      "crosshair_cyan": "Cyan crosshair",
+      "crosshair_yellow": "Yellow crosshair",
+      "crosshair_red": "Red crosshair",
+      "crosshair_purple": "Purple crosshair",
+      "crosshair_custom": "Custom crosshair color",
+      "camera_mode": "Gameplay camera",
+      "camera_distance": "Third-person camera distance",
+      "camera_follow": "Third-person camera follow responsiveness",
+      "aim_speed": "Right stick aim speed",
+      "aim_speed_presets": "Right stick aim speed presets",
+      "callsign_input": "Operator callsign"
     }
   }
 }

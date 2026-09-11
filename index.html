@@ -2138,7 +2138,7 @@
       <div class="modal-content settings-modal-panel">
         <div class="settings-sticky-header">
           <h2 class="modal-title" data-i18n="ui.settings.title">SYSTEM SETTINGS</h2>
-          <button class="close-modal" id="close-settings" aria-label="Close system settings">×</button>
+          <button class="close-modal" id="close-settings" data-i18n-aria-label="ui.aria.close_settings" aria-label="Close system settings">×</button>
         </div>
 
         <div class="settings-modal-content">
@@ -2179,7 +2179,7 @@
           <div class="settings-category-header" data-i18n="ui.settings.cat_gameplay">GAMEPLAY & ACCESSIBILITY</div>
           <div class="setting-item">
             <span>LANGUAGE / 语言 / ЯЗЫК</span>
-            <select id="setting-language-select" class="settings-select" aria-label="Game language">
+            <select id="setting-language-select" data-i18n-aria-label="ui.aria.language_select" class="settings-select" aria-label="Game language">
               <option value="en" selected>English</option>
               <option value="zh-CN">简体中文 (Simplified Chinese)</option>
               <option value="ru">Русский (Russian)</option>
@@ -2194,65 +2194,65 @@
           <div class="setting-item">
             <span data-i18n="ui.settings.ui_scale">UI ACCESSIBILITY SCALE</span>
             <select id="setting-ui-scale" class="settings-select">
-              <option value="100" selected>100% (STANDARD)</option>
-              <option value="115">115% (LARGE)</option>
-              <option value="130">130% (EXTRA LARGE)</option>
-              <option value="150">150% (MAX ACCESSIBILITY)</option>
+              <option value="100" selected data-i18n="ui.opt.scale_100">100% (STANDARD)</option>
+              <option value="115" data-i18n="ui.opt.scale_115">115% (LARGE)</option>
+              <option value="130" data-i18n="ui.opt.scale_130">130% (EXTRA LARGE)</option>
+              <option value="150" data-i18n="ui.opt.scale_150">150% (MAX ACCESSIBILITY)</option>
             </select>
           </div>
           <div class="setting-item">
             <span data-i18n="ui.settings.text_floor">MINIMUM TEXT FLOOR</span>
             <select id="setting-text-floor" class="settings-select">
-              <option value="16">16px (COMPACT)</option>
-              <option value="18" selected>18px (DECK DEFAULT)</option>
-              <option value="20">20px (LARGE)</option>
-              <option value="22">22px (EXTRA LARGE)</option>
-              <option value="24">24px (MAX CLARITY)</option>
+              <option value="16" data-i18n="ui.opt.text_16">16px (COMPACT)</option>
+              <option value="18" selected data-i18n="ui.opt.text_18">18px (DECK DEFAULT)</option>
+              <option value="20" data-i18n="ui.opt.text_20">20px (LARGE)</option>
+              <option value="22" data-i18n="ui.opt.text_22">22px (EXTRA LARGE)</option>
+              <option value="24" data-i18n="ui.opt.text_24">24px (MAX CLARITY)</option>
             </select>
           </div>
           <div class="setting-item">
             <span data-i18n="ui.settings.text_speed">TEXT SPEED</span>
             <select id="setting-text-speed" class="settings-select">
-              <option value="normal">NORMAL</option>
-              <option value="fast">FAST</option>
-              <option value="instant">INSTANT</option>
+              <option value="normal" data-i18n="ui.opt.speed_normal">NORMAL</option>
+              <option value="fast" data-i18n="ui.opt.speed_fast">FAST</option>
+              <option value="instant" data-i18n="ui.opt.speed_instant">INSTANT</option>
             </select>
           </div>
           <div class="setting-item">
             <span data-i18n="ui.settings.camera_mode">GAMEPLAY CAMERA</span>
-            <select id="setting-camera-mode" class="settings-select" aria-label="Gameplay camera">
-              <option value="third-person" selected>THIRD-PERSON — SHOULDER</option>
-              <option value="isometric">ISOMETRIC — CLASSIC</option>
+            <select id="setting-camera-mode" data-i18n-aria-label="ui.aria.camera_mode" class="settings-select" aria-label="Gameplay camera">
+              <option value="third-person" selected data-i18n="ui.opt.cam_third">THIRD-PERSON — SHOULDER</option>
+              <option value="isometric" data-i18n="ui.opt.cam_iso">ISOMETRIC — CLASSIC</option>
             </select>
           </div>
           <div class="setting-item">
             <span data-i18n="ui.settings.camera_distance">CAMERA DISTANCE</span>
-            <select id="setting-camera-distance" class="settings-select" aria-label="Third-person camera distance">
-              <option value="close" selected>CLOSE</option>
-              <option value="standard">STANDARD</option>
-              <option value="wide">WIDE</option>
+            <select id="setting-camera-distance" data-i18n-aria-label="ui.aria.camera_distance" class="settings-select" aria-label="Third-person camera distance">
+              <option value="close" selected data-i18n="ui.opt.dist_close">CLOSE</option>
+              <option value="standard" data-i18n="ui.opt.dist_standard">STANDARD</option>
+              <option value="wide" data-i18n="ui.opt.dist_wide">WIDE</option>
             </select>
           </div>
           <div class="setting-item">
             <span data-i18n="ui.settings.camera_follow">CAMERA FOLLOW</span>
-            <select id="setting-camera-follow" class="settings-select" aria-label="Third-person camera follow responsiveness">
-              <option value="tight" selected>TIGHT</option>
-              <option value="balanced">BALANCED</option>
-              <option value="smooth">SMOOTH / CINEMATIC</option>
+            <select id="setting-camera-follow" data-i18n-aria-label="ui.aria.camera_follow" class="settings-select" aria-label="Third-person camera follow responsiveness">
+              <option value="tight" selected data-i18n="ui.opt.follow_tight">TIGHT</option>
+              <option value="balanced" data-i18n="ui.opt.follow_balanced">BALANCED</option>
+              <option value="smooth" data-i18n="ui.opt.follow_smooth">SMOOTH / CINEMATIC</option>
             </select>
           </div>
           <div class="setting-item">
             <span data-i18n="ui.settings.turn_speed">TURN / AIM SPEED</span>
             <div class="settings-choice-control">
-              <select id="setting-aim-sensitivity" class="settings-select" aria-label="Right stick aim speed">
-              <option value="0.5">50% (SLOW)</option>
-              <option value="0.75">75% (LIGHT)</option>
-              <option value="1.0" selected>100% (STANDARD)</option>
-              <option value="1.25">125% (FAST)</option>
-              <option value="1.5">150% (VERY FAST)</option>
-              <option value="2.0">200% (HYPER)</option>
+              <select id="setting-aim-sensitivity" data-i18n-aria-label="ui.aria.aim_speed" class="settings-select" aria-label="Right stick aim speed">
+              <option value="0.5" data-i18n="ui.opt.turn_50">50% (SLOW)</option>
+              <option value="0.75" data-i18n="ui.opt.turn_75">75% (LIGHT)</option>
+              <option value="1.0" selected data-i18n="ui.opt.scale_100">100% (STANDARD)</option>
+              <option value="1.25" data-i18n="ui.opt.turn_125">125% (FAST)</option>
+              <option value="1.5" data-i18n="ui.opt.turn_150">150% (VERY FAST)</option>
+              <option value="2.0" data-i18n="ui.opt.turn_200">200% (HYPER)</option>
               </select>
-              <div class="sensitivity-presets" role="group" aria-label="Right stick aim speed presets">
+              <div class="sensitivity-presets" role="group" data-i18n-aria-label="ui.aria.aim_speed_presets" aria-label="Right stick aim speed presets">
                 <button type="button" data-aim-sensitivity="0.5">50%</button>
                 <button type="button" data-aim-sensitivity="0.75">75%</button>
                 <button type="button" data-aim-sensitivity="1">100%</button>
@@ -2260,7 +2260,7 @@
                 <button type="button" data-aim-sensitivity="1.5">150%</button>
                 <button type="button" data-aim-sensitivity="2">200%</button>
               </div>
-              <span class="settings-controller-hint">D-PAD ◀ ▶ TO ADJUST</span>
+              <span class="settings-controller-hint" data-i18n="ui.settings.dpad_hint">D-PAD ◀ ▶ TO ADJUST</span>
             </div>
           </div>
           <div class="setting-item">
@@ -2270,16 +2270,16 @@
           <div class="setting-item">
             <span data-i18n="ui.settings.crosshair_color">CROSSHAIR COLOR</span>
             <div class="crosshair-color-controls">
-              <div id="crosshair-color-presets" class="crosshair-color-presets" role="group" aria-label="Crosshair color presets">
-                <button type="button" class="crosshair-color-swatch" data-crosshair-color="#ff9f1c" style="--swatch-color:#ff9f1c" aria-label="Orange crosshair"></button>
-                <button type="button" class="crosshair-color-swatch" data-crosshair-color="#ffffff" style="--swatch-color:#ffffff" aria-label="White crosshair"></button>
-                <button type="button" class="crosshair-color-swatch" data-crosshair-color="#39ff88" style="--swatch-color:#39ff88" aria-label="Green crosshair"></button>
-                <button type="button" class="crosshair-color-swatch" data-crosshair-color="#2ec4ff" style="--swatch-color:#2ec4ff" aria-label="Cyan crosshair"></button>
-                <button type="button" class="crosshair-color-swatch" data-crosshair-color="#ffe14a" style="--swatch-color:#ffe14a" aria-label="Yellow crosshair"></button>
-                <button type="button" class="crosshair-color-swatch" data-crosshair-color="#ff4f64" style="--swatch-color:#ff4f64" aria-label="Red crosshair"></button>
-                <button type="button" class="crosshair-color-swatch" data-crosshair-color="#d76bff" style="--swatch-color:#d76bff" aria-label="Purple crosshair"></button>
+              <div id="crosshair-color-presets" data-i18n-aria-label="ui.aria.crosshair_presets" class="crosshair-color-presets" role="group" aria-label="Crosshair color presets">
+                <button type="button" class="crosshair-color-swatch" data-crosshair-color="#ff9f1c" data-i18n-aria-label="ui.aria.crosshair_orange" style="--swatch-color:#ff9f1c" aria-label="Orange crosshair"></button>
+                <button type="button" class="crosshair-color-swatch" data-crosshair-color="#ffffff" data-i18n-aria-label="ui.aria.crosshair_white" style="--swatch-color:#ffffff" aria-label="White crosshair"></button>
+                <button type="button" class="crosshair-color-swatch" data-crosshair-color="#39ff88" data-i18n-aria-label="ui.aria.crosshair_green" style="--swatch-color:#39ff88" aria-label="Green crosshair"></button>
+                <button type="button" class="crosshair-color-swatch" data-crosshair-color="#2ec4ff" data-i18n-aria-label="ui.aria.crosshair_cyan" style="--swatch-color:#2ec4ff" aria-label="Cyan crosshair"></button>
+                <button type="button" class="crosshair-color-swatch" data-crosshair-color="#ffe14a" data-i18n-aria-label="ui.aria.crosshair_yellow" style="--swatch-color:#ffe14a" aria-label="Yellow crosshair"></button>
+                <button type="button" class="crosshair-color-swatch" data-crosshair-color="#ff4f64" data-i18n-aria-label="ui.aria.crosshair_red" style="--swatch-color:#ff4f64" aria-label="Red crosshair"></button>
+                <button type="button" class="crosshair-color-swatch" data-crosshair-color="#d76bff" data-i18n-aria-label="ui.aria.crosshair_purple" style="--swatch-color:#d76bff" aria-label="Purple crosshair"></button>
               </div>
-              <label class="crosshair-custom-color">CUSTOM <input type="color" id="setting-crosshair-color" class="settings-color-picker" value="#ff9f1c" aria-label="Custom crosshair color"></label>
+              <label class="crosshair-custom-color"><span data-i18n="ui.settings.crosshair_custom">CUSTOM</span> <input type="color" id="setting-crosshair-color" data-i18n-aria-label="ui.aria.crosshair_custom" class="settings-color-picker" value="#ff9f1c" aria-label="Custom crosshair color"></label>
             </div>
           </div>
           <div class="setting-item">
@@ -2297,7 +2297,7 @@
           <div class="settings-category-header" data-i18n="ui.settings.cat_operator">OPERATOR & SYSTEM DATA</div>
           <div class="setting-item setting-item--operator">
             <span data-i18n="ui.settings.callsign">OPERATOR CALLSIGN</span>
-            <input type="text" id="operator-callsign" class="operator-callsign-input" maxlength="16" placeholder="AGENT" autocomplete="off" spellcheck="false" aria-label="Operator callsign">
+            <input type="text" id="operator-callsign" data-i18n-aria-label="ui.aria.callsign_input" class="operator-callsign-input" maxlength="16" placeholder="AGENT" autocomplete="off" spellcheck="false" aria-label="Operator callsign">
           </div>
           <div class="setting-item">
             <span data-i18n="ui.settings.cloud_sync">STEAM CLOUD SYNC</span>

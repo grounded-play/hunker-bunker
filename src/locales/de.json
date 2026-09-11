@@ -124,7 +124,9 @@
       "cloud_sync": "STEAM-CLOUD-SYNC",
       "save_data": "SPIELSTAND",
       "new_game_reset": "NEUSTART",
-      "exit_app": "ANWENDUNG BEENDEN"
+      "exit_app": "ANWENDUNG BEENDEN",
+      "crosshair_custom": "BENUTZERDEF.",
+      "dpad_hint": "STEUERKREUZ ◀ ▶ ZUM ANPASSEN"
     },
     "action": {
       "open": "ÖFFNEN",
@@ -136,6 +138,52 @@
     },
     "modal": {
       "controls": "STEUERUNG"
+    },
+    "opt": {
+      "scale_100": "100% (STANDARD)",
+      "scale_115": "115% (GROSS)",
+      "scale_130": "130% (SEHR GROSS)",
+      "scale_150": "150% (MAX. BARRIEREFREI)",
+      "text_16": "16px (KOMPAKT)",
+      "text_18": "18px (DECK-STANDARD)",
+      "text_20": "20px (GROSS)",
+      "text_22": "22px (SEHR GROSS)",
+      "text_24": "24px (MAX. KLARHEIT)",
+      "speed_normal": "NORMAL",
+      "speed_fast": "SCHNELL",
+      "speed_instant": "SOFORT",
+      "cam_third": "DRITTE PERSON — SCHULTER",
+      "cam_iso": "ISOMETRISCH — KLASSISCH",
+      "dist_close": "NAH",
+      "dist_standard": "STANDARD",
+      "dist_wide": "WEIT",
+      "follow_tight": "STRAFF",
+      "follow_balanced": "AUSGEWOGEN",
+      "follow_smooth": "WEICH / FILMISCH",
+      "turn_50": "50% (LANGSAM)",
+      "turn_75": "75% (LEICHT)",
+      "turn_125": "125% (SCHNELL)",
+      "turn_150": "150% (SEHR SCHNELL)",
+      "turn_200": "200% (HYPER)"
+    },
+    "aria": {
+      "language_select": "Spielsprache",
+      "close_settings": "Systemeinstellungen schließen",
+      "crosshair_presets": "Fadenkreuz-Farbvorgaben",
+      "crosshair_orange": "Oranges Fadenkreuz",
+      "crosshair_white": "Weißes Fadenkreuz",
+      "crosshair_green": "Grünes Fadenkreuz",
+      "crosshair_cyan": "Cyanfarbenes Fadenkreuz",
+      "crosshair_yellow": "Gelbes Fadenkreuz",
+      "crosshair_red": "Rotes Fadenkreuz",
+      "crosshair_purple": "Violettes Fadenkreuz",
+      "crosshair_custom": "Eigene Fadenkreuzfarbe",
+      "camera_mode": "Spielkamera",
+      "camera_distance": "Kameraabstand in der Third-Person-Ansicht",
+      "camera_follow": "Reaktionsfreudigkeit der Kameraverfolgung",
+      "aim_speed": "Zielgeschwindigkeit rechter Stick",
+      "aim_speed_presets": "Vorgaben für Zielgeschwindigkeit rechter Stick",
+      "callsign_input": "Operator-Rufzeichen"
     }
   }
 }
