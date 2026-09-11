@@ -1183,6 +1183,108 @@
         "coords": {},
         "payload": "TANK DEPLOYMENT BRIEF: HULL PAYLOAD — HEAVY COMBAT WEAPON ORGANS. DESIGNED TO STABILIZE BIO-STRUCTURAL IMPACTS AT THE QUEEN'S THRONE. USE THE FORCE-FIELDS OF THIS CHASSIS TO ABSORB THE HIVE DEFENSES."
       }
+    },
+    "missionBriefings": {
+      "caveSignal": {
+        "0": "OBJECTIVE: INVESTIGATE CAVE SIGNAL",
+        "1": "INVESTIGATE: UNAUTHORIZED SUBTERRANEAN CAVITY",
+        "2": "RECOVER: SIGNAL SOURCE SAMPLE"
+      },
+      "elimination": {
+        "0": "ELIMINATE: BIO-ENTITY CLUSTER",
+        "1": "PURGE: HOSTILE PATROL NEST",
+        "2": "CULL: REACTIVATED LIVESTOCK",
+        "3": "CLEAR: INFESTED MAINTENANCE BAY",
+        "4": "DECOMMISSION: NON-COMPLIANT FAUNA"
+      },
+      "mapping": {
+        "0": "MAPPING: CHART CORRIDOR SECTOR PATHS",
+        "1": "CARTOGRAPHY: SCAN ROUTE TO RELAY WAYPOINT",
+        "2": "SURVEY NETWORK: MAP SCANNED PATHWAY TO OBJECTIVE",
+        "3": "CHARTING: ESTABLISH CONTINUOUS SCAN CORRIDOR"
+      },
+      "retrieval": {
+        "0": "RETRIEVE: PRIORITY TECH CACHE",
+        "1": "RETRIEVE: HIGH-VALUE TECH ASSET",
+        "2": "RECOVER: SEALED PROCUREMENT CRATE",
+        "3": "RECLAIM: BONDED SALVAGE LOCKER",
+        "4": "EXTRACT: MISFILED HARDWARE REQUISITION"
+      },
+      "survey": {
+        "0": "SURVEY: CRYO SECTOR BOUNDARY",
+        "1": "SURVEY: DEEP SECTOR RECON",
+        "2": "MAP: UNLOGGED PILLAR NETWORK",
+        "3": "CHART: STRUCTURAL DRIFT ZONE",
+        "4": "AUDIT: SUPPORTS PENDING DEMOLITION"
+      }
+    },
+    "strains": {
+      "ENGINEER": {
+        "displayName": "Technomorph Strain",
+        "instinctTagline": "Tools become instincts; wires become nerves.",
+        "skillRenames": {
+          "CONSOLE DISCOUNT": "TERMINAL SPORE",
+          "FIELD REPAIR": "RESIN PATCH",
+          "REROUTE": "NEURAL HIJACK"
+        }
+      },
+      "SCOUT": {
+        "displayName": "Runner/Stalker Strain",
+        "instinctTagline": "Velocity becomes hunger; routes become ambush paths.",
+        "skillRenames": {
+          "LIGHT STEP": "SILENT TALONS",
+          "MAGNETIZED GLOVES": "SCENT LURE",
+          "SPRINT BURST": "POUNCE"
+        }
+      },
+      "TANK": {
+        "displayName": "Guardian Strain",
+        "instinctTagline": "Armor remembers every impact and grows around it.",
+        "skillRenames": {
+          "BRACE": "CARAPACE LOCK",
+          "HEAVY IMPACT": "BROODWARD SHOVE",
+          "REINFORCED PLATING": "SHELL BLOOM"
+        }
+      }
+    },
+    "terminalEvents": {
+      "0": {
+        "body": "Facilities mainframe offers oxygen replenishment. Diverting the security grid to life support will be noticed.",
+        "choices": {
+          "0": {
+            "label": "RESTORE OXYGEN — alerts a patrol"
+          },
+          "1": {
+            "label": "LEAVE IT SEALED"
+          }
+        },
+        "title": "AUXILIARY LIFE SUPPORT BYPASS"
+      },
+      "1": {
+        "body": "Pull the sector mapping database. The scanning array will degrade while it reindexes.",
+        "choices": {
+          "0": {
+            "label": "DOWNLOAD RADAR DATA — corrupts compass 60s"
+          },
+          "1": {
+            "label": "CANCEL UPLOAD"
+          }
+        },
+        "title": "MAPPED TELEMETRY UPLOAD"
+      },
+      "2": {
+        "body": "A bonded salvage locker can be force-opened. Its breaker tie-in only responds after base power is online.",
+        "choices": {
+          "0": {
+            "label": "FORCE OPEN — trips lighting breaker",
+            "offlineLabel": "FORCE OPEN — breaker offline"
+          },
+          "1": {
+            "label": "WALK AWAY"
+          }
+        },
+        "title": "UNCLAIMED ASSET LOCKER"
+      }
     }
   }
 }

@@ -24,6 +24,9 @@ import '../src/data/lineDirectorPools.js';
 import '../src/data/campQuests.js';
 import '../src/data/campDialogue.js';
 import '../src/data/codex.js';
+import '../src/data/terminalEvents.js';
+import '../src/data/missions.js';
+import '../src/data/strains.js';
 import { getRegisteredCatalogs, flattenCatalog } from '../src/i18nCatalog.js';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');

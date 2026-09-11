@@ -1,3 +1,5 @@
+import { localizeCatalog } from '../i18nCatalog.js';
+
 // ── Terminal Choice Events (T5) ───────────────────────────────
 // Data-driven tradeoff events the bunker terminals can present (vs. plain
 // lore/shop). The first slice of the src/data/* content pipeline: a frozen,
@@ -8,7 +10,7 @@
 // Schema: { id, title, body, weight, biomeTags?, choices:[{ label, tone?, effect(game) }] }
 // `tone`: 'risk' marks a choice that helps now but creates future danger.
 
-export const TERMINAL_EVENTS = Object.freeze([
+export const TERMINAL_EVENTS = localizeCatalog('narrative.terminalEvents', Object.freeze([
     {
         id: 'o2_reroute',
         title: 'AUXILIARY LIFE SUPPORT BYPASS',
@@ -82,7 +84,7 @@ export const TERMINAL_EVENTS = Object.freeze([
             }
         ]
     }
-]);
+]), { skip: ['id', 'biomeTags', 'tone', 'weight'] });
 
 export function getTerminalEventById(id) {
     return TERMINAL_EVENTS.find((e) => e.id === id) ?? null;

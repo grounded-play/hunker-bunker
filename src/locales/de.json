@@ -1070,6 +1070,108 @@
           }
         }
       }
+    },
+    "terminalEvents": {
+      "0": {
+        "title": "NOTFALL-LEBENSERHALTUNGS-BYPASS",
+        "body": "Der Haustechnik-Mainframe bietet Sauerstoffnachschub. Die Umleitung des Sicherheitsnetzes auf die Lebenserhaltung wird bemerkt werden.",
+        "choices": {
+          "0": {
+            "label": "SAUERSTOFF WIEDERHERSTELLEN — alarmiert eine Patrouille"
+          },
+          "1": {
+            "label": "VERSIEGELT LASSEN"
+          }
+        }
+      },
+      "1": {
+        "title": "ÜBERTRAGUNG DER KARTENTELEMETRIE",
+        "body": "Die Sektor-Kartendatenbank abrufen. Das Scan-Array wird während der Neuindizierung beeinträchtigt.",
+        "choices": {
+          "0": {
+            "label": "RADARDATEN LADEN — Kompass 60 s gestört"
+          },
+          "1": {
+            "label": "ÜBERTRAGUNG ABBRECHEN"
+          }
+        }
+      },
+      "2": {
+        "title": "UNBEANSPRUCHTER WERTSCHRANK",
+        "body": "Ein verbürgter Bergungsschrank lässt sich aufbrechen. Seine Schalteranbindung reagiert erst, wenn die Basisenergie läuft.",
+        "choices": {
+          "0": {
+            "label": "AUFBRECHEN — löst den Lichtschalter aus",
+            "offlineLabel": "AUFBRECHEN — Schalter offline"
+          },
+          "1": {
+            "label": "WEGGEHEN"
+          }
+        }
+      }
+    },
+    "missionBriefings": {
+      "retrieval": {
+        "0": "BERGEN: PRIORITÄRES TECH-DEPOT",
+        "1": "BERGEN: HOCHWERTIGES TECH-GUT",
+        "2": "BERGEN: VERSIEGELTE BESCHAFFUNGSKISTE",
+        "3": "ZURÜCKFORDERN: VERBÜRGTER BERGUNGSSCHRANK",
+        "4": "ENTNEHMEN: FALSCH ABGELEGTE HARDWARE-ANFORDERUNG"
+      },
+      "survey": {
+        "0": "ERKUNDUNG: KRYOSEKTORGRENZE",
+        "1": "ERKUNDUNG: TIEFSEKTOR-AUFKLÄRUNG",
+        "2": "KARTIEREN: UNERFASSTES SÄULENNETZ",
+        "3": "AUFZEICHNEN: STRUKTURDRIFTZONE",
+        "4": "PRÜFEN: ABRISSKANDIDATEN-STÜTZEN"
+      },
+      "elimination": {
+        "0": "AUSSCHALTEN: BIO-ENTITÄTEN-CLUSTER",
+        "1": "SÄUBERN: FEINDLICHES PATROUILLENNEST",
+        "2": "KEULEN: REAKTIVIERTES NUTZVIEH",
+        "3": "RÄUMEN: VERSEUCHTE WARTUNGSBUCHT",
+        "4": "AUSSER DIENST STELLEN: NICHT KONFORME FAUNA"
+      },
+      "mapping": {
+        "0": "KARTIERUNG: KORRIDORSEKTOR-WEGE ERFASSEN",
+        "1": "KARTOGRAFIE: ROUTE ZUM RELAIS-WEGPUNKT SCANNEN",
+        "2": "VERMESSUNGSNETZ: GESCANNTEN PFAD ZUM ZIEL KARTIEREN",
+        "3": "KARTIERUNG: DURCHGEHENDEN SCAN-KORRIDOR EINRICHTEN"
+      },
+      "caveSignal": {
+        "0": "ZIEL: HÖHLENSIGNAL UNTERSUCHEN",
+        "1": "UNTERSUCHEN: UNAUTORISIERTER UNTERIRDISCHER HOHLRAUM",
+        "2": "BERGEN: PROBE DER SIGNALQUELLE"
+      }
+    },
+    "strains": {
+      "SCOUT": {
+        "displayName": "Läufer-/Pirscher-Strang",
+        "instinctTagline": "Geschwindigkeit wird zu Hunger; Routen werden zu Hinterhaltspfaden.",
+        "skillRenames": {
+          "SPRINT BURST": "SATZ",
+          "MAGNETIZED GLOVES": "DUFTKÖDER",
+          "LIGHT STEP": "STILLE KRALLEN"
+        }
+      },
+      "TANK": {
+        "displayName": "Wächter-Strang",
+        "instinctTagline": "Die Rüstung erinnert jeden Einschlag und wächst um ihn herum.",
+        "skillRenames": {
+          "BRACE": "PANZERSPERRE",
+          "HEAVY IMPACT": "BRUTWÄRTIGER STOSS",
+          "REINFORCED PLATING": "SCHALENBLÜTE"
+        }
+      },
+      "ENGINEER": {
+        "displayName": "Technomorph-Strang",
+        "instinctTagline": "Werkzeuge werden zu Instinkten; Kabel werden zu Nerven.",
+        "skillRenames": {
+          "CONSOLE DISCOUNT": "TERMINALSPORE",
+          "FIELD REPAIR": "HARZFLICKEN",
+          "REROUTE": "NEURALE ÜBERNAHME"
+        }
+      }
     }
   }
 }

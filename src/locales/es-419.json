@@ -1070,6 +1070,108 @@
           }
         }
       }
+    },
+    "terminalEvents": {
+      "0": {
+        "title": "DERIVACIÓN DE SOPORTE VITAL AUXILIAR",
+        "body": "El mainframe de Mantenimiento ofrece reposición de oxígeno. Desviar la red de seguridad al soporte vital será notado.",
+        "choices": {
+          "0": {
+            "label": "RESTAURAR OXÍGENO — alerta a una patrulla"
+          },
+          "1": {
+            "label": "DEJARLO SELLADO"
+          }
+        }
+      },
+      "1": {
+        "title": "CARGA DE TELEMETRÍA CARTOGRÁFICA",
+        "body": "Extrae la base de datos de mapeo del sector. El arreglo de escaneo se degradará mientras reindexa.",
+        "choices": {
+          "0": {
+            "label": "DESCARGAR DATOS DE RADAR — corrompe la brújula 60 s"
+          },
+          "1": {
+            "label": "CANCELAR CARGA"
+          }
+        }
+      },
+      "2": {
+        "title": "CASILLERO DE ACTIVOS SIN RECLAMAR",
+        "body": "Un casillero de chatarra bonificada puede forzarse. Su conexión al disyuntor solo responde con la energía de la base activa.",
+        "choices": {
+          "0": {
+            "label": "FORZAR APERTURA — dispara el disyuntor de luces",
+            "offlineLabel": "FORZAR APERTURA — disyuntor sin energía"
+          },
+          "1": {
+            "label": "ALEJARSE"
+          }
+        }
+      }
+    },
+    "missionBriefings": {
+      "retrieval": {
+        "0": "RECUPERAR: ALIJO TECNOLÓGICO PRIORITARIO",
+        "1": "RECUPERAR: ACTIVO TECNOLÓGICO DE ALTO VALOR",
+        "2": "RECOBRAR: CAJA DE ADQUISICIONES SELLADA",
+        "3": "RECLAMAR: CASILLERO DE CHATARRA BONIFICADA",
+        "4": "EXTRAER: REQUISICIÓN DE HARDWARE MAL ARCHIVADA"
+      },
+      "survey": {
+        "0": "SONDEO: LÍMITE DEL SECTOR CRIOGÉNICO",
+        "1": "SONDEO: RECONOCIMIENTO DEL SECTOR PROFUNDO",
+        "2": "MAPEAR: RED DE PILARES NO REGISTRADA",
+        "3": "TRAZAR: ZONA DE DERIVA ESTRUCTURAL",
+        "4": "AUDITAR: SOPORTES PENDIENTES DE DEMOLICIÓN"
+      },
+      "elimination": {
+        "0": "ELIMINAR: CÚMULO DE BIOENTIDADES",
+        "1": "PURGAR: NIDO DE PATRULLA HOSTIL",
+        "2": "SACRIFICAR: GANADO REACTIVADO",
+        "3": "DESPEJAR: BAHÍA DE MANTENIMIENTO INFESTADA",
+        "4": "DAR DE BAJA: FAUNA NO CONFORME"
+      },
+      "mapping": {
+        "0": "MAPEO: TRAZAR RUTAS DEL SECTOR DE CORREDORES",
+        "1": "CARTOGRAFÍA: ESCANEAR RUTA AL PUNTO DE RELÉ",
+        "2": "RED DE SONDEO: MAPEAR EL CAMINO ESCANEADO AL OBJETIVO",
+        "3": "TRAZADO: ESTABLECER UN CORREDOR DE ESCANEO CONTINUO"
+      },
+      "caveSignal": {
+        "0": "OBJETIVO: INVESTIGAR LA SEÑAL DE LA CUEVA",
+        "1": "INVESTIGAR: CAVIDAD SUBTERRÁNEA NO AUTORIZADA",
+        "2": "RECUPERAR: MUESTRA DE LA FUENTE DE LA SEÑAL"
+      }
+    },
+    "strains": {
+      "SCOUT": {
+        "displayName": "Cepa Corredor/Acechador",
+        "instinctTagline": "La velocidad se vuelve hambre; las rutas, sendas de emboscada.",
+        "skillRenames": {
+          "SPRINT BURST": "ZARPAZO",
+          "MAGNETIZED GLOVES": "SEÑUELO DE OLOR",
+          "LIGHT STEP": "GARRAS SILENCIOSAS"
+        }
+      },
+      "TANK": {
+        "displayName": "Cepa Guardián",
+        "instinctTagline": "La armadura recuerda cada impacto y crece alrededor de él.",
+        "skillRenames": {
+          "BRACE": "BLOQUEO DE CAPARAZÓN",
+          "HEAVY IMPACT": "EMPUJE DE CRÍA",
+          "REINFORCED PLATING": "FLORACIÓN DE CAPARAZÓN"
+        }
+      },
+      "ENGINEER": {
+        "displayName": "Cepa Tecnomorfo",
+        "instinctTagline": "Las herramientas se vuelven instintos; los cables, nervios.",
+        "skillRenames": {
+          "CONSOLE DISCOUNT": "ESPORA DE TERMINAL",
+          "FIELD REPAIR": "PARCHE DE RESINA",
+          "REROUTE": "SECUESTRO NEURAL"
+        }
+      }
     }
   }
 }

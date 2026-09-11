@@ -1070,6 +1070,108 @@
           }
         }
       }
+    },
+    "terminalEvents": {
+      "0": {
+        "title": "DESVIO DE SUPORTE VITAL AUXILIAR",
+        "body": "O mainframe da manutenção oferece reposição de oxigênio. Desviar a rede de segurança para o suporte vital será notado.",
+        "choices": {
+          "0": {
+            "label": "RESTAURAR OXIGÊNIO — alerta uma patrulha"
+          },
+          "1": {
+            "label": "DEIXAR LACRADO"
+          }
+        }
+      },
+      "1": {
+        "title": "UPLOAD DE TELEMETRIA CARTOGRÁFICA",
+        "body": "Extraia o banco de dados de mapeamento do setor. O arranjo de varredura degradará enquanto reindexa.",
+        "choices": {
+          "0": {
+            "label": "BAIXAR DADOS DE RADAR — corrompe a bússola por 60 s"
+          },
+          "1": {
+            "label": "CANCELAR UPLOAD"
+          }
+        }
+      },
+      "2": {
+        "title": "ARMÁRIO DE ATIVOS NÃO RECLAMADOS",
+        "body": "Um armário de sucata penhorada pode ser arrombado. Sua ligação ao disjuntor só responde com a energia da base ligada.",
+        "choices": {
+          "0": {
+            "label": "ARROMBAR — desarma o disjuntor de iluminação",
+            "offlineLabel": "ARROMBAR — disjuntor offline"
+          },
+          "1": {
+            "label": "IR EMBORA"
+          }
+        }
+      }
+    },
+    "missionBriefings": {
+      "retrieval": {
+        "0": "RECUPERAR: DEPÓSITO TECNOLÓGICO PRIORITÁRIO",
+        "1": "RECUPERAR: ATIVO TECNOLÓGICO DE ALTO VALOR",
+        "2": "RECOBRAR: CAIXA DE AQUISIÇÃO LACRADA",
+        "3": "RECLAMAR: ARMÁRIO DE SUCATA PENHORADA",
+        "4": "EXTRAIR: REQUISIÇÃO DE HARDWARE ARQUIVADA ERRADO"
+      },
+      "survey": {
+        "0": "LEVANTAMENTO: LIMITE DO SETOR CRIOGÊNICO",
+        "1": "LEVANTAMENTO: RECONHECIMENTO DO SETOR PROFUNDO",
+        "2": "MAPEAR: REDE DE PILARES NÃO REGISTRADA",
+        "3": "TRAÇAR: ZONA DE DERIVA ESTRUTURAL",
+        "4": "AUDITAR: SUPORTES AGUARDANDO DEMOLIÇÃO"
+      },
+      "elimination": {
+        "0": "ELIMINAR: AGLOMERADO DE BIOENTIDADES",
+        "1": "PURGAR: NINHO DE PATRULHA HOSTIL",
+        "2": "ABATER: GADO REATIVADO",
+        "3": "LIMPAR: BAIA DE MANUTENÇÃO INFESTADA",
+        "4": "DESATIVAR: FAUNA NÃO CONFORME"
+      },
+      "mapping": {
+        "0": "MAPEAMENTO: TRAÇAR ROTAS DO SETOR DE CORREDORES",
+        "1": "CARTOGRAFIA: ESCANEAR ROTA ATÉ O PONTO DE RELÉ",
+        "2": "REDE DE LEVANTAMENTO: MAPEAR O CAMINHO ESCANEADO ATÉ O OBJETIVO",
+        "3": "TRAÇADO: ESTABELECER CORREDOR DE VARREDURA CONTÍNUO"
+      },
+      "caveSignal": {
+        "0": "OBJETIVO: INVESTIGAR O SINAL DA CAVERNA",
+        "1": "INVESTIGAR: CAVIDADE SUBTERRÂNEA NÃO AUTORIZADA",
+        "2": "RECUPERAR: AMOSTRA DA FONTE DO SINAL"
+      }
+    },
+    "strains": {
+      "SCOUT": {
+        "displayName": "Cepa Corredor/Espreitador",
+        "instinctTagline": "A velocidade vira fome; as rotas viram trilhas de emboscada.",
+        "skillRenames": {
+          "SPRINT BURST": "BOTE",
+          "MAGNETIZED GLOVES": "ISCA DE CHEIRO",
+          "LIGHT STEP": "GARRAS SILENCIOSAS"
+        }
+      },
+      "TANK": {
+        "displayName": "Cepa Guardiã",
+        "instinctTagline": "A armadura lembra cada impacto e cresce ao redor dele.",
+        "skillRenames": {
+          "BRACE": "TRAVA DE CARAPAÇA",
+          "HEAVY IMPACT": "EMPURRÃO DE NINHADA",
+          "REINFORCED PLATING": "FLORAÇÃO DE CASCA"
+        }
+      },
+      "ENGINEER": {
+        "displayName": "Cepa Tecnomorfo",
+        "instinctTagline": "As ferramentas viram instintos; os fios viram nervos.",
+        "skillRenames": {
+          "CONSOLE DISCOUNT": "ESPORO DE TERMINAL",
+          "FIELD REPAIR": "REMENDO DE RESINA",
+          "REROUTE": "SEQUESTRO NEURAL"
+        }
+      }
     }
   }
 }
