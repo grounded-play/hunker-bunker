@@ -58,7 +58,7 @@
 
 | SCOUT | TANK | ENGINEER |
 | :---: | :---: | :---: |
-| <img src="./public/Scout.Intro.gif" alt="Scout Class Exosuit" width="240"> | <img src="./public/Tank.Intro.gif" alt="Tank Class Exosuit" width="240"> | <img src="./public/Eng.Intro.gif" alt="Engineer Class Exosuit" width="240"> |
+| <img src="./public/cutscenes/scout-class-intro-poster.jpg" alt="Scout class intro: a light exosuit on a green-lit calibration ring" width="240"> | <img src="./public/cutscenes/tank-class-intro-poster.jpg" alt="Tank class intro: a heavy exosuit rising on a thruster cradle" width="240"> | <img src="./public/cutscenes/engineer-class-intro-poster.jpg" alt="Engineer class intro: an operator servicing a dropship gantry" width="240"> |
 | **Active Ability**: Sprint Burst<br>Fast recon & high-risk salvage runs. | **Active Ability**: Heavy Brace<br>Absorbs punishment & clears corridors. | **Active Ability**: Systems Reroute<br>Hacks terminals & maximizes extraction. |
 
 ---

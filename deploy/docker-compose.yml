@@ -1,10 +1,19 @@
 version: '3.8'
 
+# Pinned so the project keeps its identity now that this file lives under
+# deploy/ instead of the repository root. Compose otherwise names the project
+# after the containing directory, which would orphan the running containers and
+# strand the caddy_data volume holding the issued TLS certificates.
+name: hunker-bunker
+
 services:
   backend:
     build:
-      context: .
-      dockerfile: Dockerfile
+      # Context stays the repository root: the Dockerfile copies
+      # package.json, package-lock.json and server/ from there, and Docker reads
+      # .dockerignore from the context root, which is why that file did NOT move.
+      context: ..
+      dockerfile: deploy/Dockerfile
     container_name: hunker-bunker-backend
     restart: unless-stopped
     environment:
@@ -29,7 +38,7 @@ services:
       - HB_SESSION_LOG_DIR=/app/server/data/session-logs
       - HB_LOG_UPLOAD_TOKEN=${HB_LOG_UPLOAD_TOKEN:-}
     volumes:
-      - ./server/data:/app/server/data
+      - ../server/data:/app/server/data
     networks:
       - hb-network
     expose:
