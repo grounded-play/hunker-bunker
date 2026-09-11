@@ -4964,7 +4964,7 @@ function resetRunToStartingState({
             classType: window.game?.playerType ?? getSelectedHeroType()
         });
         const act2Run = isAct2RunActive();
-        currentMission = act2Run ? null : assignMission(bankManager.getState());
+        currentMission = act2Run ? null : assignMission();
         const runModifierSeed = (window.game?.isMultiplayer || window.activeMultiplayerSession)
             && (window.activeMultiplayerSession?.seed || window.game?.multiplayerRoomCode)
             ? `run-${window.activeMultiplayerSession?.seed || window.game?.multiplayerRoomCode}`
