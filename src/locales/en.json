@@ -432,305 +432,164 @@
     },
     "directorAmbient": {
       "0": {
-        "id": "director_welcome_committee",
-        "register": "corporate",
         "text": "Movement logged. Facilities has dispatched a welcome committee to your position.",
         "tags": {
-          "directorActions": {
-            "0": "patrol"
-          },
-          "cooldownClass": "director_ambient"
+          "directorActions": {}
         }
       },
       "1": {
-        "id": "director_pillar_lighting",
-        "register": "corporate",
         "text": "Unauthorized exploration detected. Local lighting has been suspended.",
         "tags": {
-          "directorActions": {
-            "0": "lightsout"
-          },
-          "cooldownClass": "director_ambient"
+          "directorActions": {}
         }
       },
       "2": {
-        "id": "director_curiosity_clearance",
-        "register": "corporate",
         "text": "Your curiosity continues to exceed your clearance.",
         "tags": {
-          "directorActions": {
-            "0": "taunt"
-          },
-          "cooldownClass": "director_ambient"
+          "directorActions": {}
         }
       },
       "3": {
-        "id": "director_power_rerouted",
-        "register": "corporate",
         "text": "Local illumination power has been rerouted.",
         "tags": {
-          "directorActions": {
-            "0": "lightsout"
-          },
-          "cooldownClass": "director_ambient"
+          "directorActions": {}
         }
       },
       "4": {
-        "id": "director_depth_disapproval",
-        "register": "corporate",
         "text": "The structure notes your depth and disapproves.",
         "tags": {
-          "directorActions": {
-            "0": "taunt"
-          },
-          "cooldownClass": "director_ambient"
+          "directorActions": {}
         }
       },
       "5": {
-        "id": "director_column_field",
-        "register": "corporate",
         "text": "Navigation telemetry is no longer considered authoritative.",
         "tags": {
-          "directorActions": {
-            "0": "corrupt"
-          },
-          "cooldownClass": "director_ambient"
+          "directorActions": {}
         }
       },
       "6": {
-        "id": "director_productivity",
-        "register": "corporate",
         "text": "Productivity is being monitored. So are your vital signs.",
         "tags": {
-          "directorActions": {
-            "0": "taunt"
-          },
-          "cooldownClass": "director_ambient"
+          "directorActions": {}
         }
       },
       "7": {
-        "id": "director_maintenance_event",
-        "register": "corporate",
         "text": "A hostile maintenance team is converging on your location.",
         "tags": {
-          "directorActions": {
-            "0": "patrol"
-          },
-          "cooldownClass": "director_ambient"
+          "directorActions": {}
         }
       },
       "8": {
-        "id": "director_glitch_curiosity",
-        "register": "glitched",
         "text": "DE-DETECTION... unauthorized cur-curiosity remains logged.",
         "tags": {
-          "directorActions": {
-            "0": "taunt"
-          },
-          "cooldownClass": "director_ambient"
+          "directorActions": {}
         }
       },
       "9": {
-        "id": "director_glitch_breaker",
-        "register": "glitched",
         "text": "WARNING: Sector breaker opened. Lights are... gone.",
         "tags": {
-          "directorActions": {
-            "0": "lightsout"
-          },
-          "cooldownClass": "director_ambient"
+          "directorActions": {}
         }
       },
       "10": {
-        "id": "director_glitch_containment",
-        "register": "glitched",
         "text": "Department of containment reports... zero surviving staff.",
         "tags": {
-          "directorActions": {
-            "0": "taunt"
-          },
-          "cooldownClass": "director_ambient"
+          "directorActions": {}
         }
       },
       "11": {
-        "id": "director_glitch_navigation",
-        "register": "glitched",
         "text": "NAV-NAVIGATION checksum failed. Compass output corrupted.",
         "tags": {
-          "directorActions": {
-            "0": "corrupt"
-          },
-          "cooldownClass": "director_ambient"
+          "directorActions": {}
         }
       },
       "12": {
-        "id": "director_glitch_remembers",
-        "register": "glitched",
         "text": "SYSTEM: Movement signatures converging. The structure... remembers you.",
         "tags": {
-          "directorActions": {
-            "0": "patrol"
-          },
-          "cooldownClass": "director_ambient"
+          "directorActions": {}
         }
       },
       "13": {
-        "id": "director_reverent_ghost",
-        "register": "reverent",
         "text": "The Director is a ghost in a machine. The Queen hears every step.",
         "tags": {
-          "directorActions": {
-            "0": "taunt"
-          },
-          "cooldownClass": "director_ambient"
+          "directorActions": {}
         }
       },
       "14": {
-        "id": "director_reverent_column",
-        "register": "reverent",
         "text": "The column turns your compass away from the sky.",
         "tags": {
-          "directorActions": {
-            "0": "corrupt"
-          },
-          "cooldownClass": "director_ambient"
+          "directorActions": {}
         }
       },
       "15": {
-        "id": "director_reverent_darkness",
-        "register": "reverent",
         "text": "The lights are gone. The dark is where the chitin grows.",
         "tags": {
-          "directorActions": {
-            "0": "lightsout"
-          },
-          "cooldownClass": "director_ambient"
+          "directorActions": {}
         }
       },
       "16": {
-        "id": "director_reverent_descent",
-        "register": "reverent",
         "text": "The structure sends its children to welcome your descent.",
         "tags": {
-          "directorActions": {
-            "0": "patrol"
-          },
-          "cooldownClass": "director_ambient"
+          "directorActions": {}
         }
       }
     },
     "mothershipReactive": {
       "0": {
-        "id": "mothership_first_kill",
         "text": "> MOTHERSHIP: AGENT — FIRST THREAT NEUTRALIZED. PROCEED.",
-        "tags": {
-          "eventTrigger": "mothership:first_kill",
-          "cooldownClass": "mothership_reactive"
-        }
+        "tags": {}
       },
       "1": {
-        "id": "mothership_first_cryo",
         "text": "> MOTHERSHIP: WARNING: CRYO SECTOR BOUNDARY CROSSED. THERMAL PROTOCOL ACTIVE.",
-        "tags": {
-          "eventTrigger": "mothership:first_cryo",
-          "cooldownClass": "mothership_reactive"
-        }
+        "tags": {}
       },
       "2": {
-        "id": "mothership_first_bio",
         "text": "> MOTHERSHIP: ALERT: BIO-CONTAINMENT ZONE ENTERED. SUIT FILTERS AT LIMIT.",
-        "tags": {
-          "eventTrigger": "mothership:first_bio",
-          "cooldownClass": "mothership_reactive"
-        }
+        "tags": {}
       },
       "3": {
-        "id": "mothership_hp_critical",
         "text": "> MOTHERSHIP: DISTRESS SIGNAL: VITAL SIGNS CRITICAL. EXTRACTION WINDOW OPEN EARLY.",
-        "tags": {
-          "eventTrigger": "mothership:hp_critical",
-          "cooldownClass": "mothership_reactive"
-        }
+        "tags": {}
       },
       "4": {
-        "id": "mothership_objective_found",
         "text": "> MOTHERSHIP: UPLINK: OBJECTIVE CONFIRMED. MAX SHIP SYSTEMS REQUIRED FOR EXTRACTION.",
-        "tags": {
-          "eventTrigger": "mothership:objective_found",
-          "cooldownClass": "mothership_reactive"
-        }
+        "tags": {}
       },
       "5": {
-        "id": "mothership_first_deposit",
         "text": "> MOTHERSHIP: SALVAGE RECEIVED. BANK SECURE. CONTINUE OPERATIONS.",
-        "tags": {
-          "eventTrigger": "mothership:first_deposit",
-          "cooldownClass": "mothership_reactive"
-        }
+        "tags": {}
       },
       "6": {
-        "id": "mothership_lore_found",
         "text": "> MOTHERSHIP: AGENT — BUNKER DATA FRAGMENT RECOVERED. TRANSMITTING TO ARCHIVE.",
-        "tags": {
-          "eventTrigger": "mothership:lore_found",
-          "cooldownClass": "mothership_reactive"
-        }
+        "tags": {}
       },
       "7": {
-        "id": "mothership_sentinel_spotted",
         "text": "> MOTHERSHIP: WARNING: AUTOMATED DEFENSE SYSTEM ACTIVE. RECOMMEND COVER.",
-        "tags": {
-          "eventTrigger": "mothership:sentinel_spotted",
-          "cooldownClass": "mothership_reactive"
-        }
+        "tags": {}
       },
       "8": {
-        "id": "mothership_crawler_detected",
         "text": "> MOTHERSHIP: ALERT: FAST-MOVING BIO-ENTITY DETECTED. MAINTAIN DISTANCE.",
-        "tags": {
-          "eventTrigger": "mothership:crawler_detected",
-          "cooldownClass": "mothership_reactive"
-        }
+        "tags": {}
       },
       "9": {
-        "id": "mothership_armory_found",
         "text": "> MOTHERSHIP: UPLINK: ARMORY CACHE LOCATED. HIGH-VALUE ASSET — EXPECT RESISTANCE.",
-        "tags": {
-          "eventTrigger": "mothership:armory_found",
-          "cooldownClass": "mothership_reactive"
-        }
+        "tags": {}
       },
       "10": {
-        "id": "mothership_the_nest",
         "text": "> MOTHERSHIP: WARNING: BIO-ENTITY NEST CONFIRMED. MAXIMUM THREAT DENSITY. CAUTION.",
-        "tags": {
-          "eventTrigger": "mothership:the_nest",
-          "cooldownClass": "mothership_reactive"
-        }
+        "tags": {}
       },
       "11": {
-        "id": "mothership_weapon_calibrated",
         "text": "> MOTHERSHIP: NOTED: AGENT WEAPON OUTPUT RISING. ... WHY DO YOU NEED MORE.",
-        "tags": {
-          "eventTrigger": "mothership:weapon_calibrated",
-          "cooldownClass": "mothership_reactive"
-        }
+        "tags": {}
       },
       "12": {
-        "id": "mothership_first_boss",
         "text": "> MOTHERSHIP: CONFIRMED KILL: APEX BIO-ENTITY DOWN. THE SIGNAL FELT THAT.",
-        "tags": {
-          "eventTrigger": "mothership:first_boss",
-          "cooldownClass": "mothership_reactive"
-        }
+        "tags": {}
       },
       "13": {
-        "id": "mothership_specimen_notices",
         "text": "> MOTHERSHIP: [UNAUTHORIZED CHANNEL] ...0047 HAS STOPPED BUILDING. IT IS LISTENING TO YOU NOW.",
-        "tags": {
-          "eventTrigger": "mothership:specimen_notices",
-          "cooldownClass": "mothership_reactive"
-        }
+        "tags": {}
       }
     },
     "campQuests": {
@@ -741,8 +600,7 @@
         },
         "1": {
           "label": "HIVE ARCHIVE CH. 1",
-          "desc": "RECOVER RGB ARCHIVE DATA FROM NEARBY ALIEN HIVE TERMINAL",
-          "chapterId": "parking_lot"
+          "desc": "RECOVER RGB ARCHIVE DATA FROM NEARBY ALIEN HIVE TERMINAL"
         },
         "2": {
           "label": "THE LOST PROBE",
@@ -756,8 +614,7 @@
         },
         "1": {
           "label": "HIVE ARCHIVE CH. 2",
-          "desc": "EXTRACT ARCHIVE DATA FROM BIOMECHANICAL STASIS NODE",
-          "chapterId": "warehouse"
+          "desc": "EXTRACT ARCHIVE DATA FROM BIOMECHANICAL STASIS NODE"
         },
         "2": {
           "label": "THE LOST CULTIST",
@@ -771,8 +628,7 @@
         },
         "1": {
           "label": "HIVE ARCHIVE CH. 3",
-          "desc": "DECRYPT INCIDENT LOGS FROM ANCIENT BUNKER ARCHIVE CORE",
-          "chapterId": "incident_review"
+          "desc": "DECRYPT INCIDENT LOGS FROM ANCIENT BUNKER ARCHIVE CORE"
         },
         "2": {
           "label": "BUNKER HOLDOUT",
@@ -1258,221 +1114,49 @@
       }
     },
     "loreMetadata": {
-      "A01": {
-        "date": "2047-08-11",
-        "coords": "SECTOR A-9 / BAY C STASIS",
-        "group": "recent"
-      },
-      "A02": {
-        "date": "2047-08-11",
-        "coords": "SECTOR A-9 / BAY C STASIS",
-        "group": "recent"
-      },
-      "A03": {
-        "date": "2047-08-12",
-        "coords": "SECTOR A-9 / ACTIVE SECTOR",
-        "group": "recent"
-      },
-      "A04": {
-        "date": "2047-08-12",
-        "coords": "SECTOR A-9 / ACTIVE SECTOR",
-        "group": "recent"
-      },
-      "A05": {
-        "date": "2047-08-13",
-        "coords": "SECTOR A-9 / BAY C STASIS",
-        "group": "recent"
-      },
-      "A06": {
-        "date": "2047-08-13",
-        "coords": "SECTOR A-9 / SECURITY CONTROL",
-        "group": "recent"
-      },
-      "A07": {
-        "date": "2047-08-14",
-        "coords": "SECTOR A-9 / O2 GENERATOR",
-        "group": "recent"
-      },
-      "A08": {
-        "date": "2047-08-14",
-        "coords": "SECTOR A-9 / COMMUNICATIONS",
-        "group": "recent"
-      },
-      "A09": {
-        "date": "2047-08-14",
-        "coords": "SECTOR A-9 / BAY C STASIS",
-        "group": "recent"
-      },
-      "A10": {
-        "date": "2038-11-18",
-        "coords": "SECTOR A-9 / ARMORY RUINS",
-        "group": "historical"
-      },
-      "A11": {
-        "date": "2038-11-20",
-        "coords": "SECTOR A-9 / MAIN OFFICE",
-        "group": "historical"
-      },
-      "A12": {
-        "date": "2047-08-15",
-        "coords": "SECTOR A-9 / COMMAND BASE",
-        "group": "recent"
-      },
-      "A13": {
-        "date": "2038-11-21",
-        "coords": "SECTOR A-9 / WEAPONS BAY",
-        "group": "historical"
-      },
-      "A14": {
-        "date": "2038-11-21",
-        "coords": "SECTOR A-9 / WEAPONS BAY",
-        "group": "historical"
-      },
-      "C01": {
-        "date": "2047-08-11",
-        "coords": "SECTOR B-4 / BAY C",
-        "group": "recent"
-      },
-      "C02": {
-        "date": "2038-11-12",
-        "coords": "SECTOR B-4 / COOLANT UNIT",
-        "group": "historical"
-      },
-      "C03": {
-        "date": "2038-11-13",
-        "coords": "SECTOR B-4 / POD 312",
-        "group": "historical"
-      },
-      "C04": {
-        "date": "2038-11-14",
-        "coords": "SECTOR B-4 / BAY C STASIS",
-        "group": "historical"
-      },
-      "C05": {
-        "date": "2038-11-14",
-        "coords": "SECTOR B-4 / CRYO LABS",
-        "group": "historical"
-      },
-      "C06": {
-        "date": "2038-11-15",
-        "coords": "SECTOR B-4 / CRYO CORRIDOR",
-        "group": "historical"
-      },
-      "C07": {
-        "date": "2038-11-16",
-        "coords": "SECTOR B-4 / BAY C SEAL",
-        "group": "historical"
-      },
-      "C08": {
-        "date": "2038-11-17",
-        "coords": "SECTOR B-4 / COOLANT DRAIN",
-        "group": "historical"
-      },
-      "C09": {
-        "date": "2038-11-17",
-        "coords": "SECTOR B-4 / POD 0047",
-        "group": "historical"
-      },
-      "C10": {
-        "date": "2038-11-18",
-        "coords": "SECTOR B-4 / VENT SHAFT",
-        "group": "historical"
-      },
-      "C11": {
-        "date": "2038-11-18",
-        "coords": "SECTOR B-4 / OUTPOST HULL",
-        "group": "historical"
-      },
-      "C12": {
-        "date": "2038-11-19",
-        "coords": "SECTOR B-4 / CRYO EXIT",
-        "group": "historical"
-      },
-      "B01": {
-        "date": "2038-11-20",
-        "coords": "SECTOR C-7 / BIO SWARM",
-        "group": "historical"
-      },
-      "B02": {
-        "date": "2047-08-14",
-        "coords": "SECTOR C-7 / NEURAL FILAMENT",
-        "group": "recent"
-      },
-      "B03": {
-        "date": "2047-08-14",
-        "coords": "SECTOR C-7 / CHEN SECTOR OFFICE",
-        "group": "recent"
-      },
-      "drop_horizon_badge": {
-        "date": "2038-11-20",
-        "coords": "SECTOR A-9 / BORE 7 RUINS",
-        "group": "historical"
-      },
-      "drop_dig_manifest": {
-        "date": "2038-11-21",
-        "coords": "SECTOR A-9 / DEEP TUNNELS",
-        "group": "historical"
-      },
-      "drop_security_log": {
-        "date": "2038-11-21",
-        "coords": "SECTOR A-9 / SECURITY POST",
-        "group": "historical"
-      },
-      "drop_survey_probe": {
-        "date": "2038-11-12",
-        "coords": "SECTOR B-4 / CRATER RIM",
-        "group": "historical"
-      },
-      "drop_meteor_core": {
-        "date": "2038-11-13",
-        "coords": "SECTOR B-4 / IMPACT CORE",
-        "group": "historical"
-      },
-      "drop_ration_ledger": {
-        "date": "2047-08-11",
-        "coords": "SECTOR B-4 / REFUGEE OUTPOST",
-        "group": "recent"
-      },
-      "drop_child_drawing": {
-        "date": "2047-08-12",
-        "coords": "SECTOR B-4 / SECTOR FAMILY AREA",
-        "group": "recent"
-      },
-      "drop_dogtags": {
-        "date": "2047-08-13",
-        "coords": "SECTOR B-4 / PERIMETER DEFENSE",
-        "group": "recent"
-      },
-      "drop_resin_locket": {
-        "date": "2047-08-14",
-        "coords": "SECTOR C-7 / BIO SWARM NEST",
-        "group": "recent"
-      },
-      "drop_moult_shard": {
-        "date": "2038-11-20",
-        "coords": "SECTOR C-7 / THE ABYSS HIVE",
-        "group": "historical"
-      },
-      "drop_first_bore_tag": {
-        "date": "2038-11-21",
-        "coords": "SECTOR C-7 / CAVERN ENTRANCE",
-        "group": "historical"
-      },
-      "drop_prayer_stone": {
-        "date": "2038-11-22",
-        "coords": "SECTOR C-7 / CULT SANCTUARY",
-        "group": "historical"
-      },
-      "drop_frozen_letter": {
-        "date": "2047-08-14",
-        "coords": "ACTIVE / DRIFT OUTSIDE OUTPOST",
-        "group": "recent"
-      },
-      "drop_black_flask": {
-        "date": "2047-08-15",
-        "coords": "ACTIVE / CATACOMBS BASEMENT",
-        "group": "recent"
-      }
+      "A01": {},
+      "A02": {},
+      "A03": {},
+      "A04": {},
+      "A05": {},
+      "A06": {},
+      "A07": {},
+      "A08": {},
+      "A09": {},
+      "A10": {},
+      "A11": {},
+      "A12": {},
+      "A13": {},
+      "A14": {},
+      "C01": {},
+      "C02": {},
+      "C03": {},
+      "C04": {},
+      "C05": {},
+      "C06": {},
+      "C07": {},
+      "C08": {},
+      "C09": {},
+      "C10": {},
+      "C11": {},
+      "C12": {},
+      "B01": {},
+      "B02": {},
+      "B03": {},
+      "drop_horizon_badge": {},
+      "drop_dig_manifest": {},
+      "drop_security_log": {},
+      "drop_survey_probe": {},
+      "drop_meteor_core": {},
+      "drop_ration_ledger": {},
+      "drop_child_drawing": {},
+      "drop_dogtags": {},
+      "drop_resin_locket": {},
+      "drop_moult_shard": {},
+      "drop_first_bore_tag": {},
+      "drop_prayer_stone": {},
+      "drop_frozen_letter": {},
+      "drop_black_flask": {}
     },
     "loreClassLogs": {
       "SCOUT": "SCOUT DEPLOYMENT BRIEF: HULL PAYLOAD — TRACKING BEACON. TARGET LOCKED ON SPECIMEN 0047. IF YOU READ THIS, THE BEACON IS ALIVE AND TRANSMITTING. IT IS THE REASON 0047 IS LISTENING TO YOU NOW. YOU CANNOT HIDE.",
@@ -1481,36 +1165,18 @@
     },
     "classWreckageLogs": {
       "SCOUT": {
-        "classType": "SCOUT",
-        "codexId": "wreckage_scout_tracking",
         "title": "SCOUT ALPHA WRECKAGE",
-        "hull": "SCOUT ALPHA",
-        "date": "2047-08-14T21:12:06Z",
-        "coords": {
-          "sector": "ACTIVE"
-        },
+        "coords": {},
         "payload": "SCOUT DEPLOYMENT BRIEF: HULL PAYLOAD — TRACKING BEACON. TARGET LOCKED ON SPECIMEN 0047. IF YOU READ THIS, THE BEACON IS ALIVE AND TRANSMITTING. IT IS THE REASON 0047 IS LISTENING TO YOU NOW. YOU CANNOT HIDE."
       },
       "ENGINEER": {
-        "classType": "ENGINEER",
-        "codexId": "wreckage_engineer_relay",
         "title": "BRAVO ENGINEER WRECKAGE",
-        "hull": "BRAVO ENGINEER",
-        "date": "2047-08-14T21:18:44Z",
-        "coords": {
-          "sector": "CRYO"
-        },
+        "coords": {},
         "payload": "ENGINEER DEPLOYMENT BRIEF: HULL PAYLOAD — NEURAL FILAMENT UPLINK RELAY. BROADCAST BANDWIDTH SECURED FOR SWARM-INTEGRATED TRANSITIONS. IF THE RELAY IS SEVERED, THE SYSTEM RECONVERGES LOCAL POWER AROUND THE SUIT."
       },
       "TANK": {
-        "classType": "TANK",
-        "codexId": "wreckage_tank_weapon",
         "title": "CHARLIE TANK WRECKAGE",
-        "hull": "CHARLIE TANK",
-        "date": "2047-08-14T21:26:19Z",
-        "coords": {
-          "sector": "BIO"
-        },
+        "coords": {},
         "payload": "TANK DEPLOYMENT BRIEF: HULL PAYLOAD — HEAVY COMBAT WEAPON ORGANS. DESIGNED TO STABILIZE BIO-STRUCTURAL IMPACTS AT THE QUEEN'S THRONE. USE THE FORCE-FIELDS OF THIS CHASSIS TO ABSORB THE HIVE DEFENSES."
       }
     }

@@ -46,12 +46,22 @@ describe('narrative catalogs', () => {
         expect(LEADER_DIALOGUE.kaelen.stages[0].next.talks).toBe(2);
     });
 
-    it('falls back to English for a locale with no narrative translations', () => {
+    it('serves a translated line when the locale has one', () => {
         setLocale('ru');
         refreshCatalogs();
         expect(DIALOGUE_LINES.lowO2[0]).toBe(
-            'Life support advisory: breathing remains optional only in archived training material.'
+            'Уведомление системы жизнеобеспечения: дыхание остаётся необязательным только в архивных учебных материалах.'
         );
+    });
+
+    it('falls back to authored English for an untranslated key', () => {
+        // A partially translated locale must never show a raw key or an empty
+        // string -- untranslated prose stays readable English.
+        const source = { line: 'NO TRANSLATION EXISTS FOR THIS' };
+        const live = localizeCatalog('narrative.__untranslated', source);
+        setLocale('ru');
+        refreshCatalogs();
+        expect(live.line).toBe('NO TRANSLATION EXISTS FOR THIS');
     });
 
     it('swaps content in place when a translation exists', () => {

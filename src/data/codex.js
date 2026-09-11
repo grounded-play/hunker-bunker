@@ -112,7 +112,7 @@ export const LORE_METADATA = localizeCatalog('narrative.loreMetadata', Object.fr
     drop_prayer_stone: { date: '2038-11-22', coords: 'SECTOR C-7 / CULT SANCTUARY', group: 'historical' },
     drop_frozen_letter: { date: '2047-08-14', coords: 'ACTIVE / DRIFT OUTSIDE OUTPOST', group: 'recent' },
     drop_black_flask: { date: '2047-08-15', coords: 'ACTIVE / CATACOMBS BASEMENT', group: 'recent' }
-}), { skip: ['id', 'image', 'icon'] });
+}), { skip: ['date', 'coords', 'group'] });
 
 // Class-specific payload wreck logs
 export const LORE_CLASS_LOGS = localizeCatalog('narrative.loreClassLogs', Object.freeze({
@@ -149,4 +149,4 @@ export const CLASS_WRECKAGE_LOGS = localizeCatalog('narrative.classWreckageLogs'
         coords: Object.freeze({ sector: 'BIO', x: 8, z: 161 }),
         payload: LORE_CLASS_LOGS.TANK
     })
-}));
+}), { skip: ['classType', 'codexId', 'date', 'hull', 'sector'] });

@@ -16,5 +16,5 @@ export const CAMP_QUESTS = localizeCatalog('narrative.campQuests', Object.freeze
         { id: 'hive_archive_ch3', label: 'HIVE ARCHIVE CH. 3', bond: 1, desc: 'DECRYPT INCIDENT LOGS FROM ANCIENT BUNKER ARCHIVE CORE', chapterId: 'incident_review' },
         { id: 'bunker_holdout', label: 'BUNKER HOLDOUT', bond: 1, desc: 'DEFEND THE BARRICADE GATE FROM INCOMING ATTACK PATROLS' }
     ]
-}), { skip: ['id'] });
+}), { skip: ['id', 'chapterId'] });
 

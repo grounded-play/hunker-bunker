@@ -254,5 +254,336 @@
       "choice_tutorial_label": "[B] ME EXPLIQUE OS PROTOCOLOS ANTES.",
       "choice_tutorial_hint": "INICIAR TUTORIAL"
     }
+  },
+  "narrative": {
+    "dialogue": {
+      "corporate": {
+        "lowO2": {
+          "0": "Aviso de suporte vital: respirar continua opcional apenas no material de treinamento arquivado.",
+          "1": "Reservas de O2 abaixo do conforto normativo. O conforto normativo está indisponível desde o impacto.",
+          "2": "Os filtros do traje estão negociando com o vácuo. Retorne ao campo azul.",
+          "3": "Crédito atmosférico baixo. Deposite oxigênio imediatamente.",
+          "4": "Aviso: a respiração do operador se aproxima de uma exceção de planilha."
+        },
+        "extraction": {
+          "0": "Janela de extração aberta. Fique parado enquanto a nave lembra que é uma nave.",
+          "1": "Autorização de lançamento pendente. Tente não morrer durante a papelada.",
+          "2": "Carga do objetivo aceita. Permaneça dentro da distância de arrependimento dos destroços.",
+          "3": "Uplink com a nave-mãe se formando. Excelente hora para partir.",
+          "4": "Rota de retorno verificada. Probabilidade de saída digna em alta."
+        },
+        "death": {
+          "0": "Sinal do operador encerrado. Gerando condolências com sinceridade reduzida.",
+          "1": "Falha do traje registrada. Protocolo de recuperação de sucata armado.",
+          "2": "Sinais vitais zerados. Continuidade narrativa preservada no arquivo.",
+          "3": "Evento de morte aceito. Aproveite sua próxima tentativa.",
+          "4": "Mancha de caixa-preta preparada. O búnquer está contando."
+        },
+        "blackBoxRecovery": {
+          "0": "Caixa-preta recuperada. A dignidade do operador anterior continua irrecuperável.",
+          "1": "Sucata selada depositada. Registro de morte anexado para conformidade e assombração.",
+          "2": "Mancha de campo removida. O arquivo guardou os detalhes constrangedores.",
+          "3": "Recursos recuperados garantidos. O búnquer nega qualquer investimento emocional.",
+          "4": "Protocolo de seguro concluído. Tente não criar um substituto imediatamente."
+        },
+        "caveSignal": {
+          "0": "NAVE-MÃE: SINAL SUBTERRÂNEO DETECTADO. FONTE DESCONHECIDA.",
+          "1": "SISTEMA: PADRÃO DE ÁUDIO SEMELHANTE A RESPIRAÇÃO. CLASSIFICADO COMO ESTÁTICA.",
+          "2": "BÚNQUER: MAPA DE PORTAS ATUALIZADO. CAVIDADE NÃO AUTORIZADA ENCONTRADA.",
+          "3": "NAVE-MÃE: NÃO ENTRE NA ESTRUTURA ORGÂNICA SEM OBJETIVO DE RECUPERAÇÃO."
+        },
+        "terminalChoice": {
+          "0": "Acordo do terminal aceito. As consequências foram encaminhadas ao seu eu futuro.",
+          "1": "Escolha registrada. A instalação aprecia risco decidido.",
+          "2": "Troca executada. O comitê de segurança entrou em modo silencioso.",
+          "3": "Substituição do sistema local concluída. Algo em outro lugar percebeu.",
+          "4": "Decisão do terminal arquivada sob julgamento questionável."
+        },
+        "majorUpgrade": {
+          "0": "Melhoria instalada. A corporação gostaria do crédito pela sua sucata.",
+          "1": "Subsistema on-line. Chances de sobrevivência passaram de decorativas a plausíveis.",
+          "2": "Autorização de hardware aceita. Continue financiando o próprio resgate.",
+          "3": "Saída do gerador melhorada. Zona respirável ampliada a pedidos.",
+          "4": "Matriz de combate atualizada. Os hostis serão informados por impacto."
+        },
+        "director": {
+          "0": "Movimento registrado. A manutenção enviou um comitê de boas-vindas.",
+          "1": "Exploração não autorizada detectada. Ajustando a iluminação dos pilares.",
+          "2": "Sua curiosidade excede sua autorização. Compensando de acordo.",
+          "3": "Energia redirecionada para um departamento que tem ressentimento de você.",
+          "4": "A estrutura registra sua profundidade e desaprova.",
+          "5": "Mantenha a calma enquanto o campo de colunas seleciona um novo destino.",
+          "6": "A produtividade está sendo monitorada. Todo o resto também.",
+          "7": "Um evento de manutenção foi agendado ao redor da sua localização."
+        }
+      }
+    },
+    "directorAmbient": {
+      "0": {
+        "text": "Movimento registrado. A manutenção enviou um comitê de boas-vindas à sua posição."
+      },
+      "1": {
+        "text": "Exploração não autorizada detectada. A iluminação local foi suspensa."
+      },
+      "2": {
+        "text": "Sua curiosidade continua excedendo sua autorização."
+      },
+      "3": {
+        "text": "A energia da iluminação local foi redirecionada."
+      },
+      "4": {
+        "text": "A estrutura registra sua profundidade e desaprova."
+      },
+      "5": {
+        "text": "A telemetria de navegação não é mais considerada confiável."
+      },
+      "6": {
+        "text": "A produtividade está sendo monitorada. Seus sinais vitais também."
+      },
+      "7": {
+        "text": "Uma equipe de manutenção hostil está convergindo para sua localização."
+      },
+      "8": {
+        "text": "DE-DETECÇÃO... a cur-curiosidade não autorizada segue registrada."
+      },
+      "9": {
+        "text": "AVISO: Disjuntor do setor aberto. As luzes... sumiram."
+      },
+      "10": {
+        "text": "O departamento de contenção informa... zero funcionários sobreviventes."
+      },
+      "11": {
+        "text": "NA-NAVEGAÇÃO: checksum falhou. Saída da bússola corrompida."
+      },
+      "12": {
+        "text": "SISTEMA: Assinaturas de movimento convergindo. A estrutura... lembra de você."
+      },
+      "13": {
+        "text": "O Diretor é um fantasma numa máquina. A Rainha ouve cada passo."
+      },
+      "14": {
+        "text": "A coluna afasta sua bússola do céu."
+      },
+      "15": {
+        "text": "As luzes se foram. A escuridão é onde a quitina cresce."
+      },
+      "16": {
+        "text": "A estrutura envia seus filhos para saudar sua descida."
+      }
+    },
+    "mothershipReactive": {
+      "0": {
+        "text": "> NAVE-MÃE: AGENTE — PRIMEIRA AMEAÇA NEUTRALIZADA. PROSSIGA."
+      },
+      "1": {
+        "text": "> NAVE-MÃE: AVISO: LIMITE DO SETOR CRIOGÊNICO CRUZADO. PROTOCOLO TÉRMICO ATIVO."
+      },
+      "2": {
+        "text": "> NAVE-MÃE: ALERTA: ZONA DE BIOCONTENÇÃO. FILTROS DO TRAJE NO LIMITE."
+      },
+      "3": {
+        "text": "> NAVE-MÃE: SINAL DE SOCORRO: SINAIS VITAIS CRÍTICOS. JANELA DE EXTRAÇÃO ABERTA MAIS CEDO."
+      },
+      "4": {
+        "text": "> NAVE-MÃE: UPLINK: OBJETIVO CONFIRMADO. TODOS OS SISTEMAS DA NAVE SÃO NECESSÁRIOS PARA A EXTRAÇÃO."
+      },
+      "5": {
+        "text": "> NAVE-MÃE: SUCATA RECEBIDA. DEPÓSITO SEGURO. CONTINUE AS OPERAÇÕES."
+      },
+      "6": {
+        "text": "> NAVE-MÃE: AGENTE — FRAGMENTO DE DADOS DO BÚNQUER RECUPERADO. TRANSMITINDO AO ARQUIVO."
+      },
+      "7": {
+        "text": "> NAVE-MÃE: AVISO: SISTEMA DE DEFESA AUTOMATIZADO ATIVO. RECOMENDO COBERTURA."
+      },
+      "8": {
+        "text": "> NAVE-MÃE: ALERTA: BIOENTIDADE DE MOVIMENTO RÁPIDO DETECTADA. MANTENHA DISTÂNCIA."
+      },
+      "9": {
+        "text": "> NAVE-MÃE: UPLINK: DEPÓSITO DE ARMAS LOCALIZADO. ATIVO DE ALTO VALOR — ESPERE RESISTÊNCIA."
+      },
+      "10": {
+        "text": "> NAVE-MÃE: AVISO: NINHO DE BIOENTIDADES CONFIRMADO. DENSIDADE MÁXIMA DE AMEAÇA. CAUTELA."
+      },
+      "11": {
+        "text": "> NAVE-MÃE: ANOTADO: POTÊNCIA DE ARMA DO AGENTE EM ALTA. ... POR QUE VOCÊ PRECISA DE MAIS."
+      },
+      "12": {
+        "text": "> NAVE-MÃE: ABATE CONFIRMADO: BIOENTIDADE ÁPICE DERRUBADA. O SINAL SENTIU ISSO."
+      },
+      "13": {
+        "text": "> NAVE-MÃE: [CANAL NÃO AUTORIZADO] ...0047 PAROU DE CONSTRUIR. ELE ESTÁ OUVINDO VOCÊ AGORA."
+      }
+    },
+    "campQuests": {
+      "camp_meridian": {
+        "0": {
+          "label": "VENTILAÇÃO DO REATOR",
+          "desc": "ALIVIE O ACÚMULO DE PRESSÃO NA GRADE DE VENTILAÇÃO DO REATOR"
+        },
+        "1": {
+          "label": "ARQUIVO DA COLMEIA CAP. 1",
+          "desc": "RECUPERE DADOS DO ARQUIVO RGB NO TERMINAL ALIENÍGENA PRÓXIMO"
+        },
+        "2": {
+          "label": "A SONDA PERDIDA",
+          "desc": "RECUPERE A SONDA MÉTRICA PERDIDA DA Horizon Corp NO BIOMA GELADO"
+        }
+      },
+      "camp_tallow": {
+        "0": {
+          "label": "PURGA DE ESPOROS",
+          "desc": "PURGUE O MOFO VERMELHO INVASOR DOS CANAIS DO HIDROLEITO"
+        },
+        "1": {
+          "label": "ARQUIVO DA COLMEIA CAP. 2",
+          "desc": "EXTRAIA DADOS DO ARQUIVO DO NÓ DE ESTASE BIOMECÂNICO"
+        },
+        "2": {
+          "label": "O CULTISTA PERDIDO",
+          "desc": "RESGATE E ESCOLTE O CULTISTA PERDIDO DOS TÚNEIS DE VENTILAÇÃO"
+        }
+      },
+      "camp_vesper": {
+        "0": {
+          "label": "INVASÃO DO ARSENAL",
+          "desc": "ELIMINE OS CIBERCARACÓIS QUE INFESTAM O ARMÁRIO DE ARMAS"
+        },
+        "1": {
+          "label": "ARQUIVO DA COLMEIA CAP. 3",
+          "desc": "DECIFRE OS REGISTROS DE INCIDENTES DO ANTIGO NÚCLEO DE ARQUIVO DO BÚNQUER"
+        },
+        "2": {
+          "label": "RESISTÊNCIA NO BÚNQUER",
+          "desc": "DEFENDA O PORTÃO DA BARRICADA DAS PATRULHAS DE ATAQUE"
+        }
+      }
+    },
+    "leaderDeathBeats": {
+      "kaelen": {
+        "0": "KAELEN: VOCÊ MORREU LÁ FORA. OUVI A ESTÁTICA DA REDE MUDAR. SENTE-SE.",
+        "1": "KAELEN: CHEN GUARDAVA NÚCLEOS CORPORAIS RESERVAS NO FABRICADOR. VOCÊ DEVE TER SIDO RECUPERADO.",
+        "2": "KAELEN: SEU PULSO AGORA É LIDO ATRAVÉS DO PISO. ANTES NÃO ERA. EU VERIFIQUEI."
+      },
+      "martha": {
+        "0": "MARTHA: VOCÊ MORREU LÁ FORA. SENTI O FRIO. CHEGUE MAIS PERTO DO VAPOR.",
+        "1": "MARTHA: O MUSGO FICA MAIS QUENTE ONDE SEU SANGUE CAIU. ELE ESTÁ LEMBRANDO DE VOCÊ.",
+        "2": "MARTHA: ME DÊ A MÃO. A OUTRA. ISSO. SEU PULSO ESTÁ CONTANDO ALGO QUE NÃO RECONHEÇO."
+      },
+      "briggs": {
+        "0": "BRIGGS: VOCÊ MORREU LÁ FORA. OUVI A ESTÁTICA NA FREQUÊNCIA. SENTE-SE.",
+        "1": "BRIGGS: A PRIMEIRA COISA QUE APRENDEMOS NA GUILDA DE FERRO: SE FOR MORRER, MORRA FORA DO CONE DE TIRO.",
+        "2": "BRIGGS: FAÇA DE NOVO. PISQUE. ...PRONTO. ISSO É NOVO. AINDA NÃO VOU ANOTAR NO LIVRO."
+      },
+      "nahl": {
+        "0": "NAHL: SENTI SEU FIO SE ROMPER. E COSTUREI DE VOLTA. FIQUE PARADO.",
+        "1": "NAHL: A RAINHA VÊ CADA MORTE. ELA NÃO SE IMPORTA. EU ME IMPORTO."
+      },
+      "vey": {
+        "0": "VEY: SEU SINAL MORREU. A ESTÁTICA ERA ENSURDECEDORA. FIQUE PARADO.",
+        "1": "VEY: A NAVE-MÃE ARQUIVA A ALMA DE CADA AGENTE. MAS O BÚNQUER... O BÚNQUER FICA COM O CORPO."
+      },
+      "rhun": {
+        "0": "RHUN: VOCÊ CAIU. EU ME LEVANTEI. ESSE É O JURAMENTO.",
+        "1": "RHUN: UM MURO QUE QUEBRA PODE SER TECIDO. UM PORTADOR QUE MORRE... PODE SER CARREGADO."
+      }
+    },
+    "codexEntries": {
+      "0": {
+        "name": "CIBERCARACOL",
+        "blurb": "Gado reclassificado. Portador de limo de memória. Aproxima-se com a paciência de uma fatura não paga."
+      },
+      "1": {
+        "name": "CRIOCARACOL",
+        "blurb": "Variante termonegativa. Vaza um frio que a manutenção insiste em chamar de \"perda de conforto ambiental\"."
+      },
+      "2": {
+        "name": "ESPOROCARACOL",
+        "blurb": "Corpo frutífero com pernas. Libera esporos que o sistema de ar concordou em ignorar."
+      },
+      "3": {
+        "name": "DRONE SENTINELA",
+        "blurb": "Unidade de imposição por linha de visão. Dispara em tudo que exceda sua cota autorizada de felicidade."
+      },
+      "4": {
+        "name": "RASTEJADOR DE BRECHA",
+        "blurb": "Ativo corpo a corpo de corda. Telegrafa o bote, como exige o manual de segurança que depois ignora."
+      },
+      "5": {
+        "name": "RETALIAÇÃO DE MARCO",
+        "blurb": "Despachado quando um operador melhora a instalação sem preencher o formulário correto."
+      },
+      "6": {
+        "name": "OPERADOR CORROMPIDO",
+        "blurb": "Um contratado anterior, reabsorvido à força de trabalho. Ainda segue o roteiro da última missão."
+      },
+      "7": {
+        "name": "TERMINAL DO BÚNQUER",
+        "blurb": "Dispositivo de memória assombrado. Imprime registros de um departamento que já não responde."
+      },
+      "8": {
+        "name": "ESTABILIZADOR DE CAMPO DE O₂",
+        "blurb": "Restaura uma zona azul de política respirável. A operação anula a garantia restante."
+      },
+      "9": {
+        "name": "FUNDIÇÃO DE FABRICAÇÃO",
+        "blurb": "Converte sucata em equipamento apostando contra as compras. Vantagem da casa: catastrófica."
+      },
+      "10": {
+        "name": "CAIXA-PRETA DO OPERADOR",
+        "blurb": "A telemetria selada de um contratado morto. Recuperável. Faturável. Levemente acusatória."
+      },
+      "11": {
+        "name": "TERMINAL IMITADOR",
+        "blurb": "Uma assinatura de terminal forjada. Paga e depois cobra em patrulhas. Engenheiros podem verificar antes de confiar."
+      },
+      "12": {
+        "name": "CARGA NEGRA DO SCOUT ALPHA",
+        "blurb": "O casco do Batedor levava o rastreador. \"Resgate\" nunca foi a palavra mais limpa para a operação."
+      },
+      "13": {
+        "name": "RELÉ DO ENGENHEIRO BRAVO",
+        "blurb": "O casco do Engenheiro levava o repetidor. Alguém queria o sinal amplificado de dentro do gelo."
+      },
+      "14": {
+        "name": "ARMA DE CONTENÇÃO DO TANQUE CHARLIE",
+        "blurb": "O casco do Tanque levava a arma. A missão esperava que algo respondesse antes de esperar que alguém saísse."
+      },
+      "15": {
+        "name": "FALHA DE DISJUNTOR",
+        "blurb": "O orçamento de iluminação expira sem aviso. Aproveite a escuridão com responsabilidade."
+      },
+      "16": {
+        "name": "DESVIO DE TELEMETRIA",
+        "blurb": "Dados de navegação reclassificados como sugestão. O mapa é memória corporativa, não verdade."
+      },
+      "17": {
+        "name": "O ELEVADOR PARA BAIXO",
+        "blurb": "Noventa segundos de descida. As aberturas discordam da sua presença o caminho todo."
+      },
+      "18": {
+        "name": "ESPÉCIME 0047",
+        "blurb": "O PIVÔ. SOLDA DE ORIGEM DESBLOQUEADA: ANTIGO PORTADOR DE SEMENTE RECLASSIFICADO COMO NÚCLEO ADORMECIDO DA RAINHA. A TELEMETRIA DO EXOTRAJE INDICA QUE O BIOSSINAL DESLOCA O FOCO DA TRANSMISSÃO PARA O CORPO DO PORTADOR NO MUNDO."
+      }
+    },
+    "loreClassLogs": {
+      "SCOUT": "BRIEFING DE IMPLANTAÇÃO DO BATEDOR: CARGA DO CASCO — BALIZA DE RASTREIO. ALVO FIXADO NO ESPÉCIME 0047. SE VOCÊ ESTÁ LENDO ISTO, A BALIZA ESTÁ VIVA E TRANSMITINDO. É POR ISSO QUE 0047 ESTÁ OUVINDO VOCÊ AGORA. NÃO HÁ COMO SE ESCONDER.",
+      "ENGINEER": "BRIEFING DE IMPLANTAÇÃO DO ENGENHEIRO: CARGA DO CASCO — RELÉ DE UPLINK DE FILAMENTO NEURAL. LARGURA DE BANDA RESERVADA PARA TRANSIÇÕES INTEGRADAS AO ENXAME. SE O RELÉ FOR CORTADO, O SISTEMA RECONCENTRA A ENERGIA LOCAL AO REDOR DO TRAJE.",
+      "TANK": "BRIEFING DE IMPLANTAÇÃO DO TANQUE: CARGA DO CASCO — ÓRGÃOS DE ARMAMENTO PESADO. PROJETADOS PARA ESTABILIZAR IMPACTOS BIOESTRUTURAIS NO TRONO DA RAINHA. USE OS CAMPOS DE FORÇA DESTE CHASSI PARA ABSORVER AS DEFESAS DA COLMEIA."
+    },
+    "classWreckageLogs": {
+      "SCOUT": {
+        "title": "DESTROÇOS DO SCOUT ALPHA",
+        "payload": "BRIEFING DE IMPLANTAÇÃO DO BATEDOR: CARGA DO CASCO — BALIZA DE RASTREIO. ALVO FIXADO NO ESPÉCIME 0047. SE VOCÊ ESTÁ LENDO ISTO, A BALIZA ESTÁ VIVA E TRANSMITINDO. É POR ISSO QUE 0047 ESTÁ OUVINDO VOCÊ AGORA. NÃO HÁ COMO SE ESCONDER."
+      },
+      "ENGINEER": {
+        "title": "DESTROÇOS DO ENGENHEIRO BRAVO",
+        "payload": "BRIEFING DE IMPLANTAÇÃO DO ENGENHEIRO: CARGA DO CASCO — RELÉ DE UPLINK DE FILAMENTO NEURAL. LARGURA DE BANDA RESERVADA PARA TRANSIÇÕES INTEGRADAS AO ENXAME. SE O RELÉ FOR CORTADO, O SISTEMA RECONCENTRA A ENERGIA LOCAL AO REDOR DO TRAJE."
+      },
+      "TANK": {
+        "title": "DESTROÇOS DO TANQUE CHARLIE",
+        "payload": "BRIEFING DE IMPLANTAÇÃO DO TANQUE: CARGA DO CASCO — ÓRGÃOS DE ARMAMENTO PESADO. PROJETADOS PARA ESTABILIZAR IMPACTOS BIOESTRUTURAIS NO TRONO DA RAINHA. USE OS CAMPOS DE FORÇA DESTE CHASSI PARA ABSORVER AS DEFESAS DA COLMEIA."
+      }
+    }
   }
 }

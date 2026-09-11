@@ -28,7 +28,7 @@ export const DIRECTOR_AMBIENT_LINES = localizeCatalog('narrative.directorAmbient
     { id: 'director_reverent_column', register: 'reverent', text: 'The column turns your compass away from the sky.', tags: { eventTrigger: null, directorActions: ['corrupt'], cooldownClass: 'director_ambient', minRepeatSeconds: 90 } },
     { id: 'director_reverent_darkness', register: 'reverent', text: 'The lights are gone. The dark is where the chitin grows.', tags: { eventTrigger: null, directorActions: ['lightsout'], cooldownClass: 'director_ambient', minRepeatSeconds: 90 } },
     { id: 'director_reverent_descent', register: 'reverent', text: 'The structure sends its children to welcome your descent.', tags: { eventTrigger: null, directorActions: ['patrol'], depthTier: { min: 2 }, cooldownClass: 'director_ambient', minRepeatSeconds: 90 } }
-]));
+]), { skip: ['id', 'register', 'tags', 'cooldownClass'] });
 
 const MOTHERSHIP_CRITICAL_IDS = new Set(['mothership_hp_critical', 'mothership_objective_found', 'mothership_first_boss']);
 
@@ -61,4 +61,4 @@ export const MOTHERSHIP_REACTIVE_LINES = localizeCatalog('narrative.mothershipRe
     mothershipLine('mothership_weapon_calibrated', 'weapon_calibrated', 'NOTED: AGENT WEAPON OUTPUT RISING. ... WHY DO YOU NEED MORE.'),
     mothershipLine('mothership_first_boss', 'first_boss', 'CONFIRMED KILL: APEX BIO-ENTITY DOWN. THE SIGNAL FELT THAT.'),
     mothershipLine('mothership_specimen_notices', 'specimen_notices', '[UNAUTHORIZED CHANNEL] ...0047 HAS STOPPED BUILDING. IT IS LISTENING TO YOU NOW.')
-]));
+]), { skip: ['id', 'tags'] });

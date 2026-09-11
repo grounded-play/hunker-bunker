@@ -254,5 +254,336 @@
       "choice_tutorial_label": "[B] ERST DIE PROTOKOLLE DURCHGEHEN.",
       "choice_tutorial_hint": "TUTORIAL STARTEN"
     }
+  },
+  "narrative": {
+    "dialogue": {
+      "corporate": {
+        "lowO2": {
+          "0": "Lebenserhaltungshinweis: Atmen bleibt nur in archiviertem Schulungsmaterial optional.",
+          "1": "O2-Reserven unter dem Richtlinienkomfort. Richtlinienkomfort ist seit dem Aufprall nicht verfügbar.",
+          "2": "Die Anzugfilter verhandeln mit dem Vakuum. Kehre zum blauen Feld zurück.",
+          "3": "Atmosphärisches Guthaben niedrig. Bitte umgehend Sauerstoff einzahlen.",
+          "4": "Warnung: Operator-Atmung nähert sich einer Tabellenkalkulations-Ausnahme."
+        },
+        "extraction": {
+          "0": "Extraktionsfenster offen. Stillhalten, während das Schiff sich erinnert, dass es ein Schiff ist.",
+          "1": "Startfreigabe ausstehend. Versuche, während des Papierkrams nicht zu sterben.",
+          "2": "Zielfracht angenommen. Bitte in Reuedistanz zum Wrack bleiben.",
+          "3": "Mutterschiff-Uplink baut sich auf. Ausgezeichneter Zeitpunkt zu gehen.",
+          "4": "Rückweg verifiziert. Wahrscheinlichkeit eines würdevollen Abgangs steigt."
+        },
+        "death": {
+          "0": "Operator-Signal beendet. Beileid mit reduzierter Aufrichtigkeit wird generiert.",
+          "1": "Anzugausfall protokolliert. Bergungsprotokoll scharfgeschaltet.",
+          "2": "Vitalwerte auf Null. Narrative Kontinuität im Archiv gesichert.",
+          "3": "Todesereignis angenommen. Viel Freude beim nächsten Versuch.",
+          "4": "Blackbox-Makel vorbereitet. Der Bunker führt Buch."
+        },
+        "blackBoxRecovery": {
+          "0": "Blackbox geborgen. Die Würde des vorherigen Operators bleibt unbergbar.",
+          "1": "Versiegelte Bergung eingelagert. Todesprotokoll angehängt — für Compliance und Spuk.",
+          "2": "Feldmakel bereinigt. Das Archiv behielt die peinlichen Details.",
+          "3": "Geborgene Ressourcen gesichert. Der Bunker bestreitet jede emotionale Beteiligung.",
+          "4": "Versicherungsprotokoll abgeschlossen. Versuche, nicht sofort einen Ersatz zu erschaffen."
+        },
+        "caveSignal": {
+          "0": "MUTTERSCHIFF: UNTERIRDISCHES SIGNAL ERFASST. QUELLE UNBEKANNT.",
+          "1": "SYSTEM: AUDIOMUSTER ÄHNELT ATMUNG. KLASSIFIZIERUNG ALS RAUSCHEN.",
+          "2": "BUNKER: TÜRKARTE AKTUALISIERT. UNAUTORISIERTER HOHLRAUM GEFUNDEN.",
+          "3": "MUTTERSCHIFF: ORGANISCHE STRUKTUR NICHT OHNE BERGUNGSZIEL BETRETEN."
+        },
+        "terminalChoice": {
+          "0": "Terminal-Handel angenommen. Konsequenzen wurden an dein zukünftiges Ich weitergeleitet.",
+          "1": "Wahl registriert. Die Anlage schätzt entschlossenes Risiko.",
+          "2": "Abwägung ausgeführt. Der Sicherheitsausschuss ist in den Schweigemodus gewechselt.",
+          "3": "Lokale Systemübersteuerung abgeschlossen. Etwas anderswo hat es bemerkt.",
+          "4": "Terminal-Entscheidung unter „fragwürdigem Urteilsvermögen“ archiviert."
+        },
+        "majorUpgrade": {
+          "0": "Upgrade installiert. Die Konzernleitung hätte gern die Anerkennung für deine Bergung.",
+          "1": "Subsystem online. Überlebenschancen von dekorativ auf plausibel angehoben.",
+          "2": "Hardware-Autorisierung angenommen. Bitte finanziere deine eigene Rettung weiter.",
+          "3": "Generatorleistung verbessert. Atemzone auf allgemeinen Wunsch erweitert.",
+          "4": "Kampfmatrix aktualisiert. Feinde werden per Einschlag informiert."
+        },
+        "director": {
+          "0": "Bewegung protokolliert. Die Haustechnik hat ein Begrüßungskomitee entsandt.",
+          "1": "Unautorisierte Erkundung erkannt. Säulenbeleuchtung wird angepasst.",
+          "2": "Deine Neugier übersteigt deine Freigabestufe. Wird entsprechend ausgeglichen.",
+          "3": "Strom in eine Abteilung umgeleitet, die dich verabscheut.",
+          "4": "Die Struktur vermerkt deine Tiefe und missbilligt sie.",
+          "5": "Bitte ruhig bleiben, während das Säulenfeld ein neues Ziel wählt.",
+          "6": "Die Produktivität wird überwacht. Alles andere ebenfalls.",
+          "7": "Ein Wartungsereignis wurde um deinen Standort herum angesetzt."
+        }
+      }
+    },
+    "directorAmbient": {
+      "0": {
+        "text": "Bewegung protokolliert. Die Haustechnik hat ein Begrüßungskomitee zu deiner Position entsandt."
+      },
+      "1": {
+        "text": "Unautorisierte Erkundung erkannt. Lokale Beleuchtung wurde ausgesetzt."
+      },
+      "2": {
+        "text": "Deine Neugier übersteigt weiterhin deine Freigabestufe."
+      },
+      "3": {
+        "text": "Die Stromversorgung der lokalen Beleuchtung wurde umgeleitet."
+      },
+      "4": {
+        "text": "Die Struktur vermerkt deine Tiefe und missbilligt sie."
+      },
+      "5": {
+        "text": "Navigationstelemetrie gilt nicht mehr als maßgeblich."
+      },
+      "6": {
+        "text": "Die Produktivität wird überwacht. Deine Vitalwerte ebenfalls."
+      },
+      "7": {
+        "text": "Ein feindliches Wartungsteam nähert sich deinem Standort."
+      },
+      "8": {
+        "text": "ER-ERKENNUNG... unautorisierte Neu-Neugier bleibt protokolliert."
+      },
+      "9": {
+        "text": "WARNUNG: Sektorschalter geöffnet. Das Licht ist... weg."
+      },
+      "10": {
+        "text": "Die Eindämmungsabteilung meldet... null überlebende Mitarbeiter."
+      },
+      "11": {
+        "text": "NA-NAVIGATION: Prüfsumme fehlgeschlagen. Kompassausgabe beschädigt."
+      },
+      "12": {
+        "text": "SYSTEM: Bewegungssignaturen laufen zusammen. Die Struktur... erinnert sich an dich."
+      },
+      "13": {
+        "text": "Der Direktor ist ein Geist in einer Maschine. Die Königin hört jeden Schritt."
+      },
+      "14": {
+        "text": "Die Säule dreht deinen Kompass vom Himmel fort."
+      },
+      "15": {
+        "text": "Das Licht ist fort. Im Dunkeln wächst das Chitin."
+      },
+      "16": {
+        "text": "Die Struktur schickt ihre Kinder, um deinen Abstieg zu begrüßen."
+      }
+    },
+    "mothershipReactive": {
+      "0": {
+        "text": "> MUTTERSCHIFF: AGENT — ERSTE BEDROHUNG NEUTRALISIERT. WEITER."
+      },
+      "1": {
+        "text": "> MUTTERSCHIFF: WARNUNG: KRYOSEKTORGRENZE ÜBERSCHRITTEN. THERMOPROTOKOLL AKTIV."
+      },
+      "2": {
+        "text": "> MUTTERSCHIFF: ALARM: BIO-SICHERHEITSZONE BETRETEN. ANZUGFILTER AM LIMIT."
+      },
+      "3": {
+        "text": "> MUTTERSCHIFF: NOTRUF: VITALWERTE KRITISCH. EXTRAKTIONSFENSTER VORZEITIG OFFEN."
+      },
+      "4": {
+        "text": "> MUTTERSCHIFF: UPLINK: ZIEL BESTÄTIGT. FÜR DIE EXTRAKTION SIND ALLE SCHIFFSSYSTEME ERFORDERLICH."
+      },
+      "5": {
+        "text": "> MUTTERSCHIFF: BERGUNG ERHALTEN. LAGER GESICHERT. EINSATZ FORTSETZEN."
+      },
+      "6": {
+        "text": "> MUTTERSCHIFF: AGENT — BUNKER-DATENFRAGMENT GEBORGEN. ÜBERTRAGUNG ANS ARCHIV."
+      },
+      "7": {
+        "text": "> MUTTERSCHIFF: WARNUNG: AUTOMATISCHES VERTEIDIGUNGSSYSTEM AKTIV. DECKUNG EMPFOHLEN."
+      },
+      "8": {
+        "text": "> MUTTERSCHIFF: ALARM: SCHNELLE BIO-ENTITÄT ERFASST. ABSTAND HALTEN."
+      },
+      "9": {
+        "text": "> MUTTERSCHIFF: UPLINK: WAFFENLAGER GEORTET. HOCHWERTIGES GUT — WIDERSTAND ERWARTEN."
+      },
+      "10": {
+        "text": "> MUTTERSCHIFF: WARNUNG: BIO-ENTITÄTEN-NEST BESTÄTIGT. MAXIMALE BEDROHUNGSDICHTE. VORSICHT."
+      },
+      "11": {
+        "text": "> MUTTERSCHIFF: VERMERKT: WAFFENLEISTUNG DES AGENTEN STEIGT. ... WARUM BRAUCHST DU MEHR."
+      },
+      "12": {
+        "text": "> MUTTERSCHIFF: ABSCHUSS BESTÄTIGT: APEX-BIO-ENTITÄT ERLEDIGT. DAS SIGNAL HAT DAS GESPÜRT."
+      },
+      "13": {
+        "text": "> MUTTERSCHIFF: [UNAUTORISIERTER KANAL] ...0047 HAT AUFGEHÖRT ZU BAUEN. ES HÖRT DIR JETZT ZU."
+      }
+    },
+    "campQuests": {
+      "camp_meridian": {
+        "0": {
+          "label": "REAKTORENTLÜFTUNG",
+          "desc": "DRUCKAUFBAU IM REAKTORENTLÜFTUNGSNETZ ABBAUEN"
+        },
+        "1": {
+          "label": "SCHWARM-ARCHIV KAP. 1",
+          "desc": "RGB-ARCHIVDATEN AUS DEM NAHEN ALIEN-TERMINAL BERGEN"
+        },
+        "2": {
+          "label": "DIE VERLORENE SONDE",
+          "desc": "VERLORENE Horizon Corp MESSSONDE AUS DEM FROSTBIOM BERGEN"
+        }
+      },
+      "camp_tallow": {
+        "0": {
+          "label": "SPORENREINIGUNG",
+          "desc": "ROTEN INVASIVEN SCHIMMEL AUS DEN HYDROBEET-KANÄLEN ENTFERNEN"
+        },
+        "1": {
+          "label": "SCHWARM-ARCHIV KAP. 2",
+          "desc": "ARCHIVDATEN AUS DEM BIOMECHANISCHEN STASE-KNOTEN EXTRAHIEREN"
+        },
+        "2": {
+          "label": "DER VERLORENE KULTIST",
+          "desc": "VERLORENEN KULTISTEN AUS DEN LÜFTUNGSTUNNELN BERGEN UND ESKORTIEREN"
+        }
+      },
+      "camp_vesper": {
+        "0": {
+          "label": "ARSENAL-DURCHBRUCH",
+          "desc": "CYBERSCHNECKEN AUS DEM WAFFENSCHRANK ENTFERNEN"
+        },
+        "1": {
+          "label": "SCHWARM-ARCHIV KAP. 3",
+          "desc": "VORFALLPROTOKOLLE AUS DEM ALTEN BUNKER-ARCHIVKERN ENTSCHLÜSSELN"
+        },
+        "2": {
+          "label": "BUNKER-VERTEIDIGUNG",
+          "desc": "DAS BARRIKADENTOR GEGEN ANRÜCKENDE ANGRIFFSPATROUILLEN VERTEIDIGEN"
+        }
+      }
+    },
+    "leaderDeathBeats": {
+      "kaelen": {
+        "0": "KAELEN: DU BIST DA DRAUSSEN GESTORBEN. ICH HÖRTE DAS RAUSCHEN DES NETZES SICH ÄNDERN. SETZ DICH.",
+        "1": "KAELEN: CHEN BEWAHRTE ERSATZ-KÖRPERKERNE IM FABRIKATOR AUF. DU MUSST GEBORGEN WORDEN SEIN.",
+        "2": "KAELEN: DEIN PULS IST JETZT DURCH DIE BODENPLATTEN MESSBAR. FRÜHER NICHT. ICH HABE NACHGESEHEN."
+      },
+      "martha": {
+        "0": "MARTHA: DU BIST DA DRAUSSEN GESTORBEN. ICH SPÜRTE DIE KÄLTE. KOMM NÄHER AN DEN DAMPF.",
+        "1": "MARTHA: DAS MOOS WIRD WÄRMER, WO DEIN BLUT FLOSS. ES ERINNERT SICH AN DICH.",
+        "2": "MARTHA: GIB MIR DIE HAND. DIE ANDERE. SO. DEIN PULS ZÄHLT ETWAS, DAS ICH NICHT KENNE."
+      },
+      "briggs": {
+        "0": "BRIGGS: DU BIST DA DRAUSSEN GESTORBEN. ICH HÖRTE DAS RAUSCHEN AUF DER FREQUENZ. SETZ DICH.",
+        "1": "BRIGGS: DAS ERSTE, WAS MAN IN DER EISERNEN GILDE LERNT: WENN DU STIRBST, DANN AUSSERHALB DES SCHUSSFELDS.",
+        "2": "BRIGGS: MACH DAS NOCHMAL. BLINZLE. ...DA. DAS IST NEU. INS BUCH SCHREIBE ICH ES NOCH NICHT."
+      },
+      "nahl": {
+        "0": "NAHL: ICH SPÜRTE, WIE DEIN FADEN RISS. UND ICH HABE IHN WIEDER VERNÄHT. HALT STILL.",
+        "1": "NAHL: DIE KÖNIGIN SIEHT JEDEN TOD. IHR IST ES EGAL. MIR NICHT."
+      },
+      "vey": {
+        "0": "VEY: DEIN SIGNAL STARB. DAS RAUSCHEN WAR OHRENBETÄUBEND. HALT STILL.",
+        "1": "VEY: DAS MUTTERSCHIFF ARCHIVIERT JEDE AGENTENSEELE. ABER DER BUNKER... DER BUNKER BEHÄLT DEN KÖRPER."
+      },
+      "rhun": {
+        "0": "RHUN: DU BIST GEFALLEN. ICH BIN AUFGESTANDEN. DAS IST DER SCHWUR.",
+        "1": "RHUN: EINE MAUER, DIE BRICHT, KANN GEFLICKT WERDEN. EIN TRÄGER, DER STIRBT... KANN GETRAGEN WERDEN."
+      }
+    },
+    "codexEntries": {
+      "0": {
+        "name": "CYBERSCHNECKE",
+        "blurb": "Umklassifiziertes Nutzvieh. Träger von Gedächtnisschleim. Nähert sich mit der Geduld einer unbezahlten Rechnung."
+      },
+      "1": {
+        "name": "KRYOSCHNECKE",
+        "blurb": "Thermonegative Variante. Verströmt eine Kälte, die die Haustechnik als „Verlust von Umgebungskomfort“ bezeichnet."
+      },
+      "2": {
+        "name": "SPORENSCHNECKE",
+        "blurb": "Fruchtkörper auf Beinen. Setzt Sporen frei, die die Lüftungsanlage zu ignorieren zugestimmt hat."
+      },
+      "3": {
+        "name": "WÄCHTERDROHNE",
+        "blurb": "Durchsetzungseinheit auf Sichtlinie. Feuert auf alles, was die genehmigte Glücksquote überschreitet."
+      },
+      "4": {
+        "name": "BRESCHENKRIECHER",
+        "blurb": "Aufziehbares Nahkampf-Asset. Kündigt seinen Ausfall an, wie es das Sicherheitshandbuch verlangt, das es danach ignoriert."
+      },
+      "5": {
+        "name": "MEILENSTEIN-VERGELTUNG",
+        "blurb": "Wird entsandt, wenn ein Operator die Anlage verbessert, ohne das richtige Formular einzureichen."
+      },
+      "6": {
+        "name": "VERDERBTER OPERATOR",
+        "blurb": "Ein früherer Auftragnehmer, wieder in die Belegschaft aufgenommen. Folgt noch immer seinem letzten Missionsskript."
+      },
+      "7": {
+        "name": "BUNKER-TERMINAL",
+        "blurb": "Heimgesuchtes Speichergerät. Druckt Protokolle einer Abteilung, die nicht mehr antwortet."
+      },
+      "8": {
+        "name": "O₂-FELDSTABILISATOR",
+        "blurb": "Stellt eine blaue Zone atembarer Richtlinien wieder her. Der Betrieb hebt die Restgarantie auf."
+      },
+      "9": {
+        "name": "FERTIGUNGSGIESSEREI",
+        "blurb": "Verwandelt Bergungsgut in Ausrüstung, indem sie gegen den Einkauf wettet. Hausvorteil: katastrophal."
+      },
+      "10": {
+        "name": "OPERATOR-BLACKBOX",
+        "blurb": "Die versiegelte Telemetrie eines toten Auftragnehmers. Bergbar. Abrechenbar. Leicht anklagend."
+      },
+      "11": {
+        "name": "MIMIK-TERMINAL",
+        "blurb": "Eine gefälschte Terminalsignatur. Zahlt aus und stellt dir dann Patrouillen in Rechnung. Ingenieure können es vor dem Vertrauen prüfen."
+      },
+      "12": {
+        "name": "SCHWARZE FRACHT VON SCOUT ALPHA",
+        "blurb": "Der Späher-Rumpf trug den Peilsender. „Rettung“ war nie das sauberste Wort für die Operation."
+      },
+      "13": {
+        "name": "RELAIS VON BRAVO ENGINEER",
+        "blurb": "Der Ingenieur-Rumpf trug den Verstärker. Jemand wollte das Signal aus dem Inneren des Eises verstärken."
+      },
+      "14": {
+        "name": "EINDÄMMUNGSWAFFE VON CHARLIE TANK",
+        "blurb": "Der Panzer-Rumpf trug die Waffe. Die Mission rechnete eher damit, dass etwas antwortet, als dass jemand geht."
+      },
+      "15": {
+        "name": "SCHALTERFEHLER",
+        "blurb": "Das Beleuchtungsbudget verfällt ohne Vorwarnung. Bitte genieße die Dunkelheit verantwortungsvoll."
+      },
+      "16": {
+        "name": "TELEMETRIE-DRIFT",
+        "blurb": "Navigationsdaten als Vorschlag umklassifiziert. Die Karte ist Konzerngedächtnis, nicht Wahrheit."
+      },
+      "17": {
+        "name": "DER AUFZUG NACH UNTEN",
+        "blurb": "Neunzig Sekunden Abstieg. Die Lüftungsschächte widersprechen deiner Anwesenheit den ganzen Weg."
+      },
+      "18": {
+        "name": "EXEMPLAR 0047",
+        "blurb": "DER DREH- UND ANGELPUNKT. URSPRUNGSNAHT ENTSPERRT: ALTER SAATTRÄGER ALS SCHLAFENDER KERN DER KÖNIGIN UMKLASSIFIZIERT. EXOSKELETT-TELEMETRIE ZEIGT, DASS DAS BIOSIGNAL SEINEN FOKUS VON DER ÜBERTRAGUNG AUF DEN KÖRPER DES TRÄGERS IN DER WELT VERLAGERT."
+      }
+    },
+    "loreClassLogs": {
+      "SCOUT": "EINSATZBRIEFING SPÄHER: RUMPFLADUNG — PEILSENDER. ZIEL ERFASST: EXEMPLAR 0047. WENN DU DAS LIEST, LEBT DER SENDER UND FUNKT. DESHALB HÖRT 0047 DIR JETZT ZU. DU KANNST DICH NICHT VERSTECKEN.",
+      "ENGINEER": "EINSATZBRIEFING INGENIEUR: RUMPFLADUNG — NEURALFILAMENT-UPLINK-RELAIS. SENDEBANDBREITE FÜR SCHWARMINTEGRIERTE ÜBERGÄNGE RESERVIERT. WIRD DAS RELAIS GETRENNT, BÜNDELT DAS SYSTEM DIE LOKALE ENERGIE UM DEN ANZUG.",
+      "TANK": "EINSATZBRIEFING PANZER: RUMPFLADUNG — SCHWERE KAMPFWAFFENORGANE. AUSGELEGT ZUR STABILISIERUNG BIOSTRUKTURELLER EINSCHLÄGE AM THRON DER KÖNIGIN. NUTZE DIE KRAFTFELDER DIESES CHASSIS, UM DIE SCHWARMVERTEIDIGUNG ZU ABSORBIEREN."
+    },
+    "classWreckageLogs": {
+      "SCOUT": {
+        "title": "WRACK VON SCOUT ALPHA",
+        "payload": "EINSATZBRIEFING SPÄHER: RUMPFLADUNG — PEILSENDER. ZIEL ERFASST: EXEMPLAR 0047. WENN DU DAS LIEST, LEBT DER SENDER UND FUNKT. DESHALB HÖRT 0047 DIR JETZT ZU. DU KANNST DICH NICHT VERSTECKEN."
+      },
+      "ENGINEER": {
+        "title": "WRACK VON BRAVO ENGINEER",
+        "payload": "EINSATZBRIEFING INGENIEUR: RUMPFLADUNG — NEURALFILAMENT-UPLINK-RELAIS. SENDEBANDBREITE FÜR SCHWARMINTEGRIERTE ÜBERGÄNGE RESERVIERT. WIRD DAS RELAIS GETRENNT, BÜNDELT DAS SYSTEM DIE LOKALE ENERGIE UM DEN ANZUG."
+      },
+      "TANK": {
+        "title": "WRACK VON CHARLIE TANK",
+        "payload": "EINSATZBRIEFING PANZER: RUMPFLADUNG — SCHWERE KAMPFWAFFENORGANE. AUSGELEGT ZUR STABILISIERUNG BIOSTRUKTURELLER EINSCHLÄGE AM THRON DER KÖNIGIN. NUTZE DIE KRAFTFELDER DIESES CHASSIS, UM DIE SCHWARMVERTEIDIGUNG ZU ABSORBIEREN."
+      }
+    }
   }
 }
