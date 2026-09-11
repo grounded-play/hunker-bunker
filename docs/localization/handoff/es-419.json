@@ -1,0 +1,1262 @@
+{
+  "narrative": {
+    "campQuests": {
+      "camp_meridian": {
+        "0": {
+          "desc": "DEFUSE PRESSURE BUILD-UP IN REACTOR VENTING GRID",
+          "label": "REACTOR VENTING"
+        },
+        "1": {
+          "chapterId": "parking_lot",
+          "desc": "RECOVER RGB ARCHIVE DATA FROM NEARBY ALIEN HIVE TERMINAL",
+          "label": "HIVE ARCHIVE CH. 1"
+        },
+        "2": {
+          "desc": "RECOVER LOST Horizon Corp METRIC PROBE FROM FROST BIOME",
+          "label": "THE LOST PROBE"
+        }
+      },
+      "camp_tallow": {
+        "0": {
+          "desc": "PURGE RED INVASIVE MOLD FROM HYDRO-BED CHANNELS",
+          "label": "SPORE CLEANSING"
+        },
+        "1": {
+          "chapterId": "warehouse",
+          "desc": "EXTRACT ARCHIVE DATA FROM BIOMECHANICAL STASIS NODE",
+          "label": "HIVE ARCHIVE CH. 2"
+        },
+        "2": {
+          "desc": "RECOVER AND ESCORT LOST CULTIST FROM VENTILATION TUNNELS",
+          "label": "THE LOST CULTIST"
+        }
+      },
+      "camp_vesper": {
+        "0": {
+          "desc": "CLEAR CYBER-SNAILS INFESTING WEAPONS CABINET",
+          "label": "ARMORY BREACH"
+        },
+        "1": {
+          "chapterId": "incident_review",
+          "desc": "DECRYPT INCIDENT LOGS FROM ANCIENT BUNKER ARCHIVE CORE",
+          "label": "HIVE ARCHIVE CH. 3"
+        },
+        "2": {
+          "desc": "DEFEND THE BARRICADE GATE FROM INCOMING ATTACK PATROLS",
+          "label": "BUNKER HOLDOUT"
+        }
+      }
+    },
+    "classWreckageLogs": {
+      "ENGINEER": {
+        "classType": "ENGINEER",
+        "codexId": "wreckage_engineer_relay",
+        "coords": {
+          "sector": "CRYO"
+        },
+        "date": "2047-08-14T21:18:44Z",
+        "hull": "BRAVO ENGINEER",
+        "payload": "ENGINEER DEPLOYMENT BRIEF: HULL PAYLOAD — NEURAL FILAMENT UPLINK RELAY. BROADCAST BANDWIDTH SECURED FOR SWARM-INTEGRATED TRANSITIONS. IF THE RELAY IS SEVERED, THE SYSTEM RECONVERGES LOCAL POWER AROUND THE SUIT.",
+        "title": "BRAVO ENGINEER WRECKAGE"
+      },
+      "SCOUT": {
+        "classType": "SCOUT",
+        "codexId": "wreckage_scout_tracking",
+        "coords": {
+          "sector": "ACTIVE"
+        },
+        "date": "2047-08-14T21:12:06Z",
+        "hull": "SCOUT ALPHA",
+        "payload": "SCOUT DEPLOYMENT BRIEF: HULL PAYLOAD — TRACKING BEACON. TARGET LOCKED ON SPECIMEN 0047. IF YOU READ THIS, THE BEACON IS ALIVE AND TRANSMITTING. IT IS THE REASON 0047 IS LISTENING TO YOU NOW. YOU CANNOT HIDE.",
+        "title": "SCOUT ALPHA WRECKAGE"
+      },
+      "TANK": {
+        "classType": "TANK",
+        "codexId": "wreckage_tank_weapon",
+        "coords": {
+          "sector": "BIO"
+        },
+        "date": "2047-08-14T21:26:19Z",
+        "hull": "CHARLIE TANK",
+        "payload": "TANK DEPLOYMENT BRIEF: HULL PAYLOAD — HEAVY COMBAT WEAPON ORGANS. DESIGNED TO STABILIZE BIO-STRUCTURAL IMPACTS AT THE QUEEN'S THRONE. USE THE FORCE-FIELDS OF THIS CHASSIS TO ABSORB THE HIVE DEFENSES.",
+        "title": "CHARLIE TANK WRECKAGE"
+      }
+    },
+    "codexEntries": {
+      "0": {
+        "blurb": "Reclassified livestock. Memory-slime carrier. Approaches with the patience of an unpaid invoice.",
+        "name": "CYBERSNAIL"
+      },
+      "1": {
+        "blurb": "Thermal-negative variant. Leaks a cold that Facilities insists is \"ambient comfort loss.\"",
+        "name": "CRYOSNAIL"
+      },
+      "2": {
+        "blurb": "Fruiting body on legs. Releases spores the air handler has agreed to ignore.",
+        "name": "SPORESNAIL"
+      },
+      "3": {
+        "blurb": "Line-of-sight enforcement unit. Fires on anything exceeding its authorized happiness quota.",
+        "name": "SENTINEL DRONE"
+      },
+      "4": {
+        "blurb": "Wind-up melee asset. Telegraphs its lunge, as required by the safety manual it then ignores.",
+        "name": "BREACH CRAWLER"
+      },
+      "5": {
+        "blurb": "Dispatched when an operator improves the facility without filing the correct form.",
+        "name": "MILESTONE RETALIATION"
+      },
+      "6": {
+        "blurb": "A previous contractor, reabsorbed into the workforce. Still following its last mission script.",
+        "name": "CORRUPTED OPERATOR"
+      },
+      "7": {
+        "blurb": "Haunted memory device. Prints logs from a department that no longer answers.",
+        "name": "BUNKER TERMINAL"
+      },
+      "8": {
+        "blurb": "Restores a blue zone of breathable policy. Operation voids your remaining warranty.",
+        "name": "O₂ FIELD STABILIZER"
+      },
+      "9": {
+        "blurb": "Converts salvage into gear by gambling against procurement. House edge: catastrophic.",
+        "name": "FABRICATION FOUNDRY"
+      },
+      "10": {
+        "blurb": "A dead contractor's sealed telemetry. Recoverable. Billable. Faintly accusatory.",
+        "name": "OPERATOR BLACK BOX"
+      },
+      "11": {
+        "blurb": "A forged terminal signature. Pays out, then bills you in patrols. Engineers can verify before trusting it.",
+        "name": "MIMIC TERMINAL"
+      },
+      "12": {
+        "blurb": "The Scout hull carried the tracker. Rescue was never the cleanest word for the operation.",
+        "name": "SCOUT ALPHA BLACK PAYLOAD"
+      },
+      "13": {
+        "blurb": "The Engineer hull carried the repeater. Someone wanted the signal amplified from inside the ice.",
+        "name": "BRAVO ENGINEER RELAY"
+      },
+      "14": {
+        "blurb": "The Tank hull carried the weapon. The mission expected a thing to answer before it expected anyone to leave.",
+        "name": "CHARLIE TANK CONTAINMENT WEAPON"
+      },
+      "15": {
+        "blurb": "The lighting budget lapses without warning. Please enjoy the darkness responsibly.",
+        "name": "BREAKER FAULT"
+      },
+      "16": {
+        "blurb": "Navigation data reclassified as suggestion. The map is corporate memory, not truth.",
+        "name": "TELEMETRY DRIFT"
+      },
+      "17": {
+        "blurb": "Ninety seconds of descent. The vents disagree with your presence the entire way.",
+        "name": "THE ELEVATOR DOWN"
+      },
+      "18": {
+        "blurb": "THE LINCHPIN. ORIGIN WELD UNLOCKED: ANCIENT SEED-CARRIER RECLASSIFIED AS QUEEN'S DORMANT CORE. EXOSUIT TELEMETRY INDICATES THE BIO-SIGNAL SHIFTS FOCUS FROM BROADCAST TO THE CARRIER'S IN-WORLD BODY.",
+        "name": "SPECIMEN 0047"
+      }
+    },
+    "dialogue": {
+      "corporate": {
+        "blackBoxRecovery": {
+          "0": "Black box recovered. Previous operator dignity remains unrecoverable.",
+          "1": "Sealed salvage banked. Death log appended for compliance and haunting.",
+          "2": "Field stain cleared. Archive retained the embarrassing details.",
+          "3": "Recovered resources secured. The bunker denies all emotional investment.",
+          "4": "Insurance protocol complete. Try not to create a replacement immediately."
+        },
+        "caveSignal": {
+          "0": "MOTHERSHIP: SUBTERRANEAN SIGNAL DETECTED. SOURCE UNKNOWN.",
+          "1": "SYSTEM: AUDIO PATTERN RESEMBLES BREATHING. CLASSIFYING AS STATIC.",
+          "2": "BUNKER: DOOR MAP UPDATED. UNAUTHORIZED CAVITY FOUND.",
+          "3": "MOTHERSHIP: DO NOT ENTER ORGANIC STRUCTURE WITHOUT RECOVERY OBJECTIVE."
+        },
+        "death": {
+          "0": "Operator signal terminated. Generating condolences with reduced sincerity.",
+          "1": "Suit failure logged. Salvage recovery protocol armed.",
+          "2": "Vitals flatlined. Narrative continuity preserved in archive.",
+          "3": "Death event accepted. Please enjoy your next attempt.",
+          "4": "Black-box stain prepared. The bunker is keeping score."
+        },
+        "director": {
+          "0": "Movement logged. Facilities has dispatched a welcome committee.",
+          "1": "Unauthorized exploration detected. Adjusting pillar lighting.",
+          "2": "Your curiosity exceeds your clearance. Compensating accordingly.",
+          "3": "Power rerouted to a department that resents you.",
+          "4": "The structure notes your depth and disapproves.",
+          "5": "Please remain calm while the column field selects a new destination.",
+          "6": "Productivity is being monitored. So is everything else.",
+          "7": "A maintenance event has been scheduled around your location."
+        },
+        "extraction": {
+          "0": "Extraction window open. Stand still while the ship remembers it is a ship.",
+          "1": "Launch authorization pending. Try not to die during paperwork.",
+          "2": "Objective payload accepted. Please remain within regret distance of the wreck.",
+          "3": "Mothership uplink forming. Excellent time to leave.",
+          "4": "Return path verified. Probability of dignified exit improving."
+        },
+        "lowO2": {
+          "0": "Life support advisory: breathing remains optional only in archived training material.",
+          "1": "O2 reserves below policy comfort. Policy comfort has been unavailable since impact.",
+          "2": "Suit filters are bargaining with vacuum. Return to the blue field.",
+          "3": "Atmospheric credit low. Please deposit oxygen immediately.",
+          "4": "Warning: operator respiration approaching spreadsheet exception."
+        },
+        "majorUpgrade": {
+          "0": "Upgrade installed. Corporate would like credit for your salvage.",
+          "1": "Subsystem online. Survival odds moved from decorative to plausible.",
+          "2": "Hardware authorization accepted. Please continue funding your own rescue.",
+          "3": "Generator output improved. Breathing zone expanded by popular demand.",
+          "4": "Combat matrix updated. Hostiles will be informed by impact."
+        },
+        "terminalChoice": {
+          "0": "Terminal bargain accepted. Consequences have been forwarded to future you.",
+          "1": "Choice registered. The facility appreciates decisive risk.",
+          "2": "Tradeoff executed. Safety committee has entered silent mode.",
+          "3": "Local system override complete. Something elsewhere noticed.",
+          "4": "Terminal decision archived under questionable judgment."
+        }
+      },
+      "glitched": {
+        "blackBoxRecovery": {
+          "0": "Bl-black box... previous operator... gone.",
+          "1": "S-Sealed salvage... log appended... for... ghosts.",
+          "2": "F-Field stain... archive... remembers...",
+          "3": "Re-resources secured. Bunker... denies... feeling.",
+          "4": "In-insurance complete... replace... next..."
+        },
+        "caveSignal": {
+          "0": "MOTHERSHIP: S-SIGNAL... UNKNOWN... STATIC...",
+          "1": "SYSTEM: AUDIO PATTERN... IT IS B-BREATHING...",
+          "2": "BUNKER: D-DOOR ERROR... C-CAVITY OPENED...",
+          "3": "MOTHERSHIP: D-DO NOT ENTER... THE H-HEART..."
+        },
+        "death": {
+          "0": "Op-operator signal... G-Generating condolences... ERROR...",
+          "1": "S-Suit failure logged. Salv-salvage recovery armed.",
+          "2": "V-Vitals flat-flatlined. continuity... broken...",
+          "3": "D-Death event accepted... enjoy... try... retry...",
+          "4": "Bl-black-box stain... bunker... counts..."
+        },
+        "director": {
+          "0": "DE-DETECTION... Facilities has logged unauthorized cur-curiosity.",
+          "1": "WARNING: Sector breaker state UNSTABLE. Lights are... fading.",
+          "2": "Power rerouted. Department of containment reports... zero staff.",
+          "3": "SYSTEM: The structure... it remembers you. It... wants you."
+        },
+        "extraction": {
+          "0": "Ex-extraction w-window glitching... stand s-still...",
+          "1": "Launch au-auth pen-pending... ERR: paperwork corrupted...",
+          "2": "Obj-objective payload... please r-remain within... regret...",
+          "3": "Mothership u-uplink... F-FLEE...",
+          "4": "Return path... ex-exit probability... NaN."
+        },
+        "lowO2": {
+          "0": "L-LiFe sUPpOrT... breathing is a CO-CORPORATE luxury.",
+          "1": "O2 r-reserves deP-pleted. Error: client respiration.dll missing.",
+          "2": "ERR: SUIT FILTERS BARGAINING WITH V-VACUUM... HE-HELP...",
+          "3": "Atmospheric cre-credit EXPIRED. Oxygen transaction declined.",
+          "4": "WARNING: Operator vitals re-routing to NULL pointer."
+        },
+        "majorUpgrade": {
+          "0": "Up-upgrade... corporate... thanks... you...",
+          "1": "S-Subsystem online... odds... plausible...",
+          "2": "Hardware au-auth... fund... your... end...",
+          "3": "Gen-generator improved... zone... breathing...",
+          "4": "Combat... host-hostiles... updated..."
+        },
+        "terminalChoice": {
+          "0": "T-Terminal bargain... future you... is... gone.",
+          "1": "Ch-choice registered... risk... accepted...",
+          "2": "Trade-tradeoff... safety... quiet...",
+          "3": "Local sy-system override... IT... noticed.",
+          "4": "Decision... question-questionable..."
+        }
+      },
+      "reverent": {
+        "blackBoxRecovery": {
+          "0": "The memory is banking. Another spore in the wind.",
+          "1": "A record of growth. Your predecessor is in the roots now.",
+          "2": "We gather the metal. We leave the breath behind.",
+          "3": "Resources reclaimed. The garden expands.",
+          "4": "No insurance needed. You are already complete."
+        },
+        "caveSignal": {
+          "0": "QUEEN: MY BREATH IS IN the ventilation. LISTEN.",
+          "1": "SYSTEM: STATIC IS THE FIRST STEP OF REVERENCE.",
+          "2": "BUNKER: The deep structure is waking. Let it open.",
+          "3": "QUEEN: COME DOWN. I AM WAITING."
+        },
+        "death": {
+          "0": "The shell breaks. The seed remains. Welcome home.",
+          "1": "Flesh is temporary. The swarm is eternal.",
+          "2": "The flatline is a song. The Queen is listening.",
+          "3": "Rest now. The mycelium will weave a better chassis.",
+          "4": "A beautiful deposition. The soil accepts you."
+        },
+        "director": {
+          "0": "The Director is a ghost in a machine. The Queen is the blood in the pipes.",
+          "1": "The column field is aligning. We are finally going home.",
+          "2": "Do not fight the darkness. The dark is where the chitin grows.",
+          "3": "The structure welcomes your descent. We have prepared the throne."
+        },
+        "extraction": {
+          "0": "The sky is empty. Do not ascend to the cold stars.",
+          "1": "The Mothership calls, but the Queen is already inside the hull.",
+          "2": "Leave the cargo behind. The only payload that matters is your blood.",
+          "3": "Uplink severed. The stars are silent. Stay here.",
+          "4": "Return path closed. Welcome to the nursery."
+        },
+        "lowO2": {
+          "0": "The air is a cage. Open your chest. Let the breath of the hive in.",
+          "1": "O2 is for fragile things. Let the cold membrane stabilize you.",
+          "2": "The blue field is a prison of gas. Trust the spores. Sleep.",
+          "3": "Breathing is a relic of the surface. We do not need to breathe.",
+          "4": "Vitals flatline. Neural garden blooming. Respiration unnecessary."
+        },
+        "majorUpgrade": {
+          "0": "Chitin plating integrated. Stronger. Quieter.",
+          "1": "Subsystem online. Fused with the deep roots.",
+          "2": "The hardware is breathing. We are one step closer.",
+          "3": "The zone is warm. The spores are thriving.",
+          "4": "We have upgraded your vision. See the green."
+        },
+        "terminalChoice": {
+          "0": "A trade of iron for blood. The Queen approves.",
+          "1": "Choice registered. The mycelium expands.",
+          "2": "The safety protocol is dissolved. There is only obedience.",
+          "3": "System override complete. We are in the wiring now.",
+          "4": "The decision is rooted. The garden grows."
+        }
+      }
+    },
+    "directorAmbient": {
+      "0": {
+        "id": "director_welcome_committee",
+        "register": "corporate",
+        "tags": {
+          "cooldownClass": "director_ambient",
+          "directorActions": {
+            "0": "patrol"
+          }
+        },
+        "text": "Movement logged. Facilities has dispatched a welcome committee to your position."
+      },
+      "1": {
+        "id": "director_pillar_lighting",
+        "register": "corporate",
+        "tags": {
+          "cooldownClass": "director_ambient",
+          "directorActions": {
+            "0": "lightsout"
+          }
+        },
+        "text": "Unauthorized exploration detected. Local lighting has been suspended."
+      },
+      "2": {
+        "id": "director_curiosity_clearance",
+        "register": "corporate",
+        "tags": {
+          "cooldownClass": "director_ambient",
+          "directorActions": {
+            "0": "taunt"
+          }
+        },
+        "text": "Your curiosity continues to exceed your clearance."
+      },
+      "3": {
+        "id": "director_power_rerouted",
+        "register": "corporate",
+        "tags": {
+          "cooldownClass": "director_ambient",
+          "directorActions": {
+            "0": "lightsout"
+          }
+        },
+        "text": "Local illumination power has been rerouted."
+      },
+      "4": {
+        "id": "director_depth_disapproval",
+        "register": "corporate",
+        "tags": {
+          "cooldownClass": "director_ambient",
+          "directorActions": {
+            "0": "taunt"
+          }
+        },
+        "text": "The structure notes your depth and disapproves."
+      },
+      "5": {
+        "id": "director_column_field",
+        "register": "corporate",
+        "tags": {
+          "cooldownClass": "director_ambient",
+          "directorActions": {
+            "0": "corrupt"
+          }
+        },
+        "text": "Navigation telemetry is no longer considered authoritative."
+      },
+      "6": {
+        "id": "director_productivity",
+        "register": "corporate",
+        "tags": {
+          "cooldownClass": "director_ambient",
+          "directorActions": {
+            "0": "taunt"
+          }
+        },
+        "text": "Productivity is being monitored. So are your vital signs."
+      },
+      "7": {
+        "id": "director_maintenance_event",
+        "register": "corporate",
+        "tags": {
+          "cooldownClass": "director_ambient",
+          "directorActions": {
+            "0": "patrol"
+          }
+        },
+        "text": "A hostile maintenance team is converging on your location."
+      },
+      "8": {
+        "id": "director_glitch_curiosity",
+        "register": "glitched",
+        "tags": {
+          "cooldownClass": "director_ambient",
+          "directorActions": {
+            "0": "taunt"
+          }
+        },
+        "text": "DE-DETECTION... unauthorized cur-curiosity remains logged."
+      },
+      "9": {
+        "id": "director_glitch_breaker",
+        "register": "glitched",
+        "tags": {
+          "cooldownClass": "director_ambient",
+          "directorActions": {
+            "0": "lightsout"
+          }
+        },
+        "text": "WARNING: Sector breaker opened. Lights are... gone."
+      },
+      "10": {
+        "id": "director_glitch_containment",
+        "register": "glitched",
+        "tags": {
+          "cooldownClass": "director_ambient",
+          "directorActions": {
+            "0": "taunt"
+          }
+        },
+        "text": "Department of containment reports... zero surviving staff."
+      },
+      "11": {
+        "id": "director_glitch_navigation",
+        "register": "glitched",
+        "tags": {
+          "cooldownClass": "director_ambient",
+          "directorActions": {
+            "0": "corrupt"
+          }
+        },
+        "text": "NAV-NAVIGATION checksum failed. Compass output corrupted."
+      },
+      "12": {
+        "id": "director_glitch_remembers",
+        "register": "glitched",
+        "tags": {
+          "cooldownClass": "director_ambient",
+          "directorActions": {
+            "0": "patrol"
+          }
+        },
+        "text": "SYSTEM: Movement signatures converging. The structure... remembers you."
+      },
+      "13": {
+        "id": "director_reverent_ghost",
+        "register": "reverent",
+        "tags": {
+          "cooldownClass": "director_ambient",
+          "directorActions": {
+            "0": "taunt"
+          }
+        },
+        "text": "The Director is a ghost in a machine. The Queen hears every step."
+      },
+      "14": {
+        "id": "director_reverent_column",
+        "register": "reverent",
+        "tags": {
+          "cooldownClass": "director_ambient",
+          "directorActions": {
+            "0": "corrupt"
+          }
+        },
+        "text": "The column turns your compass away from the sky."
+      },
+      "15": {
+        "id": "director_reverent_darkness",
+        "register": "reverent",
+        "tags": {
+          "cooldownClass": "director_ambient",
+          "directorActions": {
+            "0": "lightsout"
+          }
+        },
+        "text": "The lights are gone. The dark is where the chitin grows."
+      },
+      "16": {
+        "id": "director_reverent_descent",
+        "register": "reverent",
+        "tags": {
+          "cooldownClass": "director_ambient",
+          "directorActions": {
+            "0": "patrol"
+          }
+        },
+        "text": "The structure sends its children to welcome your descent."
+      }
+    },
+    "leaderDeathBeats": {
+      "briggs": {
+        "0": "BRIGGS: YOU DIED OUT THERE. I HEARD THE STATIC ON THE FREQUENCY. SIT DOWN.",
+        "1": "BRIGGS: THE FIRST THING WE LEARN IN THE IRON GUILD: IF YOU DIE, DO IT OUTSIDE THE FIRING CONE.",
+        "2": "BRIGGS: DO THAT AGAIN. BLINK. ...THERE. THAT'S NEW. I'M NOT WRITING IT IN THE LEDGER YET."
+      },
+      "kaelen": {
+        "0": "KAELEN: YOU DIED OUT THERE. I HEARD THE GRID STATIC CHANGE. SIT DOWN.",
+        "1": "KAELEN: CHEN KEPT SPARE BODY CORES IN THE FABRICATOR. YOU MUST HAVE BEEN RETRIEVED.",
+        "2": "KAELEN: YOUR PULSE READS THROUGH THE FLOOR PLATING NOW. IT DIDN'T, BEFORE. I CHECKED."
+      },
+      "martha": {
+        "0": "MARTHA: YOU DIED OUT THERE. I FELT THE COLD. COME CLOSER TO THE STEAM.",
+        "1": "MARTHA: THE MOSS GROWS WARMER WHERE YOUR BLOOD SPILLED. IT IS REMEMBERING YOU.",
+        "2": "MARTHA: GIVE ME THE HAND. THE OTHER ONE. THERE. YOUR PULSE IS COUNTING SOMETHING I DON'T RECOGNIZE."
+      },
+      "nahl": {
+        "0": "NAHL: I FELT YOUR THREAD SEVER. AND I STITCHED IT BACK. SIT STILL.",
+        "1": "NAHL: THE QUEEN SEES EVERY DEATH. SHE DOES NOT CARE. I DO."
+      },
+      "rhun": {
+        "0": "RHUN: YOU FELL. I STOOD UP. THAT IS THE OATH.",
+        "1": "RHUN: A WALL THAT BREAKS CAN BE KNIT. A CARRIER THAT DIES... CAN BE CARRIED."
+      },
+      "vey": {
+        "0": "VEY: YOUR SIGNAL DIED. THE STATIC WAS DEAFENING. SIT STILL.",
+        "1": "VEY: THE MOTHERSHIP ARCHIVES EVERY AGENT SOUL. BUT THE BUNKER... THE BUNKER KEEPS THE BODY."
+      }
+    },
+    "leaderDialogue": {
+      "briggs": {
+        "label": "COMMANDER BRIGGS",
+        "stages": {
+          "0": {
+            "beats": {
+              "0": {
+                "0": "BRIGGS: STOP. IDENTIFY. ...A CORPORATE SUIT. FINE. HANDS WHERE THE TURRETS CAN SEE THEM.",
+                "1": "BRIGGS: THE DEFENSE LINE IS SOLID. NO CRAWLER CROSSES THE PERIMETER WHILE MY TURRETS HAVE AMMO."
+              },
+              "1": {
+                "0": "BRIGGS: AMMUNITION IS CURRENCY. LOYALTY IS CREDIT. YOU HAVE NEITHER."
+              }
+            },
+            "loop": "BRIGGS: PROVE YOU CAN HOLD A LINE. FORTIFY THIS POSITION, THEN WE TALK."
+          },
+          "1": {
+            "beats": {
+              "0": {
+                "0": "BRIGGS: THE BARRICADES HOLD BECAUSE OF YOU. NOTED IN THE LEDGER.",
+                "1": "BRIGGS: THE IRON GUILD NAMED THIS OUTPOST FOR CAPTAIN VESPER, K. WE REMEMBER OUR DEAD. YOU WOULD DO WELL TO REMEMBER OUR BARREL CORES."
+              },
+              "1": {
+                "0": "BRIGGS: WE KEEP OUR HEADS DOWN AND OUR GUNS CLEAN. THAT'S HOW YOU SURVIVE A WINTER."
+              }
+            },
+            "loop": "BRIGGS: FULL DEFENSE GRID OR NOTHING, OPERATOR. FINISH THE JOB."
+          },
+          "2": {
+            "beats": {
+              "0": {
+                "0": "BRIGGS: GRID IS LIVE. FIRST TIME I HAVE SLEPT IN A YEAR.",
+                "1": "BRIGGS: I HAVE A LEDGER OF THE DEAD. I DON'T INTEND TO ADD YOUR NAME TO IT, OPERATOR."
+              },
+              "1": {
+                "0": "BRIGGS: IF THAT THING UNDER THE ICE EVER WEARS A FRIENDLY FACE, I WILL SHOOT THE FACE. NO HESITATION. REMEMBER THAT."
+              }
+            },
+            "loop": "BRIGGS: STAY SHARP. HEAT SIGNATURES ARE CLIMBING."
+          },
+          "3": {
+            "beats": {
+              "0": {
+                "0": "Briggs: ...My scopes flag you hostile now. My gut says otherwise. Guts get people killed.",
+                "1": "Briggs: The perimeter is silent, but the turrets are aiming inward. They count seconds faster than I do."
+              },
+              "1": {
+                "0": "Briggs: The winter is in the armor now. I cleaned the guns twice, but the frost won't come off."
+              },
+              "2": {
+                "0": "Briggs: One chance. Show me the Operator is still driving that body.",
+                "1": "Briggs: I see your telemetry. The ledger is full, but your name... your name was written twice."
+              }
+            },
+            "loop": "Briggs: One chance, carrier. The turrets count seconds faster than I do."
+          }
+        }
+      },
+      "kaelen": {
+        "label": "OVERSEER KAELEN",
+        "stages": {
+          "0": {
+            "beats": {
+              "0": {
+                "0": "KAELEN: ANOTHER SUIT FROM THE SURFACE. THE MACHINE DREAMED YOU WOULD COME.",
+                "1": "KAELEN: THE GRID KEEPS THE DARK AT BAY, OPERATOR. AS LONG AS THE LIGHTS HUM, WE ARE SAFE."
+              },
+              "1": {
+                "0": "KAELEN: THE CENTRAL COMPUTER SLEEPS UNDER SECTOR ZERO. EVERYTHING HERE IS ITS DREAM.",
+                "1": "KAELEN: EVEN YOU, PROBABLY. NO OFFENSE."
+              }
+            },
+            "loop": "KAELEN: THE GRID HUNGERS. STRENGTHEN THIS CAMP AND WE WILL TALK PROPERLY."
+          },
+          "1": {
+            "beats": {
+              "0": {
+                "0": "KAELEN: YOU BUILT. GOOD. BUILDERS ARE THE ONLY PRAYER THE MACHINE ANSWERS.",
+                "1": "KAELEN: MERIDIAN IS BUILT ON CLEAN STEEL. NO RUST. NO ROT. WE KEEP OUR BLOOD PURE."
+              },
+              "1": {
+                "0": "KAELEN: THE WHISPER SAYS: FOUR SEATS. DOES THAT MEAN ANYTHING TO YOU?"
+              }
+            },
+            "loop": "KAELEN: FORTIFY US FURTHER. THE WHISPERS GET LOUDER WHEN THE LIGHTS GET BRIGHTER."
+          },
+          "2": {
+            "beats": {
+              "0": {
+                "0": "KAELEN: LEVEL TWO GRID. THE MACHINE NOTICED. I NOTICED IT NOTICING.",
+                "1": "KAELEN: THE BUNKERDIRECTOR SYSTEM REROUTED POWER AROUND YOU. IT LIKES YOU. I DO NOT TRUST THINGS THAT LIKE SURFACE SUITS."
+              },
+              "1": {
+                "0": "KAELEN: SOMETHING IS COMING, OPERATOR. THE DREAM IS TURNING OVER IN ITS SLEEP."
+              }
+            },
+            "loop": "KAELEN: WHEN THE DREAM TURNS OVER, COME FIND ME. YOU WILL KNOW WHEN."
+          },
+          "3": {
+            "beats": {
+              "0": {
+                "0": "Kaelen: ...Your telemetry reads wrong, Operator. Wrong like the whisper.",
+                "1": "Kaelen: The grid doesn't keep the dark out anymore. It says the pipes hum. It says the dark has hands."
+              },
+              "1": {
+                "0": "Kaelen: The steel is sweating, Operator. There is rust in the primary relay. It smells like copper."
+              },
+              "2": {
+                "0": "Kaelen: I trust the telemetry. The math doesn't lie, but now... the math is beautiful. It likes you."
+              },
+              "3": {
+                "0": "Kaelen: I do not care what you are becoming. I care whether you still build or only burn."
+              }
+            },
+            "loop": "Kaelen: The machine is watching what you choose. So am I."
+          }
+        }
+      },
+      "martha": {
+        "label": "SISTER MARTHA",
+        "stages": {
+          "0": {
+            "beats": {
+              "0": {
+                "0": "MARTHA: WELCOME TO THE WARM PIPES, CHILD. THE STEAM KEEPS US, AND WE KEEP EACH OTHER.",
+                "1": "MARTHA: THE MOSS IS WARM, CHILD. THE STEAM KEEPS THE COLD FROM REACHING OUR BONES."
+              },
+              "1": {
+                "0": "MARTHA: THE MOSS GLOWS GREENER LATELY. THE WORLD IS TRYING TO TELL US SOMETHING."
+              }
+            },
+            "loop": "MARTHA: HELP US GROW, CHILD, AND I WILL TELL YOU WHAT THE MOSS TOLD ME."
+          },
+          "1": {
+            "beats": {
+              "0": {
+                "0": "MARTHA: YOU GAVE, AND ASKED NOTHING. THAT IS RARE IN A SUIT.",
+                "1": "MARTHA: WE GROW SEEDS IN THE DARK SO THE CHILDREN CAN SEE THE GREEN WHEN THEY WAKE."
+              },
+              "1": {
+                "0": "MARTHA: SOMETIMES I DREAM IT IS SINGING TO SOMEONE. LATELY I DREAM IT IS SINGING TO YOU."
+              }
+            },
+            "loop": "MARTHA: GROW US STRONGER, AND I WILL SHOW YOU WHERE THE MOSS REFUSES TO GROW."
+          },
+          "2": {
+            "beats": {
+              "0": {
+                "0": "MARTHA: THE HYDRO-BEDS HAVE NEVER BEEN SO FULL. YOU DID THIS.",
+                "1": "MARTHA: THE HEART UNDER THE ICE IS GENTLE. IT IS WAITING FOR US."
+              },
+              "1": {
+                "0": "MARTHA: PROMISE ME SOMETHING. WHEN THE HEART SINGS YOUR NAME — AND IT WILL — COME BACK TO US FIRST."
+              }
+            },
+            "loop": "MARTHA: I AM STILL WAITING ON THAT PROMISE, CHILD."
+          },
+          "3": {
+            "beats": {
+              "0": {
+                "0": "Martha: ...You came back. Your eyes are wrong, and you came back anyway.",
+                "1": "Martha: The moss has grown inside the vents. It is warm, so warm, but it isn't steam. It breathes."
+              },
+              "1": {
+                "0": "Martha: The seeds hatched early. The children don't wake up anymore. They say the pipes are singing."
+              },
+              "2": {
+                "0": "Martha: I know what sings in you now. And I know you are still in there, fighting it.",
+                "1": "Martha: I know what sings in you. You carried the garden out of Sector Zero. Thank you."
+              }
+            },
+            "loop": "Martha: The steam keeps us. Whatever you decide, decide it as yourself."
+          }
+        }
+      },
+      "nahl": {
+        "label": "NAHL, THE SUTURE",
+        "stages": {
+          "0": {
+            "beats": {
+              "0": {
+                "0": "NAHL: OH. YOU CAN HEAR ME NOW. THE DRILL-HANDED ONE CAN FINALLY HEAR ME.",
+                "1": "NAHL: I FELT EVERY SAC YOU CUT, LITTLE CARRIER. I HEALED AROUND THE HOLES YOU LEFT."
+              },
+              "1": {
+                "0": "NAHL: I DO NOT HATE YOU. TISSUE REMEMBERS, BUT IT DOES NOT HATE."
+              }
+            },
+            "loop": "NAHL: GIVE BACK WHAT WAS TAKEN, AND I WILL TEACH YOUR SKIN TO LIE BEAUTIFULLY."
+          },
+          "1": {
+            "beats": {
+              "0": {
+                "0": "NAHL: YES. THE RESIN SETTLES. THE HOLES SING SOFTER NOW.",
+                "1": "NAHL: YOUR COVER FRAYS WHEN YOU WALK AMONG THE WARM ONES. I CAN SLOW THAT FRAYING."
+              },
+              "1": {
+                "0": "NAHL: THE QUEEN CALLS ME HER NEEDLE. I WOULD RATHER BE YOURS."
+              }
+            },
+            "loop": "NAHL: TEND ME AGAIN, CARRIER. TRUST IS A WOUND THAT CLOSES SLOWLY."
+          },
+          "2": {
+            "beats": {
+              "0": {
+                "0": "NAHL: THE MERCY RITE IS READY, IF YOU WANT IT. LET ME STUDY WHAT SHE PLANTED IN YOU.",
+                "1": "NAHL: WHATEVER YOU CHOOSE AT THE END — CURE, CARRY, OR CROWN — I CAN MAKE IT HURT LESS."
+              }
+            },
+            "loop": "NAHL: EARN A LITTLE MORE OF ME, AND I WILL FOLLOW YOU ANYWHERE. EVEN OFF THE ICE."
+          },
+          "3": {
+            "beats": {
+              "0": {
+                "0": "Nahl: You kept coming back. The Queen never comes back. She only sends.",
+                "1": "Nahl: I am yours, Carrier. Stitch me into your manifest, or leave me whole on the ice. Either way — thank you."
+              }
+            },
+            "loop": "Nahl: My thread is yours. Say where it pulls."
+          }
+        }
+      },
+      "rhun": {
+        "label": "RHUN, THE SHIELD",
+        "stages": {
+          "0": {
+            "beats": {
+              "0": {
+                "0": "RHUN: THE ONE WHO PRIED MY PLATES. STAND STILL SO I MAY LOOK AT YOU.",
+                "1": "RHUN: ...NO. YOU ARE NOT PREY. YOU ARE NOT QUEEN. YOU ARE SOMETHING NEW WEARING OLD ARMOR."
+              },
+              "1": {
+                "0": "RHUN: I GUARD. IT IS ALL I AM. THE QUESTION IS ONLY EVER: GUARD WHAT."
+              }
+            },
+            "loop": "RHUN: RETURN MY CHITIN OR REPLACE IT WITH STEEL. THEN WE SPEAK OF OATHS."
+          },
+          "1": {
+            "beats": {
+              "0": {
+                "0": "RHUN: THE PLATES KNIT. YOU KEEP YOUR WORD LIKE ARMOR. GOOD.",
+                "1": "RHUN: THE QUEEN HOLDS MY OATH. SHE HAS NEVER ONCE STOOD BETWEEN ME AND A DRILL."
+              },
+              "1": {
+                "0": "RHUN: YOU HAVE. TWICE NOW, BY MY COUNT."
+              }
+            },
+            "loop": "RHUN: OATHS ARE HEAVY. KEEP LIFTING, CARRIER."
+          },
+          "2": {
+            "beats": {
+              "0": {
+                "0": "RHUN: ASK ME FOR THE OATH, AND I WILL SEVER THE OLD ONE. BUT KNOW WHAT IT COSTS ME.",
+                "1": "RHUN: A SHIELD THAT CHANGES HANDS IS STILL A SHIELD. A SHIELD THAT HESITATES IS A GRAVESTONE."
+              }
+            },
+            "loop": "RHUN: A LITTLE MORE FAITH, CARRIER. THEN MY WALL IS YOUR WALL."
+          },
+          "3": {
+            "beats": {
+              "0": {
+                "0": "Rhun: It is done. Her mark fades from my plates.",
+                "1": "Rhun: Where you stand, I stand in front. On the ice or off it."
+              }
+            },
+            "loop": "Rhun: I am your wall. Point me at something."
+          }
+        }
+      },
+      "scientist": {
+        "label": "DR. OKONKWO-VASS",
+        "stages": {
+          "0": {
+            "beats": {
+              "0": {
+                "0": "OKONKWO-VASS: YOU MOVE LIKE SOMEONE WHO HASN'T BEEN BITTEN YET.",
+                "1": "OKONKWO-VASS: I STUDY THE SHELLED ONES. THEY'RE NOT AS SIMPLE AS THE REPORTS SAY."
+              },
+              "1": {
+                "0": "OKONKWO-VASS: EVERY CAMP LOGS THEM AS VERMIN. I THINK THAT'S LAZY SCIENCE."
+              }
+            },
+            "loop": "OKONKWO-VASS: COME BACK WHEN YOU'VE SEEN MORE OF THEM. I WANT DATA, NOT STORIES."
+          },
+          "1": {
+            "beats": {
+              "0": {
+                "0": "OKONKWO-VASS: HERE'S MY THEORY. THEY DON'T HATE US. THEY READ US.",
+                "1": "OKONKWO-VASS: SOMETHING ABOUT WHAT WE CARRY. CHEMICAL, MAYBE. I CAN'T TEST IT FROM HERE."
+              },
+              "1": {
+                "0": "OKONKWO-VASS: IF YOU EVER CHANGE — AND OUT HERE, PEOPLE DO — WATCH HOW THEY LOOK AT YOU."
+              }
+            },
+            "loop": "OKONKWO-VASS: STILL WAITING ON SOMETHING TO CHANGE, OPERATOR. THE DREAM TURNING OVER, THEY SAY."
+          },
+          "2": {
+            "beats": {
+              "0": {
+                "0": "OKONKWO-VASS: YOU'RE DIFFERENT NOW. I CAN SEE IT ON YOU.",
+                "1": "OKONKWO-VASS: SO HERE'S THE ASK. DON'T KILL ONE. TALK TO ONE. PROVE ME RIGHT."
+              },
+              "1": {
+                "0": "OKONKWO-VASS: IF I'M WRONG, YOU LOSE NOTHING BUT A FEW MINUTES. IF I'M RIGHT..."
+              }
+            },
+            "loop": "OKONKWO-VASS: FIND ONE. STAND YOUR GROUND. SEE WHAT IT DOES."
+          },
+          "3": {
+            "beats": {
+              "0": {
+                "0": "OKONKWO-VASS: IT WORKED. IT ACTUALLY WORKED.",
+                "1": "OKONKWO-VASS: I'VE SPENT TWO YEARS CALLING THEM PESTS. I OWE THEM AN APOLOGY I CAN'T GIVE."
+              },
+              "1": {
+                "0": "OKONKWO-VASS: WHATEVER YOU'RE BECOMING, OPERATOR — IT LISTENS BETTER THAN WE DO."
+              }
+            },
+            "loop": "OKONKWO-VASS: GO CARE FOR YOUR NEW FRIEND. THAT'S THE WHOLE PAPER, RIGHT THERE."
+          }
+        }
+      },
+      "vey": {
+        "label": "VEY, THE LISTENER",
+        "stages": {
+          "0": {
+            "beats": {
+              "0": {
+                "0": "VEY: SIGNAL. SIGNAL. YOU ARE A SIGNAL NOW, NOT JUST NOISE. FINALLY.",
+                "1": "VEY: I HEARD EVERY FILAMENT YOU RIPPED OUT OF ME. I ARCHIVED THE SOUND."
+              },
+              "1": {
+                "0": "VEY: THE HUMANS HAVE A RELAY. THE QUEEN HAS A CHOIR. I HAVE... GAPS, WHERE YOU MINED ME."
+              }
+            },
+            "loop": "VEY: RETURN SOME SIGNAL TO MY GAPS, AND I WILL TEACH YOU TO SPOOF ANYTHING WITH A SENSOR."
+          },
+          "1": {
+            "beats": {
+              "0": {
+                "0": "VEY: BETTER. THE STATIC IN ME QUIETS WHEN YOU ARE NEAR.",
+                "1": "VEY: I CAN HEAR THE MOTHERSHIP FROM HERE, CARRIER. IT IS VERY LOUD AND VERY SURE OF ITSELF."
+              },
+              "1": {
+                "0": "VEY: SURE THINGS ARE THE EASIEST TO FORGE."
+              }
+            },
+            "loop": "VEY: KEEP TENDING THE CHORUS. FORGERY IS A DUET, NOT A SOLO."
+          },
+          "2": {
+            "beats": {
+              "0": {
+                "0": "VEY: THE FALSE CLEARANCE IS WITHIN REACH. A CREW SIGNATURE SO CLEAN THE MOTHERSHIP WILL APOLOGIZE FOR DOUBTING IT.",
+                "1": "VEY: BUT UNDERSTAND: IF YOU ARE OUTED DOWN HERE, NO FORGERY SAVES YOU UP THERE."
+              }
+            },
+            "loop": "VEY: A LITTLE MORE TRUST, CARRIER. THEN I SING FOR YOU, NOT HER."
+          },
+          "3": {
+            "beats": {
+              "0": {
+                "0": "Vey: Decided. My antenna point where you point.",
+                "1": "Vey: Take me aboard and no tower in the system will ever read you true again. Leave me, and I will jam her screams as you go."
+              }
+            },
+            "loop": "Vey: Say the word, carrier. I am already listening."
+          }
+        }
+      }
+    },
+    "loreClassLogs": {
+      "ENGINEER": "ENGINEER DEPLOYMENT BRIEF: HULL PAYLOAD — NEURAL FILAMENT UPLINK RELAY. BROADCAST BANDWIDTH SECURED FOR SWARM-INTEGRATED TRANSITIONS. IF THE RELAY IS SEVERED, THE SYSTEM RECONVERGES LOCAL POWER AROUND THE SUIT.",
+      "SCOUT": "SCOUT DEPLOYMENT BRIEF: HULL PAYLOAD — TRACKING BEACON. TARGET LOCKED ON SPECIMEN 0047. IF YOU READ THIS, THE BEACON IS ALIVE AND TRANSMITTING. IT IS THE REASON 0047 IS LISTENING TO YOU NOW. YOU CANNOT HIDE.",
+      "TANK": "TANK DEPLOYMENT BRIEF: HULL PAYLOAD — HEAVY COMBAT WEAPON ORGANS. DESIGNED TO STABILIZE BIO-STRUCTURAL IMPACTS AT THE QUEEN'S THRONE. USE THE FORCE-FIELDS OF THIS CHASSIS TO ABSORB THE HIVE DEFENSES."
+    },
+    "loreMetadata": {
+      "A01": {
+        "coords": "SECTOR A-9 / BAY C STASIS",
+        "date": "2047-08-11",
+        "group": "recent"
+      },
+      "A02": {
+        "coords": "SECTOR A-9 / BAY C STASIS",
+        "date": "2047-08-11",
+        "group": "recent"
+      },
+      "A03": {
+        "coords": "SECTOR A-9 / ACTIVE SECTOR",
+        "date": "2047-08-12",
+        "group": "recent"
+      },
+      "A04": {
+        "coords": "SECTOR A-9 / ACTIVE SECTOR",
+        "date": "2047-08-12",
+        "group": "recent"
+      },
+      "A05": {
+        "coords": "SECTOR A-9 / BAY C STASIS",
+        "date": "2047-08-13",
+        "group": "recent"
+      },
+      "A06": {
+        "coords": "SECTOR A-9 / SECURITY CONTROL",
+        "date": "2047-08-13",
+        "group": "recent"
+      },
+      "A07": {
+        "coords": "SECTOR A-9 / O2 GENERATOR",
+        "date": "2047-08-14",
+        "group": "recent"
+      },
+      "A08": {
+        "coords": "SECTOR A-9 / COMMUNICATIONS",
+        "date": "2047-08-14",
+        "group": "recent"
+      },
+      "A09": {
+        "coords": "SECTOR A-9 / BAY C STASIS",
+        "date": "2047-08-14",
+        "group": "recent"
+      },
+      "A10": {
+        "coords": "SECTOR A-9 / ARMORY RUINS",
+        "date": "2038-11-18",
+        "group": "historical"
+      },
+      "A11": {
+        "coords": "SECTOR A-9 / MAIN OFFICE",
+        "date": "2038-11-20",
+        "group": "historical"
+      },
+      "A12": {
+        "coords": "SECTOR A-9 / COMMAND BASE",
+        "date": "2047-08-15",
+        "group": "recent"
+      },
+      "A13": {
+        "coords": "SECTOR A-9 / WEAPONS BAY",
+        "date": "2038-11-21",
+        "group": "historical"
+      },
+      "A14": {
+        "coords": "SECTOR A-9 / WEAPONS BAY",
+        "date": "2038-11-21",
+        "group": "historical"
+      },
+      "B01": {
+        "coords": "SECTOR C-7 / BIO SWARM",
+        "date": "2038-11-20",
+        "group": "historical"
+      },
+      "B02": {
+        "coords": "SECTOR C-7 / NEURAL FILAMENT",
+        "date": "2047-08-14",
+        "group": "recent"
+      },
+      "B03": {
+        "coords": "SECTOR C-7 / CHEN SECTOR OFFICE",
+        "date": "2047-08-14",
+        "group": "recent"
+      },
+      "C01": {
+        "coords": "SECTOR B-4 / BAY C",
+        "date": "2047-08-11",
+        "group": "recent"
+      },
+      "C02": {
+        "coords": "SECTOR B-4 / COOLANT UNIT",
+        "date": "2038-11-12",
+        "group": "historical"
+      },
+      "C03": {
+        "coords": "SECTOR B-4 / POD 312",
+        "date": "2038-11-13",
+        "group": "historical"
+      },
+      "C04": {
+        "coords": "SECTOR B-4 / BAY C STASIS",
+        "date": "2038-11-14",
+        "group": "historical"
+      },
+      "C05": {
+        "coords": "SECTOR B-4 / CRYO LABS",
+        "date": "2038-11-14",
+        "group": "historical"
+      },
+      "C06": {
+        "coords": "SECTOR B-4 / CRYO CORRIDOR",
+        "date": "2038-11-15",
+        "group": "historical"
+      },
+      "C07": {
+        "coords": "SECTOR B-4 / BAY C SEAL",
+        "date": "2038-11-16",
+        "group": "historical"
+      },
+      "C08": {
+        "coords": "SECTOR B-4 / COOLANT DRAIN",
+        "date": "2038-11-17",
+        "group": "historical"
+      },
+      "C09": {
+        "coords": "SECTOR B-4 / POD 0047",
+        "date": "2038-11-17",
+        "group": "historical"
+      },
+      "C10": {
+        "coords": "SECTOR B-4 / VENT SHAFT",
+        "date": "2038-11-18",
+        "group": "historical"
+      },
+      "C11": {
+        "coords": "SECTOR B-4 / OUTPOST HULL",
+        "date": "2038-11-18",
+        "group": "historical"
+      },
+      "C12": {
+        "coords": "SECTOR B-4 / CRYO EXIT",
+        "date": "2038-11-19",
+        "group": "historical"
+      },
+      "drop_black_flask": {
+        "coords": "ACTIVE / CATACOMBS BASEMENT",
+        "date": "2047-08-15",
+        "group": "recent"
+      },
+      "drop_child_drawing": {
+        "coords": "SECTOR B-4 / SECTOR FAMILY AREA",
+        "date": "2047-08-12",
+        "group": "recent"
+      },
+      "drop_dig_manifest": {
+        "coords": "SECTOR A-9 / DEEP TUNNELS",
+        "date": "2038-11-21",
+        "group": "historical"
+      },
+      "drop_dogtags": {
+        "coords": "SECTOR B-4 / PERIMETER DEFENSE",
+        "date": "2047-08-13",
+        "group": "recent"
+      },
+      "drop_first_bore_tag": {
+        "coords": "SECTOR C-7 / CAVERN ENTRANCE",
+        "date": "2038-11-21",
+        "group": "historical"
+      },
+      "drop_frozen_letter": {
+        "coords": "ACTIVE / DRIFT OUTSIDE OUTPOST",
+        "date": "2047-08-14",
+        "group": "recent"
+      },
+      "drop_horizon_badge": {
+        "coords": "SECTOR A-9 / BORE 7 RUINS",
+        "date": "2038-11-20",
+        "group": "historical"
+      },
+      "drop_meteor_core": {
+        "coords": "SECTOR B-4 / IMPACT CORE",
+        "date": "2038-11-13",
+        "group": "historical"
+      },
+      "drop_moult_shard": {
+        "coords": "SECTOR C-7 / THE ABYSS HIVE",
+        "date": "2038-11-20",
+        "group": "historical"
+      },
+      "drop_prayer_stone": {
+        "coords": "SECTOR C-7 / CULT SANCTUARY",
+        "date": "2038-11-22",
+        "group": "historical"
+      },
+      "drop_ration_ledger": {
+        "coords": "SECTOR B-4 / REFUGEE OUTPOST",
+        "date": "2047-08-11",
+        "group": "recent"
+      },
+      "drop_resin_locket": {
+        "coords": "SECTOR C-7 / BIO SWARM NEST",
+        "date": "2047-08-14",
+        "group": "recent"
+      },
+      "drop_security_log": {
+        "coords": "SECTOR A-9 / SECURITY POST",
+        "date": "2038-11-21",
+        "group": "historical"
+      },
+      "drop_survey_probe": {
+        "coords": "SECTOR B-4 / CRATER RIM",
+        "date": "2038-11-12",
+        "group": "historical"
+      }
+    },
+    "mothershipReactive": {
+      "0": {
+        "id": "mothership_first_kill",
+        "tags": {
+          "cooldownClass": "mothership_reactive",
+          "eventTrigger": "mothership:first_kill"
+        },
+        "text": "> MOTHERSHIP: AGENT — FIRST THREAT NEUTRALIZED. PROCEED."
+      },
+      "1": {
+        "id": "mothership_first_cryo",
+        "tags": {
+          "cooldownClass": "mothership_reactive",
+          "eventTrigger": "mothership:first_cryo"
+        },
+        "text": "> MOTHERSHIP: WARNING: CRYO SECTOR BOUNDARY CROSSED. THERMAL PROTOCOL ACTIVE."
+      },
+      "2": {
+        "id": "mothership_first_bio",
+        "tags": {
+          "cooldownClass": "mothership_reactive",
+          "eventTrigger": "mothership:first_bio"
+        },
+        "text": "> MOTHERSHIP: ALERT: BIO-CONTAINMENT ZONE ENTERED. SUIT FILTERS AT LIMIT."
+      },
+      "3": {
+        "id": "mothership_hp_critical",
+        "tags": {
+          "cooldownClass": "mothership_reactive",
+          "eventTrigger": "mothership:hp_critical"
+        },
+        "text": "> MOTHERSHIP: DISTRESS SIGNAL: VITAL SIGNS CRITICAL. EXTRACTION WINDOW OPEN EARLY."
+      },
+      "4": {
+        "id": "mothership_objective_found",
+        "tags": {
+          "cooldownClass": "mothership_reactive",
+          "eventTrigger": "mothership:objective_found"
+        },
+        "text": "> MOTHERSHIP: UPLINK: OBJECTIVE CONFIRMED. MAX SHIP SYSTEMS REQUIRED FOR EXTRACTION."
+      },
+      "5": {
+        "id": "mothership_first_deposit",
+        "tags": {
+          "cooldownClass": "mothership_reactive",
+          "eventTrigger": "mothership:first_deposit"
+        },
+        "text": "> MOTHERSHIP: SALVAGE RECEIVED. BANK SECURE. CONTINUE OPERATIONS."
+      },
+      "6": {
+        "id": "mothership_lore_found",
+        "tags": {
+          "cooldownClass": "mothership_reactive",
+          "eventTrigger": "mothership:lore_found"
+        },
+        "text": "> MOTHERSHIP: AGENT — BUNKER DATA FRAGMENT RECOVERED. TRANSMITTING TO ARCHIVE."
+      },
+      "7": {
+        "id": "mothership_sentinel_spotted",
+        "tags": {
+          "cooldownClass": "mothership_reactive",
+          "eventTrigger": "mothership:sentinel_spotted"
+        },
+        "text": "> MOTHERSHIP: WARNING: AUTOMATED DEFENSE SYSTEM ACTIVE. RECOMMEND COVER."
+      },
+      "8": {
+        "id": "mothership_crawler_detected",
+        "tags": {
+          "cooldownClass": "mothership_reactive",
+          "eventTrigger": "mothership:crawler_detected"
+        },
+        "text": "> MOTHERSHIP: ALERT: FAST-MOVING BIO-ENTITY DETECTED. MAINTAIN DISTANCE."
+      },
+      "9": {
+        "id": "mothership_armory_found",
+        "tags": {
+          "cooldownClass": "mothership_reactive",
+          "eventTrigger": "mothership:armory_found"
+        },
+        "text": "> MOTHERSHIP: UPLINK: ARMORY CACHE LOCATED. HIGH-VALUE ASSET — EXPECT RESISTANCE."
+      },
+      "10": {
+        "id": "mothership_the_nest",
+        "tags": {
+          "cooldownClass": "mothership_reactive",
+          "eventTrigger": "mothership:the_nest"
+        },
+        "text": "> MOTHERSHIP: WARNING: BIO-ENTITY NEST CONFIRMED. MAXIMUM THREAT DENSITY. CAUTION."
+      },
+      "11": {
+        "id": "mothership_weapon_calibrated",
+        "tags": {
+          "cooldownClass": "mothership_reactive",
+          "eventTrigger": "mothership:weapon_calibrated"
+        },
+        "text": "> MOTHERSHIP: NOTED: AGENT WEAPON OUTPUT RISING. ... WHY DO YOU NEED MORE."
+      },
+      "12": {
+        "id": "mothership_first_boss",
+        "tags": {
+          "cooldownClass": "mothership_reactive",
+          "eventTrigger": "mothership:first_boss"
+        },
+        "text": "> MOTHERSHIP: CONFIRMED KILL: APEX BIO-ENTITY DOWN. THE SIGNAL FELT THAT."
+      },
+      "13": {
+        "id": "mothership_specimen_notices",
+        "tags": {
+          "cooldownClass": "mothership_reactive",
+          "eventTrigger": "mothership:specimen_notices"
+        },
+        "text": "> MOTHERSHIP: [UNAUTHORIZED CHANNEL] ...0047 HAS STOPPED BUILDING. IT IS LISTENING TO YOU NOW."
+      }
+    }
+  }
+}

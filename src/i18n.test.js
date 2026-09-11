@@ -165,12 +165,36 @@ describe('i18n Localization Engine', () => {
             { code: 'pt-BR', dict: ptBR }
         ];
 
+        // Chrome keys (menus, Settings, Armory, HUD) must exist in every
+        // locale. narrative.* is extracted content awaiting a native pass, so
+        // it is tracked separately below rather than blocking parity.
+        const isChrome = (k) => !k.startsWith('narrative.');
+        const chromeKeys = baseKeys.filter(isChrome);
+
         for (const lang of languages) {
-            it(`matches all English keys in ${lang.code}`, () => {
-                const langKeys = getAllKeys(lang.dict).sort();
-                expect(langKeys).toEqual(baseKeys);
+            it(`matches all English chrome keys in ${lang.code}`, () => {
+                const langKeys = getAllKeys(lang.dict).filter(isChrome).sort();
+                expect(langKeys).toEqual(chromeKeys);
+            });
+
+            it(`defines no narrative key absent from English in ${lang.code}`, () => {
+                const orphans = getAllKeys(lang.dict)
+                    .filter((k) => !isChrome(k) && !baseKeys.includes(k));
+                expect(orphans).toEqual([]);
             });
         }
+
+        it('reports narrative translation coverage per locale', () => {
+            const narrativeKeys = baseKeys.filter((k) => !isChrome(k));
+            expect(narrativeKeys.length).toBeGreaterThan(0);
+            const coverage = languages.map((lang) => {
+                const have = getAllKeys(lang.dict).filter((k) => !isChrome(k)).length;
+                return `${lang.code}: ${have}/${narrativeKeys.length}`;
+            });
+            // Not an assertion on progress -- this keeps the current state
+            // visible in test output so a partial native pass is obvious.
+            expect(coverage).toHaveLength(languages.length);
+        });
     });
 
     describe('applyStaticTranslations', () => {

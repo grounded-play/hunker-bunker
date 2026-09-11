@@ -1,10 +1,10 @@
-import en from './locales/en.json';
-import zhCN from './locales/zh-CN.json';
-import ru from './locales/ru.json';
-import es419 from './locales/es-419.json';
-import de from './locales/de.json';
-import ja from './locales/ja.json';
-import ptBR from './locales/pt-BR.json';
+import en from './locales/en.json' with { type: 'json' };
+import zhCN from './locales/zh-CN.json' with { type: 'json' };
+import ru from './locales/ru.json' with { type: 'json' };
+import es419 from './locales/es-419.json' with { type: 'json' };
+import de from './locales/de.json' with { type: 'json' };
+import ja from './locales/ja.json' with { type: 'json' };
+import ptBR from './locales/pt-BR.json' with { type: 'json' };
 
 export const SUPPORTED_LOCALES = Object.freeze([
     { code: 'en', name: 'English', nativeName: 'English', rtl: false },

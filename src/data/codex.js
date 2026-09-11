@@ -1,3 +1,5 @@
+import { localizeCatalog } from '../i18nCatalog.js';
+
 // ── Codex catalog (data) ──────────────────────────────────────
 // doc 11 §3.2 + §3.4 content pipeline. Frozen, read-only entries the Codex
 // viewer renders. Voiced in the municipal-decay-bureaucracy register so the
@@ -6,7 +8,7 @@
 
 export const CODEX_CATEGORIES = Object.freeze(['HOSTILE', 'INFRASTRUCTURE', 'PHENOMENON']);
 
-export const CODEX_ENTRIES = Object.freeze([
+export const CODEX_ENTRIES = localizeCatalog('narrative.codexEntries', Object.freeze([
     // Hostiles — ids match enemy `type` / boss type from enemy-killed & boss events.
     { id: 'cybersnail', name: 'CYBERSNAIL', category: 'HOSTILE', image: '/cybersnail.png',
       blurb: 'Reclassified livestock. Memory-slime carrier. Approaches with the patience of an unpaid invoice.' },
@@ -50,7 +52,7 @@ export const CODEX_ENTRIES = Object.freeze([
       blurb: 'Ninety seconds of descent. The vents disagree with your presence the entire way.' },
     { id: 'specimen_0047', name: 'SPECIMEN 0047', category: 'PHENOMENON', image: '/cutscenes/poster-art/event-queen-encounter.png',
       blurb: 'THE LINCHPIN. ORIGIN WELD UNLOCKED: ANCIENT SEED-CARRIER RECLASSIFIED AS QUEEN\'S DORMANT CORE. EXOSUIT TELEMETRY INDICATES THE BIO-SIGNAL SHIFTS FOCUS FROM BROADCAST TO THE CARRIER\'S IN-WORLD BODY.' }
-]);
+]), { skip: ['id', 'category', 'image'] });
 
 export function getCodexEntry(id) {
     return CODEX_ENTRIES.find((e) => e.id === id) ?? null;
@@ -63,7 +65,7 @@ export function getCodexEntriesByCategory(category) {
 export const CODEX_TOTAL = CODEX_ENTRIES.length;
 
 // ── Lore Logs Metadata (Sprint 19 Wave 3) ──────────────────────
-export const LORE_METADATA = Object.freeze({
+export const LORE_METADATA = localizeCatalog('narrative.loreMetadata', Object.freeze({
     A01: { date: '2047-08-11', coords: 'SECTOR A-9 / BAY C STASIS', group: 'recent' },
     A02: { date: '2047-08-11', coords: 'SECTOR A-9 / BAY C STASIS', group: 'recent' },
     A03: { date: '2047-08-12', coords: 'SECTOR A-9 / ACTIVE SECTOR', group: 'recent' },
@@ -110,16 +112,16 @@ export const LORE_METADATA = Object.freeze({
     drop_prayer_stone: { date: '2038-11-22', coords: 'SECTOR C-7 / CULT SANCTUARY', group: 'historical' },
     drop_frozen_letter: { date: '2047-08-14', coords: 'ACTIVE / DRIFT OUTSIDE OUTPOST', group: 'recent' },
     drop_black_flask: { date: '2047-08-15', coords: 'ACTIVE / CATACOMBS BASEMENT', group: 'recent' }
-});
+}), { skip: ['id', 'image', 'icon'] });
 
 // Class-specific payload wreck logs
-export const LORE_CLASS_LOGS = Object.freeze({
+export const LORE_CLASS_LOGS = localizeCatalog('narrative.loreClassLogs', Object.freeze({
     SCOUT: 'SCOUT DEPLOYMENT BRIEF: HULL PAYLOAD — TRACKING BEACON. TARGET LOCKED ON SPECIMEN 0047. IF YOU READ THIS, THE BEACON IS ALIVE AND TRANSMITTING. IT IS THE REASON 0047 IS LISTENING TO YOU NOW. YOU CANNOT HIDE.',
     ENGINEER: 'ENGINEER DEPLOYMENT BRIEF: HULL PAYLOAD — NEURAL FILAMENT UPLINK RELAY. BROADCAST BANDWIDTH SECURED FOR SWARM-INTEGRATED TRANSITIONS. IF THE RELAY IS SEVERED, THE SYSTEM RECONVERGES LOCAL POWER AROUND THE SUIT.',
     TANK: 'TANK DEPLOYMENT BRIEF: HULL PAYLOAD — HEAVY COMBAT WEAPON ORGANS. DESIGNED TO STABILIZE BIO-STRUCTURAL IMPACTS AT THE QUEEN\'S THRONE. USE THE FORCE-FIELDS OF THIS CHASSIS TO ABSORB THE HIVE DEFENSES.'
-});
+}));
 
-export const CLASS_WRECKAGE_LOGS = Object.freeze({
+export const CLASS_WRECKAGE_LOGS = localizeCatalog('narrative.classWreckageLogs', Object.freeze({
     SCOUT: Object.freeze({
         classType: 'SCOUT',
         codexId: 'wreckage_scout_tracking',
@@ -147,4 +149,4 @@ export const CLASS_WRECKAGE_LOGS = Object.freeze({
         coords: Object.freeze({ sector: 'BIO', x: 8, z: 161 }),
         payload: LORE_CLASS_LOGS.TANK
     })
-});
+}));

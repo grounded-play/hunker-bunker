@@ -62,13 +62,54 @@ Verified in a real browser against the production build: all seven locales
 swap live, both through `window.i18n.setLocale()` and through the Settings
 `<select>`, and the choice persists to `hb_locale`.
 
+### Narrative extraction (landed)
+
+Tier 2 narrative is now **extracted but not translated** — the mechanical half
+is done, the native pass is not.
+
+`src/i18nCatalog.js` registers a narrative data module and returns a live
+structure that is rebuilt *in place* on `locale-changed`. In-place mutation is
+the point: consumers routinely hold a reference (`const pool =
+DIALOGUE_LINES.lowO2`), and reassigning the export would leave them on stale
+English. Keys derive from the data's own shape, so writers keep authoring in
+the `src/data/*.js` modules exactly as before:
+
+    narrative.dialogue.corporate.lowO2.0
+
+Wrapped so far — **606 strings**:
+
+| Catalog | Strings |
+| --- | ---: |
+| `narrative.loreMetadata` | 129 |
+| `narrative.leaderDialogue` | 120 |
+| `narrative.directorAmbient` | 85 |
+| `narrative.mothershipReactive` | 56 |
+| `narrative.dialogue.{corporate,glitched,reverent}` | 118 |
+| `narrative.codexEntries` | 38 |
+| `narrative.campQuests` | 21 |
+| `narrative.classWreckageLogs` | 21 |
+| `narrative.leaderDeathBeats` | 15 |
+| `narrative.loreClassLogs` | 3 |
+
+Identifier fields (`id`, `category`, `image`, `icon`, `next`) are excluded via
+each catalog's `skip` list so lookup keys and asset paths are never translated.
+
+`node scripts/extract-narrative.js` re-syncs `narrative.*` in `en.json` from
+the source modules and prints per-locale coverage; `--handoff` writes
+`docs/localization/handoff/<locale>.json` containing only that locale's missing
+keys with English source text — the file to hand a translator and paste back.
+Both are idempotent, so re-run after any content edit.
+
 ### The remaining gap
 
-111 keys against roughly **3,300 candidate user-facing strings**. The static
-chrome is done; what remains is text written from JavaScript at runtime —
-HUD readouts, notifications, objective lines, Armory/Vault panels — plus all
-Tier 2 narrative. Those cannot use `data-i18n` and need `t()` at each write
-site.
+- **Narrative translation: 0/606 in all six non-English locales.** This is the
+  native-pass job, deliberately not machine-translated.
+- **Not yet extracted**: prose still inline in `src/dialogue.js` (~302),
+  `src/npcDialogueTrees.js` (~165), `src/act2.js` (~144) and
+  `src/sideStorySystem.js` (~96). These interleave prose with logic rather than
+  being pure data modules, so each needs per-site work, not a catalog wrapper.
+- **Runtime-written chrome**: HUD readouts, notifications and objective lines
+  still need `t()` at each write site; `data-i18n` cannot reach them.
 
 ## Tiering
 
@@ -167,7 +208,10 @@ npm run build
 
 Add to `src/i18n.test.js` as extraction proceeds:
 
-1. ~~Key parity across all seven locale files.~~ Covered.
+1. ~~Key parity across all seven locale files.~~ Covered — scoped to chrome
+   keys, since `narrative.*` is intentionally English-only until translated.
+   A separate check reports narrative coverage per locale, and orphan
+   narrative keys (present in a locale but not in English) fail.
 2. ~~Every `data-i18n` attribute in `index.html` resolves to a real key~~ —
    covered, and asserted against **all seven** locales, so a key added to
    markup without a translation fails the suite.

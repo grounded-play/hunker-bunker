@@ -1,4 +1,6 @@
-export const CAMP_QUESTS = Object.freeze({
+import { localizeCatalog } from '../i18nCatalog.js';
+
+export const CAMP_QUESTS = localizeCatalog('narrative.campQuests', Object.freeze({
     camp_meridian: [
         { id: 'reactor_venting', label: 'REACTOR VENTING', bond: 1, desc: 'DEFUSE PRESSURE BUILD-UP IN REACTOR VENTING GRID' },
         { id: 'hive_archive_ch1', label: 'HIVE ARCHIVE CH. 1', bond: 1, desc: 'RECOVER RGB ARCHIVE DATA FROM NEARBY ALIEN HIVE TERMINAL', chapterId: 'parking_lot' },
@@ -14,5 +16,5 @@ export const CAMP_QUESTS = Object.freeze({
         { id: 'hive_archive_ch3', label: 'HIVE ARCHIVE CH. 3', bond: 1, desc: 'DECRYPT INCIDENT LOGS FROM ANCIENT BUNKER ARCHIVE CORE', chapterId: 'incident_review' },
         { id: 'bunker_holdout', label: 'BUNKER HOLDOUT', bond: 1, desc: 'DEFEND THE BARRICADE GATE FROM INCOMING ATTACK PATROLS' }
     ]
-});
+}), { skip: ['id'] });
 

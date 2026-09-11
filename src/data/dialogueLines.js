@@ -1,4 +1,6 @@
-export const DIALOGUE_LINES = Object.freeze({
+import { localizeCatalog } from '../i18nCatalog.js';
+
+export const DIALOGUE_LINES = localizeCatalog('narrative.dialogue.corporate', Object.freeze({
     lowO2: Object.freeze([
         'Life support advisory: breathing remains optional only in archived training material.',
         'O2 reserves below policy comfort. Policy comfort has been unavailable since impact.',
@@ -58,11 +60,11 @@ export const DIALOGUE_LINES = Object.freeze({
         'Productivity is being monitored. So is everything else.',
         'A maintenance event has been scheduled around your location.'
     ])
-});
+}));
 
 export const DIALOGUE_REGISTERS = Object.freeze({
     corporate: DIALOGUE_LINES,
-    glitched: Object.freeze({
+    glitched: localizeCatalog('narrative.dialogue.glitched', Object.freeze({
         lowO2: Object.freeze([
             'L-LiFe sUPpOrT... breathing is a CO-CORPORATE luxury.',
             'O2 r-reserves deP-pleted. Error: client respiration.dll missing.',
@@ -117,8 +119,8 @@ export const DIALOGUE_REGISTERS = Object.freeze({
             'Power rerouted. Department of containment reports... zero staff.',
             'SYSTEM: The structure... it remembers you. It... wants you.'
         ])
-    }),
-    reverent: Object.freeze({
+    })),
+    reverent: localizeCatalog('narrative.dialogue.reverent', Object.freeze({
         lowO2: Object.freeze([
             'The air is a cage. Open your chest. Let the breath of the hive in.',
             'O2 is for fragile things. Let the cold membrane stabilize you.',
@@ -173,7 +175,7 @@ export const DIALOGUE_REGISTERS = Object.freeze({
             'Do not fight the darkness. The dark is where the chitin grows.',
             'The structure welcomes your descent. We have prepared the throne.'
         ])
-    })
+    }))
 });
 
 export function getSuitRegister(registerOrContext = 'corporate') {
