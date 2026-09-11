@@ -32121,8 +32121,8 @@ export class ThreeGame {
                 }
             }
             return {
-                x: 7.4 + offset.x,
-                y: 11.8 + offset.y
+                x: CRASH_SITE_CENTER + offset.x,
+                y: CRASH_SITE_CENTER + offset.y
             };
         }
         if (this.crashedShips) {
@@ -32136,8 +32136,8 @@ export class ThreeGame {
             }
         }
         return {
-            x: 7.4,
-            y: 11.8
+            x: CRASH_SITE_CENTER,
+            y: CRASH_SITE_CENTER
         };
     }
 
