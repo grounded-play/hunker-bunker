@@ -20,39 +20,44 @@ import { t } from './i18n.js';
  * t()'s own fallback chain, so a partially translated locale is safe to ship.
  */
 
-// Keys that would reach Object.prototype if assigned onto a plain object.
-// The catalogs here are our own frozen source modules, so this is not
-// reachable today -- but these walkers copy key-by-key from data into fresh
-// objects, which is the shape of a prototype-pollution sink, and the guard
-// costs nothing. Flagged by CodeQL as js/prototype-polluting-function.
-const UNSAFE_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
-
-function isSafeKey(key) {
-    return !UNSAFE_KEYS.has(key);
-}
+// These walkers copy key-by-key from data into fresh objects, which is the
+// shape of a prototype-pollution sink even though the catalogs here are our
+// own frozen source modules. Each guard is written as an explicit inline
+// comparison rather than a shared helper: a Set lookup behind a function call
+// is a correct guard but CodeQL's js/prototype-pollution-utility does not
+// recognise it as a sanitizer, and left the alert open on the first attempt.
 
 const registry = [];
 
 function deepUnfreeze(value) {
     if (Array.isArray(value)) return value.map(deepUnfreeze);
     if (value && typeof value === 'object') {
-        const out = Object.create(null);
+        const out = {};
         for (const [k, v] of Object.entries(value)) {
-            if (!isSafeKey(k)) continue;
+            if (k === '__proto__' || k === 'constructor' || k === 'prototype') continue;
             out[k] = deepUnfreeze(v);
         }
-        return Object.assign({}, out);
+        return out;
     }
     return value;
 }
 
 function translateInto(namespace, source, target, skip, path = []) {
     for (const [key, value] of Object.entries(source)) {
-        if (skip.has(key) || !isSafeKey(key)) continue;
+        if (key === '__proto__' || key === 'constructor' || key === 'prototype') continue;
+        if (skip.has(key)) continue;
         const next = [...path, key];
         if (typeof value === 'string') {
             target[key] = t(`${namespace}.${next.join('.')}`, {}, value);
         } else if (value && typeof value === 'object') {
+            // Only ever recurse into an own, plain container. deepUnfreeze has
+            // already built the whole shape, so this replaces nothing in
+            // practice -- and it must not, because consumers hold references
+            // to these sub-objects and rebuilding one would strand them.
+            if (!Object.prototype.hasOwnProperty.call(target, key)
+                || !target[key] || typeof target[key] !== 'object') {
+                target[key] = Array.isArray(value) ? [] : {};
+            }
             translateInto(namespace, value, target[key], skip, next);
         }
     }
@@ -85,7 +90,8 @@ export function refreshCatalogs() {
 export function flattenCatalog(namespace, source, { skip = [] } = {}, path = [], out = {}) {
     const skipSet = skip instanceof Set ? skip : new Set(skip);
     for (const [key, value] of Object.entries(source)) {
-        if (skipSet.has(key) || !isSafeKey(key)) continue;
+        if (key === '__proto__' || key === 'constructor' || key === 'prototype') continue;
+        if (skipSet.has(key)) continue;
         const next = [...path, key];
         if (typeof value === 'string') {
             out[`${namespace}.${next.join('.')}`] = value;
