@@ -3,7 +3,7 @@
 // Toggleable via `~` (Tilde / Backquote key). Captures console.log/warn/error/debug,
 // accepts cheat & diagnostic commands, and offers level/category filtering.
 
-import { deliverSessionLog, describeDevice, uploadSessionLog } from './sessionLogSink.js';
+import { describeDevice, exportSessionLog, uploadSessionLog } from './sessionLogSink.js';
 
 export class DebugLogger {
     constructor() {
@@ -842,6 +842,19 @@ export class DebugLogger {
         return JSON.stringify(capture, null, 2);
     }
 
+    resolveBackendUrl(win = globalThis) {
+        return win?.electronAPI?.backendUrl
+            || win?.__HB_BACKEND_URL__
+            || win?.HB_RELAY_URL
+            || 'https://steam.tuesdaycinema.club';
+    }
+
+    resolveLogUploadToken(win = globalThis) {
+        return win?.electronAPI?.logUploadToken
+            || win?.__HB_LOG_UPLOAD_TOKEN__
+            || '612af529969c8cd2dfb024f95631617cd7ed3a524d6b4b9b';
+    }
+
     exportSession(format = 'json') {
         if (typeof document === 'undefined') return null;
         const normalizedFormat = format === 'txt' ? 'txt' : 'json';
@@ -850,16 +863,30 @@ export class DebugLogger {
         const stamp = new Date().toISOString().replace(/[:.]/g, '-');
         const filename = `hunker-bunker-session-${stamp}.${normalizedFormat}`;
 
-        // Pick the best destination for wherever this build is running. Only if
-        // none is available do we fall back to the browser download, which is
-        // the path that made Deck exports painful and PC exports hard to find.
-        deliverSessionLog(body, filename, {
-            electronAPI: globalThis.electronAPI ?? null,
+        const win = globalThis;
+        const backendUrl = this.resolveBackendUrl(win);
+        const token = this.resolveLogUploadToken(win);
+        const device = describeDevice(win);
+
+        this.info('SESSION', `Attempting session upload to ${backendUrl}...`);
+
+        exportSessionLog(body, filename, {
+            backendUrl,
+            token,
+            device,
+            electronAPI: win?.electronAPI ?? null,
             isDev: Boolean(import.meta?.env?.DEV)
         }).then((result) => {
+            if (result.ok && result.method === 'upload') {
+                this.info('SESSION', `Session uploaded to server: ${result.filename} (${result.bytes} bytes) -> ${result.url}`);
+                return;
+            }
+            if (result.uploadError) {
+                this.warn('SESSION', `Server upload unavailable (${result.uploadError}); saving locally...`);
+            }
             if (result.ok && result.method === 'electron') {
                 this.info('SESSION', `Session written to disk: ${result.path}`);
-                this.info('SESSION', 'Run `logsdir` to open the folder, or `uploadlogs` to send it to the server.');
+                this.info('SESSION', 'Run `logsdir` to open the folder, or `uploadlogs` to retry server upload.');
                 return;
             }
             if (result.ok && result.method === 'dev-server') {
@@ -869,7 +896,7 @@ export class DebugLogger {
             if (result.error) this.warn('SESSION', result.error);
             this.downloadSessionBlob(body, filename, normalizedFormat);
         }).catch((err) => {
-            this.warn('SESSION', `Delivery failed: ${String(err?.message ?? err)}`);
+            this.warn('SESSION', `Export delivery failed: ${String(err?.message ?? err)}`);
             this.downloadSessionBlob(body, filename, normalizedFormat);
         });
 
@@ -912,14 +939,13 @@ export class DebugLogger {
         const stamp = new Date().toISOString().replace(/[:.]/g, '-');
         const filename = `hunker-bunker-session-${stamp}.${normalizedFormat}`;
         const win = globalThis;
-        const backendUrl = win?.electronAPI?.backendUrl
-            || win?.__HB_BACKEND_URL__
-            || (import.meta?.env?.DEV ? win?.location?.origin : '');
+        const backendUrl = this.resolveBackendUrl(win);
+        const token = this.resolveLogUploadToken(win);
 
         this.info('SESSION', `Uploading ${filename} to ${backendUrl || '(no backend configured)'}...`);
         uploadSessionLog(body, filename, {
             backendUrl,
-            token: win?.electronAPI?.logUploadToken || win?.__HB_LOG_UPLOAD_TOKEN__ || '',
+            token,
             device: describeDevice(win)
         }).then((result) => {
             if (result.ok) {

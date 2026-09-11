@@ -121,6 +121,12 @@ export default defineConfig({
   }],
   server: {
     allowedHosts: true,
+    proxy: {
+      '/logs/session': {
+        target: buildEnv.HB_STEAM_BACKEND_URL || 'http://127.0.0.1:3001',
+        changeOrigin: true
+      }
+    },
     // scratch/ holds ad-hoc Python venvs and generator scripts (not source);
     // watching them exhausts the OS inotify budget on dev machines.
     watch: {

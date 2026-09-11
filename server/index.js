@@ -42,7 +42,7 @@ app.use((req, res, next) => {
         res.setHeader('Access-Control-Allow-Origin', origin ?? '*');
         res.setHeader('Vary', 'Origin');
     }
-    res.setHeader('Access-Control-Allow-Headers', 'content-type, authorization');
+    res.setHeader('Access-Control-Allow-Headers', 'content-type, authorization, x-hb-log-token, x-hb-log-name, x-hb-log-device');
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
     if (req.method === 'OPTIONS') {
         res.status(isAllowedOrigin(origin) ? 204 : 403).end();
