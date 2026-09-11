@@ -793,6 +793,39 @@ const catalog = {
         "localImg": "/economy/patch_deep_frost.png",
         "localImgLarge": "/economy/patch_deep_frost_large.png"
     },
+    "4204": {
+        "itemdefid": 4204,
+        "name": "Deep Frost Sheen",
+        "rarity": "epic",
+        "desc": "Subsurface crystalline ice glaze over weapon plating with a pale cyan specular bloom.",
+        "tradable": true,
+        "marketable": true,
+        "img": "https://hunkerbunker.netlify.app/economy/fx_sheen_deep_frost.png",
+        "localImg": "/economy/fx_sheen_deep_frost.png",
+        "localImgLarge": "/economy/fx_sheen_deep_frost_large.png"
+    },
+    "4205": {
+        "itemdefid": 4205,
+        "name": "Deep Frost Tracer Rounds",
+        "rarity": "epic",
+        "desc": "Weapon projectiles emit brilliant pale cyan-white trails with drifting frost particulate.",
+        "tradable": true,
+        "marketable": true,
+        "img": "https://hunkerbunker.netlify.app/economy/fx_tracer_deep_frost.png",
+        "localImg": "/economy/fx_tracer_deep_frost.png",
+        "localImgLarge": "/economy/fx_tracer_deep_frost_large.png"
+    },
+    "4206": {
+        "itemdefid": 4206,
+        "name": "Deep Frost HUD Theme",
+        "rarity": "rare",
+        "desc": "Tactical frost-rimed HUD theme with pale cyan-white vector telemetry.",
+        "tradable": true,
+        "marketable": true,
+        "img": "https://hunkerbunker.netlify.app/economy/hudtheme_deep_frost.png",
+        "localImg": "/economy/hudtheme_deep_frost.png",
+        "localImgLarge": "/economy/hudtheme_deep_frost_large.png"
+    },
     "4210": {
         "itemdefid": 4210,
         "name": "Rust & Bone Patch",
@@ -803,6 +836,39 @@ const catalog = {
         "img": "https://hunkerbunker.netlify.app/economy/patch_rust_bone.png",
         "localImg": "/economy/patch_rust_bone.png",
         "localImgLarge": "/economy/patch_rust_bone_large.png"
+    },
+    "4211": {
+        "itemdefid": 4211,
+        "name": "Rust & Bone Sheen",
+        "rarity": "rare",
+        "desc": "Pitted oxidised iron weapon finish with oily sheen and dull ember warmth.",
+        "tradable": true,
+        "marketable": true,
+        "img": "https://hunkerbunker.netlify.app/economy/fx_sheen_rust_bone.png",
+        "localImg": "/economy/fx_sheen_rust_bone.png",
+        "localImgLarge": "/economy/fx_sheen_rust_bone_large.png"
+    },
+    "4212": {
+        "itemdefid": 4212,
+        "name": "Rust & Bone Tracer Rounds",
+        "rarity": "rare",
+        "desc": "Heavy dull-ember ballistic projectile streaks that shed burning iron sparks.",
+        "tradable": true,
+        "marketable": true,
+        "img": "https://hunkerbunker.netlify.app/economy/fx_tracer_rust_bone.png",
+        "localImg": "/economy/fx_tracer_rust_bone.png",
+        "localImgLarge": "/economy/fx_tracer_rust_bone_large.png"
+    },
+    "4213": {
+        "itemdefid": 4213,
+        "name": "Rust & Bone HUD Theme",
+        "rarity": "rare",
+        "desc": "Subterranean survival HUD styling in dull ember orange with riveted telemetry frames.",
+        "tradable": true,
+        "marketable": true,
+        "img": "https://hunkerbunker.netlify.app/economy/hudtheme_rust_bone.png",
+        "localImg": "/economy/hudtheme_rust_bone.png",
+        "localImgLarge": "/economy/hudtheme_rust_bone_large.png"
     },
     "4217": {
         "itemdefid": 4217,
@@ -815,6 +881,39 @@ const catalog = {
         "localImg": "/economy/patch_hive_chitin.png",
         "localImgLarge": "/economy/patch_hive_chitin_large.png"
     },
+    "4218": {
+        "itemdefid": 4218,
+        "name": "Hive Chitin Sheen",
+        "rarity": "epic",
+        "desc": "Living alien carapace weapon coating with shifting bioluminescent oil-slick iridescence.",
+        "tradable": true,
+        "marketable": true,
+        "img": "https://hunkerbunker.netlify.app/economy/fx_sheen_hive_chitin.png",
+        "localImg": "/economy/fx_sheen_hive_chitin.png",
+        "localImgLarge": "/economy/fx_sheen_hive_chitin_large.png"
+    },
+    "4219": {
+        "itemdefid": 4219,
+        "name": "Hive Chitin Tracer Rounds",
+        "rarity": "epic",
+        "desc": "Organic stinger darts trailing a sickly green plasma ribbon and settling spores.",
+        "tradable": true,
+        "marketable": true,
+        "img": "https://hunkerbunker.netlify.app/economy/fx_tracer_hive_chitin.png",
+        "localImg": "/economy/fx_tracer_hive_chitin.png",
+        "localImgLarge": "/economy/fx_tracer_hive_chitin_large.png"
+    },
+    "4220": {
+        "itemdefid": 4220,
+        "name": "Hive Chitin HUD Theme",
+        "rarity": "epic",
+        "desc": "Alien symbiote ocular interface with sickly bioluminescent green readouts and slow breathing pulse.",
+        "tradable": true,
+        "marketable": true,
+        "img": "https://hunkerbunker.netlify.app/economy/hudtheme_hive_chitin.png",
+        "localImg": "/economy/hudtheme_hive_chitin.png",
+        "localImgLarge": "/economy/hudtheme_hive_chitin_large.png"
+    },
     "4224": {
         "itemdefid": 4224,
         "name": "Horizon Corporate Patch",
@@ -825,6 +924,39 @@ const catalog = {
         "img": "https://hunkerbunker.netlify.app/economy/patch_horizon_corporate.png",
         "localImg": "/economy/patch_horizon_corporate.png",
         "localImgLarge": "/economy/patch_horizon_corporate_large.png"
+    },
+    "4225": {
+        "itemdefid": 4225,
+        "name": "Horizon Corporate Sheen",
+        "rarity": "rare",
+        "desc": "Pristine white ceramic weapon polish with tight specular glare and cold teal fresnel highlights.",
+        "tradable": true,
+        "marketable": true,
+        "img": "https://hunkerbunker.netlify.app/economy/fx_sheen_horizon_corporate.png",
+        "localImg": "/economy/fx_sheen_horizon_corporate.png",
+        "localImgLarge": "/economy/fx_sheen_horizon_corporate_large.png"
+    },
+    "4226": {
+        "itemdefid": 4226,
+        "name": "Horizon Corporate Tracer Rounds",
+        "rarity": "rare",
+        "desc": "High-precision solid cold teal laser beams with clean geometric muzzle flares.",
+        "tradable": true,
+        "marketable": true,
+        "img": "https://hunkerbunker.netlify.app/economy/fx_tracer_horizon_corporate.png",
+        "localImg": "/economy/fx_tracer_horizon_corporate.png",
+        "localImgLarge": "/economy/fx_tracer_horizon_corporate_large.png"
+    },
+    "4227": {
+        "itemdefid": 4227,
+        "name": "Horizon Corporate HUD Theme",
+        "rarity": "rare",
+        "desc": "Clinical military-contractor HUD interface in cold teal with razor-thin coordinate grids.",
+        "tradable": true,
+        "marketable": true,
+        "img": "https://hunkerbunker.netlify.app/economy/hudtheme_horizon_corporate.png",
+        "localImg": "/economy/hudtheme_horizon_corporate.png",
+        "localImgLarge": "/economy/hudtheme_horizon_corporate_large.png"
     },
     "4231": {
         "itemdefid": 4231,
@@ -837,6 +969,39 @@ const catalog = {
         "localImg": "/economy/patch_bunker404.png",
         "localImgLarge": "/economy/patch_bunker404_large.png"
     },
+    "4232": {
+        "itemdefid": 4232,
+        "name": "Bunker 404 Sheen",
+        "rarity": "epic",
+        "desc": "Glitched weapon finish with horizontal texture displacement and magenta signal-error chromatic tearing.",
+        "tradable": true,
+        "marketable": true,
+        "img": "https://hunkerbunker.netlify.app/economy/fx_sheen_bunker404.png",
+        "localImg": "/economy/fx_sheen_bunker404.png",
+        "localImgLarge": "/economy/fx_sheen_bunker404_large.png"
+    },
+    "4233": {
+        "itemdefid": 4233,
+        "name": "Bunker 404 Tracer Rounds",
+        "rarity": "epic",
+        "desc": "Displaced magenta projectile streaks that stutter and break into offset glitch blocks.",
+        "tradable": true,
+        "marketable": true,
+        "img": "https://hunkerbunker.netlify.app/economy/fx_tracer_bunker404.png",
+        "localImg": "/economy/fx_tracer_bunker404.png",
+        "localImgLarge": "/economy/fx_tracer_bunker404_large.png"
+    },
+    "4234": {
+        "itemdefid": 4234,
+        "name": "Bunker 404 HUD Theme",
+        "rarity": "epic",
+        "desc": "Corrupted signal HUD theme in electric magenta with intermittent scanline jitter and error readouts.",
+        "tradable": true,
+        "marketable": true,
+        "img": "https://hunkerbunker.netlify.app/economy/hudtheme_bunker404.png",
+        "localImg": "/economy/hudtheme_bunker404.png",
+        "localImgLarge": "/economy/hudtheme_bunker404_large.png"
+    },
     "4238": {
         "itemdefid": 4238,
         "name": "Grand Marshal Patch",
@@ -847,6 +1012,39 @@ const catalog = {
         "img": "https://hunkerbunker.netlify.app/economy/patch_grand_marshal.png",
         "localImg": "/economy/patch_grand_marshal.png",
         "localImgLarge": "/economy/patch_grand_marshal_large.png"
+    },
+    "4239": {
+        "itemdefid": 4239,
+        "name": "Grand Marshal Sheen",
+        "rarity": "legendary",
+        "desc": "Burnished meteorite-alloy weapon finish with warm amber gold laurel scrollwork and anisotropic glint.",
+        "tradable": true,
+        "marketable": true,
+        "img": "https://hunkerbunker.netlify.app/economy/fx_sheen_grand_marshal.png",
+        "localImg": "/economy/fx_sheen_grand_marshal.png",
+        "localImgLarge": "/economy/fx_sheen_grand_marshal_large.png"
+    },
+    "4240": {
+        "itemdefid": 4240,
+        "name": "Grand Marshal Tracer Rounds",
+        "rarity": "legendary",
+        "desc": "Ceremonial heavy gold energy streaks accompanied by shedding embers and a radiant corona.",
+        "tradable": true,
+        "marketable": true,
+        "img": "https://hunkerbunker.netlify.app/economy/fx_tracer_grand_marshal.png",
+        "localImg": "/economy/fx_tracer_grand_marshal.png",
+        "localImgLarge": "/economy/fx_tracer_grand_marshal_large.png"
+    },
+    "4241": {
+        "itemdefid": 4241,
+        "name": "Grand Marshal HUD Theme",
+        "rarity": "legendary",
+        "desc": "Regal imperial command interface in warm amber gold framed with archival laurel leaf brackets.",
+        "tradable": true,
+        "marketable": true,
+        "img": "https://hunkerbunker.netlify.app/economy/hudtheme_grand_marshal.png",
+        "localImg": "/economy/hudtheme_grand_marshal.png",
+        "localImgLarge": "/economy/hudtheme_grand_marshal_large.png"
     }
 };
 

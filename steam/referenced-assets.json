@@ -669,10 +669,46 @@
     "economy/fx_cryo_shockwave_muzzle_large.png",
     "economy/fx_emerald_void_tracer.png",
     "economy/fx_emerald_void_tracer_large.png",
+    "economy/fx_sheen_bunker404.png",
+    "economy/fx_sheen_bunker404_large.png",
+    "economy/fx_sheen_deep_frost.png",
+    "economy/fx_sheen_deep_frost_large.png",
+    "economy/fx_sheen_grand_marshal.png",
+    "economy/fx_sheen_grand_marshal_large.png",
+    "economy/fx_sheen_hive_chitin.png",
+    "economy/fx_sheen_hive_chitin_large.png",
+    "economy/fx_sheen_horizon_corporate.png",
+    "economy/fx_sheen_horizon_corporate_large.png",
+    "economy/fx_sheen_rust_bone.png",
+    "economy/fx_sheen_rust_bone_large.png",
+    "economy/fx_tracer_bunker404.png",
+    "economy/fx_tracer_bunker404_large.png",
+    "economy/fx_tracer_deep_frost.png",
+    "economy/fx_tracer_deep_frost_large.png",
+    "economy/fx_tracer_grand_marshal.png",
+    "economy/fx_tracer_grand_marshal_large.png",
+    "economy/fx_tracer_hive_chitin.png",
+    "economy/fx_tracer_hive_chitin_large.png",
+    "economy/fx_tracer_horizon_corporate.png",
+    "economy/fx_tracer_horizon_corporate_large.png",
+    "economy/fx_tracer_rust_bone.png",
+    "economy/fx_tracer_rust_bone_large.png",
     "economy/hudtheme_amber_crt.png",
     "economy/hudtheme_amber_crt_large.png",
+    "economy/hudtheme_bunker404.png",
+    "economy/hudtheme_bunker404_large.png",
+    "economy/hudtheme_deep_frost.png",
+    "economy/hudtheme_deep_frost_large.png",
     "economy/hudtheme_emerald_radar.png",
     "economy/hudtheme_emerald_radar_large.png",
+    "economy/hudtheme_grand_marshal.png",
+    "economy/hudtheme_grand_marshal_large.png",
+    "economy/hudtheme_hive_chitin.png",
+    "economy/hudtheme_hive_chitin_large.png",
+    "economy/hudtheme_horizon_corporate.png",
+    "economy/hudtheme_horizon_corporate_large.png",
+    "economy/hudtheme_rust_bone.png",
+    "economy/hudtheme_rust_bone_large.png",
     "economy/mod_bio_hazard_filter.png",
     "economy/mod_bio_hazard_filter_large.png",
     "economy/mod_cryo_capacitor.png",
@@ -5394,6 +5430,126 @@
       "classification": "runtime-required"
     },
     {
+      "path": "economy/fx_sheen_bunker404.png",
+      "bytes": 111046,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/fx_sheen_bunker404_large.png",
+      "bytes": 437699,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/fx_sheen_deep_frost.png",
+      "bytes": 100119,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/fx_sheen_deep_frost_large.png",
+      "bytes": 396505,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/fx_sheen_grand_marshal.png",
+      "bytes": 108578,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/fx_sheen_grand_marshal_large.png",
+      "bytes": 408488,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/fx_sheen_hive_chitin.png",
+      "bytes": 107678,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/fx_sheen_hive_chitin_large.png",
+      "bytes": 409327,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/fx_sheen_horizon_corporate.png",
+      "bytes": 72304,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/fx_sheen_horizon_corporate_large.png",
+      "bytes": 285434,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/fx_sheen_rust_bone.png",
+      "bytes": 111130,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/fx_sheen_rust_bone_large.png",
+      "bytes": 441786,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/fx_tracer_bunker404.png",
+      "bytes": 104885,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/fx_tracer_bunker404_large.png",
+      "bytes": 420545,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/fx_tracer_deep_frost.png",
+      "bytes": 105179,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/fx_tracer_deep_frost_large.png",
+      "bytes": 400293,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/fx_tracer_grand_marshal.png",
+      "bytes": 85155,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/fx_tracer_grand_marshal_large.png",
+      "bytes": 345322,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/fx_tracer_hive_chitin.png",
+      "bytes": 99349,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/fx_tracer_hive_chitin_large.png",
+      "bytes": 391235,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/fx_tracer_horizon_corporate.png",
+      "bytes": 55098,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/fx_tracer_horizon_corporate_large.png",
+      "bytes": 219461,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/fx_tracer_rust_bone.png",
+      "bytes": 112187,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/fx_tracer_rust_bone_large.png",
+      "bytes": 417602,
+      "classification": "runtime-required"
+    },
+    {
       "path": "economy/gun_engineer_tesla_lock.png",
       "bytes": 146556,
       "classification": "runtime-required"
@@ -5464,6 +5620,26 @@
       "classification": "runtime-required"
     },
     {
+      "path": "economy/hudtheme_bunker404.png",
+      "bytes": 132696,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/hudtheme_bunker404_large.png",
+      "bytes": 499535,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/hudtheme_deep_frost.png",
+      "bytes": 124063,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/hudtheme_deep_frost_large.png",
+      "bytes": 476333,
+      "classification": "runtime-required"
+    },
+    {
       "path": "economy/hudtheme_emerald_radar.png",
       "bytes": 33694,
       "classification": "runtime-required"
@@ -5471,6 +5647,46 @@
     {
       "path": "economy/hudtheme_emerald_radar_large.png",
       "bytes": 78886,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/hudtheme_grand_marshal.png",
+      "bytes": 125672,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/hudtheme_grand_marshal_large.png",
+      "bytes": 487123,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/hudtheme_hive_chitin.png",
+      "bytes": 120472,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/hudtheme_hive_chitin_large.png",
+      "bytes": 451012,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/hudtheme_horizon_corporate.png",
+      "bytes": 69233,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/hudtheme_horizon_corporate_large.png",
+      "bytes": 284077,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/hudtheme_rust_bone.png",
+      "bytes": 109255,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/hudtheme_rust_bone_large.png",
+      "bytes": 420617,
       "classification": "runtime-required"
     },
     {

@@ -5,7 +5,7 @@ describe('Steam Inventory asset audit', () => {
     it('accepts the complete checked-in Inventory artwork set', () => {
         expect(auditSteamInventoryAssets()).toMatchObject({
             ok: true,
-            itemCount: 77,
+            itemCount: 95,
             failures: []
         });
     });

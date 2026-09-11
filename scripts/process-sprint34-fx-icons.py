@@ -190,11 +190,9 @@ def export_all_formats(master_img, slug):
     master_path = os.path.join(MASTER_DIR, f"{slug}_master.png")
     img_1254.save(master_path, 'PNG', optimize=True)
 
-    # 4. 1254x1254 chroma icon (dark opaque backdrop)
-    chroma_bg = Image.new("RGBA", (1254, 1254), (10, 15, 26, 255))
-    chroma_img = Image.alpha_composite(chroma_bg, img_1254)
+    # 4. 1254x1254 chroma icon
     chroma_path = os.path.join(CHROMA_DIR, f"{slug}_chroma.png")
-    chroma_img.save(chroma_path, 'PNG', optimize=True)
+    img_1254.save(chroma_path, 'PNG', optimize=True)
 
     return out_256, out_512
 
@@ -206,8 +204,8 @@ def main():
         src = find_source_image(itemdef, slug)
         if src and not force_scaffold:
             raw = Image.open(src)
-            img = cutout_patch(raw) if raw.mode != 'RGBA' else raw
-            origin = f"cutout from {os.path.basename(src)}"
+            img = raw.convert('RGBA')
+            origin = f"direct scaled from {os.path.basename(src)}"
         else:
             img = create_scaffold_icon(itemdef, slug, title, category, hex_color)
             origin = "thematic procedural scaffold"

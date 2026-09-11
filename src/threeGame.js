@@ -6696,6 +6696,12 @@ export class ThreeGame {
         }
         // Season 0 Rig Overclock Modules (docs/season-zero-protocol/03) — see LoadoutManager#getActiveModifiers
         this.loadoutMods = window.loadout?.getActiveModifiers?.(resolvedType.toLowerCase()) ?? null;
+        if (this.loadoutMods?.moveSpeedMultiplier) {
+            this.moveSpeed *= this.loadoutMods.moveSpeedMultiplier;
+        }
+        if (this.loadoutMods?.oxygenDrainMultiplier) {
+            this.o2DrainMult *= this.loadoutMods.oxygenDrainMultiplier;
+        }
         baseMagnet *= 1 + (this.loadoutMods?.scrapMagnetRadiusBonus ?? 0);
         this.pickupMagnetRadius = baseMagnet;
 
@@ -20492,11 +20498,28 @@ export class ThreeGame {
         const classColor = PLAYER_COLORS[this.playerType] ?? 0xffe08f;
         let coreColor = options.color ?? (isEnemy ? 0xff4a4a : classColor);
         let glowColor = options.glowColor ?? (isEnemy ? 0xff0000 : classColor);
-        // Season 0 Emerald Void Tracer Rounds mutator (itemdef 4152, docs/season-zero-protocol/03 §5)
+        // Season 0 & Sprint 34 Tracer Mutators (4152, 4205, 4212, 4219, 4226, 4233, 4240)
         const tracerFxId = typeof window !== 'undefined' ? window.loadout?.state?.tracerFxId : null;
-        if (!isEnemy && (tracerFxId === '4152' || tracerFxId === 'fx_emerald_void_tracer' || options.tracerFx === 'emerald')) {
-            coreColor = 0x10b981;
-            glowColor = 0x34d399;
+        const TRACER_PROFILES = {
+            '4152': { core: 0x10b981, glow: 0x34d399, ribbon: 0x34d399, shader: true, pulse: 7.0 },
+            'fx_emerald_void_tracer': { core: 0x10b981, glow: 0x34d399, ribbon: 0x34d399, shader: true, pulse: 7.0 },
+            '4205': { core: 0xffffff, glow: 0x38bdf8, ribbon: 0xa5f3fc, shader: true, pulse: 12.0 }, // Deep Frost
+            'fx_tracer_deep_frost': { core: 0xffffff, glow: 0x38bdf8, ribbon: 0xa5f3fc, shader: true, pulse: 12.0 },
+            '4212': { core: 0xffedd5, glow: 0xc2410c, ribbon: 0xf97316, shader: false }, // Rust & Bone
+            'fx_tracer_rust_bone': { core: 0xffedd5, glow: 0xc2410c, ribbon: 0xf97316, shader: false },
+            '4219': { core: 0xd9f99d, glow: 0x4d7c0f, ribbon: 0x84cc16, shader: true, pulse: 5.0 }, // Hive Chitin
+            'fx_tracer_hive_chitin': { core: 0xd9f99d, glow: 0x4d7c0f, ribbon: 0x84cc16, shader: true, pulse: 5.0 },
+            '4226': { core: 0xffffff, glow: 0x0d9488, ribbon: 0x14b8a6, shader: false }, // Horizon Corporate
+            'fx_tracer_horizon_corporate': { core: 0xffffff, glow: 0x0d9488, ribbon: 0x14b8a6, shader: false },
+            '4233': { core: 0xfae8ff, glow: 0xa21caf, ribbon: 0xd946ef, shader: true, pulse: 24.0 }, // Bunker 404
+            'fx_tracer_bunker404': { core: 0xfae8ff, glow: 0xa21caf, ribbon: 0xd946ef, shader: true, pulse: 24.0 },
+            '4240': { core: 0xfffbeb, glow: 0xb45309, ribbon: 0xf59e0b, shader: true, pulse: 6.0 }, // Grand Marshal
+            'fx_tracer_grand_marshal': { core: 0xfffbeb, glow: 0xb45309, ribbon: 0xf59e0b, shader: true, pulse: 6.0 }
+        };
+        const activeProfile = !isEnemy ? (TRACER_PROFILES[tracerFxId] ?? (options.tracerFx === 'emerald' ? TRACER_PROFILES['4152'] : null)) : null;
+        if (activeProfile) {
+            coreColor = activeProfile.core;
+            glowColor = activeProfile.glow;
         }
 
         const heading = -Math.atan2(vz, vx);
@@ -20549,11 +20572,11 @@ export class ThreeGame {
         group.add(core, sheath, glow);
 
         let tracerMaterial = null;
-        if (!isEnemy && (tracerFxId === '4152' || tracerFxId === 'fx_emerald_void_tracer' || options.tracerFx === 'emerald')) {
+        if (activeProfile?.shader) {
             tracerMaterial = new THREE.ShaderMaterial({
-                uniforms: { uColor: { value: new THREE.Color(0x34d399) }, uTime: { value: 0 } },
+                uniforms: { uColor: { value: new THREE.Color(activeProfile.ribbon) }, uTime: { value: 0 } },
                 vertexShader: 'varying vec2 vUv; void main(){vUv=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}',
-                fragmentShader: 'uniform vec3 uColor; uniform float uTime; varying vec2 vUv; void main(){float edge=smoothstep(0.0,0.22,vUv.y)*smoothstep(1.0,0.78,vUv.y);float pulse=0.72+0.28*sin((vUv.x*10.0)-uTime*7.0);gl_FragColor=vec4(uColor,edge*pulse*0.72);}',
+                fragmentShader: `uniform vec3 uColor; uniform float uTime; varying vec2 vUv; void main(){float edge=smoothstep(0.0,0.22,vUv.y)*smoothstep(1.0,0.78,vUv.y);float pulse=0.72+0.28*sin((vUv.x*10.0)-uTime*${activeProfile.pulse || 7.0});gl_FragColor=vec4(uColor,edge*pulse*0.72);}`,
                 transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide
             });
             const tracerRibbon = new THREE.Mesh(new THREE.PlaneGeometry(0.95, radius * 2.2), tracerMaterial);

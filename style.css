@@ -2089,14 +2089,22 @@ body {
 /* Season 0 HUD themes are intentionally structural, not only a color swap.
    The variables are applied to #ui and the game viewport by main.js. */
 #game-container[data-hud-theme="4150"],
-#game-container[data-hud-theme="hudtheme_amber_crt"] {
-  border-color: var(--hud-border, rgba(245, 158, 11, 0.62));
-  box-shadow: inset 0 0 0 1px var(--hud-border), inset 0 0 28px var(--hud-glow);
-}
-
+#game-container[data-hud-theme="hudtheme_amber_crt"],
 #game-container[data-hud-theme="4151"],
-#game-container[data-hud-theme="hudtheme_emerald_radar"] {
-  border-color: var(--hud-border, rgba(16, 185, 129, 0.62));
+#game-container[data-hud-theme="hudtheme_emerald_radar"],
+#game-container[data-hud-theme="4206"],
+#game-container[data-hud-theme="hudtheme_deep_frost"],
+#game-container[data-hud-theme="4213"],
+#game-container[data-hud-theme="hudtheme_rust_bone"],
+#game-container[data-hud-theme="4220"],
+#game-container[data-hud-theme="hudtheme_hive_chitin"],
+#game-container[data-hud-theme="4227"],
+#game-container[data-hud-theme="hudtheme_horizon_corporate"],
+#game-container[data-hud-theme="4234"],
+#game-container[data-hud-theme="hudtheme_bunker404"],
+#game-container[data-hud-theme="4241"],
+#game-container[data-hud-theme="hudtheme_grand_marshal"] {
+  border-color: var(--hud-border, rgba(245, 158, 11, 0.62));
   box-shadow: inset 0 0 0 1px var(--hud-border), inset 0 0 28px var(--hud-glow);
 }
 
@@ -2110,10 +2118,7 @@ body {
   text-shadow: 0 0 8px var(--hud-glow, rgba(255, 159, 28, 0.4));
 }
 
-#ui[data-hud-theme="4150"]::after,
-#ui[data-hud-theme="hudtheme_amber_crt"]::after,
-#ui[data-hud-theme="4151"]::after,
-#ui[data-hud-theme="hudtheme_emerald_radar"]::after {
+#ui[data-hud-theme]::after {
   content: "";
   position: fixed;
   inset: 0;

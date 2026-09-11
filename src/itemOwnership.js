@@ -46,19 +46,19 @@ function classify(type, ids) {
     for (const id of ids) TYPE_BY_ID.set(id, type);
 }
 classify(ITEM_TYPE.AUDIO, [4148, 4149]);
-classify(ITEM_TYPE.CHARM, [4130, 4131, 4132, 4133, 4134, 4135, 4136, 4137, 4138, 4139]);
-classify(ITEM_TYPE.CHASSIS, [4112, 4113, 4114, 4115, 4116, 4117, 4118, 4119]);
+classify(ITEM_TYPE.CHARM, [4130, 4131, 4132, 4133, 4134, 4135, 4136, 4137, 4138, 4139, 4202, 4209, 4216, 4223, 4230, 4237]);
+classify(ITEM_TYPE.CHASSIS, [4112, 4113, 4114, 4115, 4116, 4117, 4118, 4119, 4200, 4207, 4214, 4221, 4228, 4235]);
 classify(ITEM_TYPE.CONTAINER, [4000]);
-classify(ITEM_TYPE.DECAL, [2000, 2001, 2002, 2003, 2004, 2100, 4120, 4121, 4122, 4123, 4124, 4125, 4126, 4127, 4128, 4129]);
-classify(ITEM_TYPE.HUD, [4150, 4151]);
+classify(ITEM_TYPE.DECAL, [2000, 2001, 2002, 2003, 2004, 2100, 4120, 4121, 4122, 4123, 4124, 4125, 4126, 4127, 4128, 4129, 4203, 4210, 4217, 4224, 4231, 4238]);
+classify(ITEM_TYPE.HUD, [4150, 4151, 4206, 4213, 4220, 4227, 4234, 4241]);
 classify(ITEM_TYPE.KEY, [4001, 4154]);
 classify(ITEM_TYPE.KEY_BUNDLE, [4155]);
 classify(ITEM_TYPE.MATERIAL, [1000, 1100]);
-classify(ITEM_TYPE.MOD, [4140, 4141, 4142, 4143, 4144, 4145, 4146, 4147]);
+classify(ITEM_TYPE.MOD, [4140, 4141, 4142, 4143, 4144, 4145, 4146, 4147, 4160, 4161, 4162, 4163, 4164, 4165, 4166, 4167]);
 classify(ITEM_TYPE.REAGENT, [4156, 4157, 4158]);
 classify(ITEM_TYPE.SHARD, [4159]);
-classify(ITEM_TYPE.SKIN, [2200, 4100, 4101, 4102, 4103, 4104, 4105, 4106, 4107, 4108, 4109, 4110, 4111]);
-classify(ITEM_TYPE.VFX, [4152, 4153]);
+classify(ITEM_TYPE.SKIN, [2200, 4100, 4101, 4102, 4103, 4104, 4105, 4106, 4107, 4108, 4109, 4110, 4111, 4201, 4208, 4215, 4222, 4229, 4236]);
+classify(ITEM_TYPE.VFX, [4152, 4153, 4204, 4205, 4211, 4212, 4218, 4219, 4225, 4226, 4232, 4233, 4239, 4240]);
 
 // Ids are not uniformly numeric: Steam itemdefids are, achievement rewards are
 // numeric-looking strings ('5001'), and community skins are opaque strings
@@ -124,6 +124,23 @@ for (const skin of COMMUNITY_SKINS ?? []) {
         glbUrl: skin.glbUrl ?? null
     }));
     if (skin?.isUnlockedDefault !== false) DEFAULT_OWNED.add(id);
+}
+
+// Earned Rig Modules (4160-4167) — Track A hardware, earned in-game, never sold on Steam Market
+export const RIG_MODULE_DEFS = Object.freeze([
+    { itemdefid: 4160, name: 'Ballast Plating', rarity: 'uncommon', type: ITEM_TYPE.MOD, source: 'earned', unlockPath: 'shells', cost: '150 Shells', desc: '+2 Max HP, −15% Move Speed' },
+    { itemdefid: 4161, name: 'Scrap Furnace', rarity: 'uncommon', type: ITEM_TYPE.MOD, source: 'earned', unlockPath: 'shells', cost: '150 Shells', desc: 'Destroyed Props Drop Salvage, −10% Fire Rate' },
+    { itemdefid: 4162, name: "Queen's Bane", rarity: 'legendary', type: ITEM_TYPE.MOD, source: 'achievement', unlockPath: 'achievement:queen', achievementKey: 'act2:queenKilled', desc: '+25% Boss Damage, −10% Other Damage' },
+    { itemdefid: 4163, name: 'Archivist Lens', rarity: 'rare', type: ITEM_TYPE.MOD, source: 'achievement', unlockPath: 'achievement:lore', achievementKey: 'achievement:archivist_lore', desc: 'Lore Drops Grant Salvage, −1 Clip Size' },
+    { itemdefid: 4164, name: 'Shard Conduit', rarity: 'rare', type: ITEM_TYPE.MOD, source: 'earned', unlockPath: 'shards', cost: '25 Deep Core Shards', desc: '+1 Relic Rarity Tier, −10% Max O₂' },
+    { itemdefid: 4165, name: 'Duplicate Refiner', rarity: 'epic', type: ITEM_TYPE.MOD, source: 'earned', unlockPath: 'shards', cost: '50 Deep Core Shards', desc: 'Duplicate Relics Grant Shards, −15% Salvage' },
+    { itemdefid: 4166, name: 'Pressure Seal', rarity: 'epic', type: ITEM_TYPE.MOD, source: 'depth', unlockPath: 'depth:4', requiredDepth: 4, desc: 'O₂ Drains 25% Slower, −40% Healing' },
+    { itemdefid: 4167, name: 'Deep Anchor', rarity: 'legendary', type: ITEM_TYPE.MOD, source: 'depth', unlockPath: 'depth:6', requiredDepth: 6, desc: 'Ring Crossings Free O₂, Spawns Elite' }
+]);
+
+for (const mod of RIG_MODULE_DEFS) {
+    MERGED_CATALOG.set(mod.itemdefid, Object.freeze(mod));
+    DEFAULT_OWNED.add(mod.itemdefid);
 }
 
 export function getCatalogEntry(itemdefid) {
