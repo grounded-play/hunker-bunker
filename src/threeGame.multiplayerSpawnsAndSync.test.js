@@ -283,4 +283,285 @@ describe('ThreeGame multiplayer spawn separation & synchronization', () => {
             expect(placementsTank.length).toBeGreaterThan(0);
         });
     });
+
+    describe('Enemy targeting and movement synchronization', () => {
+        it('targets closest remote squadmate in selectSnailTarget when closer than host', () => {
+            const sprite = {
+                position: new THREE.Vector3(20, 0, 20),
+                userData: {}
+            };
+            const hostGame = {
+                player: { position: new THREE.Vector3(100, 0, 100) }, // Host is far
+                isPlayerDead: false,
+                isHiveKinPassive: () => false,
+                isMultiplayer: true,
+                remotePlayers: new Map([
+                    ['guest-socket', {
+                        mesh: { position: new THREE.Vector3(22, 0, 20) } // Remote guest is 2 units away
+                    }]
+                ]),
+                selectSnailTarget: ThreeGame.prototype.selectSnailTarget
+            };
+
+            const target = hostGame.selectSnailTarget(sprite, null);
+            expect(target).not.toBeNull();
+            expect(target.type).toBe('player');
+            expect(target.id).toBe('guest-socket');
+            expect(target.x).toBe(22);
+            expect(target.z).toBe(20);
+        });
+
+        it('lerps enemy position on non-host client without running autonomous pathfinding', () => {
+            const sprite = {
+                position: new THREE.Vector3(10, 0, 10),
+                userData: {
+                    netTargetX: 12,
+                    netTargetZ: 10,
+                    frozenTimer: 0,
+                    knockbackTimer: 0
+                }
+            };
+            const guestGame = {
+                isMultiplayer: true,
+                isMultiplayerHost: false,
+                findSnailPath: vi.fn(),
+                selectSnailTarget: vi.fn(),
+                updateSnailBehavior: ThreeGame.prototype.updateSnailBehavior
+            };
+
+            guestGame.updateSnailBehavior(sprite, 0.05, null);
+
+            // Sprite position should have moved towards netTargetX (12)
+            expect(sprite.position.x).toBeGreaterThan(10);
+            expect(sprite.position.x).toBeLessThanOrEqual(12);
+            // Autonomous pathfinding should not be invoked on guest
+            expect(guestGame.findSnailPath).not.toHaveBeenCalled();
+            expect(guestGame.selectSnailTarget).not.toHaveBeenCalled();
+        });
+    });
+
+    describe('Enemy projectile network synchronization', () => {
+        it('broadcasts enemy-projectile-spawned from host', () => {
+            const emit = vi.fn();
+            const hostGame = {
+                isMultiplayer: true,
+                isMultiplayerHost: true,
+                netSocket: { emit },
+                broadcastSharedWorldEvent: ThreeGame.prototype.broadcastSharedWorldEvent,
+                scene: new THREE.Group(),
+                projectiles: [],
+                activeProjectiles: [],
+                playerType: 'TANK',
+                spawnProjectile: ThreeGame.prototype.spawnProjectile
+            };
+
+            hostGame.spawnProjectile({
+                x: 15,
+                z: 15,
+                vx: 1,
+                vz: 0,
+                damage: 2,
+                radius: 0.2,
+                isEnemy: true,
+                options: { color: 0xff0000 }
+            });
+
+            expect(emit).toHaveBeenCalledWith('worldEvent', expect.objectContaining({
+                event: 'enemy-projectile-spawned',
+                detail: expect.objectContaining({
+                    x: 15,
+                    z: 15,
+                    damage: 2
+                })
+            }));
+        });
+
+        it('suppresses uncoordinated local enemy projectile spawn on non-host client', () => {
+            const guestGame = {
+                isMultiplayer: true,
+                isMultiplayerHost: false,
+                projectiles: [],
+                activeProjectiles: [],
+                scene: new THREE.Group(),
+                spawnProjectile: ThreeGame.prototype.spawnProjectile
+            };
+
+            guestGame.spawnProjectile({
+                x: 15,
+                z: 15,
+                vx: 1,
+                vz: 0,
+                isEnemy: true
+            });
+
+            expect(guestGame.activeProjectiles.length).toBe(0);
+        });
+
+        it('allows guest to spawn enemy projectile when event is received with fromRemote: true', () => {
+            const guestGame = {
+                isMultiplayer: true,
+                isMultiplayerHost: false,
+                projectiles: [],
+                activeProjectiles: [],
+                scene: new THREE.Group(),
+                playerType: 'TANK',
+                spawnProjectile: ThreeGame.prototype.spawnProjectile
+            };
+
+            guestGame.spawnProjectile({
+                x: 15,
+                z: 15,
+                vx: 1,
+                vz: 0,
+                isEnemy: true,
+                options: { fromRemote: true }
+            });
+
+            expect(guestGame.activeProjectiles.length).toBe(1);
+        });
+    });
+
+    describe('Announcement synchronization', () => {
+        it('broadcasts bunker-line worldEvent when locally called in multiplayer', () => {
+            const emit = vi.fn();
+            const fakeGame = {
+                isMultiplayer: true,
+                netSocket: { emit },
+                broadcastSharedWorldEvent: ThreeGame.prototype.broadcastSharedWorldEvent,
+                showBunkerLine: ThreeGame.prototype.showBunkerLine
+            };
+
+            fakeGame.showBunkerLine('MOTHERSHIP: CAUTION.');
+
+            expect(emit).toHaveBeenCalledWith('worldEvent', {
+                event: 'bunker-line',
+                detail: { text: 'MOTHERSHIP: CAUTION.' }
+            });
+            expect(mockWindow.dispatchEvent).toHaveBeenCalledWith(expect.objectContaining({
+                type: 'bunker-line',
+                detail: { text: 'MOTHERSHIP: CAUTION.', fromRemote: false }
+            }));
+        });
+
+        it('receives bunker-line via handleSharedWorldEvent and displays without re-broadcasting', () => {
+            const emit = vi.fn();
+            const fakeGame = {
+                isMultiplayer: true,
+                netSocket: { emit },
+                broadcastSharedWorldEvent: ThreeGame.prototype.broadcastSharedWorldEvent,
+                showBunkerLine: ThreeGame.prototype.showBunkerLine,
+                handleSharedWorldEvent: ThreeGame.prototype.handleSharedWorldEvent
+            };
+
+            fakeGame.handleSharedWorldEvent({
+                event: 'bunker-line',
+                detail: { text: 'TRANSMISSION RECEIVED' }
+            });
+
+            expect(mockWindow.dispatchEvent).toHaveBeenCalledWith(expect.objectContaining({
+                type: 'bunker-line',
+                detail: { text: 'TRANSMISSION RECEIVED', fromRemote: true }
+            }));
+            expect(emit).not.toHaveBeenCalled();
+        });
+    });
+
+    describe('Pickup collection replication', () => {
+        it('broadcasts pickup-collected in updatePickups during multiplayer', () => {
+            const emit = vi.fn();
+            const pickupMesh = {
+                position: new THREE.Vector3(5, 0, 5),
+                userData: {
+                    body: { rotation: { y: 0 }, scale: { setScalar: vi.fn() } },
+                    state: 'collecting',
+                    collectTimer: 1.0, // Finish collection
+                    scale: 1,
+                    baseY: 0,
+                    type: 'ammo',
+                    rarity: { key: 'rare' },
+                    pickupId: 'pickup-99'
+                }
+            };
+            const fakeGame = {
+                isMultiplayer: true,
+                netSocket: { emit },
+                player: { position: new THREE.Vector3(5, 0, 5) },
+                playerRadius: 0.4,
+                playerVitals: { hp: 5, maxHp: 5 },
+                pickupMeshes: [pickupMesh],
+                resetPickupCoreOpacityForFog: vi.fn(),
+                applyFogOfWarOpacity: vi.fn(),
+                getFogOfWarVisibility: () => 1,
+                broadcastSharedWorldEvent: ThreeGame.prototype.broadcastSharedWorldEvent,
+                updatePickups: ThreeGame.prototype.updatePickups
+            };
+
+            fakeGame.updatePickups(0.1, 1000);
+
+            expect(emit).toHaveBeenCalledWith('worldEvent', {
+                event: 'pickup-collected',
+                detail: expect.objectContaining({
+                    x: 5,
+                    z: 5,
+                    pickupId: 'pickup-99',
+                    type: 'ammo',
+                    rarity: 'rare'
+                })
+            });
+        });
+
+        it('disposes pickup when remote pickup-collected is received in handleSharedWorldEvent', () => {
+            const disposePickup = vi.fn();
+            const pickupMesh = {
+                position: new THREE.Vector3(7, 0, 7),
+                userData: {
+                    pickupId: 'pickup-abc',
+                    state: 'idle'
+                }
+            };
+            const fakeGame = {
+                pickupMeshes: [pickupMesh],
+                disposePickup,
+                handleSharedWorldEvent: ThreeGame.prototype.handleSharedWorldEvent
+            };
+
+            fakeGame.handleSharedWorldEvent({
+                event: 'pickup-collected',
+                detail: { x: 7, z: 7, pickupId: 'pickup-abc' }
+            });
+
+            expect(disposePickup).toHaveBeenCalledWith(pickupMesh);
+        });
+    });
+
+    describe('Biomechanical door replication', () => {
+        it('broadcasts wall-destroyed when biomechanical door is opened', () => {
+            const emit = vi.fn();
+            const fakeGame = {
+                isMultiplayer: true,
+                netSocket: { emit },
+                player: { position: new THREE.Vector3(10, 0, 10) },
+                isPlayerDead: false,
+                getTileType: (x, z) => (x === 10 && z === 11 ? 'D' : '.'),
+                getWallKey: (x, z) => `${x},${z}`,
+                destroyedWallKeys: new Set(),
+                markWallTileDestroyed: vi.fn(),
+                spawnGearPoofEffect: vi.fn(),
+                broadcastSharedWorldEvent: ThreeGame.prototype.broadcastSharedWorldEvent,
+                interactWithBiomechanicalDoor: ThreeGame.prototype.interactWithBiomechanicalDoor
+            };
+
+            const opened = fakeGame.interactWithBiomechanicalDoor();
+            expect(opened).toBe(true);
+            expect(emit).toHaveBeenCalledWith('worldEvent', {
+                event: 'wall-destroyed',
+                detail: {
+                    worldX: 10,
+                    worldZ: 11,
+                    wallKey: '10,11',
+                    source: 'biomechanical_door'
+                }
+            });
+        });
+    });
 });

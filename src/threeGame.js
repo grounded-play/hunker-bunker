@@ -5142,8 +5142,17 @@ export class ThreeGame {
         let dedupeKey = null;
         if (event === 'wall-destroyed') {
             dedupeKey = `${event}:${detail.wallKey ?? `${detail.worldX},${detail.worldZ}`}`;
-        } else if (event === 'bunker-door-toggled' || event === 'procedural-door-toggled') {
-            // Door toggles are stateful transitions guarded by their respective states below
+        } else if (event === 'bunker-door-toggled' || event === 'procedural-door-toggled' || event === 'bunker-line' || event === 'enemy-projectile-spawned') {
+            // Door toggles are stateful transitions guarded by their respective states below;
+            // bunker-line and enemy-projectile-spawned stream continuously without static dedupe blocking.
+        } else if (event === 'pickup-collected') {
+            dedupeKey = `${event}:${detail.pickupId ?? `${Math.round(detail.x)},${Math.round(detail.z)}`}`;
+        } else if (event === 'maze-access-granted') {
+            dedupeKey = `${event}:${detail.sourceId ?? detail.requirement?.id ?? detail.requirement?.type ?? ''}`;
+        } else if (event === 'black-box-recovered') {
+            dedupeKey = `${event}:${detail.recovered?.recoveredAt ?? 'active'}`;
+        } else if (event === 'lore-terminal-read') {
+            dedupeKey = `${event}:${detail.loreKey}`;
         } else {
             dedupeKey = `${event}:${detail.level ?? ''}:${detail.goalKey ?? ''}`;
         }
@@ -5188,6 +5197,62 @@ export class ThreeGame {
                     this.markWallTileDestroyed?.(worldX, worldZ);
                 }
             }
+        } else if (event === 'enemy-projectile-spawned') {
+            this.spawnProjectile({
+                x: detail.x,
+                z: detail.z,
+                vx: detail.vx,
+                vz: detail.vz,
+                ttl: detail.ttl,
+                damage: detail.damage,
+                radius: detail.radius,
+                isEnemy: true,
+                options: {
+                    ...(detail.options || {}),
+                    fromRemote: true
+                }
+            });
+        } else if (event === 'bunker-line') {
+            if (typeof detail.text === 'string' && detail.text) {
+                this.showBunkerLine(detail.text, { fromRemote: true });
+            }
+        } else if (event === 'pickup-collected') {
+            const px = Number(detail.x);
+            const pz = Number(detail.z);
+            if (Number.isFinite(px) && Number.isFinite(pz)) {
+                const target = (this.pickupMeshes ?? []).find((p) => {
+                    if (p.userData?.pickupId && detail.pickupId && p.userData.pickupId === detail.pickupId) return true;
+                    return Math.hypot(p.position.x - px, p.position.z - pz) <= 0.8;
+                });
+                if (target && target.userData?.state !== 'collecting') {
+                    target.userData.state = 'collecting';
+                    target.userData.collectProgress = 1;
+                    target.userData.collectedReported = true;
+                    target.userData.fromRemote = true;
+                    this.disposePickup?.(target);
+                }
+            }
+        } else if (event === 'maze-access-granted') {
+            if (detail.requirement && this.mazeAccessState) {
+                grantAccess(this.mazeAccessState, detail.requirement);
+                if (detail.requirement?.type === 'objective') {
+                    this.completeRingCrossingMission?.(detail.requirement.id);
+                }
+            }
+        } else if (event === 'black-box-recovered') {
+            this.clearBlackBoxMarker?.();
+            this._blackBoxState = null;
+            this.arcManager?.recordSignal?.({ blackBoxesRecovered: 1 });
+            this.arcManager?.evaluate?.();
+        } else if (event === 'lore-terminal-read') {
+            if (detail.loreKey) {
+                this._readLoreKeys = this._readLoreKeys ?? new Set();
+                this._readLoreKeys.add(detail.loreKey);
+                this.syncSurvivorContract?.({
+                    type: 'terminal-decrypted',
+                    id: `terminal:${detail.loreKey}`
+                });
+            }
         }
 
         if (typeof window !== 'undefined') {
@@ -5206,12 +5271,13 @@ export class ThreeGame {
         const group = this.chunkMeshes?.get(`${chunkX},${chunkY}`);
         if (!group) return null; // Chunk not mounted yet; a later snapshot retries.
 
-        const boss = this.createScatterInstance({
+        const scale = Number.isFinite(state.scale) ? state.scale : 3.2;
+        const enemy = this.createScatterInstance({
             x: state.x,
             z: state.z,
             type: state.enemyType,
             scatterKey: state.scatterKey,
-            scale: Number.isFinite(state.scale) ? state.scale : 3.2,
+            scale,
             rotation: 0,
             tiltX: 0,
             tiltZ: 0,
@@ -5221,15 +5287,15 @@ export class ThreeGame {
             opacity: 1,
             isBoss: true
         });
-        if (!boss) return null;
-        boss.userData.isRemoteReplica = true;
+        if (!enemy) return null;
+        enemy.userData.isRemoteReplica = true;
         if (Number.isFinite(state.hp)) {
-            boss.userData.hp = state.hp;
-            boss.userData.maxHp = Math.max(state.hp, boss.userData.maxHp ?? state.hp);
+            enemy.userData.hp = state.hp;
+            enemy.userData.maxHp = Math.max(state.hp, enemy.userData.maxHp ?? state.hp);
         }
-        group.add(boss);
-        this.scatterSprites.push(boss);
-        return boss;
+        group.add(enemy);
+        this.scatterSprites.push(enemy);
+        return enemy;
     }
 
     handleEnemyStateSnapshot(data) {
@@ -5238,18 +5304,20 @@ export class ThreeGame {
         for (const state of data.enemies) {
             if (!state?.scatterKey) continue;
             let sprite = (this.scatterSprites ?? []).find((candidate) => candidate.userData?.scatterKey === state.scatterKey);
-            // A peer could previously only UPDATE enemies it already had, never
-            // create one -- so a milestone boss staged on the host stayed
-            // invisible on every other client for the whole fight. Bosses are
-            // materialized on demand; ordinary enemies deliberately are not,
-            // because each client owns its own local population and spawning
-            // every snail the host sees would double it.
             if (!sprite?.userData && state.isBoss && !state.burstTriggered) {
                 sprite = this.materializeRemoteBoss?.(state) ?? null;
             }
             if (!sprite?.userData) continue;
-            if (Number.isFinite(state.x)) sprite.position.x = state.x;
-            if (Number.isFinite(state.z)) sprite.position.z = state.z;
+            if (Number.isFinite(state.x) && Number.isFinite(state.z)) {
+                sprite.userData.netTargetX = state.x;
+                sprite.userData.netTargetZ = state.z;
+                const currentDist = Math.hypot(sprite.position.x - state.x, sprite.position.z - state.z);
+                if (currentDist > 6.0 || typeof sprite.userData.lastNetUpdate !== 'number') {
+                    sprite.position.x = state.x;
+                    sprite.position.z = state.z;
+                }
+                sprite.userData.lastNetUpdate = Date.now();
+            }
             if (state.burstTriggered && !sprite.userData.burstTriggered) {
                 const remainingHp = Math.max(1, sprite.userData.hp || 1);
                 this.damageSnail(sprite, remainingHp);
@@ -8495,6 +8563,9 @@ export class ThreeGame {
         window.AudioManager?.play('class_lock', { volume: 0.56, playbackRate: 0.76, bus: 'sfx' });
         this.arcManager?.recordSignal?.({ blackBoxesRecovered: 1 });
         this.arcManager?.evaluate?.();
+        if (this.isMultiplayer) {
+            this.broadcastSharedWorldEvent?.('black-box-recovered', { recovered });
+        }
         window.dispatchEvent(new CustomEvent('black-box-recovered', { detail: recovered }));
         return true;
     }
@@ -8537,6 +8608,12 @@ export class ThreeGame {
             );
             if (dist < 2.2) {
                 this._readLoreKeys.add(sprite.userData.loreKey);
+                if (this.isMultiplayer) {
+                    this.broadcastSharedWorldEvent?.('lore-terminal-read', {
+                        loreKey: sprite.userData.loreKey,
+                        loreText: sprite.userData.loreText
+                    });
+                }
                 window.dispatchEvent(new CustomEvent('lore-terminal-read', {
                     detail: { loreKey: sprite.userData.loreKey, loreText: sprite.userData.loreText }
                 }));
@@ -9024,6 +9101,12 @@ export class ThreeGame {
                     this.completeRingCrossingMission?.(source.requirement.id);
                 }
                 if (granted) {
+                    if (this.isMultiplayer) {
+                        this.broadcastSharedWorldEvent?.('maze-access-granted', {
+                            sourceId: source.id,
+                            requirement: source.requirement
+                        });
+                    }
                     window.dispatchEvent(new CustomEvent('maze-access-granted', {
                         detail: {
                             sourceId: source.id,
@@ -10063,11 +10146,14 @@ export class ThreeGame {
         });
     }
 
-    showBunkerLine(text) {
+    showBunkerLine(text, { fromRemote = false } = {}) {
         if (!text) return;
         if (this.performanceProfile === 'menu') return;
+        if (!fromRemote && this.isMultiplayer) {
+            this.broadcastSharedWorldEvent?.('bunker-line', { text });
+        }
         if (typeof window !== 'undefined') {
-            window.dispatchEvent(new CustomEvent('bunker-line', { detail: { text } }));
+            window.dispatchEvent(new CustomEvent('bunker-line', { detail: { text, fromRemote } }));
         }
     }
 
@@ -20582,6 +20668,28 @@ export class ThreeGame {
         attackerId = null,
         options = {}
     }) {
+        if (isEnemy && this.isMultiplayer) {
+            if (!this.isMultiplayerHost && !options.fromRemote) {
+                return null;
+            }
+            if (this.isMultiplayerHost && !options.fromRemote) {
+                this.broadcastSharedWorldEvent?.('enemy-projectile-spawned', {
+                    x,
+                    z,
+                    vx,
+                    vz,
+                    ttl,
+                    damage,
+                    radius,
+                    options: {
+                        color: options.color,
+                        glowColor: options.glowColor,
+                        tracerFx: options.tracerFx
+                    }
+                });
+            }
+        }
+
         const group = new THREE.Group();
         const classColor = PLAYER_COLORS[this.playerType] ?? 0xffe08f;
         let coreColor = options.color ?? (isEnemy ? 0xff4a4a : classColor);
@@ -20697,6 +20805,7 @@ export class ThreeGame {
         // FIFO-evict the oldest active projectile once at the cap, same
         // cleanup path expiry already uses, instead of letting the pool grow
         // without bound.
+        this.activeProjectiles = this.activeProjectiles ?? [];
         if (this.activeProjectiles.length >= MAX_ACTIVE_PROJECTILES) {
             const oldest = this.activeProjectiles.shift();
             if (oldest) this.destroyProjectile(oldest);
@@ -26014,6 +26123,16 @@ export class ThreeGame {
                         const pickupType = pickup.userData.type ?? 'unknown';
                         const rarity = pickup.userData.rarity?.key ?? null;
 
+                        if (this.isMultiplayer && !pickup.userData.fromRemote) {
+                            this.broadcastSharedWorldEvent?.('pickup-collected', {
+                                x: pickup.position.x,
+                                z: pickup.position.z,
+                                pickupId: pickup.userData.pickupId ?? null,
+                                type: pickupType,
+                                rarity
+                            });
+                        }
+
                         // Retrieval mission: first legendary weapon collected completes objective
                         if (this.missionState?.type === 'retrieval' && this.missionState.status === 'active') {
                             if (pickupType === 'weapon' && rarity === 'legendary') {
@@ -27066,9 +27185,25 @@ export class ThreeGame {
             && this.canEnemyTargetPlayer?.(sprite) !== false) {
             targets.push({
                 type: 'player',
+                id: 'local',
                 x: this.player.position.x,
                 z: this.player.position.z
             });
+        }
+        if (this.isMultiplayer && this.remotePlayers) {
+            for (const [peerId, remote] of this.remotePlayers.entries()) {
+                if (!remote || remote.isDead) continue;
+                const rx = remote.mesh?.position?.x ?? remote.x;
+                const rz = remote.mesh?.position?.z ?? remote.z;
+                if (Number.isFinite(rx) && Number.isFinite(rz)) {
+                    targets.push({
+                        type: 'player',
+                        id: peerId,
+                        x: rx,
+                        z: rz
+                    });
+                }
+            }
         }
         if (activeShip && activeShip.hp > 0) {
             targets.push({
@@ -27091,7 +27226,7 @@ export class ThreeGame {
         }
 
         if (sprite.userData.shotByPlayer) {
-            const playerTarget = targets.find(t => t.type === 'player');
+            const playerTarget = targets.filter(t => t.type === 'player').sort((a, b) => a.distance - b.distance)[0];
             if (playerTarget && playerTarget.distance <= 12.0) {
                 return { ...playerTarget, mode: 'hunt', goalX: playerTarget.x, goalZ: playerTarget.z };
             } else {
@@ -27740,6 +27875,14 @@ export class ThreeGame {
                     const doorKey = this.getWallKey ? this.getWallKey(tx, tz) : `${tx},${tz}`;
                     if (!this.destroyedWallKeys?.has(doorKey)) {
                         this.markWallTileDestroyed(tx, tz);
+                        if (this.isMultiplayer) {
+                            this.broadcastSharedWorldEvent?.('wall-destroyed', {
+                                worldX: tx,
+                                worldZ: tz,
+                                wallKey: doorKey,
+                                source: 'biomechanical_door'
+                            });
+                        }
                         this.spawnGearPoofEffect(tx, tz, 'bunker_junk');
                         window.AudioManager?.play('ui_scan_ping', { volume: 0.35, playbackRate: 1.8, bus: 'sfx' });
                         return true;
@@ -28358,6 +28501,22 @@ export class ThreeGame {
             }
         }
         data.knockbackTimer = Math.max(0, (data.knockbackTimer ?? 0) - delta);
+
+        if (this.isMultiplayer && !this.isMultiplayerHost) {
+            if (Number.isFinite(data.netTargetX) && Number.isFinite(data.netTargetZ)) {
+                const moveStep = Math.min(delta * 12, 1);
+                const oldX = sprite.position.x;
+                const oldZ = sprite.position.z;
+                sprite.position.x = THREE.MathUtils.lerp(sprite.position.x, data.netTargetX, moveStep);
+                sprite.position.z = THREE.MathUtils.lerp(sprite.position.z, data.netTargetZ, moveStep);
+                const stepX = sprite.position.x - oldX;
+                const stepZ = sprite.position.z - oldZ;
+                if (data.sheetSprite && (Math.abs(stepX) > 0.001 || Math.abs(stepZ) > 0.001)) {
+                    this.updateSheetSpriteFrame(sprite, stepX, stepZ, delta, true);
+                }
+            }
+            return;
+        }
 
         const target = this.selectSnailTarget(sprite, activeShip);
         if (!target) return;
