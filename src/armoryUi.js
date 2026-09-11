@@ -317,6 +317,28 @@ export function createArmoryUi({
                 apply: (value) => equipGuard(value, (v) => loadoutManager.equipDecal(v)),
                 sound: 'sfx_charm_clink_light',
                 after: (value) => armoryScene?.setDecal(value || null)
+            },
+            tracer: {
+                title: 'PROJECTILE TRACER',
+                subtitle: 'BALLISTIC SIGNATURE // REAL-TIME PROJECTILE VFX',
+                noneLabel: 'DEFAULT TRACER',
+                ids: () => getCatalogIdsByType(ITEM_TYPE.VFX).filter((id) => [4152, 4205, 4212, 4219, 4226, 4233, 4240].includes(Number(id))),
+                current: () => (loadoutManager.state.tracerFxId ? String(loadoutManager.state.tracerFxId) : ''),
+                currentName: () => nameForItem(loadoutManager.state.tracerFxId, 'DEFAULT TRACER'),
+                apply: (value) => equipGuard(value || null, (v) => loadoutManager.equipTracerFx(v)),
+                sound: 'sfx_charm_clink_light',
+                after: () => {}
+            },
+            hud: {
+                title: 'TACTICAL HUD THEME',
+                subtitle: 'OPTICAL VISOR // REAL-TIME INTERFACE SCANLINES',
+                noneLabel: 'DEFAULT MONOCHROME',
+                ids: () => getCatalogIdsByType(ITEM_TYPE.HUD),
+                current: () => (loadoutManager.state.hudThemeId ? String(loadoutManager.state.hudThemeId) : ''),
+                currentName: () => nameForItem(loadoutManager.state.hudThemeId, 'DEFAULT MONOCHROME'),
+                apply: (value) => equipGuard(value || null, (v) => loadoutManager.equipHudTheme(v)),
+                sound: 'sfx_charm_clink_light',
+                after: () => {}
             }
         };
     }
@@ -561,6 +583,13 @@ export function createArmoryUi({
                             </div>
 
                             </div>
+
+                            <!-- PROJECTILE TRACER -->
+                            <div class="bench-field">
+                                <label>PROJECTILE TRACER</label>
+                                ${slotHtml('tracer')}
+                            </div>
+
                             <div class="bench-row-two-col">
                                 <!-- RIG MOD 1 -->
                                 <div class="bench-field">
@@ -634,6 +663,10 @@ export function createArmoryUi({
                                     <label>SHOULDER PATCH &amp; INSIGNIA</label>
                                     ${slotHtml('decal')}
                                 </div>
+                            </div>
+                            <div class="bench-field" style="margin-top: 6px;">
+                                <label>TACTICAL HUD THEME</label>
+                                ${slotHtml('hud')}
                             </div>
                             <div class="telemetry-box">
                                 <div class="telemetry-title">SUIT TELEMETRY STATUS</div>
@@ -738,7 +771,7 @@ export function createArmoryUi({
 
     function bindEvents() {
         // Every bench control opens the shared tile modal.
-        for (const fieldKey of ['weapon', 'sheen', 'charm', 'mod1', 'mod2', 'chassis', 'decal']) {
+        for (const fieldKey of ['weapon', 'sheen', 'charm', 'tracer', 'mod1', 'mod2', 'chassis', 'decal', 'hud']) {
             container.querySelector?.(`#armory-slot-${fieldKey}`)?.addEventListener?.('click', () => {
                 playSound('ui_click');
                 openPickerModal(fieldKey);

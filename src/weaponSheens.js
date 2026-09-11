@@ -57,8 +57,16 @@ function storageOrDefault(storage) {
 export function getUnlockedSheenIds(storage = null) {
     try {
         const parsed = JSON.parse(storageOrDefault(storage)?.getItem(STORAGE_UNLOCKED) ?? '[]');
-        return new Set([0, ...(Array.isArray(parsed) ? parsed : [])]
+        const set = new Set([0, ...(Array.isArray(parsed) ? parsed : [])]
             .filter((id) => Number.isInteger(id) && id >= 0 && id < MAX_ID));
+        if (typeof window !== 'undefined' && window.itemOwnership) {
+            for (const sheen of WEAPON_SHEENS) {
+                if (sheen.itemdefid && window.itemOwnership.canEquip(sheen.itemdefid)) {
+                    set.add(sheen.id);
+                }
+            }
+        }
+        return set;
     } catch {
         return new Set([0]);
     }

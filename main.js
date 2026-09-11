@@ -13980,6 +13980,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     follow: state.settings.cameraFollow
                 });
                 window.game.nightVision = state.settings.nightVision;
+                applyHudThemeFromLoadout();
                 traceBootPhase('three-constructor-ready', {
                     pixelRatio: window.game.renderer?.getPixelRatio?.(),
                     profile: window.game.performanceProfile
