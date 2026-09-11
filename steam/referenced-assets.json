@@ -5561,12 +5561,12 @@
     },
     {
       "path": "economy/fx_cryo_shockwave_muzzle.png",
-      "bytes": 34118,
+      "bytes": 115636,
       "classification": "runtime-required"
     },
     {
       "path": "economy/fx_cryo_shockwave_muzzle_large.png",
-      "bytes": 81288,
+      "bytes": 436364,
       "classification": "runtime-required"
     },
     {
