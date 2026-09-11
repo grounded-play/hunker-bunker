@@ -4945,7 +4945,11 @@ function resetRunToStartingState({
         });
         const act2Run = isAct2RunActive();
         currentMission = act2Run ? null : assignMission(bankManager.getState());
-        currentRunModifier = pickRunModifier();
+        const runModifierSeed = (window.game?.isMultiplayer || window.activeMultiplayerSession)
+            && (window.activeMultiplayerSession?.seed || window.game?.multiplayerRoomCode)
+            ? `run-${window.activeMultiplayerSession?.seed || window.game?.multiplayerRoomCode}`
+            : undefined;
+        currentRunModifier = pickRunModifier(Math.random, runModifierSeed ? { seed: runModifierSeed } : {});
 
         resetPickupCounter();
         window.game?.respawnPlayer?.({ resetRunState: true, skipEffects, deferChunkMount });

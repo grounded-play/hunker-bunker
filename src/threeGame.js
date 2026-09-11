@@ -5138,13 +5138,57 @@ export class ThreeGame {
         const isEcho = data?.originId && data.originId === this.multiplayerLocalPlayerId;
 
         this._appliedWorldEvents = this._appliedWorldEvents ?? new Set();
-        const dedupeKey = `${event}:${detail.level ?? ''}:${detail.goalKey ?? ''}`;
-        if (this._appliedWorldEvents.has(dedupeKey)) return false;
-        this._appliedWorldEvents.add(dedupeKey);
+
+        let dedupeKey = null;
+        if (event === 'wall-destroyed') {
+            dedupeKey = `${event}:${detail.wallKey ?? `${detail.worldX},${detail.worldZ}`}`;
+        } else if (event === 'bunker-door-toggled' || event === 'procedural-door-toggled') {
+            // Door toggles are stateful transitions guarded by their respective states below
+        } else {
+            dedupeKey = `${event}:${detail.level ?? ''}:${detail.goalKey ?? ''}`;
+        }
+
+        if (dedupeKey) {
+            if (this._appliedWorldEvents.has(dedupeKey)) return false;
+            this._appliedWorldEvents.add(dedupeKey);
+        }
 
         // The originator already ran the beat locally when it fired; replaying it
         // would double the cutscene and the boss.
         if (isEcho) return false;
+
+        if (event === 'bunker-door-toggled') {
+            if (this.bunkerBlastDoorState && typeof detail.open === 'boolean') {
+                if (this.bunkerBlastDoorState.open !== detail.open) {
+                    this.toggleBunkerBlastDoor({ fromRemote: true });
+                }
+            }
+        } else if (event === 'procedural-door-toggled') {
+            const doorId = detail.doorId;
+            const door = this.proceduralDoorStates?.get(doorId);
+            if (door && door.state !== detail.state) {
+                const next = { ...door, state: detail.state };
+                this.proceduralDoorStates.set(doorId, next);
+                const mesh = this.proceduralDoorMeshes?.get(doorId);
+                if (mesh && detail.unlocked) mesh.userData.indestructible = false;
+                window.AudioManager?.playMetalStress?.({
+                    volume: 0.42,
+                    playbackRate: next.state === 'open' ? 1.35 : 0.82,
+                    force: true
+                });
+            }
+        } else if (event === 'wall-destroyed') {
+            const worldX = detail.worldX;
+            const worldZ = detail.worldZ;
+            if (Number.isFinite(worldX) && Number.isFinite(worldZ)) {
+                const wall = this.findWallMeshAt?.(worldX, worldZ);
+                if (wall && !wall.userData?.destroyed) {
+                    this.destroyWall(wall, { source: detail.source || 'remote_player', fromRemote: true, force: true });
+                } else {
+                    this.markWallTileDestroyed?.(worldX, worldZ);
+                }
+            }
+        }
 
         if (typeof window !== 'undefined') {
             window.dispatchEvent(new CustomEvent(event, {
@@ -8733,11 +8777,24 @@ export class ThreeGame {
         if (!this.bunkerBlastDoorGroup || !this.bunkerBlastDoorState) return;
 
         const state = this.bunkerBlastDoorState;
-        if (this.player && this.isGameplayInputActive() && !state.destroyed) {
-            const distance = Math.hypot(
+        if (this.isGameplayInputActive() && !state.destroyed) {
+            let distance = this.player ? Math.hypot(
                 this.player.position.x - (state.doorCenterX ?? 9),
                 this.player.position.z - state.doorZ
-            );
+            ) : Infinity;
+
+            if (this.remotePlayers) {
+                for (const remote of this.remotePlayers.values()) {
+                    if (remote?.mesh?.position) {
+                        const d = Math.hypot(
+                            remote.mesh.position.x - (state.doorCenterX ?? 9),
+                            remote.mesh.position.z - state.doorZ
+                        );
+                        if (d < distance) distance = d;
+                    }
+                }
+            }
+
             if (!state.open && distance <= PROCEDURAL_DOOR_OPEN_RADIUS) this.toggleBunkerBlastDoor();
             else if (state.open && distance >= PROCEDURAL_DOOR_CLOSE_RADIUS) this.toggleBunkerBlastDoor();
         }
@@ -8767,7 +8824,7 @@ export class ThreeGame {
             this.exteriorButtonXrayMarker.scale.set(pulseScale, pulseScale, 1.0);
         }
 
-        const promptEl = document.getElementById('console-hud-prompt');
+        const promptEl = typeof document !== 'undefined' ? document.getElementById('console-hud-prompt') : null;
         const actionText = promptEl?.querySelector('.prompt-text');
         if (actionText?.textContent?.includes('BLAST DOOR')) {
             promptEl.classList.add('hidden');
@@ -8775,7 +8832,7 @@ export class ThreeGame {
         }
     }
 
-    toggleBunkerBlastDoor() {
+    toggleBunkerBlastDoor({ fromRemote = false } = {}) {
         if (!this.bunkerBlastDoorState || this.bunkerBlastDoorState.destroyed) return;
         const state = this.bunkerBlastDoorState;
         state.open = !state.open;
@@ -8797,8 +8854,12 @@ export class ThreeGame {
         });
 
         window.dispatchEvent(new CustomEvent('bunker-door-toggled', {
-            detail: { open: state.open }
+            detail: { open: state.open, fromRemote }
         }));
+
+        if (!fromRemote && this.isMultiplayer) {
+            this.broadcastSharedWorldEvent('bunker-door-toggled', { open: state.open });
+        }
     }
 
     openBunkerBlastDoor() {
@@ -8908,7 +8969,7 @@ export class ThreeGame {
         return record ? (this.proceduralDoorStates.get(record.id) ?? record) : null;
     }
 
-    interactWithProceduralDoor() {
+    interactWithProceduralDoor({ fromRemote = false } = {}) {
         if (!this.player || !this.isGameplayInputActive()) return false;
         let nearest = null;
         for (const door of this.proceduralDoorStates.values()) {
@@ -8937,6 +8998,13 @@ export class ThreeGame {
                 playbackRate: next.state === 'open' ? 1.35 : 0.82,
                 force: true
             });
+            if (!fromRemote && this.isMultiplayer) {
+                this.broadcastSharedWorldEvent('procedural-door-toggled', {
+                    doorId: next.id,
+                    state: next.state,
+                    unlocked
+                });
+            }
         }
         return true;
     }
@@ -22435,7 +22503,7 @@ export class ThreeGame {
         return this.wallMeshes.find((wall) => wall?.userData?.wallKey === key && !wall.userData.destroyed) ?? null;
     }
 
-    destroyWall(wall, { source = 'player', burstColor = 0xb8c2c9, force = false } = {}) {
+    destroyWall(wall, { source = 'player', burstColor = 0xb8c2c9, force = false, fromRemote = false } = {}) {
         const span = beginPerfPhase('wall:destroy', {
             source,
             wallKey: wall?.userData?.wallKey ?? null,
@@ -22493,8 +22561,16 @@ export class ThreeGame {
         });
         this.triggerCameraShake?.(source === 'boss' ? 0.22 : 0.08, source === 'boss' ? 0.28 : 0.14);
         window.dispatchEvent(new CustomEvent('wall-destroyed', {
-            detail: { source, x: coord.tileX, z: coord.tileZ }
+            detail: { source, x: coord.tileX, z: coord.tileZ, fromRemote }
         }));
+        if (!fromRemote && this.isMultiplayer) {
+            this.broadcastSharedWorldEvent('wall-destroyed', {
+                worldX: coord.tileX,
+                worldZ: coord.tileZ,
+                wallKey: wall.userData?.wallKey ?? null,
+                source
+            });
+        }
         span.end(true);
         return true;
     }
@@ -24270,7 +24346,6 @@ export class ThreeGame {
             return [];
         }
         const random = this.createSeededRandom(((this.hashTile(chunkX * 523 + 43, chunkY * 859 + 71) ^ (this.runEntropy ?? 0)) >>> 0));
-        const spawn = this.getSpawnTile();
         const roomTypes = this.getRoomTypeGrid(chunkX, chunkY);
         const wfcMeta = this.wfcMetadataCache?.get(`${chunkX},${chunkY}`);
         const authoredRoomCells = new Set(
@@ -24280,6 +24355,19 @@ export class ThreeGame {
         );
         const candidates = [];
 
+        // Deterministic clearing check for crash site center and all crashed ships across all clients
+        const isNearSpawnClearing = (worldX, worldZ) => {
+            if (Math.hypot(worldX - CRASH_SITE_CENTER, worldZ - CRASH_SITE_CENTER) <= 9.0) return true;
+            if (this.crashedShips) {
+                for (const ship of this.crashedShips) {
+                    const shipX = ship.tileX + (ship.consoleOffset?.x || 0);
+                    const shipZ = ship.tileZ + (ship.consoleOffset?.z || 0) + 1.2;
+                    if (Math.hypot(worldX - shipX, worldZ - shipZ) <= 9.0) return true;
+                }
+            }
+            return false;
+        };
+
         // Find walkable candidates in this chunk
         for (let localY = 0; localY < this.chunkSize; localY++) {
             for (let localX = 0; localX < this.chunkSize; localX++) {
@@ -24287,12 +24375,9 @@ export class ThreeGame {
 
                 const worldX = chunkX * this.chunkSize + localX;
                 const worldZ = chunkY * this.chunkSize + localY;
-                const dx = worldX - spawn.x;
-                const dz = worldZ - spawn.y;
-                const distToSpawn = Math.sqrt(dx * dx + dz * dz);
 
-                // Keep the entire ship/start room clear of general scatter.
-                if (distToSpawn <= 9.0) continue;
+                // Keep the entire ship/start room clear of general scatter deterministically for all clients
+                if (isNearSpawnClearing(worldX, worldZ)) continue;
 
                 candidates.push({
                     localX,
@@ -24550,7 +24635,7 @@ export class ThreeGame {
 
             // Determine asset type based on weighted roll.
             const roll = random();
-            const distFromSpawn = Math.hypot(p.x - spawn.x, p.z - spawn.y);
+            const distFromSpawn = Math.hypot(p.x - CRASH_SITE_CENTER, p.z - CRASH_SITE_CENTER);
             const localPX = Math.round(p.x - chunkX * this.chunkSize);
             const localPZ = Math.round(p.z - chunkY * this.chunkSize);
             const pRoomType = roomTypes?.[localPZ]?.[localPX] ?? null;
@@ -31698,6 +31783,52 @@ export class ThreeGame {
             return {
                 x: 100 * this.chunkSize + centerCell * 2 + 1,
                 y: 100 * this.chunkSize + centerCell * 2 + 1
+            };
+        }
+        if (this.isMultiplayer) {
+            if (this.multiplayerCrashPlan?.players?.length) {
+                const crashParticipants = partitionCrashPlanPlayers(
+                    this.multiplayerCrashPlan.players,
+                    {
+                        localPlayerId: this.multiplayerLocalPlayerId,
+                        isHost: this.isMultiplayerHost
+                    }
+                );
+                const myInfo = crashParticipants.localPlayer;
+                if (myInfo && Number.isFinite(myInfo.spawnX) && Number.isFinite(myInfo.spawnZ)) {
+                    return {
+                        x: myInfo.spawnX,
+                        y: myInfo.spawnZ
+                    };
+                }
+            }
+
+            let slotIndex = 0;
+            if (!this.isMultiplayerHost) {
+                const guestHash = Math.abs(hashSeed(this.multiplayerLocalPlayerId || 'guest'));
+                slotIndex = (guestHash % 4) + 1;
+            }
+            const formationOffsets = [
+                { x: 0, y: 0 },
+                { x: 2.5, y: 0 },
+                { x: -2.5, y: 0 },
+                { x: 0, y: 2.5 },
+                { x: 0, y: -2.5 }
+            ];
+            const offset = formationOffsets[slotIndex % formationOffsets.length];
+
+            if (this.crashedShips) {
+                const ship = this.crashedShips.find(s => s.type === this.playerType);
+                if (ship) {
+                    return {
+                        x: ship.tileX + (ship.consoleOffset?.x || 0) + offset.x,
+                        y: ship.tileZ + (ship.consoleOffset?.z || 0) + 1.2 + offset.y
+                    };
+                }
+            }
+            return {
+                x: CRASH_SITE_CENTER + offset.x,
+                y: CRASH_SITE_CENTER + offset.y
             };
         }
         if (this.crashedShips) {
