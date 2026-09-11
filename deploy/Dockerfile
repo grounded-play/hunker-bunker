@@ -1,7 +1,7 @@
 # Backend-only image for the Steam trusted server (auth, leaderboards,
 # inventory, store). Does not build or serve the game client — that ships
 # inside the Electron/Steam depot, not this container.
-FROM node:22-slim
+FROM node:26-slim
 
 WORKDIR /app
 
