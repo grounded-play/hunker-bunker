@@ -154,17 +154,37 @@
     "3d/runtime/new3ds/prop_camp_crate.glb",
     "3d/runtime/new3ds/prop_cave_bones.glb",
     "3d/runtime/new3ds/prop_cave_queen_throne.glb",
+    "3d/runtime/new3ds/prop_chair_operator_wrecked.glb",
     "3d/runtime/new3ds/prop_conduit_hub.glb",
+    "3d/runtime/new3ds/prop_conduit_junction_box.glb",
     "3d/runtime/new3ds/prop_diagnostic_console.glb",
     "3d/runtime/new3ds/prop_fabricator_workstation.glb",
+    "3d/runtime/new3ds/prop_flesh_steel_coffin.glb",
+    "3d/runtime/new3ds/prop_flesh_steel_cradle.glb",
+    "3d/runtime/new3ds/prop_flesh_steel_inhaler.glb",
+    "3d/runtime/new3ds/prop_fungal_mycelium_loom.glb",
+    "3d/runtime/new3ds/prop_fungal_resin_basin.glb",
+    "3d/runtime/new3ds/prop_fungal_spore_dispenser.glb",
+    "3d/runtime/new3ds/prop_fungal_tendril_altar.glb",
     "3d/runtime/new3ds/prop_hive_resin_sac.glb",
+    "3d/runtime/new3ds/prop_icey_frost_manifold.glb",
+    "3d/runtime/new3ds/prop_icey_frost_vent.glb",
+    "3d/runtime/new3ds/prop_icey_thermal_pod.glb",
     "3d/runtime/new3ds/prop_laser_trap_emitter.glb",
+    "3d/runtime/new3ds/prop_light_cluster_dripping.glb",
+    "3d/runtime/new3ds/prop_locker_bulged.glb",
     "3d/runtime/new3ds/prop_medical_bed.glb",
     "3d/runtime/new3ds/prop_o2_filter_vat.glb",
+    "3d/runtime/new3ds/prop_pipe_rupture.glb",
     "3d/runtime/new3ds/prop_security_barricade.glb",
+    "3d/runtime/new3ds/prop_shrine_plinth_broken.glb",
     "3d/runtime/new3ds/prop_specimen_tank.glb",
+    "3d/runtime/new3ds/prop_storage_drum_dented.glb",
     "3d/runtime/new3ds/prop_surgical_cart.glb",
+    "3d/runtime/new3ds/prop_terminal_ruptured.glb",
     "3d/runtime/new3ds/prop_tesla_coil_node.glb",
+    "3d/runtime/new3ds/prop_valve_wheel_fused.glb",
+    "3d/runtime/new3ds/prop_vent_grate_exploded.glb",
     "3d/runtime/new3ds/prop_vital_monitor.glb",
     "3d/runtime/new3ds/scatter_bolts.glb",
     "3d/runtime/new3ds/scatter_cable_coil.glb",
@@ -1017,12 +1037,21 @@
     "prop_cave_queen_throne.png",
     "prop_cave_spores.png",
     "prop_cave_webs.png",
+    "prop_chair_operator_wrecked.png",
     "prop_conduit_hub.png",
+    "prop_conduit_junction_box.png",
     "prop_cryo_sleep_pod.png",
     "prop_cyber_junction.png",
     "prop_diagnostic_console.png",
     "prop_engineering_bench.png",
     "prop_fabricator_workstation.jpg",
+    "prop_flesh_steel_coffin.png",
+    "prop_flesh_steel_cradle.png",
+    "prop_flesh_steel_inhaler.png",
+    "prop_fungal_mycelium_loom.png",
+    "prop_fungal_resin_basin.png",
+    "prop_fungal_spore_dispenser.png",
+    "prop_fungal_tendril_altar.png",
     "prop_fusion_generator.png",
     "prop_hive_carapace_molt.jpg",
     "prop_hive_chitin_hatchery.jpg",
@@ -1031,18 +1060,29 @@
     "prop_hive_suture_organ.jpg",
     "prop_hive_synaptic_web.jpg",
     "prop_hive_wound_cauterizer.jpg",
+    "prop_icey_frost_manifold.png",
+    "prop_icey_frost_vent.png",
+    "prop_icey_thermal_pod.png",
     "prop_iron_guild_dogtags.png",
     "prop_laser_trap_emitter.jpg",
+    "prop_light_cluster_dripping.png",
+    "prop_locker_bulged.png",
     "prop_medical_bed.png",
     "prop_o2_filter_vat.jpg",
+    "prop_pipe_rupture.png",
     "prop_ruptured_coolant_pump.png",
     "prop_security_barricade.png",
     "prop_security_locker.png",
+    "prop_shrine_plinth_broken.png",
     "prop_specimen_tank.png",
     "prop_spore_colony.png",
+    "prop_storage_drum_dented.png",
     "prop_surgical_cart.png",
+    "prop_terminal_ruptured.png",
     "prop_tesla_coil_node.jpg",
     "prop_torn_warning_poster.png",
+    "prop_valve_wheel_fused.png",
+    "prop_vent_grate_exploded.png",
     "prop_vital_monitor.jpg",
     "queen_silhouette.png",
     "room_floor_material_atlas_v1.png",
@@ -1865,8 +1905,18 @@
       "classification": "runtime-required"
     },
     {
+      "path": "3d/runtime/new3ds/prop_chair_operator_wrecked.glb",
+      "bytes": 103216,
+      "classification": "runtime-required"
+    },
+    {
       "path": "3d/runtime/new3ds/prop_conduit_hub.glb",
       "bytes": 3960216,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/prop_conduit_junction_box.glb",
+      "bytes": 95400,
       "classification": "runtime-required"
     },
     {
@@ -1880,13 +1930,73 @@
       "classification": "runtime-required"
     },
     {
+      "path": "3d/runtime/new3ds/prop_flesh_steel_coffin.glb",
+      "bytes": 104828,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/prop_flesh_steel_cradle.glb",
+      "bytes": 105144,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/prop_flesh_steel_inhaler.glb",
+      "bytes": 93996,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/prop_fungal_mycelium_loom.glb",
+      "bytes": 90048,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/prop_fungal_resin_basin.glb",
+      "bytes": 89576,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/prop_fungal_spore_dispenser.glb",
+      "bytes": 84796,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/prop_fungal_tendril_altar.glb",
+      "bytes": 103328,
+      "classification": "runtime-required"
+    },
+    {
       "path": "3d/runtime/new3ds/prop_hive_resin_sac.glb",
       "bytes": 118528,
       "classification": "runtime-required"
     },
     {
+      "path": "3d/runtime/new3ds/prop_icey_frost_manifold.glb",
+      "bytes": 95952,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/prop_icey_frost_vent.glb",
+      "bytes": 84368,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/prop_icey_thermal_pod.glb",
+      "bytes": 90592,
+      "classification": "runtime-required"
+    },
+    {
       "path": "3d/runtime/new3ds/prop_laser_trap_emitter.glb",
       "bytes": 1156788,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/prop_light_cluster_dripping.glb",
+      "bytes": 99468,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/prop_locker_bulged.glb",
+      "bytes": 98916,
       "classification": "runtime-required"
     },
     {
@@ -1900,8 +2010,18 @@
       "classification": "runtime-required"
     },
     {
+      "path": "3d/runtime/new3ds/prop_pipe_rupture.glb",
+      "bytes": 98824,
+      "classification": "runtime-required"
+    },
+    {
       "path": "3d/runtime/new3ds/prop_security_barricade.glb",
       "bytes": 4915192,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/prop_shrine_plinth_broken.glb",
+      "bytes": 84244,
       "classification": "runtime-required"
     },
     {
@@ -1910,13 +2030,33 @@
       "classification": "runtime-required"
     },
     {
+      "path": "3d/runtime/new3ds/prop_storage_drum_dented.glb",
+      "bytes": 90124,
+      "classification": "runtime-required"
+    },
+    {
       "path": "3d/runtime/new3ds/prop_surgical_cart.glb",
       "bytes": 4765964,
       "classification": "runtime-required"
     },
     {
+      "path": "3d/runtime/new3ds/prop_terminal_ruptured.glb",
+      "bytes": 96540,
+      "classification": "runtime-required"
+    },
+    {
       "path": "3d/runtime/new3ds/prop_tesla_coil_node.glb",
       "bytes": 1111072,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/prop_valve_wheel_fused.glb",
+      "bytes": 91620,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/prop_vent_grate_exploded.glb",
+      "bytes": 90804,
       "classification": "runtime-required"
     },
     {
@@ -8445,8 +8585,18 @@
       "classification": "runtime-required"
     },
     {
+      "path": "prop_chair_operator_wrecked.png",
+      "bytes": 9512,
+      "classification": "runtime-required"
+    },
+    {
       "path": "prop_conduit_hub.png",
       "bytes": 640918,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "prop_conduit_junction_box.png",
+      "bytes": 14820,
       "classification": "runtime-required"
     },
     {
@@ -8472,6 +8622,41 @@
     {
       "path": "prop_fabricator_workstation.jpg",
       "bytes": 589895,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "prop_flesh_steel_coffin.png",
+      "bytes": 10926,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "prop_flesh_steel_cradle.png",
+      "bytes": 12276,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "prop_flesh_steel_inhaler.png",
+      "bytes": 8885,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "prop_fungal_mycelium_loom.png",
+      "bytes": 18449,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "prop_fungal_resin_basin.png",
+      "bytes": 5655,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "prop_fungal_spore_dispenser.png",
+      "bytes": 9900,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "prop_fungal_tendril_altar.png",
+      "bytes": 9083,
       "classification": "runtime-required"
     },
     {
@@ -8520,6 +8705,21 @@
       "classification": "runtime-required"
     },
     {
+      "path": "prop_icey_frost_manifold.png",
+      "bytes": 17513,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "prop_icey_frost_vent.png",
+      "bytes": 14819,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "prop_icey_thermal_pod.png",
+      "bytes": 7468,
+      "classification": "runtime-required"
+    },
+    {
       "path": "prop_iron_guild_dogtags.png",
       "bytes": 1017,
       "classification": "runtime-required"
@@ -8530,6 +8730,16 @@
       "classification": "runtime-required"
     },
     {
+      "path": "prop_light_cluster_dripping.png",
+      "bytes": 5114,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "prop_locker_bulged.png",
+      "bytes": 6449,
+      "classification": "runtime-required"
+    },
+    {
       "path": "prop_medical_bed.png",
       "bytes": 392486,
       "classification": "runtime-required"
@@ -8537,6 +8747,11 @@
     {
       "path": "prop_o2_filter_vat.jpg",
       "bytes": 643267,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "prop_pipe_rupture.png",
+      "bytes": 11252,
       "classification": "runtime-required"
     },
     {
@@ -8555,6 +8770,11 @@
       "classification": "runtime-required"
     },
     {
+      "path": "prop_shrine_plinth_broken.png",
+      "bytes": 5791,
+      "classification": "runtime-required"
+    },
+    {
       "path": "prop_specimen_tank.png",
       "bytes": 587180,
       "classification": "runtime-required"
@@ -8565,8 +8785,18 @@
       "classification": "runtime-required"
     },
     {
+      "path": "prop_storage_drum_dented.png",
+      "bytes": 7362,
+      "classification": "runtime-required"
+    },
+    {
       "path": "prop_surgical_cart.png",
       "bytes": 396194,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "prop_terminal_ruptured.png",
+      "bytes": 11029,
       "classification": "runtime-required"
     },
     {
@@ -8577,6 +8807,16 @@
     {
       "path": "prop_torn_warning_poster.png",
       "bytes": 1932204,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "prop_valve_wheel_fused.png",
+      "bytes": 9110,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "prop_vent_grate_exploded.png",
+      "bytes": 8994,
       "classification": "runtime-required"
     },
     {

@@ -1,3 +1,5 @@
+import { ACT2_ENDINGS } from './act2Endings.js';
+import { collectLockedEndings, normalizeLinchpins } from './storyLinchpins.js';
 const STORAGE_KEY = 'hb_act2_v1';
 const ACT2_STATE_VERSION = 3;
 
@@ -169,19 +171,7 @@ export function campFinalUrgeCost(finalsDone = 0) {
     return ACT2_FINAL_URGE_BASE_COST + ACT2_FINAL_URGE_COST_STEP * Math.max(0, finalsDone);
 }
 
-export const ACT2_ENDINGS = Object.freeze({
-    FULL_BROOD: 'full_brood',
-    CLEAN_ESCAPE: 'clean_escape',
-    MIXED_CREW: 'mixed_crew',
-    CARRIERS_BARGAIN: 'carriers_bargain',
-    SCORCHED_SKY: 'scorched_sky',
-    // Expanded families (docs/hive-swarm-camps-and-humanity-system-design.md)
-    MOTHERSHIP_INFECTION: 'mothership_infection',
-    ALIEN_EXODUS: 'alien_exodus',
-    OUTED_ESCAPE: 'outed_escape',
-    FAILED_CARRIER: 'failed_carrier',
-    EMPTY_HUSK: 'empty_husk'
-});
+export { ACT2_ENDINGS } from './act2Endings.js';
 
 export const ACT2_ENDING_CUTSCENES = Object.freeze({
     [ACT2_ENDINGS.FULL_BROOD]: 'ending-fullbrood',
@@ -543,6 +533,7 @@ export function normalizeAct2State(raw = {}) {
         camps,
         hives,
         scientist: normalizeScientist(parsed.scientist),
+        linchpins: normalizeLinchpins(parsed.linchpins),
         manifest: null,
         version: ACT2_STATE_VERSION
     };
@@ -573,6 +564,10 @@ export function deriveAct2Phase(state = DEFAULT_ACT2_STATE) {
 // > egg gambits > sweeps > compromise.
 export function pickAct2Ending(rawState = DEFAULT_ACT2_STATE) {
     const state = normalizeAct2State(rawState);
+    // Endings closed off by story linchpins are skipped as the cascade
+    // evaluates, so the next-best branch wins rather than everything collapsing
+    // to the fallback. MIXED_CREW is never lockable and stays the floor.
+    const locked = new Set(collectLockedEndings(state.linchpins));
     const manifest = state.manifest;
     const camps = state.camps;
     const total = camps.length;
@@ -612,29 +607,29 @@ export function pickAct2Ending(rawState = DEFAULT_ACT2_STATE) {
         && state.eggsStatus !== 'aboard'
         && falseClearance
     ) {
-        return ACT2_ENDINGS.MOTHERSHIP_INFECTION;
+        if (!locked.has(ACT2_ENDINGS.MOTHERSHIP_INFECTION)) return ACT2_ENDINGS.MOTHERSHIP_INFECTION;
     }
 
     // 2. Absolute obedience.
     if (queenAboard && eggsAboard && allCulled && state.queenObedience >= ACT2_MAX_OBEDIENCE) {
-        return ACT2_ENDINGS.FULL_BROOD;
+        if (!locked.has(ACT2_ENDINGS.FULL_BROOD)) return ACT2_ENDINGS.FULL_BROOD;
     }
 
     // 3. The alien friends over everyone: all three hive allies, no queen.
     if (aliensAboard >= ACT2_HIVE_SITES.length && queenGone) {
-        return ACT2_ENDINGS.ALIEN_EXODUS;
+        if (!locked.has(ACT2_ENDINGS.ALIEN_EXODUS)) return ACT2_ENDINGS.ALIEN_EXODUS;
     }
 
     // 4. Absolute defiance. A cured player is clean even if humans were told.
     if (queenGone && eggsDestroyed && allHumanRecruited
         && (!humansKnow || state.infectionStage === 'cured')) {
-        return ACT2_ENDINGS.CLEAN_ESCAPE;
+        if (!locked.has(ACT2_ENDINGS.CLEAN_ESCAPE)) return ACT2_ENDINGS.CLEAN_ESCAPE;
     }
 
     // 5. Humans board knowing what you still are: tense containment flight.
     if (queenGone && recruited > 0 && humansKnow
         && state.infectionStage !== 'cured' && !eggsAboard) {
-        return ACT2_ENDINGS.OUTED_ESCAPE;
+        if (!locked.has(ACT2_ENDINGS.OUTED_ESCAPE)) return ACT2_ENDINGS.OUTED_ESCAPE;
     }
 
     // 6. Egg gambits without the queen.

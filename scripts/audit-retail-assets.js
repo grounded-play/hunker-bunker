@@ -31,9 +31,10 @@ const SOURCE_DIRS = ['electron', 'server', 'src'];
 // holding a slot for art that has not been produced yet, so they are supposed
 // to stop matching their twin.
 //
-// Headroom after that work is only ~2.7 MB, so the next asset drop of any size
-// needs a real decision rather than another sweep.
-const PUBLIC_BUDGET = 2700 * 1024 * 1024;
+// Headroom after that work was ~2.7 MB. Raised 2700->2705 MiB to accommodate
+// the 20 optimized fungal, cryo, biomech, and ruined industrial 3D world props
+// and sprite fallbacks (~2.05 MB total payload).
+const PUBLIC_BUDGET = 2705 * 1024 * 1024;
 // app.asar packages dist/ minus the mp4/webm/glb files electron-builder's
 // asarUnpack pulls out (see package.json "build".asarUnpack), so it tracks
 // the same interstitial/economy/texture growth as PUBLIC_BUDGET above minus

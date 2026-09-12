@@ -7,6 +7,7 @@ function makeFakeGame() {
         performanceProfile: 'gameplay',
         chunkSize: CHUNK_SIZE,
         chunkCellCount: (CHUNK_SIZE - 1) / 2,
+        crashedShips: null,
         getSpawnTile: ThreeGame.prototype.getSpawnTile
     };
 }

@@ -36,13 +36,13 @@ mayor_tina: {
     id: 'mayor_tina',
     resolutions: {
         killed: {
-            humanity: +10,
+            humanity: +5,
             campBondAll: +1,
             locksEndings: ['alien_exodus', 'full_brood', 'mothership_infection'],
             codexNote: 'linchpin_tina_killed'
         },
         joined: {
-            humanity: -25,
+            humanity: -30,
             campBondAll: -2,
             locksEndings: ['clean_escape', 'scorched_sky'],
             codexNote: 'linchpin_tina_joined'
@@ -98,6 +98,44 @@ warning, then you kill them after 3 more hits."
 
 If she is damaged mid-encounter the sequence aborts cleanly rather than being
 left half-played.
+
+## Narrative reasoning behind the lock tables
+
+The first draft of this spec guessed at these. They were then checked against
+what each ending actually *means* in `src/endingExplanations.js` and what its
+cascade branch actually *requires*, and two guesses changed.
+
+Tina's encounter state carries `originalOverlay` and `transformedOverlay`: she
+transforms. Killing her is therefore not murdering a civic leader, it is
+exterminating an infiltrator wearing one's face — which is why camps approve,
+and the reason the pro-camp direction is coherent at all.
+
+**`killed` locks the three alien-aligned endings:**
+
+| Ending | Means | Why killing Tina closes it |
+| --- | --- | --- |
+| `ALIEN_EXODUS` | "rejected the Queen but brought the allied beings off-world" | Requires every hive site allied. You killed the Queen's agent; the hives do not ally with you. |
+| `FULL_BROOD` | all camps culled, obedience maxed | Requires `queenObedience >= MAX`. Killing her agent breaks the obedience path. |
+| `MOTHERSHIP_INFECTION` | "smuggled the infection aboard disguised as a clean rescue" | You destroyed the infiltration you would have been carrying. |
+
+**`joined` locks two:**
+
+| Ending | Means | Why joining closes it |
+| --- | --- | --- |
+| `CLEAN_ESCAPE` | "broke the hive link, purged the eggs, escaped with all human survivors" | Definitionally impossible: you *are* the hive link. |
+| `SCORCHED_SKY` | "incinerated every survivor camp and purged the eggs" | A carrier does not purge its own brood. |
+
+**Deliberately not locked by `joined`:** `OUTED_ESCAPE` — "the survivors boarded
+knowing what you are". Becoming a bug makes that ending *more* apt, not less.
+Locking it would have been the tidy-looking wrong answer. `EMPTY_HUSK` likewise
+stays open: fleeing alone remains available to anyone.
+
+**Humanity deltas, revised.** The first draft gave `killed` a `+10`. `humanity`
+is described in the hive-swarm design as "visible human control and masking" —
+it tracks the player's own infection, not their reputation. Killing an
+infiltrator does not cure the player. It is reduced to `+5`, as reinforced cover
+from acting decisively human in public, and camp standing carries the real
+reward. `joined` drops it `-30`: that is a transformation step, not a favour.
 
 ## Deliberately out of scope
 

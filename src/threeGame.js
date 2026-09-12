@@ -188,6 +188,8 @@ export const MAYOR_TINA_PLAYER_VISUAL = Object.freeze({
 });
 import { createEnemy3dVisual, disposeEnemy3dVisual, updateEnemy3dVisual } from './enemy3dOverlay.js';
 import { spawnEnemyGibs, spawnPropDebris } from './enemyGibs.js';
+import { registerTinaHit } from './mayorTinaCombat.js';
+import { applyLinchpinResolution } from './storyLinchpins.js';
 import { resolveSafeSpawn } from './safeSpawn.js';
 import { WORLD_3D_FACING_YAW, createWorld3dModel, hasWorld3dModel, preloadWorld3dModels, syncWorld3dReplacement } from './world3dOverlay.js';
 import { computeTrailPosition } from './companionFollow.js';
@@ -21057,6 +21059,64 @@ export class ThreeGame {
         return null;
     }
 
+    /**
+     * Mayor Tina is a bare scene group, not a scatter sprite, so the normal
+     * destructible-prop sweep never saw her. Shooting her resolves a story
+     * linchpin that permanently locks endings, so the hit count lives in
+     * mayorTinaCombat.js where it can be tested.
+     */
+    checkProjectileMayorTinaHit(projectile) {
+        if (projectile?.isEnemy) return false;
+        const encounter = this.mayorTinaEncounter;
+        const root = encounter?.mayorRoot;
+        if (!root || encounter.tinaDead || !root.visible) return false;
+
+        const distance = Math.hypot(
+            projectile.mesh.position.x - root.position.x,
+            projectile.mesh.position.z - root.position.z
+        );
+        if (distance > 0.75 + (projectile.radius ?? PROJECTILE_RADIUS)) return false;
+
+        const result = registerTinaHit(encounter);
+        if (result.outcome === 'ignored') return false;
+        this.onMayorTinaHit(result);
+        return true;
+    }
+
+    onMayorTinaHit(result) {
+        const encounter = this.mayorTinaEncounter;
+        const root = encounter?.mayorRoot;
+        if (!root) return;
+
+        this.spawnDamagePip(root.position.x, root.position.z, 1);
+        window.AudioManager?.play('enemy_hit_soft', { volume: 0.45 });
+
+        if (result.outcome === 'warning') {
+            // One warning, then she fights. Dialogue rather than a silent
+            // stat change, because the choice needs to be legible as a choice.
+            this.lineDirector?.say?.('TINA: PUT THAT DOWN. I AM ASKING ONCE.', { priority: 0 });
+        }
+
+        if (result.outcome !== 'killed') return;
+
+        // She has a GLB, so she comes apart like any other 3D-backed object.
+        spawnPropDebris(this, { userData: { scatterKey: 'secret_mayor_tina', world3dRoot: root } }, {
+            direction: this.player ? {
+                x: root.position.x - this.player.position.x,
+                z: root.position.z - this.player.position.z
+            } : null
+        });
+        root.visible = false;
+        window.AudioManager?.playMetalStress?.({ volume: 0.55, force: true });
+
+        // Irreversible: applyLinchpinResolution is write-once, so a stray
+        // extra projectile in the same frame cannot double the standing hit.
+        applyLinchpinResolution(this.act2, 'mayor_tina', 'killed');
+        window.dispatchEvent(new CustomEvent('mayor-tina-killed', {
+            detail: { x: root.position.x, z: root.position.z }
+        }));
+    }
+
     checkProjectileDestructiblePropHit(projectile) {
         if (projectile?.isEnemy) return null;
         for (const sprite of this.scatterSprites) {
@@ -21537,6 +21597,12 @@ export class ThreeGame {
                     continue;
                 }
 
+                if (this.checkProjectileMayorTinaHit(projectile)) {
+                    this.spawnProjectileImpactEffect(projectile.mesh.position.x, projectile.mesh.position.z);
+                    this.destroyProjectile(projectile);
+                    this.projectiles.splice(i, 1);
+                    continue;
+                }
                 const destructibleProp = this.checkProjectileDestructiblePropHit(projectile);
                 if (destructibleProp) {
                     this.damageScatterProp(destructibleProp, projectile.damage);

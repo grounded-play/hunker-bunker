@@ -63,4 +63,18 @@ describe('debug museum coverage', () => {
             expect(showroomTypes.has(type), type).toBe(true);
         }
     });
+
+    it('covers the new fungal, cryo, biomech, and ruined industrial world props', () => {
+        for (const type of [
+            'prop_chair_operator_wrecked', 'prop_conduit_junction_box', 'prop_flesh_steel_coffin',
+            'prop_flesh_steel_cradle', 'prop_flesh_steel_inhaler', 'prop_fungal_mycelium_loom',
+            'prop_fungal_resin_basin', 'prop_fungal_spore_dispenser', 'prop_fungal_tendril_altar',
+            'prop_icey_frost_manifold', 'prop_icey_frost_vent', 'prop_icey_thermal_pod',
+            'prop_light_cluster_dripping', 'prop_locker_bulged', 'prop_pipe_rupture',
+            'prop_shrine_plinth_broken', 'prop_storage_drum_dented', 'prop_terminal_ruptured',
+            'prop_valve_wheel_fused', 'prop_vent_grate_exploded'
+        ]) {
+            expect(showroomTypes.has(type), type).toBe(true);
+        }
+    });
 });
