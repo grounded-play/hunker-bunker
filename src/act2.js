@@ -173,6 +173,28 @@ export function campFinalUrgeCost(finalsDone = 0) {
 
 export { ACT2_ENDINGS } from './act2Endings.js';
 
+/**
+ * Endings whose bespoke cutscene has not been produced yet.
+ *
+ * playCutsceneVideo resolves silently on a missing asset, so these five played
+ * *nothing* -- a player who allied all three hives for ALIEN_EXODUS got less
+ * payoff than one who stumbled into MIXED_CREW. Each is mapped to the shipped
+ * video closest in tone until its own is authored. See
+ * docs/design/asset-gap-audit-2026-09-11.md.
+ */
+export const ACT2_ENDING_CUTSCENE_FALLBACKS = Object.freeze({
+    // Looks like a clean rescue from the outside; that is the whole point.
+    mothership_infection: 'ending-cleanescape',
+    // Leaving with the hive rather than the brood: closest to the bargain.
+    alien_exodus: 'ending-carriersbargain',
+    // Boarded, but known. The mixed manifest reads nearest.
+    outed_escape: 'ending-mixedcrew',
+    // Containment failed in the hold.
+    failed_carrier: 'ending-carriersbargain',
+    // Fled alone, everything behind you left to die.
+    empty_husk: 'ending-scorchedsky'
+});
+
 export const ACT2_ENDING_CUTSCENES = Object.freeze({
     [ACT2_ENDINGS.FULL_BROOD]: 'ending-fullbrood',
     [ACT2_ENDINGS.CLEAN_ESCAPE]: 'ending-cleanescape',
@@ -1229,4 +1251,22 @@ export class Act2Manager {
         this.state = normalizeAct2State({});
         return this.save();
     }
+}
+
+
+/**
+ * The cutscene to actually play for an ending.
+ *
+ * Prefers the bespoke asset, falls back to the nearest shipped one, and only
+ * then to the generic departure. Returns { base, isFallback } so callers can
+ * tell the difference -- an ending playing a stand-in is a content gap worth
+ * surfacing in a report, not a silent substitution.
+ */
+export function resolveEndingCutscene(ending, { availableBases = null } = {}) {
+    const bespoke = ACT2_ENDING_CUTSCENES[ending] ?? null;
+    const has = (base) => !base ? false : (availableBases ? availableBases.includes(base) : true);
+    if (bespoke && has(bespoke)) return { base: bespoke, isFallback: false };
+    const fallback = ACT2_ENDING_CUTSCENE_FALLBACKS[ending];
+    if (fallback && has(fallback)) return { base: fallback, isFallback: true };
+    return { base: 'act3-departure', isFallback: true };
 }

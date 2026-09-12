@@ -33,7 +33,7 @@ import { DIALOGUE_LINES, getDialogueLine } from './src/data/dialogueLines.js';
 import { MOTHERSHIP_REACTIVE_LINES } from './src/data/lineDirectorPools.js';
 import { ArcStateManager } from './src/arcState.js';
 import { CaveRevealController } from './src/caveReveal.js';
-import { Act2Manager, ACT2_ENDING_CUTSCENES, ACT2_LINES, getAct2EndingLines, pickAct2Ending, buildAct2Manifest } from './src/act2.js';
+import { Act2Manager, ACT2_LINES, getAct2EndingLines, pickAct2Ending, buildAct2Manifest, resolveEndingCutscene } from './src/act2.js';
 import { isDemoBuild, isGoreEnabled, setGoreEnabled } from './src/featureFlags.js';
 import {
     loadAccessibilitySettings,
@@ -12477,7 +12477,15 @@ async function runAct2DepartureSequence(detail = {}) {
     const game = window.game;
     const vector = detail.endingVector ?? game?.act2?.getEndingVector?.() ?? act2Manager?.getEndingVector?.();
     const ending = vector?.ending ?? null;
-    const videoBase = ACT2_ENDING_CUTSCENES[ending] ?? 'act3-departure';
+    // Five of the ten endings have no bespoke cutscene yet, and
+    // playCutsceneVideo resolves silently on a missing asset -- so they used to
+    // play nothing at all. resolveEndingCutscene substitutes the nearest shipped
+    // video and reports that it did, rather than a run ending on a black
+    // screen. See docs/design/asset-gap-audit-2026-09-11.md.
+    const { base: videoBase, isFallback: usedFallbackCutscene } = resolveEndingCutscene(ending);
+    if (usedFallbackCutscene) {
+        window.hbLog?.('NARRATIVE', 'warn', 'ending-cutscene-fallback', { ending, videoBase });
+    }
     const classType = game?.playerType ?? getSelectedHeroType();
     recordAchievementRunEnd({
         ...(detail.runStats ?? game?.getRunStats?.() ?? {}),
