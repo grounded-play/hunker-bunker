@@ -187,7 +187,9 @@ export const MAYOR_TINA_PLAYER_VISUAL = Object.freeze({
     allowStatic: false
 });
 import { createEnemy3dVisual, disposeEnemy3dVisual, updateEnemy3dVisual } from './enemy3dOverlay.js';
-import { spawnEnemyGibs } from './enemyGibs.js';
+import { spawnEnemyGibs, spawnPropDebris } from './enemyGibs.js';
+import { registerTinaHit } from './mayorTinaCombat.js';
+import { applyLinchpinResolution } from './storyLinchpins.js';
 import { resolveSafeSpawn } from './safeSpawn.js';
 import { WORLD_3D_FACING_YAW, createWorld3dModel, hasWorld3dModel, preloadWorld3dModels, syncWorld3dReplacement } from './world3dOverlay.js';
 import { computeTrailPosition } from './companionFollow.js';
@@ -541,7 +543,27 @@ const GENERATED_ROOM_PROP_PATHS = Object.freeze({
     prop_biomech_neural_synapse: '/prop_biomech_neural_synapse.jpg',
     prop_biomech_flesh_locker: '/prop_biomech_flesh_locker.jpg',
     prop_biomech_sphincter_trap: '/prop_biomech_sphincter_trap.jpg',
-    prop_biomech_triage_cradle: '/prop_biomech_triage_cradle.jpg'
+    prop_biomech_triage_cradle: '/prop_biomech_triage_cradle.jpg',
+    prop_chair_operator_wrecked: '/prop_chair_operator_wrecked.png',
+    prop_conduit_junction_box: '/prop_conduit_junction_box.png',
+    prop_flesh_steel_coffin: '/prop_flesh_steel_coffin.png',
+    prop_flesh_steel_cradle: '/prop_flesh_steel_cradle.png',
+    prop_flesh_steel_inhaler: '/prop_flesh_steel_inhaler.png',
+    prop_fungal_mycelium_loom: '/prop_fungal_mycelium_loom.png',
+    prop_fungal_resin_basin: '/prop_fungal_resin_basin.png',
+    prop_fungal_spore_dispenser: '/prop_fungal_spore_dispenser.png',
+    prop_fungal_tendril_altar: '/prop_fungal_tendril_altar.png',
+    prop_icey_frost_manifold: '/prop_icey_frost_manifold.png',
+    prop_icey_frost_vent: '/prop_icey_frost_vent.png',
+    prop_icey_thermal_pod: '/prop_icey_thermal_pod.png',
+    prop_light_cluster_dripping: '/prop_light_cluster_dripping.png',
+    prop_locker_bulged: '/prop_locker_bulged.png',
+    prop_pipe_rupture: '/prop_pipe_rupture.png',
+    prop_shrine_plinth_broken: '/prop_shrine_plinth_broken.png',
+    prop_storage_drum_dented: '/prop_storage_drum_dented.png',
+    prop_terminal_ruptured: '/prop_terminal_ruptured.png',
+    prop_valve_wheel_fused: '/prop_valve_wheel_fused.png',
+    prop_vent_grate_exploded: '/prop_vent_grate_exploded.png'
 });
 const FLOOR_OVERLAY_TYPES = new Set([
     'decal_oil_spill_patch',
@@ -18341,6 +18363,52 @@ export class ThreeGame {
 
         this.activeTurret = { mesh: group, timer: this.turretDuration, fireTimer: this.turretFireInterval };
         window.AudioManager?.play('fx_engineer_turret', { volume: 0.48, bus: 'sfx' });
+
+        // The cylinder-and-cone above is the placeholder this shipped with.
+        // prop_base_defense_turret has been in the repo and registered in
+        // world3dOverlay all along. It loads asynchronously, so the primitives
+        // stay as the immediate stand-in and are swapped out on arrival --
+        // deploying a turret must never wait on a network fetch mid-fight.
+        // Optional by design: if the upgrade is unavailable the placeholder
+        // primitives remain a working turret. Unlike resolveSpawnPoint, which
+        // is a safety check and must never be skipped, this is cosmetic.
+        this.upgradeTurretToModel?.(group);
+    }
+
+    /**
+     * Replace the placeholder turret primitives with the authored model.
+     *
+     * Guards on the group still being the live turret when the load resolves:
+     * a player can deploy, have the turret expire, and deploy again well inside
+     * one fetch, and the stale load must not attach to a despawned group or to
+     * the wrong one.
+     */
+    async upgradeTurretToModel(group) {
+        if (!group || !hasWorld3dModel('prop_base_defense_turret')) return false;
+        try {
+            const model = await this.createWorld3dModel('prop_base_defense_turret');
+            const root = model?.root ?? model;
+            if (!root) return false;
+            if (this.activeTurret?.mesh !== group || !group.parent) {
+                root.traverse?.((child) => {
+                    child.geometry?.dispose?.();
+                    child.material?.dispose?.();
+                });
+                return false;
+            }
+            // Drop the primitives only once the real thing is in hand, so a
+            // failed load leaves a visible turret rather than an invisible one.
+            for (const child of [...group.children]) {
+                group.remove(child);
+                child.geometry?.dispose?.();
+                child.material?.dispose?.();
+            }
+            group.add(root);
+            return true;
+        } catch (err) {
+            console.warn('[turret] model upgrade failed, keeping placeholder', err);
+            return false;
+        }
     }
 
     despawnEngineerTurret() {
@@ -20991,6 +21059,64 @@ export class ThreeGame {
         return null;
     }
 
+    /**
+     * Mayor Tina is a bare scene group, not a scatter sprite, so the normal
+     * destructible-prop sweep never saw her. Shooting her resolves a story
+     * linchpin that permanently locks endings, so the hit count lives in
+     * mayorTinaCombat.js where it can be tested.
+     */
+    checkProjectileMayorTinaHit(projectile) {
+        if (projectile?.isEnemy) return false;
+        const encounter = this.mayorTinaEncounter;
+        const root = encounter?.mayorRoot;
+        if (!root || encounter.tinaDead || !root.visible) return false;
+
+        const distance = Math.hypot(
+            projectile.mesh.position.x - root.position.x,
+            projectile.mesh.position.z - root.position.z
+        );
+        if (distance > 0.75 + (projectile.radius ?? PROJECTILE_RADIUS)) return false;
+
+        const result = registerTinaHit(encounter);
+        if (result.outcome === 'ignored') return false;
+        this.onMayorTinaHit(result);
+        return true;
+    }
+
+    onMayorTinaHit(result) {
+        const encounter = this.mayorTinaEncounter;
+        const root = encounter?.mayorRoot;
+        if (!root) return;
+
+        this.spawnDamagePip(root.position.x, root.position.z, 1);
+        window.AudioManager?.play('enemy_hit_soft', { volume: 0.45 });
+
+        if (result.outcome === 'warning') {
+            // One warning, then she fights. Dialogue rather than a silent
+            // stat change, because the choice needs to be legible as a choice.
+            this.lineDirector?.say?.('TINA: PUT THAT DOWN. I AM ASKING ONCE.', { priority: 0 });
+        }
+
+        if (result.outcome !== 'killed') return;
+
+        // She has a GLB, so she comes apart like any other 3D-backed object.
+        spawnPropDebris(this, { userData: { scatterKey: 'secret_mayor_tina', world3dRoot: root } }, {
+            direction: this.player ? {
+                x: root.position.x - this.player.position.x,
+                z: root.position.z - this.player.position.z
+            } : null
+        });
+        root.visible = false;
+        window.AudioManager?.playMetalStress?.({ volume: 0.55, force: true });
+
+        // Irreversible: applyLinchpinResolution is write-once, so a stray
+        // extra projectile in the same frame cannot double the standing hit.
+        applyLinchpinResolution(this.act2, 'mayor_tina', 'killed');
+        window.dispatchEvent(new CustomEvent('mayor-tina-killed', {
+            detail: { x: root.position.x, z: root.position.z }
+        }));
+    }
+
     checkProjectileDestructiblePropHit(projectile) {
         if (projectile?.isEnemy) return null;
         for (const sprite of this.scatterSprites) {
@@ -21471,6 +21597,11 @@ export class ThreeGame {
                     continue;
                 }
 
+                if (this.checkProjectileMayorTinaHit(projectile)) {
+                    this.spawnProjectileImpactEffect(projectile.mesh.position.x, projectile.mesh.position.z);
+                    toRemove.add(projectile);
+                    continue;
+                }
                 const destructibleProp = this.checkProjectileDestructiblePropHit(projectile);
                 if (destructibleProp) {
                     this.damageScatterProp(destructibleProp, projectile.damage);
@@ -26385,7 +26516,19 @@ export class ThreeGame {
         if (sprite.userData.propHp <= 0) {
             sprite.userData.burstTriggered = true;
             const isBio = sprite.userData.type?.includes?.('spore') || sprite.userData.type?.includes?.('specimen');
-            this.spawnGearPoofEffect(sprite.position.x, sprite.position.z, isBio ? 'bio_spores' : 'bunker_junk');
+            // Props with a 3D model come apart into physical chunks; the poof
+            // remains the fallback for flat-sprite props that have nothing to
+            // fracture. spawnPropDebris reports which happened, so a prop never
+            // gets both a debris field and a puff of smoke standing in for one.
+            const brokeApart = spawnPropDebris(this, sprite, {
+                direction: this.player ? {
+                    x: sprite.position.x - this.player.position.x,
+                    z: sprite.position.z - this.player.position.z
+                } : null
+            });
+            if (!brokeApart) {
+                this.spawnGearPoofEffect(sprite.position.x, sprite.position.z, isBio ? 'bio_spores' : 'bunker_junk');
+            }
             if (isBio) this.spawnToxicSporePuddle(sprite.position.x, sprite.position.z, false);
             window.AudioManager?.playMetalStress?.({ volume: 0.5, playbackRate: 1.85, force: true });
 
@@ -32121,8 +32264,8 @@ export class ThreeGame {
                 }
             }
             return {
-                x: 7.4 + offset.x,
-                y: 11.8 + offset.y
+                x: CRASH_SITE_CENTER + offset.x,
+                y: CRASH_SITE_CENTER + offset.y
             };
         }
         if (this.crashedShips) {
@@ -32136,8 +32279,8 @@ export class ThreeGame {
             }
         }
         return {
-            x: 7.4,
-            y: 11.8
+            x: CRASH_SITE_CENTER,
+            y: CRASH_SITE_CENTER
         };
     }
 

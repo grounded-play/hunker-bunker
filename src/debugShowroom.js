@@ -51,7 +51,33 @@ export const SHOWROOM_CATEGORIES = Object.freeze({
         'prop_biomech_sphincter_trap',
         'prop_laser_trap_emitter',
         'prop_body_empty_exosuit',
-        'prop_body_human_frozen'
+        'prop_body_human_frozen',
+        'prop_flesh_steel_coffin',
+        'prop_flesh_steel_cradle',
+        'prop_flesh_steel_inhaler'
+    ],
+    FUNGAL_PROPS: [
+        'prop_fungal_mycelium_loom',
+        'prop_fungal_resin_basin',
+        'prop_fungal_spore_dispenser',
+        'prop_fungal_tendril_altar'
+    ],
+    CRYO_PROPS: [
+        'prop_icey_frost_manifold',
+        'prop_icey_frost_vent',
+        'prop_icey_thermal_pod'
+    ],
+    RUINED_INDUSTRIAL_PROPS: [
+        'prop_chair_operator_wrecked',
+        'prop_conduit_junction_box',
+        'prop_light_cluster_dripping',
+        'prop_locker_bulged',
+        'prop_pipe_rupture',
+        'prop_shrine_plinth_broken',
+        'prop_storage_drum_dented',
+        'prop_terminal_ruptured',
+        'prop_valve_wheel_fused',
+        'prop_vent_grate_exploded'
     ],
     // Sprint 34 world art. These were registered in WORLD_3D_MODELS and used in
     // world generation, but never listed here -- so they were invisible in the

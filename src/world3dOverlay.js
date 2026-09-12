@@ -99,7 +99,27 @@ export const WORLD_3D_MODELS = Object.freeze({
     state_column_shattered: { url: '/3d/runtime/new3ds/state_column_shattered.glb', height: 1.6, yaw: 0 },
     state_wall_breached_01: { url: '/3d/runtime/new3ds/state_wall_breached_01.glb', height: 2.0, yaw: 0 },
     state_wall_breached_02: { url: '/3d/runtime/new3ds/state_wall_breached_02.glb', height: 2.0, yaw: 0 },
-    state_wall_breached_03: { url: '/3d/runtime/new3ds/state_wall_breached_03.glb', height: 2.0, yaw: 0 }
+    state_wall_breached_03: { url: '/3d/runtime/new3ds/state_wall_breached_03.glb', height: 2.0, yaw: 0 },
+    prop_chair_operator_wrecked: { url: '/3d/runtime/new3ds/prop_chair_operator_wrecked.glb', height: 1.10, yaw: 0 },
+    prop_conduit_junction_box: { url: '/3d/runtime/new3ds/prop_conduit_junction_box.glb', height: 0.90, yaw: 0 },
+    prop_flesh_steel_coffin: { url: '/3d/runtime/new3ds/prop_flesh_steel_coffin.glb', height: 1.40, yaw: 0 },
+    prop_flesh_steel_cradle: { url: '/3d/runtime/new3ds/prop_flesh_steel_cradle.glb', height: 0.95, yaw: 0 },
+    prop_flesh_steel_inhaler: { url: '/3d/runtime/new3ds/prop_flesh_steel_inhaler.glb', height: 1.30, yaw: 0 },
+    prop_fungal_mycelium_loom: { url: '/3d/runtime/new3ds/prop_fungal_mycelium_loom.glb', height: 1.85, yaw: 0 },
+    prop_fungal_resin_basin: { url: '/3d/runtime/new3ds/prop_fungal_resin_basin.glb', height: 0.85, yaw: 0 },
+    prop_fungal_spore_dispenser: { url: '/3d/runtime/new3ds/prop_fungal_spore_dispenser.glb', height: 1.25, yaw: 0 },
+    prop_fungal_tendril_altar: { url: '/3d/runtime/new3ds/prop_fungal_tendril_altar.glb', height: 2.10, yaw: 0 },
+    prop_icey_frost_manifold: { url: '/3d/runtime/new3ds/prop_icey_frost_manifold.glb', height: 1.20, yaw: 0 },
+    prop_icey_frost_vent: { url: '/3d/runtime/new3ds/prop_icey_frost_vent.glb', height: 1.10, yaw: 0 },
+    prop_icey_thermal_pod: { url: '/3d/runtime/new3ds/prop_icey_thermal_pod.glb', height: 1.40, yaw: 0 },
+    prop_light_cluster_dripping: { url: '/3d/runtime/new3ds/prop_light_cluster_dripping.glb', height: 1.20, yaw: 0 },
+    prop_locker_bulged: { url: '/3d/runtime/new3ds/prop_locker_bulged.glb', height: 1.35, yaw: 0 },
+    prop_pipe_rupture: { url: '/3d/runtime/new3ds/prop_pipe_rupture.glb', height: 0.85, yaw: 0 },
+    prop_shrine_plinth_broken: { url: '/3d/runtime/new3ds/prop_shrine_plinth_broken.glb', height: 1.25, yaw: 0 },
+    prop_storage_drum_dented: { url: '/3d/runtime/new3ds/prop_storage_drum_dented.glb', height: 0.80, yaw: 0 },
+    prop_terminal_ruptured: { url: '/3d/runtime/new3ds/prop_terminal_ruptured.glb', height: 1.15, yaw: 0 },
+    prop_valve_wheel_fused: { url: '/3d/runtime/new3ds/prop_valve_wheel_fused.glb', height: 0.75, yaw: 0 },
+    prop_vent_grate_exploded: { url: '/3d/runtime/new3ds/prop_vent_grate_exploded.glb', height: 0.65, yaw: 0 }
 });
 
 const templates = new Map();

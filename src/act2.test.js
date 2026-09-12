@@ -1027,3 +1027,46 @@ describe('Act2Manager scientist dialogue', () => {
         expect(m.getState().scientist.questFlags.snail_befriended).toBe('done');
     });
 });
+
+describe('story linchpin ending locks', () => {
+    it('skips a locked ending and falls to the next branch, not to the fallback', () => {
+        // The whole point of skipping rather than replacing: a player who
+        // closed one door should get the next-best ending, not the catch-all.
+        const base = {
+            begun: true, departed: true,
+            queenStatus: 'rejected', eggsStatus: 'destroyed',
+            camps: [
+                { id: 'camp_meridian', status: 'recruited', aided: true },
+                { id: 'camp_tallow', status: 'recruited', aided: true },
+                { id: 'camp_vesper', status: 'recruited', aided: true }
+            ]
+        };
+        const open = pickAct2Ending(base);
+        const locked = pickAct2Ending({ ...base, linchpins: { mayor_tina: 'joined' } });
+        expect(open).not.toBe(locked);
+        expect(locked).not.toBe(open);
+    });
+
+    it('never returns an ending the player has locked', () => {
+        const locked = pickAct2Ending({
+            begun: true, departed: true,
+            queenStatus: 'rejected', eggsStatus: 'destroyed',
+            camps: [
+                { id: 'camp_meridian', status: 'recruited', aided: true },
+                { id: 'camp_tallow', status: 'recruited', aided: true },
+                { id: 'camp_vesper', status: 'recruited', aided: true }
+            ],
+            linchpins: { mayor_tina: 'joined' }
+        });
+        expect(locked).not.toBe(ACT2_ENDINGS.CLEAN_ESCAPE);
+    });
+
+    it('round-trips linchpins through normalization', () => {
+        const s = normalizeAct2State({ linchpins: { mayor_tina: 'killed', bogus: 'x' } });
+        expect(s.linchpins).toEqual({ mayor_tina: 'killed' });
+    });
+
+    it('defaults old saves with no linchpins field', () => {
+        expect(normalizeAct2State({}).linchpins).toEqual({});
+    });
+});
