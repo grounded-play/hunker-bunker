@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { getCampClassMapping } from './act2.js';
 import { applyBlackChromaKey } from './textureKeying.js';
 import { assetUrl } from './assetUrl.js';
-import { syncWorld3dReplacement } from './world3dOverlay.js';
+import { syncWorld3dReplacement, createWorld3dModel, hasWorld3dModel } from './world3dOverlay.js';
 import { campWorkerVisualForHumanState, selectCampWorkerStateCue, updateCampWorkersHumanStates } from './campHumanBehavior.js';
 import { CAMP_AFTERMATH_FORTIFIED_LEVEL } from './campEconomy.js';
 
@@ -26,6 +26,33 @@ const LEADER_BOSS_SPRITESHEETS = {
 // real file lands at that path — loadKeyedTexture's onerror path already
 // falls back gracefully (see makeSignaturePropFallbackCanvas below), so
 // wiring ahead of the asset is safe.
+// 3D dressing, on top of the flat signature billboards above.
+//
+// The camps were the last places in the game still dressed entirely in sprites
+// while the rest of the world moved to GLB props, which is why they read thinner
+// than the hives despite having the same amount of writing behind them. Nothing
+// new was authored for this -- every model below already ships and is registered
+// in world3dOverlay.
+//
+// Chosen from what each leader actually says about their camp:
+//   Meridian / Kaelen  -- "built on clean steel. No rust. No rot." Grid hardware.
+//   Tallow   / Martha  -- "the warm pipes", moss, steam, spores. Wet and growing.
+//   Vesper   / Briggs  -- turrets, ammunition, a ledger of the dead. Iron.
+export const CAMP_DRESSING_MODELS = Object.freeze({
+    camp_meridian: Object.freeze([
+        { type: 'prop_conduit_junction_box', x: -3.1, z: 2.4, yaw: 0.6 },
+        { type: 'prop_light_cluster_dripping', x: 3.0, z: -2.7, yaw: -0.4 }
+    ]),
+    camp_tallow: Object.freeze([
+        { type: 'prop_fungal_resin_basin', x: -3.0, z: 2.6, yaw: 0.2 },
+        { type: 'prop_pipe_rupture', x: 3.2, z: -2.5, yaw: 1.1 }
+    ]),
+    camp_vesper: Object.freeze([
+        { type: 'prop_base_defense_turret', x: -3.2, z: -2.6, yaw: 0.9 },
+        { type: 'prop_storage_drum_dented', x: 3.1, z: 2.5, yaw: -0.7 }
+    ])
+});
+
 export const CAMP_SIGNATURE_PROPS = Object.freeze({
     camp_meridian: [
         { id: 'radio', path: '/prop_camp_meridian_radio.jpg', x: 1.7, z: 2.15, y: 0.42, scale: 1.1, color: 0xffb347 },
@@ -636,6 +663,13 @@ export class SurvivorCamp {
             this.signatureProps[spec.id] = sprite;
         }
 
+        // 3D dressing loads asynchronously and attaches to the same group, so it
+        // inherits the camp's visibility, destruction and disposal exactly like
+        // the sprites do. Failures are non-fatal: a camp missing a prop is still
+        // a camp, and blocking construction on a fetch would stall chunk mount.
+        this.dressingModels = [];
+        void this.attachCampDressingModels(group);
+
         group.visible = false;
         this.scene.add(group);
         this.group = group;
@@ -943,6 +977,32 @@ export class SurvivorCamp {
             this.npcSprite.scale.set(useBossSheet ? 1.85 : 1.5, useBossSheet ? 1.85 : 1.5, 1.0);
         }
         this.updatePropVisuals();
+    }
+
+    async attachCampDressingModels(group) {
+        for (const spec of CAMP_DRESSING_MODELS[this.id] ?? []) {
+            if (!hasWorld3dModel(spec.type)) continue;
+            try {
+                const model = await createWorld3dModel(spec.type);
+                const root = model?.root ?? model;
+                // The camp may have been torn down while this was in flight.
+                if (!root || !group.parent) {
+                    root?.traverse?.((child) => {
+                        child.geometry?.dispose?.();
+                        child.material?.dispose?.();
+                    });
+                    continue;
+                }
+                root.position.set(spec.x, 0, spec.z);
+                root.rotation.y = spec.yaw ?? 0;
+                root.userData = { kind: 'camp-dressing-model', campId: this.id, propType: spec.type };
+                group.add(root);
+                this.dressingModels.push(root);
+            } catch (err) {
+                console.warn(`[camp] dressing model ${spec.type} unavailable`, err);
+            }
+        }
+        return this.dressingModels.length;
     }
 
     setDestroyed(destroyed = true) {
