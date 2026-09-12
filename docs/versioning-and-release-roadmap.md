@@ -4,7 +4,7 @@
 
 **Active Development Branch:** `dev/sprint-35`
 
-**Current Working Version:** `v2.4.1-beta` (`2.4.1-beta` in `package.json`, branch `dev/sprint-35`)
+**Current Working Version:** `v2.4.2-beta` (`2.4.2-beta` in `package.json`, branch `dev/destructibles`)
 
 **Latest Tagged Baseline:** `v2.4.0-beta` at Sprint 33/34 integration on `mothership`
 
@@ -54,6 +54,7 @@ Bump `package.json` and `package-lock.json` together (`npm version <v>
 | **v2.3.2-beta** | `fix/mayor-tina-and-astra-plan` | 2026-09-09 | PR to `mothership` | 3D chest-mounted operator patches snug on breastplate (`mixamorig1Spine2`), high-fidelity transparent RGBA decals (4120, 4121, 4122, 4124, 4125), startup UI scale flash fix, Mayor Tina seeded placement/facing, squad-wipe co-op handling, retail asset payload repair, and full test expansion (2,623 tests across 293 files). |
 | **v2.4.0-beta** | Sprint 33 (`dev/sprint-33`) | 2026-09-10 | [PR #61](https://github.com/grounded-play/hunker-bunker/pull/61) | Co-op shared world events and enemy materialization (a host-staged boss was invisible to peers), friendly-fire shove, solo runs no longer inheriting a co-op session; the 21.4 s O₂-build stall removed (two synchronous whole-scene shader recompiles); post-processing re-enabled in the shipped camera; run-card deck variety and inert effect keys resolved; session-log export fixed on PC and Steam Deck with a server drop box; upload endpoint closed and 6 dependency advisories patched; unwired-code audit and detector. 2,826 tests across 318 files. |
 | **v2.4.1-beta** | Sprint 35 (`dev/sprint-35`) | 2026-09-11 | PR to `mothership` | **Full localization**: live language switching across 7 locales (en, zh-CN, ru, es-419, de, ja, pt-BR) with a `data-i18n` markup contract and self-wiring static pass; 218 UI keys covering menus, Settings, Armory, roster and dialogue chrome; 399 narrative strings extracted into runtime-swappable catalogs and translated to 100% in every locale; Steam item-tag matrix prepared for Steamworks entry. **Enemy dismemberment**: enemies break into ~8 physical chunks fractured at runtime from their GLBs (Lloyd-balanced, cached per type, prewarmed off the death frame), with blood burst, ground splat, and a localized gore toggle; corpse/shell economy untouched. 2,989 tests across 330 files. |
+| **v2.4.2-beta** | `dev/destructibles` | 2026-09-11 | PR to `mothership` | **Destruction pass**: every 3D-backed prop shatters into physics chunks instead of a particle poof, gore and debris separated so disabling gore no longer stops crates breaking, engineer turret swapped from placeholder primitives to the authored `prop_base_defense_turret` model. **Story linchpins**: data-driven irreversible choices that move humanity/camp standing and skip endings in the Act 2 cascade, with a write-once guard and an exhaustive reachability test; Mayor Tina is the first, killable in four hits. 20 new 3D props integrated. 3,048 tests across 334 files. |
 | **v2.4.0-beta (Active)** | Sprint 34 (`dev/sprint-34`) | *In progress* | Active development branch | Two-tier weapon finish pipeline, Season 0 & Sprint 34 cosmetic catalog registration, diorama VFX, co-op sync, 2,849 passing tests. |
 
 ---
