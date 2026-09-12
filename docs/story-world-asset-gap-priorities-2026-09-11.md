@@ -73,10 +73,6 @@ Verified: 36 focused tests, production build/media audit, and a browser check of
 the ten archive cards and the Briggs recruitment warning. Bespoke ending frames,
 aftermath portraits, and new voice recordings remain production work.
 
-- Give the camp choice modal a pre-confirmation warning naming the leader arc
-  and candidate ending locks.
-- Add an ending archive that shows discovered endings, locked silhouettes, and
-  the Codex linchpin responsible for each known lock.
-- Author one follow-up radio line per surviving leader after every later
-  linchpin, so Tina and the camps comment on one another rather than reading as
-  isolated quest chains.
+- [x] **Camp choice modal pre-confirmation warning**: Built dedicated `#camp-choice-confirm` panel displaying the leader arc name, projected resolution, humanity and bond deltas, candidate ending locks, and back/confirm decision controls.
+- [x] **Ending archive in Field Codex**: Structured `.ending-archive-section` displaying all ten historical outcomes, locked silhouettes (`*_locked.jpg`), discovery badges, and explicit Codex linchpin attribution with narrative reasoning.
+- [x] **Inter-leader radio commentary**: Authored characterful radio reaction lines across all four leaders (`TANK`, `SCOUT`, `ENGINEER`, and allied `MAYOR_TINA`) acknowledging each other's fates and hive choices without audio/text clobbering.

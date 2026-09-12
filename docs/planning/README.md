@@ -31,3 +31,4 @@ copied into the roadmap with an owner/acceptance condition or explicitly cut.
 - [O2 milestone cinematic doors and boss destruction plan](o2-cinematic-doors-and-boss-destruction-plan-2026-09-10.md) — objective blast doors, video playback, 3D generator rise, screen rumble, boss encounter video, 3D boss model visibility, and wall destruction.
 - [O2 generator stall and sequence fix plan](o2-generator-sequence-fix-2026-09-10.md) — fixes 21.4s shader recompile freeze, builds floodlights at world setup, removes misplaced compile, closes menu instantly, orchestrates door sequence, and adds framed text backing.
 
+- [Blender pre-rendered animation production plan](blender-prerendered-animation-plan-2026-09-12.md) — proposed selective Blender-to-atlas/WebM pipeline, prioritized animation slate, runtime boundaries, validation gates, and phased delivery plan.
