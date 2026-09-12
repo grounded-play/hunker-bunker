@@ -155,4 +155,22 @@ describe('SurvivorCamp', () => {
             camp.reveal(0, 0);
         }).not.toThrow();
     });
+
+    it('uses existing lived-in props to show each camp aftermath', () => {
+        const camp = new SurvivorCamp(new THREE.Scene(), { id: 'camp_meridian' });
+        camp.build(0, 0);
+
+        camp.setStatus('robbed');
+        expect(camp.propSprites.crates.visible).toBe(false);
+        expect(camp.propSprites.bedrolls.visible).toBe(false);
+        expect(camp.propSprites.laundry.visible).toBe(true);
+        expect(camp.propSprites.grave.visible).toBe(false);
+
+        camp.setStatus('recruited');
+        expect(camp.propSprites.laundry.visible).toBe(false);
+        expect(camp.propSprites.bedrolls.visible).toBe(false);
+
+        camp.setStatus('culled');
+        expect(camp.propSprites.grave.visible).toBe(true);
+    });
 });

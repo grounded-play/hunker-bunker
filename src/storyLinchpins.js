@@ -58,8 +58,140 @@ export const STORY_LINCHPINS = Object.freeze({
                 codexNote: 'linchpin_tina_joined'
             })
         })
+    }),
+
+    // Okonkwo-Vass already asks, in shipped dialogue: "DON'T KILL ONE. TALK TO
+    // ONE. PROVE ME RIGHT." That request had no mechanical consequence. It is
+    // the cheapest linchpin in the game to reach and the earliest, which makes
+    // it the right place to teach the player that choices close doors.
+    scientist_specimen: Object.freeze({
+        id: 'scientist_specimen',
+        resolutions: Object.freeze({
+            proved: Object.freeze({
+                // Standing your ground in front of something that could kill
+                // you, and not shooting, is not a humanity change -- it is a
+                // change in what the hives are willing to believe about you.
+                humanity: 0,
+                campBondAll: 0,
+                locksEndings: Object.freeze([]),
+                codexNote: 'linchpin_specimen_proved'
+            }),
+            dismissed: Object.freeze({
+                humanity: 0,
+                campBondAll: 0,
+                // The one human who would have vouched for the hives watched
+                // you kill the specimen she asked you to spare. Without her
+                // testimony the exodus has no advocate.
+                locksEndings: Object.freeze([ACT2_ENDINGS.ALIEN_EXODUS]),
+                codexNote: 'linchpin_specimen_dismissed'
+            })
+        })
+    }),
+
+    // The Queen's offer. queenStatus already tracked the outcome; as a linchpin
+    // it gains the lock semantics the seat economy implies -- she costs two of
+    // your three free seats, so accepting her is the moment the human arcs stop
+    // being arithmetically possible.
+    queen_offer: Object.freeze({
+        id: 'queen_offer',
+        resolutions: Object.freeze({
+            accepted: Object.freeze({
+                humanity: -20,
+                campBondAll: -1,
+                locksEndings: Object.freeze([
+                    ACT2_ENDINGS.CLEAN_ESCAPE,          // two seats gone; all three camps cannot board
+                    ACT2_ENDINGS.MOTHERSHIP_INFECTION   // the stealth arc requires no queen aboard
+                ]),
+                codexNote: 'linchpin_queen_accepted'
+            }),
+            refused: Object.freeze({
+                humanity: 10,
+                campBondAll: 0,
+                locksEndings: Object.freeze([ACT2_ENDINGS.FULL_BROOD]),
+                codexNote: 'linchpin_queen_refused'
+            })
+        })
+    }),
+    briggs_oath: Object.freeze({
+        id: 'briggs_oath',
+        resolutions: Object.freeze({
+            honored: Object.freeze({
+                humanity: 8,
+                campBondAll: 1,
+                locksEndings: Object.freeze([ACT2_ENDINGS.FULL_BROOD, ACT2_ENDINGS.SCORCHED_SKY]),
+                codexNote: 'linchpin_briggs_oath_honored'
+            }),
+            broken: Object.freeze({
+                humanity: -10,
+                campBondAll: -1,
+                locksEndings: Object.freeze([ACT2_ENDINGS.CLEAN_ESCAPE]),
+                codexNote: 'linchpin_briggs_oath_broken'
+            })
+        })
+    }),
+    martha_beacon: Object.freeze({
+        id: 'martha_beacon',
+        resolutions: Object.freeze({
+            broadcast: Object.freeze({
+                humanity: 5,
+                campBondAll: 1,
+                locksEndings: Object.freeze([ACT2_ENDINGS.MOTHERSHIP_INFECTION]),
+                codexNote: 'linchpin_martha_beacon_broadcast'
+            }),
+            silenced: Object.freeze({
+                humanity: -8,
+                campBondAll: -1,
+                locksEndings: Object.freeze([ACT2_ENDINGS.CLEAN_ESCAPE, ACT2_ENDINGS.ALIEN_EXODUS]),
+                codexNote: 'linchpin_martha_beacon_silenced'
+            })
+        })
+    }),
+    kaelen_manifest: Object.freeze({
+        id: 'kaelen_manifest',
+        resolutions: Object.freeze({
+            disclosed: Object.freeze({
+                humanity: 5,
+                campBondAll: 1,
+                locksEndings: Object.freeze([ACT2_ENDINGS.MOTHERSHIP_INFECTION, ACT2_ENDINGS.CARRIERS_BARGAIN]),
+                codexNote: 'linchpin_kaelen_manifest_disclosed'
+            }),
+            falsified: Object.freeze({
+                humanity: -12,
+                campBondAll: -1,
+                locksEndings: Object.freeze([ACT2_ENDINGS.CLEAN_ESCAPE]),
+                codexNote: 'linchpin_kaelen_manifest_falsified'
+            })
+        })
     })
 });
+
+const CAMP_LEADER_LINCHPIN_PATHS = Object.freeze({
+    TANK: Object.freeze({
+        id: 'briggs_oath',
+        human: 'honored',
+        hostile: 'broken'
+    }),
+    SCOUT: Object.freeze({
+        id: 'martha_beacon',
+        human: 'broadcast',
+        hostile: 'silenced'
+    }),
+    ENGINEER: Object.freeze({
+        id: 'kaelen_manifest',
+        human: 'disclosed',
+        hostile: 'falsified'
+    })
+});
+
+/** Resolve the named leader arc from an already-successful terminal camp choice. */
+export function resolveCampLeaderLinchpin(manager, leaderClassId, action) {
+    const path = CAMP_LEADER_LINCHPIN_PATHS[String(leaderClassId ?? '').toUpperCase()];
+    if (!path) return false;
+    const humanActions = new Set(['recruit', 'warn']);
+    const hostileActions = new Set(['steal', 'cull', 'turn', 'latent']);
+    const resolution = humanActions.has(action) ? path.human : hostileActions.has(action) ? path.hostile : null;
+    return resolution ? applyLinchpinResolution(manager, path.id, resolution) : false;
+}
 
 export function getResolution(linchpinId, resolution) {
     return STORY_LINCHPINS[linchpinId]?.resolutions?.[resolution] ?? null;
@@ -104,7 +236,10 @@ export function applyLinchpinResolution(manager, linchpinId, resolution) {
     const effect = getResolution(linchpinId, resolution);
     if (!effect || !manager) return false;
 
-    const state = manager.getState?.() ?? manager.state;
+    // Act2StateManager.getState() intentionally returns a normalized snapshot.
+    // Write the resolution to its live state or the next mutator/save would
+    // normalize the untouched record and silently discard the linchpin.
+    const state = manager.state ?? manager.getState?.();
     if (!state) return false;
     state.linchpins = normalizeLinchpins(state.linchpins);
     if (state.linchpins[linchpinId]) return false;

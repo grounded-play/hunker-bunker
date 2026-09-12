@@ -5,9 +5,11 @@ import {
     getResolution,
     collectLockedEndings,
     applyLinchpinResolution,
-    normalizeLinchpins
+    normalizeLinchpins,
+    resolveCampLeaderLinchpin
 } from './storyLinchpins.js';
 import { ACT2_ENDINGS } from './act2Endings.js';
+import { Act2Manager } from './act2.js';
 
 describe('STORY_LINCHPINS registry', () => {
     it('only ever locks endings that actually exist', () => {
@@ -141,11 +143,51 @@ describe('applyLinchpinResolution', () => {
         expect(() => applyLinchpinResolution(bare, 'mayor_tina', 'killed')).not.toThrow();
         expect(bare.state.linchpins.mayor_tina).toBe('killed');
     });
+
+    it('persists against the real manager whose getState returns a snapshot', () => {
+        const values = new Map();
+        const storage = {
+            getItem: (key) => values.get(key) ?? null,
+            setItem: (key, value) => values.set(key, value)
+        };
+        const manager = new Act2Manager({ storage });
+        expect(applyLinchpinResolution(manager, 'mayor_tina', 'killed')).toBe(true);
+        expect(manager.getState().linchpins).toEqual({ mayor_tina: 'killed' });
+
+        const reloaded = new Act2Manager({ storage });
+        expect(reloaded.getState().linchpins).toEqual({ mayor_tina: 'killed' });
+    });
 });
 
 describe('getResolution', () => {
     it('returns null for anything unknown', () => {
         expect(getResolution('nope', 'killed')).toBeNull();
         expect(getResolution('mayor_tina', 'nope')).toBeNull();
+    });
+});
+
+describe('resolveCampLeaderLinchpin', () => {
+    it.each([
+        ['TANK', 'recruit', 'briggs_oath', 'honored'],
+        ['SCOUT', 'cull', 'martha_beacon', 'silenced'],
+        ['ENGINEER', 'warn', 'kaelen_manifest', 'disclosed'],
+        ['ENGINEER', 'latent', 'kaelen_manifest', 'falsified']
+    ])('turns %s %s into a persistent leader outcome', (classId, action, id, resolution) => {
+        const manager = {
+            state: { linchpins: {}, camps: [] },
+            getState() { return this.state; },
+            adjustHumanity() {},
+            adjustCampBond() {},
+            save() {}
+        };
+        expect(resolveCampLeaderLinchpin(manager, classId, action)).toBe(true);
+        expect(manager.state.linchpins[id]).toBe(resolution);
+    });
+
+    it('ignores non-terminal conversation and unknown leaders', () => {
+        const manager = { state: { linchpins: {} }, getState() { return this.state; } };
+        expect(resolveCampLeaderLinchpin(manager, 'SCOUT', 'talk')).toBe(false);
+        expect(resolveCampLeaderLinchpin(manager, 'MEDIC', 'recruit')).toBe(false);
+        expect(manager.state.linchpins).toEqual({});
     });
 });

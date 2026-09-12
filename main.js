@@ -11446,7 +11446,16 @@ window.addEventListener('lore-terminal-read', () => discoverCodex('lore_terminal
 window.addEventListener('story-linchpin-resolved', (e) => {
     const detail = e?.detail;
     if (!detail?.id || !detail?.resolution) return;
-    discoverCodex(`linchpin_${detail.id.replace(/^mayor_/, '')}_${detail.resolution}`);
+    // Linchpin id -> codex id. Explicit rather than derived: the ids do not
+    // share a naming scheme, and a silent miss here means the player loses the
+    // only record of what their choice closed.
+    const CODEX_BY_LINCHPIN = {
+        mayor_tina: 'linchpin_tina',
+        scientist_specimen: 'linchpin_specimen',
+        queen_offer: 'linchpin_queen'
+    };
+    const prefix = CODEX_BY_LINCHPIN[detail.id];
+    if (prefix) discoverCodex(`${prefix}_${detail.resolution}`);
 });
 window.addEventListener('o2-bubble-activated', () => discoverCodex('o2_generator'));
 window.addEventListener('foundry-discovered', () => {

@@ -24,6 +24,8 @@ function clone(value) {
     return JSON.parse(JSON.stringify(value));
 }
 
+const CAMP_QUEST_COUNT = Object.values(CAMP_QUESTS).reduce((total, quests) => total + quests.length, 0);
+
 describe('ring manifest contract', () => {
     it('builds five versioned deterministic serializable manifests from expedition output', () => {
         const expedition = generateRadialMazeExpedition(8128);
@@ -57,7 +59,7 @@ describe('ring manifest contract', () => {
         }
     });
 
-    it('reserves dormant destinations for all nine current camp quests on their camp ring', () => {
+    it('reserves dormant destinations for every current camp quest on its camp ring', () => {
         const expedition = generateRadialMazeExpedition(99);
         const reservations = getManifestReservations(buildRingManifestPlan(expedition));
         const questReservations = reservations.filter((entry) => entry.role === 'campObjective');
@@ -65,7 +67,7 @@ describe('ring manifest contract', () => {
             quests.map((quest) => ({ campId, questId: quest.id }))
         ));
 
-        expect(questReservations).toHaveLength(9);
+        expect(questReservations).toHaveLength(CAMP_QUEST_COUNT);
         expect(questReservations.map(({ campId, questId }) => ({ campId, questId })))
             .toEqual(sourceQuests);
         for (const entry of questReservations) {
@@ -243,7 +245,7 @@ describe('WorldPlan handoff contract', () => {
         expect(first.seed).toBe(8128);
         expect(first.topology).toEqual(expedition.topology);
         expect(first.ringManifests).toHaveLength(5);
-        expect(first.reservations).toHaveLength(90);
+        expect(first.reservations).toHaveLength(81 + CAMP_QUEST_COUNT);
         expect(first.territories.map((territory) => territory.id).sort()).toEqual([
             'territory:camp_meridian',
             'territory:camp_tallow',
@@ -279,12 +281,12 @@ describe('WorldPlan handoff contract', () => {
             .toContain('hive_suture:choice_chamber');
     });
 
-    it('keeps all nine camp objectives away from their camp territory boundary', () => {
+    it('keeps every camp objective away from its camp territory boundary', () => {
         const plan = buildWorldPlan(generateRadialMazeExpedition(91));
         const quests = plan.reservations.filter((reservation) => reservation.role === 'campObjective');
-        expect(quests).toHaveLength(9);
+        expect(quests).toHaveLength(CAMP_QUEST_COUNT);
         expect(validateWorldPlan(plan)).toEqual({ valid: true, errors: [] });
-        expect(new Set(quests.map((quest) => quest.chunkKey)).size).toBe(9);
+        expect(new Set(quests.map((quest) => quest.chunkKey)).size).toBe(CAMP_QUEST_COUNT);
     });
 
     it('remains valid across a representative property sweep', () => {

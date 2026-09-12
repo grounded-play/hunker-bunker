@@ -572,6 +572,7 @@ export class SurvivorCamp {
         spriteLaundry.position.set(-3.0, 0.5, -1.0);
         spriteLaundry.scale.set(1.0, 1.0, 1);
         group.add(spriteLaundry);
+        this.propSprites.laundry = spriteLaundry;
 
         // Bedrolls Sprite
         const matBedrolls = new THREE.SpriteMaterial({ map: this.texBedrolls, transparent: true, alphaTest: 0.05, depthWrite: false });
@@ -579,6 +580,7 @@ export class SurvivorCamp {
         spriteBedrolls.position.set(2.6, 0.3, 0.8);
         spriteBedrolls.scale.set(0.6, 0.6, 1);
         group.add(spriteBedrolls);
+        this.propSprites.bedrolls = spriteBedrolls;
 
         // Grave Sprite
         const useOldGrave = this.id === 'camp_vesper';
@@ -592,6 +594,7 @@ export class SurvivorCamp {
         spriteGrave.position.set(-3.6, 0.4, 0.7);
         spriteGrave.scale.set(0.7, 0.7, 1);
         group.add(spriteGrave);
+        this.propSprites.grave = spriteGrave;
 
         // Sandbags Sprites (level-based)
         this.sandbagSprites = [];
@@ -822,7 +825,7 @@ export class SurvivorCamp {
         if (this.propSprites.crates) {
             this.propSprites.crates.material.map = (lockdown && lit) ? this.texCratesChained : this.texCrates;
             this.propSprites.crates.material.needsUpdate = true;
-            this.propSprites.crates.visible = lit;
+            this.propSprites.crates.visible = lit && this.status !== 'robbed';
         }
 
         if (this.propSprites.placard) {
@@ -831,6 +834,17 @@ export class SurvivorCamp {
 
         if (this.propSprites.shutter) {
             this.propSprites.shutter.visible = lockdown && lit;
+        }
+
+        // The same authored dressing now tells the aftermath at a glance:
+        // evacuated camps are packed bare, robbed camps lose their stores,
+        // turned camps abandon human routines, and a cull leaves only graves.
+        const occupiedByHumans = ['alive', 'robbed'].includes(this.status);
+        if (this.propSprites.laundry) this.propSprites.laundry.visible = occupiedByHumans;
+        if (this.propSprites.bedrolls) this.propSprites.bedrolls.visible = occupiedByHumans && this.status !== 'robbed';
+        if (this.propSprites.grave) this.propSprites.grave.visible = this.status === 'culled';
+        for (const sprite of Object.values(this.signatureProps ?? {})) {
+            sprite.visible = lit && this.status !== 'robbed';
         }
 
         if (this.sandbagSprites) {

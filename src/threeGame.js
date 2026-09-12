@@ -189,7 +189,7 @@ export const MAYOR_TINA_PLAYER_VISUAL = Object.freeze({
 import { createEnemy3dVisual, disposeEnemy3dVisual, updateEnemy3dVisual } from './enemy3dOverlay.js';
 import { spawnEnemyGibs, spawnPropDebris } from './enemyGibs.js';
 import { registerTinaHit } from './mayorTinaCombat.js';
-import { applyLinchpinResolution } from './storyLinchpins.js';
+import { applyLinchpinResolution, resolveCampLeaderLinchpin } from './storyLinchpins.js';
 import { resolveSafeSpawn } from './safeSpawn.js';
 import { WORLD_3D_FACING_YAW, createWorld3dModel, hasWorld3dModel, preloadWorld3dModels, syncWorld3dReplacement } from './world3dOverlay.js';
 import { computeTrailPosition } from './companionFollow.js';
@@ -15580,6 +15580,7 @@ export class ThreeGame {
             return true;
         }
         this.syncCampVisualFromRecord(camp, after);
+        resolveCampLeaderLinchpin(this.act2, camp.leaderClassId, 'steal');
         this.spawnCampStealLoot(camp);
         this.triggerCameraShake?.(0.18, 0.35);
         window.AudioManager?.play?.('ui_error', { volume: 0.38, playbackRate: 0.85 });
@@ -15609,6 +15610,7 @@ export class ThreeGame {
             return true;
         }
         this.syncCampVisualFromRecord(camp, after);
+        resolveCampLeaderLinchpin(this.act2, camp.leaderClassId, mode === 'turned' ? 'turn' : 'recruit');
         this.spawnGearPoofEffect(camp.pos.x, camp.pos.z, mode === 'turned' ? 'bio_spores' : 'bunker_junk_legendary');
         window.AudioManager?.play?.('class_lock', { volume: 0.52, playbackRate: mode === 'turned' ? 0.75 : 1.05 });
         window.dispatchEvent(new CustomEvent('camp-choice-resolved', {
@@ -15655,6 +15657,7 @@ export class ThreeGame {
             return true;
         }
         this.syncCampVisualFromRecord(camp, record);
+        resolveCampLeaderLinchpin(this.act2, camp.leaderClassId, 'cull');
         this.spawnGearPoofEffect(camp.pos.x, camp.pos.z, camp.level > 0 ? 'bunker_junk_rare' : 'bunker_junk_uncommon');
         this.spawnCampCullLoot(camp);
         this.triggerCameraShake?.(0.4, 0.6);
@@ -15693,6 +15696,7 @@ export class ThreeGame {
             return true;
         }
         this.syncCampVisualFromRecord(camp, after);
+        resolveCampLeaderLinchpin(this.act2, camp.leaderClassId, action);
         window.AudioManager?.play?.('class_lock', { volume: 0.5, playbackRate: action === 'latent' ? 0.72 : 1.0 });
         window.dispatchEvent(new CustomEvent('camp-choice-resolved', {
             detail: { campId: camp.id, campLabel: camp.label, action, status: after.status }
@@ -15720,6 +15724,16 @@ export class ThreeGame {
             }));
             return true;
         }
+        // The Queen costs two of your three free seats, so this choice is where
+        // the manifest arithmetic becomes irreversible. Recorded as a linchpin
+        // so the cascade stops offering endings the seat count already ruled
+        // out, rather than silently failing their conditions later.
+        // Mirrors the branching below exactly: purge/bargain/abandon all leave
+        // her behind; anything else (default 'queen') takes her aboard.
+        const REFUSING_VARIANTS = ['purge', 'bargain', 'abandon'];
+        applyLinchpinResolution(this.act2, 'queen_offer',
+            REFUSING_VARIANTS.includes(variant) ? 'refused' : 'accepted');
+
         if (variant === 'purge') {
             this.act2.setQueenStatus('killed');
             this.act2.setEggsStatus('destroyed');

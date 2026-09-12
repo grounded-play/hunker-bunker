@@ -59,7 +59,15 @@ export const CODEX_ENTRIES = localizeCatalog('narrative.codexEntries', Object.fr
     { id: 'linchpin_tina_killed', name: 'THE MAYOR, ENDED', category: 'PHENOMENON', image: '/lore_portraits/mayor_tina.webp',
       blurb: 'You put the thing wearing the Mayor down. The camps will thank you for it, loudly and for a long time. Something under the ice recorded the debt and will not be settling it. Roads that are now closed: the exodus, the full brood, the quiet flight home.' },
     { id: 'linchpin_tina_joined', name: 'THE MAYOR, ACCEPTED', category: 'PHENOMENON', image: '/lore_portraits/mayor_tina.webp',
-      blurb: 'You took what was offered and something in your chest agreed to it. The camps can smell the difference now. Roads that are now closed: the clean break, the scorched sky. Neither was ever going to be yours.' }
+      blurb: 'You took what was offered and something in your chest agreed to it. The camps can smell the difference now. Roads that are now closed: the clean break, the scorched sky. Neither was ever going to be yours.' },
+    { id: 'linchpin_specimen_proved', name: 'THE SPECIMEN, HEARD', category: 'PHENOMENON', image: '/cybersnail.png',
+      blurb: 'You stood still in front of a thing built to kill you and it did not. Okonkwo-Vass has two years of notes calling them vermin and has started a new page. Nothing closed today. That is rarer than it sounds.' },
+    { id: 'linchpin_specimen_dismissed', name: 'THE SPECIMEN, ENDED', category: 'PHENOMENON', image: '/cybersnail.png',
+      blurb: 'She asked for one. You gave her a body instead. The only human who would have spoken for the hives has stopped taking notes. Road now closed: the exodus. There is no one left to vouch for it.' },
+    { id: 'linchpin_queen_accepted', name: 'THE QUEEN, ABOARD', category: 'PHENOMENON', image: '/cutscenes/poster-art/event-queen-encounter.png',
+      blurb: 'She takes two seats. You did the arithmetic and said yes anyway. Roads now closed: the clean break, the quiet smuggle. Whatever leaves the ice with you, most of it will be her.' },
+    { id: 'linchpin_queen_refused', name: 'THE QUEEN, REFUSED', category: 'PHENOMENON', image: '/cutscenes/poster-art/event-queen-encounter.png',
+      blurb: 'You left her under the ice with three seats still in your hand. Road now closed: the full brood. She was always going to cost more than she offered.' }
 ]), { skip: ['id', 'category', 'image'] });
 
 export function getCodexEntry(id) {
