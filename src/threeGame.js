@@ -187,7 +187,7 @@ export const MAYOR_TINA_PLAYER_VISUAL = Object.freeze({
     allowStatic: false
 });
 import { createEnemy3dVisual, disposeEnemy3dVisual, updateEnemy3dVisual } from './enemy3dOverlay.js';
-import { spawnEnemyGibs } from './enemyGibs.js';
+import { spawnEnemyGibs, spawnPropDebris } from './enemyGibs.js';
 import { resolveSafeSpawn } from './safeSpawn.js';
 import { WORLD_3D_FACING_YAW, createWorld3dModel, hasWorld3dModel, preloadWorld3dModels, syncWorld3dReplacement } from './world3dOverlay.js';
 import { computeTrailPosition } from './companionFollow.js';
@@ -541,7 +541,27 @@ const GENERATED_ROOM_PROP_PATHS = Object.freeze({
     prop_biomech_neural_synapse: '/prop_biomech_neural_synapse.jpg',
     prop_biomech_flesh_locker: '/prop_biomech_flesh_locker.jpg',
     prop_biomech_sphincter_trap: '/prop_biomech_sphincter_trap.jpg',
-    prop_biomech_triage_cradle: '/prop_biomech_triage_cradle.jpg'
+    prop_biomech_triage_cradle: '/prop_biomech_triage_cradle.jpg',
+    prop_chair_operator_wrecked: '/prop_chair_operator_wrecked.png',
+    prop_conduit_junction_box: '/prop_conduit_junction_box.png',
+    prop_flesh_steel_coffin: '/prop_flesh_steel_coffin.png',
+    prop_flesh_steel_cradle: '/prop_flesh_steel_cradle.png',
+    prop_flesh_steel_inhaler: '/prop_flesh_steel_inhaler.png',
+    prop_fungal_mycelium_loom: '/prop_fungal_mycelium_loom.png',
+    prop_fungal_resin_basin: '/prop_fungal_resin_basin.png',
+    prop_fungal_spore_dispenser: '/prop_fungal_spore_dispenser.png',
+    prop_fungal_tendril_altar: '/prop_fungal_tendril_altar.png',
+    prop_icey_frost_manifold: '/prop_icey_frost_manifold.png',
+    prop_icey_frost_vent: '/prop_icey_frost_vent.png',
+    prop_icey_thermal_pod: '/prop_icey_thermal_pod.png',
+    prop_light_cluster_dripping: '/prop_light_cluster_dripping.png',
+    prop_locker_bulged: '/prop_locker_bulged.png',
+    prop_pipe_rupture: '/prop_pipe_rupture.png',
+    prop_shrine_plinth_broken: '/prop_shrine_plinth_broken.png',
+    prop_storage_drum_dented: '/prop_storage_drum_dented.png',
+    prop_terminal_ruptured: '/prop_terminal_ruptured.png',
+    prop_valve_wheel_fused: '/prop_valve_wheel_fused.png',
+    prop_vent_grate_exploded: '/prop_vent_grate_exploded.png'
 });
 const FLOOR_OVERLAY_TYPES = new Set([
     'decal_oil_spill_patch',
@@ -18341,6 +18361,52 @@ export class ThreeGame {
 
         this.activeTurret = { mesh: group, timer: this.turretDuration, fireTimer: this.turretFireInterval };
         window.AudioManager?.play('fx_engineer_turret', { volume: 0.48, bus: 'sfx' });
+
+        // The cylinder-and-cone above is the placeholder this shipped with.
+        // prop_base_defense_turret has been in the repo and registered in
+        // world3dOverlay all along. It loads asynchronously, so the primitives
+        // stay as the immediate stand-in and are swapped out on arrival --
+        // deploying a turret must never wait on a network fetch mid-fight.
+        // Optional by design: if the upgrade is unavailable the placeholder
+        // primitives remain a working turret. Unlike resolveSpawnPoint, which
+        // is a safety check and must never be skipped, this is cosmetic.
+        this.upgradeTurretToModel?.(group);
+    }
+
+    /**
+     * Replace the placeholder turret primitives with the authored model.
+     *
+     * Guards on the group still being the live turret when the load resolves:
+     * a player can deploy, have the turret expire, and deploy again well inside
+     * one fetch, and the stale load must not attach to a despawned group or to
+     * the wrong one.
+     */
+    async upgradeTurretToModel(group) {
+        if (!group || !hasWorld3dModel('prop_base_defense_turret')) return false;
+        try {
+            const model = await this.createWorld3dModel('prop_base_defense_turret');
+            const root = model?.root ?? model;
+            if (!root) return false;
+            if (this.activeTurret?.mesh !== group || !group.parent) {
+                root.traverse?.((child) => {
+                    child.geometry?.dispose?.();
+                    child.material?.dispose?.();
+                });
+                return false;
+            }
+            // Drop the primitives only once the real thing is in hand, so a
+            // failed load leaves a visible turret rather than an invisible one.
+            for (const child of [...group.children]) {
+                group.remove(child);
+                child.geometry?.dispose?.();
+                child.material?.dispose?.();
+            }
+            group.add(root);
+            return true;
+        } catch (err) {
+            console.warn('[turret] model upgrade failed, keeping placeholder', err);
+            return false;
+        }
     }
 
     despawnEngineerTurret() {
@@ -26385,7 +26451,19 @@ export class ThreeGame {
         if (sprite.userData.propHp <= 0) {
             sprite.userData.burstTriggered = true;
             const isBio = sprite.userData.type?.includes?.('spore') || sprite.userData.type?.includes?.('specimen');
-            this.spawnGearPoofEffect(sprite.position.x, sprite.position.z, isBio ? 'bio_spores' : 'bunker_junk');
+            // Props with a 3D model come apart into physical chunks; the poof
+            // remains the fallback for flat-sprite props that have nothing to
+            // fracture. spawnPropDebris reports which happened, so a prop never
+            // gets both a debris field and a puff of smoke standing in for one.
+            const brokeApart = spawnPropDebris(this, sprite, {
+                direction: this.player ? {
+                    x: sprite.position.x - this.player.position.x,
+                    z: sprite.position.z - this.player.position.z
+                } : null
+            });
+            if (!brokeApart) {
+                this.spawnGearPoofEffect(sprite.position.x, sprite.position.z, isBio ? 'bio_spores' : 'bunker_junk');
+            }
             if (isBio) this.spawnToxicSporePuddle(sprite.position.x, sprite.position.z, false);
             window.AudioManager?.playMetalStress?.({ volume: 0.5, playbackRate: 1.85, force: true });
 

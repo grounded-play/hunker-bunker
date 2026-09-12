@@ -300,17 +300,20 @@ const GIB_BOUNCE = -0.45;
 const GIB_LIFETIME = 2.6;
 
 /** Shared across every chunk of every corpse -- interiors are all the same meat. */
-let cutMaterial = null;
-function getCutMaterial() {
-    if (!cutMaterial) {
-        cutMaterial = new THREE.MeshBasicMaterial({
-            color: 0x4a0d12,
+const cutMaterials = { organic: null, inorganic: null };
+function getCutMaterial(organic = true) {
+    const key = organic ? 'organic' : 'inorganic';
+    if (!cutMaterials[key]) {
+        cutMaterials[key] = new THREE.MeshBasicMaterial({
+            // Exposed interiors read as meat on a creature and as scorched
+            // metal on a crate; the same dark red on both looked like gore.
+            color: organic ? 0x4a0d12 : 0x161a20,
             side: THREE.BackSide,
             transparent: true,
             opacity: 1
         });
     }
-    return cutMaterial;
+    return cutMaterials[key];
 }
 
 /**
@@ -321,15 +324,26 @@ function getCutMaterial() {
  * NOT this function's business: it still drops separately and stays
  * collectable, so the shell economy is unaffected by anything here.
  */
-export function spawnEnemyGibs(game, sprite, { direction = null, isBoss = false } = {}) {
-    if (!isGoreEnabled()) return false;
+/**
+ * Break any 3D-backed object into physical chunks.
+ *
+ * `organic` decides whether this reads as gore or as debris, and that
+ * distinction is load-bearing: a player who turns gore off is asking not to see
+ * blood, not asking crates to stop breaking. Only the organic path is gated on
+ * the setting, and only the organic path emits blood mist and a ground splat.
+ *
+ * Resolves the model from either overlay: enemies carry `enemy3dVisual.root`,
+ * world props carry `world3dRoot`. Objects with neither return false so the
+ * caller can fall back to its existing effect.
+ */
+export function spawnGibsFor(game, sprite, { direction = null, isBoss = false, organic = true } = {}) {
+    if (organic && !isGoreEnabled()) return false;
     if (!game?.scene || !sprite) return false;
 
-    const visual = sprite.userData?.enemy3dVisual;
-    const root = visual?.root;
+    const root = sprite.userData?.enemy3dVisual?.root ?? sprite.userData?.world3dRoot ?? null;
     if (!root) return false;
 
-    const type = sprite.userData.modelVariant ?? sprite.userData.type;
+    const type = sprite.userData.modelVariant ?? sprite.userData.scatterKey ?? sprite.userData.type;
     let source = null;
     const chunks = getGibChunks(type, () => {
         source = extractGibSource(root);
@@ -371,7 +385,7 @@ export function spawnEnemyGibs(game, sprite, { direction = null, isBoss = false 
         // Second pass over the same geometry renders only the faces the
         // fracture exposed, so a chunk reads as meat inside rather than a
         // hollow shell you can see through.
-        const cut = new THREE.Mesh(chunk, getCutMaterial());
+        const cut = new THREE.Mesh(chunk, getCutMaterial(organic));
         cut.frustumCulled = false;
         cut.renderOrder = 25;
         holder.add(cut);
@@ -393,12 +407,14 @@ export function spawnEnemyGibs(game, sprite, { direction = null, isBoss = false 
 
     game.scene.add(group);
 
-    const splat = makeGroundSplat(group.position, isBoss);
+    // Blood and the ground splat are the gore half; inorganic debris gets
+    // sparks and no stain.
+    const splat = organic ? makeGroundSplat(group.position, isBoss) : null;
     if (splat) game.scene.add(splat);
 
     game.spawnTextureBurstEffect?.(group.position.x, group.position.z, {
         textureKey: 'fx_spark_burst',
-        color: 0x8c1220,
+        color: organic ? 0x8c1220 : 0xffe08f,
         count: isBoss ? 5 : 3,
         baseScale: isBoss ? 0.9 : 0.55,
         duration: 0.45,
@@ -495,4 +511,15 @@ export function prewarmEnemyGibs(type, root) {
     if (!type || !root) return false;
     const chunks = getGibChunks(type, () => extractGibSource(root)?.geometry ?? null);
     return chunks.length > 0;
+}
+
+
+/** Enemies: organic, gore-gated. Preserves the original call site's contract. */
+export function spawnEnemyGibs(game, sprite, options = {}) {
+    return spawnGibsFor(game, sprite, { ...options, organic: true });
+}
+
+/** World props: debris, never gore-gated -- a crate should break regardless. */
+export function spawnPropDebris(game, sprite, options = {}) {
+    return spawnGibsFor(game, sprite, { ...options, organic: false });
 }

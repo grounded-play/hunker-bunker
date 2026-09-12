@@ -4,6 +4,7 @@ import { setGoreEnabled } from './featureFlags.js';
 import {
     fractureGeometry,
     spawnEnemyGibs,
+    spawnPropDebris,
     prewarmEnemyGibs,
     extractGibSource,
     getGibChunks,
@@ -275,5 +276,54 @@ describe('prewarmEnemyGibs', () => {
     it('is a safe no-op without a type or root', () => {
         expect(prewarmEnemyGibs(null, new THREE.Group())).toBe(false);
         expect(prewarmEnemyGibs('cybersnail', null)).toBe(false);
+    });
+});
+
+describe('spawnPropDebris', () => {
+    function fakeGame() {
+        return { scene: new THREE.Group(), transientEffects: [], spawnTextureBurstEffect: vi.fn() };
+    }
+    function fakeProp() {
+        const root = new THREE.Group();
+        root.add(new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshBasicMaterial()));
+        root.updateMatrixWorld(true);
+        // Props carry world3dRoot rather than enemy3dVisual.
+        return { userData: { scatterKey: 'prop_storage_drum', world3dRoot: root } };
+    }
+
+    beforeEach(() => {
+        clearGibCache();
+        vi.stubGlobal('window', { localStorage: null });
+        setGoreEnabled(true);
+    });
+    afterEach(() => vi.unstubAllGlobals());
+
+    it('breaks a world prop into chunks from its world3dRoot', () => {
+        const game = fakeGame();
+        expect(spawnPropDebris(game, fakeProp())).toBe(true);
+        expect(game.transientEffects).toHaveLength(1);
+    });
+
+    it('still breaks props when gore is switched off', () => {
+        // A player disabling gore is asking not to see blood, not asking
+        // crates to stop breaking. Regression guard for that distinction.
+        setGoreEnabled(false);
+        const game = fakeGame();
+        expect(spawnPropDebris(game, fakeProp())).toBe(true);
+        expect(game.transientEffects).toHaveLength(1);
+    });
+
+    it('but enemies still respect the gore setting', () => {
+        setGoreEnabled(false);
+        const game = fakeGame();
+        const root = new THREE.Group();
+        root.add(new THREE.Mesh(new THREE.SphereGeometry(0.5, 8, 8), new THREE.MeshBasicMaterial()));
+        root.updateMatrixWorld(true);
+        expect(spawnEnemyGibs(game, { userData: { type: 'cybersnail', enemy3dVisual: { root } } })).toBe(false);
+    });
+
+    it('declines for a prop with no 3D model so the caller can poof instead', () => {
+        const game = fakeGame();
+        expect(spawnPropDebris(game, { userData: { scatterKey: 'flat_sprite' } })).toBe(false);
     });
 });
