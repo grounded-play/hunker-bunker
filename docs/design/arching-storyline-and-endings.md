@@ -115,6 +115,39 @@ Enough closed doors could leave nothing. `MIXED_CREW` is permanently unlockable
 and `storyLinchpins.test.js` enumerates every combination of resolutions to
 prove at least one ending survives. **This must hold as linchpins are added.**
 
+## Reachability, measured
+
+With nine linchpins there are 512 fully-resolved playthroughs. How many of them
+leave each ending available:
+
+| Ending | Survives | |
+| --- | ---: | ---: |
+| `mixed_crew` / `failed_carrier` / `empty_husk` | 512/512 | 100% |
+| `carriers_bargain` / `outed_escape` | 256/512 | 50% |
+| `scorched_sky` | 128/512 | 25% |
+| `full_brood` / `mothership_infection` / `alien_exodus` | 16/512 | 3% |
+| **`clean_escape`** | **2/512** | **0.4%** |
+
+No ending is ever unreachable, and no playthrough is ever left with only the
+fallback — both are asserted in `storyLinchpins.test.js`, along with this exact
+distribution, so adding a linchpin cannot shift it silently.
+
+**`clean_escape` is the number worth arguing about.** Eight of the nine
+linchpins lock it on one side each, so reaching it means threading every single
+one correctly. That may be exactly right — a clean escape from this game should
+be close to impossible — but at 0.4%, with nothing in-game signposting which
+choices are closing it, effectively no player will ever see it and none will
+understand why.
+
+Three options, in ascending cost:
+
+1. **Accept it**, and make the rarity legible: the codex notes already say what
+   each choice closed, but nothing sums them up. A manifest readout would.
+2. **Thin the locks** — drop `clean_escape` from two or three of the eight and
+   it moves to roughly 5–10%.
+3. **Make it conditional** — have some locks apply only above a humanity
+   threshold, so staying human is itself the thread rather than luck.
+
 ## Gaps worth closing next
 
 - **Camps are thinner than hives.** Each hive has a named leader, a four-stage

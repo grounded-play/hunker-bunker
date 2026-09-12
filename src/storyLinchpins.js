@@ -162,8 +162,92 @@ export const STORY_LINCHPINS = Object.freeze({
                 codexNote: 'linchpin_kaelen_manifest_falsified'
             })
         })
+    }),
+    suture_host_mercy: Object.freeze({
+        id: 'suture_host_mercy',
+        resolutions: Object.freeze({
+            cured_human: Object.freeze({
+                humanity: 40,
+                campBondAll: 1,
+                locksEndings: Object.freeze([
+                    ACT2_ENDINGS.FULL_BROOD,
+                    ACT2_ENDINGS.MOTHERSHIP_INFECTION,
+                    ACT2_ENDINGS.ALIEN_EXODUS
+                ]),
+                codexNote: 'linchpin_suture_cured_human'
+            }),
+            symbiotic_carrier: Object.freeze({
+                humanity: -20,
+                campBondAll: -1,
+                locksEndings: Object.freeze([ACT2_ENDINGS.CLEAN_ESCAPE]),
+                codexNote: 'linchpin_suture_symbiotic_carrier'
+            })
+        })
+    }),
+    relay_chorus: Object.freeze({
+        id: 'relay_chorus',
+        resolutions: Object.freeze({
+            jammed_camps: Object.freeze({
+                humanity: 0,
+                campBondAll: 0,
+                locksEndings: Object.freeze([ACT2_ENDINGS.OUTED_ESCAPE]),
+                codexNote: 'linchpin_relay_jammed_camps'
+            }),
+            bridge_synapse: Object.freeze({
+                humanity: -15,
+                campBondAll: 0,
+                locksEndings: Object.freeze([ACT2_ENDINGS.CLEAN_ESCAPE]),
+                codexNote: 'linchpin_relay_bridge_synapse'
+            })
+        })
+    }),
+    carapace_oath: Object.freeze({
+        id: 'carapace_oath',
+        resolutions: Object.freeze({
+            shield_queen: Object.freeze({
+                humanity: -10,
+                campBondAll: -1,
+                locksEndings: Object.freeze([
+                    ACT2_ENDINGS.ALIEN_EXODUS,
+                    ACT2_ENDINGS.CLEAN_ESCAPE
+                ]),
+                codexNote: 'linchpin_carapace_shield_queen'
+            }),
+            shield_operator: Object.freeze({
+                humanity: 5,
+                campBondAll: 0,
+                locksEndings: Object.freeze([ACT2_ENDINGS.FULL_BROOD]),
+                codexNote: 'linchpin_carapace_shield_operator'
+            })
+        })
     })
 });
+
+export const HIVE_ALLY_LINCHPIN_PATHS = Object.freeze({
+    hive_suture: Object.freeze({
+        id: 'suture_host_mercy',
+        cure: 'cured_human',
+        symbiosis: 'symbiotic_carrier'
+    }),
+    hive_relay: Object.freeze({
+        id: 'relay_chorus',
+        jam: 'jammed_camps',
+        bridge: 'bridge_synapse'
+    }),
+    hive_carapace: Object.freeze({
+        id: 'carapace_oath',
+        queen: 'shield_queen',
+        operator: 'shield_operator'
+    })
+});
+
+/** Resolve the named hive ally arc from a terminal hive choice. */
+export function resolveHiveAllyLinchpin(manager, hiveId, choice) {
+    const path = HIVE_ALLY_LINCHPIN_PATHS[hiveId];
+    if (!path) return false;
+    const resolution = path[choice];
+    return resolution ? applyLinchpinResolution(manager, path.id, resolution) : false;
+}
 
 const CAMP_LEADER_LINCHPIN_PATHS = Object.freeze({
     TANK: Object.freeze({
@@ -185,12 +269,17 @@ const CAMP_LEADER_LINCHPIN_PATHS = Object.freeze({
 
 /** Resolve the named leader arc from an already-successful terminal camp choice. */
 export function resolveCampLeaderLinchpin(manager, leaderClassId, action) {
+    const choice = previewCampLeaderLinchpin(leaderClassId, action);
+    return choice ? applyLinchpinResolution(manager, choice.id, choice.resolution) : false;
+}
+
+export function previewCampLeaderLinchpin(leaderClassId, action) {
     const path = CAMP_LEADER_LINCHPIN_PATHS[String(leaderClassId ?? '').toUpperCase()];
-    if (!path) return false;
+    if (!path) return null;
     const humanActions = new Set(['recruit', 'warn']);
     const hostileActions = new Set(['steal', 'cull', 'turn', 'latent']);
     const resolution = humanActions.has(action) ? path.human : hostileActions.has(action) ? path.hostile : null;
-    return resolution ? applyLinchpinResolution(manager, path.id, resolution) : false;
+    return resolution ? { id: path.id, resolution, ...getResolution(path.id, resolution) } : null;
 }
 
 export function getResolution(linchpinId, resolution) {

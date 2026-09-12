@@ -54,6 +54,25 @@ more neutral clutter.
 
 ## Next implementation seams
 
+### Follow-through — 2026-09-12
+
+Implemented camp-leader and Queen boarding consequence warnings in the choice
+buttons, before selection. Warnings use the same resolution registry as the
+runtime and disappear when that irreversible choice is already recorded.
+
+The Field Codex now includes an expandable ten-ending archive. It reuses the
+existing achievement art and distinguishes historical discoveries from locks
+in the current journey. Each closed path explains the saved choices responsible;
+an unlocked path explicitly still requires its normal ending conditions.
+
+Surviving human camp leaders now react by radio to subsequent linchpin outcomes.
+These are text reactions using the existing radio presentation, not new voice
+recordings. The archive retains the causal history after transient radio text.
+
+Verified: 36 focused tests, production build/media audit, and a browser check of
+the ten archive cards and the Briggs recruitment warning. Bespoke ending frames,
+aftermath portraits, and new voice recordings remain production work.
+
 - Give the camp choice modal a pre-confirmation warning naming the leader arc
   and candidate ending locks.
 - Add an ending archive that shows discovered endings, locked silhouettes, and

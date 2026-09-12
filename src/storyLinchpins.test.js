@@ -6,7 +6,8 @@ import {
     collectLockedEndings,
     applyLinchpinResolution,
     normalizeLinchpins,
-    resolveCampLeaderLinchpin
+    resolveCampLeaderLinchpin,
+    resolveHiveAllyLinchpin
 } from './storyLinchpins.js';
 import { ACT2_ENDINGS } from './act2Endings.js';
 import { Act2Manager } from './act2.js';
@@ -189,5 +190,115 @@ describe('resolveCampLeaderLinchpin', () => {
         expect(resolveCampLeaderLinchpin(manager, 'SCOUT', 'talk')).toBe(false);
         expect(resolveCampLeaderLinchpin(manager, 'MEDIC', 'recruit')).toBe(false);
         expect(manager.state.linchpins).toEqual({});
+    });
+});
+
+describe('resolveHiveAllyLinchpin', () => {
+    it.each([
+        ['hive_suture', 'cure', 'suture_host_mercy', 'cured_human'],
+        ['hive_suture', 'symbiosis', 'suture_host_mercy', 'symbiotic_carrier'],
+        ['hive_relay', 'jam', 'relay_chorus', 'jammed_camps'],
+        ['hive_relay', 'bridge', 'relay_chorus', 'bridge_synapse'],
+        ['hive_carapace', 'queen', 'carapace_oath', 'shield_queen'],
+        ['hive_carapace', 'operator', 'carapace_oath', 'shield_operator']
+    ])('resolves %s %s to %s:%s', (hiveId, choice, linchpinId, resolution) => {
+        const manager = {
+            state: { linchpins: {}, camps: [] },
+            getState() { return this.state; },
+            adjustHumanity() {},
+            adjustCampBond() {},
+            save() {}
+        };
+        expect(resolveHiveAllyLinchpin(manager, hiveId, choice)).toBe(true);
+        expect(manager.state.linchpins[linchpinId]).toBe(resolution);
+    });
+
+    it('rejects invalid hives or unknown choices', () => {
+        const manager = { state: { linchpins: {} }, getState() { return this.state; } };
+        expect(resolveHiveAllyLinchpin(manager, 'hive_unknown', 'cure')).toBe(false);
+        expect(resolveHiveAllyLinchpin(manager, 'hive_suture', 'invalid_choice')).toBe(false);
+        expect(manager.state.linchpins).toEqual({});
+    });
+});
+
+
+describe('ending reachability under a full playthrough', () => {
+    /**
+     * The exhaustive test above proves at least one ending always survives.
+     * That is the soft-lock guard, and it is not the same question as "can a
+     * player still get this ending".
+     *
+     * A player who meets every linchpin resolves all of them. If an ending is
+     * locked by one side of enough separate linchpins, threading the needle on
+     * every single one becomes the only path to it -- reachable on paper,
+     * unreachable in practice, and the game says nothing.
+     */
+    const ids = Object.keys(STORY_LINCHPINS);
+    const fullPlaythroughs = ids
+        .map((id) => Object.keys(STORY_LINCHPINS[id].resolutions))
+        .reduce((acc, opts) => acc.flatMap((p) => opts.map((o) => [...p, o])), [[]]);
+
+    function survivalRates() {
+        const all = Object.values(ACT2_ENDINGS);
+        const open = Object.fromEntries(all.map((e) => [e, 0]));
+        for (const combo of fullPlaythroughs) {
+            const record = Object.fromEntries(combo.map((r, i) => [ids[i], r]));
+            const locked = collectLockedEndings(record);
+            for (const e of all) if (!locked.includes(e)) open[e] += 1;
+        }
+        return Object.fromEntries(
+            Object.entries(open).map(([e, n]) => [e, n / fullPlaythroughs.length])
+        );
+    }
+
+    it('never leaves a full playthrough with only the fallback', () => {
+        const all = Object.values(ACT2_ENDINGS);
+        for (const combo of fullPlaythroughs) {
+            const record = Object.fromEntries(combo.map((r, i) => [ids[i], r]));
+            const open = all.filter((e) => !collectLockedEndings(record).includes(e));
+            expect(open.length, `only ${open} left for ${JSON.stringify(record)}`).toBeGreaterThan(1);
+        }
+    });
+
+    it('keeps every ending reachable by some full playthrough', () => {
+        const rates = survivalRates();
+        const dead = Object.entries(rates).filter(([, r]) => r === 0).map(([e]) => e);
+        expect(dead, `unreachable after every linchpin is resolved: ${dead}`).toEqual([]);
+    });
+
+    /**
+     * Recorded survival counts, as of 9 linchpins / 512 full playthroughs.
+     *
+     * This is a snapshot, not a target. It exists so that adding or retuning a
+     * linchpin cannot quietly change how findable an ending is: if these move,
+     * the test fails and whoever moved them has to decide on purpose.
+     *
+     * The number worth arguing about is clean_escape at 2/512. Eight of the
+     * nine linchpins lock it on one side each, so reaching it means threading
+     * every one of them correctly. That may well be right -- a clean escape
+     * from this game should be close to impossible -- but at 0.4% with no
+     * in-game signposting, effectively no player will ever see it, and none
+     * will understand why. Documented in
+     * docs/design/arching-storyline-and-endings.md.
+     */
+    const SURVIVAL_BASELINE = {
+        clean_escape: 2,
+        full_brood: 16,
+        mothership_infection: 16,
+        alien_exodus: 16,
+        scorched_sky: 128,
+        carriers_bargain: 256,
+        outed_escape: 256,
+        mixed_crew: 512,
+        failed_carrier: 512,
+        empty_husk: 512
+    };
+
+    it('matches the recorded reachability baseline', () => {
+        const rates = survivalRates();
+        const actual = Object.fromEntries(
+            Object.entries(rates).map(([e, r]) => [e, Math.round(r * fullPlaythroughs.length)])
+        );
+        expect(actual).toEqual(SURVIVAL_BASELINE);
     });
 });

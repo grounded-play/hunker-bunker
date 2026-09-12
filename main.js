@@ -82,7 +82,9 @@ import { unlockSheenForMilestone, reconcileSheenUnlocks } from './src/weaponShee
 import { OPERATOR_POLISHES, getSelectedPolish, getUnlockedPolishIds, selectPolish, unlockAllPolishes, unlockMilestonePolish } from './src/operatorPolishes.js';
 import { createOwnershipStore } from './src/itemOwnership.js';
 import { STARTING_RUN_AMMO, CLASS_AMMO_CAPACITY } from './src/data/ammoEconomy.js';
-import { explainEnding, formatManifestBlocker } from './src/endingExplanations.js';
+import { explainEnding, explainLinchpinResolution, formatManifestBlocker } from './src/endingExplanations.js';
+import { getResolution, previewCampLeaderLinchpin } from './src/storyLinchpins.js';
+import { buildEndingArchive, getLeaderReaction } from './src/storyArchive.js';
 import { SongInterstitialController, selectCampInterstitial } from './src/songInterstitials.js';
 import { dialogueReactionForLine, preloadLeaderMedia, resolveLeaderIdentity } from './src/leaderIdentity.js';
 import { openQaNexusModal, closeQaNexusModal } from './src/debugQaNexus.js';
@@ -11456,6 +11458,31 @@ window.addEventListener('story-linchpin-resolved', (e) => {
     };
     const prefix = CODEX_BY_LINCHPIN[detail.id];
     if (prefix) discoverCodex(`${prefix}_${detail.resolution}`);
+    discoverCodex(getResolution(detail.id, detail.resolution)?.codexNote);
+    const game = window.game;
+    const state = game?.act2?.getState?.();
+    const reactions = [];
+    for (const camp of game?.camps ?? []) {
+        const record = state?.camps?.find(c => c.id === camp.id);
+        if (!record || !['alive', 'recruited', 'robbed'].includes(record.status)) continue;
+        const line = getLeaderReaction(camp.leaderClassId, detail.id, detail.resolution);
+        if (line) reactions.push(line);
+    }
+    if (state?.linchpins?.mayor_tina === 'joined' && detail.id !== 'mayor_tina') {
+        const tinaLine = getLeaderReaction('MAYOR_TINA', detail.id, detail.resolution);
+        if (tinaLine) reactions.push(tinaLine);
+    }
+    if (reactions.length) {
+        reactions.forEach((line, index) => {
+            if (index === 0) {
+                game?.showBunkerLine?.(line);
+            } else {
+                setTimeout(() => {
+                    game?.showBunkerLine?.(line);
+                }, index * 4200);
+            }
+        });
+    }
 });
 window.addEventListener('o2-bubble-activated', () => discoverCodex('o2_generator'));
 window.addEventListener('foundry-discovered', () => {
@@ -11506,6 +11533,98 @@ function renderCodexModal() {
     if (!grid) return;
     if (summary) summary.textContent = `ENTRIES RECOVERED: ${codexStore.getDiscoveredCount()} / ${CODEX_TOTAL}`;
     grid.innerHTML = '';
+    const archiveSection = document.createElement('details');
+    archiveSection.className = 'codex-section ending-archive-section';
+    archiveSection.open = true;
+
+    const archiveSummary = document.createElement('summary');
+    archiveSummary.className = 'codex-section-label ending-archive-label';
+    archiveSummary.textContent = '◈ EXPEDITION ENDINGS ARCHIVE // ALL 10 TRAJECTORIES & CODEX LINCHPINS';
+    archiveSection.appendChild(archiveSummary);
+
+    const archiveSub = document.createElement('div');
+    archiveSub.className = 'ending-archive-sub';
+    archiveSub.textContent = 'Catalogues all ten historical outcomes, locked silhouettes, and the irreversible linchpin decisions responsible for closing specific pathways in your current deployment.';
+    archiveSection.appendChild(archiveSub);
+
+    const archiveGrid = document.createElement('div');
+    archiveGrid.className = 'ending-archive-grid';
+
+    for (const ending of buildEndingArchive(window.game?.act2?.getState?.() ?? act2Manager.getState(), achievementEngine.getState().unlocked)) {
+        const card = document.createElement('article');
+        const isLockedThisRun = ending.causes.length > 0;
+        card.className = `ending-card ${ending.discovered ? 'ending-card--discovered' : (isLockedThisRun ? 'ending-card--locked-run' : 'ending-card--undiscovered')}`;
+
+        const artWrap = document.createElement('div');
+        artWrap.className = 'ending-card__art-wrap';
+        const art = document.createElement('img');
+        art.src = assetUrl(`/ach_ending_${ending.id}${ending.discovered ? '' : '_locked'}.jpg`);
+        art.alt = ACT2_ENDING_TITLES[ending.id] ?? ending.id;
+        art.loading = 'lazy';
+        art.width = 96;
+        art.height = 96;
+        art.className = 'ending-card__art';
+        if (!ending.discovered) {
+            art.classList.add('ending-card__art--silhouette');
+        }
+
+        const badge = document.createElement('span');
+        badge.className = `ending-card__badge ${ending.discovered ? 'badge--discovered' : (isLockedThisRun ? 'badge--locked-run' : 'badge--undiscovered')}`;
+        badge.textContent = ending.discovered ? 'DISCOVERED' : (isLockedThisRun ? 'LOCKED THIS RUN' : 'UNDISCOVERED');
+        artWrap.append(art, badge);
+
+        const content = document.createElement('div');
+        content.className = 'ending-card__content';
+
+        const header = document.createElement('div');
+        header.className = 'ending-card__header';
+        const title = document.createElement('h3');
+        title.className = 'ending-card__title';
+        title.textContent = ending.discovered || isLockedThisRun ? (ACT2_ENDING_TITLES[ending.id] ?? ending.id.toUpperCase()) : 'CLASSIFIED EXPEDITION TRAJECTORY';
+        header.appendChild(title);
+
+        const desc = document.createElement('p');
+        desc.className = 'ending-card__desc';
+        desc.textContent = ending.discovered
+            ? explainEnding(ending.id)
+            : (isLockedThisRun
+                ? 'This ending trajectory has been permanently closed for your current deployment.'
+                : 'Requirements unfulfilled. No irreversible choice has sealed this destiny.');
+
+        content.append(header, desc);
+
+        if (isLockedThisRun) {
+            const causesWrap = document.createElement('div');
+            causesWrap.className = 'ending-card__causes';
+            const causesLabel = document.createElement('div');
+            causesLabel.className = 'ending-card__causes-label';
+            causesLabel.textContent = '🔒 CLOSED BY EXPEDITION LINCHPIN:';
+            causesWrap.appendChild(causesLabel);
+
+            const causesList = document.createElement('ul');
+            causesList.className = 'ending-card__causes-list';
+            for (const cause of ending.causes) {
+                const li = document.createElement('li');
+                li.className = 'ending-card__cause-item';
+                const causeName = cause.id.replace(/_/g, ' ').toUpperCase();
+                const resName = cause.resolution.replace(/_/g, ' ').toUpperCase();
+                li.innerHTML = `<strong>◈ ${causeName} [${resName}]</strong>: ${explainLinchpinResolution(cause.id, cause.resolution)}`;
+                causesList.appendChild(li);
+            }
+            causesWrap.appendChild(causesList);
+            content.appendChild(causesWrap);
+        } else {
+            const openStatus = document.createElement('div');
+            openStatus.className = 'ending-card__open-status';
+            openStatus.innerHTML = `<span class="open-dot">●</span> PATHWAY AVAILABLE — Requirements can still be achieved`;
+            content.appendChild(openStatus);
+        }
+
+        card.append(artWrap, content);
+        archiveGrid.appendChild(card);
+    }
+    archiveSection.appendChild(archiveGrid);
+    grid.appendChild(archiveSection);
     for (const category of CODEX_CATEGORIES) {
         const section = document.createElement('div');
         section.className = 'codex-section';
@@ -11818,6 +11937,11 @@ function setCampChoiceOpen(open) {
     if (!campChoiceModal) return;
     campChoiceModal.classList.toggle('hidden', !open);
     campChoiceModal.setAttribute('aria-hidden', open ? 'false' : 'true');
+    const confirmContainer = document.getElementById('camp-choice-confirm');
+    if (!open) {
+        confirmContainer?.classList.add('hidden');
+        if (campChoiceOptions) campChoiceOptions.classList.remove('hidden');
+    }
     if (open) {
         window.game?.setInputEnabled?.(false);
     } else if (isGameplayPhase()) {
@@ -11958,6 +12082,18 @@ function renderCampChoice(detail = {}) {
         forecastEl.classList.add('hidden');
     }
 
+    const confirmContainer = document.getElementById('camp-choice-confirm');
+    const confirmArc = document.getElementById('camp-choice-confirm-arc');
+    const confirmAction = document.getElementById('camp-choice-confirm-action');
+    const confirmNarrative = document.getElementById('camp-choice-confirm-narrative');
+    const confirmDeltas = document.getElementById('camp-choice-confirm-deltas');
+    const confirmLocks = document.getElementById('camp-choice-confirm-locks');
+    const confirmProceedBtn = document.getElementById('camp-choice-confirm-proceed');
+    const confirmBackBtn = document.getElementById('camp-choice-confirm-back');
+
+    confirmContainer?.classList.add('hidden');
+    campChoiceOptions.classList.remove('hidden');
+
     campChoiceOptions.innerHTML = '';
     for (const option of detail.options ?? []) {
         const btn = document.createElement('button');
@@ -11972,8 +12108,110 @@ function renderCampChoice(detail = {}) {
             btn.addEventListener('mouseenter', () => updateForecast(option.variant));
             btn.addEventListener('focus', () => updateForecast(option.variant));
         }
+        const choice = option.action === 'board'
+            ? { id: 'queen_offer', resolution: ['purge', 'bargain', 'abandon'].includes(option.variant) ? 'refused' : 'accepted' }
+            : previewCampLeaderLinchpin(detail.leaderClass, option.action);
+        if (choice && !window.game?.act2?.getState?.().linchpins?.[choice.id]) {
+            const locks = getResolution(choice.id, choice.resolution)?.locksEndings ?? [];
+            const warning = document.createElement('span');
+            warning.className = 'camp-choice-option__desc';
+            warning.textContent = `Permanent choice: ${choice.id.replace(/_/g, ' ')} — ${choice.resolution.replace(/_/g, ' ')}.${locks.length ? ' Closes: ' + locks.map(id => ACT2_ENDING_TITLES[id]).join(', ') + '.' : ''}`;
+            btn.appendChild(warning);
+        }
         btn.addEventListener('click', () => {
             window.AudioManager?.play?.('ui_click', { volume: 0.45 });
+            const currentState = window.game?.act2?.getState?.() ?? act2Manager.getState();
+            const linchpins = currentState?.linchpins ?? {};
+            const alreadyResolved = choice && Boolean(linchpins[choice.id]);
+
+            // If this option triggers an unresolved story linchpin or has permanent locks, show pre-confirmation
+            if (choice && !alreadyResolved && confirmContainer) {
+                const res = getResolution(choice.id, choice.resolution);
+                const locks = res?.locksEndings ?? [];
+                const arcNames = {
+                    briggs_oath: "COMMANDER BRIGGS // THE SOLDIER'S OATH",
+                    martha_beacon: "SISTER MARTHA // THE PILGRIM'S BEACON",
+                    kaelen_manifest: "OVERSEER KAELEN // THE FOUNDRY MANIFEST",
+                    queen_offer: "THE BROOD QUEEN // COVENANT MANIFEST",
+                    mayor_tina: "MAYOR TINA // THE INFILTRATOR'S ACCORD"
+                };
+                const arcTitle = arcNames[choice.id] ?? `LEADER ARC: ${choice.id.replace(/_/g, ' ').toUpperCase()}`;
+
+                if (confirmArc) confirmArc.textContent = arcTitle;
+                if (confirmAction) {
+                    confirmAction.innerHTML = `
+                        <span class="confirm-action-badge">${option.label ?? 'ACTION'}</span>
+                        <span>➔</span>
+                        <span class="confirm-res-badge">RESOLUTION: ${choice.resolution.replace(/_/g, ' ').toUpperCase()}</span>
+                    `;
+                }
+                if (confirmNarrative) {
+                    confirmNarrative.textContent = explainLinchpinResolution(choice.id, choice.resolution);
+                }
+                if (confirmDeltas) {
+                    const deltas = [];
+                    if (res?.humanity) {
+                        deltas.push(`<span class="delta-badge ${res.humanity > 0 ? 'delta-pos' : 'delta-neg'}">${res.humanity > 0 ? '+' : ''}${res.humanity} HUMANITY</span>`);
+                    }
+                    if (res?.campBondAll) {
+                        deltas.push(`<span class="delta-badge ${res.campBondAll > 0 ? 'delta-pos' : 'delta-neg'}">${res.campBondAll > 0 ? '+' : ''}${res.campBondAll} CAMP BOND (ALL)</span>`);
+                    }
+                    confirmDeltas.innerHTML = deltas.join(' ');
+                }
+                if (confirmLocks) {
+                    if (locks.length > 0) {
+                        confirmLocks.innerHTML = `
+                            <div class="confirm-locks-header">⚠ PERMANENT EXPEDITION ENDING LOCKS:</div>
+                            <div class="confirm-locks-tags">
+                                ${locks.map(lockId => `
+                                    <div class="confirm-lock-tag">
+                                        <span class="lock-icon">🔒</span>
+                                        <strong class="lock-title">${ACT2_ENDING_TITLES[lockId] ?? lockId.toUpperCase()}</strong>
+                                        <span class="lock-sub">PERMANENTLY CLOSED</span>
+                                    </div>
+                                `).join('')}
+                            </div>
+                            <div class="confirm-locks-warning">This irreversible choice will permanently seal the above ending trajectories for the remainder of this deployment. MIXED CREW remains available as an unfailing floor.</div>
+                        `;
+                    } else {
+                        confirmLocks.innerHTML = `
+                            <div class="confirm-locks-safe">
+                                <span class="open-dot">●</span> NO ENDINGS LOCKED — Remaining expedition pathways remain reachable.
+                            </div>
+                        `;
+                    }
+                }
+
+                campChoiceOptions.classList.add('hidden');
+                if (forecastEl) forecastEl.classList.add('hidden');
+                confirmContainer.classList.remove('hidden');
+
+                if (confirmProceedBtn) {
+                    confirmProceedBtn.onclick = () => {
+                        window.AudioManager?.play?.('ui_click', { volume: 0.45 });
+                        closeCampChoiceModal();
+                        window.game?.resolveCampChoice?.(option.action, {
+                            ...option,
+                            campId: detail.campId
+                        });
+                    };
+                    confirmProceedBtn.focus();
+                }
+
+                if (confirmBackBtn) {
+                    confirmBackBtn.onclick = () => {
+                        window.AudioManager?.play?.('ui_click', { volume: 0.35 });
+                        confirmContainer.classList.add('hidden');
+                        campChoiceOptions.classList.remove('hidden');
+                        if (boardOptions.length > 0 && forecastEl) {
+                            forecastEl.classList.remove('hidden');
+                        }
+                        btn.focus();
+                    };
+                }
+                return;
+            }
+
             closeCampChoiceModal();
             window.game?.resolveCampChoice?.(option.action, {
                 ...option,

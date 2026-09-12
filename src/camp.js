@@ -41,15 +41,21 @@ const LEADER_BOSS_SPRITESHEETS = {
 export const CAMP_DRESSING_MODELS = Object.freeze({
     camp_meridian: Object.freeze([
         { type: 'prop_conduit_junction_box', x: -3.1, z: 2.4, yaw: 0.6 },
-        { type: 'prop_light_cluster_dripping', x: 3.0, z: -2.7, yaw: -0.4 }
+        { type: 'prop_light_cluster_dripping', x: 3.0, z: -2.7, yaw: -0.4 },
+        { type: 'prop_conduit_hub', x: 2.8, z: 2.7, yaw: 0.8 },
+        { type: 'prop_fabricator_workstation', x: -2.7, z: -2.8, yaw: -1.2 }
     ]),
     camp_tallow: Object.freeze([
         { type: 'prop_fungal_resin_basin', x: -3.0, z: 2.6, yaw: 0.2 },
-        { type: 'prop_pipe_rupture', x: 3.2, z: -2.5, yaw: 1.1 }
+        { type: 'prop_pipe_rupture', x: 3.2, z: -2.5, yaw: 1.1 },
+        { type: 'prop_specimen_tank', x: 2.9, z: 2.7, yaw: -0.5 },
+        { type: 'prop_o2_filter_vat', x: -2.8, z: -2.8, yaw: 0.7 }
     ]),
     camp_vesper: Object.freeze([
         { type: 'prop_base_defense_turret', x: -3.2, z: -2.6, yaw: 0.9 },
-        { type: 'prop_storage_drum_dented', x: 3.1, z: 2.5, yaw: -0.7 }
+        { type: 'prop_storage_drum_dented', x: 3.1, z: 2.5, yaw: -0.7 },
+        { type: 'prop_ammo_crate_stack', x: 2.8, z: -2.9, yaw: 1.4 },
+        { type: 'prop_security_barricade', x: -2.9, z: 2.7, yaw: -0.3 }
     ])
 });
 
@@ -248,6 +254,42 @@ const SIGNAL_FLARE_HEIGHT = 11;
 export const CAMP_FLOOR_SIZE = 9;
 export const CAMP_CLEARING_RADIUS = 4;
 
+export function getCampPathNodes(campId = '') {
+    switch (campId) {
+        case 'camp_meridian':
+            return [
+                { x: 0.8, z: 0.6, action: 'idle' },
+                { x: -2.4, z: 1.6, action: 'inspect' },
+                { x: 2.2, z: -1.8, action: 'interact' },
+                { x: -1.5, z: -2.5, action: 'patrol' },
+                { x: 1.8, z: 2.0, action: 'inspect' }
+            ];
+        case 'camp_tallow':
+            return [
+                { x: 0.8, z: 0.6, action: 'idle' },
+                { x: -2.2, z: 1.8, action: 'interact' },
+                { x: 2.0, z: -1.8, action: 'inspect' },
+                { x: -1.8, z: -2.2, action: 'patrol' },
+                { x: 1.5, z: 1.9, action: 'inspect' }
+            ];
+        case 'camp_vesper':
+            return [
+                { x: 0.8, z: 0.6, action: 'idle' },
+                { x: -2.5, z: 1.6, action: 'patrol' },
+                { x: 2.3, z: -2.1, action: 'inspect' },
+                { x: -2.6, z: -2.4, action: 'interact' },
+                { x: 1.9, z: 2.3, action: 'inspect' }
+            ];
+        default:
+            return [
+                { x: 0.8, z: 0.6, action: 'idle' },
+                { x: -2.4, z: 1.6, action: 'inspect' },
+                { x: 2.2, z: -1.8, action: 'interact' },
+                { x: -1.2, z: -2.6, action: 'patrol' }
+            ];
+    }
+}
+
 export class SurvivorCamp {
     constructor(scene, { id = 'camp', label = 'CAMP', playerType = 'Scout', groundMaterial = null } = {}) {
         this.scene = scene;
@@ -283,6 +325,7 @@ export class SurvivorCamp {
         this.level = 0;
         this.barricades = [];
         this.turrets = [];
+        this.dressingModels = [];
         this.elapsed = 0;
         this.pos = { x: 0, z: 0 };
 
@@ -302,16 +345,14 @@ export class SurvivorCamp {
         this.npcSpritePath = '';
         this.npcPos = { x: 0.8, z: 0.6 };
         this.npcTarget = { x: 0.8, z: 0.6 };
-        this.npcPathNodes = [
-            { x: 0.8, z: 0.6, action: 'idle' },
-            { x: -2.4, z: 1.6, action: 'inspect' },
-            { x: 2.2, z: -1.8, action: 'interact' },
-            { x: -1.2, z: -2.6, action: 'patrol' }
-        ];
+        this.npcPathNodes = getCampPathNodes(this.id);
         this.npcNodeIndex = 0;
         this.npcActionTimer = 1.0;
         this.npcAction = 'idle';
         this.npcFacingRow = 0;
+        this.lastLeaderBarkAt = 0;
+        this.isInteractingWithPlayer = false;
+        this.leaderStance = 'idle';
         this.campWorkers = [];
         this.fireAudio = null;
         this.wasLockedDown = false;
@@ -1070,7 +1111,7 @@ export class SurvivorCamp {
         return this.distanceTo(x, z) <= INTERACT_RADIUS;
     }
 
-    update(delta) {
+    update(delta, playerPos = null) {
         if (!this.revealed || !this.built) return;
         this.elapsed += delta;
 
@@ -1130,9 +1171,82 @@ export class SurvivorCamp {
             this.lockdownStrobeMat.color.setHex(Math.sin(this.elapsed * 9) > 0 ? 0xff2222 : 0x481010);
         }
 
+        // Dynamic player awareness and reaction update
+        const resolvedPlayerPos = playerPos
+            ?? ((typeof window !== 'undefined' && window.game?.player) ? window.game.player.position : null);
+
+        let distToPlayer = Infinity;
+        if (resolvedPlayerPos && Number.isFinite(resolvedPlayerPos.x) && Number.isFinite(resolvedPlayerPos.z)) {
+            const leaderWorldX = this.pos.x + this.npcPos.x;
+            const leaderWorldZ = this.pos.z + this.npcPos.z;
+            const pdx = resolvedPlayerPos.x - leaderWorldX;
+            const pdz = resolvedPlayerPos.z - leaderWorldZ;
+            distToPlayer = Math.hypot(pdx, pdz);
+            const isPlayerNearby = distToPlayer < 4.5;
+
+            if (isPlayerNearby && this.npcSprite && this.npcSprite.visible) {
+                // Smoothly orient leader towards approaching player
+                if (Math.abs(pdx) > Math.abs(pdz)) {
+                    this.npcFacingRow = pdx > 0 ? 2 : 3; // East / West
+                } else {
+                    this.npcFacingRow = pdz > 0 ? 0 : 1; // South / North
+                }
+
+                // Proximity reactive barks (Mayor-Tina style callouts)
+                const now = (typeof performance !== 'undefined' ? performance.now() : Date.now());
+                if (distToPlayer < 4.0 && now - (this.lastLeaderBarkAt ?? 0) > 8000) {
+                    this.lastLeaderBarkAt = now;
+                    let barkLine = null;
+                    let barkAudio = null;
+
+                    if (this.status === 'turned') {
+                        if (/briggs/i.test(this.leaderName)) {
+                            barkLine = 'COMMANDER BRIGGS: THE METAL MELTED INTO OUR VEINS, CARRIER. WE HEAR HER NOW.';
+                        } else if (/martha/i.test(this.leaderName)) {
+                            barkLine = 'SISTER MARTHA: PEACE HAS SPROUTED IN THE TISSUE. DO NOT FIGHT THE SPORES.';
+                        } else {
+                            barkLine = 'OVERSEER KAELEN: WORK EFFICIENCY IS NOMINAL. WE HAVE SURRENDERED THE NEED FOR SLEEP.';
+                        }
+                        barkAudio = 'camp_worker_infected';
+                    } else if (this.isLockedDown) {
+                        if (/briggs/i.test(this.leaderName)) {
+                            barkLine = "COMMANDER BRIGGS: YOU'RE ENTERING A LIVE FIRE ZONE. STATE YOUR INTENT.";
+                        } else if (/martha/i.test(this.leaderName)) {
+                            barkLine = 'SISTER MARTHA: DISTRUST CLOUDS THIS SANCTUARY. TREAD CAREFULLY.';
+                        } else {
+                            barkLine = 'OVERSEER KAELEN: SECURITY CAMERAS HAVE YOU FLAGGED. KEEP YOUR HANDS VISIBLE.';
+                        }
+                        barkAudio = 'camp_lockdown_alarm';
+                    } else if (this.status === 'recruited' || this.aided) {
+                        if (/briggs/i.test(this.leaderName)) {
+                            barkLine = "COMMANDER BRIGGS: PERIMETER IS SECURE. WE'RE PACKED AND READY TO BOARD.";
+                        } else if (/martha/i.test(this.leaderName)) {
+                            barkLine = 'SISTER MARTHA: BLESSINGS UPON YOUR EXOSUIT. THE CONGREGATION IS READY.';
+                        } else {
+                            barkLine = 'OVERSEER KAELEN: MANIFESTS ARE SEALED. WAITING ON YOUR LAUNCH SIGNAL.';
+                        }
+                        barkAudio = 'camp_worker_armed';
+                    }
+
+                    if (barkLine && typeof window !== 'undefined') {
+                        window.game?.showBunkerLine?.(barkLine);
+                    }
+                    if (barkAudio && typeof window !== 'undefined') {
+                        window.AudioManager?.play?.(barkAudio, { volume: 0.22, bus: 'world' });
+                    }
+                }
+            }
+        }
+
         // NPC movement pathfinding and animation update loop
         if (this.npcSprite && this.npcSprite.visible) {
-            if (this.npcAction !== 'walking') {
+            // When close to player, pause patrol to converse/react
+            const pausingForPlayer = distToPlayer < 3.2 && !this.destroyed && this.status !== 'culled';
+            this.isInteractingWithPlayer = pausingForPlayer;
+
+            if (pausingForPlayer) {
+                this.npcAction = this.status === 'turned' ? 'turned_stare' : this.isLockedDown ? 'wary_standoff' : 'attentive_idle';
+            } else if (this.npcAction !== 'walking') {
                 this.npcActionTimer -= delta;
                 if (this.npcActionTimer <= 0) {
                     this.npcNodeIndex = (this.npcNodeIndex + 1) % this.npcPathNodes.length;
@@ -1143,13 +1257,13 @@ export class SurvivorCamp {
                 const dx = this.npcTarget.x - this.npcPos.x;
                 const dz = this.npcTarget.z - this.npcPos.z;
                 const dist = Math.hypot(dx, dz);
-                if (dist < 0.05) {
+                if (dist < 0.06) {
                     this.npcPos.x = this.npcTarget.x;
                     this.npcPos.z = this.npcTarget.z;
                     this.npcAction = this.npcTarget.action;
-                    this.npcActionTimer = 2.0 + Math.random() * 3.0; // Rest at node
+                    this.npcActionTimer = 2.2 + Math.random() * 2.8; // Rest at node
                 } else {
-                    const speed = this.status === 'turned' ? 1.4 : 0.8;
+                    const speed = this.status === 'turned' ? 1.35 : (this.isLockedDown ? 1.15 : 0.85);
                     this.npcPos.x += (dx / dist) * speed * delta;
                     this.npcPos.z += (dz / dist) * speed * delta;
 
@@ -1164,12 +1278,23 @@ export class SurvivorCamp {
                 }
             }
 
-            // Step walk frame index (0..3) if walking, else stand idle
-            const frame = this.npcAction === 'walking' ? Math.floor(this.elapsed * 6) % 4 : 0;
+            // Step walk frame index (0..3) if walking, else stand idle/reactive
+            const isWalking = this.npcAction === 'walking';
+            const cadence = this.status === 'turned' ? 9.0 : 6.5;
+            const frame = isWalking ? Math.floor(this.elapsed * cadence) % 4 : 0;
             if (this.npcTexture) {
                 this.npcTexture.offset.set(frame * 0.25, (3 - this.npcFacingRow) * 0.25);
             }
-            this.npcSprite.position.set(this.npcPos.x, 0.75, this.npcPos.z);
+
+            // Procedural vertical bobbing and turned twitching
+            const walkBob = isWalking ? Math.abs(Math.sin(this.elapsed * cadence)) * 0.04 : 0;
+            const turnedTwitch = this.status === 'turned' ? Math.sin(this.elapsed * 14.0) * 0.025 : 0;
+            this.npcSprite.position.set(this.npcPos.x, 0.75 + walkBob, this.npcPos.z);
+            if (this.status === 'turned') {
+                this.npcSprite.rotation.z = turnedTwitch;
+            } else {
+                this.npcSprite.rotation.z = 0;
+            }
             syncWorld3dReplacement(this.npcSprite);
         }
 

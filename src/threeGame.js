@@ -21085,6 +21085,30 @@ export class ThreeGame {
     }
 
     /**
+     * Resolve the scientist linchpin from a snail encounter's outcome.
+     *
+     * Okonkwo-Vass asks, in shipped stage-2 dialogue: "DON'T KILL ONE. TALK TO
+     * ONE. PROVE ME RIGHT." The encounter already supports both answers --
+     * befriend/pacified/recruited, or fight_win -- they simply never reported
+     * back, so scientist_specimen was registered and unreachable.
+     *
+     * Gated on her having actually asked. Without the gate any encounter won
+     * before she raises it would resolve `dismissed`, and because linchpins are
+     * write-once the player would be locked out of ALIEN_EXODUS by a fight they
+     * had before anyone mentioned it.
+     */
+    resolveScientistSpecimenLinchpin(outcome) {
+        const stage = this.act2?.getState?.()?.scientist?.dialogueStage ?? 0;
+        if (stage < 2) return false;
+        const PROVED = ['befriend', 'pacified', 'recruited'];
+        const resolution = PROVED.includes(outcome) ? 'proved'
+            : outcome === 'fight_win' ? 'dismissed'
+                : null;
+        if (!resolution) return false;
+        return applyLinchpinResolution(this.act2, 'scientist_specimen', resolution);
+    }
+
+    /**
      * Mayor Tina is a bare scene group, not a scatter sprite, so the normal
      * destructible-prop sweep never saw her. Shooting her resolves a story
      * linchpin that permanently locks endings, so the hit count lives in
@@ -21117,9 +21141,18 @@ export class ThreeGame {
         window.AudioManager?.play('enemy_hit_soft', { volume: 0.45 });
 
         if (result.outcome === 'warning') {
-            // One warning, then she fights. Dialogue rather than a silent
-            // stat change, because the choice needs to be legible as a choice.
-            this.lineDirector?.say?.('TINA: PUT THAT DOWN. I AM ASKING ONCE.', { priority: 0 });
+            // One warning, then she fights. The choice has to be legible as a
+            // choice, so it speaks.
+            //
+            // Via bunker-line, not lineDirector: LineDirector exposes
+            // requestLine(trigger, context, pool, random) and has no say(), so
+            // the previous call was dead code that optional chaining swallowed
+            // silently -- the warning beat never appeared at all. The speaker
+            // prefix must be "MAYOR TINA:" exactly; main.js whitelists that and
+            // renders anything else as a line spoken by the bunker.
+            window.dispatchEvent(new CustomEvent('bunker-line', {
+                detail: { text: 'MAYOR TINA: PUT THAT DOWN. I AM ASKING ONCE.' }
+            }));
         }
 
         if (result.outcome !== 'killed') return;
@@ -28703,6 +28736,7 @@ export class ThreeGame {
                 this.companions.push({ sprite, assistCooldown: 0 });
             }
             this.act2?.completeScientistQuest?.('snail_befriended');
+            this.resolveScientistSpecimenLinchpin(state.outcome);
             window.dispatchEvent(new CustomEvent('snail-befriended', {
                 detail: { snailType: sprite?.userData?.type || state.entityType }
             }));
@@ -28713,6 +28747,7 @@ export class ThreeGame {
         } else if (state.outcome === 'fled' || state.outcome === 'dialogue_complete') {
             setTimeout(() => this.closeSnailEncounter(), 600);
         } else if (state.outcome === 'fight_win' || state.outcome === 'reprogrammed') {
+            this.resolveScientistSpecimenLinchpin(state.outcome);
             if (sprite) sprite.userData.encounterResolved = true;
             setTimeout(() => this.closeSnailEncounter(), 600);
         }

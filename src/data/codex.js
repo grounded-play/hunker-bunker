@@ -67,7 +67,35 @@ export const CODEX_ENTRIES = localizeCatalog('narrative.codexEntries', Object.fr
     { id: 'linchpin_queen_accepted', name: 'THE QUEEN, ABOARD', category: 'PHENOMENON', image: '/cutscenes/poster-art/event-queen-encounter.png',
       blurb: 'She takes two seats. You did the arithmetic and said yes anyway. Roads now closed: the clean break, the quiet smuggle. Whatever leaves the ice with you, most of it will be her.' },
     { id: 'linchpin_queen_refused', name: 'THE QUEEN, REFUSED', category: 'PHENOMENON', image: '/cutscenes/poster-art/event-queen-encounter.png',
-      blurb: 'You left her under the ice with three seats still in your hand. Road now closed: the full brood. She was always going to cost more than she offered.' }
+      blurb: 'You left her under the ice with three seats still in your hand. Road now closed: the full brood. She was always going to cost more than she offered.' },
+
+    // Faction Leader Linchpins
+    { id: 'linchpin_briggs_oath_honored', name: "COMMANDER BRIGGS, HONORED", category: 'PHENOMENON', image: '/tank_ship_broken.png',
+      blurb: "You stood with Vesper's garrison. The trench shields held and the soldier's faith was rewarded. Roads now closed: the full brood, the scorched sky." },
+    { id: 'linchpin_briggs_oath_broken', name: "COMMANDER BRIGGS, ABANDONED", category: 'PHENOMENON', image: '/tank_ship_broken.png',
+      blurb: "You severed Vesper's supply lines and left the frontline to freeze. The garrison fell in silence. Road now closed: the clean break." },
+    { id: 'linchpin_martha_beacon_broadcast', name: "THE SISTER'S BEACON, BROADCAST", category: 'PHENOMENON', image: '/scout_ship_broken.png',
+      blurb: "Sister Martha's transmission lit every receiver in the ice. The lost hear hope, and the swarm hears prey. Road now closed: the mothership infection." },
+    { id: 'linchpin_martha_beacon_silenced', name: "THE SISTER'S BEACON, SILENCED", category: 'PHENOMENON', image: '/scout_ship_broken.png',
+      blurb: "You cut the cables and forced Tallow into quiet boots. Stealth was bought with civilian despair. Roads now closed: the clean break, the alien exodus." },
+    { id: 'linchpin_kaelen_manifest_disclosed', name: "THE FOUNDRY MANIFEST, DISCLOSED", category: 'PHENOMENON', image: '/engineer_ship_broken.png',
+      blurb: "Overseer Kaelen published the unaltered flight manifests. No corporate privileges survived. Roads now closed: the mothership infection, the carrier's bargain." },
+    { id: 'linchpin_kaelen_manifest_falsified', name: "THE FOUNDRY MANIFEST, FALSIFIED", category: 'PHENOMENON', image: '/engineer_ship_broken.png',
+      blurb: "The passenger manifest was altered behind locked bulkheads. Corporate lies outlive the colony. Road now closed: the clean break." },
+
+    // Hive Ally Linchpins
+    { id: 'linchpin_suture_cured_human', name: "THE SUTURE HOST, CURED", category: 'PHENOMENON', image: '/module_o2_generator.png',
+      blurb: "Nahl's surgical extraction purged the spore from your blood. You walk as pure human once more. Roads now closed: the full brood, the mothership infection, the alien exodus." },
+    { id: 'linchpin_suture_symbiotic_carrier', name: "THE SUTURE HOST, EMBRACED", category: 'PHENOMENON', image: '/module_o2_generator.png',
+      blurb: "You allowed the hive spore to graft into your marrow. You are carrier and vessel in one flesh. Road now closed: the clean break." },
+    { id: 'linchpin_relay_jammed_camps', name: "THE RELAY CHORUS, JAMMED", category: 'PHENOMENON', image: '/console.png',
+      blurb: "You severed human radio frequencies to protect the hive's acoustic sanctuary. Camp communications shattered. Road now closed: the outed escape." },
+    { id: 'linchpin_relay_bridge_synapse', name: "THE RELAY CHORUS, BRIDGED", category: 'PHENOMENON', image: '/console.png',
+      blurb: "Vey opened the neural synapse bridge between hive and human minds. Thoughts bleed across the spectrum. Road now closed: the clean break." },
+    { id: 'linchpin_carapace_shield_queen', name: "THE CARAPACE OATH, TO THE QUEEN", category: 'PHENOMENON', image: '/cutscenes/poster-art/event-queen-encounter.png',
+      blurb: "Rhun's chitin fortress pledged eternal defense to the Brood Mother. Human shuttles must pierce its bulk. Roads now closed: the alien exodus, the clean break." },
+    { id: 'linchpin_carapace_shield_operator', name: "THE CARAPACE OATH, TO THE OPERATOR", category: 'PHENOMENON', image: '/cutscenes/poster-art/event-queen-encounter.png',
+      blurb: "The living shield bound its vow to you, walking beside human survivors as guardian. Road now closed: the full brood." }
 ]), { skip: ['id', 'category', 'image'] });
 
 export function getCodexEntry(id) {
