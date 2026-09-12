@@ -694,6 +694,14 @@
       "18": {
         "name": "ESPÉCIME 0047",
         "blurb": "O PIVÔ. SOLDA DE ORIGEM DESBLOQUEADA: ANTIGO PORTADOR DE SEMENTE RECLASSIFICADO COMO NÚCLEO ADORMECIDO DA RAINHA. A TELEMETRIA DO EXOTRAJE INDICA QUE O BIOSSINAL DESLOCA O FOCO DA TRANSMISSÃO PARA O CORPO DO PORTADOR NO MUNDO."
+      },
+      "19": {
+        "name": "A PREFEITA, ENCERRADA",
+        "blurb": "Você derrubou a coisa que vestia a Prefeita. Os acampamentos vão agradecer, alto e por muito tempo. Algo sob o gelo anotou a dívida e não pretende quitá-la. Caminhos agora fechados: o êxodo, a ninhada completa, o voo silencioso para casa."
+      },
+      "20": {
+        "name": "A PREFEITA, ACEITA",
+        "blurb": "Você aceitou o que lhe ofereceram e algo no seu peito concordou. Os acampamentos já sentem a diferença. Caminhos agora fechados: a ruptura limpa, o céu calcinado. Nenhum deles seria seu, de todo modo."
       }
     },
     "loreClassLogs": {

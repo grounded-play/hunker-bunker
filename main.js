@@ -11438,6 +11438,16 @@ function discoverCodex(id, metadata = null) {
 window.addEventListener('enemy-killed', (e) => discoverCodex(e?.detail?.type));
 window.addEventListener('milestone-boss-spawned', (e) => discoverCodex(e?.detail?.type));
 window.addEventListener('lore-terminal-read', () => discoverCodex('lore_terminal'));
+// Story linchpins record what they closed. A consequence the player cannot
+// perceive is indistinguishable from a bug: without this they reach an ending,
+// wonder why another was unreachable, and have no way to learn it was a choice
+// they made hours earlier. Written after the fact by design -- the choice stays
+// irreversible, it just stops being invisible.
+window.addEventListener('story-linchpin-resolved', (e) => {
+    const detail = e?.detail;
+    if (!detail?.id || !detail?.resolution) return;
+    discoverCodex(`linchpin_${detail.id.replace(/^mayor_/, '')}_${detail.resolution}`);
+});
 window.addEventListener('o2-bubble-activated', () => discoverCodex('o2_generator'));
 window.addEventListener('foundry-discovered', () => {
     discoverCodex('foundry');

@@ -4373,6 +4373,11 @@ export class ThreeGame {
     interactWithMayorTina() {
         const encounter = this.mayorTinaEncounter;
         if (!encounter || encounter.phase !== 'idle' || this.isMultiplayer || !this.player || !encounter.mayorRoot) return false;
+        // You cannot accept an offer from something you shot. Without this the
+        // player could kill her and then walk up and transform anyway: the
+        // linchpin's write-once guard would keep the state correct, but they
+        // would watch a transformation that silently did nothing.
+        if (encounter.tinaDead) return false;
         const position = this.getMayorTinaEncounterPosition();
         if (Math.hypot(this.player.position.x - position.x, this.player.position.z - position.z) >= 2.45) return false;
         encounter.phase = 'transforming';
@@ -4441,6 +4446,12 @@ export class ThreeGame {
         if (this.mayorTinaEncounter?.phase !== 'transformed') return false;
         this.cinematicLock = false;
         this.setInputEnabled(true);
+        // The other half of the Tina linchpin. This transformation IS the
+        // "become a bug" path -- it was already implemented and simply never
+        // reported its outcome, so the joined resolution was reachable only
+        // from a debug console. Resolved on completion rather than on the
+        // interaction, so an aborted cinematic does not bank the consequence.
+        applyLinchpinResolution(this.act2, 'mayor_tina', 'joined');
         return true;
     }
 
@@ -25430,6 +25441,13 @@ export class ThreeGame {
             sprite.renderOrder = 4;
             sprite.userData = {
                 isScatter: true,
+                // Bunker junk is scenery debris; it had no reason to be
+                // bulletproof. Objective-critical props (lore_terminal) stay
+                // indestructible on purpose -- see the objective-registry guard
+                // in threeGame.destructibleProps.test.js.
+                isDestructibleProp: true,
+                propHp: placement.hp ?? 2,
+                maxPropHp: placement.hp ?? 2,
                 type: placement.type,
                 scatterKey: placement.scatterKey,
                 groupType: placement.groupType,

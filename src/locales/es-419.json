@@ -694,6 +694,14 @@
       "18": {
         "name": "ESPÉCIMEN 0047",
         "blurb": "EL EJE. SOLDADURA DE ORIGEN DESBLOQUEADA: ANTIGUO PORTADOR DE SEMILLA RECLASIFICADO COMO NÚCLEO DURMIENTE DE LA REINA. LA TELEMETRÍA DEL EXOTRAJE INDICA QUE LA BIOSEÑAL DESPLAZA SU FOCO DE LA EMISIÓN AL CUERPO DEL PORTADOR EN EL MUNDO."
+      },
+      "19": {
+        "name": "LA ALCALDESA, TERMINADA",
+        "blurb": "Derribaste a la cosa que vestía a la Alcaldesa. Los campamentos te lo agradecerán, en voz alta y por mucho tiempo. Algo bajo el hielo anotó la deuda y no piensa saldarla. Caminos ahora cerrados: el éxodo, la cría completa, el vuelo silencioso a casa."
+      },
+      "20": {
+        "name": "LA ALCALDESA, ACEPTADA",
+        "blurb": "Aceptaste lo que te ofrecieron y algo dentro de tu pecho estuvo de acuerdo. Los campamentos ya notan la diferencia. Caminos ahora cerrados: la ruptura limpia, el cielo calcinado. Ninguno iba a ser tuyo jamás."
       }
     },
     "loreClassLogs": {

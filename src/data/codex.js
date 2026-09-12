@@ -51,7 +51,15 @@ export const CODEX_ENTRIES = localizeCatalog('narrative.codexEntries', Object.fr
     { id: 'elevator_down', name: 'THE ELEVATOR DOWN', category: 'PHENOMENON', image: '/door_biomech_keyart_v2.webp',
       blurb: 'Ninety seconds of descent. The vents disagree with your presence the entire way.' },
     { id: 'specimen_0047', name: 'SPECIMEN 0047', category: 'PHENOMENON', image: '/cutscenes/poster-art/event-queen-encounter.png',
-      blurb: 'THE LINCHPIN. ORIGIN WELD UNLOCKED: ANCIENT SEED-CARRIER RECLASSIFIED AS QUEEN\'S DORMANT CORE. EXOSUIT TELEMETRY INDICATES THE BIO-SIGNAL SHIFTS FOCUS FROM BROADCAST TO THE CARRIER\'S IN-WORLD BODY.' }
+      blurb: 'THE LINCHPIN. ORIGIN WELD UNLOCKED: ANCIENT SEED-CARRIER RECLASSIFIED AS QUEEN\'S DORMANT CORE. EXOSUIT TELEMETRY INDICATES THE BIO-SIGNAL SHIFTS FOCUS FROM BROADCAST TO THE CARRIER\'S IN-WORLD BODY.' },
+
+    // Story linchpins. Written after the fact, never before: the choice stays
+    // irreversible and uncomfortable, but the player gets a record of what it
+    // closed instead of silently losing endings they can never account for.
+    { id: 'linchpin_tina_killed', name: 'THE MAYOR, ENDED', category: 'PHENOMENON', image: '/lore_portraits/mayor_tina.webp',
+      blurb: 'You put the thing wearing the Mayor down. The camps will thank you for it, loudly and for a long time. Something under the ice recorded the debt and will not be settling it. Roads that are now closed: the exodus, the full brood, the quiet flight home.' },
+    { id: 'linchpin_tina_joined', name: 'THE MAYOR, ACCEPTED', category: 'PHENOMENON', image: '/lore_portraits/mayor_tina.webp',
+      blurb: 'You took what was offered and something in your chest agreed to it. The camps can smell the difference now. Roads that are now closed: the clean break, the scorched sky. Neither was ever going to be yours.' }
 ]), { skip: ['id', 'category', 'image'] });
 
 export function getCodexEntry(id) {

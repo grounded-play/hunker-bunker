@@ -1129,6 +1129,14 @@
       "18": {
         "name": "SPECIMEN 0047",
         "blurb": "THE LINCHPIN. ORIGIN WELD UNLOCKED: ANCIENT SEED-CARRIER RECLASSIFIED AS QUEEN'S DORMANT CORE. EXOSUIT TELEMETRY INDICATES THE BIO-SIGNAL SHIFTS FOCUS FROM BROADCAST TO THE CARRIER'S IN-WORLD BODY."
+      },
+      "19": {
+        "blurb": "You put the thing wearing the Mayor down. The camps will thank you for it, loudly and for a long time. Something under the ice recorded the debt and will not be settling it. Roads that are now closed: the exodus, the full brood, the quiet flight home.",
+        "name": "THE MAYOR, ENDED"
+      },
+      "20": {
+        "blurb": "You took what was offered and something in your chest agreed to it. The camps can smell the difference now. Roads that are now closed: the clean break, the scorched sky. Neither was ever going to be yours.",
+        "name": "THE MAYOR, ACCEPTED"
       }
     },
     "loreMetadata": {

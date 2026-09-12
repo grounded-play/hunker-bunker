@@ -1,27 +1,24 @@
 import { test, expect } from '@playwright/test';
-import { startRunAndSkipIntro } from './helpers.js';
+import { bootToOperatorMenu, startRunAndSkipIntro } from './helpers.js';
 
 // Browser coverage for enemy dismemberment.
-//
-// STATUS (2026-09-11): these three currently fail, and not on their own
-// assertions -- all three die inside startRunAndSkipIntro at helpers.js:120
-// ("run-start flow did not reach gameplay") before the test body runs. That is
-// not specific to this spec: gameplay-aim-cursor.spec.js, which nothing here
-// touches, fails at the identical line on the same tree. The shared boot helper
-// cannot currently reach gameplay for any gameplay spec.
-//
-// They are committed unrun deliberately. The assertions below are the check the
-// Vitest suite genuinely cannot make -- that a real GLB-backed enemy comes apart
-// in the live scene -- and they should start passing as soon as the boot helper
-// is repaired, with no changes needed here. If you are the one who fixed the
-// helper: run this spec, it is the outstanding verification for the gib system.
 //
 // The Vitest suite covers the fracture maths against synthetic geometry; what
 // it cannot reach is the part that actually matters here — that a real enemy,
 // with a real GLB loaded by enemy3dOverlay, comes apart in the live scene when
 // it dies, and that the Settings toggle genuinely suppresses it.
 test.describe('enemy dismemberment', () => {
+    // A cold boot walks a class intro, cutscene, dialogue and door transition
+    // and costs most of the config's 120s per-test budget on its own, leaving
+    // nothing for a test that then has to wait on a GLB load. These are
+    // gameplay tests; they need a gameplay-sized budget.
+    test.describe.configure({ timeout: 300_000 });
+
     test.beforeEach(async ({ page }) => {
+        // startRunAndSkipIntro assumes an already-booted page -- it never
+        // navigates. Omitting this left window.game undefined and made the
+        // failure look like the shared helper was broken.
+        await bootToOperatorMenu(page);
         await startRunAndSkipIntro(page);
         await page.evaluate(() => window.game?.setGodMode?.(true));
     });

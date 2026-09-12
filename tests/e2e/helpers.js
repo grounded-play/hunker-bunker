@@ -65,7 +65,10 @@ export async function startRunAndSkipIntro(page) {
     ];
     const completedActions = new Set();
     const repeatableSkips = ['#global-skip-intro-btn', '#mothership-choice-skip'];
-    const deadline = Date.now() + 75_000;
+    // 75s was tuned on a quieter machine. This repo now routinely has several
+    // agents building and testing at once, and a cold boot walks a class intro,
+    // a cutscene, a Mothership dialogue and a door transition before gameplay.
+    const deadline = Date.now() + 120_000;
     let ready = false;
     while (Date.now() < deadline) {
         ready = await page.evaluate(() => {
@@ -104,8 +107,37 @@ export async function startRunAndSkipIntro(page) {
         await page.waitForTimeout(250);
     }
     if (!ready) {
+        // One last check before giving up. The loop polls on a 250ms tick
+        // against a fixed deadline, so a boot that completes in the gap between
+        // the final poll and the deadline was reported as a failure whose own
+        // diagnostic said gameplayReady: true -- which is how this looked like
+        // broken infrastructure rather than a slow machine.
+        ready = await page.evaluate(() => window.isGameplayReady?.() ?? false).catch(() => false);
+    }
+    if (!ready) {
+        // Report each condition isGameplayReady() actually checks, individually.
+        // The previous dump read document.body.dataset.appPhase, which nothing
+        // ever writes -- setAppPhase sets a module variable and
+        // window.__hbAppPhase -- so it always read null and every failure
+        // looked like "all conditions green, still failed". It also omitted
+        // isGameplayPhase and isGameplayHudActive entirely, which are the two
+        // conditions most likely to be the real cause.
         const state = await page.evaluate(() => ({
-            appPhase: document.body.dataset.appPhase ?? null,
+            appPhase: window.__hbAppPhase ?? null,
+            isGameplayPhase: window.isGameplayPhase?.() ?? null,
+            isGameplayHudActive: (() => {
+                const ui = document.getElementById('ui');
+                const menu = document.getElementById('menu');
+                const gameOver = document.getElementById('game-over-modal');
+                const splash = document.getElementById('splash');
+                return {
+                    uiVisible: ui ? !ui.classList.contains('hidden') : null,
+                    menuHidden: menu ? menu.classList.contains('hidden') : null,
+                    gameOverHidden: gameOver ? gameOver.classList.contains('hidden') : null,
+                    splashHidden: splash ? splash.classList.contains('hidden') : null
+                };
+            })(),
+            gameplayReady: window.isGameplayReady?.() ?? null,
             profile: window.game?.performanceProfile ?? null,
             inputEnabled: window.game?.inputEnabled ?? null,
             loadingPaused: window.game?.loadingPaused ?? null,
