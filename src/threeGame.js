@@ -21599,8 +21599,7 @@ export class ThreeGame {
 
                 if (this.checkProjectileMayorTinaHit(projectile)) {
                     this.spawnProjectileImpactEffect(projectile.mesh.position.x, projectile.mesh.position.z);
-                    this.destroyProjectile(projectile);
-                    this.projectiles.splice(i, 1);
+                    toRemove.add(projectile);
                     continue;
                 }
                 const destructibleProp = this.checkProjectileDestructiblePropHit(projectile);

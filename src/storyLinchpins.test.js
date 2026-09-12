@@ -66,7 +66,6 @@ describe('normalizeLinchpins', () => {
         const out = normalizeLinchpins({
             mayor_tina: 'killed',
             future_thing: 'whatever',
-            // eslint-disable-next-line camelcase
             mayor_tina_typo: 'killed'
         });
         expect(out).toEqual({ mayor_tina: 'killed' });
