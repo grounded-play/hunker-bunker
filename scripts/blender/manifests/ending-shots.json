@@ -1,0 +1,301 @@
+{
+  "schemaVersion": 1,
+  "sourceDoc": "docs/planning/blender-ending-scene-blocks-and-shot-list-2026-09-12.md",
+  "generatedFrom": "5 sequences",
+  "sequences": [
+    {
+      "index": 1,
+      "name": "Mothership Infection",
+      "id": "MOTHERSHIP_INFECTION",
+      "sets": [
+        "SET-C",
+        "SET-A"
+      ],
+      "shots": [
+        {
+          "id": "MI-01",
+          "sequenceId": "MOTHERSHIP_INFECTION",
+          "timing": "0:00-1:18 / 0-42",
+          "startFrame": 0,
+          "endFrame": 42,
+          "lensMm": 28,
+          "camera": "28 mm-equivalent wide, low track right; exact one-point perspective",
+          "action": "Shuttle ramp opens beneath ribbed hangar arches like a chapel door. Three medical slabs cross frame in ritual symmetry while the operator enters through the scanner. The cyan scan reads clean; a foreground IV standard creates a thin cruciform silhouette without religious ornament.",
+          "assets": "cabin ramp, hangar shell, three beds/monitors, operator walk; `human_cold` dominant",
+          "transition": "Hard cut on scanner sweep completion"
+        },
+        {
+          "id": "MI-02",
+          "sequenceId": "MOTHERSHIP_INFECTION",
+          "timing": "1:18-3:06 / 43-78",
+          "startFrame": 43,
+          "endFrame": 78,
+          "lensMm": 50,
+          "camera": "50 mm lateral dolly, practical-lit profile",
+          "action": "Beds wipe through foreground: sleeping survivors, stable vitals, no panic. Overhead surgical bars strobe slowly across the operator like passing nave bays. Human faces receive soft cold light; the operator intermittently vanishes into black.",
+          "assets": "civilian breathing, monitors, operator walk; bed-edge in-camera wipes",
+          "transition": "Final bed frame wipes lens into macro close-up"
+        },
+        {
+          "id": "MI-03",
+          "sequenceId": "MOTHERSHIP_INFECTION",
+          "timing": "3:06-5:12 / 79-132",
+          "startFrame": 79,
+          "endFrame": 132,
+          "lensMm": 100,
+          "camera": "100 mm collar macro, shallow focus, creeping 3% push",
+          "action": "Camera settles behind the operator's neck. Focus leaves the clean scanner and finds a hair-thin subcutaneous green branch that pulses once along a cable-like route. Add a one-pixel green-channel misregistration only at pulse maximum. Operator remains composed.",
+          "assets": "operator rig, subsurface infection mask, restrained emission/light group",
+          "transition": "Rack focus through collar reflection to background conduit"
+        },
+        {
+          "id": "MI-04",
+          "sequenceId": "MOTHERSHIP_INFECTION",
+          "timing": "5:12-7:12 / 133-180",
+          "startFrame": 133,
+          "endFrame": 180,
+          "lensMm": 35,
+          "camera": "35 mm deep locked frame with an extremely restrained dolly zoom",
+          "action": "Operator and beds pass through the pointed airlock. As iron-jaw doors close, the mothership architecture seems to inhale: background arches expand almost imperceptibly while one green pulse enters the wall and propagates beyond sight.",
+          "assets": "airlock, conduit hub, emissive pulse, localized haze",
+          "transition": "Cut to charcoal-black one beat after pulse extinction"
+        }
+      ]
+    },
+    {
+      "index": 2,
+      "name": "Alien Exodus",
+      "id": "ALIEN_EXODUS",
+      "sets": [
+        "SET-D",
+        "SET-A"
+      ],
+      "shots": [
+        {
+          "id": "AE-01",
+          "sequenceId": "ALIEN_EXODUS",
+          "timing": "0:00-1:20 / 0-44",
+          "startFrame": 0,
+          "endFrame": 44,
+          "lensMm": 32,
+          "camera": "32 mm exterior three-quarter wide, slow crane through foreground ice pinnacles",
+          "action": "Shuttle rises from a cradle shaped by ruined buttresses. Three circular hive apertures pulse cyan, green, and amber; a harsher Queen-green signal claws upward and breaks against the ship's cold rectilinear silhouette. Ice foreground produces cathedral-scale parallax.",
+          "assets": "shuttle, ice set, hive lights, distant Queen silhouette, volumetric snow",
+          "transition": "Match cut three apertures to three passenger silhouettes"
+        },
+        {
+          "id": "AE-02",
+          "sequenceId": "ALIEN_EXODUS",
+          "timing": "1:20-4:00 / 45-96",
+          "startFrame": 45,
+          "endFrame": 96,
+          "lensMm": 40,
+          "camera": "40 mm symmetrical aisle dolly, gentle floating head",
+          "action": "Track through the shuttle's iron choir stalls: Rhun braces aft like a living shield, Vey watches the stars, Nahl touches the hull. The move ends on the operator. All three non-human occupants remain readable in layered depth, with distinct color accents that never merge into infection green.",
+          "assets": "Nahl, Vey, Rhun, operator; breathing/look/brace gestures; `alien_alliance` groups",
+          "transition": "Nahl's curved hand and a circular window motivate shape cut"
+        },
+        {
+          "id": "AE-03",
+          "sequenceId": "ALIEN_EXODUS",
+          "timing": "4:00-5:20 / 97-140",
+          "startFrame": 97,
+          "endFrame": 140,
+          "lensMm": 75,
+          "camera": "75 mm profile close-up with controlled rack focus",
+          "action": "Nahl's fingers settle into a riveted seam. The wall answers with a low bioluminescent waveform, turning industrial fasteners into a momentary musical staff. Focus travels from hand to operator's calm reflected eyes.",
+          "assets": "Nahl subtle gesture, subsurface fingertip, emissive hull ripple, operator head turn",
+          "transition": "Hull ripple stretches into a star streak"
+        },
+        {
+          "id": "AE-04",
+          "sequenceId": "ALIEN_EXODUS",
+          "timing": "5:20-8:00 / 141-192",
+          "startFrame": 141,
+          "endFrame": 192,
+          "lensMm": 24,
+          "camera": "24 mm exterior rear wide, slow arcing pull-away",
+          "action": "Shuttle clears atmosphere into open negative space. Below, the Queen's jagged signal collapses between black ice spires while three warm cabin apertures remain. The camera arc is the only openly graceful move in the five endings.",
+          "assets": "shuttle, planet matte, stars, signal VFX, clean motion blur",
+          "transition": "Long silver-to-black fade"
+        }
+      ]
+    },
+    {
+      "index": 3,
+      "name": "Outed Escape",
+      "id": "OUTED_ESCAPE",
+      "sets": [
+        "SET-A"
+      ],
+      "shots": [
+        {
+          "id": "OE-01",
+          "sequenceId": "OUTED_ESCAPE",
+          "timing": "0:00-1:16 / 0-40",
+          "startFrame": 0,
+          "endFrame": 40,
+          "lensMm": 35,
+          "camera": "35 mm severe symmetrical master, center partition rail splitting frame",
+          "action": "Operator faces forward beyond the open iron screen. Three survivors sit aft like a hostile tribunal, rifles low. Empty vertical space above them forms a dark apse; nobody moves when engines engage.",
+          "assets": "operator, three civilians/leader proxy, cabin, weapons, dirty-white practicals",
+          "transition": "Partition descends through exact frame center"
+        },
+        {
+          "id": "OE-02",
+          "sequenceId": "OUTED_ESCAPE",
+          "timing": "1:16-3:08 / 41-80",
+          "startFrame": 41,
+          "endFrame": 80,
+          "lensMm": 55,
+          "camera": "55 mm passenger-side medium, oblique rail foreground",
+          "action": "A survivor presses the lock. Scratched ballistic glass seals like a secular rood screen; jaw-shaped mechanical dogs engage sequentially. Each lock briefly interrupts the rotating red light. Weapons remain down.",
+          "assets": "civilian hand gesture, partition rig, warning cage",
+          "transition": "Final lock impact creates light-driven cut"
+        },
+        {
+          "id": "OE-03",
+          "sequenceId": "OUTED_ESCAPE",
+          "timing": "3:08-5:02 / 81-122",
+          "startFrame": 81,
+          "endFrame": 122,
+          "lensMm": 70,
+          "camera": "70 mm split-diopter composition through glass",
+          "action": "Operator's infected collar and survivors' unblinking faces remain sharp on opposite depth planes. A red sweep crosses the operator; a muted green pulse answers, doubled in scratched reflections. The eye contact lands without cutting to coverage.",
+          "assets": "split-diopter approximation/compositor depth masks, restrained idles, infection light group",
+          "transition": "Let beacon reflection wipe focus toward navigation side"
+        },
+        {
+          "id": "OE-04",
+          "sequenceId": "OUTED_ESCAPE",
+          "timing": "5:02-7:00 / 123-168",
+          "startFrame": 123,
+          "endFrame": 168,
+          "lensMm": 40,
+          "camera": "40 mm locked two-plane tableau, very slow lateral drift",
+          "action": "Survivors remain awake behind the screen; operator turns toward a cold quarantine vector. Passing star light creates prison-bar bands across both compartments, but never aligns across the glass.",
+          "assets": "cabin, passenger idles, console route glow, reflection pass",
+          "transition": "Cut to black inside a red rotation, before resolution"
+        }
+      ]
+    },
+    {
+      "index": 4,
+      "name": "Failed Carrier",
+      "id": "FAILED_CARRIER",
+      "sets": [
+        "SET-B",
+        "SET-A"
+      ],
+      "shots": [
+        {
+          "id": "FC-01",
+          "sequenceId": "FAILED_CARRIER",
+          "timing": "0:00-1:14 / 0-38",
+          "startFrame": 0,
+          "endFrame": 38,
+          "lensMm": 85,
+          "camera": "85 mm probe macro opening into 50 mm-equivalent reveal",
+          "action": "A frosted coolant line resembles a translucent bone beneath hard top light. A branching crack races through it like black Gothic tracery; amber fluid wells under the ice. Rack focus reveals the coffin-like containment pod.",
+          "assets": "coolant manifold, thermal pod/incubator, frost displacement/transmission",
+          "transition": "Amber alarm cage coughs to life"
+        },
+        {
+          "id": "FC-02",
+          "sequenceId": "FAILED_CARRIER",
+          "timing": "1:14-3:12 / 39-84",
+          "startFrame": 39,
+          "endFrame": 84,
+          "lensMm": 35,
+          "camera": "35 mm cramped creeping push, horizon initially level",
+          "action": "Operator works controls as diagnostic glass falls cyan→amber→red. The pod's round internal silhouette moves once against rectilinear restraints. On impact, introduce the first two-degree Dutch roll and a short shutter smear.",
+          "assets": "operator kneel/console gesture, pod, egg/resin, diagnostic reflections",
+          "transition": "Organic impact fractures composition and cuts"
+        },
+        {
+          "id": "FC-03",
+          "sequenceId": "FAILED_CARRIER",
+          "timing": "3:12-5:02 / 85-122",
+          "startFrame": 85,
+          "endFrame": 122,
+          "lensMm": 45,
+          "camera": "45 mm reverse, reflection-led staging",
+          "action": "Amber light spills beneath the passenger door like a darkroom safelight. It opens; two survivors stare past camera. The pod is visible only as a warped reflection across their eyes and wet metal as its glass branches with green-amber cracks.",
+          "assets": "civilians surprise/back-step, cargo door, reflection/cryptomatte control",
+          "transition": "Crack pattern match-cuts to spreading resin"
+        },
+        {
+          "id": "FC-04",
+          "sequenceId": "FAILED_CARRIER",
+          "timing": "5:02-7:00 / 123-168",
+          "startFrame": 123,
+          "endFrame": 168,
+          "lensMm": 28,
+          "camera": "28 mm cargo master, broken horizon and rising translational shake",
+          "action": "Coolant falls like inverted incense, the coffin seal opens, and spore fog rolls low toward the aisle. Operator turns between pod and passengers. Jaw-like hatch dogs attempt closure but living resin holds the mouth open. Preserve one clean silhouette beat before chaos.",
+          "assets": "localized volume simulation, resin growth, operator turn, hatch rig, warning groups",
+          "transition": "Abrupt black on second impact; no lingering gore reveal"
+        }
+      ]
+    },
+    {
+      "index": 5,
+      "name": "Empty Husk",
+      "id": "EMPTY_HUSK",
+      "sets": [
+        "SET-A",
+        "SET-D"
+      ],
+      "shots": [
+        {
+          "id": "EH-01",
+          "sequenceId": "EMPTY_HUSK",
+          "timing": "0:00-1:22 / 0-46",
+          "startFrame": 0,
+          "endFrame": 46,
+          "lensMm": 32,
+          "camera": "32 mm aft cabin wide, funereal one-point perspective",
+          "action": "Three empty restraints dominate foreground like abandoned choir stalls; operator is a small silhouette at the far pilot altar. Loose harnesses sway where bodies should be. A single exhausted tungsten practical breaks the blue-black nave.",
+          "assets": "cabin, operator near-static idle, strap bones, coarse shadow detail",
+          "transition": "Nearly invisible dissolve keyed to engine vibration"
+        },
+        {
+          "id": "EH-02",
+          "sequenceId": "EMPTY_HUSK",
+          "timing": "1:22-3:12 / 47-84",
+          "startFrame": 47,
+          "endFrame": 84,
+          "lensMm": 65,
+          "camera": "65 mm slow lateral track, shallow focus used sequentially",
+          "action": "Focus visits S1, S2, S3: a stamped human tag, a cloth prayer wrap, a shed shell fragment. Each token catches light then returns to black. Operator remains an anonymous defocused shape ahead.",
+          "assets": "camp/hive tokens, seat set, controlled focus pulls",
+          "transition": "Last token highlight becomes window ice glint"
+        },
+        {
+          "id": "EH-03",
+          "sequenceId": "EMPTY_HUSK",
+          "timing": "3:12-5:06 / 85-126",
+          "startFrame": 85,
+          "endFrame": 126,
+          "lensMm": 28,
+          "camera": "28 mm exterior locked wide through ruined arch foreground",
+          "action": "Shuttle rises through black Gothic ice. Six landmarks—three camp beacons and three circular hive mouths—remain dead. One distant tungsten point fails. Camera refuses to follow until the shuttle nearly escapes composition.",
+          "assets": "shuttle, ice set, dark landmarks, sparse snow volume",
+          "transition": "Delayed pan becomes cut on empty landscape"
+        },
+        {
+          "id": "EH-04",
+          "sequenceId": "EMPTY_HUSK",
+          "timing": "5:06-7:12 / 127-180",
+          "startFrame": 127,
+          "endFrame": 180,
+          "lensMm": null,
+          "camera": "extreme orbital wide, static until imperceptible final pullback",
+          "action": "Tiny shuttle crosses an enormous blue-black planet. No signal answers. Its one cabin light resembles a damaged film perforation before grain and distance swallow it. Hold longer than comfort permits.",
+          "assets": "shuttle, planet matte, minimal stars, `exterior_environment` only",
+          "transition": "Charcoal crush into full black, then silence"
+        }
+      ]
+    }
+  ]
+}

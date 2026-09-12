@@ -23,12 +23,19 @@ export const ATLAS_CONTRACT_V4 = Object.freeze({
 });
 
 /**
- * Row order, screen-relative under the fixed isometric camera. Row 0 is the
- * facing the player sees when moving "down-right" on screen; yaw increases
- * clockwise from there in 45-degree steps.
+ * Row order, screen-relative.
+ *
+ * Derived from the runtime rather than chosen: getDirectionIndexFromScreenAxes
+ * in playerSpriteLayouts.js computes atan2(screenY, screenX) and rounds to an
+ * octant, so a vector pointing right on screen -- east -- lands on index 0, and
+ * the index advances 45 degrees per row from there.
+ *
+ * An earlier draft of this module started the rows at SE, which is off by one
+ * and would have produced a perfectly consistent, entirely rotated atlas.
+ * Matches scripts/blender/manifests/scout-walk.json.
  */
 export const DIRECTION_NAMES = Object.freeze([
-    'SE', 'S', 'SW', 'W', 'NW', 'N', 'NE', 'E'
+    'E', 'SE', 'S', 'SW', 'W', 'NW', 'N', 'NE'
 ]);
 
 /** Pixel rect of one cell. Throws rather than returning a plausible wrong one. */

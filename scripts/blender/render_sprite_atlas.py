@@ -32,8 +32,9 @@ COLUMNS = 8
 ROWS = 8
 CELL = 256
 
-# Row order must match DIRECTION_NAMES in the JS contract.
-DIRECTIONS = ["SE", "S", "SW", "W", "NW", "N", "NE", "E"]
+# Row order must match DIRECTION_NAMES in the JS contract, which is itself
+# derived from getDirectionIndexFromScreenAxes: screen-right is east at index 0.
+DIRECTIONS = ["E", "SE", "S", "SW", "W", "NW", "N", "NE"]
 
 # Clip sources, reusing the mapping build_mixamo_scout_glb.py already
 # established rather than inventing a second source of truth.

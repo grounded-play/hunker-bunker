@@ -18,7 +18,7 @@ from PIL import Image
 
 COLUMNS = 8
 ROWS = 8
-DIRECTIONS = ["SE", "S", "SW", "W", "NW", "N", "NE", "E"]
+DIRECTIONS = ["E", "SE", "S", "SW", "W", "NW", "N", "NE"]
 
 
 def load_row(frames_dir: Path, clip: str, direction: str, cell: int) -> list[Image.Image] | None:
