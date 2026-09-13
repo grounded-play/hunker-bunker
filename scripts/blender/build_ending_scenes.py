@@ -553,7 +553,10 @@ def set_camera_focus_from_frame(scene: bpy.types.Scene, camera: bpy.types.Object
     for obj in scene.objects:
         if obj.type != "MESH" or obj.hide_render or obj.name.startswith("Shell_"):
             continue
-        center = obj.matrix_world @ mathutils.Vector(obj.bound_box[0])
+        # bound_box[0] is a CORNER, not a centre. An earlier line assigned it to
+        # `center` and the next line immediately overwrote it with the real
+        # centroid -- dead, and misleading to anyone reading for the framing
+        # maths, since a corner would bias every angle toward one octant.
         corners = [obj.matrix_world @ mathutils.Vector(corner) for corner in obj.bound_box]
         center = sum(corners, mathutils.Vector()) / len(corners)
         delta = center - origin
