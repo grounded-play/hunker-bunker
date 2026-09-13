@@ -39,6 +39,44 @@ export class AudioManager {
     // history it needs. The selector is pure; the caller owns this.
     static _lastSoundsetVariant = new Map();
 
+    // Where the player is and which way the camera's right axis points. The
+    // gameplay loop pushes this every frame; until it does, _listener stays
+    // null and every positional call falls back to non-spatial playback, so
+    // menus and cutscenes are unaffected.
+    static _listener = null;
+
+    static setListener(listener) {
+        if (!listener || !Number.isFinite(listener.x) || !Number.isFinite(listener.z)) {
+            AudioManager._listener = null;
+            return false;
+        }
+        AudioManager._listener = {
+            x: listener.x,
+            z: listener.z,
+            rightX: Number.isFinite(listener.rightX) ? listener.rightX : 1,
+            rightZ: Number.isFinite(listener.rightZ) ? listener.rightZ : 0
+        };
+        return true;
+    }
+
+    /**
+     * Resolve an emitter's world position into pan/gain/cutoff, or null when
+     * the call is not positional. `critical` keeps story and warning cues
+     * audible at range rather than letting distance mute them entirely.
+     */
+    static resolveSpatial(options = {}) {
+        const listener = AudioManager._listener;
+        if (!listener) return null;
+        if (!Number.isFinite(options.worldX) || !Number.isFinite(options.worldZ)) return null;
+        return calculateScreenSpaceAudio({
+            source: { x: options.worldX, z: options.worldZ },
+            listener: { x: listener.x, z: listener.z },
+            cameraRight: { x: listener.rightX, z: listener.rightZ },
+            obstructed: Boolean(options.obstructed),
+            critical: Boolean(options.critical)
+        });
+    }
+
     static buffers = {};
     static images = {};
     static globalMuted = false;
@@ -332,11 +370,19 @@ export class AudioManager {
             bus: options.bus ?? 'sfx'
         });
 
+        // Positional emitters resolve to pan/gain/cutoff here. A sound that is
+        // fully out of range is dropped before a node is built at all -- that
+        // is the audible behaviour AND it stops distant emitters allocating
+        // voices they would never be heard through.
+        const spatial = AudioManager.resolveSpatial(options);
+        if (spatial && !spatial.audible) return null;
+
         const source = audioCtx.createBufferSource();
         source.buffer = this.buffers[selectedKey];
-        
+
         const gainNode = audioCtx.createGain();
-        gainNode.gain.value = options.volume !== undefined ? options.volume : 1.0;
+        gainNode.gain.value = (options.volume !== undefined ? options.volume : 1.0)
+            * (spatial ? spatial.gain : 1);
         
         if (options.detune) source.detune.value = options.detune;
         
@@ -363,13 +409,28 @@ export class AudioManager {
 
         source.connect(gainNode);
 
-        // Optional stereo panning
         let lastNode = gainNode;
+
+        // Obstruction reads as muffling, not just quieting: a wall between the
+        // player and the emitter rolls the highs off. Only inserted when the
+        // cutoff is actually doing something, so open-air sounds keep the
+        // original node count.
+        if (spatial && spatial.cutoffHz < 20000 && typeof audioCtx.createBiquadFilter === 'function') {
+            const lowpass = audioCtx.createBiquadFilter();
+            lowpass.type = 'lowpass';
+            lowpass.frequency.value = spatial.cutoffHz;
+            lastNode.connect(lowpass);
+            lastNode = lowpass;
+        }
+
+        // Optional stereo panning. A resolved spatial pan wins over any caller
+        // supplied one -- the emitter's actual position is the better answer.
+        const panValue = spatial ? spatial.pan : options.pan;
         let panner = null;
-        if (options.pan !== undefined && Number.isFinite(options.pan)) {
+        if (panValue !== undefined && Number.isFinite(panValue)) {
             panner = audioCtx.createStereoPanner();
-            panner.pan.value = Math.max(-1, Math.min(1, options.pan));
-            gainNode.connect(panner);
+            panner.pan.value = Math.max(-1, Math.min(1, panValue));
+            lastNode.connect(panner);
             lastNode = panner;
         }
 
@@ -1650,3 +1711,4 @@ AudioManager.init();
 import { assetUrl } from './assetUrl.js';
 import { PRESENTATION_EVENTS, presentationTelemetry } from './presentationTelemetry.js';
 import { GAME_SOUNDSETS, selectSoundsetVariant } from './data/gameSoundsets.js';
+import { calculateScreenSpaceAudio } from './audioSpatial.js';

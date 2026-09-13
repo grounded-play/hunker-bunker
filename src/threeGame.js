@@ -18857,6 +18857,16 @@ export class ThreeGame {
         // that, so the run ended there.
         this.updatePinnedRecovery(delta);
 
+        // Push the audio listener every frame so positional emitters resolve
+        // against where the player actually is. cameraPlanarRight is a 2D
+        // screen-plane basis: its .y IS the world Z component, not a height.
+        window.AudioManager?.setListener?.({
+            x: this.player.position.x,
+            z: this.player.position.z,
+            rightX: this.cameraPlanarRight?.x ?? 1,
+            rightZ: this.cameraPlanarRight?.y ?? 0
+        });
+
         // Update kinetic control timers
         this.dashCooldownTimer = Math.max(0, (this.dashCooldownTimer ?? 0) - delta);
         this.meleeCooldownTimer = Math.max(0, (this.meleeCooldownTimer ?? 0) - delta);
