@@ -162,8 +162,8 @@ geometry and no special-case authoring. Place it, and the descent exists.
 | **1** | Restyle pass: palette, wear, variation in Blender | A kit corridor is indistinguishable from an authored one at a glance |
 | **2** | Corridor grammar: swap the random hallway skin per biome using one socket contract | **done** — `src/kitGrammar.js`, 12 tests |
 | **3** | Day cycle: sleep trigger, day counter, rest phase, difficulty and story gates | **core done** — `src/dayCycle.js`, 18 tests |
-| **4** | Portals: enter structure, drop to sub-level, return stack | A player enters a building and comes back out where they left |
-| **5** | Camera: ceiling fade, sub-level framing | The player is never hidden by a roof |
+| **4** | Portals: enter structure, drop to sub-level, return stack | **core done** — `src/portalPlanes.js`, 15 tests |
+| **5** | Camera: ceiling fade, sub-level framing | **core done** — same module |
 
 Phases 0–2 are asset and generation work. 3 is systems. 4–5 are runtime and
 camera. They are independent enough to land separately.
@@ -262,3 +262,58 @@ and asserts the result is a registered model. The whole promise of the grammar
 is that a generator can ask for a role and get something that renders; a role
 resolving to a type nobody registered is exactly the failure worth catching, and
 it would otherwise surface as an invisible corridor at runtime.
+
+
+---
+
+## 9. Phases 4-5 — portals, sub-levels and camera (implemented)
+
+`src/portalPlanes.js`. A stack, because that is what "go in, go deeper, come
+back out in order" is.
+
+```
+SURFACE                      camera 3.65 / far 160 / no fade
+  -> INTERIOR   (structure)  camera 3.10 / far  60 / ceiling fade
+    -> SUBLEVEL (hole)       camera 2.70 / far  42 / ceiling fade
+```
+
+### Decisions worth keeping
+
+**`returnTo` per plane.** Leaving puts the player back at the door they used,
+not at the plane's origin. Stepping out of a building and appearing somewhere
+else is the classic portal bug and it is a save-state problem once it happens.
+
+**The surface is never popped.** It is the floor of the stack; popping it would
+leave the player standing in no world at all.
+
+**Depth is bounded** at 3. An unbounded stack is a way to lose a player inside
+their own save.
+
+**Re-entering a plane already in the stack is refused.** Otherwise leaving is
+ambiguous — which copy do you return to?
+
+**Camera pulls in as you descend**, and the far plane shortens with it. That
+does double duty: it sells confinement, and it means a sub-level costs less to
+render than the surface it hangs off, which is what lets sub-levels exist at
+all on a Steam Deck.
+
+### Ceiling fade
+
+`ceilingFadeAlpha` fades geometry that is **above the player AND between them
+and the camera**. Both conditions matter:
+
+- A hard cull pops as the camera moves; a fade reads as a deliberate cutaway.
+- Fading a wall the player is standing *behind* would expose the world outside
+  the structure, so only the in-the-way test qualifies it.
+- It never fades fully — a roof at 12% alpha still reads as a roof, where one at
+  0% reads as a missing wall.
+- It ramps over a band rather than snapping, so a roof edge does not pop as the
+  player walks under it.
+- It is inert on the surface, which has no roof to hide behind.
+
+### Remaining across 4-5
+
+Runtime wiring: the trigger volumes that call `enterPlane`, chunk generation per
+plane using the kit grammar, and driving the per-object alpha from
+`ceilingFadeAlpha` in the render loop. The decisions and their guards are
+settled and tested; what is left is connection.
