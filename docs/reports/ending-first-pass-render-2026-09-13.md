@@ -80,3 +80,44 @@ under 1 MB as a likely black frame. The last full run before this pass returned
 That check exists because three separate defects this sprint produced exit-0
 renders that were wrong: an empty sprite atlas, the black per-shot shells, and a
 compositor node group that blacked every frame while reporting success.
+
+---
+
+## Preserving passes
+
+`scripts/archive-prerender-pass.sh [label]` snapshots the current scenes, test
+frames and rendered frames into `art/source/blender-prerenders/archive/<stamp>-<label>/`
+with a `MANIFEST.txt` recording the commit, branch and dirty-path count that
+produced it.
+
+It uses **hardlinks**, so a snapshot is byte-identical by construction rather
+than by copy, and costs almost nothing: the tree measures 795 MB deduplicated
+against 1.6 GB if the links were real copies. Blender writes a new inode when it
+saves, so an archived link keeps the old bytes instead of following the edit.
+
+This matters because a rebuild is not reversible from the generator alone — the
+generator has moved on, so it can no longer produce the scene it produced an
+hour ago. The first snapshot is `20260913-120517-pre-viewport-rework`: 5 scenes,
+20 test frames, 686 rendered frames.
+
+## Viewport placement
+
+The aperture goes in the wall each set's cameras actually face, chosen by
+averaging every shot camera's forward vector. Averaging rather than taking the
+first camera: three cameras facing east and one facing west should still put the
+window east.
+
+A first version always cut the north wall, and `CAM_MI_02` faces elsewhere, so
+that shot saw no difference and stayed dark — a window nobody is pointed at is
+decoration. Measured placement now:
+
+| Scene | Viewport wall |
+|---|---|
+| mothership_infection | S |
+| alien_exodus | S |
+| outed_escape | S |
+| failed_carrier | S |
+| empty_husk | N |
+
+`empty_husk` differing is the check working: its cameras genuinely face the
+other way.

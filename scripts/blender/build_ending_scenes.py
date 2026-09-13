@@ -476,33 +476,51 @@ def build_room_shell(
 
     # VIEWPORT. A sealed shell occludes the world completely -- raising the
     # interior environment strength from 0.55 to 1.8 produced a byte-identical
-    # render, which is how we know. Cutting an aperture in one wall is what
-    # actually lets the game sky light the room and appear behind the cast.
+    # render, which is how we know. Cutting an aperture is what actually lets
+    # the game sky light the room and appear behind the cast.
     #
-    # Built as four panels around a gap rather than a boolean: no modifier to
-    # evaluate, no n-gon to misbehave, and each panel stays a flat quad.
+    # It goes in the wall the set's cameras ACTUALLY FACE, not a fixed compass
+    # direction. A first version always cut the north wall; CAM_MI_02 faces
+    # elsewhere, so that shot saw no difference at all and stayed dark. A window
+    # nobody is pointed at is decoration.
+    #
+    # Built as four panels around the gap rather than a boolean: no modifier to
+    # evaluate, no n-gon, and every panel stays a flat quad.
     wall_h = ceil_z - floor_z
-    ap_w = size_x * VIEWPORT_WIDTH_FRACTION
-    ap_h = wall_h * VIEWPORT_HEIGHT_FRACTION
-    # Sill above the floor so the opening reads as a window, not a missing wall.
-    ap_bottom = floor_z + (wall_h - ap_h) * VIEWPORT_SILL_FRACTION
-    ap_top = ap_bottom + ap_h
-    side_w = (size_x - ap_w) / 2.0
-    north_y = max_y
-    north_rot = (math.radians(90), 0, 0)
+    hero = _hero_wall(scene)
 
-    surfaces = (
+    def _wall_panels(tag, centre, rotation, span):
+        """Solid wall, or four panels around an aperture when it is the hero."""
+        mid_z = (floor_z + ceil_z) / 2
+        if tag != hero:
+            return [(f"Wall_{tag}", centre(mid_z), rotation, (span, wall_h), wall_mat)]
+        ap_w = span * VIEWPORT_WIDTH_FRACTION
+        ap_h = wall_h * VIEWPORT_HEIGHT_FRACTION
+        # Sill above the floor so it reads as a window, not a missing wall.
+        ap_bottom = floor_z + (wall_h - ap_h) * VIEWPORT_SILL_FRACTION
+        ap_top = ap_bottom + ap_h
+        side = (span - ap_w) / 2.0
+        offset = (ap_w / 2) + (side / 2)
+        return [
+            (f"Wall_{tag}_Left", centre(mid_z, -offset), rotation, (side, wall_h), wall_mat),
+            (f"Wall_{tag}_Right", centre(mid_z, offset), rotation, (side, wall_h), wall_mat),
+            (f"Wall_{tag}_Above", centre((ap_top + ceil_z) / 2), rotation, (ap_w, ceil_z - ap_top), wall_mat),
+            (f"Wall_{tag}_Below", centre((floor_z + ap_bottom) / 2), rotation, (ap_w, ap_bottom - floor_z), wall_mat),
+        ]
+
+    surfaces = [
         ("Floor", (cx, cy, floor_z), (0, 0, 0), (size_x, size_y), floor_mat),
         ("Ceiling", (cx, cy, ceil_z), (math.radians(180), 0, 0), (size_x, size_y), ceil_mat),
-        # North wall in four pieces around the viewport aperture.
-        ("Wall_N_Left", (cx - (ap_w / 2) - (side_w / 2), north_y, (floor_z + ceil_z) / 2), north_rot, (side_w, wall_h), wall_mat),
-        ("Wall_N_Right", (cx + (ap_w / 2) + (side_w / 2), north_y, (floor_z + ceil_z) / 2), north_rot, (side_w, wall_h), wall_mat),
-        ("Wall_N_Above", (cx, north_y, (ap_top + ceil_z) / 2), north_rot, (ap_w, ceil_z - ap_top), wall_mat),
-        ("Wall_N_Below", (cx, north_y, (floor_z + ap_bottom) / 2), north_rot, (ap_w, ap_bottom - floor_z), wall_mat),
-        ("Wall_S", (cx, min_y, (floor_z + ceil_z) / 2), (math.radians(-90), 0, 0), (size_x, ceil_z - floor_z), wall_mat),
-        ("Wall_E", (max_x, cy, (floor_z + ceil_z) / 2), (0, math.radians(-90), 0), (ceil_z - floor_z, size_y), wall_mat),
-        ("Wall_W", (min_x, cy, (floor_z + ceil_z) / 2), (0, math.radians(90), 0), (ceil_z - floor_z, size_y), wall_mat),
-    )
+    ]
+    surfaces += _wall_panels("N", lambda z, o=0.0: (cx + o, max_y, z), (math.radians(90), 0, 0), size_x)
+    surfaces += _wall_panels("S", lambda z, o=0.0: (cx + o, min_y, z), (math.radians(-90), 0, 0), size_x)
+    # E/W planes are rotated about Y, so their local X spans the room height and
+    # local Y spans the wall length -- the scale pair is swapped relative to N/S.
+    for tag, lam, rot in (("E", lambda z, o=0.0: (max_x, cy + o, z), (0, math.radians(-90), 0)),
+                          ("W", lambda z, o=0.0: (min_x, cy + o, z), (0, math.radians(90), 0))):
+        for name, loc, rotation, (a, b), mat in _wall_panels(tag, lam, rot, size_y):
+            surfaces.append((name, loc, rotation, (b, a), mat))
+
     for suffix, location, rotation, (sx, sy), material in surfaces:
         bpy.ops.mesh.primitive_plane_add(size=1.0, location=location)
         plane = bpy.context.active_object
@@ -624,6 +642,28 @@ def create_camera(
 # Viewport aperture in one interior wall, as a fraction of that wall. Sized to
 # read as a ship window: wide enough to admit real light and show sky behind the
 # cast, not so wide the room stops being a room.
+def _hero_wall(scene) -> str:
+    """
+    Which wall do this set's cameras look at?
+
+    Averages every shot camera's forward vector and returns the compass wall it
+    points into. Averaging rather than taking the first camera: a set with three
+    cameras facing east and one facing west should still put its window east.
+    """
+    import mathutils
+
+    total = mathutils.Vector((0.0, 0.0, 0.0))
+    for obj in scene.objects:
+        if obj.type != "CAMERA" or not obj.name.startswith("CAM_"):
+            continue
+        total += obj.matrix_world.to_quaternion() @ mathutils.Vector((0.0, 0.0, -1.0))
+    if total.length < 1e-6:
+        return "N"
+    if abs(total.y) >= abs(total.x):
+        return "N" if total.y > 0 else "S"
+    return "E" if total.x > 0 else "W"
+
+
 VIEWPORT_WIDTH_FRACTION = 0.46
 VIEWPORT_HEIGHT_FRACTION = 0.40
 VIEWPORT_SILL_FRACTION = 0.55
