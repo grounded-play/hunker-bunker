@@ -316,7 +316,7 @@ export class AudioManager {
                 : key.startsWith('mainbg_')
                     ? 'music'
                     : (options.isBg ? 'music' : 'sfx');
-        const bus = requestedBus === 'world' || requestedBus === 'music' || requestedBus === 'sfx' || requestedBus === 'voice'
+        const bus = requestedBus === 'world' || requestedBus === 'music' || requestedBus === 'sfx' || requestedBus === 'voice' || requestedBus === 'foley'
             ? requestedBus
             : inferredBus;
 

@@ -45,6 +45,7 @@ export function extractShots(markdown) {
     const lines = String(markdown).split('\n');
     const sequences = [];
     let current = null;
+    let inShotList = false;
 
     for (const line of lines) {
         const seq = /^##\s+Sequence\s+(\d+)\s+[—-]\s+(.+?)\s*$/.exec(line);
@@ -57,14 +58,35 @@ export function extractShots(markdown) {
                 shots: []
             };
             sequences.push(current);
+            inShotList = false;
             continue;
         }
+
+        // Any other top-level ## heading exits sequence scope
+        if (/^##\s+/.test(line)) {
+            current = null;
+            inShotList = false;
+            continue;
+        }
+
         if (!current) continue;
+
+        if (/^###\s+Shot list\b/i.test(line)) {
+            inShotList = true;
+            continue;
+        }
+
+        if (/^###\s+/.test(line)) {
+            inShotList = false;
+            continue;
+        }
 
         if (/^\*\*Primary sets?:\*\*/.test(line)) {
             current.sets = parseSets(line);
             continue;
         }
+
+        if (!inShotList) continue;
 
         // Shot rows look like: | MI-01 | 0:00-1:18 / 0-42 | 28 mm ... |
         const row = /^\|\s*([A-Z]{2,3}-\d{2})\s*\|(.+)\|\s*$/.exec(line);

@@ -62,7 +62,7 @@ if (typeof globalThis.AudioContext === 'undefined') {
     }
 }
 
-import { AudioManager } from './audio.js';
+import { AudioManager, audioCtx } from './audio.js';
 
 describe('AudioManager Voice Channel & Soundsets Toggle', () => {
     beforeEach(() => {
@@ -99,6 +99,20 @@ describe('AudioManager Voice Channel & Soundsets Toggle', () => {
         AudioManager.globalMuted = true;
         const resultMuted = AudioManager.playVoiceForMessage('MOTHERSHIP COMMAND', 'Agent Scout.');
         expect(resultMuted).toBeNull();
+    });
+
+    it('routes an explicitly requested foley cue to the foley gain node', () => {
+        const connect = vi.fn();
+        const gainNode = { gain: { value: 1 }, connect };
+        const createGainSpy = vi.spyOn(audioCtx, 'createGain').mockReturnValueOnce(gainNode);
+        AudioManager.buffers.foley_route_test = {};
+
+        const result = AudioManager.play('foley_route_test', { bus: 'FoLeY', varyPitch: false });
+
+        expect(result?.gainNode).toBe(gainNode);
+        expect(connect).toHaveBeenCalledWith(AudioManager.foleyGain);
+        createGainSpy.mockRestore();
+        delete AudioManager.buffers.foley_route_test;
     });
 
     it('generates voice playback for speaker when voice is enabled', () => {

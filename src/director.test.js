@@ -24,7 +24,12 @@ describe('chooseDirectorAction', () => {
 
     it('keeps environmental sabotage console-driven', () => {
         const deep = { hpFrac: 1, depth: 60, secondsSinceThreat: 999, secondsElapsed: 240 };
-        for (let r = 0; r < 1; r += 0.05) {
+        // Integer stepping rather than `r += 0.05`: the float increment drifts
+        // off the intended values and stops before 1.0, so the upper end of the
+        // roll range -- exactly where lightsout/corrupt would be selected if the
+        // gate regressed -- went untested.
+        for (let i = 0; i <= 20; i += 1) {
+            const r = i / 20;
             const action = chooseDirectorAction(deep, () => r);
             expect(['patrol', 'taunt', 'none']).toContain(action);
             expect(action).not.toBe('lightsout');

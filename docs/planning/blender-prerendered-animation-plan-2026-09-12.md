@@ -388,6 +388,12 @@ ending, recommended `ALIEN_EXODUS` because it currently gates a high-effort
 three-hive outcome. Reuse repository models and environment assets, render PNG
 masters, encode WebM, and integrate through the existing cutscene engine.
 
+The Cycles production look, compositing grammar, public-domain/CC0 audio
+sourcing ledger, Blender VSE mix plan, staging, and shot definitions for all
+five missing endings are
+specified in
+[`blender-ending-scene-blocks-and-shot-list-2026-09-12.md`](blender-ending-scene-blocks-and-shot-list-2026-09-12.md).
+
 Do not batch all five endings before the first one passes narrative, playback,
 fallback, file-size, and packaged-build review.
 
@@ -480,4 +486,3 @@ This plan is complete when:
 - memory, package size, and loading budgets are recorded;
 - remaining candidate animations are explicitly accepted into the roadmap or
   cut with rationale.
-
