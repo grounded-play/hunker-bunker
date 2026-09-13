@@ -29,11 +29,12 @@ Both: `join=yes twoPlayerRoster=yes ready=yes deployed=yes remote3d=yes pvp=yes`
 | P0-1 PVP one-directional damage | **fixed; two-client rerun still required** | `df17049` |
 | (plan) 3 of 4 mandatory ship goals had no authored room | **fixed** | `7f3d578` |
 | P0-2 interaction cycling | **fixed** (keyboard + controller) | `facad1e`, `a20add1` |
-| P0-2 movement trap / unstick | **fixed** (bounded depenetration) | `79ef18d` |
+| P0-2 movement trap / unstick | **fixed** (overlap + sustained pin recovery) | `79ef18d`, `c40263f` |
 | P0-3 black box as secondary objective | **fixed** | `a20add1` |
 | P1-6 terminal death pose | **fixed** | `c397156` |
 | P2-5 base/field turret model, scale and timing | **fixed** | `10a7a81` |
-| P2-1..P2-4, P2-6..P2-7 loadout, Daily Op, inventory, skill tree | not started | — |
+| P2-4 one Relic Key per boss | **fixed; live Steam grant still needs acceptance** | `bdb590c` |
+| P2-1..P2-3, P2-6..P2-7 loadout, Daily Op, inventory, skill tree | not started | — |
 
 ### Coordination note
 
