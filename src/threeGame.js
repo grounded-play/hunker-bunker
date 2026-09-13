@@ -719,6 +719,10 @@ const BUILD_SITES = Object.freeze([
     Object.freeze({ goalKey: 'radarNode', x: 9, z: 98, biome: 'cryo', label: 'SCANNER MAST SITE', animated: true }),
     Object.freeze({ goalKey: 'reactorCompressor', x: -8, z: 176, biome: 'bio', label: 'REACTOR SITE' })
 ]);
+// Audio obstruction ray: chest height so ledges and low debris are not walls,
+// and a back-off so geometry the emitter is touching does not muffle it.
+const AUDIO_OBSTRUCTION_RAY_HEIGHT = 1.0;
+const AUDIO_OBSTRUCTION_BACKOFF = 0.75;
 const PLAYER_HITBOX_PADDING = 0.18;     // forgiving hitbox for player shots only
 const WEAPON_CLIP_PER_CAPACITY = 2;     // +clip rounds per ammoCapacity tier
 const WEAPON_SPEED_PER_TIER = 2.5;      // +projectile speed per shotSpeed tier
@@ -5007,7 +5011,9 @@ export class ThreeGame {
                 glowColor: isPvP ? 0xff0000 : 0x00ffff
             }
         });
-        window.AudioManager?.play?.('weapon_fire_sidearm', { volume: 0.28, varyPitch: true });
+        // Remote player's shot: this one genuinely needs placing -- it is the
+        // only weapon fire that does not originate at the listener.
+        window.AudioManager?.play?.('weapon_fire_sidearm', this.audioAt(originX, originZ, { volume: 0.28, varyPitch: true }));
     }
 
     handleRemotePlayerDamaged(data) {
@@ -6563,7 +6569,7 @@ export class ThreeGame {
         if (this.weaponClipAmmo <= 0 && !this.unlimitedAmmo) {
             const availableAmmo = this.getAvailableAmmo();
             if (availableAmmo < 1) {
-                window.AudioManager?.play('weapon_dry_fire', { volume: 0.45 });
+                window.AudioManager?.play('weapon_dry_fire', this.audioAt(this.player?.position?.x, this.player?.position?.z, { volume: 0.45 }));
                 presentationTelemetry.emit('WEAPON', PRESENTATION_EVENTS.WEAPON.SHOT_BLOCKED, { reason: 'out_of_ammo', clip: 0, reserve: 0 }, { level: 'warn' });
                 return this.triggerGameplayMelee({ source: 'empty-fire-fallback' });
             }
@@ -6610,7 +6616,7 @@ export class ThreeGame {
             });
         }
 
-        window.AudioManager?.play('weapon_fire_sidearm', { volume: 0.34 });
+        window.AudioManager?.play('weapon_fire_sidearm', this.audioAt(this.player?.position?.x, this.player?.position?.z, { volume: 0.34 }));
 
         if (this.weaponClipAmmo <= 0 && !this.unlimitedAmmo) {
             this.requestReload();
@@ -20779,7 +20785,7 @@ export class ThreeGame {
         this.weaponReloadDuration = WEAPON_RELOAD_DURATION * (this.reloadSpeedMult ?? 1.0);
         this.weaponReloadTimer = this.weaponReloadDuration;
         this.emitWeaponClipState();
-        window.AudioManager?.play('weapon_reload', { volume: 0.52 });
+        window.AudioManager?.play('weapon_reload', this.audioAt(this.player?.position?.x, this.player?.position?.z, { volume: 0.52 }));
         window.AudioManager?.playVoiceCallout?.('reload');
         this.triggerReloadRelicEffects?.(wasEmptyReload);
         return true;
@@ -30932,13 +30938,35 @@ export class ThreeGame {
      * emitter so standing next to a wall does not mute the thing beside it.
      */
     isAudioPathObstructed(x, z) {
-        if (!this.player || typeof this.canOccupyPosition !== 'function') return false;
+        if (!this.player) return false;
         const px = this.player.position.x;
         const pz = this.player.position.z;
         const dx = x - px;
         const dz = z - pz;
         const distance = Math.hypot(dx, dz);
         if (!(distance > 1.5)) return false;
+
+        // Preferred path: a real raycast against the built wall geometry, the
+        // same meshes the suit-light cone casts against. `far` stops short of
+        // the emitter so a wall the emitter is standing against does not muffle
+        // it, and the ray runs at chest height rather than the floor so ledges
+        // and low debris do not read as walls.
+        if (this.wallMeshes?.length > 0) {
+            this._audioRaycaster = this._audioRaycaster ?? new THREE.Raycaster();
+            this._audioRayOrigin = this._audioRayOrigin ?? new THREE.Vector3();
+            this._audioRayDir = this._audioRayDir ?? new THREE.Vector3();
+            const far = distance - AUDIO_OBSTRUCTION_BACKOFF;
+            if (!(far > 0)) return false;
+            this._audioRayOrigin.set(px, AUDIO_OBSTRUCTION_RAY_HEIGHT, pz);
+            this._audioRayDir.set(dx / distance, 0, dz / distance);
+            this._audioRaycaster.set(this._audioRayOrigin, this._audioRayDir);
+            this._audioRaycaster.far = far;
+            return this._audioRaycaster.intersectObjects(this.wallMeshes, false).length > 0;
+        }
+
+        // Fallback for before the meshes are built (and for headless tests):
+        // sample the same collision the player walks on.
+        if (typeof this.canOccupyPosition !== 'function') return false;
         const steps = Math.min(10, Math.max(2, Math.round(distance / 1.75)));
         for (let i = 1; i < steps; i += 1) {
             const t = i / steps;

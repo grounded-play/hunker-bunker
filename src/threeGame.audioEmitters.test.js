@@ -32,6 +32,47 @@ describe('audioAt', () => {
     });
 });
 
+describe('isAudioPathObstructed — raycast against world geometry', () => {
+    // A stand-in for THREE.Raycaster's contract: set(), .far, intersectObjects().
+    function rayStub(hits) {
+        return stub({
+            wallMeshes: [{}, {}],
+            _audioRaycaster: {
+                far: 0,
+                set() {},
+                // Real Raycaster honours `far`; a stub that ignores it cannot
+                // test the back-off, so model the contract.
+                intersectObjects() {
+                    return hits.filter((hit) => hit.distance <= this.far);
+                }
+            },
+            _audioRayOrigin: { set() {} },
+            _audioRayDir: { set() {} }
+        });
+    }
+
+    it('uses the wall meshes when they exist, not the collision fallback', () => {
+        const game = rayStub([{ distance: 4 }]);
+        // canOccupyPosition would say "clear"; the ray says blocked and wins.
+        expect(game.isAudioPathObstructed(20, 0)).toBe(true);
+    });
+
+    it('is clear when the ray hits nothing', () => {
+        expect(rayStub([]).isAudioPathObstructed(20, 0)).toBe(false);
+    });
+
+    it('stops short of the emitter, so a wall it stands against does not muffle it', () => {
+        const game = rayStub([{ distance: 1 }]);
+        // 1.6 apart: past the 1.5 near-guard but inside the 0.75 back-off.
+        expect(game.isAudioPathObstructed(1.6, 0)).toBe(false);
+    });
+
+    it('falls back to collision sampling before the meshes are built', () => {
+        const game = stub({ wallMeshes: [], canOccupyPosition: (x) => !(x > 9 && x < 11) });
+        expect(game.isAudioPathObstructed(20, 0)).toBe(true);
+    });
+});
+
 describe('isAudioPathObstructed', () => {
     it('never obstructs a very close emitter', () => {
         const game = stub({ canOccupyPosition: () => false });

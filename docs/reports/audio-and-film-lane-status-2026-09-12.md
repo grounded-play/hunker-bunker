@@ -130,22 +130,31 @@ suites.
 
 ### Emitters and obstruction — done
 
-Nine call sites now emit positionally via `ThreeGame.audioAt(x, z, extra)`:
+Thirteen call sites now emit positionally via `ThreeGame.audioAt(x, z, extra)`:
 enemy hits (normal, enraged, boss), enemy deaths (crawler and snail), the Mayor
 Tina encounter, hive prop hits, camp-quest shootable props, and both bunker
 blast-door stress cues.
 
-`isAudioPathObstructed()` supplies the obstruction flag by sampling
-`canOccupyPosition` along the listener→emitter segment — the same collision the
-player walks on. **Not** a Three.js raycast: this runs once per sound, and a
-scene raycast per gunshot is not affordable. It is deliberately permissive at
-both ends — emitters within 1.5 units are never obstructed, and sampling stops
-short of the emitter so standing beside a wall does not mute the thing next to
-it.
+Weapons are wired too: the **remote** player's shot (the only weapon fire that
+does not originate at the listener), plus local fire, dry-fire and reload. The
+local ones resolve to a pan of zero by construction — the player is the
+listener — but they now go through the same path, so nothing depends on a
+call-site judgement about who is holding the gun.
 
-**Deliberately left flat:** UI, menu and class-lock cues, and the local player's
-own weapon. The player is the listener, so spatialising their own gun buys a pan
-of zero and a gain of one while adding work per shot.
+`isAudioPathObstructed()` casts a real ray against `this.wallMeshes`, the same
+geometry the suit-light cone casts against, reusing a cached `THREE.Raycaster`
+and two vectors so a shot does not allocate. Two tuning constants:
 
-**Remaining:** remote players' weapons in multiplayer are still flat and would
-benefit, and `spawnPropDebris` in `src/enemyGibs.js` emits no audio at all yet.
+- `AUDIO_OBSTRUCTION_RAY_HEIGHT = 1.0` — chest height, so ledges and low debris
+  do not read as walls.
+- `AUDIO_OBSTRUCTION_BACKOFF = 0.75` — `far` stops short of the emitter, so a
+  wall the emitter is standing against does not muffle it.
+
+Emitters within 1.5 units are never obstructed: you can hear what is on top of
+you. When `wallMeshes` is empty — before the world is built, and in headless
+tests — it falls back to sampling `canOccupyPosition` along the segment.
+
+**Deliberately left flat:** UI, menu and class-lock cues only.
+
+**Remaining:** `spawnPropDebris` in `src/enemyGibs.js` emits no audio at all
+yet, so every prop in the game still shatters silently.
