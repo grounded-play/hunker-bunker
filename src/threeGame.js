@@ -357,7 +357,7 @@ const PICKUP_TYPES = [
 export const CLASS_STATS = {
     SCOUT:    { moveSpeed: 4.8, o2DrainMult: 1.25, pickupMagnetRadius: 4.2, projectileDamage: 1, passiveName: 'EVASIVE', passiveDescription: 'Reduced duration from enemy slow/freeze effects. Faster reload.' },
     TANK:     { moveSpeed: 2.6, o2DrainMult: 0.75, pickupMagnetRadius: 2.8, projectileDamage: 2, passiveName: 'BULWARK', passiveDescription: 'Chance to fully block incoming damage.' },
-    ENGINEER: { moveSpeed: 3.6, o2DrainMult: 1.0,  pickupMagnetRadius: 3.4, projectileDamage: 1, passiveName: 'AUTO-TURRET', passiveDescription: 'Periodically deploys an automated turret that fires on nearby enemies.' }
+    ENGINEER: { moveSpeed: 3.6, o2DrainMult: 1.0,  pickupMagnetRadius: 3.4, projectileDamage: 1, passiveName: 'TURRET PROTOCOL', passiveDescription: 'Unlock the automated field turret deep in the Engineer skill tree.' }
 };
 
 export const O2_DRAIN_RATE_PCT_PER_SEC = 1 / 3;
@@ -4001,6 +4001,11 @@ export class ThreeGame {
             tileZ: 4.8
         };
 
+        // The field turret already uses the authored defense-turret asset. Use
+        // that same visual language at the base, at a smaller fixture scale;
+        // primitives remain as a synchronous fallback if the GLB cannot load.
+        this.upgradeBaseTurretToModel?.(group);
+
         this._onBaseItemRepaired = () => {
             this.bank?.unlockBaseTurret?.();
             this.updateBaseTurretVisuals();
@@ -4016,6 +4021,36 @@ export class ThreeGame {
             window.addEventListener('base-turret-repaired', this._onBaseTurretChanged);
         }
         this.updateBaseTurretVisuals();
+    }
+
+    async upgradeBaseTurretToModel(group) {
+        if (!group || !hasWorld3dModel('prop_base_defense_turret')) return false;
+        try {
+            const model = await this.createWorld3dModel('prop_base_defense_turret');
+            const root = model?.root ?? model;
+            if (!root) return false;
+            if (this.baseDefenseTurretGroup !== group || !group.parent) {
+                root.traverse?.((child) => {
+                    child.geometry?.dispose?.();
+                    child.material?.dispose?.();
+                });
+                return false;
+            }
+            for (const child of [...group.children]) {
+                group.remove(child);
+                child.geometry?.dispose?.();
+                child.material?.dispose?.();
+            }
+            root.scale.multiplyScalar(0.58);
+            root.position.y = 0.04;
+            group.add(root);
+            this.baseDefenseTurretHead = root;
+            this.baseDefenseTurretEyeMat = null;
+            return true;
+        } catch (err) {
+            console.warn('[base-turret] model upgrade failed, keeping placeholder', err);
+            return false;
+        }
     }
 
     updateBaseTurretVisuals() {
@@ -16993,10 +17028,11 @@ export class ThreeGame {
             if (unlocked('tank_special_upgrade_1')) stats.blockChance = 0.4;
             if (unlocked('tank_special_upgrade_2')) stats.tankRegenEnabled = true;
         } else if (playerType === 'ENGINEER') {
-            stats.turretInterval = 20;
-            stats.turretFireInterval = 1.2;
-            stats.turretDuration = 6;
-            if (unlocked('engineer_special_unlock')) stats.turretDuration = 9;
+            if (unlocked('engineer_special_unlock')) {
+                stats.turretInterval = 20;
+                stats.turretFireInterval = 1.2;
+                stats.turretDuration = 9;
+            }
             if (unlocked('engineer_special_upgrade_1')) stats.turretFireInterval = 0.9;
             if (unlocked('engineer_special_upgrade_2')) stats.turretInterval = 15;
         }
@@ -18556,6 +18592,7 @@ export class ThreeGame {
 
     updateEngineerTurret(delta) {
         if (this.playerType !== 'ENGINEER') return;
+        if (!(this.turretInterval > 0) || !(this.turretDuration > 0)) return;
         if (this.activeTurret) {
             this.activeTurret.timer -= delta;
             this.activeTurret.fireTimer -= delta;

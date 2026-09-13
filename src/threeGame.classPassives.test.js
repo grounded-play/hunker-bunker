@@ -45,12 +45,12 @@ describe('resolveClassPassiveStats', () => {
         expect(stats.tankRegenEnabled).toBe(true);
     });
 
-    it('gives ENGINEER base 20s interval / 6s duration / 1.2s fire interval with no skills unlocked', () => {
+    it('keeps the ENGINEER field turret locked until the late protocol node', () => {
         const fakeThis = { bank: makeFakeBank([]) };
         const stats = ThreeGame.prototype.resolveClassPassiveStats.call(fakeThis, 'ENGINEER');
-        expect(stats.turretInterval).toBe(20);
-        expect(stats.turretDuration).toBe(6);
-        expect(stats.turretFireInterval).toBeCloseTo(1.2);
+        expect(stats.turretInterval).toBe(0);
+        expect(stats.turretDuration).toBe(0);
+        expect(stats.turretFireInterval).toBe(0);
     });
 
     it('improves ENGINEER turret with all three skills unlocked', () => {
@@ -325,6 +325,16 @@ describe('updateEngineerTurret — deploy/despawn cycle', () => {
 
     it('does nothing for non-ENGINEER classes', () => {
         const fakeThis = makeFakeThis({ playerType: 'TANK', turretCooldownTimer: 0 });
+        ThreeGame.prototype.updateEngineerTurret.call(fakeThis, 1);
+        expect(fakeThis.activeTurret).toBeNull();
+    });
+
+    it('does not deploy before the turret protocol is unlocked', () => {
+        const fakeThis = makeFakeThis({
+            turretInterval: 0,
+            turretDuration: 0,
+            turretCooldownTimer: 0
+        });
         ThreeGame.prototype.updateEngineerTurret.call(fakeThis, 1);
         expect(fakeThis.activeTurret).toBeNull();
     });
