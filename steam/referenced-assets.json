@@ -1203,6 +1203,7 @@
     "scout_ship_healed.png",
     "ship_wreckage.png",
     "site_floor_material_atlas_v1.png",
+    "sky/cinematic_deep_space_panorama.jpg",
     "sky/fx_comet_longtail.png",
     "sky/fx_lightning_crawler.png",
     "sky/fx_lightning_fork.png",
@@ -4958,6 +4959,11 @@
       "classification": "runtime-required"
     },
     {
+      "path": "cutscenes/ending-alienexodus.webm",
+      "bytes": 221496,
+      "classification": "runtime-required"
+    },
+    {
       "path": "cutscenes/ending-carriersbargain-poster.jpg",
       "bytes": 340577,
       "classification": "runtime-required"
@@ -4978,6 +4984,16 @@
       "classification": "runtime-required"
     },
     {
+      "path": "cutscenes/ending-emptyhusk.webm",
+      "bytes": 185855,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "cutscenes/ending-failedcarrier.webm",
+      "bytes": 191511,
+      "classification": "runtime-required"
+    },
+    {
       "path": "cutscenes/ending-fullbrood-poster.jpg",
       "bytes": 444663,
       "classification": "runtime-required"
@@ -4995,6 +5011,16 @@
     {
       "path": "cutscenes/ending-mixedcrew.webm",
       "bytes": 2018127,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "cutscenes/ending-mothershipinfection.webm",
+      "bytes": 160516,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "cutscenes/ending-outedescape.webm",
+      "bytes": 194063,
       "classification": "runtime-required"
     },
     {
