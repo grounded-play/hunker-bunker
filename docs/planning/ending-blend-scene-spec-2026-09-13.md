@@ -196,6 +196,16 @@ production `.blend` files were rebuilt:
   each for Mothership Infection, Alien Exodus, Outed Escape and Empty Husk, and
   five cues for Failed Carrier. All scenes use `AUDIO_SYNC`.
 
+The derived separation-rim system introduced for Outed Escape is now rolled
+through the other four endings. Mothership Infection's earlier hand-positioned
+collar rim now derives from its clinical key; Alien Exodus derives a warm edge
+for Nahl from the cold profile key; Failed Carrier derives a warm operator edge
+from the cyan cargo master; and Empty Husk derives a cold token edge from its
+tungsten practical. Each remains at 45% of its key and 140 degrees around its
+subject. Mixed-scene interior lights are keyed off alongside the cabin cast, so
+the new portrait lights cannot spill into AE-01/04 or EH-03/04. Representative
+Cycles reviews cover all five rims plus AE-04 and EH-03 exterior isolation.
+
 The review helper is `scripts/blender/render_review_frame.py`. Delivery remains
 at the scene-level Cycles settings (256 samples, 1920x1080, OIDN, AgX Punchy);
 the review helper deliberately overrides only resolution and sample count.

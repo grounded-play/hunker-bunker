@@ -1397,14 +1397,11 @@ def setup_scene_mothership_infection(root_col: bpy.types.Collection) -> list[bpy
     )
     aim_object_at(op_key, operator_collar)
 
-    # Rim: cool, from behind and opposite the key, so the collar separates from
-    # the dark room instead of merging into it. Low energy on purpose -- a rim
-    # that competes with the key reads as a second key.
-    op_rim = create_point_spot_light(
-        "Light_Operator_Rim", (0.35, 0.62, 0.95, 1.0), 90.0,
-        (1.1, 2.4, 2.0), (0, 0, 0), True, 42.0, scene_col
+    # Derive the rim from its key so distance, energy and opposing temperature
+    # remain coherent when the key is moved or retinted.
+    add_separation_rim(
+        bpy, "Light_Operator_Rim", operator_collar, op_key, scene_col,
     )
-    aim_object_at(op_rim, operator_collar)
 
     cam3 = create_camera("CAM_MI_03", 85.0, 1.4, scene_col)
     cam3.location = (0.05, -0.20, 1.46)
@@ -1511,6 +1508,10 @@ def setup_scene_alien_exodus(root_col: bpy.types.Collection) -> list[bpy.types.O
         (-0.2, -0.4, 2.2), is_spot=True, spot_size_deg=58.0, collection=scene_col,
     )
     aim_object_at(nahl_key, (-0.85, 0.6, 1.1))
+    add_separation_rim(
+        bpy, "Light_Nahl_Profile_Rim", (-0.85, 0.6, 1.1), nahl_key, scene_col,
+        spot_size_deg=48.0,
+    )
 
     # AE-04: 24mm exterior rear wide slow pull (frames 141-192)
     cam4 = create_camera("CAM_AE_04", 24.0, 2.8, scene_col)
@@ -1669,6 +1670,10 @@ def setup_scene_failed_carrier(root_col: bpy.types.Collection) -> list[bpy.types
         (2.2, -1.0, 2.8), is_spot=True, spot_size_deg=72.0, collection=scene_col,
     )
     aim_object_at(cargo_master_key, (0.65, 1.05, 0.85))
+    add_separation_rim(
+        bpy, "Light_Cargo_Operator_Rim", (0.4, 0.4, 1.15),
+        cargo_master_key, scene_col, spot_size_deg=52.0,
+    )
 
     return [cam1, cam2, cam3, cam4]
 
@@ -1728,6 +1733,10 @@ def setup_scene_empty_husk(root_col: bpy.types.Collection) -> list[bpy.types.Obj
         (-0.5, -0.2, 1.8), is_spot=True, spot_size_deg=55.0, collection=scene_col,
     )
     aim_object_at(token_key, (-0.6, 0.35, 0.55))
+    add_separation_rim(
+        bpy, "Light_Abandoned_Tokens_Rim", (-0.6, 0.35, 0.55),
+        token_key, scene_col, spot_size_deg=48.0,
+    )
 
     # EH-03: 28mm exterior launch wide, silent beacons (frames 85-126)
     cam3 = create_camera("CAM_EH_03", 28.0, 2.8, scene_col)
@@ -1840,8 +1849,10 @@ def build_ending_scene(ending_name: str, output_path: Path) -> None:
         key_render_visibility(exterior_objects, exterior_ranges)
         sequence_col = bpy.data.collections.get(sequence_name)
         if sequence_col:
-            cast_meshes = [obj for obj in sequence_col.all_objects if obj.type == "MESH"]
-            key_render_visibility(cast_meshes, [interior_range])
+            interior_stage_objects = [
+                obj for obj in sequence_col.all_objects if obj.type in {"MESH", "LIGHT"}
+            ]
+            key_render_visibility(interior_stage_objects, [interior_range])
 
         shuttle = handles["SET_D_ExteriorIce"].get("shuttle")
         if shuttle:
