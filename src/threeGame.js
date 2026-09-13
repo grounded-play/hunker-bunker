@@ -191,7 +191,7 @@ import { spawnEnemyGibs, spawnPropDebris } from './enemyGibs.js';
 import { registerTinaHit } from './mayorTinaCombat.js';
 import { applyLinchpinResolution, resolveCampLeaderLinchpin } from './storyLinchpins.js';
 import { resolveSafeSpawn } from './safeSpawn.js';
-import { WORLD_3D_FACING_YAW, createWorld3dModel, hasWorld3dModel, preloadWorld3dModels, syncWorld3dReplacement } from './world3dOverlay.js';
+import { WORLD_3D_FACING_YAW, createWorld3dModel, hasWorld3dModel, isWorld3dOnlyPlacementType, preloadWorld3dModels, syncWorld3dReplacement } from './world3dOverlay.js';
 import { computeTrailPosition } from './companionFollow.js';
 import { SNAIL_ENCOUNTER_CONSTANTS } from './snailEncounter.js';
 import { createUniversalEncounter, resolveEncounterAction } from './universalEncounter.js';
@@ -2344,6 +2344,27 @@ export class ThreeGame {
             prop_camp_cookfire_doused: this.loadKeyedSpriteTexture('/prop_camp_cookfire_doused.png', 14),
             prop_camp_cot: this.loadKeyedSpriteTexture('/prop_camp_cot.png', 14),
             prop_camp_crate: this.loadKeyedSpriteTexture('/prop_camp_crate.png', 14),
+            prop_camp_crates_chained: this.loadKeyedSpriteTexture('/prop_camp_crates_chained.png', 14),
+            prop_camp_warning_placard: this.loadKeyedSpriteTexture('/prop_camp_warning_placard.png', 14),
+            prop_camp_shutter_lockdown: this.loadKeyedSpriteTexture('/prop_camp_shutter_lockdown.png', 14),
+            prop_camp_laundry: this.loadKeyedSpriteTexture('/prop_camp_laundry.png', 14),
+            prop_camp_grave_fresh: this.loadKeyedSpriteTexture('/prop_camp_grave_fresh.png', 14),
+            prop_camp_grave_old: this.loadKeyedSpriteTexture('/prop_camp_grave_old.png', 14),
+            prop_camp_meridian_radio: this.loadKeyedSpriteTexture('/prop_camp_meridian_radio.jpg', 14),
+            prop_camp_meridian_battery_bank: this.loadKeyedSpriteTexture('/prop_camp_meridian_battery_bank.jpg', 14),
+            prop_camp_meridian_repair_rig: this.loadKeyedSpriteTexture('/prop_camp_meridian_repair_rig.jpg', 14),
+            prop_camp_tallow_still: this.loadKeyedSpriteTexture('/prop_camp_tallow_still.jpg', 14),
+            prop_camp_tallow_spore_trays: this.loadKeyedSpriteTexture('/prop_camp_tallow_spore_trays.jpg', 14),
+            prop_camp_tallow_resin_urn: this.loadKeyedSpriteTexture('/prop_camp_tallow_resin_urn.jpg', 14),
+            prop_camp_vesper_turret: this.loadKeyedSpriteTexture('/prop_camp_vesper_turret.jpg', 14),
+            prop_camp_vesper_ammo_press: this.loadKeyedSpriteTexture('/prop_camp_vesper_ammo_press.jpg', 14),
+            prop_camp_vesper_shield_rack: this.loadKeyedSpriteTexture('/prop_camp_vesper_shield_rack.jpg', 14),
+            prop_hive_suture_organ: this.loadKeyedSpriteTexture('/prop_hive_suture_organ.jpg', 14),
+            prop_hive_wound_cauterizer: this.loadKeyedSpriteTexture('/prop_hive_wound_cauterizer.jpg', 14),
+            prop_hive_relay_antenna: this.loadKeyedSpriteTexture('/prop_hive_relay_antenna.jpg', 14),
+            prop_hive_synaptic_web: this.loadKeyedSpriteTexture('/prop_hive_synaptic_web.jpg', 14),
+            prop_hive_chitin_hatchery: this.loadKeyedSpriteTexture('/prop_hive_chitin_hatchery.jpg', 14),
+            prop_hive_carapace_molt: this.loadKeyedSpriteTexture('/prop_hive_carapace_molt.jpg', 14),
             drop_horizon_badge: this.loadKeyedSpriteTexture('/drop_horizon_badge.png', 14),
             drop_dig_manifest: this.loadKeyedSpriteTexture('/drop_dig_manifest.png', 14),
             drop_security_log: this.loadKeyedSpriteTexture('/drop_security_log.png', 14),
@@ -25419,6 +25440,33 @@ export class ThreeGame {
                 overlay.userData.aspectApplied = true;
             };
             return overlay;
+        }
+
+        // Architectural kit entries are GLB-only: they intentionally have no
+        // scatter material. This lightweight scene anchor lets the normal
+        // chunk lifecycle own them while the registered model loads.
+        if (isWorld3dOnlyPlacementType(placement.type)) {
+            const anchor = new THREE.Object3D();
+            anchor.position.set(placement.x, anchoredY, placement.z);
+            anchor.rotation.y = placement.rotation ?? 0;
+            anchor.scale.set(scaleX, scaleY, 1);
+            anchor.visible = true;
+            anchor.userData = {
+                isScatter: true,
+                isWorld3dOnly: true,
+                isSolidProp: placement.isSolidProp ?? placement.type.startsWith('arch_'),
+                collisionRadius: placement.collisionRadius ?? Math.max(0.3, scaleX * 0.35),
+                type: placement.type,
+                scatterKey: placement.scatterKey,
+                groupType: placement.groupType,
+                baseY: anchoredY,
+                elevationOffset: placement.elevation,
+                baseScaleX: scaleX,
+                baseScaleY: scaleY,
+                baseOpacity: placement.opacity ?? 1
+            };
+            this.deferWorld3dReplacement(anchor, placement.type);
+            return anchor;
         }
 
         if (placement.type.startsWith('prop_')) {

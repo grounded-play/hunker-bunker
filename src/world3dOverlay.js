@@ -193,6 +193,17 @@ export function hasWorld3dModel(type) {
     return Boolean(WORLD_3D_MODELS[type]);
 }
 
+const WORLD_3D_ONLY_PREFIXES = Object.freeze(['arch_', 'state_', 'fixture_']);
+
+// Architectural/state fixtures have no billboard fallback by design. Keep
+// this contract explicit so room dressing routes them to their GLB instead of
+// rejecting them at the generic sprite-material gate.
+export function isWorld3dOnlyPlacementType(type) {
+    return typeof type === 'string'
+        && WORLD_3D_ONLY_PREFIXES.some((prefix) => type.startsWith(prefix))
+        && hasWorld3dModel(type);
+}
+
 export const COMMON_WORLD_3D_MODEL_TYPES = Object.freeze([
     'broken_scout_ship',
     'broken_tank_ship',

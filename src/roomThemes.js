@@ -198,6 +198,48 @@ export const ROOM_THEME_CATALOG = Object.freeze([
         encounterProfile: 'bio-nest-guard'
     },
     {
+        id: 'bio-medical',
+        biomes: ['bio'],
+        roles: ['medical'],
+        weight: 1,
+        wallStyle: 'bio-resin',
+        floorStyle: 'bio-hive',
+        doorStyle: 'medical-seal',
+        signatureProps: ['prop_biomech_triage_cradle', 'prop_biomech_respirator'],
+        largeProps: ['prop_biomech_incubator', 'prop_flesh_steel_coffin', 'prop_flesh_steel_inhaler', 'prop_broken_specimen_tank'],
+        smallProps: ['prop_cave_spores', 'decal_biohazard_stencil', 'decal_bio_sample_spill'],
+        ambientProps: LIVED_IN_DECALS.bio,
+        encounterProfile: 'sterile'
+    },
+    {
+        id: 'bio-security',
+        biomes: ['bio'],
+        roles: ['security'],
+        weight: 1,
+        wallStyle: 'bio-nest',
+        floorStyle: 'bio-resin',
+        doorStyle: 'hive',
+        signatureProps: ['prop_biomech_sphincter_trap', 'prop_laser_trap_emitter'],
+        largeProps: ['prop_hive_resin_sac', 'prop_security_barricade', 'state_wall_breached_03'],
+        smallProps: ['prop_cave_webs', 'decal_claw_scratches', 'fixture_sconce_vine'],
+        ambientProps: LIVED_IN_DECALS.bio,
+        encounterProfile: 'security'
+    },
+    {
+        id: 'bio-engineering',
+        biomes: ['bio'],
+        roles: ['engineering'],
+        weight: 1,
+        wallStyle: 'bio-resin',
+        floorStyle: 'bio-resin',
+        doorStyle: 'resin',
+        signatureProps: ['prop_fungal_mycelium_loom', 'prop_biomech_respirator'],
+        largeProps: ['prop_fungal_spore_dispenser', 'prop_fungal_resin_basin', 'prop_conduit_hub'],
+        smallProps: ['prop_cave_spores', 'decal_oil_spill_patch', 'fixture_sconce_vine'],
+        ambientProps: LIVED_IN_DECALS.bio,
+        encounterProfile: 'utility'
+    },
+    {
         id: 'bunker-workshop',
         biomes: ['active'],
         roles: ['engineering'],
@@ -211,6 +253,21 @@ export const ROOM_THEME_CATALOG = Object.freeze([
         ambientProps: LIVED_IN_DECALS.bunker,
         rareProps: ['decal_machine_cult_shrine', 'fixture_clock_dead'],
         encounterProfile: 'utility'
+    },
+    {
+        id: 'bunker-storage',
+        biomes: ['active'],
+        roles: ['storage'],
+        weight: 1,
+        wallStyle: 'bunker-storage',
+        floorStyle: 'storage',
+        doorStyle: 'utility',
+        signatureProps: ['prop_bunker_supplies', 'prop_storage_drum_dented'],
+        largeProps: ['prop_ammo_crate_stack', 'prop_security_locker', 'prop_locker_bulged'],
+        smallProps: ['scatter_bolts', 'scatter_cable_coil', 'decal_hazard_stripes'],
+        ambientProps: LIVED_IN_DECALS.bunker,
+        rareProps: ['scatter_horizon_black_box'],
+        encounterProfile: 'safe'
     },
     {
         id: 'bunker-armory',
@@ -319,6 +376,7 @@ export const ROOM_FAMILY_THEME_ROLES = Object.freeze({
     mission: 'engineering',
     cache: 'reward',
     salvage: 'reward',
+    storage: 'storage',
     lore: 'reward',
     camp: 'camp',
     hive: 'hive',
