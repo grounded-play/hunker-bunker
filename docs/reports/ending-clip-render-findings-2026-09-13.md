@@ -169,3 +169,54 @@ where each camera stands, what it is pointed at, and whether the practicals are
 lit at that frame. The pipeline underneath is proven — the scenes build, the
 optics validate, the compositor runs, and a correctly aimed camera renders real
 geometry.
+
+
+---
+
+## CORRECTION (2026-09-13) — the black frames were my bug, not blocking
+
+I attributed the black renders to camera blocking across several commits. That
+was wrong, and the evidence was available the whole time.
+
+**What it actually was.** The delivery compositor. With the node group detached
+the frame renders fully lit and textured; with it attached the frame is black.
+Bisection settled it: a **pass-through** group — Group Input wired straight to
+Group Output, no glare, no lens — produced a byte-identical black frame to the
+full one. The contents were never the problem; the group's `Image` input never
+receives the render result at all under Blender 5's
+`scene.compositing_node_group` model.
+
+**Why my first fix didn't work.** I disabled `build_delivery_compositor` and the
+scenes still rendered black, which nearly convinced me the compositor was
+innocent. There were **two definitions of the function** in the file — my
+disabled one, and the original further down. Python takes the last, so the old
+one kept running. My edit had inserted rather than replaced, because the slice
+boundaries I used did not cover the original definition.
+
+**The tell I ignored for too long.** Every black render completed in ~1.5s.
+A working frame takes 20-60s at 256 samples. A render that finishes in 1.5s is
+not a badly framed shot, it is a render doing no work. I had that number in
+front of me from the first black frame and read it as "the camera sees nothing"
+instead of "the pipeline is not rendering".
+
+**Frustum analysis is what broke it open:** for CAM_MI_02 at frame 60, 15
+objects were in front of the camera and 2 were in frame — while the render was
+pure black. Framing cannot produce that, so framing was not the cause.
+
+### Current state, verified by looking at every frame
+
+| Camera | Frame | Result |
+|---|---|---|
+| CAM_MI_01 | 20 | **renders** — lit, textured, emissive monitor with a green ECG trace |
+| CAM_MI_02 | 60 | **renders** |
+| CAM_MI_03 | 100 | still black — genuine framing for this close-up |
+
+So there *is* a blocking problem, but it is one shot, not the sequence.
+
+### Where the look went
+
+The compositor is disabled, because that is the state that demonstrably renders.
+Glare and chromatic aberration move to **encode time**, applied by ffmpeg to the
+rendered frames. That is the better place for them regardless: retuning does not
+cost a re-render, which across 893 frames is the difference between minutes and
+hours.
