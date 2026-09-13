@@ -879,6 +879,295 @@ def enhance_imported_materials(scene: bpy.types.Scene) -> dict:
 
 def build_delivery_compositor(scene: bpy.types.Scene) -> None:
     """
+    Bloom and chromatic aberration, in Blender, at render time.
+
+    An earlier attempt blacked every frame and was disabled. The diagnosis was
+    wrong: it used a Group Input as the render source, on the belief that
+    Blender 5 had removed CompositorNodeRLayers along with CompositorNodeComposite.
+    Only Composite was removed. RLayers still exists and is still how the render
+    enters the graph -- a Group Input is simply not connected to anything, which
+    is why even a pass-through produced a black frame.
+
+    So: RLayers -> Glare -> Lens Distortion -> Group Output, since the output
+    half of that pair genuinely is a group output now.
+    """
+    tree = bpy.data.node_groups.new("EndingDeliveryComp", "CompositorNodeTree")
+    scene.compositing_node_group = tree
+    tree.nodes.clear()
+    tree.interface.new_socket("Image", in_out="OUTPUT", socket_type="NodeSocketColor")
+
+    render_layers = tree.nodes.new("CompositorNodeRLayers")
+    render_layers.scene = scene
+    render_layers.location = (-400, 0)
+
+    glare = tree.nodes.new("CompositorNodeGlare")
+    # Blender 5 exposes glare settings as INPUT SOCKETS, not node properties, and
+    # Type is a menu of display names ("Fog Glow"), not the old FOG_GLOW enum.
+    glare.inputs["Type"].default_value = "Fog Glow"
+    glare.inputs["Quality"].default_value = "High"
+    # Only genuine highlights bloom. Below 1.0 every lit wall glows and the set
+    # turns to soup -- and these sets are almost entirely emissive practicals.
+    glare.inputs["Threshold"].default_value = 1.0
+    glare.inputs["Strength"].default_value = 0.5
+    glare.inputs["Size"].default_value = 7
+    glare.location = (-150, 0)
+
+    # Chromatic aberration: dispersion only. Distortion stays at 0 so the frame
+    # keeps its straight lines and the lens geometry the optics addendum fixes is
+    # not then warped by the grade. 0.03 is deliberately just-perceptible -- CA
+    # reads as cheap the moment a viewer can name it.
+    lens = tree.nodes.new("CompositorNodeLensdist")
+    lens.inputs["Dispersion"].default_value = 0.03
+    lens.inputs["Distortion"].default_value = 0.0
+    lens.inputs["Fit"].default_value = True
+    lens.location = (100, 0)
+
+    group_out = tree.nodes.new("NodeGroupOutput")
+    group_out.location = (350, 0)
+
+    links = tree.links
+    links.new(render_layers.outputs["Image"], glare.inputs["Image"])
+    links.new(glare.outputs["Image"], lens.inputs["Image"])
+    links.new(lens.outputs["Image"], group_out.inputs["Image"])
+
+
+def _hero_wall(scene) -> str:
+    """
+    Which wall do this set's cameras look at?
+
+    Averages every shot camera's forward vector and returns the compass wall it
+    points into. Averaging rather than taking the first camera: a set with three
+    cameras facing east and one facing west should still put its window east.
+    """
+    import mathutils
+
+    total = mathutils.Vector((0.0, 0.0, 0.0))
+    for obj in scene.objects:
+        if obj.type != "CAMERA" or not obj.name.startswith("CAM_"):
+            continue
+        total += obj.matrix_world.to_quaternion() @ mathutils.Vector((0.0, 0.0, -1.0))
+    if total.length < 1e-6:
+        return "N"
+    if abs(total.y) >= abs(total.x):
+        return "N" if total.y > 0 else "S"
+    return "E" if total.x > 0 else "W"
+
+
+VIEWPORT_WIDTH_FRACTION = 0.46
+VIEWPORT_HEIGHT_FRACTION = 0.40
+VIEWPORT_SILL_FRACTION = 0.55
+
+MAX_OFF_AXIS_DEG = 12.0
+
+
+def _set_bounds_center(scene: bpy.types.Scene):
+    """World-space centre of every renderable mesh in the scene."""
+    import mathutils
+
+    lo = [1e9, 1e9, 1e9]
+    hi = [-1e9, -1e9, -1e9]
+    found = False
+    for obj in scene.objects:
+        if obj.type != "MESH" or obj.hide_render:
+            continue
+        found = True
+        for corner in obj.bound_box:
+            world = obj.matrix_world @ mathutils.Vector(corner)
+            for axis in range(3):
+                lo[axis] = min(lo[axis], world[axis])
+                hi[axis] = max(hi[axis], world[axis])
+    if not found:
+        return None
+    return mathutils.Vector(((lo[0] + hi[0]) / 2, (lo[1] + hi[1]) / 2, (lo[2] + hi[2]) / 2))
+
+
+def camera_off_axis_deg(camera: bpy.types.Object, target) -> float:
+    """
+    Angle between where a camera looks and where the subject actually is.
+
+    Read through the evaluated depsgraph: a TRACK_TO constraint does not touch
+    the object's own matrix_world, so measuring the original datablock reports
+    the pre-constraint rotation and makes a corrected camera look broken.
+    """
+    import mathutils
+
+    depsgraph = bpy.context.evaluated_depsgraph_get()
+    evaluated = camera.evaluated_get(depsgraph)
+    to_target = target - evaluated.matrix_world.translation
+    if to_target.length < 1e-6:
+        return 0.0
+    forward = evaluated.matrix_world.to_quaternion() @ mathutils.Vector((0.0, 0.0, -1.0))
+    return math.degrees(forward.angle(to_target.normalized()))
+
+
+def camera_is_inside_set(camera: bpy.types.Object, scene: bpy.types.Scene) -> bool:
+    """
+    Is the camera standing within the set rather than looking at it?
+
+    A close-up framing one detail from inside the room is not "off axis" in any
+    meaningful sense -- the set centre is behind it, or beside it. Measuring
+    those against the whole-set centre reports nonsense (CAM_MI_03 scored 45
+    degrees while framing exactly what it was meant to).
+    """
+    import mathutils
+
+    lo = [1e9, 1e9, 1e9]
+    hi = [-1e9, -1e9, -1e9]
+    for obj in scene.objects:
+        if obj.type != "MESH" or obj.hide_render:
+            continue
+        for corner in obj.bound_box:
+            world = obj.matrix_world @ mathutils.Vector(corner)
+            for axis in range(3):
+                lo[axis] = min(lo[axis], world[axis])
+                hi[axis] = max(hi[axis], world[axis])
+    loc = camera.matrix_world.translation
+    return all(lo[i] <= loc[i] <= hi[i] for i in range(2))
+
+
+def aim_stray_cameras(scene: bpy.types.Scene, collection: bpy.types.Collection) -> list[str]:
+    """
+    REPORT badly-framed cameras. Does not mutate them -- see below.
+
+    Every shot camera here animates its LOCATION but holds a hand-authored
+    static rotation, so a dolly cannot keep its subject framed -- and several
+    were 20-31 degrees off the set, which on a 28mm lens puts the whole set off
+    the edge of frame. Tracking an aim empty is what this file already asks for
+    in create_camera's own comment ("never keyframe a brittle numeric"), applied
+    to rotation as well as focus.
+
+    An earlier version of this added a TRACK_TO constraint automatically. That
+    was wrong and is reverted: CAM_MI_02 stands OUTSIDE the room and looks along
+    it deliberately, so aiming it at the set centre pointed it into the unlit
+    back of an exterior wall and rendered pure black -- a correctly composed
+    shot made worse by an automated "fix".
+
+    Framing is an art decision. A geometric rule cannot tell a bad angle from a
+    deliberate one, so this now reports and lets validation fail loudly, and a
+    human fixes the blocking.
+    """
+    # Evaluate first: straight after staging, the depsgraph still holds the
+    # pre-staging transforms, so every camera measures as near-zero off-axis and
+    # nothing gets corrected -- while validation, which runs after an update,
+    # then reports the real angles. Measure and validate against the same state.
+    bpy.context.view_layer.update()
+    center = _set_bounds_center(scene)
+    if center is None:
+        return []
+    corrected = []
+    for camera in (o for o in scene.objects if o.type == "CAMERA" and o.name.startswith("CAM_")):
+        if any(c.type == "TRACK_TO" for c in camera.constraints):
+            continue
+        if camera_is_inside_set(camera, scene):
+            continue
+        if camera_off_axis_deg(camera, center) <= MAX_OFF_AXIS_DEG:
+            continue
+        corrected.append(f"{camera.name} ({camera_off_axis_deg(camera, center):.1f} deg)")
+    return corrected
+
+
+# Materials whose name or texture suggests a lit surface. These become real
+# emitters so a monitor reads as a light source rather than a painted panel --
+# the single biggest difference between "game prop in a render" and "set piece".
+EMISSIVE_HINTS = (
+    "monitor", "screen", "display", "console", "terminal", "vital", "scanner",
+    "lamp", "light", "glow", "led", "panel_lit", "hologram", "readout",
+)
+
+# Textures at or below this size are authored pixel art. Blender's default
+# Linear filtering turns them to mush at cinema resolution; Closest keeps the
+# crispness the game art was drawn with.
+PIXEL_TEXTURE_MAX = 256
+
+
+def enhance_imported_materials(scene: bpy.types.Scene) -> dict:
+    """
+    Bring imported game materials up to cinema standard without repainting them.
+
+    glTF import brings the game's textures across intact -- 39 packed images
+    across 15 materials in SET-C -- but every material lands at a flat
+    roughness 0.5 with no emission and no surface variation. That is correct for
+    a game renderer and wrong for a 1080p close-up, where uniform roughness
+    reads as plastic and an unlit monitor reads as a sticker.
+
+    Three passes, all non-destructive to the source art:
+
+    1. Pixel-art textures are switched to Closest filtering, so the game's own
+       texel grid survives instead of being blurred into mush.
+    2. Roughness gets a low-amplitude noise break-up, so highlights vary across
+       a surface the way a real material does.
+    3. Materials that read as lit surfaces get an emission driven by their OWN
+       base colour texture, so a screen emits the image it is showing rather
+       than a flat wash.
+    """
+    stats = {"materials": 0, "pixel_filtered": 0, "roughened": 0, "emissive": 0}
+    seen = set()
+    for obj in scene.objects:
+        if obj.type != "MESH":
+            continue
+        # The OBJECT name is where the meaning lives. glTF import leaves
+        # materials called "Material.001" and textures called
+        # "texture_pbr_20250901", so matching on those finds nothing -- but the
+        # objects are named Vital_Monitor_1, Scanner_Arch_Entrance, and so on.
+        object_hint = obj.name.lower()
+        for slot in obj.material_slots:
+            mat = slot.material
+            if mat is None or mat.name in seen or not mat.use_nodes:
+                continue
+            seen.add(mat.name)
+            stats["materials"] += 1
+            nodes = mat.node_tree.nodes
+            links = mat.node_tree.links
+            bsdf = next((n for n in nodes if n.type == "BSDF_PRINCIPLED"), None)
+            if bsdf is None:
+                continue
+
+            tex_nodes = [n for n in nodes if n.type == "TEX_IMAGE" and n.image]
+            for tex in tex_nodes:
+                if max(tex.image.size) <= PIXEL_TEXTURE_MAX:
+                    tex.interpolation = "Closest"
+                    stats["pixel_filtered"] += 1
+
+            # 2. Roughness break-up. Only when nothing already drives roughness,
+            # so an authored roughness map is never overwritten.
+            if not bsdf.inputs["Roughness"].is_linked:
+                base = bsdf.inputs["Roughness"].default_value
+                noise = nodes.new("ShaderNodeTexNoise")
+                noise.location = (bsdf.location.x - 600, bsdf.location.y - 300)
+                noise.inputs["Scale"].default_value = 18.0
+                noise.inputs["Detail"].default_value = 4.0
+                ramp = nodes.new("ShaderNodeMapRange")
+                ramp.location = (bsdf.location.x - 400, bsdf.location.y - 300)
+                ramp.inputs["From Min"].default_value = 0.0
+                ramp.inputs["From Max"].default_value = 1.0
+                # +/-0.12 around the authored value: enough to break a uniform
+                # highlight, small enough that the surface still reads as itself.
+                ramp.inputs["To Min"].default_value = max(0.05, base - 0.12)
+                ramp.inputs["To Max"].default_value = min(1.0, base + 0.12)
+                links.new(noise.outputs["Fac"], ramp.inputs["Value"])
+                links.new(ramp.outputs["Result"], bsdf.inputs["Roughness"])
+                stats["roughened"] += 1
+
+            # 3. Emission for lit surfaces, driven by the material's own texture.
+            haystack = (
+                object_hint + " " + mat.name.lower() + " "
+                + " ".join(t.image.name for t in tex_nodes).lower()
+            )
+            if any(hint in haystack for hint in EMISSIVE_HINTS):
+                if bsdf.inputs["Base Color"].is_linked:
+                    source = bsdf.inputs["Base Color"].links[0].from_socket
+                    links.new(source, bsdf.inputs["Emission Color"])
+                else:
+                    bsdf.inputs["Emission Color"].default_value = bsdf.inputs["Base Color"].default_value
+                # Restrained: these are set dressing, not the key light, and the
+                # glare node downstream will bloom whatever clears threshold 1.0.
+                bsdf.inputs["Emission Strength"].default_value = 2.5
+                stats["emissive"] += 1
+    return stats
+
+
+def build_delivery_compositor(scene: bpy.types.Scene) -> None:
+    """
     DISABLED -- and this is a correction, not a deferral.
 
     A scene compositing node group was added here to do glare and chromatic

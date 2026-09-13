@@ -165,7 +165,11 @@ export function lookFilter({ glare = GLARE_STRENGTH, ca = CHROMATIC_ABERRATION }
     ].join(';');
 }
 
-export function encodeArgs(frameGlobDir, out, { fps = FPS, draft = false, look = true } = {}) {
+// look defaults FALSE: bloom and chromatic aberration are applied in Blender's
+// compositor now that it works, so applying them again here would double the
+// bloom and smear the fringing. Kept as an opt-in for frames rendered without a
+// compositor.
+export function encodeArgs(frameGlobDir, out, { fps = FPS, draft = false, look = false } = {}) {
     return [
         '-y',
         '-framerate', String(fps),

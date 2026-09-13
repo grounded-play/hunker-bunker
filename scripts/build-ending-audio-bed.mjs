@@ -14,6 +14,8 @@
 import { spawnSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import { planAudio } from './build-ending-audio.mjs';
+import { ENDING_VOICE, CUE_SFX } from './ending-audio-assets.mjs';
+import { existsSync } from 'node:fs';
 
 // Each palette gets a different root, so the five endings do not all sound the
 // same. Low frequencies: this is a room tone under dialogue-free picture, not a
@@ -55,9 +57,54 @@ function main(argv) {
     const counts = new Map();
     for (const c of cues) counts.set(c.bed, (counts.get(c.bed) ?? 0) + 1);
     const palette = [...counts].sort((a, b) => b[1] - a[1])[0][0];
-    const res = spawnSync('ffmpeg', bedArgs(sequenceId, seconds, palette, out), { stdio: 'inherit' });
+    // Real assets layered over the synthesised bed: the game's own recorded
+    // voice for this ending, and a CC0 spot effect at each shot's start taken
+    // from the cue the brief itself implies.
+    const inputs = [];
+    const filters = [];
+    let idx = 0;
+
+    const bedTmp = `${out}.bed.opus`;
+    const bedRes = spawnSync('ffmpeg', bedArgs(sequenceId, seconds, palette, bedTmp), { stdio: 'ignore' });
+    if (bedRes.status !== 0) return 1;
+    inputs.push('-i', bedTmp);
+    filters.push(`[${idx}:a]volume=1.0[bed]`);
+    const mixLabels = ['[bed]'];
+    idx += 1;
+
+    // One spot effect per shot, delayed to that shot's start time, so hits land
+    // on cuts rather than drifting.
+    let elapsed = 0;
+    for (const cue of cues) {
+        const sfx = cue.spot.map((c) => CUE_SFX[c]).find((v) => v && existsSync(v));
+        if (sfx) {
+            inputs.push('-i', sfx);
+            const delayMs = Math.round(elapsed * 1000);
+            filters.push(`[${idx}:a]adelay=${delayMs}|${delayMs},volume=0.55[s${idx}]`);
+            mixLabels.push(`[s${idx}]`);
+            idx += 1;
+        }
+        elapsed += cue.seconds;
+    }
+
+    // The voice line sits a beat in, not on frame one -- a line that starts with
+    // the picture reads as a title card rather than someone speaking.
+    const voice = ENDING_VOICE[sequenceId];
+    if (voice && existsSync(voice)) {
+        inputs.push('-i', voice);
+        const delayMs = Math.round(Math.min(1.2, seconds * 0.15) * 1000);
+        filters.push(`[${idx}:a]adelay=${delayMs}|${delayMs},volume=1.35[vo]`);
+        mixLabels.push('[vo]');
+        idx += 1;
+    }
+
+    filters.push(`${mixLabels.join('')}amix=inputs=${mixLabels.length}:duration=first:normalize=0[mixed]`);
+    const res = spawnSync('ffmpeg', [
+        '-y', ...inputs, '-filter_complex', filters.join(';'),
+        '-map', '[mixed]', '-c:a', 'libopus', '-b:a', '112k', out
+    ], { stdio: 'inherit' });
     if (res.status !== 0) return 1;
-    console.log(`${sequenceId}: ${seconds}s bed (${palette}) -> ${out}`);
+    console.log(`${sequenceId}: ${seconds}s, bed=${palette}, ${idx - 1} layer(s)${voice ? ' incl. voice' : ''} -> ${out}`);
     return 0;
 }
 
