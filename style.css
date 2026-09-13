@@ -1546,17 +1546,53 @@ body {
   50% { text-shadow: 0 0 30px rgba(255, 159, 28, 0.8), 0 0 60px rgba(255, 159, 28, 0.5); }
 }
 
+/* docs/reports/playtest-issues-2026-09-12.md P1-4 -- "the drop downs not being
+   in theme on the computer". The rule below set background/border/colour but
+   never reset `appearance`, so the browser kept drawing its own control chrome
+   over the top: native arrow, native bevel, and on some platforms the native
+   background wins outright. Resetting appearance and drawing our own arrow is
+   what actually makes the theme apply. The arrow is an inline SVG data URI so
+   it needs no asset and no network fetch in the packaged build. */
 .settings-select {
-  background: var(--bg-panel);
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  background-color: var(--bg-panel);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 6'%3E%3Cpath d='M0 0h10L5 6z' fill='%232ec4b6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right calc(var(--vu) * 0.9) center;
+  background-size: 10px 6px;
   border: 1px solid var(--border-subtle);
   color: var(--accent-primary);
   font-family: 'Outfit', sans-serif;
   font-size: var(--font-sm);
   font-weight: 900;
-  padding: calc(var(--vu) * 0.8) calc(var(--vu) * 2);
+  /* Extra right padding so the value never runs under the arrow. */
+  padding: calc(var(--vu) * 0.8) calc(var(--vu) * 3.2) calc(var(--vu) * 0.8) calc(var(--vu) * 2);
   border-radius: 4px;
   cursor: pointer;
   outline: none;
+}
+
+/* The popup list is OS-drawn and only partly themable, but setting these stops
+   it rendering as black-on-black wherever the platform honours them. */
+.settings-select option {
+  background: var(--bg-panel);
+  color: var(--accent-primary);
+}
+
+/* P1-5 -- "turn aim speed ... showing all the options and an empty dropdown on
+   the Steam Deck". That control deliberately ships two inputs: a <select> for
+   pointer use, and a preset button row plus a D-pad hint for controllers. Both
+   are fully wired and kept in sync (main.js ~9669 and ~9707), but nothing ever
+   hid either one, so on the Deck the select sat under the full preset row as a
+   redundant, unusable box. Show whichever matches the active input. */
+.controller-mode .settings-choice-control > .settings-select {
+  display: none;
+}
+
+body:not(.controller-mode) .settings-choice-control > .settings-controller-hint {
+  display: none;
 }
 
 .settings-select:focus {
