@@ -152,7 +152,7 @@ export const CLASS_SKILL_TREES = Object.freeze({
         Object.freeze({
             id: 'engineer_special_unlock',
             label: 'TURRET PROTOCOL',
-            desc: 'AUTO-TURRET passive strengthened: active duration increased to 9s (from 6s).',
+            desc: 'Unlock the AUTO-TURRET field deployment protocol (9s active duration).',
             cost: Object.freeze({ tech: 50, coin: 15, med: 5 }),
             prereqs: Object.freeze(['engineer_magnet_1', 'engineer_battery_1']),
             prereqMode: 'any',

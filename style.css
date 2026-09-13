@@ -204,6 +204,18 @@ body {
    longer renders as a second set of controls. */
 .show-debug #debug-toolbar { display: none; }
 
+/* The FPS readout is the one part of the legacy toolbar still worth surfacing,
+   and it was unreachable: the toolbar is hidden in BOTH states, so turning
+   debug on did not reveal it. Shown on its own under .show-debug, without
+   bringing back the rest of the toolbar the rule above deliberately retired. */
+.show-debug #debug-toolbar {
+  display: flex;
+}
+
+.show-debug #debug-toolbar > :not(#fps-counter) {
+  display: none;
+}
+
 /* Telemetry and legends must never create an invisible click shield over the
    game. Only the toolbar's actual form controls are interactive. */
 #debug-toolbar button,
@@ -1546,17 +1558,53 @@ body {
   50% { text-shadow: 0 0 30px rgba(255, 159, 28, 0.8), 0 0 60px rgba(255, 159, 28, 0.5); }
 }
 
+/* docs/reports/playtest-issues-2026-09-12.md P1-4 -- "the drop downs not being
+   in theme on the computer". The rule below set background/border/colour but
+   never reset `appearance`, so the browser kept drawing its own control chrome
+   over the top: native arrow, native bevel, and on some platforms the native
+   background wins outright. Resetting appearance and drawing our own arrow is
+   what actually makes the theme apply. The arrow is an inline SVG data URI so
+   it needs no asset and no network fetch in the packaged build. */
 .settings-select {
-  background: var(--bg-panel);
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  background-color: var(--bg-panel);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 6'%3E%3Cpath d='M0 0h10L5 6z' fill='%232ec4b6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right calc(var(--vu) * 0.9) center;
+  background-size: 10px 6px;
   border: 1px solid var(--border-subtle);
   color: var(--accent-primary);
   font-family: 'Outfit', sans-serif;
   font-size: var(--font-sm);
   font-weight: 900;
-  padding: calc(var(--vu) * 0.8) calc(var(--vu) * 2);
+  /* Extra right padding so the value never runs under the arrow. */
+  padding: calc(var(--vu) * 0.8) calc(var(--vu) * 3.2) calc(var(--vu) * 0.8) calc(var(--vu) * 2);
   border-radius: 4px;
   cursor: pointer;
   outline: none;
+}
+
+/* The popup list is OS-drawn and only partly themable, but setting these stops
+   it rendering as black-on-black wherever the platform honours them. */
+.settings-select option {
+  background: var(--bg-panel);
+  color: var(--accent-primary);
+}
+
+/* P1-5 -- "turn aim speed ... showing all the options and an empty dropdown on
+   the Steam Deck". That control deliberately ships two inputs: a <select> for
+   pointer use, and a preset button row plus a D-pad hint for controllers. Both
+   are fully wired and kept in sync (main.js ~9669 and ~9707), but nothing ever
+   hid either one, so on the Deck the select sat under the full preset row as a
+   redundant, unusable box. Show whichever matches the active input. */
+.controller-mode .settings-choice-control > .settings-select {
+  display: none;
+}
+
+body:not(.controller-mode) .settings-choice-control > .settings-controller-hint {
+  display: none;
 }
 
 .settings-select:focus {
@@ -3828,9 +3876,16 @@ input:checked+.slider:before {
 }
 
 #settings-popup {
-  background: rgba(0, 0, 0, 0.72);
-  backdrop-filter: none;
-  -webkit-backdrop-filter: none;
+  /* Keep live HUD telemetry from competing with the settings rows. At the
+     Deck's native 1280x800 resolution the stage fills the display, so this is
+     visual isolation rather than a stacking fix: Settings already sits above
+     #ui (100010 vs 7000), but the old 72% clear backdrop left bright health,
+     objective and prompt text readable through the panel gutters. */
+  background:
+    radial-gradient(circle at 50% 42%, rgba(18, 24, 29, 0.98), rgba(0, 0, 0, 0.97) 72%),
+    #020304;
+  backdrop-filter: blur(14px) saturate(0.35);
+  -webkit-backdrop-filter: blur(14px) saturate(0.35);
   z-index: 100010;
 }
 
@@ -4461,6 +4516,48 @@ input:checked+.slider:before {
 .confirm-title {
   color: #dc2626;
   margin-bottom: calc(var(--vu) * 2.5);
+}
+
+.day-rest-warning-modal {
+  z-index: 16300;
+  background:
+    radial-gradient(circle at 50% 50%, rgba(217, 119, 6, 0.18), rgba(0, 0, 0, 0.92) 55%);
+}
+
+.day-rest-warning-modal .confirm-modal-content {
+  border-color: #f59e0b;
+  box-shadow: 0 0 60px rgba(245, 158, 11, 0.18), inset 0 0 30px rgba(120, 53, 15, 0.2);
+}
+
+.day-rest-warning-modal .confirm-title {
+  color: #fbbf24;
+}
+
+.day-rest-warning-list {
+  display: grid;
+  gap: calc(var(--vu) * 1.5);
+  margin: 0 auto calc(var(--vu) * 4);
+  max-width: 52ch;
+  text-align: left;
+}
+
+.day-rest-warning-item {
+  display: grid;
+  gap: calc(var(--vu) * 0.5);
+  border-left: 3px solid #f59e0b;
+  padding: calc(var(--vu) * 1.2) calc(var(--vu) * 1.8);
+  background: rgba(120, 53, 15, 0.2);
+}
+
+.day-rest-warning-item strong {
+  color: #fde68a;
+  letter-spacing: 0.08em;
+}
+
+.day-rest-warning-item span {
+  color: #d8c7ac;
+  font-size: var(--font-xs);
+  line-height: 1.4;
 }
 
 .confirm-copy {
@@ -21967,4 +22064,24 @@ body.contrast-max .hud-panel {
   .map-box {
     max-height: calc(100dvh - calc(var(--vu) * 3));
   }
+}
+
+/* docs/reports/playtest-issues-2026-09-12.md P1-1 -- "it's hard to click the
+   settings gear in game". The gear inherits .calibrate-btn, which is sized
+   purely from font-size and padding in `vu` units, so it shrinks with the
+   viewport and at Steam Deck resolution the hit target ends up well under the
+   44px minimum. Scoped to the gear rather than all .calibrate-btn, which is
+   also used by the wider settings action buttons whose layout should not move.
+
+   Note the keyboard and controller routes already exist and were verified:
+   Escape opens settings during gameplay (main.js ~11082) and the controller
+   pause/Start action runs triggerControllerPauseAction (main.js ~1928). This
+   only makes the pointer target reachable. */
+.open-settings-btn {
+  min-width: 44px;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
 }

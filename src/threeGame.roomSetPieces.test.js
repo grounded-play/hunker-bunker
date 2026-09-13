@@ -79,4 +79,38 @@ describe('createChunkSetPiecePlacements — room-gated set dressing', () => {
 
         expect(placements.map(({ scatterKey }) => scatterKey)).toEqual(['room_plan:far']);
     });
+
+    it('turns hallway route markers into biome-skinned, cardinal kit architecture', () => {
+        const game = makeFakeGame();
+        game.getBiomeKeyForWorldPosition = () => 'bio';
+        game.wfcMetadataCache = new Map([['0,0', {
+            generatorId: 'hallway-connector',
+            roomInstances: [],
+            wayfindingMarkers: [{
+                x: 12,
+                y: 3,
+                dressingKit: 'pipes_and_cable_trays',
+                lightingRhythm: 'dim'
+            }]
+        }]]);
+
+        const connectorGrid = Array.from({ length: 17 }, () => Array(17).fill('#'));
+        for (let x = 10; x <= 14; x += 1) connectorGrid[3][x] = '.';
+        const placements = ThreeGame.prototype.createChunkSetPiecePlacements.call(
+            game,
+            0,
+            0,
+            connectorGrid
+        );
+        const kit = placements.find((placement) => placement.scatterKey.startsWith('hallway-kit:'));
+
+        expect(kit).toMatchObject({
+            type: 'kit_cave_corridor',
+            rotation: Math.PI / 2,
+            groupType: 'architecture',
+            isSolidProp: false,
+            dressingKit: 'pipes_and_cable_trays',
+            lightingRhythm: 'dim'
+        });
+    });
 });

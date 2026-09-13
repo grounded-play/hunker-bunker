@@ -35,6 +35,48 @@ const AudioContextClass = (typeof window !== 'undefined' ? window.AudioContext |
 export const audioCtx = new AudioContextClass();
 
 export class AudioManager {
+    // Last variant chosen per soundset key, so `noImmediateRepeat` has the
+    // history it needs. The selector is pure; the caller owns this.
+    static _lastSoundsetVariant = new Map();
+
+    // Where the player is and which way the camera's right axis points. The
+    // gameplay loop pushes this every frame; until it does, _listener stays
+    // null and every positional call falls back to non-spatial playback, so
+    // menus and cutscenes are unaffected.
+    static _listener = null;
+
+    static setListener(listener) {
+        if (!listener || !Number.isFinite(listener.x) || !Number.isFinite(listener.z)) {
+            AudioManager._listener = null;
+            return false;
+        }
+        AudioManager._listener = {
+            x: listener.x,
+            z: listener.z,
+            rightX: Number.isFinite(listener.rightX) ? listener.rightX : 1,
+            rightZ: Number.isFinite(listener.rightZ) ? listener.rightZ : 0
+        };
+        return true;
+    }
+
+    /**
+     * Resolve an emitter's world position into pan/gain/cutoff, or null when
+     * the call is not positional. `critical` keeps story and warning cues
+     * audible at range rather than letting distance mute them entirely.
+     */
+    static resolveSpatial(options = {}) {
+        const listener = AudioManager._listener;
+        if (!listener) return null;
+        if (!Number.isFinite(options.worldX) || !Number.isFinite(options.worldZ)) return null;
+        return calculateScreenSpaceAudio({
+            source: { x: options.worldX, z: options.worldZ },
+            listener: { x: listener.x, z: listener.z },
+            cameraRight: { x: listener.rightX, z: listener.rightZ },
+            obstructed: Boolean(options.obstructed),
+            critical: Boolean(options.critical)
+        });
+    }
+
     static buffers = {};
     static images = {};
     static globalMuted = false;
@@ -284,6 +326,35 @@ export class AudioManager {
             return null;
         }
 
+        // Authored soundsets take precedence over the numbered-variant guess
+        // below. GAME_SOUNDSETS is deliberately empty until assets clear
+        // audition and provenance review (see src/data/gameSoundsets.js), so
+        // today every lookup misses and this is a no-op passthrough -- the
+        // integration is wired and proven before the registry decides anything.
+        //
+        // `_fromSoundset` breaks the recursion: a resolved variant is played as
+        // an ordinary key and must never be re-resolved, or a soundset whose
+        // variant shares its own name would loop.
+        const soundset = options._fromSoundset ? null : GAME_SOUNDSETS[key];
+        if (soundset) {
+            const choice = selectSoundsetVariant(soundset, {
+                lastVariant: AudioManager._lastSoundsetVariant.get(key) ?? null,
+                // Only offer variants that actually decoded, so a missing file
+                // degrades to the soundset's own fallback instead of silence.
+                availableKeys: Object.keys(this.buffers)
+            });
+            if (choice) {
+                AudioManager._lastSoundsetVariant.set(key, choice.key);
+                return this.play(choice.key, {
+                    ...options,
+                    _fromSoundset: true,
+                    bus: choice.bus ?? options.bus,
+                    volume: (options.volume ?? 1) * (choice.gain ?? 1),
+                    playbackRate: (options.playbackRate ?? 1) * (choice.playbackRate ?? 1)
+                });
+            }
+        }
+
         // Collect all keys that match 'key' exactly or are numbered variations like 'key1', 'key2'
         const matchingKeys = Object.keys(this.buffers).filter(k => k === key || (k.startsWith(key) && /^\d+$/.test(k.slice(key.length))));
         if (matchingKeys.length === 0) {
@@ -299,11 +370,19 @@ export class AudioManager {
             bus: options.bus ?? 'sfx'
         });
 
+        // Positional emitters resolve to pan/gain/cutoff here. A sound that is
+        // fully out of range is dropped before a node is built at all -- that
+        // is the audible behaviour AND it stops distant emitters allocating
+        // voices they would never be heard through.
+        const spatial = AudioManager.resolveSpatial(options);
+        if (spatial && !spatial.audible) return null;
+
         const source = audioCtx.createBufferSource();
         source.buffer = this.buffers[selectedKey];
-        
+
         const gainNode = audioCtx.createGain();
-        gainNode.gain.value = options.volume !== undefined ? options.volume : 1.0;
+        gainNode.gain.value = (options.volume !== undefined ? options.volume : 1.0)
+            * (spatial ? spatial.gain : 1);
         
         if (options.detune) source.detune.value = options.detune;
         
@@ -330,13 +409,28 @@ export class AudioManager {
 
         source.connect(gainNode);
 
-        // Optional stereo panning
         let lastNode = gainNode;
+
+        // Obstruction reads as muffling, not just quieting: a wall between the
+        // player and the emitter rolls the highs off. Only inserted when the
+        // cutoff is actually doing something, so open-air sounds keep the
+        // original node count.
+        if (spatial && spatial.cutoffHz < 20000 && typeof audioCtx.createBiquadFilter === 'function') {
+            const lowpass = audioCtx.createBiquadFilter();
+            lowpass.type = 'lowpass';
+            lowpass.frequency.value = spatial.cutoffHz;
+            lastNode.connect(lowpass);
+            lastNode = lowpass;
+        }
+
+        // Optional stereo panning. A resolved spatial pan wins over any caller
+        // supplied one -- the emitter's actual position is the better answer.
+        const panValue = spatial ? spatial.pan : options.pan;
         let panner = null;
-        if (options.pan !== undefined && Number.isFinite(options.pan)) {
+        if (panValue !== undefined && Number.isFinite(panValue)) {
             panner = audioCtx.createStereoPanner();
-            panner.pan.value = Math.max(-1, Math.min(1, options.pan));
-            gainNode.connect(panner);
+            panner.pan.value = Math.max(-1, Math.min(1, panValue));
+            lastNode.connect(panner);
             lastNode = panner;
         }
 
@@ -1616,3 +1710,5 @@ export class AudioManager {
 AudioManager.init();
 import { assetUrl } from './assetUrl.js';
 import { PRESENTATION_EVENTS, presentationTelemetry } from './presentationTelemetry.js';
+import { GAME_SOUNDSETS, selectSoundsetVariant } from './data/gameSoundsets.js';
+import { calculateScreenSpaceAudio } from './audioSpatial.js';

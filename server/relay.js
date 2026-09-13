@@ -21,6 +21,7 @@ const PVP_WEAPON_DAMAGE = 10;
 // =~15.4 units; this adds slack for the lag between when the attacker's
 // origin was sampled and when the hit report arrives.
 const PVP_WEAPON_RANGE = 20;
+const PVP_HIT_REPORT_RADIUS = 2.5;
 // Slightly under the client's real fire cooldown (WEAPON_FIRE_COOLDOWN =
 // 0.14s = 140ms) to tolerate jitter without meaningfully allowing
 // faster-than-legal fire.
@@ -849,32 +850,24 @@ export function attachRelay(server, { allowedOrigins = [] } = {}) {
             });
         });
 
-        // Sprint 24 Milestone A: server-authoritative PvP damage
-        // (docs/sprint24-multiplayer-runtime-2026-08-19.md). The VICTIM's
-        // client reports being hit (this socket is the victim -- `player`
-        // in this closure), naming who allegedly hit them and where that
-        // attacker's shot originated. This direction is safe to
-        // self-report: the only thing a lying victim can do is reduce
-        // their own HP, which no rational cheater wants. The server never
-        // trusts a client-supplied damage amount or fatality flag -- it
-        // looks up the attacker's own server-known position (from their
-        // playerMove updates, not the hit report) to range-check the
-        // claim, rate-limits per attacker, and computes damage from its
-        // own constant. What this does NOT do: full trajectory/line-of-
-        // sight raycasting against wall geometry (the goal's own scoping
-        // note says not to attempt headless server simulation this pass),
-        // so a claim that passes range+rate-limit but was actually blocked
-        // by a wall client-side would still be honored -- a known,
-        // documented gap, not silently missed.
+        // Shooter-side collision reports remove the old cross-client
+        // asymmetry: a slow/stale victim no longer has to simulate someone
+        // else's projectile before damage can exist. The relay still owns
+        // damage and validates room, mode, fire cadence, weapon range, and
+        // proximity of the reported impact to the target's known position.
+        // Legacy victim-side reports remain accepted for rolling clients.
         socket.on('weaponHit', (hitData) => {
             if (!hitData || typeof hitData !== 'object') return;
             if (player.mode !== 'pvp') return;
             if (player.hp <= 0) return;
 
-            const attackerId = sanitizeString(hitData.attackerId, 64, '');
-            const attacker = players.get(attackerId);
-            if (!attacker || !player.roomCode || attacker.roomCode !== player.roomCode) return;
-            if (attacker.mode !== 'pvp') return;
+            const reportedTargetId = sanitizeString(hitData.targetId, 64, '');
+            const legacyAttackerId = sanitizeString(hitData.attackerId, 64, '');
+            const attacker = reportedTargetId ? player : players.get(legacyAttackerId);
+            const target = reportedTargetId ? players.get(reportedTargetId) : player;
+            if (!attacker || !target || attacker.id === target.id) return;
+            if (!attacker.roomCode || attacker.roomCode !== target.roomCode) return;
+            if (attacker.mode !== 'pvp' || target.mode !== 'pvp' || target.hp <= 0) return;
 
             const now = Date.now();
             if (now - (attacker.lastWeaponHitAt || 0) < PVP_MIN_HIT_INTERVAL_MS) return;
@@ -884,22 +877,24 @@ export function attachRelay(server, { allowedOrigins = [] } = {}) {
             if (originX === null || originZ === null) return;
             const dist = Math.hypot(originX - attacker.x, originZ - attacker.z);
             if (dist > PVP_WEAPON_RANGE) return;
+            const targetDist = Math.hypot(originX - target.x, originZ - target.z);
+            if (targetDist > PVP_HIT_REPORT_RADIUS) return;
 
             attacker.lastWeaponHitAt = now;
 
             const damage = PVP_WEAPON_DAMAGE;
-            player.hp = Math.max(0, player.hp - damage);
-            const isFatal = player.hp <= 0;
+            target.hp = Math.max(0, target.hp - damage);
+            const isFatal = target.hp <= 0;
 
             if (isFatal) {
                 sessionTelemetry.fatalHits += 1;
-                logRelayEvent('FATAL_HIT', { roomCode: player.roomCode, attackerId, targetId: socket.id, damage });
+                logRelayEvent('FATAL_HIT', { roomCode: attacker.roomCode, attackerId: attacker.id, targetId: target.id, damage });
             }
-            logRelayEvent('WEAPON_HIT', { roomCode: player.roomCode, attackerId, targetId: socket.id, damage, isFatal });
+            logRelayEvent('WEAPON_HIT', { roomCode: attacker.roomCode, attackerId: attacker.id, targetId: target.id, damage, isFatal });
 
-            io.to(player.roomCode).emit('playerDamaged', {
-                attackerId,
-                targetId: socket.id,
+            io.to(attacker.roomCode).emit('playerDamaged', {
+                attackerId: attacker.id,
+                targetId: target.id,
                 damage,
                 isFatal
             });

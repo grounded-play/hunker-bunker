@@ -22,11 +22,22 @@ function seededRandom(seed) {
 }
 
 describe('ROOM_BUILD_CATALOG', () => {
-    it('has exactly the eight vertical-slice families the plan requires', () => {
+    // Engineering includes the two mandatory ship-goal rooms plus Meridian's
+    // Ring 1 reactor-vent quest destination.
+    it('has exactly the vertical-slice families the plan requires', () => {
         const families = ROOM_BUILD_CATALOG.map((build) => build.family).sort();
         expect(families).toEqual([
-            'armory', 'cache', 'fabricator', 'gate', 'medical', 'o2', 'puzzle', 'trap_reward'
+            'armory', 'cache', 'engineering', 'engineering', 'engineering', 'fabricator', 'gate',
+            'medical', 'o2', 'puzzle', 'security', 'trap_reward'
         ].sort());
+    });
+
+    it('authors the Ring 1 reactor-vent quest at its canonical objective anchor', () => {
+        const build = ROOM_BUILD_CATALOG.find((entry) => entry.id === 'reactor_vent_station');
+        expect(build.tierEligibility).toContain(1);
+        expect(build.interactionAnchors).toContainEqual(expect.objectContaining({
+            id: 'reactor_vent_control'
+        }));
     });
 
     it.each(ROOM_BUILD_CATALOG.map((build) => [build.id, build]))('%s is internally valid', (_, build) => {

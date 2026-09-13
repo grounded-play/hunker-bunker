@@ -1,8 +1,15 @@
 import { describe, expect, it } from 'vitest';
 import * as THREE from 'three';
-import { WORLD_3D_FACING_YAW, WORLD_3D_MODELS, hasWorld3dModel, syncWorld3dReplacement } from './world3dOverlay.js';
+import { WORLD_3D_FACING_YAW, WORLD_3D_MODELS, hasWorld3dModel, isWorld3dOnlyPlacementType, syncWorld3dReplacement } from './world3dOverlay.js';
 
 describe('world 3D replacement catalog', () => {
+    it('identifies registered architectural placements as GLB-only', () => {
+        expect(isWorld3dOnlyPlacementType('arch_bulkhead_frame')).toBe(true);
+        expect(isWorld3dOnlyPlacementType('state_wall_breached_01')).toBe(true);
+        expect(isWorld3dOnlyPlacementType('fixture_clock_dead')).toBe(true);
+        expect(isWorld3dOnlyPlacementType('prop_bunker_supplies')).toBe(false);
+        expect(isWorld3dOnlyPlacementType('arch_missing')).toBe(false);
+    });
     it('maps each new world counterpart to an optimized runtime GLB', () => {
         expect(WORLD_3D_MODELS.broken_scout_ship.url).toBe('/3d/runtime/broken-scout-ship.glb');
         expect(WORLD_3D_MODELS.base_console.url).toBe('/3d/runtime/console.glb');

@@ -292,5 +292,182 @@ export const ROOM_BUILD_CATALOG = Object.freeze([
         stateVariants: ['dormant', 'questActive', 'resolved'],
         adjacency: { prefers: ['defensive_approach'], forbids: ['camp', 'reward_vault'] },
         contentBudget: { structuralLarge: 2, activityZones: 2, pickupsMin: 0, enemiesMax: 4 }
+    }),
+
+    // ---------------------------------------------------------------------
+    // Mandatory ship-goal rooms. src/ringManifest.js MANDATORY_SHIP_GOALS
+    // reserves four of these every run, keyed by roomFamily + objectiveAnchorId,
+    // but only the 'o2' one had an authored room -- the other three fell back to
+    // generic architecture, so three of the game's four required objectives
+    // happened in an unauthored box. Each build below carries the exact
+    // objectiveAnchorId that manifest names, so the reservation resolves to a
+    // real point instead of a fallback.
+    //
+    // Every prop type here was checked against the live registry before
+    // authoring. None of the 3D-only arch_* pieces are referenced: those do not
+    // render yet (docs/planning/setpiece-plan-addendum-2026-09-12.md 3.1).
+    // ---------------------------------------------------------------------
+
+    Object.freeze({
+        id: 'reactor_vent_station',
+        family: 'engineering',
+        pattern: rectRoomPattern(15, 11, [
+            { x: 3, y: 3, w: 2, h: 5 },
+            { x: 10, y: 3, w: 2, h: 5 },
+            { x: 6, y: 2, w: 3, h: 2 }
+        ]),
+        sockets: [
+            { id: 'entry', side: 's', width: 3, required: true },
+            { id: 'serviceExit', side: 'n', width: 3, required: false }
+        ],
+        rotationPolicy: 'cardinal',
+        tierEligibility: [1, 2],
+        biomeEligibility: ['active', 'cryo'],
+        roles: ['questDestination', 'objective'],
+        structuralAnchors: [
+            { id: 'vent_stack_a', type: 'prop_conduit_hub', x: 4, y: 5 },
+            { id: 'vent_stack_b', type: 'prop_conduit_hub', x: 11, y: 5 }
+        ],
+        interactionAnchors: [
+            { id: 'reactor_vent_control', type: 'prop_valve_wheel_fused', x: 7, y: 8 }
+        ],
+        compassAnchors: { approach: 'entry', objective: 'reactor_vent_control' },
+        coverZones: [{ x: 2, y: 2, w: 4, h: 7 }, { x: 9, y: 2, w: 4, h: 7 }],
+        encounterZones: [{ id: 'vent_floor', x: 6, y: 4, w: 3, h: 4 }],
+        rewardAnchors: [{ id: 'vent_service_cache', type: 'prop_bunker_supplies', x: 12, y: 8 }],
+        loreAnchors: [{ id: 'vent_shift_log', type: 'lore_terminal', x: 2, y: 8 }],
+        hazardZones: [{ id: 'steam_plume', x: 6, y: 2, w: 3, h: 2 }],
+        quietZones: [],
+        safeZone: false,
+        containmentBounds: { minX: 0, minY: 0, maxX: 14, maxY: 10 },
+        presentationVariants: ['pressurized', 'venting', 'stabilized'],
+        stateVariants: ['dormant', 'questActive', 'resolved'],
+        adjacency: { prefers: ['service_passage', 'pressure_corridor'], forbids: ['camp'] },
+        contentBudget: { structuralLarge: 2, activityZones: 2, pickupsMin: 1, enemiesMax: 3 }
+    }),
+
+    Object.freeze({
+        id: 'hull_fabrication_bay',
+        family: 'engineering',
+        // Two gantry blocks leave a working aisle down the middle and a full
+        // ring of floor, so the bay reads as a shop floor rather than a room.
+        pattern: rectRoomPattern(17, 11, [{ x: 4, y: 3, w: 3, h: 5 }, { x: 10, y: 3, w: 3, h: 5 }]),
+        sockets: [
+            { id: 'entry', side: 's', width: 3, required: true },
+            { id: 'gantryExit', side: 'n', width: 3, required: false }
+        ],
+        rotationPolicy: 'cardinal',
+        tierEligibility: [2, 3],
+        biomeEligibility: ['active', 'cryo'],
+        roles: ['objective', 'questDestination'],
+        structuralAnchors: [
+            { id: 'hull_press_a', type: 'prop_hydraulic_piston_actuator', x: 5, y: 5 },
+            { id: 'hull_press_b', type: 'prop_hydraulic_piston_actuator', x: 11, y: 5 }
+        ],
+        // MANDATORY_SHIP_GOALS hullExpansion -> objectiveAnchorId, exactly.
+        interactionAnchors: [
+            { id: 'hull_fabrication_console', type: 'prop_fabricator_workstation', x: 8, y: 8 },
+            { id: 'hull_bench', type: 'prop_engineering_bench', x: 8, y: 2 }
+        ],
+        compassAnchors: { approach: 'entry', objective: 'hull_fabrication_console' },
+        coverZones: [{ x: 3, y: 2, w: 4, h: 7 }, { x: 10, y: 2, w: 4, h: 7 }],
+        encounterZones: [{ id: 'bay_floor', x: 7, y: 2, w: 3, h: 7 }],
+        rewardAnchors: [{ id: 'hull_plating_cache', type: 'prop_bunker_supplies', x: 1, y: 1 }],
+        loreAnchors: [{ id: 'fabrication_log', type: 'lore_terminal', x: 15, y: 9 }],
+        hazardZones: [],
+        quietZones: [],
+        safeZone: false,
+        containmentBounds: { minX: 0, minY: 0, maxX: 16, maxY: 10 },
+        presentationVariants: ['intact', 'abandoned', 'infested', 'looted'],
+        stateVariants: ['dormant', 'questActive', 'resolved'],
+        adjacency: { prefers: ['service_passage', 'pressure_corridor'], forbids: ['camp'] },
+        contentBudget: { structuralLarge: 2, activityZones: 1, pickupsMin: 1, enemiesMax: 3 }
+    }),
+
+    Object.freeze({
+        id: 'radar_alignment_post',
+        family: 'security',
+        // One central mast block: sightlines stay open all the way round it,
+        // which is what makes the defend-the-console beat readable.
+        pattern: rectRoomPattern(15, 13, [{ x: 6, y: 5, w: 3, h: 3 }, { x: 2, y: 2, w: 2, h: 2 }]),
+        sockets: [
+            { id: 'entry', side: 'w', width: 3, required: true },
+            { id: 'maintenanceExit', side: 'e', width: 3, required: false }
+        ],
+        rotationPolicy: 'cardinal',
+        tierEligibility: [3, 4],
+        biomeEligibility: ['active', 'cryo', 'bio'],
+        roles: ['objective', 'defense'],
+        structuralAnchors: [
+            { id: 'mast_base', type: 'prop_cyber_junction', x: 7, y: 6 },
+            { id: 'post_locker', type: 'prop_security_locker', x: 2, y: 2 }
+        ],
+        // MANDATORY_SHIP_GOALS radarNode -> objectiveAnchorId, exactly.
+        interactionAnchors: [
+            { id: 'radar_alignment_console', type: 'prop_diagnostic_console', x: 7, y: 10 },
+            { id: 'post_terminal', type: 'prop_terminal_ruptured', x: 12, y: 3 }
+        ],
+        compassAnchors: { approach: 'entry', objective: 'radar_alignment_console' },
+        coverZones: [{ x: 5, y: 4, w: 5, h: 5 }],
+        encounterZones: [
+            { id: 'north_approach', x: 3, y: 1, w: 9, h: 3 },
+            { id: 'south_approach', x: 3, y: 9, w: 9, h: 3 }
+        ],
+        rewardAnchors: [{ id: 'post_ammo', type: 'prop_ammo_crate_stack', x: 12, y: 10 }],
+        loreAnchors: [],
+        hazardZones: [],
+        quietZones: [],
+        safeZone: false,
+        containmentBounds: { minX: 0, minY: 0, maxX: 14, maxY: 12 },
+        presentationVariants: ['intact', 'abandoned', 'infested', 'looted'],
+        stateVariants: ['dormant', 'questActive', 'resolved'],
+        adjacency: { prefers: ['defensive_approach'], forbids: ['camp'] },
+        contentBudget: { structuralLarge: 2, activityZones: 2, pickupsMin: 1, enemiesMax: 4 }
+    }),
+
+    Object.freeze({
+        id: 'reactor_compressor_hall',
+        family: 'engineering',
+        // Deepest of the four and the largest: four pylons break the hall into
+        // lanes so a ring-4 fight has somewhere to go.
+        pattern: rectRoomPattern(19, 13, [
+            { x: 4, y: 3, w: 2, h: 3 }, { x: 13, y: 3, w: 2, h: 3 },
+            { x: 4, y: 8, w: 2, h: 3 }, { x: 13, y: 8, w: 2, h: 3 },
+            // The compressor core and its coolant manifold are solid: a
+            // structural anchor must mark obstruction geometry, not floor.
+            { x: 8, y: 5, w: 3, h: 3 }, { x: 8, y: 1, w: 3, h: 2 }
+        ]),
+        sockets: [
+            { id: 'entry', side: 's', width: 3, required: true },
+            { id: 'coolantExit', side: 'n', width: 3, required: false }
+        ],
+        rotationPolicy: 'cardinal',
+        tierEligibility: [4, 5],
+        biomeEligibility: ['cryo', 'bio'],
+        roles: ['objective', 'defense'],
+        structuralAnchors: [
+            { id: 'compressor_core', type: 'prop_tesla_coil_node', x: 9, y: 6 },
+            { id: 'coolant_manifold', type: 'prop_conduit_hub', x: 9, y: 2 }
+        ],
+        // MANDATORY_SHIP_GOALS reactorCompressor -> objectiveAnchorId, exactly.
+        interactionAnchors: [
+            { id: 'compressor_control', type: 'prop_valve_wheel_fused', x: 9, y: 10 },
+            { id: 'coolant_bench', type: 'prop_engineering_bench', x: 2, y: 6 }
+        ],
+        compassAnchors: { approach: 'entry', objective: 'compressor_control' },
+        coverZones: [{ x: 3, y: 2, w: 4, h: 9 }, { x: 12, y: 2, w: 4, h: 9 }],
+        encounterZones: [{ id: 'hall_centre', x: 7, y: 3, w: 5, h: 7 }],
+        rewardAnchors: [{ id: 'reactor_cache', type: 'prop_bunker_supplies', x: 17, y: 11 }],
+        loreAnchors: [{ id: 'reactor_log', type: 'lore_terminal', x: 1, y: 11 }],
+        // The coolant plume is the hall's one persistent hazard: it reads at a
+        // glance and gives the lanes a reason to matter.
+        hazardZones: [{ id: 'coolant_plume', x: 7, y: 3, w: 5, h: 2 }],
+        quietZones: [],
+        safeZone: false,
+        containmentBounds: { minX: 0, minY: 0, maxX: 18, maxY: 12 },
+        presentationVariants: ['intact', 'abandoned', 'infested', 'looted'],
+        stateVariants: ['dormant', 'questActive', 'resolved'],
+        adjacency: { prefers: ['pressure_corridor', 'boss_staging_approach'], forbids: ['camp'] },
+        contentBudget: { structuralLarge: 2, activityZones: 2, pickupsMin: 1, enemiesMax: 5 }
     })
 ]);

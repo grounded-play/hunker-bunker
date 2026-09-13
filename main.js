@@ -87,11 +87,6 @@ import { getResolution, previewCampLeaderLinchpin } from './src/storyLinchpins.j
 import { buildEndingArchive, getLeaderReaction } from './src/storyArchive.js';
 import { SongInterstitialController, selectCampInterstitial } from './src/songInterstitials.js';
 import { dialogueReactionForLine, preloadLeaderMedia, resolveLeaderIdentity } from './src/leaderIdentity.js';
-import { openQaNexusModal, closeQaNexusModal } from './src/debugQaNexus.js';
-import { openDebugMuseum, closeDebugMuseum } from './src/debugMuseum.js';
-import { openDebugTileGrid, closeDebugTileGrid } from './src/debugTileGrid.js';
-import { openDebugBossArenas, closeDebugBossArenas } from './src/debugBossArenas.js';
-import { openDebugCampSimulator, closeDebugCampSimulator } from './src/debugCampSimulator.js';
 import { LeaderConversation3d } from './src/leaderConversation3d.js';
 import { getLocale, setLocale, t as i18nT, getAvailableLocales } from './src/i18n.js';
 import {
@@ -101,6 +96,54 @@ import {
     validateRingProgression
 } from './src/mazeExpedition.js';
 import { installSteamCloudSaveBridge } from './src/steamCloudSaveBridge.js';
+import { installSettingsWheelGuard } from './src/settingsWheelGuard.js';
+import { installAccessibilitySettings } from './src/accessibilitySettings.js';
+
+// These galleries are explicit developer destinations. Keeping their modules
+// out of the boot graph prevents QA scene code (and its transitive catalogs)
+// from shipping in the player-facing index chunk. Closing an unopened tool is
+// intentionally a no-op so ordinary phase cleanup never triggers a download.
+let debugQaNexusModule = null;
+let debugMuseumModule = null;
+let debugTileGridModule = null;
+let debugBossArenasModule = null;
+let debugCampSimulatorModule = null;
+
+async function openQaNexusModal(...args) {
+    debugQaNexusModule ??= await import('./src/debugQaNexus.js');
+    return debugQaNexusModule.openQaNexusModal(...args);
+}
+function closeQaNexusModal(...args) {
+    return debugQaNexusModule?.closeQaNexusModal(...args) ?? false;
+}
+async function openDebugMuseum(...args) {
+    debugMuseumModule ??= await import('./src/debugMuseum.js');
+    return debugMuseumModule.openDebugMuseum(...args);
+}
+function closeDebugMuseum(...args) {
+    return debugMuseumModule?.closeDebugMuseum(...args) ?? false;
+}
+async function openDebugTileGrid(...args) {
+    debugTileGridModule ??= await import('./src/debugTileGrid.js');
+    return debugTileGridModule.openDebugTileGrid(...args);
+}
+function closeDebugTileGrid(...args) {
+    return debugTileGridModule?.closeDebugTileGrid(...args) ?? false;
+}
+async function openDebugBossArenas(...args) {
+    debugBossArenasModule ??= await import('./src/debugBossArenas.js');
+    return debugBossArenasModule.openDebugBossArenas(...args);
+}
+function closeDebugBossArenas(...args) {
+    return debugBossArenasModule?.closeDebugBossArenas(...args) ?? false;
+}
+async function openDebugCampSimulator(...args) {
+    debugCampSimulatorModule ??= await import('./src/debugCampSimulator.js');
+    return debugCampSimulatorModule.openDebugCampSimulator(...args);
+}
+function closeDebugCampSimulator(...args) {
+    return debugCampSimulatorModule?.closeDebugCampSimulator(...args) ?? false;
+}
 
 // docs/steamstorestatus.log Steam Cloud gap: electron/main.cjs's
 // hb:saveDataChanged bridge (mirrors hb_*-prefixed saves into save.json,
@@ -114,6 +157,17 @@ installSteamCloudSaveBridge({
     storage: typeof window !== 'undefined' ? window.localStorage : null,
     electronAPI: typeof window !== 'undefined' ? window.electronAPI : null
 });
+
+// docs/reports/playtest-issues-2026-09-12.md P1-2 -- stop the wheel editing the
+// settings popup's <select> values while the player is scrolling it. Safe to
+// call here: this module is loaded at the end of <body>, so #settings-popup
+// already exists (the getElementById calls just below rely on the same thing).
+installSettingsWheelGuard(document);
+
+// The subtitle-size, subtitle-backdrop and contrast controls, their CSS and
+// their persistence all existed but nothing imported the module, so the
+// accessibility features the Steam store page advertises never actually ran.
+installAccessibilitySettings(document);
 
 const startBtn = document.getElementById('start-game'); // INITIALIZE button
 const titleContinueBtn = document.getElementById('title-continue-btn');
@@ -275,6 +329,11 @@ const campChoiceTitle = document.getElementById('camp-choice-title');
 const campChoiceStatus = document.getElementById('camp-choice-status');
 const campChoiceCopy = document.getElementById('camp-choice-copy');
 const campChoiceOptions = document.getElementById('camp-choice-options');
+const dayRestWarningModal = document.getElementById('day-rest-warning-modal');
+const dayRestWarningCopy = document.getElementById('day-rest-warning-copy');
+const dayRestWarningList = document.getElementById('day-rest-warning-list');
+const dayRestWarningConfirm = document.getElementById('day-rest-warning-confirm');
+const dayRestWarningCancel = document.getElementById('day-rest-warning-cancel');
 const audioMasterSlider = document.getElementById('audio-master-slider');
 const audioMusicSlider = document.getElementById('audio-music-slider');
 const audioVfxSlider = document.getElementById('audio-vfx-slider');
@@ -2137,6 +2196,9 @@ function handleSteamGameplayInput(controller) {
     if (controller.interact && !prev.interact) {
         window.game?.triggerGameplayInteract?.();
     }
+    if (controller.cycleInteract && !prev.cycleInteract) {
+        window.game?.cycleInteractionTarget?.();
+    }
     if (controller.reload && !prev.reload) {
         window.game?.triggerGameplayReload?.({ manual: true });
     }
@@ -2176,6 +2238,7 @@ function handleSteamGameplayInput(controller) {
         ...prev,
         fire: Boolean(controller.fire),
         interact: Boolean(controller.interact),
+        cycleInteract: Boolean(controller.cycleInteract),
         reload: Boolean(controller.reload),
         melee: Boolean(controller.melee),
         ability: Boolean(controller.ability),
@@ -6119,7 +6182,7 @@ window.addEventListener('black-box-marker-active', (event) => {
         label: 'RECOVER BLACK BOX',
         current: 0,
         target: 1,
-        priority: 10,
+        priority: 80,
         compass: Number.isFinite(x) && Number.isFinite(z) ? { x, z } : null
     });
 });
@@ -6136,7 +6199,7 @@ window.addEventListener('black-box-guard-defeated', (event) => {
         label: 'RECOVER BLACK BOX — GUARD DEFEATED',
         current: 0,
         target: 1,
-        priority: 10,
+        priority: 80,
         compass: Number.isFinite(state.x) && Number.isFinite(state.z)
             ? { x: state.x, z: state.z }
             : null
@@ -6168,8 +6231,15 @@ window.addEventListener('loop-step-changed', (event) => {
         hud.classList.add('hidden');
         return;
     }
-    if (textEl) textEl.textContent = step.label;
+    if (textEl) {
+        // P0-3: the optional objective rides alongside the primary rather than
+        // replacing it, so both are legible at once.
+        textEl.textContent = step.secondary?.label
+            ? `${step.label}  //  ${step.secondary.label}`
+            : step.label;
+    }
     hud.dataset.step = step.key ?? '';
+    hud.dataset.secondary = step.secondary?.key ?? '';
     hud.classList.remove('hidden');
 });
 
@@ -8395,7 +8465,49 @@ function sampleFPS() {
     fpsFrames++;
     fpsRafId = requestAnimationFrame(sampleFPS);
 }
-fpsRafId = requestAnimationFrame(sampleFPS);
+
+/**
+ * FPS sampling is debug-only.
+ *
+ * This used to start unconditionally at module load: a requestAnimationFrame
+ * callback every frame plus a one-second interval, both updating an element
+ * that CSS never displays. That is per-frame work forever, on a Steam Deck, for
+ * a readout nobody can see.
+ *
+ * Started and stopped with the debug class rather than left running, so a
+ * release session pays nothing for it.
+ */
+function isDebugVisible() {
+    return typeof document !== 'undefined' && document.body?.classList?.contains('show-debug');
+}
+
+function setFpsSampling(enabled) {
+    if (enabled) {
+        if (fpsRafId === null) {
+            fpsFrames = 0;
+            fpsLastTime = performance.now();
+            fpsRafId = requestAnimationFrame(sampleFPS);
+        }
+        return;
+    }
+    if (fpsRafId !== null) {
+        cancelAnimationFrame(fpsRafId);
+        fpsRafId = null;
+    }
+    // Clear the stale reading so re-enabling does not show a number from
+    // whenever debug was last open.
+    if (fpsDisplay) fpsDisplay.textContent = 'FPS: --';
+    delete window.__hb_fps;
+}
+
+setFpsSampling(isDebugVisible());
+
+// The debug class is toggled elsewhere (the ~ console); watch the body rather
+// than threading a callback through every caller.
+if (typeof MutationObserver !== 'undefined' && document.body) {
+    new MutationObserver(() => setFpsSampling(isDebugVisible()))
+        .observe(document.body, { attributes: true, attributeFilter: ['class'] });
+}
 
 const debugGrantResourcesBtn = document.getElementById('debug-grant-resources');
 const debugGodModeBtn = document.getElementById('debug-god-mode');
@@ -9472,6 +9584,8 @@ devConsoleInput?.addEventListener('keydown', (e) => {
 
 if (fpsDisplay) {
     setInterval(() => {
+        // Nothing to sample or show while debug is off.
+        if (!isDebugVisible()) return;
         if (fpsRafId === null) {
             fpsFrames = 0;
             fpsLastTime = performance.now();
@@ -11394,10 +11508,15 @@ function openFabricationModal() {
     });
     if (FAB_RECIPES.some((r) => fabricator.isPrinting(r.id))) startFabTicker();
 }
+let campRestSessionOpen = false;
 function closeFabricationModal() {
     const modal = document.getElementById('fabrication-modal');
     if (modal) { modal.classList.add('hidden'); modal.setAttribute('aria-hidden', 'true'); }
     stopFabTicker();
+    if (campRestSessionOpen) {
+        campRestSessionOpen = false;
+        window.game?.finishCampRest?.();
+    }
 }
 
 function refreshFabAccess() {
@@ -11682,6 +11801,65 @@ setupClickOutside('codex-detail-modal', closeCodexDetailModal);
 
 // In-world Foundry (Beat 4): reaching the powered structure opens the Bay.
 window.addEventListener('open-fabrication-bay', openFabricationModal);
+let pendingCampRestConfirmation = null;
+function closeDayRestWarning() {
+    pendingCampRestConfirmation = null;
+    dayRestWarningModal?.classList.add('hidden');
+    dayRestWarningModal?.setAttribute('aria-hidden', 'true');
+}
+window.addEventListener('day-rest-warning', (event) => {
+    const detail = event?.detail ?? {};
+    pendingCampRestConfirmation = typeof detail.onConfirm === 'function' ? detail.onConfirm : null;
+    if (dayRestWarningCopy) {
+        dayRestWarningCopy.textContent = `Sleeping at ${detail.campLabel ?? 'this camp'} advances to day ${detail.nextDay ?? '?'}. These unresolved signals will be lost:`;
+    }
+    if (dayRestWarningList) {
+        dayRestWarningList.replaceChildren();
+        for (const deadline of detail.deadlines ?? []) {
+            const item = document.createElement('div');
+            item.className = 'day-rest-warning-item';
+            const title = document.createElement('strong');
+            title.textContent = deadline.label ?? String(deadline.id ?? 'UNKNOWN SIGNAL').replaceAll('_', ' ').toUpperCase();
+            const consequence = document.createElement('span');
+            consequence.textContent = deadline.consequence ?? 'This story path closes permanently.';
+            item.append(title, consequence);
+            dayRestWarningList.appendChild(item);
+        }
+    }
+    dayRestWarningModal?.classList.remove('hidden');
+    dayRestWarningModal?.setAttribute('aria-hidden', 'false');
+    dayRestWarningCancel?.focus();
+});
+dayRestWarningCancel?.addEventListener('click', closeDayRestWarning);
+dayRestWarningConfirm?.addEventListener('click', () => {
+    const confirm = pendingCampRestConfirmation;
+    closeDayRestWarning();
+    confirm?.();
+});
+window.addEventListener('day-rest-open', (event) => {
+    const detail = event?.detail ?? {};
+    campRestSessionOpen = true;
+    showBiomePrompt(`> DAY ${detail.day} // ${detail.campLabel ?? 'CAMP'} REST CYCLE COMPLETE // THREAT ${Number(detail.difficulty ?? 1).toFixed(2)}×`);
+    if (detail.expired?.length) {
+        showBiomePrompt(`> MISSED SIGNALS CLOSED: ${detail.expired.join(', ').replaceAll('_', ' ').toUpperCase()}`);
+    }
+    openFabricationModal();
+});
+
+window.addEventListener('day-cycle-changed', (event) => {
+    const detail = event?.detail ?? {};
+    const host = document.querySelector('.level-indicator');
+    if (!host) return;
+    let day = document.getElementById('campaign-day-indicator');
+    if (!day) {
+        day = document.createElement('span');
+        day.id = 'campaign-day-indicator';
+        day.className = 'level-indicator__seed';
+        host.appendChild(day);
+    }
+    day.textContent = `DAY ${detail.day ?? 1}`;
+    day.title = `Campaign threat ${Number(detail.difficulty ?? 1).toFixed(2)}×`;
+});
 window.addEventListener('o2-startup-sequence-started', (event) => {
     if ((event?.detail?.level ?? 0) !== 1) return;
     showTacticalOverlay({
@@ -14029,6 +14207,9 @@ document.addEventListener('DOMContentLoaded', async () => {
             { key: 'door_slide_horiz2', url: '/audio/vg2/door_slide_horiz2.wav' },
             { key: 'door_slide_horiz3', url: '/audio/vg2/door_slide_horiz3.wav' },
             { key: 'door_slide_horiz4', url: '/audio/vg2/door_slide_horiz4.wav' },
+            { key: 'cc0_door_lock_body_01', url: '/audio/cc0-derived/mechanisms/door_lock_body_01.ogg' },
+            { key: 'cc0_door_lock_body_02', url: '/audio/cc0-derived/mechanisms/door_lock_body_02.ogg' },
+            { key: 'cc0_metal_lock_impact_01', url: '/audio/cc0-derived/mechanisms/metal_lock_impact_01.ogg' },
             { key: 'door_gears_spin1', url: '/audio/vg2/door_gears_spin1.wav' },
             { key: 'door_gears_spin2', url: '/audio/vg2/door_gears_spin2.wav' },
             { key: 'door_gears_spin3', url: '/audio/vg2/door_gears_spin3.wav' },
@@ -14365,6 +14546,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                     { key: 'hive_eggs_hatch', url: '/audio/vg2/hive_eggs_hatch.wav' },
                     { key: 'hive_spores_puff', url: '/audio/vg2/hive_spores_puff.wav' },
                     { key: 'hive_webs_sticky', url: '/audio/vg2/hive_webs_sticky.wav' },
+                    { key: 'cc0_resin_shift_01', url: '/audio/cc0-derived/hive/resin_shift_01.ogg' },
+                    { key: 'cc0_resin_shift_02', url: '/audio/cc0-derived/hive/resin_shift_02.ogg' },
+                    { key: 'cc0_ship_engine_low_01', url: '/audio/cc0-derived/engines/ship_engine_low_01.ogg' },
                     { key: 'hive_queen_throne', url: '/audio/vg2/hive_queen_throne.wav' },
                     { key: 'hive_wounded_drip', url: '/audio/vg2/hive_wounded_drip.wav' },
                     { key: 'fx_scout_sprint', url: '/audio/vg2/fx_scout_sprint.wav' },
@@ -14487,6 +14671,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                     follow: state.settings.cameraFollow
                 });
                 window.game.nightVision = state.settings.nightVision;
+                // Publish the restored campaign day immediately; otherwise
+                // the HUD stays blank until the player completes another rest.
+                window.game.persistDayCycleState?.();
                 applyHudThemeFromLoadout();
                 traceBootPhase('three-constructor-ready', {
                     pixelRatio: window.game.renderer?.getPixelRatio?.(),
@@ -15177,19 +15364,21 @@ if (window.electronAPI) {
             });
         }
     });
-    // Boss/queen defeat: a guaranteed free Deep Relic Cache tied to a
-    // combat-sourced run milestone rather than a narrative branch choice.
-    // runKey only needs to be unique per run, not globally meaningful.
-    window.addEventListener('act2-milestone', (event) => {
-        if (event?.detail?.key !== 'queenKilled' || !window.electronAPI?.requestSteamMilestoneGrant) return;
-        if (event.detail.combat !== true && event.detail.source !== 'queen-fight') return;
-        const runKey = `${activeRunSeed ?? 'no-seed'}:${runStartTime}`;
-        showDeveloperCommentary('queen_killed');
-        recordSteamTimelineEvent('queen_killed', 'Queen Defeated', 'Specimen-0047 was defeated in combat.', {
-            icon: 'queen',
-            priority: 5,
-            durationSeconds: 10
-        });
+    // Every actual boss defeat earns one Relic Key. The encounter identity is
+    // part of the server idempotency key, so retries are safe while separate
+    // bosses in the same expedition each remain rewardable.
+    window.addEventListener('enemy-killed', (event) => {
+        if (event?.detail?.isBoss !== true || !window.electronAPI?.requestSteamMilestoneGrant) return;
+        const encounterId = event.detail.encounterId ?? event.detail.type ?? 'boss';
+        const runKey = `${activeRunSeed ?? 'no-seed'}:${runStartTime}:${encounterId}`;
+        if (event.detail.type === 'boss_queen') {
+            showDeveloperCommentary('queen_killed');
+            recordSteamTimelineEvent('queen_killed', 'Queen Defeated', 'Specimen-0047 was defeated in combat.', {
+                icon: 'queen',
+                priority: 5,
+                durationSeconds: 10
+            });
+        }
         window.electronAPI.requestSteamMilestoneGrant('boss_kill', runKey).then((result) => {
             (result?.granted ?? []).forEach((item) => showSteamDropToast(item.itemdefid, item.quantity));
         }).catch((err) => {

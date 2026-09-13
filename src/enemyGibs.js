@@ -520,6 +520,42 @@ export function spawnEnemyGibs(game, sprite, options = {}) {
 }
 
 /** World props: debris, never gore-gated -- a crate should break regardless. */
+// Inorganic debris is loud. Rate limiting matters more here than for enemy
+// gibs: shooting a stack of crates destroys several props inside a second, and
+// one impact per prop would be a wall of noise rather than an event.
+export const PROP_DEBRIS_MIN_GAP_MS = 110;
+
 export function spawnPropDebris(game, sprite, options = {}) {
-    return spawnGibsFor(game, sprite, { ...options, organic: false });
+    const spawned = spawnGibsFor(game, sprite, { ...options, organic: false });
+    if (spawned) playPropDebrisImpact(game, sprite);
+    return spawned;
+}
+
+/**
+ * The shatter a destroyed prop makes. Every prop in the game broke apart
+ * silently until now -- the debris system shipped without any audio at all.
+ *
+ * Uses the existing amb_metal_stress set (three variants) rather than adding a
+ * new asset, and routes through playMetalStress so it inherits that path's
+ * rate limiting. Positional via game.audioAt, so a crate destroyed across the
+ * room is quieter, panned, and muffled by a wall between.
+ */
+export function playPropDebrisImpact(game, sprite) {
+    const audio = globalThis.window?.AudioManager;
+    if (!audio?.playMetalStress) return false;
+    const x = sprite?.position?.x;
+    const z = sprite?.position?.z;
+    const options = {
+        volume: 0.5,
+        playbackRate: 0.85 + (Math.random() * 0.3),
+        minGapMs: PROP_DEBRIS_MIN_GAP_MS,
+        force: false
+    };
+    // audioAt adds world position and obstruction. Falling back to the bare
+    // options keeps this working in tests and headless contexts where the
+    // game object is a stub.
+    audio.playMetalStress(
+        typeof game?.audioAt === 'function' ? game.audioAt(x, z, options) : options
+    );
+    return true;
 }

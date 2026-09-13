@@ -23,6 +23,15 @@ function key(x, y) {
     return `${x},${y}`;
 }
 
+function stableRoll(value) {
+    let hash = 2166136261;
+    for (const char of String(value)) {
+        hash ^= char.charCodeAt(0);
+        hash = Math.imul(hash, 16777619);
+    }
+    return (hash >>> 0) / 0x100000000;
+}
+
 export function validateSetpieceBlueprint(blueprint) {
     const errors = [];
     if (blueprint?.version !== SETPIECE_BUILD_VERSION) errors.push('unsupported version');
@@ -106,6 +115,73 @@ export function allocateSetpieceClaim(reservation, {
         }
     }
     return null;
+}
+
+/**
+ * Allocate every eligible world-plan reservation without mutating the plan.
+ * A required crossing that cannot fit its full footprint degrades to the
+ * blueprint pivot module, preserving a valid run and a typed diagnostic.
+ */
+export function allocateWorldSetpieces(worldPlan, { catalog = SETPIECE_BUILD_CATALOG } = {}) {
+    const availableChunkKeys = Array.isArray(worldPlan?.topology?.routeChunks)
+        ? worldPlan.topology.routeChunks.map((chunk) => key(chunk.chunkX, chunk.chunkY))
+        : Object.keys(worldPlan?.topology?.chunks ?? {});
+    const targets = (worldPlan?.reservations ?? []).filter((entry) => (
+        catalog.some((blueprint) => isEligible(blueprint, entry))
+    ));
+    const targetIds = new Set(targets.map((entry) => entry.id));
+    const occupied = new Set((worldPlan?.reservations ?? [])
+        .filter((entry) => entry.chunkKey && !targetIds.has(entry.id) && !entry.shareWithReservationId)
+        .map((entry) => entry.chunkKey));
+    const claims = [];
+    const omissions = [];
+
+    for (const reservation of targets) {
+        let claim = allocateSetpieceClaim(reservation, {
+            catalog,
+            availableChunkKeys,
+            occupiedChunkKeys: [...occupied],
+            roll: stableRoll(`${worldPlan?.seed ?? 0}|${reservation.id}`)
+        });
+        if (!claim && reservation.required) {
+            const blueprint = catalog.find((entry) => (
+                validateSetpieceBlueprint(entry).valid && isEligible(entry, reservation)
+            ));
+            const pivotModule = blueprint?.modules?.find((module) => (
+                module.at.dx === blueprint.pivot.dx && module.at.dy === blueprint.pivot.dy
+            ));
+            if (blueprint && pivotModule && reservation.chunkKey && !occupied.has(reservation.chunkKey)) {
+                claim = {
+                    version: SETPIECE_CLAIM_VERSION,
+                    id: `setpiece:${reservation.id}:${blueprint.id}`,
+                    reservationId: reservation.id,
+                    setpieceId: blueprint.id,
+                    family: blueprint.family,
+                    ring: reservation.ring,
+                    rotation: 0,
+                    stage: blueprint.initialStage,
+                    chunkKeys: [reservation.chunkKey],
+                    modules: [{
+                        moduleId: pivotModule.id,
+                        chunkX: reservation.chunkX,
+                        chunkY: reservation.chunkY,
+                        chunkKey: reservation.chunkKey,
+                        routeAxis: pivotModule.routeAxis
+                    }],
+                    externalSockets: [],
+                    degraded: true,
+                    omissionReason: 'full_footprint_unavailable'
+                };
+            }
+        }
+        if (!claim) {
+            omissions.push({ reservationId: reservation.id, reason: 'no_conflict_free_footprint' });
+            continue;
+        }
+        claims.push(claim);
+        for (const chunkKey of claim.chunkKeys) occupied.add(chunkKey);
+    }
+    return { version: SETPIECE_CLAIM_VERSION, claims, omissions };
 }
 
 function makeModuleGrid(size, axis) {

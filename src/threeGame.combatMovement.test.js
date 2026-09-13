@@ -16,7 +16,8 @@ describe('combat movement separation', () => {
             interactWithConsole: openConsole,
             interactWithO2Generator: openO2,
             interactWithBaseTurret: vi.fn(),
-            interactWithFoundry: vi.fn()
+            interactWithFoundry: vi.fn(),
+            getPriorityInteractionCandidates: ThreeGame.prototype.getPriorityInteractionCandidates
         };
 
         expect(ThreeGame.prototype.interactWithNearestShipStation.call(game)).toBe(true);

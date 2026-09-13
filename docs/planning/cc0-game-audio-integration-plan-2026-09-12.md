@@ -129,8 +129,11 @@ initially empty `GAME_SOUNDSETS` registry plus validation and deterministic
 variant/fallback/no-repeat selection now exists in
 `src/data/gameSoundsets.js`, covered by `src/data/gameSoundsets.test.js`. It is
 deliberately not wired to downloaded media until audition and provenance gates
-pass. Cooldowns, concurrency, runtime history, contextual loading, and spatial
-placement remain planned work.
+pass. Pure screen-space pan, distance attenuation, obstruction treatment, and
+critical-cue floor math now lives in `src/audioSpatial.js`, covered by
+`src/audioSpatial.test.js`. Gameplay adapters and room-capture acceptance still
+remain before GAUD-07 is complete. Cooldowns, concurrency, runtime history, and
+contextual loading also remain planned work.
 
 | Work | Current seam | Required change |
 | --- | --- | --- |

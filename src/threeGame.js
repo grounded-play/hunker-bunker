@@ -191,7 +191,7 @@ import { spawnEnemyGibs, spawnPropDebris } from './enemyGibs.js';
 import { registerTinaHit } from './mayorTinaCombat.js';
 import { applyLinchpinResolution, resolveCampLeaderLinchpin } from './storyLinchpins.js';
 import { resolveSafeSpawn } from './safeSpawn.js';
-import { WORLD_3D_FACING_YAW, createWorld3dModel, hasWorld3dModel, preloadWorld3dModels, syncWorld3dReplacement } from './world3dOverlay.js';
+import { WORLD_3D_FACING_YAW, createWorld3dModel, hasWorld3dModel, isWorld3dOnlyPlacementType, preloadWorld3dModels, syncWorld3dReplacement } from './world3dOverlay.js';
 import { computeTrailPosition } from './companionFollow.js';
 import { SNAIL_ENCOUNTER_CONSTANTS } from './snailEncounter.js';
 import { createUniversalEncounter, resolveEncounterAction } from './universalEncounter.js';
@@ -227,6 +227,30 @@ import { applyBlackChromaKey, applyGreenChromaKey } from './textureKeying.js';
 import { getCachedKeyedImage, putCachedKeyedImage } from './keyedTextureCache.js';
 import { LANDFORMS, pickLandform, applyLandform, applyCanyonCollapse, connectPortalsInward, openMazeTerrain, generateHeightmapGrid, TERRAIN_HEIGHTS, findFarthestFloorCell } from './landforms.js';
 import { getDepthThreatScale, getProgressionSlot, progressionWorldTarget } from './worldProgression.js';
+import { corridorKitPlacement } from './kitGrammar.js';
+import {
+    PLANE_KINDS,
+    activePlane,
+    beginTransition,
+    cameraForPlane,
+    ceilingFadeAlpha,
+    createPlaneStack,
+    endTransition,
+    enterPlane,
+    leavePlane
+} from './portalPlanes.js';
+import {
+    DAY_STATE_KEY,
+    REST_PHASES,
+    beginExpedition,
+    beginSleep,
+    completeRest,
+    createDayState,
+    deadlinesClosingTonight,
+    normalizeDayState,
+    resolveDeadline,
+    threatScaleForDay
+} from './dayCycle.js';
 import {
     clampPositionToUnlockedRing,
     generateRadialMazeExpedition,
@@ -288,8 +312,7 @@ import {
     getEnemyDirectionRow,
     getEnemySpriteLayout
 } from './enemySpriteLayouts.js';
-import { SHOWROOM_CHUNK_X, SHOWROOM_CHUNK_Y } from './debugShowroom.js';
-import { getWing2ChunkOverride } from './debugTileGrid.js';
+import { SHOWROOM_CHUNK_X, SHOWROOM_CHUNK_Y } from './debugWorldLayout.js';
 import { PRESENTATION_EVENTS, presentationTelemetry } from './presentationTelemetry.js';
 import { summarizeSceneLights, diffLightCounts } from './lightingReport.js';
 
@@ -357,7 +380,7 @@ const PICKUP_TYPES = [
 export const CLASS_STATS = {
     SCOUT:    { moveSpeed: 4.8, o2DrainMult: 1.25, pickupMagnetRadius: 4.2, projectileDamage: 1, passiveName: 'EVASIVE', passiveDescription: 'Reduced duration from enemy slow/freeze effects. Faster reload.' },
     TANK:     { moveSpeed: 2.6, o2DrainMult: 0.75, pickupMagnetRadius: 2.8, projectileDamage: 2, passiveName: 'BULWARK', passiveDescription: 'Chance to fully block incoming damage.' },
-    ENGINEER: { moveSpeed: 3.6, o2DrainMult: 1.0,  pickupMagnetRadius: 3.4, projectileDamage: 1, passiveName: 'AUTO-TURRET', passiveDescription: 'Periodically deploys an automated turret that fires on nearby enemies.' }
+    ENGINEER: { moveSpeed: 3.6, o2DrainMult: 1.0,  pickupMagnetRadius: 3.4, projectileDamage: 1, passiveName: 'TURRET PROTOCOL', passiveDescription: 'Unlock the automated field turret deep in the Engineer skill tree.' }
 };
 
 export const O2_DRAIN_RATE_PCT_PER_SEC = 1 / 3;
@@ -720,6 +743,10 @@ const BUILD_SITES = Object.freeze([
     Object.freeze({ goalKey: 'radarNode', x: 9, z: 98, biome: 'cryo', label: 'SCANNER MAST SITE', animated: true }),
     Object.freeze({ goalKey: 'reactorCompressor', x: -8, z: 176, biome: 'bio', label: 'REACTOR SITE' })
 ]);
+// Audio obstruction ray: chest height so ledges and low debris are not walls,
+// and a back-off so geometry the emitter is touching does not muffle it.
+const AUDIO_OBSTRUCTION_RAY_HEIGHT = 1.0;
+const AUDIO_OBSTRUCTION_BACKOFF = 0.75;
 const PLAYER_HITBOX_PADDING = 0.18;     // forgiving hitbox for player shots only
 const WEAPON_CLIP_PER_CAPACITY = 2;     // +clip rounds per ammoCapacity tier
 const WEAPON_SPEED_PER_TIER = 2.5;      // +projectile speed per shotSpeed tier
@@ -1358,6 +1385,8 @@ export class ThreeGame {
         this.worldRouteRecords = new Map();
         this.pocketGroups = new Map();
         this.isInPocket = false;
+        this.planeState = createPlaneStack();
+        this._surfaceCameraBeforePortal = null;
         this.chunkMeshes = new Map();
         this.chunkGroups = new THREE.Group();
         this._chunkTemplateCache = new Map();
@@ -1449,6 +1478,9 @@ export class ThreeGame {
         // Start mid-morning; advances only during active gameplay.
         this.timeOfDay = 0.28;
         this.dayCycleSeconds = 150;
+        // Campaign day/rest is distinct from the cosmetic time-of-day clock.
+        // It survives runs and only advances through an explicit camp sleep.
+        this.dayState = this.loadDayCycleState();
         // Weather (Note 9): pooled Points field, biome/time-biased state machine.
         this.weather = {
             state: 'clear',
@@ -2344,6 +2376,27 @@ export class ThreeGame {
             prop_camp_cookfire_doused: this.loadKeyedSpriteTexture('/prop_camp_cookfire_doused.png', 14),
             prop_camp_cot: this.loadKeyedSpriteTexture('/prop_camp_cot.png', 14),
             prop_camp_crate: this.loadKeyedSpriteTexture('/prop_camp_crate.png', 14),
+            prop_camp_crates_chained: this.loadKeyedSpriteTexture('/prop_camp_crates_chained.png', 14),
+            prop_camp_warning_placard: this.loadKeyedSpriteTexture('/prop_camp_warning_placard.png', 14),
+            prop_camp_shutter_lockdown: this.loadKeyedSpriteTexture('/prop_camp_shutter_lockdown.png', 14),
+            prop_camp_laundry: this.loadKeyedSpriteTexture('/prop_camp_laundry.png', 14),
+            prop_camp_grave_fresh: this.loadKeyedSpriteTexture('/prop_camp_grave_fresh.png', 14),
+            prop_camp_grave_old: this.loadKeyedSpriteTexture('/prop_camp_grave_old.png', 14),
+            prop_camp_meridian_radio: this.loadKeyedSpriteTexture('/prop_camp_meridian_radio.jpg', 14),
+            prop_camp_meridian_battery_bank: this.loadKeyedSpriteTexture('/prop_camp_meridian_battery_bank.jpg', 14),
+            prop_camp_meridian_repair_rig: this.loadKeyedSpriteTexture('/prop_camp_meridian_repair_rig.jpg', 14),
+            prop_camp_tallow_still: this.loadKeyedSpriteTexture('/prop_camp_tallow_still.jpg', 14),
+            prop_camp_tallow_spore_trays: this.loadKeyedSpriteTexture('/prop_camp_tallow_spore_trays.jpg', 14),
+            prop_camp_tallow_resin_urn: this.loadKeyedSpriteTexture('/prop_camp_tallow_resin_urn.jpg', 14),
+            prop_camp_vesper_turret: this.loadKeyedSpriteTexture('/prop_camp_vesper_turret.jpg', 14),
+            prop_camp_vesper_ammo_press: this.loadKeyedSpriteTexture('/prop_camp_vesper_ammo_press.jpg', 14),
+            prop_camp_vesper_shield_rack: this.loadKeyedSpriteTexture('/prop_camp_vesper_shield_rack.jpg', 14),
+            prop_hive_suture_organ: this.loadKeyedSpriteTexture('/prop_hive_suture_organ.jpg', 14),
+            prop_hive_wound_cauterizer: this.loadKeyedSpriteTexture('/prop_hive_wound_cauterizer.jpg', 14),
+            prop_hive_relay_antenna: this.loadKeyedSpriteTexture('/prop_hive_relay_antenna.jpg', 14),
+            prop_hive_synaptic_web: this.loadKeyedSpriteTexture('/prop_hive_synaptic_web.jpg', 14),
+            prop_hive_chitin_hatchery: this.loadKeyedSpriteTexture('/prop_hive_chitin_hatchery.jpg', 14),
+            prop_hive_carapace_molt: this.loadKeyedSpriteTexture('/prop_hive_carapace_molt.jpg', 14),
             drop_horizon_badge: this.loadKeyedSpriteTexture('/drop_horizon_badge.png', 14),
             drop_dig_manifest: this.loadKeyedSpriteTexture('/drop_dig_manifest.png', 14),
             drop_security_log: this.loadKeyedSpriteTexture('/drop_security_log.png', 14),
@@ -3980,6 +4033,11 @@ export class ThreeGame {
             tileZ: 4.8
         };
 
+        // The field turret already uses the authored defense-turret asset. Use
+        // that same visual language at the base, at a smaller fixture scale;
+        // primitives remain as a synchronous fallback if the GLB cannot load.
+        this.upgradeBaseTurretToModel?.(group);
+
         this._onBaseItemRepaired = () => {
             this.bank?.unlockBaseTurret?.();
             this.updateBaseTurretVisuals();
@@ -3995,6 +4053,36 @@ export class ThreeGame {
             window.addEventListener('base-turret-repaired', this._onBaseTurretChanged);
         }
         this.updateBaseTurretVisuals();
+    }
+
+    async upgradeBaseTurretToModel(group) {
+        if (!group || !hasWorld3dModel('prop_base_defense_turret')) return false;
+        try {
+            const model = await this.createWorld3dModel('prop_base_defense_turret');
+            const root = model?.root ?? model;
+            if (!root) return false;
+            if (this.baseDefenseTurretGroup !== group || !group.parent) {
+                root.traverse?.((child) => {
+                    child.geometry?.dispose?.();
+                    child.material?.dispose?.();
+                });
+                return false;
+            }
+            for (const child of [...group.children]) {
+                group.remove(child);
+                child.geometry?.dispose?.();
+                child.material?.dispose?.();
+            }
+            root.scale.multiplyScalar(0.58);
+            root.position.y = 0.04;
+            group.add(root);
+            this.baseDefenseTurretHead = root;
+            this.baseDefenseTurretEyeMat = null;
+            return true;
+        } catch (err) {
+            console.warn('[base-turret] model upgrade failed, keeping placeholder', err);
+            return false;
+        }
     }
 
     updateBaseTurretVisuals() {
@@ -4952,7 +5040,9 @@ export class ThreeGame {
                 glowColor: isPvP ? 0xff0000 : 0x00ffff
             }
         });
-        window.AudioManager?.play?.('weapon_fire_sidearm', { volume: 0.28, varyPitch: true });
+        // Remote player's shot: this one genuinely needs placing -- it is the
+        // only weapon fire that does not originate at the listener.
+        window.AudioManager?.play?.('weapon_fire_sidearm', (this.audioAt?.(originX, originZ, { volume: 0.28, varyPitch: true }) ?? { volume: 0.28, varyPitch: true }));
     }
 
     handleRemotePlayerDamaged(data) {
@@ -5175,6 +5265,33 @@ export class ThreeGame {
             if (distance <= SQUADMATE_HIT_RADIUS) return { id, remote };
         }
         return null;
+    }
+
+    checkProjectileRivalHit(projectile) {
+        if (!this.isMultiplayer || this.multiplayerMode !== 'pvp') return null;
+        if (!this.remotePlayers?.size || projectile?.isEnemy) return null;
+        const px = projectile.mesh.position.x;
+        const pz = projectile.mesh.position.z;
+        for (const [id, remote] of this.remotePlayers) {
+            const mesh = remote?.mesh;
+            if (!mesh || mesh.visible === false || remote.isDown) continue;
+            const distance = Math.hypot(px - mesh.position.x, pz - mesh.position.z);
+            const radius = (this.playerRadius ?? 0.35)
+                + (projectile.radius ?? PROJECTILE_RADIUS)
+                + PLAYER_HITBOX_PADDING;
+            if (distance <= radius) return { id, remote };
+        }
+        return null;
+    }
+
+    reportProjectileRivalHit(rival, projectile) {
+        if (!rival?.id || !this.netSocket) return false;
+        this.netSocket.emit('weaponHit', {
+            targetId: rival.id,
+            originX: projectile.mesh.position.x,
+            originZ: projectile.mesh.position.z
+        });
+        return true;
     }
 
     // Send the shove along the round's own travel direction, so a squadmate is
@@ -5576,9 +5693,13 @@ export class ThreeGame {
     loadNearbyWorld3dReplacement(source) {
         if (!source?.userData?.world3dModelType || source.userData.world3dLoading || source.userData.world3dRoot) return;
         if ((this._world3dLoadsInFlight ?? 0) >= 2 || !this.player?.position) return;
+        this._world3dLoadPosition ??= new THREE.Vector3();
+        source.getWorldPosition?.(this._world3dLoadPosition);
+        const sourceX = source.getWorldPosition ? this._world3dLoadPosition.x : source.position.x;
+        const sourceZ = source.getWorldPosition ? this._world3dLoadPosition.z : source.position.z;
         const distance = Math.hypot(
-            this.player.position.x - source.position.x,
-            this.player.position.z - source.position.z
+            this.player.position.x - sourceX,
+            this.player.position.z - sourceZ
         );
         if (distance > 9) return;
         this._world3dLoadsInFlight = (this._world3dLoadsInFlight ?? 0) + 1;
@@ -5901,6 +6022,10 @@ export class ThreeGame {
             if (event.code === 'Enter' || this.codeMatchesAction(event.code, 'interact')) {
                 debugLog.debug('INPUT', 'Action: INTERACT (E/Enter)');
                 this.triggerGameplayInteract();
+            }
+            if (event.code === 'KeyC') {
+                event.preventDefault();
+                this.cycleInteractionTarget();
             }
             if (this.codeMatchesAction(event.code, 'reload')) {
                 event.preventDefault();
@@ -6236,7 +6361,11 @@ export class ThreeGame {
     triggerGameplayInteract() {
         if (!this.isGameplayInputActive()) return false;
         if (this.interactWithMayorTina()) return true;
-        if (this.interactWithNearestShipStation()) return true;
+        const priorityCandidates = this.getPriorityInteractionCandidates();
+        if (priorityCandidates.length > 0) {
+            const index = Math.min(this._interactionTargetIndex ?? 0, priorityCandidates.length - 1);
+            return Boolean(priorityCandidates[index].interact());
+        }
         // Every check below used to run with its result discarded, so a press
         // near nothing interactable was silent -- no success, no "nothing
         // here" cue, indistinguishable from the game not having heard the
@@ -6247,16 +6376,15 @@ export class ThreeGame {
         handled = this.interactWithProceduralDoor() || handled;
         handled = this.interactWithMazeAccessSource() || handled;
         handled = this.interactWithLoreTerminal() || handled;
-        handled = this.interactWithBlackBox() || handled;
-        handled = this.interactWithCaveEntrance() || handled;
-        handled = this.interactWithAct2Camp() || handled;
-        handled = this.interactWithScientist() || handled;
-        handled = this.interactWithHiveSite() || handled;
-        handled = this.interactWithCampQuestObject() || handled;
-        handled = this.interactWithWanderer() || handled;
-        handled = this.interactWithHoleTile() || handled;
-        handled = this.interactWithPocketClimbPoint() || handled;
-        handled = this.interactWithBiomechanicalDoor() || handled;
+        if (!handled) handled = this.interactWithCaveEntrance();
+        if (!handled) handled = this.interactWithAct2Camp();
+        if (!handled) handled = this.interactWithScientist();
+        if (!handled) handled = this.interactWithHiveSite();
+        if (!handled) handled = this.interactWithCampQuestObject();
+        if (!handled) handled = this.interactWithWanderer();
+        if (!handled) handled = this.interactWithHoleTile();
+        if (!handled) handled = this.interactWithPocketClimbPoint();
+        if (!handled) handled = this.interactWithBiomechanicalDoor();
         if (!handled) {
             this.playThrottledUiError('_lastNoInteractCueAt', { volume: 0.3, playbackRate: 0.9 });
         }
@@ -6264,28 +6392,92 @@ export class ThreeGame {
     }
 
     interactWithNearestShipStation() {
-        if (!this.player) return false;
+        const candidates = this.getPriorityInteractionCandidates().filter((candidate) => !candidate.secondary);
+        return Boolean(candidates[0]?.interact());
+    }
+
+    getPriorityInteractionCandidates() {
+        if (!this.player) return [];
         const px = this.player.position.x;
         const pz = this.player.position.z;
         const candidates = [];
+        const currentPlane = activePlane(this.planeState);
+        if (currentPlane?.id === 'foundry-interior') {
+            const pocket = this.pocketCache?.get(this.getWallKey(this._pocketHoleX, this._pocketHoleZ));
+            if (pocket) {
+                const originX = this._pocketHoleX - pocket.centerCell.x;
+                const originZ = this._pocketHoleZ - pocket.centerCell.y;
+                const workbenchX = originX + pocket.centerCell.x;
+                const workbenchZ = originZ + pocket.centerCell.y;
+                const exitX = originX + pocket.climbPoint.x;
+                const exitZ = originZ + pocket.climbPoint.y;
+                const workbenchDistance = Math.hypot(px - workbenchX, pz - workbenchZ);
+                const exitDistance = Math.hypot(px - exitX, pz - exitZ);
+                if (workbenchDistance <= 2.1) {
+                    candidates.push({
+                        id: 'foundry-interior-workbench',
+                        label: 'FABRICATION WORKBENCH',
+                        distance: workbenchDistance,
+                        interact: () => {
+                            window.dispatchEvent(new CustomEvent('open-fabrication-bay'));
+                            return true;
+                        }
+                    });
+                }
+                if (exitDistance <= 1.8) {
+                    candidates.push({
+                        id: 'foundry-interior-exit',
+                        label: 'EXIT FOUNDRY',
+                        distance: exitDistance,
+                        interact: () => this.exitPocket()
+                    });
+                }
+            }
+            candidates.sort((a, b) => a.distance - b.distance);
+            return candidates;
+        }
         const consoleShip = this.activeInteractiveConsole;
         if (consoleShip) {
             const x = consoleShip.tileX + consoleShip.consoleOffset.x;
             const z = consoleShip.tileZ + consoleShip.consoleOffset.z;
-            candidates.push({ distance: Math.hypot(px - x, pz - z), interact: () => this.interactWithConsole() });
+            candidates.push({ id: 'ship-console', label: 'SHIP CONSOLE', distance: Math.hypot(px - x, pz - z), interact: () => this.interactWithConsole() });
         }
         if (this.activeInteractiveO2Generator) {
             const position = this.getActiveO2GeneratorPosition();
-            if (position) candidates.push({ distance: Math.hypot(px - position.x, pz - position.z), interact: () => this.interactWithO2Generator() });
+            if (position) candidates.push({ id: 'o2-generator', label: 'O2 GENERATOR', distance: Math.hypot(px - position.x, pz - position.z), interact: () => this.interactWithO2Generator() });
         }
         if (this.activeInteractiveBaseTurret) {
-            candidates.push({ distance: Math.hypot(px - 9, pz - 4.8), interact: () => this.interactWithBaseTurret() });
+            candidates.push({ id: 'base-turret', label: 'BASE TURRET', distance: Math.hypot(px - 9, pz - 4.8), interact: () => this.interactWithBaseTurret() });
         }
         if (this.foundry?.isRevealed && this.foundry.isWithinInteractRange(px, pz)) {
-            candidates.push({ distance: this.foundry.distanceTo(px, pz), interact: () => this.interactWithFoundry() });
+            candidates.push({ id: 'foundry', label: 'FAB BAY', distance: this.foundry.distanceTo(px, pz), interact: () => this.interactWithFoundry() });
         }
-        candidates.sort((a, b) => a.distance - b.distance);
-        return Boolean(candidates[0]?.interact());
+        if (this._blackBoxMarkerActive && this._blackBoxState) {
+            const distance = Math.hypot(px - this._blackBoxState.x, pz - this._blackBoxState.z);
+            if (distance <= 2.2) {
+                candidates.push({
+                    id: 'black-box',
+                    label: 'BLACK BOX (OPTIONAL)',
+                    distance,
+                    secondary: true,
+                    interact: () => this.interactWithBlackBox()
+                });
+            }
+        }
+        candidates.sort((a, b) => Number(Boolean(a.secondary)) - Number(Boolean(b.secondary)) || a.distance - b.distance);
+        return candidates;
+    }
+
+    cycleInteractionTarget(direction = 1) {
+        const candidates = this.getPriorityInteractionCandidates();
+        if (candidates.length < 2) return false;
+        this._interactionTargetIndex = ((this._interactionTargetIndex ?? 0) + direction + candidates.length) % candidates.length;
+        const selected = candidates[this._interactionTargetIndex];
+        this.showBunkerLine(`TARGET ${this._interactionTargetIndex + 1}/${candidates.length}: ${selected.label} — PRESS INTERACT`);
+        window.dispatchEvent(new CustomEvent('interaction-target-changed', {
+            detail: { id: selected.id, label: selected.label, index: this._interactionTargetIndex, count: candidates.length }
+        }));
+        return true;
     }
 
     triggerGameplayReload({ manual = false } = {}) {
@@ -6445,7 +6637,7 @@ export class ThreeGame {
         if (this.weaponClipAmmo <= 0 && !this.unlimitedAmmo) {
             const availableAmmo = this.getAvailableAmmo();
             if (availableAmmo < 1) {
-                window.AudioManager?.play('weapon_dry_fire', { volume: 0.45 });
+                window.AudioManager?.play('weapon_dry_fire', (this.audioAt?.(this.player?.position?.x, this.player?.position?.z, { volume: 0.45 }) ?? { volume: 0.45 }));
                 presentationTelemetry.emit('WEAPON', PRESENTATION_EVENTS.WEAPON.SHOT_BLOCKED, { reason: 'out_of_ammo', clip: 0, reserve: 0 }, { level: 'warn' });
                 return this.triggerGameplayMelee({ source: 'empty-fire-fallback' });
             }
@@ -6492,7 +6684,7 @@ export class ThreeGame {
             });
         }
 
-        window.AudioManager?.play('weapon_fire_sidearm', { volume: 0.34 });
+        window.AudioManager?.play('weapon_fire_sidearm', (this.audioAt?.(this.player?.position?.x, this.player?.position?.z, { volume: 0.34 }) ?? { volume: 0.34 }));
 
         if (this.weaponClipAmmo <= 0 && !this.unlimitedAmmo) {
             this.requestReload();
@@ -8034,6 +8226,7 @@ export class ThreeGame {
         fp.measure('updateWeaponState', () => this.updateWeaponState(delta));
         fp.measure('updateProjectiles', () => this.updateProjectiles(delta));
         fp.measure('updateCamera', () => this.updateCamera(delta));
+        fp.measure('updatePortalPlanePresentation', () => this.updatePortalPlanePresentation?.());
         this._lastFrameDeltaForChunkMounts = delta;
         fp.measure('syncVisibleChunks', () => this.syncVisibleChunks());
         if (this._milestoneBossRestagePending) this.restageReadyMilestoneBosses?.();
@@ -8298,9 +8491,6 @@ export class ThreeGame {
         if (mission?.status === 'elevator_down') return { key: 'elevator', label: 'SURVIVE ELEVATOR ARRIVAL' };
         if (mission?.status === 'elevator_ready') return { key: 'elevator-choice', label: 'CHOOSE EXTRACT OR DESCEND' };
 
-        // Dead-suit recovery (T9) outranks everything when a box is in this sector.
-        if (this._blackBoxMarkerActive) return { key: 'blackbox', label: 'RECOVER BLACK BOX' };
-
         const o2 = this.getO2GeneratorState();
         const bossAlive = this.scatterSprites?.some(
             (s) => s.userData?.isMilestone && !s.userData?.burstTriggered
@@ -8338,15 +8528,37 @@ export class ThreeGame {
         if (mission?.status === 'objective_complete') return { key: 'extract', label: 'EXTRACT — RETURN TO SHIP' };
         if (!o2?.isOnline) return { key: 'o2', label: 'REPAIR O2 AT THE SHIP' };
         if (mission?.type && mission.label) return { key: 'objective', label: 'SECURE ACTIVE OBJECTIVE' };
+        // Playtest P0-3: the black box used to be a loop step of its own here.
+        // It is optional salvage, but occupying the primary slot meant that
+        // while it was unrecovered the HUD showed nothing else -- and a pickup
+        // the player cannot reach (see P0-2) hid every following objective for
+        // the rest of the run. It is attached as `secondary` in
+        // updateLoopStep() instead, so it is always visible and never blocking.
         return { key: 'explore', label: 'EXPLORE · BANK SALVAGE' };
+    }
+
+    // The optional objective that rides alongside the primary one. Additive:
+    // consumers that only read `label` are unaffected.
+    getLoopSecondary() {
+        if (this._blackBoxMarkerActive && this._blackBoxState) {
+            return { key: 'blackbox', label: 'OPTIONAL · RECOVER BLACK BOX' };
+        }
+        return null;
     }
 
     updateLoopStep(force = false) {
         const step = this.getLoopStep();
+        const secondary = this.getLoopSecondary();
         const key = step?.key ?? null;
-        if (!force && key === this._lastLoopStepKey) return;
-        this._lastLoopStepKey = key;
-        window.dispatchEvent(new CustomEvent('loop-step-changed', { detail: step }));
+        // The dedupe key has to include the secondary, or picking up the black
+        // box would leave its line on screen until the primary happened to
+        // change.
+        const dedupe = `${key}|${secondary?.key ?? ''}`;
+        if (!force && dedupe === this._lastLoopStepKey) return;
+        this._lastLoopStepKey = dedupe;
+        window.dispatchEvent(new CustomEvent('loop-step-changed', {
+            detail: { ...step, secondary }
+        }));
     }
 
     createBlackBoxMarker(state) {
@@ -9068,7 +9280,7 @@ export class ThreeGame {
         state.hp = Math.max(0, state.hp - damage);
 
         if (state.hp > 0) {
-            window.AudioManager?.playMetalStress?.({ volume: 0.42, playbackRate: 1.5, force: true });
+            window.AudioManager?.playMetalStress?.((this.audioAt?.(state.doorCenterX ?? 9, state.doorZ, { volume: 0.42, playbackRate: 1.5, force: true }) ?? { volume: 0.42, playbackRate: 1.5, force: true }));
             this.spawnTextureBurstEffect(state.doorCenterX ?? 9, state.doorZ, {
                 textureKey: 'fx_steam_puff',
                 color: 0xff4400,
@@ -9101,7 +9313,7 @@ export class ThreeGame {
             baseScale: 0.9,
             duration: 0.7
         });
-        window.AudioManager?.playMetalStress?.({ volume: 0.8, playbackRate: 0.5, force: true });
+        window.AudioManager?.playMetalStress?.((this.audioAt?.(state.doorCenterX ?? 9, state.doorZ, { volume: 0.8, playbackRate: 0.5, force: true }) ?? { volume: 0.8, playbackRate: 0.5, force: true }));
 
         window.dispatchEvent(new CustomEvent('bunker-door-destroyed', {
             detail: { source }
@@ -12471,8 +12683,7 @@ export class ThreeGame {
             window.dispatchEvent(new CustomEvent('act2-milestone', { detail: { key: 'dishBuilt' } }));
             return true;
         }
-        window.dispatchEvent(new CustomEvent('open-fabrication-bay'));
-        return true;
+        return this.enterFoundryInterior();
     }
 
     // ── Act 1 finale: the cave holding the "final ship component" ──────────
@@ -13445,7 +13656,7 @@ export class ThreeGame {
         hive.syncFromRecord(after);
         this.spawnGearPoofEffect(hive.pos.x, hive.pos.z, 'bio_spores');
         this.triggerCameraShake?.(0.14, 0.3);
-        window.AudioManager?.play?.('enemy_hit_soft', { volume: 0.5, playbackRate: 0.6 });
+        window.AudioManager?.play?.('enemy_hit_soft', (this.audioAt?.(hive.pos.x, hive.pos.z, { volume: 0.5, playbackRate: 0.6 }) ?? { volume: 0.5, playbackRate: 0.6 }));
         const boss = this.spawnHiveHarvestBoss(hive, after.extractionLevel);
         window.dispatchEvent(new CustomEvent('hive-mined', {
             detail: {
@@ -13543,13 +13754,19 @@ export class ThreeGame {
         if (quest) {
             const done = record.questFlags?.[quest.id] === 'done';
             const locked = record.bond < 2;
+            const deadlineExpired = record.id === 'hive_suture'
+                && this.isDayDeadlineExpired?.('hive_suture_parley');
             options.push({
                 action: 'hive-quest',
                 hiveId: record.id,
                 questId: quest.id,
-                label: done ? `${quest.label} — COMPLETE` : locked ? `${quest.label} — LOCKED` : quest.label,
-                desc: locked && !done ? `Requires bond 2. Current bond ${record.bond}.` : quest.desc,
-                disabled: done || locked
+                label: done ? `${quest.label} — COMPLETE`
+                    : deadlineExpired ? `${quest.label} — MISSED`
+                        : locked ? `${quest.label} — LOCKED` : quest.label,
+                desc: deadlineExpired && !done
+                    ? 'The parley window closed while you slept.'
+                    : locked && !done ? `Requires bond 2. Current bond ${record.bond}.` : quest.desc,
+                disabled: done || locked || deadlineExpired
             });
         }
 
@@ -13620,7 +13837,17 @@ export class ThreeGame {
             this.act2.adjustHiveBond(hive.id, 1);
             this.act2.healHiveExtraction(hive.id, 1);
         } else if (action === 'hive-quest') {
+            if (hive.id === 'hive_suture' && payload.questId === 'host_mercy'
+                && this.isDayDeadlineExpired?.('hive_suture_parley')) {
+                window.dispatchEvent(new CustomEvent('camp-choice-denied', {
+                    detail: { campId: hive.id, campLabel: hive.label, action, reason: 'deadline-expired' }
+                }));
+                return true;
+            }
             this.act2.completeHiveQuest(hive.id, payload.questId, 1);
+            if (hive.id === 'hive_suture' && payload.questId === 'host_mercy') {
+                this.resolveDayDeadline?.('hive_suture_parley');
+            }
         } else if (action === 'hive-network') {
             this.act2.setHiveNetworked(hive.id, true);
         } else if (action === 'hive-rescue') {
@@ -14186,6 +14413,8 @@ export class ThreeGame {
         if (!quests || !record) return null;
         for (const quest of quests) {
             if (record.questFlags?.[quest.id] === 'done') continue;
+            if (campId === 'camp_vesper' && quest.id === 'bunker_holdout'
+                && this.isDayDeadlineExpired?.('vesper_last_shelter')) continue;
             if ((record.bond ?? 0) < quest.bond) return null;
             return quest;
         }
@@ -14517,7 +14746,7 @@ export class ThreeGame {
         if (!sprite?.userData) return;
         sprite.userData.burstTriggered = true;
         this.spawnPhysicalBurst(sprite.position.x, sprite.position.z, { color: 0xcc2233, count: 5, upward: 0.16 });
-        window.AudioManager?.play?.('enemy_hit_soft', { volume: 0.4 });
+        window.AudioManager?.play?.('enemy_hit_soft', (this.audioAt?.(sprite.position.x, sprite.position.z, { volume: 0.4 }) ?? { volume: 0.4 }));
         sprite.parent?.remove(sprite);
         sprite.material?.dispose?.();
         sprite.geometry?.dispose?.();
@@ -14591,6 +14820,9 @@ export class ThreeGame {
             this.scatterSprites = this.scatterSprites.filter((s) => s !== sprite);
         }
         this.act2.completeCampQuest(aq.campId, aq.quest.id, this.getCampQuestBondDelta?.(1) ?? 1);
+        if (aq.campId === 'camp_vesper' && aq.quest.id === 'bunker_holdout') {
+            this.resolveDayDeadline?.('vesper_last_shelter');
+        }
         this.syncSurvivorContract?.({
             type: 'camp-complete', id: `camp:${aq.campId}:${aq.quest.id}`
         });
@@ -14629,6 +14861,8 @@ export class ThreeGame {
         const recruitLocked = record.bond < ACT2_RECRUIT_BOND_THRESHOLD;
         const recruitHint = `Requires bond ${ACT2_RECRUIT_BOND_THRESHOLD}. Current bond ${record.bond}.`;
         const lostCultistTrusts = camp.id === 'camp_tallow' && record.questFlags?.lost_cultist === 'done';
+        const tallowChoiceExpired = camp.id === 'camp_tallow'
+            && this.isDayDeadlineExpired?.('tallow_infection_choice');
 
         if (camp.id === this.getBoardingCampId()) {
             // Every launch variant is validated against the four-seat manifest
@@ -14715,19 +14949,25 @@ export class ThreeGame {
             const warnLocked = record.bond < 2;
             options.push({
                 action: 'warn',
-                label: warnLocked ? 'WARN THEM LOCKED' : 'WARN THEM',
-                desc: warnLocked
+                label: tallowChoiceExpired ? 'WARN THEM — TOO LATE'
+                    : warnLocked ? 'WARN THEM LOCKED' : 'WARN THEM',
+                desc: tallowChoiceExpired
+                    ? 'Tallow made its infection choice while you were away.'
+                    : warnLocked
                     ? `Requires bond 2. Current bond ${record.bond}.`
                     : 'Tell them the truth before they board. Consequence: OBEDIENCE −1, SEATS +1. (They board suspicious & safe)',
-                disabled: warnLocked
+                disabled: warnLocked || tallowChoiceExpired
             });
             const suture = this.getHiveRecord?.('hive_suture');
             const latentReady = suture?.questFlags?.host_mercy === 'done';
-            const latentLocked = !latentReady || recruitLocked || record.suspicion >= 50;
+            const latentLocked = !latentReady || recruitLocked || record.suspicion >= 50 || tallowChoiceExpired;
             options.push({
                 action: 'latent',
-                label: latentLocked ? 'LATENT SEED LOCKED' : 'LATENT SEED',
-                desc: !latentReady
+                label: tallowChoiceExpired ? 'LATENT SEED — TOO LATE'
+                    : latentLocked ? 'LATENT SEED LOCKED' : 'LATENT SEED',
+                desc: tallowChoiceExpired
+                    ? 'Tallow made its infection choice while you were away.'
+                    : !latentReady
                     ? 'Requires Nahl\'s Host Mercy rite.'
                     : latentLocked
                         ? `Requires bond ${ACT2_RECRUIT_BOND_THRESHOLD} and suspicion under 50 (now ${record.suspicion}).`
@@ -14770,6 +15010,107 @@ export class ThreeGame {
                 endingVector: this.act2.getEndingVector(),
                 options: this.buildCampChoiceOptions(camp)
             }
+        }));
+        return true;
+    }
+
+    loadDayCycleState() {
+        if (typeof localStorage === 'undefined') return createDayState();
+        try {
+            return normalizeDayState(JSON.parse(localStorage.getItem(DAY_STATE_KEY) ?? 'null'));
+        } catch {
+            return createDayState();
+        }
+    }
+
+    persistDayCycleState() {
+        this.dayState = normalizeDayState(this.dayState);
+        try {
+            if (typeof localStorage !== 'undefined') {
+                localStorage.setItem(DAY_STATE_KEY, JSON.stringify(this.dayState));
+            }
+        } catch {
+            // Storage can be unavailable in privacy modes. The live session
+            // still advances; failure to persist must not strand the player.
+        }
+        if (typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent('day-cycle-changed', {
+                detail: {
+                    ...this.dayState,
+                    difficulty: threatScaleForDay(this.dayState.day, { hp: 1, speed: 1 }).hp
+                }
+            }));
+        }
+        return this.dayState;
+    }
+
+    resolveDayDeadline(id) {
+        const result = resolveDeadline(this.dayState, id);
+        if (result.resolved) {
+            this.dayState = result.state;
+            this.persistDayCycleState();
+        }
+        return result;
+    }
+
+    isDayDeadlineExpired(id) {
+        return normalizeDayState(this.dayState).expired.includes(id);
+    }
+
+    beginCampRest(camp, { confirmed = false } = {}) {
+        const closing = deadlinesClosingTonight(this.dayState);
+        if (!confirmed && closing.length > 0) {
+            window.dispatchEvent(new CustomEvent('day-rest-warning', {
+                detail: {
+                    campId: camp?.id ?? null,
+                    campLabel: camp?.label ?? 'SURVIVOR CAMP',
+                    day: this.dayState?.day ?? 1,
+                    nextDay: (this.dayState?.day ?? 1) + 1,
+                    deadlines: closing,
+                    onConfirm: () => this.beginCampRest(camp, { confirmed: true })
+                }
+            }));
+            return true;
+        }
+        const sleeping = beginSleep(this.dayState);
+        if (!sleeping.started) return false;
+        this.dayState = sleeping.state;
+        this.persistDayCycleState();
+
+        const rested = completeRest(this.dayState);
+        if (!rested.advanced) return false;
+        this.dayState = rested.state;
+        this.persistDayCycleState();
+        // The Foundry interior is the first authored between-day tableau. Its
+        // existing pocket-plane isolation pauses surface combat while the
+        // player shops, and exiting later returns them to this exact camp.
+        const enteredRestSpace = this.enterFoundryInterior?.() ?? false;
+        this.setInputEnabled?.(false);
+        window.dispatchEvent(new CustomEvent('day-rest-open', {
+            detail: {
+                campId: camp?.id ?? null,
+                campLabel: camp?.label ?? 'SURVIVOR CAMP',
+                day: this.dayState.day,
+                difficulty: rested.difficulty,
+                expired: rested.expired,
+                closing: sleeping.closing,
+                safeSpace: enteredRestSpace ? 'foundry-interior' : 'camp-exterior'
+            }
+        }));
+        return true;
+    }
+
+    finishCampRest() {
+        const result = beginExpedition(this.dayState);
+        if (!result.started) return false;
+        this.dayState = result.state;
+        this.persistDayCycleState();
+        this.setInputEnabled?.(true);
+        if (activePlane(this.planeState)?.id === 'foundry-interior') {
+            this.showBunkerLine?.(`DAY ${this.dayState.day} // FOUNDRY SAFE PHASE COMPLETE // SOUTH AIRLOCK OPEN`);
+        }
+        window.dispatchEvent(new CustomEvent('day-expedition-started', {
+            detail: { day: this.dayState.day }
         }));
         return true;
     }
@@ -14997,6 +15338,18 @@ export class ThreeGame {
                                 : ' (UNAVAILABLE)';
                     return { camp, action: 'active-verb', verb, gate, label: `${verb.label}${suffix}` };
                 }
+            }
+            // Rest is deliberately the final dormant-camp verb: urgent camp
+            // story and progression cannot be skipped accidentally, but a
+            // settled camp always becomes the safe between-expedition space.
+            if (phase === 'dormant' && status === 'alive'
+                && !this._activeCampQuest
+                && this.dayState?.phase === REST_PHASES.EXPEDITION) {
+                return {
+                    camp,
+                    action: 'rest',
+                    label: `SLEEP UNTIL DAY ${(this.dayState?.day ?? 1) + 1}`
+                };
             }
             if (phase === 'camps_help' && !camp.aided) return { camp, action: 'aid', label: 'AID THE CAMP' };
             if (phase === 'camps_betray' && camp.aided && !camp.destroyed) {
@@ -15330,6 +15683,8 @@ export class ThreeGame {
         if (!actionable) return false;
         const { camp, action } = actionable;
 
+        if (action === 'rest') return this.beginCampRest(camp);
+
         if (action === 'talk') {
             // First contact with any camp — including ordinary Act 1 dormant-phase
             // visits, not just the Act 2 launch_ready boarding decision — gets the
@@ -15339,6 +15694,13 @@ export class ThreeGame {
             this._seenCampFirstContact ??= new Set();
             if (!this._seenCampFirstContact.has(camp.id)) {
                 this._seenCampFirstContact.add(camp.id);
+                if (camp.id === 'camp_meridian') {
+                    const deadline = this.resolveDayDeadline?.('meridian_first_contact');
+                    if (deadline && ['expired', 'deadline passed'].includes(deadline.reason)) {
+                        this.showBunkerLine?.('MERIDIAN GRID CLOSED // FIRST-CONTACT WINDOW MISSED');
+                        return this.talkToLeader('camp', camp);
+                    }
+                }
                 window.dispatchEvent(new CustomEvent('camp-first-contact', {
                     detail: {
                         campId: camp.id,
@@ -15685,6 +16047,14 @@ export class ThreeGame {
 
     // Shared resolver for camp mutations that should land on a target status.
     resolveCampStatusAction(camp, action, mutate, wantedStatus) {
+        if (camp.id === 'camp_tallow' && ['warn', 'latent'].includes(action)
+            && this.isDayDeadlineExpired?.('tallow_infection_choice')) {
+            window.AudioManager?.play?.('ui_error', { volume: 0.4 });
+            window.dispatchEvent(new CustomEvent('camp-choice-denied', {
+                detail: { campId: camp.id, campLabel: camp.label, action, reason: 'deadline-expired' }
+            }));
+            return true;
+        }
         const before = this.getCampRecord(camp.id);
         mutate();
         const after = this.getCampRecord(camp.id);
@@ -15696,6 +16066,9 @@ export class ThreeGame {
             return true;
         }
         this.syncCampVisualFromRecord(camp, after);
+        if (camp.id === 'camp_tallow' && ['warn', 'latent'].includes(action)) {
+            this.resolveDayDeadline?.('tallow_infection_choice');
+        }
         resolveCampLeaderLinchpin(this.act2, camp.leaderClassId, action);
         window.AudioManager?.play?.('class_lock', { volume: 0.5, playbackRate: action === 'latent' ? 0.72 : 1.0 });
         window.dispatchEvent(new CustomEvent('camp-choice-resolved', {
@@ -16911,10 +17284,11 @@ export class ThreeGame {
             if (unlocked('tank_special_upgrade_1')) stats.blockChance = 0.4;
             if (unlocked('tank_special_upgrade_2')) stats.tankRegenEnabled = true;
         } else if (playerType === 'ENGINEER') {
-            stats.turretInterval = 20;
-            stats.turretFireInterval = 1.2;
-            stats.turretDuration = 6;
-            if (unlocked('engineer_special_unlock')) stats.turretDuration = 9;
+            if (unlocked('engineer_special_unlock')) {
+                stats.turretInterval = 20;
+                stats.turretFireInterval = 1.2;
+                stats.turretDuration = 9;
+            }
             if (unlocked('engineer_special_upgrade_1')) stats.turretFireInterval = 0.9;
             if (unlocked('engineer_special_upgrade_2')) stats.turretInterval = 15;
         }
@@ -17480,6 +17854,11 @@ export class ThreeGame {
         // A downed co-op operator becomes fully dead on a squad wipe or
         // manual abort. Do not carry the revive-only guard into a retry.
         this.isPlayerDowned = false;
+        // Keep the operator's final world-state visually consistent with the
+        // body recorded for black-box recovery. updatePlayer stops once dead,
+        // so this pose must be latched before the death/results UI takes over.
+        this.player3dOverlay?.setDowned?.(true);
+        this.player3dOverlay?.setWeaponVisible?.(false);
         // A real death is now gracefully recorded via blackBoxStore.recordDeath
         // below -- the crash-only checkpoint has nothing left to add.
         runCheckpointStore.clear();
@@ -17602,9 +17981,17 @@ export class ThreeGame {
         this.virtualInput.z = 0;
         this.isMoving = false;
         this.isPlayerFalling = false;
+        // Death/reset is also a hard portal unwind. A run must never respawn
+        // with sublevel camera limits or a stale interior on its plane stack.
+        this.restoreSurfaceCameraAfterPortal?.();
+        this.planeState = createPlaneStack();
         this.isInPocket = false;
         this._pocketHoleX = null;
         this._pocketHoleZ = null;
+        if (this._portalPromptLabel) {
+            this._portalPromptLabel = null;
+            window.dispatchEvent(new CustomEvent('camp-prompt-clear'));
+        }
         if (this.player) {
             this.player.scale.set(1, 1, 1);
             this.player.rotation.set(0, 0, 0);
@@ -18469,6 +18856,7 @@ export class ThreeGame {
 
     updateEngineerTurret(delta) {
         if (this.playerType !== 'ENGINEER') return;
+        if (!(this.turretInterval > 0) || !(this.turretDuration > 0)) return;
         if (this.activeTurret) {
             this.activeTurret.timer -= delta;
             this.activeTurret.fireTimer -= delta;
@@ -18696,7 +19084,32 @@ export class ThreeGame {
                 this.spawnPhysicalBurst(this.player.position.x, this.player.position.z, { color: 0x111111, count: 12, upward: 0.2 });
                 return;
             }
+
+            // Authored props can be mounted or moved around the player after
+            // spawn. If that leaves the current position overlapping a solid,
+            // ordinary per-axis collision rejects every attempted step and the
+            // player can never walk back out. Resolve that invalid starting
+            // state before applying movement for this frame.
+            this.resolvePlayerDepenetration();
         }
+
+        // Playtest P0-2: the wedge between the terminal and the ship is a
+        // different failure from the overlap above. There the position is
+        // INVALID, so resolvePlayerDepenetration() fires. In a wedge the
+        // position is perfectly valid -- the player is simply pinned, with
+        // every attempted step rejected by a different solid. Nothing detected
+        // that, so the run ended there.
+        this.updatePinnedRecovery(delta);
+
+        // Push the audio listener every frame so positional emitters resolve
+        // against where the player actually is. cameraPlanarRight is a 2D
+        // screen-plane basis: its .y IS the world Z component, not a height.
+        window.AudioManager?.setListener?.({
+            x: this.player.position.x,
+            z: this.player.position.z,
+            rightX: this.cameraPlanarRight?.x ?? 1,
+            rightZ: this.cameraPlanarRight?.y ?? 0
+        });
 
         // Update kinetic control timers
         this.dashCooldownTimer = Math.max(0, (this.dashCooldownTimer ?? 0) - delta);
@@ -20432,7 +20845,19 @@ export class ThreeGame {
                 this.lastAnimationColumn = column;
                 if (layout.footstepFrames.includes(column)) {
                     if (this.performanceProfile !== 'menu') {
-                        window.AudioManager?.playProceduralFootstep(this.playerType);
+                        // Real sampled footsteps now that the soundset registry
+                        // has them; the procedural blip remains the fallback for
+                        // when the buffers have not decoded yet. Surface picks
+                        // the set -- snow outside the bunker, concrete within.
+                        const surface = this.currentBiome === 'cryo' || this.isOutdoors?.()
+                            ? 'footstep_snow'
+                            : 'footstep_concrete';
+                        const played = window.AudioManager?.play?.(
+                            surface,
+                            this.audioAt?.(this.player?.position?.x, this.player?.position?.z, { volume: 0.5 })
+                                ?? { volume: 0.5 }
+                        );
+                        if (!played) window.AudioManager?.playProceduralFootstep?.(this.playerType);
                     }
                 }
             }
@@ -20610,7 +21035,7 @@ export class ThreeGame {
         this.weaponReloadDuration = WEAPON_RELOAD_DURATION * (this.reloadSpeedMult ?? 1.0);
         this.weaponReloadTimer = this.weaponReloadDuration;
         this.emitWeaponClipState();
-        window.AudioManager?.play('weapon_reload', { volume: 0.52 });
+        window.AudioManager?.play('weapon_reload', (this.audioAt?.(this.player?.position?.x, this.player?.position?.z, { volume: 0.52 }) ?? { volume: 0.52 }));
         window.AudioManager?.playVoiceCallout?.('reload');
         this.triggerReloadRelicEffects?.(wasEmptyReload);
         return true;
@@ -21138,7 +21563,7 @@ export class ThreeGame {
         if (!root) return;
 
         this.spawnDamagePip(root.position.x, root.position.z, 1);
-        window.AudioManager?.play('enemy_hit_soft', { volume: 0.45 });
+        window.AudioManager?.play('enemy_hit_soft', (this.audioAt?.(root.position.x, root.position.z, { volume: 0.45 }) ?? { volume: 0.45 }));
 
         if (result.outcome === 'warning') {
             // One warning, then she fights. The choice has to be legible as a
@@ -21631,6 +22056,14 @@ export class ThreeGame {
                     continue;
                 }
             } else {
+                const rival = this.checkProjectileRivalHit(projectile);
+                if (rival) {
+                    this.reportProjectileRivalHit(rival, projectile);
+                    this.spawnProjectileImpactEffect(projectile.mesh.position.x, projectile.mesh.position.z);
+                    toRemove.add(projectile);
+                    continue;
+                }
+
                 const snail = this.checkProjectileSnailHit(projectile);
                 if (snail) {
                     this.applyPlayerDamageToEnemy(snail, projectile.damage);
@@ -23092,6 +23525,24 @@ export class ThreeGame {
         floor.position.set(pocket.centerCell.x, 0, pocket.centerCell.y);
         group.add(floor);
 
+        // A covered sublevel needs an actual roof, not an implied black void.
+        // It starts at the contract's minimum cutaway opacity because this
+        // group only becomes visible after entering the pocket plane.
+        const ceilingMaterial = this.wallMaterial.clone();
+        ceilingMaterial.transparent = true;
+        ceilingMaterial.opacity = 0.12;
+        ceilingMaterial.depthWrite = false;
+        ceilingMaterial.side = THREE.DoubleSide;
+        const ceiling = new THREE.Mesh(
+            new THREE.PlaneGeometry(pocket.size, pocket.size),
+            ceilingMaterial
+        );
+        ceiling.rotation.x = Math.PI / 2;
+        ceiling.position.set(pocket.centerCell.x, this.wallHeight + 0.08, pocket.centerCell.y);
+        ceiling.renderOrder = 9;
+        ceiling.userData = { isPortalCeiling: true, baseOpacity: 1 };
+        group.add(ceiling);
+
         for (let y = 0; y < pocket.size; y += 1) {
             for (let x = 0; x < pocket.size; x += 1) {
                 if (pocket.grid[y][x] !== '#') continue;
@@ -23186,7 +23637,115 @@ export class ThreeGame {
         return group;
     }
 
+    mountFoundryInterior(foundryX, foundryZ) {
+        const key = this.getWallKey(foundryX, foundryZ);
+        if (this.pocketGroups?.has(key)) return this.pocketGroups.get(key);
+        const size = 11;
+        const centerCell = { x: 5, y: 5 };
+        const climbPoint = { x: 5, y: 9 };
+        const grid = Array.from({ length: size }, (_, y) => (
+            Array.from({ length: size }, (_, x) => (
+                x === 0 || y === 0 || x === size - 1 || y === size - 1 ? '#' : '.'
+            ))
+        ));
+        // Door opening in the south wall; collision and the visible airlock
+        // agree instead of relying on a non-interactive decorative doorway.
+        grid[10][5] = '.';
+        const interior = { grid, size, centerCell, climbPoint };
+        this.pocketCache.set(key, interior);
+        const group = this.mountPocket(foundryX, foundryZ);
+        group.name = 'FoundryInteriorPlane';
+        group.userData.portalKind = PLANE_KINDS.INTERIOR;
+        group.userData.portalId = 'foundry-interior';
+
+        const shell = this.createScatterInstance?.({
+            x: centerCell.x,
+            z: centerCell.y,
+            type: 'kit_space_room_small',
+            scatterKey: 'interior:foundry:shell',
+            scale: 1,
+            tiltX: 0,
+            elevation: 0,
+            groupType: 'interior-architecture',
+            opacity: 1,
+            isSolidProp: false
+        });
+        if (shell) group.add(shell);
+
+        const bench = new THREE.Mesh(
+            new THREE.BoxGeometry(1.8, 0.85, 0.9),
+            new THREE.MeshStandardMaterial({
+                color: 0x17242b,
+                emissive: 0x0b7285,
+                emissiveIntensity: 0.55,
+                metalness: 0.78,
+                roughness: 0.34
+            })
+        );
+        bench.position.set(centerCell.x, 0.48, centerCell.y);
+        bench.userData = { isFoundryInteriorWorkbench: true };
+        group.add(bench);
+        return group;
+    }
+
+    enterFoundryInterior() {
+        if (this.isInPocket || !this.player || !this.foundry?.isRevealed) return false;
+        const position = this.foundry.getPosition?.();
+        if (!position) return false;
+        const transition = beginTransition(this.planeState ?? createPlaneStack());
+        if (!transition.began) return false;
+        this.planeState = endTransition(transition.state).state;
+        const returnTo = {
+            x: this.player.position.x,
+            y: this.player.position.y,
+            z: this.player.position.z
+        };
+        const entered = enterPlane(this.planeState, {
+            id: 'foundry-interior',
+            kind: PLANE_KINDS.INTERIOR,
+            returnTo
+        });
+        if (!entered.entered) return false;
+        this.planeState = entered.state;
+        this.captureSurfaceCameraBeforePortal();
+        this.applyPortalCameraProfile(entered.camera);
+
+        if (this.chunkGroups) this.chunkGroups.visible = false;
+        const group = this.mountFoundryInterior(position.x, position.z);
+        if (this.scene && group.parent !== this.scene) this.scene.add(group);
+        this._pocketHoleX = position.x;
+        this._pocketHoleZ = position.z;
+        this.isInPocket = true;
+        this.player.position.set(position.x, POCKET_WORLD_Y, position.z);
+        this.player.scale.set(1, 1, 1);
+        this.player.rotation.set(0, 0, 0);
+        this.setInputEnabled(true);
+        this.snapCameraToPlayer?.();
+        this.showBunkerLine?.('FOUNDRY INTERIOR // WORKBENCH ONLINE // SOUTH AIRLOCK RETURNS TO SURFACE');
+        window.dispatchEvent(new CustomEvent('portal-plane-entered', {
+            detail: { plane: entered.plane, depth: this.planeState.stack.length - 1 }
+        }));
+        return true;
+    }
+
     enterPocket(holeWorldX, holeWorldZ) {
+        const transition = beginTransition(this.planeState ?? createPlaneStack());
+        if (!transition.began) return false;
+        this.planeState = endTransition(transition.state).state;
+        const entered = enterPlane(this.planeState, {
+            id: `pocket:${this.getWallKey(holeWorldX, holeWorldZ)}`,
+            kind: PLANE_KINDS.SUBLEVEL,
+            returnTo: {
+                x: this.player?.position?.x ?? holeWorldX,
+                y: 0,
+                z: this.player?.position?.z ?? holeWorldZ
+            }
+        });
+        if (!entered.entered) return false;
+        this.planeState = entered.state;
+        this.captureSurfaceCameraBeforePortal?.();
+        this.applyPortalCameraProfile?.(entered.camera);
+
         const damage = this.resolveFallDamage();
         this.takeDamage(damage, 'fall');
 
@@ -23211,10 +23770,21 @@ export class ThreeGame {
             this.player.rotation.set(0, 0, 0);
         }
         this.setInputEnabled(true);
+        window.dispatchEvent(new CustomEvent('portal-plane-entered', {
+            detail: { plane: entered.plane, depth: this.planeState.stack.length - 1 }
+        }));
+        return true;
     }
 
     exitPocket() {
-        if (!this.isInPocket) return;
+        if (!this.isInPocket) return false;
+        const transition = beginTransition(this.planeState ?? createPlaneStack());
+        if (!transition.began) return false;
+        this.planeState = endTransition(transition.state).state;
+        const leavingPlane = activePlane(this.planeState);
+        const left = leavePlane(this.planeState);
+        if (!left.left) return false;
+        this.planeState = left.state;
         const holeWorldX = this._pocketHoleX;
         const holeWorldZ = this._pocketHoleZ;
 
@@ -23225,15 +23795,96 @@ export class ThreeGame {
         if (this.chunkGroups) this.chunkGroups.visible = true;
 
         if (this.player) {
-            this.player.position.x = holeWorldX;
-            this.player.position.z = holeWorldZ;
-            this.player.position.y = 0;
+            this.player.position.x = left.returnTo?.x ?? holeWorldX;
+            this.player.position.z = left.returnTo?.z ?? holeWorldZ;
+            this.player.position.y = left.returnTo?.y ?? 0;
         }
         this.isInPocket = false;
         this._pocketHoleX = null;
         this._pocketHoleZ = null;
+        if (this._portalPromptLabel) {
+            this._portalPromptLabel = null;
+            window.dispatchEvent(new CustomEvent('camp-prompt-clear'));
+        }
 
-        this.fillHoleAt(holeWorldX, holeWorldZ);
+        if (leavingPlane?.kind === PLANE_KINDS.SUBLEVEL) {
+            this.fillHoleAt(holeWorldX, holeWorldZ);
+        }
+        this.restoreSurfaceCameraAfterPortal?.();
+        window.dispatchEvent(new CustomEvent('portal-plane-left', {
+            detail: { plane: left.plane, returnTo: left.returnTo }
+        }));
+        return true;
+    }
+
+    captureSurfaceCameraBeforePortal() {
+        if (this._surfaceCameraBeforePortal) return;
+        this._surfaceCameraBeforePortal = {
+            orbitRadius: this.cameraOrbitRadius,
+            lift: this.cameraLift,
+            perspectiveFar: this.perspectiveCamera?.far,
+            orthographicFar: this.orthographicCamera?.far,
+            thirdPersonDistance: this.thirdPersonCameraConfig?.distance,
+            thirdPersonLift: this.thirdPersonCameraConfig?.lift
+        };
+    }
+
+    applyPortalCameraProfile(profile = cameraForPlane(this.planeState)) {
+        if (!profile) return;
+        if (this.perspectiveCamera) {
+            this.perspectiveCamera.far = profile.far;
+            this.perspectiveCamera.updateProjectionMatrix?.();
+        }
+        if (this.orthographicCamera) {
+            this.orthographicCamera.far = profile.far;
+            this.orthographicCamera.updateProjectionMatrix?.();
+        }
+        if (this.thirdPersonCameraConfig) {
+            this.thirdPersonCameraConfig.distance = profile.distance;
+            this.thirdPersonCameraConfig.lift = profile.lift;
+        }
+        this.cameraOrbitRadius = profile.distance * 3.1;
+        this.cameraLift = profile.lift * 8;
+        this.snapCameraToPlayer?.();
+    }
+
+    restoreSurfaceCameraAfterPortal() {
+        const saved = this._surfaceCameraBeforePortal;
+        if (!saved) return;
+        this.cameraOrbitRadius = saved.orbitRadius;
+        this.cameraLift = saved.lift;
+        if (this.perspectiveCamera) {
+            this.perspectiveCamera.far = saved.perspectiveFar;
+            this.perspectiveCamera.updateProjectionMatrix?.();
+        }
+        if (this.orthographicCamera) {
+            this.orthographicCamera.far = saved.orthographicFar;
+            this.orthographicCamera.updateProjectionMatrix?.();
+        }
+        if (this.thirdPersonCameraConfig) {
+            this.thirdPersonCameraConfig.distance = saved.thirdPersonDistance;
+            this.thirdPersonCameraConfig.lift = saved.thirdPersonLift;
+        }
+        this._surfaceCameraBeforePortal = null;
+        this.snapCameraToPlayer?.();
+    }
+
+    updatePortalPlanePresentation() {
+        const plane = activePlane(this.planeState);
+        if (!plane || plane.kind === PLANE_KINDS.SURFACE || !this.isInPocket) return;
+        const key = this.getWallKey(this._pocketHoleX, this._pocketHoleZ);
+        const group = this.pocketGroups?.get(key);
+        if (!group || !this.player) return;
+        const alpha = ceilingFadeAlpha(this.planeState, {
+            objectY: this.player.position.y + this.wallHeight + 0.08,
+            playerY: this.player.position.y,
+            betweenCameraAndPlayer: true
+        });
+        for (const child of group.children) {
+            if (!child.userData?.isPortalCeiling || !child.material) continue;
+            child.material.opacity = alpha;
+            child.visible = alpha > 0;
+        }
     }
 
     mountChunk(chunkX, chunkY) {
@@ -24427,6 +25078,36 @@ export class ThreeGame {
             || wfcMeta?.anchors?.length
         );
 
+        // HallwayConnector records its carved route as sparse wayfinding
+        // markers. Dress those markers with the matching reskinned modular
+        // kit; topology chooses rotation so sockets stay aligned.
+        if (wfcMeta?.generatorId === 'hallway-connector') {
+            for (const marker of wfcMeta.wayfindingMarkers ?? []) {
+                const worldX = chunkX * this.chunkSize + marker.x;
+                const worldZ = chunkY * this.chunkSize + marker.y;
+                const biome = this.getBiomeKeyForWorldPosition?.(worldX, worldZ) ?? BIOME_KEYS.ACTIVE;
+                const kit = corridorKitPlacement(grid, marker.x, marker.y, biome);
+                if (!kit) continue;
+                placements.push({
+                    x: worldX,
+                    z: worldZ,
+                    type: kit.type,
+                    rotation: kit.rotationSteps * (Math.PI / 2),
+                    scatterKey: `hallway-kit:${chunkX},${chunkY}:${marker.x},${marker.y}`,
+                    scale: 1,
+                    tiltX: 0,
+                    elevation: 0,
+                    hp: Infinity,
+                    groupType: 'architecture',
+                    opacity: 1,
+                    isSolidProp: false,
+                    dressingKit: marker.dressingKit,
+                    lightingRhythm: marker.lightingRhythm
+                });
+                reservedCells.add(`${marker.x},${marker.y}`);
+            }
+        }
+
         if (wfcMeta?.roomInstances?.length) {
             for (const room of wfcMeta.roomInstances) {
                 for (const planned of room.populationPlan?.placements ?? []) {
@@ -25421,6 +26102,33 @@ export class ThreeGame {
             return overlay;
         }
 
+        // Architectural kit entries are GLB-only: they intentionally have no
+        // scatter material. This lightweight scene anchor lets the normal
+        // chunk lifecycle own them while the registered model loads.
+        if (isWorld3dOnlyPlacementType(placement.type)) {
+            const anchor = new THREE.Object3D();
+            anchor.position.set(placement.x, anchoredY, placement.z);
+            anchor.rotation.y = placement.rotation ?? 0;
+            anchor.scale.set(scaleX, scaleY, 1);
+            anchor.visible = true;
+            anchor.userData = {
+                isScatter: true,
+                isWorld3dOnly: true,
+                isSolidProp: placement.isSolidProp ?? placement.type.startsWith('arch_'),
+                collisionRadius: placement.collisionRadius ?? Math.max(0.3, scaleX * 0.35),
+                type: placement.type,
+                scatterKey: placement.scatterKey,
+                groupType: placement.groupType,
+                baseY: anchoredY,
+                elevationOffset: placement.elevation,
+                baseScaleX: scaleX,
+                baseScaleY: scaleY,
+                baseOpacity: placement.opacity ?? 1
+            };
+            this.deferWorld3dReplacement(anchor, placement.type);
+            return anchor;
+        }
+
         if (placement.type.startsWith('prop_')) {
             const spriteMaterial = this.scatterMaterials[placement.type];
             if (!spriteMaterial) return null;
@@ -25702,7 +26410,7 @@ export class ThreeGame {
             if (!isBoss) {
                 const anchor = this.getBiomeAnchorPosition();
                 const depth = Math.hypot(placement.x - anchor.x, placement.z - anchor.z);
-                const threatScale = getDepthThreatScale(depth);
+                const threatScale = threatScaleForDay(this.dayState?.day, getDepthThreatScale(depth));
                 maxHp = Math.max(1, Math.round(maxHp * threatScale.hp));
                 speed *= threatScale.speed;
                 if (isElite) {
@@ -26576,7 +27284,7 @@ export class ThreeGame {
             sprite.material.color.setHex(0xffaa44);
             setTimeout(() => { sprite.material?.color?.setHex(0xffffff); }, 90);
         }
-        window.AudioManager?.play('enemy_hit_soft', { volume: 0.35 });
+        window.AudioManager?.play('enemy_hit_soft', (this.audioAt?.(sprite.position.x, sprite.position.z, { volume: 0.35 }) ?? { volume: 0.35 }));
 
         if (sprite.userData.propHp <= 0) {
             sprite.userData.burstTriggered = true;
@@ -26669,7 +27377,7 @@ export class ThreeGame {
         }
 
         if (sprite.userData.hp > 0) {
-            window.AudioManager?.play('enemy_hit_soft', { volume: 0.38 });
+            window.AudioManager?.play('enemy_hit_soft', (this.audioAt?.(sprite.position.x, sprite.position.z, { volume: 0.38 }) ?? { volume: 0.38 }));
             this._flashSnailHit(sprite);
             window.dispatchEvent(new CustomEvent('enemy-hit', {
                 detail: {
@@ -26861,9 +27569,9 @@ export class ThreeGame {
             spread: sprite.userData.isBoss ? 2.0 : 1.5
         });
         if (isCrawler) {
-            window.AudioManager?.play('enemy_death_crawler', { volume: isBoss ? 0.6 : 0.4, playbackRate: isBoss ? 0.75 : 1.0 });
+            window.AudioManager?.play('enemy_death_crawler', (this.audioAt?.(sprite.position.x, sprite.position.z, { volume: isBoss ? 0.6 : 0.4, playbackRate: isBoss ? 0.75 : 1.0 }) ?? { volume: isBoss ? 0.6 : 0.4, playbackRate: isBoss ? 0.75 : 1.0 }));
         } else {
-            window.AudioManager?.play('enemy_death_snail', { volume: isBoss ? 0.6 : 0.45, playbackRate: isBoss ? 0.75 : 1.0 });
+            window.AudioManager?.play('enemy_death_snail', (this.audioAt?.(sprite.position.x, sprite.position.z, { volume: isBoss ? 0.6 : 0.45, playbackRate: isBoss ? 0.75 : 1.0 }) ?? { volume: isBoss ? 0.6 : 0.45, playbackRate: isBoss ? 0.75 : 1.0 }));
             this.spawnEnemyCorpse(sprite);
         }
         window.dispatchEvent(new CustomEvent('enemy-killed', {
@@ -29316,6 +30024,47 @@ export class ThreeGame {
         const group = this.pocketGroups?.get(key);
         if (!group) return;
 
+        const plane = activePlane(this.planeState);
+        const pocket = this.pocketCache?.get(key);
+        let portalPrompt = null;
+        if (pocket) {
+            const originX = this._pocketHoleX - pocket.centerCell.x;
+            const originZ = this._pocketHoleZ - pocket.centerCell.y;
+            const exitX = originX + pocket.climbPoint.x;
+            const exitZ = originZ + pocket.climbPoint.y;
+            if (plane?.id === 'foundry-interior'
+                && Math.hypot(this.player.position.x - this._pocketHoleX,
+                    this.player.position.z - this._pocketHoleZ) <= 2.1) {
+                portalPrompt = 'USE FABRICATION WORKBENCH';
+            } else if (Math.hypot(this.player.position.x - exitX,
+                this.player.position.z - exitZ) <= 1.8) {
+                portalPrompt = plane?.kind === PLANE_KINDS.INTERIOR
+                    ? 'EXIT THROUGH SOUTH AIRLOCK'
+                    : 'CLIMB TO SURFACE';
+            }
+        }
+        if (portalPrompt !== (this._portalPromptLabel ?? null)) {
+            this._portalPromptLabel = portalPrompt;
+            window.dispatchEvent(new CustomEvent(
+                portalPrompt ? 'camp-prompt-nearby' : 'camp-prompt-clear',
+                portalPrompt ? { detail: { label: portalPrompt } } : undefined
+            ));
+        }
+
+        // Pocket/interior architecture uses local coordinates under a plane
+        // group. Resolve proximity in world space so deferred kit GLBs load
+        // after entry instead of comparing local (5,5) to a distant world tile.
+        for (const child of group.children) {
+            if (!child.userData?.world3dModelType || child.userData.world3dRoot) continue;
+            this._portalContentWorldPos ??= new THREE.Vector3();
+            child.getWorldPosition(this._portalContentWorldPos);
+            const distance = Math.hypot(
+                this.player.position.x - this._portalContentWorldPos.x,
+                this.player.position.z - this._portalContentWorldPos.z
+            );
+            if (distance <= 9) this.loadNearbyWorld3dReplacement?.(child);
+        }
+
         const allPickups = this.pickupMeshes;
         this.pickupMeshes = allPickups.filter((mesh) => group.children.includes(mesh));
         this.updatePickups(delta, now);
@@ -30651,6 +31400,162 @@ export class ThreeGame {
         return result;
     }
 
+    /**
+     * Move a player out of an invalid collision overlap by the shortest bounded
+     * displacement. This deliberately does nothing for valid positions: it is
+     * recovery from world mutation/loading, not a second movement system.
+     */
+    /**
+     * Recover a player who is in a VALID position but cannot move: pinned in a
+     * gap between two solids, where per-axis collision rejects every step.
+     * Deliberately conservative -- it needs sustained movement input and
+     * sustained near-zero displacement before it acts, so ordinary "walking
+     * into a wall" never triggers it.
+     */
+    updatePinnedRecovery(delta = 0) {
+        if (!this.player || this.noclip || !this.isGameplayInputActive?.()) {
+            this._pinnedSeconds = 0;
+            return false;
+        }
+        // Intent, not motion: a pinned player has input but no displacement.
+        // this.keys is the live keyboard state (see setKeyState ~6701); the
+        // gamepad stick is folded in where the runtime exposes it.
+        const keys = this.keys ?? {};
+        const stick = Math.hypot(Number(this._moveAxisX) || 0, Number(this._moveAxisZ) || 0);
+        const wantsToMove = Boolean(keys.up || keys.down || keys.left || keys.right) || stick > 0.2;
+        const { x, z } = this.player.position;
+        const previous = this._pinnedLastPosition;
+        const moved = previous ? Math.hypot(x - previous.x, z - previous.z) : Infinity;
+        this._pinnedLastPosition = { x, z };
+
+        // PINNED_EPSILON is per-frame travel, so it has to be tiny: a player
+        // being shoved along a wall still covers far more than this.
+        if (!wantsToMove || moved > 0.01) {
+            this._pinnedSeconds = 0;
+            return false;
+        }
+        this._pinnedSeconds = (this._pinnedSeconds ?? 0) + (Number(delta) || 0);
+        if (this._pinnedSeconds < 1.5) return false;
+
+        // A pinned player's own cell is perfectly occupiable, and
+        // resolveSafeSpawn anchors on a valid origin -- so it would report
+        // "nothing to do" and leave them stuck. Treating everything within
+        // PINNED_MIN_ESCAPE of the current position as blocked forces the
+        // search to return somewhere the player can actually walk on from.
+        const PINNED_MIN_ESCAPE = 0.6;
+        const result = resolveSafeSpawn({ x, z }, {
+            maxRadius: 6,
+            step: 0.25,
+            isBlocked: (cx, cz) => (
+                Math.hypot(cx - x, cz - z) < PINNED_MIN_ESCAPE
+                || !this.canOccupyPosition(cx, cz)
+                || this.isPlayerOverAnyHole(cx, cz)
+            )
+        });
+        this._pinnedSeconds = 0;
+        if (!result.moved) {
+            window.hbLog?.('PLAYER', 'warn', 'pinned-no-escape', { x, z });
+            return false;
+        }
+        this.player.position.x = result.x;
+        this.player.position.z = result.z;
+        this._pinnedLastPosition = { x: result.x, z: result.z };
+        window.hbLog?.('PLAYER', 'warn', 'pinned-recovered', {
+            from: { x, z }, to: { x: result.x, z: result.z }
+        });
+        return true;
+    }
+
+    /**
+     * Is the straight line from the listener to an emitter blocked by world
+     * geometry? Sampled against canOccupyPosition -- the same collision the
+     * player walks on -- rather than a Three.js raycast, because this runs per
+     * sound and a scene raycast per gunshot is not affordable.
+     *
+     * Deliberately permissive: very close emitters are never obstructed (you
+     * can hear what is on top of you), and sampling stops well short of the
+     * emitter so standing next to a wall does not mute the thing beside it.
+     */
+    isAudioPathObstructed(x, z) {
+        if (!this.player) return false;
+        const px = this.player.position.x;
+        const pz = this.player.position.z;
+        const dx = x - px;
+        const dz = z - pz;
+        const distance = Math.hypot(dx, dz);
+        if (!(distance > 1.5)) return false;
+
+        // Preferred path: a real raycast against the built wall geometry, the
+        // same meshes the suit-light cone casts against. `far` stops short of
+        // the emitter so a wall the emitter is standing against does not muffle
+        // it, and the ray runs at chest height rather than the floor so ledges
+        // and low debris do not read as walls.
+        if (this.wallMeshes?.length > 0) {
+            this._audioRaycaster = this._audioRaycaster ?? new THREE.Raycaster();
+            this._audioRayOrigin = this._audioRayOrigin ?? new THREE.Vector3();
+            this._audioRayDir = this._audioRayDir ?? new THREE.Vector3();
+            const far = distance - AUDIO_OBSTRUCTION_BACKOFF;
+            if (!(far > 0)) return false;
+            this._audioRayOrigin.set(px, AUDIO_OBSTRUCTION_RAY_HEIGHT, pz);
+            this._audioRayDir.set(dx / distance, 0, dz / distance);
+            this._audioRaycaster.set(this._audioRayOrigin, this._audioRayDir);
+            this._audioRaycaster.far = far;
+            return this._audioRaycaster.intersectObjects(this.wallMeshes, false).length > 0;
+        }
+
+        // Fallback for before the meshes are built (and for headless tests):
+        // sample the same collision the player walks on.
+        if (typeof this.canOccupyPosition !== 'function') return false;
+        const steps = Math.min(10, Math.max(2, Math.round(distance / 1.75)));
+        for (let i = 1; i < steps; i += 1) {
+            const t = i / steps;
+            if (!this.canOccupyPosition(px + (dx * t), pz + (dz * t))) return true;
+        }
+        return false;
+    }
+
+    /**
+     * Build play() options for a sound emitted at a world point. Call sites
+     * pass their own volume/bus through `extra`; this only adds placement.
+     */
+    audioAt(x, z, extra = {}) {
+        if (!Number.isFinite(x) || !Number.isFinite(z)) return extra;
+        return {
+            ...extra,
+            worldX: x,
+            worldZ: z,
+            obstructed: extra.obstructed ?? this.isAudioPathObstructed(x, z)
+        };
+    }
+
+    resolvePlayerDepenetration() {
+        if (!this.player || this.noclip) return false;
+
+        const { x, z } = this.player.position;
+        if (this.canOccupyPosition(x, z)) return false;
+
+        const result = resolveSafeSpawn({ x, z }, {
+            maxRadius: 4,
+            step: 0.25,
+            isBlocked: (cx, cz) => (
+                !this.canOccupyPosition(cx, cz)
+                || this.isPlayerOverAnyHole(cx, cz)
+            )
+        });
+        if (!result.moved) {
+            window.hbLog?.('PLAYER', 'warn', 'depenetration-no-safe-position', { x, z });
+            return false;
+        }
+
+        this.player.position.x = result.x;
+        this.player.position.z = result.z;
+        window.hbLog?.('PLAYER', 'warn', 'depenetrated', {
+            from: { x, z },
+            to: { x: result.x, z: result.z }
+        });
+        return true;
+    }
+
     isPlayerOverAnyHole(px, pz) {
         const cx = Math.round(px);
         const cz = Math.round(pz);
@@ -31330,7 +32235,7 @@ export class ThreeGame {
         // arrival. Same pattern as the Showroom override just above, but with
         // real room/door tile data (not blanket floor) for its room-type
         // modules -- see getWing2ChunkOverride's own comment in debugTileGrid.js.
-        const wing2Override = getWing2ChunkOverride(chunkX, chunkY, this.chunkSize);
+        const wing2Override = this._debugWing2ChunkOverride?.(chunkX, chunkY, this.chunkSize) ?? null;
         if (wing2Override) return wing2Override;
 
         const landform = this.getChunkLandform(chunkX, chunkY);

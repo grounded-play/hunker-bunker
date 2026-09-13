@@ -1,4 +1,5 @@
 import { describe, expect, it, beforeEach } from 'vitest';
+import * as THREE from 'three';
 import { BankManager as Bank, BASE_TURRET_UPGRADES, BASE_TURRET_REPAIR_COST } from './bank.js';
 import { ThreeGame } from './threeGame.js';
 
@@ -89,6 +90,23 @@ describe('Base Defense Turret & Crash Site Centering', () => {
         expect(bank.isBaseTurretUnlocked()).toBe(true);
         expect(game.baseDefenseTurretState.active).toBe(true);
         expect(game.baseDefenseTurretGroup.visible).toBe(true);
+    });
+
+    it('replaces the base placeholder with a smaller authored field-turret model', async () => {
+        const group = new THREE.Group();
+        group.add(new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshBasicMaterial()));
+        const scene = new THREE.Scene();
+        scene.add(group);
+        const root = new THREE.Group();
+        const game = {
+            baseDefenseTurretGroup: group,
+            createWorld3dModel: async () => ({ root })
+        };
+
+        await expect(ThreeGame.prototype.upgradeBaseTurretToModel.call(game, group)).resolves.toBe(true);
+        expect(group.children).toEqual([root]);
+        expect(root.scale.x).toBeCloseTo(0.58);
+        expect(game.baseDefenseTurretHead).toBe(root);
     });
 
     it('targets and damages enemies within range during updateBaseDefenseTurret', () => {

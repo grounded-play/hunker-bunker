@@ -3,6 +3,7 @@ import { SETPIECE_BUILD_CATALOG } from './data/setpieceBuilds.js';
 import {
     SETPIECE_STRUCTURE_GENERATOR,
     allocateSetpieceClaim,
+    allocateWorldSetpieces,
     resolveSetpieceChunkStructure,
     validateSetpieceCatalog
 } from './setpieceBuilds.js';
@@ -45,5 +46,35 @@ describe('setpiece blueprint foundation', () => {
         expect(reverse.reverse()).toEqual(forward);
         expect(forward.every((result) => result.generatorId === SETPIECE_STRUCTURE_GENERATOR)).toBe(true);
         expect(forward.map((result) => result.moduleId)).toEqual(['bridge_approach', 'bridge_span', 'bridge_far_abutment']);
+    });
+
+    it('allocates claims into a world plan deterministically without overlapping other reservations', () => {
+        const worldPlan = {
+            seed: 42,
+            topology: { chunks: { '4,4': {}, '4,5': {}, '4,6': {}, '5,5': {} } },
+            reservations: [reservation, { id: 'other', chunkKey: '5,5', chunkX: 5, chunkY: 5 }]
+        };
+        const first = allocateWorldSetpieces(worldPlan);
+        const second = allocateWorldSetpieces(worldPlan);
+        expect(first).toEqual(second);
+        expect(first.claims).toHaveLength(1);
+        expect(first.claims[0].chunkKeys).not.toContain('5,5');
+        expect(first.omissions).toEqual([]);
+    });
+
+    it('degrades a required crossing to its pivot instead of invalidating the run', () => {
+        const required = { ...reservation, required: true, chunkKey: '4,5' };
+        const plan = allocateWorldSetpieces({
+            seed: 7,
+            topology: { chunks: { '4,5': {} } },
+            reservations: [required]
+        });
+        expect(plan.claims[0]).toMatchObject({
+            reservationId: required.id,
+            degraded: true,
+            omissionReason: 'full_footprint_unavailable',
+            chunkKeys: ['4,5']
+        });
+        expect(plan.omissions).toEqual([]);
     });
 });

@@ -94,3 +94,61 @@ Complete `AUD-02/AUD-03` by generating an audition catalog with duration,
 sample rate, channels, peak, integrated/short-term loudness where meaningful,
 and a human keep/reject/possible decision. Then create the ten-second palette
 test from approved derivatives, not from the untouched originals.
+
+## First promotion — 2026-09-13
+
+Six Kenney CC0 derivatives were promoted for a shared film/game vertical slice. Runtime hashes:
+
+| File | SHA-256 |
+| --- | --- |
+| `engines/ship_engine_low_01.ogg` | `1814b46e52d5b2643d1b56fb2e00ee0eb27da9a50bac2f53bb161c591577aead` |
+| `hive/resin_shift_01.ogg` | `4a996463c77a7f2f469ad977a6cbce4b1e9963fac19356e67465bdcdfeb50d99` |
+| `hive/resin_shift_02.ogg` | `0b538d84c0d0465caca9b75916cac464a63fa70143e676be6d9f152162c311b1` |
+| `mechanisms/door_lock_body_01.ogg` | `08a76cb162d2560395a40a9d30a134a782ebc2f3712812fe5e6cd2b68328aeb5` |
+| `mechanisms/door_lock_body_02.ogg` | `a4a9ba1def6d16eb774ec6d7a273fa95796a1f8fb50f491682e3b3e04d13e3f1` |
+| `mechanisms/metal_lock_impact_01.ogg` | `51cd586016e8d165d3915bba49661ea705f9053b32665e9573ee0f25628f8fe0` |
+
+The ending cue manifest uses the same derivatives as gameplay. Door and hive soundsets retain their
+previous shipped cues as data-only fallbacks, so rollback does not require code removal.
+
+---
+
+## Second intake — 2026-09-13, Kenney (CC0)
+
+Acquired to close gaps the first intake could not fill, notably footsteps.
+
+| Pack | Files | Licence | Retained at |
+|---|---:|---|---|
+| Kenney Impact Sounds 1.0 | 108 | **CC0** (`License.txt` retained) | `art/source/audio/cinematic-source/kenney/kenney_impact-sounds/` |
+| Kenney RPG Audio | 74 | **CC0** (`License.txt` retained) | `art/source/audio/cinematic-source/kenney/kenney_rpg-audio/` |
+
+182 `.ogg` total. CC0 confirmed by reading each pack's own `License.txt`, not by
+assuming the source: no attribution required, no share-alike, commercial use
+permitted.
+
+### Promoted to `public/`
+
+Only selected files ship; the raw packs stay in the ignored source tree.
+
+- `public/audio/footsteps/` — 5 concrete + 5 snow variants
+- `public/audio/impacts/` — 4 metal + 2 glass + 2 mining
+
+### Why footsteps specifically
+
+`playerSpriteLayouts.js` has carried `footstepFrames` since the atlas work, so
+the game already knew exactly which animation frames are footfalls
+(`threeGame.js:20608`). It had no sound to play on them and fell back to a
+synthesised blip. The data was waiting for the asset.
+
+Five variants with `noImmediateRepeat`: a repeated footstep is the most
+noticeable audio artefact a game can have, because the ear tracks a walk cycle
+whether the player wants it to or not.
+
+### Used in both places
+
+- **In game** — registered in `GAME_SOUNDSETS` and selected by surface: snow
+  outdoors and in cryo, concrete within the bunker. The procedural blip remains
+  the fallback for before the buffers decode.
+- **In cutscenes** — the `footsteps` cue in `ending-audio-assets.mjs` was `null`
+  because the first intake had no convincing footstep and silence beats a wrong
+  sound. That gap is now closed rather than papered over.

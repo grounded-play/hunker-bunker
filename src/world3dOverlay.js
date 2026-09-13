@@ -13,6 +13,92 @@ function createGltfLoader() {
 }
 
 export const WORLD_3D_MODELS = Object.freeze({
+    // Kenney modular kits, CC0, restyled to the game palette by
+    // scripts/blender/restyle_kit_pieces.py. The cave and space kits share an
+    // identical 40-piece grammar, so both skins expose the same key suffixes and
+    // a generator can swap biome without changing its socket logic.
+    // 3D-only by design: these have no billboard fallback, which is why kit_
+    // joins WORLD_3D_ONLY_PREFIXES above.
+    kit_cave_corridor_corner: { url: '/3d/runtime/kits/modular-cave-kit/corridor-corner.glb', height: 3.0, yaw: 0 },
+    kit_cave_corridor_end: { url: '/3d/runtime/kits/modular-cave-kit/corridor-end.glb', height: 3.0, yaw: 0 },
+    kit_cave_corridor_intersection: { url: '/3d/runtime/kits/modular-cave-kit/corridor-intersection.glb', height: 3.0, yaw: 0 },
+    kit_cave_corridor_junction: { url: '/3d/runtime/kits/modular-cave-kit/corridor-junction.glb', height: 3.0, yaw: 0 },
+    kit_cave_corridor_transition: { url: '/3d/runtime/kits/modular-cave-kit/corridor-transition.glb', height: 3.0, yaw: 0 },
+    kit_cave_corridor_wide_corner: { url: '/3d/runtime/kits/modular-cave-kit/corridor-wide-corner.glb', height: 3.0, yaw: 0 },
+    kit_cave_corridor_wide_end: { url: '/3d/runtime/kits/modular-cave-kit/corridor-wide-end.glb', height: 3.0, yaw: 0 },
+    kit_cave_corridor_wide_intersection: { url: '/3d/runtime/kits/modular-cave-kit/corridor-wide-intersection.glb', height: 3.0, yaw: 0 },
+    kit_cave_corridor_wide_junction: { url: '/3d/runtime/kits/modular-cave-kit/corridor-wide-junction.glb', height: 3.0, yaw: 0 },
+    kit_cave_corridor_wide: { url: '/3d/runtime/kits/modular-cave-kit/corridor-wide.glb', height: 3.0, yaw: 0 },
+    kit_cave_corridor: { url: '/3d/runtime/kits/modular-cave-kit/corridor.glb', height: 3.0, yaw: 0 },
+    kit_cave_gate_metal_bars: { url: '/3d/runtime/kits/modular-cave-kit/gate-metal-bars.glb', height: 2.6, yaw: 0 },
+    kit_cave_gate_overhang: { url: '/3d/runtime/kits/modular-cave-kit/gate-overhang.glb', height: 2.6, yaw: 0 },
+    kit_cave_gate_rock: { url: '/3d/runtime/kits/modular-cave-kit/gate-rock.glb', height: 2.6, yaw: 0 },
+    kit_cave_gate: { url: '/3d/runtime/kits/modular-cave-kit/gate.glb', height: 2.6, yaw: 0 },
+    kit_cave_ladder: { url: '/3d/runtime/kits/modular-cave-kit/ladder.glb', height: 2.2, yaw: 0 },
+    kit_cave_room_corner: { url: '/3d/runtime/kits/modular-cave-kit/room-corner.glb', height: 3.0, yaw: 0 },
+    kit_cave_room_large_variation: { url: '/3d/runtime/kits/modular-cave-kit/room-large-variation.glb', height: 3.0, yaw: 0 },
+    kit_cave_room_large: { url: '/3d/runtime/kits/modular-cave-kit/room-large.glb', height: 3.0, yaw: 0 },
+    kit_cave_room_small_variation: { url: '/3d/runtime/kits/modular-cave-kit/room-small-variation.glb', height: 3.0, yaw: 0 },
+    kit_cave_room_small: { url: '/3d/runtime/kits/modular-cave-kit/room-small.glb', height: 3.0, yaw: 0 },
+    kit_cave_room_wide_variation: { url: '/3d/runtime/kits/modular-cave-kit/room-wide-variation.glb', height: 3.0, yaw: 0 },
+    kit_cave_room_wide: { url: '/3d/runtime/kits/modular-cave-kit/room-wide.glb', height: 3.0, yaw: 0 },
+    kit_cave_stairs_wide: { url: '/3d/runtime/kits/modular-cave-kit/stairs-wide.glb', height: 2.2, yaw: 0 },
+    kit_cave_stairs: { url: '/3d/runtime/kits/modular-cave-kit/stairs.glb', height: 2.2, yaw: 0 },
+    kit_cave_template_corner: { url: '/3d/runtime/kits/modular-cave-kit/template-corner.glb', height: 3.0, yaw: 0 },
+    kit_cave_template_detail: { url: '/3d/runtime/kits/modular-cave-kit/template-detail.glb', height: 3.0, yaw: 0 },
+    kit_cave_template_floor_big: { url: '/3d/runtime/kits/modular-cave-kit/template-floor-big.glb', height: 0.25, yaw: 0 },
+    kit_cave_template_floor_detail_a: { url: '/3d/runtime/kits/modular-cave-kit/template-floor-detail-a.glb', height: 0.25, yaw: 0 },
+    kit_cave_template_floor_detail: { url: '/3d/runtime/kits/modular-cave-kit/template-floor-detail.glb', height: 0.25, yaw: 0 },
+    kit_cave_template_floor_layer_hole: { url: '/3d/runtime/kits/modular-cave-kit/template-floor-layer-hole.glb', height: 0.25, yaw: 0 },
+    kit_cave_template_floor_layer_raised: { url: '/3d/runtime/kits/modular-cave-kit/template-floor-layer-raised.glb', height: 0.25, yaw: 0 },
+    kit_cave_template_floor_layer: { url: '/3d/runtime/kits/modular-cave-kit/template-floor-layer.glb', height: 0.25, yaw: 0 },
+    kit_cave_template_floor: { url: '/3d/runtime/kits/modular-cave-kit/template-floor.glb', height: 0.25, yaw: 0 },
+    kit_cave_template_wall_corner: { url: '/3d/runtime/kits/modular-cave-kit/template-wall-corner.glb', height: 2.6, yaw: 0 },
+    kit_cave_template_wall_detail_a: { url: '/3d/runtime/kits/modular-cave-kit/template-wall-detail-a.glb', height: 2.6, yaw: 0 },
+    kit_cave_template_wall_half: { url: '/3d/runtime/kits/modular-cave-kit/template-wall-half.glb', height: 2.6, yaw: 0 },
+    kit_cave_template_wall_stairs: { url: '/3d/runtime/kits/modular-cave-kit/template-wall-stairs.glb', height: 2.6, yaw: 0 },
+    kit_cave_template_wall_top: { url: '/3d/runtime/kits/modular-cave-kit/template-wall-top.glb', height: 2.6, yaw: 0 },
+    kit_cave_template_wall: { url: '/3d/runtime/kits/modular-cave-kit/template-wall.glb', height: 2.6, yaw: 0 },
+    kit_space_cables: { url: '/3d/runtime/kits/modular-space-kit/cables.glb', height: 3.0, yaw: 0 },
+    kit_space_corridor_corner: { url: '/3d/runtime/kits/modular-space-kit/corridor-corner.glb', height: 3.0, yaw: 0 },
+    kit_space_corridor_end: { url: '/3d/runtime/kits/modular-space-kit/corridor-end.glb', height: 3.0, yaw: 0 },
+    kit_space_corridor_intersection: { url: '/3d/runtime/kits/modular-space-kit/corridor-intersection.glb', height: 3.0, yaw: 0 },
+    kit_space_corridor_junction: { url: '/3d/runtime/kits/modular-space-kit/corridor-junction.glb', height: 3.0, yaw: 0 },
+    kit_space_corridor_transition: { url: '/3d/runtime/kits/modular-space-kit/corridor-transition.glb', height: 3.0, yaw: 0 },
+    kit_space_corridor_wide_corner: { url: '/3d/runtime/kits/modular-space-kit/corridor-wide-corner.glb', height: 3.0, yaw: 0 },
+    kit_space_corridor_wide_end: { url: '/3d/runtime/kits/modular-space-kit/corridor-wide-end.glb', height: 3.0, yaw: 0 },
+    kit_space_corridor_wide_intersection: { url: '/3d/runtime/kits/modular-space-kit/corridor-wide-intersection.glb', height: 3.0, yaw: 0 },
+    kit_space_corridor_wide_junction: { url: '/3d/runtime/kits/modular-space-kit/corridor-wide-junction.glb', height: 3.0, yaw: 0 },
+    kit_space_corridor_wide: { url: '/3d/runtime/kits/modular-space-kit/corridor-wide.glb', height: 3.0, yaw: 0 },
+    kit_space_corridor: { url: '/3d/runtime/kits/modular-space-kit/corridor.glb', height: 3.0, yaw: 0 },
+    kit_space_gate_door_window: { url: '/3d/runtime/kits/modular-space-kit/gate-door-window.glb', height: 2.6, yaw: 0 },
+    kit_space_gate_door: { url: '/3d/runtime/kits/modular-space-kit/gate-door.glb', height: 2.6, yaw: 0 },
+    kit_space_gate_lasers: { url: '/3d/runtime/kits/modular-space-kit/gate-lasers.glb', height: 2.6, yaw: 0 },
+    kit_space_gate: { url: '/3d/runtime/kits/modular-space-kit/gate.glb', height: 2.6, yaw: 0 },
+    kit_space_room_corner: { url: '/3d/runtime/kits/modular-space-kit/room-corner.glb', height: 3.0, yaw: 0 },
+    kit_space_room_large_variation: { url: '/3d/runtime/kits/modular-space-kit/room-large-variation.glb', height: 3.0, yaw: 0 },
+    kit_space_room_large: { url: '/3d/runtime/kits/modular-space-kit/room-large.glb', height: 3.0, yaw: 0 },
+    kit_space_room_small_variation: { url: '/3d/runtime/kits/modular-space-kit/room-small-variation.glb', height: 3.0, yaw: 0 },
+    kit_space_room_small: { url: '/3d/runtime/kits/modular-space-kit/room-small.glb', height: 3.0, yaw: 0 },
+    kit_space_room_wide_variation: { url: '/3d/runtime/kits/modular-space-kit/room-wide-variation.glb', height: 3.0, yaw: 0 },
+    kit_space_room_wide: { url: '/3d/runtime/kits/modular-space-kit/room-wide.glb', height: 3.0, yaw: 0 },
+    kit_space_stairs_wide: { url: '/3d/runtime/kits/modular-space-kit/stairs-wide.glb', height: 2.2, yaw: 0 },
+    kit_space_stairs: { url: '/3d/runtime/kits/modular-space-kit/stairs.glb', height: 2.2, yaw: 0 },
+    kit_space_template_corner: { url: '/3d/runtime/kits/modular-space-kit/template-corner.glb', height: 3.0, yaw: 0 },
+    kit_space_template_detail: { url: '/3d/runtime/kits/modular-space-kit/template-detail.glb', height: 3.0, yaw: 0 },
+    kit_space_template_floor_big: { url: '/3d/runtime/kits/modular-space-kit/template-floor-big.glb', height: 0.25, yaw: 0 },
+    kit_space_template_floor_detail_a: { url: '/3d/runtime/kits/modular-space-kit/template-floor-detail-a.glb', height: 0.25, yaw: 0 },
+    kit_space_template_floor_detail: { url: '/3d/runtime/kits/modular-space-kit/template-floor-detail.glb', height: 0.25, yaw: 0 },
+    kit_space_template_floor_layer_hole: { url: '/3d/runtime/kits/modular-space-kit/template-floor-layer-hole.glb', height: 0.25, yaw: 0 },
+    kit_space_template_floor_layer_raised: { url: '/3d/runtime/kits/modular-space-kit/template-floor-layer-raised.glb', height: 0.25, yaw: 0 },
+    kit_space_template_floor_layer: { url: '/3d/runtime/kits/modular-space-kit/template-floor-layer.glb', height: 0.25, yaw: 0 },
+    kit_space_template_floor: { url: '/3d/runtime/kits/modular-space-kit/template-floor.glb', height: 0.25, yaw: 0 },
+    kit_space_template_wall_corner: { url: '/3d/runtime/kits/modular-space-kit/template-wall-corner.glb', height: 2.6, yaw: 0 },
+    kit_space_template_wall_detail_a: { url: '/3d/runtime/kits/modular-space-kit/template-wall-detail-a.glb', height: 2.6, yaw: 0 },
+    kit_space_template_wall_half: { url: '/3d/runtime/kits/modular-space-kit/template-wall-half.glb', height: 2.6, yaw: 0 },
+    kit_space_template_wall_stairs: { url: '/3d/runtime/kits/modular-space-kit/template-wall-stairs.glb', height: 2.6, yaw: 0 },
+    kit_space_template_wall_top: { url: '/3d/runtime/kits/modular-space-kit/template-wall-top.glb', height: 2.6, yaw: 0 },
+    kit_space_template_wall: { url: '/3d/runtime/kits/modular-space-kit/template-wall.glb', height: 2.6, yaw: 0 },
     broken_scout_ship: { url: '/3d/runtime/broken-scout-ship.glb', height: 1.35, yaw: 0 },
     broken_tank_ship: { url: '/3d/runtime/broken-tank-ship.glb', height: 1.35, yaw: 0 },
     broken_engineer_ship: { url: '/3d/runtime/broken-engineer-ship.glb', height: 1.35, yaw: 0 },
@@ -122,6 +208,22 @@ export const WORLD_3D_MODELS = Object.freeze({
     prop_vent_grate_exploded: { url: '/3d/runtime/new3ds/prop_vent_grate_exploded.glb', height: 0.65, yaw: 0 }
 });
 
+// Metric-scale set-piece shells are deliberately separate from prop models.
+// Props are height-normalized and recentered; structures must preserve the
+// Blender-authored 1 unit = 1 metre scale and module-NW origin.
+export const WORLD_3D_STRUCTURES = Object.freeze({
+    structure_reference_49m: Object.freeze({
+        url: '/3d/runtime/structures/structure_reference_49m.glb',
+        collision: '/3d/runtime/structures/structure_reference_49m.collision.glb',
+        footprint: Object.freeze({ w: 49, d: 49 }),
+        origin: 'module-nw-corner',
+        yaw: 0,
+        setpiece: 'structure-loader-proof',
+        module: 'reference',
+        stage: 'test'
+    })
+});
+
 const templates = new Map();
 export const WORLD_3D_FACING_YAW = Math.PI;
 
@@ -155,6 +257,54 @@ export async function createWorld3dModel(type) {
     const context = { type, url: config.url };
     const model = measurePerfPhase('world-model:clone', context, () => cloneSkeleton(gltf.scene));
     return measurePerfPhase('world-model:prepare', context, () => prepareWorld3dModel(model, type, config));
+}
+
+export async function createWorld3dStructure(type) {
+    const config = WORLD_3D_STRUCTURES[type];
+    if (!config) return null;
+    const [renderGltf, collisionGltf] = await Promise.all([
+        loadTemplate(config.url),
+        loadTemplate(config.collision)
+    ]);
+    const renderModel = cloneSkeleton(renderGltf.scene);
+    const collisionModel = cloneSkeleton(collisionGltf.scene);
+    return prepareWorld3dStructure(renderModel, collisionModel, type, config);
+}
+
+export function prepareWorld3dStructure(renderModel, collisionModel, type, config) {
+    const root = new THREE.Group();
+    root.name = `World3dStructure:${type}`;
+    root.rotation.y = config.yaw ?? 0;
+    root.userData = {
+        isWorld3dStructure: true,
+        structureType: type,
+        footprint: { ...config.footprint },
+        origin: config.origin,
+        setpiece: config.setpiece,
+        module: config.module,
+        stage: config.stage
+    };
+
+    renderModel.name = `${type}:render`;
+    renderModel.traverse((object) => {
+        if (!object.isMesh) return;
+        object.castShadow = true;
+        object.receiveShadow = true;
+        object.userData.isStructureRenderMesh = true;
+    });
+
+    collisionModel.name = `${type}:collision`;
+    collisionModel.visible = false;
+    collisionModel.traverse((object) => {
+        if (!object.isMesh) return;
+        object.userData.isStructureCollision = true;
+        object.castShadow = false;
+        object.receiveShadow = false;
+    });
+
+    // Intentionally no normalization, bounds-centering, or position rewrite.
+    root.add(renderModel, collisionModel);
+    return root;
 }
 
 function prepareWorld3dModel(model, type, config) {
@@ -191,6 +341,17 @@ function prepareWorld3dModel(model, type, config) {
 
 export function hasWorld3dModel(type) {
     return Boolean(WORLD_3D_MODELS[type]);
+}
+
+const WORLD_3D_ONLY_PREFIXES = Object.freeze(['arch_', 'state_', 'fixture_', 'kit_']);
+
+// Architectural/state fixtures have no billboard fallback by design. Keep
+// this contract explicit so room dressing routes them to their GLB instead of
+// rejecting them at the generic sprite-material gate.
+export function isWorld3dOnlyPlacementType(type) {
+    return typeof type === 'string'
+        && WORLD_3D_ONLY_PREFIXES.some((prefix) => type.startsWith(prefix))
+        && hasWorld3dModel(type);
 }
 
 export const COMMON_WORLD_3D_MODEL_TYPES = Object.freeze([

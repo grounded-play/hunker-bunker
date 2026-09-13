@@ -13,6 +13,7 @@ import {
     allocateTerritories,
     validateTerritoryPlan
 } from './territoryPlanner.js';
+import { allocateWorldSetpieces } from './setpieceBuilds.js';
 
 export const RING_MANIFEST_VERSION = 1;
 export const WORLD_PLAN_VERSION = 1;
@@ -794,6 +795,10 @@ export function buildWorldPlan(expedition) {
             projectionErrors: projection.errors
         }
     };
+    const setpiecePlan = allocateWorldSetpieces(worldPlan);
+    worldPlan.setpieceClaimVersion = setpiecePlan.version;
+    worldPlan.setpieceClaims = setpiecePlan.claims;
+    worldPlan.diagnostics.setpieceOmissions = setpiecePlan.omissions;
     const validation = validateWorldPlan(worldPlan);
     worldPlan.diagnostics.valid = validation.valid;
     worldPlan.diagnostics.errors = validation.errors;
@@ -804,12 +809,49 @@ export function getWorldReservation(worldPlan, reservationId) {
     return worldPlan?.reservations?.find((reservation) => reservation.id === reservationId) ?? null;
 }
 
+export function getWorldReservationFootprintCells(reservation) {
+    const anchorX = Number.isInteger(reservation?.chunkX)
+        ? reservation.chunkX
+        : Number(String(reservation?.chunkKey ?? '').split(',')[0]);
+    const anchorY = Number.isInteger(reservation?.chunkY)
+        ? reservation.chunkY
+        : Number(String(reservation?.chunkKey ?? '').split(',')[1]);
+    if (!Number.isInteger(anchorX) || !Number.isInteger(anchorY)) return [];
+
+    const footprint = reservation?.footprint;
+    if (Array.isArray(footprint) && footprint.length > 0) {
+        return footprint
+            .filter((cell) => Number.isInteger(cell?.dx) && Number.isInteger(cell?.dy))
+            .map((cell) => ({
+                chunkX: anchorX + cell.dx,
+                chunkY: anchorY + cell.dy,
+                chunkKey: `${anchorX + cell.dx},${anchorY + cell.dy}`
+            }));
+    }
+
+    const width = Math.max(1, Number.isInteger(footprint?.w) ? footprint.w : 1);
+    const depth = Math.max(1, Number.isInteger(footprint?.d) ? footprint.d : 1);
+    const offsetX = Number.isInteger(footprint?.offsetX) ? footprint.offsetX : 0;
+    const offsetY = Number.isInteger(footprint?.offsetY) ? footprint.offsetY : 0;
+    const cells = [];
+    for (let dy = 0; dy < depth; dy += 1) {
+        for (let dx = 0; dx < width; dx += 1) {
+            const chunkX = anchorX + offsetX + dx;
+            const chunkY = anchorY + offsetY + dy;
+            cells.push({ chunkX, chunkY, chunkKey: `${chunkX},${chunkY}` });
+        }
+    }
+    return cells;
+}
+
 export function findWorldPlanReservationConflicts(worldPlan) {
     const occupants = new Map();
     for (const reservation of worldPlan?.reservations ?? []) {
         if (!reservation?.chunkKey || reservation.shareWithReservationId) continue;
-        if (!occupants.has(reservation.chunkKey)) occupants.set(reservation.chunkKey, []);
-        occupants.get(reservation.chunkKey).push(reservation.id);
+        for (const cell of getWorldReservationFootprintCells(reservation)) {
+            if (!occupants.has(cell.chunkKey)) occupants.set(cell.chunkKey, []);
+            occupants.get(cell.chunkKey).push(reservation.id);
+        }
     }
     const territoryBeats = new Map((worldPlan?.territories ?? []).flatMap((territory) => (
         territory.beats.map((beat) => [beat.ownerChunkKey, { territoryId: territory.id, beatId: beat.id }])

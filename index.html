@@ -2025,6 +2025,19 @@
       </div>
     </div>
 
+    <!-- Camp sleep warning: shown only when advancing the day closes story. -->
+    <div id="day-rest-warning-modal" class="modal critical-modal day-rest-warning-modal hidden" aria-hidden="true">
+      <div class="modal-content confirm-modal-content">
+        <h2 class="modal-title confirm-title">THE NIGHT WILL CLOSE DOORS</h2>
+        <p class="confirm-copy" id="day-rest-warning-copy"></p>
+        <div class="day-rest-warning-list" id="day-rest-warning-list"></div>
+        <div class="confirm-actions">
+          <button class="abort-btn" id="day-rest-warning-confirm">SLEEP ANYWAY</button>
+          <button class="confirm-secondary-btn" id="day-rest-warning-cancel">STAY AWAKE</button>
+        </div>
+      </div>
+    </div>
+
     <!-- Archive Simulations submenu (RGB and future unlockable stories) -->
     <div id="archive-sims-modal" class="modal hidden">
       <div class="modal-content archive-sims-modal-content">

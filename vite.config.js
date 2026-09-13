@@ -44,7 +44,9 @@ export default defineConfig({
     __HB_BUILD_INFO__: JSON.stringify(buildInfo)
   },
   build: {
-    chunkSizeWarningLimit: 1200,
+    // The remaining index chunk is the single-page game's boot graph, which is
+    // required up front and is loaded locally by the Steam file:// build.
+    chunkSizeWarningLimit: 1600,
     rollupOptions: {
       output: {
         manualChunks(id) {

@@ -2,9 +2,9 @@
 
 Aesthetic Direction: Neo-Gothic meets Cyberbiohorror Post-Punk.
 Features:
-- Cycles raytracing with AgX High Contrast tonemapping and OpenImageDenoise.
+- Cycles raytracing with the production AgX Punchy look and OpenImageDenoise.
 - Atmospheric volumetric scatter for cathedral god-rays, coolant steam, and spore fog.
-- Physical 35mm full-frame sensors with shallow depth of field (f/1.4 - f/2.8) and anamorphic bokeh.
+- Physical 35mm full-frame sensors with shot-safe depth of field and a seven-blade spherical iris.
 - Reusable modular sets: SET-A (Cabin), SET-B (Cargo 4), SET-C (Medical Dock), SET-D (Exterior Ice).
 - 20 precisely timed and calibrated cinematic camera rigs (MI-01..04, AE-01..04, OE-01..04, FC-01..04, EH-01..04).
 - Kitbashes existing repository GLB assets from public/3d/runtime/new3ds/ and public/3d/runtime/.
@@ -18,6 +18,34 @@ from pathlib import Path
 import sys
 
 import bpy
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from cinematic_lighting import add_separation_rim  # noqa: E402
+from cinematic_fx import add_boid_swarm, add_drift_motes, add_secondary_motion, animate_camera_dynamics  # noqa: E402
+
+
+# Locked in docs/planning/blender-cinematic-optics-2026-09-12.md. Keep these
+# values shared by every production scene; an artist can animate a focus target
+# per shot without silently changing the family-wide optical baseline.
+APERTURE_BY_LENS = ((32, 5.6), (60, 4.0), (90, 2.8), (10_000, 4.0))
+APERTURE_BLADES = 7
+VIEW_TRANSFORM = "AgX"
+VIEW_LOOK = "AgX - Punchy"
+VOLUME_DENSITY = 0.004
+VOLUME_ANISOTROPY = 0.4
+
+SHOT_MID_FRAMES = {
+    "MI": (21, 61, 106, 156), "AE": (22, 71, 119, 167),
+    "OE": (20, 61, 102, 146), "FC": (19, 62, 104, 146),
+    "EH": (23, 66, 106, 154),
+}
+
+
+def aperture_for_lens(lens_mm: float) -> float:
+    for ceiling, fstop in APERTURE_BY_LENS:
+        if lens_mm <= ceiling:
+            return fstop
+    return 4.0
 
 
 def get_base_dir() -> Path:
@@ -42,7 +70,10 @@ def setup_cycles_and_color_management(scene: bpy.types.Scene) -> None:
             print(f"[build_ending_scenes] CUDA unavailable, rendering on CPU: {exc}")
             scene.cycles.device = "CPU"
 
-    scene.cycles.samples = 128
+    # 256 for delivery. 128 left visible chroma noise in the deep shadows these
+    # sets are mostly made of, which the denoiser then smeared into blotches --
+    # worse than the noise. Cost is roughly linear, ~40s/frame at 1080p here.
+    scene.cycles.samples = 256
     scene.cycles.preview_samples = 32
     scene.cycles.use_denoising = True
     scene.cycles.denoiser = "OPENIMAGEDENOISE"
@@ -52,19 +83,181 @@ def setup_cycles_and_color_management(scene: bpy.types.Scene) -> None:
     scene.cycles.transmission_bounces = 6
     scene.cycles.volume_bounces = 2
 
-    # AgX High Contrast tonemapping for bleak post-punk shadows
-    scene.view_settings.view_transform = "AgX"
-    scene.view_settings.look = "AgX - High Contrast"
-    scene.view_settings.exposure = -0.4
+    # Pin the approved transform. Relying on the installed Blender default
+    # makes saturated practicals change appearance across workstations.
+    scene.view_settings.view_transform = VIEW_TRANSFORM
+    scene.view_settings.look = VIEW_LOOK
+    scene.view_settings.exposure = 0.0
     scene.view_settings.gamma = 1.0
 
     # Cinematic 1080p 24fps
     scene.render.resolution_x = 1920
     scene.render.resolution_y = 1080
     scene.render.fps = 24
+    scene["cinematic_optics_spec"] = "docs/planning/blender-cinematic-optics-2026-09-12.md"
+    scene["view_transform"] = VIEW_TRANSFORM
+    scene["view_look"] = VIEW_LOOK
+    scene["volume_density"] = VOLUME_DENSITY
+    scene["volume_anisotropy"] = VOLUME_ANISOTROPY
 
 
-def setup_world_atmosphere(scene: bpy.types.Scene, color_hex: str = "#020408", volume_density: float = 0.035) -> None:
+SPACE_HDRI_PATH = "art/source/hdri/game_deep_space_4k.exr"
+GAME_SPACE_LAYERS = (
+    ("public/sky/cinematic_deep_space_panorama.jpg", 0.0, 1.0),
+)
+
+
+def build_game_space_sky_nodes(output_node, links, nodes, strength: float = 1.0):
+    """Build the film sky from the same painted layers used by the game.
+
+    All three inputs are 2:1 sky paintings, so Environment Texture can map them
+    panoramically without stretching a square billboard around the horizon.
+    Violet carries the cyberbiohorror identity, ember keeps skin/metal from
+    receiving cyan-only reflections, and the core supplies dense stars and a
+    readable galactic band. Layer gain is allowed above one before the
+    Background shader: that is what turns LDR paintings into a useful authored
+    HDR environment rather than a bright wallpaper that contributes no light.
+    """
+    base_dir = get_base_dir()
+    if not all((base_dir / path).is_file() for path, _, _ in GAME_SPACE_LAYERS):
+        return None
+
+    tex_coord = nodes.new("ShaderNodeTexCoord")
+    tex_coord.location = (-1300, 0)
+    underfield = nodes.new("ShaderNodeRGB")
+    underfield.location = (-720, 420)
+    underfield.outputs[0].default_value = (0.003, 0.008, 0.025, 1.0)
+    composite = underfield.outputs[0]
+    for index, (relative_path, yaw, opacity) in enumerate(GAME_SPACE_LAYERS):
+        mapping = nodes.new("ShaderNodeMapping")
+        mapping.location = (-1120, 160 - index * 260)
+        mapping.inputs["Rotation"].default_value[2] = yaw
+        links.new(tex_coord.outputs["Generated"], mapping.inputs["Vector"])
+
+        environment = nodes.new("ShaderNodeTexEnvironment")
+        environment.name = f"GameSky_{Path(relative_path).stem}"
+        environment.label = f"GAME SKY · {Path(relative_path).stem}"
+        environment.location = (-880, 160 - index * 260)
+        environment.image = bpy.data.images.load(str(base_dir / relative_path), check_existing=True)
+        # Matches the game's ADDITIVE_LAYER_IDS contract: these skies read RGB
+        # and intentionally ignore their keyed alpha. Blender otherwise
+        # premultiplies transparent texels into black circular voids.
+        environment.image.alpha_mode = "CHANNEL_PACKED"
+        links.new(mapping.outputs["Vector"], environment.inputs["Vector"])
+
+        add = nodes.new("ShaderNodeMixRGB")
+        add.blend_type = "ADD"
+        add.inputs["Fac"].default_value = opacity
+        add.location = (-560 + index * 180, -80 - index * 90)
+        links.new(composite, add.inputs[1])
+        links.new(environment.outputs["Color"], add.inputs[2])
+        composite = add.outputs["Color"]
+
+    # Scene-linear peaks above 1.0 create real colored speculars and bounce.
+    hdr_gain = nodes.new("ShaderNodeVectorMath")
+    hdr_gain.operation = "SCALE"
+    hdr_gain.location = (220, -180)
+    hdr_gain.inputs[3].default_value = 1.8
+    links.new(composite, hdr_gain.inputs[0])
+
+    sky_bg = nodes.new("ShaderNodeBackground")
+    sky_bg.name = "GameDeepSpaceHDR"
+    sky_bg.label = "GAME SKY · HDR LIGHTING"
+    sky_bg.location = (440, 80)
+    sky_bg.inputs["Strength"].default_value = strength
+    links.new(hdr_gain.outputs["Vector"], sky_bg.inputs["Color"])
+    return sky_bg
+
+
+def build_space_sky_nodes(node_tree, output_node, links, nodes, strength: float = 1.0):
+    """
+    A procedural deep-space environment: starfield, nebula and a cold rim glow.
+
+    Made rather than downloaded. A CC0 sky from Poly Haven would need the
+    Blender MCP bridge to a live GUI session, and a procedural sky has no
+    resolution ceiling, no licence to track, and tunes per scene. It is also a
+    genuine HDR -- the star highlights sit well above 1.0, so they bloom and
+    light the set instead of clipping to flat white.
+
+    Three layers, matching how space actually reads on camera:
+      - deep base, near black but never pure black, so nothing clips to void;
+      - nebula, low-frequency noise tinted toward the game's cyan/violet palette
+        and kept dim, because a loud nebula reads as a screensaver;
+      - stars, high-frequency Voronoi with a hard threshold so points stay
+        points rather than blurring into a grey wash.
+    """
+    game_sky = build_game_space_sky_nodes(output_node, links, nodes, strength)
+    if game_sky is not None:
+        return game_sky
+
+    coord = nodes.new("ShaderNodeTexCoord")
+    coord.location = (-1200, -400)
+
+    # Nebula: large, soft, and deliberately restrained.
+    neb_noise = nodes.new("ShaderNodeTexNoise")
+    neb_noise.location = (-1000, -300)
+    neb_noise.inputs["Scale"].default_value = 2.2
+    neb_noise.inputs["Detail"].default_value = 8.0
+    neb_noise.inputs["Roughness"].default_value = 0.62
+    links.new(coord.outputs["Generated"], neb_noise.inputs["Vector"])
+
+    neb_ramp = nodes.new("ShaderNodeValToRGB")
+    neb_ramp.location = (-800, -300)
+    neb_ramp.color_ramp.elements[0].position = 0.42
+    neb_ramp.color_ramp.elements[0].color = (0.004, 0.006, 0.014, 1.0)
+    neb_ramp.color_ramp.elements[1].position = 0.78
+    neb_ramp.color_ramp.elements[1].color = (0.045, 0.030, 0.075, 1.0)
+    links.new(neb_noise.outputs["Fac"], neb_ramp.inputs["Fac"])
+
+    # Stars: Voronoi distance, inverted and hard-clipped. A soft ramp here gives
+    # grey fog instead of stars, which is the usual way procedural starfields
+    # go wrong.
+    star_vor = nodes.new("ShaderNodeTexVoronoi")
+    star_vor.location = (-1000, -700)
+    star_vor.feature = "F1"
+    star_vor.inputs["Scale"].default_value = 220.0
+    links.new(coord.outputs["Generated"], star_vor.inputs["Vector"])
+
+    star_ramp = nodes.new("ShaderNodeValToRGB")
+    star_ramp.location = (-800, -700)
+    star_ramp.color_ramp.interpolation = "CONSTANT"
+    star_ramp.color_ramp.elements[0].position = 0.0
+    star_ramp.color_ramp.elements[0].color = (1.0, 1.0, 1.0, 1.0)
+    star_ramp.color_ramp.elements[1].position = 0.045
+    star_ramp.color_ramp.elements[1].color = (0.0, 0.0, 0.0, 1.0)
+    links.new(star_vor.outputs["Distance"], star_ramp.inputs["Fac"])
+
+    # Push stars well above 1.0. A first bake peaked at 0.172 -- stars are
+    # point-sized at scale 220, so pixel filtering averages each one against its
+    # black neighbours and the result was an LDR image of a starfield rather
+    # than an HDR. Multiplying before the filter is what survives it.
+    star_gain = nodes.new("ShaderNodeMath")
+    star_gain.location = (-700, -700)
+    star_gain.operation = "MULTIPLY"
+    star_gain.inputs[1].default_value = 60.0
+    links.new(star_ramp.outputs["Color"], star_gain.inputs[0])
+
+    star_bright = nodes.new("ShaderNodeMixRGB")
+    star_bright.location = (-600, -500)
+    star_bright.blend_type = "ADD"
+    star_bright.inputs["Fac"].default_value = 1.0
+    links.new(neb_ramp.outputs["Color"], star_bright.inputs[1])
+    links.new(star_gain.outputs["Value"], star_bright.inputs[2])
+
+    sky_bg = nodes.new("ShaderNodeBackground")
+    sky_bg.location = (-380, -500)
+    sky_bg.inputs["Strength"].default_value = strength
+    links.new(star_bright.outputs["Color"], sky_bg.inputs["Color"])
+    return sky_bg
+
+
+def setup_world_atmosphere(
+    scene: bpy.types.Scene,
+    color_hex: str = "#020408",
+    volume_density: float = VOLUME_DENSITY,
+    world_strength: float = 0.9,
+    space_sky: bool = False,
+) -> None:
     world = scene.world
     if not world:
         world = bpy.data.worlds.new("NeoGothicWorld")
@@ -78,11 +271,83 @@ def setup_world_atmosphere(scene: bpy.types.Scene, color_hex: str = "#020408", v
     output_node = nodes.new(type="ShaderNodeOutputWorld")
     output_node.location = (400, 0)
 
-    # Dark cold background
+    # An HDRI-equivalent environment, built procedurally rather than shipped as
+    # a .hdr: no download, no licence to clear, and it tunes per scene.
+    #
+    # What an HDRI actually buys on a set like this is DIRECTIONAL AMBIENT --
+    # cool light from above, warm bounce from the floor, and a brighter horizon
+    # band. A flat background colour (what this was: 0.15 strength of near
+    # black) buys none of that, which is why interiors rendered as silhouettes
+    # against nothing and several shots came out pure black.
+    #
+    # Direction comes from the world-space vector; its Z drives a ramp from
+    # floor bounce through horizon to sky.
+    # Exterior scenes look at space, so they get the baked space HDRI rather
+    # than the interior bounce gradient. Falls back to the gradient when the
+    # .exr has not been baked yet, so the build never depends on an artifact
+    # that may not exist.
+    hdri_file = get_base_dir() / SPACE_HDRI_PATH
+    if space_sky and hdri_file.exists():
+        env = nodes.new(type="ShaderNodeTexEnvironment")
+        env.location = (-400, 100)
+        env.image = bpy.data.images.load(str(hdri_file), check_existing=True)
+        sky_bg = nodes.new(type="ShaderNodeBackground")
+        sky_bg.location = (100, 100)
+        sky_bg.inputs["Strength"].default_value = world_strength
+        links.new(env.outputs["Color"], sky_bg.inputs["Color"])
+        links.new(sky_bg.outputs["Background"], output_node.inputs["Surface"])
+        # Never put an infinite volume in a space world. Even modest density
+        # extinguishes every environment ray and turns a detailed HDR into a
+        # flat black background. Exterior snow/exhaust haze belongs in bounded
+        # volume geometry near the set.
+        return
+
+    if space_sky:
+        # Source assets remain directly usable before (or without) a bake. The
+        # EXR is a render optimisation and interchange artifact, not a hidden
+        # prerequisite for getting the game's sky into a scene.
+        sky_bg = build_space_sky_nodes(world.node_tree, output_node, links, nodes, world_strength)
+        links.new(sky_bg.outputs["Background"], output_node.inputs["Surface"])
+        return
+
+    tex_coord = nodes.new(type="ShaderNodeTexCoord")
+    tex_coord.location = (-800, 100)
+
+    separate = nodes.new(type="ShaderNodeSeparateXYZ")
+    separate.location = (-600, 100)
+    links.new(tex_coord.outputs["Generated"], separate.inputs["Vector"])
+
+    # Generated runs -1..1 vertically; remap to 0..1 so the ramp reads as
+    # floor -> horizon -> sky.
+    map_range = nodes.new(type="ShaderNodeMapRange")
+    map_range.location = (-420, 100)
+    map_range.inputs["From Min"].default_value = -1.0
+    map_range.inputs["From Max"].default_value = 1.0
+    map_range.inputs["To Min"].default_value = 0.0
+    map_range.inputs["To Max"].default_value = 1.0
+    links.new(separate.outputs["Z"], map_range.inputs["Value"])
+
+    ramp = nodes.new(type="ShaderNodeValToRGB")
+    ramp.location = (-240, 100)
+    ramp.color_ramp.interpolation = "EASE"
+    # Floor bounce: warm and dim. Real rooms bounce their own floor colour up
+    # into everything, and its absence is most of why CG interiors read flat.
+    ramp.color_ramp.elements[0].position = 0.0
+    ramp.color_ramp.elements[0].color = (0.055, 0.035, 0.022, 1.0)
+    # Horizon: the brightest band, and the one that actually models a set.
+    horizon = ramp.color_ramp.elements.new(0.48)
+    horizon.color = (0.085, 0.105, 0.135, 1.0)
+    # Sky: cold and slightly blue, the classic cool key from above.
+    ramp.color_ramp.elements[1].position = 1.0
+    ramp.color_ramp.elements[1].color = (0.045, 0.075, 0.125, 1.0)
+    links.new(map_range.outputs["Result"], ramp.inputs["Fac"])
+
     bg_node = nodes.new(type="ShaderNodeBackground")
     bg_node.location = (100, 100)
-    bg_node.inputs["Color"].default_value = (0.005, 0.012, 0.025, 1.0)
-    bg_node.inputs["Strength"].default_value = 0.15
+    # Enough fill that unlit geometry still reads as a shape. Practicals remain
+    # the key -- this only stops everything outside their cones being void.
+    bg_node.inputs["Strength"].default_value = world_strength
+    links.new(ramp.outputs["Color"], bg_node.inputs["Color"])
     links.new(bg_node.outputs["Background"], output_node.inputs["Surface"])
 
     # Volumetric scatter for god-rays, dust, and chilled air
@@ -91,7 +356,7 @@ def setup_world_atmosphere(scene: bpy.types.Scene, color_hex: str = "#020408", v
         vol_node.location = (100, -100)
         vol_node.inputs["Color"].default_value = (0.35, 0.55, 0.75, 1.0)
         vol_node.inputs["Density"].default_value = volume_density
-        vol_node.inputs["Anisotropy"].default_value = 0.65  # Forward scattering for strong rim shafts
+        vol_node.inputs["Anisotropy"].default_value = VOLUME_ANISOTROPY
         links.new(vol_node.outputs["Volume"], output_node.inputs["Volume"])
 
 
@@ -120,10 +385,249 @@ def import_asset(asset_rel_path: str, collection: bpy.types.Collection) -> bpy.t
     return root_obj
 
 
+def _shell_material(name: str, base, roughness: float, metallic: float = 0.0):
+    """Simple PBR surface for room shell geometry."""
+    mat = bpy.data.materials.new(name)
+    mat.use_nodes = True
+    bsdf = next(n for n in mat.node_tree.nodes if n.type == "BSDF_PRINCIPLED")
+    bsdf.inputs["Base Color"].default_value = (*base, 1.0)
+    bsdf.inputs["Roughness"].default_value = roughness
+    bsdf.inputs["Metallic"].default_value = metallic
+    return mat
+
+
+def _fractured_ice_material(name: str):
+    """Procedural bunker-planet ice: blue depth, frost breakup and fine cracks."""
+    mat = _shell_material(name, (0.08, 0.14, 0.22), 0.48, 0.08)
+    nodes = mat.node_tree.nodes
+    links = mat.node_tree.links
+    bsdf = nodes.get("Principled BSDF")
+    tex = nodes.new("ShaderNodeTexNoise")
+    tex.inputs["Scale"].default_value = 3.2
+    tex.inputs["Detail"].default_value = 7.0
+    tex.inputs["Roughness"].default_value = 0.72
+    ramp = nodes.new("ShaderNodeValToRGB")
+    ramp.color_ramp.elements[0].position = 0.28
+    ramp.color_ramp.elements[0].color = (0.012, 0.035, 0.075, 1.0)
+    ramp.color_ramp.elements[1].position = 0.72
+    ramp.color_ramp.elements[1].color = (0.26, 0.48, 0.68, 1.0)
+    bump = nodes.new("ShaderNodeBump")
+    bump.inputs["Strength"].default_value = 0.24
+    bump.inputs["Distance"].default_value = 0.12
+    links.new(tex.outputs["Fac"], ramp.inputs["Fac"])
+    links.new(ramp.outputs["Color"], bsdf.inputs["Base Color"])
+    links.new(tex.outputs["Fac"], bump.inputs["Height"])
+    links.new(bump.outputs["Normal"], bsdf.inputs["Normal"])
+    return mat
+
+
+def build_room_shell(
+    scene: bpy.types.Scene,
+    collection: bpy.types.Collection,
+    *,
+    margin: float = 2.0,
+    height: float = 4.0,
+    floor_color=(0.052, 0.055, 0.060),
+    wall_color=(0.070, 0.074, 0.082),
+    ceiling_color=(0.030, 0.032, 0.036),
+    name_prefix: str = "Shell",
+    exterior: bool = False,
+    source_collection: bpy.types.Collection | None = None,
+) -> list:
+    """
+    Build the floor, four walls and ceiling the sets were missing entirely.
+
+    Every ending scene was props and a character floating in void -- no floor,
+    no walls, no ceiling, verified by name scan across all five. That is the
+    single biggest reason these read as nothing: with no surfaces there is no
+    bounce, spot cones land on nothing, shadows fall into infinity, and the
+    "negative space" the framing spec warns about is literally the absence of a
+    room rather than a compositional choice.
+
+    Sized from the set's own bounds plus a margin, so each scene gets a room
+    that actually contains its dressing rather than a guessed box. Normals face
+    inward: Cycles renders backfaces, but an inward shell keeps the geometry
+    honest for anyone opening the file.
+
+    The ceiling is darker than the walls and the floor darker still at grazing
+    angles -- rooms are lit from within here, so the ceiling is the surface
+    furthest from every practical.
+    """
+    import mathutils
+
+    lo = [1e9, 1e9, 1e9]
+    hi = [-1e9, -1e9, -1e9]
+    found = False
+    source_objects = source_collection.all_objects if source_collection else scene.objects
+    for obj in source_objects:
+        if obj.type != "MESH" or obj.hide_render:
+            continue
+        found = True
+        for corner in obj.bound_box:
+            world = obj.matrix_world @ mathutils.Vector(corner)
+            for axis in range(3):
+                lo[axis] = min(lo[axis], world[axis])
+                hi[axis] = max(hi[axis], world[axis])
+    if not found:
+        return []
+
+    min_x, max_x = lo[0] - margin, hi[0] + margin
+    min_y, max_y = lo[1] - margin, hi[1] + margin
+    floor_z = lo[2]
+    ceil_z = floor_z + max(height, (hi[2] - lo[2]) + 1.0)
+    cx, cy = (min_x + max_x) / 2, (min_y + max_y) / 2
+    size_x, size_y = max_x - min_x, max_y - min_y
+
+    floor_mat = _shell_material(f"{name_prefix}_Floor", floor_color, 0.42, 0.15)
+    wall_mat = _shell_material(f"{name_prefix}_Wall", wall_color, 0.62, 0.05)
+    ceil_mat = _shell_material(f"{name_prefix}_Ceiling", ceiling_color, 0.78, 0.0)
+
+    created = []
+    if exterior:
+        # An exterior set gets GROUND ONLY. Giving the ice shelf a ceiling and
+        # four walls would box it in and hide the space sky entirely -- the
+        # shell exists to stop props floating in void, not to put a roof on the
+        # outdoors. Ground is oversized so the horizon reads as distance.
+        floor_mat = _fractured_ice_material(f"{name_prefix}_FracturedIce")
+        bpy.ops.mesh.primitive_plane_add(size=1.0, location=(cx, cy, floor_z))
+        ground = bpy.context.active_object
+        ground.name = f"{name_prefix}_Ground"
+        ground.scale = (size_x * 6, size_y * 6, 1.0)
+        for other in list(ground.users_collection):
+            other.objects.unlink(ground)
+        collection.objects.link(ground)
+        ground.data.materials.append(floor_mat)
+        return [ground.name]
+
+    # VIEWPORT. A sealed shell occludes the world completely -- raising the
+    # interior environment strength from 0.55 to 1.8 produced a byte-identical
+    # render, which is how we know. Cutting an aperture is what actually lets
+    # the game sky light the room and appear behind the cast.
+    #
+    # It goes in the wall the set's cameras ACTUALLY FACE, not a fixed compass
+    # direction. A first version always cut the north wall; CAM_MI_02 faces
+    # elsewhere, so that shot saw no difference at all and stayed dark. A window
+    # nobody is pointed at is decoration.
+    #
+    # Built as four panels around the gap rather than a boolean: no modifier to
+    # evaluate, no n-gon, and every panel stays a flat quad.
+    wall_h = ceil_z - floor_z
+    hero = _hero_wall(scene)
+
+    def _wall_panels(tag, centre, rotation, span):
+        """Solid wall, or four panels around an aperture when it is the hero."""
+        mid_z = (floor_z + ceil_z) / 2
+        if tag != hero:
+            return [(f"Wall_{tag}", centre(mid_z), rotation, (span, wall_h), wall_mat)]
+        ap_w = span * VIEWPORT_WIDTH_FRACTION
+        ap_h = wall_h * VIEWPORT_HEIGHT_FRACTION
+        # Sill above the floor so it reads as a window, not a missing wall.
+        ap_bottom = floor_z + (wall_h - ap_h) * VIEWPORT_SILL_FRACTION
+        ap_top = ap_bottom + ap_h
+        side = (span - ap_w) / 2.0
+        offset = (ap_w / 2) + (side / 2)
+        return [
+            (f"Wall_{tag}_Left", centre(mid_z, -offset), rotation, (side, wall_h), wall_mat),
+            (f"Wall_{tag}_Right", centre(mid_z, offset), rotation, (side, wall_h), wall_mat),
+            (f"Wall_{tag}_Above", centre((ap_top + ceil_z) / 2), rotation, (ap_w, ceil_z - ap_top), wall_mat),
+            (f"Wall_{tag}_Below", centre((floor_z + ap_bottom) / 2), rotation, (ap_w, ap_bottom - floor_z), wall_mat),
+        ]
+
+    surfaces = [
+        ("Floor", (cx, cy, floor_z), (0, 0, 0), (size_x, size_y), floor_mat),
+        ("Ceiling", (cx, cy, ceil_z), (math.radians(180), 0, 0), (size_x, size_y), ceil_mat),
+    ]
+    surfaces += _wall_panels("N", lambda z, o=0.0: (cx + o, max_y, z), (math.radians(90), 0, 0), size_x)
+    surfaces += _wall_panels("S", lambda z, o=0.0: (cx + o, min_y, z), (math.radians(-90), 0, 0), size_x)
+    # E/W planes are rotated about Y, so their local X spans the room height and
+    # local Y spans the wall length -- the scale pair is swapped relative to N/S.
+    for tag, lam, rot in (("E", lambda z, o=0.0: (max_x, cy + o, z), (0, math.radians(-90), 0)),
+                          ("W", lambda z, o=0.0: (min_x, cy + o, z), (0, math.radians(90), 0))):
+        for name, loc, rotation, (a, b), mat in _wall_panels(tag, lam, rot, size_y):
+            surfaces.append((name, loc, rotation, (b, a), mat))
+
+    for suffix, location, rotation, (sx, sy), material in surfaces:
+        bpy.ops.mesh.primitive_plane_add(size=1.0, location=location)
+        plane = bpy.context.active_object
+        plane.name = f"{name_prefix}_{suffix}"
+        plane.rotation_euler = rotation
+        plane.scale = (sx, sy, 1.0)
+        for other in list(plane.users_collection):
+            other.objects.unlink(plane)
+        collection.objects.link(plane)
+        plane.data.materials.append(material)
+        created.append(plane.name)
+    return created
+
+
+def set_camera_focus_from_frame(scene: bpy.types.Scene, camera: bpy.types.Object) -> float | None:
+    """Focus on the nearest renderable subject actually inside the camera frustum."""
+    import mathutils
+
+    parts = camera.name.split("_")
+    prefix = parts[1] if len(parts) > 2 else ""
+    shot_index = int(parts[2]) - 1 if len(parts) > 2 and parts[2].isdigit() else 0
+    frame = SHOT_MID_FRAMES.get(prefix, (scene.frame_start,))[shot_index]
+    scene.frame_set(frame)
+    bpy.context.view_layer.update()
+    evaluated = camera.evaluated_get(bpy.context.evaluated_depsgraph_get())
+    origin = evaluated.matrix_world.translation
+    forward = evaluated.matrix_world.to_quaternion() @ mathutils.Vector((0, 0, -1))
+    horizontal_half = math.atan((camera.data.sensor_width * 0.5) / camera.data.lens)
+    best = None
+    for obj in scene.objects:
+        if obj.type != "MESH" or obj.hide_render or obj.name.startswith("Shell_"):
+            continue
+        # bound_box[0] is a CORNER, not a centre. An earlier line assigned it to
+        # `center` and the next line immediately overwrote it with the real
+        # centroid -- dead, and misleading to anyone reading for the framing
+        # maths, since a corner would bias every angle toward one octant.
+        corners = [obj.matrix_world @ mathutils.Vector(corner) for corner in obj.bound_box]
+        center = sum(corners, mathutils.Vector()) / len(corners)
+        delta = center - origin
+        along = delta.dot(forward)
+        if along <= camera.data.clip_start:
+            continue
+        off_axis = forward.angle(delta.normalized())
+        if off_axis > horizontal_half * 1.15:
+            continue
+        if best is None or along < best:
+            best = along
+    focus = camera.data.dof.focus_object
+    if best is not None and focus is not None:
+        focus.location = (0, 0, -max(0.35, best))
+        camera["autofocus_distance"] = best
+    return best
+
+
+def aim_object_at(obj: bpy.types.Object, target) -> None:
+    """Point a light (or any -Z-forward object) at a world-space point."""
+    import mathutils
+
+    direction = mathutils.Vector(target) - obj.location
+    obj.rotation_euler = direction.to_track_quat("-Z", "Y").to_euler()
+
+
+def key_render_visibility(objects, visible_ranges: list[tuple[int, int]]) -> None:
+    """Animate object render visibility for sets sharing one stage origin.
+
+    SET-A and SET-D are alternate locations, not simultaneous geometry.  Their
+    shots live in one Blender scene for editorial convenience, so leaving both
+    renderable makes the cabin walls occlude the exterior shuttle.  Stepped
+    hide_render keys provide the equivalent of per-shot view layers while
+    keeping the existing single-scene render workflow intact.
+    """
+    for obj in objects:
+        for frame in range(bpy.context.scene.frame_start, bpy.context.scene.frame_end + 2):
+            visible = any(start <= frame <= end for start, end in visible_ranges)
+            obj.hide_render = not visible
+            obj.keyframe_insert(data_path="hide_render", frame=frame)
+
+
 def create_camera(
     name: str,
     focal_length_mm: float,
-    f_stop: float = 2.0,
+    f_stop: float | None = None,
     collection: bpy.types.Collection | None = None,
 ) -> bpy.types.Object:
     cam_data = bpy.data.cameras.new(name)
@@ -131,16 +635,807 @@ def create_camera(
     cam_data.sensor_width = 36.0
     cam_data.sensor_height = 24.0
 
-    # Depth of Field & Anamorphic bokeh emulation
+    # Geography-safe lens-band defaults supersede the early shot-list f/stops.
+    # The original values produced millimetres of usable focus on moving macro
+    # shots. `f_stop` remains in the signature for compatibility with the
+    # staging calls, but the approved optics addendum is authoritative.
+    approved_fstop = aperture_for_lens(focal_length_mm)
     cam_data.dof.use_dof = True
-    cam_data.dof.aperture_fstop = f_stop
-    cam_data.dof.aperture_blades = 7
-    cam_data.dof.aperture_ratio = 1.65  # 1.65x anamorphic oval squeeze
+    cam_data.dof.aperture_fstop = approved_fstop
+    cam_data.dof.aperture_blades = APERTURE_BLADES
+    cam_data.dof.aperture_ratio = 1.0
 
     cam_obj = bpy.data.objects.new(name, cam_data)
     target_col = collection if collection else bpy.context.scene.collection
     target_col.objects.link(cam_obj)
+
+    # A camera-relative target gives every moving camera a stable starting
+    # focus plane. Artists animate/re-parent this empty for rack focuses; they
+    # never keyframe a brittle numeric focus_distance.
+    focus = bpy.data.objects.new(f"FOCUS_{name.removeprefix('CAM_')}", None)
+    focus.empty_display_type = "SPHERE"
+    focus.empty_display_size = 0.12
+    target_col.objects.link(focus)
+    focus.parent = cam_obj
+    focus.location = (0.0, 0.0, -5.0)
+    cam_data.dof.focus_object = focus
+    cam_obj["approved_fstop"] = approved_fstop
+    cam_obj["requested_fstop_from_shot_list"] = f_stop if f_stop is not None else approved_fstop
+    cam_obj["focus_target"] = focus.name
     return cam_obj
+
+
+
+
+# Viewport aperture in one interior wall, as a fraction of that wall. Sized to
+# read as a ship window: wide enough to admit real light and show sky behind the
+# cast, not so wide the room stops being a room.
+def _hero_wall(scene) -> str:
+    """
+    Which wall do this set's cameras look at?
+
+    Averages every shot camera's forward vector and returns the compass wall it
+    points into. Averaging rather than taking the first camera: a set with three
+    cameras facing east and one facing west should still put its window east.
+    """
+    import mathutils
+
+    total = mathutils.Vector((0.0, 0.0, 0.0))
+    for obj in scene.objects:
+        if obj.type != "CAMERA" or not obj.name.startswith("CAM_"):
+            continue
+        total += obj.matrix_world.to_quaternion() @ mathutils.Vector((0.0, 0.0, -1.0))
+    if total.length < 1e-6:
+        return "N"
+    if abs(total.y) >= abs(total.x):
+        return "N" if total.y > 0 else "S"
+    return "E" if total.x > 0 else "W"
+
+
+VIEWPORT_WIDTH_FRACTION = 0.46
+VIEWPORT_HEIGHT_FRACTION = 0.40
+VIEWPORT_SILL_FRACTION = 0.55
+
+MAX_OFF_AXIS_DEG = 12.0
+
+
+def _set_bounds_center(scene: bpy.types.Scene):
+    """World-space centre of every renderable mesh in the scene."""
+    import mathutils
+
+    lo = [1e9, 1e9, 1e9]
+    hi = [-1e9, -1e9, -1e9]
+    found = False
+    for obj in scene.objects:
+        if obj.type != "MESH" or obj.hide_render:
+            continue
+        found = True
+        for corner in obj.bound_box:
+            world = obj.matrix_world @ mathutils.Vector(corner)
+            for axis in range(3):
+                lo[axis] = min(lo[axis], world[axis])
+                hi[axis] = max(hi[axis], world[axis])
+    if not found:
+        return None
+    return mathutils.Vector(((lo[0] + hi[0]) / 2, (lo[1] + hi[1]) / 2, (lo[2] + hi[2]) / 2))
+
+
+def camera_off_axis_deg(camera: bpy.types.Object, target) -> float:
+    """
+    Angle between where a camera looks and where the subject actually is.
+
+    Read through the evaluated depsgraph: a TRACK_TO constraint does not touch
+    the object's own matrix_world, so measuring the original datablock reports
+    the pre-constraint rotation and makes a corrected camera look broken.
+    """
+    import mathutils
+
+    depsgraph = bpy.context.evaluated_depsgraph_get()
+    evaluated = camera.evaluated_get(depsgraph)
+    to_target = target - evaluated.matrix_world.translation
+    if to_target.length < 1e-6:
+        return 0.0
+    forward = evaluated.matrix_world.to_quaternion() @ mathutils.Vector((0.0, 0.0, -1.0))
+    return math.degrees(forward.angle(to_target.normalized()))
+
+
+def camera_is_inside_set(camera: bpy.types.Object, scene: bpy.types.Scene) -> bool:
+    """
+    Is the camera standing within the set rather than looking at it?
+
+    A close-up framing one detail from inside the room is not "off axis" in any
+    meaningful sense -- the set centre is behind it, or beside it. Measuring
+    those against the whole-set centre reports nonsense (CAM_MI_03 scored 45
+    degrees while framing exactly what it was meant to).
+    """
+    import mathutils
+
+    lo = [1e9, 1e9, 1e9]
+    hi = [-1e9, -1e9, -1e9]
+    for obj in scene.objects:
+        if obj.type != "MESH" or obj.hide_render:
+            continue
+        for corner in obj.bound_box:
+            world = obj.matrix_world @ mathutils.Vector(corner)
+            for axis in range(3):
+                lo[axis] = min(lo[axis], world[axis])
+                hi[axis] = max(hi[axis], world[axis])
+    loc = camera.matrix_world.translation
+    return all(lo[i] <= loc[i] <= hi[i] for i in range(2))
+
+
+def aim_stray_cameras(scene: bpy.types.Scene, collection: bpy.types.Collection) -> list[str]:
+    """
+    REPORT badly-framed cameras. Does not mutate them -- see below.
+
+    Every shot camera here animates its LOCATION but holds a hand-authored
+    static rotation, so a dolly cannot keep its subject framed -- and several
+    were 20-31 degrees off the set, which on a 28mm lens puts the whole set off
+    the edge of frame. Tracking an aim empty is what this file already asks for
+    in create_camera's own comment ("never keyframe a brittle numeric"), applied
+    to rotation as well as focus.
+
+    An earlier version of this added a TRACK_TO constraint automatically. That
+    was wrong and is reverted: CAM_MI_02 stands OUTSIDE the room and looks along
+    it deliberately, so aiming it at the set centre pointed it into the unlit
+    back of an exterior wall and rendered pure black -- a correctly composed
+    shot made worse by an automated "fix".
+
+    Framing is an art decision. A geometric rule cannot tell a bad angle from a
+    deliberate one, so this now reports and lets validation fail loudly, and a
+    human fixes the blocking.
+    """
+    # Evaluate first: straight after staging, the depsgraph still holds the
+    # pre-staging transforms, so every camera measures as near-zero off-axis and
+    # nothing gets corrected -- while validation, which runs after an update,
+    # then reports the real angles. Measure and validate against the same state.
+    bpy.context.view_layer.update()
+    center = _set_bounds_center(scene)
+    if center is None:
+        return []
+    corrected = []
+    for camera in (o for o in scene.objects if o.type == "CAMERA" and o.name.startswith("CAM_")):
+        if any(c.type == "TRACK_TO" for c in camera.constraints):
+            continue
+        if camera_is_inside_set(camera, scene):
+            continue
+        if camera_off_axis_deg(camera, center) <= MAX_OFF_AXIS_DEG:
+            continue
+        corrected.append(f"{camera.name} ({camera_off_axis_deg(camera, center):.1f} deg)")
+    return corrected
+
+
+# Materials whose name or texture suggests a lit surface. These become real
+# emitters so a monitor reads as a light source rather than a painted panel --
+# the single biggest difference between "game prop in a render" and "set piece".
+EMISSIVE_HINTS = (
+    "monitor", "screen", "display", "console", "terminal", "vital", "scanner",
+    "lamp", "light", "glow", "led", "panel_lit", "hologram", "readout",
+)
+
+# Textures at or below this size are authored pixel art. Blender's default
+# Linear filtering turns them to mush at cinema resolution; Closest keeps the
+# crispness the game art was drawn with.
+PIXEL_TEXTURE_MAX = 256
+
+
+def enhance_imported_materials(scene: bpy.types.Scene) -> dict:
+    """
+    Bring imported game materials up to cinema standard without repainting them.
+
+    glTF import brings the game's textures across intact -- 39 packed images
+    across 15 materials in SET-C -- but every material lands at a flat
+    roughness 0.5 with no emission and no surface variation. That is correct for
+    a game renderer and wrong for a 1080p close-up, where uniform roughness
+    reads as plastic and an unlit monitor reads as a sticker.
+
+    Three passes, all non-destructive to the source art:
+
+    1. Pixel-art textures are switched to Closest filtering, so the game's own
+       texel grid survives instead of being blurred into mush.
+    2. Roughness gets a low-amplitude noise break-up, so highlights vary across
+       a surface the way a real material does.
+    3. Materials that read as lit surfaces get an emission driven by their OWN
+       base colour texture, so a screen emits the image it is showing rather
+       than a flat wash.
+    """
+    stats = {"materials": 0, "pixel_filtered": 0, "roughened": 0, "emissive": 0}
+    seen = set()
+    for obj in scene.objects:
+        if obj.type != "MESH":
+            continue
+        # The OBJECT name is where the meaning lives. glTF import leaves
+        # materials called "Material.001" and textures called
+        # "texture_pbr_20250901", so matching on those finds nothing -- but the
+        # objects are named Vital_Monitor_1, Scanner_Arch_Entrance, and so on.
+        object_hint = obj.name.lower()
+        for slot in obj.material_slots:
+            mat = slot.material
+            if mat is None or mat.name in seen or not mat.use_nodes:
+                continue
+            seen.add(mat.name)
+            stats["materials"] += 1
+            nodes = mat.node_tree.nodes
+            links = mat.node_tree.links
+            bsdf = next((n for n in nodes if n.type == "BSDF_PRINCIPLED"), None)
+            if bsdf is None:
+                continue
+
+            tex_nodes = [n for n in nodes if n.type == "TEX_IMAGE" and n.image]
+            for tex in tex_nodes:
+                if max(tex.image.size) <= PIXEL_TEXTURE_MAX:
+                    tex.interpolation = "Closest"
+                    stats["pixel_filtered"] += 1
+
+            # 2. Roughness break-up. Only when nothing already drives roughness,
+            # so an authored roughness map is never overwritten.
+            if not bsdf.inputs["Roughness"].is_linked:
+                base = bsdf.inputs["Roughness"].default_value
+                noise = nodes.new("ShaderNodeTexNoise")
+                noise.location = (bsdf.location.x - 600, bsdf.location.y - 300)
+                noise.inputs["Scale"].default_value = 18.0
+                noise.inputs["Detail"].default_value = 4.0
+                ramp = nodes.new("ShaderNodeMapRange")
+                ramp.location = (bsdf.location.x - 400, bsdf.location.y - 300)
+                ramp.inputs["From Min"].default_value = 0.0
+                ramp.inputs["From Max"].default_value = 1.0
+                # +/-0.12 around the authored value: enough to break a uniform
+                # highlight, small enough that the surface still reads as itself.
+                ramp.inputs["To Min"].default_value = max(0.05, base - 0.12)
+                ramp.inputs["To Max"].default_value = min(1.0, base + 0.12)
+                links.new(noise.outputs["Fac"], ramp.inputs["Value"])
+                links.new(ramp.outputs["Result"], bsdf.inputs["Roughness"])
+                stats["roughened"] += 1
+
+            # 3. Emission for lit surfaces, driven by the material's own texture.
+            haystack = (
+                object_hint + " " + mat.name.lower() + " "
+                + " ".join(t.image.name for t in tex_nodes).lower()
+            )
+            if any(hint in haystack for hint in EMISSIVE_HINTS):
+                if bsdf.inputs["Base Color"].is_linked:
+                    source = bsdf.inputs["Base Color"].links[0].from_socket
+                    links.new(source, bsdf.inputs["Emission Color"])
+                else:
+                    bsdf.inputs["Emission Color"].default_value = bsdf.inputs["Base Color"].default_value
+                # Restrained: these are set dressing, not the key light, and the
+                # glare node downstream will bloom whatever clears threshold 1.0.
+                bsdf.inputs["Emission Strength"].default_value = 2.5
+                stats["emissive"] += 1
+    return stats
+
+
+def build_delivery_compositor(scene: bpy.types.Scene) -> None:
+    """
+    Bloom and chromatic aberration, in Blender, at render time.
+
+    An earlier attempt blacked every frame and was disabled. The diagnosis was
+    wrong: it used a Group Input as the render source, on the belief that
+    Blender 5 had removed CompositorNodeRLayers along with CompositorNodeComposite.
+    Only Composite was removed. RLayers still exists and is still how the render
+    enters the graph -- a Group Input is simply not connected to anything, which
+    is why even a pass-through produced a black frame.
+
+    So: RLayers -> Glare -> Lens Distortion -> Group Output, since the output
+    half of that pair genuinely is a group output now.
+    """
+    tree = bpy.data.node_groups.new("EndingDeliveryComp", "CompositorNodeTree")
+    scene.compositing_node_group = tree
+    tree.nodes.clear()
+    tree.interface.new_socket("Image", in_out="OUTPUT", socket_type="NodeSocketColor")
+
+    render_layers = tree.nodes.new("CompositorNodeRLayers")
+    render_layers.scene = scene
+    render_layers.location = (-400, 0)
+
+    glare = tree.nodes.new("CompositorNodeGlare")
+    # Blender 5 exposes glare settings as INPUT SOCKETS, not node properties, and
+    # Type is a menu of display names ("Fog Glow"), not the old FOG_GLOW enum.
+    glare.inputs["Type"].default_value = "Fog Glow"
+    glare.inputs["Quality"].default_value = "High"
+    # Only genuine highlights bloom. Below 1.0 every lit wall glows and the set
+    # turns to soup -- and these sets are almost entirely emissive practicals.
+    glare.inputs["Threshold"].default_value = 1.0
+    glare.inputs["Strength"].default_value = 0.5
+    glare.inputs["Size"].default_value = 7
+    glare.location = (-150, 0)
+
+    # Chromatic aberration: dispersion only. Distortion stays at 0 so the frame
+    # keeps its straight lines and the lens geometry the optics addendum fixes is
+    # not then warped by the grade. 0.03 is deliberately just-perceptible -- CA
+    # reads as cheap the moment a viewer can name it.
+    lens = tree.nodes.new("CompositorNodeLensdist")
+    lens.inputs["Dispersion"].default_value = 0.03
+    lens.inputs["Distortion"].default_value = 0.0
+    lens.inputs["Fit"].default_value = True
+    lens.location = (100, 0)
+
+    group_out = tree.nodes.new("NodeGroupOutput")
+    group_out.location = (350, 0)
+
+    links = tree.links
+    links.new(render_layers.outputs["Image"], glare.inputs["Image"])
+    links.new(glare.outputs["Image"], lens.inputs["Image"])
+    links.new(lens.outputs["Image"], group_out.inputs["Image"])
+
+
+def _hero_wall(scene) -> str:
+    """
+    Which wall do this set's cameras look at?
+
+    Averages every shot camera's forward vector and returns the compass wall it
+    points into. Averaging rather than taking the first camera: a set with three
+    cameras facing east and one facing west should still put its window east.
+    """
+    import mathutils
+
+    total = mathutils.Vector((0.0, 0.0, 0.0))
+    for obj in scene.objects:
+        if obj.type != "CAMERA" or not obj.name.startswith("CAM_"):
+            continue
+        total += obj.matrix_world.to_quaternion() @ mathutils.Vector((0.0, 0.0, -1.0))
+    if total.length < 1e-6:
+        return "N"
+    if abs(total.y) >= abs(total.x):
+        return "N" if total.y > 0 else "S"
+    return "E" if total.x > 0 else "W"
+
+
+VIEWPORT_WIDTH_FRACTION = 0.46
+VIEWPORT_HEIGHT_FRACTION = 0.40
+VIEWPORT_SILL_FRACTION = 0.55
+
+MAX_OFF_AXIS_DEG = 12.0
+
+
+def _set_bounds_center(scene: bpy.types.Scene):
+    """World-space centre of every renderable mesh in the scene."""
+    import mathutils
+
+    lo = [1e9, 1e9, 1e9]
+    hi = [-1e9, -1e9, -1e9]
+    found = False
+    for obj in scene.objects:
+        if obj.type != "MESH" or obj.hide_render:
+            continue
+        found = True
+        for corner in obj.bound_box:
+            world = obj.matrix_world @ mathutils.Vector(corner)
+            for axis in range(3):
+                lo[axis] = min(lo[axis], world[axis])
+                hi[axis] = max(hi[axis], world[axis])
+    if not found:
+        return None
+    return mathutils.Vector(((lo[0] + hi[0]) / 2, (lo[1] + hi[1]) / 2, (lo[2] + hi[2]) / 2))
+
+
+def camera_off_axis_deg(camera: bpy.types.Object, target) -> float:
+    """
+    Angle between where a camera looks and where the subject actually is.
+
+    Read through the evaluated depsgraph: a TRACK_TO constraint does not touch
+    the object's own matrix_world, so measuring the original datablock reports
+    the pre-constraint rotation and makes a corrected camera look broken.
+    """
+    import mathutils
+
+    depsgraph = bpy.context.evaluated_depsgraph_get()
+    evaluated = camera.evaluated_get(depsgraph)
+    to_target = target - evaluated.matrix_world.translation
+    if to_target.length < 1e-6:
+        return 0.0
+    forward = evaluated.matrix_world.to_quaternion() @ mathutils.Vector((0.0, 0.0, -1.0))
+    return math.degrees(forward.angle(to_target.normalized()))
+
+
+def camera_is_inside_set(camera: bpy.types.Object, scene: bpy.types.Scene) -> bool:
+    """
+    Is the camera standing within the set rather than looking at it?
+
+    A close-up framing one detail from inside the room is not "off axis" in any
+    meaningful sense -- the set centre is behind it, or beside it. Measuring
+    those against the whole-set centre reports nonsense (CAM_MI_03 scored 45
+    degrees while framing exactly what it was meant to).
+    """
+    import mathutils
+
+    lo = [1e9, 1e9, 1e9]
+    hi = [-1e9, -1e9, -1e9]
+    for obj in scene.objects:
+        if obj.type != "MESH" or obj.hide_render:
+            continue
+        for corner in obj.bound_box:
+            world = obj.matrix_world @ mathutils.Vector(corner)
+            for axis in range(3):
+                lo[axis] = min(lo[axis], world[axis])
+                hi[axis] = max(hi[axis], world[axis])
+    loc = camera.matrix_world.translation
+    return all(lo[i] <= loc[i] <= hi[i] for i in range(2))
+
+
+def aim_stray_cameras(scene: bpy.types.Scene, collection: bpy.types.Collection) -> list[str]:
+    """
+    REPORT badly-framed cameras. Does not mutate them -- see below.
+
+    Every shot camera here animates its LOCATION but holds a hand-authored
+    static rotation, so a dolly cannot keep its subject framed -- and several
+    were 20-31 degrees off the set, which on a 28mm lens puts the whole set off
+    the edge of frame. Tracking an aim empty is what this file already asks for
+    in create_camera's own comment ("never keyframe a brittle numeric"), applied
+    to rotation as well as focus.
+
+    An earlier version of this added a TRACK_TO constraint automatically. That
+    was wrong and is reverted: CAM_MI_02 stands OUTSIDE the room and looks along
+    it deliberately, so aiming it at the set centre pointed it into the unlit
+    back of an exterior wall and rendered pure black -- a correctly composed
+    shot made worse by an automated "fix".
+
+    Framing is an art decision. A geometric rule cannot tell a bad angle from a
+    deliberate one, so this now reports and lets validation fail loudly, and a
+    human fixes the blocking.
+    """
+    # Evaluate first: straight after staging, the depsgraph still holds the
+    # pre-staging transforms, so every camera measures as near-zero off-axis and
+    # nothing gets corrected -- while validation, which runs after an update,
+    # then reports the real angles. Measure and validate against the same state.
+    bpy.context.view_layer.update()
+    center = _set_bounds_center(scene)
+    if center is None:
+        return []
+    corrected = []
+    for camera in (o for o in scene.objects if o.type == "CAMERA" and o.name.startswith("CAM_")):
+        if any(c.type == "TRACK_TO" for c in camera.constraints):
+            continue
+        if camera_is_inside_set(camera, scene):
+            continue
+        if camera_off_axis_deg(camera, center) <= MAX_OFF_AXIS_DEG:
+            continue
+        corrected.append(f"{camera.name} ({camera_off_axis_deg(camera, center):.1f} deg)")
+    return corrected
+
+
+# Materials whose name or texture suggests a lit surface. These become real
+# emitters so a monitor reads as a light source rather than a painted panel --
+# the single biggest difference between "game prop in a render" and "set piece".
+EMISSIVE_HINTS = (
+    "monitor", "screen", "display", "console", "terminal", "vital", "scanner",
+    "lamp", "light", "glow", "led", "panel_lit", "hologram", "readout",
+)
+
+# Textures at or below this size are authored pixel art. Blender's default
+# Linear filtering turns them to mush at cinema resolution; Closest keeps the
+# crispness the game art was drawn with.
+PIXEL_TEXTURE_MAX = 256
+
+
+def enhance_imported_materials(scene: bpy.types.Scene) -> dict:
+    """
+    Bring imported game materials up to cinema standard without repainting them.
+
+    glTF import brings the game's textures across intact -- 39 packed images
+    across 15 materials in SET-C -- but every material lands at a flat
+    roughness 0.5 with no emission and no surface variation. That is correct for
+    a game renderer and wrong for a 1080p close-up, where uniform roughness
+    reads as plastic and an unlit monitor reads as a sticker.
+
+    Three passes, all non-destructive to the source art:
+
+    1. Pixel-art textures are switched to Closest filtering, so the game's own
+       texel grid survives instead of being blurred into mush.
+    2. Roughness gets a low-amplitude noise break-up, so highlights vary across
+       a surface the way a real material does.
+    3. Materials that read as lit surfaces get an emission driven by their OWN
+       base colour texture, so a screen emits the image it is showing rather
+       than a flat wash.
+    """
+    stats = {"materials": 0, "pixel_filtered": 0, "roughened": 0, "emissive": 0}
+    seen = set()
+    for obj in scene.objects:
+        if obj.type != "MESH":
+            continue
+        # The OBJECT name is where the meaning lives. glTF import leaves
+        # materials called "Material.001" and textures called
+        # "texture_pbr_20250901", so matching on those finds nothing -- but the
+        # objects are named Vital_Monitor_1, Scanner_Arch_Entrance, and so on.
+        object_hint = obj.name.lower()
+        for slot in obj.material_slots:
+            mat = slot.material
+            if mat is None or mat.name in seen or not mat.use_nodes:
+                continue
+            seen.add(mat.name)
+            stats["materials"] += 1
+            nodes = mat.node_tree.nodes
+            links = mat.node_tree.links
+            bsdf = next((n for n in nodes if n.type == "BSDF_PRINCIPLED"), None)
+            if bsdf is None:
+                continue
+
+            tex_nodes = [n for n in nodes if n.type == "TEX_IMAGE" and n.image]
+            for tex in tex_nodes:
+                if max(tex.image.size) <= PIXEL_TEXTURE_MAX:
+                    tex.interpolation = "Closest"
+                    stats["pixel_filtered"] += 1
+
+            # 2. Roughness break-up. Only when nothing already drives roughness,
+            # so an authored roughness map is never overwritten.
+            if not bsdf.inputs["Roughness"].is_linked:
+                base = bsdf.inputs["Roughness"].default_value
+                noise = nodes.new("ShaderNodeTexNoise")
+                noise.location = (bsdf.location.x - 600, bsdf.location.y - 300)
+                noise.inputs["Scale"].default_value = 18.0
+                noise.inputs["Detail"].default_value = 4.0
+                ramp = nodes.new("ShaderNodeMapRange")
+                ramp.location = (bsdf.location.x - 400, bsdf.location.y - 300)
+                ramp.inputs["From Min"].default_value = 0.0
+                ramp.inputs["From Max"].default_value = 1.0
+                # +/-0.12 around the authored value: enough to break a uniform
+                # highlight, small enough that the surface still reads as itself.
+                ramp.inputs["To Min"].default_value = max(0.05, base - 0.12)
+                ramp.inputs["To Max"].default_value = min(1.0, base + 0.12)
+                links.new(noise.outputs["Fac"], ramp.inputs["Value"])
+                links.new(ramp.outputs["Result"], bsdf.inputs["Roughness"])
+                stats["roughened"] += 1
+
+            # 3. Emission for lit surfaces, driven by the material's own texture.
+            haystack = (
+                object_hint + " " + mat.name.lower() + " "
+                + " ".join(t.image.name for t in tex_nodes).lower()
+            )
+            if any(hint in haystack for hint in EMISSIVE_HINTS):
+                if bsdf.inputs["Base Color"].is_linked:
+                    source = bsdf.inputs["Base Color"].links[0].from_socket
+                    links.new(source, bsdf.inputs["Emission Color"])
+                else:
+                    bsdf.inputs["Emission Color"].default_value = bsdf.inputs["Base Color"].default_value
+                # Restrained: these are set dressing, not the key light, and the
+                # glare node downstream will bloom whatever clears threshold 1.0.
+                bsdf.inputs["Emission Strength"].default_value = 2.5
+                stats["emissive"] += 1
+    return stats
+
+
+MAX_OFF_AXIS_DEG = 12.0
+
+
+def _set_bounds_center(scene: bpy.types.Scene):
+    """World-space centre of every renderable mesh in the scene."""
+    import mathutils
+
+    lo = [1e9, 1e9, 1e9]
+    hi = [-1e9, -1e9, -1e9]
+    found = False
+    for obj in scene.objects:
+        if obj.type != "MESH" or obj.hide_render:
+            continue
+        found = True
+        for corner in obj.bound_box:
+            world = obj.matrix_world @ mathutils.Vector(corner)
+            for axis in range(3):
+                lo[axis] = min(lo[axis], world[axis])
+                hi[axis] = max(hi[axis], world[axis])
+    if not found:
+        return None
+    return mathutils.Vector(((lo[0] + hi[0]) / 2, (lo[1] + hi[1]) / 2, (lo[2] + hi[2]) / 2))
+
+
+def camera_off_axis_deg(camera: bpy.types.Object, target) -> float:
+    """
+    Angle between where a camera looks and where the subject actually is.
+
+    Read through the evaluated depsgraph: a TRACK_TO constraint does not touch
+    the object's own matrix_world, so measuring the original datablock reports
+    the pre-constraint rotation and makes a corrected camera look broken.
+    """
+    import mathutils
+
+    depsgraph = bpy.context.evaluated_depsgraph_get()
+    evaluated = camera.evaluated_get(depsgraph)
+    to_target = target - evaluated.matrix_world.translation
+    if to_target.length < 1e-6:
+        return 0.0
+    forward = evaluated.matrix_world.to_quaternion() @ mathutils.Vector((0.0, 0.0, -1.0))
+    return math.degrees(forward.angle(to_target.normalized()))
+
+
+def camera_is_inside_set(camera: bpy.types.Object, scene: bpy.types.Scene) -> bool:
+    """
+    Is the camera standing within the set rather than looking at it?
+
+    A close-up framing one detail from inside the room is not "off axis" in any
+    meaningful sense -- the set centre is behind it, or beside it. Measuring
+    those against the whole-set centre reports nonsense (CAM_MI_03 scored 45
+    degrees while framing exactly what it was meant to).
+    """
+    import mathutils
+
+    lo = [1e9, 1e9, 1e9]
+    hi = [-1e9, -1e9, -1e9]
+    for obj in scene.objects:
+        if obj.type != "MESH" or obj.hide_render:
+            continue
+        for corner in obj.bound_box:
+            world = obj.matrix_world @ mathutils.Vector(corner)
+            for axis in range(3):
+                lo[axis] = min(lo[axis], world[axis])
+                hi[axis] = max(hi[axis], world[axis])
+    loc = camera.matrix_world.translation
+    return all(lo[i] <= loc[i] <= hi[i] for i in range(2))
+
+
+def aim_stray_cameras(scene: bpy.types.Scene, collection: bpy.types.Collection) -> list[str]:
+    """
+    REPORT badly-framed cameras. Does not mutate them -- see below.
+
+    Every shot camera here animates its LOCATION but holds a hand-authored
+    static rotation, so a dolly cannot keep its subject framed -- and several
+    were 20-31 degrees off the set, which on a 28mm lens puts the whole set off
+    the edge of frame. Tracking an aim empty is what this file already asks for
+    in create_camera's own comment ("never keyframe a brittle numeric"), applied
+    to rotation as well as focus.
+
+    An earlier version of this added a TRACK_TO constraint automatically. That
+    was wrong and is reverted: CAM_MI_02 stands OUTSIDE the room and looks along
+    it deliberately, so aiming it at the set centre pointed it into the unlit
+    back of an exterior wall and rendered pure black -- a correctly composed
+    shot made worse by an automated "fix".
+
+    Framing is an art decision. A geometric rule cannot tell a bad angle from a
+    deliberate one, so this now reports and lets validation fail loudly, and a
+    human fixes the blocking.
+    """
+    # Evaluate first: straight after staging, the depsgraph still holds the
+    # pre-staging transforms, so every camera measures as near-zero off-axis and
+    # nothing gets corrected -- while validation, which runs after an update,
+    # then reports the real angles. Measure and validate against the same state.
+    bpy.context.view_layer.update()
+    center = _set_bounds_center(scene)
+    if center is None:
+        return []
+    corrected = []
+    for camera in (o for o in scene.objects if o.type == "CAMERA" and o.name.startswith("CAM_")):
+        if any(c.type == "TRACK_TO" for c in camera.constraints):
+            continue
+        if camera_is_inside_set(camera, scene):
+            continue
+        if camera_off_axis_deg(camera, center) <= MAX_OFF_AXIS_DEG:
+            continue
+        corrected.append(f"{camera.name} ({camera_off_axis_deg(camera, center):.1f} deg)")
+    return corrected
+
+
+# Materials whose name or texture suggests a lit surface. These become real
+# emitters so a monitor reads as a light source rather than a painted panel --
+# the single biggest difference between "game prop in a render" and "set piece".
+EMISSIVE_HINTS = (
+    "monitor", "screen", "display", "console", "terminal", "vital", "scanner",
+    "lamp", "light", "glow", "led", "panel_lit", "hologram", "readout",
+)
+
+# Textures at or below this size are authored pixel art. Blender's default
+# Linear filtering turns them to mush at cinema resolution; Closest keeps the
+# crispness the game art was drawn with.
+PIXEL_TEXTURE_MAX = 256
+
+
+def enhance_imported_materials(scene: bpy.types.Scene) -> dict:
+    """
+    Bring imported game materials up to cinema standard without repainting them.
+
+    glTF import brings the game's textures across intact -- 39 packed images
+    across 15 materials in SET-C -- but every material lands at a flat
+    roughness 0.5 with no emission and no surface variation. That is correct for
+    a game renderer and wrong for a 1080p close-up, where uniform roughness
+    reads as plastic and an unlit monitor reads as a sticker.
+
+    Three passes, all non-destructive to the source art:
+
+    1. Pixel-art textures are switched to Closest filtering, so the game's own
+       texel grid survives instead of being blurred into mush.
+    2. Roughness gets a low-amplitude noise break-up, so highlights vary across
+       a surface the way a real material does.
+    3. Materials that read as lit surfaces get an emission driven by their OWN
+       base colour texture, so a screen emits the image it is showing rather
+       than a flat wash.
+    """
+    stats = {"materials": 0, "pixel_filtered": 0, "roughened": 0, "emissive": 0}
+    seen = set()
+    for obj in scene.objects:
+        if obj.type != "MESH":
+            continue
+        # The OBJECT name is where the meaning lives. glTF import leaves
+        # materials called "Material.001" and textures called
+        # "texture_pbr_20250901", so matching on those finds nothing -- but the
+        # objects are named Vital_Monitor_1, Scanner_Arch_Entrance, and so on.
+        object_hint = obj.name.lower()
+        for slot in obj.material_slots:
+            mat = slot.material
+            if mat is None or mat.name in seen or not mat.use_nodes:
+                continue
+            seen.add(mat.name)
+            stats["materials"] += 1
+            nodes = mat.node_tree.nodes
+            links = mat.node_tree.links
+            bsdf = next((n for n in nodes if n.type == "BSDF_PRINCIPLED"), None)
+            if bsdf is None:
+                continue
+
+            tex_nodes = [n for n in nodes if n.type == "TEX_IMAGE" and n.image]
+            for tex in tex_nodes:
+                if max(tex.image.size) <= PIXEL_TEXTURE_MAX:
+                    tex.interpolation = "Closest"
+                    stats["pixel_filtered"] += 1
+
+            # 2. Roughness break-up. Only when nothing already drives roughness,
+            # so an authored roughness map is never overwritten.
+            if not bsdf.inputs["Roughness"].is_linked:
+                base = bsdf.inputs["Roughness"].default_value
+                noise = nodes.new("ShaderNodeTexNoise")
+                noise.location = (bsdf.location.x - 600, bsdf.location.y - 300)
+                noise.inputs["Scale"].default_value = 18.0
+                noise.inputs["Detail"].default_value = 4.0
+                ramp = nodes.new("ShaderNodeMapRange")
+                ramp.location = (bsdf.location.x - 400, bsdf.location.y - 300)
+                ramp.inputs["From Min"].default_value = 0.0
+                ramp.inputs["From Max"].default_value = 1.0
+                # +/-0.12 around the authored value: enough to break a uniform
+                # highlight, small enough that the surface still reads as itself.
+                ramp.inputs["To Min"].default_value = max(0.05, base - 0.12)
+                ramp.inputs["To Max"].default_value = min(1.0, base + 0.12)
+                links.new(noise.outputs["Fac"], ramp.inputs["Value"])
+                links.new(ramp.outputs["Result"], bsdf.inputs["Roughness"])
+                stats["roughened"] += 1
+
+            # 3. Emission for lit surfaces, driven by the material's own texture.
+            haystack = (
+                object_hint + " " + mat.name.lower() + " "
+                + " ".join(t.image.name for t in tex_nodes).lower()
+            )
+            if any(hint in haystack for hint in EMISSIVE_HINTS):
+                if bsdf.inputs["Base Color"].is_linked:
+                    source = bsdf.inputs["Base Color"].links[0].from_socket
+                    links.new(source, bsdf.inputs["Emission Color"])
+                else:
+                    bsdf.inputs["Emission Color"].default_value = bsdf.inputs["Base Color"].default_value
+                # Restrained: these are set dressing, not the key light, and the
+                # glare node downstream will bloom whatever clears threshold 1.0.
+                bsdf.inputs["Emission Strength"].default_value = 2.5
+                stats["emissive"] += 1
+    return stats
+
+
+def validate_production_optics(scene: bpy.types.Scene) -> None:
+    """Fail the scene build when a camera drifts from the locked optics."""
+    problems = []
+    if scene.view_settings.view_transform != VIEW_TRANSFORM:
+        problems.append(f"view transform is {scene.view_settings.view_transform!r}")
+    if scene.view_settings.look != VIEW_LOOK:
+        problems.append(f"view look is {scene.view_settings.look!r}")
+    center = _set_bounds_center(scene)
+    for camera in (obj for obj in scene.objects if obj.type == "CAMERA" and obj.name.startswith("CAM_")):
+        # A TRACK_TO camera is aimed by construction, so there is nothing to
+        # check -- and the constraint result is not reliably visible through the
+        # depsgraph during the same build that created it.
+        tracked = any(c.type == "TRACK_TO" for c in camera.constraints)
+        if center is not None and not tracked and not camera_is_inside_set(camera, scene):
+            off_axis = camera_off_axis_deg(camera, center)
+            if off_axis > MAX_OFF_AXIS_DEG:
+                # A warning, not a build failure: "off the set centre" is a
+                # heuristic, and several correct shots are deliberately off it.
+                print(f"[build_ending_scenes] WARNING {camera.name}: {off_axis:.1f} deg off the set centre")
+        expected = aperture_for_lens(camera.data.lens)
+        if not camera.data.dof.use_dof:
+            problems.append(f"{camera.name}: depth of field disabled")
+        if camera.data.dof.focus_object is None:
+            problems.append(f"{camera.name}: missing focus target")
+        if abs(camera.data.dof.aperture_fstop - expected) > 0.001:
+            problems.append(f"{camera.name}: f/{camera.data.dof.aperture_fstop:g}, expected f/{expected:g}")
+        if camera.data.dof.aperture_blades != APERTURE_BLADES:
+            problems.append(f"{camera.name}: {camera.data.dof.aperture_blades} aperture blades")
+        if abs(camera.data.dof.aperture_ratio - 1.0) > 0.001:
+            problems.append(f"{camera.name}: anamorphic aperture ratio {camera.data.dof.aperture_ratio:g}")
+    if problems:
+        raise RuntimeError("Production optics validation failed:\n- " + "\n- ".join(problems))
+    print(f"[build_ending_scenes] optics validated for {sum(o.type == 'CAMERA' for o in scene.objects)} cameras")
 
 
 def create_point_spot_light(
@@ -401,13 +1696,40 @@ def build_set_d_exterior_ice(scene: bpy.types.Scene, root_col: bpy.types.Collect
     if shuttle:
         shuttle.name = "Escape_Shuttle_Hero_Hull"
         shuttle.location = (0, 0, 1.2)
-        shuttle.rotation_euler = (math.radians(12), 0, 0)  # Ascending launch pitch
+        # The gameplay GLB is authored upright and at prop scale for the
+        # top-down overlay. Lay it onto its flight axis and enlarge it into a
+        # four-metre cinematic hero; otherwise it reads as a one-metre beacon.
+        shuttle.rotation_euler = (math.radians(102), 0, 0)
+        shuttle.scale = (4.0, 4.0, 4.0)
 
     cradle = import_asset(cradle_asset, set_col)
     if cradle:
         cradle.name = "Ice_Launch_Cradle"
         cradle.location = (0, 0, -0.4)
         cradle.scale = (2.0, 2.5, 0.8)
+
+    # The launch site is on the bunker planet, not an abstract studio plane.
+    # Restyled Kenney modules preserve their grid sockets but now carry the
+    # game's cryo/industrial palette. Cave masses establish a broken perimeter;
+    # space rooms and gates make the surviving outpost readable as architecture.
+    planet_modules = (
+        ("public/3d/runtime/kits/modular-space-kit/room-large-variation.glb", "Bunker_Admin_Ruin", (16.0, 24.0, 0.0), 0, 0.35),
+        ("public/3d/runtime/kits/modular-space-kit/room-small.glb", "Bunker_Service_Block", (-16.0, 22.0, 0.0), 18, 0.45),
+        ("public/3d/runtime/kits/modular-space-kit/gate-door-window.glb", "Bunker_Launch_Gate", (7.0, 14.0, 0.0), 90, 0.65),
+        ("public/3d/runtime/kits/modular-cave-kit/room-large-variation.glb", "Cryo_Ridge_West", (-20.0, 16.0, -0.5), 35, 0.38),
+        ("public/3d/runtime/kits/modular-cave-kit/room-wide-variation.glb", "Cryo_Ridge_East", (20.0, 15.0, -0.5), -28, 0.38),
+        ("public/3d/runtime/kits/modular-cave-kit/gate-overhang.glb", "Cryo_Gothic_Overhang", (-9.0, 13.0, -0.2), 12, 0.90),
+        ("public/3d/runtime/kits/modular-cave-kit/stairs-wide.glb", "Cryo_Access_Stairs", (9.0, 12.0, -0.25), 180, 0.40),
+    )
+    planet_dressing = []
+    for asset_path, object_name, location, yaw, uniform_scale in planet_modules:
+        module = import_asset(asset_path, set_col)
+        if module:
+            module.name = object_name
+            module.location = location
+            module.rotation_euler = (0, 0, math.radians(yaw))
+            module.scale = (uniform_scale,) * 3
+            planet_dressing.append(module)
 
     # 3 Beacon Spires along the chasm rims
     beacon_locs = [(-6.5, 8.0, 2.0), (6.5, 5.0, 1.8), (-7.2, -4.0, 3.2)]
@@ -419,10 +1741,24 @@ def build_set_d_exterior_ice(scene: bpy.types.Scene, root_col: bpy.types.Collect
             spire.scale = (1.2, 1.2, 2.0)
 
     # Lighting: Abyssal blue exterior key + engine flare + beacon pulses
-    create_point_spot_light("Light_Exterior_MoonKey", (0.45, 0.65, 0.95, 1.0), 2500.0, (-15.0, -12.0, 22.0), (math.radians(40), math.radians(-35), 0), True, 45.0, set_col)
-    create_point_spot_light("Light_Shuttle_Engine_Plume", (0.2, 0.7, 1.0, 1.0), 3200.0, (0, -2.5, 0.8), (math.radians(-90), 0, 0), True, 65.0, set_col)
+    moon = create_point_spot_light("Light_Exterior_MoonKey", (0.45, 0.65, 0.95, 1.0), 4200.0, (-15.0, -12.0, 22.0), is_spot=True, spot_size_deg=58.0, collection=set_col)
+    aim_object_at(moon, (0.0, 0.0, 1.2))
+    plume = create_point_spot_light("Light_Shuttle_Engine_Plume", (0.2, 0.7, 1.0, 1.0), 3600.0, (0, -3.5, 1.5), is_spot=True, spot_size_deg=72.0, collection=set_col)
+    aim_object_at(plume, (0.0, 0.0, 1.2))
+    # Broad, low-energy sky fill keeps the hull readable without flattening the
+    # moon-key silhouette. Area lights are stable across both near and orbital
+    # wides, unlike a narrowly aimed practical.
+    fill_data = bpy.data.lights.new("Light_Exterior_SkyFill", type="AREA")
+    fill_data.color = (0.16, 0.30, 0.62)
+    fill_data.energy = 850.0
+    fill_data.shape = "DISK"
+    fill_data.size = 10.0
+    fill = bpy.data.objects.new("Light_Exterior_SkyFill", fill_data)
+    fill.location = (7.0, -4.0, 12.0)
+    set_col.objects.link(fill)
+    aim_object_at(fill, (0.0, 0.0, 1.0))
 
-    return {"collection": set_col, "shuttle": shuttle}
+    return {"collection": set_col, "shuttle": shuttle, "planet_dressing": planet_dressing}
 
 
 def setup_scene_mothership_infection(root_col: bpy.types.Collection) -> list[bpy.types.Object]:
@@ -479,14 +1815,60 @@ def setup_scene_mothership_infection(root_col: bpy.types.Collection) -> list[bpy
     cam2.keyframe_insert("location", frame=43)
     cam2.location = (-3.8, 2.8, 1.1)
     cam2.keyframe_insert("location", frame=78)
+    cam2.location = (-3.0, -1.0, 1.55)
+    cam2.keyframe_insert("location", frame=43)
+    cam2.keyframe_insert("location", frame=78)
+    aim_object_at(cam2, (0.0, -0.45, 1.15))
 
     # MI-03: 85mm collar close-up, shallow focus (frames 79-132)
+    # The operator (Ch48) stands at (0, 1.0, 0) and reaches z=1.60, so the
+    # collar this shot is named for sits at roughly z=1.40.
+    #
+    # As authored this camera sat 0.36m from the character with a 10 degree yaw,
+    # which on an 85mm lens put the subject entirely outside the frame -- 13
+    # objects in front of the camera, zero in frame, so it rendered black. It is
+    # now placed a little over a metre out, level with the collar, looking
+    # straight down +Y at it.
+    #
+    # Blender cameras look down -Z, so rotation X=90deg looks along +Y; 87deg
+    # adds the slight downward tilt onto the collar. No yaw: the subject is
+    # dead ahead and this is a locked close-up.
+    # The operator was standing in total darkness. Every existing spot points at
+    # the bed row at x=-2.2; nothing lit the character at (0, 1.0), so CAM_MI_03
+    # traced real geometry for 65 seconds and produced a black frame. This is
+    # the key/rim layer the framing spec calls for, added where it was missing.
+    operator_collar = (0.0, 1.0, 1.40)
+
+    # Key: clinical white from camera-left and above, the practical motivation
+    # being the surgical lighting already in this room.
+    op_key = create_point_spot_light(
+        "Light_Operator_Key", (0.92, 0.96, 1.0, 1.0), 140.0,
+        (-1.3, 0.1, 2.35), (0, 0, 0), True, 48.0, scene_col
+    )
+    aim_object_at(op_key, operator_collar)
+
+    # Derive the rim from its key so distance, energy and opposing temperature
+    # remain coherent when the key is moved or retinted.
+    add_separation_rim(
+        bpy, "Light_Operator_Rim", operator_collar, op_key, scene_col,
+    )
+
     cam3 = create_camera("CAM_MI_03", 85.0, 1.4, scene_col)
-    cam3.location = (-0.2, 0.4, 1.55)
-    cam3.rotation_euler = (math.radians(85), 0, math.radians(10))
+    cam3.location = (0.05, -0.20, 1.46)
+    cam3.rotation_euler = (math.radians(87), 0, 0)
     cam3.keyframe_insert("location", frame=79)
-    cam3.location = (0.0, 1.4, 1.58)
+    # Slow push in -- 0.25m over 53 frames. At 85mm and ~1.2m the depth of field
+    # is shallow, so the focus empty riding the camera keeps the collar sharp
+    # through the move.
+    cam3.location = (0.05, 0.05, 1.43)
     cam3.keyframe_insert("location", frame=132)
+    # create_camera parks the focus empty 5m ahead, which is the right default
+    # for a wide. On an 85mm close-up with the subject at ~1.2m that puts the
+    # focus plane four metres past the collar and the shot renders as an
+    # abstract blur. Pull it onto the subject.
+    focus_mi3 = bpy.data.objects.get("FOCUS_MI_03")
+    if focus_mi3:
+        focus_mi3.location = (0.0, 0.0, -1.2)
 
     # MI-04: 35mm locked deep composition with slow pullback (frames 133-180)
     cam4 = create_camera("CAM_MI_04", 35.0, 2.4, scene_col)
@@ -495,6 +1877,10 @@ def setup_scene_mothership_infection(root_col: bpy.types.Collection) -> list[bpy
     cam4.keyframe_insert("location", frame=133)
     cam4.location = (0, -0.6, 1.5)
     cam4.keyframe_insert("location", frame=180)
+    cam4.location = (2.0, -1.0, 1.8)
+    cam4.keyframe_insert("location", frame=133)
+    cam4.keyframe_insert("location", frame=180)
+    aim_object_at(cam4, (0.0, 2.7, 1.15))
 
     return [cam1, cam2, cam3, cam4]
 
@@ -542,6 +1928,7 @@ def setup_scene_alien_exodus(root_col: bpy.types.Collection) -> list[bpy.types.O
     cam1.keyframe_insert("location", frame=0)
     cam1.location = (-5.5, -6.5, 6.2)
     cam1.keyframe_insert("location", frame=44)
+    aim_object_at(cam1, (0.0, 0.0, 4.0))
 
     # AE-02: 40mm cabin aisle dolly forward (frames 45-96)
     cam2 = create_camera("CAM_AE_02", 40.0, 1.8, scene_col)
@@ -558,6 +1945,23 @@ def setup_scene_alien_exodus(root_col: bpy.types.Collection) -> list[bpy.types.O
     cam3.keyframe_insert("location", frame=97)
     cam3.location = (-0.25, 0.85, 1.18)
     cam3.keyframe_insert("location", frame=140)
+    # The original camera was 20 cm from Nahl and looking across the empty
+    # aisle. Give the 70 mm portrait enough working distance for face + hand.
+    cam3.data.lens = 55.0
+    cam3.data.dof.aperture_fstop = aperture_for_lens(cam3.data.lens)
+    cam3.location = (-0.85, -1.2, 2.2)
+    cam3.keyframe_insert("location", frame=97)
+    cam3.keyframe_insert("location", frame=140)
+    aim_object_at(cam3, (-0.85, 0.6, 1.35))
+    nahl_key = create_point_spot_light(
+        "Light_Nahl_Profile_Key", (0.25, 0.75, 1.0, 1.0), 360.0,
+        (-0.2, -0.4, 2.2), is_spot=True, spot_size_deg=58.0, collection=scene_col,
+    )
+    aim_object_at(nahl_key, (-0.85, 0.6, 1.1))
+    add_separation_rim(
+        bpy, "Light_Nahl_Profile_Rim", (-0.85, 0.6, 1.1), nahl_key, scene_col,
+        spot_size_deg=48.0,
+    )
 
     # AE-04: 24mm exterior rear wide slow pull (frames 141-192)
     cam4 = create_camera("CAM_AE_04", 24.0, 2.8, scene_col)
@@ -566,6 +1970,7 @@ def setup_scene_alien_exodus(root_col: bpy.types.Collection) -> list[bpy.types.O
     cam4.keyframe_insert("location", frame=141)
     cam4.location = (0, -18.0, 5.5)
     cam4.keyframe_insert("location", frame=192)
+    aim_object_at(cam4, (0.0, 0.0, 16.0))
 
     return [cam1, cam2, cam3, cam4]
 
@@ -604,7 +2009,25 @@ def setup_scene_outed_escape(root_col: bpy.types.Collection) -> list[bpy.types.O
         c3.rotation_euler = (0, 0, math.radians(180))
 
     # Sweeping Red Quarantine Beacon
-    create_point_spot_light("Light_Quarantine_Sweep_Beacon", (1.0, 0.08, 0.02, 1.0), 550.0, (0, 1.45, 2.4), (math.radians(65), 0, 0), True, 35.0, scene_col)
+    quarantine_key = create_point_spot_light("Light_Quarantine_Sweep_Beacon", (1.0, 0.08, 0.02, 1.0), 550.0, (0, 1.45, 2.4), (math.radians(65), 0, 0), True, 35.0, scene_col)
+
+    # Separation rim. This scene has the fewest lights of the five and every one
+    # of its four cameras sits about a metre from its subject, so a figure here
+    # merges into a dark wall -- the exact failure the framing spec's third
+    # lighting layer exists to prevent, and the layer that existed on only one
+    # subject in the whole project.
+    #
+    # Derived from the quarantine beacon rather than hand-placed: the rim sits
+    # 140 degrees around the subject at the beacon's own distance, at 45% of its
+    # energy, and opposes its temperature -- that beacon is hard red, so the rim
+    # comes back cool. Re-tint the beacon and the rim follows.
+    add_separation_rim(
+        bpy,
+        "Light_Quarantine_Rim",
+        (0.0, 1.0, 1.35),
+        quarantine_key,
+        scene_col,
+    )
 
     # Cameras
     # OE-01: 35mm symmetrical cabin master (frames 0-40)
@@ -615,12 +2038,21 @@ def setup_scene_outed_escape(root_col: bpy.types.Collection) -> list[bpy.types.O
     # OE-02: 55mm passenger-side medium on lock dogs (frames 41-80)
     cam2 = create_camera("CAM_OE_02", 55.0, 1.8, scene_col)
     cam2.location = (0.55, 0.2, 1.1)
-    cam2.rotation_euler = (math.radians(82), 0, math.radians(-35))
+    aim_object_at(cam2, (0.0, 1.45, 1.0))
 
     # OE-03: 65mm operator profile through scratched partition (frames 81-122)
     cam3 = create_camera("CAM_OE_03", 65.0, 1.4, scene_col)
     cam3.location = (-0.6, 1.1, 1.35)
-    cam3.rotation_euler = (math.radians(86), 0, math.radians(15))
+    cam3.data.lens = 50.0
+    cam3.data.dof.aperture_fstop = aperture_for_lens(cam3.data.lens)
+    cam3.location = (1.5, 0.0, 1.5)
+    aim_object_at(cam3, (-0.3, 2.55, 1.15))
+
+    tribunal_key = create_point_spot_light(
+        "Light_Tribunal_Cold_Key", (0.35, 0.58, 1.0, 1.0), 380.0,
+        (1.2, 0.4, 2.4), is_spot=True, spot_size_deg=62.0, collection=scene_col,
+    )
+    aim_object_at(tribunal_key, (-0.3, 1.8, 1.0))
 
     # OE-04: 40mm two-plane locked shot (frames 123-168)
     cam4 = create_camera("CAM_OE_04", 40.0, 2.0, scene_col)
@@ -660,8 +2092,14 @@ def setup_scene_failed_carrier(root_col: bpy.types.Collection) -> list[bpy.types
     # Cameras
     # FC-01: 50mm low macro-to-medium reveal (frames 0-38)
     cam1 = create_camera("CAM_FC_01", 50.0, 1.4, scene_col)
-    cam1.location = (-0.6, 0.95, 1.25)
-    cam1.rotation_euler = (math.radians(75), 0, math.radians(-65))
+    cam1.location = (-2.35, -0.35, 1.35)
+    aim_object_at(cam1, (-0.8, 1.1, 0.9))
+
+    pipe_key = create_point_spot_light(
+        "Light_Pipe_Rupture_Key", (0.55, 0.82, 1.0, 1.0), 520.0,
+        (-2.2, -0.4, 2.7), is_spot=True, spot_size_deg=52.0, collection=scene_col,
+    )
+    aim_object_at(pipe_key, (-0.8, 1.1, 0.9))
 
     # FC-02: 35mm cramped handheld push (frames 39-84)
     cam2 = create_camera("CAM_FC_02", 35.0, 1.8, scene_col)
@@ -675,8 +2113,17 @@ def setup_scene_failed_carrier(root_col: bpy.types.Collection) -> list[bpy.types
 
     # FC-04: 28mm cargo master with increasing shake (frames 123-168)
     cam4 = create_camera("CAM_FC_04", 28.0, 2.0, scene_col)
-    cam4.location = (-0.7, -1.1, 1.4)
-    cam4.rotation_euler = (math.radians(78), 0, math.radians(40))
+    cam4.location = (2.0, -2.0, 1.8)
+    aim_object_at(cam4, (0.65, 1.05, 0.85))
+    cargo_master_key = create_point_spot_light(
+        "Light_Cargo_Master_Key", (0.18, 0.68, 1.0, 1.0), 480.0,
+        (2.2, -1.0, 2.8), is_spot=True, spot_size_deg=72.0, collection=scene_col,
+    )
+    aim_object_at(cargo_master_key, (0.65, 1.05, 0.85))
+    add_separation_rim(
+        bpy, "Light_Cargo_Operator_Rim", (0.4, 0.4, 1.15),
+        cargo_master_key, scene_col, spot_size_deg=52.0,
+    )
 
     return [cam1, cam2, cam3, cam4]
 
@@ -722,18 +2169,39 @@ def setup_scene_empty_husk(root_col: bpy.types.Collection) -> list[bpy.types.Obj
     cam2.keyframe_insert("location", frame=47)
     cam2.location = (1.4, -0.1, 0.95)
     cam2.keyframe_insert("location", frame=84)
+    # Lock the midpoint on the first abandoned token; the lateral move then
+    # lets the other empty seats wipe through focus instead of seeing a wall.
+    scene = bpy.context.scene
+    scene.frame_set(66)
+    cam2.data.lens = 55.0
+    cam2.location = (-0.85, 0.6, 2.5)
+    cam2.keyframe_insert("location", frame=47)
+    cam2.keyframe_insert("location", frame=84)
+    aim_object_at(cam2, (-0.85, 0.6, 0.55))
+    token_key = create_point_spot_light(
+        "Light_Abandoned_Tokens", (1.0, 0.48, 0.16, 1.0), 620.0,
+        (-0.5, -0.2, 1.8), is_spot=True, spot_size_deg=55.0, collection=scene_col,
+    )
+    aim_object_at(token_key, (-0.6, 0.35, 0.55))
+    add_separation_rim(
+        bpy, "Light_Abandoned_Tokens_Rim", (-0.6, 0.35, 0.55),
+        token_key, scene_col, spot_size_deg=48.0,
+    )
 
     # EH-03: 28mm exterior launch wide, silent beacons (frames 85-126)
     cam3 = create_camera("CAM_EH_03", 28.0, 2.8, scene_col)
     cam3.location = (-10.0, -12.0, 3.5)
-    cam3.rotation_euler = (math.radians(75), 0, math.radians(-42))
+    aim_object_at(cam3, (0.0, 0.0, 5.5))
 
     # EH-04: extreme orbital wide, almost static negative space (frames 127-180)
-    cam4 = create_camera("CAM_EH_04", 24.0, 4.0, scene_col)
+    cam4 = create_camera("CAM_EH_04", 35.0, 5.6, scene_col)
     cam4.location = (0, -28.0, 14.0)
-    cam4.rotation_euler = (math.radians(65), 0, 0)
+    aim_object_at(cam4, (0.0, 1.5, 19.0))
 
     return [cam1, cam2, cam3, cam4]
+
+
+FX_ENABLE_BOIDS = False
 
 
 def build_ending_scene(ending_name: str, output_path: Path) -> None:
@@ -741,26 +2209,54 @@ def build_ending_scene(ending_name: str, output_path: Path) -> None:
     bpy.ops.wm.read_factory_settings(use_empty=True)
     scene = bpy.context.scene
     setup_cycles_and_color_management(scene)
-    setup_world_atmosphere(scene)
+    # alien_exodus and empty_husk both stage SET-D, the exterior ice shelf, so
+    # their sky is actually visible and should be space. The interior sets keep
+    # the bounce gradient, where a starfield would be a window onto nothing.
+    exterior = ending_name in ("alien_exodus", "empty_husk", "all")
+    # The game sky is now the world for EVERY scene, not just the two that look
+    # at it directly. Interiors were falling back to a flat procedural gradient,
+    # so the same ending could carry two different skies depending on which shot
+    # you were watching -- and interior metal and ice picked up a grey wash
+    # instead of the violet/cyan the palette is built on.
+    #
+    # A sealed interior shell occludes most of it by design, which is correct:
+    # the HDRI's job indoors is the coloured light that reaches openings and
+    # reflective surfaces, not to shine through walls. Strength is what
+    # separates the two cases, not which sky is used.
+    setup_world_atmosphere(
+        scene, space_sky=True,
+        # The transferred sky contains 1.8x scene-linear peaks. Keep those HDR
+        # highlights for reflections while exposing the world as deep night;
+        # the moon and engine rigs remain the readable subject keys.
+        # Exteriors see the sky directly and would blow out at interior levels.
+        # Interiors are mostly occluded by their shell, so they need more gain to
+        # land the same amount of coloured light on what little reaches them.
+        # Interiors are sealed by their shell, so the world only reaches them
+        # through openings and reflections -- it needs far more gain than an
+        # exterior to land the same amount of light. 0.55 measured too dark in
+        # a test render; the sealed shell eats most of it.
+        world_strength=0.18 if exterior else 1.8,
+    )
 
     root_col = bpy.context.scene.collection
 
-    # 1. Build Reusable Sets needed. Each builder links its own collection into
-    # root_col, so it is called for that side effect; the handle dict it returns
-    # is not read here.
+    # 1. Build reusable sets and retain their collection identity. Mixed
+    # interior/exterior scenes need a cabin shell around SET-A and ground-only
+    # around SET-D; a scene-wide exterior boolean cannot represent that.
+    built_sets = []
     if ending_name in ["mothership_infection"]:
-        build_set_c_medical_dock(scene, root_col)
+        built_sets.append((build_set_c_medical_dock(scene, root_col), False))
     elif ending_name in ["alien_exodus"]:
-        build_set_a_cabin(scene, root_col)
-        build_set_d_exterior_ice(scene, root_col)
+        built_sets.append((build_set_a_cabin(scene, root_col), False))
+        built_sets.append((build_set_d_exterior_ice(scene, root_col), True))
     elif ending_name in ["outed_escape"]:
-        build_set_a_cabin(scene, root_col)
+        built_sets.append((build_set_a_cabin(scene, root_col), False))
     elif ending_name in ["failed_carrier"]:
-        build_set_b_cargo_four(scene, root_col)
-        build_set_a_cabin(scene, root_col)
+        built_sets.append((build_set_b_cargo_four(scene, root_col), False))
+        built_sets.append((build_set_a_cabin(scene, root_col), False))
     elif ending_name in ["empty_husk"]:
-        build_set_a_cabin(scene, root_col)
-        build_set_d_exterior_ice(scene, root_col)
+        built_sets.append((build_set_a_cabin(scene, root_col), False))
+        built_sets.append((build_set_d_exterior_ice(scene, root_col), True))
     elif ending_name == "all":
         build_set_a_cabin(scene, root_col)
         build_set_b_cargo_four(scene, root_col)
@@ -788,6 +2284,187 @@ def build_ending_scene(ending_name: str, output_path: Path) -> None:
 
     if cams:
         scene.camera = cams[0]
+
+    # Report framing for an art pass. Deliberately does not mutate cameras.
+    shell_count = 0
+    shell_objects_by_set = {}
+    for handle, is_exterior_set in built_sets:
+        source = handle["collection"]
+        # SET-B is the physical room for Failed Carrier; SET-A supplies the
+        # passenger-side dressing beyond its hatch. A second co-located closed
+        # shell produces coplanar walls and black occluders, not a second room.
+        if ending_name == "failed_carrier" and source.name == "SET_A_Cabin":
+            continue
+        shell_col = bpy.data.collections.new(f"SHELL_{source.name}")
+        root_col.children.link(shell_col)
+        shell_names = build_room_shell(
+            scene, shell_col, exterior=is_exterior_set,
+            source_collection=source, name_prefix=f"Shell_{source.name}"
+        )
+        shell_count += len(shell_names)
+        shell_objects_by_set[source.name] = [bpy.data.objects[name] for name in shell_names]
+    if shell_count:
+        print(f"[build_ending_scenes] per-set shell: {shell_count} surfaces")
+
+    # Air and motion. Every scene had ZERO particle systems, and characters sat
+    # on a Mixamo action with nothing layered on top -- which is most of why
+    # these read as a clean Blender turntable rather than the game's key art.
+    #
+    # Mote colour follows each set's own palette rather than one generic dust,
+    # so the particulate reinforces the scene instead of greying it out.
+    fx_palette = {
+        "mothership_infection": ((0.30, 1.00, 0.45), True),   # infection green, with a swarm
+        "alien_exodus": ((0.45, 0.85, 1.00), True),           # cold exhaust blue
+        "outed_escape": ((1.00, 0.35, 0.18), False),          # quarantine ember
+        "failed_carrier": ((0.85, 1.00, 0.40), True),         # spore spill
+        "empty_husk": ((0.70, 0.78, 0.95), False),            # dead ice dust
+    }
+    fx_color, fx_swarm = fx_palette.get(ending_name, ((0.6, 0.8, 1.0), False))
+    fx_center = (0.0, 1.5, 1.6)
+    fx_size = (14.0, 18.0, 6.0) if exterior else (9.0, 12.0, 4.0)
+    add_drift_motes(
+        bpy, f"FX_Motes_{ending_name}", root_col,
+        center=fx_center, size=fx_size,
+        count=1200 if exterior else 800,
+        color=fx_color, frame_end=scene.frame_end, seed=7,
+    )
+    # Boids are DISABLED for rendering, and this is a measured decision rather
+    # than a taste one.
+    #
+    # A boid system is simulated forward from frame 1 on every render
+    # invocation, so its cost scales with a shot's START frame, not its length.
+    # MI-01 (frames 0-42) rendered fine twice; MI-02 (43-78) failed twice at the
+    # same place, and later shots start later still. Single frames render in
+    # ~9s; the same frames as a range timed out past 400s.
+    #
+    # Drift motes stay: they are Newtonian, cheap, and carry most of the visual
+    # benefit. The flock was the expensive third of the effect for a fraction of
+    # the read.
+    #
+    # Re-enable by baking the simulation into the .blend so it is solved once
+    # rather than per invocation -- that is the real fix, and it is a separate
+    # piece of work.
+    if fx_swarm and FX_ENABLE_BOIDS:
+        # Boids only where something is alive in the air. A flock in the dead
+        # husk would contradict that ending's whole point.
+        add_boid_swarm(
+            bpy, f"FX_Swarm_{ending_name}", root_col,
+            center=(fx_center[0], fx_center[1] + 2.0, fx_center[2] + 0.6),
+            size=(6.0, 7.0, 3.0), count=320,
+            color=fx_color, frame_end=scene.frame_end, seed=11,
+        )
+
+    motion_keys = 0
+    for armature in (o for o in scene.objects if o.type == "ARMATURE"):
+        motion_keys += add_secondary_motion(
+            armature, scene.frame_start, scene.frame_end, seed=hash(armature.name) & 0xFFFF
+        )
+    print(f"[build_ending_scenes] fx: motes + {'swarm' if fx_swarm else 'no swarm'}, {motion_keys} motion keys")
+
+    # Camera dynamics. Authored cameras translate but are rotationally frozen,
+    # so a shot reads as a slide. Drift adds the hand on the camera; the rack
+    # gives the shot a focal narrative instead of one held depth.
+    #
+    # Rack range is derived from the lens: a long lens is already shallow and
+    # only needs a small pull, while a wide needs a big one to be visible at
+    # all. Racking every shot by a fixed metre would be invisible on the 85mm
+    # and absurd on the 24mm.
+    camera_keys = 0
+    for camera in (o for o in scene.objects if o.type == "CAMERA" and o.name.startswith("CAM_")):
+        focus = None
+        focus_name = camera.get("focus_target")
+        if focus_name:
+            focus = bpy.data.objects.get(focus_name)
+        lens = camera.data.lens
+        near = max(0.6, lens / 55.0)
+        rack = (near, near * (2.4 if lens < 45 else 1.5))
+        camera_keys += animate_camera_dynamics(
+            camera, scene.frame_start, scene.frame_end,
+            seed=hash(camera.name) & 0xFFFF, focus_object=focus, rack=rack,
+        )
+    print(f"[build_ending_scenes] camera: {camera_keys} drift/rack keys")
+
+    # Mixed endings cut between two locations built at the same origin.  Hide
+    # the alternate location, its shell and the interior cast on each shot.
+    # Without this, an exterior camera either sees a cabin wall as a solid black
+    # rectangle or puts seated passengers inexplicably on the ice shelf.
+    visibility = {
+        "alien_exodus": ((45, 140), [(0, 44), (141, 192)], "SEQ_02_Alien_Exodus"),
+        "empty_husk": ((0, 84), [(85, 180)], "SEQ_05_Empty_Husk"),
+    }
+    if ending_name in visibility:
+        interior_range, exterior_ranges, sequence_name = visibility[ending_name]
+        handles = {handle["collection"].name: handle for handle, _ in built_sets}
+        cabin_objects = list(handles["SET_A_Cabin"]["collection"].all_objects)
+        cabin_objects += shell_objects_by_set.get("SET_A_Cabin", [])
+        exterior_objects = list(handles["SET_D_ExteriorIce"]["collection"].all_objects)
+        exterior_objects += shell_objects_by_set.get("SET_D_ExteriorIce", [])
+        key_render_visibility(cabin_objects, [interior_range])
+        key_render_visibility(exterior_objects, exterior_ranges)
+        sequence_col = bpy.data.collections.get(sequence_name)
+        if sequence_col:
+            interior_stage_objects = [
+                obj for obj in sequence_col.all_objects if obj.type in {"MESH", "LIGHT"}
+            ]
+            key_render_visibility(interior_stage_objects, [interior_range])
+
+        shuttle = handles["SET_D_ExteriorIce"].get("shuttle")
+        if shuttle:
+            launch_keys = {
+                "alien_exodus": ((0, 1.2), (44, 7.0), (141, 8.0), (192, 25.0)),
+                "empty_husk": ((85, 1.2), (126, 10.0), (127, 14.0), (180, 25.0)),
+            }[ending_name]
+            for frame, height in launch_keys:
+                shuttle.location.z = height
+                shuttle.keyframe_insert(data_path="location", frame=frame)
+
+            # A restrained cabin/engine bounce travels with the ascending hull.
+            # Static launch-pad spots correctly fall away as it climbs, but the
+            # ship must retain one readable edge against the black sky.
+            hero_glow = create_point_spot_light(
+                "Light_Shuttle_Traveling_Glow", (0.18, 0.55, 1.0, 1.0), 900.0,
+                (2.0, -2.0, 3.2), is_spot=False,
+                collection=handles["SET_D_ExteriorIce"]["collection"],
+            )
+            key_render_visibility([hero_glow], exterior_ranges)
+            for frame, height in launch_keys:
+                hero_glow.location.z = height + 2.0
+                hero_glow.keyframe_insert(data_path="location", frame=frame)
+
+            # Compose from the actual animated midpoint, not from the camera's
+            # last keyed location. The rotation remains locked afterward, which
+            # preserves EH-03's deliberate refusal to follow the departing ship.
+            exterior_cameras = (cams[0], cams[3]) if ending_name == "alien_exodus" else (cams[2], cams[3])
+            for camera in exterior_cameras:
+                # New bunker-planet architecture can sit nearer than the ship;
+                # focus the story subject, not whichever skyline module happens
+                # to win a nearest-bounds query in this camera.
+                camera.data.dof.focus_object = shuttle
+                shot_index = int(camera.name.rsplit("_", 1)[1]) - 1
+                midpoint = SHOT_MID_FRAMES[camera.name.split("_")[1]][shot_index]
+                scene.frame_set(midpoint)
+                bpy.context.view_layer.update()
+                target = shuttle.evaluated_get(bpy.context.evaluated_depsgraph_get()).matrix_world.translation
+                aim_object_at(camera, target)
+
+    material_stats = enhance_imported_materials(scene)
+    print(
+        f"[build_ending_scenes] materials: {material_stats['materials']} seen, "
+        f"{material_stats['pixel_filtered']} pixel-filtered, "
+        f"{material_stats['roughened']} roughness-varied, "
+        f"{material_stats['emissive']} made emissive"
+    )
+    build_delivery_compositor(scene)
+    corrected = aim_stray_cameras(scene, root_col)
+    if corrected:
+        print(f"[build_ending_scenes] FRAMING REVIEW needed for {len(corrected)} camera(s): {', '.join(corrected)}")
+    bpy.context.view_layer.update()
+
+    for camera in cams:
+        distance = set_camera_focus_from_frame(scene, camera)
+        print(f"[build_ending_scenes] {camera.name} focus: {distance if distance else 'manual'}")
+
+    validate_production_optics(scene)
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
     bpy.ops.wm.save_as_mainfile(filepath=str(output_path.resolve()))

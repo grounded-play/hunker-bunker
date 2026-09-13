@@ -1,0 +1,37 @@
+{
+  "version": 1,
+  "fps": 24,
+  "scenes": {
+    "mothership_infection": { "frames": 180, "cues": [
+      { "id": "MI_AMB_ROOM", "stem": "AMB", "frame": 1, "channel": 10, "path": "public/audio/foley/mothership/foley_mothership_room_loop.wav", "gain": 0.22 },
+      { "id": "MI_SCAN_PASS", "stem": "SYNC", "frame": 18, "channel": 40, "path": "public/audio/foley/system/foley_exosuit_scanner_anomaly.wav", "gain": 0.55 },
+      { "id": "MI_VEIN_PULSE", "stem": "BIO", "frame": 104, "channel": 30, "path": "public/audio/foley/queen/foley_queen_neural_bond.wav", "gain": 0.48 },
+      { "id": "MI_AIRLOCK", "stem": "MECH", "frame": 145, "channel": 20, "path": "public/audio/cc0-derived/mechanisms/door_lock_body_01.ogg", "gain": 0.65 }
+    ]},
+    "alien_exodus": { "frames": 192, "cues": [
+      { "id": "AE_ENGINE", "stem": "AMB", "frame": 1, "channel": 10, "path": "public/audio/cc0-derived/engines/ship_engine_low_01.ogg", "gain": 0.38 },
+      { "id": "AE_IGNITION", "stem": "SYNC", "frame": 20, "channel": 40, "path": "public/audio/foley/mothership/foley_mothership_orbital_launch.wav", "gain": 0.68 },
+      { "id": "AE_HULL_SONG", "stem": "BIO", "frame": 112, "channel": 30, "path": "public/audio/foley/mothership/foley_mothership_link_acquire_1.wav", "gain": 0.45 },
+      { "id": "AE_SIGNAL_BREAK", "stem": "SYNC", "frame": 166, "channel": 41, "path": "public/audio/foley/system/foley_exosuit_sever_uplink.wav", "gain": 0.52 }
+    ]},
+    "outed_escape": { "frames": 168, "cues": [
+      { "id": "OE_AMB_ROOM", "stem": "AMB", "frame": 1, "channel": 10, "path": "public/audio/foley/system/foley_exosuit_room_loop.wav", "gain": 0.18 },
+      { "id": "OE_PARTITION", "stem": "MECH", "frame": 52, "channel": 20, "path": "public/audio/cc0-derived/mechanisms/door_lock_body_02.ogg", "gain": 0.64 },
+      { "id": "OE_LOCK_DOG", "stem": "MECH", "frame": 68, "channel": 21, "path": "public/audio/cc0-derived/mechanisms/metal_lock_impact_01.ogg", "gain": 0.72 },
+      { "id": "OE_INFECTION_ANSWER", "stem": "BIO", "frame": 112, "channel": 30, "path": "public/audio/cc0-derived/hive/resin_shift_01.ogg", "gain": 0.34 }
+    ]},
+    "failed_carrier": { "frames": 168, "cues": [
+      { "id": "FC_POD_HUM", "stem": "AMB", "frame": 1, "channel": 10, "path": "public/audio/vg2/hive_eggs_hum.wav", "gain": 0.2 },
+      { "id": "FC_PIPE_TREMOR", "stem": "MECH", "frame": 22, "channel": 20, "path": "public/audio/cc0-derived/mechanisms/metal_lock_impact_01.ogg", "gain": 0.45 },
+      { "id": "FC_EGG_IMPACT", "stem": "BIO", "frame": 78, "channel": 30, "path": "public/audio/vg2/hive_eggs_hatch.wav", "gain": 0.58 },
+      { "id": "FC_SEAL_PEEL", "stem": "BIO", "frame": 132, "channel": 31, "path": "public/audio/cc0-derived/hive/resin_shift_02.ogg", "gain": 0.62 },
+      { "id": "FC_ALARM", "stem": "SYNC", "frame": 142, "channel": 40, "path": "public/audio/vg2/camp_lockdown_alarm.wav", "gain": 0.38 }
+    ]},
+    "empty_husk": { "frames": 180, "cues": [
+      { "id": "EH_AMB_ROOM", "stem": "AMB", "frame": 1, "channel": 10, "path": "public/audio/foley/system/foley_exosuit_room_loop.wav", "gain": 0.12 },
+      { "id": "EH_HARNESS", "stem": "MECH", "frame": 34, "channel": 20, "path": "public/audio/cc0-derived/mechanisms/door_lock_body_01.ogg", "gain": 0.25 },
+      { "id": "EH_TAG_TICK", "stem": "SYNC", "frame": 82, "channel": 40, "path": "public/audio/cc0-derived/mechanisms/metal_lock_impact_01.ogg", "gain": 0.2 },
+      { "id": "EH_LAUNCH", "stem": "AMB", "frame": 126, "channel": 11, "path": "public/audio/cc0-derived/engines/ship_engine_low_01.ogg", "gain": 0.3 }
+    ]}
+  }
+}

@@ -356,7 +356,7 @@ describe('Steam Inventory API endpoints', () => {
 });
 
 describe('POST /steam/inventory/grant-milestone (Tier B)', () => {
-    it('grants a Deep Relic Cache for a boss_kill milestone', async () => {
+    it('grants a Relic Key for a boss_kill milestone', async () => {
         delete process.env.HB_STEAM_PUBLISHER_KEY;
         const testId = '76561198000000000';
         await setMockInventory(testId, []);
@@ -373,7 +373,7 @@ describe('POST /steam/inventory/grant-milestone (Tier B)', () => {
         expect(res.status).toBe(200);
         const body = await res.json();
         expect(body.ok).toBe(true);
-        expect(body.granted[0].itemdefid).toBe(4000);
+        expect(body.granted[0].itemdefid).toBe(4001);
     });
 
     it('is idempotent per run for boss_kill (same runKey never double-grants)', async () => {
@@ -391,7 +391,7 @@ describe('POST /steam/inventory/grant-milestone (Tier B)', () => {
         }
 
         const inv = getMockInventory(testId);
-        expect(inv.find((i) => i.itemdefid === 4000)?.quantity).toBe(1);
+        expect(inv.find((i) => i.itemdefid === 4001)?.quantity).toBe(1);
     });
 
     it('rejects boss_kill without a runKey', async () => {
