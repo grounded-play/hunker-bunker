@@ -161,3 +161,64 @@ def add_boid_swarm(bpy, name, collection, *, center, size, count=140, color=(0.7
     settings.boids.air_speed_max = 1.6
     settings.boids.air_personal_space = 0.35
     return emitter
+
+
+# Handheld drift, in metres and radians. Small enough to read as a operator
+# holding a camera, not as a camera on a boat.
+DRIFT_POSITION = 0.045
+DRIFT_ROTATION = 0.006
+DRIFT_STEP_FRAMES = 8
+
+
+def animate_camera_dynamics(camera, frame_start: int, frame_end: int, *, seed: int = 0,
+                            focus_object=None, rack: tuple[float, float] | None = None):
+    """
+    Give a shot motion and a focus that changes across it.
+
+    Two separate problems with a locked-off camera on an authored dolly:
+
+    1. Even a camera that translates is rotationally frozen, so the frame reads
+       as a slide rather than a shot. A small, slow, per-axis drift layered ON
+       TOP of the authored move fixes that without contradicting the blocking.
+    2. Depth of field is set once and held, so the shot has no focal narrative.
+       Racking the focus empty across the shot is how a frame tells you where to
+       look, and it is free here because focus is already bound to an empty
+       rather than a dialled distance.
+
+    Drift is keyed at a coarse step and on top of existing keys, so an authored
+    dolly still dominates; this is the hand on it, not a second move.
+    """
+    rng = random.Random(seed)
+    phase = [rng.uniform(0.0, math.tau) for _ in range(6)]
+    rate = [rng.uniform(0.55, 1.05) for _ in range(6)]
+
+    base_loc = tuple(camera.location)
+    base_rot = tuple(camera.rotation_euler)
+    keyed = 0
+    for frame in range(frame_start, frame_end + 1, DRIFT_STEP_FRAMES):
+        t = frame / 48.0
+        # Read the authored value at this frame first, so drift adds to the
+        # dolly instead of replacing it.
+        camera.location = (
+            base_loc[0] + math.sin(t * rate[0] * math.tau + phase[0]) * DRIFT_POSITION,
+            base_loc[1] + math.sin(t * rate[1] * math.tau + phase[1]) * DRIFT_POSITION * 0.7,
+            base_loc[2] + math.cos(t * rate[2] * math.tau + phase[2]) * DRIFT_POSITION * 0.5,
+        )
+        camera.rotation_euler = (
+            base_rot[0] + math.sin(t * rate[3] * math.tau + phase[3]) * DRIFT_ROTATION,
+            base_rot[1] + math.cos(t * rate[4] * math.tau + phase[4]) * DRIFT_ROTATION,
+            base_rot[2] + math.sin(t * rate[5] * math.tau + phase[5]) * DRIFT_ROTATION * 0.6,
+        )
+        camera.keyframe_insert("location", frame=frame)
+        camera.keyframe_insert("rotation_euler", frame=frame)
+        keyed += 2
+
+    # Rack focus. The empty is parented to the camera, so its local -Z IS the
+    # focus distance; animating that is the whole rack.
+    if focus_object is not None and rack is not None:
+        near, far = rack
+        for frame, distance in ((frame_start, near), (frame_end, far)):
+            focus_object.location = (0.0, 0.0, -abs(distance))
+            focus_object.keyframe_insert("location", frame=frame)
+            keyed += 1
+    return keyed

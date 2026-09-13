@@ -21,7 +21,7 @@ import bpy
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from cinematic_lighting import add_separation_rim  # noqa: E402
-from cinematic_fx import add_boid_swarm, add_drift_motes, add_secondary_motion  # noqa: E402
+from cinematic_fx import add_boid_swarm, add_drift_motes, add_secondary_motion, animate_camera_dynamics  # noqa: E402
 
 
 # Locked in docs/planning/blender-cinematic-optics-2026-09-12.md. Keep these
@@ -474,10 +474,31 @@ def build_room_shell(
         ground.data.materials.append(floor_mat)
         return [ground.name]
 
+    # VIEWPORT. A sealed shell occludes the world completely -- raising the
+    # interior environment strength from 0.55 to 1.8 produced a byte-identical
+    # render, which is how we know. Cutting an aperture in one wall is what
+    # actually lets the game sky light the room and appear behind the cast.
+    #
+    # Built as four panels around a gap rather than a boolean: no modifier to
+    # evaluate, no n-gon to misbehave, and each panel stays a flat quad.
+    wall_h = ceil_z - floor_z
+    ap_w = size_x * VIEWPORT_WIDTH_FRACTION
+    ap_h = wall_h * VIEWPORT_HEIGHT_FRACTION
+    # Sill above the floor so the opening reads as a window, not a missing wall.
+    ap_bottom = floor_z + (wall_h - ap_h) * VIEWPORT_SILL_FRACTION
+    ap_top = ap_bottom + ap_h
+    side_w = (size_x - ap_w) / 2.0
+    north_y = max_y
+    north_rot = (math.radians(90), 0, 0)
+
     surfaces = (
         ("Floor", (cx, cy, floor_z), (0, 0, 0), (size_x, size_y), floor_mat),
         ("Ceiling", (cx, cy, ceil_z), (math.radians(180), 0, 0), (size_x, size_y), ceil_mat),
-        ("Wall_N", (cx, max_y, (floor_z + ceil_z) / 2), (math.radians(90), 0, 0), (size_x, ceil_z - floor_z), wall_mat),
+        # North wall in four pieces around the viewport aperture.
+        ("Wall_N_Left", (cx - (ap_w / 2) - (side_w / 2), north_y, (floor_z + ceil_z) / 2), north_rot, (side_w, wall_h), wall_mat),
+        ("Wall_N_Right", (cx + (ap_w / 2) + (side_w / 2), north_y, (floor_z + ceil_z) / 2), north_rot, (side_w, wall_h), wall_mat),
+        ("Wall_N_Above", (cx, north_y, (ap_top + ceil_z) / 2), north_rot, (ap_w, ceil_z - ap_top), wall_mat),
+        ("Wall_N_Below", (cx, north_y, (floor_z + ap_bottom) / 2), north_rot, (ap_w, ap_bottom - floor_z), wall_mat),
         ("Wall_S", (cx, min_y, (floor_z + ceil_z) / 2), (math.radians(-90), 0, 0), (size_x, ceil_z - floor_z), wall_mat),
         ("Wall_E", (max_x, cy, (floor_z + ceil_z) / 2), (0, math.radians(-90), 0), (ceil_z - floor_z, size_y), wall_mat),
         ("Wall_W", (min_x, cy, (floor_z + ceil_z) / 2), (0, math.radians(90), 0), (ceil_z - floor_z, size_y), wall_mat),
@@ -599,6 +620,13 @@ def create_camera(
 
 
 
+
+# Viewport aperture in one interior wall, as a fraction of that wall. Sized to
+# read as a ship window: wide enough to admit real light and show sky behind the
+# cast, not so wide the room stops being a room.
+VIEWPORT_WIDTH_FRACTION = 0.46
+VIEWPORT_HEIGHT_FRACTION = 0.40
+VIEWPORT_SILL_FRACTION = 0.55
 
 MAX_OFF_AXIS_DEG = 12.0
 
@@ -1947,7 +1975,7 @@ def build_ending_scene(ending_name: str, output_path: Path) -> None:
     add_drift_motes(
         bpy, f"FX_Motes_{ending_name}", root_col,
         center=fx_center, size=fx_size,
-        count=1400 if exterior else 900,
+        count=2600 if exterior else 1800,
         color=fx_color, frame_end=scene.frame_end, seed=7,
     )
     if fx_swarm:
@@ -1956,7 +1984,7 @@ def build_ending_scene(ending_name: str, output_path: Path) -> None:
         add_boid_swarm(
             bpy, f"FX_Swarm_{ending_name}", root_col,
             center=(fx_center[0], fx_center[1] + 2.0, fx_center[2] + 0.6),
-            size=(6.0, 7.0, 3.0), count=160,
+            size=(6.0, 7.0, 3.0), count=320,
             color=fx_color, frame_end=scene.frame_end, seed=11,
         )
 
@@ -1966,6 +1994,29 @@ def build_ending_scene(ending_name: str, output_path: Path) -> None:
             armature, scene.frame_start, scene.frame_end, seed=hash(armature.name) & 0xFFFF
         )
     print(f"[build_ending_scenes] fx: motes + {'swarm' if fx_swarm else 'no swarm'}, {motion_keys} motion keys")
+
+    # Camera dynamics. Authored cameras translate but are rotationally frozen,
+    # so a shot reads as a slide. Drift adds the hand on the camera; the rack
+    # gives the shot a focal narrative instead of one held depth.
+    #
+    # Rack range is derived from the lens: a long lens is already shallow and
+    # only needs a small pull, while a wide needs a big one to be visible at
+    # all. Racking every shot by a fixed metre would be invisible on the 85mm
+    # and absurd on the 24mm.
+    camera_keys = 0
+    for camera in (o for o in scene.objects if o.type == "CAMERA" and o.name.startswith("CAM_")):
+        focus = None
+        focus_name = camera.get("focus_target")
+        if focus_name:
+            focus = bpy.data.objects.get(focus_name)
+        lens = camera.data.lens
+        near = max(0.6, lens / 55.0)
+        rack = (near, near * (2.4 if lens < 45 else 1.5))
+        camera_keys += animate_camera_dynamics(
+            camera, scene.frame_start, scene.frame_end,
+            seed=hash(camera.name) & 0xFFFF, focus_object=focus, rack=rack,
+        )
+    print(f"[build_ending_scenes] camera: {camera_keys} drift/rack keys")
 
     # Mixed endings cut between two locations built at the same origin.  Hide
     # the alternate location, its shell and the interior cast on each shot.
