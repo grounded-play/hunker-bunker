@@ -51,6 +51,20 @@ background. Without it a dark figure against a dark wall is one shape.
 Recommended per hero subject: one low-energy rim at 120–150° from the key,
 cooler than the key if the key is warm, warmer if the key is cool.
 
+**Implemented** in `scripts/blender/cinematic_lighting.py`. A rim is *derived*
+from the key it separates against rather than hand-placed: 140° around the
+subject at the key's own distance (so a close key gives a close rim and the pair
+stay in proportion), 45% of its energy, and opposing its temperature judged from
+the key's own blue-vs-red balance — re-tint a key and its rim follows.
+
+The geometry is pure and bpy-free precisely so it can be unit tested: placing a
+rim correctly is trigonometry, and trigonometry that only runs inside Blender is
+trigonometry nobody checks. 7 tests, including the overhead-key divide-by-zero
+case and the angle-wrap that makes a correct 140° rotation *look* like 220°.
+
+Wired into `outed_escape` first — fewest lights of the five, and all four of its
+cameras sit about a metre from their subject.
+
 ---
 
 ## 2. Framing — the rules a shot is checked against
@@ -146,7 +160,7 @@ exit-0 renders: the empty sprite atlas, the black shot shells, and CAM_MI_02.
 | Automatic aim correction | **reverted — made a good shot worse** |
 | Game textures imported and verified | **yes** — 39 packed images, 15/15 materials textured in SET-C |
 | Material enhancement pass | **implemented** — pixel filtering, roughness break-up, emissive screens |
-| Separation/rim lights | not started |
+| Separation/rim lights | **module + first scene done** — `cinematic_lighting.py`, wired into `outed_escape` |
 | Per-shot blocking pass | **needs art** — the remaining blocker |
 
 

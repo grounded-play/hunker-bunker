@@ -19,6 +19,9 @@ import sys
 
 import bpy
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from cinematic_lighting import add_separation_rim  # noqa: E402
+
 
 # Locked in docs/planning/blender-cinematic-optics-2026-09-12.md. Keep these
 # values shared by every production scene; an artist can animate a focus target
@@ -29,6 +32,12 @@ VIEW_TRANSFORM = "AgX"
 VIEW_LOOK = "AgX - Punchy"
 VOLUME_DENSITY = 0.004
 VOLUME_ANISOTROPY = 0.4
+
+SHOT_MID_FRAMES = {
+    "MI": (21, 61, 106, 156), "AE": (22, 71, 119, 167),
+    "OE": (20, 61, 102, 146), "FC": (19, 62, 104, 146),
+    "EH": (23, 66, 106, 154),
+}
 
 
 def aperture_for_lens(lens_mm: float) -> float:
@@ -323,6 +332,7 @@ def build_room_shell(
     ceiling_color=(0.030, 0.032, 0.036),
     name_prefix: str = "Shell",
     exterior: bool = False,
+    source_collection: bpy.types.Collection | None = None,
 ) -> list:
     """
     Build the floor, four walls and ceiling the sets were missing entirely.
@@ -348,7 +358,8 @@ def build_room_shell(
     lo = [1e9, 1e9, 1e9]
     hi = [-1e9, -1e9, -1e9]
     found = False
-    for obj in scene.objects:
+    source_objects = source_collection.all_objects if source_collection else scene.objects
+    for obj in source_objects:
         if obj.type != "MESH" or obj.hide_render:
             continue
         found = True
@@ -410,12 +421,65 @@ def build_room_shell(
     return created
 
 
+def set_camera_focus_from_frame(scene: bpy.types.Scene, camera: bpy.types.Object) -> float | None:
+    """Focus on the nearest renderable subject actually inside the camera frustum."""
+    import mathutils
+
+    parts = camera.name.split("_")
+    prefix = parts[1] if len(parts) > 2 else ""
+    shot_index = int(parts[2]) - 1 if len(parts) > 2 and parts[2].isdigit() else 0
+    frame = SHOT_MID_FRAMES.get(prefix, (scene.frame_start,))[shot_index]
+    scene.frame_set(frame)
+    bpy.context.view_layer.update()
+    evaluated = camera.evaluated_get(bpy.context.evaluated_depsgraph_get())
+    origin = evaluated.matrix_world.translation
+    forward = evaluated.matrix_world.to_quaternion() @ mathutils.Vector((0, 0, -1))
+    horizontal_half = math.atan((camera.data.sensor_width * 0.5) / camera.data.lens)
+    best = None
+    for obj in scene.objects:
+        if obj.type != "MESH" or obj.hide_render or obj.name.startswith("Shell_"):
+            continue
+        center = obj.matrix_world @ mathutils.Vector(obj.bound_box[0])
+        corners = [obj.matrix_world @ mathutils.Vector(corner) for corner in obj.bound_box]
+        center = sum(corners, mathutils.Vector()) / len(corners)
+        delta = center - origin
+        along = delta.dot(forward)
+        if along <= camera.data.clip_start:
+            continue
+        off_axis = forward.angle(delta.normalized())
+        if off_axis > horizontal_half * 1.15:
+            continue
+        if best is None or along < best:
+            best = along
+    focus = camera.data.dof.focus_object
+    if best is not None and focus is not None:
+        focus.location = (0, 0, -max(0.35, best))
+        camera["autofocus_distance"] = best
+    return best
+
+
 def aim_object_at(obj: bpy.types.Object, target) -> None:
     """Point a light (or any -Z-forward object) at a world-space point."""
     import mathutils
 
     direction = mathutils.Vector(target) - obj.location
     obj.rotation_euler = direction.to_track_quat("-Z", "Y").to_euler()
+
+
+def key_render_visibility(objects, visible_ranges: list[tuple[int, int]]) -> None:
+    """Animate object render visibility for sets sharing one stage origin.
+
+    SET-A and SET-D are alternate locations, not simultaneous geometry.  Their
+    shots live in one Blender scene for editorial convenience, so leaving both
+    renderable makes the cabin walls occlude the exterior shuttle.  Stepped
+    hide_render keys provide the equivalent of per-shot view layers while
+    keeping the existing single-scene render workflow intact.
+    """
+    for obj in objects:
+        for frame in range(bpy.context.scene.frame_start, bpy.context.scene.frame_end + 2):
+            visible = any(start <= frame <= end for start, end in visible_ranges)
+            obj.hide_render = not visible
+            obj.keyframe_insert(data_path="hide_render", frame=frame)
 
 
 def create_camera(
@@ -457,6 +521,8 @@ def create_camera(
     cam_obj["requested_fstop_from_shot_list"] = f_stop if f_stop is not None else approved_fstop
     cam_obj["focus_target"] = focus.name
     return cam_obj
+
+
 
 
 MAX_OFF_AXIS_DEG = 12.0
@@ -1221,8 +1287,22 @@ def build_set_d_exterior_ice(scene: bpy.types.Scene, root_col: bpy.types.Collect
             spire.scale = (1.2, 1.2, 2.0)
 
     # Lighting: Abyssal blue exterior key + engine flare + beacon pulses
-    create_point_spot_light("Light_Exterior_MoonKey", (0.45, 0.65, 0.95, 1.0), 2500.0, (-15.0, -12.0, 22.0), (math.radians(40), math.radians(-35), 0), True, 45.0, set_col)
-    create_point_spot_light("Light_Shuttle_Engine_Plume", (0.2, 0.7, 1.0, 1.0), 3200.0, (0, -2.5, 0.8), (math.radians(-90), 0, 0), True, 65.0, set_col)
+    moon = create_point_spot_light("Light_Exterior_MoonKey", (0.45, 0.65, 0.95, 1.0), 4200.0, (-15.0, -12.0, 22.0), is_spot=True, spot_size_deg=58.0, collection=set_col)
+    aim_object_at(moon, (0.0, 0.0, 1.2))
+    plume = create_point_spot_light("Light_Shuttle_Engine_Plume", (0.2, 0.7, 1.0, 1.0), 3600.0, (0, -3.5, 1.5), is_spot=True, spot_size_deg=72.0, collection=set_col)
+    aim_object_at(plume, (0.0, 0.0, 1.2))
+    # Broad, low-energy sky fill keeps the hull readable without flattening the
+    # moon-key silhouette. Area lights are stable across both near and orbital
+    # wides, unlike a narrowly aimed practical.
+    fill_data = bpy.data.lights.new("Light_Exterior_SkyFill", type="AREA")
+    fill_data.color = (0.16, 0.30, 0.62)
+    fill_data.energy = 850.0
+    fill_data.shape = "DISK"
+    fill_data.size = 10.0
+    fill = bpy.data.objects.new("Light_Exterior_SkyFill", fill_data)
+    fill.location = (7.0, -4.0, 12.0)
+    set_col.objects.link(fill)
+    aim_object_at(fill, (0.0, 0.0, 1.0))
 
     return {"collection": set_col, "shuttle": shuttle}
 
@@ -1451,7 +1531,25 @@ def setup_scene_outed_escape(root_col: bpy.types.Collection) -> list[bpy.types.O
         c3.rotation_euler = (0, 0, math.radians(180))
 
     # Sweeping Red Quarantine Beacon
-    create_point_spot_light("Light_Quarantine_Sweep_Beacon", (1.0, 0.08, 0.02, 1.0), 550.0, (0, 1.45, 2.4), (math.radians(65), 0, 0), True, 35.0, scene_col)
+    quarantine_key = create_point_spot_light("Light_Quarantine_Sweep_Beacon", (1.0, 0.08, 0.02, 1.0), 550.0, (0, 1.45, 2.4), (math.radians(65), 0, 0), True, 35.0, scene_col)
+
+    # Separation rim. This scene has the fewest lights of the five and every one
+    # of its four cameras sits about a metre from its subject, so a figure here
+    # merges into a dark wall -- the exact failure the framing spec's third
+    # lighting layer exists to prevent, and the layer that existed on only one
+    # subject in the whole project.
+    #
+    # Derived from the quarantine beacon rather than hand-placed: the rim sits
+    # 140 degrees around the subject at the beacon's own distance, at 45% of its
+    # energy, and opposes its temperature -- that beacon is hard red, so the rim
+    # comes back cool. Re-tint the beacon and the rim follows.
+    add_separation_rim(
+        bpy,
+        "Light_Quarantine_Rim",
+        (0.0, 1.0, 1.35),
+        quarantine_key,
+        scene_col,
+    )
 
     # Cameras
     # OE-01: 35mm symmetrical cabin master (frames 0-40)
@@ -1507,8 +1605,14 @@ def setup_scene_failed_carrier(root_col: bpy.types.Collection) -> list[bpy.types
     # Cameras
     # FC-01: 50mm low macro-to-medium reveal (frames 0-38)
     cam1 = create_camera("CAM_FC_01", 50.0, 1.4, scene_col)
-    cam1.location = (-0.6, 0.95, 1.25)
-    cam1.rotation_euler = (math.radians(75), 0, math.radians(-65))
+    cam1.location = (-2.35, -0.35, 1.35)
+    aim_object_at(cam1, (-0.8, 1.1, 0.9))
+
+    pipe_key = create_point_spot_light(
+        "Light_Pipe_Rupture_Key", (0.55, 0.82, 1.0, 1.0), 520.0,
+        (-2.2, -0.4, 2.7), is_spot=True, spot_size_deg=52.0, collection=scene_col,
+    )
+    aim_object_at(pipe_key, (-0.8, 1.1, 0.9))
 
     # FC-02: 35mm cramped handheld push (frames 39-84)
     cam2 = create_camera("CAM_FC_02", 35.0, 1.8, scene_col)
@@ -1573,12 +1677,12 @@ def setup_scene_empty_husk(root_col: bpy.types.Collection) -> list[bpy.types.Obj
     # EH-03: 28mm exterior launch wide, silent beacons (frames 85-126)
     cam3 = create_camera("CAM_EH_03", 28.0, 2.8, scene_col)
     cam3.location = (-10.0, -12.0, 3.5)
-    cam3.rotation_euler = (math.radians(75), 0, math.radians(-42))
+    aim_object_at(cam3, (0.0, 0.0, 1.2))
 
     # EH-04: extreme orbital wide, almost static negative space (frames 127-180)
-    cam4 = create_camera("CAM_EH_04", 24.0, 4.0, scene_col)
+    cam4 = create_camera("CAM_EH_04", 35.0, 5.6, scene_col)
     cam4.location = (0, -28.0, 14.0)
-    cam4.rotation_euler = (math.radians(65), 0, 0)
+    aim_object_at(cam4, (0.0, 1.5, 2.0))
 
     return [cam1, cam2, cam3, cam4]
 
@@ -1596,22 +1700,23 @@ def build_ending_scene(ending_name: str, output_path: Path) -> None:
 
     root_col = bpy.context.scene.collection
 
-    # 1. Build Reusable Sets needed. Each builder links its own collection into
-    # root_col, so it is called for that side effect; the handle dict it returns
-    # is not read here.
+    # 1. Build reusable sets and retain their collection identity. Mixed
+    # interior/exterior scenes need a cabin shell around SET-A and ground-only
+    # around SET-D; a scene-wide exterior boolean cannot represent that.
+    built_sets = []
     if ending_name in ["mothership_infection"]:
-        build_set_c_medical_dock(scene, root_col)
+        built_sets.append((build_set_c_medical_dock(scene, root_col), False))
     elif ending_name in ["alien_exodus"]:
-        build_set_a_cabin(scene, root_col)
-        build_set_d_exterior_ice(scene, root_col)
+        built_sets.append((build_set_a_cabin(scene, root_col), False))
+        built_sets.append((build_set_d_exterior_ice(scene, root_col), True))
     elif ending_name in ["outed_escape"]:
-        build_set_a_cabin(scene, root_col)
+        built_sets.append((build_set_a_cabin(scene, root_col), False))
     elif ending_name in ["failed_carrier"]:
-        build_set_b_cargo_four(scene, root_col)
-        build_set_a_cabin(scene, root_col)
+        built_sets.append((build_set_b_cargo_four(scene, root_col), False))
+        built_sets.append((build_set_a_cabin(scene, root_col), False))
     elif ending_name in ["empty_husk"]:
-        build_set_a_cabin(scene, root_col)
-        build_set_d_exterior_ice(scene, root_col)
+        built_sets.append((build_set_a_cabin(scene, root_col), False))
+        built_sets.append((build_set_d_exterior_ice(scene, root_col), True))
     elif ending_name == "all":
         build_set_a_cabin(scene, root_col)
         build_set_b_cargo_four(scene, root_col)
@@ -1641,9 +1746,47 @@ def build_ending_scene(ending_name: str, output_path: Path) -> None:
         scene.camera = cams[0]
 
     # Report framing for an art pass. Deliberately does not mutate cameras.
-    shell = build_room_shell(scene, root_col, exterior=exterior)
-    if shell:
-        print(f"[build_ending_scenes] room shell: {len(shell)} surfaces")
+    shell_count = 0
+    shell_objects_by_set = {}
+    for handle, is_exterior_set in built_sets:
+        source = handle["collection"]
+        # SET-B is the physical room for Failed Carrier; SET-A supplies the
+        # passenger-side dressing beyond its hatch. A second co-located closed
+        # shell produces coplanar walls and black occluders, not a second room.
+        if ending_name == "failed_carrier" and source.name == "SET_A_Cabin":
+            continue
+        shell_col = bpy.data.collections.new(f"SHELL_{source.name}")
+        root_col.children.link(shell_col)
+        shell_names = build_room_shell(
+            scene, shell_col, exterior=is_exterior_set,
+            source_collection=source, name_prefix=f"Shell_{source.name}"
+        )
+        shell_count += len(shell_names)
+        shell_objects_by_set[source.name] = [bpy.data.objects[name] for name in shell_names]
+    if shell_count:
+        print(f"[build_ending_scenes] per-set shell: {shell_count} surfaces")
+
+    # Mixed endings cut between two locations built at the same origin.  Hide
+    # the alternate location, its shell and the interior cast on each shot.
+    # Without this, an exterior camera either sees a cabin wall as a solid black
+    # rectangle or puts seated passengers inexplicably on the ice shelf.
+    visibility = {
+        "alien_exodus": ((45, 140), [(0, 44), (141, 192)], "SEQ_02_Alien_Exodus"),
+        "empty_husk": ((0, 84), [(85, 180)], "SEQ_05_Empty_Husk"),
+    }
+    if ending_name in visibility:
+        interior_range, exterior_ranges, sequence_name = visibility[ending_name]
+        handles = {handle["collection"].name: handle for handle, _ in built_sets}
+        cabin_objects = list(handles["SET_A_Cabin"]["collection"].all_objects)
+        cabin_objects += shell_objects_by_set.get("SET_A_Cabin", [])
+        exterior_objects = list(handles["SET_D_ExteriorIce"]["collection"].all_objects)
+        exterior_objects += shell_objects_by_set.get("SET_D_ExteriorIce", [])
+        key_render_visibility(cabin_objects, [interior_range])
+        key_render_visibility(exterior_objects, exterior_ranges)
+        sequence_col = bpy.data.collections.get(sequence_name)
+        if sequence_col:
+            cast_meshes = [obj for obj in sequence_col.all_objects if obj.type == "MESH"]
+            key_render_visibility(cast_meshes, [interior_range])
 
     material_stats = enhance_imported_materials(scene)
     print(
@@ -1657,6 +1800,10 @@ def build_ending_scene(ending_name: str, output_path: Path) -> None:
     if corrected:
         print(f"[build_ending_scenes] FRAMING REVIEW needed for {len(corrected)} camera(s): {', '.join(corrected)}")
     bpy.context.view_layer.update()
+
+    for camera in cams:
+        distance = set_camera_focus_from_frame(scene, camera)
+        print(f"[build_ending_scenes] {camera.name} focus: {distance if distance else 'manual'}")
 
     validate_production_optics(scene)
 
