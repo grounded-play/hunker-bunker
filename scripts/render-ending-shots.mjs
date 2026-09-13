@@ -134,12 +134,44 @@ function renderShot(shot) {
  * VP9 at the same bitrate is visibly better on the dark, low-contrast material
  * these endings are made of, where VP8 bands badly in near-black gradients.
  */
-export function encodeArgs(frameGlobDir, out, { fps = FPS, draft = false } = {}) {
+export const GLARE_STRENGTH = 0.55;
+export const CHROMATIC_ABERRATION = 0.0022;
+
+/**
+ * The look pass, applied at encode time rather than in Blender.
+ *
+ * A scene compositing node group blacked every frame under Blender 5.x, so the
+ * look moved here -- and this is the better home regardless: retuning costs one
+ * re-encode (seconds) rather than a re-render (hours across 893 frames).
+ *
+ * Two effects, both motivated by what these sets are:
+ *  - bloom, so emissive practicals read as light sources rather than flat
+ *    bright patches. Built from a blurred, thresholded copy screened back over
+ *    the original, which is what `glare` does in a compositor.
+ *  - chromatic aberration, scaling the red and blue planes a hair apart so
+ *    frame edges fringe the way a real lens does. Deliberately just-perceptible:
+ *    CA reads as cheap the moment a viewer can name it.
+ */
+export function lookFilter({ glare = GLARE_STRENGTH, ca = CHROMATIC_ABERRATION } = {}) {
+    return [
+        // Split for the bloom branch, threshold the highlights, blur, screen back.
+        `[0:v]split=3[base][bloom][ca]`,
+        `[bloom]lutrgb=r='max(0,val-150)*3':g='max(0,val-150)*3':b='max(0,val-150)*3',gblur=sigma=18[bl]`,
+        `[base][bl]blend=all_mode=screen:all_opacity=${glare}[lit]`,
+        // CA: scale one plane up fractionally and overlay centred, so the shift
+        // grows toward the frame edge instead of being a uniform offset.
+        `[ca]scale=iw*${(1 + ca).toFixed(5)}:ih*${(1 + ca).toFixed(5)},crop=iw/${(1 + ca).toFixed(5)}:ih/${(1 + ca).toFixed(5)}[cashift]`,
+        `[lit][cashift]blend=all_mode='addition':all_opacity=0.10[looked]`
+    ].join(';');
+}
+
+export function encodeArgs(frameGlobDir, out, { fps = FPS, draft = false, look = true } = {}) {
     return [
         '-y',
         '-framerate', String(fps),
         // %04d matches Blender's -o frame-#### padding exactly.
         '-i', path.join(frameGlobDir, 'frame-%04d.png'),
+        ...(look ? ['-filter_complex', lookFilter(), '-map', '[looked]'] : []),
         '-an',
         '-c:v', 'libvpx-vp9',
         // A placeholder pass is for timing and composition, so bitrate is the

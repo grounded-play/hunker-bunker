@@ -32,10 +32,25 @@ for (const sequence of manifest.sequences) {
     // ffconcat needs each path quoted; single quotes inside are escaped per spec.
     writeFileSync(listFile, clips.map((c) => `file '${c.replace(/'/g, "'\\''")}'`).join('\n'));
     const out = path.join(OUTPUT_ROOT, outputName(sequence));
+    // Concat silent picture first, then lay the bed over it. Doing it in one
+    // pass would re-encode every shot again for no reason.
+    const silent = path.join(shots[0].frameDir, '..', `${sequence.id}.silent.webm`);
     const res = spawnSync('ffmpeg', [
-        '-y', '-f', 'concat', '-safe', '0', '-i', listFile, '-c', 'copy', out
+        '-y', '-f', 'concat', '-safe', '0', '-i', listFile, '-c', 'copy', silent
     ], { stdio: 'inherit' });
     if (res.status !== 0) { console.error(`${sequence.id}: concat failed`); failures += 1; continue; }
-    console.log(`${sequence.id} -> ${out}`);
+
+    const bed = path.join(shots[0].frameDir, '..', `${sequence.id}.bed.opus`);
+    const bedRes = spawnSync('node', ['scripts/build-ending-audio-bed.mjs', sequence.id, bed], { stdio: 'inherit' });
+    if (bedRes.status !== 0) { console.error(`${sequence.id}: bed failed`); failures += 1; continue; }
+
+    // -c:v copy: the picture is already encoded and must not take a second
+    // generation loss just to gain an audio track.
+    const muxRes = spawnSync('ffmpeg', [
+        '-y', '-i', silent, '-i', bed,
+        '-c:v', 'copy', '-c:a', 'libopus', '-b:a', '96k', '-shortest', out
+    ], { stdio: 'inherit' });
+    if (muxRes.status !== 0) { console.error(`${sequence.id}: mux failed`); failures += 1; continue; }
+    console.log(`${sequence.id} -> ${out} (picture + bed)`);
 }
 process.exit(failures ? 1 : 0);
