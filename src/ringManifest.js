@@ -13,6 +13,7 @@ import {
     allocateTerritories,
     validateTerritoryPlan
 } from './territoryPlanner.js';
+import { allocateWorldSetpieces } from './setpieceBuilds.js';
 
 export const RING_MANIFEST_VERSION = 1;
 export const WORLD_PLAN_VERSION = 1;
@@ -794,6 +795,10 @@ export function buildWorldPlan(expedition) {
             projectionErrors: projection.errors
         }
     };
+    const setpiecePlan = allocateWorldSetpieces(worldPlan);
+    worldPlan.setpieceClaimVersion = setpiecePlan.version;
+    worldPlan.setpieceClaims = setpiecePlan.claims;
+    worldPlan.diagnostics.setpieceOmissions = setpiecePlan.omissions;
     const validation = validateWorldPlan(worldPlan);
     worldPlan.diagnostics.valid = validation.valid;
     worldPlan.diagnostics.errors = validation.errors;

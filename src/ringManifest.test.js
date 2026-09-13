@@ -255,6 +255,13 @@ describe('WorldPlan handoff contract', () => {
             'territory:hive_carapace'
         ].sort());
         expect(first.ringCrossings).toHaveLength(4);
+        expect(first.setpieceClaims).toHaveLength(1);
+        expect(first.setpieceClaims[0]).toMatchObject({
+            reservationId: 'crossing:ring-1-gate',
+            setpieceId: 'crossing_valley_bridge_v1',
+            stage: 'ruined'
+        });
+        expect(first.setpieceClaims[0].chunkKeys.length).toBeGreaterThan(0);
         expect(first.requiredChunkSockets).toHaveLength(60);
         expect(first.questFallbacks).toHaveLength(4);
         expect(first.diagnostics).toMatchObject({ valid: true, errors: [], projectionErrors: [] });
