@@ -18849,6 +18849,14 @@ export class ThreeGame {
             this.resolvePlayerDepenetration();
         }
 
+        // Playtest P0-2: the wedge between the terminal and the ship is a
+        // different failure from the overlap above. There the position is
+        // INVALID, so resolvePlayerDepenetration() fires. In a wedge the
+        // position is perfectly valid -- the player is simply pinned, with
+        // every attempted step rejected by a different solid. Nothing detected
+        // that, so the run ended there.
+        this.updatePinnedRecovery(delta);
+
         // Update kinetic control timers
         this.dashCooldownTimer = Math.max(0, (this.dashCooldownTimer ?? 0) - delta);
         this.meleeCooldownTimer = Math.max(0, (this.meleeCooldownTimer ?? 0) - delta);
@@ -30842,6 +30850,67 @@ export class ThreeGame {
      * displacement. This deliberately does nothing for valid positions: it is
      * recovery from world mutation/loading, not a second movement system.
      */
+    /**
+     * Recover a player who is in a VALID position but cannot move: pinned in a
+     * gap between two solids, where per-axis collision rejects every step.
+     * Deliberately conservative -- it needs sustained movement input and
+     * sustained near-zero displacement before it acts, so ordinary "walking
+     * into a wall" never triggers it.
+     */
+    updatePinnedRecovery(delta = 0) {
+        if (!this.player || this.noclip || !this.isGameplayInputActive?.()) {
+            this._pinnedSeconds = 0;
+            return false;
+        }
+        // Intent, not motion: a pinned player has input but no displacement.
+        // this.keys is the live keyboard state (see setKeyState ~6701); the
+        // gamepad stick is folded in where the runtime exposes it.
+        const keys = this.keys ?? {};
+        const stick = Math.hypot(Number(this._moveAxisX) || 0, Number(this._moveAxisZ) || 0);
+        const wantsToMove = Boolean(keys.up || keys.down || keys.left || keys.right) || stick > 0.2;
+        const { x, z } = this.player.position;
+        const previous = this._pinnedLastPosition;
+        const moved = previous ? Math.hypot(x - previous.x, z - previous.z) : Infinity;
+        this._pinnedLastPosition = { x, z };
+
+        // PINNED_EPSILON is per-frame travel, so it has to be tiny: a player
+        // being shoved along a wall still covers far more than this.
+        if (!wantsToMove || moved > 0.01) {
+            this._pinnedSeconds = 0;
+            return false;
+        }
+        this._pinnedSeconds = (this._pinnedSeconds ?? 0) + (Number(delta) || 0);
+        if (this._pinnedSeconds < 1.5) return false;
+
+        // A pinned player's own cell is perfectly occupiable, and
+        // resolveSafeSpawn anchors on a valid origin -- so it would report
+        // "nothing to do" and leave them stuck. Treating everything within
+        // PINNED_MIN_ESCAPE of the current position as blocked forces the
+        // search to return somewhere the player can actually walk on from.
+        const PINNED_MIN_ESCAPE = 0.6;
+        const result = resolveSafeSpawn({ x, z }, {
+            maxRadius: 6,
+            step: 0.25,
+            isBlocked: (cx, cz) => (
+                Math.hypot(cx - x, cz - z) < PINNED_MIN_ESCAPE
+                || !this.canOccupyPosition(cx, cz)
+                || this.isPlayerOverAnyHole(cx, cz)
+            )
+        });
+        this._pinnedSeconds = 0;
+        if (!result.moved) {
+            window.hbLog?.('PLAYER', 'warn', 'pinned-no-escape', { x, z });
+            return false;
+        }
+        this.player.position.x = result.x;
+        this.player.position.z = result.z;
+        this._pinnedLastPosition = { x: result.x, z: result.z };
+        window.hbLog?.('PLAYER', 'warn', 'pinned-recovered', {
+            from: { x, z }, to: { x: result.x, z: result.z }
+        });
+        return true;
+    }
+
     resolvePlayerDepenetration() {
         if (!this.player || this.noclip) return false;
 
