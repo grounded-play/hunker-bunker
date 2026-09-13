@@ -149,3 +149,7 @@ server/session-logs/
 # ships, so raw multi-megabyte GLBs must never live under it. Sources belong in
 # art/source/ (already ignored above).
 public/3D Objects/
+
+# Python bytecode from the scripts/blender tooling (py_compile, direct runs)
+__pycache__/
+*.py[cod]
