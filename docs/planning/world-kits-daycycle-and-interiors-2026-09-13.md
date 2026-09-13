@@ -161,7 +161,7 @@ geometry and no special-case authoring. Place it, and the descent exists.
 | **0** | Kit intake: convert to GLB, register placement types, record provenance | Every kit piece is addressable from a room build |
 | **1** | Restyle pass: palette, wear, variation in Blender | A kit corridor is indistinguishable from an authored one at a glance |
 | **2** | Corridor grammar: swap the random hallway skin per biome using one socket contract | Cave and bunker share a generator, differ only in skin |
-| **3** | Day cycle: sleep trigger, day counter, rest phase, difficulty and story gates | A run ends in camp and the next begins on day N+1 |
+| **3** | Day cycle: sleep trigger, day counter, rest phase, difficulty and story gates | **core done** — `src/dayCycle.js`, 18 tests |
 | **4** | Portals: enter structure, drop to sub-level, return stack | A player enters a building and comes back out where they left |
 | **5** | Camera: ceiling fade, sub-level framing | The player is never hidden by a roof |
 
@@ -172,3 +172,57 @@ camera. They are independent enough to land separately.
 
 - 2026-09-13 — kits acquired and verified CC0; cave/space grammar identity
   found; plan written.
+
+
+---
+
+## 7. Phase 3 — day cycle (implemented)
+
+`src/dayCycle.js`. Pure: no DOM, no Three.js, no storage. The caller owns
+persistence and presentation, which keeps the whole cycle unit-testable and
+lets the rest phase be a lit camp rather than a menu.
+
+### State machine
+
+```
+EXPEDITION --beginSleep--> SLEEPING --completeRest--> RESTING --beginExpedition--> EXPEDITION
+                                      day += 1
+                                      missed beats expire
+                                      difficulty recomputed
+```
+
+Each transition refuses from the wrong phase. Sleeping twice would advance the
+day twice and silently expire a beat the player never had a chance at, so
+`beginSleep` returns `started: false` rather than doing it.
+
+### Difficulty
+
+Sub-linear and capped: `1 + (day - 1) * 0.085`, ceiling `2.25`. Linear scaling
+makes early days trivial and late days impossible, and an uncapped curve means
+the campaign has a day beyond which it cannot be played. The cap is what lets a
+player who has fallen behind still catch up.
+
+`threatScaleForDay` **multiplies** the existing depth scale rather than
+replacing it, so depth still dominates within a run and the day is what makes
+each run harder than the last — they are different pressures and collapsing them
+would lose both. Speed scales at a third of HP's rate, because an enemy that
+outruns the player is unfair in a way that a tougher one is not.
+
+### Story deadlines
+
+Four beats carry a `closesOnDay`, expressed as the first day the beat is **no
+longer** available — "you have until day 4" is how a player reads it, and an
+off-by-one here silently eats content.
+
+`resolved` and `expired` are kept as separate lists on purpose. "Did it" and
+"can never do it" are different states, and collapsing them loses the reason an
+ending became unavailable — which is exactly what the ending-lock system needs
+to explain itself.
+
+`deadlinesClosingTonight` exists so the game can warn before the player sleeps.
+A deadline the player did not know about is a trap, not pressure.
+
+### Remaining for phase 3
+
+Persistence under `hb_day_cycle` (new key — bank and skill-tree keys are
+frozen), the sleep trigger at camp, and the rest-phase lighting state.
