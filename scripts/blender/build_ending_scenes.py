@@ -196,6 +196,14 @@ def import_asset(asset_rel_path: str, collection: bpy.types.Collection) -> bpy.t
     return root_obj
 
 
+def aim_object_at(obj: bpy.types.Object, target) -> None:
+    """Point a light (or any -Z-forward object) at a world-space point."""
+    import mathutils
+
+    direction = mathutils.Vector(target) - obj.location
+    obj.rotation_euler = direction.to_track_quat("-Z", "Y").to_euler()
+
+
 def create_camera(
     name: str,
     focal_length_mm: float,
@@ -1061,12 +1069,57 @@ def setup_scene_mothership_infection(root_col: bpy.types.Collection) -> list[bpy
     cam2.keyframe_insert("location", frame=78)
 
     # MI-03: 85mm collar close-up, shallow focus (frames 79-132)
+    # The operator (Ch48) stands at (0, 1.0, 0) and reaches z=1.60, so the
+    # collar this shot is named for sits at roughly z=1.40.
+    #
+    # As authored this camera sat 0.36m from the character with a 10 degree yaw,
+    # which on an 85mm lens put the subject entirely outside the frame -- 13
+    # objects in front of the camera, zero in frame, so it rendered black. It is
+    # now placed a little over a metre out, level with the collar, looking
+    # straight down +Y at it.
+    #
+    # Blender cameras look down -Z, so rotation X=90deg looks along +Y; 87deg
+    # adds the slight downward tilt onto the collar. No yaw: the subject is
+    # dead ahead and this is a locked close-up.
+    # The operator was standing in total darkness. Every existing spot points at
+    # the bed row at x=-2.2; nothing lit the character at (0, 1.0), so CAM_MI_03
+    # traced real geometry for 65 seconds and produced a black frame. This is
+    # the key/rim layer the framing spec calls for, added where it was missing.
+    operator_collar = (0.0, 1.0, 1.40)
+
+    # Key: clinical white from camera-left and above, the practical motivation
+    # being the surgical lighting already in this room.
+    op_key = create_point_spot_light(
+        "Light_Operator_Key", (0.92, 0.96, 1.0, 1.0), 140.0,
+        (-1.3, 0.1, 2.35), (0, 0, 0), True, 48.0, scene_col
+    )
+    aim_object_at(op_key, operator_collar)
+
+    # Rim: cool, from behind and opposite the key, so the collar separates from
+    # the dark room instead of merging into it. Low energy on purpose -- a rim
+    # that competes with the key reads as a second key.
+    op_rim = create_point_spot_light(
+        "Light_Operator_Rim", (0.35, 0.62, 0.95, 1.0), 90.0,
+        (1.1, 2.4, 2.0), (0, 0, 0), True, 42.0, scene_col
+    )
+    aim_object_at(op_rim, operator_collar)
+
     cam3 = create_camera("CAM_MI_03", 85.0, 1.4, scene_col)
-    cam3.location = (-0.2, 0.4, 1.55)
-    cam3.rotation_euler = (math.radians(85), 0, math.radians(10))
+    cam3.location = (0.05, -0.20, 1.46)
+    cam3.rotation_euler = (math.radians(87), 0, 0)
     cam3.keyframe_insert("location", frame=79)
-    cam3.location = (0.0, 1.4, 1.58)
+    # Slow push in -- 0.25m over 53 frames. At 85mm and ~1.2m the depth of field
+    # is shallow, so the focus empty riding the camera keeps the collar sharp
+    # through the move.
+    cam3.location = (0.05, 0.05, 1.43)
     cam3.keyframe_insert("location", frame=132)
+    # create_camera parks the focus empty 5m ahead, which is the right default
+    # for a wide. On an 85mm close-up with the subject at ~1.2m that puts the
+    # focus plane four metres past the collar and the shot renders as an
+    # abstract blur. Pull it onto the subject.
+    focus_mi3 = bpy.data.objects.get("FOCUS_MI_03")
+    if focus_mi3:
+        focus_mi3.location = (0.0, 0.0, -1.2)
 
     # MI-04: 35mm locked deep composition with slow pullback (frames 133-180)
     cam4 = create_camera("CAM_MI_04", 35.0, 2.4, scene_col)
