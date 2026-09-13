@@ -122,6 +122,22 @@ export const WORLD_3D_MODELS = Object.freeze({
     prop_vent_grate_exploded: { url: '/3d/runtime/new3ds/prop_vent_grate_exploded.glb', height: 0.65, yaw: 0 }
 });
 
+// Metric-scale set-piece shells are deliberately separate from prop models.
+// Props are height-normalized and recentered; structures must preserve the
+// Blender-authored 1 unit = 1 metre scale and module-NW origin.
+export const WORLD_3D_STRUCTURES = Object.freeze({
+    structure_reference_49m: Object.freeze({
+        url: '/3d/runtime/structures/structure_reference_49m.glb',
+        collision: '/3d/runtime/structures/structure_reference_49m.collision.glb',
+        footprint: Object.freeze({ w: 49, d: 49 }),
+        origin: 'module-nw-corner',
+        yaw: 0,
+        setpiece: 'structure-loader-proof',
+        module: 'reference',
+        stage: 'test'
+    })
+});
+
 const templates = new Map();
 export const WORLD_3D_FACING_YAW = Math.PI;
 
@@ -155,6 +171,54 @@ export async function createWorld3dModel(type) {
     const context = { type, url: config.url };
     const model = measurePerfPhase('world-model:clone', context, () => cloneSkeleton(gltf.scene));
     return measurePerfPhase('world-model:prepare', context, () => prepareWorld3dModel(model, type, config));
+}
+
+export async function createWorld3dStructure(type) {
+    const config = WORLD_3D_STRUCTURES[type];
+    if (!config) return null;
+    const [renderGltf, collisionGltf] = await Promise.all([
+        loadTemplate(config.url),
+        loadTemplate(config.collision)
+    ]);
+    const renderModel = cloneSkeleton(renderGltf.scene);
+    const collisionModel = cloneSkeleton(collisionGltf.scene);
+    return prepareWorld3dStructure(renderModel, collisionModel, type, config);
+}
+
+export function prepareWorld3dStructure(renderModel, collisionModel, type, config) {
+    const root = new THREE.Group();
+    root.name = `World3dStructure:${type}`;
+    root.rotation.y = config.yaw ?? 0;
+    root.userData = {
+        isWorld3dStructure: true,
+        structureType: type,
+        footprint: { ...config.footprint },
+        origin: config.origin,
+        setpiece: config.setpiece,
+        module: config.module,
+        stage: config.stage
+    };
+
+    renderModel.name = `${type}:render`;
+    renderModel.traverse((object) => {
+        if (!object.isMesh) return;
+        object.castShadow = true;
+        object.receiveShadow = true;
+        object.userData.isStructureRenderMesh = true;
+    });
+
+    collisionModel.name = `${type}:collision`;
+    collisionModel.visible = false;
+    collisionModel.traverse((object) => {
+        if (!object.isMesh) return;
+        object.userData.isStructureCollision = true;
+        object.castShadow = false;
+        object.receiveShadow = false;
+    });
+
+    // Intentionally no normalization, bounds-centering, or position rewrite.
+    root.add(renderModel, collisionModel);
+    return root;
 }
 
 function prepareWorld3dModel(model, type, config) {
