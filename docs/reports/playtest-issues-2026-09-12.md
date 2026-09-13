@@ -26,7 +26,19 @@ Both: `join=yes twoPlayerRoster=yes ready=yes deployed=yes remote3d=yes pvp=yes`
 | P1-1 gear hit target | **fixed** (44px min) | `pending` |
 | P1-1 ESC / controller Start | **already worked** — see below | — |
 | P1-3 HUD vs settings layering | **fixed + Deck regression** | `012b942` |
-| everything else | not started | — |
+| P0-1 PVP one-directional damage | **fixed by the other agent** | `df17049` |
+| (plan) 3 of 4 mandatory ship goals had no authored room | **fixed** | `7f3d578` |
+| P0-2 interaction cycling / unstick | not started — `threeGame.js` held by the other agent | — |
+| P0-3 black box as secondary objective | not started — same file | — |
+| P2-1..P2-7 loadout, Daily Op, inventory, turret, skill tree | not started | — |
+
+### Coordination note
+
+`src/threeGame.js` was uncommitted in the shared working tree during this pass,
+so P0-2 and P0-3 were deliberately left alone rather than risk clobbering
+in-flight work. They are the top of the queue the moment that file is free.
+Level-content work was taken instead because it is data-only and collides with
+nothing.
 
 ### P1-3 — resolution
 
