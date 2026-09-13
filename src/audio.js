@@ -35,6 +35,10 @@ const AudioContextClass = (typeof window !== 'undefined' ? window.AudioContext |
 export const audioCtx = new AudioContextClass();
 
 export class AudioManager {
+    // Last variant chosen per soundset key, so `noImmediateRepeat` has the
+    // history it needs. The selector is pure; the caller owns this.
+    static _lastSoundsetVariant = new Map();
+
     static buffers = {};
     static images = {};
     static globalMuted = false;
@@ -282,6 +286,35 @@ export class AudioManager {
         if (key === 'ui_hover') {
             this.playProceduralHover(options);
             return null;
+        }
+
+        // Authored soundsets take precedence over the numbered-variant guess
+        // below. GAME_SOUNDSETS is deliberately empty until assets clear
+        // audition and provenance review (see src/data/gameSoundsets.js), so
+        // today every lookup misses and this is a no-op passthrough -- the
+        // integration is wired and proven before the registry decides anything.
+        //
+        // `_fromSoundset` breaks the recursion: a resolved variant is played as
+        // an ordinary key and must never be re-resolved, or a soundset whose
+        // variant shares its own name would loop.
+        const soundset = options._fromSoundset ? null : GAME_SOUNDSETS[key];
+        if (soundset) {
+            const choice = selectSoundsetVariant(soundset, {
+                lastVariant: AudioManager._lastSoundsetVariant.get(key) ?? null,
+                // Only offer variants that actually decoded, so a missing file
+                // degrades to the soundset's own fallback instead of silence.
+                availableKeys: Object.keys(this.buffers)
+            });
+            if (choice) {
+                AudioManager._lastSoundsetVariant.set(key, choice.key);
+                return this.play(choice.key, {
+                    ...options,
+                    _fromSoundset: true,
+                    bus: choice.bus ?? options.bus,
+                    volume: (options.volume ?? 1) * (choice.gain ?? 1),
+                    playbackRate: (options.playbackRate ?? 1) * (choice.playbackRate ?? 1)
+                });
+            }
         }
 
         // Collect all keys that match 'key' exactly or are numbered variations like 'key1', 'key2'
@@ -1616,3 +1649,4 @@ export class AudioManager {
 AudioManager.init();
 import { assetUrl } from './assetUrl.js';
 import { PRESENTATION_EVENTS, presentationTelemetry } from './presentationTelemetry.js';
+import { GAME_SOUNDSETS, selectSoundsetVariant } from './data/gameSoundsets.js';

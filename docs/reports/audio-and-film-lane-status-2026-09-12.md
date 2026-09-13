@@ -32,7 +32,7 @@ existing five. The naming convention to match is `ending-<lowercasenospaces>.web
 
 ## Audio lane — two findings
 
-### 1. The soundset module has zero callers
+### 1. The soundset module has zero callers — **now wired**
 
 `src/data/gameSoundsets.js` exports `GAME_SOUNDSETS`, `validateSoundset` and a
 deterministic no-immediate-repeat selector, with tests. **Nothing imports it** —
@@ -43,8 +43,13 @@ fixed this session in `8afac60`, which was inert for the same reason). Worth
 flagging early here, because the module is new and the wiring is cheap now and
 expensive after the registry fills.
 
-**Not a defect yet** — see below — but it must be wired in the same pass that
-populates the registry, or the audio work will ship inert.
+**Resolved.** `AudioManager.play()` now consults `GAME_SOUNDSETS` before its
+numbered-variant guess, tracks the last variant per key so `noImmediateRepeat`
+has history, filters candidates to buffers that actually decoded, and guards the
+recursion with `_fromSoundset` so a variant sharing its soundset's name cannot
+loop. With the registry empty every lookup misses and the call is a no-op
+passthrough — the integration is proven before the registry decides anything,
+which was step 1 below.
 
 ### 2. The empty registry is deliberate, and should stay empty for now
 
@@ -68,9 +73,9 @@ blocker is audition and derivative-provenance review, which is a human gate.
 
 ### Suggested order for the audio lane
 
-1. Wire the selector to one real call site with the registry still empty, and
-   assert the empty-registry path is a clean no-op. This proves the integration
-   before any licensing decision is made.
+1. ~~Wire the selector with the registry still empty and assert the no-op
+   path.~~ **Done** — `AudioManager.play()`, 4 tests covering resolution,
+   variant history, alternation, and the untouched passthrough.
 2. Run the audition/provenance review on the CC0 intake
    (`docs/reports/blender-ending-audio-source-intake-2026-09-12.md`).
 3. Populate `GAME_SOUNDSETS` only with what passes, recording provenance per entry.
