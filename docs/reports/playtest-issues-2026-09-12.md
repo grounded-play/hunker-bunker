@@ -34,7 +34,9 @@ Both: `join=yes twoPlayerRoster=yes ready=yes deployed=yes remote3d=yes pvp=yes`
 | P1-6 terminal death pose | **fixed** | `c397156` |
 | P2-5 base/field turret model, scale and timing | **fixed** | `10a7a81` |
 | P2-4 one Relic Key per boss | **fixed; live Steam grant still needs acceptance** | `bdb590c` |
-| P2-1..P2-3, P2-6..P2-7 loadout, Daily Op, inventory, skill tree | not started | — |
+| P2-1 hero select layout | **not reproduced; intended delta needed** | browser evidence below |
+| P2-3 inventory-backed loadout | **already wired; live Steam acceptance needed** | `itemOwnership` + `armoryUi` |
+| P2-2, P2-6..P2-7 Daily Op, skill tree, start-raw | design contract required | — |
 
 ### Coordination note
 
@@ -166,6 +168,13 @@ downed-body visual is what is missing, not the death flow.
 Layout pass needed. Verify at **1280x800** (Deck) and 2304x1440 — both appear in these logs, and the
 Deck bounds have already caused three prior layout defects.
 
+**2026-09-12 browser rerun:** no mechanical layout failure reproduced at either
+viewport. All three cards, selected-operator preview, loadout/stats, operations,
+and return action remained visible; document width/height exactly matched the
+viewport (no overflow), and controller focus remained on the selected Tank
+card. A redesign needs the intended visual/order delta before implementation;
+the generic report "layout is wrong" is not enough to choose one safely.
+
 ### P2-2 Move Daily Op into the loadout screen, after the armory
 
 Daily Op should sit in the run-setup flow after the armory step, and should **list the daily goals
@@ -176,6 +185,14 @@ and challenges** there rather than being a separate destination.
 The new-run charm/loadout screen must map to actual owned inventory. Today the cosmetic/charm
 catalog is largely inert (`project_cosmetics_loadout_system`), so this is the wiring that makes
 ownership mean something.
+
+**Source reconciliation:** this path is already implemented. `main.js` creates
+one application-wide `itemOwnership` store and passes it to `armoryUi`;
+`buildEquipOptions` renders ownership-gated choices, Steam Vault refresh calls
+`loadout.reconcileOwnership(inventory)`, and that method clears charms, skins,
+mods, decals and chassis not present in the supplied inventory. What remains is
+a real-account Steam Inventory acceptance pass, not another catalog wiring
+change.
 
 ### P2-4 Grant a case unlock key per boss
 
