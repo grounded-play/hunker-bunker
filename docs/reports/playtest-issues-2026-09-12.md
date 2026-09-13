@@ -15,6 +15,43 @@ Both: `join=yes twoPlayerRoster=yes ready=yes deployed=yes remote3d=yes pvp=yes`
 
 ---
 
+## Progress
+
+| ID | Status | Commit |
+|---|---|---|
+| P1-2 wheel edits settings values | **fixed** | `959d182` |
+| (unreported) accessibility settings never ran | **fixed** | `8afac60` |
+| P1-4 dropdowns unthemed | **fixed** | `7259c11` |
+| P1-5 duplicate aim control on Deck | **fixed** | `7259c11` |
+| P1-3 HUD vs settings layering | **investigated, needs a screenshot** | — |
+| everything else | not started | — |
+
+### P1-3 — what the investigation found, and why it stopped
+
+The report reads two ways and they have opposite fixes:
+
+1. *Wrong stacking* — the HUD paints on top of the settings panel.
+2. *Too-transparent backdrop* — the stacking is correct and the HUD is simply
+   visible through it, which at 1280x800 reads as clutter.
+
+Facts gathered:
+
+- `.modal` is `z-index: 100000`, `background: rgba(0, 0, 0, 0.85)`, and
+  **`position: absolute`** — not `fixed`. It is sized to `#game-viewport`
+  (`#game-viewport > .modal` rules exist), so the backdrop covers that element's
+  box rather than the viewport. If the HUD lives outside `#game-viewport`, or
+  that element is smaller than the screen at Deck resolution, the dim never
+  reaches the HUD — which would explain why this is Deck-specific.
+- The only `z-index: 100000 !important` is `#debug-toolbar`, not HUD — ruled out.
+- Everything above `.modal` (250000+) is the loading screen, transition overlay
+  and door wipe — deliberately above modals, and not the HUD.
+
+Do not "fix" this by switching `.modal` to `position: fixed` without checking
+the container: if `#game-viewport` is transformed or scaled, `fixed` behaves
+like `absolute` anyway and the change would be inert while touching every modal
+in the game. **Resolve with a Deck screenshot first**, then either raise the
+backdrop coverage or hide the HUD while a modal is open.
+
 ## P0 — blockers
 
 ### P0-1 PVP damage is one-directional
