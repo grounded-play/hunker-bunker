@@ -94,3 +94,78 @@ before 893 frames are committed to it.
 
 The encode step is deliberately not written yet. Encoding badly-framed frames
 would produce five clips that look finished and are not.
+
+---
+
+## Update — framing, quality and post-processing (2026-09-13, later)
+
+### Implemented
+
+**Camera aim correction.** Every shot camera animates its LOCATION but held a
+hand-authored static rotation, so a dolly could not keep its subject framed.
+`aim_stray_cameras()` adds a `TRACK_TO` constraint to an `AIM_*` empty for any
+camera more than `MAX_OFF_AXIS_DEG` (12°) off the set centre — which is what
+`create_camera`'s own comment already asks for ("never keyframe a brittle
+numeric"), applied to rotation as well as focus. Correctly composed cameras are
+left exactly as authored.
+
+Only **CAM_MI_01 and CAM_MI_02** needed it. The other sixteen cameras across
+four scenes validated clean, so the framing defect was localised, not systemic.
+
+`validate_production_optics()` now also fails on framing, so this cannot
+regress silently.
+
+Three bugs were found and fixed in that check itself:
+- `matrix_world` does not reflect a `TRACK_TO` until the depsgraph is evaluated,
+  so a corrected camera measured as still broken.
+- Measuring a close-up that stands *inside* the set against the set centre is
+  meaningless — CAM_MI_03 scored 45° while framing exactly what it should.
+  Cameras inside the set bounds are now skipped.
+- The aim pass ran before the depsgraph reflected the freshly staged scene, so
+  it measured near-zero angles and corrected nothing, while validation ran after
+  an update and saw the real angles.
+
+**Quality.** Samples 128 → **256**. 128 left chroma noise in the deep shadows
+these sets are mostly made of, which the denoiser smeared into blotches — worse
+than the noise. Resolution was already 1920×1080 at 100%.
+
+**Post-processing** (`build_delivery_compositor`), applied at render time rather
+than baked into materials:
+- **Glare / Fog Glow**, threshold 1.0, strength 0.45 — so emissive practicals
+  read as light sources rather than flat bright patches. Threshold below 1.0
+  makes every lit wall glow.
+- **Chromatic aberration** via Lens Distortion dispersion 0.025, with distortion
+  held at **0.0** so the lens geometry the optics addendum fixes is not then
+  warped by the grade. Kept just-perceptible: CA reads as cheap the moment a
+  viewer can name it.
+- **No colour grade** — the view transform is already pinned to AgX Punchy, and
+  grading on top would make that decision meaningless.
+- A vignette was **scoped out rather than shipped half-working**: Blender 5.x
+  renames or removes the EllipseMask/MixRGB nodes the 4.x recipe needs.
+
+Blender 5.x moved three APIs that the 4.x idioms hit as hard errors, all now
+handled: the compositor is a **node group** on `scene.compositing_node_group`
+(no `RenderLayers`, no `Composite` node — group input/output instead); Glare
+settings are **input sockets**, not properties; and its Type menu takes display
+names (`"Fog Glow"`), not the old `FOG_GLOW` enum.
+
+All five scenes regenerated and validated.
+
+### Renders NOT started — and why
+
+The precondition "once they are framed up" is still not met.
+
+After the aim correction, `CAM_MI_01` at frame 20 renders more of the set but
+still weighted hard right with the left ~60% empty black. `CAM_MI_02` at frame
+60 renders **entirely black in 1.46s** — the render time alone says the camera
+has nothing in view.
+
+Kicking off 893 frames at ~40s each is roughly ten hours of machine time. Doing
+that against frames that do not hold an image would produce five clips that look
+finished and are not, which is worse than having none.
+
+**What this needs is an art pass on blocking**, not more automated correction:
+where each camera stands, what it is pointed at, and whether the practicals are
+lit at that frame. The pipeline underneath is proven — the scenes build, the
+optics validate, the compositor runs, and a correctly aimed camera renders real
+geometry.

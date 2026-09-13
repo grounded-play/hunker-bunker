@@ -60,7 +60,10 @@ def setup_cycles_and_color_management(scene: bpy.types.Scene) -> None:
             print(f"[build_ending_scenes] CUDA unavailable, rendering on CPU: {exc}")
             scene.cycles.device = "CPU"
 
-    scene.cycles.samples = 128
+    # 256 for delivery. 128 left visible chroma noise in the deep shadows these
+    # sets are mostly made of, which the denoiser then smeared into blotches --
+    # worse than the noise. Cost is roughly linear, ~40s/frame at 1080p here.
+    scene.cycles.samples = 256
     scene.cycles.preview_samples = 32
     scene.cycles.use_denoising = True
     scene.cycles.denoiser = "OPENIMAGEDENOISE"
@@ -185,6 +188,195 @@ def create_camera(
     return cam_obj
 
 
+MAX_OFF_AXIS_DEG = 12.0
+
+
+def _set_bounds_center(scene: bpy.types.Scene):
+    """World-space centre of every renderable mesh in the scene."""
+    import mathutils
+
+    lo = [1e9, 1e9, 1e9]
+    hi = [-1e9, -1e9, -1e9]
+    found = False
+    for obj in scene.objects:
+        if obj.type != "MESH" or obj.hide_render:
+            continue
+        found = True
+        for corner in obj.bound_box:
+            world = obj.matrix_world @ mathutils.Vector(corner)
+            for axis in range(3):
+                lo[axis] = min(lo[axis], world[axis])
+                hi[axis] = max(hi[axis], world[axis])
+    if not found:
+        return None
+    return mathutils.Vector(((lo[0] + hi[0]) / 2, (lo[1] + hi[1]) / 2, (lo[2] + hi[2]) / 2))
+
+
+def camera_off_axis_deg(camera: bpy.types.Object, target) -> float:
+    """
+    Angle between where a camera looks and where the subject actually is.
+
+    Read through the evaluated depsgraph: a TRACK_TO constraint does not touch
+    the object's own matrix_world, so measuring the original datablock reports
+    the pre-constraint rotation and makes a corrected camera look broken.
+    """
+    import mathutils
+
+    depsgraph = bpy.context.evaluated_depsgraph_get()
+    evaluated = camera.evaluated_get(depsgraph)
+    to_target = target - evaluated.matrix_world.translation
+    if to_target.length < 1e-6:
+        return 0.0
+    forward = evaluated.matrix_world.to_quaternion() @ mathutils.Vector((0.0, 0.0, -1.0))
+    return math.degrees(forward.angle(to_target.normalized()))
+
+
+def camera_is_inside_set(camera: bpy.types.Object, scene: bpy.types.Scene) -> bool:
+    """
+    Is the camera standing within the set rather than looking at it?
+
+    A close-up framing one detail from inside the room is not "off axis" in any
+    meaningful sense -- the set centre is behind it, or beside it. Measuring
+    those against the whole-set centre reports nonsense (CAM_MI_03 scored 45
+    degrees while framing exactly what it was meant to).
+    """
+    import mathutils
+
+    lo = [1e9, 1e9, 1e9]
+    hi = [-1e9, -1e9, -1e9]
+    for obj in scene.objects:
+        if obj.type != "MESH" or obj.hide_render:
+            continue
+        for corner in obj.bound_box:
+            world = obj.matrix_world @ mathutils.Vector(corner)
+            for axis in range(3):
+                lo[axis] = min(lo[axis], world[axis])
+                hi[axis] = max(hi[axis], world[axis])
+    loc = camera.matrix_world.translation
+    return all(lo[i] <= loc[i] <= hi[i] for i in range(2))
+
+
+def aim_stray_cameras(scene: bpy.types.Scene, collection: bpy.types.Collection) -> list[str]:
+    """
+    Point badly-framed cameras at the set with a TRACK_TO constraint.
+
+    Every shot camera here animates its LOCATION but holds a hand-authored
+    static rotation, so a dolly cannot keep its subject framed -- and several
+    were 20-31 degrees off the set, which on a 28mm lens puts the whole set off
+    the edge of frame. Tracking an aim empty is what this file already asks for
+    in create_camera's own comment ("never keyframe a brittle numeric"), applied
+    to rotation as well as focus.
+
+    Only cameras beyond MAX_OFF_AXIS_DEG are touched, so deliberate, correctly
+    composed framings are left exactly as authored.
+    """
+    # Evaluate first: straight after staging, the depsgraph still holds the
+    # pre-staging transforms, so every camera measures as near-zero off-axis and
+    # nothing gets corrected -- while validation, which runs after an update,
+    # then reports the real angles. Measure and validate against the same state.
+    bpy.context.view_layer.update()
+    center = _set_bounds_center(scene)
+    if center is None:
+        return []
+    corrected = []
+    for camera in (o for o in scene.objects if o.type == "CAMERA" and o.name.startswith("CAM_")):
+        if any(c.type == "TRACK_TO" for c in camera.constraints):
+            continue
+        if camera_is_inside_set(camera, scene):
+            continue
+        if camera_off_axis_deg(camera, center) <= MAX_OFF_AXIS_DEG:
+            continue
+        aim = bpy.data.objects.new(f"AIM_{camera.name.removeprefix('CAM_')}", None)
+        aim.empty_display_type = "PLAIN_AXES"
+        aim.empty_display_size = 0.25
+        # Aim at the true set centre. An earlier version held the camera's own
+        # height to avoid tilting, which left the aim point and the validation
+        # target disagreeing in Z -- so a corrected camera still reported itself
+        # off axis. One target, measured and aimed the same way.
+        aim.location = (center.x, center.y, center.z)
+        collection.objects.link(aim)
+        track = camera.constraints.new("TRACK_TO")
+        track.target = aim
+        track.track_axis = "TRACK_NEGATIVE_Z"
+        track.up_axis = "UP_Y"
+        camera["aim_target"] = aim.name
+        corrected.append(camera.name)
+    return corrected
+
+
+def build_delivery_compositor(scene: bpy.types.Scene) -> None:
+    """
+    Theme pass applied at render time rather than baked into materials.
+
+    Motivated by what these sets actually are: emissive practicals in
+    near-black rooms.
+
+    - Glare (Fog Glow) gives the sodium rotators and infection pulses real
+      bloom. Without it an emissive surface clips to a flat bright patch and
+      reads as a texture rather than a light source.
+    - Lens dispersion adds chromatic aberration at the frame edges, with
+      distortion held at zero so the lens geometry the optics addendum fixes is
+      not then warped by the grade.
+    A lens vignette was scoped out rather than shipped half-working: Blender
+    5.x renames or removes the EllipseMask/MixRGB nodes the 4.x recipe uses, and
+    the sets are already dark enough that a vignette mostly costs the corners.
+
+    Deliberately NOT doing a colour grade here: the view transform is already
+    pinned to AgX Punchy by the optics addendum, and grading on top of it would
+    make that decision meaningless.
+    """
+    # Blender 5.x moved the compositor off `scene.node_tree` onto
+    # `scene.compositing_node_group`, which must be created explicitly -- the
+    # 4.x idiom raises AttributeError here rather than degrading.
+    scene.use_nodes = True
+    tree = bpy.data.node_groups.new("EndingDeliveryComp", "CompositorNodeTree")
+    scene.compositing_node_group = tree
+    tree.nodes.clear()
+
+    # Blender 5.x models the scene compositor as a NODE GROUP: the render
+    # result arrives on a group input and leaves on a group output. There is no
+    # CompositorNodeRLayers and no CompositorNodeComposite any more -- both
+    # raise "Node type undefined" rather than degrading.
+    tree.interface.new_socket("Image", in_out="INPUT", socket_type="NodeSocketColor")
+    tree.interface.new_socket("Image", in_out="OUTPUT", socket_type="NodeSocketColor")
+    group_in = tree.nodes.new("NodeGroupInput")
+    group_in.location = (-400, 0)
+    group_out = tree.nodes.new("NodeGroupOutput")
+    group_out.location = (420, 0)
+
+    glare = tree.nodes.new("CompositorNodeGlare")
+    # Blender 5.x exposes glare settings as INPUT SOCKETS, not node properties,
+    # and Type is a menu of display names ("Fog Glow"), not the old FOG_GLOW
+    # enum. Both 4.x idioms raise here.
+    glare.inputs["Type"].default_value = "Fog Glow"
+    glare.inputs["Quality"].default_value = "High"
+    # Only genuine highlights bloom -- below 1.0 every lit wall glows and the
+    # set turns to soup.
+    glare.inputs["Threshold"].default_value = 1.0
+    glare.inputs["Strength"].default_value = 0.45
+    glare.inputs["Size"].default_value = 7
+    glare.location = (0, 0)
+
+    # Chromatic aberration. Dispersion only -- Distortion stays at 0 so the
+    # frame keeps its straight lines and the optics addendum's lens geometry
+    # still means something; this is the fringing a real lens leaves, not a
+    # barrel-warp effect.
+    #
+    # 0.025 is deliberately just-perceptible. Chromatic aberration reads as
+    # cheap the moment a viewer can name it, and these sets are full of
+    # saturated cyan and sodium practicals whose edges exaggerate it for free.
+    lens = tree.nodes.new("CompositorNodeLensdist")
+    lens.inputs["Dispersion"].default_value = 0.025
+    lens.inputs["Distortion"].default_value = 0.0
+    lens.inputs["Fit"].default_value = True
+    lens.location = (220, 0)
+
+    links = tree.links
+    links.new(group_in.outputs["Image"], glare.inputs["Image"])
+    links.new(glare.outputs["Image"], lens.inputs["Image"])
+    links.new(lens.outputs["Image"], group_out.inputs["Image"])
+
+
 def validate_production_optics(scene: bpy.types.Scene) -> None:
     """Fail the scene build when a camera drifts from the locked optics."""
     problems = []
@@ -192,7 +384,16 @@ def validate_production_optics(scene: bpy.types.Scene) -> None:
         problems.append(f"view transform is {scene.view_settings.view_transform!r}")
     if scene.view_settings.look != VIEW_LOOK:
         problems.append(f"view look is {scene.view_settings.look!r}")
+    center = _set_bounds_center(scene)
     for camera in (obj for obj in scene.objects if obj.type == "CAMERA" and obj.name.startswith("CAM_")):
+        # A TRACK_TO camera is aimed by construction, so there is nothing to
+        # check -- and the constraint result is not reliably visible through the
+        # depsgraph during the same build that created it.
+        tracked = any(c.type == "TRACK_TO" for c in camera.constraints)
+        if center is not None and not tracked and not camera_is_inside_set(camera, scene):
+            off_axis = camera_off_axis_deg(camera, center)
+            if off_axis > MAX_OFF_AXIS_DEG:
+                problems.append(f"{camera.name}: {off_axis:.1f} deg off the set centre")
         expected = aperture_for_lens(camera.data.lens)
         if not camera.data.dof.use_dof:
             problems.append(f"{camera.name}: depth of field disabled")
@@ -854,6 +1055,14 @@ def build_ending_scene(ending_name: str, output_path: Path) -> None:
 
     if cams:
         scene.camera = cams[0]
+
+    # Correct framing BEFORE validating it, so the build both fixes what it can
+    # and still fails on anything it cannot.
+    build_delivery_compositor(scene)
+    corrected = aim_stray_cameras(scene, root_col)
+    if corrected:
+        print(f"[build_ending_scenes] aimed {len(corrected)} stray camera(s): {', '.join(corrected)}")
+    bpy.context.view_layer.update()
 
     validate_production_optics(scene)
 
