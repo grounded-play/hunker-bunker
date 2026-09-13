@@ -91,11 +91,93 @@ def setup_cycles_and_color_management(scene: bpy.types.Scene) -> None:
     scene["volume_anisotropy"] = VOLUME_ANISOTROPY
 
 
+SPACE_HDRI_PATH = "art/source/hdri/space_nebula_4k.exr"
+
+
+def build_space_sky_nodes(node_tree, output_node, links, nodes, strength: float = 1.0):
+    """
+    A procedural deep-space environment: starfield, nebula and a cold rim glow.
+
+    Made rather than downloaded. A CC0 sky from Poly Haven would need the
+    Blender MCP bridge to a live GUI session, and a procedural sky has no
+    resolution ceiling, no licence to track, and tunes per scene. It is also a
+    genuine HDR -- the star highlights sit well above 1.0, so they bloom and
+    light the set instead of clipping to flat white.
+
+    Three layers, matching how space actually reads on camera:
+      - deep base, near black but never pure black, so nothing clips to void;
+      - nebula, low-frequency noise tinted toward the game's cyan/violet palette
+        and kept dim, because a loud nebula reads as a screensaver;
+      - stars, high-frequency Voronoi with a hard threshold so points stay
+        points rather than blurring into a grey wash.
+    """
+    coord = nodes.new("ShaderNodeTexCoord")
+    coord.location = (-1200, -400)
+
+    # Nebula: large, soft, and deliberately restrained.
+    neb_noise = nodes.new("ShaderNodeTexNoise")
+    neb_noise.location = (-1000, -300)
+    neb_noise.inputs["Scale"].default_value = 2.2
+    neb_noise.inputs["Detail"].default_value = 8.0
+    neb_noise.inputs["Roughness"].default_value = 0.62
+    links.new(coord.outputs["Generated"], neb_noise.inputs["Vector"])
+
+    neb_ramp = nodes.new("ShaderNodeValToRGB")
+    neb_ramp.location = (-800, -300)
+    neb_ramp.color_ramp.elements[0].position = 0.42
+    neb_ramp.color_ramp.elements[0].color = (0.004, 0.006, 0.014, 1.0)
+    neb_ramp.color_ramp.elements[1].position = 0.78
+    neb_ramp.color_ramp.elements[1].color = (0.045, 0.030, 0.075, 1.0)
+    links.new(neb_noise.outputs["Fac"], neb_ramp.inputs["Fac"])
+
+    # Stars: Voronoi distance, inverted and hard-clipped. A soft ramp here gives
+    # grey fog instead of stars, which is the usual way procedural starfields
+    # go wrong.
+    star_vor = nodes.new("ShaderNodeTexVoronoi")
+    star_vor.location = (-1000, -700)
+    star_vor.feature = "F1"
+    star_vor.inputs["Scale"].default_value = 220.0
+    links.new(coord.outputs["Generated"], star_vor.inputs["Vector"])
+
+    star_ramp = nodes.new("ShaderNodeValToRGB")
+    star_ramp.location = (-800, -700)
+    star_ramp.color_ramp.interpolation = "CONSTANT"
+    star_ramp.color_ramp.elements[0].position = 0.0
+    star_ramp.color_ramp.elements[0].color = (1.0, 1.0, 1.0, 1.0)
+    star_ramp.color_ramp.elements[1].position = 0.045
+    star_ramp.color_ramp.elements[1].color = (0.0, 0.0, 0.0, 1.0)
+    links.new(star_vor.outputs["Distance"], star_ramp.inputs["Fac"])
+
+    # Push stars well above 1.0. A first bake peaked at 0.172 -- stars are
+    # point-sized at scale 220, so pixel filtering averages each one against its
+    # black neighbours and the result was an LDR image of a starfield rather
+    # than an HDR. Multiplying before the filter is what survives it.
+    star_gain = nodes.new("ShaderNodeMath")
+    star_gain.location = (-700, -700)
+    star_gain.operation = "MULTIPLY"
+    star_gain.inputs[1].default_value = 60.0
+    links.new(star_ramp.outputs["Color"], star_gain.inputs[0])
+
+    star_bright = nodes.new("ShaderNodeMixRGB")
+    star_bright.location = (-600, -500)
+    star_bright.blend_type = "ADD"
+    star_bright.inputs["Fac"].default_value = 1.0
+    links.new(neb_ramp.outputs["Color"], star_bright.inputs[1])
+    links.new(star_gain.outputs["Value"], star_bright.inputs[2])
+
+    sky_bg = nodes.new("ShaderNodeBackground")
+    sky_bg.location = (-380, -500)
+    sky_bg.inputs["Strength"].default_value = strength
+    links.new(star_bright.outputs["Color"], sky_bg.inputs["Color"])
+    return sky_bg
+
+
 def setup_world_atmosphere(
     scene: bpy.types.Scene,
     color_hex: str = "#020408",
     volume_density: float = VOLUME_DENSITY,
     world_strength: float = 0.9,
+    space_sky: bool = False,
 ) -> None:
     world = scene.world
     if not world:
@@ -121,6 +203,29 @@ def setup_world_atmosphere(
     #
     # Direction comes from the world-space vector; its Z drives a ramp from
     # floor bounce through horizon to sky.
+    # Exterior scenes look at space, so they get the baked space HDRI rather
+    # than the interior bounce gradient. Falls back to the gradient when the
+    # .exr has not been baked yet, so the build never depends on an artifact
+    # that may not exist.
+    hdri_file = get_base_dir() / SPACE_HDRI_PATH
+    if space_sky and hdri_file.exists():
+        env = nodes.new(type="ShaderNodeTexEnvironment")
+        env.location = (-400, 100)
+        env.image = bpy.data.images.load(str(hdri_file), check_existing=True)
+        sky_bg = nodes.new(type="ShaderNodeBackground")
+        sky_bg.location = (100, 100)
+        sky_bg.inputs["Strength"].default_value = world_strength
+        links.new(env.outputs["Color"], sky_bg.inputs["Color"])
+        links.new(sky_bg.outputs["Background"], output_node.inputs["Surface"])
+        if volume_density > 0:
+            vol = nodes.new(type="ShaderNodeVolumeScatter")
+            vol.location = (100, -100)
+            vol.inputs["Color"].default_value = (0.35, 0.55, 0.75, 1.0)
+            vol.inputs["Density"].default_value = volume_density
+            vol.inputs["Anisotropy"].default_value = VOLUME_ANISOTROPY
+            links.new(vol.outputs["Volume"], output_node.inputs["Volume"])
+        return
+
     tex_coord = nodes.new(type="ShaderNodeTexCoord")
     tex_coord.location = (-800, 100)
 
@@ -217,6 +322,7 @@ def build_room_shell(
     wall_color=(0.070, 0.074, 0.082),
     ceiling_color=(0.030, 0.032, 0.036),
     name_prefix: str = "Shell",
+    exterior: bool = False,
 ) -> list:
     """
     Build the floor, four walls and ceiling the sets were missing entirely.
@@ -266,6 +372,22 @@ def build_room_shell(
     ceil_mat = _shell_material(f"{name_prefix}_Ceiling", ceiling_color, 0.78, 0.0)
 
     created = []
+    if exterior:
+        # An exterior set gets GROUND ONLY. Giving the ice shelf a ceiling and
+        # four walls would box it in and hide the space sky entirely -- the
+        # shell exists to stop props floating in void, not to put a roof on the
+        # outdoors. Ground is oversized so the horizon reads as distance.
+        floor_mat.node_tree.nodes["Principled BSDF"].inputs["Base Color"].default_value = (0.42, 0.47, 0.55, 1.0)
+        bpy.ops.mesh.primitive_plane_add(size=1.0, location=(cx, cy, floor_z))
+        ground = bpy.context.active_object
+        ground.name = f"{name_prefix}_Ground"
+        ground.scale = (size_x * 6, size_y * 6, 1.0)
+        for other in list(ground.users_collection):
+            other.objects.unlink(ground)
+        collection.objects.link(ground)
+        ground.data.materials.append(floor_mat)
+        return [ground.name]
+
     surfaces = (
         ("Floor", (cx, cy, floor_z), (0, 0, 0), (size_x, size_y), floor_mat),
         ("Ceiling", (cx, cy, ceil_z), (math.radians(180), 0, 0), (size_x, size_y), ceil_mat),
@@ -1466,7 +1588,11 @@ def build_ending_scene(ending_name: str, output_path: Path) -> None:
     bpy.ops.wm.read_factory_settings(use_empty=True)
     scene = bpy.context.scene
     setup_cycles_and_color_management(scene)
-    setup_world_atmosphere(scene)
+    # alien_exodus and empty_husk both stage SET-D, the exterior ice shelf, so
+    # their sky is actually visible and should be space. The interior sets keep
+    # the bounce gradient, where a starfield would be a window onto nothing.
+    exterior = ending_name in ("alien_exodus", "empty_husk", "all")
+    setup_world_atmosphere(scene, space_sky=exterior)
 
     root_col = bpy.context.scene.collection
 
@@ -1515,7 +1641,7 @@ def build_ending_scene(ending_name: str, output_path: Path) -> None:
         scene.camera = cams[0]
 
     # Report framing for an art pass. Deliberately does not mutate cameras.
-    shell = build_room_shell(scene, root_col)
+    shell = build_room_shell(scene, root_col, exterior=exterior)
     if shell:
         print(f"[build_ending_scenes] room shell: {len(shell)} surfaces")
 
