@@ -7,6 +7,37 @@
 
 ---
 
+## 0. Test render results — all 20 shots
+
+Full pass via `scripts/render-shot-tests.sh`, one mid-shot frame each:
+
+```
+MI-01 2,080,141   MI-02 1,371,106   MI-03 2,090,371   MI-04 1,659,086
+AE-01 1,610,687   AE-02 1,912,544   AE-03 1,381,757   AE-04   941,130  <-- black
+OE-01 2,378,228   OE-02 1,381,922   OE-03 1,328,046   OE-04 1,907,636
+FC-01 1,726,246   FC-02 2,080,089   FC-03 2,180,936   FC-04 1,290,725
+EH-01 2,264,423   EH-02 1,503,626   EH-03 1,846,856   EH-04 1,797,586
+```
+
+**19 of 20 passed.** The size heuristic flagged AE-04 at 941,130 bytes — within
+ten bytes of the known black-frame signature — and it was black when opened.
+That is the check working exactly as intended: one suspect out of twenty,
+correctly identified, without opening nineteen good frames.
+
+**AE-04 is now fixed.** That pass predated the room shell and the space HDRI on
+`alien_exodus`. Re-rendered against the current scene it produces 2,062,830
+bytes in 88 seconds with **31 of 32 objects in frame** — a lit shuttle with
+figures, warm ground bounce casting long shadows, and cool rim separation. The
+ground plane is doing its job: light and shadow now land on something instead of
+falling into void.
+
+**So every one of the 20 shots renders.** One new defect visible in AE-04: a
+solid black rectangle in the near foreground, which reads as a prop whose
+material failed to import rather than a lighting problem. Worth chasing before
+a full render.
+
+---
+
 ## 1. Current state of all five files
 
 | Scene | Props | Shell | Lights | Cams | Sky |
