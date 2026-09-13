@@ -144,6 +144,13 @@ def main() -> None:
             # Materials must travel: the whole point of this pass is the look.
             export_materials="EXPORT",
             export_apply=True,
+            # Draco. These are 80 structural pieces shipping in public/, which
+            # is under a hard Steam payload budget -- the uncompressed export
+            # pushed the build over it. Geometry compression is the right lever
+            # here because kit pieces are all position/normal data with almost
+            # no texture weight.
+            export_draco_mesh_compression_enable=True,
+            export_draco_mesh_compression_level=6,
         )
         written += 1
 
