@@ -309,6 +309,44 @@ export const ROOM_BUILD_CATALOG = Object.freeze([
     // ---------------------------------------------------------------------
 
     Object.freeze({
+        id: 'reactor_vent_station',
+        family: 'engineering',
+        pattern: rectRoomPattern(15, 11, [
+            { x: 3, y: 3, w: 2, h: 5 },
+            { x: 10, y: 3, w: 2, h: 5 },
+            { x: 6, y: 2, w: 3, h: 2 }
+        ]),
+        sockets: [
+            { id: 'entry', side: 's', width: 3, required: true },
+            { id: 'serviceExit', side: 'n', width: 3, required: false }
+        ],
+        rotationPolicy: 'cardinal',
+        tierEligibility: [1, 2],
+        biomeEligibility: ['active', 'cryo'],
+        roles: ['questDestination', 'objective'],
+        structuralAnchors: [
+            { id: 'vent_stack_a', type: 'prop_conduit_hub', x: 4, y: 5 },
+            { id: 'vent_stack_b', type: 'prop_conduit_hub', x: 11, y: 5 }
+        ],
+        interactionAnchors: [
+            { id: 'reactor_vent_control', type: 'prop_valve_wheel_fused', x: 7, y: 8 }
+        ],
+        compassAnchors: { approach: 'entry', objective: 'reactor_vent_control' },
+        coverZones: [{ x: 2, y: 2, w: 4, h: 7 }, { x: 9, y: 2, w: 4, h: 7 }],
+        encounterZones: [{ id: 'vent_floor', x: 6, y: 4, w: 3, h: 4 }],
+        rewardAnchors: [{ id: 'vent_service_cache', type: 'prop_bunker_supplies', x: 12, y: 8 }],
+        loreAnchors: [{ id: 'vent_shift_log', type: 'lore_terminal', x: 2, y: 8 }],
+        hazardZones: [{ id: 'steam_plume', x: 6, y: 2, w: 3, h: 2 }],
+        quietZones: [],
+        safeZone: false,
+        containmentBounds: { minX: 0, minY: 0, maxX: 14, maxY: 10 },
+        presentationVariants: ['pressurized', 'venting', 'stabilized'],
+        stateVariants: ['dormant', 'questActive', 'resolved'],
+        adjacency: { prefers: ['service_passage', 'pressure_corridor'], forbids: ['camp'] },
+        contentBudget: { structuralLarge: 2, activityZones: 2, pickupsMin: 1, enemiesMax: 3 }
+    }),
+
+    Object.freeze({
         id: 'hull_fabrication_bay',
         family: 'engineering',
         // Two gantry blocks leave a working aisle down the middle and a full
