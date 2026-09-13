@@ -18,7 +18,6 @@ from pathlib import Path
 import sys
 
 import bpy
-from mathutils import Euler, Vector
 
 
 def get_base_dir() -> Path:
