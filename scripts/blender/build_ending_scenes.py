@@ -2201,6 +2201,9 @@ def setup_scene_empty_husk(root_col: bpy.types.Collection) -> list[bpy.types.Obj
     return [cam1, cam2, cam3, cam4]
 
 
+FX_ENABLE_BOIDS = False
+
+
 def build_ending_scene(ending_name: str, output_path: Path) -> None:
     print(f"Building ending scene '{ending_name}' -> {output_path}")
     bpy.ops.wm.read_factory_settings(use_empty=True)
@@ -2322,10 +2325,26 @@ def build_ending_scene(ending_name: str, output_path: Path) -> None:
     add_drift_motes(
         bpy, f"FX_Motes_{ending_name}", root_col,
         center=fx_center, size=fx_size,
-        count=2600 if exterior else 1800,
+        count=1200 if exterior else 800,
         color=fx_color, frame_end=scene.frame_end, seed=7,
     )
-    if fx_swarm:
+    # Boids are DISABLED for rendering, and this is a measured decision rather
+    # than a taste one.
+    #
+    # A boid system is simulated forward from frame 1 on every render
+    # invocation, so its cost scales with a shot's START frame, not its length.
+    # MI-01 (frames 0-42) rendered fine twice; MI-02 (43-78) failed twice at the
+    # same place, and later shots start later still. Single frames render in
+    # ~9s; the same frames as a range timed out past 400s.
+    #
+    # Drift motes stay: they are Newtonian, cheap, and carry most of the visual
+    # benefit. The flock was the expensive third of the effect for a fraction of
+    # the read.
+    #
+    # Re-enable by baking the simulation into the .blend so it is solved once
+    # rather than per invocation -- that is the real fix, and it is a separate
+    # piece of work.
+    if fx_swarm and FX_ENABLE_BOIDS:
         # Boids only where something is alive in the air. A flock in the dead
         # husk would contradict that ending's whole point.
         add_boid_swarm(
