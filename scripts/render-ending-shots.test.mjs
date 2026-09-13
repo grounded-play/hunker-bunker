@@ -24,10 +24,25 @@ describe('ending shot render plan', () => {
         ]);
     });
 
-    it('reports every real scene as present', () => {
-        const plan = planRenders(manifest);
+    it('plans all 20 shots with no structural problems', () => {
+        // `exists` is injected rather than hitting the filesystem. The .blend
+        // files live under art/source/, which is gitignored -- they are
+        // generated artifacts, so a fresh CI checkout has none of them. An
+        // earlier version of this test asserted they were present, which passed
+        // on a machine that had just built them and could never pass in CI.
+        //
+        // Whether the scenes exist is a question for the --check CLI, run
+        // against a real working tree. What belongs here is the planning logic:
+        // every shot resolves to a scene path, a camera and a usable range.
+        const plan = planRenders(manifest, { exists: () => true });
         expect(plan.problems).toEqual([]);
         expect(plan.shots).toHaveLength(20);
+    });
+
+    it('reports a missing scene per shot rather than failing silently', () => {
+        const plan = planRenders(manifest, { exists: () => false });
+        expect(plan.problems).toHaveLength(20);
+        expect(plan.problems[0]).toMatch(/missing scene/);
     });
 
     it('collects all problems rather than stopping at the first', () => {
@@ -59,7 +74,7 @@ describe('ending shot render plan', () => {
     });
 
     it('targets the production scene, never the empty per-shot shell', () => {
-        const plan = planRenders(manifest);
+        const plan = planRenders(manifest, { exists: () => true });
         for (const shot of plan.shots) {
             expect(shot.blend).toMatch(/blender-prerenders\/scenes\/ending_/);
         }
