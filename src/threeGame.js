@@ -229,6 +229,17 @@ import { LANDFORMS, pickLandform, applyLandform, applyCanyonCollapse, connectPor
 import { getDepthThreatScale, getProgressionSlot, progressionWorldTarget } from './worldProgression.js';
 import { corridorKitPlacement } from './kitGrammar.js';
 import {
+    PLANE_KINDS,
+    activePlane,
+    beginTransition,
+    cameraForPlane,
+    ceilingFadeAlpha,
+    createPlaneStack,
+    endTransition,
+    enterPlane,
+    leavePlane
+} from './portalPlanes.js';
+import {
     DAY_STATE_KEY,
     REST_PHASES,
     beginExpedition,
@@ -1373,6 +1384,8 @@ export class ThreeGame {
         this.worldRouteRecords = new Map();
         this.pocketGroups = new Map();
         this.isInPocket = false;
+        this.planeState = createPlaneStack();
+        this._surfaceCameraBeforePortal = null;
         this.chunkMeshes = new Map();
         this.chunkGroups = new THREE.Group();
         this._chunkTemplateCache = new Map();
@@ -8173,6 +8186,7 @@ export class ThreeGame {
         fp.measure('updateWeaponState', () => this.updateWeaponState(delta));
         fp.measure('updateProjectiles', () => this.updateProjectiles(delta));
         fp.measure('updateCamera', () => this.updateCamera(delta));
+        fp.measure('updatePortalPlanePresentation', () => this.updatePortalPlanePresentation?.());
         this._lastFrameDeltaForChunkMounts = delta;
         fp.measure('syncVisibleChunks', () => this.syncVisibleChunks());
         if (this._milestoneBossRestagePending) this.restageReadyMilestoneBosses?.();
@@ -17854,6 +17868,10 @@ export class ThreeGame {
         this.virtualInput.z = 0;
         this.isMoving = false;
         this.isPlayerFalling = false;
+        // Death/reset is also a hard portal unwind. A run must never respawn
+        // with sublevel camera limits or a stale interior on its plane stack.
+        this.restoreSurfaceCameraAfterPortal?.();
+        this.planeState = createPlaneStack();
         this.isInPocket = false;
         this._pocketHoleX = null;
         this._pocketHoleZ = null;
@@ -23390,6 +23408,24 @@ export class ThreeGame {
         floor.position.set(pocket.centerCell.x, 0, pocket.centerCell.y);
         group.add(floor);
 
+        // A covered sublevel needs an actual roof, not an implied black void.
+        // It starts at the contract's minimum cutaway opacity because this
+        // group only becomes visible after entering the pocket plane.
+        const ceilingMaterial = this.wallMaterial.clone();
+        ceilingMaterial.transparent = true;
+        ceilingMaterial.opacity = 0.12;
+        ceilingMaterial.depthWrite = false;
+        ceilingMaterial.side = THREE.DoubleSide;
+        const ceiling = new THREE.Mesh(
+            new THREE.PlaneGeometry(pocket.size, pocket.size),
+            ceilingMaterial
+        );
+        ceiling.rotation.x = Math.PI / 2;
+        ceiling.position.set(pocket.centerCell.x, this.wallHeight + 0.08, pocket.centerCell.y);
+        ceiling.renderOrder = 9;
+        ceiling.userData = { isPortalCeiling: true, baseOpacity: 1 };
+        group.add(ceiling);
+
         for (let y = 0; y < pocket.size; y += 1) {
             for (let x = 0; x < pocket.size; x += 1) {
                 if (pocket.grid[y][x] !== '#') continue;
@@ -23485,6 +23521,23 @@ export class ThreeGame {
     }
 
     enterPocket(holeWorldX, holeWorldZ) {
+        const transition = beginTransition(this.planeState ?? createPlaneStack());
+        if (!transition.began) return false;
+        this.planeState = endTransition(transition.state).state;
+        const entered = enterPlane(this.planeState, {
+            id: `pocket:${this.getWallKey(holeWorldX, holeWorldZ)}`,
+            kind: PLANE_KINDS.SUBLEVEL,
+            returnTo: {
+                x: this.player?.position?.x ?? holeWorldX,
+                y: 0,
+                z: this.player?.position?.z ?? holeWorldZ
+            }
+        });
+        if (!entered.entered) return false;
+        this.planeState = entered.state;
+        this.captureSurfaceCameraBeforePortal?.();
+        this.applyPortalCameraProfile?.(entered.camera);
+
         const damage = this.resolveFallDamage();
         this.takeDamage(damage, 'fall');
 
@@ -23509,10 +23562,20 @@ export class ThreeGame {
             this.player.rotation.set(0, 0, 0);
         }
         this.setInputEnabled(true);
+        window.dispatchEvent(new CustomEvent('portal-plane-entered', {
+            detail: { plane: entered.plane, depth: this.planeState.stack.length - 1 }
+        }));
+        return true;
     }
 
     exitPocket() {
-        if (!this.isInPocket) return;
+        if (!this.isInPocket) return false;
+        const transition = beginTransition(this.planeState ?? createPlaneStack());
+        if (!transition.began) return false;
+        this.planeState = endTransition(transition.state).state;
+        const left = leavePlane(this.planeState);
+        if (!left.left) return false;
+        this.planeState = left.state;
         const holeWorldX = this._pocketHoleX;
         const holeWorldZ = this._pocketHoleZ;
 
@@ -23523,15 +23586,90 @@ export class ThreeGame {
         if (this.chunkGroups) this.chunkGroups.visible = true;
 
         if (this.player) {
-            this.player.position.x = holeWorldX;
-            this.player.position.z = holeWorldZ;
-            this.player.position.y = 0;
+            this.player.position.x = left.returnTo?.x ?? holeWorldX;
+            this.player.position.z = left.returnTo?.z ?? holeWorldZ;
+            this.player.position.y = left.returnTo?.y ?? 0;
         }
         this.isInPocket = false;
         this._pocketHoleX = null;
         this._pocketHoleZ = null;
 
         this.fillHoleAt(holeWorldX, holeWorldZ);
+        this.restoreSurfaceCameraAfterPortal?.();
+        window.dispatchEvent(new CustomEvent('portal-plane-left', {
+            detail: { plane: left.plane, returnTo: left.returnTo }
+        }));
+        return true;
+    }
+
+    captureSurfaceCameraBeforePortal() {
+        if (this._surfaceCameraBeforePortal) return;
+        this._surfaceCameraBeforePortal = {
+            orbitRadius: this.cameraOrbitRadius,
+            lift: this.cameraLift,
+            perspectiveFar: this.perspectiveCamera?.far,
+            orthographicFar: this.orthographicCamera?.far,
+            thirdPersonDistance: this.thirdPersonCameraConfig?.distance,
+            thirdPersonLift: this.thirdPersonCameraConfig?.lift
+        };
+    }
+
+    applyPortalCameraProfile(profile = cameraForPlane(this.planeState)) {
+        if (!profile) return;
+        if (this.perspectiveCamera) {
+            this.perspectiveCamera.far = profile.far;
+            this.perspectiveCamera.updateProjectionMatrix?.();
+        }
+        if (this.orthographicCamera) {
+            this.orthographicCamera.far = profile.far;
+            this.orthographicCamera.updateProjectionMatrix?.();
+        }
+        if (this.thirdPersonCameraConfig) {
+            this.thirdPersonCameraConfig.distance = profile.distance;
+            this.thirdPersonCameraConfig.lift = profile.lift;
+        }
+        this.cameraOrbitRadius = profile.distance * 3.1;
+        this.cameraLift = profile.lift * 8;
+        this.snapCameraToPlayer?.();
+    }
+
+    restoreSurfaceCameraAfterPortal() {
+        const saved = this._surfaceCameraBeforePortal;
+        if (!saved) return;
+        this.cameraOrbitRadius = saved.orbitRadius;
+        this.cameraLift = saved.lift;
+        if (this.perspectiveCamera) {
+            this.perspectiveCamera.far = saved.perspectiveFar;
+            this.perspectiveCamera.updateProjectionMatrix?.();
+        }
+        if (this.orthographicCamera) {
+            this.orthographicCamera.far = saved.orthographicFar;
+            this.orthographicCamera.updateProjectionMatrix?.();
+        }
+        if (this.thirdPersonCameraConfig) {
+            this.thirdPersonCameraConfig.distance = saved.thirdPersonDistance;
+            this.thirdPersonCameraConfig.lift = saved.thirdPersonLift;
+        }
+        this._surfaceCameraBeforePortal = null;
+        this.snapCameraToPlayer?.();
+    }
+
+    updatePortalPlanePresentation() {
+        const plane = activePlane(this.planeState);
+        if (!plane || plane.kind === PLANE_KINDS.SURFACE || !this.isInPocket) return;
+        const key = this.getWallKey(this._pocketHoleX, this._pocketHoleZ);
+        const group = this.pocketGroups?.get(key);
+        if (!group || !this.player) return;
+        const alpha = ceilingFadeAlpha(this.planeState, {
+            objectY: this.player.position.y + this.wallHeight + 0.08,
+            playerY: this.player.position.y,
+            betweenCameraAndPlayer: true
+        });
+        for (const child of group.children) {
+            if (!child.userData?.isPortalCeiling || !child.material) continue;
+            child.material.opacity = alpha;
+            child.visible = alpha > 0;
+        }
     }
 
     mountChunk(chunkX, chunkY) {

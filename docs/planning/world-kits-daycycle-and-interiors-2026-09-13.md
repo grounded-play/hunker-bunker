@@ -318,10 +318,9 @@ and the camera**. Both conditions matter:
 
 ### Remaining across 4-5
 
-Runtime wiring: the trigger volumes that call `enterPlane`, chunk generation per
-plane using the kit grammar, and driving the per-object alpha from
-`ceilingFadeAlpha` in the render loop. The decisions and their guards are
-settled and tested; what is left is connection.
+The pocket sublevel is now runtime-wired through the plane stack and cutaway
+camera contract (§13). Still open: authored building-door portals, deeper
+stacked planes, and per-plane connector generation using the kit grammar.
 
 ---
 
@@ -453,3 +452,39 @@ Runtime evidence now covers the entire handoff: a generated hallway marker is
 consumed by `ThreeGame`, becomes a `kit_cave_corridor` placement with the
 expected world position, rotation, dressing metadata and chunk-stable key, and
 the selected model is guarded by the existing world-model registry tests.
+
+---
+
+## 13. Runtime connection pass — first real sublevel
+
+The existing fall pocket is now the production vertical slice for
+`portalPlanes`, rather than a bespoke boolean teleport:
+
+- `ThreeGame` owns a bounded plane stack beginning at `surface`.
+- Falling through a non-lethal hole enters a uniquely keyed `sublevel` plane
+  and records the exact surface return position.
+- The surface chunk graph is hidden while the pocket group is active, retaining
+  the existing simulation isolation.
+- Perspective and orthographic far planes contract to 42 m; third-person
+  distance contracts to 2.7 m. The player's selected surface camera values are
+  captured before entry and restored exactly on exit.
+- The pocket now has a real double-sided roof. `ceilingFadeAlpha` drives it to
+  the 12% cutaway minimum while the player is underneath, so the room reads as
+  covered architecture without hiding the operator.
+- The climb point pops the plane stack and returns to the recorded doorway;
+  the existing hole seal prevents an immediate second fall.
+- Death/run reset is a hard unwind to the surface plane and surface camera, so
+  a stale dungeon state cannot leak into the next deployment.
+
+Runtime events (`portal-plane-entered`, `portal-plane-left`) expose the seam for
+future door-close/fade/audio presentation. Existing transition guards reject
+re-entry while a portal change is already in flight.
+
+Focused evidence: 56 tests across plane contracts, pocket mounting, pocket
+content scoping, fall/return behavior, hole interactions and surface-simulation
+pause. The integration assertions cover plane identity/depth, confined camera,
+exact camera restoration, and the physical cutaway ceiling.
+
+This proves sublevel traversal, not the whole interior roadmap. The next slice
+is an authored structure doorway that enters an `interior` plane generated from
+the space-kit room grammar, then returns through its inside door.

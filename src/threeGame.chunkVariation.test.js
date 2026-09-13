@@ -265,13 +265,16 @@ describe('mountPocket — pocket geometry mounting', () => {
         };
     }
 
-    it('mounts a group with a floor, at least one wall, and exactly one climb marker', () => {
+    it('mounts a group with floor, walls, a physical cutaway ceiling, and one climb marker', () => {
         const fakeThis = makeFakeThreeGameForMount();
         const group = ThreeGame.prototype.mountPocket.call(fakeThis, 10, 10);
 
         expect(group.children.length).toBeGreaterThan(0);
         const climbMarkers = group.children.filter((c) => c.userData?.isPocketClimbPoint);
         expect(climbMarkers.length).toBe(1);
+        const ceilings = group.children.filter((c) => c.userData?.isPortalCeiling);
+        expect(ceilings).toHaveLength(1);
+        expect(ceilings[0].material.opacity).toBe(0.12);
     });
 
     it('caches the mounted group by hole location', () => {
@@ -291,6 +294,15 @@ describe('enterPocket / exitPocket — fall resolution', () => {
             playerVitals: { hp: 3, maxHp: 3 },
             bank: { getState: () => ({ tier2Unlocks: {} }) },
             isInPocket: false,
+            cameraOrbitRadius: 11.3,
+            cameraLift: 12.5,
+            perspectiveCamera: { far: 160, updateProjectionMatrix: () => {} },
+            orthographicCamera: { far: 100, updateProjectionMatrix: () => {} },
+            thirdPersonCameraConfig: { distance: 5.4, lift: 5.8 },
+            snapCameraToPlayer: () => {},
+            captureSurfaceCameraBeforePortal: ThreeGame.prototype.captureSurfaceCameraBeforePortal,
+            applyPortalCameraProfile: ThreeGame.prototype.applyPortalCameraProfile,
+            restoreSurfaceCameraAfterPortal: ThreeGame.prototype.restoreSurfaceCameraAfterPortal,
             pocketCache: new Map(),
             pocketGroups: new Map(),
             pickupMeshes: [],
@@ -355,6 +367,11 @@ describe('enterPocket / exitPocket — fall resolution', () => {
         expect(fakeThis.player.position.y).toBe(-6);
         expect(fakeThis._pocketHoleX).toBe(10);
         expect(fakeThis._pocketHoleZ).toBe(20);
+        expect(fakeThis.planeState.stack.at(-1)).toMatchObject({
+            id: 'pocket:10,20', kind: 'sublevel'
+        });
+        expect(fakeThis.perspectiveCamera.far).toBe(42);
+        expect(fakeThis.thirdPersonCameraConfig.distance).toBe(2.7);
     });
 
     it('exitPocket restores the player to the surface and shows the chunk again', () => {
@@ -368,6 +385,9 @@ describe('enterPocket / exitPocket — fall resolution', () => {
         expect(fakeThis.player.position.x).toBe(10);
         expect(fakeThis.player.position.z).toBe(20);
         expect(fakeThis.chunkMeshes.get('0,1').visible).toBe(true);
+        expect(fakeThis.planeState.stack).toHaveLength(1);
+        expect(fakeThis.perspectiveCamera.far).toBe(160);
+        expect(fakeThis.thirdPersonCameraConfig.distance).toBe(5.4);
     });
 
     it('seals the hole behind the player so climbing out cannot immediately re-trigger the fall', () => {
