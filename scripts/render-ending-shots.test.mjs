@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
+import path from 'node:path';
 import { ACT2_ENDING_CUTSCENES } from '../src/act2.js';
 import { outputName, planRenders, frameCount, sequenceSlug, cameraName, encodeArgs, FPS } from './render-ending-shots.mjs';
 
@@ -76,7 +77,11 @@ describe('ending shot render plan', () => {
     it('targets the production scene, never the empty per-shot shell', () => {
         const plan = planRenders(manifest, { exists: () => true });
         for (const shot of plan.shots) {
-            expect(shot.blend).toMatch(/blender-prerenders\/scenes\/ending_/);
+            // Separators are normalised because path.join is platform-native:
+            // this is 'a/b' on Linux and 'a\\b' on Windows CI. The assertion is
+            // about WHICH directory the plan targets, not which OS built it.
+            expect(shot.blend.split(path.sep).join('/'))
+                .toMatch(/blender-prerenders\/scenes\/ending_/);
         }
     });
 });
@@ -86,7 +91,9 @@ describe('encode', () => {
         // -o frame-#### writes frame-0021.png; a mismatched pattern makes
         // ffmpeg find zero frames and produce an empty clip without erroring
         // in any obvious way.
-        expect(encodeArgs('d', 'o.webm')).toContain('d/frame-%04d.png');
+        // Built with path.join so it matches on Windows CI too; the point of
+        // the assertion is the %04d padding, not the separator.
+        expect(encodeArgs('d', 'o.webm')).toContain(path.join('d', 'frame-%04d.png'));
     });
 
     it('encodes at the project frame rate', () => {
