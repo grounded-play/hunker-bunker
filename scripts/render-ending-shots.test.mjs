@@ -96,6 +96,19 @@ describe('encode', () => {
         expect(encodeArgs('d', 'o.webm')).toContain(path.join('d', 'frame-%04d.png'));
     });
 
+    it('starts the sequence at the shot\'s first frame, not zero', () => {
+        // ffmpeg's image demuxer starts at 0000 unless told otherwise. Only
+        // MI-01 begins at frame 0; every other shot starts partway through its
+        // scene timeline, so without this 19 of 20 encodes fail outright.
+        const args = encodeArgs('d', 'o.webm', { startFrame: 43 });
+        expect(args[args.indexOf('-start_number') + 1]).toBe('43');
+    });
+
+    it('defaults to frame zero when no start is given', () => {
+        const args = encodeArgs('d', 'o.webm');
+        expect(args[args.indexOf('-start_number') + 1]).toBe('0');
+    });
+
     it('encodes at the project frame rate', () => {
         const args = encodeArgs('d', 'o.webm');
         expect(args[args.indexOf('-framerate') + 1]).toBe(String(FPS));
