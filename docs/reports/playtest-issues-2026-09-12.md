@@ -25,34 +25,21 @@ Both: `join=yes twoPlayerRoster=yes ready=yes deployed=yes remote3d=yes pvp=yes`
 | P1-5 duplicate aim control on Deck | **fixed** | `7259c11` |
 | P1-1 gear hit target | **fixed** (44px min) | `pending` |
 | P1-1 ESC / controller Start | **already worked** — see below | — |
-| P1-3 HUD vs settings layering | **investigated, needs a screenshot** | — |
+| P1-3 HUD vs settings layering | **fixed + Deck regression** | `012b942` |
 | everything else | not started | — |
 
-### P1-3 — what the investigation found, and why it stopped
+### P1-3 — resolution
 
-The report reads two ways and they have opposite fixes:
+The HUD was not above Settings: its stacking level is `7000`, while Settings is
+`100010`. At 1280x800 the 16:10 `#game-viewport` also covers the full Deck stage.
+The defect was visual bleed-through: `#settings-popup` uniquely weakened the
+global modal backdrop to 72% black and disabled blur, leaving bright HUD text
+readable through the panel gutters.
 
-1. *Wrong stacking* — the HUD paints on top of the settings panel.
-2. *Too-transparent backdrop* — the stacking is correct and the HUD is simply
-   visible through it, which at 1280x800 reads as clutter.
-
-Facts gathered:
-
-- `.modal` is `z-index: 100000`, `background: rgba(0, 0, 0, 0.85)`, and
-  **`position: absolute`** — not `fixed`. It is sized to `#game-viewport`
-  (`#game-viewport > .modal` rules exist), so the backdrop covers that element's
-  box rather than the viewport. If the HUD lives outside `#game-viewport`, or
-  that element is smaller than the screen at Deck resolution, the dim never
-  reaches the HUD — which would explain why this is Deck-specific.
-- The only `z-index: 100000 !important` is `#debug-toolbar`, not HUD — ruled out.
-- Everything above `.modal` (250000+) is the loading screen, transition overlay
-  and door wipe — deliberately above modals, and not the HUD.
-
-Do not "fix" this by switching `.modal` to `position: fixed` without checking
-the container: if `#game-viewport` is transformed or scaled, `fixed` behaves
-like `absolute` anyway and the change would be inert while touching every modal
-in the game. **Resolve with a Deck screenshot first**, then either raise the
-backdrop coverage or hide the HUD while a modal is open.
+Settings now uses a 97–98% opaque tactical gradient plus blur/desaturation. A
+Playwright regression at 1280x800 proves full-stage coverage, the correct HUD
+stacking order and the opaque/blurred backdrop. The same check also covers the
+themed desktop select and single controller-mode aim input from P1-4/P1-5.
 
 ## P0 — blockers
 
