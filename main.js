@@ -8460,7 +8460,49 @@ function sampleFPS() {
     fpsFrames++;
     fpsRafId = requestAnimationFrame(sampleFPS);
 }
-fpsRafId = requestAnimationFrame(sampleFPS);
+
+/**
+ * FPS sampling is debug-only.
+ *
+ * This used to start unconditionally at module load: a requestAnimationFrame
+ * callback every frame plus a one-second interval, both updating an element
+ * that CSS never displays. That is per-frame work forever, on a Steam Deck, for
+ * a readout nobody can see.
+ *
+ * Started and stopped with the debug class rather than left running, so a
+ * release session pays nothing for it.
+ */
+function isDebugVisible() {
+    return typeof document !== 'undefined' && document.body?.classList?.contains('show-debug');
+}
+
+function setFpsSampling(enabled) {
+    if (enabled) {
+        if (fpsRafId === null) {
+            fpsFrames = 0;
+            fpsLastTime = performance.now();
+            fpsRafId = requestAnimationFrame(sampleFPS);
+        }
+        return;
+    }
+    if (fpsRafId !== null) {
+        cancelAnimationFrame(fpsRafId);
+        fpsRafId = null;
+    }
+    // Clear the stale reading so re-enabling does not show a number from
+    // whenever debug was last open.
+    if (fpsDisplay) fpsDisplay.textContent = 'FPS: --';
+    delete window.__hb_fps;
+}
+
+setFpsSampling(isDebugVisible());
+
+// The debug class is toggled elsewhere (the ~ console); watch the body rather
+// than threading a callback through every caller.
+if (typeof MutationObserver !== 'undefined' && document.body) {
+    new MutationObserver(() => setFpsSampling(isDebugVisible()))
+        .observe(document.body, { attributes: true, attributeFilter: ['class'] });
+}
 
 const debugGrantResourcesBtn = document.getElementById('debug-grant-resources');
 const debugGodModeBtn = document.getElementById('debug-god-mode');
@@ -9537,6 +9579,8 @@ devConsoleInput?.addEventListener('keydown', (e) => {
 
 if (fpsDisplay) {
     setInterval(() => {
+        // Nothing to sample or show while debug is off.
+        if (!isDebugVisible()) return;
         if (fpsRafId === null) {
             fpsFrames = 0;
             fpsLastTime = performance.now();

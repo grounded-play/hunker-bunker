@@ -204,6 +204,18 @@ body {
    longer renders as a second set of controls. */
 .show-debug #debug-toolbar { display: none; }
 
+/* The FPS readout is the one part of the legacy toolbar still worth surfacing,
+   and it was unreachable: the toolbar is hidden in BOTH states, so turning
+   debug on did not reveal it. Shown on its own under .show-debug, without
+   bringing back the rest of the toolbar the rule above deliberately retired. */
+.show-debug #debug-toolbar {
+  display: flex;
+}
+
+.show-debug #debug-toolbar > :not(#fps-counter) {
+  display: none;
+}
+
 /* Telemetry and legends must never create an invisible click shield over the
    game. Only the toolbar's actual form controls are interactive. */
 #debug-toolbar button,
