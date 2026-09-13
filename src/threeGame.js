@@ -227,6 +227,7 @@ import { applyBlackChromaKey, applyGreenChromaKey } from './textureKeying.js';
 import { getCachedKeyedImage, putCachedKeyedImage } from './keyedTextureCache.js';
 import { LANDFORMS, pickLandform, applyLandform, applyCanyonCollapse, connectPortalsInward, openMazeTerrain, generateHeightmapGrid, TERRAIN_HEIGHTS, findFarthestFloorCell } from './landforms.js';
 import { getDepthThreatScale, getProgressionSlot, progressionWorldTarget } from './worldProgression.js';
+import { corridorKitPlacement } from './kitGrammar.js';
 import {
     DAY_STATE_KEY,
     REST_PHASES,
@@ -24723,6 +24724,36 @@ export class ThreeGame {
             wfcMeta?.roomInstances?.some((room) => room.populationPlan?.placements?.length)
             || wfcMeta?.anchors?.length
         );
+
+        // HallwayConnector records its carved route as sparse wayfinding
+        // markers. Dress those markers with the matching reskinned modular
+        // kit; topology chooses rotation so sockets stay aligned.
+        if (wfcMeta?.generatorId === 'hallway-connector') {
+            for (const marker of wfcMeta.wayfindingMarkers ?? []) {
+                const worldX = chunkX * this.chunkSize + marker.x;
+                const worldZ = chunkY * this.chunkSize + marker.y;
+                const biome = this.getBiomeKeyForWorldPosition?.(worldX, worldZ) ?? BIOME_KEYS.ACTIVE;
+                const kit = corridorKitPlacement(grid, marker.x, marker.y, biome);
+                if (!kit) continue;
+                placements.push({
+                    x: worldX,
+                    z: worldZ,
+                    type: kit.type,
+                    rotation: kit.rotationSteps * (Math.PI / 2),
+                    scatterKey: `hallway-kit:${chunkX},${chunkY}:${marker.x},${marker.y}`,
+                    scale: 1,
+                    tiltX: 0,
+                    elevation: 0,
+                    hp: Infinity,
+                    groupType: 'architecture',
+                    opacity: 1,
+                    isSolidProp: false,
+                    dressingKit: marker.dressingKit,
+                    lightingRhythm: marker.lightingRhythm
+                });
+                reservedCells.add(`${marker.x},${marker.y}`);
+            }
+        }
 
         if (wfcMeta?.roomInstances?.length) {
             for (const room of wfcMeta.roomInstances) {

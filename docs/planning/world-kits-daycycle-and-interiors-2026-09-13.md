@@ -160,7 +160,7 @@ geometry and no special-case authoring. Place it, and the descent exists.
 |---|---|---|
 | **0** | Kit intake: convert to GLB, register placement types, record provenance | Every kit piece is addressable from a room build |
 | **1** | Restyle pass: palette, wear, variation in Blender | A kit corridor is indistinguishable from an authored one at a glance |
-| **2** | Corridor grammar: swap the random hallway skin per biome using one socket contract | **done** — `src/kitGrammar.js`, 12 tests |
+| **2** | Corridor grammar: swap the random hallway skin per biome using one socket contract | **runtime connected** — topology-aware markers now place the registered cave/space GLBs |
 | **3** | Day cycle: sleep trigger, day counter, rest phase, difficulty and story gates | **core done** — `src/dayCycle.js`, 18 tests |
 | **4** | Portals: enter structure, drop to sub-level, return stack | **core done** — `src/portalPlanes.js`, 15 tests |
 | **5** | Camera: ceiling fade, sub-level framing | **core done** — same module |
@@ -423,3 +423,33 @@ Still open in Phase 3: bind the remaining three story deadline ids to their
 canonical narrative resolutions, expose closing-tonight warnings before the
 player confirms sleep, and graduate the foundry-backed safe phase into the full
 authored crash-site camp tableau. The runtime loop itself is now connected.
+
+---
+
+## 12. Runtime connection pass — biome corridor kits
+
+`kitGrammar` is no longer test-only. The authored hallway producer already
+emitted sparse route markers carrying its `dressingKit` and `lightingRhythm`;
+`ThreeGame.createChunkSetPiecePlacements` now consumes those markers and emits
+real GLB-only architectural placements owned by the normal chunk lifecycle.
+
+Each marker inspects its four carved neighbors and selects the right silhouette:
+
+- two opposite sockets → straight corridor;
+- two perpendicular sockets → corner;
+- three sockets → junction;
+- four sockets → intersection;
+- one socket → corridor end.
+
+The biome chooses the restyled skin (`bio` → cave, `active`/`cryo` → space),
+while topology—not RNG—chooses the cardinal rotation. This corrects an earlier
+grammar assumption: random 90-degree rotation is safe for freestanding room
+modules, but on a corridor it puts a wall across an open socket. The generated
+placement is explicitly non-solid because navigation and collision remain
+owned by the proven tile grid; the kit is architectural presentation, not a
+second contradictory physics map.
+
+Runtime evidence now covers the entire handoff: a generated hallway marker is
+consumed by `ThreeGame`, becomes a `kit_cave_corridor` placement with the
+expected world position, rotation, dressing metadata and chunk-stable key, and
+the selected model is guarded by the existing world-model registry tests.

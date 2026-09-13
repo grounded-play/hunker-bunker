@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { WORLD_3D_MODELS } from './world3dOverlay.js';
 import {
     KIT_SKINS, SHARED_ROLES, SKIN_ONLY_ROLES,
-    skinForBiome, kitPieceFor, chooseKitPiece
+    skinForBiome, kitPieceFor, chooseKitPiece, corridorKitPlacement
 } from './kitGrammar.js';
 
 describe('biome skinning', () => {
@@ -15,6 +15,34 @@ describe('biome skinning', () => {
     it('falls back to space for an unknown biome rather than throwing', () => {
         expect(skinForBiome('nonsense')).toBe(KIT_SKINS.SPACE);
         expect(skinForBiome(undefined)).toBe(KIT_SKINS.SPACE);
+    });
+});
+
+describe('corridor topology placement', () => {
+    const grid = (rows) => rows.map((row) => [...row]);
+
+    it('aligns straight modules to north/south and east/west routes', () => {
+        const vertical = corridorKitPlacement(grid(['#.#', '#.#', '#.#']), 1, 1, 'active');
+        const horizontal = corridorKitPlacement(grid(['###', '...', '###']), 1, 1, 'active');
+        expect(vertical).toMatchObject({ type: 'kit_space_corridor', rotationSteps: 0 });
+        expect(horizontal).toMatchObject({ type: 'kit_space_corridor', rotationSteps: 1 });
+    });
+
+    it('selects corner, junction, and intersection silhouettes from connectivity', () => {
+        expect(corridorKitPlacement(grid(['#.#', '#..', '###']), 1, 1, 'bio').role).toBe('corridorCorner');
+        expect(corridorKitPlacement(grid(['#.#', '...', '###']), 1, 1, 'bio').role).toBe('corridorT');
+        expect(corridorKitPlacement(grid(['#.#', '...', '#.#']), 1, 1, 'bio').role).toBe('corridorCross');
+    });
+
+    it('uses the biome skin without changing topology', () => {
+        const path = grid(['#.#', '#.#', '#.#']);
+        expect(corridorKitPlacement(path, 1, 1, 'bio').type).toBe('kit_cave_corridor');
+        expect(corridorKitPlacement(path, 1, 1, 'cryo').type).toBe('kit_space_corridor');
+    });
+
+    it('refuses walls and malformed grids', () => {
+        expect(corridorKitPlacement(grid(['###', '###', '###']), 1, 1, 'active')).toBeNull();
+        expect(corridorKitPlacement(null, 1, 1, 'active')).toBeNull();
     });
 });
 

@@ -127,3 +127,44 @@ export function chooseKitPiece(role, biome, random = Math.random) {
         variation: type.endsWith('_variation')
     };
 }
+
+/**
+ * Resolve a carved hallway cell to a socket-safe module and orientation.
+ * Corridor pieces may vary by skin, but their rotation is topology, not
+ * decoration: random cardinal turns still produce walls across the route.
+ */
+export function corridorKitPlacement(grid, x, y, biome) {
+    if (!Array.isArray(grid) || grid[y]?.[x] !== '.') return null;
+    const open = {
+        n: grid[y - 1]?.[x] === '.',
+        e: grid[y]?.[x + 1] === '.',
+        s: grid[y + 1]?.[x] === '.',
+        w: grid[y]?.[x - 1] === '.'
+    };
+    const directions = Object.entries(open).filter(([, value]) => value).map(([key]) => key);
+    let role = 'corridor';
+    let rotationSteps = 0;
+
+    if (directions.length >= 4) {
+        role = 'corridorCross';
+    } else if (directions.length === 3) {
+        role = 'corridorT';
+        // Base T opens N/E/W; rotate until the missing socket matches.
+        const missing = ['n', 'e', 's', 'w'].find((direction) => !open[direction]);
+        rotationSteps = ({ s: 0, w: 1, n: 2, e: 3 })[missing] ?? 0;
+    } else if (directions.length === 2 && !((open.n && open.s) || (open.e && open.w))) {
+        role = 'corridorCorner';
+        // Base corner opens N/E.
+        const key = directions.sort().join('');
+        rotationSteps = ({ en: 0, es: 1, sw: 2, nw: 3 })[key] ?? 0;
+    } else if (directions.length <= 1) {
+        role = 'corridorEnd';
+        // Base end opens north.
+        rotationSteps = ({ n: 0, e: 1, s: 2, w: 3 })[directions[0]] ?? 0;
+    } else if (open.e && open.w) {
+        rotationSteps = 1;
+    }
+
+    const type = kitPieceFor(role, biome);
+    return type ? { type, role, rotationSteps } : null;
+}
