@@ -160,7 +160,7 @@ geometry and no special-case authoring. Place it, and the descent exists.
 |---|---|---|
 | **0** | Kit intake: convert to GLB, register placement types, record provenance | Every kit piece is addressable from a room build |
 | **1** | Restyle pass: palette, wear, variation in Blender | A kit corridor is indistinguishable from an authored one at a glance |
-| **2** | Corridor grammar: swap the random hallway skin per biome using one socket contract | Cave and bunker share a generator, differ only in skin |
+| **2** | Corridor grammar: swap the random hallway skin per biome using one socket contract | **done** — `src/kitGrammar.js`, 12 tests |
 | **3** | Day cycle: sleep trigger, day counter, rest phase, difficulty and story gates | **core done** — `src/dayCycle.js`, 18 tests |
 | **4** | Portals: enter structure, drop to sub-level, return stack | A player enters a building and comes back out where they left |
 | **5** | Camera: ceiling fade, sub-level framing | The player is never hidden by a roof |
@@ -226,3 +226,39 @@ A deadline the player did not know about is a trap, not pressure.
 
 Persistence under `hb_day_cycle` (new key — bank and skill-tree keys are
 frozen), the sleep trigger at camp, and the rest-phase lighting state.
+
+
+---
+
+## 8. Phase 2 — corridor grammar (implemented)
+
+`src/kitGrammar.js`. A generator asks for a **role**; the biome decides which
+skin renders.
+
+```
+kitPieceFor('corridorCorner', 'bio')     -> kit_cave_corridor_corner
+kitPieceFor('corridorCorner', 'active')  -> kit_space_corridor_corner
+kitPieceFor('gate', 'bio')               -> kit_cave_gate_rock
+kitPieceFor('gate', 'active')            -> kit_space_gate_door
+kitPieceFor('ladder', 'active')          -> null
+```
+
+That last line is the important one. A role a skin does not have returns
+**null** rather than substituting: a rock slab standing in for a powered door is
+worse than no door, and a silent substitution is an art bug nobody traces.
+
+**Biome mapping** follows meaning the game already carries: `bio` and cave
+sectors are rock, everything bunker-side is fabricated.
+
+**Grid breaking.** Modular kits repeat at a fixed interval and the eye finds it
+fast. `chooseKitPiece` picks a cardinal rotation and, where a `-variation` twin
+exists, sometimes takes it — from the seeded random the world generator already
+threads through, so a seed still reproduces its world exactly. Rotation is
+cardinal only: these pieces socket on a grid and an arbitrary angle would break
+the seams the kit exists to provide.
+
+**The guard that matters:** a test resolves *every* shared role in *both* skins
+and asserts the result is a registered model. The whole promise of the grammar
+is that a generator can ask for a role and get something that renders; a role
+resolving to a type nobody registered is exactly the failure worth catching, and
+it would otherwise surface as an invisible corridor at runtime.
