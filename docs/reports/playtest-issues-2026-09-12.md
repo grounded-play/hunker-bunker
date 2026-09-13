@@ -23,6 +23,8 @@ Both: `join=yes twoPlayerRoster=yes ready=yes deployed=yes remote3d=yes pvp=yes`
 | (unreported) accessibility settings never ran | **fixed** | `8afac60` |
 | P1-4 dropdowns unthemed | **fixed** | `7259c11` |
 | P1-5 duplicate aim control on Deck | **fixed** | `7259c11` |
+| P1-1 gear hit target | **fixed** (44px min) | `pending` |
+| P1-1 ESC / controller Start | **already worked** — see below | — |
 | P1-3 HUD vs settings layering | **investigated, needs a screenshot** | — |
 | everything else | not started | — |
 
@@ -104,7 +106,20 @@ a **secondary** objective that never replaces the primary and never blocks progr
 
 ### P1-1 ESC and controller Start do not open settings
 
-The in-game settings gear is hard to hit, and there is no keyboard or controller route to it.
+**Correction after investigation: both routes already exist and are wired.**
+
+- **Escape** opens settings during gameplay — `main.js` ~11082, at the end of a
+  long "close the topmost open surface first" chain, guarded by `isGameplayPhase()`.
+- **Controller Start/pause** runs `triggerControllerPauseAction()` — bound at
+  `main.js:1928` via `actions.pause`, and that function already toggles settings
+  and closes whatever modal is on top.
+
+So no new binding should be added; a second one would double-fire. If Escape felt
+unresponsive in play, the cause is upstream in that chain: the handler bails on
+`event.defaultPrevented`, and any earlier surface that is open consumes the key
+first. Worth re-testing deliberately and reporting *what was on screen* at the time.
+
+The genuinely unaddressed part was the pointer target.
 **ESC should open settings**, and the Steam Deck / controller **Start (Menu)** button should do the
 same. Note the existing trap recorded in `project_steam_input_action_set_trap`: an always-mounted
 overlay without `.hidden` pins the Deck to the menu action set and kills native input — whatever

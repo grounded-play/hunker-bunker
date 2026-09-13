@@ -22004,3 +22004,23 @@ body.contrast-max .hud-panel {
     max-height: calc(100dvh - calc(var(--vu) * 3));
   }
 }
+
+/* docs/reports/playtest-issues-2026-09-12.md P1-1 -- "it's hard to click the
+   settings gear in game". The gear inherits .calibrate-btn, which is sized
+   purely from font-size and padding in `vu` units, so it shrinks with the
+   viewport and at Steam Deck resolution the hit target ends up well under the
+   44px minimum. Scoped to the gear rather than all .calibrate-btn, which is
+   also used by the wider settings action buttons whose layout should not move.
+
+   Note the keyboard and controller routes already exist and were verified:
+   Escape opens settings during gameplay (main.js ~11082) and the controller
+   pause/Start action runs triggerControllerPauseAction (main.js ~1928). This
+   only makes the pointer target reachable. */
+.open-settings-btn {
+  min-width: 44px;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
