@@ -1166,39 +1166,6 @@ def enhance_imported_materials(scene: bpy.types.Scene) -> dict:
     return stats
 
 
-def build_delivery_compositor(scene: bpy.types.Scene) -> None:
-    """
-    DISABLED -- and this is a correction, not a deferral.
-
-    A scene compositing node group was added here to do glare and chromatic
-    aberration at render time. It rendered every frame PURE BLACK, and I
-    misattributed that to camera blocking for several commits.
-
-    Proven by bisection: with the group detached the frame renders fully lit and
-    textured; with the group attached it is black. Crucially a PASS-THROUGH
-    group -- Group Input wired straight to Group Output, no glare, no lens --
-    produces a byte-identical black frame. So the contents were never the
-    problem: the group's "Image" input never receives the render result at all.
-
-    Blender 5.x moved the compositor to `scene.compositing_node_group`, and the
-    4.x nodes that used to source and sink the render (CompositorNodeRLayers /
-    CompositorNodeComposite) no longer exist. A NodeSocketColor interface socket
-    named "Image" is evidently not how the render result gets bound, and I could
-    not establish what is without more Blender-version archaeology than this is
-    worth.
-
-    So the look moves to ENCODE time, where ffmpeg can apply bloom and chromatic
-    aberration to the rendered frames and the result can be inspected directly.
-    That is a better place for it anyway: it does not cost a re-render to retune,
-    which for an 893-frame sequence is the difference between minutes and hours.
-
-    The scene is left with no compositor, which is the state that demonstrably
-    renders correctly.
-    """
-    scene.use_nodes = False
-    scene.compositing_node_group = None
-
-
 MAX_OFF_AXIS_DEG = 12.0
 
 
