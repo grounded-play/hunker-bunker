@@ -31,5 +31,8 @@ export const CUE_SFX = Object.freeze({
     monitor_tone: 'art/source/audio/cinematic-source/opengameart/kenney-sci-fi-sounds/extracted/Audio/laserSmall_001.ogg',
     organic_wet: 'art/source/audio/cinematic-source/opengameart/kenney-sci-fi-sounds/extracted/Audio/impactMetal_003.ogg',
     ice_stress: 'art/source/audio/cinematic-source/opengameart/kenney-sci-fi-sounds/extracted/Audio/impactMetal_001.ogg',
-    footsteps: null   // No convincing CC0 footstep in the intake; silence beats a wrong one.
+    // Acquired specifically for this: Kenney Impact Sounds, CC0. Previously
+    // null because the first intake had no convincing footstep and silence
+    // beats a wrong sound -- that gap is now closed rather than papered over.
+    footsteps: 'public/audio/footsteps/footstep_concrete_001.ogg'
 });

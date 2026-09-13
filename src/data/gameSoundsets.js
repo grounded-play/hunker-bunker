@@ -14,6 +14,48 @@ export const GAME_SOUNDSETS = Object.freeze({
         variants: Object.freeze(['cc0_resin_shift_01', 'cc0_resin_shift_02']),
         fallback: 'hive_webs_sticky', bus: 'world', gain: 0.72,
         pitch: Object.freeze([0.92, 1.06]), noImmediateRepeat: true, retrigger: 'replace-quietest'
+    }),
+
+    // Kenney Impact Sounds, CC0. Licence file retained with the pack under
+    // art/source/audio/cinematic-source/kenney/; only the selected files are
+    // copied into public/, the raw packs stay in the ignored source tree.
+    //
+    // The sprite layouts have carried footstepFrames since the atlas work, so
+    // the game already knew exactly which animation frames are footfalls. It
+    // had no sound to play on them and fell back to a synthesised blip.
+    footstep_concrete: Object.freeze({
+        variants: Object.freeze([
+            'footstep_concrete_000', 'footstep_concrete_001', 'footstep_concrete_002',
+            'footstep_concrete_003', 'footstep_concrete_004'
+        ]),
+        // Five variants and no immediate repeat. A repeated footstep is the
+        // most noticeable audio artefact a game can have, because the ear
+        // tracks a walk cycle whether the player wants it to or not.
+        fallback: 'footstep_concrete_000', bus: 'sfx', gain: 0.42,
+        pitch: Object.freeze([0.94, 1.08]), noImmediateRepeat: true, retrigger: 'replace-oldest'
+    }),
+    footstep_snow: Object.freeze({
+        variants: Object.freeze([
+            'footstep_snow_000', 'footstep_snow_001', 'footstep_snow_002',
+            'footstep_snow_003', 'footstep_snow_004'
+        ]),
+        fallback: 'footstep_snow_000', bus: 'sfx', gain: 0.40,
+        pitch: Object.freeze([0.92, 1.06]), noImmediateRepeat: true, retrigger: 'replace-oldest'
+    }),
+    // Prop debris had no sound at all until this sprint, then borrowed
+    // amb_metal_stress -- an ambience cue doing an impact's job.
+    prop_impact_metal: Object.freeze({
+        variants: Object.freeze([
+            'impactMetal_light_000', 'impactMetal_light_001',
+            'impactMetal_medium_000', 'impactMetal_medium_001'
+        ]),
+        fallback: 'impactMetal_light_000', bus: 'sfx', gain: 0.55,
+        pitch: Object.freeze([0.88, 1.14]), noImmediateRepeat: true, retrigger: 'replace-oldest'
+    }),
+    prop_impact_glass: Object.freeze({
+        variants: Object.freeze(['impactGlass_light_000', 'impactGlass_light_001']),
+        fallback: 'impactGlass_light_000', bus: 'sfx', gain: 0.5,
+        pitch: Object.freeze([0.9, 1.12]), noImmediateRepeat: true, retrigger: 'replace-oldest'
     })
 });
 

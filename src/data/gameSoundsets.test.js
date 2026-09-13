@@ -14,8 +14,19 @@ const DOOR_SET = Object.freeze({
 });
 
 describe('game soundset selection', () => {
-    it('starts with no unapproved runtime asset dependencies', () => {
-        expect(Object.keys(GAME_SOUNDSETS)).toEqual(['door_slide_horiz', 'hive_webs_sticky']);
+    it('contains only provenance-approved runtime asset dependencies', () => {
+        // This list is a provenance guard, not a snapshot: every entry is a
+        // deliberate approval, so adding a soundset must mean editing this test
+        // and saying where the audio came from.
+        //
+        //   door_slide_horiz, hive_webs_sticky  - CC0 intake (opengameart)
+        //   footstep_*, prop_impact_*           - Kenney Impact Sounds, CC0,
+        //     licence retained at art/source/audio/cinematic-source/kenney/
+        expect(Object.keys(GAME_SOUNDSETS)).toEqual([
+            'door_slide_horiz', 'hive_webs_sticky',
+            'footstep_concrete', 'footstep_snow',
+            'prop_impact_metal', 'prop_impact_glass'
+        ]);
         expect(Object.values(GAME_SOUNDSETS).every(validateSoundset)).toBe(true);
         expect(Object.isFrozen(GAME_SOUNDSETS)).toBe(true);
     });

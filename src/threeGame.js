@@ -20607,7 +20607,19 @@ export class ThreeGame {
                 this.lastAnimationColumn = column;
                 if (layout.footstepFrames.includes(column)) {
                     if (this.performanceProfile !== 'menu') {
-                        window.AudioManager?.playProceduralFootstep(this.playerType);
+                        // Real sampled footsteps now that the soundset registry
+                        // has them; the procedural blip remains the fallback for
+                        // when the buffers have not decoded yet. Surface picks
+                        // the set -- snow outside the bunker, concrete within.
+                        const surface = this.currentBiome === 'cryo' || this.isOutdoors?.()
+                            ? 'footstep_snow'
+                            : 'footstep_concrete';
+                        const played = window.AudioManager?.play?.(
+                            surface,
+                            this.audioAt?.(this.player?.position?.x, this.player?.position?.z, { volume: 0.5 })
+                                ?? { volume: 0.5 }
+                        );
+                        if (!played) window.AudioManager?.playProceduralFootstep?.(this.playerType);
                     }
                 }
             }

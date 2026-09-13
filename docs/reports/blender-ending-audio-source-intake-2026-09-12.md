@@ -110,3 +110,45 @@ Six Kenney CC0 derivatives were promoted for a shared film/game vertical slice. 
 
 The ending cue manifest uses the same derivatives as gameplay. Door and hive soundsets retain their
 previous shipped cues as data-only fallbacks, so rollback does not require code removal.
+
+---
+
+## Second intake — 2026-09-13, Kenney (CC0)
+
+Acquired to close gaps the first intake could not fill, notably footsteps.
+
+| Pack | Files | Licence | Retained at |
+|---|---:|---|---|
+| Kenney Impact Sounds 1.0 | 108 | **CC0** (`License.txt` retained) | `art/source/audio/cinematic-source/kenney/kenney_impact-sounds/` |
+| Kenney RPG Audio | 74 | **CC0** (`License.txt` retained) | `art/source/audio/cinematic-source/kenney/kenney_rpg-audio/` |
+
+182 `.ogg` total. CC0 confirmed by reading each pack's own `License.txt`, not by
+assuming the source: no attribution required, no share-alike, commercial use
+permitted.
+
+### Promoted to `public/`
+
+Only selected files ship; the raw packs stay in the ignored source tree.
+
+- `public/audio/footsteps/` — 5 concrete + 5 snow variants
+- `public/audio/impacts/` — 4 metal + 2 glass + 2 mining
+
+### Why footsteps specifically
+
+`playerSpriteLayouts.js` has carried `footstepFrames` since the atlas work, so
+the game already knew exactly which animation frames are footfalls
+(`threeGame.js:20608`). It had no sound to play on them and fell back to a
+synthesised blip. The data was waiting for the asset.
+
+Five variants with `noImmediateRepeat`: a repeated footstep is the most
+noticeable audio artefact a game can have, because the ear tracks a walk cycle
+whether the player wants it to or not.
+
+### Used in both places
+
+- **In game** — registered in `GAME_SOUNDSETS` and selected by surface: snow
+  outdoors and in cryo, concrete within the bunker. The procedural blip remains
+  the fallback for before the buffers decode.
+- **In cutscenes** — the `footsteps` cue in `ending-audio-assets.mjs` was `null`
+  because the first intake had no convincing footstep and silence beats a wrong
+  sound. That gap is now closed rather than papered over.
