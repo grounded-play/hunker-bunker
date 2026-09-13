@@ -16,6 +16,7 @@ import { usesGameplayFocusEffects } from './gameplayPresentation.js';
 import { getSelectedSheen } from './weaponSheens.js';
 import { captureHardwareCapabilities, createGpuMemoryTracker } from './gpuMemoryBudget.js';
 import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
+import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
 import { ShaderPass } from 'three/examples/jsm/postprocessing/ShaderPass.js';
 
 export const TiltShiftPassShader = {
@@ -1751,6 +1752,26 @@ export class ThreeGame {
         // cost was invisible to every earlier reproduction attempt because
         // repeated testing in the same tab reused already-compiled programs.
         this.renderer.debug.checkShaderErrors = false;
+
+        // PHASE A1 (docs/planning/visual-overhaul-reflective-hdr-2026-09-13.md).
+        //
+        // Tone mapping was never set, so the renderer ran on NoToneMapping:
+        // every value above 1.0 clipped. This world is built almost entirely
+        // out of saturated emissive practicals -- sodium rotators, infection
+        // pulses, cyan O2 towers -- and each one was landing as a flat white
+        // patch instead of a light source with falloff and colour in its
+        // shoulder.
+        //
+        // AgX rather than ACES to match what the Blender cinematics are pinned
+        // to (blender-cinematic-optics-2026-09-12.md). Game and cutscene now
+        // share a transform, so a prop does not change character between them.
+        // AgX also holds saturated hues far better in the highlights, which
+        // matters when the palette IS saturated emissives.
+        this.renderer.toneMapping = THREE.AgXToneMapping;
+        // Slightly above 1.0: AgX is conservative by design and these sets are
+        // deliberately near-black, so the default reads muddy.
+        this.renderer.toneMappingExposure = 1.15;
+
         this.renderer.setPixelRatio(this.menuPixelRatio);
         this.renderer.shadowMap.enabled = false;
         this.renderer.shadowMap.type = THREE.PCFShadowMap;
@@ -1765,9 +1786,36 @@ export class ThreeGame {
         this._tiltShiftFocusY = 50;
         this._tiltShiftProjectVec = new THREE.Vector3();
 
+        // PHASE A2: image-based lighting. Deferred one frame so it never
+        // blocks first paint -- the world renders correctly without it and
+        // simply gains reflections a moment later.
+        this._environmentTexture = null;
+        this.installEnvironmentLighting();
+
         this.composer = new EffectComposer(this.renderer);
         this.renderPass = new RenderPass(this.scene, this.camera);
         this.composer.addPass(this.renderPass);
+
+        // PHASE A3: selective bloom.
+        //
+        // The concept art is built around glowing vascular circuitry and
+        // emissive towers; without bloom those read as painted-on decals rather
+        // than light. Threshold is deliberately high -- below ~0.9 every lit
+        // wall blooms and the set turns to soup, which is the usual way this
+        // effect makes a game look worse rather than better.
+        //
+        // Half-resolution: the Deck is the target and bloom is the cheapest
+        // thing here to run at reduced scale without anyone noticing.
+        this.bloomPass = new UnrealBloomPass(
+            new THREE.Vector2(
+                Math.max(1, Math.floor(window.innerWidth * 0.5)),
+                Math.max(1, Math.floor(window.innerHeight * 0.5))
+            ),
+            0.62,   // strength -- restrained; this sits under AgX, not over it
+            0.45,   // radius
+            0.95    // threshold: genuine emissives only
+        );
+        this.composer.addPass(this.bloomPass);
 
         this.tiltShiftPassV = new ShaderPass(TiltShiftPassShader);
         this.tiltShiftPassH = new ShaderPass(TiltShiftPassShader);
@@ -6818,6 +6866,56 @@ export class ThreeGame {
         return this.sprinting;
     }
 
+    /**
+     * PHASE A2 -- image-based lighting from the game's own sky.
+     *
+     * 94 MeshStandardMaterials in this project were reflecting NOTHING: with no
+     * scene.environment, a PBR material has no indirect light to sample, so
+     * metal reads as matte plastic and the specular response the concept art is
+     * built around never appears.
+     *
+     * Source is the panorama already composed from the game's sky paintings for
+     * the ending cinematics. Same asset in both renderers, so a prop does not
+     * change character between gameplay and cutscene.
+     *
+     * Sets scene.environment ONLY, never scene.background. The background is a
+     * THREE.Color that the fog system lerps every frame (see the fog blend in
+     * updateFog); replacing it with a texture would silently break that.
+     */
+    installEnvironmentLighting(url = assetUrl('/sky/cinematic_deep_space_panorama.jpg')) {
+        if (!this.renderer || !this.scene) return false;
+        const pmrem = new THREE.PMREMGenerator(this.renderer);
+        // Compiling the equirect shader up front avoids a hitch on first use.
+        pmrem.compileEquirectangularShader();
+        new THREE.TextureLoader().load(
+            url,
+            (texture) => {
+                texture.mapping = THREE.EquirectangularReflectionMapping;
+                texture.colorSpace = THREE.SRGBColorSpace;
+                const target = pmrem.fromEquirectangular(texture);
+                this._environmentTexture = target.texture;
+                this.scene.environment = target.texture;
+                // Keep indirect light well under the practicals. IBL here is
+                // for specular shape and silhouette separation, not room fill
+                // -- lifting the blacks would undo the whole look.
+                this.scene.environmentIntensity = 0.35;
+                // The equirect source is no longer needed once convolved.
+                texture.dispose();
+                pmrem.dispose();
+                window.hbLog?.('RENDER', 'info', 'environment-lighting-ready', { url });
+            },
+            undefined,
+            (error) => {
+                // Non-fatal by design: the game looked like this yesterday.
+                pmrem.dispose();
+                window.hbLog?.('RENDER', 'warn', 'environment-lighting-failed', {
+                    url, message: String(error?.message ?? error)
+                });
+            }
+        );
+        return true;
+    }
+
     isGameplayInputActive() {
         return this.performanceProfile === 'gameplay'
             && this.inputEnabled
@@ -7672,6 +7770,13 @@ export class ThreeGame {
 
         this.renderer.setSize(width, height, false);
         this.composer?.setSize?.(width, height);
+        // EffectComposer.setSize propagates full resolution to every pass, which
+        // would silently undo the half-res bloom chosen for the Deck. Re-apply
+        // it after, or the perf decision survives only until the first resize.
+        this.bloomPass?.setSize?.(
+            Math.max(1, Math.floor(width * 0.5)),
+            Math.max(1, Math.floor(height * 0.5))
+        );
     }
 
     setLoadingPaused(paused = false) {

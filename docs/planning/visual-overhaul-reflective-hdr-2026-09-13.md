@@ -145,4 +145,85 @@ no tone mapping and no environment look almost identical to no normal maps.
 
 ## 6. Status log
 
-- 2026-09-13 — renderer audited, gap measured, plan written. Nothing implemented.
+- 2026-09-13 — renderer audited, gap measured, plan written.
+- 2026-09-13 — **Phase A implemented.** See section 7.
+
+
+---
+
+## 7. Phase A — implemented
+
+All three landed in `src/threeGame.js`. Build green, 3349 tests pass.
+
+### A1 — tone mapping
+
+```js
+this.renderer.toneMapping = THREE.AgXToneMapping;
+this.renderer.toneMappingExposure = 1.15;
+```
+
+Tone mapping was never set, so the renderer ran on `NoToneMapping` and every
+value above 1.0 clipped. This world is built almost entirely from saturated
+emissive practicals, and each was landing as a flat white patch instead of a
+light source with falloff and colour in its shoulder.
+
+**AgX rather than ACES**, to match what the Blender cinematics are pinned to. The
+game and the cutscenes now share a transform, so a prop does not change
+character between them — and AgX holds saturated hues in the highlights far
+better, which matters when the palette *is* saturated emissives. Exposure is
+slightly above 1.0 because AgX is conservative by design and these sets are
+deliberately near-black.
+
+### A2 — image-based lighting
+
+`installEnvironmentLighting()` builds a PMREM environment from
+`public/sky/cinematic_deep_space_panorama.jpg` — the panorama already composed
+from the game's own sky paintings for the endings. Same asset in both renderers.
+
+**Sets `scene.environment` only, never `scene.background`.** The background is a
+`THREE.Color` that the fog system lerps every frame; replacing it with a texture
+would silently break fog blending. That is the one trap in this change.
+
+`environmentIntensity` is 0.35 — IBL here is for specular shape and silhouette
+separation, not room fill. Lifting the blacks would undo the whole look.
+
+Failure is non-fatal and logged: if the texture does not load, the game renders
+exactly as it did before.
+
+### A3 — selective bloom
+
+`UnrealBloomPass` at **threshold 0.95**, strength 0.62, half resolution.
+
+The threshold is the whole decision. Below ~0.9 every lit wall blooms and the
+set turns to soup, which is how this effect usually makes a game look worse. At
+0.95 only genuine emissives bloom — which is exactly what the concept art is
+built around.
+
+Half-res for the Deck, and **re-applied after `composer.setSize`**:
+`EffectComposer` propagates full resolution to every pass, so without that the
+perf decision would survive only until the first window resize.
+
+---
+
+## 8. Handoff — what is NOT done
+
+Phase A is renderer capability. Nothing in B/C/D is started.
+
+**Not yet verified in a running game.** The changes build and the suite passes,
+but no one has looked at a frame. The first thing a continuation should do is
+run the game and check three things:
+
+1. Do emissive props now read as light sources rather than white patches?
+2. Do metal surfaces show any specular response from the environment?
+3. Is bloom confined to genuine emissives, or is it blooming lit walls?
+
+If (3) is wrong, the threshold is the dial — raise it before touching strength.
+
+**Next by return per hour:** B1, derived normal maps. The 2D textures are
+detailed enough to derive normals from luminance as a build step, with no
+repainting. Under A1 and A2 they will finally show — which is exactly why B was
+sequenced after A rather than before it.
+
+**Still true from the audit:** 125 `MeshBasicMaterial` instances ignore lighting
+entirely. Any of those that are world surfaces rather than UI or billboards
+should become `MeshStandardMaterial` to benefit from A2 at all.
