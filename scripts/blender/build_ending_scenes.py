@@ -34,8 +34,14 @@ def setup_cycles_and_color_management(scene: bpy.types.Scene) -> None:
         try:
             cycles_prefs.preferences.compute_device_type = "CUDA"
             cycles_prefs.preferences.get_devices()
-        except Exception:
-            pass
+        except Exception as exc:
+            # No CUDA runtime: CPU-only CI, an AMD/Apple host, or a container
+            # without the driver. Cycles would fall back to the CPU anyway, so
+            # make that explicit rather than leaving the scene claiming a GPU
+            # device it cannot use. Same image, slower -- not a failure, so the
+            # build continues.
+            print(f"[build_ending_scenes] CUDA unavailable, rendering on CPU: {exc}")
+            scene.cycles.device = "CPU"
 
     scene.cycles.samples = 128
     scene.cycles.preview_samples = 32
@@ -740,30 +746,27 @@ def build_ending_scene(ending_name: str, output_path: Path) -> None:
 
     root_col = bpy.context.scene.collection
 
-    # 1. Build Reusable Sets needed
-    set_a = None
-    set_b = None
-    set_c = None
-    set_d = None
-
+    # 1. Build Reusable Sets needed. Each builder links its own collection into
+    # root_col, so it is called for that side effect; the handle dict it returns
+    # is not read here.
     if ending_name in ["mothership_infection"]:
-        set_c = build_set_c_medical_dock(scene, root_col)
+        build_set_c_medical_dock(scene, root_col)
     elif ending_name in ["alien_exodus"]:
-        set_a = build_set_a_cabin(scene, root_col)
-        set_d = build_set_d_exterior_ice(scene, root_col)
+        build_set_a_cabin(scene, root_col)
+        build_set_d_exterior_ice(scene, root_col)
     elif ending_name in ["outed_escape"]:
-        set_a = build_set_a_cabin(scene, root_col)
+        build_set_a_cabin(scene, root_col)
     elif ending_name in ["failed_carrier"]:
-        set_b = build_set_b_cargo_four(scene, root_col)
-        set_a = build_set_a_cabin(scene, root_col)
+        build_set_b_cargo_four(scene, root_col)
+        build_set_a_cabin(scene, root_col)
     elif ending_name in ["empty_husk"]:
-        set_a = build_set_a_cabin(scene, root_col)
-        set_d = build_set_d_exterior_ice(scene, root_col)
+        build_set_a_cabin(scene, root_col)
+        build_set_d_exterior_ice(scene, root_col)
     elif ending_name == "all":
-        set_a = build_set_a_cabin(scene, root_col)
-        set_b = build_set_b_cargo_four(scene, root_col)
-        set_c = build_set_c_medical_dock(scene, root_col)
-        set_d = build_set_d_exterior_ice(scene, root_col)
+        build_set_a_cabin(scene, root_col)
+        build_set_b_cargo_four(scene, root_col)
+        build_set_c_medical_dock(scene, root_col)
+        build_set_d_exterior_ice(scene, root_col)
 
     # 2. Stage Ending Characters and Cameras
     cams = []
