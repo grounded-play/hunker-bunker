@@ -22,10 +22,15 @@ function seededRandom(seed) {
 }
 
 describe('ROOM_BUILD_CATALOG', () => {
-    it('has exactly the eight vertical-slice families the plan requires', () => {
+    // 'engineering' and 'security' joined the list when the three mandatory
+    // ship-goal rooms were authored: ringManifest.js MANDATORY_SHIP_GOALS
+    // reserves those two families every run and neither had a build, so the
+    // reservations resolved to generic architecture.
+    it('has exactly the vertical-slice families the plan requires', () => {
         const families = ROOM_BUILD_CATALOG.map((build) => build.family).sort();
         expect(families).toEqual([
-            'armory', 'cache', 'fabricator', 'gate', 'medical', 'o2', 'puzzle', 'trap_reward'
+            'armory', 'cache', 'engineering', 'engineering', 'fabricator', 'gate',
+            'medical', 'o2', 'puzzle', 'security', 'trap_reward'
         ].sort());
     });
 
