@@ -167,3 +167,35 @@ Environment gradient and space HDRI, room shells, imported game textures with
 pixel filtering / roughness break-up / emissive screens, 256 samples at 1080p,
 the framing report, and the per-shot test render pass with its black-frame size
 check.
+
+## 6. 2026-09-13 completion pass
+
+The measured blockers above were corrected in the generator and all five
+production `.blend` files were rebuilt:
+
+- shells are now built per set; mixed SET-A/SET-D endings key alternate set,
+  shell, light and cast visibility at shot boundaries, so cabin walls cannot
+  occlude exterior photography;
+- Failed Carrier uses SET-B as its enclosing room and SET-A only as connected
+  hatch dressing, eliminating the two coplanar closed shells;
+- camera focus is derived from the nearest renderable mesh in the shot frustum
+  at each shot midpoint rather than a fixed five metres;
+- the gameplay shuttle asset is laid onto its flight axis, promoted from prop
+  scale to a four-metre hero, animated through both launch passages, and carries
+  a restrained travelling cabin/engine bounce after it leaves the pad lights;
+- the exterior moon, engine and sky-fill rig is aimed at the launch geography;
+  the previously black AE-04, EH-03 and EH-04 now retain readable silhouettes;
+- FC-01 has a clear working-distance camera and pipe key; the remaining tight
+  interior cameras were moved out of imported meshes and explicitly composed
+  on their named story subjects;
+- deterministic 960x540, 32-sample midpoint review frames were rendered for
+  all 20 shots to `scratch/animatics/final-review/` and inspected as a contact
+  sheet. No frame is empty or blocked by a room shell. AE-03 and EH-02 retain
+  deliberate close foreground wipes from the cabin kit;
+- the checked audio manifest was reattached after the final rebuild: four cues
+  each for Mothership Infection, Alien Exodus, Outed Escape and Empty Husk, and
+  five cues for Failed Carrier. All scenes use `AUDIO_SYNC`.
+
+The review helper is `scripts/blender/render_review_frame.py`. Delivery remains
+at the scene-level Cycles settings (256 samples, 1920x1080, OIDN, AgX Punchy);
+the review helper deliberately overrides only resolution and sample count.

@@ -1269,7 +1269,11 @@ def build_set_d_exterior_ice(scene: bpy.types.Scene, root_col: bpy.types.Collect
     if shuttle:
         shuttle.name = "Escape_Shuttle_Hero_Hull"
         shuttle.location = (0, 0, 1.2)
-        shuttle.rotation_euler = (math.radians(12), 0, 0)  # Ascending launch pitch
+        # The gameplay GLB is authored upright and at prop scale for the
+        # top-down overlay. Lay it onto its flight axis and enlarge it into a
+        # four-metre cinematic hero; otherwise it reads as a one-metre beacon.
+        shuttle.rotation_euler = (math.radians(102), 0, 0)
+        shuttle.scale = (4.0, 4.0, 4.0)
 
     cradle = import_asset(cradle_asset, set_col)
     if cradle:
@@ -1361,6 +1365,10 @@ def setup_scene_mothership_infection(root_col: bpy.types.Collection) -> list[bpy
     cam2.keyframe_insert("location", frame=43)
     cam2.location = (-3.8, 2.8, 1.1)
     cam2.keyframe_insert("location", frame=78)
+    cam2.location = (-3.0, -1.0, 1.55)
+    cam2.keyframe_insert("location", frame=43)
+    cam2.keyframe_insert("location", frame=78)
+    aim_object_at(cam2, (0.0, -0.45, 1.15))
 
     # MI-03: 85mm collar close-up, shallow focus (frames 79-132)
     # The operator (Ch48) stands at (0, 1.0, 0) and reaches z=1.60, so the
@@ -1422,6 +1430,10 @@ def setup_scene_mothership_infection(root_col: bpy.types.Collection) -> list[bpy
     cam4.keyframe_insert("location", frame=133)
     cam4.location = (0, -0.6, 1.5)
     cam4.keyframe_insert("location", frame=180)
+    cam4.location = (2.0, -1.0, 1.8)
+    cam4.keyframe_insert("location", frame=133)
+    cam4.keyframe_insert("location", frame=180)
+    aim_object_at(cam4, (0.0, 2.7, 1.15))
 
     return [cam1, cam2, cam3, cam4]
 
@@ -1469,6 +1481,7 @@ def setup_scene_alien_exodus(root_col: bpy.types.Collection) -> list[bpy.types.O
     cam1.keyframe_insert("location", frame=0)
     cam1.location = (-5.5, -6.5, 6.2)
     cam1.keyframe_insert("location", frame=44)
+    aim_object_at(cam1, (0.0, 0.0, 4.0))
 
     # AE-02: 40mm cabin aisle dolly forward (frames 45-96)
     cam2 = create_camera("CAM_AE_02", 40.0, 1.8, scene_col)
@@ -1485,6 +1498,19 @@ def setup_scene_alien_exodus(root_col: bpy.types.Collection) -> list[bpy.types.O
     cam3.keyframe_insert("location", frame=97)
     cam3.location = (-0.25, 0.85, 1.18)
     cam3.keyframe_insert("location", frame=140)
+    # The original camera was 20 cm from Nahl and looking across the empty
+    # aisle. Give the 70 mm portrait enough working distance for face + hand.
+    cam3.data.lens = 55.0
+    cam3.data.dof.aperture_fstop = aperture_for_lens(cam3.data.lens)
+    cam3.location = (-0.85, -1.2, 2.2)
+    cam3.keyframe_insert("location", frame=97)
+    cam3.keyframe_insert("location", frame=140)
+    aim_object_at(cam3, (-0.85, 0.6, 1.35))
+    nahl_key = create_point_spot_light(
+        "Light_Nahl_Profile_Key", (0.25, 0.75, 1.0, 1.0), 360.0,
+        (-0.2, -0.4, 2.2), is_spot=True, spot_size_deg=58.0, collection=scene_col,
+    )
+    aim_object_at(nahl_key, (-0.85, 0.6, 1.1))
 
     # AE-04: 24mm exterior rear wide slow pull (frames 141-192)
     cam4 = create_camera("CAM_AE_04", 24.0, 2.8, scene_col)
@@ -1493,6 +1519,7 @@ def setup_scene_alien_exodus(root_col: bpy.types.Collection) -> list[bpy.types.O
     cam4.keyframe_insert("location", frame=141)
     cam4.location = (0, -18.0, 5.5)
     cam4.keyframe_insert("location", frame=192)
+    aim_object_at(cam4, (0.0, 0.0, 16.0))
 
     return [cam1, cam2, cam3, cam4]
 
@@ -1560,12 +1587,21 @@ def setup_scene_outed_escape(root_col: bpy.types.Collection) -> list[bpy.types.O
     # OE-02: 55mm passenger-side medium on lock dogs (frames 41-80)
     cam2 = create_camera("CAM_OE_02", 55.0, 1.8, scene_col)
     cam2.location = (0.55, 0.2, 1.1)
-    cam2.rotation_euler = (math.radians(82), 0, math.radians(-35))
+    aim_object_at(cam2, (0.0, 1.45, 1.0))
 
     # OE-03: 65mm operator profile through scratched partition (frames 81-122)
     cam3 = create_camera("CAM_OE_03", 65.0, 1.4, scene_col)
     cam3.location = (-0.6, 1.1, 1.35)
-    cam3.rotation_euler = (math.radians(86), 0, math.radians(15))
+    cam3.data.lens = 50.0
+    cam3.data.dof.aperture_fstop = aperture_for_lens(cam3.data.lens)
+    cam3.location = (1.5, 0.0, 1.5)
+    aim_object_at(cam3, (-0.3, 2.55, 1.15))
+
+    tribunal_key = create_point_spot_light(
+        "Light_Tribunal_Cold_Key", (0.35, 0.58, 1.0, 1.0), 380.0,
+        (1.2, 0.4, 2.4), is_spot=True, spot_size_deg=62.0, collection=scene_col,
+    )
+    aim_object_at(tribunal_key, (-0.3, 1.8, 1.0))
 
     # OE-04: 40mm two-plane locked shot (frames 123-168)
     cam4 = create_camera("CAM_OE_04", 40.0, 2.0, scene_col)
@@ -1626,8 +1662,13 @@ def setup_scene_failed_carrier(root_col: bpy.types.Collection) -> list[bpy.types
 
     # FC-04: 28mm cargo master with increasing shake (frames 123-168)
     cam4 = create_camera("CAM_FC_04", 28.0, 2.0, scene_col)
-    cam4.location = (-0.7, -1.1, 1.4)
-    cam4.rotation_euler = (math.radians(78), 0, math.radians(40))
+    cam4.location = (2.0, -2.0, 1.8)
+    aim_object_at(cam4, (0.65, 1.05, 0.85))
+    cargo_master_key = create_point_spot_light(
+        "Light_Cargo_Master_Key", (0.18, 0.68, 1.0, 1.0), 480.0,
+        (2.2, -1.0, 2.8), is_spot=True, spot_size_deg=72.0, collection=scene_col,
+    )
+    aim_object_at(cargo_master_key, (0.65, 1.05, 0.85))
 
     return [cam1, cam2, cam3, cam4]
 
@@ -1673,16 +1714,30 @@ def setup_scene_empty_husk(root_col: bpy.types.Collection) -> list[bpy.types.Obj
     cam2.keyframe_insert("location", frame=47)
     cam2.location = (1.4, -0.1, 0.95)
     cam2.keyframe_insert("location", frame=84)
+    # Lock the midpoint on the first abandoned token; the lateral move then
+    # lets the other empty seats wipe through focus instead of seeing a wall.
+    scene = bpy.context.scene
+    scene.frame_set(66)
+    cam2.data.lens = 55.0
+    cam2.location = (-0.85, 0.6, 2.5)
+    cam2.keyframe_insert("location", frame=47)
+    cam2.keyframe_insert("location", frame=84)
+    aim_object_at(cam2, (-0.85, 0.6, 0.55))
+    token_key = create_point_spot_light(
+        "Light_Abandoned_Tokens", (1.0, 0.48, 0.16, 1.0), 620.0,
+        (-0.5, -0.2, 1.8), is_spot=True, spot_size_deg=55.0, collection=scene_col,
+    )
+    aim_object_at(token_key, (-0.6, 0.35, 0.55))
 
     # EH-03: 28mm exterior launch wide, silent beacons (frames 85-126)
     cam3 = create_camera("CAM_EH_03", 28.0, 2.8, scene_col)
     cam3.location = (-10.0, -12.0, 3.5)
-    aim_object_at(cam3, (0.0, 0.0, 1.2))
+    aim_object_at(cam3, (0.0, 0.0, 5.5))
 
     # EH-04: extreme orbital wide, almost static negative space (frames 127-180)
     cam4 = create_camera("CAM_EH_04", 35.0, 5.6, scene_col)
     cam4.location = (0, -28.0, 14.0)
-    aim_object_at(cam4, (0.0, 1.5, 2.0))
+    aim_object_at(cam4, (0.0, 1.5, 19.0))
 
     return [cam1, cam2, cam3, cam4]
 
@@ -1787,6 +1842,41 @@ def build_ending_scene(ending_name: str, output_path: Path) -> None:
         if sequence_col:
             cast_meshes = [obj for obj in sequence_col.all_objects if obj.type == "MESH"]
             key_render_visibility(cast_meshes, [interior_range])
+
+        shuttle = handles["SET_D_ExteriorIce"].get("shuttle")
+        if shuttle:
+            launch_keys = {
+                "alien_exodus": ((0, 1.2), (44, 7.0), (141, 8.0), (192, 25.0)),
+                "empty_husk": ((85, 1.2), (126, 10.0), (127, 14.0), (180, 25.0)),
+            }[ending_name]
+            for frame, height in launch_keys:
+                shuttle.location.z = height
+                shuttle.keyframe_insert(data_path="location", frame=frame)
+
+            # A restrained cabin/engine bounce travels with the ascending hull.
+            # Static launch-pad spots correctly fall away as it climbs, but the
+            # ship must retain one readable edge against the black sky.
+            hero_glow = create_point_spot_light(
+                "Light_Shuttle_Traveling_Glow", (0.18, 0.55, 1.0, 1.0), 900.0,
+                (2.0, -2.0, 3.2), is_spot=False,
+                collection=handles["SET_D_ExteriorIce"]["collection"],
+            )
+            key_render_visibility([hero_glow], exterior_ranges)
+            for frame, height in launch_keys:
+                hero_glow.location.z = height + 2.0
+                hero_glow.keyframe_insert(data_path="location", frame=frame)
+
+            # Compose from the actual animated midpoint, not from the camera's
+            # last keyed location. The rotation remains locked afterward, which
+            # preserves EH-03's deliberate refusal to follow the departing ship.
+            exterior_cameras = (cams[0], cams[3]) if ending_name == "alien_exodus" else (cams[2], cams[3])
+            for camera in exterior_cameras:
+                shot_index = int(camera.name.rsplit("_", 1)[1]) - 1
+                midpoint = SHOT_MID_FRAMES[camera.name.split("_")[1]][shot_index]
+                scene.frame_set(midpoint)
+                bpy.context.view_layer.update()
+                target = shuttle.evaluated_get(bpy.context.evaluated_depsgraph_get()).matrix_world.translation
+                aim_object_at(camera, target)
 
     material_stats = enhance_imported_materials(scene)
     print(
