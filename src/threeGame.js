@@ -5198,6 +5198,33 @@ export class ThreeGame {
         return null;
     }
 
+    checkProjectileRivalHit(projectile) {
+        if (!this.isMultiplayer || this.multiplayerMode !== 'pvp') return null;
+        if (!this.remotePlayers?.size || projectile?.isEnemy) return null;
+        const px = projectile.mesh.position.x;
+        const pz = projectile.mesh.position.z;
+        for (const [id, remote] of this.remotePlayers) {
+            const mesh = remote?.mesh;
+            if (!mesh || mesh.visible === false || remote.isDown) continue;
+            const distance = Math.hypot(px - mesh.position.x, pz - mesh.position.z);
+            const radius = (this.playerRadius ?? 0.35)
+                + (projectile.radius ?? PROJECTILE_RADIUS)
+                + PLAYER_HITBOX_PADDING;
+            if (distance <= radius) return { id, remote };
+        }
+        return null;
+    }
+
+    reportProjectileRivalHit(rival, projectile) {
+        if (!rival?.id || !this.netSocket) return false;
+        this.netSocket.emit('weaponHit', {
+            targetId: rival.id,
+            originX: projectile.mesh.position.x,
+            originZ: projectile.mesh.position.z
+        });
+        return true;
+    }
+
     // Send the shove along the round's own travel direction, so a squadmate is
     // pushed the way the bullet was going rather than away from the shooter.
     nudgeSquadmate(squadmate, projectile) {
@@ -21652,6 +21679,14 @@ export class ThreeGame {
                     continue;
                 }
             } else {
+                const rival = this.checkProjectileRivalHit(projectile);
+                if (rival) {
+                    this.reportProjectileRivalHit(rival, projectile);
+                    this.spawnProjectileImpactEffect(projectile.mesh.position.x, projectile.mesh.position.z);
+                    toRemove.add(projectile);
+                    continue;
+                }
+
                 const snail = this.checkProjectileSnailHit(projectile);
                 if (snail) {
                     this.applyPlayerDamageToEnemy(snail, projectile.damage);

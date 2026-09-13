@@ -50,6 +50,40 @@ describe('Gameplay regressions: damage, oxygen, and cliff falling', () => {
     });
 
     describe('PvP damage scale conversion', () => {
+        it('detects a local projectile against a remote rival with player-shot padding', () => {
+            const rivalMesh = new THREE.Object3D();
+            rivalMesh.position.set(1, 0, 1);
+            const fakeGame = {
+                isMultiplayer: true,
+                multiplayerMode: 'pvp',
+                playerRadius: 0.35,
+                remotePlayers: new Map([['remote-player', { mesh: rivalMesh, isDown: false }]])
+            };
+            const projectile = {
+                isEnemy: false,
+                radius: 0.1,
+                mesh: { position: new THREE.Vector3(1.5, 0, 1) }
+            };
+
+            expect(ThreeGame.prototype.checkProjectileRivalHit.call(fakeGame, projectile)?.id)
+                .toBe('remote-player');
+        });
+
+        it('reports a rival hit from the shooter without trusting client damage', () => {
+            const emit = vi.fn();
+            const projectile = { mesh: { position: new THREE.Vector3(4, 0, 6) } };
+            expect(ThreeGame.prototype.reportProjectileRivalHit.call(
+                { netSocket: { emit } },
+                { id: 'remote-player' },
+                projectile
+            )).toBe(true);
+            expect(emit).toHaveBeenCalledWith('weaponHit', {
+                targetId: 'remote-player',
+                originX: 4,
+                originZ: 6
+            });
+        });
+
         it('converts a standard 10-point server hit to one local heart', () => {
             const fakeGame = {
                 netSocket: { id: 'local-player' },

@@ -124,11 +124,11 @@ describe('Server Relay: PvP mode survives a mid-match reconnect', () => {
         clientB2.emit('joinRoom', { roomCode, callsign: 'GUEST', opClass: 'SCOUT' });
         await waitForEvent(clientB2, 'currentPlayers');
 
-        // B2 (the reconnected victim) reports being hit by A. A never moved
-        // from its default spawn (x:9, z:9), so aiming the claimed origin
-        // there passes the server's range check trivially.
+        // A reports its local projectile overlapping reconnected rival B2.
+        // Both remain at the default spawn, so the impact passes attacker
+        // range and target-proximity validation.
         const damagedOnA = waitForEvent(clientA, 'playerDamaged');
-        clientB2.emit('weaponHit', { attackerId: clientA.id, originX: 9, originZ: 9 });
+        clientA.emit('weaponHit', { targetId: clientB2.id, originX: 9, originZ: 9 });
         const damagedEvent = await damagedOnA;
 
         expect(damagedEvent).not.toBeNull();
