@@ -18778,6 +18778,13 @@ export class ThreeGame {
                 this.spawnPhysicalBurst(this.player.position.x, this.player.position.z, { color: 0x111111, count: 12, upward: 0.2 });
                 return;
             }
+
+            // Authored props can be mounted or moved around the player after
+            // spawn. If that leaves the current position overlapping a solid,
+            // ordinary per-axis collision rejects every attempted step and the
+            // player can never walk back out. Resolve that invalid starting
+            // state before applying movement for this frame.
+            this.resolvePlayerDepenetration();
         }
 
         // Update kinetic control timers
@@ -30766,6 +30773,39 @@ export class ThreeGame {
             window.hbLog?.('MULTIPLAYER', 'warn', 'spawn-no-safe-tile', { x, z });
         }
         return result;
+    }
+
+    /**
+     * Move a player out of an invalid collision overlap by the shortest bounded
+     * displacement. This deliberately does nothing for valid positions: it is
+     * recovery from world mutation/loading, not a second movement system.
+     */
+    resolvePlayerDepenetration() {
+        if (!this.player || this.noclip) return false;
+
+        const { x, z } = this.player.position;
+        if (this.canOccupyPosition(x, z)) return false;
+
+        const result = resolveSafeSpawn({ x, z }, {
+            maxRadius: 4,
+            step: 0.25,
+            isBlocked: (cx, cz) => (
+                !this.canOccupyPosition(cx, cz)
+                || this.isPlayerOverAnyHole(cx, cz)
+            )
+        });
+        if (!result.moved) {
+            window.hbLog?.('PLAYER', 'warn', 'depenetration-no-safe-position', { x, z });
+            return false;
+        }
+
+        this.player.position.x = result.x;
+        this.player.position.z = result.z;
+        window.hbLog?.('PLAYER', 'warn', 'depenetrated', {
+            from: { x, z },
+            to: { x: result.x, z: result.z }
+        });
+        return true;
     }
 
     isPlayerOverAnyHole(px, pz) {
