@@ -62,4 +62,3 @@ scenes remain ignored and are not bundled or committed.
    Cycles frame sequences.
 4. Audition and promote only provenance-cleared cinematic audio, then mix it
    against approved picture lock.
-
