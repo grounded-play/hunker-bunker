@@ -196,6 +196,98 @@ def import_asset(asset_rel_path: str, collection: bpy.types.Collection) -> bpy.t
     return root_obj
 
 
+def _shell_material(name: str, base, roughness: float, metallic: float = 0.0):
+    """Simple PBR surface for room shell geometry."""
+    mat = bpy.data.materials.new(name)
+    mat.use_nodes = True
+    bsdf = next(n for n in mat.node_tree.nodes if n.type == "BSDF_PRINCIPLED")
+    bsdf.inputs["Base Color"].default_value = (*base, 1.0)
+    bsdf.inputs["Roughness"].default_value = roughness
+    bsdf.inputs["Metallic"].default_value = metallic
+    return mat
+
+
+def build_room_shell(
+    scene: bpy.types.Scene,
+    collection: bpy.types.Collection,
+    *,
+    margin: float = 2.0,
+    height: float = 4.0,
+    floor_color=(0.052, 0.055, 0.060),
+    wall_color=(0.070, 0.074, 0.082),
+    ceiling_color=(0.030, 0.032, 0.036),
+    name_prefix: str = "Shell",
+) -> list:
+    """
+    Build the floor, four walls and ceiling the sets were missing entirely.
+
+    Every ending scene was props and a character floating in void -- no floor,
+    no walls, no ceiling, verified by name scan across all five. That is the
+    single biggest reason these read as nothing: with no surfaces there is no
+    bounce, spot cones land on nothing, shadows fall into infinity, and the
+    "negative space" the framing spec warns about is literally the absence of a
+    room rather than a compositional choice.
+
+    Sized from the set's own bounds plus a margin, so each scene gets a room
+    that actually contains its dressing rather than a guessed box. Normals face
+    inward: Cycles renders backfaces, but an inward shell keeps the geometry
+    honest for anyone opening the file.
+
+    The ceiling is darker than the walls and the floor darker still at grazing
+    angles -- rooms are lit from within here, so the ceiling is the surface
+    furthest from every practical.
+    """
+    import mathutils
+
+    lo = [1e9, 1e9, 1e9]
+    hi = [-1e9, -1e9, -1e9]
+    found = False
+    for obj in scene.objects:
+        if obj.type != "MESH" or obj.hide_render:
+            continue
+        found = True
+        for corner in obj.bound_box:
+            world = obj.matrix_world @ mathutils.Vector(corner)
+            for axis in range(3):
+                lo[axis] = min(lo[axis], world[axis])
+                hi[axis] = max(hi[axis], world[axis])
+    if not found:
+        return []
+
+    min_x, max_x = lo[0] - margin, hi[0] + margin
+    min_y, max_y = lo[1] - margin, hi[1] + margin
+    floor_z = lo[2]
+    ceil_z = floor_z + max(height, (hi[2] - lo[2]) + 1.0)
+    cx, cy = (min_x + max_x) / 2, (min_y + max_y) / 2
+    size_x, size_y = max_x - min_x, max_y - min_y
+
+    floor_mat = _shell_material(f"{name_prefix}_Floor", floor_color, 0.42, 0.15)
+    wall_mat = _shell_material(f"{name_prefix}_Wall", wall_color, 0.62, 0.05)
+    ceil_mat = _shell_material(f"{name_prefix}_Ceiling", ceiling_color, 0.78, 0.0)
+
+    created = []
+    surfaces = (
+        ("Floor", (cx, cy, floor_z), (0, 0, 0), (size_x, size_y), floor_mat),
+        ("Ceiling", (cx, cy, ceil_z), (math.radians(180), 0, 0), (size_x, size_y), ceil_mat),
+        ("Wall_N", (cx, max_y, (floor_z + ceil_z) / 2), (math.radians(90), 0, 0), (size_x, ceil_z - floor_z), wall_mat),
+        ("Wall_S", (cx, min_y, (floor_z + ceil_z) / 2), (math.radians(-90), 0, 0), (size_x, ceil_z - floor_z), wall_mat),
+        ("Wall_E", (max_x, cy, (floor_z + ceil_z) / 2), (0, math.radians(-90), 0), (ceil_z - floor_z, size_y), wall_mat),
+        ("Wall_W", (min_x, cy, (floor_z + ceil_z) / 2), (0, math.radians(90), 0), (ceil_z - floor_z, size_y), wall_mat),
+    )
+    for suffix, location, rotation, (sx, sy), material in surfaces:
+        bpy.ops.mesh.primitive_plane_add(size=1.0, location=location)
+        plane = bpy.context.active_object
+        plane.name = f"{name_prefix}_{suffix}"
+        plane.rotation_euler = rotation
+        plane.scale = (sx, sy, 1.0)
+        for other in list(plane.users_collection):
+            other.objects.unlink(plane)
+        collection.objects.link(plane)
+        plane.data.materials.append(material)
+        created.append(plane.name)
+    return created
+
+
 def aim_object_at(obj: bpy.types.Object, target) -> None:
     """Point a light (or any -Z-forward object) at a world-space point."""
     import mathutils
@@ -1423,6 +1515,10 @@ def build_ending_scene(ending_name: str, output_path: Path) -> None:
         scene.camera = cams[0]
 
     # Report framing for an art pass. Deliberately does not mutate cameras.
+    shell = build_room_shell(scene, root_col)
+    if shell:
+        print(f"[build_ending_scenes] room shell: {len(shell)} surfaces")
+
     material_stats = enhance_imported_materials(scene)
     print(
         f"[build_ending_scenes] materials: {material_stats['materials']} seen, "
