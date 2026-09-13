@@ -29,9 +29,22 @@ own `License.txt` rather than trusting the source page.
 
 ### 1.1 The finding that shapes everything
 
-**The cave kit and the space kit are the same kit twice.** Identical 40 piece
-names — `corridor`, `corridor-corner`, `corridor-wide-junction`, `room-large`,
-`stairs`, `template-floor-layer-hole` — differing only in skin.
+**The cave kit and the space kit share their corridor and room grammar.**
+Measured after registering both: **36 of 40 piece names are identical** —
+`corridor`, `corridor-corner`, `corridor-wide-junction`, `room-large`, `stairs`,
+`template-floor-layer-hole` and the rest of the structural set.
+
+The four that differ are all flavour, not structure:
+
+| Cave only | Space only |
+|---|---|
+| `gate_metal_bars`, `gate_overhang`, `gate_rock` | `gate_door`, `gate_door_window`, `gate_lasers` |
+| `ladder` | `cables` |
+
+So the gates differ in what a door is made of, and the cave gets a ladder where
+space gets cable runs. An initial read called the two kits identical; they are
+not, and the distinction matters — a generator can share its corridor logic
+across both skins, but the gate table has to be per-skin.
 
 That is not a coincidence to work around; it is the design. One connector
 grammar serves both, so the existing random-hallway system can keep its logic
