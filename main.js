@@ -102,6 +102,7 @@ import {
 } from './src/mazeExpedition.js';
 import { installSteamCloudSaveBridge } from './src/steamCloudSaveBridge.js';
 import { installSettingsWheelGuard } from './src/settingsWheelGuard.js';
+import { installAccessibilitySettings } from './src/accessibilitySettings.js';
 
 // docs/steamstorestatus.log Steam Cloud gap: electron/main.cjs's
 // hb:saveDataChanged bridge (mirrors hb_*-prefixed saves into save.json,
@@ -121,6 +122,11 @@ installSteamCloudSaveBridge({
 // call here: this module is loaded at the end of <body>, so #settings-popup
 // already exists (the getElementById calls just below rely on the same thing).
 installSettingsWheelGuard(document);
+
+// The subtitle-size, subtitle-backdrop and contrast controls, their CSS and
+// their persistence all existed but nothing imported the module, so the
+// accessibility features the Steam store page advertises never actually ran.
+installAccessibilitySettings(document);
 
 const startBtn = document.getElementById('start-game'); // INITIALIZE button
 const titleContinueBtn = document.getElementById('title-continue-btn');

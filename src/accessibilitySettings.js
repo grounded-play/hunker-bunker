@@ -120,3 +120,39 @@ export function setContrast(value, doc) {
         (v) => ({ contrast: v }), doc
     );
 }
+
+// Playtest/audit 2026-09-12: everything below the surface already existed --
+// the three <select> controls in index.html, the --hb-subtitle-scale /
+// --hb-subtitle-backdrop custom properties consumed by style.css, and the
+// .contrast-high / .contrast-max rules -- but nothing imported this module, so
+// none of it ran. The Steam store page already claims these accessibility
+// features, which makes wiring them a correctness issue rather than a nicety.
+//
+// Binds the three controls to the setters and applies the stored values once at
+// boot, so a returning player sees their choice honoured before any subtitle
+// is drawn.
+
+const CONTROL_BINDINGS = Object.freeze([
+    Object.freeze({ id: 'setting-subtitle-size', key: 'subtitleSize', apply: setSubtitleSize }),
+    Object.freeze({ id: 'setting-subtitle-backdrop', key: 'subtitleBackdrop', apply: setSubtitleBackdrop }),
+    Object.freeze({ id: 'setting-contrast', key: 'contrast', apply: setContrast })
+]);
+
+export function installAccessibilitySettings(doc = (typeof document !== 'undefined' ? document : null)) {
+    if (!doc?.getElementById) return { applied: false, bound: 0 };
+
+    const stored = loadAccessibilitySettings();
+    const applied = applyAccessibilitySettings(stored, doc);
+
+    let bound = 0;
+    for (const binding of CONTROL_BINDINGS) {
+        const el = doc.getElementById(binding.id);
+        if (!el) continue;
+        // Reflect the stored value so the control never disagrees with the
+        // screen -- the select's own default is not the source of truth.
+        el.value = stored[binding.key];
+        el.addEventListener('change', (event) => binding.apply(event.target.value, doc));
+        bound += 1;
+    }
+    return { applied, bound };
+}
