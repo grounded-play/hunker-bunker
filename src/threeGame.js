@@ -17562,6 +17562,11 @@ export class ThreeGame {
         // A downed co-op operator becomes fully dead on a squad wipe or
         // manual abort. Do not carry the revive-only guard into a retry.
         this.isPlayerDowned = false;
+        // Keep the operator's final world-state visually consistent with the
+        // body recorded for black-box recovery. updatePlayer stops once dead,
+        // so this pose must be latched before the death/results UI takes over.
+        this.player3dOverlay?.setDowned?.(true);
+        this.player3dOverlay?.setWeaponVisible?.(false);
         // A real death is now gracefully recorded via blackBoxStore.recordDeath
         // below -- the crash-only checkpoint has nothing left to add.
         runCheckpointStore.clear();

@@ -110,6 +110,19 @@ describe('run checkpoint (crash-recovery) wiring', () => {
             expect(clearSpy).toHaveBeenCalled();
         });
 
+        it('latches the downed body pose and hides its weapon on terminal death', () => {
+            const setDowned = vi.fn();
+            const setWeaponVisible = vi.fn();
+            const fakeThis = makeDeathFakeThis({
+                player3dOverlay: { setDowned, setWeaponVisible }
+            });
+
+            ThreeGame.prototype.handleDeath.call(fakeThis, 'hazard');
+
+            expect(setDowned).toHaveBeenCalledWith(true);
+            expect(setWeaponVisible).toHaveBeenCalledWith(false);
+        });
+
         it('handleExtraction clears the checkpoint on a successful extraction', () => {
             const fakeThis = {
                 missionState: { status: 'elevator_ready' },
