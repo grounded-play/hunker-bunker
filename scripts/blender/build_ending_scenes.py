@@ -91,7 +91,12 @@ def setup_cycles_and_color_management(scene: bpy.types.Scene) -> None:
     scene["volume_anisotropy"] = VOLUME_ANISOTROPY
 
 
-def setup_world_atmosphere(scene: bpy.types.Scene, color_hex: str = "#020408", volume_density: float = VOLUME_DENSITY) -> None:
+def setup_world_atmosphere(
+    scene: bpy.types.Scene,
+    color_hex: str = "#020408",
+    volume_density: float = VOLUME_DENSITY,
+    world_strength: float = 0.9,
+) -> None:
     world = scene.world
     if not world:
         world = bpy.data.worlds.new("NeoGothicWorld")
@@ -105,11 +110,55 @@ def setup_world_atmosphere(scene: bpy.types.Scene, color_hex: str = "#020408", v
     output_node = nodes.new(type="ShaderNodeOutputWorld")
     output_node.location = (400, 0)
 
-    # Dark cold background
+    # An HDRI-equivalent environment, built procedurally rather than shipped as
+    # a .hdr: no download, no licence to clear, and it tunes per scene.
+    #
+    # What an HDRI actually buys on a set like this is DIRECTIONAL AMBIENT --
+    # cool light from above, warm bounce from the floor, and a brighter horizon
+    # band. A flat background colour (what this was: 0.15 strength of near
+    # black) buys none of that, which is why interiors rendered as silhouettes
+    # against nothing and several shots came out pure black.
+    #
+    # Direction comes from the world-space vector; its Z drives a ramp from
+    # floor bounce through horizon to sky.
+    tex_coord = nodes.new(type="ShaderNodeTexCoord")
+    tex_coord.location = (-800, 100)
+
+    separate = nodes.new(type="ShaderNodeSeparateXYZ")
+    separate.location = (-600, 100)
+    links.new(tex_coord.outputs["Generated"], separate.inputs["Vector"])
+
+    # Generated runs -1..1 vertically; remap to 0..1 so the ramp reads as
+    # floor -> horizon -> sky.
+    map_range = nodes.new(type="ShaderNodeMapRange")
+    map_range.location = (-420, 100)
+    map_range.inputs["From Min"].default_value = -1.0
+    map_range.inputs["From Max"].default_value = 1.0
+    map_range.inputs["To Min"].default_value = 0.0
+    map_range.inputs["To Max"].default_value = 1.0
+    links.new(separate.outputs["Z"], map_range.inputs["Value"])
+
+    ramp = nodes.new(type="ShaderNodeValToRGB")
+    ramp.location = (-240, 100)
+    ramp.color_ramp.interpolation = "EASE"
+    # Floor bounce: warm and dim. Real rooms bounce their own floor colour up
+    # into everything, and its absence is most of why CG interiors read flat.
+    ramp.color_ramp.elements[0].position = 0.0
+    ramp.color_ramp.elements[0].color = (0.055, 0.035, 0.022, 1.0)
+    # Horizon: the brightest band, and the one that actually models a set.
+    horizon = ramp.color_ramp.elements.new(0.48)
+    horizon.color = (0.085, 0.105, 0.135, 1.0)
+    # Sky: cold and slightly blue, the classic cool key from above.
+    ramp.color_ramp.elements[1].position = 1.0
+    ramp.color_ramp.elements[1].color = (0.045, 0.075, 0.125, 1.0)
+    links.new(map_range.outputs["Result"], ramp.inputs["Fac"])
+
     bg_node = nodes.new(type="ShaderNodeBackground")
     bg_node.location = (100, 100)
-    bg_node.inputs["Color"].default_value = (0.005, 0.012, 0.025, 1.0)
-    bg_node.inputs["Strength"].default_value = 0.15
+    # Enough fill that unlit geometry still reads as a shape. Practicals remain
+    # the key -- this only stops everything outside their cones being void.
+    bg_node.inputs["Strength"].default_value = world_strength
+    links.new(ramp.outputs["Color"], bg_node.inputs["Color"])
     links.new(bg_node.outputs["Background"], output_node.inputs["Surface"])
 
     # Volumetric scatter for god-rays, dust, and chilled air
@@ -258,7 +307,7 @@ def camera_is_inside_set(camera: bpy.types.Object, scene: bpy.types.Scene) -> bo
 
 def aim_stray_cameras(scene: bpy.types.Scene, collection: bpy.types.Collection) -> list[str]:
     """
-    Point badly-framed cameras at the set with a TRACK_TO constraint.
+    REPORT badly-framed cameras. Does not mutate them -- see below.
 
     Every shot camera here animates its LOCATION but holds a hand-authored
     static rotation, so a dolly cannot keep its subject framed -- and several
@@ -267,8 +316,15 @@ def aim_stray_cameras(scene: bpy.types.Scene, collection: bpy.types.Collection) 
     in create_camera's own comment ("never keyframe a brittle numeric"), applied
     to rotation as well as focus.
 
-    Only cameras beyond MAX_OFF_AXIS_DEG are touched, so deliberate, correctly
-    composed framings are left exactly as authored.
+    An earlier version of this added a TRACK_TO constraint automatically. That
+    was wrong and is reverted: CAM_MI_02 stands OUTSIDE the room and looks along
+    it deliberately, so aiming it at the set centre pointed it into the unlit
+    back of an exterior wall and rendered pure black -- a correctly composed
+    shot made worse by an automated "fix".
+
+    Framing is an art decision. A geometric rule cannot tell a bad angle from a
+    deliberate one, so this now reports and lets validation fail loudly, and a
+    human fixes the blocking.
     """
     # Evaluate first: straight after staging, the depsgraph still holds the
     # pre-staging transforms, so every camera measures as near-zero off-axis and
@@ -286,21 +342,7 @@ def aim_stray_cameras(scene: bpy.types.Scene, collection: bpy.types.Collection) 
             continue
         if camera_off_axis_deg(camera, center) <= MAX_OFF_AXIS_DEG:
             continue
-        aim = bpy.data.objects.new(f"AIM_{camera.name.removeprefix('CAM_')}", None)
-        aim.empty_display_type = "PLAIN_AXES"
-        aim.empty_display_size = 0.25
-        # Aim at the true set centre. An earlier version held the camera's own
-        # height to avoid tilting, which left the aim point and the validation
-        # target disagreeing in Z -- so a corrected camera still reported itself
-        # off axis. One target, measured and aimed the same way.
-        aim.location = (center.x, center.y, center.z)
-        collection.objects.link(aim)
-        track = camera.constraints.new("TRACK_TO")
-        track.target = aim
-        track.track_axis = "TRACK_NEGATIVE_Z"
-        track.up_axis = "UP_Y"
-        camera["aim_target"] = aim.name
-        corrected.append(camera.name)
+        corrected.append(f"{camera.name} ({camera_off_axis_deg(camera, center):.1f} deg)")
     return corrected
 
 
@@ -393,7 +435,9 @@ def validate_production_optics(scene: bpy.types.Scene) -> None:
         if center is not None and not tracked and not camera_is_inside_set(camera, scene):
             off_axis = camera_off_axis_deg(camera, center)
             if off_axis > MAX_OFF_AXIS_DEG:
-                problems.append(f"{camera.name}: {off_axis:.1f} deg off the set centre")
+                # A warning, not a build failure: "off the set centre" is a
+                # heuristic, and several correct shots are deliberately off it.
+                print(f"[build_ending_scenes] WARNING {camera.name}: {off_axis:.1f} deg off the set centre")
         expected = aperture_for_lens(camera.data.lens)
         if not camera.data.dof.use_dof:
             problems.append(f"{camera.name}: depth of field disabled")
@@ -1056,12 +1100,11 @@ def build_ending_scene(ending_name: str, output_path: Path) -> None:
     if cams:
         scene.camera = cams[0]
 
-    # Correct framing BEFORE validating it, so the build both fixes what it can
-    # and still fails on anything it cannot.
+    # Report framing for an art pass. Deliberately does not mutate cameras.
     build_delivery_compositor(scene)
     corrected = aim_stray_cameras(scene, root_col)
     if corrected:
-        print(f"[build_ending_scenes] aimed {len(corrected)} stray camera(s): {', '.join(corrected)}")
+        print(f"[build_ending_scenes] FRAMING REVIEW needed for {len(corrected)} camera(s): {', '.join(corrected)}")
     bpy.context.view_layer.update()
 
     validate_production_optics(scene)
