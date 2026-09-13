@@ -5013,7 +5013,7 @@ export class ThreeGame {
         });
         // Remote player's shot: this one genuinely needs placing -- it is the
         // only weapon fire that does not originate at the listener.
-        window.AudioManager?.play?.('weapon_fire_sidearm', this.audioAt(originX, originZ, { volume: 0.28, varyPitch: true }));
+        window.AudioManager?.play?.('weapon_fire_sidearm', (this.audioAt?.(originX, originZ, { volume: 0.28, varyPitch: true }) ?? { volume: 0.28, varyPitch: true }));
     }
 
     handleRemotePlayerDamaged(data) {
@@ -6569,7 +6569,7 @@ export class ThreeGame {
         if (this.weaponClipAmmo <= 0 && !this.unlimitedAmmo) {
             const availableAmmo = this.getAvailableAmmo();
             if (availableAmmo < 1) {
-                window.AudioManager?.play('weapon_dry_fire', this.audioAt(this.player?.position?.x, this.player?.position?.z, { volume: 0.45 }));
+                window.AudioManager?.play('weapon_dry_fire', (this.audioAt?.(this.player?.position?.x, this.player?.position?.z, { volume: 0.45 }) ?? { volume: 0.45 }));
                 presentationTelemetry.emit('WEAPON', PRESENTATION_EVENTS.WEAPON.SHOT_BLOCKED, { reason: 'out_of_ammo', clip: 0, reserve: 0 }, { level: 'warn' });
                 return this.triggerGameplayMelee({ source: 'empty-fire-fallback' });
             }
@@ -6616,7 +6616,7 @@ export class ThreeGame {
             });
         }
 
-        window.AudioManager?.play('weapon_fire_sidearm', this.audioAt(this.player?.position?.x, this.player?.position?.z, { volume: 0.34 }));
+        window.AudioManager?.play('weapon_fire_sidearm', (this.audioAt?.(this.player?.position?.x, this.player?.position?.z, { volume: 0.34 }) ?? { volume: 0.34 }));
 
         if (this.weaponClipAmmo <= 0 && !this.unlimitedAmmo) {
             this.requestReload();
@@ -9211,7 +9211,7 @@ export class ThreeGame {
         state.hp = Math.max(0, state.hp - damage);
 
         if (state.hp > 0) {
-            window.AudioManager?.playMetalStress?.(this.audioAt(state.doorCenterX ?? 9, state.doorZ, { volume: 0.42, playbackRate: 1.5, force: true }));
+            window.AudioManager?.playMetalStress?.((this.audioAt?.(state.doorCenterX ?? 9, state.doorZ, { volume: 0.42, playbackRate: 1.5, force: true }) ?? { volume: 0.42, playbackRate: 1.5, force: true }));
             this.spawnTextureBurstEffect(state.doorCenterX ?? 9, state.doorZ, {
                 textureKey: 'fx_steam_puff',
                 color: 0xff4400,
@@ -9244,7 +9244,7 @@ export class ThreeGame {
             baseScale: 0.9,
             duration: 0.7
         });
-        window.AudioManager?.playMetalStress?.(this.audioAt(state.doorCenterX ?? 9, state.doorZ, { volume: 0.8, playbackRate: 0.5, force: true }));
+        window.AudioManager?.playMetalStress?.((this.audioAt?.(state.doorCenterX ?? 9, state.doorZ, { volume: 0.8, playbackRate: 0.5, force: true }) ?? { volume: 0.8, playbackRate: 0.5, force: true }));
 
         window.dispatchEvent(new CustomEvent('bunker-door-destroyed', {
             detail: { source }
@@ -13588,7 +13588,7 @@ export class ThreeGame {
         hive.syncFromRecord(after);
         this.spawnGearPoofEffect(hive.pos.x, hive.pos.z, 'bio_spores');
         this.triggerCameraShake?.(0.14, 0.3);
-        window.AudioManager?.play?.('enemy_hit_soft', this.audioAt(hive.pos.x, hive.pos.z, { volume: 0.5, playbackRate: 0.6 }));
+        window.AudioManager?.play?.('enemy_hit_soft', (this.audioAt?.(hive.pos.x, hive.pos.z, { volume: 0.5, playbackRate: 0.6 }) ?? { volume: 0.5, playbackRate: 0.6 }));
         const boss = this.spawnHiveHarvestBoss(hive, after.extractionLevel);
         window.dispatchEvent(new CustomEvent('hive-mined', {
             detail: {
@@ -14660,7 +14660,7 @@ export class ThreeGame {
         if (!sprite?.userData) return;
         sprite.userData.burstTriggered = true;
         this.spawnPhysicalBurst(sprite.position.x, sprite.position.z, { color: 0xcc2233, count: 5, upward: 0.16 });
-        window.AudioManager?.play?.('enemy_hit_soft', this.audioAt(sprite.position.x, sprite.position.z, { volume: 0.4 }));
+        window.AudioManager?.play?.('enemy_hit_soft', (this.audioAt?.(sprite.position.x, sprite.position.z, { volume: 0.4 }) ?? { volume: 0.4 }));
         sprite.parent?.remove(sprite);
         sprite.material?.dispose?.();
         sprite.geometry?.dispose?.();
@@ -20785,7 +20785,7 @@ export class ThreeGame {
         this.weaponReloadDuration = WEAPON_RELOAD_DURATION * (this.reloadSpeedMult ?? 1.0);
         this.weaponReloadTimer = this.weaponReloadDuration;
         this.emitWeaponClipState();
-        window.AudioManager?.play('weapon_reload', this.audioAt(this.player?.position?.x, this.player?.position?.z, { volume: 0.52 }));
+        window.AudioManager?.play('weapon_reload', (this.audioAt?.(this.player?.position?.x, this.player?.position?.z, { volume: 0.52 }) ?? { volume: 0.52 }));
         window.AudioManager?.playVoiceCallout?.('reload');
         this.triggerReloadRelicEffects?.(wasEmptyReload);
         return true;
@@ -21313,7 +21313,7 @@ export class ThreeGame {
         if (!root) return;
 
         this.spawnDamagePip(root.position.x, root.position.z, 1);
-        window.AudioManager?.play('enemy_hit_soft', this.audioAt(root.position.x, root.position.z, { volume: 0.45 }));
+        window.AudioManager?.play('enemy_hit_soft', (this.audioAt?.(root.position.x, root.position.z, { volume: 0.45 }) ?? { volume: 0.45 }));
 
         if (result.outcome === 'warning') {
             // One warning, then she fights. The choice has to be legible as a
@@ -26786,7 +26786,7 @@ export class ThreeGame {
             sprite.material.color.setHex(0xffaa44);
             setTimeout(() => { sprite.material?.color?.setHex(0xffffff); }, 90);
         }
-        window.AudioManager?.play('enemy_hit_soft', this.audioAt(sprite.position.x, sprite.position.z, { volume: 0.35 }));
+        window.AudioManager?.play('enemy_hit_soft', (this.audioAt?.(sprite.position.x, sprite.position.z, { volume: 0.35 }) ?? { volume: 0.35 }));
 
         if (sprite.userData.propHp <= 0) {
             sprite.userData.burstTriggered = true;
@@ -26879,7 +26879,7 @@ export class ThreeGame {
         }
 
         if (sprite.userData.hp > 0) {
-            window.AudioManager?.play('enemy_hit_soft', this.audioAt(sprite.position.x, sprite.position.z, { volume: 0.38 }));
+            window.AudioManager?.play('enemy_hit_soft', (this.audioAt?.(sprite.position.x, sprite.position.z, { volume: 0.38 }) ?? { volume: 0.38 }));
             this._flashSnailHit(sprite);
             window.dispatchEvent(new CustomEvent('enemy-hit', {
                 detail: {
@@ -27071,9 +27071,9 @@ export class ThreeGame {
             spread: sprite.userData.isBoss ? 2.0 : 1.5
         });
         if (isCrawler) {
-            window.AudioManager?.play('enemy_death_crawler', this.audioAt(sprite.position.x, sprite.position.z, { volume: isBoss ? 0.6 : 0.4, playbackRate: isBoss ? 0.75 : 1.0 }));
+            window.AudioManager?.play('enemy_death_crawler', (this.audioAt?.(sprite.position.x, sprite.position.z, { volume: isBoss ? 0.6 : 0.4, playbackRate: isBoss ? 0.75 : 1.0 }) ?? { volume: isBoss ? 0.6 : 0.4, playbackRate: isBoss ? 0.75 : 1.0 }));
         } else {
-            window.AudioManager?.play('enemy_death_snail', this.audioAt(sprite.position.x, sprite.position.z, { volume: isBoss ? 0.6 : 0.45, playbackRate: isBoss ? 0.75 : 1.0 }));
+            window.AudioManager?.play('enemy_death_snail', (this.audioAt?.(sprite.position.x, sprite.position.z, { volume: isBoss ? 0.6 : 0.45, playbackRate: isBoss ? 0.75 : 1.0 }) ?? { volume: isBoss ? 0.6 : 0.45, playbackRate: isBoss ? 0.75 : 1.0 }));
             this.spawnEnemyCorpse(sprite);
         }
         window.dispatchEvent(new CustomEvent('enemy-killed', {
