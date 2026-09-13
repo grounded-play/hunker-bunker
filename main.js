@@ -87,11 +87,6 @@ import { getResolution, previewCampLeaderLinchpin } from './src/storyLinchpins.j
 import { buildEndingArchive, getLeaderReaction } from './src/storyArchive.js';
 import { SongInterstitialController, selectCampInterstitial } from './src/songInterstitials.js';
 import { dialogueReactionForLine, preloadLeaderMedia, resolveLeaderIdentity } from './src/leaderIdentity.js';
-import { openQaNexusModal, closeQaNexusModal } from './src/debugQaNexus.js';
-import { openDebugMuseum, closeDebugMuseum } from './src/debugMuseum.js';
-import { openDebugTileGrid, closeDebugTileGrid } from './src/debugTileGrid.js';
-import { openDebugBossArenas, closeDebugBossArenas } from './src/debugBossArenas.js';
-import { openDebugCampSimulator, closeDebugCampSimulator } from './src/debugCampSimulator.js';
 import { LeaderConversation3d } from './src/leaderConversation3d.js';
 import { getLocale, setLocale, t as i18nT, getAvailableLocales } from './src/i18n.js';
 import {
@@ -103,6 +98,52 @@ import {
 import { installSteamCloudSaveBridge } from './src/steamCloudSaveBridge.js';
 import { installSettingsWheelGuard } from './src/settingsWheelGuard.js';
 import { installAccessibilitySettings } from './src/accessibilitySettings.js';
+
+// These galleries are explicit developer destinations. Keeping their modules
+// out of the boot graph prevents QA scene code (and its transitive catalogs)
+// from shipping in the player-facing index chunk. Closing an unopened tool is
+// intentionally a no-op so ordinary phase cleanup never triggers a download.
+let debugQaNexusModule = null;
+let debugMuseumModule = null;
+let debugTileGridModule = null;
+let debugBossArenasModule = null;
+let debugCampSimulatorModule = null;
+
+async function openQaNexusModal(...args) {
+    debugQaNexusModule ??= await import('./src/debugQaNexus.js');
+    return debugQaNexusModule.openQaNexusModal(...args);
+}
+function closeQaNexusModal(...args) {
+    return debugQaNexusModule?.closeQaNexusModal(...args) ?? false;
+}
+async function openDebugMuseum(...args) {
+    debugMuseumModule ??= await import('./src/debugMuseum.js');
+    return debugMuseumModule.openDebugMuseum(...args);
+}
+function closeDebugMuseum(...args) {
+    return debugMuseumModule?.closeDebugMuseum(...args) ?? false;
+}
+async function openDebugTileGrid(...args) {
+    debugTileGridModule ??= await import('./src/debugTileGrid.js');
+    return debugTileGridModule.openDebugTileGrid(...args);
+}
+function closeDebugTileGrid(...args) {
+    return debugTileGridModule?.closeDebugTileGrid(...args) ?? false;
+}
+async function openDebugBossArenas(...args) {
+    debugBossArenasModule ??= await import('./src/debugBossArenas.js');
+    return debugBossArenasModule.openDebugBossArenas(...args);
+}
+function closeDebugBossArenas(...args) {
+    return debugBossArenasModule?.closeDebugBossArenas(...args) ?? false;
+}
+async function openDebugCampSimulator(...args) {
+    debugCampSimulatorModule ??= await import('./src/debugCampSimulator.js');
+    return debugCampSimulatorModule.openDebugCampSimulator(...args);
+}
+function closeDebugCampSimulator(...args) {
+    return debugCampSimulatorModule?.closeDebugCampSimulator(...args) ?? false;
+}
 
 // docs/steamstorestatus.log Steam Cloud gap: electron/main.cjs's
 // hb:saveDataChanged bridge (mirrors hb_*-prefixed saves into save.json,

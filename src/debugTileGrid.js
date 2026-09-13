@@ -552,6 +552,10 @@ export async function openDebugTileGrid(game) {
 
     // Ensure clean state
     closeDebugTileGrid(game);
+    // Install the far-away debug terrain override only while this explicit QA
+    // world is active. threeGame's synchronous tile lookup can then stay free
+    // of a static import of this entire gallery module.
+    game._debugWing2ChunkOverride = getWing2ChunkOverride;
 
     const rootGroup = new THREE.Group();
     rootGroup.name = 'debug-tile-grid';
@@ -598,6 +602,7 @@ export async function openDebugTileGrid(game) {
 }
 
 export function closeDebugTileGrid(game) {
+    if (game) game._debugWing2ChunkOverride = null;
     const group = game?.scene?.getObjectByName('debug-tile-grid');
     if (!group) return false;
     group.traverse((child) => {

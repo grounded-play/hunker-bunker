@@ -14,10 +14,8 @@ import {
     CHASSIS_SKIN_ITEMDEFS,
     COSMETIC_DECAL_ITEMDEFS
 } from './debugAssetCatalogs.js';
-
-export const SHOWROOM_CHUNK_X = 500;
-export const SHOWROOM_CHUNK_Y = 500;
-export const SHOWROOM_CHUNK_KEY = `${SHOWROOM_CHUNK_X},${SHOWROOM_CHUNK_Y}`;
+export { SHOWROOM_CHUNK_X, SHOWROOM_CHUNK_Y, SHOWROOM_CHUNK_KEY } from './debugWorldLayout.js';
+import { SHOWROOM_CHUNK_X, SHOWROOM_CHUNK_Y } from './debugWorldLayout.js';
 
 // Categorized catalog for exhibition
 export const SHOWROOM_CATEGORIES = Object.freeze({

@@ -288,8 +288,7 @@ import {
     getEnemyDirectionRow,
     getEnemySpriteLayout
 } from './enemySpriteLayouts.js';
-import { SHOWROOM_CHUNK_X, SHOWROOM_CHUNK_Y } from './debugShowroom.js';
-import { getWing2ChunkOverride } from './debugTileGrid.js';
+import { SHOWROOM_CHUNK_X, SHOWROOM_CHUNK_Y } from './debugWorldLayout.js';
 import { PRESENTATION_EVENTS, presentationTelemetry } from './presentationTelemetry.js';
 import { summarizeSceneLights, diffLightCounts } from './lightingReport.js';
 
@@ -31529,7 +31528,7 @@ export class ThreeGame {
         // arrival. Same pattern as the Showroom override just above, but with
         // real room/door tile data (not blanket floor) for its room-type
         // modules -- see getWing2ChunkOverride's own comment in debugTileGrid.js.
-        const wing2Override = getWing2ChunkOverride(chunkX, chunkY, this.chunkSize);
+        const wing2Override = this._debugWing2ChunkOverride?.(chunkX, chunkY, this.chunkSize) ?? null;
         if (wing2Override) return wing2Override;
 
         const landform = this.getChunkLandform(chunkX, chunkY);
