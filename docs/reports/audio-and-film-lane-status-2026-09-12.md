@@ -128,8 +128,24 @@ camera basis rather than world axes, distance attenuation, the inaudible cutoff,
 critical-cue flooring, and obstruction muffling. 28 green across the four audio
 suites.
 
-**Remaining in this lane:** gameplay emitters still need to pass `worldX`/`worldZ`
-at their call sites — weapons, enemies, doors, props. The transport is in place
-and proven, so that is now a mechanical pass rather than a design question.
-Obstruction is plumbed but no caller computes it yet; a raycast against world
-geometry is the natural source.
+### Emitters and obstruction — done
+
+Nine call sites now emit positionally via `ThreeGame.audioAt(x, z, extra)`:
+enemy hits (normal, enraged, boss), enemy deaths (crawler and snail), the Mayor
+Tina encounter, hive prop hits, camp-quest shootable props, and both bunker
+blast-door stress cues.
+
+`isAudioPathObstructed()` supplies the obstruction flag by sampling
+`canOccupyPosition` along the listener→emitter segment — the same collision the
+player walks on. **Not** a Three.js raycast: this runs once per sound, and a
+scene raycast per gunshot is not affordable. It is deliberately permissive at
+both ends — emitters within 1.5 units are never obstructed, and sampling stops
+short of the emitter so standing beside a wall does not mute the thing next to
+it.
+
+**Deliberately left flat:** UI, menu and class-lock cues, and the local player's
+own weapon. The player is the listener, so spatialising their own gun buys a pan
+of zero and a gain of one while adding work per shot.
+
+**Remaining:** remote players' weapons in multiplayer are still flat and would
+benefit, and `spawnPropDebris` in `src/enemyGibs.js` emits no audio at all yet.

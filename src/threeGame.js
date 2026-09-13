@@ -9205,7 +9205,7 @@ export class ThreeGame {
         state.hp = Math.max(0, state.hp - damage);
 
         if (state.hp > 0) {
-            window.AudioManager?.playMetalStress?.({ volume: 0.42, playbackRate: 1.5, force: true });
+            window.AudioManager?.playMetalStress?.(this.audioAt(state.doorCenterX ?? 9, state.doorZ, { volume: 0.42, playbackRate: 1.5, force: true }));
             this.spawnTextureBurstEffect(state.doorCenterX ?? 9, state.doorZ, {
                 textureKey: 'fx_steam_puff',
                 color: 0xff4400,
@@ -9238,7 +9238,7 @@ export class ThreeGame {
             baseScale: 0.9,
             duration: 0.7
         });
-        window.AudioManager?.playMetalStress?.({ volume: 0.8, playbackRate: 0.5, force: true });
+        window.AudioManager?.playMetalStress?.(this.audioAt(state.doorCenterX ?? 9, state.doorZ, { volume: 0.8, playbackRate: 0.5, force: true }));
 
         window.dispatchEvent(new CustomEvent('bunker-door-destroyed', {
             detail: { source }
@@ -13582,7 +13582,7 @@ export class ThreeGame {
         hive.syncFromRecord(after);
         this.spawnGearPoofEffect(hive.pos.x, hive.pos.z, 'bio_spores');
         this.triggerCameraShake?.(0.14, 0.3);
-        window.AudioManager?.play?.('enemy_hit_soft', { volume: 0.5, playbackRate: 0.6 });
+        window.AudioManager?.play?.('enemy_hit_soft', this.audioAt(hive.pos.x, hive.pos.z, { volume: 0.5, playbackRate: 0.6 }));
         const boss = this.spawnHiveHarvestBoss(hive, after.extractionLevel);
         window.dispatchEvent(new CustomEvent('hive-mined', {
             detail: {
@@ -14654,7 +14654,7 @@ export class ThreeGame {
         if (!sprite?.userData) return;
         sprite.userData.burstTriggered = true;
         this.spawnPhysicalBurst(sprite.position.x, sprite.position.z, { color: 0xcc2233, count: 5, upward: 0.16 });
-        window.AudioManager?.play?.('enemy_hit_soft', { volume: 0.4 });
+        window.AudioManager?.play?.('enemy_hit_soft', this.audioAt(sprite.position.x, sprite.position.z, { volume: 0.4 }));
         sprite.parent?.remove(sprite);
         sprite.material?.dispose?.();
         sprite.geometry?.dispose?.();
@@ -21307,7 +21307,7 @@ export class ThreeGame {
         if (!root) return;
 
         this.spawnDamagePip(root.position.x, root.position.z, 1);
-        window.AudioManager?.play('enemy_hit_soft', { volume: 0.45 });
+        window.AudioManager?.play('enemy_hit_soft', this.audioAt(root.position.x, root.position.z, { volume: 0.45 }));
 
         if (result.outcome === 'warning') {
             // One warning, then she fights. The choice has to be legible as a
@@ -26780,7 +26780,7 @@ export class ThreeGame {
             sprite.material.color.setHex(0xffaa44);
             setTimeout(() => { sprite.material?.color?.setHex(0xffffff); }, 90);
         }
-        window.AudioManager?.play('enemy_hit_soft', { volume: 0.35 });
+        window.AudioManager?.play('enemy_hit_soft', this.audioAt(sprite.position.x, sprite.position.z, { volume: 0.35 }));
 
         if (sprite.userData.propHp <= 0) {
             sprite.userData.burstTriggered = true;
@@ -26873,7 +26873,7 @@ export class ThreeGame {
         }
 
         if (sprite.userData.hp > 0) {
-            window.AudioManager?.play('enemy_hit_soft', { volume: 0.38 });
+            window.AudioManager?.play('enemy_hit_soft', this.audioAt(sprite.position.x, sprite.position.z, { volume: 0.38 }));
             this._flashSnailHit(sprite);
             window.dispatchEvent(new CustomEvent('enemy-hit', {
                 detail: {
@@ -27065,9 +27065,9 @@ export class ThreeGame {
             spread: sprite.userData.isBoss ? 2.0 : 1.5
         });
         if (isCrawler) {
-            window.AudioManager?.play('enemy_death_crawler', { volume: isBoss ? 0.6 : 0.4, playbackRate: isBoss ? 0.75 : 1.0 });
+            window.AudioManager?.play('enemy_death_crawler', this.audioAt(sprite.position.x, sprite.position.z, { volume: isBoss ? 0.6 : 0.4, playbackRate: isBoss ? 0.75 : 1.0 }));
         } else {
-            window.AudioManager?.play('enemy_death_snail', { volume: isBoss ? 0.6 : 0.45, playbackRate: isBoss ? 0.75 : 1.0 });
+            window.AudioManager?.play('enemy_death_snail', this.audioAt(sprite.position.x, sprite.position.z, { volume: isBoss ? 0.6 : 0.45, playbackRate: isBoss ? 0.75 : 1.0 }));
             this.spawnEnemyCorpse(sprite);
         }
         window.dispatchEvent(new CustomEvent('enemy-killed', {
@@ -30919,6 +30919,46 @@ export class ThreeGame {
             from: { x, z }, to: { x: result.x, z: result.z }
         });
         return true;
+    }
+
+    /**
+     * Is the straight line from the listener to an emitter blocked by world
+     * geometry? Sampled against canOccupyPosition -- the same collision the
+     * player walks on -- rather than a Three.js raycast, because this runs per
+     * sound and a scene raycast per gunshot is not affordable.
+     *
+     * Deliberately permissive: very close emitters are never obstructed (you
+     * can hear what is on top of you), and sampling stops well short of the
+     * emitter so standing next to a wall does not mute the thing beside it.
+     */
+    isAudioPathObstructed(x, z) {
+        if (!this.player || typeof this.canOccupyPosition !== 'function') return false;
+        const px = this.player.position.x;
+        const pz = this.player.position.z;
+        const dx = x - px;
+        const dz = z - pz;
+        const distance = Math.hypot(dx, dz);
+        if (!(distance > 1.5)) return false;
+        const steps = Math.min(10, Math.max(2, Math.round(distance / 1.75)));
+        for (let i = 1; i < steps; i += 1) {
+            const t = i / steps;
+            if (!this.canOccupyPosition(px + (dx * t), pz + (dz * t))) return true;
+        }
+        return false;
+    }
+
+    /**
+     * Build play() options for a sound emitted at a world point. Call sites
+     * pass their own volume/bus through `extra`; this only adds placement.
+     */
+    audioAt(x, z, extra = {}) {
+        if (!Number.isFinite(x) || !Number.isFinite(z)) return extra;
+        return {
+            ...extra,
+            worldX: x,
+            worldZ: z,
+            obstructed: extra.obstructed ?? this.isAudioPathObstructed(x, z)
+        };
     }
 
     resolvePlayerDepenetration() {
