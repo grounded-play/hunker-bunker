@@ -134,7 +134,7 @@ describe('getNextCampQuest', () => {
     it('returns null once every quest for the camp is done', () => {
         const fakeThis = makeFakeThis();
         const quest = ThreeGame.prototype.getNextCampQuest.call(
-            fakeThis, 'camp_meridian', { bond: 4, questFlags: { reactor_venting: 'done', hive_archive_ch1: 'done', lost_probe: 'done' } }
+            fakeThis, 'camp_meridian', { bond: 4, questFlags: { reactor_venting: 'done', hive_archive_ch1: 'done', lost_probe: 'done', grid_covenant: 'done' } }
         );
         expect(quest).toBeNull();
     });

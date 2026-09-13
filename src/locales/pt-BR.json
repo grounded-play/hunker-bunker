@@ -558,6 +558,10 @@
         "2": {
           "label": "A SONDA PERDIDA",
           "desc": "RECUPERE A SONDA MÉTRICA PERDIDA DA Horizon Corp NO BIOMA GELADO"
+        },
+        "3": {
+          "label": "O PACTO DA REDE",
+          "desc": "ASSINE O LIVRO DE KAELEN E PONHA A ENERGIA DE MERIDIAN EM SEU NOME"
         }
       },
       "camp_tallow": {
@@ -572,6 +576,10 @@
         "2": {
           "label": "O CULTISTA PERDIDO",
           "desc": "RESGATE E ESCOLTE O CULTISTA PERDIDO DOS TÚNEIS DE VENTILAÇÃO"
+        },
+        "3": {
+          "label": "OS CANOS QUENTES",
+          "desc": "CUMPRA A PROMESSA A MARTHA: VOLTE A TALLOW ANTES QUE O CORAÇÃO CANTE"
         }
       },
       "camp_vesper": {
@@ -586,6 +594,10 @@
         "2": {
           "label": "RESISTÊNCIA NO BÚNQUER",
           "desc": "DEFENDA O PORTÃO DA BARRICADA DAS PATRULHAS DE ATAQUE"
+        },
+        "3": {
+          "label": "O LIVRO DE FERRO",
+          "desc": "CONQUISTE UMA LINHA NO LIVRO DOS MORTOS DE BRIGGS SEM ESTAR NELE"
         }
       }
     },
@@ -694,6 +706,30 @@
       "18": {
         "name": "ESPÉCIME 0047",
         "blurb": "O PIVÔ. SOLDA DE ORIGEM DESBLOQUEADA: ANTIGO PORTADOR DE SEMENTE RECLASSIFICADO COMO NÚCLEO ADORMECIDO DA RAINHA. A TELEMETRIA DO EXOTRAJE INDICA QUE O BIOSSINAL DESLOCA O FOCO DA TRANSMISSÃO PARA O CORPO DO PORTADOR NO MUNDO."
+      },
+      "19": {
+        "name": "A PREFEITA, ENCERRADA",
+        "blurb": "Você derrubou a coisa que vestia a Prefeita. Os acampamentos vão agradecer, alto e por muito tempo. Algo sob o gelo anotou a dívida e não pretende quitá-la. Caminhos agora fechados: o êxodo, a ninhada completa, o voo silencioso para casa."
+      },
+      "20": {
+        "name": "A PREFEITA, ACEITA",
+        "blurb": "Você aceitou o que lhe ofereceram e algo no seu peito concordou. Os acampamentos já sentem a diferença. Caminhos agora fechados: a ruptura limpa, o céu calcinado. Nenhum deles seria seu, de todo modo."
+      },
+      "21": {
+        "name": "O ESPÉCIME, OUVIDO",
+        "blurb": "Você ficou parado diante de uma coisa feita para matá-lo e ela não matou. OKONKWO-VASS tem dois anos de anotações chamando-os de pragas e começou uma página nova. Hoje nada se fechou. Isso é mais raro do que parece."
+      },
+      "22": {
+        "name": "O ESPÉCIME, ENCERRADO",
+        "blurb": "Ela pediu um. Você deu um cadáver. A única humana que teria falado pelas colmeias parou de anotar. Caminho agora fechado: o êxodo. Não resta ninguém para avalizá-lo."
+      },
+      "23": {
+        "name": "A RAINHA, A BORDO",
+        "blurb": "Ela ocupa dois assentos. Você fez a conta e disse sim mesmo assim. Caminhos agora fechados: a ruptura limpa, o contrabando silencioso. O que quer que deixe o gelo com você, a maior parte será ela."
+      },
+      "24": {
+        "name": "A RAINHA, RECUSADA",
+        "blurb": "Você a deixou sob o gelo com três assentos ainda na mão. Caminho agora fechado: a ninhada completa. Ela sempre custaria mais do que oferecia."
       }
     },
     "loreClassLogs": {

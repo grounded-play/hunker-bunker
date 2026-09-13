@@ -338,7 +338,7 @@
 
         <div class="credits-footer">
           <span class="credits-footer-thankyou">THANK YOU FOR DEPLOYING</span>
-          <span id="about-modal-sys-ver" class="credits-footer-ver">SYS VER: 2.4.0-BETA // ACTIVE</span>
+          <span id="about-modal-sys-ver" class="credits-footer-ver">SYS VER: 2.4.2-BETA // ACTIVE</span>
         </div>
       </div>
     </div>
@@ -2088,6 +2088,20 @@
         </div>
 
         <div class="camp-choice-options" id="camp-choice-options"></div>
+
+        <!-- Pre-confirmation warning panel (shown when an action is selected) -->
+        <div class="camp-choice-confirm hidden" id="camp-choice-confirm" aria-live="polite">
+          <div class="camp-choice-confirm__kicker">⚠ IRREVERSIBLE CHOICE // STRATEGIC RECORD ⚠</div>
+          <h3 class="camp-choice-confirm__arc" id="camp-choice-confirm-arc">LEADER ARC</h3>
+          <div class="camp-choice-confirm__action" id="camp-choice-confirm-action"></div>
+          <div class="camp-choice-confirm__narrative" id="camp-choice-confirm-narrative"></div>
+          <div class="camp-choice-confirm__deltas" id="camp-choice-confirm-deltas"></div>
+          <div class="camp-choice-confirm__locks" id="camp-choice-confirm-locks"></div>
+          <div class="camp-choice-confirm__controls">
+            <button type="button" class="camp-choice-confirm-btn camp-choice-confirm-btn--proceed" id="camp-choice-confirm-proceed">CONFIRM DECISION</button>
+            <button type="button" class="camp-choice-confirm-btn camp-choice-confirm-btn--back" id="camp-choice-confirm-back">BACK TO OPTIONS</button>
+          </div>
+        </div>
       </div>
     </div>
 

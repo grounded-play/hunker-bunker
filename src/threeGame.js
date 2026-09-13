@@ -189,7 +189,7 @@ export const MAYOR_TINA_PLAYER_VISUAL = Object.freeze({
 import { createEnemy3dVisual, disposeEnemy3dVisual, updateEnemy3dVisual } from './enemy3dOverlay.js';
 import { spawnEnemyGibs, spawnPropDebris } from './enemyGibs.js';
 import { registerTinaHit } from './mayorTinaCombat.js';
-import { applyLinchpinResolution } from './storyLinchpins.js';
+import { applyLinchpinResolution, resolveCampLeaderLinchpin } from './storyLinchpins.js';
 import { resolveSafeSpawn } from './safeSpawn.js';
 import { WORLD_3D_FACING_YAW, createWorld3dModel, hasWorld3dModel, preloadWorld3dModels, syncWorld3dReplacement } from './world3dOverlay.js';
 import { computeTrailPosition } from './companionFollow.js';
@@ -4373,6 +4373,11 @@ export class ThreeGame {
     interactWithMayorTina() {
         const encounter = this.mayorTinaEncounter;
         if (!encounter || encounter.phase !== 'idle' || this.isMultiplayer || !this.player || !encounter.mayorRoot) return false;
+        // You cannot accept an offer from something you shot. Without this the
+        // player could kill her and then walk up and transform anyway: the
+        // linchpin's write-once guard would keep the state correct, but they
+        // would watch a transformation that silently did nothing.
+        if (encounter.tinaDead) return false;
         const position = this.getMayorTinaEncounterPosition();
         if (Math.hypot(this.player.position.x - position.x, this.player.position.z - position.z) >= 2.45) return false;
         encounter.phase = 'transforming';
@@ -4441,6 +4446,12 @@ export class ThreeGame {
         if (this.mayorTinaEncounter?.phase !== 'transformed') return false;
         this.cinematicLock = false;
         this.setInputEnabled(true);
+        // The other half of the Tina linchpin. This transformation IS the
+        // "become a bug" path -- it was already implemented and simply never
+        // reported its outcome, so the joined resolution was reachable only
+        // from a debug console. Resolved on completion rather than on the
+        // interaction, so an aborted cinematic does not bank the consequence.
+        applyLinchpinResolution(this.act2, 'mayor_tina', 'joined');
         return true;
     }
 
@@ -15569,6 +15580,7 @@ export class ThreeGame {
             return true;
         }
         this.syncCampVisualFromRecord(camp, after);
+        resolveCampLeaderLinchpin(this.act2, camp.leaderClassId, 'steal');
         this.spawnCampStealLoot(camp);
         this.triggerCameraShake?.(0.18, 0.35);
         window.AudioManager?.play?.('ui_error', { volume: 0.38, playbackRate: 0.85 });
@@ -15598,6 +15610,7 @@ export class ThreeGame {
             return true;
         }
         this.syncCampVisualFromRecord(camp, after);
+        resolveCampLeaderLinchpin(this.act2, camp.leaderClassId, mode === 'turned' ? 'turn' : 'recruit');
         this.spawnGearPoofEffect(camp.pos.x, camp.pos.z, mode === 'turned' ? 'bio_spores' : 'bunker_junk_legendary');
         window.AudioManager?.play?.('class_lock', { volume: 0.52, playbackRate: mode === 'turned' ? 0.75 : 1.05 });
         window.dispatchEvent(new CustomEvent('camp-choice-resolved', {
@@ -15644,6 +15657,7 @@ export class ThreeGame {
             return true;
         }
         this.syncCampVisualFromRecord(camp, record);
+        resolveCampLeaderLinchpin(this.act2, camp.leaderClassId, 'cull');
         this.spawnGearPoofEffect(camp.pos.x, camp.pos.z, camp.level > 0 ? 'bunker_junk_rare' : 'bunker_junk_uncommon');
         this.spawnCampCullLoot(camp);
         this.triggerCameraShake?.(0.4, 0.6);
@@ -15682,6 +15696,7 @@ export class ThreeGame {
             return true;
         }
         this.syncCampVisualFromRecord(camp, after);
+        resolveCampLeaderLinchpin(this.act2, camp.leaderClassId, action);
         window.AudioManager?.play?.('class_lock', { volume: 0.5, playbackRate: action === 'latent' ? 0.72 : 1.0 });
         window.dispatchEvent(new CustomEvent('camp-choice-resolved', {
             detail: { campId: camp.id, campLabel: camp.label, action, status: after.status }
@@ -15709,6 +15724,16 @@ export class ThreeGame {
             }));
             return true;
         }
+        // The Queen costs two of your three free seats, so this choice is where
+        // the manifest arithmetic becomes irreversible. Recorded as a linchpin
+        // so the cascade stops offering endings the seat count already ruled
+        // out, rather than silently failing their conditions later.
+        // Mirrors the branching below exactly: purge/bargain/abandon all leave
+        // her behind; anything else (default 'queen') takes her aboard.
+        const REFUSING_VARIANTS = ['purge', 'bargain', 'abandon'];
+        applyLinchpinResolution(this.act2, 'queen_offer',
+            REFUSING_VARIANTS.includes(variant) ? 'refused' : 'accepted');
+
         if (variant === 'purge') {
             this.act2.setQueenStatus('killed');
             this.act2.setEggsStatus('destroyed');
@@ -21060,6 +21085,30 @@ export class ThreeGame {
     }
 
     /**
+     * Resolve the scientist linchpin from a snail encounter's outcome.
+     *
+     * Okonkwo-Vass asks, in shipped stage-2 dialogue: "DON'T KILL ONE. TALK TO
+     * ONE. PROVE ME RIGHT." The encounter already supports both answers --
+     * befriend/pacified/recruited, or fight_win -- they simply never reported
+     * back, so scientist_specimen was registered and unreachable.
+     *
+     * Gated on her having actually asked. Without the gate any encounter won
+     * before she raises it would resolve `dismissed`, and because linchpins are
+     * write-once the player would be locked out of ALIEN_EXODUS by a fight they
+     * had before anyone mentioned it.
+     */
+    resolveScientistSpecimenLinchpin(outcome) {
+        const stage = this.act2?.getState?.()?.scientist?.dialogueStage ?? 0;
+        if (stage < 2) return false;
+        const PROVED = ['befriend', 'pacified', 'recruited'];
+        const resolution = PROVED.includes(outcome) ? 'proved'
+            : outcome === 'fight_win' ? 'dismissed'
+                : null;
+        if (!resolution) return false;
+        return applyLinchpinResolution(this.act2, 'scientist_specimen', resolution);
+    }
+
+    /**
      * Mayor Tina is a bare scene group, not a scatter sprite, so the normal
      * destructible-prop sweep never saw her. Shooting her resolves a story
      * linchpin that permanently locks endings, so the hit count lives in
@@ -21092,9 +21141,18 @@ export class ThreeGame {
         window.AudioManager?.play('enemy_hit_soft', { volume: 0.45 });
 
         if (result.outcome === 'warning') {
-            // One warning, then she fights. Dialogue rather than a silent
-            // stat change, because the choice needs to be legible as a choice.
-            this.lineDirector?.say?.('TINA: PUT THAT DOWN. I AM ASKING ONCE.', { priority: 0 });
+            // One warning, then she fights. The choice has to be legible as a
+            // choice, so it speaks.
+            //
+            // Via bunker-line, not lineDirector: LineDirector exposes
+            // requestLine(trigger, context, pool, random) and has no say(), so
+            // the previous call was dead code that optional chaining swallowed
+            // silently -- the warning beat never appeared at all. The speaker
+            // prefix must be "MAYOR TINA:" exactly; main.js whitelists that and
+            // renders anything else as a line spoken by the bunker.
+            window.dispatchEvent(new CustomEvent('bunker-line', {
+                detail: { text: 'MAYOR TINA: PUT THAT DOWN. I AM ASKING ONCE.' }
+            }));
         }
 
         if (result.outcome !== 'killed') return;
@@ -25430,6 +25488,13 @@ export class ThreeGame {
             sprite.renderOrder = 4;
             sprite.userData = {
                 isScatter: true,
+                // Bunker junk is scenery debris; it had no reason to be
+                // bulletproof. Objective-critical props (lore_terminal) stay
+                // indestructible on purpose -- see the objective-registry guard
+                // in threeGame.destructibleProps.test.js.
+                isDestructibleProp: true,
+                propHp: placement.hp ?? 2,
+                maxPropHp: placement.hp ?? 2,
                 type: placement.type,
                 scatterKey: placement.scatterKey,
                 groupType: placement.groupType,
@@ -28671,6 +28736,7 @@ export class ThreeGame {
                 this.companions.push({ sprite, assistCooldown: 0 });
             }
             this.act2?.completeScientistQuest?.('snail_befriended');
+            this.resolveScientistSpecimenLinchpin(state.outcome);
             window.dispatchEvent(new CustomEvent('snail-befriended', {
                 detail: { snailType: sprite?.userData?.type || state.entityType }
             }));
@@ -28681,6 +28747,7 @@ export class ThreeGame {
         } else if (state.outcome === 'fled' || state.outcome === 'dialogue_complete') {
             setTimeout(() => this.closeSnailEncounter(), 600);
         } else if (state.outcome === 'fight_win' || state.outcome === 'reprogrammed') {
+            this.resolveScientistSpecimenLinchpin(state.outcome);
             if (sprite) sprite.userData.encounterResolved = true;
             setTimeout(() => this.closeSnailEncounter(), 600);
         }

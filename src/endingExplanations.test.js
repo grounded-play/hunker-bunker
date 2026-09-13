@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { ACT2_ENDINGS } from './act2.js';
-import { explainEnding, formatManifestBlocker } from './endingExplanations.js';
+import { explainEnding, formatManifestBlocker, explainLinchpinResolution } from './endingExplanations.js';
 
 describe('ending causal explanations (Phase 9.3: a player can explain why an ending occurred)', () => {
     it('gives every declared ending a distinct, non-generic explanation', () => {
@@ -36,3 +36,17 @@ describe('manifest boarding-blocker explanations', () => {
         expect(formatManifestBlocker('some_new_reason_code')).toBe('SOME NEW REASON CODE');
     });
 });
+
+describe('linchpin resolution explanations', () => {
+    it('explains known linchpins with distinct narrative descriptions', () => {
+        const text = explainLinchpinResolution('suture_host_mercy', 'cured_human');
+        expect(text).toMatch(/resection surgery/i);
+        const tina = explainLinchpinResolution('mayor_tina', 'killed');
+        expect(tina).toMatch(/Teacup Siren/i);
+    });
+
+    it('provides fallback for unknown linchpins', () => {
+        expect(explainLinchpinResolution('mystery', 'choice')).toMatch(/mystery with choice/i);
+    });
+});
+

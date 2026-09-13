@@ -31,3 +31,12 @@ copied into the roadmap with an owner/acceptance condition or explicitly cut.
 - [O2 milestone cinematic doors and boss destruction plan](o2-cinematic-doors-and-boss-destruction-plan-2026-09-10.md) — objective blast doors, video playback, 3D generator rise, screen rumble, boss encounter video, 3D boss model visibility, and wall destruction.
 - [O2 generator stall and sequence fix plan](o2-generator-sequence-fix-2026-09-10.md) — fixes 21.4s shader recompile freeze, builds floodlights at world setup, removes misplaced compile, closes menu instantly, orchestrates door sequence, and adds framed text backing.
 
+- [Blender pre-rendered animation production plan](blender-prerendered-animation-plan-2026-09-12.md) — proposed selective Blender-to-atlas/WebM pipeline, prioritized animation slate, runtime boundaries, validation gates, and phased delivery plan.
+- [Scout walk slice report](scout-walk-slice-report-2026-09-12.md) — execution report for the initial calibrated 8-frame Scout walk slice, geometric validation results, and pipeline CLI automation.
+
+- [Blender ending scene blocks and shot list](blender-ending-scene-blocks-and-shot-list-2026-09-12.md) — Cycles look bible, neo-Gothic cyber-biohorror post-punk composition, CC0/public-domain audio sourcing, Blender VSE mixdown, chromatic-registration QC, blocking, cameras, and animatic acceptance for the five missing Act 2 ending videos.
+
+- [CC0 game audio integration plan](cc0-game-audio-integration-plan-2026-09-12.md) — license-safe conversion of the gathered source audio into bounded runtime soundsets for mechanisms, ambience, hive systems, destruction, combat, and bosses.
+
+- [Authored set pieces, crash-site building, and run variety](authored-setpieces-crash-site-and-run-building-plan-2026-09-12.md) — central plan for deterministic procedural connectors between designed multi-chunk landmarks, a buildable run headquarters, seeded project combinations, the Ring 1 valley bridge, hospitals, camps, hives, objectives, and progression-safe expansion.
+- [Gate stage areas — detailed level design](gate-stage-areas-design-2026-09-12.md) — verified world/camera metrics, scale-preserving Blender structure pipeline, landmark and gate grammar, four distinct ring-gate verbs, and production-ready Ring 1→2 bridge design.

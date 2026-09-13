@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import * as THREE from 'three';
-import { SurvivorCamp, CAMP_CLEARING_RADIUS, CAMP_FLOOR_SIZE, CAMP_INTERACT_RADIUS, CAMP_SIGNATURE_PROPS } from './camp.js';
+import { SurvivorCamp, CAMP_CLEARING_RADIUS, CAMP_FLOOR_SIZE, CAMP_INTERACT_RADIUS, CAMP_SIGNATURE_PROPS, getCampPathNodes } from './camp.js';
 
 describe('SurvivorCamp', () => {
     it('uses a crash-site-style clearing with structures spread across it', () => {
@@ -155,4 +155,65 @@ describe('SurvivorCamp', () => {
             camp.reveal(0, 0);
         }).not.toThrow();
     });
+
+    it('uses existing lived-in props to show each camp aftermath', () => {
+        const camp = new SurvivorCamp(new THREE.Scene(), { id: 'camp_meridian' });
+        camp.build(0, 0);
+
+        camp.setStatus('robbed');
+        expect(camp.propSprites.crates.visible).toBe(false);
+        expect(camp.propSprites.bedrolls.visible).toBe(false);
+        expect(camp.propSprites.laundry.visible).toBe(true);
+        expect(camp.propSprites.grave.visible).toBe(false);
+
+        camp.setStatus('recruited');
+        expect(camp.propSprites.laundry.visible).toBe(false);
+        expect(camp.propSprites.bedrolls.visible).toBe(false);
+
+        camp.setStatus('culled');
+        expect(camp.propSprites.grave.visible).toBe(true);
+    });
+
+    it('supplies distinct faction-tailored waypoint nodes per camp', () => {
+        const meridianNodes = getCampPathNodes('camp_meridian');
+        const tallowNodes = getCampPathNodes('camp_tallow');
+        const vesperNodes = getCampPathNodes('camp_vesper');
+
+        expect(meridianNodes.length).toBeGreaterThanOrEqual(4);
+        expect(tallowNodes.length).toBeGreaterThanOrEqual(4);
+        expect(vesperNodes.length).toBeGreaterThanOrEqual(4);
+        // Different factions have different patrol targets (generator vs shrine vs turret)
+        expect(meridianNodes).not.toEqual(tallowNodes);
+        expect(tallowNodes).not.toEqual(vesperNodes);
+    });
+
+    it('tracks player proximity, turns to face, and pauses patrol during standoff', () => {
+        const camp = new SurvivorCamp(new THREE.Scene(), { id: 'camp_vesper' });
+        camp.reveal(0, 0);
+
+        // Leader starts at pos (0.8, 0.6)
+        // Player approaches from the south at (0.8, 2.5) -> dz > 0
+        camp.update(0.016, { x: 0.8, y: 0, z: 2.5 });
+        expect(camp.isInteractingWithPlayer).toBe(true);
+        expect(camp.npcFacingRow).toBe(0); // South
+
+        // Player moves east of leader at (3.5, 0.6) -> dx > 0
+        camp.update(0.016, { x: 3.5, y: 0, z: 0.6 });
+        expect(camp.npcFacingRow).toBe(2); // East
+
+        // Player moves away beyond 5m -> resumes patrol
+        camp.update(0.016, { x: 20, y: 0, z: 20 });
+        expect(camp.isInteractingWithPlayer).toBe(false);
+    });
+
+    it('applies cadence and spore twitches when turned', () => {
+        const camp = new SurvivorCamp(new THREE.Scene(), { id: 'camp_tallow' });
+        camp.reveal(0, 0);
+        camp.setStatus('turned');
+
+        camp.update(0.05, { x: 20, y: 0, z: 20 });
+        expect(camp.npcSprite).toBeTruthy();
+        expect(Number.isFinite(camp.npcSprite.position.y)).toBe(true);
+    });
 });
+

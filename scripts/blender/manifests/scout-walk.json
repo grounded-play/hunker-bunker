@@ -1,0 +1,80 @@
+{
+  "schemaVersion": 1,
+  "subject": "Scout",
+  "action": "walk",
+  "sourceModel": "public/3d/scouting-scout/Scout.game.glb",
+  "sourceActionName": "walk",
+  "blenderVersion": "5.2.1 LTS",
+  "columns": 8,
+  "rows": 8,
+  "cellSize": 256,
+  "fps": 8,
+  "loop": true,
+  "camera": {
+    "type": "ORTHO",
+    "pitchDeg": 50,
+    "distY": 5.0,
+    "targetZ": 0.18,
+    "orthoScale": 2.8
+  },
+  "directions": [
+    {
+      "name": "east",
+      "row": 0,
+      "rotZ": -90
+    },
+    {
+      "name": "southeast",
+      "row": 1,
+      "rotZ": -45
+    },
+    {
+      "name": "south",
+      "row": 2,
+      "rotZ": 0
+    },
+    {
+      "name": "southwest",
+      "row": 3,
+      "rotZ": 45
+    },
+    {
+      "name": "west",
+      "row": 4,
+      "rotZ": 90
+    },
+    {
+      "name": "northwest",
+      "row": 5,
+      "rotZ": 135
+    },
+    {
+      "name": "north",
+      "row": 6,
+      "rotZ": 180
+    },
+    {
+      "name": "northeast",
+      "row": 7,
+      "rotZ": -135
+    }
+  ],
+  "phases": [
+    "left-contact",
+    "left-down",
+    "left-pass",
+    "left-up",
+    "right-contact",
+    "right-down",
+    "right-pass",
+    "right-up"
+  ],
+  "eventFrames": {
+    "footstep": [
+      0,
+      4
+    ]
+  },
+  "outputAtlas": "public/Scout.walk_v4.png",
+  "outputSidecar": "art/source/art-remaster/sprite-v4/scout/Scout.walk-v4-frame-spec.json"
+}

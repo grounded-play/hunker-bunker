@@ -558,6 +558,10 @@
         "2": {
           "label": "DIE VERLORENE SONDE",
           "desc": "VERLORENE Horizon Corp MESSSONDE AUS DEM FROSTBIOM BERGEN"
+        },
+        "3": {
+          "label": "DER NETZ-PAKT",
+          "desc": "KAELENS BUCH UNTERSCHREIBEN UND MERIDIANS STROM AUF DEINEN NAMEN SETZEN"
         }
       },
       "camp_tallow": {
@@ -572,6 +576,10 @@
         "2": {
           "label": "DER VERLORENE KULTIST",
           "desc": "VERLORENEN KULTISTEN AUS DEN LÜFTUNGSTUNNELN BERGEN UND ESKORTIEREN"
+        },
+        "3": {
+          "label": "DIE WARMEN ROHRE",
+          "desc": "MARTHAS VERSPRECHEN HALTEN: NACH TALLOW ZURÜCKKEHREN, EHE DAS HERZ SINGT"
         }
       },
       "camp_vesper": {
@@ -586,6 +594,10 @@
         "2": {
           "label": "BUNKER-VERTEIDIGUNG",
           "desc": "DAS BARRIKADENTOR GEGEN ANRÜCKENDE ANGRIFFSPATROUILLEN VERTEIDIGEN"
+        },
+        "3": {
+          "label": "DAS EISERNE BUCH",
+          "desc": "EINE ZEILE IN BRIGGS' BUCH DER TOTEN VERDIENEN, OHNE DARIN ZU STEHEN"
         }
       }
     },
@@ -694,6 +706,30 @@
       "18": {
         "name": "EXEMPLAR 0047",
         "blurb": "DER DREH- UND ANGELPUNKT. URSPRUNGSNAHT ENTSPERRT: ALTER SAATTRÄGER ALS SCHLAFENDER KERN DER KÖNIGIN UMKLASSIFIZIERT. EXOSKELETT-TELEMETRIE ZEIGT, DASS DAS BIOSIGNAL SEINEN FOKUS VON DER ÜBERTRAGUNG AUF DEN KÖRPER DES TRÄGERS IN DER WELT VERLAGERT."
+      },
+      "19": {
+        "name": "DIE BÜRGERMEISTERIN, BEENDET",
+        "blurb": "Du hast das Ding erledigt, das die Bürgermeisterin trug. Die Lager werden es dir danken, laut und lange. Etwas unter dem Eis hat die Schuld vermerkt und wird sie nicht begleichen. Nun verschlossene Wege: der Exodus, die volle Brut, der stille Heimflug."
+      },
+      "20": {
+        "name": "DIE BÜRGERMEISTERIN, ANGENOMMEN",
+        "blurb": "Du hast angenommen, was man dir bot, und etwas in deiner Brust stimmte zu. Die Lager riechen den Unterschied jetzt. Nun verschlossene Wege: der saubere Bruch, der verbrannte Himmel. Keiner davon wäre je deiner gewesen."
+      },
+      "21": {
+        "name": "DAS EXEMPLAR, GEHÖRT",
+        "blurb": "Du standest still vor einem Ding, das dich töten sollte, und es tat es nicht. OKONKWO-VASS hat zwei Jahre Notizen, die sie Ungeziefer nennen, und hat eine neue Seite begonnen. Heute schloss sich nichts. Das ist seltener, als es klingt."
+      },
+      "22": {
+        "name": "DAS EXEMPLAR, BEENDET",
+        "blurb": "Sie bat um eines. Du gabst ihr eine Leiche. Der einzige Mensch, der für die Schwärme gesprochen hätte, macht keine Notizen mehr. Nun verschlossener Weg: der Exodus. Es ist niemand mehr da, der für ihn bürgt."
+      },
+      "23": {
+        "name": "DIE KÖNIGIN, AN BORD",
+        "blurb": "Sie kostet zwei Sitze. Du hast gerechnet und trotzdem Ja gesagt. Nun verschlossene Wege: der saubere Bruch, der stille Schmuggel. Was auch immer mit dir das Eis verlässt, das meiste davon wird sie sein."
+      },
+      "24": {
+        "name": "DIE KÖNIGIN, ABGELEHNT",
+        "blurb": "Du hast sie unter dem Eis gelassen, drei Sitze noch in der Hand. Nun verschlossener Weg: die volle Brut. Sie hätte immer mehr gekostet, als sie bot."
       }
     },
     "loreClassLogs": {

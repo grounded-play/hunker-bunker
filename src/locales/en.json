@@ -623,6 +623,10 @@
         "2": {
           "label": "THE LOST PROBE",
           "desc": "RECOVER LOST Horizon Corp METRIC PROBE FROM FROST BIOME"
+        },
+        "3": {
+          "desc": "SIGN KAELEN'S LEDGER AND PUT MERIDIAN'S POWER UNDER YOUR NAME",
+          "label": "THE GRID COVENANT"
         }
       },
       "camp_tallow": {
@@ -637,6 +641,10 @@
         "2": {
           "label": "THE LOST CULTIST",
           "desc": "RECOVER AND ESCORT LOST CULTIST FROM VENTILATION TUNNELS"
+        },
+        "3": {
+          "desc": "KEEP MARTHA'S PROMISE: RETURN TO TALLOW BEFORE THE HEART SINGS",
+          "label": "THE WARM PIPES"
         }
       },
       "camp_vesper": {
@@ -651,6 +659,10 @@
         "2": {
           "label": "BUNKER HOLDOUT",
           "desc": "DEFEND THE BARRICADE GATE FROM INCOMING ATTACK PATROLS"
+        },
+        "3": {
+          "desc": "EARN A LINE IN BRIGGS' LEDGER OF THE DEAD WITHOUT BEING IN IT",
+          "label": "THE IRON LEDGER"
         }
       }
     },
@@ -1129,7 +1141,37 @@
       "18": {
         "name": "SPECIMEN 0047",
         "blurb": "THE LINCHPIN. ORIGIN WELD UNLOCKED: ANCIENT SEED-CARRIER RECLASSIFIED AS QUEEN'S DORMANT CORE. EXOSUIT TELEMETRY INDICATES THE BIO-SIGNAL SHIFTS FOCUS FROM BROADCAST TO THE CARRIER'S IN-WORLD BODY."
-      }
+      },
+      "19": {
+        "blurb": "You put the thing wearing the Mayor down. The camps will thank you for it, loudly and for a long time. Something under the ice recorded the debt and will not be settling it. Roads that are now closed: the exodus, the full brood, the quiet flight home.",
+        "name": "THE MAYOR, ENDED"
+      },
+      "20": {
+        "blurb": "You took what was offered and something in your chest agreed to it. The camps can smell the difference now. Roads that are now closed: the clean break, the scorched sky. Neither was ever going to be yours.",
+        "name": "THE MAYOR, ACCEPTED"
+      },
+      "21": {
+        "blurb": "You stood still in front of a thing built to kill you and it did not. Okonkwo-Vass has two years of notes calling them vermin and has started a new page. Nothing closed today. That is rarer than it sounds.",
+        "name": "THE SPECIMEN, HEARD"
+      },
+      "22": {
+        "blurb": "She asked for one. You gave her a body instead. The only human who would have spoken for the hives has stopped taking notes. Road now closed: the exodus. There is no one left to vouch for it.",
+        "name": "THE SPECIMEN, ENDED"
+      },
+      "23": {
+        "blurb": "She takes two seats. You did the arithmetic and said yes anyway. Roads now closed: the clean break, the quiet smuggle. Whatever leaves the ice with you, most of it will be her.",
+        "name": "THE QUEEN, ABOARD"
+      },
+      "24": {
+        "blurb": "You left her under the ice with three seats still in your hand. Road now closed: the full brood. She was always going to cost more than she offered.",
+        "name": "THE QUEEN, REFUSED"
+      },
+      "25": {},
+      "26": {},
+      "27": {},
+      "28": {},
+      "29": {},
+      "30": {}
     },
     "loreMetadata": {
       "A01": {},

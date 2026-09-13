@@ -558,6 +558,10 @@
         "2": {
           "label": "LA SONDA PERDIDA",
           "desc": "RECUPERA LA SONDA MÉTRICA PERDIDA DE Horizon Corp EN EL BIOMA HELADO"
+        },
+        "3": {
+          "label": "EL PACTO DE LA RED",
+          "desc": "FIRMA EL LIBRO DE KAELEN Y PON LA ENERGÍA DE MERIDIAN A TU NOMBRE"
         }
       },
       "camp_tallow": {
@@ -572,6 +576,10 @@
         "2": {
           "label": "EL CULTISTA PERDIDO",
           "desc": "RECUPERA Y ESCOLTA AL CULTISTA PERDIDO DESDE LOS TÚNELES DE VENTILACIÓN"
+        },
+        "3": {
+          "label": "LAS TUBERÍAS CÁLIDAS",
+          "desc": "CUMPLE LA PROMESA A MARTHA: VUELVE A TALLOW ANTES DE QUE EL CORAZÓN CANTE"
         }
       },
       "camp_vesper": {
@@ -586,6 +594,10 @@
         "2": {
           "label": "RESISTENCIA EN EL BÚNKER",
           "desc": "DEFIENDE LA PUERTA DE LA BARRICADA DE LAS PATRULLAS DE ATAQUE"
+        },
+        "3": {
+          "label": "EL LIBRO DE HIERRO",
+          "desc": "GÁNATE UNA LÍNEA EN EL LIBRO DE LOS MUERTOS DE BRIGGS SIN ESTAR EN ÉL"
         }
       }
     },
@@ -694,6 +706,30 @@
       "18": {
         "name": "ESPÉCIMEN 0047",
         "blurb": "EL EJE. SOLDADURA DE ORIGEN DESBLOQUEADA: ANTIGUO PORTADOR DE SEMILLA RECLASIFICADO COMO NÚCLEO DURMIENTE DE LA REINA. LA TELEMETRÍA DEL EXOTRAJE INDICA QUE LA BIOSEÑAL DESPLAZA SU FOCO DE LA EMISIÓN AL CUERPO DEL PORTADOR EN EL MUNDO."
+      },
+      "19": {
+        "name": "LA ALCALDESA, TERMINADA",
+        "blurb": "Derribaste a la cosa que vestía a la Alcaldesa. Los campamentos te lo agradecerán, en voz alta y por mucho tiempo. Algo bajo el hielo anotó la deuda y no piensa saldarla. Caminos ahora cerrados: el éxodo, la cría completa, el vuelo silencioso a casa."
+      },
+      "20": {
+        "name": "LA ALCALDESA, ACEPTADA",
+        "blurb": "Aceptaste lo que te ofrecieron y algo dentro de tu pecho estuvo de acuerdo. Los campamentos ya notan la diferencia. Caminos ahora cerrados: la ruptura limpia, el cielo calcinado. Ninguno iba a ser tuyo jamás."
+      },
+      "21": {
+        "name": "EL ESPÉCIMEN, ESCUCHADO",
+        "blurb": "Te quedaste quieto frente a una cosa construida para matarte y no lo hizo. OKONKWO-VASS tiene dos años de notas llamándolos alimañas y ha empezado una página nueva. Hoy no se cerró nada. Eso es más raro de lo que suena."
+      },
+      "22": {
+        "name": "EL ESPÉCIMEN, TERMINADO",
+        "blurb": "Ella pidió uno. Le diste un cadáver. La única humana que habría hablado por las colmenas dejó de tomar notas. Camino ahora cerrado: el éxodo. No queda nadie que lo avale."
+      },
+      "23": {
+        "name": "LA REINA, A BORDO",
+        "blurb": "Ella ocupa dos asientos. Hiciste la cuenta y aun así dijiste que sí. Caminos ahora cerrados: la ruptura limpia, el contrabando silencioso. Sea lo que sea que deje el hielo contigo, la mayor parte será ella."
+      },
+      "24": {
+        "name": "LA REINA, RECHAZADA",
+        "blurb": "La dejaste bajo el hielo con tres asientos todavía en la mano. Camino ahora cerrado: la cría completa. Siempre iba a costar más de lo que ofrecía."
       }
     },
     "loreClassLogs": {
