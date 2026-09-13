@@ -8382,9 +8382,6 @@ export class ThreeGame {
         if (mission?.status === 'elevator_down') return { key: 'elevator', label: 'SURVIVE ELEVATOR ARRIVAL' };
         if (mission?.status === 'elevator_ready') return { key: 'elevator-choice', label: 'CHOOSE EXTRACT OR DESCEND' };
 
-        // Dead-suit recovery (T9) outranks everything when a box is in this sector.
-        if (this._blackBoxMarkerActive) return { key: 'blackbox', label: 'RECOVER BLACK BOX' };
-
         const o2 = this.getO2GeneratorState();
         const bossAlive = this.scatterSprites?.some(
             (s) => s.userData?.isMilestone && !s.userData?.burstTriggered
@@ -8422,6 +8419,7 @@ export class ThreeGame {
         if (mission?.status === 'objective_complete') return { key: 'extract', label: 'EXTRACT — RETURN TO SHIP' };
         if (!o2?.isOnline) return { key: 'o2', label: 'REPAIR O2 AT THE SHIP' };
         if (mission?.type && mission.label) return { key: 'objective', label: 'SECURE ACTIVE OBJECTIVE' };
+        if (this._blackBoxMarkerActive) return { key: 'blackbox', label: 'OPTIONAL · RECOVER BLACK BOX' };
         return { key: 'explore', label: 'EXPLORE · BANK SALVAGE' };
     }
 

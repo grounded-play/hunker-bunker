@@ -80,6 +80,14 @@ describe('browser gamepad mapping', () => {
         expect(mapped.menuConfirm).toBe(true);
     });
 
+    it('maps right-stick click to interaction target cycling', () => {
+        const buttons = Array.from({ length: 17 }, () => button(false));
+        buttons[11] = button(true);
+        const mapped = mapBrowserGamepad({ index: 0, id: 'Steam Deck', axes: [0, 0, 0, 0], buttons });
+        expect(mapped.cycleInteract).toBe(true);
+        expect(mapped.active).toBe(true);
+    });
+
     it('fills each missing native stick independently from the browser view', () => {
         const native = {
             handle: 'native:1',
