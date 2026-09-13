@@ -346,6 +346,106 @@ def aim_stray_cameras(scene: bpy.types.Scene, collection: bpy.types.Collection) 
     return corrected
 
 
+# Materials whose name or texture suggests a lit surface. These become real
+# emitters so a monitor reads as a light source rather than a painted panel --
+# the single biggest difference between "game prop in a render" and "set piece".
+EMISSIVE_HINTS = (
+    "monitor", "screen", "display", "console", "terminal", "vital", "scanner",
+    "lamp", "light", "glow", "led", "panel_lit", "hologram", "readout",
+)
+
+# Textures at or below this size are authored pixel art. Blender's default
+# Linear filtering turns them to mush at cinema resolution; Closest keeps the
+# crispness the game art was drawn with.
+PIXEL_TEXTURE_MAX = 256
+
+
+def enhance_imported_materials(scene: bpy.types.Scene) -> dict:
+    """
+    Bring imported game materials up to cinema standard without repainting them.
+
+    glTF import brings the game's textures across intact -- 39 packed images
+    across 15 materials in SET-C -- but every material lands at a flat
+    roughness 0.5 with no emission and no surface variation. That is correct for
+    a game renderer and wrong for a 1080p close-up, where uniform roughness
+    reads as plastic and an unlit monitor reads as a sticker.
+
+    Three passes, all non-destructive to the source art:
+
+    1. Pixel-art textures are switched to Closest filtering, so the game's own
+       texel grid survives instead of being blurred into mush.
+    2. Roughness gets a low-amplitude noise break-up, so highlights vary across
+       a surface the way a real material does.
+    3. Materials that read as lit surfaces get an emission driven by their OWN
+       base colour texture, so a screen emits the image it is showing rather
+       than a flat wash.
+    """
+    stats = {"materials": 0, "pixel_filtered": 0, "roughened": 0, "emissive": 0}
+    seen = set()
+    for obj in scene.objects:
+        if obj.type != "MESH":
+            continue
+        # The OBJECT name is where the meaning lives. glTF import leaves
+        # materials called "Material.001" and textures called
+        # "texture_pbr_20250901", so matching on those finds nothing -- but the
+        # objects are named Vital_Monitor_1, Scanner_Arch_Entrance, and so on.
+        object_hint = obj.name.lower()
+        for slot in obj.material_slots:
+            mat = slot.material
+            if mat is None or mat.name in seen or not mat.use_nodes:
+                continue
+            seen.add(mat.name)
+            stats["materials"] += 1
+            nodes = mat.node_tree.nodes
+            links = mat.node_tree.links
+            bsdf = next((n for n in nodes if n.type == "BSDF_PRINCIPLED"), None)
+            if bsdf is None:
+                continue
+
+            tex_nodes = [n for n in nodes if n.type == "TEX_IMAGE" and n.image]
+            for tex in tex_nodes:
+                if max(tex.image.size) <= PIXEL_TEXTURE_MAX:
+                    tex.interpolation = "Closest"
+                    stats["pixel_filtered"] += 1
+
+            # 2. Roughness break-up. Only when nothing already drives roughness,
+            # so an authored roughness map is never overwritten.
+            if not bsdf.inputs["Roughness"].is_linked:
+                base = bsdf.inputs["Roughness"].default_value
+                noise = nodes.new("ShaderNodeTexNoise")
+                noise.location = (bsdf.location.x - 600, bsdf.location.y - 300)
+                noise.inputs["Scale"].default_value = 18.0
+                noise.inputs["Detail"].default_value = 4.0
+                ramp = nodes.new("ShaderNodeMapRange")
+                ramp.location = (bsdf.location.x - 400, bsdf.location.y - 300)
+                ramp.inputs["From Min"].default_value = 0.0
+                ramp.inputs["From Max"].default_value = 1.0
+                # +/-0.12 around the authored value: enough to break a uniform
+                # highlight, small enough that the surface still reads as itself.
+                ramp.inputs["To Min"].default_value = max(0.05, base - 0.12)
+                ramp.inputs["To Max"].default_value = min(1.0, base + 0.12)
+                links.new(noise.outputs["Fac"], ramp.inputs["Value"])
+                links.new(ramp.outputs["Result"], bsdf.inputs["Roughness"])
+                stats["roughened"] += 1
+
+            # 3. Emission for lit surfaces, driven by the material's own texture.
+            haystack = (
+                object_hint + " " + mat.name.lower() + " "
+                + " ".join(t.image.name for t in tex_nodes).lower()
+            )
+            if any(hint in haystack for hint in EMISSIVE_HINTS):
+                if bsdf.inputs["Base Color"].is_linked:
+                    source = bsdf.inputs["Base Color"].links[0].from_socket
+                    links.new(source, bsdf.inputs["Emission Color"])
+                else:
+                    bsdf.inputs["Emission Color"].default_value = bsdf.inputs["Base Color"].default_value
+                # Restrained: these are set dressing, not the key light, and the
+                # glare node downstream will bloom whatever clears threshold 1.0.
+                bsdf.inputs["Emission Strength"].default_value = 2.5
+                stats["emissive"] += 1
+    return stats
+
+
 def build_delivery_compositor(scene: bpy.types.Scene) -> None:
     """
     Theme pass applied at render time rather than baked into materials.
@@ -1101,6 +1201,13 @@ def build_ending_scene(ending_name: str, output_path: Path) -> None:
         scene.camera = cams[0]
 
     # Report framing for an art pass. Deliberately does not mutate cameras.
+    material_stats = enhance_imported_materials(scene)
+    print(
+        f"[build_ending_scenes] materials: {material_stats['materials']} seen, "
+        f"{material_stats['pixel_filtered']} pixel-filtered, "
+        f"{material_stats['roughened']} roughness-varied, "
+        f"{material_stats['emissive']} made emissive"
+    )
     build_delivery_compositor(scene)
     corrected = aim_stray_cameras(scene, root_col)
     if corrected:

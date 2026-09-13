@@ -144,5 +144,44 @@ exit-0 renders: the empty sprite atlas, the black shot shells, and CAM_MI_02.
 | Glare, chromatic aberration, 256 samples | **implemented** |
 | Framing report + warning | **implemented** |
 | Automatic aim correction | **reverted — made a good shot worse** |
+| Game textures imported and verified | **yes** — 39 packed images, 15/15 materials textured in SET-C |
+| Material enhancement pass | **implemented** — pixel filtering, roughness break-up, emissive screens |
 | Separation/rim lights | not started |
 | Per-shot blocking pass | **needs art** — the remaining blocker |
+
+
+---
+
+## 6. Game assets and textures — what is actually in these scenes
+
+Verified, not assumed: **all 25 referenced game GLBs exist on disk**, and glTF
+import brings their textures across intact — 39 packed images across 15
+materials in SET-C, with every material carrying an image texture.
+
+So the sets are already built from real game art. What they were missing was any
+treatment of that art for cinema, which `enhance_imported_materials()` now adds.
+Three passes, none destructive to the source:
+
+**Pixel-art filtering.** Textures at or below 256px are switched to `Closest`.
+Several game textures are 192px; Blender's default `Linear` filtering turns them
+to mush at 1080p. `Closest` keeps the texel grid the art was drawn with. Across
+five scenes this touched **51–66 textures per scene**.
+
+**Roughness break-up.** A low-amplitude noise (±0.12 around the authored value)
+drives roughness where nothing already does. Uniform roughness is the single
+clearest "this is a game asset" tell — real surfaces vary, and a flat 0.5 reads
+as plastic under a close-up. Guarded: only applied when roughness is unlinked,
+so an authored roughness map is never overwritten. Typically only 3–4 materials
+per scene qualify, which means most already ship proper maps.
+
+**Emissive screens.** Materials on objects whose names read as lit surfaces —
+monitor, screen, console, scanner, vital, lamp — emit their **own base colour
+texture**, so a monitor emits the image it is displaying rather than a flat
+wash. Strength 2.5, restrained: these are set dressing, and the glare node
+downstream blooms whatever clears threshold 1.0.
+
+A detail worth recording: matching on material or texture names finds nothing.
+glTF import leaves materials called `Material.001` and textures called
+`texture_pbr_20250901`. The meaning lives on the **object** names —
+`Vital_Monitor_1`, `Scanner_Arch_Entrance` — so that is what the hint matching
+reads. Matching materials first found 0 emitters; matching objects found 4.
