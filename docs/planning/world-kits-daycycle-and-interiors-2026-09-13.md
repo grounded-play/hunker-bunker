@@ -384,3 +384,42 @@ unrotated *and* poisons any transform built from it downstream, which is much
 harder to trace than an obviously wrong angle.
 
 **13 regression tests added**, one per defect plus boundary cases. Suite: 3329.
+
+---
+
+## 11. Runtime connection pass — day/rest vertical slice
+
+The day-cycle module is no longer test-only. `ThreeGame` now restores and
+normalizes `hb_day_cycle` during construction and republishes it after boot so
+the live HUD shows `DAY N` immediately.
+
+The first playable loop is deliberately built from existing camp and foundry
+grammar:
+
+1. A living, dormant camp offers **SLEEP UNTIL DAY N+1** after its immediate
+   dialogue, support, quest, favor and signature-verb work is exhausted.
+2. Sleep advances exactly once and persists before presentation begins.
+3. Expedition input is disabled and the existing fabrication bay opens as the
+   safe rest space. Players can spend banked salvage, activate the foundry,
+   print equipment and prepare the next deployment there.
+4. Closing that bay is the explicit **begin expedition** boundary. Input is
+   restored and the phase returns to `EXPEDITION`; reopening the ordinary
+   foundry later cannot advance another day.
+5. Non-boss enemy spawn stats now use `threatScaleForDay(day,
+   getDepthThreatScale(depth))`, preserving radial depth pressure while making
+   later days materially harder.
+
+The bridge dispatches `day-cycle-changed`, `day-rest-open`, and
+`day-expedition-started` so later sleep cinematics, deadline warnings and a
+dedicated camp tableau can replace the current presentation without changing
+the state-machine contract.
+
+Focused runtime evidence: 28 tests pass across the day-cycle core, the new
+`ThreeGame` persistence/rest bridge, and camp first-contact behavior. The new
+bridge tests prove save repair, one-day advancement, rest input lock, safe-phase
+entry, and return to expedition.
+
+Still open in Phase 3: bind the remaining three story deadline ids to their
+canonical narrative resolutions, expose closing-tonight warnings before the
+player confirms sleep, and graduate the foundry-backed safe phase into the full
+authored crash-site camp tableau. The runtime loop itself is now connected.

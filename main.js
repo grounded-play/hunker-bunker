@@ -11503,10 +11503,15 @@ function openFabricationModal() {
     });
     if (FAB_RECIPES.some((r) => fabricator.isPrinting(r.id))) startFabTicker();
 }
+let campRestSessionOpen = false;
 function closeFabricationModal() {
     const modal = document.getElementById('fabrication-modal');
     if (modal) { modal.classList.add('hidden'); modal.setAttribute('aria-hidden', 'true'); }
     stopFabTicker();
+    if (campRestSessionOpen) {
+        campRestSessionOpen = false;
+        window.game?.finishCampRest?.();
+    }
 }
 
 function refreshFabAccess() {
@@ -11791,6 +11796,30 @@ setupClickOutside('codex-detail-modal', closeCodexDetailModal);
 
 // In-world Foundry (Beat 4): reaching the powered structure opens the Bay.
 window.addEventListener('open-fabrication-bay', openFabricationModal);
+window.addEventListener('day-rest-open', (event) => {
+    const detail = event?.detail ?? {};
+    campRestSessionOpen = true;
+    showBiomePrompt(`> DAY ${detail.day} // ${detail.campLabel ?? 'CAMP'} REST CYCLE COMPLETE // THREAT ${Number(detail.difficulty ?? 1).toFixed(2)}×`);
+    if (detail.expired?.length) {
+        showBiomePrompt(`> MISSED SIGNALS CLOSED: ${detail.expired.join(', ').replaceAll('_', ' ').toUpperCase()}`);
+    }
+    openFabricationModal();
+});
+
+window.addEventListener('day-cycle-changed', (event) => {
+    const detail = event?.detail ?? {};
+    const host = document.querySelector('.level-indicator');
+    if (!host) return;
+    let day = document.getElementById('campaign-day-indicator');
+    if (!day) {
+        day = document.createElement('span');
+        day.id = 'campaign-day-indicator';
+        day.className = 'level-indicator__seed';
+        host.appendChild(day);
+    }
+    day.textContent = `DAY ${detail.day ?? 1}`;
+    day.title = `Campaign threat ${Number(detail.difficulty ?? 1).toFixed(2)}×`;
+});
 window.addEventListener('o2-startup-sequence-started', (event) => {
     if ((event?.detail?.level ?? 0) !== 1) return;
     showTacticalOverlay({
@@ -14602,6 +14631,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                     follow: state.settings.cameraFollow
                 });
                 window.game.nightVision = state.settings.nightVision;
+                // Publish the restored campaign day immediately; otherwise
+                // the HUD stays blank until the player completes another rest.
+                window.game.persistDayCycleState?.();
                 applyHudThemeFromLoadout();
                 traceBootPhase('three-constructor-ready', {
                     pixelRatio: window.game.renderer?.getPixelRatio?.(),

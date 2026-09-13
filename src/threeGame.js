@@ -228,6 +228,17 @@ import { getCachedKeyedImage, putCachedKeyedImage } from './keyedTextureCache.js
 import { LANDFORMS, pickLandform, applyLandform, applyCanyonCollapse, connectPortalsInward, openMazeTerrain, generateHeightmapGrid, TERRAIN_HEIGHTS, findFarthestFloorCell } from './landforms.js';
 import { getDepthThreatScale, getProgressionSlot, progressionWorldTarget } from './worldProgression.js';
 import {
+    DAY_STATE_KEY,
+    REST_PHASES,
+    beginExpedition,
+    beginSleep,
+    completeRest,
+    createDayState,
+    normalizeDayState,
+    resolveDeadline,
+    threatScaleForDay
+} from './dayCycle.js';
+import {
     clampPositionToUnlockedRing,
     generateRadialMazeExpedition,
     getMaxUnlockedRing,
@@ -1452,6 +1463,9 @@ export class ThreeGame {
         // Start mid-morning; advances only during active gameplay.
         this.timeOfDay = 0.28;
         this.dayCycleSeconds = 150;
+        // Campaign day/rest is distinct from the cosmetic time-of-day clock.
+        // It survives runs and only advances through an explicit camp sleep.
+        this.dayState = this.loadDayCycleState();
         // Weather (Note 9): pooled Points field, biome/time-biased state machine.
         this.weather = {
             state: 'clear',
@@ -14917,6 +14931,81 @@ export class ThreeGame {
         return true;
     }
 
+    loadDayCycleState() {
+        if (typeof localStorage === 'undefined') return createDayState();
+        try {
+            return normalizeDayState(JSON.parse(localStorage.getItem(DAY_STATE_KEY) ?? 'null'));
+        } catch {
+            return createDayState();
+        }
+    }
+
+    persistDayCycleState() {
+        this.dayState = normalizeDayState(this.dayState);
+        try {
+            if (typeof localStorage !== 'undefined') {
+                localStorage.setItem(DAY_STATE_KEY, JSON.stringify(this.dayState));
+            }
+        } catch {
+            // Storage can be unavailable in privacy modes. The live session
+            // still advances; failure to persist must not strand the player.
+        }
+        if (typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent('day-cycle-changed', {
+                detail: {
+                    ...this.dayState,
+                    difficulty: threatScaleForDay(this.dayState.day, { hp: 1, speed: 1 }).hp
+                }
+            }));
+        }
+        return this.dayState;
+    }
+
+    resolveDayDeadline(id) {
+        const result = resolveDeadline(this.dayState, id);
+        if (result.resolved) {
+            this.dayState = result.state;
+            this.persistDayCycleState();
+        }
+        return result;
+    }
+
+    beginCampRest(camp) {
+        const sleeping = beginSleep(this.dayState);
+        if (!sleeping.started) return false;
+        this.dayState = sleeping.state;
+        this.persistDayCycleState();
+
+        const rested = completeRest(this.dayState);
+        if (!rested.advanced) return false;
+        this.dayState = rested.state;
+        this.persistDayCycleState();
+        this.setInputEnabled?.(false);
+        window.dispatchEvent(new CustomEvent('day-rest-open', {
+            detail: {
+                campId: camp?.id ?? null,
+                campLabel: camp?.label ?? 'SURVIVOR CAMP',
+                day: this.dayState.day,
+                difficulty: rested.difficulty,
+                expired: rested.expired,
+                closing: sleeping.closing
+            }
+        }));
+        return true;
+    }
+
+    finishCampRest() {
+        const result = beginExpedition(this.dayState);
+        if (!result.started) return false;
+        this.dayState = result.state;
+        this.persistDayCycleState();
+        this.setInputEnabled?.(true);
+        window.dispatchEvent(new CustomEvent('day-expedition-started', {
+            detail: { day: this.dayState.day }
+        }));
+        return true;
+    }
+
     // The camp interaction available where the player is standing, or null.
     // ── Leader dialogue (Elden Ring grammar) ───────────────────────────────
     // Compute the next beat for a camp leader or hive being, persist the
@@ -15140,6 +15229,17 @@ export class ThreeGame {
                                 : ' (UNAVAILABLE)';
                     return { camp, action: 'active-verb', verb, gate, label: `${verb.label}${suffix}` };
                 }
+            }
+            // Rest is deliberately the final dormant-camp verb: urgent camp
+            // story and progression cannot be skipped accidentally, but a
+            // settled camp always becomes the safe between-expedition space.
+            if (phase === 'dormant' && status === 'alive'
+                && this.dayState?.phase === REST_PHASES.EXPEDITION) {
+                return {
+                    camp,
+                    action: 'rest',
+                    label: `SLEEP UNTIL DAY ${(this.dayState?.day ?? 1) + 1}`
+                };
             }
             if (phase === 'camps_help' && !camp.aided) return { camp, action: 'aid', label: 'AID THE CAMP' };
             if (phase === 'camps_betray' && camp.aided && !camp.destroyed) {
@@ -15472,6 +15572,8 @@ export class ThreeGame {
         const actionable = this.getActionableCampAt(this.player.position.x, this.player.position.z);
         if (!actionable) return false;
         const { camp, action } = actionable;
+
+        if (action === 'rest') return this.beginCampRest(camp);
 
         if (action === 'talk') {
             // First contact with any camp — including ordinary Act 1 dormant-phase
@@ -25924,7 +26026,7 @@ export class ThreeGame {
             if (!isBoss) {
                 const anchor = this.getBiomeAnchorPosition();
                 const depth = Math.hypot(placement.x - anchor.x, placement.z - anchor.z);
-                const threatScale = getDepthThreatScale(depth);
+                const threatScale = threatScaleForDay(this.dayState?.day, getDepthThreatScale(depth));
                 maxHp = Math.max(1, Math.round(maxHp * threatScale.hp));
                 speed *= threatScale.speed;
                 if (isElite) {
