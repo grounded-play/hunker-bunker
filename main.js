@@ -329,6 +329,11 @@ const campChoiceTitle = document.getElementById('camp-choice-title');
 const campChoiceStatus = document.getElementById('camp-choice-status');
 const campChoiceCopy = document.getElementById('camp-choice-copy');
 const campChoiceOptions = document.getElementById('camp-choice-options');
+const dayRestWarningModal = document.getElementById('day-rest-warning-modal');
+const dayRestWarningCopy = document.getElementById('day-rest-warning-copy');
+const dayRestWarningList = document.getElementById('day-rest-warning-list');
+const dayRestWarningConfirm = document.getElementById('day-rest-warning-confirm');
+const dayRestWarningCancel = document.getElementById('day-rest-warning-cancel');
 const audioMasterSlider = document.getElementById('audio-master-slider');
 const audioMusicSlider = document.getElementById('audio-music-slider');
 const audioVfxSlider = document.getElementById('audio-vfx-slider');
@@ -11796,6 +11801,41 @@ setupClickOutside('codex-detail-modal', closeCodexDetailModal);
 
 // In-world Foundry (Beat 4): reaching the powered structure opens the Bay.
 window.addEventListener('open-fabrication-bay', openFabricationModal);
+let pendingCampRestConfirmation = null;
+function closeDayRestWarning() {
+    pendingCampRestConfirmation = null;
+    dayRestWarningModal?.classList.add('hidden');
+    dayRestWarningModal?.setAttribute('aria-hidden', 'true');
+}
+window.addEventListener('day-rest-warning', (event) => {
+    const detail = event?.detail ?? {};
+    pendingCampRestConfirmation = typeof detail.onConfirm === 'function' ? detail.onConfirm : null;
+    if (dayRestWarningCopy) {
+        dayRestWarningCopy.textContent = `Sleeping at ${detail.campLabel ?? 'this camp'} advances to day ${detail.nextDay ?? '?'}. These unresolved signals will be lost:`;
+    }
+    if (dayRestWarningList) {
+        dayRestWarningList.replaceChildren();
+        for (const deadline of detail.deadlines ?? []) {
+            const item = document.createElement('div');
+            item.className = 'day-rest-warning-item';
+            const title = document.createElement('strong');
+            title.textContent = deadline.label ?? String(deadline.id ?? 'UNKNOWN SIGNAL').replaceAll('_', ' ').toUpperCase();
+            const consequence = document.createElement('span');
+            consequence.textContent = deadline.consequence ?? 'This story path closes permanently.';
+            item.append(title, consequence);
+            dayRestWarningList.appendChild(item);
+        }
+    }
+    dayRestWarningModal?.classList.remove('hidden');
+    dayRestWarningModal?.setAttribute('aria-hidden', 'false');
+    dayRestWarningCancel?.focus();
+});
+dayRestWarningCancel?.addEventListener('click', closeDayRestWarning);
+dayRestWarningConfirm?.addEventListener('click', () => {
+    const confirm = pendingCampRestConfirmation;
+    closeDayRestWarning();
+    confirm?.();
+});
 window.addEventListener('day-rest-open', (event) => {
     const detail = event?.detail ?? {};
     campRestSessionOpen = true;

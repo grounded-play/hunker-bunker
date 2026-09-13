@@ -50,10 +50,22 @@ export function difficultyForDay(day) {
  * 4" is how a player reads it, and off-by-one here silently eats content.
  */
 export const STORY_DEADLINES = Object.freeze([
-    Object.freeze({ id: 'meridian_first_contact', closesOnDay: 4, linchpin: 'camp_meridian' }),
-    Object.freeze({ id: 'tallow_infection_choice', closesOnDay: 7, linchpin: 'camp_tallow' }),
-    Object.freeze({ id: 'vesper_last_shelter', closesOnDay: 11, linchpin: 'camp_vesper' }),
-    Object.freeze({ id: 'hive_suture_parley', closesOnDay: 9, linchpin: 'hive_suture' })
+    Object.freeze({
+        id: 'meridian_first_contact', closesOnDay: 4, linchpin: 'camp_meridian',
+        label: 'MERIDIAN FIRST CONTACT', consequence: 'Kaelen closes the grid to unknown operators.'
+    }),
+    Object.freeze({
+        id: 'tallow_infection_choice', closesOnDay: 7, linchpin: 'camp_tallow',
+        label: 'TALLOW INFECTION CHOICE', consequence: 'Tallow chooses its fate without your warning.'
+    }),
+    Object.freeze({
+        id: 'vesper_last_shelter', closesOnDay: 11, linchpin: 'camp_vesper',
+        label: 'VESPER LAST SHELTER', consequence: 'The final holdout falls before you answer it.'
+    }),
+    Object.freeze({
+        id: 'hive_suture_parley', closesOnDay: 9, linchpin: 'hive_suture',
+        label: 'SUTURE HIVE PARLEY', consequence: 'Nahl withdraws the Host Mercy rite.'
+    })
 ]);
 
 const DEADLINE_IDS = new Set(STORY_DEADLINES.map((d) => d.id));

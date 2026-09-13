@@ -246,6 +246,7 @@ import {
     beginSleep,
     completeRest,
     createDayState,
+    deadlinesClosingTonight,
     normalizeDayState,
     resolveDeadline,
     threatScaleForDay
@@ -13753,13 +13754,19 @@ export class ThreeGame {
         if (quest) {
             const done = record.questFlags?.[quest.id] === 'done';
             const locked = record.bond < 2;
+            const deadlineExpired = record.id === 'hive_suture'
+                && this.isDayDeadlineExpired?.('hive_suture_parley');
             options.push({
                 action: 'hive-quest',
                 hiveId: record.id,
                 questId: quest.id,
-                label: done ? `${quest.label} — COMPLETE` : locked ? `${quest.label} — LOCKED` : quest.label,
-                desc: locked && !done ? `Requires bond 2. Current bond ${record.bond}.` : quest.desc,
-                disabled: done || locked
+                label: done ? `${quest.label} — COMPLETE`
+                    : deadlineExpired ? `${quest.label} — MISSED`
+                        : locked ? `${quest.label} — LOCKED` : quest.label,
+                desc: deadlineExpired && !done
+                    ? 'The parley window closed while you slept.'
+                    : locked && !done ? `Requires bond 2. Current bond ${record.bond}.` : quest.desc,
+                disabled: done || locked || deadlineExpired
             });
         }
 
@@ -13830,7 +13837,17 @@ export class ThreeGame {
             this.act2.adjustHiveBond(hive.id, 1);
             this.act2.healHiveExtraction(hive.id, 1);
         } else if (action === 'hive-quest') {
+            if (hive.id === 'hive_suture' && payload.questId === 'host_mercy'
+                && this.isDayDeadlineExpired?.('hive_suture_parley')) {
+                window.dispatchEvent(new CustomEvent('camp-choice-denied', {
+                    detail: { campId: hive.id, campLabel: hive.label, action, reason: 'deadline-expired' }
+                }));
+                return true;
+            }
             this.act2.completeHiveQuest(hive.id, payload.questId, 1);
+            if (hive.id === 'hive_suture' && payload.questId === 'host_mercy') {
+                this.resolveDayDeadline?.('hive_suture_parley');
+            }
         } else if (action === 'hive-network') {
             this.act2.setHiveNetworked(hive.id, true);
         } else if (action === 'hive-rescue') {
@@ -14396,6 +14413,8 @@ export class ThreeGame {
         if (!quests || !record) return null;
         for (const quest of quests) {
             if (record.questFlags?.[quest.id] === 'done') continue;
+            if (campId === 'camp_vesper' && quest.id === 'bunker_holdout'
+                && this.isDayDeadlineExpired?.('vesper_last_shelter')) continue;
             if ((record.bond ?? 0) < quest.bond) return null;
             return quest;
         }
@@ -14801,6 +14820,9 @@ export class ThreeGame {
             this.scatterSprites = this.scatterSprites.filter((s) => s !== sprite);
         }
         this.act2.completeCampQuest(aq.campId, aq.quest.id, this.getCampQuestBondDelta?.(1) ?? 1);
+        if (aq.campId === 'camp_vesper' && aq.quest.id === 'bunker_holdout') {
+            this.resolveDayDeadline?.('vesper_last_shelter');
+        }
         this.syncSurvivorContract?.({
             type: 'camp-complete', id: `camp:${aq.campId}:${aq.quest.id}`
         });
@@ -14839,6 +14861,8 @@ export class ThreeGame {
         const recruitLocked = record.bond < ACT2_RECRUIT_BOND_THRESHOLD;
         const recruitHint = `Requires bond ${ACT2_RECRUIT_BOND_THRESHOLD}. Current bond ${record.bond}.`;
         const lostCultistTrusts = camp.id === 'camp_tallow' && record.questFlags?.lost_cultist === 'done';
+        const tallowChoiceExpired = camp.id === 'camp_tallow'
+            && this.isDayDeadlineExpired?.('tallow_infection_choice');
 
         if (camp.id === this.getBoardingCampId()) {
             // Every launch variant is validated against the four-seat manifest
@@ -14925,19 +14949,25 @@ export class ThreeGame {
             const warnLocked = record.bond < 2;
             options.push({
                 action: 'warn',
-                label: warnLocked ? 'WARN THEM LOCKED' : 'WARN THEM',
-                desc: warnLocked
+                label: tallowChoiceExpired ? 'WARN THEM — TOO LATE'
+                    : warnLocked ? 'WARN THEM LOCKED' : 'WARN THEM',
+                desc: tallowChoiceExpired
+                    ? 'Tallow made its infection choice while you were away.'
+                    : warnLocked
                     ? `Requires bond 2. Current bond ${record.bond}.`
                     : 'Tell them the truth before they board. Consequence: OBEDIENCE −1, SEATS +1. (They board suspicious & safe)',
-                disabled: warnLocked
+                disabled: warnLocked || tallowChoiceExpired
             });
             const suture = this.getHiveRecord?.('hive_suture');
             const latentReady = suture?.questFlags?.host_mercy === 'done';
-            const latentLocked = !latentReady || recruitLocked || record.suspicion >= 50;
+            const latentLocked = !latentReady || recruitLocked || record.suspicion >= 50 || tallowChoiceExpired;
             options.push({
                 action: 'latent',
-                label: latentLocked ? 'LATENT SEED LOCKED' : 'LATENT SEED',
-                desc: !latentReady
+                label: tallowChoiceExpired ? 'LATENT SEED — TOO LATE'
+                    : latentLocked ? 'LATENT SEED LOCKED' : 'LATENT SEED',
+                desc: tallowChoiceExpired
+                    ? 'Tallow made its infection choice while you were away.'
+                    : !latentReady
                     ? 'Requires Nahl\'s Host Mercy rite.'
                     : latentLocked
                         ? `Requires bond ${ACT2_RECRUIT_BOND_THRESHOLD} and suspicion under 50 (now ${record.suspicion}).`
@@ -15023,7 +15053,25 @@ export class ThreeGame {
         return result;
     }
 
-    beginCampRest(camp) {
+    isDayDeadlineExpired(id) {
+        return normalizeDayState(this.dayState).expired.includes(id);
+    }
+
+    beginCampRest(camp, { confirmed = false } = {}) {
+        const closing = deadlinesClosingTonight(this.dayState);
+        if (!confirmed && closing.length > 0) {
+            window.dispatchEvent(new CustomEvent('day-rest-warning', {
+                detail: {
+                    campId: camp?.id ?? null,
+                    campLabel: camp?.label ?? 'SURVIVOR CAMP',
+                    day: this.dayState?.day ?? 1,
+                    nextDay: (this.dayState?.day ?? 1) + 1,
+                    deadlines: closing,
+                    onConfirm: () => this.beginCampRest(camp, { confirmed: true })
+                }
+            }));
+            return true;
+        }
         const sleeping = beginSleep(this.dayState);
         if (!sleeping.started) return false;
         this.dayState = sleeping.state;
@@ -15287,6 +15335,7 @@ export class ThreeGame {
             // story and progression cannot be skipped accidentally, but a
             // settled camp always becomes the safe between-expedition space.
             if (phase === 'dormant' && status === 'alive'
+                && !this._activeCampQuest
                 && this.dayState?.phase === REST_PHASES.EXPEDITION) {
                 return {
                     camp,
@@ -15637,6 +15686,13 @@ export class ThreeGame {
             this._seenCampFirstContact ??= new Set();
             if (!this._seenCampFirstContact.has(camp.id)) {
                 this._seenCampFirstContact.add(camp.id);
+                if (camp.id === 'camp_meridian') {
+                    const deadline = this.resolveDayDeadline?.('meridian_first_contact');
+                    if (deadline && ['expired', 'deadline passed'].includes(deadline.reason)) {
+                        this.showBunkerLine?.('MERIDIAN GRID CLOSED // FIRST-CONTACT WINDOW MISSED');
+                        return this.talkToLeader('camp', camp);
+                    }
+                }
                 window.dispatchEvent(new CustomEvent('camp-first-contact', {
                     detail: {
                         campId: camp.id,
@@ -15983,6 +16039,14 @@ export class ThreeGame {
 
     // Shared resolver for camp mutations that should land on a target status.
     resolveCampStatusAction(camp, action, mutate, wantedStatus) {
+        if (camp.id === 'camp_tallow' && ['warn', 'latent'].includes(action)
+            && this.isDayDeadlineExpired?.('tallow_infection_choice')) {
+            window.AudioManager?.play?.('ui_error', { volume: 0.4 });
+            window.dispatchEvent(new CustomEvent('camp-choice-denied', {
+                detail: { campId: camp.id, campLabel: camp.label, action, reason: 'deadline-expired' }
+            }));
+            return true;
+        }
         const before = this.getCampRecord(camp.id);
         mutate();
         const after = this.getCampRecord(camp.id);
@@ -15994,6 +16058,9 @@ export class ThreeGame {
             return true;
         }
         this.syncCampVisualFromRecord(camp, after);
+        if (camp.id === 'camp_tallow' && ['warn', 'latent'].includes(action)) {
+            this.resolveDayDeadline?.('tallow_infection_choice');
+        }
         resolveCampLeaderLinchpin(this.act2, camp.leaderClassId, action);
         window.AudioManager?.play?.('class_lock', { volume: 0.5, playbackRate: action === 'latent' ? 0.72 : 1.0 });
         window.dispatchEvent(new CustomEvent('camp-choice-resolved', {

@@ -418,10 +418,9 @@ Focused runtime evidence: 28 tests pass across the day-cycle core, the new
 bridge tests prove save repair, one-day advancement, rest input lock, safe-phase
 entry, and return to expedition.
 
-Still open in Phase 3: bind the remaining three story deadline ids to their
-canonical narrative resolutions, expose closing-tonight warnings before the
-player confirms sleep, and graduate the foundry-backed safe phase into the full
-authored crash-site camp tableau. The runtime loop itself is now connected.
+The canonical deadline bindings and closing-tonight confirmation are completed
+in §15. Still open in Phase 3: graduate the foundry-backed safe phase into the
+full authored crash-site camp tableau.
 
 ---
 
@@ -520,3 +519,34 @@ workbench and airlock interaction candidates, exact return, non-destructive
 doorway exit, and prompt cleanup. This closes the first authored-building slice;
 the next reusable step is to extract the fixed room description into a small
 interior blueprint registry before adding hospital, camp and hive interiors.
+
+---
+
+## 15. Runtime connection pass — deadlines that alter the run
+
+The campaign clock now binds to actual story actions instead of maintaining a
+parallel list that gameplay never reads:
+
+| Deadline | Resolving action | Missed-window consequence |
+|---|---|---|
+| Meridian First Contact | First real talk at Meridian | The unique first-contact interstitial is gone; later dialogue remains available. |
+| Tallow Infection Choice | Successfully warn or latent-seed Tallow | Both infection choices show **TOO LATE** and are disabled. |
+| Vesper Last Shelter | Complete the authored Bunker Holdout quest | The holdout is skipped by Vesper's quest offer sequence. |
+| Suture Hive Parley | Complete Nahl's Host Mercy rite | Host Mercy shows **MISSED** and cannot be selected or invoked directly. |
+
+These boundaries preserve the rest of each faction's content. Missing one
+timed beat does not erase a whole camp or make a save unwinnable; it removes the
+specific opportunity named in the warning. Direct resolver paths are guarded
+as well as button state so debug calls and stale UI cannot bypass expiration.
+
+Sleeping on the night before any unresolved deadline now opens a dedicated
+confirmation overlay before state changes. It names each signal and describes
+the consequence in fiction, offers **STAY AWAKE** as the focused default, and
+only advances the day through the captured confirmation callback. An active
+camp quest also suppresses the sleep verb, preventing an accepted holdout from
+being silently expired while it is in progress.
+
+Focused evidence covers warning-before-mutation, confirmation and expiry,
+Meridian first-contact resolution, Vesper holdout resolution, Tallow's resolved
+and expired paths, Suture option gating, and the existing save repair and
+single-advance invariants.

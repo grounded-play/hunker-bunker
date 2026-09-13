@@ -4518,6 +4518,48 @@ input:checked+.slider:before {
   margin-bottom: calc(var(--vu) * 2.5);
 }
 
+.day-rest-warning-modal {
+  z-index: 16300;
+  background:
+    radial-gradient(circle at 50% 50%, rgba(217, 119, 6, 0.18), rgba(0, 0, 0, 0.92) 55%);
+}
+
+.day-rest-warning-modal .confirm-modal-content {
+  border-color: #f59e0b;
+  box-shadow: 0 0 60px rgba(245, 158, 11, 0.18), inset 0 0 30px rgba(120, 53, 15, 0.2);
+}
+
+.day-rest-warning-modal .confirm-title {
+  color: #fbbf24;
+}
+
+.day-rest-warning-list {
+  display: grid;
+  gap: calc(var(--vu) * 1.5);
+  margin: 0 auto calc(var(--vu) * 4);
+  max-width: 52ch;
+  text-align: left;
+}
+
+.day-rest-warning-item {
+  display: grid;
+  gap: calc(var(--vu) * 0.5);
+  border-left: 3px solid #f59e0b;
+  padding: calc(var(--vu) * 1.2) calc(var(--vu) * 1.8);
+  background: rgba(120, 53, 15, 0.2);
+}
+
+.day-rest-warning-item strong {
+  color: #fde68a;
+  letter-spacing: 0.08em;
+}
+
+.day-rest-warning-item span {
+  color: #d8c7ac;
+  font-size: var(--font-xs);
+  line-height: 1.4;
+}
+
 .confirm-copy {
   color: var(--text-main);
   font-size: var(--font-sm);
