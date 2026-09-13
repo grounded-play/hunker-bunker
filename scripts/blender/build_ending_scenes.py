@@ -2,9 +2,9 @@
 
 Aesthetic Direction: Neo-Gothic meets Cyberbiohorror Post-Punk.
 Features:
-- Cycles raytracing with AgX High Contrast tonemapping and OpenImageDenoise.
+- Cycles raytracing with the production AgX Punchy look and OpenImageDenoise.
 - Atmospheric volumetric scatter for cathedral god-rays, coolant steam, and spore fog.
-- Physical 35mm full-frame sensors with shallow depth of field (f/1.4 - f/2.8) and anamorphic bokeh.
+- Physical 35mm full-frame sensors with shot-safe depth of field and a seven-blade spherical iris.
 - Reusable modular sets: SET-A (Cabin), SET-B (Cargo 4), SET-C (Medical Dock), SET-D (Exterior Ice).
 - 20 precisely timed and calibrated cinematic camera rigs (MI-01..04, AE-01..04, OE-01..04, FC-01..04, EH-01..04).
 - Kitbashes existing repository GLB assets from public/3d/runtime/new3ds/ and public/3d/runtime/.
@@ -18,6 +18,24 @@ from pathlib import Path
 import sys
 
 import bpy
+
+
+# Locked in docs/planning/blender-cinematic-optics-2026-09-12.md. Keep these
+# values shared by every production scene; an artist can animate a focus target
+# per shot without silently changing the family-wide optical baseline.
+APERTURE_BY_LENS = ((32, 5.6), (60, 4.0), (90, 2.8), (10_000, 4.0))
+APERTURE_BLADES = 7
+VIEW_TRANSFORM = "AgX"
+VIEW_LOOK = "AgX - Punchy"
+VOLUME_DENSITY = 0.004
+VOLUME_ANISOTROPY = 0.4
+
+
+def aperture_for_lens(lens_mm: float) -> float:
+    for ceiling, fstop in APERTURE_BY_LENS:
+        if lens_mm <= ceiling:
+            return fstop
+    return 4.0
 
 
 def get_base_dir() -> Path:
@@ -52,19 +70,25 @@ def setup_cycles_and_color_management(scene: bpy.types.Scene) -> None:
     scene.cycles.transmission_bounces = 6
     scene.cycles.volume_bounces = 2
 
-    # AgX High Contrast tonemapping for bleak post-punk shadows
-    scene.view_settings.view_transform = "AgX"
-    scene.view_settings.look = "AgX - High Contrast"
-    scene.view_settings.exposure = -0.4
+    # Pin the approved transform. Relying on the installed Blender default
+    # makes saturated practicals change appearance across workstations.
+    scene.view_settings.view_transform = VIEW_TRANSFORM
+    scene.view_settings.look = VIEW_LOOK
+    scene.view_settings.exposure = 0.0
     scene.view_settings.gamma = 1.0
 
     # Cinematic 1080p 24fps
     scene.render.resolution_x = 1920
     scene.render.resolution_y = 1080
     scene.render.fps = 24
+    scene["cinematic_optics_spec"] = "docs/planning/blender-cinematic-optics-2026-09-12.md"
+    scene["view_transform"] = VIEW_TRANSFORM
+    scene["view_look"] = VIEW_LOOK
+    scene["volume_density"] = VOLUME_DENSITY
+    scene["volume_anisotropy"] = VOLUME_ANISOTROPY
 
 
-def setup_world_atmosphere(scene: bpy.types.Scene, color_hex: str = "#020408", volume_density: float = 0.035) -> None:
+def setup_world_atmosphere(scene: bpy.types.Scene, color_hex: str = "#020408", volume_density: float = VOLUME_DENSITY) -> None:
     world = scene.world
     if not world:
         world = bpy.data.worlds.new("NeoGothicWorld")
@@ -91,7 +115,7 @@ def setup_world_atmosphere(scene: bpy.types.Scene, color_hex: str = "#020408", v
         vol_node.location = (100, -100)
         vol_node.inputs["Color"].default_value = (0.35, 0.55, 0.75, 1.0)
         vol_node.inputs["Density"].default_value = volume_density
-        vol_node.inputs["Anisotropy"].default_value = 0.65  # Forward scattering for strong rim shafts
+        vol_node.inputs["Anisotropy"].default_value = VOLUME_ANISOTROPY
         links.new(vol_node.outputs["Volume"], output_node.inputs["Volume"])
 
 
@@ -123,7 +147,7 @@ def import_asset(asset_rel_path: str, collection: bpy.types.Collection) -> bpy.t
 def create_camera(
     name: str,
     focal_length_mm: float,
-    f_stop: float = 2.0,
+    f_stop: float | None = None,
     collection: bpy.types.Collection | None = None,
 ) -> bpy.types.Object:
     cam_data = bpy.data.cameras.new(name)
@@ -131,16 +155,58 @@ def create_camera(
     cam_data.sensor_width = 36.0
     cam_data.sensor_height = 24.0
 
-    # Depth of Field & Anamorphic bokeh emulation
+    # Geography-safe lens-band defaults supersede the early shot-list f/stops.
+    # The original values produced millimetres of usable focus on moving macro
+    # shots. `f_stop` remains in the signature for compatibility with the
+    # staging calls, but the approved optics addendum is authoritative.
+    approved_fstop = aperture_for_lens(focal_length_mm)
     cam_data.dof.use_dof = True
-    cam_data.dof.aperture_fstop = f_stop
-    cam_data.dof.aperture_blades = 7
-    cam_data.dof.aperture_ratio = 1.65  # 1.65x anamorphic oval squeeze
+    cam_data.dof.aperture_fstop = approved_fstop
+    cam_data.dof.aperture_blades = APERTURE_BLADES
+    cam_data.dof.aperture_ratio = 1.0
 
     cam_obj = bpy.data.objects.new(name, cam_data)
     target_col = collection if collection else bpy.context.scene.collection
     target_col.objects.link(cam_obj)
+
+    # A camera-relative target gives every moving camera a stable starting
+    # focus plane. Artists animate/re-parent this empty for rack focuses; they
+    # never keyframe a brittle numeric focus_distance.
+    focus = bpy.data.objects.new(f"FOCUS_{name.removeprefix('CAM_')}", None)
+    focus.empty_display_type = "SPHERE"
+    focus.empty_display_size = 0.12
+    target_col.objects.link(focus)
+    focus.parent = cam_obj
+    focus.location = (0.0, 0.0, -5.0)
+    cam_data.dof.focus_object = focus
+    cam_obj["approved_fstop"] = approved_fstop
+    cam_obj["requested_fstop_from_shot_list"] = f_stop if f_stop is not None else approved_fstop
+    cam_obj["focus_target"] = focus.name
     return cam_obj
+
+
+def validate_production_optics(scene: bpy.types.Scene) -> None:
+    """Fail the scene build when a camera drifts from the locked optics."""
+    problems = []
+    if scene.view_settings.view_transform != VIEW_TRANSFORM:
+        problems.append(f"view transform is {scene.view_settings.view_transform!r}")
+    if scene.view_settings.look != VIEW_LOOK:
+        problems.append(f"view look is {scene.view_settings.look!r}")
+    for camera in (obj for obj in scene.objects if obj.type == "CAMERA" and obj.name.startswith("CAM_")):
+        expected = aperture_for_lens(camera.data.lens)
+        if not camera.data.dof.use_dof:
+            problems.append(f"{camera.name}: depth of field disabled")
+        if camera.data.dof.focus_object is None:
+            problems.append(f"{camera.name}: missing focus target")
+        if abs(camera.data.dof.aperture_fstop - expected) > 0.001:
+            problems.append(f"{camera.name}: f/{camera.data.dof.aperture_fstop:g}, expected f/{expected:g}")
+        if camera.data.dof.aperture_blades != APERTURE_BLADES:
+            problems.append(f"{camera.name}: {camera.data.dof.aperture_blades} aperture blades")
+        if abs(camera.data.dof.aperture_ratio - 1.0) > 0.001:
+            problems.append(f"{camera.name}: anamorphic aperture ratio {camera.data.dof.aperture_ratio:g}")
+    if problems:
+        raise RuntimeError("Production optics validation failed:\n- " + "\n- ".join(problems))
+    print(f"[build_ending_scenes] optics validated for {sum(o.type == 'CAMERA' for o in scene.objects)} cameras")
 
 
 def create_point_spot_light(
@@ -788,6 +854,8 @@ def build_ending_scene(ending_name: str, output_path: Path) -> None:
 
     if cams:
         scene.camera = cams[0]
+
+    validate_production_optics(scene)
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
     bpy.ops.wm.save_as_mainfile(filepath=str(output_path.resolve()))

@@ -389,6 +389,57 @@ test.describe('controller-ready modal focus', () => {
         await expect(trigger).toBeFocused();
     });
 
+    test('settings presentation is themed and isolates the HUD on Steam Deck', async ({ page }) => {
+        await page.setViewportSize({ width: 1280, height: 800 });
+        await bootToTitleSplash(page);
+        await page.locator('#title-settings-btn').click();
+
+        const presentation = await page.evaluate(() => {
+            const settings = document.getElementById('settings-popup');
+            const hud = document.getElementById('ui');
+            const viewport = document.getElementById('game-viewport');
+            const aimSelect = document.getElementById('setting-aim-sensitivity');
+            const aimPresets = document.querySelector('.sensitivity-presets');
+            const settingsRect = settings.getBoundingClientRect();
+            const viewportRect = viewport.getBoundingClientRect();
+            const style = getComputedStyle(settings);
+            const desktopSelectStyle = getComputedStyle(aimSelect);
+            const desktopSelect = {
+                appearance: desktopSelectStyle.appearance,
+                backgroundImage: desktopSelectStyle.backgroundImage,
+                display: desktopSelectStyle.display
+            };
+            document.body.classList.add('controller-mode');
+            const controllerAim = {
+                selectDisplay: getComputedStyle(aimSelect).display,
+                presetsDisplay: getComputedStyle(aimPresets).display
+            };
+            document.body.classList.remove('controller-mode');
+            return {
+                settingsZ: Number(style.zIndex),
+                hudZ: Number(getComputedStyle(hud).zIndex),
+                backdropFilter: style.backdropFilter || style.webkitBackdropFilter,
+                backgroundImage: style.backgroundImage,
+                desktopSelect,
+                controllerAim,
+                coversStage: Math.abs(settingsRect.left - viewportRect.left) < 1
+                    && Math.abs(settingsRect.top - viewportRect.top) < 1
+                    && Math.abs(settingsRect.right - viewportRect.right) < 1
+                    && Math.abs(settingsRect.bottom - viewportRect.bottom) < 1
+            };
+        });
+
+        expect(presentation.settingsZ).toBeGreaterThan(presentation.hudZ);
+        expect(presentation.coversStage).toBe(true);
+        expect(presentation.backdropFilter).toContain('blur(14px)');
+        expect(presentation.backgroundImage).toContain('radial-gradient');
+        expect(presentation.desktopSelect.appearance).toBe('none');
+        expect(presentation.desktopSelect.backgroundImage).toContain('svg');
+        expect(presentation.desktopSelect.display).not.toBe('none');
+        expect(presentation.controllerAim.selectDisplay).toBe('none');
+        expect(presentation.controllerAim.presetsDisplay).not.toBe('none');
+    });
+
     test('controls/remapping traps focus and restores its settings trigger', async ({ page }) => {
         await bootToTitleSplash(page);
         await page.locator('#title-settings-btn').click();
