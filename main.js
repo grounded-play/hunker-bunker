@@ -2150,6 +2150,9 @@ function handleSteamGameplayInput(controller) {
     if (controller.interact && !prev.interact) {
         window.game?.triggerGameplayInteract?.();
     }
+    if (controller.cycleInteract && !prev.cycleInteract) {
+        window.game?.cycleInteractionTarget?.();
+    }
     if (controller.reload && !prev.reload) {
         window.game?.triggerGameplayReload?.({ manual: true });
     }
@@ -2189,6 +2192,7 @@ function handleSteamGameplayInput(controller) {
         ...prev,
         fire: Boolean(controller.fire),
         interact: Boolean(controller.interact),
+        cycleInteract: Boolean(controller.cycleInteract),
         reload: Boolean(controller.reload),
         melee: Boolean(controller.melee),
         ability: Boolean(controller.ability),
@@ -6132,7 +6136,7 @@ window.addEventListener('black-box-marker-active', (event) => {
         label: 'RECOVER BLACK BOX',
         current: 0,
         target: 1,
-        priority: 10,
+        priority: 80,
         compass: Number.isFinite(x) && Number.isFinite(z) ? { x, z } : null
     });
 });
@@ -6149,7 +6153,7 @@ window.addEventListener('black-box-guard-defeated', (event) => {
         label: 'RECOVER BLACK BOX — GUARD DEFEATED',
         current: 0,
         target: 1,
-        priority: 10,
+        priority: 80,
         compass: Number.isFinite(state.x) && Number.isFinite(state.z)
             ? { x: state.x, z: state.z }
             : null

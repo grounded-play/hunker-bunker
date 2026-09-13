@@ -5950,6 +5950,10 @@ export class ThreeGame {
                 debugLog.debug('INPUT', 'Action: INTERACT (E/Enter)');
                 this.triggerGameplayInteract();
             }
+            if (event.code === 'KeyC') {
+                event.preventDefault();
+                this.cycleInteractionTarget();
+            }
             if (this.codeMatchesAction(event.code, 'reload')) {
                 event.preventDefault();
                 debugLog.debug('INPUT', 'Action: RELOAD (R)');
@@ -6284,7 +6288,11 @@ export class ThreeGame {
     triggerGameplayInteract() {
         if (!this.isGameplayInputActive()) return false;
         if (this.interactWithMayorTina()) return true;
-        if (this.interactWithNearestShipStation()) return true;
+        const priorityCandidates = this.getPriorityInteractionCandidates();
+        if (priorityCandidates.length > 0) {
+            const index = Math.min(this._interactionTargetIndex ?? 0, priorityCandidates.length - 1);
+            return Boolean(priorityCandidates[index].interact());
+        }
         // Every check below used to run with its result discarded, so a press
         // near nothing interactable was silent -- no success, no "nothing
         // here" cue, indistinguishable from the game not having heard the
@@ -6295,16 +6303,15 @@ export class ThreeGame {
         handled = this.interactWithProceduralDoor() || handled;
         handled = this.interactWithMazeAccessSource() || handled;
         handled = this.interactWithLoreTerminal() || handled;
-        handled = this.interactWithBlackBox() || handled;
-        handled = this.interactWithCaveEntrance() || handled;
-        handled = this.interactWithAct2Camp() || handled;
-        handled = this.interactWithScientist() || handled;
-        handled = this.interactWithHiveSite() || handled;
-        handled = this.interactWithCampQuestObject() || handled;
-        handled = this.interactWithWanderer() || handled;
-        handled = this.interactWithHoleTile() || handled;
-        handled = this.interactWithPocketClimbPoint() || handled;
-        handled = this.interactWithBiomechanicalDoor() || handled;
+        if (!handled) handled = this.interactWithCaveEntrance();
+        if (!handled) handled = this.interactWithAct2Camp();
+        if (!handled) handled = this.interactWithScientist();
+        if (!handled) handled = this.interactWithHiveSite();
+        if (!handled) handled = this.interactWithCampQuestObject();
+        if (!handled) handled = this.interactWithWanderer();
+        if (!handled) handled = this.interactWithHoleTile();
+        if (!handled) handled = this.interactWithPocketClimbPoint();
+        if (!handled) handled = this.interactWithBiomechanicalDoor();
         if (!handled) {
             this.playThrottledUiError('_lastNoInteractCueAt', { volume: 0.3, playbackRate: 0.9 });
         }
@@ -6312,7 +6319,12 @@ export class ThreeGame {
     }
 
     interactWithNearestShipStation() {
-        if (!this.player) return false;
+        const candidates = this.getPriorityInteractionCandidates().filter((candidate) => !candidate.secondary);
+        return Boolean(candidates[0]?.interact());
+    }
+
+    getPriorityInteractionCandidates() {
+        if (!this.player) return [];
         const px = this.player.position.x;
         const pz = this.player.position.z;
         const candidates = [];
@@ -6320,20 +6332,44 @@ export class ThreeGame {
         if (consoleShip) {
             const x = consoleShip.tileX + consoleShip.consoleOffset.x;
             const z = consoleShip.tileZ + consoleShip.consoleOffset.z;
-            candidates.push({ distance: Math.hypot(px - x, pz - z), interact: () => this.interactWithConsole() });
+            candidates.push({ id: 'ship-console', label: 'SHIP CONSOLE', distance: Math.hypot(px - x, pz - z), interact: () => this.interactWithConsole() });
         }
         if (this.activeInteractiveO2Generator) {
             const position = this.getActiveO2GeneratorPosition();
-            if (position) candidates.push({ distance: Math.hypot(px - position.x, pz - position.z), interact: () => this.interactWithO2Generator() });
+            if (position) candidates.push({ id: 'o2-generator', label: 'O2 GENERATOR', distance: Math.hypot(px - position.x, pz - position.z), interact: () => this.interactWithO2Generator() });
         }
         if (this.activeInteractiveBaseTurret) {
-            candidates.push({ distance: Math.hypot(px - 9, pz - 4.8), interact: () => this.interactWithBaseTurret() });
+            candidates.push({ id: 'base-turret', label: 'BASE TURRET', distance: Math.hypot(px - 9, pz - 4.8), interact: () => this.interactWithBaseTurret() });
         }
         if (this.foundry?.isRevealed && this.foundry.isWithinInteractRange(px, pz)) {
-            candidates.push({ distance: this.foundry.distanceTo(px, pz), interact: () => this.interactWithFoundry() });
+            candidates.push({ id: 'foundry', label: 'FAB BAY', distance: this.foundry.distanceTo(px, pz), interact: () => this.interactWithFoundry() });
         }
-        candidates.sort((a, b) => a.distance - b.distance);
-        return Boolean(candidates[0]?.interact());
+        if (this._blackBoxMarkerActive && this._blackBoxState) {
+            const distance = Math.hypot(px - this._blackBoxState.x, pz - this._blackBoxState.z);
+            if (distance <= 2.2) {
+                candidates.push({
+                    id: 'black-box',
+                    label: 'BLACK BOX (OPTIONAL)',
+                    distance,
+                    secondary: true,
+                    interact: () => this.interactWithBlackBox()
+                });
+            }
+        }
+        candidates.sort((a, b) => Number(Boolean(a.secondary)) - Number(Boolean(b.secondary)) || a.distance - b.distance);
+        return candidates;
+    }
+
+    cycleInteractionTarget(direction = 1) {
+        const candidates = this.getPriorityInteractionCandidates();
+        if (candidates.length < 2) return false;
+        this._interactionTargetIndex = ((this._interactionTargetIndex ?? 0) + direction + candidates.length) % candidates.length;
+        const selected = candidates[this._interactionTargetIndex];
+        this.showBunkerLine(`TARGET ${this._interactionTargetIndex + 1}/${candidates.length}: ${selected.label} — PRESS INTERACT`);
+        window.dispatchEvent(new CustomEvent('interaction-target-changed', {
+            detail: { id: selected.id, label: selected.label, index: this._interactionTargetIndex, count: candidates.length }
+        }));
+        return true;
     }
 
     triggerGameplayReload({ manual = false } = {}) {

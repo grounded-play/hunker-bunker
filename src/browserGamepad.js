@@ -74,6 +74,8 @@ export function mapBrowserGamepad(gamepad, {
         scan: readButton(buttons, 4) || readButton(buttons, 13),
         sprint: readButton(buttons, 6),
         pause: readButton(buttons, 9),
+        // Right-stick click cycles overlapping in-world interaction targets.
+        cycleInteract: readButton(buttons, 11),
         toggleMap: readButton(buttons, 5) || readButton(buttons, 8) || readButton(buttons, 16)
             || readButton(buttons, 12),
         menuUp: readButton(buttons, 12) || menuY < 0,
@@ -95,7 +97,7 @@ export function mapBrowserGamepad(gamepad, {
     mapped.active = Boolean(
         mapped.move.x || mapped.move.y || mapped.camera.x || mapped.camera.y
         || mapped.fire || mapped.interact || mapped.reload || mapped.melee || mapped.ability || mapped.dash
-        || mapped.scan || mapped.sprint || mapped.pause
+        || mapped.scan || mapped.sprint || mapped.pause || mapped.cycleInteract
         || mapped.menuUp || mapped.menuDown || mapped.menuLeft || mapped.menuRight
         || mapped.menuConfirm || mapped.menuBack
         || mapped.menuTabLeft || mapped.menuTabRight
