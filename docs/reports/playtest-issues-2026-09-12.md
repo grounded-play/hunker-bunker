@@ -23,22 +23,24 @@ Both: `join=yes twoPlayerRoster=yes ready=yes deployed=yes remote3d=yes pvp=yes`
 | (unreported) accessibility settings never ran | **fixed** | `8afac60` |
 | P1-4 dropdowns unthemed | **fixed** | `7259c11` |
 | P1-5 duplicate aim control on Deck | **fixed** | `7259c11` |
-| P1-1 gear hit target | **fixed** (44px min) | `pending` |
+| P1-1 gear hit target | **fixed** (44px min) | `8fc84e7` |
 | P1-1 ESC / controller Start | **already worked** — see below | — |
 | P1-3 HUD vs settings layering | **fixed + Deck regression** | `012b942` |
-| P0-1 PVP one-directional damage | **fixed by the other agent** | `df17049` |
+| P0-1 PVP one-directional damage | **fixed; two-client rerun still required** | `df17049` |
 | (plan) 3 of 4 mandatory ship goals had no authored room | **fixed** | `7f3d578` |
-| P0-2 interaction cycling / unstick | not started — `threeGame.js` held by the other agent | — |
-| P0-3 black box as secondary objective | not started — same file | — |
-| P2-1..P2-7 loadout, Daily Op, inventory, turret, skill tree | not started | — |
+| P0-2 interaction cycling | **fixed** (keyboard + controller) | `facad1e`, `a20add1` |
+| P0-2 movement trap / unstick | **fixed** (bounded depenetration) | `79ef18d` |
+| P0-3 black box as secondary objective | **fixed** | `a20add1` |
+| P1-6 terminal death pose | **fixed** | `c397156` |
+| P2-5 base/field turret model, scale and timing | **fixed** | `10a7a81` |
+| P2-1..P2-4, P2-6..P2-7 loadout, Daily Op, inventory, skill tree | not started | — |
 
 ### Coordination note
 
-`src/threeGame.js` was uncommitted in the shared working tree during this pass,
-so P0-2 and P0-3 were deliberately left alone rather than risk clobbering
-in-flight work. They are the top of the queue the moment that file is free.
-Level-content work was taken instead because it is data-only and collides with
-nothing.
+This was the original coordination constraint during triage. The contended
+changes subsequently landed in isolated commits: interaction cycling and
+black-box priority first, then movement depenetration. The note remains here to
+explain the commit sequence, not to describe an active blocker.
 
 ### P1-3 — resolution
 

@@ -5,6 +5,15 @@
 **Reads with:** `authored-setpieces-crash-site-and-run-building-plan-2026-09-12.md` (central),
 `gate-stage-areas-design-2026-09-12.md`, `setpiece-plan-addendum-2026-09-12.md`.
 
+**Implementation update:** the §1 routing/theme work, pure reservation-footprint
+foundation, and first metric structure-shell loader are now landed (`f51f904`,
+`b8bddcd`, `b80d2cd`). Six QA worlds are lazy-loaded (`76ef3c7`); the always-on
+session logger remains intentionally separate from that change because it is
+production diagnostics, not only debug UI. The bundle warning threshold now
+matches the deliberate boot graph (`c35bde3`). Remaining gates are allocator
+integration into the world plan, one in-world metric shell proof, and visual
+acceptance before bulk content authoring.
+
 ---
 
 ## 0. The bundle warning is not a bug
