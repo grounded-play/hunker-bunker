@@ -121,3 +121,33 @@ describe('state normalisation', () => {
         expect(normalizeDayState(null).day).toBe(1);
     });
 });
+
+describe('deadline enforcement (regressions)', () => {
+    it('refuses to resolve a beat whose day has already passed', () => {
+        // Expiry only ran at rest, so a beat past its day but not yet slept
+        // through was still resolvable -- which defeats the deadline entirely.
+        const late = resolveDeadline({ ...createDayState(), day: 99 }, 'meridian_first_contact');
+        expect(late.resolved).toBe(false);
+        expect(late.reason).toBe('deadline passed');
+    });
+
+    it('still allows resolving on the last available day', () => {
+        // closesOnDay 4 means days 1-3; day 3 must still work or the boundary
+        // is off by one and quietly eats a day of content.
+        expect(resolveDeadline({ ...createDayState(), day: 3 }, 'meridian_first_contact').resolved).toBe(true);
+    });
+
+    it('drops unknown ids from a loaded save instead of trusting them', () => {
+        // A renamed or removed beat would otherwise linger forever, and a
+        // corrupt save could mark a beat resolved that never existed --
+        // silently unlocking or locking an ending.
+        const s = normalizeDayState({ resolved: ['not_a_beat', 'meridian_first_contact'], expired: ['gone'] });
+        expect(s.resolved).toEqual(['meridian_first_contact']);
+        expect(s.expired).toEqual([]);
+    });
+
+    it('deduplicates repeated ids in a save', () => {
+        const s = normalizeDayState({ resolved: ['meridian_first_contact', 'meridian_first_contact'] });
+        expect(s.resolved).toEqual(['meridian_first_contact']);
+    });
+});

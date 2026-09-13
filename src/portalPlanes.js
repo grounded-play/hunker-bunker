@@ -41,6 +41,25 @@ export function createPlaneStack() {
     };
 }
 
+/**
+ * Mark a transition in flight.
+ *
+ * `transitioning` was previously declared and checked but never set by anything
+ * -- a guard that does not guard. A portal transition plays a fade, and during
+ * that fade a second trigger volume can easily fire; without this the player
+ * ends up two planes deep from one doorway.
+ */
+export function beginTransition(state) {
+    const current = { ...createPlaneStack(), ...state };
+    if (current.transitioning) return { state: current, began: false };
+    return { state: { ...current, transitioning: true }, began: true };
+}
+
+export function endTransition(state) {
+    const current = { ...createPlaneStack(), ...state };
+    return { state: { ...current, transitioning: false } };
+}
+
 export function activePlane(state) {
     const stack = state?.stack;
     return Array.isArray(stack) && stack.length ? stack[stack.length - 1] : null;
@@ -67,6 +86,12 @@ export function enterPlane(state, { id, kind, returnTo }) {
     if (!id || !Object.values(PLANE_KINDS).includes(kind)) {
         return { state: current, entered: false, reason: 'invalid plane' };
     }
+    // SURFACE is the floor of the stack, not something you enter. Pushing a
+    // second one made leaveable "surfaces" that are not the real world, and the
+    // camera would then treat the open world as an interior.
+    if (kind === PLANE_KINDS.SURFACE) {
+        return { state: current, entered: false, reason: 'surface cannot be entered' };
+    }
     if (planeDepth(current) >= MAX_PLANE_DEPTH) {
         return { state: current, entered: false, reason: 'max depth' };
     }
@@ -86,6 +111,7 @@ export function enterPlane(state, { id, kind, returnTo }) {
 /** Leave the current plane, returning to the one beneath and to the door used. */
 export function leavePlane(state) {
     const current = { ...createPlaneStack(), ...state };
+    if (current.transitioning) return { state: current, left: false, reason: 'already transitioning' };
     if (planeDepth(current) === 0) {
         // The surface is the floor of the stack. Popping it would leave the
         // player standing in no world at all.

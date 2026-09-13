@@ -83,9 +83,18 @@ export const VARIATION_ROLES = Object.freeze(['room_small', 'room_wide', 'room_l
  * a rock slab standing in for a powered door is worse than no door.
  */
 export function kitPieceFor(role, biome, { variation = false } = {}) {
+    if (typeof role !== 'string' || role.length === 0) return null;
     const skin = skinForBiome(biome);
-    const shared = SHARED_ROLES[role] ?? (Object.values(SHARED_ROLES).includes(role) ? role : null);
-    const specific = SKIN_ONLY_ROLES[skin]?.[role] ?? null;
+    // Own-property lookups only. A bare `SHARED_ROLES[role]` resolves inherited
+    // Object.prototype members, so a role of 'constructor' or 'toString' came
+    // back as a placement type built from a function's source text -- garbage
+    // that would reach the renderer as a model name. Role names can come from
+    // authored data, so this is reachable, not theoretical.
+    const shared = Object.hasOwn(SHARED_ROLES, role)
+        ? SHARED_ROLES[role]
+        : (Object.values(SHARED_ROLES).includes(role) ? role : null);
+    const skinRoles = Object.hasOwn(SKIN_ONLY_ROLES, skin) ? SKIN_ONLY_ROLES[skin] : null;
+    const specific = skinRoles && Object.hasOwn(skinRoles, role) ? skinRoles[role] : null;
     const base = shared ?? specific;
     if (!base) return null;
     // Only some pieces ship a -variation twin; asking for one elsewhere would
@@ -103,7 +112,11 @@ export function kitPieceFor(role, biome, { variation = false } = {}) {
  * threads through, keeping the world reproducible for a given seed.
  */
 export function chooseKitPiece(role, biome, random = Math.random) {
-    const roll = Math.min(0.999999, Math.max(0, Number(random()) || 0));
+    // Clamped, and NaN folds to 0 rather than propagating into a rotation of
+    // NaN -- a NaN rotation silently places the piece unrotated AND poisons any
+    // transform built from it downstream.
+    const raw = Number(random());
+    const roll = Number.isFinite(raw) ? Math.min(0.999999, Math.max(0, raw)) : 0;
     const type = kitPieceFor(role, biome, { variation: roll > 0.62 });
     if (!type) return null;
     return {

@@ -56,6 +56,14 @@ export const STORY_DEADLINES = Object.freeze([
     Object.freeze({ id: 'hive_suture_parley', closesOnDay: 9, linchpin: 'hive_suture' })
 ]);
 
+const DEADLINE_IDS = new Set(STORY_DEADLINES.map((d) => d.id));
+
+function knownIds(list) {
+    if (!Array.isArray(list)) return [];
+    return [...new Set(list.filter((v) => typeof v === 'string' && DEADLINE_IDS.has(v)))];
+}
+
+
 export function createDayState() {
     return {
         version: DAY_CYCLE_VERSION,
@@ -80,8 +88,12 @@ export function normalizeDayState(raw) {
         day,
         phase,
         restsTaken: Math.max(0, Math.floor(Number(raw.restsTaken) || 0)),
-        resolved: Array.isArray(raw.resolved) ? raw.resolved.filter((v) => typeof v === 'string') : [],
-        expired: Array.isArray(raw.expired) ? raw.expired.filter((v) => typeof v === 'string') : []
+        // Only ids that are still real deadlines survive. A renamed or removed
+        // beat would otherwise linger in a save forever, and a corrupt save
+        // could mark the player as having resolved something that never
+        // existed -- which silently unlocks or locks an ending.
+        resolved: knownIds(raw.resolved),
+        expired: knownIds(raw.expired)
     };
 }
 
@@ -159,8 +171,16 @@ export function beginExpedition(state) {
 /** Mark a story beat resolved so it can no longer expire. */
 export function resolveDeadline(state, id) {
     const s = normalizeDayState(state);
-    if (!STORY_DEADLINES.some((d) => d.id === id)) return { state: s, resolved: false };
-    if (s.resolved.includes(id) || s.expired.includes(id)) return { state: s, resolved: false };
+    const deadline = STORY_DEADLINES.find((d) => d.id === id);
+    if (!deadline) return { state: s, resolved: false, reason: 'unknown deadline' };
+    if (s.resolved.includes(id)) return { state: s, resolved: false, reason: 'already resolved' };
+    if (s.expired.includes(id)) return { state: s, resolved: false, reason: 'expired' };
+    // The deadline has to bind here too, not only at rest. Expiry runs when the
+    // player sleeps, so a beat whose day has passed but who has not slept since
+    // was still resolvable -- which defeats the entire point of a deadline.
+    if (s.day >= deadline.closesOnDay) {
+        return { state: s, resolved: false, reason: 'deadline passed' };
+    }
     return { state: { ...s, resolved: [...s.resolved, id] }, resolved: true };
 }
 

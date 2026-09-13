@@ -317,3 +317,65 @@ Runtime wiring: the trigger volumes that call `enterPlane`, chunk generation per
 plane using the kit grammar, and driving the per-object alpha from
 `ceilingFadeAlpha` in the render loop. The decisions and their guards are
 settled and tested; what is left is connection.
+
+---
+
+## 10. Audit pass — five defects found and fixed
+
+The three modules were re-checked by probing them adversarially rather than
+re-reading them. Every defect below was live, and none was caught by the
+original tests.
+
+### 10.1 `kitGrammar` resolved prototype members as roles — the worst one
+
+```
+kitPieceFor('constructor', 'active')
+  -> 'kit_space_function Object() { [native code] }'
+```
+
+A bare `SHARED_ROLES[role]` lookup reaches inherited `Object.prototype` members,
+so `constructor`, `toString`, `valueOf` and friends produced a placement type
+built from a function's source text. That string would travel to the renderer as
+a model name.
+
+Reachable rather than theoretical: role names come from authored room-build
+data. Fixed with own-property lookups (`Object.hasOwn`) and a type guard; all
+such keys now return `null`.
+
+### 10.2 `resolveDeadline` ignored its own deadline
+
+A beat could be resolved on day 99 even though it closed on day 4. Expiry only
+ran during rest, so a beat past its day but not yet slept through stayed
+resolvable — which defeats the entire deadline system it exists to enforce.
+
+Now refused with `reason: 'deadline passed'`, while day 3 on a day-4 deadline
+still resolves, because the boundary is "you have until day 4" and an off-by-one
+here quietly eats a day of content.
+
+### 10.3 `normalizeDayState` trusted unknown ids
+
+Saved `resolved`/`expired` entries were kept whatever they said. A renamed or
+removed beat would linger in a save forever, and a corrupt save could mark a
+beat resolved that never existed — silently unlocking or locking an ending.
+Now filtered against the real deadline set, and deduplicated.
+
+### 10.4 `transitioning` was a guard that did not guard
+
+The flag was declared and checked, and nothing ever set it. A portal fade is
+long enough for a second trigger volume to fire, which would put the player two
+planes deep from one doorway. `beginTransition`/`endTransition` now drive it,
+and both `enterPlane` and `leavePlane` respect it.
+
+### 10.5 `SURFACE` could be pushed onto the stack
+
+`enterPlane` accepted `kind: 'surface'`, producing a leaveable "world" that is
+not the real one — and the camera would then treat the open world as an
+interior, with ceiling fade active outdoors. Now refused.
+
+### Also hardened
+
+`chooseKitPiece` folded a `NaN` roll to zero. A NaN rotation places the piece
+unrotated *and* poisons any transform built from it downstream, which is much
+harder to trace than an obviously wrong angle.
+
+**13 regression tests added**, one per defect plus boundary cases. Suite: 3329.

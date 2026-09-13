@@ -86,3 +86,32 @@ describe('grid breaking', () => {
         expect(chooseKitPiece('ladder', 'active', () => 0.5)).toBeNull();
     });
 });
+
+describe('hostile input', () => {
+    it('does not resolve inherited Object.prototype keys as roles', () => {
+        // A bare SHARED_ROLES[role] returned the source text of Object's own
+        // constructor as a placement type. Role names can come from authored
+        // data, so this was reachable rather than theoretical.
+        for (const key of ['constructor', 'toString', '__proto__', 'valueOf', 'hasOwnProperty']) {
+            expect(kitPieceFor(key, 'active'), key).toBeNull();
+        }
+    });
+
+    it('rejects non-string and empty roles', () => {
+        expect(kitPieceFor(null, 'active')).toBeNull();
+        expect(kitPieceFor(42, 'active')).toBeNull();
+        expect(kitPieceFor('', 'active')).toBeNull();
+    });
+
+    it('folds a NaN roll to zero rather than producing a NaN rotation', () => {
+        // A NaN rotation places the piece unrotated AND poisons any transform
+        // built from it downstream, which is far harder to trace.
+        const piece = chooseKitPiece('corridor', 'active', () => NaN);
+        expect(Number.isFinite(piece.rotationSteps)).toBe(true);
+    });
+
+    it('clamps a random source that returns out of range', () => {
+        const piece = chooseKitPiece('corridor', 'active', () => 5);
+        expect([0, 1, 2, 3]).toContain(piece.rotationSteps);
+    });
+});

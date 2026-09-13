@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
     PLANE_KINDS, MAX_PLANE_DEPTH,
     createPlaneStack, activePlane, planeDepth, cameraForPlane,
-    enterPlane, leavePlane, ceilingFadeAlpha
+    enterPlane, leavePlane, ceilingFadeAlpha, beginTransition, endTransition
 } from './portalPlanes.js';
 
 const enterInterior = (s, id = 'hab_01') =>
@@ -113,5 +113,42 @@ describe('ceiling fade', () => {
         const near = ceilingFadeAlpha(inside, { objectY: 0.6, playerY: 0, betweenCameraAndPlayer: true });
         const far = ceilingFadeAlpha(inside, { objectY: 1.4, playerY: 0, betweenCameraAndPlayer: true });
         expect(near).toBeGreaterThan(far);
+    });
+});
+
+describe('transition guard (regressions)', () => {
+    it('refuses to enter while a transition is in flight', () => {
+        // transitioning was declared and checked but nothing ever set it -- a
+        // guard that does not guard. A portal fade is long enough for a second
+        // trigger volume to fire and put the player two planes deep from one
+        // doorway.
+        const mid = beginTransition(createPlaneStack()).state;
+        expect(enterPlane(mid, { id: 'hab', kind: PLANE_KINDS.INTERIOR }).entered).toBe(false);
+    });
+
+    it('refuses to leave while a transition is in flight', () => {
+        const inside = enterInterior(createPlaneStack());
+        const mid = beginTransition(inside).state;
+        expect(leavePlane(mid).left).toBe(false);
+    });
+
+    it('will not begin a second transition over a live one', () => {
+        const first = beginTransition(createPlaneStack());
+        expect(beginTransition(first.state).began).toBe(false);
+    });
+
+    it('clears on end, so the stack is usable again', () => {
+        const cleared = endTransition(beginTransition(createPlaneStack()).state).state;
+        expect(enterPlane(cleared, { id: 'hab', kind: PLANE_KINDS.INTERIOR }).entered).toBe(true);
+    });
+});
+
+describe('surface is not enterable (regression)', () => {
+    it('refuses to push a second surface onto the stack', () => {
+        // A pushed surface is a leaveable "world" that is not the real one, and
+        // the camera would then treat the open world as an interior.
+        const r = enterPlane(createPlaneStack(), { id: 'surface2', kind: PLANE_KINDS.SURFACE });
+        expect(r.entered).toBe(false);
+        expect(r.reason).toBe('surface cannot be entered');
     });
 });
