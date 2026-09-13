@@ -8453,16 +8453,37 @@ export class ThreeGame {
         if (mission?.status === 'objective_complete') return { key: 'extract', label: 'EXTRACT — RETURN TO SHIP' };
         if (!o2?.isOnline) return { key: 'o2', label: 'REPAIR O2 AT THE SHIP' };
         if (mission?.type && mission.label) return { key: 'objective', label: 'SECURE ACTIVE OBJECTIVE' };
-        if (this._blackBoxMarkerActive) return { key: 'blackbox', label: 'OPTIONAL · RECOVER BLACK BOX' };
+        // Playtest P0-3: the black box used to be a loop step of its own here.
+        // It is optional salvage, but occupying the primary slot meant that
+        // while it was unrecovered the HUD showed nothing else -- and a pickup
+        // the player cannot reach (see P0-2) hid every following objective for
+        // the rest of the run. It is attached as `secondary` in
+        // updateLoopStep() instead, so it is always visible and never blocking.
         return { key: 'explore', label: 'EXPLORE · BANK SALVAGE' };
+    }
+
+    // The optional objective that rides alongside the primary one. Additive:
+    // consumers that only read `label` are unaffected.
+    getLoopSecondary() {
+        if (this._blackBoxMarkerActive && this._blackBoxState) {
+            return { key: 'blackbox', label: 'OPTIONAL · RECOVER BLACK BOX' };
+        }
+        return null;
     }
 
     updateLoopStep(force = false) {
         const step = this.getLoopStep();
+        const secondary = this.getLoopSecondary();
         const key = step?.key ?? null;
-        if (!force && key === this._lastLoopStepKey) return;
-        this._lastLoopStepKey = key;
-        window.dispatchEvent(new CustomEvent('loop-step-changed', { detail: step }));
+        // The dedupe key has to include the secondary, or picking up the black
+        // box would leave its line on screen until the primary happened to
+        // change.
+        const dedupe = `${key}|${secondary?.key ?? ''}`;
+        if (!force && dedupe === this._lastLoopStepKey) return;
+        this._lastLoopStepKey = dedupe;
+        window.dispatchEvent(new CustomEvent('loop-step-changed', {
+            detail: { ...step, secondary }
+        }));
     }
 
     createBlackBoxMarker(state) {

@@ -6226,8 +6226,15 @@ window.addEventListener('loop-step-changed', (event) => {
         hud.classList.add('hidden');
         return;
     }
-    if (textEl) textEl.textContent = step.label;
+    if (textEl) {
+        // P0-3: the optional objective rides alongside the primary rather than
+        // replacing it, so both are legible at once.
+        textEl.textContent = step.secondary?.label
+            ? `${step.label}  //  ${step.secondary.label}`
+            : step.label;
+    }
     hud.dataset.step = step.key ?? '';
+    hud.dataset.secondary = step.secondary?.key ?? '';
     hud.classList.remove('hidden');
 });
 
