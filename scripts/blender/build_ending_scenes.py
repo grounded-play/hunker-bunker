@@ -21,6 +21,7 @@ import bpy
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from cinematic_lighting import add_separation_rim  # noqa: E402
+from cinematic_fx import add_boid_swarm, add_drift_motes, add_secondary_motion  # noqa: E402
 
 
 # Locked in docs/planning/blender-cinematic-optics-2026-09-12.md. Keep these
@@ -1834,12 +1835,29 @@ def build_ending_scene(ending_name: str, output_path: Path) -> None:
     # their sky is actually visible and should be space. The interior sets keep
     # the bounce gradient, where a starfield would be a window onto nothing.
     exterior = ending_name in ("alien_exodus", "empty_husk", "all")
+    # The game sky is now the world for EVERY scene, not just the two that look
+    # at it directly. Interiors were falling back to a flat procedural gradient,
+    # so the same ending could carry two different skies depending on which shot
+    # you were watching -- and interior metal and ice picked up a grey wash
+    # instead of the violet/cyan the palette is built on.
+    #
+    # A sealed interior shell occludes most of it by design, which is correct:
+    # the HDRI's job indoors is the coloured light that reaches openings and
+    # reflective surfaces, not to shine through walls. Strength is what
+    # separates the two cases, not which sky is used.
     setup_world_atmosphere(
-        scene, space_sky=exterior,
+        scene, space_sky=True,
         # The transferred sky contains 1.8x scene-linear peaks. Keep those HDR
         # highlights for reflections while exposing the world as deep night;
         # the moon and engine rigs remain the readable subject keys.
-        world_strength=0.18 if exterior else 0.9,
+        # Exteriors see the sky directly and would blow out at interior levels.
+        # Interiors are mostly occluded by their shell, so they need more gain to
+        # land the same amount of coloured light on what little reaches them.
+        # Interiors are sealed by their shell, so the world only reaches them
+        # through openings and reflections -- it needs far more gain than an
+        # exterior to land the same amount of light. 0.55 measured too dark in
+        # a test render; the sealed shell eats most of it.
+        world_strength=0.18 if exterior else 1.8,
     )
 
     root_col = bpy.context.scene.collection
@@ -1909,6 +1927,45 @@ def build_ending_scene(ending_name: str, output_path: Path) -> None:
         shell_objects_by_set[source.name] = [bpy.data.objects[name] for name in shell_names]
     if shell_count:
         print(f"[build_ending_scenes] per-set shell: {shell_count} surfaces")
+
+    # Air and motion. Every scene had ZERO particle systems, and characters sat
+    # on a Mixamo action with nothing layered on top -- which is most of why
+    # these read as a clean Blender turntable rather than the game's key art.
+    #
+    # Mote colour follows each set's own palette rather than one generic dust,
+    # so the particulate reinforces the scene instead of greying it out.
+    fx_palette = {
+        "mothership_infection": ((0.30, 1.00, 0.45), True),   # infection green, with a swarm
+        "alien_exodus": ((0.45, 0.85, 1.00), True),           # cold exhaust blue
+        "outed_escape": ((1.00, 0.35, 0.18), False),          # quarantine ember
+        "failed_carrier": ((0.85, 1.00, 0.40), True),         # spore spill
+        "empty_husk": ((0.70, 0.78, 0.95), False),            # dead ice dust
+    }
+    fx_color, fx_swarm = fx_palette.get(ending_name, ((0.6, 0.8, 1.0), False))
+    fx_center = (0.0, 1.5, 1.6)
+    fx_size = (14.0, 18.0, 6.0) if exterior else (9.0, 12.0, 4.0)
+    add_drift_motes(
+        bpy, f"FX_Motes_{ending_name}", root_col,
+        center=fx_center, size=fx_size,
+        count=1400 if exterior else 900,
+        color=fx_color, frame_end=scene.frame_end, seed=7,
+    )
+    if fx_swarm:
+        # Boids only where something is alive in the air. A flock in the dead
+        # husk would contradict that ending's whole point.
+        add_boid_swarm(
+            bpy, f"FX_Swarm_{ending_name}", root_col,
+            center=(fx_center[0], fx_center[1] + 2.0, fx_center[2] + 0.6),
+            size=(6.0, 7.0, 3.0), count=160,
+            color=fx_color, frame_end=scene.frame_end, seed=11,
+        )
+
+    motion_keys = 0
+    for armature in (o for o in scene.objects if o.type == "ARMATURE"):
+        motion_keys += add_secondary_motion(
+            armature, scene.frame_start, scene.frame_end, seed=hash(armature.name) & 0xFFFF
+        )
+    print(f"[build_ending_scenes] fx: motes + {'swarm' if fx_swarm else 'no swarm'}, {motion_keys} motion keys")
 
     # Mixed endings cut between two locations built at the same origin.  Hide
     # the alternate location, its shell and the interior cast on each shot.
