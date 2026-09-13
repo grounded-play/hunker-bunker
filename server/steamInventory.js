@@ -420,7 +420,7 @@ export function attachSteamInventoryRoutes(app) {
             if (!runKey) {
                 return res.status(400).json({ ok: false, reason: 'missing_run_key' });
             }
-            itemdefid = DEEP_RELIC_CACHE_ITEMDEFID;
+            itemdefid = CACHE_KEY_ITEMDEFID;
             mode = 'stack';
             idempotencyKey = `boss-kill-${req.steamId}-${runKey}`;
         } else if (milestone === 'achievement:slay_the_queen') {

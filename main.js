@@ -15242,19 +15242,21 @@ if (window.electronAPI) {
             });
         }
     });
-    // Boss/queen defeat: a guaranteed free Deep Relic Cache tied to a
-    // combat-sourced run milestone rather than a narrative branch choice.
-    // runKey only needs to be unique per run, not globally meaningful.
-    window.addEventListener('act2-milestone', (event) => {
-        if (event?.detail?.key !== 'queenKilled' || !window.electronAPI?.requestSteamMilestoneGrant) return;
-        if (event.detail.combat !== true && event.detail.source !== 'queen-fight') return;
-        const runKey = `${activeRunSeed ?? 'no-seed'}:${runStartTime}`;
-        showDeveloperCommentary('queen_killed');
-        recordSteamTimelineEvent('queen_killed', 'Queen Defeated', 'Specimen-0047 was defeated in combat.', {
-            icon: 'queen',
-            priority: 5,
-            durationSeconds: 10
-        });
+    // Every actual boss defeat earns one Relic Key. The encounter identity is
+    // part of the server idempotency key, so retries are safe while separate
+    // bosses in the same expedition each remain rewardable.
+    window.addEventListener('enemy-killed', (event) => {
+        if (event?.detail?.isBoss !== true || !window.electronAPI?.requestSteamMilestoneGrant) return;
+        const encounterId = event.detail.encounterId ?? event.detail.type ?? 'boss';
+        const runKey = `${activeRunSeed ?? 'no-seed'}:${runStartTime}:${encounterId}`;
+        if (event.detail.type === 'boss_queen') {
+            showDeveloperCommentary('queen_killed');
+            recordSteamTimelineEvent('queen_killed', 'Queen Defeated', 'Specimen-0047 was defeated in combat.', {
+                icon: 'queen',
+                priority: 5,
+                durationSeconds: 10
+            });
+        }
         window.electronAPI.requestSteamMilestoneGrant('boss_kill', runKey).then((result) => {
             (result?.granted ?? []).forEach((item) => showSteamDropToast(item.itemdefid, item.quantity));
         }).catch((err) => {
