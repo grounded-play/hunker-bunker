@@ -101,6 +101,7 @@ import {
     validateRingProgression
 } from './src/mazeExpedition.js';
 import { installSteamCloudSaveBridge } from './src/steamCloudSaveBridge.js';
+import { installSettingsWheelGuard } from './src/settingsWheelGuard.js';
 
 // docs/steamstorestatus.log Steam Cloud gap: electron/main.cjs's
 // hb:saveDataChanged bridge (mirrors hb_*-prefixed saves into save.json,
@@ -114,6 +115,12 @@ installSteamCloudSaveBridge({
     storage: typeof window !== 'undefined' ? window.localStorage : null,
     electronAPI: typeof window !== 'undefined' ? window.electronAPI : null
 });
+
+// docs/reports/playtest-issues-2026-09-12.md P1-2 -- stop the wheel editing the
+// settings popup's <select> values while the player is scrolling it. Safe to
+// call here: this module is loaded at the end of <body>, so #settings-popup
+// already exists (the getElementById calls just below rely on the same thing).
+installSettingsWheelGuard(document);
 
 const startBtn = document.getElementById('start-game'); // INITIALIZE button
 const titleContinueBtn = document.getElementById('title-continue-btn');
