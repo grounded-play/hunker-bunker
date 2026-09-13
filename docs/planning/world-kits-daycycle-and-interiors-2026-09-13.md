@@ -172,6 +172,11 @@ camera. They are independent enough to land separately.
 
 - 2026-09-13 — kits acquired and verified CC0; cave/space grammar identity
   found; plan written.
+- 2026-09-13 — cinematic continuity pass reuses the restyled cave/space kits in
+  SET-D and transfers the runtime sky layers into the 4K film HDR. Long renders
+  were stopped non-destructively with 893 completed frames preserved; they must
+  restart only after the bunker-planet contact sheet passes, so blank floors or
+  missing planetary architecture cannot consume another multi-hour render.
 
 
 ---

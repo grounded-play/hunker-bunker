@@ -396,6 +396,31 @@ def _shell_material(name: str, base, roughness: float, metallic: float = 0.0):
     return mat
 
 
+def _fractured_ice_material(name: str):
+    """Procedural bunker-planet ice: blue depth, frost breakup and fine cracks."""
+    mat = _shell_material(name, (0.08, 0.14, 0.22), 0.48, 0.08)
+    nodes = mat.node_tree.nodes
+    links = mat.node_tree.links
+    bsdf = nodes.get("Principled BSDF")
+    tex = nodes.new("ShaderNodeTexNoise")
+    tex.inputs["Scale"].default_value = 3.2
+    tex.inputs["Detail"].default_value = 7.0
+    tex.inputs["Roughness"].default_value = 0.72
+    ramp = nodes.new("ShaderNodeValToRGB")
+    ramp.color_ramp.elements[0].position = 0.28
+    ramp.color_ramp.elements[0].color = (0.012, 0.035, 0.075, 1.0)
+    ramp.color_ramp.elements[1].position = 0.72
+    ramp.color_ramp.elements[1].color = (0.26, 0.48, 0.68, 1.0)
+    bump = nodes.new("ShaderNodeBump")
+    bump.inputs["Strength"].default_value = 0.24
+    bump.inputs["Distance"].default_value = 0.12
+    links.new(tex.outputs["Fac"], ramp.inputs["Fac"])
+    links.new(ramp.outputs["Color"], bsdf.inputs["Base Color"])
+    links.new(tex.outputs["Fac"], bump.inputs["Height"])
+    links.new(bump.outputs["Normal"], bsdf.inputs["Normal"])
+    return mat
+
+
 def build_room_shell(
     scene: bpy.types.Scene,
     collection: bpy.types.Collection,
@@ -463,7 +488,7 @@ def build_room_shell(
         # four walls would box it in and hide the space sky entirely -- the
         # shell exists to stop props floating in void, not to put a roof on the
         # outdoors. Ground is oversized so the horizon reads as distance.
-        floor_mat.node_tree.nodes["Principled BSDF"].inputs["Base Color"].default_value = (0.42, 0.47, 0.55, 1.0)
+        floor_mat = _fractured_ice_material(f"{name_prefix}_FracturedIce")
         bpy.ops.mesh.primitive_plane_add(size=1.0, location=(cx, cy, floor_z))
         ground = bpy.context.active_object
         ground.name = f"{name_prefix}_Ground"
@@ -1683,6 +1708,29 @@ def build_set_d_exterior_ice(scene: bpy.types.Scene, root_col: bpy.types.Collect
         cradle.location = (0, 0, -0.4)
         cradle.scale = (2.0, 2.5, 0.8)
 
+    # The launch site is on the bunker planet, not an abstract studio plane.
+    # Restyled Kenney modules preserve their grid sockets but now carry the
+    # game's cryo/industrial palette. Cave masses establish a broken perimeter;
+    # space rooms and gates make the surviving outpost readable as architecture.
+    planet_modules = (
+        ("public/3d/runtime/kits/modular-space-kit/room-large-variation.glb", "Bunker_Admin_Ruin", (16.0, 24.0, 0.0), 0, 0.35),
+        ("public/3d/runtime/kits/modular-space-kit/room-small.glb", "Bunker_Service_Block", (-16.0, 22.0, 0.0), 18, 0.45),
+        ("public/3d/runtime/kits/modular-space-kit/gate-door-window.glb", "Bunker_Launch_Gate", (7.0, 14.0, 0.0), 90, 0.65),
+        ("public/3d/runtime/kits/modular-cave-kit/room-large-variation.glb", "Cryo_Ridge_West", (-20.0, 16.0, -0.5), 35, 0.38),
+        ("public/3d/runtime/kits/modular-cave-kit/room-wide-variation.glb", "Cryo_Ridge_East", (20.0, 15.0, -0.5), -28, 0.38),
+        ("public/3d/runtime/kits/modular-cave-kit/gate-overhang.glb", "Cryo_Gothic_Overhang", (-9.0, 13.0, -0.2), 12, 0.90),
+        ("public/3d/runtime/kits/modular-cave-kit/stairs-wide.glb", "Cryo_Access_Stairs", (9.0, 12.0, -0.25), 180, 0.40),
+    )
+    planet_dressing = []
+    for asset_path, object_name, location, yaw, uniform_scale in planet_modules:
+        module = import_asset(asset_path, set_col)
+        if module:
+            module.name = object_name
+            module.location = location
+            module.rotation_euler = (0, 0, math.radians(yaw))
+            module.scale = (uniform_scale,) * 3
+            planet_dressing.append(module)
+
     # 3 Beacon Spires along the chasm rims
     beacon_locs = [(-6.5, 8.0, 2.0), (6.5, 5.0, 1.8), (-7.2, -4.0, 3.2)]
     for idx, b_loc in enumerate(beacon_locs, start=1):
@@ -1710,7 +1758,7 @@ def build_set_d_exterior_ice(scene: bpy.types.Scene, root_col: bpy.types.Collect
     set_col.objects.link(fill)
     aim_object_at(fill, (0.0, 0.0, 1.0))
 
-    return {"collection": set_col, "shuttle": shuttle}
+    return {"collection": set_col, "shuttle": shuttle, "planet_dressing": planet_dressing}
 
 
 def setup_scene_mothership_infection(root_col: bpy.types.Collection) -> list[bpy.types.Object]:
@@ -2369,6 +2417,10 @@ def build_ending_scene(ending_name: str, output_path: Path) -> None:
             # preserves EH-03's deliberate refusal to follow the departing ship.
             exterior_cameras = (cams[0], cams[3]) if ending_name == "alien_exodus" else (cams[2], cams[3])
             for camera in exterior_cameras:
+                # New bunker-planet architecture can sit nearer than the ship;
+                # focus the story subject, not whichever skyline module happens
+                # to win a nearest-bounds query in this camera.
+                camera.data.dof.focus_object = shuttle
                 shot_index = int(camera.name.rsplit("_", 1)[1]) - 1
                 midpoint = SHOT_MID_FRAMES[camera.name.split("_")[1]][shot_index]
                 scene.frame_set(midpoint)

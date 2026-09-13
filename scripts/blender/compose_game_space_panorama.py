@@ -23,6 +23,11 @@ LAYERS = (
     ("public/sky/nebula_veil_violet.png", 38.0 / 360.0, 0.42),
     ("public/sky/nebula_veil_ember.png", -57.0 / 360.0, 0.24),
 )
+CELESTIALS = (
+    # path, centre x/y in normalized panorama space, angular-size proxy
+    ("public/sky/body_planet_dead_ocean.png", 0.78, 0.32, 0.16),
+    ("public/sky/body_moon_shattered.png", 0.18, 0.62, 0.085),
+)
 
 
 # The source paintings concentrate their nebula in a horizontal band, so the
@@ -79,6 +84,18 @@ def compose(output: Path) -> None:
         layer = ImageChops.offset(layer, round(size[0] * horizontal_turn), 0)
         layer = ImageEnhance.Brightness(layer).enhance(gain)
         result = ImageChops.add(result, layer, scale=1.0, offset=0)
+    # Celestial bodies remain alpha-composited solids, exactly as in the game.
+    # Their placement is sparse and asymmetric: each acts as a landmark while
+    # leaving most of the orbital frame available for uncomfortable emptiness.
+    result_rgba = result.convert("RGBA")
+    for relative_path, center_x, center_y, size_fraction in CELESTIALS:
+        body = Image.open(ROOT / relative_path).convert("RGBA")
+        diameter = round(size[1] * size_fraction)
+        body.thumbnail((diameter, diameter), Image.Resampling.LANCZOS)
+        left = round(size[0] * center_x - body.width / 2)
+        top = round(size[1] * center_y - body.height / 2)
+        result_rgba.alpha_composite(body, (left, top))
+    result = result_rgba.convert("RGB")
 
     result = fill_polar_caps(result)
     output.parent.mkdir(parents=True, exist_ok=True)

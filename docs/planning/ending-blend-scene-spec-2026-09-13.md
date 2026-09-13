@@ -209,3 +209,26 @@ Cycles reviews cover all five rims plus AE-04 and EH-03 exterior isolation.
 The review helper is `scripts/blender/render_review_frame.py`. Delivery remains
 at the scene-level Cycles settings (256 samples, 1920x1080, OIDN, AgX Punchy);
 the review helper deliberately overrides only resolution and sample count.
+
+## 7. Game-sky and bunker-planet continuity pass
+
+The exterior endings now use the game's own sky vocabulary rather than an
+unrelated procedural starfield. `compose_game_space_panorama.py` transfers the
+runtime additive layers (`nebula_band_core`, violet veil and ember veil) into an
+opaque 2:1 film panorama, then adds the catalog's dead-ocean planet and
+shattered moon as sparse alpha-composited landmarks. `bake_space_hdri.py`
+promotes that panorama directly to a 32-bit float, 4K EXR with 1.8x linear
+highlight gain. The scene exposes it at 0.18 world strength: stars and nebulae
+remain visible and contribute colored reflections without turning the night
+exterior into daylight.
+
+Space worlds no longer use infinite World Volume Scatter. That medium was
+extinguishing every environment ray, which is why earlier HDR iterations still
+rendered as black. Snow, exhaust and ground haze must use bounded volumes near
+the set.
+
+SET-D is no longer a blank plane. It now has procedural fractured-ice color and
+bump breakup plus a camera-safe, three-depth-band skyline assembled from the
+restyled modular cave and space kits: launch gate and access pieces nearest,
+ruined bunker rooms behind them, and cryo ridge masses on the far edge. The
+same assets therefore identify the playable bunker planet and its ending films.
