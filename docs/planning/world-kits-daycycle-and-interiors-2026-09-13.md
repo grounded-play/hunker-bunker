@@ -488,3 +488,35 @@ exact camera restoration, and the physical cutaway ceiling.
 This proves sublevel traversal, not the whole interior roadmap. The next slice
 is an authored structure doorway that enters an `interior` plane generated from
 the space-kit room grammar, then returns through its inside door.
+
+---
+
+## 14. Runtime connection pass — authored Foundry interior
+
+The Foundry is now the first surface structure with a real inside. Interacting
+with its exterior enters a fixed 11×11 `interior` plane instead of opening the
+fabrication interface in the exposed world. The room uses the existing
+`kit_space_room_small` shell, a physical cutaway ceiling, a deliberately
+authored south airlock, and a central emissive fabrication workbench. It proves
+that the reskinned construction kits can form destinations rather than only
+dress procedural paths.
+
+The plane contract keeps exterior and interior concerns separate:
+
+- entry records the player's exact surface position, hides surface chunk
+  groups, confines the camera to a 60 m far plane and a 3.1 m follow distance,
+  and places the player at the structure's world anchor on the interior layer;
+- deferred GLB proximity checks resolve child positions in world space, so a
+  room shell parented under an interior group still loads correctly;
+- contextual interactions inside are intentionally narrow: the central bench
+  opens fabrication and the south airlock exits;
+- exiting restores the exact exterior position and camera settings without
+  sealing the doorway as though it were a collapsed sublevel hole;
+- nearby prompt state is cleared on exit and on run reset, preventing interior
+  instructions from leaking back onto the surface.
+
+Focused evidence covers entry, shell and ceiling presence, camera confinement,
+workbench and airlock interaction candidates, exact return, non-destructive
+doorway exit, and prompt cleanup. This closes the first authored-building slice;
+the next reusable step is to extract the fixed room description into a small
+interior blueprint registry before adding hospital, camp and hive interiors.

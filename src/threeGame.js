@@ -5692,9 +5692,13 @@ export class ThreeGame {
     loadNearbyWorld3dReplacement(source) {
         if (!source?.userData?.world3dModelType || source.userData.world3dLoading || source.userData.world3dRoot) return;
         if ((this._world3dLoadsInFlight ?? 0) >= 2 || !this.player?.position) return;
+        this._world3dLoadPosition ??= new THREE.Vector3();
+        source.getWorldPosition?.(this._world3dLoadPosition);
+        const sourceX = source.getWorldPosition ? this._world3dLoadPosition.x : source.position.x;
+        const sourceZ = source.getWorldPosition ? this._world3dLoadPosition.z : source.position.z;
         const distance = Math.hypot(
-            this.player.position.x - source.position.x,
-            this.player.position.z - source.position.z
+            this.player.position.x - sourceX,
+            this.player.position.z - sourceZ
         );
         if (distance > 9) return;
         this._world3dLoadsInFlight = (this._world3dLoadsInFlight ?? 0) + 1;
@@ -6396,6 +6400,41 @@ export class ThreeGame {
         const px = this.player.position.x;
         const pz = this.player.position.z;
         const candidates = [];
+        const currentPlane = activePlane(this.planeState);
+        if (currentPlane?.id === 'foundry-interior') {
+            const pocket = this.pocketCache?.get(this.getWallKey(this._pocketHoleX, this._pocketHoleZ));
+            if (pocket) {
+                const originX = this._pocketHoleX - pocket.centerCell.x;
+                const originZ = this._pocketHoleZ - pocket.centerCell.y;
+                const workbenchX = originX + pocket.centerCell.x;
+                const workbenchZ = originZ + pocket.centerCell.y;
+                const exitX = originX + pocket.climbPoint.x;
+                const exitZ = originZ + pocket.climbPoint.y;
+                const workbenchDistance = Math.hypot(px - workbenchX, pz - workbenchZ);
+                const exitDistance = Math.hypot(px - exitX, pz - exitZ);
+                if (workbenchDistance <= 2.1) {
+                    candidates.push({
+                        id: 'foundry-interior-workbench',
+                        label: 'FABRICATION WORKBENCH',
+                        distance: workbenchDistance,
+                        interact: () => {
+                            window.dispatchEvent(new CustomEvent('open-fabrication-bay'));
+                            return true;
+                        }
+                    });
+                }
+                if (exitDistance <= 1.8) {
+                    candidates.push({
+                        id: 'foundry-interior-exit',
+                        label: 'EXIT FOUNDRY',
+                        distance: exitDistance,
+                        interact: () => this.exitPocket()
+                    });
+                }
+            }
+            candidates.sort((a, b) => a.distance - b.distance);
+            return candidates;
+        }
         const consoleShip = this.activeInteractiveConsole;
         if (consoleShip) {
             const x = consoleShip.tileX + consoleShip.consoleOffset.x;
@@ -12643,8 +12682,7 @@ export class ThreeGame {
             window.dispatchEvent(new CustomEvent('act2-milestone', { detail: { key: 'dishBuilt' } }));
             return true;
         }
-        window.dispatchEvent(new CustomEvent('open-fabrication-bay'));
-        return true;
+        return this.enterFoundryInterior();
     }
 
     // ── Act 1 finale: the cave holding the "final ship component" ──────────
@@ -17875,6 +17913,10 @@ export class ThreeGame {
         this.isInPocket = false;
         this._pocketHoleX = null;
         this._pocketHoleZ = null;
+        if (this._portalPromptLabel) {
+            this._portalPromptLabel = null;
+            window.dispatchEvent(new CustomEvent('camp-prompt-clear'));
+        }
         if (this.player) {
             this.player.scale.set(1, 1, 1);
             this.player.rotation.set(0, 0, 0);
@@ -23520,6 +23562,97 @@ export class ThreeGame {
         return group;
     }
 
+    mountFoundryInterior(foundryX, foundryZ) {
+        const key = this.getWallKey(foundryX, foundryZ);
+        if (this.pocketGroups?.has(key)) return this.pocketGroups.get(key);
+        const size = 11;
+        const centerCell = { x: 5, y: 5 };
+        const climbPoint = { x: 5, y: 9 };
+        const grid = Array.from({ length: size }, (_, y) => (
+            Array.from({ length: size }, (_, x) => (
+                x === 0 || y === 0 || x === size - 1 || y === size - 1 ? '#' : '.'
+            ))
+        ));
+        // Door opening in the south wall; collision and the visible airlock
+        // agree instead of relying on a non-interactive decorative doorway.
+        grid[10][5] = '.';
+        const interior = { grid, size, centerCell, climbPoint };
+        this.pocketCache.set(key, interior);
+        const group = this.mountPocket(foundryX, foundryZ);
+        group.name = 'FoundryInteriorPlane';
+        group.userData.portalKind = PLANE_KINDS.INTERIOR;
+        group.userData.portalId = 'foundry-interior';
+
+        const shell = this.createScatterInstance?.({
+            x: centerCell.x,
+            z: centerCell.y,
+            type: 'kit_space_room_small',
+            scatterKey: 'interior:foundry:shell',
+            scale: 1,
+            tiltX: 0,
+            elevation: 0,
+            groupType: 'interior-architecture',
+            opacity: 1,
+            isSolidProp: false
+        });
+        if (shell) group.add(shell);
+
+        const bench = new THREE.Mesh(
+            new THREE.BoxGeometry(1.8, 0.85, 0.9),
+            new THREE.MeshStandardMaterial({
+                color: 0x17242b,
+                emissive: 0x0b7285,
+                emissiveIntensity: 0.55,
+                metalness: 0.78,
+                roughness: 0.34
+            })
+        );
+        bench.position.set(centerCell.x, 0.48, centerCell.y);
+        bench.userData = { isFoundryInteriorWorkbench: true };
+        group.add(bench);
+        return group;
+    }
+
+    enterFoundryInterior() {
+        if (this.isInPocket || !this.player || !this.foundry?.isRevealed) return false;
+        const position = this.foundry.getPosition?.();
+        if (!position) return false;
+        const transition = beginTransition(this.planeState ?? createPlaneStack());
+        if (!transition.began) return false;
+        this.planeState = endTransition(transition.state).state;
+        const returnTo = {
+            x: this.player.position.x,
+            y: this.player.position.y,
+            z: this.player.position.z
+        };
+        const entered = enterPlane(this.planeState, {
+            id: 'foundry-interior',
+            kind: PLANE_KINDS.INTERIOR,
+            returnTo
+        });
+        if (!entered.entered) return false;
+        this.planeState = entered.state;
+        this.captureSurfaceCameraBeforePortal();
+        this.applyPortalCameraProfile(entered.camera);
+
+        if (this.chunkGroups) this.chunkGroups.visible = false;
+        const group = this.mountFoundryInterior(position.x, position.z);
+        if (this.scene && group.parent !== this.scene) this.scene.add(group);
+        this._pocketHoleX = position.x;
+        this._pocketHoleZ = position.z;
+        this.isInPocket = true;
+        this.player.position.set(position.x, POCKET_WORLD_Y, position.z);
+        this.player.scale.set(1, 1, 1);
+        this.player.rotation.set(0, 0, 0);
+        this.setInputEnabled(true);
+        this.snapCameraToPlayer?.();
+        this.showBunkerLine?.('FOUNDRY INTERIOR // WORKBENCH ONLINE // SOUTH AIRLOCK RETURNS TO SURFACE');
+        window.dispatchEvent(new CustomEvent('portal-plane-entered', {
+            detail: { plane: entered.plane, depth: this.planeState.stack.length - 1 }
+        }));
+        return true;
+    }
+
     enterPocket(holeWorldX, holeWorldZ) {
         const transition = beginTransition(this.planeState ?? createPlaneStack());
         if (!transition.began) return false;
@@ -23573,6 +23706,7 @@ export class ThreeGame {
         const transition = beginTransition(this.planeState ?? createPlaneStack());
         if (!transition.began) return false;
         this.planeState = endTransition(transition.state).state;
+        const leavingPlane = activePlane(this.planeState);
         const left = leavePlane(this.planeState);
         if (!left.left) return false;
         this.planeState = left.state;
@@ -23593,8 +23727,14 @@ export class ThreeGame {
         this.isInPocket = false;
         this._pocketHoleX = null;
         this._pocketHoleZ = null;
+        if (this._portalPromptLabel) {
+            this._portalPromptLabel = null;
+            window.dispatchEvent(new CustomEvent('camp-prompt-clear'));
+        }
 
-        this.fillHoleAt(holeWorldX, holeWorldZ);
+        if (leavingPlane?.kind === PLANE_KINDS.SUBLEVEL) {
+            this.fillHoleAt(holeWorldX, holeWorldZ);
+        }
         this.restoreSurfaceCameraAfterPortal?.();
         window.dispatchEvent(new CustomEvent('portal-plane-left', {
             detail: { plane: left.plane, returnTo: left.returnTo }
@@ -29808,6 +29948,47 @@ export class ThreeGame {
         const key = this.getWallKey(this._pocketHoleX, this._pocketHoleZ);
         const group = this.pocketGroups?.get(key);
         if (!group) return;
+
+        const plane = activePlane(this.planeState);
+        const pocket = this.pocketCache?.get(key);
+        let portalPrompt = null;
+        if (pocket) {
+            const originX = this._pocketHoleX - pocket.centerCell.x;
+            const originZ = this._pocketHoleZ - pocket.centerCell.y;
+            const exitX = originX + pocket.climbPoint.x;
+            const exitZ = originZ + pocket.climbPoint.y;
+            if (plane?.id === 'foundry-interior'
+                && Math.hypot(this.player.position.x - this._pocketHoleX,
+                    this.player.position.z - this._pocketHoleZ) <= 2.1) {
+                portalPrompt = 'USE FABRICATION WORKBENCH';
+            } else if (Math.hypot(this.player.position.x - exitX,
+                this.player.position.z - exitZ) <= 1.8) {
+                portalPrompt = plane?.kind === PLANE_KINDS.INTERIOR
+                    ? 'EXIT THROUGH SOUTH AIRLOCK'
+                    : 'CLIMB TO SURFACE';
+            }
+        }
+        if (portalPrompt !== (this._portalPromptLabel ?? null)) {
+            this._portalPromptLabel = portalPrompt;
+            window.dispatchEvent(new CustomEvent(
+                portalPrompt ? 'camp-prompt-nearby' : 'camp-prompt-clear',
+                portalPrompt ? { detail: { label: portalPrompt } } : undefined
+            ));
+        }
+
+        // Pocket/interior architecture uses local coordinates under a plane
+        // group. Resolve proximity in world space so deferred kit GLBs load
+        // after entry instead of comparing local (5,5) to a distant world tile.
+        for (const child of group.children) {
+            if (!child.userData?.world3dModelType || child.userData.world3dRoot) continue;
+            this._portalContentWorldPos ??= new THREE.Vector3();
+            child.getWorldPosition(this._portalContentWorldPos);
+            const distance = Math.hypot(
+                this.player.position.x - this._portalContentWorldPos.x,
+                this.player.position.z - this._portalContentWorldPos.z
+            );
+            if (distance <= 9) this.loadNearbyWorld3dReplacement?.(child);
+        }
 
         const allPickups = this.pickupMeshes;
         this.pickupMeshes = allPickups.filter((mesh) => group.children.includes(mesh));
