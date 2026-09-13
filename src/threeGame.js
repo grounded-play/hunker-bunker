@@ -15081,6 +15081,10 @@ export class ThreeGame {
         if (!rested.advanced) return false;
         this.dayState = rested.state;
         this.persistDayCycleState();
+        // The Foundry interior is the first authored between-day tableau. Its
+        // existing pocket-plane isolation pauses surface combat while the
+        // player shops, and exiting later returns them to this exact camp.
+        const enteredRestSpace = this.enterFoundryInterior?.() ?? false;
         this.setInputEnabled?.(false);
         window.dispatchEvent(new CustomEvent('day-rest-open', {
             detail: {
@@ -15089,7 +15093,8 @@ export class ThreeGame {
                 day: this.dayState.day,
                 difficulty: rested.difficulty,
                 expired: rested.expired,
-                closing: sleeping.closing
+                closing: sleeping.closing,
+                safeSpace: enteredRestSpace ? 'foundry-interior' : 'camp-exterior'
             }
         }));
         return true;
@@ -15101,6 +15106,9 @@ export class ThreeGame {
         this.dayState = result.state;
         this.persistDayCycleState();
         this.setInputEnabled?.(true);
+        if (activePlane(this.planeState)?.id === 'foundry-interior') {
+            this.showBunkerLine?.(`DAY ${this.dayState.day} // FOUNDRY SAFE PHASE COMPLETE // SOUTH AIRLOCK OPEN`);
+        }
         window.dispatchEvent(new CustomEvent('day-expedition-started', {
             detail: { day: this.dayState.day }
         }));

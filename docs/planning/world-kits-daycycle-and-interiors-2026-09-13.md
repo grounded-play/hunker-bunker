@@ -550,3 +550,25 @@ Focused evidence covers warning-before-mutation, confirmation and expiry,
 Meridian first-contact resolution, Vesper holdout resolution, Tallow's resolved
 and expired paths, Suture option gating, and the existing save repair and
 single-advance invariants.
+
+---
+
+## 16. Runtime connection pass — rest becomes a place
+
+The between-day phase now uses the authored Foundry interior from §14 whenever
+that structure is available. Sleep records the exact camp position, moves the
+operator into the covered workshop plane, pauses the exterior chunk simulation,
+then opens fabrication. Input remains locked behind the fabrication interface
+until the player finishes preparing the next expedition.
+
+Closing fabrication advances `RESTING → EXPEDITION` while leaving the operator
+inside the workshop. The south airlock is then the physical departure action;
+using it restores the exact camp where sleep began. This produces a readable
+sequence—camp bedroll → protected workshop → loadout decisions → airlock → new
+day—without adding a second teleport or duplicating the proven portal stack.
+
+If the Foundry has not yet been discovered, rest deliberately falls back to the
+camp exterior and reports that fallback in the `day-rest-open` event. The day
+loop therefore remains usable in unusual saves while ordinary progression gains
+a genuinely safe authored space. Focused runtime coverage proves relocation,
+input locking, and the emitted safe-space identity.

@@ -40,6 +40,24 @@ describe('ThreeGame day-cycle runtime bridge', () => {
         expect(JSON.parse(localStorage.getItem('hb_day_cycle')).day).toBe(2);
     });
 
+    it('moves rest into the authored Foundry interior when it is available', () => {
+        const events = [];
+        window.dispatchEvent = (event) => events.push(event);
+        const game = {
+            dayState: createDayState(),
+            enterFoundryInterior: vi.fn(() => true),
+            setInputEnabled: vi.fn(),
+            persistDayCycleState: ThreeGame.prototype.persistDayCycleState
+        };
+
+        ThreeGame.prototype.beginCampRest.call(game, { id: 'camp_tallow', label: 'TALLOW' });
+
+        expect(game.enterFoundryInterior).toHaveBeenCalledOnce();
+        expect(game.setInputEnabled).toHaveBeenLastCalledWith(false);
+        expect(events.find((event) => event.type === 'day-rest-open')?.detail.safeSpace)
+            .toBe('foundry-interior');
+    });
+
     it('returns to expedition only when the rest UI closes', () => {
         const game = {
             dayState: { ...createDayState(), day: 4, phase: REST_PHASES.RESTING },
