@@ -100,7 +100,72 @@ def setup_cycles_and_color_management(scene: bpy.types.Scene) -> None:
     scene["volume_anisotropy"] = VOLUME_ANISOTROPY
 
 
-SPACE_HDRI_PATH = "art/source/hdri/space_nebula_4k.exr"
+SPACE_HDRI_PATH = "art/source/hdri/game_deep_space_4k.exr"
+GAME_SPACE_LAYERS = (
+    ("public/sky/cinematic_deep_space_panorama.jpg", 0.0, 1.0),
+)
+
+
+def build_game_space_sky_nodes(output_node, links, nodes, strength: float = 1.0):
+    """Build the film sky from the same painted layers used by the game.
+
+    All three inputs are 2:1 sky paintings, so Environment Texture can map them
+    panoramically without stretching a square billboard around the horizon.
+    Violet carries the cyberbiohorror identity, ember keeps skin/metal from
+    receiving cyan-only reflections, and the core supplies dense stars and a
+    readable galactic band. Layer gain is allowed above one before the
+    Background shader: that is what turns LDR paintings into a useful authored
+    HDR environment rather than a bright wallpaper that contributes no light.
+    """
+    base_dir = get_base_dir()
+    if not all((base_dir / path).is_file() for path, _, _ in GAME_SPACE_LAYERS):
+        return None
+
+    tex_coord = nodes.new("ShaderNodeTexCoord")
+    tex_coord.location = (-1300, 0)
+    underfield = nodes.new("ShaderNodeRGB")
+    underfield.location = (-720, 420)
+    underfield.outputs[0].default_value = (0.003, 0.008, 0.025, 1.0)
+    composite = underfield.outputs[0]
+    for index, (relative_path, yaw, opacity) in enumerate(GAME_SPACE_LAYERS):
+        mapping = nodes.new("ShaderNodeMapping")
+        mapping.location = (-1120, 160 - index * 260)
+        mapping.inputs["Rotation"].default_value[2] = yaw
+        links.new(tex_coord.outputs["Generated"], mapping.inputs["Vector"])
+
+        environment = nodes.new("ShaderNodeTexEnvironment")
+        environment.name = f"GameSky_{Path(relative_path).stem}"
+        environment.label = f"GAME SKY · {Path(relative_path).stem}"
+        environment.location = (-880, 160 - index * 260)
+        environment.image = bpy.data.images.load(str(base_dir / relative_path), check_existing=True)
+        # Matches the game's ADDITIVE_LAYER_IDS contract: these skies read RGB
+        # and intentionally ignore their keyed alpha. Blender otherwise
+        # premultiplies transparent texels into black circular voids.
+        environment.image.alpha_mode = "CHANNEL_PACKED"
+        links.new(mapping.outputs["Vector"], environment.inputs["Vector"])
+
+        add = nodes.new("ShaderNodeMixRGB")
+        add.blend_type = "ADD"
+        add.inputs["Fac"].default_value = opacity
+        add.location = (-560 + index * 180, -80 - index * 90)
+        links.new(composite, add.inputs[1])
+        links.new(environment.outputs["Color"], add.inputs[2])
+        composite = add.outputs["Color"]
+
+    # Scene-linear peaks above 1.0 create real colored speculars and bounce.
+    hdr_gain = nodes.new("ShaderNodeVectorMath")
+    hdr_gain.operation = "SCALE"
+    hdr_gain.location = (220, -180)
+    hdr_gain.inputs[3].default_value = 1.8
+    links.new(composite, hdr_gain.inputs[0])
+
+    sky_bg = nodes.new("ShaderNodeBackground")
+    sky_bg.name = "GameDeepSpaceHDR"
+    sky_bg.label = "GAME SKY · HDR LIGHTING"
+    sky_bg.location = (440, 80)
+    sky_bg.inputs["Strength"].default_value = strength
+    links.new(hdr_gain.outputs["Vector"], sky_bg.inputs["Color"])
+    return sky_bg
 
 
 def build_space_sky_nodes(node_tree, output_node, links, nodes, strength: float = 1.0):
@@ -120,6 +185,10 @@ def build_space_sky_nodes(node_tree, output_node, links, nodes, strength: float 
       - stars, high-frequency Voronoi with a hard threshold so points stay
         points rather than blurring into a grey wash.
     """
+    game_sky = build_game_space_sky_nodes(output_node, links, nodes, strength)
+    if game_sky is not None:
+        return game_sky
+
     coord = nodes.new("ShaderNodeTexCoord")
     coord.location = (-1200, -400)
 
@@ -226,13 +295,18 @@ def setup_world_atmosphere(
         sky_bg.inputs["Strength"].default_value = world_strength
         links.new(env.outputs["Color"], sky_bg.inputs["Color"])
         links.new(sky_bg.outputs["Background"], output_node.inputs["Surface"])
-        if volume_density > 0:
-            vol = nodes.new(type="ShaderNodeVolumeScatter")
-            vol.location = (100, -100)
-            vol.inputs["Color"].default_value = (0.35, 0.55, 0.75, 1.0)
-            vol.inputs["Density"].default_value = volume_density
-            vol.inputs["Anisotropy"].default_value = VOLUME_ANISOTROPY
-            links.new(vol.outputs["Volume"], output_node.inputs["Volume"])
+        # Never put an infinite volume in a space world. Even modest density
+        # extinguishes every environment ray and turns a detailed HDR into a
+        # flat black background. Exterior snow/exhaust haze belongs in bounded
+        # volume geometry near the set.
+        return
+
+    if space_sky:
+        # Source assets remain directly usable before (or without) a bake. The
+        # EXR is a render optimisation and interchange artifact, not a hidden
+        # prerequisite for getting the game's sky into a scene.
+        sky_bg = build_space_sky_nodes(world.node_tree, output_node, links, nodes, world_strength)
+        links.new(sky_bg.outputs["Background"], output_node.inputs["Surface"])
         return
 
     tex_coord = nodes.new(type="ShaderNodeTexCoord")
@@ -1760,7 +1834,13 @@ def build_ending_scene(ending_name: str, output_path: Path) -> None:
     # their sky is actually visible and should be space. The interior sets keep
     # the bounce gradient, where a starfield would be a window onto nothing.
     exterior = ending_name in ("alien_exodus", "empty_husk", "all")
-    setup_world_atmosphere(scene, space_sky=exterior)
+    setup_world_atmosphere(
+        scene, space_sky=exterior,
+        # The transferred sky contains 1.8x scene-linear peaks. Keep those HDR
+        # highlights for reflections while exposing the world as deep night;
+        # the moon and engine rigs remain the readable subject keys.
+        world_strength=0.18 if exterior else 0.9,
+    )
 
     root_col = bpy.context.scene.collection
 
