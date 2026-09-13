@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { ACT2_ENDING_CUTSCENES } from '../src/act2.js';
-import { outputName, planRenders, frameCount, sequenceSlug, cameraName } from './render-ending-shots.mjs';
+import { outputName, planRenders, frameCount, sequenceSlug, cameraName, encodeArgs, FPS } from './render-ending-shots.mjs';
 
 const manifest = JSON.parse(readFileSync('scripts/blender/manifests/ending-shots.json', 'utf8'));
 
@@ -63,5 +63,34 @@ describe('ending shot render plan', () => {
         for (const shot of plan.shots) {
             expect(shot.blend).toMatch(/blender-prerenders\/scenes\/ending_/);
         }
+    });
+});
+
+describe('encode', () => {
+    it('matches Blender\'s frame padding exactly', () => {
+        // -o frame-#### writes frame-0021.png; a mismatched pattern makes
+        // ffmpeg find zero frames and produce an empty clip without erroring
+        // in any obvious way.
+        expect(encodeArgs('d', 'o.webm')).toContain('d/frame-%04d.png');
+    });
+
+    it('encodes at the project frame rate', () => {
+        const args = encodeArgs('d', 'o.webm');
+        expect(args[args.indexOf('-framerate') + 1]).toBe(String(FPS));
+    });
+
+    it('spends less bitrate on a draft than on delivery', () => {
+        const draft = encodeArgs('d', 'o.webm', { draft: true });
+        const delivery = encodeArgs('d', 'o.webm');
+        expect(parseInt(draft[draft.indexOf('-b:v') + 1], 10))
+            .toBeLessThan(parseInt(delivery[delivery.indexOf('-b:v') + 1], 10));
+    });
+
+    it('uses VP9, which the shipped endings already are', () => {
+        expect(encodeArgs('d', 'o.webm')).toEqual(expect.arrayContaining(['-c:v', 'libvpx-vp9']));
+    });
+
+    it('drops audio, which is muxed separately after audition clears', () => {
+        expect(encodeArgs('d', 'o.webm')).toContain('-an');
     });
 });

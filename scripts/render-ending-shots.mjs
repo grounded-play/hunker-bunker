@@ -126,9 +126,66 @@ function renderShot(shot) {
     return result.status === 0;
 }
 
+/**
+ * ffmpeg args to assemble one sequence's shot frames into the .webm the game
+ * loads. Shots are concatenated in manifest order, which is story order.
+ *
+ * VP9 rather than VP8: the five shipped ending clips are already .webm, and
+ * VP9 at the same bitrate is visibly better on the dark, low-contrast material
+ * these endings are made of, where VP8 bands badly in near-black gradients.
+ */
+export function encodeArgs(frameGlobDir, out, { fps = FPS, draft = false } = {}) {
+    return [
+        '-y',
+        '-framerate', String(fps),
+        // %04d matches Blender's -o frame-#### padding exactly.
+        '-i', path.join(frameGlobDir, 'frame-%04d.png'),
+        '-an',
+        '-c:v', 'libvpx-vp9',
+        // A placeholder pass is for timing and composition, so bitrate is the
+        // cheapest thing to give up; a delivery pass should not use draft.
+        '-b:v', draft ? '1200k' : '4000k',
+        '-pix_fmt', 'yuv420p',
+        // Even GOP so seeking in review tools lands where the reviewer clicked.
+        '-g', '48',
+        out
+    ];
+}
+
+function encodeSequence(plan, sequenceId, { draft = false } = {}) {
+    const sequence = plan.sequences.find((s) => s.id === sequenceId);
+    if (!sequence) {
+        console.error(`No sequence "${sequenceId}".`);
+        return 1;
+    }
+    const shots = plan.shots.filter((shot) => shot.sequenceId === sequenceId);
+    const missing = shots.filter((shot) => !existsSync(shot.frameDir));
+    if (missing.length > 0) {
+        console.error(`Not rendered yet: ${missing.map((s) => s.id).join(', ')}`);
+        return 1;
+    }
+    // One encode per shot, then concat -- rather than one pass over a merged
+    // directory, which would renumber frames and silently reorder the cut.
+    for (const shot of shots) {
+        const out = path.join(shot.frameDir, `${shot.id}.webm`);
+        const res = spawnSync('ffmpeg', encodeArgs(shot.frameDir, out, { draft }), { stdio: 'inherit' });
+        if (res.status !== 0) {
+            console.error(`Encode failed for ${shot.id}.`);
+            return 1;
+        }
+        console.log(`  ${shot.id} -> ${out}`);
+    }
+    console.log(`\n${shots.length} shot clips written for ${sequenceId}.`);
+    console.log(`Concat them into ${sequence.output} once the cut is approved.`);
+    return 0;
+}
+
 function main(argv) {
     const plan = planRenders(loadManifest());
     const renderArg = argv.includes('--render') ? argv[argv.indexOf('--render') + 1] : null;
+    if (argv.includes('--encode')) {
+        return encodeSequence(plan, argv[argv.indexOf('--encode') + 1], { draft: argv.includes('--draft') });
+    }
 
     if (!renderArg) {
         console.log(`${plan.shots.length} shots across ${plan.sequences.length} sequences`);
@@ -143,6 +200,14 @@ function main(argv) {
         }
         console.log('\nAll scenes present and every frame range usable.');
         return 0;
+    }
+
+    const draft = argv.includes('--draft');
+    if (draft) {
+        // Passed through to select_shot_camera.py, which applies them per scene.
+        process.env.HB_DRAFT_SAMPLES = process.env.HB_DRAFT_SAMPLES ?? '64';
+        process.env.HB_DRAFT_SCALE = process.env.HB_DRAFT_SCALE ?? '50';
+        console.log(`Draft pass: ${process.env.HB_DRAFT_SAMPLES} samples at ${process.env.HB_DRAFT_SCALE}%\n`);
     }
 
     const targets = renderArg === 'all'
