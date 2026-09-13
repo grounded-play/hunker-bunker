@@ -228,6 +228,8 @@
     "3d/runtime/secrets/teacup-roach.glb",
     "3d/runtime/spore-snail-boss.glb",
     "3d/runtime/storage-locker.glb",
+    "3d/runtime/structures/structure_reference_49m.collision.glb",
+    "3d/runtime/structures/structure_reference_49m.glb",
     "3d/runtime/tank-rigged.glb",
     "3d/scouting-scout/Scout.game.glb",
     "Cockroach_transform.mp4",
@@ -262,6 +264,12 @@
     "art-remaster/enemy-v5/snails/final/cybersnail-walk-v5.png",
     "art-remaster/enemy-v5/snails/final/sporesnail-walk-v5.png",
     "audio/ambient/amb_camp_rain_loop.wav",
+    "audio/cc0-derived/engines/ship_engine_low_01.ogg",
+    "audio/cc0-derived/hive/resin_shift_01.ogg",
+    "audio/cc0-derived/hive/resin_shift_02.ogg",
+    "audio/cc0-derived/mechanisms/door_lock_body_01.ogg",
+    "audio/cc0-derived/mechanisms/door_lock_body_02.ogg",
+    "audio/cc0-derived/mechanisms/metal_lock_impact_01.ogg",
     "audio/foley/bunker/foley_bunker_blackout_breaker.wav",
     "audio/foley/bunker/foley_bunker_facility_room_loop.wav",
     "audio/foley/bunker/foley_bunker_nav_corruption.wav",
@@ -2275,6 +2283,16 @@
       "classification": "runtime-required"
     },
     {
+      "path": "3d/runtime/structures/structure_reference_49m.collision.glb",
+      "bytes": 1856,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/structures/structure_reference_49m.glb",
+      "bytes": 4572,
+      "classification": "runtime-required"
+    },
+    {
       "path": "3d/runtime/tank-rigged.glb",
       "bytes": 5525480,
       "classification": "runtime-required"
@@ -2902,6 +2920,36 @@
     {
       "path": "audio/ambient/amb_camp_rain_loop.wav",
       "bytes": 5760078,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/cc0-derived/engines/ship_engine_low_01.ogg",
+      "bytes": 43081,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/cc0-derived/hive/resin_shift_01.ogg",
+      "bytes": 13939,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/cc0-derived/hive/resin_shift_02.ogg",
+      "bytes": 76737,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/cc0-derived/mechanisms/door_lock_body_01.ogg",
+      "bytes": 10793,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/cc0-derived/mechanisms/door_lock_body_02.ogg",
+      "bytes": 11320,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/cc0-derived/mechanisms/metal_lock_impact_01.ogg",
+      "bytes": 8707,
       "classification": "runtime-required"
     },
     {

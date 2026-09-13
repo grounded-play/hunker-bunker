@@ -15,7 +15,8 @@ const DOOR_SET = Object.freeze({
 
 describe('game soundset selection', () => {
     it('starts with no unapproved runtime asset dependencies', () => {
-        expect(GAME_SOUNDSETS).toEqual({});
+        expect(Object.keys(GAME_SOUNDSETS)).toEqual(['door_slide_horiz', 'hive_webs_sticky']);
+        expect(Object.values(GAME_SOUNDSETS).every(validateSoundset)).toBe(true);
         expect(Object.isFrozen(GAME_SOUNDSETS)).toBe(true);
     });
 

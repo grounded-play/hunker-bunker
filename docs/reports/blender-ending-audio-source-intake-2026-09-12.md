@@ -94,3 +94,19 @@ Complete `AUD-02/AUD-03` by generating an audition catalog with duration,
 sample rate, channels, peak, integrated/short-term loudness where meaningful,
 and a human keep/reject/possible decision. Then create the ten-second palette
 test from approved derivatives, not from the untouched originals.
+
+## First promotion — 2026-09-13
+
+Six Kenney CC0 derivatives were promoted for a shared film/game vertical slice. Runtime hashes:
+
+| File | SHA-256 |
+| --- | --- |
+| `engines/ship_engine_low_01.ogg` | `1814b46e52d5b2643d1b56fb2e00ee0eb27da9a50bac2f53bb161c591577aead` |
+| `hive/resin_shift_01.ogg` | `4a996463c77a7f2f469ad977a6cbce4b1e9963fac19356e67465bdcdfeb50d99` |
+| `hive/resin_shift_02.ogg` | `0b538d84c0d0465caca9b75916cac464a63fa70143e676be6d9f152162c311b1` |
+| `mechanisms/door_lock_body_01.ogg` | `08a76cb162d2560395a40a9d30a134a782ebc2f3712812fe5e6cd2b68328aeb5` |
+| `mechanisms/door_lock_body_02.ogg` | `a4a9ba1def6d16eb774ec6d7a273fa95796a1f8fb50f491682e3b3e04d13e3f1` |
+| `mechanisms/metal_lock_impact_01.ogg` | `51cd586016e8d165d3915bba49661ea705f9053b32665e9573ee0f25628f8fe0` |
+
+The ending cue manifest uses the same derivatives as gameplay. Door and hive soundsets retain their
+previous shipped cues as data-only fallbacks, so rollback does not require code removal.

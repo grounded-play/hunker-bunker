@@ -206,3 +206,25 @@ Sprint 30 does not need to hand-document every historical file before any other 
 Five original images generated with OpenAI ImageGen for this repository: Bunker 404 Lost Squad (4123), Queen Slayer Gold Seal (4126), Void Horizon Sigil (4127), Ancient Core Glyphs (4128), Grand Marshal Relic Crest (4129). Prompts requested single transparent sci-fi fabric/metal badges; no third-party source artwork used. Runtime files are 256px and 512px PNG derivatives, retaining generated alpha. Queen Slayer Gold Seal has its own new file pair and no longer aliases the red Queen Slayer Emblem. No external marketplace rights or publication approval is inferred from generation.
 
 The legacy `chroma/` source slot for these five replacements also stores the original transparent master; no green-screen derivative is required or used.
+
+## September 13, 2026 — CC0 cinematic/gameplay audio derivatives
+
+- Source: Kenney, “Sci-Fi Sounds,” downloaded from OpenGameArt. The retained pack license declares
+  CC0; source page and `License.txt` are stored under
+  `art/source/audio/cinematic-source/opengameart/kenney-sci-fi-sounds/`.
+- Runtime derivatives: six Vorbis files under `public/audio/cc0-derived/`, approximately 156 KiB
+  total. They are shared by ending-picture cue manifests and the door/hive gameplay soundsets.
+- Mechanical sources: `doorClose_000.ogg` (SHA-256
+  `c9134651ebbd7c016f90393aee495ff8120bd343bb7569b689a7506987ebd6c2`),
+  `doorClose_001.ogg` (`2153e83ff9880c78f9539aa5dcce80fc9e3b39c6fa0f8dec9325ec6d7ea2c9d5`),
+  and `impactMetal_000.ogg` (`956c6612a256aa1a67a2327fffe2454f6b1d82e4c1c2be28fd66916335d5b1d6`).
+- Biological sources: `slime_000.ogg`
+  (`480ee82b690136ea9db6966a3c3033356b8274752795c4e37afd6b6defcfacff`) and
+  `slime_001.ogg` (`822ca475d71e18ef6bba707dbe6bff2bd493d3457b2552f7473d23022c1257ca`).
+- Engine source: `spaceEngineLow_000.ogg`
+  (`d7deee8d7217ce63aab802ad7365a59cacfd243392dc1bd03b0a9d454aa494df`).
+- Processing: FFmpeg resample to 48 kHz, level normalization with true-peak margin, family-specific
+  filtering, and restrained pitch/time transformation. No voice, music, or trademark callout is
+  present. Output hashes are recorded in the source-intake report.
+- State: integrated under CC0; attribution optional. Raw sources remain ignored and retained for
+  reproducibility rather than being packaged.

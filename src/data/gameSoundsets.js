@@ -1,11 +1,21 @@
 const VALID_RETRIGGER_POLICIES = new Set(['reject', 'replace-oldest', 'replace-quietest']);
 
 /**
- * Runtime soundset definitions live here once edited assets pass audition and
- * provenance review. Keeping the initial registry empty prevents source-pack
- * files from becoming accidental shipping dependencies.
+ * Runtime soundset definitions live here only after edited assets pass
+ * provenance review. Raw source-pack files never become shipping dependencies.
  */
-export const GAME_SOUNDSETS = Object.freeze({});
+export const GAME_SOUNDSETS = Object.freeze({
+    door_slide_horiz: Object.freeze({
+        variants: Object.freeze(['cc0_door_lock_body_01', 'cc0_door_lock_body_02', 'cc0_metal_lock_impact_01']),
+        fallback: 'door_slide_horiz1', bus: 'world', gain: 0.78,
+        pitch: Object.freeze([0.96, 1.04]), noImmediateRepeat: true, retrigger: 'replace-oldest'
+    }),
+    hive_webs_sticky: Object.freeze({
+        variants: Object.freeze(['cc0_resin_shift_01', 'cc0_resin_shift_02']),
+        fallback: 'hive_webs_sticky', bus: 'world', gain: 0.72,
+        pitch: Object.freeze([0.92, 1.06]), noImmediateRepeat: true, retrigger: 'replace-quietest'
+    })
+});
 
 export function validateSoundset(soundset) {
     if (!soundset || !Array.isArray(soundset.variants) || soundset.variants.length === 0) return false;
