@@ -2834,6 +2834,16 @@ function updateDailyOpsUI() {
     }
 }
 
+function getDailyOpsPresentation() {
+    const record = getDailyOpsRecord();
+    return {
+        disabled: Boolean(record?.completed),
+        label: record?.completed
+            ? `${record.score ?? 0} PTS // ${record.grade ?? 'D'}`
+            : record?.attempted ? 'IN PROGRESS' : 'READY'
+    };
+}
+
 let _isDailyOpsRun = false;
 
 function refreshCharBestScores() {
@@ -8124,6 +8134,11 @@ function ensureArmoryInitialized() {
                 onBack: () => closeArmoryScreen({ embark: false }),
                 onOpenVault: () => openSteamVaultModal(),
                 onOpenSettings: () => openSettingsModal(),
+                onDailyOps: () => {
+                    pendingArmoryEmbarkAction = beginDailyOpsRun;
+                    closeArmoryScreen({ embark: true });
+                },
+                getDailyOpsStatus: getDailyOpsPresentation,
                 onClassChange: (cls) => {
                     saveHeroType(cls);
                     document.querySelectorAll('.char-card').forEach((card) => {
@@ -8309,16 +8324,10 @@ if (startBtn) {
     });
 }
 
-// Daily Ops button
-const dailyOpsBtn = document.getElementById('daily-ops-btn');
-if (dailyOpsBtn) {
-    dailyOpsBtn.addEventListener('click', () => {
-        const record = getDailyOpsRecord();
-        if (record?.completed) return;
-        // Same stale-session leak as titleNewRunBtn above -- Daily Ops is
-        // also never part of multiplayer's #start-game replay chain.
-        clearMultiplayerSession();
-        openArmoryGate(() => {
+function beginDailyOpsRun() {
+    const record = getDailyOpsRecord();
+    if (record?.completed) return;
+    clearMultiplayerSession();
             saveDailyOpsRecord({ attempted: true, completed: false, date: getTodayDateString() });
             _isDailyOpsRun = true;
             if (window.game) {
@@ -8368,8 +8377,14 @@ if (dailyOpsBtn) {
                 }
                 // Defaults to active class door
             );
-        });
-    });
+}
+
+// Compatibility for saves/alternate shells that still render the legacy
+// button. The primary Daily Ops entry now lives beside standard deployment in
+// the full-stage Armory.
+const dailyOpsBtn = document.getElementById('daily-ops-btn');
+if (dailyOpsBtn) {
+    dailyOpsBtn.addEventListener('click', () => openArmoryGate(beginDailyOpsRun));
 }
 
 // Fullscreen State Sync Listener
@@ -13716,22 +13731,38 @@ async function renderPreviewFrame(type, frameIndex = previewFrameIndex) {
 
 }
 
-function syncHeroPreview(type) {
+async function syncHeroPreview(type) {
     const data = heroData[type];
     if (!data) return;
 
     activePreviewType = type;
-    const show3dHero = Boolean(scoutHeroPreview);
-    void scoutHeroPreview?.setType(type);
-    scoutHeroPreview?.setVisible(true);
-    previewSprite?.classList.toggle('hidden', show3dHero);
+    // The sprite is the posed, class-correct fallback while the replacement
+    // rig and its idle clip load. Never reveal the previous class or a bind
+    // pose just because an async GLB is late.
+    scoutHeroPreview?.setVisible(false);
+    previewSprite?.classList.remove('hidden');
     if (previewName) previewName.textContent = data.name;
     if (previewFallback) {
         previewFallback.src = assetUrl(PREVIEW_PORTRAITS[type] ?? PREVIEW_PORTRAITS.SCOUT);
-        previewFallback.classList.toggle('hidden', show3dHero);
+        previewFallback.classList.remove('hidden');
     }
     previewFrameIndex = 0;
     void renderPreviewFrame(type, previewFrameIndex);
+
+    if (scoutHeroPreview) {
+        const loaded = await Promise.race([
+            scoutHeroPreview.setType(type).catch((error) => {
+                console.warn('[hero-preview] keeping posed sprite fallback', error);
+                return false;
+            }),
+            new Promise((resolve) => window.setTimeout(() => resolve(false), 8000))
+        ]);
+        if (activePreviewType === type && loaded) {
+            scoutHeroPreview.setVisible(true);
+            previewSprite?.classList.add('hidden');
+            previewFallback?.classList.add('hidden');
+        }
+    }
 
     // Update custom properties on preview stage wrapper for matching class glow colors
     const stage = document.querySelector('.char-preview-stage');
@@ -13825,8 +13856,8 @@ function triggerHeroPreviewSwap(type) {
     AudioManager.play('door_slam_vertical', { volume: 0.2 });
     AudioManager.play('door_gears_spin', { volume: 0.12 });
 
-    previewDoorTimer = window.setTimeout(() => {
-        syncHeroPreview(targetType);
+    previewDoorTimer = window.setTimeout(async () => {
+        await syncHeroPreview(targetType);
         previewDoor.classList.remove('closing');
         previewDoor.classList.add('ready-to-open');
         if (mapDoor) {

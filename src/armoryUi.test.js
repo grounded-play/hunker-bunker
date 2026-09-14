@@ -231,6 +231,7 @@ describe('createArmoryUi', () => {
     });
 
     it('handles navigation button clicks', () => {
+        const onDailyOps = vi.fn();
         const ui = createArmoryUi({
             container,
             loadoutManager,
@@ -238,6 +239,8 @@ describe('createArmoryUi', () => {
             onEmbark,
             onBack,
             onOpenVault,
+            onDailyOps,
+            getDailyOpsStatus: () => ({ label: 'READY', disabled: false }),
             ownership: ownAll()
         });
 
@@ -246,6 +249,7 @@ describe('createArmoryUi', () => {
         const btnBack = container.querySelector('#armory-btn-back');
         const btnVault = container.querySelector('#armory-btn-vault');
         const btnEmbark = container.querySelector('#armory-btn-embark');
+        const btnDaily = container.querySelector('#armory-btn-daily');
 
         btnBack.click();
         expect(onBack).toHaveBeenCalled();
@@ -255,6 +259,9 @@ describe('createArmoryUi', () => {
 
         btnEmbark.click();
         expect(onEmbark).toHaveBeenCalled();
+
+        btnDaily.click();
+        expect(onDailyOps).toHaveBeenCalled();
     });
 
     it('switches classes properly and re-renders allowed equipment', () => {
@@ -454,7 +461,7 @@ describe('createArmoryUi ownership gating', () => {
         openSlot(container, 'voicebank').dispatchEvent(tileClick('4148'));
         expect(loadoutManager.state.voicePackId).toBe('4148');
         expect(globalThis.window.AudioManager.playVoiceCallout)
-            .toHaveBeenCalledWith('boss_spotted', { volume: 0.9 });
+            .toHaveBeenCalledWith('boss_spotted', { volume: 0.9, audition: true });
 
         globalThis.window = previousWindow;
     });

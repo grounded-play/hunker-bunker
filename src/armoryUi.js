@@ -107,6 +107,8 @@ export function createArmoryUi({
     onBack,
     onOpenVault,
     onOpenSettings,
+    onDailyOps,
+    getDailyOpsStatus,
     onClassChange,
     ownership
 }) {
@@ -504,6 +506,7 @@ export function createArmoryUi({
         const modifiers = loadoutManager.getActiveModifiers(cls);
         const chassisSkinId = loadoutManager.getEquippedChassisSkinId?.();
         const selectedWeapon = pickerFields().weapon.currentName();
+        const dailyOps = getDailyOpsStatus?.() ?? { label: 'READY', disabled: false };
 
         const hasActiveOverclocks = Boolean(
             (modifiers.scrapMagnetRadiusBonus > 0) ||
@@ -693,12 +696,6 @@ export function createArmoryUi({
                                 <label data-i18n="ui.armory.f_voicebank">ALT RADIO VOICE BANK</label>
                                 ${slotHtml('voicebank')}
                             </div>
-                            <div class="telemetry-box">
-                                <div class="telemetry-title" data-i18n="ui.armory.telemetry_title">SUIT TELEMETRY STATUS</div>
-                                <div class="telemetry-item"><span data-i18n="ui.armory.tel_thermal">Thermal Cryo-Mesh:</span> <strong data-i18n="ui.armory.tel_thermal_val">NOMINAL 100%</strong></div>
-                                <div class="telemetry-item"><span data-i18n="ui.armory.tel_rad">Radiation Seal:</span> <strong data-i18n="ui.armory.tel_rad_val">ACTIVE</strong></div>
-                                <div class="telemetry-item"><span data-i18n="ui.armory.tel_turntable">Turntable Staging:</span> <strong data-i18n="ui.armory.tel_turntable_val">360° DRAG ORBIT</strong></div>
-                            </div>
                         </section>
                     </div>
                 </div>
@@ -710,6 +707,9 @@ export function createArmoryUi({
                     </button>
                     <button id="armory-btn-vault" class="armory-btn tertiary-btn">
                         <span data-i18n="ui.armory.btn_vault">STEAM VAULT &amp; FAB BAY</span> <span class="btn-keyhint">[V]</span>
+                    </button>
+                    <button id="armory-btn-daily" class="armory-btn tertiary-btn armory-btn--daily" ${dailyOps.disabled ? 'disabled' : ''}>
+                        <span>DAILY OPS // ${dailyOps.label}</span>
                     </button>
                     <button id="armory-btn-embark" class="armory-btn primary-btn embark-glow">
                         <span data-i18n="ui.armory.btn_embark">EMBARK TO BUNKER &gt;&gt;</span> <span class="btn-keyhint">[ENTER / A]</span>
@@ -838,6 +838,11 @@ export function createArmoryUi({
         container.querySelector?.('#armory-btn-vault')?.addEventListener?.('click', () => {
             playSound('ui_click_confirm1');
             onOpenVault?.();
+        });
+
+        container.querySelector?.('#armory-btn-daily')?.addEventListener?.('click', () => {
+            playSound('ui_click_confirm1');
+            onDailyOps?.();
         });
 
         container.querySelector?.('#armory-btn-embark')?.addEventListener?.('click', () => {

@@ -56,6 +56,7 @@ export async function bootToOperatorMenu(page) {
 // measuring a hidden 0x0 menu/Armory canvas after the flow gains a new gate.
 export async function startRunAndSkipIntro(page) {
     const oneShotActions = [
+        '#title-newrun-btn',
         '#roster-confirm-btn',
         '#start-game',
         '#armory-btn-embark',

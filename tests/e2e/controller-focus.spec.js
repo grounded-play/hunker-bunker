@@ -7,10 +7,12 @@ test.describe('controller-ready modal focus', () => {
         const rosterModal = page.locator('#roster-modal');
         if (await rosterModal.isVisible()) await page.locator('#close-roster-modal').click();
 
-        await page.locator('#daily-ops-btn').focus();
-        await page.keyboard.press('KeyS');
-        await expect(page.locator('#roster-btn')).toBeFocused();
+        expect(await page.locator('.menu-header-actions').evaluate((element) => (
+            getComputedStyle(element).gridTemplateColumns.split(' ').length
+        ))).toBe(3);
+        await expect(page.locator('#daily-ops-btn')).toHaveCount(0);
 
+        await page.locator('#roster-btn').focus();
         await page.keyboard.press('KeyS');
         await expect(page.locator('#steam-vault-btn')).toBeFocused();
 
@@ -281,6 +283,16 @@ test.describe('controller-ready modal focus', () => {
         if (await rosterConfirm.isVisible().catch(() => false)) await rosterConfirm.click();
         await page.locator('#start-game').click();
         await expect(page.locator('#armory-screen')).toBeVisible({ timeout: 30_000 });
+        await expect(page.locator('#armory-btn-daily')).toBeVisible();
+        await expect(page.locator('.telemetry-box')).toHaveCount(0);
+        expect(await page.evaluate(() => {
+            const screen = document.getElementById('armory-screen').getBoundingClientRect();
+            const stage = document.getElementById('game-viewport').getBoundingClientRect();
+            const sidebar = document.querySelector('.armory-controls-sidebar');
+            return Math.abs(screen.left - stage.left) < 1
+                && Math.abs(screen.right - stage.right) < 1
+                && sidebar.scrollHeight <= sidebar.clientHeight;
+        })).toBe(true);
 
         // Chassis always contains Standard plus unlocked community skins; some
         // classes intentionally expose only one weapon archetype.

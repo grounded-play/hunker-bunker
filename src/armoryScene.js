@@ -103,7 +103,7 @@ export async function createArmoryScene(canvas) {
     // the operator/weapon/bay layout intact rather than moving each piece and
     // re-deriving every prop offset around them.
     const STAGE_PAN_X = 0.62;
-    camera.position.set(0.15 + STAGE_PAN_X, 1.45, 4.4);
+    camera.position.set(0.15 + STAGE_PAN_X, 1.42, 3.75);
     camera.lookAt(0.1 + STAGE_PAN_X, 1.15, 0);
 
     // ── Bunker Lighting ──────────────────────────────────────

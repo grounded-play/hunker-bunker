@@ -22127,3 +22127,29 @@ body.contrast-max .hud-panel {
 @media (min-width: 761px) and (max-width: 1180px) and (min-height: 621px) {
   .settings-tabs { grid-template-columns: repeat(3, 1fr); }
 }
+
+/* Hero-select commands occupy a stable 3×3 command deck above INITIALIZE.
+   The semantic column wrappers remain for controller navigation, but do not
+   impose narrow visual rails or an inner scrollbar. */
+#menu .menu-header-actions { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); grid-auto-rows: minmax(0,1fr); align-content: stretch; gap: clamp(8px,1vw,15px); overflow: hidden; }
+#menu .menu-command-column { display: contents; overflow: visible; }
+#menu .menu-command-column::before { display: none; }
+#menu .menu-command { min-height: 0; justify-content: center; padding: 4px; border: 1px solid rgba(255,159,28,.1); background: rgba(0,0,0,.18); }
+#menu .menu-command .start-btn { min-height: 44px !important; }
+
+/* Armory remains inside the stage but uses its space at desktop/Deck scales. */
+.armory-hud { padding: clamp(16px,2.2vh,34px) clamp(18px,2.4vw,44px); gap: clamp(10px,1.4vh,20px); }
+.armory-main-layout { grid-template-columns: minmax(0,1fr) clamp(470px,36%,700px); }
+.armory-controls-sidebar { overflow: hidden; gap: clamp(8px,1vh,14px); }
+.armory-panel { padding: clamp(10px,1.15vh,17px) clamp(12px,1vw,19px); }
+.armory-panel .panel-header h2 { font-size: clamp(16px,1.15vw,22px); }
+.armory-slot { min-height: 44px; }
+.armory-slot__name, .armory-slot__perk { font-size: clamp(12px,.82vw,16px); }
+.armory-btn { min-height: 48px; font-size: clamp(13px,.95vw,18px); }
+.armory-footer { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); }
+.armory-btn--daily:disabled { opacity: .48; cursor: not-allowed; }
+
+@media (max-width: 1180px) {
+  .armory-main-layout { grid-template-columns: minmax(0,1fr) minmax(420px,42%); }
+  .armory-footer { grid-template-columns: repeat(2,minmax(0,1fr)); }
+}
