@@ -2190,16 +2190,22 @@
         </div>
 
         <div class="settings-tabs" role="tablist" aria-label="Settings categories">
-          <button type="button" class="settings-tab active" data-settings-tab="display" role="tab" aria-selected="true">DISPLAY</button>
+          <button type="button" class="settings-tab active" data-settings-tab="session" role="tab" aria-selected="true">SESSION</button>
           <button type="button" class="settings-tab" data-settings-tab="audio" role="tab" aria-selected="false">AUDIO</button>
-          <button type="button" class="settings-tab" data-settings-tab="gameplay" role="tab" aria-selected="false">GAMEPLAY</button>
-          <button type="button" class="settings-tab" data-settings-tab="operator" role="tab" aria-selected="false">OPERATOR</button>
+          <button type="button" class="settings-tab" data-settings-tab="controls" role="tab" aria-selected="false">CONTROLS</button>
+          <button type="button" class="settings-tab" data-settings-tab="camera" role="tab" aria-selected="false">CAMERA &amp; HUD</button>
+          <button type="button" class="settings-tab" data-settings-tab="accessibility" role="tab" aria-selected="false">ACCESSIBILITY</button>
+          <button type="button" class="settings-tab" data-settings-tab="profile" role="tab" aria-selected="false">PROFILE &amp; SAVES</button>
         </div>
 
         <div class="settings-modal-content">
           <!-- Section 1: Display & Graphics -->
-        <div class="settings-category-group" data-settings-panel="display">
-          <div class="settings-category-header" data-i18n="ui.settings.cat_display">DISPLAY & GRAPHICS</div>
+        <div class="settings-category-group" data-settings-panel="session">
+          <div class="settings-category-header">SESSION &amp; DISPLAY</div>
+          <div class="setting-item setting-item--action">
+            <span>RETURN TO GAME</span>
+            <button type="button" class="calibrate-btn settings-action-btn" id="resume-settings">RESUME</button>
+          </div>
           <!-- Stage Resolution was a developer layout label, not a renderer
                setting. Keep the internal dev-console preset, but do not offer
                an inert control in player settings. -->
@@ -2212,6 +2218,14 @@
           <div class="setting-item hidden" id="debug-overlay-setting-row">
             <span data-i18n="ui.settings.debug_overlay">DEBUG OVERLAY</span>
             <label class="toggle"><input type="checkbox" id="main-debug-toggle"> <span class="slider"></span></label>
+          </div>
+          <div class="setting-item setting-item--action setting-item--danger" id="abort-mission-setting-row">
+            <span>ABORT CURRENT MISSION</span>
+            <button class="abort-btn hidden" id="abort-mission">ABORT MISSION</button>
+          </div>
+          <div class="setting-item setting-item--action setting-item--danger">
+            <span data-i18n="ui.settings.exit_app">EXIT APPLICATION</span>
+            <button type="button" class="calibrate-btn settings-action-btn settings-action-btn--quit" id="open-quit-confirm" data-i18n="ui.menu.quit">QUIT GAME</button>
           </div>
           <!-- Debug Overlay is revealed only after QA authorization. -->
         </div>
@@ -2230,8 +2244,8 @@
         </div>
 
         <!-- Section 3: Gameplay & Accessibility -->
-        <div class="settings-category-group hidden" data-settings-panel="gameplay">
-          <div class="settings-category-header" data-i18n="ui.settings.cat_gameplay">GAMEPLAY & ACCESSIBILITY</div>
+        <div class="settings-category-group hidden" data-settings-panel="controls">
+          <div class="settings-category-header">CONTROLS</div>
           <div class="setting-item setting-item--action">
             <div class="setting-label-with-badge">
               <span data-i18n="ui.settings.language">LANGUAGE / 语言 / ЯЗЫК</span>
@@ -2309,10 +2323,10 @@
               <select id="setting-aim-sensitivity" data-i18n-aria-label="ui.aria.aim_speed" class="settings-select" aria-label="Right stick aim speed">
               <option value="0.5" data-i18n="ui.opt.turn_50">50% (SLOW)</option>
               <option value="0.75" data-i18n="ui.opt.turn_75">75% (LIGHT)</option>
-              <option value="1.0" selected data-i18n="ui.opt.scale_100">100% (STANDARD)</option>
+              <option value="1" selected data-i18n="ui.opt.scale_100">100% (STANDARD)</option>
               <option value="1.25" data-i18n="ui.opt.turn_125">125% (FAST)</option>
               <option value="1.5" data-i18n="ui.opt.turn_150">150% (VERY FAST)</option>
-              <option value="2.0" data-i18n="ui.opt.turn_200">200% (HYPER)</option>
+              <option value="2" data-i18n="ui.opt.turn_200">200% (HYPER)</option>
               </select>
               <div class="sensitivity-presets" role="group" data-i18n-aria-label="ui.aria.aim_speed_presets" aria-label="Right stick aim speed presets">
                 <button type="button" data-aim-sensitivity="0.5">50%</button>
@@ -2378,8 +2392,16 @@
           </div>
         </div>
 
+        <div class="settings-category-group hidden" data-settings-panel="camera">
+          <div class="settings-category-header">CAMERA &amp; HUD</div>
+        </div>
+
+        <div class="settings-category-group hidden" data-settings-panel="accessibility">
+          <div class="settings-category-header">ACCESSIBILITY</div>
+        </div>
+
         <!-- Section 4: Operator & System Data -->
-        <div class="settings-category-group hidden" data-settings-panel="operator">
+        <div class="settings-category-group hidden" data-settings-panel="profile">
           <div class="settings-category-header" data-i18n="ui.settings.cat_operator">OPERATOR & SYSTEM DATA</div>
           <div class="setting-item setting-item--operator">
             <span data-i18n="ui.settings.callsign">OPERATOR CALLSIGN</span>
@@ -2399,14 +2421,6 @@
             <span data-i18n="ui.settings.new_game_reset">NEW GAME RESET</span>
             <button type="button" class="calibrate-btn settings-action-btn settings-action-btn--reset" id="open-reset-save" data-i18n="ui.action.reset">RESET</button>
           </div>
-          <div class="setting-item setting-item--action setting-item--danger">
-            <span data-i18n="ui.settings.exit_app">EXIT APPLICATION</span>
-            <button type="button" class="calibrate-btn settings-action-btn settings-action-btn--quit" id="open-quit-confirm" data-i18n="ui.menu.quit">QUIT GAME</button>
-          </div>
-        </div>
-
-        <div class="modal-actions" style="margin-top: calc(var(--vu) * 4); border-top: 1px solid var(--border-subtle); padding-top: calc(var(--vu) * 3); display: flex; justify-content: center;">
-          <button class="abort-btn hidden" id="abort-mission">ABORT MISSION</button>
         </div>
         </div>
       </div>

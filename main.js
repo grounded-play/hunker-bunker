@@ -2442,7 +2442,9 @@ const state = {
         cameraFollow: ['tight', 'balanced', 'smooth'].includes(localStorage.getItem('hb_camera_follow'))
             ? localStorage.getItem('hb_camera_follow')
             : 'tight',
-        aimSensitivity: parseFloat(localStorage.getItem('hb_aim_sensitivity') || '1.0'),
+        aimSensitivity: [0.5, 0.75, 1, 1.25, 1.5, 2].includes(Number(localStorage.getItem('hb_aim_sensitivity')))
+            ? Number(localStorage.getItem('hb_aim_sensitivity'))
+            : 1,
         invertAimY: localStorage.getItem('hb_invert_aim_y') === 'true',
         crosshairColor: /^#[0-9a-f]{6}$/i.test(localStorage.getItem(CROSSHAIR_COLOR_STORAGE_KEY) ?? '')
             ? localStorage.getItem(CROSSHAIR_COLOR_STORAGE_KEY)
@@ -9665,6 +9667,31 @@ const mainFsToggle = document.getElementById('main-fs-toggle');
 const settingsBtns = document.querySelectorAll('.open-settings-btn');
 const abortBtn = document.getElementById('abort-mission');
 
+function organizeSettingsPanels() {
+    const panel = (name) => settingsPopup?.querySelector(`[data-settings-panel="${name}"]`);
+    const moveControl = (id, panelName) => {
+        const row = document.getElementById(id)?.closest('.setting-item');
+        const target = panel(panelName);
+        if (row && target) target.append(row);
+    };
+    [
+        ['setting-camera-mode', 'camera'],
+        ['setting-camera-distance', 'camera'],
+        ['setting-camera-follow', 'camera'],
+        ['open-crosshair-color', 'camera'],
+        ['open-language-select', 'accessibility'],
+        ['setting-ui-scale', 'accessibility'],
+        ['setting-text-floor', 'accessibility'],
+        ['setting-text-speed', 'accessibility'],
+        ['setting-colorblind-toggle', 'accessibility'],
+        ['setting-subtitle-size', 'accessibility'],
+        ['setting-subtitle-backdrop', 'accessibility'],
+        ['setting-contrast', 'accessibility'],
+        ['setting-gore-toggle', 'accessibility']
+    ].forEach(([id, target]) => moveControl(id, target));
+}
+organizeSettingsPanels();
+
 if (settingsPopup) {
     new MutationObserver(() => syncSteamInputPhase()).observe(settingsPopup, {
         attributes: true,
@@ -9672,7 +9699,7 @@ if (settingsPopup) {
     });
 }
 
-function selectSettingsTab(tabName = 'display', { focus = false } = {}) {
+function selectSettingsTab(tabName = 'session', { focus = false } = {}) {
     if (!settingsPopup) return;
     const tabs = [...settingsPopup.querySelectorAll('[data-settings-tab]')];
     const panels = [...settingsPopup.querySelectorAll('[data-settings-panel]')];
@@ -9711,10 +9738,10 @@ settingsPopup?.querySelector('.settings-modal-content')?.addEventListener('click
     const checkbox = row.querySelector('input[type="checkbox"]');
     const select = row.querySelector('select:not([aria-hidden="true"])');
     const button = row.querySelector('button');
-    if (checkbox) {
+    if (checkbox && !checkbox.disabled) {
         checkbox.checked = !checkbox.checked;
         checkbox.dispatchEvent(new Event('change', { bubbles: true }));
-    } else if (select?.options?.length) {
+    } else if (select?.options?.length && !select.disabled) {
         select.selectedIndex = (select.selectedIndex + 1) % select.options.length;
         select.dispatchEvent(new Event('change', { bubbles: true }));
     } else {
@@ -9726,12 +9753,12 @@ function openSettingsModal() {
     if (!settingsPopup) return;
     const isHUD = !document.getElementById('ui')?.classList.contains('hidden');
     if (abortBtn) {
-        if (isHUD) abortBtn.classList.remove('hidden');
-        else abortBtn.classList.add('hidden');
+        abortBtn.classList.toggle('hidden', !isHUD);
+        abortBtn.closest('.setting-item')?.classList.toggle('hidden', !isHUD);
     }
 
     settingsPopup.classList.remove('hidden');
-    selectSettingsTab(settingsPopup.querySelector('.settings-tab.active')?.dataset.settingsTab ?? 'display');
+    selectSettingsTab(settingsPopup.querySelector('.settings-tab.active')?.dataset.settingsTab ?? 'session');
     syncSteamInputPhase('menu');
     if (mainDebugToggle) mainDebugToggle.checked = state.settings.debug;
     if (mainFsToggle) mainFsToggle.checked = state.settings.fullscreen;
@@ -9809,10 +9836,12 @@ document.getElementById('setting-text-floor')?.addEventListener('change', (e) =>
     devSetTextFloor(e.target.value);
 });
 document.getElementById('setting-aim-sensitivity')?.addEventListener('change', (e) => {
-    state.settings.aimSensitivity = parseFloat(e.target.value) || 1.0;
+    const next = Number(e.target.value);
+    state.settings.aimSensitivity = [0.5, 0.75, 1, 1.25, 1.5, 2].includes(next) ? next : 1;
     syncAimSensitivityControls();
     persistSettings();
 });
+document.getElementById('resume-settings')?.addEventListener('click', () => closeSettings?.click());
 document.getElementById('setting-camera-mode')?.addEventListener('change', (e) => {
     state.settings.cameraMode = e.target.value === 'isometric' ? 'isometric' : 'third-person';
     window.game?.setCameraMode?.(state.settings.cameraMode);
@@ -14081,7 +14110,9 @@ function initTacticalCursor() {
             currentHoverTarget = target;
             cursor.classList.add('cursor-hovering');
             if (document.activeElement !== target) {
-                focusControllerTarget(target, { playHover: false });
+                // Pointer hover may synchronize focus styling, but must never
+                // scroll the menu underneath a stationary pointer.
+                focusControllerTarget(target, { playHover: false, ensureVisible: false });
             }
             if (playBlip) {
                 AudioManager.play('ui_hover', { volume: 0.12, varyPitch: true });

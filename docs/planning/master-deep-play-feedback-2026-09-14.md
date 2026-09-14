@@ -416,6 +416,17 @@ claim.
 
 **Acceptance:** every 50/75/100/125/150/200% selection displays and persists across reload; malformed saves recover; measured turn/aim response scales monotonically without changing menu pointer speed or scroll position.
 
+**Implementation pass 9:** Settings is now a six-page full-stage interface:
+Session, Audio, Controls, Camera & HUD, Accessibility, and Profile & Saves.
+Resume, context-sensitive Abort, Quit, and authorized Debug are together on the
+first page; existing controls are redistributed into bounded two-column pages.
+Native pointer hover synchronizes highlight without `scrollIntoView`, full-row
+activation respects disabled controls, and aim values use canonical numeric
+option strings with a finite allowlist/default migration. Browser coverage at
+1280×800 verifies all six pages fit without scrolling, pointer sweeps preserve
+`scrollTop`, every preset displays/persists, and controller/subpanel focus still
+works.
+
 ### DP-25 · P1 · Terminal layout and real objective/night log · UI/gameplay · M
 
 **Problem:** cramped terminal, redundant/unclear choice panel, first-tab scroll; new log tab is currently relocated cards plus a snapshot, not objective history.

@@ -22089,7 +22089,7 @@ body.contrast-max .hud-panel {
 
 /* Full-screen, paged settings: categories replace the continuous scroll. */
 .modal-content.settings-modal-panel { width: calc(100% - 24px) !important; height: min(94vh, 1040px) !important; max-width: 1680px !important; max-height: 94vh !important; }
-.settings-tabs { flex: 0 0 auto; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; padding: 10px clamp(14px, 2vw, 34px); border-bottom: 1px solid rgba(255,159,28,.3); background: rgba(8,12,17,.72); }
+.settings-tabs { flex: 0 0 auto; display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 8px; padding: 10px clamp(14px, 2vw, 34px); border-bottom: 1px solid rgba(255,159,28,.3); background: rgba(8,12,17,.72); }
 .settings-tab { min-height: 44px; border: 1px solid rgba(255,159,28,.28); border-radius: 5px; background: rgba(255,159,28,.04); color: rgba(255,224,180,.68); font: 900 clamp(13px,1.15vw,18px) 'Outfit',sans-serif; letter-spacing: .12em; cursor: pointer; }
 .settings-tab.active { color: #fff2d4; border-color: #ff9f1c; background: rgba(255,159,28,.2); box-shadow: inset 0 -3px 0 #ff9f1c,0 0 16px rgba(255,159,28,.14); }
 .settings-modal-panel .settings-modal-content { overflow: hidden !important; padding: clamp(12px,1.7vw,28px) !important; }
@@ -22114,4 +22114,8 @@ body.contrast-max .hud-panel {
   .settings-modal-content > .settings-category-group:not(.hidden), .terminal-objectives-grid { grid-template-columns: 1fr; overflow-y: auto; }
   .settings-tabs { grid-template-columns: repeat(2,1fr); }
   .terminal-objective-log-summary { grid-template-columns: repeat(2,1fr); }
+}
+
+@media (min-width: 761px) and (max-width: 1180px) and (min-height: 621px) {
+  .settings-tabs { grid-template-columns: repeat(3, 1fr); }
 }

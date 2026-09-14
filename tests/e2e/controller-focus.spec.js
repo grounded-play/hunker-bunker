@@ -109,7 +109,7 @@ test.describe('controller-ready modal focus', () => {
     test('settings tabs replace page scrolling and callsign still requires activation', async ({ page }) => {
         await bootToTitleSplash(page);
         await page.locator('#title-settings-btn').click();
-        await page.locator('[data-settings-tab="operator"]').click();
+        await page.locator('[data-settings-tab="profile"]').click();
 
         const panel = page.locator('.settings-modal-content');
         const callsign = page.locator('#operator-callsign');
@@ -126,7 +126,7 @@ test.describe('controller-ready modal focus', () => {
         await page.keyboard.press('KeyS');
         await expect(page.locator('#open-save-data')).toBeFocused();
 
-        await expect(page.locator('[data-settings-panel="operator"]')).toBeVisible();
+        await expect(page.locator('[data-settings-panel="profile"]')).toBeVisible();
         expect(await panel.evaluate((element) => getComputedStyle(element).overflowY)).toBe('hidden');
     });
 
@@ -135,18 +135,38 @@ test.describe('controller-ready modal focus', () => {
         await page.locator('#title-settings-btn').click();
         const toggle = page.locator('#main-nightvision-toggle');
         const before = await toggle.isChecked();
-        await page.locator('[data-settings-panel="display"] .setting-item').first().click({ position: { x: 20, y: 20 } });
+        await toggle.locator('xpath=ancestor::div[contains(@class,"setting-item")]').click({ position: { x: 20, y: 20 } });
         expect(await toggle.isChecked()).toBe(!before);
+    });
+
+    test('six settings pages fit and native pointer sweeps never scroll them', async ({ page }) => {
+        await page.setViewportSize({ width: 1280, height: 800 });
+        await bootToTitleSplash(page);
+        await page.locator('#title-settings-btn').click();
+        const names = ['session', 'audio', 'controls', 'camera', 'accessibility', 'profile'];
+        await expect(page.locator('.settings-tab')).toHaveCount(6);
+
+        for (const name of names) {
+            await page.locator(`[data-settings-tab="${name}"]`).click();
+            const panel = page.locator(`[data-settings-panel="${name}"]`);
+            await expect(panel).toBeVisible();
+            expect(await panel.evaluate((element) => element.scrollHeight <= element.clientHeight)).toBe(true);
+            const rows = panel.locator('.setting-item:visible');
+            for (let index = 0; index < await rows.count(); index += 1) {
+                await rows.nth(index).hover();
+            }
+            expect(await page.locator('.settings-modal-content').evaluate((element) => element.scrollTop)).toBe(0);
+        }
     });
 
     test('controller left and right change focused settings selects', async ({ page }) => {
         await bootToTitleSplash(page);
         await page.locator('#title-settings-btn').click();
-        await page.locator('[data-settings-tab="gameplay"]').click();
+        await page.locator('[data-settings-tab="controls"]').click();
 
         const sensitivity = page.locator('#setting-aim-sensitivity');
         await sensitivity.focus();
-        await sensitivity.selectOption('1.0');
+        await sensitivity.selectOption('1');
 
         await page.evaluate(() => {
             const buttons = Array.from({ length: 17 }, () => ({ pressed: false, value: 0 }));
@@ -174,11 +194,11 @@ test.describe('controller-ready modal focus', () => {
     test('confirm opens the dropdown picker and commits the chosen option', async ({ page }) => {
         await bootToTitleSplash(page);
         await page.locator('#title-settings-btn').click();
-        await page.locator('[data-settings-tab="gameplay"]').click();
+        await page.locator('[data-settings-tab="controls"]').click();
 
         const sensitivity = page.locator('#setting-aim-sensitivity');
         await sensitivity.focus();
-        await sensitivity.selectOption('1.0');
+        await sensitivity.selectOption('1');
 
         const overlay = page.locator('#select-picker-overlay');
         await expect(overlay).toBeHidden();
@@ -194,7 +214,7 @@ test.describe('controller-ready modal focus', () => {
         await page.keyboard.press('Enter');
 
         await expect(overlay).toBeHidden();
-        await expect(sensitivity).not.toHaveValue('1.0');
+        await expect(sensitivity).not.toHaveValue('1');
         expect(await sensitivity.evaluate((el) => el.options[el.selectedIndex].textContent.trim())).toBe(chosen);
         // Focus returns to the dropdown, not to a control inside the closed overlay.
         await expect(sensitivity).toBeFocused();
@@ -203,11 +223,11 @@ test.describe('controller-ready modal focus', () => {
     test('backing out of the dropdown picker leaves the value untouched', async ({ page }) => {
         await bootToTitleSplash(page);
         await page.locator('#title-settings-btn').click();
-        await page.locator('[data-settings-tab="gameplay"]').click();
+        await page.locator('[data-settings-tab="controls"]').click();
 
         const sensitivity = page.locator('#setting-aim-sensitivity');
         await sensitivity.focus();
-        await sensitivity.selectOption('1.0');
+        await sensitivity.selectOption('1');
 
         await page.keyboard.press('Enter');
         await expect(page.locator('#select-picker-overlay')).toBeVisible();
@@ -216,7 +236,7 @@ test.describe('controller-ready modal focus', () => {
         await page.keyboard.press('Escape');
 
         await expect(page.locator('#select-picker-overlay')).toBeHidden();
-        await expect(sensitivity).toHaveValue('1.0');
+        await expect(sensitivity).toHaveValue('1');
         await expect(sensitivity).toBeFocused();
         // The settings modal itself must survive: B cancels the picker only.
         await expect(page.locator('#settings-popup')).toBeVisible();
@@ -225,7 +245,7 @@ test.describe('controller-ready modal focus', () => {
     test('a focused dropdown no longer swallows vertical controller navigation', async ({ page }) => {
         await bootToTitleSplash(page);
         await page.locator('#title-settings-btn').click();
-        await page.locator('[data-settings-tab="gameplay"]').click();
+        await page.locator('[data-settings-tab="controls"]').click();
 
         const sensitivity = page.locator('#setting-aim-sensitivity');
         await sensitivity.focus();
@@ -281,7 +301,7 @@ test.describe('controller-ready modal focus', () => {
     test('controller can choose a visible right-stick sensitivity preset', async ({ page }) => {
         await bootToTitleSplash(page);
         await page.locator('#title-settings-btn').click();
-        await page.locator('[data-settings-tab="gameplay"]').click();
+        await page.locator('[data-settings-tab="controls"]').click();
         await page.evaluate(() => document.body.classList.add('controller-mode'));
 
         const fast = page.locator('[data-aim-sensitivity="1.5"]');
@@ -298,7 +318,7 @@ test.describe('controller-ready modal focus', () => {
     test('crosshair color picker updates and persists the accessibility color', async ({ page }) => {
         await bootToTitleSplash(page);
         await page.locator('#title-settings-btn').click();
-        await page.locator('[data-settings-tab="gameplay"]').click();
+        await page.locator('[data-settings-tab="camera"]').click();
 
         const picker = page.locator('#setting-crosshair-color');
         await picker.evaluate((element) => {
@@ -316,7 +336,7 @@ test.describe('controller-ready modal focus', () => {
     test('controller can choose a crosshair color without opening the native picker', async ({ page }) => {
         await bootToTitleSplash(page);
         await page.locator('#title-settings-btn').click();
-        await page.locator('[data-settings-tab="gameplay"]').click();
+        await page.locator('[data-settings-tab="camera"]').click();
 
         await page.locator('#open-crosshair-color').click();
         await expect(page.locator('#crosshair-color-popup')).toBeVisible();
@@ -334,7 +354,7 @@ test.describe('controller-ready modal focus', () => {
     test('settings menu crosshair color is a sub-menu that can be passed over in a single step', async ({ page }) => {
         await bootToTitleSplash(page);
         await page.locator('#title-settings-btn').click();
-        await page.locator('[data-settings-tab="gameplay"]').click();
+        await page.locator('[data-settings-tab="camera"]').click();
 
         const trigger = page.locator('#open-crosshair-color');
         await expect(trigger).toBeVisible();
@@ -366,7 +386,7 @@ test.describe('controller-ready modal focus', () => {
     test('settings menu language select is a sub-menu that can be passed over in a single step', async ({ page }) => {
         await bootToTitleSplash(page);
         await page.locator('#title-settings-btn').click();
-        await page.locator('[data-settings-tab="gameplay"]').click();
+        await page.locator('[data-settings-tab="accessibility"]').click();
 
         const trigger = page.locator('#open-language-select');
         await expect(trigger).toBeVisible();
@@ -411,7 +431,7 @@ test.describe('controller-ready modal focus', () => {
         await page.setViewportSize({ width: 1280, height: 800 });
         await bootToTitleSplash(page);
         await page.locator('#title-settings-btn').click();
-        await page.locator('[data-settings-tab="gameplay"]').click();
+        await page.locator('[data-settings-tab="controls"]').click();
 
         const presentation = await page.evaluate(() => {
             const settings = document.getElementById('settings-popup');
@@ -469,7 +489,7 @@ test.describe('controller-ready modal focus', () => {
     test('controls/remapping traps focus and restores its settings trigger', async ({ page }) => {
         await bootToTitleSplash(page);
         await page.locator('#title-settings-btn').click();
-        await page.locator('[data-settings-tab="gameplay"]').click();
+        await page.locator('[data-settings-tab="controls"]').click();
 
         const trigger = page.locator('#open-controls');
         const modal = page.locator('#controls-popup');
