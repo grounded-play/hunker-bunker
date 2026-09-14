@@ -8031,7 +8031,6 @@ async function runMissionIntroSequence({ deploymentHold = null } = {}) {
         game?.setCinematicLock?.(false);
         game?.setInputEnabled?.(true);
         game?.setGodMode?.(Boolean(debugGodModeActive));
-        notifyGameplayReady();
         // The mission intro is the outer owner of the deployment rendering
         // hold. Nested class/video skips can settle their suspend callbacks in
         // a different order, leaving the reference-counted helper restored to
@@ -8039,6 +8038,7 @@ async function runMissionIntroSequence({ deploymentHold = null } = {}) {
         // Finishing this sequence must always hand a live renderer back to
         // gameplay; otherwise the HUD appears over a permanently black frame.
         game?.setLoadingPaused?.(false);
+        notifyGameplayReady();
         missionFlowRunning = false;
         const skipBtn = document.getElementById('global-skip-intro-btn');
         if (skipBtn) skipBtn.classList.add('hidden');

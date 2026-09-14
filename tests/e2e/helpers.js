@@ -12,7 +12,7 @@
 export async function bootToTitleSplash(page) {
     await page.goto('/');
     await page.waitForLoadState('domcontentloaded');
-    await page.waitForFunction(() => typeof window.HunkerTriggerBoot === 'function', { timeout: 30_000 });
+    await page.waitForFunction(() => typeof window.HunkerTriggerBoot === 'function', null, { timeout: 30_000 });
 
     const splash = page.locator('#splash');
     const menu = page.locator('#menu');
@@ -55,8 +55,6 @@ export async function bootToOperatorMenu(page) {
 // Keeping this in one shared helper prevents gameplay specs from silently
 // measuring a hidden 0x0 menu/Armory canvas after the flow gains a new gate.
 export async function startRunAndSkipIntro(page) {
-    await page.evaluate(() => { window.skipAllIntro = true; }).catch(() => {});
-
     const oneShotActions = [
         '#roster-confirm-btn',
         '#start-game',
@@ -72,7 +70,9 @@ export async function startRunAndSkipIntro(page) {
     let ready = false;
     while (Date.now() < deadline) {
         ready = await page.evaluate(() => {
-            window.skipAllIntro = true;
+            // Exercise the real skip button below. Setting skipAllIntro here
+            // made its handler return before cancelling an active cutscene or
+            // dialogue, so the harness could manufacture a deployment stall.
             if (typeof window.isGameplayReady === 'function') {
                 return window.isGameplayReady();
             }

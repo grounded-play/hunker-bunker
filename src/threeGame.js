@@ -22879,7 +22879,7 @@ export class ThreeGame {
         // (lazily, on the first gameplay frame) would itself change the count
         // and force exactly the recompile this is all here to avoid.
         this._ensureEnvLightPool();
-        this.warmUpShaderPrograms();
+        await this.warmUpShaderPrograms();
 
         await preloadPromise;
 
@@ -30846,25 +30846,44 @@ export class ThreeGame {
     // i.e. always into a render target, so every material compiled here was a
     // cache miss again on its first real frame. Warming through the composer
     // compiles exactly what gameplay will ask for.
-    warmUpShaderPrograms() {
+    async warmUpShaderPrograms() {
         if (!this.renderer || !this.camera || !this.scene) return;
         const shadowMap = this.renderer.shadowMap;
         const configuredShadows = Boolean(shadowMap?.enabled);
         const configuredPostprocessing = this.composer
             && this.performanceProfile === 'gameplay'
             && this.gameplayPostProcessingEnabled !== false;
-        const safeCompile = () => {
+        const yieldFrame = () => new Promise((resolve) => {
+            if (typeof requestAnimationFrame === 'function') requestAnimationFrame(resolve);
+            else resolve();
+        });
+        const prepare = async (name, work) => {
+            // Let the loader paint between driver operations. Compilation can
+            // be polled asynchronously on drivers supporting parallel shaders.
+            await yieldFrame();
+            const startedAt = performance.now();
             try {
-                this.renderer.compile(this.scene, this.camera);
-            } catch {
-                // compile() is best-effort; never block the drop on it.
+                await work();
+            } catch (error) {
+                debugLog.warn('STARTUP', 'shader-warmup-failed', { phase: name, reason: error?.message });
+            } finally {
+                debugLog.info('STARTUP', 'shader-warmup-phase', {
+                    phase: name,
+                    durationMs: Math.round(performance.now() - startedAt),
+                    programs: this.renderer.info?.programs?.length ?? null
+                });
             }
         };
-        const safeRender = (render) => {
+        const compile = async (renderTarget = null) => {
+            const previousTarget = this.renderer.getRenderTarget?.() ?? null;
             try {
-                render();
-            } catch {
-                // Warming up must never block deployment if a driver rejects it.
+                // Composer output uses a different tone-mapping/color-space
+                // variant than the canvas. Compile against its actual target.
+                this.renderer.setRenderTarget?.(renderTarget);
+                if (this.renderer.compileAsync) await this.renderer.compileAsync(this.scene, this.camera);
+                else this.renderer.compile(this.scene, this.camera);
+            } finally {
+                this.renderer.setRenderTarget?.(previousTarget);
             }
         };
 
@@ -30874,22 +30893,22 @@ export class ThreeGame {
             // keys; doing this behind the loader prevents the quality drop from
             // compiling every visible material on an already-slow frame.
             if (shadowMap) shadowMap.enabled = false;
-            safeCompile();
-            safeRender(() => this.renderer.render(this.scene, this.camera));
+            await prepare('direct-compile', () => compile());
+            await prepare('direct-render', () => this.renderer.render(this.scene, this.camera));
 
             if (configuredPostprocessing) {
                 if (shadowMap) shadowMap.enabled = configuredShadows;
-                safeCompile();
+                await prepare('composer-compile', () => compile(this.composer.readBuffer ?? null));
                 // Twice: the composer ping-pongs between two render targets, so
                 // one pass can leave its second target's variants cold.
-                safeRender(() => this.composer.render());
-                safeRender(() => this.composer.render());
+                await prepare('composer-render-1', () => this.composer.render());
+                await prepare('composer-render-2', () => this.composer.render());
             } else if (configuredShadows) {
                 // A direct-render gameplay profile with shadows is distinct
                 // from the adaptive direct/no-shadow variant too.
                 if (shadowMap) shadowMap.enabled = true;
-                safeCompile();
-                safeRender(() => this.renderer.render(this.scene, this.camera));
+                await prepare('shadow-compile', () => compile());
+                await prepare('shadow-render', () => this.renderer.render(this.scene, this.camera));
             }
         } finally {
             if (shadowMap) {
