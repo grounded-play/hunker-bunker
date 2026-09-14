@@ -1,7 +1,20 @@
 import { describe, it, expect } from 'vitest';
-import { planInstall, allSlotKeys } from './install-vo-takes.mjs';
+import { applySelections, planInstall, allSlotKeys } from './install-vo-takes.mjs';
 
 const SLOTS = allSlotKeys();
+
+describe('applySelections', () => {
+    it('merges durable reviewed selections into a regenerated manifest', () => {
+        const manifest = { takes: [
+            { clip: 'a.wav', label: null },
+            { clip: 'b.wav', label: 'existing_slot' }
+        ] };
+        expect(applySelections(manifest, { 4149: { selected_slot: 'a.wav' } }).takes).toEqual([
+            { clip: 'a.wav', label: 'selected_slot' },
+            { clip: 'b.wav', label: 'existing_slot' }
+        ]);
+    });
+});
 
 describe('allSlotKeys', () => {
     it('is the 12 cue slots across both banks', () => {

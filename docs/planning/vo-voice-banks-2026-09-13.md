@@ -26,7 +26,8 @@ art/source/audio/vo/raw/voice_commander_V_take_1.wav
 art/source/audio/vo/raw/voice_commander_V_take_2.wav
 ```
 
-`public/` is back to 2,836,281,437 — **116,643 bytes under budget**. That is
+After installing the compressed production cues, `public/` is 2,835,442,137
+bytes — **955,943 bytes under budget**. That is
 tight: do not add uncompressed audio to `public/` without re-checking.
 
 ## 2. Segmentation — `scripts/segment-vo-takes.mjs`
@@ -95,23 +96,18 @@ reachable from `audio.js` and backed by a real file.
 | `voice_aura_overdrive_ready` | Dash overdrive charged |
 | `voice_aura_sector_cleared` | Objective complete / sector cleared |
 
-### Known gap (pre-existing)
+The two event aliases without dedicated recordings no longer resolve to silent
+files: Commander `target_down` reuses its kill-streak acknowledgement, and AURA
+`breached` reuses its sector-cleared acknowledgement.
 
-`audio.js`'s cueMap can also resolve `voice_commander_target_down` and
-`voice_aura_breached`, and **neither has an audio file**. Those two cues fall
-through to `this.play()` and are silently silent today. Either record them or
-point the cueMap at an existing slot.
+## 4. Reviewed selections
 
-## 4. Labelling — the one step that needs ears
-
-I cannot listen to audio, so **which take is which line is not something I can
-determine**. What the tooling does instead is reduce it to a pick-from-6:
-
-1. Open `art/source/audio/vo/segments/vo-takes.json`.
-2. The `banks` array lists the 6 cue slots per bank, with the intent of each.
-3. Listen through `art/source/audio/vo/segments/<stem>/*.wav` and set `label`
-   on the best take of each line to that slot key.
-4. Anything left `label: null` is simply not installed.
+The reviewed choices live in `scripts/audio/vo-take-selections.json`, separate
+from the generated and gitignored segmentation manifest. A local Whisper pass
+identified the phrases and timestamps. For Commander, take 2 explicitly marks
+the sequence beginning at 108.76s as "one actual real one"; that complete final
+sequence is used. AURA selections use clean, full-length takes from each spoken
+phrase group. Regenerating the segments therefore cannot erase the choices.
 
 ## 5. Installing — `scripts/install-vo-takes.mjs`
 
@@ -121,10 +117,10 @@ node scripts/install-vo-takes.mjs             # faithful copy
 node scripts/install-vo-takes.mjs --comms      # apply the radio treatment
 ```
 
-Copies labelled takes to `public/audio/generated/<slot>.wav` — the exact
-filenames the cueMap looks up. Reports which slots are still on placeholder
-audio, and quarantines labels that are not real slot keys rather than
-installing them.
+Overlays the tracked selections on the generated manifest, then copies them to
+`public/audio/generated/<slot>.wav` — the exact filenames the cueMap looks up.
+It reports missing slots and quarantines labels that are not real slot keys
+rather than installing them.
 
 `--comms` (mono / 16 kHz / 300–3400 Hz band / light compression) is **off by
 default**, since the artist said they would engineer the downsample and comms
@@ -175,6 +171,7 @@ in `src/loadout.test.js`. Full suite green: 370 files / 3384 tests.
 
 ## 9. Next
 
-- [ ] Label the takes (§4) — needs ears, blocks installation.
-- [ ] Record or remap `voice_commander_target_down` and `voice_aura_breached` (§3).
-- [ ] Decide whether the artist's engineered comms pass replaces `--comms`.
+- [x] Label and install the twelve delivered cue slots (§4).
+- [x] Remap the two runtime aliases that lack dedicated recordings (§3).
+- [ ] Replace the temporary `--comms` treatment if the artist delivers a final
+  engineered pass.

@@ -3690,62 +3690,62 @@
     },
     {
       "path": "audio/generated/voice_aura_overdrive_ready.wav",
-      "bytes": 101474,
+      "bytes": 34258,
       "classification": "runtime-required"
     },
     {
       "path": "audio/generated/voice_aura_reloading.wav",
-      "bytes": 75014,
+      "bytes": 26084,
       "classification": "runtime-required"
     },
     {
       "path": "audio/generated/voice_aura_sector_cleared.wav",
-      "bytes": 110294,
+      "bytes": 34258,
       "classification": "runtime-required"
     },
     {
       "path": "audio/generated/voice_aura_shield_critical.wav",
-      "bytes": 97064,
+      "bytes": 32772,
       "classification": "runtime-required"
     },
     {
       "path": "audio/generated/voice_aura_target_down.wav",
-      "bytes": 83834,
+      "bytes": 38716,
       "classification": "runtime-required"
     },
     {
       "path": "audio/generated/voice_aura_threat_high.wav",
-      "bytes": 114704,
+      "bytes": 33516,
       "classification": "runtime-required"
     },
     {
       "path": "audio/generated/voice_commander_boss_spotted.wav",
-      "bytes": 119114,
+      "bytes": 29822,
       "classification": "runtime-required"
     },
     {
       "path": "audio/generated/voice_commander_breached.wav",
-      "bytes": 97064,
+      "bytes": 26106,
       "classification": "runtime-required"
     },
     {
       "path": "audio/generated/voice_commander_killstreak.wav",
-      "bytes": 92654,
+      "bytes": 27592,
       "classification": "runtime-required"
     },
     {
       "path": "audio/generated/voice_commander_low_health.wav",
-      "bytes": 110294,
+      "bytes": 23134,
       "classification": "runtime-required"
     },
     {
       "path": "audio/generated/voice_commander_reloading.wav",
-      "bytes": 79424,
+      "bytes": 23134,
       "classification": "runtime-required"
     },
     {
       "path": "audio/generated/voice_commander_victory.wav",
-      "bytes": 123524,
+      "bytes": 35766,
       "classification": "runtime-required"
     },
     {

@@ -613,7 +613,7 @@ export class AudioManager {
         if (!prefix) return null;
 
         const cueMap = {
-            breached: `${prefix}_breached`,
+            breached: prefix === 'voice_commander' ? 'voice_commander_breached' : 'voice_aura_sector_cleared',
             reload: `${prefix}_reloading`,
             reloading: `${prefix}_reloading`,
             low_health: prefix === 'voice_commander' ? 'voice_commander_low_health' : 'voice_aura_shield_critical',
@@ -621,7 +621,7 @@ export class AudioManager {
             boss_spotted: prefix === 'voice_commander' ? 'voice_commander_boss_spotted' : 'voice_aura_threat_high',
             threat_high: prefix === 'voice_commander' ? 'voice_commander_boss_spotted' : 'voice_aura_threat_high',
             killstreak: prefix === 'voice_commander' ? 'voice_commander_killstreak' : 'voice_aura_target_down',
-            target_down: `${prefix}_target_down`,
+            target_down: prefix === 'voice_commander' ? 'voice_commander_killstreak' : 'voice_aura_target_down',
             victory: prefix === 'voice_commander' ? 'voice_commander_victory' : 'voice_aura_sector_cleared',
             sector_cleared: prefix === 'voice_commander' ? 'voice_commander_victory' : 'voice_aura_sector_cleared',
             overdrive_ready: prefix === 'voice_commander' ? 'voice_commander_killstreak' : 'voice_aura_overdrive_ready'

@@ -19,6 +19,7 @@ import path from 'node:path';
 import { VOICE_BANKS } from '../src/data/voiceBanks.js';
 
 export const MANIFEST = 'art/source/audio/vo/segments/vo-takes.json';
+export const SELECTIONS = 'scripts/audio/vo-take-selections.json';
 export const SEGMENTS_DIR = 'art/source/audio/vo/segments';
 export const INSTALL_DIR = 'public/audio/generated';
 
@@ -55,6 +56,21 @@ export function planInstall(manifest, { slotKeys = allSlotKeys() } = {}) {
     };
 }
 
+/** Apply reviewed, tracked choices without mutating the generated manifest. */
+export function applySelections(manifest, selections = {}) {
+    const labelsByClip = new Map();
+    for (const bank of Object.values(selections)) {
+        for (const [label, clip] of Object.entries(bank ?? {})) labelsByClip.set(clip, label);
+    }
+    return {
+        ...manifest,
+        takes: (manifest?.takes ?? []).map((take) => ({
+            ...take,
+            label: labelsByClip.get(take.clip) ?? take.label
+        }))
+    };
+}
+
 function main(argv) {
     const dryRun = argv.includes('--dry-run');
     const comms = argv.includes('--comms');
@@ -62,7 +78,9 @@ function main(argv) {
         console.error(`no manifest at ${MANIFEST} -- run scripts/segment-vo-takes.mjs first`);
         return 1;
     }
-    const manifest = JSON.parse(readFileSync(MANIFEST, 'utf8'));
+    const generatedManifest = JSON.parse(readFileSync(MANIFEST, 'utf8'));
+    const selections = existsSync(SELECTIONS) ? JSON.parse(readFileSync(SELECTIONS, 'utf8')) : {};
+    const manifest = applySelections(generatedManifest, selections);
     const { install, missing, unknown } = planInstall(manifest);
 
     for (const { clip, label } of unknown) {
