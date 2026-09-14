@@ -10944,6 +10944,7 @@ export class ThreeGame {
             window.AudioManager?.play('ui_error', { volume: 0.58 });
         }
         this.renderConsoleBanking(ship);
+
         this.renderSkillsTree(ship);
     }
 
@@ -11687,6 +11688,28 @@ export class ThreeGame {
         this.handleDepositAll(ship, { silentIfEmpty: true, quiet: true });
         this.renderConsoleBanking(ship);
 
+        const objectiveGrid = document.getElementById('terminal-objectives-grid');
+        if (objectiveGrid) {
+            ['terminal-event-section', 'hull-expansion-section', 'radar-node-section', 'reactor-compressor-section']
+                .map((id) => document.getElementById(id))
+                .filter(Boolean)
+                .forEach((section) => objectiveGrid.appendChild(section));
+        }
+        const day = this.dayState?.day ?? 1;
+        const cyclePhase = String(this.dayState?.phase ?? 'expedition').replace(/_/g, ' ').toUpperCase();
+        const lightIsDay = this.getDayFactor() >= 0.5;
+        const nextPoint = lightIsDay ? 0.75 : 0.25;
+        const cycleFraction = (nextPoint - this.timeOfDay + 1) % 1;
+        const transitionSeconds = Math.max(0, Math.round(cycleFraction * this.dayCycleSeconds));
+        const setLog = (id, text) => {
+            const element = document.getElementById(id);
+            if (element) element.textContent = text;
+        };
+        setLog('terminal-log-day', `DAY ${day}`);
+        setLog('terminal-log-phase', cyclePhase);
+        setLog('terminal-log-light', lightIsDay ? 'DAYLIGHT' : 'NIGHT OPS');
+        setLog('terminal-log-transition', `${lightIsDay ? 'DUSK' : 'DAWN'} IN ${String(Math.floor(transitionSeconds / 60)).padStart(2, '0')}:${String(transitionSeconds % 60).padStart(2, '0')}`);
+
         const depositBtn = document.getElementById('terminal-deposit-all');
         if (depositBtn) {
             depositBtn.onclick = () => this.handleDepositAll(ship);
@@ -11705,34 +11728,32 @@ export class ThreeGame {
         // Setup Tab Navigation
         const tabBase = document.getElementById('terminal-tab-base');
         const tabSkills = document.getElementById('terminal-tab-skills');
+        const tabObjectives = document.getElementById('terminal-tab-objectives');
         const contentBase = document.getElementById('terminal-tab-base-content');
         const contentSkills = document.getElementById('terminal-tab-skills-content');
+        const contentObjectives = document.getElementById('terminal-tab-objectives-content');
 
-        if (tabBase && tabSkills && contentBase && contentSkills) {
-            // Default to Base System Tab
-            tabBase.classList.add('active');
-            tabSkills.classList.remove('active');
-            contentBase.classList.remove('hidden');
-            contentSkills.classList.add('hidden');
-
-            tabBase.onclick = () => {
-                tabBase.classList.add('active');
-                tabSkills.classList.remove('active');
-                contentBase.classList.remove('hidden');
-                contentSkills.classList.add('hidden');
-                const body = modal.querySelector('.terminal-body');
-                if (body) body.scrollTop = 0;
+        if (tabBase && tabSkills && tabObjectives && contentBase && contentSkills && contentObjectives) {
+            const selectTab = (selected) => {
+                [[tabBase, contentBase], [tabObjectives, contentObjectives], [tabSkills, contentSkills]].forEach(([tab, panel]) => {
+                    const active = tab === selected;
+                    tab.classList.toggle('active', active);
+                    tab.setAttribute('aria-selected', String(active));
+                    panel.classList.toggle('hidden', !active);
+                });
                 window.AudioManager?.play('ui_click', { volume: 0.5 });
             };
+            // Default to Base System Tab
+            selectTab(tabBase);
+
+            tabBase.onclick = () => {
+                selectTab(tabBase);
+            };
+
+            tabObjectives.onclick = () => selectTab(tabObjectives);
 
             tabSkills.onclick = () => {
-                tabSkills.classList.add('active');
-                tabBase.classList.remove('active');
-                contentSkills.classList.remove('hidden');
-                contentBase.classList.add('hidden');
-                const body = modal.querySelector('.terminal-body');
-                if (body) body.scrollTop = 0;
-                window.AudioManager?.play('ui_click', { volume: 0.5 });
+                selectTab(tabSkills);
                 this.renderSkillsTree(ship);
             };
 

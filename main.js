@@ -9661,6 +9661,56 @@ if (settingsPopup) {
     });
 }
 
+function selectSettingsTab(tabName = 'display', { focus = false } = {}) {
+    if (!settingsPopup) return;
+    const tabs = [...settingsPopup.querySelectorAll('[data-settings-tab]')];
+    const panels = [...settingsPopup.querySelectorAll('[data-settings-panel]')];
+    const selected = tabs.find((tab) => tab.dataset.settingsTab === tabName) ?? tabs[0];
+    tabs.forEach((tab) => {
+        const active = tab === selected;
+        tab.classList.toggle('active', active);
+        tab.setAttribute('aria-selected', String(active));
+        tab.tabIndex = active ? 0 : -1;
+    });
+    panels.forEach((panel) => panel.classList.toggle('hidden', panel.dataset.settingsPanel !== selected?.dataset.settingsTab));
+    if (focus) selected?.focus();
+}
+
+settingsPopup?.querySelector('.settings-tabs')?.addEventListener('click', (event) => {
+    const tab = event.target.closest?.('[data-settings-tab]');
+    if (tab) selectSettingsTab(tab.dataset.settingsTab);
+});
+
+settingsPopup?.querySelector('.settings-tabs')?.addEventListener('keydown', (event) => {
+    if (!['ArrowLeft', 'ArrowRight'].includes(event.key)) return;
+    const tabs = [...settingsPopup.querySelectorAll('[data-settings-tab]')];
+    const index = tabs.indexOf(document.activeElement);
+    if (index < 0) return;
+    event.preventDefault();
+    const direction = event.key === 'ArrowRight' ? 1 : -1;
+    selectSettingsTab(tabs[(index + direction + tabs.length) % tabs.length].dataset.settingsTab, { focus: true });
+});
+
+// The full setting row is the hit target. Direct interaction with its control
+// still behaves natively; clicking the label/background activates or advances it.
+settingsPopup?.querySelector('.settings-modal-content')?.addEventListener('click', (event) => {
+    if (event.target.closest?.('button, input, select, textarea, a, label')) return;
+    const row = event.target.closest?.('.setting-item');
+    if (!row) return;
+    const checkbox = row.querySelector('input[type="checkbox"]');
+    const select = row.querySelector('select:not([aria-hidden="true"])');
+    const button = row.querySelector('button');
+    if (checkbox) {
+        checkbox.checked = !checkbox.checked;
+        checkbox.dispatchEvent(new Event('change', { bubbles: true }));
+    } else if (select?.options?.length) {
+        select.selectedIndex = (select.selectedIndex + 1) % select.options.length;
+        select.dispatchEvent(new Event('change', { bubbles: true }));
+    } else {
+        button?.click();
+    }
+});
+
 function openSettingsModal() {
     if (!settingsPopup) return;
     const isHUD = !document.getElementById('ui')?.classList.contains('hidden');
@@ -9670,6 +9720,7 @@ function openSettingsModal() {
     }
 
     settingsPopup.classList.remove('hidden');
+    selectSettingsTab(settingsPopup.querySelector('.settings-tab.active')?.dataset.settingsTab ?? 'display');
     syncSteamInputPhase('menu');
     if (mainDebugToggle) mainDebugToggle.checked = state.settings.debug;
     if (mainFsToggle) mainFsToggle.checked = state.settings.fullscreen;

@@ -106,9 +106,10 @@ test.describe('controller-ready modal focus', () => {
         await expect(trigger).toBeFocused();
     });
 
-    test('settings callsign requires activation and keeps visible scrolling enabled', async ({ page }) => {
+    test('settings tabs replace page scrolling and callsign still requires activation', async ({ page }) => {
         await bootToTitleSplash(page);
         await page.locator('#title-settings-btn').click();
+        await page.locator('[data-settings-tab="operator"]').click();
 
         const panel = page.locator('.settings-modal-content');
         const callsign = page.locator('#operator-callsign');
@@ -125,15 +126,23 @@ test.describe('controller-ready modal focus', () => {
         await page.keyboard.press('KeyS');
         await expect(page.locator('#open-save-data')).toBeFocused();
 
-        expect(await panel.evaluate((element) => ({
-            overflowY: getComputedStyle(element).overflowY,
-            scrollbarWidth: getComputedStyle(element).scrollbarWidth
-        }))).toEqual({ overflowY: 'auto', scrollbarWidth: 'thin' });
+        await expect(page.locator('[data-settings-panel="operator"]')).toBeVisible();
+        expect(await panel.evaluate((element) => getComputedStyle(element).overflowY)).toBe('hidden');
+    });
+
+    test('clicking a setting row toggles its control', async ({ page }) => {
+        await bootToTitleSplash(page);
+        await page.locator('#title-settings-btn').click();
+        const toggle = page.locator('#main-nightvision-toggle');
+        const before = await toggle.isChecked();
+        await page.locator('[data-settings-panel="display"] .setting-item').first().click({ position: { x: 20, y: 20 } });
+        expect(await toggle.isChecked()).toBe(!before);
     });
 
     test('controller left and right change focused settings selects', async ({ page }) => {
         await bootToTitleSplash(page);
         await page.locator('#title-settings-btn').click();
+        await page.locator('[data-settings-tab="gameplay"]').click();
 
         const sensitivity = page.locator('#setting-aim-sensitivity');
         await sensitivity.focus();
@@ -165,6 +174,7 @@ test.describe('controller-ready modal focus', () => {
     test('confirm opens the dropdown picker and commits the chosen option', async ({ page }) => {
         await bootToTitleSplash(page);
         await page.locator('#title-settings-btn').click();
+        await page.locator('[data-settings-tab="gameplay"]').click();
 
         const sensitivity = page.locator('#setting-aim-sensitivity');
         await sensitivity.focus();
@@ -193,6 +203,7 @@ test.describe('controller-ready modal focus', () => {
     test('backing out of the dropdown picker leaves the value untouched', async ({ page }) => {
         await bootToTitleSplash(page);
         await page.locator('#title-settings-btn').click();
+        await page.locator('[data-settings-tab="gameplay"]').click();
 
         const sensitivity = page.locator('#setting-aim-sensitivity');
         await sensitivity.focus();
@@ -214,6 +225,7 @@ test.describe('controller-ready modal focus', () => {
     test('a focused dropdown no longer swallows vertical controller navigation', async ({ page }) => {
         await bootToTitleSplash(page);
         await page.locator('#title-settings-btn').click();
+        await page.locator('[data-settings-tab="gameplay"]').click();
 
         const sensitivity = page.locator('#setting-aim-sensitivity');
         await sensitivity.focus();
@@ -269,6 +281,7 @@ test.describe('controller-ready modal focus', () => {
     test('controller can choose a visible right-stick sensitivity preset', async ({ page }) => {
         await bootToTitleSplash(page);
         await page.locator('#title-settings-btn').click();
+        await page.locator('[data-settings-tab="gameplay"]').click();
         await page.evaluate(() => document.body.classList.add('controller-mode'));
 
         const fast = page.locator('[data-aim-sensitivity="1.5"]');
@@ -285,6 +298,7 @@ test.describe('controller-ready modal focus', () => {
     test('crosshair color picker updates and persists the accessibility color', async ({ page }) => {
         await bootToTitleSplash(page);
         await page.locator('#title-settings-btn').click();
+        await page.locator('[data-settings-tab="gameplay"]').click();
 
         const picker = page.locator('#setting-crosshair-color');
         await picker.evaluate((element) => {
@@ -302,6 +316,7 @@ test.describe('controller-ready modal focus', () => {
     test('controller can choose a crosshair color without opening the native picker', async ({ page }) => {
         await bootToTitleSplash(page);
         await page.locator('#title-settings-btn').click();
+        await page.locator('[data-settings-tab="gameplay"]').click();
 
         await page.locator('#open-crosshair-color').click();
         await expect(page.locator('#crosshair-color-popup')).toBeVisible();
@@ -319,6 +334,7 @@ test.describe('controller-ready modal focus', () => {
     test('settings menu crosshair color is a sub-menu that can be passed over in a single step', async ({ page }) => {
         await bootToTitleSplash(page);
         await page.locator('#title-settings-btn').click();
+        await page.locator('[data-settings-tab="gameplay"]').click();
 
         const trigger = page.locator('#open-crosshair-color');
         await expect(trigger).toBeVisible();
@@ -350,6 +366,7 @@ test.describe('controller-ready modal focus', () => {
     test('settings menu language select is a sub-menu that can be passed over in a single step', async ({ page }) => {
         await bootToTitleSplash(page);
         await page.locator('#title-settings-btn').click();
+        await page.locator('[data-settings-tab="gameplay"]').click();
 
         const trigger = page.locator('#open-language-select');
         await expect(trigger).toBeVisible();
@@ -394,6 +411,7 @@ test.describe('controller-ready modal focus', () => {
         await page.setViewportSize({ width: 1280, height: 800 });
         await bootToTitleSplash(page);
         await page.locator('#title-settings-btn').click();
+        await page.locator('[data-settings-tab="gameplay"]').click();
 
         const presentation = await page.evaluate(() => {
             const settings = document.getElementById('settings-popup');
@@ -451,6 +469,7 @@ test.describe('controller-ready modal focus', () => {
     test('controls/remapping traps focus and restores its settings trigger', async ({ page }) => {
         await bootToTitleSplash(page);
         await page.locator('#title-settings-btn').click();
+        await page.locator('[data-settings-tab="gameplay"]').click();
 
         const trigger = page.locator('#open-controls');
         const modal = page.locator('#controls-popup');

@@ -1748,6 +1748,7 @@
               <span>◇ CLASS SKILLS</span>
               <span class="terminal-tab-btn__status" id="terminal-tab-skills-status">0/6 · ◈ 0</span>
             </button>
+            <button id="terminal-tab-objectives" class="terminal-tab-btn">◇ OBJECTIVE / NIGHT LOG</button>
           </div>
 
           <!-- Base Systems Tab Content -->
@@ -1903,6 +1904,16 @@
 
         </div>
         </div><!-- /#terminal-tab-base-content -->
+
+        <div id="terminal-tab-objectives-content" class="terminal-tab-content hidden">
+          <div class="terminal-objective-log-summary">
+            <div><span>EXPEDITION DAY</span><strong id="terminal-log-day">DAY 1</strong></div>
+            <div><span>CYCLE PHASE</span><strong id="terminal-log-phase">EXPEDITION</strong></div>
+            <div><span>LOCAL LIGHT</span><strong id="terminal-log-light">DAYLIGHT</strong></div>
+            <div><span>NEXT TRANSITION</span><strong id="terminal-log-transition">--:--</strong></div>
+          </div>
+          <div id="terminal-objectives-grid" class="terminal-objectives-grid"></div>
+        </div>
 
         <!-- Class Skills Tab Content -->
         <div id="terminal-tab-skills-content" class="terminal-tab-content hidden">
@@ -2168,9 +2179,16 @@
           <button class="close-modal" id="close-settings" data-i18n-aria-label="ui.aria.close_settings" aria-label="Close system settings">×</button>
         </div>
 
+        <div class="settings-tabs" role="tablist" aria-label="Settings categories">
+          <button type="button" class="settings-tab active" data-settings-tab="display" role="tab" aria-selected="true">DISPLAY</button>
+          <button type="button" class="settings-tab" data-settings-tab="audio" role="tab" aria-selected="false">AUDIO</button>
+          <button type="button" class="settings-tab" data-settings-tab="gameplay" role="tab" aria-selected="false">GAMEPLAY</button>
+          <button type="button" class="settings-tab" data-settings-tab="operator" role="tab" aria-selected="false">OPERATOR</button>
+        </div>
+
         <div class="settings-modal-content">
           <!-- Section 1: Display & Graphics -->
-        <div class="settings-category-group">
+        <div class="settings-category-group" data-settings-panel="display">
           <div class="settings-category-header" data-i18n="ui.settings.cat_display">DISPLAY & GRAPHICS</div>
           <!-- Stage Resolution was a developer layout label, not a renderer
                setting. Keep the internal dev-console preset, but do not offer
@@ -2189,7 +2207,7 @@
         </div>
 
         <!-- Section 2: Audio & Voice -->
-        <div class="settings-category-group">
+        <div class="settings-category-group hidden" data-settings-panel="audio">
           <div class="settings-category-header" data-i18n="ui.settings.cat_audio">AUDIO & VOICE</div>
           <div class="setting-item setting-item--action">
             <span data-i18n="ui.settings.audio_mixer">AUDIO MIXER</span>
@@ -2202,7 +2220,7 @@
         </div>
 
         <!-- Section 3: Gameplay & Accessibility -->
-        <div class="settings-category-group">
+        <div class="settings-category-group hidden" data-settings-panel="gameplay">
           <div class="settings-category-header" data-i18n="ui.settings.cat_gameplay">GAMEPLAY & ACCESSIBILITY</div>
           <div class="setting-item setting-item--action">
             <div class="setting-label-with-badge">
@@ -2351,7 +2369,7 @@
         </div>
 
         <!-- Section 4: Operator & System Data -->
-        <div class="settings-category-group">
+        <div class="settings-category-group hidden" data-settings-panel="operator">
           <div class="settings-category-header" data-i18n="ui.settings.cat_operator">OPERATOR & SYSTEM DATA</div>
           <div class="setting-item setting-item--operator">
             <span data-i18n="ui.settings.callsign">OPERATOR CALLSIGN</span>

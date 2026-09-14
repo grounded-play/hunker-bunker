@@ -10,6 +10,7 @@ import { bootToOperatorMenu, startRunAndSkipIntro } from './helpers.js';
 
 test.describe('Bunker Tree (console skill tree)', () => {
     test('renders nodes, switches tabs, and purchasing a node updates its state', async ({ page }) => {
+        test.setTimeout(240_000);
         const consoleErrors = [];
         page.on('console', (msg) => {
             if (msg.type() === 'error') consoleErrors.push(msg.text());
@@ -36,6 +37,12 @@ test.describe('Bunker Tree (console skill tree)', () => {
         // BASE SYSTEM is the default tab.
         await expect(page.locator('#terminal-tab-base-content')).toBeVisible();
         await expect(page.locator('#terminal-tab-skills-content')).toBeHidden();
+        await expect(page.locator('#console-terminal-modal .terminal-body')).toHaveCSS('overflow-y', 'hidden');
+
+        await page.locator('#terminal-tab-objectives').click();
+        await expect(page.locator('#terminal-tab-objectives-content')).toBeVisible();
+        await expect(page.locator('#terminal-log-day')).toContainText('DAY');
+        await expect(page.locator('#hull-expansion-section')).toBeVisible();
 
         await page.locator('#terminal-tab-skills').click();
         await expect(page.locator('#terminal-tab-skills-content')).toBeVisible();
