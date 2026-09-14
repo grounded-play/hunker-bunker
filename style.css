@@ -22109,6 +22109,14 @@ body.contrast-max .hud-panel {
 .terminal-objective-log-summary strong { color: var(--terminal-glow); font-size: clamp(14px,1.25vw,20px); }
 #terminal-tab-objectives-content { flex-direction: column; }
 .terminal-objectives-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 12px; min-height: 0; overflow-y: auto; }
+.terminal-objective-journal { grid-column: 1 / -1; min-height: 0; }
+.terminal-objective-journal-list { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 7px; margin: 0; padding: 0; list-style: none; }
+.terminal-objective-journal-list li { display: grid; grid-template-columns: auto minmax(0,1fr) auto; align-items: center; gap: 9px; min-height: 42px; padding: 7px 10px; border: 1px solid rgba(var(--terminal-glow-rgb),.2); background: rgba(0,0,0,.24); }
+.terminal-objective-journal-time { color: rgba(255,255,255,.5); font: 800 11px 'Outfit',sans-serif; }
+.terminal-objective-journal-copy { min-width: 0; color: rgba(255,255,255,.82); font: 700 clamp(11px,.9vw,14px) 'Outfit',sans-serif; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.terminal-objective-journal-state { color: var(--terminal-glow); font: 900 11px 'Outfit',sans-serif; text-align: right; }
+.terminal-objective-journal-list li.is-warning .terminal-objective-journal-state { color: #ffb72e; }
+.terminal-objective-journal-list li.is-expired .terminal-objective-journal-state { color: #ff5964; }
 
 @media (max-width: 760px), (max-height: 620px) {
   .settings-modal-content > .settings-category-group:not(.hidden), .terminal-objectives-grid { grid-template-columns: 1fr; overflow-y: auto; }

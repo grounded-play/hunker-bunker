@@ -38,10 +38,14 @@ test.describe('Bunker Tree (console skill tree)', () => {
         await expect(page.locator('#terminal-tab-base-content')).toBeVisible();
         await expect(page.locator('#terminal-tab-skills-content')).toBeHidden();
         await expect(page.locator('#console-terminal-modal .terminal-body')).toHaveCSS('overflow-y', 'hidden');
+        expect(await page.locator('#terminal-tab-base-content').evaluate((element) => (
+            element.scrollHeight <= element.clientHeight
+        ))).toBe(true);
 
         await page.locator('#terminal-tab-objectives').click();
         await expect(page.locator('#terminal-tab-objectives-content')).toBeVisible();
         await expect(page.locator('#terminal-log-day')).toContainText('DAY');
+        await expect(page.locator('#terminal-objective-journal-list li').first()).toBeVisible();
         await expect(page.locator('#hull-expansion-section')).toBeVisible();
 
         await page.locator('#terminal-tab-skills').click();

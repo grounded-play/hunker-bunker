@@ -439,6 +439,17 @@ works.
 
 **Acceptance:** first tab `scrollHeight <= clientHeight` at all supported sizes; no offscreen fixed min-width; real objective/night transitions update while open; resolved events don't reroll merely from rendering; all purchase actions execute once with visible results.
 
+**Implementation pass 10:** Terminal uses the full-stage bounded shell and its
+Base page is verified with `scrollHeight <= clientHeight` at 1280×800. The
+Objective/Night page now maintains a bounded, chronological expedition journal
+from live mission status, next affordable base action, day/rest phase, local
+light transition, and story deadline resolution/expiry. Re-rendering an
+unchanged state does not duplicate history; a fresh expedition clears it. The
+working random-choice system is retained and accurately labeled **Optional
+Field Opportunity**, with its result still rendered beside the choice. Browser
+coverage also completes a real skill purchase after switching through all three
+Terminal pages.
+
 ### DP-26 · P1 · Gameplay objectives never leak into menus · UI lifecycle · S
 
 **Problem:** objective prompts persist into Hero Select/Armory.
