@@ -189,7 +189,7 @@ export const MAYOR_TINA_PLAYER_VISUAL = Object.freeze({
 });
 import { createEnemy3dVisual, disposeEnemy3dVisual, updateEnemy3dVisual } from './enemy3dOverlay.js';
 import { spawnEnemyGibs, spawnPropDebris } from './enemyGibs.js';
-import { registerTinaHit } from './mayorTinaCombat.js';
+import { registerTinaHit, TINA_TOTAL_HITS } from './mayorTinaCombat.js';
 import { applyLinchpinResolution, resolveCampLeaderLinchpin } from './storyLinchpins.js';
 import { resolveSafeSpawn } from './safeSpawn.js';
 import { WORLD_3D_FACING_YAW, createWorld3dModel, hasWorld3dModel, isWorld3dOnlyPlacementType, preloadWorld3dModels, syncWorld3dReplacement } from './world3dOverlay.js';
@@ -1699,7 +1699,9 @@ export class ThreeGame {
             transformedOverlay: null,
             loadPromise: null,
             lastSirenAt: 0,
-            calloutIndex: 0
+            calloutIndex: 0,
+            hostileLastUpdateAt: 0,
+            hostileAttackReadyAt: 0
         };
         // The Bunker Director: one pressure brain that reacts to the player's
         // greed/struggle by pulling existing levers (doc 11 §4.A).
@@ -4469,6 +4471,36 @@ export class ThreeGame {
     updateMayorTinaEncounter(now = performance.now()) {
         const encounter = this.mayorTinaEncounter;
         const prompt = document.getElementById('mayor-tina-hud-prompt');
+        if (encounter?.phase === 'hostile' && !encounter.tinaDead && this.player && encounter.mayorRoot) {
+            prompt?.classList.add('hidden');
+            prompt?.classList.remove('visible');
+            const root = encounter.mayorRoot;
+            const dx = this.player.position.x - root.position.x;
+            const dz = this.player.position.z - root.position.z;
+            const distance = Math.hypot(dx, dz);
+            const previousAt = encounter.hostileLastUpdateAt || now;
+            const delta = Math.min(0.05, Math.max(0, (now - previousAt) / 1000));
+            encounter.hostileLastUpdateAt = now;
+            if (distance > 0.9 && delta > 0) {
+                const step = Math.min(distance - 0.9, 1.65 * delta);
+                const nextX = root.position.x + (dx / distance) * step;
+                const nextZ = root.position.z + (dz / distance) * step;
+                if (this.canOccupyPosition?.(nextX, nextZ) !== false) {
+                    root.position.x = nextX;
+                    root.position.z = nextZ;
+                } else {
+                    // Axis fallback keeps the actor from stalling on one wall.
+                    if (this.canOccupyPosition?.(nextX, root.position.z) !== false) root.position.x = nextX;
+                    else if (this.canOccupyPosition?.(root.position.x, nextZ) !== false) root.position.z = nextZ;
+                }
+                root.rotation.y = Math.atan2(dx, dz);
+            }
+            if (distance <= 1.05 && now >= (encounter.hostileAttackReadyAt || 0)) {
+                encounter.hostileAttackReadyAt = now + 1200;
+                this.takeDamage?.(1, 'mayor-tina', root.position.x, root.position.z);
+            }
+            return;
+        }
         if (!encounter || encounter.phase !== 'idle' || this.isMultiplayer || !this.player || !encounter.mayorRoot) {
             prompt?.classList.add('hidden');
             prompt?.classList.remove('visible');
@@ -4606,8 +4638,13 @@ export class ThreeGame {
             void this.setupPlayer3dCosmeticOverlay();
         }
         encounter.phase = 'idle';
+        encounter.tinaHostile = false;
+        encounter.tinaDead = false;
+        encounter.tinaHitsRemaining = TINA_TOTAL_HITS;
         encounter.lastSirenAt = 0;
         encounter.calloutIndex = 0;
+        encounter.hostileLastUpdateAt = 0;
+        encounter.hostileAttackReadyAt = 0;
         const position = this.getMayorTinaEncounterPosition();
         if (encounter.teacupRoot) {
             encounter.teacupRoot.removeFromParent();
@@ -21759,9 +21796,24 @@ export class ThreeGame {
             window.dispatchEvent(new CustomEvent('bunker-line', {
                 detail: { text: 'MAYOR TINA: PUT THAT DOWN. I AM ASKING ONCE.' }
             }));
+            encounter.phase = 'hostile';
+            encounter.hostileLastUpdateAt = performance.now();
+            encounter.teacupRoot?.removeFromParent?.();
+            encounter.mayorRoot.position.y = 0;
+            document.getElementById('mayor-tina-hud-prompt')?.classList.add('hidden');
+            if (window.AudioManager?.activeVoice?.speakerName?.toUpperCase?.().includes('TINA')) {
+                window.AudioManager.stopActiveVoice?.(0.05);
+            }
         }
 
         if (result.outcome !== 'killed') return;
+
+        encounter.phase = 'dead';
+        encounter.teacupRoot?.removeFromParent?.();
+        document.getElementById('mayor-tina-hud-prompt')?.classList.add('hidden');
+        if (window.AudioManager?.activeVoice?.speakerName?.toUpperCase?.().includes('TINA')) {
+            window.AudioManager.stopActiveVoice?.(0.05);
+        }
 
         // She has a GLB, so she comes apart like any other 3D-backed object.
         spawnPropDebris(this, { userData: { scatterKey: 'secret_mayor_tina', world3dRoot: root } }, {

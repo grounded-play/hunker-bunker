@@ -58,6 +58,12 @@ Commit: `d744c5c`.
 - Verification: **55 focused tests passed** (audio, soundsets and debug logger), including static literal-caller coverage in main/top-level gameplay modules, every approved variant's manifest/file presence, no-immediate-repeat, alias options, bounded cardinality and exported counts. ESLint, production build, required-media audit and `git diff --check` passed. Browser skill verification decoded all 16 real files and started all four sound families with zero missing reports. `tests/e2e/gameplay-audio-assets.spec.js` passed real fetch/decode/playback in Chrome (22.7 seconds).
 - **Status: implemented, full-route listening acceptance pending.** The browser test uses the actual audio manager and shipped files in a title-screen fixture; it does not prove traversal mix quality, every dynamic cue, spatial audibility on speakers, or VO correctness (DP-13–15). Static coverage intentionally excludes dynamically assembled names and non-audio `.play()` calls.
 
+### Pass 6 — DP-04 Mayor Tina hostile lifecycle (September 14)
+
+- Fixed the split state that marked Tina hostile while leaving the encounter in the friendly `idle` phase. The warning hit now transitions to `hostile`, removes the teacup immediately, grounds the Mayor model, hides/disables the interaction prompt and stops Tina-owned speech.
+- The hostile actor now pursues the player with bounded delta time, collision-aware axis fallback, facing updates and a contact-damage cooldown. It no longer remains embedded in the cup. The dead state removes any residual cup, hides the actor and prevents siren/prompt/dialogue updates. New-run reset explicitly restores hit count, hostility/death flags, actor placement and both models.
+- Verification: 16 Mayor lifecycle/combat tests pass, including warning→chase, blocked-axis movement, attack cooldown, death voice/visual cleanup and complete reset. Full visual encounter playthrough remains part of the final acceptance sweep.
+
 ## Evidence register
 
 References use **entry `id`**, not zero-based array position, followed by elapsed milliseconds. JSON messages embed diagnostic objects; expand the referenced entry to inspect its details. SHA-256 and compact metrics can be reproduced with:
