@@ -17896,6 +17896,7 @@ export class ThreeGame {
             return false;
         }
         const previousHp = this.playerVitals.hp;
+        const previousShieldHp = this.playerShieldHp ?? 0;
         let effectiveAmount = amount;
         effectiveAmount = applyIncomingDamageModifiers(effectiveAmount, this.runOverclocks, this.runRelics);
         if (typeof window !== 'undefined' && window.npcDialogueTreeManager?.activePerks?.has?.('arias_psychic_mind_caress') && ['poison', 'hazard-zone', 'bio', 'sporesnail'].includes(reason)) {
@@ -17916,6 +17917,13 @@ export class ThreeGame {
             const absorbed = Math.min(this.playerShieldHp, effectiveAmount);
             this.playerShieldHp -= absorbed;
             effectiveAmount -= absorbed;
+        }
+        if (
+            this.playerShieldMax > 0
+            && previousShieldHp / this.playerShieldMax > 0.25
+            && this.playerShieldHp / this.playerShieldMax <= 0.25
+        ) {
+            window.AudioManager?.playVoiceCallout?.('shield_critical');
         }
         if (this.playerShieldMax > 0) {
             const baseDelay = 4.0;
@@ -17979,10 +17987,12 @@ export class ThreeGame {
             this.hadNearDeath = true;
         }
 
-        if (this.playerVitals.hp > 0 && (this.playerVitals.hp / (this.playerVitals.maxHp || 100)) <= 0.25 && !this._lowHealthVoiceCooldown) {
-            this._lowHealthVoiceCooldown = true;
+        if (
+            this.playerVitals.hp > 0
+            && previousHp / (this.playerVitals.maxHp || 100) > 0.25
+            && this.playerVitals.hp / (this.playerVitals.maxHp || 100) <= 0.25
+        ) {
             window.AudioManager?.playVoiceCallout?.('low_health');
-            setTimeout(() => { this._lowHealthVoiceCooldown = false; }, 12000);
         }
 
         if (this.playerVitals.hp <= 0) {
@@ -18227,6 +18237,7 @@ export class ThreeGame {
         if (resetRunState) {
             this.resetBunkerBlastDoor();
             this.runStartTime = Date.now();
+            window.AudioManager?.beginVoiceRun?.(this.runStartTime);
             this.cancelO2StartupSequence?.({ restoreVisuals: false });
             this.totalDistanceTravelled = 0;
             this.maxDepthTierReached = 0;

@@ -39,6 +39,24 @@ export class AudioManager {
     // history it needs. The selector is pure; the caller owns this.
     static _lastSoundsetVariant = new Map();
     static _lastVoiceTake = new Map();
+    static _playedVoiceSemantics = new Set();
+    static _voiceRunId = null;
+
+    static beginVoiceRun(runId) {
+        const next = String(runId ?? 'unknown');
+        if (this._voiceRunId === next) return false;
+        this.stopActiveVoice?.(0.02);
+        this._voiceRunId = next;
+        this._playedVoiceSemantics.clear();
+        return true;
+    }
+
+    static emitVoiceLine(detail) {
+        if (typeof window === 'undefined' || typeof window.dispatchEvent !== 'function') return;
+        const EventCtor = window.CustomEvent ?? globalThis.CustomEvent;
+        if (typeof EventCtor !== 'function') return;
+        window.dispatchEvent(new EventCtor('voice-callout-started', { detail }));
+    }
     static _missingAudio = new Map();
     static _missingAudioAttempts = 0;
     static _untrackedMissingAudioAttempts = 0;
@@ -536,6 +554,12 @@ export class AudioManager {
             return this.activeVoice;
         }
 
+        // One speech owner. Only a strictly higher-priority story/warning cue
+        // can preempt the current owner; equal/lower chatter is discarded.
+        if (this.isVoiceSpeaking() && !options.audition && priority >= this.activeVoice.priority) {
+            return null;
+        }
+
         // If a higher-priority narrative voice track is active (<= 2), don't clobber it with lower priority
         if (this.activeVoice?.source && this.activeVoice.priority <= 2 && this.activeVoice.priority < priority) {
             const remaining = ((this.activeVoice.startedAt || 0) + (this.activeVoice.estimatedDuration || 0)) - now;
@@ -626,39 +650,18 @@ export class AudioManager {
 
     static playVoiceCallout(cueType, options = {}) {
         if (this.globalMuted || !this.voiceEnabled) return null;
-        // Suppress tactical combat chatter if narrative or leader dialogue is active
-        if (this.isVoiceSpeaking() && this.activeVoice.priority <= 2) {
-            return null;
-        }
 
         const voicePackId = (typeof window !== 'undefined' ? (window.loadout?.state?.voicePackId || window.loadout?.getEquippedVoicePackId?.()) : null);
         if (!voicePackId) return null;
 
-        let prefix = null;
         const idStr = String(voicePackId);
-        if (idStr === '4148' || idStr === 'voicepack_soviet_commander') {
-            prefix = 'voice_commander';
-        } else if (idStr === '4149' || idStr === 'voicepack_aura') {
-            prefix = 'voice_aura';
-        }
-        if (!prefix) return null;
-
-        const cueMap = {
-            breached: prefix === 'voice_commander' ? 'voice_commander_breached' : 'voice_aura_sector_cleared',
-            reload: `${prefix}_reloading`,
-            reloading: `${prefix}_reloading`,
-            low_health: prefix === 'voice_commander' ? 'voice_commander_low_health' : 'voice_aura_shield_critical',
-            shield_critical: prefix === 'voice_commander' ? 'voice_commander_low_health' : 'voice_aura_shield_critical',
-            boss_spotted: prefix === 'voice_commander' ? 'voice_commander_boss_spotted' : 'voice_aura_threat_high',
-            threat_high: prefix === 'voice_commander' ? 'voice_commander_boss_spotted' : 'voice_aura_threat_high',
-            killstreak: prefix === 'voice_commander' ? 'voice_commander_killstreak' : 'voice_aura_target_down',
-            target_down: prefix === 'voice_commander' ? 'voice_commander_killstreak' : 'voice_aura_target_down',
-            victory: prefix === 'voice_commander' ? 'voice_commander_victory' : 'voice_aura_sector_cleared',
-            sector_cleared: prefix === 'voice_commander' ? 'voice_commander_victory' : 'voice_aura_sector_cleared',
-            overdrive_ready: prefix === 'voice_commander' ? 'voice_commander_killstreak' : 'voice_aura_overdrive_ready'
-        };
-
-        const targetKey = cueMap[cueType] || `${prefix}_${cueType}`;
+        const bankId = idStr === 'voicepack_soviet_commander' ? 4148
+            : idStr === 'voicepack_aura' ? 4149 : Number(idStr);
+        const slot = resolveVoiceBankSlot(bankId, cueType === 'reloading' ? 'reload' : cueType);
+        if (!slot) return null;
+        const semanticId = options.semanticId ?? `${bankId}:${slot.cue}`;
+        if (!options.audition && this._playedVoiceSemantics.has(semanticId)) return null;
+        const targetKey = slot.key;
         const availableTakes = getVoiceTakeKeys(targetKey).filter((key) => this.buffers[key]);
         if (availableTakes.length) {
             const previous = this._lastVoiceTake.get(targetKey);
@@ -666,10 +669,18 @@ export class AudioManager {
                 ? availableTakes.filter((key) => key !== previous)
                 : availableTakes;
             const selectedKey = candidates[Math.floor(Math.random() * candidates.length)];
+            const playback = this.playVoiceTrack(selectedKey, { priority: slot.priority, speakerName: String(bankId), volume: options.volume ?? 0.85, ...options });
+            if (!playback) return null;
             this._lastVoiceTake.set(targetKey, selectedKey);
-            return this.playVoiceTrack(selectedKey, { priority: 4, volume: options.volume ?? 0.85, ...options });
+            if (!options.audition) this._playedVoiceSemantics.add(semanticId);
+            this.emitVoiceLine({
+                cue: slot.cue, semanticId, subtitle: slot.subtitle, take: selectedKey, bankId,
+                speakerName: bankId === 4148 ? 'COMMANDER' : 'AURA',
+                audition: Boolean(options.audition)
+            });
+            return playback;
         }
-        return this.play(targetKey, { bus: 'voice', volume: options.volume ?? 0.85, ...options });
+        return null;
     }
 
     static playVoiceForMessage(speakerInfo = {}, messageText = '', options = {}) {
@@ -776,11 +787,20 @@ export class AudioManager {
         }
 
         if (targetKey && this.buffers[targetKey]) {
+            const semanticId = options.semanticId ?? `message:${targetKey}`;
+            if (!options.audition && this._playedVoiceSemantics.has(semanticId)) return null;
             // If this exact buffer is already actively playing, don't restart it
             if (this.isVoiceSpeaking() && this.activeVoice?.bufferKey === targetKey) {
                 return this.activeVoice;
             }
-            return this.playVoiceTrack(targetKey, { priority, speakerName, volume: options.volume ?? 1.0, varyPitch: false, ...options });
+            const playback = this.playVoiceTrack(targetKey, { priority, speakerName, volume: options.volume ?? 1.0, varyPitch: false, ...options });
+            if (!playback) return null;
+            if (!options.audition) this._playedVoiceSemantics.add(semanticId);
+            this.emitVoiceLine({
+                cue: 'dialogue', semanticId, subtitle: text, take: targetKey,
+                speakerName, audition: Boolean(options.audition)
+            });
+            return playback;
         }
 
         // If voice is currently speaking, do not override with procedural fallback
@@ -1750,5 +1770,5 @@ import { assetUrl } from './assetUrl.js';
 import { PRESENTATION_EVENTS, presentationTelemetry } from './presentationTelemetry.js';
 import { GAME_SOUNDSETS, selectSoundsetVariant } from './data/gameSoundsets.js';
 import { GAME_AUDIO_ALIASES } from './data/gameAudioAliases.js';
-import { getVoiceTakeKeys } from './data/voiceBanks.js';
+import { getVoiceTakeKeys, resolveVoiceBankSlot } from './data/voiceBanks.js';
 import { calculateScreenSpaceAudio } from './audioSpatial.js';

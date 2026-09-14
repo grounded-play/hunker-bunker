@@ -299,6 +299,15 @@ Do not close the umbrella review until every child has either passed its accepta
 
 **Acceptance:** every shipped trigger maps to approved text and matching takes; every take is auditionable; no unused/mislabeled cuts; automated asset/subtitle mapping checks plus human content sign-off. Deliver the script as a separate child artifact, not merely more recording files.
 
+**Implementation pass 8:** Alternate-radio cues now use strict semantic slots,
+one authored speech owner, expedition-scoped no-repeat history, downward-only HP
+and shield threshold triggers, exact start-time subtitles, and Armory-only
+audition bypass. The authoritative trigger/exclusion/take matrix is in
+`docs/planning/vo-runtime-script-2026-09-14.md`. Unsupported meanings stay silent
+rather than reusing the other bank's unrelated line. Human listening approval of
+the freestyle source cuts remains a release-content check, not an automated-code
+claim.
+
 ### DP-16 · P1 · Missing sound keys and bounded audio diagnostics · Audio · S
 
 **Problem:** common actions request absent sounds and spam the log.

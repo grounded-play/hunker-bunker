@@ -4051,7 +4051,7 @@ function showRadioTransmission(rawText) {
     if (!radioPumpTimer) pumpRadioQueue();
 }
 
-function renderRadioTransmission(rawText) {
+function renderRadioTransmission(rawText, { playVoice = true } = {}) {
     if (!isGameplayPhase()) return;
     if (!isGameplayHudActive() || isResettingRun) return;
 
@@ -4095,7 +4095,7 @@ function renderRadioTransmission(rawText) {
     const messageText = radioPrompt.querySelector('.radio-transmission-prompt__message');
     senderName.textContent = sender;
     messageText.textContent = text;
-    AudioManager.playVoiceForMessage({ name: sender }, text);
+    if (playVoice) AudioManager.playVoiceForMessage({ name: sender }, text);
     radioPrompt.addEventListener('pointerdown', (event) => {
         event.preventDefault();
         dismissRadioPrompt(radioPrompt);
@@ -4120,6 +4120,15 @@ function renderRadioTransmission(rawText) {
     }
     updateHudNotificationDeck();
 }
+
+// Situational voice banks own concise, exact subtitles. Render them at voice
+// start (not after the radio queue delay) and never ask the dialogue vocalizer
+// to speak the subtitle over the authored take.
+window.addEventListener('voice-callout-started', (event) => {
+    const detail = event?.detail ?? {};
+    if (detail.audition || !detail.subtitle) return;
+    renderRadioTransmission(`${detail.speakerName || 'COMMS'}: ${detail.subtitle}`, { playVoice: false });
+});
 
 function showBiomePrompt(message = '') {
     showRadioTransmission(message);

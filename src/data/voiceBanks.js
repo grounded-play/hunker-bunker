@@ -13,12 +13,12 @@ export const VOICE_BANKS = Object.freeze({
         blurb: 'Heavy radio static. Authoritative Russian-accented military jargon.',
         previewCue: 'boss_spotted',
         slots: Object.freeze([
-            Object.freeze({ key: 'voice_commander_reloading', cue: 'reload', intent: 'Weapon reload -- replaces "Reloading"' }),
-            Object.freeze({ key: 'voice_commander_low_health', cue: 'low_health', intent: 'Player near death -- replaces "Shield low"' }),
-            Object.freeze({ key: 'voice_commander_boss_spotted', cue: 'boss_spotted', intent: 'Boss enters the field -- replaces "Heavy incoming"' }),
-            Object.freeze({ key: 'voice_commander_killstreak', cue: 'killstreak', intent: 'Kill streak / overdrive ready' }),
-            Object.freeze({ key: 'voice_commander_breached', cue: 'breached', intent: 'A wall is breached' }),
-            Object.freeze({ key: 'voice_commander_victory', cue: 'victory', intent: 'Extraction / run won' })
+            Object.freeze({ key: 'voice_commander_reloading', cue: 'reload', subtitle: 'RELOADING.', intent: 'Weapon reload', trigger: 'A non-full weapon begins reload', exclusions: ['menu', 'full magazine'], priority: 4 }),
+            Object.freeze({ key: 'voice_commander_low_health', cue: 'low_health', subtitle: 'VITALS CRITICAL.', intent: 'HP crosses downward to 25% or less', trigger: 'Downward HP threshold crossing', exclusions: ['shield loss', 'maximum HP increase', 'healing'], priority: 3 }),
+            Object.freeze({ key: 'voice_commander_boss_spotted', cue: 'boss_spotted', aliases: ['threat_high'], subtitle: 'HEAVY INCOMING.', intent: 'Boss enters the field', trigger: 'New boss encounter ID', exclusions: ['ordinary enemy', 'repeated event alias'], priority: 3 }),
+            Object.freeze({ key: 'voice_commander_killstreak', cue: 'killstreak', subtitle: 'KEEP FIRING.', intent: 'Kill streak reached', trigger: 'New kill-streak tier', exclusions: ['single target down', 'overdrive ready'], priority: 4 }),
+            Object.freeze({ key: 'voice_commander_breached', cue: 'breached', subtitle: 'WALL BREACHED.', intent: 'A wall is breached', trigger: 'New wall breach', exclusions: ['door opening'], priority: 4 }),
+            Object.freeze({ key: 'voice_commander_victory', cue: 'victory', subtitle: 'EXTRACTION SECURED.', intent: 'Extraction / run won', trigger: 'Successful extraction', exclusions: ['objective complete'], priority: 2 })
         ])
     }),
     4149: Object.freeze({
@@ -28,12 +28,12 @@ export const VOICE_BANKS = Object.freeze({
         blurb: 'Smooth synthesized female tactical assistant with sub-harmonic chimes.',
         previewCue: 'overdrive_ready',
         slots: Object.freeze([
-            Object.freeze({ key: 'voice_aura_reloading', cue: 'reload', intent: 'Weapon reload -- replaces "Reloading"' }),
-            Object.freeze({ key: 'voice_aura_shield_critical', cue: 'shield_critical', intent: 'Player near death -- replaces "Shield low"' }),
-            Object.freeze({ key: 'voice_aura_threat_high', cue: 'threat_high', intent: 'Boss enters the field -- replaces "Heavy incoming"' }),
-            Object.freeze({ key: 'voice_aura_target_down', cue: 'target_down', intent: 'Target eliminated' }),
-            Object.freeze({ key: 'voice_aura_overdrive_ready', cue: 'overdrive_ready', intent: 'Dash overdrive charged' }),
-            Object.freeze({ key: 'voice_aura_sector_cleared', cue: 'sector_cleared', intent: 'Objective complete / sector cleared' })
+            Object.freeze({ key: 'voice_aura_reloading', cue: 'reload', subtitle: 'RELOADING.', intent: 'Weapon reload', trigger: 'A non-full weapon begins reload', exclusions: ['menu', 'full magazine'], priority: 4 }),
+            Object.freeze({ key: 'voice_aura_shield_critical', cue: 'shield_critical', subtitle: 'SHIELD CRITICAL.', intent: 'Shield crosses downward to 25% or less', trigger: 'Downward shield threshold crossing', exclusions: ['HP loss', 'shield unavailable'], priority: 3 }),
+            Object.freeze({ key: 'voice_aura_threat_high', cue: 'threat_high', aliases: ['boss_spotted'], subtitle: 'THREAT LEVEL HIGH.', intent: 'Boss enters the field', trigger: 'New boss encounter ID', exclusions: ['ordinary enemy', 'repeated event alias'], priority: 3 }),
+            Object.freeze({ key: 'voice_aura_target_down', cue: 'target_down', subtitle: 'TARGET DOWN.', intent: 'Boss target eliminated', trigger: 'Boss death', exclusions: ['ordinary enemy', 'kill streak'], priority: 4 }),
+            Object.freeze({ key: 'voice_aura_overdrive_ready', cue: 'overdrive_ready', subtitle: 'OVERDRIVE READY.', intent: 'Dash overdrive charged', trigger: 'Overdrive becomes ready', exclusions: ['kill streak'], priority: 4 }),
+            Object.freeze({ key: 'voice_aura_sector_cleared', cue: 'sector_cleared', subtitle: 'SECTOR CLEARED.', intent: 'Objective complete / sector cleared', trigger: 'Objective completion', exclusions: ['extraction victory'], priority: 3 })
         ])
     })
 });
@@ -49,6 +49,26 @@ export function getVoiceAudioManifest() {
     return Object.values(VOICE_BANKS).flatMap((bank) => bank.slots.flatMap((slot) => (
         getVoiceTakeKeys(slot.key).map((key) => ({ key, url: `/audio/generated/${key}.wav` }))
     )));
+}
+
+export function resolveVoiceBankSlot(itemdefid, cue) {
+    const bank = getVoiceBank(itemdefid);
+    if (!bank) return null;
+    const normalized = String(cue ?? '').toLowerCase();
+    return bank.slots.find((slot) => slot.cue === normalized || slot.aliases?.includes(normalized)) ?? null;
+}
+
+export function getVoiceScriptRows() {
+    return Object.values(VOICE_BANKS).flatMap((bank) => bank.slots.map((slot) => ({
+        bankId: bank.itemdefid,
+        bankName: bank.name,
+        semanticId: `${bank.itemdefid}:${slot.cue}`,
+        repeatScope: 'expedition',
+        lifetime: 'trigger-time only',
+        direction: bank.itemdefid === 4148 ? 'Authoritative, clipped military radio' : 'Calm synthesized tactical warning',
+        takes: getVoiceTakeKeys(slot.key),
+        ...slot
+    })));
 }
 
 /** Which bank a raw session filename belongs to ("voice_aura_V_take_1.wav" -> 4149). */

@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { existsSync } from 'node:fs';
-import { VOICE_BANKS, VOICE_BANK_IDS, bankForSourceFile, getVoiceAudioManifest, getVoiceBank, getVoiceTakeKeys } from './voiceBanks.js';
+import { VOICE_BANKS, VOICE_BANK_IDS, bankForSourceFile, getVoiceAudioManifest, getVoiceBank, getVoiceScriptRows, getVoiceTakeKeys, resolveVoiceBankSlot } from './voiceBanks.js';
 import { getCatalogEntry, ITEM_TYPE } from '../itemOwnership.js';
 
 describe('VOICE_BANKS', () => {
@@ -72,5 +72,29 @@ describe('getVoiceBank', () => {
     it('returns null for anything else', () => {
         expect(getVoiceBank(9999)).toBeNull();
         expect(getVoiceBank(null)).toBeNull();
+    });
+});
+
+describe('voice script routing', () => {
+    it('does not borrow a line with the wrong meaning', () => {
+        expect(resolveVoiceBankSlot(4148, 'shield_critical')).toBeNull();
+        expect(resolveVoiceBankSlot(4149, 'low_health')).toBeNull();
+        expect(resolveVoiceBankSlot(4148, 'target_down')).toBeNull();
+        expect(resolveVoiceBankSlot(4149, 'killstreak')).toBeNull();
+        expect(resolveVoiceBankSlot(4148, 'overdrive_ready')).toBeNull();
+        expect(resolveVoiceBankSlot(4149, 'victory')).toBeNull();
+    });
+
+    it('publishes complete trigger, exclusion, subtitle and take metadata', () => {
+        const rows = getVoiceScriptRows();
+        expect(rows).toHaveLength(12);
+        for (const row of rows) {
+            expect(row.semanticId).toBe(`${row.bankId}:${row.cue}`);
+            expect(row.repeatScope).toBe('expedition');
+            expect(row.subtitle.length).toBeGreaterThan(0);
+            expect(row.trigger.length).toBeGreaterThan(0);
+            expect(row.exclusions.length).toBeGreaterThan(0);
+            expect(row.takes).toHaveLength(2);
+        }
     });
 });

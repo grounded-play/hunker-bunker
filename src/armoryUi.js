@@ -346,7 +346,7 @@ export function createArmoryUi({
                 after: (value) => {
                     if (!value) return;
                     const bank = getVoiceBank(value);
-                    if (bank) window.AudioManager?.playVoiceCallout?.(bank.previewCue, { volume: 0.9 });
+                    if (bank) window.AudioManager?.playVoiceCallout?.(bank.previewCue, { volume: 0.9, audition: true });
                 }
             },
             hud: {
