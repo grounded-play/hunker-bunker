@@ -36,6 +36,8 @@ function makeGame() {
         }),
         mountPocket: ThreeGame.prototype.mountPocket,
         mountFoundryInterior: ThreeGame.prototype.mountFoundryInterior,
+        discardPortalGroup: ThreeGame.prototype.discardPortalGroup,
+        exitPocket: ThreeGame.prototype.exitPocket,
         captureSurfaceCameraBeforePortal: ThreeGame.prototype.captureSurfaceCameraBeforePortal,
         applyPortalCameraProfile: ThreeGame.prototype.applyPortalCameraProfile,
         restoreSurfaceCameraAfterPortal: ThreeGame.prototype.restoreSurfaceCameraAfterPortal,
@@ -74,7 +76,7 @@ describe('Foundry authored interior plane', () => {
         expect(game.perspectiveCamera.far).toBe(60);
         expect(game.thirdPersonCameraConfig.distance).toBe(3.1);
         expect(game.placements).toContainEqual(expect.objectContaining({ type: 'kit_space_room_small' }));
-        const group = game.pocketGroups.get('30,40');
+        const group = game.pocketGroups.get('foundry:30,40');
         expect(group.children.some((child) => child.userData?.isPortalCeiling)).toBe(true);
         expect(group.children.some((child) => child.userData?.isFoundryInteriorWorkbench)).toBe(true);
     });
@@ -127,5 +129,108 @@ describe('Foundry authored interior plane', () => {
         expect(window.dispatchEvent).toHaveBeenCalledWith(expect.objectContaining({
             type: 'camp-prompt-clear'
         }));
+    });
+
+    it('does not reuse or overwrite an ordinary pit at the same world coordinate', () => {
+        const game = makeGame();
+        const pit = game.mountPocket(30, 40);
+        const pitGrid = game.pocketCache.get('30,40');
+        expect(ThreeGame.prototype.enterFoundryInterior.call(game)).toBe(true);
+        expect(game.pocketGroups.get('30,40')).toBe(pit);
+        expect(game.pocketCache.get('30,40')).toBe(pitGrid);
+        expect(game.pocketGroups.get('foundry:30,40')).not.toBe(pit);
+        expect(ThreeGame.prototype.getTileType.call(game, 30, 45)).toBe('.');
+        expect(ThreeGame.prototype.getCachedTileType.call(game, 30, 45)).toBe('.');
+    });
+
+    it('rolls back a failed mount and permits a clean retry without leaking pickups', () => {
+        const game = makeGame();
+        const original = game.createScatterInstance;
+        game.createScatterInstance = vi.fn(() => { throw new Error('asset failed'); });
+        const disposeFloor = vi.spyOn(game.floorMaterial, 'dispose');
+        const disposeWalls = vi.spyOn(game.wallGeometry, 'dispose');
+        expect(ThreeGame.prototype.enterFoundryInterior.call(game)).toBe(false);
+        expect(game.player.position.toArray()).toEqual([29.5, 0, 39.5]);
+        expect(game.chunkGroups.visible).toBe(true);
+        expect(game.planeState.stack).toHaveLength(1);
+        expect(game.planeState.transitioning).toBe(false);
+        expect(game.isInPocket).toBe(false);
+        expect(game.pocketGroups.size).toBe(0);
+        expect(game.pickupMeshes).toHaveLength(0);
+        expect(disposeFloor).not.toHaveBeenCalled();
+        expect(disposeWalls).not.toHaveBeenCalled();
+        expect(window.dispatchEvent).not.toHaveBeenCalledWith(expect.objectContaining({ type: 'portal-plane-entered' }));
+        game.createScatterInstance = original;
+        expect(ThreeGame.prototype.enterFoundryInterior.call(game)).toBe(true);
+    });
+
+    it('rolls back camera, player transforms and visibility if entry fails after mounting', () => {
+        const game = makeGame();
+        game.inputEnabled = false;
+        game.player.scale.set(0.5, 0.5, 0.5);
+        game.setInputEnabled = () => { throw new Error('input transition failed'); };
+        expect(ThreeGame.prototype.enterFoundryInterior.call(game)).toBe(false);
+        expect(game.perspectiveCamera.far).toBe(160);
+        expect(game.thirdPersonCameraConfig.distance).toBe(5.4);
+        expect(game.player.position.toArray()).toEqual([29.5, 0, 39.5]);
+        expect(game.player.scale.toArray()).toEqual([0.5, 0.5, 0.5]);
+        expect(game.inputEnabled).toBe(false);
+        expect(game.chunkGroups.visible).toBe(true);
+        expect(game.scene.children).toHaveLength(0);
+    });
+
+    it('keeps the transition guarded while assets mount', () => {
+        const game = makeGame();
+        const mount = game.mountFoundryInterior;
+        game.mountFoundryInterior = (...args) => {
+            expect(ThreeGame.prototype.enterFoundryInterior.call(game)).toBe(false);
+            return mount.call(game, ...args);
+        };
+        expect(ThreeGame.prototype.enterFoundryInterior.call(game)).toBe(true);
+        expect(game.planeState.stack).toHaveLength(2);
+    });
+
+    it.each([NaN, Infinity])('rejects a non-finite destination (%s) without hiding the surface', (value) => {
+        const game = makeGame();
+        game.foundry.getPosition = () => ({ x: value, z: 40 });
+        expect(ThreeGame.prototype.enterFoundryInterior.call(game)).toBe(false);
+        expect(game.chunkGroups.visible).toBe(true);
+        expect(game.pocketGroups.size).toBe(0);
+    });
+
+    it('hides the interior on exit and makes the cached room visible on re-entry', () => {
+        const game = makeGame();
+        ThreeGame.prototype.enterFoundryInterior.call(game);
+        const group = game.pocketGroups.get('foundry:30,40');
+        game.exitPocket();
+        expect(group.visible).toBe(false);
+        expect(game._pocketCacheKey).toBeNull();
+        ThreeGame.prototype.enterFoundryInterior.call(game);
+        expect(game.pocketGroups.get('foundry:30,40')).toBe(group);
+        expect(group.visible).toBe(true);
+    });
+
+    it.each([[30, -20, 40], [60, -6, 40], [NaN, -6, 40]])('recovers escaped position %j to the interior floor', (x, y, z) => {
+        const game = makeGame();
+        ThreeGame.prototype.enterFoundryInterior.call(game);
+        game.player.position.set(x, y, z);
+        ThreeGame.prototype.updatePortalPlanePresentation.call(game);
+        expect(game.player.position.toArray()).toEqual([30, -6, 40]);
+        expect(game.isInPocket).toBe(true);
+        expect(game.chunkGroups.visible).toBe(false);
+    });
+
+    it('returns to the surface if the active floor is lost, then rebuilds on retry', () => {
+        const game = makeGame();
+        ThreeGame.prototype.enterFoundryInterior.call(game);
+        const group = game.pocketGroups.get('foundry:30,40');
+        group.children.find((child) => child.userData?.isPortalFloor).visible = false;
+        ThreeGame.prototype.updatePortalPlanePresentation.call(game);
+        expect(game.player.position.toArray()).toEqual([29.5, 0, 39.5]);
+        expect(game.chunkGroups.visible).toBe(true);
+        expect(game.isInPocket).toBe(false);
+        expect(game.fillHoleAt).not.toHaveBeenCalled();
+        expect(ThreeGame.prototype.enterFoundryInterior.call(game)).toBe(true);
+        expect(game.pocketGroups.get('foundry:30,40')).not.toBe(group);
     });
 });

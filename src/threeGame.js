@@ -6447,7 +6447,7 @@ export class ThreeGame {
         const candidates = [];
         const currentPlane = activePlane(this.planeState);
         if (currentPlane?.id === 'foundry-interior') {
-            const pocket = this.pocketCache?.get(this.getWallKey(this._pocketHoleX, this._pocketHoleZ));
+            const pocket = this.pocketCache?.get(this._pocketCacheKey ?? this.getWallKey(this._pocketHoleX, this._pocketHoleZ));
             if (pocket) {
                 const originX = this._pocketHoleX - pocket.centerCell.x;
                 const originZ = this._pocketHoleZ - pocket.centerCell.y;
@@ -9214,7 +9214,7 @@ export class ThreeGame {
             let promptLabel = 'FILL HOLE';
             if (this.inputEnabled && hudActive && this.player && this.isGameplayInputActive()) {
                 if (this.isInPocket) {
-                    const key = this.getWallKey(this._pocketHoleX, this._pocketHoleZ);
+                    const key = this._pocketCacheKey ?? this.getWallKey(this._pocketHoleX, this._pocketHoleZ);
                     const pocket = this.pocketCache?.get(key);
                     if (pocket) {
                         // Convert grid-local climbPoint to world space first
@@ -18162,6 +18162,10 @@ export class ThreeGame {
         this.restoreSurfaceCameraAfterPortal?.();
         this.planeState = createPlaneStack();
         this.isInPocket = false;
+        this._pocketCacheKey = null;
+        if (this.chunkGroups) this.chunkGroups.visible = true;
+        for (const group of this.chunkMeshes?.values() ?? []) group.visible = true;
+        for (const group of this.pocketGroups?.values() ?? []) group.visible = false;
         this._pocketHoleX = null;
         this._pocketHoleZ = null;
         if (this._portalPromptLabel) {
@@ -23681,12 +23685,12 @@ export class ThreeGame {
         return true;
     }
 
-    mountPocket(holeWorldX, holeWorldZ) {
+    mountPocket(holeWorldX, holeWorldZ, cacheKey = this.getWallKey(holeWorldX, holeWorldZ)) {
         if (!this.pocketGroups) this.pocketGroups = new Map();
-        const key = this.getWallKey(holeWorldX, holeWorldZ);
+        const key = cacheKey;
         if (this.pocketGroups.has(key)) return this.pocketGroups.get(key);
 
-        const pocket = this.generatePocket(holeWorldX, holeWorldZ);
+        const pocket = this.pocketCache?.get(key) ?? this.generatePocket(holeWorldX, holeWorldZ);
         const group = new THREE.Group();
         group.position.set(
             holeWorldX - pocket.centerCell.x,
@@ -23700,6 +23704,7 @@ export class ThreeGame {
         );
         floor.rotation.x = -Math.PI / 2;
         floor.position.set(pocket.centerCell.x, 0, pocket.centerCell.y);
+        floor.userData = { isPortalFloor: true, ownsPortalGeometry: true };
         group.add(floor);
 
         // A covered sublevel needs an actual roof, not an implied black void.
@@ -23717,8 +23722,10 @@ export class ThreeGame {
         ceiling.rotation.x = Math.PI / 2;
         ceiling.position.set(pocket.centerCell.x, this.wallHeight + 0.08, pocket.centerCell.y);
         ceiling.renderOrder = 9;
-        ceiling.userData = { isPortalCeiling: true, baseOpacity: 1 };
+        ceiling.userData = { isPortalCeiling: true, baseOpacity: 1, ownsPortalGeometry: true, ownsPortalMaterial: true };
         group.add(ceiling);
+        // Register before optional dressing so a failed mount can be unwound.
+        this.pocketGroups.set(key, group);
 
         for (let y = 0; y < pocket.size; y += 1) {
             for (let x = 0; x < pocket.size; x += 1) {
@@ -23815,8 +23822,12 @@ export class ThreeGame {
     }
 
     mountFoundryInterior(foundryX, foundryZ) {
-        const key = this.getWallKey(foundryX, foundryZ);
-        if (this.pocketGroups?.has(key)) return this.pocketGroups.get(key);
+        const key = `foundry:${this.getWallKey(foundryX, foundryZ)}`;
+        const cached = this.pocketGroups?.get(key);
+        if (cached?.userData.portalId === 'foundry-interior'
+            && cached.children.some((child) => child.userData?.isPortalFloor && child.visible)
+            && cached.children.some((child) => child.userData?.isFoundryInteriorWorkbench)) return cached;
+        if (cached) this.discardPortalGroup(key);
         const size = 11;
         const centerCell = { x: 5, y: 5 };
         const climbPoint = { x: 5, y: 9 };
@@ -23830,7 +23841,7 @@ export class ThreeGame {
         grid[10][5] = '.';
         const interior = { grid, size, centerCell, climbPoint };
         this.pocketCache.set(key, interior);
-        const group = this.mountPocket(foundryX, foundryZ);
+        const group = this.mountPocket(foundryX, foundryZ, key);
         group.name = 'FoundryInteriorPlane';
         group.userData.portalKind = PLANE_KINDS.INTERIOR;
         group.userData.portalId = 'foundry-interior';
@@ -23860,44 +23871,89 @@ export class ThreeGame {
             })
         );
         bench.position.set(centerCell.x, 0.48, centerCell.y);
-        bench.userData = { isFoundryInteriorWorkbench: true };
+        bench.userData = { isFoundryInteriorWorkbench: true, ownsPortalGeometry: true, ownsPortalMaterial: true };
         group.add(bench);
         return group;
+    }
+
+    discardPortalGroup(key) {
+        const group = this.pocketGroups?.get(key);
+        if (!group) return;
+        group.removeFromParent();
+        const children = new Set();
+        group.traverse((child) => {
+            children.add(child);
+            // Never dispose shared surface wall/floor materials or model assets.
+            if (child.userData?.ownsPortalGeometry) child.geometry?.dispose();
+            if (child.userData?.ownsPortalMaterial) child.material?.dispose();
+        });
+        this.pickupMeshes = this.pickupMeshes?.filter((pickup) => !children.has(pickup)) ?? [];
+        this.pocketGroups.delete(key);
+        this.pocketCache?.delete(key);
     }
 
     enterFoundryInterior() {
         if (this.isInPocket || !this.player || !this.foundry?.isRevealed) return false;
         const position = this.foundry.getPosition?.();
-        if (!position) return false;
-        const transition = beginTransition(this.planeState ?? createPlaneStack());
+        if (!position || ![position.x, position.z, ...this.player.position.toArray()].every(Number.isFinite)) return false;
+        const previousState = this.planeState ?? createPlaneStack();
+        const transition = beginTransition(previousState);
         if (!transition.began) return false;
-        this.planeState = endTransition(transition.state).state;
         const returnTo = {
             x: this.player.position.x,
             y: this.player.position.y,
             z: this.player.position.z
         };
-        const entered = enterPlane(this.planeState, {
+        const entered = enterPlane(previousState, {
             id: 'foundry-interior',
             kind: PLANE_KINDS.INTERIOR,
             returnTo
         });
         if (!entered.entered) return false;
-        this.planeState = entered.state;
-        this.captureSurfaceCameraBeforePortal();
-        this.applyPortalCameraProfile(entered.camera);
-
-        if (this.chunkGroups) this.chunkGroups.visible = false;
-        const group = this.mountFoundryInterior(position.x, position.z);
-        if (this.scene && group.parent !== this.scene) this.scene.add(group);
-        this._pocketHoleX = position.x;
-        this._pocketHoleZ = position.z;
-        this.isInPocket = true;
-        this.player.position.set(position.x, POCKET_WORLD_Y, position.z);
-        this.player.scale.set(1, 1, 1);
-        this.player.rotation.set(0, 0, 0);
-        this.setInputEnabled(true);
-        this.snapCameraToPlayer?.();
+        const key = `foundry:${this.getWallKey(position.x, position.z)}`;
+        const surfaceVisible = this.chunkGroups?.visible;
+        const inputEnabled = this.inputEnabled;
+        const scale = this.player.scale.clone();
+        const rotation = this.player.rotation.clone();
+        this.planeState = transition.state;
+        try {
+            const group = this.mountFoundryInterior(position.x, position.z);
+            if (!group?.children.some((child) => child.userData?.isPortalFloor && child.visible)) {
+                throw new Error('Foundry floor is not ready');
+            }
+            if (!this.scene) throw new Error('Foundry scene is not ready');
+            if (group.parent !== this.scene) this.scene.add(group);
+            group.visible = true;
+            this.captureSurfaceCameraBeforePortal();
+            this.applyPortalCameraProfile(entered.camera);
+            this._pocketCacheKey = key;
+            this._pocketHoleX = position.x;
+            this._pocketHoleZ = position.z;
+            this.isInPocket = true;
+            this.player.position.set(position.x, POCKET_WORLD_Y, position.z);
+            this.player.scale.set(1, 1, 1);
+            this.player.rotation.set(0, 0, 0);
+            if (this.chunkGroups) this.chunkGroups.visible = false;
+            this.setInputEnabled(true);
+            this.snapCameraToPlayer?.();
+            this.planeState = entered.state;
+        } catch (error) {
+            this.planeState = previousState;
+            this.isInPocket = false;
+            this._pocketCacheKey = null;
+            this._pocketHoleX = null;
+            this._pocketHoleZ = null;
+            this.player.position.set(returnTo.x, returnTo.y, returnTo.z);
+            this.player.scale.copy(scale);
+            this.player.rotation.copy(rotation);
+            if (this.chunkGroups) this.chunkGroups.visible = surfaceVisible;
+            this.inputEnabled = inputEnabled;
+            this.discardPortalGroup(key);
+            this.restoreSurfaceCameraAfterPortal();
+            debugLog.warn('PORTAL', 'foundry-entry-rolled-back', { key, returnTo, reason: error.message });
+            return false;
+        }
+        debugLog.info('PORTAL', 'foundry-entered', { key, returnTo, floorY: POCKET_WORLD_Y, run: this.runStartTime });
         this.showBunkerLine?.('FOUNDRY INTERIOR // WORKBENCH ONLINE // SOUTH AIRLOCK RETURNS TO SURFACE');
         window.dispatchEvent(new CustomEvent('portal-plane-entered', {
             detail: { plane: entered.plane, depth: this.planeState.stack.length - 1 }
@@ -23934,7 +23990,9 @@ export class ThreeGame {
 
         const group = this.mountPocket(holeWorldX, holeWorldZ);
         if (this.scene && group.parent !== this.scene) this.scene.add(group);
+        group.visible = true;
 
+        this._pocketCacheKey = this.getWallKey(holeWorldX, holeWorldZ);
         this._pocketHoleX = holeWorldX;
         this._pocketHoleZ = holeWorldZ;
         this.isInPocket = true;
@@ -23964,6 +24022,8 @@ export class ThreeGame {
         this.planeState = left.state;
         const holeWorldX = this._pocketHoleX;
         const holeWorldZ = this._pocketHoleZ;
+        const pocketGroup = this.pocketGroups?.get(this._pocketCacheKey ?? this.getWallKey(holeWorldX, holeWorldZ));
+        if (pocketGroup) pocketGroup.visible = false;
 
         const chunkX = Math.floor(holeWorldX / this.chunkSize);
         const chunkY = Math.floor(holeWorldZ / this.chunkSize);
@@ -23977,6 +24037,7 @@ export class ThreeGame {
             this.player.position.y = left.returnTo?.y ?? 0;
         }
         this.isInPocket = false;
+        this._pocketCacheKey = null;
         this._pocketHoleX = null;
         this._pocketHoleZ = null;
         if (this._portalPromptLabel) {
@@ -23988,6 +24049,7 @@ export class ThreeGame {
             this.fillHoleAt(holeWorldX, holeWorldZ);
         }
         this.restoreSurfaceCameraAfterPortal?.();
+        debugLog.info('PORTAL', 'portal-left', { from: leavingPlane?.id, returnTo: left.returnTo, surfaceVisible: this.chunkGroups?.visible });
         window.dispatchEvent(new CustomEvent('portal-plane-left', {
             detail: { plane: left.plane, returnTo: left.returnTo }
         }));
@@ -24049,8 +24111,30 @@ export class ThreeGame {
     updatePortalPlanePresentation() {
         const plane = activePlane(this.planeState);
         if (!plane || plane.kind === PLANE_KINDS.SURFACE || !this.isInPocket) return;
-        const key = this.getWallKey(this._pocketHoleX, this._pocketHoleZ);
+        const key = this._pocketCacheKey ?? this.getWallKey(this._pocketHoleX, this._pocketHoleZ);
         const group = this.pocketGroups?.get(key);
+        if (plane.id === 'foundry-interior' && this.player) {
+            const floor = group?.children.find((child) => child.userData?.isPortalFloor && child.visible);
+            if (!floor || !group.visible || group.parent !== this.scene || !this.pocketCache?.has(key)) {
+                debugLog.warn('PORTAL', 'foundry-floor-lost', { key, position: this.player.position.toArray() });
+                this.exitPocket();
+                this.discardPortalGroup(key);
+                return;
+            }
+            const position = this.player.position;
+            const pocket = this.pocketCache.get(key);
+            const halfSize = pocket.size / 2;
+            if (![position.x, position.y, position.z].every(Number.isFinite)
+                || position.y < POCKET_WORLD_Y - 1
+                || Math.abs(position.x - this._pocketHoleX) >= halfSize
+                || Math.abs(position.z - this._pocketHoleZ) >= halfSize) {
+                debugLog.warn('PORTAL', 'foundry-position-recovered', { key, position: position.toArray() });
+                position.set(this._pocketHoleX, POCKET_WORLD_Y, this._pocketHoleZ);
+                this.isPlayerFalling = false;
+                this.player.scale.set(1, 1, 1);
+                this.snapCameraToPlayer?.();
+            }
+        }
         if (!group || !this.player) return;
         const alpha = ceilingFadeAlpha(this.planeState, {
             objectY: this.player.position.y + this.wallHeight + 0.08,
@@ -30197,7 +30281,7 @@ export class ThreeGame {
     // though the player is at a completely different Y.
     updatePocketContent(delta, now) {
         if (!this.player) return;
-        const key = this.getWallKey(this._pocketHoleX, this._pocketHoleZ);
+        const key = this._pocketCacheKey ?? this.getWallKey(this._pocketHoleX, this._pocketHoleZ);
         const group = this.pocketGroups?.get(key);
         if (!group) return;
 
@@ -31180,7 +31264,7 @@ export class ThreeGame {
         const tileX = Math.round(worldX);
         const tileY = Math.round(worldY);
         if (this.isInPocket) {
-            const pocket = this.pocketCache?.get(this.getWallKey(this._pocketHoleX, this._pocketHoleZ));
+            const pocket = this.pocketCache?.get(this._pocketCacheKey ?? this.getWallKey(this._pocketHoleX, this._pocketHoleZ));
             if (!pocket) return '#';
             const localX = tileX - this._pocketHoleX + pocket.centerCell.x;
             const localY = tileY - this._pocketHoleZ + pocket.centerCell.y;
@@ -31214,7 +31298,7 @@ export class ThreeGame {
         const tileX = Math.round(worldX);
         const tileY = Math.round(worldY);
         if (this.isInPocket) {
-            const pocket = this.pocketCache?.get(this.getWallKey(this._pocketHoleX, this._pocketHoleZ));
+            const pocket = this.pocketCache?.get(this._pocketCacheKey ?? this.getWallKey(this._pocketHoleX, this._pocketHoleZ));
             if (!pocket) return '#';
             const localX = tileX - this._pocketHoleX + pocket.centerCell.x;
             const localY = tileY - this._pocketHoleZ + pocket.centerCell.y;
@@ -31522,7 +31606,7 @@ export class ThreeGame {
 
     interactWithPocketClimbPoint() {
         if (!this.isInPocket || !this.player) return false;
-        const key = this.getWallKey(this._pocketHoleX, this._pocketHoleZ);
+        const key = this._pocketCacheKey ?? this.getWallKey(this._pocketHoleX, this._pocketHoleZ);
         const pocket = this.pocketCache?.get(key);
         if (!pocket) return false;
 

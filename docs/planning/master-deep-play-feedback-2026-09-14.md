@@ -42,6 +42,14 @@ Commit: `126dda5`.
 
 ## Evidence register
 
+### Pass 4 — DP-05 Foundry transition rollback and plane recovery (September 14)
+
+- Found a concrete failure path independent of the unidentified original capture: entry hid the surface and committed the plane before mounting the room; a mount exception left no rollback. Entry now keeps the surface intact until a floor is mounted, guards reentrant entry, and restores player transforms, camera, input and visibility on failure. Failed room pickups are deregistered; cleanup disposes only portal-owned geometry/materials, never shared surface resources.
+- Foundry uses a namespaced cache instead of reusing a pit at the same coordinates. Collision, contextual interactions, pickups, ceiling presentation and the exit all use the active cache key. Exit hides the interior; re-entry restores it. Respawn restores surface visibility and hides old interior groups.
+- A bounded Foundry-only recovery handles non-finite coordinates, below-floor positions and escape beyond the room. Missing/hidden/detached floor groups return the player to the recorded exterior point and are invalidated for clean reconstruction. Entry, rollback, recovery and exit now emit structured `PORTAL` diagnostics.
+- Verification: **88 files / 637 tests passed**, including 11 new Foundry regression cases (40 checks across Foundry, pockets and plane contracts). ESLint, `git diff --check`, production build and 50-required-media audit passed.
+- Browser skill verification reached title → roster → Armory → solo deployment without reported page errors, but the intro/loading transition remained non-ready and later evaluations stalled. No successful rendered Foundry traversal is claimed; original failure replay and packaged-client acceptance remain open. This is a tested safety patch, not proof that all Foundry ground-loss causes are resolved.
+
 References use **entry `id`**, not zero-based array position, followed by elapsed milliseconds. JSON messages embed diagnostic objects; expand the referenced entry to inspect its details. SHA-256 and compact metrics can be reproduced with:
 
 ```sh
