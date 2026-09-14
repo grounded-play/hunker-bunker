@@ -269,6 +269,7 @@ test.describe('controller-ready modal focus', () => {
     test('controller can choose a visible right-stick sensitivity preset', async ({ page }) => {
         await bootToTitleSplash(page);
         await page.locator('#title-settings-btn').click();
+        await page.evaluate(() => document.body.classList.add('controller-mode'));
 
         const fast = page.locator('[data-aim-sensitivity="1.5"]');
         await fast.focus();
@@ -409,6 +410,10 @@ test.describe('controller-ready modal focus', () => {
                 backgroundImage: desktopSelectStyle.backgroundImage,
                 display: desktopSelectStyle.display
             };
+            const desktopAim = {
+                selectDisplay: desktopSelectStyle.display,
+                presetsDisplay: getComputedStyle(aimPresets).display
+            };
             document.body.classList.add('controller-mode');
             const controllerAim = {
                 selectDisplay: getComputedStyle(aimSelect).display,
@@ -421,6 +426,7 @@ test.describe('controller-ready modal focus', () => {
                 backdropFilter: style.backdropFilter || style.webkitBackdropFilter,
                 backgroundImage: style.backgroundImage,
                 desktopSelect,
+                desktopAim,
                 controllerAim,
                 coversStage: Math.abs(settingsRect.left - viewportRect.left) < 1
                     && Math.abs(settingsRect.top - viewportRect.top) < 1
@@ -436,6 +442,8 @@ test.describe('controller-ready modal focus', () => {
         expect(presentation.desktopSelect.appearance).toBe('none');
         expect(presentation.desktopSelect.backgroundImage).toContain('svg');
         expect(presentation.desktopSelect.display).not.toBe('none');
+        expect(presentation.desktopAim.selectDisplay).not.toBe('none');
+        expect(presentation.desktopAim.presetsDisplay).toBe('none');
         expect(presentation.controllerAim.selectDisplay).toBe('none');
         expect(presentation.controllerAim.presetsDisplay).not.toBe('none');
     });

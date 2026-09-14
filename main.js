@@ -1086,7 +1086,7 @@ function resolveInteractiveFocusTarget(element) {
     return item.querySelector?.('button:not([disabled]), select:not([disabled]), input:not([disabled]), textarea:not([disabled]), a[href], [tabindex]:not([tabindex="-1"])') || item;
 }
 
-function focusControllerTarget(target, { playHover = false } = {}) {
+function focusControllerTarget(target, { playHover = false, ensureVisible = true } = {}) {
     if (!target) return false;
     const previous = document.activeElement;
     try {
@@ -1094,7 +1094,7 @@ function focusControllerTarget(target, { playHover = false } = {}) {
     } catch {
         target.focus?.();
     }
-    if (!centerSettingsFocusTarget(target)) {
+    if (ensureVisible && !centerSettingsFocusTarget(target)) {
         target.scrollIntoView?.({ block: 'nearest', inline: 'nearest' });
     }
     if (playHover && previous !== target) {
@@ -1884,34 +1884,16 @@ function handleSteamMenuInput(actions) {
 
         updateVirtualGamepadCursorPosition(controllerAimCursor.x, controllerAimCursor.y, true);
 
-        // Smooth scroll active or hovered container. The whole-root fallback
-        // below is only for genuine scrollable modal content (settings lists,
-        // codex, etc). The title/main menu (#splash, #menu) were never meant
-        // to scroll at all -- any scrollHeight > clientHeight there is layout
-        // noise, not content, and scrolling the whole screen reads as the
-        // entire menu shifting instead of the subtle cursor motion desktop
-        // gets from the same stick input.
-        const scrollValue = (pointerY * 20) || (-deltaY * 20);
-        if (Math.abs(scrollValue) > 0.5) {
-            const elAtPoint = document.elementFromPoint(controllerAimCursor.x, controllerAimCursor.y);
-            const root = getControllerFocusRoot() ?? document.body;
-            const isTopLevelMenuScreen = root.id === 'splash' || root.id === 'menu';
-            const scrollContainer = elAtPoint?.closest?.('.modal-content, .settings-modal-content, .controls-list, .mothership-dialogue-body, .codex-modal-content, .archive-log-list')
-                || root.querySelector?.('.settings-modal-content, .modal-content, .controls-list, .mothership-dialogue-body, .codex-modal-content, .archive-log-list')
-                || (!isTopLevelMenuScreen && root.scrollHeight > root.clientHeight ? root : null);
-
-            if (scrollContainer) {
-                scrollContainer.scrollTop += scrollValue;
-            }
-        }
-
         // Hover element focus
         const hovered = document.elementFromPoint(controllerAimCursor.x, controllerAimCursor.y);
         const focusable = hovered?.closest?.('button, select, input, a, [tabindex]:not([tabindex="-1"]), .setting-item, .char-card, .class-tab, .armory-btn, .armory-select, .deck-focus-target, .toggle, .splash-btn, .about-btn');
         if (focusable) {
             const target = focusable.matches('button, select, input, a, .char-card, .class-tab, .armory-btn, .armory-select, .toggle') ? focusable : (focusable.querySelector('button, select, input, a') || focusable);
             if (target && target !== document.activeElement) {
-                focusControllerTarget(target, { playHover: true });
+                // Moving the virtual cursor should behave like moving a mouse:
+                // update hover/focus without pulling a scrollable menu along
+                // underneath it. D-pad navigation still centers focused rows.
+                focusControllerTarget(target, { playHover: true, ensureVisible: false });
             }
         }
     }

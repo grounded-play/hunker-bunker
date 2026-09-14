@@ -1603,6 +1603,7 @@ body {
   display: none;
 }
 
+body:not(.controller-mode) .settings-choice-control > .sensitivity-presets,
 body:not(.controller-mode) .settings-choice-control > .settings-controller-hint {
   display: none;
 }
