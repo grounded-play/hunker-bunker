@@ -1912,7 +1912,17 @@
             <div><span>LOCAL LIGHT</span><strong id="terminal-log-light">DAYLIGHT</strong></div>
             <div><span>NEXT TRANSITION</span><strong id="terminal-log-transition">--:--</strong></div>
           </div>
-          <div id="terminal-objectives-grid" class="terminal-objectives-grid"></div>
+          <div id="terminal-objectives-grid" class="terminal-objectives-grid">
+            <section class="terminal-section" id="terminal-turret-build-section" aria-label="Optional base defense">
+              <div class="action-card">
+                <div class="action-card-header"><span class="action-title">DEFENSE TURRET</span></div>
+                <p class="action-desc">Optional north-door defense. Repairing life support does not build a turret.</p>
+                <p class="action-desc" id="terminal-turret-build-status" role="status">REPAIR O₂ TO UNLOCK BLUEPRINT</p>
+                <p class="action-desc action-desc--cost" id="terminal-turret-build-cost"></p>
+                <button type="button" class="terminal-action-btn" id="terminal-build-turret" disabled>REQUIRES O₂ REPAIR</button>
+              </div>
+            </section>
+          </div>
         </div>
 
         <!-- Class Skills Tab Content -->

@@ -96,7 +96,7 @@ import { createSkyRig } from './sky/skyDome.js';
 import { SKY_SHEETS } from './sky/skySheets.js';
 import { MULTIPLAYER_SPAWN_MODES, hashSeed, partitionCrashPlanPlayers } from './multiplayerCrashPlanner.js';
 import { multiplayerLobby } from './multiplayerLobby.js';
-import { BankManager, O2_GENERATOR_UPGRADES, BASE_TURRET_UPGRADES, BASE_TURRET_REPAIR_COST, TIER2_UPGRADE_ORDER, TIER2_UPGRADE_CONFIGS, WEAPON_UPGRADE_ORDER, WEAPON_UPGRADES_CONFIG, CLASS_SKILL_TREES, shellPriceOf } from './bank.js';
+import { BankManager, O2_GENERATOR_UPGRADES, BASE_TURRET_UPGRADES, BASE_TURRET_REPAIR_COST, BASE_TURRET_BUILD_COST, TIER2_UPGRADE_ORDER, TIER2_UPGRADE_CONFIGS, WEAPON_UPGRADE_ORDER, WEAPON_UPGRADES_CONFIG, CLASS_SKILL_TREES, shellPriceOf } from './bank.js';
 import { MarkovGenerator } from './generator.js';
 import {
     addCanyonVoidAroundWalkable,
@@ -4087,7 +4087,6 @@ export class ThreeGame {
         this.upgradeBaseTurretToModel?.(group);
 
         this._onBaseItemRepaired = () => {
-            this.bank?.unlockBaseTurret?.();
             this.updateBaseTurretVisuals();
         };
         this._onBaseTurretChanged = () => this.updateBaseTurretVisuals();
@@ -4138,15 +4137,10 @@ export class ThreeGame {
         const level = this.bank.getBaseTurretLevel();
         const hp = this.bank.getBaseTurretHp();
 
-        const hasCompletedBaseRepair = this.bank.getO2GeneratorLevel() >= 1
-            || Object.values(this.bank.state?.unlocks || {}).some(Boolean);
-        if (hasCompletedBaseRepair && !this.bank.isBaseTurretUnlocked()) {
-            this.bank.unlockBaseTurret();
-        }
         const isUnlocked = this.bank.isBaseTurretUnlocked();
 
-        if (isUnlocked && this.baseDefenseTurretState) {
-            this.baseDefenseTurretState.active = true;
+        if (this.baseDefenseTurretState) {
+            this.baseDefenseTurretState.active = isUnlocked;
         }
 
         const active = Boolean(this.baseDefenseTurretState?.active && hp > 0);
@@ -11390,6 +11384,7 @@ export class ThreeGame {
             this.renderGoalCard(ship, bankState, cardConfig);
         }
         this.renderTerminalEventPanel();
+        this.renderBaseTurretBuildCard(ship);
 
         // Hide active / unlocked sections below
         const o2SectionEl = document.getElementById('o2-generator-section');
@@ -12309,6 +12304,35 @@ export class ThreeGame {
             modal.classList.add('hidden');
             modal.setAttribute('aria-hidden', 'true');
         }
+    }
+
+    renderBaseTurretBuildCard(ship) {
+        const button = document.getElementById('terminal-build-turret');
+        const status = document.getElementById('terminal-turret-build-status');
+        const cost = document.getElementById('terminal-turret-build-cost');
+        if (!button || !this.bank) return;
+        const built = this.bank.isBaseTurretUnlocked();
+        const available = this.bank.isBaseTurretBuildAvailable();
+        const canBuild = this.bank.canBuildBaseTurret();
+        if (status) status.textContent = built ? 'BUILT — CONTROLS AT NORTH DOOR'
+            : available ? 'OPTIONAL DEFENSE — CONSTRUCTION AVAILABLE' : 'REPAIR O₂ TO UNLOCK BLUEPRINT';
+        if (cost) cost.textContent = `BUILD COST: ${this.formatResourceCost(BASE_TURRET_BUILD_COST)}`;
+        button.textContent = built ? 'TURRET BUILT' : available ? 'BUILD DEFENSE TURRET' : 'REQUIRES O₂ REPAIR';
+        button.disabled = !canBuild;
+        button.classList.toggle('btn-state--available', canBuild);
+        button.classList.toggle('btn-state--locked', !canBuild);
+        button.onclick = () => {
+            try {
+                if (!this.bank.buildBaseTurret()) return;
+            } catch (error) {
+                if (status) status.textContent = 'BUILD NOT SAVED — NO RESOURCES SPENT. FREE SAVE SPACE AND RETRY.';
+                console.warn('[base-turret] construction save failed', error);
+                return;
+            }
+            window.AudioManager?.play('ui_buy_item', { volume: 0.6 });
+            this.updateBaseTurretVisuals();
+            this.renderConsoleBanking(ship);
+        };
     }
 
     openBaseTurretModal() {

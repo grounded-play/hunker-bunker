@@ -8,6 +8,18 @@ Code baseline: `545bb8f` on `dev/sprint-40`, package `2.4.4-beta`. That commit c
 
 This document is a plan, not a claim that the entire sprint has been implemented. No Steam accounts, achievements, inventory, purchases, or hosted issues were modified during this review.
 
+## Implementation journal
+
+The full backlog remains the goal. Entries below distinguish implemented changes from acceptance still requiring hardware, packaged clients, or a complete gameplay route. No ticket is closed merely because its unit tests pass.
+
+### Pass 1 — DP-10 explicit turret construction (September 14)
+
+- Removed all three automatic ownership paths: bank-load inference, base-upgrade event grant and visual-update grant. O2 now unlocks construction eligibility, not an active turret.
+- Added an optional terminal build card (currently Objective / Night Log; its final tab home is part of DP-25). Construction costs **30 TECH / 10 COIN**, committed atomically with ownership. Duplicate purchase, missing O2/funds, and upgrading/repairing an unbuilt turret are rejected.
+- Existing explicit `baseTurretUnlocked: true` beta saves retain their turret, upgrades and damage without a new charge. A save containing only O2/goal progress gets no inferred turret. Fresh bank reset clears active rendering/firing state.
+- Verification: bank/base-turret/class-passive tests passed (57 checks); ESLint passed for affected JS. Browser skill checks confirmed the actual terminal button at 1920×1080: click changed resources 100/100 → 70/90, ownership and active state to true, then disabled the button as `TURRET BUILT`; no browser errors. This used isolated seeded O2 eligibility, not a claimed full boss playthrough. `tests/e2e/base-turret-build.spec.js` passed its real-click/duplicate/persist/reload route (26.8 seconds).
+- **Status: implemented, broader acceptance pending.** First-boss balance with/without defense and paired packaged clients still need verification; DP-17/25 own final menu sizing/organization.
+
 ## Evidence register
 
 References use **entry `id`**, not zero-based array position, followed by elapsed milliseconds. JSON messages embed diagnostic objects; expand the referenced entry to inspect its details. SHA-256 and compact metrics can be reproduced with:
