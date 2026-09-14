@@ -233,6 +233,7 @@
       "f_chassis": "EXOSKELETT-CHASSIS-SKIN",
       "f_patch": "SCHULTERAUFNÄHER & ABZEICHEN",
       "f_hud": "TAKTISCHES HUD-DESIGN",
+      "f_voicebank": "ALT-FUNK-STIMMBANK",
       "telemetry_title": "ANZUG-TELEMETRIESTATUS",
       "tel_thermal": "Thermo-Kryogewebe:",
       "tel_thermal_val": "NORMAL 100%",

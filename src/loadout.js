@@ -465,32 +465,57 @@ export class LoadoutManager {
         return recipe.name;
     }
 
-    reconcileOwnership(inventory = []) {
+    /**
+     * Strip equipped cosmetics the player no longer owns.
+     *
+     * The debug UNLOCK ALL override has to be honoured here, not just at the
+     * equip gate: without it you could equip a locked chassis in the Armory and
+     * have the next inventory refresh silently strip it back off -- which is
+     * what "debug doesn't unlock everything" looked like from the outside.
+     * steamVaultUi calls this with an empty inventory on sign-out, so that path
+     * stripped every slot at once.
+     *
+     * @param inventory   Owned items, as {itemdefid, quantity}.
+     * @param isUnlockAll Override, defaulting to the live ownership store.
+     */
+    reconcileOwnership(inventory = [], { isUnlockAll = null } = {}) {
+        const unlockAll = isUnlockAll ?? (typeof window !== 'undefined'
+            ? Boolean(window.itemOwnership?.isUnlockAll?.())
+            : false);
+        if (unlockAll) return;
+
+        // Prefer the ownership store: it also knows about items that ship
+        // unlocked (community chassis skins, earned rig modules) and about
+        // achievement/season grants, none of which appear in the Steam
+        // inventory array. Checking the array alone stripped all of them --
+        // and community skin ids are strings, so Number() made them NaN and
+        // they could never match at all.
+        const store = typeof window !== 'undefined' ? window.itemOwnership : null;
         const ownedDefIds = new Set(inventory.map((item) => Number(item.itemdefid)));
+        const owned = (id) => {
+            if (!id) return true;
+            if (store?.isOwned) return store.isOwned(id);
+            return ownedDefIds.has(Number(id));
+        };
 
-        // Validate suit decals / skins
-        if (this.state.suit.decalId && !ownedDefIds.has(Number(this.state.suit.decalId))) {
-            this.state.suit.decalId = null;
-        }
-        if (this.state.suit.chassisSkinId && !ownedDefIds.has(Number(this.state.suit.chassisSkinId))) {
-            this.state.suit.chassisSkinId = null;
-        }
+        // Suit-wide cosmetics.
+        if (!owned(this.state.suit.decalId)) this.state.suit.decalId = null;
+        if (!owned(this.state.suit.chassisSkinId)) this.state.suit.chassisSkinId = null;
 
-        // Validate per-class charms & skins & mods
+        // UI overlays and the alt-radio voice bank. These went unreconciled
+        // before, so an unowned HUD theme, tracer or voice bank stayed equipped
+        // indefinitely -- the mirror image of the stripping bug above.
+        if (!owned(this.state.hudThemeId)) this.state.hudThemeId = null;
+        if (!owned(this.state.tracerFxId)) this.state.tracerFxId = null;
+        if (!owned(this.state.voicePackId)) this.state.voicePackId = null;
+
+        // Per-class charms, weapon skins and rig modules.
         for (const cls of ['scout', 'tank', 'engineer']) {
             const lo = this.state.perClass[cls];
-            if (lo.charmId && !ownedDefIds.has(Number(lo.charmId))) {
-                lo.charmId = null;
-            }
-            if (lo.weaponSkinId && !ownedDefIds.has(Number(lo.weaponSkinId))) {
-                lo.weaponSkinId = null;
-            }
-            if (lo.mod1Id && !ownedDefIds.has(Number(lo.mod1Id))) {
-                lo.mod1Id = null;
-            }
-            if (lo.mod2Id && !ownedDefIds.has(Number(lo.mod2Id))) {
-                lo.mod2Id = null;
-            }
+            if (!owned(lo.charmId)) lo.charmId = null;
+            if (!owned(lo.weaponSkinId)) lo.weaponSkinId = null;
+            if (!owned(lo.mod1Id)) lo.mod1Id = null;
+            if (!owned(lo.mod2Id)) lo.mod2Id = null;
         }
 
         this.save();

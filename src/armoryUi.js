@@ -12,6 +12,7 @@ import {
     unlockAllSheens
 } from './weaponSheens.js';
 import { ITEM_TYPE, getCatalogIdsByType, getCatalogEntry } from './itemOwnership.js';
+import { getVoiceBank } from './data/voiceBanks.js';
 import { unlockAllPolishes } from './operatorPolishes.js';
 import {
     ARCHETYPE_SKINS,
@@ -330,6 +331,24 @@ export function createArmoryUi({
                 sound: 'sfx_charm_clink_light',
                 after: () => {}
             },
+            voicebank: {
+                title: 'ALT RADIO VOICE BANK',
+                subtitle: 'COMMS OVERLAY // REPLACES GENERIC COMBAT CALLOUTS',
+                noneLabel: 'DEFAULT COMMS',
+                ids: () => getCatalogIdsByType(ITEM_TYPE.AUDIO),
+                current: () => (loadoutManager.state.voicePackId ? String(loadoutManager.state.voicePackId) : ''),
+                currentName: () => nameForItem(loadoutManager.state.voicePackId, 'DEFAULT COMMS'),
+                apply: (value) => equipGuard(value || null, (v) => loadoutManager.equipVoicePack(v)),
+                sound: 'sfx_charm_clink_light',
+                // Preview the bank the moment it is picked -- a voice option you
+                // cannot hear before committing is the one cosmetic slot where
+                // the turntable tells you nothing.
+                after: (value) => {
+                    if (!value) return;
+                    const bank = getVoiceBank(value);
+                    if (bank) window.AudioManager?.playVoiceCallout?.('reload', { volume: 0.9 });
+                }
+            },
             hud: {
                 title: 'TACTICAL HUD THEME',
                 subtitle: 'OPTICAL VISOR // REAL-TIME INTERFACE SCANLINES',
@@ -520,8 +539,8 @@ export function createArmoryUi({
                             <button type="button" class="class-tab ${cls === 'tank' ? 'active' : ''}" data-class="tank" data-i18n="ui.armory.tab_tank">▰ TANK</button>
                             <button type="button" class="class-tab ${cls === 'engineer' ? 'active' : ''}" data-class="engineer" data-i18n="ui.armory.tab_engineer">◆ ENGINEER</button>
                         </div>
-                        <button type="button" class="armory-debug-skins-btn ${ownership.isUnlockAll() ? 'active' : ''}" id="armory-debug-unlock-skins-btn" title="Toggle debug unlock for all weapon/chassis skins, charms, and polishes">
-                            ${ownership.isUnlockAll() ? '✓ ALL SKINS UNLOCKED' : '[DEBUG] UNLOCK ALL SKINS'}
+                        <button type="button" class="armory-debug-skins-btn ${ownership.isUnlockAll() ? 'active' : ''}" id="armory-debug-unlock-skins-btn" title="Toggle debug unlock for every cosmetic: weapon and chassis skins, charms, decals, rig modules, tracers, HUD themes and alt-radio voice banks">
+                            ${ownership.isUnlockAll() ? '✓ ALL COSMETICS UNLOCKED' : '[DEBUG] UNLOCK ALL COSMETICS'}
                         </button>
                         <span class="status-cycle-hint" data-i18n="ui.armory.cycle_hint">[Q / E CYCLE]</span>
                         <button type="button" class="calibrate-btn open-settings-btn armory-settings-btn" id="armory-settings-btn" title="Open Settings" aria-label="Open Settings" data-i18n-title="ui.armory.aria_settings" data-i18n-aria-label="ui.armory.aria_settings">⚙</button>
@@ -669,6 +688,10 @@ export function createArmoryUi({
                             <div class="bench-field" style="margin-top: 6px;">
                                 <label data-i18n="ui.armory.f_hud">TACTICAL HUD THEME</label>
                                 ${slotHtml('hud')}
+                            </div>
+                            <div class="bench-field" style="margin-top: 6px;">
+                                <label data-i18n="ui.armory.f_voicebank">ALT RADIO VOICE BANK</label>
+                                ${slotHtml('voicebank')}
                             </div>
                             <div class="telemetry-box">
                                 <div class="telemetry-title" data-i18n="ui.armory.telemetry_title">SUIT TELEMETRY STATUS</div>

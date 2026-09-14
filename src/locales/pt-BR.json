@@ -233,6 +233,7 @@
       "f_chassis": "APARÊNCIA DO CHASSI",
       "f_patch": "INSÍGNIA DE OMBRO",
       "f_hud": "TEMA DE HUD TÁTICO",
+      "f_voicebank": "BANCO DE VOZ DE RÁDIO ALT",
       "telemetry_title": "STATUS DE TELEMETRIA DO TRAJE",
       "tel_thermal": "Malha criotérmica:",
       "tel_thermal_val": "NOMINAL 100%",

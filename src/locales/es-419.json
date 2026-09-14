@@ -233,6 +233,7 @@
       "f_chassis": "ASPECTO DEL CHASIS",
       "f_patch": "PARCHE E INSIGNIA",
       "f_hud": "TEMA DE HUD TÁCTICO",
+      "f_voicebank": "BANCO DE VOZ DE RADIO ALT",
       "telemetry_title": "ESTADO DE TELEMETRÍA DEL TRAJE",
       "tel_thermal": "Malla criotérmica:",
       "tel_thermal_val": "NOMINAL 100%",

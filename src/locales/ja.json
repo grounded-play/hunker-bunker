@@ -233,6 +233,7 @@
       "f_chassis": "外骨格機体スキン",
       "f_patch": "ショルダーパッチと記章",
       "f_hud": "戦術HUDテーマ",
+      "f_voicebank": "代替無線ボイスバンク",
       "telemetry_title": "スーツテレメトリ状態",
       "tel_thermal": "サーマルクライオメッシュ：",
       "tel_thermal_val": "正常 100%",

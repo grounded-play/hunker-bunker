@@ -233,6 +233,7 @@
       "f_chassis": "外骨骼机体皮肤",
       "f_patch": "肩章与徽记",
       "f_hud": "战术 HUD 主题",
+      "f_voicebank": "备用无线电语音库",
       "telemetry_title": "装甲遥测状态",
       "tel_thermal": "低温热网：",
       "tel_thermal_val": "正常 100%",
