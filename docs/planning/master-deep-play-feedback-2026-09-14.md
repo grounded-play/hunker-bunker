@@ -20,6 +20,13 @@ The full backlog remains the goal. Entries below distinguish implemented changes
 - Verification: bank/base-turret/class-passive tests passed (57 checks); ESLint passed for affected JS. Browser skill checks confirmed the actual terminal button at 1920×1080: click changed resources 100/100 → 70/90, ownership and active state to true, then disabled the button as `TURRET BUILT`; no browser errors. This used isolated seeded O2 eligibility, not a claimed full boss playthrough. `tests/e2e/base-turret-build.spec.js` passed its real-click/duplicate/persist/reload route (26.8 seconds).
 - **Status: implemented, broader acceptance pending.** First-boss balance with/without defense and paired packaged clients still need verification; DP-17/25 own final menu sizing/organization.
 
+### Pass 2 — DP-02 O2 lighting lifecycle regression
+
+- Found the prebuilt-light workaround was undone by `ensureO2BubbleVisualState`: every offline O2 update disposed the base grid. First repair added eight PointLights back during play, then startup hid/reintroduced the O2 PointLight too. These changes invalidate light-count-dependent material programs and are consistent with the recorded long render phases; they do not prove every stall has the same cause.
+- Added `BaseLights.standby()` to power down without removing fixtures. The O2 light is likewise always present at zero intensity while offline. Actual game teardown still disposes the grid. Repair, cinematic rise and reset now preserve the same light identities.
+- Verification: **19 tests passed** across base lights, choreography and the new **runtime** `threeGame.o2LightLifecycle.test.js`. The regression exercises `ensureO2BubbleVisualState`, offline/online/reset and `startO2StartupSequence`/animation completion, asserting the same nine visible light IDs throughout. ESLint, production build and required-media audit passed.
+- **Status: regression fixed, performance acceptance pending.** Need same-route cold/warm RTX and packaged Linux traces for DP-01/02; no FPS or latency improvement is claimed from unit tests alone. Asset first-use/driver/media costs and choreography ownership remain separate work.
+
 ## Evidence register
 
 References use **entry `id`**, not zero-based array position, followed by elapsed milliseconds. JSON messages embed diagnostic objects; expand the referenced entry to inspect its details. SHA-256 and compact metrics can be reproduced with:

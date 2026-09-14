@@ -12620,7 +12620,7 @@ export class ThreeGame {
         this._skipO2Dialogue = skipDialogue;
         this.createO2BubbleObjects();
         if (this.o2BubbleObjects) {
-            this.o2BubbleObjects.light.visible = false;
+            this.o2BubbleObjects.light.intensity = 0;
             this.o2BubbleObjects.fill.visible = false;
             this.o2BubbleObjects.ring.visible = false;
         }
@@ -16476,7 +16476,7 @@ export class ThreeGame {
     createO2BubbleObjects() {
         if (this.o2BubbleObjects) return;
 
-        const light = new THREE.PointLight(O2_SAFE_LIGHT_COLOR, 1.45, 9, 1.45);
+        const light = new THREE.PointLight(O2_SAFE_LIGHT_COLOR, 0, 9, 1.45);
         const ringInnerRadius = Math.max(0.2, O2_GENERATOR_RING_BASE_RADIUS - (O2_GENERATOR_RING_BAND_THICKNESS * 0.5));
         const ringOuterRadius = O2_GENERATOR_RING_BASE_RADIUS + (O2_GENERATOR_RING_BAND_THICKNESS * 0.5);
         const fill = new THREE.Mesh(
@@ -16509,7 +16509,8 @@ export class ThreeGame {
         ring.rotation.x = -Math.PI / 2;
         ring.position.y = 0.035;
         ring.visible = false;
-        light.visible = false;
+        // Keep the O2 light in the shader light set even while unpowered.
+        light.visible = true;
 
         this.scene.add(light);
         this.scene.add(fill);
@@ -16583,11 +16584,11 @@ export class ThreeGame {
         if (!this.o2BubbleObjects) return;
 
         if (!enabled) {
-            this.o2BubbleObjects.light.visible = false;
+            this.o2BubbleObjects.light.intensity = 0;
             this.o2BubbleObjects.fill.visible = false;
             this.o2BubbleObjects.ring.visible = false;
             if (this.baseLights) {
-                this.baseLights.dispose();
+                this.baseLights.standby();
             }
             return;
         }
@@ -16600,6 +16601,7 @@ export class ThreeGame {
         this.o2BubbleObjects.ring.position.set(generatorPos.x, 0.035, generatorPos.z);
         this.o2BubbleObjects.fill.position.set(generatorPos.x, 0.034, generatorPos.z);
         this.o2BubbleObjects.light.visible = true;
+        this.o2BubbleObjects.light.intensity = 1.35;
         this.o2BubbleObjects.fill.visible = true;
         this.o2BubbleObjects.ring.visible = true;
 
@@ -33581,6 +33583,7 @@ export class ThreeGame {
             this.scene.remove(this.o2BubbleObjects.light);
             this.o2BubbleObjects = null;
         }
+        this.baseLights?.dispose();
         this.removeMenuGyroListeners();
         this.gpuFrameTimer?.dispose?.();
         this.renderer.dispose();
