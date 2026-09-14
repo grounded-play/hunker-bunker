@@ -18,10 +18,8 @@ import { runO2MilestoneChoreography, O2_CHOREOGRAPHY_PHASES } from './o2Cinemati
 // intensities. These lock the properties that fix depends on, because the
 // symptom is a frame-time cliff that no unit test can observe directly.
 //
-// NOTE: the wider O2 door/video choreography described in
-// docs/planning/o2-cinematic-doors-and-boss-destruction-plan-2026-09-10.md is
-// NOT implemented in the runtime yet, so nothing here asserts it. See that
-// plan's review notes.
+// Runtime power/reset coverage lives in threeGame.o2LightLifecycle.test.js;
+// director ownership/cancellation coverage lives in milestonePresentation.test.js.
 describe('LAG-01 — base light grid must not change the scene light set at ignition', () => {
     const countLights = (scene) => {
         let n = 0;

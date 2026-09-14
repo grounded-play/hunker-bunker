@@ -6282,9 +6282,11 @@ export class ThreeGame {
                         playerType: this.playerType,
                         goalKey
                     });
-                    this.spawnMilestoneBoss(bossType, { sourceGoalKey: goalKey });
+                    const boss = this.spawnMilestoneBoss(bossType, { sourceGoalKey: goalKey });
                     window.dispatchEvent(new CustomEvent('milestone-boss-warning', {
-                        detail: { type: bossType, goalKey }
+                        detail: { type: bossType, goalKey,
+                            encounterId: boss?.userData?.milestoneEncounterId,
+                            milestoneId: boss?.userData?.milestoneId }
                     }));
                 } finally {
                     this.setInputEnabled(true);
@@ -12652,6 +12654,26 @@ export class ThreeGame {
         this.o2StartupTime = 0;
     }
 
+    cancelO2StartupSequence({ restoreVisuals = true } = {}) {
+        const wasActive = this.o2StartupSequenceActive;
+        this.o2StartupSequenceActive = false;
+        this.o2StartupPhase = null;
+        this._onO2StartupSequenceComplete = null;
+        this._pendingO2BossType = null;
+        this._skipO2Dialogue = true;
+        if (!restoreVisuals || !wasActive) return;
+        // A completed purchase survives a presentation failure. Restore its
+        // final visual state instead of leaving the generator below the floor.
+        const ship = this.getActiveShip();
+        if (ship?.o2ModuleSprite) {
+            ship.o2ModuleSprite.scale.set(1.58, 1.58, 1);
+            ship.o2ModuleSprite.position.y = 0.09;
+            syncWorld3dReplacement(ship.o2ModuleSprite, { scale: 1, visible: true });
+        }
+        ship?.o2ModuleShadow?.scale.set(1, 1, 1);
+        this.ensureO2BubbleVisualState();
+    }
+
     updateO2StartupSequence(delta) {
         if (!this.o2StartupSequenceActive) return;
         this.o2StartupTime += delta;
@@ -12736,11 +12758,13 @@ export class ThreeGame {
 
             // Post-dialogue actions:
             // 1. Send the boss
-            this.spawnMilestoneBoss(bossType, { sourceGoalKey: 'o2Bubble' });
+            const boss = this.spawnMilestoneBoss(bossType, { sourceGoalKey: 'o2Bubble' });
 
             // 2. Play warning alert overlay
             window.dispatchEvent(new CustomEvent('milestone-boss-warning', {
-                detail: { type: bossType, goalKey: 'o2Bubble' }
+                detail: { type: bossType, goalKey: 'o2Bubble',
+                    encounterId: boss?.userData?.milestoneEncounterId,
+                    milestoneId: boss?.userData?.milestoneId }
             }));
         } finally {
             // Input must come back even if the dialogue or boss spawn throws —
@@ -18162,6 +18186,7 @@ export class ThreeGame {
         if (resetRunState) {
             this.resetBunkerBlastDoor();
             this.runStartTime = Date.now();
+            this.cancelO2StartupSequence?.({ restoreVisuals: false });
             this.totalDistanceTravelled = 0;
             this.maxDepthTierReached = 0;
             this.currentDepthTier = 0;

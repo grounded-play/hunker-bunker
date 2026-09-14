@@ -14,6 +14,8 @@ The full backlog remains the goal. Entries below distinguish implemented changes
 
 ### Pass 1 — DP-10 explicit turret construction (September 14)
 
+Commit: `8182f49`.
+
 - Removed all three automatic ownership paths: bank-load inference, base-upgrade event grant and visual-update grant. O2 now unlocks construction eligibility, not an active turret.
 - Added an optional terminal build card (currently Objective / Night Log; its final tab home is part of DP-25). Construction costs **30 TECH / 10 COIN**, committed atomically with ownership. Duplicate purchase, missing O2/funds, and upgrading/repairing an unbuilt turret are rejected.
 - Existing explicit `baseTurretUnlocked: true` beta saves retain their turret, upgrades and damage without a new charge. A save containing only O2/goal progress gets no inferred turret. Fresh bank reset clears active rendering/firing state.
@@ -22,10 +24,21 @@ The full backlog remains the goal. Entries below distinguish implemented changes
 
 ### Pass 2 — DP-02 O2 lighting lifecycle regression
 
+Commit: `126dda5`.
+
 - Found the prebuilt-light workaround was undone by `ensureO2BubbleVisualState`: every offline O2 update disposed the base grid. First repair added eight PointLights back during play, then startup hid/reintroduced the O2 PointLight too. These changes invalidate light-count-dependent material programs and are consistent with the recorded long render phases; they do not prove every stall has the same cause.
 - Added `BaseLights.standby()` to power down without removing fixtures. The O2 light is likewise always present at zero intensity while offline. Actual game teardown still disposes the grid. Repair, cinematic rise and reset now preserve the same light identities.
 - Verification: **19 tests passed** across base lights, choreography and the new **runtime** `threeGame.o2LightLifecycle.test.js`. The regression exercises `ensureO2BubbleVisualState`, offline/online/reset and `startO2StartupSequence`/animation completion, asserting the same nine visible light IDs throughout. ESLint, production build and required-media audit passed.
 - **Status: regression fixed, performance acceptance pending.** Need same-route cold/warm RTX and packaged Linux traces for DP-01/02; no FPS or latency improvement is claimed from unit tests alone. Asset first-use/driver/media costs and choreography ownership remain separate work.
+
+### Pass 3 — DP-03 boss-film ownership and interrupted O2 cleanup
+
+- O2's director now marks its final boss warning as already presented; the warning remains available to HUD/VO consumers without enqueuing the film a second time. The main warning listener uses a per-run, per-encounter claim gate, with goal fallback for legacy events. Radar and reactor can both present even though they use the same species. Actual spawned encounter IDs now travel with warning events.
+- Concurrent/repeated O2 requests share one promise within a run. New runs get a new presentation; failed requests can retry. Leaving the run prevents late sequence callbacks from spawning a boss or unlocking a newer expedition.
+- Added bounded wait for the structure-rise callback and failure cleanup: input/cinematic lock releases, the paid generator restores its completed visual state, and stale callbacks clear. Run reset explicitly cancels any old rise animation.
+- Verification: **38 tests passed** across presentation, director, boss lifecycle and runtime O2 lighting. Tests include actual director→warning-consumer interaction, duplicate aliases, distinct same-species goals, new encounters/runs, concurrency, media failure/retry, lost callback and cancellation. ESLint, production build and required-media audit passed.
+- Broader regression sweep: `npx vitest run src/threeGame*.test.js src/bank*.test.js src/baseTurret.test.js src/o2CinematicDoors.test.js src/baseLights.test.js src/milestonePresentation.test.js --maxWorkers=4` — **88 files / 626 tests passed**. This includes the existing gameplay/bank tests affected by the new build card and reset hooks.
+- **Status: implemented, full media/client acceptance pending.** Tests inject media/door completion rather than certify actual decoder timing or paired packaged-client playback. Full O2 camera framing (DP-11), later structure choreography (DP-12) and general cinematic queue cancellation remain follow-up work; the overall 48-ticket goal is not complete.
 
 ## Evidence register
 

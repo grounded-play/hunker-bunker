@@ -1,5 +1,6 @@
 import { crossingGuidance, expeditionDebrief } from './src/expeditionFeedback.js';
 import { runO2MilestoneChoreography } from './src/o2CinematicDoors.js';
+import { createMilestonePresentationGate } from './src/milestonePresentation.js';
 import { formatRunCardBadges, summarizeRunCards } from './src/runCardHud.js';
 import { cutsceneCutoffTime } from './src/cutsceneTiming.js';
 /* global __HB_BUILD_INFO__ */
@@ -11903,21 +11904,15 @@ window.addEventListener('o2-startup-sequence-started', (event) => {
         duration: 3200
     });
 });
-const MILESTONE_BOSS_CINEMATIC_SUFFIXES = new Set(['cryosnail', 'cybersnail', 'sporesnail']);
-const MILESTONE_BOSS_INTERSTITIAL_MAP = {
-    cybersnail: 'int_13_a_snail_blocks_the_hallway',
-    cryosnail: 'int_26_absolute_zero_has_a_shell',
-    sporesnail: 'int_27_the_bloom_that_hunts'
-};
+const milestonePresentationGate = createMilestonePresentationGate();
 window.addEventListener('milestone-boss-warning', (event) => {
+    if (!isGameplayPhase()) return;
     showBiomePrompt('> ALERT: PERIMETER BREACH — LARGE HOSTILE SIGNATURE CLOSING <');
-    const bossType = String(event?.detail?.type ?? '').replace(/^boss_/, '');
-    const suffix = MILESTONE_BOSS_CINEMATIC_SUFFIXES.has(bossType) ? bossType : 'cybersnail';
-    const videoBase = MILESTONE_BOSS_INTERSTITIAL_MAP[suffix] || `event-boss-encounter-${suffix}`;
-    playAuthoredEventOnce(`boss_encounter_${suffix}`, {
-        videoBase,
-        eventDetail: event?.detail ?? {}
-    });
+    const detail = event?.detail ?? {};
+    if (!shouldPlayAuthoredEventCinematic({ appPhase, ...detail })) return;
+    const request = milestonePresentationGate.claim(detail, window.game?.runStartTime ?? runStartTime);
+    if (!request) return;
+    void queueCinematicEvent({ videoBase: request.videoBase, fallback: getEventCinematicSpec(request.eventId) });
 });
 window.addEventListener('foundry-discovered', (event) => {
     if (!isGameplayPhase()) return;

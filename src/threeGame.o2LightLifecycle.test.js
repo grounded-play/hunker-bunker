@@ -25,6 +25,7 @@ describe('DP-02: O2 runtime retains its shader light set', () => {
             ensureO2BubbleVisualState: ThreeGame.prototype.ensureO2BubbleVisualState,
             igniteBaseLights: ThreeGame.prototype.igniteBaseLights,
             startO2StartupSequence: ThreeGame.prototype.startO2StartupSequence,
+            cancelO2StartupSequence: ThreeGame.prototype.cancelO2StartupSequence,
             updateO2StartupSequence: ThreeGame.prototype.updateO2StartupSequence
         };
         game.baseLights.build(9, 9);
@@ -75,5 +76,18 @@ describe('DP-02: O2 runtime retains its shader light set', () => {
         expect(complete).toHaveBeenCalledOnce();
         game.baseLights.dispose();
         expect(visibleLights(game.scene)).toHaveLength(1);
+    });
+
+    it('cancels a lost rise without leaving an active sequence or stale completion callback', () => {
+        const { game, generator } = setup();
+        generator.isOnline = true;
+        const complete = vi.fn();
+        game.startO2StartupSequence('boss_cybersnail', { onComplete: complete });
+        game.cancelO2StartupSequence();
+        game.updateO2StartupSequence(100);
+        expect(game.o2StartupSequenceActive).toBe(false);
+        expect(game._onO2StartupSequenceComplete).toBeNull();
+        expect(complete).not.toHaveBeenCalled();
+        expect(game.o2BubbleObjects.ring.visible).toBe(true);
     });
 });
