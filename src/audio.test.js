@@ -143,6 +143,22 @@ describe('AudioManager Voice Channel & Soundsets Toggle', () => {
         const resultNone = AudioManager.playVoiceCallout('reload');
         expect(resultNone).toBeNull();
     });
+
+    it('rotates mapped takes without immediately repeating a line', () => {
+        AudioManager.buffers.voice_aura_reloading = {};
+        AudioManager.buffers.voice_aura_reloading2 = {};
+        AudioManager._lastVoiceTake.clear();
+        globalThis.window = globalThis.window || {};
+        globalThis.window.loadout = { state: { voicePackId: '4149' } };
+        const playback = vi.spyOn(AudioManager, 'playVoiceTrack').mockImplementation((key) => key);
+        const random = vi.spyOn(Math, 'random').mockReturnValue(0);
+
+        expect(AudioManager.playVoiceCallout('reload')).toBe('voice_aura_reloading');
+        expect(AudioManager.playVoiceCallout('reload')).toBe('voice_aura_reloading2');
+
+        random.mockRestore();
+        playback.mockRestore();
+    });
 });
 
 

@@ -9,9 +9,9 @@ describe('applySelections', () => {
             { clip: 'a.wav', label: null },
             { clip: 'b.wav', label: 'existing_slot' }
         ] };
-        expect(applySelections(manifest, { 4149: { selected_slot: 'a.wav' } }).takes).toEqual([
+        expect(applySelections(manifest, { 4149: { selected_slot: ['a.wav', 'b.wav'] } }).takes).toEqual([
             { clip: 'a.wav', label: 'selected_slot' },
-            { clip: 'b.wav', label: 'existing_slot' }
+            { clip: 'b.wav', label: 'selected_slot2' }
         ]);
     });
 });

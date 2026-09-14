@@ -1,18 +1,18 @@
 {
   "4149": {
-    "voice_aura_overdrive_ready": "voice_aura_V_take_1__line_1__take_3.wav",
-    "voice_aura_reloading": "voice_aura_V_take_1__line_1__take_8.wav",
-    "voice_aura_sector_cleared": "voice_aura_V_take_1__line_1__take_12.wav",
-    "voice_aura_shield_critical": "voice_aura_V_take_1__line_2__take_4.wav",
-    "voice_aura_target_down": "voice_aura_V_take_1__line_3__take_2.wav",
-    "voice_aura_threat_high": "voice_aura_V_take_1__line_4__take_2.wav"
+    "voice_aura_overdrive_ready": ["voice_aura_V_take_1__line_1__take_3.wav", "voice_aura_V_take_1__line_1__take_2.wav"],
+    "voice_aura_reloading": ["voice_aura_V_take_1__line_1__take_8.wav", "voice_aura_V_take_1__line_1__take_7.wav"],
+    "voice_aura_sector_cleared": ["voice_aura_V_take_1__line_1__take_12.wav", "voice_aura_V_take_1__line_1__take_11.wav"],
+    "voice_aura_shield_critical": ["voice_aura_V_take_1__line_2__take_4.wav", "voice_aura_V_take_1__line_2__take_3.wav"],
+    "voice_aura_target_down": ["voice_aura_V_take_1__line_3__take_2.wav", "voice_aura_V_take_1__line_3__take_3.wav"],
+    "voice_aura_threat_high": ["voice_aura_V_take_1__line_4__take_2.wav", "voice_aura_V_take_1__line_4__take_3.wav"]
   },
   "4148": {
-    "voice_commander_boss_spotted": "voice_commander_V_take_2__line_3__take_6.wav",
-    "voice_commander_breached": "voice_commander_V_take_2__line_4__take_1.wav",
-    "voice_commander_killstreak": "voice_commander_V_take_2__line_4__take_2.wav",
-    "voice_commander_low_health": "voice_commander_V_take_2__line_4__take_3.wav",
-    "voice_commander_reloading": "voice_commander_V_take_2__line_4__take_4.wav",
-    "voice_commander_victory": "voice_commander_V_take_2__line_4__take_5.wav"
+    "voice_commander_boss_spotted": ["voice_commander_V_take_2__line_3__take_6.wav", "voice_commander_V_take_2__line_1__take_1.wav"],
+    "voice_commander_breached": ["voice_commander_V_take_2__line_4__take_1.wav", "voice_commander_V_take_2__line_1__take_2.wav"],
+    "voice_commander_killstreak": ["voice_commander_V_take_2__line_4__take_2.wav", "voice_commander_V_take_2__line_1__take_3.wav"],
+    "voice_commander_low_health": ["voice_commander_V_take_2__line_4__take_3.wav", "voice_commander_V_take_2__line_1__take_4.wav"],
+    "voice_commander_reloading": ["voice_commander_V_take_2__line_4__take_4.wav", "voice_commander_V_take_2__line_1__take_5.wav"],
+    "voice_commander_victory": ["voice_commander_V_take_2__line_4__take_5.wav", "voice_commander_V_take_2__line_1__take_6.wav"]
   }
 }

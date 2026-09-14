@@ -60,7 +60,10 @@ export function planInstall(manifest, { slotKeys = allSlotKeys() } = {}) {
 export function applySelections(manifest, selections = {}) {
     const labelsByClip = new Map();
     for (const bank of Object.values(selections)) {
-        for (const [label, clip] of Object.entries(bank ?? {})) labelsByClip.set(clip, label);
+        for (const [label, clips] of Object.entries(bank ?? {})) {
+            const choices = Array.isArray(clips) ? clips : [clips];
+            choices.forEach((clip, index) => labelsByClip.set(clip, index === 0 ? label : `${label}${index + 1}`));
+        }
     }
     return {
         ...manifest,
@@ -81,7 +84,12 @@ function main(argv) {
     const generatedManifest = JSON.parse(readFileSync(MANIFEST, 'utf8'));
     const selections = existsSync(SELECTIONS) ? JSON.parse(readFileSync(SELECTIONS, 'utf8')) : {};
     const manifest = applySelections(generatedManifest, selections);
-    const { install, missing, unknown } = planInstall(manifest);
+    const selectedSlots = Object.values(selections).flatMap((bank) => Object.entries(bank ?? {}).flatMap(([slot, clips]) => (
+        (Array.isArray(clips) ? clips : [clips]).map((_, index) => index === 0 ? slot : `${slot}${index + 1}`)
+    )));
+    const { install, missing, unknown } = planInstall(manifest, {
+        slotKeys: selectedSlots.length ? selectedSlots : allSlotKeys()
+    });
 
     for (const { clip, label } of unknown) {
         console.warn(`  ! ${clip}: label "${label}" is not a known cue slot -- skipped`);

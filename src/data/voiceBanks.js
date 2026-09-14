@@ -11,6 +11,7 @@ export const VOICE_BANKS = Object.freeze({
         prefix: 'voice_commander',
         name: 'Soviet Sub-Commander Radio',
         blurb: 'Heavy radio static. Authoritative Russian-accented military jargon.',
+        previewCue: 'boss_spotted',
         slots: Object.freeze([
             Object.freeze({ key: 'voice_commander_reloading', cue: 'reload', intent: 'Weapon reload -- replaces "Reloading"' }),
             Object.freeze({ key: 'voice_commander_low_health', cue: 'low_health', intent: 'Player near death -- replaces "Shield low"' }),
@@ -25,6 +26,7 @@ export const VOICE_BANKS = Object.freeze({
         prefix: 'voice_aura',
         name: "Synthesized AI Unit 'AURA'",
         blurb: 'Smooth synthesized female tactical assistant with sub-harmonic chimes.',
+        previewCue: 'overdrive_ready',
         slots: Object.freeze([
             Object.freeze({ key: 'voice_aura_reloading', cue: 'reload', intent: 'Weapon reload -- replaces "Reloading"' }),
             Object.freeze({ key: 'voice_aura_shield_critical', cue: 'shield_critical', intent: 'Player near death -- replaces "Shield low"' }),
@@ -37,6 +39,17 @@ export const VOICE_BANKS = Object.freeze({
 });
 
 export const VOICE_BANK_IDS = Object.freeze(Object.keys(VOICE_BANKS).map(Number));
+export const VOICE_TAKES_PER_LINE = 2;
+
+export function getVoiceTakeKeys(slotKey, count = VOICE_TAKES_PER_LINE) {
+    return Array.from({ length: count }, (_, index) => index === 0 ? slotKey : `${slotKey}${index + 1}`);
+}
+
+export function getVoiceAudioManifest() {
+    return Object.values(VOICE_BANKS).flatMap((bank) => bank.slots.flatMap((slot) => (
+        getVoiceTakeKeys(slot.key).map((key) => ({ key, url: `/audio/generated/${key}.wav` }))
+    )));
+}
 
 /** Which bank a raw session filename belongs to ("voice_aura_V_take_1.wav" -> 4149). */
 export function bankForSourceFile(filename = '') {

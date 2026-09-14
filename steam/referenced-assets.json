@@ -390,18 +390,6 @@
     "audio/generated/sfx_trade_shard_dispense.wav",
     "audio/generated/ui_reward_burst.wav",
     "audio/generated/ui_reward_dismiss.wav",
-    "audio/generated/voice_aura_overdrive_ready.wav",
-    "audio/generated/voice_aura_reloading.wav",
-    "audio/generated/voice_aura_sector_cleared.wav",
-    "audio/generated/voice_aura_shield_critical.wav",
-    "audio/generated/voice_aura_target_down.wav",
-    "audio/generated/voice_aura_threat_high.wav",
-    "audio/generated/voice_commander_boss_spotted.wav",
-    "audio/generated/voice_commander_breached.wav",
-    "audio/generated/voice_commander_killstreak.wav",
-    "audio/generated/voice_commander_low_health.wav",
-    "audio/generated/voice_commander_reloading.wav",
-    "audio/generated/voice_commander_victory.wav",
     "audio/generated/weapon_dry_fire.wav",
     "audio/generated/xp_bonus.wav",
     "audio/generated/xp_levelup.wav",
@@ -3691,62 +3679,122 @@
     {
       "path": "audio/generated/voice_aura_overdrive_ready.wav",
       "bytes": 34258,
-      "classification": "runtime-required"
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/voice_aura_overdrive_ready2.wav",
+      "bytes": 32772,
+      "classification": "generated-intermediate"
     },
     {
       "path": "audio/generated/voice_aura_reloading.wav",
       "bytes": 26084,
-      "classification": "runtime-required"
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/voice_aura_reloading2.wav",
+      "bytes": 21626,
+      "classification": "generated-intermediate"
     },
     {
       "path": "audio/generated/voice_aura_sector_cleared.wav",
       "bytes": 34258,
-      "classification": "runtime-required"
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/voice_aura_sector_cleared2.wav",
+      "bytes": 30542,
+      "classification": "generated-intermediate"
     },
     {
       "path": "audio/generated/voice_aura_shield_critical.wav",
       "bytes": 32772,
-      "classification": "runtime-required"
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/voice_aura_shield_critical2.wav",
+      "bytes": 26828,
+      "classification": "generated-intermediate"
     },
     {
       "path": "audio/generated/voice_aura_target_down.wav",
       "bytes": 38716,
-      "classification": "runtime-required"
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/voice_aura_target_down2.wav",
+      "bytes": 23856,
+      "classification": "generated-intermediate"
     },
     {
       "path": "audio/generated/voice_aura_threat_high.wav",
       "bytes": 33516,
-      "classification": "runtime-required"
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/voice_aura_threat_high2.wav",
+      "bytes": 30542,
+      "classification": "generated-intermediate"
     },
     {
       "path": "audio/generated/voice_commander_boss_spotted.wav",
       "bytes": 29822,
-      "classification": "runtime-required"
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/voice_commander_boss_spotted2.wav",
+      "bytes": 31308,
+      "classification": "generated-intermediate"
     },
     {
       "path": "audio/generated/voice_commander_breached.wav",
       "bytes": 26106,
-      "classification": "runtime-required"
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/voice_commander_breached2.wav",
+      "bytes": 18676,
+      "classification": "generated-intermediate"
     },
     {
       "path": "audio/generated/voice_commander_killstreak.wav",
       "bytes": 27592,
-      "classification": "runtime-required"
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/voice_commander_killstreak2.wav",
+      "bytes": 27592,
+      "classification": "generated-intermediate"
     },
     {
       "path": "audio/generated/voice_commander_low_health.wav",
       "bytes": 23134,
-      "classification": "runtime-required"
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/voice_commander_low_health2.wav",
+      "bytes": 29078,
+      "classification": "generated-intermediate"
     },
     {
       "path": "audio/generated/voice_commander_reloading.wav",
       "bytes": 23134,
-      "classification": "runtime-required"
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/voice_commander_reloading2.wav",
+      "bytes": 17934,
+      "classification": "generated-intermediate"
     },
     {
       "path": "audio/generated/voice_commander_victory.wav",
       "bytes": 35766,
-      "classification": "runtime-required"
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/voice_commander_victory2.wav",
+      "bytes": 24620,
+      "classification": "generated-intermediate"
     },
     {
       "path": "audio/generated/weapon_dry_fire.wav",

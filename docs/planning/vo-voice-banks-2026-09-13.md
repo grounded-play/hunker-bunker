@@ -26,8 +26,8 @@ art/source/audio/vo/raw/voice_commander_V_take_1.wav
 art/source/audio/vo/raw/voice_commander_V_take_2.wav
 ```
 
-After installing the compressed production cues, `public/` is 2,835,442,137
-bytes — **955,943 bytes under budget**. That is
+After installing two compressed takes per production cue, `public/` is
+2,835,757,511 bytes — **640,569 bytes under budget**. That is
 tight: do not add uncompressed audio to `public/` without re-checking.
 
 ## 2. Segmentation — `scripts/segment-vo-takes.mjs`
@@ -106,8 +106,10 @@ The reviewed choices live in `scripts/audio/vo-take-selections.json`, separate
 from the generated and gitignored segmentation manifest. A local Whisper pass
 identified the phrases and timestamps. For Commander, take 2 explicitly marks
 the sequence beginning at 108.76s as "one actual real one"; that complete final
-sequence is used. AURA selections use clean, full-length takes from each spoken
-phrase group. Regenerating the segments therefore cannot erase the choices.
+sequence is the primary take, with its earlier regular sequence as the alternate.
+AURA selections use two clean, full-length takes from each spoken phrase group.
+Runtime selection avoids immediately repeating the same take. Regenerating the
+segments therefore cannot erase the choices.
 
 ## 5. Installing — `scripts/install-vo-takes.mjs`
 

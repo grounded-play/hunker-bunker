@@ -38,6 +38,7 @@ export class AudioManager {
     // Last variant chosen per soundset key, so `noImmediateRepeat` has the
     // history it needs. The selector is pure; the caller owns this.
     static _lastSoundsetVariant = new Map();
+    static _lastVoiceTake = new Map();
 
     // Where the player is and which way the camera's right axis points. The
     // gameplay loop pushes this every frame; until it does, _listener stays
@@ -628,8 +629,15 @@ export class AudioManager {
         };
 
         const targetKey = cueMap[cueType] || `${prefix}_${cueType}`;
-        if (this.buffers[targetKey]) {
-            return this.playVoiceTrack(targetKey, { priority: 4, volume: options.volume ?? 0.85, ...options });
+        const availableTakes = getVoiceTakeKeys(targetKey).filter((key) => this.buffers[key]);
+        if (availableTakes.length) {
+            const previous = this._lastVoiceTake.get(targetKey);
+            const candidates = availableTakes.length > 1
+                ? availableTakes.filter((key) => key !== previous)
+                : availableTakes;
+            const selectedKey = candidates[Math.floor(Math.random() * candidates.length)];
+            this._lastVoiceTake.set(targetKey, selectedKey);
+            return this.playVoiceTrack(selectedKey, { priority: 4, volume: options.volume ?? 0.85, ...options });
         }
         return this.play(targetKey, { bus: 'voice', volume: options.volume ?? 0.85, ...options });
     }
@@ -1711,4 +1719,5 @@ AudioManager.init();
 import { assetUrl } from './assetUrl.js';
 import { PRESENTATION_EVENTS, presentationTelemetry } from './presentationTelemetry.js';
 import { GAME_SOUNDSETS, selectSoundsetVariant } from './data/gameSoundsets.js';
+import { getVoiceTakeKeys } from './data/voiceBanks.js';
 import { calculateScreenSpaceAudio } from './audioSpatial.js';

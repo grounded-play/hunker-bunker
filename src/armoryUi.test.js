@@ -441,4 +441,21 @@ describe('createArmoryUi ownership gating', () => {
         expect(ownership.isUnlockAll()).toBe(true);
         expect(container.innerHTML).not.toContain('disabled');
     });
+
+    it('previews the selected voice bank with its signature line', () => {
+        ownership.setUnlockAll(true);
+        const previousWindow = globalThis.window;
+        globalThis.window = {
+            AudioManager: { playVoiceCallout: vi.fn() },
+            addEventListener: vi.fn()
+        };
+        mount();
+
+        openSlot(container, 'voicebank').dispatchEvent(tileClick('4148'));
+        expect(loadoutManager.state.voicePackId).toBe('4148');
+        expect(globalThis.window.AudioManager.playVoiceCallout)
+            .toHaveBeenCalledWith('boss_spotted', { volume: 0.9 });
+
+        globalThis.window = previousWindow;
+    });
 });

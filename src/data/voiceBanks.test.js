@@ -1,7 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { existsSync } from 'node:fs';
-import { readFileSync } from 'node:fs';
-import { VOICE_BANKS, VOICE_BANK_IDS, bankForSourceFile, getVoiceBank } from './voiceBanks.js';
+import { VOICE_BANKS, VOICE_BANK_IDS, bankForSourceFile, getVoiceAudioManifest, getVoiceBank, getVoiceTakeKeys } from './voiceBanks.js';
 import { getCatalogEntry, ITEM_TYPE } from '../itemOwnership.js';
 
 describe('VOICE_BANKS', () => {
@@ -34,24 +33,17 @@ describe('VOICE_BANKS', () => {
         }
     });
 
-    // The bank definition is only useful if the keys are the ones the callout
-    // player actually looks up -- a typo here is a silently silent cue.
-    it('every slot key appears in audio.js so no cue resolves to a missing asset', () => {
-        const audioSrc = readFileSync(new URL('../audio.js', import.meta.url), 'utf8');
+    it('ships and preloads two takes behind every slot', () => {
+        const manifest = getVoiceAudioManifest();
         for (const bank of Object.values(VOICE_BANKS)) {
             for (const slot of bank.slots) {
-                const referenced = audioSrc.includes(slot.key)
-                    || audioSrc.includes(`\${prefix}_${slot.key.slice(bank.prefix.length + 1)}`);
-                expect(referenced, `${slot.key} is not reachable from audio.js`).toBe(true);
-            }
-        }
-    });
-
-    it('has a shipped audio file behind every slot', () => {
-        for (const bank of Object.values(VOICE_BANKS)) {
-            for (const slot of bank.slots) {
-                const path = new URL(`../../public/audio/generated/${slot.key}.wav`, import.meta.url);
-                expect(existsSync(path), `no audio file for ${slot.key}`).toBe(true);
+                const keys = getVoiceTakeKeys(slot.key);
+                expect(keys).toHaveLength(2);
+                for (const key of keys) {
+                    const path = new URL(`../../public/audio/generated/${key}.wav`, import.meta.url);
+                    expect(existsSync(path), `no audio file for ${key}`).toBe(true);
+                    expect(manifest).toContainEqual({ key, url: `/audio/generated/${key}.wav` });
+                }
             }
         }
     });

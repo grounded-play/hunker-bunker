@@ -19,6 +19,7 @@ import { ProfileManager, clearSaveData, exportSaveCode, importSaveCode } from '.
 import { LoadoutManager } from './src/loadout.js';
 import { CutsceneManager } from './src/cutscene.js';
 import { DEPTH_TIER_NAMES } from './src/data/loot.js';
+import { getVoiceAudioManifest } from './src/data/voiceBanks.js';
 import { getDeathCinematicSpec, getEventCinematicSpec, normalizeCinematicStillSpec, shouldPlayAuthoredEventCinematic } from './src/cinematicFallback.js';
 import { DialogueManager } from './src/dialogue.js';
 import { VitalsHUD } from './src/vitals.js';
@@ -14493,18 +14494,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     { key: 'camp_verb_meridian', url: '/audio/generated/camp_verb_meridian.wav' },
                     { key: 'camp_verb_tallow', url: '/audio/generated/camp_verb_tallow.wav' },
                     { key: 'camp_verb_vesper', url: '/audio/generated/camp_verb_vesper.wav' },
-                    { key: 'voice_commander_breached', url: '/audio/generated/voice_commander_breached.wav' },
-                    { key: 'voice_commander_reloading', url: '/audio/generated/voice_commander_reloading.wav' },
-                    { key: 'voice_commander_low_health', url: '/audio/generated/voice_commander_low_health.wav' },
-                    { key: 'voice_commander_boss_spotted', url: '/audio/generated/voice_commander_boss_spotted.wav' },
-                    { key: 'voice_commander_killstreak', url: '/audio/generated/voice_commander_killstreak.wav' },
-                    { key: 'voice_commander_victory', url: '/audio/generated/voice_commander_victory.wav' },
-                    { key: 'voice_aura_target_down', url: '/audio/generated/voice_aura_target_down.wav' },
-                    { key: 'voice_aura_shield_critical', url: '/audio/generated/voice_aura_shield_critical.wav' },
-                    { key: 'voice_aura_reloading', url: '/audio/generated/voice_aura_reloading.wav' },
-                    { key: 'voice_aura_threat_high', url: '/audio/generated/voice_aura_threat_high.wav' },
-                    { key: 'voice_aura_overdrive_ready', url: '/audio/generated/voice_aura_overdrive_ready.wav' },
-                    { key: 'voice_aura_sector_cleared', url: '/audio/generated/voice_aura_sector_cleared.wav' },
+                    ...getVoiceAudioManifest(),
                     { key: 'sfx_charm_clink_light', url: '/audio/generated/sfx_charm_clink_light.wav' },
                     { key: 'sfx_charm_clink_heavy', url: '/audio/generated/sfx_charm_clink_heavy.wav' },
                     { key: 'sfx_overclock_socket', url: '/audio/generated/sfx_overclock_socket.wav' },

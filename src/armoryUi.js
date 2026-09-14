@@ -346,7 +346,7 @@ export function createArmoryUi({
                 after: (value) => {
                     if (!value) return;
                     const bank = getVoiceBank(value);
-                    if (bank) window.AudioManager?.playVoiceCallout?.('reload', { volume: 0.9 });
+                    if (bank) window.AudioManager?.playVoiceCallout?.(bank.previewCue, { volume: 0.9 });
                 }
             },
             hud: {
@@ -804,7 +804,7 @@ export function createArmoryUi({
 
     function bindEvents() {
         // Every bench control opens the shared tile modal.
-        for (const fieldKey of ['weapon', 'sheen', 'charm', 'tracer', 'mod1', 'mod2', 'chassis', 'decal', 'hud']) {
+        for (const fieldKey of ['weapon', 'sheen', 'charm', 'tracer', 'mod1', 'mod2', 'chassis', 'decal', 'hud', 'voicebank']) {
             container.querySelector?.(`#armory-slot-${fieldKey}`)?.addEventListener?.('click', () => {
                 playSound('ui_click');
                 openPickerModal(fieldKey);
