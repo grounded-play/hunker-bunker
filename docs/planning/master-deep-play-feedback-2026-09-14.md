@@ -40,15 +40,25 @@ Commit: `126dda5`.
 - Broader regression sweep: `npx vitest run src/threeGame*.test.js src/bank*.test.js src/baseTurret.test.js src/o2CinematicDoors.test.js src/baseLights.test.js src/milestonePresentation.test.js --maxWorkers=4` — **88 files / 626 tests passed**. This includes the existing gameplay/bank tests affected by the new build card and reset hooks.
 - **Status: implemented, full media/client acceptance pending.** Tests inject media/door completion rather than certify actual decoder timing or paired packaged-client playback. Full O2 camera framing (DP-11), later structure choreography (DP-12) and general cinematic queue cancellation remain follow-up work; the overall 48-ticket goal is not complete.
 
-## Evidence register
-
 ### Pass 4 — DP-05 Foundry transition rollback and plane recovery (September 14)
+
+Commit: `d744c5c`.
 
 - Found a concrete failure path independent of the unidentified original capture: entry hid the surface and committed the plane before mounting the room; a mount exception left no rollback. Entry now keeps the surface intact until a floor is mounted, guards reentrant entry, and restores player transforms, camera, input and visibility on failure. Failed room pickups are deregistered; cleanup disposes only portal-owned geometry/materials, never shared surface resources.
 - Foundry uses a namespaced cache instead of reusing a pit at the same coordinates. Collision, contextual interactions, pickups, ceiling presentation and the exit all use the active cache key. Exit hides the interior; re-entry restores it. Respawn restores surface visibility and hides old interior groups.
 - A bounded Foundry-only recovery handles non-finite coordinates, below-floor positions and escape beyond the room. Missing/hidden/detached floor groups return the player to the recorded exterior point and are invalidated for clean reconstruction. Entry, rollback, recovery and exit now emit structured `PORTAL` diagnostics.
 - Verification: **88 files / 637 tests passed**, including 11 new Foundry regression cases (40 checks across Foundry, pockets and plane contracts). ESLint, `git diff --check`, production build and 50-required-media audit passed.
 - Browser skill verification reached title → roster → Armory → solo deployment without reported page errors, but the intro/loading transition remained non-ready and later evaluations stalled. No successful rendered Foundry traversal is claimed; original failure replay and packaged-client acceptance remain open. This is a tested safety patch, not proof that all Foundry ground-loss causes are resolved.
+
+### Pass 5 — DP-16 gameplay audio manifest and bounded missing-key diagnostics (September 14)
+
+- Confirmed the concrete footstep cause: `GAME_SOUNDSETS` already described approved concrete/snow and metal/glass variants, but the gameplay audio manifest loaded **none of their 16 files**. Added the shared `GAMEPLAY_FOLEY_MANIFEST` to actual gameplay loading, using existing approved assets; no new audio artwork or source-pack imports.
+- Added one canonical alias table for 18 stale UI/gameplay names, including metal stress, turret gunshots, boss death, priority alarm and confirmation cues. Aliases preserve caller volume, pitch and world-space options, reuse canonical buffers and cannot form chains. Updated the obsolete comment claiming the soundset registry was empty.
+- Missing audio is now logged once per key with exact attempt counts retained in exported `state.audioMissing`; diagnostics track at most 128 distinct keys plus overflow attempt totals. Late asset decoding is still retried, not permanently silenced by the diagnostic dedupe.
+- Verification: **55 focused tests passed** (audio, soundsets and debug logger), including static literal-caller coverage in main/top-level gameplay modules, every approved variant's manifest/file presence, no-immediate-repeat, alias options, bounded cardinality and exported counts. ESLint, production build, required-media audit and `git diff --check` passed. Browser skill verification decoded all 16 real files and started all four sound families with zero missing reports. `tests/e2e/gameplay-audio-assets.spec.js` passed real fetch/decode/playback in Chrome (22.7 seconds).
+- **Status: implemented, full-route listening acceptance pending.** The browser test uses the actual audio manager and shipped files in a title-screen fixture; it does not prove traversal mix quality, every dynamic cue, spatial audibility on speakers, or VO correctness (DP-13–15). Static coverage intentionally excludes dynamically assembled names and non-audio `.play()` calls.
+
+## Evidence register
 
 References use **entry `id`**, not zero-based array position, followed by elapsed milliseconds. JSON messages embed diagnostic objects; expand the referenced entry to inspect its details. SHA-256 and compact metrics can be reproduced with:
 

@@ -21,6 +21,7 @@ import { LoadoutManager } from './src/loadout.js';
 import { CutsceneManager } from './src/cutscene.js';
 import { DEPTH_TIER_NAMES } from './src/data/loot.js';
 import { getVoiceAudioManifest } from './src/data/voiceBanks.js';
+import { GAMEPLAY_FOLEY_MANIFEST } from './src/data/gameSoundsets.js';
 import { getDeathCinematicSpec, getEventCinematicSpec, normalizeCinematicStillSpec, shouldPlayAuthoredEventCinematic } from './src/cinematicFallback.js';
 import { DialogueManager } from './src/dialogue.js';
 import { VitalsHUD } from './src/vitals.js';
@@ -14504,6 +14505,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     '/decal_scars.png'
                 ],
                 audio: [
+                    ...GAMEPLAY_FOLEY_MANIFEST,
                     { key: 'music_safe_ship', url: '/audio/ost/Safe Haven (Ship Sanctuary).mp3', fallbackUrl: '/audio/ost/Hunker Bunker Main Theme.mp3' },
                     { key: 'music_cryo_explore', url: '/audio/ost/Glacial Depths (Cryo Biome).mp3', fallbackUrl: '/audio/ost/Hunker Bunker Main Theme.mp3' },
                     { key: 'music_bio_explore', url: '/audio/ost/Overgrown Bio-Sphere (Bio Biome).mp3', fallbackUrl: '/audio/ost/Hunker Bunker Main Theme.mp3' },

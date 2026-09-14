@@ -39,6 +39,37 @@ export class AudioManager {
     // history it needs. The selector is pure; the caller owns this.
     static _lastSoundsetVariant = new Map();
     static _lastVoiceTake = new Map();
+    static _missingAudio = new Map();
+    static _missingAudioAttempts = 0;
+    static _untrackedMissingAudioAttempts = 0;
+
+    static getMissingAudioDiagnostics() {
+        return {
+            totalAttempts: this._missingAudioAttempts,
+            untrackedAttempts: this._untrackedMissingAudioAttempts,
+            keys: [...this._missingAudio].map(([key, detail]) => ({ key, ...detail }))
+        };
+    }
+
+    static recordMissingAudio(key, resolvedKey) {
+        this._missingAudioAttempts += 1;
+        const existing = this._missingAudio.get(key);
+        if (existing) {
+            existing.count += 1;
+            existing.lastAt = Date.now();
+            return;
+        }
+        // Bound dynamic/invalid key cardinality without losing total attempts.
+        if (this._missingAudio.size >= 128) {
+            this._untrackedMissingAudioAttempts += 1;
+            return;
+        }
+        const now = Date.now();
+        this._missingAudio.set(key, { resolvedKey, count: 1, firstAt: now, lastAt: now });
+        presentationTelemetry.emit('AUDIO', PRESENTATION_EVENTS.AUDIO.PLAY_MISSING, {
+            key, resolvedKey, count: 1, aggregatedIn: 'state.audioMissing'
+        });
+    }
 
     // Where the player is and which way the camera's right axis points. The
     // gameplay loop pushes this every frame; until it does, _listener stays
@@ -320,6 +351,8 @@ export class AudioManager {
 
     static play(key, options = {}) {
         if (this.globalMuted) return null;
+        const requestedKey = key;
+        key = Object.hasOwn(GAME_AUDIO_ALIASES, key) ? GAME_AUDIO_ALIASES[key] : key;
 
         // Intercept hover requests for procedurally synthesized blips
         if (key === 'ui_hover') {
@@ -327,11 +360,8 @@ export class AudioManager {
             return null;
         }
 
-        // Authored soundsets take precedence over the numbered-variant guess
-        // below. GAME_SOUNDSETS is deliberately empty until assets clear
-        // audition and provenance review (see src/data/gameSoundsets.js), so
-        // today every lookup misses and this is a no-op passthrough -- the
-        // integration is wired and proven before the registry decides anything.
+        // Authored, provenance-reviewed soundsets take precedence over the
+        // numbered-variant convention used by the older manifest.
         //
         // `_fromSoundset` breaks the recursion: a resolved variant is played as
         // an ordinary key and must never be re-resolved, or a soundset whose
@@ -359,14 +389,14 @@ export class AudioManager {
         // Collect all keys that match 'key' exactly or are numbered variations like 'key1', 'key2'
         const matchingKeys = Object.keys(this.buffers).filter(k => k === key || (k.startsWith(key) && /^\d+$/.test(k.slice(key.length))));
         if (matchingKeys.length === 0) {
-            presentationTelemetry.emit('AUDIO', PRESENTATION_EVENTS.AUDIO.PLAY_MISSING, { key });
+            this.recordMissingAudio(requestedKey, key);
             return null;
         }
 
         // Pick a random variation
         const selectedKey = matchingKeys[Math.floor(Math.random() * matchingKeys.length)];
         presentationTelemetry.emit('AUDIO', PRESENTATION_EVENTS.AUDIO.PLAY, {
-            requestedKey: key,
+            requestedKey,
             selectedKey,
             bus: options.bus ?? 'sfx'
         });
@@ -1719,5 +1749,6 @@ AudioManager.init();
 import { assetUrl } from './assetUrl.js';
 import { PRESENTATION_EVENTS, presentationTelemetry } from './presentationTelemetry.js';
 import { GAME_SOUNDSETS, selectSoundsetVariant } from './data/gameSoundsets.js';
+import { GAME_AUDIO_ALIASES } from './data/gameAudioAliases.js';
 import { getVoiceTakeKeys } from './data/voiceBanks.js';
 import { calculateScreenSpaceAudio } from './audioSpatial.js';

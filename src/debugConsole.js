@@ -801,6 +801,7 @@ export class DebugLogger {
                     : null,
                 renderer: game?.renderer?.info?.render ?? null,
                 performance: game?.getPerformanceDiagnosticsSnapshot?.() ?? null,
+                audioMissing: typeof window !== 'undefined' ? window.AudioManager?.getMissingAudioDiagnostics?.() ?? null : null,
                 stage: typeof window !== 'undefined' ? window.hbStage ?? null : null,
                 input: inputState,
                 steam: typeof window !== 'undefined' ? window.__hbSteamStatus ?? null : null
