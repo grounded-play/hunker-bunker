@@ -102,6 +102,7 @@ import {
 import { installSteamCloudSaveBridge } from './src/steamCloudSaveBridge.js';
 import { installSettingsWheelGuard } from './src/settingsWheelGuard.js';
 import { installAccessibilitySettings } from './src/accessibilitySettings.js';
+import { recordCollectedPickup, recordDebugResourceGrant, resetRunResourceTelemetry } from './src/runTelemetry.js';
 
 // These galleries are explicit developer destinations. Keeping their modules
 // out of the boot graph prevents QA scene code (and its transitive catalogs)
@@ -2686,7 +2687,10 @@ const pickupCounterState = {
     health: 0,
     ammo: 0,
     weapon: 0,
-    coin: 0
+    coin: 0,
+    collectedCount: 0,
+    collectedValue: 0,
+    debugGrantedResources: { tech: 0, coin: 0, med: 0, ammo: 0, shells: 0 }
 };
 let activeAmmoCapacity = CLASS_AMMO_CAPACITY.SCOUT;
 const bankManager = new BankManager();
@@ -3365,6 +3369,7 @@ function resetPickupCounter(playerType = (window.game?.playerType || 'SCOUT')) {
     pickupCounterState.ammo = Math.min(STARTING_RUN_AMMO + ammoReserve, activeAmmoCapacity);
     pickupCounterState.weapon = 0;
     pickupCounterState.coin = 0;
+    resetRunResourceTelemetry(pickupCounterState);
     recomputePickupTotal();
     renderPickupCounter();
     window.hbLog?.('WEAPON', 'info', 'ammo-reset', {
@@ -3419,6 +3424,7 @@ function trackPickupCollected(event) {
         }
         return;
     }
+    recordCollectedPickup(pickupCounterState, event?.detail);
 
     // Play dynamic procedurally synthesized loot sound
     const rarity = event?.detail?.rarity;
@@ -8723,6 +8729,9 @@ function devGrantResources() {
     pickupCounterState.tech = 999999;
     pickupCounterState.coin = 999999;
     pickupCounterState.shells = bankManager.getShells?.() ?? 999999;
+    recordDebugResourceGrant(pickupCounterState, {
+        tech: 999999, coin: 999999, med: 999999, ammo: 999999, shells: 999999
+    });
     recomputePickupTotal();
     renderPickupCounter();
     window.game?.healPlayer?.(999999, { skipQueensMilkPenalty: true });

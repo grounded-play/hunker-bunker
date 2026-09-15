@@ -1,4 +1,5 @@
 import { getFieldWeaponProfile } from './fieldWeapon.js';
+import { buildRunResourceTelemetry } from './runTelemetry.js';
 import { createRelicPickup, animateRelicPickup, createImpactBurst, disposeExpeditionEffect } from './expeditionVfx.js';
 import { TraumaManager, create3DMuzzleFlash, WEAPON_TRAUMA_TABLE } from './combatJuice.js';
 import { PickupMagnet, PickupComboTracker } from './lootJuice.js';
@@ -21364,10 +21365,12 @@ export class ThreeGame {
 
     getRunStats() {
         const bankState = this.bank.getState();
-        const totalBanked = (bankState.med ?? 0) + (bankState.tech ?? 0) + (bankState.coin ?? 0);
+        const pickupState = typeof window !== 'undefined' ? window.pickupCounterState : null;
+        const resourceTelemetry = buildRunResourceTelemetry(pickupState, bankState);
         return {
             distanceTravelled: Math.round(this.totalDistanceTravelled),
-            totalPickups: totalBanked,
+            // totalPickups is the compatibility alias for collected count.
+            ...resourceTelemetry,
             generatorLevel: this.bank.getO2GeneratorLevel(),
             depthTier: this.maxDepthTierReached,
             depthTierName: this.getDepthTierName(this.maxDepthTierReached),
@@ -22872,7 +22875,8 @@ export class ThreeGame {
 
         const cinematicFocus = this._cinematicCameraFocus;
         if (this.performanceProfile === 'gameplay' && this.cameraMode === 'third-person') {
-            this.updateThirdPersonCamera(delta, { focusPosition: cinematicFocus });
+            if (cinematicFocus) this.updateThirdPersonCamera(delta, { focusPosition: cinematicFocus });
+            else this.updateThirdPersonCamera(delta);
             if (this.mouseAimActive
                 && Number.isFinite(this.lastMouseClientX)
                 && Number.isFinite(this.lastMouseClientY)) {
@@ -24134,7 +24138,9 @@ export class ThreeGame {
             return true;
         }
 
-        const breachTiles = this.getBossBreachTiles(sprite, tileX, tileZ);
+        const breachTiles = typeof this.getBossBreachTiles === 'function'
+            ? this.getBossBreachTiles(sprite, tileX, tileZ)
+            : [{ x: tileX, z: tileZ }];
         for (const tile of breachTiles) {
             const wall = this.findWallMeshAt(tile.x, tile.z);
             if (wall) {
@@ -24149,7 +24155,7 @@ export class ThreeGame {
                 });
             }
         }
-        window.AudioManager?.playMetalStress?.({ volume: 0.48, playbackRate: 0.65, force: true });
+        globalThis.window?.AudioManager?.playMetalStress?.({ volume: 0.48, playbackRate: 0.65, force: true });
         data.wallBreakCooldown = BOSS_WALL_BREAK_COOLDOWN;
         data.pathNodes = null;
         data.pathRetargetTimer = 0;
@@ -27876,15 +27882,10 @@ export class ThreeGame {
 
                         if (pickupType === 'health' && this.playerVitals.hp < this.playerVitals.maxHp) {
                             this.healPlayer(1);
-                            window.AudioManager?.playProceduralLoot('health', rarity);
-                        } else {
-                            window.dispatchEvent(new CustomEvent('pickup-collected', {
-                                detail: {
-                                    type: pickupType,
-                                    rarity
-                                }
-                            }));
                         }
+                        window.dispatchEvent(new CustomEvent('pickup-collected', {
+                            detail: { type: pickupType, rarity, value: 1 }
+                        }));
                     }
                     removals.push(pickup);
                 }
@@ -31697,6 +31698,10 @@ export class ThreeGame {
                 // The source sprite retains authoritative gameplay state after
                 // its GLB becomes visible, including the collider.
                 if (!prop?.parent || !prop.userData?.isSolidProp || prop.userData.burstTriggered) continue;
+                // A hidden source blocks only when it is the authoritative
+                // collision proxy for a visible GLB replacement. Arbitrarily
+                // hidden/cull-state sprites must not leave invisible walls.
+                if (prop.visible === false && !prop.userData.replacedBy3d) continue;
                 const collisionRadius = prop.userData.collisionRadius ?? 0.38;
                 if (Math.hypot(x - prop.position.x, z - prop.position.z) < collisionRadius + this.playerRadius) {
                     return false;

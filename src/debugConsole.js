@@ -14,6 +14,8 @@ export class DebugLogger {
         this.demoMarkers = [];
         this.sequence = 0;
         this.maxLogs = 2500;
+        this.maxSessionLogs = 20000;
+        this.droppedSessionLogEntries = 0;
         // Cap on how many <div> rows the live panel keeps in the DOM at once.
         // A long/laggy session can log dozens of entries per real frame (PERF
         // "Long task" warnings alone), and the panel used to append one row
@@ -220,7 +222,10 @@ export class DebugLogger {
         const now = new Date();
         const timestamp = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}:${now.getSeconds().toString().padStart(2, '0')}.${now.getMilliseconds().toString().padStart(3, '0')}`;
         
-        const message = this.formatArgs(args);
+        const rawMessage = this.formatArgs(args);
+        const message = rawMessage.length > 12000
+            ? `${rawMessage.slice(0, 12000)}… [TRUNCATED ${rawMessage.length - 12000} CHARS]`
+            : rawMessage;
         const entry = {
             id: ++this.sequence,
             timestamp,
@@ -233,6 +238,11 @@ export class DebugLogger {
 
         this.logs.push(entry);
         this.sessionLogs.push(entry);
+        if (this.sessionLogs.length > this.maxSessionLogs) {
+            const overflow = this.sessionLogs.length - this.maxSessionLogs;
+            this.sessionLogs.splice(0, overflow);
+            this.droppedSessionLogEntries += overflow;
+        }
         if (this.logs.length > this.maxLogs) {
             this.logs.shift();
         }
@@ -781,7 +791,7 @@ export class DebugLogger {
             : null;
         return {
             format: 'hunker-bunker-session-log',
-            schemaVersion: 1,
+            schemaVersion: 2,
             session: {
                 startedAt: this.sessionStartedAt.toISOString(),
                 exportedAt: new Date().toISOString(),
@@ -791,6 +801,24 @@ export class DebugLogger {
                 demoStartedAt: this.demoStartedAt,
                 demoDurationMs: this.demoStartedAt ? Date.now() - this.demoStartedAt : null,
                 demoMarkers: this.demoMarkers.map((marker) => ({ ...marker }))
+            },
+            diagnostics: {
+                retainedEntries: this.sessionLogs.length,
+                droppedEntries: this.droppedSessionLogEntries,
+                maxEntries: this.maxSessionLogs,
+                maxMessageChars: 12000,
+                identifiers: {
+                    build: globalThis.__HB_BUILD_INFO__ ?? null,
+                    seed: game?.seed ?? game?.worldSeed ?? game?.missionState?.seed ?? null,
+                    encounterId: game?.activeBossEncounterId ?? null,
+                    entityId: game?.activeInteractiveConsole?.userData?.entityId ?? null,
+                    plane: game?.isInFoundryInterior ? 'foundry' : (game?.isInPocket ? 'pocket' : 'surface')
+                },
+                measurementCoverage: {
+                    gpuTimingSupported: Boolean(game?.gpuFrameTimer?.supported),
+                    gpuSamples: game?.gpuFrameTimer?.snapshot?.()?.samples ?? 0,
+                    frameProfilerEnabled: Boolean(game?.frameProfiler?.enabled)
+                }
             },
             state: {
                 appPhase: typeof window !== 'undefined' ? window.__hbAppPhase ?? null : null,

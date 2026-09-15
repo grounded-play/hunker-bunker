@@ -66,7 +66,7 @@ describe('createGpuFrameTimer', () => {
         timer.beginFrame();
         timer.endFrame();
         expect(timer.beginFrame()).toBe(false);
-        expect(timer.snapshot()).toMatchObject({ pendingQueries: 1, droppedFrames: 1 });
+        expect(timer.snapshot()).toMatchObject({ pendingQueries: 1, querySampleDrops: 1, droppedFrames: 1, droppedFramesDeprecated: true });
     });
 
     it('discards delayed results on reset before collecting the next profile', () => {

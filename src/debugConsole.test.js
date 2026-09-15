@@ -155,11 +155,26 @@ describe('debugConsole', () => {
         debugLog.executeCommand('demo mark first-room');
         const capture = debugLog.buildSessionCapture();
 
+        expect(capture.schemaVersion).toBe(2);
         expect(capture.session.demoMarkers.map((marker) => marker.label)).toEqual(['demo-start', 'first-room']);
         expect(capture.state.input.isSteamDeck).toBe(true);
         expect(capture.state.stage.stageWidth).toBe(1280);
         expect(capture.state.steam.backend.ok).toBe(true);
         expect(capture.state.performance.drawCalls).toBe(12);
+        expect(capture.diagnostics.maxEntries).toBe(20000);
+        expect(capture.diagnostics.measurementCoverage.gpuTimingSupported).toBe(false);
+    });
+
+    it('bounds session history and truncates giant repeated context', () => {
+        const oldMax = debugLog.maxSessionLogs;
+        debugLog.maxSessionLogs = 2;
+        const beforeDrops = debugLog.droppedSessionLogEntries;
+        debugLog.info('TEST', 'x'.repeat(13000));
+        debugLog.info('TEST', 'two');
+        debugLog.info('TEST', 'three');
+        expect(debugLog.sessionLogs).toHaveLength(2);
+        expect(debugLog.droppedSessionLogEntries).toBeGreaterThan(beforeDrops);
+        debugLog.maxSessionLogs = oldMax;
     });
 
     it('executes noclip command and delegates to game instance', () => {

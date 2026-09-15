@@ -126,7 +126,11 @@ export function createGpuFrameTimer(gl, {
             maxMs: Math.round(maxMs * 100) / 100,
             samples,
             pendingQueries: pending.length + (activeQuery ? 1 : 0),
+            // This counter is a profiler coverage gap, not a rendered frame
+            // drop. Keep the old field for log-reader compatibility only.
+            querySampleDrops: droppedFrames,
             droppedFrames,
+            droppedFramesDeprecated: true,
             disjointEvents
         };
     }

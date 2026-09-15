@@ -129,6 +129,11 @@ describe('O2 Milestone Cinematic Doors and Video Choreography (SEQ-01)', () => {
             setCinematicLock: (locked) => events.push(`setCinematicLock:${locked}`),
             getActiveO2GeneratorPosition: () => ({ x: 10, z: 20 }),
             cameraTarget: { x: 0, z: 0 },
+            focusCinematicCamera: (position) => {
+                fakeGame.cameraTarget = { ...position };
+                events.push(`focusCamera:${position.x}:${position.z}`);
+            },
+            clearCinematicCameraFocus: () => events.push('clearCameraFocus'),
             startO2StartupSequence: (bossType, { onComplete, skipDialogue }) => {
                 events.push(`startO2StartupSequence:${bossType}:skipDialogue=${skipDialogue}`);
                 if (onComplete) onComplete();
@@ -196,7 +201,8 @@ describe('O2 Milestone Cinematic Doors and Video Choreography (SEQ-01)', () => {
         expect(events).toContain('playCutsceneVideo:event-o2-generator-upgraded');
 
         // 4 & 5. Camera recenters onto generator position
-        expect(fakeGame.cameraTarget).toEqual({ x: 10, z: 20 });
+        expect(events).toContain('focusCamera:10:20');
+        expect(events).toContain('clearCameraFocus');
 
         // 6. 3D generator rise
         expect(events).toContain('startO2StartupSequence:boss_cybersnail:skipDialogue=true');

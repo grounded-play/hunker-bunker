@@ -129,6 +129,15 @@ Commit: `d744c5c`.
 - Fabricated recipe cards now expose their real name, effect, exact cost, print progress and direct print/apply action. A full module rig offers explicit replacement buttons for bay A and B; no slot is silently overwritten. Print ownership is catalog-backed and survives inventory refresh without pretending to be Steam inventory.
 - Verification: 56 focused Fabricator/Loadout/field-weapon/season checks passed, including weapon/mod/charm current-run application, full-slot rejection then explicit replacement and one-spend print behavior. A broader 39-check weapon/projectile regression subset and the production build/media audit passed.
 
+### Pass 19 — DP-48 truthful, bounded playtest telemetry (September 15)
+
+- Corrected `totalPickups`: it is now a compatibility alias for lifetime items collected during the run, not the mutable sum of bank balances. Captures separately report pickup count, collected value, current per-resource bank balance, banked total and debug-granted resources. Spending changes bank state without rewriting collection history.
+- Routed health pickups through the same single collection event as every other pickup, preventing both missing counts and divergent audio/accounting behavior.
+- Renamed GPU `droppedFrames` semantically to `querySampleDrops`; retained the old field with an explicit deprecation marker so older log readers remain usable. Captures identify whether GPU timing was supported and how many samples were actually observed.
+- Session log schema 2 adds build/seed/encounter/entity/plane identifiers and measurement coverage. Individual contexts are capped at 12,000 characters and session journals at 20,000 entries with an exact dropped-entry count, preventing repeated giant snapshots from producing unbounded exports.
+- Steam run payload schema 2 carries the corrected fields and explicitly separates debug resources so test grants cannot masquerade as earned pickup/stat totals.
+- Verification: 28 focused run-telemetry/GPU/session/export checks passed, including one-pickup/one-count, spend-independent lifetime count, and distinguishable debug grants; ESLint, diff checks and production build/media audit passed.
+
 ## Evidence register
 
 References use **entry `id`**, not zero-based array position, followed by elapsed milliseconds. JSON messages embed diagnostic objects; expand the referenced entry to inspect its details. SHA-256 and compact metrics can be reproduced with:

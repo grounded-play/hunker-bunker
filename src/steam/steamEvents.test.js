@@ -28,7 +28,7 @@ describe('buildSteamRunScorePayload', () => {
         });
 
         expect(payload).toMatchObject({
-            schemaVersion: 1,
+            schemaVersion: 2,
             runId: 'hb:1000:91000:ENGINEER:no-seed',
             classType: 'ENGINEER',
             outcome: 'death',
