@@ -14,20 +14,52 @@ const STORAGE_KEY = 'hb_fabricator_v1';
 // Recipes — each maps to a curated schematic card. Costs draw on the same
 // salvage currencies the loot HUD tracks (tech / coin / med).
 export const FAB_RECIPES = Object.freeze([
-    { id: 'mk1_sidearm',   name: 'MARK-I SIDEARM',    klass: 'WEAPON', rarity: 'COMMON',    art: '/schematics/schematic_00.webp', cost: { tech: 8,  coin: 4,  med: 0 }, printSeconds: 6,  blurb: 'Reliable fallback pistol. First print off the line.' },
-    { id: 'pulse_carbine', name: 'PULSE CARBINE',      klass: 'WEAPON', rarity: 'RARE',      art: '/schematics/schematic_01.webp', cost: { tech: 14, coin: 8,  med: 0 }, printSeconds: 10, blurb: 'Mid-range energy carbine with a tight spread.' },
-    { id: 'scatter_rep',   name: 'SCATTER REPEATER',   klass: 'WEAPON', rarity: 'COMMON',    art: '/schematics/schematic_02.webp', cost: { tech: 12, coin: 6,  med: 0 }, printSeconds: 9,  blurb: 'Close-quarters spread weapon. Brutal between the pillars.' },
-    { id: 'rail_marksman', name: 'RAIL MARKSMAN',      klass: 'WEAPON', rarity: 'EPIC',      art: '/schematics/schematic_03.webp', cost: { tech: 20, coin: 12, med: 0 }, printSeconds: 16, blurb: 'Long-line railgun. Punches through armor.' },
-    { id: 'neon_smg',      name: 'NEON SMG',           klass: 'WEAPON', rarity: 'RARE',      art: '/schematics/schematic_04.webp', cost: { tech: 16, coin: 10, med: 0 }, printSeconds: 12, blurb: 'High fire-rate SMG. Loud, fast, pink.' },
-    { id: 'cryo_lance',    name: 'CRYO LANCE',         klass: 'WEAPON', rarity: 'EPIC',      art: '/schematics/schematic_05.webp', cost: { tech: 18, coin: 10, med: 4 }, printSeconds: 14, blurb: 'Freezing lance. Slows whatever it hits.' },
-    { id: 'salvage_drill', name: 'SALVAGE DRILL',      klass: 'TOOL',   rarity: 'COMMON',    art: '/schematics/schematic_06.webp', cost: { tech: 10, coin: 14, med: 0 }, printSeconds: 11, blurb: 'Powered drill. Cracks junk piles wide open.' },
-    { id: 'exo_plating',   name: 'EXOSUIT PLATING',    klass: 'MODULE', rarity: 'LEGENDARY', art: '/schematics/schematic_07.webp', cost: { tech: 22, coin: 16, med: 6 }, printSeconds: 20, blurb: 'Layered hull plating. Hardens the exosuit shell.' },
-    { id: 'tallow_thermal_wrap', name: 'TALLOW THERMAL WRAP', klass: 'MODULE', rarity: 'RARE', art: '/schematics/schematic_05.webp', cost: { tech: 12, coin: 6, med: 6 }, printSeconds: 12, blurb: 'Freezing-resistant thermal underlayer woven from bio-spore fibers.' },
-    { id: 'vesper_vanguard_rig', name: 'VESPER VANGUARD RIG', klass: 'MODULE', rarity: 'EPIC', art: '/schematics/schematic_07.webp', cost: { tech: 18, coin: 10, med: 4 }, printSeconds: 15, blurb: 'Hardened titanium chest harness crafted by Vanguard mechanics.' },
-    { id: 'meridian_frequency_scanner', name: 'MERIDIAN FREQUENCY SCANNER', klass: 'TOOL', rarity: 'RARE', art: '/schematics/schematic_06.webp', cost: { tech: 20, coin: 8, med: 0 }, printSeconds: 14, blurb: 'High-frequency radar mast amplifier tuned to deep cavern signals.' },
-    { id: 'brood_chitin_plating', name: 'BROOD CHITIN PLATING', klass: 'MODULE', rarity: 'EPIC', art: '/schematics/schematic_03.webp', cost: { tech: 16, coin: 6, med: 10 }, printSeconds: 16, blurb: 'Living bio-chitin plates that reflect acidic spore splatter.' },
-    { id: 'nahl_resonant_chitin', name: 'RESONANT CHITIN MESH', klass: 'MODULE', rarity: 'LEGENDARY', art: '/schematics/schematic_07.webp', cost: { tech: 24, coin: 14, med: 12 }, printSeconds: 18, blurb: 'Symbiotic bio-mesh that absorbs psychic shockwaves and regenerates armor.' }
+    { id: 'mk1_sidearm', name: 'MARK-I SIDEARM', klass: 'WEAPON', output: { kind: 'weapon' }, rarity: 'COMMON', art: '/schematics/schematic_00.webp', cost: { tech: 8, coin: 4, med: 0 }, printSeconds: 6, blurb: 'Stable, efficient sidearm profile for the current expedition.' },
+    { id: 'pulse_carbine', name: 'PULSE CARBINE', klass: 'WEAPON', output: { kind: 'weapon' }, rarity: 'RARE', art: '/schematics/schematic_01.webp', cost: { tech: 14, coin: 8, med: 0 }, printSeconds: 10, blurb: 'Fast mid-range pulse profile with reduced impact.' },
+    { id: 'scatter_rep', name: 'SCATTER REPEATER', klass: 'WEAPON', output: { kind: 'weapon' }, rarity: 'COMMON', art: '/schematics/schematic_02.webp', cost: { tech: 12, coin: 6, med: 0 }, printSeconds: 9, blurb: 'Three close-range projectiles per shot.' },
+    { id: 'rail_marksman', name: 'RAIL MARKSMAN', klass: 'WEAPON', output: { kind: 'weapon' }, rarity: 'EPIC', art: '/schematics/schematic_03.webp', cost: { tech: 20, coin: 12, med: 0 }, printSeconds: 16, blurb: 'Slow heavy penetrator with extended reach.' },
+    { id: 'neon_smg', name: 'NEON SMG', klass: 'WEAPON', output: { kind: 'weapon' }, rarity: 'RARE', art: '/schematics/schematic_04.webp', cost: { tech: 16, coin: 10, med: 0 }, printSeconds: 12, blurb: 'High fire-rate profile with lighter rounds.' },
+    { id: 'cryo_lance', name: 'CRYO LANCE', klass: 'WEAPON', output: { kind: 'weapon' }, rarity: 'EPIC', art: '/schematics/schematic_05.webp', cost: { tech: 18, coin: 10, med: 4 }, printSeconds: 14, blurb: 'Precise long-life cryogenic projectile profile.' },
+    { id: 'salvage_drill', name: 'GEODETIC COMPASS CHARM', klass: 'CHARM', output: { kind: 'charm', itemdefid: 4135 }, rarity: 'COMMON', art: '/schematics/schematic_06.webp', cost: { tech: 10, coin: 14, med: 0 }, printSeconds: 11, blurb: 'A real weapon-mounted Geodetic Compass charm.' },
+    { id: 'exo_plating', name: 'BALLAST PLATING', klass: 'MODULE', output: { kind: 'mod', itemdefid: 4160 }, rarity: 'LEGENDARY', art: '/schematics/schematic_07.webp', cost: { tech: 22, coin: 16, med: 6 }, printSeconds: 20, blurb: '+2 max HP with a movement tradeoff.' },
+    { id: 'tallow_thermal_wrap', name: 'CRYO-CAPACITOR', klass: 'MODULE', output: { kind: 'mod', itemdefid: 4140 }, rarity: 'RARE', art: '/schematics/schematic_05.webp', cost: { tech: 12, coin: 6, med: 6 }, printSeconds: 12, blurb: 'Extends cryogenic freeze duration.' },
+    { id: 'vesper_vanguard_rig', name: 'KINETIC IMPACT BUSHING', klass: 'MODULE', output: { kind: 'mod', itemdefid: 4143 }, rarity: 'EPIC', art: '/schematics/schematic_07.webp', cost: { tech: 18, coin: 10, med: 4 }, printSeconds: 15, blurb: 'Adds one live projectile penetration.' },
+    { id: 'meridian_frequency_scanner', name: 'ECHO-LOCATION TRANSCEIVER', klass: 'MODULE', output: { kind: 'mod', itemdefid: 4145 }, rarity: 'RARE', art: '/schematics/schematic_06.webp', cost: { tech: 20, coin: 8, med: 0 }, printSeconds: 14, blurb: 'Detects hidden rooms within fifteen metres.' },
+    { id: 'brood_chitin_plating', name: 'BIO-HAZARD FILTER', klass: 'MODULE', output: { kind: 'mod', itemdefid: 4142 }, rarity: 'EPIC', art: '/schematics/schematic_03.webp', cost: { tech: 16, coin: 6, med: 10 }, printSeconds: 16, blurb: 'Reduces live spore and gas damage.' },
+    { id: 'nahl_resonant_chitin', name: 'SPORESNAIL PEARL CHARM', klass: 'CHARM', output: { kind: 'charm', itemdefid: 4132 }, rarity: 'LEGENDARY', art: '/schematics/schematic_07.webp', cost: { tech: 24, coin: 14, med: 12 }, printSeconds: 18, blurb: 'A real animated weapon-mounted pearl charm.' }
 ]);
+
+export function getFabricatedOutputIds(fabricator) {
+    return FAB_RECIPES.filter((recipe) => fabricator?.isFabricated?.(recipe.id))
+        .map((recipe) => recipe.output?.itemdefid)
+        .filter((id) => id != null);
+}
+
+export function applyFabricatedRecipeOutput(recipe, { fabricator, loadout, game = null, classId = null, replaceSlot = null } = {}) {
+    if (!recipe || !fabricator?.isFabricated?.(recipe.id) || !loadout) return { ok: false, reason: 'not_fabricated' };
+    const targetClass = classId ?? loadout.activeClassId;
+    const output = recipe.output ?? (recipe.klass === 'WEAPON' ? { kind: 'weapon' } : null);
+    if (output?.kind === 'weapon') {
+        if (!loadout.equip(recipe.id, fabricator, targetClass)) return { ok: false, reason: 'equip_rejected' };
+        game?.applyWeaponUpgrades?.();
+        return { ok: true, kind: 'weapon', id: recipe.id };
+    }
+    if (output?.kind === 'charm') {
+        loadout.equipCharm(targetClass, output.itemdefid);
+        void game?.setupPlayer3dCosmeticOverlay?.();
+        return { ok: true, kind: 'charm', itemdefid: output.itemdefid };
+    }
+    if (output?.kind === 'mod') {
+        const current = loadout.getClassLoadout(targetClass);
+        const openSlot = !current.mod1Id ? 1 : (!current.mod2Id ? 2 : null);
+        const slot = openSlot ?? Number(replaceSlot);
+        if (![1, 2].includes(slot)) return { ok: false, reason: 'slot_conflict', occupied: [current.mod1Id, current.mod2Id] };
+        loadout.equipRigModule(targetClass, slot, output.itemdefid);
+        if (game) game.loadoutMods = loadout.getActiveModifiers(targetClass);
+        return { ok: true, kind: 'mod', itemdefid: output.itemdefid, slot };
+    }
+    return { ok: false, reason: 'unsupported_output' };
+}
 
 // Flat "spin" cost for a fabricator roll (mothership's gamba metaphor, in HB
 // salvage). Rolling gambles this cost for a rarity-weighted schematic reveal.
