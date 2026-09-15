@@ -7,6 +7,23 @@ afterEach(() => {
 });
 
 describe('floor overlays', () => {
+    it('honors the authored blocking contract for room props', () => {
+        const texture = new THREE.Texture();
+        const material = new THREE.SpriteMaterial({ map: texture });
+        const game = Object.assign(Object.create(ThreeGame.prototype), {
+            scatterMaterials: { prop_bunker_supplies: material },
+            hashTile: () => 1
+        });
+        const prop = game.createScatterInstance({
+            type: 'prop_bunker_supplies', x: 2, z: 3, scale: 1,
+            tiltX: 0, elevation: 0.08, isSolidProp: false
+        });
+        expect(prop.userData.isSolidProp).toBe(false);
+        prop.material.dispose();
+        material.dispose();
+        texture.dispose();
+    });
+
     it('renders ground overlay decals as horizontal meshes above the floor', () => {
         const texture = new THREE.Texture();
         const game = {

@@ -5243,6 +5243,24 @@ window.addEventListener('goal-unlocked', (event) => {
     if (line) showBiomePrompt(`> BUNKER: ${line}`);
 });
 
+window.addEventListener('goal-milestone-presentation-requested', (event) => {
+    const detail = event?.detail;
+    if (!detail || !isGameplayPhase()) return;
+    const videoByBoss = {
+        boss_cybersnail: 'event-boss-encounter-cybersnail',
+        boss_cryosnail: 'event-boss-encounter-cryosnail',
+        boss_sporesnail: 'event-boss-encounter-sporesnail'
+    };
+    const videoBase = videoByBoss[detail.bossType];
+    if (!videoBase) return;
+    detail.promise = playCutsceneVideo(videoBase, {
+        kicker: 'SYSTEM CONSTRUCTION COMPLETE',
+        title: String(detail.goalKey ?? 'BASE MODULE').replace(/([a-z])([A-Z])/g, '$1 $2').toUpperCase(),
+        body: 'STRUCTURE READY // HOSTILE RESPONSE DETECTED',
+        tone: 'danger'
+    });
+});
+
 window.addEventListener('o2-generator-upgraded', (event) => {
     // Level 1 is the milestone build: it runs the choreographed 8-beat sequence
     // (blast doors close -> action video -> doors close -> 3D reveal -> generator rise & lights

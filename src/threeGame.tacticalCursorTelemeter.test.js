@@ -189,6 +189,32 @@ describe('Tactical Cursor & Telemeter Hover System', () => {
         expect(targetPickup.promptText).toBe('COLLECT');
     });
 
+    it('keeps a destructible prop targetable after its sprite is replaced by a GLB', () => {
+        const game = createMockGame();
+        game.disableFogOfWar = true;
+        game.isEnemyType = () => false;
+        const prop = new THREE.Sprite();
+        prop.position.set(2, 0, 2);
+        prop.visible = false;
+        prop.userData = {
+            type: 'prop_specimen_tank',
+            isDestructibleProp: true,
+            replacedBy3d: true,
+            propHp: 2,
+            maxPropHp: 4,
+            collisionRadius: 0.48
+        };
+        new THREE.Group().add(prop);
+        game.scatterSprites = [prop];
+
+        const target = game.resolveTacticalInspectTarget({ x: 2.1, z: 2.1 });
+        expect(target).toMatchObject({
+            targetId: 'destructible_prop',
+            integrity: 50,
+            promptText: 'DISMANTLE'
+        });
+    });
+
     it('identifies unscanned fog-of-war tiles as ???', () => {
         const game = createMockGame();
         game.player.position.set(0, 0, 0);

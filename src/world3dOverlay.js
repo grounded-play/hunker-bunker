@@ -226,6 +226,7 @@ export const WORLD_3D_STRUCTURES = Object.freeze({
 
 const templates = new Map();
 export const WORLD_3D_FACING_YAW = Math.PI;
+export const WORLD_3D_SWAP_PREFETCH_DISTANCE = 28;
 
 function loadTemplate(url) {
     if (!templates.has(url)) {

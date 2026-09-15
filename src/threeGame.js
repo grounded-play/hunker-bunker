@@ -207,7 +207,7 @@ import { spawnEnemyGibs, spawnPropDebris } from './enemyGibs.js';
 import { registerTinaHit, TINA_TOTAL_HITS } from './mayorTinaCombat.js';
 import { applyLinchpinResolution, resolveCampLeaderLinchpin } from './storyLinchpins.js';
 import { resolveSafeSpawn } from './safeSpawn.js';
-import { WORLD_3D_FACING_YAW, createWorld3dModel, hasWorld3dModel, isWorld3dOnlyPlacementType, preloadWorld3dModels, syncWorld3dReplacement } from './world3dOverlay.js';
+import { WORLD_3D_FACING_YAW, WORLD_3D_SWAP_PREFETCH_DISTANCE, createWorld3dModel, hasWorld3dModel, isWorld3dOnlyPlacementType, preloadWorld3dModels, syncWorld3dReplacement } from './world3dOverlay.js';
 import { computeTrailPosition } from './companionFollow.js';
 import { SNAIL_ENCOUNTER_CONSTANTS } from './snailEncounter.js';
 import { createUniversalEncounter, resolveEncounterAction } from './universalEncounter.js';
@@ -5788,7 +5788,7 @@ export class ThreeGame {
 
     loadNearbyWorld3dReplacement(source) {
         if (!source?.userData?.world3dModelType || source.userData.world3dLoading || source.userData.world3dRoot) return;
-        if ((this._world3dLoadsInFlight ?? 0) >= 2 || !this.player?.position) return;
+        if ((this._world3dLoadsInFlight ?? 0) >= 3 || !this.player?.position) return;
         this._world3dLoadPosition ??= new THREE.Vector3();
         source.getWorldPosition?.(this._world3dLoadPosition);
         const sourceX = source.getWorldPosition ? this._world3dLoadPosition.x : source.position.x;
@@ -5797,7 +5797,7 @@ export class ThreeGame {
             this.player.position.x - sourceX,
             this.player.position.z - sourceZ
         );
-        if (distance > 9) return;
+        if (distance > WORLD_3D_SWAP_PREFETCH_DISTANCE) return;
         this._world3dLoadsInFlight = (this._world3dLoadsInFlight ?? 0) + 1;
         void this.setupWorld3dReplacement(source, source.userData.world3dModelType)
             .finally(() => { this._world3dLoadsInFlight = Math.max(0, this._world3dLoadsInFlight - 1); });
@@ -6332,6 +6332,21 @@ export class ThreeGame {
                 this.closeConsoleModal();
                 this.setInputEnabled(false);
                 try {
+                    if (goalKey !== 'o2Bubble') {
+                        const presentation = {
+                            goalKey,
+                            bossType,
+                            promise: null
+                        };
+                        window.dispatchEvent(new CustomEvent('goal-milestone-presentation-requested', {
+                            detail: presentation
+                        }));
+                        // The renderer attaches the real media promise during
+                        // synchronous event delivery. Decode/skip/error all
+                        // settle before the in-world structure begins rising.
+                        await Promise.resolve(presentation.promise).catch(() => null);
+                        await this.playGoalModuleWorldReveal(goalKey);
+                    }
                     await this.dialogueManager?.openO2MilestoneDialogue({
                         playerType: this.playerType,
                         goalKey
@@ -6340,9 +6355,11 @@ export class ThreeGame {
                     window.dispatchEvent(new CustomEvent('milestone-boss-warning', {
                         detail: { type: bossType, goalKey,
                             encounterId: boss?.userData?.milestoneEncounterId,
-                            milestoneId: boss?.userData?.milestoneId }
+                            milestoneId: boss?.userData?.milestoneId,
+                            presentationHandled: goalKey !== 'o2Bubble' }
                     }));
                 } finally {
+                    this.clearCinematicCameraFocus?.();
                     this.setInputEnabled(true);
                 }
 
@@ -8393,6 +8410,7 @@ export class ThreeGame {
         fp.measure('updateHiddenPlayerMarker', () => this.updateHiddenPlayerMarker(now));
         fp.measure('updateVitals', () => this.updateVitals(delta));
         fp.measure('updateO2StartupSequence', () => this.updateO2StartupSequence(delta));
+        fp.measure('updateGoalModuleRise', () => this.updateGoalModuleRise?.(delta));
         fp.measure('updateRunCheckpoint', () => this.updateRunCheckpoint?.(delta));
         fp.measure('updateLoopStep', () => this.updateLoopStep());
         // Surface-only systems: enemy AI, hazards, and prompts that key off
@@ -10238,6 +10256,32 @@ export class ThreeGame {
             }
         }
 
+        // GLB replacements render on behalf of their hidden source sprite,
+        // but destruction state still lives on that source. Keep the target
+        // discoverable so a model swap never makes a prop look usable while
+        // silently dropping its aim response.
+        for (const prop of this.scatterSprites ?? []) {
+            if (!prop?.parent || !prop.userData?.isDestructibleProp || prop.userData.burstTriggered) continue;
+            const dist = Math.hypot(worldPoint.x - prop.position.x, worldPoint.z - prop.position.z);
+            const radius = Math.max(0.8, (prop.userData.collisionRadius ?? 0.38) + 0.55);
+            if (dist > radius) continue;
+            const hp = Math.max(0, prop.userData.propHp ?? 1);
+            const maxHp = Math.max(1, prop.userData.maxPropHp ?? hp);
+            return {
+                type: 'enemy',
+                targetId: 'destructible_prop',
+                badgeLabel: 'SALVAGEABLE PROP',
+                kicker: 'WORLD OBJECT // DESTRUCTIBLE',
+                title: String(prop.userData.type ?? 'FIELD PROP').replaceAll('_', ' ').toUpperCase(),
+                subtitle: 'BREAK TO CLEAR THE ROUTE OR RECOVER MATERIAL',
+                coords: { x: tileX, z: tileZ },
+                distance: Math.hypot(prop.position.x - this.player.position.x, prop.position.z - this.player.position.z),
+                integrity: Math.round((hp / maxHp) * 100),
+                promptKey: 'L-CLICK',
+                promptText: 'DISMANTLE'
+            };
+        }
+
         // 7. Check Crashed Ships / Consoles
         if (this.crashedShips) {
             for (const ship of this.crashedShips) {
@@ -11191,6 +11235,77 @@ export class ThreeGame {
             this.goalModuleMaterials.reactorCompressor.needsUpdate = true;
         }
         this.updateShipVisualState();
+    }
+
+    getGoalModulePresentation(goalKey) {
+        const ship = this.getActiveShip?.();
+        if (!ship) return null;
+        const config = {
+            hullExpansion: { sprite: 'hullModuleSprite', shadow: 'hullModuleShadow', model: 'hull_matrix' },
+            radarNode: { sprite: 'radarModuleSprite', shadow: 'radarModuleShadow', model: 'radar' },
+            reactorCompressor: { sprite: 'reactorModuleSprite', shadow: 'reactorModuleShadow', model: 'fusion_generator' }
+        }[goalKey];
+        if (!config || !ship[config.sprite]) return null;
+        return { ship, ...config, source: ship[config.sprite], shadowSource: ship[config.shadow] };
+    }
+
+    playGoalModuleWorldReveal(goalKey) {
+        return new Promise((resolve) => {
+            const presentation = this.getGoalModulePresentation(goalKey);
+            if (!presentation) {
+                resolve(false);
+                return;
+            }
+            const { ship, source, shadowSource, model } = presentation;
+            source.userData.world3dDesiredVisible = true;
+            source.visible = !source.userData?.replacedBy3d;
+            source.scale.set(0, 0, 1);
+            source.position.y = -1.41;
+            if (shadowSource) {
+                shadowSource.visible = true;
+                shadowSource.scale.set(0, 0, 1);
+            }
+            this.setupWorld3dReplacement(source, model, { owner: ship, ownerKey: `${goalKey}Reveal3d` });
+            syncWorld3dReplacement(source, { scale: 0, visible: true });
+            this.focusCinematicCamera({ x: source.position.x, z: source.position.z }, { immediate: true });
+            this._goalModuleRise = { goalKey, source, shadowSource, elapsed: 0, duration: 1.35, resolve };
+            window.dispatchEvent(new CustomEvent('goal-structure-rise-started', {
+                detail: { goalKey, x: source.position.x, z: source.position.z }
+            }));
+        });
+    }
+
+    updateGoalModuleRise(delta) {
+        const rise = this._goalModuleRise;
+        if (!rise) return;
+        rise.elapsed += Math.max(0, delta);
+        const progress = Math.min(1, rise.elapsed / rise.duration);
+        const eased = 1 - Math.pow(1 - progress, 3);
+        rise.source.scale.set(1.58 * eased, 1.58 * eased, 1);
+        rise.source.position.y = 0.09 - 1.5 * (1 - eased);
+        syncWorld3dReplacement(rise.source, { scale: eased, visible: true });
+        rise.shadowSource?.scale?.set(eased, eased, 1);
+        if (progress < 1) return;
+        this._goalModuleRise = null;
+        window.dispatchEvent(new CustomEvent('goal-structure-rise-complete', {
+            detail: { goalKey: rise.goalKey }
+        }));
+        rise.resolve?.(true);
+    }
+
+    cancelGoalModuleRise({ restoreVisuals = true } = {}) {
+        const rise = this._goalModuleRise;
+        if (!rise) return false;
+        this._goalModuleRise = null;
+        if (restoreVisuals) {
+            rise.source.scale.set(1.58, 1.58, 1);
+            rise.source.position.y = 0.09;
+            syncWorld3dReplacement(rise.source, { scale: 1, visible: true });
+            rise.shadowSource?.scale?.set(1, 1, 1);
+        }
+        rise.resolve?.(false);
+        this.clearCinematicCameraFocus?.();
+        return true;
     }
 
     updateShipVisualState(now = performance.now()) {
@@ -12761,6 +12876,35 @@ export class ThreeGame {
             };
             this.startO2StartupSequence(MILESTONE_BOSS_FOR_GOAL.o2Bubble);
         });
+    }
+
+    focusCinematicCamera(position, { immediate = false } = {}) {
+        if (!position || !Number.isFinite(position.x) || !Number.isFinite(position.z)) return false;
+        this._cinematicCameraFocus = {
+            x: position.x,
+            y: Number.isFinite(position.y) ? position.y : (this.getTerrainHeightAt?.(position.x, position.z) ?? 0),
+            z: position.z
+        };
+        if (immediate) this.snapCameraToFocus?.(this._cinematicCameraFocus);
+        return true;
+    }
+
+    centerCameraOnPosition(x, z) {
+        return this.focusCinematicCamera({ x, z }, { immediate: true });
+    }
+
+    clearCinematicCameraFocus() {
+        this._cinematicCameraFocus = null;
+    }
+
+    snapCameraToFocus(focus = this._cinematicCameraFocus) {
+        if (!focus || !this.camera) return;
+        this.camera.position.set(
+            focus.x + this.cameraOffset.x,
+            focus.y + this.cameraOffset.y,
+            focus.z + this.cameraOffset.z
+        );
+        this.camera.lookAt(focus.x, focus.y + 0.4, focus.z);
     }
 
     startO2StartupSequence(bossType, options = {}) {
@@ -18300,6 +18444,8 @@ export class ThreeGame {
         if (this.isPlayerDead) return;
         if (this.performanceProfile && this.performanceProfile !== 'gameplay') return;
         this.isPlayerDead = true;
+        this.cancelGoalModuleRise?.();
+        this.clearCinematicCameraFocus?.();
         // A downed co-op operator becomes fully dead on a squad wipe or
         // manual abort. Do not carry the revive-only guard into a retry.
         this.isPlayerDowned = false;
@@ -18465,6 +18611,7 @@ export class ThreeGame {
             this.runStartTime = Date.now();
             window.AudioManager?.beginVoiceRun?.(this.runStartTime);
             this.cancelO2StartupSequence?.({ restoreVisuals: false });
+            this.cancelGoalModuleRise?.({ restoreVisuals: false });
             this.totalDistanceTravelled = 0;
             this.maxDepthTierReached = 0;
             this.currentDepthTier = 0;
@@ -22711,8 +22858,9 @@ export class ThreeGame {
             this.cameraOrbitRadius * Math.cos(this.cameraAzimuth)
         );
 
+        const cinematicFocus = this._cinematicCameraFocus;
         if (this.performanceProfile === 'gameplay' && this.cameraMode === 'third-person') {
-            this.updateThirdPersonCamera(delta);
+            this.updateThirdPersonCamera(delta, { focusPosition: cinematicFocus });
             if (this.mouseAimActive
                 && Number.isFinite(this.lastMouseClientX)
                 && Number.isFinite(this.lastMouseClientY)) {
@@ -22728,10 +22876,11 @@ export class ThreeGame {
             return;
         }
 
+        const cameraSubject = cinematicFocus ?? this.player.position;
         const target = new THREE.Vector3(
-            this.player.position.x + this.cameraOffset.x,
-            this.player.position.y + this.cameraOffset.y,
-            this.player.position.z + this.cameraOffset.z
+            cameraSubject.x + this.cameraOffset.x,
+            cameraSubject.y + this.cameraOffset.y,
+            cameraSubject.z + this.cameraOffset.z
         );
 
         if (this.performanceProfile === 'menu') {
@@ -22767,9 +22916,9 @@ export class ThreeGame {
             this.camera.rotation.x += trauma.pitch;
         }
 
-        const lookAtX = this.player.position.x + (this._menuParallaxX || 0) * 0.35;
-        const lookAtY = this.player.position.y + 0.4 + (this._menuParallaxY || 0) * 0.35;
-        this.camera.lookAt(lookAtX, lookAtY, this.player.position.z);
+        const lookAtX = cameraSubject.x + (this._menuParallaxX || 0) * 0.35;
+        const lookAtY = cameraSubject.y + 0.4 + (this._menuParallaxY || 0) * 0.35;
+        this.camera.lookAt(lookAtX, lookAtY, cameraSubject.z);
 
         if (this.performanceProfile === 'menu' && typeof document !== 'undefined') {
             const menuEl = document.getElementById('menu') || document.getElementById('splash');
@@ -22783,9 +22932,10 @@ export class ThreeGame {
         this.updateTiltShiftAndBokeh(delta);
     }
 
-    updateThirdPersonCamera(delta, { immediate = false } = {}) {
+    updateThirdPersonCamera(delta, { immediate = false, focusPosition = null } = {}) {
+        const trackedPosition = focusPosition ?? this.player.position;
         const pose = getThirdPersonCameraPose({
-            playerPosition: this.player.position,
+            playerPosition: trackedPosition,
             planarForward: this.cameraPlanarForward,
             planarRight: this.cameraPlanarRight,
             config: this.thirdPersonCameraConfig
@@ -25716,7 +25866,8 @@ export class ThreeGame {
                         hp: propType === 'prop_specimen_tank' ? 4 : 3,
                         groupType: 'prop',
                         opacity: 1,
-                        worldDressing: planned.kind === 'ambient'
+                        worldDressing: planned.kind === 'ambient',
+                        isSolidProp: planned.blocking !== false
                     });
                     reservedCells.add(`${planned.x},${planned.y}`);
                 }
@@ -26753,7 +26904,7 @@ export class ThreeGame {
                 Math.round(placement.x * 10),
                 Math.round(placement.z * 10)
             ) % 3 === 0;
-            sprite.userData.isSolidProp = true;
+            sprite.userData.isSolidProp = placement.isSolidProp !== false;
             sprite.userData.collisionRadius = storageVariant ? 0.48 : 0.38;
             const lockerType = placement.type === 'prop_security_locker'
                 || (placement.type === 'prop_bunker_supplies' && storageVariant);
@@ -31531,11 +31682,9 @@ export class ThreeGame {
 
         if (!this.isInPocket && this.scatterSprites) {
             for (const prop of this.scatterSprites) {
-                // A 2D prop is hidden after its nearby GLB replacement is
-                // ready. Hidden source sprites must not keep an invisible
-                // collision volume in the world while the visible GLB is
-                // being rendered.
-                if (!prop?.parent || prop.visible === false || !prop.userData?.isSolidProp || prop.userData.burstTriggered) continue;
+                // The source sprite retains authoritative gameplay state after
+                // its GLB becomes visible, including the collider.
+                if (!prop?.parent || !prop.userData?.isSolidProp || prop.userData.burstTriggered) continue;
                 const collisionRadius = prop.userData.collisionRadius ?? 0.38;
                 if (Math.hypot(x - prop.position.x, z - prop.position.z) < collisionRadius + this.playerRadius) {
                     return false;

@@ -64,6 +64,24 @@ describe('DP-03 milestone presentation ownership', () => {
         expect(gate.claim({ ...warnings[0], presentationHandled: false }, 1)).toBeNull();
     });
 
+    it('holds the generator in camera focus for the full rise and restores tracking afterward', async () => {
+        const focusCinematicCamera = vi.fn();
+        const clearCinematicCameraFocus = vi.fn();
+        const game = {
+            getActiveO2GeneratorPosition: () => ({ x: 7, z: 9 }),
+            focusCinematicCamera,
+            clearCinematicCameraFocus,
+            startO2StartupSequence: (_type, { onComplete }) => {
+                expect(focusCinematicCamera).toHaveBeenCalledWith({ x: 7, z: 9 }, { immediate: true });
+                expect(clearCinematicCameraFocus).not.toHaveBeenCalled();
+                onComplete();
+            },
+            spawnMilestoneBoss: () => null
+        };
+        await runO2MilestoneChoreography({ ...sequenceOptions(game), shakePauseMs: 0 });
+        expect(clearCinematicCameraFocus).toHaveBeenCalled();
+    });
+
     function sequenceOptions(game = {}) {
         return {
             game, shakePauseMs: 0,

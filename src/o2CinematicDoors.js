@@ -54,6 +54,7 @@ export function runO2MilestoneChoreography(options = {}) {
         .finally(() => {
             // An old cinematic must never unlock or mutate a new expedition.
             if (presentations.get(game) === entry && game.runStartTime === runId) {
+                game.clearCinematicCameraFocus?.();
                 game.setCinematicLock?.(false);
                 game.setInputEnabled?.(!game.isPlayerDead && game.performanceProfile !== 'menu');
             }
@@ -160,13 +161,11 @@ async function executeO2MilestoneChoreography(options = {}) {
 
     // ── Beat 4 & 5: Blast doors cycle over video and open to 3D reveal ──
     setPhase(O2_CHOREOGRAPHY_PHASES.DOORS_OPEN_3D);
+    const generatorPosition = game?.getActiveO2GeneratorPosition?.();
+    if (generatorPosition) game?.focusCinematicCamera?.(generatorPosition, { immediate: true });
     await doorTransition(
         () => {
-            const genPos = game?.getActiveO2GeneratorPosition?.();
-            if (genPos && game?.cameraTarget) {
-                game.cameraTarget.x = genPos.x;
-                game.cameraTarget.z = genPos.z;
-            }
+            if (generatorPosition) game?.focusCinematicCamera?.(generatorPosition, { immediate: true });
         },
         () => {},
         'base'
@@ -201,6 +200,9 @@ async function executeO2MilestoneChoreography(options = {}) {
             }
         });
     }
+    // Hold the completed structure in frame through the end of the rise; the
+    // next door-covered beat can safely restore normal player tracking.
+    game?.clearCinematicCameraFocus?.();
 
     // ── Beat 7: Screen rumble & warning alert broadcast ──
     setPhase(O2_CHOREOGRAPHY_PHASES.SCREEN_SHAKE_WARNING);

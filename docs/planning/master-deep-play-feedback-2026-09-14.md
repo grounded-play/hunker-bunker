@@ -95,6 +95,15 @@ Commit: `d744c5c`.
 - The expedition HUD now displays campaign day, local 24-hour time, day/night phase and cycle progress continuously.
 - Verification: 47 focused Vitest assertions passed across day-cycle, wall, survivor and camp suites; production Vite build and 50-asset media audit passed.
 
+### Pass 15 — DP-06–08/11–12 route, prop streaming and milestone presentation (September 14)
+
+- Room population now reserves a complete doorway apron, preserves authored blocking flags, and retains the existing multi-thousand-seed connectivity guarantees so set dressing cannot seal a valid west-complex socket.
+- Common world models remain preloaded during staging; uncommon GLB replacements now begin 28 units away with bounded concurrency while their deterministic sprite fallback remains visible. Destruction keys remain authoritative across chunk eviction.
+- GLB-replaced destructible props retain collision and an explicit DISMANTLE reticle/integrity readout; nonblocking authored dressing no longer becomes a surprise solid collider.
+- O₂ choreography now drives the active camera focus rather than an unused field, holds the generator through its rise, and restores tracking on success, skip, death or error.
+- Hull, radar and reactor console milestones request the correct boss film immediately, wait for media settlement, focus and raise their own structure from below ground, then begin dialogue/boss AI. Completed-save restoration remains instant and skips theatrics.
+- Verification: 51 focused presentation/navigation/interaction assertions passed, plus the 6,000-seed maze stress suite and the production build/media audit.
+
 ## Evidence register
 
 References use **entry `id`**, not zero-based array position, followed by elapsed milliseconds. JSON messages embed diagnostic objects; expand the referenced entry to inspect its details. SHA-256 and compact metrics can be reproduced with:
