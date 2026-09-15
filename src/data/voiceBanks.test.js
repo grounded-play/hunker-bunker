@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { existsSync } from 'node:fs';
+import { Buffer } from 'node:buffer';
+import { existsSync, readFileSync } from 'node:fs';
 import { VOICE_BANKS, VOICE_BANK_IDS, bankForSourceFile, getVoiceAudioManifest, getVoiceBank, getVoiceScriptRows, getVoiceTakeKeys, resolveVoiceBankSlot } from './voiceBanks.js';
 import { getCatalogEntry, ITEM_TYPE } from '../itemOwnership.js';
 
@@ -45,6 +46,24 @@ describe('VOICE_BANKS', () => {
                     expect(manifest).toContainEqual({ key, url: `/audio/generated/${key}.wav` });
                 }
             }
+        }
+    });
+
+    it('ships alternate-radio takes at an audible, non-clipping level', () => {
+        for (const { url } of getVoiceAudioManifest()) {
+            const path = new URL(`../../public${url}`, import.meta.url);
+            const wav = readFileSync(path);
+            expect(wav.toString('ascii', 0, 4), `${url} is not RIFF`).toBe('RIFF');
+            const dataOffset = wav.indexOf(Buffer.from('data'));
+            expect(dataOffset, `${url} has no PCM data chunk`).toBeGreaterThan(0);
+            const byteLength = wav.readUInt32LE(dataOffset + 4);
+            let peak = 0;
+            for (let offset = dataOffset + 8; offset + 1 < dataOffset + 8 + byteLength; offset += 2) {
+                peak = Math.max(peak, Math.abs(wav.readInt16LE(offset)));
+            }
+            const peakDb = 20 * Math.log10(peak / 32768);
+            expect(peakDb, `${url} is too quiet at ${peakDb.toFixed(1)} dBFS`).toBeGreaterThan(-6);
+            expect(peakDb, `${url} clips at ${peakDb.toFixed(1)} dBFS`).toBeLessThan(-0.5);
         }
     });
 });

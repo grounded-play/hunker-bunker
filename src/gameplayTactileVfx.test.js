@@ -225,7 +225,8 @@ describe('KillstreakFeedbackSystem', () => {
 
         globalThis.window = {
             AudioManager: {
-                play: vi.fn()
+                play: vi.fn(),
+                playVoiceCallout: vi.fn()
             }
         };
 
@@ -265,6 +266,7 @@ describe('KillstreakFeedbackSystem', () => {
         expect(container.children.length).toBe(1);
         const banner = container.querySelector('.killstreak-banner');
         expect(banner.textContent).toContain('TRIPLE PURGE');
+        expect(window.AudioManager.playVoiceCallout).toHaveBeenCalledWith('killstreak');
     });
 
     it('handles boss kills with immediate high tier notification', () => {
