@@ -90,6 +90,19 @@ describe('DP-03 milestone presentation ownership', () => {
         };
     }
 
+    it('latches the generator hidden synchronously before the first movie starts', async () => {
+        let releaseVideo;
+        const prepareO2StartupReveal = vi.fn();
+        const game = { runStartTime: 20, prepareO2StartupReveal };
+        const options = sequenceOptions(game);
+        options.playCutsceneVideo.mockImplementationOnce(() => new Promise(resolve => { releaseVideo = resolve; }));
+        const pending = runO2MilestoneChoreography(options);
+        expect(prepareO2StartupReveal).toHaveBeenCalledOnce();
+        await vi.waitFor(() => expect(releaseVideo).toBeTypeOf('function'));
+        releaseVideo({ played: true });
+        await pending;
+    });
+
     it('shares concurrent and completed O2 requests, but allows a new run', async () => {
         const options = sequenceOptions({ runStartTime: 1 });
         const first = runO2MilestoneChoreography(options);

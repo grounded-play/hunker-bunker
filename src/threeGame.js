@@ -15,6 +15,7 @@ import { createFrameIntervalTracker } from './frameIntervalTracker.js';
 import { createGpuFrameTimer } from './gpuFrameTimer.js';
 import { beginPerfPhase } from './perfPhases.js';
 import { usesGameplayFocusEffects } from './gameplayPresentation.js';
+import { mapRotationForWorldYaw } from './mapHeading.js';
 import { getSelectedSheen } from './weaponSheens.js';
 import { captureHardwareCapabilities, createGpuMemoryTracker } from './gpuMemoryBudget.js';
 import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
@@ -6704,19 +6705,27 @@ export class ThreeGame {
     }
 
     getTerrainHeightAt(worldX, worldZ) {
+        if (!Number.isFinite(worldX) || !Number.isFinite(worldZ)) {
+            return TERRAIN_HEIGHTS.GROUND;
+        }
         const tileX = Math.round(worldX);
         const tileZ = Math.round(worldZ);
         const chunkX = Math.floor(tileX / this.chunkSize);
         const chunkY = Math.floor(tileZ / this.chunkSize);
         const key = `${chunkX},${chunkY}`;
         const chunk = this.chunkCache?.get(key);
-        if (!chunk || !chunk.heightmap) return TERRAIN_HEIGHTS.GROUND;
-        const localX = tileX - chunkX * this.chunkSize;
-        const localZ = tileZ - chunkY * this.chunkSize;
-        if (localZ < 0 || localZ >= chunk.heightmap.length || localX < 0 || localX >= chunk.heightmap[0].length) {
+        if (!chunk || !Array.isArray(chunk.heightmap) || chunk.heightmap.length === 0) {
             return TERRAIN_HEIGHTS.GROUND;
         }
-        return chunk.heightmap[localZ][localX] ?? TERRAIN_HEIGHTS.GROUND;
+        const localX = tileX - chunkX * this.chunkSize;
+        const localZ = tileZ - chunkY * this.chunkSize;
+        const row = chunk.heightmap[localZ];
+        if (localZ < 0 || localZ >= chunk.heightmap.length || !Array.isArray(row)
+            || localX < 0 || localX >= row.length) {
+            return TERRAIN_HEIGHTS.GROUND;
+        }
+        const height = row[localX];
+        return Number.isFinite(height) ? height : TERRAIN_HEIGHTS.GROUND;
     }
 
     playThrottledUiError(fieldName, options = {}, eventName = null) {
@@ -8058,7 +8067,7 @@ export class ThreeGame {
         // Adaptive quality may lower the render resolution, but it must not
         // remove the authored DOF/tilt-shift treatment. Bypassing the composer
         // made the start-of-run handoff look like lighting and fog had unloaded.
-        this.gameplayPostProcessingEnabled = !nextEnabled;
+        this.gameplayPostProcessingEnabled = true;
         if (this.renderer?.shadowMap) {
             // Keep the shadow variant stable while adaptive mode lowers pixel
             // cost. Toggling shadowMap at runtime caused a
@@ -8190,7 +8199,11 @@ export class ThreeGame {
     }
 
     renderWithPerf(label = 'frame:render') {
-        const span = beginPerfPhase(label, this.getPerformanceDiagnosticsSnapshot());
+        // A full diagnostics snapshot traverses the scene and sorts frame
+        // samples. Doing that before every render amplified low FPS into a
+        // permanent lockup on Steam Deck. Detailed snapshots are captured by
+        // the throttled long-task reporter instead.
+        const span = beginPerfPhase(label, { profile: this.performanceProfile });
         const gpuQueryStarted = this.gpuFrameTimer?.beginFrame?.() ?? false;
         try {
             if (this.composer && usesGameplayFocusEffects(this)) {
@@ -8295,6 +8308,21 @@ export class ThreeGame {
                 ? this.renderFrameBody
                 : ThreeGame.prototype.renderFrameBody;
             return frameBody.call(this);
+        } catch (error) {
+            // A single malformed world actor must not terminate Three's
+            // animation loop and leave a responsive UI over a frozen mission.
+            this._runtimeFrameErrorCount = (this._runtimeFrameErrorCount ?? 0) + 1;
+            const now = typeof performance !== 'undefined' ? performance.now() : Date.now();
+            if (!Number.isFinite(this._lastRuntimeFrameErrorAt)
+                || now - this._lastRuntimeFrameErrorAt >= 5000) {
+                this._lastRuntimeFrameErrorAt = now;
+                debugLog.error('RUNTIME', 'frame-update-recovered', {
+                    count: this._runtimeFrameErrorCount,
+                    message: error?.message ?? String(error),
+                    stack: typeof error?.stack === 'string' ? error.stack.slice(0, 1200) : null
+                });
+            }
+            return undefined;
         } finally {
             fp.endFrame();
         }
@@ -12927,6 +12955,8 @@ export class ThreeGame {
 
     startO2StartupSequence(bossType, options = {}) {
         const { onComplete = null, skipDialogue = false } = options;
+        this.o2StartupSequenceActive = true;
+        this._o2RevealPending = false;
         this._onO2StartupSequenceComplete = onComplete;
         this._skipO2Dialogue = skipDialogue;
         this.createO2BubbleObjects();
@@ -12958,19 +12988,43 @@ export class ThreeGame {
             detail: { level: 1, bossType }
         }));
         this._pendingO2BossType = bossType;
-        this.o2StartupSequenceActive = true;
         this.o2StartupPhase = 'popup';
         this.o2StartupTime = 0;
     }
 
+    prepareO2StartupReveal() {
+        this._o2RevealPending = true;
+        this.createO2BubbleObjects();
+        if (this.o2BubbleObjects) {
+            this.o2BubbleObjects.light.intensity = 0;
+            this.o2BubbleObjects.fill.visible = false;
+            this.o2BubbleObjects.ring.visible = false;
+        }
+        const ship = this.getActiveShip?.();
+        if (ship?.o2ModuleSprite) {
+            ship.o2ModuleSprite.userData.world3dDesiredVisible = false;
+            ship.o2ModuleSprite.visible = false;
+            ship.o2ModuleSprite.scale.set(0, 0, 1);
+            ship.o2ModuleSprite.position.y = 0.09 - 1.5;
+            syncWorld3dReplacement(ship.o2ModuleSprite, { scale: 0, visible: false });
+        }
+        if (ship?.o2Module3d) ship.o2Module3d.visible = false;
+        if (ship?.o2ModuleShadow) {
+            ship.o2ModuleShadow.visible = false;
+            ship.o2ModuleShadow.scale.set(0, 0, 1);
+        }
+    }
+
     cancelO2StartupSequence({ restoreVisuals = true } = {}) {
         const wasActive = this.o2StartupSequenceActive;
+        const wasPending = this._o2RevealPending;
+        this._o2RevealPending = false;
         this.o2StartupSequenceActive = false;
         this.o2StartupPhase = null;
         this._onO2StartupSequenceComplete = null;
         this._pendingO2BossType = null;
         this._skipO2Dialogue = true;
-        if (!restoreVisuals || !wasActive) return;
+        if (!restoreVisuals || (!wasActive && !wasPending)) return;
         // A completed purchase survives a presentation failure. Restore its
         // final visual state instead of leaving the generator below the floor.
         const ship = this.getActiveShip();
@@ -16060,12 +16114,21 @@ export class ThreeGame {
         if (this.activeWanderer.arriving && this.activeWanderer.instance3d?.root) {
             const actor = this.activeWanderer;
             const root = actor.instance3d.root;
-            const pathNode = actor.arrivalPath?.[actor.arrivalPathIndex];
-            const waypointX = pathNode?.x ?? actor.targetX;
-            const waypointZ = pathNode?.z ?? actor.targetZ;
-            const dx = waypointX - root.position.x;
-            const dz = waypointZ - root.position.z;
-            const distance = Math.hypot(dx, dz);
+            if (![root.position.x, root.position.z, actor.targetX, actor.targetZ].every(Number.isFinite)) {
+                // Recover old/saved actors that were already poisoned by the
+                // zero-distance normalization bug seen in the Sept 15 logs.
+                root.position.x = Number.isFinite(actor.targetX) ? actor.targetX : 0;
+                root.position.z = Number.isFinite(actor.targetZ) ? actor.targetZ : 0;
+                actor.targetX = root.position.x;
+                actor.targetZ = root.position.z;
+                actor.arriving = false;
+            }
+            const pathNode = actor.arriving ? actor.arrivalPath?.[actor.arrivalPathIndex] : null;
+            let waypointX = Number.isFinite(pathNode?.x) ? pathNode.x : actor.targetX;
+            let waypointZ = Number.isFinite(pathNode?.z) ? pathNode.z : actor.targetZ;
+            let dx = waypointX - root.position.x;
+            let dz = waypointZ - root.position.z;
+            let distance = Math.hypot(dx, dz);
             const finalDistance = Math.hypot(actor.targetX - root.position.x, actor.targetZ - root.position.z);
             if (distance <= 0.16 && pathNode && actor.arrivalPathIndex < actor.arrivalPath.length - 1) {
                 actor.arrivalPathIndex += 1;
@@ -16077,7 +16140,25 @@ export class ThreeGame {
                 actor.z = actor.targetZ;
                 this.explorationTracker?.removeLandmark?.('survivor_signal');
                 this.showBunkerLine(`SURVIVOR ON DECK: ${actor.name.toUpperCase()} IS WAITING AT THE FRONT AIRLOCK.`);
-            } else {
+            } else if (actor.arriving) {
+                // A rounded final path node can exactly equal the current
+                // position while the fractional airlock target is still ahead.
+                // Move directly to that target instead of dividing 0 by 0.
+                if (!Number.isFinite(distance) || distance <= Number.EPSILON) {
+                    waypointX = actor.targetX;
+                    waypointZ = actor.targetZ;
+                    dx = waypointX - root.position.x;
+                    dz = waypointZ - root.position.z;
+                    distance = Math.hypot(dx, dz);
+                }
+                if (!Number.isFinite(distance) || distance <= Number.EPSILON) {
+                    actor.arriving = false;
+                    root.position.x = actor.targetX;
+                    root.position.z = actor.targetZ;
+                    actor.x = actor.targetX;
+                    actor.z = actor.targetZ;
+                    return;
+                }
                 const step = Math.min(distance, 2.2 * 0.016);
                 const nextX = root.position.x + (dx / distance) * step;
                 const nextZ = root.position.z + (dz / distance) * step;
@@ -16969,13 +17050,14 @@ export class ThreeGame {
         this.createO2BubbleObjects();
         const generatorState = this.getO2GeneratorState();
         const generatorPos = this.getActiveO2GeneratorPosition();
-        const enabled = generatorState.isOnline && Boolean(generatorPos);
+        const revealPending = Boolean(this._o2RevealPending);
+        const enabled = generatorState.isOnline && Boolean(generatorPos) && !revealPending;
         const unlocks = this.unlocks ?? this.bank.getUnlocks();
 
         if (this.crashedShips) {
             for (const ship of this.crashedShips) {
                 const isActiveShip = ship.type === this.playerType;
-                const o2ModuleOnline = isActiveShip && generatorState.isOnline;
+                const o2ModuleOnline = isActiveShip && generatorState.isOnline && !revealPending;
                 const hullOnline = isActiveShip && Boolean(unlocks.hullExpansion);
                 const radarOnline = isActiveShip && Boolean(unlocks.radarNode);
                 const reactorOnline = isActiveShip && Boolean(unlocks.reactorCompressor);
@@ -17691,7 +17773,11 @@ export class ThreeGame {
         }
 
         return {
-            player: this.player ? { x: this.player.position.x, z: this.player.position.z, rotation: this.player.rotation?.y ?? 0 } : null,
+            player: this.player ? {
+                x: this.player.position.x,
+                z: this.player.position.z,
+                rotation: mapRotationForWorldYaw(this.facingYaw)
+            } : null,
             home: { x: CRASH_SITE_CENTER, z: CRASH_SITE_CENTER },
             chunkSize: this.chunkSize,
             detailedChunks,

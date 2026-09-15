@@ -76,7 +76,7 @@ describe('ThreeGame - WebGL Camera Tilt-Shift Shader Pass', () => {
         expect(fakeOverlay._active).toBe(false);
     });
 
-    it('disables the overlay in adaptive gameplay mode', () => {
+    it('retains the authored overlay in adaptive gameplay mode', () => {
         const fakeOverlay = {
             classList: {
                 toggle: (cls, state) => {
@@ -99,6 +99,6 @@ describe('ThreeGame - WebGL Camera Tilt-Shift Shader Pass', () => {
         };
 
         ThreeGame.prototype.updateTiltShiftAndBokeh.call(fakeGame, 0.016);
-        expect(fakeOverlay._active).toBe(false);
+        expect(fakeOverlay._active).toBe(true);
     });
 });

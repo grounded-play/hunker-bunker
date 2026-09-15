@@ -330,6 +330,24 @@ test.describe('controller-ready modal focus', () => {
         await expect.poll(() => page.evaluate(() => localStorage.getItem('hb_aim_sensitivity'))).toBe('1.5');
     });
 
+    test('down from every settings tab enters that tab panel', async ({ page }) => {
+        await bootToTitleSplash(page);
+        await page.locator('#title-settings-btn').click();
+
+        const tabNames = await page.locator('[data-settings-tab]').evaluateAll((tabs) => (
+            tabs.map((tab) => tab.dataset.settingsTab)
+        ));
+        for (const tabName of tabNames) {
+            const tab = page.locator(`[data-settings-tab="${tabName}"]`);
+            await tab.click();
+            await tab.focus();
+            await tab.press('ArrowDown');
+            await expect.poll(() => page.evaluate((name) => (
+                document.activeElement?.closest?.('[data-settings-panel]')?.dataset.settingsPanel ?? null
+            ), tabName)).toBe(tabName);
+        }
+    });
+
     test('crosshair color picker updates and persists the accessibility color', async ({ page }) => {
         await bootToTitleSplash(page);
         await page.locator('#title-settings-btn').click();

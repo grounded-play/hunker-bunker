@@ -24,6 +24,7 @@ describe('DP-02: O2 runtime retains its shader light set', () => {
             createO2BubbleObjects: ThreeGame.prototype.createO2BubbleObjects,
             ensureO2BubbleVisualState: ThreeGame.prototype.ensureO2BubbleVisualState,
             igniteBaseLights: ThreeGame.prototype.igniteBaseLights,
+            prepareO2StartupReveal: ThreeGame.prototype.prepareO2StartupReveal,
             startO2StartupSequence: ThreeGame.prototype.startO2StartupSequence,
             cancelO2StartupSequence: ThreeGame.prototype.cancelO2StartupSequence,
             updateO2StartupSequence: ThreeGame.prototype.updateO2StartupSequence
@@ -76,6 +77,20 @@ describe('DP-02: O2 runtime retains its shader light set', () => {
         expect(complete).toHaveBeenCalledOnce();
         game.baseLights.dispose();
         expect(visibleLights(game.scene)).toHaveLength(1);
+    });
+
+    it('keeps a purchased generator hidden until its authored rise begins', () => {
+        const { game, generator } = setup();
+        generator.isOnline = true;
+        game.prepareO2StartupReveal();
+        game.ensureO2BubbleVisualState();
+        expect(game._o2RevealPending).toBe(true);
+        expect(game.o2BubbleObjects.light.intensity).toBe(0);
+        expect(game.o2BubbleObjects.ring.visible).toBe(false);
+
+        game.startO2StartupSequence('boss_cybersnail', { skipDialogue: true });
+        expect(game._o2RevealPending).toBe(false);
+        expect(game.o2StartupSequenceActive).toBe(true);
     });
 
     it('cancels a lost rise without leaving an active sequence or stale completion callback', () => {

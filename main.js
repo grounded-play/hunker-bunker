@@ -1,5 +1,6 @@
 import { crossingGuidance, expeditionDebrief } from './src/expeditionFeedback.js';
 import { runO2MilestoneChoreography } from './src/o2CinematicDoors.js';
+import { compactPerformanceSnapshot, compactPerfPhase, createLongTaskReporter } from './src/longTaskDiagnostics.js';
 import { createMilestonePresentationGate } from './src/milestonePresentation.js';
 import { formatRunCardBadges, summarizeRunCards } from './src/runCardHud.js';
 import { cutsceneCutoffTime } from './src/cutsceneTiming.js';
@@ -1168,6 +1169,21 @@ function moveControllerFocus(delta) {
     return target;
 }
 
+function moveSettingsDirectionalFocus(code) {
+    const popup = document.getElementById('settings-popup');
+    const active = document.activeElement;
+    if (!popup?.contains(active)) return false;
+
+    const tab = active.closest?.('[data-settings-tab]');
+    if (tab && (code === 'ArrowDown' || code === 'KeyS')) {
+        const panel = popup.querySelector(`[data-settings-panel="${tab.dataset.settingsTab}"]:not(.hidden)`);
+        const target = getVisibleControllerFocusables(panel)[0];
+        return target ? focusControllerTarget(target, { playHover: true }) : true;
+    }
+
+    return false;
+}
+
 let lastHeroMenuCommandFocus = null;
 
 function moveHeroSelectPanelFocus(code) {
@@ -1377,6 +1393,7 @@ document.addEventListener('keydown', (event) => {
         event.preventDefault();
         if (root.id === 'operator-polish-modal' && moveOperatorPolishGridFocus(event.code)) return;
         if (root.id === 'menu' && moveMenuDirectionalFocus(event.code)) return;
+        if (root.id === 'settings-popup' && moveSettingsDirectionalFocus(event.code)) return;
         const horizontal = ['KeyA', 'KeyD', 'ArrowLeft', 'ArrowRight'].includes(event.code);
         const active = document.activeElement;
         const adjusted = horizontal && (
@@ -1931,6 +1948,7 @@ function handleSteamMenuInput(actions) {
                     ? 'ArrowLeft'
                     : 'ArrowRight';
         if (root?.id === 'menu') moveMenuDirectionalFocus(code);
+        else if (root?.id === 'settings-popup' && moveSettingsDirectionalFocus(code)) return;
         else moveControllerFocus((actions.up || actions.left) ? -1 : 1);
     }
 
@@ -1973,6 +1991,7 @@ window.addEventListener('gamepad-menu-nav', (event) => {
         };
         const root = getControllerFocusRoot();
         if (root?.id === 'menu') moveMenuDirectionalFocus(codeByAction[action]);
+        else if (root?.id === 'settings-popup' && moveSettingsDirectionalFocus(codeByAction[action])) return;
         else moveControllerFocus(action === 'menu_up' || action === 'menu_left' ? -1 : 1);
     } else if (action === 'menu_confirm') {
         activateControllerFocusedElement();
@@ -9831,6 +9850,11 @@ settingsPopup?.querySelector('.settings-tabs')?.addEventListener('click', (event
 });
 
 settingsPopup?.querySelector('.settings-tabs')?.addEventListener('keydown', (event) => {
+    if (event.key === 'ArrowDown') {
+        event.preventDefault();
+        moveSettingsDirectionalFocus(event.key);
+        return;
+    }
     if (!['ArrowLeft', 'ArrowRight'].includes(event.key)) return;
     const tabs = [...settingsPopup.querySelectorAll('[data-settings-tab]')];
     const index = tabs.indexOf(document.activeElement);
@@ -15339,10 +15363,10 @@ function captureGameplayPerfContext() {
             activePhases: (window.__hbPerfPhaseStack ?? []).map((span) => ({
                 phase: span.phase,
                 startMs: Math.round(span.startMs * 10) / 10,
-                context: span.context ?? null
+                context: compactPerfPhase(span)?.context ?? null
             })),
-            recentPhases: (window.__hbPerfPhaseHistory ?? []).slice(-12),
-            counters: window.game?.getPerformanceDiagnosticsSnapshot?.() ?? null
+            recentPhases: (window.__hbPerfPhaseHistory ?? []).slice(-6).map(compactPerfPhase),
+            counters: compactPerformanceSnapshot(window.game?.getPerformanceDiagnosticsSnapshot?.())
         };
     } catch {
         return { activePhases: [], recentPhases: [], counters: null };
@@ -15350,20 +15374,22 @@ function captureGameplayPerfContext() {
 }
 
 let gameplayLongTaskObserver = null;
+const reportGameplayLongTask = createLongTaskReporter({
+    emit: (message, context) => debugLog.warn('PERF', message, context)
+});
 function startGameplayLongTaskDiagnostics() {
     if (typeof PerformanceObserver === 'undefined' || gameplayLongTaskObserver) return;
     try {
         gameplayLongTaskObserver = new PerformanceObserver((list) => {
             for (const task of list.getEntries()) {
-                const phaseAge = window.__hbLastPerfPhaseAt != null
-                    ? performance.now() - window.__hbLastPerfPhaseAt
-                    : null;
-                const lastPhase = (phaseAge != null && phaseAge <= PERF_PHASE_MAX_AGE_MS)
-                    ? window.__hbLastPerfPhase
-                    : null;
-                debugLog.warn('PERF', `Long task: ${Math.round(task.duration)}ms`, {
-                    durationMs: Math.round(task.duration),
-                    startMs: Math.round(task.startTime),
+                reportGameplayLongTask(task, () => {
+                    const phaseAge = window.__hbLastPerfPhaseAt != null
+                        ? performance.now() - window.__hbLastPerfPhaseAt
+                        : null;
+                    const lastPhase = (phaseAge != null && phaseAge <= PERF_PHASE_MAX_AGE_MS)
+                        ? window.__hbLastPerfPhase
+                        : null;
+                    return {
                     // Set by threeGame.js right before each known-expensive
                     // synchronous op (chunk mounting, prop-break VFX) and left
                     // in place afterward -- since JS is single-threaded, by the
@@ -15378,6 +15404,7 @@ function startGameplayLongTaskDiagnostics() {
                     // Only populated when still unattributed and the game is
                     // sitting in the menu profile -- see captureMenuRenderSnapshot.
                     menuRenderSnapshot: lastPhase === null ? captureMenuRenderSnapshot() : null
+                    };
                 });
             }
         });

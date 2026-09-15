@@ -54,8 +54,32 @@ describe('ThreeGame performance diagnostics', () => {
 
         expect(globalThis.window.__hbPerfPhaseHistory).toHaveLength(1);
         expect(globalThis.window.__hbPerfPhaseHistory[0].phase).toBe('frame:render');
-        expect(globalThis.window.__hbPerfPhaseHistory[0].context).toEqual({ drawCalls: 12, wallInstances: 8 });
+        expect(globalThis.window.__hbPerfPhaseHistory[0].context).toEqual({ profile: 'gameplay' });
         expect(globalThis.window.__hbPerfPhaseStack).toHaveLength(0);
+    });
+
+    it('does not take a full scene snapshot on every rendered frame', () => {
+        globalThis.window = { __hbPerfPhaseHistory: [], __hbPerfPhaseStack: [] };
+        const fake = {
+            performanceProfile: 'gameplay', scene: {}, camera: {},
+            renderer: { render: vi.fn() },
+            getPerformanceDiagnosticsSnapshot: vi.fn()
+        };
+        ThreeGame.prototype.renderWithPerf.call(fake);
+        expect(fake.getPerformanceDiagnosticsSnapshot).not.toHaveBeenCalled();
+    });
+
+    it('contains a frame exception so the next animation tick can recover', () => {
+        const fake = {
+            frameProfiler: { beginFrame: vi.fn(), endFrame: vi.fn() },
+            renderFrameBody: vi.fn()
+                .mockImplementationOnce(() => { throw new Error('bad actor'); })
+                .mockReturnValueOnce('next-frame')
+        };
+        expect(ThreeGame.prototype.render.call(fake)).toBeUndefined();
+        expect(ThreeGame.prototype.render.call(fake)).toBe('next-frame');
+        expect(fake._runtimeFrameErrorCount).toBe(1);
+        expect(fake.frameProfiler.endFrame).toHaveBeenCalledTimes(2);
     });
 
     it('wraps renderer submission in a non-blocking GPU query when available', () => {

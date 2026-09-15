@@ -47,6 +47,10 @@ export function runO2MilestoneChoreography(options = {}) {
     if (previous && previous.runId === runId) return previous.promise;
     const entry = { runId };
     presentations.set(game, entry);
+    // Hide the newly purchased structure synchronously. The purchase event is
+    // dispatched before persistent unlock synchronization; without this latch,
+    // that synchronization exposed the completed generator behind movie one.
+    game.prepareO2StartupReveal?.();
     const isCurrent = () => presentations.get(game) === entry && game.runStartTime === runId
         && !game.isPlayerDead && game.performanceProfile !== 'menu';
     entry.promise = Promise.resolve()
