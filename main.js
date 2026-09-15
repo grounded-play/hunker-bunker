@@ -82,7 +82,7 @@ import { sideStoryManager, SIDE_STORIES_CONFIG, SIDE_STORY_STATUS } from './src/
 import { matureContentAudit } from './src/matureContentAudit.js';
 import { progressionWalkthrough } from './src/progressionWalkthrough.js';
 import { renderGameOverLeaderboard } from './src/leaderboardUi.js';
-import { unlockSheenForMilestone, reconcileSheenUnlocks } from './src/weaponSheens.js';
+import { unlockSheenForMilestone, reconcileSheenUnlocks, unlockAllSheens } from './src/weaponSheens.js';
 import { OPERATOR_POLISHES, getSelectedPolish, getUnlockedPolishIds, selectPolish, unlockAllPolishes, unlockMilestonePolish } from './src/operatorPolishes.js';
 import { createOwnershipStore } from './src/itemOwnership.js';
 import { STARTING_RUN_AMMO, CLASS_AMMO_CAPACITY } from './src/data/ammoEconomy.js';
@@ -8668,11 +8668,17 @@ function devSetCosmeticUnlockAll(arg) {
     const next = arg === undefined || arg === ''
         ? !store.isUnlockAll()
         : !['0', 'off', 'false', 'no'].includes(String(arg).toLowerCase());
-    store.setUnlockAll(next);
+    if (!store.setUnlockAll(next)) {
+        return 'QA UNLOCK REJECTED (trusted beta/dev capability required)';
+    }
     if (next) {
         unlockAllPolishes();
+        unlockAllSheens();
     }
-    return `ALL WEAPON & CHASSIS SKINS ${next ? 'UNLOCKED' : 'LOCKED'} (equip override)`;
+    const audit = store.auditEquippableCatalog();
+    return next
+        ? `QA UNLOCK ${audit.available}/${audit.total}: all catalogued equipment, operator polishes and weapon sheens available (synthetic equip override)`
+        : 'QA UNLOCK disabled (earned/default ownership retained)';
 }
 
 // B9: clears economy state only. Settings, achievements and codex progress live
