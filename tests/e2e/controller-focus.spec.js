@@ -342,9 +342,9 @@ test.describe('controller-ready modal focus', () => {
             await tab.click();
             await tab.focus();
             await tab.press('ArrowDown');
-            await expect.poll(() => page.evaluate((name) => (
+            await expect.poll(() => page.evaluate(() => (
                 document.activeElement?.closest?.('[data-settings-panel]')?.dataset.settingsPanel ?? null
-            ), tabName)).toBe(tabName);
+            ))).toBe(tabName);
         }
     });
 

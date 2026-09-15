@@ -33,6 +33,7 @@
     "audio:plan-sfx": "node scripts/generate-plan-sfx.js",
     "audio:plan-sfx:check": "node scripts/generate-plan-sfx.js --check",
     "audio:ending-mixes:check": "node scripts/validate-ending-audio-manifest.mjs",
+    "audio:generate-radio-wave2": "node scripts/generate-alternate-radio-wave2.mjs",
     "preview": "vite preview",
     "lint": "eslint .",
     "test": "vitest run",

@@ -17,9 +17,9 @@ describe('applySelections', () => {
 });
 
 describe('allSlotKeys', () => {
-    it('is the 12 cue slots across both banks', () => {
-        expect(SLOTS).toHaveLength(12);
-        expect(new Set(SLOTS).size).toBe(12);
+    it('is the 20 combat cue slots across both banks', () => {
+        expect(SLOTS).toHaveLength(20);
+        expect(new Set(SLOTS).size).toBe(20);
     });
 });
 
@@ -36,7 +36,7 @@ describe('planInstall', () => {
         });
         expect(install).toEqual([{ slot: 'voice_aura_reloading', take: expect.objectContaining({ clip: 'a.wav' }) }]);
         expect(missing).not.toContain('voice_aura_reloading');
-        expect(missing).toHaveLength(11);
+        expect(missing).toHaveLength(SLOTS.length - 1);
     });
 
     it('lets a later take override an earlier one for the same slot', () => {

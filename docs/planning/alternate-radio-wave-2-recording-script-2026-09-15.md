@@ -1,6 +1,6 @@
 # Alternate Radio Voice Banks — Wave 2 Recording Script
 
-Status: recording handoff  
+Status: recording handoff; eight combat counterparts have generated take 01 placeholders
 Banks: Soviet Sub-Commander (`4148`) and AURA (`4149`)  
 Runtime owner: `src/data/voiceBanks.js`
 
@@ -66,6 +66,16 @@ Output examples:
 
 - `voice_commander_shield_critical_take_01.wav`
 - `voice_aura_low_health_take_02.wav`
+
+### 2026-09-15 generated placeholder pass
+
+The eight missing counterparts above now have one ElevenLabs-generated take in
+`public/audio/generated/` and are mapped into both runtime banks. Commander
+uses the Adam premade voice; AURA uses the Sarah premade voice because the
+account's saved robotic library voice is unavailable through the free API.
+These are playable coverage placeholders, not replacements for the requested
+two-take actor delivery. Take 02 remains intentionally absent so runtime never
+presents a copied file as a distinct performance.
 
 ## B. Deployment, weapon, and movement calls
 
@@ -163,7 +173,7 @@ expedition for discoveries, milestones, extraction, and failure.
 ## Recording checklist
 
 - [ ] 42 new paired cues recorded for Commander and AURA.
-- [ ] Eight missing counterparts from the original combat set recorded.
+- [x] Eight missing counterparts have one generated placeholder take wired.
 - [ ] Two clean takes for every line.
 - [ ] Cue IDs and take numbers present in filenames.
 - [ ] No spoken slates inside delivery files.

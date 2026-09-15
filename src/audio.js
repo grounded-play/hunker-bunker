@@ -662,7 +662,7 @@ export class AudioManager {
         const semanticId = options.semanticId ?? `${bankId}:${slot.cue}`;
         if (!options.audition && this._playedVoiceSemantics.has(semanticId)) return null;
         const targetKey = slot.key;
-        const availableTakes = getVoiceTakeKeys(targetKey).filter((key) => this.buffers[key]);
+        const availableTakes = getVoiceTakeKeys(targetKey, slot.takeCount).filter((key) => this.buffers[key]);
         if (availableTakes.length) {
             const previous = this._lastVoiceTake.get(targetKey);
             const candidates = availableTakes.length > 1

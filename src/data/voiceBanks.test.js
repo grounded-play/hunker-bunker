@@ -17,9 +17,9 @@ describe('VOICE_BANKS', () => {
         }
     });
 
-    it('gives each bank exactly the 6 lines the artist recorded', () => {
+    it('gives each bank the six delivered lines plus four generated counterparts', () => {
         for (const bank of Object.values(VOICE_BANKS)) {
-            expect(bank.slots).toHaveLength(6);
+            expect(bank.slots).toHaveLength(10);
         }
     });
 
@@ -34,12 +34,12 @@ describe('VOICE_BANKS', () => {
         }
     });
 
-    it('ships and preloads two takes behind every slot', () => {
+    it('ships and preloads every currently available take behind each slot', () => {
         const manifest = getVoiceAudioManifest();
         for (const bank of Object.values(VOICE_BANKS)) {
             for (const slot of bank.slots) {
-                const keys = getVoiceTakeKeys(slot.key);
-                expect(keys).toHaveLength(2);
+                const keys = getVoiceTakeKeys(slot.key, slot.takeCount);
+                expect(keys).toHaveLength(slot.takeCount ?? 2);
                 for (const key of keys) {
                     const path = new URL(`../../public/audio/generated/${key}.wav`, import.meta.url);
                     expect(existsSync(path), `no audio file for ${key}`).toBe(true);
@@ -95,25 +95,23 @@ describe('getVoiceBank', () => {
 });
 
 describe('voice script routing', () => {
-    it('does not borrow a line with the wrong meaning', () => {
-        expect(resolveVoiceBankSlot(4148, 'shield_critical')).toBeNull();
-        expect(resolveVoiceBankSlot(4149, 'low_health')).toBeNull();
-        expect(resolveVoiceBankSlot(4148, 'target_down')).toBeNull();
-        expect(resolveVoiceBankSlot(4149, 'killstreak')).toBeNull();
-        expect(resolveVoiceBankSlot(4148, 'overdrive_ready')).toBeNull();
-        expect(resolveVoiceBankSlot(4149, 'victory')).toBeNull();
+    it('routes every original combat semantic to a matching line in both banks', () => {
+        const cues = ['reload', 'low_health', 'shield_critical', 'boss_spotted', 'target_down', 'killstreak', 'overdrive_ready', 'breached', 'sector_cleared', 'victory'];
+        for (const bankId of VOICE_BANK_IDS) {
+            for (const cue of cues) expect(resolveVoiceBankSlot(bankId, cue), `${bankId}:${cue}`).toBeTruthy();
+        }
     });
 
     it('publishes complete trigger, exclusion, subtitle and take metadata', () => {
         const rows = getVoiceScriptRows();
-        expect(rows).toHaveLength(12);
+        expect(rows).toHaveLength(20);
         for (const row of rows) {
             expect(row.semanticId).toBe(`${row.bankId}:${row.cue}`);
             expect(row.repeatScope).toBe('expedition');
             expect(row.subtitle.length).toBeGreaterThan(0);
             expect(row.trigger.length).toBeGreaterThan(0);
             expect(row.exclusions.length).toBeGreaterThan(0);
-            expect(row.takes).toHaveLength(2);
+            expect(row.takes).toHaveLength(row.takeCount ?? 2);
         }
     });
 });
