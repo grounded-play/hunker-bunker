@@ -14,19 +14,22 @@ test.describe('controller-ready modal focus', () => {
 
         await page.locator('#roster-btn').focus();
         await page.keyboard.press('KeyS');
-        await expect(page.locator('#steam-vault-btn')).toBeFocused();
+        await expect(page.locator('#archive-btn')).toBeFocused();
 
         await page.keyboard.press('KeyS');
         await expect(page.locator('#start-game')).toBeFocused();
 
         await page.keyboard.press('KeyW');
-        await expect(page.locator('#steam-vault-btn')).toBeFocused();
+        await expect(page.locator('#archive-btn')).toBeFocused();
 
         await page.keyboard.press('KeyW');
         await expect(page.locator('#roster-btn')).toBeFocused();
 
         await page.keyboard.press('KeyD');
-        await expect(page.locator('#codex-btn')).toBeFocused();
+        await expect(page.locator('#steam-vault-btn')).toBeFocused();
+
+        await page.keyboard.press('KeyD');
+        await expect(page.locator('#fabrication-btn')).toBeFocused();
 
         await page.keyboard.press('KeyD');
         await expect(page.locator('#hero-polish-btn')).toBeFocused();
@@ -54,7 +57,7 @@ test.describe('controller-ready modal focus', () => {
 
         await page.locator('#steam-vault-btn').focus();
         await page.keyboard.press('KeyD');
-        await expect(page.locator('#season-pass-btn')).toBeFocused();
+        await expect(page.locator('#fabrication-btn')).toBeFocused();
 
         await page.keyboard.press('KeyA');
         await expect(page.locator('#steam-vault-btn')).toBeFocused();

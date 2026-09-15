@@ -1313,38 +1313,34 @@ function moveMenuCommandGridFocus(code) {
             : visibleCommands.at(-1);
         return target ? focusControllerTarget(target, { playHover: true }) : true;
     }
-    const activeColumn = active?.closest?.('.menu-command-column');
-    if (!activeColumn) return false;
+    if (!active?.closest?.('.menu-header-actions')) return false;
 
-    const columns = Array.from(document.querySelectorAll('#menu .menu-command-column'));
-    if (!columns.includes(activeColumn)) return false;
-
-    const focusablesFor = (column) => getVisibleControllerFocusables(column).filter((element) => (
-        element.matches('button, .steam-account-badge--menu')
-    ));
-    const currentItems = focusablesFor(activeColumn);
-    if (!currentItems.length) return false;
-    const columnIndex = columns.indexOf(activeColumn);
-    const rowIndex = Math.max(0, currentItems.indexOf(active));
+    // The command wrappers are semantic groups, but CSS flattens them into a
+    // three-column visual grid. Navigate the grid the player can actually see
+    // instead of the old two-column wrapper structure.
+    const commands = getVisibleControllerFocusables(document.querySelector('.menu-header-actions'))
+        .filter((element) => element.matches('button, .steam-account-badge--menu'));
+    const index = commands.indexOf(active);
+    if (index < 0) return false;
+    const columnCount = 3;
+    const columnIndex = index % columnCount;
     let target = null;
 
     if (code === 'KeyW' || code === 'ArrowUp') {
-        target = currentItems[(rowIndex - 1 + currentItems.length) % currentItems.length];
+        target = index >= columnCount ? commands[index - columnCount] : commands[index];
     } else if (code === 'KeyS' || code === 'ArrowDown') {
-        if (rowIndex === currentItems.length - 1) {
+        if (index + columnCount >= commands.length) {
             lastHeroMenuCommandFocus = active;
             target = document.getElementById('start-game');
         } else {
-            target = currentItems[rowIndex + 1];
+            target = commands[index + columnCount];
         }
     } else if (code === 'KeyA' || code === 'ArrowLeft') {
         if (columnIndex === 0) return false;
-        const adjacentItems = focusablesFor(columns[columnIndex - 1]);
-        target = adjacentItems[Math.min(rowIndex, adjacentItems.length - 1)];
+        target = commands[index - 1];
     } else if (code === 'KeyD' || code === 'ArrowRight') {
-        if (columnIndex === columns.length - 1) return false;
-        const adjacentItems = focusablesFor(columns[columnIndex + 1]);
-        target = adjacentItems[Math.min(rowIndex, adjacentItems.length - 1)];
+        if (columnIndex === columnCount - 1 || index + 1 >= commands.length) return false;
+        target = commands[index + 1];
     }
 
     return target ? focusControllerTarget(target, { playHover: true }) : false;

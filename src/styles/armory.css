@@ -295,7 +295,19 @@
 #armory-picker-modal .armory-tile__swatch { background: linear-gradient(140deg, #ffffff55, transparent 45%, #00000099), var(--tile-swatch); }
 @media (max-height: 740px) {
   #armory-screen .armory-panel { padding: 7px 10px; gap: 6px; }
-  #armory-screen .armory-slot { min-height: 48px; padding: 5px; }
+  #armory-screen .armory-controls-sidebar { gap: 6px; overflow: hidden; }
+  #armory-screen .armory-panel { gap: 4px; }
+  #armory-screen .panel-header { padding-bottom: 3px; }
+  #armory-screen .panel-header h2 { font-size: 14px; }
+  #armory-screen .bench-field { gap: 1px; }
+  #armory-screen .bench-field label { font-size: 8px; line-height: 1.15; }
+  #armory-screen .armory-slot { min-height: 38px; padding: 3px 5px; }
+  #armory-screen .armory-slot__art { width: 28px; height: 28px; }
+  #armory-screen .armory-slot__name { font-size: 10px; line-height: 1.1; }
+  #armory-screen .modifiers-summary { padding: 4px 8px; }
+  #armory-screen .modifiers-title { margin-bottom: 2px; font-size: 8px; }
+  #armory-screen .modifiers-standby { padding: 2px; }
+  #armory-screen .standby-desc { font-size: 8px; }
   #armory-screen .telemetry-box { display: flex; flex-wrap: wrap; gap: 4px 10px; }
   #armory-screen .telemetry-title { width: 100%; }
   #armory-screen .telemetry-item { gap: 6px; }

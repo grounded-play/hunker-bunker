@@ -64,6 +64,14 @@ Commit: `d744c5c`.
 - The hostile actor now pursues the player with bounded delta time, collision-aware axis fallback, facing updates and a contact-damage cooldown. It no longer remains embedded in the cup. The dead state removes any residual cup, hides the actor and prevents siren/prompt/dialogue updates. New-run reset explicitly restores hit count, hostility/death flags, actor placement and both models.
 - Verification: 16 Mayor lifecycle/combat tests pass, including warning→chase, blocked-axis movement, attack cooldown, death voice/visual cleanup and complete reset. Full visual encounter playthrough remains part of the final acceptance sweep.
 
+### Pass 11 — DP-17–21 full-stage Armory and stable operator selection (September 14)
+
+- Expanded the Armory across the bounded game stage, brought the operator and weapon camera closer, increased primary target/text floors and added a compact 720p layout that keeps both equipment benches visible without scrolling or overlap. Removed the redundant turntable telemetry placeholder while retaining direct stage inspection.
+- Daily Ops is no longer a Hero Select utility command. It is a deployment choice beside standard embark in the Armory, preserving the selected class and loadout while routing through the existing real Daily Ops seed/rules entry point.
+- Flattened Hero Select commands into a visible three-column command deck above Initialize. Controller/WASD movement now follows those visible rows and columns rather than the obsolete semantic wrapper rails.
+- Class swaps keep the last valid posed preview until the requested model proves it has an idle clip, reject stale async completions, use a class-correct sprite/fallback during loading and recover after a bounded timeout. The selection doors wait for that synchronized result, preventing the left identity and center model from disagreeing.
+- Verification: 42 focused Armory/3D overlay tests passed. Browser checks passed rapid 50-class cycling, operator preview fallback coverage, real 3-column directional navigation, equipment re-rendering and computed full-stage/no-sidebar-overflow checks at the project Chrome profile. Broader resolution and packaged-client visual acceptance remain in the final sweep.
+
 ## Evidence register
 
 References use **entry `id`**, not zero-based array position, followed by elapsed milliseconds. JSON messages embed diagnostic objects; expand the referenced entry to inspect its details. SHA-256 and compact metrics can be reproduced with:
