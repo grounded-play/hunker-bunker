@@ -11,6 +11,7 @@ import { getControllerGlyphLabel } from './inputGlyphs.js';
 import * as THREE from 'three';
 import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
 import { createFrameProfiler } from './frameProfiler.js';
+import { createFrameIntervalTracker } from './frameIntervalTracker.js';
 import { createGpuFrameTimer } from './gpuFrameTimer.js';
 import { beginPerfPhase } from './perfPhases.js';
 import { usesGameplayFocusEffects } from './gameplayPresentation.js';
@@ -8165,6 +8166,7 @@ export class ThreeGame {
             gameplayPostProcessingEnabled: this.gameplayPostProcessingEnabled !== false,
             shadowsEnabled: Boolean(this.renderer?.shadowMap?.enabled),
             frameProfilerEnabled: Boolean(this.frameProfiler?.enabled),
+            frameIntervals: this.frameIntervalTracker?.snapshot?.() ?? null,
             jsHeapUsed: performance.memory?.usedJSHeapSize ?? null,
             jsHeapLimit: performance.memory?.jsHeapSizeLimit ?? null,
             gpuFrame,
@@ -8314,6 +8316,9 @@ export class ThreeGame {
         // one boolean test per call in a shipping frame.
         const fp = this.frameProfiler ?? (this.frameProfiler = createFrameProfiler());
         const renderFrame = () => {
+            const frameIntervals = this.frameIntervalTracker
+                ?? (this.frameIntervalTracker = createFrameIntervalTracker());
+            frameIntervals.record(this.performanceProfile, performance.now());
             fp.measure('renderFrame', () => {
                 if (typeof this.renderWithPerf === 'function') {
                     this.renderWithPerf();

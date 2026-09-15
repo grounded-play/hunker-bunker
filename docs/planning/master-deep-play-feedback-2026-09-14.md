@@ -2,15 +2,15 @@
 
 ## Outcome and scope
 
-This is the implementation backlog for the supplied screenshots, full playthrough notes, attached review, `docs/logs/log21.json`, `docs/logs/log22.json`, and the latest available hosted Steam captures. **All 48 tickets below remain open.** Existing implementations are identified explicitly; finding code or passing a unit test does not close a visual/gameplay regression.
+This is the implementation backlog for the supplied screenshots, full playthrough notes, attached review, `docs/logs/log21.json`, `docs/logs/log22.json`, and the latest available hosted Steam captures. **Code implementation passes now cover DP-01 through DP-48.** Hardware, packaged-Steam and full-route acceptance remain intentionally separate; finding code or passing a unit test does not by itself certify a visual/gameplay regression on the target machine.
 
-Code baseline: `545bb8f` on `dev/sprint-40`, package `2.4.4-beta`. That commit contains the initial tabbed Settings/Terminal pass. Earlier commits added alternate VO takes and broader cosmetic unlocking. They do not establish that the requested UI balance, general VO orchestration, or packaged Steam behavior is correct. The hosted captures below are older `2.4.2-beta` builds; reproduce against the current branch before deciding whether an old defect remains.
+Implementation branch: `dev/sprint-40`, package `2.4.4-beta`. The pass journal records the focused changes after baseline `545bb8f`. The hosted captures below are older `2.4.2-beta` builds; reproduce against the current branch before deciding whether an old defect remains.
 
-This document is a plan, not a claim that the entire sprint has been implemented. No Steam accounts, achievements, inventory, purchases, or hosted issues were modified during this review.
+This document is both the original plan and its implementation journal. It does not claim target-hardware acceptance. No real Steam purchase was initiated and automated checks did not mutate a tester's live Steam account.
 
 ## Implementation journal
 
-The full backlog remains the goal. Entries below distinguish implemented changes from acceptance still requiring hardware, packaged clients, or a complete gameplay route. No ticket is closed merely because its unit tests pass.
+Entries below distinguish completed code passes from acceptance still requiring hardware, packaged clients, or a complete gameplay route. No ticket is visually certified merely because its unit tests pass.
 
 ### Pass 1 — DP-10 explicit turret construction (September 14)
 
@@ -38,7 +38,7 @@ Commit: `126dda5`.
 - Added bounded wait for the structure-rise callback and failure cleanup: input/cinematic lock releases, the paid generator restores its completed visual state, and stale callbacks clear. Run reset explicitly cancels any old rise animation.
 - Verification: **38 tests passed** across presentation, director, boss lifecycle and runtime O2 lighting. Tests include actual director→warning-consumer interaction, duplicate aliases, distinct same-species goals, new encounters/runs, concurrency, media failure/retry, lost callback and cancellation. ESLint, production build and required-media audit passed.
 - Broader regression sweep: `npx vitest run src/threeGame*.test.js src/bank*.test.js src/baseTurret.test.js src/o2CinematicDoors.test.js src/baseLights.test.js src/milestonePresentation.test.js --maxWorkers=4` — **88 files / 626 tests passed**. This includes the existing gameplay/bank tests affected by the new build card and reset hooks.
-- **Status: implemented, full media/client acceptance pending.** Tests inject media/door completion rather than certify actual decoder timing or paired packaged-client playback. Full O2 camera framing (DP-11), later structure choreography (DP-12) and general cinematic queue cancellation remain follow-up work; the overall 48-ticket goal is not complete.
+- **Status: implemented, full media/client acceptance pending.** Tests inject media/door completion rather than certify actual decoder timing or paired packaged-client playback. Full O2 camera framing and later structure choreography are covered by Pass 15; the combined packaged-client route remains an acceptance task.
 
 ### Pass 4 — DP-05 Foundry transition rollback and plane recovery (September 14)
 
@@ -137,6 +137,13 @@ Commit: `d744c5c`.
 - Session log schema 2 adds build/seed/encounter/entity/plane identifiers and measurement coverage. Individual contexts are capped at 12,000 characters and session journals at 20,000 entries with an exact dropped-entry count, preventing repeated giant snapshots from producing unbounded exports.
 - Steam run payload schema 2 carries the corrected fields and explicitly separates debug resources so test grants cannot masquerade as earned pickup/stat totals.
 - Verification: 28 focused run-telemetry/GPU/session/export checks passed, including one-pickup/one-count, spend-independent lifetime count, and distinguishable debug grants; ESLint, diff checks and production build/media audit passed.
+
+### Pass 20 — DP-01 bounded frame-pacing evidence (September 15)
+
+- Added an always-on, low-overhead presented-frame interval tracker independent of the opt-in per-section CPU profiler. It reports average, p50, p95, p99 and maximum intervals separately for menu/gameplay/museum profiles.
+- Each profile retains only its latest 3,600 intervals in a ring and reports observed, retained and overwritten counts, so a long session remains bounded and its measurement coverage is explicit.
+- The tracker records only when a frame is actually submitted, after hidden-container and menu-throttle guards. Performance snapshots attached to long-task logs now include these frame-pacing distributions alongside CPU phases, GPU queries, renderer resources, hardware and overlay context.
+- Verification: 20 focused frame-profiler, GPU-timer and diagnostics checks passed; the final repository sweep passed **384 files / 3,472 tests**, production build and the 50-required-media audit. Target RTX/packaged-Linux p95/p99 values can only be accepted from the requested next playtest; the code no longer requires another instrumentation pass first.
 
 ## Evidence register
 
@@ -843,7 +850,7 @@ Earlier requests not explicit in the 25-item summary remain covered: full-stage/
 
 ## Review validation
 
-The evidence extractor was run successfully against L21/L22 and all four downloaded exports. Ticket numbering was checked for exactly DP-01 through DP-48; every local Markdown link resolves; `git diff --check` passed. These validate the report, **not** the proposed game fixes. No new gameplay acceptance run or Steam mutation was performed for this planning handoff.
+The evidence extractor was run successfully against L21/L22 and all four downloaded exports. Ticket numbering was checked for exactly DP-01 through DP-48 and every local Markdown link resolves. Automated tests validate the code contracts recorded in the journal; they do **not** replace the next target-hardware gameplay acceptance run. No real Steam purchase or tester-account mutation was performed by this implementation pass.
 
 Capture SHA-256 fingerprints (downloaded JSON is normalized by the fetch script):
 

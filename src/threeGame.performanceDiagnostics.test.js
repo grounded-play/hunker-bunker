@@ -118,6 +118,12 @@ describe('ThreeGame performance diagnostics', () => {
             adaptiveGameplayPerformanceMode: true,
             gameplayPostProcessingEnabled: false,
             frameProfiler: { enabled: true },
+            frameIntervalTracker: {
+                snapshot: () => ({
+                    measurement: 'presented-frame-start interval',
+                    profiles: { gameplay: { p95Ms: 18.5, p99Ms: 24 } }
+                })
+            },
             gpuFrameTimer: {
                 snapshot: () => ({ supported: true, latestMs: 6.25, averageMs: 7.5 })
             },
@@ -149,6 +155,10 @@ describe('ThreeGame performance diagnostics', () => {
             gameplayPostProcessingEnabled: false,
             shadowsEnabled: false,
             frameProfilerEnabled: true,
+            frameIntervals: {
+                measurement: 'presented-frame-start interval',
+                profiles: { gameplay: { p95Ms: 18.5, p99Ms: 24 } }
+            },
             gpuFrame: { supported: true, latestMs: 6.25, averageMs: 7.5 },
             gpuMemory: { estimatedBytes: 64_000_000, textureBytes: 48_000_000 },
             hardware: { isSteamDeck: true, logicalCores: 8, deviceMemoryGb: 16 }
