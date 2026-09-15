@@ -46,6 +46,14 @@ function hybrid(fake) {
 }
 
 describe('survivor runtime lifecycle', () => {
+    it('plans an off-site approach to a walkable crash-site airlock', () => {
+        const fake = { isSnailTileWalkable: () => true };
+        const route = ThreeGame.prototype.getCrashSiteWandererArrival.call(fake, { tileX: 10, tileZ: 20 });
+        expect(Math.hypot(route.spawnX - route.targetX, route.spawnZ - route.targetZ)).toBeGreaterThanOrEqual(8);
+        expect(route.targetX).toBeCloseTo(12.5);
+        expect(route.targetZ).toBeCloseTo(21.8);
+    });
+
     it('coalesces arrival while loading and discards a model after run teardown', async () => {
         const fake = fixture();
         let resolve;

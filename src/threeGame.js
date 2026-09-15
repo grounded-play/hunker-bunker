@@ -14239,7 +14239,10 @@ export class ThreeGame {
                 z = site.z;
                 this.act2.setCampPosition(record.id, x, z);
             }
-            camp.reveal(x, z);
+            // Camps are full set pieces, not floating overlays. Anchor the
+            // foundation to the sampled terrain after validating its entire
+            // nine-unit footprint above.
+            camp.reveal(x, z, this.getTerrainHeightAt?.(x, z) ?? 0);
             camp.setLevel(record.level);
             camp.setAided(record.aided);
             camp.setStatus(record.status);
@@ -15804,8 +15807,25 @@ export class ThreeGame {
         const token = {};
         this._wandererLoad = token;
         const activeShip = this.activeInteractiveConsole || this.ship || { tileX: 0, tileZ: 0 };
-        const spawnX = (activeShip.tileX ?? 0) + 2.5;
-        const spawnZ = (activeShip.tileZ ?? 0) + 1.8;
+        const arrival = ThreeGame.prototype.getCrashSiteWandererArrival.call(this, activeShip);
+        const { spawnX, spawnZ, targetX, targetZ } = arrival;
+
+        // Signal the survivor before model decoding completes. The map/cursor
+        // therefore gives the player a human-readable lead-in instead of an
+        // NPC suddenly appearing at the edge of the crash site.
+        this.explorationTracker?.registerLandmark?.('survivor_signal', {
+            x: targetX,
+            z: targetZ,
+            label: 'SURVIVOR SIGNAL // CAMP MERIDIAN',
+            type: 'objective',
+            priority: 980,
+            revealOnMap: true
+        });
+        if (typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent('wanderer-signal-active', {
+                detail: { x: targetX, z: targetZ, label: 'CAMP MERIDIAN SURVIVOR SIGNAL' }
+            }));
+        }
 
         const instance3d = await createWanderer3dInstance({
             glbUrl: wanderer.glbUrl,
@@ -15830,10 +15850,33 @@ export class ThreeGame {
             ...wanderer,
             x: spawnX,
             z: spawnZ,
+            targetX,
+            targetZ,
+            arriving: true,
+            arrivalPath: this.findSnailPath?.(
+                Math.round(spawnX), Math.round(spawnZ),
+                Math.round(targetX), Math.round(targetZ),
+                SNAIL_PATH_NODE_BUDGET
+            ) ?? null,
+            arrivalPathIndex: 1,
             instance3d
         };
 
-        this.showBunkerLine(`SURVIVOR TRANSMISSION: ${wanderer.name.toUpperCase()} ARRIVED AT CRASH SITE.`);
+        this.showBunkerLine(`SURVIVOR TRANSMISSION: ${wanderer.name.toUpperCase()} APPROACHING THE CRASH SITE.`);
+    }
+
+    getCrashSiteWandererArrival(activeShip = {}) {
+        const shipX = Number(activeShip.tileX ?? activeShip.position?.x ?? 0);
+        const shipZ = Number(activeShip.tileZ ?? activeShip.position?.z ?? 0);
+        const candidates = [
+            { targetX: shipX + 2.5, targetZ: shipZ + 1.8, spawnX: shipX + 10.5, spawnZ: shipZ + 1.8 },
+            { targetX: shipX - 2.5, targetZ: shipZ + 1.8, spawnX: shipX - 10.5, spawnZ: shipZ + 1.8 },
+            { targetX: shipX + 1.8, targetZ: shipZ + 2.5, spawnX: shipX + 1.8, spawnZ: shipZ + 10.5 },
+            { targetX: shipX + 1.8, targetZ: shipZ - 2.5, spawnX: shipX + 1.8, spawnZ: shipZ - 10.5 }
+        ];
+        const isOpen = (x, z) => this.isSnailTileWalkable?.(Math.round(x), Math.round(z)) !== false;
+        return candidates.find((candidate) => isOpen(candidate.targetX, candidate.targetZ)
+            && isOpen(candidate.spawnX, candidate.spawnZ)) ?? candidates[0];
     }
 
     updateWandererPromptState() {
@@ -15850,6 +15893,47 @@ export class ThreeGame {
                 window.dispatchEvent(new CustomEvent('camp-prompt-clear'));
             }
             return;
+        }
+
+        if (this.activeWanderer.arriving && this.activeWanderer.instance3d?.root) {
+            const actor = this.activeWanderer;
+            const root = actor.instance3d.root;
+            const pathNode = actor.arrivalPath?.[actor.arrivalPathIndex];
+            const waypointX = pathNode?.x ?? actor.targetX;
+            const waypointZ = pathNode?.z ?? actor.targetZ;
+            const dx = waypointX - root.position.x;
+            const dz = waypointZ - root.position.z;
+            const distance = Math.hypot(dx, dz);
+            const finalDistance = Math.hypot(actor.targetX - root.position.x, actor.targetZ - root.position.z);
+            if (distance <= 0.16 && pathNode && actor.arrivalPathIndex < actor.arrivalPath.length - 1) {
+                actor.arrivalPathIndex += 1;
+            } else if (finalDistance <= 0.16) {
+                actor.arriving = false;
+                root.position.x = actor.targetX;
+                root.position.z = actor.targetZ;
+                actor.x = actor.targetX;
+                actor.z = actor.targetZ;
+                this.explorationTracker?.removeLandmark?.('survivor_signal');
+                this.showBunkerLine(`SURVIVOR ON DECK: ${actor.name.toUpperCase()} IS WAITING AT THE FRONT AIRLOCK.`);
+            } else {
+                const step = Math.min(distance, 2.2 * 0.016);
+                const nextX = root.position.x + (dx / distance) * step;
+                const nextZ = root.position.z + (dz / distance) * step;
+                const canWalk = this.isSnailTileWalkable?.(Math.round(nextX), Math.round(nextZ)) !== false;
+                if (canWalk) {
+                    root.position.x = nextX;
+                    root.position.z = nextZ;
+                } else {
+                    // Try each axis so a survivor walks around a corner rather
+                    // than flying through it or freezing in place.
+                    if (this.isSnailTileWalkable?.(Math.round(nextX), Math.round(root.position.z)) !== false) root.position.x = nextX;
+                    else if (this.isSnailTileWalkable?.(Math.round(root.position.x), Math.round(nextZ)) !== false) root.position.z = nextZ;
+                }
+                root.position.y = this.getTerrainHeightAt?.(root.position.x, root.position.z) ?? root.position.y ?? 0;
+                root.rotation.y = Math.atan2(dx, dz);
+                actor.x = root.position.x;
+                actor.z = root.position.z;
+            }
         }
 
         const dist = Math.hypot(this.player.position.x - this.activeWanderer.x, this.player.position.z - this.activeWanderer.z);
@@ -20296,6 +20380,19 @@ export class ThreeGame {
             this.timeOfDay = (this.timeOfDay + delta / this.dayCycleSeconds) % 1;
         }
 
+        const hudNow = performance.now();
+        if (typeof window !== 'undefined' && hudNow - (this._lastDayCycleHudTick ?? -Infinity) >= 500) {
+            this._lastDayCycleHudTick = hudNow;
+            window.dispatchEvent(new CustomEvent('time-of-day-changed', {
+                detail: {
+                    day: this.dayState?.day ?? 1,
+                    timeOfDay: this.timeOfDay,
+                    label: this.getTimeOfDayLabel(),
+                    difficulty: threatScaleForDay(this.dayState?.day ?? 1, { hp: 1, speed: 1 }).hp
+                }
+            }));
+        }
+
         const day = this.getDayFactor();
         const lerp = THREE.MathUtils.lerp;
         // Extra smoothing plus tighter ranges keeps dusk/dawn transitions subtle.
@@ -23875,23 +23972,42 @@ export class ThreeGame {
             return true;
         }
 
-        const wall = this.findWallMeshAt(tileX, tileZ);
-        if (wall) {
-            this.damageWall(wall, BOSS_WALL_BREAK_DAMAGE, { source: 'boss' });
-        } else {
-            const coord = this.markWallTileDestroyed(tileX, tileZ);
-            this.spawnPhysicalBurst(coord.tileX, coord.tileZ, {
-                color: 0xffa45a,
-                count: 8,
-                upward: 0.2,
-                spread: 1.5
-            });
-            window.AudioManager?.playMetalStress?.({ volume: 0.48, playbackRate: 0.65, force: true });
+        const breachTiles = this.getBossBreachTiles(sprite, tileX, tileZ);
+        for (const tile of breachTiles) {
+            const wall = this.findWallMeshAt(tile.x, tile.z);
+            if (wall) {
+                this.damageWall(wall, BOSS_WALL_BREAK_DAMAGE, { source: 'boss' });
+            } else {
+                const coord = this.markWallTileDestroyed(tile.x, tile.z);
+                this.spawnPhysicalBurst(coord.tileX, coord.tileZ, {
+                    color: 0xffa45a,
+                    count: 8,
+                    upward: 0.2,
+                    spread: 1.5
+                });
+            }
         }
+        window.AudioManager?.playMetalStress?.({ volume: 0.48, playbackRate: 0.65, force: true });
         data.wallBreakCooldown = BOSS_WALL_BREAK_COOLDOWN;
         data.pathNodes = null;
         data.pathRetargetTimer = 0;
         return true;
+    }
+
+    getBossBreachTiles(sprite, tileX, tileZ) {
+        const dx = (this.player?.position?.x ?? tileX) - (sprite?.position?.x ?? tileX);
+        const dz = (this.player?.position?.z ?? tileZ) - (sprite?.position?.z ?? tileZ);
+        // Breach perpendicular to travel so the opening accommodates the full
+        // boss body instead of leaving a one-tile slit it cannot traverse.
+        const offsets = Math.abs(dx) >= Math.abs(dz)
+            ? [{ x: 0, z: 1 }, { x: 0, z: -1 }]
+            : [{ x: 1, z: 0 }, { x: -1, z: 0 }];
+        const tiles = [{ x: tileX, z: tileZ }];
+        const neighbor = offsets
+            .map((offset) => ({ x: tileX + offset.x, z: tileZ + offset.z }))
+            .find((tile) => this.getTileType?.(tile.x, tile.z) === '#' && !this.isHoleTile?.(tile.x, tile.z));
+        if (neighbor) tiles.push(neighbor);
+        return tiles;
     }
 
     mountPocket(holeWorldX, holeWorldZ, cacheKey = this.getWallKey(holeWorldX, holeWorldZ)) {
@@ -29586,17 +29702,26 @@ export class ThreeGame {
                 const toTrailZ = trail.z - root.position.z;
                 const dist = Math.hypot(toTrailX, toTrailZ);
                 if (dist > 16) {
-                    root.position.copy(this.player.position);
+                    // Recover behind the player on real ground. Keeping this
+                    // out of the player's immediate position avoids the old
+                    // visible overlap/flying companion failure.
+                    root.position.set(trail.x, this.getTerrainHeightAt?.(trail.x, trail.z) ?? this.player.position.y ?? 0, trail.z);
                 } else if (dist > 0.1) {
-                    const step = Math.min(dist, 2.5 * delta);
+                    const catchupSpeed = dist > 7 ? 5.5 : 2.5;
+                    const step = Math.min(dist, catchupSpeed * delta);
                     const nextX = root.position.x + (toTrailX / dist) * step;
                     const nextZ = root.position.z + (toTrailZ / dist) * step;
                     if (this.isSnailTileWalkable(Math.round(nextX), Math.round(nextZ))) {
                         root.position.x = nextX;
                         root.position.z = nextZ;
+                    } else if (this.isSnailTileWalkable(Math.round(nextX), Math.round(root.position.z))) {
+                        root.position.x = nextX;
+                    } else if (this.isSnailTileWalkable(Math.round(root.position.x), Math.round(nextZ))) {
+                        root.position.z = nextZ;
                     }
                     root.rotation.y = Math.atan2(toTrailX, toTrailZ);
                 }
+                root.position.y = this.getTerrainHeightAt?.(root.position.x, root.position.z) ?? root.position.y ?? 0;
                 companion.instance3d.update(delta);
 
                 companion.assistCooldown = Math.max(0, (companion.assistCooldown ?? 0) - delta);

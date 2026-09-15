@@ -11994,8 +11994,7 @@ window.addEventListener('day-rest-open', (event) => {
     openFabricationModal();
 });
 
-window.addEventListener('day-cycle-changed', (event) => {
-    const detail = event?.detail ?? {};
+function updateCampaignCycleIndicator(detail = {}) {
     const host = document.querySelector('.level-indicator');
     if (!host) return;
     let day = document.getElementById('campaign-day-indicator');
@@ -12005,9 +12004,14 @@ window.addEventListener('day-cycle-changed', (event) => {
         day.className = 'level-indicator__seed';
         host.appendChild(day);
     }
-    day.textContent = `DAY ${detail.day ?? 1}`;
+    day.textContent = `DAY ${detail.day ?? 1}${detail.label ? ` · ${detail.label}` : ''}`;
     day.title = `Campaign threat ${Number(detail.difficulty ?? 1).toFixed(2)}×`;
-});
+    day.dataset.phase = String(detail.label ?? '').includes('NIGHT') ? 'night' : 'day';
+    const progress = document.getElementById('campaign-cycle-progress');
+    if (progress && Number.isFinite(detail.timeOfDay)) progress.style.width = `${Math.max(0, Math.min(1, detail.timeOfDay)) * 100}%`;
+}
+window.addEventListener('day-cycle-changed', (event) => updateCampaignCycleIndicator(event?.detail));
+window.addEventListener('time-of-day-changed', (event) => updateCampaignCycleIndicator(event?.detail));
 window.addEventListener('o2-startup-sequence-started', (event) => {
     if ((event?.detail?.level ?? 0) !== 1) return;
     showTacticalOverlay({

@@ -86,6 +86,15 @@ Commit: `d744c5c`.
 - Removed the erroneous extra half-turn from the rigged crawler asset, whose locomotion pack and model are both +Z-forward. Removed the inherited quarter-turn from the unique cryo boss export while leaving regular cyber/cryo shared-mesh and cyber-boss corrections untouched; corrections are explicitly asset-local.
 - Verification: eight focused Black Box storage/corpse and enemy-overlay tests passed, including all three class mappings, loading fallback identity and independent yaw contracts. Full rendered death/recovery and eight-direction encounter acceptance remain in the visual sweep.
 
+### Pass 14 — DP-09/35–38 breaches, survivors, camps and visible cycle (September 14)
+
+- Boss wall attacks now select a perpendicular adjacent wall and clear a two-tile-wide opening toward the target.
+- Eligible survivors publish a map signal before model load, spawn off-site, follow a navigation route to the crash-site airlock and only become interactable on arrival.
+- Recruited survivors use grounded collision-aware follow movement with faster catch-up and safe behind-player recovery instead of flying/overlapping teleports.
+- Camp placement validates the full clearing and anchors the complete set piece to sampled terrain height.
+- The expedition HUD now displays campaign day, local 24-hour time, day/night phase and cycle progress continuously.
+- Verification: 47 focused Vitest assertions passed across day-cycle, wall, survivor and camp suites; production Vite build and 50-asset media audit passed.
+
 ## Evidence register
 
 References use **entry `id`**, not zero-based array position, followed by elapsed milliseconds. JSON messages embed diagnostic objects; expand the referenced entry to inspect its details. SHA-256 and compact metrics can be reproduced with:
