@@ -104,6 +104,14 @@ Commit: `d744c5c`.
 - Hull, radar and reactor console milestones request the correct boss film immediately, wait for media settlement, focus and raise their own structure from below ground, then begin dialogue/boss AI. Completed-save restoration remains instant and skips theatrics.
 - Verification: 51 focused presentation/navigation/interaction assertions passed, plus the 6,000-seed maze stress suite and the production build/media audit.
 
+### Pass 16 — DP-39–42 isolated validation gallery and audio audition (September 14)
+
+- Replaced the single-file exhibit corridor with six-column category grids, retained labeled pedestals and upright wall backing, and enlarged the bounded validation floor for clear aisles around every row.
+- World props and actors now expose paired intact/damaged display states with repeatable global reset/damage controls. Production display actors retain their authored idle animation path; static counterparts use an explicit visual damage state rather than invented animation clips.
+- Entering the gallery now selects an isolated simulation profile: player inspection and camera motion continue, while run timers, needs, hazards, weapons, projectiles, ambient spawns and enemy AI remain frozen. Existing transient shots are hidden, and their visibility plus the prior noclip/god/session state are restored exactly on exit.
+- Added the bounded Music / Songs / VO & Takes / Effects jukebox with filter, source/cue metadata, missing-source status, one-sample ownership, stop and gain. It catalogs all 38 soundtrack entries and both alternate takes for every voice slot, and auditions raw buffers without consuming dialogue history or firing story/achievement events.
+- Verification: 25 focused gallery/frame-profile assertions passed, including multi-row placement, specimen reset, complete song/take discovery and live-run isolation; production Vite build and 50-asset media audit passed.
+
 ## Evidence register
 
 References use **entry `id`**, not zero-based array position, followed by elapsed milliseconds. JSON messages embed diagnostic objects; expand the referenced entry to inspect its details. SHA-256 and compact metrics can be reproduced with:

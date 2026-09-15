@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
-import { openDebugMuseum, closeDebugMuseum } from './debugMuseum.js';
+import { openDebugMuseum, closeDebugMuseum, buildMuseumAudioCatalog, setMuseumSpecimenState } from './debugMuseum.js';
 import { SHOWROOM_CATEGORIES, createDebugWallDecalDisplay } from './debugShowroom.js';
 
 describe('Debug Hallway Museum', () => {
@@ -179,6 +179,60 @@ describe('Debug Hallway Museum', () => {
         mockGame.setNoclip.mockClear();
         closeDebugMuseum(mockGame);
         expect(mockGame.setNoclip).toHaveBeenCalledWith(false);
+    });
+
+    it('lays exhibits out in bounded category grids instead of one long line', async () => {
+        await openDebugMuseum(mockGame);
+        const group = scene.getObjectByName('debug-museum');
+        const pedestals = group.children.filter((child) => child.children?.some((part) => part.geometry?.type === 'CylinderGeometry'));
+        const rows = new Set(pedestals.map((pedestal) => pedestal.position.z.toFixed(1)));
+        expect(pedestals.length).toBeGreaterThan(12);
+        expect(rows.size).toBeGreaterThan(2);
+    });
+
+    it('freezes the live run, hides transient shots, and restores prior state', async () => {
+        const projectile = { mesh: Object.assign(new THREE.Group(), { visible: true }) };
+        mockGame.activeProjectiles = [projectile];
+        mockGame.godMode = false;
+        await openDebugMuseum(mockGame);
+        expect(mockGame._debugMuseumSessionActive).toBe(true);
+        expect(projectile.mesh.visible).toBe(false);
+
+        closeDebugMuseum(mockGame);
+        expect(mockGame._debugMuseumSessionActive).toBe(false);
+        expect(projectile.mesh.visible).toBe(true);
+        expect(mockGame.setGodMode).toHaveBeenLastCalledWith(false);
+    });
+
+    it('provides resettable paired specimen states', async () => {
+        mockGame.createWorld3dModel = vi.fn(async () => new THREE.Group());
+        await openDebugMuseum(mockGame);
+        const group = scene.getObjectByName('debug-museum');
+        const damaged = [];
+        group.traverse((child) => {
+            if (child.userData?.museumSpecimenState === 'damaged') damaged.push(child);
+        });
+        expect(damaged.length).toBeGreaterThan(0);
+        expect(setMuseumSpecimenState(mockGame, 'damaged')).toBe(true);
+        expect(damaged.every((child) => child.visible)).toBe(true);
+        expect(setMuseumSpecimenState(mockGame, 'intact')).toBe(true);
+        expect(damaged.every((child) => !child.visible)).toBe(true);
+    });
+
+    it('catalogs every song and alternate VO take without gameplay triggers', () => {
+        const buffers = {
+            music_menu: {},
+            music_interstitial_01: {},
+            voice_commander_reloading: {},
+            voice_commander_reloading2: {},
+            gunshot: {}
+        };
+        const catalog = buildMuseumAudioCatalog(buffers);
+        expect(catalog.songs).toHaveLength(38);
+        expect(catalog.voice.length).toBeGreaterThanOrEqual(24);
+        expect(catalog.voice.some((row) => row.key.endsWith('2'))).toBe(true);
+        expect(catalog.effects.map((row) => row.key)).toContain('gunshot');
+        expect(catalog.music.map((row) => row.key)).toContain('music_menu');
     });
 
     it('survives a game without the optional debug hooks', async () => {

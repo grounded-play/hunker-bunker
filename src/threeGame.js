@@ -8350,6 +8350,18 @@ export class ThreeGame {
         const delta = Math.min(rawFrameDelta, 0.05);
         this.lastTime = now;
 
+        // The asset museum is an isolated validation profile, not another
+        // coordinate in the active expedition. Keep camera/player inspection
+        // responsive while freezing needs, enemy AI, ambient spawns, weapons,
+        // projectiles and run timers. debugMuseum snapshots/restores this flag.
+        if (this._debugMuseumSessionActive) {
+            this.updatePlayer?.(delta);
+            this.updateCamera?.(delta);
+            this.updateHiddenPlayerMarker?.(now);
+            renderFrame();
+            return;
+        }
+
         if (this.hitstopTimer > 0) {
             this.hitstopTimer -= delta * 1000;
             renderFrame();
