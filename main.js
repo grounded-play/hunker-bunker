@@ -5966,11 +5966,6 @@ window.addEventListener('special-room-discovered', (event) => {
     if (template === 'armory') fireMothershipReactiveLine('armory_found');
 });
 
-window.addEventListener('player-damaged', (event) => {
-    const hp = event?.detail?.hp ?? 99;
-    if (hp <= 1) fireMothershipReactiveLine('hp_critical');
-});
-
 window.addEventListener('mission-objective-complete', () => {
     fireMothershipReactiveLine('objective_found');
 });
@@ -6471,7 +6466,9 @@ function updateDistressMode(o2, hp) {
         _distressModeActive = true;
         document.body.classList.add('distress-mode');
         document.body.classList.add('vitals-critical');
-        fireMothershipReactiveLine('hp_critical');
+        // The suit's threshold callout is the single authoritative low-health
+        // voice. Distress mode owns visuals/music only, avoiding a second
+        // Mothership paragraph on top of the selected radio take.
         window.AudioManager?.play('ui_error', { volume: 0.55, playbackRate: 0.48, bus: 'sfx' });
     } else if (!shouldBeDistress && _distressModeActive) {
         _distressModeActive = false;

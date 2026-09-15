@@ -84,7 +84,7 @@ async function executeO2MilestoneChoreography(options = {}) {
         upgradeVideo = 'event-o2-generator-upgraded',
         bossVideo = 'event-boss-encounter-cybersnail',
         onPhaseChange = null,
-        shakePauseMs = 800,
+        shakePauseMs = 1800,
         timeoutMs = 10000,
         isCurrent = () => true
     } = options;
@@ -163,6 +163,11 @@ async function executeO2MilestoneChoreography(options = {}) {
         }
     });
 
+    // Resolve the authored generator before revealing the world. Previously
+    // its asynchronous GLB swap often completed after the rise had begun, so
+    // the placeholder 2D sprite visibly lifted out of the floor.
+    await game?.ensureO2Generator3dReady?.();
+
     // ── Beat 4 & 5: Blast doors cycle over video and open to 3D reveal ──
     setPhase(O2_CHOREOGRAPHY_PHASES.DOORS_OPEN_3D);
     const generatorPosition = game?.getActiveO2GeneratorPosition?.();
@@ -214,15 +219,17 @@ async function executeO2MilestoneChoreography(options = {}) {
     if (typeof window !== 'undefined' && window.AudioManager?.play) {
         window.AudioManager.play('alert_high_priority', { volume: 0.7 });
     }
+    // Let the physical impact read before covering it with text.
+    await new Promise((resolve) => setTimeout(resolve, Math.min(500, shakePauseMs)));
     if (typeof injectedShowTacticalOverlay === 'function') {
         injectedShowTacticalOverlay({
             title: 'SEISMIC ANOMALY',
             status: '> SEISMIC IMPACT DETECTED<br>> BIOMECHANICAL RETALIATION CLOSING IN',
             progress: 100,
-            duration: 2500
+            duration: 3500
         });
     }
-    await new Promise((resolve) => setTimeout(resolve, shakePauseMs));
+    await new Promise((resolve) => setTimeout(resolve, Math.max(0, shakePauseMs - Math.min(500, shakePauseMs))));
 
     // ── Beat 8: Blast doors cycle to retaliatory boss video ──
     setPhase(O2_CHOREOGRAPHY_PHASES.DOORS_CLOSE_BOSS);

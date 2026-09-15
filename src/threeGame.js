@@ -768,6 +768,13 @@ const BUILD_SITES = Object.freeze([
 const AUDIO_OBSTRUCTION_RAY_HEIGHT = 1.0;
 const AUDIO_OBSTRUCTION_BACKOFF = 0.75;
 const PLAYER_HITBOX_PADDING = 0.18;     // forgiving hitbox for player shots only
+const PVP_PRIVATE_WORLD_EVENTS = new Set([
+    'pickup-collected',
+    'o2-generator-upgraded',
+    'black-box-recovered',
+    'lore-terminal-read',
+    'maze-access-granted'
+]);
 const WEAPON_CLIP_PER_CAPACITY = 2;     // +clip rounds per ammoCapacity tier
 const WEAPON_SPEED_PER_TIER = 2.5;      // +projectile speed per shotSpeed tier
 const MULTISHOT_SPREADS = Object.freeze([[], [-0.085, 0.085], [-0.15, 0.0, 0.15]]);
@@ -4696,6 +4703,10 @@ export class ThreeGame {
             || multiplayerLobby?.getActiveSession?.();
         if (!session) return;
 
+        // ThreeGame survives between deployments. Never stack a second set
+        // of relay listeners on a prior session during reconnect/redeploy.
+        if (this.netSocket) this.teardownMultiplayerNetwork();
+
         this.isMultiplayer = true;
         this.multiplayerMode = session.mode || MULTIPLAYER_SPAWN_MODES.COOP;
         this.multiplayerRoomCode = session.roomCode || 'SECTOR-7';
@@ -4970,8 +4981,8 @@ export class ThreeGame {
             facingRow: PLAYER_DEFAULT_DIRECTION_INDEX,
             animationTimer: 0,
             lastAnimationColumn: -1,
-            hp: 100,
-            maxHp: 100,
+            hp: isPvP ? 3 : 100,
+            maxHp: isPvP ? 3 : 100,
             isDown: false,
             lastUpdate: Date.now()
         };
@@ -5136,7 +5147,8 @@ export class ThreeGame {
             attackerId: isPvP ? data.playerId : null,
             options: {
                 color: data.color ?? (isPvP ? 0xff4a4a : 0x2ec4b6),
-                glowColor: isPvP ? 0xff0000 : 0x00ffff
+                glowColor: isPvP ? 0xff0000 : 0x00ffff,
+                fromRemote: true
             }
         });
         // Remote player's shot: this one genuinely needs placing -- it is the
@@ -5148,19 +5160,22 @@ export class ThreeGame {
         if (!data) return;
         if (data.targetId === this.netSocket?.id) {
             // Local player was hit in PvP.
-            // Server damage is emitted on a 100-point scale (e.g. PVP_WEAPON_DAMAGE = 10).
-            // Convert to player vitals scale (3-4 hearts) so local player takes 1 heart per standard hit instead of dying in one shot.
-            const serverDamage = data.damage || 10;
+            // New relays emit heart-scale damage. Preserve conversion for a
+            // rolling legacy relay that still emits the old 10-point value.
+            const serverDamage = Number.isFinite(data.damage) ? data.damage : 1;
             const damageHearts = serverDamage >= 10
                 ? Math.max(1, Math.round((serverDamage / 100) * (this.playerVitals?.maxHp || 3)))
                 : serverDamage;
             this.takeDamage?.(damageHearts, 'pvp-rival');
         } else if (this.remotePlayers?.has(data.targetId)) {
             const remote = this.remotePlayers.get(data.targetId);
-            remote.hp = Math.max(0, remote.hp - (data.damage || 10));
+            const remoteDamage = Number.isFinite(data.damage) ? data.damage : 1;
+            remote.hp = Math.max(0, remote.hp - remoteDamage);
             if (remote.hp === 0) {
                 remote.isDown = true;
+                remote.overlay?.setDowned?.(true);
                 if (this.multiplayerMode === 'pvp') {
+                    this.showRemotePlayerDeathMarker?.(remote);
                     window.showToastNotification?.(`RIVAL ELIMINATED: ${remote.callsign}`);
                     window.AudioManager?.play?.('fx_achievement', { volume: 0.4 });
                 } else {
@@ -5187,6 +5202,7 @@ export class ThreeGame {
         remote.isDown = false;
         remote.hp = remote.maxHp;
         remote.overlay?.setDowned?.(false);
+        this.clearRemotePlayerDeathMarker?.(remote);
         window.showToastNotification?.(`SQUADMATE REVIVED: ${remote.callsign}`);
         window.AudioManager?.play?.('fx_level_up', { volume: 0.4 });
     }
@@ -5200,6 +5216,34 @@ export class ThreeGame {
         window.showToastNotification?.(`SQUADMATE DOWN: ${remote.callsign}`);
         window.AudioManager?.play?.('ui_error', { volume: 0.4 });
         this.resolveCoopSquadWipe?.();
+    }
+
+    showRemotePlayerDeathMarker(remote) {
+        if (!remote?.mesh?.position || remote.deathMarker) return remote?.deathMarker ?? null;
+        const { x, z } = remote.mesh.position;
+        if (!Number.isFinite(x) || !Number.isFinite(z)) return null;
+        const marker = this.createBlackBoxMarker?.({ x, z, classType: remote.opClass || 'SCOUT' });
+        if (!marker) return null;
+        marker.userData.isRemoteDeathMarker = true;
+        marker.userData.remotePlayerId = remote.id;
+        this.scene?.add?.(marker);
+        remote.deathMarker = marker;
+        remote.mesh.visible = false;
+        return marker;
+    }
+
+    clearRemotePlayerDeathMarker(remote) {
+        const marker = remote?.deathMarker;
+        if (!marker) return false;
+        marker.userData?.corpseOverlay?.dispose?.();
+        marker.parent?.remove?.(marker);
+        marker.traverse?.((child) => {
+            if (child.userData?.blackBoxOwnedMaterial) child.material?.dispose?.();
+            child.geometry?.dispose?.();
+        });
+        remote.deathMarker = null;
+        if (remote.mesh) remote.mesh.visible = true;
+        return true;
     }
 
     resolveCoopSquadWipe() {
@@ -5442,6 +5486,7 @@ export class ThreeGame {
 
     broadcastSharedWorldEvent(event, detail = {}) {
         if (!this.isMultiplayer || !this.netSocket || !event) return false;
+        if (this.multiplayerMode === 'pvp' && PVP_PRIVATE_WORLD_EVENTS.has(event)) return false;
         this.netSocket.emit('worldEvent', { event, detail });
         return true;
     }
@@ -5452,6 +5497,7 @@ export class ThreeGame {
     handleSharedWorldEvent(data) {
         const event = data?.event;
         if (!event) return false;
+        if (this.multiplayerMode === 'pvp' && PVP_PRIVATE_WORLD_EVENTS.has(event)) return false;
         const detail = data?.detail ?? {};
         const isEcho = data?.originId && data.originId === this.multiplayerLocalPlayerId;
 
@@ -5650,6 +5696,7 @@ export class ThreeGame {
     removeRemotePlayer(id) {
         if (!this.remotePlayers?.has(id)) return;
         const remote = this.remotePlayers.get(id);
+        this.clearRemotePlayerDeathMarker?.(remote);
         remote.overlay?.dispose?.();
         if (remote.mesh) {
             this.scene.remove(remote.mesh);
@@ -5757,31 +5804,56 @@ export class ThreeGame {
     }
 
     async setupWorld3dReplacement(source, modelType, { owner = null, ownerKey = null } = {}) {
-        if (!source || source.userData?.world3dLoading || source.userData?.world3dRoot) return;
+        if (!source || source.userData?.world3dRoot) return source?.userData?.world3dRoot ?? null;
+        if (source.userData?.world3dPromise) return source.userData.world3dPromise;
         source.userData.world3dLoading = true;
-        try {
-            const root = await (this.createWorld3dModel?.(modelType) ?? createWorld3dModel(modelType));
-            if (!root || !source.parent) return;
-            root.position.copy(source.position);
-            // Must match syncWorld3dReplacement, which adds WORLD_3D_FACING_YAW.
-            // Without it the model faced one way when it loaded and snapped
-            // 180 degrees on the next frame's sync.
-            root.rotation.y = (source.material?.rotation ?? 0) + WORLD_3D_FACING_YAW;
-            root.visible = owner ? Boolean(owner.isVisible) : source.visible;
-            source.parent.add(root);
-            root.userData.world3dSource = source;
-            source.userData.world3dRoot = root;
-            source.userData.world3dDesiredVisible = source.visible;
-            source.userData.replacedBy3d = true;
+        const loadPromise = (async () => {
+            try {
+                const root = await (this.createWorld3dModel?.(modelType) ?? createWorld3dModel(modelType));
+                if (!root || !source.parent) return null;
+                root.position.copy(source.position);
+                // Must match syncWorld3dReplacement, which adds WORLD_3D_FACING_YAW.
+                // Without it the model faced one way when it loaded and snapped
+                // 180 degrees on the next frame's sync.
+                root.rotation.y = (source.material?.rotation ?? 0) + WORLD_3D_FACING_YAW;
+                root.visible = owner ? Boolean(owner.isVisible) : source.visible;
+                source.parent.add(root);
+                root.userData.world3dSource = source;
+                source.userData.world3dRoot = root;
+                source.userData.world3dDesiredVisible = source.visible;
+                source.userData.replacedBy3d = true;
+                source.visible = false;
+                syncWorld3dReplacement(source);
+                if (owner && ownerKey) owner[ownerKey] = root;
+                if (owner?.threeObjects && !owner.threeObjects.includes(root)) owner.threeObjects.push(root);
+                return root;
+            } catch (error) {
+                console.warn(`[world-3d-overlay] ${modelType} unavailable; keeping sprite`, error);
+                return null;
+            } finally {
+                source.userData.world3dLoading = false;
+                source.userData.world3dPromise = null;
+            }
+        })();
+        source.userData.world3dPromise = loadPromise;
+        return loadPromise;
+    }
+
+    async ensureO2Generator3dReady() {
+        const ship = this.getActiveShip?.();
+        const source = ship?.o2ModuleSprite;
+        if (!source) return null;
+        const root = await this.setupWorld3dReplacement(source, 'o2_generator', {
+            owner: ship,
+            ownerKey: 'o2Module3d'
+        });
+        // The cinematic owns visibility and scale from here; never fall back
+        // to lifting the flat sprite once the authored model is available.
+        if (root) {
             source.visible = false;
-            syncWorld3dReplacement(source);
-            if (owner && ownerKey) owner[ownerKey] = root;
-            if (owner?.threeObjects && !owner.threeObjects.includes(root)) owner.threeObjects.push(root);
-        } catch (error) {
-            console.warn(`[world-3d-overlay] ${modelType} unavailable; keeping sprite`, error);
-        } finally {
-            source.userData.world3dLoading = false;
+            root.visible = false;
         }
+        return root;
     }
 
     deferWorld3dReplacement(source, modelType) {
@@ -6698,10 +6770,12 @@ export class ThreeGame {
 
     spawnPhysicalLootDrop(x, z, item) {
         if (!item || !this.scene) return;
+        if (!Number.isFinite(x) || !Number.isFinite(z)) return null;
         const mesh = createRelicPickup(item);
         mesh.position.set(x, (this.getTerrainHeightAt?.(x, z) ?? 0) + 0.05, z);
         this.scene.add(mesh);
         this.inRunLootDrops.push(mesh);
+        return mesh;
     }
 
     getTerrainHeightAt(worldX, worldZ) {
@@ -8939,7 +9013,7 @@ export class ThreeGame {
                 weaponEnabled: false,
                 allowStatic: false
             });
-            if (!marker?.parent || marker !== this._blackBoxMarker) {
+            if (!marker?.parent || (marker !== this._blackBoxMarker && !marker.userData?.isRemoteDeathMarker)) {
                 overlay.dispose();
                 return false;
             }
@@ -27949,7 +28023,7 @@ export class ThreeGame {
                         const pickupType = pickup.userData.type ?? 'unknown';
                         const rarity = pickup.userData.rarity?.key ?? null;
 
-                        if (this.isMultiplayer && !pickup.userData.fromRemote) {
+                        if (this.isMultiplayer && this.multiplayerMode !== 'pvp' && !pickup.userData.fromRemote) {
                             this.broadcastSharedWorldEvent?.('pickup-collected', {
                                 x: pickup.position.x,
                                 z: pickup.position.z,

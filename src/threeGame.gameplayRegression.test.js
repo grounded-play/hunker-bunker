@@ -50,6 +50,23 @@ describe('Gameplay regressions: damage, oxygen, and cliff falling', () => {
     });
 
     describe('PvP damage scale conversion', () => {
+        it('marks relayed rival rounds as remote so authority guards render them', () => {
+            const spawnProjectile = vi.fn();
+            ThreeGame.prototype.handleRemotePlayerFired.call({
+                multiplayerMode: 'pvp',
+                spawnProjectile,
+                audioAt: vi.fn(() => ({}))
+            }, {
+                playerId: 'rival', originX: 4, originZ: 5, dirX: 1, dirZ: 0
+            });
+
+            expect(spawnProjectile).toHaveBeenCalledWith(expect.objectContaining({
+                isEnemy: true,
+                attackerId: 'rival',
+                options: expect.objectContaining({ fromRemote: true })
+            }));
+        });
+
         it('detects a local projectile against a remote rival with player-shot padding', () => {
             const rivalMesh = new THREE.Object3D();
             rivalMesh.position.set(1, 0, 1);
@@ -112,6 +129,42 @@ describe('Gameplay regressions: damage, oxygen, and cliff falling', () => {
             });
 
             expect(fakeGame.takeDamage).toHaveBeenCalledWith(2, 'pvp-rival');
+        });
+
+        it('applies the relay heart-scale hit directly', () => {
+            const fakeGame = {
+                netSocket: { id: 'local-player' },
+                playerVitals: { hp: 3, maxHp: 3 },
+                takeDamage: vi.fn()
+            };
+
+            ThreeGame.prototype.handleRemotePlayerDamaged.call(fakeGame, {
+                targetId: 'local-player',
+                damage: 1
+            });
+
+            expect(fakeGame.takeDamage).toHaveBeenCalledWith(1, 'pvp-rival');
+        });
+
+        it('leaves a laid-down black-box marker where a rival dies', () => {
+            const scene = new THREE.Scene();
+            const marker = new THREE.Group();
+            const remote = {
+                id: 'rival', opClass: 'TANK', mesh: new THREE.Group(), deathMarker: null
+            };
+            remote.mesh.position.set(7, 0, 11);
+            const fakeGame = {
+                scene,
+                createBlackBoxMarker: vi.fn(() => marker)
+            };
+
+            const result = ThreeGame.prototype.showRemotePlayerDeathMarker.call(fakeGame, remote);
+
+            expect(result).toBe(marker);
+            expect(fakeGame.createBlackBoxMarker).toHaveBeenCalledWith({ x: 7, z: 11, classType: 'TANK' });
+            expect(marker.userData.isRemoteDeathMarker).toBe(true);
+            expect(remote.mesh.visible).toBe(false);
+            expect(scene.children).toContain(marker);
         });
     });
 

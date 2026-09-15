@@ -451,7 +451,7 @@
     },
     "directorAmbient": {
       "0": {
-        "text": "Movement logged. Facilities has dispatched a welcome committee to your position.",
+        "text": "Hostile patrol dispatched to your position.",
         "tags": {
           "directorActions": {}
         }

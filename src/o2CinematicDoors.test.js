@@ -127,6 +127,7 @@ describe('O2 Milestone Cinematic Doors and Video Choreography (SEQ-01)', () => {
             closeConsoleModal: () => events.push('closeConsoleModal'),
             setInputEnabled: (enabled) => events.push(`setInputEnabled:${enabled}`),
             setCinematicLock: (locked) => events.push(`setCinematicLock:${locked}`),
+            ensureO2Generator3dReady: async () => events.push('ensureO2Generator3dReady'),
             getActiveO2GeneratorPosition: () => ({ x: 10, z: 20 }),
             cameraTarget: { x: 0, z: 0 },
             focusCinematicCamera: (position) => {
@@ -199,6 +200,7 @@ describe('O2 Milestone Cinematic Doors and Video Choreography (SEQ-01)', () => {
 
         // 2 & 3. Door closes and opens to upgrade video
         expect(events).toContain('playCutsceneVideo:event-o2-generator-upgraded');
+        expect(events.indexOf('ensureO2Generator3dReady')).toBeLessThan(events.indexOf('focusCamera:10:20'));
 
         // 4 & 5. Camera recenters onto generator position
         expect(events).toContain('focusCamera:10:20');
