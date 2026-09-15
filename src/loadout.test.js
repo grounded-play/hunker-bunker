@@ -42,7 +42,7 @@ describe('LoadoutManager', () => {
 
     it('refuses non-weapon recipes', () => {
         const lo = new LoadoutManager({ storage });
-        // salvage_drill is a TOOL, exo_plating a MODULE
+        // salvage_drill is a CHARM output, exo_plating a MODULE
         expect(lo.equip('salvage_drill', fakeFab('salvage_drill'))).toBe(false);
         expect(lo.equip('exo_plating', fakeFab('exo_plating'))).toBe(false);
     });

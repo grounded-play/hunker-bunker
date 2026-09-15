@@ -121,6 +121,14 @@ Commit: `d744c5c`.
 - Achievement reset now supports explicit local / Steam / both scopes. Local state resets in memory and storage, while account-scoped reset generations discard stale retries and allow the same achievement to be earned again without duplicating reward grants. Offline Steam reset is reported as unavailable rather than success.
 - Verification: 80 focused ownership/Armory/achievement/sync/auth assertions passed (93 including adjacent console coverage); Electron syntax checks, ESLint, diff checks, production Vite build and media audit passed. A real Steam account reset was intentionally not invoked by automated verification.
 
+### Pass 18 — DP-47 functional Foundry run outputs (September 15)
+
+- Replaced concept-only Foundry output labels with explicit runtime contracts: six fabricated guns, five existing rig modules and two existing weapon charms. Every recipe declares its output kind and, for equipment, the real catalog itemdef it grants.
+- All six guns now select distinct live projectile spread, damage, lifetime and cadence profiles; previously only Scatter Repeater changed gameplay. Equip from the Foundry calls the running game's weapon recalculation immediately.
+- Module outputs use effects already consumed by combat/hazard simulation and update the active run's modifier snapshot. Charm outputs mount the existing GLB charm and rebuild the current player weapon overlay.
+- Fabricated recipe cards now expose their real name, effect, exact cost, print progress and direct print/apply action. A full module rig offers explicit replacement buttons for bay A and B; no slot is silently overwritten. Print ownership is catalog-backed and survives inventory refresh without pretending to be Steam inventory.
+- Verification: 56 focused Fabricator/Loadout/field-weapon/season checks passed, including weapon/mod/charm current-run application, full-slot rejection then explicit replacement and one-spend print behavior. A broader 39-check weapon/projectile regression subset and the production build/media audit passed.
+
 ## Evidence register
 
 References use **entry `id`**, not zero-based array position, followed by elapsed milliseconds. JSON messages embed diagnostic objects; expand the referenced entry to inspect its details. SHA-256 and compact metrics can be reproduced with:

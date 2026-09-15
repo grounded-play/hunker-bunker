@@ -15,7 +15,7 @@ import { ObjectiveRegistry } from './src/objectiveRegistry.js';
 import { BankManager, FOUNDRY_ACTIVATION_COST } from './src/bank.js';
 import { ExpeditionReceipt } from './src/economyReceipt.js';
 import { renderReturnManifest } from './src/returnManifest.js';
-import { FabricatorManager, FAB_RECIPES, FAB_SPIN_COST, FABRICATOR_SITE_MAX_USES } from './src/fabricator.js';
+import { FabricatorManager, FAB_RECIPES, FAB_SPIN_COST, FABRICATOR_SITE_MAX_USES, applyFabricatedRecipeOutput, getFabricatedOutputIds } from './src/fabricator.js';
 import { ProfileManager, clearSaveData, exportSaveCode, importSaveCode } from './src/profile.js';
 import { LoadoutManager } from './src/loadout.js';
 import { CutsceneManager } from './src/cutscene.js';
@@ -2746,6 +2746,11 @@ function getOwnershipStore() {
 // Warm it at startup so `window.itemOwnership` is available to the console and
 // to any UI that opens before the Armory does.
 getOwnershipStore();
+
+function syncFabricatorOutputOwnership() {
+    getOwnershipStore().setExternalOwnership('fabricator', getFabricatedOutputIds(fabricator));
+}
+syncFabricatorOutputOwnership();
 
 const loadout = new LoadoutManager();
 window.loadout = loadout;
@@ -11536,7 +11541,7 @@ function renderFabricationModal() {
 
     const rollPanel = document.getElementById('fab-roll-panel');
     grid.innerHTML = '';
-    renderFieldPrint(grid, bank);
+    if (!bankManager.isFoundryActivated()) renderFieldPrint(grid, bank);
     if (renderFoundryActivationPanel(grid, bank)) {
         rollPanel?.classList.add('hidden');
         setTxt('fab-summary', `FOUNDRY ACTIVATION: ${fabCostText(FOUNDRY_ACTIVATION_COST, bank, { showHaveNeed: !bankManager.canActivateFoundry() })}`);
@@ -11561,9 +11566,7 @@ function renderFabricationModal() {
     for (const recipe of FAB_RECIPES) {
         const fabricated = fabricator.isFabricated(recipe.id);
 
-        // Collection card: display-only. Owned schematics are revealed; unowned
-        // show as locked silhouettes you can still win from a roll. Rarity tints
-        // the border so the collection reads at a glance.
+        // These are real current-run outputs, not concept collection cards.
         const rarity = (recipe.rarity ?? 'COMMON').toLowerCase();
         const card = document.createElement('div');
         card.className = ['fab-card', `fab-card--${rarity}`, fabricated ? 'fab-card--done' : 'fab-card--locked'].filter(Boolean).join(' ');
@@ -11582,15 +11585,80 @@ function renderFabricationModal() {
 
         const name = document.createElement('div');
         name.className = 'fab-card__name';
-        name.innerHTML = fabricated
-            ? `<span class="fab-card__klass">${recipe.klass}</span>${recipe.name}`
-            : `<span class="fab-card__klass">${recipe.klass}</span>??? LOCKED`;
+        name.innerHTML = `<span class="fab-card__klass">${recipe.klass}</span>${recipe.name}`;
         card.appendChild(name);
+
+        const description = document.createElement('div');
+        description.className = 'fab-card__description';
+        description.textContent = recipe.blurb;
+        card.appendChild(description);
 
         const status = document.createElement('div');
         status.className = 'fab-card__status';
-        status.textContent = fabricated ? '✓ FABRICATED' : 'NOT YET FABRICATED';
+        status.textContent = fabricated ? '✓ READY TO APPLY' : fabricator.isPrinting(recipe.id)
+            ? `PRINTING ${Math.round(fabricator.getPrintProgress(recipe.id) * 100)}%`
+            : `PRINT COST · ${fabCostText(fabricator.getEffectiveCost(recipe), bank)}`;
         card.appendChild(status);
+
+        const addApplyButton = (label, replaceSlot = null) => {
+            const button = document.createElement('button');
+            button.className = 'fab-card__btn';
+            button.textContent = label;
+            button.addEventListener('click', () => {
+                syncFabricatorOutputOwnership();
+                const result = applyFabricatedRecipeOutput(recipe, {
+                    fabricator,
+                    loadout,
+                    game: window.game,
+                    classId: loadout.activeClassId,
+                    replaceSlot
+                });
+                if (result.ok) {
+                    window.AudioManager?.play?.('class_lock', { volume: 0.55 });
+                    syncEquippedWeaponLabel();
+                    renderFabricationModal();
+                } else {
+                    button.textContent = result.reason === 'slot_conflict' ? 'CHOOSE BAY A OR B' : 'APPLY FAILED';
+                    window.AudioManager?.play?.('ui_error', { volume: 0.5 });
+                }
+            });
+            card.appendChild(button);
+        };
+
+        if (fabricated) {
+            const output = recipe.output ?? { kind: 'weapon' };
+            const current = loadout.getClassLoadout(loadout.activeClassId);
+            if (output.kind === 'weapon') {
+                const equipped = loadout.getEquippedId(loadout.activeClassId) === recipe.id;
+                if (!equipped) addApplyButton('EQUIP NOW');
+                else status.textContent = '✓ EQUIPPED IN CURRENT RUN';
+            } else if (output.kind === 'charm') {
+                const equipped = String(current.charmId ?? '') === String(output.itemdefid);
+                if (!equipped) addApplyButton(current.charmId ? `REPLACE CHARM ${current.charmId}` : 'MOUNT CHARM NOW');
+                else status.textContent = '✓ MOUNTED IN CURRENT RUN';
+            } else if (output.kind === 'mod') {
+                const equippedSlot = [current.mod1Id, current.mod2Id].findIndex((id) => String(id ?? '') === String(output.itemdefid));
+                if (equippedSlot >= 0) status.textContent = `✓ ACTIVE IN BAY ${equippedSlot === 0 ? 'A' : 'B'}`;
+                else if (!current.mod1Id || !current.mod2Id) addApplyButton(`INSTALL IN OPEN BAY`);
+                else {
+                    addApplyButton(`REPLACE BAY A · ${current.mod1Id}`, 1);
+                    addApplyButton(`REPLACE BAY B · ${current.mod2Id}`, 2);
+                }
+            }
+        } else {
+            const cost = fabricator.getEffectiveCost(recipe);
+            const printing = fabricator.isPrinting(recipe.id);
+            const button = document.createElement('button');
+            button.className = 'fab-card__btn';
+            button.disabled = printing || !fabricator.canFabricate(recipe.id, bankManager);
+            button.textContent = printing ? 'PRINTING…' : bankManager.canAfford(cost) ? 'PRINT THIS OUTPUT' : fabMissingResourceText(cost, bank);
+            button.addEventListener('click', () => {
+                if (!fabricator.startPrint(recipe.id, bankManager)) return;
+                startFabTicker();
+                renderFabricationModal();
+            });
+            card.appendChild(button);
+        }
 
         grid.appendChild(card);
     }
@@ -13426,6 +13494,7 @@ setupClickOutside('roster-modal', () => {
 // and keep it correct after a fresh fabrication completes.
 syncEquippedWeaponLabel();
 window.addEventListener('fabrication-complete', syncEquippedWeaponLabel);
+window.addEventListener('fabrication-complete', syncFabricatorOutputOwnership);
 
 setupClickOutside('settings-popup', () => {
     const settingsPopup = document.getElementById('settings-popup');
