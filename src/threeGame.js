@@ -187,6 +187,21 @@ export const MAYOR_TINA_PLAYER_VISUAL = Object.freeze({
     weaponEnabled: false,
     allowStatic: false
 });
+
+export const BLACK_BOX_CORPSE_VISUALS = Object.freeze({
+    SCOUT: Object.freeze({
+        modelUrl: '/3d/scouting-scout/Scout.game.glb',
+        animationModelUrl: '/3d/scouting-scout/Scout.game.glb'
+    }),
+    TANK: Object.freeze({
+        modelUrl: '/3d/runtime/tank-rigged.glb',
+        animationModelUrl: '/3d/scouting-scout/Scout.game.glb'
+    }),
+    ENGINEER: Object.freeze({
+        modelUrl: '/3d/runtime/engineer-rigged-gestures.glb',
+        animationModelUrl: '/3d/scouting-scout/Scout.game.glb'
+    })
+});
 import { createEnemy3dVisual, disposeEnemy3dVisual, updateEnemy3dVisual } from './enemy3dOverlay.js';
 import { spawnEnemyGibs, spawnPropDebris } from './enemyGibs.js';
 import { registerTinaHit, TINA_TOTAL_HITS } from './mayorTinaCombat.js';
@@ -8703,6 +8718,7 @@ export class ThreeGame {
 
     createBlackBoxMarker(state) {
         const marker = new THREE.Group();
+        marker.userData.corpseClass = BLACK_BOX_CORPSE_VISUALS[state.classType] ? state.classType : 'SCOUT';
 
         // 1. Red neon pulse ring under the corpse
         const ring = new THREE.Mesh(
@@ -8722,6 +8738,8 @@ export class ThreeGame {
 
         // 2. Body corpse geometry group
         const bodyGroup = new THREE.Group();
+        bodyGroup.name = 'BlackBoxCorpseFallback';
+        bodyGroup.userData.corpseClass = marker.userData.corpseClass;
 
         const suitColors = {
             SCOUT: 0xd4af37,     // scout gold/yellow
@@ -8840,7 +8858,52 @@ export class ThreeGame {
 
         marker.position.set(state.x, 0, state.z);
         marker.userData.isBlackBoxMarker = true;
+        void this.attachBlackBoxCorpseModel?.(marker, bodyGroup, state);
         return marker;
+    }
+
+    async attachBlackBoxCorpseModel(marker, fallback, state) {
+        const classType = BLACK_BOX_CORPSE_VISUALS[state?.classType] ? state.classType : 'SCOUT';
+        const visual = BLACK_BOX_CORPSE_VISUALS[classType];
+        let overlay;
+        try {
+            overlay = await createPlayer3dOverlay({
+                ...visual,
+                animationBonePrefix: 'mixamorig',
+                targetHeight: 1.35,
+                idleActionName: 'idle',
+                weaponEnabled: false,
+                allowStatic: false
+            });
+            if (!marker?.parent || marker !== this._blackBoxMarker) {
+                overlay.dispose();
+                return false;
+            }
+            overlay.setDowned(true);
+            overlay.update(1 / 30, {
+                isMoving: false,
+                isFalling: false,
+                isReloading: false,
+                hasAim: false,
+                moveX: 0,
+                moveZ: 1
+            });
+            overlay.root.rotation.z = -Math.PI / 2;
+            overlay.root.rotation.y = 0.18;
+            overlay.root.updateMatrixWorld(true);
+            const bounds = new THREE.Box3().setFromObject(overlay.root);
+            overlay.root.position.y += 0.04 - bounds.min.y;
+            overlay.root.position.x = -0.12;
+            overlay.root.name = `BlackBoxCorpse:${classType}`;
+            marker.add(overlay.root);
+            marker.userData.corpseOverlay = overlay;
+            fallback.visible = false;
+            return true;
+        } catch (error) {
+            overlay?.dispose?.();
+            console.warn(`[black-box] ${classType} corpse model unavailable; retaining class-colored fallback`, error);
+            return false;
+        }
     }
 
     ensureBlackBoxMarker() {
@@ -8922,6 +8985,7 @@ export class ThreeGame {
 
     clearBlackBoxMarker() {
         if (this._blackBoxMarker) {
+            this._blackBoxMarker.userData?.corpseOverlay?.dispose?.();
             this.scene.remove(this._blackBoxMarker);
             this._blackBoxMarker.traverse((child) => {
                 if (child.userData?.blackBoxOwnedMaterial) child.material?.dispose?.();

@@ -80,6 +80,12 @@ Commit: `d744c5c`.
 - Increased the minimap player arrow floor, added a high-contrast outline/notched tail and drove map paths, rooms, scans and the player marker from the active HUD theme. Theme tokens now reach the complete HUD panel family immediately; the pink/purple Bunker 404 theme applies a functional heart-shaped minimap mask while hazard meaning retains independent colors.
 - Verification: 30 focused map, mapping-mission and gameplay-regression tests passed, including fake-clock fade/expiry, bounded trails and truthful hazard event telemetry. ESLint and diff checks passed; visual theme/hazard acceptance remains in the combined browser/package sweep.
 
+### Pass 13 — DP-32–34 corpse identity and enemy forward axes (September 14)
+
+- Black Box markers now preserve the recorded deceased class and asynchronously replace the lightweight class-colored fallback with that class's actual rig. The rig is locked into the shared defeat/downed animation, laid onto the ground and kept independent of the operator selected for the recovery run. Missing assets retain the identified fallback instead of exposing a bind pose.
+- Removed the erroneous extra half-turn from the rigged crawler asset, whose locomotion pack and model are both +Z-forward. Removed the inherited quarter-turn from the unique cryo boss export while leaving regular cyber/cryo shared-mesh and cyber-boss corrections untouched; corrections are explicitly asset-local.
+- Verification: eight focused Black Box storage/corpse and enemy-overlay tests passed, including all three class mappings, loading fallback identity and independent yaw contracts. Full rendered death/recovery and eight-direction encounter acceptance remain in the visual sweep.
+
 ## Evidence register
 
 References use **entry `id`**, not zero-based array position, followed by elapsed milliseconds. JSON messages embed diagnostic objects; expand the referenced entry to inspect its details. SHA-256 and compact metrics can be reproduced with:
