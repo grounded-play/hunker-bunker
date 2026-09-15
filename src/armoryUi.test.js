@@ -184,6 +184,8 @@ describe('createArmoryUi', () => {
         expect(container.innerHTML).not.toMatch(/TACTICAL FINISH/);
         expect(container.innerHTML).not.toContain('armory-slot-archetype');
         expect(container.innerHTML).toContain('id="armory-polish-btn"');
+        expect(container.innerHTML).toContain('class="armory-hud-theme-preview"');
+        expect(container.innerHTML).toContain('DEFAULT MONOCHROME');
         // No dropdown survives anywhere on the bench.
         expect(container.innerHTML).not.toContain('<select');
 
@@ -208,6 +210,11 @@ describe('createArmoryUi', () => {
         openSlot(container, 'charm').dispatchEvent(tileClick('4130'));
         expect(loadoutManager.getEquippedCharmId('scout')).toBe('4130');
         expect(fakeScene.updateFromLoadout).toHaveBeenCalledWith(loadoutManager, 'scout');
+
+        openSlot(container, 'hud').dispatchEvent(tileClick('4234'));
+        expect(loadoutManager.state.hudThemeId).toBe('4234');
+        expect(container.innerHTML).toContain('data-hud-shape="heart"');
+        expect(container.innerHTML).toContain('Bunker 404');
 
         openSlot(container, 'chassis').dispatchEvent(tileClick('4113'));
         expect(loadoutManager.getEquippedChassisSkinId()).toBe('4113');

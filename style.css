@@ -2157,45 +2157,40 @@ body:not(.controller-mode) .settings-choice-control > .settings-controller-hint 
   box-shadow: inset 0 0 0 1px var(--hud-border), inset 0 0 28px var(--hud-glow);
 }
 
-#ui[data-hud-theme] .hud-header,
-#ui[data-hud-theme] .level-indicator,
-#ui[data-hud-theme] .hud-action-prompt,
-#ui[data-hud-theme] .mission-progress-hud,
-#ui[data-hud-theme] .desktop-compass,
-#ui[data-hud-theme] .pickup-counter-panel,
-#ui[data-hud-theme] .weapon-status-panel,
-#ui[data-hud-theme] .ship-status-panel,
-#ui[data-hud-theme] .vitals-panel,
-#ui[data-hud-theme] .class-ability-panel,
-#ui[data-hud-theme] .loop-step-hud,
-#ui[data-hud-theme] .objective-tracker__item,
-#ui[data-hud-theme] .queens-ledger-hud {
+#game-viewport[data-hud-theme] :is(
+  .hud-header, .level-indicator, .hud-action-prompt, .mission-progress-hud,
+  .desktop-compass, .pickup-counter-panel, .weapon-status-panel,
+  .ship-status-panel, .vitals-panel, .class-ability-panel, .loop-step-hud,
+  .objective-tracker__item, .queens-ledger-hud, .tutorial-prompt,
+  .radio-transmission-prompt, .biome-hud-prompt, .hazard-status-panel,
+  .tactical-telemeter-box
+) {
   border-color: var(--hud-border, var(--accent-primary));
   color: var(--hud-secondary, var(--hud-primary, var(--accent-primary)));
   background-color: var(--hud-panel, rgba(0, 0, 0, 0.5));
   text-shadow: 0 0 8px var(--hud-glow, rgba(255, 159, 28, 0.4));
 }
 
-#ui[data-hud-theme] .weapon-status-panel__reload-bar,
-#ui[data-hud-theme] .ship-status-panel__bar,
-#ui[data-hud-theme] .class-ability-panel__bar,
-#ui[data-hud-theme] .vitals-panel__o2-bar,
-#ui[data-hud-theme] .objective-tracker__meter::-webkit-progress-value {
+#game-viewport[data-hud-theme] :is(
+  .weapon-status-panel__reload-bar, .ship-status-panel__bar,
+  .class-ability-panel__bar, .vitals-panel__o2-bar
+),
+#game-viewport[data-hud-theme] .objective-tracker__meter::-webkit-progress-value {
   background: var(--hud-primary) !important;
   box-shadow: 0 0 10px var(--hud-glow) !important;
 }
 
-#ui[data-hud-theme] .desktop-compass__arrow,
-#ui[data-hud-theme] .desktop-compass__radar-arrow,
-#ui[data-hud-theme] .loop-step-hud__chevron,
-#ui[data-hud-theme] .objective-tracker__eyebrow,
-#ui[data-hud-theme] .hud-visor-telemetry {
+#game-viewport[data-hud-theme] :is(
+  .desktop-compass__arrow, .desktop-compass__radar-arrow,
+  .loop-step-hud__chevron, .objective-tracker__eyebrow,
+  .hud-visor-telemetry, .prompt-key, .radio-transmission-prompt__sender,
+  .radio-transmission-prompt__signal-icon, #scan-name
+) {
   color: var(--hud-primary) !important;
   border-color: var(--hud-primary) !important;
 }
 
-#ui[data-hud-theme="4234"] #hud-blueprint-canvas,
-#ui[data-hud-theme="hudtheme_bunker404"] #hud-blueprint-canvas {
+#game-viewport[data-hud-shape="heart"] #hud-blueprint-canvas {
   clip-path: polygon(50% 96%, 8% 55%, 5% 34%, 12% 17%, 27% 8%, 40% 13%, 50% 27%, 60% 13%, 73% 8%, 88% 17%, 95% 34%, 92% 55%);
   filter: drop-shadow(0 0 8px var(--hud-glow));
 }
@@ -22247,3 +22242,202 @@ body.contrast-max .hud-panel {
   .armory-main-layout { grid-template-columns: minmax(0,1fr) minmax(420px,42%); }
   .armory-footer { grid-template-columns: repeat(2,minmax(0,1fr)); }
 }
+
+/* ── Gameplay HUD rail overhaul ───────────────────────────────
+   Each screen edge has one owner. Legacy prompt rules still describe their
+   card appearance, but these final rules own placement so independently
+   authored absolute boxes cannot stack on top of one another. */
+html.phase-gameplay #ui .hud-header {
+  top: clamp(10px, 1.8vh, 22px);
+  left: clamp(168px, 15vw, 244px);
+  right: clamp(52px, 4.6vw, 76px);
+  display: grid;
+  grid-template-columns: minmax(260px, auto) minmax(0, 1fr);
+  align-items: start;
+  justify-content: stretch;
+  gap: clamp(7px, .8vw, 13px);
+  padding: 0;
+}
+
+html.phase-gameplay #ui .hud-header__center {
+  justify-self: start;
+  max-width: 100%;
+}
+
+html.phase-gameplay #ui .hud-header__right {
+  justify-self: end;
+  justify-content: flex-end;
+  max-width: 100%;
+}
+
+html.phase-gameplay #ui :is(.weapon-status-panel, .ship-status-panel, .vitals-panel--topbar, .class-ability-panel) {
+  box-sizing: border-box;
+  min-height: 38px;
+}
+
+html.phase-gameplay #ui .level-indicator {
+  top: clamp(10px, 1.8vh, 22px);
+  left: clamp(10px, 1.3vw, 22px);
+  width: clamp(120px, 11vw, 164px);
+  box-sizing: border-box;
+}
+
+html.phase-gameplay #ui .pickup-counter-panel {
+  top: clamp(106px, 14vh, 138px);
+  left: clamp(10px, 1.3vw, 22px);
+  width: clamp(120px, 11vw, 164px);
+  box-sizing: border-box;
+}
+
+html.phase-gameplay #ui .desktop-compass {
+  top: auto;
+  bottom: clamp(12px, 2vh, 24px);
+  left: clamp(10px, 1.3vw, 22px);
+  width: clamp(150px, 14vw, 210px);
+  max-height: min(42vh, 330px);
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+#hud-blueprint-canvas {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: min(22vh, 180px);
+  aspect-ratio: 5 / 3;
+}
+
+html.phase-gameplay .hud-notification-stack,
+html.phase-gameplay .hud-mission-stack {
+  top: clamp(82px, 11.5vh, 112px);
+  right: clamp(10px, 1.3vw, 22px);
+  width: clamp(280px, 31vw, 460px);
+  max-width: calc(100vw - 210px);
+  box-sizing: border-box;
+}
+
+html.phase-gameplay .hud-mission-stack.is-below-notifications {
+  top: clamp(224px, 31vh, 284px);
+}
+
+html.phase-gameplay .hud-mission-stack > * {
+  box-sizing: border-box;
+  margin: 0;
+  min-height: 0;
+}
+
+html.phase-gameplay .hud-mission-stack :is(.prompt-text, .mission-progress-hud__text, .objective-tracker__label, .objective-tracker__step) {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+html.phase-gameplay .objective-tracker {
+  gap: clamp(5px, .7vh, 9px);
+}
+
+html.phase-gameplay .objective-tracker__item {
+  padding: clamp(7px, .9vh, 11px) clamp(10px, 1vw, 16px);
+}
+
+html.phase-gameplay #loop-step-hud {
+  bottom: clamp(14px, 2.3vh, 28px);
+  max-width: min(62vw, 760px);
+  box-sizing: border-box;
+}
+
+html.phase-gameplay #game-viewport:has(#boss-status-panel:not(.hidden)) #loop-step-hud {
+  bottom: clamp(96px, 13vh, 126px);
+}
+
+html.phase-gameplay #tactical-telemeter-box {
+  right: clamp(10px, 1.3vw, 22px);
+  bottom: clamp(12px, 2vh, 24px);
+  width: clamp(250px, 23vw, 340px);
+  box-sizing: border-box;
+}
+
+@media (max-width: 1100px), (max-height: 700px) {
+  html.phase-gameplay #ui .hud-header {
+    left: clamp(128px, 13vw, 170px);
+    right: clamp(44px, 4vw, 58px);
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+  html.phase-gameplay #ui .level-indicator,
+  html.phase-gameplay #ui .pickup-counter-panel { width: clamp(102px, 11vw, 132px); }
+  html.phase-gameplay #ui .pickup-counter-panel { top: clamp(86px, 13vh, 108px); }
+  html.phase-gameplay #ui .desktop-compass { width: clamp(132px, 15vw, 172px); }
+  html.phase-gameplay .hud-notification-stack,
+  html.phase-gameplay .hud-mission-stack { width: clamp(250px, 34vw, 370px); }
+  html.phase-gameplay #ui .hud-header__right { gap: 4px; }
+  html.phase-gameplay #ui .class-ability-panel { max-width: 92px; }
+}
+
+/* All HUD cosmetics now inherit from #game-viewport, including prompts and
+   trackers that intentionally live outside #ui. Inline legacy colors are
+   overridden so an equipped theme is a complete visor skin. */
+#game-viewport[data-hud-theme] :is(
+  .hud-mission-stack > *, .hud-notification-stack > *, .boss-status-panel,
+  .tactical-telemeter-box, .hazard-status-panel
+) {
+  border-color: var(--hud-border) !important;
+  background-color: var(--hud-panel) !important;
+  color: var(--hud-secondary) !important;
+  box-shadow: 0 0 16px var(--hud-glow), inset 0 0 7px color-mix(in srgb, var(--hud-primary) 12%, transparent) !important;
+}
+
+#game-viewport[data-hud-theme] :is(
+  .heart--full, .pickup-counter-panel__icon, .desktop-compass__header,
+  .desktop-compass__hint, .mission-progress-hud__icon, .objective-tracker__label,
+  .objective-tracker__icon, .telemeter-status-icon, .biome-hud-prompt__icon
+) {
+  color: var(--hud-primary) !important;
+}
+
+#game-viewport[data-hud-theme] #scan-bar {
+  background: var(--hud-primary) !important;
+  box-shadow: 0 0 7px var(--hud-glow) !important;
+}
+
+#game-viewport[data-hud-theme] :is(.desktop-compass__arrow, .desktop-compass__radar-arrow)::before {
+  border-bottom-color: var(--hud-primary) !important;
+  filter: drop-shadow(0 0 5px var(--hud-glow)) !important;
+}
+
+#game-viewport[data-hud-shape="crt"] :is(.hud-action-prompt, .mission-progress-hud, .objective-tracker__item, .desktop-compass) { border-radius: 0 !important; }
+#game-viewport[data-hud-shape="radar"] :is(.hud-action-prompt, .mission-progress-hud, .objective-tracker__item, .desktop-compass) { border-radius: 16px !important; }
+#game-viewport[data-hud-shape="frost"] :is(.hud-action-prompt, .mission-progress-hud, .objective-tracker__item) { clip-path: polygon(8px 0,100% 0,100% calc(100% - 8px),calc(100% - 8px) 100%,0 100%,0 8px); }
+#game-viewport[data-hud-shape="bone"] :is(.hud-action-prompt, .mission-progress-hud, .objective-tracker__item) { border-style: dashed !important; }
+#game-viewport[data-hud-shape="chitin"] :is(.hud-action-prompt, .mission-progress-hud, .objective-tracker__item, .desktop-compass) { border-radius: 18px 5px !important; }
+#game-viewport[data-hud-shape="corporate"] :is(.hud-action-prompt, .mission-progress-hud, .objective-tracker__item, .desktop-compass) { border-radius: 2px !important; box-shadow: none !important; }
+#game-viewport[data-hud-shape="marshal"] :is(.hud-action-prompt, .mission-progress-hud, .objective-tracker__item, .desktop-compass) { outline: 1px solid color-mix(in srgb, var(--hud-primary) 42%, transparent); outline-offset: 2px; }
+
+/* Equipped HUD preview lives beside the Armory selector and rerenders as soon
+   as a theme is chosen. It uses the same variables and shape IDs as gameplay. */
+.armory-hud-theme-preview {
+  display: grid;
+  grid-template-columns: 30px minmax(0, 1fr);
+  align-items: center;
+  gap: 7px;
+  min-height: 34px;
+  padding: 3px 6px;
+  overflow: hidden;
+  color: var(--hud-secondary, #d8e6ed);
+  background: var(--hud-panel, rgba(4, 10, 16, .9));
+  border: 1px solid var(--hud-border, rgba(148, 163, 184, .35));
+  border-radius: 5px;
+  box-shadow: inset 0 0 12px var(--hud-glow, transparent);
+  font-family: 'Space Mono', monospace;
+}
+
+.armory-hud-theme-preview__copy { display: grid; min-width: 0; }
+.armory-hud-theme-preview__copy b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: clamp(8px, .62vw, 11px); text-transform: uppercase; }
+.armory-hud-theme-preview__copy small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--hud-primary, #8ca0aa); font-size: 7px; letter-spacing: .05em; }
+.armory-hud-theme-preview__map { display: grid; place-items: center; width: 30px; height: 24px; color: var(--hud-primary, #8ca0aa); border: 1px solid currentColor; }
+.armory-hud-theme-preview[data-hud-shape="crt"] { border-radius: 0; }
+.armory-hud-theme-preview[data-hud-shape="radar"] .armory-hud-theme-preview__map { border-radius: 50%; }
+.armory-hud-theme-preview[data-hud-shape="frost"] { clip-path: polygon(8px 0,100% 0,100% calc(100% - 8px),calc(100% - 8px) 100%,0 100%,0 8px); }
+.armory-hud-theme-preview[data-hud-shape="bone"] { border-style: dashed; }
+.armory-hud-theme-preview[data-hud-shape="chitin"] { border-radius: 18px 5px; }
+.armory-hud-theme-preview[data-hud-shape="corporate"] { border-radius: 1px; box-shadow: none; }
+.armory-hud-theme-preview[data-hud-shape="heart"] .armory-hud-theme-preview__map { border: 0; clip-path: polygon(50% 95%,5% 52%,7% 25%,25% 8%,50% 28%,75% 8%,93% 25%,95% 52%); background: var(--hud-primary); color: #16051a; }
+.armory-hud-theme-preview[data-hud-shape="marshal"] { outline: 1px solid var(--hud-border); outline-offset: -4px; }

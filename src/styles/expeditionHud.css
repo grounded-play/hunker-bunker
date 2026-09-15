@@ -951,3 +951,83 @@
   .tactical-map-sidebar { gap: 8px; }
   .tactical-map-legend-item { margin-bottom: 2px; }
 }
+
+/* September 15: dynamic HUD rails. The earlier pass assigned sensible card
+   skins but still let wide center/right groups overflow one another, and its
+   fixed 68px mission origin ignored active radio and hazard cards. These are
+   the canonical placement rules for the expedition HUD. */
+#ui .hud-header,
+#game-container.fullscreen-mode ~ #ui .hud-header {
+  left: clamp(168px, 15vw, 208px) !important;
+  right: 68px !important;
+  justify-content: space-between !important;
+  overflow: visible !important;
+}
+
+#ui .hud-header__center {
+  flex: 0 0 auto !important;
+  justify-content: flex-start !important;
+}
+
+#ui .hud-header__right {
+  position: relative !important;
+  flex: 0 0 auto !important;
+  justify-content: flex-end !important;
+}
+
+#ui #hazard-status-panel:not(.hidden) {
+  position: absolute !important;
+  top: 46px !important;
+  right: 0 !important;
+  width: clamp(250px, 24vw, 340px) !important;
+  min-width: 0 !important;
+}
+
+.hud-notification-stack,
+.hud-mission-stack {
+  top: 74px !important;
+  right: 18px !important;
+  width: min(340px, 32vw) !important;
+}
+
+.hud-mission-stack.is-below-notifications {
+  top: 202px !important;
+}
+
+#game-viewport:has(#hazard-status-panel:not(.hidden)) .hud-notification-stack,
+#game-viewport:has(#hazard-status-panel:not(.hidden)) .hud-mission-stack {
+  top: 112px !important;
+}
+
+#game-viewport:has(#hazard-status-panel:not(.hidden)) .hud-mission-stack.is-below-notifications {
+  top: 236px !important;
+}
+
+#game-viewport:has(#boss-status-panel:not(.hidden)) .loop-step-hud {
+  bottom: 102px !important;
+}
+
+.hud-mission-stack > * {
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+}
+
+@media (max-width: 1180px) {
+  #ui .hud-header,
+  #game-container.fullscreen-mode ~ #ui .hud-header { left: 154px !important; }
+  #ui .weapon-status-panel,
+  #ui .ship-status-panel { padding-inline: 8px !important; gap: 6px !important; }
+  #ui .weapon-status-panel__reload-track { width: 38px !important; }
+  #ui .ship-status-panel__track { width: 48px !important; }
+}
+
+@media (max-width: 900px) {
+  #ui .hud-header,
+  #game-container.fullscreen-mode ~ #ui .hud-header { left: 124px !important; right: 54px !important; }
+  #ui .weapon-status-panel__title,
+  #ui .ship-status-panel__title,
+  #ui .vitals-panel__title { display: none !important; }
+  .hud-notification-stack,
+  .hud-mission-stack { width: min(300px, 38vw) !important; }
+}

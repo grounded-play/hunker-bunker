@@ -13,6 +13,7 @@ import {
 } from './weaponSheens.js';
 import { ITEM_TYPE, getCatalogIdsByType, getCatalogEntry } from './itemOwnership.js';
 import { getVoiceBank } from './data/voiceBanks.js';
+import { hudThemeInlineStyle, resolveHudTheme } from './hudThemes.js';
 import { unlockAllPolishes } from './operatorPolishes.js';
 import {
     ARCHETYPE_SKINS,
@@ -508,6 +509,8 @@ export function createArmoryUi({
         const chassisSkinId = loadoutManager.getEquippedChassisSkinId?.();
         const selectedWeapon = pickerFields().weapon.currentName();
         const dailyOps = getDailyOpsStatus?.() ?? { label: 'READY', disabled: false };
+        const hudTheme = resolveHudTheme(loadoutManager.state.hudThemeId);
+        const hudThemeStyle = hudThemeInlineStyle(loadoutManager.state.hudThemeId);
         const qaAudit = ownership.auditEquippableCatalog?.() ?? { total: 0, available: 0, complete: false };
 
         const hasActiveOverclocks = Boolean(
@@ -690,13 +693,19 @@ export function createArmoryUi({
                                     ${slotHtml('decal')}
                                 </div>
                             </div>
-                            <div class="bench-field" style="margin-top: 6px;">
-                                <label data-i18n="ui.armory.f_hud">TACTICAL HUD THEME</label>
-                                ${slotHtml('hud')}
-                            </div>
-                            <div class="bench-field" style="margin-top: 6px;">
-                                <label data-i18n="ui.armory.f_voicebank">ALT RADIO VOICE BANK</label>
-                                ${slotHtml('voicebank')}
+                            <div class="bench-row-two-col armory-systems-row">
+                                <div class="bench-field">
+                                    <label data-i18n="ui.armory.f_hud">TACTICAL HUD THEME</label>
+                                    ${slotHtml('hud')}
+                                    <div class="armory-hud-theme-preview" data-hud-theme="${hudTheme?.id ?? 'default'}" data-hud-shape="${hudTheme?.shape ?? 'default'}" style="${hudThemeStyle}" aria-label="Equipped HUD preview">
+                                        <span class="armory-hud-theme-preview__map" aria-hidden="true">⌁</span>
+                                        <span class="armory-hud-theme-preview__copy"><b>${hudTheme?.name ?? 'Default Monochrome'}</b><small>♥♥♥ · O₂ 96% · LIVE PREVIEW</small></span>
+                                    </div>
+                                </div>
+                                <div class="bench-field">
+                                    <label data-i18n="ui.armory.f_voicebank">ALT RADIO VOICE BANK</label>
+                                    ${slotHtml('voicebank')}
+                                </div>
                             </div>
                         </section>
                     </div>
