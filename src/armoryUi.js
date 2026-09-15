@@ -110,7 +110,8 @@ export function createArmoryUi({
     onDailyOps,
     getDailyOpsStatus,
     onClassChange,
-    ownership
+    ownership,
+    qaToolsEnabled = false
 }) {
     if (!container) throw new Error('Armory UI requires a container DOM element');
     if (!ownership) throw new Error('Armory UI requires an ownership store');
@@ -507,6 +508,7 @@ export function createArmoryUi({
         const chassisSkinId = loadoutManager.getEquippedChassisSkinId?.();
         const selectedWeapon = pickerFields().weapon.currentName();
         const dailyOps = getDailyOpsStatus?.() ?? { label: 'READY', disabled: false };
+        const qaAudit = ownership.auditEquippableCatalog?.() ?? { total: 0, available: 0, complete: false };
 
         const hasActiveOverclocks = Boolean(
             (modifiers.scrapMagnetRadiusBonus > 0) ||
@@ -542,9 +544,9 @@ export function createArmoryUi({
                             <button type="button" class="class-tab ${cls === 'tank' ? 'active' : ''}" data-class="tank" data-i18n="ui.armory.tab_tank">▰ TANK</button>
                             <button type="button" class="class-tab ${cls === 'engineer' ? 'active' : ''}" data-class="engineer" data-i18n="ui.armory.tab_engineer">◆ ENGINEER</button>
                         </div>
-                        <button type="button" class="armory-debug-skins-btn ${ownership.isUnlockAll() ? 'active' : ''}" id="armory-debug-unlock-skins-btn" title="Toggle debug unlock for every cosmetic: weapon and chassis skins, charms, decals, rig modules, tracers, HUD themes and alt-radio voice banks">
-                            ${ownership.isUnlockAll() ? '✓ ALL COSMETICS UNLOCKED' : '[DEBUG] UNLOCK ALL COSMETICS'}
-                        </button>
+                        ${qaToolsEnabled ? `<button type="button" class="armory-debug-skins-btn ${ownership.isUnlockAll() ? 'active' : ''}" id="armory-debug-unlock-skins-btn" title="Synthetic QA override for every catalogued equippable; does not create Steam inventory">
+                            ${ownership.isUnlockAll() ? `✓ QA UNLOCK ${qaAudit.available}/${qaAudit.total}` : `[QA] UNLOCK ALL ${qaAudit.available}/${qaAudit.total}`}
+                        </button><button type="button" class="armory-debug-skins-btn" id="armory-debug-grant-kit-btn" title="Grant non-tradable synthetic marketplace items and test keys; never initiates a purchase">[QA] GRANT TEST KIT</button>` : ''}
                         <span class="status-cycle-hint" data-i18n="ui.armory.cycle_hint">[Q / E CYCLE]</span>
                         <button type="button" class="calibrate-btn open-settings-btn armory-settings-btn" id="armory-settings-btn" title="Open Settings" aria-label="Open Settings" data-i18n-title="ui.armory.aria_settings" data-i18n-aria-label="ui.armory.aria_settings">⚙</button>
                     </div>
@@ -865,6 +867,7 @@ export function createArmoryUi({
         });
 
         container.querySelector?.('#armory-debug-unlock-skins-btn')?.addEventListener?.('click', () => {
+            if (!qaToolsEnabled || !ownership.isLocalInventoryAllowed?.()) return;
             const next = !ownership.isUnlockAll();
             ownership.setUnlockAll(next);
             if (next) {
@@ -873,6 +876,17 @@ export function createArmoryUi({
             }
             playSound('ui_click_confirm1');
             render();
+        });
+
+        container.querySelector?.('#armory-debug-grant-kit-btn')?.addEventListener?.('click', () => {
+            if (!qaToolsEnabled || !ownership.isLocalInventoryAllowed?.()) return;
+            const items = ownership.grantDevSet?.('marketplace');
+            const keys = ownership.grantDevSet?.('keys', 5);
+            const button = container.querySelector?.('#armory-debug-grant-kit-btn');
+            if (button) button.textContent = items?.ok && keys?.ok
+                ? `✓ SYNTHETIC ${items.granted.length} + KEYS`
+                : 'GRANT REJECTED';
+            playSound('ui_click_confirm1');
         });
 
         // Steam Deck / Keyboard controller shortcuts for Armory screen

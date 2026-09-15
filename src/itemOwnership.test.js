@@ -79,6 +79,34 @@ describe('ownership store', () => {
         expect(store.getQuantity(4100)).toBe(3);
     });
 
+    it('enables synthetic grants only after trusted QA capability is applied', () => {
+        const gated = createOwnershipStore({ storage, allowLocalInventory: false });
+        expect(gated.grantDevSet('keys', 5)).toMatchObject({ ok: false, reason: 'qa_tools_disabled' });
+        expect(gated.setUnlockAll(true)).toBe(false);
+        gated.setLocalInventoryAllowed(true);
+        const receipt = gated.grantDevSet('keys', 500);
+        expect(receipt.ok).toBe(true);
+        expect(receipt.granted.every((item) => item.source === 'qa_synthetic' && item.tradable === false)).toBe(true);
+        expect(Math.max(...receipt.granted.map((item) => item.quantity))).toBe(99);
+    });
+
+    it('audits unlock-all against the catalog-derived equippable set', () => {
+        expect(store.auditEquippableCatalog().complete).toBe(false);
+        store.setUnlockAll(true);
+        const audit = store.auditEquippableCatalog();
+        expect(audit.complete).toBe(true);
+        expect(audit.available).toBe(audit.total);
+        expect(audit.total).toBeGreaterThan(70);
+    });
+
+    it('grants a bounded, non-tradable marketplace test set with a receipt', () => {
+        const result = store.grantDevSet('marketplace');
+        expect(result.ok).toBe(true);
+        expect(result.receiptId).toMatch(/^qa-/);
+        expect(result.granted.length).toBeGreaterThan(50);
+        expect(result.granted.every((item) => item.source === 'qa_synthetic' && item.tradable === false)).toBe(true);
+    });
+
     it('replaces, not merges, on a later Steam inventory refresh', () => {
         store.setSteamInventory([{ itemdefid: 4100, quantity: 1 }]);
         store.setSteamInventory([{ itemdefid: 4101, quantity: 1 }]);

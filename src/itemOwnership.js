@@ -20,6 +20,7 @@ import { ACHIEVEMENT_COSMETIC_REWARDS, ACHIEVEMENT_DEFS } from './achievements.j
 
 export const DEV_GRANTS_STORAGE_KEY = 'hb_dev_item_grants_v1';
 export const UNLOCK_ALL_STORAGE_KEY = 'hb_dev_unlock_all_cosmetics_v1';
+export const QA_GRANT_RECEIPTS_STORAGE_KEY = 'hb_qa_inventory_receipts_v1';
 
 export const ITEM_TYPE = Object.freeze({
     SKIN: 'skin',
@@ -37,6 +38,11 @@ export const ITEM_TYPE = Object.freeze({
     KEY: 'key',
     KEY_BUNDLE: 'key_bundle'
 });
+
+export const EQUIPPABLE_ITEM_TYPES = Object.freeze([
+    ITEM_TYPE.SKIN, ITEM_TYPE.CHASSIS, ITEM_TYPE.DECAL, ITEM_TYPE.CHARM,
+    ITEM_TYPE.MOD, ITEM_TYPE.HUD, ITEM_TYPE.VFX, ITEM_TYPE.AUDIO
+]);
 
 // Equip category per itemdefid. The generated Steam catalog has no notion of
 // this — it is a storefront schema — so the classification lives here and is
@@ -174,6 +180,7 @@ function readJson(storage, key) {
  *                 context can pass null.
  */
 export function createOwnershipStore({ storage = null, allowLocalInventory = true } = {}) {
+    let localInventoryAllowed = Boolean(allowLocalInventory);
     // Steam-side entitlements. Deliberately NOT persisted: writing them to
     // local storage would make entitlement forgeable with a devtools one-liner.
     // They are re-fetched from the inventory service on every boot.
@@ -190,8 +197,10 @@ export function createOwnershipStore({ storage = null, allowLocalInventory = tru
     let externalOwnership = new Map();
     const subscribers = new Set();
 
-    const persistedGrants = readJson(storage, DEV_GRANTS_STORAGE_KEY);
-    if (allowLocalInventory && persistedGrants && typeof persistedGrants === 'object') {
+    function hydrateLocalInventory() {
+        if (!localInventoryAllowed) return;
+        const persistedGrants = readJson(storage, DEV_GRANTS_STORAGE_KEY);
+        if (persistedGrants && typeof persistedGrants === 'object') {
         for (const [key, qty] of Object.entries(persistedGrants)) {
             const id = toId(key);
             const amount = Number(qty);
@@ -201,8 +210,10 @@ export function createOwnershipStore({ storage = null, allowLocalInventory = tru
             if (!Number.isFinite(amount) || amount <= 0) continue;
             devQuantities.set(id, amount);
         }
+        }
+        unlockAll = readJson(storage, UNLOCK_ALL_STORAGE_KEY) === true;
     }
-    unlockAll = allowLocalInventory && readJson(storage, UNLOCK_ALL_STORAGE_KEY) === true;
+    hydrateLocalInventory();
 
     function persistDevGrants() {
         if (!storage) return;
@@ -241,7 +252,7 @@ export function createOwnershipStore({ storage = null, allowLocalInventory = tru
         },
 
         grantDev(itemdefid, quantity = 1) {
-            if (!allowLocalInventory) return false;
+            if (!localInventoryAllowed) return false;
             const id = toId(itemdefid);
             const amount = Number(quantity);
             if (id === null || !MERGED_CATALOG.has(id)) return false;
@@ -253,7 +264,7 @@ export function createOwnershipStore({ storage = null, allowLocalInventory = tru
         },
 
         setDevInventory(inventory = []) {
-            if (!allowLocalInventory) return;
+            if (!localInventoryAllowed) return false;
             devQuantities = new Map();
             for (const item of Array.isArray(inventory) ? inventory : []) {
                 const id = toId(item?.itemdefid);
@@ -263,6 +274,57 @@ export function createOwnershipStore({ storage = null, allowLocalInventory = tru
             }
             persistDevGrants();
             notify();
+            return true;
+        },
+
+        setLocalInventoryAllowed(enabled) {
+            const next = Boolean(enabled);
+            if (next === localInventoryAllowed) return localInventoryAllowed;
+            localInventoryAllowed = next;
+            if (next) hydrateLocalInventory();
+            else {
+                devQuantities = new Map();
+                unlockAll = false;
+            }
+            notify();
+            return localInventoryAllowed;
+        },
+
+        isLocalInventoryAllowed() {
+            return localInventoryAllowed;
+        },
+
+        grantDevSet(setName = 'all_equippables', quantity = 1) {
+            if (!localInventoryAllowed) return { ok: false, reason: 'qa_tools_disabled', granted: [] };
+            const amount = Math.max(1, Math.min(99, Math.floor(Number(quantity) || 1)));
+            const setIds = setName === 'keys'
+                ? [...getCatalogIdsByType(ITEM_TYPE.KEY), ...getCatalogIdsByType(ITEM_TYPE.KEY_BUNDLE)]
+                : setName === 'marketplace'
+                    ? getCatalogIds().filter((id) => getCatalogEntry(id)?.source === 'steam')
+                    : EQUIPPABLE_ITEM_TYPES.flatMap((type) => getCatalogIdsByType(type));
+            const granted = [];
+            for (const id of new Set(setIds)) {
+                const qty = setName === 'keys' ? amount : 1;
+                devQuantities.set(id, Math.min(99, (devQuantities.get(id) ?? 0) + qty));
+                granted.push({ itemdefid: id, quantity: qty, source: 'qa_synthetic', tradable: false });
+            }
+            persistDevGrants();
+            const receipt = {
+                id: `qa-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+                at: Date.now(), setName, granted
+            };
+            if (storage) {
+                const receipts = readJson(storage, QA_GRANT_RECEIPTS_STORAGE_KEY);
+                try { storage.setItem(QA_GRANT_RECEIPTS_STORAGE_KEY, JSON.stringify([...(Array.isArray(receipts) ? receipts : []), receipt].slice(-25))); } catch { /* best effort */ }
+            }
+            notify();
+            return { ok: true, receiptId: receipt.id, granted };
+        },
+
+        auditEquippableCatalog() {
+            const ids = [...new Set(EQUIPPABLE_ITEM_TYPES.flatMap((type) => getCatalogIdsByType(type)))];
+            const failedIds = ids.filter((id) => !store.canEquip(id));
+            return { total: ids.length, available: ids.length - failedIds.length, failedIds, complete: failedIds.length === 0 };
         },
 
         setExternalOwnership(sourceKey, ids = []) {
@@ -306,7 +368,7 @@ export function createOwnershipStore({ storage = null, allowLocalInventory = tru
         },
 
         setUnlockAll(enabled) {
-            if (!allowLocalInventory) return;
+            if (!localInventoryAllowed) return false;
             unlockAll = Boolean(enabled);
             if (storage) {
                 try {
@@ -317,6 +379,7 @@ export function createOwnershipStore({ storage = null, allowLocalInventory = tru
                 }
             }
             notify();
+            return true;
         },
 
         subscribe(fn) {
@@ -338,6 +401,7 @@ export function createOwnershipStore({ storage = null, allowLocalInventory = tru
                 try {
                     storage.removeItem(DEV_GRANTS_STORAGE_KEY);
                     storage.removeItem(UNLOCK_ALL_STORAGE_KEY);
+                    storage.removeItem(QA_GRANT_RECEIPTS_STORAGE_KEY);
                 } catch {
                     // best-effort
                 }

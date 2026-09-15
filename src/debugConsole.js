@@ -1414,17 +1414,37 @@ export class DebugLogger {
                 // different account. Requires "confirm" since it's a real
                 // action against a real Steam profile, not local run state
                 // like the other cheats here.
-                if (parts[1]?.toLowerCase() !== 'confirm') {
-                    this.warn('QA', 'This resets ALL Steam stats and achievements for the currently logged-in account. Type: resetachievements confirm');
+                {
+                const requestedScope = parts[1]?.toLowerCase() === 'confirm' ? 'both' : parts[1]?.toLowerCase();
+                const confirmed = parts[1]?.toLowerCase() === 'confirm' || parts[2]?.toLowerCase() === 'confirm';
+                if (!confirmed || !['local', 'steam', 'both'].includes(requestedScope)) {
+                    this.warn('QA', 'This resets ALL Steam stats and achievements for the currently logged-in account. Type: resetachievements local|steam|both confirm (legacy: resetachievements confirm)');
+                    break;
+                }
+                const resetLocal = (generation = null) => {
+                    const state = win?.achievementEngine?.resetLocal?.({ generation });
+                    if (!state) return false;
+                    win?.steamAchievementSync?.markReset?.(state.resetGeneration);
+                    win?.dispatchEvent?.(new CustomEvent('achievement-stats-changed'));
+                    return true;
+                };
+                if (requestedScope === 'local') {
+                    if (resetLocal()) this.info('QA', 'Local test achievement progress reset; Steam was not changed.');
+                    else this.error('QA', 'Local achievement engine unavailable.');
                     break;
                 }
                 if (!win?.electronAPI?.resetAchievements) {
-                    this.warn('QA', 'Not available — no desktop Steam bridge in this build.');
+                    this.warn('QA', 'Steam reset unavailable — local state was not changed. Use resetachievements local confirm for an offline-only reset.');
                     break;
                 }
-                win.electronAPI.resetAchievements().then((result) => {
+                const requestedGeneration = (win?.achievementEngine?.getState?.().resetGeneration ?? 0) + 1;
+                win.electronAPI.resetAchievements(requestedGeneration).then((result) => {
                     if (result?.ok) {
-                        this.info('QA', 'Steam stats and achievements reset for the current account.');
+                        if (requestedScope === 'both') resetLocal(result.generation);
+                        else win?.steamAchievementSync?.markReset?.(result.generation);
+                        this.info('QA', requestedScope === 'both'
+                            ? 'Local and Steam stats/achievements reset for the current tester account; achievements can be re-earned.'
+                            : 'Steam stats and achievements reset for the current account; local progress was preserved.');
                     } else if (result?.reason === 'qa_tools_disabled') {
                         this.warn('QA', 'Disabled in this build — launch with HB_QA_TOOLS_ENABLED=1 to enable.');
                     } else if (result?.reason === 'steam_not_active') {
@@ -1435,6 +1455,7 @@ export class DebugLogger {
                 }).catch((err) => {
                     this.error('QA', `Reset failed: ${err?.message ?? err}`);
                 });
+                }
                 break;
 
             default:

@@ -112,6 +112,15 @@ Commit: `d744c5c`.
 - Added the bounded Music / Songs / VO & Takes / Effects jukebox with filter, source/cue metadata, missing-source status, one-sample ownership, stop and gain. It catalogs all 38 soundtrack entries and both alternate takes for every voice slot, and auditions raw buffers without consuming dialogue history or firing story/achievement events.
 - Verification: 25 focused gallery/frame-profile assertions passed, including multi-row placement, specimen reset, complete song/take discovery and live-run isolation; production Vite build and 50-asset media audit passed.
 
+### Pass 17 — DP-43–46 authorized beta inventory and repeatable achievement QA (September 14)
+
+- Fixed the packaged-beta unlock no-op: Electron ownership starts denied and can only enable synthetic inventory after the trusted main process confirms a named beta or explicit QA override. Public/default builds omit the controls and still reject direct store calls.
+- Unlock All audits every catalog-derived equippable category and displays its available/total result. The Armory test kit grants bounded, non-tradable synthetic marketplace items plus keys, records bounded local receipts, survives Steam inventory refresh and never claims those objects are Steam-owned.
+- Named beta builds now reject purchase-init/finalize before reaching a charge endpoint and direct testers to the no-charge grant kit. Browser sandbox acquisition is labeled as a synthetic grant rather than a verified purchase.
+- Steam achievement activation changed from fire-and-forget IPC to request/ack. A durable account-scoped queue retries unacknowledged keys, rejects account crossover, validates all live API keys against a shared Electron catalog and excludes coming-soon definitions.
+- Achievement reset now supports explicit local / Steam / both scopes. Local state resets in memory and storage, while account-scoped reset generations discard stale retries and allow the same achievement to be earned again without duplicating reward grants. Offline Steam reset is reported as unavailable rather than success.
+- Verification: 80 focused ownership/Armory/achievement/sync/auth assertions passed (93 including adjacent console coverage); Electron syntax checks, ESLint, diff checks, production Vite build and media audit passed. A real Steam account reset was intentionally not invoked by automated verification.
+
 ## Evidence register
 
 References use **entry `id`**, not zero-based array position, followed by elapsed milliseconds. JSON messages embed diagnostic objects; expand the referenced entry to inspect its details. SHA-256 and compact metrics can be reproduced with:

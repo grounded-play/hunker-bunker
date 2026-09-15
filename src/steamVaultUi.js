@@ -824,13 +824,22 @@ export async function purchaseKeys(sku) {
         const statusEl = document.getElementById('vault-store-open-status');
         if (statusEl) {
             statusEl.classList.remove('hidden');
-            statusEl.textContent = `Sandbox purchase verified: +${keyCount} Relic Key(s) added!`;
+            statusEl.textContent = `Synthetic QA grant: +${keyCount} non-tradable Relic Key(s). No purchase was initiated.`;
         }
         showSteamDropToast(4001, keyCount);
         return;
     }
 
     const result = await window.electronAPI.purchaseSteamKeys(sku).catch((err) => ({ ok: false, message: err?.message }));
+
+    if (result?.reason === 'qa_test_mode_no_charge') {
+        const statusEl = document.getElementById('vault-store-open-status');
+        if (statusEl) {
+            statusEl.classList.remove('hidden');
+            statusEl.textContent = 'Purchases are disabled in this beta. Use Armory QA GRANT TEST KIT for non-tradable test items.';
+        }
+        return;
+    }
 
     if (result?.ok && result.mode === 'mock') {
         await loadVaultData();

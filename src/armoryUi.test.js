@@ -322,7 +322,8 @@ describe('createArmoryUi ownership gating', () => {
             onEmbark: vi.fn(),
             onBack: vi.fn(),
             onOpenVault: vi.fn(),
-            ownership
+            ownership,
+            qaToolsEnabled: true
         });
         // The factory wires listeners; setClass is what paints the bench.
         ui.setClass('SCOUT');
@@ -447,6 +448,28 @@ describe('createArmoryUi ownership gating', () => {
         btn.click();
         expect(ownership.isUnlockAll()).toBe(true);
         expect(container.innerHTML).not.toContain('disabled');
+    });
+
+    it('grants a synthetic marketplace kit and test keys without a purchase path', () => {
+        mount();
+        const button = container.querySelector('#armory-debug-grant-kit-btn');
+        expect(button).not.toBeNull();
+        button.click();
+        expect(ownership.getQuantity(4100)).toBeGreaterThan(0);
+        expect(ownership.getQuantity(4001)).toBeGreaterThanOrEqual(5);
+    });
+
+    it('does not render QA controls without the trusted capability', () => {
+        const ui = createArmoryUi({
+            container,
+            loadoutManager,
+            armoryScene: fakeScene,
+            ownership,
+            qaToolsEnabled: false
+        });
+        ui.setClass('SCOUT');
+        expect(container.querySelector('#armory-debug-unlock-skins-btn')).toBeNull();
+        expect(container.querySelector('#armory-debug-grant-kit-btn')).toBeNull();
     });
 
     it('previews the selected voice bank with its signature line', () => {

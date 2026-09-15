@@ -46,6 +46,7 @@ import {
     setContrast
 } from './src/accessibilitySettings.js';
 import { ACHIEVEMENT_DEFS, AchievementEngine, getAchievementProgress, getSecretGateState, hasAnyUnlock, saveAchievements } from './src/achievements.js';
+import { SteamAchievementSync } from './src/steamAchievementSync.js';
 import { STEAM_RUN_SCORE_FINALIZED_EVENT, buildSteamRunScorePayload, dispatchSteamRunScoreFinalized } from './src/steam/steamEvents.js';
 import { syncSteamStats } from './src/steamStats.js';
 import { loadRgbSave, saveRgbSave, markUnlocked as markRgbUnlocked, shouldUnlockRgb, unlockChapter as unlockRgbChapter, isChapterUnlocked as isRgbChapterUnlocked } from './src/minigames/rgb/save.js';
@@ -2702,6 +2703,21 @@ window.profile = profile;
 
 const achievementEngine = new AchievementEngine();
 window.achievementEngine = achievementEngine;
+const steamAchievementSync = window.electronAPI ? new SteamAchievementSync({
+    storage: localStorage,
+    bridge: window.electronAPI
+}) : null;
+window.steamAchievementSync = steamAchievementSync;
+
+async function retrySteamAchievementSync() {
+    if (!steamAchievementSync?.getStatus().accountId) return;
+    const unlockedKeys = Object.keys(achievementEngine.getState().unlocked ?? {});
+    await steamAchievementSync.reconcile(unlockedKeys);
+}
+if (steamAchievementSync) {
+    queueMicrotask(() => void retrySteamAchievementSync());
+    window.addEventListener('online', () => void retrySteamAchievementSync());
+}
 
 // Single app-wide ownership store (src/itemOwnership.js). Everything that asks
 // "does the player have this?" -- Armory dropdowns, Vault rendering, equip
@@ -8178,6 +8194,13 @@ function ensureArmoryInitialized() {
             // session; the decal equivalent is covered per-class already via
             // updateFromLoadout below.
             armorySceneInstance.setOperatorPolish(getSelectedPolish().color);
+            const qaToolsEnabled = window.electronAPI
+                ? Boolean(await window.electronAPI.getQaToolsEnabled?.().catch?.(() => false))
+                : Boolean(import.meta.env.DEV);
+            // Desktop local grants stay disabled until the trusted main
+            // process confirms this is a named beta/QA build. Hiding the UI
+            // alone is never treated as authorization.
+            getOwnershipStore().setLocalInventoryAllowed?.(qaToolsEnabled);
             armoryUiInstance = createArmoryUi({
                 container: hudContainer,
                 loadoutManager: loadout,
@@ -8205,7 +8228,8 @@ function ensureArmoryInitialized() {
                         window.game.playerType = cls;
                     }
                 },
-                ownership: getOwnershipStore()
+                ownership: getOwnershipStore(),
+                qaToolsEnabled
             });
         })();
     }
@@ -15519,7 +15543,9 @@ if (window.electronAPI) {
     window.addEventListener('achievement-unlocked', (event) => {
         const key = event?.detail?.key;
         if (!key) return;
-        window.electronAPI.unlockAchievement(key);
+        void steamAchievementSync?.enqueue(key).then((status) => {
+            if (!status?.ok) console.log(`[steam] achievement '${key}' pending: ${status?.reason ?? status?.failed?.[0]?.reason ?? 'not acknowledged'}`);
+        });
         showDeveloperCommentary('achievement');
         recordSteamTimelineEvent('achievement', 'Achievement Unlocked', event?.detail?.title ?? key, {
             icon: 'achievement',
