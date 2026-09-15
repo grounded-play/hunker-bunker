@@ -14368,6 +14368,34 @@ export class ThreeGame {
             if (cavePos) this.maybeSpawnSiteLoreDrop('cave', 'cave', cavePos.x, cavePos.z);
         }
 
+        if (this.foundry?.isRevealed) {
+            const fp = this.foundry.getPosition();
+            this.explorationTracker.registerLandmark('foundry', {
+                x: fp.x,
+                z: fp.z,
+                label: 'FOUNDRY SIGNAL',
+                type: 'foundry',
+                priority: 900,
+                revealOnMap: true
+            });
+        } else {
+            this.explorationTracker?.removeLandmark('foundry');
+        }
+
+        const blackBoxState = this._blackBoxState ?? blackBoxStore.load();
+        if (blackBoxState?.active) {
+            this.explorationTracker.registerLandmark('black_box', {
+                x: blackBoxState.x,
+                z: blackBoxState.z,
+                label: 'BLACK BOX SIGNAL',
+                type: 'black_box',
+                priority: 950,
+                revealOnMap: true
+            });
+        } else {
+            this.explorationTracker?.removeLandmark('black_box');
+        }
+
         for (let i = this.loreDrops.length - 1; i >= 0; i -= 1) {
             const entry = this.loreDrops[i];
             entry.t += delta;
@@ -16826,7 +16854,11 @@ export class ThreeGame {
         window.dispatchEvent(new CustomEvent('player-o2-changed', {
             detail: {
                 o2: this.playerVitals.o2,
-                bubbleActive: generatorState.isOnline
+                bubbleActive: generatorState.isOnline,
+                safe: Boolean(this._wasInBubble),
+                drainRate: Math.max(0, Number(this._currentO2DrainRate) || 0),
+                biome: this.currentBiomeKey ?? BIOME_KEYS.ACTIVE,
+                safeDirection: this._wasInBubble ? 'PRESSURIZED FIELD STABLE' : 'RETURN TO THE PRESSURIZED SHIP FIELD'
             }
         }));
     }
@@ -19194,6 +19226,7 @@ export class ThreeGame {
         if (this.godMode) {
             this.playerVitals.o2 = this.playerVitals.maxO2 ?? 100;
             this.playerVitals.o2HealthTimer = 0;
+            this._currentO2DrainRate = 0;
             this.emitO2State();
             return;
         }
@@ -19211,6 +19244,7 @@ export class ThreeGame {
         const reactorLevel = this.bank.getState().reactorCompressorLevel ?? (reactorUpgrade ? 1 : 0);
 
         if (inBubble) {
+            this._currentO2DrainRate = 0;
             let refillMult = 1.0;
             if (reactorLevel === 1) refillMult = 1.2;
             else if (reactorLevel >= 2) refillMult = 2.0;
@@ -19263,6 +19297,7 @@ export class ThreeGame {
             if (t2Unlocks.deconFilters && this.currentBiomeKey === BIOME_KEYS.BIO) {
                 drainRate *= 0.5;
             }
+            this._currentO2DrainRate = drainRate;
             this.playerVitals.o2 = Math.max(0, this.playerVitals.o2 - drainRate * delta);
 
             if (this.playerVitals.o2 <= 0) {

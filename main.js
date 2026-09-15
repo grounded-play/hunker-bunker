@@ -465,7 +465,8 @@ function hideAllGameplayPrompts() {
         'o2-generator-hud-prompt',
         'hole-hud-prompt',
         'black-box-hud-prompt',
-        'radio-transmission-prompt'
+        'radio-transmission-prompt',
+        'hazard-status-panel'
     ];
     for (const id of promptIds) {
         const el = document.getElementById(id);
@@ -507,6 +508,7 @@ function setAppPhase(phase) {
         cancelXpFeedback();
     }
     if (!isGameplay) {
+        document.body.classList.remove('player-cold-exposed', 'player-poisoned');
         window.game?.setCursorInspectState?.(null);
         if (tacticalOverlayTimer) {
             clearTimeout(tacticalOverlayTimer);
@@ -2746,12 +2748,12 @@ const HUD_THEME_PRESETS = {
     hudtheme_hive_chitin: { '--hud-primary': '#84cc16', '--hud-secondary': '#d9f99d', '--hud-glow': 'rgba(132, 204, 22, 0.4)', '--hud-scanline': '#4d7c0f', '--hud-border': 'rgba(132, 204, 22, 0.62)', '--hud-panel': 'rgba(26, 46, 5, 0.88)', '--hud-warning': '#eab308' },
     4227: { '--hud-primary': '#14b8a6', '--hud-secondary': '#ccfbf1', '--hud-glow': 'rgba(20, 184, 166, 0.35)', '--hud-scanline': '#0f766e', '--hud-border': 'rgba(20, 184, 166, 0.55)', '--hud-panel': 'rgba(15, 23, 42, 0.92)', '--hud-warning': '#f97316' }, // Horizon Corporate
     hudtheme_horizon_corporate: { '--hud-primary': '#14b8a6', '--hud-secondary': '#ccfbf1', '--hud-glow': 'rgba(20, 184, 166, 0.35)', '--hud-scanline': '#0f766e', '--hud-border': 'rgba(20, 184, 166, 0.55)', '--hud-panel': 'rgba(15, 23, 42, 0.92)', '--hud-warning': '#f97316' },
-    4234: { '--hud-primary': '#d946ef', '--hud-secondary': '#fae8ff', '--hud-glow': 'rgba(217, 70, 239, 0.45)', '--hud-scanline': '#a21caf', '--hud-border': 'rgba(217, 70, 239, 0.65)', '--hud-panel': 'rgba(38, 10, 42, 0.90)', '--hud-warning': '#f43f5e' }, // Bunker 404
-    hudtheme_bunker404: { '--hud-primary': '#d946ef', '--hud-secondary': '#fae8ff', '--hud-glow': 'rgba(217, 70, 239, 0.45)', '--hud-scanline': '#a21caf', '--hud-border': 'rgba(217, 70, 239, 0.65)', '--hud-panel': 'rgba(38, 10, 42, 0.90)', '--hud-warning': '#f43f5e' },
+    4234: { '--hud-primary': '#d946ef', '--hud-secondary': '#fae8ff', '--hud-glow': 'rgba(217, 70, 239, 0.45)', '--hud-scanline': '#a21caf', '--hud-border': 'rgba(217, 70, 239, 0.65)', '--hud-panel': 'rgba(38, 10, 42, 0.90)', '--hud-warning': '#f43f5e', '--hud-map-mask': 'heart' }, // Bunker 404
+    hudtheme_bunker404: { '--hud-primary': '#d946ef', '--hud-secondary': '#fae8ff', '--hud-glow': 'rgba(217, 70, 239, 0.45)', '--hud-scanline': '#a21caf', '--hud-border': 'rgba(217, 70, 239, 0.65)', '--hud-panel': 'rgba(38, 10, 42, 0.90)', '--hud-warning': '#f43f5e', '--hud-map-mask': 'heart' },
     4241: { '--hud-primary': '#f59e0b', '--hud-secondary': '#fef3c7', '--hud-glow': 'rgba(245, 158, 11, 0.45)', '--hud-scanline': '#b45309', '--hud-border': 'rgba(245, 158, 11, 0.70)', '--hud-panel': 'rgba(30, 24, 12, 0.90)', '--hud-warning': '#dc2626' }, // Grand Marshal
     hudtheme_grand_marshal: { '--hud-primary': '#f59e0b', '--hud-secondary': '#fef3c7', '--hud-glow': 'rgba(245, 158, 11, 0.45)', '--hud-scanline': '#b45309', '--hud-border': 'rgba(245, 158, 11, 0.70)', '--hud-panel': 'rgba(30, 24, 12, 0.90)', '--hud-warning': '#dc2626' }
 };
-const HUD_THEME_VARS = ['--hud-primary', '--hud-secondary', '--hud-glow', '--hud-scanline', '--hud-border', '--hud-panel', '--hud-warning'];
+const HUD_THEME_VARS = ['--hud-primary', '--hud-secondary', '--hud-glow', '--hud-scanline', '--hud-border', '--hud-panel', '--hud-warning', '--hud-map-mask'];
 function applyHudThemeFromLoadout() {
     const gameContainer = document.getElementById('game-container');
     if (!gameContainer) return;
@@ -6443,6 +6445,21 @@ function updateDistressMode(o2, hp) {
     }
 }
 
+function renderHazardStatus({ kind = null, label = '', detail = '', timeLeft = null } = {}) {
+    const panel = document.getElementById('hazard-status-panel');
+    if (!panel) return;
+    const visible = Boolean(kind) && isGameplayHudActive();
+    panel.classList.toggle('hidden', !visible);
+    panel.dataset.hazard = kind ?? '';
+    document.getElementById('hazard-status-icon').textContent = kind === 'toxin' ? '☣' : kind === 'oxygen' ? 'O₂' : '❄';
+    document.getElementById('hazard-status-label').textContent = label;
+    document.getElementById('hazard-status-detail').textContent = detail;
+    document.getElementById('hazard-status-time').textContent = Number.isFinite(timeLeft)
+        ? `${Math.max(0, timeLeft).toFixed(timeLeft < 10 ? 1 : 0)}s`
+        : '—';
+    document.body.classList.toggle('player-cold-exposed', visible && kind === 'cold');
+}
+
 window.addEventListener('player-o2-changed', (event) => {
     const o2 = event?.detail?.o2 ?? 100;
     const hp = window.game?.playerVitals?.hp ?? 99;
@@ -6460,6 +6477,20 @@ window.addEventListener('player-o2-changed', (event) => {
     }
     updateDistressMode(o2, hp);
     updateMusicTension();
+    if (!document.body.classList.contains('player-poisoned')) {
+        const drainRate = Number(event?.detail?.drainRate ?? 0);
+        const biome = String(event?.detail?.biome ?? 'active');
+        if (!event?.detail?.safe && drainRate > 0 && (o2 < 60 || biome === 'cryo')) {
+            renderHazardStatus({
+                kind: biome === 'cryo' ? 'cold' : 'oxygen',
+                label: biome === 'cryo' ? 'COLD EXPOSURE' : 'OXYGEN RESERVE DRAINING',
+                detail: event?.detail?.safeDirection || 'RETURN TO THE PRESSURIZED SHIP FIELD',
+                timeLeft: drainRate > 0 ? o2 / drainRate : null
+            });
+        } else {
+            renderHazardStatus();
+        }
+    }
 });
 
 window.addEventListener('player-damaged', (event) => {
@@ -6469,11 +6500,18 @@ window.addEventListener('player-damaged', (event) => {
     updateMusicTension();
 });
 
-window.addEventListener('player-poisoned', () => {
+window.addEventListener('player-poisoned', (event) => {
     document.body.classList.add('player-poisoned');
+    renderHazardStatus({
+        kind: 'toxin',
+        label: 'BIO-TOXIN EXPOSURE',
+        detail: 'FILTERS COMPROMISED · LEAVE THE SPORE CLOUD',
+        timeLeft: Number(event?.detail?.timeLeft)
+    });
 });
 window.addEventListener('player-poison-cleared', () => {
     document.body.classList.remove('player-poisoned');
+    renderHazardStatus();
 });
 
 window.addEventListener('health-restored', () => {
@@ -10655,6 +10693,9 @@ function drawTacticalMapOverlay(canvasId = 'tactical-map-canvas', compact = fals
     const home = mapState.home ?? { x: 0, z: 0 };
     const chunkSize = mapState.chunkSize ?? 49;
     const detailedChunks = mapState.detailedChunks ?? [];
+    const hudStyle = window.getComputedStyle(document.getElementById('ui') ?? document.documentElement);
+    const mapPrimary = hudStyle.getPropertyValue('--hud-primary').trim() || '#00e5ff';
+    const mapSecondary = hudStyle.getPropertyValue('--hud-secondary').trim() || '#00ffd2';
     const discoveredKeys = new Set(detailedChunks.map((chunk) => chunk.key));
 
     const tileStatEl = compact ? null : document.getElementById('map-stat-tiles');
@@ -10671,7 +10712,8 @@ function drawTacticalMapOverlay(canvasId = 'tactical-map-canvas', compact = fals
     const worldToMap = (x, z) => ({ x: x * cellSize + offsetX, y: z * cellSize + offsetY });
 
     // Grid lines background
-    ctx.strokeStyle = 'rgba(0, 229, 255, 0.08)';
+    ctx.globalAlpha = 0.08;
+    ctx.strokeStyle = mapPrimary;
     ctx.lineWidth = 1;
     const gridStep = Math.max(12, chunkSize * cellSize);
     for (let x = (offsetX % gridStep + gridStep) % gridStep; x <= width; x += gridStep) {
@@ -10686,6 +10728,7 @@ function drawTacticalMapOverlay(canvasId = 'tactical-map-canvas', compact = fals
         ctx.lineTo(width, y);
         ctx.stroke();
     }
+    ctx.globalAlpha = 1;
 
     // Debug uses the lightweight regional plan rather than generating every
     // 49x49 gameplay chunk. It reveals the complete macro route without
@@ -10724,46 +10767,44 @@ function drawTacticalMapOverlay(canvasId = 'tactical-map-canvas', compact = fals
         for (const cell of chunk.cells ?? []) {
             const p = worldToMap(chunk.chunkX * chunkSize + cell.x, chunk.chunkY * chunkSize + cell.y);
             if (p.x < -cellSize || p.x > width || p.y < -cellSize || p.y > height) continue;
-            ctx.fillStyle = cell.kind === 'door' ? '#ffd15c'
-                : cell.kind === 'room' ? 'rgba(0,229,255,.72)'
-                    : 'rgba(55,145,178,.5)';
+            ctx.globalAlpha = cell.kind === 'door' ? 1 : cell.kind === 'room' ? 0.72 : 0.5;
+            ctx.fillStyle = cell.kind === 'door' ? '#ffd15c' : cell.kind === 'room' ? mapPrimary : mapSecondary;
             ctx.fillRect(p.x, p.y, Math.max(1.2, cellSize + 0.25), Math.max(1.2, cellSize + 0.25));
         }
     }
+    ctx.globalAlpha = 1;
 
-    // Render Traversed Exploration Breadcrumb Trail (Real Historical Footsteps)
+    // Render recent traversal as independently fading segments. A single
+    // opaque path made old runs accumulate into a permanent map scribble.
     const breadcrumbTrail = mapState.breadcrumbTrail ?? [];
     if (breadcrumbTrail.length >= 2) {
         ctx.save();
-
-        // 1. Soft glowing outer trail path
-        ctx.beginPath();
-        const startPt = worldToMap(breadcrumbTrail[0].x, breadcrumbTrail[0].z);
-        ctx.moveTo(startPt.x, startPt.y);
         for (let i = 1; i < breadcrumbTrail.length; i++) {
-            const pt = worldToMap(breadcrumbTrail[i].x, breadcrumbTrail[i].z);
-            ctx.lineTo(pt.x, pt.y);
+            const from = worldToMap(breadcrumbTrail[i - 1].x, breadcrumbTrail[i - 1].z);
+            const to = worldToMap(breadcrumbTrail[i].x, breadcrumbTrail[i].z);
+            const alpha = Math.min(breadcrumbTrail[i - 1].opacity ?? 1, breadcrumbTrail[i].opacity ?? 1);
+            ctx.beginPath();
+            ctx.moveTo(from.x, from.y);
+            ctx.lineTo(to.x, to.y);
+            ctx.globalAlpha = 0.2 * alpha;
+            ctx.strokeStyle = mapPrimary;
+            ctx.lineWidth = 4.5;
+            ctx.lineCap = 'round';
+            ctx.stroke();
+            ctx.globalAlpha = 0.85 * alpha;
+            ctx.strokeStyle = mapSecondary;
+            ctx.lineWidth = 1.8;
+            ctx.setLineDash([4, 2]);
+            ctx.stroke();
         }
-        ctx.strokeStyle = 'rgba(0, 229, 255, 0.22)';
-        ctx.lineWidth = 4.5;
-        ctx.lineCap = 'round';
-        ctx.lineJoin = 'round';
-        ctx.stroke();
-
-        // 2. Inner crisp neon route trail
-        ctx.strokeStyle = 'rgba(46, 230, 255, 0.85)';
-        ctx.lineWidth = 1.8;
-        ctx.setLineDash([4, 2]);
-        ctx.stroke();
-
-        // 3. Footstep waypoint pulse markers along the traveled route
         const stepInterval = Math.max(3, Math.floor(breadcrumbTrail.length / 40));
         for (let i = 0; i < breadcrumbTrail.length; i += stepInterval) {
             const wp = worldToMap(breadcrumbTrail[i].x, breadcrumbTrail[i].z);
             if (wp.x < -10 || wp.x > width + 10 || wp.y < -10 || wp.y > height + 10) continue;
             ctx.beginPath();
             ctx.arc(wp.x, wp.y, 2.0, 0, Math.PI * 2);
-            ctx.fillStyle = '#00ffd2';
+            ctx.globalAlpha = breadcrumbTrail[i].opacity ?? 1;
+            ctx.fillStyle = mapSecondary;
             ctx.fill();
         }
         ctx.restore();
@@ -10772,7 +10813,7 @@ function drawTacticalMapOverlay(canvasId = 'tactical-map-canvas', compact = fals
     // Landmarks (including Home Base)
     for (const landmark of landmarks) {
         const landmarkKey = `${Math.floor(landmark.x / chunkSize)},${Math.floor(landmark.z / chunkSize)}`;
-        if (landmark.type !== 'home_base' && !view.debugRevealAll && !discoveredKeys.has(landmarkKey)) continue;
+        if (landmark.type !== 'home_base' && !landmark.revealOnMap && !view.debugRevealAll && !discoveredKeys.has(landmarkKey)) continue;
         const point = worldToMap(landmark.x, landmark.z);
         const lx = point.x;
         const ly = point.y;
@@ -10798,6 +10839,17 @@ function drawTacticalMapOverlay(canvasId = 'tactical-map-canvas', compact = fals
             ctx.fillStyle = '#ffd700';
             ctx.font = 'bold 11px Space Mono, monospace';
             if (!compact) ctx.fillText(landmark.label ?? 'HOME BASE', lx, ly + 20);
+        } else if (landmark.type === 'black_box') {
+            ctx.fillStyle = '#ff4d67';
+            ctx.fillText('◆', lx, ly);
+            ctx.strokeStyle = '#ffffff';
+            ctx.lineWidth = 2;
+            ctx.strokeText('◆', lx, ly);
+            if (!compact) ctx.fillText(landmark.label ?? 'BLACK BOX', lx, ly + 16);
+        } else if (landmark.type === 'foundry') {
+            ctx.fillStyle = '#ffb238';
+            ctx.fillText('⚒', lx, ly);
+            if (!compact) ctx.fillText(landmark.label ?? 'FOUNDRY', lx, ly + 16);
         } else if (landmark.type === 'camp') {
             ctx.fillStyle = '#ffaa00';
             ctx.fillText('⛺', lx, ly);
@@ -10824,9 +10876,11 @@ function drawTacticalMapOverlay(canvasId = 'tactical-map-canvas', compact = fals
         if (!c.scanned) continue;
         const pt = worldToMap(c.gx * 15, c.gz * 15);
         if (pt.x < 0 || pt.x > width || pt.y < 0 || pt.y > height) continue;
-        ctx.fillStyle = 'rgba(0, 210, 255, 0.18)';
+        ctx.globalAlpha = 0.18;
+        ctx.fillStyle = mapPrimary;
         ctx.fillRect(pt.x - 3, pt.y - 3, 6, 6);
     }
+    ctx.globalAlpha = 1;
 
     // Render scanned path connectivity lines & route vectors
     const scannedPaths = mapState.scannedPaths ?? [];
@@ -10840,7 +10894,8 @@ function drawTacticalMapOverlay(canvasId = 'tactical-map-canvas', compact = fals
             const pt = worldToMap(sp.path[i].x, sp.path[i].z);
             ctx.lineTo(pt.x, pt.y);
         }
-        ctx.strokeStyle = sp.found ? 'rgba(0, 255, 210, 0.85)' : 'rgba(0, 210, 255, 0.35)';
+        ctx.globalAlpha = sp.found ? 0.85 : 0.35;
+        ctx.strokeStyle = sp.found ? mapSecondary : mapPrimary;
         ctx.lineWidth = sp.found ? 3 : 1.5;
         ctx.setLineDash(sp.found ? [6, 4] : [2, 4]);
         ctx.stroke();
@@ -10850,7 +10905,7 @@ function drawTacticalMapOverlay(canvasId = 'tactical-map-canvas', compact = fals
             const pt = worldToMap(sp.path[i].x, sp.path[i].z);
             ctx.beginPath();
             ctx.arc(pt.x, pt.y, sp.found ? 3.5 : 2, 0, Math.PI * 2);
-            ctx.fillStyle = sp.found ? '#00ffd2' : '#00d2ff';
+            ctx.fillStyle = sp.found ? mapSecondary : mapPrimary;
             ctx.fill();
         }
         ctx.restore();
@@ -10863,27 +10918,35 @@ function drawTacticalMapOverlay(canvasId = 'tactical-map-canvas', compact = fals
 
     if (px >= -20 && px <= width + 20 && py >= -20 && py <= height + 20) {
         const time = Date.now() * 0.003;
-        const pulseRadius = (compact ? 7 : 12) + Math.sin(time) * 2;
+        const pulseRadius = (compact ? 9 : 13) + Math.sin(time) * 2;
         ctx.beginPath();
         ctx.arc(px, py, pulseRadius, 0, Math.PI * 2);
-        ctx.strokeStyle = 'rgba(0, 255, 170, 0.4)';
+        ctx.globalAlpha = 0.4;
+        ctx.strokeStyle = mapSecondary;
         ctx.lineWidth = 1;
         ctx.stroke();
+        ctx.globalAlpha = 1;
 
         ctx.save();
         ctx.translate(px, py);
         ctx.rotate(player.rotation ?? 0);
 
-        ctx.fillStyle = '#00ffaa';
+        ctx.shadowColor = 'rgba(0, 0, 0, 0.9)';
+        ctx.shadowBlur = compact ? 5 : 7;
+        ctx.fillStyle = mapSecondary;
         ctx.beginPath();
-        ctx.moveTo(0, -10);
-        ctx.lineTo(7, 8);
-        ctx.lineTo(-7, 8);
+        const arrowLength = compact ? 13 : 15;
+        const arrowHalfWidth = compact ? 8 : 9;
+        ctx.moveTo(0, -arrowLength);
+        ctx.lineTo(arrowHalfWidth, arrowLength * 0.7);
+        ctx.lineTo(0, arrowLength * 0.35);
+        ctx.lineTo(-arrowHalfWidth, arrowLength * 0.7);
         ctx.closePath();
         ctx.fill();
 
+        ctx.shadowBlur = 0;
         ctx.strokeStyle = '#ffffff';
-        ctx.lineWidth = 1.5;
+        ctx.lineWidth = compact ? 2.5 : 2;
         ctx.stroke();
 
         ctx.restore();

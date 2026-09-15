@@ -223,7 +223,28 @@ describe('Gameplay regressions: damage, oxygen, and cliff falling', () => {
 
             ThreeGame.prototype.updateVitals.call(fakeGame, 1.0);
             expect(fakeGame.playerVitals.o2).toBeLessThan(100);
+            expect(fakeGame._currentO2DrainRate).toBeGreaterThan(0);
             expect(fakeGame.emitO2State).toHaveBeenCalled();
+        });
+
+        it('emits truthful safety, biome and rate data for the hazard HUD', () => {
+            const fakeGame = {
+                playerVitals: { o2: 42 },
+                _wasInBubble: false,
+                _currentO2DrainRate: 2.5,
+                currentBiomeKey: 'cryo',
+                getO2GeneratorState: () => ({ isOnline: true })
+            };
+            ThreeGame.prototype.emitO2State.call(fakeGame);
+            expect(window.dispatchEvent).toHaveBeenCalledWith(expect.objectContaining({
+                type: 'player-o2-changed',
+                detail: expect.objectContaining({
+                    o2: 42,
+                    safe: false,
+                    drainRate: 2.5,
+                    biome: 'cryo'
+                })
+            }));
         });
     });
 

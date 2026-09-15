@@ -11,9 +11,16 @@ export function gridToWorld(gx, gz, cellSize = DEFAULT_CELL_SIZE) {
 }
 
 export class ExplorationTracker {
-    constructor({ cellSize = DEFAULT_CELL_SIZE, maxTrailPoints = 1000 } = {}) {
+    constructor({
+        cellSize = DEFAULT_CELL_SIZE,
+        maxTrailPoints = 600,
+        trailMaxAgeMs = 180_000,
+        now = () => Date.now()
+    } = {}) {
         this.cellSize = cellSize;
         this.maxTrailPoints = maxTrailPoints;
+        this.trailMaxAgeMs = Math.max(1_000, Number(trailMaxAgeMs) || 180_000);
+        this.now = typeof now === 'function' ? now : () => Date.now();
         this.exploredCells = new Map();
         this.landmarks = new Map();
         this.breadcrumbTrail = [];
@@ -47,7 +54,7 @@ export class ExplorationTracker {
             return { currentKey: this.currentCellKey, changedCell: false, newlyDiscovered: false };
         }
 
-        const now = Date.now();
+        const now = this.now();
         const lastPoint = this.breadcrumbTrail[this.breadcrumbTrail.length - 1];
         if (!lastPoint || Math.hypot(x - lastPoint.x, z - lastPoint.z) >= 1.5) {
             this.breadcrumbTrail.push({ x, z, timestamp: now });
@@ -86,7 +93,13 @@ export class ExplorationTracker {
     }
 
     getBreadcrumbTrail() {
-        return this.breadcrumbTrail.slice();
+        const now = this.now();
+        const cutoff = now - this.trailMaxAgeMs;
+        while (this.breadcrumbTrail[0]?.timestamp < cutoff) this.breadcrumbTrail.shift();
+        return this.breadcrumbTrail.map((point) => ({
+            ...point,
+            opacity: Math.max(0.08, Math.min(1, 1 - ((now - point.timestamp) / this.trailMaxAgeMs)))
+        }));
     }
 
     registerLandmark(id, landmarkData = {}) {
@@ -107,7 +120,9 @@ export class ExplorationTracker {
             type: landmarkData.type ?? 'objective',
             priority: Number(landmarkData.priority ?? 100),
             discovered: Boolean(landmarkData.discovered ?? true),
-            active: Boolean(landmarkData.active ?? true)
+            active: Boolean(landmarkData.active ?? true),
+            revealOnMap: Boolean(landmarkData.revealOnMap),
+            plane: landmarkData.plane ?? 'surface'
         };
 
         this.landmarks.set(id, entry);
@@ -199,7 +214,7 @@ export class ExplorationTracker {
         const gridRadius = Math.ceil((radius + this.cellSize * 0.5) / this.cellSize);
         let newlyDiscoveredCount = 0;
         let scannedCount = 0;
-        const now = Date.now();
+        const now = this.now();
 
         for (let dx = -gridRadius; dx <= gridRadius; dx++) {
             for (let dz = -gridRadius; dz <= gridRadius; dz++) {

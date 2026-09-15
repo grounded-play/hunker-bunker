@@ -72,6 +72,14 @@ Commit: `d744c5c`.
 - Class swaps keep the last valid posed preview until the requested model proves it has an idle clip, reject stale async completions, use a class-correct sprite/fallback during loading and recover after a bounded timeout. The selection doors wait for that synchronized result, preventing the left identity and center model from disagreeing.
 - Verification: 42 focused Armory/3D overlay tests passed. Browser checks passed rapid 50-class cycling, operator preview fallback coverage, real 3-column directional navigation, equipment re-rendering and computed full-stage/no-sidebar-overflow checks at the project Chrome profile. Broader resolution and packaged-client visual acceptance remain in the final sweep.
 
+### Pass 12 — DP-26–31 HUD hazard and tactical-map coherence (September 14)
+
+- Added a gameplay-phase-owned hazard panel that distinguishes cold exposure, oxygen depletion and bio-toxin exposure, reports a rate-derived time remaining where meaningful, identifies the safety action and supplies separate restrained edge treatments with reduced-motion behavior. Leaving gameplay clears both the HUD and environmental body states.
+- Black Box and Foundry now register explicit always-identifiable tactical-map landmarks as soon as their signals are active; they use distinct icon shapes and do not depend on the destination chunk already being explored.
+- Exploration trails are bounded to 600 points, use an injectable clock, fade segment-by-segment for three minutes and expire instead of accumulating across a long run. Existing new-run/death reset remains authoritative for immediate clearing.
+- Increased the minimap player arrow floor, added a high-contrast outline/notched tail and drove map paths, rooms, scans and the player marker from the active HUD theme. Theme tokens now reach the complete HUD panel family immediately; the pink/purple Bunker 404 theme applies a functional heart-shaped minimap mask while hazard meaning retains independent colors.
+- Verification: 30 focused map, mapping-mission and gameplay-regression tests passed, including fake-clock fade/expiry, bounded trails and truthful hazard event telemetry. ESLint and diff checks passed; visual theme/hazard acceptance remains in the combined browser/package sweep.
+
 ## Evidence register
 
 References use **entry `id`**, not zero-based array position, followed by elapsed milliseconds. JSON messages embed diagnostic objects; expand the referenced entry to inspect its details. SHA-256 and compact metrics can be reproduced with:

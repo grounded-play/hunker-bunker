@@ -43,4 +43,18 @@ describe('ExplorationTracker Breadcrumb Journey Trail', () => {
         tracker.reset();
         expect(tracker.getBreadcrumbTrail().length).toBe(0);
     });
+
+    it('fades and expires old route points using an injectable clock', () => {
+        let now = 1_000;
+        const tracker = new ExplorationTracker({ trailMaxAgeMs: 10_000, now: () => now });
+        tracker.recordPlayerPosition(0, 0);
+        now = 6_000;
+        tracker.recordPlayerPosition(3, 0);
+
+        expect(tracker.getBreadcrumbTrail().map((point) => point.opacity)).toEqual([0.5, 1]);
+        now = 11_001;
+        const remaining = tracker.getBreadcrumbTrail();
+        expect(remaining).toHaveLength(1);
+        expect(remaining[0].x).toBe(3);
+    });
 });

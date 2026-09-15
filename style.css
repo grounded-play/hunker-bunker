@@ -2160,11 +2160,44 @@ body:not(.controller-mode) .settings-choice-control > .settings-controller-hint 
 #ui[data-hud-theme] .hud-header,
 #ui[data-hud-theme] .level-indicator,
 #ui[data-hud-theme] .hud-action-prompt,
-#ui[data-hud-theme] .mission-progress-hud {
+#ui[data-hud-theme] .mission-progress-hud,
+#ui[data-hud-theme] .desktop-compass,
+#ui[data-hud-theme] .pickup-counter-panel,
+#ui[data-hud-theme] .weapon-status-panel,
+#ui[data-hud-theme] .ship-status-panel,
+#ui[data-hud-theme] .vitals-panel,
+#ui[data-hud-theme] .class-ability-panel,
+#ui[data-hud-theme] .loop-step-hud,
+#ui[data-hud-theme] .objective-tracker__item,
+#ui[data-hud-theme] .queens-ledger-hud {
   border-color: var(--hud-border, var(--accent-primary));
   color: var(--hud-secondary, var(--hud-primary, var(--accent-primary)));
   background-color: var(--hud-panel, rgba(0, 0, 0, 0.5));
   text-shadow: 0 0 8px var(--hud-glow, rgba(255, 159, 28, 0.4));
+}
+
+#ui[data-hud-theme] .weapon-status-panel__reload-bar,
+#ui[data-hud-theme] .ship-status-panel__bar,
+#ui[data-hud-theme] .class-ability-panel__bar,
+#ui[data-hud-theme] .vitals-panel__o2-bar,
+#ui[data-hud-theme] .objective-tracker__meter::-webkit-progress-value {
+  background: var(--hud-primary) !important;
+  box-shadow: 0 0 10px var(--hud-glow) !important;
+}
+
+#ui[data-hud-theme] .desktop-compass__arrow,
+#ui[data-hud-theme] .desktop-compass__radar-arrow,
+#ui[data-hud-theme] .loop-step-hud__chevron,
+#ui[data-hud-theme] .objective-tracker__eyebrow,
+#ui[data-hud-theme] .hud-visor-telemetry {
+  color: var(--hud-primary) !important;
+  border-color: var(--hud-primary) !important;
+}
+
+#ui[data-hud-theme="4234"] #hud-blueprint-canvas,
+#ui[data-hud-theme="hudtheme_bunker404"] #hud-blueprint-canvas {
+  clip-path: polygon(50% 96%, 8% 55%, 5% 34%, 12% 17%, 27% 8%, 40% 13%, 50% 27%, 60% 13%, 73% 8%, 88% 17%, 95% 34%, 92% 55%);
+  filter: drop-shadow(0 0 8px var(--hud-glow));
 }
 
 #ui[data-hud-theme]::after {
@@ -6429,6 +6462,42 @@ body.player-poisoned #game-viewport::after {
   pointer-events: none;
   z-index: 9390;
 }
+
+body.player-cold-exposed #game-viewport::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 9385;
+  pointer-events: none;
+  background:
+    linear-gradient(115deg, rgba(166,232,255,.3), transparent 12% 88%, rgba(166,232,255,.28)),
+    radial-gradient(circle at center, transparent 52%, rgba(84,183,224,.25) 100%);
+  box-shadow: inset 0 0 50px rgba(145,224,255,.26);
+  animation: cold-edge-breathe 1.8s ease-in-out infinite;
+}
+
+.hazard-status-panel {
+  display: grid;
+  grid-template-columns: auto minmax(0,1fr) auto;
+  align-items: center;
+  gap: 9px;
+  min-width: clamp(250px,22vw,390px);
+  padding: 8px 11px;
+  border: 1px solid rgba(135,220,255,.58);
+  border-left: 4px solid #87dcff;
+  background: rgba(5,18,28,.94);
+  box-shadow: 0 0 18px rgba(87,198,255,.25);
+  color: #dff8ff;
+}
+.hazard-status-panel.hidden { display: none; }
+.hazard-status-panel[data-hazard="toxin"] { border-color: rgba(126,255,102,.6); border-left-color: #7eff66; color: #dcffd6; }
+.hazard-status-panel__icon { font: 900 18px 'Space Mono',monospace; }
+.hazard-status-panel__copy { display: flex; flex-direction: column; min-width: 0; }
+.hazard-status-panel__copy strong { font: 900 12px 'Outfit',sans-serif; letter-spacing: .1em; }
+.hazard-status-panel__copy span { font: 700 9px 'Space Mono',monospace; opacity: .78; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.hazard-status-panel__time { font: 900 15px 'Space Mono',monospace; }
+@keyframes cold-edge-breathe { 0%,100% { opacity:.42; } 50% { opacity:.9; } }
+@media (prefers-reduced-motion: reduce) { body.player-cold-exposed #game-viewport::before { animation: none; opacity: .65; } }
 
 @keyframes poison-pulse {
   0%, 100% { opacity: 0.5; }
