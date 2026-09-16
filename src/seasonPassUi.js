@@ -13,7 +13,7 @@ import { getSeasonOneCosmetic, SEASON_ONE_CLASS_CHOICES } from './data/seasonOne
 import { DETERMINISTIC_RECIPES, getItemCount } from './craftingMatrix.js';
 import { getItemCatalogEntry, deliverLocalSeasonReward, craftLocalSeasonRecipe, getLocalSeasonInventory, loadVaultData } from './steamVaultUi.js';
 import { assetUrl } from './assetUrl.js';
-import { t } from './i18n.js';
+import { t, onLocaleChange } from './i18n.js';
 
 export const seasonPass = new SeasonPassManager();
 if (typeof window !== 'undefined') window.seasonPass = seasonPass;
@@ -686,3 +686,8 @@ export function initSeasonPassUI() {
     if (!window.electronAPI) void loadVaultData().then(() => runSeasonAction()).catch(() => { deliveryMessage = 'Local inventory unavailable — delivery will retry from Dossier.'; });
     updateMenuStatus();
 }
+
+onLocaleChange(() => renderSeasonPassBody(), () => {
+    const modal = document.getElementById('season-pass-modal');
+    return Boolean(modal) && !modal.classList.contains('hidden');
+});

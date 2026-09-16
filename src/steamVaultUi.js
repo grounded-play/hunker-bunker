@@ -25,7 +25,7 @@ import {
     CACHE_ITEMDEFID,
     CACHE_KEY_ITEMDEFID
 } from './cacheOpening.js';
-import { t } from './i18n.js';
+import { t, onLocaleChange } from './i18n.js';
 
 export { STEAM_ITEM_CATALOG };
 
@@ -1281,3 +1281,17 @@ export async function openDeepRelicCache() {
     }
 }
 import { assetUrl } from './assetUrl.js';
+
+// The vault renders its panels when it opens, so a language change while it is
+// on screen has to rebuild them. Guarded on the modal actually being visible so
+// switching language from the title screen does no work.
+onLocaleChange(() => {
+    renderInventoryGrid();
+    renderStoreSkuGrid();
+    renderHostedItemStoreCta();
+    renderOddsTable();
+    renderSmelterPanel();
+}, () => {
+    const modal = document.getElementById('steam-vault-modal');
+    return Boolean(modal) && !modal.classList.contains('hidden');
+});

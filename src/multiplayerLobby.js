@@ -7,7 +7,7 @@ import { io as connectSocketIo } from 'socket.io-client';
 import { planMultiplayerCrashSites } from './multiplayerCrashPlanner.js';
 import { clearMultiplayerSession, startMultiplayerRun } from './gameController.js';
 import { getSelectedPolish } from './operatorPolishes.js';
-import { t } from './i18n.js';
+import { t, onLocaleChange } from './i18n.js';
 import {
     createSteamLobby,
     joinSteamLobby,
@@ -1338,3 +1338,10 @@ export class MultiplayerLobby {
 }
 
 export const multiplayerLobby = new MultiplayerLobby();
+
+// updateUiState() repaints the mode indicators, relay status, roster and deploy
+// button - everything in the lobby whose words come from t().
+onLocaleChange(() => multiplayerLobby.updateUiState(), () => {
+    const modal = document.getElementById('multiplayer-modal');
+    return Boolean(modal) && !modal.classList.contains('hidden');
+});

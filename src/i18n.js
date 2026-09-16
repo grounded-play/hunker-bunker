@@ -172,6 +172,40 @@ export function hasKey(key) {
     return getNestedValue(DICTIONARIES['en'], key) !== undefined;
 }
 
+/**
+ * Re-render a panel whose text this module wrote with t().
+ *
+ * data-i18n covers markup that exists at parse time, and localizeCatalog covers
+ * the content catalogs, but a panel a JS module builds on open keeps whatever
+ * language it was rendered in until something rebuilds it. Switching language
+ * with the Vault or the lobby open would otherwise leave half the screen in the
+ * old locale.
+ *
+ * `isMounted` is checked at fire time so a closed panel costs nothing and, more
+ * importantly, so re-rendering never re-opens something the player has closed.
+ * Returns an unsubscribe function.
+ */
+export function onLocaleChange(render, isMounted = () => true) {
+    if (typeof window === 'undefined' || typeof render !== 'function') return () => {};
+    const handler = () => {
+        let mounted = false;
+        try {
+            mounted = Boolean(isMounted());
+        } catch {
+            return; // a panel that cannot report its state is not one to rebuild
+        }
+        if (!mounted) return;
+        try {
+            render();
+        } catch {
+            // A failed re-render must not break the language switch itself;
+            // the panel reopens correctly translated either way.
+        }
+    };
+    window.addEventListener('locale-changed', handler);
+    return () => window.removeEventListener('locale-changed', handler);
+}
+
 // Attributes that carry user-visible text and can be keyed from markup with
 // data-i18n-<attr>, e.g. data-i18n-title="ui.hub.codex".
 const TRANSLATABLE_ATTRS = Object.freeze(['title', 'aria-label', 'placeholder']);
