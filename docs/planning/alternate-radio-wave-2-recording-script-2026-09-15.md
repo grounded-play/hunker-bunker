@@ -1,6 +1,6 @@
 # Alternate Radio Voice Banks — Wave 2 Recording Script
 
-Status: recording handoff; eight combat counterparts have generated take 01 placeholders
+Status: complete generated Wave 2 coverage; actor replacement pass remains optional
 Banks: Soviet Sub-Commander (`4148`) and AURA (`4149`)  
 Runtime owner: `src/data/voiceBanks.js`
 
@@ -67,15 +67,18 @@ Output examples:
 - `voice_commander_shield_critical_take_01.wav`
 - `voice_aura_low_health_take_02.wav`
 
-### 2026-09-15 generated placeholder pass
+### 2026-09-15 generated Wave 2 pass
 
-The eight missing counterparts above now have one ElevenLabs-generated take in
-`public/audio/generated/` and are mapped into both runtime banks. Commander
-uses the Adam premade voice; AURA uses the Sarah premade voice because the
-account's saved robotic library voice is unavailable through the free API.
-These are playable coverage placeholders, not replacements for the requested
-two-take actor delivery. Take 02 remains intentionally absent so runtime never
-presents a copied file as a distinct performance.
+Every missing line in this sheet now has two distinct Eleven v3 takes in
+`public/audio/generated/`. Commander uses the Adam premade voice with clipped,
+restrained Russian-accent direction; AURA uses the Sarah premade voice with
+calm, precise tactical-intelligence direction. Source MP3 masters are retained
+under the ignored `art/source/audio/vo/elevenlabs-wave2/` directory. Game cuts
+are mono 16 kHz PCM, filtered by bank, compressed, and loudness-normalized.
+
+The original delivered actor takes remain authoritative where the table says
+"Already delivered." Generated Wave 2 files provide full recording coverage;
+runtime event wiring can be enabled cue-by-cue as each trigger is validated.
 
 ## B. Deployment, weapon, and movement calls
 
@@ -172,13 +175,14 @@ expedition for discoveries, milestones, extraction, and failure.
 
 ## Recording checklist
 
-- [ ] 42 new paired cues recorded for Commander and AURA.
-- [x] Eight missing counterparts have one generated placeholder take wired.
-- [ ] Two clean takes for every line.
-- [ ] Cue IDs and take numbers present in filenames.
+- [x] 42 new paired cues generated for Commander and AURA.
+- [x] Eight missing counterparts have two generated takes; take 01 is wired.
+- [x] Two clean generated takes for every missing line.
+- [x] Cue IDs and take numbers present in filenames.
 - [ ] No spoken slates inside delivery files.
 - [ ] No baked music, reverb, radio static, or game sound effects.
 - [ ] Pronunciation and subtitle wording match this sheet exactly.
-- [ ] Dry masters archived before the comms processing pass.
-- [ ] Processed assets loudness-matched and auditioned under combat mix.
+- [x] Source masters archived before the comms processing pass.
+- [x] Processed assets loudness-matched by the generation pipeline.
+- [ ] Processed assets auditioned under combat mix.
 - [ ] Armory preview and a ten-minute expedition checked for each bank.
