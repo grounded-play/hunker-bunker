@@ -45,6 +45,7 @@ import {
 import { AudioManager } from '../../audio.js';
 import { createRgbAudioController, getDialogueSpeaker } from './audio.js';
 import { assetUrl } from '../../assetUrl.js';
+import { t } from '../../i18n.js';
 
 const NAV_REPEAT_MS = 220;
 const STICK_THRESHOLD = 0.5;
@@ -264,7 +265,7 @@ export function mountRgb({ root, save, storage, onExit }) {
 
         const header = document.createElement('div');
         header.className = 'rgb-flowchart__header';
-        header.innerHTML = `<span>FLOWCHART</span> <strong>${flowchartData.title.toUpperCase()}</strong>`;
+        header.innerHTML = `<span>${t('ui.rgb.flowchart')}</span> <strong>${flowchartData.title.toUpperCase()}</strong>`;
 
         const tree = document.createElement('div');
         tree.className = 'rgb-flowchart__tree';
@@ -284,7 +285,7 @@ export function mountRgb({ root, save, storage, onExit }) {
 
             const waveTag = document.createElement('div');
             waveTag.className = 'rgb-flowchart__wave-tag';
-            waveTag.textContent = `WAVE ${waveNum}`;
+            waveTag.textContent = t('ui.rgb.wave', { n: waveNum });
             waveCol.append(waveTag);
 
             for (const node of waves[waveNum]) {
@@ -313,8 +314,8 @@ export function mountRgb({ root, save, storage, onExit }) {
                     nodeEl.classList.add('rgb-flowchart__node--hidden');
                     nodeEl.innerHTML = `
                         <div class="rgb-flowchart__badge rgb-flowchart__badge--hidden">${node.branch ? `${node.branch} · LOCKED` : 'UNEXPLORED'}</div>
-                        <div class="rgb-flowchart__title">??? UNDISCOVERED PATH ???</div>
-                        <div class="rgb-flowchart__desc">Explore alternative choices in another run to reveal.</div>
+                        <div class="rgb-flowchart__title">${t('ui.rgb.undiscovered_path')}</div>
+                        <div class="rgb-flowchart__desc">${t('ui.rgb.explore_to_reveal')}</div>
                     `;
                 }
                 waveCol.append(nodeEl);
@@ -349,13 +350,13 @@ export function mountRgb({ root, save, storage, onExit }) {
 
         const progress = document.createElement('div');
         progress.className = 'rgb-header__progress';
-        progress.textContent = `CHAPTER ${chapterNumber()} OF ${CHAPTER_ORDER.length}`;
+        progress.textContent = t('ui.rgb.chapter_of', { n: chapterNumber(), total: CHAPTER_ORDER.length });
 
         const settingsBtn = document.createElement('button');
         settingsBtn.type = 'button';
         settingsBtn.className = 'calibrate-btn open-settings-btn rgb-settings-btn';
-        settingsBtn.setAttribute('aria-label', 'Settings');
-        settingsBtn.title = 'Settings';
+        settingsBtn.setAttribute('aria-label', t('ui.rgb.settings'));
+        settingsBtn.title = t('ui.rgb.settings');
         settingsBtn.textContent = '⚙';
         settingsBtn.addEventListener('click', () => {
             const settingsPopup = document.getElementById('settings-popup');
@@ -368,8 +369,8 @@ export function mountRgb({ root, save, storage, onExit }) {
         const pathBtn = document.createElement('button');
         pathBtn.type = 'button';
         pathBtn.className = 'rgb-path-btn';
-        pathBtn.textContent = `PATH ${runState.routeHistory.length}`;
-        pathBtn.setAttribute('aria-label', 'Open path history and recap');
+        pathBtn.textContent = t('ui.rgb.path_count', { n: runState.routeHistory.length });
+        pathBtn.setAttribute('aria-label', t('ui.rgb.open_path_history'));
         pathBtn.addEventListener('click', () => {
             mode = 'recap';
             render();
@@ -411,7 +412,7 @@ export function mountRgb({ root, save, storage, onExit }) {
         const actionDeck = document.createElement('div');
         actionDeck.className = 'rgb-action-deck';
         actionDeck.classList.toggle('rgb-action-deck--cutaway', Boolean(activeCutaway));
-        actionDeck.setAttribute('aria-label', 'Available actions');
+        actionDeck.setAttribute('aria-label', t('ui.rgb.available_actions'));
         focusableHotspots().forEach((hotspot) => {
             const btn = document.createElement('button');
             btn.type = 'button';
@@ -499,7 +500,7 @@ export function mountRgb({ root, save, storage, onExit }) {
         const btn = document.createElement('button');
         btn.type = 'button';
         btn.className = 'rgb-warning__continue';
-        btn.textContent = 'CONTINUE';
+        btn.textContent = t('ui.rgb.continue');
         btn.addEventListener('click', dismissWarning);
         overlay.append(body, btn);
         root.append(overlay);
@@ -517,7 +518,7 @@ export function mountRgb({ root, save, storage, onExit }) {
         const title = document.createElement('div');
         title.className = 'rgb-hints__title';
         const total = (chapter.hints ?? []).length;
-        title.textContent = `HINT ${Math.min(hintsShown, total)} OF ${total}`;
+        title.textContent = t('ui.rgb.hint_of', { n: Math.min(hintsShown, total), total });
         panel.append(title);
 
         for (const hint of (chapter.hints ?? []).slice(0, hintsShown)) {
@@ -529,7 +530,7 @@ export function mountRgb({ root, save, storage, onExit }) {
         if (hintsShown >= total) {
             const exhausted = document.createElement('div');
             exhausted.className = 'rgb-hints__exhausted';
-            exhausted.textContent = 'No further hints for this chapter.';
+            exhausted.textContent = t('ui.rgb.no_more_hints');
             panel.append(exhausted);
         }
         return panel;
@@ -573,14 +574,14 @@ export function mountRgb({ root, save, storage, onExit }) {
             const take = document.createElement('button');
             take.type = 'button';
             take.className = 'rgb-dialogue__take';
-            take.textContent = pendingPickup.label ?? 'TAKE';
+            take.textContent = pendingPickup.label ?? t('ui.rgb.take');
             take.addEventListener('click', takePendingPickup);
             dialogue.append(take);
         } else if (activeCutaway) {
             const back = document.createElement('button');
             back.type = 'button';
             back.className = 'rgb-dialogue__take rgb-dialogue__return';
-            back.textContent = 'RETURN TO SCENE';
+            back.textContent = t('ui.rgb.return_to_scene');
             back.addEventListener('click', dismissCutaway);
             dialogue.append(back);
         }
@@ -621,7 +622,7 @@ export function mountRgb({ root, save, storage, onExit }) {
 
         const eyebrow = document.createElement('div');
         eyebrow.className = 'rgb-chapter-card__eyebrow';
-        eyebrow.textContent = `CHAPTER ${chapterNumber()} OF ${CHAPTER_ORDER.length}`;
+        eyebrow.textContent = t('ui.rgb.chapter_of', { n: chapterNumber(), total: CHAPTER_ORDER.length });
 
         const title = document.createElement('div');
         title.className = 'rgb-chapter-card__title';
@@ -634,7 +635,7 @@ export function mountRgb({ root, save, storage, onExit }) {
         const cont = document.createElement('button');
         cont.type = 'button';
         cont.className = 'rgb-chapter-card__continue';
-        cont.textContent = 'CONTINUE';
+        cont.textContent = t('ui.rgb.continue');
         cont.addEventListener('click', dismissChapterCard);
 
         card.append(eyebrow, title, goal, cont);
@@ -656,12 +657,12 @@ export function mountRgb({ root, save, storage, onExit }) {
         overlay.className = 'rgb-overlay rgb-inventory';
         const title = document.createElement('div');
         title.className = 'rgb-overlay__title';
-        title.textContent = 'INVENTORY';
+        title.textContent = t('ui.rgb.inventory');
         overlay.append(title);
         if (runState.inventory.length === 0) {
             const empty = document.createElement('div');
             empty.className = 'rgb-overlay__empty';
-            empty.textContent = 'Nothing carried yet.';
+            empty.textContent = t('ui.rgb.nothing_carried');
             overlay.append(empty);
         } else {
             const grid = document.createElement('div');
@@ -717,11 +718,11 @@ export function mountRgb({ root, save, storage, onExit }) {
         overlay.className = 'rgb-overlay rgb-recap';
         const title = document.createElement('div');
         title.className = 'rgb-overlay__title';
-        title.textContent = 'YOUR PATH';
+        title.textContent = t('ui.rgb.your_path');
 
         const intro = document.createElement('div');
         intro.className = 'rgb-recap__intro';
-        intro.textContent = `Current objective — ${currentChapter().goal}`;
+        intro.textContent = t('ui.rgb.current_objective', { goal: currentChapter().goal });
 
         const status = document.createElement('div');
         status.className = 'rgb-recap__status';
@@ -755,7 +756,7 @@ export function mountRgb({ root, save, storage, onExit }) {
 
         const heading = document.createElement('div');
         heading.className = 'rgb-recap__heading';
-        heading.textContent = 'DECISIONS THAT CHANGED THIS RUN';
+        heading.textContent = t('ui.rgb.decisions_changed');
 
         const timeline = document.createElement('div');
         timeline.className = 'rgb-route-timeline';
@@ -781,7 +782,7 @@ export function mountRgb({ root, save, storage, onExit }) {
 
         const evidenceHeading = document.createElement('div');
         evidenceHeading.className = 'rgb-recap__heading';
-        evidenceHeading.textContent = 'EVIDENCE PRESERVED';
+        evidenceHeading.textContent = t('ui.rgb.evidence_preserved');
         const evidenceList = document.createElement('div');
         evidenceList.className = 'rgb-recap__evidence';
         evidenceList.textContent = runState.evidence.length > 0
@@ -790,14 +791,14 @@ export function mountRgb({ root, save, storage, onExit }) {
 
         const flowchartHeading = document.createElement('div');
         flowchartHeading.className = 'rgb-recap__heading';
-        flowchartHeading.textContent = 'NARRATIVE BRANCH TREE & UNLOCKED PATHS';
+        flowchartHeading.textContent = t('ui.rgb.branch_tree');
 
         const flowchartEl = renderChapterFlowchart(runState.checkpoint);
 
         const close = document.createElement('button');
         close.type = 'button';
         close.className = 'rgb-recap__close';
-        close.textContent = 'RETURN TO SCENE';
+        close.textContent = t('ui.rgb.return_to_scene');
         close.addEventListener('click', () => {
             mode = 'scene';
             render();
@@ -817,15 +818,15 @@ export function mountRgb({ root, save, storage, onExit }) {
         overlay.className = 'rgb-overlay rgb-pause';
         const title = document.createElement('div');
         title.className = 'rgb-overlay__title';
-        title.textContent = 'PAUSED';
+        title.textContent = t('ui.rgb.paused');
         const resumeBtn = document.createElement('button');
         resumeBtn.type = 'button';
-        resumeBtn.textContent = 'RESUME';
+        resumeBtn.textContent = t('ui.rgb.resume');
         resumeBtn.addEventListener('click', () => { mode = 'scene'; render(); });
         const settingsBtn = document.createElement('button');
         settingsBtn.type = 'button';
         settingsBtn.className = 'open-settings-btn';
-        settingsBtn.textContent = 'SETTINGS';
+        settingsBtn.textContent = t('ui.rgb.settings_caps');
         settingsBtn.addEventListener('click', () => {
             const settingsPopup = document.getElementById('settings-popup');
             if (settingsPopup) {
@@ -835,7 +836,7 @@ export function mountRgb({ root, save, storage, onExit }) {
         });
         const exitBtn = document.createElement('button');
         exitBtn.type = 'button';
-        exitBtn.textContent = 'EXIT SIMULATION';
+        exitBtn.textContent = t('ui.rgb.exit_simulation');
         exitBtn.addEventListener('click', handleExit);
         overlay.append(title, resumeBtn, settingsBtn, exitBtn);
         root.append(overlay);
@@ -865,7 +866,7 @@ export function mountRgb({ root, save, storage, onExit }) {
 
         const exitBtn = document.createElement('button');
         exitBtn.type = 'button';
-        exitBtn.textContent = 'EXIT SIMULATION';
+        exitBtn.textContent = t('ui.rgb.exit_simulation');
         exitBtn.addEventListener('click', handleExit);
         card.append(title, body);
         if (flowchartEl) {
@@ -889,17 +890,17 @@ export function mountRgb({ root, save, storage, onExit }) {
 
         const retryBtn = document.createElement('button');
         retryBtn.type = 'button';
-        retryBtn.textContent = info.id === 'crushed' ? 'RETRY RESCUE' : 'RETRY';
+        retryBtn.textContent = info.id === 'crushed' ? t('ui.rgb.retry_rescue') : t('ui.rgb.retry');
         retryBtn.addEventListener('click', () => retryGameOver(info));
 
         const loadBtn = document.createElement('button');
         loadBtn.type = 'button';
-        loadBtn.textContent = 'LOAD CHAPTER';
+        loadBtn.textContent = t('ui.rgb.load_chapter');
         loadBtn.addEventListener('click', () => loadChapterFromCheckpoint());
 
         const exitBtn = document.createElement('button');
         exitBtn.type = 'button';
-        exitBtn.textContent = 'EXIT SIMULATION';
+        exitBtn.textContent = t('ui.rgb.exit_simulation');
         exitBtn.addEventListener('click', handleExit);
 
         card.append(title, body, retryBtn, loadBtn, exitBtn);

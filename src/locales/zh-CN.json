@@ -1105,6 +1105,110 @@
       "tab_tiers": "档案",
       "tab_bounties": "指令",
       "tab_workshop": "碎片工坊"
+    },
+    "prompt": {
+      "access_base_shop": "进入 {type} 基地商店",
+      "upgrade_o2": "升级 O₂ 发生器",
+      "turret_controls": "防御炮塔控制",
+      "blast_locked": "防爆闸门已锁定 — {lock}"
+    },
+    "telemeter": {
+      "passive_scan": "地表扫描 // 被动",
+      "sector": "区域",
+      "explored_corridor": "已探索走廊",
+      "coords": "[X: {x}, Z: {z}]",
+      "biome_tier": "生物群系：{biome} // 层级 {tier}",
+      "stable": "稳定",
+      "occluded": "被遮挡",
+      "dist": "距离：{meters}m"
+    },
+    "console": {
+      "online": "在线",
+      "ready_deficit": "就绪 — 资源不足",
+      "ready_permitted": "就绪 — 允许建造",
+      "resolved": "已解决",
+      "choice_required": "需要抉择",
+      "event_resolved": "终端事件已解决。商店系统仍可使用。",
+      "engineer_verify": "工程兵验证",
+      "mimic_neutralized": "警告：终端签名系伪造 — 拟态体已消灭。可安全通过。"
+    },
+    "journal": {
+      "day_time": "D{day} {minute}:{second}"
+    },
+    "bank": {
+      "deposit_ready": "可以存入。资源传输通道已开启。",
+      "deposit_to_fund": "存入资源以资助 O₂ 修复。",
+      "hp_full": "生命值已满",
+      "conversions_available": "×{count} 可用",
+      "integrity_full": "外骨骼完整度已满，无需转换。",
+      "next_cost_none": "下次花费：无",
+      "generator_maxed": "该外骨骼舱的 O₂ 发生器输出已达上限。",
+      "repair_to_create_zone": "修复此模块可在飞船附近建立安全 O₂ 区域。",
+      "upgrades_expand_field": "升级可扩大蓝色 O₂ 力场，让你在更远处补充。"
+    },
+    "skills": {
+      "completed": "已完成",
+      "upgrade": "升级",
+      "unlock": "解锁"
+    },
+    "turret": {
+      "built_north_door": "已建造 — 控制台位于北门",
+      "build_cost": "建造花费：{cost}",
+      "built": "炮塔已建造",
+      "build": "建造防御炮塔",
+      "requires_o2": "需要先修复 O₂",
+      "build_not_saved": "建造未保存 — 未消耗资源。请释放存档空间后重试。",
+      "level_hp": "等级 {level} // HP {hp}/{maxHp}",
+      "stats": "伤害：{damage} | 射程：{range}u | 射速：{rate}s",
+      "next_upgrade_cost": "下次升级花费：{cost}",
+      "max_level": "下次升级花费：已达最高等级",
+      "repair_cost": "修复花费：{cost}",
+      "repair_full_hp": "修复花费：生命值已满"
+    },
+    "boss": {
+      "cybershell_titan": "赛博壳泰坦",
+      "cryo_goliath": "低温歌利亚蜗牛",
+      "plagueshell_behemoth": "疫壳贝希摩斯",
+      "corrupted_scout": "堕落侦察兵：MARTHA",
+      "corrupted_tank": "堕落重装兵：BRIGGS",
+      "corrupted_engineer": "堕落工程兵：KAELEN",
+      "queen": "女王",
+      "elite_threat": "精英威胁"
+    },
+    "rgb": {
+      "wave": "第 {n} 波",
+      "undiscovered_path": "??? 未发现的路径 ???",
+      "explore_to_reveal": "在另一次游玩中探索其他选择以揭示。",
+      "chapter_of": "第 {n} 章 / 共 {total} 章",
+      "settings": "设置",
+      "path_count": "路径 {n}",
+      "open_path_history": "打开路径历史与回顾",
+      "available_actions": "可用操作",
+      "continue": "继续",
+      "hint_of": "提示 {n} / 共 {total}",
+      "no_more_hints": "本章没有更多提示。",
+      "take": "拿取",
+      "return_to_scene": "返回场景",
+      "inventory": "物品栏",
+      "nothing_carried": "尚未携带任何物品。",
+      "your_path": "你的路径",
+      "current_objective": "当前目标 — {goal}",
+      "decisions_changed": "改变了本次游玩的抉择",
+      "evidence_preserved": "已保存的证据",
+      "branch_tree": "叙事分支树与已解锁路径",
+      "paused": "已暂停",
+      "resume": "继续",
+      "settings_caps": "设置",
+      "exit_simulation": "退出模拟",
+      "retry_rescue": "重试救援",
+      "load_chapter": "载入章节",
+      "flowchart": "流程图",
+      "retry": "重试"
+    },
+    "cinematic": {
+      "restoring": "档案影像 // 正在恢复信号",
+      "advances": "档案将推进到下一个重建场景。",
+      "skip_hint": "按任意按钮 / 按键跳过"
     }
   },
   "narrative": {

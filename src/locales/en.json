@@ -1105,6 +1105,110 @@
       "tab_tiers": "Dossier",
       "tab_bounties": "Directives",
       "tab_workshop": "Fragment Workshop"
+    },
+    "prompt": {
+      "access_base_shop": "ACCESS {type} BASE SHOP",
+      "upgrade_o2": "UPGRADE O₂ GENERATOR",
+      "turret_controls": "DEFENSE TURRET CONTROLS",
+      "blast_locked": "BLAST THRESHOLD LOCKED — {lock}"
+    },
+    "telemeter": {
+      "passive_scan": "SURFACE SCAN // PASSIVE",
+      "sector": "SECTOR",
+      "explored_corridor": "EXPLORED CORRIDOR",
+      "coords": "[X: {x}, Z: {z}]",
+      "biome_tier": "BIOME: {biome} // TIER {tier}",
+      "stable": "STABLE",
+      "occluded": "OCCLUDED",
+      "dist": "DIST: {meters}m"
+    },
+    "console": {
+      "online": "ONLINE",
+      "ready_deficit": "READY — RESOURCE DEFICIT",
+      "ready_permitted": "READY — BUILD PERMITTED",
+      "resolved": "RESOLVED",
+      "choice_required": "CHOICE REQUIRED",
+      "event_resolved": "TERMINAL EVENT RESOLVED. SHOP SYSTEMS REMAIN AVAILABLE.",
+      "engineer_verify": "ENGINEER VERIFY",
+      "mimic_neutralized": "WARNING: TERMINAL SIGNATURE FORGED — MIMIC NEUTRALIZED. SAFE TO PROCEED."
+    },
+    "journal": {
+      "day_time": "D{day} {minute}:{second}"
+    },
+    "bank": {
+      "deposit_ready": "DEPOSIT READY. RESOURCE TRANSFER CHANNEL OPEN.",
+      "deposit_to_fund": "DEPOSIT RESOURCES TO FUND O₂ REPAIRS.",
+      "hp_full": "HP FULL",
+      "conversions_available": "×{count} AVAILABLE",
+      "integrity_full": "EXOSUIT INTEGRITY IS FULL. NO CONVERSION NEEDED.",
+      "next_cost_none": "NEXT COST: NONE",
+      "generator_maxed": "O₂ GENERATOR OUTPUT IS MAXED FOR THIS EXOSUIT BAY.",
+      "repair_to_create_zone": "REPAIR THIS MODULE TO CREATE A SAFE O₂ ZONE NEAR YOUR SHIP.",
+      "upgrades_expand_field": "UPGRADES EXPAND THE BLUE O₂ FIELD SO YOU CAN REFILL FROM FURTHER OUT."
+    },
+    "skills": {
+      "completed": "COMPLETED",
+      "upgrade": "UPGRADE",
+      "unlock": "UNLOCK"
+    },
+    "turret": {
+      "built_north_door": "BUILT — CONTROLS AT NORTH DOOR",
+      "build_cost": "BUILD COST: {cost}",
+      "built": "TURRET BUILT",
+      "build": "BUILD DEFENSE TURRET",
+      "requires_o2": "REQUIRES O₂ REPAIR",
+      "build_not_saved": "BUILD NOT SAVED — NO RESOURCES SPENT. FREE SAVE SPACE AND RETRY.",
+      "level_hp": "LVL {level} // HP {hp}/{maxHp}",
+      "stats": "DAMAGE: {damage} | RANGE: {range}u | RATE: {rate}s",
+      "next_upgrade_cost": "NEXT UPGRADE COST: {cost}",
+      "max_level": "NEXT UPGRADE COST: MAX LEVEL REACHED",
+      "repair_cost": "REPAIR COST: {cost}",
+      "repair_full_hp": "REPAIR COST: FULL HP"
+    },
+    "boss": {
+      "cybershell_titan": "CYBER-SHELL TITAN",
+      "cryo_goliath": "CRYO-GOLIATH SNAIL",
+      "plagueshell_behemoth": "PLAGUE-SHELL BEHEMOTH",
+      "corrupted_scout": "CORRUPTED SCOUT: MARTHA",
+      "corrupted_tank": "CORRUPTED TANK: BRIGGS",
+      "corrupted_engineer": "CORRUPTED ENGINEER: KAELEN",
+      "queen": "THE QUEEN",
+      "elite_threat": "ELITE THREAT"
+    },
+    "rgb": {
+      "wave": "WAVE {n}",
+      "undiscovered_path": "??? UNDISCOVERED PATH ???",
+      "explore_to_reveal": "Explore alternative choices in another run to reveal.",
+      "chapter_of": "CHAPTER {n} OF {total}",
+      "settings": "Settings",
+      "path_count": "PATH {n}",
+      "open_path_history": "Open path history and recap",
+      "available_actions": "Available actions",
+      "continue": "CONTINUE",
+      "hint_of": "HINT {n} OF {total}",
+      "no_more_hints": "No further hints for this chapter.",
+      "take": "TAKE",
+      "return_to_scene": "RETURN TO SCENE",
+      "inventory": "INVENTORY",
+      "nothing_carried": "Nothing carried yet.",
+      "your_path": "YOUR PATH",
+      "current_objective": "Current objective — {goal}",
+      "decisions_changed": "DECISIONS THAT CHANGED THIS RUN",
+      "evidence_preserved": "EVIDENCE PRESERVED",
+      "branch_tree": "NARRATIVE BRANCH TREE & UNLOCKED PATHS",
+      "paused": "PAUSED",
+      "resume": "RESUME",
+      "settings_caps": "SETTINGS",
+      "exit_simulation": "EXIT SIMULATION",
+      "retry_rescue": "RETRY RESCUE",
+      "load_chapter": "LOAD CHAPTER",
+      "flowchart": "FLOWCHART",
+      "retry": "RETRY"
+    },
+    "cinematic": {
+      "restoring": "ARCHIVE CINEMATIC // RESTORING SIGNAL",
+      "advances": "The archive advances to the next reconstructed scene.",
+      "skip_hint": "PRESS ANY BUTTON / KEY TO SKIP"
     }
   },
   "narrative": {

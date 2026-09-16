@@ -1105,6 +1105,110 @@
       "tab_tiers": "ドシエ",
       "tab_bounties": "指令",
       "tab_workshop": "破片ワークショップ"
+    },
+    "prompt": {
+      "access_base_shop": "{type} 基地ショップにアクセス",
+      "upgrade_o2": "O₂ ジェネレーターを強化",
+      "turret_controls": "防衛タレット制御",
+      "blast_locked": "防爆隔壁ロック中 — {lock}"
+    },
+    "telemeter": {
+      "passive_scan": "地表スキャン // パッシブ",
+      "sector": "セクター",
+      "explored_corridor": "探索済みの通路",
+      "coords": "[X: {x}, Z: {z}]",
+      "biome_tier": "バイオーム：{biome} // ティア {tier}",
+      "stable": "安定",
+      "occluded": "遮蔽",
+      "dist": "距離：{meters}m"
+    },
+    "console": {
+      "online": "オンライン",
+      "ready_deficit": "準備完了 — 資源不足",
+      "ready_permitted": "準備完了 — 建設可能",
+      "resolved": "解決済み",
+      "choice_required": "選択が必要",
+      "event_resolved": "端末イベントは解決した。ショップ機能は引き続き利用できる。",
+      "engineer_verify": "エンジニア検証",
+      "mimic_neutralized": "警告：端末署名は偽造 — ミミックを排除した。進行して問題ない。"
+    },
+    "journal": {
+      "day_time": "D{day} {minute}:{second}"
+    },
+    "bank": {
+      "deposit_ready": "預入可能。資源転送チャンネル開通。",
+      "deposit_to_fund": "資源を預けて O₂ 修理の資金にする。",
+      "hp_full": "HP 満タン",
+      "conversions_available": "×{count} 利用可能",
+      "integrity_full": "エクソスーツの健全性は満タン。変換は不要。",
+      "next_cost_none": "次のコスト：なし",
+      "generator_maxed": "このエクソスーツ・ベイでは O₂ 出力が上限だ。",
+      "repair_to_create_zone": "このモジュールを修理すれば船の近くに安全な O₂ ゾーンができる。",
+      "upgrades_expand_field": "アップグレードで青い O₂ フィールドが広がり、遠くからでも補充できる。"
+    },
+    "skills": {
+      "completed": "完了",
+      "upgrade": "強化",
+      "unlock": "解放"
+    },
+    "turret": {
+      "built_north_door": "建設済み — 制御は北扉",
+      "build_cost": "建設コスト：{cost}",
+      "built": "タレット建設済み",
+      "build": "防衛タレットを建設",
+      "requires_o2": "O₂ の修理が必要",
+      "build_not_saved": "建設は保存されなかった — 資源は消費していない。保存領域を空けて再試行せよ。",
+      "level_hp": "LV {level} // HP {hp}/{maxHp}",
+      "stats": "ダメージ：{damage} | 射程：{range}u | 連射：{rate}s",
+      "next_upgrade_cost": "次の強化コスト：{cost}",
+      "max_level": "次の強化コスト：最大レベル到達",
+      "repair_cost": "修理コスト：{cost}",
+      "repair_full_hp": "修理コスト：HP 満タン"
+    },
+    "boss": {
+      "cybershell_titan": "サイバーシェル・タイタン",
+      "cryo_goliath": "クライオ・ゴリアテ・スネイル",
+      "plagueshell_behemoth": "ペイグシェル・ベヒーモス",
+      "corrupted_scout": "堕ちたスカウト：MARTHA",
+      "corrupted_tank": "堕ちたタンク：BRIGGS",
+      "corrupted_engineer": "堕ちたエンジニア：KAELEN",
+      "queen": "女王",
+      "elite_threat": "エリート脅威"
+    },
+    "rgb": {
+      "wave": "ウェーブ {n}",
+      "undiscovered_path": "??? 未発見のルート ???",
+      "explore_to_reveal": "別のランで他の選択肢を試すと開放される。",
+      "chapter_of": "第 {n} 章 / 全 {total} 章",
+      "settings": "設定",
+      "path_count": "ルート {n}",
+      "open_path_history": "ルート履歴と振り返りを開く",
+      "available_actions": "可能なアクション",
+      "continue": "つづける",
+      "hint_of": "ヒント {n} / {total}",
+      "no_more_hints": "この章のヒントはもうない。",
+      "take": "取る",
+      "return_to_scene": "シーンに戻る",
+      "inventory": "インベントリ",
+      "nothing_carried": "まだ何も持っていない。",
+      "your_path": "あなたのルート",
+      "current_objective": "現在の目標 — {goal}",
+      "decisions_changed": "このランを変えた決断",
+      "evidence_preserved": "保全された証拠",
+      "branch_tree": "物語の分岐ツリーと解放済みルート",
+      "paused": "一時停止",
+      "resume": "再開",
+      "settings_caps": "設定",
+      "exit_simulation": "シミュレーションを終了",
+      "retry_rescue": "救出をやり直す",
+      "load_chapter": "チャプターを読み込む",
+      "flowchart": "フローチャート",
+      "retry": "再試行"
+    },
+    "cinematic": {
+      "restoring": "アーカイブ映像 // 信号を復元中",
+      "advances": "アーカイブは次の再構成シーンへ進む。",
+      "skip_hint": "任意のボタン / キーでスキップ"
     }
   },
   "narrative": {

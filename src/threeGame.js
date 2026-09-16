@@ -335,6 +335,23 @@ import {
 import { SHOWROOM_CHUNK_X, SHOWROOM_CHUNK_Y } from './debugWorldLayout.js';
 import { PRESENTATION_EVENTS, presentationTelemetry } from './presentationTelemetry.js';
 import { summarizeSceneLights, diffLightCounts } from './lightingReport.js';
+import { t } from './i18n.js';
+
+/**
+ * Boss display names by spawn type. Was an eight-branch if/else assigning
+ * English literals; a lookup keeps the type -> key mapping in one readable
+ * place and leaves the wording to the catalog. Character names (MARTHA,
+ * BRIGGS, KAELEN) stay as written in every locale - only the role translates.
+ */
+const BOSS_NAME_KEYS = Object.freeze({
+    boss_cybersnail: 'ui.boss.cybershell_titan',
+    boss_cryosnail: 'ui.boss.cryo_goliath',
+    boss_sporesnail: 'ui.boss.plagueshell_behemoth',
+    boss_corrupted_scout: 'ui.boss.corrupted_scout',
+    boss_corrupted_tank: 'ui.boss.corrupted_tank',
+    boss_corrupted_engineer: 'ui.boss.corrupted_engineer',
+    boss_queen: 'ui.boss.queen'
+});
 
 
 const PLAYER_COLORS = {
@@ -9377,7 +9394,7 @@ export class ThreeGame {
                 const actionText = promptEl.querySelector('.prompt-text');
                 const promptKey = promptEl.querySelector('.prompt-key');
                 if (actionText) {
-                    actionText.textContent = `ACCESS ${nearestConsole.type} BASE SHOP`;
+                    actionText.textContent = t('ui.prompt.access_base_shop', { type: nearestConsole.type });
                 }
                 if (promptKey) {
                     const promptKeyLabel = this.getPromptKeyLabel('E');
@@ -9408,7 +9425,7 @@ export class ThreeGame {
             if (o2InRange) {
                 const actionText = o2PromptEl.querySelector('.prompt-text');
                 const promptKey = o2PromptEl.querySelector('.prompt-key');
-                if (actionText) actionText.textContent = 'UPGRADE O₂ GENERATOR';
+                if (actionText) actionText.textContent = t('ui.prompt.upgrade_o2');
                 if (promptKey) {
                     const promptKeyLabel = this.getPromptKeyLabel('E');
                     promptKey.textContent = promptKeyLabel;
@@ -9431,7 +9448,7 @@ export class ThreeGame {
             if (baseTurretInRange) {
                 const actionText = baseTurretPromptEl.querySelector('.prompt-text');
                 const promptKey = baseTurretPromptEl.querySelector('.prompt-key');
-                if (actionText) actionText.textContent = 'DEFENSE TURRET CONTROLS';
+                if (actionText) actionText.textContent = t('ui.prompt.turret_controls');
                 if (promptKey) {
                     const promptKeyLabel = this.getPromptKeyLabel('E');
                     promptKey.textContent = promptKeyLabel;
@@ -9862,7 +9879,7 @@ export class ThreeGame {
         if (nearestDoor && nearestLocked && promptEl && !this.activeInteractiveConsole) {
             const promptKey = promptEl.querySelector('.prompt-key');
             if (actionText) {
-                actionText.textContent = `BLAST THRESHOLD LOCKED — ${nearestDoorState.lock.label}`;
+                actionText.textContent = t('ui.prompt.blast_locked', { lock: nearestDoorState.lock.label });
             }
             if (promptKey) {
                 const promptKeyLabel = this.getPromptKeyLabel('E');
@@ -10709,17 +10726,17 @@ export class ThreeGame {
             const rangeVal = telemeter.querySelector('#telemeter-range-val');
             const actionPrompt = telemeter.querySelector('#telemeter-action-prompt');
 
-            if (kicker) kicker.textContent = target?.kicker || 'SURFACE SCAN // PASSIVE';
+            if (kicker) kicker.textContent = target?.kicker || t('ui.telemeter.passive_scan');
             if (typeTag) {
-                typeTag.textContent = 'SECTOR';
+                typeTag.textContent = t('ui.telemeter.sector');
                 typeTag.className = 'telemeter-type-tag telemeter-tag--sector';
             }
-            if (title) title.textContent = target?.title || 'EXPLORED CORRIDOR';
-            if (coords) coords.textContent = target?.coords ? `[X: ${target.coords.x >= 0 ? '+' : ''}${target.coords.x}, Z: ${target.coords.z >= 0 ? '+' : ''}${target.coords.z}]` : '[X: --, Z: --]';
-            if (subtitle) subtitle.textContent = target?.subtitle || `BIOME: ${(this.currentBiomeKey || 'CRYO').toUpperCase()} // TIER ${this.currentDepthTier ?? 1}`;
+            if (title) title.textContent = target?.title || t('ui.telemeter.explored_corridor');
+            if (coords) coords.textContent = target?.coords ? t('ui.telemeter.coords', { x: `${target.coords.x >= 0 ? '+' : ''}${target.coords.x}`, z: `${target.coords.z >= 0 ? '+' : ''}${target.coords.z}` }) : '[X: --, Z: --]';
+            if (subtitle) subtitle.textContent = target?.subtitle || t('ui.telemeter.biome_tier', { biome: (this.currentBiomeKey || 'CRYO').toUpperCase(), tier: this.currentDepthTier ?? 1 });
             if (meterBar) meterBar.style.width = '100%';
-            if (meterVal) meterVal.textContent = 'STABLE';
-            if (rangeVal) rangeVal.textContent = target?.distance != null ? `DIST: ${target.distance.toFixed(1)}m` : 'DIST: 0.0m';
+            if (meterVal) meterVal.textContent = t('ui.telemeter.stable');
+            if (rangeVal) rangeVal.textContent = target?.distance != null ? t('ui.telemeter.dist', { meters: target.distance.toFixed(1) }) : t('ui.telemeter.dist', { meters: '0.0' });
             if (actionPrompt) actionPrompt.classList.add('hidden');
             return;
         }
@@ -10743,12 +10760,12 @@ export class ThreeGame {
             typeTag.className = `telemeter-type-tag telemeter-tag--${target.type}`;
         }
         if (title) title.textContent = target.title;
-        if (coords) coords.textContent = target.coords ? `[X: ${target.coords.x >= 0 ? '+' : ''}${target.coords.x}, Z: ${target.coords.z >= 0 ? '+' : ''}${target.coords.z}]` : '[X: --, Z: --]';
+        if (coords) coords.textContent = target.coords ? t('ui.telemeter.coords', { x: `${target.coords.x >= 0 ? '+' : ''}${target.coords.x}`, z: `${target.coords.z >= 0 ? '+' : ''}${target.coords.z}` }) : '[X: --, Z: --]';
         if (subtitle) subtitle.textContent = target.subtitle;
 
         if (meterBar) meterBar.style.width = `${target.integrity ?? 100}%`;
-        if (meterVal) meterVal.textContent = target.type === 'unscanned' ? 'OCCLUDED' : `${target.integrity ?? 100}%`;
-        if (rangeVal) rangeVal.textContent = target.distance != null ? `DIST: ${target.distance.toFixed(1)}m` : '';
+        if (meterVal) meterVal.textContent = target.type === 'unscanned' ? t('ui.telemeter.occluded') : `${target.integrity ?? 100}%`;
+        if (rangeVal) rangeVal.textContent = target.distance != null ? t('ui.telemeter.dist', { meters: target.distance.toFixed(1) }) : '';
 
         if (actionPrompt && actionKey && actionText) {
             if (target.promptKey && target.promptText) {
@@ -11162,13 +11179,13 @@ export class ThreeGame {
         const statusEl = document.getElementById(cardConfig.statusId);
         if (statusEl) {
             if (unlocked) {
-                statusEl.textContent = 'ONLINE';
+                statusEl.textContent = t('ui.console.online');
             } else if (!prereqMet) {
                 statusEl.textContent = cardConfig.lockedStatusText;
             } else if (!affordable) {
-                statusEl.textContent = 'READY — RESOURCE DEFICIT';
+                statusEl.textContent = t('ui.console.ready_deficit');
             } else {
-                statusEl.textContent = 'READY — BUILD PERMITTED';
+                statusEl.textContent = t('ui.console.ready_permitted');
             }
         }
 
@@ -11259,24 +11276,24 @@ export class ThreeGame {
         if (!event) return;
 
         if (title) title.textContent = event.title;
-        if (status) status.textContent = resolved ? 'RESOLVED' : 'CHOICE REQUIRED';
+        if (status) status.textContent = resolved ? t('ui.console.resolved') : t('ui.console.choice_required');
         if (body) body.textContent = event.body;
         choicesEl.innerHTML = '';
 
         if (resolved) {
-            if (resultEl) resultEl.textContent = 'TERMINAL EVENT RESOLVED. SHOP SYSTEMS REMAIN AVAILABLE.';
+            if (resultEl) resultEl.textContent = t('ui.console.event_resolved');
             return;
         }
 
         if (this.playerType === 'ENGINEER') {
             const verifyBtn = document.createElement('button');
             verifyBtn.className = 'terminal-action-btn terminal-event-choice btn-state--available';
-            verifyBtn.textContent = 'ENGINEER VERIFY';
+            verifyBtn.textContent = t('ui.console.engineer_verify');
             verifyBtn.addEventListener('click', () => {
                 if (this._terminalEventIsMimic) {
                     // Engineer detects the forgery and disarms its payback.
                     this._terminalMimicDisarmed = true;
-                    if (resultEl) resultEl.textContent = 'WARNING: TERMINAL SIGNATURE FORGED — MIMIC NEUTRALIZED. SAFE TO PROCEED.';
+                    if (resultEl) resultEl.textContent = t('ui.console.mimic_neutralized');
                     window.dispatchEvent(new CustomEvent('codex-discover', { detail: { id: 'mimic_terminal' } }));
                     window.AudioManager?.play('ui_error', { volume: 0.32, playbackRate: 0.9, bus: 'sfx' });
                     return;
@@ -11570,7 +11587,7 @@ export class ThreeGame {
             const minute = String(Math.floor(entry.elapsed / 60)).padStart(2, '0');
             const second = String(entry.elapsed % 60).padStart(2, '0');
             item.innerHTML = `<span class="terminal-objective-journal-time"></span><span class="terminal-objective-journal-copy"></span><strong class="terminal-objective-journal-state"></strong>`;
-            item.querySelector('.terminal-objective-journal-time').textContent = `D${entry.day} ${minute}:${second}`;
+            item.querySelector('.terminal-objective-journal-time').textContent = t('ui.journal.day_time', { day: entry.day, minute, second });
             item.querySelector('.terminal-objective-journal-copy').textContent = `${entry.missionLabel} // NEXT: ${entry.goalLabel}`;
             item.querySelector('.terminal-objective-journal-state').textContent = `${entry.missionStatus} · ${entry.goalStatus}`;
             list.append(item);
@@ -11689,9 +11706,9 @@ export class ThreeGame {
         const hint = document.getElementById('terminal-bank-hint');
         if (hint) {
             if (depositableTotal > 0) {
-                hint.textContent = 'DEPOSIT READY. RESOURCE TRANSFER CHANNEL OPEN.';
+                hint.textContent = t('ui.bank.deposit_ready');
             } else {
-                hint.textContent = 'DEPOSIT RESOURCES TO FUND O₂ REPAIRS.';
+                hint.textContent = t('ui.bank.deposit_to_fund');
             }
         }
 
@@ -11704,17 +11721,17 @@ export class ThreeGame {
 
         if (medkitStatus) {
             if (this.playerVitals.hp >= this.playerVitals.maxHp) {
-                medkitStatus.textContent = 'HP FULL';
+                medkitStatus.textContent = t('ui.bank.hp_full');
             } else if (bankState.med < 10) {
                 medkitStatus.textContent = `${bankState.med}/10 MED`;
             } else {
-                medkitStatus.textContent = `×${conversionsReady} AVAILABLE`;
+                medkitStatus.textContent = t('ui.bank.conversions_available', { count: conversionsReady });
             }
         }
 
         if (medkitHint) {
             if (this.playerVitals.hp >= this.playerVitals.maxHp) {
-                medkitHint.textContent = 'EXOSUIT INTEGRITY IS FULL. NO CONVERSION NEEDED.';
+                medkitHint.textContent = t('ui.bank.integrity_full');
             } else {
                 medkitHint.textContent = `${heartsMissing} HEART${heartsMissing === 1 ? '' : 'S'} MISSING. ${conversionsReady} CONVERSION${conversionsReady === 1 ? '' : 'S'} AVAILABLE (${bankState.med} MED STORED).`;
             }
@@ -11746,7 +11763,7 @@ export class ThreeGame {
                 const missingText = canAfford ? '' : ` // ${this.getMissingResourceText(effectiveCost, bankState)}`;
                 costEl.textContent = `NEXT COST: ${this.formatResourceCost(effectiveCost, { bankState, showHaveNeed: !canAfford })}${discountTag}${missingText}`;
             } else {
-                costEl.textContent = 'NEXT COST: NONE';
+                costEl.textContent = t('ui.bank.next_cost_none');
             }
         }
 
@@ -11760,13 +11777,13 @@ export class ThreeGame {
         const generatorHint = document.getElementById('terminal-o2-generator-hint');
         if (generatorHint) {
             if (generatorState.maxed) {
-                generatorHint.textContent = 'O₂ GENERATOR OUTPUT IS MAXED FOR THIS EXOSUIT BAY.';
+                generatorHint.textContent = t('ui.bank.generator_maxed');
             } else if (!generatorState.isOnline) {
                 const effectiveCost = generatorState.nextUpgrade ? this.getEffectiveCost(generatorState.nextUpgrade.cost) : {};
                 const missingText = this.getMissingResourceText(effectiveCost, bankState);
-                generatorHint.textContent = missingText || 'REPAIR THIS MODULE TO CREATE A SAFE O₂ ZONE NEAR YOUR SHIP.';
+                generatorHint.textContent = missingText || t('ui.bank.repair_to_create_zone');
             } else {
-                generatorHint.textContent = 'UPGRADES EXPAND THE BLUE O₂ FIELD SO YOU CAN REFILL FROM FURTHER OUT.';
+                generatorHint.textContent = t('ui.bank.upgrades_expand_field');
             }
         }
 
@@ -12430,13 +12447,13 @@ export class ThreeGame {
 
         const costEl = document.createElement('div');
         costEl.className = 'skill-node-cost';
-        costEl.textContent = state.unlocked ? (node.maxLevel > 1 ? state.costText : 'COMPLETED') : (state.gateText || state.costText);
+        costEl.textContent = state.unlocked ? (node.maxLevel > 1 ? state.costText : t('ui.skills.completed')) : (state.gateText || state.costText);
         card.appendChild(costEl);
 
         if (state.available) {
             const buyBtn = document.createElement('button');
             buyBtn.className = 'skill-node-btn';
-            buyBtn.textContent = node.maxLevel > 1 && state.level > 0 ? 'UPGRADE' : 'UNLOCK';
+            buyBtn.textContent = node.maxLevel > 1 && state.level > 0 ? t('ui.skills.upgrade') : t('ui.skills.unlock');
             buyBtn.onclick = (e) => {
                 e.stopPropagation();
                 this.purchaseTreeNode(ship, node);
@@ -12698,10 +12715,10 @@ export class ThreeGame {
         const built = this.bank.isBaseTurretUnlocked();
         const available = this.bank.isBaseTurretBuildAvailable();
         const canBuild = this.bank.canBuildBaseTurret();
-        if (status) status.textContent = built ? 'BUILT — CONTROLS AT NORTH DOOR'
+        if (status) status.textContent = built ? t('ui.turret.built_north_door')
             : available ? 'OPTIONAL DEFENSE — CONSTRUCTION AVAILABLE' : 'REPAIR O₂ TO UNLOCK BLUEPRINT';
-        if (cost) cost.textContent = `BUILD COST: ${this.formatResourceCost(BASE_TURRET_BUILD_COST)}`;
-        button.textContent = built ? 'TURRET BUILT' : available ? 'BUILD DEFENSE TURRET' : 'REQUIRES O₂ REPAIR';
+        if (cost) cost.textContent = t('ui.turret.build_cost', { cost: this.formatResourceCost(BASE_TURRET_BUILD_COST) });
+        button.textContent = built ? t('ui.turret.built') : available ? t('ui.turret.build') : t('ui.turret.requires_o2');
         button.disabled = !canBuild;
         button.classList.toggle('btn-state--available', canBuild);
         button.classList.toggle('btn-state--locked', !canBuild);
@@ -12709,7 +12726,7 @@ export class ThreeGame {
             try {
                 if (!this.bank.buildBaseTurret()) return;
             } catch (error) {
-                if (status) status.textContent = 'BUILD NOT SAVED — NO RESOURCES SPENT. FREE SAVE SPACE AND RETRY.';
+                if (status) status.textContent = t('ui.turret.build_not_saved');
                 console.warn('[base-turret] construction save failed', error);
                 return;
             }
@@ -12769,15 +12786,15 @@ export class ThreeGame {
         const config = BASE_TURRET_UPGRADES[level - 1] ?? BASE_TURRET_UPGRADES[0];
         const { damage, range, fireRate } = config;
 
-        if (statusEl) statusEl.textContent = `LVL ${level} // HP ${hp}/${maxHp}`;
-        if (statsEl) statsEl.textContent = `DAMAGE: ${damage} | RANGE: ${range}u | RATE: ${fireRate}s`;
+        if (statusEl) statusEl.textContent = t('ui.turret.level_hp', { level, hp, maxHp });
+        if (statsEl) statsEl.textContent = t('ui.turret.stats', { damage, range, rate: fireRate });
 
         const nextUpgradeCost = this.bank.getBaseTurretUpgradeCost();
         if (upgradeCostEl) {
             if (nextUpgradeCost) {
-                upgradeCostEl.textContent = `NEXT UPGRADE COST: ${this.formatResourceCost(nextUpgradeCost)}`;
+                upgradeCostEl.textContent = t('ui.turret.next_upgrade_cost', { cost: this.formatResourceCost(nextUpgradeCost) });
             } else {
-                upgradeCostEl.textContent = 'NEXT UPGRADE COST: MAX LEVEL REACHED';
+                upgradeCostEl.textContent = t('ui.turret.max_level');
             }
         }
 
@@ -12790,11 +12807,11 @@ export class ThreeGame {
         const canRepair = this.bank.canRepairBaseTurret();
         if (repairCostEl) {
             if (canRepair) {
-                repairCostEl.textContent = `REPAIR COST: ${this.formatResourceCost(BASE_TURRET_REPAIR_COST)}`;
+                repairCostEl.textContent = t('ui.turret.repair_cost', { cost: this.formatResourceCost(BASE_TURRET_REPAIR_COST) });
             } else if (hp >= maxHp) {
-                repairCostEl.textContent = 'REPAIR COST: FULL HP';
+                repairCostEl.textContent = t('ui.turret.repair_full_hp');
             } else {
-                repairCostEl.textContent = `REPAIR COST: ${this.formatResourceCost(BASE_TURRET_REPAIR_COST)} (INSUFFICIENT RESOURCES)`;
+                repairCostEl.textContent = t('ui.turret.repair_cost', { cost: `${this.formatResourceCost(BASE_TURRET_REPAIR_COST)} (INSUFFICIENT RESOURCES)` });
             }
         }
 
@@ -31084,23 +31101,7 @@ export class ThreeGame {
                 
                 if (this._bossNameEl && this._lastRenderedBossType !== nearestBoss.userData.type) {
                     this._lastRenderedBossType = nearestBoss.userData.type;
-                    if (nearestBoss.userData.type === 'boss_cybersnail') {
-                        this._bossNameEl.textContent = 'CYBER-SHELL TITAN';
-                    } else if (nearestBoss.userData.type === 'boss_cryosnail') {
-                        this._bossNameEl.textContent = 'CRYO-GOLIATH SNAIL';
-                    } else if (nearestBoss.userData.type === 'boss_sporesnail') {
-                        this._bossNameEl.textContent = 'PLAGUE-SHELL BEHEMOTH';
-                    } else if (nearestBoss.userData.type === 'boss_corrupted_scout') {
-                        this._bossNameEl.textContent = 'CORRUPTED SCOUT: MARTHA';
-                    } else if (nearestBoss.userData.type === 'boss_corrupted_tank') {
-                        this._bossNameEl.textContent = 'CORRUPTED TANK: BRIGGS';
-                    } else if (nearestBoss.userData.type === 'boss_corrupted_engineer') {
-                        this._bossNameEl.textContent = 'CORRUPTED ENGINEER: KAELEN';
-                    } else if (nearestBoss.userData.type === 'boss_queen') {
-                        this._bossNameEl.textContent = 'THE QUEEN';
-                    } else {
-                        this._bossNameEl.textContent = 'ELITE THREAT';
-                    }
+                    this._bossNameEl.textContent = t(BOSS_NAME_KEYS[nearestBoss.userData.type] ?? 'ui.boss.elite_threat');
                 }
                 
                 const hp = nearestBoss.userData.hp ?? 0;

@@ -27,6 +27,11 @@ describe('player-facing text classification', () => {
         expect(isPlayerFacingText('display: none;')).toBe(false);
     });
 
+    it('rejects a catalog key, which is an address rather than display text', () => {
+        expect(isPlayerFacingText('ui.boss.elite_threat')).toBe(false);
+        expect(isPlayerFacingText('common.ok')).toBe(false);
+    });
+
     it('rejects pure numeric readouts, which carry no words to translate', () => {
         expect(isPlayerFacingText('0 / 27')).toBe(false);
         expect(isPlayerFacingText('12.5')).toBe(false);
@@ -65,6 +70,15 @@ describe('markup audit', () => {
         const wired = auditMarkup('<div id="hud"><button data-i18n-title="ui.codex" title="Open the codex">X</button></div>');
         expect(wired.findings.some((f) => f.kind === 'attr')).toBe(false);
         expect(wired.annotated.attrs).toBe(1);
+    });
+
+    it('reads the attribute value, not the annotation that names it', () => {
+        // \btitle= also matches inside data-i18n-title=, so the scan used to
+        // pick up the key "ui.codex" as if it were the displayed tooltip.
+        const { findings } = auditMarkup('<div id="hud"><button data-i18n-title="ui.codex" title="Open the codex">X</button></div>');
+        expect(findings).toHaveLength(0);
+        const bare = auditMarkup('<div id="hud"><button title="Open the codex">X</button></div>');
+        expect(bare.findings[0].text).toBe('Open the codex');
     });
 
     it('ignores script and style bodies', () => {

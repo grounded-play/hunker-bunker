@@ -1105,6 +1105,110 @@
       "tab_tiers": "Досье",
       "tab_bounties": "Директивы",
       "tab_workshop": "Мастерская осколков"
+    },
+    "prompt": {
+      "access_base_shop": "ОТКРЫТЬ МАГАЗИН БАЗЫ {type}",
+      "upgrade_o2": "УЛУЧШИТЬ ГЕНЕРАТОР O₂",
+      "turret_controls": "УПРАВЛЕНИЕ ТУРЕЛЬЮ",
+      "blast_locked": "ВЗРЫВОСТОЙКИЙ ПОРОГ ЗАБЛОКИРОВАН — {lock}"
+    },
+    "telemeter": {
+      "passive_scan": "СКАНИРОВАНИЕ ПОВЕРХНОСТИ // ПАССИВНО",
+      "sector": "СЕКТОР",
+      "explored_corridor": "ИССЛЕДОВАННЫЙ КОРИДОР",
+      "coords": "[X: {x}, Z: {z}]",
+      "biome_tier": "БИОМ: {biome} // УРОВЕНЬ {tier}",
+      "stable": "СТАБИЛЬНО",
+      "occluded": "ПЕРЕКРЫТО",
+      "dist": "ДИСТ: {meters}м"
+    },
+    "console": {
+      "online": "В СЕТИ",
+      "ready_deficit": "ГОТОВО — НЕХВАТКА РЕСУРСОВ",
+      "ready_permitted": "ГОТОВО — СТРОИТЕЛЬСТВО РАЗРЕШЕНО",
+      "resolved": "РЕШЕНО",
+      "choice_required": "НУЖЕН ВЫБОР",
+      "event_resolved": "Событие терминала решено. Системы магазина по-прежнему доступны.",
+      "engineer_verify": "ПРОВЕРКА ИНЖЕНЕРА",
+      "mimic_neutralized": "ВНИМАНИЕ: ПОДПИСЬ ТЕРМИНАЛА ПОДДЕЛАНА — МИМИК УНИЧТОЖЕН. МОЖНО ПРОДОЛЖАТЬ."
+    },
+    "journal": {
+      "day_time": "Д{day} {minute}:{second}"
+    },
+    "bank": {
+      "deposit_ready": "ГОТОВО К ДЕПОЗИТУ. КАНАЛ ПЕРЕДАЧИ РЕСУРСОВ ОТКРЫТ.",
+      "deposit_to_fund": "СДАЙТЕ РЕСУРСЫ НА РЕМОНТ O₂.",
+      "hp_full": "ЗДОРОВЬЕ ПОЛНОЕ",
+      "conversions_available": "×{count} ДОСТУПНО",
+      "integrity_full": "ЦЕЛОСТНОСТЬ ЭКЗОКОСТЮМА ПОЛНАЯ. КОНВЕРСИЯ НЕ НУЖНА.",
+      "next_cost_none": "СЛЕД. ЦЕНА: НЕТ",
+      "generator_maxed": "ВЫХОД ГЕНЕРАТОРА O₂ МАКСИМАЛЕН ДЛЯ ЭТОГО ОТСЕКА.",
+      "repair_to_create_zone": "ПОЧИНИТЕ МОДУЛЬ, ЧТОБЫ СОЗДАТЬ БЕЗОПАСНУЮ ЗОНУ O₂ У КОРАБЛЯ.",
+      "upgrades_expand_field": "УЛУЧШЕНИЯ РАСШИРЯЮТ СИНЕЕ ПОЛЕ O₂, ЧТОБЫ ПОПОЛНЯТЬСЯ ИЗДАЛЕКА."
+    },
+    "skills": {
+      "completed": "ЗАВЕРШЕНО",
+      "upgrade": "УЛУЧШИТЬ",
+      "unlock": "РАЗБЛОКИРОВАТЬ"
+    },
+    "turret": {
+      "built_north_door": "ПОСТРОЕНО — УПРАВЛЕНИЕ У СЕВЕРНОЙ ДВЕРИ",
+      "build_cost": "ЦЕНА ПОСТРОЙКИ: {cost}",
+      "built": "ТУРЕЛЬ ПОСТРОЕНА",
+      "build": "ПОСТРОИТЬ ТУРЕЛЬ",
+      "requires_o2": "ТРЕБУЕТСЯ РЕМОНТ O₂",
+      "build_not_saved": "ПОСТРОЙКА НЕ СОХРАНЕНА — РЕСУРСЫ НЕ ПОТРАЧЕНЫ. ОСВОБОДИТЕ МЕСТО И ПОВТОРИТЕ.",
+      "level_hp": "УР. {level} // ОЗ {hp}/{maxHp}",
+      "stats": "УРОН: {damage} | ДАЛЬНОСТЬ: {range}u | ТЕМП: {rate}s",
+      "next_upgrade_cost": "ЦЕНА СЛЕД. УЛУЧШЕНИЯ: {cost}",
+      "max_level": "ЦЕНА СЛЕД. УЛУЧШЕНИЯ: МАКС. УРОВЕНЬ",
+      "repair_cost": "ЦЕНА РЕМОНТА: {cost}",
+      "repair_full_hp": "ЦЕНА РЕМОНТА: ПОЛНОЕ ЗДОРОВЬЕ"
+    },
+    "boss": {
+      "cybershell_titan": "КИБЕРПАНЦИРНЫЙ ТИТАН",
+      "cryo_goliath": "КРИО-ГОЛИАФ УЛИТКА",
+      "plagueshell_behemoth": "ЧУМНОПАНЦИРНЫЙ БЕГЕМОТ",
+      "corrupted_scout": "ИСПОРЧЕННЫЙ РАЗВЕДЧИК: MARTHA",
+      "corrupted_tank": "ИСПОРЧЕННЫЙ ТАНК: BRIGGS",
+      "corrupted_engineer": "ИСПОРЧЕННЫЙ ИНЖЕНЕР: KAELEN",
+      "queen": "КОРОЛЕВА",
+      "elite_threat": "ЭЛИТНАЯ УГРОЗА"
+    },
+    "rgb": {
+      "wave": "ВОЛНА {n}",
+      "undiscovered_path": "??? НЕОТКРЫТЫЙ ПУТЬ ???",
+      "explore_to_reveal": "Исследуйте другие варианты в новом забеге, чтобы открыть.",
+      "chapter_of": "ГЛАВА {n} ИЗ {total}",
+      "settings": "Настройки",
+      "path_count": "ПУТЬ {n}",
+      "open_path_history": "Открыть историю пути и сводку",
+      "available_actions": "Доступные действия",
+      "continue": "ПРОДОЛЖИТЬ",
+      "hint_of": "ПОДСКАЗКА {n} ИЗ {total}",
+      "no_more_hints": "Для этой главы больше нет подсказок.",
+      "take": "ВЗЯТЬ",
+      "return_to_scene": "ВЕРНУТЬСЯ К СЦЕНЕ",
+      "inventory": "ИНВЕНТАРЬ",
+      "nothing_carried": "Пока ничего нет.",
+      "your_path": "ТВОЙ ПУТЬ",
+      "current_objective": "Текущая цель — {goal}",
+      "decisions_changed": "РЕШЕНИЯ, ИЗМЕНИВШИЕ ЭТОТ ЗАБЕГ",
+      "evidence_preserved": "СОХРАНЁННЫЕ УЛИКИ",
+      "branch_tree": "ДЕРЕВО СЮЖЕТНЫХ ВЕТОК И ОТКРЫТЫЕ ПУТИ",
+      "paused": "ПАУЗА",
+      "resume": "ПРОДОЛЖИТЬ",
+      "settings_caps": "НАСТРОЙКИ",
+      "exit_simulation": "ВЫЙТИ ИЗ СИМУЛЯЦИИ",
+      "retry_rescue": "ПОВТОРИТЬ СПАСЕНИЕ",
+      "load_chapter": "ЗАГРУЗИТЬ ГЛАВУ",
+      "flowchart": "СХЕМА",
+      "retry": "ПОВТОРИТЬ"
+    },
+    "cinematic": {
+      "restoring": "АРХИВНЫЙ РОЛИК // ВОССТАНОВЛЕНИЕ СИГНАЛА",
+      "advances": "Архив переходит к следующей восстановленной сцене.",
+      "skip_hint": "НАЖМИТЕ ЛЮБУЮ КНОПКУ / КЛАВИШУ, ЧТОБЫ ПРОПУСТИТЬ"
     }
   },
   "narrative": {

@@ -1105,6 +1105,110 @@
       "tab_tiers": "Dossiê",
       "tab_bounties": "Diretivas",
       "tab_workshop": "Oficina de fragmentos"
+    },
+    "prompt": {
+      "access_base_shop": "ACESSAR LOJA DA BASE {type}",
+      "upgrade_o2": "MELHORAR GERADOR DE O₂",
+      "turret_controls": "CONTROLES DA TORRE DE DEFESA",
+      "blast_locked": "LIMIAR ANTIEXPLOSÃO BLOQUEADO — {lock}"
+    },
+    "telemeter": {
+      "passive_scan": "VARREDURA DE SUPERFÍCIE // PASSIVA",
+      "sector": "SETOR",
+      "explored_corridor": "CORREDOR EXPLORADO",
+      "coords": "[X: {x}, Z: {z}]",
+      "biome_tier": "BIOMA: {biome} // NÍVEL {tier}",
+      "stable": "ESTÁVEL",
+      "occluded": "OCLUÍDO",
+      "dist": "DIST: {meters}m"
+    },
+    "console": {
+      "online": "ONLINE",
+      "ready_deficit": "PRONTO — DÉFICIT DE RECURSOS",
+      "ready_permitted": "PRONTO — CONSTRUÇÃO PERMITIDA",
+      "resolved": "RESOLVIDO",
+      "choice_required": "ESCOLHA NECESSÁRIA",
+      "event_resolved": "Evento do terminal resolvido. Os sistemas da loja continuam disponíveis.",
+      "engineer_verify": "VERIFICAR (ENGENHEIRO)",
+      "mimic_neutralized": "AVISO: ASSINATURA DO TERMINAL FALSIFICADA — MÍMICO NEUTRALIZADO. SEGURO PROSSEGUIR."
+    },
+    "journal": {
+      "day_time": "D{day} {minute}:{second}"
+    },
+    "bank": {
+      "deposit_ready": "PRONTO PARA DEPOSITAR. CANAL DE TRANSFERÊNCIA ABERTO.",
+      "deposit_to_fund": "DEPOSITE RECURSOS PARA FINANCIAR OS REPAROS DE O₂.",
+      "hp_full": "PV CHEIO",
+      "conversions_available": "×{count} DISPONÍVEIS",
+      "integrity_full": "A INTEGRIDADE DO EXOTRAJE ESTÁ CHEIA. NÃO É PRECISO CONVERTER.",
+      "next_cost_none": "PRÓXIMO CUSTO: NENHUM",
+      "generator_maxed": "A SAÍDA DO GERADOR DE O₂ ESTÁ NO MÁXIMO PARA ESTA BAIA.",
+      "repair_to_create_zone": "REPARE ESTE MÓDULO PARA CRIAR UMA ZONA SEGURA DE O₂ PERTO DA NAVE.",
+      "upgrades_expand_field": "MELHORIAS EXPANDEM O CAMPO AZUL DE O₂ PARA RECARREGAR DE MAIS LONGE."
+    },
+    "skills": {
+      "completed": "CONCLUÍDO",
+      "upgrade": "MELHORAR",
+      "unlock": "DESBLOQUEAR"
+    },
+    "turret": {
+      "built_north_door": "CONSTRUÍDA — CONTROLES NA PORTA NORTE",
+      "build_cost": "CUSTO DE CONSTRUÇÃO: {cost}",
+      "built": "TORRE CONSTRUÍDA",
+      "build": "CONSTRUIR TORRE DE DEFESA",
+      "requires_o2": "EXIGE REPARO DE O₂",
+      "build_not_saved": "CONSTRUÇÃO NÃO SALVA — NENHUM RECURSO GASTO. LIBERE ESPAÇO E TENTE NOVAMENTE.",
+      "level_hp": "NÍV. {level} // PV {hp}/{maxHp}",
+      "stats": "DANO: {damage} | ALCANCE: {range}u | CADÊNCIA: {rate}s",
+      "next_upgrade_cost": "CUSTO DA PRÓXIMA MELHORIA: {cost}",
+      "max_level": "CUSTO DA PRÓXIMA MELHORIA: NÍVEL MÁXIMO",
+      "repair_cost": "CUSTO DE REPARO: {cost}",
+      "repair_full_hp": "CUSTO DE REPARO: PV CHEIO"
+    },
+    "boss": {
+      "cybershell_titan": "TITÃ CIBERCASCO",
+      "cryo_goliath": "CARACOL CRIO-GOLIAS",
+      "plagueshell_behemoth": "BEEMOTE CASCA-PRAGA",
+      "corrupted_scout": "BATEDORA CORROMPIDA: MARTHA",
+      "corrupted_tank": "TANQUE CORROMPIDO: BRIGGS",
+      "corrupted_engineer": "ENGENHEIRO CORROMPIDO: KAELEN",
+      "queen": "A RAINHA",
+      "elite_threat": "AMEAÇA DE ELITE"
+    },
+    "rgb": {
+      "wave": "ONDA {n}",
+      "undiscovered_path": "??? CAMINHO NÃO DESCOBERTO ???",
+      "explore_to_reveal": "Explore outras escolhas em outra partida para revelar.",
+      "chapter_of": "CAPÍTULO {n} DE {total}",
+      "settings": "Ajustes",
+      "path_count": "CAMINHO {n}",
+      "open_path_history": "Abrir histórico de caminhos e resumo",
+      "available_actions": "Ações disponíveis",
+      "continue": "CONTINUAR",
+      "hint_of": "DICA {n} DE {total}",
+      "no_more_hints": "Não há mais dicas para este capítulo.",
+      "take": "PEGAR",
+      "return_to_scene": "VOLTAR À CENA",
+      "inventory": "INVENTÁRIO",
+      "nothing_carried": "Nada carregado ainda.",
+      "your_path": "SEU CAMINHO",
+      "current_objective": "Objetivo atual — {goal}",
+      "decisions_changed": "DECISÕES QUE MUDARAM ESTA PARTIDA",
+      "evidence_preserved": "PROVAS PRESERVADAS",
+      "branch_tree": "ÁRVORE DE RAMOS NARRATIVOS E CAMINHOS DESBLOQUEADOS",
+      "paused": "PAUSADO",
+      "resume": "RETOMAR",
+      "settings_caps": "AJUSTES",
+      "exit_simulation": "SAIR DA SIMULAÇÃO",
+      "retry_rescue": "TENTAR RESGATE NOVAMENTE",
+      "load_chapter": "CARREGAR CAPÍTULO",
+      "flowchart": "FLUXOGRAMA",
+      "retry": "TENTAR NOVAMENTE"
+    },
+    "cinematic": {
+      "restoring": "CINEMÁTICA DE ARQUIVO // RESTAURANDO SINAL",
+      "advances": "O arquivo avança para a próxima cena reconstruída.",
+      "skip_hint": "PRESSIONE QUALQUER BOTÃO / TECLA PARA PULAR"
     }
   },
   "narrative": {

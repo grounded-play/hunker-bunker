@@ -45,12 +45,8 @@
         "total": 119
     },
     "runtime": {
-        "modules": {
-            "src/minigames/rgb/cinematicPlayer.js": 3,
-            "src/minigames/rgb/runtime.js": 32,
-            "src/threeGame.js": 51
-        },
-        "total": 86
+        "modules": {},
+        "total": 0
     },
     "orphanKeys": 34
 }

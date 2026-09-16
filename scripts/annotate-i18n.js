@@ -179,7 +179,7 @@ export function planAnnotations(html, runtimeWrittenIds = new Set()) {
         // Attributes belong to this element, checked while it is on the stack.
         if (!frame.excluded) {
             for (const attr of TRANSLATABLE_ATTRS) {
-                const attrMatch = attrsRaw.match(new RegExp(`\\b${attr}\\s*=\\s*"([^"]*)"`));
+                const attrMatch = attrsRaw.match(new RegExp(`(?<![-\\w])${attr}\\s*=\\s*"([^"]*)"`));
                 if (!attrMatch) continue;
                 if (new RegExp(`data-i18n-${attr}\\s*=`).test(attrsRaw)) continue;
                 const value = attrMatch[1].replace(/&[a-z]+;|&#\d+;/gi, ' ').trim();

@@ -1105,6 +1105,110 @@
       "tab_tiers": "Dossier",
       "tab_bounties": "Direktiven",
       "tab_workshop": "Splitter-Werkstatt"
+    },
+    "prompt": {
+      "access_base_shop": "{type}-BASIS-SHOP ÖFFNEN",
+      "upgrade_o2": "O₂-GENERATOR AUFRÜSTEN",
+      "turret_controls": "STEUERUNG DES VERTEIDIGUNGSGESCHÜTZES",
+      "blast_locked": "SPRENGSCHWELLE GESPERRT – {lock}"
+    },
+    "telemeter": {
+      "passive_scan": "OBERFLÄCHENSCAN // PASSIV",
+      "sector": "SEKTOR",
+      "explored_corridor": "ERKUNDETER KORRIDOR",
+      "coords": "[X: {x}, Z: {z}]",
+      "biome_tier": "BIOM: {biome} // STUFE {tier}",
+      "stable": "STABIL",
+      "occluded": "VERDECKT",
+      "dist": "DIST: {meters}m"
+    },
+    "console": {
+      "online": "ONLINE",
+      "ready_deficit": "BEREIT – RESSOURCENMANGEL",
+      "ready_permitted": "BEREIT – BAU ERLAUBT",
+      "resolved": "GELÖST",
+      "choice_required": "ENTSCHEIDUNG ERFORDERLICH",
+      "event_resolved": "Terminal-Ereignis gelöst. Shop-Systeme bleiben verfügbar.",
+      "engineer_verify": "INGENIEUR-PRÜFUNG",
+      "mimic_neutralized": "WARNUNG: TERMINALSIGNATUR GEFÄLSCHT – MIMIK AUSGESCHALTET. WEITERGEHEN IST SICHER."
+    },
+    "journal": {
+      "day_time": "T{day} {minute}:{second}"
+    },
+    "bank": {
+      "deposit_ready": "EINZAHLUNG BEREIT. RESSOURCENKANAL OFFEN.",
+      "deposit_to_fund": "RESSOURCEN EINZAHLEN, UM O₂-REPARATUREN ZU FINANZIEREN.",
+      "hp_full": "TP VOLL",
+      "conversions_available": "×{count} VERFÜGBAR",
+      "integrity_full": "EXOANZUG-INTEGRITÄT IST VOLL. KEINE UMWANDLUNG NÖTIG.",
+      "next_cost_none": "NÄCHSTE KOSTEN: KEINE",
+      "generator_maxed": "DIE O₂-GENERATORLEISTUNG IST FÜR DIESE BUCHT MAXIMAL.",
+      "repair_to_create_zone": "REPARIERE DIESES MODUL, UM EINE SICHERE O₂-ZONE AM SCHIFF ZU SCHAFFEN.",
+      "upgrades_expand_field": "UPGRADES ERWEITERN DAS BLAUE O₂-FELD, SODASS DU VON WEITER WEG AUFFÜLLST."
+    },
+    "skills": {
+      "completed": "ABGESCHLOSSEN",
+      "upgrade": "AUFWERTEN",
+      "unlock": "FREISCHALTEN"
+    },
+    "turret": {
+      "built_north_door": "GEBAUT – STEUERUNG AN DER NORDTÜR",
+      "build_cost": "BAUKOSTEN: {cost}",
+      "built": "GESCHÜTZ GEBAUT",
+      "build": "VERTEIDIGUNGSGESCHÜTZ BAUEN",
+      "requires_o2": "ERFORDERT O₂-REPARATUR",
+      "build_not_saved": "BAU NICHT GESPEICHERT – KEINE RESSOURCEN VERBRAUCHT. SPEICHERPLATZ FREIGEBEN UND ERNEUT VERSUCHEN.",
+      "level_hp": "STUFE {level} // TP {hp}/{maxHp}",
+      "stats": "SCHADEN: {damage} | REICHWEITE: {range}u | RATE: {rate}s",
+      "next_upgrade_cost": "NÄCHSTE UPGRADE-KOSTEN: {cost}",
+      "max_level": "NÄCHSTE UPGRADE-KOSTEN: MAXIMALSTUFE ERREICHT",
+      "repair_cost": "REPARATURKOSTEN: {cost}",
+      "repair_full_hp": "REPARATURKOSTEN: VOLLE TP"
+    },
+    "boss": {
+      "cybershell_titan": "CYBERSCHALEN-TITAN",
+      "cryo_goliath": "KRYO-GOLIATH-SCHNECKE",
+      "plagueshell_behemoth": "SEUCHENSCHALEN-BEHEMOTH",
+      "corrupted_scout": "KORRUMPIERTER SPÄHER: MARTHA",
+      "corrupted_tank": "KORRUMPIERTER TANK: BRIGGS",
+      "corrupted_engineer": "KORRUMPIERTER INGENIEUR: KAELEN",
+      "queen": "DIE KÖNIGIN",
+      "elite_threat": "ELITE-BEDROHUNG"
+    },
+    "rgb": {
+      "wave": "WELLE {n}",
+      "undiscovered_path": "??? UNENTDECKTER PFAD ???",
+      "explore_to_reveal": "Erkunde in einem anderen Durchlauf andere Entscheidungen, um es aufzudecken.",
+      "chapter_of": "KAPITEL {n} VON {total}",
+      "settings": "Einstellungen",
+      "path_count": "PFAD {n}",
+      "open_path_history": "Pfadverlauf und Rückblick öffnen",
+      "available_actions": "Verfügbare Aktionen",
+      "continue": "WEITER",
+      "hint_of": "HINWEIS {n} VON {total}",
+      "no_more_hints": "Keine weiteren Hinweise für dieses Kapitel.",
+      "take": "NEHMEN",
+      "return_to_scene": "ZURÜCK ZUR SZENE",
+      "inventory": "INVENTAR",
+      "nothing_carried": "Noch nichts dabei.",
+      "your_path": "DEIN PFAD",
+      "current_objective": "Aktuelles Ziel – {goal}",
+      "decisions_changed": "ENTSCHEIDUNGEN, DIE DIESEN DURCHLAUF VERÄNDERT HABEN",
+      "evidence_preserved": "GESICHERTE BEWEISE",
+      "branch_tree": "ERZÄHLBAUM & FREIGESCHALTETE PFADE",
+      "paused": "PAUSIERT",
+      "resume": "FORTSETZEN",
+      "settings_caps": "EINSTELLUNGEN",
+      "exit_simulation": "SIMULATION VERLASSEN",
+      "retry_rescue": "RETTUNG WIEDERHOLEN",
+      "load_chapter": "KAPITEL LADEN",
+      "flowchart": "FLUSSDIAGRAMM",
+      "retry": "ERNEUT VERSUCHEN"
+    },
+    "cinematic": {
+      "restoring": "ARCHIV-CINEMATIC // SIGNAL WIRD WIEDERHERGESTELLT",
+      "advances": "Das Archiv geht zur nächsten rekonstruierten Szene über.",
+      "skip_hint": "BELIEBIGE TASTE ZUM ÜBERSPRINGEN"
     }
   },
   "narrative": {

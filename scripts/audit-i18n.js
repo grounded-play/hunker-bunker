@@ -107,6 +107,7 @@ export function isPlayerFacingText(raw) {
     if (/^[a-z][a-zA-Z0-9]*$/.test(s)) return false;        // camelCase identifier
     if (/^[a-z0-9]+(?:[-_]+[a-z0-9]+)+$/.test(s)) return false; // kebab/snake/BEM token
     if (/^[A-Z][A-Z0-9]*(?:_[A-Z0-9]+)+$/.test(s)) return false; // CONST_NAME
+    if (/^[a-z][a-z0-9_]*(?:\.[a-z0-9_]+)+$/.test(s)) return false; // a catalog key, not display text
     if (/^#[0-9a-fA-F]{3,8}$/.test(s)) return false;        // color
     if (/^[a-z-]+\s*:\s*[^;]+;?$/.test(s)) return false;    // css declaration
     if (/^\d[\d\s.,:%x/-]*$/.test(s)) return false;         // pure numeric readout
@@ -200,7 +201,7 @@ export function auditMarkup(html) {
         // so the element's own id is the owner of its own attribute findings.
         stack.push(frame);
         for (const attr of TRANSLATABLE_ATTRS) {
-            const attrMatch = attrsRaw.match(new RegExp(`\\b${attr}\\s*=\\s*"([^"]*)"`));
+            const attrMatch = attrsRaw.match(new RegExp(`(?<![-\\w])${attr}\\s*=\\s*"([^"]*)"`));
             if (!attrMatch) continue;
             const value = attrMatch[1].replace(/&[a-z]+;|&#\d+;/gi, ' ').trim();
             if (!isPlayerFacingText(value) || isExcluded()) continue;
