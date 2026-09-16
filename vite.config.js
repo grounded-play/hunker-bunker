@@ -53,6 +53,9 @@ export default defineConfig({
           if (id.includes('node_modules/three')) {
             return 'vendor-three';
           }
+          if (id.includes('/src/debug') || id.includes('/src/sessionLogSink')) {
+            return 'debug-tools';
+          }
         }
       }
     }
