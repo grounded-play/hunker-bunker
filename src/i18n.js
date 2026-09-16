@@ -242,14 +242,34 @@ export function applyStaticTranslations(root = (typeof document !== 'undefined' 
 // Auto-initialize locale on module load
 currentLocale = detectInitialLocale();
 
+/**
+ * Mirror the active locale onto <html lang>. setLocale() does this when the
+ * player switches, but a session that *starts* in a stored or Steam-detected
+ * locale never went through setLocale, so the document claimed lang="en" while
+ * showing Japanese. That drives font fallback and CJK glyph selection, text
+ * hyphenation, and what a screen reader announces.
+ */
+function syncDocumentLang() {
+    try {
+        if (typeof document !== 'undefined' && document.documentElement) {
+            document.documentElement.lang = currentLocale;
+        }
+    } catch {
+        // Ignore document element errors
+    }
+}
+
 // Keep static markup in sync: translate once the document is parsed, and again
 // whenever the player changes language, so switching never needs a reload.
 if (typeof window !== 'undefined' && typeof document !== 'undefined') {
+    syncDocumentLang();
     window.addEventListener('locale-changed', () => {
+        syncDocumentLang();
         applyStaticTranslations();
     });
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', () => {
+            syncDocumentLang();
             applyStaticTranslations();
         }, { once: true });
     } else {

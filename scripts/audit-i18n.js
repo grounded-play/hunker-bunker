@@ -45,6 +45,25 @@ export const DEBUG_ALLOWLIST = Object.freeze({
     ],
     /** Any id matching these is developer tooling regardless of nesting. */
     screenPatterns: [/^dev-/, /^debug-/, /-debug$/, /^qa-/],
+    /**
+     * Developer/diagnostic strings that live inside player-facing modules, so
+     * they cannot be excluded by filename. Build stamps, FPS counters, seeds
+     * and the debug toolbar's own labels are read by developers, not players,
+     * and translating them would obscure the diagnostics.
+     */
+    strings: [
+        'GOD', 'AMMO', 'GHOST/FLY', 'DC',
+        'GOD✓', 'AMMO✓', 'GHOST/FLY✓', '👻 NOCLIP / FLY',
+        'FPS: --', 'SYSTEM BUILD'
+    ],
+    stringPatterns: [
+        /^Built \$\{/,          // build timestamp tooltip
+        /^SYSTEM BUILD/,         // build stamp on the loader
+        /^ACH$/,                 // 3-letter monogram derived from a title, not a word
+        /^FPS: /,                // frame counter
+        /^SEED: /,               // run seed readout, a debugging identifier
+        /^DAILY-/                // daily-ops date key
+    ],
     modules: [
         'debugConsole.js',
         'debugTileGrid.js',
@@ -115,6 +134,55 @@ export function isPlayerFacingText(raw) {
     return true;
 }
 
+export function findRuntimeWrittenIds(sourceDir, htmlIds = []) {
+    const files = [];
+    const walk = (dir) => {
+        for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+            if (entry.name === 'locales' || entry.name === 'node_modules') continue;
+            const full = path.join(dir, entry.name);
+            if (entry.isDirectory()) { walk(full); continue; }
+            if (entry.name.endsWith('.js') && !entry.name.includes('.test.')) files.push(full);
+        }
+    };
+    walk(sourceDir);
+    const entry = path.resolve(sourceDir, '..', 'main.js');
+    if (fs.existsSync(entry)) files.push(entry);
+
+    const ids = new Set();
+    const TEXT_WRITE = /\.(textContent|innerHTML|innerText)\s*\+?=/;
+    for (const file of files) {
+        const source = fs.readFileSync(file, 'utf8');
+        const lines = source.split('\n');
+        for (const id of htmlIds) {
+            if (ids.has(id) || !source.includes(id)) continue;
+            for (let i = 0; i < lines.length; i += 1) {
+                if (!lines[i].includes(id)) continue;
+                // A write on the same line or in the handful of lines that follow
+                // covers getElementById(..).textContent=, querySelector('#id'), and
+                // the common lookup-then-assign pair.
+                if (TEXT_WRITE.test(lines.slice(i, i + 6).join('\n'))) { ids.add(id); break; }
+                // Or the id is handed to a text-setting helper: setText('id', value).
+                if (new RegExp(`(?:setText|setLabel|setContent|writeText)\\(\\s*['"]${id}['"]`).test(lines[i])) {
+                    ids.add(id);
+                    break;
+                }
+                // Or the lookup is bound to a variable written to anywhere in the file.
+                const bound = lines[i].match(/(?:const|let|var)\s+(\w+)\s*=/);
+                if (bound && new RegExp(`\\b${bound[1]}\\s*(?:\\??\\.)\\s*(?:textContent|innerHTML|innerText)\\s*\\+?=`).test(source)) {
+                    ids.add(id);
+                    break;
+                }
+            }
+        }
+    }
+    return ids;
+}
+
+/** Every id declared in the markup, so the scan above has candidates to test. */
+export function collectHtmlIds(html) {
+    return [...new Set([...html.matchAll(/\bid="([^"]+)"/g)].map((m) => m[1]))];
+}
+
 // ---------------------------------------------------------------------------
 // 1. Static markup
 // ---------------------------------------------------------------------------
@@ -125,7 +193,7 @@ export function isPlayerFacingText(raw) {
  * makes the baseline reviewable: "multiplayer-modal: 61" is actionable,
  * "index.html: 454" is not.
  */
-export function auditMarkup(html) {
+export function auditMarkup(html, runtimeWrittenIds = new Set()) {
     const withoutScripts = html
         .replace(/<script[\s\S]*?<\/script>/gi, (m) => '\n'.repeat((m.match(/\n/g) || []).length))
         .replace(/<style[\s\S]*?<\/style>/gi, (m) => '\n'.repeat((m.match(/\n/g) || []).length))
@@ -151,6 +219,14 @@ export function auditMarkup(html) {
         return '(document)';
     };
 
+    /**
+     * An element whose text JS writes is not "unannotated markup" - it is
+     * runtime UI, counted and fixed on the runtime side. Counting it here too
+     * would demand a data-i18n that the locale handler would then use to
+     * clobber the live value.
+     */
+    const isRuntimeOwned = (frame) => Boolean(frame?.id) && runtimeWrittenIds.has(frame.id);
+
     /** True when any ancestor marks this subtree as debug-only or intentionally native. */
     const isExcluded = () => stack.some(({ id }) => id && (
         DEBUG_ALLOWLIST.screens.includes(id)
@@ -171,7 +247,7 @@ export function auditMarkup(html) {
             const owner = stack[stack.length - 1];
             const hasAnnotation = owner && /\bdata-i18n\s*=/.test(owner.attrs);
             const decoded = text.replace(/&[a-z]+;|&#\d+;/gi, ' ').trim();
-            if (isPlayerFacingText(decoded) && !isExcluded()) {
+            if (isPlayerFacingText(decoded) && !isExcluded() && !isRuntimeOwned(owner)) {
                 if (hasAnnotation) {
                     annotated.text += 1;
                 } else {
@@ -344,6 +420,13 @@ export function isKeyReferenced(key, corpus) {
     }
 }
 
+/** Diagnostics that live in player-facing modules and must stay in English. */
+export function isDeveloperString(text) {
+    const s = String(text).trim();
+    if (DEBUG_ALLOWLIST.strings.includes(s)) return true;
+    return DEBUG_ALLOWLIST.stringPatterns.some((re) => re.test(s));
+}
+
 // ---------------------------------------------------------------------------
 // Report assembly
 // ---------------------------------------------------------------------------
@@ -363,7 +446,8 @@ export function collectSourceFiles(dir, acc = []) {
 
 export function runAudit() {
     const html = fs.readFileSync(path.join(ROOT_DIR, 'index.html'), 'utf8');
-    const { findings: markupFindings, annotated } = auditMarkup(html);
+    const runtimeWrittenIds = findRuntimeWrittenIds(path.join(ROOT_DIR, 'src'), collectHtmlIds(html));
+    const { findings: markupFindings, annotated } = auditMarkup(html, runtimeWrittenIds);
 
     const screens = {};
     for (const finding of markupFindings) {
@@ -373,12 +457,16 @@ export function runAudit() {
     const modules = {};
     const moduleDetail = {};
     let corpus = html;
-    for (const file of collectSourceFiles(path.join(ROOT_DIR, 'src'))) {
+    // main.js is the entry point and lives at the repo root, not under src/.
+    // Scanning only src/ hid its loader log and boot copy entirely.
+    const sourceFiles = [path.join(ROOT_DIR, 'main.js'), ...collectSourceFiles(path.join(ROOT_DIR, 'src'))]
+        .filter((file) => fs.existsSync(file));
+    for (const file of sourceFiles) {
         const rel = path.relative(ROOT_DIR, file);
         const source = fs.readFileSync(file, 'utf8');
         corpus += source;
         if (DEBUG_ALLOWLIST.modules.includes(path.basename(file))) continue;
-        const findings = auditRuntimeStrings(source);
+        const findings = auditRuntimeStrings(source).filter((f) => !isDeveloperString(f.text));
         if (findings.length) {
             modules[rel] = findings.length;
             moduleDetail[rel] = findings;

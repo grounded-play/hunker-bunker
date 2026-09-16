@@ -54,20 +54,15 @@
       "quit": "ゲーム終了",
       "aria_label_operations_and_steam": "操作と Steam コマンド",
       "title_operator_roster_callsign": "オペレーター名簿 — コールサインと装備",
-      "0_0_arsenal": "0 / 0 アーセナル",
       "title_steam_vault_view": "Steam ヴォールト — Steam 所有のスキンを表示",
       "title_archive_simulations_unlockable": "アーカイブ・シミュレーション — 解放可能なストーリーミニゲーム",
       "rgb": "RGB",
       "title_fabrication_bay_print": "製造ベイ — 廃材から装備を出力（基地に電力が入ると解放）",
-      "0_0_printed": "0 / 0 出力済み",
       "aria_label_records_and_dossier": "記録とドシエのコマンド",
       "title_bunker_archive_discovered": "バンカー・アーカイブ — 発見したロア記録",
-      "0_27_logs": "0 / 27 ログ",
       "title_field_codex_catalogued": "フィールド・コデックス — 敵性体・設備・現象の記録",
-      "0_0_intel": "0 / 0 情報",
       "title_tactical_dossier_beta": "戦術ドシエ — ベータシーズン1の進行",
       "title_achievement_records_unlocked": "実績記録 — 解放されたランのマイルストーン",
-      "locked": "ロック中",
       "tank": "タンク",
       "aria_label_s_o_u": "S.O.U.L — 速度・O2消費・回収範囲",
       "speed": "速度",
@@ -81,7 +76,6 @@
       "med": "医療",
       "title_choose_operator_polish": "オペレーターの塗装を選択",
       "suit_polish": "スーツ塗装",
-      "standard_issue": "標準支給",
       "recon_frame": "偵察フレーム",
       "scout": "スカウト",
       "sprint_burst": "スプリントバースト",
@@ -100,12 +94,16 @@
       "roster": "▣ 名簿",
       "vault": "◈ STEAMヴォールト",
       "archive_sims": "◈ アーカイブシム",
-      "fab_bay": "◇ 製造ベイ",
       "archive": "◈ アーカイブ",
       "codex": "❑ コーデックス",
       "dossier": "◈ ドシエ",
       "achievements": "実績",
-      "initialize": "開始"
+      "initialize": "開始",
+      "vault_tooltip": "クリックして Steam ヴォールトのスキン一覧を開く",
+      "status_logs": "ログ {found} / {total}",
+      "status_intel": "情報 {found} / {total}",
+      "status_printed": "出力 {printed} / {total}",
+      "status_armed": "武装 {armed}/{total}"
     },
     "settings": {
       "title": "システム設定",
@@ -153,8 +151,7 @@
       "abort_current_mission": "現在の任務を中止",
       "abort_mission": "任務中止",
       "title_active_crosshair_color": "現在のクロスヘア色",
-      "placeholder_agent": "エージェント",
-      "checking": "確認中…"
+      "placeholder_agent": "エージェント"
     },
     "action": {
       "open": "開く",
@@ -267,7 +264,6 @@
       "aria_label_pre_mission_armory": "任務前アーモリー"
     },
     "roster": {
-      "title": "▣ オペレーター記録 // 展開テレメトリ",
       "deepest_sector": "最深セクター：",
       "total_distance": "総距離：",
       "hostiles": "敵対勢力：",
@@ -276,17 +272,18 @@
       "decal": "デカール：",
       "finish": "スキン：",
       "hint": "製造ベイで武器を製作するとここで装備できます。外観はSTEAMヴォールトでカスタマイズできます。",
-      "confirm": "確認して出撃",
       "randomize": "コールサインをランダム化",
       "callsign": "コールサイン：",
       "placeholder_agent_01": "AGENT-01",
-      "random": "🎲 ランダム",
       "sector_0": "セクター 0",
       "0_eliminated": "0 撃破",
       "none": "なし",
-      "arsenal_0_0_schematics_fabricated": "アーセナル：設計図 0 / 0 製造済み",
       "equipped_sidearm": "装備中のサイドアーム",
-      "equipped_steam_cosmetics": "装備中の Steam スキン"
+      "equipped_steam_cosmetics": "装備中の Steam スキン",
+      "no_weapons": "武器は未製造",
+      "print_hint": "製造ベイでテック 12 / コイン 6 を払えば確実にスキャッター・リピーターを出力できる。",
+      "equipped": "✓ 装備中",
+      "equip": "装備する"
     },
     "dlg": {
       "channel": "マザーシップ通信チャンネル7",
@@ -305,34 +302,19 @@
     "loading": {
       "aria_label_build_and_developer": "ビルドと開発者情報",
       "system_build": "システムビルド",
-      "build_dev_loading_revision": "ビルド DEV // リビジョン読込中…",
       "dev_console": "開発コンソール",
-      "initializing_systems": "システム初期化中",
-      "mothership_command": "マザーシップ司令部",
-      "connecting_to_tactical_network": "戦術ネットワークに接続中..."
+      "initializing_systems": "システム初期化中"
     },
     "splash_steam_badge": {
       "title_click_to_open": "クリックして Steam オーバーレイのプロフィールを開く",
       "aria_label_open_steam_profile": "Steam プロフィールを開く"
-    },
-    "splash_steam_persona": {
-      "steam_offline": "Steam オフライン"
-    },
-    "splash_steam_status": {
-      "not_connected": "未接続"
     },
     "splash": {
       "tactical_command_v2_0": "戦術コマンド v2.0"
     },
     "title_profile_hud": {
       "aria_label_current_operator_profile": "現在のオペレーター・プロフィール",
-      "active_operator_profile": "アクティブなオペレーター・プロフィール",
-      "agent": "エージェント",
-      "tank": "タンク",
-      "longest_00_00": "最長 00:00",
-      "depth_surface": "深度 地表",
-      "deaths_0": "死亡 0",
-      "class_best_0000": "クラス最高 0000"
+      "active_operator_profile": "アクティブなオペレーター・プロフィール"
     },
     "about": {
       "aria_label_close_credits": "クレジットを閉じる",
@@ -357,7 +339,11 @@
     },
     "archive": {
       "bunker_archive": "◈ バンカー・アーカイブ",
-      "logs_recovered_0_27": "回収ログ：0 / 27"
+      "recovered_kicker": "アーカイブ・シミュレーションを復元",
+      "in_progress": "進行中",
+      "ready": "準備完了",
+      "best_score": "◈ ベスト：{score} 点",
+      "rgb_title": "RGB：RIVERSIDE GLOBAL 'BOTICS"
     },
     "close_season_pass": {
       "aria_label_close_tactical_dossier": "戦術ドシエを閉じる"
@@ -369,7 +355,6 @@
     "archive_log_detail": {
       "aria_label_close_archive_log": "アーカイブ記録を閉じる",
       "recovered_archive_record": "◈ 復元アーカイブ記録",
-      "log_a01": "LOG-A01",
       "decryption_complete_read_only": "復号完了 // 読取専用"
     },
     "close_codex": {
@@ -378,14 +363,24 @@
     "codex": {
       "field_intel_discovered_specimens_lore": "◈ フィールド情報 // 発見標本とロア",
       "catalogued_by_sub_terran_encounter": "地下遭遇別に分類",
-      "entries_recovered_0_0": "回収エントリ：0 / 0"
+      "intel_record_kicker": "❑ {category} 情報記録",
+      "entries_recovered": "回収エントリ：{found} / {total}",
+      "endings_archive": "◈ 遠征エンディング・アーカイブ // 全10の軌跡とコデックスの要",
+      "endings_sub": "十の歴史的結末、ロックされたシルエット、そして今回の展開で特定の道を閉ざす不可逆の決断を収録する。",
+      "discovered": "発見済み",
+      "locked_this_run": "このランではロック",
+      "undiscovered": "未発見",
+      "classified": "機密の遠征軌跡",
+      "closed_by": "🔒 遠征の要の決断により閉ざされた：",
+      "view_record": "{name} の情報記録を見る",
+      "click_hint": "クリックして情報ドシエとアートを表示",
+      "uncatalogued": "??? — 未分類",
+      "encounter_hint": "フィールドで遭遇すると記録を回収できる。"
     },
     "close_codex_detail": {
       "aria_label_close_codex_entry": "コデックス項目を閉じる"
     },
     "codex_detail": {
-      "field_intel_record": "❑ フィールド情報記録",
-      "cybersnail": "サイバースネイル",
       "entry_recovered_read_only_dossier": "エントリ回収 // 読取専用ドシエ"
     },
     "close_achievements": {
@@ -393,7 +388,6 @@
     },
     "achievements": {
       "combat_citations_deep_crust_commendations": "◈ 戦闘表彰 // 深部地殻功績",
-      "0_0_unlocked": "0 / 0 解放",
       "title_copy_a_portable": "携帯用セーブコードをコピー",
       "copy_save_code": "セーブコードをコピー"
     },
@@ -434,9 +428,7 @@
     },
     "operator_polish": {
       "operator_polish": "◆ オペレーター塗装",
-      "16_bit_suit_tint_matrix": "16ビット・スーツ配色マトリクス // ロック中の仕上げはフィールド実績が必要",
-      "standard_issue": "標準支給",
-      "equipped": "装備中"
+      "16_bit_suit_tint_matrix": "16ビット・スーツ配色マトリクス // ロック中の仕上げはフィールド実績が必要"
     },
     "close_tactical_map": {
       "aria_label_close_tactical_map": "戦術マップを閉じる"
@@ -473,50 +465,26 @@
     "player_trade": {
       "operative_link_field_barter": "オペレーティブ・リンク // 野外取引",
       "link_active": "リンク確立",
-      "local_operative": "ローカル・オペレーティブ",
-      "tank_command": "タンク // 指揮",
       "shells": "シェル",
       "ammo": "弾薬",
       "medkits": "メドキット",
       "o2_filter": "O2 フィルター",
-      "squadmate": "分隊メイト",
-      "scout_recon": "スカウト // 偵察",
       "shells_offered": "提示シェル",
       "ammo_offered": "提示弾薬",
       "medkits_offered": "提示メドキット",
       "o2_filters_offered": "提示 O2 フィルター",
-      "awaiting_transfer_confirmation": "転送の確認待ち",
       "cancel_link": "リンクを解除",
       "confirm_transfer": "転送を確認"
     },
     "close_player_trade": {
       "aria_label_close_trade_link": "取引リンクを閉じる"
     },
-    "npc_dialogue_name": {
-      "sister_val": "シスター・ヴァル"
-    },
-    "npc_dialogue_faction": {
-      "camp_tallow_suture_sanctuary": "キャンプ・タロー // 縫合の聖域"
-    },
     "npc_dialogue": {
       "affection_bond": "好感度 // 絆",
-      "side_story_stage_1_3": "サイドストーリー // ステージ 1/3：震えるシェルター",
-      "objective_survive_subzero_exposure_or": "目標：氷点下の曝露を生き延びるか、低酸素でキャンプ・タローに到達せよ。",
-      "intimate_attracted": "親密 / 好意",
-      "she_sets_down_a_steaming": "彼女は加熱した植物樹脂の入った湯気立つ青銅のやかんを置いた……",
       "press_1_4_or_click": "[1-4] を押すか選択カードをクリック • [ESC] 離脱"
-    },
-    "npc_dialogue_bond_badge": {
-      "neutral_lvl_0": "中立（レベル 0）"
     },
     "close_npc_dialogue": {
       "title_exit_dialogue": "会話を終了"
-    },
-    "npc_dialogue_speaker": {
-      "sister_val": "シスター・ヴァル："
-    },
-    "npc_dialogue_text": {
-      "you_re_shivering_contractor": "「震えているな、契約者……」"
     },
     "demo_end": {
       "transmission_terminated": "◈ 通信終了",
@@ -534,22 +502,14 @@
       "schematics_fabricated_0_8": "製造済み設計図：0 / 8"
     },
     "fab_roll": {
-      "insert_salvage_to_fabricate": "廃材を投入して製造",
-      "roll_fabricator": "ファブリケーター起動"
+      "insert_salvage_to_fabricate": "廃材を投入して製造"
     },
     "ui": {
       "exosuit_mark_iv_pressurized": "エクソスーツ // MARK-IV 与圧型",
       "bunker_level": "バンカー階層"
     },
-    "biome_label": {
-      "active_sector": "現在のセクター"
-    },
     "campaign_day_indicator": {
-      "title_campaign_day_and": "キャンペーン日数と現地の昼夜周期",
-      "day_1_06_43_day": "1日目 · 06:43 · 昼"
-    },
-    "hud_run_seed": {
-      "seed": "シード：—"
+      "title_campaign_day_and": "キャンペーン日数と現地の昼夜周期"
     },
     "hud_run_cards": {
       "aria_label_active_run_pressure": "現在のランの圧力"
@@ -571,8 +531,7 @@
       "node": "ノード"
     },
     "weapon_status": {
-      "sidearm": "サイドアーム",
-      "cache_18": "キャッシュ 18"
+      "sidearm": "サイドアーム"
     },
     "ship_status": {
       "ship_integrity": "艦体健全性"
@@ -582,15 +541,8 @@
       "aria_label_health": "体力",
       "cover": "遮蔽"
     },
-    "hazard_status": {
-      "cold_exposure": "低温曝露",
-      "seek_pressurized_cover": "与圧された遮蔽を探せ"
-    },
     "queens_ledger_hud": {
       "obedience_0_seats_1_4": "♛ 服従度 0 · 議席 1/4 · ベクトル：不安定"
-    },
-    "class_ability": {
-      "passive": "パッシブ"
     },
     "radar_scan": {
       "title_radar_scan_q": "レーダースキャン [Q]",
@@ -614,19 +566,12 @@
       "distance_covered": "踏破距離",
       "items_recovered": "回収アイテム",
       "o2_generator": "O₂ ジェネレーター",
-      "offline": "オフライン",
       "threats_eliminated": "排除した脅威",
       "time_elapsed": "経過時間",
       "aria_label_expedition_earnings_and": "遠征収益と銀行残高",
-      "banked_resources_preserved": "預けた資源は保持される",
-      "run_pressure_none": "ランの圧力：なし",
-      "black_box_none": "ブラックボックス：なし",
       "score": "スコア",
-      "new_best": "自己ベスト更新",
       "pts": "点",
-      "agent_lost_minimal_telemetry": "エージェント消失 — テレメトリ僅少",
       "world_seed": "ワールドシード：",
-      "logs_recovered_0_27": "回収ログ：0/27",
       "leaderboard_results": "◈ リーダーボード結果",
       "try_again": "もう一度"
     },
@@ -637,10 +582,15 @@
       "aria_label_close_log": "ログを閉じる"
     },
     "lore": {
-      "bunker_terminal_log_fragment": "バンカー端末 — ログ断片"
-    },
-    "lore_modal_key": {
-      "log_a01": "LOG-A01"
+      "bunker_terminal_log_fragment": "バンカー端末 — ログ断片",
+      "log_key": "LOG-{key}",
+      "text_unavailable": "[ログ本文を読み取れない — バンカーに戻れ]",
+      "date": "日付：{date}",
+      "loc": "座標：{coords}",
+      "open_log": "回収したログ {key} を開く",
+      "recovered": "回収済み // 記録を開く",
+      "encrypted": "暗号化 // ロック中",
+      "summary": "回収ログ：{found} / {total}"
     },
     "radio_sender_name": {
       "mothership_command": "マザーシップ司令部"
@@ -694,15 +644,6 @@
       "click": "クリック",
       "to_look_around": "見回すには"
     },
-    "mission_progress_hud": {
-      "mission_active": "任務進行中"
-    },
-    "camp_quest_hud": {
-      "quest_active": "クエスト進行中"
-    },
-    "loop_step_hud": {
-      "deploying": "展開中"
-    },
     "telemeter_integrity": {
       "integrity": "健全性："
     },
@@ -738,11 +679,8 @@
       "increase_generator_efficiency_o2_refill": "ジェネレーター効率を向上。O₂ 補充速度が2倍、消費速度が 20% 低下。",
       "cost_300_tech_100_coin": "コスト：テック 300 / コイン 100",
       "expedition_day": "遠征日数",
-      "day_1": "1日目",
       "cycle_phase": "サイクル段階",
-      "expedition": "遠征",
       "local_light": "現地の明るさ",
-      "daylight": "日中",
       "next_transition": "次の遷移",
       "aria_label_objective_history": "目標履歴",
       "expedition_journal": "遠征ジャーナル",
@@ -760,8 +698,6 @@
       "tech": "テック",
       "coin": "コイン",
       "current_objective": "現在の目標",
-      "active": "進行中",
-      "explore_bank_salvage": "探索 · 廃材を預ける",
       "base_priority": "基地の優先度"
     },
     "close_o2_generator": {
@@ -770,18 +706,6 @@
     "o2_generator": {
       "o2_generator_module": "O₂ ジェネレーター・モジュール",
       "safe_field_output": "安全フィールド出力"
-    },
-    "o2_generator_modal_status": {
-      "online_lvl_1": "オンライン // LV 1"
-    },
-    "o2_generator_modal_cost": {
-      "next_cost": "次のコスト：--"
-    },
-    "o2_generator_modal_field": {
-      "field_radius_refill": "フィールド半径 -- // 補充 --"
-    },
-    "o2_generator_modal_hint": {
-      "upgrades_expand_the_blue_o2": "アップグレードで青い O₂ フィールドが拡大する。"
     },
     "close_base_turret": {
       "aria_label_close_base_turret": "基地タレット制御を閉じる"
@@ -815,7 +739,6 @@
     "archive_sims": {
       "archive_simulations": "アーカイブ・シミュレーション",
       "rgb_riverside_global_botics": "RGB：RIVERSIDE GLOBAL 'BOTICS",
-      "not_started": "未開始",
       "launch_continued_run": "続きのランを開始"
     },
     "archive_sims_modal_close": {
@@ -833,13 +756,9 @@
     },
     "camp_choice": {
       "aria_label_close_camp_decision": "キャンプの決断を閉じる",
-      "camp_contact": "キャンプ接触",
-      "camp_decision": "キャンプの決断",
       "vessel_launch_manifest_forecast": "◇ 船体打ち上げ目録の予測 ◇",
       "irreversible_choice_strategic_record": "⚠ 不可逆の選択 // 戦略記録 ⚠",
-      "leader_arc": "リーダーの物語",
-      "confirm_decision": "決断を確定",
-      "back_to_options": "選択肢に戻る"
+      "confirm_decision": "決断を確定"
     },
     "song_interstitial_track": {
       "track_00": "トラック 00"
@@ -881,9 +800,6 @@
     "leader_conversation": {
       "aria_label_leave_conversation": "会話を離れる",
       "aria_label_speaker": "話者",
-      "camp_contact": "キャンプ接触",
-      "survivor": "生存者",
-      "continue": "つづける",
       "leave": "立ち去る"
     },
     "snail_encounter": {
@@ -962,11 +878,9 @@
       "aria_label_close_progression_walkthrough": "進行ウォークスルーを閉じる"
     },
     "select_picker": {
-      "select_option": "オプションを選択",
       "aria_label_close_option_picker": "オプション選択を閉じる"
     },
     "virtual_keyboard": {
-      "enter_text": "テキストを入力",
       "aria_label_close_on_screen": "スクリーンキーボードを閉じる",
       "back": "⌫ 戻る",
       "space": "スペース",
@@ -1110,7 +1024,14 @@
       "access_base_shop": "{type} 基地ショップにアクセス",
       "upgrade_o2": "O₂ ジェネレーターを強化",
       "turret_controls": "防衛タレット制御",
-      "blast_locked": "防爆隔壁ロック中 — {lock}"
+      "blast_locked": "防爆隔壁ロック中 — {lock}",
+      "press_key": "{key} を押す",
+      "tap": "タップ",
+      "read_log": "ログを読む",
+      "defeat_guard": "守衛を倒してブラックボックスを解放せよ",
+      "recover_black_box": "ブラックボックスを回収",
+      "recover_final": "最終コンポーネントを回収",
+      "interact": "調べる"
     },
     "telemeter": {
       "passive_scan": "地表スキャン // パッシブ",
@@ -1208,7 +1129,125 @@
     "cinematic": {
       "restoring": "アーカイブ映像 // 信号を復元中",
       "advances": "アーカイブは次の再構成シーンへ進む。",
-      "skip_hint": "任意のボタン / キーでスキップ"
+      "skip_hint": "任意のボタン / キーでスキップ",
+      "skip_any": "任意のボタン / キーでスキップ",
+      "skip_space": "スペース / Enter でスキップ",
+      "continue_any": "任意のボタン / キーで続行"
+    },
+    "profile": {
+      "longest": "最長 {time}",
+      "deaths": "死亡 {count}",
+      "depth": "深度 {depth}",
+      "class_best": "クラス最高 {score}"
+    },
+    "hud": {
+      "ammo_cache": "キャッシュ {current}/{max}",
+      "current_biome": "現在のバイオーム {biome}",
+      "equipped": "装備中"
+    },
+    "commentary": {
+      "kicker": "開発者コメンタリー"
+    },
+    "radio": {
+      "online": "オンライン",
+      "squad_manifest": "分隊名簿",
+      "commander_tag": "戦術通信 // 72.4 MHz キリル",
+      "aura_tag": "ニューラル通信リンク // AURA-7 ユニット",
+      "commander_name": "ソビエト副司令官",
+      "aura_name": "合成AI「AURA」",
+      "commander_title": "ソビエト副司令官",
+      "aura_title": "合成AI「AURA」"
+    },
+    "go": {
+      "generator_level": "LV {level}",
+      "offline": "オフライン",
+      "none": "なし",
+      "extraction_complete": "脱出完了",
+      "exosuit_failure": "エクソスーツ機能不全",
+      "logs_recovered": "回収ログ：{found}/{total}",
+      "survivor_camps": "生存者キャンプ",
+      "alien_hives": "エイリアンの巣",
+      "obedience": "服従度：",
+      "seats_filled": "議席充足：",
+      "humanity": "人間性："
+    },
+    "ach": {
+      "unlocked_kicker": "実績解除",
+      "hidden": "隠された記録。解除すると表示される。",
+      "coming_soon": "近日公開",
+      "unlocked": "解除済み"
+    },
+    "save": {
+      "code_unavailable": "セーブコードを取得できません"
+    },
+    "objective": {
+      "blocked": "進行不能",
+      "next": "次の目標",
+      "also_tracking": "同時に追跡中",
+      "eliminate": "撃破：{count}/{target}"
+    },
+    "loader": {
+      "deployment_telemetry": "マザーシップ展開テレメトリ",
+      "init_failed": "システム初期化に失敗"
+    },
+    "alert": {
+      "tactical": "戦術警報",
+      "critical": "重大"
+    },
+    "trade": {
+      "squadmate": "分隊メイト",
+      "awaiting_offer": "提示の選択を待機中",
+      "waiting_squadmate": "分隊メイトを待機中..."
+    },
+    "bond": {
+      "enamored": "心酔 / 献身",
+      "warm": "好意 / 惹かれる",
+      "attentive": "関心あり"
+    },
+    "fab": {
+      "scatter_repeater": "スキャッター・リピーター",
+      "equipped_next_run": "次のランに装備済み ✓",
+      "equip_scatter": "スキャッター・リピーターを装備",
+      "printing": "出力中…",
+      "save_pending": "保存保留中 — 製造ベイを開き直して復元",
+      "foundry_required": "ファウンドリ接続が必要",
+      "activate_bay": "製造ベイを起動",
+      "bring_online": "設計図を出力する前に、ワールド内のファウンドリを起動せよ。",
+      "activate_foundry": "ファウンドリを起動",
+      "common": "コモン",
+      "ready_to_apply": "✓ 適用可能",
+      "choose_bay": "ベイ A か B を選択",
+      "apply_failed": "適用に失敗",
+      "equipped_current": "✓ 現在のランに装備中",
+      "mounted_current": "✓ 現在のランに搭載中",
+      "active_in_bay": "✓ ベイ {bay} で有効",
+      "print_output": "この出力を印刷",
+      "fabricating": "製造中…",
+      "bay_button": "◇ 製造ベイ",
+      "open_bay": "+ 製造ベイを開く"
+    },
+    "camp": {
+      "sleep_warning": "{camp} で眠ると {day} 日目へ進む。未解決の信号は閉ざされる。",
+      "this_camp": "このキャンプ",
+      "unknown_signal": "不明な信号",
+      "path_closes": "この物語の道は永久に閉ざされる。",
+      "threat": "キャンペーン脅威度 {value}×",
+      "contact_kicker": "接触 {order} // {leader}",
+      "decision": "キャンプの決断",
+      "permanent_choice": "恒久の選択：{choice} — {resolution}。",
+      "closes": " 閉鎖：{locks}。",
+      "ending_locks_header": "⚠ 恒久的な遠征エンディングのロック：",
+      "finish_conversation": "会話を終える",
+      "continue": "つづける",
+      "camp_conversation": "キャンプでの会話",
+      "field_conversation": "フィールドでの会話",
+      "callsign": "コールサイン {callsign}",
+      "listen_hint": "話を聞いてから、どう助けるか決めよ。",
+      "quote": "「{text}」"
+    },
+    "title": {
+      "pregalien_command": "PREGALIEN | ハイブ司令部",
+      "pregalien": "PREGALIEN"
     }
   },
   "narrative": {

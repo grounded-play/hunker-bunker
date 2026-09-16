@@ -16,7 +16,13 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { DEBUG_ALLOWLIST, LOCALE_NATIVE_CONTAINERS, isPlayerFacingText } from './audit-i18n.js';
+import {
+    DEBUG_ALLOWLIST,
+    LOCALE_NATIVE_CONTAINERS,
+    collectHtmlIds,
+    findRuntimeWrittenIds,
+    isPlayerFacingText
+} from './audit-i18n.js';
 
 const ROOT_DIR = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const HTML_PATH = path.join(ROOT_DIR, 'index.html');
@@ -34,48 +40,6 @@ const SCREEN_ID = /(modal|popup|overlay|screen|menu|hud|panel|toolbar|drawer|she
  * with the static English authored in the markup. These need t() at the write
  * site in phase 3, not a data-i18n annotation here.
  */
-export function findRuntimeWrittenIds(sourceDir, htmlIds = []) {
-    const files = [];
-    const walk = (dir) => {
-        for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
-            if (entry.name === 'locales' || entry.name === 'node_modules') continue;
-            const full = path.join(dir, entry.name);
-            if (entry.isDirectory()) { walk(full); continue; }
-            if (entry.name.endsWith('.js') && !entry.name.includes('.test.')) files.push(full);
-        }
-    };
-    walk(sourceDir);
-
-    const ids = new Set();
-    const TEXT_WRITE = /\.(textContent|innerHTML|innerText)\s*\+?=/;
-    for (const file of files) {
-        const source = fs.readFileSync(file, 'utf8');
-        const lines = source.split('\n');
-        for (const id of htmlIds) {
-            if (ids.has(id) || !source.includes(id)) continue;
-            for (let i = 0; i < lines.length; i += 1) {
-                if (!lines[i].includes(id)) continue;
-                // A write on the same line or in the handful of lines that follow
-                // covers getElementById(..).textContent=, querySelector('#id'), and
-                // the common lookup-then-assign pair.
-                if (TEXT_WRITE.test(lines.slice(i, i + 6).join('\n'))) { ids.add(id); break; }
-                // Or the lookup is bound to a variable written to anywhere in the file.
-                const bound = lines[i].match(/(?:const|let|var)\s+(\w+)\s*=/);
-                if (bound && new RegExp(`\\b${bound[1]}\\s*(?:\\??\\.)\\s*(?:textContent|innerHTML|innerText)\\s*\\+?=`).test(source)) {
-                    ids.add(id);
-                    break;
-                }
-            }
-        }
-    }
-    return ids;
-}
-
-/** Every id declared in the markup, so the scan above has candidates to test. */
-export function collectHtmlIds(html) {
-    return [...new Set([...html.matchAll(/\bid="([^"]+)"/g)].map((m) => m[1]))];
-}
-
 export function slugify(text, maxWords = 5) {
     const base = text
         .normalize('NFKD')

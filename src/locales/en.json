@@ -54,20 +54,15 @@
       "quit": "QUIT GAME",
       "aria_label_operations_and_steam": "Operations and Steam commands",
       "title_operator_roster_callsign": "Operator roster — callsign and equipped loadout",
-      "0_0_arsenal": "0 / 0 ARSENAL",
       "title_steam_vault_view": "Steam Vault — view Steam-owned cosmetics",
       "title_archive_simulations_unlockable": "Archive Simulations — unlockable story mini-games",
       "rgb": "RGB",
       "title_fabrication_bay_print": "Fabrication Bay — print gear from salvage (unlocks once the base is powered)",
-      "0_0_printed": "0 / 0 PRINTED",
       "aria_label_records_and_dossier": "Records and Dossier commands",
       "title_bunker_archive_discovered": "Bunker Archive — discovered lore logs",
-      "0_27_logs": "0 / 27 LOGS",
       "title_field_codex_catalogued": "Field Codex — catalogued hostiles, infrastructure, and phenomena",
-      "0_0_intel": "0 / 0 INTEL",
       "title_tactical_dossier_beta": "Tactical Dossier — Beta Season 1 progression",
       "title_achievement_records_unlocked": "Achievement records — unlocked run milestones",
-      "locked": "LOCKED",
       "tank": "TANK",
       "aria_label_s_o_u": "S.O.U.L — Speed, O2 Usage, Loot-Range",
       "speed": "SPEED",
@@ -81,7 +76,6 @@
       "med": "MED",
       "title_choose_operator_polish": "Choose operator polish",
       "suit_polish": "SUIT POLISH",
-      "standard_issue": "STANDARD ISSUE",
       "recon_frame": "RECON FRAME",
       "scout": "SCOUT",
       "sprint_burst": "SPRINT BURST",
@@ -100,12 +94,16 @@
       "roster": "▣ ROSTER",
       "vault": "◈ STEAM VAULT",
       "archive_sims": "◈ ARCHIVE SIMS",
-      "fab_bay": "◇ FAB BAY",
       "archive": "◈ ARCHIVE",
       "codex": "❑ CODEX",
       "dossier": "◈ DOSSIER",
       "achievements": "ACHIEVEMENTS",
-      "initialize": "INITIALIZE"
+      "initialize": "INITIALIZE",
+      "vault_tooltip": "Click to open Steam Vault cosmetics submenu",
+      "status_logs": "{found} / {total} LOGS",
+      "status_intel": "{found} / {total} INTEL",
+      "status_printed": "{printed} / {total} PRINTED",
+      "status_armed": "{armed}/{total} ARMED"
     },
     "settings": {
       "title": "SYSTEM SETTINGS",
@@ -153,8 +151,7 @@
       "abort_current_mission": "ABORT CURRENT MISSION",
       "abort_mission": "ABORT MISSION",
       "title_active_crosshair_color": "Active crosshair color",
-      "placeholder_agent": "AGENT",
-      "checking": "CHECKING…"
+      "placeholder_agent": "AGENT"
     },
     "action": {
       "open": "OPEN",
@@ -267,7 +264,6 @@
       "aria_label_pre_mission_armory": "Pre-Mission Armory"
     },
     "roster": {
-      "title": "▣ OPERATOR DOSSIER // DEPLOYMENT TELEMETRY",
       "deepest_sector": "DEEPEST SECTOR:",
       "total_distance": "TOTAL DISTANCE:",
       "hostiles": "HOSTILES:",
@@ -276,17 +272,18 @@
       "decal": "DECAL:",
       "finish": "FINISH:",
       "hint": "Fabricate weapons in the FAB BAY to equip them here. Customize cosmetics in the STEAM VAULT.",
-      "confirm": "CONFIRM & DEPLOY",
       "randomize": "Randomize Callsign",
       "callsign": "CALLSIGN:",
       "placeholder_agent_01": "AGENT-01",
-      "random": "🎲 RANDOM",
       "sector_0": "SECTOR 0",
       "0_eliminated": "0 ELIMINATED",
       "none": "NONE",
-      "arsenal_0_0_schematics_fabricated": "ARSENAL: 0 / 0 SCHEMATICS FABRICATED",
       "equipped_sidearm": "EQUIPPED SIDEARM",
-      "equipped_steam_cosmetics": "EQUIPPED STEAM COSMETICS"
+      "equipped_steam_cosmetics": "EQUIPPED STEAM COSMETICS",
+      "no_weapons": "NO WEAPONS FABRICATED",
+      "print_hint": "Print a guaranteed Scatter Repeater for 12 Tech / 6 Coin in the Fab Bay.",
+      "equipped": "✓ EQUIPPED",
+      "equip": "EQUIP"
     },
     "dlg": {
       "channel": "MOTHERSHIP UPLINK CHANNEL 7",
@@ -305,34 +302,19 @@
     "loading": {
       "aria_label_build_and_developer": "Build and developer information",
       "system_build": "SYSTEM BUILD",
-      "build_dev_loading_revision": "BUILD DEV // LOADING REVISION…",
       "dev_console": "DEV CONSOLE",
-      "initializing_systems": "INITIALIZING SYSTEMS",
-      "mothership_command": "MOTHERSHIP COMMAND",
-      "connecting_to_tactical_network": "CONNECTING TO TACTICAL NETWORK..."
+      "initializing_systems": "INITIALIZING SYSTEMS"
     },
     "splash_steam_badge": {
       "title_click_to_open": "Click to open Steam Overlay profile",
       "aria_label_open_steam_profile": "Open Steam profile"
-    },
-    "splash_steam_persona": {
-      "steam_offline": "STEAM OFFLINE"
-    },
-    "splash_steam_status": {
-      "not_connected": "NOT CONNECTED"
     },
     "splash": {
       "tactical_command_v2_0": "TACTICAL COMMAND v2.0"
     },
     "title_profile_hud": {
       "aria_label_current_operator_profile": "Current operator profile",
-      "active_operator_profile": "ACTIVE OPERATOR PROFILE",
-      "agent": "AGENT",
-      "tank": "TANK",
-      "longest_00_00": "LONGEST 00:00",
-      "depth_surface": "DEPTH SURFACE",
-      "deaths_0": "DEATHS 0",
-      "class_best_0000": "CLASS BEST 0000"
+      "active_operator_profile": "ACTIVE OPERATOR PROFILE"
     },
     "about": {
       "aria_label_close_credits": "Close Credits",
@@ -357,7 +339,11 @@
     },
     "archive": {
       "bunker_archive": "◈ BUNKER ARCHIVE",
-      "logs_recovered_0_27": "LOGS RECOVERED: 0 / 27"
+      "recovered_kicker": "ARCHIVE SIMULATION RECOVERED",
+      "in_progress": "IN PROGRESS",
+      "ready": "READY",
+      "best_score": "◈ BEST: {score} PTS",
+      "rgb_title": "RGB: RIVERSIDE GLOBAL 'BOTICS"
     },
     "close_season_pass": {
       "aria_label_close_tactical_dossier": "Close Tactical Dossier"
@@ -369,7 +355,6 @@
     "archive_log_detail": {
       "aria_label_close_archive_log": "Close archive log",
       "recovered_archive_record": "◈ RECOVERED ARCHIVE RECORD",
-      "log_a01": "LOG-A01",
       "decryption_complete_read_only": "DECRYPTION COMPLETE // READ-ONLY"
     },
     "close_codex": {
@@ -378,14 +363,24 @@
     "codex": {
       "field_intel_discovered_specimens_lore": "◈ FIELD INTEL // DISCOVERED SPECIMENS & LORE",
       "catalogued_by_sub_terran_encounter": "CATALOGUED BY SUB-TERRAN ENCOUNTER",
-      "entries_recovered_0_0": "ENTRIES RECOVERED: 0 / 0"
+      "intel_record_kicker": "❑ {category} INTEL RECORD",
+      "entries_recovered": "ENTRIES RECOVERED: {found} / {total}",
+      "endings_archive": "◈ EXPEDITION ENDINGS ARCHIVE // ALL 10 TRAJECTORIES & CODEX LINCHPINS",
+      "endings_sub": "Catalogues all ten historical outcomes, locked silhouettes, and the irreversible linchpin decisions responsible for closing specific pathways in your current deployment.",
+      "discovered": "DISCOVERED",
+      "locked_this_run": "LOCKED THIS RUN",
+      "undiscovered": "UNDISCOVERED",
+      "classified": "CLASSIFIED EXPEDITION TRAJECTORY",
+      "closed_by": "🔒 CLOSED BY EXPEDITION LINCHPIN:",
+      "view_record": "View intel record for {name}",
+      "click_hint": "CLICK TO VIEW INTEL DOSSIER & ARTWORK",
+      "uncatalogued": "??? — UNCATALOGUED",
+      "encounter_hint": "Encounter this in the field to recover its record."
     },
     "close_codex_detail": {
       "aria_label_close_codex_entry": "Close codex entry"
     },
     "codex_detail": {
-      "field_intel_record": "❑ FIELD INTEL RECORD",
-      "cybersnail": "CYBERSNAIL",
       "entry_recovered_read_only_dossier": "ENTRY RECOVERED // READ-ONLY DOSSIER"
     },
     "close_achievements": {
@@ -393,7 +388,6 @@
     },
     "achievements": {
       "combat_citations_deep_crust_commendations": "◈ COMBAT CITATIONS // DEEP CRUST COMMENDATIONS",
-      "0_0_unlocked": "0 / 0 UNLOCKED",
       "title_copy_a_portable": "Copy a portable save code",
       "copy_save_code": "COPY SAVE CODE"
     },
@@ -434,9 +428,7 @@
     },
     "operator_polish": {
       "operator_polish": "◆ OPERATOR POLISH",
-      "16_bit_suit_tint_matrix": "16-BIT SUIT TINT MATRIX // LOCKED FINISHES REQUIRE FIELD MILESTONES",
-      "standard_issue": "STANDARD ISSUE",
-      "equipped": "EQUIPPED"
+      "16_bit_suit_tint_matrix": "16-BIT SUIT TINT MATRIX // LOCKED FINISHES REQUIRE FIELD MILESTONES"
     },
     "close_tactical_map": {
       "aria_label_close_tactical_map": "Close Tactical Map"
@@ -473,50 +465,26 @@
     "player_trade": {
       "operative_link_field_barter": "OPERATIVE LINK // FIELD BARTER",
       "link_active": "LINK ACTIVE",
-      "local_operative": "LOCAL OPERATIVE",
-      "tank_command": "TANK // COMMAND",
       "shells": "SHELLS",
       "ammo": "AMMO",
       "medkits": "MEDKITS",
       "o2_filter": "O2 FILTER",
-      "squadmate": "SQUADMATE",
-      "scout_recon": "SCOUT // RECON",
       "shells_offered": "SHELLS OFFERED",
       "ammo_offered": "AMMO OFFERED",
       "medkits_offered": "MEDKITS OFFERED",
       "o2_filters_offered": "O2 FILTERS OFFERED",
-      "awaiting_transfer_confirmation": "AWAITING TRANSFER CONFIRMATION",
       "cancel_link": "CANCEL LINK",
       "confirm_transfer": "CONFIRM TRANSFER"
     },
     "close_player_trade": {
       "aria_label_close_trade_link": "Close Trade Link"
     },
-    "npc_dialogue_name": {
-      "sister_val": "SISTER VAL"
-    },
-    "npc_dialogue_faction": {
-      "camp_tallow_suture_sanctuary": "CAMP TALLOW // SUTURE SANCTUARY"
-    },
     "npc_dialogue": {
       "affection_bond": "AFFECTION // BOND",
-      "side_story_stage_1_3": "SIDE STORY // STAGE 1/3: THE SHIVERING SHELTER",
-      "objective_survive_subzero_exposure_or": "OBJECTIVE: Survive subzero exposure or reach Camp Tallow with low O2.",
-      "intimate_attracted": "INTIMATE / ATTRACTED",
-      "she_sets_down_a_steaming": "She sets down a steaming bronze kettle of heated botanical resin...",
       "press_1_4_or_click": "PRESS [1-4] OR CLICK CHOICE CARD • [ESC] WITHDRAW"
-    },
-    "npc_dialogue_bond_badge": {
-      "neutral_lvl_0": "NEUTRAL (LVL 0)"
     },
     "close_npc_dialogue": {
       "title_exit_dialogue": "Exit Dialogue"
-    },
-    "npc_dialogue_speaker": {
-      "sister_val": "SISTER VAL:"
-    },
-    "npc_dialogue_text": {
-      "you_re_shivering_contractor": "\"You're shivering, contractor...\""
     },
     "demo_end": {
       "transmission_terminated": "◈ TRANSMISSION TERMINATED",
@@ -534,22 +502,14 @@
       "schematics_fabricated_0_8": "SCHEMATICS FABRICATED: 0 / 8"
     },
     "fab_roll": {
-      "insert_salvage_to_fabricate": "INSERT SALVAGE TO FABRICATE",
-      "roll_fabricator": "ROLL FABRICATOR"
+      "insert_salvage_to_fabricate": "INSERT SALVAGE TO FABRICATE"
     },
     "ui": {
       "exosuit_mark_iv_pressurized": "EXOSUIT // MARK-IV PRESSURIZED",
       "bunker_level": "BUNKER LEVEL"
     },
-    "biome_label": {
-      "active_sector": "ACTIVE SECTOR"
-    },
     "campaign_day_indicator": {
-      "title_campaign_day_and": "Campaign day and local light cycle",
-      "day_1_06_43_day": "DAY 1 · 06:43 · DAY"
-    },
-    "hud_run_seed": {
-      "seed": "SEED: —"
+      "title_campaign_day_and": "Campaign day and local light cycle"
     },
     "hud_run_cards": {
       "aria_label_active_run_pressure": "Active run pressure"
@@ -571,8 +531,7 @@
       "node": "NODE"
     },
     "weapon_status": {
-      "sidearm": "SIDEARM",
-      "cache_18": "CACHE 18"
+      "sidearm": "SIDEARM"
     },
     "ship_status": {
       "ship_integrity": "SHIP INTEGRITY"
@@ -582,15 +541,8 @@
       "aria_label_health": "Health",
       "cover": "COVER"
     },
-    "hazard_status": {
-      "cold_exposure": "COLD EXPOSURE",
-      "seek_pressurized_cover": "SEEK PRESSURIZED COVER"
-    },
     "queens_ledger_hud": {
       "obedience_0_seats_1_4": "♛ OBEDIENCE 0 · SEATS 1/4 · VECTOR: UNSTABLE"
-    },
-    "class_ability": {
-      "passive": "PASSIVE"
     },
     "radar_scan": {
       "title_radar_scan_q": "Radar Scan [Q]",
@@ -614,19 +566,12 @@
       "distance_covered": "DISTANCE COVERED",
       "items_recovered": "ITEMS RECOVERED",
       "o2_generator": "O₂ GENERATOR",
-      "offline": "OFFLINE",
       "threats_eliminated": "THREATS ELIMINATED",
       "time_elapsed": "TIME ELAPSED",
       "aria_label_expedition_earnings_and": "Expedition earnings and bank balances",
-      "banked_resources_preserved": "BANKED RESOURCES PRESERVED",
-      "run_pressure_none": "RUN PRESSURE: NONE",
-      "black_box_none": "BLACK BOX: NONE",
       "score": "SCORE",
-      "new_best": "NEW BEST",
       "pts": "PTS",
-      "agent_lost_minimal_telemetry": "AGENT LOST — MINIMAL TELEMETRY",
       "world_seed": "WORLD SEED:",
-      "logs_recovered_0_27": "LOGS RECOVERED: 0/27",
       "leaderboard_results": "◈ LEADERBOARD RESULTS",
       "try_again": "TRY AGAIN"
     },
@@ -637,10 +582,15 @@
       "aria_label_close_log": "Close log"
     },
     "lore": {
-      "bunker_terminal_log_fragment": "BUNKER TERMINAL — LOG FRAGMENT"
-    },
-    "lore_modal_key": {
-      "log_a01": "LOG-A01"
+      "bunker_terminal_log_fragment": "BUNKER TERMINAL — LOG FRAGMENT",
+      "log_key": "LOG-{key}",
+      "text_unavailable": "[LOG TEXT UNAVAILABLE — RETURN TO BUNKER]",
+      "date": "DATE: {date}",
+      "loc": "LOC: {coords}",
+      "open_log": "Open recovered log {key}",
+      "recovered": "RECOVERED // OPEN RECORD",
+      "encrypted": "ENCRYPTED // LOCKED",
+      "summary": "LOGS RECOVERED: {found} / {total}"
     },
     "radio_sender_name": {
       "mothership_command": "MOTHERSHIP COMMAND"
@@ -694,15 +644,6 @@
       "click": "CLICK",
       "to_look_around": "TO LOOK AROUND"
     },
-    "mission_progress_hud": {
-      "mission_active": "MISSION ACTIVE"
-    },
-    "camp_quest_hud": {
-      "quest_active": "QUEST ACTIVE"
-    },
-    "loop_step_hud": {
-      "deploying": "DEPLOYING"
-    },
     "telemeter_integrity": {
       "integrity": "INTEGRITY:"
     },
@@ -738,11 +679,8 @@
       "increase_generator_efficiency_o2_refill": "Increase generator efficiency. O₂ refill rate doubles. Drain rate slows 20%.",
       "cost_300_tech_100_coin": "COST: 300 TECH / 100 COIN",
       "expedition_day": "EXPEDITION DAY",
-      "day_1": "DAY 1",
       "cycle_phase": "CYCLE PHASE",
-      "expedition": "EXPEDITION",
       "local_light": "LOCAL LIGHT",
-      "daylight": "DAYLIGHT",
       "next_transition": "NEXT TRANSITION",
       "aria_label_objective_history": "Objective history",
       "expedition_journal": "EXPEDITION JOURNAL",
@@ -760,8 +698,6 @@
       "tech": "TECH",
       "coin": "COIN",
       "current_objective": "CURRENT OBJECTIVE",
-      "active": "ACTIVE",
-      "explore_bank_salvage": "EXPLORE · BANK SALVAGE",
       "base_priority": "BASE PRIORITY"
     },
     "close_o2_generator": {
@@ -770,18 +706,6 @@
     "o2_generator": {
       "o2_generator_module": "O₂ GENERATOR MODULE",
       "safe_field_output": "SAFE FIELD OUTPUT"
-    },
-    "o2_generator_modal_status": {
-      "online_lvl_1": "ONLINE // LVL 1"
-    },
-    "o2_generator_modal_cost": {
-      "next_cost": "NEXT COST: --"
-    },
-    "o2_generator_modal_field": {
-      "field_radius_refill": "FIELD RADIUS -- // REFILL --"
-    },
-    "o2_generator_modal_hint": {
-      "upgrades_expand_the_blue_o2": "UPGRADES EXPAND THE BLUE O₂ FIELD."
     },
     "close_base_turret": {
       "aria_label_close_base_turret": "Close Base Turret controls"
@@ -815,7 +739,6 @@
     "archive_sims": {
       "archive_simulations": "ARCHIVE SIMULATIONS",
       "rgb_riverside_global_botics": "RGB: RIVERSIDE GLOBAL 'BOTICS",
-      "not_started": "NOT STARTED",
       "launch_continued_run": "LAUNCH CONTINUED RUN"
     },
     "archive_sims_modal_close": {
@@ -833,13 +756,9 @@
     },
     "camp_choice": {
       "aria_label_close_camp_decision": "Close camp decision",
-      "camp_contact": "CAMP CONTACT",
-      "camp_decision": "CAMP DECISION",
       "vessel_launch_manifest_forecast": "◇ VESSEL LAUNCH MANIFEST FORECAST ◇",
       "irreversible_choice_strategic_record": "⚠ IRREVERSIBLE CHOICE // STRATEGIC RECORD ⚠",
-      "leader_arc": "LEADER ARC",
-      "confirm_decision": "CONFIRM DECISION",
-      "back_to_options": "BACK TO OPTIONS"
+      "confirm_decision": "CONFIRM DECISION"
     },
     "song_interstitial_track": {
       "track_00": "TRACK 00"
@@ -881,9 +800,6 @@
     "leader_conversation": {
       "aria_label_leave_conversation": "Leave conversation",
       "aria_label_speaker": "Speaker",
-      "camp_contact": "CAMP CONTACT",
-      "survivor": "SURVIVOR",
-      "continue": "CONTINUE",
       "leave": "LEAVE"
     },
     "snail_encounter": {
@@ -962,11 +878,9 @@
       "aria_label_close_progression_walkthrough": "Close progression walkthrough"
     },
     "select_picker": {
-      "select_option": "SELECT OPTION",
       "aria_label_close_option_picker": "Close option picker"
     },
     "virtual_keyboard": {
-      "enter_text": "ENTER TEXT",
       "aria_label_close_on_screen": "Close on-screen keyboard",
       "back": "⌫ BACK",
       "space": "SPACE",
@@ -1110,7 +1024,14 @@
       "access_base_shop": "ACCESS {type} BASE SHOP",
       "upgrade_o2": "UPGRADE O₂ GENERATOR",
       "turret_controls": "DEFENSE TURRET CONTROLS",
-      "blast_locked": "BLAST THRESHOLD LOCKED — {lock}"
+      "blast_locked": "BLAST THRESHOLD LOCKED — {lock}",
+      "press_key": "PRESS {key}",
+      "tap": "TAP",
+      "read_log": "READ LOG",
+      "defeat_guard": "DEFEAT GUARD TO UNLOCK BLACK BOX",
+      "recover_black_box": "RECOVER BLACK BOX",
+      "recover_final": "RECOVER FINAL COMPONENT",
+      "interact": "INTERACT"
     },
     "telemeter": {
       "passive_scan": "SURFACE SCAN // PASSIVE",
@@ -1208,7 +1129,125 @@
     "cinematic": {
       "restoring": "ARCHIVE CINEMATIC // RESTORING SIGNAL",
       "advances": "The archive advances to the next reconstructed scene.",
-      "skip_hint": "PRESS ANY BUTTON / KEY TO SKIP"
+      "skip_hint": "PRESS ANY BUTTON / KEY TO SKIP",
+      "skip_any": "PRESS ANY BUTTON / KEY TO SKIP",
+      "skip_space": "PRESS SPACE / ENTER TO SKIP",
+      "continue_any": "PRESS ANY BUTTON / KEY TO CONTINUE"
+    },
+    "profile": {
+      "longest": "LONGEST {time}",
+      "deaths": "DEATHS {count}",
+      "depth": "DEPTH {depth}",
+      "class_best": "CLASS BEST {score}"
+    },
+    "hud": {
+      "ammo_cache": "CACHE {current}/{max}",
+      "current_biome": "CURRENT BIOME {biome}",
+      "equipped": "EQUIPPED"
+    },
+    "commentary": {
+      "kicker": "DEVELOPER COMMENTARY"
+    },
+    "radio": {
+      "online": "ONLINE",
+      "squad_manifest": "SQUAD MANIFEST",
+      "commander_tag": "TACTICAL COMMS // 72.4 MHz CYRILLIC",
+      "aura_tag": "NEURAL COMM LINK // AURA-7 UNIT",
+      "commander_name": "Soviet Sub-Commander",
+      "aura_name": "Synthesized AI 'AURA'",
+      "commander_title": "SOVIET SUB-COMMANDER",
+      "aura_title": "SYNTHESIZED AI 'AURA'"
+    },
+    "go": {
+      "generator_level": "LVL {level}",
+      "offline": "OFFLINE",
+      "none": "NONE",
+      "extraction_complete": "EXTRACTION COMPLETE",
+      "exosuit_failure": "EXOSUIT FAILURE",
+      "logs_recovered": "LOGS RECOVERED: {found}/{total}",
+      "survivor_camps": "Survivor Camps",
+      "alien_hives": "Alien Hives",
+      "obedience": "Obedience:",
+      "seats_filled": "Seats Filled:",
+      "humanity": "Humanity:"
+    },
+    "ach": {
+      "unlocked_kicker": "ACHIEVEMENT UNLOCKED",
+      "hidden": "Hidden record. Unlock to reveal.",
+      "coming_soon": "COMING SOON",
+      "unlocked": "UNLOCKED"
+    },
+    "save": {
+      "code_unavailable": "SAVE CODE UNAVAILABLE"
+    },
+    "objective": {
+      "blocked": "BLOCKED",
+      "next": "NEXT OBJECTIVE",
+      "also_tracking": "ALSO TRACKING",
+      "eliminate": "ELIMINATE: {count}/{target}"
+    },
+    "loader": {
+      "deployment_telemetry": "MOTHERSHIP DEPLOYMENT TELEMETRY",
+      "init_failed": "SYSTEM INITIALIZATION FAILED"
+    },
+    "alert": {
+      "tactical": "TACTICAL ALERT",
+      "critical": "CRITICAL"
+    },
+    "trade": {
+      "squadmate": "SQUADMATE",
+      "awaiting_offer": "AWAITING OFFER SELECTION",
+      "waiting_squadmate": "WAITING FOR SQUADMATE..."
+    },
+    "bond": {
+      "enamored": "ENAMORED / DEVOTED",
+      "warm": "WARM / ATTRACTION",
+      "attentive": "ATTENTIVE"
+    },
+    "fab": {
+      "scatter_repeater": "SCATTER REPEATER",
+      "equipped_next_run": "EQUIPPED FOR NEXT RUN ✓",
+      "equip_scatter": "EQUIP SCATTER REPEATER",
+      "printing": "PRINTING…",
+      "save_pending": "SAVE PENDING — REOPEN FAB BAY TO RECOVER",
+      "foundry_required": "FOUNDRY LINK REQUIRED",
+      "activate_bay": "ACTIVATE FABRICATION BAY",
+      "bring_online": "Bring the in-world Foundry online before printing schematics.",
+      "activate_foundry": "ACTIVATE FOUNDRY",
+      "common": "COMMON",
+      "ready_to_apply": "✓ READY TO APPLY",
+      "choose_bay": "CHOOSE BAY A OR B",
+      "apply_failed": "APPLY FAILED",
+      "equipped_current": "✓ EQUIPPED IN CURRENT RUN",
+      "mounted_current": "✓ MOUNTED IN CURRENT RUN",
+      "active_in_bay": "✓ ACTIVE IN BAY {bay}",
+      "print_output": "PRINT THIS OUTPUT",
+      "fabricating": "FABRICATING…",
+      "bay_button": "◇ FAB BAY",
+      "open_bay": "+ OPEN FAB BAY"
+    },
+    "camp": {
+      "sleep_warning": "Sleeping at {camp} advances to day {day}. These unresolved signals will close.",
+      "this_camp": "this camp",
+      "unknown_signal": "UNKNOWN SIGNAL",
+      "path_closes": "This story path closes permanently.",
+      "threat": "Campaign threat {value}×",
+      "contact_kicker": "CONTACT {order} // {leader}",
+      "decision": "CAMP DECISION",
+      "permanent_choice": "Permanent choice: {choice} — {resolution}.",
+      "closes": " Closes: {locks}.",
+      "ending_locks_header": "⚠ PERMANENT EXPEDITION ENDING LOCKS:",
+      "finish_conversation": "FINISH CONVERSATION",
+      "continue": "CONTINUE",
+      "camp_conversation": "CAMP CONVERSATION",
+      "field_conversation": "FIELD CONVERSATION",
+      "callsign": "CALLSIGN {callsign}",
+      "listen_hint": "Listen, then decide how you want to help.",
+      "quote": "\"{text}\""
+    },
+    "title": {
+      "pregalien_command": "PREGALIEN | HIVE COMMAND",
+      "pregalien": "PREGALIEN"
     }
   },
   "narrative": {
@@ -1388,164 +1427,99 @@
     },
     "directorAmbient": {
       "0": {
-        "text": "Hostile patrol dispatched to your position.",
-        "tags": {
-          "directorActions": {}
-        }
+        "text": "Hostile patrol dispatched to your position."
       },
       "1": {
-        "text": "Unauthorized exploration detected. Local lighting has been suspended.",
-        "tags": {
-          "directorActions": {}
-        }
+        "text": "Unauthorized exploration detected. Local lighting has been suspended."
       },
       "2": {
-        "text": "Your curiosity continues to exceed your clearance.",
-        "tags": {
-          "directorActions": {}
-        }
+        "text": "Your curiosity continues to exceed your clearance."
       },
       "3": {
-        "text": "Local illumination power has been rerouted.",
-        "tags": {
-          "directorActions": {}
-        }
+        "text": "Local illumination power has been rerouted."
       },
       "4": {
-        "text": "The structure notes your depth and disapproves.",
-        "tags": {
-          "directorActions": {}
-        }
+        "text": "The structure notes your depth and disapproves."
       },
       "5": {
-        "text": "Navigation telemetry is no longer considered authoritative.",
-        "tags": {
-          "directorActions": {}
-        }
+        "text": "Navigation telemetry is no longer considered authoritative."
       },
       "6": {
-        "text": "Productivity is being monitored. So are your vital signs.",
-        "tags": {
-          "directorActions": {}
-        }
+        "text": "Productivity is being monitored. So are your vital signs."
       },
       "7": {
-        "text": "A hostile maintenance team is converging on your location.",
-        "tags": {
-          "directorActions": {}
-        }
+        "text": "A hostile maintenance team is converging on your location."
       },
       "8": {
-        "text": "DE-DETECTION... unauthorized cur-curiosity remains logged.",
-        "tags": {
-          "directorActions": {}
-        }
+        "text": "DE-DETECTION... unauthorized cur-curiosity remains logged."
       },
       "9": {
-        "text": "WARNING: Sector breaker opened. Lights are... gone.",
-        "tags": {
-          "directorActions": {}
-        }
+        "text": "WARNING: Sector breaker opened. Lights are... gone."
       },
       "10": {
-        "text": "Department of containment reports... zero surviving staff.",
-        "tags": {
-          "directorActions": {}
-        }
+        "text": "Department of containment reports... zero surviving staff."
       },
       "11": {
-        "text": "NAV-NAVIGATION checksum failed. Compass output corrupted.",
-        "tags": {
-          "directorActions": {}
-        }
+        "text": "NAV-NAVIGATION checksum failed. Compass output corrupted."
       },
       "12": {
-        "text": "SYSTEM: Movement signatures converging. The structure... remembers you.",
-        "tags": {
-          "directorActions": {}
-        }
+        "text": "SYSTEM: Movement signatures converging. The structure... remembers you."
       },
       "13": {
-        "text": "The Director is a ghost in a machine. The Queen hears every step.",
-        "tags": {
-          "directorActions": {}
-        }
+        "text": "The Director is a ghost in a machine. The Queen hears every step."
       },
       "14": {
-        "text": "The column turns your compass away from the sky.",
-        "tags": {
-          "directorActions": {}
-        }
+        "text": "The column turns your compass away from the sky."
       },
       "15": {
-        "text": "The lights are gone. The dark is where the chitin grows.",
-        "tags": {
-          "directorActions": {}
-        }
+        "text": "The lights are gone. The dark is where the chitin grows."
       },
       "16": {
-        "text": "The structure sends its children to welcome your descent.",
-        "tags": {
-          "directorActions": {}
-        }
+        "text": "The structure sends its children to welcome your descent."
       }
     },
     "mothershipReactive": {
       "0": {
-        "text": "> MOTHERSHIP: AGENT — FIRST THREAT NEUTRALIZED. PROCEED.",
-        "tags": {}
+        "text": "> MOTHERSHIP: AGENT — FIRST THREAT NEUTRALIZED. PROCEED."
       },
       "1": {
-        "text": "> MOTHERSHIP: WARNING: CRYO SECTOR BOUNDARY CROSSED. THERMAL PROTOCOL ACTIVE.",
-        "tags": {}
+        "text": "> MOTHERSHIP: WARNING: CRYO SECTOR BOUNDARY CROSSED. THERMAL PROTOCOL ACTIVE."
       },
       "2": {
-        "text": "> MOTHERSHIP: ALERT: BIO-CONTAINMENT ZONE ENTERED. SUIT FILTERS AT LIMIT.",
-        "tags": {}
+        "text": "> MOTHERSHIP: ALERT: BIO-CONTAINMENT ZONE ENTERED. SUIT FILTERS AT LIMIT."
       },
       "3": {
-        "text": "> MOTHERSHIP: DISTRESS SIGNAL: VITAL SIGNS CRITICAL. EXTRACTION WINDOW OPEN EARLY.",
-        "tags": {}
+        "text": "> MOTHERSHIP: DISTRESS SIGNAL: VITAL SIGNS CRITICAL. EXTRACTION WINDOW OPEN EARLY."
       },
       "4": {
-        "text": "> MOTHERSHIP: UPLINK: OBJECTIVE CONFIRMED. MAX SHIP SYSTEMS REQUIRED FOR EXTRACTION.",
-        "tags": {}
+        "text": "> MOTHERSHIP: UPLINK: OBJECTIVE CONFIRMED. MAX SHIP SYSTEMS REQUIRED FOR EXTRACTION."
       },
       "5": {
-        "text": "> MOTHERSHIP: SALVAGE RECEIVED. BANK SECURE. CONTINUE OPERATIONS.",
-        "tags": {}
+        "text": "> MOTHERSHIP: SALVAGE RECEIVED. BANK SECURE. CONTINUE OPERATIONS."
       },
       "6": {
-        "text": "> MOTHERSHIP: AGENT — BUNKER DATA FRAGMENT RECOVERED. TRANSMITTING TO ARCHIVE.",
-        "tags": {}
+        "text": "> MOTHERSHIP: AGENT — BUNKER DATA FRAGMENT RECOVERED. TRANSMITTING TO ARCHIVE."
       },
       "7": {
-        "text": "> MOTHERSHIP: WARNING: AUTOMATED DEFENSE SYSTEM ACTIVE. RECOMMEND COVER.",
-        "tags": {}
+        "text": "> MOTHERSHIP: WARNING: AUTOMATED DEFENSE SYSTEM ACTIVE. RECOMMEND COVER."
       },
       "8": {
-        "text": "> MOTHERSHIP: ALERT: FAST-MOVING BIO-ENTITY DETECTED. MAINTAIN DISTANCE.",
-        "tags": {}
+        "text": "> MOTHERSHIP: ALERT: FAST-MOVING BIO-ENTITY DETECTED. MAINTAIN DISTANCE."
       },
       "9": {
-        "text": "> MOTHERSHIP: UPLINK: ARMORY CACHE LOCATED. HIGH-VALUE ASSET — EXPECT RESISTANCE.",
-        "tags": {}
+        "text": "> MOTHERSHIP: UPLINK: ARMORY CACHE LOCATED. HIGH-VALUE ASSET — EXPECT RESISTANCE."
       },
       "10": {
-        "text": "> MOTHERSHIP: WARNING: BIO-ENTITY NEST CONFIRMED. MAXIMUM THREAT DENSITY. CAUTION.",
-        "tags": {}
+        "text": "> MOTHERSHIP: WARNING: BIO-ENTITY NEST CONFIRMED. MAXIMUM THREAT DENSITY. CAUTION."
       },
       "11": {
-        "text": "> MOTHERSHIP: NOTED: AGENT WEAPON OUTPUT RISING. ... WHY DO YOU NEED MORE.",
-        "tags": {}
+        "text": "> MOTHERSHIP: NOTED: AGENT WEAPON OUTPUT RISING. ... WHY DO YOU NEED MORE."
       },
       "12": {
-        "text": "> MOTHERSHIP: CONFIRMED KILL: APEX BIO-ENTITY DOWN. THE SIGNAL FELT THAT.",
-        "tags": {}
+        "text": "> MOTHERSHIP: CONFIRMED KILL: APEX BIO-ENTITY DOWN. THE SIGNAL FELT THAT."
       },
       "13": {
-        "text": "> MOTHERSHIP: [UNAUTHORIZED CHANNEL] ...0047 HAS STOPPED BUILDING. IT IS LISTENING TO YOU NOW.",
-        "tags": {}
+        "text": "> MOTHERSHIP: [UNAUTHORIZED CHANNEL] ...0047 HAS STOPPED BUILDING. IT IS LISTENING TO YOU NOW."
       }
     },
     "campQuests": {
@@ -2153,51 +2127,6 @@
         "name": "THE CARAPACE OATH, TO THE OPERATOR"
       }
     },
-    "loreMetadata": {
-      "A01": {},
-      "A02": {},
-      "A03": {},
-      "A04": {},
-      "A05": {},
-      "A06": {},
-      "A07": {},
-      "A08": {},
-      "A09": {},
-      "A10": {},
-      "A11": {},
-      "A12": {},
-      "A13": {},
-      "A14": {},
-      "C01": {},
-      "C02": {},
-      "C03": {},
-      "C04": {},
-      "C05": {},
-      "C06": {},
-      "C07": {},
-      "C08": {},
-      "C09": {},
-      "C10": {},
-      "C11": {},
-      "C12": {},
-      "B01": {},
-      "B02": {},
-      "B03": {},
-      "drop_horizon_badge": {},
-      "drop_dig_manifest": {},
-      "drop_security_log": {},
-      "drop_survey_probe": {},
-      "drop_meteor_core": {},
-      "drop_ration_ledger": {},
-      "drop_child_drawing": {},
-      "drop_dogtags": {},
-      "drop_resin_locket": {},
-      "drop_moult_shard": {},
-      "drop_first_bore_tag": {},
-      "drop_prayer_stone": {},
-      "drop_frozen_letter": {},
-      "drop_black_flask": {}
-    },
     "loreClassLogs": {
       "SCOUT": "SCOUT DEPLOYMENT BRIEF: HULL PAYLOAD — TRACKING BEACON. TARGET LOCKED ON SPECIMEN 0047. IF YOU READ THIS, THE BEACON IS ALIVE AND TRANSMITTING. IT IS THE REASON 0047 IS LISTENING TO YOU NOW. YOU CANNOT HIDE.",
       "ENGINEER": "ENGINEER DEPLOYMENT BRIEF: HULL PAYLOAD — NEURAL FILAMENT UPLINK RELAY. BROADCAST BANDWIDTH SECURED FOR SWARM-INTEGRATED TRANSITIONS. IF THE RELAY IS SEVERED, THE SYSTEM RECONVERGES LOCAL POWER AROUND THE SUIT.",
@@ -2206,17 +2135,14 @@
     "classWreckageLogs": {
       "SCOUT": {
         "title": "SCOUT ALPHA WRECKAGE",
-        "coords": {},
         "payload": "SCOUT DEPLOYMENT BRIEF: HULL PAYLOAD — TRACKING BEACON. TARGET LOCKED ON SPECIMEN 0047. IF YOU READ THIS, THE BEACON IS ALIVE AND TRANSMITTING. IT IS THE REASON 0047 IS LISTENING TO YOU NOW. YOU CANNOT HIDE."
       },
       "ENGINEER": {
         "title": "BRAVO ENGINEER WRECKAGE",
-        "coords": {},
         "payload": "ENGINEER DEPLOYMENT BRIEF: HULL PAYLOAD — NEURAL FILAMENT UPLINK RELAY. BROADCAST BANDWIDTH SECURED FOR SWARM-INTEGRATED TRANSITIONS. IF THE RELAY IS SEVERED, THE SYSTEM RECONVERGES LOCAL POWER AROUND THE SUIT."
       },
       "TANK": {
         "title": "CHARLIE TANK WRECKAGE",
-        "coords": {},
         "payload": "TANK DEPLOYMENT BRIEF: HULL PAYLOAD — HEAVY COMBAT WEAPON ORGANS. DESIGNED TO STABILIZE BIO-STRUCTURAL IMPACTS AT THE QUEEN'S THRONE. USE THE FORCE-FIELDS OF THIS CHASSIS TO ABSORB THE HIVE DEFENSES."
       }
     },

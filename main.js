@@ -94,7 +94,7 @@ import { buildEndingArchive, getLeaderReaction } from './src/storyArchive.js';
 import { SongInterstitialController, selectCampInterstitial } from './src/songInterstitials.js';
 import { dialogueReactionForLine, preloadLeaderMedia, resolveLeaderIdentity } from './src/leaderIdentity.js';
 import { LeaderConversation3d } from './src/leaderConversation3d.js';
-import { getLocale, setLocale, t as i18nT, getAvailableLocales } from './src/i18n.js';
+import { getLocale, setLocale, t, t as i18nT, getAvailableLocales } from './src/i18n.js';
 import {
     computeTopologyDistances,
     findConflictingChunkReservations,
@@ -756,9 +756,9 @@ function setPromptKeyLabel(promptKey, defaultKey = 'E') {
     promptKey.classList.toggle('prompt-key--controller', isController);
 
     if (isController && (label === 'A' || label === 'B' || label === 'X' || label === 'Y')) {
-        promptKey.innerHTML = `PRESS <span class="controller-glyph glyph-${label.toLowerCase()}">${label}</span>`;
+        promptKey.innerHTML = t('ui.prompt.press_key', { key: `<span class="controller-glyph glyph-${label.toLowerCase()}">${label}</span>` });
     } else {
-        promptKey.textContent = label === 'TAP' ? 'TAP' : `PRESS ${label}`;
+        promptKey.textContent = label === 'TAP' ? t('ui.prompt.tap') : t('ui.prompt.press_key', { key: label });
     }
     promptKey.classList.toggle('prompt-key--tap', label === 'TAP');
 }
@@ -2510,10 +2510,10 @@ function maybeShowRgbUnlockToast() {
     toast.className = 'rgb-unlock-toast';
     const kicker = document.createElement('div');
     kicker.className = 'rgb-unlock-toast__kicker';
-    kicker.textContent = 'ARCHIVE SIMULATION RECOVERED';
+    kicker.textContent = t('ui.archive.recovered_kicker');
     const title = document.createElement('div');
     title.className = 'rgb-unlock-toast__title';
-    title.textContent = "RGB: RIVERSIDE GLOBAL 'BOTICS";
+    title.textContent = t('ui.archive.rgb_title');
     toast.append(kicker, title);
     document.body.appendChild(toast);
 
@@ -2844,9 +2844,9 @@ function updateDailyOpsUI() {
             const g = record.grade ?? 'D';
             statusEl.textContent = `${record.score} PTS // ${g}`;
         } else if (record?.attempted) {
-            statusEl.textContent = 'IN PROGRESS';
+            statusEl.textContent = t('ui.archive.in_progress');
         } else {
-            statusEl.textContent = 'READY';
+            statusEl.textContent = t('ui.archive.ready');
         }
     }
 }
@@ -2869,7 +2869,7 @@ function refreshCharBestScores() {
         if (!el) continue;
         const best = Number(localStorage.getItem(`hb_best_score_${cls}`) ?? 0);
         const formattedScore = String(best).padStart(4, '0');
-        el.textContent = `◈ BEST: ${formattedScore} PTS`;
+        el.textContent = t('ui.archive.best_score', { score: formattedScore });
     }
 }
 
@@ -2892,13 +2892,13 @@ function refreshCareerStats() {
     const depthName = DEPTH_TIER_NAMES[Math.max(0, Math.min(DEPTH_TIER_NAMES.length - 1, tier))] ?? 'SURFACE';
     const deaths = stats.totalDeaths ?? 0;
     if (longestEl) {
-        longestEl.textContent = `LONGEST ${mm}:${ss}`;
+        longestEl.textContent = t('ui.profile.longest', { time: `${mm}:${ss}` });
     }
     if (deathsEl) {
-        deathsEl.textContent = `DEATHS ${deaths}`;
+        deathsEl.textContent = t('ui.profile.deaths', { count: deaths });
     }
     if (depthEl) {
-        depthEl.textContent = `DEPTH ${depthName}`;
+        depthEl.textContent = t('ui.profile.depth', { depth: depthName });
     }
     if (menuHistoryEl) {
         // Was also OR-ing two keys the game never writes; see hasCareerHistory().
@@ -3006,7 +3006,7 @@ function refreshTitleProfileHud(hasSave = true) {
     if (portraitEl) void renderTitleProfilePortrait(playerType);
     if (bestEl) {
         const best = Number(localStorage.getItem(`hb_best_score_${playerType}`) ?? 0);
-        bestEl.textContent = `CLASS BEST ${String(best).padStart(4, '0')}`;
+        bestEl.textContent = t('ui.profile.class_best', { score: String(best).padStart(4, '0') });
     }
     refreshCareerStats();
 }
@@ -3054,7 +3054,7 @@ function renderPickupCounter() {
     }
 
     if (weaponAmmoCache) {
-        weaponAmmoCache.textContent = `CACHE ${pickupCounterState.ammo}/${activeAmmoCapacity}`;
+        weaponAmmoCache.textContent = t('ui.hud.ammo_cache', { current: pickupCounterState.ammo, max: activeAmmoCapacity });
     }
 }
 
@@ -3482,7 +3482,7 @@ function renderWeaponClipState(detail = {}) {
         weaponClipMax.textContent = String(maxClip);
     }
     if (weaponAmmoCache) {
-        weaponAmmoCache.textContent = isUnlimited ? `CACHE ∞/${activeAmmoCapacity}` : `CACHE ${cache}/${activeAmmoCapacity}`;
+        weaponAmmoCache.textContent = t('ui.hud.ammo_cache', { current: isUnlimited ? '∞' : cache, max: activeAmmoCapacity });
     }
     if (weaponReloadBar) {
         weaponReloadBar.style.transform = `scaleX(${reloading ? reloadProgress : refilling ? autoRefillProgress : 0})`;
@@ -3972,7 +3972,7 @@ function showDeveloperCommentary(key, detail = {}, { once = true } = {}) {
 
     const kicker = document.createElement('div');
     kicker.className = 'commentary-toast__kicker';
-    kicker.textContent = 'DEVELOPER COMMENTARY';
+    kicker.textContent = t('ui.commentary.kicker');
 
     const title = document.createElement('div');
     title.className = 'commentary-toast__title';
@@ -4116,7 +4116,7 @@ function renderRadioTransmission(rawText, { playVoice = true } = {}) {
           <div class="radio-transmission-prompt__header">
             <span class="radio-transmission-prompt__signal-icon">⚡</span>
             <span class="radio-transmission-prompt__sender"></span>
-            <span class="radio-transmission-prompt__status">ONLINE</span>
+            <span class="radio-transmission-prompt__status">${t('ui.radio.online')}</span>
           </div>
           <div class="radio-transmission-prompt__message"></div>
         </div>
@@ -4177,7 +4177,7 @@ function renderBiomeStatus(detail = {}, { showPrompt = false } = {}) {
     if (biomeLabelEl) {
         biomeLabelEl.textContent = label;
         biomeLabelEl.title = label;
-        biomeLabelEl.setAttribute('aria-label', `CURRENT BIOME ${label}`);
+        biomeLabelEl.setAttribute('aria-label', t('ui.hud.current_biome', { biome: label }));
     }
 
     const hudVisible = isGameplayPhase() && !document.getElementById('ui')?.classList.contains('hidden');
@@ -4439,7 +4439,7 @@ function renderOperatorPolishUi() {
     const readoutName = document.getElementById('operator-polish-readout-name');
     const readoutState = document.getElementById('operator-polish-readout-state');
     if (readoutName) readoutName.textContent = selected.name;
-    if (readoutState) readoutState.textContent = 'EQUIPPED';
+    if (readoutState) readoutState.textContent = t('ui.hud.equipped');
 
     if (!grid) return;
     grid.innerHTML = '';
@@ -4681,8 +4681,8 @@ function showGameOverScreen(stats, { isVictory = false, deathReason = 'hazard' }
 
     if (distVal)  distVal.textContent  = `${stats.distanceTravelled}u`;
     if (itemVal)  itemVal.textContent  = String(stats.totalPickups);
-    if (genVal)   genVal.textContent   = stats.generatorLevel > 0 ? `LVL ${stats.generatorLevel}` : 'OFFLINE';
-    if (killsVal) killsVal.textContent = kills > 0 ? String(kills) : 'NONE';
+    if (genVal)   genVal.textContent   = stats.generatorLevel > 0 ? t('ui.go.generator_level', { level: stats.generatorLevel }) : t('ui.go.offline');
+    if (killsVal) killsVal.textContent = kills > 0 ? String(kills) : t('ui.go.none');
     if (timeVal)  timeVal.textContent  = formatRunTime(elapsedMs);
 
     const bankNote = document.getElementById('go-bank-note');
@@ -4712,7 +4712,7 @@ function showGameOverScreen(stats, { isVictory = false, deathReason = 'hazard' }
     // Title / subtitle
     const title = document.querySelector('.game-over-title');
     const subtitle = document.querySelector('.game-over-subtitle');
-    if (title) title.textContent = isVictory ? 'EXTRACTION COMPLETE' : 'EXOSUIT FAILURE';
+    if (title) title.textContent = isVictory ? t('ui.go.extraction_complete') : t('ui.go.exosuit_failure');
     if (subtitle) {
         const outcomeReport = isVictory
             ? `> MISSION: ${stats.missionLabel ?? 'COMPLETE'}. RETURNING TO MOTHERSHIP.`
@@ -4873,7 +4873,7 @@ function showGameOverScreen(stats, { isVictory = false, deathReason = 'hazard' }
     const mem = getWorldMemory();
     const logsFound = mem.logsFound?.length ?? 0;
     if (archiveRow) archiveRow.classList.toggle('hidden', logsFound === 0);
-    if (archiveText) archiveText.textContent = `LOGS RECOVERED: ${logsFound}/${ALL_LORE_KEYS.length}`;
+    if (archiveText) archiveText.textContent = t('ui.go.logs_recovered', { found: logsFound, total: ALL_LORE_KEYS.length });
 
     // Two runs with identical stats still read differently if the player is
     // told which pressure they were carrying.
@@ -4987,22 +4987,22 @@ function renderGameOverAct2Summary() {
         </div>
         <div class="go-act2-grid">
             <div>
-                <div class="go-act2-col-title">Survivor Camps</div>
+                <div class="go-act2-col-title">${t('ui.go.survivor_camps')}</div>
                 <div class="go-act2-list">
                     ${campDetails}
                 </div>
             </div>
             <div>
-                <div class="go-act2-col-title">Alien Hives</div>
+                <div class="go-act2-col-title">${t('ui.go.alien_hives')}</div>
                 <div class="go-act2-list">
                     ${hiveDetails}
                 </div>
             </div>
         </div>
         <div class="go-act2-stats-row">
-            <div class="go-act2-stat">Obedience: <span>${obedienceText}</span></div>
-            <div class="go-act2-stat">Seats Filled: <span>${seatsUsed}/${seatsMax}</span></div>
-            <div class="go-act2-stat">Humanity: <span>${state.humanity}%</span></div>
+            <div class="go-act2-stat">${t('ui.go.obedience')} <span>${obedienceText}</span></div>
+            <div class="go-act2-stat">${t('ui.go.seats_filled')} <span>${seatsUsed}/${seatsMax}</span></div>
+            <div class="go-act2-stat">${t('ui.go.humanity')} <span>${state.humanity}%</span></div>
         </div>
         <div class="go-act2-one-liner">
             ${oneLiner}
@@ -5407,10 +5407,10 @@ function updateMenuCommandStatuses() {
     const weapons = FAB_RECIPES.filter((recipe) => recipe.klass === 'WEAPON');
     const armed = weapons.filter((recipe) => fabricator.isFabricated(recipe.id)).length;
 
-    setText('archive-command-status', `${foundLogs} / ${ALL_LORE_KEYS.length} LOGS`);
-    setText('codex-command-status', `${codexStore.getDiscoveredCount()} / ${CODEX_TOTAL} INTEL`);
-    setText('fab-command-status', `${printed} / ${FAB_RECIPES.length} PRINTED`);
-    setText('roster-command-status', `${armed}/${weapons.length} ARMED`);
+    setText('archive-command-status', t('ui.hub.status_logs', { found: foundLogs, total: ALL_LORE_KEYS.length }));
+    setText('codex-command-status', t('ui.hub.status_intel', { found: codexStore.getDiscoveredCount(), total: CODEX_TOTAL }));
+    setText('fab-command-status', t('ui.hub.status_printed', { printed, total: FAB_RECIPES.length }));
+    setText('roster-command-status', t('ui.hub.status_armed', { armed, total: weapons.length }));
 }
 
 // Recovered-survivor portraits for log authors. Reused from the mothership
@@ -5441,15 +5441,15 @@ function openArchiveLogDetail(key) {
     const portraitEl = document.getElementById('archive-log-detail-portrait');
     if (!modal) return;
 
-    if (keyEl) keyEl.textContent = window.game?.getLoreTitle?.(key) ?? `LOG-${key}`;
-    if (textEl) textEl.textContent = window.game?.getLoreText?.(key) ?? '[LOG TEXT UNAVAILABLE — RETURN TO BUNKER]';
+    if (keyEl) keyEl.textContent = window.game?.getLoreTitle?.(key) ?? t('ui.lore.log_key', { key });
+    if (textEl) textEl.textContent = window.game?.getLoreText?.(key) ?? t('ui.lore.text_unavailable');
     if (portraitEl) portraitEl.src = assetUrl(lorePortraitSrc(key));
 
     const metadata = LORE_METADATA[key];
     const dateEl = document.getElementById('archive-log-detail-date');
     const coordsEl = document.getElementById('archive-log-detail-coords');
-    if (dateEl) dateEl.textContent = metadata ? `DATE: ${metadata.date}` : '';
-    if (coordsEl) coordsEl.textContent = metadata ? `LOC: ${metadata.coords}` : '';
+    if (dateEl) dateEl.textContent = metadata ? t('ui.lore.date', { date: metadata.date }) : '';
+    if (coordsEl) coordsEl.textContent = metadata ? t('ui.lore.loc', { coords: metadata.coords }) : '';
 
     modal.classList.remove('hidden');
     modal.setAttribute('aria-hidden', 'false');
@@ -5491,7 +5491,7 @@ function buildArchiveModal() {
             entry.className = `archive-log-entry ${isFound ? '' : 'archive-log-entry--undiscovered'}`;
             if (isFound) {
                 entry.type = 'button';
-                entry.setAttribute('aria-label', `Open recovered log ${key}`);
+                entry.setAttribute('aria-label', t('ui.lore.open_log', { key }));
                 entry.addEventListener('click', () => openArchiveLogDetail(key));
             }
 
@@ -5518,15 +5518,15 @@ function buildArchiveModal() {
 
             const keyEl = document.createElement('div');
             keyEl.className = 'archive-log-key';
-            keyEl.textContent = `LOG-${key}`;
+            keyEl.textContent = t('ui.lore.log_key', { key });
 
             const textEl = document.createElement('div');
             textEl.className = `archive-log-text ${isFound ? '' : 'archive-log-text--locked'}`;
 
             if (isFound) {
-                textEl.textContent = 'RECOVERED // OPEN RECORD';
+                textEl.textContent = t('ui.lore.recovered');
             } else {
-                textEl.textContent = 'ENCRYPTED // LOCKED';
+                textEl.textContent = t('ui.lore.encrypted');
             }
 
             body.appendChild(keyEl);
@@ -5541,7 +5541,7 @@ function buildArchiveModal() {
     }
 
     if (summaryEl) {
-        summaryEl.textContent = `LOGS RECOVERED: ${found.size} / ${ALL_LORE_KEYS.length}`;
+        summaryEl.textContent = t('ui.lore.summary', { found: found.size, total: ALL_LORE_KEYS.length });
     }
 }
 
@@ -5608,7 +5608,7 @@ function showAchievementToast(unlock) {
     body.className = 'achievement-toast__body';
     const kicker = document.createElement('div');
     kicker.className = 'achievement-toast__kicker';
-    kicker.textContent = 'ACHIEVEMENT UNLOCKED';
+    kicker.textContent = t('ui.ach.unlocked_kicker');
     const title = document.createElement('div');
     title.className = 'achievement-toast__title';
     title.textContent = unlock.title;
@@ -5712,13 +5712,13 @@ function renderAchievementsModal() {
         title.textContent = secretLocked ? '???' : def.title;
         const blurb = document.createElement('div');
         blurb.className = 'achievement-card__blurb';
-        blurb.textContent = secretLocked ? 'Hidden record. Unlock to reveal.' : def.blurb;
+        blurb.textContent = secretLocked ? t('ui.ach.hidden') : def.blurb;
         body.append(title, blurb);
 
         if (def.comingSoon) {
             const soon = document.createElement('div');
             soon.className = 'achievement-card__meta';
-            soon.textContent = 'COMING SOON';
+            soon.textContent = t('ui.ach.coming_soon');
             body.appendChild(soon);
         } else if (progress && !unlocked && !secretLocked) {
             const meta = document.createElement('div');
@@ -5728,7 +5728,7 @@ function renderAchievementsModal() {
         } else if (unlocked) {
             const meta = document.createElement('div');
             meta.className = 'achievement-card__meta achievement-card__meta--unlocked';
-            meta.textContent = 'UNLOCKED';
+            meta.textContent = t('ui.ach.unlocked');
             body.appendChild(meta);
         }
 
@@ -5758,7 +5758,7 @@ async function copyAchievementSaveCode() {
     const code = exportSaveCode();
     const status = document.getElementById('achievements-save-status');
     if (!code) {
-        if (status) status.textContent = 'SAVE CODE UNAVAILABLE';
+        if (status) status.textContent = t('ui.save.code_unavailable');
         window.AudioManager?.play?.('ui_error', { volume: 0.5 });
         return;
     }
@@ -5854,7 +5854,7 @@ window.addEventListener('lore-terminal-nearby', () => {
     const key = prompt?.querySelector('.prompt-key');
     const text = prompt?.querySelector('.prompt-text');
     if (key) setPromptKeyLabel(key);
-    if (text) text.textContent = 'READ LOG';
+    if (text) text.textContent = t('ui.prompt.read_log');
     if (prompt) prompt.classList.remove('hidden');
 });
 
@@ -5882,14 +5882,14 @@ window.addEventListener('lore-terminal-read', (event) => {
     const loreTextEl = document.getElementById('lore-modal-text');
     if (!loreModal) return;
 
-    if (loreKeyEl) loreKeyEl.textContent = title ? title : (window.game?.getLoreTitle?.(loreKey) ?? `LOG-${loreKey}`);
+    if (loreKeyEl) loreKeyEl.textContent = title ? title : (window.game?.getLoreTitle?.(loreKey) ?? t('ui.lore.log_key', { key: loreKey }));
     if (loreTextEl) loreTextEl.textContent = '';
 
     const metadata = LORE_METADATA[loreKey];
     const dateEl = document.getElementById('lore-modal-date');
     const coordsEl = document.getElementById('lore-modal-coords');
-    if (dateEl) dateEl.textContent = metadata ? `DATE: ${metadata.date}` : '';
-    if (coordsEl) coordsEl.textContent = metadata ? `LOC: ${metadata.coords}` : '';
+    if (dateEl) dateEl.textContent = metadata ? t('ui.lore.date', { date: metadata.date }) : '';
+    if (coordsEl) coordsEl.textContent = metadata ? t('ui.lore.loc', { coords: metadata.coords }) : '';
 
     loreModal.classList.remove('hidden');
     window.game?.setInputEnabled?.(false);
@@ -6011,7 +6011,7 @@ window.addEventListener('black-box-prompt-nearby', (event) => {
         key.classList.toggle('hidden', Boolean(locked));
     }
     if (text) {
-        text.textContent = locked ? 'DEFEAT GUARD TO UNLOCK BLACK BOX' : 'RECOVER BLACK BOX';
+        text.textContent = locked ? t('ui.prompt.defeat_guard') : t('ui.prompt.recover_black_box');
     }
     prompt?.classList.remove('hidden');
     prompt?.classList.add('visible');
@@ -6134,12 +6134,12 @@ function renderObjectiveTracker(activeObjectives) {
 
         const progSpan = document.createElement('span');
         progSpan.className = 'objective-tracker__progress';
-        progSpan.textContent = obj.status === 'blocked' ? 'BLOCKED'
+        progSpan.textContent = obj.status === 'blocked' ? t('ui.objective.blocked')
             : obj.target > 1 ? `${obj.current}/${obj.target}` : 'ACTIVE';
 
         const eyebrow = document.createElement('div');
         eyebrow.className = 'objective-tracker__eyebrow';
-        eyebrow.textContent = index === 0 ? 'NEXT OBJECTIVE' : 'ALSO TRACKING';
+        eyebrow.textContent = index === 0 ? t('ui.objective.next') : t('ui.objective.also_tracking');
         item.appendChild(eyebrow);
         item.classList.toggle('is-blocked', obj.status === 'blocked');
 
@@ -6293,7 +6293,7 @@ if (tutorialPrompt) {
 window.addEventListener('mission-kill-progress', (event) => {
     const { count = 0, target = 0 } = event?.detail ?? {};
     const missionEl = document.getElementById('mission-status-text');
-    if (missionEl) missionEl.textContent = `ELIMINATE: ${count}/${target}`;
+    if (missionEl) missionEl.textContent = t('ui.objective.eliminate', { count, target });
     showMissionProgressHUD(`ELIMINATE: ${count} / ${target}`);
 });
 
@@ -6925,7 +6925,7 @@ function ensureMissionManagers() {
 
 function showRunLoadingScreen(status = 'SYNCHRONIZING DROP VECTOR', progress = 0, { overDoor = false } = {}) {
     clearLoaderBriefingMode();
-    if (loaderTitle) loaderTitle.textContent = 'MOTHERSHIP DEPLOYMENT TELEMETRY';
+    if (loaderTitle) loaderTitle.textContent = t('ui.loader.deployment_telemetry');
     if (loaderStatus) loaderStatus.textContent = status;
     if (loaderBar) loaderBar.style.width = `${Math.max(0, Math.min(100, progress))}%`;
     loadingScreen?.classList.toggle('over-door-loader', Boolean(overDoor));
@@ -6991,8 +6991,8 @@ function showTacticalNotificationToast({ title, status, duration = 4000 }) {
         <div class="tactical-alert-toast__icon">⚠️</div>
         <div class="tactical-alert-toast__body">
             <div class="tactical-alert-toast__header">
-                <span class="tactical-alert-toast__kicker">TACTICAL ALERT</span>
-                <span class="tactical-alert-toast__status">CRITICAL</span>
+                <span class="tactical-alert-toast__kicker">${t('ui.alert.tactical')}</span>
+                <span class="tactical-alert-toast__status">${t('ui.alert.critical')}</span>
             </div>
             <div class="tactical-alert-toast__title">${title}</div>
             <div class="tactical-alert-toast__blurb">${status}</div>
@@ -7205,7 +7205,7 @@ function playClassIntroSequence(playerType = 'SCOUT') {
 
         const skipHint = document.createElement('div');
         skipHint.className = 'class-intro-skip';
-        skipHint.textContent = 'PRESS ANY BUTTON / KEY TO SKIP';
+        skipHint.textContent = t('ui.cinematic.skip_any');
 
         let settled = false;
         let step = 'character'; // 'character' | 'launch' | 'done'
@@ -7389,8 +7389,18 @@ function playClassIntroSequence(playerType = 'SCOUT') {
             overlay.append(buildSquadManifestPanel());
         }
 
+        const activeVoicePackId = window.loadout?.state?.voicePackId || window.loadout?.getEquippedVoicePackId?.();
+        const personaPanel = buildVoicePackPersonaOverlay(activeVoicePackId);
+        if (personaPanel) {
+            overlay.append(personaPanel);
+        }
+
         overlay.append(skipHint);
         host.appendChild(overlay);
+
+        if (activeVoicePackId) {
+            window.AudioManager?.playVoiceCallout?.('mission_active', { volume: 0.95 });
+        }
 
         playVideoSource(charBase, startLaunchStep);
     });
@@ -7407,7 +7417,7 @@ function buildSquadManifestPanel() {
 
     const title = document.createElement('div');
     title.className = 'class-intro-squad-title';
-    title.textContent = 'SQUAD MANIFEST';
+    title.textContent = t('ui.radio.squad_manifest');
     panel.appendChild(title);
 
     multiplayerLobby.players.forEach((player) => {
@@ -7428,6 +7438,39 @@ function buildSquadManifestPanel() {
         panel.appendChild(row);
     });
 
+    return panel;
+}
+
+function buildVoicePackPersonaOverlay(voicePackId) {
+    const id = Number(voicePackId);
+    if (!id || (id !== 4148 && id !== 4149)) return null;
+
+    const isCommander = id === 4148;
+    const panel = document.createElement('div');
+    panel.className = `class-intro-persona-panel ${isCommander ? 'class-intro-persona-panel--commander' : 'class-intro-persona-panel--aura'}`;
+
+    const portrait = document.createElement('img');
+    portrait.className = 'class-intro-persona-portrait';
+    portrait.alt = isCommander ? t('ui.radio.commander_name') : t('ui.radio.aura_name');
+    portrait.src = assetUrl(isCommander ? '/lore_portraits/voice_commander_persona.png' : '/lore_portraits/voice_aura_persona.png');
+
+    const meta = document.createElement('div');
+    meta.className = 'class-intro-persona-meta';
+
+    const tag = document.createElement('div');
+    tag.className = 'class-intro-persona-tag';
+    tag.textContent = isCommander ? t('ui.radio.commander_tag') : t('ui.radio.aura_tag');
+
+    const title = document.createElement('div');
+    title.className = 'class-intro-persona-title';
+    title.textContent = isCommander ? t('ui.radio.commander_title') : t('ui.radio.aura_title');
+
+    const status = document.createElement('div');
+    status.className = 'class-intro-persona-status';
+    status.innerHTML = `<span class="persona-pulse-dot"></span>${isCommander ? 'TRANSMISSION ARMED // ORDERS LOCKED' : 'TELEMETRY SYNCED // ACTIVE MONITOR'}`;
+
+    meta.append(tag, title, status);
+    panel.append(portrait, meta);
     return panel;
 }
 
@@ -7534,7 +7577,7 @@ function playCutsceneVideo(base, options = {}) {
 
         const skipHint = document.createElement('div');
         skipHint.className = 'class-intro-skip cinematic-still-skip';
-        skipHint.textContent = 'PRESS SPACE / ENTER TO SKIP';
+        skipHint.textContent = t('ui.cinematic.skip_space');
 
         // Render text overlay on top of video when kicker/title/body are provided
         const resolvedKicker = kicker || fallback?.kicker || '';
@@ -7765,7 +7808,7 @@ function playCinematicStills(rawSpec = {}) {
         const skip = document.createElement('button');
         skip.type = 'button';
         skip.className = 'class-intro-skip cinematic-still-skip';
-        skip.textContent = spec.allowSkip ? 'PRESS ANY BUTTON / KEY TO CONTINUE' : '';
+        skip.textContent = spec.allowSkip ? t('ui.cinematic.continue_any') : '';
         skip.disabled = !spec.allowSkip;
 
         overlay.append(frameA);
@@ -8081,6 +8124,7 @@ async function runMissionIntroSequence({ deploymentHold = null } = {}) {
             document.body.classList.remove('mission-intro-active');
         }
         game?.setCinematicLock?.(false);
+        window.AudioManager?.playVoiceCallout?.('comms_online', { volume: 0.95 });
 
         if (startTutorial) {
             await dialogueManager?.startTutorialSequence({ game });
@@ -10407,7 +10451,7 @@ function updatePlayerTradeUi(state) {
 
     const peerCallsignEl = document.getElementById('trade-peer-callsign');
     const peerClassEl = document.getElementById('trade-peer-class');
-    if (peerCallsignEl) peerCallsignEl.textContent = (state.partner?.callsign || 'SQUADMATE').toUpperCase();
+    if (peerCallsignEl) peerCallsignEl.textContent = (state.partner?.callsign || t('ui.trade.squadmate')).toUpperCase();
     if (peerClassEl) peerClassEl.textContent = `${state.partner?.opClass || 'SCOUT'} // REMOTE`;
 
     // Self availability
@@ -10441,11 +10485,11 @@ function updatePlayerTradeUi(state) {
     if (peerO2ValEl) peerO2ValEl.textContent = String(state.peerOffer.o2Canisters || 0);
 
     const statusBarEl = document.getElementById('trade-status-bar-text');
-    if (statusBarEl) statusBarEl.textContent = state.statusMessage || 'AWAITING OFFER SELECTION';
+    if (statusBarEl) statusBarEl.textContent = state.statusMessage || t('ui.trade.awaiting_offer');
 
     const confirmBtn = document.getElementById('trade-confirm-btn');
     if (confirmBtn) {
-        confirmBtn.textContent = state.myAccepted ? 'WAITING FOR SQUADMATE...' : 'CONFIRM TRANSFER';
+        confirmBtn.textContent = state.myAccepted ? t('ui.trade.waiting_squadmate') : t('ui.player_trade.confirm_transfer');
         confirmBtn.disabled = state.myAccepted;
     }
 }
@@ -10565,7 +10609,7 @@ function updateNpcDialogueUi(state = {}) {
     }
     if (avatarEl) avatarEl.textContent = tree.icon || '💬';
     if (moodEl) {
-        moodEl.textContent = (bond?.level >= 2) ? 'ENAMORED / DEVOTED' : ((bond?.level === 1) ? 'WARM / ATTRACTION' : 'ATTENTIVE');
+        moodEl.textContent = (bond?.level >= 2) ? t('ui.bond.enamored') : ((bond?.level === 1) ? t('ui.bond.warm') : t('ui.bond.attentive'));
     }
 
     if (narrationEl) {
@@ -10578,7 +10622,7 @@ function updateNpcDialogueUi(state = {}) {
     }
 
     if (speakerEl) speakerEl.textContent = `${node.speaker ? node.speaker.toUpperCase() : tree.name.toUpperCase()}:`;
-    if (textEl) textEl.textContent = `"${node.dialogue}"`;
+    if (textEl) textEl.textContent = t('ui.camp.quote', { text: node.dialogue });
 
     if (choicesEl) {
         choicesEl.innerHTML = '';
@@ -11483,20 +11527,20 @@ function renderFieldPrint(grid, bank) {
     const panel = document.createElement('div');
     panel.className = 'fab-activation-panel';
     panel.innerHTML = `<div class="fab-activation-panel__kicker">GUARANTEED FIELD PRINT · ALL CLASSES</div>
-        <div class="fab-activation-panel__title">SCATTER REPEATER</div>
+        <div class="fab-activation-panel__title">${t('ui.fab.scatter_repeater')}</div>
         <p>Three close-range projectiles per shot; shorter reach. Equip for your next deployment. No Foundry activation needed for this field schematic.</p>
         <div class="fab-activation-panel__cost">${fabCostText(cost, bank, { showHaveNeed: !bankManager.canAfford(cost) })}</div>`;
     const button = document.createElement('button');
     button.id = 'season-field-print';
     button.className = 'fab-card__btn';
-    button.textContent = fabricated ? (equipped ? 'EQUIPPED FOR NEXT RUN ✓' : 'EQUIP SCATTER REPEATER') : printing ? 'PRINTING…' : bankManager.canAfford(cost) ? 'PRINT SCATTER REPEATER' : fabMissingResourceText(cost, bank);
+    button.textContent = fabricated ? (equipped ? t('ui.fab.equipped_next_run') : t('ui.fab.equip_scatter')) : printing ? t('ui.fab.printing') : bankManager.canAfford(cost) ? 'PRINT SCATTER REPEATER' : fabMissingResourceText(cost, bank);
     button.disabled = printing || equipped || (!fabricated && !bankManager.canAfford(cost));
     button.addEventListener('click', () => {
         try {
             if (fabricated) { loadout.equip(recipe.id, fabricator); syncEquippedWeaponLabel(); }
             else { fabricator.startPrint(recipe.id, bankManager); startFabTicker(); }
             renderFabricationModal();
-        } catch { button.textContent = 'SAVE PENDING — REOPEN FAB BAY TO RECOVER'; }
+        } catch { button.textContent = t('ui.fab.save_pending'); }
     });
     panel.appendChild(button);
     grid.appendChild(panel);
@@ -11511,9 +11555,9 @@ function renderFoundryActivationPanel(grid, bank) {
     const panel = document.createElement('div');
     panel.className = 'fab-activation-panel';
     panel.innerHTML = `
-        <div class="fab-activation-panel__kicker">FOUNDRY LINK REQUIRED</div>
-        <div class="fab-activation-panel__title">ACTIVATE FABRICATION BAY</div>
-        <div class="fab-activation-panel__desc">Bring the in-world Foundry online before printing schematics.</div>
+        <div class="fab-activation-panel__kicker">${t('ui.fab.foundry_required')}</div>
+        <div class="fab-activation-panel__title">${t('ui.fab.activate_bay')}</div>
+        <div class="fab-activation-panel__desc">${t('ui.fab.bring_online')}</div>
         <div class="fab-activation-panel__cost">${fabCostText(FOUNDRY_ACTIVATION_COST, bank, { showHaveNeed: !canActivate })}</div>
         <div class="fab-activation-panel__hint">${canActivate ? 'READY TO ACTIVATE' : missingText}</div>
     `;
@@ -11521,7 +11565,7 @@ function renderFoundryActivationPanel(grid, bank) {
     btn.id = 'fab-activate-btn';
     btn.className = 'fab-card__btn';
     btn.disabled = !canActivate;
-    btn.textContent = canActivate ? 'ACTIVATE FOUNDRY' : missingText;
+    btn.textContent = canActivate ? t('ui.fab.activate_foundry') : missingText;
     if (!canActivate) btn.classList.add('fab-card__btn--locked');
     btn.addEventListener('click', () => {
         if (bankManager.activateFoundry()) {
@@ -11590,7 +11634,7 @@ function renderFabricationModal() {
         art.appendChild(img);
         const rarityTag = document.createElement('span');
         rarityTag.className = 'fab-card__rarity';
-        rarityTag.textContent = recipe.rarity ?? 'COMMON';
+        rarityTag.textContent = recipe.rarity ?? t('ui.fab.common');
         art.appendChild(rarityTag);
         card.appendChild(art);
 
@@ -11606,7 +11650,7 @@ function renderFabricationModal() {
 
         const status = document.createElement('div');
         status.className = 'fab-card__status';
-        status.textContent = fabricated ? '✓ READY TO APPLY' : fabricator.isPrinting(recipe.id)
+        status.textContent = fabricated ? t('ui.fab.ready_to_apply') : fabricator.isPrinting(recipe.id)
             ? `PRINTING ${Math.round(fabricator.getPrintProgress(recipe.id) * 100)}%`
             : `PRINT COST · ${fabCostText(fabricator.getEffectiveCost(recipe), bank)}`;
         card.appendChild(status);
@@ -11629,7 +11673,7 @@ function renderFabricationModal() {
                     syncEquippedWeaponLabel();
                     renderFabricationModal();
                 } else {
-                    button.textContent = result.reason === 'slot_conflict' ? 'CHOOSE BAY A OR B' : 'APPLY FAILED';
+                    button.textContent = result.reason === 'slot_conflict' ? t('ui.fab.choose_bay') : t('ui.fab.apply_failed');
                     window.AudioManager?.play?.('ui_error', { volume: 0.5 });
                 }
             });
@@ -11642,14 +11686,14 @@ function renderFabricationModal() {
             if (output.kind === 'weapon') {
                 const equipped = loadout.getEquippedId(loadout.activeClassId) === recipe.id;
                 if (!equipped) addApplyButton('EQUIP NOW');
-                else status.textContent = '✓ EQUIPPED IN CURRENT RUN';
+                else status.textContent = t('ui.fab.equipped_current');
             } else if (output.kind === 'charm') {
                 const equipped = String(current.charmId ?? '') === String(output.itemdefid);
                 if (!equipped) addApplyButton(current.charmId ? `REPLACE CHARM ${current.charmId}` : 'MOUNT CHARM NOW');
-                else status.textContent = '✓ MOUNTED IN CURRENT RUN';
+                else status.textContent = t('ui.fab.mounted_current');
             } else if (output.kind === 'mod') {
                 const equippedSlot = [current.mod1Id, current.mod2Id].findIndex((id) => String(id ?? '') === String(output.itemdefid));
-                if (equippedSlot >= 0) status.textContent = `✓ ACTIVE IN BAY ${equippedSlot === 0 ? 'A' : 'B'}`;
+                if (equippedSlot >= 0) status.textContent = t('ui.fab.active_in_bay', { bay: equippedSlot === 0 ? 'A' : 'B' });
                 else if (!current.mod1Id || !current.mod2Id) addApplyButton(`INSTALL IN OPEN BAY`);
                 else {
                     addApplyButton(`REPLACE BAY A · ${current.mod1Id}`, 1);
@@ -11662,7 +11706,7 @@ function renderFabricationModal() {
             const button = document.createElement('button');
             button.className = 'fab-card__btn';
             button.disabled = printing || !fabricator.canFabricate(recipe.id, bankManager);
-            button.textContent = printing ? 'PRINTING…' : bankManager.canAfford(cost) ? 'PRINT THIS OUTPUT' : fabMissingResourceText(cost, bank);
+            button.textContent = printing ? t('ui.fab.printing') : bankManager.canAfford(cost) ? t('ui.fab.print_output') : fabMissingResourceText(cost, bank);
             button.addEventListener('click', () => {
                 if (!fabricator.startPrint(recipe.id, bankManager)) return;
                 startFabTicker();
@@ -11706,7 +11750,7 @@ function runFabricatorRoll() {
     const strip = document.getElementById('fab-reveal-strip');
     const cardEl = document.getElementById('fab-reveal-card');
     const rollBtn = document.getElementById('fab-roll-btn');
-    if (rollBtn) { rollBtn.disabled = true; rollBtn.textContent = 'FABRICATING…'; }
+    if (rollBtn) { rollBtn.disabled = true; rollBtn.textContent = t('ui.fab.fabricating'); }
     window.AudioManager?.play?.('door_gears_spin', { volume: 0.4 });
 
     // Build a long strip of rarity tiles; the winner lands under the marker.
@@ -11793,7 +11837,7 @@ function refreshFabAccess() {
     if (!fabCmd) return;
     fabCmd.classList.remove('hidden');
     const btn = document.getElementById('fabrication-btn');
-    if (btn) btn.textContent = '◇ FAB BAY';
+    if (btn) btn.textContent = t('ui.fab.bay_button');
     updateMenuCommandStatuses();
 }
 
@@ -11892,7 +11936,7 @@ function openCodexDetailModal(id) {
     const img = document.getElementById('codex-detail-img');
     const blurb = document.getElementById('codex-detail-blurb');
 
-    if (kicker) kicker.textContent = `❑ ${entry.category} INTEL RECORD`;
+    if (kicker) kicker.textContent = t('ui.codex.intel_record_kicker', { category: entry.category });
     if (name) name.textContent = entry.name;
     if (blurb) blurb.textContent = entry.blurb;
     if (img) {
@@ -11919,7 +11963,7 @@ function renderCodexModal() {
     const grid = document.getElementById('codex-grid');
     const summary = document.getElementById('codex-summary');
     if (!grid) return;
-    if (summary) summary.textContent = `ENTRIES RECOVERED: ${codexStore.getDiscoveredCount()} / ${CODEX_TOTAL}`;
+    if (summary) summary.textContent = t('ui.codex.entries_recovered', { found: codexStore.getDiscoveredCount(), total: CODEX_TOTAL });
     grid.innerHTML = '';
     const archiveSection = document.createElement('details');
     archiveSection.className = 'codex-section ending-archive-section';
@@ -11927,12 +11971,12 @@ function renderCodexModal() {
 
     const archiveSummary = document.createElement('summary');
     archiveSummary.className = 'codex-section-label ending-archive-label';
-    archiveSummary.textContent = '◈ EXPEDITION ENDINGS ARCHIVE // ALL 10 TRAJECTORIES & CODEX LINCHPINS';
+    archiveSummary.textContent = t('ui.codex.endings_archive');
     archiveSection.appendChild(archiveSummary);
 
     const archiveSub = document.createElement('div');
     archiveSub.className = 'ending-archive-sub';
-    archiveSub.textContent = 'Catalogues all ten historical outcomes, locked silhouettes, and the irreversible linchpin decisions responsible for closing specific pathways in your current deployment.';
+    archiveSub.textContent = t('ui.codex.endings_sub');
     archiveSection.appendChild(archiveSub);
 
     const archiveGrid = document.createElement('div');
@@ -11958,7 +12002,7 @@ function renderCodexModal() {
 
         const badge = document.createElement('span');
         badge.className = `ending-card__badge ${ending.discovered ? 'badge--discovered' : (isLockedThisRun ? 'badge--locked-run' : 'badge--undiscovered')}`;
-        badge.textContent = ending.discovered ? 'DISCOVERED' : (isLockedThisRun ? 'LOCKED THIS RUN' : 'UNDISCOVERED');
+        badge.textContent = ending.discovered ? t('ui.codex.discovered') : (isLockedThisRun ? t('ui.codex.locked_this_run') : t('ui.codex.undiscovered'));
         artWrap.append(art, badge);
 
         const content = document.createElement('div');
@@ -11968,7 +12012,7 @@ function renderCodexModal() {
         header.className = 'ending-card__header';
         const title = document.createElement('h3');
         title.className = 'ending-card__title';
-        title.textContent = ending.discovered || isLockedThisRun ? (ACT2_ENDING_TITLES[ending.id] ?? ending.id.toUpperCase()) : 'CLASSIFIED EXPEDITION TRAJECTORY';
+        title.textContent = ending.discovered || isLockedThisRun ? (ACT2_ENDING_TITLES[ending.id] ?? ending.id.toUpperCase()) : t('ui.codex.classified');
         header.appendChild(title);
 
         const desc = document.createElement('p');
@@ -11986,7 +12030,7 @@ function renderCodexModal() {
             causesWrap.className = 'ending-card__causes';
             const causesLabel = document.createElement('div');
             causesLabel.className = 'ending-card__causes-label';
-            causesLabel.textContent = '🔒 CLOSED BY EXPEDITION LINCHPIN:';
+            causesLabel.textContent = t('ui.codex.closed_by');
             causesWrap.appendChild(causesLabel);
 
             const causesList = document.createElement('ul');
@@ -12027,14 +12071,14 @@ function renderCodexModal() {
             if (known) {
                 card.setAttribute('role', 'button');
                 card.setAttribute('tabindex', '0');
-                card.setAttribute('aria-label', `View intel record for ${entry.name}`);
+                card.setAttribute('aria-label', t('ui.codex.view_record', { name: entry.name }));
                 card.innerHTML = `
                     <div class="codex-card__header">
                       <div class="codex-card__name">${entry.name}</div>
                       <span class="codex-card__icon" title="View Intel Dossier & Artwork">🔍</span>
                     </div>
                     <div class="codex-card__blurb">${entry.blurb}</div>
-                    <div class="codex-card__hint">CLICK TO VIEW INTEL DOSSIER & ARTWORK</div>
+                    <div class="codex-card__hint">${t('ui.codex.click_hint')}</div>
                 `;
                 card.addEventListener('click', () => openCodexDetailModal(entry.id));
                 card.addEventListener('keydown', (event) => {
@@ -12044,8 +12088,8 @@ function renderCodexModal() {
                 });
             } else {
                 card.innerHTML = `
-                    <div class="codex-card__name">??? — UNCATALOGUED</div>
-                    <div class="codex-card__blurb">Encounter this in the field to recover its record.</div>
+                    <div class="codex-card__name">${t('ui.codex.uncatalogued')}</div>
+                    <div class="codex-card__blurb">${t('ui.codex.encounter_hint')}</div>
                 `;
             }
             section.appendChild(card);
@@ -12080,7 +12124,7 @@ window.addEventListener('day-rest-warning', (event) => {
     const detail = event?.detail ?? {};
     pendingCampRestConfirmation = typeof detail.onConfirm === 'function' ? detail.onConfirm : null;
     if (dayRestWarningCopy) {
-        dayRestWarningCopy.textContent = `Sleeping at ${detail.campLabel ?? 'this camp'} advances to day ${detail.nextDay ?? '?'}. These unresolved signals will be lost:`;
+        dayRestWarningCopy.textContent = t('ui.camp.sleep_warning', { camp: detail.campLabel ?? t('ui.camp.this_camp'), day: detail.nextDay ?? '?' });
     }
     if (dayRestWarningList) {
         dayRestWarningList.replaceChildren();
@@ -12088,9 +12132,9 @@ window.addEventListener('day-rest-warning', (event) => {
             const item = document.createElement('div');
             item.className = 'day-rest-warning-item';
             const title = document.createElement('strong');
-            title.textContent = deadline.label ?? String(deadline.id ?? 'UNKNOWN SIGNAL').replaceAll('_', ' ').toUpperCase();
+            title.textContent = deadline.label ?? String(deadline.id ?? t('ui.camp.unknown_signal')).replaceAll('_', ' ').toUpperCase();
             const consequence = document.createElement('span');
-            consequence.textContent = deadline.consequence ?? 'This story path closes permanently.';
+            consequence.textContent = deadline.consequence ?? t('ui.camp.path_closes');
             item.append(title, consequence);
             dayRestWarningList.appendChild(item);
         }
@@ -12126,7 +12170,7 @@ function updateCampaignCycleIndicator(detail = {}) {
         host.appendChild(day);
     }
     day.textContent = `DAY ${detail.day ?? 1}${detail.label ? ` · ${detail.label}` : ''}`;
-    day.title = `Campaign threat ${Number(detail.difficulty ?? 1).toFixed(2)}×`;
+    day.title = t('ui.camp.threat', { value: Number(detail.difficulty ?? 1).toFixed(2) });
     day.dataset.phase = String(detail.label ?? '').includes('NIGHT') ? 'night' : 'day';
     const progress = document.getElementById('campaign-cycle-progress');
     if (progress && Number.isFinite(detail.timeOfDay)) progress.style.width = `${Math.max(0, Math.min(1, detail.timeOfDay)) * 100}%`;
@@ -12194,7 +12238,7 @@ window.addEventListener('cave-prompt-nearby', () => {
     const key = prompt?.querySelector('.prompt-key');
     const text = prompt?.querySelector('.prompt-text');
     if (key) setPromptKeyLabel(key);
-    if (text) text.textContent = 'RECOVER FINAL COMPONENT';
+    if (text) text.textContent = t('ui.prompt.recover_final');
     prompt?.classList.remove('hidden');
 });
 window.addEventListener('cave-prompt-clear', () => {
@@ -12332,7 +12376,7 @@ window.addEventListener('camp-prompt-nearby', (event) => {
     const key = prompt?.querySelector('.prompt-key');
     const text = prompt?.querySelector('.prompt-text');
     if (key) setPromptKeyLabel(key);
-    if (text) text.textContent = event?.detail?.label ?? 'INTERACT';
+    if (text) text.textContent = event?.detail?.label ?? t('ui.prompt.interact');
     prompt?.classList.remove('hidden');
 });
 window.addEventListener('camp-prompt-clear', () => {
@@ -12414,10 +12458,10 @@ function renderCampChoice(detail = {}) {
         ? `${detail.leaderName} // ${detail.leaderClass ?? 'SURVIVOR'}${detail.leaderIsBoss ? ' // INVERTED COMMAND' : ''}`
         : 'SURVIVOR COMMAND';
     if (campChoiceKicker) {
-        campChoiceKicker.textContent = `CONTACT ${detail.storyOrder ?? '?'} // ${leaderLine}`;
+        campChoiceKicker.textContent = t('ui.camp.contact_kicker', { order: detail.storyOrder ?? '?', leader: leaderLine });
     }
     if (campChoiceTitle) {
-        campChoiceTitle.textContent = detail.campLabel ?? 'CAMP DECISION';
+        campChoiceTitle.textContent = detail.campLabel ?? t('ui.camp.decision');
     }
     const ending = detail.endingVector?.ending;
     if (campChoiceStatus) {
@@ -12560,7 +12604,8 @@ function renderCampChoice(detail = {}) {
             const locks = getResolution(choice.id, choice.resolution)?.locksEndings ?? [];
             const warning = document.createElement('span');
             warning.className = 'camp-choice-option__desc';
-            warning.textContent = `Permanent choice: ${choice.id.replace(/_/g, ' ')} — ${choice.resolution.replace(/_/g, ' ')}.${locks.length ? ' Closes: ' + locks.map(id => ACT2_ENDING_TITLES[id]).join(', ') + '.' : ''}`;
+            warning.textContent = t('ui.camp.permanent_choice', { choice: choice.id.replace(/_/g, ' '), resolution: choice.resolution.replace(/_/g, ' ') })
+                + (locks.length ? t('ui.camp.closes', { locks: locks.map(id => ACT2_ENDING_TITLES[id]).join(', ') }) : '');
             btn.appendChild(warning);
         }
         btn.addEventListener('click', () => {
@@ -12606,7 +12651,7 @@ function renderCampChoice(detail = {}) {
                 if (confirmLocks) {
                     if (locks.length > 0) {
                         confirmLocks.innerHTML = `
-                            <div class="confirm-locks-header">⚠ PERMANENT EXPEDITION ENDING LOCKS:</div>
+                            <div class="confirm-locks-header">${t('ui.camp.ending_locks_header')}</div>
                             <div class="confirm-locks-tags">
                                 ${locks.map(lockId => `
                                     <div class="confirm-lock-tag">
@@ -12734,7 +12779,7 @@ function renderLeaderConversationLine() {
     leaderConversationModal?.setAttribute('data-mood', reaction.mood);
     leaderConversation3d.react(reaction);
     const atEnd = leaderConversationLineIndex >= leaderConversationLines.length - 1;
-    if (leaderConversationContinue) leaderConversationContinue.textContent = atEnd ? 'FINISH CONVERSATION' : 'CONTINUE';
+    if (leaderConversationContinue) leaderConversationContinue.textContent = atEnd ? t('ui.camp.finish_conversation') : t('ui.camp.continue');
     if (raw && typeof window !== 'undefined' && window.AudioManager?.playVoiceForMessage) {
         window.AudioManager.playVoiceForMessage({ name: leaderConversationIdentity?.name || 'LEADER' }, raw);
     }
@@ -12816,9 +12861,9 @@ window.addEventListener('leader-dialogue', async (event) => {
     preloadLeaderMedia(identity);
     leaderConversationModal.style.setProperty('--leader-accent', identity.accent);
     if (leaderConversationName) leaderConversationName.textContent = identity.name;
-    if (leaderConversationKicker) leaderConversationKicker.textContent = detail.kind === 'camp' ? 'CAMP CONVERSATION' : 'FIELD CONVERSATION';
+    if (leaderConversationKicker) leaderConversationKicker.textContent = detail.kind === 'camp' ? t('ui.camp.camp_conversation') : t('ui.camp.field_conversation');
     if (leaderConversationMeta) {
-        leaderConversationMeta.textContent = [identity.title, identity.callsign ? `CALLSIGN ${identity.callsign}` : '', identity.classId]
+        leaderConversationMeta.textContent = [identity.title, identity.callsign ? t('ui.camp.callsign', { callsign: identity.callsign }) : '', identity.classId]
             .filter(Boolean).join(' // ');
     }
     if (leaderConversationPortrait) {
@@ -12839,7 +12884,7 @@ window.addEventListener('leader-dialogue', async (event) => {
         stats.push(`STORY STAGE ${(detail.progress?.stage ?? detail.stage ?? 0) + 1}`);
         leaderConversationStats.textContent = stats.join('  •  ');
     }
-    if (leaderConversationGuidance) leaderConversationGuidance.textContent = detail.progress?.guidance || 'Listen, then decide how you want to help.';
+    if (leaderConversationGuidance) leaderConversationGuidance.textContent = detail.progress?.guidance || t('ui.camp.listen_hint');
     renderLeaderConversationLine();
     leaderConversationModal.classList.remove('hidden');
     leaderConversationModal.setAttribute('aria-hidden', 'false');
@@ -13214,10 +13259,10 @@ async function runAct2DepartureSequence(detail = {}) {
 function applyCorruptedTitlePresentation({ sting = false } = {}) {
     if (!arcManager) return;
     if (arcManager.getState().arcState !== 'hive_awakened_tease') return;
-    document.title = 'PREGALIEN | HIVE COMMAND';
+    document.title = t('ui.title.pregalien_command');
     for (const el of [document.querySelector('.splash-title'), document.querySelector('.title-small')]) {
         if (!el) continue;
-        el.textContent = 'PREGALIEN';
+        el.textContent = t('ui.title.pregalien');
         el.classList.add('title-corrupted');
     }
     if (sting) {
@@ -13390,7 +13435,7 @@ function renderRosterModal(mode = 'continue') {
         cosmeticsRow._wired = true;
         cosmeticsRow.querySelectorAll('.roster-cosmetic-chip').forEach((chip) => {
             chip.style.cursor = 'pointer';
-            chip.title = 'Click to open Steam Vault cosmetics submenu';
+            chip.title = t('ui.hub.vault_tooltip');
             chip.addEventListener('click', () => {
                 window.AudioManager?.play?.('ui_click', { volume: 0.5 });
                 openSteamVaultModal();
@@ -13422,11 +13467,11 @@ function renderRosterModal(mode = 'continue') {
 
         const title = document.createElement('div');
         title.className = 'roster-empty-title';
-        title.textContent = 'NO WEAPONS FABRICATED';
+        title.textContent = t('ui.roster.no_weapons');
 
         const sub = document.createElement('div');
         sub.className = 'roster-empty-sub';
-        sub.textContent = 'Print a guaranteed Scatter Repeater for 12 Tech / 6 Coin in the Fab Bay.';
+        sub.textContent = t('ui.roster.print_hint');
 
         textGroup.appendChild(title);
         textGroup.appendChild(sub);
@@ -13436,7 +13481,7 @@ function renderRosterModal(mode = 'continue') {
 
         const fabBtn = document.createElement('button');
         fabBtn.className = 'roster-weapon__btn roster-weapon__btn--single-fab';
-        fabBtn.textContent = '+ OPEN FAB BAY';
+        fabBtn.textContent = t('ui.fab.open_bay');
         fabBtn.addEventListener('click', () => {
             window.AudioManager?.play?.('ui_click', { volume: 0.5 });
             openFabricationModal();
@@ -13469,9 +13514,9 @@ function renderRosterModal(mode = 'continue') {
             const btn = document.createElement('button');
             btn.className = 'roster-weapon__btn';
             if (equipped) {
-                btn.textContent = '✓ EQUIPPED'; btn.disabled = true; btn.classList.add('roster-weapon__btn--equipped');
+                btn.textContent = t('ui.roster.equipped'); btn.disabled = true; btn.classList.add('roster-weapon__btn--equipped');
             } else {
-                btn.textContent = 'EQUIP';
+                btn.textContent = t('ui.roster.equip');
                 btn.addEventListener('click', () => {
                     if (loadout.equip(recipe.id, fabricator)) {
                         window.AudioManager?.play?.('ui_click', { volume: 0.5 });
@@ -14959,7 +15004,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 console.error('[ThreeGame init failed]', err);
                 const loaderTitle = document.querySelector('.loader-title');
                 const loaderStatusEl = document.querySelector('.loader-status');
-                if (loaderTitle) loaderTitle.textContent = 'SYSTEM INITIALIZATION FAILED';
+                if (loaderTitle) loaderTitle.textContent = t('ui.loader.init_failed');
                 if (loaderStatusEl) {
                     loaderStatusEl.innerHTML = `<div style="color: var(--accent-secondary); font-size: var(--font-xs);">${err?.message ?? 'UNKNOWN ERROR — WebGL may be unavailable'}</div>`;
                 }

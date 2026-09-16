@@ -54,20 +54,15 @@
       "quit": "SALIR DEL JUEGO",
       "aria_label_operations_and_steam": "Comandos de operaciones y Steam",
       "title_operator_roster_callsign": "Registro de operadores: distintivo y equipo",
-      "0_0_arsenal": "0 / 0 ARSENAL",
       "title_steam_vault_view": "Bóveda Steam: ver cosméticos de Steam",
       "title_archive_simulations_unlockable": "Simulaciones de archivo: minijuegos de historia",
       "rgb": "RGB",
       "title_fabrication_bay_print": "Taller de fabricación: imprime equipo con chatarra (se desbloquea al energizar la base)",
-      "0_0_printed": "0 / 0 IMPRESOS",
       "aria_label_records_and_dossier": "Comandos de registros y expediente",
       "title_bunker_archive_discovered": "Archivo del búnker: registros de trasfondo hallados",
-      "0_27_logs": "0 / 27 REGISTROS",
       "title_field_codex_catalogued": "Códice de campo: hostiles, infraestructura y fenómenos",
-      "0_0_intel": "0 / 0 INTEL",
       "title_tactical_dossier_beta": "Expediente táctico: progreso de la Temporada Beta 1",
       "title_achievement_records_unlocked": "Registros de logros: hitos de partida desbloqueados",
-      "locked": "BLOQUEADO",
       "tank": "TANQUE",
       "aria_label_s_o_u": "S.O.U.L: velocidad, consumo de O2, alcance de botín",
       "speed": "VELOCIDAD",
@@ -81,7 +76,6 @@
       "med": "MED",
       "title_choose_operator_polish": "Elegir acabado del operador",
       "suit_polish": "ACABADO DEL TRAJE",
-      "standard_issue": "REGLAMENTARIO",
       "recon_frame": "ARMAZÓN DE RECON",
       "scout": "EXPLORADOR",
       "sprint_burst": "IMPULSO DE CARRERA",
@@ -100,12 +94,16 @@
       "roster": "▣ PLANTILLA",
       "vault": "◈ BÓVEDA DE STEAM",
       "archive_sims": "◈ SIMS DE ARCHIVO",
-      "fab_bay": "◇ TALLER",
       "archive": "◈ ARCHIVO",
       "codex": "❑ CODEX",
       "dossier": "◈ EXPEDIENTE",
       "achievements": "LOGROS",
-      "initialize": "INICIALIZAR"
+      "initialize": "INICIALIZAR",
+      "vault_tooltip": "Haz clic para abrir el submenú de cosméticos de la Bóveda Steam",
+      "status_logs": "{found} / {total} REGISTROS",
+      "status_intel": "{found} / {total} INTEL",
+      "status_printed": "{printed} / {total} IMPRESOS",
+      "status_armed": "{armed}/{total} ARMADAS"
     },
     "settings": {
       "title": "AJUSTES DEL SISTEMA",
@@ -153,8 +151,7 @@
       "abort_current_mission": "ABORTAR MISIÓN ACTUAL",
       "abort_mission": "ABORTAR MISIÓN",
       "title_active_crosshair_color": "Color de mira activo",
-      "placeholder_agent": "AGENTE",
-      "checking": "COMPROBANDO…"
+      "placeholder_agent": "AGENTE"
     },
     "action": {
       "open": "ABRIR",
@@ -267,7 +264,6 @@
       "aria_label_pre_mission_armory": "Armería previa a la misión"
     },
     "roster": {
-      "title": "▣ EXPEDIENTE DEL OPERADOR // TELEMETRÍA DE DESPLIEGUE",
       "deepest_sector": "SECTOR MÁS PROFUNDO:",
       "total_distance": "DISTANCIA TOTAL:",
       "hostiles": "HOSTILES:",
@@ -276,17 +272,18 @@
       "decal": "CALCOMANÍA:",
       "finish": "ACABADO:",
       "hint": "Fabrica armas en el TALLER para equiparlas aquí. Personaliza cosméticos en la BÓVEDA DE STEAM.",
-      "confirm": "CONFIRMAR Y DESPLEGAR",
       "randomize": "Indicativo aleatorio",
       "callsign": "DISTINTIVO:",
       "placeholder_agent_01": "AGENT-01",
-      "random": "🎲 ALEATORIO",
       "sector_0": "SECTOR 0",
       "0_eliminated": "0 ELIMINADOS",
       "none": "NINGUNO",
-      "arsenal_0_0_schematics_fabricated": "ARSENAL: 0 / 0 ESQUEMAS FABRICADOS",
       "equipped_sidearm": "ARMA SECUNDARIA EQUIPADA",
-      "equipped_steam_cosmetics": "COSMÉTICOS DE STEAM EQUIPADOS"
+      "equipped_steam_cosmetics": "COSMÉTICOS DE STEAM EQUIPADOS",
+      "no_weapons": "NO SE HAN FABRICADO ARMAS",
+      "print_hint": "Imprime un Repetidor de Dispersión garantizado por 12 de tecnología / 6 monedas en el taller.",
+      "equipped": "✓ EQUIPADO",
+      "equip": "EQUIPAR"
     },
     "dlg": {
       "channel": "CANAL 7 DE ENLACE CON LA NODRIZA",
@@ -305,34 +302,19 @@
     "loading": {
       "aria_label_build_and_developer": "Información de compilación y desarrollador",
       "system_build": "COMPILACIÓN DEL SISTEMA",
-      "build_dev_loading_revision": "BUILD DEV // CARGANDO REVISIÓN…",
       "dev_console": "CONSOLA DEV",
-      "initializing_systems": "INICIALIZANDO SISTEMAS",
-      "mothership_command": "MANDO DE LA NAVE NODRIZA",
-      "connecting_to_tactical_network": "CONECTANDO A LA RED TÁCTICA..."
+      "initializing_systems": "INICIALIZANDO SISTEMAS"
     },
     "splash_steam_badge": {
       "title_click_to_open": "Haz clic para abrir el perfil del Overlay de Steam",
       "aria_label_open_steam_profile": "Abrir perfil de Steam"
-    },
-    "splash_steam_persona": {
-      "steam_offline": "STEAM DESCONECTADO"
-    },
-    "splash_steam_status": {
-      "not_connected": "SIN CONEXIÓN"
     },
     "splash": {
       "tactical_command_v2_0": "MANDO TÁCTICO v2.0"
     },
     "title_profile_hud": {
       "aria_label_current_operator_profile": "Perfil del operador actual",
-      "active_operator_profile": "PERFIL DE OPERADOR ACTIVO",
-      "agent": "AGENTE",
-      "tank": "TANQUE",
-      "longest_00_00": "MÁS LARGO 00:00",
-      "depth_surface": "PROFUNDIDAD SUPERFICIE",
-      "deaths_0": "MUERTES 0",
-      "class_best_0000": "MEJOR DE CLASE 0000"
+      "active_operator_profile": "PERFIL DE OPERADOR ACTIVO"
     },
     "about": {
       "aria_label_close_credits": "Cerrar créditos",
@@ -357,7 +339,11 @@
     },
     "archive": {
       "bunker_archive": "◈ ARCHIVO DEL BÚNKER",
-      "logs_recovered_0_27": "REGISTROS RECUPERADOS: 0 / 27"
+      "recovered_kicker": "SIMULACIÓN DE ARCHIVO RECUPERADA",
+      "in_progress": "EN CURSO",
+      "ready": "LISTO",
+      "best_score": "◈ MEJOR: {score} PTS",
+      "rgb_title": "RGB: RIVERSIDE GLOBAL 'BOTICS"
     },
     "close_season_pass": {
       "aria_label_close_tactical_dossier": "Cerrar expediente táctico"
@@ -369,7 +355,6 @@
     "archive_log_detail": {
       "aria_label_close_archive_log": "Cerrar registro de archivo",
       "recovered_archive_record": "◈ REGISTRO DE ARCHIVO RECUPERADO",
-      "log_a01": "LOG-A01",
       "decryption_complete_read_only": "DESCIFRADO COMPLETO // SOLO LECTURA"
     },
     "close_codex": {
@@ -378,14 +363,24 @@
     "codex": {
       "field_intel_discovered_specimens_lore": "◈ INTEL DE CAMPO // ESPECÍMENES Y TRASFONDO",
       "catalogued_by_sub_terran_encounter": "CATALOGADO POR ENCUENTRO SUBTERRÁNEO",
-      "entries_recovered_0_0": "ENTRADAS RECUPERADAS: 0 / 0"
+      "intel_record_kicker": "❑ REGISTRO DE INTEL: {category}",
+      "entries_recovered": "ENTRADAS RECUPERADAS: {found} / {total}",
+      "endings_archive": "◈ ARCHIVO DE FINALES // LAS 10 TRAYECTORIAS Y CLAVES DEL CÓDICE",
+      "endings_sub": "Cataloga los diez desenlaces históricos, las siluetas bloqueadas y las decisiones irreversibles que cierran rutas concretas en tu despliegue actual.",
+      "discovered": "DESCUBIERTO",
+      "locked_this_run": "BLOQUEADO EN ESTA PARTIDA",
+      "undiscovered": "NO DESCUBIERTO",
+      "classified": "TRAYECTORIA DE EXPEDICIÓN CLASIFICADA",
+      "closed_by": "🔒 CERRADO POR DECISIÓN CLAVE:",
+      "view_record": "Ver el registro de intel de {name}",
+      "click_hint": "HAZ CLIC PARA VER EL EXPEDIENTE Y EL ARTE",
+      "uncatalogued": "??? — SIN CATALOGAR",
+      "encounter_hint": "Encuéntralo en el campo para recuperar su registro."
     },
     "close_codex_detail": {
       "aria_label_close_codex_entry": "Cerrar entrada del códice"
     },
     "codex_detail": {
-      "field_intel_record": "❑ REGISTRO DE INTEL DE CAMPO",
-      "cybersnail": "CIBERCARACOL",
       "entry_recovered_read_only_dossier": "ENTRADA RECUPERADA // EXPEDIENTE SOLO LECTURA"
     },
     "close_achievements": {
@@ -393,7 +388,6 @@
     },
     "achievements": {
       "combat_citations_deep_crust_commendations": "◈ CITACIONES DE COMBATE // CONDECORACIONES DE CORTEZA PROFUNDA",
-      "0_0_unlocked": "0 / 0 DESBLOQUEADOS",
       "title_copy_a_portable": "Copiar un código de guardado portátil",
       "copy_save_code": "COPIAR CÓDIGO DE GUARDADO"
     },
@@ -434,9 +428,7 @@
     },
     "operator_polish": {
       "operator_polish": "◆ ACABADO DE OPERADOR",
-      "16_bit_suit_tint_matrix": "MATRIZ DE TINTES DE 16 BITS // LOS ACABADOS BLOQUEADOS REQUIEREN HITOS DE CAMPO",
-      "standard_issue": "REGLAMENTARIO",
-      "equipped": "EQUIPADO"
+      "16_bit_suit_tint_matrix": "MATRIZ DE TINTES DE 16 BITS // LOS ACABADOS BLOQUEADOS REQUIEREN HITOS DE CAMPO"
     },
     "close_tactical_map": {
       "aria_label_close_tactical_map": "Cerrar mapa táctico"
@@ -473,50 +465,26 @@
     "player_trade": {
       "operative_link_field_barter": "ENLACE DE OPERATIVOS // TRUEQUE DE CAMPO",
       "link_active": "ENLACE ACTIVO",
-      "local_operative": "OPERATIVO LOCAL",
-      "tank_command": "TANQUE // MANDO",
       "shells": "CASQUILLOS",
       "ammo": "MUNICIÓN",
       "medkits": "BOTIQUINES",
       "o2_filter": "FILTRO DE O2",
-      "squadmate": "COMPAÑERO DE ESCUADRA",
-      "scout_recon": "EXPLORADOR // RECONOCIMIENTO",
       "shells_offered": "CASQUILLOS OFRECIDOS",
       "ammo_offered": "MUNICIÓN OFRECIDA",
       "medkits_offered": "BOTIQUINES OFRECIDOS",
       "o2_filters_offered": "FILTROS DE O2 OFRECIDOS",
-      "awaiting_transfer_confirmation": "ESPERANDO CONFIRMACIÓN DE TRANSFERENCIA",
       "cancel_link": "CANCELAR ENLACE",
       "confirm_transfer": "CONFIRMAR TRANSFERENCIA"
     },
     "close_player_trade": {
       "aria_label_close_trade_link": "Cerrar enlace de intercambio"
     },
-    "npc_dialogue_name": {
-      "sister_val": "HERMANA VAL"
-    },
-    "npc_dialogue_faction": {
-      "camp_tallow_suture_sanctuary": "CAMPAMENTO TALLOW // SANTUARIO DE SUTURA"
-    },
     "npc_dialogue": {
       "affection_bond": "AFECTO // VÍNCULO",
-      "side_story_stage_1_3": "HISTORIA SECUNDARIA // ETAPA 1/3: EL REFUGIO TIRITANTE",
-      "objective_survive_subzero_exposure_or": "OBJETIVO: sobrevive a la exposición bajo cero o llega al Campamento Tallow con poco O2.",
-      "intimate_attracted": "ÍNTIMO / ATRAÍDA",
-      "she_sets_down_a_steaming": "Deja una humeante tetera de bronce con resina botánica caliente...",
       "press_1_4_or_click": "PULSA [1-4] O HAZ CLIC EN UNA CARTA • [ESC] RETIRARSE"
-    },
-    "npc_dialogue_bond_badge": {
-      "neutral_lvl_0": "NEUTRAL (NIV. 0)"
     },
     "close_npc_dialogue": {
       "title_exit_dialogue": "Salir del diálogo"
-    },
-    "npc_dialogue_speaker": {
-      "sister_val": "HERMANA VAL:"
-    },
-    "npc_dialogue_text": {
-      "you_re_shivering_contractor": "«Estás temblando, contratista...»"
     },
     "demo_end": {
       "transmission_terminated": "◈ TRANSMISIÓN TERMINADA",
@@ -534,22 +502,14 @@
       "schematics_fabricated_0_8": "ESQUEMAS FABRICADOS: 0 / 8"
     },
     "fab_roll": {
-      "insert_salvage_to_fabricate": "INSERTA CHATARRA PARA FABRICAR",
-      "roll_fabricator": "ACTIVAR FABRICADOR"
+      "insert_salvage_to_fabricate": "INSERTA CHATARRA PARA FABRICAR"
     },
     "ui": {
       "exosuit_mark_iv_pressurized": "EXOTRAJE // MARK-IV PRESURIZADO",
       "bunker_level": "NIVEL DEL BÚNKER"
     },
-    "biome_label": {
-      "active_sector": "SECTOR ACTIVO"
-    },
     "campaign_day_indicator": {
-      "title_campaign_day_and": "Día de campaña y ciclo de luz local",
-      "day_1_06_43_day": "DÍA 1 · 06:43 · DÍA"
-    },
-    "hud_run_seed": {
-      "seed": "SEMILLA: —"
+      "title_campaign_day_and": "Día de campaña y ciclo de luz local"
     },
     "hud_run_cards": {
       "aria_label_active_run_pressure": "Presión de la partida actual"
@@ -571,8 +531,7 @@
       "node": "NODO"
     },
     "weapon_status": {
-      "sidearm": "ARMA SECUNDARIA",
-      "cache_18": "ALIJO 18"
+      "sidearm": "ARMA SECUNDARIA"
     },
     "ship_status": {
       "ship_integrity": "INTEGRIDAD DE LA NAVE"
@@ -582,15 +541,8 @@
       "aria_label_health": "Salud",
       "cover": "COBERTURA"
     },
-    "hazard_status": {
-      "cold_exposure": "EXPOSICIÓN AL FRÍO",
-      "seek_pressurized_cover": "BUSCA COBERTURA PRESURIZADA"
-    },
     "queens_ledger_hud": {
       "obedience_0_seats_1_4": "♛ OBEDIENCIA 0 · ASIENTOS 1/4 · VECTOR: INESTABLE"
-    },
-    "class_ability": {
-      "passive": "PASIVO"
     },
     "radar_scan": {
       "title_radar_scan_q": "Escaneo de radar [Q]",
@@ -614,19 +566,12 @@
       "distance_covered": "DISTANCIA RECORRIDA",
       "items_recovered": "OBJETOS RECUPERADOS",
       "o2_generator": "GENERADOR DE O₂",
-      "offline": "DESCONECTADO",
       "threats_eliminated": "AMENAZAS ELIMINADAS",
       "time_elapsed": "TIEMPO TRANSCURRIDO",
       "aria_label_expedition_earnings_and": "Ganancias de la expedición y saldos del banco",
-      "banked_resources_preserved": "RECURSOS DEPOSITADOS CONSERVADOS",
-      "run_pressure_none": "PRESIÓN DE PARTIDA: NINGUNA",
-      "black_box_none": "CAJA NEGRA: NINGUNA",
       "score": "PUNTUACIÓN",
-      "new_best": "NUEVO RÉCORD",
       "pts": "PTS",
-      "agent_lost_minimal_telemetry": "AGENTE PERDIDO — TELEMETRÍA MÍNIMA",
       "world_seed": "SEMILLA DEL MUNDO:",
-      "logs_recovered_0_27": "REGISTROS RECUPERADOS: 0/27",
       "leaderboard_results": "◈ RESULTADOS DE CLASIFICACIÓN",
       "try_again": "REINTENTAR"
     },
@@ -637,10 +582,15 @@
       "aria_label_close_log": "Cerrar registro"
     },
     "lore": {
-      "bunker_terminal_log_fragment": "TERMINAL DEL BÚNKER — FRAGMENTO DE REGISTRO"
-    },
-    "lore_modal_key": {
-      "log_a01": "LOG-A01"
+      "bunker_terminal_log_fragment": "TERMINAL DEL BÚNKER — FRAGMENTO DE REGISTRO",
+      "log_key": "LOG-{key}",
+      "text_unavailable": "[TEXTO DEL REGISTRO NO DISPONIBLE — VUELVE AL BÚNKER]",
+      "date": "FECHA: {date}",
+      "loc": "UBIC: {coords}",
+      "open_log": "Abrir registro recuperado {key}",
+      "recovered": "RECUPERADO // ABRIR REGISTRO",
+      "encrypted": "CIFRADO // BLOQUEADO",
+      "summary": "REGISTROS RECUPERADOS: {found} / {total}"
     },
     "radio_sender_name": {
       "mothership_command": "MANDO DE LA NAVE NODRIZA"
@@ -694,15 +644,6 @@
       "click": "CLIC",
       "to_look_around": "PARA MIRAR ALREDEDOR"
     },
-    "mission_progress_hud": {
-      "mission_active": "MISIÓN ACTIVA"
-    },
-    "camp_quest_hud": {
-      "quest_active": "MISIÓN SECUNDARIA ACTIVA"
-    },
-    "loop_step_hud": {
-      "deploying": "DESPLEGANDO"
-    },
     "telemeter_integrity": {
       "integrity": "INTEGRIDAD:"
     },
@@ -738,11 +679,8 @@
       "increase_generator_efficiency_o2_refill": "Aumenta la eficiencia del generador. La recarga de O₂ se duplica. El consumo baja un 20%.",
       "cost_300_tech_100_coin": "COSTE: 300 TEC / 100 MONEDAS",
       "expedition_day": "DÍA DE EXPEDICIÓN",
-      "day_1": "DÍA 1",
       "cycle_phase": "FASE DEL CICLO",
-      "expedition": "EXPEDICIÓN",
       "local_light": "LUZ LOCAL",
-      "daylight": "LUZ DIURNA",
       "next_transition": "PRÓXIMA TRANSICIÓN",
       "aria_label_objective_history": "Historial de objetivos",
       "expedition_journal": "DIARIO DE EXPEDICIÓN",
@@ -760,8 +698,6 @@
       "tech": "TEC",
       "coin": "MONEDAS",
       "current_objective": "OBJETIVO ACTUAL",
-      "active": "ACTIVO",
-      "explore_bank_salvage": "EXPLORAR · DEPOSITAR CHATARRA",
       "base_priority": "PRIORIDAD DE LA BASE"
     },
     "close_o2_generator": {
@@ -770,18 +706,6 @@
     "o2_generator": {
       "o2_generator_module": "MÓDULO DEL GENERADOR DE O₂",
       "safe_field_output": "SALIDA DE CAMPO SEGURA"
-    },
-    "o2_generator_modal_status": {
-      "online_lvl_1": "EN LÍNEA // NIV. 1"
-    },
-    "o2_generator_modal_cost": {
-      "next_cost": "PRÓXIMO COSTE: --"
-    },
-    "o2_generator_modal_field": {
-      "field_radius_refill": "RADIO DE CAMPO -- // RECARGA --"
-    },
-    "o2_generator_modal_hint": {
-      "upgrades_expand_the_blue_o2": "LAS MEJORAS AMPLÍAN EL CAMPO AZUL DE O₂."
     },
     "close_base_turret": {
       "aria_label_close_base_turret": "Cerrar controles de la torreta de la base"
@@ -815,7 +739,6 @@
     "archive_sims": {
       "archive_simulations": "SIMULACIONES DE ARCHIVO",
       "rgb_riverside_global_botics": "RGB: RIVERSIDE GLOBAL 'BOTICS",
-      "not_started": "NO INICIADO",
       "launch_continued_run": "CONTINUAR PARTIDA"
     },
     "archive_sims_modal_close": {
@@ -833,13 +756,9 @@
     },
     "camp_choice": {
       "aria_label_close_camp_decision": "Cerrar decisión del campamento",
-      "camp_contact": "CONTACTO CON EL CAMPAMENTO",
-      "camp_decision": "DECISIÓN DEL CAMPAMENTO",
       "vessel_launch_manifest_forecast": "◇ PRONÓSTICO DEL MANIFIESTO DE LANZAMIENTO ◇",
       "irreversible_choice_strategic_record": "⚠ ELECCIÓN IRREVERSIBLE // REGISTRO ESTRATÉGICO ⚠",
-      "leader_arc": "ARCO DEL LÍDER",
-      "confirm_decision": "CONFIRMAR DECISIÓN",
-      "back_to_options": "VOLVER A LAS OPCIONES"
+      "confirm_decision": "CONFIRMAR DECISIÓN"
     },
     "song_interstitial_track": {
       "track_00": "PISTA 00"
@@ -881,9 +800,6 @@
     "leader_conversation": {
       "aria_label_leave_conversation": "Salir de la conversación",
       "aria_label_speaker": "Hablante",
-      "camp_contact": "CONTACTO CON EL CAMPAMENTO",
-      "survivor": "SUPERVIVIENTE",
-      "continue": "CONTINUAR",
       "leave": "SALIR"
     },
     "snail_encounter": {
@@ -962,11 +878,9 @@
       "aria_label_close_progression_walkthrough": "Cerrar guía de progresión"
     },
     "select_picker": {
-      "select_option": "SELECCIONAR OPCIÓN",
       "aria_label_close_option_picker": "Cerrar selector de opciones"
     },
     "virtual_keyboard": {
-      "enter_text": "INTRODUCIR TEXTO",
       "aria_label_close_on_screen": "Cerrar teclado en pantalla",
       "back": "⌫ ATRÁS",
       "space": "ESPACIO",
@@ -1110,7 +1024,14 @@
       "access_base_shop": "ACCEDER A LA TIENDA DE BASE {type}",
       "upgrade_o2": "MEJORAR GENERADOR DE O₂",
       "turret_controls": "CONTROLES DE TORRETA DEFENSIVA",
-      "blast_locked": "UMBRAL ANTIEXPLOSIÓN BLOQUEADO — {lock}"
+      "blast_locked": "UMBRAL ANTIEXPLOSIÓN BLOQUEADO — {lock}",
+      "press_key": "PULSA {key}",
+      "tap": "TOCA",
+      "read_log": "LEER REGISTRO",
+      "defeat_guard": "DERROTA AL GUARDIA PARA DESBLOQUEAR LA CAJA NEGRA",
+      "recover_black_box": "RECUPERAR CAJA NEGRA",
+      "recover_final": "RECUPERAR COMPONENTE FINAL",
+      "interact": "INTERACTUAR"
     },
     "telemeter": {
       "passive_scan": "ESCANEO DE SUPERFICIE // PASIVO",
@@ -1208,7 +1129,125 @@
     "cinematic": {
       "restoring": "CINEMÁTICA DE ARCHIVO // RESTAURANDO SEÑAL",
       "advances": "El archivo avanza a la siguiente escena reconstruida.",
-      "skip_hint": "PULSA CUALQUIER BOTÓN / TECLA PARA OMITIR"
+      "skip_hint": "PULSA CUALQUIER BOTÓN / TECLA PARA OMITIR",
+      "skip_any": "PULSA CUALQUIER BOTÓN / TECLA PARA OMITIR",
+      "skip_space": "PULSA ESPACIO / INTRO PARA OMITIR",
+      "continue_any": "PULSA CUALQUIER BOTÓN / TECLA PARA CONTINUAR"
+    },
+    "profile": {
+      "longest": "MÁS LARGO {time}",
+      "deaths": "MUERTES {count}",
+      "depth": "PROFUNDIDAD {depth}",
+      "class_best": "MEJOR DE CLASE {score}"
+    },
+    "hud": {
+      "ammo_cache": "ALIJO {current}/{max}",
+      "current_biome": "BIOMA ACTUAL {biome}",
+      "equipped": "EQUIPADO"
+    },
+    "commentary": {
+      "kicker": "COMENTARIO DEL DESARROLLADOR"
+    },
+    "radio": {
+      "online": "EN LÍNEA",
+      "squad_manifest": "MANIFIESTO DE ESCUADRA",
+      "commander_tag": "COMUNICACIONES TÁCTICAS // 72.4 MHz CIRÍLICO",
+      "aura_tag": "ENLACE NEURAL DE COMUNICACIÓN // UNIDAD AURA-7",
+      "commander_name": "Subcomandante soviético",
+      "aura_name": "IA sintetizada «AURA»",
+      "commander_title": "SUBCOMANDANTE SOVIÉTICO",
+      "aura_title": "IA SINTETIZADA «AURA»"
+    },
+    "go": {
+      "generator_level": "NIV. {level}",
+      "offline": "DESCONECTADO",
+      "none": "NINGUNO",
+      "extraction_complete": "EXTRACCIÓN COMPLETA",
+      "exosuit_failure": "FALLO DEL EXOTRAJE",
+      "logs_recovered": "REGISTROS RECUPERADOS: {found}/{total}",
+      "survivor_camps": "Campamentos de supervivientes",
+      "alien_hives": "Colmenas alienígenas",
+      "obedience": "Obediencia:",
+      "seats_filled": "Asientos ocupados:",
+      "humanity": "Humanidad:"
+    },
+    "ach": {
+      "unlocked_kicker": "LOGRO DESBLOQUEADO",
+      "hidden": "Registro oculto. Desbloquéalo para revelarlo.",
+      "coming_soon": "PRÓXIMAMENTE",
+      "unlocked": "DESBLOQUEADO"
+    },
+    "save": {
+      "code_unavailable": "CÓDIGO DE GUARDADO NO DISPONIBLE"
+    },
+    "objective": {
+      "blocked": "BLOQUEADO",
+      "next": "PRÓXIMO OBJETIVO",
+      "also_tracking": "TAMBIÉN EN SEGUIMIENTO",
+      "eliminate": "ELIMINAR: {count}/{target}"
+    },
+    "loader": {
+      "deployment_telemetry": "TELEMETRÍA DE DESPLIEGUE DE LA NAVE NODRIZA",
+      "init_failed": "FALLO DE INICIALIZACIÓN DEL SISTEMA"
+    },
+    "alert": {
+      "tactical": "ALERTA TÁCTICA",
+      "critical": "CRÍTICO"
+    },
+    "trade": {
+      "squadmate": "COMPAÑERO DE ESCUADRA",
+      "awaiting_offer": "ESPERANDO SELECCIÓN DE OFERTA",
+      "waiting_squadmate": "ESPERANDO AL COMPAÑERO..."
+    },
+    "bond": {
+      "enamored": "ENAMORADA / DEVOTA",
+      "warm": "CÁLIDA / ATRACCIÓN",
+      "attentive": "ATENTA"
+    },
+    "fab": {
+      "scatter_repeater": "REPETIDOR DE DISPERSIÓN",
+      "equipped_next_run": "EQUIPADO PARA LA PRÓXIMA PARTIDA ✓",
+      "equip_scatter": "EQUIPAR REPETIDOR DE DISPERSIÓN",
+      "printing": "IMPRIMIENDO…",
+      "save_pending": "GUARDADO PENDIENTE — REABRE EL TALLER PARA RECUPERAR",
+      "foundry_required": "SE REQUIERE ENLACE CON LA FUNDICIÓN",
+      "activate_bay": "ACTIVAR TALLER DE FABRICACIÓN",
+      "bring_online": "Pon en marcha la Fundición del mundo antes de imprimir esquemas.",
+      "activate_foundry": "ACTIVAR FUNDICIÓN",
+      "common": "COMÚN",
+      "ready_to_apply": "✓ LISTO PARA APLICAR",
+      "choose_bay": "ELIGE LA BAHÍA A O B",
+      "apply_failed": "ERROR AL APLICAR",
+      "equipped_current": "✓ EQUIPADO EN LA PARTIDA ACTUAL",
+      "mounted_current": "✓ MONTADO EN LA PARTIDA ACTUAL",
+      "active_in_bay": "✓ ACTIVO EN LA BAHÍA {bay}",
+      "print_output": "IMPRIMIR ESTE RESULTADO",
+      "fabricating": "FABRICANDO…",
+      "bay_button": "◇ TALLER",
+      "open_bay": "+ ABRIR TALLER"
+    },
+    "camp": {
+      "sleep_warning": "Dormir en {camp} avanza al día {day}. Estas señales sin resolver se cerrarán.",
+      "this_camp": "este campamento",
+      "unknown_signal": "SEÑAL DESCONOCIDA",
+      "path_closes": "Esta ruta narrativa se cierra permanentemente.",
+      "threat": "Amenaza de campaña {value}×",
+      "contact_kicker": "CONTACTO {order} // {leader}",
+      "decision": "DECISIÓN DEL CAMPAMENTO",
+      "permanent_choice": "Elección permanente: {choice} — {resolution}.",
+      "closes": " Cierra: {locks}.",
+      "ending_locks_header": "⚠ BLOQUEOS PERMANENTES DE FINALES:",
+      "finish_conversation": "TERMINAR CONVERSACIÓN",
+      "continue": "CONTINUAR",
+      "camp_conversation": "CONVERSACIÓN EN EL CAMPAMENTO",
+      "field_conversation": "CONVERSACIÓN DE CAMPO",
+      "callsign": "DISTINTIVO {callsign}",
+      "listen_hint": "Escucha y luego decide cómo quieres ayudar.",
+      "quote": "«{text}»"
+    },
+    "title": {
+      "pregalien_command": "PREGALIEN | MANDO DE LA COLMENA",
+      "pregalien": "PREGALIEN"
     }
   },
   "narrative": {

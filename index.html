@@ -191,7 +191,7 @@
           <span data-i18n="ui.loading.system_build">SYSTEM BUILD</span>
           <span class="loader-system-info__time" id="loader-build-time"></span>
         </div>
-        <div data-i18n="ui.loading.build_dev_loading_revision" class="loader-version-tag" id="loader-version-tag">BUILD DEV // LOADING REVISION…</div>
+        <div class="loader-version-tag" id="loader-version-tag">BUILD DEV // LOADING REVISION…</div>
         <div class="loader-debug-hint"><kbd>~</kbd><span data-i18n="ui.loading.dev_console">DEV CONSOLE</span></div>
       </aside>
       <div class="loader-content">
@@ -203,8 +203,8 @@
         <div class="loader-bar-container">
           <div class="loader-bar"></div>
         </div>
-        <div data-i18n="ui.loading.mothership_command" class="loader-briefing-speaker hidden" id="loader-briefing-speaker">MOTHERSHIP COMMAND</div>
-        <div data-i18n="ui.loading.connecting_to_tactical_network" class="loader-status">CONNECTING TO TACTICAL NETWORK...</div>
+        <div class="loader-briefing-speaker hidden" id="loader-briefing-speaker">MOTHERSHIP COMMAND</div>
+        <div class="loader-status">CONNECTING TO TACTICAL NETWORK...</div>
       </div>
     </div>
 
@@ -221,8 +221,8 @@
           </svg>
         </div>
         <div class="steam-account-badge__info">
-          <span data-i18n="ui.splash_steam_persona.steam_offline" class="steam-account-badge__name" id="splash-steam-persona">STEAM OFFLINE</span>
-          <span data-i18n="ui.splash_steam_status.not_connected" class="steam-account-badge__status" id="splash-steam-status">NOT CONNECTED</span>
+          <span class="steam-account-badge__name" id="splash-steam-persona">STEAM OFFLINE</span>
+          <span class="steam-account-badge__status" id="splash-steam-status">NOT CONNECTED</span>
         </div>
       </div>
 
@@ -262,15 +262,15 @@
           <div class="title-profile-hud__body">
             <div data-i18n="ui.title_profile_hud.active_operator_profile" class="title-profile-hud__kicker">ACTIVE OPERATOR PROFILE</div>
             <div class="title-profile-hud__identity">
-              <span data-i18n="ui.title_profile_hud.agent" id="title-profile-callsign">AGENT</span>
+              <span id="title-profile-callsign">AGENT</span>
               <span class="ui-separator">//</span>
-              <span data-i18n="ui.title_profile_hud.tank" id="title-profile-class">TANK</span>
+              <span id="title-profile-class">TANK</span>
             </div>
             <div class="title-profile-hud__stats">
-              <span data-i18n="ui.title_profile_hud.longest_00_00" id="career-stat-longest-run">LONGEST 00:00</span>
-              <span data-i18n="ui.title_profile_hud.depth_surface" id="career-stat-deepest-depth">DEPTH SURFACE</span>
-              <span data-i18n="ui.title_profile_hud.deaths_0" id="career-stat-deaths">DEATHS 0</span>
-              <span data-i18n="ui.title_profile_hud.class_best_0000" id="title-profile-best">CLASS BEST 0000</span>
+              <span id="career-stat-longest-run">LONGEST 00:00</span>
+              <span id="career-stat-deepest-depth">DEPTH SURFACE</span>
+              <span id="career-stat-deaths">DEATHS 0</span>
+              <span id="title-profile-best">CLASS BEST 0000</span>
             </div>
           </div>
         </section>
@@ -371,7 +371,7 @@
                 <div data-i18n-aria-label="ui.menu.aria_label_operations_and_steam" class="menu-command-column" aria-label="Operations and Steam commands">
                   <div class="menu-command">
                     <button data-i18n-title="ui.menu.title_operator_roster_callsign" class="start-btn start-btn--roster" id="roster-btn" data-i18n="ui.hub.roster" title="Operator roster — callsign and equipped loadout">▣ ROSTER</button>
-                    <div data-i18n="ui.menu.0_0_arsenal" class="menu-command__status" id="roster-command-status">0 / 0 ARSENAL</div>
+                    <div class="menu-command__status" id="roster-command-status">0 / 0 ARSENAL</div>
                   </div>
                   <div class="menu-command" id="steam-vault-command">
                     <button data-i18n-title="ui.menu.title_steam_vault_view" class="start-btn start-btn--vault" id="steam-vault-btn" data-i18n="ui.hub.vault" title="Steam Vault — view Steam-owned cosmetics">◈ STEAM VAULT</button>
@@ -382,18 +382,18 @@
                     <div data-i18n="ui.menu.rgb" class="menu-command__status" id="archive-sims-command-status">RGB</div>
                   </div>
                   <div class="menu-command menu-command--fab hidden" id="fabrication-command">
-                    <button data-i18n-title="ui.menu.title_fabrication_bay_print" class="start-btn start-btn--fab" id="fabrication-btn" data-i18n="ui.hub.fab_bay" title="Fabrication Bay — print gear from salvage (unlocks once the base is powered)">◇ FAB BAY</button>
-                    <div data-i18n="ui.menu.0_0_printed" class="menu-command__status" id="fab-command-status">0 / 0 PRINTED</div>
+                    <button data-i18n-title="ui.menu.title_fabrication_bay_print" class="start-btn start-btn--fab" id="fabrication-btn" title="Fabrication Bay — print gear from salvage (unlocks once the base is powered)">◇ FAB BAY</button>
+                    <div class="menu-command__status" id="fab-command-status">0 / 0 PRINTED</div>
                   </div>
                 </div>
                 <div data-i18n-aria-label="ui.menu.aria_label_records_and_dossier" class="menu-command-column" aria-label="Records and Dossier commands">
                   <div class="menu-command">
                     <button data-i18n-title="ui.menu.title_bunker_archive_discovered" class="start-btn start-btn--archive" id="archive-btn" data-i18n="ui.hub.archive" title="Bunker Archive — discovered lore logs">◈ ARCHIVE</button>
-                    <div data-i18n="ui.menu.0_27_logs" class="menu-command__status" id="archive-command-status">0 / 27 LOGS</div>
+                    <div class="menu-command__status" id="archive-command-status">0 / 27 LOGS</div>
                   </div>
                   <div class="menu-command">
                     <button data-i18n-title="ui.menu.title_field_codex_catalogued" class="start-btn start-btn--codex" id="codex-btn" data-i18n="ui.hub.codex" title="Field Codex — catalogued hostiles, infrastructure, and phenomena">❑ CODEX</button>
-                    <div data-i18n="ui.menu.0_0_intel" class="menu-command__status" id="codex-command-status">0 / 0 INTEL</div>
+                    <div class="menu-command__status" id="codex-command-status">0 / 0 INTEL</div>
                   </div>
                   <div class="menu-command" id="season-pass-command">
                     <button data-i18n-title="ui.menu.title_tactical_dossier_beta" class="start-btn start-btn--dossier" id="season-pass-btn" data-i18n="ui.hub.dossier" title="Tactical Dossier — Beta Season 1 progression">◈ DOSSIER</button>
@@ -401,7 +401,7 @@
                   </div>
                   <div class="menu-command hidden" id="achievements-command">
                     <button data-i18n-title="ui.menu.title_achievement_records_unlocked" class="start-btn start-btn--achievements" id="achievements-btn" data-i18n="ui.hub.achievements" title="Achievement records — unlocked run milestones">ACHIEVEMENTS</button>
-                    <div data-i18n="ui.menu.locked" class="menu-command__status" id="achievements-command-status">LOCKED</div>
+                    <div class="menu-command__status" id="achievements-command-status">LOCKED</div>
                   </div>
                 </div>
               </div>
@@ -423,7 +423,7 @@
                     <div class="char-preview-door__panel char-preview-door__panel--right"></div>
                   </div>
                 </div>
-                <div data-i18n="ui.menu.tank" id="char-preview-name">TANK</div>
+                <div id="char-preview-name">TANK</div>
               </div>
               <div class="hero-detail-panel" id="hero-detail-panel">
                 <div data-i18n="ui.hero_detail.field_loadout" class="hero-detail-panel__kicker">FIELD LOADOUT</div>
@@ -454,7 +454,7 @@
                   <span class="hero-polish-slot__swatch" id="hero-polish-swatch"></span>
                   <span class="hero-polish-slot__copy">
                     <span data-i18n="ui.menu.suit_polish" class="hero-polish-slot__label">SUIT POLISH</span>
-                    <span data-i18n="ui.menu.standard_issue" class="hero-polish-slot__name" id="hero-polish-name">STANDARD ISSUE</span>
+                    <span class="hero-polish-slot__name" id="hero-polish-name">STANDARD ISSUE</span>
                   </span>
                   <span class="hero-polish-slot__count" id="hero-polish-count">1/16</span>
                 </button>
@@ -529,7 +529,7 @@
         <div class="archive-header">
           <button class="close-modal" id="close-archive-modal">×</button>
           <div data-i18n="ui.archive.bunker_archive" class="archive-title">◈ BUNKER ARCHIVE</div>
-          <div data-i18n="ui.archive.logs_recovered_0_27" id="archive-summary" class="archive-summary">LOGS RECOVERED: 0 / 27</div>
+          <div id="archive-summary" class="archive-summary">LOGS RECOVERED: 0 / 27</div>
         </div>
         <div id="archive-log-list" class="archive-log-list"></div>
       </div>
@@ -557,7 +557,7 @@
           <img id="archive-log-detail-portrait" class="archive-log-detail-portrait" src="" alt="" />
           <div>
             <div data-i18n="ui.archive_log_detail.recovered_archive_record" class="archive-log-detail-kicker">◈ RECOVERED ARCHIVE RECORD</div>
-            <div data-i18n="ui.archive_log_detail.log_a01" id="archive-log-detail-key" class="archive-log-detail-key">LOG-A01</div>
+            <div id="archive-log-detail-key" class="archive-log-detail-key">LOG-A01</div>
             <div class="archive-log-detail-meta" style="font-family: 'Space Mono', monospace; font-size: 11px; color: #ffaa44; margin-bottom: 8px; opacity: 0.85; display: flex; gap: 16px;">
               <span id="archive-log-detail-date"></span>
               <span id="archive-log-detail-coords"></span>
@@ -575,11 +575,11 @@
         <div class="terminal-scanline"></div>
         <div class="roster-header">
           <button class="close-modal" id="close-roster-modal">×</button>
-          <div class="roster-title" id="roster-title-label" data-i18n="ui.roster.title">▣ OPERATOR DOSSIER // DEPLOYMENT TELEMETRY</div>
+          <div class="roster-title" id="roster-title-label">▣ OPERATOR DOSSIER // DEPLOYMENT TELEMETRY</div>
           <div class="roster-id-row">
             <label data-i18n="ui.roster.callsign" class="roster-callsign-label" for="roster-callsign-input">CALLSIGN:</label>
             <input data-i18n-placeholder="ui.roster.placeholder_agent_01" type="text" id="roster-callsign-input" class="operator-callsign-input" maxlength="16" placeholder="AGENT-01" autocomplete="off" spellcheck="false">
-            <button data-i18n="ui.roster.random" type="button" class="dev-btn dev-btn--accent" id="roster-randomize-btn" title="Randomize Callsign" data-i18n-title="ui.roster.randomize">🎲 RANDOM</button>
+            <button type="button" class="dev-btn dev-btn--accent" id="roster-randomize-btn" title="Randomize Callsign" data-i18n-title="ui.roster.randomize">🎲 RANDOM</button>
           </div>
           <!-- Run Telemetry Summary Block -->
           <div id="roster-run-telemetry" class="roster-run-telemetry">
@@ -589,7 +589,7 @@
             <div class="roster-telemetry-chip"><span class="label" data-i18n="ui.roster.black_box">BLACK BOX:</span> <b data-i18n="ui.roster.none" id="roster-stat-blackbox">NONE</b></div>
           </div>
           <div class="roster-sub-bar">
-            <div data-i18n="ui.roster.arsenal_0_0_schematics_fabricated" class="roster-stat" id="roster-fab-count">ARSENAL: 0 / 0 SCHEMATICS FABRICATED</div>
+            <div class="roster-stat" id="roster-fab-count">ARSENAL: 0 / 0 SCHEMATICS FABRICATED</div>
             <div class="roster-id-badge">ID: <span class="roster-id" id="roster-id">op-—</span></div>
           </div>
         </div>
@@ -609,7 +609,7 @@
         </div>
         <div class="roster-hint" id="roster-hint" data-i18n="ui.roster.hint">Fabricate weapons in the FAB BAY to equip them here. Customize cosmetics in the STEAM VAULT.</div>
         <div class="roster-footer-actions">
-          <button type="button" class="start-btn roster-confirm-btn" id="roster-confirm-btn" data-i18n="ui.roster.confirm">CONFIRM & DEPLOY</button>
+          <button type="button" class="start-btn roster-confirm-btn" id="roster-confirm-btn">CONFIRM & DEPLOY</button>
         </div>
       </div>
     </div>
@@ -623,7 +623,7 @@
           <div data-i18n="ui.codex.field_intel_discovered_specimens_lore" class="codex-header-kicker">◈ FIELD INTEL // DISCOVERED SPECIMENS & LORE</div>
           <div class="codex-title">FIELD CODEX <span class="codex-title-accent">// BESTIARY</span></div>
           <div data-i18n="ui.codex.catalogued_by_sub_terran_encounter" class="codex-subtitle">CATALOGUED BY SUB-TERRAN ENCOUNTER</div>
-          <div data-i18n="ui.codex.entries_recovered_0_0" id="codex-summary" class="codex-summary">ENTRIES RECOVERED: 0 / 0</div>
+          <div id="codex-summary" class="codex-summary">ENTRIES RECOVERED: 0 / 0</div>
         </div>
         <div id="codex-grid" class="codex-grid"></div>
       </div>
@@ -635,8 +635,8 @@
         <div class="terminal-scanline"></div>
         <button data-i18n-aria-label="ui.close_codex_detail.aria_label_close_codex_entry" class="close-modal" id="close-codex-detail-modal" aria-label="Close codex entry">×</button>
         <div class="codex-detail-header">
-          <div data-i18n="ui.codex_detail.field_intel_record" class="codex-detail-kicker" id="codex-detail-kicker">❑ FIELD INTEL RECORD</div>
-          <div data-i18n="ui.codex_detail.cybersnail" class="codex-detail-title" id="codex-detail-name">CYBERSNAIL</div>
+          <div class="codex-detail-kicker" id="codex-detail-kicker">❑ FIELD INTEL RECORD</div>
+          <div class="codex-detail-title" id="codex-detail-name">CYBERSNAIL</div>
           <div data-i18n="ui.codex_detail.entry_recovered_read_only_dossier" class="codex-detail-status">ENTRY RECOVERED // READ-ONLY DOSSIER</div>
         </div>
         <div class="codex-detail-body">
@@ -657,7 +657,7 @@
           <button data-i18n-aria-label="ui.close_achievements.aria_label_close_achievements" class="close-modal" id="close-achievements-modal" aria-label="Close Achievements">×</button>
           <div data-i18n="ui.achievements.combat_citations_deep_crust_commendations" class="achievements-header-kicker">◈ COMBAT CITATIONS // DEEP CRUST COMMENDATIONS</div>
           <div class="achievements-title">OPERATIVE CITATIONS <span class="achievements-title-accent">// ARCHIVE</span></div>
-          <div data-i18n="ui.achievements.0_0_unlocked" id="achievements-summary" class="achievements-summary">0 / 0 UNLOCKED</div>
+          <div id="achievements-summary" class="achievements-summary">0 / 0 UNLOCKED</div>
         </div>
         <div id="achievements-grid" class="achievements-grid"></div>
         <div class="achievements-footer">
@@ -859,8 +859,8 @@
         <div data-i18n="ui.operator_polish.16_bit_suit_tint_matrix" class="operator-polish-subtitle">16-BIT SUIT TINT MATRIX // LOCKED FINISHES REQUIRE FIELD MILESTONES</div>
         <div class="operator-polish-grid" id="operator-polish-grid"></div>
         <div class="operator-polish-readout">
-          <span data-i18n="ui.operator_polish.standard_issue" id="operator-polish-readout-name">STANDARD ISSUE</span>
-          <span data-i18n="ui.operator_polish.equipped" id="operator-polish-readout-state">EQUIPPED</span>
+          <span id="operator-polish-readout-name">STANDARD ISSUE</span>
+          <span id="operator-polish-readout-state">EQUIPPED</span>
         </div>
       </div>
     </div>
@@ -966,8 +966,8 @@
           <!-- Local Operative Column -->
           <div class="trade-column trade-column--self">
             <div class="trade-column-header">
-              <div data-i18n="ui.player_trade.local_operative" class="trade-op-name" id="trade-self-callsign">LOCAL OPERATIVE</div>
-              <div data-i18n="ui.player_trade.tank_command" class="trade-op-meta" id="trade-self-class">TANK // COMMAND</div>
+              <div class="trade-op-name" id="trade-self-callsign">LOCAL OPERATIVE</div>
+              <div class="trade-op-meta" id="trade-self-class">TANK // COMMAND</div>
             </div>
             <div class="trade-resource-list">
               <div class="trade-resource-row">
@@ -1027,8 +1027,8 @@
           <!-- Peer Operative Column -->
           <div class="trade-column trade-column--peer">
             <div class="trade-column-header">
-              <div data-i18n="ui.player_trade.squadmate" class="trade-op-name" id="trade-peer-callsign">SQUADMATE</div>
-              <div data-i18n="ui.player_trade.scout_recon" class="trade-op-meta" id="trade-peer-class">SCOUT // RECON</div>
+              <div class="trade-op-name" id="trade-peer-callsign">SQUADMATE</div>
+              <div class="trade-op-meta" id="trade-peer-class">SCOUT // RECON</div>
             </div>
             <div class="trade-resource-list">
               <div class="trade-resource-row trade-resource-row--peer">
@@ -1066,13 +1066,13 @@
           </div>
         </div>
 
-        <div data-i18n="ui.player_trade.awaiting_transfer_confirmation" class="trade-status-bar" id="trade-status-bar-text">
+        <div class="trade-status-bar" id="trade-status-bar-text">
           AWAITING TRANSFER CONFIRMATION
         </div>
 
         <div class="trade-actions-footer">
           <button data-i18n="ui.player_trade.cancel_link" type="button" class="start-btn trade-btn--cancel" id="trade-cancel-btn">CANCEL LINK</button>
-          <button data-i18n="ui.player_trade.confirm_transfer" type="button" class="start-btn trade-btn--confirm" id="trade-confirm-btn">CONFIRM TRANSFER</button>
+          <button type="button" class="start-btn trade-btn--confirm" id="trade-confirm-btn">CONFIRM TRANSFER</button>
         </div>
       </div>
     </div>
@@ -1085,14 +1085,14 @@
           <div class="npc-header-left">
             <span class="npc-header-icon" id="npc-dialogue-icon">🩸</span>
             <div class="npc-header-meta">
-              <div data-i18n="ui.npc_dialogue_name.sister_val" class="npc-header-name" id="npc-dialogue-name">SISTER VAL</div>
-              <div data-i18n="ui.npc_dialogue_faction.camp_tallow_suture_sanctuary" class="npc-header-faction" id="npc-dialogue-faction">CAMP TALLOW // SUTURE SANCTUARY</div>
+              <div class="npc-header-name" id="npc-dialogue-name">SISTER VAL</div>
+              <div class="npc-header-faction" id="npc-dialogue-faction">CAMP TALLOW // SUTURE SANCTUARY</div>
             </div>
           </div>
           <div class="npc-header-right">
             <div class="npc-bond-container">
               <span data-i18n="ui.npc_dialogue.affection_bond" class="npc-bond-tag">AFFECTION // BOND</span>
-              <div data-i18n="ui.npc_dialogue_bond_badge.neutral_lvl_0" class="npc-bond-badge" id="npc-dialogue-bond-badge">NEUTRAL (LVL 0)</div>
+              <div class="npc-bond-badge" id="npc-dialogue-bond-badge">NEUTRAL (LVL 0)</div>
             </div>
             <button data-i18n-title="ui.close_npc_dialogue.title_exit_dialogue" type="button" class="close-modal" id="close-npc-dialogue-modal" title="Exit Dialogue">×</button>
           </div>
@@ -1100,14 +1100,14 @@
 
         <div class="npc-story-tracker" id="npc-story-tracker">
           <div class="npc-story-stage-row">
-            <span data-i18n="ui.npc_dialogue.side_story_stage_1_3" class="npc-story-stage-title" id="npc-story-stage-title">SIDE STORY // STAGE 1/3: THE SHIVERING SHELTER</span>
+            <span class="npc-story-stage-title" id="npc-story-stage-title">SIDE STORY // STAGE 1/3: THE SHIVERING SHELTER</span>
             <div class="npc-story-progress-dots" id="npc-story-progress-dots">
               <span class="story-dot story-dot--active"></span>
               <span class="story-dot"></span>
               <span class="story-dot"></span>
             </div>
           </div>
-          <div data-i18n="ui.npc_dialogue.objective_survive_subzero_exposure_or" class="npc-story-objective-text" id="npc-story-objective-text">
+          <div class="npc-story-objective-text" id="npc-story-objective-text">
             OBJECTIVE: Survive subzero exposure or reach Camp Tallow with low O2.
           </div>
         </div>
@@ -1118,16 +1118,16 @@
             <div class="npc-portrait-frame">
               <div class="npc-avatar-visual" id="npc-avatar-visual">🩸</div>
             </div>
-            <div data-i18n="ui.npc_dialogue.intimate_attracted" class="npc-mood-indicator" id="npc-mood-indicator">INTIMATE / ATTRACTED</div>
+            <div class="npc-mood-indicator" id="npc-mood-indicator">INTIMATE / ATTRACTED</div>
           </div>
 
           <div class="npc-script-container">
-            <div data-i18n="ui.npc_dialogue.she_sets_down_a_steaming" class="npc-narration-box" id="npc-narration-box">
+            <div class="npc-narration-box" id="npc-narration-box">
               She sets down a steaming bronze kettle of heated botanical resin...
             </div>
             <div class="npc-dialogue-box">
-              <span data-i18n="ui.npc_dialogue_speaker.sister_val" class="npc-dialogue-speaker" id="npc-dialogue-speaker">SISTER VAL:</span>
-              <p data-i18n="ui.npc_dialogue_text.you_re_shivering_contractor" class="npc-dialogue-text" id="npc-dialogue-text">"You're shivering, contractor..."</p>
+              <span class="npc-dialogue-speaker" id="npc-dialogue-speaker">SISTER VAL:</span>
+              <p class="npc-dialogue-text" id="npc-dialogue-text">"You're shivering, contractor..."</p>
             </div>
           </div>
         </div>
@@ -1187,7 +1187,7 @@
             </div>
             <div class="fab-reveal__card" id="fab-reveal-card"></div>
           </div>
-          <button data-i18n="ui.fab_roll.roll_fabricator" class="fab-roll-btn" id="fab-roll-btn">ROLL FABRICATOR</button>
+          <button class="fab-roll-btn" id="fab-roll-btn">ROLL FABRICATOR</button>
         </div>
         <div id="fab-recipe-grid" class="fab-recipe-grid"></div>
       </div>
@@ -1210,10 +1210,10 @@
       <div class="level-indicator">
         <span data-i18n="ui.ui.bunker_level" class="level-indicator__title">BUNKER LEVEL</span>
         <span id="level-num">0</span>
-        <span data-i18n="ui.biome_label.active_sector" id="biome-label" class="level-indicator__biome">ACTIVE SECTOR</span>
-        <span data-i18n="ui.campaign_day_indicator.day_1_06_43_day" data-i18n-title="ui.campaign_day_indicator.title_campaign_day_and" id="campaign-day-indicator" class="level-indicator__cycle" title="Campaign day and local light cycle">DAY 1 · 06:43 · DAY</span>
+        <span id="biome-label" class="level-indicator__biome">ACTIVE SECTOR</span>
+        <span data-i18n-title="ui.campaign_day_indicator.title_campaign_day_and" id="campaign-day-indicator" class="level-indicator__cycle" title="Campaign day and local light cycle">DAY 1 · 06:43 · DAY</span>
         <span class="level-indicator__cycle-track" aria-hidden="true"><span id="campaign-cycle-progress"></span></span>
-        <span data-i18n="ui.hud_run_seed.seed" id="hud-run-seed" class="level-indicator__seed hidden">SEED: —</span>
+        <span id="hud-run-seed" class="level-indicator__seed hidden">SEED: —</span>
         <div data-i18n-aria-label="ui.hud_run_cards.aria_label_active_run_pressure" id="hud-run-cards" class="run-card-strip hidden" aria-label="Active run pressure"></div>
       </div>
 
@@ -1257,7 +1257,7 @@
               <span class="weapon-status-panel__clip">
                 <span id="weapon-clip-current">6</span>/<span id="weapon-clip-max">6</span>
               </span>
-              <span data-i18n="ui.weapon_status.cache_18" id="weapon-ammo-cache" class="weapon-status-panel__cache">CACHE 18</span>
+              <span id="weapon-ammo-cache" class="weapon-status-panel__cache">CACHE 18</span>
             </div>
             <div class="weapon-status-panel__reload-track" aria-hidden="true">
               <div id="weapon-reload-bar" class="weapon-status-panel__reload-bar"></div>
@@ -1297,8 +1297,8 @@
           <div id="hazard-status-panel" class="hazard-status-panel hidden" aria-live="assertive">
             <span id="hazard-status-icon" class="hazard-status-panel__icon">❄</span>
             <span class="hazard-status-panel__copy">
-              <strong data-i18n="ui.hazard_status.cold_exposure" id="hazard-status-label">COLD EXPOSURE</strong>
-              <span data-i18n="ui.hazard_status.seek_pressurized_cover" id="hazard-status-detail">SEEK PRESSURIZED COVER</span>
+              <strong id="hazard-status-label">COLD EXPOSURE</strong>
+              <span id="hazard-status-detail">SEEK PRESSURIZED COVER</span>
             </span>
             <span id="hazard-status-time" class="hazard-status-panel__time">—</span>
           </div>
@@ -1308,7 +1308,7 @@
           </div>
           <div id="class-ability-panel" class="class-ability-panel" aria-live="polite" role="button" tabindex="-1">
             <span class="class-ability-panel__key" aria-hidden="true"><svg class="run-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 18 22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="3" r="2.2" fill="currentColor" stroke="none"/><path d="M11 5 L8 11"/><path d="M10 8 L14 5.5" stroke-width="1.4"/><path d="M10 8 L6 10.5" stroke-width="1.4"/><path d="M8 11 L12 16 L16 18"/><path d="M8 11 L5 15 L2 13"/></svg></span>
-            <span data-i18n="ui.class_ability.passive" class="class-ability-panel__name" id="ability-name">PASSIVE</span>
+            <span class="class-ability-panel__name" id="ability-name">PASSIVE</span>
             <div class="class-ability-panel__bar-track" aria-hidden="true">
               <div class="class-ability-panel__bar" id="ability-bar"></div>
             </div>
@@ -1393,7 +1393,7 @@
             <span data-i18n="ui.game_over.o2_generator" class="game-over-stat-label">O₂ GENERATOR</span>
             <div class="game-over-stat-bar-row">
               <div class="game-over-stat-bar-track"><div class="game-over-stat-bar" id="go-bar-generator"></div></div>
-              <span data-i18n="ui.game_over.offline" class="game-over-stat-value" id="go-val-generator">OFFLINE</span>
+              <span class="game-over-stat-value" id="go-val-generator">OFFLINE</span>
             </div>
           </div>
 
@@ -1413,9 +1413,9 @@
             </div>
           </div>
 
-          <section data-i18n="ui.game_over.banked_resources_preserved" data-i18n-aria-label="ui.game_over.aria_label_expedition_earnings_and" class="return-manifest" id="go-bank-note" aria-label="Expedition earnings and bank balances">BANKED RESOURCES PRESERVED</section>
-          <div data-i18n="ui.game_over.run_pressure_none" class="game-over-bank-note game-over-bank-note--cards" id="go-run-cards">RUN PRESSURE: NONE</div>
-          <div data-i18n="ui.game_over.black_box_none" class="game-over-bank-note game-over-bank-note--recoverable" id="go-recoverable-note">BLACK BOX: NONE</div>
+          <section data-i18n-aria-label="ui.game_over.aria_label_expedition_earnings_and" class="return-manifest" id="go-bank-note" aria-label="Expedition earnings and bank balances">BANKED RESOURCES PRESERVED</section>
+          <div class="game-over-bank-note game-over-bank-note--cards" id="go-run-cards">RUN PRESSURE: NONE</div>
+          <div class="game-over-bank-note game-over-bank-note--recoverable" id="go-recoverable-note">BLACK BOX: NONE</div>
           <div class="game-over-bank-note game-over-bank-note--steam hidden" id="go-steam-grant-note"></div>
 
           <!-- Act 2 Summary Card -->
@@ -1428,14 +1428,14 @@
           <div class="go-score-row">
             <span data-i18n="ui.game_over.score" class="go-score-label">SCORE</span>
             <div class="go-score-right">
-              <span data-i18n="ui.game_over.new_best" id="go-new-best" class="go-new-best hidden">NEW BEST</span>
+              <span id="go-new-best" class="go-new-best hidden">NEW BEST</span>
               <span id="go-score-val" class="go-score-val">0</span>
               <span data-i18n="ui.game_over.pts" class="go-score-pts">PTS</span>
             </div>
           </div>
           <div class="go-rating-row">
             <span id="go-rating-badge" class="go-rating-badge go-rating-badge--d">D</span>
-            <span data-i18n="ui.game_over.agent_lost_minimal_telemetry" id="go-rating-label" class="go-rating-label">AGENT LOST — MINIMAL TELEMETRY</span>
+            <span id="go-rating-label" class="go-rating-label">AGENT LOST — MINIMAL TELEMETRY</span>
           </div>
           <div id="mission-status-text" class="go-mission-status"></div>
           <div id="go-seed-row" class="go-seed-row hidden">
@@ -1444,7 +1444,7 @@
           </div>
           <div id="go-archive-row" class="go-archive-row hidden">
             <span class="go-archive-icon">◈</span>
-            <span data-i18n="ui.game_over.logs_recovered_0_27" id="go-archive-text" class="go-archive-text">LOGS RECOVERED: 0/27</span>
+            <span id="go-archive-text" class="go-archive-text">LOGS RECOVERED: 0/27</span>
           </div>
         </div>
 
@@ -1491,7 +1491,7 @@
         <button data-i18n-aria-label="ui.close_lore.aria_label_close_log" class="close-modal" id="close-lore-modal" aria-label="Close log">×</button>
         <div class="terminal-scanline"></div>
         <div data-i18n="ui.lore.bunker_terminal_log_fragment" class="lore-modal-header">BUNKER TERMINAL — LOG FRAGMENT</div>
-        <div data-i18n="ui.lore_modal_key.log_a01" class="lore-modal-key" id="lore-modal-key">LOG-A01</div>
+        <div class="lore-modal-key" id="lore-modal-key">LOG-A01</div>
         <div class="lore-modal-meta" style="font-family: 'Space Mono', monospace; font-size: 11px; color: #ffaa44; margin-bottom: 12px; opacity: 0.85; display: flex; gap: 16px;">
           <span id="lore-modal-date"></span>
           <span id="lore-modal-coords"></span>
@@ -1582,12 +1582,12 @@
 
       <div id="mission-progress-hud" class="mission-progress-hud hidden" aria-live="polite">
         <span class="mission-progress-hud__icon">◈</span>
-        <span data-i18n="ui.mission_progress_hud.mission_active" id="mission-progress-text" class="mission-progress-hud__text">MISSION ACTIVE</span>
+        <span id="mission-progress-text" class="mission-progress-hud__text">MISSION ACTIVE</span>
       </div>
 
       <div id="camp-quest-hud" class="mission-progress-hud hidden" aria-live="polite">
         <span class="mission-progress-hud__icon">◈</span>
-        <span data-i18n="ui.camp_quest_hud.quest_active" id="camp-quest-text" class="mission-progress-hud__text">QUEST ACTIVE</span>
+        <span id="camp-quest-text" class="mission-progress-hud__text">QUEST ACTIVE</span>
       </div>
 
       <!-- Unified Objective Tracker HUD -->
@@ -1598,7 +1598,7 @@
     <!-- Persistent loop-state cue: always shows the next thing to do -->
     <div id="loop-step-hud" class="loop-step-hud hidden" aria-live="polite">
       <span class="loop-step-hud__chevron" aria-hidden="true">▸</span>
-      <span data-i18n="ui.loop_step_hud.deploying" id="loop-step-text" class="loop-step-hud__text">DEPLOYING</span>
+      <span id="loop-step-text" class="loop-step-hud__text">DEPLOYING</span>
     </div>
 
     <!-- Tactical Telemeter / Inspection Box -->
@@ -1807,9 +1807,9 @@
               <div class="terminal-current-objective" id="terminal-current-objective">
                 <div class="terminal-current-objective__header">
                   <span data-i18n="ui.terminal_bank.current_objective" class="terminal-current-objective__label">CURRENT OBJECTIVE</span>
-                  <span data-i18n="ui.terminal_bank.active" class="terminal-current-objective__status" id="terminal-current-objective-status">ACTIVE</span>
+                  <span class="terminal-current-objective__status" id="terminal-current-objective-status">ACTIVE</span>
                 </div>
-                <span data-i18n="ui.terminal_bank.explore_bank_salvage" class="terminal-current-objective__title" id="terminal-current-objective-title">EXPLORE · BANK SALVAGE</span>
+                <span class="terminal-current-objective__title" id="terminal-current-objective-title">EXPLORE · BANK SALVAGE</span>
                 <span class="terminal-current-objective__detail" id="terminal-current-objective-detail">NO ACTIVE MISSION CONTRACT</span>
                 
                 <!-- Purchase Zone for Active Base Goal -->
@@ -1913,9 +1913,9 @@
 
         <div id="terminal-tab-objectives-content" class="terminal-tab-content hidden">
           <div class="terminal-objective-log-summary">
-            <div><span data-i18n="ui.console_terminal.expedition_day">EXPEDITION DAY</span><strong data-i18n="ui.console_terminal.day_1" id="terminal-log-day">DAY 1</strong></div>
-            <div><span data-i18n="ui.console_terminal.cycle_phase">CYCLE PHASE</span><strong data-i18n="ui.console_terminal.expedition" id="terminal-log-phase">EXPEDITION</strong></div>
-            <div><span data-i18n="ui.console_terminal.local_light">LOCAL LIGHT</span><strong data-i18n="ui.console_terminal.daylight" id="terminal-log-light">DAYLIGHT</strong></div>
+            <div><span data-i18n="ui.console_terminal.expedition_day">EXPEDITION DAY</span><strong id="terminal-log-day">DAY 1</strong></div>
+            <div><span data-i18n="ui.console_terminal.cycle_phase">CYCLE PHASE</span><strong id="terminal-log-phase">EXPEDITION</strong></div>
+            <div><span data-i18n="ui.console_terminal.local_light">LOCAL LIGHT</span><strong id="terminal-log-light">DAYLIGHT</strong></div>
             <div><span data-i18n="ui.console_terminal.next_transition">NEXT TRANSITION</span><strong id="terminal-log-transition">--:--</strong></div>
           </div>
           <div id="terminal-objectives-grid" class="terminal-objectives-grid">
@@ -1973,11 +1973,11 @@
             <div class="action-card action-card--generator" data-goal-card="o2GeneratorWorld">
               <div class="action-card-header">
                 <span data-i18n="ui.o2_generator.safe_field_output" class="action-title">SAFE FIELD OUTPUT</span>
-                <span data-i18n="ui.o2_generator_modal_status.online_lvl_1" class="action-cost" id="o2-generator-modal-status">ONLINE // LVL 1</span>
+                <span class="action-cost" id="o2-generator-modal-status">ONLINE // LVL 1</span>
               </div>
-              <p data-i18n="ui.o2_generator_modal_cost.next_cost" class="action-desc" id="o2-generator-modal-cost">NEXT COST: --</p>
-              <p data-i18n="ui.o2_generator_modal_field.field_radius_refill" class="action-desc" id="o2-generator-modal-field">FIELD RADIUS -- // REFILL --</p>
-              <p data-i18n="ui.o2_generator_modal_hint.upgrades_expand_the_blue_o2" class="action-desc action-desc--hint" id="o2-generator-modal-hint">UPGRADES EXPAND THE BLUE O₂ FIELD.</p>
+              <p class="action-desc" id="o2-generator-modal-cost">NEXT COST: --</p>
+              <p class="action-desc" id="o2-generator-modal-field">FIELD RADIUS -- // REFILL --</p>
+              <p class="action-desc action-desc--hint" id="o2-generator-modal-hint">UPGRADES EXPAND THE BLUE O₂ FIELD.</p>
               <button class="terminal-action-btn" id="o2-generator-modal-btn">UPGRADE FIELD RADIUS</button>
             </div>
           </div>
@@ -2075,7 +2075,7 @@
         <h2 data-i18n="ui.archive_sims.archive_simulations" class="modal-title">ARCHIVE SIMULATIONS</h2>
         <div class="archive-sim-card">
           <div data-i18n="ui.archive_sims.rgb_riverside_global_botics" class="archive-sim-card__title">RGB: RIVERSIDE GLOBAL 'BOTICS</div>
-          <div data-i18n="ui.archive_sims.not_started" class="archive-sim-card__status" id="archive-sim-rgb-status">NOT STARTED</div>
+          <div class="archive-sim-card__status" id="archive-sim-rgb-status">NOT STARTED</div>
           <div class="archive-sim-card__endings" id="archive-sim-rgb-endings"></div>
           <div class="archive-sim-chapters" id="archive-sim-rgb-chapters"></div>
           <button data-i18n="ui.archive_sims.launch_continued_run" class="start-btn" id="archive-sim-rgb-launch">LAUNCH CONTINUED RUN</button>
@@ -2117,8 +2117,8 @@
     <div id="camp-choice-modal" class="modal camp-choice-modal hidden" aria-hidden="true">
       <div class="modal-content camp-choice-panel">
         <button data-i18n-aria-label="ui.camp_choice.aria_label_close_camp_decision" class="close-modal camp-choice-close" id="close-camp-choice" aria-label="Close camp decision">×</button>
-        <div data-i18n="ui.camp_choice.camp_contact" class="camp-choice-kicker" id="camp-choice-kicker">CAMP CONTACT</div>
-        <h2 data-i18n="ui.camp_choice.camp_decision" class="modal-title camp-choice-title" id="camp-choice-title">CAMP DECISION</h2>
+        <div class="camp-choice-kicker" id="camp-choice-kicker">CAMP CONTACT</div>
+        <h2 class="modal-title camp-choice-title" id="camp-choice-title">CAMP DECISION</h2>
         <div class="camp-choice-status" id="camp-choice-status"></div>
         <p class="camp-choice-copy" id="camp-choice-copy"></p>
         
@@ -2136,14 +2136,14 @@
         <!-- Pre-confirmation warning panel (shown when an action is selected) -->
         <div class="camp-choice-confirm hidden" id="camp-choice-confirm" aria-live="polite">
           <div data-i18n="ui.camp_choice.irreversible_choice_strategic_record" class="camp-choice-confirm__kicker">⚠ IRREVERSIBLE CHOICE // STRATEGIC RECORD ⚠</div>
-          <h3 data-i18n="ui.camp_choice.leader_arc" class="camp-choice-confirm__arc" id="camp-choice-confirm-arc">LEADER ARC</h3>
+          <h3 class="camp-choice-confirm__arc" id="camp-choice-confirm-arc">LEADER ARC</h3>
           <div class="camp-choice-confirm__action" id="camp-choice-confirm-action"></div>
           <div class="camp-choice-confirm__narrative" id="camp-choice-confirm-narrative"></div>
           <div class="camp-choice-confirm__deltas" id="camp-choice-confirm-deltas"></div>
           <div class="camp-choice-confirm__locks" id="camp-choice-confirm-locks"></div>
           <div class="camp-choice-confirm__controls">
             <button data-i18n="ui.camp_choice.confirm_decision" type="button" class="camp-choice-confirm-btn camp-choice-confirm-btn--proceed" id="camp-choice-confirm-proceed">CONFIRM DECISION</button>
-            <button data-i18n="ui.camp_choice.back_to_options" type="button" class="camp-choice-confirm-btn camp-choice-confirm-btn--back" id="camp-choice-confirm-back">BACK TO OPTIONS</button>
+            <button type="button" class="camp-choice-confirm-btn camp-choice-confirm-btn--back" id="camp-choice-confirm-back">BACK TO OPTIONS</button>
           </div>
         </div>
       </div>
@@ -2419,7 +2419,7 @@
           </div>
           <div class="setting-item">
             <span data-i18n="ui.settings.cloud_sync">STEAM CLOUD SYNC</span>
-            <span data-i18n="ui.settings.checking" id="setting-steam-cloud-status" class="setting-val-display" data-state="checking">CHECKING…</span>
+            <span id="setting-steam-cloud-status" class="setting-val-display" data-state="checking">CHECKING…</span>
           </div>
           <!-- Mature Content Audit is a reviewer/QA tool reachable through
                its authorized F9 workflow; it is not a player setting. -->
@@ -2744,8 +2744,8 @@
           <div class="leader-conversation-scanlines" aria-hidden="true"></div>
         </section>
         <section class="leader-conversation-content">
-          <div data-i18n="ui.leader_conversation.camp_contact" id="leader-conversation-kicker" class="leader-conversation-kicker">CAMP CONTACT</div>
-          <h2 data-i18n="ui.leader_conversation.survivor" id="leader-conversation-name" class="leader-conversation-name">SURVIVOR</h2>
+          <div id="leader-conversation-kicker" class="leader-conversation-kicker">CAMP CONTACT</div>
+          <h2 id="leader-conversation-name" class="leader-conversation-name">SURVIVOR</h2>
           <div id="leader-conversation-meta" class="leader-conversation-meta"></div>
           <div id="leader-conversation-line" class="leader-conversation-line" aria-live="polite"></div>
           <div class="leader-conversation-progress">
@@ -2753,7 +2753,7 @@
             <div id="leader-conversation-guidance" class="leader-conversation-guidance"></div>
           </div>
           <div class="leader-conversation-actions">
-            <button data-i18n="ui.leader_conversation.continue" type="button" id="leader-conversation-continue">CONTINUE</button>
+            <button type="button" id="leader-conversation-continue">CONTINUE</button>
             <button data-i18n="ui.leader_conversation.leave" type="button" id="leader-conversation-leave">LEAVE</button>
           </div>
         </section>
@@ -3075,7 +3075,7 @@
       <div class="modal-content select-picker-content">
         <div class="settings-sticky-header">
           <div>
-            <h2 data-i18n="ui.select_picker.select_option" class="modal-title" id="select-picker-label">SELECT OPTION</h2>
+            <h2 class="modal-title" id="select-picker-label">SELECT OPTION</h2>
           </div>
           <button data-i18n-aria-label="ui.select_picker.aria_label_close_option_picker" class="close-modal" id="select-picker-close" aria-label="Close option picker">&times;</button>
         </div>
@@ -3091,7 +3091,7 @@
       <div class="modal-content virtual-keyboard-content">
         <div class="settings-sticky-header">
           <div>
-            <h2 data-i18n="ui.virtual_keyboard.enter_text" class="modal-title" id="virtual-keyboard-label">ENTER TEXT</h2>
+            <h2 class="modal-title" id="virtual-keyboard-label">ENTER TEXT</h2>
           </div>
           <button data-i18n-aria-label="ui.virtual_keyboard.aria_label_close_on_screen" class="close-modal" id="virtual-keyboard-close" aria-label="Close on-screen keyboard">×</button>
         </div>
