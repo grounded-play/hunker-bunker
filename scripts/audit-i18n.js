@@ -202,7 +202,7 @@ export function auditMarkup(html, runtimeWrittenIds = new Set()) {
     const findings = [];
     const annotated = { text: 0, attrs: 0 };
     const stack = [];
-    const tokenRe = /<\/?([a-zA-Z][\w-]*)((?:"[^"]*"|'[^']*'|[^"'<>]+)*)(\/?)>/g;
+    const tokenRe = /<\/?([a-zA-Z][\w-]*)((?:"[^"]*"|'[^']*'|[^<>"'/])*)(\/?)>/g;
 
     const lineAt = (index) => withoutScripts.slice(0, index).split('\n').length;
 

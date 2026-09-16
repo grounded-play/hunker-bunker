@@ -77,7 +77,7 @@ export function planAnnotations(html, runtimeWrittenIds = new Set()) {
     const mixed = [];
     const runtimeOwned = [];
     const stack = [];
-    const tokenRe = /<\/?([a-zA-Z][\w-]*)((?:[^"'/>]+|"[^"]*"|'[^']*')*)(\/?)>/g;
+    const tokenRe = /<\/?([a-zA-Z][\w-]*)((?:"[^"]*"|'[^']*'|[^<>"'/])*)(\/?)>/g;
 
     const ownerScreen = () => {
         for (let i = stack.length - 1; i >= 0; i -= 1) {

@@ -6521,7 +6521,7 @@ window.addEventListener('player-o2-changed', (event) => {
                 kind: biome === 'cryo' ? 'cold' : 'oxygen',
                 label: biome === 'cryo' ? 'COLD EXPOSURE' : 'OXYGEN RESERVE DRAINING',
                 detail: event?.detail?.safeDirection || 'RETURN TO THE PRESSURIZED SHIP FIELD',
-                timeLeft: drainRate > 0 ? o2 / drainRate : null
+                timeLeft: o2 / drainRate
             });
         } else {
             renderHazardStatus();
