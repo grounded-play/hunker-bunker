@@ -11,7 +11,7 @@
   <link rel="stylesheet" href="/src/styles/expeditionHud.css">
   <link rel="stylesheet" href="/src/styles/armory.css">
   <link rel="icon" type="image/png" href="/favicon.png" />
-  <title>HUNKER BUNKER | TACTICAL COMMAND</title>
+  <title data-i18n="ui.misc.hunker_bunker_tactical_command">HUNKER BUNKER | TACTICAL COMMAND</title>
 
   <!-- SEO Metadata -->
   <meta name="description" content="HUNKER BUNKER is an immersive, retro-futuristic WebGL arcade tactics game. Command modular units through an infinite procedural subterranean corridor network." />
@@ -139,7 +139,7 @@
         } catch (e) {}
       })();
     </script>
-    <button id="global-skip-intro-btn" class="global-skip-btn hidden">SKIP INTRO</button>
+    <button data-i18n="ui.global_skip_intro_btn.skip_intro" id="global-skip-intro-btn" class="global-skip-btn hidden">SKIP INTRO</button>
     <div id="damage-vignette-layer" class="hidden">
       <div id="hit-indicator-wedge"></div>
     </div>
@@ -186,25 +186,25 @@
 
     <!-- Loading Screen (Pre-Splash) -->
     <div id="loading-screen">
-      <aside class="loader-system-info" aria-label="Build and developer information">
+      <aside data-i18n-aria-label="ui.loading.aria_label_build_and_developer" class="loader-system-info" aria-label="Build and developer information">
         <div class="loader-system-info__label" id="loader-system-info-label">
-          <span>SYSTEM BUILD</span>
+          <span data-i18n="ui.loading.system_build">SYSTEM BUILD</span>
           <span class="loader-system-info__time" id="loader-build-time"></span>
         </div>
-        <div class="loader-version-tag" id="loader-version-tag">BUILD DEV // LOADING REVISION…</div>
-        <div class="loader-debug-hint"><kbd>~</kbd><span>DEV CONSOLE</span></div>
+        <div data-i18n="ui.loading.build_dev_loading_revision" class="loader-version-tag" id="loader-version-tag">BUILD DEV // LOADING REVISION…</div>
+        <div class="loader-debug-hint"><kbd>~</kbd><span data-i18n="ui.loading.dev_console">DEV CONSOLE</span></div>
       </aside>
       <div class="loader-content">
         <div class="loader-briefing-avatar hidden" id="loader-briefing-avatar">
           <img id="loader-briefing-avatar-img" src="/lore_portraits/survivor_08.webp" alt="" />
           <div class="loader-briefing-avatar__scanline"></div>
         </div>
-        <div class="loader-title">INITIALIZING SYSTEMS</div>
+        <div data-i18n="ui.loading.initializing_systems" class="loader-title">INITIALIZING SYSTEMS</div>
         <div class="loader-bar-container">
           <div class="loader-bar"></div>
         </div>
-        <div class="loader-briefing-speaker hidden" id="loader-briefing-speaker">MOTHERSHIP COMMAND</div>
-        <div class="loader-status">CONNECTING TO TACTICAL NETWORK...</div>
+        <div data-i18n="ui.loading.mothership_command" class="loader-briefing-speaker hidden" id="loader-briefing-speaker">MOTHERSHIP COMMAND</div>
+        <div data-i18n="ui.loading.connecting_to_tactical_network" class="loader-status">CONNECTING TO TACTICAL NETWORK...</div>
       </div>
     </div>
 
@@ -213,7 +213,7 @@
     <!-- Splash Screen (Monolithic) -->
     <div id="splash" class="hidden">
       <!-- Steam Account Profile Badge -->
-      <div id="splash-steam-badge" class="steam-account-badge" role="button" tabindex="0"
+      <div data-i18n-aria-label="ui.splash_steam_badge.aria_label_open_steam_profile" data-i18n-title="ui.splash_steam_badge.title_click_to_open" id="splash-steam-badge" class="steam-account-badge" role="button" tabindex="0"
         aria-label="Open Steam profile" title="Click to open Steam Overlay profile">
         <div class="steam-account-badge__icon">
           <svg class="steam-icon-svg" viewBox="0 0 24 24" fill="currentColor">
@@ -221,8 +221,8 @@
           </svg>
         </div>
         <div class="steam-account-badge__info">
-          <span class="steam-account-badge__name" id="splash-steam-persona">STEAM OFFLINE</span>
-          <span class="steam-account-badge__status" id="splash-steam-status">NOT CONNECTED</span>
+          <span data-i18n="ui.splash_steam_persona.steam_offline" class="steam-account-badge__name" id="splash-steam-persona">STEAM OFFLINE</span>
+          <span data-i18n="ui.splash_steam_status.not_connected" class="steam-account-badge__status" id="splash-steam-status">NOT CONNECTED</span>
         </div>
       </div>
 
@@ -255,22 +255,22 @@
 
       <div class="splash-content">
         <div class="splash-title"><span>HUNKER</span><span>BUNKER</span></div>
-        <div class="splash-subtitle">TACTICAL COMMAND v2.0</div>
+        <div data-i18n="ui.splash.tactical_command_v2_0" class="splash-subtitle">TACTICAL COMMAND v2.0</div>
 
-        <section id="title-profile-hud" class="title-profile-hud hidden" aria-label="Current operator profile">
+        <section data-i18n-aria-label="ui.title_profile_hud.aria_label_current_operator_profile" id="title-profile-hud" class="title-profile-hud hidden" aria-label="Current operator profile">
           <canvas id="title-profile-portrait" class="title-profile-hud__portrait" width="128" height="128" aria-hidden="true"></canvas>
           <div class="title-profile-hud__body">
-            <div class="title-profile-hud__kicker">ACTIVE OPERATOR PROFILE</div>
+            <div data-i18n="ui.title_profile_hud.active_operator_profile" class="title-profile-hud__kicker">ACTIVE OPERATOR PROFILE</div>
             <div class="title-profile-hud__identity">
-              <span id="title-profile-callsign">AGENT</span>
+              <span data-i18n="ui.title_profile_hud.agent" id="title-profile-callsign">AGENT</span>
               <span class="ui-separator">//</span>
-              <span id="title-profile-class">TANK</span>
+              <span data-i18n="ui.title_profile_hud.tank" id="title-profile-class">TANK</span>
             </div>
             <div class="title-profile-hud__stats">
-              <span id="career-stat-longest-run">LONGEST 00:00</span>
-              <span id="career-stat-deepest-depth">DEPTH SURFACE</span>
-              <span id="career-stat-deaths">DEATHS 0</span>
-              <span id="title-profile-best">CLASS BEST 0000</span>
+              <span data-i18n="ui.title_profile_hud.longest_00_00" id="career-stat-longest-run">LONGEST 00:00</span>
+              <span data-i18n="ui.title_profile_hud.depth_surface" id="career-stat-deepest-depth">DEPTH SURFACE</span>
+              <span data-i18n="ui.title_profile_hud.deaths_0" id="career-stat-deaths">DEATHS 0</span>
+              <span data-i18n="ui.title_profile_hud.class_best_0000" id="title-profile-best">CLASS BEST 0000</span>
             </div>
           </div>
         </section>
@@ -291,53 +291,53 @@
     <div id="about-modal" class="modal hidden" aria-hidden="true">
       <div class="modal-content credits-modal-content">
         <div class="terminal-scanline"></div>
-        <button class="close-modal" id="close-about" aria-label="Close Credits">&times;</button>
+        <button data-i18n-aria-label="ui.about.aria_label_close_credits" class="close-modal" id="close-about" aria-label="Close Credits">&times;</button>
         <div class="credits-header">
-          <div class="credits-header-kicker">◈ PERSONNEL ARCHIVE // PRODUCTION CREDITS</div>
+          <div data-i18n="ui.about.personnel_archive_production_credits" class="credits-header-kicker">◈ PERSONNEL ARCHIVE // PRODUCTION CREDITS</div>
           <div class="credits-modal-title">TACTICAL COMMAND <span class="credits-title-accent">// CREDITS</span></div>
         </div>
         
         <div class="credits-container">
           <div class="credits-scroll">
             <div class="credits-section">
-              <div class="credits-role">DEVELOPED BY</div>
-              <div class="credits-name"><a href="https://linktr.ee/Tuesday_Cinema_Club" target="_blank" rel="noopener noreferrer">TUESDAY CINEMA CLUB</a></div>
+              <div data-i18n="ui.about.developed_by" class="credits-role">DEVELOPED BY</div>
+              <div class="credits-name"><a data-i18n="ui.about.tuesday_cinema_club" href="https://linktr.ee/Tuesday_Cinema_Club" target="_blank" rel="noopener noreferrer">TUESDAY CINEMA CLUB</a></div>
             </div>
 
             <div class="credits-section">
-              <div class="credits-role">LEAD DESIGN & PROGRAMMING</div>
-              <div class="credits-name">Tuesday Cinema Club Team</div>
+              <div data-i18n="ui.about.lead_design_programming" class="credits-role">LEAD DESIGN & PROGRAMMING</div>
+              <div data-i18n="ui.about.tuesday_cinema_club_team" class="credits-name">Tuesday Cinema Club Team</div>
             </div>
 
             <div class="credits-section">
-              <div class="credits-role">GRAPHICS ENGINE</div>
+              <div data-i18n="ui.about.graphics_engine" class="credits-role">GRAPHICS ENGINE</div>
               <div class="credits-name">Three.js r184</div>
             </div>
 
             <div class="credits-section">
-              <div class="credits-role">SOUNDS & MUSIC</div>
-              <div class="credits-name">Tuesday Cinema Club Audio Collective</div>
+              <div data-i18n="ui.about.sounds_music" class="credits-role">SOUNDS & MUSIC</div>
+              <div data-i18n="ui.about.tuesday_cinema_club_audio_collective" class="credits-name">Tuesday Cinema Club Audio Collective</div>
             </div>
 
             <div class="credits-section">
-              <div class="credits-role">DISCORD COMMUNITY</div>
-              <div class="credits-name"><a href="https://discord.gg/XXwwz3rauu" target="_blank" rel="noopener noreferrer">JOIN DISCORD SERVER</a></div>
+              <div data-i18n="ui.about.discord_community" class="credits-role">DISCORD COMMUNITY</div>
+              <div class="credits-name"><a data-i18n="ui.about.join_discord_server" href="https://discord.gg/XXwwz3rauu" target="_blank" rel="noopener noreferrer">JOIN DISCORD SERVER</a></div>
             </div>
 
             <div class="credits-section">
-              <div class="credits-role">PROJECT REPOSITORY</div>
-              <div class="credits-name"><a href="https://github.com/grounded-play/hunker-bunker" target="_blank" rel="noopener noreferrer">GITHUB REPOSITORY</a></div>
+              <div data-i18n="ui.about.project_repository" class="credits-role">PROJECT REPOSITORY</div>
+              <div class="credits-name"><a data-i18n="ui.about.github_repository" href="https://github.com/grounded-play/hunker-bunker" target="_blank" rel="noopener noreferrer">GITHUB REPOSITORY</a></div>
             </div>
 
             <div class="credits-section special-thanks">
-              <div class="credits-role">SPECIAL THANKS</div>
-              <div class="credits-name">Our Amazing Community & Players</div>
+              <div data-i18n="ui.about.special_thanks" class="credits-role">SPECIAL THANKS</div>
+              <div data-i18n="ui.about.our_amazing_community_players" class="credits-name">Our Amazing Community & Players</div>
             </div>
           </div>
         </div>
 
         <div class="credits-footer">
-          <span class="credits-footer-thankyou">THANK YOU FOR DEPLOYING</span>
+          <span data-i18n="ui.about.thank_you_for_deploying" class="credits-footer-thankyou">THANK YOU FOR DEPLOYING</span>
           <span id="about-modal-sys-ver" class="credits-footer-ver">SYS VER: 2.4.2-BETA // ACTIVE</span>
         </div>
       </div>
@@ -368,40 +368,40 @@
                 </div>
               </div>
               <div class="menu-header-actions">
-                <div class="menu-command-column" aria-label="Operations and Steam commands">
+                <div data-i18n-aria-label="ui.menu.aria_label_operations_and_steam" class="menu-command-column" aria-label="Operations and Steam commands">
                   <div class="menu-command">
-                    <button class="start-btn start-btn--roster" id="roster-btn" data-i18n="ui.hub.roster" title="Operator roster — callsign and equipped loadout">▣ ROSTER</button>
-                    <div class="menu-command__status" id="roster-command-status">0 / 0 ARSENAL</div>
+                    <button data-i18n-title="ui.menu.title_operator_roster_callsign" class="start-btn start-btn--roster" id="roster-btn" data-i18n="ui.hub.roster" title="Operator roster — callsign and equipped loadout">▣ ROSTER</button>
+                    <div data-i18n="ui.menu.0_0_arsenal" class="menu-command__status" id="roster-command-status">0 / 0 ARSENAL</div>
                   </div>
                   <div class="menu-command" id="steam-vault-command">
-                    <button class="start-btn start-btn--vault" id="steam-vault-btn" data-i18n="ui.hub.vault" title="Steam Vault — view Steam-owned cosmetics">◈ STEAM VAULT</button>
+                    <button data-i18n-title="ui.menu.title_steam_vault_view" class="start-btn start-btn--vault" id="steam-vault-btn" data-i18n="ui.hub.vault" title="Steam Vault — view Steam-owned cosmetics">◈ STEAM VAULT</button>
                     <div class="menu-command__status" id="vault-command-status">OFFLINE</div>
                   </div>
                   <div class="menu-command hidden" id="archive-sims-command">
-                    <button class="start-btn start-btn--archive-sims" id="archive-sims-btn" data-i18n="ui.hub.archive_sims" title="Archive Simulations — unlockable story mini-games">◈ ARCHIVE SIMS</button>
-                    <div class="menu-command__status" id="archive-sims-command-status">RGB</div>
+                    <button data-i18n-title="ui.menu.title_archive_simulations_unlockable" class="start-btn start-btn--archive-sims" id="archive-sims-btn" data-i18n="ui.hub.archive_sims" title="Archive Simulations — unlockable story mini-games">◈ ARCHIVE SIMS</button>
+                    <div data-i18n="ui.menu.rgb" class="menu-command__status" id="archive-sims-command-status">RGB</div>
                   </div>
                   <div class="menu-command menu-command--fab hidden" id="fabrication-command">
-                    <button class="start-btn start-btn--fab" id="fabrication-btn" data-i18n="ui.hub.fab_bay" title="Fabrication Bay — print gear from salvage (unlocks once the base is powered)">◇ FAB BAY</button>
-                    <div class="menu-command__status" id="fab-command-status">0 / 0 PRINTED</div>
+                    <button data-i18n-title="ui.menu.title_fabrication_bay_print" class="start-btn start-btn--fab" id="fabrication-btn" data-i18n="ui.hub.fab_bay" title="Fabrication Bay — print gear from salvage (unlocks once the base is powered)">◇ FAB BAY</button>
+                    <div data-i18n="ui.menu.0_0_printed" class="menu-command__status" id="fab-command-status">0 / 0 PRINTED</div>
                   </div>
                 </div>
-                <div class="menu-command-column" aria-label="Records and Dossier commands">
+                <div data-i18n-aria-label="ui.menu.aria_label_records_and_dossier" class="menu-command-column" aria-label="Records and Dossier commands">
                   <div class="menu-command">
-                    <button class="start-btn start-btn--archive" id="archive-btn" data-i18n="ui.hub.archive" title="Bunker Archive — discovered lore logs">◈ ARCHIVE</button>
-                    <div class="menu-command__status" id="archive-command-status">0 / 27 LOGS</div>
+                    <button data-i18n-title="ui.menu.title_bunker_archive_discovered" class="start-btn start-btn--archive" id="archive-btn" data-i18n="ui.hub.archive" title="Bunker Archive — discovered lore logs">◈ ARCHIVE</button>
+                    <div data-i18n="ui.menu.0_27_logs" class="menu-command__status" id="archive-command-status">0 / 27 LOGS</div>
                   </div>
                   <div class="menu-command">
-                    <button class="start-btn start-btn--codex" id="codex-btn" data-i18n="ui.hub.codex" title="Field Codex — catalogued hostiles, infrastructure, and phenomena">❑ CODEX</button>
-                    <div class="menu-command__status" id="codex-command-status">0 / 0 INTEL</div>
+                    <button data-i18n-title="ui.menu.title_field_codex_catalogued" class="start-btn start-btn--codex" id="codex-btn" data-i18n="ui.hub.codex" title="Field Codex — catalogued hostiles, infrastructure, and phenomena">❑ CODEX</button>
+                    <div data-i18n="ui.menu.0_0_intel" class="menu-command__status" id="codex-command-status">0 / 0 INTEL</div>
                   </div>
                   <div class="menu-command" id="season-pass-command">
-                    <button class="start-btn start-btn--dossier" id="season-pass-btn" data-i18n="ui.hub.dossier" title="Tactical Dossier — Beta Season 1 progression">◈ DOSSIER</button>
+                    <button data-i18n-title="ui.menu.title_tactical_dossier_beta" class="start-btn start-btn--dossier" id="season-pass-btn" data-i18n="ui.hub.dossier" title="Tactical Dossier — Beta Season 1 progression">◈ DOSSIER</button>
                     <div class="menu-command__status" id="season-pass-command-status">TIER 0 / 50</div>
                   </div>
                   <div class="menu-command hidden" id="achievements-command">
-                    <button class="start-btn start-btn--achievements" id="achievements-btn" data-i18n="ui.hub.achievements" title="Achievement records — unlocked run milestones">ACHIEVEMENTS</button>
-                    <div class="menu-command__status" id="achievements-command-status">LOCKED</div>
+                    <button data-i18n-title="ui.menu.title_achievement_records_unlocked" class="start-btn start-btn--achievements" id="achievements-btn" data-i18n="ui.hub.achievements" title="Achievement records — unlocked run milestones">ACHIEVEMENTS</button>
+                    <div data-i18n="ui.menu.locked" class="menu-command__status" id="achievements-command-status">LOCKED</div>
                   </div>
                 </div>
               </div>
@@ -423,38 +423,38 @@
                     <div class="char-preview-door__panel char-preview-door__panel--right"></div>
                   </div>
                 </div>
-                <div id="char-preview-name">TANK</div>
+                <div data-i18n="ui.menu.tank" id="char-preview-name">TANK</div>
               </div>
               <div class="hero-detail-panel" id="hero-detail-panel">
-                <div class="hero-detail-panel__kicker">FIELD LOADOUT</div>
+                <div data-i18n="ui.hero_detail.field_loadout" class="hero-detail-panel__kicker">FIELD LOADOUT</div>
                 <div class="hero-detail-line1" id="hero-detail-active">—</div>
                 <div class="hero-detail-line2" id="hero-detail-passive">—</div>
               </div>
               <div class="hero-stats-compact" id="hero-stats-row">
-                <div
+                <div data-i18n-aria-label="ui.menu.aria_label_s_o_u"
                   class="hero-stats-compact__title"
                   aria-label="S.O.U.L — Speed, O2 Usage, Loot-Range"
                 >S.O.U.L</div>
                 <div class="hero-stat-compact-row">
-                  <span class="hero-stat-compact-label">SPEED</span>
+                  <span data-i18n="ui.menu.speed" class="hero-stat-compact-label">SPEED</span>
                   <div class="hero-stat-pips" id="hero-stat-spd"></div>
-                  <span class="hero-stat-compact-value" id="hero-stat-spd-val">FAST</span>
+                  <span data-i18n="ui.menu.fast" class="hero-stat-compact-value" id="hero-stat-spd-val">FAST</span>
                 </div>
                 <div class="hero-stat-compact-row">
-                  <span class="hero-stat-compact-label" aria-label="O2 Consumption Rate — Lower is Better" title="O₂ Consumption Rate — Lower value means suit oxygen drains slower">O₂ USE</span>
+                  <span data-i18n="ui.menu.o2_use" data-i18n-aria-label="ui.menu.aria_label_o2_consumption_rate" data-i18n-title="ui.menu.title_o2_consumption_rate" class="hero-stat-compact-label" aria-label="O2 Consumption Rate — Lower is Better" title="O₂ Consumption Rate — Lower value means suit oxygen drains slower">O₂ USE</span>
                   <div class="hero-stat-pips" id="hero-stat-o2"></div>
-                  <span class="hero-stat-compact-value" id="hero-stat-o2-val">LOW</span>
+                  <span data-i18n="ui.menu.low" class="hero-stat-compact-value" id="hero-stat-o2-val">LOW</span>
                 </div>
                 <div class="hero-stat-compact-row">
-                  <span class="hero-stat-compact-label" aria-label="Loot magnet range">LOOT-MAG</span>
+                  <span data-i18n="ui.menu.loot_mag" data-i18n-aria-label="ui.menu.aria_label_loot_magnet_range" class="hero-stat-compact-label" aria-label="Loot magnet range">LOOT-MAG</span>
                   <div class="hero-stat-pips" id="hero-stat-loot"></div>
-                  <span class="hero-stat-compact-value" id="hero-stat-loot-val">MED</span>
+                  <span data-i18n="ui.menu.med" class="hero-stat-compact-value" id="hero-stat-loot-val">MED</span>
                 </div>
-                <button type="button" class="hero-polish-slot" id="hero-polish-btn" title="Choose operator polish">
+                <button data-i18n-title="ui.menu.title_choose_operator_polish" type="button" class="hero-polish-slot" id="hero-polish-btn" title="Choose operator polish">
                   <span class="hero-polish-slot__swatch" id="hero-polish-swatch"></span>
                   <span class="hero-polish-slot__copy">
-                    <span class="hero-polish-slot__label">SUIT POLISH</span>
-                    <span class="hero-polish-slot__name" id="hero-polish-name">STANDARD ISSUE</span>
+                    <span data-i18n="ui.menu.suit_polish" class="hero-polish-slot__label">SUIT POLISH</span>
+                    <span data-i18n="ui.menu.standard_issue" class="hero-polish-slot__name" id="hero-polish-name">STANDARD ISSUE</span>
                   </span>
                   <span class="hero-polish-slot__count" id="hero-polish-count">1/16</span>
                 </button>
@@ -467,11 +467,11 @@
             <div class="char-selection">
               <div class="char-card" data-type="SCOUT">
                 <div class="char-info">
-                  <span class="char-kicker">RECON FRAME</span>
-                  <span class="char-name">SCOUT</span>
+                  <span data-i18n="ui.menu.recon_frame" class="char-kicker">RECON FRAME</span>
+                  <span data-i18n="ui.menu.scout" class="char-name">SCOUT</span>
                   <div class="char-desc-lines">
-                    <span class="char-desc-line1">SPRINT BURST</span>
-                    <span class="char-desc-line2">WIDE MAGNET</span>
+                    <span data-i18n="ui.menu.sprint_burst" class="char-desc-line1">SPRINT BURST</span>
+                    <span data-i18n="ui.menu.wide_magnet" class="char-desc-line2">WIDE MAGNET</span>
                   </div>
                   <span class="char-best-score" id="char-best-SCOUT"></span>
                 </div>
@@ -479,11 +479,11 @@
               </div>
               <div class="char-card selected" data-type="TANK">
                 <div class="char-info">
-                  <span class="char-kicker">BULWARK FRAME</span>
-                  <span class="char-name">TANK</span>
+                  <span data-i18n="ui.menu.bulwark_frame" class="char-kicker">BULWARK FRAME</span>
+                  <span data-i18n="ui.menu.tank" class="char-name">TANK</span>
                   <div class="char-desc-lines">
-                    <span class="char-desc-line1">BRACE</span>
-                    <span class="char-desc-line2">LOW O₂ DRAIN</span>
+                    <span data-i18n="ui.menu.brace" class="char-desc-line1">BRACE</span>
+                    <span data-i18n="ui.menu.low_o2_drain" class="char-desc-line2">LOW O₂ DRAIN</span>
                   </div>
                   <span class="char-best-score" id="char-best-TANK"></span>
                 </div>
@@ -491,18 +491,18 @@
               </div>
               <div class="char-card" data-type="ENGINEER">
                 <div class="char-info">
-                  <span class="char-kicker">UTILITY FRAME</span>
-                  <span class="char-name">ENGINEER</span>
+                  <span data-i18n="ui.menu.utility_frame" class="char-kicker">UTILITY FRAME</span>
+                  <span data-i18n="ui.menu.engineer" class="char-name">ENGINEER</span>
                   <div class="char-desc-lines">
-                    <span class="char-desc-line1">REROUTE</span>
-                    <span class="char-desc-line2">CHEAPER CONSOLES</span>
+                    <span data-i18n="ui.menu.reroute" class="char-desc-line1">REROUTE</span>
+                    <span data-i18n="ui.menu.cheaper_consoles" class="char-desc-line2">CHEAPER CONSOLES</span>
                   </div>
                   <span class="char-best-score" id="char-best-ENGINEER"></span>
                 </div>
                 <div class="char-icon">⚙</div>
               </div>
               <button type="button" class="hero-select-back-btn" id="hero-select-back-btn">
-                ← RETURN TO MAIN MENU <span>[ESC]</span>
+                ← RETURN TO MAIN MENU <span data-i18n="ui.menu.esc">[ESC]</span>
               </button>
             </div>
           </div>
@@ -517,7 +517,7 @@
     </div>
 
     <!-- Fullsize 3D Pre-Mission Armory (#armory-screen) -->
-    <section id="armory-screen" class="hidden" aria-label="Pre-Mission Armory">
+    <section data-i18n-aria-label="ui.armory.aria_label_pre_mission_armory" id="armory-screen" class="hidden" aria-label="Pre-Mission Armory">
       <canvas id="armory-canvas"></canvas>
       <div id="armory-hud-overlay"></div>
     </section>
@@ -528,8 +528,8 @@
         <div class="terminal-scanline"></div>
         <div class="archive-header">
           <button class="close-modal" id="close-archive-modal">×</button>
-          <div class="archive-title">◈ BUNKER ARCHIVE</div>
-          <div id="archive-summary" class="archive-summary">LOGS RECOVERED: 0 / 27</div>
+          <div data-i18n="ui.archive.bunker_archive" class="archive-title">◈ BUNKER ARCHIVE</div>
+          <div data-i18n="ui.archive.logs_recovered_0_27" id="archive-summary" class="archive-summary">LOGS RECOVERED: 0 / 27</div>
         </div>
         <div id="archive-log-list" class="archive-log-list"></div>
       </div>
@@ -539,9 +539,9 @@
       <div class="modal-content season-pass-modal-content">
         <div class="terminal-scanline"></div>
         <div class="season-pass-header">
-          <button class="close-modal" id="close-season-pass-modal" aria-label="Close Tactical Dossier">×</button>
-          <div class="season-pass-header-kicker">◈ SUB-TERRAN SECTOR OPERATIONS // BETA SEASON 1</div>
-          <div class="season-pass-title">TACTICAL DOSSIER <span class="season-pass-title-accent">& DIRECTIVES</span></div>
+          <button data-i18n-aria-label="ui.close_season_pass.aria_label_close_tactical_dossier" class="close-modal" id="close-season-pass-modal" aria-label="Close Tactical Dossier">×</button>
+          <div data-i18n="ui.season_pass.sub_terran_sector_operations_beta" class="season-pass-header-kicker">◈ SUB-TERRAN SECTOR OPERATIONS // BETA SEASON 1</div>
+          <div class="season-pass-title">TACTICAL DOSSIER <span data-i18n="ui.season_pass.directives" class="season-pass-title-accent">& DIRECTIVES</span></div>
           <div id="season-pass-progress-summary" class="season-pass-progress-summary"></div>
         </div>
         <div id="season-pass-body" class="season-pass-body"></div>
@@ -552,17 +552,17 @@
     <div id="archive-log-detail-modal" class="modal archive-log-detail-modal hidden" aria-hidden="true">
       <div class="modal-content archive-log-detail-content">
         <div class="terminal-scanline"></div>
-        <button class="close-modal" id="close-archive-log-detail" aria-label="Close archive log">×</button>
+        <button data-i18n-aria-label="ui.archive_log_detail.aria_label_close_archive_log" class="close-modal" id="close-archive-log-detail" aria-label="Close archive log">×</button>
         <div class="archive-log-detail-header">
           <img id="archive-log-detail-portrait" class="archive-log-detail-portrait" src="" alt="" />
           <div>
-            <div class="archive-log-detail-kicker">◈ RECOVERED ARCHIVE RECORD</div>
-            <div id="archive-log-detail-key" class="archive-log-detail-key">LOG-A01</div>
+            <div data-i18n="ui.archive_log_detail.recovered_archive_record" class="archive-log-detail-kicker">◈ RECOVERED ARCHIVE RECORD</div>
+            <div data-i18n="ui.archive_log_detail.log_a01" id="archive-log-detail-key" class="archive-log-detail-key">LOG-A01</div>
             <div class="archive-log-detail-meta" style="font-family: 'Space Mono', monospace; font-size: 11px; color: #ffaa44; margin-bottom: 8px; opacity: 0.85; display: flex; gap: 16px;">
               <span id="archive-log-detail-date"></span>
               <span id="archive-log-detail-coords"></span>
             </div>
-            <div class="archive-log-detail-status">DECRYPTION COMPLETE // READ-ONLY</div>
+            <div data-i18n="ui.archive_log_detail.decryption_complete_read_only" class="archive-log-detail-status">DECRYPTION COMPLETE // READ-ONLY</div>
           </div>
         </div>
         <div id="archive-log-detail-text" class="archive-log-detail-text"></div>
@@ -577,34 +577,34 @@
           <button class="close-modal" id="close-roster-modal">×</button>
           <div class="roster-title" id="roster-title-label" data-i18n="ui.roster.title">▣ OPERATOR DOSSIER // DEPLOYMENT TELEMETRY</div>
           <div class="roster-id-row">
-            <label class="roster-callsign-label" for="roster-callsign-input">CALLSIGN:</label>
-            <input type="text" id="roster-callsign-input" class="operator-callsign-input" maxlength="16" placeholder="AGENT-01" autocomplete="off" spellcheck="false">
-            <button type="button" class="dev-btn dev-btn--accent" id="roster-randomize-btn" title="Randomize Callsign" data-i18n-title="ui.roster.randomize">🎲 RANDOM</button>
+            <label data-i18n="ui.roster.callsign" class="roster-callsign-label" for="roster-callsign-input">CALLSIGN:</label>
+            <input data-i18n-placeholder="ui.roster.placeholder_agent_01" type="text" id="roster-callsign-input" class="operator-callsign-input" maxlength="16" placeholder="AGENT-01" autocomplete="off" spellcheck="false">
+            <button data-i18n="ui.roster.random" type="button" class="dev-btn dev-btn--accent" id="roster-randomize-btn" title="Randomize Callsign" data-i18n-title="ui.roster.randomize">🎲 RANDOM</button>
           </div>
           <!-- Run Telemetry Summary Block -->
           <div id="roster-run-telemetry" class="roster-run-telemetry">
-            <div class="roster-telemetry-chip"><span class="label" data-i18n="ui.roster.deepest_sector">DEEPEST SECTOR:</span> <b id="roster-stat-depth">SECTOR 0</b></div>
+            <div class="roster-telemetry-chip"><span class="label" data-i18n="ui.roster.deepest_sector">DEEPEST SECTOR:</span> <b data-i18n="ui.roster.sector_0" id="roster-stat-depth">SECTOR 0</b></div>
             <div class="roster-telemetry-chip"><span class="label" data-i18n="ui.roster.total_distance">TOTAL DISTANCE:</span> <b id="roster-stat-distance">0u</b></div>
-            <div class="roster-telemetry-chip"><span class="label" data-i18n="ui.roster.hostiles">HOSTILES:</span> <b id="roster-stat-kills">0 ELIMINATED</b></div>
-            <div class="roster-telemetry-chip"><span class="label" data-i18n="ui.roster.black_box">BLACK BOX:</span> <b id="roster-stat-blackbox">NONE</b></div>
+            <div class="roster-telemetry-chip"><span class="label" data-i18n="ui.roster.hostiles">HOSTILES:</span> <b data-i18n="ui.roster.0_eliminated" id="roster-stat-kills">0 ELIMINATED</b></div>
+            <div class="roster-telemetry-chip"><span class="label" data-i18n="ui.roster.black_box">BLACK BOX:</span> <b data-i18n="ui.roster.none" id="roster-stat-blackbox">NONE</b></div>
           </div>
           <div class="roster-sub-bar">
-            <div class="roster-stat" id="roster-fab-count">ARSENAL: 0 / 0 SCHEMATICS FABRICATED</div>
+            <div data-i18n="ui.roster.arsenal_0_0_schematics_fabricated" class="roster-stat" id="roster-fab-count">ARSENAL: 0 / 0 SCHEMATICS FABRICATED</div>
             <div class="roster-id-badge">ID: <span class="roster-id" id="roster-id">op-—</span></div>
           </div>
         </div>
-        <div class="roster-section-label">EQUIPPED SIDEARM</div>
+        <div data-i18n="ui.roster.equipped_sidearm" class="roster-section-label">EQUIPPED SIDEARM</div>
         <div id="roster-weapon-grid" class="roster-weapon-grid"></div>
-        <div class="roster-section-label">EQUIPPED STEAM COSMETICS</div>
+        <div data-i18n="ui.roster.equipped_steam_cosmetics" class="roster-section-label">EQUIPPED STEAM COSMETICS</div>
         <div id="roster-cosmetics-row" class="roster-cosmetics-row">
           <div class="roster-cosmetic-chip">
-            <span class="label" data-i18n="ui.roster.patch">PATCH:</span> <span id="roster-equipped-patch">NONE</span>
+            <span class="label" data-i18n="ui.roster.patch">PATCH:</span> <span data-i18n="ui.roster.none" id="roster-equipped-patch">NONE</span>
           </div>
           <div class="roster-cosmetic-chip">
-            <span class="label" data-i18n="ui.roster.decal">DECAL:</span> <span id="roster-equipped-decal">NONE</span>
+            <span class="label" data-i18n="ui.roster.decal">DECAL:</span> <span data-i18n="ui.roster.none" id="roster-equipped-decal">NONE</span>
           </div>
           <div class="roster-cosmetic-chip">
-            <span class="label" data-i18n="ui.roster.finish">FINISH:</span> <span id="roster-equipped-weapon-finish">NONE</span>
+            <span class="label" data-i18n="ui.roster.finish">FINISH:</span> <span data-i18n="ui.roster.none" id="roster-equipped-weapon-finish">NONE</span>
           </div>
         </div>
         <div class="roster-hint" id="roster-hint" data-i18n="ui.roster.hint">Fabricate weapons in the FAB BAY to equip them here. Customize cosmetics in the STEAM VAULT.</div>
@@ -619,11 +619,11 @@
       <div class="modal-content codex-modal-content">
         <div class="terminal-scanline"></div>
         <div class="codex-header">
-          <button class="close-modal" id="close-codex-modal" aria-label="Close Field Codex">×</button>
-          <div class="codex-header-kicker">◈ FIELD INTEL // DISCOVERED SPECIMENS & LORE</div>
+          <button data-i18n-aria-label="ui.close_codex.aria_label_close_field_codex" class="close-modal" id="close-codex-modal" aria-label="Close Field Codex">×</button>
+          <div data-i18n="ui.codex.field_intel_discovered_specimens_lore" class="codex-header-kicker">◈ FIELD INTEL // DISCOVERED SPECIMENS & LORE</div>
           <div class="codex-title">FIELD CODEX <span class="codex-title-accent">// BESTIARY</span></div>
-          <div class="codex-subtitle">CATALOGUED BY SUB-TERRAN ENCOUNTER</div>
-          <div id="codex-summary" class="codex-summary">ENTRIES RECOVERED: 0 / 0</div>
+          <div data-i18n="ui.codex.catalogued_by_sub_terran_encounter" class="codex-subtitle">CATALOGUED BY SUB-TERRAN ENCOUNTER</div>
+          <div data-i18n="ui.codex.entries_recovered_0_0" id="codex-summary" class="codex-summary">ENTRIES RECOVERED: 0 / 0</div>
         </div>
         <div id="codex-grid" class="codex-grid"></div>
       </div>
@@ -633,11 +633,11 @@
     <div id="codex-detail-modal" class="modal codex-detail-modal hidden" aria-hidden="true">
       <div class="modal-content codex-detail-content">
         <div class="terminal-scanline"></div>
-        <button class="close-modal" id="close-codex-detail-modal" aria-label="Close codex entry">×</button>
+        <button data-i18n-aria-label="ui.close_codex_detail.aria_label_close_codex_entry" class="close-modal" id="close-codex-detail-modal" aria-label="Close codex entry">×</button>
         <div class="codex-detail-header">
-          <div class="codex-detail-kicker" id="codex-detail-kicker">❑ FIELD INTEL RECORD</div>
-          <div class="codex-detail-title" id="codex-detail-name">CYBERSNAIL</div>
-          <div class="codex-detail-status">ENTRY RECOVERED // READ-ONLY DOSSIER</div>
+          <div data-i18n="ui.codex_detail.field_intel_record" class="codex-detail-kicker" id="codex-detail-kicker">❑ FIELD INTEL RECORD</div>
+          <div data-i18n="ui.codex_detail.cybersnail" class="codex-detail-title" id="codex-detail-name">CYBERSNAIL</div>
+          <div data-i18n="ui.codex_detail.entry_recovered_read_only_dossier" class="codex-detail-status">ENTRY RECOVERED // READ-ONLY DOSSIER</div>
         </div>
         <div class="codex-detail-body">
           <div class="codex-detail-image-wrap">
@@ -654,14 +654,14 @@
       <div class="modal-content achievements-modal-content">
         <div class="terminal-scanline"></div>
         <div class="achievements-header">
-          <button class="close-modal" id="close-achievements-modal" aria-label="Close Achievements">×</button>
-          <div class="achievements-header-kicker">◈ COMBAT CITATIONS // DEEP CRUST COMMENDATIONS</div>
+          <button data-i18n-aria-label="ui.close_achievements.aria_label_close_achievements" class="close-modal" id="close-achievements-modal" aria-label="Close Achievements">×</button>
+          <div data-i18n="ui.achievements.combat_citations_deep_crust_commendations" class="achievements-header-kicker">◈ COMBAT CITATIONS // DEEP CRUST COMMENDATIONS</div>
           <div class="achievements-title">OPERATIVE CITATIONS <span class="achievements-title-accent">// ARCHIVE</span></div>
-          <div id="achievements-summary" class="achievements-summary">0 / 0 UNLOCKED</div>
+          <div data-i18n="ui.achievements.0_0_unlocked" id="achievements-summary" class="achievements-summary">0 / 0 UNLOCKED</div>
         </div>
         <div id="achievements-grid" class="achievements-grid"></div>
         <div class="achievements-footer">
-          <button type="button" class="settings-action-btn settings-action-btn--save" id="achievement-copy-save" title="Copy a portable save code">COPY SAVE CODE</button>
+          <button data-i18n="ui.achievements.copy_save_code" data-i18n-title="ui.achievements.title_copy_a_portable" type="button" class="settings-action-btn settings-action-btn--save" id="achievement-copy-save" title="Copy a portable save code">COPY SAVE CODE</button>
           <div class="achievements-save-status" id="achievements-save-status" role="status" aria-live="polite"></div>
         </div>
       </div>
@@ -672,8 +672,8 @@
       <div class="modal-content vault-modal-content">
         <div class="terminal-scanline"></div>
         <div class="vault-header">
-          <button class="close-modal" id="close-steam-vault-modal" aria-label="Close Steam Vault">×</button>
-          <div class="vault-header-kicker">◈ APPID 4957040 // SECURE DISPENSARY</div>
+          <button data-i18n-aria-label="ui.close_steam_vault.aria_label_close_steam_vault" class="close-modal" id="close-steam-vault-modal" aria-label="Close Steam Vault">×</button>
+          <div data-i18n="ui.steam_vault.appid_4957040_secure_dispensary" class="vault-header-kicker">◈ APPID 4957040 // SECURE DISPENSARY</div>
           <div class="vault-title">◈ STEAM VAULT <span class="vault-title-accent">// ITEM DISPATCH</span></div>
           <div class="vault-callsign-row">
             <span class="vault-callsign" id="vault-player-name">OFFLINE OPERATOR</span>
@@ -694,8 +694,8 @@
         <div class="vault-main-layout" id="vault-inventory-layout">
           <div class="vault-left-column">
             <div class="vault-column-header">
-              <span class="vault-column-title">STEAM INVENTORY MANIFEST</span>
-              <span class="vault-column-badge">VERIFIED</span>
+              <span data-i18n="ui.steam_vault.steam_inventory_manifest" class="vault-column-title">STEAM INVENTORY MANIFEST</span>
+              <span data-i18n="ui.steam_vault.verified" class="vault-column-badge">VERIFIED</span>
             </div>
             <div class="vault-inventory-container" id="vault-inventory-container">
               <div class="vault-grid" id="vault-item-grid"></div>
@@ -716,7 +716,7 @@
               </div>
               <div class="vault-details-actions">
                 <span class="vault-equip-status" id="vault-equip-status">READ-ONLY STEAM INVENTORY</span>
-                <button class="start-btn vault-btn-view-market hidden" id="vault-btn-view-market">VIEW IN STEAM MARKET</button>
+                <button data-i18n="ui.vault_details.view_in_steam_market" class="start-btn vault-btn-view-market hidden" id="vault-btn-view-market">VIEW IN STEAM MARKET</button>
               </div>
             </div>
           </div>
@@ -727,18 +727,18 @@
           <div class="vault-store-col vault-store-col--left">
             <div class="vault-store-intro">
               <div class="vault-store-intro__badges">
-                <span class="vault-notice-badge">🛡️ STEAM SECURED</span>
-                <span class="vault-notice-badge vault-notice-badge--odds">⚖️ 100% DISCLOSED ODDS</span>
-                <span class="vault-notice-badge">📦 F2P IN-GAME DROPS</span>
+                <span data-i18n="ui.steam_vault.steam_secured" class="vault-notice-badge">🛡️ STEAM SECURED</span>
+                <span data-i18n="ui.steam_vault.100_disclosed_odds" class="vault-notice-badge vault-notice-badge--odds">⚖️ 100% DISCLOSED ODDS</span>
+                <span data-i18n="ui.steam_vault.f2p_in_game_drops" class="vault-notice-badge">📦 F2P IN-GAME DROPS</span>
               </div>
               <div class="vault-store-intro__body">
-                <strong>DEEP RELIC CACHES</strong> decrypt with <strong>CACHE KEYS</strong> · Rates match server tables.
+                <strong data-i18n="ui.steam_vault.deep_relic_caches">DEEP RELIC CACHES</strong> decrypt with <strong data-i18n="ui.steam_vault.cache_keys">CACHE KEYS</strong> · Rates match server tables.
               </div>
             </div>
 
             <div class="vault-store-section-header">
-              <span class="vault-store-section-label">RELIC KEY DISPENSARY</span>
-              <span class="vault-store-section-sub">STEAM WALLET DIRECT</span>
+              <span data-i18n="ui.steam_vault.relic_key_dispensary" class="vault-store-section-label">RELIC KEY DISPENSARY</span>
+              <span data-i18n="ui.steam_vault.steam_wallet_direct" class="vault-store-section-sub">STEAM WALLET DIRECT</span>
             </div>
             <div class="vault-store-grid" id="vault-store-sku-grid"></div>
 
@@ -747,14 +747,14 @@
                 <span class="vault-store-hosted-dot">●</span>
                 <span class="vault-store-hosted-status" id="vault-store-hosted-status">STEAM ITEM STORE OFFLINE</span>
               </div>
-              <button class="start-btn vault-store-hosted-btn" id="vault-store-hosted-btn">OPEN IN STEAM ↗</button>
+              <button data-i18n="ui.steam_vault.open_in_steam" class="start-btn vault-store-hosted-btn" id="vault-store-hosted-btn">OPEN IN STEAM ↗</button>
             </div>
           </div>
 
           <div class="vault-store-col vault-store-col--right">
             <div class="vault-store-decrypt-card">
               <div class="vault-decrypt-header">
-                <div class="vault-decrypt-title">RELIC CACHE DECRYPTOR</div>
+                <div data-i18n="ui.steam_vault.relic_cache_decryptor" class="vault-decrypt-title">RELIC CACHE DECRYPTOR</div>
                 <div class="vault-decrypt-inventory">
                   <span class="vault-inventory-pill"><span class="vault-pill-dot">●</span> CACHES: <strong id="vault-store-cache-val">0</strong></span>
                   <span class="vault-inventory-pill vault-inventory-pill--key"><span class="vault-pill-dot">●</span> KEYS: <strong id="vault-store-key-val">0</strong></span>
@@ -765,14 +765,14 @@
                   <span class="vault-store-open-icon">◈</span>
                   <span class="vault-store-open-status" id="vault-store-open-status">Key & Cache required for decryption.</span>
                 </div>
-                <button class="start-btn vault-store-open-btn hidden" id="vault-store-open-btn">◈ OPEN DEEP RELIC CACHE</button>
+                <button data-i18n="ui.steam_vault.open_deep_relic_cache" class="start-btn vault-store-open-btn hidden" id="vault-store-open-btn">◈ OPEN DEEP RELIC CACHE</button>
               </div>
             </div>
 
             <div class="vault-store-odds">
               <div class="vault-store-odds-header">
-                <div class="vault-store-odds-title">PUBLISHED DROP RATES</div>
-                <div class="vault-store-odds-badge">100% DISCLOSED</div>
+                <div data-i18n="ui.steam_vault.published_drop_rates" class="vault-store-odds-title">PUBLISHED DROP RATES</div>
+                <div data-i18n="ui.steam_vault.100_disclosed" class="vault-store-odds-badge">100% DISCLOSED</div>
               </div>
               <div class="vault-store-odds-table" id="vault-store-odds-table"></div>
             </div>
@@ -784,18 +784,18 @@
           <div class="vault-store-col vault-store-col--left">
             <div class="vault-store-intro">
               <div class="vault-store-intro__badges">
-                <span class="vault-notice-badge">🔥 TRADE-UP SMELTING</span>
-                <span class="vault-notice-badge vault-notice-badge--odds">⚖️ 5:1 TIER UPGRADE</span>
-                <span class="vault-notice-badge">◈ PERMANENT MERGE</span>
+                <span data-i18n="ui.steam_vault.trade_up_smelting" class="vault-notice-badge">🔥 TRADE-UP SMELTING</span>
+                <span data-i18n="ui.steam_vault.5_1_tier_upgrade" class="vault-notice-badge vault-notice-badge--odds">⚖️ 5:1 TIER UPGRADE</span>
+                <span data-i18n="ui.steam_vault.permanent_merge" class="vault-notice-badge">◈ PERMANENT MERGE</span>
               </div>
               <div class="vault-store-intro__body">
-                <strong>5× SAME-TIER ITEMS</strong> ➔ <strong>1× NEXT-TIER ITEM</strong> · Consumed items are removed.
+                <strong data-i18n="ui.steam_vault.5_same_tier_items">5× SAME-TIER ITEMS</strong> ➔ <strong data-i18n="ui.steam_vault.1_next_tier_item">1× NEXT-TIER ITEM</strong> · Consumed items are removed.
               </div>
             </div>
 
             <div class="vault-store-section-header">
-              <span class="vault-store-section-label">DEEP SMELTER</span>
-              <span class="vault-store-section-sub">CONSUMES 5x SAME-TIER ITEMS</span>
+              <span data-i18n="ui.steam_vault.deep_smelter" class="vault-store-section-label">DEEP SMELTER</span>
+              <span data-i18n="ui.steam_vault.consumes_5x_same_tier_items" class="vault-store-section-sub">CONSUMES 5x SAME-TIER ITEMS</span>
             </div>
             <div class="vault-smelter-grid" id="vault-smelter-grid"></div>
           </div>
@@ -803,7 +803,7 @@
           <div class="vault-store-col vault-store-col--right">
             <div class="vault-store-decrypt-card">
               <div class="vault-decrypt-header">
-                <div class="vault-decrypt-title">DEEP CORE SHARD DISPENSARY</div>
+                <div data-i18n="ui.steam_vault.deep_core_shard_dispensary" class="vault-decrypt-title">DEEP CORE SHARD DISPENSARY</div>
                 <div class="vault-decrypt-inventory">
                   <span class="vault-inventory-pill"><span class="vault-pill-dot">●</span> SHARDS: <strong id="vault-shard-balance">0</strong></span>
                 </div>
@@ -823,7 +823,7 @@
         <div id="vault-reveal-overlay" class="vault-reveal-overlay hidden" aria-hidden="true" data-state="idle">
           <div class="vault-reveal-container">
             <div class="vault-reveal-header">
-              <div class="vault-reveal-kicker">◈ STEAM RELIC DISPENSARY // APPID 4957040</div>
+              <div data-i18n="ui.vault_reveal.steam_relic_dispensary_appid_4957040" class="vault-reveal-kicker">◈ STEAM RELIC DISPENSARY // APPID 4957040</div>
               <div class="vault-reveal-title" id="vault-reveal-title">DECRYPTING RELIC CACHE</div>
               <div class="vault-reveal-subtitle" id="vault-reveal-status">SPINNING CIPHER MATRIX...</div>
             </div>
@@ -842,7 +842,7 @@
               <div class="vault-reveal-card__rarity" id="vault-reveal-rarity-pill">LEGENDARY REWARD</div>
               <div class="vault-reveal-card__name" id="vault-reveal-name">QUEEN SLAYER EMBLEM</div>
               <div class="vault-reveal-card__desc" id="vault-reveal-desc">Awarded for single-handedly defeating the deep vault matriarch.</div>
-              <button class="start-btn vault-reveal-claim-btn" id="vault-reveal-claim-btn">◈ CLAIM TO INVENTORY</button>
+              <button data-i18n="ui.vault_reveal.claim_to_inventory" class="start-btn vault-reveal-claim-btn" id="vault-reveal-claim-btn">◈ CLAIM TO INVENTORY</button>
             </div>
           </div>
         </div>
@@ -855,12 +855,12 @@
       <div class="modal-content operator-polish-modal-content">
         <div class="terminal-scanline"></div>
         <button class="close-modal" id="close-operator-polish-modal">×</button>
-        <div class="operator-polish-title">◆ OPERATOR POLISH</div>
-        <div class="operator-polish-subtitle">16-BIT SUIT TINT MATRIX // LOCKED FINISHES REQUIRE FIELD MILESTONES</div>
+        <div data-i18n="ui.operator_polish.operator_polish" class="operator-polish-title">◆ OPERATOR POLISH</div>
+        <div data-i18n="ui.operator_polish.16_bit_suit_tint_matrix" class="operator-polish-subtitle">16-BIT SUIT TINT MATRIX // LOCKED FINISHES REQUIRE FIELD MILESTONES</div>
         <div class="operator-polish-grid" id="operator-polish-grid"></div>
         <div class="operator-polish-readout">
-          <span id="operator-polish-readout-name">STANDARD ISSUE</span>
-          <span id="operator-polish-readout-state">EQUIPPED</span>
+          <span data-i18n="ui.operator_polish.standard_issue" id="operator-polish-readout-name">STANDARD ISSUE</span>
+          <span data-i18n="ui.operator_polish.equipped" id="operator-polish-readout-state">EQUIPPED</span>
         </div>
       </div>
     </div>
@@ -870,28 +870,28 @@
       <div class="modal-content tactical-map-modal-content">
         <div class="terminal-scanline"></div>
         <div class="tactical-map-header">
-          <button class="close-modal" id="close-tactical-map-modal" aria-label="Close Tactical Map">×</button>
-          <div class="tactical-map-title">◈ TACTICAL BLUEPRINT OVERLAY</div>
-          <div class="tactical-map-subtitle" id="tactical-map-subtitle">GRID SECTOR 01 // EXPLORATION ACTIVE</div>
+          <button data-i18n-aria-label="ui.close_tactical_map.aria_label_close_tactical_map" class="close-modal" id="close-tactical-map-modal" aria-label="Close Tactical Map">×</button>
+          <div data-i18n="ui.tactical_map.tactical_blueprint_overlay" class="tactical-map-title">◈ TACTICAL BLUEPRINT OVERLAY</div>
+          <div data-i18n="ui.tactical_map.grid_sector_01_exploration_active" class="tactical-map-subtitle" id="tactical-map-subtitle">GRID SECTOR 01 // EXPLORATION ACTIVE</div>
         </div>
         <div class="tactical-map-toolbar">
-          <button type="button" class="map-tool-btn" id="map-zoom-in" title="Zoom In (+)">
-            <span class="btn-icon">+</span> <span class="btn-label">ZOOM IN</span>
+          <button data-i18n-title="ui.tactical_map.title_zoom_in" type="button" class="map-tool-btn" id="map-zoom-in" title="Zoom In (+)">
+            <span class="btn-icon">+</span> <span data-i18n="ui.tactical_map.zoom_in" class="btn-label">ZOOM IN</span>
           </button>
-          <button type="button" class="map-tool-btn" id="map-zoom-out" title="Zoom Out (-)">
-            <span class="btn-icon">-</span> <span class="btn-label">ZOOM OUT</span>
+          <button data-i18n-title="ui.tactical_map.title_zoom_out" type="button" class="map-tool-btn" id="map-zoom-out" title="Zoom Out (-)">
+            <span class="btn-icon">-</span> <span data-i18n="ui.tactical_map.zoom_out" class="btn-label">ZOOM OUT</span>
           </button>
-          <button type="button" class="map-tool-btn" id="map-focus-home" title="Center Home Base (H)">
-            <span class="btn-icon">🏠</span> <span class="btn-label">HOME BASE</span>
+          <button data-i18n-title="ui.tactical_map.title_center_home_base" type="button" class="map-tool-btn" id="map-focus-home" title="Center Home Base (H)">
+            <span class="btn-icon">🏠</span> <span data-i18n="ui.tactical_map.home_base" class="btn-label">HOME BASE</span>
           </button>
-          <button type="button" class="map-tool-btn" id="map-focus-player" title="Center Operator (P)">
-            <span class="btn-icon">🎯</span> <span class="btn-label">OPERATOR</span>
+          <button data-i18n-title="ui.tactical_map.title_center_operator_p" type="button" class="map-tool-btn" id="map-focus-player" title="Center Operator (P)">
+            <span class="btn-icon">🎯</span> <span data-i18n="ui.tactical_map.operator" class="btn-label">OPERATOR</span>
           </button>
-          <button type="button" class="map-tool-btn" id="map-reset-view" title="Reset View (R)">
-            <span class="btn-icon">⟲</span> <span class="btn-label">RESET</span>
+          <button data-i18n-title="ui.tactical_map.title_reset_view_r" type="button" class="map-tool-btn" id="map-reset-view" title="Reset View (R)">
+            <span class="btn-icon">⟲</span> <span data-i18n="ui.tactical_map.reset" class="btn-label">RESET</span>
           </button>
-          <button type="button" class="map-tool-btn map-tool-btn--debug" id="map-debug-reveal" title="Debug: reveal regional route">
-            <span class="btn-icon">◉</span> <span class="btn-label">REVEAL ALL</span>
+          <button data-i18n-title="ui.tactical_map.title_debug_reveal_regional" type="button" class="map-tool-btn map-tool-btn--debug" id="map-debug-reveal" title="Debug: reveal regional route">
+            <span class="btn-icon">◉</span> <span data-i18n="ui.tactical_map.reveal_all" class="btn-label">REVEAL ALL</span>
           </button>
         </div>
         <div class="tactical-map-body">
@@ -901,50 +901,50 @@
           </div>
           <div class="tactical-map-sidebar">
             <div id="expanded-map-info" class="map-inspection-slot"></div>
-            <div class="tactical-map-legend-title">BLUEPRINT LEGEND</div>
+            <div data-i18n="ui.tactical_map.blueprint_legend" class="tactical-map-legend-title">BLUEPRINT LEGEND</div>
             <div class="tactical-map-legend-item">
               <span class="legend-chip legend-chip--home">🏠</span>
-              <span>HOME BASE</span>
+              <span data-i18n="ui.tactical_map.home_base">HOME BASE</span>
             </div>
             <div class="tactical-map-legend-item">
               <span class="legend-chip legend-chip--player">▲</span>
-              <span>OPERATOR POSITION</span>
+              <span data-i18n="ui.tactical_map.operator_position">OPERATOR POSITION</span>
             </div>
             <div class="tactical-map-legend-item">
               <span class="legend-chip legend-chip--explored">█</span>
-              <span>DISCOVERED ROOM</span>
+              <span data-i18n="ui.tactical_map.discovered_room">DISCOVERED ROOM</span>
             </div>
             <div class="tactical-map-legend-item">
               <span class="legend-chip legend-chip--unexplored">░</span>
-              <span>SHROUDED FOG-OF-WAR</span>
+              <span data-i18n="ui.tactical_map.shrouded_fog_of_war">SHROUDED FOG-OF-WAR</span>
             </div>
             <div class="tactical-map-legend-item">
               <span class="legend-chip legend-chip--camp">⛺</span>
-              <span>SURVIVOR CAMP</span>
+              <span data-i18n="ui.tactical_map.survivor_camp">SURVIVOR CAMP</span>
             </div>
             <div class="tactical-map-legend-item">
               <span class="legend-chip legend-chip--hive">⚡</span>
-              <span>HIVE SITE</span>
+              <span data-i18n="ui.tactical_map.hive_site">HIVE SITE</span>
             </div>
             <div class="tactical-map-legend-item">
               <span class="legend-chip legend-chip--objective">★</span>
-              <span>ACTIVE OBJECTIVE</span>
+              <span data-i18n="ui.tactical_map.active_objective">ACTIVE OBJECTIVE</span>
             </div>
             <div class="tactical-map-stats">
               <div class="map-stat-row">
-                <span class="map-stat-label">EXPLORED TILES:</span>
+                <span data-i18n="ui.tactical_map.explored_tiles" class="map-stat-label">EXPLORED TILES:</span>
                 <span class="map-stat-val" id="map-stat-tiles">0</span>
               </div>
               <div class="map-stat-row">
-                <span class="map-stat-label">ACTIVE SIGNALS:</span>
+                <span data-i18n="ui.tactical_map.active_signals" class="map-stat-label">ACTIVE SIGNALS:</span>
                 <span class="map-stat-val" id="map-stat-signals">0</span>
               </div>
             </div>
             <div class="tactical-map-keyhints">
-              <div class="keyhint-row">[DRAG / WASD / L-STICK] PAN</div>
-              <div class="keyhint-row">[SCROLL / +/- / LB-RB] ZOOM</div>
-              <div class="keyhint-row">[H / (X)] HOME  [P / (Y)] OPERATOR</div>
-              <div class="keyhint-row">[M] / [SELECT] / [ESC] CLOSE</div>
+              <div data-i18n="ui.tactical_map.drag_wasd_l_stick_pan" class="keyhint-row">[DRAG / WASD / L-STICK] PAN</div>
+              <div data-i18n="ui.tactical_map.scroll_lb_rb_zoom" class="keyhint-row">[SCROLL / +/- / LB-RB] ZOOM</div>
+              <div data-i18n="ui.tactical_map.h_x_home_p_y" class="keyhint-row">[H / (X)] HOME  [P / (Y)] OPERATOR</div>
+              <div data-i18n="ui.tactical_map.m_select_esc_close" class="keyhint-row">[M] / [SELECT] / [ESC] CLOSE</div>
             </div>
           </div>
         </div>
@@ -956,24 +956,24 @@
       <div class="modal-content trade-modal-content">
         <div class="settings-sticky-header">
           <div class="net-header-wrap">
-            <h2 class="modal-title">OPERATIVE LINK // FIELD BARTER</h2>
-            <div id="trade-status-pill" class="net-status-pill net-status--online">LINK ACTIVE</div>
+            <h2 data-i18n="ui.player_trade.operative_link_field_barter" class="modal-title">OPERATIVE LINK // FIELD BARTER</h2>
+            <div data-i18n="ui.player_trade.link_active" id="trade-status-pill" class="net-status-pill net-status--online">LINK ACTIVE</div>
           </div>
-          <button class="close-modal" id="close-player-trade-modal" aria-label="Close Trade Link">×</button>
+          <button data-i18n-aria-label="ui.close_player_trade.aria_label_close_trade_link" class="close-modal" id="close-player-trade-modal" aria-label="Close Trade Link">×</button>
         </div>
 
         <div class="trade-grid">
           <!-- Local Operative Column -->
           <div class="trade-column trade-column--self">
             <div class="trade-column-header">
-              <div class="trade-op-name" id="trade-self-callsign">LOCAL OPERATIVE</div>
-              <div class="trade-op-meta" id="trade-self-class">TANK // COMMAND</div>
+              <div data-i18n="ui.player_trade.local_operative" class="trade-op-name" id="trade-self-callsign">LOCAL OPERATIVE</div>
+              <div data-i18n="ui.player_trade.tank_command" class="trade-op-meta" id="trade-self-class">TANK // COMMAND</div>
             </div>
             <div class="trade-resource-list">
               <div class="trade-resource-row">
                 <div class="trade-res-info">
                   <span class="trade-res-icon">🐚</span>
-                  <span class="trade-res-name">SHELLS</span>
+                  <span data-i18n="ui.player_trade.shells" class="trade-res-name">SHELLS</span>
                   <span class="trade-res-avail" id="trade-self-shells-avail">(0)</span>
                 </div>
                 <div class="trade-res-controls">
@@ -986,7 +986,7 @@
               <div class="trade-resource-row">
                 <div class="trade-res-info">
                   <span class="trade-res-icon">⚡</span>
-                  <span class="trade-res-name">AMMO</span>
+                  <span data-i18n="ui.player_trade.ammo" class="trade-res-name">AMMO</span>
                   <span class="trade-res-avail" id="trade-self-ammo-avail">(0)</span>
                 </div>
                 <div class="trade-res-controls">
@@ -999,7 +999,7 @@
               <div class="trade-resource-row">
                 <div class="trade-res-info">
                   <span class="trade-res-icon">💉</span>
-                  <span class="trade-res-name">MEDKITS</span>
+                  <span data-i18n="ui.player_trade.medkits" class="trade-res-name">MEDKITS</span>
                   <span class="trade-res-avail" id="trade-self-meds-avail">(0)</span>
                 </div>
                 <div class="trade-res-controls">
@@ -1012,7 +1012,7 @@
               <div class="trade-resource-row">
                 <div class="trade-res-info">
                   <span class="trade-res-icon">🫧</span>
-                  <span class="trade-res-name">O2 FILTER</span>
+                  <span data-i18n="ui.player_trade.o2_filter" class="trade-res-name">O2 FILTER</span>
                   <span class="trade-res-avail" id="trade-self-o2-avail">(0)</span>
                 </div>
                 <div class="trade-res-controls">
@@ -1027,14 +1027,14 @@
           <!-- Peer Operative Column -->
           <div class="trade-column trade-column--peer">
             <div class="trade-column-header">
-              <div class="trade-op-name" id="trade-peer-callsign">SQUADMATE</div>
-              <div class="trade-op-meta" id="trade-peer-class">SCOUT // RECON</div>
+              <div data-i18n="ui.player_trade.squadmate" class="trade-op-name" id="trade-peer-callsign">SQUADMATE</div>
+              <div data-i18n="ui.player_trade.scout_recon" class="trade-op-meta" id="trade-peer-class">SCOUT // RECON</div>
             </div>
             <div class="trade-resource-list">
               <div class="trade-resource-row trade-resource-row--peer">
                 <div class="trade-res-info">
                   <span class="trade-res-icon">🐚</span>
-                  <span class="trade-res-name">SHELLS OFFERED</span>
+                  <span data-i18n="ui.player_trade.shells_offered" class="trade-res-name">SHELLS OFFERED</span>
                 </div>
                 <span class="trade-res-val trade-res-val--peer" id="trade-peer-shells-val">0</span>
               </div>
@@ -1042,7 +1042,7 @@
               <div class="trade-resource-row trade-resource-row--peer">
                 <div class="trade-res-info">
                   <span class="trade-res-icon">⚡</span>
-                  <span class="trade-res-name">AMMO OFFERED</span>
+                  <span data-i18n="ui.player_trade.ammo_offered" class="trade-res-name">AMMO OFFERED</span>
                 </div>
                 <span class="trade-res-val trade-res-val--peer" id="trade-peer-ammo-val">0</span>
               </div>
@@ -1050,7 +1050,7 @@
               <div class="trade-resource-row trade-resource-row--peer">
                 <div class="trade-res-info">
                   <span class="trade-res-icon">💉</span>
-                  <span class="trade-res-name">MEDKITS OFFERED</span>
+                  <span data-i18n="ui.player_trade.medkits_offered" class="trade-res-name">MEDKITS OFFERED</span>
                 </div>
                 <span class="trade-res-val trade-res-val--peer" id="trade-peer-meds-val">0</span>
               </div>
@@ -1058,7 +1058,7 @@
               <div class="trade-resource-row trade-resource-row--peer">
                 <div class="trade-res-info">
                   <span class="trade-res-icon">🫧</span>
-                  <span class="trade-res-name">O2 FILTERS OFFERED</span>
+                  <span data-i18n="ui.player_trade.o2_filters_offered" class="trade-res-name">O2 FILTERS OFFERED</span>
                 </div>
                 <span class="trade-res-val trade-res-val--peer" id="trade-peer-o2-val">0</span>
               </div>
@@ -1066,13 +1066,13 @@
           </div>
         </div>
 
-        <div class="trade-status-bar" id="trade-status-bar-text">
+        <div data-i18n="ui.player_trade.awaiting_transfer_confirmation" class="trade-status-bar" id="trade-status-bar-text">
           AWAITING TRANSFER CONFIRMATION
         </div>
 
         <div class="trade-actions-footer">
-          <button type="button" class="start-btn trade-btn--cancel" id="trade-cancel-btn">CANCEL LINK</button>
-          <button type="button" class="start-btn trade-btn--confirm" id="trade-confirm-btn">CONFIRM TRANSFER</button>
+          <button data-i18n="ui.player_trade.cancel_link" type="button" class="start-btn trade-btn--cancel" id="trade-cancel-btn">CANCEL LINK</button>
+          <button data-i18n="ui.player_trade.confirm_transfer" type="button" class="start-btn trade-btn--confirm" id="trade-confirm-btn">CONFIRM TRANSFER</button>
         </div>
       </div>
     </div>
@@ -1085,29 +1085,29 @@
           <div class="npc-header-left">
             <span class="npc-header-icon" id="npc-dialogue-icon">🩸</span>
             <div class="npc-header-meta">
-              <div class="npc-header-name" id="npc-dialogue-name">SISTER VAL</div>
-              <div class="npc-header-faction" id="npc-dialogue-faction">CAMP TALLOW // SUTURE SANCTUARY</div>
+              <div data-i18n="ui.npc_dialogue_name.sister_val" class="npc-header-name" id="npc-dialogue-name">SISTER VAL</div>
+              <div data-i18n="ui.npc_dialogue_faction.camp_tallow_suture_sanctuary" class="npc-header-faction" id="npc-dialogue-faction">CAMP TALLOW // SUTURE SANCTUARY</div>
             </div>
           </div>
           <div class="npc-header-right">
             <div class="npc-bond-container">
-              <span class="npc-bond-tag">AFFECTION // BOND</span>
-              <div class="npc-bond-badge" id="npc-dialogue-bond-badge">NEUTRAL (LVL 0)</div>
+              <span data-i18n="ui.npc_dialogue.affection_bond" class="npc-bond-tag">AFFECTION // BOND</span>
+              <div data-i18n="ui.npc_dialogue_bond_badge.neutral_lvl_0" class="npc-bond-badge" id="npc-dialogue-bond-badge">NEUTRAL (LVL 0)</div>
             </div>
-            <button type="button" class="close-modal" id="close-npc-dialogue-modal" title="Exit Dialogue">×</button>
+            <button data-i18n-title="ui.close_npc_dialogue.title_exit_dialogue" type="button" class="close-modal" id="close-npc-dialogue-modal" title="Exit Dialogue">×</button>
           </div>
         </div>
 
         <div class="npc-story-tracker" id="npc-story-tracker">
           <div class="npc-story-stage-row">
-            <span class="npc-story-stage-title" id="npc-story-stage-title">SIDE STORY // STAGE 1/3: THE SHIVERING SHELTER</span>
+            <span data-i18n="ui.npc_dialogue.side_story_stage_1_3" class="npc-story-stage-title" id="npc-story-stage-title">SIDE STORY // STAGE 1/3: THE SHIVERING SHELTER</span>
             <div class="npc-story-progress-dots" id="npc-story-progress-dots">
               <span class="story-dot story-dot--active"></span>
               <span class="story-dot"></span>
               <span class="story-dot"></span>
             </div>
           </div>
-          <div class="npc-story-objective-text" id="npc-story-objective-text">
+          <div data-i18n="ui.npc_dialogue.objective_survive_subzero_exposure_or" class="npc-story-objective-text" id="npc-story-objective-text">
             OBJECTIVE: Survive subzero exposure or reach Camp Tallow with low O2.
           </div>
         </div>
@@ -1118,16 +1118,16 @@
             <div class="npc-portrait-frame">
               <div class="npc-avatar-visual" id="npc-avatar-visual">🩸</div>
             </div>
-            <div class="npc-mood-indicator" id="npc-mood-indicator">INTIMATE / ATTRACTED</div>
+            <div data-i18n="ui.npc_dialogue.intimate_attracted" class="npc-mood-indicator" id="npc-mood-indicator">INTIMATE / ATTRACTED</div>
           </div>
 
           <div class="npc-script-container">
-            <div class="npc-narration-box" id="npc-narration-box">
+            <div data-i18n="ui.npc_dialogue.she_sets_down_a_steaming" class="npc-narration-box" id="npc-narration-box">
               She sets down a steaming bronze kettle of heated botanical resin...
             </div>
             <div class="npc-dialogue-box">
-              <span class="npc-dialogue-speaker" id="npc-dialogue-speaker">SISTER VAL:</span>
-              <p class="npc-dialogue-text" id="npc-dialogue-text">"You're shivering, contractor..."</p>
+              <span data-i18n="ui.npc_dialogue_speaker.sister_val" class="npc-dialogue-speaker" id="npc-dialogue-speaker">SISTER VAL:</span>
+              <p data-i18n="ui.npc_dialogue_text.you_re_shivering_contractor" class="npc-dialogue-text" id="npc-dialogue-text">"You're shivering, contractor..."</p>
             </div>
           </div>
         </div>
@@ -1137,7 +1137,7 @@
         </div>
 
         <div class="npc-dialogue-footer">
-          <span class="npc-footer-hint">PRESS [1-4] OR CLICK CHOICE CARD • [ESC] WITHDRAW</span>
+          <span data-i18n="ui.npc_dialogue.press_1_4_or_click" class="npc-footer-hint">PRESS [1-4] OR CLICK CHOICE CARD • [ESC] WITHDRAW</span>
         </div>
       </div>
     </div>
@@ -1147,16 +1147,16 @@
       <div class="modal-content demo-end-content">
         <div class="terminal-scanline"></div>
         <div class="demo-end-header">
-          <div class="demo-end-title">◈ TRANSMISSION TERMINATED</div>
+          <div data-i18n="ui.demo_end.transmission_terminated" class="demo-end-title">◈ TRANSMISSION TERMINATED</div>
         </div>
         <div class="demo-end-body">
-          <p class="queen-voice">"You belong to the deep now, little machine. The swarm remembers your call."</p>
-          <p class="demo-end-text">Thank you for playing the Hunker Bunker demo.</p>
-          <p class="demo-end-subtext">The mothership uplink has been severed, but the true threat still awaits. Wishlist the full game on Steam to continue your extraction in the deep vaults.</p>
+          <p data-i18n="ui.demo_end.you_belong_to_the_deep" class="queen-voice">"You belong to the deep now, little machine. The swarm remembers your call."</p>
+          <p data-i18n="ui.demo_end.thank_you_for_playing_the" class="demo-end-text">Thank you for playing the Hunker Bunker demo.</p>
+          <p data-i18n="ui.demo_end.the_mothership_uplink_has_been" class="demo-end-subtext">The mothership uplink has been severed, but the true threat still awaits. Wishlist the full game on Steam to continue your extraction in the deep vaults.</p>
         </div>
         <div class="demo-end-actions">
-          <button class="start-btn wishlist-btn" id="demo-wishlist-btn">◈ WISHLIST ON STEAM</button>
-          <button class="abort-btn" id="demo-end-main-menu">RETURN TO MENU</button>
+          <button data-i18n="ui.demo_end.wishlist_on_steam" class="start-btn wishlist-btn" id="demo-wishlist-btn">◈ WISHLIST ON STEAM</button>
+          <button data-i18n="ui.demo_end_main_menu.return_to_menu" class="abort-btn" id="demo-end-main-menu">RETURN TO MENU</button>
         </div>
       </div>
     </div>
@@ -1167,9 +1167,9 @@
         <div class="terminal-scanline"></div>
         <div class="fab-header">
           <button class="close-modal" id="close-fabrication-modal">×</button>
-          <div class="fab-title">◇ FABRICATION BAY</div>
-          <div class="fab-subtitle">PRINT GEAR FROM SALVAGE</div>
-          <div id="fab-summary" class="fab-summary">SCHEMATICS FABRICATED: 0 / 8</div>
+          <div data-i18n="ui.fabrication.fabrication_bay" class="fab-title">◇ FABRICATION BAY</div>
+          <div data-i18n="ui.fabrication.print_gear_from_salvage" class="fab-subtitle">PRINT GEAR FROM SALVAGE</div>
+          <div data-i18n="ui.fabrication.schematics_fabricated_0_8" id="fab-summary" class="fab-summary">SCHEMATICS FABRICATED: 0 / 8</div>
         </div>
         <div class="fab-bank-row" id="fab-bank-row">
           <span class="fab-bank-chip"><span class="fab-bank-icon">⬢</span>TECH <b id="fab-bank-tech">0</b></span>
@@ -1180,14 +1180,14 @@
         <!-- Gamba roll panel: spend a flat cost for a rarity-weighted reveal -->
         <div id="fab-roll-panel" class="fab-roll-panel hidden">
           <div id="fab-reveal" class="fab-reveal" data-state="idle">
-            <div class="fab-reveal__idle" id="fab-reveal-idle">INSERT SALVAGE TO FABRICATE</div>
+            <div data-i18n="ui.fab_roll.insert_salvage_to_fabricate" class="fab-reveal__idle" id="fab-reveal-idle">INSERT SALVAGE TO FABRICATE</div>
             <div class="fab-reveal__strip-wrap" id="fab-reveal-strip-wrap" aria-hidden="true">
               <div class="fab-reveal__marker"></div>
               <div class="fab-reveal__strip" id="fab-reveal-strip"></div>
             </div>
             <div class="fab-reveal__card" id="fab-reveal-card"></div>
           </div>
-          <button class="fab-roll-btn" id="fab-roll-btn">ROLL FABRICATOR</button>
+          <button data-i18n="ui.fab_roll.roll_fabricator" class="fab-roll-btn" id="fab-roll-btn">ROLL FABRICATOR</button>
         </div>
         <div id="fab-recipe-grid" class="fab-recipe-grid"></div>
       </div>
@@ -1202,28 +1202,28 @@
         <span class="hud-visor-bracket hud-visor-bracket--bl"></span>
         <span class="hud-visor-bracket hud-visor-bracket--br"></span>
         <div class="hud-visor-telemetry">
-          <span class="hud-visor-telemetry__tag">EXOSUIT // MARK-IV PRESSURIZED</span>
+          <span data-i18n="ui.ui.exosuit_mark_iv_pressurized" class="hud-visor-telemetry__tag">EXOSUIT // MARK-IV PRESSURIZED</span>
           <span class="hud-visor-telemetry__grid-mark">◈ 44.10°N // 12.80°W</span>
         </div>
       </div>
 
       <div class="level-indicator">
-        <span class="level-indicator__title">BUNKER LEVEL</span>
+        <span data-i18n="ui.ui.bunker_level" class="level-indicator__title">BUNKER LEVEL</span>
         <span id="level-num">0</span>
-        <span id="biome-label" class="level-indicator__biome">ACTIVE SECTOR</span>
-        <span id="campaign-day-indicator" class="level-indicator__cycle" title="Campaign day and local light cycle">DAY 1 · 06:43 · DAY</span>
+        <span data-i18n="ui.biome_label.active_sector" id="biome-label" class="level-indicator__biome">ACTIVE SECTOR</span>
+        <span data-i18n="ui.campaign_day_indicator.day_1_06_43_day" data-i18n-title="ui.campaign_day_indicator.title_campaign_day_and" id="campaign-day-indicator" class="level-indicator__cycle" title="Campaign day and local light cycle">DAY 1 · 06:43 · DAY</span>
         <span class="level-indicator__cycle-track" aria-hidden="true"><span id="campaign-cycle-progress"></span></span>
-        <span id="hud-run-seed" class="level-indicator__seed hidden">SEED: —</span>
-        <div id="hud-run-cards" class="run-card-strip hidden" aria-label="Active run pressure"></div>
+        <span data-i18n="ui.hud_run_seed.seed" id="hud-run-seed" class="level-indicator__seed hidden">SEED: —</span>
+        <div data-i18n-aria-label="ui.hud_run_cards.aria_label_active_run_pressure" id="hud-run-cards" class="run-card-strip hidden" aria-label="Active run pressure"></div>
       </div>
 
       <!-- Desktop Compass HUD (shown only on PC) -->
-      <div id="desktop-compass" class="desktop-compass hidden" role="button" tabindex="0" title="Click or press M to toggle Tactical Map" aria-label="Tactical Compass (Click to open map)">
+      <div data-i18n-aria-label="ui.desktop_compass.aria_label_tactical_compass_click" data-i18n-title="ui.desktop_compass.title_click_or_press" id="desktop-compass" class="desktop-compass hidden" role="button" tabindex="0" title="Click or press M to toggle Tactical Map" aria-label="Tactical Compass (Click to open map)">
         <div class="desktop-compass__header">
-          <span>TACTICAL MAP</span>
-          <span class="desktop-compass__hint">[MAP / M]</span>
+          <span data-i18n="ui.desktop_compass.tactical_map">TACTICAL MAP</span>
+          <span data-i18n="ui.desktop_compass.map_m" class="desktop-compass__hint">[MAP / M]</span>
         </div>
-        <canvas id="hud-blueprint-canvas" width="300" height="180" aria-label="Explored tactical map"></canvas>
+        <canvas data-i18n-aria-label="ui.hud_blueprint_canvas.aria_label_explored_tactical_map" id="hud-blueprint-canvas" width="300" height="180" aria-label="Explored tactical map"></canvas>
         <div class="desktop-compass__face">
           <div class="desktop-compass__ring">
             <div class="desktop-compass__arrow" id="desktop-compass-arrow"></div>
@@ -1233,16 +1233,16 @@
                 <circle class="extraction-ring-track" cx="20" cy="20" r="16"/>
                 <circle id="extraction-ring-fill" class="extraction-ring-fill" cx="20" cy="20" r="16"/>
               </svg>
-              <div class="extraction-ring-label">LAUNCH</div>
+              <div data-i18n="ui.extraction_progress_ring.launch" class="extraction-ring-label">LAUNCH</div>
             </div>
           </div>
           <div class="desktop-compass__readout">
             <div class="desktop-compass__row">
-              <span class="desktop-compass__label">BASE</span>
+              <span data-i18n="ui.desktop_compass.base" class="desktop-compass__label">BASE</span>
               <span class="desktop-compass__value" id="desktop-compass-distance">0u</span>
             </div>
             <div class="desktop-compass__row hidden" id="desktop-compass-radar-row">
-              <span class="desktop-compass__label">NODE</span>
+              <span data-i18n="ui.desktop_compass_radar_row.node" class="desktop-compass__label">NODE</span>
               <span class="desktop-compass__value" id="desktop-compass-radar-distance">0u</span>
             </div>
           </div>
@@ -1252,19 +1252,19 @@
       <div class="header-bar hud-header">
         <div class="hud-header__center">
           <div id="weapon-status-panel" class="weapon-status-panel" aria-live="polite">
-            <span class="weapon-status-panel__title">SIDEARM</span>
+            <span data-i18n="ui.weapon_status.sidearm" class="weapon-status-panel__title">SIDEARM</span>
             <div class="weapon-status-panel__ammo">
               <span class="weapon-status-panel__clip">
                 <span id="weapon-clip-current">6</span>/<span id="weapon-clip-max">6</span>
               </span>
-              <span id="weapon-ammo-cache" class="weapon-status-panel__cache">CACHE 18</span>
+              <span data-i18n="ui.weapon_status.cache_18" id="weapon-ammo-cache" class="weapon-status-panel__cache">CACHE 18</span>
             </div>
             <div class="weapon-status-panel__reload-track" aria-hidden="true">
               <div id="weapon-reload-bar" class="weapon-status-panel__reload-bar"></div>
             </div>
           </div>
           <div id="ship-status-panel" class="ship-status-panel" aria-live="polite">
-            <span class="ship-status-panel__title">SHIP INTEGRITY</span>
+            <span data-i18n="ui.ship_status.ship_integrity" class="ship-status-panel__title">SHIP INTEGRITY</span>
             <div class="ship-status-panel__track">
               <div id="ship-hp-bar" class="ship-status-panel__bar"></div>
             </div>
@@ -1273,8 +1273,8 @@
         </div>
         <div class="hud-header__right">
           <div id="vitals-panel" class="vitals-panel vitals-panel--topbar" aria-live="polite">
-            <div class="vitals-panel__title">VITALS</div>
-            <div class="vitals-panel__hearts" id="vitals-hearts" aria-label="Health">
+            <div data-i18n="ui.vitals.vitals" class="vitals-panel__title">VITALS</div>
+            <div data-i18n-aria-label="ui.vitals.aria_label_health" class="vitals-panel__hearts" id="vitals-hearts" aria-label="Health">
               <span class="heart heart--full" data-index="0">♥</span>
               <span class="heart heart--full" data-index="1">♥</span>
               <span class="heart heart--full" data-index="2">♥</span>
@@ -1287,7 +1287,7 @@
               <span class="vitals-panel__o2-pct" id="vitals-o2-pct">100%</span>
             </div>
             <div class="vitals-panel__o2-row vitals-panel__cover-row hidden" id="vitals-cover-row">
-              <span class="vitals-panel__o2-label" id="vitals-cover-label">COVER</span>
+              <span data-i18n="ui.vitals.cover" class="vitals-panel__o2-label" id="vitals-cover-label">COVER</span>
               <div class="vitals-panel__o2-bar-track">
                 <div class="vitals-panel__o2-bar vitals-panel__cover-bar" id="vitals-cover-bar"></div>
               </div>
@@ -1297,25 +1297,25 @@
           <div id="hazard-status-panel" class="hazard-status-panel hidden" aria-live="assertive">
             <span id="hazard-status-icon" class="hazard-status-panel__icon">❄</span>
             <span class="hazard-status-panel__copy">
-              <strong id="hazard-status-label">COLD EXPOSURE</strong>
-              <span id="hazard-status-detail">SEEK PRESSURIZED COVER</span>
+              <strong data-i18n="ui.hazard_status.cold_exposure" id="hazard-status-label">COLD EXPOSURE</strong>
+              <span data-i18n="ui.hazard_status.seek_pressurized_cover" id="hazard-status-detail">SEEK PRESSURIZED COVER</span>
             </span>
             <span id="hazard-status-time" class="hazard-status-panel__time">—</span>
           </div>
           <!-- Queen's Ledger HUD Chip (visible post-reveal/Act 2 begun) -->
           <div id="queens-ledger-hud" class="queens-ledger-hud hidden" aria-live="polite">
-            <span id="queens-ledger-text">♛ OBEDIENCE 0 · SEATS 1/4 · VECTOR: UNSTABLE</span>
+            <span data-i18n="ui.queens_ledger_hud.obedience_0_seats_1_4" id="queens-ledger-text">♛ OBEDIENCE 0 · SEATS 1/4 · VECTOR: UNSTABLE</span>
           </div>
           <div id="class-ability-panel" class="class-ability-panel" aria-live="polite" role="button" tabindex="-1">
             <span class="class-ability-panel__key" aria-hidden="true"><svg class="run-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 18 22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="3" r="2.2" fill="currentColor" stroke="none"/><path d="M11 5 L8 11"/><path d="M10 8 L14 5.5" stroke-width="1.4"/><path d="M10 8 L6 10.5" stroke-width="1.4"/><path d="M8 11 L12 16 L16 18"/><path d="M8 11 L5 15 L2 13"/></svg></span>
-            <span class="class-ability-panel__name" id="ability-name">PASSIVE</span>
+            <span data-i18n="ui.class_ability.passive" class="class-ability-panel__name" id="ability-name">PASSIVE</span>
             <div class="class-ability-panel__bar-track" aria-hidden="true">
               <div class="class-ability-panel__bar" id="ability-bar"></div>
             </div>
           </div>
-          <div id="radar-scan-panel" class="class-ability-panel" aria-live="polite" role="button" tabindex="-1" title="Radar Scan [Q]" style="border-color: rgba(0, 210, 255, 0.22);">
+          <div data-i18n-title="ui.radar_scan.title_radar_scan_q" id="radar-scan-panel" class="class-ability-panel" aria-live="polite" role="button" tabindex="-1" title="Radar Scan [Q]" style="border-color: rgba(0, 210, 255, 0.22);">
             <span class="class-ability-panel__key" aria-hidden="true"><svg class="run-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10" stroke-dasharray="3,3" /><circle cx="12" cy="12" r="6" /><circle cx="12" cy="12" r="2" fill="currentColor" stroke="none" /><line x1="12" y1="2" x2="12" y2="12" /></svg></span>
-            <span class="class-ability-panel__name" id="scan-name" style="color: #00d2ff;">RADAR SCAN</span>
+            <span data-i18n="ui.radar_scan.radar_scan" class="class-ability-panel__name" id="scan-name" style="color: #00d2ff;">RADAR SCAN</span>
             <div class="class-ability-panel__bar-track" aria-hidden="true" style="background: rgba(0, 210, 255, 0.12);">
               <div class="class-ability-panel__bar" id="scan-bar" style="background: #00d2ff; box-shadow: 0 0 5px rgba(0, 210, 255, 0.5);"></div>
             </div>
@@ -1327,9 +1327,9 @@
         <button class="calibrate-btn open-settings-btn">⚙</button>
       </div>
       <div id="pickup-counter-panel" class="pickup-counter-panel" aria-live="polite">
-        <div class="pickup-counter-panel__title">LOOT</div>
+        <div data-i18n="ui.pickup_counter.loot" class="pickup-counter-panel__title">LOOT</div>
         <div class="pickup-counter-panel__row pickup-counter-panel__row--total">
-          <span class="pickup-counter-panel__label">TOTAL</span>
+          <span data-i18n="ui.pickup_counter.total" class="pickup-counter-panel__label">TOTAL</span>
           <span id="pickup-count-total">0</span>
         </div>
         <div class="pickup-counter-panel__row">
@@ -1351,15 +1351,15 @@
       </div>
       <!-- Boss Status Panel -->
       <div id="boss-status-panel" class="boss-status-panel hidden" aria-live="polite">
-        <div class="boss-status-panel__title" id="boss-name">BOSS THREAT</div>
+        <div data-i18n="ui.boss_status.boss_threat" class="boss-status-panel__title" id="boss-name">BOSS THREAT</div>
         <div class="boss-status-panel__track">
           <div id="boss-hp-bar" class="boss-status-panel__bar"></div>
         </div>
         <span id="boss-hp-text" class="boss-status-panel__value">100%</span>
       </div>
       <div id="world-status" class="hidden">
-        <div class="status-title">TACTICAL FEED</div>
-        <div class="status-item"><span>UNITS</span><span class="status-value" id="online-count">1</span></div>
+        <div data-i18n="ui.world_status.tactical_feed" class="status-title">TACTICAL FEED</div>
+        <div class="status-item"><span data-i18n="ui.world_status.units">UNITS</span><span class="status-value" id="online-count">1</span></div>
       </div>
     </div>
     <!-- Game Over Screen -->
@@ -1367,14 +1367,14 @@
       <div class="modal-content game-over-content">
         <div class="terminal-scanline"></div>
         <div class="game-over-header">
-          <div class="game-over-title">EXOSUIT FAILURE</div>
-          <div class="game-over-subtitle">&gt; AGENT LOST IN SECTOR 9. TELEMETRY RECOVERED.</div>
+          <div data-i18n="ui.game_over.exosuit_failure" class="game-over-title">EXOSUIT FAILURE</div>
+          <div data-i18n="ui.game_over.agent_lost_in_sector_9" class="game-over-subtitle">&gt; AGENT LOST IN SECTOR 9. TELEMETRY RECOVERED.</div>
         </div>
         <div class="game-over-report">
-          <div class="game-over-section-label">MISSION REPORT</div>
+          <div data-i18n="ui.game_over.mission_report" class="game-over-section-label">MISSION REPORT</div>
 
           <div class="game-over-stat-block game-over-stat-block--meter">
-            <span class="game-over-stat-label">DISTANCE COVERED</span>
+            <span data-i18n="ui.game_over.distance_covered" class="game-over-stat-label">DISTANCE COVERED</span>
             <div class="game-over-stat-bar-row">
               <div class="game-over-stat-bar-track"><div class="game-over-stat-bar" id="go-bar-distance"></div></div>
               <span class="game-over-stat-value" id="go-val-distance">0u</span>
@@ -1382,7 +1382,7 @@
           </div>
 
           <div class="game-over-stat-block game-over-stat-block--value-only">
-            <span class="game-over-stat-label">ITEMS RECOVERED</span>
+            <span data-i18n="ui.game_over.items_recovered" class="game-over-stat-label">ITEMS RECOVERED</span>
             <div class="game-over-stat-bar-row">
               <div class="game-over-stat-bar-track"><div class="game-over-stat-bar" id="go-bar-items"></div></div>
               <span class="game-over-stat-value" id="go-val-items">0</span>
@@ -1390,15 +1390,15 @@
           </div>
 
           <div class="game-over-stat-block game-over-stat-block--value-only">
-            <span class="game-over-stat-label">O₂ GENERATOR</span>
+            <span data-i18n="ui.game_over.o2_generator" class="game-over-stat-label">O₂ GENERATOR</span>
             <div class="game-over-stat-bar-row">
               <div class="game-over-stat-bar-track"><div class="game-over-stat-bar" id="go-bar-generator"></div></div>
-              <span class="game-over-stat-value" id="go-val-generator">OFFLINE</span>
+              <span data-i18n="ui.game_over.offline" class="game-over-stat-value" id="go-val-generator">OFFLINE</span>
             </div>
           </div>
 
           <div class="game-over-stat-block game-over-stat-block--value-only">
-            <span class="game-over-stat-label">THREATS ELIMINATED</span>
+            <span data-i18n="ui.game_over.threats_eliminated" class="game-over-stat-label">THREATS ELIMINATED</span>
             <div class="game-over-stat-bar-row">
               <div class="game-over-stat-bar-track"><div class="game-over-stat-bar" id="go-bar-kills"></div></div>
               <span class="game-over-stat-value" id="go-val-kills">0</span>
@@ -1406,16 +1406,16 @@
           </div>
 
           <div class="game-over-stat-block game-over-stat-block--value-only">
-            <span class="game-over-stat-label">TIME ELAPSED</span>
+            <span data-i18n="ui.game_over.time_elapsed" class="game-over-stat-label">TIME ELAPSED</span>
             <div class="game-over-stat-bar-row">
               <div class="game-over-stat-bar-track"><div class="game-over-stat-bar" id="go-bar-time"></div></div>
               <span class="game-over-stat-value" id="go-val-time">0:00</span>
             </div>
           </div>
 
-          <section class="return-manifest" id="go-bank-note" aria-label="Expedition earnings and bank balances">BANKED RESOURCES PRESERVED</section>
-          <div class="game-over-bank-note game-over-bank-note--cards" id="go-run-cards">RUN PRESSURE: NONE</div>
-          <div class="game-over-bank-note game-over-bank-note--recoverable" id="go-recoverable-note">BLACK BOX: NONE</div>
+          <section data-i18n="ui.game_over.banked_resources_preserved" data-i18n-aria-label="ui.game_over.aria_label_expedition_earnings_and" class="return-manifest" id="go-bank-note" aria-label="Expedition earnings and bank balances">BANKED RESOURCES PRESERVED</section>
+          <div data-i18n="ui.game_over.run_pressure_none" class="game-over-bank-note game-over-bank-note--cards" id="go-run-cards">RUN PRESSURE: NONE</div>
+          <div data-i18n="ui.game_over.black_box_none" class="game-over-bank-note game-over-bank-note--recoverable" id="go-recoverable-note">BLACK BOX: NONE</div>
           <div class="game-over-bank-note game-over-bank-note--steam hidden" id="go-steam-grant-note"></div>
 
           <!-- Act 2 Summary Card -->
@@ -1426,38 +1426,38 @@
 
         <div class="game-over-score-section">
           <div class="go-score-row">
-            <span class="go-score-label">SCORE</span>
+            <span data-i18n="ui.game_over.score" class="go-score-label">SCORE</span>
             <div class="go-score-right">
-              <span id="go-new-best" class="go-new-best hidden">NEW BEST</span>
+              <span data-i18n="ui.game_over.new_best" id="go-new-best" class="go-new-best hidden">NEW BEST</span>
               <span id="go-score-val" class="go-score-val">0</span>
-              <span class="go-score-pts">PTS</span>
+              <span data-i18n="ui.game_over.pts" class="go-score-pts">PTS</span>
             </div>
           </div>
           <div class="go-rating-row">
             <span id="go-rating-badge" class="go-rating-badge go-rating-badge--d">D</span>
-            <span id="go-rating-label" class="go-rating-label">AGENT LOST — MINIMAL TELEMETRY</span>
+            <span data-i18n="ui.game_over.agent_lost_minimal_telemetry" id="go-rating-label" class="go-rating-label">AGENT LOST — MINIMAL TELEMETRY</span>
           </div>
           <div id="mission-status-text" class="go-mission-status"></div>
           <div id="go-seed-row" class="go-seed-row hidden">
-            <span class="go-seed-label">WORLD SEED:</span>
+            <span data-i18n="ui.game_over.world_seed" class="go-seed-label">WORLD SEED:</span>
             <span id="go-seed-val" class="go-seed-val">0</span>
           </div>
           <div id="go-archive-row" class="go-archive-row hidden">
             <span class="go-archive-icon">◈</span>
-            <span id="go-archive-text" class="go-archive-text">LOGS RECOVERED: 0/27</span>
+            <span data-i18n="ui.game_over.logs_recovered_0_27" id="go-archive-text" class="go-archive-text">LOGS RECOVERED: 0/27</span>
           </div>
         </div>
 
         <!-- Game Over Leaderboard Widget -->
         <div class="go-leaderboard-container" id="go-leaderboard-container">
-          <div class="go-leaderboard-header">◈ LEADERBOARD RESULTS</div>
+          <div data-i18n="ui.game_over.leaderboard_results" class="go-leaderboard-header">◈ LEADERBOARD RESULTS</div>
           <div class="go-leaderboard-status" id="go-leaderboard-status">CONNECTING...</div>
           <div class="go-leaderboard-list" id="go-leaderboard-list"></div>
         </div>
 
         <div class="game-over-actions">
-          <button class="start-btn game-over-btn game-over-btn--primary" id="game-over-try-again">TRY AGAIN</button>
-          <button class="abort-btn game-over-btn game-over-btn--secondary" id="game-over-main-menu">MAIN MENU</button>
+          <button data-i18n="ui.game_over.try_again" class="start-btn game-over-btn game-over-btn--primary" id="game-over-try-again">TRY AGAIN</button>
+          <button data-i18n="ui.game_over_main_menu.main_menu" class="abort-btn game-over-btn game-over-btn--secondary" id="game-over-main-menu">MAIN MENU</button>
         </div>
       </div>
     </div>
@@ -1488,10 +1488,10 @@
     <!-- Lore Terminal Modal -->
     <div id="lore-modal" class="modal hidden" aria-live="polite">
       <div class="modal-content lore-modal-content">
-        <button class="close-modal" id="close-lore-modal" aria-label="Close log">×</button>
+        <button data-i18n-aria-label="ui.close_lore.aria_label_close_log" class="close-modal" id="close-lore-modal" aria-label="Close log">×</button>
         <div class="terminal-scanline"></div>
-        <div class="lore-modal-header">BUNKER TERMINAL — LOG FRAGMENT</div>
-        <div class="lore-modal-key" id="lore-modal-key">LOG-A01</div>
+        <div data-i18n="ui.lore.bunker_terminal_log_fragment" class="lore-modal-header">BUNKER TERMINAL — LOG FRAGMENT</div>
+        <div data-i18n="ui.lore_modal_key.log_a01" class="lore-modal-key" id="lore-modal-key">LOG-A01</div>
         <div class="lore-modal-meta" style="font-family: 'Space Mono', monospace; font-size: 11px; color: #ffaa44; margin-bottom: 12px; opacity: 0.85; display: flex; gap: 16px;">
           <span id="lore-modal-date"></span>
           <span id="lore-modal-coords"></span>
@@ -1515,8 +1515,8 @@
         <div class="radio-transmission-prompt__body">
           <div class="radio-transmission-prompt__header">
             <span class="radio-transmission-prompt__signal-icon">⚡</span>
-            <span id="radio-sender-name" class="radio-transmission-prompt__sender">MOTHERSHIP COMMAND</span>
-            <span class="radio-transmission-prompt__status">ONLINE</span>
+            <span data-i18n="ui.radio_sender_name.mothership_command" id="radio-sender-name" class="radio-transmission-prompt__sender">MOTHERSHIP COMMAND</span>
+            <span data-i18n="ui.radio_transmission_prompt.online" class="radio-transmission-prompt__status">ONLINE</span>
           </div>
           <div id="radio-message-text" class="radio-transmission-prompt__message"></div>
         </div>
@@ -1526,68 +1526,68 @@
     <!-- Mission/action prompts sit below the popup deck -->
     <div class="hud-mission-stack">
       <div id="biome-hud-prompt" class="biome-hud-prompt hidden" aria-live="polite">
-        <span class="biome-hud-prompt__icon">ZONE</span>
-        <span id="biome-hud-text" class="biome-hud-prompt__text">ENTERING ACTIVE SECTOR</span>
+        <span data-i18n="ui.biome_hud_prompt.zone" class="biome-hud-prompt__icon">ZONE</span>
+        <span data-i18n="ui.biome_hud_text.entering_active_sector" id="biome-hud-text" class="biome-hud-prompt__text">ENTERING ACTIVE SECTOR</span>
       </div>
 
       <div id="lore-hud-prompt" class="lore-hud-prompt hud-action-prompt hidden">
-        <span class="prompt-key">PRESS E</span>
-        <span class="prompt-text">READ LOG</span>
+        <span data-i18n="ui.lore_hud_prompt.press_e" class="prompt-key">PRESS E</span>
+        <span data-i18n="ui.lore_hud_prompt.read_log" class="prompt-text">READ LOG</span>
       </div>
 
       <div id="console-hud-prompt" class="hud-action-prompt hidden">
-        <span class="prompt-key">PRESS E</span>
-        <span class="prompt-text">ACCESS BASE SHOP</span>
+        <span data-i18n="ui.console_hud_prompt.press_e" class="prompt-key">PRESS E</span>
+        <span data-i18n="ui.console_hud_prompt.access_base_shop" class="prompt-text">ACCESS BASE SHOP</span>
       </div>
 
       <div id="o2-generator-hud-prompt" class="lore-hud-prompt hud-action-prompt o2-generator-hud-prompt hidden">
-        <span class="prompt-key">PRESS E</span>
-        <span class="prompt-text">UPGRADE O₂ GENERATOR</span>
+        <span data-i18n="ui.o2_generator_hud_prompt.press_e" class="prompt-key">PRESS E</span>
+        <span data-i18n="ui.o2_generator_hud_prompt.upgrade_o2_generator" class="prompt-text">UPGRADE O₂ GENERATOR</span>
       </div>
 
       <div id="base-turret-hud-prompt" class="lore-hud-prompt hud-action-prompt base-turret-hud-prompt hidden">
-        <span class="prompt-key">PRESS E</span>
-        <span class="prompt-text">DEFENSE TURRET CONTROLS</span>
+        <span data-i18n="ui.base_turret_hud_prompt.press_e" class="prompt-key">PRESS E</span>
+        <span data-i18n="ui.base_turret_hud_prompt.defense_turret_controls" class="prompt-text">DEFENSE TURRET CONTROLS</span>
       </div>
 
       <div id="foundry-hud-prompt" class="lore-hud-prompt hud-action-prompt foundry-hud-prompt hidden">
-        <span class="prompt-key">PRESS E</span>
-        <span class="prompt-text">OPEN FAB BAY</span>
+        <span data-i18n="ui.foundry_hud_prompt.press_e" class="prompt-key">PRESS E</span>
+        <span data-i18n="ui.foundry_hud_prompt.open_fab_bay" class="prompt-text">OPEN FAB BAY</span>
       </div>
 
       <div id="scientist-hud-prompt" class="lore-hud-prompt hud-action-prompt hidden">
-        <span class="prompt-key">PRESS E</span>
-        <span class="prompt-text">TALK TO DR. OKONKWO-VASS</span>
+        <span data-i18n="ui.scientist_hud_prompt.press_e" class="prompt-key">PRESS E</span>
+        <span data-i18n="ui.scientist_hud_prompt.talk_to_dr_okonkwo_vass" class="prompt-text">TALK TO DR. OKONKWO-VASS</span>
       </div>
 
       <div id="mayor-tina-hud-prompt" class="lore-hud-prompt hud-action-prompt mayor-tina-hud-prompt hidden">
-        <span class="prompt-key">PRESS E</span>
-        <span class="prompt-text">TALK TO MAYOR TINA</span>
+        <span data-i18n="ui.mayor_tina_hud_prompt.press_e" class="prompt-key">PRESS E</span>
+        <span data-i18n="ui.mayor_tina_hud_prompt.talk_to_mayor_tina" class="prompt-text">TALK TO MAYOR TINA</span>
       </div>
 
       <div id="black-box-hud-prompt" class="lore-hud-prompt black-box-hud-prompt hidden">
-        <span class="prompt-key">PRESS E</span>
-        <span class="prompt-text">RECOVER BLACK BOX</span>
+        <span data-i18n="ui.black_box_hud_prompt.press_e" class="prompt-key">PRESS E</span>
+        <span data-i18n="ui.black_box_hud_prompt.recover_black_box" class="prompt-text">RECOVER BLACK BOX</span>
       </div>
 
       <div id="hole-hud-prompt" class="lore-hud-prompt hole-hud-prompt hidden">
-        <span class="prompt-key">PRESS E</span>
-        <span class="prompt-text">FILL HOLE</span>
+        <span data-i18n="ui.hole_hud_prompt.press_e" class="prompt-key">PRESS E</span>
+        <span data-i18n="ui.hole_hud_prompt.fill_hole" class="prompt-text">FILL HOLE</span>
       </div>
 
       <div id="mouse-look-prompt" class="hud-action-prompt hidden">
-        <span class="prompt-key">CLICK</span>
-        <span class="prompt-text">TO LOOK AROUND</span>
+        <span data-i18n="ui.mouse_look_prompt.click" class="prompt-key">CLICK</span>
+        <span data-i18n="ui.mouse_look_prompt.to_look_around" class="prompt-text">TO LOOK AROUND</span>
       </div>
 
       <div id="mission-progress-hud" class="mission-progress-hud hidden" aria-live="polite">
         <span class="mission-progress-hud__icon">◈</span>
-        <span id="mission-progress-text" class="mission-progress-hud__text">MISSION ACTIVE</span>
+        <span data-i18n="ui.mission_progress_hud.mission_active" id="mission-progress-text" class="mission-progress-hud__text">MISSION ACTIVE</span>
       </div>
 
       <div id="camp-quest-hud" class="mission-progress-hud hidden" aria-live="polite">
         <span class="mission-progress-hud__icon">◈</span>
-        <span id="camp-quest-text" class="mission-progress-hud__text">QUEST ACTIVE</span>
+        <span data-i18n="ui.camp_quest_hud.quest_active" id="camp-quest-text" class="mission-progress-hud__text">QUEST ACTIVE</span>
       </div>
 
       <!-- Unified Objective Tracker HUD -->
@@ -1598,7 +1598,7 @@
     <!-- Persistent loop-state cue: always shows the next thing to do -->
     <div id="loop-step-hud" class="loop-step-hud hidden" aria-live="polite">
       <span class="loop-step-hud__chevron" aria-hidden="true">▸</span>
-      <span id="loop-step-text" class="loop-step-hud__text">DEPLOYING</span>
+      <span data-i18n="ui.loop_step_hud.deploying" id="loop-step-text" class="loop-step-hud__text">DEPLOYING</span>
     </div>
 
     <!-- Tactical Telemeter / Inspection Box -->
@@ -1617,7 +1617,7 @@
         <div id="telemeter-subtitle" class="telemeter-subtitle">BIOME: GLACIAL BEDROCK</div>
         <div id="telemeter-stats-row" class="telemeter-stats-row">
           <div id="telemeter-integrity-wrap" class="telemeter-integrity-wrap">
-            <span class="telemeter-stat-label">INTEGRITY:</span>
+            <span data-i18n="ui.telemeter_integrity.integrity" class="telemeter-stat-label">INTEGRITY:</span>
             <div class="telemeter-meter-track">
               <div id="telemeter-meter-bar" class="telemeter-meter-bar" style="width: 100%;"></div>
             </div>
@@ -1738,10 +1738,10 @@
         <div class="terminal-flicker"></div>
         
         <div class="terminal-header">
-          <div class="terminal-title">BUNKER TACTICAL TERMINAL</div>
+          <div data-i18n="ui.console_terminal.bunker_tactical_terminal" class="terminal-title">BUNKER TACTICAL TERMINAL</div>
           <div class="terminal-clock-row">
-            <span class="terminal-clock-chip"><span class="terminal-clock-label">TIME OF DAY</span><span class="terminal-clock-value" id="terminal-time-of-day">--:--</span></span>
-            <span class="terminal-clock-chip"><span class="terminal-clock-label">SURVIVED</span><span class="terminal-clock-value" id="terminal-time-survived">00:00</span></span>
+            <span class="terminal-clock-chip"><span data-i18n="ui.console_terminal.time_of_day" class="terminal-clock-label">TIME OF DAY</span><span class="terminal-clock-value" id="terminal-time-of-day">--:--</span></span>
+            <span class="terminal-clock-chip"><span data-i18n="ui.console_terminal.survived" class="terminal-clock-label">SURVIVED</span><span class="terminal-clock-value" id="terminal-time-survived">00:00</span></span>
           </div>
           <div class="terminal-class-badge" id="terminal-class-badge">SCOUT BASE STATUS</div>
         </div>
@@ -1749,12 +1749,12 @@
         <div class="terminal-body">
           <!-- Terminal Tabs Header -->
           <div class="terminal-tabs">
-            <button id="terminal-tab-base" class="terminal-tab-btn active">◇ BASE SYSTEM</button>
+            <button data-i18n="ui.console_terminal.base_system" id="terminal-tab-base" class="terminal-tab-btn active">◇ BASE SYSTEM</button>
             <button id="terminal-tab-skills" class="terminal-tab-btn">
-              <span>◇ CLASS SKILLS</span>
+              <span data-i18n="ui.console_terminal.class_skills">◇ CLASS SKILLS</span>
               <span class="terminal-tab-btn__status" id="terminal-tab-skills-status">0/6 · ◈ 0</span>
             </button>
-            <button id="terminal-tab-objectives" class="terminal-tab-btn">◇ OBJECTIVE / NIGHT LOG</button>
+            <button data-i18n="ui.console_terminal.objective_night_log" id="terminal-tab-objectives" class="terminal-tab-btn">◇ OBJECTIVE / NIGHT LOG</button>
           </div>
 
           <!-- Base Systems Tab Content -->
@@ -1764,18 +1764,18 @@
           <div class="terminal-shop-toprow">
             <!-- Bank balance: compact resource grid + deposit -->
             <div id="terminal-bank-panel" class="terminal-shop-bank terminal-tone--bank">
-              <div class="terminal-section-title">CURRENT RUN STATS</div>
+              <div data-i18n="ui.terminal_bank.current_run_stats" class="terminal-section-title">CURRENT RUN STATS</div>
               <div class="terminal-info-grid">
                 <div class="terminal-info-chip">
-                  <span class="terminal-info-chip__label">SHELLS</span>
+                  <span data-i18n="ui.terminal_bank.shells" class="terminal-info-chip__label">SHELLS</span>
                   <span class="terminal-info-chip__value" id="terminal-summary-shells">◈ 0</span>
                 </div>
                 <div class="terminal-info-chip">
-                  <span class="terminal-info-chip__label">BANK TOTAL</span>
+                  <span data-i18n="ui.terminal_bank.bank_total" class="terminal-info-chip__label">BANK TOTAL</span>
                   <span class="terminal-info-chip__value" id="terminal-summary-bank">0</span>
                 </div>
                 <div class="terminal-info-chip">
-                  <span class="terminal-info-chip__label">HEARTS</span>
+                  <span data-i18n="ui.terminal_bank.hearts" class="terminal-info-chip__label">HEARTS</span>
                   <span class="terminal-info-chip__value" id="terminal-summary-hp">3/3</span>
                 </div>
                 <div class="terminal-info-chip">
@@ -1785,20 +1785,20 @@
               </div>
               <div class="terminal-bank-grid">
                 <div class="terminal-bank-cell">
-                  <span class="terminal-bank-cell__label">MED</span>
+                  <span data-i18n="ui.terminal_bank.med" class="terminal-bank-cell__label">MED</span>
                   <span class="terminal-bank-cell__stored" id="terminal-bank-med">0</span>
                   <span class="terminal-bank-cell__subtext" id="terminal-med-hearts">0/10 for ♥</span>
                   <span class="terminal-bank-cell__carried" id="terminal-session-med" style="display: none;">0</span>
                   <span class="terminal-bank-cell__arrow" style="display: none;">→</span>
                 </div>
                 <div class="terminal-bank-cell">
-                  <span class="terminal-bank-cell__label">TECH</span>
+                  <span data-i18n="ui.terminal_bank.tech" class="terminal-bank-cell__label">TECH</span>
                   <span class="terminal-bank-cell__stored" id="terminal-bank-tech">0</span>
                   <span class="terminal-bank-cell__carried" id="terminal-session-tech" style="display: none;">0</span>
                   <span class="terminal-bank-cell__arrow" style="display: none;">→</span>
                 </div>
                 <div class="terminal-bank-cell">
-                  <span class="terminal-bank-cell__label">COIN</span>
+                  <span data-i18n="ui.terminal_bank.coin" class="terminal-bank-cell__label">COIN</span>
                   <span class="terminal-bank-cell__stored" id="terminal-bank-coin">0</span>
                   <span class="terminal-bank-cell__carried" id="terminal-session-coin" style="display: none;">0</span>
                   <span class="terminal-bank-cell__arrow" style="display: none;">→</span>
@@ -1806,10 +1806,10 @@
               </div>
               <div class="terminal-current-objective" id="terminal-current-objective">
                 <div class="terminal-current-objective__header">
-                  <span class="terminal-current-objective__label">CURRENT OBJECTIVE</span>
-                  <span class="terminal-current-objective__status" id="terminal-current-objective-status">ACTIVE</span>
+                  <span data-i18n="ui.terminal_bank.current_objective" class="terminal-current-objective__label">CURRENT OBJECTIVE</span>
+                  <span data-i18n="ui.terminal_bank.active" class="terminal-current-objective__status" id="terminal-current-objective-status">ACTIVE</span>
                 </div>
-                <span class="terminal-current-objective__title" id="terminal-current-objective-title">EXPLORE · BANK SALVAGE</span>
+                <span data-i18n="ui.terminal_bank.explore_bank_salvage" class="terminal-current-objective__title" id="terminal-current-objective-title">EXPLORE · BANK SALVAGE</span>
                 <span class="terminal-current-objective__detail" id="terminal-current-objective-detail">NO ACTIVE MISSION CONTRACT</span>
                 
                 <!-- Purchase Zone for Active Base Goal -->
@@ -1819,7 +1819,7 @@
                 </div>
 
                 <div class="terminal-current-objective__footer">
-                  <span class="terminal-current-objective__directive-label">BASE PRIORITY</span>
+                  <span data-i18n="ui.terminal_bank.base_priority" class="terminal-current-objective__directive-label">BASE PRIORITY</span>
                   <span class="terminal-bank-hint" id="terminal-bank-hint">RUN LOOT AUTOMATICALLY SECURED AND BANKED.</span>
                 </div>
               </div>
@@ -1827,20 +1827,20 @@
 
             <div class="terminal-shop-right-col">
               <div id="med-conversion-section" class="upgrade-goals-section upgrade-goals-section--medkit terminal-tone--medkit">
-                <div class="terminal-section-title">FIELD MEDKIT</div>
+                <div data-i18n="ui.console_terminal.field_medkit" class="terminal-section-title">FIELD MEDKIT</div>
                 <div class="action-card action-card--medkit" data-goal-card="medkit">
                   <div class="action-card-header">
-                    <span class="action-title">MED CONVERSION</span>
+                    <span data-i18n="ui.console_terminal.med_conversion" class="action-title">MED CONVERSION</span>
                     <span class="action-cost" id="terminal-medkit-status">OFFLINE</span>
                   </div>
-                  <p class="action-desc" id="terminal-medkit-desc">CONVERT 10 MED → ♥ 1 HEART RESTORED</p>
+                  <p data-i18n="ui.console_terminal.convert_10_med_1_heart" class="action-desc" id="terminal-medkit-desc">CONVERT 10 MED → ♥ 1 HEART RESTORED</p>
                   <p class="action-desc action-desc--hint" id="terminal-medkit-hint">USE BANKED MED SUPPLIES TO REPAIR EXOSUIT INTEGRITY.</p>
-                  <button class="terminal-action-btn" id="terminal-btn-medkit" disabled>CONVERT 10 MED → ♥</button>
+                  <button data-i18n="ui.console_terminal.convert_10_med" class="terminal-action-btn" id="terminal-btn-medkit" disabled>CONVERT 10 MED → ♥</button>
                 </div>
               </div>
 
               <div id="terminal-event-section" class="upgrade-goals-section terminal-tone--event hidden">
-                <div class="terminal-section-title">OPTIONAL FIELD OPPORTUNITY</div>
+                <div data-i18n="ui.console_terminal.optional_field_opportunity" class="terminal-section-title">OPTIONAL FIELD OPPORTUNITY</div>
                 <div class="action-card action-card--terminal-event">
                   <div class="action-card-header">
                     <span class="action-title" id="terminal-event-title">SYSTEM OFFER</span>
@@ -1856,55 +1856,55 @@
 
           <!-- O2 generator upgrade -->
           <div id="o2-generator-section" class="upgrade-goals-section upgrade-goals-section--generator terminal-tone--generator">
-            <div class="terminal-section-title">O₂ GENERATOR MODULE</div>
+            <div data-i18n="ui.console_terminal.o2_generator_module" class="terminal-section-title">O₂ GENERATOR MODULE</div>
             <div class="action-card action-card--generator" data-goal-card="o2Generator">
               <div class="action-card-header">
-                <span class="action-title">FIELD STABILIZER</span>
+                <span data-i18n="ui.console_terminal.field_stabilizer" class="action-title">FIELD STABILIZER</span>
                 <span class="action-cost" id="terminal-o2-generator-status">OFFLINE // REPAIR REQUIRED</span>
               </div>
               <p class="action-desc" id="terminal-o2-generator-cost">NEXT COST: 10 TECH / 5 MED / 5 COIN</p>
               <p class="action-desc" id="terminal-o2-generator-field">FIELD RADIUS 0.0u // REFILL OFFLINE</p>
               <p class="action-desc action-desc--hint" id="terminal-o2-generator-hint">REPAIR THIS MODULE TO CREATE A SAFE O₂ ZONE NEAR YOUR SHIP.</p>
-              <button class="terminal-action-btn" id="terminal-btn-o2-generator">REPAIR GENERATOR</button>
+              <button data-i18n="ui.console_terminal.repair_generator" class="terminal-action-btn" id="terminal-btn-o2-generator">REPAIR GENERATOR</button>
             </div>
           </div>
 
           <div id="hull-expansion-section" class="upgrade-goals-section terminal-tone--goal">
-            <div class="terminal-section-title">GOAL 2</div>
+            <div data-i18n="ui.console_terminal.goal_2" class="terminal-section-title">GOAL 2</div>
             <div class="action-card" data-goal-card="hullExpansion">
               <div class="action-card-header">
-                <span class="action-title">HULL EXPANSION MATRIX</span>
-                <span class="action-cost" id="terminal-hull-status">LOCKED — REPAIR O₂ GENERATOR FIRST</span>
+                <span data-i18n="ui.console_terminal.hull_expansion_matrix" class="action-title">HULL EXPANSION MATRIX</span>
+                <span data-i18n="ui.console_terminal.locked_repair_o2_generator_first" class="action-cost" id="terminal-hull-status">LOCKED — REPAIR O₂ GENERATOR FIRST</span>
               </div>
-              <p class="action-desc">Reinforce exterior hull. Increases max exosuit integrity to 4 hearts.</p>
-              <p class="action-desc action-desc--cost" id="terminal-hull-cost">COST: 50 TECH / 20 MED</p>
-              <button class="terminal-action-btn btn-state--locked" id="terminal-btn-hull" disabled>LOCKED</button>
+              <p data-i18n="ui.console_terminal.reinforce_exterior_hull_increases_max" class="action-desc">Reinforce exterior hull. Increases max exosuit integrity to 4 hearts.</p>
+              <p data-i18n="ui.console_terminal.cost_50_tech_20_med" class="action-desc action-desc--cost" id="terminal-hull-cost">COST: 50 TECH / 20 MED</p>
+              <button data-i18n="ui.console_terminal.locked" class="terminal-action-btn btn-state--locked" id="terminal-btn-hull" disabled>LOCKED</button>
             </div>
           </div>
 
           <div id="radar-node-section" class="upgrade-goals-section terminal-tone--goal">
-            <div class="terminal-section-title">GOAL 3</div>
+            <div data-i18n="ui.console_terminal.goal_3" class="terminal-section-title">GOAL 3</div>
             <div class="action-card" data-goal-card="radarNode">
               <div class="action-card-header">
-                <span class="action-title">COMMUNICATION RADAR NODE</span>
-                <span class="action-cost" id="terminal-radar-status">LOCKED — INSTALL HULL MATRIX FIRST</span>
+                <span data-i18n="ui.console_terminal.communication_radar_node" class="action-title">COMMUNICATION RADAR NODE</span>
+                <span data-i18n="ui.console_terminal.locked_install_hull_matrix_first" class="action-cost" id="terminal-radar-status">LOCKED — INSTALL HULL MATRIX FIRST</span>
               </div>
-              <p class="action-desc">Establish long-range tactical feeds. Compass tracks nearest supply cache cluster.</p>
-              <p class="action-desc action-desc--cost" id="terminal-radar-cost">COST: 150 TECH / 30 COIN</p>
-              <button class="terminal-action-btn btn-state--locked" id="terminal-btn-radar" disabled>LOCKED</button>
+              <p data-i18n="ui.console_terminal.establish_long_range_tactical_feeds" class="action-desc">Establish long-range tactical feeds. Compass tracks nearest supply cache cluster.</p>
+              <p data-i18n="ui.console_terminal.cost_150_tech_30_coin" class="action-desc action-desc--cost" id="terminal-radar-cost">COST: 150 TECH / 30 COIN</p>
+              <button data-i18n="ui.console_terminal.locked" class="terminal-action-btn btn-state--locked" id="terminal-btn-radar" disabled>LOCKED</button>
             </div>
           </div>
 
           <div id="reactor-compressor-section" class="upgrade-goals-section terminal-tone--goal">
-            <div class="terminal-section-title">GOAL 4</div>
+            <div data-i18n="ui.console_terminal.goal_4" class="terminal-section-title">GOAL 4</div>
             <div class="action-card" data-goal-card="reactorCompressor">
               <div class="action-card-header">
-                <span class="action-title">REACTOR COMPRESSOR</span>
-                <span class="action-cost" id="terminal-reactor-status">LOCKED — INSTALL RADAR NODE FIRST</span>
+                <span data-i18n="ui.console_terminal.reactor_compressor" class="action-title">REACTOR COMPRESSOR</span>
+                <span data-i18n="ui.console_terminal.locked_install_radar_node_first" class="action-cost" id="terminal-reactor-status">LOCKED — INSTALL RADAR NODE FIRST</span>
               </div>
-              <p class="action-desc">Increase generator efficiency. O₂ refill rate doubles. Drain rate slows 20%.</p>
-              <p class="action-desc action-desc--cost" id="terminal-reactor-cost">COST: 300 TECH / 100 COIN</p>
-              <button class="terminal-action-btn btn-state--locked" id="terminal-btn-reactor" disabled>LOCKED</button>
+              <p data-i18n="ui.console_terminal.increase_generator_efficiency_o2_refill" class="action-desc">Increase generator efficiency. O₂ refill rate doubles. Drain rate slows 20%.</p>
+              <p data-i18n="ui.console_terminal.cost_300_tech_100_coin" class="action-desc action-desc--cost" id="terminal-reactor-cost">COST: 300 TECH / 100 COIN</p>
+              <button data-i18n="ui.console_terminal.locked" class="terminal-action-btn btn-state--locked" id="terminal-btn-reactor" disabled>LOCKED</button>
             </div>
           </div>
 
@@ -1913,20 +1913,20 @@
 
         <div id="terminal-tab-objectives-content" class="terminal-tab-content hidden">
           <div class="terminal-objective-log-summary">
-            <div><span>EXPEDITION DAY</span><strong id="terminal-log-day">DAY 1</strong></div>
-            <div><span>CYCLE PHASE</span><strong id="terminal-log-phase">EXPEDITION</strong></div>
-            <div><span>LOCAL LIGHT</span><strong id="terminal-log-light">DAYLIGHT</strong></div>
-            <div><span>NEXT TRANSITION</span><strong id="terminal-log-transition">--:--</strong></div>
+            <div><span data-i18n="ui.console_terminal.expedition_day">EXPEDITION DAY</span><strong data-i18n="ui.console_terminal.day_1" id="terminal-log-day">DAY 1</strong></div>
+            <div><span data-i18n="ui.console_terminal.cycle_phase">CYCLE PHASE</span><strong data-i18n="ui.console_terminal.expedition" id="terminal-log-phase">EXPEDITION</strong></div>
+            <div><span data-i18n="ui.console_terminal.local_light">LOCAL LIGHT</span><strong data-i18n="ui.console_terminal.daylight" id="terminal-log-light">DAYLIGHT</strong></div>
+            <div><span data-i18n="ui.console_terminal.next_transition">NEXT TRANSITION</span><strong id="terminal-log-transition">--:--</strong></div>
           </div>
           <div id="terminal-objectives-grid" class="terminal-objectives-grid">
-            <section class="terminal-section terminal-objective-journal" aria-label="Objective history">
-              <div class="terminal-section-title">EXPEDITION JOURNAL</div>
+            <section data-i18n-aria-label="ui.console_terminal.aria_label_objective_history" class="terminal-section terminal-objective-journal" aria-label="Objective history">
+              <div data-i18n="ui.console_terminal.expedition_journal" class="terminal-section-title">EXPEDITION JOURNAL</div>
               <ol id="terminal-objective-journal-list" class="terminal-objective-journal-list" aria-live="polite"></ol>
             </section>
-            <section class="terminal-section" id="terminal-turret-build-section" aria-label="Optional base defense">
+            <section data-i18n-aria-label="ui.console_terminal.aria_label_optional_base_defense" class="terminal-section" id="terminal-turret-build-section" aria-label="Optional base defense">
               <div class="action-card">
-                <div class="action-card-header"><span class="action-title">DEFENSE TURRET</span></div>
-                <p class="action-desc">Optional north-door defense. Repairing life support does not build a turret.</p>
+                <div class="action-card-header"><span data-i18n="ui.console_terminal.defense_turret" class="action-title">DEFENSE TURRET</span></div>
+                <p data-i18n="ui.console_terminal.optional_north_door_defense_repairing" class="action-desc">Optional north-door defense. Repairing life support does not build a turret.</p>
                 <p class="action-desc" id="terminal-turret-build-status" role="status">REPAIR O₂ TO UNLOCK BLUEPRINT</p>
                 <p class="action-desc action-desc--cost" id="terminal-turret-build-cost"></p>
                 <button type="button" class="terminal-action-btn" id="terminal-build-turret" disabled>REQUIRES O₂ REPAIR</button>
@@ -1940,7 +1940,7 @@
           <div class="terminal-layout terminal-layout--skills">
             <div class="skills-header">
               <span class="skills-unlocked-count" id="skills-unlocked-count">UNLOCKED SKILLS: 0/6</span>
-              <span class="skills-info-hint">BUNKER TREE // CROSS-LINKED PROTOCOLS</span>
+              <span data-i18n="ui.console_terminal.bunker_tree_cross_linked_protocols" class="skills-info-hint">BUNKER TREE // CROSS-LINKED PROTOCOLS</span>
             </div>
             <div class="skills-tree-container">
               <div class="skills-tree-grid" id="skills-tree-grid">
@@ -1961,23 +1961,23 @@
     <!-- In-world O2 Generator Upgrade Modal -->
     <div id="o2-generator-modal" class="modal hidden" aria-hidden="true">
       <div class="modal-content console-terminal-content o2-generator-modal-content">
-        <button class="close-modal" id="close-o2-generator-modal" aria-label="Close O2 generator">×</button>
+        <button data-i18n-aria-label="ui.close_o2_generator.aria_label_close_o2_generator" class="close-modal" id="close-o2-generator-modal" aria-label="Close O2 generator">×</button>
         <div class="terminal-scanline"></div>
         <div class="terminal-flicker"></div>
         <div class="terminal-header">
-          <div class="terminal-title">O₂ GENERATOR MODULE</div>
+          <div data-i18n="ui.o2_generator.o2_generator_module" class="terminal-title">O₂ GENERATOR MODULE</div>
           <div class="terminal-class-badge" id="o2-generator-modal-badge">FIELD STABILIZER</div>
         </div>
         <div class="terminal-body">
           <div class="upgrade-goals-section upgrade-goals-section--generator terminal-tone--generator">
             <div class="action-card action-card--generator" data-goal-card="o2GeneratorWorld">
               <div class="action-card-header">
-                <span class="action-title">SAFE FIELD OUTPUT</span>
-                <span class="action-cost" id="o2-generator-modal-status">ONLINE // LVL 1</span>
+                <span data-i18n="ui.o2_generator.safe_field_output" class="action-title">SAFE FIELD OUTPUT</span>
+                <span data-i18n="ui.o2_generator_modal_status.online_lvl_1" class="action-cost" id="o2-generator-modal-status">ONLINE // LVL 1</span>
               </div>
-              <p class="action-desc" id="o2-generator-modal-cost">NEXT COST: --</p>
-              <p class="action-desc" id="o2-generator-modal-field">FIELD RADIUS -- // REFILL --</p>
-              <p class="action-desc action-desc--hint" id="o2-generator-modal-hint">UPGRADES EXPAND THE BLUE O₂ FIELD.</p>
+              <p data-i18n="ui.o2_generator_modal_cost.next_cost" class="action-desc" id="o2-generator-modal-cost">NEXT COST: --</p>
+              <p data-i18n="ui.o2_generator_modal_field.field_radius_refill" class="action-desc" id="o2-generator-modal-field">FIELD RADIUS -- // REFILL --</p>
+              <p data-i18n="ui.o2_generator_modal_hint.upgrades_expand_the_blue_o2" class="action-desc action-desc--hint" id="o2-generator-modal-hint">UPGRADES EXPAND THE BLUE O₂ FIELD.</p>
               <button class="terminal-action-btn" id="o2-generator-modal-btn">UPGRADE FIELD RADIUS</button>
             </div>
           </div>
@@ -1988,18 +1988,18 @@
     <!-- Base Defense Turret Upgrade / Repair Modal -->
     <div id="base-turret-modal" class="modal hidden" aria-hidden="true">
       <div class="modal-content console-terminal-content base-turret-modal-content">
-        <button class="close-modal" id="close-base-turret-modal" aria-label="Close Base Turret controls">×</button>
+        <button data-i18n-aria-label="ui.close_base_turret.aria_label_close_base_turret" class="close-modal" id="close-base-turret-modal" aria-label="Close Base Turret controls">×</button>
         <div class="terminal-scanline"></div>
         <div class="terminal-flicker"></div>
         <div class="terminal-header">
-          <div class="terminal-title">CAMP DEFENSE TURRET</div>
-          <div class="terminal-class-badge" id="base-turret-modal-badge">DOOR GUARD</div>
+          <div data-i18n="ui.base_turret.camp_defense_turret" class="terminal-title">CAMP DEFENSE TURRET</div>
+          <div data-i18n="ui.base_turret_modal_badge.door_guard" class="terminal-class-badge" id="base-turret-modal-badge">DOOR GUARD</div>
         </div>
         <div class="terminal-body">
           <div class="upgrade-goals-section upgrade-goals-section--generator terminal-tone--generator">
             <div class="action-card action-card--generator">
               <div class="action-card-header">
-                <span class="action-title">TURRET STATUS</span>
+                <span data-i18n="ui.base_turret.turret_status" class="action-title">TURRET STATUS</span>
                 <span class="action-cost" id="base-turret-modal-status">LVL 1 // HP 100/100</span>
               </div>
               <p class="action-desc" id="base-turret-modal-stats">DAMAGE: 4 | RANGE: 7u | RATE: 1.2s</p>
@@ -2020,20 +2020,20 @@
         <div class="terminal-scanline"></div>
         <div class="terminal-flicker"></div>
         <div class="terminal-header">
-          <div class="terminal-title">ELEVATOR ARRIVAL</div>
-          <div class="terminal-class-badge">EXTRACT OR DESCEND</div>
+          <div data-i18n="ui.elevator_choice.elevator_arrival" class="terminal-title">ELEVATOR ARRIVAL</div>
+          <div data-i18n="ui.elevator_choice.extract_or_descend" class="terminal-class-badge">EXTRACT OR DESCEND</div>
         </div>
         <div class="terminal-body">
           <div class="upgrade-goals-section terminal-tone--event">
             <div class="action-card action-card--terminal-event">
               <div class="action-card-header">
-                <span class="action-title">THE DOORS ARE OPEN</span>
-                <span class="action-cost">CHOICE REQUIRED</span>
+                <span data-i18n="ui.elevator_choice.the_doors_are_open" class="action-title">THE DOORS ARE OPEN</span>
+                <span data-i18n="ui.elevator_choice.choice_required" class="action-cost">CHOICE REQUIRED</span>
               </div>
-              <p class="action-desc">The lift can carry the operator back to orbit or down into a deeper sector.</p>
+              <p data-i18n="ui.elevator_choice.the_lift_can_carry_the" class="action-desc">The lift can carry the operator back to orbit or down into a deeper sector.</p>
               <div class="terminal-event-choices">
-                <button class="terminal-action-btn terminal-event-choice btn-state--available" id="elevator-choice-extract">EXTRACT UP</button>
-                <button class="terminal-action-btn terminal-event-choice btn-state--available" id="elevator-choice-descend">DESCEND DEEPER</button>
+                <button data-i18n="ui.elevator_choice.extract_up" class="terminal-action-btn terminal-event-choice btn-state--available" id="elevator-choice-extract">EXTRACT UP</button>
+                <button data-i18n="ui.elevator_choice.descend_deeper" class="terminal-action-btn terminal-event-choice btn-state--available" id="elevator-choice-descend">DESCEND DEEPER</button>
               </div>
             </div>
           </div>
@@ -2044,14 +2044,14 @@
     <!-- Tactical Confirmation Modal -->
     <div id="confirm-modal" class="modal critical-modal hidden">
       <div class="modal-content confirm-modal-content">
-        <h2 class="modal-title confirm-title">CRITICAL ALERT</h2>
+        <h2 data-i18n="ui.confirm.critical_alert" class="modal-title confirm-title">CRITICAL ALERT</h2>
         <p class="confirm-copy">
           TERMINATE THIS CONTRACT IN PLACE?<br>
           FACILITIES WILL BAG THE SUIT AND ARM A BLACK BOX FOR NEXT DESCENT.
         </p>
         <div class="confirm-actions">
-          <button class="abort-btn" id="confirm-yes">ABORT MISSION</button>
-          <button class="confirm-secondary-btn" id="confirm-no">CANCEL</button>
+          <button data-i18n="ui.confirm.abort_mission" class="abort-btn" id="confirm-yes">ABORT MISSION</button>
+          <button data-i18n="ui.confirm.cancel" class="confirm-secondary-btn" id="confirm-no">CANCEL</button>
         </div>
       </div>
     </div>
@@ -2059,12 +2059,12 @@
     <!-- Camp sleep warning: shown only when advancing the day closes story. -->
     <div id="day-rest-warning-modal" class="modal critical-modal day-rest-warning-modal hidden" aria-hidden="true">
       <div class="modal-content confirm-modal-content">
-        <h2 class="modal-title confirm-title">THE NIGHT WILL CLOSE DOORS</h2>
+        <h2 data-i18n="ui.day_rest_warning.the_night_will_close_doors" class="modal-title confirm-title">THE NIGHT WILL CLOSE DOORS</h2>
         <p class="confirm-copy" id="day-rest-warning-copy"></p>
         <div class="day-rest-warning-list" id="day-rest-warning-list"></div>
         <div class="confirm-actions">
-          <button class="abort-btn" id="day-rest-warning-confirm">SLEEP ANYWAY</button>
-          <button class="confirm-secondary-btn" id="day-rest-warning-cancel">STAY AWAKE</button>
+          <button data-i18n="ui.day_rest_warning.sleep_anyway" class="abort-btn" id="day-rest-warning-confirm">SLEEP ANYWAY</button>
+          <button data-i18n="ui.day_rest_warning.stay_awake" class="confirm-secondary-btn" id="day-rest-warning-cancel">STAY AWAKE</button>
         </div>
       </div>
     </div>
@@ -2072,29 +2072,29 @@
     <!-- Archive Simulations submenu (RGB and future unlockable stories) -->
     <div id="archive-sims-modal" class="modal hidden">
       <div class="modal-content archive-sims-modal-content">
-        <h2 class="modal-title">ARCHIVE SIMULATIONS</h2>
+        <h2 data-i18n="ui.archive_sims.archive_simulations" class="modal-title">ARCHIVE SIMULATIONS</h2>
         <div class="archive-sim-card">
-          <div class="archive-sim-card__title">RGB: RIVERSIDE GLOBAL 'BOTICS</div>
-          <div class="archive-sim-card__status" id="archive-sim-rgb-status">NOT STARTED</div>
+          <div data-i18n="ui.archive_sims.rgb_riverside_global_botics" class="archive-sim-card__title">RGB: RIVERSIDE GLOBAL 'BOTICS</div>
+          <div data-i18n="ui.archive_sims.not_started" class="archive-sim-card__status" id="archive-sim-rgb-status">NOT STARTED</div>
           <div class="archive-sim-card__endings" id="archive-sim-rgb-endings"></div>
           <div class="archive-sim-chapters" id="archive-sim-rgb-chapters"></div>
-          <button class="start-btn" id="archive-sim-rgb-launch">LAUNCH CONTINUED RUN</button>
+          <button data-i18n="ui.archive_sims.launch_continued_run" class="start-btn" id="archive-sim-rgb-launch">LAUNCH CONTINUED RUN</button>
         </div>
-        <button class="abort-btn" id="archive-sims-modal-close">CLOSE</button>
+        <button data-i18n="ui.archive_sims_modal_close.close" class="abort-btn" id="archive-sims-modal-close">CLOSE</button>
       </div>
     </div>
 
     <div id="reset-save-confirm-modal" class="modal critical-modal hidden" aria-hidden="true">
       <div class="modal-content confirm-modal-content">
-        <h2 class="modal-title confirm-title">RESET SAVE DATA</h2>
+        <h2 data-i18n="ui.reset_save_confirm.reset_save_data" class="modal-title confirm-title">RESET SAVE DATA</h2>
         <p class="confirm-copy">
           START A NEW GAME?<br>
           RGB PROGRESS, ALL ACHIEVEMENTS, UNLOCKS, BANKED SALVAGE, CODEX, FABRICATIONS, BEST SCORES, AND PROFILE DATA WILL BE CLEARED ON THIS DEVICE.<br><br>
           AUDIO, DISPLAY, AND CONTROL PREFERENCES WILL BE KEPT.
         </p>
         <div class="confirm-actions">
-          <button class="abort-btn" id="reset-save-confirm">RESET SAVE</button>
-          <button class="confirm-secondary-btn" id="reset-save-cancel">CANCEL</button>
+          <button data-i18n="ui.reset_save_confirm.reset_save" class="abort-btn" id="reset-save-confirm">RESET SAVE</button>
+          <button data-i18n="ui.reset_save_confirm.cancel" class="confirm-secondary-btn" id="reset-save-cancel">CANCEL</button>
         </div>
       </div>
     </div>
@@ -2102,29 +2102,29 @@
     <!-- Quit Game Confirmation Modal -->
     <div id="quit-confirm-modal" class="modal critical-modal hidden" aria-hidden="true">
       <div class="modal-content confirm-modal-content">
-        <h2 class="modal-title confirm-title">QUIT HUNKER BUNKER</h2>
+        <h2 data-i18n="ui.quit_confirm.quit_hunker_bunker" class="modal-title confirm-title">QUIT HUNKER BUNKER</h2>
         <p class="confirm-copy">
           EXIT APPLICATION?<br>
           ARE YOU SURE YOU WANT TO QUIT? ANY UNSAVED PROGRESS IN AN ACTIVE RUN WILL BE LOST.
         </p>
         <div class="confirm-actions">
-          <button class="abort-btn" id="quit-confirm-btn">CONFIRM QUIT</button>
-          <button class="confirm-secondary-btn" id="quit-cancel-btn">CANCEL</button>
+          <button data-i18n="ui.quit_confirm.confirm_quit" class="abort-btn" id="quit-confirm-btn">CONFIRM QUIT</button>
+          <button data-i18n="ui.quit_confirm.cancel" class="confirm-secondary-btn" id="quit-cancel-btn">CANCEL</button>
         </div>
       </div>
     </div>
 
     <div id="camp-choice-modal" class="modal camp-choice-modal hidden" aria-hidden="true">
       <div class="modal-content camp-choice-panel">
-        <button class="close-modal camp-choice-close" id="close-camp-choice" aria-label="Close camp decision">×</button>
-        <div class="camp-choice-kicker" id="camp-choice-kicker">CAMP CONTACT</div>
-        <h2 class="modal-title camp-choice-title" id="camp-choice-title">CAMP DECISION</h2>
+        <button data-i18n-aria-label="ui.camp_choice.aria_label_close_camp_decision" class="close-modal camp-choice-close" id="close-camp-choice" aria-label="Close camp decision">×</button>
+        <div data-i18n="ui.camp_choice.camp_contact" class="camp-choice-kicker" id="camp-choice-kicker">CAMP CONTACT</div>
+        <h2 data-i18n="ui.camp_choice.camp_decision" class="modal-title camp-choice-title" id="camp-choice-title">CAMP DECISION</h2>
         <div class="camp-choice-status" id="camp-choice-status"></div>
         <p class="camp-choice-copy" id="camp-choice-copy"></p>
         
         <!-- Boarding Manifest Forecast (hidden by default, shown during boarding choice) -->
         <div id="boarding-manifest-forecast" class="boarding-manifest-forecast hidden">
-          <div class="manifest-forecast-title">◇ VESSEL LAUNCH MANIFEST FORECAST ◇</div>
+          <div data-i18n="ui.camp_choice.vessel_launch_manifest_forecast" class="manifest-forecast-title">◇ VESSEL LAUNCH MANIFEST FORECAST ◇</div>
           <div class="manifest-seats-grid">
             <!-- Dynamically populated seats forecast -->
           </div>
@@ -2135,15 +2135,15 @@
 
         <!-- Pre-confirmation warning panel (shown when an action is selected) -->
         <div class="camp-choice-confirm hidden" id="camp-choice-confirm" aria-live="polite">
-          <div class="camp-choice-confirm__kicker">⚠ IRREVERSIBLE CHOICE // STRATEGIC RECORD ⚠</div>
-          <h3 class="camp-choice-confirm__arc" id="camp-choice-confirm-arc">LEADER ARC</h3>
+          <div data-i18n="ui.camp_choice.irreversible_choice_strategic_record" class="camp-choice-confirm__kicker">⚠ IRREVERSIBLE CHOICE // STRATEGIC RECORD ⚠</div>
+          <h3 data-i18n="ui.camp_choice.leader_arc" class="camp-choice-confirm__arc" id="camp-choice-confirm-arc">LEADER ARC</h3>
           <div class="camp-choice-confirm__action" id="camp-choice-confirm-action"></div>
           <div class="camp-choice-confirm__narrative" id="camp-choice-confirm-narrative"></div>
           <div class="camp-choice-confirm__deltas" id="camp-choice-confirm-deltas"></div>
           <div class="camp-choice-confirm__locks" id="camp-choice-confirm-locks"></div>
           <div class="camp-choice-confirm__controls">
-            <button type="button" class="camp-choice-confirm-btn camp-choice-confirm-btn--proceed" id="camp-choice-confirm-proceed">CONFIRM DECISION</button>
-            <button type="button" class="camp-choice-confirm-btn camp-choice-confirm-btn--back" id="camp-choice-confirm-back">BACK TO OPTIONS</button>
+            <button data-i18n="ui.camp_choice.confirm_decision" type="button" class="camp-choice-confirm-btn camp-choice-confirm-btn--proceed" id="camp-choice-confirm-proceed">CONFIRM DECISION</button>
+            <button data-i18n="ui.camp_choice.back_to_options" type="button" class="camp-choice-confirm-btn camp-choice-confirm-btn--back" id="camp-choice-confirm-back">BACK TO OPTIONS</button>
           </div>
         </div>
       </div>
@@ -2157,8 +2157,8 @@
       <div class="song-interstitial__door song-interstitial__door--left" aria-hidden="true"></div>
       <div class="song-interstitial__door song-interstitial__door--right" aria-hidden="true"></div>
       <div class="song-interstitial__caption">
-        <span id="song-interstitial-track">TRACK 00</span>
-        <strong id="song-interstitial-title">SIGNAL ACQUIRED</strong>
+        <span data-i18n="ui.song_interstitial_track.track_00" id="song-interstitial-track">TRACK 00</span>
+        <strong data-i18n="ui.song_interstitial_title.signal_acquired" id="song-interstitial-title">SIGNAL ACQUIRED</strong>
       </div>
     </div>
 
@@ -2184,11 +2184,11 @@
     </div>
 
     <div class="diag-typography">
-      <div class="typo-sample scale-xl">XL: 18</div>
-      <div class="typo-sample scale-lg">LG: 06</div>
-      <div class="typo-sample scale-md">MD: 04</div>
-      <div class="typo-sample scale-sm">SM: 02.5</div>
-      <div class="typo-sample scale-xs">XS: 01.8</div>
+      <div data-i18n="ui.game_viewport.xl_18" class="typo-sample scale-xl">XL: 18</div>
+      <div data-i18n="ui.game_viewport.lg_06" class="typo-sample scale-lg">LG: 06</div>
+      <div data-i18n="ui.game_viewport.md_04" class="typo-sample scale-md">MD: 04</div>
+      <div data-i18n="ui.game_viewport.sm_02_5" class="typo-sample scale-sm">SM: 02.5</div>
+      <div data-i18n="ui.game_viewport.xs_01_8" class="typo-sample scale-xs">XS: 01.8</div>
     </div>
 
     <!-- Settings Modal -->
@@ -2199,22 +2199,22 @@
           <button class="close-modal" id="close-settings" data-i18n-aria-label="ui.aria.close_settings" aria-label="Close system settings">×</button>
         </div>
 
-        <div class="settings-tabs" role="tablist" aria-label="Settings categories">
-          <button type="button" class="settings-tab active" data-settings-tab="session" role="tab" aria-selected="true">SESSION</button>
-          <button type="button" class="settings-tab" data-settings-tab="audio" role="tab" aria-selected="false">AUDIO</button>
-          <button type="button" class="settings-tab" data-settings-tab="controls" role="tab" aria-selected="false">CONTROLS</button>
-          <button type="button" class="settings-tab" data-settings-tab="camera" role="tab" aria-selected="false">CAMERA &amp; HUD</button>
-          <button type="button" class="settings-tab" data-settings-tab="accessibility" role="tab" aria-selected="false">ACCESSIBILITY</button>
-          <button type="button" class="settings-tab" data-settings-tab="profile" role="tab" aria-selected="false">PROFILE &amp; SAVES</button>
+        <div data-i18n-aria-label="ui.settings.aria_label_settings_categories" class="settings-tabs" role="tablist" aria-label="Settings categories">
+          <button data-i18n="ui.settings.session" type="button" class="settings-tab active" data-settings-tab="session" role="tab" aria-selected="true">SESSION</button>
+          <button data-i18n="ui.settings.audio" type="button" class="settings-tab" data-settings-tab="audio" role="tab" aria-selected="false">AUDIO</button>
+          <button data-i18n="ui.settings.controls" type="button" class="settings-tab" data-settings-tab="controls" role="tab" aria-selected="false">CONTROLS</button>
+          <button data-i18n="ui.settings.camera_hud" type="button" class="settings-tab" data-settings-tab="camera" role="tab" aria-selected="false">CAMERA &amp; HUD</button>
+          <button data-i18n="ui.settings.accessibility" type="button" class="settings-tab" data-settings-tab="accessibility" role="tab" aria-selected="false">ACCESSIBILITY</button>
+          <button data-i18n="ui.settings.profile_saves" type="button" class="settings-tab" data-settings-tab="profile" role="tab" aria-selected="false">PROFILE &amp; SAVES</button>
         </div>
 
         <div class="settings-modal-content">
           <!-- Section 1: Display & Graphics -->
         <div class="settings-category-group" data-settings-panel="session">
-          <div class="settings-category-header">SESSION &amp; DISPLAY</div>
+          <div data-i18n="ui.settings.session_display" class="settings-category-header">SESSION &amp; DISPLAY</div>
           <div class="setting-item setting-item--action">
-            <span>RETURN TO GAME</span>
-            <button type="button" class="calibrate-btn settings-action-btn" id="resume-settings">RESUME</button>
+            <span data-i18n="ui.settings.return_to_game">RETURN TO GAME</span>
+            <button data-i18n="ui.settings.resume" type="button" class="calibrate-btn settings-action-btn" id="resume-settings">RESUME</button>
           </div>
           <!-- Stage Resolution was a developer layout label, not a renderer
                setting. Keep the internal dev-console preset, but do not offer
@@ -2230,8 +2230,8 @@
             <label class="toggle"><input type="checkbox" id="main-debug-toggle"> <span class="slider"></span></label>
           </div>
           <div class="setting-item setting-item--action setting-item--danger" id="abort-mission-setting-row">
-            <span>ABORT CURRENT MISSION</span>
-            <button class="abort-btn hidden" id="abort-mission">ABORT MISSION</button>
+            <span data-i18n="ui.settings.abort_current_mission">ABORT CURRENT MISSION</span>
+            <button data-i18n="ui.settings.abort_mission" class="abort-btn hidden" id="abort-mission">ABORT MISSION</button>
           </div>
           <div class="setting-item setting-item--action setting-item--danger">
             <span data-i18n="ui.settings.exit_app">EXIT APPLICATION</span>
@@ -2255,7 +2255,7 @@
 
         <!-- Section 3: Gameplay & Accessibility -->
         <div class="settings-category-group hidden" data-settings-panel="controls">
-          <div class="settings-category-header">CONTROLS</div>
+          <div data-i18n="ui.settings.controls" class="settings-category-header">CONTROLS</div>
           <div class="setting-item setting-item--action">
             <div class="setting-label-with-badge">
               <span data-i18n="ui.settings.language">LANGUAGE / 语言 / ЯЗЫК</span>
@@ -2356,7 +2356,7 @@
           <div class="setting-item setting-item--action">
             <div class="setting-label-with-badge">
               <span data-i18n="ui.settings.crosshair_color">CROSSHAIR COLOR</span>
-              <span class="setting-color-preview-badge" id="crosshair-preview-badge" title="Active crosshair color">
+              <span data-i18n-title="ui.settings.title_active_crosshair_color" class="setting-color-preview-badge" id="crosshair-preview-badge" title="Active crosshair color">
                 <span class="crosshair-preview-dot" id="crosshair-badge-dot"></span>
                 <span class="crosshair-preview-text" id="crosshair-badge-text">#FF9F1C</span>
               </span>
@@ -2403,11 +2403,11 @@
         </div>
 
         <div class="settings-category-group hidden" data-settings-panel="camera">
-          <div class="settings-category-header">CAMERA &amp; HUD</div>
+          <div data-i18n="ui.settings.camera_hud" class="settings-category-header">CAMERA &amp; HUD</div>
         </div>
 
         <div class="settings-category-group hidden" data-settings-panel="accessibility">
-          <div class="settings-category-header">ACCESSIBILITY</div>
+          <div data-i18n="ui.settings.accessibility" class="settings-category-header">ACCESSIBILITY</div>
         </div>
 
         <!-- Section 4: Operator & System Data -->
@@ -2415,11 +2415,11 @@
           <div class="settings-category-header" data-i18n="ui.settings.cat_operator">OPERATOR & SYSTEM DATA</div>
           <div class="setting-item setting-item--operator">
             <span data-i18n="ui.settings.callsign">OPERATOR CALLSIGN</span>
-            <input type="text" id="operator-callsign" data-i18n-aria-label="ui.aria.callsign_input" class="operator-callsign-input" maxlength="16" placeholder="AGENT" autocomplete="off" spellcheck="false" aria-label="Operator callsign">
+            <input data-i18n-placeholder="ui.settings.placeholder_agent" type="text" id="operator-callsign" data-i18n-aria-label="ui.aria.callsign_input" class="operator-callsign-input" maxlength="16" placeholder="AGENT" autocomplete="off" spellcheck="false" aria-label="Operator callsign">
           </div>
           <div class="setting-item">
             <span data-i18n="ui.settings.cloud_sync">STEAM CLOUD SYNC</span>
-            <span id="setting-steam-cloud-status" class="setting-val-display" data-state="checking">CHECKING…</span>
+            <span data-i18n="ui.settings.checking" id="setting-steam-cloud-status" class="setting-val-display" data-state="checking">CHECKING…</span>
           </div>
           <!-- Mature Content Audit is a reviewer/QA tool reachable through
                its authorized F9 workflow; it is not a player setting. -->
@@ -2440,20 +2440,20 @@
       <div class="modal-content audio-mixer-panel save-data-panel">
         <button class="close-modal audio-mixer-close" id="close-save-data">×</button>
         <h2 class="modal-title" data-i18n="ui.settings.save_data">SAVE DATA</h2>
-        <p class="save-data-hint">Export a portable save code or paste one below to restore progress. Importing overwrites current data on this device.</p>
-        <label class="save-data-code-label" for="save-data-code">PORTABLE SAVE CODE</label>
-        <textarea id="save-data-code" class="save-data-code" rows="5" placeholder="EXPORT OR PASTE SAVE CODE" autocomplete="off" spellcheck="false"></textarea>
+        <p data-i18n="ui.save_data.export_a_portable_save_code" class="save-data-hint">Export a portable save code or paste one below to restore progress. Importing overwrites current data on this device.</p>
+        <label data-i18n="ui.save_data.portable_save_code" class="save-data-code-label" for="save-data-code">PORTABLE SAVE CODE</label>
+        <textarea data-i18n-placeholder="ui.save_data.placeholder_export_or_paste" id="save-data-code" class="save-data-code" rows="5" placeholder="EXPORT OR PASTE SAVE CODE" autocomplete="off" spellcheck="false"></textarea>
         <div class="save-data-status" id="save-data-status" role="status" aria-live="polite"></div>
         <div class="audio-mixer-actions save-data-actions">
-          <button type="button" class="settings-action-btn settings-action-btn--save" id="export-save" data-i18n="ui.action.export_copy" title="Generate and copy a portable save code">EXPORT + COPY</button>
-          <button type="button" class="settings-action-btn settings-action-btn--reset" id="import-save" data-i18n="ui.action.import_data" title="Restore progress from the pasted save code">IMPORT DATA</button>
+          <button data-i18n-title="ui.save_data.title_generate_and_copy" type="button" class="settings-action-btn settings-action-btn--save" id="export-save" data-i18n="ui.action.export_copy" title="Generate and copy a portable save code">EXPORT + COPY</button>
+          <button data-i18n-title="ui.save_data.title_restore_progress_from" type="button" class="settings-action-btn settings-action-btn--reset" id="import-save" data-i18n="ui.action.import_data" title="Restore progress from the pasted save code">IMPORT DATA</button>
         </div>
       </div>
     </div>
 
     <div id="crosshair-color-popup" class="modal settings-subpanel audio-mixer-modal hidden" aria-hidden="true">
       <div class="modal-content audio-mixer-panel crosshair-color-panel">
-        <button class="close-modal audio-mixer-close" id="close-crosshair-color" aria-label="Close crosshair color menu">×</button>
+        <button data-i18n-aria-label="ui.crosshair_color.aria_label_close_crosshair_color" class="close-modal audio-mixer-close" id="close-crosshair-color" aria-label="Close crosshair color menu">×</button>
         <h2 class="modal-title" data-i18n="ui.settings.crosshair_color">CROSSHAIR COLOR</h2>
         <p class="crosshair-color-hint" data-i18n="ui.settings.crosshair_hint">Select a tactical reticle preset or configure a custom color.</p>
         <div class="crosshair-color-modal-body">
@@ -2655,27 +2655,27 @@
         <button class="close-modal audio-mixer-close" id="close-audio-mixer">×</button>
         <h2 class="modal-title" data-i18n="ui.settings.audio_mixer">AUDIO MIXER</h2>
         <label class="audio-slider-row" for="audio-master-slider">
-          <span class="audio-slider-row__label">MASTER</span>
+          <span data-i18n="ui.audio_mixer.master" class="audio-slider-row__label">MASTER</span>
           <input type="range" id="audio-master-slider" min="0" max="100" step="1" value="100">
           <span class="audio-slider-row__value" id="audio-master-value">100%</span>
         </label>
         <label class="audio-slider-row" for="audio-music-slider">
-          <span class="audio-slider-row__label">MUSIC</span>
+          <span data-i18n="ui.audio_mixer.music" class="audio-slider-row__label">MUSIC</span>
           <input type="range" id="audio-music-slider" min="0" max="100" step="1" value="100">
           <span class="audio-slider-row__value" id="audio-music-value">100%</span>
         </label>
         <label class="audio-slider-row" for="audio-vfx-slider">
-          <span class="audio-slider-row__label">VFX</span>
+          <span data-i18n="ui.audio_mixer.vfx" class="audio-slider-row__label">VFX</span>
           <input type="range" id="audio-vfx-slider" min="0" max="100" step="1" value="100">
           <span class="audio-slider-row__value" id="audio-vfx-value">100%</span>
         </label>
         <label class="audio-slider-row" for="audio-voice-slider">
-          <span class="audio-slider-row__label">VOICE</span>
+          <span data-i18n="ui.audio_mixer.voice" class="audio-slider-row__label">VOICE</span>
           <input type="range" id="audio-voice-slider" min="0" max="100" step="1" value="100">
           <span class="audio-slider-row__value" id="audio-voice-value">100%</span>
         </label>
         <label class="audio-slider-row" for="audio-voice-toggle" style="display: flex; align-items: center; justify-content: space-between; margin-top: 8px;">
-          <span class="audio-slider-row__label">CHARACTER VOICE READOUTS</span>
+          <span data-i18n="ui.audio_mixer.character_voice_readouts" class="audio-slider-row__label">CHARACTER VOICE READOUTS</span>
           <label class="toggle"><input type="checkbox" id="audio-voice-toggle" checked> <span class="slider"></span></label>
         </label>
         <div class="audio-mixer-actions">
@@ -2688,8 +2688,8 @@
       <div class="modal-content controls-panel">
         <button class="close-modal controls-close" id="close-controls">×</button>
         <h2 class="modal-title" data-i18n="ui.modal.controls">CONTROLS</h2>
-        <p class="controls-hint"><strong>STEAM DECK:</strong> Left stick moves or navigates · Right stick aims and controls the visible pointer · A accepts/interacts · B backs out/dodges · Menu opens settings.</p>
-        <p class="controls-hint"><strong>DESKTOP:</strong> Click a slot, then press a key to bind it. ESC cancels.</p>
+        <p class="controls-hint"><strong data-i18n="ui.controls.steam_deck">STEAM DECK:</strong> Left stick moves or navigates · Right stick aims and controls the visible pointer · A accepts/interacts · B backs out/dodges · Menu opens settings.</p>
+        <p class="controls-hint"><strong data-i18n="ui.controls.desktop">DESKTOP:</strong> Click a slot, then press a key to bind it. ESC cancels.</p>
         <div class="controls-list" id="controls-list"></div>
         <div class="controls-actions">
           <button type="button" class="settings-action-btn settings-action-btn--reset" id="reset-controls" data-i18n="ui.action.reset">RESET</button>
@@ -2706,7 +2706,7 @@
 
         <div class="terminal-header">
           <div class="terminal-title" data-i18n="ui.dlg.channel">MOTHERSHIP UPLINK CHANNEL 7</div>
-          <div class="terminal-class-badge" id="mothership-class-badge">SCOUT LINK [ENCRYPTED]</div>
+          <div data-i18n="ui.mothership_dialogue.scout_link_encrypted" class="terminal-class-badge" id="mothership-class-badge">SCOUT LINK [ENCRYPTED]</div>
         </div>
 
         <div class="mothership-dialogue-columns">
@@ -2737,15 +2737,15 @@
 
     <div id="leader-conversation-modal" class="modal leader-conversation-modal hidden" aria-hidden="true">
       <div class="leader-conversation-panel" role="dialog" aria-modal="true" aria-labelledby="leader-conversation-name">
-        <button type="button" id="leader-conversation-close" class="close-modal leader-conversation-close" aria-label="Leave conversation">×</button>
-        <section class="leader-conversation-visual" aria-label="Speaker">
+        <button data-i18n-aria-label="ui.leader_conversation.aria_label_leave_conversation" type="button" id="leader-conversation-close" class="close-modal leader-conversation-close" aria-label="Leave conversation">×</button>
+        <section data-i18n-aria-label="ui.leader_conversation.aria_label_speaker" class="leader-conversation-visual" aria-label="Speaker">
           <canvas id="leader-conversation-canvas" class="leader-conversation-canvas"></canvas>
           <img id="leader-conversation-portrait" class="leader-conversation-portrait" src="/lore_portraits/survivor_00.webp" alt="">
           <div class="leader-conversation-scanlines" aria-hidden="true"></div>
         </section>
         <section class="leader-conversation-content">
-          <div id="leader-conversation-kicker" class="leader-conversation-kicker">CAMP CONTACT</div>
-          <h2 id="leader-conversation-name" class="leader-conversation-name">SURVIVOR</h2>
+          <div data-i18n="ui.leader_conversation.camp_contact" id="leader-conversation-kicker" class="leader-conversation-kicker">CAMP CONTACT</div>
+          <h2 data-i18n="ui.leader_conversation.survivor" id="leader-conversation-name" class="leader-conversation-name">SURVIVOR</h2>
           <div id="leader-conversation-meta" class="leader-conversation-meta"></div>
           <div id="leader-conversation-line" class="leader-conversation-line" aria-live="polite"></div>
           <div class="leader-conversation-progress">
@@ -2753,8 +2753,8 @@
             <div id="leader-conversation-guidance" class="leader-conversation-guidance"></div>
           </div>
           <div class="leader-conversation-actions">
-            <button type="button" id="leader-conversation-continue">CONTINUE</button>
-            <button type="button" id="leader-conversation-leave">LEAVE</button>
+            <button data-i18n="ui.leader_conversation.continue" type="button" id="leader-conversation-continue">CONTINUE</button>
+            <button data-i18n="ui.leader_conversation.leave" type="button" id="leader-conversation-leave">LEAVE</button>
           </div>
         </section>
       </div>
@@ -2772,7 +2772,7 @@
             </div>
             <span id="snail-encounter-player-name" class="snail-combatant-name">OPERATOR</span>
           </div>
-          <div class="snail-encounter-vs">VS</div>
+          <div data-i18n="ui.snail_encounter.vs" class="snail-encounter-vs">VS</div>
           <div class="snail-combatant snail-combatant--enemy" id="snail-encounter-enemy-card">
             <div class="snail-combatant-avatar-wrap">
               <img id="snail-encounter-enemy-img" src="/cybersnail.png" alt="Snail Combatant" class="snail-combatant-img" />
@@ -2783,11 +2783,11 @@
         <div id="snail-encounter-log" class="snail-encounter-log" aria-live="polite"></div>
         <div class="snail-encounter-bars">
           <div class="snail-encounter-bar-row">
-            <span>SNAIL HP</span>
+            <span data-i18n="ui.snail_encounter.snail_hp">SNAIL HP</span>
             <div class="snail-encounter-bar"><div id="snail-encounter-hp-fill" class="snail-encounter-bar-fill"></div></div>
           </div>
           <div class="snail-encounter-bar-row">
-            <span>RESOLVE</span>
+            <span data-i18n="ui.snail_encounter.resolve">RESOLVE</span>
             <div class="snail-encounter-bar"><div id="snail-encounter-resolve-fill" class="snail-encounter-bar-fill snail-encounter-bar-fill--resolve"></div></div>
           </div>
         </div>
@@ -2808,7 +2808,7 @@
         <!-- Header -->
         <div class="net-header">
           <div class="net-header-meta">
-            <span class="net-header-kicker">◈ SUB-SURFACE COMMS // COMBAT DATA-LINK v2.1</span>
+            <span data-i18n="ui.multiplayer.sub_surface_comms_combat_data" class="net-header-kicker">◈ SUB-SURFACE COMMS // COMBAT DATA-LINK v2.1</span>
             <div class="net-header-title-row">
               <h2 class="net-modal-title">TACTICAL NET <span class="net-title-accent">// RELAY COMMAND</span></h2>
               <div class="net-status-badge">
@@ -2817,7 +2817,7 @@
               </div>
             </div>
           </div>
-          <button class="close-modal" id="close-multiplayer-modal" aria-label="Close Tactical Net">×</button>
+          <button data-i18n-aria-label="ui.close_multiplayer.aria_label_close_tactical_net" class="close-modal" id="close-multiplayer-modal" aria-label="Close Tactical Net">×</button>
         </div>
 
         <!-- Mode Selector Cards -->
@@ -2831,57 +2831,57 @@
           <button type="button" class="net-mode-card active" id="net-mode-solo-btn">
             <div class="net-mode-card__badge">
               <span class="net-mode-card__icon">▲</span>
-              <span class="net-mode-card__tag">SOLO</span>
+              <span data-i18n="ui.multiplayer.solo" class="net-mode-card__tag">SOLO</span>
             </div>
             <div class="net-mode-card__info">
-              <div class="net-mode-card__title">SOLO OPERATION</div>
-              <div class="net-mode-card__meta">1 OPERATIVE // NO SQUAD, NO RIVALS</div>
+              <div data-i18n="ui.multiplayer.solo_operation" class="net-mode-card__title">SOLO OPERATION</div>
+              <div data-i18n="ui.multiplayer.1_operative_no_squad_no" class="net-mode-card__meta">1 OPERATIVE // NO SQUAD, NO RIVALS</div>
             </div>
             <div class="net-mode-card__perks">
-              <span class="net-perk-chip">NO RELAY REQUIRED</span>
-              <span class="net-perk-chip">FULL SALVAGE CLAIM</span>
+              <span data-i18n="ui.multiplayer.no_relay_required" class="net-perk-chip">NO RELAY REQUIRED</span>
+              <span data-i18n="ui.multiplayer.full_salvage_claim" class="net-perk-chip">FULL SALVAGE CLAIM</span>
             </div>
-            <div class="net-mode-card__indicator">ACTIVE MODE</div>
+            <div data-i18n="ui.multiplayer.active_mode" class="net-mode-card__indicator">ACTIVE MODE</div>
           </button>
 
           <button type="button" class="net-mode-card" id="net-mode-coop-btn">
             <div class="net-mode-card__badge">
               <span class="net-mode-card__icon">◈</span>
-              <span class="net-mode-card__tag">PVE SQUAD</span>
+              <span data-i18n="ui.multiplayer.pve_squad" class="net-mode-card__tag">PVE SQUAD</span>
             </div>
             <div class="net-mode-card__info">
-              <div class="net-mode-card__title">CO-OP EXPEDITION</div>
-              <div class="net-mode-card__meta">2-4 OPERATIVES // SHARED SALVAGE & REVIVAL</div>
+              <div data-i18n="ui.multiplayer.co_op_expedition" class="net-mode-card__title">CO-OP EXPEDITION</div>
+              <div data-i18n="ui.multiplayer.2_4_operatives_shared_salvage" class="net-mode-card__meta">2-4 OPERATIVES // SHARED SALVAGE & REVIVAL</div>
             </div>
             <div class="net-mode-card__perks">
-              <span class="net-perk-chip">SYNCED TELEMETRY</span>
-              <span class="net-perk-chip">EMERGENCY RESCUE</span>
-              <span class="net-perk-chip">SHARED O₂ LINK</span>
+              <span data-i18n="ui.multiplayer.synced_telemetry" class="net-perk-chip">SYNCED TELEMETRY</span>
+              <span data-i18n="ui.multiplayer.emergency_rescue" class="net-perk-chip">EMERGENCY RESCUE</span>
+              <span data-i18n="ui.multiplayer.shared_o2_link" class="net-perk-chip">SHARED O₂ LINK</span>
             </div>
-            <div class="net-mode-card__indicator">SELECT MODE</div>
+            <div data-i18n="ui.multiplayer.select_mode" class="net-mode-card__indicator">SELECT MODE</div>
           </button>
 
           <button type="button" class="net-mode-card" id="net-mode-pvp-btn">
             <div class="net-mode-card__badge net-mode-card__badge--pvp">
               <span class="net-mode-card__icon">⚔</span>
-              <span class="net-mode-card__tag">PVP DUEL</span>
+              <span data-i18n="ui.multiplayer.pvp_duel" class="net-mode-card__tag">PVP DUEL</span>
             </div>
             <div class="net-mode-card__info">
-              <div class="net-mode-card__title">PVP SECTOR SKIRMISH</div>
-              <div class="net-mode-card__meta">CONTESTED BUNKER // HIGH-TIER DROPS</div>
+              <div data-i18n="ui.multiplayer.pvp_sector_skirmish" class="net-mode-card__title">PVP SECTOR SKIRMISH</div>
+              <div data-i18n="ui.multiplayer.contested_bunker_high_tier_drops" class="net-mode-card__meta">CONTESTED BUNKER // HIGH-TIER DROPS</div>
             </div>
             <div class="net-mode-card__perks">
-              <span class="net-perk-chip net-perk-chip--pvp">CONTESTED CORRIDORS</span>
-              <span class="net-perk-chip net-perk-chip--pvp">FULL LOOT CLAIM</span>
-              <span class="net-perk-chip net-perk-chip--pvp">RIVAL BOUNTIES</span>
+              <span data-i18n="ui.multiplayer.contested_corridors" class="net-perk-chip net-perk-chip--pvp">CONTESTED CORRIDORS</span>
+              <span data-i18n="ui.multiplayer.full_loot_claim" class="net-perk-chip net-perk-chip--pvp">FULL LOOT CLAIM</span>
+              <span data-i18n="ui.multiplayer.rival_bounties" class="net-perk-chip net-perk-chip--pvp">RIVAL BOUNTIES</span>
             </div>
-            <div class="net-mode-card__indicator">SELECT MODE</div>
+            <div data-i18n="ui.multiplayer.select_mode" class="net-mode-card__indicator">SELECT MODE</div>
           </button>
         </div>
 
         <!-- Mode Mission Briefing Banner -->
         <div class="net-briefing-banner">
-          <div class="net-briefing-label">MISSION OBJECTIVE:</div>
+          <div data-i18n="ui.multiplayer.mission_objective" class="net-briefing-label">MISSION OBJECTIVE:</div>
           <div class="net-mode-description" id="net-mode-description">
             CO-OP EXPEDITION: Deploy joint squads through the outer ring. Shared salvage, synchronized telemetry, and emergency revival.
           </div>
@@ -2893,23 +2893,23 @@
           <!-- Column 1: Network & Sector Frequency -->
           <div class="net-column net-column--telemetry">
             <div class="net-panel-header">
-              <span class="net-panel-title">SECTOR FREQUENCY & UPLINK</span>
-              <span class="net-panel-badge">CH-07</span>
+              <span data-i18n="ui.multiplayer.sector_frequency_uplink" class="net-panel-title">SECTOR FREQUENCY & UPLINK</span>
+              <span data-i18n="ui.multiplayer.ch_07" class="net-panel-badge">CH-07</span>
             </div>
 
             <div class="net-telemetry-box">
               <div class="net-field-group">
-                <span class="net-field-label">SECTOR ROOM CODE</span>
+                <span data-i18n="ui.multiplayer.sector_room_code" class="net-field-label">SECTOR ROOM CODE</span>
                 <div class="net-code-display">
                   <span class="net-code-val" id="net-room-code-val">SECTOR-7</span>
-                  <button type="button" class="net-code-copy-btn" id="net-copy-code-btn" title="Copy Sector Frequency">
+                  <button data-i18n-title="ui.multiplayer.title_copy_sector_frequency" type="button" class="net-code-copy-btn" id="net-copy-code-btn" title="Copy Sector Frequency">
                     <span>📋</span> COPY
                   </button>
                   <!-- docs/steam-lobby-integration-plan-2026-08-20.md step 4:
                        Electron/Steam only -- hidden by default, shown by
                        multiplayerLobby.js's updateUiState() once a Steam
                        lobby exists to invite a friend into. -->
-                  <button type="button" class="net-code-copy-btn hidden" id="net-steam-invite-btn" title="Invite a Steam Friend">
+                  <button data-i18n-title="ui.multiplayer.title_invite_a_steam" type="button" class="net-code-copy-btn hidden" id="net-steam-invite-btn" title="Invite a Steam Friend">
                     <span>👥</span> INVITE FRIEND
                   </button>
                 </div>
@@ -2923,18 +2923,18 @@
                    hosting a lobby that doesn't exist yet -- hidden once
                    connected (multiplayerLobby.js's updateUiState()). -->
               <div class="net-field-group" id="net-private-lobby-group">
-                <span class="net-field-label">LOBBY ACCESS</span>
+                <span data-i18n="ui.multiplayer.lobby_access" class="net-field-label">LOBBY ACCESS</span>
                 <div class="net-relay-display">
                   <label class="net-private-toggle-label">
                     <input type="checkbox" id="net-private-toggle">
-                    <span>PRIVATE (INVITE-ONLY)</span>
+                    <span data-i18n="ui.multiplayer.private_invite_only">PRIVATE (INVITE-ONLY)</span>
                   </label>
-                  <input type="password" class="net-private-password-input" id="net-private-password" placeholder="OPTIONAL PASSWORD" maxlength="64">
+                  <input data-i18n-placeholder="ui.multiplayer.placeholder_optional_password" type="password" class="net-private-password-input" id="net-private-password" placeholder="OPTIONAL PASSWORD" maxlength="64">
                 </div>
               </div>
 
               <div class="net-field-group">
-                <span class="net-field-label">NETWORK RELAY BACKEND</span>
+                <span data-i18n="ui.multiplayer.network_relay_backend" class="net-field-label">NETWORK RELAY BACKEND</span>
                 <div class="net-relay-display">
                   <div class="net-relay-url-wrap">
                     <span class="net-relay-dot">●</span>
@@ -2946,20 +2946,20 @@
 
               <div class="net-protocol-specs">
                 <div class="net-spec-row">
-                  <span class="net-spec-name">ENCRYPTION:</span>
-                  <span class="net-spec-val">AES-256 / SHARED SEED</span>
+                  <span data-i18n="ui.multiplayer.encryption" class="net-spec-name">ENCRYPTION:</span>
+                  <span data-i18n="ui.multiplayer.aes_256_shared_seed" class="net-spec-val">AES-256 / SHARED SEED</span>
                 </div>
                 <div class="net-spec-row">
-                  <span class="net-spec-name">SYNC RATE:</span>
-                  <span class="net-spec-val">60 HZ STATE LOCK</span>
+                  <span data-i18n="ui.multiplayer.sync_rate" class="net-spec-name">SYNC RATE:</span>
+                  <span data-i18n="ui.multiplayer.60_hz_state_lock" class="net-spec-val">60 HZ STATE LOCK</span>
                 </div>
                 <div class="net-spec-row">
-                  <span class="net-spec-name">SECTOR MAP:</span>
-                  <span class="net-spec-val">PROCEDURAL RADIAL RING</span>
+                  <span data-i18n="ui.multiplayer.sector_map" class="net-spec-name">SECTOR MAP:</span>
+                  <span data-i18n="ui.multiplayer.procedural_radial_ring" class="net-spec-val">PROCEDURAL RADIAL RING</span>
                 </div>
                 <div class="net-spec-row">
-                  <span class="net-spec-name">CRASH SITES:</span>
-                  <span class="net-spec-val">SYNCHRONIZED SPLIT-DROP</span>
+                  <span data-i18n="ui.multiplayer.crash_sites" class="net-spec-name">CRASH SITES:</span>
+                  <span data-i18n="ui.multiplayer.synchronized_split_drop" class="net-spec-val">SYNCHRONIZED SPLIT-DROP</span>
                 </div>
               </div>
 
@@ -2969,13 +2969,13 @@
                    updateUiState() when window.electronAPI is present. -->
               <div class="net-field-group hidden" id="net-steam-lobbies-group">
                 <div class="net-code-display">
-                  <span class="net-field-label">PUBLIC STEAM LOBBIES</span>
-                  <button type="button" class="net-code-copy-btn" id="net-steam-lobbies-refresh-btn" title="Refresh Public Lobbies">
+                  <span data-i18n="ui.multiplayer.public_steam_lobbies" class="net-field-label">PUBLIC STEAM LOBBIES</span>
+                  <button data-i18n-title="ui.multiplayer.title_refresh_public_lobbies" type="button" class="net-code-copy-btn" id="net-steam-lobbies-refresh-btn" title="Refresh Public Lobbies">
                     <span>🔄</span> REFRESH
                   </button>
                 </div>
                 <div class="net-protocol-specs" id="net-steam-lobbies-list">
-                  <div class="net-spec-row"><span class="net-spec-val">No public lobbies found yet.</span></div>
+                  <div class="net-spec-row"><span data-i18n="ui.multiplayer.no_public_lobbies_found_yet" class="net-spec-val">No public lobbies found yet.</span></div>
                 </div>
               </div>
             </div>
@@ -2985,18 +2985,18 @@
           <div class="net-column net-column--roster">
             <div class="net-panel-header">
               <div class="net-panel-title-wrap">
-                <span class="net-panel-title">SQUAD MANIFEST</span>
+                <span data-i18n="ui.multiplayer.squad_manifest" class="net-panel-title">SQUAD MANIFEST</span>
                 <span class="net-roster-count" id="net-roster-count">SQUAD: 1 / 4</span>
               </div>
-              <span class="net-panel-badge net-panel-badge--green">MAX: 4</span>
+              <span data-i18n="ui.multiplayer.max_4" class="net-panel-badge net-panel-badge--green">MAX: 4</span>
             </div>
 
             <div class="net-roster-container">
               <div class="net-roster-header">
-                <span>OPERATIVE CALLSIGN</span>
-                <span>CHASSIS FRAME</span>
-                <span>LATENCY</span>
-                <span>STATUS</span>
+                <span data-i18n="ui.multiplayer.operative_callsign">OPERATIVE CALLSIGN</span>
+                <span data-i18n="ui.multiplayer.chassis_frame">CHASSIS FRAME</span>
+                <span data-i18n="ui.multiplayer.latency">LATENCY</span>
+                <span data-i18n="ui.multiplayer.status">STATUS</span>
               </div>
               <div class="net-roster-list" id="net-roster-list">
                 <!-- Dynamically populated by JS -->
@@ -3009,12 +3009,12 @@
         <!-- Footer Action Bar -->
         <div class="net-modal-actions">
           <div class="net-action-hints">
-            <span class="net-hint-item"><kbd>ESC</kbd> BACK</span>
-            <span class="net-hint-item"><kbd>CLICK</kbd> TOGGLE MODE</span>
-            <span class="net-hint-item"><kbd>HOST</kbd> DEPLOY SQUAD</span>
+            <span class="net-hint-item"><kbd data-i18n="ui.multiplayer.esc">ESC</kbd> BACK</span>
+            <span class="net-hint-item"><kbd data-i18n="ui.multiplayer.click">CLICK</kbd> TOGGLE MODE</span>
+            <span class="net-hint-item"><kbd data-i18n="ui.multiplayer.host">HOST</kbd> DEPLOY SQUAD</span>
           </div>
           <div class="net-modal-btn-row">
-            <button type="button" class="start-btn net-back-btn" id="net-back-btn">← BACK TO ARMORY</button>
+            <button data-i18n="ui.multiplayer.back_to_armory" type="button" class="start-btn net-back-btn" id="net-back-btn">← BACK TO ARMORY</button>
             <button type="button" class="start-btn net-deploy-btn" id="net-deploy-btn">DEPLOY SQUAD</button>
           </div>
         </div>
@@ -3026,10 +3026,10 @@
       <div class="modal-content mature-audit-modal-content">
         <div class="settings-sticky-header">
           <div>
-            <h2 class="modal-title">STEAM MATURE CONTENT & REVIEWER AUDIT</h2>
-            <div class="mature-audit-subtitle">F9 SHORTCUT // COMPLIANCE VERIFICATION SUITE</div>
+            <h2 data-i18n="ui.mature_content_audit.steam_mature_content_reviewer_audit" class="modal-title">STEAM MATURE CONTENT & REVIEWER AUDIT</h2>
+            <div data-i18n="ui.mature_content_audit.f9_shortcut_compliance_verification_suite" class="mature-audit-subtitle">F9 SHORTCUT // COMPLIANCE VERIFICATION SUITE</div>
           </div>
-          <button class="close-modal" id="close-mature-audit-modal" aria-label="Close audit suite">×</button>
+          <button data-i18n-aria-label="ui.close_mature_audit.aria_label_close_audit_suite" class="close-modal" id="close-mature-audit-modal" aria-label="Close audit suite">×</button>
         </div>
         <p class="mature-audit-summary">
           This panel catalogs all mature themes, psychological horror, alien parasite symbiosis, Queen subjugation choices, and self-annihilation plotlines present in Hunker Bunker for Steam review verification.
@@ -3047,10 +3047,10 @@
       <div class="modal-content mature-audit-modal-content">
         <div class="settings-sticky-header">
           <div>
-            <h2 class="modal-title">GAMEPLAY PROGRESSION WALKTHROUGH</h2>
-            <div class="mature-audit-subtitle">F10 SHORTCUT // DEV-ONLY QA TOOL</div>
+            <h2 data-i18n="ui.progression_walkthrough.gameplay_progression_walkthrough" class="modal-title">GAMEPLAY PROGRESSION WALKTHROUGH</h2>
+            <div data-i18n="ui.progression_walkthrough.f10_shortcut_dev_only_qa" class="mature-audit-subtitle">F10 SHORTCUT // DEV-ONLY QA TOOL</div>
           </div>
-          <button class="close-modal" id="close-progression-walkthrough-modal" aria-label="Close progression walkthrough">×</button>
+          <button data-i18n-aria-label="ui.close_progression_walkthrough.aria_label_close_progression_walkthrough" class="close-modal" id="close-progression-walkthrough-modal" aria-label="Close progression walkthrough">×</button>
         </div>
         <p class="mature-audit-summary">
           Jump directly to any real gameplay/story beat in the order a player encounters it —
@@ -3075,9 +3075,9 @@
       <div class="modal-content select-picker-content">
         <div class="settings-sticky-header">
           <div>
-            <h2 class="modal-title" id="select-picker-label">SELECT OPTION</h2>
+            <h2 data-i18n="ui.select_picker.select_option" class="modal-title" id="select-picker-label">SELECT OPTION</h2>
           </div>
-          <button class="close-modal" id="select-picker-close" aria-label="Close option picker">&times;</button>
+          <button data-i18n-aria-label="ui.select_picker.aria_label_close_option_picker" class="close-modal" id="select-picker-close" aria-label="Close option picker">&times;</button>
         </div>
         <div class="select-picker-list" id="select-picker-list" role="listbox" aria-labelledby="select-picker-label"></div>
         <div class="select-picker-hint" aria-hidden="true">
@@ -3091,9 +3091,9 @@
       <div class="modal-content virtual-keyboard-content">
         <div class="settings-sticky-header">
           <div>
-            <h2 class="modal-title" id="virtual-keyboard-label">ENTER TEXT</h2>
+            <h2 data-i18n="ui.virtual_keyboard.enter_text" class="modal-title" id="virtual-keyboard-label">ENTER TEXT</h2>
           </div>
-          <button class="close-modal" id="virtual-keyboard-close" aria-label="Close on-screen keyboard">×</button>
+          <button data-i18n-aria-label="ui.virtual_keyboard.aria_label_close_on_screen" class="close-modal" id="virtual-keyboard-close" aria-label="Close on-screen keyboard">×</button>
         </div>
         <div id="virtual-keyboard-preview" class="virtual-keyboard-preview" aria-live="polite"></div>
         <div class="virtual-keyboard-grid" id="virtual-keyboard-grid">
@@ -3140,11 +3140,11 @@
             <button type="button" class="virtual-keyboard-key" data-key="B">B</button>
             <button type="button" class="virtual-keyboard-key" data-key="N">N</button>
             <button type="button" class="virtual-keyboard-key" data-key="M">M</button>
-            <button type="button" class="virtual-keyboard-key virtual-keyboard-key--wide" data-action="backspace">⌫ BACK</button>
+            <button data-i18n="ui.virtual_keyboard.back" type="button" class="virtual-keyboard-key virtual-keyboard-key--wide" data-action="backspace">⌫ BACK</button>
           </div>
           <div class="virtual-keyboard-row">
-            <button type="button" class="virtual-keyboard-key virtual-keyboard-key--space" data-key=" ">SPACE</button>
-            <button type="button" class="virtual-keyboard-key virtual-keyboard-key--wide start-btn" id="virtual-keyboard-done" data-action="done">✓ DONE</button>
+            <button data-i18n="ui.virtual_keyboard.space" type="button" class="virtual-keyboard-key virtual-keyboard-key--space" data-key=" ">SPACE</button>
+            <button data-i18n="ui.virtual_keyboard.done" type="button" class="virtual-keyboard-key virtual-keyboard-key--wide start-btn" id="virtual-keyboard-done" data-action="done">✓ DONE</button>
           </div>
         </div>
       </div>

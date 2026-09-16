@@ -112,10 +112,14 @@ ever see, and worse, a tempting wrong key for the next person wiring a call site
 | `data/enemies.js` | 99 | enemy display names |
 | `data/roomBuilds.js`, `data/runModifiers.js`, `data/seasonOne*.js` | — | modifier + expedition labels |
 
-### Side finding (not localization)
-`index.html:341` hardcodes `SYS VER: 2.4.2-BETA // ACTIVE` in the About modal. Nothing
-writes to `#about-modal-sys-ver` at runtime, so the credits screen has been showing a stale
-version for two releases. One-line fix, worth doing while we are in this file.
+### Side finding — RETRACTED 2026-09-16
+An earlier draft of this document claimed `index.html:341` showed a stale `SYS VER:
+2.4.2-BETA` because nothing wrote to `#about-modal-sys-ver`. **That was wrong.** The
+original grep covered `src/` only and missed the entry point: `main.js:291` overwrites the
+element at boot with `canonicalVersionText`, built from the vite `__HB_BUILD_INFO__`
+define. The markup literal is only a placeholder. The readout is build diagnostics
+(`BUILD <version> // <sha> // <branch> // <timestamp>`), not translatable prose, so it is
+deliberately left unkeyed.
 
 ---
 

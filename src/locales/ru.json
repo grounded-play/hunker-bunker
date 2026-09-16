@@ -51,7 +51,49 @@
       "achievements": "ДОСТИЖЕНИЯ",
       "settings": "НАСТРОЙКИ",
       "about": "ОБ ИГРЕ",
-      "quit": "ВЫЙТИ ИЗ ИГРЫ"
+      "quit": "ВЫЙТИ ИЗ ИГРЫ",
+      "aria_label_operations_and_steam": "Операции и команды Steam",
+      "title_operator_roster_callsign": "Состав операторов — позывной и снаряжение",
+      "0_0_arsenal": "0 / 0 АРСЕНАЛ",
+      "title_steam_vault_view": "Хранилище Steam — косметика из Steam",
+      "title_archive_simulations_unlockable": "Архивные симуляции — сюжетные мини-игры",
+      "rgb": "RGB",
+      "title_fabrication_bay_print": "Цех сборки — печать снаряжения из лома (после подачи энергии на базу)",
+      "0_0_printed": "0 / 0 НАПЕЧАТАНО",
+      "aria_label_records_and_dossier": "Команды записей и досье",
+      "title_bunker_archive_discovered": "Архив бункера — найденные записи",
+      "0_27_logs": "0 / 27 ЗАПИСЕЙ",
+      "title_field_codex_catalogued": "Полевой кодекс — враги, объекты и явления",
+      "0_0_intel": "0 / 0 ДАННЫХ",
+      "title_tactical_dossier_beta": "Тактическое досье — прогресс бета-сезона 1",
+      "title_achievement_records_unlocked": "Достижения — открытые вехи забегов",
+      "locked": "ЗАБЛОКИРОВАНО",
+      "tank": "ТАНК",
+      "aria_label_s_o_u": "S.O.U.L — скорость, расход O2, радиус сбора",
+      "speed": "СКОРОСТЬ",
+      "fast": "БЫСТРО",
+      "title_o2_consumption_rate": "Расход O₂ — чем ниже, тем медленнее убывает кислород",
+      "aria_label_o2_consumption_rate": "Расход O2 — чем ниже, тем лучше",
+      "o2_use": "РАСХОД O₂",
+      "low": "НИЗКИЙ",
+      "aria_label_loot_magnet_range": "Радиус притяжения добычи",
+      "loot_mag": "МАГНИТ",
+      "med": "МЕД",
+      "title_choose_operator_polish": "Выбор отделки оператора",
+      "suit_polish": "ОТДЕЛКА КОСТЮМА",
+      "standard_issue": "СТАНДАРТНЫЙ",
+      "recon_frame": "РАЗВЕДРАМА",
+      "scout": "РАЗВЕДЧИК",
+      "sprint_burst": "РЫВОК",
+      "wide_magnet": "ШИРОКИЙ МАГНИТ",
+      "bulwark_frame": "РАМА-БАСТИОН",
+      "brace": "УПОР",
+      "low_o2_drain": "НИЗКИЙ РАСХОД O₂",
+      "utility_frame": "УТИЛИТАРНАЯ РАМА",
+      "engineer": "ИНЖЕНЕР",
+      "reroute": "ПЕРЕНАПРАВИТЬ",
+      "cheaper_consoles": "ДЕШЕВЛЕ КОНСОЛИ",
+      "esc": "[ESC]"
     },
     "hub": {
       "daily_ops": "ЕЖЕДНЕВНАЯ ОПЕРАЦИЯ",
@@ -99,7 +141,22 @@
       "gore": "КРОВЬ И РАСЧЛЕНЁНКА",
       "subtitle_size": "РАЗМЕР СУБТИТРОВ",
       "subtitle_backdrop": "ФОН СУБТИТРОВ",
-      "contrast": "КОНТРАСТ ИНТЕРФЕЙСА"
+      "contrast": "КОНТРАСТ ИНТЕРФЕЙСА",
+      "aria_label_settings_categories": "Категории настроек",
+      "session": "СЕССИЯ",
+      "audio": "ЗВУК",
+      "controls": "УПРАВЛЕНИЕ",
+      "camera_hud": "КАМЕРА И HUD",
+      "accessibility": "ДОСТУПНОСТЬ",
+      "profile_saves": "ПРОФИЛЬ И СОХРАНЕНИЯ",
+      "session_display": "СЕССИЯ И ЭКРАН",
+      "return_to_game": "ВЕРНУТЬСЯ В ИГРУ",
+      "resume": "ПРОДОЛЖИТЬ",
+      "abort_current_mission": "ПРЕРВАТЬ ТЕКУЩУЮ МИССИЮ",
+      "abort_mission": "ПРЕРВАТЬ МИССИЮ",
+      "title_active_crosshair_color": "Текущий цвет прицела",
+      "placeholder_agent": "АГЕНТ",
+      "checking": "ПРОВЕРКА…"
     },
     "action": {
       "open": "ОТКРЫТЬ",
@@ -208,7 +265,8 @@
       "select_to_equip": "ВЫБРАТЬ ДЛЯ ЭКИПИРОВКИ",
       "unknown_equipment": "НЕИЗВЕСТНОЕ СНАРЯЖЕНИЕ",
       "locked_achievement": "Получите полевое достижение, чтобы открыть.",
-      "locked_rewards": "Открывается за полевые награды."
+      "locked_rewards": "Открывается за полевые награды.",
+      "aria_label_pre_mission_armory": "Оружейная перед миссией"
     },
     "roster": {
       "title": "▣ ДОСЬЕ ОПЕРАТОРА // ТЕЛЕМЕТРИЯ ВЫСАДКИ",
@@ -221,7 +279,16 @@
       "finish": "ОКРАСКА:",
       "hint": "Создавайте оружие в цехе сборки, чтобы экипировать его здесь. Настраивайте косметику в хранилище Steam.",
       "confirm": "ПОДТВЕРДИТЬ И ВЫСАДИТЬСЯ",
-      "randomize": "Случайный позывной"
+      "randomize": "Случайный позывной",
+      "callsign": "ПОЗЫВНОЙ:",
+      "placeholder_agent_01": "AGENT-01",
+      "random": "🎲 СЛУЧАЙНО",
+      "sector_0": "СЕКТОР 0",
+      "0_eliminated": "0 УНИЧТОЖЕНО",
+      "none": "НЕТ",
+      "arsenal_0_0_schematics_fabricated": "АРСЕНАЛ: СОБРАНО 0 / 0 СХЕМ",
+      "equipped_sidearm": "ОСНАЩЁННЫЙ ПИСТОЛЕТ",
+      "equipped_steam_cosmetics": "ОСНАЩЁННАЯ КОСМЕТИКА STEAM"
     },
     "dlg": {
       "channel": "КАНАЛ СВЯЗИ С МАТКОЙ 7",
@@ -230,6 +297,682 @@
       "choice_skip_hint": "ПРОПУСТИТЬ ОБУЧЕНИЕ",
       "choice_tutorial_label": "[B] СНАЧАЛА ПРОГОНИ ПРОТОКОЛЫ.",
       "choice_tutorial_hint": "НАЧАТЬ ОБУЧЕНИЕ"
+    },
+    "misc": {
+      "hunker_bunker_tactical_command": "HUNKER BUNKER | ТАКТИЧЕСКОЕ КОМАНДОВАНИЕ"
+    },
+    "global_skip_intro_btn": {
+      "skip_intro": "ПРОПУСТИТЬ ЗАСТАВКУ"
+    },
+    "loading": {
+      "aria_label_build_and_developer": "Сведения о сборке и разработчике",
+      "system_build": "СБОРКА СИСТЕМЫ",
+      "build_dev_loading_revision": "СБОРКА DEV // ЗАГРУЗКА РЕВИЗИИ…",
+      "dev_console": "КОНСОЛЬ DEV",
+      "initializing_systems": "ИНИЦИАЛИЗАЦИЯ СИСТЕМ",
+      "mothership_command": "КОМАНДОВАНИЕ МАТКИ",
+      "connecting_to_tactical_network": "ПОДКЛЮЧЕНИЕ К ТАКТИЧЕСКОЙ СЕТИ..."
+    },
+    "splash_steam_badge": {
+      "title_click_to_open": "Открыть профиль через оверлей Steam",
+      "aria_label_open_steam_profile": "Открыть профиль Steam"
+    },
+    "splash_steam_persona": {
+      "steam_offline": "STEAM ОФФЛАЙН"
+    },
+    "splash_steam_status": {
+      "not_connected": "НЕТ ПОДКЛЮЧЕНИЯ"
+    },
+    "splash": {
+      "tactical_command_v2_0": "ТАКТИЧЕСКОЕ КОМАНДОВАНИЕ v2.0"
+    },
+    "title_profile_hud": {
+      "aria_label_current_operator_profile": "Текущий профиль оператора",
+      "active_operator_profile": "АКТИВНЫЙ ПРОФИЛЬ ОПЕРАТОРА",
+      "agent": "АГЕНТ",
+      "tank": "ТАНК",
+      "longest_00_00": "ДОЛЬШЕ ВСЕГО 00:00",
+      "depth_surface": "ГЛУБИНА ПОВЕРХНОСТЬ",
+      "deaths_0": "СМЕРТЕЙ 0",
+      "class_best_0000": "ЛУЧШИЙ В КЛАССЕ 0000"
+    },
+    "about": {
+      "aria_label_close_credits": "Закрыть титры",
+      "personnel_archive_production_credits": "◈ АРХИВ ПЕРСОНАЛА // ТИТРЫ",
+      "developed_by": "РАЗРАБОТКА",
+      "tuesday_cinema_club": "TUESDAY CINEMA CLUB",
+      "lead_design_programming": "ВЕДУЩИЙ ДИЗАЙН И ПРОГРАММИРОВАНИЕ",
+      "tuesday_cinema_club_team": "Команда Tuesday Cinema Club",
+      "graphics_engine": "ГРАФИЧЕСКИЙ ДВИЖОК",
+      "sounds_music": "ЗВУК И МУЗЫКА",
+      "tuesday_cinema_club_audio_collective": "Аудиоколлектив Tuesday Cinema Club",
+      "discord_community": "СООБЩЕСТВО DISCORD",
+      "join_discord_server": "ВОЙТИ НА СЕРВЕР DISCORD",
+      "project_repository": "РЕПОЗИТОРИЙ ПРОЕКТА",
+      "github_repository": "РЕПОЗИТОРИЙ GITHUB",
+      "special_thanks": "ОСОБАЯ БЛАГОДАРНОСТЬ",
+      "our_amazing_community_players": "Нашему замечательному сообществу и игрокам",
+      "thank_you_for_deploying": "СПАСИБО ЗА ВЫСАДКУ"
+    },
+    "hero_detail": {
+      "field_loadout": "ПОЛЕВОЕ СНАРЯЖЕНИЕ"
+    },
+    "archive": {
+      "bunker_archive": "◈ АРХИВ БУНКЕРА",
+      "logs_recovered_0_27": "ВОССТАНОВЛЕНО ЗАПИСЕЙ: 0 / 27"
+    },
+    "close_season_pass": {
+      "aria_label_close_tactical_dossier": "Закрыть тактическое досье"
+    },
+    "season_pass": {
+      "sub_terran_sector_operations_beta": "◈ ОПЕРАЦИИ ПОДЗЕМНОГО СЕКТОРА // БЕТА-СЕЗОН 1",
+      "directives": "И ДИРЕКТИВЫ"
+    },
+    "archive_log_detail": {
+      "aria_label_close_archive_log": "Закрыть архивную запись",
+      "recovered_archive_record": "◈ ВОССТАНОВЛЕННАЯ АРХИВНАЯ ЗАПИСЬ",
+      "log_a01": "LOG-A01",
+      "decryption_complete_read_only": "РАСШИФРОВКА ЗАВЕРШЕНА // ТОЛЬКО ЧТЕНИЕ"
+    },
+    "close_codex": {
+      "aria_label_close_field_codex": "Закрыть полевой кодекс"
+    },
+    "codex": {
+      "field_intel_discovered_specimens_lore": "◈ ПОЛЕВЫЕ ДАННЫЕ // НАЙДЕННЫЕ ОБРАЗЦЫ И ЛОР",
+      "catalogued_by_sub_terran_encounter": "КАТАЛОГИЗИРОВАНО ПО ПОДЗЕМНЫМ ВСТРЕЧАМ",
+      "entries_recovered_0_0": "ВОССТАНОВЛЕНО ЗАПИСЕЙ: 0 / 0"
+    },
+    "close_codex_detail": {
+      "aria_label_close_codex_entry": "Закрыть запись кодекса"
+    },
+    "codex_detail": {
+      "field_intel_record": "❑ ЗАПИСЬ ПОЛЕВЫХ ДАННЫХ",
+      "cybersnail": "КИБЕРУЛИТКА",
+      "entry_recovered_read_only_dossier": "ЗАПИСЬ ВОССТАНОВЛЕНА // ДОСЬЕ ТОЛЬКО ДЛЯ ЧТЕНИЯ"
+    },
+    "close_achievements": {
+      "aria_label_close_achievements": "Закрыть достижения"
+    },
+    "achievements": {
+      "combat_citations_deep_crust_commendations": "◈ БОЕВЫЕ НАГРАДЫ // ОТЛИЧИЯ ГЛУБИННОЙ КОРЫ",
+      "0_0_unlocked": "РАЗБЛОКИРОВАНО 0 / 0",
+      "title_copy_a_portable": "Скопировать переносимый код сохранения",
+      "copy_save_code": "КОПИРОВАТЬ КОД СОХРАНЕНИЯ"
+    },
+    "close_steam_vault": {
+      "aria_label_close_steam_vault": "Закрыть хранилище Steam"
+    },
+    "steam_vault": {
+      "appid_4957040_secure_dispensary": "◈ APPID 4957040 // ЗАЩИЩЁННЫЙ РАЗДАТЧИК",
+      "steam_inventory_manifest": "ОПИСЬ ИНВЕНТАРЯ STEAM",
+      "verified": "ПРОВЕРЕНО",
+      "steam_secured": "🛡️ ЗАЩИЩЕНО STEAM",
+      "100_disclosed_odds": "⚖️ 100% РАСКРЫТЫЕ ШАНСЫ",
+      "f2p_in_game_drops": "📦 F2P ВНУТРИИГРОВЫЕ ДРОПЫ",
+      "deep_relic_caches": "ТАЙНИКИ ГЛУБИННЫХ РЕЛИКВИЙ",
+      "cache_keys": "КЛЮЧИ ОТ ТАЙНИКОВ",
+      "relic_key_dispensary": "РАЗДАТЧИК КЛЮЧЕЙ РЕЛИКВИЙ",
+      "steam_wallet_direct": "ПРЯМО ИЗ КОШЕЛЬКА STEAM",
+      "open_in_steam": "ОТКРЫТЬ В STEAM ↗",
+      "relic_cache_decryptor": "ДЕШИФРАТОР ТАЙНИКОВ",
+      "open_deep_relic_cache": "◈ ОТКРЫТЬ ТАЙНИК РЕЛИКВИЙ",
+      "published_drop_rates": "ОПУБЛИКОВАННЫЕ ШАНСЫ",
+      "100_disclosed": "100% РАСКРЫТО",
+      "trade_up_smelting": "🔥 ПЕРЕПЛАВКА С ПОВЫШЕНИЕМ",
+      "5_1_tier_upgrade": "⚖️ ПОВЫШЕНИЕ УРОВНЯ 5:1",
+      "permanent_merge": "◈ НЕОБРАТИМОЕ СЛИЯНИЕ",
+      "5_same_tier_items": "5× ПРЕДМЕТОВ ТОГО ЖЕ УРОВНЯ",
+      "1_next_tier_item": "1× ПРЕДМЕТ СЛЕДУЮЩЕГО УРОВНЯ",
+      "deep_smelter": "ГЛУБИННАЯ ПЛАВИЛЬНЯ",
+      "consumes_5x_same_tier_items": "ПОТРЕБЛЯЕТ 5x ПРЕДМЕТОВ ТОГО ЖЕ УРОВНЯ",
+      "deep_core_shard_dispensary": "РАЗДАТЧИК ОСКОЛКОВ ЯДРА"
+    },
+    "vault_details": {
+      "view_in_steam_market": "ОТКРЫТЬ В ТОРГОВОЙ ПЛОЩАДКЕ STEAM"
+    },
+    "vault_reveal": {
+      "steam_relic_dispensary_appid_4957040": "◈ РАЗДАТЧИК РЕЛИКВИЙ STEAM // APPID 4957040",
+      "claim_to_inventory": "◈ ЗАБРАТЬ В ИНВЕНТАРЬ"
+    },
+    "operator_polish": {
+      "operator_polish": "◆ ОТДЕЛКА ОПЕРАТОРА",
+      "16_bit_suit_tint_matrix": "16-БИТНАЯ МАТРИЦА ОКРАСКИ // ЗАКРЫТЫЕ ОТДЕЛКИ ТРЕБУЮТ ПОЛЕВЫХ ВЕХ",
+      "standard_issue": "СТАНДАРТНЫЙ",
+      "equipped": "ОСНАЩЕНО"
+    },
+    "close_tactical_map": {
+      "aria_label_close_tactical_map": "Закрыть тактическую карту"
+    },
+    "tactical_map": {
+      "tactical_blueprint_overlay": "◈ НАЛОЖЕНИЕ ТАКТИЧЕСКОГО ЧЕРТЕЖА",
+      "grid_sector_01_exploration_active": "СЕКТОР СЕТКИ 01 // ИДЁТ РАЗВЕДКА",
+      "title_zoom_in": "Приблизить (+)",
+      "zoom_in": "ПРИБЛИЗИТЬ",
+      "title_zoom_out": "Отдалить (-)",
+      "zoom_out": "ОТДАЛИТЬ",
+      "title_center_home_base": "Центрировать на базе (H)",
+      "home_base": "БАЗА",
+      "title_center_operator_p": "Центрировать на операторе (P)",
+      "operator": "ОПЕРАТОР",
+      "title_reset_view_r": "Сбросить вид (R)",
+      "reset": "СБРОС",
+      "title_debug_reveal_regional": "Отладка: показать маршрут региона",
+      "reveal_all": "ПОКАЗАТЬ ВСЁ",
+      "blueprint_legend": "ЛЕГЕНДА ЧЕРТЕЖА",
+      "operator_position": "ПОЗИЦИЯ ОПЕРАТОРА",
+      "discovered_room": "НАЙДЕННАЯ КОМНАТА",
+      "shrouded_fog_of_war": "СКРЫТО ТУМАНОМ ВОЙНЫ",
+      "survivor_camp": "ЛАГЕРЬ ВЫЖИВШИХ",
+      "hive_site": "УЛЕЙ",
+      "active_objective": "ТЕКУЩАЯ ЦЕЛЬ",
+      "explored_tiles": "ИССЛЕДОВАНО КЛЕТОК:",
+      "active_signals": "АКТИВНЫЕ СИГНАЛЫ:",
+      "drag_wasd_l_stick_pan": "[ПЕРЕТАСКИВАНИЕ / WASD / ЛЕВЫЙ СТИК] ПАНОРАМА",
+      "scroll_lb_rb_zoom": "[КОЛЁСИКО / +/- / LB-RB] МАСШТАБ",
+      "h_x_home_p_y": "[H / (X)] БАЗА [P / (Y)] ОПЕРАТОР",
+      "m_select_esc_close": "[M] / [SELECT] / [ESC] ЗАКРЫТЬ"
+    },
+    "player_trade": {
+      "operative_link_field_barter": "СВЯЗЬ ОПЕРАТИВНИКОВ // ПОЛЕВОЙ ОБМЕН",
+      "link_active": "СВЯЗЬ АКТИВНА",
+      "local_operative": "МЕСТНЫЙ ОПЕРАТИВНИК",
+      "tank_command": "ТАНК // КОМАНДОВАНИЕ",
+      "shells": "ГИЛЬЗЫ",
+      "ammo": "ПАТРОНЫ",
+      "medkits": "АПТЕЧКИ",
+      "o2_filter": "ФИЛЬТР O2",
+      "squadmate": "НАПАРНИК",
+      "scout_recon": "РАЗВЕДЧИК // РАЗВЕДКА",
+      "shells_offered": "ПРЕДЛОЖЕНО ГИЛЬЗ",
+      "ammo_offered": "ПРЕДЛОЖЕНО ПАТРОНОВ",
+      "medkits_offered": "ПРЕДЛОЖЕНО АПТЕЧЕК",
+      "o2_filters_offered": "ПРЕДЛОЖЕНО ФИЛЬТРОВ O2",
+      "awaiting_transfer_confirmation": "ОЖИДАНИЕ ПОДТВЕРЖДЕНИЯ ПЕРЕДАЧИ",
+      "cancel_link": "ОТМЕНИТЬ СВЯЗЬ",
+      "confirm_transfer": "ПОДТВЕРДИТЬ ПЕРЕДАЧУ"
+    },
+    "close_player_trade": {
+      "aria_label_close_trade_link": "Закрыть торговую связь"
+    },
+    "npc_dialogue_name": {
+      "sister_val": "СЕСТРА ВАЛ"
+    },
+    "npc_dialogue_faction": {
+      "camp_tallow_suture_sanctuary": "ЛАГЕРЬ ТЭЛЛОУ // ОБИТЕЛЬ ШВОВ"
+    },
+    "npc_dialogue": {
+      "affection_bond": "ПРИВЯЗАННОСТЬ // СВЯЗЬ",
+      "side_story_stage_1_3": "ПОБОЧНАЯ ИСТОРИЯ // ЭТАП 1/3: ДРОЖАЩЕЕ УБЕЖИЩЕ",
+      "objective_survive_subzero_exposure_or": "ЦЕЛЬ: пережить мороз или добраться до лагеря Тэллоу с низким O2.",
+      "intimate_attracted": "БЛИЗОСТЬ / ВЛЕЧЕНИЕ",
+      "she_sets_down_a_steaming": "Она ставит дымящийся бронзовый котелок с разогретой растительной смолой...",
+      "press_1_4_or_click": "НАЖМИТЕ [1-4] ИЛИ ВЫБЕРИТЕ КАРТУ • [ESC] ВЫЙТИ"
+    },
+    "npc_dialogue_bond_badge": {
+      "neutral_lvl_0": "НЕЙТРАЛЬНО (УР. 0)"
+    },
+    "close_npc_dialogue": {
+      "title_exit_dialogue": "Выйти из диалога"
+    },
+    "npc_dialogue_speaker": {
+      "sister_val": "СЕСТРА ВАЛ:"
+    },
+    "npc_dialogue_text": {
+      "you_re_shivering_contractor": "«Ты дрожишь, подрядчик...»"
+    },
+    "demo_end": {
+      "transmission_terminated": "◈ ПЕРЕДАЧА ПРЕРВАНА",
+      "you_belong_to_the_deep": "«Теперь ты принадлежишь глубине, машинка. Рой помнит твой зов.»",
+      "thank_you_for_playing_the": "Спасибо, что сыграли в демоверсию Hunker Bunker.",
+      "the_mothership_uplink_has_been": "Связь с маткой прервана, но настоящая угроза ещё впереди. Добавьте полную версию в список желаемого в Steam, чтобы продолжить эвакуацию в глубинных хранилищах.",
+      "wishlist_on_steam": "◈ ДОБАВИТЬ В ЖЕЛАЕМОЕ В STEAM"
+    },
+    "demo_end_main_menu": {
+      "return_to_menu": "ВЕРНУТЬСЯ В МЕНЮ"
+    },
+    "fabrication": {
+      "fabrication_bay": "◇ ЦЕХ СБОРКИ",
+      "print_gear_from_salvage": "ПЕЧАТЬ СНАРЯЖЕНИЯ ИЗ ЛОМА",
+      "schematics_fabricated_0_8": "СОБРАНО СХЕМ: 0 / 8"
+    },
+    "fab_roll": {
+      "insert_salvage_to_fabricate": "ВСТАВЬТЕ ЛОМ ДЛЯ СБОРКИ",
+      "roll_fabricator": "ЗАПУСТИТЬ СБОРЩИК"
+    },
+    "ui": {
+      "exosuit_mark_iv_pressurized": "ЭКЗОКОСТЮМ // MARK-IV ГЕРМЕТИЧНЫЙ",
+      "bunker_level": "УРОВЕНЬ БУНКЕРА"
+    },
+    "biome_label": {
+      "active_sector": "АКТИВНЫЙ СЕКТОР"
+    },
+    "campaign_day_indicator": {
+      "title_campaign_day_and": "День кампании и местный световой цикл",
+      "day_1_06_43_day": "ДЕНЬ 1 · 06:43 · ДЕНЬ"
+    },
+    "hud_run_seed": {
+      "seed": "СИД: —"
+    },
+    "hud_run_cards": {
+      "aria_label_active_run_pressure": "Текущее давление забега"
+    },
+    "desktop_compass": {
+      "title_click_or_press": "Нажмите или клавишу M, чтобы открыть тактическую карту",
+      "aria_label_tactical_compass_click": "Тактический компас (нажмите, чтобы открыть карту)",
+      "tactical_map": "ТАКТИЧЕСКАЯ КАРТА",
+      "map_m": "[КАРТА / M]",
+      "base": "БАЗА"
+    },
+    "hud_blueprint_canvas": {
+      "aria_label_explored_tactical_map": "Исследованная тактическая карта"
+    },
+    "extraction_progress_ring": {
+      "launch": "ЗАПУСК"
+    },
+    "desktop_compass_radar_row": {
+      "node": "УЗЕЛ"
+    },
+    "weapon_status": {
+      "sidearm": "ПИСТОЛЕТ",
+      "cache_18": "ТАЙНИК 18"
+    },
+    "ship_status": {
+      "ship_integrity": "ЦЕЛОСТНОСТЬ КОРАБЛЯ"
+    },
+    "vitals": {
+      "vitals": "ЖИЗНЕННЫЕ ПОКАЗАТЕЛИ",
+      "aria_label_health": "Здоровье",
+      "cover": "УКРЫТИЕ"
+    },
+    "hazard_status": {
+      "cold_exposure": "ПЕРЕОХЛАЖДЕНИЕ",
+      "seek_pressurized_cover": "НАЙДИТЕ ГЕРМЕТИЧНОЕ УКРЫТИЕ"
+    },
+    "queens_ledger_hud": {
+      "obedience_0_seats_1_4": "♛ ПОВИНОВЕНИЕ 0 · МЕСТА 1/4 · ВЕКТОР: НЕСТАБИЛЕН"
+    },
+    "class_ability": {
+      "passive": "ПАССИВНО"
+    },
+    "radar_scan": {
+      "title_radar_scan_q": "Сканирование радара [Q]",
+      "radar_scan": "СКАНИРОВАНИЕ РАДАРА"
+    },
+    "pickup_counter": {
+      "loot": "ДОБЫЧА",
+      "total": "ВСЕГО"
+    },
+    "boss_status": {
+      "boss_threat": "УГРОЗА БОССА"
+    },
+    "world_status": {
+      "tactical_feed": "ТАКТИЧЕСКАЯ СВОДКА",
+      "units": "ЕДИНИЦ"
+    },
+    "game_over": {
+      "exosuit_failure": "ОТКАЗ ЭКЗОКОСТЮМА",
+      "agent_lost_in_sector_9": "> АГЕНТ ПОТЕРЯН В СЕКТОРЕ 9. ТЕЛЕМЕТРИЯ ВОССТАНОВЛЕНА.",
+      "mission_report": "ОТЧЁТ О МИССИИ",
+      "distance_covered": "ПРОЙДЕНО РАССТОЯНИЕ",
+      "items_recovered": "СОБРАНО ПРЕДМЕТОВ",
+      "o2_generator": "ГЕНЕРАТОР O₂",
+      "offline": "ОТКЛЮЧЕН",
+      "threats_eliminated": "УСТРАНЕНО УГРОЗ",
+      "time_elapsed": "ПРОШЛО ВРЕМЕНИ",
+      "aria_label_expedition_earnings_and": "Доход экспедиции и баланс банка",
+      "banked_resources_preserved": "НАКОПЛЕННЫЕ РЕСУРСЫ СОХРАНЕНЫ",
+      "run_pressure_none": "ДАВЛЕНИЕ ЗАБЕГА: НЕТ",
+      "black_box_none": "ЧЁРНЫЙ ЯЩИК: НЕТ",
+      "score": "ОЧКИ",
+      "new_best": "НОВЫЙ РЕКОРД",
+      "pts": "ОЧК",
+      "agent_lost_minimal_telemetry": "АГЕНТ ПОТЕРЯН — МИНИМУМ ТЕЛЕМЕТРИИ",
+      "world_seed": "СИД МИРА:",
+      "logs_recovered_0_27": "ВОССТАНОВЛЕНО ЗАПИСЕЙ: 0/27",
+      "leaderboard_results": "◈ РЕЗУЛЬТАТЫ ТАБЛИЦЫ ЛИДЕРОВ",
+      "try_again": "ПОПРОБОВАТЬ СНОВА"
+    },
+    "game_over_main_menu": {
+      "main_menu": "ГЛАВНОЕ МЕНЮ"
+    },
+    "close_lore": {
+      "aria_label_close_log": "Закрыть запись"
+    },
+    "lore": {
+      "bunker_terminal_log_fragment": "ТЕРМИНАЛ БУНКЕРА — ФРАГМЕНТ ЗАПИСИ"
+    },
+    "lore_modal_key": {
+      "log_a01": "LOG-A01"
+    },
+    "radio_sender_name": {
+      "mothership_command": "КОМАНДОВАНИЕ МАТКИ"
+    },
+    "radio_transmission_prompt": {
+      "online": "В СЕТИ"
+    },
+    "biome_hud_prompt": {
+      "zone": "ЗОНА"
+    },
+    "biome_hud_text": {
+      "entering_active_sector": "ВХОД В АКТИВНЫЙ СЕКТОР"
+    },
+    "lore_hud_prompt": {
+      "press_e": "НАЖМИТЕ E",
+      "read_log": "ПРОЧИТАТЬ ЗАПИСЬ"
+    },
+    "console_hud_prompt": {
+      "press_e": "НАЖМИТЕ E",
+      "access_base_shop": "ОТКРЫТЬ МАГАЗИН БАЗЫ"
+    },
+    "o2_generator_hud_prompt": {
+      "press_e": "НАЖМИТЕ E",
+      "upgrade_o2_generator": "УЛУЧШИТЬ ГЕНЕРАТОР O₂"
+    },
+    "base_turret_hud_prompt": {
+      "press_e": "НАЖМИТЕ E",
+      "defense_turret_controls": "УПРАВЛЕНИЕ ТУРЕЛЬЮ"
+    },
+    "foundry_hud_prompt": {
+      "press_e": "НАЖМИТЕ E",
+      "open_fab_bay": "ОТКРЫТЬ ЦЕХ СБОРКИ"
+    },
+    "scientist_hud_prompt": {
+      "press_e": "НАЖМИТЕ E",
+      "talk_to_dr_okonkwo_vass": "ПОГОВОРИТЬ С Д-РОМ ОКОНКВО-ВАСС"
+    },
+    "mayor_tina_hud_prompt": {
+      "press_e": "НАЖМИТЕ E",
+      "talk_to_mayor_tina": "ПОГОВОРИТЬ С МЭРОМ ТИНОЙ"
+    },
+    "black_box_hud_prompt": {
+      "press_e": "НАЖМИТЕ E",
+      "recover_black_box": "ИЗВЛЕЧЬ ЧЁРНЫЙ ЯЩИК"
+    },
+    "hole_hud_prompt": {
+      "press_e": "НАЖМИТЕ E",
+      "fill_hole": "ЗАДЕЛАТЬ ПРОЛОМ"
+    },
+    "mouse_look_prompt": {
+      "click": "КЛИК",
+      "to_look_around": "ЧТОБЫ ОСМОТРЕТЬСЯ"
+    },
+    "mission_progress_hud": {
+      "mission_active": "МИССИЯ АКТИВНА"
+    },
+    "camp_quest_hud": {
+      "quest_active": "ЗАДАНИЕ АКТИВНО"
+    },
+    "loop_step_hud": {
+      "deploying": "ВЫСАДКА"
+    },
+    "telemeter_integrity": {
+      "integrity": "ЦЕЛОСТНОСТЬ:"
+    },
+    "console_terminal": {
+      "bunker_tactical_terminal": "ТАКТИЧЕСКИЙ ТЕРМИНАЛ БУНКЕРА",
+      "time_of_day": "ВРЕМЯ СУТОК",
+      "survived": "ВЫЖИЛ",
+      "base_system": "◇ СИСТЕМА БАЗЫ",
+      "class_skills": "◇ НАВЫКИ КЛАССА",
+      "objective_night_log": "◇ ЦЕЛЬ / НОЧНОЙ ЖУРНАЛ",
+      "field_medkit": "ПОЛЕВАЯ АПТЕЧКА",
+      "med_conversion": "КОНВЕРСИЯ МЕДИКАМЕНТОВ",
+      "convert_10_med_1_heart": "ОБМЕНЯТЬ 10 МЕД → ♥ ВОССТАНОВИТЬ 1 СЕРДЦЕ",
+      "convert_10_med": "ОБМЕНЯТЬ 10 МЕД → ♥",
+      "optional_field_opportunity": "ДОПОЛНИТЕЛЬНАЯ ПОЛЕВАЯ ВОЗМОЖНОСТЬ",
+      "o2_generator_module": "МОДУЛЬ ГЕНЕРАТОРА O₂",
+      "field_stabilizer": "ПОЛЕВОЙ СТАБИЛИЗАТОР",
+      "repair_generator": "ПОЧИНИТЬ ГЕНЕРАТОР",
+      "goal_2": "ЦЕЛЬ 2",
+      "hull_expansion_matrix": "МАТРИЦА РАСШИРЕНИЯ КОРПУСА",
+      "locked_repair_o2_generator_first": "ЗАБЛОКИРОВАНО — СНАЧАЛА ПОЧИНИТЕ ГЕНЕРАТОР O₂",
+      "reinforce_exterior_hull_increases_max": "Укрепляет внешний корпус. Максимальная целостность экзокостюма до 4 сердец.",
+      "cost_50_tech_20_med": "ЦЕНА: 50 ТЕХ / 20 МЕД",
+      "locked": "ЗАБЛОКИРОВАНО",
+      "goal_3": "ЦЕЛЬ 3",
+      "communication_radar_node": "УЗЕЛ СВЯЗИ И РАДАРА",
+      "locked_install_hull_matrix_first": "ЗАБЛОКИРОВАНО — СНАЧАЛА УСТАНОВИТЕ МАТРИЦУ КОРПУСА",
+      "establish_long_range_tactical_feeds": "Налаживает дальнюю тактическую связь. Компас отслеживает ближайший кластер тайников.",
+      "cost_150_tech_30_coin": "ЦЕНА: 150 ТЕХ / 30 МОНЕТ",
+      "goal_4": "ЦЕЛЬ 4",
+      "reactor_compressor": "КОМПРЕССОР РЕАКТОРА",
+      "locked_install_radar_node_first": "ЗАБЛОКИРОВАНО — СНАЧАЛА УСТАНОВИТЕ УЗЕЛ РАДАРА",
+      "increase_generator_efficiency_o2_refill": "Повышает КПД генератора. Скорость пополнения O₂ вдвое выше, расход ниже на 20%.",
+      "cost_300_tech_100_coin": "ЦЕНА: 300 ТЕХ / 100 МОНЕТ",
+      "expedition_day": "ДЕНЬ ЭКСПЕДИЦИИ",
+      "day_1": "ДЕНЬ 1",
+      "cycle_phase": "ФАЗА ЦИКЛА",
+      "expedition": "ЭКСПЕДИЦИЯ",
+      "local_light": "МЕСТНЫЙ СВЕТ",
+      "daylight": "ДНЕВНОЙ СВЕТ",
+      "next_transition": "СЛЕДУЮЩИЙ ПЕРЕХОД",
+      "aria_label_objective_history": "История целей",
+      "expedition_journal": "ЖУРНАЛ ЭКСПЕДИЦИИ",
+      "aria_label_optional_base_defense": "Дополнительная оборона базы",
+      "defense_turret": "ОБОРОНИТЕЛЬНАЯ ТУРЕЛЬ",
+      "optional_north_door_defense_repairing": "Дополнительная оборона северной двери. Ремонт жизнеобеспечения не строит турель.",
+      "bunker_tree_cross_linked_protocols": "ДЕРЕВО БУНКЕРА // СВЯЗАННЫЕ ПРОТОКОЛЫ"
+    },
+    "terminal_bank": {
+      "current_run_stats": "СТАТИСТИКА ТЕКУЩЕГО ЗАБЕГА",
+      "shells": "ГИЛЬЗЫ",
+      "bank_total": "ВСЕГО В БАНКЕ",
+      "hearts": "СЕРДЦА",
+      "med": "МЕД",
+      "tech": "ТЕХ",
+      "coin": "МОНЕТЫ",
+      "current_objective": "ТЕКУЩАЯ ЦЕЛЬ",
+      "active": "АКТИВНО",
+      "explore_bank_salvage": "ИССЛЕДУЙ · СДАЙ ЛОМ",
+      "base_priority": "ПРИОРИТЕТ БАЗЫ"
+    },
+    "close_o2_generator": {
+      "aria_label_close_o2_generator": "Закрыть генератор O2"
+    },
+    "o2_generator": {
+      "o2_generator_module": "МОДУЛЬ ГЕНЕРАТОРА O₂",
+      "safe_field_output": "БЕЗОПАСНЫЙ ВЫХОД ПОЛЯ"
+    },
+    "o2_generator_modal_status": {
+      "online_lvl_1": "В СЕТИ // УР. 1"
+    },
+    "o2_generator_modal_cost": {
+      "next_cost": "СЛЕД. ЦЕНА: --"
+    },
+    "o2_generator_modal_field": {
+      "field_radius_refill": "РАДИУС ПОЛЯ -- // ПОПОЛНЕНИЕ --"
+    },
+    "o2_generator_modal_hint": {
+      "upgrades_expand_the_blue_o2": "УЛУЧШЕНИЯ РАСШИРЯЮТ СИНЕЕ ПОЛЕ O₂."
+    },
+    "close_base_turret": {
+      "aria_label_close_base_turret": "Закрыть управление турелью базы"
+    },
+    "base_turret": {
+      "camp_defense_turret": "ТУРЕЛЬ ОБОРОНЫ ЛАГЕРЯ",
+      "turret_status": "СОСТОЯНИЕ ТУРЕЛИ"
+    },
+    "base_turret_modal_badge": {
+      "door_guard": "ОХРАНА ДВЕРИ"
+    },
+    "elevator_choice": {
+      "elevator_arrival": "ПРИБЫТИЕ ЛИФТА",
+      "extract_or_descend": "ЭВАКУАЦИЯ ИЛИ СПУСК",
+      "the_doors_are_open": "ДВЕРИ ОТКРЫТЫ",
+      "choice_required": "НУЖЕН ВЫБОР",
+      "the_lift_can_carry_the": "Лифт может вернуть оператора на орбиту или спустить в более глубокий сектор.",
+      "extract_up": "ЭВАКУАЦИЯ НАВЕРХ",
+      "descend_deeper": "СПУСТИТЬСЯ ГЛУБЖЕ"
+    },
+    "confirm": {
+      "critical_alert": "КРИТИЧЕСКОЕ ПРЕДУПРЕЖДЕНИЕ",
+      "abort_mission": "ПРЕРВАТЬ МИССИЮ",
+      "cancel": "ОТМЕНА"
+    },
+    "day_rest_warning": {
+      "the_night_will_close_doors": "НОЧЬ ЗАКРОЕТ ДВЕРИ",
+      "sleep_anyway": "ВСЁ РАВНО СПАТЬ",
+      "stay_awake": "ОСТАТЬСЯ БОДРСТВОВАТЬ"
+    },
+    "archive_sims": {
+      "archive_simulations": "АРХИВНЫЕ СИМУЛЯЦИИ",
+      "rgb_riverside_global_botics": "RGB: RIVERSIDE GLOBAL 'BOTICS",
+      "not_started": "НЕ НАЧАТО",
+      "launch_continued_run": "ПРОДОЛЖИТЬ ЗАБЕГ"
+    },
+    "archive_sims_modal_close": {
+      "close": "ЗАКРЫТЬ"
+    },
+    "reset_save_confirm": {
+      "reset_save_data": "СБРОСИТЬ СОХРАНЕНИЯ",
+      "reset_save": "СБРОСИТЬ СОХРАНЕНИЕ",
+      "cancel": "ОТМЕНА"
+    },
+    "quit_confirm": {
+      "quit_hunker_bunker": "ВЫЙТИ ИЗ HUNKER BUNKER",
+      "confirm_quit": "ПОДТВЕРДИТЬ ВЫХОД",
+      "cancel": "ОТМЕНА"
+    },
+    "camp_choice": {
+      "aria_label_close_camp_decision": "Закрыть решение по лагерю",
+      "camp_contact": "КОНТАКТ С ЛАГЕРЕМ",
+      "camp_decision": "РЕШЕНИЕ ПО ЛАГЕРЮ",
+      "vessel_launch_manifest_forecast": "◇ ПРОГНОЗ МАНИФЕСТА ЗАПУСКА СУДНА ◇",
+      "irreversible_choice_strategic_record": "⚠ НЕОБРАТИМЫЙ ВЫБОР // СТРАТЕГИЧЕСКАЯ ЗАПИСЬ ⚠",
+      "leader_arc": "ЛИНИЯ ЛИДЕРА",
+      "confirm_decision": "ПОДТВЕРДИТЬ РЕШЕНИЕ",
+      "back_to_options": "НАЗАД К ВАРИАНТАМ"
+    },
+    "song_interstitial_track": {
+      "track_00": "ТРЕК 00"
+    },
+    "song_interstitial_title": {
+      "signal_acquired": "СИГНАЛ ПОЙМАН"
+    },
+    "game_viewport": {
+      "xl_18": "XL: 18",
+      "lg_06": "LG: 06",
+      "md_04": "MD: 04",
+      "sm_02_5": "SM: 02.5",
+      "xs_01_8": "XS: 01.8"
+    },
+    "save_data": {
+      "export_a_portable_save_code": "Экспортируйте переносимый код сохранения или вставьте его ниже, чтобы восстановить прогресс. Импорт перезапишет текущие данные на этом устройстве.",
+      "portable_save_code": "ПЕРЕНОСИМЫЙ КОД СОХРАНЕНИЯ",
+      "placeholder_export_or_paste": "ЭКСПОРТ ИЛИ ВСТАВКА КОДА",
+      "title_generate_and_copy": "Создать и скопировать переносимый код сохранения",
+      "title_restore_progress_from": "Восстановить прогресс из вставленного кода"
+    },
+    "crosshair_color": {
+      "aria_label_close_crosshair_color": "Закрыть меню цвета прицела"
+    },
+    "audio_mixer": {
+      "master": "ОБЩАЯ",
+      "music": "МУЗЫКА",
+      "vfx": "ЭФФЕКТЫ",
+      "voice": "ГОЛОС",
+      "character_voice_readouts": "ГОЛОСОВЫЕ РЕПЛИКИ ПЕРСОНАЖЕЙ"
+    },
+    "controls": {
+      "steam_deck": "STEAM DECK:",
+      "desktop": "ПК:"
+    },
+    "mothership_dialogue": {
+      "scout_link_encrypted": "КАНАЛ РАЗВЕДКИ [ШИФРОВАНО]"
+    },
+    "leader_conversation": {
+      "aria_label_leave_conversation": "Покинуть разговор",
+      "aria_label_speaker": "Говорящий",
+      "camp_contact": "КОНТАКТ С ЛАГЕРЕМ",
+      "survivor": "ВЫЖИВШИЙ",
+      "continue": "ПРОДОЛЖИТЬ",
+      "leave": "УЙТИ"
+    },
+    "snail_encounter": {
+      "vs": "ПРОТИВ",
+      "snail_hp": "ОЗ УЛИТКИ",
+      "resolve": "РЕШИМОСТЬ"
+    },
+    "multiplayer": {
+      "sub_surface_comms_combat_data": "◈ ПОДЗЕМНАЯ СВЯЗЬ // БОЕВОЙ КАНАЛ ДАННЫХ v2.1",
+      "solo": "ОДИНОЧНАЯ",
+      "solo_operation": "ОДИНОЧНАЯ ОПЕРАЦИЯ",
+      "1_operative_no_squad_no": "1 ОПЕРАТИВНИК // БЕЗ ОТРЯДА И СОПЕРНИКОВ",
+      "no_relay_required": "РЕТРАНСЛЯТОР НЕ НУЖЕН",
+      "full_salvage_claim": "ПОЛНОЕ ПРАВО НА ЛОМ",
+      "active_mode": "АКТИВНЫЙ РЕЖИМ",
+      "pve_squad": "PVE ОТРЯД",
+      "co_op_expedition": "КООПЕРАТИВНАЯ ЭКСПЕДИЦИЯ",
+      "2_4_operatives_shared_salvage": "2-4 ОПЕРАТИВНИКА // ОБЩИЙ ЛОМ И ВОСКРЕШЕНИЕ",
+      "synced_telemetry": "СИНХРОННАЯ ТЕЛЕМЕТРИЯ",
+      "emergency_rescue": "ЭКСТРЕННОЕ СПАСЕНИЕ",
+      "shared_o2_link": "ОБЩИЙ КАНАЛ O₂",
+      "select_mode": "ВЫБРАТЬ РЕЖИМ",
+      "pvp_duel": "PVP ДУЭЛЬ",
+      "pvp_sector_skirmish": "PVP СТЫЧКА В СЕКТОРЕ",
+      "contested_bunker_high_tier_drops": "СПОРНЫЙ БУНКЕР // ВЫСОКОУРОВНЕВЫЙ ЛУТ",
+      "contested_corridors": "СПОРНЫЕ КОРИДОРЫ",
+      "full_loot_claim": "ПОЛНОЕ ПРАВО НА ДОБЫЧУ",
+      "rival_bounties": "НАГРАДЫ ЗА СОПЕРНИКОВ",
+      "mission_objective": "ЦЕЛЬ МИССИИ:",
+      "sector_frequency_uplink": "ЧАСТОТА СЕКТОРА И КАНАЛ СВЯЗИ",
+      "ch_07": "CH-07",
+      "sector_room_code": "КОД КОМНАТЫ СЕКТОРА",
+      "title_copy_sector_frequency": "Скопировать частоту сектора",
+      "title_invite_a_steam": "Пригласить друга из Steam",
+      "lobby_access": "ДОСТУП К ЛОББИ",
+      "private_invite_only": "ПРИВАТНОЕ (ТОЛЬКО ПО ПРИГЛАШЕНИЮ)",
+      "placeholder_optional_password": "НЕОБЯЗАТЕЛЬНЫЙ ПАРОЛЬ",
+      "network_relay_backend": "СЕРВЕР СЕТЕВОГО РЕТРАНСЛЯТОРА",
+      "encryption": "ШИФРОВАНИЕ:",
+      "aes_256_shared_seed": "AES-256 / ОБЩИЙ СИД",
+      "sync_rate": "ЧАСТОТА СИНХРОНИЗАЦИИ:",
+      "60_hz_state_lock": "ФИКСАЦИЯ СОСТОЯНИЯ 60 ГЦ",
+      "sector_map": "КАРТА СЕКТОРА:",
+      "procedural_radial_ring": "ПРОЦЕДУРНОЕ РАДИАЛЬНОЕ КОЛЬЦО",
+      "crash_sites": "МЕСТА КРУШЕНИЯ:",
+      "synchronized_split_drop": "СИНХРОННАЯ РАЗДЕЛЬНАЯ ВЫСАДКА",
+      "public_steam_lobbies": "ПУБЛИЧНЫЕ ЛОББИ STEAM",
+      "title_refresh_public_lobbies": "Обновить публичные лобби",
+      "no_public_lobbies_found_yet": "Публичные лобби пока не найдены.",
+      "squad_manifest": "СОСТАВ ОТРЯДА",
+      "max_4": "МАКС: 4",
+      "operative_callsign": "ПОЗЫВНОЙ ОПЕРАТИВНИКА",
+      "chassis_frame": "ШАССИ",
+      "latency": "ЗАДЕРЖКА",
+      "status": "СТАТУС",
+      "esc": "ESC",
+      "click": "КЛИК",
+      "host": "ХОСТ",
+      "back_to_armory": "← НАЗАД В ОРУЖЕЙНУЮ"
+    },
+    "close_multiplayer": {
+      "aria_label_close_tactical_net": "Закрыть тактическую сеть"
+    },
+    "mature_content_audit": {
+      "steam_mature_content_reviewer_audit": "АУДИТ КОНТЕНТА 18+ И ПРОВЕРКИ STEAM",
+      "f9_shortcut_compliance_verification_suite": "ГОРЯЧАЯ КЛАВИША F9 // НАБОР ПРОВЕРКИ СООТВЕТСТВИЯ"
+    },
+    "close_mature_audit": {
+      "aria_label_close_audit_suite": "Закрыть набор аудита"
+    },
+    "progression_walkthrough": {
+      "gameplay_progression_walkthrough": "ПРОХОЖДЕНИЕ ИГРОВОГО ПРОГРЕССА",
+      "f10_shortcut_dev_only_qa": "ГОРЯЧАЯ КЛАВИША F10 // QA-ИНСТРУМЕНТ ДЛЯ РАЗРАБОТЧИКОВ"
+    },
+    "close_progression_walkthrough": {
+      "aria_label_close_progression_walkthrough": "Закрыть прохождение прогресса"
+    },
+    "select_picker": {
+      "select_option": "ВЫБЕРИТЕ ВАРИАНТ",
+      "aria_label_close_option_picker": "Закрыть выбор варианта"
+    },
+    "virtual_keyboard": {
+      "enter_text": "ВВЕДИТЕ ТЕКСТ",
+      "aria_label_close_on_screen": "Закрыть экранную клавиатуру",
+      "back": "⌫ НАЗАД",
+      "space": "ПРОБЕЛ",
+      "done": "✓ ГОТОВО"
     }
   },
   "narrative": {
