@@ -218,4 +218,22 @@ describe('WorldPlan reservation runtime adapter', () => {
             }
         });
     });
+
+    it('resolves an authored multi-chunk setpiece structure when claimed by the world plan', () => {
+        const fullPlan = realWorldPlan(44);
+        const setpieceClaim = fullPlan.setpieceClaims?.[0];
+        expect(setpieceClaim).toBeDefined();
+        const outerModule = setpieceClaim.modules.find((m) => !fullPlan.reservations.some((r) => r.chunkKey === m.chunkKey))
+            ?? setpieceClaim.modules[0];
+        const result = resolveAuthoredChunkStructure(seededRandom(47), fullPlan, {
+            chunkX: outerModule.chunkX,
+            chunkY: outerModule.chunkY,
+            chunkSize: 35
+        });
+        expect(result.status).toBe(AUTHORED_STRUCTURE_RESOLUTION.ACCEPTED);
+        expect(result.generatorId).toBe('authored-setpiece');
+        expect(result.structure).not.toBeNull();
+        expect(result.structure.setpieceId).toBe(setpieceClaim.setpieceId);
+        expect(result.structure.moduleId).toBe(outerModule.moduleId);
+    });
 });

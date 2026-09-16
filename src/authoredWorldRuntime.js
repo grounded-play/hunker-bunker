@@ -1,4 +1,5 @@
 import { resolveChunkStructureForReservation } from './chunkStructure.js';
+import { resolveSetpieceChunkStructure } from './setpieceBuilds.js';
 import {
     RING_CROSSING_PLAN_VERSION,
     RING_CROSSING_STATES,
@@ -262,23 +263,23 @@ function fallbackResult({ chunkKey, reservation = null, reason, attemptedRotatio
 
 function withReservationMetadata(structure, reservation, rotationSteps) {
     const wayfindingMarkers = (structure?.wayfindingMarkers ?? []).map((marker) => ({ ...marker }));
-    const stateVariant = reservation.stateKey ?? null;
+    const stateVariant = reservation?.stateKey ?? null;
     return {
         ...structure,
-        reservationId: reservation.id,
-        reservationRole: reservation.role ?? null,
+        reservationId: reservation?.id ?? null,
+        reservationRole: reservation?.role ?? null,
         rooms: (structure?.rooms ?? []).map((room) => ({
             ...room,
-            reservationId: reservation.id,
+            reservationId: reservation?.id ?? null,
             stateVariant: stateVariant ?? room.stateVariant
         })),
-        anchors: (structure?.anchors ?? []).map((anchor) => ({ ...anchor, reservationId: reservation.id })),
-        zones: (structure?.zones ?? []).map((zone) => ({ ...zone, reservationId: reservation.id })),
+        anchors: (structure?.anchors ?? []).map((anchor) => ({ ...anchor, reservationId: reservation?.id ?? null })),
+        zones: (structure?.zones ?? []).map((zone) => ({ ...zone, reservationId: reservation?.id ?? null })),
         wayfindingMarkers,
         diagnostics: {
             ...(structure?.diagnostics ?? {}),
-            reservationId: reservation.id,
-            reservationRole: reservation.role ?? null,
+            reservationId: reservation?.id ?? null,
+            reservationRole: reservation?.role ?? null,
             acceptedRotationSteps: rotationSteps
         }
     };
@@ -302,8 +303,43 @@ export function resolveAuthoredChunkStructure(random, worldPlan, {
             reason: AUTHORED_STRUCTURE_FALLBACK_REASONS.INVALID_REQUEST
         });
     }
+
     const reservation = selectCanonicalReservationForChunk(worldPlan, chunkX, chunkY, { activeReservationIds });
     if (!reservation) {
+        // Even without a canonical reservation directly on this chunk,
+        // it may be an outer module of a multi-chunk setpiece claim
+        const setpieceClaim = (worldPlan?.setpieceClaims ?? []).find((claim) => (
+            claim?.chunkKeys?.includes(chunkKey)
+        ));
+        if (setpieceClaim) {
+            const setpieceStructure = resolveSetpieceChunkStructure(setpieceClaim, chunkX, chunkY, {
+                chunkSize: producerOptions.chunkSize
+            });
+            if (setpieceStructure) {
+                const parentRes = (worldPlan?.reservations ?? []).find((entry) => entry.id === setpieceClaim.reservationId)
+                    ?? { id: setpieceClaim.id };
+                const acceptedStructure = withReservationMetadata(setpieceStructure, parentRes, setpieceClaim.rotation ?? 0);
+                return {
+                    status: AUTHORED_STRUCTURE_RESOLUTION.ACCEPTED,
+                    chunkKey,
+                    reservation: parentRes,
+                    reservationId: parentRes.id,
+                    generatorId: acceptedStructure.generatorId,
+                    wayfindingMarkers: acceptedStructure.wayfindingMarkers,
+                    structure: acceptedStructure,
+                    diagnostics: {
+                        fallbackRequired: false,
+                        reason: null,
+                        attemptedRotations: [setpieceClaim.rotation ?? 0],
+                        rejectedSockets: [],
+                        errors: [],
+                        acceptedRotationSteps: setpieceClaim.rotation ?? 0,
+                        setpieceClaimId: setpieceClaim.id
+                    }
+                };
+            }
+        }
+
         return fallbackResult({
             chunkKey,
             reason: AUTHORED_STRUCTURE_FALLBACK_REASONS.NO_ACTIVE_RESERVATION
@@ -362,6 +398,38 @@ export function resolveAuthoredChunkStructure(random, worldPlan, {
                 acceptedRotationSteps: rotationSteps
             }
         };
+    }
+
+    // If no single-chunk room in ROOM_BUILD_CATALOG matched this reservation,
+    // check if a multi-chunk setpiece claim covers it
+    const setpieceClaim = (worldPlan?.setpieceClaims ?? []).find((claim) => (
+        claim?.chunkKeys?.includes(chunkKey)
+    ));
+    if (setpieceClaim) {
+        const setpieceStructure = resolveSetpieceChunkStructure(setpieceClaim, chunkX, chunkY, {
+            chunkSize: producerOptions.chunkSize
+        });
+        if (setpieceStructure) {
+            const acceptedStructure = withReservationMetadata(setpieceStructure, reservation, setpieceClaim.rotation ?? 0);
+            return {
+                status: AUTHORED_STRUCTURE_RESOLUTION.ACCEPTED,
+                chunkKey,
+                reservation,
+                reservationId: reservation.id,
+                generatorId: acceptedStructure.generatorId,
+                wayfindingMarkers: acceptedStructure.wayfindingMarkers,
+                structure: acceptedStructure,
+                diagnostics: {
+                    fallbackRequired: false,
+                    reason: null,
+                    attemptedRotations: [setpieceClaim.rotation ?? 0],
+                    rejectedSockets: [],
+                    errors: [],
+                    acceptedRotationSteps: setpieceClaim.rotation ?? 0,
+                    setpieceClaimId: setpieceClaim.id
+                }
+            };
+        }
     }
 
     const reason = producedAnyStructure
