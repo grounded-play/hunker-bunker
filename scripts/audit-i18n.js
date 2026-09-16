@@ -269,6 +269,10 @@ export function auditRuntimeStrings(source) {
             for (const m of line.matchAll(/>([^<>{}`]{2,120})</g)) {
                 const text = m[1].trim();
                 if (!isPlayerFacingText(text)) continue;
+                // Template bookkeeping (").join('')}", "} else {") reads as text
+                // to a regex but is code, not words a player sees. Interpolated
+                // expressions are stripped first so real sentences survive.
+                if (/[(){};]|=>/.test(text.replace(/\$\{[^}]*\}/g, ''))) continue;
                 findings.push({ line: index + 1, kind: 'template', text: text.slice(0, 80) });
                 break;
             }
@@ -280,6 +284,11 @@ export function auditRuntimeStrings(source) {
             if (!isPlayerFacingText(literal)) continue;
             // A template literal that is purely interpolation carries no words.
             if (m[1] === '`' && literal.replace(/\$\{[^}]*\}/g, '').trim().length < 2) continue;
+            // A backtick run that swallowed code punctuation is a fragment of a
+            // multi-line template, not a sentence. Interpolations are stripped
+            // first: `DIST: ${x.toFixed(1)}m` is real player text whose braces
+            // live inside the expression, not in the words.
+            if (m[1] === '`' && /[(){};]|=>/.test(literal.replace(/\$\{[^}]*\}/g, ''))) continue;
             findings.push({ line: index + 1, kind: 'literal', text: literal.slice(0, 80) });
             break;
         }

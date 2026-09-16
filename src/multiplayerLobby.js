@@ -7,6 +7,7 @@ import { io as connectSocketIo } from 'socket.io-client';
 import { planMultiplayerCrashSites } from './multiplayerCrashPlanner.js';
 import { clearMultiplayerSession, startMultiplayerRun } from './gameController.js';
 import { getSelectedPolish } from './operatorPolishes.js';
+import { t } from './i18n.js';
 import {
     createSteamLobby,
     joinSteamLobby,
@@ -391,7 +392,7 @@ export class MultiplayerLobby {
         if (typeof document === 'undefined') return;
         const statusEl = document.getElementById('net-status-pill');
         if (statusEl) {
-            statusEl.textContent = 'CONNECTING...';
+            statusEl.textContent = t('ui.lobby.connecting');
             statusEl.className = 'net-status-pill net-status--connecting';
         }
 
@@ -570,14 +571,19 @@ export class MultiplayerLobby {
                     const original = el.textContent;
                     const originalClass = el.className;
                     el.textContent = reason === 'not_host'
-                        ? 'HOST CONTROL REQUIRED'
-                        : 'NOT ALL OPERATIVES READY';
+                        ? t('ui.lobby.host_control_required')
+                        : t('ui.lobby.not_all_ready');
                     el.className = 'net-status-pill net-status--offline';
+                    // Marked with a flag rather than compared against the
+                    // displayed words: the notice is translated, so a string
+                    // comparison would stop matching in every non-English
+                    // locale and the pill would never revert.
+                    el.dataset.transientNotice = 'deploy-rejected';
                     setTimeout(() => {
-                        if (el.textContent === 'NOT ALL OPERATIVES READY' || el.textContent === 'HOST CONTROL REQUIRED') {
-                            el.textContent = original;
-                            el.className = originalClass;
-                        }
+                        if (el.dataset.transientNotice !== 'deploy-rejected') return;
+                        delete el.dataset.transientNotice;
+                        el.textContent = original;
+                        el.className = originalClass;
                     }, 2200);
                 });
 
@@ -611,7 +617,7 @@ export class MultiplayerLobby {
                         this.usingRelay = false;
                         const statusEl = document.getElementById('net-status-pill');
                         if (statusEl) {
-                            statusEl.textContent = 'STEAM AUTH REQUIRED';
+                            statusEl.textContent = t('ui.lobby.steam_auth_required');
                             statusEl.className = 'net-status-pill net-status--offline';
                         }
                         return;
@@ -808,7 +814,7 @@ export class MultiplayerLobby {
             const joinBtn = document.createElement('button');
             joinBtn.type = 'button';
             joinBtn.className = 'net-code-copy-btn';
-            joinBtn.textContent = 'JOIN';
+            joinBtn.textContent = t('ui.lobby.join');
             joinBtn.addEventListener('click', () => this.handleSteamLobbyJoinRequested(lobby.id));
 
             row.appendChild(label);
@@ -1025,12 +1031,12 @@ export class MultiplayerLobby {
         let remaining = Math.ceil((durationMs ?? 3000) / 1000);
         if (deployBtn) {
             deployBtn.disabled = true;
-            deployBtn.textContent = `STARTING IN ${remaining}...`;
+            deployBtn.textContent = t('ui.lobby.starting_in', { seconds: remaining });
         }
         this.countdownInterval = setInterval(() => {
             remaining -= 1;
             if (deployBtn && remaining > 0) {
-                deployBtn.textContent = `STARTING IN ${remaining}...`;
+                deployBtn.textContent = t('ui.lobby.starting_in', { seconds: remaining });
             }
             if (remaining <= 0 && this.countdownInterval) {
                 clearInterval(this.countdownInterval);
@@ -1133,7 +1139,7 @@ export class MultiplayerLobby {
         const btn = document.getElementById('net-copy-code-btn');
         if (btn) {
             const orig = btn.textContent;
-            btn.textContent = 'COPIED!';
+            btn.textContent = t('ui.lobby.copied');
             setTimeout(() => { btn.textContent = orig; }, 1800);
         }
         window.AudioManager?.play?.('fx_menu_click', { volume: 0.3, bus: 'sfx' });
@@ -1159,9 +1165,9 @@ export class MultiplayerLobby {
         const soloIndicator = modeSoloBtn?.querySelector('.net-mode-card__indicator');
         const coopIndicator = modeCoopBtn?.querySelector('.net-mode-card__indicator');
         const pvpIndicator = modePvpBtn?.querySelector('.net-mode-card__indicator');
-        if (soloIndicator) soloIndicator.textContent = isSolo ? 'ACTIVE MODE' : 'SELECT MODE';
-        if (coopIndicator) coopIndicator.textContent = isCoop ? 'ACTIVE MODE' : 'SELECT MODE';
-        if (pvpIndicator) pvpIndicator.textContent = isPvp ? 'ACTIVE MODE' : 'SELECT MODE';
+        if (soloIndicator) soloIndicator.textContent = isSolo ? t('ui.multiplayer.active_mode') : t('ui.multiplayer.select_mode');
+        if (coopIndicator) coopIndicator.textContent = isCoop ? t('ui.multiplayer.active_mode') : t('ui.multiplayer.select_mode');
+        if (pvpIndicator) pvpIndicator.textContent = isPvp ? t('ui.multiplayer.active_mode') : t('ui.multiplayer.select_mode');
 
         const titleDesc = document.getElementById('net-mode-description');
         if (titleDesc) {
@@ -1213,13 +1219,13 @@ export class MultiplayerLobby {
         const connectBtn = document.getElementById('net-connect-btn');
         if (statusEl) {
             if (this.connected && this.usingRelay) {
-                statusEl.textContent = 'ONLINE // RELAY ACTIVE';
+                statusEl.textContent = t('ui.lobby.relay_active');
                 statusEl.className = 'net-status-pill net-status--online';
             } else if (this.connected) {
-                statusEl.textContent = 'LOCAL // RELAY UNREACHABLE';
+                statusEl.textContent = t('ui.lobby.relay_unreachable');
                 statusEl.className = 'net-status-pill net-status--offline';
             } else {
-                statusEl.textContent = 'STANDBY // OFFLINE';
+                statusEl.textContent = t('ui.lobby.standby_offline');
                 statusEl.className = 'net-status-pill net-status--offline';
             }
         }
@@ -1231,7 +1237,7 @@ export class MultiplayerLobby {
                 : 'socket.io://unreachable (local fallback)';
         }
         if (connectBtn) {
-            connectBtn.textContent = this.connected ? 'DISCONNECT' : 'HOST NEW LOBBY';
+            connectBtn.textContent = this.connected ? t('ui.lobby.disconnect') : t('ui.lobby.host_new_lobby');
         }
 
         const rosterCountEl = document.getElementById('net-roster-count');
@@ -1245,8 +1251,8 @@ export class MultiplayerLobby {
             if (this.players.size === 0) {
                 rosterGrid.innerHTML = `
                     <div class="net-empty-roster">
-                        <div class="net-empty-title">NO OPERATIVES IN SECTOR</div>
-                        <div class="net-empty-sub">BROADCASTING DISTRESS FREQUENCY ON SECTOR CHANNEL...</div>
+                        <div class="net-empty-title">${t('ui.lobby.no_operatives')}</div>
+                        <div class="net-empty-sub">${t('ui.lobby.broadcasting')}</div>
                     </div>
                 `;
             } else {
@@ -1296,24 +1302,24 @@ export class MultiplayerLobby {
                 deployBtn.title = '';
             } else if (!this.localReady) {
                 deployBtn.disabled = false;
-                deployBtn.textContent = 'READY UP';
-                deployBtn.title = 'Mark this operative ready';
+                deployBtn.textContent = t('ui.lobby.ready_up');
+                deployBtn.title = t('ui.lobby.mark_ready');
             } else if (!this.isLocalPlayerHost) {
                 deployBtn.disabled = false;
-                deployBtn.textContent = 'READY ✓';
-                deployBtn.title = 'Waiting for the host. Click to cancel readiness.';
+                deployBtn.textContent = t('ui.lobby.ready_done');
+                deployBtn.title = t('ui.lobby.waiting_host');
             } else if (!this.allPlayersReady()) {
                 const readyCount = Array.from(this.players.values()).filter((p) => p.ready).length;
                 deployBtn.disabled = false;
-                deployBtn.textContent = `SQUAD ${readyCount}/${this.players.size} READY`;
-                deployBtn.title = 'Waiting for the squad. Click to cancel readiness.';
+                deployBtn.textContent = t('ui.lobby.squad_ready', { ready: readyCount, total: this.players.size });
+                deployBtn.title = t('ui.lobby.waiting_squad');
             } else {
                 deployBtn.disabled = false;
                 // Readiness is a vote; deployment remains a host command.
                 // Make the second host click explicit once the whole roster
                 // is ready, so the room does not appear stuck at 2/2 READY.
-                deployBtn.textContent = isCoop ? 'START SQUAD' : 'START MATCH';
-                deployBtn.title = 'All operatives ready';
+                deployBtn.textContent = isCoop ? t('ui.lobby.start_squad') : t('ui.lobby.start_match');
+                deployBtn.title = t('ui.lobby.all_ready');
             }
             deployBtn.setAttribute('aria-label', deployBtn.title || deployBtn.textContent);
         }
@@ -1326,7 +1332,7 @@ export class MultiplayerLobby {
         const deployBtn = document.getElementById('net-deploy-btn');
         if (deployBtn && !this.countdownInterval) {
             deployBtn.disabled = false;
-            deployBtn.textContent = 'DEPLOY SOLO';
+            deployBtn.textContent = t('ui.lobby.deploy_solo');
         }
     }
 }

@@ -13,6 +13,7 @@ import { getSeasonOneCosmetic, SEASON_ONE_CLASS_CHOICES } from './data/seasonOne
 import { DETERMINISTIC_RECIPES, getItemCount } from './craftingMatrix.js';
 import { getItemCatalogEntry, deliverLocalSeasonReward, craftLocalSeasonRecipe, getLocalSeasonInventory, loadVaultData } from './steamVaultUi.js';
 import { assetUrl } from './assetUrl.js';
+import { t } from './i18n.js';
 
 export const seasonPass = new SeasonPassManager();
 if (typeof window !== 'undefined') window.seasonPass = seasonPass;
@@ -99,7 +100,7 @@ function renderSeasonPassToast(title, blurb) {
     toast.innerHTML = `
         <div class="achievement-toast__icon">◈</div>
         <div class="achievement-toast__body">
-            <div class="achievement-toast__kicker">TACTICAL DOSSIER</div>
+            <div class="achievement-toast__kicker">${t('ui.dossier.title')}</div>
             <div class="achievement-toast__title">${title}</div>
             <div class="achievement-toast__blurb">${blurb}</div>
         </div>
@@ -130,21 +131,21 @@ function ensureProgressionCeremony() {
     overlay.setAttribute('aria-hidden', 'true');
     overlay.innerHTML = `
         <div class="progression-reward-panel">
-            <div class="progression-reward-kicker">◈ TACTICAL DOSSIER // PROMOTION SIGNAL</div>
-            <div class="progression-reward-title">LEVEL <span id="progression-level-value">1</span> REACHED</div>
+            <div class="progression-reward-kicker">${t('ui.dossier.promotion_signal')}</div>
+            <div class="progression-reward-title" id="progression-reward-title"></div>
             <div class="progression-xp-track"><div id="progression-xp-bar" class="progression-xp-bar"></div></div>
-            <div id="progression-xp-label" class="progression-xp-label">XP THRESHOLD CONFIRMED</div>
+            <div id="progression-xp-label" class="progression-xp-label">${t('ui.dossier.xp_confirmed')}</div>
             <div id="progression-reward-preview" class="progression-reward-preview" aria-hidden="true"></div>
             <div class="progression-reward-burst" aria-hidden="true"></div>
             <div class="progression-reward-card">
-                <div class="progression-reward-card__slot">NEW REQUISITION</div>
+                <div class="progression-reward-card__slot">${t('ui.dossier.new_requisition')}</div>
                 <div id="progression-reward-primary" class="progression-reward-card__name"></div>
                 <div id="progression-reward-secondary" class="progression-reward-card__desc"></div>
                 <div id="progression-reward-currency" class="progression-reward-card__meta"></div>
                 <div id="progression-reward-confirm" class="progression-reward-card__meta progression-reward-confirm hidden"></div>
             </div>
-            <button id="progression-claim-btn" class="start-btn progression-claim-btn">◈ CLAIM REWARD</button>
-            <button id="progression-continue-btn" class="start-btn progression-continue-btn hidden">◈ CONTINUE</button>
+            <button id="progression-claim-btn" class="start-btn progression-claim-btn">${t('ui.dossier.claim_reward')}</button>
+            <button id="progression-continue-btn" class="start-btn progression-continue-btn hidden">${t('ui.dossier.continue')}</button>
         </div>
     `;
     document.body.appendChild(overlay);
@@ -181,19 +182,19 @@ function showNextProgressionReward() {
     overlay.dataset.track = next.track;
     overlay.classList.remove('hidden');
     overlay.setAttribute('aria-hidden', 'false');
-    overlay.querySelector('#progression-level-value').textContent = String(next.tier);
-    overlay.querySelector('#progression-reward-primary').textContent = reward?.label ?? 'REWARD SIGNAL';
+    overlay.querySelector('#progression-reward-title').textContent = t('ui.dossier.level_reached', { level: next.tier });
+    overlay.querySelector('#progression-reward-primary').textContent = reward?.label ?? t('ui.dossier.reward_signal');
     overlay.querySelector('#progression-reward-secondary').textContent = reward?.kind === 'item' || reward?.kind === 'cache'
         ? 'ITEM SECURED FOR VAULT CLAIM'
         : 'CURRENCY CREDIT READY';
-    overlay.querySelector('#progression-reward-currency').textContent = reward?.qty > 1 ? `QUANTITY ×${reward.qty}` : `${next.track.toUpperCase()} TRACK`;
-    overlay.querySelector('#progression-xp-label').textContent = `TIER ${next.tier} // XP THRESHOLD CONFIRMED`;
+    overlay.querySelector('#progression-reward-currency').textContent = reward?.qty > 1 ? t('ui.dossier.quantity', { qty: reward.qty }) : t('ui.dossier.track_label', { track: next.track.toUpperCase() });
+    overlay.querySelector('#progression-xp-label').textContent = t('ui.dossier.tier_confirmed', { tier: next.tier });
     const bar = overlay.querySelector('#progression-xp-bar');
     bar.style.width = '0%';
     requestAnimationFrame(() => { bar.style.width = '100%'; });
     const burst = overlay.querySelector('.progression-reward-burst');
     burst.innerHTML = Array.from({ length: 18 }, (_, i) => `<i style="--particle-angle:${i * 20}deg"></i>`).join('');
-    overlay.querySelector('#progression-claim-btn').textContent = 'VIEW REWARD';
+    overlay.querySelector('#progression-claim-btn').textContent = t('ui.dossier.view_reward');
     overlay.querySelector('#progression-claim-btn')?.focus?.();
 }
 
@@ -260,7 +261,7 @@ export function presentRewardStage(stage, ending) {
     overlay.querySelector('#progression-continue-btn')?.focus?.();
     const confirm = overlay.querySelector('#progression-reward-confirm');
     if (confirm) {
-        confirm.textContent = 'ADDED TO INVENTORY';
+        confirm.textContent = t('ui.dossier.added_to_inventory');
         confirm.classList.remove('hidden');
     }
 }
@@ -445,7 +446,7 @@ function isModalOpen() {
 
 function updateMenuStatus() {
     const status = document.getElementById('season-pass-command-status');
-    if (status) status.textContent = `RANK ${seasonPass.getCurrentTier()} / ${TOTAL_TIERS}`;
+    if (status) status.textContent = t('ui.dossier.rank', { tier: seasonPass.getCurrentTier(), total: TOTAL_TIERS });
 }
 
 function compatibilityText(reward) {
@@ -536,12 +537,12 @@ function renderSeasonPassBody() {
         <summary class="season-dispatch-summary">
             <span class="dispatch-kicker">◈ FIELD DISPATCH // WEEK ${week}</span>
             <span class="dispatch-title">${dispatch.title}</span>
-            <span class="dispatch-toggle">EXPAND ▾</span>
+            <span class="dispatch-toggle">${t('ui.dossier.expand')}</span>
         </summary>
         <div class="dispatch-body">${dispatch.text}</div>
     </details>
     ${deliveryMessage ? `<div class="season-delivery-alert" role="status">◈ ${deliveryMessage}</div>` : ''}
-    <div class="season-pass-tabs">${[['tiers', 'Dossier'], ['bounties', 'Directives'], ['workshop', 'Fragment Workshop']].map(([id, label]) => `<button class="season-pass-tab-btn ${activeTab === id ? 'active' : ''}" data-tab="${id}">${label}</button>`).join('')}</div>`;
+    <div class="season-pass-tabs">${[['tiers', t('ui.dossier.tab_tiers')], ['bounties', t('ui.dossier.tab_bounties')], ['workshop', t('ui.dossier.tab_workshop')]].map(([id, label]) => `<button class="season-pass-tab-btn ${activeTab === id ? 'active' : ''}" data-tab="${id}">${label}</button>`).join('')}</div>`;
 
     summary.querySelectorAll('[data-tab]').forEach(btn => btn.addEventListener('click', () => { activeTab = btn.dataset.tab; renderSeasonPassBody(); }));
 
@@ -549,9 +550,9 @@ function renderSeasonPassBody() {
         body.innerHTML = `<div class="season-pass-tier-list">${PASS_CHAPTERS.map(chapter => `<h3 class="season-one-chapter">${chapter.name} · ${chapter.startTier}–${chapter.endTier}</h3><div class="season-pass-tier-header-row"><div>RANK</div><div>FREE TRACK</div><div>CLASSIFIED TRACK</div></div>${Array.from({ length: 10 }, (_, i) => renderTierCard(chapter.startTier + i)).join('')}`).join('')}</div>`;
     } else if (activeTab === 'bounties') {
         body.innerHTML = `<div class="season-tab-telemetry-bar">
-            <span class="telemetry-pill">DIRECTIVES: <strong>${week * 3} / 24</strong></span>
-            <span class="telemetry-pill">SETTLEMENT: <strong>AUTO-RETAINED</strong></span>
-            <span class="telemetry-pill">EXPIRATION: <strong>PERMANENT</strong></span>
+            <span class="telemetry-pill">${t('ui.dossier.directives')} <strong>${week * 3} / 24</strong></span>
+            <span class="telemetry-pill">${t('ui.dossier.settlement')} <strong>${t('ui.dossier.settlement_auto')}</strong></span>
+            <span class="telemetry-pill">${t('ui.dossier.expiration')} <strong>${t('ui.dossier.expiration_permanent')}</strong></span>
         </div>`
             + Array.from({ length: week }, (_, index) => `<h3 class="season-one-chapter">Week ${index + 1} · ${WEEKLY_DISPATCHES[index].title}</h3><div class="bounty-grid">${seasonPass.getActiveWeeklies().filter(d => d.week === index + 1).map(d => `<div class="bounty-card ${d.completed ? 'completed' : ''}"><div class="bounty-card__header"><div class="bounty-card__title">${d.title}</div><span class="bounty-xp-badge">${d.completed ? '1,000 XP ✓' : '+1,000 XP'}</span></div><p class="bounty-card__desc">${d.desc}</p><div class="bounty-card__meter-wrap"><div class="bounty-card__meter"><div class="bounty-card__fill" style="width:${Math.min(100, Math.round((d.progress / d.target) * 100))}%"></div></div><span class="bounty-card__count">${d.progress} / ${d.target}</span></div></div>`).join('')}</div>`).join('');
     } else {
@@ -561,15 +562,15 @@ function renderSeasonPassBody() {
         body.innerHTML = `<div class="fragment-ledger-bar">
             <div class="fragment-pill fragment-pill--common">
                 <span class="fragment-icon">⬢</span>
-                <span class="fragment-label">COMMON FRAGMENTS</span>
+                <span class="fragment-label">${t('ui.dossier.common_fragments')}</span>
                 <strong class="fragment-val">${commonCount}</strong>
                 <span class="fragment-cap">ALLOWANCE: ${seasonPass.state.fragments.common} / ${week * 3} (MAX 24)</span>
             </div>
             <div class="fragment-pill fragment-pill--rare">
                 <span class="fragment-icon">◈</span>
-                <span class="fragment-label">RARE FRAGMENTS</span>
+                <span class="fragment-label">${t('ui.dossier.rare_fragments')}</span>
                 <strong class="fragment-val">${rareCount}</strong>
-                <span class="fragment-cap">ALLOWANCE: MAX 8 (1/WEEK)</span>
+                <span class="fragment-cap">${t('ui.dossier.allowance')}</span>
             </div>
         </div>`
             + `<div class="bounty-grid">${Object.values(DETERMINISTIC_RECIPES).map(recipe => {
@@ -588,8 +589,8 @@ function renderSeasonPassBody() {
             }).join('')}</div>`;
     }
     body.querySelectorAll('[data-equip]').forEach(btn => btn.addEventListener('click', () => {
-        try { if (equipSeasonItem(Number(btn.dataset.equip))) btn.textContent = 'Equipped ✓'; }
-        catch { btn.textContent = 'Retry'; }
+        try { if (equipSeasonItem(Number(btn.dataset.equip))) btn.textContent = t('ui.dossier.equipped'); }
+        catch { btn.textContent = t('ui.dossier.retry'); }
     }));
     body.querySelectorAll('[data-retry]').forEach(btn => btn.addEventListener('click', () => { void runSeasonAction(); }));
     body.querySelectorAll('[data-pin]').forEach(btn => btn.addEventListener('click', () => {

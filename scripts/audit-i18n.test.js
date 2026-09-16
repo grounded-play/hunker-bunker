@@ -111,6 +111,18 @@ describe('runtime string audit', () => {
         expect(findings.some((f) => f.text === 'OPERATIVES READY')).toBe(true);
     });
 
+    it('keeps a real string whose interpolation contains code punctuation', () => {
+        // `DIST: ${target.distance.toFixed(1)}m` is player text. An earlier
+        // filter rejected any backtick run containing (){}; and silently hid 23
+        // real strings, which made the coverage number a lie.
+        const findings = auditRuntimeStrings('el.textContent = `DIST: ${target.distance.toFixed(1)}m`;');
+        expect(findings).toHaveLength(1);
+    });
+
+    it('drops a template fragment that is bookkeeping rather than words', () => {
+        expect(auditRuntimeStrings("body.innerHTML = `${rows.join('')}</div>`;")).toHaveLength(0);
+    });
+
     it('ignores class names and pure interpolation', () => {
         expect(auditRuntimeStrings('el.innerHTML = `${count}`;')).toHaveLength(0);
         expect(auditRuntimeStrings('el.className = "vault-row active";')).toHaveLength(0);

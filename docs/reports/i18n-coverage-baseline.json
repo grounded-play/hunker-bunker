@@ -48,11 +48,9 @@
         "modules": {
             "src/minigames/rgb/cinematicPlayer.js": 3,
             "src/minigames/rgb/runtime.js": 32,
-            "src/multiplayerLobby.js": 25,
-            "src/seasonPassUi.js": 23,
-            "src/threeGame.js": 54
+            "src/threeGame.js": 51
         },
-        "total": 137
+        "total": 86
     },
-    "orphanKeys": 37
+    "orphanKeys": 34
 }

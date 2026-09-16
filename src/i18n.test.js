@@ -329,3 +329,57 @@ describe('i18n Localization Engine', () => {
         });
     });
 });
+
+/**
+ * Script-contamination guard.
+ *
+ * Bulk translation work mixes scripts by accident - a Cyrillic word left inside
+ * a Japanese string reads as corruption to the player and is invisible to a
+ * key-parity check, which only compares key sets. This caught a real slip
+ * ("新規требование") during the runtime-UI sweep.
+ */
+describe('translation script integrity', () => {
+    const CYRILLIC = /[Ѐ-ӿ]/;
+    const CJK = /[぀-ヿ一-鿿]/;
+    const HANGUL = /[가-힯]/;
+
+    const flatten = (obj, prefix = '', out = {}) => {
+        for (const key of Object.keys(obj)) {
+            const value = obj[key];
+            const full = prefix ? `${prefix}.${key}` : key;
+            if (value && typeof value === 'object') flatten(value, full, out);
+            else out[full] = value;
+        }
+        return out;
+    };
+
+    const catalogs = { en, 'zh-CN': zhCN, ru, 'es-419': es419, de, ja, ptBR };
+
+    // Deliberately multi-script: the language setting names itself in several
+    // scripts so a player who cannot read the active one can still find it.
+    const MULTISCRIPT_BY_DESIGN = new Set(['ui.settings.language']);
+
+    const offenders = (dict, pattern) => Object.entries(flatten(dict))
+        .filter(([key]) => !MULTISCRIPT_BY_DESIGN.has(key))
+        .filter(([, value]) => typeof value === 'string' && pattern.test(value))
+        .map(([key]) => key);
+
+    it('keeps Cyrillic out of every non-Russian catalog', () => {
+        for (const [code, dict] of Object.entries(catalogs)) {
+            if (code === 'ru') continue;
+            expect({ code, keys: offenders(dict, CYRILLIC) }).toEqual({ code, keys: [] });
+        }
+    });
+
+    it('keeps CJK out of the Latin and Cyrillic catalogs', () => {
+        for (const code of ['en', 'ru', 'es-419', 'de', 'ptBR']) {
+            expect({ code, keys: offenders(catalogs[code], CJK) }).toEqual({ code, keys: [] });
+        }
+    });
+
+    it('uses no Hangul anywhere, since Korean is not a shipped locale', () => {
+        for (const [code, dict] of Object.entries(catalogs)) {
+            expect({ code, keys: offenders(dict, HANGUL) }).toEqual({ code, keys: [] });
+        }
+    });
+});

@@ -720,7 +720,7 @@ export function createArmoryUi({
                         <span data-i18n="ui.armory.btn_vault">STEAM VAULT &amp; FAB BAY</span> <span class="btn-keyhint">[V]</span>
                     </button>
                     <button id="armory-btn-daily" class="armory-btn tertiary-btn armory-btn--daily" ${dailyOps.disabled ? 'disabled' : ''}>
-                        <span>DAILY OPS // ${dailyOps.label}</span>
+                        <span>${t('ui.hub.daily_ops')} // ${dailyOps.label}</span>
                     </button>
                     <button id="armory-btn-embark" class="armory-btn primary-btn embark-glow">
                         <span data-i18n="ui.armory.btn_embark">EMBARK TO BUNKER &gt;&gt;</span> <span class="btn-keyhint">[ENTER / A]</span>
