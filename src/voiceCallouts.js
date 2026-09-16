@@ -10,7 +10,14 @@ export function initVoiceCallouts() {
         window.AudioManager?.playVoiceCallout?.('boss_spotted');
     });
     window.addEventListener('enemy-killed', (e) => {
-        if (e.detail?.isBoss) window.AudioManager?.playVoiceCallout?.('target_down');
+        if (e.detail?.isBoss) {
+            window.AudioManager?.playVoiceCallout?.('target_down');
+        } else if (e.detail?.firstKill) {
+            window.AudioManager?.playVoiceCallout?.('first_kill');
+        }
+    });
+    window.addEventListener('enemy-first-kill', () => {
+        window.AudioManager?.playVoiceCallout?.('first_kill');
     });
     window.addEventListener('mission-objective-complete', () => {
         window.AudioManager?.playVoiceCallout?.('sector_cleared');
@@ -23,5 +30,17 @@ export function initVoiceCallouts() {
     });
     window.addEventListener('dash-overdrive-ready', () => {
         window.AudioManager?.playVoiceCallout?.('overdrive_ready');
+    });
+    window.addEventListener('black-box-recovered', () => {
+        window.AudioManager?.playVoiceCallout?.('black_box_recovered');
+    });
+    window.addEventListener('goal-structure-rise-started', () => {
+        window.AudioManager?.playVoiceCallout?.('build_started');
+    });
+    window.addEventListener('goal-structure-rise-complete', () => {
+        window.AudioManager?.playVoiceCallout?.('build_complete');
+    });
+    window.addEventListener('foundry-discovered', () => {
+        window.AudioManager?.playVoiceCallout?.('foundry_found');
     });
 }

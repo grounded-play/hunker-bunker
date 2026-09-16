@@ -1707,6 +1707,54 @@
       "24": {
         "name": "A RAINHA, RECUSADA",
         "blurb": "Você a deixou sob o gelo com três assentos ainda na mão. Caminho agora fechado: a ninhada completa. Ela sempre custaria mais do que oferecia."
+      },
+      "25": {
+        "blurb": "Você ficou com a guarnição de Vesper. Os escudos de trincheira resistiram e a fé do soldado foi recompensada. Rotas agora fechadas: a ninhada completa, o céu calcinado.",
+        "name": "COMANDANTE BRIGGS, HONRADO"
+      },
+      "26": {
+        "blurb": "Você cortou as linhas de suprimento de Vesper e deixou a linha de frente congelar. A guarnição caiu em silêncio. Rota agora fechada: a ruptura limpa.",
+        "name": "COMANDANTE BRIGGS, ABANDONADO"
+      },
+      "27": {
+        "blurb": "A transmissão da irmã Martha acendeu todos os receptores no gelo. Os perdidos ouvem esperança; o enxame ouve presa. Rota agora fechada: a infecção da nave-mãe.",
+        "name": "O FAROL DA IRMÃ, TRANSMITIDO"
+      },
+      "28": {
+        "blurb": "Você cortou os cabos e forçou Tallow ao silêncio. A furtividade foi paga com desespero civil. Rotas agora fechadas: a ruptura limpa, o êxodo alienígena.",
+        "name": "O FAROL DA IRMÃ, SILENCIADO"
+      },
+      "29": {
+        "blurb": "O supervisor Kaelen publicou os manifestos de voo inalterados. Nenhum privilégio corporativo sobreviveu. Rotas agora fechadas: a infecção da nave-mãe, o acordo do portador.",
+        "name": "O MANIFESTO DA FUNDIÇÃO, DIVULGADO"
+      },
+      "30": {
+        "blurb": "O manifesto de passageiros foi alterado atrás de anteparas trancadas. As mentiras corporativas sobrevivem à colônia. Rota agora fechada: a ruptura limpa.",
+        "name": "O MANIFESTO DA FUNDIÇÃO, FALSIFICADO"
+      },
+      "31": {
+        "blurb": "A extração cirúrgica de Nahl purgou o esporo do seu sangue. Você caminha como humano puro outra vez. Rotas agora fechadas: a ninhada completa, a infecção da nave-mãe, o êxodo alienígena.",
+        "name": "O HOSPEDEIRO DA SUTURA, CURADO"
+      },
+      "32": {
+        "blurb": "Você permitiu que o esporo da colmeia se enxertasse na sua medula. Você é portador e recipiente na mesma carne. Rota agora fechada: a ruptura limpa.",
+        "name": "O HOSPEDEIRO DA SUTURA, ACOLHIDO"
+      },
+      "33": {
+        "blurb": "Você cortou as frequências de rádio humanas para proteger o santuário acústico da colmeia. As comunicações do acampamento se estilhaçaram. Rota agora fechada: a fuga exposta.",
+        "name": "O CORO DO RELÉ, BLOQUEADO"
+      },
+      "34": {
+        "blurb": "Vey abriu a ponte sináptica neural entre as mentes da colmeia e as humanas. Os pensamentos sangram por todo o espectro. Rota agora fechada: a ruptura limpa.",
+        "name": "O CORO DO RELÉ, CONECTADO"
+      },
+      "35": {
+        "blurb": "A fortaleza de quitina de Rhun jurou defesa eterna à Mãe da Ninhada. As naves humanas terão de perfurar seu volume. Rotas agora fechadas: o êxodo alienígena, a ruptura limpa.",
+        "name": "O JURAMENTO DA CARAPAÇA, À RAINHA"
+      },
+      "36": {
+        "blurb": "O escudo vivo atou seu voto a você, caminhando ao lado dos sobreviventes humanos como guardião. Rota agora fechada: a ninhada completa.",
+        "name": "O JURAMENTO DA CARAPAÇA, AO OPERADOR"
       }
     },
     "loreClassLogs": {
@@ -2198,6 +2246,334 @@
           "FIELD REPAIR": "REMENDO DE RESINA",
           "REROUTE": "SEQUESTRO NEURAL"
         }
+      }
+    },
+    "communitySkins": {
+      "0": {
+        "actionLabel": "Confirmando",
+        "desc": "Batedor leal e calejado em combate, em uniforme tático.",
+        "name": "Batedor: Sombra de trincheira",
+        "theme": "Camaradas de trincheira"
+      },
+      "1": {
+        "actionLabel": "Andar de passarela",
+        "desc": "Andarilha do vazio, estilosa e destemida, em roupa urbana neon.",
+        "name": "Batedora: ABG espacial",
+        "theme": "Viajantes ABG"
+      },
+      "2": {
+        "actionLabel": "Andar feminino",
+        "desc": "Infiltradora corporativa cínica e afiada, em sobretudo de alta tecnologia.",
+        "name": "Batedora: Corredora das sombras corporativa",
+        "theme": "Sombras corporativas"
+      },
+      "3": {
+        "actionLabel": "Pendurado ocioso",
+        "desc": "Batedor biomecânico ao estilo Giger com carapaça de obsidiana estriada.",
+        "name": "Batedor: Xeno-espreitador",
+        "theme": "Biomecânico"
+      },
+      "4": {
+        "actionLabel": "Andar ferido para trás",
+        "desc": "Traje tático de nado hidrodinâmico em gravidade zero com condutos LED.",
+        "name": "Batedora: Traje de nado em gravidade zero",
+        "theme": "Nado espacial"
+      },
+      "5": {
+        "actionLabel": "Salto alegre",
+        "desc": "Batedor simbionte da colmeia corrompido, brilhando com bioluminescência de esporos tóxicos.",
+        "name": "Batedor: Crisálida ápice tóxica",
+        "theme": "Crisálida tóxica"
+      },
+      "6": {
+        "actionLabel": "Continência",
+        "desc": "Híbrido alienígena-humanoide predador em armadura óssea perolada.",
+        "name": "Batedora: Espécie Sil",
+        "theme": "Crisálida da espécie"
+      },
+      "7": {
+        "actionLabel": "Surpreso",
+        "desc": "Batedor híbrido cristalino e régio com tentáculos bioluminescentes.",
+        "name": "Batedor: Crisálida ápice",
+        "theme": "Crisálida da espécie"
+      },
+      "8": {
+        "actionLabel": "Usando um fax",
+        "desc": "Batedora hacker space-punk de cabelo rosa com atitude anarquista.",
+        "name": "Batedora: Hacker maníaca doce",
+        "theme": "Hackers maníacas"
+      },
+      "9": {
+        "actionLabel": "Servindo drinques",
+        "desc": "Vanguarda festiva peso-pesado equipada para defesa de bunker de alto impacto.",
+        "name": "Tanque: ABG espacial",
+        "theme": "Viajantes ABG"
+      },
+      "10": {
+        "actionLabel": "Assassinato brutal",
+        "desc": "Lutadora space-punk curvilínea e pesadamente blindada que protege ferozmente seu esquadrão.",
+        "name": "Tanque: Hacker protetora",
+        "theme": "Hackers maníacas"
+      },
+      "11": {
+        "actionLabel": "Passarela com joelhos altos",
+        "desc": "Colosso alienígena metamórfico pesado em armadura de quitina calcificada.",
+        "name": "Tanque: Espécie Sil",
+        "theme": "Crisálida da espécie"
+      },
+      "12": {
+        "actionLabel": "Dança twerk",
+        "desc": "Sobrevivente de queda de nave, régia sem pedir desculpas, com cibernética faiscante.",
+        "name": "Tanque: Rainha sobrevivente da queda",
+        "theme": "Sobreviventes da queda"
+      },
+      "13": {
+        "actionLabel": "Ocioso bêbado",
+        "desc": "Diretor corporativo imponente, de sobretudo pesado e membros cromados.",
+        "name": "Tanque: Guardião executivo corporativo",
+        "theme": "Sombras corporativas"
+      },
+      "14": {
+        "actionLabel": "Salto",
+        "desc": "Traje de mergulho reforçado de águas profundas em gravidade zero com placas de lastro.",
+        "name": "Tanque: Mergulhador pesado em gravidade zero",
+        "theme": "Nado espacial"
+      },
+      "15": {
+        "actionLabel": "Ataque em salto",
+        "desc": "Enorme fortaleza de biocarapaça blindada inspirada em Giger.",
+        "name": "Tanque: Matrona da ninhada",
+        "theme": "Biomecânico"
+      },
+      "16": {
+        "actionLabel": "Chute na virilha",
+        "desc": "Pesada de linha de frente, dura e leal, ao estilo Vasquez, pronta para qualquer briga de trincheira.",
+        "name": "Tanque: Sombra de trincheira",
+        "theme": "Camaradas de trincheira"
+      },
+      "17": {
+        "actionLabel": "Falando",
+        "desc": "Sobrevivente poderoso do núcleo profundo, blindado com chapas de casco recuperadas.",
+        "name": "Tanque: Sobrevivente afro da queda",
+        "theme": "Sobreviventes da queda"
+      },
+      "18": {
+        "actionLabel": "Contando um segredo",
+        "desc": "Colosso híbrido escultural com linhas vasculares âmbar brilhantes.",
+        "name": "Tanque: Crisálida ápice",
+        "theme": "Crisálida da espécie"
+      },
+      "19": {
+        "actionLabel": "Andar lateral à esquerda",
+        "desc": "Biocarapaça pesada impregnada de esporos tóxicos com válvulas de ácido corrosivo.",
+        "name": "Tanque: Crisálida ápice tóxica",
+        "theme": "Crisálida tóxica"
+      },
+      "20": {
+        "actionLabel": "Irritado",
+        "desc": "Engenheiro de bioplasma mutado por colmeias de esporos tóxicos de estrato profundo.",
+        "name": "Engenheiro: Crisálida ápice tóxica",
+        "theme": "Crisálida tóxica"
+      },
+      "21": {
+        "actionLabel": "Fim do burpee",
+        "desc": "Técnica futurista fissurada em mecânica, com roupa urbana e ferramentas holográficas.",
+        "name": "Engenheira: ABG espacial",
+        "theme": "Viajantes ABG"
+      },
+      "22": {
+        "actionLabel": "De agachado para em pé",
+        "desc": "Construtora neuro-híbrida com condutos de plasma vivos e cabos tentaculares.",
+        "name": "Engenheira: Espécie Sil",
+        "theme": "Crisálida da espécie"
+      },
+      "23": {
+        "actionLabel": "Andar bêbado",
+        "desc": "Diretora de sindicato tecnológico de alta-costura com microdrones flutuantes.",
+        "name": "Engenheira: Arquiteta-chefe",
+        "theme": "Sombras corporativas"
+      },
+      "24": {
+        "actionLabel": "Balanço de kettlebell",
+        "desc": "Engenheira maníaca hipercriativa com cibercabelo rosa e soldadores de plasma customizados.",
+        "name": "Engenheira: Arquiteta maníaca doce",
+        "theme": "Hackers maníacas"
+      },
+      "25": {
+        "actionLabel": "Olhar em volta",
+        "desc": "Sobrevivente estelar engenhoso que converte motores destroçados em tecnologia de bunker.",
+        "name": "Engenheiro: Sobrevivente afro da queda",
+        "theme": "Sobreviventes da queda"
+      },
+      "26": {
+        "actionLabel": "Ocioso orc",
+        "desc": "Equipamento de nado termorregulador com braçadeiras de lastro magnéticas à prova d'água.",
+        "name": "Engenheira: Equipamento hidro em gravidade zero",
+        "theme": "Nado espacial"
+      },
+      "27": {
+        "actionLabel": "Sentado furioso",
+        "desc": "Engenheiro de combate calejado e engraxado que conserta fendas e torres sob fogo.",
+        "name": "Engenheiro: Sombra de trincheira",
+        "theme": "Camaradas de trincheira"
+      },
+      "28": {
+        "actionLabel": "Iniciar prancha",
+        "desc": "Construtor biomecânico inspirado em Giger com bioferramentas montadas na coluna.",
+        "name": "Engenheiro: Tecelão neural",
+        "theme": "Biomecânico"
+      },
+      "29": {
+        "actionLabel": "Grato",
+        "desc": "Arquiteto biossintético com condutos de energia torácicos cristalinos.",
+        "name": "Engenheiro: Crisálida ápice",
+        "theme": "Crisálida da espécie"
+      }
+    },
+    "steamItems": {
+      "4200": {
+        "desc": "Acabamento completo do chassi do operador na identidade Gelo Profundo.",
+        "name": "Visual de operador Gelo Profundo"
+      },
+      "4201": {
+        "desc": "Acabamento do revestimento da arma na identidade Gelo Profundo.",
+        "name": "Visual de arma Gelo Profundo"
+      },
+      "4202": {
+        "desc": "Berloque pendurado na arma na identidade Gelo Profundo.",
+        "name": "Berloque Gelo Profundo"
+      },
+      "4203": {
+        "name": "Patch Gelo Profundo"
+      },
+      "4204": {
+        "name": "Brilho Gelo Profundo"
+      },
+      "4205": {
+        "name": "Traçantes Gelo Profundo"
+      },
+      "4206": {
+        "name": "Tema de HUD Gelo Profundo"
+      },
+      "4207": {
+        "desc": "Acabamento completo do chassi do operador na identidade Ferrugem e Osso.",
+        "name": "Visual de operador Ferrugem e Osso"
+      },
+      "4208": {
+        "desc": "Acabamento do revestimento da arma na identidade Ferrugem e Osso.",
+        "name": "Visual de arma Ferrugem e Osso"
+      },
+      "4209": {
+        "desc": "Berloque pendurado na arma na identidade Ferrugem e Osso.",
+        "name": "Berloque Ferrugem e Osso"
+      },
+      "4210": {
+        "name": "Patch Ferrugem e Osso"
+      },
+      "4211": {
+        "name": "Brilho Ferrugem e Osso"
+      },
+      "4212": {
+        "name": "Traçantes Ferrugem e Osso"
+      },
+      "4213": {
+        "name": "Tema de HUD Ferrugem e Osso"
+      },
+      "4214": {
+        "desc": "Acabamento completo do chassi do operador na identidade Quitina da Colmeia.",
+        "name": "Visual de operador Quitina da Colmeia"
+      },
+      "4215": {
+        "desc": "Acabamento do revestimento da arma na identidade Quitina da Colmeia.",
+        "name": "Visual de arma Quitina da Colmeia"
+      },
+      "4216": {
+        "desc": "Berloque pendurado na arma na identidade Quitina da Colmeia.",
+        "name": "Berloque Quitina da Colmeia"
+      },
+      "4217": {
+        "name": "Patch Quitina da Colmeia"
+      },
+      "4218": {
+        "name": "Brilho Quitina da Colmeia"
+      },
+      "4219": {
+        "name": "Traçantes Quitina da Colmeia"
+      },
+      "4220": {
+        "name": "Tema de HUD Quitina da Colmeia"
+      },
+      "4221": {
+        "desc": "Acabamento completo do chassi do operador na identidade Corporativo Horizon.",
+        "name": "Visual de operador Corporativo Horizon"
+      },
+      "4222": {
+        "desc": "Acabamento do revestimento da arma na identidade Corporativo Horizon.",
+        "name": "Visual de arma Corporativo Horizon"
+      },
+      "4223": {
+        "desc": "Berloque pendurado na arma na identidade Corporativo Horizon.",
+        "name": "Berloque Corporativo Horizon"
+      },
+      "4224": {
+        "name": "Patch Corporativo Horizon"
+      },
+      "4225": {
+        "name": "Brilho Corporativo Horizon"
+      },
+      "4226": {
+        "name": "Traçantes Corporativo Horizon"
+      },
+      "4227": {
+        "name": "Tema de HUD Corporativo Horizon"
+      },
+      "4228": {
+        "desc": "Acabamento completo do chassi do operador na identidade Bunker 404.",
+        "name": "Visual de operador Bunker 404"
+      },
+      "4229": {
+        "desc": "Acabamento do revestimento da arma na identidade Bunker 404.",
+        "name": "Visual de arma Bunker 404"
+      },
+      "4230": {
+        "desc": "Berloque pendurado na arma na identidade Bunker 404.",
+        "name": "Berloque Bunker 404"
+      },
+      "4231": {
+        "name": "Patch Bunker 404"
+      },
+      "4232": {
+        "name": "Brilho Bunker 404"
+      },
+      "4233": {
+        "name": "Traçantes Bunker 404"
+      },
+      "4234": {
+        "name": "Tema de HUD Bunker 404"
+      },
+      "4235": {
+        "desc": "Acabamento completo do chassi do operador na identidade Grão-Marechal.",
+        "name": "Visual de operador Grão-Marechal"
+      },
+      "4236": {
+        "desc": "Acabamento do revestimento da arma na identidade Grão-Marechal.",
+        "name": "Visual de arma Grão-Marechal"
+      },
+      "4237": {
+        "desc": "Berloque pendurado na arma na identidade Grão-Marechal.",
+        "name": "Berloque Grão-Marechal"
+      },
+      "4238": {
+        "name": "Patch Grão-Marechal"
+      },
+      "4239": {
+        "name": "Brilho Grão-Marechal"
+      },
+      "4240": {
+        "name": "Traçantes Grão-Marechal"
+      },
+      "4241": {
+        "name": "Tema de HUD Grão-Marechal"
       }
     }
   }

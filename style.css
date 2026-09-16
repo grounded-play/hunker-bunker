@@ -14037,6 +14037,91 @@ body.cutscene-video-active .tactical-overlay {
   text-overflow: ellipsis;
 }
 
+/* ── Voicepack persona HUD overlay in class-intro video ── */
+.class-intro-persona-panel {
+  position: absolute;
+  top: calc(var(--vu, 1vmin) * 3);
+  right: calc(var(--vu, 1vmin) * 3);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 16px;
+  background: rgba(10, 14, 18, 0.8);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 183, 0, 0.4);
+  border-radius: 8px;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.6), inset 0 0 12px rgba(255, 183, 0, 0.15);
+  pointer-events: none;
+  opacity: 0;
+  animation: class-intro-skip-in 0.5s ease 0.8s forwards;
+  z-index: 12005;
+  max-width: min(380px, 80vw);
+}
+
+.class-intro-persona-panel--commander {
+  border-color: rgba(255, 90, 40, 0.55);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.7), inset 0 0 15px rgba(255, 80, 20, 0.2);
+}
+
+.class-intro-persona-panel--aura {
+  border-color: rgba(0, 229, 255, 0.55);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.7), inset 0 0 15px rgba(0, 229, 255, 0.2);
+}
+
+.class-intro-persona-portrait {
+  width: 52px;
+  height: 52px;
+  border-radius: 6px;
+  object-fit: cover;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  flex-shrink: 0;
+}
+
+.class-intro-persona-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.class-intro-persona-tag {
+  font-family: 'Space Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.class-intro-persona-title {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 14px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  color: #fff;
+  text-shadow: 0 0 8px rgba(255, 255, 255, 0.4);
+}
+
+.class-intro-persona-status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: 'Space Mono', monospace;
+  font-size: 10px;
+  color: #a3e635;
+}
+
+.persona-pulse-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #a3e635;
+  box-shadow: 0 0 6px #a3e635;
+  animation: pulse-dot 1.2s infinite ease-in-out;
+}
+
+@keyframes pulse-dot {
+  0%, 100% { opacity: 0.4; transform: scale(0.9); }
+  50% { opacity: 1; transform: scale(1.2); }
+}
+
 /* ── Cinematic still fallback: one/two authored frames when video is absent. ── */
 .cinematic-still-overlay {
   position: absolute;

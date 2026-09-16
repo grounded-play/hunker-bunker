@@ -1707,6 +1707,54 @@
       "24": {
         "name": "DIE KÖNIGIN, ABGELEHNT",
         "blurb": "Du hast sie unter dem Eis gelassen, drei Sitze noch in der Hand. Nun verschlossener Weg: die volle Brut. Sie hätte immer mehr gekostet, als sie bot."
+      },
+      "25": {
+        "blurb": "Du standest bei Vespers Garnison. Die Grabenschilde hielten, und der Glaube des Soldaten wurde belohnt. Nun verschlossene Wege: die volle Brut, der verbrannte Himmel.",
+        "name": "COMMANDER BRIGGS, GEEHRT"
+      },
+      "26": {
+        "blurb": "Du hast Vespers Nachschublinien gekappt und die Front erfrieren lassen. Die Garnison fiel schweigend. Nun verschlossener Weg: der saubere Bruch.",
+        "name": "COMMANDER BRIGGS, IM STICH GELASSEN"
+      },
+      "27": {
+        "blurb": "Schwester Marthas Übertragung erhellte jeden Empfänger im Eis. Die Verlorenen hören Hoffnung, der Schwarm hört Beute. Nun verschlossener Weg: die Mutterschiff-Infektion.",
+        "name": "DAS LEUCHTFEUER DER SCHWESTER, GESENDET"
+      },
+      "28": {
+        "blurb": "Du hast die Kabel gekappt und Tallow zu leisen Stiefeln gezwungen. Tarnung wurde mit ziviler Verzweiflung erkauft. Nun verschlossene Wege: der saubere Bruch, der Alien-Exodus.",
+        "name": "DAS LEUCHTFEUER DER SCHWESTER, VERSTUMMT"
+      },
+      "29": {
+        "blurb": "Aufseher Kaelen veröffentlichte die unveränderten Flugmanifeste. Keine Konzernprivilegien überlebten. Nun verschlossene Wege: die Mutterschiff-Infektion, der Handel des Trägers.",
+        "name": "DAS GIESSEREI-MANIFEST, OFFENGELEGT"
+      },
+      "30": {
+        "blurb": "Das Passagiermanifest wurde hinter verschlossenen Schotten geändert. Konzernlügen überleben die Kolonie. Nun verschlossener Weg: der saubere Bruch.",
+        "name": "DAS GIESSEREI-MANIFEST, GEFÄLSCHT"
+      },
+      "31": {
+        "blurb": "Nahls chirurgische Entfernung tilgte die Spore aus deinem Blut. Du gehst wieder als reiner Mensch. Nun verschlossene Wege: die volle Brut, die Mutterschiff-Infektion, der Alien-Exodus.",
+        "name": "DER NAHT-WIRT, GEHEILT"
+      },
+      "32": {
+        "blurb": "Du ließt die Nest-Spore in dein Mark einwachsen. Du bist Träger und Gefäß in einem Fleisch. Nun verschlossener Weg: der saubere Bruch.",
+        "name": "DER NAHT-WIRT, ANGENOMMEN"
+      },
+      "33": {
+        "blurb": "Du hast menschliche Funkfrequenzen gekappt, um das akustische Heiligtum des Nests zu schützen. Die Lagerkommunikation zerbrach. Nun verschlossener Weg: die verratene Flucht.",
+        "name": "DER RELAIS-CHOR, GESTÖRT"
+      },
+      "34": {
+        "blurb": "Vey öffnete die neuronale Synapsenbrücke zwischen Nest- und Menschengeist. Gedanken bluten durch das Spektrum. Nun verschlossener Weg: der saubere Bruch.",
+        "name": "DER RELAIS-CHOR, VERBUNDEN"
+      },
+      "35": {
+        "blurb": "Rhuns Chitinfestung schwor der Brutmutter ewige Verteidigung. Menschliche Shuttles müssen ihre Masse durchstoßen. Nun verschlossene Wege: der Alien-Exodus, der saubere Bruch.",
+        "name": "DER PANZER-EID, AN DIE KÖNIGIN"
+      },
+      "36": {
+        "blurb": "Der lebende Schild band seinen Schwur an dich und schreitet als Wächter neben menschlichen Überlebenden. Nun verschlossener Weg: die volle Brut.",
+        "name": "DER PANZER-EID, AN DEN OPERATOR"
       }
     },
     "loreClassLogs": {
@@ -2198,6 +2246,334 @@
           "FIELD REPAIR": "HARZFLICKEN",
           "REROUTE": "NEURALE ÜBERNAHME"
         }
+      }
+    },
+    "communitySkins": {
+      "0": {
+        "actionLabel": "Bestätigen",
+        "desc": "Kampferprobter, loyaler Aufklärer in Taktikmontur.",
+        "name": "Späher: Schützenloch-Schatten",
+        "theme": "Schützenloch-Kameraden"
+      },
+      "1": {
+        "actionLabel": "Laufsteg-Gang",
+        "desc": "Stilvolle, furchtlose Leere-Treiberin in Neon-Streetwear.",
+        "name": "Späherin: Space-ABG",
+        "theme": "ABG-Trippers"
+      },
+      "2": {
+        "actionLabel": "Weiblicher Gang",
+        "desc": "Zynische, messerscharfe Konzern-Infiltratorin im Hightech-Trenchcoat.",
+        "name": "Späherin: Konzern-Schattenläuferin",
+        "theme": "Konzern-Schatten"
+      },
+      "3": {
+        "actionLabel": "Hängendes Verharren",
+        "desc": "Biomechanischer Späher im Giger-Stil mit geripptem Obsidianpanzer.",
+        "name": "Späher: Xeno-Pirscher",
+        "theme": "Biomechanisch"
+      },
+      "4": {
+        "actionLabel": "Verletzt rückwärts gehen",
+        "desc": "Hydrodynamischer Zero-G-Taktikschwimmanzug mit LED-Leitungen.",
+        "name": "Späherin: Zero-G-Schwimmanzug",
+        "theme": "Weltraumschwimmen"
+      },
+      "5": {
+        "actionLabel": "Freudensprung",
+        "desc": "Korrumpierter Nest-Symbiont-Späher, leuchtend von toxischer Sporen-Biolumineszenz.",
+        "name": "Späher: Toxische Apex-Chrysalis",
+        "theme": "Giftige Chrysalis"
+      },
+      "6": {
+        "actionLabel": "Salutieren",
+        "desc": "Räuberischer Alien-Humanoid-Hybrid in perlmuttfarbener Knochenrüstung.",
+        "name": "Späherin: Spezies Sil",
+        "theme": "Spezies-Chrysalis"
+      },
+      "7": {
+        "actionLabel": "Überrascht",
+        "desc": "Majestätischer kristalliner Hybrid-Späher mit biolumineszenten Ranken.",
+        "name": "Späher: Apex-Chrysalis",
+        "theme": "Spezies-Chrysalis"
+      },
+      "8": {
+        "actionLabel": "Faxgerät bedienen",
+        "desc": "Pinkhaarige Space-Punk-Hackerin mit anarchistischer Haltung.",
+        "name": "Späherin: Sanfte manische Hacker-GF",
+        "theme": "Manische Hacker-GFs"
+      },
+      "9": {
+        "actionLabel": "Cocktails mixen",
+        "desc": "Schwergewichtige Party-Vorhut, ausgerüstet für harte Bunkerverteidigung.",
+        "name": "Tank: Space-ABG",
+        "theme": "ABG-Trippers"
+      },
+      "10": {
+        "actionLabel": "Brutale Hinrichtung",
+        "desc": "Kurvige, schwer gepanzerte Space-Punk-Kämpferin, die ihr Squad erbittert schützt.",
+        "name": "Tank: Beschützende Hacker-GF",
+        "theme": "Manische Hacker-GFs"
+      },
+      "11": {
+        "actionLabel": "Laufsteg mit hohen Knien",
+        "desc": "Schwerer metamorpher Alien-Koloss in verkalkter Chitinrüstung.",
+        "name": "Tank: Spezies Sil",
+        "theme": "Spezies-Chrysalis"
+      },
+      "12": {
+        "actionLabel": "Twerk-Tanz",
+        "desc": "Kompromisslos königliche Raumschiff-Absturzüberlebende mit funkender Kybernetik.",
+        "name": "Tank: Absturzüberlebenden-Königin",
+        "theme": "Absturzüberlebende"
+      },
+      "13": {
+        "actionLabel": "Betrunkenes Verharren",
+        "desc": "Imposanter Konzerndirektor im schweren Mantel mit Chromgliedern.",
+        "name": "Tank: Konzern-Vollstrecker",
+        "theme": "Konzern-Schatten"
+      },
+      "14": {
+        "actionLabel": "Sprung",
+        "desc": "Verstärkter Tiefsee-Zero-G-Tauchanzug mit Auftriebs-Ballastplatten.",
+        "name": "Tank: Zero-G-Schwertaucher",
+        "theme": "Weltraumschwimmen"
+      },
+      "15": {
+        "actionLabel": "Sprungangriff",
+        "desc": "Massive, von Giger inspirierte gepanzerte Bio-Panzer-Festung.",
+        "name": "Tank: Brutmatrone",
+        "theme": "Biomechanisch"
+      },
+      "16": {
+        "actionLabel": "Tritt in die Weichteile",
+        "desc": "Zäher, loyaler Frontline-Schwerkämpfer im Vasquez-Stil, bereit für jede Grabenschlägerei.",
+        "name": "Tank: Schützenloch-Schatten",
+        "theme": "Schützenloch-Kameraden"
+      },
+      "17": {
+        "actionLabel": "Sprechen",
+        "desc": "Kraftvoller Tiefenkern-Überlebender, gepanzert mit geborgenen Schiffshüllenplatten.",
+        "name": "Tank: Afro-Absturzüberlebender",
+        "theme": "Absturzüberlebende"
+      },
+      "18": {
+        "actionLabel": "Ein Geheimnis verraten",
+        "desc": "Statuenhafter Hybrid-Koloss mit glühenden bernsteinfarbenen Gefäßlinien.",
+        "name": "Tank: Apex-Chrysalis",
+        "theme": "Spezies-Chrysalis"
+      },
+      "19": {
+        "actionLabel": "Seitwärts links gehen",
+        "desc": "Schwerer Bio-Panzer mit toxischen Sporen und ätzenden Säureventilen.",
+        "name": "Tank: Toxische Apex-Chrysalis",
+        "theme": "Giftige Chrysalis"
+      },
+      "20": {
+        "actionLabel": "Wütend",
+        "desc": "Bio-Plasma-Ingenieur, mutiert durch toxische Sporennester der Tiefenschichten.",
+        "name": "Ingenieur: Toxische Apex-Chrysalis",
+        "theme": "Giftige Chrysalis"
+      },
+      "21": {
+        "actionLabel": "Burpee-Ende",
+        "desc": "Futuristische Technik-Freakin in Streetwear mit holografischen Werkzeugen.",
+        "name": "Ingenieurin: Space-ABG",
+        "theme": "ABG-Trippers"
+      },
+      "22": {
+        "actionLabel": "Aus der Hocke aufstehen",
+        "desc": "Neural-Hybrid-Konstrukteurin mit lebenden Plasmaleitungen und Tentakelkabeln.",
+        "name": "Ingenieurin: Spezies Sil",
+        "theme": "Spezies-Chrysalis"
+      },
+      "23": {
+        "actionLabel": "Betrunkener Gang",
+        "desc": "Hochmodische Techsyndikat-Direktorin mit schwebenden Mikrodrohnen.",
+        "name": "Ingenieurin: Chefarchitektin",
+        "theme": "Konzern-Schatten"
+      },
+      "24": {
+        "actionLabel": "Kettlebell-Schwung",
+        "desc": "Hyperkreative manische Ingenieurin mit pinkem Cyber-Haar und maßgefertigten Plasmaschweißern.",
+        "name": "Ingenieurin: Sanfte manische Architektin-GF",
+        "theme": "Manische Hacker-GFs"
+      },
+      "25": {
+        "actionLabel": "Umsehen",
+        "desc": "Erfinderischer Raumschiff-Überlebender, der Wrackmotoren zu Bunkertechnik umbaut.",
+        "name": "Ingenieur: Afro-Absturzüberlebender",
+        "theme": "Absturzüberlebende"
+      },
+      "26": {
+        "actionLabel": "Ork-Verharren",
+        "desc": "Temperaturregulierende Schwimmausrüstung mit wasserdichten magnetischen Ballastklemmen.",
+        "name": "Ingenieurin: Zero-G-Hydro-Rig",
+        "theme": "Weltraumschwimmen"
+      },
+      "27": {
+        "actionLabel": "Wütend sitzen",
+        "desc": "Ruppiger, ölverschmierter Kampfingenieur, der unter Beschuss Risse und Geschütze flickt.",
+        "name": "Ingenieur: Schützenloch-Schatten",
+        "theme": "Schützenloch-Kameraden"
+      },
+      "28": {
+        "actionLabel": "Plank beginnen",
+        "desc": "Von Giger inspirierter biomechanischer Konstrukteur mit wirbelsäulenmontierten Bio-Werkzeugen.",
+        "name": "Ingenieur: Neuralweber",
+        "theme": "Biomechanisch"
+      },
+      "29": {
+        "actionLabel": "Dankbar",
+        "desc": "Bio-synthetischer Architekt mit kristallinen thorakalen Energieleitungen.",
+        "name": "Ingenieur: Apex-Chrysalis",
+        "theme": "Spezies-Chrysalis"
+      }
+    },
+    "steamItems": {
+      "4200": {
+        "desc": "Vollständige Operator-Chassis-Lackierung im Tieffrost-Stil.",
+        "name": "Tieffrost Operator-Skin"
+      },
+      "4201": {
+        "desc": "Waffenplattierung im Tieffrost-Stil.",
+        "name": "Tieffrost Waffen-Skin"
+      },
+      "4202": {
+        "desc": "Hängender Waffenanhänger im Tieffrost-Stil.",
+        "name": "Tieffrost Anhänger"
+      },
+      "4203": {
+        "name": "Tieffrost Aufnäher"
+      },
+      "4204": {
+        "name": "Tieffrost Glanz"
+      },
+      "4205": {
+        "name": "Tieffrost Leuchtspur"
+      },
+      "4206": {
+        "name": "Tieffrost HUD-Design"
+      },
+      "4207": {
+        "desc": "Vollständige Operator-Chassis-Lackierung im Rost & Knochen-Stil.",
+        "name": "Rost & Knochen Operator-Skin"
+      },
+      "4208": {
+        "desc": "Waffenplattierung im Rost & Knochen-Stil.",
+        "name": "Rost & Knochen Waffen-Skin"
+      },
+      "4209": {
+        "desc": "Hängender Waffenanhänger im Rost & Knochen-Stil.",
+        "name": "Rost & Knochen Anhänger"
+      },
+      "4210": {
+        "name": "Rost & Knochen Aufnäher"
+      },
+      "4211": {
+        "name": "Rost & Knochen Glanz"
+      },
+      "4212": {
+        "name": "Rost & Knochen Leuchtspur"
+      },
+      "4213": {
+        "name": "Rost & Knochen HUD-Design"
+      },
+      "4214": {
+        "desc": "Vollständige Operator-Chassis-Lackierung im Nest-Chitin-Stil.",
+        "name": "Nest-Chitin Operator-Skin"
+      },
+      "4215": {
+        "desc": "Waffenplattierung im Nest-Chitin-Stil.",
+        "name": "Nest-Chitin Waffen-Skin"
+      },
+      "4216": {
+        "desc": "Hängender Waffenanhänger im Nest-Chitin-Stil.",
+        "name": "Nest-Chitin Anhänger"
+      },
+      "4217": {
+        "name": "Nest-Chitin Aufnäher"
+      },
+      "4218": {
+        "name": "Nest-Chitin Glanz"
+      },
+      "4219": {
+        "name": "Nest-Chitin Leuchtspur"
+      },
+      "4220": {
+        "name": "Nest-Chitin HUD-Design"
+      },
+      "4221": {
+        "desc": "Vollständige Operator-Chassis-Lackierung im Horizon Corporate-Stil.",
+        "name": "Horizon Corporate Operator-Skin"
+      },
+      "4222": {
+        "desc": "Waffenplattierung im Horizon Corporate-Stil.",
+        "name": "Horizon Corporate Waffen-Skin"
+      },
+      "4223": {
+        "desc": "Hängender Waffenanhänger im Horizon Corporate-Stil.",
+        "name": "Horizon Corporate Anhänger"
+      },
+      "4224": {
+        "name": "Horizon Corporate Aufnäher"
+      },
+      "4225": {
+        "name": "Horizon Corporate Glanz"
+      },
+      "4226": {
+        "name": "Horizon Corporate Leuchtspur"
+      },
+      "4227": {
+        "name": "Horizon Corporate HUD-Design"
+      },
+      "4228": {
+        "desc": "Vollständige Operator-Chassis-Lackierung im Bunker 404-Stil.",
+        "name": "Bunker 404 Operator-Skin"
+      },
+      "4229": {
+        "desc": "Waffenplattierung im Bunker 404-Stil.",
+        "name": "Bunker 404 Waffen-Skin"
+      },
+      "4230": {
+        "desc": "Hängender Waffenanhänger im Bunker 404-Stil.",
+        "name": "Bunker 404 Anhänger"
+      },
+      "4231": {
+        "name": "Bunker 404 Aufnäher"
+      },
+      "4232": {
+        "name": "Bunker 404 Glanz"
+      },
+      "4233": {
+        "name": "Bunker 404 Leuchtspur"
+      },
+      "4234": {
+        "name": "Bunker 404 HUD-Design"
+      },
+      "4235": {
+        "desc": "Vollständige Operator-Chassis-Lackierung im Großmarschall-Stil.",
+        "name": "Großmarschall Operator-Skin"
+      },
+      "4236": {
+        "desc": "Waffenplattierung im Großmarschall-Stil.",
+        "name": "Großmarschall Waffen-Skin"
+      },
+      "4237": {
+        "desc": "Hängender Waffenanhänger im Großmarschall-Stil.",
+        "name": "Großmarschall Anhänger"
+      },
+      "4238": {
+        "name": "Großmarschall Aufnäher"
+      },
+      "4239": {
+        "name": "Großmarschall Glanz"
+      },
+      "4240": {
+        "name": "Großmarschall Leuchtspur"
+      },
+      "4241": {
+        "name": "Großmarschall HUD-Design"
       }
     }
   }

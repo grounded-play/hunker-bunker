@@ -30,6 +30,48 @@ const CHOICE_REPLY = {
     tutorial: 'MOTHERSHIP: CONFIRMED. DISPLAYING OPERATIONAL BRIEFING NOW.'
 };
 
+const COMMANDER_CRASH_LINES = [
+    { text: "SOVIET SUB-COMMANDER: AGENT {CLASS}. REPORT IN. YOU ARE STILL BREATHING.", pauseMs: 400 },
+    { text: 'SOVIET SUB-COMMANDER: YOUR DESCENT VEHICLE WAS HIT BY HIGH-VELOCITY FLAK OVER SECTOR 9.' },
+    { text: "SOVIET SUB-COMMANDER: SHIP IS TOTAL WRECKAGE. VACUUM TUBES ARE SURGING ON RESERVE POWER." },
+    { text: 'SOVIET SUB-COMMANDER: SCATTERED SUPPLY CONTAINERS IN THE PERIMETER. YOUR SUIT CAN TRACK THEM.' },
+    { text: 'SOVIET SUB-COMMANDER: SALVAGE CONSOLE NEAR THE WRECK DRAWS POWER. BANK SCRAP THERE AND REBUILD SYSTEMS PIECE BY PIECE.' },
+    { text: 'SOVIET SUB-COMMANDER: GET THIS SHIP FLIGHT-READY AND WE PULL YOU OUT OF THIS FROZEN HELL, OPERATOR.' },
+    { text: 'SOVIET SUB-COMMANDER: CONFIRM READINESS, OPERATOR.' }
+];
+
+const COMMANDER_CLASS_BRIEFING_LINES = {
+    SCOUT: { text: 'SOVIET SUB-COMMANDER: RECON SENSORS DETECT SCRAP AT GREATER RANGE. MOVE FAST AND DO NOT GET CORNERED.' },
+    TANK:  { text: 'SOVIET SUB-COMMANDER: REINFORCED CHASSIS ABSORBS FIRE, BUT OXYGEN IS FINITE. KEEP TO THE HEAT.' },
+    ENGINEER: { text: 'SOVIET SUB-COMMANDER: TECH CORE DISCOUNTED FOR EXPEDITION USE. REBUILD CRITICAL STATIONS FIRST.' }
+};
+
+const COMMANDER_CHOICE_REPLY = {
+    skip: 'SOVIET SUB-COMMANDER: ORDERS RECEIVED. COMMAND CHANNEL OPEN. STAY SHARP.',
+    tutorial: 'SOVIET SUB-COMMANDER: COPY. TRANSMITTING TACTICAL BRIEFING NOW.'
+};
+
+const AURA_CRASH_LINES = [
+    { text: "SYNTHESIZED AI 'AURA': OPERATOR {CLASS}. BIOMETRIC STATUS: STABLE. NEURAL LINK ACTIVE.", pauseMs: 400 },
+    { text: "SYNTHESIZED AI 'AURA': HYPERSONIC DESCENT ANOMALY RESULTED IN HARD IMPACT AT SECTOR 9." },
+    { text: "SYNTHESIZED AI 'AURA': HULL COMPROMISED. TERRAIN TOPOLOGY UNMAPPED." },
+    { text: "SYNTHESIZED AI 'AURA': SCATTERED SUPPLY CACHES ARE DETECTABLE VIA EXOSUIT SENSOR ARRAYS." },
+    { text: "SYNTHESIZED AI 'AURA': PRIMARY SALVAGE CONSOLE LOCATED AT IMPACT SITE. DEPOSIT SALVAGE TO SYSTEMATICALLY RESTORE HULL INTEGRITY." },
+    { text: "SYNTHESIZED AI 'AURA': RESTORE ALL SUBSYSTEMS TO INITIATE ORBITAL EXTRACTION." },
+    { text: "SYNTHESIZED AI 'AURA': AWAITING TACTICAL ACKNOWLEDGEMENT." }
+];
+
+const AURA_CLASS_BRIEFING_LINES = {
+    SCOUT: { text: "SYNTHESIZED AI 'AURA': SCOUT SENSORY ARRAY ONLINE. EXPANDED ACQUISITION RADIUS ACTIVE." },
+    TANK:  { text: "SYNTHESIZED AI 'AURA': REINFORCED COMPOSITE PLATING ENGAGED. LIFE SUPPORT CONSUMPTION OPTIMIZED." },
+    ENGINEER: { text: "SYNTHESIZED AI 'AURA': ENGINEERING LOGIC ENABLED. CONSOLE FABRICATION COSTS REDUCED BY TWENTY PERCENT." }
+};
+
+const AURA_CHOICE_REPLY = {
+    skip: "SYNTHESIZED AI 'AURA': AURA ONLINE. TACTICAL LINK ESTABLISHED. PROCEED WITH EXTRACTION RUN.",
+    tutorial: "SYNTHESIZED AI 'AURA': UNDERSTOOD. INITIATING TACTICAL PROTOCOL OVERLAY."
+};
+
 const O2_MILESTONE_LINES = {
     SCOUT: [
         { text: "SYSTEM: O₂ FIELD LIFE SUPPORT AT 100%. BASE CONSOLE STABILIZED.", pauseMs: 400 },
@@ -264,8 +306,24 @@ export class DialogueManager {
         window.AudioManager?.play('door_slide_horiz', { volume: 0.5 });
         this.initDialogueListeners();
 
-        const allLines = [...MOTHERSHIP_LINES];
-        const classBriefing = CLASS_BRIEFING_LINES[playerType];
+        const rawVoiceId = typeof window !== 'undefined' ? (window.loadout?.state?.voicePackId || window.loadout?.getEquippedVoicePackId?.()) : null;
+        const voicePackId = rawVoiceId === 'voicepack_soviet_commander' ? 4148
+            : rawVoiceId === 'voicepack_aura' ? 4149 : Number(rawVoiceId);
+
+        let allLines = [...MOTHERSHIP_LINES];
+        let classBriefing = CLASS_BRIEFING_LINES[playerType];
+        let choiceReplies = CHOICE_REPLY;
+
+        if (voicePackId === 4148) {
+            allLines = [...COMMANDER_CRASH_LINES];
+            classBriefing = COMMANDER_CLASS_BRIEFING_LINES[playerType];
+            choiceReplies = COMMANDER_CHOICE_REPLY;
+        } else if (voicePackId === 4149) {
+            allLines = [...AURA_CRASH_LINES];
+            classBriefing = AURA_CLASS_BRIEFING_LINES[playerType];
+            choiceReplies = AURA_CHOICE_REPLY;
+        }
+
         if (classBriefing) {
             allLines.splice(allLines.length - 1, 0, classBriefing);
         }
@@ -309,7 +367,7 @@ export class DialogueManager {
         if (!this.isDialogueRunActive(runId)) return 'skip';
 
         window.AudioManager?.play('ui_click', { volume: 0.6 });
-        await this.typeLine(runId, CHOICE_REPLY[choice] ?? CHOICE_REPLY.skip);
+        await this.typeLine(runId, choiceReplies[choice] ?? choiceReplies.skip);
         await this.sleep(runId, 260);
 
         await this.closeDialogue(runId);
@@ -794,6 +852,14 @@ export class DialogueManager {
             name = 'MOTHERSHIP COMMAND';
             portrait = '/lore_portraits/survivor_00.webp';
             cleanText = text.replace(/^MOTHERSHIP:\s*/, '');
+        } else if (text.startsWith('SOVIET SUB-COMMANDER:') || text.startsWith('SOVIET COMMANDER:') || text.startsWith('SUB-COMMANDER:')) {
+            name = 'SOVIET SUB-COMMANDER';
+            portrait = '/lore_portraits/voice_commander_persona.png';
+            cleanText = text.replace(/^(SOVIET SUB-COMMANDER|SOVIET COMMANDER|SUB-COMMANDER):\s*/, '');
+        } else if (text.startsWith("SYNTHESIZED AI 'AURA':") || text.startsWith('SYNTHESIZED AI AURA:') || text.startsWith('AURA:')) {
+            name = "SYNTHESIZED AI 'AURA'";
+            portrait = '/lore_portraits/voice_aura_persona.png';
+            cleanText = text.replace(/^(SYNTHESIZED AI 'AURA'|SYNTHESIZED AI AURA|AURA):\s*/, '');
         } else if (text.startsWith('SISTER MARTHA:') || text.startsWith('MARTHA:')) {
             name = 'SISTER MARTHA';
             portrait = '/lore_portraits/tallow_martha.webp';
@@ -947,7 +1013,16 @@ export class DialogueManager {
             this.tutorialPromptEl.style.setProperty('--tutorial-glow-rgb', theme.rgb);
         }
         if (this.classBadgeEl) {
-            this.classBadgeEl.textContent = `${playerType} LINK [ENCRYPTED]`;
+            const rawVoiceId = typeof window !== 'undefined' ? (window.loadout?.state?.voicePackId || window.loadout?.getEquippedVoicePackId?.()) : null;
+            const voicePackId = rawVoiceId === 'voicepack_soviet_commander' ? 4148
+                : rawVoiceId === 'voicepack_aura' ? 4149 : Number(rawVoiceId);
+            if (voicePackId === 4148) {
+                this.classBadgeEl.textContent = `${'SOVIET RADIO COMMS [72.4 MHz // '}${playerType}]`;
+            } else if (voicePackId === 4149) {
+                this.classBadgeEl.textContent = `${'AURA TACTICAL LINK [SYNTH // '}${playerType}]`;
+            } else {
+                this.classBadgeEl.textContent = `${playerType} LINK [ENCRYPTED]`;
+            }
         }
     }
 

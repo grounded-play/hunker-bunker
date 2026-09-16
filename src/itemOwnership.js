@@ -149,6 +149,10 @@ for (const mod of RIG_MODULE_DEFS) {
     DEFAULT_OWNED.add(mod.itemdefid);
 }
 
+// Tactical voice packs (4148 Soviet Sub-Commander, 4149 AURA) unlocked by default
+DEFAULT_OWNED.add(4148);
+DEFAULT_OWNED.add(4149);
+
 export function getCatalogEntry(itemdefid) {
     const id = toId(itemdefid);
     if (id === null) return null;

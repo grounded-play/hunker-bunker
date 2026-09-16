@@ -651,7 +651,7 @@ export class AudioManager {
     static playVoiceCallout(cueType, options = {}) {
         if (this.globalMuted || !this.voiceEnabled) return null;
 
-        const voicePackId = (typeof window !== 'undefined' ? (window.loadout?.state?.voicePackId || window.loadout?.getEquippedVoicePackId?.()) : null);
+        const voicePackId = options.voicePackId ?? (typeof window !== 'undefined' ? (window.loadout?.state?.voicePackId || window.loadout?.getEquippedVoicePackId?.()) : null);
         if (!voicePackId) return null;
 
         const idStr = String(voicePackId);
@@ -704,8 +704,8 @@ export class AudioManager {
             || speakerName.includes('CORPO') || speakerName.includes('CRASH QUEEN')
             || speakerName.includes('ABG') || speakerName.includes('HYBRID')) {
             priority = 1;
-        } else if (speakerName.includes('MOTHERSHIP') || speakerName.includes('SYSTEM') || speakerName.includes('EXOSUIT') || speakerName.includes('BUNKER')) {
-            priority = 3;
+        } else if (speakerName.includes('MOTHERSHIP') || speakerName.includes('SYSTEM') || speakerName.includes('EXOSUIT') || speakerName.includes('BUNKER') || speakerName.includes('COMMANDER') || speakerName.includes('AURA')) {
+            priority = 2;
         }
 
         // 1. Check direct key match or character script mapping
@@ -722,6 +722,25 @@ export class AudioManager {
         else if (textLower.includes('command not recognized')) targetKey = 'voice_kiosk_ch4_01';
         else if (textLower.includes('training model sort arm 4a')) targetKey = 'voice_system_ch5_01';
         else if (textLower.includes('thermal warning in sector 4')) targetKey = 'voice_system_ch6_01';
+
+        // Soviet Sub-Commander Radio (Voicepack 4148)
+        else if (speakerName.includes('COMMANDER') || speakerName.includes('SOVIET')) {
+            if (textLower.includes('breathing') || textLower.includes('alive') || textLower.includes('report in') || textLower.includes('channel open')) targetKey = 'voice_commander_comms_online';
+            else if (textLower.includes('order') || textLower.includes('move out') || textLower.includes('readiness') || textLower.includes('mission')) targetKey = 'voice_commander_mission_active';
+            else if (textLower.includes('flak') || textLower.includes('impact') || textLower.includes('wreckage') || textLower.includes('wrecked')) targetKey = 'voice_commander_hull_damaged';
+            else if (textLower.includes('salvage') || textLower.includes('scrap')) targetKey = 'voice_commander_salvage_banked';
+            else if (textLower.includes('extraction') || textLower.includes('home')) targetKey = 'voice_commander_return_to_ship';
+            else targetKey = 'voice_commander_comms_online';
+        }
+        // Synthesized AI AURA (Voicepack 4149)
+        else if (speakerName.includes('AURA')) {
+            if (textLower.includes('stable') || textLower.includes('neural link') || textLower.includes('online') || textLower.includes('biometric')) targetKey = 'voice_aura_comms_online';
+            else if (textLower.includes('parameter') || textLower.includes('mission') || textLower.includes('protocol') || textLower.includes('tactical')) targetKey = 'voice_aura_mission_active';
+            else if (textLower.includes('impact') || textLower.includes('compromised')) targetKey = 'voice_aura_hull_damaged';
+            else if (textLower.includes('salvage')) targetKey = 'voice_aura_salvage_banked';
+            else if (textLower.includes('extraction')) targetKey = 'voice_aura_return_to_ship';
+            else targetKey = 'voice_aura_comms_online';
+        }
 
         // Mothership Command
         else if (speakerName.includes('MOTHERSHIP')) {

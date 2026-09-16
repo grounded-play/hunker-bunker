@@ -491,7 +491,7 @@ describe('createArmoryUi ownership gating', () => {
         openSlot(container, 'voicebank').dispatchEvent(tileClick('4148'));
         expect(loadoutManager.state.voicePackId).toBe('4148');
         expect(globalThis.window.AudioManager.playVoiceCallout)
-            .toHaveBeenCalledWith('boss_spotted', { volume: 0.9, audition: true });
+            .toHaveBeenCalledWith('boss_spotted', { voicePackId: '4148', volume: 0.9, audition: true });
 
         globalThis.window = previousWindow;
     });

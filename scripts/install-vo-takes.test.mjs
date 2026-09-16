@@ -17,9 +17,9 @@ describe('applySelections', () => {
 });
 
 describe('allSlotKeys', () => {
-    it('is the 20 combat cue slots across both banks', () => {
-        expect(SLOTS).toHaveLength(20);
-        expect(new Set(SLOTS).size).toBe(20);
+    it('is the 104 voice cue slots across both banks', () => {
+        expect(SLOTS).toHaveLength(104);
+        expect(new Set(SLOTS).size).toBe(104);
     });
 });
 

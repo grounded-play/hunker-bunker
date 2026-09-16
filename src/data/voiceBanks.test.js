@@ -17,9 +17,9 @@ describe('VOICE_BANKS', () => {
         }
     });
 
-    it('gives each bank the six delivered lines plus four generated counterparts', () => {
+    it('gives each bank the full suite of combat and wave 2 slots', () => {
         for (const bank of Object.values(VOICE_BANKS)) {
-            expect(bank.slots).toHaveLength(10);
+            expect(bank.slots).toHaveLength(52);
         }
     });
 
@@ -104,7 +104,7 @@ describe('voice script routing', () => {
 
     it('publishes complete trigger, exclusion, subtitle and take metadata', () => {
         const rows = getVoiceScriptRows();
-        expect(rows).toHaveLength(20);
+        expect(rows).toHaveLength(104);
         for (const row of rows) {
             expect(row.semanticId).toBe(`${row.bankId}:${row.cue}`);
             expect(row.repeatScope).toBe('expedition');
