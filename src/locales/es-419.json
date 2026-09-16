@@ -303,7 +303,48 @@
       "aria_label_build_and_developer": "Información de compilación y desarrollador",
       "system_build": "COMPILACIÓN DEL SISTEMA",
       "dev_console": "CONSOLA DEV",
-      "initializing_systems": "INICIALIZANDO SISTEMAS"
+      "initializing_systems": "INICIALIZANDO SISTEMAS",
+      "msg_biometric_airlock": "CALIBRANDO LA ESCLUSA BIOMÉTRICA",
+      "msg_reactor_bulkhead": "BLINDANDO LA MAMPARA DE REFRIGERANTE DEL REACTOR",
+      "msg_thermal_shield": "ESTABILIZANDO EL ESCUDO SUPERCONDUCTOR TÉRMICO",
+      "msg_xeno_codes": "DESCIFRANDO CÓDIGOS DE SEGURIDAD XENOTECNOLÓGICOS",
+      "msg_corroded_ports": "SELLANDO PUERTOS EXTERIORES CORROÍDOS",
+      "msg_door_hydraulics": "ACTIVANDO LA HIDRÁULICA DE LA PUERTA DE TRÁNSITO",
+      "msg_gigawatt_goliath": "LOCALIZANDO EL PERFIL DE RADAR DEL GOLIAT GIGAVATIO",
+      "msg_temp_drop": "ADVERTENCIA: SE DETECTA UNA CAÍDA BRUSCA DE TEMPERATURA",
+      "msg_hull_contagion": "PELIGRO: CONTAGIO BIOORGÁNICO DEL CASCO CRÍTICO",
+      "msg_corrosive_anomalies": "IDENTIFICANDO ANOMALÍAS CORROSIVAS DEL CAMPO DE APOYO",
+      "msg_gelid_drain": "MIDIENDO EL ÍNDICE DE DESGASTE GÉLIDO DEL EXOTRAJE",
+      "msg_bio_pathogens": "MONITOREANDO PATÓGENOS BIOCINÉTICOS SUBTERRÁNEOS",
+      "msg_metal_supports": "MAPEANDO SOPORTES METÁLICOS SEGUROS",
+      "msg_cryo_pipelines": "ESTABILIZANDO LAS TUBERÍAS DE REFRIGERANTE CRIOGÉNICO",
+      "msg_spore_biospheres": "AISLANDO BIOSFERAS INFESTADAS DE ESPORAS",
+      "msg_glacial_caverns": "EXPLORANDO CAVERNAS GLACIARES GEOTÉRMICAS",
+      "msg_salvage_debris": "ESCANEANDO ESCOMBROS RECUPERABLES",
+      "msg_dust_signals": "FILTRANDO SEÑALES DE POLVO DEL METAL RECUPERABLE",
+      "msg_gold_cache": "DETECTANDO ALIJO DE NÚCLEO CON FIRMA DORADA",
+      "msg_high_value_lobes": "EL RADAR RESUELVE LÓBULOS INUSUALES DE ALTO VALOR",
+      "msg_o2_mixer": "PRECALENTANDO LA VÁLVULA MEZCLADORA DEL GENERADOR DE OXÍGENO",
+      "msg_n2_cooler": "PURGANDO EL ENFRIADOR DE NITRÓGENO LÍQUIDO DEL COMPRESOR",
+      "msg_radome_antenna": "ALINEANDO LA ANTENA EM DE RADOMO DE ALTA GANANCIA",
+      "msg_nanobot_fabricator": "SUBIENDO SUBRUTINAS DEL FABRICADOR DE NANOBOTS",
+      "msg_defensive_matrix": "AJUSTANDO LA POLARIDAD DE LAS CELDAS DE LA MATRIZ DEFENSIVA",
+      "msg_recon_datalink": "ESTABLECIENDO ENLACE DE DATOS DE RECONOCIMIENTO RÁPIDO",
+      "msg_exosuit_buffers": "INICIANDO LOS AMORTIGUADORES DE FUERZA DEL EXOTRAJE PESADO",
+      "msg_debris_deflection": "CALIBRANDO LA ASISTENCIA DE DESVÍO DE ESCOMBROS",
+      "msg_display_schematics": "ALMACENANDO ESQUEMAS DE PANTALLA INTERACTIVOS",
+      "msg_audio_matrix": "ESTABILIZANDO EL FLUJO DE LA MATRIZ DE AUDIO TÁCTICO",
+      "msg_tactical_data": "SINCRONIZANDO EL ARCHIVO DE DATOS TÁCTICOS",
+      "log_verifying_steam": "> VERIFICANDO LA INTEGRACIÓN DE STEAMWORKS...",
+      "log_steam_error": "> ERROR DE COMPROBACIÓN DE STEAM: {error}",
+      "log_unknown_error": "ERROR DESCONOCIDO",
+      "log_steam_linked": "> STEAM VINCULADO: {persona}",
+      "log_connected": "CONECTADO",
+      "log_steam_degraded": "> STEAM DEGRADADO: {reason} — CONTINUANDO",
+      "log_asset": "> {message}...",
+      "log_booting_webgl": "> INICIANDO EL NÚCLEO TÁCTICO WEBGL...",
+      "log_preloading_cinematic": "> PRECARGANDO LA SECUENCIA CINEMÁTICA (DoorIntro)...",
+      "log_assets_loaded": "> TODOS LOS RECURSOS CARGADOS — ABRIENDO LA ESCLUSA..."
     },
     "splash_steam_badge": {
       "title_click_to_open": "Haz clic para abrir el perfil del Overlay de Steam",
@@ -1051,7 +1092,12 @@
       "choice_required": "SE REQUIERE ELECCIÓN",
       "event_resolved": "Evento del terminal resuelto. Los sistemas de la tienda siguen disponibles.",
       "engineer_verify": "VERIFICAR (INGENIERO)",
-      "mimic_neutralized": "ADVERTENCIA: FIRMA DEL TERMINAL FALSIFICADA — MÍMICO NEUTRALIZADO. ES SEGURO CONTINUAR."
+      "mimic_neutralized": "ADVERTENCIA: FIRMA DEL TERMINAL FALSIFICADA — MÍMICO NEUTRALIZADO. ES SEGURO CONTINUAR.",
+      "day_n": "DÍA {day}",
+      "daylight": "LUZ DIURNA",
+      "night_ops": "OPERACIONES NOCTURNAS",
+      "ready": "LISTO",
+      "insufficient": "INSUFICIENTE"
     },
     "journal": {
       "day_time": "D{day} {minute}:{second}"
@@ -1065,7 +1111,9 @@
       "next_cost_none": "PRÓXIMO COSTE: NINGUNO",
       "generator_maxed": "LA SALIDA DEL GENERADOR DE O₂ ESTÁ AL MÁXIMO PARA ESTA BAHÍA.",
       "repair_to_create_zone": "REPARA ESTE MÓDULO PARA CREAR UNA ZONA SEGURA DE O₂ CERCA DE TU NAVE.",
-      "upgrades_expand_field": "LAS MEJORAS AMPLÍAN EL CAMPO AZUL DE O₂ PARA RECARGAR DESDE MÁS LEJOS."
+      "upgrades_expand_field": "LAS MEJORAS AMPLÍAN EL CAMPO AZUL DE O₂ PARA RECARGAR DESDE MÁS LEJOS.",
+      "hearts_available": "♥ ×{count} DISPONIBLES",
+      "med_for_heart": "{med}/10 PARA ♥"
     },
     "skills": {
       "completed": "COMPLETADO",
@@ -2431,6 +2479,322 @@
       }
     },
     "steamItems": {
+      "1000": {
+        "desc": "Un fragmento de maquinaria subterránea antigua, usado en intercambios básicos de fabricación.",
+        "name": "Fragmento de reliquia común"
+      },
+      "1100": {
+        "desc": "Un núcleo de procesador intacto de las bóvedas profundas, usado para crear cosméticos de élite.",
+        "name": "Fragmento de reliquia raro"
+      },
+      "2000": {
+        "desc": "Otorgado a operadores que extraen con éxito usando un armazón de explorador. Equipo cosmético.",
+        "name": "Parche de victoria de explorador"
+      },
+      "2001": {
+        "desc": "Otorgado a operadores que extraen con éxito usando un armazón de tanque. Equipo cosmético.",
+        "name": "Parche de victoria de tanque"
+      },
+      "2002": {
+        "desc": "Otorgado a operadores que extraen con éxito usando un armazón de ingeniero. Equipo cosmético.",
+        "name": "Parche de victoria de ingeniero"
+      },
+      "2003": {
+        "desc": "Otorgado por derrotar a la reina del Acto 2. Equipo cosmético.",
+        "name": "Emblema matarreinas"
+      },
+      "2004": {
+        "desc": "Otorgado por recuperar el archivo completo del búnker. Equipo cosmético.",
+        "name": "Emblema de archivista"
+      },
+      "2100": {
+        "desc": "Un acabado de tejido de alto rendimiento para tu exotraje. Equipo cosmético.",
+        "name": "Calcomanía de fibra de carbono"
+      },
+      "2200": {
+        "desc": "Acabado cromado pulido de alta reflectividad para el arma secundaria estándar. Equipo cosmético.",
+        "name": "Arma secundaria cromada"
+      },
+      "4000": {
+        "desc": "Un contenedor sellado recuperado del archivo profundo del búnker. Requiere una Llave de Alijo para abrirse. Las probabilidades se publican en la página de la tienda antes de la compra.",
+        "name": "Alijo de reliquias profundas"
+      },
+      "4001": {
+        "desc": "Abre un único Alijo de Reliquias Profundas. Se compra en la Tienda de Objetos de Steam; nunca cae gratis.",
+        "name": "Llave de descifrado de reliquias"
+      },
+      "4100": {
+        "desc": "Chasis de polímero recubierto de escarcha criogénica con respiraderos de refrigeración.",
+        "name": "Arma secundaria Congelación Bajo Cero"
+      },
+      "4101": {
+        "desc": "Librea industrial de advertencia amarilla y negra de alta visibilidad.",
+        "name": "Subfusil de franjas de peligro"
+      },
+      "4102": {
+        "desc": "Cañón pesado de tungsteno con estrías disipadoras de calor.",
+        "name": "Escopeta Perforadora Tectónica"
+      },
+      "4103": {
+        "desc": "Bobinas de plasma cian superconductoras enrolladas en el bastidor del impulsor de arco Tesla-Lock.",
+        "name": "Impulsor de arco de crioplasma"
+      },
+      "4104": {
+        "desc": "Chatarra de búnker desgastada con incrustaciones óseas bioluminiscentes.",
+        "name": "Carabina de trinchera Óxido y Hueso"
+      },
+      "4105": {
+        "desc": "Cajón de mecanismos de vidrio volcánico pulido con detalles de acero de Damasco.",
+        "name": "Arma secundaria Fragmento de Obsidiana"
+      },
+      "4106": {
+        "desc": "Tanque biomecánico que rezuma esporas fúngicas verdes palpitantes.",
+        "name": "Rociador de esporas bioluminiscente"
+      },
+      "4107": {
+        "desc": "Núcleo de reactor infundido con magma que palpita con energía térmica naranja.",
+        "name": "Fundidor del núcleo profundo"
+      },
+      "4108": {
+        "desc": "Placa de circuito holográfica animada que parpadea con registros de error.",
+        "name": "Bólter de circuito glitcheado"
+      },
+      "4109": {
+        "desc": "Emisor de materia oscura con horizonte de sucesos gravitacional púrpura.",
+        "name": "Cañón de rayos Caminante del Vacío"
+      },
+      "4110": {
+        "desc": "Aleación de quitina viva recuperada de la corona de la reina de la prole.",
+        "name": "Carabina del caparazón de la reina"
+      },
+      "4111": {
+        "desc": "Acelerador de antimateria dorado puro con estela de partículas solares.",
+        "name": "Rifle de antimateria Llamarada Solar"
+      },
+      "4112": {
+        "desc": "Blindaje pesado reforzado contra riesgos y foco en el visor.",
+        "name": "Ingeniero perforador subterráneo"
+      },
+      "4113": {
+        "desc": "Traje sigiloso presurizado de camuflaje blanco con aislamiento térmico.",
+        "name": "Explorador Crio-Vanguardia"
+      },
+      "4114": {
+        "desc": "Armadura de placas antiexplosión remachada con respirador de gas.",
+        "name": "Guardián de trinchera pesado"
+      },
+      "4115": {
+        "desc": "Nanotejido negro mate sigiloso con sensor óptico púrpura.",
+        "name": "Reconocimiento comando del vacío"
+      },
+      "4116": {
+        "name": "Arnés biosintetizador",
+        "desc": "Arnés de jeringas biomecánico con tubos de fluido palpitantes."
+      },
+      "4117": {
+        "desc": "Armadura de potencia hidráulica pesada con núcleo de magma brillante.",
+        "name": "Exo-coloso Acorazado"
+      },
+      "4118": {
+        "desc": "Camuflaje activo con destello holográfico y visor cibernético.",
+        "name": "Infiltrador Ciber-Espectro"
+      },
+      "4119": {
+        "desc": "Armadura híbrida mutada de caparazón alienígena vivo y acero.",
+        "name": "Exotraje simbionte Señor de la Colmena"
+      },
+      "4120": {
+        "desc": "Insignia conmemorativa de la primera expedición subterránea.",
+        "name": "Parche de pionero bajo cero"
+      },
+      "4121": {
+        "desc": "Emblema fluorescente de advertencia radiactiva.",
+        "name": "Emblema del trébol radiactivo"
+      },
+      "4122": {
+        "desc": "Escudo estilizado de concha otorgado por purgas de nidos profundos.",
+        "name": "Escudo de cazador de caracoles de esporas"
+      },
+      "4123": {
+        "desc": "Insignia memorial de la división de topógrafos sísmicos perdida.",
+        "name": "Calcomanía del escuadrón perdido del Búnker 404"
+      },
+      "4124": {
+        "desc": "Calavera cromada holográfica con cuencas cian brillantes.",
+        "name": "Pin táctico Ciber-Calavera"
+      },
+      "4125": {
+        "desc": "Ave de hielo mítica que se alza del permafrost subterráneo.",
+        "name": "Insignia Crio-Fénix"
+      },
+      "4126": {
+        "desc": "Sello dorado en relieve que celebra la eliminación de la reina de la prole.",
+        "name": "Sello dorado matarreinas"
+      },
+      "4127": {
+        "desc": "Sigilo de hilo violeta orbital que rodea un horizonte de sucesos de obsidiana.",
+        "name": "Sigilo del Horizonte del Vacío"
+      },
+      "4128": {
+        "desc": "Jeroglíficos alienígenas arcaicos hallados en el estrato cero.",
+        "name": "Glifos del núcleo antiguo"
+      },
+      "4129": {
+        "desc": "Águila de mariscal dorada y núcleo ámbar enmarcados por un laurel de aleación de meteorito.",
+        "name": "Escudo reliquia del Gran Mariscal"
+      },
+      "4130": {
+        "desc": "Diminuto núcleo escarchado que expulsa vapor frío microscópico.",
+        "name": "Amuleto mini crionúcleo"
+      },
+      "4131": {
+        "desc": "Casquillo usado grabado de la primera brecha del búnker.",
+        "name": "Casquillo del 50 usado"
+      },
+      "4132": {
+        "desc": "Perla biológica lustrosa recuperada de una reina de la colmena.",
+        "name": "Perla de caracol de esporas"
+      },
+      "4133": {
+        "desc": "Silbato táctico retro colgando de una cadena de placas de identificación.",
+        "name": "Silbato de trinchera"
+      },
+      "4134": {
+        "desc": "Chip de circuito con lectura LED verde miniatura parpadeante.",
+        "name": "Tarjeta RAM glitcheada"
+      },
+      "4135": {
+        "desc": "La aguja gira sin control al apuntar hacia las cámaras de los jefes.",
+        "name": "Brújula geodésica"
+      },
+      "4136": {
+        "desc": "Diminuto dron torreta articulado con haz de búsqueda móvil.",
+        "name": "Cabezón de dron miniaturizado"
+      },
+      "4137": {
+        "desc": "Embrión luminoso suspendido que reacciona a los disparos.",
+        "name": "Frasco biológico ámbar"
+      },
+      "4138": {
+        "desc": "Agujero negro en miniatura con partículas de plasma en órbita.",
+        "name": "Microsingularidad de materia oscura"
+      },
+      "4139": {
+        "desc": "Emite rayos dorados radiantes y un tintineo de monedas.",
+        "name": "Llave dorada del subbúnker"
+      },
+      "4140": {
+        "desc": "+8% de duración de congelación criogénica en ataques elementales.",
+        "name": "Sobrecarga de criocondensador"
+      },
+      "4141": {
+        "desc": "+20% de radio de atracción magnética de chatarra y salvamento.",
+        "name": "Bobina magnética carroñera"
+      },
+      "4142": {
+        "desc": "-12% de daño de nubes de esporas y gas ácido.",
+        "name": "Respiradero con filtro biopeligroso"
+      },
+      "4143": {
+        "desc": "+1 de penetración perforante en proyectiles de armas cinéticas.",
+        "name": "Buje de impacto cinético"
+      },
+      "4144": {
+        "desc": "+10% de velocidad de recarga del escudo tras recibir fuego.",
+        "name": "Intercambiador de calor térmico"
+      },
+      "4145": {
+        "desc": "Detecta salas y cofres ocultos en un radio de 15 m.",
+        "name": "Transceptor de ecolocalización"
+      },
+      "4146": {
+        "desc": "+15% de velocidad de movimiento durante 4 s al bajar del 25% de PV.",
+        "name": "Bomba de adrenalina simbiótica"
+      },
+      "4147": {
+        "desc": "Matar a 5 enemigos en 3 s devuelve 1 carga de impulso/carrera.",
+        "name": "Sobremarcha de flujo de punto cero"
+      },
+      "4148": {
+        "desc": "Locuciones tácticas de un comandante militar de voz áspera.",
+        "name": "Radio del subcomandante soviético"
+      },
+      "4149": {
+        "desc": "Anunciadora de combate de IA táctica, serena y analítica.",
+        "name": "Unidad de IA sintetizada «AURA»"
+      },
+      "4150": {
+        "desc": "Estilo de HUD de terminal de fósforo ámbar retro de los 80.",
+        "name": "Tema de monitor CRT ámbar"
+      },
+      "4151": {
+        "desc": "Radar y telemetría de HUD verde de visión nocturna militar.",
+        "name": "HUD de fósforo de radar esmeralda"
+      },
+      "4152": {
+        "desc": "Los proyectiles emiten estelas láser verde esmeralda brillantes.",
+        "name": "Trazadoras de vacío esmeralda"
+      },
+      "4153": {
+        "desc": "El fogonazo desata una explosión de cristales de hielo en miniatura.",
+        "name": "Fogonazo de onda de choque criogénica"
+      },
+      "4154": {
+        "name": "Llave de descifrado de reliquias (ganada)",
+        "desc": "Desbloquea 1 Alijo de Reliquias Profundas en la Bóveda Steam. Se obtiene gratis canjeando Fragmentos del Núcleo Profundo en el dispensario."
+      },
+      "4155": {
+        "desc": "Paquete que contiene 5 Llaves de Descifrado de Reliquias.",
+        "name": "Paquete maestro de 5 llaves de reliquia"
+      },
+      "4156": {
+        "desc": "Metal de fabricación estacional principal para apertura y forja.",
+        "name": "Lingote de crioaleación"
+      },
+      "4157": {
+        "desc": "Núcleo de energía concentrado usado para crear Sobrecargas épicas.",
+        "name": "Matriz de subnúcleo profundo"
+      },
+      "4158": {
+        "desc": "Catalizador biológico raro necesario para aspectos legendarios.",
+        "name": "Catalizador de ámbar gris refinado"
+      },
+      "4159": {
+        "desc": "Moneda otorgada por duplicados al abrir cajas (100 fragmentos = cualquier objeto).",
+        "name": "Fragmento del núcleo profundo (ficha)"
+      },
+      "4160": {
+        "desc": "Blindaje de traje con contrapeso. Más pesado y más difícil de mover.",
+        "name": "Blindaje de lastre"
+      },
+      "4161": {
+        "desc": "Fundidora dorsal que procesa el salvamento en el sitio.",
+        "name": "Horno de chatarra"
+      },
+      "4162": {
+        "desc": "Inyector con púas crecido de caparazón y acero quirúrgico.",
+        "name": "Perdición de la reina"
+      },
+      "4163": {
+        "desc": "Lente de escaneo monocular antigua en un brazo articulado.",
+        "name": "Lente de archivista"
+      },
+      "4164": {
+        "desc": "Módulo de enrutamiento de cristal que está frío al tacto.",
+        "name": "Conducto de fragmentos"
+      },
+      "4165": {
+        "desc": "Tambor de recuperación de materia. Poco vistoso y eficaz.",
+        "name": "Refinador de duplicados"
+      },
+      "4166": {
+        "desc": "Diafragma de rebreather torácico que se detiene a media respiración.",
+        "name": "Sello de presión"
+      },
+      "4167": {
+        "desc": "Ancla de descenso que ha bajado más de lo que debía.",
+        "name": "Ancla profunda"
+      },
       "4200": {
         "desc": "Acabado completo del chasis del operador con la identidad Escarcha Profunda.",
         "name": "Aspecto de operador Escarcha Profunda"
@@ -2444,16 +2808,20 @@
         "name": "Amuleto Escarcha Profunda"
       },
       "4203": {
-        "name": "Parche Escarcha Profunda"
+        "name": "Parche Escarcha Profunda",
+        "desc": "Motivo bordado de corona de hielo blanco hueso con líneas de fractura cian pálido y bordes deshilachados."
       },
       "4204": {
-        "name": "Lustre Escarcha Profunda"
+        "name": "Lustre Escarcha Profunda",
+        "desc": "Esmalte de hielo cristalino subsuperficial sobre el blindaje del arma con destello especular cian pálido."
       },
       "4205": {
-        "name": "Trazadoras Escarcha Profunda"
+        "name": "Trazadoras Escarcha Profunda",
+        "desc": "Los proyectiles emiten estelas cian-blanco pálido brillantes con partículas de escarcha a la deriva."
       },
       "4206": {
-        "name": "Tema de HUD Escarcha Profunda"
+        "name": "Tema de HUD Escarcha Profunda",
+        "desc": "Tema de HUD táctico escarchado con telemetría vectorial cian-blanco pálido."
       },
       "4207": {
         "desc": "Acabado completo del chasis del operador con la identidad Óxido y Hueso.",
@@ -2468,16 +2836,20 @@
         "name": "Amuleto Óxido y Hueso"
       },
       "4210": {
-        "name": "Parche Óxido y Hueso"
+        "name": "Parche Óxido y Hueso",
+        "desc": "Respaldo de arpillera áspera con motivo óseo cosido a mano e hilo de brasa apagada."
       },
       "4211": {
-        "name": "Lustre Óxido y Hueso"
+        "name": "Lustre Óxido y Hueso",
+        "desc": "Acabado de arma de hierro oxidado y picado con lustre aceitoso y calidez de brasa apagada."
       },
       "4212": {
-        "name": "Trazadoras Óxido y Hueso"
+        "name": "Trazadoras Óxido y Hueso",
+        "desc": "Estelas balísticas pesadas de brasa apagada que desprenden chispas de hierro ardiente."
       },
       "4213": {
-        "name": "Tema de HUD Óxido y Hueso"
+        "name": "Tema de HUD Óxido y Hueso",
+        "desc": "Estilo de HUD de supervivencia subterránea en naranja brasa apagada con marcos de telemetría remachados."
       },
       "4214": {
         "desc": "Acabado completo del chasis del operador con la identidad Quitina de Colmena.",
@@ -2492,16 +2864,20 @@
         "name": "Amuleto Quitina de Colmena"
       },
       "4217": {
-        "name": "Parche Quitina de Colmena"
+        "name": "Parche Quitina de Colmena",
+        "desc": "Placa fina de caparazón alienígena seco con vetas verdes palpitantes que forman una reina de la colmena."
       },
       "4218": {
-        "name": "Lustre Quitina de Colmena"
+        "name": "Lustre Quitina de Colmena",
+        "desc": "Recubrimiento de arma de caparazón alienígena vivo con iridiscencia bioluminiscente cambiante de mancha de aceite."
       },
       "4219": {
-        "name": "Trazadoras Quitina de Colmena"
+        "name": "Trazadoras Quitina de Colmena",
+        "desc": "Dardos aguijón orgánicos que dejan una cinta de plasma verde enfermizo y esporas que se posan."
       },
       "4220": {
-        "name": "Tema de HUD Quitina de Colmena"
+        "name": "Tema de HUD Quitina de Colmena",
+        "desc": "Interfaz ocular de simbionte alienígena con lecturas verdes bioluminiscentes enfermizas y un pulso respiratorio lento."
       },
       "4221": {
         "desc": "Acabado completo del chasis del operador con la identidad Corporativo Horizon.",
@@ -2516,16 +2892,20 @@
         "name": "Amuleto Corporativo Horizon"
       },
       "4224": {
-        "name": "Parche Corporativo Horizon"
+        "name": "Parche Corporativo Horizon",
+        "desc": "Sarga blanca nítida con bordado láser en verde azulado frío que forma una marca de horizonte limpia."
       },
       "4225": {
-        "name": "Lustre Corporativo Horizon"
+        "name": "Lustre Corporativo Horizon",
+        "desc": "Pulido cerámico blanco impecable con destello especular ceñido y realces fresnel verde azulado frío."
       },
       "4226": {
-        "name": "Trazadoras Corporativo Horizon"
+        "name": "Trazadoras Corporativo Horizon",
+        "desc": "Rayos láser sólidos verde azulado frío de alta precisión con fogonazos geométricos limpios."
       },
       "4227": {
-        "name": "Tema de HUD Corporativo Horizon"
+        "name": "Tema de HUD Corporativo Horizon",
+        "desc": "Interfaz de HUD clínica de contratista militar en verde azulado frío con retículas de coordenadas finísimas."
       },
       "4228": {
         "desc": "Acabado completo del chasis del operador con la identidad Búnker 404.",
@@ -2540,16 +2920,20 @@
         "name": "Amuleto Búnker 404"
       },
       "4231": {
-        "name": "Parche Búnker 404"
+        "name": "Parche Búnker 404",
+        "desc": "Sarga negra con hilo magenta que forma una insignia de escuadra glitcheada con bloques desplazados."
       },
       "4232": {
-        "name": "Lustre Búnker 404"
+        "name": "Lustre Búnker 404",
+        "desc": "Acabado de arma glitcheado con desplazamiento horizontal de textura y desgarro cromático magenta de error de señal."
       },
       "4233": {
-        "name": "Trazadoras Búnker 404"
+        "name": "Trazadoras Búnker 404",
+        "desc": "Estelas de proyectil magenta desplazadas que tartamudean y se rompen en bloques glitch desfasados."
       },
       "4234": {
-        "name": "Tema de HUD Búnker 404"
+        "name": "Tema de HUD Búnker 404",
+        "desc": "Tema de HUD de señal corrupta en magenta eléctrico con temblor intermitente de líneas de barrido y lecturas de error."
       },
       "4235": {
         "desc": "Acabado completo del chasis del operador con la identidad Gran Mariscal.",
@@ -2564,16 +2948,20 @@
         "name": "Amuleto Gran Mariscal"
       },
       "4238": {
-        "name": "Parche Gran Mariscal"
+        "name": "Parche Gran Mariscal",
+        "desc": "Respaldo de terciopelo negro profundo con bordado denso de canutillo dorado ámbar en un escudo reliquia de laurel."
       },
       "4239": {
-        "name": "Lustre Gran Mariscal"
+        "name": "Lustre Gran Mariscal",
+        "desc": "Acabado de arma de aleación de meteorito bruñida con volutas de laurel dorado ámbar cálido y destello anisotrópico."
       },
       "4240": {
-        "name": "Trazadoras Gran Mariscal"
+        "name": "Trazadoras Gran Mariscal",
+        "desc": "Estelas de energía doradas pesadas y ceremoniales acompañadas de brasas que caen y una corona radiante."
       },
       "4241": {
-        "name": "Tema de HUD Gran Mariscal"
+        "name": "Tema de HUD Gran Mariscal",
+        "desc": "Interfaz de mando imperial regia en dorado ámbar cálido enmarcada con soportes de hojas de laurel de archivo."
       }
     }
   }

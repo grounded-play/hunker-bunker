@@ -312,7 +312,11 @@ const DOM_SINK = new RegExp([
     '\\.title\\s*=',
     '\\.alt\\s*=',
     'setAttribute\\(\\s*[\'"](?:aria-label|title|placeholder|alt)[\'"]',
-    'insertAdjacentHTML\\('
+    'insertAdjacentHTML\\(',
+    // Text-setting helpers. A module that funnels display strings through its
+    // own helper hides them from an assignment-only scan: main.js's loader log
+    // and hub status counters were invisible until these were added.
+    '\\b(?:renderLoaderLogs|setText|setLabel|setContent|writeText)\\('
 ].join('|'));
 
 /**

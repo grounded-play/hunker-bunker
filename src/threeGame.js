@@ -11684,9 +11684,9 @@ export class ThreeGame {
             const element = document.getElementById(id);
             if (element) element.textContent = text;
         };
-        setText('terminal-log-day', `DAY ${day}`);
+        setText('terminal-log-day', t('ui.console.day_n', { day }));
         setText('terminal-log-phase', phase);
-        setText('terminal-log-light', lightIsDay ? 'DAYLIGHT' : 'NIGHT OPS');
+        setText('terminal-log-light', lightIsDay ? t('ui.console.daylight') : t('ui.console.night_ops'));
         setText('terminal-log-transition', `${lightIsDay ? 'DUSK' : 'DAWN'} IN ${String(Math.floor(transitionSeconds / 60)).padStart(2, '0')}:${String(transitionSeconds % 60).padStart(2, '0')}`);
 
         const mission = this.missionState;
@@ -11800,7 +11800,7 @@ export class ThreeGame {
                 }
             };
 
-            setText('terminal-current-objective-status', canAfford ? 'READY' : 'INSUFFICIENT');
+            setText('terminal-current-objective-status', canAfford ? t('ui.console.ready') : t('ui.console.insufficient'));
         } else {
             if (purchaseZone) {
                 purchaseZone.classList.add('hidden');
@@ -11825,7 +11825,7 @@ export class ThreeGame {
         this.renderTerminalObjectiveJournal(bankState, activeGoal);
         this.updateTerminalClock();
         const heartsFromMed = Math.floor(bankState.med / 10);
-        setText('terminal-med-hearts', heartsFromMed > 0 ? `♥ ×${heartsFromMed} AVAILABLE` : `${bankState.med}/10 FOR ♥`);
+        setText('terminal-med-hearts', heartsFromMed > 0 ? t('ui.bank.hearts_available', { count: heartsFromMed }) : t('ui.bank.med_for_heart', { med: bankState.med }));
 
         const hint = document.getElementById('terminal-bank-hint');
         if (hint) {
@@ -12792,7 +12792,7 @@ export class ThreeGame {
             const missingText = canAfford ? '' : ` // ${this.getMissingResourceText(effectiveCost, bankState)}`;
             setText('o2-generator-modal-cost', `NEXT COST: ${this.formatResourceCost(effectiveCost, { bankState, showHaveNeed: !canAfford })}${discountTag}${missingText}`);
         } else {
-            setText('o2-generator-modal-cost', 'NEXT COST: NONE');
+            setText('o2-generator-modal-cost', t('ui.bank.next_cost_none'));
         }
         setText('o2-generator-modal-hint', generatorState.maxed
             ? 'O2 GENERATOR OUTPUT IS MAXED.'

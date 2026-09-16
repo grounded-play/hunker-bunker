@@ -14457,50 +14457,50 @@ document.addEventListener('DOMContentLoaded', async () => {
         const name = itemName.toLowerCase();
 
         // Doors
-        if (name.includes('door_bio')) return 'CALIBRATING BIOMETRIC AIRLOCK GATEWAY';
-        if (name.includes('door_nuclear')) return 'SHIELDING REACTOR PILE COOLANT BULKHEAD';
-        if (name.includes('door_cryo')) return 'STABILIZING THERMAL SUPERCONDUCTOR SHIELD';
-        if (name.includes('door_alien')) return 'DECRYPTING XENO-TECHNOLOGY SECURITY CODES';
-        if (name.includes('door_rust')) return 'SEALING CORROSION-DECAYED OUTBOARD PORTS';
-        if (name.includes('door')) return 'ENGAGING SECTOR TRANSIT DOORWAY HYDRAULICS';
+        if (name.includes('door_bio')) return t('ui.loading.msg_biometric_airlock');
+        if (name.includes('door_nuclear')) return t('ui.loading.msg_reactor_bulkhead');
+        if (name.includes('door_cryo')) return t('ui.loading.msg_thermal_shield');
+        if (name.includes('door_alien')) return t('ui.loading.msg_xeno_codes');
+        if (name.includes('door_rust')) return t('ui.loading.msg_corroded_ports');
+        if (name.includes('door')) return t('ui.loading.msg_door_hydraulics');
 
         // Snails / Enemies
-        if (name.includes('boss_cybersnail')) return 'PINPOINTING GIGAWATT GOLIATH RADAR PROFILE';
-        if (name.includes('boss_cryosnail')) return 'WARNING: DETECTING SEVERE LOCAL TEMPERATURE DROP';
-        if (name.includes('boss_sporesnail')) return 'DANGER: BIO-ORGANIC HULL CONTAGION CRITICAL';
-        if (name.includes('cybersnail')) return 'IDENTIFYING SUPPORT-FIELD CORROSIVE ANOMALIES';
-        if (name.includes('cryosnail')) return 'MEASURING GELID EXOSUIT DRAIN INDEX';
-        if (name.includes('sporesnail')) return 'MONITORING SUBTERRANEAN BIO-KINETIC PATHOGENS';
+        if (name.includes('boss_cybersnail')) return t('ui.loading.msg_gigawatt_goliath');
+        if (name.includes('boss_cryosnail')) return t('ui.loading.msg_temp_drop');
+        if (name.includes('boss_sporesnail')) return t('ui.loading.msg_hull_contagion');
+        if (name.includes('cybersnail')) return t('ui.loading.msg_corrosive_anomalies');
+        if (name.includes('cryosnail')) return t('ui.loading.msg_gelid_drain');
+        if (name.includes('sporesnail')) return t('ui.loading.msg_bio_pathogens');
 
         // Biome Textures
-        if (name.includes('bunker_base') || name.includes('bunker_wall') || name.includes('bunker_grunge')) return 'MAPPING SECURE METAL-STRUCT SUPPORTS';
-        if (name.includes('cryo_base') || name.includes('cryo_grunge') || name.includes('cryo_wall')) return 'STABILIZING CRYOGENIC COOLANT PIPELINES';
-        if (name.includes('bio_base') || name.includes('bio_grunge') || name.includes('bio_wall')) return 'ISOLATING SPORE-INFESTED BIOSPHERES';
-        if (name.includes('ice_base') || name.includes('ice_grunge') || name.includes('ice_wall')) return 'SURVEYING GEOTHERMAL GLACIAL CAVERNS';
+        if (name.includes('bunker_base') || name.includes('bunker_wall') || name.includes('bunker_grunge')) return t('ui.loading.msg_metal_supports');
+        if (name.includes('cryo_base') || name.includes('cryo_grunge') || name.includes('cryo_wall')) return t('ui.loading.msg_cryo_pipelines');
+        if (name.includes('bio_base') || name.includes('bio_grunge') || name.includes('bio_wall')) return t('ui.loading.msg_spore_biospheres');
+        if (name.includes('ice_base') || name.includes('ice_grunge') || name.includes('ice_wall')) return t('ui.loading.msg_glacial_caverns');
 
         // Junk / Salvage
-        if (name.includes('bunker_junk_legendary')) return 'DETECTING GOLD-SIGNATURE CORE CACHE';
-        if (name.includes('bunker_junk_rare')) return 'RADAR RESOLVING UNUSUAL HIGH-VALUE LOBES';
-        if (name.includes('bunker_junk_uncommon')) return 'FILTERING DUST SIGNALS FROM RECLAIMABLE METAL';
-        if (name.includes('bunker_junk')) return 'SCANNING RECLAIMABLE SALVAGE DEBRIS';
+        if (name.includes('bunker_junk_legendary')) return t('ui.loading.msg_gold_cache');
+        if (name.includes('bunker_junk_rare')) return t('ui.loading.msg_high_value_lobes');
+        if (name.includes('bunker_junk_uncommon')) return t('ui.loading.msg_dust_signals');
+        if (name.includes('bunker_junk')) return t('ui.loading.msg_salvage_debris');
 
         // Modules
-        if (name.includes('module_o2')) return 'PREHEATING OXYGEN GENERATOR MIXER VALVE';
-        if (name.includes('module_hull')) return 'TUNING DEFENSIVE MATRIX CELL POLARITY';
-        if (name.includes('module_radar')) return 'ALIGNING HIGH-GAIN RADOME EM ANTENNA';
-        if (name.includes('module_reactor')) return 'VENTING COMPRESSOR LIQUID NITROGEN COOLER';
+        if (name.includes('module_o2')) return t('ui.loading.msg_o2_mixer');
+        if (name.includes('module_hull')) return t('ui.loading.msg_defensive_matrix');
+        if (name.includes('module_radar')) return t('ui.loading.msg_radome_antenna');
+        if (name.includes('module_reactor')) return t('ui.loading.msg_n2_cooler');
 
         // Hero portraits
-        if (name.includes('scout.full') || name.includes('scout_ship')) return 'ESTABLISHING FAST RECON SCOUT DATA-LINK';
-        if (name.includes('tank.full') || name.includes('tank.walk') || name.includes('tank_ship')) return 'BOOTING HEAVY EXOSUIT STRENGTH BUFFERS';
-        if (name.includes('eng.full') || name.includes('eng.walk') || name.includes('engineer_ship')) return 'UPLOADING NANOBOT FABRICATOR SUB-ROUTINES';
+        if (name.includes('scout.full') || name.includes('scout_ship')) return t('ui.loading.msg_recon_datalink');
+        if (name.includes('tank.full') || name.includes('tank.walk') || name.includes('tank_ship')) return t('ui.loading.msg_exosuit_buffers');
+        if (name.includes('eng.full') || name.includes('eng.walk') || name.includes('engineer_ship')) return t('ui.loading.msg_nanobot_fabricator');
 
         // Audio / Backgrounds
-        if (name.includes('.mp3') || name.includes('.wav')) return 'STABILIZING TACTICAL AUDIO MATRIX FEED';
-        if (name.includes('bg.webp') || name.includes('menu_bg')) return 'BUFFERING INTERACTIVE DISPLAY SCHEMATICS';
-        if (name.includes('scatter_')) return 'CALIBRATING DEBRIS DEFLECTION ASSIST';
+        if (name.includes('.mp3') || name.includes('.wav')) return t('ui.loading.msg_audio_matrix');
+        if (name.includes('bg.webp') || name.includes('menu_bg')) return t('ui.loading.msg_display_schematics');
+        if (name.includes('scatter_')) return t('ui.loading.msg_debris_deflection');
 
-        return 'SYNCHRONIZING TACTICAL DATA FILE';
+        return t('ui.loading.msg_tactical_data');
     }
 
     // Load audio manifest (Critical elements only for splash & menu)
@@ -15058,10 +15058,10 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // 1. Refresh Steam bridge & check backend health
     traceBootPhase('steam-identity-check-start');
-    renderLoaderLogs('> VERIFYING STEAMWORKS INTEGRATION...');
+    renderLoaderLogs(t('ui.loading.log_verifying_steam'));
     if (loaderBar) loaderBar.style.width = '15%';
     const steamStatus = await refreshSteamBridgeStatus({ waitForBackend: false }).catch((err) => {
-        renderLoaderLogs(`> STEAM CHECK ERROR: ${err?.message ?? 'UNKNOWN ERROR'}`);
+        renderLoaderLogs(t('ui.loading.log_steam_error', { error: err?.message ?? t('ui.loading.log_unknown_error') }));
         console.error('[steam] loading-screen verification failed:', err);
         return null;
     });
@@ -15071,10 +15071,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         backend: 'async'
     });
     if (steamStatus?.info?.active) {
-        renderLoaderLogs(`> STEAM LINKED: ${steamStatus.info.persona ?? 'CONNECTED'}`);
+        renderLoaderLogs(t('ui.loading.log_steam_linked', { persona: steamStatus.info.persona ?? t('ui.loading.log_connected') }));
     } else {
         const reason = steamStatus?.info?.reason ?? steamStatus?.health?.reason ?? 'OFFLINE';
-        renderLoaderLogs(`> STEAM DEGRADED: ${String(reason).toUpperCase()} — CONTINUING`);
+        renderLoaderLogs(t('ui.loading.log_steam_degraded', { reason: String(reason).toUpperCase() }));
     }
 
     // 2. Load core audio & image manifest
@@ -15087,12 +15087,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (loaderBar) loaderBar.style.width = `${scaledProgress}%`;
         if (itemName) {
             const msg = getLoadingMessageForAsset(itemName);
-            renderLoaderLogs(`> ${msg}...`);
+            renderLoaderLogs(t('ui.loading.log_asset', { message: msg }));
         }
     });
     traceBootPhase('core-assets-ready');
 
-    renderLoaderLogs('> BOOTING TACTICAL WEBGL CORE...');
+    renderLoaderLogs(t('ui.loading.log_booting_webgl'));
     if (loaderBar) loaderBar.style.width = '65%';
 
     let bootInitializing = false;
@@ -15105,11 +15105,11 @@ document.addEventListener('DOMContentLoaded', async () => {
             await initializeGame(initialType);
             traceBootPhase('airlock-start');
             if (loaderBar) loaderBar.style.width = '85%';
-            renderLoaderLogs('> PRELOADING CINEMATIC FEED (DoorIntro)...');
+            renderLoaderLogs(t('ui.loading.log_preloading_cinematic'));
             await preloadVideoReady('DoorIntro');
             if (document.fonts?.ready) await document.fonts.ready;
             if (loaderBar) loaderBar.style.width = '100%';
-            renderLoaderLogs('> ALL ASSETS LOADED — OPENING AIRLOCK...');
+            renderLoaderLogs(t('ui.loading.log_assets_loaded'));
         } catch (err) {
             console.error('Initialization failed:', err);
             bootInitializing = false;
