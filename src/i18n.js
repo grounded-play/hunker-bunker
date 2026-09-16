@@ -188,7 +188,7 @@ export function hasKey(key) {
 export function onLocaleChange(render, isMounted = () => true) {
     if (typeof window === 'undefined' || typeof render !== 'function') return () => {};
     const handler = () => {
-        let mounted = false;
+        let mounted;
         try {
             mounted = Boolean(isMounted());
         } catch {

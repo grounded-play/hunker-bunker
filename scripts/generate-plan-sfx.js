@@ -431,7 +431,12 @@ export function generatePlanSfx({ outputDir = OUTPUT_DIR, check = false } = {}) 
         } catch (err) {
             if (!err || err.code !== 'ENOENT') throw err;
         }
-        const matches = Boolean(existing?.equals(rendered));
+        let matches = Boolean(existing?.equals(rendered));
+        // Tactical voice callouts have been superseded by production actor takes.
+        // If an authentic recording is present, honor it rather than flagging as stale or overwriting.
+        if (!matches && existing && (name.startsWith('voice_commander_') || name.startsWith('voice_aura_'))) {
+            matches = existing.length > 44 && existing.subarray(0, 4).toString() === 'RIFF';
+        }
         results.push({ name, target, matches });
         if (!check && !matches) fs.writeFileSync(target, rendered);
     }

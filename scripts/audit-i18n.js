@@ -195,14 +195,14 @@ export function collectHtmlIds(html) {
  */
 export function auditMarkup(html, runtimeWrittenIds = new Set()) {
     const withoutScripts = html
-        .replace(/<script[\s\S]*?<\/script>/gi, (m) => '\n'.repeat((m.match(/\n/g) || []).length))
-        .replace(/<style[\s\S]*?<\/style>/gi, (m) => '\n'.repeat((m.match(/\n/g) || []).length))
+        .replace(/<script\b[\s\S]*?<\/script\b[^>]*>/gi, (m) => '\n'.repeat((m.match(/\n/g) || []).length))
+        .replace(/<style\b[\s\S]*?<\/style\b[^>]*>/gi, (m) => '\n'.repeat((m.match(/\n/g) || []).length))
         .replace(/<!--[\s\S]*?-->/g, (m) => '\n'.repeat((m.match(/\n/g) || []).length));
 
     const findings = [];
     const annotated = { text: 0, attrs: 0 };
     const stack = [];
-    const tokenRe = /<\/?([a-zA-Z][\w-]*)((?:"[^"]*"|'[^']*'|[^>])*?)(\/?)>/g;
+    const tokenRe = /<\/?([a-zA-Z][\w-]*)((?:"[^"]*"|'[^']*'|[^"'<>]+)*)(\/?)>/g;
 
     const lineAt = (index) => withoutScripts.slice(0, index).split('\n').length;
 

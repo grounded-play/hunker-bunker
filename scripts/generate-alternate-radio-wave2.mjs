@@ -8,8 +8,9 @@ import { dirname, resolve } from 'node:path';
 import process from 'node:process';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
+import { RECORDING_JOBS } from './audio/alternate-radio-wave2-jobs.js';
+
 const ROOT = resolve(import.meta.dirname, '..');
-const SCRIPT_PATH = resolve(ROOT, 'docs/planning/alternate-radio-wave-2-recording-script-2026-09-15.md');
 const SOURCE_DIR = resolve(ROOT, 'art/source/audio/vo/elevenlabs-wave2');
 const GAME_DIR = resolve(ROOT, 'public/audio/generated');
 const API_BASE = 'https://api.elevenlabs.io';
@@ -92,6 +93,11 @@ function processForGame(source, destination, bank) {
     ]);
 }
 
+function sanitizePromptText(raw) {
+    if (typeof raw !== 'string') return '';
+    return raw.replace(/[\x00-\x1F\x7F]/g, ' ').trim().slice(0, 500);
+}
+
 async function synthesize(job, keys, startIndex) {
     let lastError = 'No usable API key';
     for (let offset = 0; offset < keys.length; offset += 1) {
@@ -100,7 +106,7 @@ async function synthesize(job, keys, startIndex) {
             method: 'POST',
             headers: { 'content-type': 'application/json', 'xi-api-key': keys[keyIndex] },
             body: JSON.stringify({
-                text: job.prompt,
+                text: sanitizePromptText(job.prompt),
                 model_id: 'eleven_v3',
                 seed: 41000 + job.cue.length * 31 + job.take * 997 + (job.bank === 'aura' ? 17 : 0),
                 voice_settings: {
@@ -123,7 +129,7 @@ async function synthesize(job, keys, startIndex) {
 export async function main(argv = process.argv.slice(2)) {
     const planOnly = argv.includes('--plan');
     const force = argv.includes('--force');
-    const jobs = parseRecordingJobs(readFileSync(SCRIPT_PATH, 'utf8'));
+    const jobs = RECORDING_JOBS;
     const pending = force ? jobs : jobs.filter((job) => !existsSync(resolve(GAME_DIR, `${job.outputKey}.wav`)));
     const promptCharacters = pending.reduce((total, job) => total + job.prompt.length, 0);
     console.log(`Wave 2 plan: ${pending.length}/${jobs.length} clips, ${promptCharacters} submitted characters${force ? ' (overwrite enabled)' : ''}`);

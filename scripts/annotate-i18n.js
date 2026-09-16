@@ -69,15 +69,15 @@ export function screenNamespace(screenId) {
  */
 export function planAnnotations(html, runtimeWrittenIds = new Set()) {
     const blanked = html
-        .replace(/<script[\s\S]*?<\/script>/gi, (m) => ' '.repeat(m.length))
-        .replace(/<style[\s\S]*?<\/style>/gi, (m) => ' '.repeat(m.length))
+        .replace(/<script\b[\s\S]*?<\/script(?:\s+[^>]*)?\s*>/gi, (m) => ' '.repeat(m.length))
+        .replace(/<style\b[\s\S]*?<\/style(?:\s+[^>]*)?\s*>/gi, (m) => ' '.repeat(m.length))
         .replace(/<!--[\s\S]*?-->/g, (m) => ' '.repeat(m.length));
 
     const targets = [];
     const mixed = [];
     const runtimeOwned = [];
     const stack = [];
-    const tokenRe = /<\/?([a-zA-Z][\w-]*)((?:"[^"]*"|'[^']*'|[^>])*?)(\/?)>/g;
+    const tokenRe = /<\/?([a-zA-Z][\w-]*)((?:[^"'/>]+|"[^"]*"|'[^']*')*)(\/?)>/g;
 
     const ownerScreen = () => {
         for (let i = stack.length - 1; i >= 0; i -= 1) {
@@ -209,8 +209,9 @@ export function assignKeys(targets, existingKeys) {
 
     for (const target of targets) {
         const ns = screenNamespace(target.screen);
-        const decoded = target.text.replace(/&amp;/g, '&').replace(/&times;/g, '×')
+        const decoded = target.text.replace(/&times;/g, '×')
             .replace(/&gt;/g, '>').replace(/&lt;/g, '<').replace(/&nbsp;/g, ' ')
+            .replace(/&amp;/g, '&')
             .replace(/\s+/g, ' ').trim();
         const dedupeKey = `${ns}::${decoded}::${target.kind}::${target.attr ?? ''}`;
         if (byText.has(dedupeKey)) {

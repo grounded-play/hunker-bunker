@@ -34,7 +34,9 @@ const SOURCE_DIRS = ['electron', 'server', 'src'];
 // Headroom after that work was ~2.7 MB. Raised 2700->2705 MiB to accommodate
 // the 20 optimized fungal, cryo, biomech, and ruined industrial 3D world props
 // and sprite fallbacks (~2.05 MB total payload).
-const PUBLIC_BUDGET = 2705 * 1024 * 1024;
+// Raised 2705->2725 MiB in Sprint 40 for the 208 Wave 2 alternate radio takes,
+// voice pack personas, and ending cinematic video/audio assets (~14.7 MB).
+const PUBLIC_BUDGET = 2725 * 1024 * 1024;
 // app.asar packages dist/ minus the mp4/webm/glb files electron-builder's
 // asarUnpack pulls out (see package.json "build".asarUnpack), so it tracks
 // the same interstitial/economy/texture growth as PUBLIC_BUDGET above minus

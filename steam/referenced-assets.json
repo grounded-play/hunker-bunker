@@ -1057,6 +1057,8 @@
     "lore_portraits/tallow_martha.webp",
     "lore_portraits/vesper_briggs.png",
     "lore_portraits/vesper_briggs.webp",
+    "lore_portraits/voice_aura_persona.png",
+    "lore_portraits/voice_commander_persona.png",
     "manifest.json",
     "martha_camp_walk.png",
     "martha_camp_walk_v2.png",
@@ -3677,6 +3679,286 @@
       "classification": "runtime-required"
     },
     {
+      "path": "audio/generated/voice_aura_ammo_empty.wav",
+      "bytes": 49358,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/voice_aura_ammo_empty2.wav",
+      "bytes": 49358,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/voice_aura_armory_found.wav",
+      "bytes": 74958,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/voice_aura_armory_found2.wav",
+      "bytes": 74958,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/voice_aura_black_box_found.wav",
+      "bytes": 74958,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/voice_aura_black_box_found2.wav",
+      "bytes": 74958,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/voice_aura_black_box_recovered.wav",
+      "bytes": 67278,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/voice_aura_black_box_recovered2.wav",
+      "bytes": 74958,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/voice_aura_breached.wav",
+      "bytes": 69838,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/voice_aura_breached2.wav",
+      "bytes": 72398,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/voice_aura_build_complete.wav",
+      "bytes": 64718,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/voice_aura_build_complete2.wav",
+      "bytes": 62158,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/voice_aura_build_started.wav",
+      "bytes": 77518,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/voice_aura_build_started2.wav",
+      "bytes": 77518,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/voice_aura_camp_found.wav",
+      "bytes": 72398,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/voice_aura_camp_found2.wav",
+      "bytes": 62158,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/voice_aura_comms_online.wav",
+      "bytes": 115918,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/voice_aura_comms_online2.wav",
+      "bytes": 108238,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/voice_aura_cover_degrading.wav",
+      "bytes": 77518,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/voice_aura_cover_degrading2.wav",
+      "bytes": 82638,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/voice_aura_crawler_detected.wav",
+      "bytes": 69838,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/voice_aura_crawler_detected2.wav",
+      "bytes": 82638,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/voice_aura_data_recovered.wav",
+      "bytes": 51918,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/voice_aura_data_recovered2.wav",
+      "bytes": 57038,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/voice_aura_elevator_inbound.wav",
+      "bytes": 103118,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/voice_aura_elevator_inbound2.wav",
+      "bytes": 100558,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/voice_aura_extraction_ready.wav",
+      "bytes": 87758,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/voice_aura_extraction_ready2.wav",
+      "bytes": 69838,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/voice_aura_first_kill.wav",
+      "bytes": 62158,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/voice_aura_first_kill2.wav",
+      "bytes": 62158,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/voice_aura_foundry_found.wav",
+      "bytes": 72398,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/voice_aura_foundry_found2.wav",
+      "bytes": 69838,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/voice_aura_freeze_warning.wav",
+      "bytes": 87758,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/voice_aura_freeze_warning2.wav",
+      "bytes": 87758,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/voice_aura_hive_found.wav",
+      "bytes": 85198,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/voice_aura_hive_found2.wav",
+      "bytes": 77518,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/voice_aura_hull_critical.wav",
+      "bytes": 69838,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/voice_aura_hull_critical2.wav",
+      "bytes": 67278,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/voice_aura_hull_damaged.wav",
+      "bytes": 59598,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/voice_aura_hull_damaged2.wav",
+      "bytes": 74958,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/voice_aura_killstreak.wav",
+      "bytes": 67278,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/voice_aura_killstreak2.wav",
+      "bytes": 59598,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/voice_aura_launch_blocked.wav",
+      "bytes": 74958,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/voice_aura_launch_blocked2.wav",
+      "bytes": 69838,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/voice_aura_lights_failed.wav",
+      "bytes": 74958,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/voice_aura_lights_failed2.wav",
+      "bytes": 69838,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/voice_aura_low_health.wav",
+      "bytes": 57038,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/voice_aura_low_health2.wav",
+      "bytes": 51918,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/voice_aura_mission_active.wav",
+      "bytes": 67278,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/voice_aura_mission_active2.wav",
+      "bytes": 80078,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/voice_aura_navigation_corrupt.wav",
+      "bytes": 69838,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/voice_aura_navigation_corrupt2.wav",
+      "bytes": 69838,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/voice_aura_objective_found.wav",
+      "bytes": 72398,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/voice_aura_objective_found2.wav",
+      "bytes": 62158,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/voice_aura_operator_down.wav",
+      "bytes": 62158,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/voice_aura_operator_down2.wav",
+      "bytes": 62158,
+      "classification": "generated-intermediate"
+    },
+    {
       "path": "audio/generated/voice_aura_overdrive_ready.wav",
       "bytes": 34258,
       "classification": "generated-intermediate"
@@ -3684,6 +3966,66 @@
     {
       "path": "audio/generated/voice_aura_overdrive_ready2.wav",
       "bytes": 32772,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/voice_aura_oxygen_critical.wav",
+      "bytes": 113358,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/voice_aura_oxygen_critical2.wav",
+      "bytes": 103118,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/voice_aura_oxygen_low.wav",
+      "bytes": 95438,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/voice_aura_oxygen_low2.wav",
+      "bytes": 85198,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/voice_aura_oxygen_restored.wav",
+      "bytes": 67278,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/voice_aura_oxygen_restored2.wav",
+      "bytes": 85198,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/voice_aura_radar_contact.wav",
+      "bytes": 69838,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/voice_aura_radar_contact2.wav",
+      "bytes": 64718,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/voice_aura_radar_ready.wav",
+      "bytes": 49358,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/voice_aura_radar_ready2.wav",
+      "bytes": 54478,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/voice_aura_reload_complete.wav",
+      "bytes": 44238,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/voice_aura_reload_complete2.wav",
+      "bytes": 46798,
       "classification": "generated-intermediate"
     },
     {
@@ -3697,6 +4039,26 @@
       "classification": "generated-intermediate"
     },
     {
+      "path": "audio/generated/voice_aura_return_to_ship.wav",
+      "bytes": 97998,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/voice_aura_return_to_ship2.wav",
+      "bytes": 97998,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/voice_aura_salvage_banked.wav",
+      "bytes": 62158,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/voice_aura_salvage_banked2.wav",
+      "bytes": 62158,
+      "classification": "generated-intermediate"
+    },
+    {
       "path": "audio/generated/voice_aura_sector_cleared.wav",
       "bytes": 34258,
       "classification": "generated-intermediate"
@@ -3704,6 +4066,16 @@
     {
       "path": "audio/generated/voice_aura_sector_cleared2.wav",
       "bytes": 30542,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/voice_aura_sentinel_detected.wav",
+      "bytes": 80078,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/voice_aura_sentinel_detected2.wav",
+      "bytes": 72398,
       "classification": "generated-intermediate"
     },
     {
@@ -3727,6 +4099,26 @@
       "classification": "generated-intermediate"
     },
     {
+      "path": "audio/generated/voice_aura_terminal_accepted.wav",
+      "bytes": 62158,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/voice_aura_terminal_accepted2.wav",
+      "bytes": 62158,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/voice_aura_terminal_denied.wav",
+      "bytes": 67278,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/voice_aura_terminal_denied2.wav",
+      "bytes": 64718,
+      "classification": "generated-intermediate"
+    },
+    {
       "path": "audio/generated/voice_aura_threat_high.wav",
       "bytes": 33516,
       "classification": "generated-intermediate"
@@ -3734,6 +4126,116 @@
     {
       "path": "audio/generated/voice_aura_threat_high2.wav",
       "bytes": 30542,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/voice_aura_toxin_warning.wav",
+      "bytes": 77518,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/voice_aura_toxin_warning2.wav",
+      "bytes": 77518,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/voice_aura_turret_deployed.wav",
+      "bytes": 97998,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/voice_aura_turret_deployed2.wav",
+      "bytes": 100558,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/voice_aura_turret_ready.wav",
+      "bytes": 62158,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/voice_aura_turret_ready2.wav",
+      "bytes": 59598,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/voice_aura_upgrade_installed.wav",
+      "bytes": 82638,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/voice_aura_upgrade_installed2.wav",
+      "bytes": 82638,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/voice_aura_uplink_lost.wav",
+      "bytes": 82638,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/voice_aura_uplink_lost2.wav",
+      "bytes": 77518,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/voice_aura_uplink_restored.wav",
+      "bytes": 80078,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/voice_aura_uplink_restored2.wav",
+      "bytes": 67278,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/voice_aura_victory.wav",
+      "bytes": 92878,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/voice_aura_victory2.wav",
+      "bytes": 87758,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/voice_commander_ammo_empty.wav",
+      "bytes": 80078,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/voice_commander_ammo_empty2.wav",
+      "bytes": 113358,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/voice_commander_armory_found.wav",
+      "bytes": 97998,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/voice_commander_armory_found2.wav",
+      "bytes": 92878,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/voice_commander_black_box_found.wav",
+      "bytes": 74958,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/voice_commander_black_box_found2.wav",
+      "bytes": 87758,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/voice_commander_black_box_recovered.wav",
+      "bytes": 69838,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/voice_commander_black_box_recovered2.wav",
+      "bytes": 69838,
       "classification": "generated-intermediate"
     },
     {
@@ -3757,6 +4259,156 @@
       "classification": "generated-intermediate"
     },
     {
+      "path": "audio/generated/voice_commander_build_complete.wav",
+      "bytes": 69838,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/voice_commander_build_complete2.wav",
+      "bytes": 87758,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/voice_commander_build_started.wav",
+      "bytes": 85198,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/voice_commander_build_started2.wav",
+      "bytes": 77518,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/voice_commander_camp_found.wav",
+      "bytes": 85198,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/voice_commander_camp_found2.wav",
+      "bytes": 95438,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/voice_commander_comms_online.wav",
+      "bytes": 69838,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/voice_commander_comms_online2.wav",
+      "bytes": 69838,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/voice_commander_cover_degrading.wav",
+      "bytes": 85198,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/voice_commander_cover_degrading2.wav",
+      "bytes": 92878,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/voice_commander_crawler_detected.wav",
+      "bytes": 80078,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/voice_commander_crawler_detected2.wav",
+      "bytes": 92878,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/voice_commander_data_recovered.wav",
+      "bytes": 100558,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/voice_commander_data_recovered2.wav",
+      "bytes": 105678,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/voice_commander_elevator_inbound.wav",
+      "bytes": 92878,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/voice_commander_elevator_inbound2.wav",
+      "bytes": 95438,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/voice_commander_extraction_ready.wav",
+      "bytes": 74958,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/voice_commander_extraction_ready2.wav",
+      "bytes": 67278,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/voice_commander_first_kill.wav",
+      "bytes": 62158,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/voice_commander_first_kill2.wav",
+      "bytes": 72398,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/voice_commander_foundry_found.wav",
+      "bytes": 92878,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/voice_commander_foundry_found2.wav",
+      "bytes": 72398,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/voice_commander_freeze_warning.wav",
+      "bytes": 97998,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/voice_commander_freeze_warning2.wav",
+      "bytes": 95438,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/voice_commander_hive_found.wav",
+      "bytes": 90318,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/voice_commander_hive_found2.wav",
+      "bytes": 90318,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/voice_commander_hull_critical.wav",
+      "bytes": 74958,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/voice_commander_hull_critical2.wav",
+      "bytes": 72398,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/voice_commander_hull_damaged.wav",
+      "bytes": 85198,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/voice_commander_hull_damaged2.wav",
+      "bytes": 67278,
+      "classification": "generated-intermediate"
+    },
+    {
       "path": "audio/generated/voice_commander_killstreak.wav",
       "bytes": 27592,
       "classification": "generated-intermediate"
@@ -3764,6 +4416,26 @@
     {
       "path": "audio/generated/voice_commander_killstreak2.wav",
       "bytes": 27592,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/voice_commander_launch_blocked.wav",
+      "bytes": 85198,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/voice_commander_launch_blocked2.wav",
+      "bytes": 82638,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/voice_commander_lights_failed.wav",
+      "bytes": 103118,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/voice_commander_lights_failed2.wav",
+      "bytes": 95438,
       "classification": "generated-intermediate"
     },
     {
@@ -3777,6 +4449,116 @@
       "classification": "generated-intermediate"
     },
     {
+      "path": "audio/generated/voice_commander_mission_active.wav",
+      "bytes": 72398,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/voice_commander_mission_active2.wav",
+      "bytes": 69838,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/voice_commander_navigation_corrupt.wav",
+      "bytes": 110798,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/voice_commander_navigation_corrupt2.wav",
+      "bytes": 108238,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/voice_commander_objective_found.wav",
+      "bytes": 72398,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/voice_commander_objective_found2.wav",
+      "bytes": 95438,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/voice_commander_operator_down.wav",
+      "bytes": 77518,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/voice_commander_operator_down2.wav",
+      "bytes": 77518,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/voice_commander_overdrive_ready.wav",
+      "bytes": 90318,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/voice_commander_overdrive_ready2.wav",
+      "bytes": 82638,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/voice_commander_oxygen_critical.wav",
+      "bytes": 92878,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/voice_commander_oxygen_critical2.wav",
+      "bytes": 92878,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/voice_commander_oxygen_low.wav",
+      "bytes": 80078,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/voice_commander_oxygen_low2.wav",
+      "bytes": 95438,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/voice_commander_oxygen_restored.wav",
+      "bytes": 62158,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/voice_commander_oxygen_restored2.wav",
+      "bytes": 95438,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/voice_commander_radar_contact.wav",
+      "bytes": 57038,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/voice_commander_radar_contact2.wav",
+      "bytes": 67278,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/voice_commander_radar_ready.wav",
+      "bytes": 62158,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/voice_commander_radar_ready2.wav",
+      "bytes": 69838,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/voice_commander_reload_complete.wav",
+      "bytes": 36558,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/voice_commander_reload_complete2.wav",
+      "bytes": 36558,
+      "classification": "generated-intermediate"
+    },
+    {
       "path": "audio/generated/voice_commander_reloading.wav",
       "bytes": 23134,
       "classification": "generated-intermediate"
@@ -3784,6 +4566,146 @@
     {
       "path": "audio/generated/voice_commander_reloading2.wav",
       "bytes": 17934,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/voice_commander_return_to_ship.wav",
+      "bytes": 80078,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/voice_commander_return_to_ship2.wav",
+      "bytes": 85198,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/voice_commander_salvage_banked.wav",
+      "bytes": 90318,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/voice_commander_salvage_banked2.wav",
+      "bytes": 80078,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/voice_commander_sector_cleared.wav",
+      "bytes": 77518,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/voice_commander_sector_cleared2.wav",
+      "bytes": 100558,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/voice_commander_sentinel_detected.wav",
+      "bytes": 67278,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/voice_commander_sentinel_detected2.wav",
+      "bytes": 72398,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/voice_commander_shield_critical.wav",
+      "bytes": 62158,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/voice_commander_shield_critical2.wav",
+      "bytes": 87758,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/voice_commander_target_down.wav",
+      "bytes": 49358,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/voice_commander_target_down2.wav",
+      "bytes": 51918,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/voice_commander_terminal_accepted.wav",
+      "bytes": 110798,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/voice_commander_terminal_accepted2.wav",
+      "bytes": 110798,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/voice_commander_terminal_denied.wav",
+      "bytes": 85198,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/voice_commander_terminal_denied2.wav",
+      "bytes": 90318,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/voice_commander_toxin_warning.wav",
+      "bytes": 80078,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/voice_commander_toxin_warning2.wav",
+      "bytes": 95438,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/voice_commander_turret_deployed.wav",
+      "bytes": 69838,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/voice_commander_turret_deployed2.wav",
+      "bytes": 64718,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/voice_commander_turret_ready.wav",
+      "bytes": 41678,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/voice_commander_turret_ready2.wav",
+      "bytes": 67278,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/voice_commander_upgrade_installed.wav",
+      "bytes": 90318,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/voice_commander_upgrade_installed2.wav",
+      "bytes": 92878,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/voice_commander_uplink_lost.wav",
+      "bytes": 90318,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/voice_commander_uplink_lost2.wav",
+      "bytes": 95438,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/voice_commander_uplink_restored.wav",
+      "bytes": 72398,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/voice_commander_uplink_restored2.wav",
+      "bytes": 74958,
       "classification": "generated-intermediate"
     },
     {
@@ -8389,6 +9311,16 @@
     {
       "path": "lore_portraits/vesper_briggs.webp",
       "bytes": 3460,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "lore_portraits/voice_aura_persona.png",
+      "bytes": 841670,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "lore_portraits/voice_commander_persona.png",
+      "bytes": 924461,
       "classification": "runtime-required"
     },
     {
