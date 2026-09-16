@@ -314,7 +314,24 @@ export function flattenKeys(obj, prefix = '', out = {}) {
 export function findOrphanKeys(englishCatalog, corpus) {
     return Object.keys(flattenKeys(englishCatalog))
         .filter((key) => !key.startsWith('narrative.'))
-        .filter((key) => !corpus.includes(key));
+        .filter((key) => !isKeyReferenced(key, corpus));
+}
+
+/**
+ * A plain substring test reports `settings.title` as referenced because
+ * `ui.settings.title` contains it, which hides a whole dead namespace. The
+ * match must not be preceded by a key character or a dot.
+ */
+export function isKeyReferenced(key, corpus) {
+    let from = 0;
+    for (;;) {
+        const at = corpus.indexOf(key, from);
+        if (at === -1) return false;
+        const before = at === 0 ? '' : corpus[at - 1];
+        const after = corpus[at + key.length] ?? '';
+        if (!/[\w.$-]/.test(before) && !/[\w.]/.test(after)) return true;
+        from = at + 1;
+    }
 }
 
 // ---------------------------------------------------------------------------

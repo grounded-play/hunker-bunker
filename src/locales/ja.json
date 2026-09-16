@@ -13,18 +13,7 @@
     "locked": "ロック",
     "unlocked": "解除済み"
   },
-  "menu": {
-    "play": "エージェント出撃",
-    "resume": "ミッション再開",
-    "armory": "武器庫・ロードアウト",
-    "vault": "Steam 保管庫",
-    "settings": "設定",
-    "multiplayer": "部隊協力プレイ",
-    "quit": "デスクトップに戻る",
-    "version": "バージョン {version}"
-  },
   "classes": {
-    "all": "全クラス",
     "scout": "スカウト",
     "tank": "タンク",
     "engineer": "エンジニア"
@@ -44,38 +33,15 @@
     "ammo": "弾薬",
     "dash": "ダッシュ",
     "overclock": "オーバークロック",
-    "objective": "主要指令",
-    "depth": "深度層",
     "sector": "セクター",
     "bunker_alert": "バンカー警戒警報"
   },
   "dialogue": {
-    "mothership_intro": "マザーシップ：降下を検知。隊形を維持せよ。",
     "mothership_caution": "マザーシップ：警告。回収シグナルを追跡中。敵巡回部隊が接近。",
-    "operator_down": "エージェント行動不能。救助ドローン発進。",
     "black_box_guard": "マザーシップ：ブラックボックスを確保するため、変異エージェントを撃破せよ。",
     "black_box_authorized": "変異体排除完了。ブラックボックスの回収を承認。",
     "extraction_forming": "脱出リンク確立中。事務処理が終わるまで死亡しないでください。",
     "elite_contact": "スーツ：エリート敵と接触。重装甲目標――退路を確保せよ。"
-  },
-  "settings": {
-    "title": "システム設定",
-    "language": "言語 (Language)",
-    "audio": "オーディオ",
-    "master_volume": "主音量",
-    "sfx_volume": "効果音音量",
-    "music_volume": "BGM音量",
-    "subtitles": "字幕",
-    "video": "画面・グラフィック",
-    "screen_shake": "画面の揺れ",
-    "controls": "操作設定"
-  },
-  "vault": {
-    "title": "Steam 保管庫・インベントリ",
-    "keys_available": "所持暗号キー: {count}",
-    "get_keys": "アイテムストアでキーを入手",
-    "open_cache": "深層レリックコンテナを解読",
-    "disclosed_odds": "公開された暗号化ドロップ確率"
   },
   "ui": {
     "menu": {
@@ -187,7 +153,6 @@
     "aria": {
       "language_select": "ゲーム言語",
       "close_language": "言語メニューを閉じる",
-      "language_choice": "言語を選択",
       "close_settings": "システム設定を閉じる",
       "crosshair_presets": "クロスヘア色プリセット",
       "crosshair_orange": "オレンジのクロスヘア",
@@ -234,13 +199,6 @@
       "f_patch": "ショルダーパッチと記章",
       "f_hud": "戦術HUDテーマ",
       "f_voicebank": "代替無線ボイスバンク",
-      "telemetry_title": "スーツテレメトリ状態",
-      "tel_thermal": "サーマルクライオメッシュ：",
-      "tel_thermal_val": "正常 100%",
-      "tel_rad": "放射線シール：",
-      "tel_rad_val": "作動中",
-      "tel_turntable": "ターンテーブル：",
-      "tel_turntable_val": "360°ドラッグ回転",
       "btn_return": "← メインメニューへ戻る",
       "btn_vault": "STEAMヴォールトと製造ベイ",
       "btn_embark": "バンカーへ出発 >>",

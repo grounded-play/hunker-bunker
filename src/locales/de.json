@@ -13,18 +13,7 @@
     "locked": "Gesperrt",
     "unlocked": "Freigeschaltet"
   },
-  "menu": {
-    "play": "AGENT ENTSENDEN",
-    "resume": "MISSION FORTSETZEN",
-    "armory": "WAFFENKAMMER & LOADOUT",
-    "vault": "STEAM-TRESER",
-    "settings": "EINSTELLUNGEN",
-    "multiplayer": "SQUAD-KOOP",
-    "quit": "ZUM DESKTOP BEENDEN",
-    "version": "Version {version}"
-  },
   "classes": {
-    "all": "Alle Klassen",
     "scout": "Späher",
     "tank": "Panzer",
     "engineer": "Ingenieur"
@@ -44,38 +33,15 @@
     "ammo": "MUNITION",
     "dash": "SPURT",
     "overclock": "ÜBERTAKTER",
-    "objective": "HAUPTDIREKTIVE",
-    "depth": "SCHICHTSTUFE",
     "sector": "SEKTOR",
     "bunker_alert": "BUNKER-ALARM"
   },
   "dialogue": {
-    "mothership_intro": "MUTTERSCHIFF: Abstieg erfasst. Formation halten.",
     "mothership_caution": "MUTTERSCHIFF: Vorsicht. Bergungssignatur verfolgt. Patrouillen nähern sich.",
-    "operator_down": "AGENT AUSGESCHALTET. Bergungsdrohne entsandt.",
     "black_box_guard": "MUTTERSCHIFF: Eliminiere den korrumpierten Agenten, um die Blackbox zu sichern.",
     "black_box_authorized": "Korrupter Agent neutralisiert. Bergung der Blackbox autorisiert.",
     "extraction_forming": "Extraktionsverbindung wird aufgebaut. Bitte während des Papierkrams nicht sterben.",
     "elite_contact": "ANZUG: Elite-Kontakt. Verstärkter Feind — Rückzugsweg freihalten."
-  },
-  "settings": {
-    "title": "SYSTEMKONFIGURATION",
-    "language": "Sprache (Language)",
-    "audio": "Audio",
-    "master_volume": "Gesamtlautstärke",
-    "sfx_volume": "Effektlautstärke",
-    "music_volume": "Musiklautstärke",
-    "subtitles": "Untertitel",
-    "video": "Anzeige & Grafik",
-    "screen_shake": "Bildschirmwackeln",
-    "controls": "Steuerung"
-  },
-  "vault": {
-    "title": "STEAM-TRESER & INVENTAR",
-    "keys_available": "Verfügbare Entschlüsselungsschlüssel: {count}",
-    "get_keys": "SCHLÜSSEL IM ITEM STORE KAUFEN",
-    "open_cache": "TIEFEN-RELIKTE-CACHE ENTSCHLÜSSELN",
-    "disclosed_odds": "Offengelegte kryptografische Wahrscheinlichkeiten"
   },
   "ui": {
     "menu": {
@@ -187,7 +153,6 @@
     "aria": {
       "language_select": "Spielsprache",
       "close_language": "Sprachmenü schließen",
-      "language_choice": "Sprache auswählen",
       "close_settings": "Systemeinstellungen schließen",
       "crosshair_presets": "Fadenkreuz-Farbvorgaben",
       "crosshair_orange": "Oranges Fadenkreuz",
@@ -234,13 +199,6 @@
       "f_patch": "SCHULTERAUFNÄHER & ABZEICHEN",
       "f_hud": "TAKTISCHES HUD-DESIGN",
       "f_voicebank": "ALT-FUNK-STIMMBANK",
-      "telemetry_title": "ANZUG-TELEMETRIESTATUS",
-      "tel_thermal": "Thermo-Kryogewebe:",
-      "tel_thermal_val": "NORMAL 100%",
-      "tel_rad": "Strahlungssiegel:",
-      "tel_rad_val": "AKTIV",
-      "tel_turntable": "Drehbühne:",
-      "tel_turntable_val": "360°-ZIEHORBIT",
       "btn_return": "← ZURÜCK ZUM HAUPTMENÜ",
       "btn_vault": "STEAM-TRESOR & FERTIGUNG",
       "btn_embark": "ZUM BUNKER AUFBRECHEN >>",

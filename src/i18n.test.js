@@ -8,7 +8,8 @@ import {
     getLocale,
     setLocale,
     getAvailableLocales,
-    resolveLocaleCode
+    resolveLocaleCode,
+    interpolate
 } from './i18n.js';
 import en from './locales/en.json';
 import zhCN from './locales/zh-CN.json';
@@ -72,41 +73,45 @@ describe('i18n Localization Engine', () => {
     });
 
     describe('Translation function t()', () => {
+        // These assert against keys that are actually wired to shipped markup.
+        // They previously asserted against menu.play/menu.version/vault.*, which
+        // were authored blind and referenced by nothing, so the suite validated
+        // the fiction instead of the UI. Those keys are now deleted.
         it('returns English translation by default', () => {
             setLocale('en');
-            expect(t('menu.play')).toBe('DEPLOY OPERATIVE');
+            expect(t('ui.menu.new_run')).toBe('NEW RUN');
             expect(t('classes.scout')).toBe('Scout');
             expect(t('hud.shield')).toBe('SHIELD');
         });
 
         it('translates strings into Simplified Chinese', () => {
             setLocale('zh-CN');
-            expect(t('menu.play')).toBe('部署特工');
+            expect(t('ui.menu.new_run')).toBe('新的征程');
             expect(t('classes.tank')).toBe('重装兵');
             expect(t('hud.shield')).toBe('护盾');
         });
 
         it('translates strings into Russian', () => {
             setLocale('ru');
-            expect(t('menu.play')).toBe('ДИСЛОКАЦИЯ ОПЕРАТИВНИКА');
+            expect(t('ui.menu.new_run')).toBe('НОВЫЙ ЗАБЕГ');
             expect(t('classes.engineer')).toBe('Инженер');
             expect(t('hud.shield')).toBe('ЩИТ');
         });
 
         it('translates strings into Japanese', () => {
             setLocale('ja');
-            expect(t('menu.play')).toBe('エージェント出撃');
+            expect(t('ui.menu.new_run')).toBe('ニューラン');
             expect(t('hud.shield')).toBe('シールド');
         });
 
         it('interpolates named variables into templates', () => {
             setLocale('en');
-            expect(t('menu.version', { version: '2.4.0' })).toBe('Version 2.4.0');
-            expect(t('vault.keys_available', { count: 5 })).toBe('Decryption Keys Available: 5');
+            expect(interpolate('Version {version}', { version: '2.4.0' })).toBe('Version 2.4.0');
+            expect(interpolate('KEYS: {count}', { count: 5 })).toBe('KEYS: 5');
+        });
 
-            setLocale('zh-CN');
-            expect(t('menu.version', { version: '2.4.0' })).toBe('版本 2.4.0');
-            expect(t('vault.keys_available', { count: 5 })).toBe('可用解密码匙: 5');
+        it('leaves an unsupplied placeholder untouched rather than printing undefined', () => {
+            expect(interpolate('KEYS: {count}', {})).toBe('KEYS: {count}');
         });
 
         it('falls back to English when a key is missing in active locale', () => {

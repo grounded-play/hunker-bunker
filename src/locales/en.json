@@ -13,18 +13,7 @@
     "locked": "Locked",
     "unlocked": "Unlocked"
   },
-  "menu": {
-    "play": "DEPLOY OPERATIVE",
-    "resume": "RESUME MISSION",
-    "armory": "ARMORY & LOADOUT",
-    "vault": "STEAM VAULT",
-    "settings": "SETTINGS",
-    "multiplayer": "SQUAD CO-OP",
-    "quit": "ABORT TO DESKTOP",
-    "version": "Version {version}"
-  },
   "classes": {
-    "all": "All Classes",
     "scout": "Scout",
     "tank": "Tank",
     "engineer": "Engineer"
@@ -44,38 +33,15 @@
     "ammo": "AMMO",
     "dash": "DASH",
     "overclock": "OVERCLOCK",
-    "objective": "PRIMARY DIRECTIVE",
-    "depth": "STRATUM TIER",
     "sector": "SECTOR",
     "bunker_alert": "BUNKER ALERT"
   },
   "dialogue": {
-    "mothership_intro": "MOTHERSHIP: DESCENT DETECTED. MAINTAIN FORMATION.",
     "mothership_caution": "MOTHERSHIP: CAUTION. RECOVERY SIGNATURE TRACKED. PATROLS INBOUND.",
-    "operator_down": "OPERATOR COMPROMISED. RECOVERY DRONE DISPATCHED.",
     "black_box_guard": "MOTHERSHIP: DEFEAT THE CORRUPTED OPERATOR TO SECURE THE BLACK BOX.",
     "black_box_authorized": "CORRUPTED OPERATOR NEUTRALIZED. BLACK BOX RECOVERY NOW AUTHORIZED.",
     "extraction_forming": "EXTRACTION UPLINK FORMING. TRY NOT TO DIE DURING PAPERWORK.",
     "elite_contact": "SUIT: ELITE CONTACT. REINFORCED HOSTILE — KEEP AN ESCAPE ROUTE."
-  },
-  "settings": {
-    "title": "SYSTEM CONFIGURATION",
-    "language": "Language",
-    "audio": "Audio",
-    "master_volume": "Master Volume",
-    "sfx_volume": "SFX Volume",
-    "music_volume": "Music Volume",
-    "subtitles": "Subtitles",
-    "video": "Display & Graphics",
-    "screen_shake": "Screen Shake",
-    "controls": "Controls"
-  },
-  "vault": {
-    "title": "STEAM VAULT & INVENTORY",
-    "keys_available": "Decryption Keys Available: {count}",
-    "get_keys": "GET KEYS IN ITEM STORE",
-    "open_cache": "DECRYPT DEEP RELIC CACHE",
-    "disclosed_odds": "Disclosed Cryptographic Odds"
   },
   "ui": {
     "menu": {
@@ -187,7 +153,6 @@
     "aria": {
       "language_select": "Game language",
       "close_language": "Close language menu",
-      "language_choice": "Select language",
       "close_settings": "Close system settings",
       "crosshair_presets": "Crosshair color presets",
       "crosshair_orange": "Orange crosshair",
@@ -234,13 +199,6 @@
       "f_patch": "SHOULDER PATCH & INSIGNIA",
       "f_hud": "TACTICAL HUD THEME",
       "f_voicebank": "ALT RADIO VOICE BANK",
-      "telemetry_title": "SUIT TELEMETRY STATUS",
-      "tel_thermal": "Thermal Cryo-Mesh:",
-      "tel_thermal_val": "NOMINAL 100%",
-      "tel_rad": "Radiation Seal:",
-      "tel_rad_val": "ACTIVE",
-      "tel_turntable": "Turntable Staging:",
-      "tel_turntable_val": "360° DRAG ORBIT",
       "btn_return": "← RETURN TO MAIN MENU",
       "btn_vault": "STEAM VAULT & FAB BAY",
       "btn_embark": "EMBARK TO BUNKER >>",

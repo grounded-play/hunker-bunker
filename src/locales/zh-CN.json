@@ -13,18 +13,7 @@
     "locked": "已锁定",
     "unlocked": "已解锁"
   },
-  "menu": {
-    "play": "部署特工",
-    "resume": "继续任务",
-    "armory": "军械库与配置",
-    "vault": "Steam 保险库",
-    "settings": "系统设置",
-    "multiplayer": "小队联机协力",
-    "quit": "退出到桌面",
-    "version": "版本 {version}"
-  },
   "classes": {
-    "all": "所有职业",
     "scout": "侦察兵",
     "tank": "重装兵",
     "engineer": "工程兵"
@@ -44,38 +33,15 @@
     "ammo": "弹药",
     "dash": "冲刺",
     "overclock": "超频",
-    "objective": "主要指令",
-    "depth": "地层深度",
     "sector": "扇区",
     "bunker_alert": "地堡警报"
   },
   "dialogue": {
-    "mothership_intro": "母舰：已检测到下潜。保持队形。",
     "mothership_caution": "母舰：警报。回收特征信号已被追踪。敌方巡逻队接近中。",
-    "operator_down": "特工倒下。救援无人机已派遣。",
     "black_box_guard": "母舰：消灭腐化特工以确保黑匣子安全。",
     "black_box_authorized": "腐化特工已清除。黑匣子回收授权已生效。",
     "extraction_forming": "撤离信标正在连线。在完成撤离程序前不要阵亡。",
     "elite_contact": "机甲：接触精英目标。重装敌方单位——注意保留撤退路线。"
-  },
-  "settings": {
-    "title": "系统配置",
-    "language": "语言 (Language)",
-    "audio": "音频",
-    "master_volume": "主音量",
-    "sfx_volume": "音效音量",
-    "music_volume": "音乐音量",
-    "subtitles": "字幕",
-    "video": "显示与图形",
-    "screen_shake": "屏幕震动",
-    "controls": "控制键位"
-  },
-  "vault": {
-    "title": "Steam 保险库与库存",
-    "keys_available": "可用解密码匙: {count}",
-    "get_keys": "在道具商店获取钥匙",
-    "open_cache": "解密深层遗物物资箱",
-    "disclosed_odds": "公开密码学开箱概率"
   },
   "ui": {
     "menu": {
@@ -187,7 +153,6 @@
     "aria": {
       "language_select": "游戏语言",
       "close_language": "关闭语言菜单",
-      "language_choice": "选择语言",
       "close_settings": "关闭系统设置",
       "crosshair_presets": "准星颜色预设",
       "crosshair_orange": "橙色准星",
@@ -234,13 +199,6 @@
       "f_patch": "肩章与徽记",
       "f_hud": "战术 HUD 主题",
       "f_voicebank": "备用无线电语音库",
-      "telemetry_title": "装甲遥测状态",
-      "tel_thermal": "低温热网：",
-      "tel_thermal_val": "正常 100%",
-      "tel_rad": "辐射密封：",
-      "tel_rad_val": "启用",
-      "tel_turntable": "转台展示：",
-      "tel_turntable_val": "360° 拖动环绕",
       "btn_return": "← 返回主菜单",
       "btn_vault": "STEAM 保险库与制造舱",
       "btn_embark": "前往地堡 >>",

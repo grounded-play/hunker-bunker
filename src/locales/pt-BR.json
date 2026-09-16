@@ -13,18 +13,7 @@
     "locked": "Bloqueado",
     "unlocked": "Desbloqueado"
   },
-  "menu": {
-    "play": "ENVIAR OPERADOR",
-    "resume": "RETOMAR MISSÃO",
-    "armory": "ARSENAL E EQUIPAMENTO",
-    "vault": "COFRE STEAM",
-    "settings": "CONFIGURAÇÕES",
-    "multiplayer": "COOP DE ESQUADRÃO",
-    "quit": "SAIR PARA ÁREA DE TRABALHO",
-    "version": "Versão {version}"
-  },
   "classes": {
-    "all": "Todas as Classes",
     "scout": "Batedor",
     "tank": "Tanque",
     "engineer": "Engenheiro"
@@ -44,38 +33,15 @@
     "ammo": "MUNIÇÃO",
     "dash": "IMPULSO",
     "overclock": "OVERCLOCK",
-    "objective": "DIRETRIZ PRINCIPAL",
-    "depth": "NÍVEL DE ESTRATO",
     "sector": "SETOR",
     "bunker_alert": "ALERTA DO BÚNKER"
   },
   "dialogue": {
-    "mothership_intro": "NAVE-MÃE: Descida detectada. Mantenham a formação.",
     "mothership_caution": "NAVE-MÃE: Cuidado. Assinatura de extração rastreada. Patrulhas a caminho.",
-    "operator_down": "OPERADOR ABATIDO. Drone de resgate enviado.",
     "black_box_guard": "NAVE-MÃE: Elimine o operador corrompido para resgatar a caixa-preta.",
     "black_box_authorized": "Operador corrompido neutralizado. Recuperação da caixa-preta autorizada.",
     "extraction_forming": "Uplink de extração formando. Tente não morrer durante a burocracia.",
     "elite_contact": "TRAJE: Contato de elite. Inimigo blindado — mantenha uma rota de fuga."
-  },
-  "settings": {
-    "title": "CONFIGURAÇÃO DO SISTEMA",
-    "language": "Idioma (Language)",
-    "audio": "Áudio",
-    "master_volume": "Volume Geral",
-    "sfx_volume": "Volume de Efeitos",
-    "music_volume": "Volume da Música",
-    "subtitles": "Legendas",
-    "video": "Tela e Gráficos",
-    "screen_shake": "Tremor de Tela",
-    "controls": "Controles"
-  },
-  "vault": {
-    "title": "COFRE E INVENTÁRIO STEAM",
-    "keys_available": "Chaves de decodificação disponíveis: {count}",
-    "get_keys": "OBTER CHAVES NA LOJA",
-    "open_cache": "DECODIFICAR CAIXA DE RELÍQUIA",
-    "disclosed_odds": "Probabilidades criptográficas divulgadas"
   },
   "ui": {
     "menu": {
@@ -187,7 +153,6 @@
     "aria": {
       "language_select": "Idioma do jogo",
       "close_language": "Fechar menu de idioma",
-      "language_choice": "Selecionar idioma",
       "close_settings": "Fechar configurações do sistema",
       "crosshair_presets": "Predefinições de cor da mira",
       "crosshair_orange": "Mira laranja",
@@ -234,13 +199,6 @@
       "f_patch": "INSÍGNIA DE OMBRO",
       "f_hud": "TEMA DE HUD TÁTICO",
       "f_voicebank": "BANCO DE VOZ DE RÁDIO ALT",
-      "telemetry_title": "STATUS DE TELEMETRIA DO TRAJE",
-      "tel_thermal": "Malha criotérmica:",
-      "tel_thermal_val": "NOMINAL 100%",
-      "tel_rad": "Vedação antirradiação:",
-      "tel_rad_val": "ATIVO",
-      "tel_turntable": "Plataforma giratória:",
-      "tel_turntable_val": "ÓRBITA 360° ARRASTANDO",
       "btn_return": "← VOLTAR AO MENU PRINCIPAL",
       "btn_vault": "COFRE STEAM E OFICINA",
       "btn_embark": "EMBARCAR PARA O BÚNKER >>",
