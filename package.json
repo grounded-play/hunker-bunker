@@ -26,6 +26,7 @@
     "audit:armory-assets": "node scripts/audit-armory-assets.js",
     "audit:chroma-green:check": "node scripts/audit-chroma-green.js --check",
     "audit:docs": "node scripts/audit-docs.js",
+    "i18n:audit": "node scripts/audit-i18n.js",
     "prerender:assemble": "node scripts/assemble-prerender-atlas.mjs",
     "prerender:validate": "node scripts/validate-prerender-atlas.mjs",
     "presubmit": "npm run presubmit:generated",
