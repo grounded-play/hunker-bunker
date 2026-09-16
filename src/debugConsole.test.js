@@ -142,12 +142,17 @@ describe('debugConsole', () => {
     });
 
     it('records demo checkpoints and exports Deck-safe diagnostic context', () => {
+        globalThis.__HB_BUILD_INFO__ = {
+            version: '2.4.4-beta', commit: 'abc123', branch: 'dev/sprint-40', dirty: false
+        };
         globalThis.window.HunkerInputState = {
             getState: () => ({ isSteamDeck: true, controllerCount: 1, lastInputMode: 'controller' })
         };
         globalThis.window.hbStage = { stageWidth: 1280, stageHeight: 800, scale: 1 };
         globalThis.window.__hbSteamStatus = { active: true, isSteamDeck: true, backend: { ok: true } };
         globalThis.window.threeGame = {
+            planeState: { stack: [{ id: 'surface' }, { id: 'foundry-interior' }] },
+            isInPocket: true,
             getPerformanceDiagnosticsSnapshot: () => ({ drawCalls: 12, triangles: 400 })
         };
 
@@ -163,6 +168,12 @@ describe('debugConsole', () => {
         expect(capture.state.performance.drawCalls).toBe(12);
         expect(capture.diagnostics.maxEntries).toBe(20000);
         expect(capture.diagnostics.measurementCoverage.gpuTimingSupported).toBe(false);
+        expect(capture.diagnostics.identifiers.build).toMatchObject({
+            version: '2.4.4-beta', commit: 'abc123', branch: 'dev/sprint-40'
+        });
+        expect(capture.diagnostics.identifiers).toMatchObject({
+            plane: 'foundry', planeId: 'foundry-interior'
+        });
     });
 
     it('bounds session history and truncates giant repeated context', () => {

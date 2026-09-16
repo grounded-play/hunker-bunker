@@ -244,6 +244,10 @@ const buildInfo = typeof __HB_BUILD_INFO__ === 'object'
         steamBuild: '',
         builtAt: ''
     });
+// Session diagnostics are assembled by the debug console module, so expose the
+// compile-time fingerprint in one stable location it can capture on web and
+// packaged Steam builds.
+globalThis.__HB_BUILD_INFO__ = buildInfo;
 
 function formatBuildTimestamp(raw) {
     if (!raw) return '';

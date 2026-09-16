@@ -64,6 +64,41 @@ describe('Foundry authored interior plane', () => {
         globalThis.window = { dispatchEvent: vi.fn() };
     });
 
+    it('opens ordinary fabrication on the surface without entering the underground plane', () => {
+        const game = makeGame();
+        game.isGameplayInputActive = () => true;
+        game.isAct2Active = () => false;
+        game.foundry.isWithinInteractRange = () => true;
+        game.enterFoundryInterior = vi.fn();
+
+        expect(ThreeGame.prototype.interactWithFoundry.call(game)).toBe(true);
+
+        expect(game.enterFoundryInterior).not.toHaveBeenCalled();
+        expect(game.player.position.toArray()).toEqual([29.5, 0, 39.5]);
+        expect(game.chunkGroups.visible).toBe(true);
+        expect(window.dispatchEvent).toHaveBeenCalledWith(expect.objectContaining({
+            type: 'open-fabrication-bay',
+            detail: expect.objectContaining({ source: 'surface-foundry' })
+        }));
+    });
+
+    it('preserves the Act 2 signal-dish interaction instead of opening fabrication', () => {
+        const game = makeGame();
+        game.isGameplayInputActive = () => true;
+        game.isAct2Active = () => true;
+        game.foundry.isWithinInteractRange = () => true;
+        game.act2 = { getPhase: () => 'dish', buildDish: vi.fn() };
+        game.triggerCameraShake = vi.fn();
+        globalThis.window.AudioManager = { play: vi.fn() };
+
+        expect(ThreeGame.prototype.interactWithFoundry.call(game)).toBe(true);
+
+        expect(game.act2.buildDish).toHaveBeenCalledOnce();
+        expect(window.dispatchEvent).not.toHaveBeenCalledWith(expect.objectContaining({
+            type: 'open-fabrication-bay'
+        }));
+    });
+
     it('enters a covered space-kit room and applies interior camera limits', () => {
         const game = makeGame();
 

@@ -789,6 +789,7 @@ export class DebugLogger {
         const inputState = typeof window !== 'undefined'
             ? window.HunkerInputState?.getState?.() ?? null
             : null;
+        const activePlaneId = game?.planeState?.stack?.at?.(-1)?.id ?? null;
         return {
             format: 'hunker-bunker-session-log',
             schemaVersion: 2,
@@ -812,7 +813,10 @@ export class DebugLogger {
                     seed: game?.seed ?? game?.worldSeed ?? game?.missionState?.seed ?? null,
                     encounterId: game?.activeBossEncounterId ?? null,
                     entityId: game?.activeInteractiveConsole?.userData?.entityId ?? null,
-                    plane: game?.isInFoundryInterior ? 'foundry' : (game?.isInPocket ? 'pocket' : 'surface')
+                    plane: activePlaneId === 'foundry-interior'
+                        ? 'foundry'
+                        : (game?.isInPocket ? 'pocket' : 'surface'),
+                    planeId: activePlaneId
                 },
                 measurementCoverage: {
                     gpuTimingSupported: Boolean(game?.gpuFrameTimer?.supported),

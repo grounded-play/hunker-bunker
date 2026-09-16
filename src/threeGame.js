@@ -13281,7 +13281,10 @@ export class ThreeGame {
         }
     }
 
-    // Interact (E / tap) when standing at the Foundry -> open the Fabrication Bay.
+    // Interact (E / tap) when standing at the Foundry -> open the Fabrication
+    // Bay in place. The authored interior remains available for camp rest, but
+    // ordinary fabrication must not hide the surface and teleport the player
+    // to the shared below-ground pocket plane.
     interactWithFoundry() {
         if (!this.isGameplayInputActive() || !this.player || !this.foundry?.isRevealed) return false;
         if (!this.foundry.isWithinInteractRange(this.player.position.x, this.player.position.z)) return false;
@@ -13294,7 +13297,19 @@ export class ThreeGame {
             window.dispatchEvent(new CustomEvent('act2-milestone', { detail: { key: 'dishBuilt' } }));
             return true;
         }
-        return this.enterFoundryInterior();
+        window.dispatchEvent(new CustomEvent('open-fabrication-bay', {
+            detail: {
+                source: 'surface-foundry',
+                foundry: this.foundry.getPosition?.() ?? null,
+                player: { x: this.player.position.x, z: this.player.position.z }
+            }
+        }));
+        debugLog.info('FOUNDRY', 'fabrication-bay-opened', {
+            source: 'surface-foundry',
+            playerX: this.player.position.x,
+            playerZ: this.player.position.z
+        });
+        return true;
     }
 
     // ── Act 1 finale: the cave holding the "final ship component" ──────────
