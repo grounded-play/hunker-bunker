@@ -40,7 +40,7 @@ export async function createScoutHeroPreview(canvas) {
     async function setType(type) {
         const nextType = ['SCOUT', 'ENGINEER', 'TANK'].includes(type) ? type : 'SCOUT';
         const generation = ++loadGeneration;
-        if (nextType === activeType) return;
+        if (nextType === activeType) return true;
         const configs = {
             SCOUT: { idleActionName: 'heroIdle', weaponVisible: false },
             ENGINEER: {
@@ -64,7 +64,11 @@ export async function createScoutHeroPreview(canvas) {
         const nextOverlay = await createPlayer3dOverlay({ targetHeight: 2.05, ...configs[nextType] });
         if (disposed || generation !== loadGeneration) {
             nextOverlay.dispose();
-            return;
+            return false;
+        }
+        if (!nextOverlay.hasAnimation?.('heroIdle') && !nextOverlay.hasAnimation?.('idle')) {
+            nextOverlay.dispose();
+            throw new Error(`${nextType} preview has no validated idle animation`);
         }
         overlay.root.removeFromParent();
         overlay.dispose();
@@ -76,6 +80,7 @@ export async function createScoutHeroPreview(canvas) {
         overlay.root.position.y += 0.04;
         overlay.root.rotation.y = Math.atan2(camera.position.x, camera.position.z);
         scene.add(overlay.root);
+        return true;
     }
 
     let visible = false;

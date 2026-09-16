@@ -1,6 +1,6 @@
-import { describe, expect, it, beforeEach } from 'vitest';
+import { describe, expect, it, beforeEach, vi } from 'vitest';
 import * as THREE from 'three';
-import { BankManager as Bank, BASE_TURRET_UPGRADES, BASE_TURRET_REPAIR_COST } from './bank.js';
+import { BankManager as Bank, BASE_TURRET_UPGRADES, BASE_TURRET_REPAIR_COST, BASE_TURRET_BUILD_COST } from './bank.js';
 import { ThreeGame } from './threeGame.js';
 
 describe('Base Defense Turret & Crash Site Centering', () => {
@@ -37,6 +37,8 @@ describe('Base Defense Turret & Crash Site Centering', () => {
         // Add resources for upgrade level 2 (cost: tech 30, coin 10)
         bank.state.tech = 50;
         bank.state.coin = 20;
+        expect(bank.canUpgradeBaseTurret()).toBe(false);
+        bank.unlockBaseTurret();
         expect(bank.canUpgradeBaseTurret()).toBe(true);
         expect(bank.upgradeBaseTurret()).toBe(true);
         expect(bank.getBaseTurretLevel()).toBe(2);
@@ -71,7 +73,7 @@ describe('Base Defense Turret & Crash Site Centering', () => {
         expect(game.baseDefenseTurretState).toMatchObject({ tileX: 9, tileZ: 4.8 });
     });
 
-    it('deploys base turret automatically when O2 generator or base item is repaired', () => {
+    it('leaves the turret unbuilt after O2 repair, until deliberately purchased', () => {
         const fakeScene = { add: () => {} };
         const bank = new Bank({ storage: mockStorage });
         const game = {
@@ -84,12 +86,65 @@ describe('Base Defense Turret & Crash Site Centering', () => {
         game.setupBaseDefenseTurret();
         expect(game.baseDefenseTurretState.active).toBe(false);
 
-        // Manually trigger base item repair handler
+        bank.deposit({ tech: 1000, coin: 1000, med: 1000 });
+        expect(bank.upgradeO2Generator()?.level).toBe(1);
         game._onBaseItemRepaired();
+        game.updateBaseTurretVisuals();
+
+        expect(bank.isBaseTurretUnlocked()).toBe(false);
+        expect(game.baseDefenseTurretState.active).toBe(false);
+        expect(game.baseDefenseTurretGroup.visible).toBe(false);
+
+        expect(bank.buildBaseTurret()).toBe(true);
+        game.updateBaseTurretVisuals();
 
         expect(bank.isBaseTurretUnlocked()).toBe(true);
         expect(game.baseDefenseTurretState.active).toBe(true);
         expect(game.baseDefenseTurretGroup.visible).toBe(true);
+
+        bank.reset();
+        game.updateBaseTurretVisuals();
+        expect(game.baseDefenseTurretState.active).toBe(false);
+        expect(game.baseDefenseTurretGroup.visible).toBe(false);
+    });
+
+    it('requires O2 and funds, charges once and preserves the choice on reload', () => {
+        const bank = new Bank({ storage: mockStorage });
+        bank.deposit(BASE_TURRET_BUILD_COST);
+        expect(bank.buildBaseTurret()).toBe(false);
+        bank.state.o2GeneratorLevel = 1;
+        bank.state.coin -= 1;
+        expect(bank.buildBaseTurret()).toBe(false);
+        bank.state.coin += 1;
+        expect(bank.buildBaseTurret()).toBe(true);
+        expect(bank.getState()).toMatchObject({ tech: 0, coin: 0, baseTurretUnlocked: true });
+        bank.deposit(BASE_TURRET_BUILD_COST);
+        const balance = bank.getState();
+        expect(bank.buildBaseTurret()).toBe(false);
+        expect(bank.getState()).toEqual(balance);
+        expect(new Bank({ storage: mockStorage }).isBaseTurretUnlocked()).toBe(true);
+    });
+
+    it('does not charge or construct when the atomic save fails', () => {
+        const bank = new Bank({ storage: mockStorage });
+        bank.state.o2GeneratorLevel = 1;
+        bank.deposit(BASE_TURRET_BUILD_COST);
+        const before = bank.getState();
+        vi.spyOn(mockStorage, 'setItem').mockImplementation(() => { throw new Error('disk full'); });
+        expect(() => bank.buildBaseTurret()).toThrow('disk full');
+        expect(bank.getState()).toEqual(before);
+    });
+
+    it('migrates legacy progress without granting a turret, but keeps explicit ownership', () => {
+        for (const unlocked of [undefined, false, true]) {
+            mockStorage.setItem('hb_bank', JSON.stringify({
+                schemaVersion: 8, o2GeneratorLevel: 2, unlocks: { hullExpansion: true },
+                baseTurretUnlocked: unlocked, baseTurretLevel: 2, baseTurretHp: 0
+            }));
+            const bank = new Bank({ storage: mockStorage });
+            expect(bank.isBaseTurretUnlocked()).toBe(unlocked === true);
+            expect(bank.getBaseTurretHp()).toBe(0);
+        }
     });
 
     it('replaces the base placeholder with a smaller authored field-turret model', async () => {

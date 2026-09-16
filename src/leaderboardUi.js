@@ -1,3 +1,4 @@
+import { t } from './i18n.js';
 /**
  * Leaderboard UI Frontend Implementation
  * Extracted from main.js for modular UI architecture.
@@ -43,7 +44,7 @@ export function setGameOverLeaderboardState(statusText, entries = [], { board = 
     if (!entries.length) {
         const empty = document.createElement('div');
         empty.className = 'go-leaderboard-row go-leaderboard-row--empty';
-        empty.textContent = 'NO RANKS AVAILABLE';
+        empty.textContent = t('ui.leaderboard.no_ranks');
         listEl.appendChild(empty);
         return;
     }
@@ -67,7 +68,7 @@ export function setGameOverLeaderboardState(statusText, entries = [], { board = 
 
         const name = document.createElement('span');
         name.className = 'go-leaderboard-name';
-        name.textContent = entry.persona || 'Agent';
+        name.textContent = entry.persona || t('ui.leaderboard.anonymous_agent');
 
         const score = document.createElement('span');
         score.className = 'go-leaderboard-score';

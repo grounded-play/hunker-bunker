@@ -1,6 +1,6 @@
 {
   "name": "hunker-bunker",
-  "version": "2.4.3-beta",
+  "version": "2.4.4-beta",
   "description": "A biomechanical survival roguelike set beneath the frozen surface of Cocytus IV.",
   "author": "Tuesday Cinema Club",
   "private": true,
@@ -26,6 +26,7 @@
     "audit:armory-assets": "node scripts/audit-armory-assets.js",
     "audit:chroma-green:check": "node scripts/audit-chroma-green.js --check",
     "audit:docs": "node scripts/audit-docs.js",
+    "i18n:audit": "node scripts/audit-i18n.js",
     "prerender:assemble": "node scripts/assemble-prerender-atlas.mjs",
     "prerender:validate": "node scripts/validate-prerender-atlas.mjs",
     "presubmit": "npm run presubmit:generated",
@@ -33,6 +34,7 @@
     "audio:plan-sfx": "node scripts/generate-plan-sfx.js",
     "audio:plan-sfx:check": "node scripts/generate-plan-sfx.js --check",
     "audio:ending-mixes:check": "node scripts/validate-ending-audio-manifest.mjs",
+    "audio:generate-radio-wave2": "node scripts/generate-alternate-radio-wave2.mjs",
     "preview": "vite preview",
     "lint": "eslint .",
     "test": "vitest run",

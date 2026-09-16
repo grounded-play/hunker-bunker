@@ -1,20 +1,20 @@
 {
   "version": 1,
   "budgets": {
-    "publicBytes": 2836398080,
+    "publicBytes": 2857369600,
     "appAsarBytes": 996147200,
     "unknownAssets": 160,
     "codecMismatches": 140,
     "duplicateGroups": 15
   },
   "measured": {
-    "publicBytes": 2835327996,
-    "publicFileCount": 1756
+    "publicBytes": 2851812554,
+    "publicFileCount": 1959
   },
   "classifications": {
-    "runtime-required": 1706,
+    "runtime-required": 1701,
     "source-reference": 0,
-    "generated-intermediate": 0,
+    "generated-intermediate": 208,
     "unknown": 50
   },
   "missingReferences": [],
@@ -434,6 +434,16 @@
       "path": "lore_portraits/vesper_briggs.png",
       "extension": ".png",
       "detected": ".webp"
+    },
+    {
+      "path": "lore_portraits/voice_aura_persona.png",
+      "extension": ".png",
+      "detected": ".jpg"
+    },
+    {
+      "path": "lore_portraits/voice_commander_persona.png",
+      "extension": ".png",
+      "detected": ".jpg"
     },
     {
       "path": "martha_camp_walk_v2.png",

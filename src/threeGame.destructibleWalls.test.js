@@ -32,6 +32,20 @@ describe('weapon ammo refill', () => {
 });
 
 describe('destructible wall grid persistence', () => {
+    it('selects a perpendicular adjacent wall so a boss breach is two tiles wide', () => {
+        const fakeThis = {
+            player: { position: { x: 20, z: 3 } },
+            getTileType: (x, z) => (x === 5 && (z === 3 || z === 4) ? '#' : '.'),
+            isHoleTile: () => false
+        };
+        const sprite = { position: { x: 2, z: 3 } };
+
+        expect(call('getBossBreachTiles', fakeThis, sprite, 5, 3)).toEqual([
+            { x: 5, z: 3 },
+            { x: 5, z: 4 }
+        ]);
+    });
+
     it('tunes wall HP above the first prototype values so breaking walls takes commitment', () => {
         const fakeThis = {};
 

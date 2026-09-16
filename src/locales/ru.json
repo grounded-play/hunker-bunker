@@ -13,18 +13,7 @@
     "locked": "Заблокировано",
     "unlocked": "Разблокировано"
   },
-  "menu": {
-    "play": "ДИСЛОКАЦИЯ ОПЕРАТИВНИКА",
-    "resume": "ПРОДОЛЖИТЬ МИССИЮ",
-    "armory": "АРСЕНАЛ И СНАРЯЖЕНИЕ",
-    "vault": "ХРАНИЛИЩЕ STEAM",
-    "settings": "НАСТРОЙКИ",
-    "multiplayer": "КООПЕРАТИВ ОТРЯДА",
-    "quit": "ВЫХОД НА РАБОЧИЙ СТОЛ",
-    "version": "Версия {version}"
-  },
   "classes": {
-    "all": "Все классы",
     "scout": "Разведчик",
     "tank": "Тяжеловес",
     "engineer": "Инженер"
@@ -44,38 +33,15 @@
     "ammo": "БОЕПРИПАСЫ",
     "dash": "РЫВОК",
     "overclock": "РАЗГОН",
-    "objective": "ГЛАВНАЯ ДИРЕКТИВА",
-    "depth": "УРОВЕНЬ ПЛАСТА",
     "sector": "СЕКТОР",
     "bunker_alert": "ТРЕВОГА БУНКЕРА"
   },
   "dialogue": {
-    "mothership_intro": "БАЗА: Зафиксирован спуск. Держите строй.",
     "mothership_caution": "БАЗА: Внимание. Сигнатура эвакуации обнаружена. Патрули на подходе.",
-    "operator_down": "ОПЕРАТИВНИК ПОДБИТ. Дрон спасения выслан.",
     "black_box_guard": "БАЗА: Уничтожьте зараженного оперативника для защиты черного ящика.",
     "black_box_authorized": "Зараженный нейтрализован. Извлечение черного ящика разрешено.",
     "extraction_forming": "Канал эвакуации формируется. Постарайтесь выжить во время оформления протокола.",
     "elite_contact": "КОСТЮМ: Элитный контакт. Усиленный противник — держите путь к отходу."
-  },
-  "settings": {
-    "title": "КОНФИГУРАЦИЯ СИСТЕМЫ",
-    "language": "Язык (Language)",
-    "audio": "Аудио",
-    "master_volume": "Общая громкость",
-    "sfx_volume": "Громкость эффектов",
-    "music_volume": "Громкость музыки",
-    "subtitles": "Субтитры",
-    "video": "Дисплей и графика",
-    "screen_shake": "Тряска экрана",
-    "controls": "Управление"
-  },
-  "vault": {
-    "title": "ХРАНИЛИЩЕ И ИНВЕНТАРЬ STEAM",
-    "keys_available": "Доступно ключей дешифрования: {count}",
-    "get_keys": "КУПИТЬ КЛЮЧИ В МАГАЗИНЕ",
-    "open_cache": "ДЕШИФРОВАТЬ КОНТЕЙНЕР",
-    "disclosed_odds": "Открытые вероятности шифрования"
   },
   "ui": {
     "menu": {
@@ -85,29 +51,67 @@
       "achievements": "ДОСТИЖЕНИЯ",
       "settings": "НАСТРОЙКИ",
       "about": "ОБ ИГРЕ",
-      "quit": "ВЫЙТИ ИЗ ИГРЫ"
+      "quit": "ВЫЙТИ ИЗ ИГРЫ",
+      "aria_label_operations_and_steam": "Операции и команды Steam",
+      "title_operator_roster_callsign": "Состав операторов — позывной и снаряжение",
+      "title_steam_vault_view": "Хранилище Steam — косметика из Steam",
+      "title_archive_simulations_unlockable": "Архивные симуляции — сюжетные мини-игры",
+      "rgb": "RGB",
+      "title_fabrication_bay_print": "Цех сборки — печать снаряжения из лома (после подачи энергии на базу)",
+      "aria_label_records_and_dossier": "Команды записей и досье",
+      "title_bunker_archive_discovered": "Архив бункера — найденные записи",
+      "title_field_codex_catalogued": "Полевой кодекс — враги, объекты и явления",
+      "title_tactical_dossier_beta": "Тактическое досье — прогресс бета-сезона 1",
+      "title_achievement_records_unlocked": "Достижения — открытые вехи забегов",
+      "tank": "ТАНК",
+      "aria_label_s_o_u": "S.O.U.L — скорость, расход O2, радиус сбора",
+      "speed": "СКОРОСТЬ",
+      "fast": "БЫСТРО",
+      "title_o2_consumption_rate": "Расход O₂ — чем ниже, тем медленнее убывает кислород",
+      "aria_label_o2_consumption_rate": "Расход O2 — чем ниже, тем лучше",
+      "o2_use": "РАСХОД O₂",
+      "low": "НИЗКИЙ",
+      "aria_label_loot_magnet_range": "Радиус притяжения добычи",
+      "loot_mag": "МАГНИТ",
+      "med": "МЕД",
+      "title_choose_operator_polish": "Выбор отделки оператора",
+      "suit_polish": "ОТДЕЛКА КОСТЮМА",
+      "recon_frame": "РАЗВЕДРАМА",
+      "scout": "РАЗВЕДЧИК",
+      "sprint_burst": "РЫВОК",
+      "wide_magnet": "ШИРОКИЙ МАГНИТ",
+      "bulwark_frame": "РАМА-БАСТИОН",
+      "brace": "УПОР",
+      "low_o2_drain": "НИЗКИЙ РАСХОД O₂",
+      "utility_frame": "УТИЛИТАРНАЯ РАМА",
+      "engineer": "ИНЖЕНЕР",
+      "reroute": "ПЕРЕНАПРАВИТЬ",
+      "cheaper_consoles": "ДЕШЕВЛЕ КОНСОЛИ",
+      "esc": "[ESC]"
     },
     "hub": {
       "daily_ops": "ЕЖЕДНЕВНАЯ ОПЕРАЦИЯ",
       "roster": "▣ СОСТАВ",
       "vault": "◈ ХРАНИЛИЩЕ STEAM",
       "archive_sims": "◈ АРХИВНЫЕ СИМУЛЯЦИИ",
-      "fab_bay": "◇ ЦЕХ СБОРКИ",
       "archive": "◈ АРХИВ",
       "codex": "❑ КОДЕКС",
       "dossier": "◈ ДОСЬЕ",
       "achievements": "ДОСТИЖЕНИЯ",
-      "initialize": "ЗАПУСК"
+      "initialize": "ЗАПУСК",
+      "vault_tooltip": "Открыть подменю косметики хранилища Steam",
+      "status_logs": "ЗАПИСЕЙ {found} / {total}",
+      "status_intel": "ДАННЫХ {found} / {total}",
+      "status_printed": "НАПЕЧАТАНО {printed} / {total}",
+      "status_armed": "ВООРУЖЕНО {armed}/{total}"
     },
     "settings": {
       "title": "СИСТЕМНЫЕ НАСТРОЙКИ",
-      "cat_display": "ЭКРАН И ГРАФИКА",
       "night_vision": "НОЧНОЕ ВИДЕНИЕ (БЕЗ ТУМАНА/НОЧИ)",
       "debug_overlay": "ОТЛАДОЧНЫЙ ОВЕРЛЕЙ",
       "cat_audio": "ЗВУК И ГОЛОС",
       "audio_mixer": "МИКШЕР",
       "commentary": "РЕЖИМ КОММЕНТАРИЕВ",
-      "cat_gameplay": "ИГРОВОЙ ПРОЦЕСС И ДОСТУПНОСТЬ",
       "ui_scale": "МАСШТАБ ИНТЕРФЕЙСА",
       "text_floor": "МИНИМАЛЬНЫЙ РАЗМЕР ТЕКСТА",
       "text_speed": "СКОРОСТЬ ТЕКСТА",
@@ -133,7 +137,21 @@
       "gore": "КРОВЬ И РАСЧЛЕНЁНКА",
       "subtitle_size": "РАЗМЕР СУБТИТРОВ",
       "subtitle_backdrop": "ФОН СУБТИТРОВ",
-      "contrast": "КОНТРАСТ ИНТЕРФЕЙСА"
+      "contrast": "КОНТРАСТ ИНТЕРФЕЙСА",
+      "aria_label_settings_categories": "Категории настроек",
+      "session": "СЕССИЯ",
+      "audio": "ЗВУК",
+      "controls": "УПРАВЛЕНИЕ",
+      "camera_hud": "КАМЕРА И HUD",
+      "accessibility": "ДОСТУПНОСТЬ",
+      "profile_saves": "ПРОФИЛЬ И СОХРАНЕНИЯ",
+      "session_display": "СЕССИЯ И ЭКРАН",
+      "return_to_game": "ВЕРНУТЬСЯ В ИГРУ",
+      "resume": "ПРОДОЛЖИТЬ",
+      "abort_current_mission": "ПРЕРВАТЬ ТЕКУЩУЮ МИССИЮ",
+      "abort_mission": "ПРЕРВАТЬ МИССИЮ",
+      "title_active_crosshair_color": "Текущий цвет прицела",
+      "placeholder_agent": "АГЕНТ"
     },
     "action": {
       "open": "ОТКРЫТЬ",
@@ -187,7 +205,6 @@
     "aria": {
       "language_select": "Язык игры",
       "close_language": "Закрыть меню языка",
-      "language_choice": "Выбрать язык",
       "close_settings": "Закрыть системные настройки",
       "crosshair_presets": "Предустановки цвета прицела",
       "crosshair_orange": "Оранжевый прицел",
@@ -233,13 +250,7 @@
       "f_chassis": "СКИН КОРПУСА ЭКЗОСКЕЛЕТА",
       "f_patch": "НАШИВКА И ЗНАК РАЗЛИЧИЯ",
       "f_hud": "ТЕМА ТАКТИЧЕСКОГО HUD",
-      "telemetry_title": "ТЕЛЕМЕТРИЯ КОСТЮМА",
-      "tel_thermal": "Термо-криосетка:",
-      "tel_thermal_val": "НОРМА 100%",
-      "tel_rad": "Радиационная защита:",
-      "tel_rad_val": "АКТИВНА",
-      "tel_turntable": "Поворотный стол:",
-      "tel_turntable_val": "360° ОРБИТА ПЕРЕТАСКИВАНИЕМ",
+      "f_voicebank": "АЛЬТ. РАДИОГОЛОС",
       "btn_return": "← В ГЛАВНОЕ МЕНЮ",
       "btn_vault": "ХРАНИЛИЩЕ STEAM И ЦЕХ",
       "btn_embark": "ОТПРАВИТЬСЯ В БУНКЕР >>",
@@ -249,10 +260,10 @@
       "select_to_equip": "ВЫБРАТЬ ДЛЯ ЭКИПИРОВКИ",
       "unknown_equipment": "НЕИЗВЕСТНОЕ СНАРЯЖЕНИЕ",
       "locked_achievement": "Получите полевое достижение, чтобы открыть.",
-      "locked_rewards": "Открывается за полевые награды."
+      "locked_rewards": "Открывается за полевые награды.",
+      "aria_label_pre_mission_armory": "Оружейная перед миссией"
     },
     "roster": {
-      "title": "▣ ДОСЬЕ ОПЕРАТОРА // ТЕЛЕМЕТРИЯ ВЫСАДКИ",
       "deepest_sector": "ГЛУБЖАЙШИЙ СЕКТОР:",
       "total_distance": "ОБЩАЯ ДИСТАНЦИЯ:",
       "hostiles": "ВРАГИ:",
@@ -261,8 +272,18 @@
       "decal": "ЭМБЛЕМА:",
       "finish": "ОКРАСКА:",
       "hint": "Создавайте оружие в цехе сборки, чтобы экипировать его здесь. Настраивайте косметику в хранилище Steam.",
-      "confirm": "ПОДТВЕРДИТЬ И ВЫСАДИТЬСЯ",
-      "randomize": "Случайный позывной"
+      "randomize": "Случайный позывной",
+      "callsign": "ПОЗЫВНОЙ:",
+      "placeholder_agent_01": "AGENT-01",
+      "sector_0": "СЕКТОР 0",
+      "0_eliminated": "0 УНИЧТОЖЕНО",
+      "none": "НЕТ",
+      "equipped_sidearm": "ОСНАЩЁННЫЙ ПИСТОЛЕТ",
+      "equipped_steam_cosmetics": "ОСНАЩЁННАЯ КОСМЕТИКА STEAM",
+      "no_weapons": "ОРУЖИЕ НЕ СОБРАНО",
+      "print_hint": "Напечатайте гарантированный дробовой репитер за 12 тех / 6 монет в цехе сборки.",
+      "equipped": "✓ ОСНАЩЕНО",
+      "equip": "ОСНАСТИТЬ"
     },
     "dlg": {
       "channel": "КАНАЛ СВЯЗИ С МАТКОЙ 7",
@@ -271,6 +292,962 @@
       "choice_skip_hint": "ПРОПУСТИТЬ ОБУЧЕНИЕ",
       "choice_tutorial_label": "[B] СНАЧАЛА ПРОГОНИ ПРОТОКОЛЫ.",
       "choice_tutorial_hint": "НАЧАТЬ ОБУЧЕНИЕ"
+    },
+    "misc": {
+      "hunker_bunker_tactical_command": "HUNKER BUNKER | ТАКТИЧЕСКОЕ КОМАНДОВАНИЕ"
+    },
+    "global_skip_intro_btn": {
+      "skip_intro": "ПРОПУСТИТЬ ЗАСТАВКУ"
+    },
+    "loading": {
+      "aria_label_build_and_developer": "Сведения о сборке и разработчике",
+      "system_build": "СБОРКА СИСТЕМЫ",
+      "dev_console": "КОНСОЛЬ DEV",
+      "initializing_systems": "ИНИЦИАЛИЗАЦИЯ СИСТЕМ"
+    },
+    "splash_steam_badge": {
+      "title_click_to_open": "Открыть профиль через оверлей Steam",
+      "aria_label_open_steam_profile": "Открыть профиль Steam"
+    },
+    "splash": {
+      "tactical_command_v2_0": "ТАКТИЧЕСКОЕ КОМАНДОВАНИЕ v2.0"
+    },
+    "title_profile_hud": {
+      "aria_label_current_operator_profile": "Текущий профиль оператора",
+      "active_operator_profile": "АКТИВНЫЙ ПРОФИЛЬ ОПЕРАТОРА"
+    },
+    "about": {
+      "aria_label_close_credits": "Закрыть титры",
+      "personnel_archive_production_credits": "◈ АРХИВ ПЕРСОНАЛА // ТИТРЫ",
+      "developed_by": "РАЗРАБОТКА",
+      "tuesday_cinema_club": "TUESDAY CINEMA CLUB",
+      "lead_design_programming": "ВЕДУЩИЙ ДИЗАЙН И ПРОГРАММИРОВАНИЕ",
+      "tuesday_cinema_club_team": "Команда Tuesday Cinema Club",
+      "graphics_engine": "ГРАФИЧЕСКИЙ ДВИЖОК",
+      "sounds_music": "ЗВУК И МУЗЫКА",
+      "tuesday_cinema_club_audio_collective": "Аудиоколлектив Tuesday Cinema Club",
+      "discord_community": "СООБЩЕСТВО DISCORD",
+      "join_discord_server": "ВОЙТИ НА СЕРВЕР DISCORD",
+      "project_repository": "РЕПОЗИТОРИЙ ПРОЕКТА",
+      "github_repository": "РЕПОЗИТОРИЙ GITHUB",
+      "special_thanks": "ОСОБАЯ БЛАГОДАРНОСТЬ",
+      "our_amazing_community_players": "Нашему замечательному сообществу и игрокам",
+      "thank_you_for_deploying": "СПАСИБО ЗА ВЫСАДКУ"
+    },
+    "hero_detail": {
+      "field_loadout": "ПОЛЕВОЕ СНАРЯЖЕНИЕ"
+    },
+    "archive": {
+      "bunker_archive": "◈ АРХИВ БУНКЕРА",
+      "recovered_kicker": "АРХИВНАЯ СИМУЛЯЦИЯ ВОССТАНОВЛЕНА",
+      "in_progress": "В ПРОЦЕССЕ",
+      "ready": "ГОТОВО",
+      "best_score": "◈ ЛУЧШИЙ: {score} ОЧК",
+      "rgb_title": "RGB: RIVERSIDE GLOBAL 'BOTICS"
+    },
+    "close_season_pass": {
+      "aria_label_close_tactical_dossier": "Закрыть тактическое досье"
+    },
+    "season_pass": {
+      "sub_terran_sector_operations_beta": "◈ ОПЕРАЦИИ ПОДЗЕМНОГО СЕКТОРА // БЕТА-СЕЗОН 1",
+      "directives": "И ДИРЕКТИВЫ"
+    },
+    "archive_log_detail": {
+      "aria_label_close_archive_log": "Закрыть архивную запись",
+      "recovered_archive_record": "◈ ВОССТАНОВЛЕННАЯ АРХИВНАЯ ЗАПИСЬ",
+      "decryption_complete_read_only": "РАСШИФРОВКА ЗАВЕРШЕНА // ТОЛЬКО ЧТЕНИЕ"
+    },
+    "close_codex": {
+      "aria_label_close_field_codex": "Закрыть полевой кодекс"
+    },
+    "codex": {
+      "field_intel_discovered_specimens_lore": "◈ ПОЛЕВЫЕ ДАННЫЕ // НАЙДЕННЫЕ ОБРАЗЦЫ И ЛОР",
+      "catalogued_by_sub_terran_encounter": "КАТАЛОГИЗИРОВАНО ПО ПОДЗЕМНЫМ ВСТРЕЧАМ",
+      "intel_record_kicker": "❑ ЗАПИСЬ ДАННЫХ: {category}",
+      "entries_recovered": "ВОССТАНОВЛЕНО ЗАПИСЕЙ: {found} / {total}",
+      "endings_archive": "◈ АРХИВ ФИНАЛОВ ЭКСПЕДИЦИИ // ВСЕ 10 ТРАЕКТОРИЙ И КЛЮЧЕВЫЕ ЗАПИСИ",
+      "endings_sub": "Каталог всех десяти исходов, закрытых силуэтов и необратимых ключевых решений, закрывающих конкретные пути в текущей операции.",
+      "discovered": "ОТКРЫТО",
+      "locked_this_run": "ЗАКРЫТО В ЭТОМ ЗАБЕГЕ",
+      "undiscovered": "НЕ ОТКРЫТО",
+      "classified": "ЗАСЕКРЕЧЕННАЯ ТРАЕКТОРИЯ ЭКСПЕДИЦИИ",
+      "closed_by": "🔒 ЗАКРЫТО КЛЮЧЕВЫМ РЕШЕНИЕМ:",
+      "view_record": "Открыть запись данных: {name}",
+      "click_hint": "НАЖМИТЕ, ЧТОБЫ ОТКРЫТЬ ДОСЬЕ И АРТ",
+      "uncatalogued": "??? — НЕ КАТАЛОГИЗИРОВАНО",
+      "encounter_hint": "Встретьте это в поле, чтобы восстановить запись."
+    },
+    "close_codex_detail": {
+      "aria_label_close_codex_entry": "Закрыть запись кодекса"
+    },
+    "codex_detail": {
+      "entry_recovered_read_only_dossier": "ЗАПИСЬ ВОССТАНОВЛЕНА // ДОСЬЕ ТОЛЬКО ДЛЯ ЧТЕНИЯ"
+    },
+    "close_achievements": {
+      "aria_label_close_achievements": "Закрыть достижения"
+    },
+    "achievements": {
+      "combat_citations_deep_crust_commendations": "◈ БОЕВЫЕ НАГРАДЫ // ОТЛИЧИЯ ГЛУБИННОЙ КОРЫ",
+      "title_copy_a_portable": "Скопировать переносимый код сохранения",
+      "copy_save_code": "КОПИРОВАТЬ КОД СОХРАНЕНИЯ"
+    },
+    "close_steam_vault": {
+      "aria_label_close_steam_vault": "Закрыть хранилище Steam"
+    },
+    "steam_vault": {
+      "appid_4957040_secure_dispensary": "◈ APPID 4957040 // ЗАЩИЩЁННЫЙ РАЗДАТЧИК",
+      "steam_inventory_manifest": "ОПИСЬ ИНВЕНТАРЯ STEAM",
+      "verified": "ПРОВЕРЕНО",
+      "steam_secured": "🛡️ ЗАЩИЩЕНО STEAM",
+      "100_disclosed_odds": "⚖️ 100% РАСКРЫТЫЕ ШАНСЫ",
+      "f2p_in_game_drops": "📦 F2P ВНУТРИИГРОВЫЕ ДРОПЫ",
+      "deep_relic_caches": "ТАЙНИКИ ГЛУБИННЫХ РЕЛИКВИЙ",
+      "cache_keys": "КЛЮЧИ ОТ ТАЙНИКОВ",
+      "relic_key_dispensary": "РАЗДАТЧИК КЛЮЧЕЙ РЕЛИКВИЙ",
+      "steam_wallet_direct": "ПРЯМО ИЗ КОШЕЛЬКА STEAM",
+      "open_in_steam": "ОТКРЫТЬ В STEAM ↗",
+      "relic_cache_decryptor": "ДЕШИФРАТОР ТАЙНИКОВ",
+      "open_deep_relic_cache": "◈ ОТКРЫТЬ ТАЙНИК РЕЛИКВИЙ",
+      "published_drop_rates": "ОПУБЛИКОВАННЫЕ ШАНСЫ",
+      "100_disclosed": "100% РАСКРЫТО",
+      "trade_up_smelting": "🔥 ПЕРЕПЛАВКА С ПОВЫШЕНИЕМ",
+      "5_1_tier_upgrade": "⚖️ ПОВЫШЕНИЕ УРОВНЯ 5:1",
+      "permanent_merge": "◈ НЕОБРАТИМОЕ СЛИЯНИЕ",
+      "5_same_tier_items": "5× ПРЕДМЕТОВ ТОГО ЖЕ УРОВНЯ",
+      "1_next_tier_item": "1× ПРЕДМЕТ СЛЕДУЮЩЕГО УРОВНЯ",
+      "deep_smelter": "ГЛУБИННАЯ ПЛАВИЛЬНЯ",
+      "consumes_5x_same_tier_items": "ПОТРЕБЛЯЕТ 5x ПРЕДМЕТОВ ТОГО ЖЕ УРОВНЯ",
+      "deep_core_shard_dispensary": "РАЗДАТЧИК ОСКОЛКОВ ЯДРА"
+    },
+    "vault_details": {
+      "view_in_steam_market": "ОТКРЫТЬ В ТОРГОВОЙ ПЛОЩАДКЕ STEAM"
+    },
+    "vault_reveal": {
+      "steam_relic_dispensary_appid_4957040": "◈ РАЗДАТЧИК РЕЛИКВИЙ STEAM // APPID 4957040",
+      "claim_to_inventory": "◈ ЗАБРАТЬ В ИНВЕНТАРЬ"
+    },
+    "operator_polish": {
+      "operator_polish": "◆ ОТДЕЛКА ОПЕРАТОРА",
+      "16_bit_suit_tint_matrix": "16-БИТНАЯ МАТРИЦА ОКРАСКИ // ЗАКРЫТЫЕ ОТДЕЛКИ ТРЕБУЮТ ПОЛЕВЫХ ВЕХ"
+    },
+    "close_tactical_map": {
+      "aria_label_close_tactical_map": "Закрыть тактическую карту"
+    },
+    "tactical_map": {
+      "tactical_blueprint_overlay": "◈ НАЛОЖЕНИЕ ТАКТИЧЕСКОГО ЧЕРТЕЖА",
+      "grid_sector_01_exploration_active": "СЕКТОР СЕТКИ 01 // ИДЁТ РАЗВЕДКА",
+      "title_zoom_in": "Приблизить (+)",
+      "zoom_in": "ПРИБЛИЗИТЬ",
+      "title_zoom_out": "Отдалить (-)",
+      "zoom_out": "ОТДАЛИТЬ",
+      "title_center_home_base": "Центрировать на базе (H)",
+      "home_base": "БАЗА",
+      "title_center_operator_p": "Центрировать на операторе (P)",
+      "operator": "ОПЕРАТОР",
+      "title_reset_view_r": "Сбросить вид (R)",
+      "reset": "СБРОС",
+      "title_debug_reveal_regional": "Отладка: показать маршрут региона",
+      "reveal_all": "ПОКАЗАТЬ ВСЁ",
+      "blueprint_legend": "ЛЕГЕНДА ЧЕРТЕЖА",
+      "operator_position": "ПОЗИЦИЯ ОПЕРАТОРА",
+      "discovered_room": "НАЙДЕННАЯ КОМНАТА",
+      "shrouded_fog_of_war": "СКРЫТО ТУМАНОМ ВОЙНЫ",
+      "survivor_camp": "ЛАГЕРЬ ВЫЖИВШИХ",
+      "hive_site": "УЛЕЙ",
+      "active_objective": "ТЕКУЩАЯ ЦЕЛЬ",
+      "explored_tiles": "ИССЛЕДОВАНО КЛЕТОК:",
+      "active_signals": "АКТИВНЫЕ СИГНАЛЫ:",
+      "drag_wasd_l_stick_pan": "[ПЕРЕТАСКИВАНИЕ / WASD / ЛЕВЫЙ СТИК] ПАНОРАМА",
+      "scroll_lb_rb_zoom": "[КОЛЁСИКО / +/- / LB-RB] МАСШТАБ",
+      "h_x_home_p_y": "[H / (X)] БАЗА [P / (Y)] ОПЕРАТОР",
+      "m_select_esc_close": "[M] / [SELECT] / [ESC] ЗАКРЫТЬ"
+    },
+    "player_trade": {
+      "operative_link_field_barter": "СВЯЗЬ ОПЕРАТИВНИКОВ // ПОЛЕВОЙ ОБМЕН",
+      "link_active": "СВЯЗЬ АКТИВНА",
+      "shells": "ГИЛЬЗЫ",
+      "ammo": "ПАТРОНЫ",
+      "medkits": "АПТЕЧКИ",
+      "o2_filter": "ФИЛЬТР O2",
+      "shells_offered": "ПРЕДЛОЖЕНО ГИЛЬЗ",
+      "ammo_offered": "ПРЕДЛОЖЕНО ПАТРОНОВ",
+      "medkits_offered": "ПРЕДЛОЖЕНО АПТЕЧЕК",
+      "o2_filters_offered": "ПРЕДЛОЖЕНО ФИЛЬТРОВ O2",
+      "cancel_link": "ОТМЕНИТЬ СВЯЗЬ",
+      "confirm_transfer": "ПОДТВЕРДИТЬ ПЕРЕДАЧУ"
+    },
+    "close_player_trade": {
+      "aria_label_close_trade_link": "Закрыть торговую связь"
+    },
+    "npc_dialogue": {
+      "affection_bond": "ПРИВЯЗАННОСТЬ // СВЯЗЬ",
+      "press_1_4_or_click": "НАЖМИТЕ [1-4] ИЛИ ВЫБЕРИТЕ КАРТУ • [ESC] ВЫЙТИ"
+    },
+    "close_npc_dialogue": {
+      "title_exit_dialogue": "Выйти из диалога"
+    },
+    "demo_end": {
+      "transmission_terminated": "◈ ПЕРЕДАЧА ПРЕРВАНА",
+      "you_belong_to_the_deep": "«Теперь ты принадлежишь глубине, машинка. Рой помнит твой зов.»",
+      "thank_you_for_playing_the": "Спасибо, что сыграли в демоверсию Hunker Bunker.",
+      "the_mothership_uplink_has_been": "Связь с маткой прервана, но настоящая угроза ещё впереди. Добавьте полную версию в список желаемого в Steam, чтобы продолжить эвакуацию в глубинных хранилищах.",
+      "wishlist_on_steam": "◈ ДОБАВИТЬ В ЖЕЛАЕМОЕ В STEAM"
+    },
+    "demo_end_main_menu": {
+      "return_to_menu": "ВЕРНУТЬСЯ В МЕНЮ"
+    },
+    "fabrication": {
+      "fabrication_bay": "◇ ЦЕХ СБОРКИ",
+      "print_gear_from_salvage": "ПЕЧАТЬ СНАРЯЖЕНИЯ ИЗ ЛОМА",
+      "schematics_fabricated_0_8": "СОБРАНО СХЕМ: 0 / 8"
+    },
+    "fab_roll": {
+      "insert_salvage_to_fabricate": "ВСТАВЬТЕ ЛОМ ДЛЯ СБОРКИ"
+    },
+    "ui": {
+      "exosuit_mark_iv_pressurized": "ЭКЗОКОСТЮМ // MARK-IV ГЕРМЕТИЧНЫЙ",
+      "bunker_level": "УРОВЕНЬ БУНКЕРА"
+    },
+    "campaign_day_indicator": {
+      "title_campaign_day_and": "День кампании и местный световой цикл"
+    },
+    "hud_run_cards": {
+      "aria_label_active_run_pressure": "Текущее давление забега"
+    },
+    "desktop_compass": {
+      "title_click_or_press": "Нажмите или клавишу M, чтобы открыть тактическую карту",
+      "aria_label_tactical_compass_click": "Тактический компас (нажмите, чтобы открыть карту)",
+      "tactical_map": "ТАКТИЧЕСКАЯ КАРТА",
+      "map_m": "[КАРТА / M]",
+      "base": "БАЗА"
+    },
+    "hud_blueprint_canvas": {
+      "aria_label_explored_tactical_map": "Исследованная тактическая карта"
+    },
+    "extraction_progress_ring": {
+      "launch": "ЗАПУСК"
+    },
+    "desktop_compass_radar_row": {
+      "node": "УЗЕЛ"
+    },
+    "weapon_status": {
+      "sidearm": "ПИСТОЛЕТ"
+    },
+    "ship_status": {
+      "ship_integrity": "ЦЕЛОСТНОСТЬ КОРАБЛЯ"
+    },
+    "vitals": {
+      "vitals": "ЖИЗНЕННЫЕ ПОКАЗАТЕЛИ",
+      "aria_label_health": "Здоровье",
+      "cover": "УКРЫТИЕ"
+    },
+    "queens_ledger_hud": {
+      "obedience_0_seats_1_4": "♛ ПОВИНОВЕНИЕ 0 · МЕСТА 1/4 · ВЕКТОР: НЕСТАБИЛЕН"
+    },
+    "radar_scan": {
+      "title_radar_scan_q": "Сканирование радара [Q]",
+      "radar_scan": "СКАНИРОВАНИЕ РАДАРА"
+    },
+    "pickup_counter": {
+      "loot": "ДОБЫЧА",
+      "total": "ВСЕГО"
+    },
+    "boss_status": {
+      "boss_threat": "УГРОЗА БОССА"
+    },
+    "world_status": {
+      "tactical_feed": "ТАКТИЧЕСКАЯ СВОДКА",
+      "units": "ЕДИНИЦ"
+    },
+    "game_over": {
+      "exosuit_failure": "ОТКАЗ ЭКЗОКОСТЮМА",
+      "agent_lost_in_sector_9": "> АГЕНТ ПОТЕРЯН В СЕКТОРЕ 9. ТЕЛЕМЕТРИЯ ВОССТАНОВЛЕНА.",
+      "mission_report": "ОТЧЁТ О МИССИИ",
+      "distance_covered": "ПРОЙДЕНО РАССТОЯНИЕ",
+      "items_recovered": "СОБРАНО ПРЕДМЕТОВ",
+      "o2_generator": "ГЕНЕРАТОР O₂",
+      "threats_eliminated": "УСТРАНЕНО УГРОЗ",
+      "time_elapsed": "ПРОШЛО ВРЕМЕНИ",
+      "aria_label_expedition_earnings_and": "Доход экспедиции и баланс банка",
+      "score": "ОЧКИ",
+      "pts": "ОЧК",
+      "world_seed": "СИД МИРА:",
+      "leaderboard_results": "◈ РЕЗУЛЬТАТЫ ТАБЛИЦЫ ЛИДЕРОВ",
+      "try_again": "ПОПРОБОВАТЬ СНОВА"
+    },
+    "game_over_main_menu": {
+      "main_menu": "ГЛАВНОЕ МЕНЮ"
+    },
+    "close_lore": {
+      "aria_label_close_log": "Закрыть запись"
+    },
+    "lore": {
+      "bunker_terminal_log_fragment": "ТЕРМИНАЛ БУНКЕРА — ФРАГМЕНТ ЗАПИСИ",
+      "log_key": "ЗАПИСЬ-{key}",
+      "text_unavailable": "[ТЕКСТ ЗАПИСИ НЕДОСТУПЕН — ВЕРНИТЕСЬ В БУНКЕР]",
+      "date": "ДАТА: {date}",
+      "loc": "МЕСТО: {coords}",
+      "open_log": "Открыть восстановленную запись {key}",
+      "recovered": "ВОССТАНОВЛЕНО // ОТКРЫТЬ ЗАПИСЬ",
+      "encrypted": "ЗАШИФРОВАНО // ЗАБЛОКИРОВАНО",
+      "summary": "ВОССТАНОВЛЕНО ЗАПИСЕЙ: {found} / {total}"
+    },
+    "radio_sender_name": {
+      "mothership_command": "КОМАНДОВАНИЕ МАТКИ"
+    },
+    "radio_transmission_prompt": {
+      "online": "В СЕТИ"
+    },
+    "biome_hud_prompt": {
+      "zone": "ЗОНА"
+    },
+    "biome_hud_text": {
+      "entering_active_sector": "ВХОД В АКТИВНЫЙ СЕКТОР"
+    },
+    "lore_hud_prompt": {
+      "press_e": "НАЖМИТЕ E",
+      "read_log": "ПРОЧИТАТЬ ЗАПИСЬ"
+    },
+    "console_hud_prompt": {
+      "press_e": "НАЖМИТЕ E",
+      "access_base_shop": "ОТКРЫТЬ МАГАЗИН БАЗЫ"
+    },
+    "o2_generator_hud_prompt": {
+      "press_e": "НАЖМИТЕ E",
+      "upgrade_o2_generator": "УЛУЧШИТЬ ГЕНЕРАТОР O₂"
+    },
+    "base_turret_hud_prompt": {
+      "press_e": "НАЖМИТЕ E",
+      "defense_turret_controls": "УПРАВЛЕНИЕ ТУРЕЛЬЮ"
+    },
+    "foundry_hud_prompt": {
+      "press_e": "НАЖМИТЕ E",
+      "open_fab_bay": "ОТКРЫТЬ ЦЕХ СБОРКИ"
+    },
+    "scientist_hud_prompt": {
+      "press_e": "НАЖМИТЕ E",
+      "talk_to_dr_okonkwo_vass": "ПОГОВОРИТЬ С Д-РОМ ОКОНКВО-ВАСС"
+    },
+    "mayor_tina_hud_prompt": {
+      "press_e": "НАЖМИТЕ E",
+      "talk_to_mayor_tina": "ПОГОВОРИТЬ С МЭРОМ ТИНОЙ"
+    },
+    "black_box_hud_prompt": {
+      "press_e": "НАЖМИТЕ E",
+      "recover_black_box": "ИЗВЛЕЧЬ ЧЁРНЫЙ ЯЩИК"
+    },
+    "hole_hud_prompt": {
+      "press_e": "НАЖМИТЕ E",
+      "fill_hole": "ЗАДЕЛАТЬ ПРОЛОМ"
+    },
+    "mouse_look_prompt": {
+      "click": "КЛИК",
+      "to_look_around": "ЧТОБЫ ОСМОТРЕТЬСЯ"
+    },
+    "telemeter_integrity": {
+      "integrity": "ЦЕЛОСТНОСТЬ:"
+    },
+    "console_terminal": {
+      "bunker_tactical_terminal": "ТАКТИЧЕСКИЙ ТЕРМИНАЛ БУНКЕРА",
+      "time_of_day": "ВРЕМЯ СУТОК",
+      "survived": "ВЫЖИЛ",
+      "base_system": "◇ СИСТЕМА БАЗЫ",
+      "class_skills": "◇ НАВЫКИ КЛАССА",
+      "objective_night_log": "◇ ЦЕЛЬ / НОЧНОЙ ЖУРНАЛ",
+      "field_medkit": "ПОЛЕВАЯ АПТЕЧКА",
+      "med_conversion": "КОНВЕРСИЯ МЕДИКАМЕНТОВ",
+      "convert_10_med_1_heart": "ОБМЕНЯТЬ 10 МЕД → ♥ ВОССТАНОВИТЬ 1 СЕРДЦЕ",
+      "convert_10_med": "ОБМЕНЯТЬ 10 МЕД → ♥",
+      "optional_field_opportunity": "ДОПОЛНИТЕЛЬНАЯ ПОЛЕВАЯ ВОЗМОЖНОСТЬ",
+      "o2_generator_module": "МОДУЛЬ ГЕНЕРАТОРА O₂",
+      "field_stabilizer": "ПОЛЕВОЙ СТАБИЛИЗАТОР",
+      "repair_generator": "ПОЧИНИТЬ ГЕНЕРАТОР",
+      "goal_2": "ЦЕЛЬ 2",
+      "hull_expansion_matrix": "МАТРИЦА РАСШИРЕНИЯ КОРПУСА",
+      "locked_repair_o2_generator_first": "ЗАБЛОКИРОВАНО — СНАЧАЛА ПОЧИНИТЕ ГЕНЕРАТОР O₂",
+      "reinforce_exterior_hull_increases_max": "Укрепляет внешний корпус. Максимальная целостность экзокостюма до 4 сердец.",
+      "cost_50_tech_20_med": "ЦЕНА: 50 ТЕХ / 20 МЕД",
+      "locked": "ЗАБЛОКИРОВАНО",
+      "goal_3": "ЦЕЛЬ 3",
+      "communication_radar_node": "УЗЕЛ СВЯЗИ И РАДАРА",
+      "locked_install_hull_matrix_first": "ЗАБЛОКИРОВАНО — СНАЧАЛА УСТАНОВИТЕ МАТРИЦУ КОРПУСА",
+      "establish_long_range_tactical_feeds": "Налаживает дальнюю тактическую связь. Компас отслеживает ближайший кластер тайников.",
+      "cost_150_tech_30_coin": "ЦЕНА: 150 ТЕХ / 30 МОНЕТ",
+      "goal_4": "ЦЕЛЬ 4",
+      "reactor_compressor": "КОМПРЕССОР РЕАКТОРА",
+      "locked_install_radar_node_first": "ЗАБЛОКИРОВАНО — СНАЧАЛА УСТАНОВИТЕ УЗЕЛ РАДАРА",
+      "increase_generator_efficiency_o2_refill": "Повышает КПД генератора. Скорость пополнения O₂ вдвое выше, расход ниже на 20%.",
+      "cost_300_tech_100_coin": "ЦЕНА: 300 ТЕХ / 100 МОНЕТ",
+      "expedition_day": "ДЕНЬ ЭКСПЕДИЦИИ",
+      "cycle_phase": "ФАЗА ЦИКЛА",
+      "local_light": "МЕСТНЫЙ СВЕТ",
+      "next_transition": "СЛЕДУЮЩИЙ ПЕРЕХОД",
+      "aria_label_objective_history": "История целей",
+      "expedition_journal": "ЖУРНАЛ ЭКСПЕДИЦИИ",
+      "aria_label_optional_base_defense": "Дополнительная оборона базы",
+      "defense_turret": "ОБОРОНИТЕЛЬНАЯ ТУРЕЛЬ",
+      "optional_north_door_defense_repairing": "Дополнительная оборона северной двери. Ремонт жизнеобеспечения не строит турель.",
+      "bunker_tree_cross_linked_protocols": "ДЕРЕВО БУНКЕРА // СВЯЗАННЫЕ ПРОТОКОЛЫ"
+    },
+    "terminal_bank": {
+      "current_run_stats": "СТАТИСТИКА ТЕКУЩЕГО ЗАБЕГА",
+      "shells": "ГИЛЬЗЫ",
+      "bank_total": "ВСЕГО В БАНКЕ",
+      "hearts": "СЕРДЦА",
+      "med": "МЕД",
+      "tech": "ТЕХ",
+      "coin": "МОНЕТЫ",
+      "current_objective": "ТЕКУЩАЯ ЦЕЛЬ",
+      "base_priority": "ПРИОРИТЕТ БАЗЫ"
+    },
+    "close_o2_generator": {
+      "aria_label_close_o2_generator": "Закрыть генератор O2"
+    },
+    "o2_generator": {
+      "o2_generator_module": "МОДУЛЬ ГЕНЕРАТОРА O₂",
+      "safe_field_output": "БЕЗОПАСНЫЙ ВЫХОД ПОЛЯ"
+    },
+    "close_base_turret": {
+      "aria_label_close_base_turret": "Закрыть управление турелью базы"
+    },
+    "base_turret": {
+      "camp_defense_turret": "ТУРЕЛЬ ОБОРОНЫ ЛАГЕРЯ",
+      "turret_status": "СОСТОЯНИЕ ТУРЕЛИ"
+    },
+    "base_turret_modal_badge": {
+      "door_guard": "ОХРАНА ДВЕРИ"
+    },
+    "elevator_choice": {
+      "elevator_arrival": "ПРИБЫТИЕ ЛИФТА",
+      "extract_or_descend": "ЭВАКУАЦИЯ ИЛИ СПУСК",
+      "the_doors_are_open": "ДВЕРИ ОТКРЫТЫ",
+      "choice_required": "НУЖЕН ВЫБОР",
+      "the_lift_can_carry_the": "Лифт может вернуть оператора на орбиту или спустить в более глубокий сектор.",
+      "extract_up": "ЭВАКУАЦИЯ НАВЕРХ",
+      "descend_deeper": "СПУСТИТЬСЯ ГЛУБЖЕ"
+    },
+    "confirm": {
+      "critical_alert": "КРИТИЧЕСКОЕ ПРЕДУПРЕЖДЕНИЕ",
+      "abort_mission": "ПРЕРВАТЬ МИССИЮ",
+      "cancel": "ОТМЕНА"
+    },
+    "day_rest_warning": {
+      "the_night_will_close_doors": "НОЧЬ ЗАКРОЕТ ДВЕРИ",
+      "sleep_anyway": "ВСЁ РАВНО СПАТЬ",
+      "stay_awake": "ОСТАТЬСЯ БОДРСТВОВАТЬ"
+    },
+    "archive_sims": {
+      "archive_simulations": "АРХИВНЫЕ СИМУЛЯЦИИ",
+      "rgb_riverside_global_botics": "RGB: RIVERSIDE GLOBAL 'BOTICS",
+      "launch_continued_run": "ПРОДОЛЖИТЬ ЗАБЕГ"
+    },
+    "archive_sims_modal_close": {
+      "close": "ЗАКРЫТЬ"
+    },
+    "reset_save_confirm": {
+      "reset_save_data": "СБРОСИТЬ СОХРАНЕНИЯ",
+      "reset_save": "СБРОСИТЬ СОХРАНЕНИЕ",
+      "cancel": "ОТМЕНА"
+    },
+    "quit_confirm": {
+      "quit_hunker_bunker": "ВЫЙТИ ИЗ HUNKER BUNKER",
+      "confirm_quit": "ПОДТВЕРДИТЬ ВЫХОД",
+      "cancel": "ОТМЕНА"
+    },
+    "camp_choice": {
+      "aria_label_close_camp_decision": "Закрыть решение по лагерю",
+      "vessel_launch_manifest_forecast": "◇ ПРОГНОЗ МАНИФЕСТА ЗАПУСКА СУДНА ◇",
+      "irreversible_choice_strategic_record": "⚠ НЕОБРАТИМЫЙ ВЫБОР // СТРАТЕГИЧЕСКАЯ ЗАПИСЬ ⚠",
+      "confirm_decision": "ПОДТВЕРДИТЬ РЕШЕНИЕ"
+    },
+    "song_interstitial_track": {
+      "track_00": "ТРЕК 00"
+    },
+    "song_interstitial_title": {
+      "signal_acquired": "СИГНАЛ ПОЙМАН"
+    },
+    "game_viewport": {
+      "xl_18": "XL: 18",
+      "lg_06": "LG: 06",
+      "md_04": "MD: 04",
+      "sm_02_5": "SM: 02.5",
+      "xs_01_8": "XS: 01.8"
+    },
+    "save_data": {
+      "export_a_portable_save_code": "Экспортируйте переносимый код сохранения или вставьте его ниже, чтобы восстановить прогресс. Импорт перезапишет текущие данные на этом устройстве.",
+      "portable_save_code": "ПЕРЕНОСИМЫЙ КОД СОХРАНЕНИЯ",
+      "placeholder_export_or_paste": "ЭКСПОРТ ИЛИ ВСТАВКА КОДА",
+      "title_generate_and_copy": "Создать и скопировать переносимый код сохранения",
+      "title_restore_progress_from": "Восстановить прогресс из вставленного кода"
+    },
+    "crosshair_color": {
+      "aria_label_close_crosshair_color": "Закрыть меню цвета прицела"
+    },
+    "audio_mixer": {
+      "master": "ОБЩАЯ",
+      "music": "МУЗЫКА",
+      "vfx": "ЭФФЕКТЫ",
+      "voice": "ГОЛОС",
+      "character_voice_readouts": "ГОЛОСОВЫЕ РЕПЛИКИ ПЕРСОНАЖЕЙ"
+    },
+    "controls": {
+      "steam_deck": "STEAM DECK:",
+      "desktop": "ПК:"
+    },
+    "mothership_dialogue": {
+      "scout_link_encrypted": "КАНАЛ РАЗВЕДКИ [ШИФРОВАНО]"
+    },
+    "leader_conversation": {
+      "aria_label_leave_conversation": "Покинуть разговор",
+      "aria_label_speaker": "Говорящий",
+      "leave": "УЙТИ"
+    },
+    "snail_encounter": {
+      "vs": "ПРОТИВ",
+      "snail_hp": "ОЗ УЛИТКИ",
+      "resolve": "РЕШИМОСТЬ"
+    },
+    "multiplayer": {
+      "sub_surface_comms_combat_data": "◈ ПОДЗЕМНАЯ СВЯЗЬ // БОЕВОЙ КАНАЛ ДАННЫХ v2.1",
+      "solo": "ОДИНОЧНАЯ",
+      "solo_operation": "ОДИНОЧНАЯ ОПЕРАЦИЯ",
+      "1_operative_no_squad_no": "1 ОПЕРАТИВНИК // БЕЗ ОТРЯДА И СОПЕРНИКОВ",
+      "no_relay_required": "РЕТРАНСЛЯТОР НЕ НУЖЕН",
+      "full_salvage_claim": "ПОЛНОЕ ПРАВО НА ЛОМ",
+      "active_mode": "АКТИВНЫЙ РЕЖИМ",
+      "pve_squad": "PVE ОТРЯД",
+      "co_op_expedition": "КООПЕРАТИВНАЯ ЭКСПЕДИЦИЯ",
+      "2_4_operatives_shared_salvage": "2-4 ОПЕРАТИВНИКА // ОБЩИЙ ЛОМ И ВОСКРЕШЕНИЕ",
+      "synced_telemetry": "СИНХРОННАЯ ТЕЛЕМЕТРИЯ",
+      "emergency_rescue": "ЭКСТРЕННОЕ СПАСЕНИЕ",
+      "shared_o2_link": "ОБЩИЙ КАНАЛ O₂",
+      "select_mode": "ВЫБРАТЬ РЕЖИМ",
+      "pvp_duel": "PVP ДУЭЛЬ",
+      "pvp_sector_skirmish": "PVP СТЫЧКА В СЕКТОРЕ",
+      "contested_bunker_high_tier_drops": "СПОРНЫЙ БУНКЕР // ВЫСОКОУРОВНЕВЫЙ ЛУТ",
+      "contested_corridors": "СПОРНЫЕ КОРИДОРЫ",
+      "full_loot_claim": "ПОЛНОЕ ПРАВО НА ДОБЫЧУ",
+      "rival_bounties": "НАГРАДЫ ЗА СОПЕРНИКОВ",
+      "mission_objective": "ЦЕЛЬ МИССИИ:",
+      "sector_frequency_uplink": "ЧАСТОТА СЕКТОРА И КАНАЛ СВЯЗИ",
+      "ch_07": "CH-07",
+      "sector_room_code": "КОД КОМНАТЫ СЕКТОРА",
+      "title_copy_sector_frequency": "Скопировать частоту сектора",
+      "title_invite_a_steam": "Пригласить друга из Steam",
+      "lobby_access": "ДОСТУП К ЛОББИ",
+      "private_invite_only": "ПРИВАТНОЕ (ТОЛЬКО ПО ПРИГЛАШЕНИЮ)",
+      "placeholder_optional_password": "НЕОБЯЗАТЕЛЬНЫЙ ПАРОЛЬ",
+      "network_relay_backend": "СЕРВЕР СЕТЕВОГО РЕТРАНСЛЯТОРА",
+      "encryption": "ШИФРОВАНИЕ:",
+      "aes_256_shared_seed": "AES-256 / ОБЩИЙ СИД",
+      "sync_rate": "ЧАСТОТА СИНХРОНИЗАЦИИ:",
+      "60_hz_state_lock": "ФИКСАЦИЯ СОСТОЯНИЯ 60 ГЦ",
+      "sector_map": "КАРТА СЕКТОРА:",
+      "procedural_radial_ring": "ПРОЦЕДУРНОЕ РАДИАЛЬНОЕ КОЛЬЦО",
+      "crash_sites": "МЕСТА КРУШЕНИЯ:",
+      "synchronized_split_drop": "СИНХРОННАЯ РАЗДЕЛЬНАЯ ВЫСАДКА",
+      "public_steam_lobbies": "ПУБЛИЧНЫЕ ЛОББИ STEAM",
+      "title_refresh_public_lobbies": "Обновить публичные лобби",
+      "no_public_lobbies_found_yet": "Публичные лобби пока не найдены.",
+      "squad_manifest": "СОСТАВ ОТРЯДА",
+      "max_4": "МАКС: 4",
+      "operative_callsign": "ПОЗЫВНОЙ ОПЕРАТИВНИКА",
+      "chassis_frame": "ШАССИ",
+      "latency": "ЗАДЕРЖКА",
+      "status": "СТАТУС",
+      "esc": "ESC",
+      "click": "КЛИК",
+      "host": "ХОСТ",
+      "back_to_armory": "← НАЗАД В ОРУЖЕЙНУЮ"
+    },
+    "close_multiplayer": {
+      "aria_label_close_tactical_net": "Закрыть тактическую сеть"
+    },
+    "mature_content_audit": {
+      "steam_mature_content_reviewer_audit": "АУДИТ КОНТЕНТА 18+ И ПРОВЕРКИ STEAM",
+      "f9_shortcut_compliance_verification_suite": "ГОРЯЧАЯ КЛАВИША F9 // НАБОР ПРОВЕРКИ СООТВЕТСТВИЯ"
+    },
+    "close_mature_audit": {
+      "aria_label_close_audit_suite": "Закрыть набор аудита"
+    },
+    "progression_walkthrough": {
+      "gameplay_progression_walkthrough": "ПРОХОЖДЕНИЕ ИГРОВОГО ПРОГРЕССА",
+      "f10_shortcut_dev_only_qa": "ГОРЯЧАЯ КЛАВИША F10 // QA-ИНСТРУМЕНТ ДЛЯ РАЗРАБОТЧИКОВ"
+    },
+    "close_progression_walkthrough": {
+      "aria_label_close_progression_walkthrough": "Закрыть прохождение прогресса"
+    },
+    "select_picker": {
+      "aria_label_close_option_picker": "Закрыть выбор варианта"
+    },
+    "virtual_keyboard": {
+      "aria_label_close_on_screen": "Закрыть экранную клавиатуру",
+      "back": "⌫ НАЗАД",
+      "space": "ПРОБЕЛ",
+      "done": "✓ ГОТОВО"
+    },
+    "leaderboard": {
+      "no_ranks": "НЕТ РЕЗУЛЬТАТОВ",
+      "anonymous_agent": "Агент"
+    },
+    "interstitial": {
+      "track": "ТРЕК {id}"
+    },
+    "manifest": {
+      "title": "МАНИФЕСТ ВОЗВРАТА",
+      "extracted": "ЭВАКУИРОВАН",
+      "bank_secured": "БАНК СОХРАНЁН",
+      "col_resource": "РЕСУРС",
+      "col_earned": "ПОЛУЧЕНО",
+      "col_spent": "ПОТРАЧЕНО",
+      "col_bank_now": "В БАНКЕ",
+      "consolidated": "Доход экспедиции объединён с резервом бункера.",
+      "receipt_unavailable": "Квитанция забега недоступна. Показан сохранённый банк.",
+      "ready_next": "Готов к следующей высадке.",
+      "preserved_on_failure": "При провале активы банка сохраняются.",
+      "dossier": "ДОСЬЕ",
+      "pending": "{count} В ОЖИДАНИИ",
+      "synced": "СИНХРОНИЗИРОВАНО ✓"
+    },
+    "wanderer": {
+      "survivor_named": "Выживший: {name}",
+      "close": "Закрыть разговор с выжившим",
+      "wanderer": "СТРАННИК",
+      "recruit": "НАНЯТЬ СПУТНИКА",
+      "decline": "ОТКЛОНИТЬ СОЮЗ — СДАТЬ {supplies}",
+      "supplies": "ПРИПАСЫ",
+      "transmission": "[ ПЕРЕДАЧА ВЫЖИВШЕГО ]",
+      "quote": "«{text}»"
+    },
+    "vault": {
+      "item_acquired": "ПРЕДМЕТ STEAM ПОЛУЧЕН",
+      "item_unlocked": "ПРЕДМЕТ STEAM РАЗБЛОКИРОВАН: {names}",
+      "operator": "ОПЕРАТОР",
+      "steam_connected": "STEAM ПОДКЛЮЧЁН",
+      "online": "В СЕТИ",
+      "dev_mode": "РЕЖИМ DEV",
+      "dev_fallback": "РЕЗЕРВ DEV",
+      "local_operator": "ЛОКАЛЬНЫЙ ОПЕРАТОР",
+      "local_beta": "ЛОКАЛЬНАЯ БЕТА — СОХРАНЕНИЕ В БРАУЗЕРЕ",
+      "local": "ЛОКАЛЬНО",
+      "trading_external": "Обмен осуществляется через Steam.",
+      "tradable": "МОЖНО ОБМЕНИВАТЬ",
+      "non_tradable": "НЕЛЬЗЯ ОБМЕНИВАТЬ",
+      "market_external": "Действия на торговой площадке выполняются через Steam.",
+      "marketable_offline": "ПРОДАВАЕМО (ОФФЛАЙН)",
+      "market_route_unavailable": "Проверка права на продажу недоступна или отклонена.",
+      "marketable": "ПРОДАВАЕМО",
+      "non_marketable": "НЕ ПРОДАВАЕМО",
+      "ownership_verified": "ПРАВО ВЛАДЕНИЯ STEAM ПОДТВЕРЖДЕНО{quantity}",
+      "wallet_direct": "ПРЯМО ИЗ КОШЕЛЬКА STEAM",
+      "store_offline": "МАГАЗИН ПРЕДМЕТОВ STEAM ОФФЛАЙН",
+      "purchases_offline": "Покупки в магазине Steam отключены в этой сборке.",
+      "qa_grant": "Тестовая выдача QA: +{count} необмениваемых ключей реликвий. Покупка не совершалась.",
+      "purchases_disabled": "Покупки отключены в этой бете. Используйте QA GRANT TEST KIT в оружейной для необмениваемых тестовых предметов.",
+      "key_and_cache_required": "Для расшифровки нужны ключ и тайник.",
+      "decrypting": "РАСШИФРОВКА ТАЙНИКА РЕЛИКВИЙ",
+      "spinning_cipher": "ВРАЩЕНИЕ ШИФРОВАЛЬНОЙ МАТРИЦЫ...",
+      "decryption_complete": "РАСШИФРОВКА ЗАВЕРШЕНА",
+      "item_secured": "ПРЕДМЕТ СОХРАНЁН И ЗАПИСАН В STEAM",
+      "rarity_reward": "★ НАГРАДА {rarity} ★",
+      "purchase": "КУПИТЬ",
+      "redeem": "ОБМЕНЯТЬ",
+      "purchase_failed_reason": "Покупка не удалась: {reason}.",
+      "purchase_failed_bank": "Покупка не удалась: списание из банка отклонено.",
+      "purchased_ingot": "Куплено {quantity}x слитка криосплава за {cost} тех!",
+      "smelt_failed": "Переплавка не удалась: {reason}.",
+      "smelted": "Переплавлено 5x {rarity} → {reward}!",
+      "redeem_failed": "Обмен не удался: {reason}.",
+      "redeemed": "Обменяно {cost} осколков на {reward}!",
+      "cache_unlocked": "Тайник открыт: получено наград — {count}.",
+      "cache_opened": "Набор тайника открыт.",
+      "cache_partial": "Обмен тайника завершён с частичной выдачей в Steam.",
+      "cache_failed": "Не удалось открыть тайник — проверьте соединение и повторите попытку."
+    },
+    "lobby": {
+      "connecting": "ПОДКЛЮЧЕНИЕ...",
+      "not_all_ready": "НЕ ВСЕ ОПЕРАТИВНИКИ ГОТОВЫ",
+      "steam_auth_required": "ТРЕБУЕТСЯ АВТОРИЗАЦИЯ STEAM",
+      "join": "ВОЙТИ",
+      "starting_in": "НАЧАЛО ЧЕРЕЗ {seconds}...",
+      "copied": "СКОПИРОВАНО!",
+      "relay_active": "В СЕТИ // РЕТРАНСЛЯТОР АКТИВЕН",
+      "relay_unreachable": "ЛОКАЛЬНО // РЕТРАНСЛЯТОР НЕДОСТУПЕН",
+      "standby_offline": "ОЖИДАНИЕ // ОФФЛАЙН",
+      "disconnect": "ОТКЛЮЧИТЬСЯ",
+      "no_operatives": "В СЕКТОРЕ НЕТ ОПЕРАТИВНИКОВ",
+      "broadcasting": "ПЕРЕДАЧА СИГНАЛА БЕДСТВИЯ НА КАНАЛЕ СЕКТОРА...",
+      "ready_up": "ГОТОВНОСТЬ",
+      "mark_ready": "Отметить оперативника готовым",
+      "ready_done": "ГОТОВ ✓",
+      "waiting_host": "Ожидание хоста. Нажмите, чтобы отменить готовность.",
+      "squad_ready": "ОТРЯД ГОТОВ {ready}/{total}",
+      "waiting_squad": "Ожидание отряда. Нажмите, чтобы отменить готовность.",
+      "start_squad": "НАЧАТЬ ОТРЯДОМ",
+      "all_ready": "Все оперативники готовы",
+      "deploy_solo": "ВЫСАДКА В ОДИНОЧКУ",
+      "host_control_required": "ТРЕБУЕТСЯ УПРАВЛЕНИЕ ХОСТА",
+      "host_new_lobby": "СОЗДАТЬ НОВОЕ ЛОББИ",
+      "start_match": "НАЧАТЬ МАТЧ"
+    },
+    "dossier": {
+      "title": "ТАКТИЧЕСКОЕ ДОСЬЕ",
+      "promotion_signal": "◈ ТАКТИЧЕСКОЕ ДОСЬЕ // СИГНАЛ ПОВЫШЕНИЯ",
+      "xp_confirmed": "ПОРОГ ОПЫТА ПОДТВЕРЖДЁН",
+      "new_requisition": "НОВАЯ ЗАЯВКА",
+      "claim_reward": "◈ ЗАБРАТЬ НАГРАДУ",
+      "continue": "◈ ПРОДОЛЖИТЬ",
+      "reward_signal": "СИГНАЛ НАГРАДЫ",
+      "quantity": "КОЛИЧЕСТВО ×{qty}",
+      "tier_confirmed": "УРОВЕНЬ {tier} // ПОРОГ ОПЫТА ПОДТВЕРЖДЁН",
+      "view_reward": "ПОСМОТРЕТЬ НАГРАДУ",
+      "added_to_inventory": "ДОБАВЛЕНО В ИНВЕНТАРЬ",
+      "rank": "РАНГ {tier} / {total}",
+      "expand": "РАЗВЕРНУТЬ ▾",
+      "directives": "ДИРЕКТИВЫ:",
+      "settlement": "РАСЧЁТ:",
+      "expiration": "ИСТЕЧЕНИЕ:",
+      "common_fragments": "ОБЫЧНЫЕ ОСКОЛКИ",
+      "rare_fragments": "РЕДКИЕ ОСКОЛКИ",
+      "allowance": "ЛИМИТ: МАКС. 8 (1 В НЕДЕЛЮ)",
+      "equipped": "Оснащено ✓",
+      "retry": "Повторить",
+      "level_reached": "ДОСТИГНУТ УРОВЕНЬ {level}",
+      "track_label": "ВЕТКА {track}",
+      "settlement_auto": "СОХРАНЯЕТСЯ АВТОМАТИЧЕСКИ",
+      "expiration_permanent": "БЕССРОЧНО",
+      "tab_tiers": "Досье",
+      "tab_bounties": "Директивы",
+      "tab_workshop": "Мастерская осколков"
+    },
+    "prompt": {
+      "access_base_shop": "ОТКРЫТЬ МАГАЗИН БАЗЫ {type}",
+      "upgrade_o2": "УЛУЧШИТЬ ГЕНЕРАТОР O₂",
+      "turret_controls": "УПРАВЛЕНИЕ ТУРЕЛЬЮ",
+      "blast_locked": "ВЗРЫВОСТОЙКИЙ ПОРОГ ЗАБЛОКИРОВАН — {lock}",
+      "press_key": "НАЖМИТЕ {key}",
+      "tap": "КАСАНИЕ",
+      "read_log": "ПРОЧИТАТЬ ЗАПИСЬ",
+      "defeat_guard": "ПОБЕДИТЕ СТРАЖА, ЧТОБЫ ОТКРЫТЬ ЧЁРНЫЙ ЯЩИК",
+      "recover_black_box": "ИЗВЛЕЧЬ ЧЁРНЫЙ ЯЩИК",
+      "recover_final": "ИЗВЛЕЧЬ ПОСЛЕДНИЙ КОМПОНЕНТ",
+      "interact": "ВЗАИМОДЕЙСТВИЕ"
+    },
+    "telemeter": {
+      "passive_scan": "СКАНИРОВАНИЕ ПОВЕРХНОСТИ // ПАССИВНО",
+      "sector": "СЕКТОР",
+      "explored_corridor": "ИССЛЕДОВАННЫЙ КОРИДОР",
+      "coords": "[X: {x}, Z: {z}]",
+      "biome_tier": "БИОМ: {biome} // УРОВЕНЬ {tier}",
+      "stable": "СТАБИЛЬНО",
+      "occluded": "ПЕРЕКРЫТО",
+      "dist": "ДИСТ: {meters}м"
+    },
+    "console": {
+      "online": "В СЕТИ",
+      "ready_deficit": "ГОТОВО — НЕХВАТКА РЕСУРСОВ",
+      "ready_permitted": "ГОТОВО — СТРОИТЕЛЬСТВО РАЗРЕШЕНО",
+      "resolved": "РЕШЕНО",
+      "choice_required": "НУЖЕН ВЫБОР",
+      "event_resolved": "Событие терминала решено. Системы магазина по-прежнему доступны.",
+      "engineer_verify": "ПРОВЕРКА ИНЖЕНЕРА",
+      "mimic_neutralized": "ВНИМАНИЕ: ПОДПИСЬ ТЕРМИНАЛА ПОДДЕЛАНА — МИМИК УНИЧТОЖЕН. МОЖНО ПРОДОЛЖАТЬ."
+    },
+    "journal": {
+      "day_time": "Д{day} {minute}:{second}"
+    },
+    "bank": {
+      "deposit_ready": "ГОТОВО К ДЕПОЗИТУ. КАНАЛ ПЕРЕДАЧИ РЕСУРСОВ ОТКРЫТ.",
+      "deposit_to_fund": "СДАЙТЕ РЕСУРСЫ НА РЕМОНТ O₂.",
+      "hp_full": "ЗДОРОВЬЕ ПОЛНОЕ",
+      "conversions_available": "×{count} ДОСТУПНО",
+      "integrity_full": "ЦЕЛОСТНОСТЬ ЭКЗОКОСТЮМА ПОЛНАЯ. КОНВЕРСИЯ НЕ НУЖНА.",
+      "next_cost_none": "СЛЕД. ЦЕНА: НЕТ",
+      "generator_maxed": "ВЫХОД ГЕНЕРАТОРА O₂ МАКСИМАЛЕН ДЛЯ ЭТОГО ОТСЕКА.",
+      "repair_to_create_zone": "ПОЧИНИТЕ МОДУЛЬ, ЧТОБЫ СОЗДАТЬ БЕЗОПАСНУЮ ЗОНУ O₂ У КОРАБЛЯ.",
+      "upgrades_expand_field": "УЛУЧШЕНИЯ РАСШИРЯЮТ СИНЕЕ ПОЛЕ O₂, ЧТОБЫ ПОПОЛНЯТЬСЯ ИЗДАЛЕКА."
+    },
+    "skills": {
+      "completed": "ЗАВЕРШЕНО",
+      "upgrade": "УЛУЧШИТЬ",
+      "unlock": "РАЗБЛОКИРОВАТЬ"
+    },
+    "turret": {
+      "built_north_door": "ПОСТРОЕНО — УПРАВЛЕНИЕ У СЕВЕРНОЙ ДВЕРИ",
+      "build_cost": "ЦЕНА ПОСТРОЙКИ: {cost}",
+      "built": "ТУРЕЛЬ ПОСТРОЕНА",
+      "build": "ПОСТРОИТЬ ТУРЕЛЬ",
+      "requires_o2": "ТРЕБУЕТСЯ РЕМОНТ O₂",
+      "build_not_saved": "ПОСТРОЙКА НЕ СОХРАНЕНА — РЕСУРСЫ НЕ ПОТРАЧЕНЫ. ОСВОБОДИТЕ МЕСТО И ПОВТОРИТЕ.",
+      "level_hp": "УР. {level} // ОЗ {hp}/{maxHp}",
+      "stats": "УРОН: {damage} | ДАЛЬНОСТЬ: {range}u | ТЕМП: {rate}s",
+      "next_upgrade_cost": "ЦЕНА СЛЕД. УЛУЧШЕНИЯ: {cost}",
+      "max_level": "ЦЕНА СЛЕД. УЛУЧШЕНИЯ: МАКС. УРОВЕНЬ",
+      "repair_cost": "ЦЕНА РЕМОНТА: {cost}",
+      "repair_full_hp": "ЦЕНА РЕМОНТА: ПОЛНОЕ ЗДОРОВЬЕ"
+    },
+    "boss": {
+      "cybershell_titan": "КИБЕРПАНЦИРНЫЙ ТИТАН",
+      "cryo_goliath": "КРИО-ГОЛИАФ УЛИТКА",
+      "plagueshell_behemoth": "ЧУМНОПАНЦИРНЫЙ БЕГЕМОТ",
+      "corrupted_scout": "ИСПОРЧЕННЫЙ РАЗВЕДЧИК: MARTHA",
+      "corrupted_tank": "ИСПОРЧЕННЫЙ ТАНК: BRIGGS",
+      "corrupted_engineer": "ИСПОРЧЕННЫЙ ИНЖЕНЕР: KAELEN",
+      "queen": "КОРОЛЕВА",
+      "elite_threat": "ЭЛИТНАЯ УГРОЗА"
+    },
+    "rgb": {
+      "wave": "ВОЛНА {n}",
+      "undiscovered_path": "??? НЕОТКРЫТЫЙ ПУТЬ ???",
+      "explore_to_reveal": "Исследуйте другие варианты в новом забеге, чтобы открыть.",
+      "chapter_of": "ГЛАВА {n} ИЗ {total}",
+      "settings": "Настройки",
+      "path_count": "ПУТЬ {n}",
+      "open_path_history": "Открыть историю пути и сводку",
+      "available_actions": "Доступные действия",
+      "continue": "ПРОДОЛЖИТЬ",
+      "hint_of": "ПОДСКАЗКА {n} ИЗ {total}",
+      "no_more_hints": "Для этой главы больше нет подсказок.",
+      "take": "ВЗЯТЬ",
+      "return_to_scene": "ВЕРНУТЬСЯ К СЦЕНЕ",
+      "inventory": "ИНВЕНТАРЬ",
+      "nothing_carried": "Пока ничего нет.",
+      "your_path": "ТВОЙ ПУТЬ",
+      "current_objective": "Текущая цель — {goal}",
+      "decisions_changed": "РЕШЕНИЯ, ИЗМЕНИВШИЕ ЭТОТ ЗАБЕГ",
+      "evidence_preserved": "СОХРАНЁННЫЕ УЛИКИ",
+      "branch_tree": "ДЕРЕВО СЮЖЕТНЫХ ВЕТОК И ОТКРЫТЫЕ ПУТИ",
+      "paused": "ПАУЗА",
+      "resume": "ПРОДОЛЖИТЬ",
+      "settings_caps": "НАСТРОЙКИ",
+      "exit_simulation": "ВЫЙТИ ИЗ СИМУЛЯЦИИ",
+      "retry_rescue": "ПОВТОРИТЬ СПАСЕНИЕ",
+      "load_chapter": "ЗАГРУЗИТЬ ГЛАВУ",
+      "flowchart": "СХЕМА",
+      "retry": "ПОВТОРИТЬ"
+    },
+    "cinematic": {
+      "restoring": "АРХИВНЫЙ РОЛИК // ВОССТАНОВЛЕНИЕ СИГНАЛА",
+      "advances": "Архив переходит к следующей восстановленной сцене.",
+      "skip_hint": "НАЖМИТЕ ЛЮБУЮ КНОПКУ / КЛАВИШУ, ЧТОБЫ ПРОПУСТИТЬ",
+      "skip_any": "НАЖМИТЕ ЛЮБУЮ КНОПКУ / КЛАВИШУ, ЧТОБЫ ПРОПУСТИТЬ",
+      "skip_space": "НАЖМИТЕ ПРОБЕЛ / ENTER, ЧТОБЫ ПРОПУСТИТЬ",
+      "continue_any": "НАЖМИТЕ ЛЮБУЮ КНОПКУ / КЛАВИШУ, ЧТОБЫ ПРОДОЛЖИТЬ"
+    },
+    "profile": {
+      "longest": "ДОЛЬШЕ ВСЕГО {time}",
+      "deaths": "СМЕРТЕЙ {count}",
+      "depth": "ГЛУБИНА {depth}",
+      "class_best": "ЛУЧШИЙ В КЛАССЕ {score}"
+    },
+    "hud": {
+      "ammo_cache": "ТАЙНИК {current}/{max}",
+      "current_biome": "ТЕКУЩИЙ БИОМ {biome}",
+      "equipped": "ОСНАЩЕНО"
+    },
+    "commentary": {
+      "kicker": "КОММЕНТАРИИ РАЗРАБОТЧИКОВ"
+    },
+    "radio": {
+      "online": "В СЕТИ",
+      "squad_manifest": "СОСТАВ ОТРЯДА",
+      "commander_tag": "ТАКТИЧЕСКАЯ СВЯЗЬ // 72.4 МГц КИРИЛЛИЦА",
+      "aura_tag": "НЕЙРОКАНАЛ СВЯЗИ // БЛОК AURA-7",
+      "commander_name": "Советский суб-командир",
+      "aura_name": "Синтезированный ИИ «AURA»",
+      "commander_title": "СОВЕТСКИЙ СУБ-КОМАНДИР",
+      "aura_title": "СИНТЕЗИРОВАННЫЙ ИИ «AURA»"
+    },
+    "go": {
+      "generator_level": "УР. {level}",
+      "offline": "ОТКЛЮЧЁН",
+      "none": "НЕТ",
+      "extraction_complete": "ЭВАКУАЦИЯ ЗАВЕРШЕНА",
+      "exosuit_failure": "ОТКАЗ ЭКЗОКОСТЮМА",
+      "logs_recovered": "ВОССТАНОВЛЕНО ЗАПИСЕЙ: {found}/{total}",
+      "survivor_camps": "Лагеря выживших",
+      "alien_hives": "Ульи чужих",
+      "obedience": "Повиновение:",
+      "seats_filled": "Занято мест:",
+      "humanity": "Человечность:"
+    },
+    "ach": {
+      "unlocked_kicker": "ДОСТИЖЕНИЕ ПОЛУЧЕНО",
+      "hidden": "Скрытая запись. Откройте, чтобы увидеть.",
+      "coming_soon": "СКОРО",
+      "unlocked": "ОТКРЫТО"
+    },
+    "save": {
+      "code_unavailable": "КОД СОХРАНЕНИЯ НЕДОСТУПЕН"
+    },
+    "objective": {
+      "blocked": "ЗАБЛОКИРОВАНО",
+      "next": "СЛЕДУЮЩАЯ ЦЕЛЬ",
+      "also_tracking": "ТАКЖЕ ОТСЛЕЖИВАЕТСЯ",
+      "eliminate": "УНИЧТОЖИТЬ: {count}/{target}"
+    },
+    "loader": {
+      "deployment_telemetry": "ТЕЛЕМЕТРИЯ ВЫСАДКИ С МАТКИ",
+      "init_failed": "СБОЙ ИНИЦИАЛИЗАЦИИ СИСТЕМЫ"
+    },
+    "alert": {
+      "tactical": "ТАКТИЧЕСКАЯ ТРЕВОГА",
+      "critical": "КРИТИЧНО"
+    },
+    "trade": {
+      "squadmate": "НАПАРНИК",
+      "awaiting_offer": "ОЖИДАНИЕ ВЫБОРА ПРЕДЛОЖЕНИЯ",
+      "waiting_squadmate": "ОЖИДАНИЕ НАПАРНИКА..."
+    },
+    "bond": {
+      "enamored": "ВЛЮБЛЁН / ПРЕДАН",
+      "warm": "ТЕПЛО / СИМПАТИЯ",
+      "attentive": "ВНИМАТЕЛЕН"
+    },
+    "fab": {
+      "scatter_repeater": "ДРОБОВОЙ РЕПИТЕР",
+      "equipped_next_run": "ОСНАЩЕНО НА СЛЕДУЮЩИЙ ЗАБЕГ ✓",
+      "equip_scatter": "ОСНАСТИТЬ ДРОБОВЫМ РЕПИТЕРОМ",
+      "printing": "ПЕЧАТЬ…",
+      "save_pending": "СОХРАНЕНИЕ ОЖИДАЕТ — ОТКРОЙТЕ ЦЕХ СНОВА",
+      "foundry_required": "ТРЕБУЕТСЯ СВЯЗЬ С ЛИТЕЙНОЙ",
+      "activate_bay": "АКТИВИРОВАТЬ ЦЕХ СБОРКИ",
+      "bring_online": "Запустите Литейную в мире, прежде чем печатать схемы.",
+      "activate_foundry": "АКТИВИРОВАТЬ ЛИТЕЙНУЮ",
+      "common": "ОБЫЧНЫЙ",
+      "ready_to_apply": "✓ ГОТОВО К ПРИМЕНЕНИЮ",
+      "choose_bay": "ВЫБЕРИТЕ ОТСЕК A ИЛИ B",
+      "apply_failed": "НЕ УДАЛОСЬ ПРИМЕНИТЬ",
+      "equipped_current": "✓ ОСНАЩЕНО В ТЕКУЩЕМ ЗАБЕГЕ",
+      "mounted_current": "✓ УСТАНОВЛЕНО В ТЕКУЩЕМ ЗАБЕГЕ",
+      "active_in_bay": "✓ АКТИВНО В ОТСЕКЕ {bay}",
+      "print_output": "НАПЕЧАТАТЬ",
+      "fabricating": "СБОРКА…",
+      "bay_button": "◇ ЦЕХ СБОРКИ",
+      "open_bay": "+ ОТКРЫТЬ ЦЕХ СБОРКИ"
+    },
+    "camp": {
+      "sleep_warning": "Сон в {camp} переносит на день {day}. Эти нерешённые сигналы закроются.",
+      "this_camp": "этом лагере",
+      "unknown_signal": "НЕИЗВЕСТНЫЙ СИГНАЛ",
+      "path_closes": "Эта сюжетная ветка закроется навсегда.",
+      "threat": "Угроза кампании {value}×",
+      "contact_kicker": "КОНТАКТ {order} // {leader}",
+      "decision": "РЕШЕНИЕ ПО ЛАГЕРЮ",
+      "permanent_choice": "Необратимый выбор: {choice} — {resolution}.",
+      "closes": " Закрывает: {locks}.",
+      "ending_locks_header": "⚠ НЕОБРАТИМЫЕ БЛОКИРОВКИ ФИНАЛОВ:",
+      "finish_conversation": "ЗАВЕРШИТЬ РАЗГОВОР",
+      "continue": "ПРОДОЛЖИТЬ",
+      "camp_conversation": "РАЗГОВОР В ЛАГЕРЕ",
+      "field_conversation": "ПОЛЕВОЙ РАЗГОВОР",
+      "callsign": "ПОЗЫВНОЙ {callsign}",
+      "listen_hint": "Выслушайте, затем решите, чем помочь.",
+      "quote": "«{text}»"
+    },
+    "title": {
+      "pregalien_command": "PREGALIEN | КОМАНДОВАНИЕ УЛЬЯ",
+      "pregalien": "PREGALIEN"
     }
   },
   "narrative": {
@@ -730,6 +1707,54 @@
       "24": {
         "name": "КОРОЛЕВА, ОТВЕРГНУТА",
         "blurb": "Ты оставил её подо льдом, и в руке у тебя осталось три места. Закрытый теперь путь: полный выводок. Она всегда просила больше, чем предлагала."
+      },
+      "25": {
+        "blurb": "Ты стоял с гарнизоном Веспер. Траншейные щиты выдержали, и вера солдата была вознаграждена. Закрытые пути: полный выводок, выжженное небо.",
+        "name": "КОМАНДИР BRIGGS, В ПОЧЁТЕ"
+      },
+      "26": {
+        "blurb": "Ты перерезал линии снабжения Веспер и оставил фронт замерзать. Гарнизон пал в тишине. Закрытый путь: чистый разрыв.",
+        "name": "КОМАНДИР BRIGGS, БРОШЕН"
+      },
+      "27": {
+        "blurb": "Передача сестры Марты зажгла каждый приёмник во льдах. Потерянные слышат надежду, рой слышит добычу. Закрытый путь: заражение матки.",
+        "name": "МАЯК СЕСТРЫ, В ЭФИРЕ"
+      },
+      "28": {
+        "blurb": "Ты перерезал кабели и заставил Тэллоу ходить тихо. Скрытность куплена отчаянием мирных. Закрытые пути: чистый разрыв, исход чужих.",
+        "name": "МАЯК СЕСТРЫ, ЗАГЛУШЁН"
+      },
+      "29": {
+        "blurb": "Надзиратель Кейлен обнародовал неизменённые полётные манифесты. Корпоративных привилегий не осталось. Закрытые пути: заражение матки, сделка носителя.",
+        "name": "МАНИФЕСТ ЛИТЕЙНОЙ, ОБНАРОДОВАН"
+      },
+      "30": {
+        "blurb": "Пассажирский манифест изменили за запертыми переборками. Корпоративная ложь переживёт колонию. Закрытый путь: чистый разрыв.",
+        "name": "МАНИФЕСТ ЛИТЕЙНОЙ, ПОДДЕЛАН"
+      },
+      "31": {
+        "blurb": "Хирургическое извлечение Наля очистило твою кровь от споры. Ты снова ходишь чистым человеком. Закрытые пути: полный выводок, заражение матки, исход чужих.",
+        "name": "ШОВНЫЙ НОСИТЕЛЬ, ИСЦЕЛЁН"
+      },
+      "32": {
+        "blurb": "Ты позволил споре улья врасти в костный мозг. Ты — носитель и сосуд в одной плоти. Закрытый путь: чистый разрыв.",
+        "name": "ШОВНЫЙ НОСИТЕЛЬ, ПРИНЯТ"
+      },
+      "33": {
+        "blurb": "Ты оборвал человеческие радиочастоты, чтобы защитить акустическое святилище улья. Связь лагеря рассыпалась. Закрытый путь: раскрытый побег.",
+        "name": "ХОР РЕТРАНСЛЯТОРА, ЗАГЛУШЁН"
+      },
+      "34": {
+        "blurb": "Вей открыл нейронный мост между разумами улья и людей. Мысли сочатся сквозь спектр. Закрытый путь: чистый разрыв.",
+        "name": "ХОР РЕТРАНСЛЯТОРА, СОЕДИНЁН"
+      },
+      "35": {
+        "blurb": "Хитиновая крепость Руна поклялась вечно защищать Мать Выводка. Человеческим шаттлам придётся пробивать её толщу. Закрытые пути: исход чужих, чистый разрыв.",
+        "name": "КЛЯТВА ПАНЦИРЯ, КОРОЛЕВЕ"
+      },
+      "36": {
+        "blurb": "Живой щит связал свою клятву с тобой, шагая рядом с выжившими людьми как страж. Закрытый путь: полный выводок.",
+        "name": "КЛЯТВА ПАНЦИРЯ, ОПЕРАТОРУ"
       }
     },
     "loreClassLogs": {
@@ -1221,6 +2246,334 @@
           "FIELD REPAIR": "СМОЛЯНАЯ ЗАПЛАТА",
           "REROUTE": "НЕЙРОПЕРЕХВАТ"
         }
+      }
+    },
+    "communitySkins": {
+      "0": {
+        "actionLabel": "Подтверждает",
+        "desc": "Закалённый в боях, верный разведчик в тактической форме.",
+        "name": "Разведчик: Тень окопа",
+        "theme": "Товарищи по окопу"
+      },
+      "1": {
+        "actionLabel": "Подиумная походка",
+        "desc": "Стильная бесстрашная скиталица пустоты в неоновой уличной одежде.",
+        "name": "Разведчик: Космическая ABG",
+        "theme": "Странники ABG"
+      },
+      "2": {
+        "actionLabel": "Женская походка",
+        "desc": "Циничный, острый как бритва корпоративный лазутчик в высокотехнологичном плаще.",
+        "name": "Разведчица: Корпоративный теневой бегун",
+        "theme": "Корпоративные тени"
+      },
+      "3": {
+        "actionLabel": "Вис на месте",
+        "desc": "Биомеханический разведчик в духе Гигера с ребристым обсидиановым панцирем.",
+        "name": "Разведчик: Ксено-сталкер",
+        "theme": "Биомеханика"
+      },
+      "4": {
+        "actionLabel": "Раненый шаг назад",
+        "desc": "Гидродинамический тактический костюм невесомости со светодиодными каналами.",
+        "name": "Разведчица: Костюм невесомости",
+        "theme": "Космическое плавание"
+      },
+      "5": {
+        "actionLabel": "Радостный прыжок",
+        "desc": "Испорченный разведчик-симбионт улья, светящийся токсичной споровой биолюминесценцией.",
+        "name": "Разведчик: Токсичный апекс-кокон",
+        "theme": "Токсичный кокон"
+      },
+      "6": {
+        "actionLabel": "Отдать честь",
+        "desc": "Хищный гибрид чужого и человека в перламутровой костяной броне.",
+        "name": "Разведчица: Особь Сил",
+        "theme": "Кокон вида"
+      },
+      "7": {
+        "actionLabel": "Удивление",
+        "desc": "Царственный кристаллический гибрид-разведчик с биолюминесцентными усиками.",
+        "name": "Разведчик: Апекс-кокон",
+        "theme": "Кокон вида"
+      },
+      "8": {
+        "actionLabel": "Работа с факсом",
+        "desc": "Розоволосая хакерша-космопанк с анархистским нравом.",
+        "name": "Разведчица: Нежная маниакальная хакерша",
+        "theme": "Маниакальные хакерши"
+      },
+      "9": {
+        "actionLabel": "За барной стойкой",
+        "desc": "Тяжеловесный авангард вечеринки, снаряжённый для жёсткой обороны бункера.",
+        "name": "Танк: Космическая ABG",
+        "theme": "Странники ABG"
+      },
+      "10": {
+        "actionLabel": "Жестокое убийство",
+        "desc": "Пышная, тяжелобронированная драчунья-космопанк, яростно защищающая отряд.",
+        "name": "Танк: Оберегающая хакерша",
+        "theme": "Маниакальные хакерши"
+      },
+      "11": {
+        "actionLabel": "Подиум с высоким шагом",
+        "desc": "Тяжёлый метаморфный чужой-джаггернаут в кальцинированной хитиновой броне.",
+        "name": "Танк: Особь Сил",
+        "theme": "Кокон вида"
+      },
+      "12": {
+        "actionLabel": "Танец тверк",
+        "desc": "Без тени извинений царственная выжившая после крушения звездолёта, с искрящей кибернетикой.",
+        "name": "Танк: Королева выживших",
+        "theme": "Выжившие после крушения"
+      },
+      "13": {
+        "actionLabel": "Пьяная стойка",
+        "desc": "Внушительный корпоративный директор в тяжёлом драпированном пальто с хромированными конечностями.",
+        "name": "Танк: Корпоративный надзиратель",
+        "theme": "Корпоративные тени"
+      },
+      "14": {
+        "actionLabel": "Прыжок",
+        "desc": "Усиленный глубоководный костюм невесомости с балластными плитами плавучести.",
+        "name": "Танк: Тяжёлый водолаз невесомости",
+        "theme": "Космическое плавание"
+      },
+      "15": {
+        "actionLabel": "Прыжковая атака",
+        "desc": "Массивная бронированная био-панцирная крепость в духе Гигера.",
+        "name": "Танк: Матрона выводка",
+        "theme": "Биомеханика"
+      },
+      "16": {
+        "actionLabel": "Удар в пах",
+        "desc": "Крепкий, преданный фронтовой тяжеловес в духе Васкес, готовый к любой окопной драке.",
+        "name": "Танк: Тень окопа",
+        "theme": "Товарищи по окопу"
+      },
+      "17": {
+        "actionLabel": "Разговор",
+        "desc": "Могучий выживший из глубинного ядра, бронированный обшивкой со спасённого корабля.",
+        "name": "Танк: Выживший после крушения с афро",
+        "theme": "Выжившие после крушения"
+      },
+      "18": {
+        "actionLabel": "Шёпот на ухо",
+        "desc": "Статная гибридная громада со светящимися янтарными сосудистыми линиями.",
+        "name": "Танк: Апекс-кокон",
+        "theme": "Кокон вида"
+      },
+      "19": {
+        "actionLabel": "Шаг влево боком",
+        "desc": "Тяжёлый био-панцирь, пропитанный токсичными спорами, с едкими кислотными соплами.",
+        "name": "Танк: Токсичный апекс-кокон",
+        "theme": "Токсичный кокон"
+      },
+      "20": {
+        "actionLabel": "Гнев",
+        "desc": "Био-плазменный инженер, мутировавший от глубинных токсичных споровых ульев.",
+        "name": "Инженер: Токсичный апекс-кокон",
+        "theme": "Токсичный кокон"
+      },
+      "21": {
+        "actionLabel": "Финал бёрпи",
+        "desc": "Футуристичный техник-механик в уличной одежде с голографическими инструментами.",
+        "name": "Инженер: Космическая ABG",
+        "theme": "Странники ABG"
+      },
+      "22": {
+        "actionLabel": "Подъём из приседа",
+        "desc": "Нейрогибридный конструктор с живыми плазменными каналами и щупальцами-кабелями.",
+        "name": "Инженер: Особь Сил",
+        "theme": "Кокон вида"
+      },
+      "23": {
+        "actionLabel": "Пьяная походка",
+        "desc": "Высокомодный директор техносиндиката с парящими микродронами.",
+        "name": "Инженер: Главный архитектор",
+        "theme": "Корпоративные тени"
+      },
+      "24": {
+        "actionLabel": "Мах гирей",
+        "desc": "Гиперкреативная маниакальная инженерша с розовыми кибер-волосами и кастомными плазменными сварщиками.",
+        "name": "Инженер: Нежная маниакальная архитекторша",
+        "theme": "Маниакальные хакерши"
+      },
+      "25": {
+        "actionLabel": "Осмотреться",
+        "desc": "Изобретательный выживший со звездолёта, переделывающий разбитые двигатели в технику бункера.",
+        "name": "Инженер: Выживший после крушения с афро",
+        "theme": "Выжившие после крушения"
+      },
+      "26": {
+        "actionLabel": "Стойка орка",
+        "desc": "Терморегулирующее плавательное снаряжение с водонепроницаемыми магнитными балластными зажимами.",
+        "name": "Инженер: Гидрокостюм невесомости",
+        "theme": "Космическое плавание"
+      },
+      "27": {
+        "actionLabel": "Сидит в гневе",
+        "desc": "Закалённый, перемазанный маслом боевой инженер, чинящий разломы и турели под огнём.",
+        "name": "Инженер: Тень окопа",
+        "theme": "Товарищи по окопу"
+      },
+      "28": {
+        "actionLabel": "Начать планку",
+        "desc": "Биомеханический конструктор в духе Гигера с биоинструментами на позвоночнике.",
+        "name": "Инженер: Нейроткач",
+        "theme": "Биомеханика"
+      },
+      "29": {
+        "actionLabel": "Благодарность",
+        "desc": "Био-синтетический архитектор с кристаллическими грудными энергоканалами.",
+        "name": "Инженер: Апекс-кокон",
+        "theme": "Кокон вида"
+      }
+    },
+    "steamItems": {
+      "4200": {
+        "desc": "Полная отделка шасси оператора в стиле «Глубокий Иней».",
+        "name": "Скин оператора «Глубокий Иней»"
+      },
+      "4201": {
+        "desc": "Отделка оружейных пластин в стиле «Глубокий Иней».",
+        "name": "Скин оружия «Глубокий Иней»"
+      },
+      "4202": {
+        "desc": "Подвесной брелок для оружия в стиле «Глубокий Иней».",
+        "name": "Брелок «Глубокий Иней»"
+      },
+      "4203": {
+        "name": "Нашивка «Глубокий Иней»"
+      },
+      "4204": {
+        "name": "Блеск «Глубокий Иней»"
+      },
+      "4205": {
+        "name": "Трассеры «Глубокий Иней»"
+      },
+      "4206": {
+        "name": "Тема HUD «Глубокий Иней»"
+      },
+      "4207": {
+        "desc": "Полная отделка шасси оператора в стиле «Ржавчина и Кость».",
+        "name": "Скин оператора «Ржавчина и Кость»"
+      },
+      "4208": {
+        "desc": "Отделка оружейных пластин в стиле «Ржавчина и Кость».",
+        "name": "Скин оружия «Ржавчина и Кость»"
+      },
+      "4209": {
+        "desc": "Подвесной брелок для оружия в стиле «Ржавчина и Кость».",
+        "name": "Брелок «Ржавчина и Кость»"
+      },
+      "4210": {
+        "name": "Нашивка «Ржавчина и Кость»"
+      },
+      "4211": {
+        "name": "Блеск «Ржавчина и Кость»"
+      },
+      "4212": {
+        "name": "Трассеры «Ржавчина и Кость»"
+      },
+      "4213": {
+        "name": "Тема HUD «Ржавчина и Кость»"
+      },
+      "4214": {
+        "desc": "Полная отделка шасси оператора в стиле «Хитин Улья».",
+        "name": "Скин оператора «Хитин Улья»"
+      },
+      "4215": {
+        "desc": "Отделка оружейных пластин в стиле «Хитин Улья».",
+        "name": "Скин оружия «Хитин Улья»"
+      },
+      "4216": {
+        "desc": "Подвесной брелок для оружия в стиле «Хитин Улья».",
+        "name": "Брелок «Хитин Улья»"
+      },
+      "4217": {
+        "name": "Нашивка «Хитин Улья»"
+      },
+      "4218": {
+        "name": "Блеск «Хитин Улья»"
+      },
+      "4219": {
+        "name": "Трассеры «Хитин Улья»"
+      },
+      "4220": {
+        "name": "Тема HUD «Хитин Улья»"
+      },
+      "4221": {
+        "desc": "Полная отделка шасси оператора в стиле «Корпорация Horizon».",
+        "name": "Скин оператора «Корпорация Horizon»"
+      },
+      "4222": {
+        "desc": "Отделка оружейных пластин в стиле «Корпорация Horizon».",
+        "name": "Скин оружия «Корпорация Horizon»"
+      },
+      "4223": {
+        "desc": "Подвесной брелок для оружия в стиле «Корпорация Horizon».",
+        "name": "Брелок «Корпорация Horizon»"
+      },
+      "4224": {
+        "name": "Нашивка «Корпорация Horizon»"
+      },
+      "4225": {
+        "name": "Блеск «Корпорация Horizon»"
+      },
+      "4226": {
+        "name": "Трассеры «Корпорация Horizon»"
+      },
+      "4227": {
+        "name": "Тема HUD «Корпорация Horizon»"
+      },
+      "4228": {
+        "desc": "Полная отделка шасси оператора в стиле «Бункер 404».",
+        "name": "Скин оператора «Бункер 404»"
+      },
+      "4229": {
+        "desc": "Отделка оружейных пластин в стиле «Бункер 404».",
+        "name": "Скин оружия «Бункер 404»"
+      },
+      "4230": {
+        "desc": "Подвесной брелок для оружия в стиле «Бункер 404».",
+        "name": "Брелок «Бункер 404»"
+      },
+      "4231": {
+        "name": "Нашивка «Бункер 404»"
+      },
+      "4232": {
+        "name": "Блеск «Бункер 404»"
+      },
+      "4233": {
+        "name": "Трассеры «Бункер 404»"
+      },
+      "4234": {
+        "name": "Тема HUD «Бункер 404»"
+      },
+      "4235": {
+        "desc": "Полная отделка шасси оператора в стиле «Гранд-Маршал».",
+        "name": "Скин оператора «Гранд-Маршал»"
+      },
+      "4236": {
+        "desc": "Отделка оружейных пластин в стиле «Гранд-Маршал».",
+        "name": "Скин оружия «Гранд-Маршал»"
+      },
+      "4237": {
+        "desc": "Подвесной брелок для оружия в стиле «Гранд-Маршал».",
+        "name": "Брелок «Гранд-Маршал»"
+      },
+      "4238": {
+        "name": "Нашивка «Гранд-Маршал»"
+      },
+      "4239": {
+        "name": "Блеск «Гранд-Маршал»"
+      },
+      "4240": {
+        "name": "Трассеры «Гранд-Маршал»"
+      },
+      "4241": {
+        "name": "Тема HUD «Гранд-Маршал»"
       }
     }
   }

@@ -467,6 +467,26 @@ describe('ThreeGame multiplayer spawn separation & synchronization', () => {
     });
 
     describe('Pickup collection replication', () => {
+        it('keeps progression and salvage private between PvP rivals', () => {
+            const emit = vi.fn();
+            const fakeGame = {
+                isMultiplayer: true,
+                multiplayerMode: 'pvp',
+                netSocket: { emit },
+                broadcastSharedWorldEvent: ThreeGame.prototype.broadcastSharedWorldEvent,
+                handleSharedWorldEvent: ThreeGame.prototype.handleSharedWorldEvent
+            };
+
+            expect(fakeGame.broadcastSharedWorldEvent('pickup-collected', { pickupId: 'mine' })).toBe(false);
+            expect(fakeGame.broadcastSharedWorldEvent('o2-generator-upgraded', { level: 1 })).toBe(false);
+            expect(fakeGame.handleSharedWorldEvent({
+                event: 'pickup-collected',
+                originId: 'rival',
+                detail: { pickupId: 'theirs', x: 2, z: 3 }
+            })).toBe(false);
+            expect(emit).not.toHaveBeenCalled();
+        });
+
         it('broadcasts pickup-collected in updatePickups during multiplayer', () => {
             const emit = vi.fn();
             const pickupMesh = {

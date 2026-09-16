@@ -134,7 +134,7 @@ describe('Server Relay: PvP mode survives a mid-match reconnect', () => {
         expect(damagedEvent).not.toBeNull();
         expect(damagedEvent.targetId).toBe(clientB2.id);
         expect(damagedEvent.attackerId).toBe(clientA.id);
-        expect(damagedEvent.damage).toBe(10);
+        expect(damagedEvent.damage).toBe(1);
     });
 
     it('still defaults a genuinely fresh join (no prior matchDeploy in that room) to coop, not stale pvp state', async () => {

@@ -27,6 +27,8 @@ import '../src/data/codex.js';
 import '../src/data/terminalEvents.js';
 import '../src/data/missions.js';
 import '../src/data/strains.js';
+import '../src/data/steamItemCatalog.js';
+import '../src/data/communitySkins.js';
 import { getRegisteredCatalogs, flattenCatalog } from '../src/i18nCatalog.js';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');

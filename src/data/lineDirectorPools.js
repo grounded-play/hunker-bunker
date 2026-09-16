@@ -7,7 +7,7 @@ import { localizeCatalog } from '../i18nCatalog.js';
 
 export const DIRECTOR_AMBIENT_LINES = localizeCatalog('narrative.directorAmbient', Object.freeze([
     // corporate
-    { id: 'director_welcome_committee', register: 'corporate', text: 'Movement logged. Facilities has dispatched a welcome committee to your position.', tags: { eventTrigger: null, directorActions: ['patrol'], cooldownClass: 'director_ambient', minRepeatSeconds: 90 } },
+    { id: 'director_welcome_committee', register: 'corporate', text: 'Hostile patrol dispatched to your position.', tags: { eventTrigger: null, directorActions: ['patrol'], cooldownClass: 'director_ambient', minRepeatSeconds: 90 } },
     { id: 'director_pillar_lighting', register: 'corporate', text: 'Unauthorized exploration detected. Local lighting has been suspended.', tags: { eventTrigger: null, directorActions: ['lightsout'], depthTier: { min: 1 }, cooldownClass: 'director_ambient', minRepeatSeconds: 90 } },
     { id: 'director_curiosity_clearance', register: 'corporate', text: 'Your curiosity continues to exceed your clearance.', tags: { eventTrigger: null, directorActions: ['taunt'], depthTier: { min: 1 }, cooldownClass: 'director_ambient', minRepeatSeconds: 90 } },
     { id: 'director_power_rerouted', register: 'corporate', text: 'Local illumination power has been rerouted.', tags: { eventTrigger: null, directorActions: ['lightsout'], cooldownClass: 'director_ambient', minRepeatSeconds: 90 } },

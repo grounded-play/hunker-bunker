@@ -15,7 +15,7 @@ describe('gameplay focus policy', () => {
 
     it.each([
         { performanceProfile: 'menu' }, { loadingPaused: true },
-        { adaptiveGameplayPerformanceMode: true }, { gameplayPostProcessingEnabled: false }
+        { gameplayPostProcessingEnabled: false }
     ])('bypasses focus work when %j', (state) => {
         const game = { ...normal, ...state, renderer: { render: vi.fn() }, composer: { render: vi.fn() }, getPerformanceDiagnosticsSnapshot: () => ({}) };
         ThreeGame.prototype.renderWithPerf.call(game);
@@ -25,7 +25,8 @@ describe('gameplay focus policy', () => {
 
     it.each([
         { performanceProfile: 'gameplay', cameraMode: 'isometric' },
-        { performanceProfile: 'gameplay', cameraMode: 'third-person' }
+        { performanceProfile: 'gameplay', cameraMode: 'third-person' },
+        { performanceProfile: 'gameplay', cameraMode: 'third-person', adaptiveGameplayPerformanceMode: true }
     ])('renders through the composer when %j', (state) => {
         const game = { ...state, renderer: { render: vi.fn() }, composer: { render: vi.fn() }, getPerformanceDiagnosticsSnapshot: () => ({}) };
         ThreeGame.prototype.renderWithPerf.call(game);

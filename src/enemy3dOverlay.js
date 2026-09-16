@@ -20,9 +20,13 @@ const MODEL_CONFIG = {
     // Boss exports face opposite their travel axis, so turn their model roots
     // 180 degrees relative to the smaller snail variants.
     boss_cybersnail: { url: '/3d/runtime/cyber-snail-boss.glb', height: 1.65, yaw: Math.PI / 2 },
-    boss_cryosnail: { url: '/3d/runtime/cryo-snail-boss.glb', height: 1.8, yaw: Math.PI / 2 },
+    // The unique cryo boss export's nose is authored on +Z. The inherited
+    // snail quarter-turn made it travel broadside during the playtest.
+    boss_cryosnail: { url: '/3d/runtime/cryo-snail-boss.glb', height: 1.8, yaw: 0 },
     boss_sporesnail: { url: '/3d/runtime/spore-snail-boss.glb', height: 1.95, yaw: Math.PI / 2 },
-    crawler: { url: '/3d/runtime/parasite.glb', height: 1.15, yaw: Math.PI },
+    // parasite.glb is already authored facing the locomotion pack's +Z.
+    // Applying another half turn was why the crawler ran backwards.
+    crawler: { url: '/3d/runtime/parasite.glb', height: 1.15, yaw: 0 },
     alien_proto_crawler: { url: '/3d/runtime/new3ds/alien_proto_crawler.glb', height: 0.95, yaw: 0 },
     // Variant tinting rides here rather than in the mesh: the GLB carries a
     // photoscan texture set, and `tint` multiplies the material colour at load
@@ -56,6 +60,10 @@ export function hasEnemy3dModel(type) {
 
 export function usesRiggedEnemyLocomotion(type) {
     return RIGGED_LOCOMOTION_TYPES.has(type);
+}
+
+export function getEnemyAssetYaw(type) {
+    return MODEL_CONFIG[type]?.yaw ?? 0;
 }
 
 // Boss/queen encounters are rare, once-per-run, and already a big cinematic

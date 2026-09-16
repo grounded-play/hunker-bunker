@@ -134,6 +134,19 @@ export class BaseLights {
         return this.ignited;
     }
 
+    // Offline life support is a power state, not destruction of the fixtures.
+    // Retain the same visible light set so re-ignition reuses material programs.
+    standby() {
+        this.ignited = false;
+        this.elapsed = 0;
+        for (const f of this.fixtures) {
+            f.on = false;
+            f.light.visible = true;
+            f.light.intensity = 0;
+            f.bulb.material.opacity = 0;
+        }
+    }
+
     update(delta) {
         if (!this.ignited || !this.built) return;
         this.elapsed += delta;

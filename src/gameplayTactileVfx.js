@@ -313,6 +313,11 @@ export class KillstreakFeedbackSystem {
         if (tier) {
             this.showBanner(tier);
             window?.AudioManager?.play?.('killstreak_stinger', { volume: 0.75, force: true });
+            // The Commander bank ships a dedicated "KEEP FIRING" take for
+            // this exact beat. It was catalogued but never connected to the
+            // kill-streak system, leaving one of the six paid voice-bank cues
+            // impossible to hear during a run.
+            window?.AudioManager?.playVoiceCallout?.('killstreak');
         }
     }
 

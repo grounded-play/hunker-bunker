@@ -619,6 +619,8 @@ export async function createPlayer3dOverlay({
     return {
         root,
         actions,
+        hasAnimation(name) { return actions.has(name); },
+        getAnimationNames() { return [...actions.keys()]; },
         weapon,
         patch: chestPatch.root,
         setPatchImage(path) { chestPatch.setImage(path); },

@@ -65,8 +65,10 @@ if (typeof globalThis.AudioContext === 'undefined') {
 import { AudioManager, audioCtx } from './audio.js';
 
 describe('AudioManager Voice Channel & Soundsets Toggle', () => {
+    let runNumber = 0;
     beforeEach(() => {
         AudioManager.init();
+        AudioManager.beginVoiceRun(`audio-test-${++runNumber}`);
         AudioManager.isUnlocked = true;
         AudioManager.globalMuted = false;
         AudioManager.voiceEnabled = true;
@@ -135,6 +137,7 @@ describe('AudioManager Voice Channel & Soundsets Toggle', () => {
         const resultCommander = AudioManager.playVoiceCallout('reload');
         expect(resultCommander).not.toBeNull();
 
+        AudioManager.stopActiveVoice(0);
         globalThis.window.loadout.state.voicePackId = '4149';
         const resultAura = AudioManager.playVoiceCallout('reload');
         expect(resultAura).not.toBeNull();
@@ -142,6 +145,46 @@ describe('AudioManager Voice Channel & Soundsets Toggle', () => {
         globalThis.window.loadout.state.voicePackId = null;
         const resultNone = AudioManager.playVoiceCallout('reload');
         expect(resultNone).toBeNull();
+    });
+
+    it('auditions mapped takes without immediately repeating a line', () => {
+        AudioManager.buffers.voice_aura_reloading = {};
+        AudioManager.buffers.voice_aura_reloading2 = {};
+        AudioManager._lastVoiceTake.clear();
+        globalThis.window = globalThis.window || {};
+        globalThis.window.loadout = { state: { voicePackId: '4149' } };
+        const playback = vi.spyOn(AudioManager, 'playVoiceTrack').mockImplementation((key) => key);
+        const random = vi.spyOn(Math, 'random').mockReturnValue(0);
+
+        expect(AudioManager.playVoiceCallout('reload', { audition: true })).toBe('voice_aura_reloading');
+        expect(AudioManager.playVoiceCallout('reload', { audition: true })).toBe('voice_aura_reloading2');
+
+        random.mockRestore();
+        playback.mockRestore();
+    });
+
+    it('plays a semantic gameplay callout once per expedition and resets on a new run', () => {
+        AudioManager.buffers.voice_aura_reloading = {};
+        globalThis.window = globalThis.window || {};
+        globalThis.window.loadout = { state: { voicePackId: '4149' } };
+        const playback = vi.spyOn(AudioManager, 'playVoiceTrack').mockReturnValue({ source: {} });
+
+        expect(AudioManager.playVoiceCallout('reload')).not.toBeNull();
+        expect(AudioManager.playVoiceCallout('reload')).toBeNull();
+        AudioManager.beginVoiceRun('next-expedition');
+        expect(AudioManager.playVoiceCallout('reload')).not.toBeNull();
+        expect(playback).toHaveBeenCalledTimes(2);
+        playback.mockRestore();
+    });
+
+    it('keeps unsupported contexts silent instead of borrowing unrelated speech', () => {
+        AudioManager.buffers.voice_commander_low_health = {};
+        AudioManager.buffers.voice_aura_shield_critical = {};
+        globalThis.window = globalThis.window || {};
+        globalThis.window.loadout = { state: { voicePackId: '4148' } };
+        expect(AudioManager.playVoiceCallout('shield_critical')).toBeNull();
+        globalThis.window.loadout.state.voicePackId = '4149';
+        expect(AudioManager.playVoiceCallout('low_health')).toBeNull();
     });
 });
 

@@ -9,7 +9,8 @@ import {
     getSecretGateState,
     hasAnyUnlock,
     migrateAchievements,
-    recordRunEnd
+    recordRunEnd,
+    resetLocalAchievements
 } from './achievements.js';
 
 function makeStorage(seed = {}) {
@@ -213,6 +214,23 @@ describe('achievement persistence wrappers', () => {
 
         expect(result.newUnlocks.map((def) => def.key)).toContain('kin');
         expect(engine.getState().unlocked.kin.unlockedAt).toBe(99);
+    });
+
+    it('resets in-memory and persisted local progress with a new generation so it can be re-earned', () => {
+        const storage = makeStorage();
+        const engine = new AchievementEngine({ storage, now: () => 99 });
+        engine.recordRunEnd({ outcome: 'death', runMs: 1000 });
+        expect(engine.getState().unlocked.quick_study).toBeTruthy();
+
+        const reset = engine.resetLocal();
+        expect(reset.unlocked).toEqual({});
+        expect(reset.stats.totalDeaths).toBe(0);
+        expect(reset.resetGeneration).toBe(1);
+        expect(JSON.parse(storage.getItem(ACHIEVEMENT_STORAGE_KEY)).unlocked).toEqual({});
+
+        const earnedAgain = engine.recordRunEnd({ outcome: 'death', runMs: 1000 });
+        expect(earnedAgain.newUnlocks.map((def) => def.key)).toContain('quick_study');
+        expect(resetLocalAchievements(storage).resetGeneration).toBe(2);
     });
 });
 

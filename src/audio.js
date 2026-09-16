@@ -38,6 +38,56 @@ export class AudioManager {
     // Last variant chosen per soundset key, so `noImmediateRepeat` has the
     // history it needs. The selector is pure; the caller owns this.
     static _lastSoundsetVariant = new Map();
+    static _lastVoiceTake = new Map();
+    static _playedVoiceSemantics = new Set();
+    static _voiceRunId = null;
+
+    static beginVoiceRun(runId) {
+        const next = String(runId ?? 'unknown');
+        if (this._voiceRunId === next) return false;
+        this.stopActiveVoice?.(0.02);
+        this._voiceRunId = next;
+        this._playedVoiceSemantics.clear();
+        return true;
+    }
+
+    static emitVoiceLine(detail) {
+        if (typeof window === 'undefined' || typeof window.dispatchEvent !== 'function') return;
+        const EventCtor = window.CustomEvent ?? globalThis.CustomEvent;
+        if (typeof EventCtor !== 'function') return;
+        window.dispatchEvent(new EventCtor('voice-callout-started', { detail }));
+    }
+    static _missingAudio = new Map();
+    static _missingAudioAttempts = 0;
+    static _untrackedMissingAudioAttempts = 0;
+
+    static getMissingAudioDiagnostics() {
+        return {
+            totalAttempts: this._missingAudioAttempts,
+            untrackedAttempts: this._untrackedMissingAudioAttempts,
+            keys: [...this._missingAudio].map(([key, detail]) => ({ key, ...detail }))
+        };
+    }
+
+    static recordMissingAudio(key, resolvedKey) {
+        this._missingAudioAttempts += 1;
+        const existing = this._missingAudio.get(key);
+        if (existing) {
+            existing.count += 1;
+            existing.lastAt = Date.now();
+            return;
+        }
+        // Bound dynamic/invalid key cardinality without losing total attempts.
+        if (this._missingAudio.size >= 128) {
+            this._untrackedMissingAudioAttempts += 1;
+            return;
+        }
+        const now = Date.now();
+        this._missingAudio.set(key, { resolvedKey, count: 1, firstAt: now, lastAt: now });
+        presentationTelemetry.emit('AUDIO', PRESENTATION_EVENTS.AUDIO.PLAY_MISSING, {
+            key, resolvedKey, count: 1, aggregatedIn: 'state.audioMissing'
+        });
+    }
 
     // Where the player is and which way the camera's right axis points. The
     // gameplay loop pushes this every frame; until it does, _listener stays
@@ -319,6 +369,8 @@ export class AudioManager {
 
     static play(key, options = {}) {
         if (this.globalMuted) return null;
+        const requestedKey = key;
+        key = Object.hasOwn(GAME_AUDIO_ALIASES, key) ? GAME_AUDIO_ALIASES[key] : key;
 
         // Intercept hover requests for procedurally synthesized blips
         if (key === 'ui_hover') {
@@ -326,11 +378,8 @@ export class AudioManager {
             return null;
         }
 
-        // Authored soundsets take precedence over the numbered-variant guess
-        // below. GAME_SOUNDSETS is deliberately empty until assets clear
-        // audition and provenance review (see src/data/gameSoundsets.js), so
-        // today every lookup misses and this is a no-op passthrough -- the
-        // integration is wired and proven before the registry decides anything.
+        // Authored, provenance-reviewed soundsets take precedence over the
+        // numbered-variant convention used by the older manifest.
         //
         // `_fromSoundset` breaks the recursion: a resolved variant is played as
         // an ordinary key and must never be re-resolved, or a soundset whose
@@ -358,14 +407,14 @@ export class AudioManager {
         // Collect all keys that match 'key' exactly or are numbered variations like 'key1', 'key2'
         const matchingKeys = Object.keys(this.buffers).filter(k => k === key || (k.startsWith(key) && /^\d+$/.test(k.slice(key.length))));
         if (matchingKeys.length === 0) {
-            presentationTelemetry.emit('AUDIO', PRESENTATION_EVENTS.AUDIO.PLAY_MISSING, { key });
+            this.recordMissingAudio(requestedKey, key);
             return null;
         }
 
         // Pick a random variation
         const selectedKey = matchingKeys[Math.floor(Math.random() * matchingKeys.length)];
         presentationTelemetry.emit('AUDIO', PRESENTATION_EVENTS.AUDIO.PLAY, {
-            requestedKey: key,
+            requestedKey,
             selectedKey,
             bus: options.bus ?? 'sfx'
         });
@@ -505,6 +554,12 @@ export class AudioManager {
             return this.activeVoice;
         }
 
+        // One speech owner. Only a strictly higher-priority story/warning cue
+        // can preempt the current owner; equal/lower chatter is discarded.
+        if (this.isVoiceSpeaking() && !options.audition && priority >= this.activeVoice.priority) {
+            return null;
+        }
+
         // If a higher-priority narrative voice track is active (<= 2), don't clobber it with lower priority
         if (this.activeVoice?.source && this.activeVoice.priority <= 2 && this.activeVoice.priority < priority) {
             const remaining = ((this.activeVoice.startedAt || 0) + (this.activeVoice.estimatedDuration || 0)) - now;
@@ -595,43 +650,37 @@ export class AudioManager {
 
     static playVoiceCallout(cueType, options = {}) {
         if (this.globalMuted || !this.voiceEnabled) return null;
-        // Suppress tactical combat chatter if narrative or leader dialogue is active
-        if (this.isVoiceSpeaking() && this.activeVoice.priority <= 2) {
-            return null;
-        }
 
-        const voicePackId = (typeof window !== 'undefined' ? (window.loadout?.state?.voicePackId || window.loadout?.getEquippedVoicePackId?.()) : null);
+        const voicePackId = options.voicePackId ?? (typeof window !== 'undefined' ? (window.loadout?.state?.voicePackId || window.loadout?.getEquippedVoicePackId?.()) : null);
         if (!voicePackId) return null;
 
-        let prefix = null;
         const idStr = String(voicePackId);
-        if (idStr === '4148' || idStr === 'voicepack_soviet_commander') {
-            prefix = 'voice_commander';
-        } else if (idStr === '4149' || idStr === 'voicepack_aura') {
-            prefix = 'voice_aura';
+        const bankId = idStr === 'voicepack_soviet_commander' ? 4148
+            : idStr === 'voicepack_aura' ? 4149 : Number(idStr);
+        const slot = resolveVoiceBankSlot(bankId, cueType === 'reloading' ? 'reload' : cueType);
+        if (!slot) return null;
+        const semanticId = options.semanticId ?? `${bankId}:${slot.cue}`;
+        if (!options.audition && this._playedVoiceSemantics.has(semanticId)) return null;
+        const targetKey = slot.key;
+        const availableTakes = getVoiceTakeKeys(targetKey, slot.takeCount).filter((key) => this.buffers[key]);
+        if (availableTakes.length) {
+            const previous = this._lastVoiceTake.get(targetKey);
+            const candidates = availableTakes.length > 1
+                ? availableTakes.filter((key) => key !== previous)
+                : availableTakes;
+            const selectedKey = candidates[Math.floor(Math.random() * candidates.length)];
+            const playback = this.playVoiceTrack(selectedKey, { priority: slot.priority, speakerName: String(bankId), volume: options.volume ?? 0.85, ...options });
+            if (!playback) return null;
+            this._lastVoiceTake.set(targetKey, selectedKey);
+            if (!options.audition) this._playedVoiceSemantics.add(semanticId);
+            this.emitVoiceLine({
+                cue: slot.cue, semanticId, subtitle: slot.subtitle, take: selectedKey, bankId,
+                speakerName: bankId === 4148 ? 'COMMANDER' : 'AURA',
+                audition: Boolean(options.audition)
+            });
+            return playback;
         }
-        if (!prefix) return null;
-
-        const cueMap = {
-            breached: `${prefix}_breached`,
-            reload: `${prefix}_reloading`,
-            reloading: `${prefix}_reloading`,
-            low_health: prefix === 'voice_commander' ? 'voice_commander_low_health' : 'voice_aura_shield_critical',
-            shield_critical: prefix === 'voice_commander' ? 'voice_commander_low_health' : 'voice_aura_shield_critical',
-            boss_spotted: prefix === 'voice_commander' ? 'voice_commander_boss_spotted' : 'voice_aura_threat_high',
-            threat_high: prefix === 'voice_commander' ? 'voice_commander_boss_spotted' : 'voice_aura_threat_high',
-            killstreak: prefix === 'voice_commander' ? 'voice_commander_killstreak' : 'voice_aura_target_down',
-            target_down: `${prefix}_target_down`,
-            victory: prefix === 'voice_commander' ? 'voice_commander_victory' : 'voice_aura_sector_cleared',
-            sector_cleared: prefix === 'voice_commander' ? 'voice_commander_victory' : 'voice_aura_sector_cleared',
-            overdrive_ready: prefix === 'voice_commander' ? 'voice_commander_killstreak' : 'voice_aura_overdrive_ready'
-        };
-
-        const targetKey = cueMap[cueType] || `${prefix}_${cueType}`;
-        if (this.buffers[targetKey]) {
-            return this.playVoiceTrack(targetKey, { priority: 4, volume: options.volume ?? 0.85, ...options });
-        }
-        return this.play(targetKey, { bus: 'voice', volume: options.volume ?? 0.85, ...options });
+        return null;
     }
 
     static playVoiceForMessage(speakerInfo = {}, messageText = '', options = {}) {
@@ -655,8 +704,8 @@ export class AudioManager {
             || speakerName.includes('CORPO') || speakerName.includes('CRASH QUEEN')
             || speakerName.includes('ABG') || speakerName.includes('HYBRID')) {
             priority = 1;
-        } else if (speakerName.includes('MOTHERSHIP') || speakerName.includes('SYSTEM') || speakerName.includes('EXOSUIT') || speakerName.includes('BUNKER')) {
-            priority = 3;
+        } else if (speakerName.includes('MOTHERSHIP') || speakerName.includes('SYSTEM') || speakerName.includes('EXOSUIT') || speakerName.includes('BUNKER') || speakerName.includes('COMMANDER') || speakerName.includes('AURA')) {
+            priority = 2;
         }
 
         // 1. Check direct key match or character script mapping
@@ -673,6 +722,25 @@ export class AudioManager {
         else if (textLower.includes('command not recognized')) targetKey = 'voice_kiosk_ch4_01';
         else if (textLower.includes('training model sort arm 4a')) targetKey = 'voice_system_ch5_01';
         else if (textLower.includes('thermal warning in sector 4')) targetKey = 'voice_system_ch6_01';
+
+        // Soviet Sub-Commander Radio (Voicepack 4148)
+        else if (speakerName.includes('COMMANDER') || speakerName.includes('SOVIET')) {
+            if (textLower.includes('breathing') || textLower.includes('alive') || textLower.includes('report in') || textLower.includes('channel open')) targetKey = 'voice_commander_comms_online';
+            else if (textLower.includes('order') || textLower.includes('move out') || textLower.includes('readiness') || textLower.includes('mission')) targetKey = 'voice_commander_mission_active';
+            else if (textLower.includes('flak') || textLower.includes('impact') || textLower.includes('wreckage') || textLower.includes('wrecked')) targetKey = 'voice_commander_hull_damaged';
+            else if (textLower.includes('salvage') || textLower.includes('scrap')) targetKey = 'voice_commander_salvage_banked';
+            else if (textLower.includes('extraction') || textLower.includes('home')) targetKey = 'voice_commander_return_to_ship';
+            else targetKey = 'voice_commander_comms_online';
+        }
+        // Synthesized AI AURA (Voicepack 4149)
+        else if (speakerName.includes('AURA')) {
+            if (textLower.includes('stable') || textLower.includes('neural link') || textLower.includes('online') || textLower.includes('biometric')) targetKey = 'voice_aura_comms_online';
+            else if (textLower.includes('parameter') || textLower.includes('mission') || textLower.includes('protocol') || textLower.includes('tactical')) targetKey = 'voice_aura_mission_active';
+            else if (textLower.includes('impact') || textLower.includes('compromised')) targetKey = 'voice_aura_hull_damaged';
+            else if (textLower.includes('salvage')) targetKey = 'voice_aura_salvage_banked';
+            else if (textLower.includes('extraction')) targetKey = 'voice_aura_return_to_ship';
+            else targetKey = 'voice_aura_comms_online';
+        }
 
         // Mothership Command
         else if (speakerName.includes('MOTHERSHIP')) {
@@ -738,11 +806,20 @@ export class AudioManager {
         }
 
         if (targetKey && this.buffers[targetKey]) {
+            const semanticId = options.semanticId ?? `message:${targetKey}`;
+            if (!options.audition && this._playedVoiceSemantics.has(semanticId)) return null;
             // If this exact buffer is already actively playing, don't restart it
             if (this.isVoiceSpeaking() && this.activeVoice?.bufferKey === targetKey) {
                 return this.activeVoice;
             }
-            return this.playVoiceTrack(targetKey, { priority, speakerName, volume: options.volume ?? 1.0, varyPitch: false, ...options });
+            const playback = this.playVoiceTrack(targetKey, { priority, speakerName, volume: options.volume ?? 1.0, varyPitch: false, ...options });
+            if (!playback) return null;
+            if (!options.audition) this._playedVoiceSemantics.add(semanticId);
+            this.emitVoiceLine({
+                cue: 'dialogue', semanticId, subtitle: text, take: targetKey,
+                speakerName, audition: Boolean(options.audition)
+            });
+            return playback;
         }
 
         // If voice is currently speaking, do not override with procedural fallback
@@ -1711,4 +1788,6 @@ AudioManager.init();
 import { assetUrl } from './assetUrl.js';
 import { PRESENTATION_EVENTS, presentationTelemetry } from './presentationTelemetry.js';
 import { GAME_SOUNDSETS, selectSoundsetVariant } from './data/gameSoundsets.js';
+import { GAME_AUDIO_ALIASES } from './data/gameAudioAliases.js';
+import { getVoiceTakeKeys, resolveVoiceBankSlot } from './data/voiceBanks.js';
 import { calculateScreenSpaceAudio } from './audioSpatial.js';

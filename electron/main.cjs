@@ -63,6 +63,7 @@ const {
     writeSaveAtomic
 } = require('./save-contract.cjs');
 const { isQaToolsEnabled, normalizeBetaName } = require('./qa-tools.cjs');
+const { PUBLISHED_ACHIEVEMENT_KEYS } = require('./steam-achievement-catalog.cjs');
 const { parseConnectLobbyArg } = require('./steam-lobby.cjs');
 
 const DEV = process.env.ELECTRON_DEV === '1';
@@ -802,14 +803,28 @@ ipcMain.on('hb:saveDataRemoved', (_e, key) => {
     delete saveState[key];
     scheduleFlush();
 });
-ipcMain.on('hb:unlockAchievement', (_e, key) => {
-    if (!steamClient || typeof key !== 'string') return;
+const PUBLISHED_ACHIEVEMENT_KEY_SET = new Set(PUBLISHED_ACHIEVEMENT_KEYS);
+const achievementResetGenerationByAccount = new Map();
+
+ipcMain.handle('hb:unlockAchievement', (_e, key, generation = 0) => {
+    if (!steamClient) return { ok: false, reason: 'steam_not_active' };
+    if (typeof key !== 'string' || !PUBLISHED_ACHIEVEMENT_KEY_SET.has(key)) return { ok: false, reason: 'unknown_or_unpublished_key' };
+    const identity = getSteamIdentitySnapshot();
+    const accountId = String(identity.steamId64 ?? identity.accountId ?? '');
+    if (!accountId) return { ok: false, reason: 'steam_identity_unavailable' };
+    const requestGeneration = Math.max(0, Math.floor(Number(generation) || 0));
+    const activeGeneration = achievementResetGenerationByAccount.get(accountId) ?? 0;
+    if (requestGeneration < activeGeneration) return { ok: false, reason: 'stale_reset_generation', generation: activeGeneration };
+    achievementResetGenerationByAccount.set(accountId, requestGeneration);
     try {
         // Steam API names must match ACHIEVEMENT_DEFS keys (mapping table in
         // the Antigravity Electron plan / pipeline doc).
         steamClient.achievement.activate(key);
+        steamClient.stats.store();
+        return { ok: true, key, accountId, generation: requestGeneration };
     } catch (err) {
         console.log(`[steam] achievement '${key}' failed: ${err?.message ?? err}`);
+        return { ok: false, reason: 'exception', message: err?.message ?? String(err) };
     }
 });
 ipcMain.on('hb:setStat', (_e, key, value) => {
@@ -845,13 +860,21 @@ function qaToolsEnabled(betaName = getCurrentSteamBetaName()) {
     });
 }
 ipcMain.handle('hb:qaToolsEnabled', () => qaToolsEnabled());
-ipcMain.handle('hb:resetAchievements', () => {
+ipcMain.handle('hb:resetAchievements', (_event, requestedGeneration = 0) => {
     if (!qaToolsEnabled()) return { ok: false, reason: 'qa_tools_disabled' };
     if (!steamClient) return { ok: false, reason: 'steam_not_active' };
     try {
         const ok = steamClient.stats.resetAll(true);
         steamClient.stats.store();
-        return { ok: Boolean(ok) };
+        if (!ok) return { ok: false, reason: 'steam_reset_rejected' };
+        const identity = getSteamIdentitySnapshot();
+        const accountId = String(identity.steamId64 ?? identity.accountId ?? '');
+        const generation = Math.max(
+            (achievementResetGenerationByAccount.get(accountId) ?? 0) + 1,
+            Math.floor(Number(requestedGeneration) || 0)
+        );
+        achievementResetGenerationByAccount.set(accountId, generation);
+        return { ok: true, accountId, generation };
     } catch (err) {
         return { ok: false, reason: 'exception', message: err?.message ?? String(err) };
     }

@@ -18,10 +18,8 @@ import { runO2MilestoneChoreography, O2_CHOREOGRAPHY_PHASES } from './o2Cinemati
 // intensities. These lock the properties that fix depends on, because the
 // symptom is a frame-time cliff that no unit test can observe directly.
 //
-// NOTE: the wider O2 door/video choreography described in
-// docs/planning/o2-cinematic-doors-and-boss-destruction-plan-2026-09-10.md is
-// NOT implemented in the runtime yet, so nothing here asserts it. See that
-// plan's review notes.
+// Runtime power/reset coverage lives in threeGame.o2LightLifecycle.test.js;
+// director ownership/cancellation coverage lives in milestonePresentation.test.js.
 describe('LAG-01 — base light grid must not change the scene light set at ignition', () => {
     const countLights = (scene) => {
         let n = 0;
@@ -129,8 +127,14 @@ describe('O2 Milestone Cinematic Doors and Video Choreography (SEQ-01)', () => {
             closeConsoleModal: () => events.push('closeConsoleModal'),
             setInputEnabled: (enabled) => events.push(`setInputEnabled:${enabled}`),
             setCinematicLock: (locked) => events.push(`setCinematicLock:${locked}`),
+            ensureO2Generator3dReady: async () => events.push('ensureO2Generator3dReady'),
             getActiveO2GeneratorPosition: () => ({ x: 10, z: 20 }),
             cameraTarget: { x: 0, z: 0 },
+            focusCinematicCamera: (position) => {
+                fakeGame.cameraTarget = { ...position };
+                events.push(`focusCamera:${position.x}:${position.z}`);
+            },
+            clearCinematicCameraFocus: () => events.push('clearCameraFocus'),
             startO2StartupSequence: (bossType, { onComplete, skipDialogue }) => {
                 events.push(`startO2StartupSequence:${bossType}:skipDialogue=${skipDialogue}`);
                 if (onComplete) onComplete();
@@ -196,9 +200,11 @@ describe('O2 Milestone Cinematic Doors and Video Choreography (SEQ-01)', () => {
 
         // 2 & 3. Door closes and opens to upgrade video
         expect(events).toContain('playCutsceneVideo:event-o2-generator-upgraded');
+        expect(events.indexOf('ensureO2Generator3dReady')).toBeLessThan(events.indexOf('focusCamera:10:20'));
 
         // 4 & 5. Camera recenters onto generator position
-        expect(fakeGame.cameraTarget).toEqual({ x: 10, z: 20 });
+        expect(events).toContain('focusCamera:10:20');
+        expect(events).toContain('clearCameraFocus');
 
         // 6. 3D generator rise
         expect(events).toContain('startO2StartupSequence:boss_cybersnail:skipDialogue=true');

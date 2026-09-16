@@ -37,7 +37,44 @@ export const O2_CHOREOGRAPHY_PHASES = Object.freeze({
     COMPLETE: 'complete'
 });
 
-export async function runO2MilestoneChoreography(options = {}) {
+const presentations = new WeakMap();
+
+export function runO2MilestoneChoreography(options = {}) {
+    const { game = typeof window !== 'undefined' ? window.game : null } = options;
+    if (!game) return executeO2MilestoneChoreography(options);
+    const runId = game.runStartTime;
+    const previous = presentations.get(game);
+    if (previous && previous.runId === runId) return previous.promise;
+    const entry = { runId };
+    presentations.set(game, entry);
+    // Hide the newly purchased structure synchronously. The purchase event is
+    // dispatched before persistent unlock synchronization; without this latch,
+    // that synchronization exposed the completed generator behind movie one.
+    game.prepareO2StartupReveal?.();
+    const isCurrent = () => presentations.get(game) === entry && game.runStartTime === runId
+        && !game.isPlayerDead && game.performanceProfile !== 'menu';
+    entry.promise = Promise.resolve()
+        .then(() => executeO2MilestoneChoreography({ ...options, game, isCurrent }))
+        .finally(() => {
+            // An old cinematic must never unlock or mutate a new expedition.
+            if (presentations.get(game) === entry && game.runStartTime === runId) {
+                game.clearCinematicCameraFocus?.();
+                game.setCinematicLock?.(false);
+                game.setInputEnabled?.(!game.isPlayerDead && game.performanceProfile !== 'menu');
+            }
+        })
+        .catch(error => {
+            if (presentations.get(game) === entry && game.runStartTime === runId) {
+                game.cancelO2StartupSequence?.();
+            }
+            if (presentations.get(game) === entry) presentations.delete(game);
+            if (error.name !== 'AbortError') console.warn('[o2CinematicDoors] sequence interrupted', error);
+            return { ok: false, reason: error.message };
+        });
+    return entry.promise;
+}
+
+async function executeO2MilestoneChoreography(options = {}) {
     const {
         game = typeof window !== 'undefined' ? window.game : null,
         triggerDoorTransition: injectedDoorTransition = typeof window !== 'undefined' ? window.triggerDoorTransition : null,
@@ -47,11 +84,17 @@ export async function runO2MilestoneChoreography(options = {}) {
         upgradeVideo = 'event-o2-generator-upgraded',
         bossVideo = 'event-boss-encounter-cybersnail',
         onPhaseChange = null,
-        shakePauseMs = 800,
-        timeoutMs = null
+        shakePauseMs = 1800,
+        timeoutMs = 10000,
+        isCurrent = () => true
     } = options;
 
     const setPhase = (phase) => {
+        if (!isCurrent()) {
+            const error = new Error('O2 presentation cancelled after leaving its run');
+            error.name = 'AbortError';
+            throw error;
+        }
         if (typeof onPhaseChange === 'function') {
             try {
                 onPhaseChange(phase);
@@ -65,9 +108,9 @@ export async function runO2MilestoneChoreography(options = {}) {
         if (typeof injectedDoorTransition === 'function') {
             return new Promise((resolve) => {
                 injectedDoorTransition(
-                    onClosed,
+                    () => { if (isCurrent()) onClosed?.(); },
                     () => {
-                        if (onOpened) onOpened();
+                        if (isCurrent()) onOpened?.();
                         resolve();
                     },
                     key,
@@ -120,15 +163,18 @@ export async function runO2MilestoneChoreography(options = {}) {
         }
     });
 
+    // Resolve the authored generator before revealing the world. Previously
+    // its asynchronous GLB swap often completed after the rise had begun, so
+    // the placeholder 2D sprite visibly lifted out of the floor.
+    await game?.ensureO2Generator3dReady?.();
+
     // ── Beat 4 & 5: Blast doors cycle over video and open to 3D reveal ──
     setPhase(O2_CHOREOGRAPHY_PHASES.DOORS_OPEN_3D);
+    const generatorPosition = game?.getActiveO2GeneratorPosition?.();
+    if (generatorPosition) game?.focusCinematicCamera?.(generatorPosition, { immediate: true });
     await doorTransition(
         () => {
-            const genPos = game?.getActiveO2GeneratorPosition?.();
-            if (genPos && game?.cameraTarget) {
-                game.cameraTarget.x = genPos.x;
-                game.cameraTarget.z = genPos.z;
-            }
+            if (generatorPosition) game?.focusCinematicCamera?.(generatorPosition, { immediate: true });
         },
         () => {},
         'base'
@@ -137,24 +183,35 @@ export async function runO2MilestoneChoreography(options = {}) {
     // ── Beat 6: 3D generator rise animation & base floodlights ignite ──
     setPhase(O2_CHOREOGRAPHY_PHASES.GENERATOR_RISE_3D);
     if (game?.startO2StartupSequence) {
-        await new Promise((resolve) => {
+        await new Promise((resolve, reject) => {
             let settled = false;
+            const timer = setTimeout(() => {
+                if (settled) return;
+                settled = true;
+                reject(new Error('O2 structure rise did not complete'));
+            }, timeoutMs ?? 10000);
             const complete = () => {
                 if (settled) return;
                 settled = true;
+                clearTimeout(timer);
                 resolve();
             };
 
-            game.startO2StartupSequence(bossType, {
-                skipDialogue: true,
-                onComplete: complete
-            });
-
-            if (timeoutMs) {
-                setTimeout(complete, timeoutMs);
+            try {
+                game.startO2StartupSequence(bossType, {
+                    skipDialogue: true,
+                    onComplete: complete
+                });
+            } catch (error) {
+                settled = true;
+                clearTimeout(timer);
+                reject(error);
             }
         });
     }
+    // Hold the completed structure in frame through the end of the rise; the
+    // next door-covered beat can safely restore normal player tracking.
+    game?.clearCinematicCameraFocus?.();
 
     // ── Beat 7: Screen rumble & warning alert broadcast ──
     setPhase(O2_CHOREOGRAPHY_PHASES.SCREEN_SHAKE_WARNING);
@@ -162,15 +219,17 @@ export async function runO2MilestoneChoreography(options = {}) {
     if (typeof window !== 'undefined' && window.AudioManager?.play) {
         window.AudioManager.play('alert_high_priority', { volume: 0.7 });
     }
+    // Let the physical impact read before covering it with text.
+    await new Promise((resolve) => setTimeout(resolve, Math.min(500, shakePauseMs)));
     if (typeof injectedShowTacticalOverlay === 'function') {
         injectedShowTacticalOverlay({
             title: 'SEISMIC ANOMALY',
             status: '> SEISMIC IMPACT DETECTED<br>> BIOMECHANICAL RETALIATION CLOSING IN',
             progress: 100,
-            duration: 2500
+            duration: 3500
         });
     }
-    await new Promise((resolve) => setTimeout(resolve, shakePauseMs));
+    await new Promise((resolve) => setTimeout(resolve, Math.max(0, shakePauseMs - Math.min(500, shakePauseMs))));
 
     // ── Beat 8: Blast doors cycle to retaliatory boss video ──
     setPhase(O2_CHOREOGRAPHY_PHASES.DOORS_CLOSE_BOSS);
@@ -198,10 +257,15 @@ export async function runO2MilestoneChoreography(options = {}) {
     // ── Beat 9: Final door reveal into active 3D gameplay ──
     await doorTransition(
         () => {
-            game?.spawnMilestoneBoss?.(bossType, { sourceGoalKey: 'o2Bubble' });
+            const boss = game?.spawnMilestoneBoss?.(bossType, { sourceGoalKey: 'o2Bubble' });
             if (typeof window !== 'undefined') {
                 window.dispatchEvent(new CustomEvent('milestone-boss-warning', {
-                    detail: { type: bossType, goalKey: 'o2Bubble' }
+                    detail: {
+                        type: bossType, goalKey: 'o2Bubble',
+                        encounterId: boss?.userData?.milestoneEncounterId,
+                        milestoneId: boss?.userData?.milestoneId,
+                        presentationHandled: true
+                    }
                 }));
             }
         },
@@ -209,10 +273,7 @@ export async function runO2MilestoneChoreography(options = {}) {
         'base'
     );
 
-    // Final unlock
+    // The owning run wrapper releases input and the cinematic lock.
     setPhase(O2_CHOREOGRAPHY_PHASES.COMPLETE);
-    game?.setCinematicLock?.(false);
-    game?.setInputEnabled?.(true);
-
     return { ok: true };
 }

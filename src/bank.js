@@ -290,6 +290,7 @@ export const BASE_TURRET_UPGRADES = Object.freeze([
 ]);
 
 export const BASE_TURRET_REPAIR_COST = Object.freeze({ tech: 10, coin: 5 });
+export const BASE_TURRET_BUILD_COST = Object.freeze({ tech: 30, coin: 10 });
 
 export const MAX_O2_GENERATOR_LEVEL = O2_GENERATOR_UPGRADES.length;
 
@@ -512,11 +513,9 @@ function toSerializableState(raw) {
         base.unlockedSkills = [];
     }
 
-    base.baseTurretUnlocked = Boolean(
-        raw.baseTurretUnlocked
-        || base.o2GeneratorLevel >= 1
-        || Object.values(base.unlocks).some(Boolean)
-    );
+    // Grandfather explicitly owned beta turrets, but never infer construction
+    // from another building. O2 unlocks the blueprint, not a free defense.
+    base.baseTurretUnlocked = Boolean(raw.baseTurretUnlocked);
     base.baseTurretLevel = Math.max(1, Math.min(3, Math.floor(Number(raw.baseTurretLevel) || 1)));
     const persistedTurretHp = Number(raw.baseTurretHp);
     base.baseTurretHp = Number.isFinite(persistedTurretHp)
@@ -1011,6 +1010,29 @@ export class BankManager {
         return Boolean(this.state.baseTurretUnlocked);
     }
 
+    isBaseTurretBuildAvailable() {
+        return this.getO2GeneratorLevel() >= 1 && !this.isBaseTurretUnlocked();
+    }
+
+    canBuildBaseTurret() {
+        return this.isBaseTurretBuildAvailable() && this.canAfford(BASE_TURRET_BUILD_COST);
+    }
+
+    buildBaseTurret() {
+        if (!this.canBuildBaseTurret()) return false;
+        // Cost and construction persist together; a failed write must not
+        // take payment without delivering a turret or permit a duplicate buy.
+        const next = this.getState();
+        for (const [key, cost] of Object.entries(BASE_TURRET_BUILD_COST)) next[key] -= cost;
+        next.baseTurretUnlocked = true;
+        next.baseTurretLevel = 1;
+        next.baseTurretHp = BASE_TURRET_UPGRADES[0].maxHp;
+        this.save(next);
+        emit('bank-updated', { bank: this.getState() });
+        emit('base-turret-unlocked', { level: 1, hp: next.baseTurretHp, bank: this.getState() });
+        return true;
+    }
+
     unlockBaseTurret() {
         if (this.isBaseTurretUnlocked()) return false;
         this.state.baseTurretUnlocked = true;
@@ -1044,12 +1066,14 @@ export class BankManager {
     }
 
     canUpgradeBaseTurret() {
+        if (!this.isBaseTurretUnlocked()) return false;
         const cost = this.getBaseTurretUpgradeCost();
         if (!cost) return false;
         return this.canAfford(cost);
     }
 
     upgradeBaseTurret() {
+        if (!this.canUpgradeBaseTurret()) return false;
         const cost = this.getBaseTurretUpgradeCost();
         if (!cost || !this.spend(cost)) return false;
         const newLevel = this.getBaseTurretLevel() + 1;
@@ -1061,6 +1085,7 @@ export class BankManager {
     }
 
     canRepairBaseTurret() {
+        if (!this.isBaseTurretUnlocked()) return false;
         if (this.getBaseTurretHp() >= this.getBaseTurretMaxHp()) return false;
         return this.canAfford(BASE_TURRET_REPAIR_COST);
     }

@@ -92,7 +92,7 @@ export function buildSteamRunScorePayload({
     const dailyOps = Boolean(isDailyOps);
 
     return {
-        schemaVersion: 1,
+        schemaVersion: 2,
         runId: [
             'hb',
             startedAt,
@@ -153,6 +153,10 @@ export function buildSteamRunScorePayload({
         stats: {
             distanceTravelled,
             totalPickups: clampInteger(stats.totalPickups),
+            pickupsCollected: clampInteger(stats.pickupsCollected ?? stats.totalPickups),
+            pickupValueCollected: clampInteger(stats.pickupValueCollected),
+            salvageBanked: clampInteger(stats.salvageBanked),
+            debugGrantedResources: normalizeResourceCounts(stats.debugGrantedResources),
             generatorLevel: clampInteger(stats.generatorLevel),
             depthTier,
             depthTierName: stats.depthTierName ?? '',

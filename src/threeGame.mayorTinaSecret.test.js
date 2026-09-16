@@ -158,4 +158,87 @@ describe('Mayor Tina secret encounter', () => {
         expect(game.mayorTinaEncounter.phase).toBe('transformed');
         expect(game.playerSprite.visible).toBe(false);
     });
+
+    it('removes the cup, disables friendly interaction, and starts a grounded chase on the warning hit', () => {
+        const scene = new THREE.Scene();
+        const mayorRoot = new THREE.Group();
+        const teacupRoot = new THREE.Group();
+        mayorRoot.position.set(9, 0.43, -14);
+        scene.add(mayorRoot, teacupRoot);
+        const prompt = { classList: { add: vi.fn(), remove: vi.fn(), toggle: vi.fn() }, querySelector: vi.fn() };
+        document.getElementById.mockReturnValue(prompt);
+        const game = {
+            mayorTinaEncounter: { phase: 'idle', mayorRoot, teacupRoot, tinaDead: false },
+            player: { position: new THREE.Vector3(9, 0, -8) },
+            spawnDamagePip: vi.fn(),
+            audioAt: vi.fn(() => ({ volume: 0.45 })),
+            showBunkerLine: vi.fn(),
+            getMayorTinaEncounterPosition: () => ({ x: 9, z: -14 }),
+            canOccupyPosition: vi.fn(() => true),
+            takeDamage: vi.fn()
+        };
+        ThreeGame.prototype.onMayorTinaHit.call(game, { outcome: 'warning' });
+        expect(game.mayorTinaEncounter.phase).toBe('hostile');
+        expect(teacupRoot.parent).toBeNull();
+        expect(mayorRoot.position.y).toBe(0);
+        expect(ThreeGame.prototype.interactWithMayorTina.call({ ...game, isMultiplayer: false })).toBe(false);
+
+        const beforeZ = mayorRoot.position.z;
+        game.mayorTinaEncounter.hostileLastUpdateAt = 1000;
+        ThreeGame.prototype.updateMayorTinaEncounter.call(game, 1050);
+        expect(mayorRoot.position.z).toBeGreaterThan(beforeZ);
+        expect(prompt.classList.add).toHaveBeenCalledWith('hidden');
+        expect(game.showBunkerLine).not.toHaveBeenCalled();
+    });
+
+    it('attacks on a cooldown while hostile and slides along a blocked axis', () => {
+        const mayorRoot = new THREE.Group();
+        const game = {
+            mayorTinaEncounter: { phase: 'hostile', mayorRoot, tinaDead: false, hostileLastUpdateAt: 1000, hostileAttackReadyAt: 0 },
+            player: { position: new THREE.Vector3(0.7, 0, 0.7) },
+            canOccupyPosition: vi.fn((x, _z) => x === 0),
+            takeDamage: vi.fn()
+        };
+        ThreeGame.prototype.updateMayorTinaEncounter.call(game, 1050);
+        expect(mayorRoot.position.x).toBe(0);
+        expect(mayorRoot.position.z).toBeGreaterThan(0);
+        expect(game.takeDamage).toHaveBeenCalledTimes(1);
+        ThreeGame.prototype.updateMayorTinaEncounter.call(game, 1100);
+        expect(game.takeDamage).toHaveBeenCalledTimes(1);
+    });
+
+    it('removes every residual actor and voice on death, then fully resets the encounter', () => {
+        const scene = new THREE.Scene();
+        const mayorRoot = new THREE.Group();
+        const teacupRoot = new THREE.Group();
+        scene.add(mayorRoot, teacupRoot);
+        window.AudioManager.activeVoice = { speakerName: 'MAYOR TINA' };
+        window.AudioManager.stopActiveVoice = vi.fn();
+        window.AudioManager.playMetalStress = vi.fn();
+        const game = {
+            runEntropy: 0,
+            performanceProfile: 'gameplay',
+            scene,
+            player: { position: new THREE.Vector3() },
+            mayorTinaEncounter: { phase: 'hostile', mayorRoot, teacupRoot, tinaDead: true, tinaHostile: true, tinaHitsRemaining: 0 },
+            spawnDamagePip: vi.fn(),
+            audioAt: vi.fn(() => ({})),
+            getMayorTinaEncounterPosition: ThreeGame.prototype.getMayorTinaEncounterPosition,
+            act2: null
+        };
+        ThreeGame.prototype.onMayorTinaHit.call(game, { outcome: 'killed' });
+        expect(game.mayorTinaEncounter.phase).toBe('dead');
+        expect(teacupRoot.parent).toBeNull();
+        expect(mayorRoot.visible).toBe(false);
+        expect(window.AudioManager.stopActiveVoice).toHaveBeenCalledOnce();
+
+        ThreeGame.prototype.resetMayorTinaEncounter.call(game);
+        expect(game.mayorTinaEncounter).toMatchObject({
+            phase: 'idle', tinaDead: false, tinaHostile: false, tinaHitsRemaining: 4,
+            hostileLastUpdateAt: 0, hostileAttackReadyAt: 0
+        });
+        expect(scene.children).toContain(mayorRoot);
+        expect(scene.children).toContain(teacupRoot);
+        expect(mayorRoot.visible).toBe(true);
+    });
 });

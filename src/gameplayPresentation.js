@@ -11,6 +11,5 @@
 export function usesGameplayFocusEffects(game) {
     return game.performanceProfile === 'gameplay'
         && game.gameplayPostProcessingEnabled !== false
-        && !game.adaptiveGameplayPerformanceMode
         && !game.loadingPaused;
 }

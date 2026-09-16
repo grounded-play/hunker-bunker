@@ -169,10 +169,17 @@ export function lookFilter({ glare = GLARE_STRENGTH, ca = CHROMATIC_ABERRATION }
 // compositor now that it works, so applying them again here would double the
 // bloom and smear the fringing. Kept as an opt-in for frames rendered without a
 // compositor.
-export function encodeArgs(frameGlobDir, out, { fps = FPS, draft = false, look = false } = {}) {
+export function encodeArgs(frameGlobDir, out, { fps = FPS, draft = false, look = false, startFrame = 0 } = {}) {
     return [
         '-y',
         '-framerate', String(fps),
+        // ffmpeg's image-sequence demuxer starts at 0000 unless told otherwise,
+        // and only MI-01 begins at frame 0 -- every other shot starts partway
+        // through its scene's timeline (MI-02 at 0043, MI-03 at 0079...). Without
+        // this the encode fails with "No such file or directory" for 19 of 20
+        // shots, which is exactly the mismatch the padding comment below warns
+        // about, one field over.
+        '-start_number', String(Math.max(0, Math.floor(Number(startFrame) || 0))),
         // %04d matches Blender's -o frame-#### padding exactly.
         '-i', path.join(frameGlobDir, 'frame-%04d.png'),
         ...(look ? ['-filter_complex', lookFilter(), '-map', '[looked]'] : []),
@@ -204,7 +211,9 @@ function encodeSequence(plan, sequenceId, { draft = false } = {}) {
     // directory, which would renumber frames and silently reorder the cut.
     for (const shot of shots) {
         const out = path.join(shot.frameDir, `${shot.id}.webm`);
-        const res = spawnSync('ffmpeg', encodeArgs(shot.frameDir, out, { draft }), { stdio: 'inherit' });
+        const res = spawnSync('ffmpeg', encodeArgs(shot.frameDir, out, {
+            draft, startFrame: shot.startFrame
+        }), { stdio: 'inherit' });
         if (res.status !== 0) {
             console.error(`Encode failed for ${shot.id}.`);
             return 1;

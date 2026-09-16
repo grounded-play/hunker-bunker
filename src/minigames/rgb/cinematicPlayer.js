@@ -9,6 +9,7 @@
 
 import { AudioManager } from '../../audio.js';
 import { assetUrl } from '../../assetUrl.js';
+import { t } from '../../i18n.js';
 
 export const IMAGE_HOLD_MS = 2600;
 export const FADE_MS = 350;
@@ -45,13 +46,13 @@ function playStep(container, step, mediaStack, onNarration) {
 
         const status = document.createElement('div');
         status.className = 'rgb-cinematic__status';
-        status.textContent = step.label ?? 'ARCHIVE CINEMATIC // RESTORING SIGNAL';
+        status.textContent = step.label ?? t('ui.cinematic.restoring');
         const narration = document.createElement('div');
         narration.className = 'rgb-cinematic__narration';
-        narration.textContent = step.narration ?? 'The archive advances to the next reconstructed scene.';
+        narration.textContent = step.narration ?? t('ui.cinematic.advances');
         const skip = document.createElement('div');
         skip.className = 'rgb-cinematic__skip';
-        skip.textContent = 'PRESS ANY BUTTON / KEY TO SKIP';
+        skip.textContent = t('ui.cinematic.skip_hint');
         skip.setAttribute('role', 'button');
         skip.tabIndex = 0;
         skip.addEventListener('click', (event) => {

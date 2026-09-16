@@ -59,6 +59,17 @@ export const GAME_SOUNDSETS = Object.freeze({
     })
 });
 
+// These approved soundsets used to exist only in the registry: without
+// manifest entries no variant could decode, so every footfall fell back.
+export const GAMEPLAY_FOLEY_MANIFEST = Object.freeze([
+    ...['footstep_concrete', 'footstep_snow'].flatMap((key) => (
+        GAME_SOUNDSETS[key].variants.map((variant) => Object.freeze({ key: variant, url: `/audio/footsteps/${variant}.ogg` }))
+    )),
+    ...['prop_impact_metal', 'prop_impact_glass'].flatMap((key) => (
+        GAME_SOUNDSETS[key].variants.map((variant) => Object.freeze({ key: variant, url: `/audio/impacts/${variant}.ogg` }))
+    ))
+]);
+
 export function validateSoundset(soundset) {
     if (!soundset || !Array.isArray(soundset.variants) || soundset.variants.length === 0) return false;
     if (soundset.variants.some(key => typeof key !== 'string' || key.length === 0)) return false;

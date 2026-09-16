@@ -13,18 +13,7 @@
     "locked": "Locked",
     "unlocked": "Unlocked"
   },
-  "menu": {
-    "play": "DEPLOY OPERATIVE",
-    "resume": "RESUME MISSION",
-    "armory": "ARMORY & LOADOUT",
-    "vault": "STEAM VAULT",
-    "settings": "SETTINGS",
-    "multiplayer": "SQUAD CO-OP",
-    "quit": "ABORT TO DESKTOP",
-    "version": "Version {version}"
-  },
   "classes": {
-    "all": "All Classes",
     "scout": "Scout",
     "tank": "Tank",
     "engineer": "Engineer"
@@ -44,38 +33,15 @@
     "ammo": "AMMO",
     "dash": "DASH",
     "overclock": "OVERCLOCK",
-    "objective": "PRIMARY DIRECTIVE",
-    "depth": "STRATUM TIER",
     "sector": "SECTOR",
     "bunker_alert": "BUNKER ALERT"
   },
   "dialogue": {
-    "mothership_intro": "MOTHERSHIP: DESCENT DETECTED. MAINTAIN FORMATION.",
     "mothership_caution": "MOTHERSHIP: CAUTION. RECOVERY SIGNATURE TRACKED. PATROLS INBOUND.",
-    "operator_down": "OPERATOR COMPROMISED. RECOVERY DRONE DISPATCHED.",
     "black_box_guard": "MOTHERSHIP: DEFEAT THE CORRUPTED OPERATOR TO SECURE THE BLACK BOX.",
     "black_box_authorized": "CORRUPTED OPERATOR NEUTRALIZED. BLACK BOX RECOVERY NOW AUTHORIZED.",
     "extraction_forming": "EXTRACTION UPLINK FORMING. TRY NOT TO DIE DURING PAPERWORK.",
     "elite_contact": "SUIT: ELITE CONTACT. REINFORCED HOSTILE — KEEP AN ESCAPE ROUTE."
-  },
-  "settings": {
-    "title": "SYSTEM CONFIGURATION",
-    "language": "Language",
-    "audio": "Audio",
-    "master_volume": "Master Volume",
-    "sfx_volume": "SFX Volume",
-    "music_volume": "Music Volume",
-    "subtitles": "Subtitles",
-    "video": "Display & Graphics",
-    "screen_shake": "Screen Shake",
-    "controls": "Controls"
-  },
-  "vault": {
-    "title": "STEAM VAULT & INVENTORY",
-    "keys_available": "Decryption Keys Available: {count}",
-    "get_keys": "GET KEYS IN ITEM STORE",
-    "open_cache": "DECRYPT DEEP RELIC CACHE",
-    "disclosed_odds": "Disclosed Cryptographic Odds"
   },
   "ui": {
     "menu": {
@@ -85,29 +51,67 @@
       "achievements": "ACHIEVEMENTS",
       "settings": "SETTINGS",
       "about": "ABOUT",
-      "quit": "QUIT GAME"
+      "quit": "QUIT GAME",
+      "aria_label_operations_and_steam": "Operations and Steam commands",
+      "title_operator_roster_callsign": "Operator roster — callsign and equipped loadout",
+      "title_steam_vault_view": "Steam Vault — view Steam-owned cosmetics",
+      "title_archive_simulations_unlockable": "Archive Simulations — unlockable story mini-games",
+      "rgb": "RGB",
+      "title_fabrication_bay_print": "Fabrication Bay — print gear from salvage (unlocks once the base is powered)",
+      "aria_label_records_and_dossier": "Records and Dossier commands",
+      "title_bunker_archive_discovered": "Bunker Archive — discovered lore logs",
+      "title_field_codex_catalogued": "Field Codex — catalogued hostiles, infrastructure, and phenomena",
+      "title_tactical_dossier_beta": "Tactical Dossier — Beta Season 1 progression",
+      "title_achievement_records_unlocked": "Achievement records — unlocked run milestones",
+      "tank": "TANK",
+      "aria_label_s_o_u": "S.O.U.L — Speed, O2 Usage, Loot-Range",
+      "speed": "SPEED",
+      "fast": "FAST",
+      "title_o2_consumption_rate": "O₂ Consumption Rate — Lower value means suit oxygen drains slower",
+      "aria_label_o2_consumption_rate": "O2 Consumption Rate — Lower is Better",
+      "o2_use": "O₂ USE",
+      "low": "LOW",
+      "aria_label_loot_magnet_range": "Loot magnet range",
+      "loot_mag": "LOOT-MAG",
+      "med": "MED",
+      "title_choose_operator_polish": "Choose operator polish",
+      "suit_polish": "SUIT POLISH",
+      "recon_frame": "RECON FRAME",
+      "scout": "SCOUT",
+      "sprint_burst": "SPRINT BURST",
+      "wide_magnet": "WIDE MAGNET",
+      "bulwark_frame": "BULWARK FRAME",
+      "brace": "BRACE",
+      "low_o2_drain": "LOW O₂ DRAIN",
+      "utility_frame": "UTILITY FRAME",
+      "engineer": "ENGINEER",
+      "reroute": "REROUTE",
+      "cheaper_consoles": "CHEAPER CONSOLES",
+      "esc": "[ESC]"
     },
     "hub": {
       "daily_ops": "DAILY OPS",
       "roster": "▣ ROSTER",
       "vault": "◈ STEAM VAULT",
       "archive_sims": "◈ ARCHIVE SIMS",
-      "fab_bay": "◇ FAB BAY",
       "archive": "◈ ARCHIVE",
       "codex": "❑ CODEX",
       "dossier": "◈ DOSSIER",
       "achievements": "ACHIEVEMENTS",
-      "initialize": "INITIALIZE"
+      "initialize": "INITIALIZE",
+      "vault_tooltip": "Click to open Steam Vault cosmetics submenu",
+      "status_logs": "{found} / {total} LOGS",
+      "status_intel": "{found} / {total} INTEL",
+      "status_printed": "{printed} / {total} PRINTED",
+      "status_armed": "{armed}/{total} ARMED"
     },
     "settings": {
       "title": "SYSTEM SETTINGS",
-      "cat_display": "DISPLAY & GRAPHICS",
       "night_vision": "NIGHT VISION (NO FOG/NIGHT)",
       "debug_overlay": "DEBUG OVERLAY",
       "cat_audio": "AUDIO & VOICE",
       "audio_mixer": "AUDIO MIXER",
       "commentary": "COMMENTARY MODE",
-      "cat_gameplay": "GAMEPLAY & ACCESSIBILITY",
       "ui_scale": "UI ACCESSIBILITY SCALE",
       "text_floor": "MINIMUM TEXT FLOOR",
       "text_speed": "TEXT SPEED",
@@ -133,7 +137,21 @@
       "gore": "GORE EFFECTS (DISMEMBERMENT)",
       "subtitle_size": "SUBTITLE SIZE",
       "subtitle_backdrop": "SUBTITLE BACKGROUND",
-      "contrast": "HUD CONTRAST"
+      "contrast": "HUD CONTRAST",
+      "aria_label_settings_categories": "Settings categories",
+      "session": "SESSION",
+      "audio": "AUDIO",
+      "controls": "CONTROLS",
+      "camera_hud": "CAMERA & HUD",
+      "accessibility": "ACCESSIBILITY",
+      "profile_saves": "PROFILE & SAVES",
+      "session_display": "SESSION & DISPLAY",
+      "return_to_game": "RETURN TO GAME",
+      "resume": "RESUME",
+      "abort_current_mission": "ABORT CURRENT MISSION",
+      "abort_mission": "ABORT MISSION",
+      "title_active_crosshair_color": "Active crosshair color",
+      "placeholder_agent": "AGENT"
     },
     "action": {
       "open": "OPEN",
@@ -187,7 +205,6 @@
     "aria": {
       "language_select": "Game language",
       "close_language": "Close language menu",
-      "language_choice": "Select language",
       "close_settings": "Close system settings",
       "crosshair_presets": "Crosshair color presets",
       "crosshair_orange": "Orange crosshair",
@@ -233,13 +250,7 @@
       "f_chassis": "EXOSUIT CHASSIS SKIN",
       "f_patch": "SHOULDER PATCH & INSIGNIA",
       "f_hud": "TACTICAL HUD THEME",
-      "telemetry_title": "SUIT TELEMETRY STATUS",
-      "tel_thermal": "Thermal Cryo-Mesh:",
-      "tel_thermal_val": "NOMINAL 100%",
-      "tel_rad": "Radiation Seal:",
-      "tel_rad_val": "ACTIVE",
-      "tel_turntable": "Turntable Staging:",
-      "tel_turntable_val": "360° DRAG ORBIT",
+      "f_voicebank": "ALT RADIO VOICE BANK",
       "btn_return": "← RETURN TO MAIN MENU",
       "btn_vault": "STEAM VAULT & FAB BAY",
       "btn_embark": "EMBARK TO BUNKER >>",
@@ -249,10 +260,10 @@
       "select_to_equip": "SELECT TO EQUIP",
       "unknown_equipment": "UNKNOWN EQUIPMENT",
       "locked_achievement": "Earn its field achievement to reveal.",
-      "locked_rewards": "Unlock through field rewards."
+      "locked_rewards": "Unlock through field rewards.",
+      "aria_label_pre_mission_armory": "Pre-Mission Armory"
     },
     "roster": {
-      "title": "▣ OPERATOR DOSSIER // DEPLOYMENT TELEMETRY",
       "deepest_sector": "DEEPEST SECTOR:",
       "total_distance": "TOTAL DISTANCE:",
       "hostiles": "HOSTILES:",
@@ -261,8 +272,18 @@
       "decal": "DECAL:",
       "finish": "FINISH:",
       "hint": "Fabricate weapons in the FAB BAY to equip them here. Customize cosmetics in the STEAM VAULT.",
-      "confirm": "CONFIRM & DEPLOY",
-      "randomize": "Randomize Callsign"
+      "randomize": "Randomize Callsign",
+      "callsign": "CALLSIGN:",
+      "placeholder_agent_01": "AGENT-01",
+      "sector_0": "SECTOR 0",
+      "0_eliminated": "0 ELIMINATED",
+      "none": "NONE",
+      "equipped_sidearm": "EQUIPPED SIDEARM",
+      "equipped_steam_cosmetics": "EQUIPPED STEAM COSMETICS",
+      "no_weapons": "NO WEAPONS FABRICATED",
+      "print_hint": "Print a guaranteed Scatter Repeater for 12 Tech / 6 Coin in the Fab Bay.",
+      "equipped": "✓ EQUIPPED",
+      "equip": "EQUIP"
     },
     "dlg": {
       "channel": "MOTHERSHIP UPLINK CHANNEL 7",
@@ -271,6 +292,962 @@
       "choice_skip_hint": "SKIP TUTORIAL",
       "choice_tutorial_label": "[B] RUN ME THROUGH PROTOCOLS FIRST.",
       "choice_tutorial_hint": "START TUTORIAL"
+    },
+    "misc": {
+      "hunker_bunker_tactical_command": "HUNKER BUNKER | TACTICAL COMMAND"
+    },
+    "global_skip_intro_btn": {
+      "skip_intro": "SKIP INTRO"
+    },
+    "loading": {
+      "aria_label_build_and_developer": "Build and developer information",
+      "system_build": "SYSTEM BUILD",
+      "dev_console": "DEV CONSOLE",
+      "initializing_systems": "INITIALIZING SYSTEMS"
+    },
+    "splash_steam_badge": {
+      "title_click_to_open": "Click to open Steam Overlay profile",
+      "aria_label_open_steam_profile": "Open Steam profile"
+    },
+    "splash": {
+      "tactical_command_v2_0": "TACTICAL COMMAND v2.0"
+    },
+    "title_profile_hud": {
+      "aria_label_current_operator_profile": "Current operator profile",
+      "active_operator_profile": "ACTIVE OPERATOR PROFILE"
+    },
+    "about": {
+      "aria_label_close_credits": "Close Credits",
+      "personnel_archive_production_credits": "◈ PERSONNEL ARCHIVE // PRODUCTION CREDITS",
+      "developed_by": "DEVELOPED BY",
+      "tuesday_cinema_club": "TUESDAY CINEMA CLUB",
+      "lead_design_programming": "LEAD DESIGN & PROGRAMMING",
+      "tuesday_cinema_club_team": "Tuesday Cinema Club Team",
+      "graphics_engine": "GRAPHICS ENGINE",
+      "sounds_music": "SOUNDS & MUSIC",
+      "tuesday_cinema_club_audio_collective": "Tuesday Cinema Club Audio Collective",
+      "discord_community": "DISCORD COMMUNITY",
+      "join_discord_server": "JOIN DISCORD SERVER",
+      "project_repository": "PROJECT REPOSITORY",
+      "github_repository": "GITHUB REPOSITORY",
+      "special_thanks": "SPECIAL THANKS",
+      "our_amazing_community_players": "Our Amazing Community & Players",
+      "thank_you_for_deploying": "THANK YOU FOR DEPLOYING"
+    },
+    "hero_detail": {
+      "field_loadout": "FIELD LOADOUT"
+    },
+    "archive": {
+      "bunker_archive": "◈ BUNKER ARCHIVE",
+      "recovered_kicker": "ARCHIVE SIMULATION RECOVERED",
+      "in_progress": "IN PROGRESS",
+      "ready": "READY",
+      "best_score": "◈ BEST: {score} PTS",
+      "rgb_title": "RGB: RIVERSIDE GLOBAL 'BOTICS"
+    },
+    "close_season_pass": {
+      "aria_label_close_tactical_dossier": "Close Tactical Dossier"
+    },
+    "season_pass": {
+      "sub_terran_sector_operations_beta": "◈ SUB-TERRAN SECTOR OPERATIONS // BETA SEASON 1",
+      "directives": "& DIRECTIVES"
+    },
+    "archive_log_detail": {
+      "aria_label_close_archive_log": "Close archive log",
+      "recovered_archive_record": "◈ RECOVERED ARCHIVE RECORD",
+      "decryption_complete_read_only": "DECRYPTION COMPLETE // READ-ONLY"
+    },
+    "close_codex": {
+      "aria_label_close_field_codex": "Close Field Codex"
+    },
+    "codex": {
+      "field_intel_discovered_specimens_lore": "◈ FIELD INTEL // DISCOVERED SPECIMENS & LORE",
+      "catalogued_by_sub_terran_encounter": "CATALOGUED BY SUB-TERRAN ENCOUNTER",
+      "intel_record_kicker": "❑ {category} INTEL RECORD",
+      "entries_recovered": "ENTRIES RECOVERED: {found} / {total}",
+      "endings_archive": "◈ EXPEDITION ENDINGS ARCHIVE // ALL 10 TRAJECTORIES & CODEX LINCHPINS",
+      "endings_sub": "Catalogues all ten historical outcomes, locked silhouettes, and the irreversible linchpin decisions responsible for closing specific pathways in your current deployment.",
+      "discovered": "DISCOVERED",
+      "locked_this_run": "LOCKED THIS RUN",
+      "undiscovered": "UNDISCOVERED",
+      "classified": "CLASSIFIED EXPEDITION TRAJECTORY",
+      "closed_by": "🔒 CLOSED BY EXPEDITION LINCHPIN:",
+      "view_record": "View intel record for {name}",
+      "click_hint": "CLICK TO VIEW INTEL DOSSIER & ARTWORK",
+      "uncatalogued": "??? — UNCATALOGUED",
+      "encounter_hint": "Encounter this in the field to recover its record."
+    },
+    "close_codex_detail": {
+      "aria_label_close_codex_entry": "Close codex entry"
+    },
+    "codex_detail": {
+      "entry_recovered_read_only_dossier": "ENTRY RECOVERED // READ-ONLY DOSSIER"
+    },
+    "close_achievements": {
+      "aria_label_close_achievements": "Close Achievements"
+    },
+    "achievements": {
+      "combat_citations_deep_crust_commendations": "◈ COMBAT CITATIONS // DEEP CRUST COMMENDATIONS",
+      "title_copy_a_portable": "Copy a portable save code",
+      "copy_save_code": "COPY SAVE CODE"
+    },
+    "close_steam_vault": {
+      "aria_label_close_steam_vault": "Close Steam Vault"
+    },
+    "steam_vault": {
+      "appid_4957040_secure_dispensary": "◈ APPID 4957040 // SECURE DISPENSARY",
+      "steam_inventory_manifest": "STEAM INVENTORY MANIFEST",
+      "verified": "VERIFIED",
+      "steam_secured": "🛡️ STEAM SECURED",
+      "100_disclosed_odds": "⚖️ 100% DISCLOSED ODDS",
+      "f2p_in_game_drops": "📦 F2P IN-GAME DROPS",
+      "deep_relic_caches": "DEEP RELIC CACHES",
+      "cache_keys": "CACHE KEYS",
+      "relic_key_dispensary": "RELIC KEY DISPENSARY",
+      "steam_wallet_direct": "STEAM WALLET DIRECT",
+      "open_in_steam": "OPEN IN STEAM ↗",
+      "relic_cache_decryptor": "RELIC CACHE DECRYPTOR",
+      "open_deep_relic_cache": "◈ OPEN DEEP RELIC CACHE",
+      "published_drop_rates": "PUBLISHED DROP RATES",
+      "100_disclosed": "100% DISCLOSED",
+      "trade_up_smelting": "🔥 TRADE-UP SMELTING",
+      "5_1_tier_upgrade": "⚖️ 5:1 TIER UPGRADE",
+      "permanent_merge": "◈ PERMANENT MERGE",
+      "5_same_tier_items": "5× SAME-TIER ITEMS",
+      "1_next_tier_item": "1× NEXT-TIER ITEM",
+      "deep_smelter": "DEEP SMELTER",
+      "consumes_5x_same_tier_items": "CONSUMES 5x SAME-TIER ITEMS",
+      "deep_core_shard_dispensary": "DEEP CORE SHARD DISPENSARY"
+    },
+    "vault_details": {
+      "view_in_steam_market": "VIEW IN STEAM MARKET"
+    },
+    "vault_reveal": {
+      "steam_relic_dispensary_appid_4957040": "◈ STEAM RELIC DISPENSARY // APPID 4957040",
+      "claim_to_inventory": "◈ CLAIM TO INVENTORY"
+    },
+    "operator_polish": {
+      "operator_polish": "◆ OPERATOR POLISH",
+      "16_bit_suit_tint_matrix": "16-BIT SUIT TINT MATRIX // LOCKED FINISHES REQUIRE FIELD MILESTONES"
+    },
+    "close_tactical_map": {
+      "aria_label_close_tactical_map": "Close Tactical Map"
+    },
+    "tactical_map": {
+      "tactical_blueprint_overlay": "◈ TACTICAL BLUEPRINT OVERLAY",
+      "grid_sector_01_exploration_active": "GRID SECTOR 01 // EXPLORATION ACTIVE",
+      "title_zoom_in": "Zoom In (+)",
+      "zoom_in": "ZOOM IN",
+      "title_zoom_out": "Zoom Out (-)",
+      "zoom_out": "ZOOM OUT",
+      "title_center_home_base": "Center Home Base (H)",
+      "home_base": "HOME BASE",
+      "title_center_operator_p": "Center Operator (P)",
+      "operator": "OPERATOR",
+      "title_reset_view_r": "Reset View (R)",
+      "reset": "RESET",
+      "title_debug_reveal_regional": "Debug: reveal regional route",
+      "reveal_all": "REVEAL ALL",
+      "blueprint_legend": "BLUEPRINT LEGEND",
+      "operator_position": "OPERATOR POSITION",
+      "discovered_room": "DISCOVERED ROOM",
+      "shrouded_fog_of_war": "SHROUDED FOG-OF-WAR",
+      "survivor_camp": "SURVIVOR CAMP",
+      "hive_site": "HIVE SITE",
+      "active_objective": "ACTIVE OBJECTIVE",
+      "explored_tiles": "EXPLORED TILES:",
+      "active_signals": "ACTIVE SIGNALS:",
+      "drag_wasd_l_stick_pan": "[DRAG / WASD / L-STICK] PAN",
+      "scroll_lb_rb_zoom": "[SCROLL / +/- / LB-RB] ZOOM",
+      "h_x_home_p_y": "[H / (X)] HOME [P / (Y)] OPERATOR",
+      "m_select_esc_close": "[M] / [SELECT] / [ESC] CLOSE"
+    },
+    "player_trade": {
+      "operative_link_field_barter": "OPERATIVE LINK // FIELD BARTER",
+      "link_active": "LINK ACTIVE",
+      "shells": "SHELLS",
+      "ammo": "AMMO",
+      "medkits": "MEDKITS",
+      "o2_filter": "O2 FILTER",
+      "shells_offered": "SHELLS OFFERED",
+      "ammo_offered": "AMMO OFFERED",
+      "medkits_offered": "MEDKITS OFFERED",
+      "o2_filters_offered": "O2 FILTERS OFFERED",
+      "cancel_link": "CANCEL LINK",
+      "confirm_transfer": "CONFIRM TRANSFER"
+    },
+    "close_player_trade": {
+      "aria_label_close_trade_link": "Close Trade Link"
+    },
+    "npc_dialogue": {
+      "affection_bond": "AFFECTION // BOND",
+      "press_1_4_or_click": "PRESS [1-4] OR CLICK CHOICE CARD • [ESC] WITHDRAW"
+    },
+    "close_npc_dialogue": {
+      "title_exit_dialogue": "Exit Dialogue"
+    },
+    "demo_end": {
+      "transmission_terminated": "◈ TRANSMISSION TERMINATED",
+      "you_belong_to_the_deep": "\"You belong to the deep now, little machine. The swarm remembers your call.\"",
+      "thank_you_for_playing_the": "Thank you for playing the Hunker Bunker demo.",
+      "the_mothership_uplink_has_been": "The mothership uplink has been severed, but the true threat still awaits. Wishlist the full game on Steam to continue your extraction in the deep vaults.",
+      "wishlist_on_steam": "◈ WISHLIST ON STEAM"
+    },
+    "demo_end_main_menu": {
+      "return_to_menu": "RETURN TO MENU"
+    },
+    "fabrication": {
+      "fabrication_bay": "◇ FABRICATION BAY",
+      "print_gear_from_salvage": "PRINT GEAR FROM SALVAGE",
+      "schematics_fabricated_0_8": "SCHEMATICS FABRICATED: 0 / 8"
+    },
+    "fab_roll": {
+      "insert_salvage_to_fabricate": "INSERT SALVAGE TO FABRICATE"
+    },
+    "ui": {
+      "exosuit_mark_iv_pressurized": "EXOSUIT // MARK-IV PRESSURIZED",
+      "bunker_level": "BUNKER LEVEL"
+    },
+    "campaign_day_indicator": {
+      "title_campaign_day_and": "Campaign day and local light cycle"
+    },
+    "hud_run_cards": {
+      "aria_label_active_run_pressure": "Active run pressure"
+    },
+    "desktop_compass": {
+      "title_click_or_press": "Click or press M to toggle Tactical Map",
+      "aria_label_tactical_compass_click": "Tactical Compass (Click to open map)",
+      "tactical_map": "TACTICAL MAP",
+      "map_m": "[MAP / M]",
+      "base": "BASE"
+    },
+    "hud_blueprint_canvas": {
+      "aria_label_explored_tactical_map": "Explored tactical map"
+    },
+    "extraction_progress_ring": {
+      "launch": "LAUNCH"
+    },
+    "desktop_compass_radar_row": {
+      "node": "NODE"
+    },
+    "weapon_status": {
+      "sidearm": "SIDEARM"
+    },
+    "ship_status": {
+      "ship_integrity": "SHIP INTEGRITY"
+    },
+    "vitals": {
+      "vitals": "VITALS",
+      "aria_label_health": "Health",
+      "cover": "COVER"
+    },
+    "queens_ledger_hud": {
+      "obedience_0_seats_1_4": "♛ OBEDIENCE 0 · SEATS 1/4 · VECTOR: UNSTABLE"
+    },
+    "radar_scan": {
+      "title_radar_scan_q": "Radar Scan [Q]",
+      "radar_scan": "RADAR SCAN"
+    },
+    "pickup_counter": {
+      "loot": "LOOT",
+      "total": "TOTAL"
+    },
+    "boss_status": {
+      "boss_threat": "BOSS THREAT"
+    },
+    "world_status": {
+      "tactical_feed": "TACTICAL FEED",
+      "units": "UNITS"
+    },
+    "game_over": {
+      "exosuit_failure": "EXOSUIT FAILURE",
+      "agent_lost_in_sector_9": "> AGENT LOST IN SECTOR 9. TELEMETRY RECOVERED.",
+      "mission_report": "MISSION REPORT",
+      "distance_covered": "DISTANCE COVERED",
+      "items_recovered": "ITEMS RECOVERED",
+      "o2_generator": "O₂ GENERATOR",
+      "threats_eliminated": "THREATS ELIMINATED",
+      "time_elapsed": "TIME ELAPSED",
+      "aria_label_expedition_earnings_and": "Expedition earnings and bank balances",
+      "score": "SCORE",
+      "pts": "PTS",
+      "world_seed": "WORLD SEED:",
+      "leaderboard_results": "◈ LEADERBOARD RESULTS",
+      "try_again": "TRY AGAIN"
+    },
+    "game_over_main_menu": {
+      "main_menu": "MAIN MENU"
+    },
+    "close_lore": {
+      "aria_label_close_log": "Close log"
+    },
+    "lore": {
+      "bunker_terminal_log_fragment": "BUNKER TERMINAL — LOG FRAGMENT",
+      "log_key": "LOG-{key}",
+      "text_unavailable": "[LOG TEXT UNAVAILABLE — RETURN TO BUNKER]",
+      "date": "DATE: {date}",
+      "loc": "LOC: {coords}",
+      "open_log": "Open recovered log {key}",
+      "recovered": "RECOVERED // OPEN RECORD",
+      "encrypted": "ENCRYPTED // LOCKED",
+      "summary": "LOGS RECOVERED: {found} / {total}"
+    },
+    "radio_sender_name": {
+      "mothership_command": "MOTHERSHIP COMMAND"
+    },
+    "radio_transmission_prompt": {
+      "online": "ONLINE"
+    },
+    "biome_hud_prompt": {
+      "zone": "ZONE"
+    },
+    "biome_hud_text": {
+      "entering_active_sector": "ENTERING ACTIVE SECTOR"
+    },
+    "lore_hud_prompt": {
+      "press_e": "PRESS E",
+      "read_log": "READ LOG"
+    },
+    "console_hud_prompt": {
+      "press_e": "PRESS E",
+      "access_base_shop": "ACCESS BASE SHOP"
+    },
+    "o2_generator_hud_prompt": {
+      "press_e": "PRESS E",
+      "upgrade_o2_generator": "UPGRADE O₂ GENERATOR"
+    },
+    "base_turret_hud_prompt": {
+      "press_e": "PRESS E",
+      "defense_turret_controls": "DEFENSE TURRET CONTROLS"
+    },
+    "foundry_hud_prompt": {
+      "press_e": "PRESS E",
+      "open_fab_bay": "OPEN FAB BAY"
+    },
+    "scientist_hud_prompt": {
+      "press_e": "PRESS E",
+      "talk_to_dr_okonkwo_vass": "TALK TO DR. OKONKWO-VASS"
+    },
+    "mayor_tina_hud_prompt": {
+      "press_e": "PRESS E",
+      "talk_to_mayor_tina": "TALK TO MAYOR TINA"
+    },
+    "black_box_hud_prompt": {
+      "press_e": "PRESS E",
+      "recover_black_box": "RECOVER BLACK BOX"
+    },
+    "hole_hud_prompt": {
+      "press_e": "PRESS E",
+      "fill_hole": "FILL HOLE"
+    },
+    "mouse_look_prompt": {
+      "click": "CLICK",
+      "to_look_around": "TO LOOK AROUND"
+    },
+    "telemeter_integrity": {
+      "integrity": "INTEGRITY:"
+    },
+    "console_terminal": {
+      "bunker_tactical_terminal": "BUNKER TACTICAL TERMINAL",
+      "time_of_day": "TIME OF DAY",
+      "survived": "SURVIVED",
+      "base_system": "◇ BASE SYSTEM",
+      "class_skills": "◇ CLASS SKILLS",
+      "objective_night_log": "◇ OBJECTIVE / NIGHT LOG",
+      "field_medkit": "FIELD MEDKIT",
+      "med_conversion": "MED CONVERSION",
+      "convert_10_med_1_heart": "CONVERT 10 MED → ♥ 1 HEART RESTORED",
+      "convert_10_med": "CONVERT 10 MED → ♥",
+      "optional_field_opportunity": "OPTIONAL FIELD OPPORTUNITY",
+      "o2_generator_module": "O₂ GENERATOR MODULE",
+      "field_stabilizer": "FIELD STABILIZER",
+      "repair_generator": "REPAIR GENERATOR",
+      "goal_2": "GOAL 2",
+      "hull_expansion_matrix": "HULL EXPANSION MATRIX",
+      "locked_repair_o2_generator_first": "LOCKED — REPAIR O₂ GENERATOR FIRST",
+      "reinforce_exterior_hull_increases_max": "Reinforce exterior hull. Increases max exosuit integrity to 4 hearts.",
+      "cost_50_tech_20_med": "COST: 50 TECH / 20 MED",
+      "locked": "LOCKED",
+      "goal_3": "GOAL 3",
+      "communication_radar_node": "COMMUNICATION RADAR NODE",
+      "locked_install_hull_matrix_first": "LOCKED — INSTALL HULL MATRIX FIRST",
+      "establish_long_range_tactical_feeds": "Establish long-range tactical feeds. Compass tracks nearest supply cache cluster.",
+      "cost_150_tech_30_coin": "COST: 150 TECH / 30 COIN",
+      "goal_4": "GOAL 4",
+      "reactor_compressor": "REACTOR COMPRESSOR",
+      "locked_install_radar_node_first": "LOCKED — INSTALL RADAR NODE FIRST",
+      "increase_generator_efficiency_o2_refill": "Increase generator efficiency. O₂ refill rate doubles. Drain rate slows 20%.",
+      "cost_300_tech_100_coin": "COST: 300 TECH / 100 COIN",
+      "expedition_day": "EXPEDITION DAY",
+      "cycle_phase": "CYCLE PHASE",
+      "local_light": "LOCAL LIGHT",
+      "next_transition": "NEXT TRANSITION",
+      "aria_label_objective_history": "Objective history",
+      "expedition_journal": "EXPEDITION JOURNAL",
+      "aria_label_optional_base_defense": "Optional base defense",
+      "defense_turret": "DEFENSE TURRET",
+      "optional_north_door_defense_repairing": "Optional north-door defense. Repairing life support does not build a turret.",
+      "bunker_tree_cross_linked_protocols": "BUNKER TREE // CROSS-LINKED PROTOCOLS"
+    },
+    "terminal_bank": {
+      "current_run_stats": "CURRENT RUN STATS",
+      "shells": "SHELLS",
+      "bank_total": "BANK TOTAL",
+      "hearts": "HEARTS",
+      "med": "MED",
+      "tech": "TECH",
+      "coin": "COIN",
+      "current_objective": "CURRENT OBJECTIVE",
+      "base_priority": "BASE PRIORITY"
+    },
+    "close_o2_generator": {
+      "aria_label_close_o2_generator": "Close O2 generator"
+    },
+    "o2_generator": {
+      "o2_generator_module": "O₂ GENERATOR MODULE",
+      "safe_field_output": "SAFE FIELD OUTPUT"
+    },
+    "close_base_turret": {
+      "aria_label_close_base_turret": "Close Base Turret controls"
+    },
+    "base_turret": {
+      "camp_defense_turret": "CAMP DEFENSE TURRET",
+      "turret_status": "TURRET STATUS"
+    },
+    "base_turret_modal_badge": {
+      "door_guard": "DOOR GUARD"
+    },
+    "elevator_choice": {
+      "elevator_arrival": "ELEVATOR ARRIVAL",
+      "extract_or_descend": "EXTRACT OR DESCEND",
+      "the_doors_are_open": "THE DOORS ARE OPEN",
+      "choice_required": "CHOICE REQUIRED",
+      "the_lift_can_carry_the": "The lift can carry the operator back to orbit or down into a deeper sector.",
+      "extract_up": "EXTRACT UP",
+      "descend_deeper": "DESCEND DEEPER"
+    },
+    "confirm": {
+      "critical_alert": "CRITICAL ALERT",
+      "abort_mission": "ABORT MISSION",
+      "cancel": "CANCEL"
+    },
+    "day_rest_warning": {
+      "the_night_will_close_doors": "THE NIGHT WILL CLOSE DOORS",
+      "sleep_anyway": "SLEEP ANYWAY",
+      "stay_awake": "STAY AWAKE"
+    },
+    "archive_sims": {
+      "archive_simulations": "ARCHIVE SIMULATIONS",
+      "rgb_riverside_global_botics": "RGB: RIVERSIDE GLOBAL 'BOTICS",
+      "launch_continued_run": "LAUNCH CONTINUED RUN"
+    },
+    "archive_sims_modal_close": {
+      "close": "CLOSE"
+    },
+    "reset_save_confirm": {
+      "reset_save_data": "RESET SAVE DATA",
+      "reset_save": "RESET SAVE",
+      "cancel": "CANCEL"
+    },
+    "quit_confirm": {
+      "quit_hunker_bunker": "QUIT HUNKER BUNKER",
+      "confirm_quit": "CONFIRM QUIT",
+      "cancel": "CANCEL"
+    },
+    "camp_choice": {
+      "aria_label_close_camp_decision": "Close camp decision",
+      "vessel_launch_manifest_forecast": "◇ VESSEL LAUNCH MANIFEST FORECAST ◇",
+      "irreversible_choice_strategic_record": "⚠ IRREVERSIBLE CHOICE // STRATEGIC RECORD ⚠",
+      "confirm_decision": "CONFIRM DECISION"
+    },
+    "song_interstitial_track": {
+      "track_00": "TRACK 00"
+    },
+    "song_interstitial_title": {
+      "signal_acquired": "SIGNAL ACQUIRED"
+    },
+    "game_viewport": {
+      "xl_18": "XL: 18",
+      "lg_06": "LG: 06",
+      "md_04": "MD: 04",
+      "sm_02_5": "SM: 02.5",
+      "xs_01_8": "XS: 01.8"
+    },
+    "save_data": {
+      "export_a_portable_save_code": "Export a portable save code or paste one below to restore progress. Importing overwrites current data on this device.",
+      "portable_save_code": "PORTABLE SAVE CODE",
+      "placeholder_export_or_paste": "EXPORT OR PASTE SAVE CODE",
+      "title_generate_and_copy": "Generate and copy a portable save code",
+      "title_restore_progress_from": "Restore progress from the pasted save code"
+    },
+    "crosshair_color": {
+      "aria_label_close_crosshair_color": "Close crosshair color menu"
+    },
+    "audio_mixer": {
+      "master": "MASTER",
+      "music": "MUSIC",
+      "vfx": "VFX",
+      "voice": "VOICE",
+      "character_voice_readouts": "CHARACTER VOICE READOUTS"
+    },
+    "controls": {
+      "steam_deck": "STEAM DECK:",
+      "desktop": "DESKTOP:"
+    },
+    "mothership_dialogue": {
+      "scout_link_encrypted": "SCOUT LINK [ENCRYPTED]"
+    },
+    "leader_conversation": {
+      "aria_label_leave_conversation": "Leave conversation",
+      "aria_label_speaker": "Speaker",
+      "leave": "LEAVE"
+    },
+    "snail_encounter": {
+      "vs": "VS",
+      "snail_hp": "SNAIL HP",
+      "resolve": "RESOLVE"
+    },
+    "multiplayer": {
+      "sub_surface_comms_combat_data": "◈ SUB-SURFACE COMMS // COMBAT DATA-LINK v2.1",
+      "solo": "SOLO",
+      "solo_operation": "SOLO OPERATION",
+      "1_operative_no_squad_no": "1 OPERATIVE // NO SQUAD, NO RIVALS",
+      "no_relay_required": "NO RELAY REQUIRED",
+      "full_salvage_claim": "FULL SALVAGE CLAIM",
+      "active_mode": "ACTIVE MODE",
+      "pve_squad": "PVE SQUAD",
+      "co_op_expedition": "CO-OP EXPEDITION",
+      "2_4_operatives_shared_salvage": "2-4 OPERATIVES // SHARED SALVAGE & REVIVAL",
+      "synced_telemetry": "SYNCED TELEMETRY",
+      "emergency_rescue": "EMERGENCY RESCUE",
+      "shared_o2_link": "SHARED O₂ LINK",
+      "select_mode": "SELECT MODE",
+      "pvp_duel": "PVP DUEL",
+      "pvp_sector_skirmish": "PVP SECTOR SKIRMISH",
+      "contested_bunker_high_tier_drops": "CONTESTED BUNKER // HIGH-TIER DROPS",
+      "contested_corridors": "CONTESTED CORRIDORS",
+      "full_loot_claim": "FULL LOOT CLAIM",
+      "rival_bounties": "RIVAL BOUNTIES",
+      "mission_objective": "MISSION OBJECTIVE:",
+      "sector_frequency_uplink": "SECTOR FREQUENCY & UPLINK",
+      "ch_07": "CH-07",
+      "sector_room_code": "SECTOR ROOM CODE",
+      "title_copy_sector_frequency": "Copy Sector Frequency",
+      "title_invite_a_steam": "Invite a Steam Friend",
+      "lobby_access": "LOBBY ACCESS",
+      "private_invite_only": "PRIVATE (INVITE-ONLY)",
+      "placeholder_optional_password": "OPTIONAL PASSWORD",
+      "network_relay_backend": "NETWORK RELAY BACKEND",
+      "encryption": "ENCRYPTION:",
+      "aes_256_shared_seed": "AES-256 / SHARED SEED",
+      "sync_rate": "SYNC RATE:",
+      "60_hz_state_lock": "60 HZ STATE LOCK",
+      "sector_map": "SECTOR MAP:",
+      "procedural_radial_ring": "PROCEDURAL RADIAL RING",
+      "crash_sites": "CRASH SITES:",
+      "synchronized_split_drop": "SYNCHRONIZED SPLIT-DROP",
+      "public_steam_lobbies": "PUBLIC STEAM LOBBIES",
+      "title_refresh_public_lobbies": "Refresh Public Lobbies",
+      "no_public_lobbies_found_yet": "No public lobbies found yet.",
+      "squad_manifest": "SQUAD MANIFEST",
+      "max_4": "MAX: 4",
+      "operative_callsign": "OPERATIVE CALLSIGN",
+      "chassis_frame": "CHASSIS FRAME",
+      "latency": "LATENCY",
+      "status": "STATUS",
+      "esc": "ESC",
+      "click": "CLICK",
+      "host": "HOST",
+      "back_to_armory": "← BACK TO ARMORY"
+    },
+    "close_multiplayer": {
+      "aria_label_close_tactical_net": "Close Tactical Net"
+    },
+    "mature_content_audit": {
+      "steam_mature_content_reviewer_audit": "STEAM MATURE CONTENT & REVIEWER AUDIT",
+      "f9_shortcut_compliance_verification_suite": "F9 SHORTCUT // COMPLIANCE VERIFICATION SUITE"
+    },
+    "close_mature_audit": {
+      "aria_label_close_audit_suite": "Close audit suite"
+    },
+    "progression_walkthrough": {
+      "gameplay_progression_walkthrough": "GAMEPLAY PROGRESSION WALKTHROUGH",
+      "f10_shortcut_dev_only_qa": "F10 SHORTCUT // DEV-ONLY QA TOOL"
+    },
+    "close_progression_walkthrough": {
+      "aria_label_close_progression_walkthrough": "Close progression walkthrough"
+    },
+    "select_picker": {
+      "aria_label_close_option_picker": "Close option picker"
+    },
+    "virtual_keyboard": {
+      "aria_label_close_on_screen": "Close on-screen keyboard",
+      "back": "⌫ BACK",
+      "space": "SPACE",
+      "done": "✓ DONE"
+    },
+    "leaderboard": {
+      "no_ranks": "NO RANKS AVAILABLE",
+      "anonymous_agent": "Agent"
+    },
+    "interstitial": {
+      "track": "TRACK {id}"
+    },
+    "manifest": {
+      "title": "RETURN MANIFEST",
+      "extracted": "EXTRACTED",
+      "bank_secured": "BANK SECURED",
+      "col_resource": "RESOURCE",
+      "col_earned": "EARNED",
+      "col_spent": "SPENT",
+      "col_bank_now": "BANK NOW",
+      "consolidated": "Expedition earnings consolidated with bunker reserve.",
+      "receipt_unavailable": "Run receipt unavailable. Your saved bank is shown.",
+      "ready_next": "Ready for next deployment.",
+      "preserved_on_failure": "Bank assets preserved on failure.",
+      "dossier": "DOSSIER",
+      "pending": "{count} PENDING",
+      "synced": "SYNCED ✓"
+    },
+    "wanderer": {
+      "survivor_named": "Survivor: {name}",
+      "close": "Close survivor conversation",
+      "wanderer": "WANDERER",
+      "recruit": "RECRUIT COMPANION",
+      "decline": "DECLINE ALLIANCE — BANK {supplies}",
+      "supplies": "SUPPLIES",
+      "transmission": "[ SURVIVOR TRANSMISSION ]",
+      "quote": "\"{text}\""
+    },
+    "vault": {
+      "item_acquired": "STEAM ITEM ACQUIRED",
+      "item_unlocked": "STEAM ITEM UNLOCKED: {names}",
+      "operator": "OPERATOR",
+      "steam_connected": "STEAM CONNECTED",
+      "online": "ONLINE",
+      "dev_mode": "DEV MODE",
+      "dev_fallback": "DEV FALLBACK",
+      "local_operator": "LOCAL OPERATOR",
+      "local_beta": "LOCAL BETA — BROWSER SAVE",
+      "local": "LOCAL",
+      "trading_external": "Trading is handled externally through Steam.",
+      "tradable": "TRADABLE",
+      "non_tradable": "NON-TRADABLE",
+      "market_external": "Market actions are handled externally through Steam.",
+      "marketable_offline": "MARKETABLE (OFFLINE)",
+      "market_route_unavailable": "Market eligibility route unavailable or rejected.",
+      "marketable": "MARKETABLE",
+      "non_marketable": "NON-MARKETABLE",
+      "ownership_verified": "STEAM OWNERSHIP VERIFIED{quantity}",
+      "wallet_direct": "STEAM WALLET DIRECT",
+      "store_offline": "STEAM ITEM STORE OFFLINE",
+      "purchases_offline": "Steam Store purchases are offline for this build.",
+      "qa_grant": "Synthetic QA grant: +{count} non-tradable Relic Key(s). No purchase was initiated.",
+      "purchases_disabled": "Purchases are disabled in this beta. Use Armory QA GRANT TEST KIT for non-tradable test items.",
+      "key_and_cache_required": "Key & Cache required for decryption.",
+      "decrypting": "DECRYPTING RELIC CACHE",
+      "spinning_cipher": "SPINNING CIPHER MATRIX...",
+      "decryption_complete": "DECRYPTION COMPLETE",
+      "item_secured": "ITEM SECURED & PERSISTED TO STEAM",
+      "rarity_reward": "★ {rarity} REWARD ★",
+      "purchase": "PURCHASE",
+      "redeem": "REDEEM",
+      "purchase_failed_reason": "Purchase failed: {reason}.",
+      "purchase_failed_bank": "Purchase failed: bank spend rejected.",
+      "purchased_ingot": "Purchased {quantity}x Cryo-Alloy Ingot for {cost} Tech!",
+      "smelt_failed": "Smelt failed: {reason}.",
+      "smelted": "Smelted 5x {rarity} → {reward}!",
+      "redeem_failed": "Redeem failed: {reason}.",
+      "redeemed": "Redeemed {cost} Shards for {reward}!",
+      "cache_unlocked": "Cache unlocked: {count} rewards secured.",
+      "cache_opened": "Cache bundle opened.",
+      "cache_partial": "Cache exchange completed with a partial Steam grant.",
+      "cache_failed": "Cache open failed — check your connection and try again."
+    },
+    "lobby": {
+      "connecting": "CONNECTING...",
+      "not_all_ready": "NOT ALL OPERATIVES READY",
+      "steam_auth_required": "STEAM AUTH REQUIRED",
+      "join": "JOIN",
+      "starting_in": "STARTING IN {seconds}...",
+      "copied": "COPIED!",
+      "relay_active": "ONLINE // RELAY ACTIVE",
+      "relay_unreachable": "LOCAL // RELAY UNREACHABLE",
+      "standby_offline": "STANDBY // OFFLINE",
+      "disconnect": "DISCONNECT",
+      "no_operatives": "NO OPERATIVES IN SECTOR",
+      "broadcasting": "BROADCASTING DISTRESS FREQUENCY ON SECTOR CHANNEL...",
+      "ready_up": "READY UP",
+      "mark_ready": "Mark this operative ready",
+      "ready_done": "READY ✓",
+      "waiting_host": "Waiting for the host. Click to cancel readiness.",
+      "squad_ready": "SQUAD {ready}/{total} READY",
+      "waiting_squad": "Waiting for the squad. Click to cancel readiness.",
+      "start_squad": "START SQUAD",
+      "all_ready": "All operatives ready",
+      "deploy_solo": "DEPLOY SOLO",
+      "host_control_required": "HOST CONTROL REQUIRED",
+      "host_new_lobby": "HOST NEW LOBBY",
+      "start_match": "START MATCH"
+    },
+    "dossier": {
+      "title": "TACTICAL DOSSIER",
+      "promotion_signal": "◈ TACTICAL DOSSIER // PROMOTION SIGNAL",
+      "xp_confirmed": "XP THRESHOLD CONFIRMED",
+      "new_requisition": "NEW REQUISITION",
+      "claim_reward": "◈ CLAIM REWARD",
+      "continue": "◈ CONTINUE",
+      "reward_signal": "REWARD SIGNAL",
+      "quantity": "QUANTITY ×{qty}",
+      "tier_confirmed": "TIER {tier} // XP THRESHOLD CONFIRMED",
+      "view_reward": "VIEW REWARD",
+      "added_to_inventory": "ADDED TO INVENTORY",
+      "rank": "RANK {tier} / {total}",
+      "expand": "EXPAND ▾",
+      "directives": "DIRECTIVES:",
+      "settlement": "SETTLEMENT:",
+      "expiration": "EXPIRATION:",
+      "common_fragments": "COMMON FRAGMENTS",
+      "rare_fragments": "RARE FRAGMENTS",
+      "allowance": "ALLOWANCE: MAX 8 (1/WEEK)",
+      "equipped": "Equipped ✓",
+      "retry": "Retry",
+      "level_reached": "LEVEL {level} REACHED",
+      "track_label": "{track} TRACK",
+      "settlement_auto": "AUTO-RETAINED",
+      "expiration_permanent": "PERMANENT",
+      "tab_tiers": "Dossier",
+      "tab_bounties": "Directives",
+      "tab_workshop": "Fragment Workshop"
+    },
+    "prompt": {
+      "access_base_shop": "ACCESS {type} BASE SHOP",
+      "upgrade_o2": "UPGRADE O₂ GENERATOR",
+      "turret_controls": "DEFENSE TURRET CONTROLS",
+      "blast_locked": "BLAST THRESHOLD LOCKED — {lock}",
+      "press_key": "PRESS {key}",
+      "tap": "TAP",
+      "read_log": "READ LOG",
+      "defeat_guard": "DEFEAT GUARD TO UNLOCK BLACK BOX",
+      "recover_black_box": "RECOVER BLACK BOX",
+      "recover_final": "RECOVER FINAL COMPONENT",
+      "interact": "INTERACT"
+    },
+    "telemeter": {
+      "passive_scan": "SURFACE SCAN // PASSIVE",
+      "sector": "SECTOR",
+      "explored_corridor": "EXPLORED CORRIDOR",
+      "coords": "[X: {x}, Z: {z}]",
+      "biome_tier": "BIOME: {biome} // TIER {tier}",
+      "stable": "STABLE",
+      "occluded": "OCCLUDED",
+      "dist": "DIST: {meters}m"
+    },
+    "console": {
+      "online": "ONLINE",
+      "ready_deficit": "READY — RESOURCE DEFICIT",
+      "ready_permitted": "READY — BUILD PERMITTED",
+      "resolved": "RESOLVED",
+      "choice_required": "CHOICE REQUIRED",
+      "event_resolved": "TERMINAL EVENT RESOLVED. SHOP SYSTEMS REMAIN AVAILABLE.",
+      "engineer_verify": "ENGINEER VERIFY",
+      "mimic_neutralized": "WARNING: TERMINAL SIGNATURE FORGED — MIMIC NEUTRALIZED. SAFE TO PROCEED."
+    },
+    "journal": {
+      "day_time": "D{day} {minute}:{second}"
+    },
+    "bank": {
+      "deposit_ready": "DEPOSIT READY. RESOURCE TRANSFER CHANNEL OPEN.",
+      "deposit_to_fund": "DEPOSIT RESOURCES TO FUND O₂ REPAIRS.",
+      "hp_full": "HP FULL",
+      "conversions_available": "×{count} AVAILABLE",
+      "integrity_full": "EXOSUIT INTEGRITY IS FULL. NO CONVERSION NEEDED.",
+      "next_cost_none": "NEXT COST: NONE",
+      "generator_maxed": "O₂ GENERATOR OUTPUT IS MAXED FOR THIS EXOSUIT BAY.",
+      "repair_to_create_zone": "REPAIR THIS MODULE TO CREATE A SAFE O₂ ZONE NEAR YOUR SHIP.",
+      "upgrades_expand_field": "UPGRADES EXPAND THE BLUE O₂ FIELD SO YOU CAN REFILL FROM FURTHER OUT."
+    },
+    "skills": {
+      "completed": "COMPLETED",
+      "upgrade": "UPGRADE",
+      "unlock": "UNLOCK"
+    },
+    "turret": {
+      "built_north_door": "BUILT — CONTROLS AT NORTH DOOR",
+      "build_cost": "BUILD COST: {cost}",
+      "built": "TURRET BUILT",
+      "build": "BUILD DEFENSE TURRET",
+      "requires_o2": "REQUIRES O₂ REPAIR",
+      "build_not_saved": "BUILD NOT SAVED — NO RESOURCES SPENT. FREE SAVE SPACE AND RETRY.",
+      "level_hp": "LVL {level} // HP {hp}/{maxHp}",
+      "stats": "DAMAGE: {damage} | RANGE: {range}u | RATE: {rate}s",
+      "next_upgrade_cost": "NEXT UPGRADE COST: {cost}",
+      "max_level": "NEXT UPGRADE COST: MAX LEVEL REACHED",
+      "repair_cost": "REPAIR COST: {cost}",
+      "repair_full_hp": "REPAIR COST: FULL HP"
+    },
+    "boss": {
+      "cybershell_titan": "CYBER-SHELL TITAN",
+      "cryo_goliath": "CRYO-GOLIATH SNAIL",
+      "plagueshell_behemoth": "PLAGUE-SHELL BEHEMOTH",
+      "corrupted_scout": "CORRUPTED SCOUT: MARTHA",
+      "corrupted_tank": "CORRUPTED TANK: BRIGGS",
+      "corrupted_engineer": "CORRUPTED ENGINEER: KAELEN",
+      "queen": "THE QUEEN",
+      "elite_threat": "ELITE THREAT"
+    },
+    "rgb": {
+      "wave": "WAVE {n}",
+      "undiscovered_path": "??? UNDISCOVERED PATH ???",
+      "explore_to_reveal": "Explore alternative choices in another run to reveal.",
+      "chapter_of": "CHAPTER {n} OF {total}",
+      "settings": "Settings",
+      "path_count": "PATH {n}",
+      "open_path_history": "Open path history and recap",
+      "available_actions": "Available actions",
+      "continue": "CONTINUE",
+      "hint_of": "HINT {n} OF {total}",
+      "no_more_hints": "No further hints for this chapter.",
+      "take": "TAKE",
+      "return_to_scene": "RETURN TO SCENE",
+      "inventory": "INVENTORY",
+      "nothing_carried": "Nothing carried yet.",
+      "your_path": "YOUR PATH",
+      "current_objective": "Current objective — {goal}",
+      "decisions_changed": "DECISIONS THAT CHANGED THIS RUN",
+      "evidence_preserved": "EVIDENCE PRESERVED",
+      "branch_tree": "NARRATIVE BRANCH TREE & UNLOCKED PATHS",
+      "paused": "PAUSED",
+      "resume": "RESUME",
+      "settings_caps": "SETTINGS",
+      "exit_simulation": "EXIT SIMULATION",
+      "retry_rescue": "RETRY RESCUE",
+      "load_chapter": "LOAD CHAPTER",
+      "flowchart": "FLOWCHART",
+      "retry": "RETRY"
+    },
+    "cinematic": {
+      "restoring": "ARCHIVE CINEMATIC // RESTORING SIGNAL",
+      "advances": "The archive advances to the next reconstructed scene.",
+      "skip_hint": "PRESS ANY BUTTON / KEY TO SKIP",
+      "skip_any": "PRESS ANY BUTTON / KEY TO SKIP",
+      "skip_space": "PRESS SPACE / ENTER TO SKIP",
+      "continue_any": "PRESS ANY BUTTON / KEY TO CONTINUE"
+    },
+    "profile": {
+      "longest": "LONGEST {time}",
+      "deaths": "DEATHS {count}",
+      "depth": "DEPTH {depth}",
+      "class_best": "CLASS BEST {score}"
+    },
+    "hud": {
+      "ammo_cache": "CACHE {current}/{max}",
+      "current_biome": "CURRENT BIOME {biome}",
+      "equipped": "EQUIPPED"
+    },
+    "commentary": {
+      "kicker": "DEVELOPER COMMENTARY"
+    },
+    "radio": {
+      "online": "ONLINE",
+      "squad_manifest": "SQUAD MANIFEST",
+      "commander_tag": "TACTICAL COMMS // 72.4 MHz CYRILLIC",
+      "aura_tag": "NEURAL COMM LINK // AURA-7 UNIT",
+      "commander_name": "Soviet Sub-Commander",
+      "aura_name": "Synthesized AI 'AURA'",
+      "commander_title": "SOVIET SUB-COMMANDER",
+      "aura_title": "SYNTHESIZED AI 'AURA'"
+    },
+    "go": {
+      "generator_level": "LVL {level}",
+      "offline": "OFFLINE",
+      "none": "NONE",
+      "extraction_complete": "EXTRACTION COMPLETE",
+      "exosuit_failure": "EXOSUIT FAILURE",
+      "logs_recovered": "LOGS RECOVERED: {found}/{total}",
+      "survivor_camps": "Survivor Camps",
+      "alien_hives": "Alien Hives",
+      "obedience": "Obedience:",
+      "seats_filled": "Seats Filled:",
+      "humanity": "Humanity:"
+    },
+    "ach": {
+      "unlocked_kicker": "ACHIEVEMENT UNLOCKED",
+      "hidden": "Hidden record. Unlock to reveal.",
+      "coming_soon": "COMING SOON",
+      "unlocked": "UNLOCKED"
+    },
+    "save": {
+      "code_unavailable": "SAVE CODE UNAVAILABLE"
+    },
+    "objective": {
+      "blocked": "BLOCKED",
+      "next": "NEXT OBJECTIVE",
+      "also_tracking": "ALSO TRACKING",
+      "eliminate": "ELIMINATE: {count}/{target}"
+    },
+    "loader": {
+      "deployment_telemetry": "MOTHERSHIP DEPLOYMENT TELEMETRY",
+      "init_failed": "SYSTEM INITIALIZATION FAILED"
+    },
+    "alert": {
+      "tactical": "TACTICAL ALERT",
+      "critical": "CRITICAL"
+    },
+    "trade": {
+      "squadmate": "SQUADMATE",
+      "awaiting_offer": "AWAITING OFFER SELECTION",
+      "waiting_squadmate": "WAITING FOR SQUADMATE..."
+    },
+    "bond": {
+      "enamored": "ENAMORED / DEVOTED",
+      "warm": "WARM / ATTRACTION",
+      "attentive": "ATTENTIVE"
+    },
+    "fab": {
+      "scatter_repeater": "SCATTER REPEATER",
+      "equipped_next_run": "EQUIPPED FOR NEXT RUN ✓",
+      "equip_scatter": "EQUIP SCATTER REPEATER",
+      "printing": "PRINTING…",
+      "save_pending": "SAVE PENDING — REOPEN FAB BAY TO RECOVER",
+      "foundry_required": "FOUNDRY LINK REQUIRED",
+      "activate_bay": "ACTIVATE FABRICATION BAY",
+      "bring_online": "Bring the in-world Foundry online before printing schematics.",
+      "activate_foundry": "ACTIVATE FOUNDRY",
+      "common": "COMMON",
+      "ready_to_apply": "✓ READY TO APPLY",
+      "choose_bay": "CHOOSE BAY A OR B",
+      "apply_failed": "APPLY FAILED",
+      "equipped_current": "✓ EQUIPPED IN CURRENT RUN",
+      "mounted_current": "✓ MOUNTED IN CURRENT RUN",
+      "active_in_bay": "✓ ACTIVE IN BAY {bay}",
+      "print_output": "PRINT THIS OUTPUT",
+      "fabricating": "FABRICATING…",
+      "bay_button": "◇ FAB BAY",
+      "open_bay": "+ OPEN FAB BAY"
+    },
+    "camp": {
+      "sleep_warning": "Sleeping at {camp} advances to day {day}. These unresolved signals will close.",
+      "this_camp": "this camp",
+      "unknown_signal": "UNKNOWN SIGNAL",
+      "path_closes": "This story path closes permanently.",
+      "threat": "Campaign threat {value}×",
+      "contact_kicker": "CONTACT {order} // {leader}",
+      "decision": "CAMP DECISION",
+      "permanent_choice": "Permanent choice: {choice} — {resolution}.",
+      "closes": " Closes: {locks}.",
+      "ending_locks_header": "⚠ PERMANENT EXPEDITION ENDING LOCKS:",
+      "finish_conversation": "FINISH CONVERSATION",
+      "continue": "CONTINUE",
+      "camp_conversation": "CAMP CONVERSATION",
+      "field_conversation": "FIELD CONVERSATION",
+      "callsign": "CALLSIGN {callsign}",
+      "listen_hint": "Listen, then decide how you want to help.",
+      "quote": "\"{text}\""
+    },
+    "title": {
+      "pregalien_command": "PREGALIEN | HIVE COMMAND",
+      "pregalien": "PREGALIEN"
     }
   },
   "narrative": {
@@ -450,164 +1427,99 @@
     },
     "directorAmbient": {
       "0": {
-        "text": "Movement logged. Facilities has dispatched a welcome committee to your position.",
-        "tags": {
-          "directorActions": {}
-        }
+        "text": "Hostile patrol dispatched to your position."
       },
       "1": {
-        "text": "Unauthorized exploration detected. Local lighting has been suspended.",
-        "tags": {
-          "directorActions": {}
-        }
+        "text": "Unauthorized exploration detected. Local lighting has been suspended."
       },
       "2": {
-        "text": "Your curiosity continues to exceed your clearance.",
-        "tags": {
-          "directorActions": {}
-        }
+        "text": "Your curiosity continues to exceed your clearance."
       },
       "3": {
-        "text": "Local illumination power has been rerouted.",
-        "tags": {
-          "directorActions": {}
-        }
+        "text": "Local illumination power has been rerouted."
       },
       "4": {
-        "text": "The structure notes your depth and disapproves.",
-        "tags": {
-          "directorActions": {}
-        }
+        "text": "The structure notes your depth and disapproves."
       },
       "5": {
-        "text": "Navigation telemetry is no longer considered authoritative.",
-        "tags": {
-          "directorActions": {}
-        }
+        "text": "Navigation telemetry is no longer considered authoritative."
       },
       "6": {
-        "text": "Productivity is being monitored. So are your vital signs.",
-        "tags": {
-          "directorActions": {}
-        }
+        "text": "Productivity is being monitored. So are your vital signs."
       },
       "7": {
-        "text": "A hostile maintenance team is converging on your location.",
-        "tags": {
-          "directorActions": {}
-        }
+        "text": "A hostile maintenance team is converging on your location."
       },
       "8": {
-        "text": "DE-DETECTION... unauthorized cur-curiosity remains logged.",
-        "tags": {
-          "directorActions": {}
-        }
+        "text": "DE-DETECTION... unauthorized cur-curiosity remains logged."
       },
       "9": {
-        "text": "WARNING: Sector breaker opened. Lights are... gone.",
-        "tags": {
-          "directorActions": {}
-        }
+        "text": "WARNING: Sector breaker opened. Lights are... gone."
       },
       "10": {
-        "text": "Department of containment reports... zero surviving staff.",
-        "tags": {
-          "directorActions": {}
-        }
+        "text": "Department of containment reports... zero surviving staff."
       },
       "11": {
-        "text": "NAV-NAVIGATION checksum failed. Compass output corrupted.",
-        "tags": {
-          "directorActions": {}
-        }
+        "text": "NAV-NAVIGATION checksum failed. Compass output corrupted."
       },
       "12": {
-        "text": "SYSTEM: Movement signatures converging. The structure... remembers you.",
-        "tags": {
-          "directorActions": {}
-        }
+        "text": "SYSTEM: Movement signatures converging. The structure... remembers you."
       },
       "13": {
-        "text": "The Director is a ghost in a machine. The Queen hears every step.",
-        "tags": {
-          "directorActions": {}
-        }
+        "text": "The Director is a ghost in a machine. The Queen hears every step."
       },
       "14": {
-        "text": "The column turns your compass away from the sky.",
-        "tags": {
-          "directorActions": {}
-        }
+        "text": "The column turns your compass away from the sky."
       },
       "15": {
-        "text": "The lights are gone. The dark is where the chitin grows.",
-        "tags": {
-          "directorActions": {}
-        }
+        "text": "The lights are gone. The dark is where the chitin grows."
       },
       "16": {
-        "text": "The structure sends its children to welcome your descent.",
-        "tags": {
-          "directorActions": {}
-        }
+        "text": "The structure sends its children to welcome your descent."
       }
     },
     "mothershipReactive": {
       "0": {
-        "text": "> MOTHERSHIP: AGENT — FIRST THREAT NEUTRALIZED. PROCEED.",
-        "tags": {}
+        "text": "> MOTHERSHIP: AGENT — FIRST THREAT NEUTRALIZED. PROCEED."
       },
       "1": {
-        "text": "> MOTHERSHIP: WARNING: CRYO SECTOR BOUNDARY CROSSED. THERMAL PROTOCOL ACTIVE.",
-        "tags": {}
+        "text": "> MOTHERSHIP: WARNING: CRYO SECTOR BOUNDARY CROSSED. THERMAL PROTOCOL ACTIVE."
       },
       "2": {
-        "text": "> MOTHERSHIP: ALERT: BIO-CONTAINMENT ZONE ENTERED. SUIT FILTERS AT LIMIT.",
-        "tags": {}
+        "text": "> MOTHERSHIP: ALERT: BIO-CONTAINMENT ZONE ENTERED. SUIT FILTERS AT LIMIT."
       },
       "3": {
-        "text": "> MOTHERSHIP: DISTRESS SIGNAL: VITAL SIGNS CRITICAL. EXTRACTION WINDOW OPEN EARLY.",
-        "tags": {}
+        "text": "> MOTHERSHIP: DISTRESS SIGNAL: VITAL SIGNS CRITICAL. EXTRACTION WINDOW OPEN EARLY."
       },
       "4": {
-        "text": "> MOTHERSHIP: UPLINK: OBJECTIVE CONFIRMED. MAX SHIP SYSTEMS REQUIRED FOR EXTRACTION.",
-        "tags": {}
+        "text": "> MOTHERSHIP: UPLINK: OBJECTIVE CONFIRMED. MAX SHIP SYSTEMS REQUIRED FOR EXTRACTION."
       },
       "5": {
-        "text": "> MOTHERSHIP: SALVAGE RECEIVED. BANK SECURE. CONTINUE OPERATIONS.",
-        "tags": {}
+        "text": "> MOTHERSHIP: SALVAGE RECEIVED. BANK SECURE. CONTINUE OPERATIONS."
       },
       "6": {
-        "text": "> MOTHERSHIP: AGENT — BUNKER DATA FRAGMENT RECOVERED. TRANSMITTING TO ARCHIVE.",
-        "tags": {}
+        "text": "> MOTHERSHIP: AGENT — BUNKER DATA FRAGMENT RECOVERED. TRANSMITTING TO ARCHIVE."
       },
       "7": {
-        "text": "> MOTHERSHIP: WARNING: AUTOMATED DEFENSE SYSTEM ACTIVE. RECOMMEND COVER.",
-        "tags": {}
+        "text": "> MOTHERSHIP: WARNING: AUTOMATED DEFENSE SYSTEM ACTIVE. RECOMMEND COVER."
       },
       "8": {
-        "text": "> MOTHERSHIP: ALERT: FAST-MOVING BIO-ENTITY DETECTED. MAINTAIN DISTANCE.",
-        "tags": {}
+        "text": "> MOTHERSHIP: ALERT: FAST-MOVING BIO-ENTITY DETECTED. MAINTAIN DISTANCE."
       },
       "9": {
-        "text": "> MOTHERSHIP: UPLINK: ARMORY CACHE LOCATED. HIGH-VALUE ASSET — EXPECT RESISTANCE.",
-        "tags": {}
+        "text": "> MOTHERSHIP: UPLINK: ARMORY CACHE LOCATED. HIGH-VALUE ASSET — EXPECT RESISTANCE."
       },
       "10": {
-        "text": "> MOTHERSHIP: WARNING: BIO-ENTITY NEST CONFIRMED. MAXIMUM THREAT DENSITY. CAUTION.",
-        "tags": {}
+        "text": "> MOTHERSHIP: WARNING: BIO-ENTITY NEST CONFIRMED. MAXIMUM THREAT DENSITY. CAUTION."
       },
       "11": {
-        "text": "> MOTHERSHIP: NOTED: AGENT WEAPON OUTPUT RISING. ... WHY DO YOU NEED MORE.",
-        "tags": {}
+        "text": "> MOTHERSHIP: NOTED: AGENT WEAPON OUTPUT RISING. ... WHY DO YOU NEED MORE."
       },
       "12": {
-        "text": "> MOTHERSHIP: CONFIRMED KILL: APEX BIO-ENTITY DOWN. THE SIGNAL FELT THAT.",
-        "tags": {}
+        "text": "> MOTHERSHIP: CONFIRMED KILL: APEX BIO-ENTITY DOWN. THE SIGNAL FELT THAT."
       },
       "13": {
-        "text": "> MOTHERSHIP: [UNAUTHORIZED CHANNEL] ...0047 HAS STOPPED BUILDING. IT IS LISTENING TO YOU NOW.",
-        "tags": {}
+        "text": "> MOTHERSHIP: [UNAUTHORIZED CHANNEL] ...0047 HAS STOPPED BUILDING. IT IS LISTENING TO YOU NOW."
       }
     },
     "campQuests": {
@@ -1166,57 +2078,54 @@
         "blurb": "You left her under the ice with three seats still in your hand. Road now closed: the full brood. She was always going to cost more than she offered.",
         "name": "THE QUEEN, REFUSED"
       },
-      "25": {},
-      "26": {},
-      "27": {},
-      "28": {},
-      "29": {},
-      "30": {}
-    },
-    "loreMetadata": {
-      "A01": {},
-      "A02": {},
-      "A03": {},
-      "A04": {},
-      "A05": {},
-      "A06": {},
-      "A07": {},
-      "A08": {},
-      "A09": {},
-      "A10": {},
-      "A11": {},
-      "A12": {},
-      "A13": {},
-      "A14": {},
-      "C01": {},
-      "C02": {},
-      "C03": {},
-      "C04": {},
-      "C05": {},
-      "C06": {},
-      "C07": {},
-      "C08": {},
-      "C09": {},
-      "C10": {},
-      "C11": {},
-      "C12": {},
-      "B01": {},
-      "B02": {},
-      "B03": {},
-      "drop_horizon_badge": {},
-      "drop_dig_manifest": {},
-      "drop_security_log": {},
-      "drop_survey_probe": {},
-      "drop_meteor_core": {},
-      "drop_ration_ledger": {},
-      "drop_child_drawing": {},
-      "drop_dogtags": {},
-      "drop_resin_locket": {},
-      "drop_moult_shard": {},
-      "drop_first_bore_tag": {},
-      "drop_prayer_stone": {},
-      "drop_frozen_letter": {},
-      "drop_black_flask": {}
+      "25": {
+        "blurb": "You stood with Vesper's garrison. The trench shields held and the soldier's faith was rewarded. Roads now closed: the full brood, the scorched sky.",
+        "name": "COMMANDER BRIGGS, HONORED"
+      },
+      "26": {
+        "blurb": "You severed Vesper's supply lines and left the frontline to freeze. The garrison fell in silence. Road now closed: the clean break.",
+        "name": "COMMANDER BRIGGS, ABANDONED"
+      },
+      "27": {
+        "blurb": "Sister Martha's transmission lit every receiver in the ice. The lost hear hope, and the swarm hears prey. Road now closed: the mothership infection.",
+        "name": "THE SISTER'S BEACON, BROADCAST"
+      },
+      "28": {
+        "blurb": "You cut the cables and forced Tallow into quiet boots. Stealth was bought with civilian despair. Roads now closed: the clean break, the alien exodus.",
+        "name": "THE SISTER'S BEACON, SILENCED"
+      },
+      "29": {
+        "blurb": "Overseer Kaelen published the unaltered flight manifests. No corporate privileges survived. Roads now closed: the mothership infection, the carrier's bargain.",
+        "name": "THE FOUNDRY MANIFEST, DISCLOSED"
+      },
+      "30": {
+        "blurb": "The passenger manifest was altered behind locked bulkheads. Corporate lies outlive the colony. Road now closed: the clean break.",
+        "name": "THE FOUNDRY MANIFEST, FALSIFIED"
+      },
+      "31": {
+        "blurb": "Nahl's surgical extraction purged the spore from your blood. You walk as pure human once more. Roads now closed: the full brood, the mothership infection, the alien exodus.",
+        "name": "THE SUTURE HOST, CURED"
+      },
+      "32": {
+        "blurb": "You allowed the hive spore to graft into your marrow. You are carrier and vessel in one flesh. Road now closed: the clean break.",
+        "name": "THE SUTURE HOST, EMBRACED"
+      },
+      "33": {
+        "blurb": "You severed human radio frequencies to protect the hive's acoustic sanctuary. Camp communications shattered. Road now closed: the outed escape.",
+        "name": "THE RELAY CHORUS, JAMMED"
+      },
+      "34": {
+        "blurb": "Vey opened the neural synapse bridge between hive and human minds. Thoughts bleed across the spectrum. Road now closed: the clean break.",
+        "name": "THE RELAY CHORUS, BRIDGED"
+      },
+      "35": {
+        "blurb": "Rhun's chitin fortress pledged eternal defense to the Brood Mother. Human shuttles must pierce its bulk. Roads now closed: the alien exodus, the clean break.",
+        "name": "THE CARAPACE OATH, TO THE QUEEN"
+      },
+      "36": {
+        "blurb": "The living shield bound its vow to you, walking beside human survivors as guardian. Road now closed: the full brood.",
+        "name": "THE CARAPACE OATH, TO THE OPERATOR"
+      }
     },
     "loreClassLogs": {
       "SCOUT": "SCOUT DEPLOYMENT BRIEF: HULL PAYLOAD — TRACKING BEACON. TARGET LOCKED ON SPECIMEN 0047. IF YOU READ THIS, THE BEACON IS ALIVE AND TRANSMITTING. IT IS THE REASON 0047 IS LISTENING TO YOU NOW. YOU CANNOT HIDE.",
@@ -1226,17 +2135,14 @@
     "classWreckageLogs": {
       "SCOUT": {
         "title": "SCOUT ALPHA WRECKAGE",
-        "coords": {},
         "payload": "SCOUT DEPLOYMENT BRIEF: HULL PAYLOAD — TRACKING BEACON. TARGET LOCKED ON SPECIMEN 0047. IF YOU READ THIS, THE BEACON IS ALIVE AND TRANSMITTING. IT IS THE REASON 0047 IS LISTENING TO YOU NOW. YOU CANNOT HIDE."
       },
       "ENGINEER": {
         "title": "BRAVO ENGINEER WRECKAGE",
-        "coords": {},
         "payload": "ENGINEER DEPLOYMENT BRIEF: HULL PAYLOAD — NEURAL FILAMENT UPLINK RELAY. BROADCAST BANDWIDTH SECURED FOR SWARM-INTEGRATED TRANSITIONS. IF THE RELAY IS SEVERED, THE SYSTEM RECONVERGES LOCAL POWER AROUND THE SUIT."
       },
       "TANK": {
         "title": "CHARLIE TANK WRECKAGE",
-        "coords": {},
         "payload": "TANK DEPLOYMENT BRIEF: HULL PAYLOAD — HEAVY COMBAT WEAPON ORGANS. DESIGNED TO STABILIZE BIO-STRUCTURAL IMPACTS AT THE QUEEN'S THRONE. USE THE FORCE-FIELDS OF THIS CHASSIS TO ABSORB THE HIVE DEFENSES."
       }
     },
@@ -1340,6 +2246,674 @@
           }
         },
         "title": "UNCLAIMED ASSET LOCKER"
+      }
+    },
+    "communitySkins": {
+      "0": {
+        "actionLabel": "Acknowledging",
+        "desc": "Battle-hardened, loyal reconnaissance scout in tactical fatigues.",
+        "name": "Scout: Foxhole Shadow",
+        "theme": "Foxhole Buddies"
+      },
+      "1": {
+        "actionLabel": "Catwalk Walking",
+        "desc": "Stylish and fearless void-drifter in neon street gear.",
+        "name": "Scout: Space ABG",
+        "theme": "ABG Trippers"
+      },
+      "2": {
+        "actionLabel": "Female Walk",
+        "desc": "Cynical, razor-sharp corporate infiltrator in high-tech trench wear.",
+        "name": "Scout: Corpo Shadow Runner",
+        "theme": "Corpo Shadows"
+      },
+      "3": {
+        "actionLabel": "Hanging Idle",
+        "desc": "Giger-esque biomechanical scout with ribbed obsidian carapace.",
+        "name": "Scout: Xeno-Stalker",
+        "theme": "Biomechanical"
+      },
+      "4": {
+        "actionLabel": "Injured Walk Backwards",
+        "desc": "Hydrodynamic zero-gravity tactical swimwear with LED conduits.",
+        "name": "Scout: Zero-G Swimsuit",
+        "theme": "Space Swim"
+      },
+      "5": {
+        "actionLabel": "Joyful Jump",
+        "desc": "Corrupted hive-symbiote scout glowing with toxic spore bioluminescence.",
+        "name": "Scout: Toxic Apex Chrysalis",
+        "theme": "Toxic Chrysalis"
+      },
+      "6": {
+        "actionLabel": "Salute",
+        "desc": "Predatory alien-humanoid hybrid in pearlescent bone armor.",
+        "name": "Scout: Species Sil",
+        "theme": "Species Chrysalis"
+      },
+      "7": {
+        "actionLabel": "Surprised",
+        "desc": "Regal crystalline hybrid scout with bio-luminescent tendrils.",
+        "name": "Scout: Apex Chrysalis",
+        "theme": "Species Chrysalis"
+      },
+      "8": {
+        "actionLabel": "Using A Fax Machine",
+        "desc": "Pink-haired space-punk hacker scout with an anarchist attitude.",
+        "name": "Scout: Soft Manic Hacker GF",
+        "theme": "Manic Hacker GFs"
+      },
+      "9": {
+        "actionLabel": "Bartending",
+        "desc": "Heavyweight party vanguard equipped for high-impact bunker defense.",
+        "name": "Tank: Space ABG",
+        "theme": "ABG Trippers"
+      },
+      "10": {
+        "actionLabel": "Brutal Assassination",
+        "desc": "Curvy, heavily armored space-punk brawler who protects her squad fiercely.",
+        "name": "Tank: Protective Hacker GF",
+        "theme": "Manic Hacker GFs"
+      },
+      "11": {
+        "actionLabel": "Catwalk Walk HighKnees",
+        "desc": "Heavy metamorphic alien juggernaut in calcified chitin armor.",
+        "name": "Tank: Species Sil",
+        "theme": "Species Chrysalis"
+      },
+      "12": {
+        "actionLabel": "Dancing Twerk",
+        "desc": "Unapologetically regal starship crash survivor with sparking cybernetics.",
+        "name": "Tank: Crash Survivor Queen",
+        "theme": "Crash Survivors"
+      },
+      "13": {
+        "actionLabel": "Drunk Idle Variation",
+        "desc": "Imposing corporate director in a heavy draped overcoat and chrome limbs.",
+        "name": "Tank: Corpo Executive Warden",
+        "theme": "Corpo Shadows"
+      },
+      "14": {
+        "actionLabel": "Jump",
+        "desc": "Reinforced deep-sea zero-g dive suit with buoyancy ballast plates.",
+        "name": "Tank: Zero-G Heavy Diver",
+        "theme": "Space Swim"
+      },
+      "15": {
+        "actionLabel": "Jump Attack",
+        "desc": "Massive Giger-inspired armored bio-carapace fortress.",
+        "name": "Tank: Brood Matron",
+        "theme": "Biomechanical"
+      },
+      "16": {
+        "actionLabel": "Kick To The Groin",
+        "desc": "Tough, loyal Vasquez-coded frontline heavy ready for any trench brawl.",
+        "name": "Tank: Foxhole Shadow",
+        "theme": "Foxhole Buddies"
+      },
+      "17": {
+        "actionLabel": "Talking",
+        "desc": "Powerful deep-core survivor armored in salvaged spaceship hull plating.",
+        "name": "Tank: Afro Crash Survivor",
+        "theme": "Crash Survivors"
+      },
+      "18": {
+        "actionLabel": "Telling A Secret",
+        "desc": "Statuesque hybrid juggernaut with glowing amber vascular lines.",
+        "name": "Tank: Apex Chrysalis",
+        "theme": "Species Chrysalis"
+      },
+      "19": {
+        "actionLabel": "Walk Strafe Left",
+        "desc": "Toxic spore-infused heavy bio-carapace with corrosive acid vents.",
+        "name": "Tank: Toxic Apex Chrysalis",
+        "theme": "Toxic Chrysalis"
+      },
+      "20": {
+        "actionLabel": "Angry",
+        "desc": "Bio-plasma engineer mutated by deep-strata toxic spore hives.",
+        "name": "Engineer: Toxic Apex Chrysalis",
+        "theme": "Toxic Chrysalis"
+      },
+      "21": {
+        "actionLabel": "Burpee End",
+        "desc": "Futuristic gearhead technician rocking streetwear and holographic tools.",
+        "name": "Engineer: Space ABG",
+        "theme": "ABG Trippers"
+      },
+      "22": {
+        "actionLabel": "Crouch To Stand",
+        "desc": "Neural-hybrid constructor with living plasma conduits and tentacle cables.",
+        "name": "Engineer: Species Sil",
+        "theme": "Species Chrysalis"
+      },
+      "23": {
+        "actionLabel": "Drunk Walk",
+        "desc": "High-fashion tech-syndicate director with floating micro-drones.",
+        "name": "Engineer: Chief Architect",
+        "theme": "Corpo Shadows"
+      },
+      "24": {
+        "actionLabel": "Kettlebell Swing",
+        "desc": "Hyper-creative manic engineer with pink cyber-hair and custom plasma welders.",
+        "name": "Engineer: Soft Manic Architect GF",
+        "theme": "Manic Hacker GFs"
+      },
+      "25": {
+        "actionLabel": "Look Around",
+        "desc": "Ingenious starship survivor retrofitting wrecked engines into bunker tech.",
+        "name": "Engineer: Afro Crash Survivor",
+        "theme": "Crash Survivors"
+      },
+      "26": {
+        "actionLabel": "Orc Idle",
+        "desc": "Thermal-regulating swim gear with waterproof magnetic ballast clamps.",
+        "name": "Engineer: Zero-G Hydro-Rig",
+        "theme": "Space Swim"
+      },
+      "27": {
+        "actionLabel": "Sitting Angry",
+        "desc": "Grit-and-grease combat engineer who fixes rifts and turrets under fire.",
+        "name": "Engineer: Foxhole Shadow",
+        "theme": "Foxhole Buddies"
+      },
+      "28": {
+        "actionLabel": "Start Plank",
+        "desc": "Giger-inspired biomechanical constructor with spine-mounted bio-tools.",
+        "name": "Engineer: Neural Weaver",
+        "theme": "Biomechanical"
+      },
+      "29": {
+        "actionLabel": "Thankful",
+        "desc": "Bio-synthetic architect with crystalline thoracic power conduits.",
+        "name": "Engineer: Apex Chrysalis",
+        "theme": "Species Chrysalis"
+      }
+    },
+    "steamItems": {
+      "1000": {
+        "desc": "A shard of ancient subterranean machinery, used in basic crafting exchanges.",
+        "name": "Common Relic Fragment"
+      },
+      "1100": {
+        "desc": "An intact processor core from the deep vaults, used to craft elite cosmetics.",
+        "name": "Rare Relic Fragment"
+      },
+      "2000": {
+        "desc": "Awarded to operators who successfully extract using a Scout frame. Cosmetic equip.",
+        "name": "Scout Victory Patch"
+      },
+      "2001": {
+        "desc": "Awarded to operators who successfully extract using a Tank frame. Cosmetic equip.",
+        "name": "Tank Victory Patch"
+      },
+      "2002": {
+        "desc": "Awarded to operators who successfully extract using an Engineer frame. Cosmetic equip.",
+        "name": "Engineer Victory Patch"
+      },
+      "2003": {
+        "desc": "Awarded for defeating the Act 2 queen. Cosmetic equip.",
+        "name": "Queen Slayer Emblem"
+      },
+      "2004": {
+        "desc": "Awarded for recovering the full bunker archive. Cosmetic equip.",
+        "name": "Archivist Emblem"
+      },
+      "2100": {
+        "desc": "A high-performance weave finish for your exosuit. Cosmetic equip.",
+        "name": "Carbon Fiber Decal"
+      },
+      "2200": {
+        "desc": "Polished high-reflectivity chrome finish for the standard sidearm. Cosmetic equip.",
+        "name": "Chrome Plated Sidearm"
+      },
+      "4000": {
+        "desc": "A sealed drop container recovered from the bunker's deep archive. Requires a Cache Key to open. Odds are published on the store page before purchase.",
+        "name": "Deep Relic Cache"
+      },
+      "4001": {
+        "desc": "Opens a single Deep Relic Cache. Purchased through the Steam Item Store; never drops for free.",
+        "name": "Relic Decryption Key"
+      },
+      "4100": {
+        "desc": "Cryogenic frost-coated polymer chassis with cooling vents.",
+        "name": "Sub-Zero Frostbite Sidearm"
+      },
+      "4101": {
+        "desc": "High-visibility yellow/black industrial warning livery.",
+        "name": "Hazard Stripe SMG"
+      },
+      "4102": {
+        "desc": "Heavy tungsten barrel with heat-dissipating fluting.",
+        "name": "Tectonic Driller Shotgun"
+      },
+      "4103": {
+        "desc": "Superconducting cyan plasma coils wrapped around the Tesla-Lock's arc driver frame.",
+        "name": "Cryo-Plasma Arc Driver"
+      },
+      "4104": {
+        "desc": "Weathered bunker salvage with bio-luminescent bone inlays.",
+        "name": "Rust & Bone Trench Carbine"
+      },
+      "4105": {
+        "desc": "Polished volcanic glass receiver with Damascus steel accents.",
+        "name": "Obsidian Shard Sidearm"
+      },
+      "4106": {
+        "desc": "Biomechanical tank leaking pulsing green fungal spores.",
+        "name": "Biolume Spore Sprayer"
+      },
+      "4107": {
+        "desc": "Magma-infused reactor core pulsing with orange thermal energy.",
+        "name": "Deep Core Melter"
+      },
+      "4108": {
+        "desc": "Holographic animated circuit board flickering with error logs.",
+        "name": "Glitched Circuit Bolter"
+      },
+      "4109": {
+        "desc": "Dark matter emitter with purple gravitational event horizon.",
+        "name": "Void-Walker Beam Cannon"
+      },
+      "4110": {
+        "desc": "Living chitin alloy salvaged from the brood queen's crown.",
+        "name": "Queen's Carapace Carbine"
+      },
+      "4111": {
+        "desc": "Pure golden antimatter accelerator with solar particle trail.",
+        "name": "Solar Flare Antimatter Rifle"
+      },
+      "4112": {
+        "desc": "Reinforced heavy hazard plating and visor searchlight.",
+        "name": "Sub-Terran Drill Engineer"
+      },
+      "4113": {
+        "desc": "Thermal insulated white-camo pressurized stealth suit.",
+        "name": "Cryo-Vanguard Scout"
+      },
+      "4114": {
+        "desc": "Riveted blast-shield plate armor with gas respirator.",
+        "name": "Trench Warden Heavy"
+      },
+      "4115": {
+        "desc": "Stealth matte-black nano-weave with purple optic sensor.",
+        "name": "Void Commando Recon"
+      },
+      "4116": {
+        "desc": "Biomechanical syringe harness with pulsing fluid tubes. Chassis skins equip via LoadoutManager's single global suit slot (src/loadout.js `suit.chassisSkinId`, not per-class) — no class restriction needed, so the earlier 'Medic class' framing (there is no Medic class; roster is locked to Scout/Tank/Engineer per doc 07 §1) never actually blocked this item.",
+        "name": "Bio-Synthesizer Harness"
+      },
+      "4117": {
+        "desc": "Heavy hydraulic power-armor with glowing magma core.",
+        "name": "Dreadnought Exo-Juggernaut"
+      },
+      "4118": {
+        "desc": "Active-camo holographic shimmer with cybernetic visor.",
+        "name": "Cyber-Spectre Infiltrator"
+      },
+      "4119": {
+        "desc": "Mutated hybrid armor of living alien carapace and steel.",
+        "name": "Hive-Lord Symbiote Exosuit"
+      },
+      "4120": {
+        "desc": "Commemorative badge of the first subterranean expedition.",
+        "name": "Sub-Zero Pioneer Patch"
+      },
+      "4121": {
+        "desc": "Fluorescent radioactive warning emblem.",
+        "name": "Radiation Trefoil Emblem"
+      },
+      "4122": {
+        "desc": "Stylized shell crest awarded for deep nest purges.",
+        "name": "Sporesnail Hunter Crest"
+      },
+      "4123": {
+        "desc": "Memorial badge of the lost seismic surveyor division.",
+        "name": "Bunker 404 Lost Squad Decal"
+      },
+      "4124": {
+        "desc": "Holographic chrome skull with glowing cyan oculars.",
+        "name": "Cyber-Skull Tactical Pin"
+      },
+      "4125": {
+        "desc": "Mythic ice bird rising from subterranean permafrost.",
+        "name": "Cryo-Phoenix Insignia"
+      },
+      "4126": {
+        "desc": "Embossed gold seal celebrating brood queen termination.",
+        "name": "Queen Slayer Gold Seal"
+      },
+      "4127": {
+        "desc": "Orbital violet-thread sigil surrounding an obsidian event horizon.",
+        "name": "Void Horizon Sigil"
+      },
+      "4128": {
+        "desc": "Archaic alien hieroglyphs found in stratum zero.",
+        "name": "Ancient Core Glyphs"
+      },
+      "4129": {
+        "desc": "Gilded marshal eagle and amber core framed by a meteorite-alloy laurel.",
+        "name": "Grand Marshal Relic Crest"
+      },
+      "4130": {
+        "desc": "Tiny frosted core venting microscopic cold vapor.",
+        "name": "Mini Cryo-Core Charm"
+      },
+      "4131": {
+        "desc": "Engraved spent casing from the initial bunker breach.",
+        "name": "Spent 50-Cal Casing"
+      },
+      "4132": {
+        "desc": "Lustrous biological pearl recovered from a hive queen.",
+        "name": "Sporesnail Pearl"
+      },
+      "4133": {
+        "desc": "Retro tactical whistle dangling from a dog tag chain.",
+        "name": "Trench Whistle"
+      },
+      "4134": {
+        "desc": "Circuit chip with flickering miniature green LED readout.",
+        "name": "Glitched RAM Card"
+      },
+      "4135": {
+        "desc": "Needle spins wildly when pointing toward boss chambers.",
+        "name": "Geodetic Compass"
+      },
+      "4136": {
+        "desc": "Tiny articulated turret drone with moving search beam.",
+        "name": "Miniaturized Drone Bobble"
+      },
+      "4137": {
+        "desc": "Suspended glowing embryo reacting to weapon fire.",
+        "name": "Amber Bio-Flask"
+      },
+      "4138": {
+        "desc": "Miniature black hole with orbiting plasma particles.",
+        "name": "Dark Matter Micro-Singularity"
+      },
+      "4139": {
+        "desc": "Emits radiant gold god-rays and coin jingling audio.",
+        "name": "Golden Sub-Bunker Key"
+      },
+      "4140": {
+        "desc": "+8% Cryo Freeze Duration on elemental attacks.",
+        "name": "Cryo-Capacitor Overclock"
+      },
+      "4141": {
+        "desc": "+20% Scrap & Salvage Magnet Pull Radius.",
+        "name": "Magnetic Scavenger Coil"
+      },
+      "4142": {
+        "desc": "-12% Damage from Spore & Acid Gas Clouds.",
+        "name": "Bio-Hazard Filter Vent"
+      },
+      "4143": {
+        "desc": "+1 Piercing Penetration on kinetic weapon rounds.",
+        "name": "Kinetic Impact Bushing"
+      },
+      "4144": {
+        "desc": "+10% Faster Shield Recharge Rate after taking fire.",
+        "name": "Thermal Heat Exchanger"
+      },
+      "4145": {
+        "desc": "Pings hidden rooms & chests within 15m radius.",
+        "name": "Echo-Location Transceiver"
+      },
+      "4146": {
+        "desc": "+15% Movement Speed for 4s upon dropping below 25% HP.",
+        "name": "Symbiotic Adrenaline Pump"
+      },
+      "4147": {
+        "desc": "Killing 5 enemies in 3s refunds 1 Dash/Sprint Charge.",
+        "name": "Zero-Point Flux Overdrive"
+      },
+      "4148": {
+        "desc": "Gruff military commander tactical voiceover callouts.",
+        "name": "Soviet Sub-Commander Radio"
+      },
+      "4149": {
+        "desc": "Calm, analytical female tactical AI combat announcer.",
+        "name": "Synthesized AI Unit 'AURA'"
+      },
+      "4150": {
+        "desc": "Retro 1980s amber phosphorus terminal HUD styling.",
+        "name": "Amber CRT Monitor Theme"
+      },
+      "4151": {
+        "desc": "Military night-vision green HUD radar and telemetry.",
+        "name": "Emerald Radar Phosphor HUD"
+      },
+      "4152": {
+        "desc": "Weapon projectiles emit bright emerald green laser trails.",
+        "name": "Emerald Void Tracer Rounds"
+      },
+      "4153": {
+        "desc": "Muzzle blast triggers a miniature freezing ice crystal burst.",
+        "name": "Cryo Shockwave Muzzle Flare"
+      },
+      "4154": {
+        "desc": "Unlocks 1 Deep Relic Cache via the Steam Vault. Earned for free through Deep Core Shard dispensary trade-in (docs/season-zero-protocol/05 §4) — the F2P-earned counterpart to itemdef 4001's paid Cache Key, not a duplicate; 4001 is purchase-only and never drops free.",
+        "name": "Relic Decryption Key (Earned)"
+      },
+      "4155": {
+        "desc": "Bundle pack containing 5 Relic Decryption Keys.",
+        "name": "5x Relic Key Master Pack"
+      },
+      "4156": {
+        "desc": "Primary seasonal crafting metal for unboxing and forging.",
+        "name": "Cryo-Alloy Ingot"
+      },
+      "4157": {
+        "desc": "Concentrated power core used to craft Epic Overclocks.",
+        "name": "Deep Sub-Core Matrix"
+      },
+      "4158": {
+        "desc": "Rare biological catalyst required for Legendary skins.",
+        "name": "Refined Ambergris Catalyst"
+      },
+      "4159": {
+        "desc": "Currency awarded from duplicate unboxings (100 shards = any item).",
+        "name": "Deep Core Shard (Token)"
+      },
+      "4160": {
+        "desc": "Counterweight suit plating. Heavier, and harder to move.",
+        "name": "Ballast Plating"
+      },
+      "4161": {
+        "desc": "Back-mounted smelter that renders salvage on the spot.",
+        "name": "Scrap Furnace"
+      },
+      "4162": {
+        "desc": "Barbed injector grown from carapace and surgical steel.",
+        "name": "Queen's Bane"
+      },
+      "4163": {
+        "desc": "Antique monocular scanning lens on an articulated arm.",
+        "name": "Archivist Lens"
+      },
+      "4164": {
+        "desc": "Crystal routing module that runs cold to the touch.",
+        "name": "Shard Conduit"
+      },
+      "4165": {
+        "desc": "Matter reclamation drum. Unglamorous, and effective.",
+        "name": "Duplicate Refiner"
+      },
+      "4166": {
+        "desc": "Chest rebreather diaphragm that sits mid-breath.",
+        "name": "Pressure Seal"
+      },
+      "4167": {
+        "desc": "Descent anchor that has been deeper than it should have.",
+        "name": "Deep Anchor"
+      },
+      "4200": {
+        "desc": "Full operator chassis finish in the Deep Frost identity.",
+        "name": "Deep Frost Operator Skin"
+      },
+      "4201": {
+        "desc": "Weapon plating finish in the Deep Frost identity.",
+        "name": "Deep Frost Weapon Skin"
+      },
+      "4202": {
+        "desc": "Hanging weapon charm in the Deep Frost identity.",
+        "name": "Deep Frost Charm"
+      },
+      "4203": {
+        "desc": "Embroidered bone-white ice crown motif with pale cyan fracture lines and frayed edges.",
+        "name": "Deep Frost Patch"
+      },
+      "4204": {
+        "desc": "Subsurface crystalline ice glaze over weapon plating with a pale cyan specular bloom.",
+        "name": "Deep Frost Sheen"
+      },
+      "4205": {
+        "desc": "Weapon projectiles emit brilliant pale cyan-white trails with drifting frost particulate.",
+        "name": "Deep Frost Tracer Rounds"
+      },
+      "4206": {
+        "desc": "Tactical frost-rimed HUD theme with pale cyan-white vector telemetry.",
+        "name": "Deep Frost HUD Theme"
+      },
+      "4207": {
+        "desc": "Full operator chassis finish in the Rust & Bone identity.",
+        "name": "Rust & Bone Operator Skin"
+      },
+      "4208": {
+        "desc": "Weapon plating finish in the Rust & Bone identity.",
+        "name": "Rust & Bone Weapon Skin"
+      },
+      "4209": {
+        "desc": "Hanging weapon charm in the Rust & Bone identity.",
+        "name": "Rust & Bone Charm"
+      },
+      "4210": {
+        "desc": "Rough hessian backing with hand-stitched bone motif and dull ember thread.",
+        "name": "Rust & Bone Patch"
+      },
+      "4211": {
+        "desc": "Pitted oxidised iron weapon finish with oily sheen and dull ember warmth.",
+        "name": "Rust & Bone Sheen"
+      },
+      "4212": {
+        "desc": "Heavy dull-ember ballistic projectile streaks that shed burning iron sparks.",
+        "name": "Rust & Bone Tracer Rounds"
+      },
+      "4213": {
+        "desc": "Subterranean survival HUD styling in dull ember orange with riveted telemetry frames.",
+        "name": "Rust & Bone HUD Theme"
+      },
+      "4214": {
+        "desc": "Full operator chassis finish in the Hive Chitin identity.",
+        "name": "Hive Chitin Operator Skin"
+      },
+      "4215": {
+        "desc": "Weapon plating finish in the Hive Chitin identity.",
+        "name": "Hive Chitin Weapon Skin"
+      },
+      "4216": {
+        "desc": "Hanging weapon charm in the Hive Chitin identity.",
+        "name": "Hive Chitin Charm"
+      },
+      "4217": {
+        "desc": "Thin dried alien carapace plate with pulsing green veining forming a hive queen.",
+        "name": "Hive Chitin Patch"
+      },
+      "4218": {
+        "desc": "Living alien carapace weapon coating with shifting bioluminescent oil-slick iridescence.",
+        "name": "Hive Chitin Sheen"
+      },
+      "4219": {
+        "desc": "Organic stinger darts trailing a sickly green plasma ribbon and settling spores.",
+        "name": "Hive Chitin Tracer Rounds"
+      },
+      "4220": {
+        "desc": "Alien symbiote ocular interface with sickly bioluminescent green readouts and slow breathing pulse.",
+        "name": "Hive Chitin HUD Theme"
+      },
+      "4221": {
+        "desc": "Full operator chassis finish in the Horizon Corporate identity.",
+        "name": "Horizon Corporate Operator Skin"
+      },
+      "4222": {
+        "desc": "Weapon plating finish in the Horizon Corporate identity.",
+        "name": "Horizon Corporate Weapon Skin"
+      },
+      "4223": {
+        "desc": "Hanging weapon charm in the Horizon Corporate identity.",
+        "name": "Horizon Corporate Charm"
+      },
+      "4224": {
+        "desc": "Crisp white twill with cold teal laser-cut embroidery forming a clean horizon mark.",
+        "name": "Horizon Corporate Patch"
+      },
+      "4225": {
+        "desc": "Pristine white ceramic weapon polish with tight specular glare and cold teal fresnel highlights.",
+        "name": "Horizon Corporate Sheen"
+      },
+      "4226": {
+        "desc": "High-precision solid cold teal laser beams with clean geometric muzzle flares.",
+        "name": "Horizon Corporate Tracer Rounds"
+      },
+      "4227": {
+        "desc": "Clinical military-contractor HUD interface in cold teal with razor-thin coordinate grids.",
+        "name": "Horizon Corporate HUD Theme"
+      },
+      "4228": {
+        "desc": "Full operator chassis finish in the Bunker 404 identity.",
+        "name": "Bunker 404 Operator Skin"
+      },
+      "4229": {
+        "desc": "Weapon plating finish in the Bunker 404 identity.",
+        "name": "Bunker 404 Weapon Skin"
+      },
+      "4230": {
+        "desc": "Hanging weapon charm in the Bunker 404 identity.",
+        "name": "Bunker 404 Charm"
+      },
+      "4231": {
+        "desc": "Black twill with magenta thread forming a glitched squad insignia with displaced blocks.",
+        "name": "Bunker 404 Patch"
+      },
+      "4232": {
+        "desc": "Glitched weapon finish with horizontal texture displacement and magenta signal-error chromatic tearing.",
+        "name": "Bunker 404 Sheen"
+      },
+      "4233": {
+        "desc": "Displaced magenta projectile streaks that stutter and break into offset glitch blocks.",
+        "name": "Bunker 404 Tracer Rounds"
+      },
+      "4234": {
+        "desc": "Corrupted signal HUD theme in electric magenta with intermittent scanline jitter and error readouts.",
+        "name": "Bunker 404 HUD Theme"
+      },
+      "4235": {
+        "desc": "Full operator chassis finish in the Grand Marshal identity.",
+        "name": "Grand Marshal Operator Skin"
+      },
+      "4236": {
+        "desc": "Weapon plating finish in the Grand Marshal identity.",
+        "name": "Grand Marshal Weapon Skin"
+      },
+      "4237": {
+        "desc": "Hanging weapon charm in the Grand Marshal identity.",
+        "name": "Grand Marshal Charm"
+      },
+      "4238": {
+        "desc": "Deep black velvet backing with dense amber gold bullion embroidery in a laurel relic crest.",
+        "name": "Grand Marshal Patch"
+      },
+      "4239": {
+        "desc": "Burnished meteorite-alloy weapon finish with warm amber gold laurel scrollwork and anisotropic glint.",
+        "name": "Grand Marshal Sheen"
+      },
+      "4240": {
+        "desc": "Ceremonial heavy gold energy streaks accompanied by shedding embers and a radiant corona.",
+        "name": "Grand Marshal Tracer Rounds"
+      },
+      "4241": {
+        "desc": "Regal imperial command interface in warm amber gold framed with archival laurel leaf brackets.",
+        "name": "Grand Marshal HUD Theme"
       }
     }
   }

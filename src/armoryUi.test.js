@@ -184,6 +184,8 @@ describe('createArmoryUi', () => {
         expect(container.innerHTML).not.toMatch(/TACTICAL FINISH/);
         expect(container.innerHTML).not.toContain('armory-slot-archetype');
         expect(container.innerHTML).toContain('id="armory-polish-btn"');
+        expect(container.innerHTML).toContain('class="armory-hud-theme-preview"');
+        expect(container.innerHTML).toContain('DEFAULT MONOCHROME');
         // No dropdown survives anywhere on the bench.
         expect(container.innerHTML).not.toContain('<select');
 
@@ -209,6 +211,11 @@ describe('createArmoryUi', () => {
         expect(loadoutManager.getEquippedCharmId('scout')).toBe('4130');
         expect(fakeScene.updateFromLoadout).toHaveBeenCalledWith(loadoutManager, 'scout');
 
+        openSlot(container, 'hud').dispatchEvent(tileClick('4234'));
+        expect(loadoutManager.state.hudThemeId).toBe('4234');
+        expect(container.innerHTML).toContain('data-hud-shape="heart"');
+        expect(container.innerHTML).toContain('Bunker 404');
+
         openSlot(container, 'chassis').dispatchEvent(tileClick('4113'));
         expect(loadoutManager.getEquippedChassisSkinId()).toBe('4113');
         expect(fakeScene.setChassisSkin).toHaveBeenCalledWith('4113', 'scout');
@@ -231,6 +238,7 @@ describe('createArmoryUi', () => {
     });
 
     it('handles navigation button clicks', () => {
+        const onDailyOps = vi.fn();
         const ui = createArmoryUi({
             container,
             loadoutManager,
@@ -238,6 +246,8 @@ describe('createArmoryUi', () => {
             onEmbark,
             onBack,
             onOpenVault,
+            onDailyOps,
+            getDailyOpsStatus: () => ({ label: 'READY', disabled: false }),
             ownership: ownAll()
         });
 
@@ -246,6 +256,7 @@ describe('createArmoryUi', () => {
         const btnBack = container.querySelector('#armory-btn-back');
         const btnVault = container.querySelector('#armory-btn-vault');
         const btnEmbark = container.querySelector('#armory-btn-embark');
+        const btnDaily = container.querySelector('#armory-btn-daily');
 
         btnBack.click();
         expect(onBack).toHaveBeenCalled();
@@ -255,6 +266,9 @@ describe('createArmoryUi', () => {
 
         btnEmbark.click();
         expect(onEmbark).toHaveBeenCalled();
+
+        btnDaily.click();
+        expect(onDailyOps).toHaveBeenCalled();
     });
 
     it('switches classes properly and re-renders allowed equipment', () => {
@@ -315,7 +329,8 @@ describe('createArmoryUi ownership gating', () => {
             onEmbark: vi.fn(),
             onBack: vi.fn(),
             onOpenVault: vi.fn(),
-            ownership
+            ownership,
+            qaToolsEnabled: true
         });
         // The factory wires listeners; setClass is what paints the bench.
         ui.setClass('SCOUT');
@@ -440,5 +455,44 @@ describe('createArmoryUi ownership gating', () => {
         btn.click();
         expect(ownership.isUnlockAll()).toBe(true);
         expect(container.innerHTML).not.toContain('disabled');
+    });
+
+    it('grants a synthetic marketplace kit and test keys without a purchase path', () => {
+        mount();
+        const button = container.querySelector('#armory-debug-grant-kit-btn');
+        expect(button).not.toBeNull();
+        button.click();
+        expect(ownership.getQuantity(4100)).toBeGreaterThan(0);
+        expect(ownership.getQuantity(4001)).toBeGreaterThanOrEqual(5);
+    });
+
+    it('does not render QA controls without the trusted capability', () => {
+        const ui = createArmoryUi({
+            container,
+            loadoutManager,
+            armoryScene: fakeScene,
+            ownership,
+            qaToolsEnabled: false
+        });
+        ui.setClass('SCOUT');
+        expect(container.querySelector('#armory-debug-unlock-skins-btn')).toBeNull();
+        expect(container.querySelector('#armory-debug-grant-kit-btn')).toBeNull();
+    });
+
+    it('previews the selected voice bank with its signature line', () => {
+        ownership.setUnlockAll(true);
+        const previousWindow = globalThis.window;
+        globalThis.window = {
+            AudioManager: { playVoiceCallout: vi.fn() },
+            addEventListener: vi.fn()
+        };
+        mount();
+
+        openSlot(container, 'voicebank').dispatchEvent(tileClick('4148'));
+        expect(loadoutManager.state.voicePackId).toBe('4148');
+        expect(globalThis.window.AudioManager.playVoiceCallout)
+            .toHaveBeenCalledWith('boss_spotted', { voicePackId: '4148', volume: 0.9, audition: true });
+
+        globalThis.window = previousWindow;
     });
 });

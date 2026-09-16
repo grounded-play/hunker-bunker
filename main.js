@@ -1,5 +1,8 @@
 import { crossingGuidance, expeditionDebrief } from './src/expeditionFeedback.js';
 import { runO2MilestoneChoreography } from './src/o2CinematicDoors.js';
+import { compactPerformanceSnapshot, compactPerfPhase, createLongTaskReporter } from './src/longTaskDiagnostics.js';
+import { applyHudThemeToElement } from './src/hudThemes.js';
+import { createMilestonePresentationGate } from './src/milestonePresentation.js';
 import { formatRunCardBadges, summarizeRunCards } from './src/runCardHud.js';
 import { cutsceneCutoffTime } from './src/cutsceneTiming.js';
 /* global __HB_BUILD_INFO__ */
@@ -14,11 +17,13 @@ import { ObjectiveRegistry } from './src/objectiveRegistry.js';
 import { BankManager, FOUNDRY_ACTIVATION_COST } from './src/bank.js';
 import { ExpeditionReceipt } from './src/economyReceipt.js';
 import { renderReturnManifest } from './src/returnManifest.js';
-import { FabricatorManager, FAB_RECIPES, FAB_SPIN_COST, FABRICATOR_SITE_MAX_USES } from './src/fabricator.js';
+import { FabricatorManager, FAB_RECIPES, FAB_SPIN_COST, FABRICATOR_SITE_MAX_USES, applyFabricatedRecipeOutput, getFabricatedOutputIds } from './src/fabricator.js';
 import { ProfileManager, clearSaveData, exportSaveCode, importSaveCode } from './src/profile.js';
 import { LoadoutManager } from './src/loadout.js';
 import { CutsceneManager } from './src/cutscene.js';
 import { DEPTH_TIER_NAMES } from './src/data/loot.js';
+import { getVoiceAudioManifest } from './src/data/voiceBanks.js';
+import { GAMEPLAY_FOLEY_MANIFEST } from './src/data/gameSoundsets.js';
 import { getDeathCinematicSpec, getEventCinematicSpec, normalizeCinematicStillSpec, shouldPlayAuthoredEventCinematic } from './src/cinematicFallback.js';
 import { DialogueManager } from './src/dialogue.js';
 import { VitalsHUD } from './src/vitals.js';
@@ -43,6 +48,7 @@ import {
     setContrast
 } from './src/accessibilitySettings.js';
 import { ACHIEVEMENT_DEFS, AchievementEngine, getAchievementProgress, getSecretGateState, hasAnyUnlock, saveAchievements } from './src/achievements.js';
+import { SteamAchievementSync } from './src/steamAchievementSync.js';
 import { STEAM_RUN_SCORE_FINALIZED_EVENT, buildSteamRunScorePayload, dispatchSteamRunScoreFinalized } from './src/steam/steamEvents.js';
 import { syncSteamStats } from './src/steamStats.js';
 import { loadRgbSave, saveRgbSave, markUnlocked as markRgbUnlocked, shouldUnlockRgb, unlockChapter as unlockRgbChapter, isChapterUnlocked as isRgbChapterUnlocked } from './src/minigames/rgb/save.js';
@@ -78,7 +84,7 @@ import { sideStoryManager, SIDE_STORIES_CONFIG, SIDE_STORY_STATUS } from './src/
 import { matureContentAudit } from './src/matureContentAudit.js';
 import { progressionWalkthrough } from './src/progressionWalkthrough.js';
 import { renderGameOverLeaderboard } from './src/leaderboardUi.js';
-import { unlockSheenForMilestone, reconcileSheenUnlocks } from './src/weaponSheens.js';
+import { unlockSheenForMilestone, reconcileSheenUnlocks, unlockAllSheens } from './src/weaponSheens.js';
 import { OPERATOR_POLISHES, getSelectedPolish, getUnlockedPolishIds, selectPolish, unlockAllPolishes, unlockMilestonePolish } from './src/operatorPolishes.js';
 import { createOwnershipStore } from './src/itemOwnership.js';
 import { STARTING_RUN_AMMO, CLASS_AMMO_CAPACITY } from './src/data/ammoEconomy.js';
@@ -88,7 +94,7 @@ import { buildEndingArchive, getLeaderReaction } from './src/storyArchive.js';
 import { SongInterstitialController, selectCampInterstitial } from './src/songInterstitials.js';
 import { dialogueReactionForLine, preloadLeaderMedia, resolveLeaderIdentity } from './src/leaderIdentity.js';
 import { LeaderConversation3d } from './src/leaderConversation3d.js';
-import { getLocale, setLocale, t as i18nT, getAvailableLocales } from './src/i18n.js';
+import { getLocale, setLocale, t, t as i18nT, getAvailableLocales } from './src/i18n.js';
 import {
     computeTopologyDistances,
     findConflictingChunkReservations,
@@ -98,6 +104,7 @@ import {
 import { installSteamCloudSaveBridge } from './src/steamCloudSaveBridge.js';
 import { installSettingsWheelGuard } from './src/settingsWheelGuard.js';
 import { installAccessibilitySettings } from './src/accessibilitySettings.js';
+import { recordCollectedPickup, recordDebugResourceGrant, resetRunResourceTelemetry } from './src/runTelemetry.js';
 
 // These galleries are explicit developer destinations. Keeping their modules
 // out of the boot graph prevents QA scene code (and its transitive catalogs)
@@ -237,6 +244,10 @@ const buildInfo = typeof __HB_BUILD_INFO__ === 'object'
         steamBuild: '',
         builtAt: ''
     });
+// Session diagnostics are assembled by the debug console module, so expose the
+// compile-time fingerprint in one stable location it can capture on web and
+// packaged Steam builds.
+globalThis.__HB_BUILD_INFO__ = buildInfo;
 
 function formatBuildTimestamp(raw) {
     if (!raw) return '';
@@ -462,7 +473,8 @@ function hideAllGameplayPrompts() {
         'o2-generator-hud-prompt',
         'hole-hud-prompt',
         'black-box-hud-prompt',
-        'radio-transmission-prompt'
+        'radio-transmission-prompt',
+        'hazard-status-panel'
     ];
     for (const id of promptIds) {
         const el = document.getElementById(id);
@@ -504,6 +516,7 @@ function setAppPhase(phase) {
         cancelXpFeedback();
     }
     if (!isGameplay) {
+        document.body.classList.remove('player-cold-exposed', 'player-poisoned');
         window.game?.setCursorInspectState?.(null);
         if (tacticalOverlayTimer) {
             clearTimeout(tacticalOverlayTimer);
@@ -743,9 +756,9 @@ function setPromptKeyLabel(promptKey, defaultKey = 'E') {
     promptKey.classList.toggle('prompt-key--controller', isController);
 
     if (isController && (label === 'A' || label === 'B' || label === 'X' || label === 'Y')) {
-        promptKey.innerHTML = `PRESS <span class="controller-glyph glyph-${label.toLowerCase()}">${label}</span>`;
+        promptKey.innerHTML = t('ui.prompt.press_key', { key: `<span class="controller-glyph glyph-${label.toLowerCase()}">${label}</span>` });
     } else {
-        promptKey.textContent = label === 'TAP' ? 'TAP' : `PRESS ${label}`;
+        promptKey.textContent = label === 'TAP' ? t('ui.prompt.tap') : t('ui.prompt.press_key', { key: label });
     }
     promptKey.classList.toggle('prompt-key--tap', label === 'TAP');
 }
@@ -1086,7 +1099,7 @@ function resolveInteractiveFocusTarget(element) {
     return item.querySelector?.('button:not([disabled]), select:not([disabled]), input:not([disabled]), textarea:not([disabled]), a[href], [tabindex]:not([tabindex="-1"])') || item;
 }
 
-function focusControllerTarget(target, { playHover = false } = {}) {
+function focusControllerTarget(target, { playHover = false, ensureVisible = true } = {}) {
     if (!target) return false;
     const previous = document.activeElement;
     try {
@@ -1094,7 +1107,7 @@ function focusControllerTarget(target, { playHover = false } = {}) {
     } catch {
         target.focus?.();
     }
-    if (!centerSettingsFocusTarget(target)) {
+    if (ensureVisible && !centerSettingsFocusTarget(target)) {
         target.scrollIntoView?.({ block: 'nearest', inline: 'nearest' });
     }
     if (playHover && previous !== target) {
@@ -1159,6 +1172,21 @@ function moveControllerFocus(delta) {
     const target = focusables[index] ?? null;
     focusControllerTarget(target, { playHover: true });
     return target;
+}
+
+function moveSettingsDirectionalFocus(code) {
+    const popup = document.getElementById('settings-popup');
+    const active = document.activeElement;
+    if (!popup?.contains(active)) return false;
+
+    const tab = active.closest?.('[data-settings-tab]');
+    if (tab && (code === 'ArrowDown' || code === 'KeyS')) {
+        const panel = popup.querySelector(`[data-settings-panel="${tab.dataset.settingsTab}"]:not(.hidden)`);
+        const target = getVisibleControllerFocusables(panel)[0];
+        return target ? focusControllerTarget(target, { playHover: true }) : true;
+    }
+
+    return false;
 }
 
 let lastHeroMenuCommandFocus = null;
@@ -1310,38 +1338,34 @@ function moveMenuCommandGridFocus(code) {
             : visibleCommands.at(-1);
         return target ? focusControllerTarget(target, { playHover: true }) : true;
     }
-    const activeColumn = active?.closest?.('.menu-command-column');
-    if (!activeColumn) return false;
+    if (!active?.closest?.('.menu-header-actions')) return false;
 
-    const columns = Array.from(document.querySelectorAll('#menu .menu-command-column'));
-    if (!columns.includes(activeColumn)) return false;
-
-    const focusablesFor = (column) => getVisibleControllerFocusables(column).filter((element) => (
-        element.matches('button, .steam-account-badge--menu')
-    ));
-    const currentItems = focusablesFor(activeColumn);
-    if (!currentItems.length) return false;
-    const columnIndex = columns.indexOf(activeColumn);
-    const rowIndex = Math.max(0, currentItems.indexOf(active));
+    // The command wrappers are semantic groups, but CSS flattens them into a
+    // three-column visual grid. Navigate the grid the player can actually see
+    // instead of the old two-column wrapper structure.
+    const commands = getVisibleControllerFocusables(document.querySelector('.menu-header-actions'))
+        .filter((element) => element.matches('button, .steam-account-badge--menu'));
+    const index = commands.indexOf(active);
+    if (index < 0) return false;
+    const columnCount = 3;
+    const columnIndex = index % columnCount;
     let target = null;
 
     if (code === 'KeyW' || code === 'ArrowUp') {
-        target = currentItems[(rowIndex - 1 + currentItems.length) % currentItems.length];
+        target = index >= columnCount ? commands[index - columnCount] : commands[index];
     } else if (code === 'KeyS' || code === 'ArrowDown') {
-        if (rowIndex === currentItems.length - 1) {
+        if (index + columnCount >= commands.length) {
             lastHeroMenuCommandFocus = active;
             target = document.getElementById('start-game');
         } else {
-            target = currentItems[rowIndex + 1];
+            target = commands[index + columnCount];
         }
     } else if (code === 'KeyA' || code === 'ArrowLeft') {
         if (columnIndex === 0) return false;
-        const adjacentItems = focusablesFor(columns[columnIndex - 1]);
-        target = adjacentItems[Math.min(rowIndex, adjacentItems.length - 1)];
+        target = commands[index - 1];
     } else if (code === 'KeyD' || code === 'ArrowRight') {
-        if (columnIndex === columns.length - 1) return false;
-        const adjacentItems = focusablesFor(columns[columnIndex + 1]);
-        target = adjacentItems[Math.min(rowIndex, adjacentItems.length - 1)];
+        if (columnIndex === columnCount - 1 || index + 1 >= commands.length) return false;
+        target = commands[index + 1];
     }
 
     return target ? focusControllerTarget(target, { playHover: true }) : false;
@@ -1374,6 +1398,7 @@ document.addEventListener('keydown', (event) => {
         event.preventDefault();
         if (root.id === 'operator-polish-modal' && moveOperatorPolishGridFocus(event.code)) return;
         if (root.id === 'menu' && moveMenuDirectionalFocus(event.code)) return;
+        if (root.id === 'settings-popup' && moveSettingsDirectionalFocus(event.code)) return;
         const horizontal = ['KeyA', 'KeyD', 'ArrowLeft', 'ArrowRight'].includes(event.code);
         const active = document.activeElement;
         const adjusted = horizontal && (
@@ -1884,34 +1909,16 @@ function handleSteamMenuInput(actions) {
 
         updateVirtualGamepadCursorPosition(controllerAimCursor.x, controllerAimCursor.y, true);
 
-        // Smooth scroll active or hovered container. The whole-root fallback
-        // below is only for genuine scrollable modal content (settings lists,
-        // codex, etc). The title/main menu (#splash, #menu) were never meant
-        // to scroll at all -- any scrollHeight > clientHeight there is layout
-        // noise, not content, and scrolling the whole screen reads as the
-        // entire menu shifting instead of the subtle cursor motion desktop
-        // gets from the same stick input.
-        const scrollValue = (pointerY * 20) || (-deltaY * 20);
-        if (Math.abs(scrollValue) > 0.5) {
-            const elAtPoint = document.elementFromPoint(controllerAimCursor.x, controllerAimCursor.y);
-            const root = getControllerFocusRoot() ?? document.body;
-            const isTopLevelMenuScreen = root.id === 'splash' || root.id === 'menu';
-            const scrollContainer = elAtPoint?.closest?.('.modal-content, .settings-modal-content, .controls-list, .mothership-dialogue-body, .codex-modal-content, .archive-log-list')
-                || root.querySelector?.('.settings-modal-content, .modal-content, .controls-list, .mothership-dialogue-body, .codex-modal-content, .archive-log-list')
-                || (!isTopLevelMenuScreen && root.scrollHeight > root.clientHeight ? root : null);
-
-            if (scrollContainer) {
-                scrollContainer.scrollTop += scrollValue;
-            }
-        }
-
         // Hover element focus
         const hovered = document.elementFromPoint(controllerAimCursor.x, controllerAimCursor.y);
         const focusable = hovered?.closest?.('button, select, input, a, [tabindex]:not([tabindex="-1"]), .setting-item, .char-card, .class-tab, .armory-btn, .armory-select, .deck-focus-target, .toggle, .splash-btn, .about-btn');
         if (focusable) {
             const target = focusable.matches('button, select, input, a, .char-card, .class-tab, .armory-btn, .armory-select, .toggle') ? focusable : (focusable.querySelector('button, select, input, a') || focusable);
             if (target && target !== document.activeElement) {
-                focusControllerTarget(target, { playHover: true });
+                // Moving the virtual cursor should behave like moving a mouse:
+                // update hover/focus without pulling a scrollable menu along
+                // underneath it. D-pad navigation still centers focused rows.
+                focusControllerTarget(target, { playHover: true, ensureVisible: false });
             }
         }
     }
@@ -1946,6 +1953,7 @@ function handleSteamMenuInput(actions) {
                     ? 'ArrowLeft'
                     : 'ArrowRight';
         if (root?.id === 'menu') moveMenuDirectionalFocus(code);
+        else if (root?.id === 'settings-popup' && moveSettingsDirectionalFocus(code)) return;
         else moveControllerFocus((actions.up || actions.left) ? -1 : 1);
     }
 
@@ -1988,6 +1996,7 @@ window.addEventListener('gamepad-menu-nav', (event) => {
         };
         const root = getControllerFocusRoot();
         if (root?.id === 'menu') moveMenuDirectionalFocus(codeByAction[action]);
+        else if (root?.id === 'settings-popup' && moveSettingsDirectionalFocus(codeByAction[action])) return;
         else moveControllerFocus(action === 'menu_up' || action === 'menu_left' ? -1 : 1);
     } else if (action === 'menu_confirm') {
         activateControllerFocusedElement();
@@ -2457,7 +2466,9 @@ const state = {
         cameraFollow: ['tight', 'balanced', 'smooth'].includes(localStorage.getItem('hb_camera_follow'))
             ? localStorage.getItem('hb_camera_follow')
             : 'tight',
-        aimSensitivity: parseFloat(localStorage.getItem('hb_aim_sensitivity') || '1.0'),
+        aimSensitivity: [0.5, 0.75, 1, 1.25, 1.5, 2].includes(Number(localStorage.getItem('hb_aim_sensitivity')))
+            ? Number(localStorage.getItem('hb_aim_sensitivity'))
+            : 1,
         invertAimY: localStorage.getItem('hb_invert_aim_y') === 'true',
         crosshairColor: /^#[0-9a-f]{6}$/i.test(localStorage.getItem(CROSSHAIR_COLOR_STORAGE_KEY) ?? '')
             ? localStorage.getItem(CROSSHAIR_COLOR_STORAGE_KEY)
@@ -2499,10 +2510,10 @@ function maybeShowRgbUnlockToast() {
     toast.className = 'rgb-unlock-toast';
     const kicker = document.createElement('div');
     kicker.className = 'rgb-unlock-toast__kicker';
-    kicker.textContent = 'ARCHIVE SIMULATION RECOVERED';
+    kicker.textContent = t('ui.archive.recovered_kicker');
     const title = document.createElement('div');
     title.className = 'rgb-unlock-toast__title';
-    title.textContent = "RGB: RIVERSIDE GLOBAL 'BOTICS";
+    title.textContent = t('ui.archive.rgb_title');
     toast.append(kicker, title);
     document.body.appendChild(toast);
 
@@ -2700,7 +2711,10 @@ const pickupCounterState = {
     health: 0,
     ammo: 0,
     weapon: 0,
-    coin: 0
+    coin: 0,
+    collectedCount: 0,
+    collectedValue: 0,
+    debugGrantedResources: { tech: 0, coin: 0, med: 0, ammo: 0, shells: 0 }
 };
 let activeAmmoCapacity = CLASS_AMMO_CAPACITY.SCOUT;
 const bankManager = new BankManager();
@@ -2717,6 +2731,21 @@ window.profile = profile;
 
 const achievementEngine = new AchievementEngine();
 window.achievementEngine = achievementEngine;
+const steamAchievementSync = window.electronAPI ? new SteamAchievementSync({
+    storage: localStorage,
+    bridge: window.electronAPI
+}) : null;
+window.steamAchievementSync = steamAchievementSync;
+
+async function retrySteamAchievementSync() {
+    if (!steamAchievementSync?.getStatus().accountId) return;
+    const unlockedKeys = Object.keys(achievementEngine.getState().unlocked ?? {});
+    await steamAchievementSync.reconcile(unlockedKeys);
+}
+if (steamAchievementSync) {
+    queueMicrotask(() => void retrySteamAchievementSync());
+    window.addEventListener('online', () => void retrySteamAchievementSync());
+}
 
 // Single app-wide ownership store (src/itemOwnership.js). Everything that asks
 // "does the player have this?" -- Armory dropdowns, Vault rendering, equip
@@ -2746,47 +2775,22 @@ function getOwnershipStore() {
 // to any UI that opens before the Armory does.
 getOwnershipStore();
 
+function syncFabricatorOutputOwnership() {
+    getOwnershipStore().setExternalOwnership('fabricator', getFabricatedOutputIds(fabricator));
+}
+syncFabricatorOutputOwnership();
+
 const loadout = new LoadoutManager();
 window.loadout = loadout;
 
-// Season 0 HUD CRT Mutators (docs/season-zero-protocol/03 §5, itemdefs 4150/4151)
-const HUD_THEME_PRESETS = {
-    4150: { '--hud-primary': '#f59e0b', '--hud-secondary': '#fde68a', '--hud-glow': 'rgba(245, 158, 11, 0.4)', '--hud-scanline': '#d97706', '--hud-border': 'rgba(245, 158, 11, 0.62)', '--hud-panel': 'rgba(55, 30, 4, 0.84)', '--hud-warning': '#fb7185' }, // Amber CRT
-    4151: { '--hud-primary': '#10b981', '--hud-secondary': '#a7f3d0', '--hud-glow': 'rgba(16, 185, 129, 0.4)', '--hud-scanline': '#059669', '--hud-border': 'rgba(16, 185, 129, 0.62)', '--hud-panel': 'rgba(2, 44, 34, 0.84)', '--hud-warning': '#fbbf24' }, // Emerald Radar
-    hudtheme_amber_crt: { '--hud-primary': '#f59e0b', '--hud-secondary': '#fde68a', '--hud-glow': 'rgba(245, 158, 11, 0.4)', '--hud-scanline': '#d97706', '--hud-border': 'rgba(245, 158, 11, 0.62)', '--hud-panel': 'rgba(55, 30, 4, 0.84)', '--hud-warning': '#fb7185' },
-    hudtheme_emerald_radar: { '--hud-primary': '#10b981', '--hud-secondary': '#a7f3d0', '--hud-glow': 'rgba(16, 185, 129, 0.4)', '--hud-scanline': '#059669', '--hud-border': 'rgba(16, 185, 129, 0.62)', '--hud-panel': 'rgba(2, 44, 34, 0.84)', '--hud-warning': '#fbbf24' },
-    4206: { '--hud-primary': '#a5f3fc', '--hud-secondary': '#e0f2fe', '--hud-glow': 'rgba(165, 243, 252, 0.4)', '--hud-scanline': '#0891b2', '--hud-border': 'rgba(165, 243, 252, 0.62)', '--hud-panel': 'rgba(8, 47, 73, 0.88)', '--hud-warning': '#f43f5e' }, // Deep Frost
-    hudtheme_deep_frost: { '--hud-primary': '#a5f3fc', '--hud-secondary': '#e0f2fe', '--hud-glow': 'rgba(165, 243, 252, 0.4)', '--hud-scanline': '#0891b2', '--hud-border': 'rgba(165, 243, 252, 0.62)', '--hud-panel': 'rgba(8, 47, 73, 0.88)', '--hud-warning': '#f43f5e' },
-    4213: { '--hud-primary': '#ea580c', '--hud-secondary': '#fed7aa', '--hud-glow': 'rgba(234, 88, 12, 0.4)', '--hud-scanline': '#9a3412', '--hud-border': 'rgba(234, 88, 12, 0.62)', '--hud-panel': 'rgba(43, 20, 10, 0.88)', '--hud-warning': '#ef4444' }, // Rust & Bone
-    hudtheme_rust_bone: { '--hud-primary': '#ea580c', '--hud-secondary': '#fed7aa', '--hud-glow': 'rgba(234, 88, 12, 0.4)', '--hud-scanline': '#9a3412', '--hud-border': 'rgba(234, 88, 12, 0.62)', '--hud-panel': 'rgba(43, 20, 10, 0.88)', '--hud-warning': '#ef4444' },
-    4220: { '--hud-primary': '#84cc16', '--hud-secondary': '#d9f99d', '--hud-glow': 'rgba(132, 204, 22, 0.4)', '--hud-scanline': '#4d7c0f', '--hud-border': 'rgba(132, 204, 22, 0.62)', '--hud-panel': 'rgba(26, 46, 5, 0.88)', '--hud-warning': '#eab308' }, // Hive Chitin
-    hudtheme_hive_chitin: { '--hud-primary': '#84cc16', '--hud-secondary': '#d9f99d', '--hud-glow': 'rgba(132, 204, 22, 0.4)', '--hud-scanline': '#4d7c0f', '--hud-border': 'rgba(132, 204, 22, 0.62)', '--hud-panel': 'rgba(26, 46, 5, 0.88)', '--hud-warning': '#eab308' },
-    4227: { '--hud-primary': '#14b8a6', '--hud-secondary': '#ccfbf1', '--hud-glow': 'rgba(20, 184, 166, 0.35)', '--hud-scanline': '#0f766e', '--hud-border': 'rgba(20, 184, 166, 0.55)', '--hud-panel': 'rgba(15, 23, 42, 0.92)', '--hud-warning': '#f97316' }, // Horizon Corporate
-    hudtheme_horizon_corporate: { '--hud-primary': '#14b8a6', '--hud-secondary': '#ccfbf1', '--hud-glow': 'rgba(20, 184, 166, 0.35)', '--hud-scanline': '#0f766e', '--hud-border': 'rgba(20, 184, 166, 0.55)', '--hud-panel': 'rgba(15, 23, 42, 0.92)', '--hud-warning': '#f97316' },
-    4234: { '--hud-primary': '#d946ef', '--hud-secondary': '#fae8ff', '--hud-glow': 'rgba(217, 70, 239, 0.45)', '--hud-scanline': '#a21caf', '--hud-border': 'rgba(217, 70, 239, 0.65)', '--hud-panel': 'rgba(38, 10, 42, 0.90)', '--hud-warning': '#f43f5e' }, // Bunker 404
-    hudtheme_bunker404: { '--hud-primary': '#d946ef', '--hud-secondary': '#fae8ff', '--hud-glow': 'rgba(217, 70, 239, 0.45)', '--hud-scanline': '#a21caf', '--hud-border': 'rgba(217, 70, 239, 0.65)', '--hud-panel': 'rgba(38, 10, 42, 0.90)', '--hud-warning': '#f43f5e' },
-    4241: { '--hud-primary': '#f59e0b', '--hud-secondary': '#fef3c7', '--hud-glow': 'rgba(245, 158, 11, 0.45)', '--hud-scanline': '#b45309', '--hud-border': 'rgba(245, 158, 11, 0.70)', '--hud-panel': 'rgba(30, 24, 12, 0.90)', '--hud-warning': '#dc2626' }, // Grand Marshal
-    hudtheme_grand_marshal: { '--hud-primary': '#f59e0b', '--hud-secondary': '#fef3c7', '--hud-glow': 'rgba(245, 158, 11, 0.45)', '--hud-scanline': '#b45309', '--hud-border': 'rgba(245, 158, 11, 0.70)', '--hud-panel': 'rgba(30, 24, 12, 0.90)', '--hud-warning': '#dc2626' }
-};
-const HUD_THEME_VARS = ['--hud-primary', '--hud-secondary', '--hud-glow', '--hud-scanline', '--hud-border', '--hud-panel', '--hud-warning'];
 function applyHudThemeFromLoadout() {
     const gameContainer = document.getElementById('game-container');
     if (!gameContainer) return;
     const hudRoot = document.getElementById('ui');
-    const targets = [gameContainer, hudRoot].filter(Boolean);
+    const viewport = document.getElementById('game-viewport');
+    const targets = [gameContainer, hudRoot, viewport].filter(Boolean);
     const rawId = loadout.state.hudThemeId;
-    const preset = HUD_THEME_PRESETS[rawId] ?? HUD_THEME_PRESETS[Number(rawId)];
-    if (preset) {
-        for (const target of targets) {
-            for (const [key, value] of Object.entries(preset)) target.style.setProperty(key, value);
-            target.dataset.hudTheme = String(rawId);
-        }
-    } else {
-        for (const target of targets) {
-            for (const key of HUD_THEME_VARS) target.style.removeProperty(key);
-            delete target.dataset.hudTheme;
-        }
-    }
+    for (const target of targets) applyHudThemeToElement(target, rawId);
 }
 applyHudThemeFromLoadout();
 window.addEventListener('loadout-hud-theme-changed', applyHudThemeFromLoadout);
@@ -2840,11 +2844,21 @@ function updateDailyOpsUI() {
             const g = record.grade ?? 'D';
             statusEl.textContent = `${record.score} PTS // ${g}`;
         } else if (record?.attempted) {
-            statusEl.textContent = 'IN PROGRESS';
+            statusEl.textContent = t('ui.archive.in_progress');
         } else {
-            statusEl.textContent = 'READY';
+            statusEl.textContent = t('ui.archive.ready');
         }
     }
+}
+
+function getDailyOpsPresentation() {
+    const record = getDailyOpsRecord();
+    return {
+        disabled: Boolean(record?.completed),
+        label: record?.completed
+            ? `${record.score ?? 0} PTS // ${record.grade ?? 'D'}`
+            : record?.attempted ? 'IN PROGRESS' : 'READY'
+    };
 }
 
 let _isDailyOpsRun = false;
@@ -2855,7 +2869,7 @@ function refreshCharBestScores() {
         if (!el) continue;
         const best = Number(localStorage.getItem(`hb_best_score_${cls}`) ?? 0);
         const formattedScore = String(best).padStart(4, '0');
-        el.textContent = `◈ BEST: ${formattedScore} PTS`;
+        el.textContent = t('ui.archive.best_score', { score: formattedScore });
     }
 }
 
@@ -2878,13 +2892,13 @@ function refreshCareerStats() {
     const depthName = DEPTH_TIER_NAMES[Math.max(0, Math.min(DEPTH_TIER_NAMES.length - 1, tier))] ?? 'SURFACE';
     const deaths = stats.totalDeaths ?? 0;
     if (longestEl) {
-        longestEl.textContent = `LONGEST ${mm}:${ss}`;
+        longestEl.textContent = t('ui.profile.longest', { time: `${mm}:${ss}` });
     }
     if (deathsEl) {
-        deathsEl.textContent = `DEATHS ${deaths}`;
+        deathsEl.textContent = t('ui.profile.deaths', { count: deaths });
     }
     if (depthEl) {
-        depthEl.textContent = `DEPTH ${depthName}`;
+        depthEl.textContent = t('ui.profile.depth', { depth: depthName });
     }
     if (menuHistoryEl) {
         // Was also OR-ing two keys the game never writes; see hasCareerHistory().
@@ -2992,7 +3006,7 @@ function refreshTitleProfileHud(hasSave = true) {
     if (portraitEl) void renderTitleProfilePortrait(playerType);
     if (bestEl) {
         const best = Number(localStorage.getItem(`hb_best_score_${playerType}`) ?? 0);
-        bestEl.textContent = `CLASS BEST ${String(best).padStart(4, '0')}`;
+        bestEl.textContent = t('ui.profile.class_best', { score: String(best).padStart(4, '0') });
     }
     refreshCareerStats();
 }
@@ -3040,7 +3054,7 @@ function renderPickupCounter() {
     }
 
     if (weaponAmmoCache) {
-        weaponAmmoCache.textContent = `CACHE ${pickupCounterState.ammo}/${activeAmmoCapacity}`;
+        weaponAmmoCache.textContent = t('ui.hud.ammo_cache', { current: pickupCounterState.ammo, max: activeAmmoCapacity });
     }
 }
 
@@ -3349,6 +3363,7 @@ function resetPickupCounter(playerType = (window.game?.playerType || 'SCOUT')) {
     pickupCounterState.ammo = Math.min(STARTING_RUN_AMMO + ammoReserve, activeAmmoCapacity);
     pickupCounterState.weapon = 0;
     pickupCounterState.coin = 0;
+    resetRunResourceTelemetry(pickupCounterState);
     recomputePickupTotal();
     renderPickupCounter();
     window.hbLog?.('WEAPON', 'info', 'ammo-reset', {
@@ -3403,6 +3418,7 @@ function trackPickupCollected(event) {
         }
         return;
     }
+    recordCollectedPickup(pickupCounterState, event?.detail);
 
     // Play dynamic procedurally synthesized loot sound
     const rarity = event?.detail?.rarity;
@@ -3466,7 +3482,7 @@ function renderWeaponClipState(detail = {}) {
         weaponClipMax.textContent = String(maxClip);
     }
     if (weaponAmmoCache) {
-        weaponAmmoCache.textContent = isUnlimited ? `CACHE ∞/${activeAmmoCapacity}` : `CACHE ${cache}/${activeAmmoCapacity}`;
+        weaponAmmoCache.textContent = t('ui.hud.ammo_cache', { current: isUnlimited ? '∞' : cache, max: activeAmmoCapacity });
     }
     if (weaponReloadBar) {
         weaponReloadBar.style.transform = `scaleX(${reloading ? reloadProgress : refilling ? autoRefillProgress : 0})`;
@@ -3956,7 +3972,7 @@ function showDeveloperCommentary(key, detail = {}, { once = true } = {}) {
 
     const kicker = document.createElement('div');
     kicker.className = 'commentary-toast__kicker';
-    kicker.textContent = 'DEVELOPER COMMENTARY';
+    kicker.textContent = t('ui.commentary.kicker');
 
     const title = document.createElement('div');
     title.className = 'commentary-toast__title';
@@ -4066,7 +4082,7 @@ function showRadioTransmission(rawText) {
     if (!radioPumpTimer) pumpRadioQueue();
 }
 
-function renderRadioTransmission(rawText) {
+function renderRadioTransmission(rawText, { playVoice = true } = {}) {
     if (!isGameplayPhase()) return;
     if (!isGameplayHudActive() || isResettingRun) return;
 
@@ -4100,7 +4116,7 @@ function renderRadioTransmission(rawText) {
           <div class="radio-transmission-prompt__header">
             <span class="radio-transmission-prompt__signal-icon">⚡</span>
             <span class="radio-transmission-prompt__sender"></span>
-            <span class="radio-transmission-prompt__status">ONLINE</span>
+            <span class="radio-transmission-prompt__status">${t('ui.radio.online')}</span>
           </div>
           <div class="radio-transmission-prompt__message"></div>
         </div>
@@ -4110,7 +4126,7 @@ function renderRadioTransmission(rawText) {
     const messageText = radioPrompt.querySelector('.radio-transmission-prompt__message');
     senderName.textContent = sender;
     messageText.textContent = text;
-    AudioManager.playVoiceForMessage({ name: sender }, text);
+    if (playVoice) AudioManager.playVoiceForMessage({ name: sender }, text);
     radioPrompt.addEventListener('pointerdown', (event) => {
         event.preventDefault();
         dismissRadioPrompt(radioPrompt);
@@ -4136,6 +4152,15 @@ function renderRadioTransmission(rawText) {
     updateHudNotificationDeck();
 }
 
+// Situational voice banks own concise, exact subtitles. Render them at voice
+// start (not after the radio queue delay) and never ask the dialogue vocalizer
+// to speak the subtitle over the authored take.
+window.addEventListener('voice-callout-started', (event) => {
+    const detail = event?.detail ?? {};
+    if (detail.audition || !detail.subtitle) return;
+    renderRadioTransmission(`${detail.speakerName || 'COMMS'}: ${detail.subtitle}`, { playVoice: false });
+});
+
 function showBiomePrompt(message = '') {
     showRadioTransmission(message);
 }
@@ -4152,7 +4177,7 @@ function renderBiomeStatus(detail = {}, { showPrompt = false } = {}) {
     if (biomeLabelEl) {
         biomeLabelEl.textContent = label;
         biomeLabelEl.title = label;
-        biomeLabelEl.setAttribute('aria-label', `CURRENT BIOME ${label}`);
+        biomeLabelEl.setAttribute('aria-label', t('ui.hud.current_biome', { biome: label }));
     }
 
     const hudVisible = isGameplayPhase() && !document.getElementById('ui')?.classList.contains('hidden');
@@ -4414,7 +4439,7 @@ function renderOperatorPolishUi() {
     const readoutName = document.getElementById('operator-polish-readout-name');
     const readoutState = document.getElementById('operator-polish-readout-state');
     if (readoutName) readoutName.textContent = selected.name;
-    if (readoutState) readoutState.textContent = 'EQUIPPED';
+    if (readoutState) readoutState.textContent = t('ui.hud.equipped');
 
     if (!grid) return;
     grid.innerHTML = '';
@@ -4656,8 +4681,8 @@ function showGameOverScreen(stats, { isVictory = false, deathReason = 'hazard' }
 
     if (distVal)  distVal.textContent  = `${stats.distanceTravelled}u`;
     if (itemVal)  itemVal.textContent  = String(stats.totalPickups);
-    if (genVal)   genVal.textContent   = stats.generatorLevel > 0 ? `LVL ${stats.generatorLevel}` : 'OFFLINE';
-    if (killsVal) killsVal.textContent = kills > 0 ? String(kills) : 'NONE';
+    if (genVal)   genVal.textContent   = stats.generatorLevel > 0 ? t('ui.go.generator_level', { level: stats.generatorLevel }) : t('ui.go.offline');
+    if (killsVal) killsVal.textContent = kills > 0 ? String(kills) : t('ui.go.none');
     if (timeVal)  timeVal.textContent  = formatRunTime(elapsedMs);
 
     const bankNote = document.getElementById('go-bank-note');
@@ -4687,7 +4712,7 @@ function showGameOverScreen(stats, { isVictory = false, deathReason = 'hazard' }
     // Title / subtitle
     const title = document.querySelector('.game-over-title');
     const subtitle = document.querySelector('.game-over-subtitle');
-    if (title) title.textContent = isVictory ? 'EXTRACTION COMPLETE' : 'EXOSUIT FAILURE';
+    if (title) title.textContent = isVictory ? t('ui.go.extraction_complete') : t('ui.go.exosuit_failure');
     if (subtitle) {
         const outcomeReport = isVictory
             ? `> MISSION: ${stats.missionLabel ?? 'COMPLETE'}. RETURNING TO MOTHERSHIP.`
@@ -4848,7 +4873,7 @@ function showGameOverScreen(stats, { isVictory = false, deathReason = 'hazard' }
     const mem = getWorldMemory();
     const logsFound = mem.logsFound?.length ?? 0;
     if (archiveRow) archiveRow.classList.toggle('hidden', logsFound === 0);
-    if (archiveText) archiveText.textContent = `LOGS RECOVERED: ${logsFound}/${ALL_LORE_KEYS.length}`;
+    if (archiveText) archiveText.textContent = t('ui.go.logs_recovered', { found: logsFound, total: ALL_LORE_KEYS.length });
 
     // Two runs with identical stats still read differently if the player is
     // told which pressure they were carrying.
@@ -4962,22 +4987,22 @@ function renderGameOverAct2Summary() {
         </div>
         <div class="go-act2-grid">
             <div>
-                <div class="go-act2-col-title">Survivor Camps</div>
+                <div class="go-act2-col-title">${t('ui.go.survivor_camps')}</div>
                 <div class="go-act2-list">
                     ${campDetails}
                 </div>
             </div>
             <div>
-                <div class="go-act2-col-title">Alien Hives</div>
+                <div class="go-act2-col-title">${t('ui.go.alien_hives')}</div>
                 <div class="go-act2-list">
                     ${hiveDetails}
                 </div>
             </div>
         </div>
         <div class="go-act2-stats-row">
-            <div class="go-act2-stat">Obedience: <span>${obedienceText}</span></div>
-            <div class="go-act2-stat">Seats Filled: <span>${seatsUsed}/${seatsMax}</span></div>
-            <div class="go-act2-stat">Humanity: <span>${state.humanity}%</span></div>
+            <div class="go-act2-stat">${t('ui.go.obedience')} <span>${obedienceText}</span></div>
+            <div class="go-act2-stat">${t('ui.go.seats_filled')} <span>${seatsUsed}/${seatsMax}</span></div>
+            <div class="go-act2-stat">${t('ui.go.humanity')} <span>${state.humanity}%</span></div>
         </div>
         <div class="go-act2-one-liner">
             ${oneLiner}
@@ -5239,6 +5264,24 @@ window.addEventListener('goal-unlocked', (event) => {
     if (line) showBiomePrompt(`> BUNKER: ${line}`);
 });
 
+window.addEventListener('goal-milestone-presentation-requested', (event) => {
+    const detail = event?.detail;
+    if (!detail || !isGameplayPhase()) return;
+    const videoByBoss = {
+        boss_cybersnail: 'event-boss-encounter-cybersnail',
+        boss_cryosnail: 'event-boss-encounter-cryosnail',
+        boss_sporesnail: 'event-boss-encounter-sporesnail'
+    };
+    const videoBase = videoByBoss[detail.bossType];
+    if (!videoBase) return;
+    detail.promise = playCutsceneVideo(videoBase, {
+        kicker: 'SYSTEM CONSTRUCTION COMPLETE',
+        title: String(detail.goalKey ?? 'BASE MODULE').replace(/([a-z])([A-Z])/g, '$1 $2').toUpperCase(),
+        body: 'STRUCTURE READY // HOSTILE RESPONSE DETECTED',
+        tone: 'danger'
+    });
+});
+
 window.addEventListener('o2-generator-upgraded', (event) => {
     // Level 1 is the milestone build: it runs the choreographed 8-beat sequence
     // (blast doors close -> action video -> doors close -> 3D reveal -> generator rise & lights
@@ -5364,10 +5407,10 @@ function updateMenuCommandStatuses() {
     const weapons = FAB_RECIPES.filter((recipe) => recipe.klass === 'WEAPON');
     const armed = weapons.filter((recipe) => fabricator.isFabricated(recipe.id)).length;
 
-    setText('archive-command-status', `${foundLogs} / ${ALL_LORE_KEYS.length} LOGS`);
-    setText('codex-command-status', `${codexStore.getDiscoveredCount()} / ${CODEX_TOTAL} INTEL`);
-    setText('fab-command-status', `${printed} / ${FAB_RECIPES.length} PRINTED`);
-    setText('roster-command-status', `${armed}/${weapons.length} ARMED`);
+    setText('archive-command-status', t('ui.hub.status_logs', { found: foundLogs, total: ALL_LORE_KEYS.length }));
+    setText('codex-command-status', t('ui.hub.status_intel', { found: codexStore.getDiscoveredCount(), total: CODEX_TOTAL }));
+    setText('fab-command-status', t('ui.hub.status_printed', { printed, total: FAB_RECIPES.length }));
+    setText('roster-command-status', t('ui.hub.status_armed', { armed, total: weapons.length }));
 }
 
 // Recovered-survivor portraits for log authors. Reused from the mothership
@@ -5398,15 +5441,15 @@ function openArchiveLogDetail(key) {
     const portraitEl = document.getElementById('archive-log-detail-portrait');
     if (!modal) return;
 
-    if (keyEl) keyEl.textContent = window.game?.getLoreTitle?.(key) ?? `LOG-${key}`;
-    if (textEl) textEl.textContent = window.game?.getLoreText?.(key) ?? '[LOG TEXT UNAVAILABLE — RETURN TO BUNKER]';
+    if (keyEl) keyEl.textContent = window.game?.getLoreTitle?.(key) ?? t('ui.lore.log_key', { key });
+    if (textEl) textEl.textContent = window.game?.getLoreText?.(key) ?? t('ui.lore.text_unavailable');
     if (portraitEl) portraitEl.src = assetUrl(lorePortraitSrc(key));
 
     const metadata = LORE_METADATA[key];
     const dateEl = document.getElementById('archive-log-detail-date');
     const coordsEl = document.getElementById('archive-log-detail-coords');
-    if (dateEl) dateEl.textContent = metadata ? `DATE: ${metadata.date}` : '';
-    if (coordsEl) coordsEl.textContent = metadata ? `LOC: ${metadata.coords}` : '';
+    if (dateEl) dateEl.textContent = metadata ? t('ui.lore.date', { date: metadata.date }) : '';
+    if (coordsEl) coordsEl.textContent = metadata ? t('ui.lore.loc', { coords: metadata.coords }) : '';
 
     modal.classList.remove('hidden');
     modal.setAttribute('aria-hidden', 'false');
@@ -5448,7 +5491,7 @@ function buildArchiveModal() {
             entry.className = `archive-log-entry ${isFound ? '' : 'archive-log-entry--undiscovered'}`;
             if (isFound) {
                 entry.type = 'button';
-                entry.setAttribute('aria-label', `Open recovered log ${key}`);
+                entry.setAttribute('aria-label', t('ui.lore.open_log', { key }));
                 entry.addEventListener('click', () => openArchiveLogDetail(key));
             }
 
@@ -5475,15 +5518,15 @@ function buildArchiveModal() {
 
             const keyEl = document.createElement('div');
             keyEl.className = 'archive-log-key';
-            keyEl.textContent = `LOG-${key}`;
+            keyEl.textContent = t('ui.lore.log_key', { key });
 
             const textEl = document.createElement('div');
             textEl.className = `archive-log-text ${isFound ? '' : 'archive-log-text--locked'}`;
 
             if (isFound) {
-                textEl.textContent = 'RECOVERED // OPEN RECORD';
+                textEl.textContent = t('ui.lore.recovered');
             } else {
-                textEl.textContent = 'ENCRYPTED // LOCKED';
+                textEl.textContent = t('ui.lore.encrypted');
             }
 
             body.appendChild(keyEl);
@@ -5498,7 +5541,7 @@ function buildArchiveModal() {
     }
 
     if (summaryEl) {
-        summaryEl.textContent = `LOGS RECOVERED: ${found.size} / ${ALL_LORE_KEYS.length}`;
+        summaryEl.textContent = t('ui.lore.summary', { found: found.size, total: ALL_LORE_KEYS.length });
     }
 }
 
@@ -5565,7 +5608,7 @@ function showAchievementToast(unlock) {
     body.className = 'achievement-toast__body';
     const kicker = document.createElement('div');
     kicker.className = 'achievement-toast__kicker';
-    kicker.textContent = 'ACHIEVEMENT UNLOCKED';
+    kicker.textContent = t('ui.ach.unlocked_kicker');
     const title = document.createElement('div');
     title.className = 'achievement-toast__title';
     title.textContent = unlock.title;
@@ -5669,13 +5712,13 @@ function renderAchievementsModal() {
         title.textContent = secretLocked ? '???' : def.title;
         const blurb = document.createElement('div');
         blurb.className = 'achievement-card__blurb';
-        blurb.textContent = secretLocked ? 'Hidden record. Unlock to reveal.' : def.blurb;
+        blurb.textContent = secretLocked ? t('ui.ach.hidden') : def.blurb;
         body.append(title, blurb);
 
         if (def.comingSoon) {
             const soon = document.createElement('div');
             soon.className = 'achievement-card__meta';
-            soon.textContent = 'COMING SOON';
+            soon.textContent = t('ui.ach.coming_soon');
             body.appendChild(soon);
         } else if (progress && !unlocked && !secretLocked) {
             const meta = document.createElement('div');
@@ -5685,7 +5728,7 @@ function renderAchievementsModal() {
         } else if (unlocked) {
             const meta = document.createElement('div');
             meta.className = 'achievement-card__meta achievement-card__meta--unlocked';
-            meta.textContent = 'UNLOCKED';
+            meta.textContent = t('ui.ach.unlocked');
             body.appendChild(meta);
         }
 
@@ -5715,7 +5758,7 @@ async function copyAchievementSaveCode() {
     const code = exportSaveCode();
     const status = document.getElementById('achievements-save-status');
     if (!code) {
-        if (status) status.textContent = 'SAVE CODE UNAVAILABLE';
+        if (status) status.textContent = t('ui.save.code_unavailable');
         window.AudioManager?.play?.('ui_error', { volume: 0.5 });
         return;
     }
@@ -5811,7 +5854,7 @@ window.addEventListener('lore-terminal-nearby', () => {
     const key = prompt?.querySelector('.prompt-key');
     const text = prompt?.querySelector('.prompt-text');
     if (key) setPromptKeyLabel(key);
-    if (text) text.textContent = 'READ LOG';
+    if (text) text.textContent = t('ui.prompt.read_log');
     if (prompt) prompt.classList.remove('hidden');
 });
 
@@ -5839,14 +5882,14 @@ window.addEventListener('lore-terminal-read', (event) => {
     const loreTextEl = document.getElementById('lore-modal-text');
     if (!loreModal) return;
 
-    if (loreKeyEl) loreKeyEl.textContent = title ? title : (window.game?.getLoreTitle?.(loreKey) ?? `LOG-${loreKey}`);
+    if (loreKeyEl) loreKeyEl.textContent = title ? title : (window.game?.getLoreTitle?.(loreKey) ?? t('ui.lore.log_key', { key: loreKey }));
     if (loreTextEl) loreTextEl.textContent = '';
 
     const metadata = LORE_METADATA[loreKey];
     const dateEl = document.getElementById('lore-modal-date');
     const coordsEl = document.getElementById('lore-modal-coords');
-    if (dateEl) dateEl.textContent = metadata ? `DATE: ${metadata.date}` : '';
-    if (coordsEl) coordsEl.textContent = metadata ? `LOC: ${metadata.coords}` : '';
+    if (dateEl) dateEl.textContent = metadata ? t('ui.lore.date', { date: metadata.date }) : '';
+    if (coordsEl) coordsEl.textContent = metadata ? t('ui.lore.loc', { coords: metadata.coords }) : '';
 
     loreModal.classList.remove('hidden');
     window.game?.setInputEnabled?.(false);
@@ -5927,11 +5970,6 @@ window.addEventListener('special-room-discovered', (event) => {
     if (template === 'armory') fireMothershipReactiveLine('armory_found');
 });
 
-window.addEventListener('player-damaged', (event) => {
-    const hp = event?.detail?.hp ?? 99;
-    if (hp <= 1) fireMothershipReactiveLine('hp_critical');
-});
-
 window.addEventListener('mission-objective-complete', () => {
     fireMothershipReactiveLine('objective_found');
 });
@@ -5973,7 +6011,7 @@ window.addEventListener('black-box-prompt-nearby', (event) => {
         key.classList.toggle('hidden', Boolean(locked));
     }
     if (text) {
-        text.textContent = locked ? 'DEFEAT GUARD TO UNLOCK BLACK BOX' : 'RECOVER BLACK BOX';
+        text.textContent = locked ? t('ui.prompt.defeat_guard') : t('ui.prompt.recover_black_box');
     }
     prompt?.classList.remove('hidden');
     prompt?.classList.add('visible');
@@ -6096,12 +6134,12 @@ function renderObjectiveTracker(activeObjectives) {
 
         const progSpan = document.createElement('span');
         progSpan.className = 'objective-tracker__progress';
-        progSpan.textContent = obj.status === 'blocked' ? 'BLOCKED'
+        progSpan.textContent = obj.status === 'blocked' ? t('ui.objective.blocked')
             : obj.target > 1 ? `${obj.current}/${obj.target}` : 'ACTIVE';
 
         const eyebrow = document.createElement('div');
         eyebrow.className = 'objective-tracker__eyebrow';
-        eyebrow.textContent = index === 0 ? 'NEXT OBJECTIVE' : 'ALSO TRACKING';
+        eyebrow.textContent = index === 0 ? t('ui.objective.next') : t('ui.objective.also_tracking');
         item.appendChild(eyebrow);
         item.classList.toggle('is-blocked', obj.status === 'blocked');
 
@@ -6255,7 +6293,7 @@ if (tutorialPrompt) {
 window.addEventListener('mission-kill-progress', (event) => {
     const { count = 0, target = 0 } = event?.detail ?? {};
     const missionEl = document.getElementById('mission-status-text');
-    if (missionEl) missionEl.textContent = `ELIMINATE: ${count}/${target}`;
+    if (missionEl) missionEl.textContent = t('ui.objective.eliminate', { count, target });
     showMissionProgressHUD(`ELIMINATE: ${count} / ${target}`);
 });
 
@@ -6432,13 +6470,30 @@ function updateDistressMode(o2, hp) {
         _distressModeActive = true;
         document.body.classList.add('distress-mode');
         document.body.classList.add('vitals-critical');
-        fireMothershipReactiveLine('hp_critical');
+        // The suit's threshold callout is the single authoritative low-health
+        // voice. Distress mode owns visuals/music only, avoiding a second
+        // Mothership paragraph on top of the selected radio take.
         window.AudioManager?.play('ui_error', { volume: 0.55, playbackRate: 0.48, bus: 'sfx' });
     } else if (!shouldBeDistress && _distressModeActive) {
         _distressModeActive = false;
         document.body.classList.remove('distress-mode');
         document.body.classList.remove('vitals-critical');
     }
+}
+
+function renderHazardStatus({ kind = null, label = '', detail = '', timeLeft = null } = {}) {
+    const panel = document.getElementById('hazard-status-panel');
+    if (!panel) return;
+    const visible = Boolean(kind) && isGameplayHudActive();
+    panel.classList.toggle('hidden', !visible);
+    panel.dataset.hazard = kind ?? '';
+    document.getElementById('hazard-status-icon').textContent = kind === 'toxin' ? '☣' : kind === 'oxygen' ? 'O₂' : '❄';
+    document.getElementById('hazard-status-label').textContent = label;
+    document.getElementById('hazard-status-detail').textContent = detail;
+    document.getElementById('hazard-status-time').textContent = Number.isFinite(timeLeft)
+        ? `${Math.max(0, timeLeft).toFixed(timeLeft < 10 ? 1 : 0)}s`
+        : '—';
+    document.body.classList.toggle('player-cold-exposed', visible && kind === 'cold');
 }
 
 window.addEventListener('player-o2-changed', (event) => {
@@ -6458,6 +6513,20 @@ window.addEventListener('player-o2-changed', (event) => {
     }
     updateDistressMode(o2, hp);
     updateMusicTension();
+    if (!document.body.classList.contains('player-poisoned')) {
+        const drainRate = Number(event?.detail?.drainRate ?? 0);
+        const biome = String(event?.detail?.biome ?? 'active');
+        if (!event?.detail?.safe && drainRate > 0 && (o2 < 60 || biome === 'cryo')) {
+            renderHazardStatus({
+                kind: biome === 'cryo' ? 'cold' : 'oxygen',
+                label: biome === 'cryo' ? 'COLD EXPOSURE' : 'OXYGEN RESERVE DRAINING',
+                detail: event?.detail?.safeDirection || 'RETURN TO THE PRESSURIZED SHIP FIELD',
+                timeLeft: o2 / drainRate
+            });
+        } else {
+            renderHazardStatus();
+        }
+    }
 });
 
 window.addEventListener('player-damaged', (event) => {
@@ -6467,11 +6536,18 @@ window.addEventListener('player-damaged', (event) => {
     updateMusicTension();
 });
 
-window.addEventListener('player-poisoned', () => {
+window.addEventListener('player-poisoned', (event) => {
     document.body.classList.add('player-poisoned');
+    renderHazardStatus({
+        kind: 'toxin',
+        label: 'BIO-TOXIN EXPOSURE',
+        detail: 'FILTERS COMPROMISED · LEAVE THE SPORE CLOUD',
+        timeLeft: Number(event?.detail?.timeLeft)
+    });
 });
 window.addEventListener('player-poison-cleared', () => {
     document.body.classList.remove('player-poisoned');
+    renderHazardStatus();
 });
 
 window.addEventListener('health-restored', () => {
@@ -6849,7 +6925,7 @@ function ensureMissionManagers() {
 
 function showRunLoadingScreen(status = 'SYNCHRONIZING DROP VECTOR', progress = 0, { overDoor = false } = {}) {
     clearLoaderBriefingMode();
-    if (loaderTitle) loaderTitle.textContent = 'MOTHERSHIP DEPLOYMENT TELEMETRY';
+    if (loaderTitle) loaderTitle.textContent = t('ui.loader.deployment_telemetry');
     if (loaderStatus) loaderStatus.textContent = status;
     if (loaderBar) loaderBar.style.width = `${Math.max(0, Math.min(100, progress))}%`;
     loadingScreen?.classList.toggle('over-door-loader', Boolean(overDoor));
@@ -6915,8 +6991,8 @@ function showTacticalNotificationToast({ title, status, duration = 4000 }) {
         <div class="tactical-alert-toast__icon">⚠️</div>
         <div class="tactical-alert-toast__body">
             <div class="tactical-alert-toast__header">
-                <span class="tactical-alert-toast__kicker">TACTICAL ALERT</span>
-                <span class="tactical-alert-toast__status">CRITICAL</span>
+                <span class="tactical-alert-toast__kicker">${t('ui.alert.tactical')}</span>
+                <span class="tactical-alert-toast__status">${t('ui.alert.critical')}</span>
             </div>
             <div class="tactical-alert-toast__title">${title}</div>
             <div class="tactical-alert-toast__blurb">${status}</div>
@@ -7129,7 +7205,7 @@ function playClassIntroSequence(playerType = 'SCOUT') {
 
         const skipHint = document.createElement('div');
         skipHint.className = 'class-intro-skip';
-        skipHint.textContent = 'PRESS ANY BUTTON / KEY TO SKIP';
+        skipHint.textContent = t('ui.cinematic.skip_any');
 
         let settled = false;
         let step = 'character'; // 'character' | 'launch' | 'done'
@@ -7313,8 +7389,18 @@ function playClassIntroSequence(playerType = 'SCOUT') {
             overlay.append(buildSquadManifestPanel());
         }
 
+        const activeVoicePackId = window.loadout?.state?.voicePackId || window.loadout?.getEquippedVoicePackId?.();
+        const personaPanel = buildVoicePackPersonaOverlay(activeVoicePackId);
+        if (personaPanel) {
+            overlay.append(personaPanel);
+        }
+
         overlay.append(skipHint);
         host.appendChild(overlay);
+
+        if (activeVoicePackId) {
+            window.AudioManager?.playVoiceCallout?.('mission_active', { volume: 0.95 });
+        }
 
         playVideoSource(charBase, startLaunchStep);
     });
@@ -7331,7 +7417,7 @@ function buildSquadManifestPanel() {
 
     const title = document.createElement('div');
     title.className = 'class-intro-squad-title';
-    title.textContent = 'SQUAD MANIFEST';
+    title.textContent = t('ui.radio.squad_manifest');
     panel.appendChild(title);
 
     multiplayerLobby.players.forEach((player) => {
@@ -7352,6 +7438,39 @@ function buildSquadManifestPanel() {
         panel.appendChild(row);
     });
 
+    return panel;
+}
+
+function buildVoicePackPersonaOverlay(voicePackId) {
+    const id = Number(voicePackId);
+    if (!id || (id !== 4148 && id !== 4149)) return null;
+
+    const isCommander = id === 4148;
+    const panel = document.createElement('div');
+    panel.className = `class-intro-persona-panel ${isCommander ? 'class-intro-persona-panel--commander' : 'class-intro-persona-panel--aura'}`;
+
+    const portrait = document.createElement('img');
+    portrait.className = 'class-intro-persona-portrait';
+    portrait.alt = isCommander ? t('ui.radio.commander_name') : t('ui.radio.aura_name');
+    portrait.src = assetUrl(isCommander ? '/lore_portraits/voice_commander_persona.png' : '/lore_portraits/voice_aura_persona.png');
+
+    const meta = document.createElement('div');
+    meta.className = 'class-intro-persona-meta';
+
+    const tag = document.createElement('div');
+    tag.className = 'class-intro-persona-tag';
+    tag.textContent = isCommander ? t('ui.radio.commander_tag') : t('ui.radio.aura_tag');
+
+    const title = document.createElement('div');
+    title.className = 'class-intro-persona-title';
+    title.textContent = isCommander ? t('ui.radio.commander_title') : t('ui.radio.aura_title');
+
+    const status = document.createElement('div');
+    status.className = 'class-intro-persona-status';
+    status.innerHTML = `<span class="persona-pulse-dot"></span>${isCommander ? 'TRANSMISSION ARMED // ORDERS LOCKED' : 'TELEMETRY SYNCED // ACTIVE MONITOR'}`;
+
+    meta.append(tag, title, status);
+    panel.append(portrait, meta);
     return panel;
 }
 
@@ -7458,7 +7577,7 @@ function playCutsceneVideo(base, options = {}) {
 
         const skipHint = document.createElement('div');
         skipHint.className = 'class-intro-skip cinematic-still-skip';
-        skipHint.textContent = 'PRESS SPACE / ENTER TO SKIP';
+        skipHint.textContent = t('ui.cinematic.skip_space');
 
         // Render text overlay on top of video when kicker/title/body are provided
         const resolvedKicker = kicker || fallback?.kicker || '';
@@ -7689,7 +7808,7 @@ function playCinematicStills(rawSpec = {}) {
         const skip = document.createElement('button');
         skip.type = 'button';
         skip.className = 'class-intro-skip cinematic-still-skip';
-        skip.textContent = spec.allowSkip ? 'PRESS ANY BUTTON / KEY TO CONTINUE' : '';
+        skip.textContent = spec.allowSkip ? t('ui.cinematic.continue_any') : '';
         skip.disabled = !spec.allowSkip;
 
         overlay.append(frameA);
@@ -8005,6 +8124,7 @@ async function runMissionIntroSequence({ deploymentHold = null } = {}) {
             document.body.classList.remove('mission-intro-active');
         }
         game?.setCinematicLock?.(false);
+        window.AudioManager?.playVoiceCallout?.('comms_online', { volume: 0.95 });
 
         if (startTutorial) {
             await dialogueManager?.startTutorialSequence({ game });
@@ -8046,7 +8166,6 @@ async function runMissionIntroSequence({ deploymentHold = null } = {}) {
         game?.setCinematicLock?.(false);
         game?.setInputEnabled?.(true);
         game?.setGodMode?.(Boolean(debugGodModeActive));
-        notifyGameplayReady();
         // The mission intro is the outer owner of the deployment rendering
         // hold. Nested class/video skips can settle their suspend callbacks in
         // a different order, leaving the reference-counted helper restored to
@@ -8054,6 +8173,7 @@ async function runMissionIntroSequence({ deploymentHold = null } = {}) {
         // Finishing this sequence must always hand a live renderer back to
         // gameplay; otherwise the HUD appears over a permanently black frame.
         game?.setLoadingPaused?.(false);
+        notifyGameplayReady();
         missionFlowRunning = false;
         const skipBtn = document.getElementById('global-skip-intro-btn');
         if (skipBtn) skipBtn.classList.add('hidden');
@@ -8120,6 +8240,13 @@ function ensureArmoryInitialized() {
             // session; the decal equivalent is covered per-class already via
             // updateFromLoadout below.
             armorySceneInstance.setOperatorPolish(getSelectedPolish().color);
+            const qaToolsEnabled = window.electronAPI
+                ? Boolean(await window.electronAPI.getQaToolsEnabled?.().catch?.(() => false))
+                : Boolean(import.meta.env.DEV);
+            // Desktop local grants stay disabled until the trusted main
+            // process confirms this is a named beta/QA build. Hiding the UI
+            // alone is never treated as authorization.
+            getOwnershipStore().setLocalInventoryAllowed?.(qaToolsEnabled);
             armoryUiInstance = createArmoryUi({
                 container: hudContainer,
                 loadoutManager: loadout,
@@ -8128,6 +8255,11 @@ function ensureArmoryInitialized() {
                 onBack: () => closeArmoryScreen({ embark: false }),
                 onOpenVault: () => openSteamVaultModal(),
                 onOpenSettings: () => openSettingsModal(),
+                onDailyOps: () => {
+                    pendingArmoryEmbarkAction = beginDailyOpsRun;
+                    closeArmoryScreen({ embark: true });
+                },
+                getDailyOpsStatus: getDailyOpsPresentation,
                 onClassChange: (cls) => {
                     saveHeroType(cls);
                     document.querySelectorAll('.char-card').forEach((card) => {
@@ -8142,7 +8274,8 @@ function ensureArmoryInitialized() {
                         window.game.playerType = cls;
                     }
                 },
-                ownership: getOwnershipStore()
+                ownership: getOwnershipStore(),
+                qaToolsEnabled
             });
         })();
     }
@@ -8313,16 +8446,10 @@ if (startBtn) {
     });
 }
 
-// Daily Ops button
-const dailyOpsBtn = document.getElementById('daily-ops-btn');
-if (dailyOpsBtn) {
-    dailyOpsBtn.addEventListener('click', () => {
-        const record = getDailyOpsRecord();
-        if (record?.completed) return;
-        // Same stale-session leak as titleNewRunBtn above -- Daily Ops is
-        // also never part of multiplayer's #start-game replay chain.
-        clearMultiplayerSession();
-        openArmoryGate(() => {
+function beginDailyOpsRun() {
+    const record = getDailyOpsRecord();
+    if (record?.completed) return;
+    clearMultiplayerSession();
             saveDailyOpsRecord({ attempted: true, completed: false, date: getTodayDateString() });
             _isDailyOpsRun = true;
             if (window.game) {
@@ -8372,8 +8499,14 @@ if (dailyOpsBtn) {
                 }
                 // Defaults to active class door
             );
-        });
-    });
+}
+
+// Compatibility for saves/alternate shells that still render the legacy
+// button. The primary Daily Ops entry now lives beside standard deployment in
+// the full-stage Armory.
+const dailyOpsBtn = document.getElementById('daily-ops-btn');
+if (dailyOpsBtn) {
+    dailyOpsBtn.addEventListener('click', () => openArmoryGate(beginDailyOpsRun));
 }
 
 // Fullscreen State Sync Listener
@@ -8570,11 +8703,17 @@ function devSetCosmeticUnlockAll(arg) {
     const next = arg === undefined || arg === ''
         ? !store.isUnlockAll()
         : !['0', 'off', 'false', 'no'].includes(String(arg).toLowerCase());
-    store.setUnlockAll(next);
+    if (!store.setUnlockAll(next)) {
+        return 'QA UNLOCK REJECTED (trusted beta/dev capability required)';
+    }
     if (next) {
         unlockAllPolishes();
+        unlockAllSheens();
     }
-    return `ALL WEAPON & CHASSIS SKINS ${next ? 'UNLOCKED' : 'LOCKED'} (equip override)`;
+    const audit = store.auditEquippableCatalog();
+    return next
+        ? `QA UNLOCK ${audit.available}/${audit.total}: all catalogued equipment, operator polishes and weapon sheens available (synthetic equip override)`
+        : 'QA UNLOCK disabled (earned/default ownership retained)';
 }
 
 // B9: clears economy state only. Settings, achievements and codex progress live
@@ -8631,6 +8770,9 @@ function devGrantResources() {
     pickupCounterState.tech = 999999;
     pickupCounterState.coin = 999999;
     pickupCounterState.shells = bankManager.getShells?.() ?? 999999;
+    recordDebugResourceGrant(pickupCounterState, {
+        tech: 999999, coin: 999999, med: 999999, ammo: 999999, shells: 999999
+    });
     recomputePickupTotal();
     renderPickupCounter();
     window.game?.healPlayer?.(999999, { skipQueensMilkPenalty: true });
@@ -9671,6 +9813,31 @@ const mainFsToggle = document.getElementById('main-fs-toggle');
 const settingsBtns = document.querySelectorAll('.open-settings-btn');
 const abortBtn = document.getElementById('abort-mission');
 
+function organizeSettingsPanels() {
+    const panel = (name) => settingsPopup?.querySelector(`[data-settings-panel="${name}"]`);
+    const moveControl = (id, panelName) => {
+        const row = document.getElementById(id)?.closest('.setting-item');
+        const target = panel(panelName);
+        if (row && target) target.append(row);
+    };
+    [
+        ['setting-camera-mode', 'camera'],
+        ['setting-camera-distance', 'camera'],
+        ['setting-camera-follow', 'camera'],
+        ['open-crosshair-color', 'camera'],
+        ['open-language-select', 'accessibility'],
+        ['setting-ui-scale', 'accessibility'],
+        ['setting-text-floor', 'accessibility'],
+        ['setting-text-speed', 'accessibility'],
+        ['setting-colorblind-toggle', 'accessibility'],
+        ['setting-subtitle-size', 'accessibility'],
+        ['setting-subtitle-backdrop', 'accessibility'],
+        ['setting-contrast', 'accessibility'],
+        ['setting-gore-toggle', 'accessibility']
+    ].forEach(([id, target]) => moveControl(id, target));
+}
+organizeSettingsPanels();
+
 if (settingsPopup) {
     new MutationObserver(() => syncSteamInputPhase()).observe(settingsPopup, {
         attributes: true,
@@ -9678,15 +9845,71 @@ if (settingsPopup) {
     });
 }
 
+function selectSettingsTab(tabName = 'session', { focus = false } = {}) {
+    if (!settingsPopup) return;
+    const tabs = [...settingsPopup.querySelectorAll('[data-settings-tab]')];
+    const panels = [...settingsPopup.querySelectorAll('[data-settings-panel]')];
+    const selected = tabs.find((tab) => tab.dataset.settingsTab === tabName) ?? tabs[0];
+    tabs.forEach((tab) => {
+        const active = tab === selected;
+        tab.classList.toggle('active', active);
+        tab.setAttribute('aria-selected', String(active));
+        tab.tabIndex = active ? 0 : -1;
+    });
+    panels.forEach((panel) => panel.classList.toggle('hidden', panel.dataset.settingsPanel !== selected?.dataset.settingsTab));
+    if (focus) selected?.focus();
+}
+
+settingsPopup?.querySelector('.settings-tabs')?.addEventListener('click', (event) => {
+    const tab = event.target.closest?.('[data-settings-tab]');
+    if (tab) selectSettingsTab(tab.dataset.settingsTab);
+});
+
+settingsPopup?.querySelector('.settings-tabs')?.addEventListener('keydown', (event) => {
+    if (event.key === 'ArrowDown') {
+        event.preventDefault();
+        moveSettingsDirectionalFocus(event.key);
+        return;
+    }
+    if (!['ArrowLeft', 'ArrowRight'].includes(event.key)) return;
+    const tabs = [...settingsPopup.querySelectorAll('[data-settings-tab]')];
+    const index = tabs.indexOf(document.activeElement);
+    if (index < 0) return;
+    event.preventDefault();
+    const direction = event.key === 'ArrowRight' ? 1 : -1;
+    selectSettingsTab(tabs[(index + direction + tabs.length) % tabs.length].dataset.settingsTab, { focus: true });
+});
+
+// The full setting row is the hit target. Direct interaction with its control
+// still behaves natively; clicking the label/background activates or advances it.
+settingsPopup?.querySelector('.settings-modal-content')?.addEventListener('click', (event) => {
+    if (event.target.closest?.('button, input, select, textarea, a, label')) return;
+    const row = event.target.closest?.('.setting-item');
+    if (!row) return;
+    const checkbox = row.querySelector('input[type="checkbox"]');
+    const select = row.querySelector('select:not([aria-hidden="true"])');
+    const button = row.querySelector('button');
+    if (checkbox && !checkbox.disabled) {
+        checkbox.checked = !checkbox.checked;
+        checkbox.dispatchEvent(new Event('change', { bubbles: true }));
+    } else if (select?.options?.length && !select.disabled) {
+        select.selectedIndex = (select.selectedIndex + 1) % select.options.length;
+        select.dispatchEvent(new Event('change', { bubbles: true }));
+    } else {
+        button?.click();
+    }
+});
+
 function openSettingsModal() {
     if (!settingsPopup) return;
     const isHUD = !document.getElementById('ui')?.classList.contains('hidden');
     if (abortBtn) {
-        if (isHUD) abortBtn.classList.remove('hidden');
-        else abortBtn.classList.add('hidden');
+        abortBtn.classList.toggle('hidden', !isHUD);
+        abortBtn.closest('.setting-item')?.classList.toggle('hidden', !isHUD);
     }
 
     settingsPopup.classList.remove('hidden');
+    selectSettingsTab(settingsPopup.querySelector('.settings-tab.active')?.dataset.settingsTab ?? 'session');
     syncSteamInputPhase('menu');
     if (mainDebugToggle) mainDebugToggle.checked = state.settings.debug;
     if (mainFsToggle) mainFsToggle.checked = state.settings.fullscreen;
@@ -9764,10 +9987,12 @@ document.getElementById('setting-text-floor')?.addEventListener('change', (e) =>
     devSetTextFloor(e.target.value);
 });
 document.getElementById('setting-aim-sensitivity')?.addEventListener('change', (e) => {
-    state.settings.aimSensitivity = parseFloat(e.target.value) || 1.0;
+    const next = Number(e.target.value);
+    state.settings.aimSensitivity = [0.5, 0.75, 1, 1.25, 1.5, 2].includes(next) ? next : 1;
     syncAimSensitivityControls();
     persistSettings();
 });
+document.getElementById('resume-settings')?.addEventListener('click', () => closeSettings?.click());
 document.getElementById('setting-camera-mode')?.addEventListener('change', (e) => {
     state.settings.cameraMode = e.target.value === 'isometric' ? 'isometric' : 'third-person';
     window.game?.setCameraMode?.(state.settings.cameraMode);
@@ -10226,7 +10451,7 @@ function updatePlayerTradeUi(state) {
 
     const peerCallsignEl = document.getElementById('trade-peer-callsign');
     const peerClassEl = document.getElementById('trade-peer-class');
-    if (peerCallsignEl) peerCallsignEl.textContent = (state.partner?.callsign || 'SQUADMATE').toUpperCase();
+    if (peerCallsignEl) peerCallsignEl.textContent = (state.partner?.callsign || t('ui.trade.squadmate')).toUpperCase();
     if (peerClassEl) peerClassEl.textContent = `${state.partner?.opClass || 'SCOUT'} // REMOTE`;
 
     // Self availability
@@ -10260,11 +10485,11 @@ function updatePlayerTradeUi(state) {
     if (peerO2ValEl) peerO2ValEl.textContent = String(state.peerOffer.o2Canisters || 0);
 
     const statusBarEl = document.getElementById('trade-status-bar-text');
-    if (statusBarEl) statusBarEl.textContent = state.statusMessage || 'AWAITING OFFER SELECTION';
+    if (statusBarEl) statusBarEl.textContent = state.statusMessage || t('ui.trade.awaiting_offer');
 
     const confirmBtn = document.getElementById('trade-confirm-btn');
     if (confirmBtn) {
-        confirmBtn.textContent = state.myAccepted ? 'WAITING FOR SQUADMATE...' : 'CONFIRM TRANSFER';
+        confirmBtn.textContent = state.myAccepted ? t('ui.trade.waiting_squadmate') : t('ui.player_trade.confirm_transfer');
         confirmBtn.disabled = state.myAccepted;
     }
 }
@@ -10384,7 +10609,7 @@ function updateNpcDialogueUi(state = {}) {
     }
     if (avatarEl) avatarEl.textContent = tree.icon || '💬';
     if (moodEl) {
-        moodEl.textContent = (bond?.level >= 2) ? 'ENAMORED / DEVOTED' : ((bond?.level === 1) ? 'WARM / ATTRACTION' : 'ATTENTIVE');
+        moodEl.textContent = (bond?.level >= 2) ? t('ui.bond.enamored') : ((bond?.level === 1) ? t('ui.bond.warm') : t('ui.bond.attentive'));
     }
 
     if (narrationEl) {
@@ -10397,7 +10622,7 @@ function updateNpcDialogueUi(state = {}) {
     }
 
     if (speakerEl) speakerEl.textContent = `${node.speaker ? node.speaker.toUpperCase() : tree.name.toUpperCase()}:`;
-    if (textEl) textEl.textContent = `"${node.dialogue}"`;
+    if (textEl) textEl.textContent = t('ui.camp.quote', { text: node.dialogue });
 
     if (choicesEl) {
         choicesEl.innerHTML = '';
@@ -10570,6 +10795,9 @@ function drawTacticalMapOverlay(canvasId = 'tactical-map-canvas', compact = fals
     const home = mapState.home ?? { x: 0, z: 0 };
     const chunkSize = mapState.chunkSize ?? 49;
     const detailedChunks = mapState.detailedChunks ?? [];
+    const hudStyle = window.getComputedStyle(document.getElementById('ui') ?? document.documentElement);
+    const mapPrimary = hudStyle.getPropertyValue('--hud-primary').trim() || '#00e5ff';
+    const mapSecondary = hudStyle.getPropertyValue('--hud-secondary').trim() || '#00ffd2';
     const discoveredKeys = new Set(detailedChunks.map((chunk) => chunk.key));
 
     const tileStatEl = compact ? null : document.getElementById('map-stat-tiles');
@@ -10586,7 +10814,8 @@ function drawTacticalMapOverlay(canvasId = 'tactical-map-canvas', compact = fals
     const worldToMap = (x, z) => ({ x: x * cellSize + offsetX, y: z * cellSize + offsetY });
 
     // Grid lines background
-    ctx.strokeStyle = 'rgba(0, 229, 255, 0.08)';
+    ctx.globalAlpha = 0.08;
+    ctx.strokeStyle = mapPrimary;
     ctx.lineWidth = 1;
     const gridStep = Math.max(12, chunkSize * cellSize);
     for (let x = (offsetX % gridStep + gridStep) % gridStep; x <= width; x += gridStep) {
@@ -10601,6 +10830,7 @@ function drawTacticalMapOverlay(canvasId = 'tactical-map-canvas', compact = fals
         ctx.lineTo(width, y);
         ctx.stroke();
     }
+    ctx.globalAlpha = 1;
 
     // Debug uses the lightweight regional plan rather than generating every
     // 49x49 gameplay chunk. It reveals the complete macro route without
@@ -10639,46 +10869,44 @@ function drawTacticalMapOverlay(canvasId = 'tactical-map-canvas', compact = fals
         for (const cell of chunk.cells ?? []) {
             const p = worldToMap(chunk.chunkX * chunkSize + cell.x, chunk.chunkY * chunkSize + cell.y);
             if (p.x < -cellSize || p.x > width || p.y < -cellSize || p.y > height) continue;
-            ctx.fillStyle = cell.kind === 'door' ? '#ffd15c'
-                : cell.kind === 'room' ? 'rgba(0,229,255,.72)'
-                    : 'rgba(55,145,178,.5)';
+            ctx.globalAlpha = cell.kind === 'door' ? 1 : cell.kind === 'room' ? 0.72 : 0.5;
+            ctx.fillStyle = cell.kind === 'door' ? '#ffd15c' : cell.kind === 'room' ? mapPrimary : mapSecondary;
             ctx.fillRect(p.x, p.y, Math.max(1.2, cellSize + 0.25), Math.max(1.2, cellSize + 0.25));
         }
     }
+    ctx.globalAlpha = 1;
 
-    // Render Traversed Exploration Breadcrumb Trail (Real Historical Footsteps)
+    // Render recent traversal as independently fading segments. A single
+    // opaque path made old runs accumulate into a permanent map scribble.
     const breadcrumbTrail = mapState.breadcrumbTrail ?? [];
     if (breadcrumbTrail.length >= 2) {
         ctx.save();
-
-        // 1. Soft glowing outer trail path
-        ctx.beginPath();
-        const startPt = worldToMap(breadcrumbTrail[0].x, breadcrumbTrail[0].z);
-        ctx.moveTo(startPt.x, startPt.y);
         for (let i = 1; i < breadcrumbTrail.length; i++) {
-            const pt = worldToMap(breadcrumbTrail[i].x, breadcrumbTrail[i].z);
-            ctx.lineTo(pt.x, pt.y);
+            const from = worldToMap(breadcrumbTrail[i - 1].x, breadcrumbTrail[i - 1].z);
+            const to = worldToMap(breadcrumbTrail[i].x, breadcrumbTrail[i].z);
+            const alpha = Math.min(breadcrumbTrail[i - 1].opacity ?? 1, breadcrumbTrail[i].opacity ?? 1);
+            ctx.beginPath();
+            ctx.moveTo(from.x, from.y);
+            ctx.lineTo(to.x, to.y);
+            ctx.globalAlpha = 0.2 * alpha;
+            ctx.strokeStyle = mapPrimary;
+            ctx.lineWidth = 4.5;
+            ctx.lineCap = 'round';
+            ctx.stroke();
+            ctx.globalAlpha = 0.85 * alpha;
+            ctx.strokeStyle = mapSecondary;
+            ctx.lineWidth = 1.8;
+            ctx.setLineDash([4, 2]);
+            ctx.stroke();
         }
-        ctx.strokeStyle = 'rgba(0, 229, 255, 0.22)';
-        ctx.lineWidth = 4.5;
-        ctx.lineCap = 'round';
-        ctx.lineJoin = 'round';
-        ctx.stroke();
-
-        // 2. Inner crisp neon route trail
-        ctx.strokeStyle = 'rgba(46, 230, 255, 0.85)';
-        ctx.lineWidth = 1.8;
-        ctx.setLineDash([4, 2]);
-        ctx.stroke();
-
-        // 3. Footstep waypoint pulse markers along the traveled route
         const stepInterval = Math.max(3, Math.floor(breadcrumbTrail.length / 40));
         for (let i = 0; i < breadcrumbTrail.length; i += stepInterval) {
             const wp = worldToMap(breadcrumbTrail[i].x, breadcrumbTrail[i].z);
             if (wp.x < -10 || wp.x > width + 10 || wp.y < -10 || wp.y > height + 10) continue;
             ctx.beginPath();
             ctx.arc(wp.x, wp.y, 2.0, 0, Math.PI * 2);
-            ctx.fillStyle = '#00ffd2';
+            ctx.globalAlpha = breadcrumbTrail[i].opacity ?? 1;
+            ctx.fillStyle = mapSecondary;
             ctx.fill();
         }
         ctx.restore();
@@ -10687,7 +10915,7 @@ function drawTacticalMapOverlay(canvasId = 'tactical-map-canvas', compact = fals
     // Landmarks (including Home Base)
     for (const landmark of landmarks) {
         const landmarkKey = `${Math.floor(landmark.x / chunkSize)},${Math.floor(landmark.z / chunkSize)}`;
-        if (landmark.type !== 'home_base' && !view.debugRevealAll && !discoveredKeys.has(landmarkKey)) continue;
+        if (landmark.type !== 'home_base' && !landmark.revealOnMap && !view.debugRevealAll && !discoveredKeys.has(landmarkKey)) continue;
         const point = worldToMap(landmark.x, landmark.z);
         const lx = point.x;
         const ly = point.y;
@@ -10713,6 +10941,17 @@ function drawTacticalMapOverlay(canvasId = 'tactical-map-canvas', compact = fals
             ctx.fillStyle = '#ffd700';
             ctx.font = 'bold 11px Space Mono, monospace';
             if (!compact) ctx.fillText(landmark.label ?? 'HOME BASE', lx, ly + 20);
+        } else if (landmark.type === 'black_box') {
+            ctx.fillStyle = '#ff4d67';
+            ctx.fillText('◆', lx, ly);
+            ctx.strokeStyle = '#ffffff';
+            ctx.lineWidth = 2;
+            ctx.strokeText('◆', lx, ly);
+            if (!compact) ctx.fillText(landmark.label ?? 'BLACK BOX', lx, ly + 16);
+        } else if (landmark.type === 'foundry') {
+            ctx.fillStyle = '#ffb238';
+            ctx.fillText('⚒', lx, ly);
+            if (!compact) ctx.fillText(landmark.label ?? 'FOUNDRY', lx, ly + 16);
         } else if (landmark.type === 'camp') {
             ctx.fillStyle = '#ffaa00';
             ctx.fillText('⛺', lx, ly);
@@ -10739,9 +10978,11 @@ function drawTacticalMapOverlay(canvasId = 'tactical-map-canvas', compact = fals
         if (!c.scanned) continue;
         const pt = worldToMap(c.gx * 15, c.gz * 15);
         if (pt.x < 0 || pt.x > width || pt.y < 0 || pt.y > height) continue;
-        ctx.fillStyle = 'rgba(0, 210, 255, 0.18)';
+        ctx.globalAlpha = 0.18;
+        ctx.fillStyle = mapPrimary;
         ctx.fillRect(pt.x - 3, pt.y - 3, 6, 6);
     }
+    ctx.globalAlpha = 1;
 
     // Render scanned path connectivity lines & route vectors
     const scannedPaths = mapState.scannedPaths ?? [];
@@ -10755,7 +10996,8 @@ function drawTacticalMapOverlay(canvasId = 'tactical-map-canvas', compact = fals
             const pt = worldToMap(sp.path[i].x, sp.path[i].z);
             ctx.lineTo(pt.x, pt.y);
         }
-        ctx.strokeStyle = sp.found ? 'rgba(0, 255, 210, 0.85)' : 'rgba(0, 210, 255, 0.35)';
+        ctx.globalAlpha = sp.found ? 0.85 : 0.35;
+        ctx.strokeStyle = sp.found ? mapSecondary : mapPrimary;
         ctx.lineWidth = sp.found ? 3 : 1.5;
         ctx.setLineDash(sp.found ? [6, 4] : [2, 4]);
         ctx.stroke();
@@ -10765,7 +11007,7 @@ function drawTacticalMapOverlay(canvasId = 'tactical-map-canvas', compact = fals
             const pt = worldToMap(sp.path[i].x, sp.path[i].z);
             ctx.beginPath();
             ctx.arc(pt.x, pt.y, sp.found ? 3.5 : 2, 0, Math.PI * 2);
-            ctx.fillStyle = sp.found ? '#00ffd2' : '#00d2ff';
+            ctx.fillStyle = sp.found ? mapSecondary : mapPrimary;
             ctx.fill();
         }
         ctx.restore();
@@ -10778,27 +11020,35 @@ function drawTacticalMapOverlay(canvasId = 'tactical-map-canvas', compact = fals
 
     if (px >= -20 && px <= width + 20 && py >= -20 && py <= height + 20) {
         const time = Date.now() * 0.003;
-        const pulseRadius = (compact ? 7 : 12) + Math.sin(time) * 2;
+        const pulseRadius = (compact ? 9 : 13) + Math.sin(time) * 2;
         ctx.beginPath();
         ctx.arc(px, py, pulseRadius, 0, Math.PI * 2);
-        ctx.strokeStyle = 'rgba(0, 255, 170, 0.4)';
+        ctx.globalAlpha = 0.4;
+        ctx.strokeStyle = mapSecondary;
         ctx.lineWidth = 1;
         ctx.stroke();
+        ctx.globalAlpha = 1;
 
         ctx.save();
         ctx.translate(px, py);
         ctx.rotate(player.rotation ?? 0);
 
-        ctx.fillStyle = '#00ffaa';
+        ctx.shadowColor = 'rgba(0, 0, 0, 0.9)';
+        ctx.shadowBlur = compact ? 5 : 7;
+        ctx.fillStyle = mapSecondary;
         ctx.beginPath();
-        ctx.moveTo(0, -10);
-        ctx.lineTo(7, 8);
-        ctx.lineTo(-7, 8);
+        const arrowLength = compact ? 13 : 15;
+        const arrowHalfWidth = compact ? 8 : 9;
+        ctx.moveTo(0, -arrowLength);
+        ctx.lineTo(arrowHalfWidth, arrowLength * 0.7);
+        ctx.lineTo(0, arrowLength * 0.35);
+        ctx.lineTo(-arrowHalfWidth, arrowLength * 0.7);
         ctx.closePath();
         ctx.fill();
 
+        ctx.shadowBlur = 0;
         ctx.strokeStyle = '#ffffff';
-        ctx.lineWidth = 1.5;
+        ctx.lineWidth = compact ? 2.5 : 2;
         ctx.stroke();
 
         ctx.restore();
@@ -11277,20 +11527,20 @@ function renderFieldPrint(grid, bank) {
     const panel = document.createElement('div');
     panel.className = 'fab-activation-panel';
     panel.innerHTML = `<div class="fab-activation-panel__kicker">GUARANTEED FIELD PRINT · ALL CLASSES</div>
-        <div class="fab-activation-panel__title">SCATTER REPEATER</div>
+        <div class="fab-activation-panel__title">${t('ui.fab.scatter_repeater')}</div>
         <p>Three close-range projectiles per shot; shorter reach. Equip for your next deployment. No Foundry activation needed for this field schematic.</p>
         <div class="fab-activation-panel__cost">${fabCostText(cost, bank, { showHaveNeed: !bankManager.canAfford(cost) })}</div>`;
     const button = document.createElement('button');
     button.id = 'season-field-print';
     button.className = 'fab-card__btn';
-    button.textContent = fabricated ? (equipped ? 'EQUIPPED FOR NEXT RUN ✓' : 'EQUIP SCATTER REPEATER') : printing ? 'PRINTING…' : bankManager.canAfford(cost) ? 'PRINT SCATTER REPEATER' : fabMissingResourceText(cost, bank);
+    button.textContent = fabricated ? (equipped ? t('ui.fab.equipped_next_run') : t('ui.fab.equip_scatter')) : printing ? t('ui.fab.printing') : bankManager.canAfford(cost) ? 'PRINT SCATTER REPEATER' : fabMissingResourceText(cost, bank);
     button.disabled = printing || equipped || (!fabricated && !bankManager.canAfford(cost));
     button.addEventListener('click', () => {
         try {
             if (fabricated) { loadout.equip(recipe.id, fabricator); syncEquippedWeaponLabel(); }
             else { fabricator.startPrint(recipe.id, bankManager); startFabTicker(); }
             renderFabricationModal();
-        } catch { button.textContent = 'SAVE PENDING — REOPEN FAB BAY TO RECOVER'; }
+        } catch { button.textContent = t('ui.fab.save_pending'); }
     });
     panel.appendChild(button);
     grid.appendChild(panel);
@@ -11305,9 +11555,9 @@ function renderFoundryActivationPanel(grid, bank) {
     const panel = document.createElement('div');
     panel.className = 'fab-activation-panel';
     panel.innerHTML = `
-        <div class="fab-activation-panel__kicker">FOUNDRY LINK REQUIRED</div>
-        <div class="fab-activation-panel__title">ACTIVATE FABRICATION BAY</div>
-        <div class="fab-activation-panel__desc">Bring the in-world Foundry online before printing schematics.</div>
+        <div class="fab-activation-panel__kicker">${t('ui.fab.foundry_required')}</div>
+        <div class="fab-activation-panel__title">${t('ui.fab.activate_bay')}</div>
+        <div class="fab-activation-panel__desc">${t('ui.fab.bring_online')}</div>
         <div class="fab-activation-panel__cost">${fabCostText(FOUNDRY_ACTIVATION_COST, bank, { showHaveNeed: !canActivate })}</div>
         <div class="fab-activation-panel__hint">${canActivate ? 'READY TO ACTIVATE' : missingText}</div>
     `;
@@ -11315,7 +11565,7 @@ function renderFoundryActivationPanel(grid, bank) {
     btn.id = 'fab-activate-btn';
     btn.className = 'fab-card__btn';
     btn.disabled = !canActivate;
-    btn.textContent = canActivate ? 'ACTIVATE FOUNDRY' : missingText;
+    btn.textContent = canActivate ? t('ui.fab.activate_foundry') : missingText;
     if (!canActivate) btn.classList.add('fab-card__btn--locked');
     btn.addEventListener('click', () => {
         if (bankManager.activateFoundry()) {
@@ -11346,7 +11596,7 @@ function renderFabricationModal() {
 
     const rollPanel = document.getElementById('fab-roll-panel');
     grid.innerHTML = '';
-    renderFieldPrint(grid, bank);
+    if (!bankManager.isFoundryActivated()) renderFieldPrint(grid, bank);
     if (renderFoundryActivationPanel(grid, bank)) {
         rollPanel?.classList.add('hidden');
         setTxt('fab-summary', `FOUNDRY ACTIVATION: ${fabCostText(FOUNDRY_ACTIVATION_COST, bank, { showHaveNeed: !bankManager.canActivateFoundry() })}`);
@@ -11371,9 +11621,7 @@ function renderFabricationModal() {
     for (const recipe of FAB_RECIPES) {
         const fabricated = fabricator.isFabricated(recipe.id);
 
-        // Collection card: display-only. Owned schematics are revealed; unowned
-        // show as locked silhouettes you can still win from a roll. Rarity tints
-        // the border so the collection reads at a glance.
+        // These are real current-run outputs, not concept collection cards.
         const rarity = (recipe.rarity ?? 'COMMON').toLowerCase();
         const card = document.createElement('div');
         card.className = ['fab-card', `fab-card--${rarity}`, fabricated ? 'fab-card--done' : 'fab-card--locked'].filter(Boolean).join(' ');
@@ -11386,21 +11634,86 @@ function renderFabricationModal() {
         art.appendChild(img);
         const rarityTag = document.createElement('span');
         rarityTag.className = 'fab-card__rarity';
-        rarityTag.textContent = recipe.rarity ?? 'COMMON';
+        rarityTag.textContent = recipe.rarity ?? t('ui.fab.common');
         art.appendChild(rarityTag);
         card.appendChild(art);
 
         const name = document.createElement('div');
         name.className = 'fab-card__name';
-        name.innerHTML = fabricated
-            ? `<span class="fab-card__klass">${recipe.klass}</span>${recipe.name}`
-            : `<span class="fab-card__klass">${recipe.klass}</span>??? LOCKED`;
+        name.innerHTML = `<span class="fab-card__klass">${recipe.klass}</span>${recipe.name}`;
         card.appendChild(name);
+
+        const description = document.createElement('div');
+        description.className = 'fab-card__description';
+        description.textContent = recipe.blurb;
+        card.appendChild(description);
 
         const status = document.createElement('div');
         status.className = 'fab-card__status';
-        status.textContent = fabricated ? '✓ FABRICATED' : 'NOT YET FABRICATED';
+        status.textContent = fabricated ? t('ui.fab.ready_to_apply') : fabricator.isPrinting(recipe.id)
+            ? `PRINTING ${Math.round(fabricator.getPrintProgress(recipe.id) * 100)}%`
+            : `PRINT COST · ${fabCostText(fabricator.getEffectiveCost(recipe), bank)}`;
         card.appendChild(status);
+
+        const addApplyButton = (label, replaceSlot = null) => {
+            const button = document.createElement('button');
+            button.className = 'fab-card__btn';
+            button.textContent = label;
+            button.addEventListener('click', () => {
+                syncFabricatorOutputOwnership();
+                const result = applyFabricatedRecipeOutput(recipe, {
+                    fabricator,
+                    loadout,
+                    game: window.game,
+                    classId: loadout.activeClassId,
+                    replaceSlot
+                });
+                if (result.ok) {
+                    window.AudioManager?.play?.('class_lock', { volume: 0.55 });
+                    syncEquippedWeaponLabel();
+                    renderFabricationModal();
+                } else {
+                    button.textContent = result.reason === 'slot_conflict' ? t('ui.fab.choose_bay') : t('ui.fab.apply_failed');
+                    window.AudioManager?.play?.('ui_error', { volume: 0.5 });
+                }
+            });
+            card.appendChild(button);
+        };
+
+        if (fabricated) {
+            const output = recipe.output ?? { kind: 'weapon' };
+            const current = loadout.getClassLoadout(loadout.activeClassId);
+            if (output.kind === 'weapon') {
+                const equipped = loadout.getEquippedId(loadout.activeClassId) === recipe.id;
+                if (!equipped) addApplyButton('EQUIP NOW');
+                else status.textContent = t('ui.fab.equipped_current');
+            } else if (output.kind === 'charm') {
+                const equipped = String(current.charmId ?? '') === String(output.itemdefid);
+                if (!equipped) addApplyButton(current.charmId ? `REPLACE CHARM ${current.charmId}` : 'MOUNT CHARM NOW');
+                else status.textContent = t('ui.fab.mounted_current');
+            } else if (output.kind === 'mod') {
+                const equippedSlot = [current.mod1Id, current.mod2Id].findIndex((id) => String(id ?? '') === String(output.itemdefid));
+                if (equippedSlot >= 0) status.textContent = t('ui.fab.active_in_bay', { bay: equippedSlot === 0 ? 'A' : 'B' });
+                else if (!current.mod1Id || !current.mod2Id) addApplyButton(`INSTALL IN OPEN BAY`);
+                else {
+                    addApplyButton(`REPLACE BAY A · ${current.mod1Id}`, 1);
+                    addApplyButton(`REPLACE BAY B · ${current.mod2Id}`, 2);
+                }
+            }
+        } else {
+            const cost = fabricator.getEffectiveCost(recipe);
+            const printing = fabricator.isPrinting(recipe.id);
+            const button = document.createElement('button');
+            button.className = 'fab-card__btn';
+            button.disabled = printing || !fabricator.canFabricate(recipe.id, bankManager);
+            button.textContent = printing ? t('ui.fab.printing') : bankManager.canAfford(cost) ? t('ui.fab.print_output') : fabMissingResourceText(cost, bank);
+            button.addEventListener('click', () => {
+                if (!fabricator.startPrint(recipe.id, bankManager)) return;
+                startFabTicker();
+                renderFabricationModal();
+            });
+            card.appendChild(button);
+        }
 
         grid.appendChild(card);
     }
@@ -11437,7 +11750,7 @@ function runFabricatorRoll() {
     const strip = document.getElementById('fab-reveal-strip');
     const cardEl = document.getElementById('fab-reveal-card');
     const rollBtn = document.getElementById('fab-roll-btn');
-    if (rollBtn) { rollBtn.disabled = true; rollBtn.textContent = 'FABRICATING…'; }
+    if (rollBtn) { rollBtn.disabled = true; rollBtn.textContent = t('ui.fab.fabricating'); }
     window.AudioManager?.play?.('door_gears_spin', { volume: 0.4 });
 
     // Build a long strip of rarity tiles; the winner lands under the marker.
@@ -11524,7 +11837,7 @@ function refreshFabAccess() {
     if (!fabCmd) return;
     fabCmd.classList.remove('hidden');
     const btn = document.getElementById('fabrication-btn');
-    if (btn) btn.textContent = '◇ FAB BAY';
+    if (btn) btn.textContent = t('ui.fab.bay_button');
     updateMenuCommandStatuses();
 }
 
@@ -11623,7 +11936,7 @@ function openCodexDetailModal(id) {
     const img = document.getElementById('codex-detail-img');
     const blurb = document.getElementById('codex-detail-blurb');
 
-    if (kicker) kicker.textContent = `❑ ${entry.category} INTEL RECORD`;
+    if (kicker) kicker.textContent = t('ui.codex.intel_record_kicker', { category: entry.category });
     if (name) name.textContent = entry.name;
     if (blurb) blurb.textContent = entry.blurb;
     if (img) {
@@ -11650,7 +11963,7 @@ function renderCodexModal() {
     const grid = document.getElementById('codex-grid');
     const summary = document.getElementById('codex-summary');
     if (!grid) return;
-    if (summary) summary.textContent = `ENTRIES RECOVERED: ${codexStore.getDiscoveredCount()} / ${CODEX_TOTAL}`;
+    if (summary) summary.textContent = t('ui.codex.entries_recovered', { found: codexStore.getDiscoveredCount(), total: CODEX_TOTAL });
     grid.innerHTML = '';
     const archiveSection = document.createElement('details');
     archiveSection.className = 'codex-section ending-archive-section';
@@ -11658,12 +11971,12 @@ function renderCodexModal() {
 
     const archiveSummary = document.createElement('summary');
     archiveSummary.className = 'codex-section-label ending-archive-label';
-    archiveSummary.textContent = '◈ EXPEDITION ENDINGS ARCHIVE // ALL 10 TRAJECTORIES & CODEX LINCHPINS';
+    archiveSummary.textContent = t('ui.codex.endings_archive');
     archiveSection.appendChild(archiveSummary);
 
     const archiveSub = document.createElement('div');
     archiveSub.className = 'ending-archive-sub';
-    archiveSub.textContent = 'Catalogues all ten historical outcomes, locked silhouettes, and the irreversible linchpin decisions responsible for closing specific pathways in your current deployment.';
+    archiveSub.textContent = t('ui.codex.endings_sub');
     archiveSection.appendChild(archiveSub);
 
     const archiveGrid = document.createElement('div');
@@ -11689,7 +12002,7 @@ function renderCodexModal() {
 
         const badge = document.createElement('span');
         badge.className = `ending-card__badge ${ending.discovered ? 'badge--discovered' : (isLockedThisRun ? 'badge--locked-run' : 'badge--undiscovered')}`;
-        badge.textContent = ending.discovered ? 'DISCOVERED' : (isLockedThisRun ? 'LOCKED THIS RUN' : 'UNDISCOVERED');
+        badge.textContent = ending.discovered ? t('ui.codex.discovered') : (isLockedThisRun ? t('ui.codex.locked_this_run') : t('ui.codex.undiscovered'));
         artWrap.append(art, badge);
 
         const content = document.createElement('div');
@@ -11699,7 +12012,7 @@ function renderCodexModal() {
         header.className = 'ending-card__header';
         const title = document.createElement('h3');
         title.className = 'ending-card__title';
-        title.textContent = ending.discovered || isLockedThisRun ? (ACT2_ENDING_TITLES[ending.id] ?? ending.id.toUpperCase()) : 'CLASSIFIED EXPEDITION TRAJECTORY';
+        title.textContent = ending.discovered || isLockedThisRun ? (ACT2_ENDING_TITLES[ending.id] ?? ending.id.toUpperCase()) : t('ui.codex.classified');
         header.appendChild(title);
 
         const desc = document.createElement('p');
@@ -11717,7 +12030,7 @@ function renderCodexModal() {
             causesWrap.className = 'ending-card__causes';
             const causesLabel = document.createElement('div');
             causesLabel.className = 'ending-card__causes-label';
-            causesLabel.textContent = '🔒 CLOSED BY EXPEDITION LINCHPIN:';
+            causesLabel.textContent = t('ui.codex.closed_by');
             causesWrap.appendChild(causesLabel);
 
             const causesList = document.createElement('ul');
@@ -11758,14 +12071,14 @@ function renderCodexModal() {
             if (known) {
                 card.setAttribute('role', 'button');
                 card.setAttribute('tabindex', '0');
-                card.setAttribute('aria-label', `View intel record for ${entry.name}`);
+                card.setAttribute('aria-label', t('ui.codex.view_record', { name: entry.name }));
                 card.innerHTML = `
                     <div class="codex-card__header">
                       <div class="codex-card__name">${entry.name}</div>
                       <span class="codex-card__icon" title="View Intel Dossier & Artwork">🔍</span>
                     </div>
                     <div class="codex-card__blurb">${entry.blurb}</div>
-                    <div class="codex-card__hint">CLICK TO VIEW INTEL DOSSIER & ARTWORK</div>
+                    <div class="codex-card__hint">${t('ui.codex.click_hint')}</div>
                 `;
                 card.addEventListener('click', () => openCodexDetailModal(entry.id));
                 card.addEventListener('keydown', (event) => {
@@ -11775,8 +12088,8 @@ function renderCodexModal() {
                 });
             } else {
                 card.innerHTML = `
-                    <div class="codex-card__name">??? — UNCATALOGUED</div>
-                    <div class="codex-card__blurb">Encounter this in the field to recover its record.</div>
+                    <div class="codex-card__name">${t('ui.codex.uncatalogued')}</div>
+                    <div class="codex-card__blurb">${t('ui.codex.encounter_hint')}</div>
                 `;
             }
             section.appendChild(card);
@@ -11811,7 +12124,7 @@ window.addEventListener('day-rest-warning', (event) => {
     const detail = event?.detail ?? {};
     pendingCampRestConfirmation = typeof detail.onConfirm === 'function' ? detail.onConfirm : null;
     if (dayRestWarningCopy) {
-        dayRestWarningCopy.textContent = `Sleeping at ${detail.campLabel ?? 'this camp'} advances to day ${detail.nextDay ?? '?'}. These unresolved signals will be lost:`;
+        dayRestWarningCopy.textContent = t('ui.camp.sleep_warning', { camp: detail.campLabel ?? t('ui.camp.this_camp'), day: detail.nextDay ?? '?' });
     }
     if (dayRestWarningList) {
         dayRestWarningList.replaceChildren();
@@ -11819,9 +12132,9 @@ window.addEventListener('day-rest-warning', (event) => {
             const item = document.createElement('div');
             item.className = 'day-rest-warning-item';
             const title = document.createElement('strong');
-            title.textContent = deadline.label ?? String(deadline.id ?? 'UNKNOWN SIGNAL').replaceAll('_', ' ').toUpperCase();
+            title.textContent = deadline.label ?? String(deadline.id ?? t('ui.camp.unknown_signal')).replaceAll('_', ' ').toUpperCase();
             const consequence = document.createElement('span');
-            consequence.textContent = deadline.consequence ?? 'This story path closes permanently.';
+            consequence.textContent = deadline.consequence ?? t('ui.camp.path_closes');
             item.append(title, consequence);
             dayRestWarningList.appendChild(item);
         }
@@ -11846,8 +12159,7 @@ window.addEventListener('day-rest-open', (event) => {
     openFabricationModal();
 });
 
-window.addEventListener('day-cycle-changed', (event) => {
-    const detail = event?.detail ?? {};
+function updateCampaignCycleIndicator(detail = {}) {
     const host = document.querySelector('.level-indicator');
     if (!host) return;
     let day = document.getElementById('campaign-day-indicator');
@@ -11857,9 +12169,14 @@ window.addEventListener('day-cycle-changed', (event) => {
         day.className = 'level-indicator__seed';
         host.appendChild(day);
     }
-    day.textContent = `DAY ${detail.day ?? 1}`;
-    day.title = `Campaign threat ${Number(detail.difficulty ?? 1).toFixed(2)}×`;
-});
+    day.textContent = `DAY ${detail.day ?? 1}${detail.label ? ` · ${detail.label}` : ''}`;
+    day.title = t('ui.camp.threat', { value: Number(detail.difficulty ?? 1).toFixed(2) });
+    day.dataset.phase = String(detail.label ?? '').includes('NIGHT') ? 'night' : 'day';
+    const progress = document.getElementById('campaign-cycle-progress');
+    if (progress && Number.isFinite(detail.timeOfDay)) progress.style.width = `${Math.max(0, Math.min(1, detail.timeOfDay)) * 100}%`;
+}
+window.addEventListener('day-cycle-changed', (event) => updateCampaignCycleIndicator(event?.detail));
+window.addEventListener('time-of-day-changed', (event) => updateCampaignCycleIndicator(event?.detail));
 window.addEventListener('o2-startup-sequence-started', (event) => {
     if ((event?.detail?.level ?? 0) !== 1) return;
     showTacticalOverlay({
@@ -11869,21 +12186,15 @@ window.addEventListener('o2-startup-sequence-started', (event) => {
         duration: 3200
     });
 });
-const MILESTONE_BOSS_CINEMATIC_SUFFIXES = new Set(['cryosnail', 'cybersnail', 'sporesnail']);
-const MILESTONE_BOSS_INTERSTITIAL_MAP = {
-    cybersnail: 'int_13_a_snail_blocks_the_hallway',
-    cryosnail: 'int_26_absolute_zero_has_a_shell',
-    sporesnail: 'int_27_the_bloom_that_hunts'
-};
+const milestonePresentationGate = createMilestonePresentationGate();
 window.addEventListener('milestone-boss-warning', (event) => {
+    if (!isGameplayPhase()) return;
     showBiomePrompt('> ALERT: PERIMETER BREACH — LARGE HOSTILE SIGNATURE CLOSING <');
-    const bossType = String(event?.detail?.type ?? '').replace(/^boss_/, '');
-    const suffix = MILESTONE_BOSS_CINEMATIC_SUFFIXES.has(bossType) ? bossType : 'cybersnail';
-    const videoBase = MILESTONE_BOSS_INTERSTITIAL_MAP[suffix] || `event-boss-encounter-${suffix}`;
-    playAuthoredEventOnce(`boss_encounter_${suffix}`, {
-        videoBase,
-        eventDetail: event?.detail ?? {}
-    });
+    const detail = event?.detail ?? {};
+    if (!shouldPlayAuthoredEventCinematic({ appPhase, ...detail })) return;
+    const request = milestonePresentationGate.claim(detail, window.game?.runStartTime ?? runStartTime);
+    if (!request) return;
+    void queueCinematicEvent({ videoBase: request.videoBase, fallback: getEventCinematicSpec(request.eventId) });
 });
 window.addEventListener('foundry-discovered', (event) => {
     if (!isGameplayPhase()) return;
@@ -11927,7 +12238,7 @@ window.addEventListener('cave-prompt-nearby', () => {
     const key = prompt?.querySelector('.prompt-key');
     const text = prompt?.querySelector('.prompt-text');
     if (key) setPromptKeyLabel(key);
-    if (text) text.textContent = 'RECOVER FINAL COMPONENT';
+    if (text) text.textContent = t('ui.prompt.recover_final');
     prompt?.classList.remove('hidden');
 });
 window.addEventListener('cave-prompt-clear', () => {
@@ -12065,7 +12376,7 @@ window.addEventListener('camp-prompt-nearby', (event) => {
     const key = prompt?.querySelector('.prompt-key');
     const text = prompt?.querySelector('.prompt-text');
     if (key) setPromptKeyLabel(key);
-    if (text) text.textContent = event?.detail?.label ?? 'INTERACT';
+    if (text) text.textContent = event?.detail?.label ?? t('ui.prompt.interact');
     prompt?.classList.remove('hidden');
 });
 window.addEventListener('camp-prompt-clear', () => {
@@ -12147,10 +12458,10 @@ function renderCampChoice(detail = {}) {
         ? `${detail.leaderName} // ${detail.leaderClass ?? 'SURVIVOR'}${detail.leaderIsBoss ? ' // INVERTED COMMAND' : ''}`
         : 'SURVIVOR COMMAND';
     if (campChoiceKicker) {
-        campChoiceKicker.textContent = `CONTACT ${detail.storyOrder ?? '?'} // ${leaderLine}`;
+        campChoiceKicker.textContent = t('ui.camp.contact_kicker', { order: detail.storyOrder ?? '?', leader: leaderLine });
     }
     if (campChoiceTitle) {
-        campChoiceTitle.textContent = detail.campLabel ?? 'CAMP DECISION';
+        campChoiceTitle.textContent = detail.campLabel ?? t('ui.camp.decision');
     }
     const ending = detail.endingVector?.ending;
     if (campChoiceStatus) {
@@ -12293,7 +12604,8 @@ function renderCampChoice(detail = {}) {
             const locks = getResolution(choice.id, choice.resolution)?.locksEndings ?? [];
             const warning = document.createElement('span');
             warning.className = 'camp-choice-option__desc';
-            warning.textContent = `Permanent choice: ${choice.id.replace(/_/g, ' ')} — ${choice.resolution.replace(/_/g, ' ')}.${locks.length ? ' Closes: ' + locks.map(id => ACT2_ENDING_TITLES[id]).join(', ') + '.' : ''}`;
+            warning.textContent = t('ui.camp.permanent_choice', { choice: choice.id.replace(/_/g, ' '), resolution: choice.resolution.replace(/_/g, ' ') })
+                + (locks.length ? t('ui.camp.closes', { locks: locks.map(id => ACT2_ENDING_TITLES[id]).join(', ') }) : '');
             btn.appendChild(warning);
         }
         btn.addEventListener('click', () => {
@@ -12339,7 +12651,7 @@ function renderCampChoice(detail = {}) {
                 if (confirmLocks) {
                     if (locks.length > 0) {
                         confirmLocks.innerHTML = `
-                            <div class="confirm-locks-header">⚠ PERMANENT EXPEDITION ENDING LOCKS:</div>
+                            <div class="confirm-locks-header">${t('ui.camp.ending_locks_header')}</div>
                             <div class="confirm-locks-tags">
                                 ${locks.map(lockId => `
                                     <div class="confirm-lock-tag">
@@ -12467,7 +12779,7 @@ function renderLeaderConversationLine() {
     leaderConversationModal?.setAttribute('data-mood', reaction.mood);
     leaderConversation3d.react(reaction);
     const atEnd = leaderConversationLineIndex >= leaderConversationLines.length - 1;
-    if (leaderConversationContinue) leaderConversationContinue.textContent = atEnd ? 'FINISH CONVERSATION' : 'CONTINUE';
+    if (leaderConversationContinue) leaderConversationContinue.textContent = atEnd ? t('ui.camp.finish_conversation') : t('ui.camp.continue');
     if (raw && typeof window !== 'undefined' && window.AudioManager?.playVoiceForMessage) {
         window.AudioManager.playVoiceForMessage({ name: leaderConversationIdentity?.name || 'LEADER' }, raw);
     }
@@ -12549,9 +12861,9 @@ window.addEventListener('leader-dialogue', async (event) => {
     preloadLeaderMedia(identity);
     leaderConversationModal.style.setProperty('--leader-accent', identity.accent);
     if (leaderConversationName) leaderConversationName.textContent = identity.name;
-    if (leaderConversationKicker) leaderConversationKicker.textContent = detail.kind === 'camp' ? 'CAMP CONVERSATION' : 'FIELD CONVERSATION';
+    if (leaderConversationKicker) leaderConversationKicker.textContent = detail.kind === 'camp' ? t('ui.camp.camp_conversation') : t('ui.camp.field_conversation');
     if (leaderConversationMeta) {
-        leaderConversationMeta.textContent = [identity.title, identity.callsign ? `CALLSIGN ${identity.callsign}` : '', identity.classId]
+        leaderConversationMeta.textContent = [identity.title, identity.callsign ? t('ui.camp.callsign', { callsign: identity.callsign }) : '', identity.classId]
             .filter(Boolean).join(' // ');
     }
     if (leaderConversationPortrait) {
@@ -12572,7 +12884,7 @@ window.addEventListener('leader-dialogue', async (event) => {
         stats.push(`STORY STAGE ${(detail.progress?.stage ?? detail.stage ?? 0) + 1}`);
         leaderConversationStats.textContent = stats.join('  •  ');
     }
-    if (leaderConversationGuidance) leaderConversationGuidance.textContent = detail.progress?.guidance || 'Listen, then decide how you want to help.';
+    if (leaderConversationGuidance) leaderConversationGuidance.textContent = detail.progress?.guidance || t('ui.camp.listen_hint');
     renderLeaderConversationLine();
     leaderConversationModal.classList.remove('hidden');
     leaderConversationModal.setAttribute('aria-hidden', 'false');
@@ -12947,10 +13259,10 @@ async function runAct2DepartureSequence(detail = {}) {
 function applyCorruptedTitlePresentation({ sting = false } = {}) {
     if (!arcManager) return;
     if (arcManager.getState().arcState !== 'hive_awakened_tease') return;
-    document.title = 'PREGALIEN | HIVE COMMAND';
+    document.title = t('ui.title.pregalien_command');
     for (const el of [document.querySelector('.splash-title'), document.querySelector('.title-small')]) {
         if (!el) continue;
-        el.textContent = 'PREGALIEN';
+        el.textContent = t('ui.title.pregalien');
         el.classList.add('title-corrupted');
     }
     if (sting) {
@@ -13123,7 +13435,7 @@ function renderRosterModal(mode = 'continue') {
         cosmeticsRow._wired = true;
         cosmeticsRow.querySelectorAll('.roster-cosmetic-chip').forEach((chip) => {
             chip.style.cursor = 'pointer';
-            chip.title = 'Click to open Steam Vault cosmetics submenu';
+            chip.title = t('ui.hub.vault_tooltip');
             chip.addEventListener('click', () => {
                 window.AudioManager?.play?.('ui_click', { volume: 0.5 });
                 openSteamVaultModal();
@@ -13155,11 +13467,11 @@ function renderRosterModal(mode = 'continue') {
 
         const title = document.createElement('div');
         title.className = 'roster-empty-title';
-        title.textContent = 'NO WEAPONS FABRICATED';
+        title.textContent = t('ui.roster.no_weapons');
 
         const sub = document.createElement('div');
         sub.className = 'roster-empty-sub';
-        sub.textContent = 'Print a guaranteed Scatter Repeater for 12 Tech / 6 Coin in the Fab Bay.';
+        sub.textContent = t('ui.roster.print_hint');
 
         textGroup.appendChild(title);
         textGroup.appendChild(sub);
@@ -13169,7 +13481,7 @@ function renderRosterModal(mode = 'continue') {
 
         const fabBtn = document.createElement('button');
         fabBtn.className = 'roster-weapon__btn roster-weapon__btn--single-fab';
-        fabBtn.textContent = '+ OPEN FAB BAY';
+        fabBtn.textContent = t('ui.fab.open_bay');
         fabBtn.addEventListener('click', () => {
             window.AudioManager?.play?.('ui_click', { volume: 0.5 });
             openFabricationModal();
@@ -13202,9 +13514,9 @@ function renderRosterModal(mode = 'continue') {
             const btn = document.createElement('button');
             btn.className = 'roster-weapon__btn';
             if (equipped) {
-                btn.textContent = '✓ EQUIPPED'; btn.disabled = true; btn.classList.add('roster-weapon__btn--equipped');
+                btn.textContent = t('ui.roster.equipped'); btn.disabled = true; btn.classList.add('roster-weapon__btn--equipped');
             } else {
-                btn.textContent = 'EQUIP';
+                btn.textContent = t('ui.roster.equip');
                 btn.addEventListener('click', () => {
                     if (loadout.equip(recipe.id, fabricator)) {
                         window.AudioManager?.play?.('ui_click', { volume: 0.5 });
@@ -13238,6 +13550,7 @@ setupClickOutside('roster-modal', () => {
 // and keep it correct after a fresh fabrication completes.
 syncEquippedWeaponLabel();
 window.addEventListener('fabrication-complete', syncEquippedWeaponLabel);
+window.addEventListener('fabrication-complete', syncFabricatorOutputOwnership);
 
 setupClickOutside('settings-popup', () => {
     const settingsPopup = document.getElementById('settings-popup');
@@ -13648,22 +13961,38 @@ async function renderPreviewFrame(type, frameIndex = previewFrameIndex) {
 
 }
 
-function syncHeroPreview(type) {
+async function syncHeroPreview(type) {
     const data = heroData[type];
     if (!data) return;
 
     activePreviewType = type;
-    const show3dHero = Boolean(scoutHeroPreview);
-    void scoutHeroPreview?.setType(type);
-    scoutHeroPreview?.setVisible(true);
-    previewSprite?.classList.toggle('hidden', show3dHero);
+    // The sprite is the posed, class-correct fallback while the replacement
+    // rig and its idle clip load. Never reveal the previous class or a bind
+    // pose just because an async GLB is late.
+    scoutHeroPreview?.setVisible(false);
+    previewSprite?.classList.remove('hidden');
     if (previewName) previewName.textContent = data.name;
     if (previewFallback) {
         previewFallback.src = assetUrl(PREVIEW_PORTRAITS[type] ?? PREVIEW_PORTRAITS.SCOUT);
-        previewFallback.classList.toggle('hidden', show3dHero);
+        previewFallback.classList.remove('hidden');
     }
     previewFrameIndex = 0;
     void renderPreviewFrame(type, previewFrameIndex);
+
+    if (scoutHeroPreview) {
+        const loaded = await Promise.race([
+            scoutHeroPreview.setType(type).catch((error) => {
+                console.warn('[hero-preview] keeping posed sprite fallback', error);
+                return false;
+            }),
+            new Promise((resolve) => window.setTimeout(() => resolve(false), 8000))
+        ]);
+        if (activePreviewType === type && loaded) {
+            scoutHeroPreview.setVisible(true);
+            previewSprite?.classList.add('hidden');
+            previewFallback?.classList.add('hidden');
+        }
+    }
 
     // Update custom properties on preview stage wrapper for matching class glow colors
     const stage = document.querySelector('.char-preview-stage');
@@ -13757,8 +14086,8 @@ function triggerHeroPreviewSwap(type) {
     AudioManager.play('door_slam_vertical', { volume: 0.2 });
     AudioManager.play('door_gears_spin', { volume: 0.12 });
 
-    previewDoorTimer = window.setTimeout(() => {
-        syncHeroPreview(targetType);
+    previewDoorTimer = window.setTimeout(async () => {
+        await syncHeroPreview(targetType);
         previewDoor.classList.remove('closing');
         previewDoor.classList.add('ready-to-open');
         if (mapDoor) {
@@ -14042,7 +14371,9 @@ function initTacticalCursor() {
             currentHoverTarget = target;
             cursor.classList.add('cursor-hovering');
             if (document.activeElement !== target) {
-                focusControllerTarget(target, { playHover: false });
+                // Pointer hover may synchronize focus styling, but must never
+                // scroll the menu underneath a stationary pointer.
+                focusControllerTarget(target, { playHover: false, ensureVisible: false });
             }
             if (playBlip) {
                 AudioManager.play('ui_hover', { volume: 0.12, varyPitch: true });
@@ -14475,6 +14806,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     '/decal_scars.png'
                 ],
                 audio: [
+                    ...GAMEPLAY_FOLEY_MANIFEST,
                     { key: 'music_safe_ship', url: '/audio/ost/Safe Haven (Ship Sanctuary).mp3', fallbackUrl: '/audio/ost/Hunker Bunker Main Theme.mp3' },
                     { key: 'music_cryo_explore', url: '/audio/ost/Glacial Depths (Cryo Biome).mp3', fallbackUrl: '/audio/ost/Hunker Bunker Main Theme.mp3' },
                     { key: 'music_bio_explore', url: '/audio/ost/Overgrown Bio-Sphere (Bio Biome).mp3', fallbackUrl: '/audio/ost/Hunker Bunker Main Theme.mp3' },
@@ -14511,18 +14843,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     { key: 'camp_verb_meridian', url: '/audio/generated/camp_verb_meridian.wav' },
                     { key: 'camp_verb_tallow', url: '/audio/generated/camp_verb_tallow.wav' },
                     { key: 'camp_verb_vesper', url: '/audio/generated/camp_verb_vesper.wav' },
-                    { key: 'voice_commander_breached', url: '/audio/generated/voice_commander_breached.wav' },
-                    { key: 'voice_commander_reloading', url: '/audio/generated/voice_commander_reloading.wav' },
-                    { key: 'voice_commander_low_health', url: '/audio/generated/voice_commander_low_health.wav' },
-                    { key: 'voice_commander_boss_spotted', url: '/audio/generated/voice_commander_boss_spotted.wav' },
-                    { key: 'voice_commander_killstreak', url: '/audio/generated/voice_commander_killstreak.wav' },
-                    { key: 'voice_commander_victory', url: '/audio/generated/voice_commander_victory.wav' },
-                    { key: 'voice_aura_target_down', url: '/audio/generated/voice_aura_target_down.wav' },
-                    { key: 'voice_aura_shield_critical', url: '/audio/generated/voice_aura_shield_critical.wav' },
-                    { key: 'voice_aura_reloading', url: '/audio/generated/voice_aura_reloading.wav' },
-                    { key: 'voice_aura_threat_high', url: '/audio/generated/voice_aura_threat_high.wav' },
-                    { key: 'voice_aura_overdrive_ready', url: '/audio/generated/voice_aura_overdrive_ready.wav' },
-                    { key: 'voice_aura_sector_cleared', url: '/audio/generated/voice_aura_sector_cleared.wav' },
+                    ...getVoiceAudioManifest(),
                     { key: 'sfx_charm_clink_light', url: '/audio/generated/sfx_charm_clink_light.wav' },
                     { key: 'sfx_charm_clink_heavy', url: '/audio/generated/sfx_charm_clink_heavy.wav' },
                     { key: 'sfx_overclock_socket', url: '/audio/generated/sfx_overclock_socket.wav' },
@@ -14683,7 +15004,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 console.error('[ThreeGame init failed]', err);
                 const loaderTitle = document.querySelector('.loader-title');
                 const loaderStatusEl = document.querySelector('.loader-status');
-                if (loaderTitle) loaderTitle.textContent = 'SYSTEM INITIALIZATION FAILED';
+                if (loaderTitle) loaderTitle.textContent = t('ui.loader.init_failed');
                 if (loaderStatusEl) {
                     loaderStatusEl.innerHTML = `<div style="color: var(--accent-secondary); font-size: var(--font-xs);">${err?.message ?? 'UNKNOWN ERROR — WebGL may be unavailable'}</div>`;
                 }
@@ -15059,10 +15380,10 @@ function captureGameplayPerfContext() {
             activePhases: (window.__hbPerfPhaseStack ?? []).map((span) => ({
                 phase: span.phase,
                 startMs: Math.round(span.startMs * 10) / 10,
-                context: span.context ?? null
+                context: compactPerfPhase(span)?.context ?? null
             })),
-            recentPhases: (window.__hbPerfPhaseHistory ?? []).slice(-12),
-            counters: window.game?.getPerformanceDiagnosticsSnapshot?.() ?? null
+            recentPhases: (window.__hbPerfPhaseHistory ?? []).slice(-6).map(compactPerfPhase),
+            counters: compactPerformanceSnapshot(window.game?.getPerformanceDiagnosticsSnapshot?.())
         };
     } catch {
         return { activePhases: [], recentPhases: [], counters: null };
@@ -15070,20 +15391,22 @@ function captureGameplayPerfContext() {
 }
 
 let gameplayLongTaskObserver = null;
+const reportGameplayLongTask = createLongTaskReporter({
+    emit: (message, context) => debugLog.warn('PERF', message, context)
+});
 function startGameplayLongTaskDiagnostics() {
     if (typeof PerformanceObserver === 'undefined' || gameplayLongTaskObserver) return;
     try {
         gameplayLongTaskObserver = new PerformanceObserver((list) => {
             for (const task of list.getEntries()) {
-                const phaseAge = window.__hbLastPerfPhaseAt != null
-                    ? performance.now() - window.__hbLastPerfPhaseAt
-                    : null;
-                const lastPhase = (phaseAge != null && phaseAge <= PERF_PHASE_MAX_AGE_MS)
-                    ? window.__hbLastPerfPhase
-                    : null;
-                debugLog.warn('PERF', `Long task: ${Math.round(task.duration)}ms`, {
-                    durationMs: Math.round(task.duration),
-                    startMs: Math.round(task.startTime),
+                reportGameplayLongTask(task, () => {
+                    const phaseAge = window.__hbLastPerfPhaseAt != null
+                        ? performance.now() - window.__hbLastPerfPhaseAt
+                        : null;
+                    const lastPhase = (phaseAge != null && phaseAge <= PERF_PHASE_MAX_AGE_MS)
+                        ? window.__hbLastPerfPhase
+                        : null;
+                    return {
                     // Set by threeGame.js right before each known-expensive
                     // synchronous op (chunk mounting, prop-break VFX) and left
                     // in place afterward -- since JS is single-threaded, by the
@@ -15098,6 +15421,7 @@ function startGameplayLongTaskDiagnostics() {
                     // Only populated when still unattributed and the game is
                     // sitting in the menu profile -- see captureMenuRenderSnapshot.
                     menuRenderSnapshot: lastPhase === null ? captureMenuRenderSnapshot() : null
+                    };
                 });
             }
         });
@@ -15347,7 +15671,9 @@ if (window.electronAPI) {
     window.addEventListener('achievement-unlocked', (event) => {
         const key = event?.detail?.key;
         if (!key) return;
-        window.electronAPI.unlockAchievement(key);
+        void steamAchievementSync?.enqueue(key).then((status) => {
+            if (!status?.ok) console.log(`[steam] achievement '${key}' pending: ${status?.reason ?? status?.failed?.[0]?.reason ?? 'not acknowledged'}`);
+        });
         showDeveloperCommentary('achievement');
         recordSteamTimelineEvent('achievement', 'Achievement Unlocked', event?.detail?.title ?? key, {
             icon: 'achievement',

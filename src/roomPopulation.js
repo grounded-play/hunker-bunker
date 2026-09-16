@@ -75,6 +75,11 @@ export function planRoomPopulation(room, grid, random) {
     const doorLanes = room.navigation?.doorLanes ?? [];
     const fixtureCells = room.navigation?.reserved ?? [];
     const reserved = new Set([...doorLanes, ...fixtureCells].map(cellKey));
+    for (const door of doorLanes) {
+        for (let dy = -1; dy <= 1; dy += 1) {
+            for (let dx = -1; dx <= 1; dx += 1) reserved.add(`${door.x + dx},${door.y + dy}`);
+        }
+    }
     for (const fixture of fixtureCells) {
         for (let dy = -1; dy <= 1; dy += 1) {
             for (let dx = -1; dx <= 1; dx += 1) reserved.add(`${fixture.x + dx},${fixture.y + dy}`);

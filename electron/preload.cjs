@@ -88,6 +88,14 @@ let cachedSteamSession = null;
 let pendingSteamSession = null;
 let pendingSteamSessionIdentity = null;
 
+async function rejectChargeInQaBuild() {
+    try {
+        return Boolean(await ipcRenderer.invoke('hb:qaToolsEnabled'));
+    } catch {
+        return false;
+    }
+}
+
 function steamBackendUrl(path) {
     const relPath = String(path ?? '').trim();
     if (!relPath.startsWith('/')) {
@@ -334,13 +342,13 @@ contextBridge.exposeInMainWorld('electronAPI', {
     getSaveData: () => ipcRenderer.invoke('hb:getSaveData'),
     onSaveDataChanged: (key, value) => ipcRenderer.send('hb:saveDataChanged', key, value),
     onSaveDataRemoved: (key) => ipcRenderer.send('hb:saveDataRemoved', key),
-    unlockAchievement: (key) => ipcRenderer.send('hb:unlockAchievement', key),
+    unlockAchievement: (key, generation = 0) => ipcRenderer.invoke('hb:unlockAchievement', key, generation),
     setStat: (key, value) => ipcRenderer.send('hb:setStat', key, value),
     getSteamInfo: () => ipcRenderer.invoke('hb:steamInfo'),
     getSteamIdentity: () => ipcRenderer.invoke('hb:getSteamIdentity'),
     getSteamCloudStatus: () => ipcRenderer.invoke('hb:getSteamCloudStatus'),
     getQaToolsEnabled: () => ipcRenderer.invoke('hb:qaToolsEnabled'),
-    resetAchievements: () => ipcRenderer.invoke('hb:resetAchievements'),
+    resetAchievements: (generation = 0) => ipcRenderer.invoke('hb:resetAchievements', generation),
     getSteamDiagnostics: () => ipcRenderer.invoke('hb:getSteamDiagnostics'),
     getSteamAuthTicket: (identity = STEAM_AUTH_IDENTITY) => ipcRenderer.invoke('hb:getSteamAuthTicket', identity),
     cancelSteamAuthTicket: (handle) => ipcRenderer.invoke('hb:cancelSteamAuthTicket', handle),
@@ -356,10 +364,14 @@ contextBridge.exposeInMainWorld('electronAPI', {
     exchangeSteamInventory: (recipeId, materials) => withSteamSession('/steam/inventory/exchange', { recipeId, materials }),
     getSteamMarketEligibility: () => withSteamSessionGet('/steam/market/eligibility'),
     getSteamStoreCatalog: () => requestSteamBackend('/steam/store/catalog'),
-    purchaseSteamKeys: (sku, requestId = `store-${Date.now()}-${Math.random().toString(36).slice(2)}`) => (
-        withSteamSession('/steam/store/purchase/init', { sku, requestId })
-    ),
-    finalizeSteamPurchase: (transId) => withSteamSession('/steam/store/purchase/finalize', { transId }),
+    purchaseSteamKeys: async (sku, requestId = `store-${Date.now()}-${Math.random().toString(36).slice(2)}`) => {
+        if (await rejectChargeInQaBuild()) return { ok: false, reason: 'qa_test_mode_no_charge', purchaseStatus: 'disabled' };
+        return withSteamSession('/steam/store/purchase/init', { sku, requestId });
+    },
+    finalizeSteamPurchase: async (transId) => {
+        if (await rejectChargeInQaBuild()) return { ok: false, reason: 'qa_test_mode_no_charge', purchaseStatus: 'disabled' };
+        return withSteamSession('/steam/store/purchase/finalize', { transId });
+    },
     openSteamCache: (cacheItemId, keyItemId, requestId = `cache-${Date.now()}-${Math.random().toString(36).slice(2)}`) => (
         withSteamSession('/steam/inventory/exchange', { recipeId: 4100, materials: [cacheItemId, keyItemId], requestId })
     ),

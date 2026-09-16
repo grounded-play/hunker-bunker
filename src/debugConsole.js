@@ -14,6 +14,8 @@ export class DebugLogger {
         this.demoMarkers = [];
         this.sequence = 0;
         this.maxLogs = 2500;
+        this.maxSessionLogs = 20000;
+        this.droppedSessionLogEntries = 0;
         // Cap on how many <div> rows the live panel keeps in the DOM at once.
         // A long/laggy session can log dozens of entries per real frame (PERF
         // "Long task" warnings alone), and the panel used to append one row
@@ -220,7 +222,10 @@ export class DebugLogger {
         const now = new Date();
         const timestamp = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}:${now.getSeconds().toString().padStart(2, '0')}.${now.getMilliseconds().toString().padStart(3, '0')}`;
         
-        const message = this.formatArgs(args);
+        const rawMessage = this.formatArgs(args);
+        const message = rawMessage.length > 12000
+            ? `${rawMessage.slice(0, 12000)}… [TRUNCATED ${rawMessage.length - 12000} CHARS]`
+            : rawMessage;
         const entry = {
             id: ++this.sequence,
             timestamp,
@@ -233,6 +238,11 @@ export class DebugLogger {
 
         this.logs.push(entry);
         this.sessionLogs.push(entry);
+        if (this.sessionLogs.length > this.maxSessionLogs) {
+            const overflow = this.sessionLogs.length - this.maxSessionLogs;
+            this.sessionLogs.splice(0, overflow);
+            this.droppedSessionLogEntries += overflow;
+        }
         if (this.logs.length > this.maxLogs) {
             this.logs.shift();
         }
@@ -779,9 +789,10 @@ export class DebugLogger {
         const inputState = typeof window !== 'undefined'
             ? window.HunkerInputState?.getState?.() ?? null
             : null;
+        const activePlaneId = game?.planeState?.stack?.at?.(-1)?.id ?? null;
         return {
             format: 'hunker-bunker-session-log',
-            schemaVersion: 1,
+            schemaVersion: 2,
             session: {
                 startedAt: this.sessionStartedAt.toISOString(),
                 exportedAt: new Date().toISOString(),
@@ -792,6 +803,27 @@ export class DebugLogger {
                 demoDurationMs: this.demoStartedAt ? Date.now() - this.demoStartedAt : null,
                 demoMarkers: this.demoMarkers.map((marker) => ({ ...marker }))
             },
+            diagnostics: {
+                retainedEntries: this.sessionLogs.length,
+                droppedEntries: this.droppedSessionLogEntries,
+                maxEntries: this.maxSessionLogs,
+                maxMessageChars: 12000,
+                identifiers: {
+                    build: globalThis.__HB_BUILD_INFO__ ?? null,
+                    seed: game?.seed ?? game?.worldSeed ?? game?.missionState?.seed ?? null,
+                    encounterId: game?.activeBossEncounterId ?? null,
+                    entityId: game?.activeInteractiveConsole?.userData?.entityId ?? null,
+                    plane: activePlaneId === 'foundry-interior'
+                        ? 'foundry'
+                        : (game?.isInPocket ? 'pocket' : 'surface'),
+                    planeId: activePlaneId
+                },
+                measurementCoverage: {
+                    gpuTimingSupported: Boolean(game?.gpuFrameTimer?.supported),
+                    gpuSamples: game?.gpuFrameTimer?.snapshot?.()?.samples ?? 0,
+                    frameProfilerEnabled: Boolean(game?.frameProfiler?.enabled)
+                }
+            },
             state: {
                 appPhase: typeof window !== 'undefined' ? window.__hbAppPhase ?? null : null,
                 playerType: game?.playerType ?? null,
@@ -801,6 +833,7 @@ export class DebugLogger {
                     : null,
                 renderer: game?.renderer?.info?.render ?? null,
                 performance: game?.getPerformanceDiagnosticsSnapshot?.() ?? null,
+                audioMissing: typeof window !== 'undefined' ? window.AudioManager?.getMissingAudioDiagnostics?.() ?? null : null,
                 stage: typeof window !== 'undefined' ? window.hbStage ?? null : null,
                 input: inputState,
                 steam: typeof window !== 'undefined' ? window.__hbSteamStatus ?? null : null
@@ -1413,17 +1446,37 @@ export class DebugLogger {
                 // different account. Requires "confirm" since it's a real
                 // action against a real Steam profile, not local run state
                 // like the other cheats here.
-                if (parts[1]?.toLowerCase() !== 'confirm') {
-                    this.warn('QA', 'This resets ALL Steam stats and achievements for the currently logged-in account. Type: resetachievements confirm');
+                {
+                const requestedScope = parts[1]?.toLowerCase() === 'confirm' ? 'both' : parts[1]?.toLowerCase();
+                const confirmed = parts[1]?.toLowerCase() === 'confirm' || parts[2]?.toLowerCase() === 'confirm';
+                if (!confirmed || !['local', 'steam', 'both'].includes(requestedScope)) {
+                    this.warn('QA', 'This resets ALL Steam stats and achievements for the currently logged-in account. Type: resetachievements local|steam|both confirm (legacy: resetachievements confirm)');
+                    break;
+                }
+                const resetLocal = (generation = null) => {
+                    const state = win?.achievementEngine?.resetLocal?.({ generation });
+                    if (!state) return false;
+                    win?.steamAchievementSync?.markReset?.(state.resetGeneration);
+                    win?.dispatchEvent?.(new CustomEvent('achievement-stats-changed'));
+                    return true;
+                };
+                if (requestedScope === 'local') {
+                    if (resetLocal()) this.info('QA', 'Local test achievement progress reset; Steam was not changed.');
+                    else this.error('QA', 'Local achievement engine unavailable.');
                     break;
                 }
                 if (!win?.electronAPI?.resetAchievements) {
-                    this.warn('QA', 'Not available — no desktop Steam bridge in this build.');
+                    this.warn('QA', 'Steam reset unavailable — local state was not changed. Use resetachievements local confirm for an offline-only reset.');
                     break;
                 }
-                win.electronAPI.resetAchievements().then((result) => {
+                const requestedGeneration = (win?.achievementEngine?.getState?.().resetGeneration ?? 0) + 1;
+                win.electronAPI.resetAchievements(requestedGeneration).then((result) => {
                     if (result?.ok) {
-                        this.info('QA', 'Steam stats and achievements reset for the current account.');
+                        if (requestedScope === 'both') resetLocal(result.generation);
+                        else win?.steamAchievementSync?.markReset?.(result.generation);
+                        this.info('QA', requestedScope === 'both'
+                            ? 'Local and Steam stats/achievements reset for the current tester account; achievements can be re-earned.'
+                            : 'Steam stats and achievements reset for the current account; local progress was preserved.');
                     } else if (result?.reason === 'qa_tools_disabled') {
                         this.warn('QA', 'Disabled in this build — launch with HB_QA_TOOLS_ENABLED=1 to enable.');
                     } else if (result?.reason === 'steam_not_active') {
@@ -1434,6 +1487,7 @@ export class DebugLogger {
                 }).catch((err) => {
                     this.error('QA', `Reset failed: ${err?.message ?? err}`);
                 });
+                }
                 break;
 
             default:

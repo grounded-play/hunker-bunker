@@ -2,6 +2,23 @@ import { describe, expect, it } from 'vitest';
 import { normalizePopulationBudget, planRoomPopulation } from './roomPopulation.js';
 
 describe('room population', () => {
+    it('reserves a full doorway apron so blocking props cannot seal a connector', () => {
+        const grid = Array.from({ length: 7 }, () => Array(7).fill('.'));
+        const room = {
+            id: 'west-complex',
+            role: 'storage',
+            interior: Array.from({ length: 25 }, (_, index) => ({ x: 1 + (index % 5), y: 1 + Math.floor(index / 5) })),
+            navigation: { doorLanes: [{ x: 1, y: 3 }] },
+            populationBudget: { signature: 1, large: 1 },
+            themeConfig: { signatureProps: ['prop_bunker_supplies'] }
+        };
+        const plan = planRoomPopulation(room, grid, () => 0.5);
+        for (let y = 2; y <= 4; y += 1) {
+            for (let x = 0; x <= 2; x += 1) expect(plan.reserved).toContain(`${x},${y}`);
+        }
+        expect(plan.placements.every((placement) => !(placement.x <= 2 && placement.y >= 2 && placement.y <= 4))).toBe(true);
+    });
+
     it('normalizes legacy numeric budgets', () => {
         expect(normalizePopulationBudget({ large: 1, small: 3, pickup: 1, enemy: 0 })).toEqual({
             signature: 1,

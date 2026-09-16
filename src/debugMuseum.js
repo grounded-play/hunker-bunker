@@ -12,11 +12,16 @@ import { getItemCatalogEntry } from './steamVaultUi.js';
 import { WEAPON_ARCHETYPES, WEAPON_SKIN_MESHES, CHARM_GLB_MAP, MOD_GLB_MAP, CHASSIS_SKIN_GLB_MAP, NPC_GLB_MAP } from './debugAssetCatalogs.js';
 import { SHOWROOM_CATEGORIES, createDebugWallDecalDisplay } from './debugShowroom.js';
 import { createWorld3dModel } from './world3dOverlay.js';
+import { AudioManager } from './audio.js';
+import { getVoiceScriptRows } from './data/voiceBanks.js';
+import { SONG_INTERSTITIALS } from './songInterstitials.js';
 
 // Far outside any real generated terrain so the museum never overlaps a real run's chunks.
 const MUSEUM_ORIGIN = Object.freeze({ x: 9000, z: 9000 });
-const ITEM_SPACING = 2.4;
-const CATEGORY_GAP = 5;
+const ITEM_SPACING_X = 3.2;
+const ITEM_SPACING_Z = 3.4;
+const CATEGORY_COLUMNS = 6;
+const CATEGORY_GAP = 3.5;
 
 // Hand-collected from threeGame.js's isEnemyType() allowlist.
 const ENEMY_TYPES = SHOWROOM_CATEGORIES.ENEMIES;
@@ -197,9 +202,142 @@ function spawnIconPlaneAt(iconPath, x, y, z) {
     }
 }
 
+export function buildMuseumAudioCatalog(buffers = AudioManager.buffers) {
+    const bufferKeys = Object.keys(buffers ?? {}).sort();
+    const voiceRows = getVoiceScriptRows();
+    const voiceKeys = new Set(voiceRows.flatMap((row) => row.takes));
+    const songKeys = new Set(Object.values(SONG_INTERSTITIALS).map((song) => song.musicKey));
+    return {
+        music: bufferKeys.filter((key) => key.startsWith('music_') && !songKeys.has(key))
+            .map((key) => ({ key, label: key, available: true, bus: 'music' })),
+        songs: Object.values(SONG_INTERSTITIALS).map((song) => ({
+            key: song.musicKey,
+            label: `${song.id} // ${song.title}`,
+            source: song.audio,
+            available: Boolean(buffers?.[song.musicKey]),
+            bus: 'music'
+        })),
+        voice: voiceRows.flatMap((row) => row.takes.map((key, index) => ({
+            key,
+            label: `${row.bankName} // ${row.cue} // TAKE ${index + 1}`,
+            subtitle: row.subtitle,
+            semanticId: row.semanticId,
+            available: Boolean(buffers?.[key]),
+            bus: 'voice'
+        }))),
+        effects: bufferKeys.filter((key) => !key.startsWith('music_') && !voiceKeys.has(key))
+            .map((key) => ({ key, label: key, available: true, bus: key.startsWith('amb_') ? 'world' : 'sfx' }))
+    };
+}
+
+function stopMuseumAudition(group) {
+    const active = group?.userData?.museumAudition;
+    try { active?.source?.stop?.(); } catch { /* source may already have ended */ }
+    if (group?.userData) group.userData.museumAudition = null;
+}
+
+function mountMuseumJukebox(game, group) {
+    if (typeof document === 'undefined' || !document.body?.appendChild) return null;
+    const catalog = buildMuseumAudioCatalog();
+    const root = document.createElement('section');
+    if (!root?.appendChild) return null;
+    root.id = 'debug-museum-jukebox';
+    root.setAttribute?.('aria-label', 'Museum audio jukebox');
+    root.innerHTML = `<style>
+      #debug-museum-jukebox{position:fixed;right:2vw;top:9vh;width:min(520px,42vw);max-height:82vh;z-index:10020;background:#070d14f2;border:1px solid #22d3ee;color:#e2e8f0;font:12px "Space Mono",monospace;padding:12px;box-shadow:0 0 28px #000;display:flex;flex-direction:column;gap:9px}
+      #debug-museum-jukebox .museum-tabs{display:grid;grid-template-columns:repeat(4,1fr);gap:5px} #debug-museum-jukebox button,#debug-museum-jukebox input{font:inherit}
+      #debug-museum-jukebox button{background:#101b28;color:#bdebf2;border:1px solid #31566b;padding:8px;cursor:pointer} #debug-museum-jukebox button[aria-selected="true"]{border-color:#f59e0b;color:#fbbf24}
+      #debug-museum-jukebox .museum-list{overflow:auto;display:grid;gap:5px;min-height:180px} #debug-museum-jukebox .museum-track{text-align:left;display:grid;grid-template-columns:1fr auto;gap:8px}
+      #debug-museum-jukebox .museum-track small{grid-column:1/-1;color:#7dd3fc} #debug-museum-jukebox .unavailable{opacity:.48} #debug-museum-jukebox .museum-controls{display:flex;gap:7px;align-items:center}
+      #debug-museum-jukebox.collapsed .museum-tabs,#debug-museum-jukebox.collapsed .museum-search,#debug-museum-jukebox.collapsed .museum-list{display:none}
+    </style><strong>AUDIO VALIDATION JUKEBOX</strong><div class="museum-tabs"></div><input class="museum-search" aria-label="Filter audio" placeholder="FILTER BY TITLE / CUE / ID"><div class="museum-list"></div><div class="museum-controls"><button data-action="stop">STOP</button><button data-action="reset">RESET SPECIMENS</button><button data-action="damage">DAMAGE STATE</button><label>GAIN <input data-action="gain" type="range" min="0" max="1" step="0.05" value="0.8"></label><button data-action="close">MINIMIZE</button></div>`;
+    const tabs = root.querySelector?.('.museum-tabs');
+    const list = root.querySelector?.('.museum-list');
+    const search = root.querySelector?.('.museum-search');
+    const gain = root.querySelector?.('[data-action="gain"]');
+    let activeTab = 'music';
+    const tabLabels = { music: 'MUSIC', songs: 'SONGS', voice: 'VO & TAKES', effects: 'EFFECTS' };
+
+    const render = () => {
+        if (!list) return;
+        const query = String(search?.value ?? '').trim().toLowerCase();
+        const rows = catalog[activeTab].filter((row) => `${row.label} ${row.subtitle ?? ''} ${row.semanticId ?? ''}`.toLowerCase().includes(query));
+        list.replaceChildren?.();
+        for (const row of rows) {
+            const button = document.createElement('button');
+            button.className = `museum-track${row.available ? '' : ' unavailable'}`;
+            button.disabled = !row.available;
+            button.innerHTML = `<span>${row.label}</span><b>${row.available ? 'PLAY' : 'MISSING'}</b>${row.subtitle ? `<small>${row.subtitle} // ${row.semanticId}</small>` : ''}`;
+            button.addEventListener?.('click', () => {
+                stopMuseumAudition(group);
+                group.userData.museumAudition = AudioManager.play(row.key, {
+                    bus: row.bus,
+                    volume: Number(gain?.value ?? 0.8),
+                    varyPitch: false
+                });
+            });
+            list.appendChild(button);
+        }
+    };
+    for (const key of Object.keys(tabLabels)) {
+        const button = document.createElement('button');
+        button.textContent = tabLabels[key];
+        button.setAttribute?.('aria-selected', String(key === activeTab));
+        button.addEventListener?.('click', () => {
+            activeTab = key;
+            for (const tab of tabs?.children ?? []) tab.setAttribute?.('aria-selected', String(tab === button));
+            render();
+        });
+        tabs?.appendChild(button);
+    }
+    search?.addEventListener?.('input', render);
+    root.querySelector?.('[data-action="stop"]')?.addEventListener?.('click', () => stopMuseumAudition(group));
+    root.querySelector?.('[data-action="reset"]')?.addEventListener?.('click', () => setMuseumSpecimenState(game, 'intact'));
+    root.querySelector?.('[data-action="damage"]')?.addEventListener?.('click', () => setMuseumSpecimenState(game, 'damaged'));
+    root.querySelector?.('[data-action="close"]')?.addEventListener?.('click', (event) => {
+        root.classList?.toggle('collapsed');
+        event.currentTarget.textContent = root.classList?.contains('collapsed') ? 'EXPAND' : 'MINIMIZE';
+        stopMuseumAudition(group);
+    });
+    document.body.appendChild(root);
+    render();
+    return root;
+}
+
+export function setMuseumSpecimenState(game, state = 'intact') {
+    const group = game?.scene?.getObjectByName('debug-museum');
+    if (!group) return false;
+    const damaged = state === 'damaged';
+    group.traverse((child) => {
+        if (child.userData?.museumSpecimenState === 'intact') child.visible = !damaged;
+        if (child.userData?.museumSpecimenState === 'damaged') child.visible = damaged;
+    });
+    return true;
+}
+
+function createPairedSpecimen(source) {
+    const pair = new THREE.Group();
+    pair.name = 'debug-museum-specimen-pair';
+    source.userData.museumSpecimenState = 'intact';
+    source.position.z -= 0.55;
+    pair.add(source);
+    const damaged = source.clone(true);
+    damaged.userData.museumSpecimenState = 'damaged';
+    damaged.position.z += 1.1;
+    damaged.visible = false;
+    damaged.traverse((child) => {
+        if (!child.isMesh || !child.material) return;
+        child.material = child.material.clone();
+        if (child.material.color) child.material.color.multiplyScalar(0.35);
+        if (child.material.emissive) child.material.emissive.setHex(0x4a0808);
+    });
+    pair.add(damaged);
+    return pair;
+}
+
 /**
- * Opens the debug museum: teleports the player to a dedicated staging area and lays out one
- * of every known asset in a long line, grouped by category with labeled separators.
+ * Opens the debug museum: teleports the player to an isolated staging area and lays out one
+ * of every known asset in bounded category grids with labeled separators.
  */
 export async function openDebugMuseum(game) {
     if (!game?.scene || !game?.player) {
@@ -211,6 +349,8 @@ export async function openDebugMuseum(game) {
     group.name = 'debug-museum';
     group.userData.mixers = [];
     group.userData.rotatingItems = [];
+    group.userData.restoreGodMode = Boolean(game.godMode);
+    group.userData.restoreMuseumSessionActive = Boolean(game._debugMuseumSessionActive);
     game.scene.add(group);
     startMuseumAnimationLoop(group);
 
@@ -222,7 +362,6 @@ export async function openDebugMuseum(game) {
     // immediately." The player now appears in the corridor right away and
     // watches pedestals fill in as each category's assets finish loading.
     game.player.position.set(MUSEUM_ORIGIN.x - 4, 0, MUSEUM_ORIGIN.z);
-    if (typeof game.setGodMode === 'function') game.setGodMode(true);
     // The museum is a QA space, not a level. Nothing here should stop you
     // walking: chunk streaming still mounts real terrain around the player at
     // these coordinates, and canOccupyPosition rejects any tile the generator
@@ -230,6 +369,16 @@ export async function openDebugMuseum(game) {
     // speed 1 rather than its 3.5 default, so movement stays normal and only
     // the collision goes away.
     if (typeof game.setNoclip === 'function') game.setNoclip(true, 1);
+    game._debugMuseumSessionActive = true;
+    // Scene-level shots/effects are not children of chunkGroups. Freeze their
+    // simulation in the frame profile and hide them for a genuinely clean lab.
+    group.userData.restoreTransientVisibility = [];
+    for (const entry of [...(game.activeProjectiles ?? []), ...(game.transientEffects ?? [])]) {
+        const display = entry?.mesh ?? entry?.sprite ?? entry?.group;
+        if (!display) continue;
+        group.userData.restoreTransientVisibility.push([display, display.visible]);
+        display.visible = false;
+    }
     // ...and nothing here should be visible except what this function spawned.
     // chunkGroups holds the whole generated world (terrain, walls, scatter),
     // so one flag hides all of it -- the same lever the pocket mechanic uses.
@@ -248,6 +397,7 @@ export async function openDebugMuseum(game) {
         group.userData.restoreBackground = game.scene.background.clone();
         game.scene.background.setHex(0x0b0d0f);
     }
+    group.userData.jukebox = mountMuseumJukebox(game, group);
 
     // Studio lighting for museum corridor
     const ambient = new THREE.AmbientLight(0xffffff, 1.4);
@@ -262,7 +412,7 @@ export async function openDebugMuseum(game) {
     // oversized instead of a 14-wide corridor, so there is room to walk
     // around an exhibit and view it from any side.
     const corridorLength = 280;
-    const floorSize = corridorLength + 60;
+    const floorSize = corridorLength + 100;
     const gridTexture = game.createMenuGridTexture?.();
     if (gridTexture) {
         // The hero-select floor is 96 units at 8 repeats. Match that density
@@ -285,16 +435,19 @@ export async function openDebugMuseum(game) {
     let spawnedCount = 0;
     let skippedCount = 0;
 
-    async function addCategory(title, entries, spawnFn) {
+    async function addCategory(title, entries, spawnFn, { paired = false } = {}) {
         const categoryLabel = makeLabelSprite(`=== ${title} (${entries.length}) ===`, { color: '#22d3ee', fontSize: 40 });
-        categoryLabel.position.set(cursorX, 2.6, z);
+        categoryLabel.position.set(cursorX + ((CATEGORY_COLUMNS - 1) * ITEM_SPACING_X) / 2, 2.8, z - 1.4);
         categoryLabel.scale.set(2.4, 0.6, 1);
         group.add(categoryLabel);
 
-        for (const entry of entries) {
+        for (let index = 0; index < entries.length; index += 1) {
+            const entry = entries[index];
+            const itemX = cursorX + (index % CATEGORY_COLUMNS) * ITEM_SPACING_X;
+            const itemZ = z + Math.floor(index / CATEGORY_COLUMNS) * ITEM_SPACING_Z;
             let obj = null;
             try {
-                obj = await spawnFn(entry, cursorX, z);
+                obj = await spawnFn(entry, itemX, itemZ);
             } catch (err) {
                 console.warn('[debug-museum] spawn failed:', entry, err);
             }
@@ -304,8 +457,9 @@ export async function openDebugMuseum(game) {
                 // so this normalizes rotation to a fixed value rather than leaving whatever
                 // orientation each source file happened to author it in.
                 obj.rotation.y = 0;
-                group.add(spawnPedestal(cursorX, z));
+                group.add(spawnPedestal(itemX, itemZ));
                 obj.position.y += PEDESTAL_HEIGHT;
+                if (paired) obj = createPairedSpecimen(obj);
                 group.add(obj);
                 spawnedCount += 1;
 
@@ -315,15 +469,14 @@ export async function openDebugMuseum(game) {
                 const triCount = countTriangles(obj);
                 const placardText = triCount > 0 ? `${label} // ${triCount} TRIS` : label;
                 const nameLabel = makeLabelSprite(placardText, { fontSize: 26 });
-                nameLabel.position.set(cursorX, PEDESTAL_HEIGHT + 1.1, z + 1.0);
+                nameLabel.position.set(itemX, PEDESTAL_HEIGHT + 1.1, itemZ + 1.0);
                 nameLabel.scale.set(1.8, 0.45, 1);
                 group.add(nameLabel);
             } else {
                 skippedCount += 1;
             }
-            cursorX += ITEM_SPACING;
         }
-        cursorX += CATEGORY_GAP;
+        cursorX += CATEGORY_COLUMNS * ITEM_SPACING_X + CATEGORY_GAP;
     }
 
     // 1. Weapon archetypes (base guns)
@@ -393,7 +546,7 @@ export async function openDebugMuseum(game) {
             console.warn('[debug-museum] failed to load world prop:', type, err);
             return null;
         }
-    });
+    }, { paired: true });
 
     // 8b. Ground overlays / floor decals (real production spawn path)
     await addCategory('GROUND OVERLAYS & FLOOR DECALS', PROP_AND_OVERLAY_TYPES, async (type, x, zPos) => {
@@ -405,9 +558,9 @@ export async function openDebugMuseum(game) {
     await addCategory('ENEMIES & BOSSES', ENEMY_TYPES, async (type, x, zPos) => {
         const placement = { type, x, z: zPos, scale: 1, tiltX: 0, elevation: 0, isDisplayModel: true };
         return game.createScatterInstance(placement);
-    });
+    }, { paired: true });
 
-    console.log(`[debug-museum] opened: ${spawnedCount} objects spawned, ${skippedCount} skipped. Walk +X to tour every category.`);
+    console.log(`[debug-museum] opened: ${spawnedCount} objects spawned, ${skippedCount} skipped across bounded category grids.`);
     return true;
 }
 
@@ -427,7 +580,14 @@ export function closeDebugMuseum(game) {
     if (group.userData.restoreBackground && game.scene.background?.isColor) {
         game.scene.background.copy(group.userData.restoreBackground);
     }
+    stopMuseumAudition(group);
+    group.userData.jukebox?.remove?.();
+    for (const [display, visible] of group.userData.restoreTransientVisibility ?? []) {
+        display.visible = visible;
+    }
+    game._debugMuseumSessionActive = group.userData.restoreMuseumSessionActive ?? false;
     if (typeof game.setNoclip === 'function') game.setNoclip(false);
+    if (typeof game.setGodMode === 'function') game.setGodMode(group.userData.restoreGodMode ?? false);
     group.traverse((child) => {
         child.material?.map?.dispose?.();
         child.material?.dispose?.();

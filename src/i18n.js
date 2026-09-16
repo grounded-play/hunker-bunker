@@ -172,6 +172,40 @@ export function hasKey(key) {
     return getNestedValue(DICTIONARIES['en'], key) !== undefined;
 }
 
+/**
+ * Re-render a panel whose text this module wrote with t().
+ *
+ * data-i18n covers markup that exists at parse time, and localizeCatalog covers
+ * the content catalogs, but a panel a JS module builds on open keeps whatever
+ * language it was rendered in until something rebuilds it. Switching language
+ * with the Vault or the lobby open would otherwise leave half the screen in the
+ * old locale.
+ *
+ * `isMounted` is checked at fire time so a closed panel costs nothing and, more
+ * importantly, so re-rendering never re-opens something the player has closed.
+ * Returns an unsubscribe function.
+ */
+export function onLocaleChange(render, isMounted = () => true) {
+    if (typeof window === 'undefined' || typeof render !== 'function') return () => {};
+    const handler = () => {
+        let mounted;
+        try {
+            mounted = Boolean(isMounted());
+        } catch {
+            return; // a panel that cannot report its state is not one to rebuild
+        }
+        if (!mounted) return;
+        try {
+            render();
+        } catch {
+            // A failed re-render must not break the language switch itself;
+            // the panel reopens correctly translated either way.
+        }
+    };
+    window.addEventListener('locale-changed', handler);
+    return () => window.removeEventListener('locale-changed', handler);
+}
+
 // Attributes that carry user-visible text and can be keyed from markup with
 // data-i18n-<attr>, e.g. data-i18n-title="ui.hub.codex".
 const TRANSLATABLE_ATTRS = Object.freeze(['title', 'aria-label', 'placeholder']);
@@ -208,14 +242,34 @@ export function applyStaticTranslations(root = (typeof document !== 'undefined' 
 // Auto-initialize locale on module load
 currentLocale = detectInitialLocale();
 
+/**
+ * Mirror the active locale onto <html lang>. setLocale() does this when the
+ * player switches, but a session that *starts* in a stored or Steam-detected
+ * locale never went through setLocale, so the document claimed lang="en" while
+ * showing Japanese. That drives font fallback and CJK glyph selection, text
+ * hyphenation, and what a screen reader announces.
+ */
+function syncDocumentLang() {
+    try {
+        if (typeof document !== 'undefined' && document.documentElement) {
+            document.documentElement.lang = currentLocale;
+        }
+    } catch {
+        // Ignore document element errors
+    }
+}
+
 // Keep static markup in sync: translate once the document is parsed, and again
 // whenever the player changes language, so switching never needs a reload.
 if (typeof window !== 'undefined' && typeof document !== 'undefined') {
+    syncDocumentLang();
     window.addEventListener('locale-changed', () => {
+        syncDocumentLang();
         applyStaticTranslations();
     });
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', () => {
+            syncDocumentLang();
             applyStaticTranslations();
         }, { once: true });
     } else {

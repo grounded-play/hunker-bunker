@@ -3,6 +3,14 @@ import * as THREE from 'three';
 import { SurvivorCamp, CAMP_CLEARING_RADIUS, CAMP_FLOOR_SIZE, CAMP_INTERACT_RADIUS, CAMP_SIGNATURE_PROPS, getCampPathNodes } from './camp.js';
 
 describe('SurvivorCamp', () => {
+    it('anchors the whole set piece at the sampled terrain height', () => {
+        const scene = new THREE.Scene();
+        const camp = new SurvivorCamp(scene, { id: 'camp_meridian' });
+        camp.reveal(8, 12, 2.75);
+        expect(camp.group.position).toMatchObject({ x: 8, y: 2.75, z: 12 });
+        expect(camp.getPosition()).toEqual({ x: 8, z: 12 });
+    });
+
     it('uses a crash-site-style clearing with structures spread across it', () => {
         const groundMaterial = new THREE.MeshBasicMaterial();
         const camp = new SurvivorCamp(new THREE.Scene(), { groundMaterial });
@@ -216,4 +224,3 @@ describe('SurvivorCamp', () => {
         expect(Number.isFinite(camp.npcSprite.position.y)).toBe(true);
     });
 });
-

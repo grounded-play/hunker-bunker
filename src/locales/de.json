@@ -13,18 +13,7 @@
     "locked": "Gesperrt",
     "unlocked": "Freigeschaltet"
   },
-  "menu": {
-    "play": "AGENT ENTSENDEN",
-    "resume": "MISSION FORTSETZEN",
-    "armory": "WAFFENKAMMER & LOADOUT",
-    "vault": "STEAM-TRESER",
-    "settings": "EINSTELLUNGEN",
-    "multiplayer": "SQUAD-KOOP",
-    "quit": "ZUM DESKTOP BEENDEN",
-    "version": "Version {version}"
-  },
   "classes": {
-    "all": "Alle Klassen",
     "scout": "Späher",
     "tank": "Panzer",
     "engineer": "Ingenieur"
@@ -44,38 +33,15 @@
     "ammo": "MUNITION",
     "dash": "SPURT",
     "overclock": "ÜBERTAKTER",
-    "objective": "HAUPTDIREKTIVE",
-    "depth": "SCHICHTSTUFE",
     "sector": "SEKTOR",
     "bunker_alert": "BUNKER-ALARM"
   },
   "dialogue": {
-    "mothership_intro": "MUTTERSCHIFF: Abstieg erfasst. Formation halten.",
     "mothership_caution": "MUTTERSCHIFF: Vorsicht. Bergungssignatur verfolgt. Patrouillen nähern sich.",
-    "operator_down": "AGENT AUSGESCHALTET. Bergungsdrohne entsandt.",
     "black_box_guard": "MUTTERSCHIFF: Eliminiere den korrumpierten Agenten, um die Blackbox zu sichern.",
     "black_box_authorized": "Korrupter Agent neutralisiert. Bergung der Blackbox autorisiert.",
     "extraction_forming": "Extraktionsverbindung wird aufgebaut. Bitte während des Papierkrams nicht sterben.",
     "elite_contact": "ANZUG: Elite-Kontakt. Verstärkter Feind — Rückzugsweg freihalten."
-  },
-  "settings": {
-    "title": "SYSTEMKONFIGURATION",
-    "language": "Sprache (Language)",
-    "audio": "Audio",
-    "master_volume": "Gesamtlautstärke",
-    "sfx_volume": "Effektlautstärke",
-    "music_volume": "Musiklautstärke",
-    "subtitles": "Untertitel",
-    "video": "Anzeige & Grafik",
-    "screen_shake": "Bildschirmwackeln",
-    "controls": "Steuerung"
-  },
-  "vault": {
-    "title": "STEAM-TRESER & INVENTAR",
-    "keys_available": "Verfügbare Entschlüsselungsschlüssel: {count}",
-    "get_keys": "SCHLÜSSEL IM ITEM STORE KAUFEN",
-    "open_cache": "TIEFEN-RELIKTE-CACHE ENTSCHLÜSSELN",
-    "disclosed_odds": "Offengelegte kryptografische Wahrscheinlichkeiten"
   },
   "ui": {
     "menu": {
@@ -85,29 +51,67 @@
       "achievements": "ERFOLGE",
       "settings": "EINSTELLUNGEN",
       "about": "ÜBER",
-      "quit": "SPIEL BEENDEN"
+      "quit": "SPIEL BEENDEN",
+      "aria_label_operations_and_steam": "Einsatz- und Steam-Befehle",
+      "title_operator_roster_callsign": "Operator-Liste – Rufzeichen und Ausrüstung",
+      "title_steam_vault_view": "Steam-Tresor – Steam-Kosmetik ansehen",
+      "title_archive_simulations_unlockable": "Archiv-Simulationen – freischaltbare Story-Minispiele",
+      "rgb": "RGB",
+      "title_fabrication_bay_print": "Fertigungsbucht – Ausrüstung aus Schrott drucken (nach Strom für die Basis)",
+      "aria_label_records_and_dossier": "Datensatz- und Dossier-Befehle",
+      "title_bunker_archive_discovered": "Bunker-Archiv – entdeckte Lore-Logs",
+      "title_field_codex_catalogued": "Feld-Kodex – katalogisierte Feinde, Anlagen und Phänomene",
+      "title_tactical_dossier_beta": "Taktisches Dossier – Fortschritt Beta-Saison 1",
+      "title_achievement_records_unlocked": "Erfolgsdaten – freigeschaltete Run-Meilensteine",
+      "tank": "TANK",
+      "aria_label_s_o_u": "S.O.U.L – Tempo, O2-Verbrauch, Beute-Reichweite",
+      "speed": "TEMPO",
+      "fast": "SCHNELL",
+      "title_o2_consumption_rate": "O₂-Verbrauchsrate – niedriger heißt langsamerer Sauerstoffverlust",
+      "aria_label_o2_consumption_rate": "O2-Verbrauchsrate – niedriger ist besser",
+      "o2_use": "O₂-VERBRAUCH",
+      "low": "NIEDRIG",
+      "aria_label_loot_magnet_range": "Reichweite des Beute-Magneten",
+      "loot_mag": "BEUTE-MAG",
+      "med": "MED",
+      "title_choose_operator_polish": "Operator-Lackierung wählen",
+      "suit_polish": "ANZUG-LACKIERUNG",
+      "recon_frame": "AUFKLÄRER-RAHMEN",
+      "scout": "SPÄHER",
+      "sprint_burst": "SPRINT-SCHUB",
+      "wide_magnet": "BREITER MAGNET",
+      "bulwark_frame": "BOLLWERK-RAHMEN",
+      "brace": "ABSTÜTZEN",
+      "low_o2_drain": "GERINGER O₂-VERBRAUCH",
+      "utility_frame": "VERSORGUNGS-RAHMEN",
+      "engineer": "INGENIEUR",
+      "reroute": "UMLEITEN",
+      "cheaper_consoles": "GÜNSTIGERE KONSOLEN",
+      "esc": "[ESC]"
     },
     "hub": {
       "daily_ops": "TAGESEINSATZ",
       "roster": "▣ KADER",
       "vault": "◈ STEAM-TRESOR",
       "archive_sims": "◈ ARCHIV-SIMS",
-      "fab_bay": "◇ FERTIGUNG",
       "archive": "◈ ARCHIV",
       "codex": "❑ KODEX",
       "dossier": "◈ DOSSIER",
       "achievements": "ERFOLGE",
-      "initialize": "INITIALISIEREN"
+      "initialize": "INITIALISIEREN",
+      "vault_tooltip": "Klicken, um das Steam-Tresor-Kosmetikmenü zu öffnen",
+      "status_logs": "{found} / {total} LOGS",
+      "status_intel": "{found} / {total} INTEL",
+      "status_printed": "{printed} / {total} GEDRUCKT",
+      "status_armed": "{armed}/{total} BEWAFFNET"
     },
     "settings": {
       "title": "SYSTEMEINSTELLUNGEN",
-      "cat_display": "ANZEIGE & GRAFIK",
       "night_vision": "NACHTSICHT (OHNE NEBEL/NACHT)",
       "debug_overlay": "DEBUG-OVERLAY",
       "cat_audio": "AUDIO & SPRACHE",
       "audio_mixer": "AUDIO-MIXER",
       "commentary": "KOMMENTARMODUS",
-      "cat_gameplay": "GAMEPLAY & BARRIEREFREIHEIT",
       "ui_scale": "UI-SKALIERUNG",
       "text_floor": "MINDESTTEXTGRÖSSE",
       "text_speed": "TEXTGESCHWINDIGKEIT",
@@ -133,7 +137,21 @@
       "gore": "GORE-EFFEKTE (ZERSTÜCKELUNG)",
       "subtitle_size": "UNTERTITELGRÖSSE",
       "subtitle_backdrop": "UNTERTITEL-HINTERGRUND",
-      "contrast": "HUD-KONTRAST"
+      "contrast": "HUD-KONTRAST",
+      "aria_label_settings_categories": "Einstellungskategorien",
+      "session": "SITZUNG",
+      "audio": "AUDIO",
+      "controls": "STEUERUNG",
+      "camera_hud": "KAMERA & HUD",
+      "accessibility": "BARRIEREFREIHEIT",
+      "profile_saves": "PROFIL & SPEICHERN",
+      "session_display": "SITZUNG & ANZEIGE",
+      "return_to_game": "ZURÜCK INS SPIEL",
+      "resume": "FORTSETZEN",
+      "abort_current_mission": "AKTUELLE MISSION ABBRECHEN",
+      "abort_mission": "MISSION ABBRECHEN",
+      "title_active_crosshair_color": "Aktive Fadenkreuzfarbe",
+      "placeholder_agent": "AGENT"
     },
     "action": {
       "open": "ÖFFNEN",
@@ -187,7 +205,6 @@
     "aria": {
       "language_select": "Spielsprache",
       "close_language": "Sprachmenü schließen",
-      "language_choice": "Sprache auswählen",
       "close_settings": "Systemeinstellungen schließen",
       "crosshair_presets": "Fadenkreuz-Farbvorgaben",
       "crosshair_orange": "Oranges Fadenkreuz",
@@ -233,13 +250,7 @@
       "f_chassis": "EXOSKELETT-CHASSIS-SKIN",
       "f_patch": "SCHULTERAUFNÄHER & ABZEICHEN",
       "f_hud": "TAKTISCHES HUD-DESIGN",
-      "telemetry_title": "ANZUG-TELEMETRIESTATUS",
-      "tel_thermal": "Thermo-Kryogewebe:",
-      "tel_thermal_val": "NORMAL 100%",
-      "tel_rad": "Strahlungssiegel:",
-      "tel_rad_val": "AKTIV",
-      "tel_turntable": "Drehbühne:",
-      "tel_turntable_val": "360°-ZIEHORBIT",
+      "f_voicebank": "ALT-FUNK-STIMMBANK",
       "btn_return": "← ZURÜCK ZUM HAUPTMENÜ",
       "btn_vault": "STEAM-TRESOR & FERTIGUNG",
       "btn_embark": "ZUM BUNKER AUFBRECHEN >>",
@@ -249,10 +260,10 @@
       "select_to_equip": "ZUM AUSRÜSTEN WÄHLEN",
       "unknown_equipment": "UNBEKANNTE AUSRÜSTUNG",
       "locked_achievement": "Erringe den zugehörigen Felderfolg, um es freizulegen.",
-      "locked_rewards": "Durch Feldbelohnungen freischalten."
+      "locked_rewards": "Durch Feldbelohnungen freischalten.",
+      "aria_label_pre_mission_armory": "Waffenkammer vor der Mission"
     },
     "roster": {
-      "title": "▣ OPERATOR-DOSSIER // EINSATZTELEMETRIE",
       "deepest_sector": "TIEFSTER SEKTOR:",
       "total_distance": "GESAMTSTRECKE:",
       "hostiles": "FEINDE:",
@@ -261,8 +272,18 @@
       "decal": "ABZEICHEN:",
       "finish": "LACKIERUNG:",
       "hint": "Fertige Waffen in der FERTIGUNG, um sie hier auszurüsten. Kosmetik im STEAM-TRESOR anpassen.",
-      "confirm": "BESTÄTIGEN & EINSETZEN",
-      "randomize": "Rufzeichen zufällig"
+      "randomize": "Rufzeichen zufällig",
+      "callsign": "RUFZEICHEN:",
+      "placeholder_agent_01": "AGENT-01",
+      "sector_0": "SEKTOR 0",
+      "0_eliminated": "0 AUSGESCHALTET",
+      "none": "KEINE",
+      "equipped_sidearm": "AUSGERÜSTETE SEITENWAFFE",
+      "equipped_steam_cosmetics": "AUSGERÜSTETE STEAM-KOSMETIK",
+      "no_weapons": "KEINE WAFFEN GEFERTIGT",
+      "print_hint": "Drucke in der Fertigungsbucht einen garantierten Streu-Repetierer für 12 Tech / 6 Münzen.",
+      "equipped": "✓ AUSGERÜSTET",
+      "equip": "AUSRÜSTEN"
     },
     "dlg": {
       "channel": "MUTTERSCHIFF-UPLINK KANAL 7",
@@ -271,6 +292,962 @@
       "choice_skip_hint": "TUTORIAL ÜBERSPRINGEN",
       "choice_tutorial_label": "[B] ERST DIE PROTOKOLLE DURCHGEHEN.",
       "choice_tutorial_hint": "TUTORIAL STARTEN"
+    },
+    "misc": {
+      "hunker_bunker_tactical_command": "HUNKER BUNKER | TAKTISCHES KOMMANDO"
+    },
+    "global_skip_intro_btn": {
+      "skip_intro": "INTRO ÜBERSPRINGEN"
+    },
+    "loading": {
+      "aria_label_build_and_developer": "Build- und Entwicklerinformationen",
+      "system_build": "SYSTEM-BUILD",
+      "dev_console": "DEV-KONSOLE",
+      "initializing_systems": "SYSTEME WERDEN INITIALISIERT"
+    },
+    "splash_steam_badge": {
+      "title_click_to_open": "Klicken, um Steam-Overlay-Profil zu öffnen",
+      "aria_label_open_steam_profile": "Steam-Profil öffnen"
+    },
+    "splash": {
+      "tactical_command_v2_0": "TAKTISCHES KOMMANDO v2.0"
+    },
+    "title_profile_hud": {
+      "aria_label_current_operator_profile": "Aktuelles Operator-Profil",
+      "active_operator_profile": "AKTIVES OPERATOR-PROFIL"
+    },
+    "about": {
+      "aria_label_close_credits": "Abspann schließen",
+      "personnel_archive_production_credits": "◈ PERSONALARCHIV // PRODUKTIONS-CREDITS",
+      "developed_by": "ENTWICKELT VON",
+      "tuesday_cinema_club": "TUESDAY CINEMA CLUB",
+      "lead_design_programming": "LEITUNG DESIGN & PROGRAMMIERUNG",
+      "tuesday_cinema_club_team": "Tuesday Cinema Club Team",
+      "graphics_engine": "GRAFIK-ENGINE",
+      "sounds_music": "SOUND & MUSIK",
+      "tuesday_cinema_club_audio_collective": "Tuesday Cinema Club Audio-Kollektiv",
+      "discord_community": "DISCORD-COMMUNITY",
+      "join_discord_server": "DISCORD-SERVER BEITRETEN",
+      "project_repository": "PROJEKT-REPOSITORY",
+      "github_repository": "GITHUB-REPOSITORY",
+      "special_thanks": "BESONDERER DANK",
+      "our_amazing_community_players": "Unserer großartigen Community & den Spielern",
+      "thank_you_for_deploying": "DANKE FÜRS AUSRÜCKEN"
+    },
+    "hero_detail": {
+      "field_loadout": "FELDAUSRÜSTUNG"
+    },
+    "archive": {
+      "bunker_archive": "◈ BUNKER-ARCHIV",
+      "recovered_kicker": "ARCHIV-SIMULATION WIEDERHERGESTELLT",
+      "in_progress": "LÄUFT",
+      "ready": "BEREIT",
+      "best_score": "◈ BESTE: {score} PKT",
+      "rgb_title": "RGB: RIVERSIDE GLOBAL 'BOTICS"
+    },
+    "close_season_pass": {
+      "aria_label_close_tactical_dossier": "Taktisches Dossier schließen"
+    },
+    "season_pass": {
+      "sub_terran_sector_operations_beta": "◈ SUBTERRANE SEKTOR-OPERATIONEN // BETA-SAISON 1",
+      "directives": "& DIREKTIVEN"
+    },
+    "archive_log_detail": {
+      "aria_label_close_archive_log": "Archiv-Log schließen",
+      "recovered_archive_record": "◈ GEBORGENER ARCHIVEINTRAG",
+      "decryption_complete_read_only": "ENTSCHLÜSSELUNG ABGESCHLOSSEN // NUR LESEN"
+    },
+    "close_codex": {
+      "aria_label_close_field_codex": "Feld-Kodex schließen"
+    },
+    "codex": {
+      "field_intel_discovered_specimens_lore": "◈ FELD-INTEL // ENTDECKTE EXEMPLARE & LORE",
+      "catalogued_by_sub_terran_encounter": "NACH SUBTERRANER BEGEGNUNG KATALOGISIERT",
+      "intel_record_kicker": "❑ {category}-INTEL-EINTRAG",
+      "entries_recovered": "EINTRÄGE GEBORGEN: {found} / {total}",
+      "endings_archive": "◈ ARCHIV DER EXPEDITIONSENDEN // ALLE 10 VERLÄUFE & KODEX-DREHPUNKTE",
+      "endings_sub": "Katalogisiert alle zehn historischen Ausgänge, gesperrte Silhouetten und die unumkehrbaren Schlüsselentscheidungen, die bestimmte Wege im aktuellen Einsatz schließen.",
+      "discovered": "ENTDECKT",
+      "locked_this_run": "IN DIESEM RUN GESPERRT",
+      "undiscovered": "UNENTDECKT",
+      "classified": "GEHEIME EXPEDITIONSBAHN",
+      "closed_by": "🔒 GESCHLOSSEN DURCH SCHLÜSSELENTSCHEIDUNG:",
+      "view_record": "Intel-Eintrag für {name} ansehen",
+      "click_hint": "KLICKEN FÜR DOSSIER & ARTWORK",
+      "uncatalogued": "??? — NICHT KATALOGISIERT",
+      "encounter_hint": "Begegne ihm im Feld, um seinen Eintrag zu bergen."
+    },
+    "close_codex_detail": {
+      "aria_label_close_codex_entry": "Kodex-Eintrag schließen"
+    },
+    "codex_detail": {
+      "entry_recovered_read_only_dossier": "EINTRAG GEBORGEN // NUR-LESE-DOSSIER"
+    },
+    "close_achievements": {
+      "aria_label_close_achievements": "Erfolge schließen"
+    },
+    "achievements": {
+      "combat_citations_deep_crust_commendations": "◈ GEFECHTSAUSZEICHNUNGEN // TIEFENKRUSTEN-EHRUNGEN",
+      "title_copy_a_portable": "Portablen Speichercode kopieren",
+      "copy_save_code": "SPEICHERCODE KOPIEREN"
+    },
+    "close_steam_vault": {
+      "aria_label_close_steam_vault": "Steam-Tresor schließen"
+    },
+    "steam_vault": {
+      "appid_4957040_secure_dispensary": "◈ APPID 4957040 // SICHERE AUSGABE",
+      "steam_inventory_manifest": "STEAM-INVENTARLISTE",
+      "verified": "VERIFIZIERT",
+      "steam_secured": "🛡️ STEAM-GESICHERT",
+      "100_disclosed_odds": "⚖️ 100% OFFENGELEGTE CHANCEN",
+      "f2p_in_game_drops": "📦 F2P IN-GAME-DROPS",
+      "deep_relic_caches": "TIEFEN-RELIKT-CACHES",
+      "cache_keys": "CACHE-SCHLÜSSEL",
+      "relic_key_dispensary": "RELIKT-SCHLÜSSEL-AUSGABE",
+      "steam_wallet_direct": "STEAM-GUTHABEN DIREKT",
+      "open_in_steam": "IN STEAM ÖFFNEN ↗",
+      "relic_cache_decryptor": "RELIKT-CACHE-DECODER",
+      "open_deep_relic_cache": "◈ TIEFEN-RELIKT-CACHE ÖFFNEN",
+      "published_drop_rates": "VERÖFFENTLICHTE DROP-RATEN",
+      "100_disclosed": "100% OFFENGELEGT",
+      "trade_up_smelting": "🔥 AUFWERTUNGS-SCHMELZE",
+      "5_1_tier_upgrade": "⚖️ 5:1 STUFEN-UPGRADE",
+      "permanent_merge": "◈ DAUERHAFTE VERSCHMELZUNG",
+      "5_same_tier_items": "5× GEGENSTÄNDE GLEICHER STUFE",
+      "1_next_tier_item": "1× GEGENSTAND NÄCHSTER STUFE",
+      "deep_smelter": "TIEFEN-SCHMELZE",
+      "consumes_5x_same_tier_items": "VERBRAUCHT 5x GEGENSTÄNDE GLEICHER STUFE",
+      "deep_core_shard_dispensary": "TIEFENKERN-SPLITTER-AUSGABE"
+    },
+    "vault_details": {
+      "view_in_steam_market": "IM STEAM-MARKT ANSEHEN"
+    },
+    "vault_reveal": {
+      "steam_relic_dispensary_appid_4957040": "◈ STEAM-RELIKT-AUSGABE // APPID 4957040",
+      "claim_to_inventory": "◈ INS INVENTAR ÜBERNEHMEN"
+    },
+    "operator_polish": {
+      "operator_polish": "◆ OPERATOR-LACKIERUNG",
+      "16_bit_suit_tint_matrix": "16-BIT-ANZUGFARBMATRIX // GESPERRTE FINISHES ERFORDERN FELD-MEILENSTEINE"
+    },
+    "close_tactical_map": {
+      "aria_label_close_tactical_map": "Taktische Karte schließen"
+    },
+    "tactical_map": {
+      "tactical_blueprint_overlay": "◈ TAKTISCHE BLAUPAUSEN-ÜBERLAGERUNG",
+      "grid_sector_01_exploration_active": "RASTER-SEKTOR 01 // ERKUNDUNG AKTIV",
+      "title_zoom_in": "Vergrößern (+)",
+      "zoom_in": "VERGRÖSSERN",
+      "title_zoom_out": "Verkleinern (-)",
+      "zoom_out": "VERKLEINERN",
+      "title_center_home_base": "Auf Basis zentrieren (H)",
+      "home_base": "HEIMATBASIS",
+      "title_center_operator_p": "Auf Operator zentrieren (P)",
+      "operator": "OPERATOR",
+      "title_reset_view_r": "Ansicht zurücksetzen (R)",
+      "reset": "ZURÜCKSETZEN",
+      "title_debug_reveal_regional": "Debug: Regionalroute aufdecken",
+      "reveal_all": "ALLES AUFDECKEN",
+      "blueprint_legend": "BLAUPAUSEN-LEGENDE",
+      "operator_position": "OPERATOR-POSITION",
+      "discovered_room": "ENTDECKTER RAUM",
+      "shrouded_fog_of_war": "VOM KRIEGSNEBEL VERHÜLLT",
+      "survivor_camp": "ÜBERLEBENDEN-LAGER",
+      "hive_site": "NEST-STANDORT",
+      "active_objective": "AKTIVES ZIEL",
+      "explored_tiles": "ERKUNDETE FELDER:",
+      "active_signals": "AKTIVE SIGNALE:",
+      "drag_wasd_l_stick_pan": "[ZIEHEN / WASD / L-STICK] SCHWENKEN",
+      "scroll_lb_rb_zoom": "[SCROLLEN / +/- / LB-RB] ZOOM",
+      "h_x_home_p_y": "[H / (X)] BASIS [P / (Y)] OPERATOR",
+      "m_select_esc_close": "[M] / [SELECT] / [ESC] SCHLIESSEN"
+    },
+    "player_trade": {
+      "operative_link_field_barter": "OPERATIVEN-LINK // FELDTAUSCH",
+      "link_active": "LINK AKTIV",
+      "shells": "HÜLSEN",
+      "ammo": "MUNITION",
+      "medkits": "MEDIPACKS",
+      "o2_filter": "O2-FILTER",
+      "shells_offered": "ANGEBOTENE HÜLSEN",
+      "ammo_offered": "ANGEBOTENE MUNITION",
+      "medkits_offered": "ANGEBOTENE MEDIPACKS",
+      "o2_filters_offered": "ANGEBOTENE O2-FILTER",
+      "cancel_link": "LINK ABBRECHEN",
+      "confirm_transfer": "TRANSFER BESTÄTIGEN"
+    },
+    "close_player_trade": {
+      "aria_label_close_trade_link": "Handels-Link schließen"
+    },
+    "npc_dialogue": {
+      "affection_bond": "ZUNEIGUNG // BINDUNG",
+      "press_1_4_or_click": "[1-4] DRÜCKEN ODER KARTE ANKLICKEN • [ESC] ZURÜCKZIEHEN"
+    },
+    "close_npc_dialogue": {
+      "title_exit_dialogue": "Dialog verlassen"
+    },
+    "demo_end": {
+      "transmission_terminated": "◈ ÜBERTRAGUNG BEENDET",
+      "you_belong_to_the_deep": "„Du gehörst jetzt der Tiefe, kleine Maschine. Der Schwarm erinnert sich an deinen Ruf.“",
+      "thank_you_for_playing_the": "Danke, dass du die Hunker-Bunker-Demo gespielt hast.",
+      "the_mothership_uplink_has_been": "Die Verbindung zum Mutterschiff ist gekappt, doch die wahre Bedrohung wartet noch. Setze das Hauptspiel auf deine Steam-Wunschliste, um deine Bergung in den tiefen Tresoren fortzusetzen.",
+      "wishlist_on_steam": "◈ AUF STEAM-WUNSCHLISTE SETZEN"
+    },
+    "demo_end_main_menu": {
+      "return_to_menu": "ZURÜCK ZUM MENÜ"
+    },
+    "fabrication": {
+      "fabrication_bay": "◇ FERTIGUNGSBUCHT",
+      "print_gear_from_salvage": "AUSRÜSTUNG AUS SCHROTT DRUCKEN",
+      "schematics_fabricated_0_8": "GEFERTIGTE BAUPLÄNE: 0 / 8"
+    },
+    "fab_roll": {
+      "insert_salvage_to_fabricate": "SCHROTT ZUM FERTIGEN EINLEGEN"
+    },
+    "ui": {
+      "exosuit_mark_iv_pressurized": "EXOANZUG // MARK-IV DRUCKFEST",
+      "bunker_level": "BUNKER-EBENE"
+    },
+    "campaign_day_indicator": {
+      "title_campaign_day_and": "Kampagnentag und lokaler Lichtzyklus"
+    },
+    "hud_run_cards": {
+      "aria_label_active_run_pressure": "Aktueller Run-Druck"
+    },
+    "desktop_compass": {
+      "title_click_or_press": "Klicken oder M drücken, um die taktische Karte umzuschalten",
+      "aria_label_tactical_compass_click": "Taktischer Kompass (klicken, um Karte zu öffnen)",
+      "tactical_map": "TAKTISCHE KARTE",
+      "map_m": "[KARTE / M]",
+      "base": "BASIS"
+    },
+    "hud_blueprint_canvas": {
+      "aria_label_explored_tactical_map": "Erkundete taktische Karte"
+    },
+    "extraction_progress_ring": {
+      "launch": "START"
+    },
+    "desktop_compass_radar_row": {
+      "node": "KNOTEN"
+    },
+    "weapon_status": {
+      "sidearm": "SEITENWAFFE"
+    },
+    "ship_status": {
+      "ship_integrity": "SCHIFFSINTEGRITÄT"
+    },
+    "vitals": {
+      "vitals": "VITALWERTE",
+      "aria_label_health": "Gesundheit",
+      "cover": "DECKUNG"
+    },
+    "queens_ledger_hud": {
+      "obedience_0_seats_1_4": "♛ GEHORSAM 0 · SITZE 1/4 · VEKTOR: INSTABIL"
+    },
+    "radar_scan": {
+      "title_radar_scan_q": "Radarscan [Q]",
+      "radar_scan": "RADARSCAN"
+    },
+    "pickup_counter": {
+      "loot": "BEUTE",
+      "total": "GESAMT"
+    },
+    "boss_status": {
+      "boss_threat": "BOSS-BEDROHUNG"
+    },
+    "world_status": {
+      "tactical_feed": "TAKTISCHER FEED",
+      "units": "EINHEITEN"
+    },
+    "game_over": {
+      "exosuit_failure": "EXOANZUG-AUSFALL",
+      "agent_lost_in_sector_9": "> AGENT IN SEKTOR 9 VERLOREN. TELEMETRIE GEBORGEN.",
+      "mission_report": "MISSIONSBERICHT",
+      "distance_covered": "ZURÜCKGELEGTE STRECKE",
+      "items_recovered": "GEBORGENE GEGENSTÄNDE",
+      "o2_generator": "O₂-GENERATOR",
+      "threats_eliminated": "AUSGESCHALTETE BEDROHUNGEN",
+      "time_elapsed": "VERSTRICHENE ZEIT",
+      "aria_label_expedition_earnings_and": "Expeditionserträge und Bankguthaben",
+      "score": "PUNKTE",
+      "pts": "PKT",
+      "world_seed": "WELT-SEED:",
+      "leaderboard_results": "◈ BESTENLISTEN-ERGEBNISSE",
+      "try_again": "NOCHMAL VERSUCHEN"
+    },
+    "game_over_main_menu": {
+      "main_menu": "HAUPTMENÜ"
+    },
+    "close_lore": {
+      "aria_label_close_log": "Log schließen"
+    },
+    "lore": {
+      "bunker_terminal_log_fragment": "BUNKER-TERMINAL – LOG-FRAGMENT",
+      "log_key": "LOG-{key}",
+      "text_unavailable": "[LOG-TEXT NICHT VERFÜGBAR – ZURÜCK ZUM BUNKER]",
+      "date": "DATUM: {date}",
+      "loc": "ORT: {coords}",
+      "open_log": "Geborgenen Log {key} öffnen",
+      "recovered": "GEBORGEN // EINTRAG ÖFFNEN",
+      "encrypted": "VERSCHLÜSSELT // GESPERRT",
+      "summary": "LOGS GEBORGEN: {found} / {total}"
+    },
+    "radio_sender_name": {
+      "mothership_command": "MUTTERSCHIFF-KOMMANDO"
+    },
+    "radio_transmission_prompt": {
+      "online": "ONLINE"
+    },
+    "biome_hud_prompt": {
+      "zone": "ZONE"
+    },
+    "biome_hud_text": {
+      "entering_active_sector": "BETRETE AKTIVEN SEKTOR"
+    },
+    "lore_hud_prompt": {
+      "press_e": "E DRÜCKEN",
+      "read_log": "LOG LESEN"
+    },
+    "console_hud_prompt": {
+      "press_e": "E DRÜCKEN",
+      "access_base_shop": "BASIS-SHOP ÖFFNEN"
+    },
+    "o2_generator_hud_prompt": {
+      "press_e": "E DRÜCKEN",
+      "upgrade_o2_generator": "O₂-GENERATOR AUFRÜSTEN"
+    },
+    "base_turret_hud_prompt": {
+      "press_e": "E DRÜCKEN",
+      "defense_turret_controls": "STEUERUNG DES VERTEIDIGUNGSGESCHÜTZES"
+    },
+    "foundry_hud_prompt": {
+      "press_e": "E DRÜCKEN",
+      "open_fab_bay": "FERTIGUNGSBUCHT ÖFFNEN"
+    },
+    "scientist_hud_prompt": {
+      "press_e": "E DRÜCKEN",
+      "talk_to_dr_okonkwo_vass": "MIT DR. OKONKWO-VASS SPRECHEN"
+    },
+    "mayor_tina_hud_prompt": {
+      "press_e": "E DRÜCKEN",
+      "talk_to_mayor_tina": "MIT BÜRGERMEISTERIN TINA SPRECHEN"
+    },
+    "black_box_hud_prompt": {
+      "press_e": "E DRÜCKEN",
+      "recover_black_box": "BLACKBOX BERGEN"
+    },
+    "hole_hud_prompt": {
+      "press_e": "E DRÜCKEN",
+      "fill_hole": "LOCH VERFÜLLEN"
+    },
+    "mouse_look_prompt": {
+      "click": "KLICKEN",
+      "to_look_around": "ZUM UMSEHEN"
+    },
+    "telemeter_integrity": {
+      "integrity": "INTEGRITÄT:"
+    },
+    "console_terminal": {
+      "bunker_tactical_terminal": "TAKTISCHES BUNKER-TERMINAL",
+      "time_of_day": "TAGESZEIT",
+      "survived": "ÜBERLEBT",
+      "base_system": "◇ BASIS-SYSTEM",
+      "class_skills": "◇ KLASSEN-FÄHIGKEITEN",
+      "objective_night_log": "◇ ZIEL / NACHT-LOG",
+      "field_medkit": "FELD-MEDIPACK",
+      "med_conversion": "MED-UMWANDLUNG",
+      "convert_10_med_1_heart": "10 MED UMWANDELN → ♥ 1 HERZ WIEDERHERGESTELLT",
+      "convert_10_med": "10 MED UMWANDELN → ♥",
+      "optional_field_opportunity": "OPTIONALE FELDGELEGENHEIT",
+      "o2_generator_module": "O₂-GENERATORMODUL",
+      "field_stabilizer": "FELDSTABILISATOR",
+      "repair_generator": "GENERATOR REPARIEREN",
+      "goal_2": "ZIEL 2",
+      "hull_expansion_matrix": "HÜLLEN-ERWEITERUNGSMATRIX",
+      "locked_repair_o2_generator_first": "GESPERRT – ZUERST O₂-GENERATOR REPARIEREN",
+      "reinforce_exterior_hull_increases_max": "Verstärkt die Außenhülle. Erhöht die max. Exoanzug-Integrität auf 4 Herzen.",
+      "cost_50_tech_20_med": "KOSTEN: 50 TECH / 20 MED",
+      "locked": "GESPERRT",
+      "goal_3": "ZIEL 3",
+      "communication_radar_node": "KOMMUNIKATIONS-RADARKNOTEN",
+      "locked_install_hull_matrix_first": "GESPERRT – ZUERST HÜLLENMATRIX INSTALLIEREN",
+      "establish_long_range_tactical_feeds": "Stellt taktische Fernverbindungen her. Der Kompass verfolgt das nächste Versorgungslager.",
+      "cost_150_tech_30_coin": "KOSTEN: 150 TECH / 30 MÜNZEN",
+      "goal_4": "ZIEL 4",
+      "reactor_compressor": "REAKTOR-KOMPRESSOR",
+      "locked_install_radar_node_first": "GESPERRT – ZUERST RADARKNOTEN INSTALLIEREN",
+      "increase_generator_efficiency_o2_refill": "Steigert die Generatoreffizienz. O₂-Nachfüllrate verdoppelt sich, Verbrauch sinkt um 20%.",
+      "cost_300_tech_100_coin": "KOSTEN: 300 TECH / 100 MÜNZEN",
+      "expedition_day": "EXPEDITIONSTAG",
+      "cycle_phase": "ZYKLUSPHASE",
+      "local_light": "LOKALES LICHT",
+      "next_transition": "NÄCHSTER ÜBERGANG",
+      "aria_label_objective_history": "Zielverlauf",
+      "expedition_journal": "EXPEDITIONSJOURNAL",
+      "aria_label_optional_base_defense": "Optionale Basisverteidigung",
+      "defense_turret": "VERTEIDIGUNGSGESCHÜTZ",
+      "optional_north_door_defense_repairing": "Optionale Verteidigung der Nordtür. Die Reparatur der Lebenserhaltung baut kein Geschütz.",
+      "bunker_tree_cross_linked_protocols": "BUNKER-BAUM // VERKNÜPFTE PROTOKOLLE"
+    },
+    "terminal_bank": {
+      "current_run_stats": "AKTUELLE RUN-STATISTIK",
+      "shells": "HÜLSEN",
+      "bank_total": "BANK GESAMT",
+      "hearts": "HERZEN",
+      "med": "MED",
+      "tech": "TECH",
+      "coin": "MÜNZEN",
+      "current_objective": "AKTUELLES ZIEL",
+      "base_priority": "BASIS-PRIORITÄT"
+    },
+    "close_o2_generator": {
+      "aria_label_close_o2_generator": "O2-Generator schließen"
+    },
+    "o2_generator": {
+      "o2_generator_module": "O₂-GENERATORMODUL",
+      "safe_field_output": "SICHERE FELDLEISTUNG"
+    },
+    "close_base_turret": {
+      "aria_label_close_base_turret": "Basis-Geschützsteuerung schließen"
+    },
+    "base_turret": {
+      "camp_defense_turret": "LAGER-VERTEIDIGUNGSGESCHÜTZ",
+      "turret_status": "GESCHÜTZ-STATUS"
+    },
+    "base_turret_modal_badge": {
+      "door_guard": "TÜRWACHE"
+    },
+    "elevator_choice": {
+      "elevator_arrival": "AUFZUG ANGEKOMMEN",
+      "extract_or_descend": "BERGEN ODER ABSTEIGEN",
+      "the_doors_are_open": "DIE TÜREN SIND OFFEN",
+      "choice_required": "ENTSCHEIDUNG ERFORDERLICH",
+      "the_lift_can_carry_the": "Der Aufzug kann den Operator zurück in den Orbit oder in einen tieferen Sektor bringen.",
+      "extract_up": "NACH OBEN BERGEN",
+      "descend_deeper": "TIEFER ABSTEIGEN"
+    },
+    "confirm": {
+      "critical_alert": "KRITISCHER ALARM",
+      "abort_mission": "MISSION ABBRECHEN",
+      "cancel": "ABBRECHEN"
+    },
+    "day_rest_warning": {
+      "the_night_will_close_doors": "DIE NACHT WIRD TÜREN SCHLIESSEN",
+      "sleep_anyway": "TROTZDEM SCHLAFEN",
+      "stay_awake": "WACH BLEIBEN"
+    },
+    "archive_sims": {
+      "archive_simulations": "ARCHIV-SIMULATIONEN",
+      "rgb_riverside_global_botics": "RGB: RIVERSIDE GLOBAL 'BOTICS",
+      "launch_continued_run": "FORTGESETZTEN RUN STARTEN"
+    },
+    "archive_sims_modal_close": {
+      "close": "SCHLIESSEN"
+    },
+    "reset_save_confirm": {
+      "reset_save_data": "SPEICHERDATEN ZURÜCKSETZEN",
+      "reset_save": "SPEICHERSTAND ZURÜCKSETZEN",
+      "cancel": "ABBRECHEN"
+    },
+    "quit_confirm": {
+      "quit_hunker_bunker": "HUNKER BUNKER BEENDEN",
+      "confirm_quit": "BEENDEN BESTÄTIGEN",
+      "cancel": "ABBRECHEN"
+    },
+    "camp_choice": {
+      "aria_label_close_camp_decision": "Lager-Entscheidung schließen",
+      "vessel_launch_manifest_forecast": "◇ PROGNOSE DER SCHIFFS-STARTLISTE ◇",
+      "irreversible_choice_strategic_record": "⚠ UNUMKEHRBARE WAHL // STRATEGISCHER EINTRAG ⚠",
+      "confirm_decision": "ENTSCHEIDUNG BESTÄTIGEN"
+    },
+    "song_interstitial_track": {
+      "track_00": "TITEL 00"
+    },
+    "song_interstitial_title": {
+      "signal_acquired": "SIGNAL ERFASST"
+    },
+    "game_viewport": {
+      "xl_18": "XL: 18",
+      "lg_06": "LG: 06",
+      "md_04": "MD: 04",
+      "sm_02_5": "SM: 02.5",
+      "xs_01_8": "XS: 01.8"
+    },
+    "save_data": {
+      "export_a_portable_save_code": "Exportiere einen portablen Speichercode oder füge unten einen ein, um den Fortschritt wiederherzustellen. Der Import überschreibt die aktuellen Daten auf diesem Gerät.",
+      "portable_save_code": "PORTABLER SPEICHERCODE",
+      "placeholder_export_or_paste": "SPEICHERCODE EXPORTIEREN ODER EINFÜGEN",
+      "title_generate_and_copy": "Portablen Speichercode erzeugen und kopieren",
+      "title_restore_progress_from": "Fortschritt aus eingefügtem Code wiederherstellen"
+    },
+    "crosshair_color": {
+      "aria_label_close_crosshair_color": "Fadenkreuzfarben-Menü schließen"
+    },
+    "audio_mixer": {
+      "master": "GESAMT",
+      "music": "MUSIK",
+      "vfx": "EFFEKTE",
+      "voice": "STIMME",
+      "character_voice_readouts": "CHARAKTER-SPRACHAUSGABEN"
+    },
+    "controls": {
+      "steam_deck": "STEAM DECK:",
+      "desktop": "DESKTOP:"
+    },
+    "mothership_dialogue": {
+      "scout_link_encrypted": "SPÄHER-LINK [VERSCHLÜSSELT]"
+    },
+    "leader_conversation": {
+      "aria_label_leave_conversation": "Gespräch verlassen",
+      "aria_label_speaker": "Sprecher",
+      "leave": "VERLASSEN"
+    },
+    "snail_encounter": {
+      "vs": "VS",
+      "snail_hp": "SCHNECKEN-TP",
+      "resolve": "ENTSCHLOSSENHEIT"
+    },
+    "multiplayer": {
+      "sub_surface_comms_combat_data": "◈ UNTERGRUND-FUNK // GEFECHTS-DATENLINK v2.1",
+      "solo": "SOLO",
+      "solo_operation": "EINZELEINSATZ",
+      "1_operative_no_squad_no": "1 OPERATIVER // KEIN SQUAD, KEINE RIVALEN",
+      "no_relay_required": "KEIN RELAY ERFORDERLICH",
+      "full_salvage_claim": "VOLLER SCHROTT-ANSPRUCH",
+      "active_mode": "AKTIVER MODUS",
+      "pve_squad": "PVE-SQUAD",
+      "co_op_expedition": "KOOP-EXPEDITION",
+      "2_4_operatives_shared_salvage": "2-4 OPERATIVE // GETEILTER SCHROTT & WIEDERBELEBUNG",
+      "synced_telemetry": "SYNCHRONE TELEMETRIE",
+      "emergency_rescue": "NOTFALL-RETTUNG",
+      "shared_o2_link": "GETEILTER O₂-LINK",
+      "select_mode": "MODUS WÄHLEN",
+      "pvp_duel": "PVP-DUELL",
+      "pvp_sector_skirmish": "PVP-SEKTORGEFECHT",
+      "contested_bunker_high_tier_drops": "UMKÄMPFTER BUNKER // HOCHSTUFIGE DROPS",
+      "contested_corridors": "UMKÄMPFTE KORRIDORE",
+      "full_loot_claim": "VOLLER BEUTEANSPRUCH",
+      "rival_bounties": "RIVALEN-KOPFGELDER",
+      "mission_objective": "MISSIONSZIEL:",
+      "sector_frequency_uplink": "SEKTORFREQUENZ & UPLINK",
+      "ch_07": "CH-07",
+      "sector_room_code": "SEKTOR-RAUMCODE",
+      "title_copy_sector_frequency": "Sektorfrequenz kopieren",
+      "title_invite_a_steam": "Steam-Freund einladen",
+      "lobby_access": "LOBBY-ZUGANG",
+      "private_invite_only": "PRIVAT (NUR AUF EINLADUNG)",
+      "placeholder_optional_password": "OPTIONALES PASSWORT",
+      "network_relay_backend": "NETZWERK-RELAY-BACKEND",
+      "encryption": "VERSCHLÜSSELUNG:",
+      "aes_256_shared_seed": "AES-256 / GETEILTER SEED",
+      "sync_rate": "SYNC-RATE:",
+      "60_hz_state_lock": "60-HZ-ZUSTANDSSPERRE",
+      "sector_map": "SEKTORKARTE:",
+      "procedural_radial_ring": "PROZEDURALER RADIALRING",
+      "crash_sites": "ABSTURZSTELLEN:",
+      "synchronized_split_drop": "SYNCHRONISIERTER TEIL-ABWURF",
+      "public_steam_lobbies": "ÖFFENTLICHE STEAM-LOBBYS",
+      "title_refresh_public_lobbies": "Öffentliche Lobbys aktualisieren",
+      "no_public_lobbies_found_yet": "Noch keine öffentlichen Lobbys gefunden.",
+      "squad_manifest": "SQUAD-LISTE",
+      "max_4": "MAX: 4",
+      "operative_callsign": "OPERATIVEN-RUFZEICHEN",
+      "chassis_frame": "CHASSIS-RAHMEN",
+      "latency": "LATENZ",
+      "status": "STATUS",
+      "esc": "ESC",
+      "click": "KLICKEN",
+      "host": "HOST",
+      "back_to_armory": "← ZURÜCK ZUR WAFFENKAMMER"
+    },
+    "close_multiplayer": {
+      "aria_label_close_tactical_net": "Taktisches Netz schließen"
+    },
+    "mature_content_audit": {
+      "steam_mature_content_reviewer_audit": "STEAM-AUDIT: REIFE INHALTE & PRÜFER",
+      "f9_shortcut_compliance_verification_suite": "F9-KÜRZEL // COMPLIANCE-PRÜFSUITE"
+    },
+    "close_mature_audit": {
+      "aria_label_close_audit_suite": "Audit-Suite schließen"
+    },
+    "progression_walkthrough": {
+      "gameplay_progression_walkthrough": "GAMEPLAY-FORTSCHRITTS-WALKTHROUGH",
+      "f10_shortcut_dev_only_qa": "F10-KÜRZEL // NUR-DEV-QA-WERKZEUG"
+    },
+    "close_progression_walkthrough": {
+      "aria_label_close_progression_walkthrough": "Fortschritts-Walkthrough schließen"
+    },
+    "select_picker": {
+      "aria_label_close_option_picker": "Optionsauswahl schließen"
+    },
+    "virtual_keyboard": {
+      "aria_label_close_on_screen": "Bildschirmtastatur schließen",
+      "back": "⌫ ZURÜCK",
+      "space": "LEER",
+      "done": "✓ FERTIG"
+    },
+    "leaderboard": {
+      "no_ranks": "KEINE RÄNGE VERFÜGBAR",
+      "anonymous_agent": "Agent"
+    },
+    "interstitial": {
+      "track": "TITEL {id}"
+    },
+    "manifest": {
+      "title": "RÜCKKEHR-MANIFEST",
+      "extracted": "GEBORGEN",
+      "bank_secured": "BANK GESICHERT",
+      "col_resource": "RESSOURCE",
+      "col_earned": "VERDIENT",
+      "col_spent": "AUSGEGEBEN",
+      "col_bank_now": "BANK JETZT",
+      "consolidated": "Expeditionserträge wurden mit der Bunkerreserve zusammengeführt.",
+      "receipt_unavailable": "Run-Beleg nicht verfügbar. Angezeigt wird deine gespeicherte Bank.",
+      "ready_next": "Bereit für den nächsten Einsatz.",
+      "preserved_on_failure": "Bankguthaben bleibt bei Misserfolg erhalten.",
+      "dossier": "DOSSIER",
+      "pending": "{count} AUSSTEHEND",
+      "synced": "SYNCHRONISIERT ✓"
+    },
+    "wanderer": {
+      "survivor_named": "Überlebender: {name}",
+      "close": "Gespräch mit Überlebendem schließen",
+      "wanderer": "WANDERER",
+      "recruit": "GEFÄHRTEN ANWERBEN",
+      "decline": "BÜNDNIS ABLEHNEN – {supplies} EINLAGERN",
+      "supplies": "VORRÄTE",
+      "transmission": "[ ÜBERLEBENDEN-ÜBERTRAGUNG ]",
+      "quote": "„{text}“"
+    },
+    "vault": {
+      "item_acquired": "STEAM-GEGENSTAND ERHALTEN",
+      "item_unlocked": "STEAM-GEGENSTAND FREIGESCHALTET: {names}",
+      "operator": "OPERATOR",
+      "steam_connected": "STEAM VERBUNDEN",
+      "online": "ONLINE",
+      "dev_mode": "DEV-MODUS",
+      "dev_fallback": "DEV-FALLBACK",
+      "local_operator": "LOKALER OPERATOR",
+      "local_beta": "LOKALE BETA – BROWSER-SPEICHERUNG",
+      "local": "LOKAL",
+      "trading_external": "Der Handel wird extern über Steam abgewickelt.",
+      "tradable": "HANDELBAR",
+      "non_tradable": "NICHT HANDELBAR",
+      "market_external": "Marktaktionen werden extern über Steam abgewickelt.",
+      "marketable_offline": "MARKTFÄHIG (OFFLINE)",
+      "market_route_unavailable": "Route zur Marktberechtigung nicht verfügbar oder abgelehnt.",
+      "marketable": "MARKTFÄHIG",
+      "non_marketable": "NICHT MARKTFÄHIG",
+      "ownership_verified": "STEAM-BESITZ BESTÄTIGT{quantity}",
+      "wallet_direct": "STEAM-GUTHABEN DIREKT",
+      "store_offline": "STEAM-ITEM-SHOP OFFLINE",
+      "purchases_offline": "Steam-Shop-Käufe sind in diesem Build offline.",
+      "qa_grant": "Synthetische QA-Vergabe: +{count} nicht handelbare Relikt-Schlüssel. Es wurde kein Kauf ausgelöst.",
+      "purchases_disabled": "Käufe sind in dieser Beta deaktiviert. Nutze QA GRANT TEST KIT in der Waffenkammer für nicht handelbare Testgegenstände.",
+      "key_and_cache_required": "Für die Entschlüsselung werden Schlüssel und Cache benötigt.",
+      "decrypting": "RELIKT-CACHE WIRD ENTSCHLÜSSELT",
+      "spinning_cipher": "CHIFFRIERMATRIX DREHT...",
+      "decryption_complete": "ENTSCHLÜSSELUNG ABGESCHLOSSEN",
+      "item_secured": "GEGENSTAND GESICHERT & IN STEAM GESPEICHERT",
+      "rarity_reward": "★ {rarity} BELOHNUNG ★",
+      "purchase": "KAUFEN",
+      "redeem": "EINLÖSEN",
+      "purchase_failed_reason": "Kauf fehlgeschlagen: {reason}.",
+      "purchase_failed_bank": "Kauf fehlgeschlagen: Bankabbuchung abgelehnt.",
+      "purchased_ingot": "{quantity}x Kryo-Legierungsbarren für {cost} Tech gekauft!",
+      "smelt_failed": "Schmelzen fehlgeschlagen: {reason}.",
+      "smelted": "5x {rarity} → {reward} geschmolzen!",
+      "redeem_failed": "Einlösen fehlgeschlagen: {reason}.",
+      "redeemed": "{cost} Splitter gegen {reward} eingelöst!",
+      "cache_unlocked": "Cache geöffnet: {count} Belohnungen gesichert.",
+      "cache_opened": "Cache-Paket geöffnet.",
+      "cache_partial": "Cache-Tausch mit teilweiser Steam-Vergabe abgeschlossen.",
+      "cache_failed": "Cache konnte nicht geöffnet werden – Verbindung prüfen und erneut versuchen."
+    },
+    "lobby": {
+      "connecting": "VERBINDE...",
+      "not_all_ready": "NICHT ALLE OPERATIVEN BEREIT",
+      "steam_auth_required": "STEAM-AUTHENTIFIZIERUNG ERFORDERLICH",
+      "join": "BEITRETEN",
+      "starting_in": "START IN {seconds}...",
+      "copied": "KOPIERT!",
+      "relay_active": "ONLINE // RELAY AKTIV",
+      "relay_unreachable": "LOKAL // RELAY NICHT ERREICHBAR",
+      "standby_offline": "BEREITSCHAFT // OFFLINE",
+      "disconnect": "TRENNEN",
+      "no_operatives": "KEINE OPERATIVEN IM SEKTOR",
+      "broadcasting": "NOTFREQUENZ WIRD AUF SEKTORKANAL GESENDET...",
+      "ready_up": "BEREIT MACHEN",
+      "mark_ready": "Diesen Operativen als bereit markieren",
+      "ready_done": "BEREIT ✓",
+      "waiting_host": "Warte auf den Host. Klicken, um Bereitschaft aufzuheben.",
+      "squad_ready": "SQUAD {ready}/{total} BEREIT",
+      "waiting_squad": "Warte auf das Squad. Klicken, um Bereitschaft aufzuheben.",
+      "start_squad": "SQUAD STARTEN",
+      "all_ready": "Alle Operativen bereit",
+      "deploy_solo": "ALLEIN AUSRÜCKEN",
+      "host_control_required": "HOST-KONTROLLE ERFORDERLICH",
+      "host_new_lobby": "NEUE LOBBY HOSTEN",
+      "start_match": "MATCH STARTEN"
+    },
+    "dossier": {
+      "title": "TAKTISCHES DOSSIER",
+      "promotion_signal": "◈ TAKTISCHES DOSSIER // BEFÖRDERUNGSSIGNAL",
+      "xp_confirmed": "XP-SCHWELLE BESTÄTIGT",
+      "new_requisition": "NEUE ANFORDERUNG",
+      "claim_reward": "◈ BELOHNUNG ABHOLEN",
+      "continue": "◈ WEITER",
+      "reward_signal": "BELOHNUNGSSIGNAL",
+      "quantity": "MENGE ×{qty}",
+      "tier_confirmed": "STUFE {tier} // XP-SCHWELLE BESTÄTIGT",
+      "view_reward": "BELOHNUNG ANSEHEN",
+      "added_to_inventory": "ZUM INVENTAR HINZUGEFÜGT",
+      "rank": "RANG {tier} / {total}",
+      "expand": "AUSKLAPPEN ▾",
+      "directives": "DIREKTIVEN:",
+      "settlement": "ABRECHNUNG:",
+      "expiration": "ABLAUF:",
+      "common_fragments": "GEWÖHNLICHE SPLITTER",
+      "rare_fragments": "SELTENE SPLITTER",
+      "allowance": "KONTINGENT: MAX 8 (1/WOCHE)",
+      "equipped": "Ausgerüstet ✓",
+      "retry": "Erneut versuchen",
+      "level_reached": "STUFE {level} ERREICHT",
+      "track_label": "{track}-PFAD",
+      "settlement_auto": "AUTOMATISCH EINBEHALTEN",
+      "expiration_permanent": "DAUERHAFT",
+      "tab_tiers": "Dossier",
+      "tab_bounties": "Direktiven",
+      "tab_workshop": "Splitter-Werkstatt"
+    },
+    "prompt": {
+      "access_base_shop": "{type}-BASIS-SHOP ÖFFNEN",
+      "upgrade_o2": "O₂-GENERATOR AUFRÜSTEN",
+      "turret_controls": "STEUERUNG DES VERTEIDIGUNGSGESCHÜTZES",
+      "blast_locked": "SPRENGSCHWELLE GESPERRT – {lock}",
+      "press_key": "{key} DRÜCKEN",
+      "tap": "TIPPEN",
+      "read_log": "LOG LESEN",
+      "defeat_guard": "WÄCHTER BESIEGEN, UM DIE BLACKBOX FREIZUSCHALTEN",
+      "recover_black_box": "BLACKBOX BERGEN",
+      "recover_final": "LETZTE KOMPONENTE BERGEN",
+      "interact": "INTERAGIEREN"
+    },
+    "telemeter": {
+      "passive_scan": "OBERFLÄCHENSCAN // PASSIV",
+      "sector": "SEKTOR",
+      "explored_corridor": "ERKUNDETER KORRIDOR",
+      "coords": "[X: {x}, Z: {z}]",
+      "biome_tier": "BIOM: {biome} // STUFE {tier}",
+      "stable": "STABIL",
+      "occluded": "VERDECKT",
+      "dist": "DIST: {meters}m"
+    },
+    "console": {
+      "online": "ONLINE",
+      "ready_deficit": "BEREIT – RESSOURCENMANGEL",
+      "ready_permitted": "BEREIT – BAU ERLAUBT",
+      "resolved": "GELÖST",
+      "choice_required": "ENTSCHEIDUNG ERFORDERLICH",
+      "event_resolved": "Terminal-Ereignis gelöst. Shop-Systeme bleiben verfügbar.",
+      "engineer_verify": "INGENIEUR-PRÜFUNG",
+      "mimic_neutralized": "WARNUNG: TERMINALSIGNATUR GEFÄLSCHT – MIMIK AUSGESCHALTET. WEITERGEHEN IST SICHER."
+    },
+    "journal": {
+      "day_time": "T{day} {minute}:{second}"
+    },
+    "bank": {
+      "deposit_ready": "EINZAHLUNG BEREIT. RESSOURCENKANAL OFFEN.",
+      "deposit_to_fund": "RESSOURCEN EINZAHLEN, UM O₂-REPARATUREN ZU FINANZIEREN.",
+      "hp_full": "TP VOLL",
+      "conversions_available": "×{count} VERFÜGBAR",
+      "integrity_full": "EXOANZUG-INTEGRITÄT IST VOLL. KEINE UMWANDLUNG NÖTIG.",
+      "next_cost_none": "NÄCHSTE KOSTEN: KEINE",
+      "generator_maxed": "DIE O₂-GENERATORLEISTUNG IST FÜR DIESE BUCHT MAXIMAL.",
+      "repair_to_create_zone": "REPARIERE DIESES MODUL, UM EINE SICHERE O₂-ZONE AM SCHIFF ZU SCHAFFEN.",
+      "upgrades_expand_field": "UPGRADES ERWEITERN DAS BLAUE O₂-FELD, SODASS DU VON WEITER WEG AUFFÜLLST."
+    },
+    "skills": {
+      "completed": "ABGESCHLOSSEN",
+      "upgrade": "AUFWERTEN",
+      "unlock": "FREISCHALTEN"
+    },
+    "turret": {
+      "built_north_door": "GEBAUT – STEUERUNG AN DER NORDTÜR",
+      "build_cost": "BAUKOSTEN: {cost}",
+      "built": "GESCHÜTZ GEBAUT",
+      "build": "VERTEIDIGUNGSGESCHÜTZ BAUEN",
+      "requires_o2": "ERFORDERT O₂-REPARATUR",
+      "build_not_saved": "BAU NICHT GESPEICHERT – KEINE RESSOURCEN VERBRAUCHT. SPEICHERPLATZ FREIGEBEN UND ERNEUT VERSUCHEN.",
+      "level_hp": "STUFE {level} // TP {hp}/{maxHp}",
+      "stats": "SCHADEN: {damage} | REICHWEITE: {range}u | RATE: {rate}s",
+      "next_upgrade_cost": "NÄCHSTE UPGRADE-KOSTEN: {cost}",
+      "max_level": "NÄCHSTE UPGRADE-KOSTEN: MAXIMALSTUFE ERREICHT",
+      "repair_cost": "REPARATURKOSTEN: {cost}",
+      "repair_full_hp": "REPARATURKOSTEN: VOLLE TP"
+    },
+    "boss": {
+      "cybershell_titan": "CYBERSCHALEN-TITAN",
+      "cryo_goliath": "KRYO-GOLIATH-SCHNECKE",
+      "plagueshell_behemoth": "SEUCHENSCHALEN-BEHEMOTH",
+      "corrupted_scout": "KORRUMPIERTER SPÄHER: MARTHA",
+      "corrupted_tank": "KORRUMPIERTER TANK: BRIGGS",
+      "corrupted_engineer": "KORRUMPIERTER INGENIEUR: KAELEN",
+      "queen": "DIE KÖNIGIN",
+      "elite_threat": "ELITE-BEDROHUNG"
+    },
+    "rgb": {
+      "wave": "WELLE {n}",
+      "undiscovered_path": "??? UNENTDECKTER PFAD ???",
+      "explore_to_reveal": "Erkunde in einem anderen Durchlauf andere Entscheidungen, um es aufzudecken.",
+      "chapter_of": "KAPITEL {n} VON {total}",
+      "settings": "Einstellungen",
+      "path_count": "PFAD {n}",
+      "open_path_history": "Pfadverlauf und Rückblick öffnen",
+      "available_actions": "Verfügbare Aktionen",
+      "continue": "WEITER",
+      "hint_of": "HINWEIS {n} VON {total}",
+      "no_more_hints": "Keine weiteren Hinweise für dieses Kapitel.",
+      "take": "NEHMEN",
+      "return_to_scene": "ZURÜCK ZUR SZENE",
+      "inventory": "INVENTAR",
+      "nothing_carried": "Noch nichts dabei.",
+      "your_path": "DEIN PFAD",
+      "current_objective": "Aktuelles Ziel – {goal}",
+      "decisions_changed": "ENTSCHEIDUNGEN, DIE DIESEN DURCHLAUF VERÄNDERT HABEN",
+      "evidence_preserved": "GESICHERTE BEWEISE",
+      "branch_tree": "ERZÄHLBAUM & FREIGESCHALTETE PFADE",
+      "paused": "PAUSIERT",
+      "resume": "FORTSETZEN",
+      "settings_caps": "EINSTELLUNGEN",
+      "exit_simulation": "SIMULATION VERLASSEN",
+      "retry_rescue": "RETTUNG WIEDERHOLEN",
+      "load_chapter": "KAPITEL LADEN",
+      "flowchart": "FLUSSDIAGRAMM",
+      "retry": "ERNEUT VERSUCHEN"
+    },
+    "cinematic": {
+      "restoring": "ARCHIV-CINEMATIC // SIGNAL WIRD WIEDERHERGESTELLT",
+      "advances": "Das Archiv geht zur nächsten rekonstruierten Szene über.",
+      "skip_hint": "BELIEBIGE TASTE ZUM ÜBERSPRINGEN",
+      "skip_any": "BELIEBIGE TASTE ZUM ÜBERSPRINGEN",
+      "skip_space": "LEERTASTE / ENTER ZUM ÜBERSPRINGEN",
+      "continue_any": "BELIEBIGE TASTE ZUM FORTFAHREN"
+    },
+    "profile": {
+      "longest": "LÄNGSTE {time}",
+      "deaths": "TODE {count}",
+      "depth": "TIEFE {depth}",
+      "class_best": "KLASSENBESTWERT {score}"
+    },
+    "hud": {
+      "ammo_cache": "CACHE {current}/{max}",
+      "current_biome": "AKTUELLES BIOM {biome}",
+      "equipped": "AUSGERÜSTET"
+    },
+    "commentary": {
+      "kicker": "ENTWICKLERKOMMENTAR"
+    },
+    "radio": {
+      "online": "ONLINE",
+      "squad_manifest": "SQUAD-LISTE",
+      "commander_tag": "TAKTISCHER FUNK // 72,4 MHz KYRILLISCH",
+      "aura_tag": "NEURALE FUNKVERBINDUNG // EINHEIT AURA-7",
+      "commander_name": "Sowjetischer Unterkommandeur",
+      "aura_name": "Synthetische KI „AURA“",
+      "commander_title": "SOWJETISCHER UNTERKOMMANDEUR",
+      "aura_title": "SYNTHETISCHE KI „AURA“"
+    },
+    "go": {
+      "generator_level": "STUFE {level}",
+      "offline": "OFFLINE",
+      "none": "KEINE",
+      "extraction_complete": "BERGUNG ABGESCHLOSSEN",
+      "exosuit_failure": "EXOANZUG-AUSFALL",
+      "logs_recovered": "LOGS GEBORGEN: {found}/{total}",
+      "survivor_camps": "Überlebenden-Lager",
+      "alien_hives": "Alien-Nester",
+      "obedience": "Gehorsam:",
+      "seats_filled": "Besetzte Sitze:",
+      "humanity": "Menschlichkeit:"
+    },
+    "ach": {
+      "unlocked_kicker": "ERFOLG FREIGESCHALTET",
+      "hidden": "Verborgener Eintrag. Zum Anzeigen freischalten.",
+      "coming_soon": "DEMNÄCHST",
+      "unlocked": "FREIGESCHALTET"
+    },
+    "save": {
+      "code_unavailable": "SPEICHERCODE NICHT VERFÜGBAR"
+    },
+    "objective": {
+      "blocked": "BLOCKIERT",
+      "next": "NÄCHSTES ZIEL",
+      "also_tracking": "EBENFALLS VERFOLGT",
+      "eliminate": "AUSSCHALTEN: {count}/{target}"
+    },
+    "loader": {
+      "deployment_telemetry": "MUTTERSCHIFF-EINSATZTELEMETRIE",
+      "init_failed": "SYSTEMINITIALISIERUNG FEHLGESCHLAGEN"
+    },
+    "alert": {
+      "tactical": "TAKTISCHER ALARM",
+      "critical": "KRITISCH"
+    },
+    "trade": {
+      "squadmate": "SQUAD-KAMERAD",
+      "awaiting_offer": "WARTE AUF ANGEBOTSAUSWAHL",
+      "waiting_squadmate": "WARTE AUF SQUAD-KAMERAD..."
+    },
+    "bond": {
+      "enamored": "VERLIEBT / ERGEBEN",
+      "warm": "WARM / ANZIEHUNG",
+      "attentive": "AUFMERKSAM"
+    },
+    "fab": {
+      "scatter_repeater": "STREU-REPETIERER",
+      "equipped_next_run": "FÜR NÄCHSTEN RUN AUSGERÜSTET ✓",
+      "equip_scatter": "STREU-REPETIERER AUSRÜSTEN",
+      "printing": "DRUCKT…",
+      "save_pending": "SPEICHERN AUSSTEHEND – FERTIGUNGSBUCHT ERNEUT ÖFFNEN",
+      "foundry_required": "GIESSEREI-VERBINDUNG ERFORDERLICH",
+      "activate_bay": "FERTIGUNGSBUCHT AKTIVIEREN",
+      "bring_online": "Bringe die Gießerei in der Welt online, bevor du Baupläne druckst.",
+      "activate_foundry": "GIESSEREI AKTIVIEREN",
+      "common": "GEWÖHNLICH",
+      "ready_to_apply": "✓ BEREIT ZUM ANWENDEN",
+      "choose_bay": "BUCHT A ODER B WÄHLEN",
+      "apply_failed": "ANWENDEN FEHLGESCHLAGEN",
+      "equipped_current": "✓ IM AKTUELLEN RUN AUSGERÜSTET",
+      "mounted_current": "✓ IM AKTUELLEN RUN MONTIERT",
+      "active_in_bay": "✓ AKTIV IN BUCHT {bay}",
+      "print_output": "DIESE AUSGABE DRUCKEN",
+      "fabricating": "FERTIGE…",
+      "bay_button": "◇ FERTIGUNGSBUCHT",
+      "open_bay": "+ FERTIGUNGSBUCHT ÖFFNEN"
+    },
+    "camp": {
+      "sleep_warning": "Schlaf in {camp} bringt dich zu Tag {day}. Diese offenen Signale werden geschlossen.",
+      "this_camp": "diesem Lager",
+      "unknown_signal": "UNBEKANNTES SIGNAL",
+      "path_closes": "Dieser Handlungsstrang schließt sich endgültig.",
+      "threat": "Kampagnenbedrohung {value}×",
+      "contact_kicker": "KONTAKT {order} // {leader}",
+      "decision": "LAGER-ENTSCHEIDUNG",
+      "permanent_choice": "Dauerhafte Wahl: {choice} – {resolution}.",
+      "closes": " Schließt: {locks}.",
+      "ending_locks_header": "⚠ DAUERHAFTE ENDSPERREN DER EXPEDITION:",
+      "finish_conversation": "GESPRÄCH BEENDEN",
+      "continue": "WEITER",
+      "camp_conversation": "LAGERGESPRÄCH",
+      "field_conversation": "FELDGESPRÄCH",
+      "callsign": "RUFZEICHEN {callsign}",
+      "listen_hint": "Hör zu und entscheide dann, wie du helfen willst.",
+      "quote": "„{text}“"
+    },
+    "title": {
+      "pregalien_command": "PREGALIEN | NEST-KOMMANDO",
+      "pregalien": "PREGALIEN"
     }
   },
   "narrative": {
@@ -730,6 +1707,54 @@
       "24": {
         "name": "DIE KÖNIGIN, ABGELEHNT",
         "blurb": "Du hast sie unter dem Eis gelassen, drei Sitze noch in der Hand. Nun verschlossener Weg: die volle Brut. Sie hätte immer mehr gekostet, als sie bot."
+      },
+      "25": {
+        "blurb": "Du standest bei Vespers Garnison. Die Grabenschilde hielten, und der Glaube des Soldaten wurde belohnt. Nun verschlossene Wege: die volle Brut, der verbrannte Himmel.",
+        "name": "COMMANDER BRIGGS, GEEHRT"
+      },
+      "26": {
+        "blurb": "Du hast Vespers Nachschublinien gekappt und die Front erfrieren lassen. Die Garnison fiel schweigend. Nun verschlossener Weg: der saubere Bruch.",
+        "name": "COMMANDER BRIGGS, IM STICH GELASSEN"
+      },
+      "27": {
+        "blurb": "Schwester Marthas Übertragung erhellte jeden Empfänger im Eis. Die Verlorenen hören Hoffnung, der Schwarm hört Beute. Nun verschlossener Weg: die Mutterschiff-Infektion.",
+        "name": "DAS LEUCHTFEUER DER SCHWESTER, GESENDET"
+      },
+      "28": {
+        "blurb": "Du hast die Kabel gekappt und Tallow zu leisen Stiefeln gezwungen. Tarnung wurde mit ziviler Verzweiflung erkauft. Nun verschlossene Wege: der saubere Bruch, der Alien-Exodus.",
+        "name": "DAS LEUCHTFEUER DER SCHWESTER, VERSTUMMT"
+      },
+      "29": {
+        "blurb": "Aufseher Kaelen veröffentlichte die unveränderten Flugmanifeste. Keine Konzernprivilegien überlebten. Nun verschlossene Wege: die Mutterschiff-Infektion, der Handel des Trägers.",
+        "name": "DAS GIESSEREI-MANIFEST, OFFENGELEGT"
+      },
+      "30": {
+        "blurb": "Das Passagiermanifest wurde hinter verschlossenen Schotten geändert. Konzernlügen überleben die Kolonie. Nun verschlossener Weg: der saubere Bruch.",
+        "name": "DAS GIESSEREI-MANIFEST, GEFÄLSCHT"
+      },
+      "31": {
+        "blurb": "Nahls chirurgische Entfernung tilgte die Spore aus deinem Blut. Du gehst wieder als reiner Mensch. Nun verschlossene Wege: die volle Brut, die Mutterschiff-Infektion, der Alien-Exodus.",
+        "name": "DER NAHT-WIRT, GEHEILT"
+      },
+      "32": {
+        "blurb": "Du ließt die Nest-Spore in dein Mark einwachsen. Du bist Träger und Gefäß in einem Fleisch. Nun verschlossener Weg: der saubere Bruch.",
+        "name": "DER NAHT-WIRT, ANGENOMMEN"
+      },
+      "33": {
+        "blurb": "Du hast menschliche Funkfrequenzen gekappt, um das akustische Heiligtum des Nests zu schützen. Die Lagerkommunikation zerbrach. Nun verschlossener Weg: die verratene Flucht.",
+        "name": "DER RELAIS-CHOR, GESTÖRT"
+      },
+      "34": {
+        "blurb": "Vey öffnete die neuronale Synapsenbrücke zwischen Nest- und Menschengeist. Gedanken bluten durch das Spektrum. Nun verschlossener Weg: der saubere Bruch.",
+        "name": "DER RELAIS-CHOR, VERBUNDEN"
+      },
+      "35": {
+        "blurb": "Rhuns Chitinfestung schwor der Brutmutter ewige Verteidigung. Menschliche Shuttles müssen ihre Masse durchstoßen. Nun verschlossene Wege: der Alien-Exodus, der saubere Bruch.",
+        "name": "DER PANZER-EID, AN DIE KÖNIGIN"
+      },
+      "36": {
+        "blurb": "Der lebende Schild band seinen Schwur an dich und schreitet als Wächter neben menschlichen Überlebenden. Nun verschlossener Weg: die volle Brut.",
+        "name": "DER PANZER-EID, AN DEN OPERATOR"
       }
     },
     "loreClassLogs": {
@@ -1221,6 +2246,334 @@
           "FIELD REPAIR": "HARZFLICKEN",
           "REROUTE": "NEURALE ÜBERNAHME"
         }
+      }
+    },
+    "communitySkins": {
+      "0": {
+        "actionLabel": "Bestätigen",
+        "desc": "Kampferprobter, loyaler Aufklärer in Taktikmontur.",
+        "name": "Späher: Schützenloch-Schatten",
+        "theme": "Schützenloch-Kameraden"
+      },
+      "1": {
+        "actionLabel": "Laufsteg-Gang",
+        "desc": "Stilvolle, furchtlose Leere-Treiberin in Neon-Streetwear.",
+        "name": "Späherin: Space-ABG",
+        "theme": "ABG-Trippers"
+      },
+      "2": {
+        "actionLabel": "Weiblicher Gang",
+        "desc": "Zynische, messerscharfe Konzern-Infiltratorin im Hightech-Trenchcoat.",
+        "name": "Späherin: Konzern-Schattenläuferin",
+        "theme": "Konzern-Schatten"
+      },
+      "3": {
+        "actionLabel": "Hängendes Verharren",
+        "desc": "Biomechanischer Späher im Giger-Stil mit geripptem Obsidianpanzer.",
+        "name": "Späher: Xeno-Pirscher",
+        "theme": "Biomechanisch"
+      },
+      "4": {
+        "actionLabel": "Verletzt rückwärts gehen",
+        "desc": "Hydrodynamischer Zero-G-Taktikschwimmanzug mit LED-Leitungen.",
+        "name": "Späherin: Zero-G-Schwimmanzug",
+        "theme": "Weltraumschwimmen"
+      },
+      "5": {
+        "actionLabel": "Freudensprung",
+        "desc": "Korrumpierter Nest-Symbiont-Späher, leuchtend von toxischer Sporen-Biolumineszenz.",
+        "name": "Späher: Toxische Apex-Chrysalis",
+        "theme": "Giftige Chrysalis"
+      },
+      "6": {
+        "actionLabel": "Salutieren",
+        "desc": "Räuberischer Alien-Humanoid-Hybrid in perlmuttfarbener Knochenrüstung.",
+        "name": "Späherin: Spezies Sil",
+        "theme": "Spezies-Chrysalis"
+      },
+      "7": {
+        "actionLabel": "Überrascht",
+        "desc": "Majestätischer kristalliner Hybrid-Späher mit biolumineszenten Ranken.",
+        "name": "Späher: Apex-Chrysalis",
+        "theme": "Spezies-Chrysalis"
+      },
+      "8": {
+        "actionLabel": "Faxgerät bedienen",
+        "desc": "Pinkhaarige Space-Punk-Hackerin mit anarchistischer Haltung.",
+        "name": "Späherin: Sanfte manische Hacker-GF",
+        "theme": "Manische Hacker-GFs"
+      },
+      "9": {
+        "actionLabel": "Cocktails mixen",
+        "desc": "Schwergewichtige Party-Vorhut, ausgerüstet für harte Bunkerverteidigung.",
+        "name": "Tank: Space-ABG",
+        "theme": "ABG-Trippers"
+      },
+      "10": {
+        "actionLabel": "Brutale Hinrichtung",
+        "desc": "Kurvige, schwer gepanzerte Space-Punk-Kämpferin, die ihr Squad erbittert schützt.",
+        "name": "Tank: Beschützende Hacker-GF",
+        "theme": "Manische Hacker-GFs"
+      },
+      "11": {
+        "actionLabel": "Laufsteg mit hohen Knien",
+        "desc": "Schwerer metamorpher Alien-Koloss in verkalkter Chitinrüstung.",
+        "name": "Tank: Spezies Sil",
+        "theme": "Spezies-Chrysalis"
+      },
+      "12": {
+        "actionLabel": "Twerk-Tanz",
+        "desc": "Kompromisslos königliche Raumschiff-Absturzüberlebende mit funkender Kybernetik.",
+        "name": "Tank: Absturzüberlebenden-Königin",
+        "theme": "Absturzüberlebende"
+      },
+      "13": {
+        "actionLabel": "Betrunkenes Verharren",
+        "desc": "Imposanter Konzerndirektor im schweren Mantel mit Chromgliedern.",
+        "name": "Tank: Konzern-Vollstrecker",
+        "theme": "Konzern-Schatten"
+      },
+      "14": {
+        "actionLabel": "Sprung",
+        "desc": "Verstärkter Tiefsee-Zero-G-Tauchanzug mit Auftriebs-Ballastplatten.",
+        "name": "Tank: Zero-G-Schwertaucher",
+        "theme": "Weltraumschwimmen"
+      },
+      "15": {
+        "actionLabel": "Sprungangriff",
+        "desc": "Massive, von Giger inspirierte gepanzerte Bio-Panzer-Festung.",
+        "name": "Tank: Brutmatrone",
+        "theme": "Biomechanisch"
+      },
+      "16": {
+        "actionLabel": "Tritt in die Weichteile",
+        "desc": "Zäher, loyaler Frontline-Schwerkämpfer im Vasquez-Stil, bereit für jede Grabenschlägerei.",
+        "name": "Tank: Schützenloch-Schatten",
+        "theme": "Schützenloch-Kameraden"
+      },
+      "17": {
+        "actionLabel": "Sprechen",
+        "desc": "Kraftvoller Tiefenkern-Überlebender, gepanzert mit geborgenen Schiffshüllenplatten.",
+        "name": "Tank: Afro-Absturzüberlebender",
+        "theme": "Absturzüberlebende"
+      },
+      "18": {
+        "actionLabel": "Ein Geheimnis verraten",
+        "desc": "Statuenhafter Hybrid-Koloss mit glühenden bernsteinfarbenen Gefäßlinien.",
+        "name": "Tank: Apex-Chrysalis",
+        "theme": "Spezies-Chrysalis"
+      },
+      "19": {
+        "actionLabel": "Seitwärts links gehen",
+        "desc": "Schwerer Bio-Panzer mit toxischen Sporen und ätzenden Säureventilen.",
+        "name": "Tank: Toxische Apex-Chrysalis",
+        "theme": "Giftige Chrysalis"
+      },
+      "20": {
+        "actionLabel": "Wütend",
+        "desc": "Bio-Plasma-Ingenieur, mutiert durch toxische Sporennester der Tiefenschichten.",
+        "name": "Ingenieur: Toxische Apex-Chrysalis",
+        "theme": "Giftige Chrysalis"
+      },
+      "21": {
+        "actionLabel": "Burpee-Ende",
+        "desc": "Futuristische Technik-Freakin in Streetwear mit holografischen Werkzeugen.",
+        "name": "Ingenieurin: Space-ABG",
+        "theme": "ABG-Trippers"
+      },
+      "22": {
+        "actionLabel": "Aus der Hocke aufstehen",
+        "desc": "Neural-Hybrid-Konstrukteurin mit lebenden Plasmaleitungen und Tentakelkabeln.",
+        "name": "Ingenieurin: Spezies Sil",
+        "theme": "Spezies-Chrysalis"
+      },
+      "23": {
+        "actionLabel": "Betrunkener Gang",
+        "desc": "Hochmodische Techsyndikat-Direktorin mit schwebenden Mikrodrohnen.",
+        "name": "Ingenieurin: Chefarchitektin",
+        "theme": "Konzern-Schatten"
+      },
+      "24": {
+        "actionLabel": "Kettlebell-Schwung",
+        "desc": "Hyperkreative manische Ingenieurin mit pinkem Cyber-Haar und maßgefertigten Plasmaschweißern.",
+        "name": "Ingenieurin: Sanfte manische Architektin-GF",
+        "theme": "Manische Hacker-GFs"
+      },
+      "25": {
+        "actionLabel": "Umsehen",
+        "desc": "Erfinderischer Raumschiff-Überlebender, der Wrackmotoren zu Bunkertechnik umbaut.",
+        "name": "Ingenieur: Afro-Absturzüberlebender",
+        "theme": "Absturzüberlebende"
+      },
+      "26": {
+        "actionLabel": "Ork-Verharren",
+        "desc": "Temperaturregulierende Schwimmausrüstung mit wasserdichten magnetischen Ballastklemmen.",
+        "name": "Ingenieurin: Zero-G-Hydro-Rig",
+        "theme": "Weltraumschwimmen"
+      },
+      "27": {
+        "actionLabel": "Wütend sitzen",
+        "desc": "Ruppiger, ölverschmierter Kampfingenieur, der unter Beschuss Risse und Geschütze flickt.",
+        "name": "Ingenieur: Schützenloch-Schatten",
+        "theme": "Schützenloch-Kameraden"
+      },
+      "28": {
+        "actionLabel": "Plank beginnen",
+        "desc": "Von Giger inspirierter biomechanischer Konstrukteur mit wirbelsäulenmontierten Bio-Werkzeugen.",
+        "name": "Ingenieur: Neuralweber",
+        "theme": "Biomechanisch"
+      },
+      "29": {
+        "actionLabel": "Dankbar",
+        "desc": "Bio-synthetischer Architekt mit kristallinen thorakalen Energieleitungen.",
+        "name": "Ingenieur: Apex-Chrysalis",
+        "theme": "Spezies-Chrysalis"
+      }
+    },
+    "steamItems": {
+      "4200": {
+        "desc": "Vollständige Operator-Chassis-Lackierung im Tieffrost-Stil.",
+        "name": "Tieffrost Operator-Skin"
+      },
+      "4201": {
+        "desc": "Waffenplattierung im Tieffrost-Stil.",
+        "name": "Tieffrost Waffen-Skin"
+      },
+      "4202": {
+        "desc": "Hängender Waffenanhänger im Tieffrost-Stil.",
+        "name": "Tieffrost Anhänger"
+      },
+      "4203": {
+        "name": "Tieffrost Aufnäher"
+      },
+      "4204": {
+        "name": "Tieffrost Glanz"
+      },
+      "4205": {
+        "name": "Tieffrost Leuchtspur"
+      },
+      "4206": {
+        "name": "Tieffrost HUD-Design"
+      },
+      "4207": {
+        "desc": "Vollständige Operator-Chassis-Lackierung im Rost & Knochen-Stil.",
+        "name": "Rost & Knochen Operator-Skin"
+      },
+      "4208": {
+        "desc": "Waffenplattierung im Rost & Knochen-Stil.",
+        "name": "Rost & Knochen Waffen-Skin"
+      },
+      "4209": {
+        "desc": "Hängender Waffenanhänger im Rost & Knochen-Stil.",
+        "name": "Rost & Knochen Anhänger"
+      },
+      "4210": {
+        "name": "Rost & Knochen Aufnäher"
+      },
+      "4211": {
+        "name": "Rost & Knochen Glanz"
+      },
+      "4212": {
+        "name": "Rost & Knochen Leuchtspur"
+      },
+      "4213": {
+        "name": "Rost & Knochen HUD-Design"
+      },
+      "4214": {
+        "desc": "Vollständige Operator-Chassis-Lackierung im Nest-Chitin-Stil.",
+        "name": "Nest-Chitin Operator-Skin"
+      },
+      "4215": {
+        "desc": "Waffenplattierung im Nest-Chitin-Stil.",
+        "name": "Nest-Chitin Waffen-Skin"
+      },
+      "4216": {
+        "desc": "Hängender Waffenanhänger im Nest-Chitin-Stil.",
+        "name": "Nest-Chitin Anhänger"
+      },
+      "4217": {
+        "name": "Nest-Chitin Aufnäher"
+      },
+      "4218": {
+        "name": "Nest-Chitin Glanz"
+      },
+      "4219": {
+        "name": "Nest-Chitin Leuchtspur"
+      },
+      "4220": {
+        "name": "Nest-Chitin HUD-Design"
+      },
+      "4221": {
+        "desc": "Vollständige Operator-Chassis-Lackierung im Horizon Corporate-Stil.",
+        "name": "Horizon Corporate Operator-Skin"
+      },
+      "4222": {
+        "desc": "Waffenplattierung im Horizon Corporate-Stil.",
+        "name": "Horizon Corporate Waffen-Skin"
+      },
+      "4223": {
+        "desc": "Hängender Waffenanhänger im Horizon Corporate-Stil.",
+        "name": "Horizon Corporate Anhänger"
+      },
+      "4224": {
+        "name": "Horizon Corporate Aufnäher"
+      },
+      "4225": {
+        "name": "Horizon Corporate Glanz"
+      },
+      "4226": {
+        "name": "Horizon Corporate Leuchtspur"
+      },
+      "4227": {
+        "name": "Horizon Corporate HUD-Design"
+      },
+      "4228": {
+        "desc": "Vollständige Operator-Chassis-Lackierung im Bunker 404-Stil.",
+        "name": "Bunker 404 Operator-Skin"
+      },
+      "4229": {
+        "desc": "Waffenplattierung im Bunker 404-Stil.",
+        "name": "Bunker 404 Waffen-Skin"
+      },
+      "4230": {
+        "desc": "Hängender Waffenanhänger im Bunker 404-Stil.",
+        "name": "Bunker 404 Anhänger"
+      },
+      "4231": {
+        "name": "Bunker 404 Aufnäher"
+      },
+      "4232": {
+        "name": "Bunker 404 Glanz"
+      },
+      "4233": {
+        "name": "Bunker 404 Leuchtspur"
+      },
+      "4234": {
+        "name": "Bunker 404 HUD-Design"
+      },
+      "4235": {
+        "desc": "Vollständige Operator-Chassis-Lackierung im Großmarschall-Stil.",
+        "name": "Großmarschall Operator-Skin"
+      },
+      "4236": {
+        "desc": "Waffenplattierung im Großmarschall-Stil.",
+        "name": "Großmarschall Waffen-Skin"
+      },
+      "4237": {
+        "desc": "Hängender Waffenanhänger im Großmarschall-Stil.",
+        "name": "Großmarschall Anhänger"
+      },
+      "4238": {
+        "name": "Großmarschall Aufnäher"
+      },
+      "4239": {
+        "name": "Großmarschall Glanz"
+      },
+      "4240": {
+        "name": "Großmarschall Leuchtspur"
+      },
+      "4241": {
+        "name": "Großmarschall HUD-Design"
       }
     }
   }

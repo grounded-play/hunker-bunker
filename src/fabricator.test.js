@@ -1,5 +1,5 @@
-import { describe, it, expect, beforeEach } from 'vitest';
-import { FabricatorManager, FAB_RECIPES, getRecipe, rollRarity, FAB_SPIN_COST, getRecipesByRarity, FABRICATOR_SITE_MAX_USES } from './fabricator.js';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { FabricatorManager, FAB_RECIPES, getRecipe, rollRarity, FAB_SPIN_COST, getRecipesByRarity, FABRICATOR_SITE_MAX_USES, applyFabricatedRecipeOutput, getFabricatedOutputIds } from './fabricator.js';
 
 function makeStorage() {
     const map = new Map();
@@ -44,7 +44,45 @@ describe('FabricatorManager', () => {
             expect(r.art).toMatch(/^\/schematics\/schematic_\d\d\.webp$/);
             expect(r.printSeconds).toBeGreaterThan(0);
             expect(typeof r.cost.tech).toBe('number');
+            expect(['weapon', 'mod', 'charm']).toContain(r.output.kind);
         }
+    });
+
+    it('applies fabricated weapons, mods and charms to the current run', () => {
+        const loadout = {
+            activeClassId: 'scout',
+            state: { mod1Id: null, mod2Id: null, charmId: null },
+            equip: vi.fn(() => true),
+            equipCharm: vi.fn(),
+            equipRigModule: vi.fn((_cls, slot, id) => { loadout.state[`mod${slot}Id`] = String(id); }),
+            getClassLoadout: () => loadout.state,
+            getActiveModifiers: vi.fn(() => ({ kineticPierceBonus: 1 }))
+        };
+        const game = { applyWeaponUpgrades: vi.fn(), setupPlayer3dCosmeticOverlay: vi.fn() };
+        for (const id of ['scatter_rep', 'vesper_vanguard_rig', 'salvage_drill']) fab.state.fabricated[id] = true;
+
+        expect(applyFabricatedRecipeOutput(getRecipe('scatter_rep'), { fabricator: fab, loadout, game }).ok).toBe(true);
+        expect(game.applyWeaponUpgrades).toHaveBeenCalled();
+        expect(applyFabricatedRecipeOutput(getRecipe('vesper_vanguard_rig'), { fabricator: fab, loadout, game })).toMatchObject({ ok: true, kind: 'mod', itemdefid: 4143 });
+        expect(game.loadoutMods).toEqual({ kineticPierceBonus: 1 });
+        expect(applyFabricatedRecipeOutput(getRecipe('salvage_drill'), { fabricator: fab, loadout, game })).toMatchObject({ ok: true, kind: 'charm', itemdefid: 4135 });
+        expect(game.setupPlayer3dCosmeticOverlay).toHaveBeenCalled();
+        expect(getFabricatedOutputIds(fab)).toEqual(expect.arrayContaining([4143, 4135]));
+    });
+
+    it('requires an explicit bay replacement when both module slots are occupied', () => {
+        fab.state.fabricated.vesper_vanguard_rig = true;
+        const state = { mod1Id: '4140', mod2Id: '4142' };
+        const loadout = {
+            activeClassId: 'scout', getClassLoadout: () => state,
+            equipRigModule: vi.fn((_cls, slot, id) => { state[`mod${slot}Id`] = String(id); }),
+            getActiveModifiers: () => ({ kineticPierceBonus: 1 })
+        };
+        const recipe = getRecipe('vesper_vanguard_rig');
+        expect(applyFabricatedRecipeOutput(recipe, { fabricator: fab, loadout })).toMatchObject({ ok: false, reason: 'slot_conflict' });
+        expect(loadout.equipRigModule).not.toHaveBeenCalled();
+        expect(applyFabricatedRecipeOutput(recipe, { fabricator: fab, loadout, replaceSlot: 2 })).toMatchObject({ ok: true, slot: 2 });
+        expect(state.mod2Id).toBe('4143');
     });
 
     it('starting a print spends salvage and queues it', () => {

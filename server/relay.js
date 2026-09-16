@@ -9,14 +9,14 @@ const MIN_FIRE_INTERVAL_MS = 40; // ~25 shots/sec cap per socket
 
 // Sprint 24 Milestone A server-authoritative PvP damage
 // (docs/sprint24-multiplayer-runtime-2026-08-19.md). These mirror the
-// client's existing, unmodified balance -- BASE_HEARTS (src/threeGame.js)
-// and the flat 10-damage-per-hit fallback every PvP shot already used
-// (this.playerDamage was never actually assigned anywhere, so the
-// fallback was the *only* value in practice) -- so moving authority to
-// the server does not change game balance, only who gets to decide the
-// outcome of a hit.
+// client's existing heart balance -- BASE_HEARTS (src/threeGame.js) and
+// one heart per accepted shot -- so moving authority to the server does not
+// change game balance, only who gets to decide the outcome of a hit.
 const PVP_DEFAULT_MAX_HP = 3;
-const PVP_WEAPON_DAMAGE = 10;
+// Relay and client both track PvP health in hearts. Keeping damage at the
+// old value of 10 against 3 max HP made the server declare a target dead
+// after one hit while the client only removed one displayed heart.
+const PVP_WEAPON_DAMAGE = 1;
 // Real client projectile reach is PROJECTILE_SPEED(13.4) * PROJECTILE_TTL(1.15)
 // =~15.4 units; this adds slack for the lag between when the attacker's
 // origin was sampled and when the hit report arrives.

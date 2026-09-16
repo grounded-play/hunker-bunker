@@ -25,6 +25,7 @@ import {
     CACHE_ITEMDEFID,
     CACHE_KEY_ITEMDEFID
 } from './cacheOpening.js';
+import { t, onLocaleChange } from './i18n.js';
 
 export { STEAM_ITEM_CATALOG };
 
@@ -205,7 +206,7 @@ export function showSteamDropToast(itemdefid, quantity = 1) {
     body.className = 'achievement-toast__body';
     const kicker = document.createElement('div');
     kicker.className = 'achievement-toast__kicker';
-    kicker.textContent = 'STEAM ITEM ACQUIRED';
+    kicker.textContent = t('ui.vault.item_acquired');
     const title = document.createElement('div');
     title.className = 'achievement-toast__title';
     title.textContent = quantity > 1 ? `${catalog.name} x${quantity}` : catalog.name;
@@ -297,7 +298,7 @@ export function renderSteamMilestoneGrants(grants = []) {
             return item.quantity > 1 ? `${label} x${item.quantity}` : label;
         })
         .join(', ');
-    grantNote.textContent = `STEAM ITEM UNLOCKED: ${names}`;
+    grantNote.textContent = t('ui.vault.item_unlocked', { names });
     grantNote.classList.remove('hidden');
 }
 
@@ -471,14 +472,14 @@ export async function loadVaultData() {
         const marketResult = await Promise.resolve(marketCheck).catch(() => ({ ok: false, reason: 'error' }));
         setMarketEligibilityFromResult(marketResult);
         if (identity?.active) {
-            if (playerEl) playerEl.textContent = identity.persona ?? 'OPERATOR';
-            if (statusEl) statusEl.textContent = 'STEAM CONNECTED';
+            if (playerEl) playerEl.textContent = identity.persona ?? t('ui.vault.operator');
+            if (statusEl) statusEl.textContent = t('ui.vault.steam_connected');
             if (statusEl) statusEl.classList.remove('vault-status--offline');
-            if (commandStatus) commandStatus.textContent = identity.persona ?? 'ONLINE';
+            if (commandStatus) commandStatus.textContent = identity.persona ?? t('ui.vault.online');
         } else {
-            if (playerEl) playerEl.textContent = 'DEV MODE';
-            if (statusEl) statusEl.textContent = 'DEV FALLBACK';
-            if (commandStatus) commandStatus.textContent = 'DEV MODE';
+            if (playerEl) playerEl.textContent = t('ui.vault.dev_mode');
+            if (statusEl) statusEl.textContent = t('ui.vault.dev_fallback');
+            if (commandStatus) commandStatus.textContent = t('ui.vault.dev_mode');
         }
 
         // Fetch Inventory
@@ -496,9 +497,9 @@ export async function loadVaultData() {
         updateOpenCacheAvailability();
     } else {
         setMarketEligibilityFromResult({ ok: false, reason: 'unsupported' });
-        if (playerEl) playerEl.textContent = 'LOCAL OPERATOR';
-        if (statusEl) statusEl.textContent = 'LOCAL BETA — BROWSER SAVE';
-        if (commandStatus) commandStatus.textContent = 'LOCAL';
+        if (playerEl) playerEl.textContent = t('ui.vault.local_operator');
+        if (statusEl) statusEl.textContent = t('ui.vault.local_beta');
+        if (commandStatus) commandStatus.textContent = t('ui.vault.local');
         vaultItems = readDevVaultInventory() ?? [];
         reconcileCosmeticsOwnership(vaultItems);
         syncDevOwnership();
@@ -586,18 +587,18 @@ export function updateDetailsPanel(item) {
 
     if (tradableEl) {
         tradableEl.className = `vault-meta-tag vault-meta-tag--readonly ${catalog.tradable ? 'active' : ''}`;
-        tradableEl.title = "Trading is handled externally through Steam.";
-        tradableEl.textContent = catalog.tradable ? 'TRADABLE' : 'NON-TRADABLE';
+        tradableEl.title = t('ui.vault.trading_external');
+        tradableEl.textContent = catalog.tradable ? t('ui.vault.tradable') : t('ui.vault.non_tradable');
     }
     if (marketableEl) {
         const isEligible = canOpenMarketOverlay();
         marketableEl.className = `vault-meta-tag vault-meta-tag--readonly ${catalog.marketable ? 'active' : ''} ${catalog.marketable && !isEligible ? 'degraded' : ''}`;
-        marketableEl.title = "Market actions are handled externally through Steam.";
+        marketableEl.title = t('ui.vault.market_external');
         if (catalog.marketable && !isEligible) {
-            marketableEl.textContent = 'MARKETABLE (OFFLINE)';
-            marketableEl.title = "Market eligibility route unavailable or rejected.";
+            marketableEl.textContent = t('ui.vault.marketable_offline');
+            marketableEl.title = t('ui.vault.market_route_unavailable');
         } else {
-            marketableEl.textContent = catalog.marketable ? 'MARKETABLE' : 'NON-MARKETABLE';
+            marketableEl.textContent = catalog.marketable ? t('ui.vault.marketable') : t('ui.vault.non_marketable');
         }
     }
     if (btnViewMarket) {
@@ -609,7 +610,7 @@ export function updateDetailsPanel(item) {
     btnUnequip?.classList.add('hidden');
     if (statusEl) {
         const quantity = Number(item.quantity) > 1 ? ` x${Number(item.quantity)}` : '';
-        statusEl.textContent = `STEAM OWNERSHIP VERIFIED${quantity}`;
+        statusEl.textContent = t('ui.vault.ownership_verified', { quantity });
     }
 }
 
@@ -723,7 +724,7 @@ export function renderStoreSkuGrid() {
             </div>
             <div class="vault-store-sku-label">${sku.label}</div>
             <div class="vault-store-sku-price">${priceLabel}</div>
-            <div class="vault-store-sku-sub">STEAM WALLET DIRECT</div>
+            <div class="vault-store-sku-sub">${t('ui.vault.wallet_direct')}</div>
             <button class="start-btn vault-store-buy-btn" data-sku="${sku.sku}" ${storePurchasesEnabled ? '' : 'disabled'}>${buttonLabel}</button>
         `;
         const buyBtn = card.querySelector('.vault-store-buy-btn');
@@ -744,7 +745,7 @@ export function renderHostedItemStoreCta() {
     row.classList.toggle('hidden', !configured);
     btn.disabled = !enabled;
     if (!configured) {
-        status.textContent = 'STEAM ITEM STORE OFFLINE';
+        status.textContent = t('ui.vault.store_offline');
         return;
     }
     if (!enabled) {
@@ -800,7 +801,7 @@ export async function purchaseKeys(sku) {
         const statusEl = document.getElementById('vault-store-open-status');
         if (statusEl) {
             statusEl.classList.remove('hidden');
-            statusEl.textContent = 'Steam Store purchases are offline for this build.';
+            statusEl.textContent = t('ui.vault.purchases_offline');
         }
         return;
     }
@@ -824,13 +825,22 @@ export async function purchaseKeys(sku) {
         const statusEl = document.getElementById('vault-store-open-status');
         if (statusEl) {
             statusEl.classList.remove('hidden');
-            statusEl.textContent = `Sandbox purchase verified: +${keyCount} Relic Key(s) added!`;
+            statusEl.textContent = t('ui.vault.qa_grant', { count: keyCount });
         }
         showSteamDropToast(4001, keyCount);
         return;
     }
 
     const result = await window.electronAPI.purchaseSteamKeys(sku).catch((err) => ({ ok: false, message: err?.message }));
+
+    if (result?.reason === 'qa_test_mode_no_charge') {
+        const statusEl = document.getElementById('vault-store-open-status');
+        if (statusEl) {
+            statusEl.classList.remove('hidden');
+            statusEl.textContent = t('ui.vault.purchases_disabled');
+        }
+        return;
+    }
 
     if (result?.ok && result.mode === 'mock') {
         await loadVaultData();
@@ -888,7 +898,7 @@ export function updateOpenCacheAvailability() {
     } else {
         if (statusEl) {
             statusEl.classList.remove('hidden');
-            statusEl.textContent = 'Key & Cache required for decryption.';
+            statusEl.textContent = t('ui.vault.key_and_cache_required');
         }
         btn?.classList.add('hidden');
     }
@@ -935,8 +945,8 @@ export function playCacheRevealAnimation(openingOrReward, onClaim) {
     overlay.setAttribute('aria-hidden', 'false');
     overlay.dataset.state = 'spinning';
 
-    if (titleEl) titleEl.textContent = 'DECRYPTING RELIC CACHE';
-    if (statusEl) statusEl.textContent = 'SPINNING CIPHER MATRIX...';
+    if (titleEl) titleEl.textContent = t('ui.vault.decrypting');
+    if (statusEl) statusEl.textContent = t('ui.vault.spinning_cipher');
 
     const CANDIDATE_ITEMS = Object.values(STEAM_ITEM_CATALOG).filter((i) => i.itemdefid !== 4000 && i.itemdefid !== 4001);
     const WIN_INDEX = 38;
@@ -998,8 +1008,8 @@ export function playCacheRevealAnimation(openingOrReward, onClaim) {
     // Reveal final grand showcase card
     setTimeout(() => {
         overlay.dataset.state = 'revealed';
-        if (titleEl) titleEl.textContent = 'DECRYPTION COMPLETE';
-        if (statusEl) statusEl.textContent = 'ITEM SECURED & PERSISTED TO STEAM';
+        if (titleEl) titleEl.textContent = t('ui.vault.decryption_complete');
+        if (statusEl) statusEl.textContent = t('ui.vault.item_secured');
 
         if (cardEl) {
             const color = getRarityColor(reward.rarity);
@@ -1009,7 +1019,7 @@ export function playCacheRevealAnimation(openingOrReward, onClaim) {
         }
 
         if (rarityPill) {
-            rarityPill.textContent = `★ ${(reward.rarity || 'RARE').toUpperCase()} REWARD ★`;
+            rarityPill.textContent = t('ui.vault.rarity_reward', { rarity: (reward.rarity || 'RARE').toUpperCase() });
             const color = getRarityColor(reward.rarity);
             rarityPill.style.color = color;
             rarityPill.style.borderColor = color;
@@ -1095,7 +1105,7 @@ export function renderSmelterPanel() {
         ingotCard.innerHTML = `
             <div class="vault-smelter-card__title" style="color:${getRarityColor('uncommon')}">Cryo-Alloy Ingot Pack (x${INGOT_PACK_QUANTITY})</div>
             <div class="vault-smelter-card__sub">${INGOT_PACK_COST.tech} Tech · Quartermaster</div>
-            <button class="vault-smelter-card__btn" ${ingotAffordable ? '' : 'disabled'} id="vault-quartermaster-ingot-btn">PURCHASE</button>
+            <button class="vault-smelter-card__btn" ${ingotAffordable ? '' : 'disabled'} id="vault-quartermaster-ingot-btn">${t('ui.vault.purchase')}</button>
         `;
         ingotCard.querySelector('button')?.addEventListener('click', handleIngotPackPurchase);
         dispensaryGrid.appendChild(ingotCard);
@@ -1117,7 +1127,7 @@ export function renderSmelterPanel() {
             card.innerHTML = `
                 <div class="vault-smelter-card__title" style="color:${getRarityColor(cat.rarity)}">${cat.name}</div>
                 <div class="vault-smelter-card__sub">${cost} Shards · ${cat.rarity.toUpperCase()}</div>
-                <button class="vault-smelter-card__btn" ${affordable ? '' : 'disabled'} data-dispense-id="${itemdefid}">REDEEM</button>
+                <button class="vault-smelter-card__btn" ${affordable ? '' : 'disabled'} data-dispense-id="${itemdefid}">${t('ui.vault.redeem')}</button>
             `;
             card.querySelector('button')?.addEventListener('click', () => handleDispensaryRedeem(itemdefid));
             dispensaryGrid.appendChild(card);
@@ -1129,17 +1139,17 @@ function handleIngotPackPurchase() {
     const plan = planIngotPackPurchase(window.bankManager);
     const statusEl = document.getElementById('vault-smelter-status');
     if (!plan.ok) {
-        if (statusEl) statusEl.textContent = `Purchase failed: ${plan.reason.replace(/_/g, ' ')}.`;
+        if (statusEl) statusEl.textContent = t('ui.vault.purchase_failed_reason', { reason: plan.reason.replace(/_/g, ' ') });
         return;
     }
 
     if (!window.bankManager.spend(plan.cost)) {
-        if (statusEl) statusEl.textContent = 'Purchase failed: bank spend rejected.';
+        if (statusEl) statusEl.textContent = t('ui.vault.purchase_failed_bank');
         return;
     }
     grantVaultItem(plan.itemdefid, plan.quantity);
 
-    if (statusEl) statusEl.textContent = `Purchased ${plan.quantity}x Cryo-Alloy Ingot for ${plan.cost.tech} Tech!`;
+    if (statusEl) statusEl.textContent = t('ui.vault.purchased_ingot', { quantity: plan.quantity, cost: plan.cost.tech });
     showSteamDropToast(plan.itemdefid, plan.quantity);
     window.AudioManager?.play?.('fx_achievement', { volume: 0.4, bus: 'sfx' });
     renderSmelterPanel();
@@ -1150,7 +1160,7 @@ function handleSmeltClick(rarity) {
     const plan = planSmelt({ vaultItems, rarity, catalogLookup: getItemCatalogEntry, outputPool });
     const statusEl = document.getElementById('vault-smelter-status');
     if (!plan.ok) {
-        if (statusEl) statusEl.textContent = `Smelt failed: ${plan.reason.replace(/_/g, ' ')}.`;
+        if (statusEl) statusEl.textContent = t('ui.vault.smelt_failed', { reason: plan.reason.replace(/_/g, ' ') });
         return;
     }
 
@@ -1164,7 +1174,7 @@ function handleSmeltClick(rarity) {
 
     if (statusEl) {
         const reward = getItemCatalogEntry(plan.outputItemdefid);
-        statusEl.textContent = `Smelted 5x ${rarity} → ${reward?.name ?? plan.outputItemdefid}!`;
+        statusEl.textContent = t('ui.vault.smelted', { rarity, reward: reward?.name ?? plan.outputItemdefid });
     }
     showSteamDropToast(plan.outputItemdefid, 1);
     window.AudioManager?.play?.('fx_achievement', { volume: 0.4, bus: 'sfx' });
@@ -1175,7 +1185,7 @@ function handleDispensaryRedeem(targetItemdefid) {
     const plan = planDispensaryRedeem(vaultItems, targetItemdefid, getItemCatalogEntry);
     const statusEl = document.getElementById('vault-smelter-status');
     if (!plan.ok) {
-        if (statusEl) statusEl.textContent = `Redeem failed: ${plan.reason.replace(/_/g, ' ')}.`;
+        if (statusEl) statusEl.textContent = t('ui.vault.redeem_failed', { reason: plan.reason.replace(/_/g, ' ') });
         return;
     }
 
@@ -1186,7 +1196,7 @@ function handleDispensaryRedeem(targetItemdefid) {
 
     if (statusEl) {
         const reward = getItemCatalogEntry(plan.targetItemdefid);
-        statusEl.textContent = `Redeemed ${plan.cost} Shards for ${reward?.name ?? plan.targetItemdefid}!`;
+        statusEl.textContent = t('ui.vault.redeemed', { cost: plan.cost, reward: reward?.name ?? plan.targetItemdefid });
     }
     showSteamDropToast(plan.targetItemdefid, 1);
     window.AudioManager?.play?.('fx_achievement', { volume: 0.4, bus: 'sfx' });
@@ -1230,7 +1240,7 @@ export async function openDeepRelicCache() {
             const statusEl = document.getElementById('vault-store-open-status');
             if (statusEl) {
                 statusEl.classList.remove('hidden');
-                statusEl.textContent = `Cache unlocked: ${opening.rewards.length} rewards secured.`;
+                statusEl.textContent = t('ui.vault.cache_unlocked', { count: opening.rewards.length });
             }
             for (const reward of opening.rewards) showSteamDropToast(reward.itemdefid, reward.quantity ?? 1);
         });
@@ -1257,7 +1267,7 @@ export async function openDeepRelicCache() {
             cacheOpeningBusy = false;
             if (statusEl) {
                 statusEl.classList.remove('hidden');
-                statusEl.textContent = opening.complete ? 'Cache bundle opened.' : 'Cache exchange completed with a partial Steam grant.';
+                statusEl.textContent = opening.complete ? t('ui.vault.cache_opened') : t('ui.vault.cache_partial');
             }
             for (const reward of opening.rewards) showSteamDropToast(reward.itemdefid, reward.quantity ?? 1);
         });
@@ -1266,8 +1276,22 @@ export async function openDeepRelicCache() {
         console.error('[steam-store] cache open failed:', result);
         if (statusEl) {
             statusEl.classList.remove('hidden');
-            statusEl.textContent = 'Cache open failed — check your connection and try again.';
+            statusEl.textContent = t('ui.vault.cache_failed');
         }
     }
 }
 import { assetUrl } from './assetUrl.js';
+
+// The vault renders its panels when it opens, so a language change while it is
+// on screen has to rebuild them. Guarded on the modal actually being visible so
+// switching language from the title screen does no work.
+onLocaleChange(() => {
+    renderInventoryGrid();
+    renderStoreSkuGrid();
+    renderHostedItemStoreCta();
+    renderOddsTable();
+    renderSmelterPanel();
+}, () => {
+    const modal = document.getElementById('steam-vault-modal');
+    return Boolean(modal) && !modal.classList.contains('hidden');
+});

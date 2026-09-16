@@ -42,7 +42,7 @@ describe('LoadoutManager', () => {
 
     it('refuses non-weapon recipes', () => {
         const lo = new LoadoutManager({ storage });
-        // salvage_drill is a TOOL, exo_plating a MODULE
+        // salvage_drill is a CHARM output, exo_plating a MODULE
         expect(lo.equip('salvage_drill', fakeFab('salvage_drill'))).toBe(false);
         expect(lo.equip('exo_plating', fakeFab('exo_plating'))).toBe(false);
     });
@@ -208,5 +208,92 @@ describe('LoadoutManager', () => {
         expect(CLASS_CHASSIS_SKINS.tank).toContain('4228');
         expect(CLASS_CHASSIS_SKINS.engineer).toContain('4214');
         expect(CLASS_CHASSIS_SKINS.engineer).toContain('4235');
+    });
+});
+
+describe('reconcileOwnership', () => {
+    let storage;
+    beforeEach(() => {
+        storage = makeStorage();
+        globalThis.window = globalThis.window ?? {};
+        delete globalThis.window.itemOwnership;
+    });
+
+    function equipped(lo) {
+        return {
+            chassis: lo.state.suit.chassisSkinId,
+            decal: lo.state.suit.decalId,
+            hud: lo.state.hudThemeId,
+            tracer: lo.state.tracerFxId,
+            voice: lo.state.voicePackId,
+            charm: lo.state.perClass.scout.charmId
+        };
+    }
+
+    function fullyEquipped(storage) {
+        const lo = new LoadoutManager({ storage });
+        lo.state.suit.chassisSkinId = '4112';
+        lo.state.suit.decalId = '4120';
+        lo.state.hudThemeId = '4150';
+        lo.state.tracerFxId = '4152';
+        lo.state.voicePackId = '4148';
+        lo.state.perClass.scout.charmId = '4130';
+        return lo;
+    }
+
+    it('strips everything unowned when the inventory is empty', () => {
+        const lo = fullyEquipped(storage);
+        lo.reconcileOwnership([]);
+        expect(equipped(lo)).toEqual({
+            chassis: null, decal: null, hud: null, tracer: null, voice: null, charm: null
+        });
+    });
+
+    // The reported bug: equip under debug unlock, then an inventory refresh
+    // quietly took it all back off again.
+    it('keeps every slot when the debug unlock-all override is on', () => {
+        const lo = fullyEquipped(storage);
+        lo.reconcileOwnership([], { isUnlockAll: true });
+        expect(equipped(lo)).toEqual({
+            chassis: '4112', decal: '4120', hud: '4150', tracer: '4152', voice: '4148', charm: '4130'
+        });
+    });
+
+    it('reads the unlock-all override off the live ownership store by default', () => {
+        const lo = fullyEquipped(storage);
+        globalThis.window.itemOwnership = { isUnlockAll: () => true };
+        lo.reconcileOwnership([]);
+        expect(equipped(lo).chassis).toBe('4112');
+    });
+
+    it('keeps items the ownership store considers owned but Steam never lists', () => {
+        // Rig modules and community chassis skins ship unlocked and appear in
+        // no Steam inventory response.
+        const lo = new LoadoutManager({ storage });
+        lo.state.perClass.scout.mod1Id = 4160;
+        lo.state.suit.chassisSkinId = 'comm_scout_abg';
+        globalThis.window.itemOwnership = {
+            isUnlockAll: () => false,
+            isOwned: (id) => id === 4160 || id === 'comm_scout_abg'
+        };
+        lo.reconcileOwnership([]);
+        expect(lo.state.perClass.scout.mod1Id).toBe(4160);
+        expect(lo.state.suit.chassisSkinId).toBe('comm_scout_abg');
+    });
+
+    it('still strips unowned items when the store says they are not owned', () => {
+        const lo = fullyEquipped(storage);
+        globalThis.window.itemOwnership = { isUnlockAll: () => false, isOwned: () => false };
+        lo.reconcileOwnership([]);
+        expect(equipped(lo).chassis).toBeNull();
+        expect(equipped(lo).voice).toBeNull();
+    });
+
+    it('falls back to the inventory array when no ownership store is present', () => {
+        const lo = fullyEquipped(storage);
+        lo.reconcileOwnership([{ itemdefid: 4112, quantity: 1 }, { itemdefid: 4148, quantity: 1 }]);
+        expect(equipped(lo).chassis).toBe('4112');
+        expect(equipped(lo).voice).toBe('4148');
+        expect(equipped(lo).decal).toBeNull();
     });
 });

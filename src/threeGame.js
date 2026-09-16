@@ -1,4 +1,5 @@
 import { getFieldWeaponProfile } from './fieldWeapon.js';
+import { buildRunResourceTelemetry } from './runTelemetry.js';
 import { createRelicPickup, animateRelicPickup, createImpactBurst, disposeExpeditionEffect } from './expeditionVfx.js';
 import { TraumaManager, create3DMuzzleFlash, WEAPON_TRAUMA_TABLE } from './combatJuice.js';
 import { PickupMagnet, PickupComboTracker } from './lootJuice.js';
@@ -10,12 +11,15 @@ import { getControllerGlyphLabel } from './inputGlyphs.js';
 import * as THREE from 'three';
 import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
 import { createFrameProfiler } from './frameProfiler.js';
+import { createFrameIntervalTracker } from './frameIntervalTracker.js';
 import { createGpuFrameTimer } from './gpuFrameTimer.js';
 import { beginPerfPhase } from './perfPhases.js';
 import { usesGameplayFocusEffects } from './gameplayPresentation.js';
+import { mapRotationForWorldYaw } from './mapHeading.js';
 import { getSelectedSheen } from './weaponSheens.js';
 import { captureHardwareCapabilities, createGpuMemoryTracker } from './gpuMemoryBudget.js';
 import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
+import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
 import { ShaderPass } from 'three/examples/jsm/postprocessing/ShaderPass.js';
 
 export const TiltShiftPassShader = {
@@ -95,7 +99,7 @@ import { createSkyRig } from './sky/skyDome.js';
 import { SKY_SHEETS } from './sky/skySheets.js';
 import { MULTIPLAYER_SPAWN_MODES, hashSeed, partitionCrashPlanPlayers } from './multiplayerCrashPlanner.js';
 import { multiplayerLobby } from './multiplayerLobby.js';
-import { BankManager, O2_GENERATOR_UPGRADES, BASE_TURRET_UPGRADES, BASE_TURRET_REPAIR_COST, TIER2_UPGRADE_ORDER, TIER2_UPGRADE_CONFIGS, WEAPON_UPGRADE_ORDER, WEAPON_UPGRADES_CONFIG, CLASS_SKILL_TREES, shellPriceOf } from './bank.js';
+import { BankManager, O2_GENERATOR_UPGRADES, BASE_TURRET_UPGRADES, BASE_TURRET_REPAIR_COST, BASE_TURRET_BUILD_COST, TIER2_UPGRADE_ORDER, TIER2_UPGRADE_CONFIGS, WEAPON_UPGRADE_ORDER, WEAPON_UPGRADES_CONFIG, CLASS_SKILL_TREES, shellPriceOf } from './bank.js';
 import { MarkovGenerator } from './generator.js';
 import {
     addCanyonVoidAroundWalkable,
@@ -186,12 +190,27 @@ export const MAYOR_TINA_PLAYER_VISUAL = Object.freeze({
     weaponEnabled: false,
     allowStatic: false
 });
+
+export const BLACK_BOX_CORPSE_VISUALS = Object.freeze({
+    SCOUT: Object.freeze({
+        modelUrl: '/3d/scouting-scout/Scout.game.glb',
+        animationModelUrl: '/3d/scouting-scout/Scout.game.glb'
+    }),
+    TANK: Object.freeze({
+        modelUrl: '/3d/runtime/tank-rigged.glb',
+        animationModelUrl: '/3d/scouting-scout/Scout.game.glb'
+    }),
+    ENGINEER: Object.freeze({
+        modelUrl: '/3d/runtime/engineer-rigged-gestures.glb',
+        animationModelUrl: '/3d/scouting-scout/Scout.game.glb'
+    })
+});
 import { createEnemy3dVisual, disposeEnemy3dVisual, updateEnemy3dVisual } from './enemy3dOverlay.js';
 import { spawnEnemyGibs, spawnPropDebris } from './enemyGibs.js';
-import { registerTinaHit } from './mayorTinaCombat.js';
+import { registerTinaHit, TINA_TOTAL_HITS } from './mayorTinaCombat.js';
 import { applyLinchpinResolution, resolveCampLeaderLinchpin } from './storyLinchpins.js';
 import { resolveSafeSpawn } from './safeSpawn.js';
-import { WORLD_3D_FACING_YAW, createWorld3dModel, hasWorld3dModel, isWorld3dOnlyPlacementType, preloadWorld3dModels, syncWorld3dReplacement } from './world3dOverlay.js';
+import { WORLD_3D_FACING_YAW, WORLD_3D_SWAP_PREFETCH_DISTANCE, createWorld3dModel, hasWorld3dModel, isWorld3dOnlyPlacementType, preloadWorld3dModels, syncWorld3dReplacement } from './world3dOverlay.js';
 import { computeTrailPosition } from './companionFollow.js';
 import { SNAIL_ENCOUNTER_CONSTANTS } from './snailEncounter.js';
 import { createUniversalEncounter, resolveEncounterAction } from './universalEncounter.js';
@@ -242,6 +261,7 @@ import {
 import {
     DAY_STATE_KEY,
     REST_PHASES,
+    STORY_DEADLINES,
     beginExpedition,
     beginSleep,
     completeRest,
@@ -315,6 +335,23 @@ import {
 import { SHOWROOM_CHUNK_X, SHOWROOM_CHUNK_Y } from './debugWorldLayout.js';
 import { PRESENTATION_EVENTS, presentationTelemetry } from './presentationTelemetry.js';
 import { summarizeSceneLights, diffLightCounts } from './lightingReport.js';
+import { t } from './i18n.js';
+
+/**
+ * Boss display names by spawn type. Was an eight-branch if/else assigning
+ * English literals; a lookup keeps the type -> key mapping in one readable
+ * place and leaves the wording to the catalog. Character names (MARTHA,
+ * BRIGGS, KAELEN) stay as written in every locale - only the role translates.
+ */
+const BOSS_NAME_KEYS = Object.freeze({
+    boss_cybersnail: 'ui.boss.cybershell_titan',
+    boss_cryosnail: 'ui.boss.cryo_goliath',
+    boss_sporesnail: 'ui.boss.plagueshell_behemoth',
+    boss_corrupted_scout: 'ui.boss.corrupted_scout',
+    boss_corrupted_tank: 'ui.boss.corrupted_tank',
+    boss_corrupted_engineer: 'ui.boss.corrupted_engineer',
+    boss_queen: 'ui.boss.queen'
+});
 
 
 const PLAYER_COLORS = {
@@ -748,6 +785,13 @@ const BUILD_SITES = Object.freeze([
 const AUDIO_OBSTRUCTION_RAY_HEIGHT = 1.0;
 const AUDIO_OBSTRUCTION_BACKOFF = 0.75;
 const PLAYER_HITBOX_PADDING = 0.18;     // forgiving hitbox for player shots only
+const PVP_PRIVATE_WORLD_EVENTS = new Set([
+    'pickup-collected',
+    'o2-generator-upgraded',
+    'black-box-recovered',
+    'lore-terminal-read',
+    'maze-access-granted'
+]);
 const WEAPON_CLIP_PER_CAPACITY = 2;     // +clip rounds per ammoCapacity tier
 const WEAPON_SPEED_PER_TIER = 2.5;      // +projectile speed per shotSpeed tier
 const MULTISHOT_SPREADS = Object.freeze([[], [-0.085, 0.085], [-0.15, 0.0, 0.15]]);
@@ -1676,6 +1720,7 @@ export class ThreeGame {
         this._tankShockGuardUsed = false;
         this._terminalEvent = null;
         this._terminalEventResolvedIds = new Set();
+        this._terminalObjectiveHistory = [];
         this._terminalEventIsMimic = false;   // forged terminal — punishes unverified trust
         this._terminalMimicDisarmed = false;  // Engineer verify neutralizes the trap
         this._compassCorruptUntil = 0;
@@ -1698,7 +1743,9 @@ export class ThreeGame {
             transformedOverlay: null,
             loadPromise: null,
             lastSirenAt: 0,
-            calloutIndex: 0
+            calloutIndex: 0,
+            hostileLastUpdateAt: 0,
+            hostileAttackReadyAt: 0
         };
         // The Bunker Director: one pressure brain that reacts to the player's
         // greed/struggle by pulling existing levers (doc 11 §4.A).
@@ -1751,6 +1798,26 @@ export class ThreeGame {
         // cost was invisible to every earlier reproduction attempt because
         // repeated testing in the same tab reused already-compiled programs.
         this.renderer.debug.checkShaderErrors = false;
+
+        // PHASE A1 (docs/planning/visual-overhaul-reflective-hdr-2026-09-13.md).
+        //
+        // Tone mapping was never set, so the renderer ran on NoToneMapping:
+        // every value above 1.0 clipped. This world is built almost entirely
+        // out of saturated emissive practicals -- sodium rotators, infection
+        // pulses, cyan O2 towers -- and each one was landing as a flat white
+        // patch instead of a light source with falloff and colour in its
+        // shoulder.
+        //
+        // AgX rather than ACES to match what the Blender cinematics are pinned
+        // to (blender-cinematic-optics-2026-09-12.md). Game and cutscene now
+        // share a transform, so a prop does not change character between them.
+        // AgX also holds saturated hues far better in the highlights, which
+        // matters when the palette IS saturated emissives.
+        this.renderer.toneMapping = THREE.AgXToneMapping;
+        // Slightly above 1.0: AgX is conservative by design and these sets are
+        // deliberately near-black, so the default reads muddy.
+        this.renderer.toneMappingExposure = 1.15;
+
         this.renderer.setPixelRatio(this.menuPixelRatio);
         this.renderer.shadowMap.enabled = false;
         this.renderer.shadowMap.type = THREE.PCFShadowMap;
@@ -1765,9 +1832,36 @@ export class ThreeGame {
         this._tiltShiftFocusY = 50;
         this._tiltShiftProjectVec = new THREE.Vector3();
 
+        // PHASE A2: image-based lighting. Deferred one frame so it never
+        // blocks first paint -- the world renders correctly without it and
+        // simply gains reflections a moment later.
+        this._environmentTexture = null;
+        this.installEnvironmentLighting();
+
         this.composer = new EffectComposer(this.renderer);
         this.renderPass = new RenderPass(this.scene, this.camera);
         this.composer.addPass(this.renderPass);
+
+        // PHASE A3: selective bloom.
+        //
+        // The concept art is built around glowing vascular circuitry and
+        // emissive towers; without bloom those read as painted-on decals rather
+        // than light. Threshold is deliberately high -- below ~0.9 every lit
+        // wall blooms and the set turns to soup, which is the usual way this
+        // effect makes a game look worse rather than better.
+        //
+        // Half-resolution: the Deck is the target and bloom is the cheapest
+        // thing here to run at reduced scale without anyone noticing.
+        this.bloomPass = new UnrealBloomPass(
+            new THREE.Vector2(
+                Math.max(1, Math.floor(window.innerWidth * 0.5)),
+                Math.max(1, Math.floor(window.innerHeight * 0.5))
+            ),
+            0.62,   // strength -- restrained; this sits under AgX, not over it
+            0.45,   // radius
+            0.95    // threshold: genuine emissives only
+        );
+        this.composer.addPass(this.bloomPass);
 
         this.tiltShiftPassV = new ShaderPass(TiltShiftPassShader);
         this.tiltShiftPassH = new ShaderPass(TiltShiftPassShader);
@@ -4039,7 +4133,6 @@ export class ThreeGame {
         this.upgradeBaseTurretToModel?.(group);
 
         this._onBaseItemRepaired = () => {
-            this.bank?.unlockBaseTurret?.();
             this.updateBaseTurretVisuals();
         };
         this._onBaseTurretChanged = () => this.updateBaseTurretVisuals();
@@ -4090,15 +4183,10 @@ export class ThreeGame {
         const level = this.bank.getBaseTurretLevel();
         const hp = this.bank.getBaseTurretHp();
 
-        const hasCompletedBaseRepair = this.bank.getO2GeneratorLevel() >= 1
-            || Object.values(this.bank.state?.unlocks || {}).some(Boolean);
-        if (hasCompletedBaseRepair && !this.bank.isBaseTurretUnlocked()) {
-            this.bank.unlockBaseTurret();
-        }
         const isUnlocked = this.bank.isBaseTurretUnlocked();
 
-        if (isUnlocked && this.baseDefenseTurretState) {
-            this.baseDefenseTurretState.active = true;
+        if (this.baseDefenseTurretState) {
+            this.baseDefenseTurretState.active = isUnlocked;
         }
 
         const active = Boolean(this.baseDefenseTurretState?.active && hp > 0);
@@ -4427,6 +4515,36 @@ export class ThreeGame {
     updateMayorTinaEncounter(now = performance.now()) {
         const encounter = this.mayorTinaEncounter;
         const prompt = document.getElementById('mayor-tina-hud-prompt');
+        if (encounter?.phase === 'hostile' && !encounter.tinaDead && this.player && encounter.mayorRoot) {
+            prompt?.classList.add('hidden');
+            prompt?.classList.remove('visible');
+            const root = encounter.mayorRoot;
+            const dx = this.player.position.x - root.position.x;
+            const dz = this.player.position.z - root.position.z;
+            const distance = Math.hypot(dx, dz);
+            const previousAt = encounter.hostileLastUpdateAt || now;
+            const delta = Math.min(0.05, Math.max(0, (now - previousAt) / 1000));
+            encounter.hostileLastUpdateAt = now;
+            if (distance > 0.9 && delta > 0) {
+                const step = Math.min(distance - 0.9, 1.65 * delta);
+                const nextX = root.position.x + (dx / distance) * step;
+                const nextZ = root.position.z + (dz / distance) * step;
+                if (this.canOccupyPosition?.(nextX, nextZ) !== false) {
+                    root.position.x = nextX;
+                    root.position.z = nextZ;
+                } else {
+                    // Axis fallback keeps the actor from stalling on one wall.
+                    if (this.canOccupyPosition?.(nextX, root.position.z) !== false) root.position.x = nextX;
+                    else if (this.canOccupyPosition?.(root.position.x, nextZ) !== false) root.position.z = nextZ;
+                }
+                root.rotation.y = Math.atan2(dx, dz);
+            }
+            if (distance <= 1.05 && now >= (encounter.hostileAttackReadyAt || 0)) {
+                encounter.hostileAttackReadyAt = now + 1200;
+                this.takeDamage?.(1, 'mayor-tina', root.position.x, root.position.z);
+            }
+            return;
+        }
         if (!encounter || encounter.phase !== 'idle' || this.isMultiplayer || !this.player || !encounter.mayorRoot) {
             prompt?.classList.add('hidden');
             prompt?.classList.remove('visible');
@@ -4564,8 +4682,13 @@ export class ThreeGame {
             void this.setupPlayer3dCosmeticOverlay();
         }
         encounter.phase = 'idle';
+        encounter.tinaHostile = false;
+        encounter.tinaDead = false;
+        encounter.tinaHitsRemaining = TINA_TOTAL_HITS;
         encounter.lastSirenAt = 0;
         encounter.calloutIndex = 0;
+        encounter.hostileLastUpdateAt = 0;
+        encounter.hostileAttackReadyAt = 0;
         const position = this.getMayorTinaEncounterPosition();
         if (encounter.teacupRoot) {
             encounter.teacupRoot.removeFromParent();
@@ -4596,6 +4719,10 @@ export class ThreeGame {
             || (typeof window !== 'undefined' && window.activeMultiplayerSession)
             || multiplayerLobby?.getActiveSession?.();
         if (!session) return;
+
+        // ThreeGame survives between deployments. Never stack a second set
+        // of relay listeners on a prior session during reconnect/redeploy.
+        if (this.netSocket) this.teardownMultiplayerNetwork();
 
         this.isMultiplayer = true;
         this.multiplayerMode = session.mode || MULTIPLAYER_SPAWN_MODES.COOP;
@@ -4871,8 +4998,8 @@ export class ThreeGame {
             facingRow: PLAYER_DEFAULT_DIRECTION_INDEX,
             animationTimer: 0,
             lastAnimationColumn: -1,
-            hp: 100,
-            maxHp: 100,
+            hp: isPvP ? 3 : 100,
+            maxHp: isPvP ? 3 : 100,
             isDown: false,
             lastUpdate: Date.now()
         };
@@ -5037,7 +5164,8 @@ export class ThreeGame {
             attackerId: isPvP ? data.playerId : null,
             options: {
                 color: data.color ?? (isPvP ? 0xff4a4a : 0x2ec4b6),
-                glowColor: isPvP ? 0xff0000 : 0x00ffff
+                glowColor: isPvP ? 0xff0000 : 0x00ffff,
+                fromRemote: true
             }
         });
         // Remote player's shot: this one genuinely needs placing -- it is the
@@ -5049,19 +5177,22 @@ export class ThreeGame {
         if (!data) return;
         if (data.targetId === this.netSocket?.id) {
             // Local player was hit in PvP.
-            // Server damage is emitted on a 100-point scale (e.g. PVP_WEAPON_DAMAGE = 10).
-            // Convert to player vitals scale (3-4 hearts) so local player takes 1 heart per standard hit instead of dying in one shot.
-            const serverDamage = data.damage || 10;
+            // New relays emit heart-scale damage. Preserve conversion for a
+            // rolling legacy relay that still emits the old 10-point value.
+            const serverDamage = Number.isFinite(data.damage) ? data.damage : 1;
             const damageHearts = serverDamage >= 10
                 ? Math.max(1, Math.round((serverDamage / 100) * (this.playerVitals?.maxHp || 3)))
                 : serverDamage;
             this.takeDamage?.(damageHearts, 'pvp-rival');
         } else if (this.remotePlayers?.has(data.targetId)) {
             const remote = this.remotePlayers.get(data.targetId);
-            remote.hp = Math.max(0, remote.hp - (data.damage || 10));
+            const remoteDamage = Number.isFinite(data.damage) ? data.damage : 1;
+            remote.hp = Math.max(0, remote.hp - remoteDamage);
             if (remote.hp === 0) {
                 remote.isDown = true;
+                remote.overlay?.setDowned?.(true);
                 if (this.multiplayerMode === 'pvp') {
+                    this.showRemotePlayerDeathMarker?.(remote);
                     window.showToastNotification?.(`RIVAL ELIMINATED: ${remote.callsign}`);
                     window.AudioManager?.play?.('fx_achievement', { volume: 0.4 });
                 } else {
@@ -5088,6 +5219,7 @@ export class ThreeGame {
         remote.isDown = false;
         remote.hp = remote.maxHp;
         remote.overlay?.setDowned?.(false);
+        this.clearRemotePlayerDeathMarker?.(remote);
         window.showToastNotification?.(`SQUADMATE REVIVED: ${remote.callsign}`);
         window.AudioManager?.play?.('fx_level_up', { volume: 0.4 });
     }
@@ -5101,6 +5233,34 @@ export class ThreeGame {
         window.showToastNotification?.(`SQUADMATE DOWN: ${remote.callsign}`);
         window.AudioManager?.play?.('ui_error', { volume: 0.4 });
         this.resolveCoopSquadWipe?.();
+    }
+
+    showRemotePlayerDeathMarker(remote) {
+        if (!remote?.mesh?.position || remote.deathMarker) return remote?.deathMarker ?? null;
+        const { x, z } = remote.mesh.position;
+        if (!Number.isFinite(x) || !Number.isFinite(z)) return null;
+        const marker = this.createBlackBoxMarker?.({ x, z, classType: remote.opClass || 'SCOUT' });
+        if (!marker) return null;
+        marker.userData.isRemoteDeathMarker = true;
+        marker.userData.remotePlayerId = remote.id;
+        this.scene?.add?.(marker);
+        remote.deathMarker = marker;
+        remote.mesh.visible = false;
+        return marker;
+    }
+
+    clearRemotePlayerDeathMarker(remote) {
+        const marker = remote?.deathMarker;
+        if (!marker) return false;
+        marker.userData?.corpseOverlay?.dispose?.();
+        marker.parent?.remove?.(marker);
+        marker.traverse?.((child) => {
+            if (child.userData?.blackBoxOwnedMaterial) child.material?.dispose?.();
+            child.geometry?.dispose?.();
+        });
+        remote.deathMarker = null;
+        if (remote.mesh) remote.mesh.visible = true;
+        return true;
     }
 
     resolveCoopSquadWipe() {
@@ -5343,6 +5503,7 @@ export class ThreeGame {
 
     broadcastSharedWorldEvent(event, detail = {}) {
         if (!this.isMultiplayer || !this.netSocket || !event) return false;
+        if (this.multiplayerMode === 'pvp' && PVP_PRIVATE_WORLD_EVENTS.has(event)) return false;
         this.netSocket.emit('worldEvent', { event, detail });
         return true;
     }
@@ -5353,6 +5514,7 @@ export class ThreeGame {
     handleSharedWorldEvent(data) {
         const event = data?.event;
         if (!event) return false;
+        if (this.multiplayerMode === 'pvp' && PVP_PRIVATE_WORLD_EVENTS.has(event)) return false;
         const detail = data?.detail ?? {};
         const isEcho = data?.originId && data.originId === this.multiplayerLocalPlayerId;
 
@@ -5551,6 +5713,7 @@ export class ThreeGame {
     removeRemotePlayer(id) {
         if (!this.remotePlayers?.has(id)) return;
         const remote = this.remotePlayers.get(id);
+        this.clearRemotePlayerDeathMarker?.(remote);
         remote.overlay?.dispose?.();
         if (remote.mesh) {
             this.scene.remove(remote.mesh);
@@ -5658,31 +5821,56 @@ export class ThreeGame {
     }
 
     async setupWorld3dReplacement(source, modelType, { owner = null, ownerKey = null } = {}) {
-        if (!source || source.userData?.world3dLoading || source.userData?.world3dRoot) return;
+        if (!source || source.userData?.world3dRoot) return source?.userData?.world3dRoot ?? null;
+        if (source.userData?.world3dPromise) return source.userData.world3dPromise;
         source.userData.world3dLoading = true;
-        try {
-            const root = await (this.createWorld3dModel?.(modelType) ?? createWorld3dModel(modelType));
-            if (!root || !source.parent) return;
-            root.position.copy(source.position);
-            // Must match syncWorld3dReplacement, which adds WORLD_3D_FACING_YAW.
-            // Without it the model faced one way when it loaded and snapped
-            // 180 degrees on the next frame's sync.
-            root.rotation.y = (source.material?.rotation ?? 0) + WORLD_3D_FACING_YAW;
-            root.visible = owner ? Boolean(owner.isVisible) : source.visible;
-            source.parent.add(root);
-            root.userData.world3dSource = source;
-            source.userData.world3dRoot = root;
-            source.userData.world3dDesiredVisible = source.visible;
-            source.userData.replacedBy3d = true;
+        const loadPromise = (async () => {
+            try {
+                const root = await (this.createWorld3dModel?.(modelType) ?? createWorld3dModel(modelType));
+                if (!root || !source.parent) return null;
+                root.position.copy(source.position);
+                // Must match syncWorld3dReplacement, which adds WORLD_3D_FACING_YAW.
+                // Without it the model faced one way when it loaded and snapped
+                // 180 degrees on the next frame's sync.
+                root.rotation.y = (source.material?.rotation ?? 0) + WORLD_3D_FACING_YAW;
+                root.visible = owner ? Boolean(owner.isVisible) : source.visible;
+                source.parent.add(root);
+                root.userData.world3dSource = source;
+                source.userData.world3dRoot = root;
+                source.userData.world3dDesiredVisible = source.visible;
+                source.userData.replacedBy3d = true;
+                source.visible = false;
+                syncWorld3dReplacement(source);
+                if (owner && ownerKey) owner[ownerKey] = root;
+                if (owner?.threeObjects && !owner.threeObjects.includes(root)) owner.threeObjects.push(root);
+                return root;
+            } catch (error) {
+                console.warn(`[world-3d-overlay] ${modelType} unavailable; keeping sprite`, error);
+                return null;
+            } finally {
+                source.userData.world3dLoading = false;
+                source.userData.world3dPromise = null;
+            }
+        })();
+        source.userData.world3dPromise = loadPromise;
+        return loadPromise;
+    }
+
+    async ensureO2Generator3dReady() {
+        const ship = this.getActiveShip?.();
+        const source = ship?.o2ModuleSprite;
+        if (!source) return null;
+        const root = await this.setupWorld3dReplacement(source, 'o2_generator', {
+            owner: ship,
+            ownerKey: 'o2Module3d'
+        });
+        // The cinematic owns visibility and scale from here; never fall back
+        // to lifting the flat sprite once the authored model is available.
+        if (root) {
             source.visible = false;
-            syncWorld3dReplacement(source);
-            if (owner && ownerKey) owner[ownerKey] = root;
-            if (owner?.threeObjects && !owner.threeObjects.includes(root)) owner.threeObjects.push(root);
-        } catch (error) {
-            console.warn(`[world-3d-overlay] ${modelType} unavailable; keeping sprite`, error);
-        } finally {
-            source.userData.world3dLoading = false;
+            root.visible = false;
         }
+        return root;
     }
 
     deferWorld3dReplacement(source, modelType) {
@@ -5692,7 +5880,7 @@ export class ThreeGame {
 
     loadNearbyWorld3dReplacement(source) {
         if (!source?.userData?.world3dModelType || source.userData.world3dLoading || source.userData.world3dRoot) return;
-        if ((this._world3dLoadsInFlight ?? 0) >= 2 || !this.player?.position) return;
+        if ((this._world3dLoadsInFlight ?? 0) >= 3 || !this.player?.position) return;
         this._world3dLoadPosition ??= new THREE.Vector3();
         source.getWorldPosition?.(this._world3dLoadPosition);
         const sourceX = source.getWorldPosition ? this._world3dLoadPosition.x : source.position.x;
@@ -5701,7 +5889,7 @@ export class ThreeGame {
             this.player.position.x - sourceX,
             this.player.position.z - sourceZ
         );
-        if (distance > 9) return;
+        if (distance > WORLD_3D_SWAP_PREFETCH_DISTANCE) return;
         this._world3dLoadsInFlight = (this._world3dLoadsInFlight ?? 0) + 1;
         void this.setupWorld3dReplacement(source, source.userData.world3dModelType)
             .finally(() => { this._world3dLoadsInFlight = Math.max(0, this._world3dLoadsInFlight - 1); });
@@ -6236,15 +6424,34 @@ export class ThreeGame {
                 this.closeConsoleModal();
                 this.setInputEnabled(false);
                 try {
+                    if (goalKey !== 'o2Bubble') {
+                        const presentation = {
+                            goalKey,
+                            bossType,
+                            promise: null
+                        };
+                        window.dispatchEvent(new CustomEvent('goal-milestone-presentation-requested', {
+                            detail: presentation
+                        }));
+                        // The renderer attaches the real media promise during
+                        // synchronous event delivery. Decode/skip/error all
+                        // settle before the in-world structure begins rising.
+                        await Promise.resolve(presentation.promise).catch(() => null);
+                        await this.playGoalModuleWorldReveal(goalKey);
+                    }
                     await this.dialogueManager?.openO2MilestoneDialogue({
                         playerType: this.playerType,
                         goalKey
                     });
-                    this.spawnMilestoneBoss(bossType, { sourceGoalKey: goalKey });
+                    const boss = this.spawnMilestoneBoss(bossType, { sourceGoalKey: goalKey });
                     window.dispatchEvent(new CustomEvent('milestone-boss-warning', {
-                        detail: { type: bossType, goalKey }
+                        detail: { type: bossType, goalKey,
+                            encounterId: boss?.userData?.milestoneEncounterId,
+                            milestoneId: boss?.userData?.milestoneId,
+                            presentationHandled: goalKey !== 'o2Bubble' }
                     }));
                 } finally {
+                    this.clearCinematicCameraFocus?.();
                     this.setInputEnabled(true);
                 }
 
@@ -6403,7 +6610,7 @@ export class ThreeGame {
         const candidates = [];
         const currentPlane = activePlane(this.planeState);
         if (currentPlane?.id === 'foundry-interior') {
-            const pocket = this.pocketCache?.get(this.getWallKey(this._pocketHoleX, this._pocketHoleZ));
+            const pocket = this.pocketCache?.get(this._pocketCacheKey ?? this.getWallKey(this._pocketHoleX, this._pocketHoleZ));
             if (pocket) {
                 const originX = this._pocketHoleX - pocket.centerCell.x;
                 const originZ = this._pocketHoleZ - pocket.centerCell.y;
@@ -6580,26 +6787,36 @@ export class ThreeGame {
 
     spawnPhysicalLootDrop(x, z, item) {
         if (!item || !this.scene) return;
+        if (!Number.isFinite(x) || !Number.isFinite(z)) return null;
         const mesh = createRelicPickup(item);
         mesh.position.set(x, (this.getTerrainHeightAt?.(x, z) ?? 0) + 0.05, z);
         this.scene.add(mesh);
         this.inRunLootDrops.push(mesh);
+        return mesh;
     }
 
     getTerrainHeightAt(worldX, worldZ) {
+        if (!Number.isFinite(worldX) || !Number.isFinite(worldZ)) {
+            return TERRAIN_HEIGHTS.GROUND;
+        }
         const tileX = Math.round(worldX);
         const tileZ = Math.round(worldZ);
         const chunkX = Math.floor(tileX / this.chunkSize);
         const chunkY = Math.floor(tileZ / this.chunkSize);
         const key = `${chunkX},${chunkY}`;
         const chunk = this.chunkCache?.get(key);
-        if (!chunk || !chunk.heightmap) return TERRAIN_HEIGHTS.GROUND;
-        const localX = tileX - chunkX * this.chunkSize;
-        const localZ = tileZ - chunkY * this.chunkSize;
-        if (localZ < 0 || localZ >= chunk.heightmap.length || localX < 0 || localX >= chunk.heightmap[0].length) {
+        if (!chunk || !Array.isArray(chunk.heightmap) || chunk.heightmap.length === 0) {
             return TERRAIN_HEIGHTS.GROUND;
         }
-        return chunk.heightmap[localZ][localX] ?? TERRAIN_HEIGHTS.GROUND;
+        const localX = tileX - chunkX * this.chunkSize;
+        const localZ = tileZ - chunkY * this.chunkSize;
+        const row = chunk.heightmap[localZ];
+        if (localZ < 0 || localZ >= chunk.heightmap.length || !Array.isArray(row)
+            || localX < 0 || localX >= row.length) {
+            return TERRAIN_HEIGHTS.GROUND;
+        }
+        const height = row[localX];
+        return Number.isFinite(height) ? height : TERRAIN_HEIGHTS.GROUND;
     }
 
     playThrottledUiError(fieldName, options = {}, eventName = null) {
@@ -6816,6 +7033,56 @@ export class ThreeGame {
         }
         this.sprinting = Boolean(active);
         return this.sprinting;
+    }
+
+    /**
+     * PHASE A2 -- image-based lighting from the game's own sky.
+     *
+     * 94 MeshStandardMaterials in this project were reflecting NOTHING: with no
+     * scene.environment, a PBR material has no indirect light to sample, so
+     * metal reads as matte plastic and the specular response the concept art is
+     * built around never appears.
+     *
+     * Source is the panorama already composed from the game's sky paintings for
+     * the ending cinematics. Same asset in both renderers, so a prop does not
+     * change character between gameplay and cutscene.
+     *
+     * Sets scene.environment ONLY, never scene.background. The background is a
+     * THREE.Color that the fog system lerps every frame (see the fog blend in
+     * updateFog); replacing it with a texture would silently break that.
+     */
+    installEnvironmentLighting(url = assetUrl('/sky/cinematic_deep_space_panorama.jpg')) {
+        if (!this.renderer || !this.scene) return false;
+        const pmrem = new THREE.PMREMGenerator(this.renderer);
+        // Compiling the equirect shader up front avoids a hitch on first use.
+        pmrem.compileEquirectangularShader();
+        new THREE.TextureLoader().load(
+            url,
+            (texture) => {
+                texture.mapping = THREE.EquirectangularReflectionMapping;
+                texture.colorSpace = THREE.SRGBColorSpace;
+                const target = pmrem.fromEquirectangular(texture);
+                this._environmentTexture = target.texture;
+                this.scene.environment = target.texture;
+                // Keep indirect light well under the practicals. IBL here is
+                // for specular shape and silhouette separation, not room fill
+                // -- lifting the blacks would undo the whole look.
+                this.scene.environmentIntensity = 0.35;
+                // The equirect source is no longer needed once convolved.
+                texture.dispose();
+                pmrem.dispose();
+                window.hbLog?.('RENDER', 'info', 'environment-lighting-ready', { url });
+            },
+            undefined,
+            (error) => {
+                // Non-fatal by design: the game looked like this yesterday.
+                pmrem.dispose();
+                window.hbLog?.('RENDER', 'warn', 'environment-lighting-failed', {
+                    url, message: String(error?.message ?? error)
+                });
+            }
+        );
+        return true;
     }
 
     isGameplayInputActive() {
@@ -7672,6 +7939,13 @@ export class ThreeGame {
 
         this.renderer.setSize(width, height, false);
         this.composer?.setSize?.(width, height);
+        // EffectComposer.setSize propagates full resolution to every pass, which
+        // would silently undo the half-res bloom chosen for the Deck. Re-apply
+        // it after, or the perf decision survives only until the first resize.
+        this.bloomPass?.setSize?.(
+            Math.max(1, Math.floor(width * 0.5)),
+            Math.max(1, Math.floor(height * 0.5))
+        );
     }
 
     setLoadingPaused(paused = false) {
@@ -7884,7 +8158,7 @@ export class ThreeGame {
         // Adaptive quality may lower the render resolution, but it must not
         // remove the authored DOF/tilt-shift treatment. Bypassing the composer
         // made the start-of-run handoff look like lighting and fog had unloaded.
-        this.gameplayPostProcessingEnabled = !nextEnabled;
+        this.gameplayPostProcessingEnabled = true;
         if (this.renderer?.shadowMap) {
             // Keep the shadow variant stable while adaptive mode lowers pixel
             // cost. Toggling shadowMap at runtime caused a
@@ -7992,6 +8266,7 @@ export class ThreeGame {
             gameplayPostProcessingEnabled: this.gameplayPostProcessingEnabled !== false,
             shadowsEnabled: Boolean(this.renderer?.shadowMap?.enabled),
             frameProfilerEnabled: Boolean(this.frameProfiler?.enabled),
+            frameIntervals: this.frameIntervalTracker?.snapshot?.() ?? null,
             jsHeapUsed: performance.memory?.usedJSHeapSize ?? null,
             jsHeapLimit: performance.memory?.jsHeapSizeLimit ?? null,
             gpuFrame,
@@ -8015,7 +8290,11 @@ export class ThreeGame {
     }
 
     renderWithPerf(label = 'frame:render') {
-        const span = beginPerfPhase(label, this.getPerformanceDiagnosticsSnapshot());
+        // A full diagnostics snapshot traverses the scene and sorts frame
+        // samples. Doing that before every render amplified low FPS into a
+        // permanent lockup on Steam Deck. Detailed snapshots are captured by
+        // the throttled long-task reporter instead.
+        const span = beginPerfPhase(label, { profile: this.performanceProfile });
         const gpuQueryStarted = this.gpuFrameTimer?.beginFrame?.() ?? false;
         try {
             if (this.composer && usesGameplayFocusEffects(this)) {
@@ -8120,6 +8399,21 @@ export class ThreeGame {
                 ? this.renderFrameBody
                 : ThreeGame.prototype.renderFrameBody;
             return frameBody.call(this);
+        } catch (error) {
+            // A single malformed world actor must not terminate Three's
+            // animation loop and leave a responsive UI over a frozen mission.
+            this._runtimeFrameErrorCount = (this._runtimeFrameErrorCount ?? 0) + 1;
+            const now = typeof performance !== 'undefined' ? performance.now() : Date.now();
+            if (!Number.isFinite(this._lastRuntimeFrameErrorAt)
+                || now - this._lastRuntimeFrameErrorAt >= 5000) {
+                this._lastRuntimeFrameErrorAt = now;
+                debugLog.error('RUNTIME', 'frame-update-recovered', {
+                    count: this._runtimeFrameErrorCount,
+                    message: error?.message ?? String(error),
+                    stack: typeof error?.stack === 'string' ? error.stack.slice(0, 1200) : null
+                });
+            }
+            return undefined;
         } finally {
             fp.endFrame();
         }
@@ -8141,6 +8435,9 @@ export class ThreeGame {
         // one boolean test per call in a shipping frame.
         const fp = this.frameProfiler ?? (this.frameProfiler = createFrameProfiler());
         const renderFrame = () => {
+            const frameIntervals = this.frameIntervalTracker
+                ?? (this.frameIntervalTracker = createFrameIntervalTracker());
+            frameIntervals.record(this.performanceProfile, performance.now());
             fp.measure('renderFrame', () => {
                 if (typeof this.renderWithPerf === 'function') {
                     this.renderWithPerf();
@@ -8177,6 +8474,18 @@ export class ThreeGame {
         const rawFrameDelta = Math.max(0, (now - this.lastTime) / 1000);
         const delta = Math.min(rawFrameDelta, 0.05);
         this.lastTime = now;
+
+        // The asset museum is an isolated validation profile, not another
+        // coordinate in the active expedition. Keep camera/player inspection
+        // responsive while freezing needs, enemy AI, ambient spawns, weapons,
+        // projectiles and run timers. debugMuseum snapshots/restores this flag.
+        if (this._debugMuseumSessionActive) {
+            this.updatePlayer?.(delta);
+            this.updateCamera?.(delta);
+            this.updateHiddenPlayerMarker?.(now);
+            renderFrame();
+            return;
+        }
 
         if (this.hitstopTimer > 0) {
             this.hitstopTimer -= delta * 1000;
@@ -8238,6 +8547,7 @@ export class ThreeGame {
         fp.measure('updateHiddenPlayerMarker', () => this.updateHiddenPlayerMarker(now));
         fp.measure('updateVitals', () => this.updateVitals(delta));
         fp.measure('updateO2StartupSequence', () => this.updateO2StartupSequence(delta));
+        fp.measure('updateGoalModuleRise', () => this.updateGoalModuleRise?.(delta));
         fp.measure('updateRunCheckpoint', () => this.updateRunCheckpoint?.(delta));
         fp.measure('updateLoopStep', () => this.updateLoopStep());
         // Surface-only systems: enemy AI, hazards, and prompts that key off
@@ -8563,6 +8873,7 @@ export class ThreeGame {
 
     createBlackBoxMarker(state) {
         const marker = new THREE.Group();
+        marker.userData.corpseClass = BLACK_BOX_CORPSE_VISUALS[state.classType] ? state.classType : 'SCOUT';
 
         // 1. Red neon pulse ring under the corpse
         const ring = new THREE.Mesh(
@@ -8582,6 +8893,8 @@ export class ThreeGame {
 
         // 2. Body corpse geometry group
         const bodyGroup = new THREE.Group();
+        bodyGroup.name = 'BlackBoxCorpseFallback';
+        bodyGroup.userData.corpseClass = marker.userData.corpseClass;
 
         const suitColors = {
             SCOUT: 0xd4af37,     // scout gold/yellow
@@ -8700,7 +9013,52 @@ export class ThreeGame {
 
         marker.position.set(state.x, 0, state.z);
         marker.userData.isBlackBoxMarker = true;
+        void this.attachBlackBoxCorpseModel?.(marker, bodyGroup, state);
         return marker;
+    }
+
+    async attachBlackBoxCorpseModel(marker, fallback, state) {
+        const classType = BLACK_BOX_CORPSE_VISUALS[state?.classType] ? state.classType : 'SCOUT';
+        const visual = BLACK_BOX_CORPSE_VISUALS[classType];
+        let overlay;
+        try {
+            overlay = await createPlayer3dOverlay({
+                ...visual,
+                animationBonePrefix: 'mixamorig',
+                targetHeight: 1.35,
+                idleActionName: 'idle',
+                weaponEnabled: false,
+                allowStatic: false
+            });
+            if (!marker?.parent || (marker !== this._blackBoxMarker && !marker.userData?.isRemoteDeathMarker)) {
+                overlay.dispose();
+                return false;
+            }
+            overlay.setDowned(true);
+            overlay.update(1 / 30, {
+                isMoving: false,
+                isFalling: false,
+                isReloading: false,
+                hasAim: false,
+                moveX: 0,
+                moveZ: 1
+            });
+            overlay.root.rotation.z = -Math.PI / 2;
+            overlay.root.rotation.y = 0.18;
+            overlay.root.updateMatrixWorld(true);
+            const bounds = new THREE.Box3().setFromObject(overlay.root);
+            overlay.root.position.y += 0.04 - bounds.min.y;
+            overlay.root.position.x = -0.12;
+            overlay.root.name = `BlackBoxCorpse:${classType}`;
+            marker.add(overlay.root);
+            marker.userData.corpseOverlay = overlay;
+            fallback.visible = false;
+            return true;
+        } catch (error) {
+            overlay?.dispose?.();
+            console.warn(`[black-box] ${classType} corpse model unavailable; retaining class-colored fallback`, error);
+            return false;
+        }
     }
 
     ensureBlackBoxMarker() {
@@ -8782,6 +9140,7 @@ export class ThreeGame {
 
     clearBlackBoxMarker() {
         if (this._blackBoxMarker) {
+            this._blackBoxMarker.userData?.corpseOverlay?.dispose?.();
             this.scene.remove(this._blackBoxMarker);
             this._blackBoxMarker.traverse((child) => {
                 if (child.userData?.blackBoxOwnedMaterial) child.material?.dispose?.();
@@ -9035,7 +9394,7 @@ export class ThreeGame {
                 const actionText = promptEl.querySelector('.prompt-text');
                 const promptKey = promptEl.querySelector('.prompt-key');
                 if (actionText) {
-                    actionText.textContent = `ACCESS ${nearestConsole.type} BASE SHOP`;
+                    actionText.textContent = t('ui.prompt.access_base_shop', { type: nearestConsole.type });
                 }
                 if (promptKey) {
                     const promptKeyLabel = this.getPromptKeyLabel('E');
@@ -9066,7 +9425,7 @@ export class ThreeGame {
             if (o2InRange) {
                 const actionText = o2PromptEl.querySelector('.prompt-text');
                 const promptKey = o2PromptEl.querySelector('.prompt-key');
-                if (actionText) actionText.textContent = 'UPGRADE O₂ GENERATOR';
+                if (actionText) actionText.textContent = t('ui.prompt.upgrade_o2');
                 if (promptKey) {
                     const promptKeyLabel = this.getPromptKeyLabel('E');
                     promptKey.textContent = promptKeyLabel;
@@ -9089,7 +9448,7 @@ export class ThreeGame {
             if (baseTurretInRange) {
                 const actionText = baseTurretPromptEl.querySelector('.prompt-text');
                 const promptKey = baseTurretPromptEl.querySelector('.prompt-key');
-                if (actionText) actionText.textContent = 'DEFENSE TURRET CONTROLS';
+                if (actionText) actionText.textContent = t('ui.prompt.turret_controls');
                 if (promptKey) {
                     const promptKeyLabel = this.getPromptKeyLabel('E');
                     promptKey.textContent = promptKeyLabel;
@@ -9113,7 +9472,7 @@ export class ThreeGame {
             let promptLabel = 'FILL HOLE';
             if (this.inputEnabled && hudActive && this.player && this.isGameplayInputActive()) {
                 if (this.isInPocket) {
-                    const key = this.getWallKey(this._pocketHoleX, this._pocketHoleZ);
+                    const key = this._pocketCacheKey ?? this.getWallKey(this._pocketHoleX, this._pocketHoleZ);
                     const pocket = this.pocketCache?.get(key);
                     if (pocket) {
                         // Convert grid-local climbPoint to world space first
@@ -9520,7 +9879,7 @@ export class ThreeGame {
         if (nearestDoor && nearestLocked && promptEl && !this.activeInteractiveConsole) {
             const promptKey = promptEl.querySelector('.prompt-key');
             if (actionText) {
-                actionText.textContent = `BLAST THRESHOLD LOCKED — ${nearestDoorState.lock.label}`;
+                actionText.textContent = t('ui.prompt.blast_locked', { lock: nearestDoorState.lock.label });
             }
             if (promptKey) {
                 const promptKeyLabel = this.getPromptKeyLabel('E');
@@ -10034,6 +10393,32 @@ export class ThreeGame {
             }
         }
 
+        // GLB replacements render on behalf of their hidden source sprite,
+        // but destruction state still lives on that source. Keep the target
+        // discoverable so a model swap never makes a prop look usable while
+        // silently dropping its aim response.
+        for (const prop of this.scatterSprites ?? []) {
+            if (!prop?.parent || !prop.userData?.isDestructibleProp || prop.userData.burstTriggered) continue;
+            const dist = Math.hypot(worldPoint.x - prop.position.x, worldPoint.z - prop.position.z);
+            const radius = Math.max(0.8, (prop.userData.collisionRadius ?? 0.38) + 0.55);
+            if (dist > radius) continue;
+            const hp = Math.max(0, prop.userData.propHp ?? 1);
+            const maxHp = Math.max(1, prop.userData.maxPropHp ?? hp);
+            return {
+                type: 'enemy',
+                targetId: 'destructible_prop',
+                badgeLabel: 'SALVAGEABLE PROP',
+                kicker: 'WORLD OBJECT // DESTRUCTIBLE',
+                title: String(prop.userData.type ?? 'FIELD PROP').replaceAll('_', ' ').toUpperCase(),
+                subtitle: 'BREAK TO CLEAR THE ROUTE OR RECOVER MATERIAL',
+                coords: { x: tileX, z: tileZ },
+                distance: Math.hypot(prop.position.x - this.player.position.x, prop.position.z - this.player.position.z),
+                integrity: Math.round((hp / maxHp) * 100),
+                promptKey: 'L-CLICK',
+                promptText: 'DISMANTLE'
+            };
+        }
+
         // 7. Check Crashed Ships / Consoles
         if (this.crashedShips) {
             for (const ship of this.crashedShips) {
@@ -10341,17 +10726,17 @@ export class ThreeGame {
             const rangeVal = telemeter.querySelector('#telemeter-range-val');
             const actionPrompt = telemeter.querySelector('#telemeter-action-prompt');
 
-            if (kicker) kicker.textContent = target?.kicker || 'SURFACE SCAN // PASSIVE';
+            if (kicker) kicker.textContent = target?.kicker || t('ui.telemeter.passive_scan');
             if (typeTag) {
-                typeTag.textContent = 'SECTOR';
+                typeTag.textContent = t('ui.telemeter.sector');
                 typeTag.className = 'telemeter-type-tag telemeter-tag--sector';
             }
-            if (title) title.textContent = target?.title || 'EXPLORED CORRIDOR';
-            if (coords) coords.textContent = target?.coords ? `[X: ${target.coords.x >= 0 ? '+' : ''}${target.coords.x}, Z: ${target.coords.z >= 0 ? '+' : ''}${target.coords.z}]` : '[X: --, Z: --]';
-            if (subtitle) subtitle.textContent = target?.subtitle || `BIOME: ${(this.currentBiomeKey || 'CRYO').toUpperCase()} // TIER ${this.currentDepthTier ?? 1}`;
+            if (title) title.textContent = target?.title || t('ui.telemeter.explored_corridor');
+            if (coords) coords.textContent = target?.coords ? t('ui.telemeter.coords', { x: `${target.coords.x >= 0 ? '+' : ''}${target.coords.x}`, z: `${target.coords.z >= 0 ? '+' : ''}${target.coords.z}` }) : '[X: --, Z: --]';
+            if (subtitle) subtitle.textContent = target?.subtitle || t('ui.telemeter.biome_tier', { biome: (this.currentBiomeKey || 'CRYO').toUpperCase(), tier: this.currentDepthTier ?? 1 });
             if (meterBar) meterBar.style.width = '100%';
-            if (meterVal) meterVal.textContent = 'STABLE';
-            if (rangeVal) rangeVal.textContent = target?.distance != null ? `DIST: ${target.distance.toFixed(1)}m` : 'DIST: 0.0m';
+            if (meterVal) meterVal.textContent = t('ui.telemeter.stable');
+            if (rangeVal) rangeVal.textContent = target?.distance != null ? t('ui.telemeter.dist', { meters: target.distance.toFixed(1) }) : t('ui.telemeter.dist', { meters: '0.0' });
             if (actionPrompt) actionPrompt.classList.add('hidden');
             return;
         }
@@ -10375,12 +10760,12 @@ export class ThreeGame {
             typeTag.className = `telemeter-type-tag telemeter-tag--${target.type}`;
         }
         if (title) title.textContent = target.title;
-        if (coords) coords.textContent = target.coords ? `[X: ${target.coords.x >= 0 ? '+' : ''}${target.coords.x}, Z: ${target.coords.z >= 0 ? '+' : ''}${target.coords.z}]` : '[X: --, Z: --]';
+        if (coords) coords.textContent = target.coords ? t('ui.telemeter.coords', { x: `${target.coords.x >= 0 ? '+' : ''}${target.coords.x}`, z: `${target.coords.z >= 0 ? '+' : ''}${target.coords.z}` }) : '[X: --, Z: --]';
         if (subtitle) subtitle.textContent = target.subtitle;
 
         if (meterBar) meterBar.style.width = `${target.integrity ?? 100}%`;
-        if (meterVal) meterVal.textContent = target.type === 'unscanned' ? 'OCCLUDED' : `${target.integrity ?? 100}%`;
-        if (rangeVal) rangeVal.textContent = target.distance != null ? `DIST: ${target.distance.toFixed(1)}m` : '';
+        if (meterVal) meterVal.textContent = target.type === 'unscanned' ? t('ui.telemeter.occluded') : `${target.integrity ?? 100}%`;
+        if (rangeVal) rangeVal.textContent = target.distance != null ? t('ui.telemeter.dist', { meters: target.distance.toFixed(1) }) : '';
 
         if (actionPrompt && actionKey && actionText) {
             if (target.promptKey && target.promptText) {
@@ -10794,13 +11179,13 @@ export class ThreeGame {
         const statusEl = document.getElementById(cardConfig.statusId);
         if (statusEl) {
             if (unlocked) {
-                statusEl.textContent = 'ONLINE';
+                statusEl.textContent = t('ui.console.online');
             } else if (!prereqMet) {
                 statusEl.textContent = cardConfig.lockedStatusText;
             } else if (!affordable) {
-                statusEl.textContent = 'READY — RESOURCE DEFICIT';
+                statusEl.textContent = t('ui.console.ready_deficit');
             } else {
-                statusEl.textContent = 'READY — BUILD PERMITTED';
+                statusEl.textContent = t('ui.console.ready_permitted');
             }
         }
 
@@ -10839,6 +11224,7 @@ export class ThreeGame {
             window.AudioManager?.play('ui_error', { volume: 0.58 });
         }
         this.renderConsoleBanking(ship);
+
         this.renderSkillsTree(ship);
     }
 
@@ -10890,24 +11276,24 @@ export class ThreeGame {
         if (!event) return;
 
         if (title) title.textContent = event.title;
-        if (status) status.textContent = resolved ? 'RESOLVED' : 'CHOICE REQUIRED';
+        if (status) status.textContent = resolved ? t('ui.console.resolved') : t('ui.console.choice_required');
         if (body) body.textContent = event.body;
         choicesEl.innerHTML = '';
 
         if (resolved) {
-            if (resultEl) resultEl.textContent = 'TERMINAL EVENT RESOLVED. SHOP SYSTEMS REMAIN AVAILABLE.';
+            if (resultEl) resultEl.textContent = t('ui.console.event_resolved');
             return;
         }
 
         if (this.playerType === 'ENGINEER') {
             const verifyBtn = document.createElement('button');
             verifyBtn.className = 'terminal-action-btn terminal-event-choice btn-state--available';
-            verifyBtn.textContent = 'ENGINEER VERIFY';
+            verifyBtn.textContent = t('ui.console.engineer_verify');
             verifyBtn.addEventListener('click', () => {
                 if (this._terminalEventIsMimic) {
                     // Engineer detects the forgery and disarms its payback.
                     this._terminalMimicDisarmed = true;
-                    if (resultEl) resultEl.textContent = 'WARNING: TERMINAL SIGNATURE FORGED — MIMIC NEUTRALIZED. SAFE TO PROCEED.';
+                    if (resultEl) resultEl.textContent = t('ui.console.mimic_neutralized');
                     window.dispatchEvent(new CustomEvent('codex-discover', { detail: { id: 'mimic_terminal' } }));
                     window.AudioManager?.play('ui_error', { volume: 0.32, playbackRate: 0.9, bus: 'sfx' });
                     return;
@@ -10986,6 +11372,77 @@ export class ThreeGame {
             this.goalModuleMaterials.reactorCompressor.needsUpdate = true;
         }
         this.updateShipVisualState();
+    }
+
+    getGoalModulePresentation(goalKey) {
+        const ship = this.getActiveShip?.();
+        if (!ship) return null;
+        const config = {
+            hullExpansion: { sprite: 'hullModuleSprite', shadow: 'hullModuleShadow', model: 'hull_matrix' },
+            radarNode: { sprite: 'radarModuleSprite', shadow: 'radarModuleShadow', model: 'radar' },
+            reactorCompressor: { sprite: 'reactorModuleSprite', shadow: 'reactorModuleShadow', model: 'fusion_generator' }
+        }[goalKey];
+        if (!config || !ship[config.sprite]) return null;
+        return { ship, ...config, source: ship[config.sprite], shadowSource: ship[config.shadow] };
+    }
+
+    playGoalModuleWorldReveal(goalKey) {
+        return new Promise((resolve) => {
+            const presentation = this.getGoalModulePresentation(goalKey);
+            if (!presentation) {
+                resolve(false);
+                return;
+            }
+            const { ship, source, shadowSource, model } = presentation;
+            source.userData.world3dDesiredVisible = true;
+            source.visible = !source.userData?.replacedBy3d;
+            source.scale.set(0, 0, 1);
+            source.position.y = -1.41;
+            if (shadowSource) {
+                shadowSource.visible = true;
+                shadowSource.scale.set(0, 0, 1);
+            }
+            this.setupWorld3dReplacement(source, model, { owner: ship, ownerKey: `${goalKey}Reveal3d` });
+            syncWorld3dReplacement(source, { scale: 0, visible: true });
+            this.focusCinematicCamera({ x: source.position.x, z: source.position.z }, { immediate: true });
+            this._goalModuleRise = { goalKey, source, shadowSource, elapsed: 0, duration: 1.35, resolve };
+            window.dispatchEvent(new CustomEvent('goal-structure-rise-started', {
+                detail: { goalKey, x: source.position.x, z: source.position.z }
+            }));
+        });
+    }
+
+    updateGoalModuleRise(delta) {
+        const rise = this._goalModuleRise;
+        if (!rise) return;
+        rise.elapsed += Math.max(0, delta);
+        const progress = Math.min(1, rise.elapsed / rise.duration);
+        const eased = 1 - Math.pow(1 - progress, 3);
+        rise.source.scale.set(1.58 * eased, 1.58 * eased, 1);
+        rise.source.position.y = 0.09 - 1.5 * (1 - eased);
+        syncWorld3dReplacement(rise.source, { scale: eased, visible: true });
+        rise.shadowSource?.scale?.set(eased, eased, 1);
+        if (progress < 1) return;
+        this._goalModuleRise = null;
+        window.dispatchEvent(new CustomEvent('goal-structure-rise-complete', {
+            detail: { goalKey: rise.goalKey }
+        }));
+        rise.resolve?.(true);
+    }
+
+    cancelGoalModuleRise({ restoreVisuals = true } = {}) {
+        const rise = this._goalModuleRise;
+        if (!rise) return false;
+        this._goalModuleRise = null;
+        if (restoreVisuals) {
+            rise.source.scale.set(1.58, 1.58, 1);
+            rise.source.position.y = 0.09;
+            syncWorld3dReplacement(rise.source, { scale: 1, visible: true });
+            rise.shadowSource?.scale?.set(1, 1, 1);
+        }
+        rise.resolve?.(false);
+        this.clearCinematicCameraFocus?.();
+        return true;
     }
 
     updateShipVisualState(now = performance.now()) {
@@ -11092,6 +11549,64 @@ export class ThreeGame {
         return null;
     }
 
+    renderTerminalObjectiveJournal(bankState, activeGoal) {
+        const day = this.dayState?.day ?? 1;
+        const phase = String(this.dayState?.phase ?? REST_PHASES.EXPEDITION).replace(/_/g, ' ').toUpperCase();
+        const lightIsDay = this.getDayFactor() >= 0.5;
+        const nextPoint = lightIsDay ? 0.75 : 0.25;
+        const cycleFraction = (nextPoint - this.timeOfDay + 1) % 1;
+        const transitionSeconds = Math.max(0, Math.round(cycleFraction * this.dayCycleSeconds));
+        const setText = (id, text) => {
+            const element = document.getElementById(id);
+            if (element) element.textContent = text;
+        };
+        setText('terminal-log-day', `DAY ${day}`);
+        setText('terminal-log-phase', phase);
+        setText('terminal-log-light', lightIsDay ? 'DAYLIGHT' : 'NIGHT OPS');
+        setText('terminal-log-transition', `${lightIsDay ? 'DUSK' : 'DAWN'} IN ${String(Math.floor(transitionSeconds / 60)).padStart(2, '0')}:${String(transitionSeconds % 60).padStart(2, '0')}`);
+
+        const mission = this.missionState;
+        const missionLabel = mission?.label || 'EXPLORE · BANK SALVAGE';
+        const missionStatus = String(mission?.status || 'active').replace(/_/g, ' ').toUpperCase();
+        const goalLabel = activeGoal?.title ?? 'BASE SYSTEMS MAXIMUM';
+        const goalStatus = activeGoal ? (this.bank.canAfford(activeGoal.cost) ? 'READY' : 'RESOURCE DEFICIT') : 'COMPLETE';
+        const snapshot = `${day}|${phase}|${missionLabel}|${missionStatus}|${goalLabel}|${goalStatus}`;
+        this._terminalObjectiveHistory ??= [];
+        if (this._terminalObjectiveHistory.at(-1)?.snapshot !== snapshot) {
+            const elapsed = Math.max(0, Math.floor((Date.now() - (this.runStartTime || Date.now())) / 1000));
+            this._terminalObjectiveHistory.push({ snapshot, elapsed, missionLabel, missionStatus, goalLabel, goalStatus, day, phase });
+            this._terminalObjectiveHistory = this._terminalObjectiveHistory.slice(-12);
+        }
+
+        const list = document.getElementById('terminal-objective-journal-list');
+        if (!list) return;
+        list.replaceChildren();
+        const rows = [...this._terminalObjectiveHistory].reverse();
+        for (const entry of rows) {
+            const item = document.createElement('li');
+            const minute = String(Math.floor(entry.elapsed / 60)).padStart(2, '0');
+            const second = String(entry.elapsed % 60).padStart(2, '0');
+            item.innerHTML = `<span class="terminal-objective-journal-time"></span><span class="terminal-objective-journal-copy"></span><strong class="terminal-objective-journal-state"></strong>`;
+            item.querySelector('.terminal-objective-journal-time').textContent = t('ui.journal.day_time', { day: entry.day, minute, second });
+            item.querySelector('.terminal-objective-journal-copy').textContent = `${entry.missionLabel} // NEXT: ${entry.goalLabel}`;
+            item.querySelector('.terminal-objective-journal-state').textContent = `${entry.missionStatus} · ${entry.goalStatus}`;
+            list.append(item);
+        }
+
+        const resolved = new Set(this.dayState?.resolved ?? []);
+        const expired = new Set(this.dayState?.expired ?? []);
+        for (const deadline of STORY_DEADLINES) {
+            if (!resolved.has(deadline.id) && !expired.has(deadline.id) && day + 1 < deadline.closesOnDay) continue;
+            const item = document.createElement('li');
+            item.className = expired.has(deadline.id) ? 'is-expired' : resolved.has(deadline.id) ? 'is-complete' : 'is-warning';
+            item.innerHTML = `<span class="terminal-objective-journal-time">STORY</span><span class="terminal-objective-journal-copy"></span><strong class="terminal-objective-journal-state"></strong>`;
+            item.querySelector('.terminal-objective-journal-copy').textContent = deadline.label;
+            item.querySelector('.terminal-objective-journal-state').textContent = resolved.has(deadline.id)
+                ? 'RESOLVED' : expired.has(deadline.id) ? 'EXPIRED' : `CLOSES DAY ${deadline.closesOnDay}`;
+            list.append(item);
+        }
+    }
+
     renderConsoleBanking(ship) {
         const inventory = this.getSessionInventory();
         const bankState = this.bank.getState();
@@ -11183,6 +11698,7 @@ export class ThreeGame {
                         : 'ACTIVE'
             );
         }
+        this.renderTerminalObjectiveJournal(bankState, activeGoal);
         this.updateTerminalClock();
         const heartsFromMed = Math.floor(bankState.med / 10);
         setText('terminal-med-hearts', heartsFromMed > 0 ? `♥ ×${heartsFromMed} AVAILABLE` : `${bankState.med}/10 FOR ♥`);
@@ -11190,9 +11706,9 @@ export class ThreeGame {
         const hint = document.getElementById('terminal-bank-hint');
         if (hint) {
             if (depositableTotal > 0) {
-                hint.textContent = 'DEPOSIT READY. RESOURCE TRANSFER CHANNEL OPEN.';
+                hint.textContent = t('ui.bank.deposit_ready');
             } else {
-                hint.textContent = 'DEPOSIT RESOURCES TO FUND O₂ REPAIRS.';
+                hint.textContent = t('ui.bank.deposit_to_fund');
             }
         }
 
@@ -11205,17 +11721,17 @@ export class ThreeGame {
 
         if (medkitStatus) {
             if (this.playerVitals.hp >= this.playerVitals.maxHp) {
-                medkitStatus.textContent = 'HP FULL';
+                medkitStatus.textContent = t('ui.bank.hp_full');
             } else if (bankState.med < 10) {
                 medkitStatus.textContent = `${bankState.med}/10 MED`;
             } else {
-                medkitStatus.textContent = `×${conversionsReady} AVAILABLE`;
+                medkitStatus.textContent = t('ui.bank.conversions_available', { count: conversionsReady });
             }
         }
 
         if (medkitHint) {
             if (this.playerVitals.hp >= this.playerVitals.maxHp) {
-                medkitHint.textContent = 'EXOSUIT INTEGRITY IS FULL. NO CONVERSION NEEDED.';
+                medkitHint.textContent = t('ui.bank.integrity_full');
             } else {
                 medkitHint.textContent = `${heartsMissing} HEART${heartsMissing === 1 ? '' : 'S'} MISSING. ${conversionsReady} CONVERSION${conversionsReady === 1 ? '' : 'S'} AVAILABLE (${bankState.med} MED STORED).`;
             }
@@ -11247,7 +11763,7 @@ export class ThreeGame {
                 const missingText = canAfford ? '' : ` // ${this.getMissingResourceText(effectiveCost, bankState)}`;
                 costEl.textContent = `NEXT COST: ${this.formatResourceCost(effectiveCost, { bankState, showHaveNeed: !canAfford })}${discountTag}${missingText}`;
             } else {
-                costEl.textContent = 'NEXT COST: NONE';
+                costEl.textContent = t('ui.bank.next_cost_none');
             }
         }
 
@@ -11261,13 +11777,13 @@ export class ThreeGame {
         const generatorHint = document.getElementById('terminal-o2-generator-hint');
         if (generatorHint) {
             if (generatorState.maxed) {
-                generatorHint.textContent = 'O₂ GENERATOR OUTPUT IS MAXED FOR THIS EXOSUIT BAY.';
+                generatorHint.textContent = t('ui.bank.generator_maxed');
             } else if (!generatorState.isOnline) {
                 const effectiveCost = generatorState.nextUpgrade ? this.getEffectiveCost(generatorState.nextUpgrade.cost) : {};
                 const missingText = this.getMissingResourceText(effectiveCost, bankState);
-                generatorHint.textContent = missingText || 'REPAIR THIS MODULE TO CREATE A SAFE O₂ ZONE NEAR YOUR SHIP.';
+                generatorHint.textContent = missingText || t('ui.bank.repair_to_create_zone');
             } else {
-                generatorHint.textContent = 'UPGRADES EXPAND THE BLUE O₂ FIELD SO YOU CAN REFILL FROM FURTHER OUT.';
+                generatorHint.textContent = t('ui.bank.upgrades_expand_field');
             }
         }
 
@@ -11284,6 +11800,7 @@ export class ThreeGame {
             this.renderGoalCard(ship, bankState, cardConfig);
         }
         this.renderTerminalEventPanel();
+        this.renderBaseTurretBuildCard(ship);
 
         // Hide active / unlocked sections below
         const o2SectionEl = document.getElementById('o2-generator-section');
@@ -11582,6 +12099,13 @@ export class ThreeGame {
         this.handleDepositAll(ship, { silentIfEmpty: true, quiet: true });
         this.renderConsoleBanking(ship);
 
+        const objectiveGrid = document.getElementById('terminal-objectives-grid');
+        if (objectiveGrid) {
+            ['terminal-event-section', 'hull-expansion-section', 'radar-node-section', 'reactor-compressor-section']
+                .map((id) => document.getElementById(id))
+                .filter(Boolean)
+                .forEach((section) => objectiveGrid.appendChild(section));
+        }
         const depositBtn = document.getElementById('terminal-deposit-all');
         if (depositBtn) {
             depositBtn.onclick = () => this.handleDepositAll(ship);
@@ -11600,34 +12124,32 @@ export class ThreeGame {
         // Setup Tab Navigation
         const tabBase = document.getElementById('terminal-tab-base');
         const tabSkills = document.getElementById('terminal-tab-skills');
+        const tabObjectives = document.getElementById('terminal-tab-objectives');
         const contentBase = document.getElementById('terminal-tab-base-content');
         const contentSkills = document.getElementById('terminal-tab-skills-content');
+        const contentObjectives = document.getElementById('terminal-tab-objectives-content');
 
-        if (tabBase && tabSkills && contentBase && contentSkills) {
-            // Default to Base System Tab
-            tabBase.classList.add('active');
-            tabSkills.classList.remove('active');
-            contentBase.classList.remove('hidden');
-            contentSkills.classList.add('hidden');
-
-            tabBase.onclick = () => {
-                tabBase.classList.add('active');
-                tabSkills.classList.remove('active');
-                contentBase.classList.remove('hidden');
-                contentSkills.classList.add('hidden');
-                const body = modal.querySelector('.terminal-body');
-                if (body) body.scrollTop = 0;
+        if (tabBase && tabSkills && tabObjectives && contentBase && contentSkills && contentObjectives) {
+            const selectTab = (selected) => {
+                [[tabBase, contentBase], [tabObjectives, contentObjectives], [tabSkills, contentSkills]].forEach(([tab, panel]) => {
+                    const active = tab === selected;
+                    tab.classList.toggle('active', active);
+                    tab.setAttribute('aria-selected', String(active));
+                    panel.classList.toggle('hidden', !active);
+                });
                 window.AudioManager?.play('ui_click', { volume: 0.5 });
             };
+            // Default to Base System Tab
+            selectTab(tabBase);
+
+            tabBase.onclick = () => {
+                selectTab(tabBase);
+            };
+
+            tabObjectives.onclick = () => selectTab(tabObjectives);
 
             tabSkills.onclick = () => {
-                tabSkills.classList.add('active');
-                tabBase.classList.remove('active');
-                contentSkills.classList.remove('hidden');
-                contentBase.classList.add('hidden');
-                const body = modal.querySelector('.terminal-body');
-                if (body) body.scrollTop = 0;
-                window.AudioManager?.play('ui_click', { volume: 0.5 });
+                selectTab(tabSkills);
                 this.renderSkillsTree(ship);
             };
 
@@ -11925,13 +12447,13 @@ export class ThreeGame {
 
         const costEl = document.createElement('div');
         costEl.className = 'skill-node-cost';
-        costEl.textContent = state.unlocked ? (node.maxLevel > 1 ? state.costText : 'COMPLETED') : (state.gateText || state.costText);
+        costEl.textContent = state.unlocked ? (node.maxLevel > 1 ? state.costText : t('ui.skills.completed')) : (state.gateText || state.costText);
         card.appendChild(costEl);
 
         if (state.available) {
             const buyBtn = document.createElement('button');
             buyBtn.className = 'skill-node-btn';
-            buyBtn.textContent = node.maxLevel > 1 && state.level > 0 ? 'UPGRADE' : 'UNLOCK';
+            buyBtn.textContent = node.maxLevel > 1 && state.level > 0 ? t('ui.skills.upgrade') : t('ui.skills.unlock');
             buyBtn.onclick = (e) => {
                 e.stopPropagation();
                 this.purchaseTreeNode(ship, node);
@@ -12185,6 +12707,35 @@ export class ThreeGame {
         }
     }
 
+    renderBaseTurretBuildCard(ship) {
+        const button = document.getElementById('terminal-build-turret');
+        const status = document.getElementById('terminal-turret-build-status');
+        const cost = document.getElementById('terminal-turret-build-cost');
+        if (!button || !this.bank) return;
+        const built = this.bank.isBaseTurretUnlocked();
+        const available = this.bank.isBaseTurretBuildAvailable();
+        const canBuild = this.bank.canBuildBaseTurret();
+        if (status) status.textContent = built ? t('ui.turret.built_north_door')
+            : available ? 'OPTIONAL DEFENSE — CONSTRUCTION AVAILABLE' : 'REPAIR O₂ TO UNLOCK BLUEPRINT';
+        if (cost) cost.textContent = t('ui.turret.build_cost', { cost: this.formatResourceCost(BASE_TURRET_BUILD_COST) });
+        button.textContent = built ? t('ui.turret.built') : available ? t('ui.turret.build') : t('ui.turret.requires_o2');
+        button.disabled = !canBuild;
+        button.classList.toggle('btn-state--available', canBuild);
+        button.classList.toggle('btn-state--locked', !canBuild);
+        button.onclick = () => {
+            try {
+                if (!this.bank.buildBaseTurret()) return;
+            } catch (error) {
+                if (status) status.textContent = t('ui.turret.build_not_saved');
+                console.warn('[base-turret] construction save failed', error);
+                return;
+            }
+            window.AudioManager?.play('ui_buy_item', { volume: 0.6 });
+            this.updateBaseTurretVisuals();
+            this.renderConsoleBanking(ship);
+        };
+    }
+
     openBaseTurretModal() {
         const modal = document.getElementById('base-turret-modal');
         if (!modal) return;
@@ -12235,15 +12786,15 @@ export class ThreeGame {
         const config = BASE_TURRET_UPGRADES[level - 1] ?? BASE_TURRET_UPGRADES[0];
         const { damage, range, fireRate } = config;
 
-        if (statusEl) statusEl.textContent = `LVL ${level} // HP ${hp}/${maxHp}`;
-        if (statsEl) statsEl.textContent = `DAMAGE: ${damage} | RANGE: ${range}u | RATE: ${fireRate}s`;
+        if (statusEl) statusEl.textContent = t('ui.turret.level_hp', { level, hp, maxHp });
+        if (statsEl) statsEl.textContent = t('ui.turret.stats', { damage, range, rate: fireRate });
 
         const nextUpgradeCost = this.bank.getBaseTurretUpgradeCost();
         if (upgradeCostEl) {
             if (nextUpgradeCost) {
-                upgradeCostEl.textContent = `NEXT UPGRADE COST: ${this.formatResourceCost(nextUpgradeCost)}`;
+                upgradeCostEl.textContent = t('ui.turret.next_upgrade_cost', { cost: this.formatResourceCost(nextUpgradeCost) });
             } else {
-                upgradeCostEl.textContent = 'NEXT UPGRADE COST: MAX LEVEL REACHED';
+                upgradeCostEl.textContent = t('ui.turret.max_level');
             }
         }
 
@@ -12256,11 +12807,11 @@ export class ThreeGame {
         const canRepair = this.bank.canRepairBaseTurret();
         if (repairCostEl) {
             if (canRepair) {
-                repairCostEl.textContent = `REPAIR COST: ${this.formatResourceCost(BASE_TURRET_REPAIR_COST)}`;
+                repairCostEl.textContent = t('ui.turret.repair_cost', { cost: this.formatResourceCost(BASE_TURRET_REPAIR_COST) });
             } else if (hp >= maxHp) {
-                repairCostEl.textContent = 'REPAIR COST: FULL HP';
+                repairCostEl.textContent = t('ui.turret.repair_full_hp');
             } else {
-                repairCostEl.textContent = `REPAIR COST: ${this.formatResourceCost(BASE_TURRET_REPAIR_COST)} (INSUFFICIENT RESOURCES)`;
+                repairCostEl.textContent = t('ui.turret.repair_cost', { cost: `${this.formatResourceCost(BASE_TURRET_REPAIR_COST)} (INSUFFICIENT RESOURCES)` });
             }
         }
 
@@ -12464,13 +13015,44 @@ export class ThreeGame {
         });
     }
 
+    focusCinematicCamera(position, { immediate = false } = {}) {
+        if (!position || !Number.isFinite(position.x) || !Number.isFinite(position.z)) return false;
+        this._cinematicCameraFocus = {
+            x: position.x,
+            y: Number.isFinite(position.y) ? position.y : (this.getTerrainHeightAt?.(position.x, position.z) ?? 0),
+            z: position.z
+        };
+        if (immediate) this.snapCameraToFocus?.(this._cinematicCameraFocus);
+        return true;
+    }
+
+    centerCameraOnPosition(x, z) {
+        return this.focusCinematicCamera({ x, z }, { immediate: true });
+    }
+
+    clearCinematicCameraFocus() {
+        this._cinematicCameraFocus = null;
+    }
+
+    snapCameraToFocus(focus = this._cinematicCameraFocus) {
+        if (!focus || !this.camera) return;
+        this.camera.position.set(
+            focus.x + this.cameraOffset.x,
+            focus.y + this.cameraOffset.y,
+            focus.z + this.cameraOffset.z
+        );
+        this.camera.lookAt(focus.x, focus.y + 0.4, focus.z);
+    }
+
     startO2StartupSequence(bossType, options = {}) {
         const { onComplete = null, skipDialogue = false } = options;
+        this.o2StartupSequenceActive = true;
+        this._o2RevealPending = false;
         this._onO2StartupSequenceComplete = onComplete;
         this._skipO2Dialogue = skipDialogue;
         this.createO2BubbleObjects();
         if (this.o2BubbleObjects) {
-            this.o2BubbleObjects.light.visible = false;
+            this.o2BubbleObjects.light.intensity = 0;
             this.o2BubbleObjects.fill.visible = false;
             this.o2BubbleObjects.ring.visible = false;
         }
@@ -12497,9 +13079,53 @@ export class ThreeGame {
             detail: { level: 1, bossType }
         }));
         this._pendingO2BossType = bossType;
-        this.o2StartupSequenceActive = true;
         this.o2StartupPhase = 'popup';
         this.o2StartupTime = 0;
+    }
+
+    prepareO2StartupReveal() {
+        this._o2RevealPending = true;
+        this.createO2BubbleObjects();
+        if (this.o2BubbleObjects) {
+            this.o2BubbleObjects.light.intensity = 0;
+            this.o2BubbleObjects.fill.visible = false;
+            this.o2BubbleObjects.ring.visible = false;
+        }
+        const ship = this.getActiveShip?.();
+        if (ship?.o2ModuleSprite) {
+            ship.o2ModuleSprite.userData.world3dDesiredVisible = false;
+            ship.o2ModuleSprite.visible = false;
+            ship.o2ModuleSprite.scale.set(0, 0, 1);
+            ship.o2ModuleSprite.position.y = 0.09 - 1.5;
+            syncWorld3dReplacement(ship.o2ModuleSprite, { scale: 0, visible: false });
+        }
+        if (ship?.o2Module3d) ship.o2Module3d.visible = false;
+        if (ship?.o2ModuleShadow) {
+            ship.o2ModuleShadow.visible = false;
+            ship.o2ModuleShadow.scale.set(0, 0, 1);
+        }
+    }
+
+    cancelO2StartupSequence({ restoreVisuals = true } = {}) {
+        const wasActive = this.o2StartupSequenceActive;
+        const wasPending = this._o2RevealPending;
+        this._o2RevealPending = false;
+        this.o2StartupSequenceActive = false;
+        this.o2StartupPhase = null;
+        this._onO2StartupSequenceComplete = null;
+        this._pendingO2BossType = null;
+        this._skipO2Dialogue = true;
+        if (!restoreVisuals || (!wasActive && !wasPending)) return;
+        // A completed purchase survives a presentation failure. Restore its
+        // final visual state instead of leaving the generator below the floor.
+        const ship = this.getActiveShip();
+        if (ship?.o2ModuleSprite) {
+            ship.o2ModuleSprite.scale.set(1.58, 1.58, 1);
+            ship.o2ModuleSprite.position.y = 0.09;
+            syncWorld3dReplacement(ship.o2ModuleSprite, { scale: 1, visible: true });
+        }
+        ship?.o2ModuleShadow?.scale.set(1, 1, 1);
+        this.ensureO2BubbleVisualState();
     }
 
     updateO2StartupSequence(delta) {
@@ -12586,11 +13212,13 @@ export class ThreeGame {
 
             // Post-dialogue actions:
             // 1. Send the boss
-            this.spawnMilestoneBoss(bossType, { sourceGoalKey: 'o2Bubble' });
+            const boss = this.spawnMilestoneBoss(bossType, { sourceGoalKey: 'o2Bubble' });
 
             // 2. Play warning alert overlay
             window.dispatchEvent(new CustomEvent('milestone-boss-warning', {
-                detail: { type: bossType, goalKey: 'o2Bubble' }
+                detail: { type: bossType, goalKey: 'o2Bubble',
+                    encounterId: boss?.userData?.milestoneEncounterId,
+                    milestoneId: boss?.userData?.milestoneId }
             }));
         } finally {
             // Input must come back even if the dialogue or boss spawn throws —
@@ -12670,7 +13298,10 @@ export class ThreeGame {
         }
     }
 
-    // Interact (E / tap) when standing at the Foundry -> open the Fabrication Bay.
+    // Interact (E / tap) when standing at the Foundry -> open the Fabrication
+    // Bay in place. The authored interior remains available for camp rest, but
+    // ordinary fabrication must not hide the surface and teleport the player
+    // to the shared below-ground pocket plane.
     interactWithFoundry() {
         if (!this.isGameplayInputActive() || !this.player || !this.foundry?.isRevealed) return false;
         if (!this.foundry.isWithinInteractRange(this.player.position.x, this.player.position.z)) return false;
@@ -12683,7 +13314,19 @@ export class ThreeGame {
             window.dispatchEvent(new CustomEvent('act2-milestone', { detail: { key: 'dishBuilt' } }));
             return true;
         }
-        return this.enterFoundryInterior();
+        window.dispatchEvent(new CustomEvent('open-fabrication-bay', {
+            detail: {
+                source: 'surface-foundry',
+                foundry: this.foundry.getPosition?.() ?? null,
+                player: { x: this.player.position.x, z: this.player.position.z }
+            }
+        }));
+        debugLog.info('FOUNDRY', 'fabrication-bay-opened', {
+            source: 'surface-foundry',
+            playerX: this.player.position.x,
+            playerZ: this.player.position.z
+        });
+        return true;
     }
 
     // ── Act 1 finale: the cave holding the "final ship component" ──────────
@@ -13918,7 +14561,10 @@ export class ThreeGame {
                 z = site.z;
                 this.act2.setCampPosition(record.id, x, z);
             }
-            camp.reveal(x, z);
+            // Camps are full set pieces, not floating overlays. Anchor the
+            // foundation to the sampled terrain after validating its entire
+            // nine-unit footprint above.
+            camp.reveal(x, z, this.getTerrainHeightAt?.(x, z) ?? 0);
             camp.setLevel(record.level);
             camp.setAided(record.aided);
             camp.setStatus(record.status);
@@ -14109,6 +14755,34 @@ export class ThreeGame {
         if (this.caveEntrance?.isRevealed) {
             const cavePos = this.caveEntrance.getPosition?.();
             if (cavePos) this.maybeSpawnSiteLoreDrop('cave', 'cave', cavePos.x, cavePos.z);
+        }
+
+        if (this.foundry?.isRevealed) {
+            const fp = this.foundry.getPosition();
+            this.explorationTracker.registerLandmark('foundry', {
+                x: fp.x,
+                z: fp.z,
+                label: 'FOUNDRY SIGNAL',
+                type: 'foundry',
+                priority: 900,
+                revealOnMap: true
+            });
+        } else {
+            this.explorationTracker?.removeLandmark('foundry');
+        }
+
+        const blackBoxState = this._blackBoxState ?? blackBoxStore.load();
+        if (blackBoxState?.active) {
+            this.explorationTracker.registerLandmark('black_box', {
+                x: blackBoxState.x,
+                z: blackBoxState.z,
+                label: 'BLACK BOX SIGNAL',
+                type: 'black_box',
+                priority: 950,
+                revealOnMap: true
+            });
+        } else {
+            this.explorationTracker?.removeLandmark('black_box');
         }
 
         for (let i = this.loreDrops.length - 1; i >= 0; i -= 1) {
@@ -15455,8 +16129,25 @@ export class ThreeGame {
         const token = {};
         this._wandererLoad = token;
         const activeShip = this.activeInteractiveConsole || this.ship || { tileX: 0, tileZ: 0 };
-        const spawnX = (activeShip.tileX ?? 0) + 2.5;
-        const spawnZ = (activeShip.tileZ ?? 0) + 1.8;
+        const arrival = ThreeGame.prototype.getCrashSiteWandererArrival.call(this, activeShip);
+        const { spawnX, spawnZ, targetX, targetZ } = arrival;
+
+        // Signal the survivor before model decoding completes. The map/cursor
+        // therefore gives the player a human-readable lead-in instead of an
+        // NPC suddenly appearing at the edge of the crash site.
+        this.explorationTracker?.registerLandmark?.('survivor_signal', {
+            x: targetX,
+            z: targetZ,
+            label: 'SURVIVOR SIGNAL // CAMP MERIDIAN',
+            type: 'objective',
+            priority: 980,
+            revealOnMap: true
+        });
+        if (typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent('wanderer-signal-active', {
+                detail: { x: targetX, z: targetZ, label: 'CAMP MERIDIAN SURVIVOR SIGNAL' }
+            }));
+        }
 
         const instance3d = await createWanderer3dInstance({
             glbUrl: wanderer.glbUrl,
@@ -15481,10 +16172,33 @@ export class ThreeGame {
             ...wanderer,
             x: spawnX,
             z: spawnZ,
+            targetX,
+            targetZ,
+            arriving: true,
+            arrivalPath: this.findSnailPath?.(
+                Math.round(spawnX), Math.round(spawnZ),
+                Math.round(targetX), Math.round(targetZ),
+                SNAIL_PATH_NODE_BUDGET
+            ) ?? null,
+            arrivalPathIndex: 1,
             instance3d
         };
 
-        this.showBunkerLine(`SURVIVOR TRANSMISSION: ${wanderer.name.toUpperCase()} ARRIVED AT CRASH SITE.`);
+        this.showBunkerLine(`SURVIVOR TRANSMISSION: ${wanderer.name.toUpperCase()} APPROACHING THE CRASH SITE.`);
+    }
+
+    getCrashSiteWandererArrival(activeShip = {}) {
+        const shipX = Number(activeShip.tileX ?? activeShip.position?.x ?? 0);
+        const shipZ = Number(activeShip.tileZ ?? activeShip.position?.z ?? 0);
+        const candidates = [
+            { targetX: shipX + 2.5, targetZ: shipZ + 1.8, spawnX: shipX + 10.5, spawnZ: shipZ + 1.8 },
+            { targetX: shipX - 2.5, targetZ: shipZ + 1.8, spawnX: shipX - 10.5, spawnZ: shipZ + 1.8 },
+            { targetX: shipX + 1.8, targetZ: shipZ + 2.5, spawnX: shipX + 1.8, spawnZ: shipZ + 10.5 },
+            { targetX: shipX + 1.8, targetZ: shipZ - 2.5, spawnX: shipX + 1.8, spawnZ: shipZ - 10.5 }
+        ];
+        const isOpen = (x, z) => this.isSnailTileWalkable?.(Math.round(x), Math.round(z)) !== false;
+        return candidates.find((candidate) => isOpen(candidate.targetX, candidate.targetZ)
+            && isOpen(candidate.spawnX, candidate.spawnZ)) ?? candidates[0];
     }
 
     updateWandererPromptState() {
@@ -15501,6 +16215,74 @@ export class ThreeGame {
                 window.dispatchEvent(new CustomEvent('camp-prompt-clear'));
             }
             return;
+        }
+
+        if (this.activeWanderer.arriving && this.activeWanderer.instance3d?.root) {
+            const actor = this.activeWanderer;
+            const root = actor.instance3d.root;
+            if (![root.position.x, root.position.z, actor.targetX, actor.targetZ].every(Number.isFinite)) {
+                // Recover old/saved actors that were already poisoned by the
+                // zero-distance normalization bug seen in the Sept 15 logs.
+                root.position.x = Number.isFinite(actor.targetX) ? actor.targetX : 0;
+                root.position.z = Number.isFinite(actor.targetZ) ? actor.targetZ : 0;
+                actor.targetX = root.position.x;
+                actor.targetZ = root.position.z;
+                actor.arriving = false;
+            }
+            const pathNode = actor.arriving ? actor.arrivalPath?.[actor.arrivalPathIndex] : null;
+            let waypointX = Number.isFinite(pathNode?.x) ? pathNode.x : actor.targetX;
+            let waypointZ = Number.isFinite(pathNode?.z) ? pathNode.z : actor.targetZ;
+            let dx = waypointX - root.position.x;
+            let dz = waypointZ - root.position.z;
+            let distance = Math.hypot(dx, dz);
+            const finalDistance = Math.hypot(actor.targetX - root.position.x, actor.targetZ - root.position.z);
+            if (distance <= 0.16 && pathNode && actor.arrivalPathIndex < actor.arrivalPath.length - 1) {
+                actor.arrivalPathIndex += 1;
+            } else if (finalDistance <= 0.16) {
+                actor.arriving = false;
+                root.position.x = actor.targetX;
+                root.position.z = actor.targetZ;
+                actor.x = actor.targetX;
+                actor.z = actor.targetZ;
+                this.explorationTracker?.removeLandmark?.('survivor_signal');
+                this.showBunkerLine(`SURVIVOR ON DECK: ${actor.name.toUpperCase()} IS WAITING AT THE FRONT AIRLOCK.`);
+            } else if (actor.arriving) {
+                // A rounded final path node can exactly equal the current
+                // position while the fractional airlock target is still ahead.
+                // Move directly to that target instead of dividing 0 by 0.
+                if (!Number.isFinite(distance) || distance <= Number.EPSILON) {
+                    waypointX = actor.targetX;
+                    waypointZ = actor.targetZ;
+                    dx = waypointX - root.position.x;
+                    dz = waypointZ - root.position.z;
+                    distance = Math.hypot(dx, dz);
+                }
+                if (!Number.isFinite(distance) || distance <= Number.EPSILON) {
+                    actor.arriving = false;
+                    root.position.x = actor.targetX;
+                    root.position.z = actor.targetZ;
+                    actor.x = actor.targetX;
+                    actor.z = actor.targetZ;
+                    return;
+                }
+                const step = Math.min(distance, 2.2 * 0.016);
+                const nextX = root.position.x + (dx / distance) * step;
+                const nextZ = root.position.z + (dz / distance) * step;
+                const canWalk = this.isSnailTileWalkable?.(Math.round(nextX), Math.round(nextZ)) !== false;
+                if (canWalk) {
+                    root.position.x = nextX;
+                    root.position.z = nextZ;
+                } else {
+                    // Try each axis so a survivor walks around a corner rather
+                    // than flying through it or freezing in place.
+                    if (this.isSnailTileWalkable?.(Math.round(nextX), Math.round(root.position.z)) !== false) root.position.x = nextX;
+                    else if (this.isSnailTileWalkable?.(Math.round(root.position.x), Math.round(nextZ)) !== false) root.position.z = nextZ;
+                }
+                root.position.y = this.getTerrainHeightAt?.(root.position.x, root.position.z) ?? root.position.y ?? 0;
+                root.rotation.y = Math.atan2(dx, dz);
+                actor.x = root.position.x;
+                actor.z = root.position.z;
+            }
         }
 
         const dist = Math.hypot(this.player.position.x - this.activeWanderer.x, this.player.position.z - this.activeWanderer.z);
@@ -16326,7 +17108,7 @@ export class ThreeGame {
     createO2BubbleObjects() {
         if (this.o2BubbleObjects) return;
 
-        const light = new THREE.PointLight(O2_SAFE_LIGHT_COLOR, 1.45, 9, 1.45);
+        const light = new THREE.PointLight(O2_SAFE_LIGHT_COLOR, 0, 9, 1.45);
         const ringInnerRadius = Math.max(0.2, O2_GENERATOR_RING_BASE_RADIUS - (O2_GENERATOR_RING_BAND_THICKNESS * 0.5));
         const ringOuterRadius = O2_GENERATOR_RING_BASE_RADIUS + (O2_GENERATOR_RING_BAND_THICKNESS * 0.5);
         const fill = new THREE.Mesh(
@@ -16359,7 +17141,8 @@ export class ThreeGame {
         ring.rotation.x = -Math.PI / 2;
         ring.position.y = 0.035;
         ring.visible = false;
-        light.visible = false;
+        // Keep the O2 light in the shader light set even while unpowered.
+        light.visible = true;
 
         this.scene.add(light);
         this.scene.add(fill);
@@ -16373,13 +17156,14 @@ export class ThreeGame {
         this.createO2BubbleObjects();
         const generatorState = this.getO2GeneratorState();
         const generatorPos = this.getActiveO2GeneratorPosition();
-        const enabled = generatorState.isOnline && Boolean(generatorPos);
+        const revealPending = Boolean(this._o2RevealPending);
+        const enabled = generatorState.isOnline && Boolean(generatorPos) && !revealPending;
         const unlocks = this.unlocks ?? this.bank.getUnlocks();
 
         if (this.crashedShips) {
             for (const ship of this.crashedShips) {
                 const isActiveShip = ship.type === this.playerType;
-                const o2ModuleOnline = isActiveShip && generatorState.isOnline;
+                const o2ModuleOnline = isActiveShip && generatorState.isOnline && !revealPending;
                 const hullOnline = isActiveShip && Boolean(unlocks.hullExpansion);
                 const radarOnline = isActiveShip && Boolean(unlocks.radarNode);
                 const reactorOnline = isActiveShip && Boolean(unlocks.reactorCompressor);
@@ -16433,11 +17217,11 @@ export class ThreeGame {
         if (!this.o2BubbleObjects) return;
 
         if (!enabled) {
-            this.o2BubbleObjects.light.visible = false;
+            this.o2BubbleObjects.light.intensity = 0;
             this.o2BubbleObjects.fill.visible = false;
             this.o2BubbleObjects.ring.visible = false;
             if (this.baseLights) {
-                this.baseLights.dispose();
+                this.baseLights.standby();
             }
             return;
         }
@@ -16450,6 +17234,7 @@ export class ThreeGame {
         this.o2BubbleObjects.ring.position.set(generatorPos.x, 0.035, generatorPos.z);
         this.o2BubbleObjects.fill.position.set(generatorPos.x, 0.034, generatorPos.z);
         this.o2BubbleObjects.light.visible = true;
+        this.o2BubbleObjects.light.intensity = 1.35;
         this.o2BubbleObjects.fill.visible = true;
         this.o2BubbleObjects.ring.visible = true;
 
@@ -16567,7 +17352,11 @@ export class ThreeGame {
         window.dispatchEvent(new CustomEvent('player-o2-changed', {
             detail: {
                 o2: this.playerVitals.o2,
-                bubbleActive: generatorState.isOnline
+                bubbleActive: generatorState.isOnline,
+                safe: Boolean(this._wasInBubble),
+                drainRate: Math.max(0, Number(this._currentO2DrainRate) || 0),
+                biome: this.currentBiomeKey ?? BIOME_KEYS.ACTIVE,
+                safeDirection: this._wasInBubble ? 'PRESSURIZED FIELD STABLE' : 'RETURN TO THE PRESSURIZED SHIP FIELD'
             }
         }));
     }
@@ -17090,7 +17879,11 @@ export class ThreeGame {
         }
 
         return {
-            player: this.player ? { x: this.player.position.x, z: this.player.position.z, rotation: this.player.rotation?.y ?? 0 } : null,
+            player: this.player ? {
+                x: this.player.position.x,
+                z: this.player.position.z,
+                rotation: mapRotationForWorldYaw(this.facingYaw)
+            } : null,
             home: { x: CRASH_SITE_CENTER, z: CRASH_SITE_CENTER },
             chunkSize: this.chunkSize,
             detailedChunks,
@@ -17683,6 +18476,7 @@ export class ThreeGame {
             return false;
         }
         const previousHp = this.playerVitals.hp;
+        const previousShieldHp = this.playerShieldHp ?? 0;
         let effectiveAmount = amount;
         effectiveAmount = applyIncomingDamageModifiers(effectiveAmount, this.runOverclocks, this.runRelics);
         if (typeof window !== 'undefined' && window.npcDialogueTreeManager?.activePerks?.has?.('arias_psychic_mind_caress') && ['poison', 'hazard-zone', 'bio', 'sporesnail'].includes(reason)) {
@@ -17703,6 +18497,13 @@ export class ThreeGame {
             const absorbed = Math.min(this.playerShieldHp, effectiveAmount);
             this.playerShieldHp -= absorbed;
             effectiveAmount -= absorbed;
+        }
+        if (
+            this.playerShieldMax > 0
+            && previousShieldHp / this.playerShieldMax > 0.25
+            && this.playerShieldHp / this.playerShieldMax <= 0.25
+        ) {
+            window.AudioManager?.playVoiceCallout?.('shield_critical');
         }
         if (this.playerShieldMax > 0) {
             const baseDelay = 4.0;
@@ -17766,10 +18567,12 @@ export class ThreeGame {
             this.hadNearDeath = true;
         }
 
-        if (this.playerVitals.hp > 0 && (this.playerVitals.hp / (this.playerVitals.maxHp || 100)) <= 0.25 && !this._lowHealthVoiceCooldown) {
-            this._lowHealthVoiceCooldown = true;
+        if (
+            this.playerVitals.hp > 0
+            && previousHp / (this.playerVitals.maxHp || 100) > 0.25
+            && this.playerVitals.hp / (this.playerVitals.maxHp || 100) <= 0.25
+        ) {
             window.AudioManager?.playVoiceCallout?.('low_health');
-            setTimeout(() => { this._lowHealthVoiceCooldown = false; }, 12000);
         }
 
         if (this.playerVitals.hp <= 0) {
@@ -17851,6 +18654,8 @@ export class ThreeGame {
         if (this.isPlayerDead) return;
         if (this.performanceProfile && this.performanceProfile !== 'gameplay') return;
         this.isPlayerDead = true;
+        this.cancelGoalModuleRise?.();
+        this.clearCinematicCameraFocus?.();
         // A downed co-op operator becomes fully dead on a squad wipe or
         // manual abort. Do not carry the revive-only guard into a retry.
         this.isPlayerDowned = false;
@@ -17986,6 +18791,10 @@ export class ThreeGame {
         this.restoreSurfaceCameraAfterPortal?.();
         this.planeState = createPlaneStack();
         this.isInPocket = false;
+        this._pocketCacheKey = null;
+        if (this.chunkGroups) this.chunkGroups.visible = true;
+        for (const group of this.chunkMeshes?.values() ?? []) group.visible = true;
+        for (const group of this.pocketGroups?.values() ?? []) group.visible = false;
         this._pocketHoleX = null;
         this._pocketHoleZ = null;
         if (this._portalPromptLabel) {
@@ -18010,6 +18819,9 @@ export class ThreeGame {
         if (resetRunState) {
             this.resetBunkerBlastDoor();
             this.runStartTime = Date.now();
+            window.AudioManager?.beginVoiceRun?.(this.runStartTime);
+            this.cancelO2StartupSequence?.({ restoreVisuals: false });
+            this.cancelGoalModuleRise?.({ restoreVisuals: false });
             this.totalDistanceTravelled = 0;
             this.maxDepthTierReached = 0;
             this.currentDepthTier = 0;
@@ -18027,6 +18839,7 @@ export class ThreeGame {
             this._blockedExtractionSignalFired = false;
             this._terminalEvent = null;
             this._terminalEventResolvedIds.clear();
+            this._terminalObjectiveHistory = [];
             this._meridianCompassLock = null;
             this.foundry?.reset?.();
             this._foundryPromptActive = false;
@@ -18918,6 +19731,7 @@ export class ThreeGame {
         if (this.godMode) {
             this.playerVitals.o2 = this.playerVitals.maxO2 ?? 100;
             this.playerVitals.o2HealthTimer = 0;
+            this._currentO2DrainRate = 0;
             this.emitO2State();
             return;
         }
@@ -18935,6 +19749,7 @@ export class ThreeGame {
         const reactorLevel = this.bank.getState().reactorCompressorLevel ?? (reactorUpgrade ? 1 : 0);
 
         if (inBubble) {
+            this._currentO2DrainRate = 0;
             let refillMult = 1.0;
             if (reactorLevel === 1) refillMult = 1.2;
             else if (reactorLevel >= 2) refillMult = 2.0;
@@ -18987,6 +19802,7 @@ export class ThreeGame {
             if (t2Unlocks.deconFilters && this.currentBiomeKey === BIOME_KEYS.BIO) {
                 drainRate *= 0.5;
             }
+            this._currentO2DrainRate = drainRate;
             this.playerVitals.o2 = Math.max(0, this.playerVitals.o2 - drainRate * delta);
 
             if (this.playerVitals.o2 <= 0) {
@@ -19921,6 +20737,19 @@ export class ThreeGame {
             this.timeOfDay = (this.timeOfDay + delta / this.dayCycleSeconds) % 1;
         }
 
+        const hudNow = performance.now();
+        if (typeof window !== 'undefined' && hudNow - (this._lastDayCycleHudTick ?? -Infinity) >= 500) {
+            this._lastDayCycleHudTick = hudNow;
+            window.dispatchEvent(new CustomEvent('time-of-day-changed', {
+                detail: {
+                    day: this.dayState?.day ?? 1,
+                    timeOfDay: this.timeOfDay,
+                    label: this.getTimeOfDayLabel(),
+                    difficulty: threatScaleForDay(this.dayState?.day ?? 1, { hp: 1, speed: 1 }).hp
+                }
+            }));
+        }
+
         const day = this.getDayFactor();
         const lerp = THREE.MathUtils.lerp;
         // Extra smoothing plus tighter ranges keeps dusk/dawn transitions subtle.
@@ -20733,10 +21562,12 @@ export class ThreeGame {
 
     getRunStats() {
         const bankState = this.bank.getState();
-        const totalBanked = (bankState.med ?? 0) + (bankState.tech ?? 0) + (bankState.coin ?? 0);
+        const pickupState = typeof window !== 'undefined' ? window.pickupCounterState : null;
+        const resourceTelemetry = buildRunResourceTelemetry(pickupState, bankState);
         return {
             distanceTravelled: Math.round(this.totalDistanceTravelled),
-            totalPickups: totalBanked,
+            // totalPickups is the compatibility alias for collected count.
+            ...resourceTelemetry,
             generatorLevel: this.bank.getO2GeneratorLevel(),
             depthTier: this.maxDepthTierReached,
             depthTierName: this.getDepthTierName(this.maxDepthTierReached),
@@ -21578,9 +22409,24 @@ export class ThreeGame {
             window.dispatchEvent(new CustomEvent('bunker-line', {
                 detail: { text: 'MAYOR TINA: PUT THAT DOWN. I AM ASKING ONCE.' }
             }));
+            encounter.phase = 'hostile';
+            encounter.hostileLastUpdateAt = performance.now();
+            encounter.teacupRoot?.removeFromParent?.();
+            encounter.mayorRoot.position.y = 0;
+            document.getElementById('mayor-tina-hud-prompt')?.classList.add('hidden');
+            if (window.AudioManager?.activeVoice?.speakerName?.toUpperCase?.().includes('TINA')) {
+                window.AudioManager.stopActiveVoice?.(0.05);
+            }
         }
 
         if (result.outcome !== 'killed') return;
+
+        encounter.phase = 'dead';
+        encounter.teacupRoot?.removeFromParent?.();
+        document.getElementById('mayor-tina-hud-prompt')?.classList.add('hidden');
+        if (window.AudioManager?.activeVoice?.speakerName?.toUpperCase?.().includes('TINA')) {
+            window.AudioManager.stopActiveVoice?.(0.05);
+        }
 
         // She has a GLB, so she comes apart like any other 3D-backed object.
         spawnPropDebris(this, { userData: { scatterKey: 'secret_mayor_tina', world3dRoot: root } }, {
@@ -22224,8 +23070,10 @@ export class ThreeGame {
             this.cameraOrbitRadius * Math.cos(this.cameraAzimuth)
         );
 
+        const cinematicFocus = this._cinematicCameraFocus;
         if (this.performanceProfile === 'gameplay' && this.cameraMode === 'third-person') {
-            this.updateThirdPersonCamera(delta);
+            if (cinematicFocus) this.updateThirdPersonCamera(delta, { focusPosition: cinematicFocus });
+            else this.updateThirdPersonCamera(delta);
             if (this.mouseAimActive
                 && Number.isFinite(this.lastMouseClientX)
                 && Number.isFinite(this.lastMouseClientY)) {
@@ -22241,10 +23089,11 @@ export class ThreeGame {
             return;
         }
 
+        const cameraSubject = cinematicFocus ?? this.player.position;
         const target = new THREE.Vector3(
-            this.player.position.x + this.cameraOffset.x,
-            this.player.position.y + this.cameraOffset.y,
-            this.player.position.z + this.cameraOffset.z
+            cameraSubject.x + this.cameraOffset.x,
+            cameraSubject.y + this.cameraOffset.y,
+            cameraSubject.z + this.cameraOffset.z
         );
 
         if (this.performanceProfile === 'menu') {
@@ -22280,9 +23129,9 @@ export class ThreeGame {
             this.camera.rotation.x += trauma.pitch;
         }
 
-        const lookAtX = this.player.position.x + (this._menuParallaxX || 0) * 0.35;
-        const lookAtY = this.player.position.y + 0.4 + (this._menuParallaxY || 0) * 0.35;
-        this.camera.lookAt(lookAtX, lookAtY, this.player.position.z);
+        const lookAtX = cameraSubject.x + (this._menuParallaxX || 0) * 0.35;
+        const lookAtY = cameraSubject.y + 0.4 + (this._menuParallaxY || 0) * 0.35;
+        this.camera.lookAt(lookAtX, lookAtY, cameraSubject.z);
 
         if (this.performanceProfile === 'menu' && typeof document !== 'undefined') {
             const menuEl = document.getElementById('menu') || document.getElementById('splash');
@@ -22296,9 +23145,10 @@ export class ThreeGame {
         this.updateTiltShiftAndBokeh(delta);
     }
 
-    updateThirdPersonCamera(delta, { immediate = false } = {}) {
+    updateThirdPersonCamera(delta, { immediate = false, focusPosition = null } = {}) {
+        const trackedPosition = focusPosition ?? this.player.position;
         const pose = getThirdPersonCameraPose({
-            playerPosition: this.player.position,
+            playerPosition: trackedPosition,
             planarForward: this.cameraPlanarForward,
             planarRight: this.cameraPlanarRight,
             config: this.thirdPersonCameraConfig
@@ -22698,7 +23548,7 @@ export class ThreeGame {
         // (lazily, on the first gameplay frame) would itself change the count
         // and force exactly the recompile this is all here to avoid.
         this._ensureEnvLightPool();
-        this.warmUpShaderPrograms();
+        await this.warmUpShaderPrograms();
 
         await preloadPromise;
 
@@ -23485,31 +24335,52 @@ export class ThreeGame {
             return true;
         }
 
-        const wall = this.findWallMeshAt(tileX, tileZ);
-        if (wall) {
-            this.damageWall(wall, BOSS_WALL_BREAK_DAMAGE, { source: 'boss' });
-        } else {
-            const coord = this.markWallTileDestroyed(tileX, tileZ);
-            this.spawnPhysicalBurst(coord.tileX, coord.tileZ, {
-                color: 0xffa45a,
-                count: 8,
-                upward: 0.2,
-                spread: 1.5
-            });
-            window.AudioManager?.playMetalStress?.({ volume: 0.48, playbackRate: 0.65, force: true });
+        const breachTiles = typeof this.getBossBreachTiles === 'function'
+            ? this.getBossBreachTiles(sprite, tileX, tileZ)
+            : [{ x: tileX, z: tileZ }];
+        for (const tile of breachTiles) {
+            const wall = this.findWallMeshAt(tile.x, tile.z);
+            if (wall) {
+                this.damageWall(wall, BOSS_WALL_BREAK_DAMAGE, { source: 'boss' });
+            } else {
+                const coord = this.markWallTileDestroyed(tile.x, tile.z);
+                this.spawnPhysicalBurst(coord.tileX, coord.tileZ, {
+                    color: 0xffa45a,
+                    count: 8,
+                    upward: 0.2,
+                    spread: 1.5
+                });
+            }
         }
+        globalThis.window?.AudioManager?.playMetalStress?.({ volume: 0.48, playbackRate: 0.65, force: true });
         data.wallBreakCooldown = BOSS_WALL_BREAK_COOLDOWN;
         data.pathNodes = null;
         data.pathRetargetTimer = 0;
         return true;
     }
 
-    mountPocket(holeWorldX, holeWorldZ) {
+    getBossBreachTiles(sprite, tileX, tileZ) {
+        const dx = (this.player?.position?.x ?? tileX) - (sprite?.position?.x ?? tileX);
+        const dz = (this.player?.position?.z ?? tileZ) - (sprite?.position?.z ?? tileZ);
+        // Breach perpendicular to travel so the opening accommodates the full
+        // boss body instead of leaving a one-tile slit it cannot traverse.
+        const offsets = Math.abs(dx) >= Math.abs(dz)
+            ? [{ x: 0, z: 1 }, { x: 0, z: -1 }]
+            : [{ x: 1, z: 0 }, { x: -1, z: 0 }];
+        const tiles = [{ x: tileX, z: tileZ }];
+        const neighbor = offsets
+            .map((offset) => ({ x: tileX + offset.x, z: tileZ + offset.z }))
+            .find((tile) => this.getTileType?.(tile.x, tile.z) === '#' && !this.isHoleTile?.(tile.x, tile.z));
+        if (neighbor) tiles.push(neighbor);
+        return tiles;
+    }
+
+    mountPocket(holeWorldX, holeWorldZ, cacheKey = this.getWallKey(holeWorldX, holeWorldZ)) {
         if (!this.pocketGroups) this.pocketGroups = new Map();
-        const key = this.getWallKey(holeWorldX, holeWorldZ);
+        const key = cacheKey;
         if (this.pocketGroups.has(key)) return this.pocketGroups.get(key);
 
-        const pocket = this.generatePocket(holeWorldX, holeWorldZ);
+        const pocket = this.pocketCache?.get(key) ?? this.generatePocket(holeWorldX, holeWorldZ);
         const group = new THREE.Group();
         group.position.set(
             holeWorldX - pocket.centerCell.x,
@@ -23523,6 +24394,7 @@ export class ThreeGame {
         );
         floor.rotation.x = -Math.PI / 2;
         floor.position.set(pocket.centerCell.x, 0, pocket.centerCell.y);
+        floor.userData = { isPortalFloor: true, ownsPortalGeometry: true };
         group.add(floor);
 
         // A covered sublevel needs an actual roof, not an implied black void.
@@ -23540,8 +24412,10 @@ export class ThreeGame {
         ceiling.rotation.x = Math.PI / 2;
         ceiling.position.set(pocket.centerCell.x, this.wallHeight + 0.08, pocket.centerCell.y);
         ceiling.renderOrder = 9;
-        ceiling.userData = { isPortalCeiling: true, baseOpacity: 1 };
+        ceiling.userData = { isPortalCeiling: true, baseOpacity: 1, ownsPortalGeometry: true, ownsPortalMaterial: true };
         group.add(ceiling);
+        // Register before optional dressing so a failed mount can be unwound.
+        this.pocketGroups.set(key, group);
 
         for (let y = 0; y < pocket.size; y += 1) {
             for (let x = 0; x < pocket.size; x += 1) {
@@ -23638,8 +24512,12 @@ export class ThreeGame {
     }
 
     mountFoundryInterior(foundryX, foundryZ) {
-        const key = this.getWallKey(foundryX, foundryZ);
-        if (this.pocketGroups?.has(key)) return this.pocketGroups.get(key);
+        const key = `foundry:${this.getWallKey(foundryX, foundryZ)}`;
+        const cached = this.pocketGroups?.get(key);
+        if (cached?.userData.portalId === 'foundry-interior'
+            && cached.children.some((child) => child.userData?.isPortalFloor && child.visible)
+            && cached.children.some((child) => child.userData?.isFoundryInteriorWorkbench)) return cached;
+        if (cached) this.discardPortalGroup(key);
         const size = 11;
         const centerCell = { x: 5, y: 5 };
         const climbPoint = { x: 5, y: 9 };
@@ -23653,7 +24531,7 @@ export class ThreeGame {
         grid[10][5] = '.';
         const interior = { grid, size, centerCell, climbPoint };
         this.pocketCache.set(key, interior);
-        const group = this.mountPocket(foundryX, foundryZ);
+        const group = this.mountPocket(foundryX, foundryZ, key);
         group.name = 'FoundryInteriorPlane';
         group.userData.portalKind = PLANE_KINDS.INTERIOR;
         group.userData.portalId = 'foundry-interior';
@@ -23683,44 +24561,89 @@ export class ThreeGame {
             })
         );
         bench.position.set(centerCell.x, 0.48, centerCell.y);
-        bench.userData = { isFoundryInteriorWorkbench: true };
+        bench.userData = { isFoundryInteriorWorkbench: true, ownsPortalGeometry: true, ownsPortalMaterial: true };
         group.add(bench);
         return group;
+    }
+
+    discardPortalGroup(key) {
+        const group = this.pocketGroups?.get(key);
+        if (!group) return;
+        group.removeFromParent();
+        const children = new Set();
+        group.traverse((child) => {
+            children.add(child);
+            // Never dispose shared surface wall/floor materials or model assets.
+            if (child.userData?.ownsPortalGeometry) child.geometry?.dispose();
+            if (child.userData?.ownsPortalMaterial) child.material?.dispose();
+        });
+        this.pickupMeshes = this.pickupMeshes?.filter((pickup) => !children.has(pickup)) ?? [];
+        this.pocketGroups.delete(key);
+        this.pocketCache?.delete(key);
     }
 
     enterFoundryInterior() {
         if (this.isInPocket || !this.player || !this.foundry?.isRevealed) return false;
         const position = this.foundry.getPosition?.();
-        if (!position) return false;
-        const transition = beginTransition(this.planeState ?? createPlaneStack());
+        if (!position || ![position.x, position.z, ...this.player.position.toArray()].every(Number.isFinite)) return false;
+        const previousState = this.planeState ?? createPlaneStack();
+        const transition = beginTransition(previousState);
         if (!transition.began) return false;
-        this.planeState = endTransition(transition.state).state;
         const returnTo = {
             x: this.player.position.x,
             y: this.player.position.y,
             z: this.player.position.z
         };
-        const entered = enterPlane(this.planeState, {
+        const entered = enterPlane(previousState, {
             id: 'foundry-interior',
             kind: PLANE_KINDS.INTERIOR,
             returnTo
         });
         if (!entered.entered) return false;
-        this.planeState = entered.state;
-        this.captureSurfaceCameraBeforePortal();
-        this.applyPortalCameraProfile(entered.camera);
-
-        if (this.chunkGroups) this.chunkGroups.visible = false;
-        const group = this.mountFoundryInterior(position.x, position.z);
-        if (this.scene && group.parent !== this.scene) this.scene.add(group);
-        this._pocketHoleX = position.x;
-        this._pocketHoleZ = position.z;
-        this.isInPocket = true;
-        this.player.position.set(position.x, POCKET_WORLD_Y, position.z);
-        this.player.scale.set(1, 1, 1);
-        this.player.rotation.set(0, 0, 0);
-        this.setInputEnabled(true);
-        this.snapCameraToPlayer?.();
+        const key = `foundry:${this.getWallKey(position.x, position.z)}`;
+        const surfaceVisible = this.chunkGroups?.visible;
+        const inputEnabled = this.inputEnabled;
+        const scale = this.player.scale.clone();
+        const rotation = this.player.rotation.clone();
+        this.planeState = transition.state;
+        try {
+            const group = this.mountFoundryInterior(position.x, position.z);
+            if (!group?.children.some((child) => child.userData?.isPortalFloor && child.visible)) {
+                throw new Error('Foundry floor is not ready');
+            }
+            if (!this.scene) throw new Error('Foundry scene is not ready');
+            if (group.parent !== this.scene) this.scene.add(group);
+            group.visible = true;
+            this.captureSurfaceCameraBeforePortal();
+            this.applyPortalCameraProfile(entered.camera);
+            this._pocketCacheKey = key;
+            this._pocketHoleX = position.x;
+            this._pocketHoleZ = position.z;
+            this.isInPocket = true;
+            this.player.position.set(position.x, POCKET_WORLD_Y, position.z);
+            this.player.scale.set(1, 1, 1);
+            this.player.rotation.set(0, 0, 0);
+            if (this.chunkGroups) this.chunkGroups.visible = false;
+            this.setInputEnabled(true);
+            this.snapCameraToPlayer?.();
+            this.planeState = entered.state;
+        } catch (error) {
+            this.planeState = previousState;
+            this.isInPocket = false;
+            this._pocketCacheKey = null;
+            this._pocketHoleX = null;
+            this._pocketHoleZ = null;
+            this.player.position.set(returnTo.x, returnTo.y, returnTo.z);
+            this.player.scale.copy(scale);
+            this.player.rotation.copy(rotation);
+            if (this.chunkGroups) this.chunkGroups.visible = surfaceVisible;
+            this.inputEnabled = inputEnabled;
+            this.discardPortalGroup(key);
+            this.restoreSurfaceCameraAfterPortal();
+            debugLog.warn('PORTAL', 'foundry-entry-rolled-back', { key, returnTo, reason: error.message });
+            return false;
+        }
+        debugLog.info('PORTAL', 'foundry-entered', { key, returnTo, floorY: POCKET_WORLD_Y, run: this.runStartTime });
         this.showBunkerLine?.('FOUNDRY INTERIOR // WORKBENCH ONLINE // SOUTH AIRLOCK RETURNS TO SURFACE');
         window.dispatchEvent(new CustomEvent('portal-plane-entered', {
             detail: { plane: entered.plane, depth: this.planeState.stack.length - 1 }
@@ -23757,7 +24680,9 @@ export class ThreeGame {
 
         const group = this.mountPocket(holeWorldX, holeWorldZ);
         if (this.scene && group.parent !== this.scene) this.scene.add(group);
+        group.visible = true;
 
+        this._pocketCacheKey = this.getWallKey(holeWorldX, holeWorldZ);
         this._pocketHoleX = holeWorldX;
         this._pocketHoleZ = holeWorldZ;
         this.isInPocket = true;
@@ -23787,6 +24712,8 @@ export class ThreeGame {
         this.planeState = left.state;
         const holeWorldX = this._pocketHoleX;
         const holeWorldZ = this._pocketHoleZ;
+        const pocketGroup = this.pocketGroups?.get(this._pocketCacheKey ?? this.getWallKey(holeWorldX, holeWorldZ));
+        if (pocketGroup) pocketGroup.visible = false;
 
         const chunkX = Math.floor(holeWorldX / this.chunkSize);
         const chunkY = Math.floor(holeWorldZ / this.chunkSize);
@@ -23800,6 +24727,7 @@ export class ThreeGame {
             this.player.position.y = left.returnTo?.y ?? 0;
         }
         this.isInPocket = false;
+        this._pocketCacheKey = null;
         this._pocketHoleX = null;
         this._pocketHoleZ = null;
         if (this._portalPromptLabel) {
@@ -23811,6 +24739,7 @@ export class ThreeGame {
             this.fillHoleAt(holeWorldX, holeWorldZ);
         }
         this.restoreSurfaceCameraAfterPortal?.();
+        debugLog.info('PORTAL', 'portal-left', { from: leavingPlane?.id, returnTo: left.returnTo, surfaceVisible: this.chunkGroups?.visible });
         window.dispatchEvent(new CustomEvent('portal-plane-left', {
             detail: { plane: left.plane, returnTo: left.returnTo }
         }));
@@ -23872,8 +24801,30 @@ export class ThreeGame {
     updatePortalPlanePresentation() {
         const plane = activePlane(this.planeState);
         if (!plane || plane.kind === PLANE_KINDS.SURFACE || !this.isInPocket) return;
-        const key = this.getWallKey(this._pocketHoleX, this._pocketHoleZ);
+        const key = this._pocketCacheKey ?? this.getWallKey(this._pocketHoleX, this._pocketHoleZ);
         const group = this.pocketGroups?.get(key);
+        if (plane.id === 'foundry-interior' && this.player) {
+            const floor = group?.children.find((child) => child.userData?.isPortalFloor && child.visible);
+            if (!floor || !group.visible || group.parent !== this.scene || !this.pocketCache?.has(key)) {
+                debugLog.warn('PORTAL', 'foundry-floor-lost', { key, position: this.player.position.toArray() });
+                this.exitPocket();
+                this.discardPortalGroup(key);
+                return;
+            }
+            const position = this.player.position;
+            const pocket = this.pocketCache.get(key);
+            const halfSize = pocket.size / 2;
+            if (![position.x, position.y, position.z].every(Number.isFinite)
+                || position.y < POCKET_WORLD_Y - 1
+                || Math.abs(position.x - this._pocketHoleX) >= halfSize
+                || Math.abs(position.z - this._pocketHoleZ) >= halfSize) {
+                debugLog.warn('PORTAL', 'foundry-position-recovered', { key, position: position.toArray() });
+                position.set(this._pocketHoleX, POCKET_WORLD_Y, this._pocketHoleZ);
+                this.isPlayerFalling = false;
+                this.player.scale.set(1, 1, 1);
+                this.snapCameraToPlayer?.();
+            }
+        }
         if (!group || !this.player) return;
         const alpha = ceilingFadeAlpha(this.planeState, {
             objectY: this.player.position.y + this.wallHeight + 0.08,
@@ -25130,7 +26081,8 @@ export class ThreeGame {
                         hp: propType === 'prop_specimen_tank' ? 4 : 3,
                         groupType: 'prop',
                         opacity: 1,
-                        worldDressing: planned.kind === 'ambient'
+                        worldDressing: planned.kind === 'ambient',
+                        isSolidProp: planned.blocking !== false
                     });
                     reservedCells.add(`${planned.x},${planned.y}`);
                 }
@@ -26167,7 +27119,7 @@ export class ThreeGame {
                 Math.round(placement.x * 10),
                 Math.round(placement.z * 10)
             ) % 3 === 0;
-            sprite.userData.isSolidProp = true;
+            sprite.userData.isSolidProp = placement.isSolidProp !== false;
             sprite.userData.collisionRadius = storageVariant ? 0.48 : 0.38;
             const lockerType = placement.type === 'prop_security_locker'
                 || (placement.type === 'prop_bunker_supplies' && storageVariant);
@@ -27103,7 +28055,7 @@ export class ThreeGame {
                         const pickupType = pickup.userData.type ?? 'unknown';
                         const rarity = pickup.userData.rarity?.key ?? null;
 
-                        if (this.isMultiplayer && !pickup.userData.fromRemote) {
+                        if (this.isMultiplayer && this.multiplayerMode !== 'pvp' && !pickup.userData.fromRemote) {
                             this.broadcastSharedWorldEvent?.('pickup-collected', {
                                 x: pickup.position.x,
                                 z: pickup.position.z,
@@ -27127,15 +28079,10 @@ export class ThreeGame {
 
                         if (pickupType === 'health' && this.playerVitals.hp < this.playerVitals.maxHp) {
                             this.healPlayer(1);
-                            window.AudioManager?.playProceduralLoot('health', rarity);
-                        } else {
-                            window.dispatchEvent(new CustomEvent('pickup-collected', {
-                                detail: {
-                                    type: pickupType,
-                                    rarity
-                                }
-                            }));
                         }
+                        window.dispatchEvent(new CustomEvent('pickup-collected', {
+                            detail: { type: pickupType, rarity, value: 1 }
+                        }));
                     }
                     removals.push(pickup);
                 }
@@ -29116,17 +30063,26 @@ export class ThreeGame {
                 const toTrailZ = trail.z - root.position.z;
                 const dist = Math.hypot(toTrailX, toTrailZ);
                 if (dist > 16) {
-                    root.position.copy(this.player.position);
+                    // Recover behind the player on real ground. Keeping this
+                    // out of the player's immediate position avoids the old
+                    // visible overlap/flying companion failure.
+                    root.position.set(trail.x, this.getTerrainHeightAt?.(trail.x, trail.z) ?? this.player.position.y ?? 0, trail.z);
                 } else if (dist > 0.1) {
-                    const step = Math.min(dist, 2.5 * delta);
+                    const catchupSpeed = dist > 7 ? 5.5 : 2.5;
+                    const step = Math.min(dist, catchupSpeed * delta);
                     const nextX = root.position.x + (toTrailX / dist) * step;
                     const nextZ = root.position.z + (toTrailZ / dist) * step;
                     if (this.isSnailTileWalkable(Math.round(nextX), Math.round(nextZ))) {
                         root.position.x = nextX;
                         root.position.z = nextZ;
+                    } else if (this.isSnailTileWalkable(Math.round(nextX), Math.round(root.position.z))) {
+                        root.position.x = nextX;
+                    } else if (this.isSnailTileWalkable(Math.round(root.position.x), Math.round(nextZ))) {
+                        root.position.z = nextZ;
                     }
                     root.rotation.y = Math.atan2(toTrailX, toTrailZ);
                 }
+                root.position.y = this.getTerrainHeightAt?.(root.position.x, root.position.z) ?? root.position.y ?? 0;
                 companion.instance3d.update(delta);
 
                 companion.assistCooldown = Math.max(0, (companion.assistCooldown ?? 0) - delta);
@@ -30020,7 +30976,7 @@ export class ThreeGame {
     // though the player is at a completely different Y.
     updatePocketContent(delta, now) {
         if (!this.player) return;
-        const key = this.getWallKey(this._pocketHoleX, this._pocketHoleZ);
+        const key = this._pocketCacheKey ?? this.getWallKey(this._pocketHoleX, this._pocketHoleZ);
         const group = this.pocketGroups?.get(key);
         if (!group) return;
 
@@ -30145,23 +31101,7 @@ export class ThreeGame {
                 
                 if (this._bossNameEl && this._lastRenderedBossType !== nearestBoss.userData.type) {
                     this._lastRenderedBossType = nearestBoss.userData.type;
-                    if (nearestBoss.userData.type === 'boss_cybersnail') {
-                        this._bossNameEl.textContent = 'CYBER-SHELL TITAN';
-                    } else if (nearestBoss.userData.type === 'boss_cryosnail') {
-                        this._bossNameEl.textContent = 'CRYO-GOLIATH SNAIL';
-                    } else if (nearestBoss.userData.type === 'boss_sporesnail') {
-                        this._bossNameEl.textContent = 'PLAGUE-SHELL BEHEMOTH';
-                    } else if (nearestBoss.userData.type === 'boss_corrupted_scout') {
-                        this._bossNameEl.textContent = 'CORRUPTED SCOUT: MARTHA';
-                    } else if (nearestBoss.userData.type === 'boss_corrupted_tank') {
-                        this._bossNameEl.textContent = 'CORRUPTED TANK: BRIGGS';
-                    } else if (nearestBoss.userData.type === 'boss_corrupted_engineer') {
-                        this._bossNameEl.textContent = 'CORRUPTED ENGINEER: KAELEN';
-                    } else if (nearestBoss.userData.type === 'boss_queen') {
-                        this._bossNameEl.textContent = 'THE QUEEN';
-                    } else {
-                        this._bossNameEl.textContent = 'ELITE THREAT';
-                    }
+                    this._bossNameEl.textContent = t(BOSS_NAME_KEYS[nearestBoss.userData.type] ?? 'ui.boss.elite_threat');
                 }
                 
                 const hp = nearestBoss.userData.hp ?? 0;
@@ -30585,25 +31525,44 @@ export class ThreeGame {
     // i.e. always into a render target, so every material compiled here was a
     // cache miss again on its first real frame. Warming through the composer
     // compiles exactly what gameplay will ask for.
-    warmUpShaderPrograms() {
+    async warmUpShaderPrograms() {
         if (!this.renderer || !this.camera || !this.scene) return;
         const shadowMap = this.renderer.shadowMap;
         const configuredShadows = Boolean(shadowMap?.enabled);
         const configuredPostprocessing = this.composer
             && this.performanceProfile === 'gameplay'
             && this.gameplayPostProcessingEnabled !== false;
-        const safeCompile = () => {
+        const yieldFrame = () => new Promise((resolve) => {
+            if (typeof requestAnimationFrame === 'function') requestAnimationFrame(resolve);
+            else resolve();
+        });
+        const prepare = async (name, work) => {
+            // Let the loader paint between driver operations. Compilation can
+            // be polled asynchronously on drivers supporting parallel shaders.
+            await yieldFrame();
+            const startedAt = performance.now();
             try {
-                this.renderer.compile(this.scene, this.camera);
-            } catch {
-                // compile() is best-effort; never block the drop on it.
+                await work();
+            } catch (error) {
+                debugLog.warn('STARTUP', 'shader-warmup-failed', { phase: name, reason: error?.message });
+            } finally {
+                debugLog.info('STARTUP', 'shader-warmup-phase', {
+                    phase: name,
+                    durationMs: Math.round(performance.now() - startedAt),
+                    programs: this.renderer.info?.programs?.length ?? null
+                });
             }
         };
-        const safeRender = (render) => {
+        const compile = async (renderTarget = null) => {
+            const previousTarget = this.renderer.getRenderTarget?.() ?? null;
             try {
-                render();
-            } catch {
-                // Warming up must never block deployment if a driver rejects it.
+                // Composer output uses a different tone-mapping/color-space
+                // variant than the canvas. Compile against its actual target.
+                this.renderer.setRenderTarget?.(renderTarget);
+                if (this.renderer.compileAsync) await this.renderer.compileAsync(this.scene, this.camera);
+                else this.renderer.compile(this.scene, this.camera);
+            } finally {
+                this.renderer.setRenderTarget?.(previousTarget);
             }
         };
 
@@ -30613,22 +31572,22 @@ export class ThreeGame {
             // keys; doing this behind the loader prevents the quality drop from
             // compiling every visible material on an already-slow frame.
             if (shadowMap) shadowMap.enabled = false;
-            safeCompile();
-            safeRender(() => this.renderer.render(this.scene, this.camera));
+            await prepare('direct-compile', () => compile());
+            await prepare('direct-render', () => this.renderer.render(this.scene, this.camera));
 
             if (configuredPostprocessing) {
                 if (shadowMap) shadowMap.enabled = configuredShadows;
-                safeCompile();
+                await prepare('composer-compile', () => compile(this.composer.readBuffer ?? null));
                 // Twice: the composer ping-pongs between two render targets, so
                 // one pass can leave its second target's variants cold.
-                safeRender(() => this.composer.render());
-                safeRender(() => this.composer.render());
+                await prepare('composer-render-1', () => this.composer.render());
+                await prepare('composer-render-2', () => this.composer.render());
             } else if (configuredShadows) {
                 // A direct-render gameplay profile with shadows is distinct
                 // from the adaptive direct/no-shadow variant too.
                 if (shadowMap) shadowMap.enabled = true;
-                safeCompile();
-                safeRender(() => this.renderer.render(this.scene, this.camera));
+                await prepare('shadow-compile', () => compile());
+                await prepare('shadow-render', () => this.renderer.render(this.scene, this.camera));
             }
         } finally {
             if (shadowMap) {
@@ -30917,11 +31876,13 @@ export class ThreeGame {
 
         if (!this.isInPocket && this.scatterSprites) {
             for (const prop of this.scatterSprites) {
-                // A 2D prop is hidden after its nearby GLB replacement is
-                // ready. Hidden source sprites must not keep an invisible
-                // collision volume in the world while the visible GLB is
-                // being rendered.
-                if (!prop?.parent || prop.visible === false || !prop.userData?.isSolidProp || prop.userData.burstTriggered) continue;
+                // The source sprite retains authoritative gameplay state after
+                // its GLB becomes visible, including the collider.
+                if (!prop?.parent || !prop.userData?.isSolidProp || prop.userData.burstTriggered) continue;
+                // A hidden source blocks only when it is the authoritative
+                // collision proxy for a visible GLB replacement. Arbitrarily
+                // hidden/cull-state sprites must not leave invisible walls.
+                if (prop.visible === false && !prop.userData.replacedBy3d) continue;
                 const collisionRadius = prop.userData.collisionRadius ?? 0.38;
                 if (Math.hypot(x - prop.position.x, z - prop.position.z) < collisionRadius + this.playerRadius) {
                     return false;
@@ -31003,7 +31964,7 @@ export class ThreeGame {
         const tileX = Math.round(worldX);
         const tileY = Math.round(worldY);
         if (this.isInPocket) {
-            const pocket = this.pocketCache?.get(this.getWallKey(this._pocketHoleX, this._pocketHoleZ));
+            const pocket = this.pocketCache?.get(this._pocketCacheKey ?? this.getWallKey(this._pocketHoleX, this._pocketHoleZ));
             if (!pocket) return '#';
             const localX = tileX - this._pocketHoleX + pocket.centerCell.x;
             const localY = tileY - this._pocketHoleZ + pocket.centerCell.y;
@@ -31037,7 +31998,7 @@ export class ThreeGame {
         const tileX = Math.round(worldX);
         const tileY = Math.round(worldY);
         if (this.isInPocket) {
-            const pocket = this.pocketCache?.get(this.getWallKey(this._pocketHoleX, this._pocketHoleZ));
+            const pocket = this.pocketCache?.get(this._pocketCacheKey ?? this.getWallKey(this._pocketHoleX, this._pocketHoleZ));
             if (!pocket) return '#';
             const localX = tileX - this._pocketHoleX + pocket.centerCell.x;
             const localY = tileY - this._pocketHoleZ + pocket.centerCell.y;
@@ -31345,7 +32306,7 @@ export class ThreeGame {
 
     interactWithPocketClimbPoint() {
         if (!this.isInPocket || !this.player) return false;
-        const key = this.getWallKey(this._pocketHoleX, this._pocketHoleZ);
+        const key = this._pocketCacheKey ?? this.getWallKey(this._pocketHoleX, this._pocketHoleZ);
         const pocket = this.pocketCache?.get(key);
         if (!pocket) return false;
 
@@ -33431,6 +34392,7 @@ export class ThreeGame {
             this.scene.remove(this.o2BubbleObjects.light);
             this.o2BubbleObjects = null;
         }
+        this.baseLights?.dispose();
         this.removeMenuGyroListeners();
         this.gpuFrameTimer?.dispose?.();
         this.renderer.dispose();

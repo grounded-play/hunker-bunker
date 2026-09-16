@@ -12,6 +12,8 @@ import {
     unlockAllSheens
 } from './weaponSheens.js';
 import { ITEM_TYPE, getCatalogIdsByType, getCatalogEntry } from './itemOwnership.js';
+import { getVoiceBank } from './data/voiceBanks.js';
+import { hudThemeInlineStyle, resolveHudTheme } from './hudThemes.js';
 import { unlockAllPolishes } from './operatorPolishes.js';
 import {
     ARCHETYPE_SKINS,
@@ -106,8 +108,11 @@ export function createArmoryUi({
     onBack,
     onOpenVault,
     onOpenSettings,
+    onDailyOps,
+    getDailyOpsStatus,
     onClassChange,
-    ownership
+    ownership,
+    qaToolsEnabled = false
 }) {
     if (!container) throw new Error('Armory UI requires a container DOM element');
     if (!ownership) throw new Error('Armory UI requires an ownership store');
@@ -330,6 +335,24 @@ export function createArmoryUi({
                 sound: 'sfx_charm_clink_light',
                 after: () => {}
             },
+            voicebank: {
+                title: 'ALT RADIO VOICE BANK',
+                subtitle: 'COMMS OVERLAY // REPLACES GENERIC COMBAT CALLOUTS',
+                noneLabel: 'DEFAULT COMMS',
+                ids: () => getCatalogIdsByType(ITEM_TYPE.AUDIO),
+                current: () => (loadoutManager.state.voicePackId ? String(loadoutManager.state.voicePackId) : ''),
+                currentName: () => nameForItem(loadoutManager.state.voicePackId, 'DEFAULT COMMS'),
+                apply: (value) => equipGuard(value || null, (v) => loadoutManager.equipVoicePack(v)),
+                sound: 'sfx_charm_clink_light',
+                // Preview the bank the moment it is picked -- a voice option you
+                // cannot hear before committing is the one cosmetic slot where
+                // the turntable tells you nothing.
+                after: (value) => {
+                    if (!value) return;
+                    const bank = getVoiceBank(value);
+                    if (bank) window.AudioManager?.playVoiceCallout?.(bank.previewCue, { voicePackId: value, volume: 0.9, audition: true });
+                }
+            },
             hud: {
                 title: 'TACTICAL HUD THEME',
                 subtitle: 'OPTICAL VISOR // REAL-TIME INTERFACE SCANLINES',
@@ -485,6 +508,10 @@ export function createArmoryUi({
         const modifiers = loadoutManager.getActiveModifiers(cls);
         const chassisSkinId = loadoutManager.getEquippedChassisSkinId?.();
         const selectedWeapon = pickerFields().weapon.currentName();
+        const dailyOps = getDailyOpsStatus?.() ?? { label: 'READY', disabled: false };
+        const hudTheme = resolveHudTheme(loadoutManager.state.hudThemeId);
+        const hudThemeStyle = hudThemeInlineStyle(loadoutManager.state.hudThemeId);
+        const qaAudit = ownership.auditEquippableCatalog?.() ?? { total: 0, available: 0, complete: false };
 
         const hasActiveOverclocks = Boolean(
             (modifiers.scrapMagnetRadiusBonus > 0) ||
@@ -520,9 +547,9 @@ export function createArmoryUi({
                             <button type="button" class="class-tab ${cls === 'tank' ? 'active' : ''}" data-class="tank" data-i18n="ui.armory.tab_tank">▰ TANK</button>
                             <button type="button" class="class-tab ${cls === 'engineer' ? 'active' : ''}" data-class="engineer" data-i18n="ui.armory.tab_engineer">◆ ENGINEER</button>
                         </div>
-                        <button type="button" class="armory-debug-skins-btn ${ownership.isUnlockAll() ? 'active' : ''}" id="armory-debug-unlock-skins-btn" title="Toggle debug unlock for all weapon/chassis skins, charms, and polishes">
-                            ${ownership.isUnlockAll() ? '✓ ALL SKINS UNLOCKED' : '[DEBUG] UNLOCK ALL SKINS'}
-                        </button>
+                        ${qaToolsEnabled ? `<button type="button" class="armory-debug-skins-btn ${ownership.isUnlockAll() ? 'active' : ''}" id="armory-debug-unlock-skins-btn" title="Synthetic QA override for every catalogued equippable; does not create Steam inventory">
+                            ${ownership.isUnlockAll() ? `✓ QA UNLOCK ${qaAudit.available}/${qaAudit.total}` : `[QA] UNLOCK ALL ${qaAudit.available}/${qaAudit.total}`}
+                        </button><button type="button" class="armory-debug-skins-btn" id="armory-debug-grant-kit-btn" title="Grant non-tradable synthetic marketplace items and test keys; never initiates a purchase">[QA] GRANT TEST KIT</button>` : ''}
                         <span class="status-cycle-hint" data-i18n="ui.armory.cycle_hint">[Q / E CYCLE]</span>
                         <button type="button" class="calibrate-btn open-settings-btn armory-settings-btn" id="armory-settings-btn" title="Open Settings" aria-label="Open Settings" data-i18n-title="ui.armory.aria_settings" data-i18n-aria-label="ui.armory.aria_settings">⚙</button>
                     </div>
@@ -666,15 +693,19 @@ export function createArmoryUi({
                                     ${slotHtml('decal')}
                                 </div>
                             </div>
-                            <div class="bench-field" style="margin-top: 6px;">
-                                <label data-i18n="ui.armory.f_hud">TACTICAL HUD THEME</label>
-                                ${slotHtml('hud')}
-                            </div>
-                            <div class="telemetry-box">
-                                <div class="telemetry-title" data-i18n="ui.armory.telemetry_title">SUIT TELEMETRY STATUS</div>
-                                <div class="telemetry-item"><span data-i18n="ui.armory.tel_thermal">Thermal Cryo-Mesh:</span> <strong data-i18n="ui.armory.tel_thermal_val">NOMINAL 100%</strong></div>
-                                <div class="telemetry-item"><span data-i18n="ui.armory.tel_rad">Radiation Seal:</span> <strong data-i18n="ui.armory.tel_rad_val">ACTIVE</strong></div>
-                                <div class="telemetry-item"><span data-i18n="ui.armory.tel_turntable">Turntable Staging:</span> <strong data-i18n="ui.armory.tel_turntable_val">360° DRAG ORBIT</strong></div>
+                            <div class="bench-row-two-col armory-systems-row">
+                                <div class="bench-field">
+                                    <label data-i18n="ui.armory.f_hud">TACTICAL HUD THEME</label>
+                                    ${slotHtml('hud')}
+                                    <div class="armory-hud-theme-preview" data-hud-theme="${hudTheme?.id ?? 'default'}" data-hud-shape="${hudTheme?.shape ?? 'default'}" style="${hudThemeStyle}" aria-label="Equipped HUD preview">
+                                        <span class="armory-hud-theme-preview__map" aria-hidden="true">⌁</span>
+                                        <span class="armory-hud-theme-preview__copy"><b>${hudTheme?.name ?? 'Default Monochrome'}</b><small>♥♥♥ · O₂ 96% · LIVE PREVIEW</small></span>
+                                    </div>
+                                </div>
+                                <div class="bench-field">
+                                    <label data-i18n="ui.armory.f_voicebank">ALT RADIO VOICE BANK</label>
+                                    ${slotHtml('voicebank')}
+                                </div>
                             </div>
                         </section>
                     </div>
@@ -687,6 +718,9 @@ export function createArmoryUi({
                     </button>
                     <button id="armory-btn-vault" class="armory-btn tertiary-btn">
                         <span data-i18n="ui.armory.btn_vault">STEAM VAULT &amp; FAB BAY</span> <span class="btn-keyhint">[V]</span>
+                    </button>
+                    <button id="armory-btn-daily" class="armory-btn tertiary-btn armory-btn--daily" ${dailyOps.disabled ? 'disabled' : ''}>
+                        <span>${t('ui.hub.daily_ops')} // ${dailyOps.label}</span>
                     </button>
                     <button id="armory-btn-embark" class="armory-btn primary-btn embark-glow">
                         <span data-i18n="ui.armory.btn_embark">EMBARK TO BUNKER &gt;&gt;</span> <span class="btn-keyhint">[ENTER / A]</span>
@@ -781,7 +815,7 @@ export function createArmoryUi({
 
     function bindEvents() {
         // Every bench control opens the shared tile modal.
-        for (const fieldKey of ['weapon', 'sheen', 'charm', 'tracer', 'mod1', 'mod2', 'chassis', 'decal', 'hud']) {
+        for (const fieldKey of ['weapon', 'sheen', 'charm', 'tracer', 'mod1', 'mod2', 'chassis', 'decal', 'hud', 'voicebank']) {
             container.querySelector?.(`#armory-slot-${fieldKey}`)?.addEventListener?.('click', () => {
                 playSound('ui_click');
                 openPickerModal(fieldKey);
@@ -817,6 +851,11 @@ export function createArmoryUi({
             onOpenVault?.();
         });
 
+        container.querySelector?.('#armory-btn-daily')?.addEventListener?.('click', () => {
+            playSound('ui_click_confirm1');
+            onDailyOps?.();
+        });
+
         container.querySelector?.('#armory-btn-embark')?.addEventListener?.('click', () => {
             playSound('ui_upgrade_weapon1');
             onEmbark?.();
@@ -837,6 +876,7 @@ export function createArmoryUi({
         });
 
         container.querySelector?.('#armory-debug-unlock-skins-btn')?.addEventListener?.('click', () => {
+            if (!qaToolsEnabled || !ownership.isLocalInventoryAllowed?.()) return;
             const next = !ownership.isUnlockAll();
             ownership.setUnlockAll(next);
             if (next) {
@@ -845,6 +885,17 @@ export function createArmoryUi({
             }
             playSound('ui_click_confirm1');
             render();
+        });
+
+        container.querySelector?.('#armory-debug-grant-kit-btn')?.addEventListener?.('click', () => {
+            if (!qaToolsEnabled || !ownership.isLocalInventoryAllowed?.()) return;
+            const items = ownership.grantDevSet?.('marketplace');
+            const keys = ownership.grantDevSet?.('keys', 5);
+            const button = container.querySelector?.('#armory-debug-grant-kit-btn');
+            if (button) button.textContent = items?.ok && keys?.ok
+                ? `✓ SYNTHETIC ${items.granted.length} + KEYS`
+                : 'GRANT REJECTED';
+            playSound('ui_click_confirm1');
         });
 
         // Steam Deck / Keyboard controller shortcuts for Armory screen

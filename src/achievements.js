@@ -218,6 +218,7 @@ export function createDefaultRunState() {
 export function createDefaultAchievementState() {
     return {
         schemaVersion: ACHIEVEMENT_SCHEMA_VERSION,
+        resetGeneration: 0,
         stats: {
             totalDeaths: 0,
             totalKills: 0,
@@ -322,6 +323,17 @@ export function saveAchievements(state, storage = null) {
     } catch {
         // best effort
     }
+}
+
+export function resetLocalAchievements(storage = null, { generation = null } = {}) {
+    const store = getStorage(storage);
+    const previous = loadAchievements(store);
+    const state = createDefaultAchievementState();
+    state.resetGeneration = Number.isFinite(Number(generation))
+        ? Math.max(Number(previous.resetGeneration) + 1, Math.floor(Number(generation)))
+        : Number(previous.resetGeneration) + 1;
+    saveAchievements(state, store);
+    return state;
 }
 
 function markMapValue(map, key) {
@@ -527,5 +539,10 @@ export class AchievementEngine {
 
     recordRunEnd(stats = {}) {
         return this.recordEvent('run-end', stats);
+    }
+
+    resetLocal(options = {}) {
+        this.state = resetLocalAchievements(this.storage, options);
+        return this.state;
     }
 }

@@ -413,16 +413,18 @@ export class SurvivorCamp {
         }
     }
 
-    build(x, z) {
+    build(x, z, groundY = 0) {
         if (this.built) {
             this.pos = { x, z };
-            if (this.group) this.group.position.set(x, 0, z);
+            this.groundY = groundY;
+            if (this.group) this.group.position.set(x, groundY, z);
             return;
         }
         this.pos = { x, z };
+        this.groundY = groundY;
 
         const group = new THREE.Group();
-        group.position.set(x, 0, z);
+        group.position.set(x, groundY, z);
 
         if (this.groundMaterial) {
             const ground = new THREE.Mesh(new THREE.PlaneGeometry(CAMP_FLOOR_SIZE, CAMP_FLOOR_SIZE), this.groundMaterial);
@@ -717,8 +719,13 @@ export class SurvivorCamp {
         this.built = true;
     }
 
-    reveal(x, z) {
-        if (!this.built) this.build(x, z);
+    reveal(x, z, groundY = 0) {
+        if (!this.built) this.build(x, z, groundY);
+        else if (this.group) {
+            this.pos = { x, z };
+            this.groundY = groundY;
+            this.group.position.set(x, groundY, z);
+        }
         this.revealed = true;
         if (this.group) this.group.visible = true;
     }
