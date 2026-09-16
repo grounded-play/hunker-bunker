@@ -1,3 +1,4 @@
+import { t } from './i18n.js';
 // ── Wanderer Encounter Modal & Choice UI ─────────────────────────────
 // Interactive HUD modal for Befriending or Chasing Off wanderers at the crash site.
 
@@ -18,7 +19,7 @@ export function renderWandererModal(wanderer, { onBefriend, onChaseOff, onClose 
     modalContainer.id = 'wanderer-encounter-modal';
     modalContainer.setAttribute('role', 'dialog');
     modalContainer.setAttribute('aria-modal', 'true');
-    modalContainer.setAttribute('aria-label', `Survivor: ${wanderer.name || wanderer.title}`);
+    modalContainer.setAttribute('aria-label', t('ui.wanderer.survivor_named', { name: wanderer.name || wanderer.title }));
     modalContainer.style.position = 'absolute';
     modalContainer.style.top = '0';
     modalContainer.style.left = '0';
@@ -55,11 +56,11 @@ export function renderWandererModal(wanderer, { onBefriend, onChaseOff, onClose 
     header.style.alignItems = 'center';
 
     const titleEl = document.createElement('div');
-    titleEl.innerHTML = `<span style="color:#29b6f6; font-size:12px; letter-spacing:2px;">[ SURVIVOR TRANSMISSION ]</span><br><strong style="color:#ffffff; font-size:20px; text-transform:uppercase;">${wanderer.name || wanderer.title}</strong> <span style="color:#78909c; font-size:14px;">— ${wanderer.title}</span>`;
+    titleEl.innerHTML = `<span style="color:#29b6f6; font-size:12px; letter-spacing:2px;">${t('ui.wanderer.transmission')}</span><br><strong style="color:#ffffff; font-size:20px; text-transform:uppercase;">${wanderer.name || wanderer.title}</strong> <span style="color:#78909c; font-size:14px;">— ${wanderer.title}</span>`;
 
     const closeBtn = document.createElement('button');
     closeBtn.textContent = '✕';
-    closeBtn.setAttribute('aria-label', 'Close survivor conversation');
+    closeBtn.setAttribute('aria-label', t('ui.wanderer.close'));
     closeBtn.style.background = 'none';
     closeBtn.style.border = 'none';
     closeBtn.style.color = '#78909c';
@@ -123,7 +124,7 @@ export function renderWandererModal(wanderer, { onBefriend, onChaseOff, onClose 
     badgeEl.style.textAlign = 'center';
     badgeEl.style.textTransform = 'uppercase';
     badgeEl.style.fontWeight = 'bold';
-    badgeEl.textContent = wanderer.familyId ? wanderer.familyId.replace('_', ' ') : 'WANDERER';
+    badgeEl.textContent = wanderer.familyId ? wanderer.familyId.replace('_', ' ') : t('ui.wanderer.wanderer');
 
     portraitCol.append(avatarFrame, badgeEl);
     mainContent.appendChild(portraitCol);
@@ -145,7 +146,7 @@ export function renderWandererModal(wanderer, { onBefriend, onChaseOff, onClose 
     greetingBox.style.fontSize = '14px';
     greetingBox.style.lineHeight = '1.5';
     greetingBox.style.color = '#e0f7fa';
-    greetingBox.textContent = `"${greetingText}"`;
+    greetingBox.textContent = t('ui.wanderer.quote', { text: greetingText });
     body.appendChild(greetingBox);
 
     const questionBox = document.createElement('div');
@@ -222,7 +223,7 @@ export function renderWandererModal(wanderer, { onBefriend, onChaseOff, onClose 
     const chaseBtn = document.createElement('button');
     const supplies = ['tech', 'med', 'coin'].filter((key) => wanderer.chaseLoot?.[key] > 0)
         .map((key) => `${wanderer.chaseLoot[key]} ${key}`).join(', ');
-    chaseBtn.textContent = `DECLINE ALLIANCE — BANK ${supplies.toUpperCase() || 'SUPPLIES'}`;
+    chaseBtn.textContent = t('ui.wanderer.decline', { supplies: supplies.toUpperCase() || t('ui.wanderer.supplies') });
     chaseBtn.style.padding = '10px 16px';
     chaseBtn.style.backgroundColor = '#3e1313';
     chaseBtn.style.border = '1px solid #e57373';
@@ -243,7 +244,7 @@ export function renderWandererModal(wanderer, { onBefriend, onChaseOff, onClose 
 
     // Befriend Button
     const befriendBtn = document.createElement('button');
-    befriendBtn.textContent = 'RECRUIT COMPANION';
+    befriendBtn.textContent = t('ui.wanderer.recruit');
     befriendBtn.style.padding = '10px 20px';
     befriendBtn.style.backgroundColor = '#13402e';
     befriendBtn.style.border = '1px solid #81c784';

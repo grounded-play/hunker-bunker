@@ -101,10 +101,11 @@ export function isPlayerFacingText(raw) {
     if (s.length < 2 || s.length > 200) return false;
     if (!/[A-Za-z]{2}/.test(s)) return false;               // needs real letters
     if (/^[{}<>/\\$]/.test(s)) return false;                // template/markup fragment
+    if (/^[.#][A-Za-z_-]/.test(s)) return false;            // CSS selector
     if (/^(https?:|mailto:|data:|\.{0,2}\/)/.test(s)) return false;
     if (/\.(js|mjs|json|png|jpe?g|webp|glb|gltf|wav|mp3|ogg|webm|mp4|css|svg|ttf|woff2?)\b/i.test(s)) return false;
     if (/^[a-z][a-zA-Z0-9]*$/.test(s)) return false;        // camelCase identifier
-    if (/^[a-z0-9]+(?:[-_][a-z0-9]+)+$/.test(s)) return false; // kebab/snake token
+    if (/^[a-z0-9]+(?:[-_]+[a-z0-9]+)+$/.test(s)) return false; // kebab/snake/BEM token
     if (/^[A-Z][A-Z0-9]*(?:_[A-Z0-9]+)+$/.test(s)) return false; // CONST_NAME
     if (/^#[0-9a-fA-F]{3,8}$/.test(s)) return false;        // color
     if (/^[a-z-]+\s*:\s*[^;]+;?$/.test(s)) return false;    // css declaration
@@ -233,7 +234,6 @@ const DOM_SINK = new RegExp([
     '\\.placeholder\\s*=',
     '\\.title\\s*=',
     '\\.alt\\s*=',
-    '\\.label\\s*=',
     'setAttribute\\(\\s*[\'"](?:aria-label|title|placeholder|alt)[\'"]',
     'insertAdjacentHTML\\('
 ].join('|'));

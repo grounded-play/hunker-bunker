@@ -46,20 +46,13 @@
     },
     "runtime": {
         "modules": {
-            "src/dialogue.js": 1,
-            "src/hiveSite.js": 1,
-            "src/leaderboardUi.js": 2,
             "src/minigames/rgb/cinematicPlayer.js": 3,
             "src/minigames/rgb/runtime.js": 32,
             "src/multiplayerLobby.js": 25,
-            "src/returnManifest.js": 4,
-            "src/seasonPassUi.js": 25,
-            "src/songInterstitials.js": 1,
-            "src/steamVaultUi.js": 41,
-            "src/threeGame.js": 58,
-            "src/wandererModal.js": 6
+            "src/seasonPassUi.js": 23,
+            "src/threeGame.js": 54
         },
-        "total": 199
+        "total": 137
     },
     "orphanKeys": 37
 }

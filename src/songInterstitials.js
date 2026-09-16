@@ -1,4 +1,5 @@
 import { assetUrl } from './assetUrl.js';
+import { t } from './i18n.js';
 
 const TITLES = [
     'Someone Is Still Alive', 'Kaelen\'s Sleeping Machine', 'The Math Is Beautiful Now',
@@ -339,7 +340,7 @@ export class SongInterstitialController {
         this.root.classList.add('is-closing');
         this.root.setAttribute('aria-hidden', 'false');
         if (this.title) this.title.textContent = spec.title;
-        if (this.track) this.track.textContent = `TRACK ${spec.id}`;
+        if (this.track) this.track.textContent = t('ui.interstitial.track', { id: spec.id });
         const [loaded, motionLoaded] = await Promise.all([
             this.loadStill(spec),
             this.loadMotion(spec)
