@@ -398,9 +398,9 @@ const RADAR_DANGER_COLOR = 0xff3344;
 const RADAR_HOLE_SCAN_PADDING = 2.25;
 const FOUNDRY_DISCOVERY_MIN_DISTANCE = 38;
 const FOUNDRY_DISCOVERY_MAX_DISTANCE = 58;
-const MENU_SHOWROOM_FLOOR_SIZE = 96;
-const MENU_SHOWROOM_FLOOR_OFFSET_X = 8;
-const MENU_SHOWROOM_FLOOR_OFFSET_Z = 8;
+const MENU_SHOWROOM_FLOOR_SIZE = 28;
+const MENU_SHOWROOM_FLOOR_OFFSET_X = 0;
+const MENU_SHOWROOM_FLOOR_OFFSET_Z = 0;
 // The crash site is an authored landmark inside the much larger procedural
 // origin chunk. Its ship placements, blast door, safe floor, and spawn must
 // share this fixed anchor; deriving any of them from CHUNK_SIZE strands the
@@ -3623,36 +3623,79 @@ export class ThreeGame {
     }
 
     createMenuGridTexture() {
+        const size = 512;
         const canvas = document.createElement('canvas');
-        canvas.width = 256;
-        canvas.height = 256;
+        canvas.width = size;
+        canvas.height = size;
         const ctx = canvas.getContext('2d');
 
-        ctx.fillStyle = '#101316';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = '#080a0d';
+        ctx.fillRect(0, 0, size, size);
 
         const drawGrid = (step, color, width) => {
             ctx.strokeStyle = color;
             ctx.lineWidth = width;
             ctx.beginPath();
-            for (let x = 0; x <= canvas.width; x += step) {
+            for (let x = 0; x <= size; x += step) {
                 ctx.moveTo(x + 0.5, 0);
-                ctx.lineTo(x + 0.5, canvas.height);
+                ctx.lineTo(x + 0.5, size);
             }
-            for (let y = 0; y <= canvas.height; y += step) {
+            for (let y = 0; y <= size; y += step) {
                 ctx.moveTo(0, y + 0.5);
-                ctx.lineTo(canvas.width, y + 0.5);
+                ctx.lineTo(size, y + 0.5);
             }
             ctx.stroke();
         };
 
-        drawGrid(16, 'rgba(255, 255, 255, 0.16)', 1);
-        drawGrid(64, 'rgba(255, 255, 255, 0.36)', 1.5);
+        drawGrid(16, 'rgba(255, 255, 255, 0.05)', 1);
+        drawGrid(64, 'rgba(255, 255, 255, 0.16)', 1.5);
+        drawGrid(128, 'rgba(255, 255, 255, 0.32)', 2);
+
+        // Crosshairs at 64px grid intersections
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.55)';
+        ctx.lineWidth = 1.5;
+        const crossLen = 6;
+        for (let x = 64; x < size; x += 64) {
+            for (let y = 64; y < size; y += 64) {
+                ctx.beginPath();
+                ctx.moveTo(x - crossLen, y + 0.5);
+                ctx.lineTo(x + crossLen, y + 0.5);
+                ctx.moveTo(x + 0.5, y - crossLen);
+                ctx.lineTo(x + 0.5, y + crossLen);
+                ctx.stroke();
+            }
+        }
+
+        // Concentric tactical range rings
+        const center = size / 2;
+        const rings = [48, 96, 160, 220];
+        for (let i = 0; i < rings.length; i++) {
+            const r = rings[i];
+            ctx.strokeStyle = i === rings.length - 1 ? 'rgba(255, 255, 255, 0.45)' : 'rgba(255, 255, 255, 0.15)';
+            ctx.lineWidth = i === rings.length - 1 ? 2 : 1;
+            ctx.beginPath();
+            ctx.arc(center, center, r, 0, Math.PI * 2);
+            ctx.stroke();
+        }
+
+        // Radial fade to deck edge
+        const grad = ctx.createRadialGradient(center, center, 140, center, center, 256);
+        grad.addColorStop(0, 'rgba(8, 10, 13, 0)');
+        grad.addColorStop(0.75, 'rgba(8, 10, 13, 0.55)');
+        grad.addColorStop(1, 'rgba(8, 10, 13, 1)');
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, size, size);
+
+        // Outer rim ring
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.7)';
+        ctx.lineWidth = 2.5;
+        ctx.beginPath();
+        ctx.arc(center, center, 248, 0, Math.PI * 2);
+        ctx.stroke();
 
         const texture = new THREE.CanvasTexture(canvas);
-        texture.wrapS = THREE.RepeatWrapping;
-        texture.wrapT = THREE.RepeatWrapping;
-        texture.repeat.set(8, 8);
+        texture.wrapS = THREE.ClampToEdgeWrapping;
+        texture.wrapT = THREE.ClampToEdgeWrapping;
         texture.colorSpace = THREE.SRGBColorSpace;
         texture.anisotropy = Math.min(this.maxTextureAnisotropy ?? 1, 4);
         return texture;
@@ -3680,7 +3723,7 @@ export class ThreeGame {
         this.menuShowroomFloor.rotation.x = -Math.PI / 2;
         this.menuShowroomFloor.position.set(
             spawn.x + MENU_SHOWROOM_FLOOR_OFFSET_X,
-            -0.06,
+            -0.005,
             spawn.y + MENU_SHOWROOM_FLOOR_OFFSET_Z
         );
         this.menuShowroomFloor.receiveShadow = true;
@@ -4534,6 +4577,9 @@ export class ThreeGame {
             this.player3dOverlay = overlay;
             this.updatePlayerDecalSprite();
             overlay.setOperatorPolish(this._playerPolishHex ?? 0xffffff);
+            if (typeof this.updatePlayerSpriteAnimation === 'function') {
+                this.updatePlayerSpriteAnimation(0, 0, 0, false, 0, 0);
+            }
             // Hide only after the GLB is ready. A load failure leaves the proven
             // 2D sprite visible as the automatic fallback.
             this.playerSprite.visible = false;
@@ -8040,7 +8086,7 @@ export class ThreeGame {
         const spawn = this.getSpawnTile();
         this.menuShowroomFloor.position.set(
             spawn.x + MENU_SHOWROOM_FLOOR_OFFSET_X,
-            -0.06,
+            -0.005,
             spawn.y + MENU_SHOWROOM_FLOOR_OFFSET_Z
         );
     }

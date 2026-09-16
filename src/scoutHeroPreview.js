@@ -80,6 +80,7 @@ export async function createScoutHeroPreview(canvas) {
         overlay.root.position.y += 0.04;
         overlay.root.rotation.y = Math.atan2(camera.position.x, camera.position.z);
         scene.add(overlay.root);
+        overlay.update(0, idleState);
         return true;
     }
 
