@@ -2104,12 +2104,54 @@
         "blurb": "You left her under the ice with three seats still in your hand. Road now closed: the full brood. She was always going to cost more than she offered.",
         "name": "THE QUEEN, REFUSED"
       },
-      "25": {},
-      "26": {},
-      "27": {},
-      "28": {},
-      "29": {},
-      "30": {}
+      "25": {
+        "blurb": "You stood with Vesper's garrison. The trench shields held and the soldier's faith was rewarded. Roads now closed: the full brood, the scorched sky.",
+        "name": "COMMANDER BRIGGS, HONORED"
+      },
+      "26": {
+        "blurb": "You severed Vesper's supply lines and left the frontline to freeze. The garrison fell in silence. Road now closed: the clean break.",
+        "name": "COMMANDER BRIGGS, ABANDONED"
+      },
+      "27": {
+        "blurb": "Sister Martha's transmission lit every receiver in the ice. The lost hear hope, and the swarm hears prey. Road now closed: the mothership infection.",
+        "name": "THE SISTER'S BEACON, BROADCAST"
+      },
+      "28": {
+        "blurb": "You cut the cables and forced Tallow into quiet boots. Stealth was bought with civilian despair. Roads now closed: the clean break, the alien exodus.",
+        "name": "THE SISTER'S BEACON, SILENCED"
+      },
+      "29": {
+        "blurb": "Overseer Kaelen published the unaltered flight manifests. No corporate privileges survived. Roads now closed: the mothership infection, the carrier's bargain.",
+        "name": "THE FOUNDRY MANIFEST, DISCLOSED"
+      },
+      "30": {
+        "blurb": "The passenger manifest was altered behind locked bulkheads. Corporate lies outlive the colony. Road now closed: the clean break.",
+        "name": "THE FOUNDRY MANIFEST, FALSIFIED"
+      },
+      "31": {
+        "blurb": "Nahl's surgical extraction purged the spore from your blood. You walk as pure human once more. Roads now closed: the full brood, the mothership infection, the alien exodus.",
+        "name": "THE SUTURE HOST, CURED"
+      },
+      "32": {
+        "blurb": "You allowed the hive spore to graft into your marrow. You are carrier and vessel in one flesh. Road now closed: the clean break.",
+        "name": "THE SUTURE HOST, EMBRACED"
+      },
+      "33": {
+        "blurb": "You severed human radio frequencies to protect the hive's acoustic sanctuary. Camp communications shattered. Road now closed: the outed escape.",
+        "name": "THE RELAY CHORUS, JAMMED"
+      },
+      "34": {
+        "blurb": "Vey opened the neural synapse bridge between hive and human minds. Thoughts bleed across the spectrum. Road now closed: the clean break.",
+        "name": "THE RELAY CHORUS, BRIDGED"
+      },
+      "35": {
+        "blurb": "Rhun's chitin fortress pledged eternal defense to the Brood Mother. Human shuttles must pierce its bulk. Roads now closed: the alien exodus, the clean break.",
+        "name": "THE CARAPACE OATH, TO THE QUEEN"
+      },
+      "36": {
+        "blurb": "The living shield bound its vow to you, walking beside human survivors as guardian. Road now closed: the full brood.",
+        "name": "THE CARAPACE OATH, TO THE OPERATOR"
+      }
     },
     "loreMetadata": {
       "A01": {},
@@ -2278,6 +2320,674 @@
           }
         },
         "title": "UNCLAIMED ASSET LOCKER"
+      }
+    },
+    "communitySkins": {
+      "0": {
+        "actionLabel": "Acknowledging",
+        "desc": "Battle-hardened, loyal reconnaissance scout in tactical fatigues.",
+        "name": "Scout: Foxhole Shadow",
+        "theme": "Foxhole Buddies"
+      },
+      "1": {
+        "actionLabel": "Catwalk Walking",
+        "desc": "Stylish and fearless void-drifter in neon street gear.",
+        "name": "Scout: Space ABG",
+        "theme": "ABG Trippers"
+      },
+      "2": {
+        "actionLabel": "Female Walk",
+        "desc": "Cynical, razor-sharp corporate infiltrator in high-tech trench wear.",
+        "name": "Scout: Corpo Shadow Runner",
+        "theme": "Corpo Shadows"
+      },
+      "3": {
+        "actionLabel": "Hanging Idle",
+        "desc": "Giger-esque biomechanical scout with ribbed obsidian carapace.",
+        "name": "Scout: Xeno-Stalker",
+        "theme": "Biomechanical"
+      },
+      "4": {
+        "actionLabel": "Injured Walk Backwards",
+        "desc": "Hydrodynamic zero-gravity tactical swimwear with LED conduits.",
+        "name": "Scout: Zero-G Swimsuit",
+        "theme": "Space Swim"
+      },
+      "5": {
+        "actionLabel": "Joyful Jump",
+        "desc": "Corrupted hive-symbiote scout glowing with toxic spore bioluminescence.",
+        "name": "Scout: Toxic Apex Chrysalis",
+        "theme": "Toxic Chrysalis"
+      },
+      "6": {
+        "actionLabel": "Salute",
+        "desc": "Predatory alien-humanoid hybrid in pearlescent bone armor.",
+        "name": "Scout: Species Sil",
+        "theme": "Species Chrysalis"
+      },
+      "7": {
+        "actionLabel": "Surprised",
+        "desc": "Regal crystalline hybrid scout with bio-luminescent tendrils.",
+        "name": "Scout: Apex Chrysalis",
+        "theme": "Species Chrysalis"
+      },
+      "8": {
+        "actionLabel": "Using A Fax Machine",
+        "desc": "Pink-haired space-punk hacker scout with an anarchist attitude.",
+        "name": "Scout: Soft Manic Hacker GF",
+        "theme": "Manic Hacker GFs"
+      },
+      "9": {
+        "actionLabel": "Bartending",
+        "desc": "Heavyweight party vanguard equipped for high-impact bunker defense.",
+        "name": "Tank: Space ABG",
+        "theme": "ABG Trippers"
+      },
+      "10": {
+        "actionLabel": "Brutal Assassination",
+        "desc": "Curvy, heavily armored space-punk brawler who protects her squad fiercely.",
+        "name": "Tank: Protective Hacker GF",
+        "theme": "Manic Hacker GFs"
+      },
+      "11": {
+        "actionLabel": "Catwalk Walk HighKnees",
+        "desc": "Heavy metamorphic alien juggernaut in calcified chitin armor.",
+        "name": "Tank: Species Sil",
+        "theme": "Species Chrysalis"
+      },
+      "12": {
+        "actionLabel": "Dancing Twerk",
+        "desc": "Unapologetically regal starship crash survivor with sparking cybernetics.",
+        "name": "Tank: Crash Survivor Queen",
+        "theme": "Crash Survivors"
+      },
+      "13": {
+        "actionLabel": "Drunk Idle Variation",
+        "desc": "Imposing corporate director in a heavy draped overcoat and chrome limbs.",
+        "name": "Tank: Corpo Executive Warden",
+        "theme": "Corpo Shadows"
+      },
+      "14": {
+        "actionLabel": "Jump",
+        "desc": "Reinforced deep-sea zero-g dive suit with buoyancy ballast plates.",
+        "name": "Tank: Zero-G Heavy Diver",
+        "theme": "Space Swim"
+      },
+      "15": {
+        "actionLabel": "Jump Attack",
+        "desc": "Massive Giger-inspired armored bio-carapace fortress.",
+        "name": "Tank: Brood Matron",
+        "theme": "Biomechanical"
+      },
+      "16": {
+        "actionLabel": "Kick To The Groin",
+        "desc": "Tough, loyal Vasquez-coded frontline heavy ready for any trench brawl.",
+        "name": "Tank: Foxhole Shadow",
+        "theme": "Foxhole Buddies"
+      },
+      "17": {
+        "actionLabel": "Talking",
+        "desc": "Powerful deep-core survivor armored in salvaged spaceship hull plating.",
+        "name": "Tank: Afro Crash Survivor",
+        "theme": "Crash Survivors"
+      },
+      "18": {
+        "actionLabel": "Telling A Secret",
+        "desc": "Statuesque hybrid juggernaut with glowing amber vascular lines.",
+        "name": "Tank: Apex Chrysalis",
+        "theme": "Species Chrysalis"
+      },
+      "19": {
+        "actionLabel": "Walk Strafe Left",
+        "desc": "Toxic spore-infused heavy bio-carapace with corrosive acid vents.",
+        "name": "Tank: Toxic Apex Chrysalis",
+        "theme": "Toxic Chrysalis"
+      },
+      "20": {
+        "actionLabel": "Angry",
+        "desc": "Bio-plasma engineer mutated by deep-strata toxic spore hives.",
+        "name": "Engineer: Toxic Apex Chrysalis",
+        "theme": "Toxic Chrysalis"
+      },
+      "21": {
+        "actionLabel": "Burpee End",
+        "desc": "Futuristic gearhead technician rocking streetwear and holographic tools.",
+        "name": "Engineer: Space ABG",
+        "theme": "ABG Trippers"
+      },
+      "22": {
+        "actionLabel": "Crouch To Stand",
+        "desc": "Neural-hybrid constructor with living plasma conduits and tentacle cables.",
+        "name": "Engineer: Species Sil",
+        "theme": "Species Chrysalis"
+      },
+      "23": {
+        "actionLabel": "Drunk Walk",
+        "desc": "High-fashion tech-syndicate director with floating micro-drones.",
+        "name": "Engineer: Chief Architect",
+        "theme": "Corpo Shadows"
+      },
+      "24": {
+        "actionLabel": "Kettlebell Swing",
+        "desc": "Hyper-creative manic engineer with pink cyber-hair and custom plasma welders.",
+        "name": "Engineer: Soft Manic Architect GF",
+        "theme": "Manic Hacker GFs"
+      },
+      "25": {
+        "actionLabel": "Look Around",
+        "desc": "Ingenious starship survivor retrofitting wrecked engines into bunker tech.",
+        "name": "Engineer: Afro Crash Survivor",
+        "theme": "Crash Survivors"
+      },
+      "26": {
+        "actionLabel": "Orc Idle",
+        "desc": "Thermal-regulating swim gear with waterproof magnetic ballast clamps.",
+        "name": "Engineer: Zero-G Hydro-Rig",
+        "theme": "Space Swim"
+      },
+      "27": {
+        "actionLabel": "Sitting Angry",
+        "desc": "Grit-and-grease combat engineer who fixes rifts and turrets under fire.",
+        "name": "Engineer: Foxhole Shadow",
+        "theme": "Foxhole Buddies"
+      },
+      "28": {
+        "actionLabel": "Start Plank",
+        "desc": "Giger-inspired biomechanical constructor with spine-mounted bio-tools.",
+        "name": "Engineer: Neural Weaver",
+        "theme": "Biomechanical"
+      },
+      "29": {
+        "actionLabel": "Thankful",
+        "desc": "Bio-synthetic architect with crystalline thoracic power conduits.",
+        "name": "Engineer: Apex Chrysalis",
+        "theme": "Species Chrysalis"
+      }
+    },
+    "steamItems": {
+      "1000": {
+        "desc": "A shard of ancient subterranean machinery, used in basic crafting exchanges.",
+        "name": "Common Relic Fragment"
+      },
+      "1100": {
+        "desc": "An intact processor core from the deep vaults, used to craft elite cosmetics.",
+        "name": "Rare Relic Fragment"
+      },
+      "2000": {
+        "desc": "Awarded to operators who successfully extract using a Scout frame. Cosmetic equip.",
+        "name": "Scout Victory Patch"
+      },
+      "2001": {
+        "desc": "Awarded to operators who successfully extract using a Tank frame. Cosmetic equip.",
+        "name": "Tank Victory Patch"
+      },
+      "2002": {
+        "desc": "Awarded to operators who successfully extract using an Engineer frame. Cosmetic equip.",
+        "name": "Engineer Victory Patch"
+      },
+      "2003": {
+        "desc": "Awarded for defeating the Act 2 queen. Cosmetic equip.",
+        "name": "Queen Slayer Emblem"
+      },
+      "2004": {
+        "desc": "Awarded for recovering the full bunker archive. Cosmetic equip.",
+        "name": "Archivist Emblem"
+      },
+      "2100": {
+        "desc": "A high-performance weave finish for your exosuit. Cosmetic equip.",
+        "name": "Carbon Fiber Decal"
+      },
+      "2200": {
+        "desc": "Polished high-reflectivity chrome finish for the standard sidearm. Cosmetic equip.",
+        "name": "Chrome Plated Sidearm"
+      },
+      "4000": {
+        "desc": "A sealed drop container recovered from the bunker's deep archive. Requires a Cache Key to open. Odds are published on the store page before purchase.",
+        "name": "Deep Relic Cache"
+      },
+      "4001": {
+        "desc": "Opens a single Deep Relic Cache. Purchased through the Steam Item Store; never drops for free.",
+        "name": "Relic Decryption Key"
+      },
+      "4100": {
+        "desc": "Cryogenic frost-coated polymer chassis with cooling vents.",
+        "name": "Sub-Zero Frostbite Sidearm"
+      },
+      "4101": {
+        "desc": "High-visibility yellow/black industrial warning livery.",
+        "name": "Hazard Stripe SMG"
+      },
+      "4102": {
+        "desc": "Heavy tungsten barrel with heat-dissipating fluting.",
+        "name": "Tectonic Driller Shotgun"
+      },
+      "4103": {
+        "desc": "Superconducting cyan plasma coils wrapped around the Tesla-Lock's arc driver frame.",
+        "name": "Cryo-Plasma Arc Driver"
+      },
+      "4104": {
+        "desc": "Weathered bunker salvage with bio-luminescent bone inlays.",
+        "name": "Rust & Bone Trench Carbine"
+      },
+      "4105": {
+        "desc": "Polished volcanic glass receiver with Damascus steel accents.",
+        "name": "Obsidian Shard Sidearm"
+      },
+      "4106": {
+        "desc": "Biomechanical tank leaking pulsing green fungal spores.",
+        "name": "Biolume Spore Sprayer"
+      },
+      "4107": {
+        "desc": "Magma-infused reactor core pulsing with orange thermal energy.",
+        "name": "Deep Core Melter"
+      },
+      "4108": {
+        "desc": "Holographic animated circuit board flickering with error logs.",
+        "name": "Glitched Circuit Bolter"
+      },
+      "4109": {
+        "desc": "Dark matter emitter with purple gravitational event horizon.",
+        "name": "Void-Walker Beam Cannon"
+      },
+      "4110": {
+        "desc": "Living chitin alloy salvaged from the brood queen's crown.",
+        "name": "Queen's Carapace Carbine"
+      },
+      "4111": {
+        "desc": "Pure golden antimatter accelerator with solar particle trail.",
+        "name": "Solar Flare Antimatter Rifle"
+      },
+      "4112": {
+        "desc": "Reinforced heavy hazard plating and visor searchlight.",
+        "name": "Sub-Terran Drill Engineer"
+      },
+      "4113": {
+        "desc": "Thermal insulated white-camo pressurized stealth suit.",
+        "name": "Cryo-Vanguard Scout"
+      },
+      "4114": {
+        "desc": "Riveted blast-shield plate armor with gas respirator.",
+        "name": "Trench Warden Heavy"
+      },
+      "4115": {
+        "desc": "Stealth matte-black nano-weave with purple optic sensor.",
+        "name": "Void Commando Recon"
+      },
+      "4116": {
+        "desc": "Biomechanical syringe harness with pulsing fluid tubes. Chassis skins equip via LoadoutManager's single global suit slot (src/loadout.js `suit.chassisSkinId`, not per-class) — no class restriction needed, so the earlier 'Medic class' framing (there is no Medic class; roster is locked to Scout/Tank/Engineer per doc 07 §1) never actually blocked this item.",
+        "name": "Bio-Synthesizer Harness"
+      },
+      "4117": {
+        "desc": "Heavy hydraulic power-armor with glowing magma core.",
+        "name": "Dreadnought Exo-Juggernaut"
+      },
+      "4118": {
+        "desc": "Active-camo holographic shimmer with cybernetic visor.",
+        "name": "Cyber-Spectre Infiltrator"
+      },
+      "4119": {
+        "desc": "Mutated hybrid armor of living alien carapace and steel.",
+        "name": "Hive-Lord Symbiote Exosuit"
+      },
+      "4120": {
+        "desc": "Commemorative badge of the first subterranean expedition.",
+        "name": "Sub-Zero Pioneer Patch"
+      },
+      "4121": {
+        "desc": "Fluorescent radioactive warning emblem.",
+        "name": "Radiation Trefoil Emblem"
+      },
+      "4122": {
+        "desc": "Stylized shell crest awarded for deep nest purges.",
+        "name": "Sporesnail Hunter Crest"
+      },
+      "4123": {
+        "desc": "Memorial badge of the lost seismic surveyor division.",
+        "name": "Bunker 404 Lost Squad Decal"
+      },
+      "4124": {
+        "desc": "Holographic chrome skull with glowing cyan oculars.",
+        "name": "Cyber-Skull Tactical Pin"
+      },
+      "4125": {
+        "desc": "Mythic ice bird rising from subterranean permafrost.",
+        "name": "Cryo-Phoenix Insignia"
+      },
+      "4126": {
+        "desc": "Embossed gold seal celebrating brood queen termination.",
+        "name": "Queen Slayer Gold Seal"
+      },
+      "4127": {
+        "desc": "Orbital violet-thread sigil surrounding an obsidian event horizon.",
+        "name": "Void Horizon Sigil"
+      },
+      "4128": {
+        "desc": "Archaic alien hieroglyphs found in stratum zero.",
+        "name": "Ancient Core Glyphs"
+      },
+      "4129": {
+        "desc": "Gilded marshal eagle and amber core framed by a meteorite-alloy laurel.",
+        "name": "Grand Marshal Relic Crest"
+      },
+      "4130": {
+        "desc": "Tiny frosted core venting microscopic cold vapor.",
+        "name": "Mini Cryo-Core Charm"
+      },
+      "4131": {
+        "desc": "Engraved spent casing from the initial bunker breach.",
+        "name": "Spent 50-Cal Casing"
+      },
+      "4132": {
+        "desc": "Lustrous biological pearl recovered from a hive queen.",
+        "name": "Sporesnail Pearl"
+      },
+      "4133": {
+        "desc": "Retro tactical whistle dangling from a dog tag chain.",
+        "name": "Trench Whistle"
+      },
+      "4134": {
+        "desc": "Circuit chip with flickering miniature green LED readout.",
+        "name": "Glitched RAM Card"
+      },
+      "4135": {
+        "desc": "Needle spins wildly when pointing toward boss chambers.",
+        "name": "Geodetic Compass"
+      },
+      "4136": {
+        "desc": "Tiny articulated turret drone with moving search beam.",
+        "name": "Miniaturized Drone Bobble"
+      },
+      "4137": {
+        "desc": "Suspended glowing embryo reacting to weapon fire.",
+        "name": "Amber Bio-Flask"
+      },
+      "4138": {
+        "desc": "Miniature black hole with orbiting plasma particles.",
+        "name": "Dark Matter Micro-Singularity"
+      },
+      "4139": {
+        "desc": "Emits radiant gold god-rays and coin jingling audio.",
+        "name": "Golden Sub-Bunker Key"
+      },
+      "4140": {
+        "desc": "+8% Cryo Freeze Duration on elemental attacks.",
+        "name": "Cryo-Capacitor Overclock"
+      },
+      "4141": {
+        "desc": "+20% Scrap & Salvage Magnet Pull Radius.",
+        "name": "Magnetic Scavenger Coil"
+      },
+      "4142": {
+        "desc": "-12% Damage from Spore & Acid Gas Clouds.",
+        "name": "Bio-Hazard Filter Vent"
+      },
+      "4143": {
+        "desc": "+1 Piercing Penetration on kinetic weapon rounds.",
+        "name": "Kinetic Impact Bushing"
+      },
+      "4144": {
+        "desc": "+10% Faster Shield Recharge Rate after taking fire.",
+        "name": "Thermal Heat Exchanger"
+      },
+      "4145": {
+        "desc": "Pings hidden rooms & chests within 15m radius.",
+        "name": "Echo-Location Transceiver"
+      },
+      "4146": {
+        "desc": "+15% Movement Speed for 4s upon dropping below 25% HP.",
+        "name": "Symbiotic Adrenaline Pump"
+      },
+      "4147": {
+        "desc": "Killing 5 enemies in 3s refunds 1 Dash/Sprint Charge.",
+        "name": "Zero-Point Flux Overdrive"
+      },
+      "4148": {
+        "desc": "Gruff military commander tactical voiceover callouts.",
+        "name": "Soviet Sub-Commander Radio"
+      },
+      "4149": {
+        "desc": "Calm, analytical female tactical AI combat announcer.",
+        "name": "Synthesized AI Unit 'AURA'"
+      },
+      "4150": {
+        "desc": "Retro 1980s amber phosphorus terminal HUD styling.",
+        "name": "Amber CRT Monitor Theme"
+      },
+      "4151": {
+        "desc": "Military night-vision green HUD radar and telemetry.",
+        "name": "Emerald Radar Phosphor HUD"
+      },
+      "4152": {
+        "desc": "Weapon projectiles emit bright emerald green laser trails.",
+        "name": "Emerald Void Tracer Rounds"
+      },
+      "4153": {
+        "desc": "Muzzle blast triggers a miniature freezing ice crystal burst.",
+        "name": "Cryo Shockwave Muzzle Flare"
+      },
+      "4154": {
+        "desc": "Unlocks 1 Deep Relic Cache via the Steam Vault. Earned for free through Deep Core Shard dispensary trade-in (docs/season-zero-protocol/05 §4) — the F2P-earned counterpart to itemdef 4001's paid Cache Key, not a duplicate; 4001 is purchase-only and never drops free.",
+        "name": "Relic Decryption Key (Earned)"
+      },
+      "4155": {
+        "desc": "Bundle pack containing 5 Relic Decryption Keys.",
+        "name": "5x Relic Key Master Pack"
+      },
+      "4156": {
+        "desc": "Primary seasonal crafting metal for unboxing and forging.",
+        "name": "Cryo-Alloy Ingot"
+      },
+      "4157": {
+        "desc": "Concentrated power core used to craft Epic Overclocks.",
+        "name": "Deep Sub-Core Matrix"
+      },
+      "4158": {
+        "desc": "Rare biological catalyst required for Legendary skins.",
+        "name": "Refined Ambergris Catalyst"
+      },
+      "4159": {
+        "desc": "Currency awarded from duplicate unboxings (100 shards = any item).",
+        "name": "Deep Core Shard (Token)"
+      },
+      "4160": {
+        "desc": "Counterweight suit plating. Heavier, and harder to move.",
+        "name": "Ballast Plating"
+      },
+      "4161": {
+        "desc": "Back-mounted smelter that renders salvage on the spot.",
+        "name": "Scrap Furnace"
+      },
+      "4162": {
+        "desc": "Barbed injector grown from carapace and surgical steel.",
+        "name": "Queen's Bane"
+      },
+      "4163": {
+        "desc": "Antique monocular scanning lens on an articulated arm.",
+        "name": "Archivist Lens"
+      },
+      "4164": {
+        "desc": "Crystal routing module that runs cold to the touch.",
+        "name": "Shard Conduit"
+      },
+      "4165": {
+        "desc": "Matter reclamation drum. Unglamorous, and effective.",
+        "name": "Duplicate Refiner"
+      },
+      "4166": {
+        "desc": "Chest rebreather diaphragm that sits mid-breath.",
+        "name": "Pressure Seal"
+      },
+      "4167": {
+        "desc": "Descent anchor that has been deeper than it should have.",
+        "name": "Deep Anchor"
+      },
+      "4200": {
+        "desc": "Full operator chassis finish in the Deep Frost identity.",
+        "name": "Deep Frost Operator Skin"
+      },
+      "4201": {
+        "desc": "Weapon plating finish in the Deep Frost identity.",
+        "name": "Deep Frost Weapon Skin"
+      },
+      "4202": {
+        "desc": "Hanging weapon charm in the Deep Frost identity.",
+        "name": "Deep Frost Charm"
+      },
+      "4203": {
+        "desc": "Embroidered bone-white ice crown motif with pale cyan fracture lines and frayed edges.",
+        "name": "Deep Frost Patch"
+      },
+      "4204": {
+        "desc": "Subsurface crystalline ice glaze over weapon plating with a pale cyan specular bloom.",
+        "name": "Deep Frost Sheen"
+      },
+      "4205": {
+        "desc": "Weapon projectiles emit brilliant pale cyan-white trails with drifting frost particulate.",
+        "name": "Deep Frost Tracer Rounds"
+      },
+      "4206": {
+        "desc": "Tactical frost-rimed HUD theme with pale cyan-white vector telemetry.",
+        "name": "Deep Frost HUD Theme"
+      },
+      "4207": {
+        "desc": "Full operator chassis finish in the Rust & Bone identity.",
+        "name": "Rust & Bone Operator Skin"
+      },
+      "4208": {
+        "desc": "Weapon plating finish in the Rust & Bone identity.",
+        "name": "Rust & Bone Weapon Skin"
+      },
+      "4209": {
+        "desc": "Hanging weapon charm in the Rust & Bone identity.",
+        "name": "Rust & Bone Charm"
+      },
+      "4210": {
+        "desc": "Rough hessian backing with hand-stitched bone motif and dull ember thread.",
+        "name": "Rust & Bone Patch"
+      },
+      "4211": {
+        "desc": "Pitted oxidised iron weapon finish with oily sheen and dull ember warmth.",
+        "name": "Rust & Bone Sheen"
+      },
+      "4212": {
+        "desc": "Heavy dull-ember ballistic projectile streaks that shed burning iron sparks.",
+        "name": "Rust & Bone Tracer Rounds"
+      },
+      "4213": {
+        "desc": "Subterranean survival HUD styling in dull ember orange with riveted telemetry frames.",
+        "name": "Rust & Bone HUD Theme"
+      },
+      "4214": {
+        "desc": "Full operator chassis finish in the Hive Chitin identity.",
+        "name": "Hive Chitin Operator Skin"
+      },
+      "4215": {
+        "desc": "Weapon plating finish in the Hive Chitin identity.",
+        "name": "Hive Chitin Weapon Skin"
+      },
+      "4216": {
+        "desc": "Hanging weapon charm in the Hive Chitin identity.",
+        "name": "Hive Chitin Charm"
+      },
+      "4217": {
+        "desc": "Thin dried alien carapace plate with pulsing green veining forming a hive queen.",
+        "name": "Hive Chitin Patch"
+      },
+      "4218": {
+        "desc": "Living alien carapace weapon coating with shifting bioluminescent oil-slick iridescence.",
+        "name": "Hive Chitin Sheen"
+      },
+      "4219": {
+        "desc": "Organic stinger darts trailing a sickly green plasma ribbon and settling spores.",
+        "name": "Hive Chitin Tracer Rounds"
+      },
+      "4220": {
+        "desc": "Alien symbiote ocular interface with sickly bioluminescent green readouts and slow breathing pulse.",
+        "name": "Hive Chitin HUD Theme"
+      },
+      "4221": {
+        "desc": "Full operator chassis finish in the Horizon Corporate identity.",
+        "name": "Horizon Corporate Operator Skin"
+      },
+      "4222": {
+        "desc": "Weapon plating finish in the Horizon Corporate identity.",
+        "name": "Horizon Corporate Weapon Skin"
+      },
+      "4223": {
+        "desc": "Hanging weapon charm in the Horizon Corporate identity.",
+        "name": "Horizon Corporate Charm"
+      },
+      "4224": {
+        "desc": "Crisp white twill with cold teal laser-cut embroidery forming a clean horizon mark.",
+        "name": "Horizon Corporate Patch"
+      },
+      "4225": {
+        "desc": "Pristine white ceramic weapon polish with tight specular glare and cold teal fresnel highlights.",
+        "name": "Horizon Corporate Sheen"
+      },
+      "4226": {
+        "desc": "High-precision solid cold teal laser beams with clean geometric muzzle flares.",
+        "name": "Horizon Corporate Tracer Rounds"
+      },
+      "4227": {
+        "desc": "Clinical military-contractor HUD interface in cold teal with razor-thin coordinate grids.",
+        "name": "Horizon Corporate HUD Theme"
+      },
+      "4228": {
+        "desc": "Full operator chassis finish in the Bunker 404 identity.",
+        "name": "Bunker 404 Operator Skin"
+      },
+      "4229": {
+        "desc": "Weapon plating finish in the Bunker 404 identity.",
+        "name": "Bunker 404 Weapon Skin"
+      },
+      "4230": {
+        "desc": "Hanging weapon charm in the Bunker 404 identity.",
+        "name": "Bunker 404 Charm"
+      },
+      "4231": {
+        "desc": "Black twill with magenta thread forming a glitched squad insignia with displaced blocks.",
+        "name": "Bunker 404 Patch"
+      },
+      "4232": {
+        "desc": "Glitched weapon finish with horizontal texture displacement and magenta signal-error chromatic tearing.",
+        "name": "Bunker 404 Sheen"
+      },
+      "4233": {
+        "desc": "Displaced magenta projectile streaks that stutter and break into offset glitch blocks.",
+        "name": "Bunker 404 Tracer Rounds"
+      },
+      "4234": {
+        "desc": "Corrupted signal HUD theme in electric magenta with intermittent scanline jitter and error readouts.",
+        "name": "Bunker 404 HUD Theme"
+      },
+      "4235": {
+        "desc": "Full operator chassis finish in the Grand Marshal identity.",
+        "name": "Grand Marshal Operator Skin"
+      },
+      "4236": {
+        "desc": "Weapon plating finish in the Grand Marshal identity.",
+        "name": "Grand Marshal Weapon Skin"
+      },
+      "4237": {
+        "desc": "Hanging weapon charm in the Grand Marshal identity.",
+        "name": "Grand Marshal Charm"
+      },
+      "4238": {
+        "desc": "Deep black velvet backing with dense amber gold bullion embroidery in a laurel relic crest.",
+        "name": "Grand Marshal Patch"
+      },
+      "4239": {
+        "desc": "Burnished meteorite-alloy weapon finish with warm amber gold laurel scrollwork and anisotropic glint.",
+        "name": "Grand Marshal Sheen"
+      },
+      "4240": {
+        "desc": "Ceremonial heavy gold energy streaks accompanied by shedding embers and a radiant corona.",
+        "name": "Grand Marshal Tracer Rounds"
+      },
+      "4241": {
+        "desc": "Regal imperial command interface in warm amber gold framed with archival laurel leaf brackets.",
+        "name": "Grand Marshal HUD Theme"
       }
     }
   }

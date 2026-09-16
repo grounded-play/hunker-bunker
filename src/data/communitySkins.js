@@ -2,7 +2,12 @@
 // Maps the 30 community chassis skins and animation actions across Scout, Tank,
 // and Engineer classes for loadouts, Armory previews, gestures, and survivor camp NPCs.
 
-export const COMMUNITY_SKINS = Object.freeze([
+import { localizeCatalog } from '../i18nCatalog.js';
+
+// name / theme / desc / actionLabel are shown in the Armory skin picker and on
+// survivor camp NPC cards. Ids, class keys, GLB paths, action keys and rarity
+// are machine values and are skipped.
+export const COMMUNITY_SKINS = localizeCatalog('narrative.communitySkins', Object.freeze([
     // ── SCOUT SKINS ──────────────────────────────────────────
     {
         id: 'comm_scout_foxhole_shadow',
@@ -368,7 +373,7 @@ export const COMMUNITY_SKINS = Object.freeze([
         rarity: 'epic',
         isUnlockedDefault: true
     }
-]);
+]), { skip: ['id', 'classId', 'glbUrl', 'actionKey', 'rarity', 'isUnlockedDefault'] });
 
 export const COMMUNITY_GESTURES = Object.freeze(
     COMMUNITY_SKINS.map((s) => s.actionKey).filter((v, i, a) => a.indexOf(v) === i)
