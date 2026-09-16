@@ -15,13 +15,13 @@ export const VOICE_BANKS = Object.freeze({
         slots: Object.freeze([
             Object.freeze({ key: 'voice_commander_reloading', cue: 'reload', subtitle: 'RELOADING.', intent: 'Weapon reload', trigger: 'A non-full weapon begins reload', exclusions: ['menu', 'full magazine'], priority: 4 }),
             Object.freeze({ key: 'voice_commander_low_health', cue: 'low_health', subtitle: 'VITALS CRITICAL.', intent: 'HP crosses downward to 25% or less', trigger: 'Downward HP threshold crossing', exclusions: ['shield loss', 'maximum HP increase', 'healing'], priority: 3 }),
-            Object.freeze({ key: 'voice_commander_shield_critical', cue: 'shield_critical', subtitle: 'SHIELD FAILING. TAKE COVER.', intent: 'Shield crosses downward to 25% or less', trigger: 'Downward shield threshold crossing', exclusions: ['HP loss', 'shield unavailable'], priority: 3, takeCount: 1 }),
+            Object.freeze({ key: 'voice_commander_shield_critical', cue: 'shield_critical', subtitle: 'SHIELD FAILING. TAKE COVER.', intent: 'Shield crosses downward to 25% or less', trigger: 'Downward shield threshold crossing', exclusions: ['HP loss', 'shield unavailable'], priority: 3 }),
             Object.freeze({ key: 'voice_commander_boss_spotted', cue: 'boss_spotted', aliases: ['threat_high'], subtitle: 'HEAVY INCOMING.', intent: 'Boss enters the field', trigger: 'New boss encounter ID', exclusions: ['ordinary enemy', 'repeated event alias'], priority: 3 }),
             Object.freeze({ key: 'voice_commander_killstreak', cue: 'killstreak', subtitle: 'KEEP FIRING.', intent: 'Kill streak reached', trigger: 'New kill-streak tier', exclusions: ['single target down', 'overdrive ready'], priority: 4 }),
-            Object.freeze({ key: 'voice_commander_target_down', cue: 'target_down', subtitle: 'HEAVY TARGET DESTROYED.', intent: 'Boss target eliminated', trigger: 'Boss death', exclusions: ['ordinary enemy', 'kill streak'], priority: 4, takeCount: 1 }),
-            Object.freeze({ key: 'voice_commander_overdrive_ready', cue: 'overdrive_ready', subtitle: 'OVERDRIVE CHARGED. MOVE.', intent: 'Dash overdrive charged', trigger: 'Overdrive becomes ready', exclusions: ['kill streak'], priority: 4, takeCount: 1 }),
+            Object.freeze({ key: 'voice_commander_target_down', cue: 'target_down', subtitle: 'HEAVY TARGET DESTROYED.', intent: 'Boss target eliminated', trigger: 'Boss death', exclusions: ['ordinary enemy', 'kill streak'], priority: 4 }),
+            Object.freeze({ key: 'voice_commander_overdrive_ready', cue: 'overdrive_ready', subtitle: 'OVERDRIVE CHARGED. MOVE.', intent: 'Dash overdrive charged', trigger: 'Overdrive becomes ready', exclusions: ['kill streak'], priority: 4 }),
             Object.freeze({ key: 'voice_commander_breached', cue: 'breached', subtitle: 'WALL BREACHED.', intent: 'A wall is breached', trigger: 'New wall breach', exclusions: ['door opening'], priority: 4 }),
-            Object.freeze({ key: 'voice_commander_sector_cleared', cue: 'sector_cleared', subtitle: 'SECTOR SECURE. RETURN TO SHIP.', intent: 'Objective complete / sector cleared', trigger: 'Objective completion', exclusions: ['extraction victory'], priority: 3, takeCount: 1 }),
+            Object.freeze({ key: 'voice_commander_sector_cleared', cue: 'sector_cleared', subtitle: 'SECTOR SECURE. RETURN TO SHIP.', intent: 'Objective complete / sector cleared', trigger: 'Objective completion', exclusions: ['extraction victory'], priority: 3 }),
             Object.freeze({ key: 'voice_commander_victory', cue: 'victory', subtitle: 'EXTRACTION SECURED.', intent: 'Extraction / run won', trigger: 'Successful extraction', exclusions: ['objective complete'], priority: 2 })
         ])
     }),
@@ -33,15 +33,15 @@ export const VOICE_BANKS = Object.freeze({
         previewCue: 'overdrive_ready',
         slots: Object.freeze([
             Object.freeze({ key: 'voice_aura_reloading', cue: 'reload', subtitle: 'RELOADING.', intent: 'Weapon reload', trigger: 'A non-full weapon begins reload', exclusions: ['menu', 'full magazine'], priority: 4 }),
-            Object.freeze({ key: 'voice_aura_low_health', cue: 'low_health', subtitle: 'OPERATOR VITALS CRITICAL.', intent: 'HP crosses downward to 25% or less', trigger: 'Downward HP threshold crossing', exclusions: ['shield loss', 'maximum HP increase', 'healing'], priority: 3, takeCount: 1 }),
+            Object.freeze({ key: 'voice_aura_low_health', cue: 'low_health', subtitle: 'OPERATOR VITALS CRITICAL.', intent: 'HP crosses downward to 25% or less', trigger: 'Downward HP threshold crossing', exclusions: ['shield loss', 'maximum HP increase', 'healing'], priority: 3 }),
             Object.freeze({ key: 'voice_aura_shield_critical', cue: 'shield_critical', subtitle: 'SHIELD CRITICAL.', intent: 'Shield crosses downward to 25% or less', trigger: 'Downward shield threshold crossing', exclusions: ['HP loss', 'shield unavailable'], priority: 3 }),
             Object.freeze({ key: 'voice_aura_threat_high', cue: 'threat_high', aliases: ['boss_spotted'], subtitle: 'THREAT LEVEL HIGH.', intent: 'Boss enters the field', trigger: 'New boss encounter ID', exclusions: ['ordinary enemy', 'repeated event alias'], priority: 3 }),
             Object.freeze({ key: 'voice_aura_target_down', cue: 'target_down', subtitle: 'TARGET DOWN.', intent: 'Boss target eliminated', trigger: 'Boss death', exclusions: ['ordinary enemy', 'kill streak'], priority: 4 }),
-            Object.freeze({ key: 'voice_aura_killstreak', cue: 'killstreak', subtitle: 'COMBAT EFFICIENCY RISING.', intent: 'Kill streak reached', trigger: 'New kill-streak tier', exclusions: ['single target down', 'overdrive ready'], priority: 4, takeCount: 1 }),
+            Object.freeze({ key: 'voice_aura_killstreak', cue: 'killstreak', subtitle: 'COMBAT EFFICIENCY RISING.', intent: 'Kill streak reached', trigger: 'New kill-streak tier', exclusions: ['single target down', 'overdrive ready'], priority: 4 }),
             Object.freeze({ key: 'voice_aura_overdrive_ready', cue: 'overdrive_ready', subtitle: 'OVERDRIVE READY.', intent: 'Dash overdrive charged', trigger: 'Overdrive becomes ready', exclusions: ['kill streak'], priority: 4 }),
-            Object.freeze({ key: 'voice_aura_breached', cue: 'breached', subtitle: 'STRUCTURAL BREACH CONFIRMED.', intent: 'A wall is breached', trigger: 'New wall breach', exclusions: ['door opening'], priority: 4, takeCount: 1 }),
+            Object.freeze({ key: 'voice_aura_breached', cue: 'breached', subtitle: 'STRUCTURAL BREACH CONFIRMED.', intent: 'A wall is breached', trigger: 'New wall breach', exclusions: ['door opening'], priority: 4 }),
             Object.freeze({ key: 'voice_aura_sector_cleared', cue: 'sector_cleared', subtitle: 'SECTOR CLEARED.', intent: 'Objective complete / sector cleared', trigger: 'Objective completion', exclusions: ['extraction victory'], priority: 3 }),
-            Object.freeze({ key: 'voice_aura_victory', cue: 'victory', subtitle: 'EXTRACTION CONFIRMED. MISSION COMPLETE.', intent: 'Extraction / run won', trigger: 'Successful extraction', exclusions: ['objective complete'], priority: 2, takeCount: 1 })
+            Object.freeze({ key: 'voice_aura_victory', cue: 'victory', subtitle: 'EXTRACTION CONFIRMED. MISSION COMPLETE.', intent: 'Extraction / run won', trigger: 'Successful extraction', exclusions: ['objective complete'], priority: 2 })
         ])
     })
 });

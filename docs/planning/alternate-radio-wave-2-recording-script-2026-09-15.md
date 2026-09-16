@@ -176,7 +176,7 @@ expedition for discoveries, milestones, extraction, and failure.
 ## Recording checklist
 
 - [x] 42 new paired cues generated for Commander and AURA.
-- [x] Eight missing counterparts have two generated takes; take 01 is wired.
+- [x] Eight missing counterparts have two generated takes wired for rotation.
 - [x] Two clean generated takes for every missing line.
 - [x] Cue IDs and take numbers present in filenames.
 - [ ] No spoken slates inside delivery files.
