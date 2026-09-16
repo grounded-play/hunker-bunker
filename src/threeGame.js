@@ -85,6 +85,10 @@ export const TiltShiftPassShader = {
             color.b += (texture2D(tDiffuse, uv3P - vec2(chroma * 2.2, 0.0)).b + texture2D(tDiffuse, uv3M - vec2(chroma * 2.2, 0.0)).b) * w3;
             color.a += (texture2D(tDiffuse, uv3P).a + texture2D(tDiffuse, uv3M).a) * w3;
 
+            // Phase D: Subtle analog film grain matching Blender delivery compositor
+            float hbFilmNoise = fract(sin(dot(vUv * 1234.56, vec2(12.9898, 78.233))) * 43758.5453);
+            color.rgb += (hbFilmNoise - 0.5) * 0.018;
+
             gl_FragColor = color;
         }
     `
@@ -2057,6 +2061,8 @@ export class ThreeGame {
                 uniform sampler2D tBioGrunge;
                 uniform sampler2D tBioDetail;
                 uniform vec2 uShipWorldPos;
+                float hbFloorRoughness;
+                vec3 hbFloorNormalPerturb;
                 ${shader.fragmentShader}
             `;
 
@@ -2106,6 +2112,39 @@ export class ThreeGame {
                     vec3 floorColor = mix(bunkerColor, cryoColor, cryoMix);
                     floorColor = mix(floorColor, bioColor, bioMix);
                     diffuseColor *= vec4(floorColor, 1.0);
+
+                    // Phase B2: Roughness variation break-up (smooth worn metal vs matte oxidation vs wet bio)
+                    float bunkerRough = mix(0.38, 0.92, bunkerRustMask);
+                    float cryoRough = mix(0.46, 0.90, cryoRustMask);
+                    float bioRough = mix(0.24, 0.60, bioMask);
+                    hbFloorRoughness = mix(bunkerRough, cryoRough, cryoMix);
+                    hbFloorRoughness = mix(hbFloorRoughness, bioRough, bioMix);
+
+                    // Phase B1: Derived surface normal relief from luminance & detail texture
+                    float floorLum = dot(floorColor, vec3(0.299, 0.587, 0.114));
+                    float dFloorX = dFdx(floorLum);
+                    float dFloorY = dFdy(floorLum);
+                    hbFloorNormalPerturb = vec3(-dFloorX * 1.5, 0.0, -dFloorY * 1.5);
+                #endif
+                `
+            );
+
+            shader.fragmentShader = shader.fragmentShader.replace(
+                '#include <roughnessmap_fragment>',
+                `
+                #include <roughnessmap_fragment>
+                #ifdef USE_MAP
+                    roughnessFactor = clamp(hbFloorRoughness, 0.04, 1.0);
+                #endif
+                `
+            );
+
+            shader.fragmentShader = shader.fragmentShader.replace(
+                '#include <normal_fragment_maps>',
+                `
+                #include <normal_fragment_maps>
+                #ifdef USE_MAP
+                    normal = normalize(normal + hbFloorNormalPerturb);
                 #endif
                 `
             );
@@ -2119,7 +2158,9 @@ export class ThreeGame {
                     vec2 uvDetailEmissive = vWorldPos.xz * 0.27;
                     vec4 colDetailEmissive = texture2D( tDetail, uvDetailEmissive );
                     float glowIntensity = smoothstep(0.35, 0.7, colDetailEmissive.g * colDetailEmissive.b);
-                    totalEmissiveRadiance += vec3(0.0, 0.7, 0.85) * glowIntensity * 1.35;
+                    // Phase B3: Glowing vascular circuitry and bio veins
+                    vec3 bioVeinColor = vec3(1.0, 0.44, 0.08) * smoothstep(0.4, 0.75, bioDetail.r * bioDetail.g) * 1.8 * bioMix;
+                    totalEmissiveRadiance += vec3(0.0, 0.7, 0.85) * glowIntensity * 1.35 + bioVeinColor;
                 #endif
                 `
             );
@@ -2202,6 +2243,8 @@ export class ThreeGame {
                     p += dot(p, p + 45.32);
                     return fract(p.x * p.y);
                 }
+                float hbWallRoughness;
+                vec3 hbWallNormalPerturb;
                 ${shader.fragmentShader}
             `;
 
@@ -2317,6 +2360,41 @@ export class ThreeGame {
                     finalWallColor *= mix(0.85, 1.15, tileWear);
 
                     diffuseColor *= vec4(finalWallColor, 1.0);
+
+                    // Phase B2: Roughness variation break-up
+                    float bunkerWallRough = mix(0.35, 0.88, bunkerRustMask);
+                    float cryoWallRough = mix(0.44, 0.90, cryoMask);
+                    float bioWallRough = mix(0.22, 0.58, bioMask);
+                    hbWallRoughness = mix(bunkerWallRough, cryoWallRough, cryoMix);
+                    hbWallRoughness = mix(hbWallRoughness, bioWallRough, bioMix);
+
+                    // Phase B1: Derived surface normal perturbation from luminance
+                    float wallLum = dot(finalWallColor, vec3(0.299, 0.587, 0.114));
+                    float dWallX = dFdx(wallLum);
+                    float dWallY = dFdy(wallLum);
+                    hbWallNormalPerturb = (abs(vWorldNormal.y) > 0.5)
+                        ? vec3(-dWallX * 1.8, 0.0, -dWallY * 1.8)
+                        : vec3(-dWallX * vWorldNormal.z * 1.8, -dWallY * 1.8, dWallX * vWorldNormal.x * 1.8);
+                #endif
+                `
+            );
+
+            shader.fragmentShader = shader.fragmentShader.replace(
+                '#include <roughnessmap_fragment>',
+                `
+                #include <roughnessmap_fragment>
+                #ifdef USE_MAP
+                    roughnessFactor = clamp(hbWallRoughness, 0.04, 1.0);
+                #endif
+                `
+            );
+
+            shader.fragmentShader = shader.fragmentShader.replace(
+                '#include <normal_fragment_maps>',
+                `
+                #include <normal_fragment_maps>
+                #ifdef USE_MAP
+                    normal = normalize(normal + hbWallNormalPerturb);
                 #endif
                 `
             );
