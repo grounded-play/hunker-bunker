@@ -42,6 +42,6 @@ Status vocabulary:
 
 ## Current milestone
 
-Sprint 41 is active on `dev/sprint-41`, developing from the `v2.4.4-beta` baseline toward `v2.4.5-beta`. Its focus is architecture kit GLB in-world routing, faction prop placement, theme matrix hole closures, Visual Overhaul Phase B (derived normal/roughness maps), multi-chunk setpiece allocator integration, and debug module code splitting.
+Sprint 41 is active on `dev/sprint-41`, developing from the `v2.4.5-beta` baseline toward `v2.4.6-beta`. Its focus is architecture kit GLB in-world routing, faction prop placement, theme matrix hole closures, Visual Overhaul Phase B (derived normal/roughness maps), multi-chunk setpiece allocator integration, and debug module code splitting.
 The executable plan and 10-sprint retrospective audit are in [docs/planning/sprint-41-audit-and-roadmap.md](docs/planning/sprint-41-audit-and-roadmap.md); the wider sequence is in [docs/planning/repository-roadmap.md](docs/planning/repository-roadmap.md).
 

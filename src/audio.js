@@ -650,42 +650,92 @@ export class AudioManager {
 
     static playVoiceCallout(cueType, options = {}) {
         if (this.globalMuted || !this.voiceEnabled) return null;
+        if (!this.isUnlocked && audioCtx?.state === 'running') {
+            this.isUnlocked = true;
+        }
 
-        const voicePackId = options.voicePackId ?? (typeof window !== 'undefined' ? (window.loadout?.state?.voicePackId || window.loadout?.getEquippedVoicePackId?.()) : null);
-        if (!voicePackId) return null;
+        const rawVoiceId = options.voicePackId ?? (typeof window !== 'undefined' ? (window.loadout?.state?.voicePackId || window.loadout?.getEquippedVoicePackId?.()) : null);
+        let bankId = rawVoiceId === 'voicepack_soviet_commander' || rawVoiceId === '4148' || rawVoiceId === 4148 ? 4148
+            : rawVoiceId === 'voicepack_aura' || rawVoiceId === '4149' || rawVoiceId === 4149 ? 4149
+            : rawVoiceId ? Number(rawVoiceId) : null;
 
-        const idStr = String(voicePackId);
-        const bankId = idStr === 'voicepack_soviet_commander' ? 4148
-            : idStr === 'voicepack_aura' ? 4149 : Number(idStr);
-        const slot = resolveVoiceBankSlot(bankId, cueType === 'reloading' ? 'reload' : cueType);
-        if (!slot) return null;
-        const semanticId = options.semanticId ?? `${bankId}:${slot.cue}`;
-        if (!options.audition && this._playedVoiceSemantics.has(semanticId)) return null;
-        const targetKey = slot.key;
-        const availableTakes = getVoiceTakeKeys(targetKey, slot.takeCount).filter((key) => this.buffers[key]);
-        if (availableTakes.length) {
-            const previous = this._lastVoiceTake.get(targetKey);
-            const candidates = availableTakes.length > 1
-                ? availableTakes.filter((key) => key !== previous)
-                : availableTakes;
-            const selectedKey = candidates[Math.floor(Math.random() * candidates.length)];
-            const playback = this.playVoiceTrack(selectedKey, { priority: slot.priority, speakerName: String(bankId), volume: options.volume ?? 0.85, ...options });
+        // If game language is Russian and no specific pack was chosen, default to Soviet Sub-Commander
+        if (!bankId && typeof window !== 'undefined') {
+            const currentLang = window.i18n?.getLanguage?.() || window.i18n?.currentLanguage || window.state?.settings?.language;
+            if (currentLang === 'ru') bankId = 4148;
+        }
+
+        if (bankId) {
+            const slot = resolveVoiceBankSlot(bankId, cueType === 'reloading' ? 'reload' : cueType);
+            if (!slot) return null;
+            const semanticId = options.semanticId ?? `${bankId}:${slot.cue}`;
+            if (!options.audition && this._playedVoiceSemantics.has(semanticId)) return null;
+            const targetKey = slot.key;
+            const availableTakes = getVoiceTakeKeys(targetKey, slot.takeCount).filter((key) => this.buffers[key]);
+            if (availableTakes.length) {
+                const previous = this._lastVoiceTake.get(targetKey);
+                const candidates = availableTakes.length > 1
+                    ? availableTakes.filter((key) => key !== previous)
+                    : availableTakes;
+                const selectedKey = candidates[Math.floor(Math.random() * candidates.length)];
+                const playback = this.playVoiceTrack(selectedKey, { priority: slot.priority, speakerName: String(bankId), volume: options.volume ?? 0.85, ...options });
+                if (!playback) return null;
+                this._lastVoiceTake.set(targetKey, selectedKey);
+                if (!options.audition) this._playedVoiceSemantics.add(semanticId);
+                this.emitVoiceLine({
+                    cue: slot.cue, semanticId, subtitle: slot.subtitle, take: selectedKey, bankId,
+                    speakerName: bankId === 4148 ? 'COMMANDER' : 'AURA',
+                    audition: Boolean(options.audition)
+                });
+                return playback;
+            }
+            return null;
+        }
+
+        // Default Comms (Mothership Command / Exosuit OS)
+        let defaultKey = null;
+        let defaultSubtitle = '';
+        if (cueType === 'operator_down') {
+            defaultKey = 'voice_system_02_uplink_severed';
+            defaultSubtitle = 'UPLINK SEVERED. TELEMETRY LOST.';
+        } else if (cueType === 'victory' || cueType === 'mission_active') {
+            defaultKey = 'voice_mothership_01_alive';
+            defaultSubtitle = "AGENT. YOU'RE ALIVE.";
+        } else if (cueType === 'boss_spotted' || cueType === 'threat_high') {
+            defaultKey = 'voice_mothership_02_warning_bio';
+            defaultSubtitle = 'UNAUTHORIZED BIOLOGICAL SIGNATURES DETECTED.';
+        } else if (cueType === 'low_health' || cueType === 'shield_critical') {
+            defaultKey = 'voice_system_01_o2_stabilized';
+            defaultSubtitle = 'EXOSUIT INTEGRITY AT RISK.';
+        }
+
+        if (defaultKey && this.buffers[defaultKey]) {
+            const semanticId = options.semanticId ?? `default:${cueType}`;
+            if (!options.audition && this._playedVoiceSemantics.has(semanticId)) return null;
+            const playback = this.playVoiceTrack(defaultKey, { priority: 2, speakerName: 'MOTHERSHIP', volume: options.volume ?? 0.85, ...options });
             if (!playback) return null;
-            this._lastVoiceTake.set(targetKey, selectedKey);
             if (!options.audition) this._playedVoiceSemantics.add(semanticId);
             this.emitVoiceLine({
-                cue: slot.cue, semanticId, subtitle: slot.subtitle, take: selectedKey, bankId,
-                speakerName: bankId === 4148 ? 'COMMANDER' : 'AURA',
+                cue: cueType, semanticId, subtitle: defaultSubtitle, take: defaultKey, bankId: 0,
+                speakerName: 'MOTHERSHIP',
                 audition: Boolean(options.audition)
             });
             return playback;
         }
+
         return null;
     }
 
     static playVoiceForMessage(speakerInfo = {}, messageText = '', options = {}) {
-        if (this.globalMuted || !this.isUnlocked || !this.voiceEnabled) return null;
-        if (this.voiceGain.gain.value <= 0.001) return null;
+        if (this.globalMuted || !this.voiceEnabled) return null;
+        if (!this.isUnlocked) {
+            if (audioCtx && audioCtx.state === 'running') {
+                this.isUnlocked = true;
+            } else if (audioCtx && audioCtx.state === 'suspended') {
+                audioCtx.resume().then(() => { this.isUnlocked = true; }).catch(() => {});
+            }
+        }
+        if (this.voiceGain?.gain && this.voiceGain.gain.value <= 0.001) return null;
 
         // Skip typewriter chirps if full voice speech is actively playing
         if (options.isChirp && this.isVoiceSpeaking()) return null;
@@ -747,6 +797,7 @@ export class AudioManager {
             if (textLower.includes('unauthorized biological') || textLower.includes('do not answer') || textLower.includes('extraction window')) targetKey = 'voice_mothership_02_warning_bio';
             else if (textLower.includes('abandoned') || textLower.includes('extermination') || textLower.includes('remain where you are')) targetKey = 'voice_mothership_03_orbital_purge';
             else if (textLower.includes("you're alive") || textLower.includes("you are alive") || textLower.includes("alive.")) targetKey = 'voice_mothership_01_alive';
+            else targetKey = 'voice_mothership_01_alive';
         }
         // System / Exosuit
         else if (speakerName.includes('EXOSUIT') || speakerName.includes('SYSTEM')) {

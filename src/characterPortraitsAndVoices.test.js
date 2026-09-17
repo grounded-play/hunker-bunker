@@ -94,4 +94,30 @@ describe('Character Portraits and Speaker Resolution', () => {
         expect(wanderer.portrait).toBeTruthy();
         expect(wanderer.portrait).toMatch(/^\/lore_portraits\/survivor_.*\.webp$/);
     });
+
+    it('resolves effective voice pack correctly with language and explicit equips', async () => {
+        const { resolveEffectiveVoicePackId } = await import('./dialogue.js');
+        globalThis.window = globalThis.window || {};
+
+        // English default without voice pack -> null (Mothership)
+        globalThis.window.i18n = { getLanguage: () => 'en' };
+        globalThis.window.loadout = { state: { voicePackId: null } };
+        expect(resolveEffectiveVoicePackId()).toBeNull();
+
+        // Russian language without voice pack -> 4148 (Soviet Commander)
+        globalThis.window.i18n = { getLanguage: () => 'ru' };
+        expect(resolveEffectiveVoicePackId()).toBe(4148);
+
+        // Explicit AURA equip overrides Russian default
+        globalThis.window.loadout = { state: { voicePackId: 4149 } };
+        expect(resolveEffectiveVoicePackId()).toBe(4149);
+
+        // Explicit candidateId passed directly
+        expect(resolveEffectiveVoicePackId('4148')).toBe(4148);
+        expect(resolveEffectiveVoicePackId('voicepack_aura')).toBe(4149);
+
+        // Clean up mock globals
+        delete globalThis.window.i18n;
+        delete globalThis.window.loadout;
+    });
 });
