@@ -225,10 +225,10 @@ All six phases ran. Numbers below come from `npm run i18n:audit`, and the ratche
 | Measure | At audit | Now |
 |---|---:|---:|
 | Runtime strings written to the DOM without `t()` | 199* | **0** |
-| Unannotated markup (non-debug) | 635 | **52** |
+| Unannotated markup (non-debug) | 635 | **0** |
 | Orphaned keys | 68 (really 73) | **34** |
 | Narrative catalog coverage, per locale | 52% | **100%** (803/803) |
-| Keys per locale / parity | 654, exact | **1758, exact** |
+| Keys per locale / parity | 654, exact | **1898, exact** |
 
 \* the original 199 counted `src/` only; `main.js` was outside the scan and held 119 more.
 
@@ -240,14 +240,8 @@ entirely English loading screen.
 
 ### What is deliberately left
 
-- **52 markup strings across 21 screens.** These are the mixed-content elements the codemod
-  refuses to annotate, because `applyStaticTranslations` assigns `textContent` and would
-  delete their child elements. Each needs a manual `<span>` wrap. Largest: `#steam-vault-modal`
-  (12), `#multiplayer-modal` (6), `#fabrication-modal` (4), `#pickup-counter-panel` (4).
 - **34 orphaned keys** in `common.*`, `rarity.*`, `hud.*`, `classes.*`, `dialogue.*`. Their
   text is real and correct; they simply have no call site yet. Kept rather than deleted.
-- **`src/dialogue.js` radio badges.** Another agent was editing that file live; it was
-  reverted untouched rather than risk a conflict.
 - **Developer surfaces** — the dev console, debug toolbar, build stamps, FPS counters and run
   seeds — excluded by explicit allowlist, not by silence.
 - **The language picker**, which correctly shows each language in its own script.
@@ -268,3 +262,39 @@ them per screen and per module against `docs/reports/i18n-coverage-baseline.json
 fall, never rise. Verified by adding a raw button to `#menu`, which fails with
 `"#menu: 46 -> 48"`. The old coverage test asserted only that one annotation existed anywhere
 and could never fail.
+
+
+---
+
+## 8. Follow-up: the last 52, and what finishing them exposed
+
+The 52 mixed-content strings are wrapped and coverage is now **0 unannotated markup,
+0 unlocalized runtime strings**, 1898 keys per locale at exact parity.
+
+**One deliberate visual change.** The pickup-counter rows styled their count cell with
+`.pickup-counter-panel__row span:last-child` — a *descendant* selector, so it also matched the
+icon span, which is the last element child of the label. Wrapping the label text would have
+handed that styling to the new span. The four rules are now scoped to direct children, which is
+what a right-aligned tabular-number rule always meant. The icon consequently falls back to its
+own authored colour: it rendered `rgba(255,228,172,.95)` by specificity accident and now renders
+the `rgba(255,199,99,.96)` its own rule specifies. Confirmed by reading computed styles in the
+built page.
+
+**`alt` is now translatable.** The engine handled only title/aria-label/placeholder, so six
+static alt texts could not be localized at all — a screen reader announced "Crashed ship"
+mid-cutscene in every locale.
+
+**Four scanner defects, each hiding live text.** A leading `/` was read as a path, hiding the
+five `TITLE // ACCENT` headers. A leading `>` was read as markup, hiding the loader's
+prompt-prefixed lines. The has-letters and length tests ran on the raw literal, so
+`(${inv.shells})` passed on "inv.shells" while a long `innerHTML` template hid short visible
+text behind the 200-character cap — both now test the *visible* text. And `setTxt` joined the
+recognised text-setting helpers, with `RUNTIME_WRITTEN_CLASSES` covering elements reached by
+class selector rather than id. Fixing those surfaced **33 more live runtime strings**, all now
+wired.
+
+**A gap only the browser could show.** `updateDetailsPanel()` returned early on a missing item
+and was never called for an empty vault, so a player with no items read that panel in English in
+every locale. A `data-i18n` annotation would have been the wrong fix — once an item is selected
+those same elements hold its catalog name, which a locale change would then overwrite with the
+placeholder. JS owns both states instead.
