@@ -27,6 +27,20 @@ describe('player-facing text classification', () => {
         expect(isPlayerFacingText('display: none;')).toBe(false);
     });
 
+    it('treats // as a decorative separator, not a URL path', () => {
+        // The game writes "TITLE // ACCENT" everywhere. A path rule that
+        // rejected any leading slash hid five title accents from the count.
+        expect(isPlayerFacingText('// ITEM DISPATCH')).toBe(true);
+        expect(isPlayerFacingText('SURFACE SCAN // PASSIVE')).toBe(true);
+    });
+
+    it('still rejects real paths', () => {
+        expect(isPlayerFacingText('/economy/relic_common.png')).toBe(false);
+        expect(isPlayerFacingText('./src/i18n.js')).toBe(false);
+        expect(isPlayerFacingText('../locales/en.json')).toBe(false);
+        expect(isPlayerFacingText('/assets/foo')).toBe(false);
+    });
+
     it('rejects a catalog key, which is an address rather than display text', () => {
         expect(isPlayerFacingText('ui.boss.elite_threat')).toBe(false);
         expect(isPlayerFacingText('common.ok')).toBe(false);
@@ -140,6 +154,20 @@ describe('runtime string audit', () => {
     it('ignores class names and pure interpolation', () => {
         expect(auditRuntimeStrings('el.innerHTML = `${count}`;')).toHaveLength(0);
         expect(auditRuntimeStrings('el.className = "vault-row active";')).toHaveLength(0);
+    });
+
+    it('judges the visible text, not the raw literal', () => {
+        // `(${inv.shells})` has letters only inside the interpolation, and a
+        // long innerHTML template can hide short visible text behind a length
+        // cap. Both were scanned wrongly until the visible text was used.
+        expect(auditRuntimeStrings('el.textContent = `(${inv.shells})`;')).toHaveLength(0);
+        const long = 'el.innerHTML = `<div style="opacity: 1.0; animation: pulse 2s infinite ease-in-out; color: var(--x);">[ SYSTEM ERROR ]</div>`;';
+        expect(auditRuntimeStrings(long)).toHaveLength(1);
+    });
+
+    it('sees text set through a helper, not only through assignment', () => {
+        expect(auditRuntimeStrings("setTxt('roster-stat-depth', 'SECTOR 0');")).toHaveLength(1);
+        expect(auditRuntimeStrings("renderLoaderLogs('> BOOTING CORE...');")).toHaveLength(1);
     });
 
     it('ignores comment lines', () => {

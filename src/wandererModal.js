@@ -156,7 +156,7 @@ export function renderWandererModal(wanderer, { onBefriend, onChaseOff, onClose 
     questionBox.style.fontSize = '14px';
     questionBox.style.lineHeight = '1.5';
     questionBox.style.color = '#fff3e0';
-    questionBox.innerHTML = `<strong>Inquiry:</strong> "${questionText}"`;
+    questionBox.innerHTML = `<strong>${t('ui.wanderer.inquiry')}</strong> ${t('ui.wanderer.quote', { text: questionText })}`;
     body.appendChild(questionBox);
 
     // Perks preview
@@ -198,7 +198,7 @@ export function renderWandererModal(wanderer, { onBefriend, onChaseOff, onClose 
         questBox.style.borderRadius = '4px';
         questBox.style.fontSize = '12px';
         const reward = wanderer.quest.rewardText || wanderer.quest.rewardSkinId || 'Class Skin Variant';
-        questBox.textContent = `${wanderer.quest.title} — ${wanderer.quest.desc} Reward: ${reward}.`;
+        questBox.textContent = t('ui.wanderer.quest_line', { title: wanderer.quest.title, desc: wanderer.quest.desc, reward });
         body.appendChild(questBox);
     }
 

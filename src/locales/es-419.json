@@ -87,7 +87,8 @@
       "engineer": "INGENIERO",
       "reroute": "DESVIAR",
       "cheaper_consoles": "CONSOLAS MÁS BARATAS",
-      "esc": "[ESC]"
+      "esc": "[ESC]",
+      "return_main": "← VOLVER AL MENÚ PRINCIPAL"
     },
     "hub": {
       "daily_ops": "OPS DIARIAS",
@@ -283,7 +284,14 @@
       "no_weapons": "NO SE HAN FABRICADO ARMAS",
       "print_hint": "Imprime un Repetidor de Dispersión garantizado por 12 de tecnología / 6 monedas en el taller.",
       "equipped": "✓ EQUIPADO",
-      "equip": "EQUIPAR"
+      "equip": "EQUIPAR",
+      "id_label": "ID:",
+      "stat_sector": "SECTOR {depth}",
+      "stat_hostiles": "{count} HOSTILES",
+      "blackbox_recoverable": "RECUPERABLE (SECTOR {depth})",
+      "blackbox_none": "NINGUNA",
+      "equipped_none": "NULO",
+      "arsenal_count": "ARSENAL: {made} / {total} ARMAS FABRICADAS"
     },
     "dlg": {
       "channel": "CANAL 7 DE ENLACE CON LA NODRIZA",
@@ -344,7 +352,8 @@
       "log_asset": "> {message}...",
       "log_booting_webgl": "> INICIANDO EL NÚCLEO TÁCTICO WEBGL...",
       "log_preloading_cinematic": "> PRECARGANDO LA SECUENCIA CINEMÁTICA (DoorIntro)...",
-      "log_assets_loaded": "> TODOS LOS RECURSOS CARGADOS — ABRIENDO LA ESCLUSA..."
+      "log_assets_loaded": "> TODOS LOS RECURSOS CARGADOS — ABRIENDO LA ESCLUSA...",
+      "initializing_core": "> INICIALIZANDO EL NÚCLEO TÁCTICO DEL EXOTRAJE... ({percent}%)"
     },
     "splash_steam_badge": {
       "title_click_to_open": "Haz clic para abrir el perfil del Overlay de Steam",
@@ -373,7 +382,9 @@
       "github_repository": "REPOSITORIO DE GITHUB",
       "special_thanks": "AGRADECIMIENTOS ESPECIALES",
       "our_amazing_community_players": "Nuestra increíble comunidad y jugadores",
-      "thank_you_for_deploying": "GRACIAS POR DESPLEGARTE"
+      "thank_you_for_deploying": "GRACIAS POR DESPLEGARTE",
+      "tactical_command": "MANDO TÁCTICO",
+      "accent_credits": "// CRÉDITOS"
     },
     "hero_detail": {
       "field_loadout": "EQUIPO DE CAMPO"
@@ -384,14 +395,16 @@
       "in_progress": "EN CURSO",
       "ready": "LISTO",
       "best_score": "◈ MEJOR: {score} PTS",
-      "rgb_title": "RGB: RIVERSIDE GLOBAL 'BOTICS"
+      "rgb_title": "RGB: RIVERSIDE GLOBAL 'BOTICS",
+      "score_grade": "{score} PTS // {grade}"
     },
     "close_season_pass": {
       "aria_label_close_tactical_dossier": "Cerrar expediente táctico"
     },
     "season_pass": {
       "sub_terran_sector_operations_beta": "◈ OPERACIONES DEL SECTOR SUBTERRÁNEO // TEMPORADA BETA 1",
-      "directives": "Y DIRECTIVAS"
+      "directives": "Y DIRECTIVAS",
+      "title": "EXPEDIENTE TÁCTICO"
     },
     "archive_log_detail": {
       "aria_label_close_archive_log": "Cerrar registro de archivo",
@@ -416,7 +429,10 @@
       "view_record": "Ver el registro de intel de {name}",
       "click_hint": "HAZ CLIC PARA VER EL EXPEDIENTE Y EL ARTE",
       "uncatalogued": "??? — SIN CATALOGAR",
-      "encounter_hint": "Encuéntralo en el campo para recuperar su registro."
+      "encounter_hint": "Encuéntralo en el campo para recuperar su registro.",
+      "title": "CÓDICE DE CAMPO",
+      "alt_intel_image": "Imagen de intel del códice",
+      "accent_bestiary": "// BESTIARIO"
     },
     "close_codex_detail": {
       "aria_label_close_codex_entry": "Cerrar entrada del códice"
@@ -430,7 +446,9 @@
     "achievements": {
       "combat_citations_deep_crust_commendations": "◈ CITACIONES DE COMBATE // CONDECORACIONES DE CORTEZA PROFUNDA",
       "title_copy_a_portable": "Copiar un código de guardado portátil",
-      "copy_save_code": "COPIAR CÓDIGO DE GUARDADO"
+      "copy_save_code": "COPIAR CÓDIGO DE GUARDADO",
+      "title": "CITACIONES DE OPERATIVO",
+      "accent_archive": "// ARCHIVO"
     },
     "close_steam_vault": {
       "aria_label_close_steam_vault": "Cerrar Bóveda Steam"
@@ -458,14 +476,26 @@
       "1_next_tier_item": "1× OBJETO DEL NIVEL SIGUIENTE",
       "deep_smelter": "FUNDIDORA PROFUNDA",
       "consumes_5x_same_tier_items": "CONSUME 5x OBJETOS DEL MISMO NIVEL",
-      "deep_core_shard_dispensary": "DISPENSARIO DE FRAGMENTOS DEL NÚCLEO"
+      "deep_core_shard_dispensary": "DISPENSARIO DE FRAGMENTOS DEL NÚCLEO",
+      "title": "◈ BÓVEDA STEAM",
+      "caches_label": "ALIJOS:",
+      "keys_label": "LLAVES:",
+      "shards_label": "FRAGMENTOS:",
+      "tab_inventory": "INVENTARIO PROPIO",
+      "tab_store": "◈ TIENDA DE RELIQUIAS Y PROBABILIDADES",
+      "tab_smelter": "◈ FUNDIDORA Y DISPENSARIO",
+      "decrypt_with": "se descifran con",
+      "rates_match": "· Las tasas coinciden con las tablas del servidor.",
+      "consumed_removed": "· Los objetos consumidos se eliminan.",
+      "accent_dispatch": "// DESPACHO DE OBJETOS"
     },
     "vault_details": {
       "view_in_steam_market": "VER EN EL MERCADO DE STEAM"
     },
     "vault_reveal": {
       "steam_relic_dispensary_appid_4957040": "◈ DISPENSARIO DE RELIQUIAS STEAM // APPID 4957040",
-      "claim_to_inventory": "◈ RECLAMAR AL INVENTARIO"
+      "claim_to_inventory": "◈ RECLAMAR AL INVENTARIO",
+      "alt_reward": "Recompensa"
     },
     "operator_polish": {
       "operator_polish": "◆ ACABADO DE OPERADOR",
@@ -540,7 +570,11 @@
     "fabrication": {
       "fabrication_bay": "◇ TALLER DE FABRICACIÓN",
       "print_gear_from_salvage": "IMPRIMIR EQUIPO CON CHATARRA",
-      "schematics_fabricated_0_8": "ESQUEMAS FABRICADOS: 0 / 8"
+      "schematics_fabricated_0_8": "ESQUEMAS FABRICADOS: 0 / 8",
+      "tech": "TEC",
+      "coin": "MONEDAS",
+      "med": "MED",
+      "shells": "CASQUILLOS"
     },
     "fab_roll": {
       "insert_salvage_to_fabricate": "INSERTA CHATARRA PARA FABRICAR"
@@ -591,7 +625,11 @@
     },
     "pickup_counter": {
       "loot": "BOTÍN",
-      "total": "TOTAL"
+      "total": "TOTAL",
+      "med": "MED",
+      "tech": "TEC",
+      "coin": "MONEDAS",
+      "shell": "CASQUILLO"
     },
     "boss_status": {
       "boss_threat": "AMENAZA DE JEFE"
@@ -770,7 +808,9 @@
     "confirm": {
       "critical_alert": "ALERTA CRÍTICA",
       "abort_mission": "ABORTAR MISIÓN",
-      "cancel": "CANCELAR"
+      "cancel": "CANCELAR",
+      "terminate_question": "¿TERMINAR ESTE CONTRATO AQUÍ MISMO?",
+      "terminate_detail": "Mantenimiento embolsará el traje y preparará una caja negra para el próximo descenso."
     },
     "day_rest_warning": {
       "the_night_will_close_doors": "LA NOCHE CERRARÁ LAS PUERTAS",
@@ -788,12 +828,17 @@
     "reset_save_confirm": {
       "reset_save_data": "RESTABLECER DATOS GUARDADOS",
       "reset_save": "RESTABLECER PARTIDA",
-      "cancel": "CANCELAR"
+      "cancel": "CANCELAR",
+      "question": "¿EMPEZAR UNA PARTIDA NUEVA?",
+      "cleared": "SE BORRARÁN EN ESTE DISPOSITIVO EL PROGRESO DE RGB, TODOS LOS LOGROS, DESBLOQUEOS, CHATARRA DEPOSITADA, CÓDICE, FABRICACIONES, MEJORES PUNTUACIONES Y DATOS DE PERFIL.",
+      "kept": "SE CONSERVARÁN LAS PREFERENCIAS DE AUDIO, PANTALLA Y CONTROLES."
     },
     "quit_confirm": {
       "quit_hunker_bunker": "SALIR DE HUNKER BUNKER",
       "confirm_quit": "CONFIRMAR SALIDA",
-      "cancel": "CANCELAR"
+      "cancel": "CANCELAR",
+      "question": "¿SALIR DE LA APLICACIÓN?",
+      "detail": "¿SEGURO QUE QUIERES SALIR? SE PERDERÁ TODO EL PROGRESO NO GUARDADO DE LA PARTIDA ACTIVA."
     },
     "camp_choice": {
       "aria_label_close_camp_decision": "Cerrar decisión del campamento",
@@ -833,7 +878,9 @@
     },
     "controls": {
       "steam_deck": "STEAM DECK:",
-      "desktop": "ESCRITORIO:"
+      "desktop": "ESCRITORIO:",
+      "deck_hint": "Stick izquierdo mueve o navega · Stick derecho apunta y controla el puntero visible · A acepta/interactúa · B retrocede/esquiva · Menu abre los ajustes.",
+      "desktop_hint": "Haz clic en una ranura y luego pulsa una tecla para asignarla. ESC cancela."
     },
     "mothership_dialogue": {
       "scout_link_encrypted": "ENLACE DE EXPLORACIÓN [CIFRADO]"
@@ -899,7 +946,14 @@
       "esc": "ESC",
       "click": "CLIC",
       "host": "ANFITRIÓN",
-      "back_to_armory": "← VOLVER A LA ARMERÍA"
+      "back_to_armory": "← VOLVER A LA ARMERÍA",
+      "title": "RED TÁCTICA",
+      "invite_friend": "INVITAR AMIGO",
+      "refresh": "ACTUALIZAR",
+      "hint_back": "ATRÁS",
+      "hint_toggle": "CAMBIAR MODO",
+      "hint_deploy": "DESPLEGAR ESCUADRA",
+      "accent_relay": "// MANDO DE RELÉ"
     },
     "close_multiplayer": {
       "aria_label_close_tactical_net": "Cerrar red táctica"
@@ -919,7 +973,9 @@
       "aria_label_close_progression_walkthrough": "Cerrar guía de progresión"
     },
     "select_picker": {
-      "aria_label_close_option_picker": "Cerrar selector de opciones"
+      "aria_label_close_option_picker": "Cerrar selector de opciones",
+      "select": "SELECCIONAR",
+      "back": "ATRÁS"
     },
     "virtual_keyboard": {
       "aria_label_close_on_screen": "Cerrar teclado en pantalla",
@@ -948,7 +1004,9 @@
       "preserved_on_failure": "Los activos del banco se conservan al fallar.",
       "dossier": "EXPEDIENTE",
       "pending": "{count} PENDIENTES",
-      "synced": "SINCRONIZADO ✓"
+      "synced": "SINCRONIZADO ✓",
+      "pathway_available": "RUTA DISPONIBLE — Los requisitos aún pueden cumplirse",
+      "projected_path": "RUTA PROYECTADA: {ending}"
     },
     "wanderer": {
       "survivor_named": "Superviviente: {name}",
@@ -958,7 +1016,9 @@
       "decline": "RECHAZAR ALIANZA — DEPOSITAR {supplies}",
       "supplies": "SUMINISTROS",
       "transmission": "[ TRANSMISIÓN DE SUPERVIVIENTE ]",
-      "quote": "«{text}»"
+      "quote": "«{text}»",
+      "inquiry": "Consulta:",
+      "quest_line": "{title} — {desc} Recompensa: {reward}."
     },
     "vault": {
       "item_acquired": "OBJETO DE STEAM OBTENIDO",
@@ -1029,7 +1089,8 @@
       "deploy_solo": "DESPLEGAR EN SOLITARIO",
       "host_control_required": "SE REQUIERE CONTROL DEL ANFITRIÓN",
       "host_new_lobby": "CREAR NUEVO VESTÍBULO",
-      "start_match": "INICIAR PARTIDA"
+      "start_match": "INICIAR PARTIDA",
+      "mode_members": "{mode} // {count}/4 OPERATIVOS"
     },
     "dossier": {
       "title": "EXPEDIENTE TÁCTICO",
@@ -1097,10 +1158,19 @@
       "daylight": "LUZ DIURNA",
       "night_ops": "OPERACIONES NOCTURNAS",
       "ready": "LISTO",
-      "insufficient": "INSUFICIENTE"
+      "insufficient": "INSUFICIENTE",
+      "transition_in": "{phase} EN {time}",
+      "dusk": "ANOCHECER",
+      "dawn": "AMANECER",
+      "base_status": "ESTADO DE LA BASE {type} {state}",
+      "active_exosuit": "[EXOTRAJE ACTIVO]",
+      "standby": "[EN ESPERA]",
+      "field_stabilizer": "ESTABILIZADOR DE CAMPO {type}"
     },
     "journal": {
-      "day_time": "D{day} {minute}:{second}"
+      "day_time": "D{day} {minute}:{second}",
+      "story": "HISTORIA",
+      "mission_next": "{mission} // SIGUIENTE: {goal}"
     },
     "bank": {
       "deposit_ready": "LISTO PARA DEPOSITAR. CANAL DE TRANSFERENCIA ABIERTO.",
@@ -1113,12 +1183,15 @@
       "repair_to_create_zone": "REPARA ESTE MÓDULO PARA CREAR UNA ZONA SEGURA DE O₂ CERCA DE TU NAVE.",
       "upgrades_expand_field": "LAS MEJORAS AMPLÍAN EL CAMPO AZUL DE O₂ PARA RECARGAR DESDE MÁS LEJOS.",
       "hearts_available": "♥ ×{count} DISPONIBLES",
-      "med_for_heart": "{med}/10 PARA ♥"
+      "med_for_heart": "{med}/10 PARA ♥",
+      "hearts_missing": "FALTAN {hearts} CORAZONES. {conversions} CONVERSIONES DISPONIBLES ({med} MED ALMACENADOS).",
+      "med_stored": "{med}/10 MED"
     },
     "skills": {
       "completed": "COMPLETADO",
       "upgrade": "MEJORAR",
-      "unlock": "DESBLOQUEAR"
+      "unlock": "DESBLOQUEAR",
+      "tree_summary": "ÁRBOL DEL BÚNKER {class}: {active}/{total} EN LÍNEA ({ready} LISTOS) | NIV. COMBATE: {combat}/{combatTotal} | SALDO: ◈ {shells} CASQUILLOS"
     },
     "turret": {
       "built_north_door": "CONSTRUIDA: CONTROLES EN LA PUERTA NORTE",
@@ -1191,7 +1264,8 @@
     "hud": {
       "ammo_cache": "ALIJO {current}/{max}",
       "current_biome": "BIOMA ACTUAL {biome}",
-      "equipped": "EQUIPADO"
+      "equipped": "EQUIPADO",
+      "bunker_level_aria": "NIVEL DEL BÚNKER {level} ({tier}) — {biome}"
     },
     "commentary": {
       "kicker": "COMENTARIO DEL DESARROLLADOR"
@@ -1204,7 +1278,8 @@
       "commander_name": "Subcomandante soviético",
       "aura_name": "IA sintetizada «AURA»",
       "commander_title": "SUBCOMANDANTE SOVIÉTICO",
-      "aura_title": "IA SINTETIZADA «AURA»"
+      "aura_title": "IA SINTETIZADA «AURA»",
+      "alt_sender_portrait": "Retrato del remitente"
     },
     "go": {
       "generator_level": "NIV. {level}",
@@ -1223,7 +1298,8 @@
       "unlocked_kicker": "LOGRO DESBLOQUEADO",
       "hidden": "Registro oculto. Desbloquéalo para revelarlo.",
       "coming_soon": "PRÓXIMAMENTE",
-      "unlocked": "DESBLOQUEADO"
+      "unlocked": "DESBLOQUEADO",
+      "summary_unlocked": "{unlocked} / {total} DESBLOQUEADOS"
     },
     "save": {
       "code_unavailable": "CÓDIGO DE GUARDADO NO DISPONIBLE"
@@ -1236,7 +1312,8 @@
     },
     "loader": {
       "deployment_telemetry": "TELEMETRÍA DE DESPLIEGUE DE LA NAVE NODRIZA",
-      "init_failed": "FALLO DE INICIALIZACIÓN DEL SISTEMA"
+      "init_failed": "FALLO DE INICIALIZACIÓN DEL SISTEMA",
+      "init_error_retrying": "[ ERROR DE INICIALIZACIÓN DEL SISTEMA — REINTENTANDO... ]"
     },
     "alert": {
       "tactical": "ALERTA TÁCTICA",
@@ -1245,12 +1322,15 @@
     "trade": {
       "squadmate": "COMPAÑERO DE ESCUADRA",
       "awaiting_offer": "ESPERANDO SELECCIÓN DE OFERTA",
-      "waiting_squadmate": "ESPERANDO AL COMPAÑERO..."
+      "waiting_squadmate": "ESPERANDO AL COMPAÑERO...",
+      "self_class": "{class} // OPERATIVO",
+      "peer_class": "{class} // REMOTO"
     },
     "bond": {
       "enamored": "ENAMORADA / DEVOTA",
       "warm": "CÁLIDA / ATRACCIÓN",
-      "attentive": "ATENTA"
+      "attentive": "ATENTA",
+      "badge": "{label} ({score} PTS)"
     },
     "fab": {
       "scatter_repeater": "REPETIDOR DE DISPERSIÓN",
@@ -1291,11 +1371,25 @@
       "field_conversation": "CONVERSACIÓN DE CAMPO",
       "callsign": "DISTINTIVO {callsign}",
       "listen_hint": "Escucha y luego decide cómo quieres ayudar.",
-      "quote": "«{text}»"
+      "quote": "«{text}»",
+      "next_action": "Tu próxima acción cambia el manifiesto de lanzamiento y el vector del final."
     },
     "title": {
       "pregalien_command": "PREGALIEN | MANDO DE LA COLMENA",
       "pregalien": "PREGALIEN"
+    },
+    "dialogue": {
+      "commander_badge": "COMUNICACIONES SOVIÉTICAS [72.4 MHz // {class}]",
+      "aura_badge": "ENLACE TÁCTICO AURA [SINT // {class}]",
+      "encrypted_badge": "ENLACE {class} [CIFRADO]"
+    },
+    "cutscene": {
+      "alt_incoming_ship": "Nave entrante",
+      "alt_crashed_ship": "Nave estrellada"
+    },
+    "snail": {
+      "alt_player_chassis": "Chasis del jugador",
+      "alt_snail_combatant": "Caracol combatiente"
     }
   },
   "narrative": {

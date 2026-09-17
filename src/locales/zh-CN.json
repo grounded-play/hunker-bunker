@@ -87,7 +87,8 @@
       "engineer": "工程兵",
       "reroute": "改道",
       "cheaper_consoles": "控制台更便宜",
-      "esc": "[ESC]"
+      "esc": "[ESC]",
+      "return_main": "← 返回主菜单"
     },
     "hub": {
       "daily_ops": "每日行动",
@@ -283,7 +284,14 @@
       "no_weapons": "尚未制造武器",
       "print_hint": "在制造舱花 12 科技 / 6 硬币必定打印一把散射连发枪。",
       "equipped": "✓ 已装备",
-      "equip": "装备"
+      "equip": "装备",
+      "id_label": "编号：",
+      "stat_sector": "区域 {depth}",
+      "stat_hostiles": "敌对目标 {count}",
+      "blackbox_recoverable": "可回收（区域 {depth}）",
+      "blackbox_none": "无",
+      "equipped_none": "无",
+      "arsenal_count": "军械库：已制造 {made} / {total} 件武器"
     },
     "dlg": {
       "channel": "母舰上行链路 7 号频道",
@@ -344,7 +352,8 @@
       "log_asset": "> {message}…",
       "log_booting_webgl": "> 正在启动战术 WebGL 核心…",
       "log_preloading_cinematic": "> 正在预载过场影像（DoorIntro）…",
-      "log_assets_loaded": "> 所有资源已载入 — 正在开启气闸…"
+      "log_assets_loaded": "> 所有资源已载入 — 正在开启气闸…",
+      "initializing_core": "> 正在初始化战术外骨骼核心…（{percent}%）"
     },
     "splash_steam_badge": {
       "title_click_to_open": "点击打开 Steam 界面档案",
@@ -373,7 +382,9 @@
       "github_repository": "GitHub 仓库",
       "special_thanks": "特别鸣谢",
       "our_amazing_community_players": "我们了不起的社区与玩家",
-      "thank_you_for_deploying": "感谢你的出击"
+      "thank_you_for_deploying": "感谢你的出击",
+      "tactical_command": "战术指挥",
+      "accent_credits": "// 制作名单"
     },
     "hero_detail": {
       "field_loadout": "野战配置"
@@ -384,14 +395,16 @@
       "in_progress": "进行中",
       "ready": "就绪",
       "best_score": "◈ 最佳：{score} 分",
-      "rgb_title": "RGB：RIVERSIDE GLOBAL 'BOTICS"
+      "rgb_title": "RGB：RIVERSIDE GLOBAL 'BOTICS",
+      "score_grade": "{score} 分 // {grade}"
     },
     "close_season_pass": {
       "aria_label_close_tactical_dossier": "关闭战术档案"
     },
     "season_pass": {
       "sub_terran_sector_operations_beta": "◈ 地下区域行动 // Beta 第 1 赛季",
-      "directives": "与指令"
+      "directives": "与指令",
+      "title": "战术档案"
     },
     "archive_log_detail": {
       "aria_label_close_archive_log": "关闭档案日志",
@@ -416,7 +429,10 @@
       "view_record": "查看 {name} 的情报记录",
       "click_hint": "点击查看情报档案与插图",
       "uncatalogued": "??? — 未收录",
-      "encounter_hint": "在野外遭遇它以恢复其记录。"
+      "encounter_hint": "在野外遭遇它以恢复其记录。",
+      "title": "野外图鉴",
+      "alt_intel_image": "图鉴情报图像",
+      "accent_bestiary": "// 图鉴志"
     },
     "close_codex_detail": {
       "aria_label_close_codex_entry": "关闭图鉴条目"
@@ -430,7 +446,9 @@
     "achievements": {
       "combat_citations_deep_crust_commendations": "◈ 战斗嘉奖 // 深层地壳表彰",
       "title_copy_a_portable": "复制便携存档代码",
-      "copy_save_code": "复制存档代码"
+      "copy_save_code": "复制存档代码",
+      "title": "特工嘉奖",
+      "accent_archive": "// 档案"
     },
     "close_steam_vault": {
       "aria_label_close_steam_vault": "关闭 Steam 保险库"
@@ -458,14 +476,26 @@
       "1_next_tier_item": "1× 上一品级物品",
       "deep_smelter": "深层熔炉",
       "consumes_5x_same_tier_items": "消耗 5x 同品级物品",
-      "deep_core_shard_dispensary": "深核碎片发放处"
+      "deep_core_shard_dispensary": "深核碎片发放处",
+      "title": "◈ Steam 保险库",
+      "caches_label": "宝箱：",
+      "keys_label": "钥匙：",
+      "shards_label": "碎片：",
+      "tab_inventory": "已拥有物品",
+      "tab_store": "◈ 遗物商店与掉落概率",
+      "tab_smelter": "◈ 熔炉与发放处",
+      "decrypt_with": "解密需要",
+      "rates_match": "· 概率与服务器表一致。",
+      "consumed_removed": "· 被消耗的物品将被移除。",
+      "accent_dispatch": "// 物品调度"
     },
     "vault_details": {
       "view_in_steam_market": "在 Steam 市场查看"
     },
     "vault_reveal": {
       "steam_relic_dispensary_appid_4957040": "◈ Steam 遗物发放处 // APPID 4957040",
-      "claim_to_inventory": "◈ 领取到背包"
+      "claim_to_inventory": "◈ 领取到背包",
+      "alt_reward": "奖励"
     },
     "operator_polish": {
       "operator_polish": "◆ 操作员涂装",
@@ -540,7 +570,11 @@
     "fabrication": {
       "fabrication_bay": "◇ 制造舱",
       "print_gear_from_salvage": "用废料打印装备",
-      "schematics_fabricated_0_8": "已制造图纸：0 / 8"
+      "schematics_fabricated_0_8": "已制造图纸：0 / 8",
+      "tech": "科技",
+      "coin": "硬币",
+      "med": "医疗",
+      "shells": "弹壳"
     },
     "fab_roll": {
       "insert_salvage_to_fabricate": "投入废料以制造"
@@ -591,7 +625,11 @@
     },
     "pickup_counter": {
       "loot": "战利品",
-      "total": "总计"
+      "total": "总计",
+      "med": "医疗",
+      "tech": "科技",
+      "coin": "硬币",
+      "shell": "弹壳"
     },
     "boss_status": {
       "boss_threat": "首领威胁"
@@ -770,7 +808,9 @@
     "confirm": {
       "critical_alert": "紧急警报",
       "abort_mission": "中止任务",
-      "cancel": "取消"
+      "cancel": "取消",
+      "terminate_question": "就地终止这份合约？",
+      "terminate_detail": "后勤将回收战服，并为下次下潜配备黑匣子。"
     },
     "day_rest_warning": {
       "the_night_will_close_doors": "夜幕将关闭大门",
@@ -788,12 +828,17 @@
     "reset_save_confirm": {
       "reset_save_data": "重置存档数据",
       "reset_save": "重置存档",
-      "cancel": "取消"
+      "cancel": "取消",
+      "question": "开始新游戏？",
+      "cleared": "本设备上的 RGB 进度、全部成就、解锁内容、存入的废料、图鉴、制造记录、最佳成绩与档案数据都将被清除。",
+      "kept": "音频、显示与操作偏好将被保留。"
     },
     "quit_confirm": {
       "quit_hunker_bunker": "退出 HUNKER BUNKER",
       "confirm_quit": "确认退出",
-      "cancel": "取消"
+      "cancel": "取消",
+      "question": "退出应用程序？",
+      "detail": "确定要退出吗？进行中征程的未保存进度都将丢失。"
     },
     "camp_choice": {
       "aria_label_close_camp_decision": "关闭营地决策",
@@ -833,7 +878,9 @@
     },
     "controls": {
       "steam_deck": "Steam Deck：",
-      "desktop": "桌面端："
+      "desktop": "桌面端：",
+      "deck_hint": "左摇杆移动或导航 · 右摇杆瞄准并控制可见指针 · A 确认/交互 · B 返回/闪避 · Menu 打开设置。",
+      "desktop_hint": "点击一个槽位，再按下按键进行绑定。ESC 取消。"
     },
     "mothership_dialogue": {
       "scout_link_encrypted": "侦察链路 [已加密]"
@@ -899,7 +946,14 @@
       "esc": "ESC",
       "click": "点击",
       "host": "房主",
-      "back_to_armory": "← 返回军械库"
+      "back_to_armory": "← 返回军械库",
+      "title": "战术网络",
+      "invite_friend": "邀请好友",
+      "refresh": "刷新",
+      "hint_back": "返回",
+      "hint_toggle": "切换模式",
+      "hint_deploy": "部署小队",
+      "accent_relay": "// 中继指挥"
     },
     "close_multiplayer": {
       "aria_label_close_tactical_net": "关闭战术网络"
@@ -919,7 +973,9 @@
       "aria_label_close_progression_walkthrough": "关闭进度演练"
     },
     "select_picker": {
-      "aria_label_close_option_picker": "关闭选项选择器"
+      "aria_label_close_option_picker": "关闭选项选择器",
+      "select": "选择",
+      "back": "返回"
     },
     "virtual_keyboard": {
       "aria_label_close_on_screen": "关闭屏幕键盘",
@@ -948,7 +1004,9 @@
       "preserved_on_failure": "失败时存款资产得以保留。",
       "dossier": "档案",
       "pending": "{count} 待处理",
-      "synced": "已同步 ✓"
+      "synced": "已同步 ✓",
+      "pathway_available": "路径仍然可行 — 条件尚可达成",
+      "projected_path": "预测路径：{ending}"
     },
     "wanderer": {
       "survivor_named": "幸存者：{name}",
@@ -958,7 +1016,9 @@
       "decline": "拒绝结盟 — 存入{supplies}",
       "supplies": "补给",
       "transmission": "[ 幸存者通讯 ]",
-      "quote": "“{text}”"
+      "quote": "“{text}”",
+      "inquiry": "询问：",
+      "quest_line": "{title} — {desc} 奖励：{reward}。"
     },
     "vault": {
       "item_acquired": "已获得 Steam 物品",
@@ -1029,7 +1089,8 @@
       "deploy_solo": "单人出击",
       "host_control_required": "需要房主权限",
       "host_new_lobby": "创建新大厅",
-      "start_match": "开始对战"
+      "start_match": "开始对战",
+      "mode_members": "{mode} // {count}/4 名特工"
     },
     "dossier": {
       "title": "战术档案",
@@ -1097,10 +1158,19 @@
       "daylight": "白昼",
       "night_ops": "夜间行动",
       "ready": "就绪",
-      "insufficient": "资源不足"
+      "insufficient": "资源不足",
+      "transition_in": "{time} 后{phase}",
+      "dusk": "黄昏",
+      "dawn": "黎明",
+      "base_status": "{type} 基地状态 {state}",
+      "active_exosuit": "[当前外骨骼]",
+      "standby": "[待机]",
+      "field_stabilizer": "{type} 力场稳定器"
     },
     "journal": {
-      "day_time": "D{day} {minute}:{second}"
+      "day_time": "D{day} {minute}:{second}",
+      "story": "剧情",
+      "mission_next": "{mission} // 下一步：{goal}"
     },
     "bank": {
       "deposit_ready": "可以存入。资源传输通道已开启。",
@@ -1113,12 +1183,15 @@
       "repair_to_create_zone": "修复此模块可在飞船附近建立安全 O₂ 区域。",
       "upgrades_expand_field": "升级可扩大蓝色 O₂ 力场，让你在更远处补充。",
       "hearts_available": "♥ ×{count} 可用",
-      "med_for_heart": "{med}/10 换 ♥"
+      "med_for_heart": "{med}/10 换 ♥",
+      "hearts_missing": "缺少 {hearts} 颗心。可进行 {conversions} 次转换（已存 {med} 医疗）。",
+      "med_stored": "医疗 {med}/10"
     },
     "skills": {
       "completed": "已完成",
       "upgrade": "升级",
-      "unlock": "解锁"
+      "unlock": "解锁",
+      "tree_summary": "{class} 地堡树：{active}/{total} 在线（{ready} 就绪）| 战斗等级：{combat}/{combatTotal} | 余额：◈ {shells} 弹壳"
     },
     "turret": {
       "built_north_door": "已建造 — 控制台位于北门",
@@ -1191,7 +1264,8 @@
     "hud": {
       "ammo_cache": "弹药箱 {current}/{max}",
       "current_biome": "当前生物群系 {biome}",
-      "equipped": "已装备"
+      "equipped": "已装备",
+      "bunker_level_aria": "地堡层级 {level}（{tier}）— {biome}"
     },
     "commentary": {
       "kicker": "开发者评论"
@@ -1204,7 +1278,8 @@
       "commander_name": "苏联副指挥官",
       "aura_name": "合成人工智能“AURA”",
       "commander_title": "苏联副指挥官",
-      "aura_title": "合成人工智能“AURA”"
+      "aura_title": "合成人工智能“AURA”",
+      "alt_sender_portrait": "发信人肖像"
     },
     "go": {
       "generator_level": "等级 {level}",
@@ -1223,7 +1298,8 @@
       "unlocked_kicker": "成就解锁",
       "hidden": "隐藏记录。解锁后显示。",
       "coming_soon": "敬请期待",
-      "unlocked": "已解锁"
+      "unlocked": "已解锁",
+      "summary_unlocked": "已解锁 {unlocked} / {total}"
     },
     "save": {
       "code_unavailable": "存档代码不可用"
@@ -1236,7 +1312,8 @@
     },
     "loader": {
       "deployment_telemetry": "母舰部署遥测",
-      "init_failed": "系统初始化失败"
+      "init_failed": "系统初始化失败",
+      "init_error_retrying": "[ 系统初始化错误 — 正在重试… ]"
     },
     "alert": {
       "tactical": "战术警报",
@@ -1245,12 +1322,15 @@
     "trade": {
       "squadmate": "小队成员",
       "awaiting_offer": "等待选择报价",
-      "waiting_squadmate": "等待小队成员…"
+      "waiting_squadmate": "等待小队成员…",
+      "self_class": "{class} // 特工",
+      "peer_class": "{class} // 远程"
     },
     "bond": {
       "enamored": "倾心 / 忠诚",
       "warm": "热情 / 好感",
-      "attentive": "关注"
+      "attentive": "关注",
+      "badge": "{label}（{score} 分）"
     },
     "fab": {
       "scatter_repeater": "散射连发枪",
@@ -1291,11 +1371,25 @@
       "field_conversation": "野外对话",
       "callsign": "呼号 {callsign}",
       "listen_hint": "先倾听，再决定你想如何帮忙。",
-      "quote": "“{text}”"
+      "quote": "“{text}”",
+      "next_action": "你的下一步行动将改变发射清单与结局走向。"
     },
     "title": {
       "pregalien_command": "PREGALIEN | 虫巢指挥",
       "pregalien": "PREGALIEN"
+    },
+    "dialogue": {
+      "commander_badge": "苏联无线电通讯 [72.4 MHz // {class}]",
+      "aura_badge": "AURA 战术链路 [合成 // {class}]",
+      "encrypted_badge": "{class} 链路 [已加密]"
+    },
+    "cutscene": {
+      "alt_incoming_ship": "来袭的飞船",
+      "alt_crashed_ship": "坠毁的飞船"
+    },
+    "snail": {
+      "alt_player_chassis": "玩家底盘",
+      "alt_snail_combatant": "蜗牛战斗体"
     }
   },
   "narrative": {

@@ -6561,7 +6561,7 @@ body.distress-mode #game-viewport::after {
   color: rgba(245, 248, 251, 0.84);
 }
 
-.pickup-counter-panel__row span:last-child {
+.pickup-counter-panel__row > span:last-child {
   color: rgba(255, 228, 172, 0.95);
   font-weight: 900;
   text-align: right;
@@ -6573,7 +6573,7 @@ body.distress-mode #game-viewport::after {
   margin-bottom: calc(var(--vu) * 0.3);
 }
 
-.pickup-counter-panel__row--total span:last-child {
+.pickup-counter-panel__row--total > span:last-child {
   font-size: clamp(20px, calc(var(--vu) * 3.4), 30px);
   font-weight: 900;
   color: #ffd18c;
@@ -6817,7 +6817,7 @@ body.distress-mode #game-viewport::after {
     width: clamp(10px, calc(var(--vu) * 1.55), 13px);
   }
 
-  .pickup-counter-panel__row--total span:last-child {
+  .pickup-counter-panel__row--total > span:last-child {
     font-size: clamp(14px, calc(var(--vu) * 2.05), 18px);
   }
 
@@ -14343,7 +14343,7 @@ body.cutscene-video-active .tactical-overlay {
 }
 
 /* ── Snail shell counter (bank-backed row in the loot panel) ── */
-.pickup-counter-panel__row--shells span:last-child {
+.pickup-counter-panel__row--shells > span:last-child {
   color: #9fe8c4;
 }
 

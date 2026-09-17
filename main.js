@@ -25,7 +25,7 @@ import { DEPTH_TIER_NAMES } from './src/data/loot.js';
 import { getVoiceAudioManifest } from './src/data/voiceBanks.js';
 import { GAMEPLAY_FOLEY_MANIFEST } from './src/data/gameSoundsets.js';
 import { getDeathCinematicSpec, getEventCinematicSpec, normalizeCinematicStillSpec, shouldPlayAuthoredEventCinematic } from './src/cinematicFallback.js';
-import { DialogueManager } from './src/dialogue.js';
+import { DialogueManager, resolveEffectiveVoicePackId } from './src/dialogue.js';
 import { VitalsHUD } from './src/vitals.js';
 import { blackBoxStore } from './src/blackBox.js';
 import { runCheckpointStore, recoverCrashedRunCheckpoint } from './src/runCheckpoint.js';
@@ -731,6 +731,17 @@ document.addEventListener('visibilitychange', () => {
     }
     window.requestAnimationFrame(ensureControllerMenuFocus);
 });
+
+// Unlock web audio on first user gesture anywhere so dialogue and voice callouts play reliably
+const unlockAudioOnGesture = () => {
+    AudioManager.unlock();
+    window.removeEventListener('pointerdown', unlockAudioOnGesture, true);
+    window.removeEventListener('keydown', unlockAudioOnGesture, true);
+    window.removeEventListener('touchstart', unlockAudioOnGesture, true);
+};
+window.addEventListener('pointerdown', unlockAudioOnGesture, { capture: true, once: true });
+window.addEventListener('keydown', unlockAudioOnGesture, { capture: true, once: true });
+window.addEventListener('touchstart', unlockAudioOnGesture, { capture: true, once: true });
 
 function setLastInputMode(mode, { refresh = true } = {}) {
     const normalized = mode === 'controller' ? 'controller' : 'keyboard';
@@ -2842,7 +2853,7 @@ function updateDailyOpsUI() {
     if (statusEl) {
         if (record?.completed) {
             const g = record.grade ?? 'D';
-            statusEl.textContent = `${record.score} PTS // ${g}`;
+            statusEl.textContent = t('ui.archive.score_grade', { score: record.score, grade: g });
         } else if (record?.attempted) {
             statusEl.textContent = t('ui.archive.in_progress');
         } else {
@@ -3706,7 +3717,7 @@ function renderBunkerLevel(tier = 0) {
     bunkerLevelNum.textContent = String(normalized);
     bunkerLevelNum.title = BUNKER_TIER_NAMES[normalized];
     const biomeLabel = biomeLabelEl?.textContent?.trim() || DEFAULT_BIOME_LABEL;
-    bunkerLevelNum.setAttribute('aria-label', `BUNKER LEVEL ${normalized} (${BUNKER_TIER_NAMES[normalized]}) — ${biomeLabel}`);
+    bunkerLevelNum.setAttribute('aria-label', t('ui.hud.bunker_level_aria', { level: normalized, tier: BUNKER_TIER_NAMES[normalized], biome: biomeLabel }));
 }
 
 function hideBiomePrompt() {
@@ -4888,6 +4899,11 @@ function showGameOverScreen(stats, { isVictory = false, deathReason = 'hazard' }
     AudioManager.stopAmbience();
     transitionToMenuMusic();
 
+    // Trigger Game Over audio cues
+    AudioManager.unlock();
+    AudioManager.play(isVictory ? 'generator_complete' : 'terminal_deny', { volume: 0.75 });
+    AudioManager.playVoiceCallout(isVictory ? 'victory' : 'operator_down', { volume: 0.95 });
+
     // Stagger bar animations for a readout effect
     requestAnimationFrame(() => {
         setTimeout(() => { if (distBar)  distBar.style.width  = `${distancePct}%`; }, 120);
@@ -5674,7 +5690,7 @@ function renderAchievementsModal() {
     const grid = document.getElementById('achievements-grid');
     const summary = document.getElementById('achievements-summary');
     const status = document.getElementById('achievements-save-status');
-    if (summary) summary.textContent = `${getAchievementUnlockCount(state)} / ${getLiveAchievementCount()} UNLOCKED`;
+    if (summary) summary.textContent = t('ui.ach.summary_unlocked', { unlocked: getAchievementUnlockCount(state), total: getLiveAchievementCount() });
     if (status) status.textContent = '';
     if (!grid) return;
     grid.innerHTML = '';
@@ -7389,7 +7405,7 @@ function playClassIntroSequence(playerType = 'SCOUT') {
             overlay.append(buildSquadManifestPanel());
         }
 
-        const activeVoicePackId = window.loadout?.state?.voicePackId || window.loadout?.getEquippedVoicePackId?.();
+        const activeVoicePackId = resolveEffectiveVoicePackId(window.loadout?.state?.voicePackId || window.loadout?.getEquippedVoicePackId?.());
         const personaPanel = buildVoicePackPersonaOverlay(activeVoicePackId);
         if (personaPanel) {
             overlay.append(personaPanel);
@@ -7398,9 +7414,8 @@ function playClassIntroSequence(playerType = 'SCOUT') {
         overlay.append(skipHint);
         host.appendChild(overlay);
 
-        if (activeVoicePackId) {
-            window.AudioManager?.playVoiceCallout?.('mission_active', { volume: 0.95 });
-        }
+        window.AudioManager?.unlock?.();
+        window.AudioManager?.playVoiceCallout?.('mission_active', { volume: 0.95 });
 
         playVideoSource(charBase, startLaunchStep);
     });
@@ -10447,12 +10462,12 @@ function updatePlayerTradeUi(state) {
     const selfCallsignEl = document.getElementById('trade-self-callsign');
     const selfClassEl = document.getElementById('trade-self-class');
     if (selfCallsignEl) selfCallsignEl.textContent = selfCallsign.toUpperCase();
-    if (selfClassEl) selfClassEl.textContent = `${selfClass} // OPERATIVE`;
+    if (selfClassEl) selfClassEl.textContent = t('ui.trade.self_class', { class: selfClass });
 
     const peerCallsignEl = document.getElementById('trade-peer-callsign');
     const peerClassEl = document.getElementById('trade-peer-class');
     if (peerCallsignEl) peerCallsignEl.textContent = (state.partner?.callsign || t('ui.trade.squadmate')).toUpperCase();
-    if (peerClassEl) peerClassEl.textContent = `${state.partner?.opClass || 'SCOUT'} // REMOTE`;
+    if (peerClassEl) peerClassEl.textContent = t('ui.trade.peer_class', { class: state.partner?.opClass || 'SCOUT' });
 
     // Self availability
     const shellAvailEl = document.getElementById('trade-self-shells-avail');
@@ -10605,7 +10620,7 @@ function updateNpcDialogueUi(state = {}) {
     if (nameEl) nameEl.textContent = tree.name.toUpperCase();
     if (factionEl) factionEl.textContent = tree.faction;
     if (bondBadgeEl && bond) {
-        bondBadgeEl.textContent = `${bond.label} (${state.bondScore || 0} PTS)`;
+        bondBadgeEl.textContent = t('ui.bond.badge', { label: bond.label, score: state.bondScore || 0 });
     }
     if (avatarEl) avatarEl.textContent = tree.icon || '💬';
     if (moodEl) {
@@ -12048,7 +12063,7 @@ function renderCodexModal() {
         } else {
             const openStatus = document.createElement('div');
             openStatus.className = 'ending-card__open-status';
-            openStatus.innerHTML = `<span class="open-dot">●</span> PATHWAY AVAILABLE — Requirements can still be achieved`;
+            openStatus.innerHTML = `<span class="open-dot">●</span> ${t('ui.manifest.pathway_available')}`;
             content.appendChild(openStatus);
         }
 
@@ -12481,7 +12496,7 @@ function renderCampChoice(detail = {}) {
     if (campChoiceCopy) {
         const title = detail.leaderTitle ? `${detail.leaderTitle}. ` : '';
         const callsign = detail.leaderCallsign ? `Callsign ${detail.leaderCallsign}. ` : '';
-        campChoiceCopy.textContent = `${title}${callsign}Your next action changes the launch manifest and the ending vector.`;
+        campChoiceCopy.textContent = `${title}${callsign}${t('ui.camp.next_action')}`;
     }
 
     // Boarding manifest forecast logic
@@ -12559,7 +12574,7 @@ function renderCampChoice(detail = {}) {
             } else {
                 const projectedEnding = pickAct2Ending(previewState);
                 const endingName = ACT2_ENDING_TITLES[projectedEnding] ?? projectedEnding.replace(/_/g, ' ').toUpperCase();
-                blockersList.innerHTML = `<div class="manifest-success-item">PROJECTED PATH: ${endingName}</div>`;
+                blockersList.innerHTML = `<div class="manifest-success-item">${t('ui.manifest.projected_path', { ending: endingName })}</div>`;
             }
         }
     }
@@ -13409,15 +13424,15 @@ function renderRosterModal(mode = 'continue') {
         const distVal = stats.distanceTravelled ?? 0;
         const killVal = stats.snailsKilled ?? 0;
 
-        setTxt('roster-stat-depth', `SECTOR ${depthVal}`);
+        setTxt('roster-stat-depth', t('ui.roster.stat_sector', { depth: depthVal }));
         setTxt('roster-stat-distance', `${distVal}u`);
-        setTxt('roster-stat-kills', `${killVal} HOSTILES`);
-        setTxt('roster-stat-blackbox', bbState?.active ? `RECOVERABLE (SECTOR ${bbState.depth ?? 0})` : 'NONE');
+        setTxt('roster-stat-kills', t('ui.roster.stat_hostiles', { count: killVal }));
+        setTxt('roster-stat-blackbox', bbState?.active ? t('ui.roster.blackbox_recoverable', { depth: bbState.depth ?? 0 }) : t('ui.roster.blackbox_none'));
     } catch {
-        setTxt('roster-stat-depth', 'SECTOR 0');
+        setTxt('roster-stat-depth', t('ui.roster.stat_sector', { depth: 0 }));
         setTxt('roster-stat-distance', '0u');
-        setTxt('roster-stat-kills', '0 HOSTILES');
-        setTxt('roster-stat-blackbox', 'NONE');
+        setTxt('roster-stat-kills', t('ui.roster.stat_hostiles', { count: 0 }));
+        setTxt('roster-stat-blackbox', t('ui.roster.blackbox_none'));
     }
 
     // Render equipped Steam cosmetics (3 pre-blank placeholder cards showing NULL when unequipped)
@@ -13425,9 +13440,9 @@ function renderRosterModal(mode = 'continue') {
     const decalId = localStorage.getItem('hb_equipped_decal');
     const finishId = localStorage.getItem('hb_equipped_weapon_finish');
 
-    setTxt('roster-equipped-patch', patchId ? (STEAM_ITEM_CATALOG[Number(patchId)]?.name ?? 'NULL') : 'NULL');
-    setTxt('roster-equipped-decal', decalId ? (STEAM_ITEM_CATALOG[Number(decalId)]?.name ?? 'NULL') : 'NULL');
-    setTxt('roster-equipped-weapon-finish', finishId ? (STEAM_ITEM_CATALOG[Number(finishId)]?.name ?? 'NULL') : 'NULL');
+    setTxt('roster-equipped-patch', patchId ? (STEAM_ITEM_CATALOG[Number(patchId)]?.name ?? t('ui.roster.equipped_none')) : t('ui.roster.equipped_none'));
+    setTxt('roster-equipped-decal', decalId ? (STEAM_ITEM_CATALOG[Number(decalId)]?.name ?? t('ui.roster.equipped_none')) : t('ui.roster.equipped_none'));
+    setTxt('roster-equipped-weapon-finish', finishId ? (STEAM_ITEM_CATALOG[Number(finishId)]?.name ?? t('ui.roster.equipped_none')) : t('ui.roster.equipped_none'));
 
     // Make cosmetic cards clickable to open Steam Vault submenu
     const cosmeticsRow = document.getElementById('roster-cosmetics-row');
@@ -13446,7 +13461,7 @@ function renderRosterModal(mode = 'continue') {
     const weapons = FAB_RECIPES.filter((r) => r.klass === 'WEAPON');
     const fabbedWeapons = weapons.filter((r) => fabricator.isFabricated(r.id));
     const fabbed = fabbedWeapons.length;
-    setTxt('roster-fab-count', `ARSENAL: ${fabbed} / ${weapons.length} WEAPONS FABRICATED`);
+    setTxt('roster-fab-count', t('ui.roster.arsenal_count', { made: fabbed, total: weapons.length }));
 
     grid.innerHTML = '';
     if (fabbed === 0) {
@@ -14963,7 +14978,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             await AudioManager.loadAssets(gameplayManifest, (progress, itemName) => {
                 if (loaderStatus && itemName) {
                     const msg = getLoadingMessageForAsset(itemName);
-                    loaderStatus.innerHTML = `<div style="opacity: 1.0; animation: tactical-pulse 1s infinite ease-in-out;">> INITIALIZING TACTICAL EXOSUIT CORE... (${Math.round(progress)}%)<br><span style="font-size: var(--font-xs); color: var(--text-muted);">> ${msg}...</span></div>`;
+                    loaderStatus.innerHTML = `<div style="opacity: 1.0; animation: tactical-pulse 1s infinite ease-in-out;">${t('ui.loading.initializing_core', { percent: Math.round(progress) })}<br><span style="font-size: var(--font-xs); color: var(--text-muted);">> ${msg}...</span></div>`;
                 }
             });
             traceBootPhase('gameplay-assets-ready', {
@@ -15114,7 +15129,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             console.error('Initialization failed:', err);
             bootInitializing = false;
             if (loaderStatus) {
-                loaderStatus.innerHTML = `<div style="opacity: 1.0; color: var(--accent-secondary); animation: tactical-pulse 2s infinite ease-in-out;">[ SYSTEM INITIALIZATION ERROR — RETRYING... ]</div>`;
+                loaderStatus.innerHTML = `<div style="opacity: 1.0; color: var(--accent-secondary); animation: tactical-pulse 2s infinite ease-in-out;">${t('ui.loader.init_error_retrying')}</div>`;
             }
             return;
         }

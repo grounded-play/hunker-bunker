@@ -11687,7 +11687,10 @@ export class ThreeGame {
         setText('terminal-log-day', t('ui.console.day_n', { day }));
         setText('terminal-log-phase', phase);
         setText('terminal-log-light', lightIsDay ? t('ui.console.daylight') : t('ui.console.night_ops'));
-        setText('terminal-log-transition', `${lightIsDay ? 'DUSK' : 'DAWN'} IN ${String(Math.floor(transitionSeconds / 60)).padStart(2, '0')}:${String(transitionSeconds % 60).padStart(2, '0')}`);
+        setText('terminal-log-transition', t('ui.console.transition_in', {
+            phase: lightIsDay ? t('ui.console.dusk') : t('ui.console.dawn'),
+            time: `${String(Math.floor(transitionSeconds / 60)).padStart(2, '0')}:${String(transitionSeconds % 60).padStart(2, '0')}`
+        }));
 
         const mission = this.missionState;
         const missionLabel = mission?.label || 'EXPLORE · BANK SALVAGE';
@@ -11712,7 +11715,7 @@ export class ThreeGame {
             const second = String(entry.elapsed % 60).padStart(2, '0');
             item.innerHTML = `<span class="terminal-objective-journal-time"></span><span class="terminal-objective-journal-copy"></span><strong class="terminal-objective-journal-state"></strong>`;
             item.querySelector('.terminal-objective-journal-time').textContent = t('ui.journal.day_time', { day: entry.day, minute, second });
-            item.querySelector('.terminal-objective-journal-copy').textContent = `${entry.missionLabel} // NEXT: ${entry.goalLabel}`;
+            item.querySelector('.terminal-objective-journal-copy').textContent = t('ui.journal.mission_next', { mission: entry.missionLabel, goal: entry.goalLabel });
             item.querySelector('.terminal-objective-journal-state').textContent = `${entry.missionStatus} · ${entry.goalStatus}`;
             list.append(item);
         }
@@ -11723,7 +11726,7 @@ export class ThreeGame {
             if (!resolved.has(deadline.id) && !expired.has(deadline.id) && day + 1 < deadline.closesOnDay) continue;
             const item = document.createElement('li');
             item.className = expired.has(deadline.id) ? 'is-expired' : resolved.has(deadline.id) ? 'is-complete' : 'is-warning';
-            item.innerHTML = `<span class="terminal-objective-journal-time">STORY</span><span class="terminal-objective-journal-copy"></span><strong class="terminal-objective-journal-state"></strong>`;
+            item.innerHTML = `<span class="terminal-objective-journal-time">${t('ui.journal.story')}</span><span class="terminal-objective-journal-copy"></span><strong class="terminal-objective-journal-state"></strong>`;
             item.querySelector('.terminal-objective-journal-copy').textContent = deadline.label;
             item.querySelector('.terminal-objective-journal-state').textContent = resolved.has(deadline.id)
                 ? 'RESOLVED' : expired.has(deadline.id) ? 'EXPIRED' : `CLOSES DAY ${deadline.closesOnDay}`;
@@ -11847,7 +11850,7 @@ export class ThreeGame {
             if (this.playerVitals.hp >= this.playerVitals.maxHp) {
                 medkitStatus.textContent = t('ui.bank.hp_full');
             } else if (bankState.med < 10) {
-                medkitStatus.textContent = `${bankState.med}/10 MED`;
+                medkitStatus.textContent = t('ui.bank.med_stored', { med: bankState.med });
             } else {
                 medkitStatus.textContent = t('ui.bank.conversions_available', { count: conversionsReady });
             }
@@ -11857,7 +11860,13 @@ export class ThreeGame {
             if (this.playerVitals.hp >= this.playerVitals.maxHp) {
                 medkitHint.textContent = t('ui.bank.integrity_full');
             } else {
-                medkitHint.textContent = `${heartsMissing} HEART${heartsMissing === 1 ? '' : 'S'} MISSING. ${conversionsReady} CONVERSION${conversionsReady === 1 ? '' : 'S'} AVAILABLE (${bankState.med} MED STORED).`;
+                medkitHint.textContent = t('ui.bank.hearts_missing', {
+                    hearts: heartsMissing,
+                    heartPlural: heartsMissing === 1 ? '' : 'S',
+                    conversions: conversionsReady,
+                    conversionPlural: conversionsReady === 1 ? '' : 'S',
+                    med: bankState.med
+                });
             }
         }
 
@@ -12216,7 +12225,7 @@ export class ThreeGame {
         const badge = document.getElementById('terminal-class-badge');
         if (badge) {
             const isActive = this.playerType === ship.type;
-            badge.textContent = `${ship.type} BASE STATUS ${isActive ? '[ACTIVE EXOSUIT]' : '[STANDBY]'}`;
+            badge.textContent = t('ui.console.base_status', { type: ship.type, state: isActive ? t('ui.console.active_exosuit') : t('ui.console.standby') });
         }
 
         this.syncPersistentUpgrades();
@@ -12735,7 +12744,15 @@ export class ThreeGame {
         if (countEl) {
             const activeCount = nodes.filter((node) => this.isTreeNodeActive(stateById.get(node.id))).length;
             const readyCount = nodes.filter((node) => Boolean(stateById.get(node.id)?.available)).length;
-            countEl.textContent = `${tree.playerClass} BUNKER TREE: ${activeCount}/${nodes.length} ONLINE (${readyCount} READY) | COMBAT LV: ${progression.combatUnlocked}/${progression.combatTotal} | BALANCE: ◈ ${this.bank.getShells()} SHELLS`;
+            countEl.textContent = t('ui.skills.tree_summary', {
+                class: tree.playerClass,
+                active: activeCount,
+                total: nodes.length,
+                ready: readyCount,
+                combat: progression.combatUnlocked,
+                combatTotal: progression.combatTotal,
+                shells: this.bank.getShells()
+            });
         }
 
         // Row-major append order: the CSS grid places cards by explicit
@@ -12773,7 +12790,7 @@ export class ThreeGame {
         };
         const badge = document.getElementById('o2-generator-modal-badge');
         if (badge) {
-            badge.textContent = `${ship?.type ?? this.playerType} FIELD STABILIZER`;
+            badge.textContent = t('ui.console.field_stabilizer', { type: ship?.type ?? this.playerType });
         }
         setText('o2-generator-modal-status', generatorState.isOnline
             ? `ONLINE // LVL ${generatorState.level}`

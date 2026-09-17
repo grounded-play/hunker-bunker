@@ -87,7 +87,8 @@
       "engineer": "INGENIEUR",
       "reroute": "UMLEITEN",
       "cheaper_consoles": "GÜNSTIGERE KONSOLEN",
-      "esc": "[ESC]"
+      "esc": "[ESC]",
+      "return_main": "← ZURÜCK ZUM HAUPTMENÜ"
     },
     "hub": {
       "daily_ops": "TAGESEINSATZ",
@@ -283,7 +284,14 @@
       "no_weapons": "KEINE WAFFEN GEFERTIGT",
       "print_hint": "Drucke in der Fertigungsbucht einen garantierten Streu-Repetierer für 12 Tech / 6 Münzen.",
       "equipped": "✓ AUSGERÜSTET",
-      "equip": "AUSRÜSTEN"
+      "equip": "AUSRÜSTEN",
+      "id_label": "ID:",
+      "stat_sector": "SEKTOR {depth}",
+      "stat_hostiles": "{count} FEINDE",
+      "blackbox_recoverable": "BERGBAR (SEKTOR {depth})",
+      "blackbox_none": "KEINE",
+      "equipped_none": "KEINE",
+      "arsenal_count": "ARSENAL: {made} / {total} WAFFEN GEFERTIGT"
     },
     "dlg": {
       "channel": "MUTTERSCHIFF-UPLINK KANAL 7",
@@ -344,7 +352,8 @@
       "log_asset": "> {message}...",
       "log_booting_webgl": "> TAKTISCHER WEBGL-KERN WIRD GESTARTET...",
       "log_preloading_cinematic": "> CINEMATIC-FEED WIRD VORGELADEN (DoorIntro)...",
-      "log_assets_loaded": "> ALLE ASSETS GELADEN – LUFTSCHLEUSE WIRD GEÖFFNET..."
+      "log_assets_loaded": "> ALLE ASSETS GELADEN – LUFTSCHLEUSE WIRD GEÖFFNET...",
+      "initializing_core": "> TAKTISCHER EXOANZUG-KERN WIRD INITIALISIERT... ({percent}%)"
     },
     "splash_steam_badge": {
       "title_click_to_open": "Klicken, um Steam-Overlay-Profil zu öffnen",
@@ -373,7 +382,9 @@
       "github_repository": "GITHUB-REPOSITORY",
       "special_thanks": "BESONDERER DANK",
       "our_amazing_community_players": "Unserer großartigen Community & den Spielern",
-      "thank_you_for_deploying": "DANKE FÜRS AUSRÜCKEN"
+      "thank_you_for_deploying": "DANKE FÜRS AUSRÜCKEN",
+      "tactical_command": "TAKTISCHES KOMMANDO",
+      "accent_credits": "// CREDITS"
     },
     "hero_detail": {
       "field_loadout": "FELDAUSRÜSTUNG"
@@ -384,14 +395,16 @@
       "in_progress": "LÄUFT",
       "ready": "BEREIT",
       "best_score": "◈ BESTE: {score} PKT",
-      "rgb_title": "RGB: RIVERSIDE GLOBAL 'BOTICS"
+      "rgb_title": "RGB: RIVERSIDE GLOBAL 'BOTICS",
+      "score_grade": "{score} PKT // {grade}"
     },
     "close_season_pass": {
       "aria_label_close_tactical_dossier": "Taktisches Dossier schließen"
     },
     "season_pass": {
       "sub_terran_sector_operations_beta": "◈ SUBTERRANE SEKTOR-OPERATIONEN // BETA-SAISON 1",
-      "directives": "& DIREKTIVEN"
+      "directives": "& DIREKTIVEN",
+      "title": "TAKTISCHES DOSSIER"
     },
     "archive_log_detail": {
       "aria_label_close_archive_log": "Archiv-Log schließen",
@@ -416,7 +429,10 @@
       "view_record": "Intel-Eintrag für {name} ansehen",
       "click_hint": "KLICKEN FÜR DOSSIER & ARTWORK",
       "uncatalogued": "??? — NICHT KATALOGISIERT",
-      "encounter_hint": "Begegne ihm im Feld, um seinen Eintrag zu bergen."
+      "encounter_hint": "Begegne ihm im Feld, um seinen Eintrag zu bergen.",
+      "title": "FELD-KODEX",
+      "alt_intel_image": "Kodex-Intel-Bild",
+      "accent_bestiary": "// BESTIARIUM"
     },
     "close_codex_detail": {
       "aria_label_close_codex_entry": "Kodex-Eintrag schließen"
@@ -430,7 +446,9 @@
     "achievements": {
       "combat_citations_deep_crust_commendations": "◈ GEFECHTSAUSZEICHNUNGEN // TIEFENKRUSTEN-EHRUNGEN",
       "title_copy_a_portable": "Portablen Speichercode kopieren",
-      "copy_save_code": "SPEICHERCODE KOPIEREN"
+      "copy_save_code": "SPEICHERCODE KOPIEREN",
+      "title": "OPERATIVEN-AUSZEICHNUNGEN",
+      "accent_archive": "// ARCHIV"
     },
     "close_steam_vault": {
       "aria_label_close_steam_vault": "Steam-Tresor schließen"
@@ -458,14 +476,26 @@
       "1_next_tier_item": "1× GEGENSTAND NÄCHSTER STUFE",
       "deep_smelter": "TIEFEN-SCHMELZE",
       "consumes_5x_same_tier_items": "VERBRAUCHT 5x GEGENSTÄNDE GLEICHER STUFE",
-      "deep_core_shard_dispensary": "TIEFENKERN-SPLITTER-AUSGABE"
+      "deep_core_shard_dispensary": "TIEFENKERN-SPLITTER-AUSGABE",
+      "title": "◈ STEAM-TRESOR",
+      "caches_label": "CACHES:",
+      "keys_label": "SCHLÜSSEL:",
+      "shards_label": "SPLITTER:",
+      "tab_inventory": "EIGENES INVENTAR",
+      "tab_store": "◈ RELIKT-SHOP & DROP-CHANCEN",
+      "tab_smelter": "◈ SCHMELZE & AUSGABE",
+      "decrypt_with": "entschlüsseln mit",
+      "rates_match": "· Die Raten entsprechen den Servertabellen.",
+      "consumed_removed": "· Verbrauchte Gegenstände werden entfernt.",
+      "accent_dispatch": "// ITEM-VERSAND"
     },
     "vault_details": {
       "view_in_steam_market": "IM STEAM-MARKT ANSEHEN"
     },
     "vault_reveal": {
       "steam_relic_dispensary_appid_4957040": "◈ STEAM-RELIKT-AUSGABE // APPID 4957040",
-      "claim_to_inventory": "◈ INS INVENTAR ÜBERNEHMEN"
+      "claim_to_inventory": "◈ INS INVENTAR ÜBERNEHMEN",
+      "alt_reward": "Belohnung"
     },
     "operator_polish": {
       "operator_polish": "◆ OPERATOR-LACKIERUNG",
@@ -540,7 +570,11 @@
     "fabrication": {
       "fabrication_bay": "◇ FERTIGUNGSBUCHT",
       "print_gear_from_salvage": "AUSRÜSTUNG AUS SCHROTT DRUCKEN",
-      "schematics_fabricated_0_8": "GEFERTIGTE BAUPLÄNE: 0 / 8"
+      "schematics_fabricated_0_8": "GEFERTIGTE BAUPLÄNE: 0 / 8",
+      "tech": "TECH",
+      "coin": "MÜNZEN",
+      "med": "MED",
+      "shells": "HÜLSEN"
     },
     "fab_roll": {
       "insert_salvage_to_fabricate": "SCHROTT ZUM FERTIGEN EINLEGEN"
@@ -591,7 +625,11 @@
     },
     "pickup_counter": {
       "loot": "BEUTE",
-      "total": "GESAMT"
+      "total": "GESAMT",
+      "med": "MED",
+      "tech": "TECH",
+      "coin": "MÜNZEN",
+      "shell": "HÜLSE"
     },
     "boss_status": {
       "boss_threat": "BOSS-BEDROHUNG"
@@ -770,7 +808,9 @@
     "confirm": {
       "critical_alert": "KRITISCHER ALARM",
       "abort_mission": "MISSION ABBRECHEN",
-      "cancel": "ABBRECHEN"
+      "cancel": "ABBRECHEN",
+      "terminate_question": "DIESEN VERTRAG AUF DER STELLE BEENDEN?",
+      "terminate_detail": "Die Anlagen bergen den Anzug und rüsten eine Blackbox für den nächsten Abstieg."
     },
     "day_rest_warning": {
       "the_night_will_close_doors": "DIE NACHT WIRD TÜREN SCHLIESSEN",
@@ -788,12 +828,17 @@
     "reset_save_confirm": {
       "reset_save_data": "SPEICHERDATEN ZURÜCKSETZEN",
       "reset_save": "SPEICHERSTAND ZURÜCKSETZEN",
-      "cancel": "ABBRECHEN"
+      "cancel": "ABBRECHEN",
+      "question": "EIN NEUES SPIEL BEGINNEN?",
+      "cleared": "AUF DIESEM GERÄT WERDEN RGB-FORTSCHRITT, ALLE ERFOLGE, FREISCHALTUNGEN, EINGELAGERTER SCHROTT, KODEX, FERTIGUNGEN, BESTLEISTUNGEN UND PROFILDATEN GELÖSCHT.",
+      "kept": "AUDIO-, ANZEIGE- UND STEUERUNGSEINSTELLUNGEN BLEIBEN ERHALTEN."
     },
     "quit_confirm": {
       "quit_hunker_bunker": "HUNKER BUNKER BEENDEN",
       "confirm_quit": "BEENDEN BESTÄTIGEN",
-      "cancel": "ABBRECHEN"
+      "cancel": "ABBRECHEN",
+      "question": "ANWENDUNG BEENDEN?",
+      "detail": "WIRKLICH BEENDEN? NICHT GESPEICHERTER FORTSCHRITT EINES LAUFENDEN RUNS GEHT VERLOREN."
     },
     "camp_choice": {
       "aria_label_close_camp_decision": "Lager-Entscheidung schließen",
@@ -833,7 +878,9 @@
     },
     "controls": {
       "steam_deck": "STEAM DECK:",
-      "desktop": "DESKTOP:"
+      "desktop": "DESKTOP:",
+      "deck_hint": "Linker Stick bewegt oder navigiert · Rechter Stick zielt und steuert den sichtbaren Zeiger · A bestätigt/interagiert · B zurück/ausweichen · Menu öffnet die Einstellungen.",
+      "desktop_hint": "Auf einen Slot klicken, dann eine Taste zum Belegen drücken. ESC bricht ab."
     },
     "mothership_dialogue": {
       "scout_link_encrypted": "SPÄHER-LINK [VERSCHLÜSSELT]"
@@ -899,7 +946,14 @@
       "esc": "ESC",
       "click": "KLICKEN",
       "host": "HOST",
-      "back_to_armory": "← ZURÜCK ZUR WAFFENKAMMER"
+      "back_to_armory": "← ZURÜCK ZUR WAFFENKAMMER",
+      "title": "TAKTISCHES NETZ",
+      "invite_friend": "FREUND EINLADEN",
+      "refresh": "AKTUALISIEREN",
+      "hint_back": "ZURÜCK",
+      "hint_toggle": "MODUS WECHSELN",
+      "hint_deploy": "SQUAD ENTSENDEN",
+      "accent_relay": "// RELAY-KOMMANDO"
     },
     "close_multiplayer": {
       "aria_label_close_tactical_net": "Taktisches Netz schließen"
@@ -919,7 +973,9 @@
       "aria_label_close_progression_walkthrough": "Fortschritts-Walkthrough schließen"
     },
     "select_picker": {
-      "aria_label_close_option_picker": "Optionsauswahl schließen"
+      "aria_label_close_option_picker": "Optionsauswahl schließen",
+      "select": "AUSWÄHLEN",
+      "back": "ZURÜCK"
     },
     "virtual_keyboard": {
       "aria_label_close_on_screen": "Bildschirmtastatur schließen",
@@ -948,7 +1004,9 @@
       "preserved_on_failure": "Bankguthaben bleibt bei Misserfolg erhalten.",
       "dossier": "DOSSIER",
       "pending": "{count} AUSSTEHEND",
-      "synced": "SYNCHRONISIERT ✓"
+      "synced": "SYNCHRONISIERT ✓",
+      "pathway_available": "PFAD VERFÜGBAR – Die Anforderungen sind noch erfüllbar",
+      "projected_path": "PROGNOSTIZIERTER PFAD: {ending}"
     },
     "wanderer": {
       "survivor_named": "Überlebender: {name}",
@@ -958,7 +1016,9 @@
       "decline": "BÜNDNIS ABLEHNEN – {supplies} EINLAGERN",
       "supplies": "VORRÄTE",
       "transmission": "[ ÜBERLEBENDEN-ÜBERTRAGUNG ]",
-      "quote": "„{text}“"
+      "quote": "„{text}“",
+      "inquiry": "Anfrage:",
+      "quest_line": "{title} – {desc} Belohnung: {reward}."
     },
     "vault": {
       "item_acquired": "STEAM-GEGENSTAND ERHALTEN",
@@ -1029,7 +1089,8 @@
       "deploy_solo": "ALLEIN AUSRÜCKEN",
       "host_control_required": "HOST-KONTROLLE ERFORDERLICH",
       "host_new_lobby": "NEUE LOBBY HOSTEN",
-      "start_match": "MATCH STARTEN"
+      "start_match": "MATCH STARTEN",
+      "mode_members": "{mode} // {count}/4 OPERATIVE"
     },
     "dossier": {
       "title": "TAKTISCHES DOSSIER",
@@ -1097,10 +1158,19 @@
       "daylight": "TAGESLICHT",
       "night_ops": "NACHTEINSATZ",
       "ready": "BEREIT",
-      "insufficient": "UNZUREICHEND"
+      "insufficient": "UNZUREICHEND",
+      "transition_in": "{phase} IN {time}",
+      "dusk": "ABENDDÄMMERUNG",
+      "dawn": "MORGENDÄMMERUNG",
+      "base_status": "{type} BASIS-STATUS {state}",
+      "active_exosuit": "[AKTIVER EXOANZUG]",
+      "standby": "[BEREITSCHAFT]",
+      "field_stabilizer": "{type} FELDSTABILISATOR"
     },
     "journal": {
-      "day_time": "T{day} {minute}:{second}"
+      "day_time": "T{day} {minute}:{second}",
+      "story": "STORY",
+      "mission_next": "{mission} // NÄCHSTES: {goal}"
     },
     "bank": {
       "deposit_ready": "EINZAHLUNG BEREIT. RESSOURCENKANAL OFFEN.",
@@ -1113,12 +1183,15 @@
       "repair_to_create_zone": "REPARIERE DIESES MODUL, UM EINE SICHERE O₂-ZONE AM SCHIFF ZU SCHAFFEN.",
       "upgrades_expand_field": "UPGRADES ERWEITERN DAS BLAUE O₂-FELD, SODASS DU VON WEITER WEG AUFFÜLLST.",
       "hearts_available": "♥ ×{count} VERFÜGBAR",
-      "med_for_heart": "{med}/10 FÜR ♥"
+      "med_for_heart": "{med}/10 FÜR ♥",
+      "hearts_missing": "{hearts} HERZEN FEHLEN. {conversions} UMWANDLUNGEN VERFÜGBAR ({med} MED GELAGERT).",
+      "med_stored": "{med}/10 MED"
     },
     "skills": {
       "completed": "ABGESCHLOSSEN",
       "upgrade": "AUFWERTEN",
-      "unlock": "FREISCHALTEN"
+      "unlock": "FREISCHALTEN",
+      "tree_summary": "{class} BUNKER-BAUM: {active}/{total} ONLINE ({ready} BEREIT) | KAMPFSTUFE: {combat}/{combatTotal} | GUTHABEN: ◈ {shells} HÜLSEN"
     },
     "turret": {
       "built_north_door": "GEBAUT – STEUERUNG AN DER NORDTÜR",
@@ -1191,7 +1264,8 @@
     "hud": {
       "ammo_cache": "CACHE {current}/{max}",
       "current_biome": "AKTUELLES BIOM {biome}",
-      "equipped": "AUSGERÜSTET"
+      "equipped": "AUSGERÜSTET",
+      "bunker_level_aria": "BUNKER-EBENE {level} ({tier}) – {biome}"
     },
     "commentary": {
       "kicker": "ENTWICKLERKOMMENTAR"
@@ -1204,7 +1278,8 @@
       "commander_name": "Sowjetischer Unterkommandeur",
       "aura_name": "Synthetische KI „AURA“",
       "commander_title": "SOWJETISCHER UNTERKOMMANDEUR",
-      "aura_title": "SYNTHETISCHE KI „AURA“"
+      "aura_title": "SYNTHETISCHE KI „AURA“",
+      "alt_sender_portrait": "Porträt des Absenders"
     },
     "go": {
       "generator_level": "STUFE {level}",
@@ -1223,7 +1298,8 @@
       "unlocked_kicker": "ERFOLG FREIGESCHALTET",
       "hidden": "Verborgener Eintrag. Zum Anzeigen freischalten.",
       "coming_soon": "DEMNÄCHST",
-      "unlocked": "FREIGESCHALTET"
+      "unlocked": "FREIGESCHALTET",
+      "summary_unlocked": "{unlocked} / {total} FREIGESCHALTET"
     },
     "save": {
       "code_unavailable": "SPEICHERCODE NICHT VERFÜGBAR"
@@ -1236,7 +1312,8 @@
     },
     "loader": {
       "deployment_telemetry": "MUTTERSCHIFF-EINSATZTELEMETRIE",
-      "init_failed": "SYSTEMINITIALISIERUNG FEHLGESCHLAGEN"
+      "init_failed": "SYSTEMINITIALISIERUNG FEHLGESCHLAGEN",
+      "init_error_retrying": "[ SYSTEMINITIALISIERUNGSFEHLER – ERNEUTER VERSUCH... ]"
     },
     "alert": {
       "tactical": "TAKTISCHER ALARM",
@@ -1245,12 +1322,15 @@
     "trade": {
       "squadmate": "SQUAD-KAMERAD",
       "awaiting_offer": "WARTE AUF ANGEBOTSAUSWAHL",
-      "waiting_squadmate": "WARTE AUF SQUAD-KAMERAD..."
+      "waiting_squadmate": "WARTE AUF SQUAD-KAMERAD...",
+      "self_class": "{class} // OPERATIVER",
+      "peer_class": "{class} // ENTFERNT"
     },
     "bond": {
       "enamored": "VERLIEBT / ERGEBEN",
       "warm": "WARM / ANZIEHUNG",
-      "attentive": "AUFMERKSAM"
+      "attentive": "AUFMERKSAM",
+      "badge": "{label} ({score} PKT)"
     },
     "fab": {
       "scatter_repeater": "STREU-REPETIERER",
@@ -1291,11 +1371,25 @@
       "field_conversation": "FELDGESPRÄCH",
       "callsign": "RUFZEICHEN {callsign}",
       "listen_hint": "Hör zu und entscheide dann, wie du helfen willst.",
-      "quote": "„{text}“"
+      "quote": "„{text}“",
+      "next_action": "Deine nächste Handlung ändert die Startliste und den Endverlauf."
     },
     "title": {
       "pregalien_command": "PREGALIEN | NEST-KOMMANDO",
       "pregalien": "PREGALIEN"
+    },
+    "dialogue": {
+      "commander_badge": "SOWJETISCHER FUNK [72,4 MHz // {class}]",
+      "aura_badge": "AURA TAKTIK-LINK [SYNTH // {class}]",
+      "encrypted_badge": "{class}-LINK [VERSCHLÜSSELT]"
+    },
+    "cutscene": {
+      "alt_incoming_ship": "Ankommendes Schiff",
+      "alt_crashed_ship": "Abgestürztes Schiff"
+    },
+    "snail": {
+      "alt_player_chassis": "Spieler-Chassis",
+      "alt_snail_combatant": "Schnecken-Kämpfer"
     }
   },
   "narrative": {

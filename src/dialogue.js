@@ -1,4 +1,5 @@
 import { getControllerGlyphLabel } from './inputGlyphs.js';
+import { t } from './i18n.js';
 
 const DIALOGUE_CHAR_INTERVAL_MS = 18;
 const DIALOGUE_LINE_GAP_MS = 150;
@@ -144,6 +145,20 @@ const MILESTONE_LINES = {
         ]
     }
 };
+
+export function resolveEffectiveVoicePackId(candidateId = null) {
+    if (typeof window === 'undefined') return candidateId ? Number(candidateId) : null;
+    const rawVoiceId = candidateId || window.loadout?.state?.voicePackId || window.loadout?.getEquippedVoicePackId?.();
+    if (rawVoiceId === 'voicepack_soviet_commander' || rawVoiceId === '4148' || rawVoiceId === 4148) return 4148;
+    if (rawVoiceId === 'voicepack_aura' || rawVoiceId === '4149' || rawVoiceId === 4149) return 4149;
+    if (rawVoiceId) return Number(rawVoiceId);
+
+    // If game language is Russian and player hasn't explicitly chosen another pack, default to Soviet Sub-Commander
+    const lang = window.i18n?.getLanguage?.() || window.i18n?.currentLanguage || window.state?.settings?.language;
+    if (lang === 'ru') return 4148;
+
+    return null;
+}
 
 export class DialogueManager {
     // Movement, vitals, pickup, HUD counter, dead ends, enemy intel, compass,
@@ -306,9 +321,7 @@ export class DialogueManager {
         window.AudioManager?.play('door_slide_horiz', { volume: 0.5 });
         this.initDialogueListeners();
 
-        const rawVoiceId = typeof window !== 'undefined' ? (window.loadout?.state?.voicePackId || window.loadout?.getEquippedVoicePackId?.()) : null;
-        const voicePackId = rawVoiceId === 'voicepack_soviet_commander' ? 4148
-            : rawVoiceId === 'voicepack_aura' ? 4149 : Number(rawVoiceId);
+        const voicePackId = resolveEffectiveVoicePackId();
 
         let allLines = [...MOTHERSHIP_LINES];
         let classBriefing = CLASS_BRIEFING_LINES[playerType];
@@ -1013,15 +1026,13 @@ export class DialogueManager {
             this.tutorialPromptEl.style.setProperty('--tutorial-glow-rgb', theme.rgb);
         }
         if (this.classBadgeEl) {
-            const rawVoiceId = typeof window !== 'undefined' ? (window.loadout?.state?.voicePackId || window.loadout?.getEquippedVoicePackId?.()) : null;
-            const voicePackId = rawVoiceId === 'voicepack_soviet_commander' ? 4148
-                : rawVoiceId === 'voicepack_aura' ? 4149 : Number(rawVoiceId);
+            const voicePackId = resolveEffectiveVoicePackId();
             if (voicePackId === 4148) {
-                this.classBadgeEl.textContent = `${'SOVIET RADIO COMMS [72.4 MHz // '}${playerType}]`;
+                this.classBadgeEl.textContent = t('ui.dialogue.commander_badge', { class: playerType });
             } else if (voicePackId === 4149) {
-                this.classBadgeEl.textContent = `${'AURA TACTICAL LINK [SYNTH // '}${playerType}]`;
+                this.classBadgeEl.textContent = t('ui.dialogue.aura_badge', { class: playerType });
             } else {
-                this.classBadgeEl.textContent = `${playerType} LINK [ENCRYPTED]`;
+                this.classBadgeEl.textContent = t('ui.dialogue.encrypted_badge', { class: playerType });
             }
         }
     }

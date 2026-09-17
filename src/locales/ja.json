@@ -87,7 +87,8 @@
       "engineer": "エンジニア",
       "reroute": "再配線",
       "cheaper_consoles": "コンソール割安",
-      "esc": "[ESC]"
+      "esc": "[ESC]",
+      "return_main": "← メインメニューに戻る"
     },
     "hub": {
       "daily_ops": "デイリー作戦",
@@ -283,7 +284,14 @@
       "no_weapons": "武器は未製造",
       "print_hint": "製造ベイでテック 12 / コイン 6 を払えば確実にスキャッター・リピーターを出力できる。",
       "equipped": "✓ 装備中",
-      "equip": "装備する"
+      "equip": "装備する",
+      "id_label": "ID：",
+      "stat_sector": "セクター {depth}",
+      "stat_hostiles": "敵性体 {count}",
+      "blackbox_recoverable": "回収可能（セクター {depth}）",
+      "blackbox_none": "なし",
+      "equipped_none": "なし",
+      "arsenal_count": "アーセナル：武器 {made} / {total} 製造済み"
     },
     "dlg": {
       "channel": "マザーシップ通信チャンネル7",
@@ -344,7 +352,8 @@
       "log_asset": "> {message}...",
       "log_booting_webgl": "> 戦術 WebGL コアを起動中...",
       "log_preloading_cinematic": "> シネマティック・フィードを先読み中（DoorIntro）...",
-      "log_assets_loaded": "> 全アセット読込完了 — エアロックを開放中..."
+      "log_assets_loaded": "> 全アセット読込完了 — エアロックを開放中...",
+      "initializing_core": "> 戦術エクソスーツ・コアを初期化中...（{percent}%）"
     },
     "splash_steam_badge": {
       "title_click_to_open": "クリックして Steam オーバーレイのプロフィールを開く",
@@ -373,7 +382,9 @@
       "github_repository": "GitHub リポジトリ",
       "special_thanks": "スペシャルサンクス",
       "our_amazing_community_players": "素晴らしいコミュニティとプレイヤーの皆様",
-      "thank_you_for_deploying": "出撃ありがとう"
+      "thank_you_for_deploying": "出撃ありがとう",
+      "tactical_command": "戦術コマンド",
+      "accent_credits": "// クレジット"
     },
     "hero_detail": {
       "field_loadout": "フィールド装備"
@@ -384,14 +395,16 @@
       "in_progress": "進行中",
       "ready": "準備完了",
       "best_score": "◈ ベスト：{score} 点",
-      "rgb_title": "RGB：RIVERSIDE GLOBAL 'BOTICS"
+      "rgb_title": "RGB：RIVERSIDE GLOBAL 'BOTICS",
+      "score_grade": "{score} 点 // {grade}"
     },
     "close_season_pass": {
       "aria_label_close_tactical_dossier": "戦術ドシエを閉じる"
     },
     "season_pass": {
       "sub_terran_sector_operations_beta": "◈ 地下セクター作戦 // ベータシーズン1",
-      "directives": "＆ 指令"
+      "directives": "＆ 指令",
+      "title": "戦術ドシエ"
     },
     "archive_log_detail": {
       "aria_label_close_archive_log": "アーカイブ記録を閉じる",
@@ -416,7 +429,10 @@
       "view_record": "{name} の情報記録を見る",
       "click_hint": "クリックして情報ドシエとアートを表示",
       "uncatalogued": "??? — 未分類",
-      "encounter_hint": "フィールドで遭遇すると記録を回収できる。"
+      "encounter_hint": "フィールドで遭遇すると記録を回収できる。",
+      "title": "フィールド・コデックス",
+      "alt_intel_image": "コデックス情報画像",
+      "accent_bestiary": "// ベスティアリ"
     },
     "close_codex_detail": {
       "aria_label_close_codex_entry": "コデックス項目を閉じる"
@@ -430,7 +446,9 @@
     "achievements": {
       "combat_citations_deep_crust_commendations": "◈ 戦闘表彰 // 深部地殻功績",
       "title_copy_a_portable": "携帯用セーブコードをコピー",
-      "copy_save_code": "セーブコードをコピー"
+      "copy_save_code": "セーブコードをコピー",
+      "title": "オペレーティブ表彰",
+      "accent_archive": "// アーカイブ"
     },
     "close_steam_vault": {
       "aria_label_close_steam_vault": "Steam ヴォールトを閉じる"
@@ -458,14 +476,26 @@
       "1_next_tier_item": "1× 上位ティアのアイテム",
       "deep_smelter": "ディープ精錬炉",
       "consumes_5x_same_tier_items": "同ティアのアイテムを 5x 消費",
-      "deep_core_shard_dispensary": "ディープコア片 配給所"
+      "deep_core_shard_dispensary": "ディープコア片 配給所",
+      "title": "◈ Steam ヴォールト",
+      "caches_label": "キャッシュ：",
+      "keys_label": "キー：",
+      "shards_label": "破片：",
+      "tab_inventory": "所有インベントリ",
+      "tab_store": "◈ レリックストアとドロップ確率",
+      "tab_smelter": "◈ 精錬炉と配給所",
+      "decrypt_with": "の開封に必要：",
+      "rates_match": "· 確率はサーバーの表と一致する。",
+      "consumed_removed": "· 消費されたアイテムは削除される。",
+      "accent_dispatch": "// アイテム配送"
     },
     "vault_details": {
       "view_in_steam_market": "Steam マーケットで見る"
     },
     "vault_reveal": {
       "steam_relic_dispensary_appid_4957040": "◈ Steam レリック配給所 // APPID 4957040",
-      "claim_to_inventory": "◈ インベントリに受け取る"
+      "claim_to_inventory": "◈ インベントリに受け取る",
+      "alt_reward": "報酬"
     },
     "operator_polish": {
       "operator_polish": "◆ オペレーター塗装",
@@ -540,7 +570,11 @@
     "fabrication": {
       "fabrication_bay": "◇ 製造ベイ",
       "print_gear_from_salvage": "廃材から装備を出力",
-      "schematics_fabricated_0_8": "製造済み設計図：0 / 8"
+      "schematics_fabricated_0_8": "製造済み設計図：0 / 8",
+      "tech": "テック",
+      "coin": "コイン",
+      "med": "医療",
+      "shells": "シェル"
     },
     "fab_roll": {
       "insert_salvage_to_fabricate": "廃材を投入して製造"
@@ -591,7 +625,11 @@
     },
     "pickup_counter": {
       "loot": "戦利品",
-      "total": "合計"
+      "total": "合計",
+      "med": "医療",
+      "tech": "テック",
+      "coin": "コイン",
+      "shell": "シェル"
     },
     "boss_status": {
       "boss_threat": "ボス脅威"
@@ -770,7 +808,9 @@
     "confirm": {
       "critical_alert": "重大警報",
       "abort_mission": "任務中止",
-      "cancel": "キャンセル"
+      "cancel": "キャンセル",
+      "terminate_question": "この契約をこの場で打ち切るか？",
+      "terminate_detail": "施設がスーツを回収し、次の降下用にブラックボックスを用意する。"
     },
     "day_rest_warning": {
       "the_night_will_close_doors": "夜が扉を閉ざす",
@@ -788,12 +828,17 @@
     "reset_save_confirm": {
       "reset_save_data": "セーブデータをリセット",
       "reset_save": "セーブをリセット",
-      "cancel": "キャンセル"
+      "cancel": "キャンセル",
+      "question": "新しくゲームを始めるか？",
+      "cleared": "この端末の RGB 進行、全実績、解放内容、預けた廃材、コデックス、製造記録、最高記録、プロフィールデータはすべて消去される。",
+      "kept": "オーディオ・表示・操作の設定は保持される。"
     },
     "quit_confirm": {
       "quit_hunker_bunker": "HUNKER BUNKER を終了",
       "confirm_quit": "終了を確認",
-      "cancel": "キャンセル"
+      "cancel": "キャンセル",
+      "question": "アプリケーションを終了するか？",
+      "detail": "本当に終了するか？進行中のランの未保存の進捗は失われる。"
     },
     "camp_choice": {
       "aria_label_close_camp_decision": "キャンプの決断を閉じる",
@@ -833,7 +878,9 @@
     },
     "controls": {
       "steam_deck": "Steam Deck：",
-      "desktop": "デスクトップ："
+      "desktop": "デスクトップ：",
+      "deck_hint": "左スティックで移動・操作 · 右スティックで照準とポインター · A で決定／調べる · B で戻る／回避 · Menu で設定。",
+      "desktop_hint": "スロットをクリックし、割り当てるキーを押す。ESC で取消。"
     },
     "mothership_dialogue": {
       "scout_link_encrypted": "スカウト回線 [暗号化]"
@@ -899,7 +946,14 @@
       "esc": "ESC",
       "click": "クリック",
       "host": "ホスト",
-      "back_to_armory": "← アーモリーに戻る"
+      "back_to_armory": "← アーモリーに戻る",
+      "title": "戦術ネット",
+      "invite_friend": "フレンドを招待",
+      "refresh": "更新",
+      "hint_back": "戻る",
+      "hint_toggle": "モード切替",
+      "hint_deploy": "分隊を展開",
+      "accent_relay": "// リレー司令"
     },
     "close_multiplayer": {
       "aria_label_close_tactical_net": "戦術ネットを閉じる"
@@ -919,7 +973,9 @@
       "aria_label_close_progression_walkthrough": "進行ウォークスルーを閉じる"
     },
     "select_picker": {
-      "aria_label_close_option_picker": "オプション選択を閉じる"
+      "aria_label_close_option_picker": "オプション選択を閉じる",
+      "select": "決定",
+      "back": "戻る"
     },
     "virtual_keyboard": {
       "aria_label_close_on_screen": "スクリーンキーボードを閉じる",
@@ -948,7 +1004,9 @@
       "preserved_on_failure": "失敗しても銀行資産は保持される。",
       "dossier": "ドシエ",
       "pending": "{count} 保留中",
-      "synced": "同期済み ✓"
+      "synced": "同期済み ✓",
+      "pathway_available": "ルート健在 — 条件はまだ達成できる",
+      "projected_path": "予測ルート：{ending}"
     },
     "wanderer": {
       "survivor_named": "生存者：{name}",
@@ -958,7 +1016,9 @@
       "decline": "同盟を断る — {supplies}を預ける",
       "supplies": "物資",
       "transmission": "[ 生存者からの通信 ]",
-      "quote": "「{text}」"
+      "quote": "「{text}」",
+      "inquiry": "問いかけ：",
+      "quest_line": "{title} — {desc} 報酬：{reward}。"
     },
     "vault": {
       "item_acquired": "Steam アイテム獲得",
@@ -1029,7 +1089,8 @@
       "deploy_solo": "ソロで出撃",
       "host_control_required": "ホスト権限が必要です",
       "host_new_lobby": "新しいロビーを作成",
-      "start_match": "マッチ開始"
+      "start_match": "マッチ開始",
+      "mode_members": "{mode} // オペレーティブ {count}/4"
     },
     "dossier": {
       "title": "戦術ドシエ",
@@ -1097,10 +1158,19 @@
       "daylight": "日中",
       "night_ops": "夜間作戦",
       "ready": "準備完了",
-      "insufficient": "不足"
+      "insufficient": "不足",
+      "transition_in": "{time} 後に{phase}",
+      "dusk": "夕暮れ",
+      "dawn": "夜明け",
+      "base_status": "{type} 基地状態 {state}",
+      "active_exosuit": "[稼働中エクソスーツ]",
+      "standby": "[待機]",
+      "field_stabilizer": "{type} フィールド安定装置"
     },
     "journal": {
-      "day_time": "D{day} {minute}:{second}"
+      "day_time": "D{day} {minute}:{second}",
+      "story": "ストーリー",
+      "mission_next": "{mission} // 次：{goal}"
     },
     "bank": {
       "deposit_ready": "預入可能。資源転送チャンネル開通。",
@@ -1113,12 +1183,15 @@
       "repair_to_create_zone": "このモジュールを修理すれば船の近くに安全な O₂ ゾーンができる。",
       "upgrades_expand_field": "アップグレードで青い O₂ フィールドが広がり、遠くからでも補充できる。",
       "hearts_available": "♥ ×{count} 利用可能",
-      "med_for_heart": "{med}/10 で ♥"
+      "med_for_heart": "{med}/10 で ♥",
+      "hearts_missing": "ハートが {hearts} 不足。変換可能 {conversions} 回（医療 {med} 備蓄）。",
+      "med_stored": "医療 {med}/10"
     },
     "skills": {
       "completed": "完了",
       "upgrade": "強化",
-      "unlock": "解放"
+      "unlock": "解放",
+      "tree_summary": "{class} バンカーツリー：{active}/{total} 稼働（{ready} 準備完了）| 戦闘LV：{combat}/{combatTotal} | 残高：◈ シェル {shells}"
     },
     "turret": {
       "built_north_door": "建設済み — 制御は北扉",
@@ -1191,7 +1264,8 @@
     "hud": {
       "ammo_cache": "キャッシュ {current}/{max}",
       "current_biome": "現在のバイオーム {biome}",
-      "equipped": "装備中"
+      "equipped": "装備中",
+      "bunker_level_aria": "バンカー階層 {level}（{tier}）— {biome}"
     },
     "commentary": {
       "kicker": "開発者コメンタリー"
@@ -1204,7 +1278,8 @@
       "commander_name": "ソビエト副司令官",
       "aura_name": "合成AI「AURA」",
       "commander_title": "ソビエト副司令官",
-      "aura_title": "合成AI「AURA」"
+      "aura_title": "合成AI「AURA」",
+      "alt_sender_portrait": "送信者の肖像"
     },
     "go": {
       "generator_level": "LV {level}",
@@ -1223,7 +1298,8 @@
       "unlocked_kicker": "実績解除",
       "hidden": "隠された記録。解除すると表示される。",
       "coming_soon": "近日公開",
-      "unlocked": "解除済み"
+      "unlocked": "解除済み",
+      "summary_unlocked": "{unlocked} / {total} 解除"
     },
     "save": {
       "code_unavailable": "セーブコードを取得できません"
@@ -1236,7 +1312,8 @@
     },
     "loader": {
       "deployment_telemetry": "マザーシップ展開テレメトリ",
-      "init_failed": "システム初期化に失敗"
+      "init_failed": "システム初期化に失敗",
+      "init_error_retrying": "[ システム初期化エラー — 再試行中... ]"
     },
     "alert": {
       "tactical": "戦術警報",
@@ -1245,12 +1322,15 @@
     "trade": {
       "squadmate": "分隊メイト",
       "awaiting_offer": "提示の選択を待機中",
-      "waiting_squadmate": "分隊メイトを待機中..."
+      "waiting_squadmate": "分隊メイトを待機中...",
+      "self_class": "{class} // オペレーティブ",
+      "peer_class": "{class} // リモート"
     },
     "bond": {
       "enamored": "心酔 / 献身",
       "warm": "好意 / 惹かれる",
-      "attentive": "関心あり"
+      "attentive": "関心あり",
+      "badge": "{label}（{score} 点）"
     },
     "fab": {
       "scatter_repeater": "スキャッター・リピーター",
@@ -1291,11 +1371,25 @@
       "field_conversation": "フィールドでの会話",
       "callsign": "コールサイン {callsign}",
       "listen_hint": "話を聞いてから、どう助けるか決めよ。",
-      "quote": "「{text}」"
+      "quote": "「{text}」",
+      "next_action": "次の行動が打ち上げ目録とエンディングの方向を変える。"
     },
     "title": {
       "pregalien_command": "PREGALIEN | ハイブ司令部",
       "pregalien": "PREGALIEN"
+    },
+    "dialogue": {
+      "commander_badge": "ソビエト無線通信 [72.4 MHz // {class}]",
+      "aura_badge": "AURA 戦術リンク [合成 // {class}]",
+      "encrypted_badge": "{class} リンク [暗号化]"
+    },
+    "cutscene": {
+      "alt_incoming_ship": "接近する船",
+      "alt_crashed_ship": "墜落した船"
+    },
+    "snail": {
+      "alt_player_chassis": "プレイヤー・シャーシ",
+      "alt_snail_combatant": "スネイル戦闘体"
     }
   },
   "narrative": {
