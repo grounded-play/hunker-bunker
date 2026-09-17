@@ -490,7 +490,11 @@
       "accent_dispatch": "// ВЫДАЧА ПРЕДМЕТОВ"
     },
     "vault_details": {
-      "view_in_steam_market": "ОТКРЫТЬ В ТОРГОВОЙ ПЛОЩАДКЕ STEAM"
+      "view_in_steam_market": "ОТКРЫТЬ В ТОРГОВОЙ ПЛОЩАДКЕ STEAM",
+      "select_an_item": "ВЫБЕРИТЕ ПРЕДМЕТ",
+      "select_hint": "Выберите предмет, чтобы увидеть владение в Steam и данные обмена.",
+      "read_only": "ИНВЕНТАРЬ STEAM ТОЛЬКО ДЛЯ ЧТЕНИЯ",
+      "no_rarity": "—"
     },
     "vault_reveal": {
       "steam_relic_dispensary_appid_4957040": "◈ РАЗДАТЧИК РЕЛИКВИЙ STEAM // APPID 4957040",

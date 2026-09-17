@@ -490,7 +490,11 @@
       "accent_dispatch": "// ITEM-VERSAND"
     },
     "vault_details": {
-      "view_in_steam_market": "IM STEAM-MARKT ANSEHEN"
+      "view_in_steam_market": "IM STEAM-MARKT ANSEHEN",
+      "select_an_item": "GEGENSTAND WÄHLEN",
+      "select_hint": "Wähle einen Gegenstand, um Steam-Besitz und Handelsdaten zu sehen.",
+      "read_only": "STEAM-INVENTAR NUR LESEN",
+      "no_rarity": "—"
     },
     "vault_reveal": {
       "steam_relic_dispensary_appid_4957040": "◈ STEAM-RELIKT-AUSGABE // APPID 4957040",

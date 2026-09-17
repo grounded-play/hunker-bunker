@@ -490,7 +490,11 @@
       "accent_dispatch": "// ITEM DISPATCH"
     },
     "vault_details": {
-      "view_in_steam_market": "VIEW IN STEAM MARKET"
+      "view_in_steam_market": "VIEW IN STEAM MARKET",
+      "select_an_item": "SELECT AN ITEM",
+      "select_hint": "Select an item to view Steam ownership and trade metadata.",
+      "read_only": "READ-ONLY STEAM INVENTORY",
+      "no_rarity": "—"
     },
     "vault_reveal": {
       "steam_relic_dispensary_appid_4957040": "◈ STEAM RELIC DISPENSARY // APPID 4957040",

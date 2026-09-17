@@ -490,7 +490,11 @@
       "accent_dispatch": "// アイテム配送"
     },
     "vault_details": {
-      "view_in_steam_market": "Steam マーケットで見る"
+      "view_in_steam_market": "Steam マーケットで見る",
+      "select_an_item": "アイテムを選択",
+      "select_hint": "アイテムを選ぶと Steam の所有権と取引情報が表示される。",
+      "read_only": "読み取り専用の Steam インベントリ",
+      "no_rarity": "—"
     },
     "vault_reveal": {
       "steam_relic_dispensary_appid_4957040": "◈ Steam レリック配給所 // APPID 4957040",

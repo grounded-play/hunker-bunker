@@ -490,7 +490,11 @@
       "accent_dispatch": "// DESPACHO DE OBJETOS"
     },
     "vault_details": {
-      "view_in_steam_market": "VER EN EL MERCADO DE STEAM"
+      "view_in_steam_market": "VER EN EL MERCADO DE STEAM",
+      "select_an_item": "SELECCIONA UN OBJETO",
+      "select_hint": "Selecciona un objeto para ver la propiedad en Steam y los datos de intercambio.",
+      "read_only": "INVENTARIO DE STEAM DE SOLO LECTURA",
+      "no_rarity": "—"
     },
     "vault_reveal": {
       "steam_relic_dispensary_appid_4957040": "◈ DISPENSARIO DE RELIQUIAS STEAM // APPID 4957040",

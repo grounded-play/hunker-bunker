@@ -556,8 +556,10 @@ export function renderInventoryGrid() {
 
     if (!selectedVaultItem && vaultItems.length > 0) {
         selectedVaultItem = vaultItems[0];
-        updateDetailsPanel(selectedVaultItem);
     }
+    // Called unconditionally: with an empty vault this paints the localized
+    // empty state, which previously stayed on its English markup placeholder.
+    updateDetailsPanel(selectedVaultItem);
 }
 
 export function updateDetailsPanel(item) {
@@ -573,9 +575,26 @@ export function updateDetailsPanel(item) {
     const btnViewMarket = document.getElementById('vault-btn-view-market');
     const statusEl = document.getElementById('vault-equip-status');
 
-    if (!item) return;
-    const catalog = getItemCatalogEntry(item.itemdefid);
-    if (!catalog) return;
+    // An empty vault, or an item missing from the catalog, leaves this panel on
+    // its markup placeholder. Those used to be authored English that nothing
+    // ever rewrote, so a player with no items read the panel in English no
+    // matter the locale. JS owns both states now, which also keeps the element
+    // off the static-annotation path where a locale change would clobber a
+    // selected item's name back to the placeholder.
+    const catalog = item ? getItemCatalogEntry(item.itemdefid) : null;
+    if (!catalog) {
+        if (nameEl) nameEl.textContent = t('ui.vault_details.select_an_item');
+        if (rarityEl) {
+            rarityEl.textContent = t('ui.vault_details.no_rarity');
+            rarityEl.style.color = '';
+        }
+        if (descEl) descEl.textContent = t('ui.vault_details.select_hint');
+        if (tradableEl) tradableEl.textContent = t('ui.vault.tradable');
+        if (marketableEl) marketableEl.textContent = t('ui.vault.marketable');
+        if (statusEl) statusEl.textContent = t('ui.vault_details.read_only');
+        for (const btn of [btnEquip, btnUnequip, btnViewMarket]) btn?.classList.add('hidden');
+        return;
+    }
 
     if (nameEl) nameEl.textContent = catalog.name;
     if (rarityEl) {

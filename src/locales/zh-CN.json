@@ -490,7 +490,11 @@
       "accent_dispatch": "// 物品调度"
     },
     "vault_details": {
-      "view_in_steam_market": "在 Steam 市场查看"
+      "view_in_steam_market": "在 Steam 市场查看",
+      "select_an_item": "请选择一件物品",
+      "select_hint": "选择一件物品以查看 Steam 所有权与交易信息。",
+      "read_only": "只读 Steam 库存",
+      "no_rarity": "—"
     },
     "vault_reveal": {
       "steam_relic_dispensary_appid_4957040": "◈ Steam 遗物发放处 // APPID 4957040",
