@@ -85,6 +85,10 @@ export const TiltShiftPassShader = {
             color.b += (texture2D(tDiffuse, uv3P - vec2(chroma * 2.2, 0.0)).b + texture2D(tDiffuse, uv3M - vec2(chroma * 2.2, 0.0)).b) * w3;
             color.a += (texture2D(tDiffuse, uv3P).a + texture2D(tDiffuse, uv3M).a) * w3;
 
+            // Phase D: Subtle analog film grain matching Blender delivery compositor
+            float hbFilmNoise = fract(sin(dot(vUv * 1234.56, vec2(12.9898, 78.233))) * 43758.5453);
+            color.rgb += (hbFilmNoise - 0.5) * 0.018;
+
             gl_FragColor = color;
         }
     `
@@ -394,9 +398,9 @@ const RADAR_DANGER_COLOR = 0xff3344;
 const RADAR_HOLE_SCAN_PADDING = 2.25;
 const FOUNDRY_DISCOVERY_MIN_DISTANCE = 38;
 const FOUNDRY_DISCOVERY_MAX_DISTANCE = 58;
-const MENU_SHOWROOM_FLOOR_SIZE = 96;
-const MENU_SHOWROOM_FLOOR_OFFSET_X = 8;
-const MENU_SHOWROOM_FLOOR_OFFSET_Z = 8;
+const MENU_SHOWROOM_FLOOR_SIZE = 28;
+const MENU_SHOWROOM_FLOOR_OFFSET_X = 0;
+const MENU_SHOWROOM_FLOOR_OFFSET_Z = 0;
 // The crash site is an authored landmark inside the much larger procedural
 // origin chunk. Its ship placements, blast door, safe floor, and spawn must
 // share this fixed anchor; deriving any of them from CHUNK_SIZE strands the
@@ -2057,6 +2061,8 @@ export class ThreeGame {
                 uniform sampler2D tBioGrunge;
                 uniform sampler2D tBioDetail;
                 uniform vec2 uShipWorldPos;
+                float hbFloorRoughness;
+                vec3 hbFloorNormalPerturb;
                 ${shader.fragmentShader}
             `;
 
@@ -2106,6 +2112,39 @@ export class ThreeGame {
                     vec3 floorColor = mix(bunkerColor, cryoColor, cryoMix);
                     floorColor = mix(floorColor, bioColor, bioMix);
                     diffuseColor *= vec4(floorColor, 1.0);
+
+                    // Phase B2: Roughness variation break-up (smooth worn metal vs matte oxidation vs wet bio)
+                    float bunkerRough = mix(0.38, 0.92, bunkerRustMask);
+                    float cryoRough = mix(0.46, 0.90, cryoRustMask);
+                    float bioRough = mix(0.24, 0.60, bioMask);
+                    hbFloorRoughness = mix(bunkerRough, cryoRough, cryoMix);
+                    hbFloorRoughness = mix(hbFloorRoughness, bioRough, bioMix);
+
+                    // Phase B1: Derived surface normal relief from luminance & detail texture
+                    float floorLum = dot(floorColor, vec3(0.299, 0.587, 0.114));
+                    float dFloorX = dFdx(floorLum);
+                    float dFloorY = dFdy(floorLum);
+                    hbFloorNormalPerturb = vec3(-dFloorX * 1.5, 0.0, -dFloorY * 1.5);
+                #endif
+                `
+            );
+
+            shader.fragmentShader = shader.fragmentShader.replace(
+                '#include <roughnessmap_fragment>',
+                `
+                #include <roughnessmap_fragment>
+                #ifdef USE_MAP
+                    roughnessFactor = clamp(hbFloorRoughness, 0.04, 1.0);
+                #endif
+                `
+            );
+
+            shader.fragmentShader = shader.fragmentShader.replace(
+                '#include <normal_fragment_maps>',
+                `
+                #include <normal_fragment_maps>
+                #ifdef USE_MAP
+                    normal = normalize(normal + hbFloorNormalPerturb);
                 #endif
                 `
             );
@@ -2119,7 +2158,9 @@ export class ThreeGame {
                     vec2 uvDetailEmissive = vWorldPos.xz * 0.27;
                     vec4 colDetailEmissive = texture2D( tDetail, uvDetailEmissive );
                     float glowIntensity = smoothstep(0.35, 0.7, colDetailEmissive.g * colDetailEmissive.b);
-                    totalEmissiveRadiance += vec3(0.0, 0.7, 0.85) * glowIntensity * 1.35;
+                    // Phase B3: Glowing vascular circuitry and bio veins
+                    vec3 bioVeinColor = vec3(1.0, 0.44, 0.08) * smoothstep(0.4, 0.75, bioDetail.r * bioDetail.g) * 1.8 * bioMix;
+                    totalEmissiveRadiance += vec3(0.0, 0.7, 0.85) * glowIntensity * 1.35 + bioVeinColor;
                 #endif
                 `
             );
@@ -2202,6 +2243,8 @@ export class ThreeGame {
                     p += dot(p, p + 45.32);
                     return fract(p.x * p.y);
                 }
+                float hbWallRoughness;
+                vec3 hbWallNormalPerturb;
                 ${shader.fragmentShader}
             `;
 
@@ -2317,6 +2360,41 @@ export class ThreeGame {
                     finalWallColor *= mix(0.85, 1.15, tileWear);
 
                     diffuseColor *= vec4(finalWallColor, 1.0);
+
+                    // Phase B2: Roughness variation break-up
+                    float bunkerWallRough = mix(0.35, 0.88, bunkerRustMask);
+                    float cryoWallRough = mix(0.44, 0.90, cryoMask);
+                    float bioWallRough = mix(0.22, 0.58, bioMask);
+                    hbWallRoughness = mix(bunkerWallRough, cryoWallRough, cryoMix);
+                    hbWallRoughness = mix(hbWallRoughness, bioWallRough, bioMix);
+
+                    // Phase B1: Derived surface normal perturbation from luminance
+                    float wallLum = dot(finalWallColor, vec3(0.299, 0.587, 0.114));
+                    float dWallX = dFdx(wallLum);
+                    float dWallY = dFdy(wallLum);
+                    hbWallNormalPerturb = (abs(vWorldNormal.y) > 0.5)
+                        ? vec3(-dWallX * 1.8, 0.0, -dWallY * 1.8)
+                        : vec3(-dWallX * vWorldNormal.z * 1.8, -dWallY * 1.8, dWallX * vWorldNormal.x * 1.8);
+                #endif
+                `
+            );
+
+            shader.fragmentShader = shader.fragmentShader.replace(
+                '#include <roughnessmap_fragment>',
+                `
+                #include <roughnessmap_fragment>
+                #ifdef USE_MAP
+                    roughnessFactor = clamp(hbWallRoughness, 0.04, 1.0);
+                #endif
+                `
+            );
+
+            shader.fragmentShader = shader.fragmentShader.replace(
+                '#include <normal_fragment_maps>',
+                `
+                #include <normal_fragment_maps>
+                #ifdef USE_MAP
+                    normal = normalize(normal + hbWallNormalPerturb);
                 #endif
                 `
             );
@@ -3545,36 +3623,79 @@ export class ThreeGame {
     }
 
     createMenuGridTexture() {
+        const size = 512;
         const canvas = document.createElement('canvas');
-        canvas.width = 256;
-        canvas.height = 256;
+        canvas.width = size;
+        canvas.height = size;
         const ctx = canvas.getContext('2d');
 
-        ctx.fillStyle = '#101316';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = '#080a0d';
+        ctx.fillRect(0, 0, size, size);
 
         const drawGrid = (step, color, width) => {
             ctx.strokeStyle = color;
             ctx.lineWidth = width;
             ctx.beginPath();
-            for (let x = 0; x <= canvas.width; x += step) {
+            for (let x = 0; x <= size; x += step) {
                 ctx.moveTo(x + 0.5, 0);
-                ctx.lineTo(x + 0.5, canvas.height);
+                ctx.lineTo(x + 0.5, size);
             }
-            for (let y = 0; y <= canvas.height; y += step) {
+            for (let y = 0; y <= size; y += step) {
                 ctx.moveTo(0, y + 0.5);
-                ctx.lineTo(canvas.width, y + 0.5);
+                ctx.lineTo(size, y + 0.5);
             }
             ctx.stroke();
         };
 
-        drawGrid(16, 'rgba(255, 255, 255, 0.16)', 1);
-        drawGrid(64, 'rgba(255, 255, 255, 0.36)', 1.5);
+        drawGrid(16, 'rgba(255, 255, 255, 0.05)', 1);
+        drawGrid(64, 'rgba(255, 255, 255, 0.16)', 1.5);
+        drawGrid(128, 'rgba(255, 255, 255, 0.32)', 2);
+
+        // Crosshairs at 64px grid intersections
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.55)';
+        ctx.lineWidth = 1.5;
+        const crossLen = 6;
+        for (let x = 64; x < size; x += 64) {
+            for (let y = 64; y < size; y += 64) {
+                ctx.beginPath();
+                ctx.moveTo(x - crossLen, y + 0.5);
+                ctx.lineTo(x + crossLen, y + 0.5);
+                ctx.moveTo(x + 0.5, y - crossLen);
+                ctx.lineTo(x + 0.5, y + crossLen);
+                ctx.stroke();
+            }
+        }
+
+        // Concentric tactical range rings
+        const center = size / 2;
+        const rings = [48, 96, 160, 220];
+        for (let i = 0; i < rings.length; i++) {
+            const r = rings[i];
+            ctx.strokeStyle = i === rings.length - 1 ? 'rgba(255, 255, 255, 0.45)' : 'rgba(255, 255, 255, 0.15)';
+            ctx.lineWidth = i === rings.length - 1 ? 2 : 1;
+            ctx.beginPath();
+            ctx.arc(center, center, r, 0, Math.PI * 2);
+            ctx.stroke();
+        }
+
+        // Radial fade to deck edge
+        const grad = ctx.createRadialGradient(center, center, 140, center, center, 256);
+        grad.addColorStop(0, 'rgba(8, 10, 13, 0)');
+        grad.addColorStop(0.75, 'rgba(8, 10, 13, 0.55)');
+        grad.addColorStop(1, 'rgba(8, 10, 13, 1)');
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, size, size);
+
+        // Outer rim ring
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.7)';
+        ctx.lineWidth = 2.5;
+        ctx.beginPath();
+        ctx.arc(center, center, 248, 0, Math.PI * 2);
+        ctx.stroke();
 
         const texture = new THREE.CanvasTexture(canvas);
-        texture.wrapS = THREE.RepeatWrapping;
-        texture.wrapT = THREE.RepeatWrapping;
-        texture.repeat.set(8, 8);
+        texture.wrapS = THREE.ClampToEdgeWrapping;
+        texture.wrapT = THREE.ClampToEdgeWrapping;
         texture.colorSpace = THREE.SRGBColorSpace;
         texture.anisotropy = Math.min(this.maxTextureAnisotropy ?? 1, 4);
         return texture;
@@ -3602,7 +3723,7 @@ export class ThreeGame {
         this.menuShowroomFloor.rotation.x = -Math.PI / 2;
         this.menuShowroomFloor.position.set(
             spawn.x + MENU_SHOWROOM_FLOOR_OFFSET_X,
-            -0.06,
+            -0.005,
             spawn.y + MENU_SHOWROOM_FLOOR_OFFSET_Z
         );
         this.menuShowroomFloor.receiveShadow = true;
@@ -4456,6 +4577,9 @@ export class ThreeGame {
             this.player3dOverlay = overlay;
             this.updatePlayerDecalSprite();
             overlay.setOperatorPolish(this._playerPolishHex ?? 0xffffff);
+            if (typeof this.updatePlayerSpriteAnimation === 'function') {
+                this.updatePlayerSpriteAnimation(0, 0, 0, false, 0, 0);
+            }
             // Hide only after the GLB is ready. A load failure leaves the proven
             // 2D sprite visible as the automatic fallback.
             this.playerSprite.visible = false;
@@ -7962,7 +8086,7 @@ export class ThreeGame {
         const spawn = this.getSpawnTile();
         this.menuShowroomFloor.position.set(
             spawn.x + MENU_SHOWROOM_FLOOR_OFFSET_X,
-            -0.06,
+            -0.005,
             spawn.y + MENU_SHOWROOM_FLOOR_OFFSET_Z
         );
     }
@@ -11560,10 +11684,13 @@ export class ThreeGame {
             const element = document.getElementById(id);
             if (element) element.textContent = text;
         };
-        setText('terminal-log-day', `DAY ${day}`);
+        setText('terminal-log-day', t('ui.console.day_n', { day }));
         setText('terminal-log-phase', phase);
-        setText('terminal-log-light', lightIsDay ? 'DAYLIGHT' : 'NIGHT OPS');
-        setText('terminal-log-transition', `${lightIsDay ? 'DUSK' : 'DAWN'} IN ${String(Math.floor(transitionSeconds / 60)).padStart(2, '0')}:${String(transitionSeconds % 60).padStart(2, '0')}`);
+        setText('terminal-log-light', lightIsDay ? t('ui.console.daylight') : t('ui.console.night_ops'));
+        setText('terminal-log-transition', t('ui.console.transition_in', {
+            phase: lightIsDay ? t('ui.console.dusk') : t('ui.console.dawn'),
+            time: `${String(Math.floor(transitionSeconds / 60)).padStart(2, '0')}:${String(transitionSeconds % 60).padStart(2, '0')}`
+        }));
 
         const mission = this.missionState;
         const missionLabel = mission?.label || 'EXPLORE · BANK SALVAGE';
@@ -11588,7 +11715,7 @@ export class ThreeGame {
             const second = String(entry.elapsed % 60).padStart(2, '0');
             item.innerHTML = `<span class="terminal-objective-journal-time"></span><span class="terminal-objective-journal-copy"></span><strong class="terminal-objective-journal-state"></strong>`;
             item.querySelector('.terminal-objective-journal-time').textContent = t('ui.journal.day_time', { day: entry.day, minute, second });
-            item.querySelector('.terminal-objective-journal-copy').textContent = `${entry.missionLabel} // NEXT: ${entry.goalLabel}`;
+            item.querySelector('.terminal-objective-journal-copy').textContent = t('ui.journal.mission_next', { mission: entry.missionLabel, goal: entry.goalLabel });
             item.querySelector('.terminal-objective-journal-state').textContent = `${entry.missionStatus} · ${entry.goalStatus}`;
             list.append(item);
         }
@@ -11599,7 +11726,7 @@ export class ThreeGame {
             if (!resolved.has(deadline.id) && !expired.has(deadline.id) && day + 1 < deadline.closesOnDay) continue;
             const item = document.createElement('li');
             item.className = expired.has(deadline.id) ? 'is-expired' : resolved.has(deadline.id) ? 'is-complete' : 'is-warning';
-            item.innerHTML = `<span class="terminal-objective-journal-time">STORY</span><span class="terminal-objective-journal-copy"></span><strong class="terminal-objective-journal-state"></strong>`;
+            item.innerHTML = `<span class="terminal-objective-journal-time">${t('ui.journal.story')}</span><span class="terminal-objective-journal-copy"></span><strong class="terminal-objective-journal-state"></strong>`;
             item.querySelector('.terminal-objective-journal-copy').textContent = deadline.label;
             item.querySelector('.terminal-objective-journal-state').textContent = resolved.has(deadline.id)
                 ? 'RESOLVED' : expired.has(deadline.id) ? 'EXPIRED' : `CLOSES DAY ${deadline.closesOnDay}`;
@@ -11676,7 +11803,7 @@ export class ThreeGame {
                 }
             };
 
-            setText('terminal-current-objective-status', canAfford ? 'READY' : 'INSUFFICIENT');
+            setText('terminal-current-objective-status', canAfford ? t('ui.console.ready') : t('ui.console.insufficient'));
         } else {
             if (purchaseZone) {
                 purchaseZone.classList.add('hidden');
@@ -11701,7 +11828,7 @@ export class ThreeGame {
         this.renderTerminalObjectiveJournal(bankState, activeGoal);
         this.updateTerminalClock();
         const heartsFromMed = Math.floor(bankState.med / 10);
-        setText('terminal-med-hearts', heartsFromMed > 0 ? `♥ ×${heartsFromMed} AVAILABLE` : `${bankState.med}/10 FOR ♥`);
+        setText('terminal-med-hearts', heartsFromMed > 0 ? t('ui.bank.hearts_available', { count: heartsFromMed }) : t('ui.bank.med_for_heart', { med: bankState.med }));
 
         const hint = document.getElementById('terminal-bank-hint');
         if (hint) {
@@ -11723,7 +11850,7 @@ export class ThreeGame {
             if (this.playerVitals.hp >= this.playerVitals.maxHp) {
                 medkitStatus.textContent = t('ui.bank.hp_full');
             } else if (bankState.med < 10) {
-                medkitStatus.textContent = `${bankState.med}/10 MED`;
+                medkitStatus.textContent = t('ui.bank.med_stored', { med: bankState.med });
             } else {
                 medkitStatus.textContent = t('ui.bank.conversions_available', { count: conversionsReady });
             }
@@ -11733,7 +11860,13 @@ export class ThreeGame {
             if (this.playerVitals.hp >= this.playerVitals.maxHp) {
                 medkitHint.textContent = t('ui.bank.integrity_full');
             } else {
-                medkitHint.textContent = `${heartsMissing} HEART${heartsMissing === 1 ? '' : 'S'} MISSING. ${conversionsReady} CONVERSION${conversionsReady === 1 ? '' : 'S'} AVAILABLE (${bankState.med} MED STORED).`;
+                medkitHint.textContent = t('ui.bank.hearts_missing', {
+                    hearts: heartsMissing,
+                    heartPlural: heartsMissing === 1 ? '' : 'S',
+                    conversions: conversionsReady,
+                    conversionPlural: conversionsReady === 1 ? '' : 'S',
+                    med: bankState.med
+                });
             }
         }
 
@@ -12092,7 +12225,7 @@ export class ThreeGame {
         const badge = document.getElementById('terminal-class-badge');
         if (badge) {
             const isActive = this.playerType === ship.type;
-            badge.textContent = `${ship.type} BASE STATUS ${isActive ? '[ACTIVE EXOSUIT]' : '[STANDBY]'}`;
+            badge.textContent = t('ui.console.base_status', { type: ship.type, state: isActive ? t('ui.console.active_exosuit') : t('ui.console.standby') });
         }
 
         this.syncPersistentUpgrades();
@@ -12611,7 +12744,15 @@ export class ThreeGame {
         if (countEl) {
             const activeCount = nodes.filter((node) => this.isTreeNodeActive(stateById.get(node.id))).length;
             const readyCount = nodes.filter((node) => Boolean(stateById.get(node.id)?.available)).length;
-            countEl.textContent = `${tree.playerClass} BUNKER TREE: ${activeCount}/${nodes.length} ONLINE (${readyCount} READY) | COMBAT LV: ${progression.combatUnlocked}/${progression.combatTotal} | BALANCE: ◈ ${this.bank.getShells()} SHELLS`;
+            countEl.textContent = t('ui.skills.tree_summary', {
+                class: tree.playerClass,
+                active: activeCount,
+                total: nodes.length,
+                ready: readyCount,
+                combat: progression.combatUnlocked,
+                combatTotal: progression.combatTotal,
+                shells: this.bank.getShells()
+            });
         }
 
         // Row-major append order: the CSS grid places cards by explicit
@@ -12649,7 +12790,7 @@ export class ThreeGame {
         };
         const badge = document.getElementById('o2-generator-modal-badge');
         if (badge) {
-            badge.textContent = `${ship?.type ?? this.playerType} FIELD STABILIZER`;
+            badge.textContent = t('ui.console.field_stabilizer', { type: ship?.type ?? this.playerType });
         }
         setText('o2-generator-modal-status', generatorState.isOnline
             ? `ONLINE // LVL ${generatorState.level}`
@@ -12668,7 +12809,7 @@ export class ThreeGame {
             const missingText = canAfford ? '' : ` // ${this.getMissingResourceText(effectiveCost, bankState)}`;
             setText('o2-generator-modal-cost', `NEXT COST: ${this.formatResourceCost(effectiveCost, { bankState, showHaveNeed: !canAfford })}${discountTag}${missingText}`);
         } else {
-            setText('o2-generator-modal-cost', 'NEXT COST: NONE');
+            setText('o2-generator-modal-cost', t('ui.bank.next_cost_none'));
         }
         setText('o2-generator-modal-hint', generatorState.maxed
             ? 'O2 GENERATOR OUTPUT IS MAXED.'

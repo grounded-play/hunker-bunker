@@ -20,9 +20,9 @@
 
 🎮 **[Play Live Browser Build](https://hunkerbunker.netlify.app/)** • 💬 **[Join Discord Server](https://discord.gg/XXwwz3rauu)** • 📚 **[Documentation Map](docs/README.md)**
 
-> **Status (2026-09-10):** Sprint 34 is active on `dev/sprint-34`, developing from the `v2.4.0-beta` baseline. Current features include the two-tier weapon cosmetic pipeline, complete Season 0 & Sprint 34 catalog registration, real-time diorama VFX, shared co-op events, and 3D armory weapon calibration. Steam lobby, Cloud, Deck, packaged-build, and co-op claims continue through rigorous human and hardware acceptance gates; see [Product State](PRODUCT_STATE.md) for the exact distinction.
+> **Status (2026-09-18):** Sprint 41 is active on `dev/sprint-41` at `v2.4.7-beta`, staged for release off the `v2.4.4-beta` baseline. Localization is now complete on both axes — **0 unannotated markup strings and 0 unlocalized runtime strings**, with 1,898 keys per locale at exact parity and the narrative catalog fully translated in all 7 languages. Alongside it: Alternate Radio Voice Banks with custom in-game personas and personalized crash sequences (Soviet Sub-Commander & AURA, 104 slots / 208 takes), 10 fully rendered motion ending cinematics, Phase A AgX tone mapping & IBL reflections, and 52 playtest stability tickets (DP-01 through DP-52).
 >
-> Verified locally on 2026-09-10: **2,849 passing tests across 322 files** (100% green test suite). See [`docs/releases/v2.4.0-beta.md`](docs/releases/v2.4.0-beta.md), [Product State](PRODUCT_STATE.md), and [`docs/planning/`](docs/planning/) for current work and tagged releases.
+> Verified locally on 2026-09-18: **3,566 passing tests across 395 files** (100% green), **9/9 Playwright E2E browser tests** across all 7 locales, clean lint, and `npm run i18n:audit` reporting zero on every axis. See [`docs/releases/v2.4.7-beta.md`](docs/releases/v2.4.7-beta.md), [`docs/planning/localization-coverage-audit-and-plan-2026-09-16.md`](docs/planning/localization-coverage-audit-and-plan-2026-09-16.md), [`docs/planning/sprint-41-audit-and-roadmap.md`](docs/planning/sprint-41-audit-and-roadmap.md), [Product State](PRODUCT_STATE.md), and [`docs/planning/`](docs/planning/) for current work and tagged releases.
 
 ---
 
@@ -45,9 +45,12 @@
 ## ⚡ Core Features
 
 - **Procedural Bunker Runs**: WebGL-powered isometric corridors with dynamic fog of war, environmental hazards, and O2 survival pressure — no two runs share a layout.
+- **Deep Localization (7 Languages)**: Complete localization across **English (`en`)**, **German (`de`)**, **Latin American Spanish (`es-419`)**, **Japanese (`ja`)**, **Brazilian Portuguese (`pt-BR`)**, **Russian (`ru`)**, and **Simplified Chinese (`zh-CN`)** — 0 unannotated markup, 0 unlocalized runtime strings, 1,898 keys per locale at exact parity, live in-session switching, and a coverage ratchet (`npm run i18n:audit`) that fails CI if any of those regress.
+- **Alternate Radio Voice Banks & Personas**: Equip the grizzled Soviet Sub-Commander (`4148`) or tactical AI AURA (`4149`) with 104 callout slots (208 authentic takes), intro cutscene HUD persona cards, and customized opening crash dialogue.
+- **10 Branching Motion Endings**: Survivor encounters, faction standing with the Meridian/Tallow/Vesper camps, and hive diplomacy determine which of ten fully-rendered 3D motion cinematic endings with dedicated audio beds you achieve.
+- **AgX Tone Mapping & Reflective IBL**: High-dynamic-range reflection probes, space HDRI lighting, selective bloom, and upgraded tilt-shift diorama bokeh for gritty biomechanical depth.
 - **3 Exosuit Classes**: Distinct playstyles for **Scout** (Speed & Recon), **Tank** (Endurance & Armor), and **Engineer** (Systems & Terminals).
 - **Deep Progression**: Bank salvage between runs, research a full combat skill tree, craft specialized gear, and level a **50-tier Season 0 Battle Pass**.
-- **10 Branching Endings**: Survivor encounters, faction standing with the Meridian/Tallow/Vesper camps, and hive diplomacy all feed into which of ten real Act 2 outcomes you land.
 - **Real Multiplayer**: Socket.IO relay lobby with LAN and online play — drop in with a friend or run solo against AI.
 - **Steamworks Integration**: Code-backed support for trusted leaderboards, Steam Cloud saves, Steam lobbies, the Steam Vault economy, and 24 achievements. Production acceptance varies by feature and is tracked in [Product State](PRODUCT_STATE.md).
 - **In-Game Dev & QA Console (`~`)**: Real-time diagnostic telemetry, event interceptors, audio/network monitors, and QA cheat commands (`resetachievements`).

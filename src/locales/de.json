@@ -87,7 +87,8 @@
       "engineer": "INGENIEUR",
       "reroute": "UMLEITEN",
       "cheaper_consoles": "GÜNSTIGERE KONSOLEN",
-      "esc": "[ESC]"
+      "esc": "[ESC]",
+      "return_main": "← ZURÜCK ZUM HAUPTMENÜ"
     },
     "hub": {
       "daily_ops": "TAGESEINSATZ",
@@ -283,7 +284,14 @@
       "no_weapons": "KEINE WAFFEN GEFERTIGT",
       "print_hint": "Drucke in der Fertigungsbucht einen garantierten Streu-Repetierer für 12 Tech / 6 Münzen.",
       "equipped": "✓ AUSGERÜSTET",
-      "equip": "AUSRÜSTEN"
+      "equip": "AUSRÜSTEN",
+      "id_label": "ID:",
+      "stat_sector": "SEKTOR {depth}",
+      "stat_hostiles": "{count} FEINDE",
+      "blackbox_recoverable": "BERGBAR (SEKTOR {depth})",
+      "blackbox_none": "KEINE",
+      "equipped_none": "KEINE",
+      "arsenal_count": "ARSENAL: {made} / {total} WAFFEN GEFERTIGT"
     },
     "dlg": {
       "channel": "MUTTERSCHIFF-UPLINK KANAL 7",
@@ -303,7 +311,49 @@
       "aria_label_build_and_developer": "Build- und Entwicklerinformationen",
       "system_build": "SYSTEM-BUILD",
       "dev_console": "DEV-KONSOLE",
-      "initializing_systems": "SYSTEME WERDEN INITIALISIERT"
+      "initializing_systems": "SYSTEME WERDEN INITIALISIERT",
+      "msg_biometric_airlock": "BIOMETRISCHES LUFTSCHLEUSENTOR WIRD KALIBRIERT",
+      "msg_reactor_bulkhead": "REAKTOR-KÜHLMITTELSCHOTT WIRD ABGESCHIRMT",
+      "msg_thermal_shield": "THERMISCHER SUPRALEITERSCHILD WIRD STABILISIERT",
+      "msg_xeno_codes": "XENO-TECHNOLOGIE-SICHERHEITSCODES WERDEN ENTSCHLÜSSELT",
+      "msg_corroded_ports": "KORRODIERTE AUSSENBORDPORTS WERDEN VERSIEGELT",
+      "msg_door_hydraulics": "HYDRAULIK DER SEKTORTÜREN WIRD AKTIVIERT",
+      "msg_gigawatt_goliath": "RADARPROFIL DES GIGAWATT-GOLIATHS WIRD ORTET",
+      "msg_temp_drop": "WARNUNG: STARKER LOKALER TEMPERATURABFALL ERKANNT",
+      "msg_hull_contagion": "GEFAHR: BIO-ORGANISCHE HÜLLENKONTAMINATION KRITISCH",
+      "msg_corrosive_anomalies": "KORROSIVE ANOMALIEN IM STÜTZFELD WERDEN ERKANNT",
+      "msg_gelid_drain": "GELID-ABNUTZUNGSINDEX DES EXOANZUGS WIRD GEMESSEN",
+      "msg_bio_pathogens": "SUBTERRANE BIO-KINETISCHE ERREGER WERDEN ÜBERWACHT",
+      "msg_metal_supports": "SICHERE METALLSTRUKTUR-STÜTZEN WERDEN KARTIERT",
+      "msg_cryo_pipelines": "KRYOGENE KÜHLMITTELLEITUNGEN WERDEN STABILISIERT",
+      "msg_spore_biospheres": "SPORENVERSEUCHTE BIOSPHÄREN WERDEN ISOLIERT",
+      "msg_glacial_caverns": "GEOTHERMALE GLETSCHERHÖHLEN WERDEN VERMESSEN",
+      "msg_salvage_debris": "VERWERTBARER BERGESCHUTT WIRD GESCANNT",
+      "msg_dust_signals": "STAUBSIGNALE WERDEN VON VERWERTBAREM METALL GETRENNT",
+      "msg_gold_cache": "KERNCACHE MIT GOLDSIGNATUR WIRD ERKANNT",
+      "msg_high_value_lobes": "RADAR ERFASST UNGEWÖHNLICHE HOCHWERTIGE KEULEN",
+      "msg_o2_mixer": "MISCHVENTIL DES SAUERSTOFFGENERATORS WIRD VORGEHEIZT",
+      "msg_n2_cooler": "FLÜSSIGSTICKSTOFFKÜHLER DES KOMPRESSORS WIRD ENTLÜFTET",
+      "msg_radome_antenna": "HOCHGEWINN-RADOM-EM-ANTENNE WIRD AUSGERICHTET",
+      "msg_nanobot_fabricator": "NANOBOT-FABRIKATOR-SUBROUTINEN WERDEN HOCHGELADEN",
+      "msg_defensive_matrix": "ZELLPOLARITÄT DER VERTEIDIGUNGSMATRIX WIRD ABGESTIMMT",
+      "msg_recon_datalink": "SCHNELLE AUFKLÄRUNGS-DATENVERBINDUNG WIRD AUFGEBAUT",
+      "msg_exosuit_buffers": "STÄRKEPUFFER DES SCHWEREN EXOANZUGS WERDEN GESTARTET",
+      "msg_debris_deflection": "TRÜMMERABLENKUNGSHILFE WIRD KALIBRIERT",
+      "msg_display_schematics": "INTERAKTIVE ANZEIGESCHEMATA WERDEN GEPUFFERT",
+      "msg_audio_matrix": "TAKTISCHER AUDIOMATRIX-FEED WIRD STABILISIERT",
+      "msg_tactical_data": "TAKTISCHE DATENDATEI WIRD SYNCHRONISIERT",
+      "log_verifying_steam": "> STEAMWORKS-INTEGRATION WIRD GEPRÜFT...",
+      "log_steam_error": "> STEAM-PRÜFFEHLER: {error}",
+      "log_unknown_error": "UNBEKANNTER FEHLER",
+      "log_steam_linked": "> STEAM VERBUNDEN: {persona}",
+      "log_connected": "VERBUNDEN",
+      "log_steam_degraded": "> STEAM EINGESCHRÄNKT: {reason} – FORTFAHREN",
+      "log_asset": "> {message}...",
+      "log_booting_webgl": "> TAKTISCHER WEBGL-KERN WIRD GESTARTET...",
+      "log_preloading_cinematic": "> CINEMATIC-FEED WIRD VORGELADEN (DoorIntro)...",
+      "log_assets_loaded": "> ALLE ASSETS GELADEN – LUFTSCHLEUSE WIRD GEÖFFNET...",
+      "initializing_core": "> TAKTISCHER EXOANZUG-KERN WIRD INITIALISIERT... ({percent}%)"
     },
     "splash_steam_badge": {
       "title_click_to_open": "Klicken, um Steam-Overlay-Profil zu öffnen",
@@ -332,7 +382,9 @@
       "github_repository": "GITHUB-REPOSITORY",
       "special_thanks": "BESONDERER DANK",
       "our_amazing_community_players": "Unserer großartigen Community & den Spielern",
-      "thank_you_for_deploying": "DANKE FÜRS AUSRÜCKEN"
+      "thank_you_for_deploying": "DANKE FÜRS AUSRÜCKEN",
+      "tactical_command": "TAKTISCHES KOMMANDO",
+      "accent_credits": "// CREDITS"
     },
     "hero_detail": {
       "field_loadout": "FELDAUSRÜSTUNG"
@@ -343,14 +395,16 @@
       "in_progress": "LÄUFT",
       "ready": "BEREIT",
       "best_score": "◈ BESTE: {score} PKT",
-      "rgb_title": "RGB: RIVERSIDE GLOBAL 'BOTICS"
+      "rgb_title": "RGB: RIVERSIDE GLOBAL 'BOTICS",
+      "score_grade": "{score} PKT // {grade}"
     },
     "close_season_pass": {
       "aria_label_close_tactical_dossier": "Taktisches Dossier schließen"
     },
     "season_pass": {
       "sub_terran_sector_operations_beta": "◈ SUBTERRANE SEKTOR-OPERATIONEN // BETA-SAISON 1",
-      "directives": "& DIREKTIVEN"
+      "directives": "& DIREKTIVEN",
+      "title": "TAKTISCHES DOSSIER"
     },
     "archive_log_detail": {
       "aria_label_close_archive_log": "Archiv-Log schließen",
@@ -375,7 +429,10 @@
       "view_record": "Intel-Eintrag für {name} ansehen",
       "click_hint": "KLICKEN FÜR DOSSIER & ARTWORK",
       "uncatalogued": "??? — NICHT KATALOGISIERT",
-      "encounter_hint": "Begegne ihm im Feld, um seinen Eintrag zu bergen."
+      "encounter_hint": "Begegne ihm im Feld, um seinen Eintrag zu bergen.",
+      "title": "FELD-KODEX",
+      "alt_intel_image": "Kodex-Intel-Bild",
+      "accent_bestiary": "// BESTIARIUM"
     },
     "close_codex_detail": {
       "aria_label_close_codex_entry": "Kodex-Eintrag schließen"
@@ -389,7 +446,9 @@
     "achievements": {
       "combat_citations_deep_crust_commendations": "◈ GEFECHTSAUSZEICHNUNGEN // TIEFENKRUSTEN-EHRUNGEN",
       "title_copy_a_portable": "Portablen Speichercode kopieren",
-      "copy_save_code": "SPEICHERCODE KOPIEREN"
+      "copy_save_code": "SPEICHERCODE KOPIEREN",
+      "title": "OPERATIVEN-AUSZEICHNUNGEN",
+      "accent_archive": "// ARCHIV"
     },
     "close_steam_vault": {
       "aria_label_close_steam_vault": "Steam-Tresor schließen"
@@ -417,14 +476,30 @@
       "1_next_tier_item": "1× GEGENSTAND NÄCHSTER STUFE",
       "deep_smelter": "TIEFEN-SCHMELZE",
       "consumes_5x_same_tier_items": "VERBRAUCHT 5x GEGENSTÄNDE GLEICHER STUFE",
-      "deep_core_shard_dispensary": "TIEFENKERN-SPLITTER-AUSGABE"
+      "deep_core_shard_dispensary": "TIEFENKERN-SPLITTER-AUSGABE",
+      "title": "◈ STEAM-TRESOR",
+      "caches_label": "CACHES:",
+      "keys_label": "SCHLÜSSEL:",
+      "shards_label": "SPLITTER:",
+      "tab_inventory": "EIGENES INVENTAR",
+      "tab_store": "◈ RELIKT-SHOP & DROP-CHANCEN",
+      "tab_smelter": "◈ SCHMELZE & AUSGABE",
+      "decrypt_with": "entschlüsseln mit",
+      "rates_match": "· Die Raten entsprechen den Servertabellen.",
+      "consumed_removed": "· Verbrauchte Gegenstände werden entfernt.",
+      "accent_dispatch": "// ITEM-VERSAND"
     },
     "vault_details": {
-      "view_in_steam_market": "IM STEAM-MARKT ANSEHEN"
+      "view_in_steam_market": "IM STEAM-MARKT ANSEHEN",
+      "select_an_item": "GEGENSTAND WÄHLEN",
+      "select_hint": "Wähle einen Gegenstand, um Steam-Besitz und Handelsdaten zu sehen.",
+      "read_only": "STEAM-INVENTAR NUR LESEN",
+      "no_rarity": "—"
     },
     "vault_reveal": {
       "steam_relic_dispensary_appid_4957040": "◈ STEAM-RELIKT-AUSGABE // APPID 4957040",
-      "claim_to_inventory": "◈ INS INVENTAR ÜBERNEHMEN"
+      "claim_to_inventory": "◈ INS INVENTAR ÜBERNEHMEN",
+      "alt_reward": "Belohnung"
     },
     "operator_polish": {
       "operator_polish": "◆ OPERATOR-LACKIERUNG",
@@ -499,7 +574,11 @@
     "fabrication": {
       "fabrication_bay": "◇ FERTIGUNGSBUCHT",
       "print_gear_from_salvage": "AUSRÜSTUNG AUS SCHROTT DRUCKEN",
-      "schematics_fabricated_0_8": "GEFERTIGTE BAUPLÄNE: 0 / 8"
+      "schematics_fabricated_0_8": "GEFERTIGTE BAUPLÄNE: 0 / 8",
+      "tech": "TECH",
+      "coin": "MÜNZEN",
+      "med": "MED",
+      "shells": "HÜLSEN"
     },
     "fab_roll": {
       "insert_salvage_to_fabricate": "SCHROTT ZUM FERTIGEN EINLEGEN"
@@ -550,7 +629,11 @@
     },
     "pickup_counter": {
       "loot": "BEUTE",
-      "total": "GESAMT"
+      "total": "GESAMT",
+      "med": "MED",
+      "tech": "TECH",
+      "coin": "MÜNZEN",
+      "shell": "HÜLSE"
     },
     "boss_status": {
       "boss_threat": "BOSS-BEDROHUNG"
@@ -729,7 +812,9 @@
     "confirm": {
       "critical_alert": "KRITISCHER ALARM",
       "abort_mission": "MISSION ABBRECHEN",
-      "cancel": "ABBRECHEN"
+      "cancel": "ABBRECHEN",
+      "terminate_question": "DIESEN VERTRAG AUF DER STELLE BEENDEN?",
+      "terminate_detail": "Die Anlagen bergen den Anzug und rüsten eine Blackbox für den nächsten Abstieg."
     },
     "day_rest_warning": {
       "the_night_will_close_doors": "DIE NACHT WIRD TÜREN SCHLIESSEN",
@@ -747,12 +832,17 @@
     "reset_save_confirm": {
       "reset_save_data": "SPEICHERDATEN ZURÜCKSETZEN",
       "reset_save": "SPEICHERSTAND ZURÜCKSETZEN",
-      "cancel": "ABBRECHEN"
+      "cancel": "ABBRECHEN",
+      "question": "EIN NEUES SPIEL BEGINNEN?",
+      "cleared": "AUF DIESEM GERÄT WERDEN RGB-FORTSCHRITT, ALLE ERFOLGE, FREISCHALTUNGEN, EINGELAGERTER SCHROTT, KODEX, FERTIGUNGEN, BESTLEISTUNGEN UND PROFILDATEN GELÖSCHT.",
+      "kept": "AUDIO-, ANZEIGE- UND STEUERUNGSEINSTELLUNGEN BLEIBEN ERHALTEN."
     },
     "quit_confirm": {
       "quit_hunker_bunker": "HUNKER BUNKER BEENDEN",
       "confirm_quit": "BEENDEN BESTÄTIGEN",
-      "cancel": "ABBRECHEN"
+      "cancel": "ABBRECHEN",
+      "question": "ANWENDUNG BEENDEN?",
+      "detail": "WIRKLICH BEENDEN? NICHT GESPEICHERTER FORTSCHRITT EINES LAUFENDEN RUNS GEHT VERLOREN."
     },
     "camp_choice": {
       "aria_label_close_camp_decision": "Lager-Entscheidung schließen",
@@ -792,7 +882,9 @@
     },
     "controls": {
       "steam_deck": "STEAM DECK:",
-      "desktop": "DESKTOP:"
+      "desktop": "DESKTOP:",
+      "deck_hint": "Linker Stick bewegt oder navigiert · Rechter Stick zielt und steuert den sichtbaren Zeiger · A bestätigt/interagiert · B zurück/ausweichen · Menu öffnet die Einstellungen.",
+      "desktop_hint": "Auf einen Slot klicken, dann eine Taste zum Belegen drücken. ESC bricht ab."
     },
     "mothership_dialogue": {
       "scout_link_encrypted": "SPÄHER-LINK [VERSCHLÜSSELT]"
@@ -858,7 +950,14 @@
       "esc": "ESC",
       "click": "KLICKEN",
       "host": "HOST",
-      "back_to_armory": "← ZURÜCK ZUR WAFFENKAMMER"
+      "back_to_armory": "← ZURÜCK ZUR WAFFENKAMMER",
+      "title": "TAKTISCHES NETZ",
+      "invite_friend": "FREUND EINLADEN",
+      "refresh": "AKTUALISIEREN",
+      "hint_back": "ZURÜCK",
+      "hint_toggle": "MODUS WECHSELN",
+      "hint_deploy": "SQUAD ENTSENDEN",
+      "accent_relay": "// RELAY-KOMMANDO"
     },
     "close_multiplayer": {
       "aria_label_close_tactical_net": "Taktisches Netz schließen"
@@ -878,7 +977,9 @@
       "aria_label_close_progression_walkthrough": "Fortschritts-Walkthrough schließen"
     },
     "select_picker": {
-      "aria_label_close_option_picker": "Optionsauswahl schließen"
+      "aria_label_close_option_picker": "Optionsauswahl schließen",
+      "select": "AUSWÄHLEN",
+      "back": "ZURÜCK"
     },
     "virtual_keyboard": {
       "aria_label_close_on_screen": "Bildschirmtastatur schließen",
@@ -907,7 +1008,9 @@
       "preserved_on_failure": "Bankguthaben bleibt bei Misserfolg erhalten.",
       "dossier": "DOSSIER",
       "pending": "{count} AUSSTEHEND",
-      "synced": "SYNCHRONISIERT ✓"
+      "synced": "SYNCHRONISIERT ✓",
+      "pathway_available": "PFAD VERFÜGBAR – Die Anforderungen sind noch erfüllbar",
+      "projected_path": "PROGNOSTIZIERTER PFAD: {ending}"
     },
     "wanderer": {
       "survivor_named": "Überlebender: {name}",
@@ -917,7 +1020,9 @@
       "decline": "BÜNDNIS ABLEHNEN – {supplies} EINLAGERN",
       "supplies": "VORRÄTE",
       "transmission": "[ ÜBERLEBENDEN-ÜBERTRAGUNG ]",
-      "quote": "„{text}“"
+      "quote": "„{text}“",
+      "inquiry": "Anfrage:",
+      "quest_line": "{title} – {desc} Belohnung: {reward}."
     },
     "vault": {
       "item_acquired": "STEAM-GEGENSTAND ERHALTEN",
@@ -988,7 +1093,8 @@
       "deploy_solo": "ALLEIN AUSRÜCKEN",
       "host_control_required": "HOST-KONTROLLE ERFORDERLICH",
       "host_new_lobby": "NEUE LOBBY HOSTEN",
-      "start_match": "MATCH STARTEN"
+      "start_match": "MATCH STARTEN",
+      "mode_members": "{mode} // {count}/4 OPERATIVE"
     },
     "dossier": {
       "title": "TAKTISCHES DOSSIER",
@@ -1051,10 +1157,24 @@
       "choice_required": "ENTSCHEIDUNG ERFORDERLICH",
       "event_resolved": "Terminal-Ereignis gelöst. Shop-Systeme bleiben verfügbar.",
       "engineer_verify": "INGENIEUR-PRÜFUNG",
-      "mimic_neutralized": "WARNUNG: TERMINALSIGNATUR GEFÄLSCHT – MIMIK AUSGESCHALTET. WEITERGEHEN IST SICHER."
+      "mimic_neutralized": "WARNUNG: TERMINALSIGNATUR GEFÄLSCHT – MIMIK AUSGESCHALTET. WEITERGEHEN IST SICHER.",
+      "day_n": "TAG {day}",
+      "daylight": "TAGESLICHT",
+      "night_ops": "NACHTEINSATZ",
+      "ready": "BEREIT",
+      "insufficient": "UNZUREICHEND",
+      "transition_in": "{phase} IN {time}",
+      "dusk": "ABENDDÄMMERUNG",
+      "dawn": "MORGENDÄMMERUNG",
+      "base_status": "{type} BASIS-STATUS {state}",
+      "active_exosuit": "[AKTIVER EXOANZUG]",
+      "standby": "[BEREITSCHAFT]",
+      "field_stabilizer": "{type} FELDSTABILISATOR"
     },
     "journal": {
-      "day_time": "T{day} {minute}:{second}"
+      "day_time": "T{day} {minute}:{second}",
+      "story": "STORY",
+      "mission_next": "{mission} // NÄCHSTES: {goal}"
     },
     "bank": {
       "deposit_ready": "EINZAHLUNG BEREIT. RESSOURCENKANAL OFFEN.",
@@ -1065,12 +1185,17 @@
       "next_cost_none": "NÄCHSTE KOSTEN: KEINE",
       "generator_maxed": "DIE O₂-GENERATORLEISTUNG IST FÜR DIESE BUCHT MAXIMAL.",
       "repair_to_create_zone": "REPARIERE DIESES MODUL, UM EINE SICHERE O₂-ZONE AM SCHIFF ZU SCHAFFEN.",
-      "upgrades_expand_field": "UPGRADES ERWEITERN DAS BLAUE O₂-FELD, SODASS DU VON WEITER WEG AUFFÜLLST."
+      "upgrades_expand_field": "UPGRADES ERWEITERN DAS BLAUE O₂-FELD, SODASS DU VON WEITER WEG AUFFÜLLST.",
+      "hearts_available": "♥ ×{count} VERFÜGBAR",
+      "med_for_heart": "{med}/10 FÜR ♥",
+      "hearts_missing": "{hearts} HERZEN FEHLEN. {conversions} UMWANDLUNGEN VERFÜGBAR ({med} MED GELAGERT).",
+      "med_stored": "{med}/10 MED"
     },
     "skills": {
       "completed": "ABGESCHLOSSEN",
       "upgrade": "AUFWERTEN",
-      "unlock": "FREISCHALTEN"
+      "unlock": "FREISCHALTEN",
+      "tree_summary": "{class} BUNKER-BAUM: {active}/{total} ONLINE ({ready} BEREIT) | KAMPFSTUFE: {combat}/{combatTotal} | GUTHABEN: ◈ {shells} HÜLSEN"
     },
     "turret": {
       "built_north_door": "GEBAUT – STEUERUNG AN DER NORDTÜR",
@@ -1143,7 +1268,8 @@
     "hud": {
       "ammo_cache": "CACHE {current}/{max}",
       "current_biome": "AKTUELLES BIOM {biome}",
-      "equipped": "AUSGERÜSTET"
+      "equipped": "AUSGERÜSTET",
+      "bunker_level_aria": "BUNKER-EBENE {level} ({tier}) – {biome}"
     },
     "commentary": {
       "kicker": "ENTWICKLERKOMMENTAR"
@@ -1156,7 +1282,8 @@
       "commander_name": "Sowjetischer Unterkommandeur",
       "aura_name": "Synthetische KI „AURA“",
       "commander_title": "SOWJETISCHER UNTERKOMMANDEUR",
-      "aura_title": "SYNTHETISCHE KI „AURA“"
+      "aura_title": "SYNTHETISCHE KI „AURA“",
+      "alt_sender_portrait": "Porträt des Absenders"
     },
     "go": {
       "generator_level": "STUFE {level}",
@@ -1175,7 +1302,8 @@
       "unlocked_kicker": "ERFOLG FREIGESCHALTET",
       "hidden": "Verborgener Eintrag. Zum Anzeigen freischalten.",
       "coming_soon": "DEMNÄCHST",
-      "unlocked": "FREIGESCHALTET"
+      "unlocked": "FREIGESCHALTET",
+      "summary_unlocked": "{unlocked} / {total} FREIGESCHALTET"
     },
     "save": {
       "code_unavailable": "SPEICHERCODE NICHT VERFÜGBAR"
@@ -1188,7 +1316,8 @@
     },
     "loader": {
       "deployment_telemetry": "MUTTERSCHIFF-EINSATZTELEMETRIE",
-      "init_failed": "SYSTEMINITIALISIERUNG FEHLGESCHLAGEN"
+      "init_failed": "SYSTEMINITIALISIERUNG FEHLGESCHLAGEN",
+      "init_error_retrying": "[ SYSTEMINITIALISIERUNGSFEHLER – ERNEUTER VERSUCH... ]"
     },
     "alert": {
       "tactical": "TAKTISCHER ALARM",
@@ -1197,12 +1326,15 @@
     "trade": {
       "squadmate": "SQUAD-KAMERAD",
       "awaiting_offer": "WARTE AUF ANGEBOTSAUSWAHL",
-      "waiting_squadmate": "WARTE AUF SQUAD-KAMERAD..."
+      "waiting_squadmate": "WARTE AUF SQUAD-KAMERAD...",
+      "self_class": "{class} // OPERATIVER",
+      "peer_class": "{class} // ENTFERNT"
     },
     "bond": {
       "enamored": "VERLIEBT / ERGEBEN",
       "warm": "WARM / ANZIEHUNG",
-      "attentive": "AUFMERKSAM"
+      "attentive": "AUFMERKSAM",
+      "badge": "{label} ({score} PKT)"
     },
     "fab": {
       "scatter_repeater": "STREU-REPETIERER",
@@ -1243,11 +1375,25 @@
       "field_conversation": "FELDGESPRÄCH",
       "callsign": "RUFZEICHEN {callsign}",
       "listen_hint": "Hör zu und entscheide dann, wie du helfen willst.",
-      "quote": "„{text}“"
+      "quote": "„{text}“",
+      "next_action": "Deine nächste Handlung ändert die Startliste und den Endverlauf."
     },
     "title": {
       "pregalien_command": "PREGALIEN | NEST-KOMMANDO",
       "pregalien": "PREGALIEN"
+    },
+    "dialogue": {
+      "commander_badge": "SOWJETISCHER FUNK [72,4 MHz // {class}]",
+      "aura_badge": "AURA TAKTIK-LINK [SYNTH // {class}]",
+      "encrypted_badge": "{class}-LINK [VERSCHLÜSSELT]"
+    },
+    "cutscene": {
+      "alt_incoming_ship": "Ankommendes Schiff",
+      "alt_crashed_ship": "Abgestürztes Schiff"
+    },
+    "snail": {
+      "alt_player_chassis": "Spieler-Chassis",
+      "alt_snail_combatant": "Schnecken-Kämpfer"
     }
   },
   "narrative": {
@@ -2431,6 +2577,322 @@
       }
     },
     "steamItems": {
+      "1000": {
+        "desc": "Ein Splitter uralter unterirdischer Maschinerie, für einfachen Fertigungstausch.",
+        "name": "Gewöhnliches Reliktfragment"
+      },
+      "1100": {
+        "desc": "Ein intakter Prozessorkern aus den tiefen Tresoren, für Elite-Kosmetik.",
+        "name": "Seltenes Reliktfragment"
+      },
+      "2000": {
+        "desc": "Für Operatoren, die mit einem Späher-Rahmen erfolgreich bergen. Kosmetisch.",
+        "name": "Späher-Siegesaufnäher"
+      },
+      "2001": {
+        "desc": "Für Operatoren, die mit einem Tank-Rahmen erfolgreich bergen. Kosmetisch.",
+        "name": "Tank-Siegesaufnäher"
+      },
+      "2002": {
+        "desc": "Für Operatoren, die mit einem Ingenieur-Rahmen erfolgreich bergen. Kosmetisch.",
+        "name": "Ingenieur-Siegesaufnäher"
+      },
+      "2003": {
+        "desc": "Für den Sieg über die Königin aus Akt 2. Kosmetisch.",
+        "name": "Königinnentöter-Emblem"
+      },
+      "2004": {
+        "desc": "Für die Bergung des vollständigen Bunkerarchivs. Kosmetisch.",
+        "name": "Archivar-Emblem"
+      },
+      "2100": {
+        "desc": "Eine Hochleistungs-Gewebelackierung für deinen Exoanzug. Kosmetisch.",
+        "name": "Karbonfaser-Aufkleber"
+      },
+      "2200": {
+        "desc": "Polierte, hochreflektierende Verchromung für die Standard-Seitenwaffe. Kosmetisch.",
+        "name": "Verchromte Seitenwaffe"
+      },
+      "4000": {
+        "desc": "Ein versiegelter Behälter aus dem tiefen Bunkerarchiv. Zum Öffnen wird ein Cache-Schlüssel benötigt. Die Chancen stehen vor dem Kauf auf der Shop-Seite.",
+        "name": "Tiefen-Relikt-Cache"
+      },
+      "4001": {
+        "desc": "Öffnet einen einzelnen Tiefen-Relikt-Cache. Im Steam-Item-Shop gekauft; fällt nie kostenlos.",
+        "name": "Relikt-Entschlüsselungsschlüssel"
+      },
+      "4100": {
+        "desc": "Kryogen bereiftes Polymergehäuse mit Kühlschlitzen.",
+        "name": "Unter-Null-Frostbiss-Seitenwaffe"
+      },
+      "4101": {
+        "desc": "Gut sichtbare gelb-schwarze Industrie-Warnlackierung.",
+        "name": "Warnstreifen-MP"
+      },
+      "4102": {
+        "desc": "Schwerer Wolframlauf mit wärmeableitenden Riefen.",
+        "name": "Tektonik-Bohrer-Schrotflinte"
+      },
+      "4103": {
+        "desc": "Supraleitende cyanfarbene Plasmaspulen um den Bogentreiberrahmen des Tesla-Lock.",
+        "name": "Kryo-Plasma-Bogentreiber"
+      },
+      "4104": {
+        "desc": "Verwitterter Bunkerschrott mit biolumineszenten Knocheneinlagen.",
+        "name": "Rost-&-Knochen-Grabenkarabiner"
+      },
+      "4105": {
+        "desc": "Poliertes Vulkanglasgehäuse mit Damaszener-Stahlakzenten.",
+        "name": "Obsidiansplitter-Seitenwaffe"
+      },
+      "4106": {
+        "desc": "Biomechanischer Tank, der pulsierende grüne Pilzsporen austreten lässt.",
+        "name": "Biolum-Sporensprüher"
+      },
+      "4107": {
+        "desc": "Magmadurchsetzter Reaktorkern, pulsierend vor oranger Wärmeenergie.",
+        "name": "Tiefenkern-Schmelzer"
+      },
+      "4108": {
+        "desc": "Holografische animierte Platine, flackernd mit Fehlerprotokollen.",
+        "name": "Glitch-Schaltkreis-Bolter"
+      },
+      "4109": {
+        "desc": "Dunkle-Materie-Emitter mit violettem Gravitations-Ereignishorizont.",
+        "name": "Leerenwandler-Strahlkanone"
+      },
+      "4110": {
+        "desc": "Lebende Chitinlegierung, geborgen aus der Krone der Brutkönigin.",
+        "name": "Königinnenpanzer-Karabiner"
+      },
+      "4111": {
+        "desc": "Rein goldener Antimateriebeschleuniger mit Sonnenpartikelschweif.",
+        "name": "Sonneneruptions-Antimateriegewehr"
+      },
+      "4112": {
+        "desc": "Verstärkte schwere Gefahrenplattierung und Visier-Suchscheinwerfer.",
+        "name": "Subterraner Bohringenieur"
+      },
+      "4113": {
+        "desc": "Wärmeisolierter, weiß getarnter Druck-Tarnanzug.",
+        "name": "Kryo-Vorhut-Späher"
+      },
+      "4114": {
+        "desc": "Genietete Sprengschutz-Plattenrüstung mit Gasmaske.",
+        "name": "Grabenwächter-Schwer"
+      },
+      "4115": {
+        "desc": "Getarntes mattschwarzes Nanogewebe mit violettem Optiksensor.",
+        "name": "Leeren-Kommando-Aufklärung"
+      },
+      "4116": {
+        "name": "Bio-Synthesizer-Geschirr",
+        "desc": "Biomechanisches Spritzengeschirr mit pulsierenden Flüssigkeitsschläuchen."
+      },
+      "4117": {
+        "desc": "Schwere hydraulische Kampfrüstung mit glühendem Magmakern.",
+        "name": "Dreadnought-Exo-Koloss"
+      },
+      "4118": {
+        "desc": "Aktivtarnung mit holografischem Schimmer und kybernetischem Visier.",
+        "name": "Cyber-Spektre-Infiltrator"
+      },
+      "4119": {
+        "desc": "Mutierte Hybridrüstung aus lebendem Alien-Panzer und Stahl.",
+        "name": "Nestherr-Symbiont-Exoanzug"
+      },
+      "4120": {
+        "desc": "Gedenkabzeichen der ersten subterranen Expedition.",
+        "name": "Unter-Null-Pionier-Aufnäher"
+      },
+      "4121": {
+        "desc": "Fluoreszierendes Strahlenwarn-Emblem.",
+        "name": "Strahlungs-Kleeblatt-Emblem"
+      },
+      "4122": {
+        "desc": "Stilisiertes Muschelwappen für die Säuberung tiefer Nester.",
+        "name": "Sporenschnecken-Jäger-Wappen"
+      },
+      "4123": {
+        "desc": "Gedenkabzeichen der verlorenen seismischen Vermessungsabteilung.",
+        "name": "Bunker-404-Verlorene-Truppe-Aufkleber"
+      },
+      "4124": {
+        "desc": "Holografischer Chromschädel mit leuchtenden cyanfarbenen Augen.",
+        "name": "Cyber-Schädel-Taktikpin"
+      },
+      "4125": {
+        "desc": "Mythischer Eisvogel, der aus dem subterranen Permafrost aufsteigt.",
+        "name": "Kryo-Phönix-Abzeichen"
+      },
+      "4126": {
+        "desc": "Geprägtes Goldsiegel zur Feier der Ausschaltung der Brutkönigin.",
+        "name": "Königinnentöter-Goldsiegel"
+      },
+      "4127": {
+        "desc": "Orbitales Violettfaden-Siegel um einen Obsidian-Ereignishorizont.",
+        "name": "Leerenhorizont-Siegel"
+      },
+      "4128": {
+        "desc": "Archaische Alien-Hieroglyphen aus Schicht null.",
+        "name": "Alte Kern-Glyphen"
+      },
+      "4129": {
+        "desc": "Vergoldeter Marschallsadler und Bernsteinkern, gerahmt von einem Meteoritlegierungs-Lorbeer.",
+        "name": "Großmarschall-Reliktwappen"
+      },
+      "4130": {
+        "desc": "Winziger bereifter Kern, der mikroskopischen Kaltdampf ausstößt.",
+        "name": "Mini-Kryokern-Anhänger"
+      },
+      "4131": {
+        "desc": "Gravierte verschossene Hülse vom ersten Bunkerdurchbruch.",
+        "name": "Verschossene .50-Hülse"
+      },
+      "4132": {
+        "desc": "Glänzende biologische Perle, geborgen aus einer Nestkönigin.",
+        "name": "Sporenschnecken-Perle"
+      },
+      "4133": {
+        "desc": "Retro-Taktikpfeife an einer Erkennungsmarkenkette.",
+        "name": "Grabenpfeife"
+      },
+      "4134": {
+        "desc": "Schaltkreis-Chip mit flackernder grüner Mini-LED-Anzeige.",
+        "name": "Glitch-RAM-Karte"
+      },
+      "4135": {
+        "desc": "Die Nadel dreht wild, wenn sie auf Bosskammern zeigt.",
+        "name": "Geodätischer Kompass"
+      },
+      "4136": {
+        "desc": "Winzige gelenkige Geschützdrohne mit beweglichem Suchstrahl.",
+        "name": "Miniatur-Drohnen-Wackelfigur"
+      },
+      "4137": {
+        "desc": "Schwebender leuchtender Embryo, der auf Waffenfeuer reagiert.",
+        "name": "Bernstein-Biokolben"
+      },
+      "4138": {
+        "desc": "Miniatur-Schwarzes-Loch mit umkreisenden Plasmapartikeln.",
+        "name": "Dunkle-Materie-Mikrosingularität"
+      },
+      "4139": {
+        "desc": "Strahlt goldene Lichtstrahlen aus und klimpert wie Münzen.",
+        "name": "Goldener Subbunker-Schlüssel"
+      },
+      "4140": {
+        "desc": "+8% Kryo-Einfrierdauer bei Elementarangriffen.",
+        "name": "Kryo-Kondensator-Übertaktung"
+      },
+      "4141": {
+        "desc": "+20% Magnet-Anziehungsradius für Schrott und Bergegut.",
+        "name": "Magnetische Sammlerspule"
+      },
+      "4142": {
+        "desc": "-12% Schaden durch Sporen- und Säuregaswolken.",
+        "name": "Biogefahren-Filterventil"
+      },
+      "4143": {
+        "desc": "+1 Durchschlag bei kinetischer Waffenmunition.",
+        "name": "Kinetische Aufprallbuchse"
+      },
+      "4144": {
+        "desc": "+10% schnellere Schildaufladung nach Beschuss.",
+        "name": "Thermischer Wärmetauscher"
+      },
+      "4145": {
+        "desc": "Ortet versteckte Räume und Truhen im Umkreis von 15 m.",
+        "name": "Echoortungs-Transceiver"
+      },
+      "4146": {
+        "desc": "+15% Bewegungstempo für 4 s, wenn die TP unter 25% fallen.",
+        "name": "Symbiotische Adrenalinpumpe"
+      },
+      "4147": {
+        "desc": "5 Gegner in 3 s zu töten erstattet 1 Dash-/Sprint-Ladung.",
+        "name": "Nullpunkt-Fluss-Overdrive"
+      },
+      "4148": {
+        "desc": "Raue taktische Sprachansagen eines Militärkommandeurs.",
+        "name": "Sowjetisches Unterkommandeur-Funkgerät"
+      },
+      "4149": {
+        "desc": "Ruhige, analytische weibliche Taktik-KI als Gefechtsansagerin.",
+        "name": "Synthetische KI-Einheit „AURA“"
+      },
+      "4150": {
+        "desc": "Retro-HUD im Stil bernsteinfarbener Phosphor-Terminals der 1980er.",
+        "name": "Bernstein-CRT-Monitor-Design"
+      },
+      "4151": {
+        "desc": "Militärisches Nachtsicht-Grün-HUD mit Radar und Telemetrie.",
+        "name": "Smaragd-Radar-Phosphor-HUD"
+      },
+      "4152": {
+        "desc": "Projektile hinterlassen leuchtend smaragdgrüne Laserspuren.",
+        "name": "Smaragd-Leeren-Leuchtspur"
+      },
+      "4153": {
+        "desc": "Der Mündungsknall löst einen winzigen Eiskristallausbruch aus.",
+        "name": "Kryo-Schockwellen-Mündungsfeuer"
+      },
+      "4154": {
+        "name": "Relikt-Entschlüsselungsschlüssel (verdient)",
+        "desc": "Schaltet 1 Tiefen-Relikt-Cache über den Steam-Tresor frei. Kostenlos durch Eintausch von Tiefenkern-Splittern in der Ausgabe."
+      },
+      "4155": {
+        "desc": "Bündel mit 5 Relikt-Entschlüsselungsschlüsseln.",
+        "name": "5x Relikt-Schlüssel-Masterpack"
+      },
+      "4156": {
+        "desc": "Primäres saisonales Fertigungsmetall zum Öffnen und Schmieden.",
+        "name": "Kryo-Legierungsbarren"
+      },
+      "4157": {
+        "desc": "Konzentrierter Energiekern zur Fertigung epischer Übertaktungen.",
+        "name": "Tiefen-Subkern-Matrix"
+      },
+      "4158": {
+        "desc": "Seltener biologischer Katalysator für legendäre Skins.",
+        "name": "Raffinierter Ambra-Katalysator"
+      },
+      "4159": {
+        "desc": "Währung aus doppelten Öffnungen (100 Splitter = beliebiger Gegenstand).",
+        "name": "Tiefenkern-Splitter (Token)"
+      },
+      "4160": {
+        "desc": "Gegengewichts-Anzugplattierung. Schwerer und schwerfälliger.",
+        "name": "Ballastplattierung"
+      },
+      "4161": {
+        "desc": "Rückenmontierte Schmelze, die Bergegut vor Ort verarbeitet.",
+        "name": "Schrottofen"
+      },
+      "4162": {
+        "desc": "Widerhaken-Injektor, gezüchtet aus Panzer und Chirurgenstahl.",
+        "name": "Königinnenfluch"
+      },
+      "4163": {
+        "desc": "Antike monokulare Scanlinse an einem Gelenkarm.",
+        "name": "Archivarlinse"
+      },
+      "4164": {
+        "desc": "Kristallines Leitmodul, kalt bei Berührung.",
+        "name": "Splitterleitung"
+      },
+      "4165": {
+        "desc": "Materie-Rückgewinnungstrommel. Unscheinbar und wirksam.",
+        "name": "Duplikat-Veredler"
+      },
+      "4166": {
+        "desc": "Brust-Kreislaufatemgerät-Membran, die im Atemzug innehält.",
+        "name": "Drucksiegel"
+      },
+      "4167": {
+        "desc": "Abstiegsanker, der tiefer war, als er sollte.",
+        "name": "Tiefenanker"
+      },
       "4200": {
         "desc": "Vollständige Operator-Chassis-Lackierung im Tieffrost-Stil.",
         "name": "Tieffrost Operator-Skin"
@@ -2444,16 +2906,20 @@
         "name": "Tieffrost Anhänger"
       },
       "4203": {
-        "name": "Tieffrost Aufnäher"
+        "name": "Tieffrost Aufnäher",
+        "desc": "Gesticktes knochenweißes Eiskronen-Motiv mit blassen cyanfarbenen Bruchlinien und ausgefransten Rändern."
       },
       "4204": {
-        "name": "Tieffrost Glanz"
+        "name": "Tieffrost Glanz",
+        "desc": "Subsurface-Kristalleisglasur auf der Waffenplattierung mit blassem cyanfarbenem Glanz."
       },
       "4205": {
-        "name": "Tieffrost Leuchtspur"
+        "name": "Tieffrost Leuchtspur",
+        "desc": "Projektile hinterlassen leuchtend blass-cyanweiße Spuren mit treibenden Frostpartikeln."
       },
       "4206": {
-        "name": "Tieffrost HUD-Design"
+        "name": "Tieffrost HUD-Design",
+        "desc": "Taktisches reifbedecktes HUD-Design mit blass-cyanweißer Vektortelemetrie."
       },
       "4207": {
         "desc": "Vollständige Operator-Chassis-Lackierung im Rost & Knochen-Stil.",
@@ -2468,16 +2934,20 @@
         "name": "Rost & Knochen Anhänger"
       },
       "4210": {
-        "name": "Rost & Knochen Aufnäher"
+        "name": "Rost & Knochen Aufnäher",
+        "desc": "Grober Sackleinenrücken mit handgenähtem Knochenmotiv und mattem Glutfaden."
       },
       "4211": {
-        "name": "Rost & Knochen Glanz"
+        "name": "Rost & Knochen Glanz",
+        "desc": "Narbige oxidierte Eisenlackierung mit öligem Schimmer und matter Glutwärme."
       },
       "4212": {
-        "name": "Rost & Knochen Leuchtspur"
+        "name": "Rost & Knochen Leuchtspur",
+        "desc": "Schwere matt-glutfarbene ballistische Spuren, die brennende Eisenfunken abwerfen."
       },
       "4213": {
-        "name": "Rost & Knochen HUD-Design"
+        "name": "Rost & Knochen HUD-Design",
+        "desc": "Subterranes Überlebens-HUD in mattem Glutorange mit genieteten Telemetrierahmen."
       },
       "4214": {
         "desc": "Vollständige Operator-Chassis-Lackierung im Nest-Chitin-Stil.",
@@ -2492,16 +2962,20 @@
         "name": "Nest-Chitin Anhänger"
       },
       "4217": {
-        "name": "Nest-Chitin Aufnäher"
+        "name": "Nest-Chitin Aufnäher",
+        "desc": "Dünne getrocknete Alien-Panzerplatte mit pulsierender grüner Äderung, die eine Nestkönigin formt."
       },
       "4218": {
-        "name": "Nest-Chitin Glanz"
+        "name": "Nest-Chitin Glanz",
+        "desc": "Waffenbeschichtung aus lebendem Alien-Panzer mit wechselnder biolumineszenter Ölschlick-Irisierung."
       },
       "4219": {
-        "name": "Nest-Chitin Leuchtspur"
+        "name": "Nest-Chitin Leuchtspur",
+        "desc": "Organische Stachelpfeile mit fahlgrünem Plasmaband und absinkenden Sporen."
       },
       "4220": {
-        "name": "Nest-Chitin HUD-Design"
+        "name": "Nest-Chitin HUD-Design",
+        "desc": "Okulare Alien-Symbionten-Schnittstelle mit fahlgrünen biolumineszenten Anzeigen und langsamem Atempuls."
       },
       "4221": {
         "desc": "Vollständige Operator-Chassis-Lackierung im Horizon Corporate-Stil.",
@@ -2516,16 +2990,20 @@
         "name": "Horizon Corporate Anhänger"
       },
       "4224": {
-        "name": "Horizon Corporate Aufnäher"
+        "name": "Horizon Corporate Aufnäher",
+        "desc": "Klares weißes Köpergewebe mit kalt-blaugrüner Laserstickerei, die eine saubere Horizontmarke bildet."
       },
       "4225": {
-        "name": "Horizon Corporate Glanz"
+        "name": "Horizon Corporate Glanz",
+        "desc": "Makellose weiße Keramikpolitur mit engem Glanzlicht und kalt-blaugrünen Fresnel-Akzenten."
       },
       "4226": {
-        "name": "Horizon Corporate Leuchtspur"
+        "name": "Horizon Corporate Leuchtspur",
+        "desc": "Hochpräzise durchgehende kalt-blaugrüne Laserstrahlen mit klaren geometrischen Mündungsfeuern."
       },
       "4227": {
-        "name": "Horizon Corporate HUD-Design"
+        "name": "Horizon Corporate HUD-Design",
+        "desc": "Klinische Militärdienstleister-HUD in kaltem Blaugrün mit hauchdünnen Koordinatengittern."
       },
       "4228": {
         "desc": "Vollständige Operator-Chassis-Lackierung im Bunker 404-Stil.",
@@ -2540,16 +3018,20 @@
         "name": "Bunker 404 Anhänger"
       },
       "4231": {
-        "name": "Bunker 404 Aufnäher"
+        "name": "Bunker 404 Aufnäher",
+        "desc": "Schwarzes Köpergewebe mit Magentafaden, das ein glitchendes Truppenabzeichen mit versetzten Blöcken bildet."
       },
       "4232": {
-        "name": "Bunker 404 Glanz"
+        "name": "Bunker 404 Glanz",
+        "desc": "Glitch-Waffenlackierung mit horizontaler Texturverschiebung und magentafarbenem Signalfehler-Chromariss."
       },
       "4233": {
-        "name": "Bunker 404 Leuchtspur"
+        "name": "Bunker 404 Leuchtspur",
+        "desc": "Versetzte magentafarbene Projektilspuren, die stottern und in versetzte Glitch-Blöcke zerbrechen."
       },
       "4234": {
-        "name": "Bunker 404 HUD-Design"
+        "name": "Bunker 404 HUD-Design",
+        "desc": "Korrupte Signal-HUD in elektrischem Magenta mit sporadischem Scanline-Jitter und Fehlermeldungen."
       },
       "4235": {
         "desc": "Vollständige Operator-Chassis-Lackierung im Großmarschall-Stil.",
@@ -2564,16 +3046,20 @@
         "name": "Großmarschall Anhänger"
       },
       "4238": {
-        "name": "Großmarschall Aufnäher"
+        "name": "Großmarschall Aufnäher",
+        "desc": "Tiefschwarzer Samtrücken mit dichter bernsteingoldener Bouillonstickerei in einem Lorbeer-Reliktwappen."
       },
       "4239": {
-        "name": "Großmarschall Glanz"
+        "name": "Großmarschall Glanz",
+        "desc": "Polierte Meteoritlegierungs-Lackierung mit warmem bernsteingoldenem Lorbeer-Rankenwerk und anisotropem Glanz."
       },
       "4240": {
-        "name": "Großmarschall Leuchtspur"
+        "name": "Großmarschall Leuchtspur",
+        "desc": "Zeremonielle schwere goldene Energiespuren mit fallenden Glutstücken und strahlender Korona."
       },
       "4241": {
-        "name": "Großmarschall HUD-Design"
+        "name": "Großmarschall HUD-Design",
+        "desc": "Königliche imperiale Kommandoschnittstelle in warmem Bernsteingold, gerahmt von archivarischen Lorbeerblattklammern."
       }
     }
   }

@@ -1,31 +1,9 @@
 {
     "description": "Localization coverage ratchet. Counts may fall, never rise. Regenerate with: npm run i18n:audit -- --baseline",
-    "generated": "2026-09-16",
+    "generated": "2026-09-17",
     "markup": {
-        "screens": {
-            "loading-screen": 1,
-            "about-modal": 1,
-            "menu": 1,
-            "season-pass-modal": 1,
-            "roster-modal": 2,
-            "codex-modal": 1,
-            "codex-detail-modal": 1,
-            "achievements-modal": 1,
-            "steam-vault-modal": 12,
-            "vault-reveal-overlay": 1,
-            "fabrication-modal": 4,
-            "pickup-counter-panel": 4,
-            "cutscene-overlay": 2,
-            "radio-avatar-img": 1,
-            "confirm-modal": 2,
-            "reset-save-confirm-modal": 3,
-            "quit-confirm-modal": 2,
-            "controls-popup": 2,
-            "snail-encounter-modal": 2,
-            "multiplayer-modal": 6,
-            "select-picker-overlay": 2
-        },
-        "total": 52
+        "screens": {},
+        "total": 0
     },
     "runtime": {
         "modules": {},

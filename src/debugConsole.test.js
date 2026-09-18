@@ -143,7 +143,7 @@ describe('debugConsole', () => {
 
     it('records demo checkpoints and exports Deck-safe diagnostic context', () => {
         globalThis.__HB_BUILD_INFO__ = {
-            version: '2.4.4-beta', commit: 'abc123', branch: 'dev/sprint-40', dirty: false
+            version: '2.4.5-beta', commit: 'abc123', branch: 'dev/sprint-41', dirty: false
         };
         globalThis.window.HunkerInputState = {
             getState: () => ({ isSteamDeck: true, controllerCount: 1, lastInputMode: 'controller' })
@@ -169,7 +169,7 @@ describe('debugConsole', () => {
         expect(capture.diagnostics.maxEntries).toBe(20000);
         expect(capture.diagnostics.measurementCoverage.gpuTimingSupported).toBe(false);
         expect(capture.diagnostics.identifiers.build).toMatchObject({
-            version: '2.4.4-beta', commit: 'abc123', branch: 'dev/sprint-40'
+            version: '2.4.5-beta', commit: 'abc123', branch: 'dev/sprint-41'
         });
         expect(capture.diagnostics.identifiers).toMatchObject({
             plane: 'foundry', planeId: 'foundry-interior'

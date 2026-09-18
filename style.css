@@ -3120,16 +3120,25 @@ body:not(.controller-mode) .title-menu-btn:focus:not(:focus-visible) {
 }
 
 /* ---- Game Over Screen ---- */
+#game-over-modal {
+  box-sizing: border-box;
+  padding: clamp(8px, 2vh, 18px);
+  overflow-y: auto;
+}
+
 .game-over-content {
   background: linear-gradient(180deg, rgba(16, 20, 24, 0.97) 0%, rgba(10, 13, 16, 0.98) 100%) !important;
   border: 1px solid rgba(239, 68, 68, 0.45) !important;
   box-shadow: 0 0 50px rgba(220, 38, 38, 0.25), inset 0 0 30px rgba(0, 0, 0, 0.8) !important;
   width: min(calc(var(--vu) * 112), 90vw) !important;
   padding: clamp(14px, calc(var(--vu) * 2.2), 24px) !important;
+  padding-bottom: clamp(14px, calc(var(--vu) * 1.8), 20px) !important;
   display: flex;
   flex-direction: column;
   gap: clamp(8px, calc(var(--vu) * 1.0), 14px);
-  max-height: 100% !important;
+  max-height: min(calc(100vh - 36px), calc(100dvh - 36px), 94vh) !important;
+  box-sizing: border-box;
+  margin: auto;
   border-radius: 10px !important;
   overflow-y: auto;
   scrollbar-width: thin;
@@ -6561,7 +6570,7 @@ body.distress-mode #game-viewport::after {
   color: rgba(245, 248, 251, 0.84);
 }
 
-.pickup-counter-panel__row span:last-child {
+.pickup-counter-panel__row > span:last-child {
   color: rgba(255, 228, 172, 0.95);
   font-weight: 900;
   text-align: right;
@@ -6573,7 +6582,7 @@ body.distress-mode #game-viewport::after {
   margin-bottom: calc(var(--vu) * 0.3);
 }
 
-.pickup-counter-panel__row--total span:last-child {
+.pickup-counter-panel__row--total > span:last-child {
   font-size: clamp(20px, calc(var(--vu) * 3.4), 30px);
   font-weight: 900;
   color: #ffd18c;
@@ -6817,7 +6826,7 @@ body.distress-mode #game-viewport::after {
     width: clamp(10px, calc(var(--vu) * 1.55), 13px);
   }
 
-  .pickup-counter-panel__row--total span:last-child {
+  .pickup-counter-panel__row--total > span:last-child {
     font-size: clamp(14px, calc(var(--vu) * 2.05), 18px);
   }
 
@@ -14343,7 +14352,7 @@ body.cutscene-video-active .tactical-overlay {
 }
 
 /* ── Snail shell counter (bank-backed row in the loot panel) ── */
-.pickup-counter-panel__row--shells span:last-child {
+.pickup-counter-panel__row--shells > span:last-child {
   color: #9fe8c4;
 }
 
@@ -22171,10 +22180,10 @@ body.contrast-max .hud-panel {
 
   .game-over-actions {
     position: sticky;
-    bottom: -10px;
+    bottom: 0;
     z-index: 2;
-    margin: 0 -6px -4px;
-    padding: 6px 6px 4px;
+    margin: 0;
+    padding: 6px 8px 6px;
     gap: 10px;
     background: rgba(10, 13, 16, 0.98);
   }
@@ -22220,8 +22229,9 @@ body.contrast-max .hud-panel {
    Pinning the actions row means the buttons are reachable at any height. */
 .game-over-actions {
   position: sticky;
-  bottom: calc(var(--vu) * -0.2);
+  bottom: 0;
   z-index: 2;
+  margin: 0;
   background: linear-gradient(180deg, rgba(10, 13, 16, 0) 0%, rgba(10, 13, 16, 0.96) 28%);
   padding-top: calc(var(--vu) * 1.2);
   padding-bottom: calc(var(--vu) * 0.4);

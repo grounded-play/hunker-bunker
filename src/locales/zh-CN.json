@@ -87,7 +87,8 @@
       "engineer": "工程兵",
       "reroute": "改道",
       "cheaper_consoles": "控制台更便宜",
-      "esc": "[ESC]"
+      "esc": "[ESC]",
+      "return_main": "← 返回主菜单"
     },
     "hub": {
       "daily_ops": "每日行动",
@@ -283,7 +284,14 @@
       "no_weapons": "尚未制造武器",
       "print_hint": "在制造舱花 12 科技 / 6 硬币必定打印一把散射连发枪。",
       "equipped": "✓ 已装备",
-      "equip": "装备"
+      "equip": "装备",
+      "id_label": "编号：",
+      "stat_sector": "区域 {depth}",
+      "stat_hostiles": "敌对目标 {count}",
+      "blackbox_recoverable": "可回收（区域 {depth}）",
+      "blackbox_none": "无",
+      "equipped_none": "无",
+      "arsenal_count": "军械库：已制造 {made} / {total} 件武器"
     },
     "dlg": {
       "channel": "母舰上行链路 7 号频道",
@@ -303,7 +311,49 @@
       "aria_label_build_and_developer": "版本与开发者信息",
       "system_build": "系统版本",
       "dev_console": "开发者控制台",
-      "initializing_systems": "正在初始化系统"
+      "initializing_systems": "正在初始化系统",
+      "msg_biometric_airlock": "正在校准生物识别气闸通道",
+      "msg_reactor_bulkhead": "正在屏蔽反应堆冷却隔舱",
+      "msg_thermal_shield": "正在稳定热超导护盾",
+      "msg_xeno_codes": "正在解密异星科技安全码",
+      "msg_corroded_ports": "正在封闭腐蚀朽坏的舷外接口",
+      "msg_door_hydraulics": "正在启动区域通行门液压系统",
+      "msg_gigawatt_goliath": "正在锁定吉瓦歌利亚雷达轮廓",
+      "msg_temp_drop": "警告：检测到局部气温骤降",
+      "msg_hull_contagion": "危险：生物有机舱体污染已达临界",
+      "msg_corrosive_anomalies": "正在识别支援力场腐蚀异常",
+      "msg_gelid_drain": "正在测量严寒外骨骼耗损指数",
+      "msg_bio_pathogens": "正在监测地下生物动力病原体",
+      "msg_metal_supports": "正在测绘稳固的金属结构支撑",
+      "msg_cryo_pipelines": "正在稳定低温冷却管路",
+      "msg_spore_biospheres": "正在隔离孢子侵染的生物圈",
+      "msg_glacial_caverns": "正在勘测地热冰川洞窟",
+      "msg_salvage_debris": "正在扫描可回收的打捞残骸",
+      "msg_dust_signals": "正在从可回收金属中滤除尘埃信号",
+      "msg_gold_cache": "正在探测金信号特征核心宝箱",
+      "msg_high_value_lobes": "雷达正在解析异常的高价值波瓣",
+      "msg_o2_mixer": "正在预热氧气发生器混合阀",
+      "msg_n2_cooler": "正在排放压缩机液氮冷却器",
+      "msg_radome_antenna": "正在对准高增益天线罩电磁天线",
+      "msg_nanobot_fabricator": "正在上传纳米机器人制造子程序",
+      "msg_defensive_matrix": "正在调谐防御矩阵单元极性",
+      "msg_recon_datalink": "正在建立快速侦察数据链",
+      "msg_exosuit_buffers": "正在启动重型外骨骼力量缓冲器",
+      "msg_debris_deflection": "正在校准碎片偏转辅助",
+      "msg_display_schematics": "正在缓冲交互显示示意图",
+      "msg_audio_matrix": "正在稳定战术音频矩阵信号",
+      "msg_tactical_data": "正在同步战术数据文件",
+      "log_verifying_steam": "> 正在验证 Steamworks 集成…",
+      "log_steam_error": "> Steam 检查错误：{error}",
+      "log_unknown_error": "未知错误",
+      "log_steam_linked": "> 已连接 Steam：{persona}",
+      "log_connected": "已连接",
+      "log_steam_degraded": "> Steam 降级：{reason} — 继续",
+      "log_asset": "> {message}…",
+      "log_booting_webgl": "> 正在启动战术 WebGL 核心…",
+      "log_preloading_cinematic": "> 正在预载过场影像（DoorIntro）…",
+      "log_assets_loaded": "> 所有资源已载入 — 正在开启气闸…",
+      "initializing_core": "> 正在初始化战术外骨骼核心…（{percent}%）"
     },
     "splash_steam_badge": {
       "title_click_to_open": "点击打开 Steam 界面档案",
@@ -332,7 +382,9 @@
       "github_repository": "GitHub 仓库",
       "special_thanks": "特别鸣谢",
       "our_amazing_community_players": "我们了不起的社区与玩家",
-      "thank_you_for_deploying": "感谢你的出击"
+      "thank_you_for_deploying": "感谢你的出击",
+      "tactical_command": "战术指挥",
+      "accent_credits": "// 制作名单"
     },
     "hero_detail": {
       "field_loadout": "野战配置"
@@ -343,14 +395,16 @@
       "in_progress": "进行中",
       "ready": "就绪",
       "best_score": "◈ 最佳：{score} 分",
-      "rgb_title": "RGB：RIVERSIDE GLOBAL 'BOTICS"
+      "rgb_title": "RGB：RIVERSIDE GLOBAL 'BOTICS",
+      "score_grade": "{score} 分 // {grade}"
     },
     "close_season_pass": {
       "aria_label_close_tactical_dossier": "关闭战术档案"
     },
     "season_pass": {
       "sub_terran_sector_operations_beta": "◈ 地下区域行动 // Beta 第 1 赛季",
-      "directives": "与指令"
+      "directives": "与指令",
+      "title": "战术档案"
     },
     "archive_log_detail": {
       "aria_label_close_archive_log": "关闭档案日志",
@@ -375,7 +429,10 @@
       "view_record": "查看 {name} 的情报记录",
       "click_hint": "点击查看情报档案与插图",
       "uncatalogued": "??? — 未收录",
-      "encounter_hint": "在野外遭遇它以恢复其记录。"
+      "encounter_hint": "在野外遭遇它以恢复其记录。",
+      "title": "野外图鉴",
+      "alt_intel_image": "图鉴情报图像",
+      "accent_bestiary": "// 图鉴志"
     },
     "close_codex_detail": {
       "aria_label_close_codex_entry": "关闭图鉴条目"
@@ -389,7 +446,9 @@
     "achievements": {
       "combat_citations_deep_crust_commendations": "◈ 战斗嘉奖 // 深层地壳表彰",
       "title_copy_a_portable": "复制便携存档代码",
-      "copy_save_code": "复制存档代码"
+      "copy_save_code": "复制存档代码",
+      "title": "特工嘉奖",
+      "accent_archive": "// 档案"
     },
     "close_steam_vault": {
       "aria_label_close_steam_vault": "关闭 Steam 保险库"
@@ -417,14 +476,30 @@
       "1_next_tier_item": "1× 上一品级物品",
       "deep_smelter": "深层熔炉",
       "consumes_5x_same_tier_items": "消耗 5x 同品级物品",
-      "deep_core_shard_dispensary": "深核碎片发放处"
+      "deep_core_shard_dispensary": "深核碎片发放处",
+      "title": "◈ Steam 保险库",
+      "caches_label": "宝箱：",
+      "keys_label": "钥匙：",
+      "shards_label": "碎片：",
+      "tab_inventory": "已拥有物品",
+      "tab_store": "◈ 遗物商店与掉落概率",
+      "tab_smelter": "◈ 熔炉与发放处",
+      "decrypt_with": "解密需要",
+      "rates_match": "· 概率与服务器表一致。",
+      "consumed_removed": "· 被消耗的物品将被移除。",
+      "accent_dispatch": "// 物品调度"
     },
     "vault_details": {
-      "view_in_steam_market": "在 Steam 市场查看"
+      "view_in_steam_market": "在 Steam 市场查看",
+      "select_an_item": "请选择一件物品",
+      "select_hint": "选择一件物品以查看 Steam 所有权与交易信息。",
+      "read_only": "只读 Steam 库存",
+      "no_rarity": "—"
     },
     "vault_reveal": {
       "steam_relic_dispensary_appid_4957040": "◈ Steam 遗物发放处 // APPID 4957040",
-      "claim_to_inventory": "◈ 领取到背包"
+      "claim_to_inventory": "◈ 领取到背包",
+      "alt_reward": "奖励"
     },
     "operator_polish": {
       "operator_polish": "◆ 操作员涂装",
@@ -499,7 +574,11 @@
     "fabrication": {
       "fabrication_bay": "◇ 制造舱",
       "print_gear_from_salvage": "用废料打印装备",
-      "schematics_fabricated_0_8": "已制造图纸：0 / 8"
+      "schematics_fabricated_0_8": "已制造图纸：0 / 8",
+      "tech": "科技",
+      "coin": "硬币",
+      "med": "医疗",
+      "shells": "弹壳"
     },
     "fab_roll": {
       "insert_salvage_to_fabricate": "投入废料以制造"
@@ -550,7 +629,11 @@
     },
     "pickup_counter": {
       "loot": "战利品",
-      "total": "总计"
+      "total": "总计",
+      "med": "医疗",
+      "tech": "科技",
+      "coin": "硬币",
+      "shell": "弹壳"
     },
     "boss_status": {
       "boss_threat": "首领威胁"
@@ -729,7 +812,9 @@
     "confirm": {
       "critical_alert": "紧急警报",
       "abort_mission": "中止任务",
-      "cancel": "取消"
+      "cancel": "取消",
+      "terminate_question": "就地终止这份合约？",
+      "terminate_detail": "后勤将回收战服，并为下次下潜配备黑匣子。"
     },
     "day_rest_warning": {
       "the_night_will_close_doors": "夜幕将关闭大门",
@@ -747,12 +832,17 @@
     "reset_save_confirm": {
       "reset_save_data": "重置存档数据",
       "reset_save": "重置存档",
-      "cancel": "取消"
+      "cancel": "取消",
+      "question": "开始新游戏？",
+      "cleared": "本设备上的 RGB 进度、全部成就、解锁内容、存入的废料、图鉴、制造记录、最佳成绩与档案数据都将被清除。",
+      "kept": "音频、显示与操作偏好将被保留。"
     },
     "quit_confirm": {
       "quit_hunker_bunker": "退出 HUNKER BUNKER",
       "confirm_quit": "确认退出",
-      "cancel": "取消"
+      "cancel": "取消",
+      "question": "退出应用程序？",
+      "detail": "确定要退出吗？进行中征程的未保存进度都将丢失。"
     },
     "camp_choice": {
       "aria_label_close_camp_decision": "关闭营地决策",
@@ -792,7 +882,9 @@
     },
     "controls": {
       "steam_deck": "Steam Deck：",
-      "desktop": "桌面端："
+      "desktop": "桌面端：",
+      "deck_hint": "左摇杆移动或导航 · 右摇杆瞄准并控制可见指针 · A 确认/交互 · B 返回/闪避 · Menu 打开设置。",
+      "desktop_hint": "点击一个槽位，再按下按键进行绑定。ESC 取消。"
     },
     "mothership_dialogue": {
       "scout_link_encrypted": "侦察链路 [已加密]"
@@ -858,7 +950,14 @@
       "esc": "ESC",
       "click": "点击",
       "host": "房主",
-      "back_to_armory": "← 返回军械库"
+      "back_to_armory": "← 返回军械库",
+      "title": "战术网络",
+      "invite_friend": "邀请好友",
+      "refresh": "刷新",
+      "hint_back": "返回",
+      "hint_toggle": "切换模式",
+      "hint_deploy": "部署小队",
+      "accent_relay": "// 中继指挥"
     },
     "close_multiplayer": {
       "aria_label_close_tactical_net": "关闭战术网络"
@@ -878,7 +977,9 @@
       "aria_label_close_progression_walkthrough": "关闭进度演练"
     },
     "select_picker": {
-      "aria_label_close_option_picker": "关闭选项选择器"
+      "aria_label_close_option_picker": "关闭选项选择器",
+      "select": "选择",
+      "back": "返回"
     },
     "virtual_keyboard": {
       "aria_label_close_on_screen": "关闭屏幕键盘",
@@ -907,7 +1008,9 @@
       "preserved_on_failure": "失败时存款资产得以保留。",
       "dossier": "档案",
       "pending": "{count} 待处理",
-      "synced": "已同步 ✓"
+      "synced": "已同步 ✓",
+      "pathway_available": "路径仍然可行 — 条件尚可达成",
+      "projected_path": "预测路径：{ending}"
     },
     "wanderer": {
       "survivor_named": "幸存者：{name}",
@@ -917,7 +1020,9 @@
       "decline": "拒绝结盟 — 存入{supplies}",
       "supplies": "补给",
       "transmission": "[ 幸存者通讯 ]",
-      "quote": "“{text}”"
+      "quote": "“{text}”",
+      "inquiry": "询问：",
+      "quest_line": "{title} — {desc} 奖励：{reward}。"
     },
     "vault": {
       "item_acquired": "已获得 Steam 物品",
@@ -988,7 +1093,8 @@
       "deploy_solo": "单人出击",
       "host_control_required": "需要房主权限",
       "host_new_lobby": "创建新大厅",
-      "start_match": "开始对战"
+      "start_match": "开始对战",
+      "mode_members": "{mode} // {count}/4 名特工"
     },
     "dossier": {
       "title": "战术档案",
@@ -1051,10 +1157,24 @@
       "choice_required": "需要抉择",
       "event_resolved": "终端事件已解决。商店系统仍可使用。",
       "engineer_verify": "工程兵验证",
-      "mimic_neutralized": "警告：终端签名系伪造 — 拟态体已消灭。可安全通过。"
+      "mimic_neutralized": "警告：终端签名系伪造 — 拟态体已消灭。可安全通过。",
+      "day_n": "第 {day} 天",
+      "daylight": "白昼",
+      "night_ops": "夜间行动",
+      "ready": "就绪",
+      "insufficient": "资源不足",
+      "transition_in": "{time} 后{phase}",
+      "dusk": "黄昏",
+      "dawn": "黎明",
+      "base_status": "{type} 基地状态 {state}",
+      "active_exosuit": "[当前外骨骼]",
+      "standby": "[待机]",
+      "field_stabilizer": "{type} 力场稳定器"
     },
     "journal": {
-      "day_time": "D{day} {minute}:{second}"
+      "day_time": "D{day} {minute}:{second}",
+      "story": "剧情",
+      "mission_next": "{mission} // 下一步：{goal}"
     },
     "bank": {
       "deposit_ready": "可以存入。资源传输通道已开启。",
@@ -1065,12 +1185,17 @@
       "next_cost_none": "下次花费：无",
       "generator_maxed": "该外骨骼舱的 O₂ 发生器输出已达上限。",
       "repair_to_create_zone": "修复此模块可在飞船附近建立安全 O₂ 区域。",
-      "upgrades_expand_field": "升级可扩大蓝色 O₂ 力场，让你在更远处补充。"
+      "upgrades_expand_field": "升级可扩大蓝色 O₂ 力场，让你在更远处补充。",
+      "hearts_available": "♥ ×{count} 可用",
+      "med_for_heart": "{med}/10 换 ♥",
+      "hearts_missing": "缺少 {hearts} 颗心。可进行 {conversions} 次转换（已存 {med} 医疗）。",
+      "med_stored": "医疗 {med}/10"
     },
     "skills": {
       "completed": "已完成",
       "upgrade": "升级",
-      "unlock": "解锁"
+      "unlock": "解锁",
+      "tree_summary": "{class} 地堡树：{active}/{total} 在线（{ready} 就绪）| 战斗等级：{combat}/{combatTotal} | 余额：◈ {shells} 弹壳"
     },
     "turret": {
       "built_north_door": "已建造 — 控制台位于北门",
@@ -1143,7 +1268,8 @@
     "hud": {
       "ammo_cache": "弹药箱 {current}/{max}",
       "current_biome": "当前生物群系 {biome}",
-      "equipped": "已装备"
+      "equipped": "已装备",
+      "bunker_level_aria": "地堡层级 {level}（{tier}）— {biome}"
     },
     "commentary": {
       "kicker": "开发者评论"
@@ -1156,7 +1282,8 @@
       "commander_name": "苏联副指挥官",
       "aura_name": "合成人工智能“AURA”",
       "commander_title": "苏联副指挥官",
-      "aura_title": "合成人工智能“AURA”"
+      "aura_title": "合成人工智能“AURA”",
+      "alt_sender_portrait": "发信人肖像"
     },
     "go": {
       "generator_level": "等级 {level}",
@@ -1175,7 +1302,8 @@
       "unlocked_kicker": "成就解锁",
       "hidden": "隐藏记录。解锁后显示。",
       "coming_soon": "敬请期待",
-      "unlocked": "已解锁"
+      "unlocked": "已解锁",
+      "summary_unlocked": "已解锁 {unlocked} / {total}"
     },
     "save": {
       "code_unavailable": "存档代码不可用"
@@ -1188,7 +1316,8 @@
     },
     "loader": {
       "deployment_telemetry": "母舰部署遥测",
-      "init_failed": "系统初始化失败"
+      "init_failed": "系统初始化失败",
+      "init_error_retrying": "[ 系统初始化错误 — 正在重试… ]"
     },
     "alert": {
       "tactical": "战术警报",
@@ -1197,12 +1326,15 @@
     "trade": {
       "squadmate": "小队成员",
       "awaiting_offer": "等待选择报价",
-      "waiting_squadmate": "等待小队成员…"
+      "waiting_squadmate": "等待小队成员…",
+      "self_class": "{class} // 特工",
+      "peer_class": "{class} // 远程"
     },
     "bond": {
       "enamored": "倾心 / 忠诚",
       "warm": "热情 / 好感",
-      "attentive": "关注"
+      "attentive": "关注",
+      "badge": "{label}（{score} 分）"
     },
     "fab": {
       "scatter_repeater": "散射连发枪",
@@ -1243,11 +1375,25 @@
       "field_conversation": "野外对话",
       "callsign": "呼号 {callsign}",
       "listen_hint": "先倾听，再决定你想如何帮忙。",
-      "quote": "“{text}”"
+      "quote": "“{text}”",
+      "next_action": "你的下一步行动将改变发射清单与结局走向。"
     },
     "title": {
       "pregalien_command": "PREGALIEN | 虫巢指挥",
       "pregalien": "PREGALIEN"
+    },
+    "dialogue": {
+      "commander_badge": "苏联无线电通讯 [72.4 MHz // {class}]",
+      "aura_badge": "AURA 战术链路 [合成 // {class}]",
+      "encrypted_badge": "{class} 链路 [已加密]"
+    },
+    "cutscene": {
+      "alt_incoming_ship": "来袭的飞船",
+      "alt_crashed_ship": "坠毁的飞船"
+    },
+    "snail": {
+      "alt_player_chassis": "玩家底盘",
+      "alt_snail_combatant": "蜗牛战斗体"
     }
   },
   "narrative": {
@@ -2431,6 +2577,322 @@
       }
     },
     "steamItems": {
+      "1000": {
+        "desc": "一片古老地下机械的碎屑，用于基础制作兑换。",
+        "name": "普通遗物碎片"
+      },
+      "1100": {
+        "desc": "来自深层密室的完整处理器核心，用于制作精英外观。",
+        "name": "稀有遗物碎片"
+      },
+      "2000": {
+        "desc": "授予以侦察框架成功撤离的操作员。仅为外观装备。",
+        "name": "侦察兵胜利臂章"
+      },
+      "2001": {
+        "desc": "授予以重装框架成功撤离的操作员。仅为外观装备。",
+        "name": "重装兵胜利臂章"
+      },
+      "2002": {
+        "desc": "授予以工程框架成功撤离的操作员。仅为外观装备。",
+        "name": "工程兵胜利臂章"
+      },
+      "2003": {
+        "desc": "因击败第二幕女王而授予。仅为外观装备。",
+        "name": "弑后徽记"
+      },
+      "2004": {
+        "desc": "因回收完整地堡档案而授予。仅为外观装备。",
+        "name": "档案员徽记"
+      },
+      "2100": {
+        "desc": "为你的外骨骼准备的高性能编织涂装。仅为外观装备。",
+        "name": "碳纤维贴花"
+      },
+      "2200": {
+        "desc": "为标准副武器打造的高反射抛光镀铬涂装。仅为外观装备。",
+        "name": "镀铬副武器"
+      },
+      "4000": {
+        "desc": "自地堡深层档案回收的密封掉落容器。需要宝箱钥匙开启。概率已在购买前于商店页面公示。",
+        "name": "深层遗物宝箱"
+      },
+      "4001": {
+        "desc": "开启一个深层遗物宝箱。通过 Steam 物品商店购买；绝不免费掉落。",
+        "name": "遗物解密钥匙"
+      },
+      "4100": {
+        "desc": "带散热口的低温覆霜聚合物机身。",
+        "name": "零下冻伤副武器"
+      },
+      "4101": {
+        "desc": "高可见度的黄黑工业警示涂装。",
+        "name": "警示条纹冲锋枪"
+      },
+      "4102": {
+        "desc": "带散热凹槽的重型钨制枪管。",
+        "name": "构造钻探霰弹枪"
+      },
+      "4103": {
+        "desc": "缠绕在特斯拉锁电弧驱动框架上的超导青色等离子线圈。",
+        "name": "低温等离子电弧驱动器"
+      },
+      "4104": {
+        "desc": "风化的地堡打捞件，镶有生物荧光骨饰。",
+        "name": "锈与骨战壕卡宾枪"
+      },
+      "4105": {
+        "desc": "抛光火山玻璃机匣，配大马士革钢饰件。",
+        "name": "黑曜碎片副武器"
+      },
+      "4106": {
+        "desc": "渗漏着脉动绿色真菌孢子的生物机械罐体。",
+        "name": "生物荧光孢子喷射器"
+      },
+      "4107": {
+        "desc": "注入岩浆的反应堆核心，搏动着橙色热能。",
+        "name": "深核熔炉枪"
+      },
+      "4108": {
+        "desc": "闪烁着错误日志的全息动态电路板。",
+        "name": "故障电路螺栓枪"
+      },
+      "4109": {
+        "desc": "带紫色引力事件视界的暗物质发射器。",
+        "name": "虚空行者光束炮"
+      },
+      "4110": {
+        "desc": "自巢后王冠打捞而来的活体甲壳合金。",
+        "name": "女王甲壳卡宾枪"
+      },
+      "4111": {
+        "desc": "纯金反物质加速器，拖曳太阳粒子尾迹。",
+        "name": "太阳耀斑反物质步枪"
+      },
+      "4112": {
+        "desc": "加固的重型危险作业装甲与面罩探照灯。",
+        "name": "地下钻探工程兵"
+      },
+      "4113": {
+        "desc": "带热绝缘的白色迷彩加压潜行服。",
+        "name": "低温先锋侦察兵"
+      },
+      "4114": {
+        "desc": "带防毒面具的铆接防爆板甲。",
+        "name": "战壕守卫重装"
+      },
+      "4115": {
+        "desc": "带紫色光学传感器的哑光黑纳米编织潜行装。",
+        "name": "虚空突击侦查"
+      },
+      "4116": {
+        "name": "生物合成挽具",
+        "desc": "带脉动输液管的生物机械注射挽具。"
+      },
+      "4117": {
+        "desc": "带发光岩浆核心的重型液压动力甲。",
+        "name": "无畏外骨骼巨兽"
+      },
+      "4118": {
+        "desc": "带电子面罩的主动迷彩全息微光。",
+        "name": "赛博幽灵渗透者"
+      },
+      "4119": {
+        "desc": "由活体异星甲壳与钢铁构成的变异混种装甲。",
+        "name": "巢主共生外骨骼"
+      },
+      "4120": {
+        "desc": "首次地下远征的纪念徽章。",
+        "name": "零下先驱者臂章"
+      },
+      "4121": {
+        "desc": "荧光放射性警示徽记。",
+        "name": "辐射三叶徽记"
+      },
+      "4122": {
+        "desc": "因清剿深层巢穴而授予的风格化贝壳纹章。",
+        "name": "孢蜗猎手纹章"
+      },
+      "4123": {
+        "desc": "失踪地震勘测分队的纪念徽章。",
+        "name": "地堡 404 失踪小队贴花"
+      },
+      "4124": {
+        "desc": "带发光青色眼窝的全息镀铬骷髅。",
+        "name": "赛博骷髅战术别针"
+      },
+      "4125": {
+        "desc": "自地下永冻层升起的神话冰鸟。",
+        "name": "低温凤凰徽标"
+      },
+      "4126": {
+        "desc": "庆贺终结巢后的压印金印。",
+        "name": "弑后金印"
+      },
+      "4127": {
+        "desc": "环绕黑曜事件视界的轨道紫线符印。",
+        "name": "虚空视界符印"
+      },
+      "4128": {
+        "desc": "在零号地层发现的古异星象形文字。",
+        "name": "远古核心铭文"
+      },
+      "4129": {
+        "desc": "镀金元帅之鹰与琥珀核心，环以陨铁合金桂冠。",
+        "name": "大元帅遗物纹章"
+      },
+      "4130": {
+        "desc": "渗出微观冷雾的微型覆霜核心。",
+        "name": "迷你低温核心挂饰"
+      },
+      "4131": {
+        "desc": "首次地堡突破时留下的刻纹空弹壳。",
+        "name": "用过的 50 口径弹壳"
+      },
+      "4132": {
+        "desc": "自巢后体内取出的润泽生物珍珠。",
+        "name": "孢蜗珍珠"
+      },
+      "4133": {
+        "desc": "挂在身份牌链上的复古战术哨。",
+        "name": "战壕哨"
+      },
+      "4134": {
+        "desc": "带闪烁微型绿色 LED 显示的电路芯片。",
+        "name": "故障内存条"
+      },
+      "4135": {
+        "desc": "指向首领房间时指针会疯狂旋转。",
+        "name": "大地测量罗盘"
+      },
+      "4136": {
+        "desc": "带移动探照光束的微型可动炮塔无人机。",
+        "name": "微缩无人机摇头挂件"
+      },
+      "4137": {
+        "desc": "悬浮的发光胚胎，会对枪火作出反应。",
+        "name": "琥珀生物瓶"
+      },
+      "4138": {
+        "desc": "带环绕等离子粒子的微型黑洞。",
+        "name": "暗物质微奇点"
+      },
+      "4139": {
+        "desc": "散发璀璨金色光束，伴有硬币叮当声。",
+        "name": "黄金子地堡钥匙"
+      },
+      "4140": {
+        "desc": "元素攻击的低温冻结时长 +8%。",
+        "name": "低温电容超频"
+      },
+      "4141": {
+        "desc": "废料与打捞物磁吸半径 +20%。",
+        "name": "磁性拾荒线圈"
+      },
+      "4142": {
+        "desc": "受孢子与酸性气云伤害 -12%。",
+        "name": "生物危害过滤口"
+      },
+      "4143": {
+        "desc": "动能武器弹药穿透 +1。",
+        "name": "动能冲击衬套"
+      },
+      "4144": {
+        "desc": "受击后护盾充能速率 +10%。",
+        "name": "热交换器"
+      },
+      "4145": {
+        "desc": "在 15 米半径内标记隐藏房间与箱子。",
+        "name": "回声定位收发器"
+      },
+      "4146": {
+        "desc": "生命值降至 25% 以下时，移动速度 +15%，持续 4 秒。",
+        "name": "共生肾上腺泵"
+      },
+      "4147": {
+        "desc": "3 秒内击杀 5 名敌人可返还 1 次冲刺充能。",
+        "name": "零点通量超载"
+      },
+      "4148": {
+        "desc": "粗犷军事指挥官的战术语音播报。",
+        "name": "苏联副指挥官电台"
+      },
+      "4149": {
+        "desc": "冷静、善于分析的女性战术 AI 战斗播报。",
+        "name": "合成人工智能单元“AURA”"
+      },
+      "4150": {
+        "desc": "复古 1980 年代琥珀磷光终端 HUD 风格。",
+        "name": "琥珀 CRT 显示器主题"
+      },
+      "4151": {
+        "desc": "军用夜视绿色 HUD 雷达与遥测。",
+        "name": "翡翠雷达磷光 HUD"
+      },
+      "4152": {
+        "desc": "武器弹丸拖曳明亮的翡翠绿激光尾迹。",
+        "name": "翡翠虚空曳光弹"
+      },
+      "4153": {
+        "desc": "枪口爆风会触发微型冰晶爆裂。",
+        "name": "低温冲击波枪口焰"
+      },
+      "4154": {
+        "name": "遗物解密钥匙（赚取）",
+        "desc": "通过 Steam 保险库开启 1 个深层遗物宝箱。可用深核碎片在发放处免费兑换。"
+      },
+      "4155": {
+        "desc": "包含 5 把遗物解密钥匙的礼包。",
+        "name": "5x 遗物钥匙大礼包"
+      },
+      "4156": {
+        "desc": "用于开箱与锻造的主要赛季制作金属。",
+        "name": "低温合金锭"
+      },
+      "4157": {
+        "desc": "用于制作史诗超频的浓缩动力核心。",
+        "name": "深层子核矩阵"
+      },
+      "4158": {
+        "desc": "制作传说外观所需的稀有生物催化剂。",
+        "name": "精炼龙涎香催化剂"
+      },
+      "4159": {
+        "desc": "开箱重复时获得的货币（100 碎片 = 任意物品）。",
+        "name": "深核碎片（代币）"
+      },
+      "4160": {
+        "desc": "配重式战服装甲板。更重，也更难移动。",
+        "name": "压载装甲板"
+      },
+      "4161": {
+        "desc": "背负式熔炉，可就地熔炼打捞物。",
+        "name": "废料熔炉"
+      },
+      "4162": {
+        "desc": "由甲壳与手术钢生长而成的倒刺注射器。",
+        "name": "女王之殃"
+      },
+      "4163": {
+        "desc": "装于可动臂上的古董单目扫描透镜。",
+        "name": "档案员透镜"
+      },
+      "4164": {
+        "desc": "触感冰凉的晶体路由模块。",
+        "name": "碎片导管"
+      },
+      "4165": {
+        "desc": "物质回收滚筒。不起眼，但有效。",
+        "name": "重复品精炼器"
+      },
+      "4166": {
+        "desc": "停在半口气上的胸式循环呼吸器隔膜。",
+        "name": "加压密封"
+      },
+      "4167": {
+        "desc": "下潜之锚，去过它本不该去的深度。",
+        "name": "深渊之锚"
+      },
       "4200": {
         "desc": "采用深霜风格的完整操作员底盘涂装。",
         "name": "深霜操作员涂装"
@@ -2444,16 +2906,20 @@
         "name": "深霜挂饰"
       },
       "4203": {
-        "name": "深霜臂章"
+        "name": "深霜臂章",
+        "desc": "骨白冰冠刺绣图案，带淡青裂纹与磨损边缘。"
       },
       "4204": {
-        "name": "深霜光泽"
+        "name": "深霜光泽",
+        "desc": "武器装甲上的次表面结晶冰釉，带淡青高光晕。"
       },
       "4205": {
-        "name": "深霜曳光弹"
+        "name": "深霜曳光弹",
+        "desc": "武器弹丸拖曳明亮的淡青白色尾迹，伴有飘散霜粒。"
       },
       "4206": {
-        "name": "深霜 HUD 主题"
+        "name": "深霜 HUD 主题",
+        "desc": "覆霜战术 HUD 主题，配淡青白矢量遥测。"
       },
       "4207": {
         "desc": "采用锈与骨风格的完整操作员底盘涂装。",
@@ -2468,16 +2934,20 @@
         "name": "锈与骨挂饰"
       },
       "4210": {
-        "name": "锈与骨臂章"
+        "name": "锈与骨臂章",
+        "desc": "粗麻布底衬，手工缝制骨纹与暗炭色线。"
       },
       "4211": {
-        "name": "锈与骨光泽"
+        "name": "锈与骨光泽",
+        "desc": "斑驳氧化铁质武器涂装，带油亮光泽与暗炭色暖意。"
       },
       "4212": {
-        "name": "锈与骨曳光弹"
+        "name": "锈与骨曳光弹",
+        "desc": "沉重的暗炭色弹道尾迹，抖落燃烧的铁火星。"
       },
       "4213": {
-        "name": "锈与骨 HUD 主题"
+        "name": "锈与骨 HUD 主题",
+        "desc": "暗炭橙色的地下生存 HUD 风格，配铆接遥测边框。"
       },
       "4214": {
         "desc": "采用虫巢甲壳风格的完整操作员底盘涂装。",
@@ -2492,16 +2962,20 @@
         "name": "虫巢甲壳挂饰"
       },
       "4217": {
-        "name": "虫巢甲壳臂章"
+        "name": "虫巢甲壳臂章",
+        "desc": "薄而干燥的异星甲壳板，脉动的绿色纹路勾勒出巢后形象。"
       },
       "4218": {
-        "name": "虫巢甲壳光泽"
+        "name": "虫巢甲壳光泽",
+        "desc": "活体异星甲壳武器涂层，泛着流转的生物荧光油膜虹彩。"
       },
       "4219": {
-        "name": "虫巢甲壳曳光弹"
+        "name": "虫巢甲壳曳光弹",
+        "desc": "有机螫针飞镖，拖着病态绿色等离子带与沉降的孢子。"
       },
       "4220": {
-        "name": "虫巢甲壳 HUD 主题"
+        "name": "虫巢甲壳 HUD 主题",
+        "desc": "异星共生体视觉界面，带病态生物荧光绿读数与缓慢的呼吸脉动。"
       },
       "4221": {
         "desc": "采用地平线企业风格的完整操作员底盘涂装。",
@@ -2516,16 +2990,20 @@
         "name": "地平线企业挂饰"
       },
       "4224": {
-        "name": "地平线企业臂章"
+        "name": "地平线企业臂章",
+        "desc": "挺括的白色斜纹布，冷青绿激光切割刺绣勾勒出干净的地平线标记。"
       },
       "4225": {
-        "name": "地平线企业光泽"
+        "name": "地平线企业光泽",
+        "desc": "无瑕的白色陶瓷武器抛光，带紧致高光与冷青绿菲涅尔亮边。"
       },
       "4226": {
-        "name": "地平线企业曳光弹"
+        "name": "地平线企业曳光弹",
+        "desc": "高精度的实心冷青绿激光束，配干净的几何枪口焰。"
       },
       "4227": {
-        "name": "地平线企业 HUD 主题"
+        "name": "地平线企业 HUD 主题",
+        "desc": "冷青绿的临床式军事承包商 HUD 界面，配极细坐标网格。"
       },
       "4228": {
         "desc": "采用地堡 404风格的完整操作员底盘涂装。",
@@ -2540,16 +3018,20 @@
         "name": "地堡 404挂饰"
       },
       "4231": {
-        "name": "地堡 404臂章"
+        "name": "地堡 404臂章",
+        "desc": "黑色斜纹布配洋红线，构成带错位方块的故障小队徽标。"
       },
       "4232": {
-        "name": "地堡 404光泽"
+        "name": "地堡 404光泽",
+        "desc": "故障武器涂装，带水平纹理错位与洋红信号错误色彩撕裂。"
       },
       "4233": {
-        "name": "地堡 404曳光弹"
+        "name": "地堡 404曳光弹",
+        "desc": "错位的洋红弹道尾迹，会卡顿并碎裂成偏移的故障方块。"
       },
       "4234": {
-        "name": "地堡 404 HUD 主题"
+        "name": "地堡 404 HUD 主题",
+        "desc": "电光洋红的损坏信号 HUD 主题，带间歇扫描线抖动与错误读数。"
       },
       "4235": {
         "desc": "采用大元帅风格的完整操作员底盘涂装。",
@@ -2564,16 +3046,20 @@
         "name": "大元帅挂饰"
       },
       "4238": {
-        "name": "大元帅臂章"
+        "name": "大元帅臂章",
+        "desc": "深黑天鹅绒底衬，以密实的琥珀金线刺绣成月桂遗物纹章。"
       },
       "4239": {
-        "name": "大元帅光泽"
+        "name": "大元帅光泽",
+        "desc": "抛光陨铁合金武器涂装，配暖琥珀金月桂卷草纹与各向异性闪光。"
       },
       "4240": {
-        "name": "大元帅曳光弹"
+        "name": "大元帅曳光弹",
+        "desc": "仪式性的厚重金色能量尾迹，伴随飘落的余烬与光辉冕晕。"
       },
       "4241": {
-        "name": "大元帅 HUD 主题"
+        "name": "大元帅 HUD 主题",
+        "desc": "暖琥珀金的王室帝国指挥界面，以档案式月桂叶托架为框。"
       }
     }
   }

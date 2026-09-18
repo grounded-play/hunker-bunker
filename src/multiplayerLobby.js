@@ -809,7 +809,7 @@ export class MultiplayerLobby {
             label.className = 'net-spec-name';
             const mode = (lobby.data?.hb_mode || 'coop').toUpperCase();
             const memberCount = lobby.members?.length ?? 0;
-            label.textContent = `${mode} // ${memberCount}/4 OPERATIVES`;
+            label.textContent = t('ui.lobby.mode_members', { mode, count: memberCount });
 
             const joinBtn = document.createElement('button');
             joinBtn.type = 'button';

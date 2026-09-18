@@ -615,6 +615,13 @@ export async function createPlayer3dOverlay({
     for (const name of [...blendableActions, ...injuredVariantActions]) {
         actions.get(name)?.setEffectiveWeight(0).play();
     }
+    // Prime the idle action immediately with full weight and tick the mixer so the
+    // skinned mesh starts in its natural idle pose instead of its T-pose bind pose.
+    if (activeIdleName && actions.has(activeIdleName)) {
+        smoothedWeights[activeIdleName] = 1;
+        actions.get(activeIdleName)?.setEffectiveWeight(1).play();
+        mixer.update(0);
+    }
 
     return {
         root,

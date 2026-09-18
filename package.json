@@ -1,6 +1,6 @@
 {
   "name": "hunker-bunker",
-  "version": "2.4.4-beta",
+  "version": "2.4.7-beta",
   "description": "A biomechanical survival roguelike set beneath the frozen surface of Cocytus IV.",
   "author": "Tuesday Cinema Club",
   "private": true,
@@ -139,7 +139,7 @@
     "socket.io": "^4.8.3",
     "socket.io-client": "^4.8.3",
     "steamworks.js": "^0.4.0",
-    "three": "^0.185.1"
+    "three": "^0.186.0"
   },
   "overrides": {
     "vite": "^8.1.5",

@@ -2,11 +2,10 @@
 
 **Branch:** `dev/sprint-40` · package `2.4.4-beta` · suite green (390 files / 3505 tests)
 **Question asked:** do all words and buttons actually change language, in every menu and place?
-**Answer:** no. The translation *engine* and *dictionaries* are healthy and complete. The
-*wiring* reaches roughly one and a half screens. Everything else renders English in all
-seven locales.
+**Answer at audit time:** no. The engine and dictionaries were healthy; the *wiring* reached
+about one and a half screens out of forty.
 
-This document is the audit and the execution plan. No code was changed to produce it.
+**Status 2026-09-16, all six phases executed — see §7.**
 
 ---
 
@@ -214,3 +213,88 @@ it against other sprint-40 work rather than running it concurrently. Phase 6 wil
 layout bugs that are not localization bugs; budget for them separately.
 
 No part of this is blocked. Phase 0 can start immediately.
+
+
+---
+
+## 7. Outcome
+
+All six phases ran. Numbers below come from `npm run i18n:audit`, and the ratchet in
+`scripts/audit-i18n.test.js` holds them.
+
+| Measure | At audit | Now |
+|---|---:|---:|
+| Runtime strings written to the DOM without `t()` | 199* | **0** |
+| Unannotated markup (non-debug) | 635 | **0** |
+| Orphaned keys | 68 (really 73) | **34** |
+| Narrative catalog coverage, per locale | 52% | **100%** (803/803) |
+| Keys per locale / parity | 654, exact | **1898, exact** |
+
+\* the original 199 counted `src/` only; `main.js` was outside the scan and held 119 more.
+
+**Verified in a browser, not just in tests.** Built bundle served from `dist/`, driven with
+Playwright across all 7 locales: correct text, `<html lang>` tracking the locale, zero console
+errors and zero page errors. That pass is what caught the three defects unit tests could not
+see — `t is not defined` thrown eight times on boot, `<html lang>` stuck on `"en"`, and an
+entirely English loading screen.
+
+### What is deliberately left
+
+- **34 orphaned keys** in `common.*`, `rarity.*`, `hud.*`, `classes.*`, `dialogue.*`. Their
+  text is real and correct; they simply have no call site yet. Kept rather than deleted.
+- **Developer surfaces** — the dev console, debug toolbar, build stamps, FPS counters and run
+  seeds — excluded by explicit allowlist, not by silence.
+- **The language picker**, which correctly shows each language in its own script.
+
+### Two defects raised, not fixed here
+
+`steam/inventory_schema_hunker_bunker.json` has developer notes pasted into two player-facing
+item descriptions (itemdef 4110 and the earned Cache Key), citing source file paths, itemdef
+numbers and internal doc sections. That schema uploads to Steamworks, so the notes appear on
+those items' store pages. The six non-English locales carry only the real product sentence;
+the English source is left as-is so the defect stays visible. Fixing shipped store copy is the
+content owner's call.
+
+### Guardrail
+
+`npm run i18n:audit` reports the three failure modes; `scripts/audit-i18n.test.js` ratchets
+them per screen and per module against `docs/reports/i18n-coverage-baseline.json`. Counts may
+fall, never rise. Verified by adding a raw button to `#menu`, which fails with
+`"#menu: 46 -> 48"`. The old coverage test asserted only that one annotation existed anywhere
+and could never fail.
+
+
+---
+
+## 8. Follow-up: the last 52, and what finishing them exposed
+
+The 52 mixed-content strings are wrapped and coverage is now **0 unannotated markup,
+0 unlocalized runtime strings**, 1898 keys per locale at exact parity.
+
+**One deliberate visual change.** The pickup-counter rows styled their count cell with
+`.pickup-counter-panel__row span:last-child` — a *descendant* selector, so it also matched the
+icon span, which is the last element child of the label. Wrapping the label text would have
+handed that styling to the new span. The four rules are now scoped to direct children, which is
+what a right-aligned tabular-number rule always meant. The icon consequently falls back to its
+own authored colour: it rendered `rgba(255,228,172,.95)` by specificity accident and now renders
+the `rgba(255,199,99,.96)` its own rule specifies. Confirmed by reading computed styles in the
+built page.
+
+**`alt` is now translatable.** The engine handled only title/aria-label/placeholder, so six
+static alt texts could not be localized at all — a screen reader announced "Crashed ship"
+mid-cutscene in every locale.
+
+**Four scanner defects, each hiding live text.** A leading `/` was read as a path, hiding the
+five `TITLE // ACCENT` headers. A leading `>` was read as markup, hiding the loader's
+prompt-prefixed lines. The has-letters and length tests ran on the raw literal, so
+`(${inv.shells})` passed on "inv.shells" while a long `innerHTML` template hid short visible
+text behind the 200-character cap — both now test the *visible* text. And `setTxt` joined the
+recognised text-setting helpers, with `RUNTIME_WRITTEN_CLASSES` covering elements reached by
+class selector rather than id. Fixing those surfaced **33 more live runtime strings**, all now
+wired.
+
+**A gap only the browser could show.** `updateDetailsPanel()` returned early on a missing item
+and was never called for an empty vault, so a player with no items read that panel in English in
+every locale. A `data-i18n` annotation would have been the wrong fix — once an item is selected
+those same elements hold its catalog name, which a locale change would then overwrite with the
+placeholder. JS owns both states instead.

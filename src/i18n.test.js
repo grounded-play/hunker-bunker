@@ -238,6 +238,13 @@ describe('i18n Localization Engine', () => {
             expect(el.textContent).toBe('NEUER DURCHLAUF');
         });
 
+        it('translates alt text, which a screen reader announces', () => {
+            setLocale('en');
+            const el = fakeElement({ 'data-i18n-alt': 'ui.menu.new_run', alt: 'placeholder' }, '');
+            applyStaticTranslations(fakeRoot([el]));
+            expect(el.getAttribute('alt')).toBe('NEW RUN');
+        });
+
         it('translates annotated attributes', () => {
             const el = fakeElement({
                 'data-i18n-title': 'ui.hub.codex',

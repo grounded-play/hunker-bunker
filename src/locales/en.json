@@ -87,7 +87,8 @@
       "engineer": "ENGINEER",
       "reroute": "REROUTE",
       "cheaper_consoles": "CHEAPER CONSOLES",
-      "esc": "[ESC]"
+      "esc": "[ESC]",
+      "return_main": "← RETURN TO MAIN MENU"
     },
     "hub": {
       "daily_ops": "DAILY OPS",
@@ -283,7 +284,14 @@
       "no_weapons": "NO WEAPONS FABRICATED",
       "print_hint": "Print a guaranteed Scatter Repeater for 12 Tech / 6 Coin in the Fab Bay.",
       "equipped": "✓ EQUIPPED",
-      "equip": "EQUIP"
+      "equip": "EQUIP",
+      "id_label": "ID:",
+      "stat_sector": "SECTOR {depth}",
+      "stat_hostiles": "{count} HOSTILES",
+      "blackbox_recoverable": "RECOVERABLE (SECTOR {depth})",
+      "blackbox_none": "NONE",
+      "equipped_none": "NULL",
+      "arsenal_count": "ARSENAL: {made} / {total} WEAPONS FABRICATED"
     },
     "dlg": {
       "channel": "MOTHERSHIP UPLINK CHANNEL 7",
@@ -303,7 +311,49 @@
       "aria_label_build_and_developer": "Build and developer information",
       "system_build": "SYSTEM BUILD",
       "dev_console": "DEV CONSOLE",
-      "initializing_systems": "INITIALIZING SYSTEMS"
+      "initializing_systems": "INITIALIZING SYSTEMS",
+      "msg_biometric_airlock": "CALIBRATING BIOMETRIC AIRLOCK GATEWAY",
+      "msg_reactor_bulkhead": "SHIELDING REACTOR PILE COOLANT BULKHEAD",
+      "msg_thermal_shield": "STABILIZING THERMAL SUPERCONDUCTOR SHIELD",
+      "msg_xeno_codes": "DECRYPTING XENO-TECHNOLOGY SECURITY CODES",
+      "msg_corroded_ports": "SEALING CORROSION-DECAYED OUTBOARD PORTS",
+      "msg_door_hydraulics": "ENGAGING SECTOR TRANSIT DOORWAY HYDRAULICS",
+      "msg_gigawatt_goliath": "PINPOINTING GIGAWATT GOLIATH RADAR PROFILE",
+      "msg_temp_drop": "WARNING: DETECTING SEVERE LOCAL TEMPERATURE DROP",
+      "msg_hull_contagion": "DANGER: BIO-ORGANIC HULL CONTAGION CRITICAL",
+      "msg_corrosive_anomalies": "IDENTIFYING SUPPORT-FIELD CORROSIVE ANOMALIES",
+      "msg_gelid_drain": "MEASURING GELID EXOSUIT DRAIN INDEX",
+      "msg_bio_pathogens": "MONITORING SUBTERRANEAN BIO-KINETIC PATHOGENS",
+      "msg_metal_supports": "MAPPING SECURE METAL-STRUCT SUPPORTS",
+      "msg_cryo_pipelines": "STABILIZING CRYOGENIC COOLANT PIPELINES",
+      "msg_spore_biospheres": "ISOLATING SPORE-INFESTED BIOSPHERES",
+      "msg_glacial_caverns": "SURVEYING GEOTHERMAL GLACIAL CAVERNS",
+      "msg_salvage_debris": "SCANNING RECLAIMABLE SALVAGE DEBRIS",
+      "msg_dust_signals": "FILTERING DUST SIGNALS FROM RECLAIMABLE METAL",
+      "msg_gold_cache": "DETECTING GOLD-SIGNATURE CORE CACHE",
+      "msg_high_value_lobes": "RADAR RESOLVING UNUSUAL HIGH-VALUE LOBES",
+      "msg_o2_mixer": "PREHEATING OXYGEN GENERATOR MIXER VALVE",
+      "msg_n2_cooler": "VENTING COMPRESSOR LIQUID NITROGEN COOLER",
+      "msg_radome_antenna": "ALIGNING HIGH-GAIN RADOME EM ANTENNA",
+      "msg_nanobot_fabricator": "UPLOADING NANOBOT FABRICATOR SUB-ROUTINES",
+      "msg_defensive_matrix": "TUNING DEFENSIVE MATRIX CELL POLARITY",
+      "msg_recon_datalink": "ESTABLISHING FAST RECON SCOUT DATA-LINK",
+      "msg_exosuit_buffers": "BOOTING HEAVY EXOSUIT STRENGTH BUFFERS",
+      "msg_debris_deflection": "CALIBRATING DEBRIS DEFLECTION ASSIST",
+      "msg_display_schematics": "BUFFERING INTERACTIVE DISPLAY SCHEMATICS",
+      "msg_audio_matrix": "STABILIZING TACTICAL AUDIO MATRIX FEED",
+      "msg_tactical_data": "SYNCHRONIZING TACTICAL DATA FILE",
+      "log_verifying_steam": "> VERIFYING STEAMWORKS INTEGRATION...",
+      "log_steam_error": "> STEAM CHECK ERROR: {error}",
+      "log_unknown_error": "UNKNOWN ERROR",
+      "log_steam_linked": "> STEAM LINKED: {persona}",
+      "log_connected": "CONNECTED",
+      "log_steam_degraded": "> STEAM DEGRADED: {reason} — CONTINUING",
+      "log_asset": "> {message}...",
+      "log_booting_webgl": "> BOOTING TACTICAL WEBGL CORE...",
+      "log_preloading_cinematic": "> PRELOADING CINEMATIC FEED (DoorIntro)...",
+      "log_assets_loaded": "> ALL ASSETS LOADED — OPENING AIRLOCK...",
+      "initializing_core": "> INITIALIZING TACTICAL EXOSUIT CORE... ({percent}%)"
     },
     "splash_steam_badge": {
       "title_click_to_open": "Click to open Steam Overlay profile",
@@ -332,7 +382,9 @@
       "github_repository": "GITHUB REPOSITORY",
       "special_thanks": "SPECIAL THANKS",
       "our_amazing_community_players": "Our Amazing Community & Players",
-      "thank_you_for_deploying": "THANK YOU FOR DEPLOYING"
+      "thank_you_for_deploying": "THANK YOU FOR DEPLOYING",
+      "tactical_command": "TACTICAL COMMAND",
+      "accent_credits": "// CREDITS"
     },
     "hero_detail": {
       "field_loadout": "FIELD LOADOUT"
@@ -343,14 +395,16 @@
       "in_progress": "IN PROGRESS",
       "ready": "READY",
       "best_score": "◈ BEST: {score} PTS",
-      "rgb_title": "RGB: RIVERSIDE GLOBAL 'BOTICS"
+      "rgb_title": "RGB: RIVERSIDE GLOBAL 'BOTICS",
+      "score_grade": "{score} PTS // {grade}"
     },
     "close_season_pass": {
       "aria_label_close_tactical_dossier": "Close Tactical Dossier"
     },
     "season_pass": {
       "sub_terran_sector_operations_beta": "◈ SUB-TERRAN SECTOR OPERATIONS // BETA SEASON 1",
-      "directives": "& DIRECTIVES"
+      "directives": "& DIRECTIVES",
+      "title": "TACTICAL DOSSIER"
     },
     "archive_log_detail": {
       "aria_label_close_archive_log": "Close archive log",
@@ -375,7 +429,10 @@
       "view_record": "View intel record for {name}",
       "click_hint": "CLICK TO VIEW INTEL DOSSIER & ARTWORK",
       "uncatalogued": "??? — UNCATALOGUED",
-      "encounter_hint": "Encounter this in the field to recover its record."
+      "encounter_hint": "Encounter this in the field to recover its record.",
+      "title": "FIELD CODEX",
+      "alt_intel_image": "Codex Intel Image",
+      "accent_bestiary": "// BESTIARY"
     },
     "close_codex_detail": {
       "aria_label_close_codex_entry": "Close codex entry"
@@ -389,7 +446,9 @@
     "achievements": {
       "combat_citations_deep_crust_commendations": "◈ COMBAT CITATIONS // DEEP CRUST COMMENDATIONS",
       "title_copy_a_portable": "Copy a portable save code",
-      "copy_save_code": "COPY SAVE CODE"
+      "copy_save_code": "COPY SAVE CODE",
+      "title": "OPERATIVE CITATIONS",
+      "accent_archive": "// ARCHIVE"
     },
     "close_steam_vault": {
       "aria_label_close_steam_vault": "Close Steam Vault"
@@ -417,14 +476,30 @@
       "1_next_tier_item": "1× NEXT-TIER ITEM",
       "deep_smelter": "DEEP SMELTER",
       "consumes_5x_same_tier_items": "CONSUMES 5x SAME-TIER ITEMS",
-      "deep_core_shard_dispensary": "DEEP CORE SHARD DISPENSARY"
+      "deep_core_shard_dispensary": "DEEP CORE SHARD DISPENSARY",
+      "title": "◈ STEAM VAULT",
+      "caches_label": "CACHES:",
+      "keys_label": "KEYS:",
+      "shards_label": "SHARDS:",
+      "tab_inventory": "OWNED INVENTORY",
+      "tab_store": "◈ RELIC STORE & DROP ODDS",
+      "tab_smelter": "◈ SMELTER & DISPENSARY",
+      "decrypt_with": "decrypt with",
+      "rates_match": "· Rates match server tables.",
+      "consumed_removed": "· Consumed items are removed.",
+      "accent_dispatch": "// ITEM DISPATCH"
     },
     "vault_details": {
-      "view_in_steam_market": "VIEW IN STEAM MARKET"
+      "view_in_steam_market": "VIEW IN STEAM MARKET",
+      "select_an_item": "SELECT AN ITEM",
+      "select_hint": "Select an item to view Steam ownership and trade metadata.",
+      "read_only": "READ-ONLY STEAM INVENTORY",
+      "no_rarity": "—"
     },
     "vault_reveal": {
       "steam_relic_dispensary_appid_4957040": "◈ STEAM RELIC DISPENSARY // APPID 4957040",
-      "claim_to_inventory": "◈ CLAIM TO INVENTORY"
+      "claim_to_inventory": "◈ CLAIM TO INVENTORY",
+      "alt_reward": "Reward"
     },
     "operator_polish": {
       "operator_polish": "◆ OPERATOR POLISH",
@@ -499,7 +574,11 @@
     "fabrication": {
       "fabrication_bay": "◇ FABRICATION BAY",
       "print_gear_from_salvage": "PRINT GEAR FROM SALVAGE",
-      "schematics_fabricated_0_8": "SCHEMATICS FABRICATED: 0 / 8"
+      "schematics_fabricated_0_8": "SCHEMATICS FABRICATED: 0 / 8",
+      "tech": "TECH",
+      "coin": "COIN",
+      "med": "MED",
+      "shells": "SHELLS"
     },
     "fab_roll": {
       "insert_salvage_to_fabricate": "INSERT SALVAGE TO FABRICATE"
@@ -550,7 +629,11 @@
     },
     "pickup_counter": {
       "loot": "LOOT",
-      "total": "TOTAL"
+      "total": "TOTAL",
+      "med": "MED",
+      "tech": "TECH",
+      "coin": "COIN",
+      "shell": "SHELL"
     },
     "boss_status": {
       "boss_threat": "BOSS THREAT"
@@ -729,7 +812,9 @@
     "confirm": {
       "critical_alert": "CRITICAL ALERT",
       "abort_mission": "ABORT MISSION",
-      "cancel": "CANCEL"
+      "cancel": "CANCEL",
+      "terminate_question": "TERMINATE THIS CONTRACT IN PLACE?",
+      "terminate_detail": "FACILITIES WILL BAG THE SUIT AND ARM A BLACK BOX FOR NEXT DESCENT."
     },
     "day_rest_warning": {
       "the_night_will_close_doors": "THE NIGHT WILL CLOSE DOORS",
@@ -747,12 +832,17 @@
     "reset_save_confirm": {
       "reset_save_data": "RESET SAVE DATA",
       "reset_save": "RESET SAVE",
-      "cancel": "CANCEL"
+      "cancel": "CANCEL",
+      "question": "START A NEW GAME?",
+      "cleared": "RGB PROGRESS, ALL ACHIEVEMENTS, UNLOCKS, BANKED SALVAGE, CODEX, FABRICATIONS, BEST SCORES, AND PROFILE DATA WILL BE CLEARED ON THIS DEVICE.",
+      "kept": "AUDIO, DISPLAY, AND CONTROL PREFERENCES WILL BE KEPT."
     },
     "quit_confirm": {
       "quit_hunker_bunker": "QUIT HUNKER BUNKER",
       "confirm_quit": "CONFIRM QUIT",
-      "cancel": "CANCEL"
+      "cancel": "CANCEL",
+      "question": "EXIT APPLICATION?",
+      "detail": "ARE YOU SURE YOU WANT TO QUIT? ANY UNSAVED PROGRESS IN AN ACTIVE RUN WILL BE LOST."
     },
     "camp_choice": {
       "aria_label_close_camp_decision": "Close camp decision",
@@ -792,7 +882,9 @@
     },
     "controls": {
       "steam_deck": "STEAM DECK:",
-      "desktop": "DESKTOP:"
+      "desktop": "DESKTOP:",
+      "deck_hint": "Left stick moves or navigates · Right stick aims and controls the visible pointer · A accepts/interacts · B backs out/dodges · Menu opens settings.",
+      "desktop_hint": "Click a slot, then press a key to bind it. ESC cancels."
     },
     "mothership_dialogue": {
       "scout_link_encrypted": "SCOUT LINK [ENCRYPTED]"
@@ -858,7 +950,14 @@
       "esc": "ESC",
       "click": "CLICK",
       "host": "HOST",
-      "back_to_armory": "← BACK TO ARMORY"
+      "back_to_armory": "← BACK TO ARMORY",
+      "title": "TACTICAL NET",
+      "invite_friend": "INVITE FRIEND",
+      "refresh": "REFRESH",
+      "hint_back": "BACK",
+      "hint_toggle": "TOGGLE MODE",
+      "hint_deploy": "DEPLOY SQUAD",
+      "accent_relay": "// RELAY COMMAND"
     },
     "close_multiplayer": {
       "aria_label_close_tactical_net": "Close Tactical Net"
@@ -878,7 +977,9 @@
       "aria_label_close_progression_walkthrough": "Close progression walkthrough"
     },
     "select_picker": {
-      "aria_label_close_option_picker": "Close option picker"
+      "aria_label_close_option_picker": "Close option picker",
+      "select": "SELECT",
+      "back": "BACK"
     },
     "virtual_keyboard": {
       "aria_label_close_on_screen": "Close on-screen keyboard",
@@ -907,7 +1008,9 @@
       "preserved_on_failure": "Bank assets preserved on failure.",
       "dossier": "DOSSIER",
       "pending": "{count} PENDING",
-      "synced": "SYNCED ✓"
+      "synced": "SYNCED ✓",
+      "pathway_available": "PATHWAY AVAILABLE — Requirements can still be achieved",
+      "projected_path": "PROJECTED PATH: {ending}"
     },
     "wanderer": {
       "survivor_named": "Survivor: {name}",
@@ -917,7 +1020,9 @@
       "decline": "DECLINE ALLIANCE — BANK {supplies}",
       "supplies": "SUPPLIES",
       "transmission": "[ SURVIVOR TRANSMISSION ]",
-      "quote": "\"{text}\""
+      "quote": "\"{text}\"",
+      "inquiry": "Inquiry:",
+      "quest_line": "{title} — {desc} Reward: {reward}."
     },
     "vault": {
       "item_acquired": "STEAM ITEM ACQUIRED",
@@ -988,7 +1093,8 @@
       "deploy_solo": "DEPLOY SOLO",
       "host_control_required": "HOST CONTROL REQUIRED",
       "host_new_lobby": "HOST NEW LOBBY",
-      "start_match": "START MATCH"
+      "start_match": "START MATCH",
+      "mode_members": "{mode} // {count}/4 OPERATIVES"
     },
     "dossier": {
       "title": "TACTICAL DOSSIER",
@@ -1051,10 +1157,24 @@
       "choice_required": "CHOICE REQUIRED",
       "event_resolved": "TERMINAL EVENT RESOLVED. SHOP SYSTEMS REMAIN AVAILABLE.",
       "engineer_verify": "ENGINEER VERIFY",
-      "mimic_neutralized": "WARNING: TERMINAL SIGNATURE FORGED — MIMIC NEUTRALIZED. SAFE TO PROCEED."
+      "mimic_neutralized": "WARNING: TERMINAL SIGNATURE FORGED — MIMIC NEUTRALIZED. SAFE TO PROCEED.",
+      "day_n": "DAY {day}",
+      "daylight": "DAYLIGHT",
+      "night_ops": "NIGHT OPS",
+      "ready": "READY",
+      "insufficient": "INSUFFICIENT",
+      "transition_in": "{phase} IN {time}",
+      "dusk": "DUSK",
+      "dawn": "DAWN",
+      "base_status": "{type} BASE STATUS {state}",
+      "active_exosuit": "[ACTIVE EXOSUIT]",
+      "standby": "[STANDBY]",
+      "field_stabilizer": "{type} FIELD STABILIZER"
     },
     "journal": {
-      "day_time": "D{day} {minute}:{second}"
+      "day_time": "D{day} {minute}:{second}",
+      "story": "STORY",
+      "mission_next": "{mission} // NEXT: {goal}"
     },
     "bank": {
       "deposit_ready": "DEPOSIT READY. RESOURCE TRANSFER CHANNEL OPEN.",
@@ -1065,12 +1185,17 @@
       "next_cost_none": "NEXT COST: NONE",
       "generator_maxed": "O₂ GENERATOR OUTPUT IS MAXED FOR THIS EXOSUIT BAY.",
       "repair_to_create_zone": "REPAIR THIS MODULE TO CREATE A SAFE O₂ ZONE NEAR YOUR SHIP.",
-      "upgrades_expand_field": "UPGRADES EXPAND THE BLUE O₂ FIELD SO YOU CAN REFILL FROM FURTHER OUT."
+      "upgrades_expand_field": "UPGRADES EXPAND THE BLUE O₂ FIELD SO YOU CAN REFILL FROM FURTHER OUT.",
+      "hearts_available": "♥ ×{count} AVAILABLE",
+      "med_for_heart": "{med}/10 FOR ♥",
+      "hearts_missing": "{hearts} HEART{heartPlural} MISSING. {conversions} CONVERSION{conversionPlural} AVAILABLE ({med} MED STORED).",
+      "med_stored": "{med}/10 MED"
     },
     "skills": {
       "completed": "COMPLETED",
       "upgrade": "UPGRADE",
-      "unlock": "UNLOCK"
+      "unlock": "UNLOCK",
+      "tree_summary": "{class} BUNKER TREE: {active}/{total} ONLINE ({ready} READY) | COMBAT LV: {combat}/{combatTotal} | BALANCE: ◈ {shells} SHELLS"
     },
     "turret": {
       "built_north_door": "BUILT — CONTROLS AT NORTH DOOR",
@@ -1143,7 +1268,8 @@
     "hud": {
       "ammo_cache": "CACHE {current}/{max}",
       "current_biome": "CURRENT BIOME {biome}",
-      "equipped": "EQUIPPED"
+      "equipped": "EQUIPPED",
+      "bunker_level_aria": "BUNKER LEVEL {level} ({tier}) — {biome}"
     },
     "commentary": {
       "kicker": "DEVELOPER COMMENTARY"
@@ -1156,7 +1282,8 @@
       "commander_name": "Soviet Sub-Commander",
       "aura_name": "Synthesized AI 'AURA'",
       "commander_title": "SOVIET SUB-COMMANDER",
-      "aura_title": "SYNTHESIZED AI 'AURA'"
+      "aura_title": "SYNTHESIZED AI 'AURA'",
+      "alt_sender_portrait": "Sender Portrait"
     },
     "go": {
       "generator_level": "LVL {level}",
@@ -1175,7 +1302,8 @@
       "unlocked_kicker": "ACHIEVEMENT UNLOCKED",
       "hidden": "Hidden record. Unlock to reveal.",
       "coming_soon": "COMING SOON",
-      "unlocked": "UNLOCKED"
+      "unlocked": "UNLOCKED",
+      "summary_unlocked": "{unlocked} / {total} UNLOCKED"
     },
     "save": {
       "code_unavailable": "SAVE CODE UNAVAILABLE"
@@ -1188,7 +1316,8 @@
     },
     "loader": {
       "deployment_telemetry": "MOTHERSHIP DEPLOYMENT TELEMETRY",
-      "init_failed": "SYSTEM INITIALIZATION FAILED"
+      "init_failed": "SYSTEM INITIALIZATION FAILED",
+      "init_error_retrying": "[ SYSTEM INITIALIZATION ERROR — RETRYING... ]"
     },
     "alert": {
       "tactical": "TACTICAL ALERT",
@@ -1197,12 +1326,15 @@
     "trade": {
       "squadmate": "SQUADMATE",
       "awaiting_offer": "AWAITING OFFER SELECTION",
-      "waiting_squadmate": "WAITING FOR SQUADMATE..."
+      "waiting_squadmate": "WAITING FOR SQUADMATE...",
+      "self_class": "{class} // OPERATIVE",
+      "peer_class": "{class} // REMOTE"
     },
     "bond": {
       "enamored": "ENAMORED / DEVOTED",
       "warm": "WARM / ATTRACTION",
-      "attentive": "ATTENTIVE"
+      "attentive": "ATTENTIVE",
+      "badge": "{label} ({score} PTS)"
     },
     "fab": {
       "scatter_repeater": "SCATTER REPEATER",
@@ -1243,11 +1375,25 @@
       "field_conversation": "FIELD CONVERSATION",
       "callsign": "CALLSIGN {callsign}",
       "listen_hint": "Listen, then decide how you want to help.",
-      "quote": "\"{text}\""
+      "quote": "\"{text}\"",
+      "next_action": "Your next action changes the launch manifest and the ending vector."
     },
     "title": {
       "pregalien_command": "PREGALIEN | HIVE COMMAND",
       "pregalien": "PREGALIEN"
+    },
+    "dialogue": {
+      "commander_badge": "SOVIET RADIO COMMS [72.4 MHz // {class}]",
+      "aura_badge": "AURA TACTICAL LINK [SYNTH // {class}]",
+      "encrypted_badge": "{class} LINK [ENCRYPTED]"
+    },
+    "cutscene": {
+      "alt_incoming_ship": "Incoming ship",
+      "alt_crashed_ship": "Crashed ship"
+    },
+    "snail": {
+      "alt_player_chassis": "Player Chassis",
+      "alt_snail_combatant": "Snail Combatant"
     }
   },
   "narrative": {

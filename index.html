@@ -294,7 +294,7 @@
         <button data-i18n-aria-label="ui.about.aria_label_close_credits" class="close-modal" id="close-about" aria-label="Close Credits">&times;</button>
         <div class="credits-header">
           <div data-i18n="ui.about.personnel_archive_production_credits" class="credits-header-kicker">◈ PERSONNEL ARCHIVE // PRODUCTION CREDITS</div>
-          <div class="credits-modal-title">TACTICAL COMMAND <span class="credits-title-accent">// CREDITS</span></div>
+          <div class="credits-modal-title"><span data-i18n="ui.about.tactical_command">TACTICAL COMMAND</span> <span data-i18n="ui.about.accent_credits" class="credits-title-accent">// CREDITS</span></div>
         </div>
         
         <div class="credits-container">
@@ -338,7 +338,7 @@
 
         <div class="credits-footer">
           <span data-i18n="ui.about.thank_you_for_deploying" class="credits-footer-thankyou">THANK YOU FOR DEPLOYING</span>
-          <span id="about-modal-sys-ver" class="credits-footer-ver">SYS VER: 2.4.2-BETA // ACTIVE</span>
+          <span id="about-modal-sys-ver" class="credits-footer-ver">SYS VER: 2.4.7-BETA // ACTIVE</span>
         </div>
       </div>
     </div>
@@ -502,7 +502,7 @@
                 <div class="char-icon">⚙</div>
               </div>
               <button type="button" class="hero-select-back-btn" id="hero-select-back-btn">
-                ← RETURN TO MAIN MENU <span data-i18n="ui.menu.esc">[ESC]</span>
+                <span data-i18n="ui.menu.return_main">← RETURN TO MAIN MENU</span> <span data-i18n="ui.menu.esc">[ESC]</span>
               </button>
             </div>
           </div>
@@ -541,7 +541,7 @@
         <div class="season-pass-header">
           <button data-i18n-aria-label="ui.close_season_pass.aria_label_close_tactical_dossier" class="close-modal" id="close-season-pass-modal" aria-label="Close Tactical Dossier">×</button>
           <div data-i18n="ui.season_pass.sub_terran_sector_operations_beta" class="season-pass-header-kicker">◈ SUB-TERRAN SECTOR OPERATIONS // BETA SEASON 1</div>
-          <div class="season-pass-title">TACTICAL DOSSIER <span data-i18n="ui.season_pass.directives" class="season-pass-title-accent">& DIRECTIVES</span></div>
+          <div class="season-pass-title"><span data-i18n="ui.season_pass.title">TACTICAL DOSSIER</span> <span data-i18n="ui.season_pass.directives" class="season-pass-title-accent">& DIRECTIVES</span></div>
           <div id="season-pass-progress-summary" class="season-pass-progress-summary"></div>
         </div>
         <div id="season-pass-body" class="season-pass-body"></div>
@@ -590,7 +590,7 @@
           </div>
           <div class="roster-sub-bar">
             <div class="roster-stat" id="roster-fab-count">ARSENAL: 0 / 0 SCHEMATICS FABRICATED</div>
-            <div class="roster-id-badge">ID: <span class="roster-id" id="roster-id">op-—</span></div>
+            <div class="roster-id-badge"><span data-i18n="ui.roster.id_label">ID:</span> <span class="roster-id" id="roster-id">op-—</span></div>
           </div>
         </div>
         <div data-i18n="ui.roster.equipped_sidearm" class="roster-section-label">EQUIPPED SIDEARM</div>
@@ -621,7 +621,7 @@
         <div class="codex-header">
           <button data-i18n-aria-label="ui.close_codex.aria_label_close_field_codex" class="close-modal" id="close-codex-modal" aria-label="Close Field Codex">×</button>
           <div data-i18n="ui.codex.field_intel_discovered_specimens_lore" class="codex-header-kicker">◈ FIELD INTEL // DISCOVERED SPECIMENS & LORE</div>
-          <div class="codex-title">FIELD CODEX <span class="codex-title-accent">// BESTIARY</span></div>
+          <div class="codex-title"><span data-i18n="ui.codex.title">FIELD CODEX</span> <span data-i18n="ui.codex.accent_bestiary" class="codex-title-accent">// BESTIARY</span></div>
           <div data-i18n="ui.codex.catalogued_by_sub_terran_encounter" class="codex-subtitle">CATALOGUED BY SUB-TERRAN ENCOUNTER</div>
           <div id="codex-summary" class="codex-summary">ENTRIES RECOVERED: 0 / 0</div>
         </div>
@@ -641,7 +641,7 @@
         </div>
         <div class="codex-detail-body">
           <div class="codex-detail-image-wrap">
-            <img id="codex-detail-img" class="codex-detail-img" src="" alt="Codex Intel Image" />
+            <img id="codex-detail-img" class="codex-detail-img" src="" data-i18n-alt="ui.codex.alt_intel_image" alt="Codex Intel Image" />
             <div class="codex-detail-scanline"></div>
           </div>
           <div class="codex-detail-text" id="codex-detail-blurb"></div>
@@ -656,7 +656,7 @@
         <div class="achievements-header">
           <button data-i18n-aria-label="ui.close_achievements.aria_label_close_achievements" class="close-modal" id="close-achievements-modal" aria-label="Close Achievements">×</button>
           <div data-i18n="ui.achievements.combat_citations_deep_crust_commendations" class="achievements-header-kicker">◈ COMBAT CITATIONS // DEEP CRUST COMMENDATIONS</div>
-          <div class="achievements-title">OPERATIVE CITATIONS <span class="achievements-title-accent">// ARCHIVE</span></div>
+          <div class="achievements-title"><span data-i18n="ui.achievements.title">OPERATIVE CITATIONS</span> <span data-i18n="ui.achievements.accent_archive" class="achievements-title-accent">// ARCHIVE</span></div>
           <div id="achievements-summary" class="achievements-summary">0 / 0 UNLOCKED</div>
         </div>
         <div id="achievements-grid" class="achievements-grid"></div>
@@ -674,20 +674,20 @@
         <div class="vault-header">
           <button data-i18n-aria-label="ui.close_steam_vault.aria_label_close_steam_vault" class="close-modal" id="close-steam-vault-modal" aria-label="Close Steam Vault">×</button>
           <div data-i18n="ui.steam_vault.appid_4957040_secure_dispensary" class="vault-header-kicker">◈ APPID 4957040 // SECURE DISPENSARY</div>
-          <div class="vault-title">◈ STEAM VAULT <span class="vault-title-accent">// ITEM DISPATCH</span></div>
+          <div class="vault-title"><span data-i18n="ui.steam_vault.title">◈ STEAM VAULT</span> <span data-i18n="ui.steam_vault.accent_dispatch" class="vault-title-accent">// ITEM DISPATCH</span></div>
           <div class="vault-callsign-row">
             <span class="vault-callsign" id="vault-player-name">OFFLINE OPERATOR</span>
             <span class="vault-status" id="vault-connection-status">DEV FALLBACK</span>
             <div class="vault-telemetry-chips">
-              <span class="vault-chip vault-chip--caches"><span class="vault-chip-icon">📦</span> CACHES: <strong id="vault-cache-count">0</strong></span>
-              <span class="vault-chip vault-chip--keys"><span class="vault-chip-icon">🗝️</span> KEYS: <strong id="vault-key-count">0</strong></span>
+              <span class="vault-chip vault-chip--caches"><span class="vault-chip-icon">📦</span> <span data-i18n="ui.steam_vault.caches_label">CACHES:</span> <strong id="vault-cache-count">0</strong></span>
+              <span class="vault-chip vault-chip--keys"><span class="vault-chip-icon">🗝️</span> <span data-i18n="ui.steam_vault.keys_label">KEYS:</span> <strong id="vault-key-count">0</strong></span>
             </div>
           </div>
         </div>
         <div class="vault-tabs">
-          <button class="vault-tab-btn active" id="vault-tab-inventory"><span class="vault-tab-icon">📦</span> OWNED INVENTORY</button>
-          <button class="vault-tab-btn" id="vault-tab-store"><span class="vault-tab-icon">🗝️</span> ◈ RELIC STORE & DROP ODDS</button>
-          <button class="vault-tab-btn" id="vault-tab-smelter"><span class="vault-tab-icon">🔥</span> ◈ SMELTER & DISPENSARY</button>
+          <button class="vault-tab-btn active" id="vault-tab-inventory"><span class="vault-tab-icon">📦</span> <span data-i18n="ui.steam_vault.tab_inventory">OWNED INVENTORY</span></button>
+          <button class="vault-tab-btn" id="vault-tab-store"><span class="vault-tab-icon">🗝️</span> <span data-i18n="ui.steam_vault.tab_store">◈ RELIC STORE &amp; DROP ODDS</span></button>
+          <button class="vault-tab-btn" id="vault-tab-smelter"><span class="vault-tab-icon">🔥</span> <span data-i18n="ui.steam_vault.tab_smelter">◈ SMELTER &amp; DISPENSARY</span></button>
         </div>
 
         <!-- Inventory Tab Layout -->
@@ -732,7 +732,7 @@
                 <span data-i18n="ui.steam_vault.f2p_in_game_drops" class="vault-notice-badge">📦 F2P IN-GAME DROPS</span>
               </div>
               <div class="vault-store-intro__body">
-                <strong data-i18n="ui.steam_vault.deep_relic_caches">DEEP RELIC CACHES</strong> decrypt with <strong data-i18n="ui.steam_vault.cache_keys">CACHE KEYS</strong> · Rates match server tables.
+                <strong data-i18n="ui.steam_vault.deep_relic_caches">DEEP RELIC CACHES</strong> <span data-i18n="ui.steam_vault.decrypt_with">decrypt with</span> <strong data-i18n="ui.steam_vault.cache_keys">CACHE KEYS</strong> <span data-i18n="ui.steam_vault.rates_match">· Rates match server tables.</span>
               </div>
             </div>
 
@@ -756,8 +756,8 @@
               <div class="vault-decrypt-header">
                 <div data-i18n="ui.steam_vault.relic_cache_decryptor" class="vault-decrypt-title">RELIC CACHE DECRYPTOR</div>
                 <div class="vault-decrypt-inventory">
-                  <span class="vault-inventory-pill"><span class="vault-pill-dot">●</span> CACHES: <strong id="vault-store-cache-val">0</strong></span>
-                  <span class="vault-inventory-pill vault-inventory-pill--key"><span class="vault-pill-dot">●</span> KEYS: <strong id="vault-store-key-val">0</strong></span>
+                  <span class="vault-inventory-pill"><span class="vault-pill-dot">●</span> <span data-i18n="ui.steam_vault.caches_label">CACHES:</span> <strong id="vault-store-cache-val">0</strong></span>
+                  <span class="vault-inventory-pill vault-inventory-pill--key"><span class="vault-pill-dot">●</span> <span data-i18n="ui.steam_vault.keys_label">KEYS:</span> <strong id="vault-store-key-val">0</strong></span>
                 </div>
               </div>
               <div class="vault-store-open-row">
@@ -789,7 +789,7 @@
                 <span data-i18n="ui.steam_vault.permanent_merge" class="vault-notice-badge">◈ PERMANENT MERGE</span>
               </div>
               <div class="vault-store-intro__body">
-                <strong data-i18n="ui.steam_vault.5_same_tier_items">5× SAME-TIER ITEMS</strong> ➔ <strong data-i18n="ui.steam_vault.1_next_tier_item">1× NEXT-TIER ITEM</strong> · Consumed items are removed.
+                <strong data-i18n="ui.steam_vault.5_same_tier_items">5× SAME-TIER ITEMS</strong> ➔ <strong data-i18n="ui.steam_vault.1_next_tier_item">1× NEXT-TIER ITEM</strong> <span data-i18n="ui.steam_vault.consumed_removed">· Consumed items are removed.</span>
               </div>
             </div>
 
@@ -805,7 +805,7 @@
               <div class="vault-decrypt-header">
                 <div data-i18n="ui.steam_vault.deep_core_shard_dispensary" class="vault-decrypt-title">DEEP CORE SHARD DISPENSARY</div>
                 <div class="vault-decrypt-inventory">
-                  <span class="vault-inventory-pill"><span class="vault-pill-dot">●</span> SHARDS: <strong id="vault-shard-balance">0</strong></span>
+                  <span class="vault-inventory-pill"><span class="vault-pill-dot">●</span> <span data-i18n="ui.steam_vault.shards_label">SHARDS:</span> <strong id="vault-shard-balance">0</strong></span>
                 </div>
               </div>
               <div class="vault-store-open-row">
@@ -837,7 +837,7 @@
             <!-- Final Revealed Item Card -->
             <div class="vault-reveal-card" id="vault-reveal-card">
               <div class="vault-reveal-card__art">
-                <img id="vault-reveal-img" src="/favicon.png" alt="Reward" />
+                <img id="vault-reveal-img" src="/favicon.png" data-i18n-alt="ui.vault_reveal.alt_reward" alt="Reward" />
               </div>
               <div class="vault-reveal-card__rarity" id="vault-reveal-rarity-pill">LEGENDARY REWARD</div>
               <div class="vault-reveal-card__name" id="vault-reveal-name">QUEEN SLAYER EMBLEM</div>
@@ -1172,10 +1172,10 @@
           <div data-i18n="ui.fabrication.schematics_fabricated_0_8" id="fab-summary" class="fab-summary">SCHEMATICS FABRICATED: 0 / 8</div>
         </div>
         <div class="fab-bank-row" id="fab-bank-row">
-          <span class="fab-bank-chip"><span class="fab-bank-icon">⬢</span>TECH <b id="fab-bank-tech">0</b></span>
-          <span class="fab-bank-chip"><span class="fab-bank-icon">◎</span>COIN <b id="fab-bank-coin">0</b></span>
-          <span class="fab-bank-chip"><span class="fab-bank-icon">✚</span>MED <b id="fab-bank-med">0</b></span>
-          <span class="fab-bank-chip"><span class="fab-bank-icon">◈</span>SHELLS <b id="fab-bank-shells">0</b></span>
+          <span class="fab-bank-chip"><span class="fab-bank-icon">⬢</span><span data-i18n="ui.fabrication.tech">TECH</span> <b id="fab-bank-tech">0</b></span>
+          <span class="fab-bank-chip"><span class="fab-bank-icon">◎</span><span data-i18n="ui.fabrication.coin">COIN</span> <b id="fab-bank-coin">0</b></span>
+          <span class="fab-bank-chip"><span class="fab-bank-icon">✚</span><span data-i18n="ui.fabrication.med">MED</span> <b id="fab-bank-med">0</b></span>
+          <span class="fab-bank-chip"><span class="fab-bank-icon">◈</span><span data-i18n="ui.fabrication.shells">SHELLS</span> <b id="fab-bank-shells">0</b></span>
         </div>
         <!-- Gamba roll panel: spend a flat cost for a rarity-weighted reveal -->
         <div id="fab-roll-panel" class="fab-roll-panel hidden">
@@ -1333,19 +1333,19 @@
           <span id="pickup-count-total">0</span>
         </div>
         <div class="pickup-counter-panel__row">
-          <span class="pickup-counter-panel__label"><span class="pickup-counter-panel__icon">✚</span>MED</span>
+          <span class="pickup-counter-panel__label"><span class="pickup-counter-panel__icon">✚</span><span data-i18n="ui.pickup_counter.med">MED</span></span>
           <span id="pickup-count-health">0</span>
         </div>
         <div class="pickup-counter-panel__row">
-          <span class="pickup-counter-panel__label"><span class="pickup-counter-panel__icon">⬢</span>TECH</span>
+          <span class="pickup-counter-panel__label"><span class="pickup-counter-panel__icon">⬢</span><span data-i18n="ui.pickup_counter.tech">TECH</span></span>
           <span id="pickup-count-weapon">0</span>
         </div>
         <div class="pickup-counter-panel__row">
-          <span class="pickup-counter-panel__label"><span class="pickup-counter-panel__icon">◎</span>COIN</span>
+          <span class="pickup-counter-panel__label"><span class="pickup-counter-panel__icon">◎</span><span data-i18n="ui.pickup_counter.coin">COIN</span></span>
           <span id="pickup-count-coin">0</span>
         </div>
         <div class="pickup-counter-panel__row pickup-counter-panel__row--shells">
-          <span class="pickup-counter-panel__label"><span class="pickup-counter-panel__icon">❂</span>SHELL</span>
+          <span class="pickup-counter-panel__label"><span class="pickup-counter-panel__icon">❂</span><span data-i18n="ui.pickup_counter.shell">SHELL</span></span>
           <span id="pickup-count-shells">0</span>
         </div>
       </div>
@@ -1477,8 +1477,8 @@
       <div id="cutscene-starfield" class="cutscene-starfield" aria-hidden="true"></div>
       <div class="cutscene-planet" aria-hidden="true"></div>
       <div class="cutscene-impact-flash" aria-hidden="true"></div>
-      <img id="cutscene-ship" class="cutscene-ship" alt="Incoming ship">
-      <img id="cutscene-wreck" class="cutscene-wreck hidden" alt="Crashed ship">
+      <img id="cutscene-ship" class="cutscene-ship" data-i18n-alt="ui.cutscene.alt_incoming_ship" alt="Incoming ship">
+      <img id="cutscene-wreck" class="cutscene-wreck hidden" data-i18n-alt="ui.cutscene.alt_crashed_ship" alt="Crashed ship">
       <div id="cutscene-particles" class="cutscene-particles" aria-hidden="true"></div>
     </div>
 
@@ -1509,7 +1509,7 @@
       <!-- Radio Transmission CRT Prompt -->
       <div id="radio-transmission-prompt" class="radio-transmission-prompt hidden" aria-live="polite">
         <div class="radio-transmission-prompt__avatar">
-          <img id="radio-avatar-img" src="/lore_portraits/survivor_08.webp" alt="Sender Portrait" />
+          <img id="radio-avatar-img" src="/lore_portraits/survivor_08.webp" data-i18n-alt="ui.radio.alt_sender_portrait" alt="Sender Portrait" />
           <div class="radio-transmission-prompt__scanline"></div>
         </div>
         <div class="radio-transmission-prompt__body">
@@ -2046,8 +2046,8 @@
       <div class="modal-content confirm-modal-content">
         <h2 data-i18n="ui.confirm.critical_alert" class="modal-title confirm-title">CRITICAL ALERT</h2>
         <p class="confirm-copy">
-          TERMINATE THIS CONTRACT IN PLACE?<br>
-          FACILITIES WILL BAG THE SUIT AND ARM A BLACK BOX FOR NEXT DESCENT.
+          <span data-i18n="ui.confirm.terminate_question">TERMINATE THIS CONTRACT IN PLACE?</span><br>
+          <span data-i18n="ui.confirm.terminate_detail">FACILITIES WILL BAG THE SUIT AND ARM A BLACK BOX FOR NEXT DESCENT.</span>
         </p>
         <div class="confirm-actions">
           <button data-i18n="ui.confirm.abort_mission" class="abort-btn" id="confirm-yes">ABORT MISSION</button>
@@ -2088,9 +2088,9 @@
       <div class="modal-content confirm-modal-content">
         <h2 data-i18n="ui.reset_save_confirm.reset_save_data" class="modal-title confirm-title">RESET SAVE DATA</h2>
         <p class="confirm-copy">
-          START A NEW GAME?<br>
-          RGB PROGRESS, ALL ACHIEVEMENTS, UNLOCKS, BANKED SALVAGE, CODEX, FABRICATIONS, BEST SCORES, AND PROFILE DATA WILL BE CLEARED ON THIS DEVICE.<br><br>
-          AUDIO, DISPLAY, AND CONTROL PREFERENCES WILL BE KEPT.
+          <span data-i18n="ui.reset_save_confirm.question">START A NEW GAME?</span><br>
+          <span data-i18n="ui.reset_save_confirm.cleared">RGB PROGRESS, ALL ACHIEVEMENTS, UNLOCKS, BANKED SALVAGE, CODEX, FABRICATIONS, BEST SCORES, AND PROFILE DATA WILL BE CLEARED ON THIS DEVICE.</span><br><br>
+          <span data-i18n="ui.reset_save_confirm.kept">AUDIO, DISPLAY, AND CONTROL PREFERENCES WILL BE KEPT.</span>
         </p>
         <div class="confirm-actions">
           <button data-i18n="ui.reset_save_confirm.reset_save" class="abort-btn" id="reset-save-confirm">RESET SAVE</button>
@@ -2104,8 +2104,8 @@
       <div class="modal-content confirm-modal-content">
         <h2 data-i18n="ui.quit_confirm.quit_hunker_bunker" class="modal-title confirm-title">QUIT HUNKER BUNKER</h2>
         <p class="confirm-copy">
-          EXIT APPLICATION?<br>
-          ARE YOU SURE YOU WANT TO QUIT? ANY UNSAVED PROGRESS IN AN ACTIVE RUN WILL BE LOST.
+          <span data-i18n="ui.quit_confirm.question">EXIT APPLICATION?</span><br>
+          <span data-i18n="ui.quit_confirm.detail">ARE YOU SURE YOU WANT TO QUIT? ANY UNSAVED PROGRESS IN AN ACTIVE RUN WILL BE LOST.</span>
         </p>
         <div class="confirm-actions">
           <button data-i18n="ui.quit_confirm.confirm_quit" class="abort-btn" id="quit-confirm-btn">CONFIRM QUIT</button>
@@ -2688,8 +2688,8 @@
       <div class="modal-content controls-panel">
         <button class="close-modal controls-close" id="close-controls">×</button>
         <h2 class="modal-title" data-i18n="ui.modal.controls">CONTROLS</h2>
-        <p class="controls-hint"><strong data-i18n="ui.controls.steam_deck">STEAM DECK:</strong> Left stick moves or navigates · Right stick aims and controls the visible pointer · A accepts/interacts · B backs out/dodges · Menu opens settings.</p>
-        <p class="controls-hint"><strong data-i18n="ui.controls.desktop">DESKTOP:</strong> Click a slot, then press a key to bind it. ESC cancels.</p>
+        <p class="controls-hint"><strong data-i18n="ui.controls.steam_deck">STEAM DECK:</strong> <span data-i18n="ui.controls.deck_hint">Left stick moves or navigates · Right stick aims and controls the visible pointer · A accepts/interacts · B backs out/dodges · Menu opens settings.</span></p>
+        <p class="controls-hint"><strong data-i18n="ui.controls.desktop">DESKTOP:</strong> <span data-i18n="ui.controls.desktop_hint">Click a slot, then press a key to bind it. ESC cancels.</span></p>
         <div class="controls-list" id="controls-list"></div>
         <div class="controls-actions">
           <button type="button" class="settings-action-btn settings-action-btn--reset" id="reset-controls" data-i18n="ui.action.reset">RESET</button>
@@ -2768,14 +2768,14 @@
         <div class="snail-encounter-stage" id="snail-encounter-stage">
           <div class="snail-combatant snail-combatant--player" id="snail-encounter-player-card">
             <div class="snail-combatant-avatar-wrap">
-              <img id="snail-encounter-player-img" src="/Scout.full_v2.png" alt="Player Chassis" class="snail-combatant-img" />
+              <img id="snail-encounter-player-img" src="/Scout.full_v2.png" data-i18n-alt="ui.snail.alt_player_chassis" alt="Player Chassis" class="snail-combatant-img" />
             </div>
             <span id="snail-encounter-player-name" class="snail-combatant-name">OPERATOR</span>
           </div>
           <div data-i18n="ui.snail_encounter.vs" class="snail-encounter-vs">VS</div>
           <div class="snail-combatant snail-combatant--enemy" id="snail-encounter-enemy-card">
             <div class="snail-combatant-avatar-wrap">
-              <img id="snail-encounter-enemy-img" src="/cybersnail.png" alt="Snail Combatant" class="snail-combatant-img" />
+              <img id="snail-encounter-enemy-img" src="/cybersnail.png" data-i18n-alt="ui.snail.alt_snail_combatant" alt="Snail Combatant" class="snail-combatant-img" />
             </div>
             <span id="snail-encounter-enemy-name" class="snail-combatant-name">CYBERSNAIL</span>
           </div>
@@ -2810,7 +2810,7 @@
           <div class="net-header-meta">
             <span data-i18n="ui.multiplayer.sub_surface_comms_combat_data" class="net-header-kicker">◈ SUB-SURFACE COMMS // COMBAT DATA-LINK v2.1</span>
             <div class="net-header-title-row">
-              <h2 class="net-modal-title">TACTICAL NET <span class="net-title-accent">// RELAY COMMAND</span></h2>
+              <h2 class="net-modal-title"><span data-i18n="ui.multiplayer.title">TACTICAL NET</span> <span data-i18n="ui.multiplayer.accent_relay" class="net-title-accent">// RELAY COMMAND</span></h2>
               <div class="net-status-badge">
                 <span class="net-status-dot"></span>
                 <span id="net-status-pill" class="net-status-pill net-status--connecting">CONNECTING...</span>
@@ -2910,7 +2910,7 @@
                        multiplayerLobby.js's updateUiState() once a Steam
                        lobby exists to invite a friend into. -->
                   <button data-i18n-title="ui.multiplayer.title_invite_a_steam" type="button" class="net-code-copy-btn hidden" id="net-steam-invite-btn" title="Invite a Steam Friend">
-                    <span>👥</span> INVITE FRIEND
+                    <span>👥</span> <span data-i18n="ui.multiplayer.invite_friend">INVITE FRIEND</span>
                   </button>
                 </div>
                 <div class="net-field-hint" id="net-steam-lobby-status" aria-live="polite">
@@ -2971,7 +2971,7 @@
                 <div class="net-code-display">
                   <span data-i18n="ui.multiplayer.public_steam_lobbies" class="net-field-label">PUBLIC STEAM LOBBIES</span>
                   <button data-i18n-title="ui.multiplayer.title_refresh_public_lobbies" type="button" class="net-code-copy-btn" id="net-steam-lobbies-refresh-btn" title="Refresh Public Lobbies">
-                    <span>🔄</span> REFRESH
+                    <span>🔄</span> <span data-i18n="ui.multiplayer.refresh">REFRESH</span>
                   </button>
                 </div>
                 <div class="net-protocol-specs" id="net-steam-lobbies-list">
@@ -3009,9 +3009,9 @@
         <!-- Footer Action Bar -->
         <div class="net-modal-actions">
           <div class="net-action-hints">
-            <span class="net-hint-item"><kbd data-i18n="ui.multiplayer.esc">ESC</kbd> BACK</span>
-            <span class="net-hint-item"><kbd data-i18n="ui.multiplayer.click">CLICK</kbd> TOGGLE MODE</span>
-            <span class="net-hint-item"><kbd data-i18n="ui.multiplayer.host">HOST</kbd> DEPLOY SQUAD</span>
+            <span class="net-hint-item"><kbd data-i18n="ui.multiplayer.esc">ESC</kbd> <span data-i18n="ui.multiplayer.hint_back">BACK</span></span>
+            <span class="net-hint-item"><kbd data-i18n="ui.multiplayer.click">CLICK</kbd> <span data-i18n="ui.multiplayer.hint_toggle">TOGGLE MODE</span></span>
+            <span class="net-hint-item"><kbd data-i18n="ui.multiplayer.host">HOST</kbd> <span data-i18n="ui.multiplayer.hint_deploy">DEPLOY SQUAD</span></span>
           </div>
           <div class="net-modal-btn-row">
             <button data-i18n="ui.multiplayer.back_to_armory" type="button" class="start-btn net-back-btn" id="net-back-btn">← BACK TO ARMORY</button>
@@ -3081,8 +3081,8 @@
         </div>
         <div class="select-picker-list" id="select-picker-list" role="listbox" aria-labelledby="select-picker-label"></div>
         <div class="select-picker-hint" aria-hidden="true">
-          <span><span class="select-picker-glyph">A</span> SELECT</span>
-          <span><span class="select-picker-glyph">B</span> BACK</span>
+          <span><span class="select-picker-glyph">A</span> <span data-i18n="ui.select_picker.select">SELECT</span></span>
+          <span><span class="select-picker-glyph">B</span> <span data-i18n="ui.select_picker.back">BACK</span></span>
         </div>
       </div>
     </div>

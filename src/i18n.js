@@ -207,8 +207,10 @@ export function onLocaleChange(render, isMounted = () => true) {
 }
 
 // Attributes that carry user-visible text and can be keyed from markup with
-// data-i18n-<attr>, e.g. data-i18n-title="ui.hub.codex".
-const TRANSLATABLE_ATTRS = Object.freeze(['title', 'aria-label', 'placeholder']);
+// data-i18n-<attr>, e.g. data-i18n-title="ui.hub.codex". `alt` is included
+// because a screen reader announces it: an untranslated alt leaves a Japanese
+// player hearing "Crashed ship" in the middle of a localized cutscene.
+const TRANSLATABLE_ATTRS = Object.freeze(['title', 'aria-label', 'placeholder', 'alt']);
 
 /**
  * Translate every element in `root` carrying a data-i18n (textContent) or

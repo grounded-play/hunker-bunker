@@ -56,12 +56,14 @@ export const DEBUG_ALLOWLIST = Object.freeze({
         'GOD✓', 'AMMO✓', 'GHOST/FLY✓', '👻 NOCLIP / FLY',
         'FPS: --', 'SYSTEM BUILD'
     ],
+    // Matched against the VISIBLE text (interpolations stripped), so a pattern
+    // here describes the words that remain, not the source literal.
     stringPatterns: [
-        /^Built \$\{/,          // build timestamp tooltip
+        /^Built$/,               // build timestamp tooltip
         /^SYSTEM BUILD/,         // build stamp on the loader
         /^ACH$/,                 // 3-letter monogram derived from a title, not a word
-        /^FPS: /,                // frame counter
-        /^SEED: /,               // run seed readout, a debugging identifier
+        /^FPS:$/,                // frame counter
+        /^SEED:$/,               // run seed readout, a debugging identifier
         /^DAILY-/                // daily-ops date key
     ],
     modules: [
@@ -119,9 +121,15 @@ export function isPlayerFacingText(raw) {
     const s = raw.trim();
     if (s.length < 2 || s.length > 200) return false;
     if (!/[A-Za-z]{2}/.test(s)) return false;               // needs real letters
-    if (/^[{}<>/\\$]/.test(s)) return false;                // template/markup fragment
+    if (/^[{}<\\$]/.test(s)) return false;                  // template/markup fragment
+                                                            // (`>` excluded: the loader uses it as a prompt prefix)
+                                                            // (`/` excluded: paths have their own rules below)
     if (/^[.#][A-Za-z_-]/.test(s)) return false;            // CSS selector
-    if (/^(https?:|mailto:|data:|\.{0,2}\/)/.test(s)) return false;
+    // Paths, not prose. `//` alone is NOT a path here: this game uses it as a
+    // decorative separator ("// ITEM DISPATCH"), which the old rule swallowed.
+    if (/^(https?:|mailto:|data:)/.test(s)) return false;
+    if (/^\.{1,2}\//.test(s)) return false;                   // ./ or ../
+    if (/^\/[A-Za-z0-9_.-]+(\/|$)/.test(s)) return false;     // /assets/foo
     if (/\.(js|mjs|json|png|jpe?g|webp|glb|gltf|wav|mp3|ogg|webm|mp4|css|svg|ttf|woff2?)\b/i.test(s)) return false;
     if (/^[a-z][a-zA-Z0-9]*$/.test(s)) return false;        // camelCase identifier
     if (/^[a-z0-9]+(?:[-_]+[a-z0-9]+)+$/.test(s)) return false; // kebab/snake/BEM token
@@ -162,7 +170,7 @@ export function findRuntimeWrittenIds(sourceDir, htmlIds = []) {
                 // the common lookup-then-assign pair.
                 if (TEXT_WRITE.test(lines.slice(i, i + 6).join('\n'))) { ids.add(id); break; }
                 // Or the id is handed to a text-setting helper: setText('id', value).
-                if (new RegExp(`(?:setText|setLabel|setContent|writeText)\\(\\s*['"]${id}['"]`).test(lines[i])) {
+                if (new RegExp(`(?:setText|setTxt|setLabel|setContent|writeText)\\(\\s*['"]${id}['"]`).test(lines[i])) {
                     ids.add(id);
                     break;
                 }
@@ -177,6 +185,13 @@ export function findRuntimeWrittenIds(sourceDir, htmlIds = []) {
     }
     return ids;
 }
+
+/**
+ * Classes whose element has its text written by JS through a class selector
+ * rather than an id, e.g. document.querySelector('.loader-status'). An
+ * id-keyed scan cannot see these, so they are named explicitly.
+ */
+export const RUNTIME_WRITTEN_CLASSES = Object.freeze(['loader-status']);
 
 /** Every id declared in the markup, so the scan above has candidates to test. */
 export function collectHtmlIds(html) {
@@ -225,7 +240,12 @@ export function auditMarkup(html, runtimeWrittenIds = new Set()) {
      * would demand a data-i18n that the locale handler would then use to
      * clobber the live value.
      */
-    const isRuntimeOwned = (frame) => Boolean(frame?.id) && runtimeWrittenIds.has(frame.id);
+    const isRuntimeOwned = (frame) => {
+        if (!frame) return false;
+        if (frame.id && runtimeWrittenIds.has(frame.id)) return true;
+        const cls = frame.attrs?.match(/\bclass\s*=\s*"([^"]*)"/)?.[1] ?? '';
+        return RUNTIME_WRITTEN_CLASSES.some((name) => cls.split(/\s+/).includes(name));
+    };
 
     /** True when any ancestor marks this subtree as debug-only or intentionally native. */
     const isExcluded = () => stack.some(({ id }) => id && (
@@ -312,7 +332,11 @@ const DOM_SINK = new RegExp([
     '\\.title\\s*=',
     '\\.alt\\s*=',
     'setAttribute\\(\\s*[\'"](?:aria-label|title|placeholder|alt)[\'"]',
-    'insertAdjacentHTML\\('
+    'insertAdjacentHTML\\(',
+    // Text-setting helpers. A module that funnels display strings through its
+    // own helper hides them from an assignment-only scan: main.js's loader log
+    // and hub status counters were invisible until these were added.
+    '\\b(?:renderLoaderLogs|setText|setTxt|setLabel|setContent|writeText)\\('
 ].join('|'));
 
 /**
@@ -349,7 +373,7 @@ export function auditRuntimeStrings(source) {
                 // Template bookkeeping (").join('')}", "} else {") reads as text
                 // to a regex but is code, not words a player sees. Interpolated
                 // expressions are stripped first so real sentences survive.
-                if (/[(){};]|=>/.test(text.replace(/\$\{[^}]*\}/g, ''))) continue;
+                if (looksLikeCode(text)) continue;
                 findings.push({ line: index + 1, kind: 'template', text: text.slice(0, 80) });
                 break;
             }
@@ -358,20 +382,56 @@ export function auditRuntimeStrings(source) {
 
         for (const m of line.matchAll(/(['"`])((?:\\.|(?!\1)[^\\])*)\1/g)) {
             const literal = m[2];
-            if (!isPlayerFacingText(literal)) continue;
-            // A template literal that is purely interpolation carries no words.
-            if (m[1] === '`' && literal.replace(/\$\{[^}]*\}/g, '').trim().length < 2) continue;
-            // A backtick run that swallowed code punctuation is a fragment of a
-            // multi-line template, not a sentence. Interpolations are stripped
-            // first: `DIST: ${x.toFixed(1)}m` is real player text whose braces
-            // live inside the expression, not in the words.
-            if (m[1] === '`' && /[(){};]|=>/.test(literal.replace(/\$\{[^}]*\}/g, ''))) continue;
-            findings.push({ line: index + 1, kind: 'literal', text: literal.slice(0, 80) });
+            // What a player actually reads: interpolations and markup removed.
+            // Judging the raw literal instead lets `(${inv.shells})` pass the
+            // has-letters test on "inv.shells", and pushes a long innerHTML
+            // template past the length cap even when its visible text is short.
+            const visible = m[1] === '`' ? visibleText(literal) : literal;
+            if (!isPlayerFacingText(visible)) continue;
+            if (m[1] === '`' && looksLikeCode(literal)) continue;
+            findings.push({ line: index + 1, kind: 'literal', text: visible.slice(0, 80) });
             break;
         }
     });
 
     return findings;
+}
+
+/**
+ * Does this backtick run read as template bookkeeping rather than words?
+ *
+ * Interpolations and HTML tags are stripped first. Both legitimately carry the
+ * punctuation that marks code: `DIST: ${d.toFixed(1)}m` is player text, and so
+ * is a line whose inline `style="opacity: 1;"` would otherwise condemn it.
+ * Parentheses alone do not count - "(ESC)" and "(50%)" are ordinary UI text.
+ */
+export function looksLikeCode(text) {
+    return /[;{}]|=>/.test(visibleText(text));
+}
+
+/**
+ * Remove HTML-like tags repeatedly until stable.
+ * This avoids incomplete multi-character sanitization where one replacement
+ * pass can expose another tag-shaped substring.
+ */
+export function stripHtmlLikeTags(input) {
+    let current = String(input);
+    let previous;
+    do {
+        previous = current;
+        current = current.replace(/<[^>]*>/g, '');
+    } while (current !== previous);
+    return current;
+}
+
+/** Strip interpolations and markup, leaving only what renders as words. */
+export function visibleText(text) {
+    return stripHtmlLikeTags(
+        String(text)
+            .replace(/\$\{[^}]*\}/g, '')
+    )
+        .replace(/\s+/g, ' ')
+        .trim();
 }
 
 // ---------------------------------------------------------------------------
