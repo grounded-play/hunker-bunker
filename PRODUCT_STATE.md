@@ -5,9 +5,11 @@ and worklogs are evidence or history; they do not override this file. Update a
 row when its implementation or acceptance state changes and link to evidence
 instead of duplicating it here.
 
-Last verified: 2026-09-16 · Sprint 40 · `dev/sprint-40` · `v2.4.4-beta`
+Last verified: 2026-09-18 · Sprint 41 · `dev/sprint-41` · `v2.4.7-beta`
 
-Partial re-verification: 2026-09-16 · `dev/sprint-40` from `e017b06` · `v2.4.4-beta`. Deep localization sweep (7 languages, 0 unlocalized DOM sinks), Alternate Radio Voice Banks (104 cue slots / 208 takes), all 10 rendered motion ending cinematics, Phase A AgX tone mapping & IBL reflections, and 52 playtest stability tickets (DP-01 through DP-52) were merged into `mothership` and released.
+Released in `v2.4.4-beta` and already on `mothership` (`e017b06`): the first deep localization sweep (7 languages, 0 unlocalized runtime strings), Alternate Radio Voice Banks (104 cue slots / 208 takes), all 10 rendered motion ending cinematics, Phase A AgX tone mapping & IBL reflections, and 52 playtest stability tickets (DP-01 through DP-52).
+
+Staged on `dev/sprint-41` and **not yet merged**: localization closed out on the second axis (0 unannotated markup, down from 52; content catalogs at 100%; 1,898 keys per locale at exact parity), the Steam Vault empty-state fix, voice unlock and Soviet Commander Russian dialogue work, and `three` 0.186.0.
 
 Status vocabulary:
 
@@ -24,7 +26,7 @@ Status vocabulary:
 | Relics | All 8 transformative relics are runtime-wired and tested. | Build diversity and exploit/balance playtesting remain open. |
 | Co-op | Host-authoritative enemy sync, roster/loadout sync, ready-up, reconnect, and host failover are code-backed. | Two real Steam accounts completing one production expedition remains open. |
 | PvP | Server-authoritative player damage is functional and experimental. | Not a launch-ready mode; real-network balance and abuse testing remain open. |
-| Localization | Deep localization complete across all 7 supported languages (English, German, Latin American Spanish, Japanese, Brazilian Portuguese, Russian, Simplified Chinese); 0 unlocalized DOM sinks in runtime UI; live in-session switching. | Human linguistic review by native speakers across non-English locales remains open. |
+| Localization | Complete across all 7 supported languages (English, German, Latin American Spanish, Japanese, Brazilian Portuguese, Russian, Simplified Chinese). **0 unannotated markup strings and 0 unlocalized runtime strings**; 1,898 keys per locale at exact parity; narrative catalog 100% translated; live in-session switching with `<html lang>` synced. Guarded by a per-screen and per-module coverage ratchet (`npm run i18n:audit`, `scripts/audit-i18n.test.js`) that fails when any count rises. | Human linguistic review by native speakers across non-English locales remains open — every non-English string is machine-authored. Two Steamworks item descriptions still carry developer notes in their English source (see the release notes). |
 | Voice packs & comms | Soviet Sub-Commander (`4148`) and AURA (`4149`) registered with 52 cue slots each (104 slots / 208 takes); custom intro cutscene persona cards and opening crash dialogue wired. | Optional physical actor replacement pass remains open; current takes are production-mixed ElevenLabs Wave 2 assets. |
 | Ending cinematics | All 10 endings rendered as full-motion video sequences with dedicated mixed audio beds. | Player telemetry on ending distribution and pacing acceptance remain open. |
 | Steam lobbies | Create, browse, join, invite, Friends/Join Game, Rich Presence, and cold-start handling are code-complete. | Two-account acceptance is open; cross-region public discovery is constrained by the current native binding. |

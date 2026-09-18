@@ -35,7 +35,7 @@ This document serves two purposes:
 
 ## 3. Current Product State as of `v2.4.4-beta`
 
-- **Localization**: English (`en`), German (`de`), Latin American Spanish (`es-419`), Japanese (`ja`), Brazilian Portuguese (`pt-BR`), Russian (`ru`), Simplified Chinese (`zh-CN`). 0 unlocalized DOM sinks in runtime UI. Live in-session switching without reload.
+- **Localization**: English (`en`), German (`de`), Latin American Spanish (`es-419`), Japanese (`ja`), Brazilian Portuguese (`pt-BR`), Russian (`ru`), Simplified Chinese (`zh-CN`). **0 unannotated markup and 0 unlocalized runtime strings** as of `v2.4.7-beta`; 1,898 keys per locale at exact parity; narrative catalog 100% translated. Live in-session switching without reload, `<html lang>` synced. Guarded by a per-screen/per-module coverage ratchet (`npm run i18n:audit`).
 - **Voice Packs**: Unlocked Soviet Sub-Commander (`4148`) and AURA (`4149`) with 52 cue slots each (104 slots, 208 high-quality takes). Auditionable in Armory; customized intro cutscenes and opening crash dialogue.
 - **Cinematics**: All 10 game endings rendered end-to-end with Blender motion passes and mixed audio beds.
 - **Rendering**: AgX tone mapping, PMREM deep-space environment map reflections on 94 PBR materials, and selective bloom.

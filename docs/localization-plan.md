@@ -1,5 +1,15 @@
 # Localization Plan
 
+> **Superseded 2026-09-18.** This is the original planning document. The work is
+> complete: 0 unannotated markup strings, 0 unlocalized runtime strings, 1,898
+> keys per locale at exact parity across all 7 languages, narrative catalog 100%
+> translated. See
+> [`planning/localization-coverage-audit-and-plan-2026-09-16.md`](planning/localization-coverage-audit-and-plan-2026-09-16.md)
+> for the audit, execution record and the traps worth knowing, and
+> [`releases/v2.4.7-beta.md`](releases/v2.4.7-beta.md) for what shipped. Run
+> `npm run i18n:audit` for live coverage. The locale selection and Steam tag
+> rationale below remain accurate.
+
 Status as of 2026-09-11. Companion to
 [`steam-item-tag-localization.md`](steam-item-tag-localization.md) (English tag
 values) and [`steam-item-tags-translation-matrix.md`](steam-item-tags-translation-matrix.md)
