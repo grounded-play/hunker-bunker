@@ -409,11 +409,27 @@ export function looksLikeCode(text) {
     return /[;{}]|=>/.test(visibleText(text));
 }
 
+/**
+ * Remove HTML-like tags repeatedly until stable.
+ * This avoids incomplete multi-character sanitization where one replacement
+ * pass can expose another tag-shaped substring.
+ */
+export function stripHtmlLikeTags(input) {
+    let current = String(input);
+    let previous;
+    do {
+        previous = current;
+        current = current.replace(/<[^>]*>/g, '');
+    } while (current !== previous);
+    return current;
+}
+
 /** Strip interpolations and markup, leaving only what renders as words. */
 export function visibleText(text) {
-    return String(text)
-        .replace(/\$\{[^}]*\}/g, '')
-        .replace(/<[^>]*>/g, '')
+    return stripHtmlLikeTags(
+        String(text)
+            .replace(/\$\{[^}]*\}/g, '')
+    )
         .replace(/\s+/g, ' ')
         .trim();
 }
