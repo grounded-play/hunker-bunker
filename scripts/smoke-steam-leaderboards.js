@@ -82,6 +82,12 @@ export async function runLeaderboardSmoke({
             if (body.mock === true) throw new Error(`${board} returned mock data from a production smoke target.`);
             if (!Array.isArray(body.entries)) throw new Error(`${board} ${dataRequest} response is missing entries.`);
             reads.push({ board, dataRequest, entryCount: body.entries.length });
+            // A 200 submit followed by an empty board is how the invented
+            // response-shape bug hid for weeks: writes landed, reads parsed nothing.
+            if (dataRequest === 'RequestGlobal' && body.entries.length === 0
+                && submission?.submitted?.some((entry) => entry.target === board)) {
+                throw new Error(`${board} accepted a submission but reads back empty.`);
+            }
             if (steamId64 && dataRequest === 'RequestAroundUser'
                 && !body.entries.some((entry) => String(entry.steamId64) === String(steamId64))) {
                 throw new Error(`${board} around-user results do not contain expected Steam account ${steamId64}.`);

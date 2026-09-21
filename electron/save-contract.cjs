@@ -13,6 +13,7 @@ const JSON_VALUE_KEYS = new Set([
     'hb_fabricator_v1',
     'hb_loadout_v1',
     'hb_minigame_rgb_v1',
+    'hb_pending_run_submits_v1',
     'hb_profile_v1',
     'hb_run_stats_v1',
     'hb_world_memory_v1'

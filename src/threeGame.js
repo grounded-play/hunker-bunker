@@ -1,4 +1,5 @@
 import { getRunRating } from './runRating.js';
+import { computeRunScore } from './runScore.js';
 import { getFieldWeaponProfile } from './fieldWeapon.js';
 import { buildRunResourceTelemetry } from './runTelemetry.js';
 import { createRelicPickup, animateRelicPickup, createImpactBurst, disposeExpeditionEffect } from './expeditionVfx.js';
@@ -19235,28 +19236,17 @@ export class ThreeGame {
         }));
     }
 
-    calculateRunScore(runStats, missionState, startTime) {
-        const elapsedMinutes = (Date.now() - startTime) / 60000;
-        let score = 0;
-
-        if (missionState?.status === 'extracted') score += 500;
-        score += Math.floor((runStats.depthTier ?? 0) * (runStats.distanceTravelled ?? 0) * 0.08);
-
-        const r = this.runDepositedResources;
-        score += ((r.tech ?? 0) * 10) + ((r.coin ?? 0) * 5) + ((r.med ?? 0) * 3);
-        score += (runStats.snailsKilled ?? 0) * 40;
-
-        if (missionState?.status === 'extracted') {
-            score += 200;
-            if (this.playerVitals.hp >= this.playerVitals.maxHp) score += 100;
-        }
-
-        if (elapsedMinutes < 15) {
-            score += Math.max(0, Math.min(300, Math.floor((15 - elapsedMinutes) * 50)));
-        }
-        if (this.hadNearDeath) score += 100;
-
-        return Math.floor(score);
+    calculateRunScore(runStats, missionState, startTime, endedAt = Date.now()) {
+        return computeRunScore({
+            stats: {
+                ...runStats,
+                fullHealthAtEnd: this.playerVitals.hp >= this.playerVitals.maxHp,
+                hadNearDeath: this.hadNearDeath
+            },
+            missionStatus: missionState?.status ?? null,
+            depositedResources: this.runDepositedResources,
+            runMs: endedAt - startTime
+        });
     }
 
     getRunRating(score) {

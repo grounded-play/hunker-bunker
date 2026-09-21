@@ -71,6 +71,9 @@ app.use('/steam', (req, res, next) => {
             hasTicket: Boolean(req.body?.ticketHex || req.query?.ticketHex),
             hasBearer: Boolean(req.headers.authorization)
         };
+        // Routes stash a short failure summary here so a rejected submit is
+        // diagnosable from `docker logs` without reproducing it.
+        if (res.statusCode >= 400 && res.locals.hbFailure) log.failure = res.locals.hbFailure;
         console.info('[hb-request]', JSON.stringify(log));
     });
     next();

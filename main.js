@@ -84,6 +84,7 @@ import { sideStoryManager, SIDE_STORIES_CONFIG, SIDE_STORY_STATUS } from './src/
 import { matureContentAudit } from './src/matureContentAudit.js';
 import { progressionWalkthrough } from './src/progressionWalkthrough.js';
 import { renderGameOverLeaderboard } from './src/leaderboardUi.js';
+import { flushPendingRunSubmits, submitRunWithRetryQueue } from './src/steam/runSubmitQueue.js';
 import { unlockSheenForMilestone, reconcileSheenUnlocks, unlockAllSheens } from './src/weaponSheens.js';
 import { OPERATOR_POLISHES, getSelectedPolish, getUnlockedPolishIds, selectPolish, unlockAllPolishes, unlockMilestonePolish } from './src/operatorPolishes.js';
 import { createOwnershipStore } from './src/itemOwnership.js';
@@ -4755,7 +4756,7 @@ function showGameOverScreen(stats, { isVictory = false, deathReason = 'hazard' }
     }
 
     // Score + rating
-    const score = window.game?.calculateRunScore?.(stats, { status: stats.missionStatus }, runStartTime) ?? 0;
+    const score = window.game?.calculateRunScore?.(stats, { status: stats.missionStatus }, runStartTime, endedAt) ?? 0;
     const rating = window.game?.getRunRating?.(score) ?? { grade: 'D', label: 'AGENT LOST — MINIMAL TELEMETRY' };
     const wasDailyOpsRun = _isDailyOpsRun;
     const dailyOpsDate = wasDailyOpsRun ? getTodayDateString() : null;
@@ -4815,8 +4816,11 @@ function showGameOverScreen(stats, { isVictory = false, deathReason = 'hazard' }
         window.profile?.recordMultiplayerRun?.({ mode: mpMode, isVictory });
     }
 
+    // The finalized-event listener (desktop only) starts the submit
+    // synchronously and parks its promise here, so the board is read after it.
+    latestRunSubmission = null;
     dispatchSteamRunScoreFinalized(steamRunPayload, window);
-    void renderGameOverLeaderboard(steamRunPayload);
+    void renderGameOverLeaderboard(steamRunPayload, { submission: latestRunSubmission });
 
     const scoreVal = document.getElementById('go-score-val');
     const ratingBadge = document.getElementById('go-rating-badge');
@@ -15250,6 +15254,7 @@ let bootLongTaskObserver = null;
 let bootLongTasks = [];
 let lastSteamIdentityLogKey = null;
 let lastSteamBackendLogKey = null;
+let latestRunSubmission = null;
 
 function traceBootPhase(phase, details = null) {
     const now = performance.now();
@@ -15751,22 +15756,26 @@ if (window.electronAPI) {
             durationSeconds: 10
         });
 
-        window.electronAPI.submitSteamRunScore(payload).then((result) => {
-            if (result?.ok) {
+        latestRunSubmission = submitRunWithRetryQueue(payload, window.electronAPI.submitSteamRunScore).then((result) => {
+            if (result.ok) {
                 console.log(`[steam] leaderboard payload accepted (${payload.runId})`);
                 renderSteamMilestoneGrants(result.milestoneGrants);
-            } else if (!['steam_auth_unavailable', 'steam_backend_unreachable'].includes(result?.reason)) {
-                console.log(`[steam] leaderboard submit skipped: ${result?.reason ?? 'unknown'}`);
+            } else {
+                console.warn(`[steam] leaderboard submit ${result.queued ? 'queued for retry' : 'rejected'}: ${result.reason ?? 'unknown'}${result.errors ? ` ${JSON.stringify(result.errors)}` : ''}`);
             }
-        }).catch((err) => {
-            console.log(`[steam] leaderboard submit failed: ${err?.message ?? err}`);
+            return result;
         });
     });
+    const flushQueuedRunSubmits = () => flushPendingRunSubmits(window.electronAPI.submitSteamRunScore).then((summary) => {
+        if (summary.attempted > 0) console.log(`[steam] queued run submits: ${summary.accepted} accepted, ${summary.dropped} dropped, ${summary.remaining} still pending`);
+    }).catch(() => {});
     refreshSteamBridgeStatus().then(({ info } = {}) => {
         if (info?.active) console.log(`[steam] linked as ${info.persona} (app ${info.appId})`);
+        void flushQueuedRunSubmits();
     }).catch(() => {});
     window.setInterval(() => {
         void refreshSteamBridgeStatus();
+        void flushQueuedRunSubmits();
     }, 60000);
 
     loadVaultData().catch(() => null);

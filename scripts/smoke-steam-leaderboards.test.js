@@ -76,4 +76,17 @@ describe('production leaderboard smoke client', () => {
         expect(result.submittedTargets).toEqual(['best_run_score']);
         expect(fetchImpl).toHaveBeenCalledTimes(11);
     });
+
+    it('fails when a board accepted the submission but reads back empty', async () => {
+        const fetchImpl = vi.fn(async (_url, options = {}) => (options.method === 'POST'
+            ? response({ ok: true, submitted: [{ ok: true, target: 'best_run_score' }] })
+            : response({ ok: true, mock: false, entries: [] })));
+
+        await expect(runLeaderboardSmoke({
+            backendUrl: 'https://backend.example.test',
+            sessionToken: 'token',
+            submitPayload: { schemaVersion: 2 },
+            fetchImpl
+        })).rejects.toThrow('best_run_score accepted a submission but reads back empty');
+    });
 });
