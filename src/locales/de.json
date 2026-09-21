@@ -1394,6 +1394,29 @@
     "snail": {
       "alt_player_chassis": "Spieler-Chassis",
       "alt_snail_combatant": "Schnecken-Kämpfer"
+    },
+    "daily_ops": {
+      "tag": "TÄGLICH",
+      "card_meta": "1 AGENT // EIN GEWERTETER VERSUCH",
+      "perk_shared_sector": "GEMEINSAMER TAGESSEKTOR",
+      "perk_grade_targets": "NOTENZIELE",
+      "perk_leaderboard": "TAGES-BESTENLISTE",
+      "goals_title": "HEUTIGE TAGESZIELE",
+      "resets_midnight": "RESET UM MITTERNACHT",
+      "col_goal": "ZIEL",
+      "col_requirement": "ANFORDERUNG",
+      "description": "TAGESEINSATZ: Alle Agenten landen im heutigen Sektor. Du hast einen gewerteten Versuch; deine Endnote wird in die Tageseinsatz-Bestenliste eingetragen. Reset um Mitternacht.",
+      "earned": "ERREICHT",
+      "missed": "VERFEHLT",
+      "target": "ZIEL",
+      "goal_attempt": "HEUTIGEN EINSATZ ABSCHLIESSEN",
+      "goal_attempt_req": "Einen Tageseinsatz beenden (Sieg oder Tod)",
+      "goal_grade": "NOTE {grade}",
+      "goal_grade_req": "{score}+ Punkte erzielen",
+      "goal_leaderboard": "IN BESTENLISTE EINTRAGEN",
+      "goal_leaderboard_req": "Deine Punkte kommen auf die heutige Tafel",
+      "deploy": "TAGESEINSATZ STARTEN",
+      "deploy_done": "MORGEN WIEDER"
     }
   },
   "narrative": {

@@ -286,7 +286,7 @@ test.describe('controller-ready modal focus', () => {
         if (await rosterConfirm.isVisible().catch(() => false)) await rosterConfirm.click();
         await page.locator('#start-game').click();
         await expect(page.locator('#armory-screen')).toBeVisible({ timeout: 30_000 });
-        await expect(page.locator('#armory-btn-daily')).toBeVisible();
+        await expect(page.locator('#armory-btn-daily')).toHaveCount(0);
         await expect(page.locator('.telemetry-box')).toHaveCount(0);
         expect(await page.evaluate(() => {
             const screen = document.getElementById('armory-screen').getBoundingClientRect();

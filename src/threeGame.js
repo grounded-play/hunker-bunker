@@ -1,3 +1,4 @@
+import { getRunRating } from './runRating.js';
 import { getFieldWeaponProfile } from './fieldWeapon.js';
 import { buildRunResourceTelemetry } from './runTelemetry.js';
 import { createRelicPickup, animateRelicPickup, createImpactBurst, disposeExpeditionEffect } from './expeditionVfx.js';
@@ -184,7 +185,7 @@ import { HiveSite } from './hiveSite.js';
 import { describeDialogueProgress, leaderKeyFromName, nextDialogueBeat, isFinalStage } from './data/campDialogue.js';
 import { blackBoxStore } from './blackBox.js';
 import { runCheckpointStore } from './runCheckpoint.js';
-import { CHASSIS_SKIN_MODELS, createPlayer3dOverlay, ENGINEER_GESTURES } from './player3dOverlay.js';
+import { CHASSIS_SKIN_MODELS, createPlayer3dOverlay, ENGINEER_GESTURES, excludePlayerSelfLights } from './player3dOverlay.js';
 
 export const MAYOR_TINA_PLAYER_VISUAL = Object.freeze({
     modelUrl: '/3d/runtime/secrets/mayor-tina-rigged.glb',
@@ -390,6 +391,45 @@ const SUIT_LOCAL_LIGHT_POOL_RADIUS = 5.7;
 const SUIT_LOCAL_LIGHT_POOL_OPACITY = 0.68;
 const SUIT_LIGHT_EMITTER_HEIGHT = 1.35;
 const SUIT_LIGHT_WALL_PADDING = 0.35;
+// Point/spot lights are infinitesimal emitters. On the glossy wall/floor
+// patches (roughness down to ~0.22) the analytic specular lobe collapses to a
+// tight white disc that reads as a mirrored light bulb -- most visibly the
+// playerGlow/suit lights hovering beside a wall. Direct lights are shaded with
+// at least this roughness; the IBL sky reflections keep the real value.
+const HB_DIRECT_SPECULAR_MIN_ROUGHNESS = 0.6;
+
+export function softenDirectSpecularHighlights(shader) {
+    shader.fragmentShader = shader.fragmentShader
+        .replace(
+            '#include <lights_fragment_begin>',
+            `
+            float hbIblRoughness = material.roughness;
+            material.roughness = max(material.roughness, ${HB_DIRECT_SPECULAR_MIN_ROUGHNESS.toFixed(2)});
+            #include <lights_fragment_begin>
+            `
+        )
+        .replace(
+            '#include <lights_fragment_maps>',
+            `
+            material.roughness = hbIblRoughness;
+            #ifdef STANDARD
+                material.dfg = texture2D( dfgLUT, vec2( material.roughness, dotNVms ) ).rg;
+            #endif
+            #include <lights_fragment_maps>
+            `
+        )
+        .replace(
+            '#include <lights_fragment_end>',
+            `
+            // Attenuate harsh point-blank analytical specular hot spots on walls and floors,
+            // while preserving indirect PBR environment reflections.
+            reflectedLight.directSpecular *= 0.35;
+            #include <lights_fragment_end>
+            `
+        );
+    return shader;
+}
+
 const O2_SAFE_LIGHT_COLOR = 0xb9fbff;
 const O2_SAFE_FILL_OPACITY = 0.16;
 const RADAR_STANDARD_TRACK_SECONDS = 5.0;
@@ -2138,6 +2178,7 @@ export class ThreeGame {
                 #endif
                 `
             );
+            softenDirectSpecularHighlights(shader);
 
             shader.fragmentShader = shader.fragmentShader.replace(
                 '#include <normal_fragment_maps>',
@@ -2388,6 +2429,7 @@ export class ThreeGame {
                 #endif
                 `
             );
+            softenDirectSpecularHighlights(shader);
 
             shader.fragmentShader = shader.fragmentShader.replace(
                 '#include <normal_fragment_maps>',
@@ -4577,6 +4619,15 @@ export class ThreeGame {
             this.player3dOverlay = overlay;
             this.updatePlayerDecalSprite();
             overlay.setOperatorPolish(this._playerPolishHex ?? 0xffffff);
+            overlay.root.traverse((child) => {
+                if (child.isMesh && child.material) {
+                    const mats = Array.isArray(child.material) ? child.material : [child.material];
+                    for (const m of mats) {
+                        excludePlayerSelfLights(m);
+                        m.needsUpdate = true;
+                    }
+                }
+            });
             if (typeof this.updatePlayerSpriteAnimation === 'function') {
                 this.updatePlayerSpriteAnimation(0, 0, 0, false, 0, 0);
             }
@@ -6213,14 +6264,15 @@ export class ThreeGame {
             map: this.playerEmitterGlowTexture,
             color: 0xffffff,
             transparent: true,
-            opacity: 0.58,
+            opacity: 0,
             blending: THREE.AdditiveBlending,
             depthWrite: false,
             depthTest: true,
             fog: false
         }));
-        this.playerEmitterGlow.scale.set(0.72, 0.72, 1);
-        this.playerEmitterGlow.renderOrder = 8;
+        this.playerEmitterGlow.scale.set(0.01, 0.01, 1);
+        this.playerEmitterGlow.visible = false;
+        this.playerEmitterGlow.renderOrder = 4;
         this.scene.add(this.playerEmitterGlow);
 
         this.playerForwardLightTarget = new THREE.Object3D();
@@ -19208,11 +19260,7 @@ export class ThreeGame {
     }
 
     getRunRating(score) {
-        if (score >= 2000) return { grade: 'S', label: 'EXEMPLARY FIELD PERFORMANCE' };
-        if (score >= 1500) return { grade: 'A', label: 'MISSION SUCCESSFUL' };
-        if (score >= 1000) return { grade: 'B', label: 'PARTIAL SUCCESS' };
-        if (score >= 500)  return { grade: 'C', label: 'MISSION FAILED — DATA RECOVERED' };
-        return { grade: 'D', label: 'AGENT LOST — MINIMAL TELEMETRY' };
+        return getRunRating(score);
     }
 
     getLoreText(key) {
@@ -20916,30 +20964,37 @@ export class ThreeGame {
         }
         // Player's own glow matters a little more in the dark.
         if (this.playerGlow) {
-            this.playerGlow.intensity = this.baseLightIntensity.playerGlow * lerp(2.6, 1.12, dayBlend);
-            this.playerGlow.distance = lerp(16.5, 10.8, dayBlend);
-            this.playerGlow.decay = lerp(1.35, 1.7, dayBlend);
+            const wallGlowDamp = THREE.MathUtils.clamp(((this._lastMinWallDist ?? 2.0) - 0.25) / 1.0, 0.45, 1.0);
+            this.playerGlow.intensity = this.baseLightIntensity.playerGlow * lerp(1.35, 0.8, dayBlend) * wallGlowDamp;
+            this.playerGlow.distance = lerp(13.5, 9.5, dayBlend);
+            this.playerGlow.decay = lerp(1.4, 1.7, dayBlend);
         }
         if (this.suitFillLight) {
             const movePulse = this.isMoving ? 0.14 * (0.5 + 0.5 * Math.sin(performance.now() * 0.011)) : 0;
-            this.suitFillLight.intensity = SUIT_LIGHT_BASE_INTENSITY * lerp(1.28, 0.74, dayBlend) * (1 + movePulse);
-            this.suitFillLight.distance = SUIT_LIGHT_BASE_DISTANCE * lerp(1.18, 0.92, dayBlend);
-            this.suitFillLight.decay = lerp(1.08, 1.32, dayBlend);
+            const wallGlowDamp = THREE.MathUtils.clamp(((this._lastMinWallDist ?? 2.0) - 0.25) / 1.0, 0.45, 1.0);
+            this.suitFillLight.intensity = SUIT_LIGHT_BASE_INTENSITY * lerp(1.05, 0.68, dayBlend) * (1 + movePulse) * wallGlowDamp;
+            this.suitFillLight.distance = SUIT_LIGHT_BASE_DISTANCE * lerp(1.1, 0.9, dayBlend);
+            this.suitFillLight.decay = lerp(1.2, 1.4, dayBlend);
         }
         if (this.playerForwardSpotLight) {
             const pulse = this.isMoving ? 0.08 * (0.5 + 0.5 * Math.sin(performance.now() * 0.013)) : 0;
-            this.playerForwardSpotLight.intensity = 5.8 * lerp(2.25, 0.82, dayBlend) * (1 + pulse);
-            this.playerForwardSpotLight.distance = SUIT_CONE_LIGHT_DISTANCE * lerp(1.32, 0.88, dayBlend);
-            this.playerForwardSpotLight.angle = SUIT_CONE_LIGHT_ANGLE * lerp(1.08, 0.92, dayBlend);
+            // Proximity damping: as the player approaches a wall face, softly attenuate
+            // the spotlight so it provides clean directional illumination instead of blowing out
+            // into a blinding white/yellow disc on the wall and player.
+            const wallProximityDamp = THREE.MathUtils.clamp(((this._lastMinWallDist ?? 2.0) - 0.25) / 1.25, 0.22, 1.0);
+            this.playerForwardSpotLight.intensity = 3.6 * lerp(1.35, 0.75, dayBlend) * (1 + pulse) * wallProximityDamp;
+            this.playerForwardSpotLight.distance = SUIT_CONE_LIGHT_DISTANCE * lerp(1.2, 0.88, dayBlend);
+            this.playerForwardSpotLight.angle = SUIT_CONE_LIGHT_ANGLE * lerp(1.05, 0.92, dayBlend);
         }
         if (this.playerForwardCone?.material) {
-            this.playerForwardCone.material.opacity = SUIT_CONE_VISUAL_OPACITY * lerp(0.72, 0.28, dayBlend);
+            const wallProximity = THREE.MathUtils.clamp(((this._lastMinWallDist ?? 2.0) - 0.35) / 1.25, 0.12, 1.0);
+            this.playerForwardCone.material.opacity = SUIT_CONE_VISUAL_OPACITY * lerp(0.65, 0.28, dayBlend) * wallProximity;
         }
         if (this.playerLightPool?.material) {
             this.playerLightPool.material.opacity = SUIT_LOCAL_LIGHT_POOL_OPACITY * lerp(1.85, 0.48, dayBlend);
         }
-        if (this.playerEmitterGlow?.material) {
-            this.playerEmitterGlow.material.opacity = 0.58 * lerp(1.16, 0.46, dayBlend);
+        if (this.playerEmitterGlow) {
+            this.playerEmitterGlow.visible = false;
         }
 
         if (this.disableFogOfWar) {
@@ -21004,7 +21059,7 @@ export class ThreeGame {
             this.playerLightPool.position.set(originX, 0.071, originZ);
         }
         if (this.playerEmitterGlow) {
-            this.playerEmitterGlow.position.set(originX, SUIT_LIGHT_EMITTER_HEIGHT, originZ);
+            this.playerEmitterGlow.visible = false;
         }
         const facingAngle = Math.atan2(dirX, dirZ);
         this.playerForwardCone.position.set(
@@ -21040,6 +21095,7 @@ export class ThreeGame {
         const haveWalls = this.performanceProfile === 'gameplay' && this.wallMeshes?.length > 0;
 
         if (!haveWalls) {
+            this._lastMinWallDist = SUIT_CONE_VISUAL_DISTANCE;
             // Menu / no geometry: restore the full unobstructed fan.
             for (let i = 0; i < rimAngles.length; i++) {
                 const angle = rimAngles[i];
@@ -21059,12 +21115,16 @@ export class ThreeGame {
         this._coneRayDir = this._coneRayDir ?? new THREE.Vector3();
         this._coneRayOrigin.set(originX, SUIT_LIGHT_EMITTER_HEIGHT, originZ);
 
+        let minHitDist = SUIT_CONE_VISUAL_DISTANCE;
         for (let i = 0; i < rimAngles.length; i++) {
             const angle = rimAngles[i];
             const worldAngle = facingAngle + angle;
             this._coneRayDir.set(Math.sin(worldAngle), 0, Math.cos(worldAngle));
             raycaster.set(this._coneRayOrigin, this._coneRayDir);
             const hit = raycaster.intersectObjects(this.wallMeshes, false)[0];
+            if (hit && hit.distance < minHitDist) {
+                minHitDist = hit.distance;
+            }
             const dist = hit
                 ? Math.max(0.4, hit.distance - SUIT_LIGHT_WALL_PADDING)
                 : SUIT_CONE_VISUAL_DISTANCE;
@@ -21072,9 +21132,12 @@ export class ThreeGame {
             // Rim stays in the cone's local frame (apex forward = +Z); the mesh
             // rotation already orients it, so only the local angle is used here.
             array[vi] = Math.sin(angle) * dist;
-            array[vi + 1] = hit ? (this.wallHeight - 0.2) : 0;
+            // Truncate the cone at the wall boundary without pulling vertices 2.6m vertically up
+            // into camera view, which stacked overlapping additive triangles into a blinding solid blob.
+            array[vi + 1] = 0;
             array[vi + 2] = Math.cos(angle) * dist;
         }
+        this._lastMinWallDist = minHitDist;
         attr.needsUpdate = true;
     }
 

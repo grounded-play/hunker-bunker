@@ -1394,6 +1394,29 @@
     "snail": {
       "alt_player_chassis": "玩家底盘",
       "alt_snail_combatant": "蜗牛战斗体"
+    },
+    "daily_ops": {
+      "tag": "每日",
+      "card_meta": "1 名干员 // 仅一次计分机会",
+      "perk_shared_sector": "共享每日扇区",
+      "perk_grade_targets": "评级目标",
+      "perk_leaderboard": "每日排行榜",
+      "goals_title": "今日每日目标",
+      "resets_midnight": "午夜重置",
+      "col_goal": "目标",
+      "col_requirement": "要求",
+      "description": "每日行动：所有干员空降至今日扇区。你只有一次计分机会，最终评级将登上每日行动排行榜。午夜重置。",
+      "earned": "已达成",
+      "missed": "未达成",
+      "target": "目标",
+      "goal_attempt": "完成今日行动",
+      "goal_attempt_req": "完成一次每日行动（胜利或阵亡均可）",
+      "goal_grade": "评级 {grade}",
+      "goal_grade_req": "获得 {score}+ 分",
+      "goal_leaderboard": "登上排行榜",
+      "goal_leaderboard_req": "你的分数将进入今日排行榜",
+      "deploy": "部署每日行动",
+      "deploy_done": "明天再来"
     }
   },
   "narrative": {

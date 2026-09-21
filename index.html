@@ -405,7 +405,6 @@
                   </div>
                 </div>
               </div>
-              <button class="start-btn map-initialize-btn" id="start-game" data-i18n="ui.hub.initialize">INITIALIZE</button>
               <div class="module-scanline"></div>
             </div>
 
@@ -516,6 +515,12 @@
       </div>
     </div>
 
+    <!-- INITIALIZE lives beside #menu, not inside it: #menu carries a 3D
+         mouse-tilt transform and its panels use contain: layout paint, and
+         either would trap the shared bottom-right advance slot
+         (style.css .hb-advance-slot). Hidden whenever #menu is. -->
+    <button class="start-btn map-initialize-btn hb-advance-slot" id="start-game" data-i18n="ui.hub.initialize">INITIALIZE</button>
+
     <!-- Fullsize 3D Pre-Mission Armory (#armory-screen) -->
     <section data-i18n-aria-label="ui.armory.aria_label_pre_mission_armory" id="armory-screen" class="hidden" aria-label="Pre-Mission Armory">
       <canvas id="armory-canvas"></canvas>
@@ -609,7 +614,7 @@
         </div>
         <div class="roster-hint" id="roster-hint" data-i18n="ui.roster.hint">Fabricate weapons in the FAB BAY to equip them here. Customize cosmetics in the STEAM VAULT.</div>
         <div class="roster-footer-actions">
-          <button type="button" class="start-btn roster-confirm-btn" id="roster-confirm-btn">CONFIRM & DEPLOY</button>
+          <button type="button" class="start-btn roster-confirm-btn hb-advance-slot" id="roster-confirm-btn">CONFIRM & DEPLOY</button>
         </div>
       </div>
     </div>
@@ -2877,6 +2882,27 @@
             </div>
             <div data-i18n="ui.multiplayer.select_mode" class="net-mode-card__indicator">SELECT MODE</div>
           </button>
+
+          <!-- Daily Ops moved here from the Armory footer: it is a way to
+               deploy, so it sits with the other deployment modes. Solo-only;
+               selecting it shows today's goals in #net-daily-goals below. -->
+          <button type="button" class="net-mode-card net-mode-card--daily" id="net-mode-daily-btn">
+            <div class="net-mode-card__badge net-mode-card__badge--daily">
+              <span class="net-mode-card__icon">◷</span>
+              <span data-i18n="ui.daily_ops.tag" class="net-mode-card__tag">DAILY</span>
+              <span class="net-daily-status-chip" id="net-daily-status-chip"></span>
+            </div>
+            <div class="net-mode-card__info">
+              <div data-i18n="ui.hub.daily_ops" class="net-mode-card__title">DAILY OPS</div>
+              <div data-i18n="ui.daily_ops.card_meta" class="net-mode-card__meta">1 OPERATIVE // ONE SCORED ATTEMPT</div>
+            </div>
+            <div class="net-mode-card__perks">
+              <span data-i18n="ui.daily_ops.perk_shared_sector" class="net-perk-chip net-perk-chip--daily">SHARED DAILY SECTOR</span>
+              <span data-i18n="ui.daily_ops.perk_grade_targets" class="net-perk-chip net-perk-chip--daily">GRADE TARGETS</span>
+              <span data-i18n="ui.daily_ops.perk_leaderboard" class="net-perk-chip net-perk-chip--daily">DAILY LEADERBOARD</span>
+            </div>
+            <div data-i18n="ui.multiplayer.select_mode" class="net-mode-card__indicator">SELECT MODE</div>
+          </button>
         </div>
 
         <!-- Mode Mission Briefing Banner -->
@@ -3004,6 +3030,31 @@
             </div>
           </div>
 
+          <!-- Daily Ops goals: shown only while the DAILY OPS card is active
+               (multiplayerLobby.js's updateUiState), in place of the two
+               relay columns. Rows are rendered from main.js's Daily Ops
+               record, so earned/target states are today's real result. -->
+          <div class="net-column net-column--daily hidden">
+            <div class="net-panel-header">
+              <div class="net-panel-title-wrap">
+                <span data-i18n="ui.daily_ops.goals_title" class="net-panel-title">TODAY'S DAILY GOALS</span>
+                <span class="net-roster-count" id="net-daily-seed"></span>
+              </div>
+              <span data-i18n="ui.daily_ops.resets_midnight" class="net-panel-badge net-panel-badge--green">RESETS AT MIDNIGHT</span>
+            </div>
+
+            <div class="net-roster-container">
+              <div class="net-roster-header net-daily-header">
+                <span data-i18n="ui.daily_ops.col_goal">GOAL</span>
+                <span data-i18n="ui.daily_ops.col_requirement">REQUIREMENT</span>
+                <span data-i18n="ui.multiplayer.status">STATUS</span>
+              </div>
+              <div class="net-roster-list net-daily-goals" id="net-daily-goals">
+                <!-- Dynamically populated by JS -->
+              </div>
+            </div>
+          </div>
+
         </div>
 
         <!-- Footer Action Bar -->
@@ -3015,7 +3066,7 @@
           </div>
           <div class="net-modal-btn-row">
             <button data-i18n="ui.multiplayer.back_to_armory" type="button" class="start-btn net-back-btn" id="net-back-btn">← BACK TO ARMORY</button>
-            <button type="button" class="start-btn net-deploy-btn" id="net-deploy-btn">DEPLOY SQUAD</button>
+            <button type="button" class="start-btn net-deploy-btn hb-advance-slot" id="net-deploy-btn">DEPLOY SQUAD</button>
           </div>
         </div>
       </div>

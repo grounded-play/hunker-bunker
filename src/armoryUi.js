@@ -108,8 +108,6 @@ export function createArmoryUi({
     onBack,
     onOpenVault,
     onOpenSettings,
-    onDailyOps,
-    getDailyOpsStatus,
     onClassChange,
     ownership,
     qaToolsEnabled = false
@@ -508,7 +506,6 @@ export function createArmoryUi({
         const modifiers = loadoutManager.getActiveModifiers(cls);
         const chassisSkinId = loadoutManager.getEquippedChassisSkinId?.();
         const selectedWeapon = pickerFields().weapon.currentName();
-        const dailyOps = getDailyOpsStatus?.() ?? { label: 'READY', disabled: false };
         const hudTheme = resolveHudTheme(loadoutManager.state.hudThemeId);
         const hudThemeStyle = hudThemeInlineStyle(loadoutManager.state.hudThemeId);
         const qaAudit = ownership.auditEquippableCatalog?.() ?? { total: 0, available: 0, complete: false };
@@ -719,10 +716,7 @@ export function createArmoryUi({
                     <button id="armory-btn-vault" class="armory-btn tertiary-btn">
                         <span data-i18n="ui.armory.btn_vault">STEAM VAULT &amp; FAB BAY</span> <span class="btn-keyhint">[V]</span>
                     </button>
-                    <button id="armory-btn-daily" class="armory-btn tertiary-btn armory-btn--daily" ${dailyOps.disabled ? 'disabled' : ''}>
-                        <span>${t('ui.hub.daily_ops')} // ${dailyOps.label}</span>
-                    </button>
-                    <button id="armory-btn-embark" class="armory-btn primary-btn embark-glow">
+                    <button id="armory-btn-embark" class="armory-btn primary-btn embark-glow hb-advance-slot">
                         <span data-i18n="ui.armory.btn_embark">EMBARK TO BUNKER &gt;&gt;</span> <span class="btn-keyhint">[ENTER / A]</span>
                     </button>
                 </footer>
@@ -849,11 +843,6 @@ export function createArmoryUi({
         container.querySelector?.('#armory-btn-vault')?.addEventListener?.('click', () => {
             playSound('ui_click_confirm1');
             onOpenVault?.();
-        });
-
-        container.querySelector?.('#armory-btn-daily')?.addEventListener?.('click', () => {
-            playSound('ui_click_confirm1');
-            onDailyOps?.();
         });
 
         container.querySelector?.('#armory-btn-embark')?.addEventListener?.('click', () => {

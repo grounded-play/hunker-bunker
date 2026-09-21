@@ -18564,7 +18564,7 @@ body.show-debug .map-tool-btn--debug { display: inline-flex; }
 /* Mode Selector Grid */
 .net-mode-selector {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   gap: calc(var(--vu) * 1.1);
   position: relative;
   z-index: 2;
@@ -18717,6 +18717,103 @@ body.show-debug .map-tool-btn--debug { display: inline-flex; }
 
 #net-mode-pvp-btn.active .net-mode-card__indicator {
   color: #ff9f1c;
+}
+
+/* Daily Ops mode card + goals panel. Amber, so the timed daily reads as its
+   own thing next to teal SOLO/CO-OP and red PVP. */
+#net-mode-daily-btn.active {
+  border-color: #ffb700 !important;
+  background: rgba(255, 183, 0, 0.1) !important;
+  box-shadow: 0 0 24px rgba(255, 183, 0, 0.22), inset 0 0 16px rgba(255, 183, 0, 0.12) !important;
+}
+
+#net-mode-daily-btn.active::before {
+  background: linear-gradient(90deg, #ffb700, #ff9f1c);
+}
+
+#net-mode-daily-btn.active .net-mode-card__indicator {
+  color: #ffb700;
+}
+
+.net-mode-card__badge--daily .net-mode-card__icon {
+  color: #ffb700;
+}
+
+.net-perk-chip--daily {
+  border-color: rgba(255, 183, 0, 0.35);
+  color: #ffd27a;
+}
+
+.net-daily-status-chip {
+  margin-left: auto;
+  font-family: 'Space Mono', monospace;
+  font-size: calc(var(--font-xs) * 0.66);
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  color: #39ff88;
+}
+
+.net-daily-status-chip--in-progress { color: #ffb700; }
+.net-daily-status-chip--completed { color: #a0cce8; }
+
+.net-main-grid.net-main-grid--daily {
+  grid-template-columns: 1fr;
+}
+
+.net-column--daily .net-roster-container {
+  height: auto;
+  max-height: none;
+}
+
+.net-roster-header.net-daily-header,
+.net-roster-row.net-daily-row {
+  grid-template-columns: 1.6fr 2.2fr 0.9fr;
+}
+
+.net-roster-list.net-daily-goals {
+  min-height: 0;
+  max-height: none;
+  gap: 5px;
+}
+
+.net-roster-row.net-daily-row {
+  padding: 5px 10px;
+}
+
+.net-daily-goal-name {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 700;
+}
+
+.net-daily-grade {
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 900;
+  background: rgba(255, 183, 0, 0.14);
+  color: #ffb700;
+  border: 1px solid rgba(255, 183, 0, 0.4);
+}
+
+.net-daily-requirement {
+  color: #a0cce8;
+}
+
+.net-daily-row--earned {
+  border-left: 4px solid #39ff88 !important;
+  background: rgba(57, 255, 136, 0.08) !important;
+}
+
+.net-status-tag.net-status-tag--missed {
+  color: #7799bb;
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.15);
 }
 
 /* Briefing Banner */
@@ -19287,6 +19384,12 @@ body.show-debug .map-tool-btn--debug { display: inline-flex; }
   }
   .net-roster-container {
     max-height: calc(var(--vu) * 20);
+  }
+}
+
+@media (max-width: 1100px) {
+  .net-mode-selector {
+    grid-template-columns: repeat(2, 1fr);
   }
 }
 
@@ -22331,7 +22434,6 @@ body.contrast-max .hud-panel {
 .armory-slot__name, .armory-slot__perk { font-size: clamp(12px,.82vw,16px); }
 .armory-btn { min-height: 48px; font-size: clamp(13px,.95vw,18px); }
 .armory-footer { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); }
-.armory-btn--daily:disabled { opacity: .48; cursor: not-allowed; }
 
 @media (max-width: 1180px) {
   .armory-main-layout { grid-template-columns: minmax(0,1fr) minmax(420px,42%); }
@@ -22536,3 +22638,136 @@ html.phase-gameplay #tactical-telemeter-box {
 .armory-hud-theme-preview[data-hud-shape="corporate"] { border-radius: 1px; box-shadow: none; }
 .armory-hud-theme-preview[data-hud-shape="heart"] .armory-hud-theme-preview__map { border: 0; clip-path: polygon(50% 95%,5% 52%,7% 25%,25% 8%,50% 28%,75% 8%,93% 25%,95% 52%); background: var(--hud-primary); color: #16051a; }
 .armory-hud-theme-preview[data-hud-shape="marshal"] { outline: 1px solid var(--hud-border); outline-offset: -4px; }
+
+/* ── Shared advance slot ───────────────────────────────────────
+   Every pre-run screen's "go forward" button (INITIALIZE, CONFIRM &
+   DEPLOY, EMBARK, DEPLOY) sits in this one spot so the player never hunts
+   for it. position: fixed resolves against each screen's full-stage root,
+   which is made the containing block below (#armory-screen via contain,
+   the two modals via their own backdrop-filter), so the slot is
+   stage-relative -- correct under letterboxing -- and scales via --vu.
+   INITIALIZE is a direct child of the stage and uses absolute instead. */
+#game-viewport {
+  --advance-right: calc(var(--vu) * 8);
+  /* Lifting the Armory footer to this baseline costs its sidebar height;
+     4.5vu / 5.6vu is the most it can give up at 1280x800 (Deck) without
+     overflowing -- see tests/e2e/controller-focus.spec.js's sidebar check. */
+  --advance-bottom: calc(var(--vu) * 4.5);
+  --advance-width: calc(var(--vu) * 36);
+  --advance-height: calc(var(--vu) * 5.6);
+}
+
+#game-viewport .hb-advance-slot {
+  position: fixed !important;
+  right: var(--advance-right) !important;
+  bottom: var(--advance-bottom) !important;
+  left: auto !important;
+  top: auto !important;
+  width: var(--advance-width) !important;
+  min-width: 0 !important;
+  max-width: none !important;
+  height: var(--advance-height) !important;
+  min-height: 0 !important;
+  margin: 0 !important;
+  z-index: 40;
+  /* One label treatment for every screen's button, so it reads as the
+     same control, not four lookalikes. */
+  box-sizing: border-box !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 0 calc(var(--vu) * 1.5) !important;
+  font-size: calc(var(--font-xs) * 1.05) !important;
+  line-height: 1 !important;
+  letter-spacing: 0.1em !important;
+  white-space: nowrap !important;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+#game-viewport .hb-advance-slot .btn-keyhint {
+  display: none;
+}
+
+#armory-screen {
+  contain: layout;
+}
+
+#game-viewport > #start-game.hb-advance-slot {
+  position: absolute !important;
+}
+
+/* The two modals are inset: 0 on the stage, and their backdrop-filter
+   already makes them the slot's containing block. */
+#game-viewport > #roster-modal,
+#game-viewport > #multiplayer-modal {
+  padding: calc(var(--vu) * 2);
+}
+
+/* Stretched to the stage so the slot lands inside their frame, in the
+   same bottom-right corner as the Armory footer. */
+#game-viewport > #roster-modal > .roster-modal-content,
+#game-viewport > #multiplayer-modal > .net-modal-content {
+  width: 100%;
+  max-width: none;
+  height: 100%;
+  max-height: none;
+  /* .modal .modal-content rests at translateY(0) scale(1), and any resting
+     transform re-anchors fixed children. none still interpolates with the
+     open/exit transitions, which keep the button riding along. */
+  transform: none;
+}
+
+#game-viewport > #menu.hidden + #start-game {
+  display: none !important;
+}
+
+#game-viewport > #start-game {
+  z-index: 8001;
+}
+
+/* Each footer row ends exactly at the slot's baseline and is exactly its
+   height, so the slot reads as that row's last button; the row's own
+   buttons stop short of the slot's footprint. The modals sit inside a
+   2vu stage padding (above). */
+#game-viewport > #multiplayer-modal > .net-modal-content {
+  justify-content: flex-start;
+  padding-bottom: calc(var(--advance-bottom) - var(--vu) * 2) !important;
+}
+
+#game-viewport > #roster-modal > .roster-modal-content {
+  padding-bottom: calc(var(--advance-bottom) - var(--vu) * 2) !important;
+}
+
+.net-modal-actions,
+.roster-footer-actions {
+  box-sizing: content-box;
+  min-height: var(--advance-height);
+  margin-top: auto;
+  padding-bottom: 0;
+}
+
+.net-modal-btn-row {
+  margin-right: calc(var(--advance-width) + var(--advance-right));
+}
+
+.net-modal-btn-row .net-back-btn {
+  height: var(--advance-height);
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+}
+
+.armory-footer {
+  grid-template-columns: repeat(2, minmax(0, max-content));
+  justify-content: start;
+  align-items: center;
+  min-height: var(--advance-height);
+  padding-right: calc(var(--advance-width) + var(--advance-right));
+  /* .armory-hud's own bottom padding, lifted to the slot's baseline. */
+  margin-bottom: calc(var(--advance-bottom) - clamp(16px, 2.2vh, 34px));
+}
+
+.armory-footer .armory-btn:not(.hb-advance-slot) {
+  height: var(--advance-height);
+  min-height: 0;
+}

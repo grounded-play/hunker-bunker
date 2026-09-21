@@ -1394,6 +1394,29 @@
     "snail": {
       "alt_player_chassis": "Player Chassis",
       "alt_snail_combatant": "Snail Combatant"
+    },
+    "daily_ops": {
+      "tag": "DAILY",
+      "card_meta": "1 OPERATIVE // ONE SCORED ATTEMPT",
+      "perk_shared_sector": "SHARED DAILY SECTOR",
+      "perk_grade_targets": "GRADE TARGETS",
+      "perk_leaderboard": "DAILY LEADERBOARD",
+      "goals_title": "TODAY'S DAILY GOALS",
+      "resets_midnight": "RESETS AT MIDNIGHT",
+      "col_goal": "GOAL",
+      "col_requirement": "REQUIREMENT",
+      "description": "DAILY OPS: Every operative drops into today's sector. You get one scored attempt; the grade you finish on is posted to the Daily Ops leaderboard. Resets at midnight.",
+      "earned": "EARNED",
+      "missed": "MISSED",
+      "target": "TARGET",
+      "goal_attempt": "FILE TODAY'S RUN",
+      "goal_attempt_req": "Finish one Daily Ops run (win or die)",
+      "goal_grade": "GRADE {grade}",
+      "goal_grade_req": "Score {score}+ points",
+      "goal_leaderboard": "POST TO LEADERBOARD",
+      "goal_leaderboard_req": "Your score joins today's Daily Ops board",
+      "deploy": "DEPLOY DAILY OPS",
+      "deploy_done": "BACK TOMORROW"
     }
   },
   "narrative": {

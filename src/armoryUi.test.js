@@ -238,7 +238,6 @@ describe('createArmoryUi', () => {
     });
 
     it('handles navigation button clicks', () => {
-        const onDailyOps = vi.fn();
         const ui = createArmoryUi({
             container,
             loadoutManager,
@@ -246,8 +245,6 @@ describe('createArmoryUi', () => {
             onEmbark,
             onBack,
             onOpenVault,
-            onDailyOps,
-            getDailyOpsStatus: () => ({ label: 'READY', disabled: false }),
             ownership: ownAll()
         });
 
@@ -256,7 +253,6 @@ describe('createArmoryUi', () => {
         const btnBack = container.querySelector('#armory-btn-back');
         const btnVault = container.querySelector('#armory-btn-vault');
         const btnEmbark = container.querySelector('#armory-btn-embark');
-        const btnDaily = container.querySelector('#armory-btn-daily');
 
         btnBack.click();
         expect(onBack).toHaveBeenCalled();
@@ -267,8 +263,8 @@ describe('createArmoryUi', () => {
         btnEmbark.click();
         expect(onEmbark).toHaveBeenCalled();
 
-        btnDaily.click();
-        expect(onDailyOps).toHaveBeenCalled();
+        // Daily Ops moved to the Deployment Briefing's mode cards.
+        expect(container.querySelector('#armory-btn-daily')).toBeNull();
     });
 
     it('switches classes properly and re-renders allowed equipment', () => {

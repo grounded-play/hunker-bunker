@@ -2862,13 +2862,17 @@ function updateDailyOpsUI() {
     }
 }
 
-function getDailyOpsPresentation() {
+// Today's Daily Ops record, shaped for the Deployment Briefing's DAILY OPS
+// card and goals panel (multiplayerLobby.js's updateDailyPanel).
+function getDailyOpsBriefingStatus() {
     const record = getDailyOpsRecord();
+    const date = getTodayDateString();
     return {
-        disabled: Boolean(record?.completed),
-        label: record?.completed
-            ? `${record.score ?? 0} PTS // ${record.grade ?? 'D'}`
-            : record?.attempted ? 'IN PROGRESS' : 'READY'
+        date,
+        seedLabel: `DAILY-${date}`,
+        state: record?.completed ? 'completed' : record?.attempted ? 'in_progress' : 'ready',
+        score: record?.score ?? 0,
+        grade: record?.grade ?? 'D'
     };
 }
 
@@ -8270,11 +8274,6 @@ function ensureArmoryInitialized() {
                 onBack: () => closeArmoryScreen({ embark: false }),
                 onOpenVault: () => openSteamVaultModal(),
                 onOpenSettings: () => openSettingsModal(),
-                onDailyOps: () => {
-                    pendingArmoryEmbarkAction = beginDailyOpsRun;
-                    closeArmoryScreen({ embark: true });
-                },
-                getDailyOpsStatus: getDailyOpsPresentation,
                 onClassChange: (cls) => {
                     saveHeroType(cls);
                     document.querySelectorAll('.char-card').forEach((card) => {
@@ -8444,6 +8443,8 @@ if (startBtn) {
         const openDeploymentBriefing = () => {
             multiplayerLobby.openModal({
                 onLaunch: () => launchStandardRun({ resetBank: true, playIntro: true }),
+                onDailyLaunch: beginDailyOpsRun,
+                getDailyOpsStatus: getDailyOpsBriefingStatus,
                 onCancel: () => {
                     const playerType = getSelectedHeroType();
                     triggerDoorTransition(
@@ -8517,8 +8518,8 @@ function beginDailyOpsRun() {
 }
 
 // Compatibility for saves/alternate shells that still render the legacy
-// button. The primary Daily Ops entry now lives beside standard deployment in
-// the full-stage Armory.
+// button. The primary Daily Ops entry is the DAILY OPS mode card on the
+// post-Armory Deployment Briefing.
 const dailyOpsBtn = document.getElementById('daily-ops-btn');
 if (dailyOpsBtn) {
     dailyOpsBtn.addEventListener('click', () => openArmoryGate(beginDailyOpsRun));

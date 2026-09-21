@@ -1394,6 +1394,29 @@
     "snail": {
       "alt_player_chassis": "Chasis del jugador",
       "alt_snail_combatant": "Caracol combatiente"
+    },
+    "daily_ops": {
+      "tag": "DIARIA",
+      "card_meta": "1 OPERATIVO // UN INTENTO PUNTUADO",
+      "perk_shared_sector": "SECTOR DIARIO COMPARTIDO",
+      "perk_grade_targets": "METAS DE CALIFICACIÓN",
+      "perk_leaderboard": "CLASIFICACIÓN DIARIA",
+      "goals_title": "METAS DIARIAS DE HOY",
+      "resets_midnight": "SE REINICIA A MEDIANOCHE",
+      "col_goal": "META",
+      "col_requirement": "REQUISITO",
+      "description": "OPS DIARIAS: Todos los operativos caen en el sector de hoy. Tienes un intento puntuado; la calificación final se publica en la clasificación de Ops Diarias. Se reinicia a medianoche.",
+      "earned": "LOGRADO",
+      "missed": "FALLADO",
+      "target": "OBJETIVO",
+      "goal_attempt": "COMPLETA LA MISIÓN DE HOY",
+      "goal_attempt_req": "Termina una misión de Ops Diarias (gana o muere)",
+      "goal_grade": "CALIFICACIÓN {grade}",
+      "goal_grade_req": "Consigue {score}+ puntos",
+      "goal_leaderboard": "PUBLICAR EN CLASIFICACIÓN",
+      "goal_leaderboard_req": "Tu puntaje entra al tablero de hoy",
+      "deploy": "DESPLEGAR OPS DIARIAS",
+      "deploy_done": "VUELVE MAÑANA"
     }
   },
   "narrative": {

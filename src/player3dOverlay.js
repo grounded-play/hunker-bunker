@@ -464,6 +464,41 @@ export function computeOperatorPolishMaterialState(baseColor, baseRoughness, bas
     };
 }
 
+export function excludePlayerSelfLights(material) {
+    if (!material) return material;
+    const previousOnBeforeCompile = material.onBeforeCompile;
+    material.onBeforeCompile = (shader, renderer) => {
+        if (typeof previousOnBeforeCompile === 'function') {
+            previousOnBeforeCompile(shader, renderer);
+        }
+        if (shader.fragmentShader && shader.fragmentShader.includes('#include <lights_fragment_begin>')) {
+            const modifiedLights = THREE.ShaderChunk.lights_fragment_begin
+                .replace(
+                    'getPointLightInfo( pointLight, geometryPosition, directLight );',
+                    `getPointLightInfo( pointLight, geometryPosition, directLight );
+                    if ( length( pointLight.position - geometryPosition ) < 2.2 ) {
+                        directLight.color = vec3( 0.0 );
+                        directLight.visible = false;
+                    }`
+                )
+                .replace(
+                    'getSpotLightInfo( spotLight, geometryPosition, directLight );',
+                    `getSpotLightInfo( spotLight, geometryPosition, directLight );
+                    if ( length( spotLight.position - geometryPosition ) < 1.6 ) {
+                        directLight.color = vec3( 0.0 );
+                        directLight.visible = false;
+                    }`
+                );
+            shader.fragmentShader = shader.fragmentShader.replace(
+                '#include <lights_fragment_begin>',
+                modifiedLights
+            );
+        }
+    };
+    material.customProgramCacheKey = () => 'excludePlayerSelfLights';
+    return material;
+}
+
 export async function createPlayer3dOverlay({
     targetHeight = 1.85,
     idleActionName = 'idle',
@@ -557,6 +592,17 @@ export async function createPlayer3dOverlay({
         object.material = Array.isArray(object.material)
             ? object.material.map(cloneMaterial)
             : cloneMaterial(object.material);
+    });
+
+    // Ensure all meshes and equipment in the operator rig (including weapon,
+    // charm, and patch) ignore lights originating from the player's own body
+    // so suitFillLight and playerGlow illuminate the surroundings without peaking on the player.
+    root.traverse((object) => {
+        if (!object.isMesh || !object.material) return;
+        const materials = Array.isArray(object.material) ? object.material : [object.material];
+        for (const mat of materials) {
+            excludePlayerSelfLights(mat);
+        }
     });
 
     const mixer = new THREE.AnimationMixer(root);
