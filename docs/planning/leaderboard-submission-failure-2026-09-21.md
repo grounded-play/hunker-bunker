@@ -1,6 +1,6 @@
 # Leaderboards Not Recording Runs (Steam Deck + PC) — Investigation & Fix Plan
 
-**Date:** 2026-09-21 · **Branch:** `dev/sprint-41` · **Status:** root cause 1 confirmed in production; root cause 2 high-confidence, needs one live read to confirm
+**Date:** 2026-09-21 · **Branch:** `dev/sprint-41` · **Status:** both root causes confirmed and fixed in `5c16fc5`; backend live; see Status log at the bottom
 
 ## Symptom
 
@@ -48,7 +48,7 @@ Why nobody noticed:
    `server/steamLeaderboards.test.js` build their own hand-written `schemaVersion: 1`
    fixtures. Both suites pass while the real pair is incompatible.
 
-## Root cause 2 — boards read back empty even after successful writes (HIGH CONFIDENCE, verify)
+## Root cause 2 — boards read back empty even after successful writes (CONFIRMED after redeploy)
 
 38 submits returned **200** between 09-11 and 09-16, i.e. `SetLeaderboardScore`
 was called for every board — yet every board still returns `entries: []`.
@@ -190,3 +190,19 @@ client-side revert to `1` would require shipping a new Steam build.
 - `server/steamLeaderboards.test.js`, new `server/runPayloadContract.test.js`
 - `src/steam/steamEvents.js`, `src/threeGame.js` (`calculateRunScore`), `main.js` (Game Over + submit listener), `src/leaderboardUi.js`
 - `electron/preload.cjs` — pending-submit queue hook (3.4)
+
+## Status log
+
+**2026-09-21 — shipped in `5c16fc5` (v2.4.8-beta)**
+
+- Phases 1–4 implemented as planned; full suite 3,605/3,605 green on the commit in isolation, lint clean.
+- Backend redeployed (`docker compose up -d --no-deps hunker-bunker-backend`). **Deploy blocker found and fixed:**
+  `~/server/compose.yaml` still said `dockerfile: Dockerfile` after `3a193eb` moved it to `deploy/Dockerfile`, so every
+  `--build` would have failed; now points at `deploy/Dockerfile` (backup: `compose.yaml.bak-2026-09-21`).
+- **Root cause 2 confirmed live:** right after the redeploy the public reads returned the scores that had been on
+  Steam all along: 4 players on `best_run_score` / `survival_time_seconds` / `deepest_depth_score`, 1 on `daily_ops_score`,
+  with persona names resolved. `fastest_extraction_ms` is empty because no extraction has been submitted yet.
+- Already-installed builds (v2.4.7) now submit successfully too, because the server accepts schema v2. They still read the
+  board in parallel with the submit, so the new run shows up one Game Over late until the 2.4.8 client ships.
+- Steam client upload: built from a clean worktree at `5c16fc5`; upload (`node scripts/steam-release.js --upload
+  --skip-build`) runs with your steamcmd login and lands on the private `beta` branch.
