@@ -48,19 +48,12 @@ function findFirstHole(fakeThis) {
 
 describe('getHoleCutForLandform', () => {
     it('matches the exact per-landform thresholds mountChunk renders with', () => {
-        expect(holeCutFor('maze')).toBe(0.08);
-        expect(holeCutFor('ruins')).toBe(0.08);
-        expect(holeCutFor('field')).toBe(0.03);
+        expect(holeCutFor('maze')).toBe(0.015);
+        expect(holeCutFor('ruins')).toBe(0.015);
+        expect(holeCutFor('field')).toBe(0.01);
         expect(holeCutFor('canyon')).toBe(0.0);
-        // Regression: crater used to fall through to the generic 0.06/0.22
-        // fallback (missing from this table even though every other
-        // per-landform density table in threeGame.js explicitly tunes
-        // crater), giving it a 16% hazard-wall roll window instead of the
-        // ~3-4% every named landform gets -- confirmed live via mountChunk
-        // producing 100+ individual animated hazard-wall meshes in a single
-        // crater chunk.
-        expect(holeCutFor('crater')).toBe(0.05);
-        expect(holeCutFor(undefined)).toBe(0.06);
+        expect(holeCutFor('crater')).toBe(0.02);
+        expect(holeCutFor(undefined)).toBe(0.015);
     });
 });
 

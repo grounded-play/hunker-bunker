@@ -58,10 +58,6 @@ test.describe('RGB archive simulation', () => {
         }, { key: RGB_SAVE_KEY, save: unlockedSave() });
         await page.reload();
         await bootToOperatorMenu(page);
-        if (await page.locator('#roster-modal').isVisible()) {
-            await page.locator('#close-roster-modal').click();
-        }
-
         await expect(archiveBtn).toBeVisible();
         await archiveBtn.click();
 

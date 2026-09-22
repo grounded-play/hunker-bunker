@@ -4,40 +4,16 @@ import { bootToOperatorMenu, bootToTitleSplash } from './helpers.js';
 test.describe('controller-ready modal focus', () => {
     test('operator commands use spatial WASD navigation across both columns', async ({ page }) => {
         await bootToOperatorMenu(page);
-        const rosterModal = page.locator('#roster-modal');
-        if (await rosterModal.isVisible()) await page.locator('#close-roster-modal').click();
 
         expect(await page.locator('.menu-header-actions').evaluate((element) => (
             getComputedStyle(element).gridTemplateColumns.split(' ').length
-        ))).toBe(3);
+        ))).toBe(2);
         await expect(page.locator('#daily-ops-btn')).toHaveCount(0);
 
-        await page.locator('#roster-btn').focus();
-        await page.keyboard.press('KeyS');
-        await expect(page.locator('#archive-btn')).toBeFocused();
+        await expect(page.locator('#roster-callsign-input')).toBeVisible();
 
-        await page.keyboard.press('KeyS');
-        await expect(page.locator('#start-game')).toBeFocused();
-
-        await page.keyboard.press('KeyW');
-        await expect(page.locator('#archive-btn')).toBeFocused();
-
-        await page.keyboard.press('KeyW');
-        await expect(page.locator('#roster-btn')).toBeFocused();
-
-        await page.keyboard.press('KeyD');
-        await expect(page.locator('#steam-vault-btn')).toBeFocused();
-
-        await page.keyboard.press('KeyD');
-        await expect(page.locator('#fabrication-btn')).toBeFocused();
-
-        await page.keyboard.press('KeyD');
-        await expect(page.locator('#hero-polish-btn')).toBeFocused();
-
-        await page.keyboard.press('KeyD');
-        await expect(page.locator('.char-selection .char-card.selected')).toBeFocused();
-
-        // Navigate down the hero stack through all cards to the back button
+        // The class rail contains only classes; down exits through the shared
+        // bottom-right advance dock.
         await page.locator('.char-selection .char-card[data-type="SCOUT"]').focus();
         await page.keyboard.press('KeyS');
         await expect(page.locator('.char-selection .char-card[data-type="TANK"]')).toBeFocused();
@@ -46,27 +22,24 @@ test.describe('controller-ready modal focus', () => {
         await expect(page.locator('.char-selection .char-card[data-type="ENGINEER"]')).toBeFocused();
 
         await page.keyboard.press('KeyS');
-        await expect(page.locator('#hero-select-back-btn')).toBeFocused();
-
-        await page.keyboard.press('KeyW');
-        await expect(page.locator('.char-selection .char-card[data-type="ENGINEER"]')).toBeFocused();
-
-        await page.locator('#hero-select-back-btn').focus();
-        await page.keyboard.press('KeyA');
         await expect(page.locator('#start-game')).toBeFocused();
 
-        await page.locator('#steam-vault-btn').focus();
-        await page.keyboard.press('KeyD');
-        await expect(page.locator('#fabrication-btn')).toBeFocused();
+        // Back belongs to the bottom of the first/operations panel.
+        await page.locator('#hero-select-back-btn').focus();
+        await page.keyboard.press('KeyS');
+        await expect(page.locator('#start-game')).toBeFocused();
 
-        await page.keyboard.press('KeyA');
-        await expect(page.locator('#steam-vault-btn')).toBeFocused();
+        await page.locator('#hero-select-back-btn').focus();
+        await page.keyboard.press('KeyW');
+        await expect(page.locator('#season-pass-btn')).toBeFocused();
+
+        await page.locator('#start-game').focus();
+        await page.keyboard.press('KeyW');
+        await expect(page.locator('#season-pass-btn')).toBeFocused();
     });
 
     test('operator polish picker uses a spatial WASD grid', async ({ page }) => {
         await bootToOperatorMenu(page);
-        const rosterModal = page.locator('#roster-modal');
-        if (await rosterModal.isVisible()) await page.locator('#close-roster-modal').click();
 
         await page.locator('#hero-polish-btn').click();
         await expect(page.locator('#operator-polish-modal')).toBeVisible();
@@ -282,8 +255,6 @@ test.describe('controller-ready modal focus', () => {
     // re-renders the bench, and the slot must survive it showing the new item.
     test('Armory slot updates when an equipment change re-renders the bench', async ({ page }) => {
         await bootToOperatorMenu(page);
-        const rosterConfirm = page.locator('#roster-confirm-btn');
-        if (await rosterConfirm.isVisible().catch(() => false)) await rosterConfirm.click();
         await page.locator('#start-game').click();
         await expect(page.locator('#armory-screen')).toBeVisible({ timeout: 30_000 });
         await expect(page.locator('#armory-btn-daily')).toHaveCount(0);

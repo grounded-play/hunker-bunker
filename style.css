@@ -1698,25 +1698,28 @@ body:not(.controller-mode) .settings-choice-control > .settings-controller-hint 
 /* --- Briefing Console (#menu) --- */
 #menu {
   position: absolute;
-  top: calc(var(--vu) * 4);
-  left: calc(var(--vu) * 6.4);
-  right: calc(var(--vu) * 6.4);
-  bottom: calc(var(--vu) * 4);
-  background: var(--bg-dark) url('/menu_bg_v2.webp') center / 100% 100% no-repeat;
-  border: 1px solid var(--border-subtle);
-  border-radius: 12px;
-  padding: calc(var(--vu) * 3.8) calc(var(--vu) * 4.2);
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 100%;
+  height: 100%;
+  background: var(--bg-dark) url('/menu_bg_v3.webp') center / 100% 100% no-repeat;
+  border: none;
+  border-radius: 0;
+  padding: 0;
   z-index: 8000;
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  grid-template-rows: calc(var(--vu) * 4.2) minmax(0, 1fr) auto;
-  gap: calc(var(--vu) * 1) calc(var(--vu) * 1.25);
+  grid-template-rows: calc(var(--vu) * 5.2) minmax(0, 1fr) auto;
+  gap: 0;
   overflow: hidden;
-  /* Keep the interactive console inside the inner face of the background frame. */
-  --briefing-content-top: calc(var(--vu) * 9.4);
-  --briefing-content-bottom: calc(var(--vu) * 11.4);
-  --briefing-content-left: calc(var(--vu) * 15.2);
-  --briefing-content-right: calc(var(--vu) * 12.4);
+  box-sizing: border-box;
+  /* Keep the interactive console aligned inside the three recessed bays of menu_bg_v3.webp */
+  --briefing-content-top: calc(var(--vu) * 7.6);
+  --briefing-content-bottom: calc(var(--vu) * 11.6);
+  --briefing-content-left: calc(var(--vu) * 12.2);
+  --briefing-content-right: calc(var(--vu) * 10.4);
 }
 
 .header-bar {
@@ -2010,7 +2013,7 @@ body:not(.controller-mode) .settings-choice-control > .settings-controller-hint 
 
 .module-row {
   display: grid;
-  grid-template-columns: minmax(0, 0.82fr) minmax(0, 0.68fr) minmax(0, 0.94fr);
+  grid-template-columns: minmax(0, 0.28fr) minmax(0, 0.42fr) minmax(0, 0.30fr);
   grid-template-rows: minmax(0, 1fr);
   gap: calc(var(--vu) * 1);
   align-items: stretch;
@@ -2040,7 +2043,7 @@ body:not(.controller-mode) .settings-choice-control > .settings-controller-hint 
 }
 
 .map-box {
-  width: 80%;
+  width: 100%;
   justify-self: end;
   padding: calc(var(--vu) * 1.25);
   display: flex;
@@ -2106,7 +2109,7 @@ body:not(.controller-mode) .settings-choice-control > .settings-controller-hint 
 
 .preview-box {
   display: grid;
-  grid-template-rows: minmax(0, 1fr) auto auto;
+  grid-template-rows: auto minmax(0, 1fr) auto auto;
   align-content: stretch;
   align-items: stretch;
   padding: calc(var(--vu) * 1.15);
@@ -2118,6 +2121,110 @@ body:not(.controller-mode) .settings-choice-control > .settings-controller-hint 
   display: flex;
   flex-direction: column;
   gap: calc(var(--vu) * 1);
+  padding-bottom: calc(var(--advance-height) + var(--vu) * 2.2);
+}
+
+/* Homebase owns operator identity and career telemetry directly. These are
+   live UI surfaces; the background plate only provides their physical bays. */
+.homebase-section-kicker {
+  color: rgba(255, 183, 91, 0.82);
+  font: 800 calc(var(--font-xs) * 0.62) / 1 'Space Mono', monospace;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.homebase-identity,
+.homebase-telemetry {
+  position: relative;
+  z-index: 3;
+  min-width: 0;
+  border: 1px solid rgba(255, 159, 28, 0.18);
+  border-radius: 7px;
+  background: rgba(4, 7, 9, 0.78);
+  box-shadow: inset 0 0 calc(var(--vu) * 1.2) rgba(255, 159, 28, 0.05);
+}
+
+.homebase-identity {
+  display: grid;
+  gap: calc(var(--vu) * 0.55);
+  padding: calc(var(--vu) * 0.72) calc(var(--vu) * 0.85);
+}
+
+.homebase-identity .roster-id-row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) calc(var(--vu) * 4.4);
+  align-items: center;
+  gap: calc(var(--vu) * 0.5);
+  margin: 0;
+}
+
+.homebase-identity .operator-callsign-input {
+  width: 100%;
+  min-width: 0;
+  height: calc(var(--vu) * 3.3);
+  padding: 0 calc(var(--vu) * 0.7);
+}
+
+.homebase-identity #roster-randomize-btn {
+  width: calc(var(--vu) * 4.4);
+  min-width: 0;
+  height: calc(var(--vu) * 3.3);
+  padding: 0 !important;
+  font-size: calc(var(--font-xs) * 1.05);
+}
+
+.homebase-identity__meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: calc(var(--vu) * 0.7);
+  min-width: 0;
+  color: rgba(200, 255, 180, 0.56);
+  font: 700 calc(var(--font-xs) * 0.56) / 1.25 'Space Mono', monospace;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+#homebase-loadout-summary {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.homebase-telemetry {
+  display: grid;
+  gap: calc(var(--vu) * 0.48);
+  padding: calc(var(--vu) * 0.7);
+}
+
+.homebase-telemetry__grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: calc(var(--vu) * 0.42);
+}
+
+.homebase-telemetry .roster-telemetry-chip {
+  min-width: 0;
+  padding: calc(var(--vu) * 0.45);
+  border: 1px solid rgba(255, 159, 28, 0.12);
+  background: rgba(8, 11, 13, 0.72);
+  font-size: calc(var(--font-xs) * 0.52);
+  line-height: 1.25;
+}
+
+.homebase-telemetry .roster-telemetry-chip .label,
+.homebase-telemetry .roster-telemetry-chip b {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (max-width: 1100px), (max-height: 700px) {
+  .homebase-identity,
+  .homebase-telemetry { padding: calc(var(--vu) * 0.45); gap: calc(var(--vu) * 0.32); }
+  .homebase-telemetry__grid { gap: calc(var(--vu) * 0.25); }
+  .homebase-identity__meta { font-size: calc(var(--font-xs) * 0.5); }
 }
 
 #game-container {
@@ -3526,7 +3633,7 @@ body:not(.controller-mode) .title-menu-btn:focus:not(:focus-visible) {
 .action-row {
   position: absolute;
   left: var(--briefing-content-left);
-  right: var(--briefing-content-right);
+  right: calc(var(--advance-right) + var(--advance-width) + calc(var(--vu) * 2));
   bottom: calc(var(--vu) * 1.8);
   display: flex;
   align-items: center;
@@ -5718,8 +5825,8 @@ input:checked+.slider:before {
 /* Gear button: pinned to top-right corner of #menu, matches menu padding */
 .menu-corner-settings {
   position: absolute;
-  top: calc(var(--vu) * 0.9);
-  right: calc(var(--vu) * 0.9);
+  top: calc(var(--vu) * 1.8);
+  right: calc(var(--vu) * 2.4);
   pointer-events: auto;
   z-index: 10000;
 }
@@ -7448,7 +7555,17 @@ html.phase-menu #npc-dialogue-modal,
 html.phase-menu #wanderer-encounter-modal,
 html.phase-menu #tutorial-prompt,
 html.phase-menu .radio-transmission-prompt,
-html.phase-menu .commentary-toast {
+html.phase-menu .commentary-toast,
+html.phase-menu #loop-step-hud,
+html.phase-menu #objective-tracker,
+html.phase-menu #mission-progress-hud,
+html.phase-menu #camp-quest-hud,
+html.phase-menu #black-box-hud-prompt,
+html.phase-menu #hole-hud-prompt,
+html.phase-menu #console-hud-prompt,
+html.phase-menu #o2-generator-hud-prompt,
+html.phase-menu #foundry-hud-prompt,
+html.phase-menu #lore-hud-prompt {
   display: none !important;
   visibility: hidden !important;
   opacity: 0 !important;
@@ -22423,6 +22540,429 @@ body.contrast-max .hud-panel {
 #menu .menu-command-column::before { display: none; }
 #menu .menu-command { min-height: 0; justify-content: center; padding: 4px; border: 1px solid rgba(255,159,28,.1); background: rgba(0,0,0,.18); }
 #menu .menu-command .start-btn { min-height: 44px !important; }
+
+/* Homebase frame fit and legibility pass. The background is authored to wrap
+   the 16:10 stage edge-to-edge. We stretch #menu to fill 100% of the viewport with
+   zero insets or borders so the ornate outer mechanical frame touches the stage perimeter,
+   and align the 3 bays with the recessed plates of menu_bg_v3.webp. */
+#menu {
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  --briefing-content-top: calc(var(--vu) * 7.6);
+  --briefing-content-bottom: calc(var(--vu) * 11.6);
+  --briefing-content-left: calc(var(--vu) * 12.2);
+  --briefing-content-right: calc(var(--vu) * 10.4);
+}
+
+#menu .title-group {
+  padding: calc(var(--vu) * 1.5) 0 0 calc(var(--vu) * 2.8);
+}
+
+#menu .module-row {
+  grid-template-columns: minmax(220px, 0.285fr) minmax(300px, 0.43fr) minmax(230px, 0.285fr);
+  gap: calc(var(--vu) * 1.35);
+}
+
+#menu .map-box,
+#menu .preview-box,
+#menu .char-selection {
+  width: 100%;
+}
+
+#menu .map-box #game-container {
+  flex: 0 0 34%;
+  width: 100%;
+  min-height: 100px;
+  max-height: 165px;
+  aspect-ratio: auto;
+}
+
+#menu .homebase-telemetry {
+  flex: 0 0 auto;
+  padding: calc(var(--vu) * 0.45) calc(var(--vu) * 0.6);
+  gap: calc(var(--vu) * 0.3);
+}
+
+#menu .homebase-telemetry__grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: calc(var(--vu) * 0.35) calc(var(--vu) * 0.45);
+}
+
+#menu .homebase-telemetry .roster-telemetry-chip {
+  padding: calc(var(--vu) * 0.35) calc(var(--vu) * 0.45);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 2px;
+  min-height: calc(var(--vu) * 4.4);
+  min-width: 0;
+  border: 1px solid rgba(255, 159, 28, 0.18);
+  background: rgba(8, 11, 13, 0.82);
+  border-radius: 4px;
+}
+
+#menu .homebase-telemetry .roster-telemetry-chip .label {
+  font-family: 'Space Mono', monospace;
+  font-size: clamp(8px, calc(var(--font-xs) * 0.62), 10px);
+  color: var(--text-muted);
+  letter-spacing: 0.05em;
+  line-height: 1.15;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+}
+
+#menu .homebase-telemetry .roster-telemetry-chip b {
+  font-family: 'Space Mono', monospace;
+  font-size: clamp(10px, calc(var(--font-xs) * 0.8), 12.5px);
+  font-weight: 900;
+  color: var(--accent-primary);
+  line-height: 1.2;
+  white-space: normal;
+  word-break: normal;
+  overflow-wrap: break-word;
+  text-overflow: clip;
+}
+
+#menu .menu-header-actions {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-auto-rows: auto;
+  align-content: start;
+  gap: calc(var(--vu) * 0.45);
+  padding: calc(var(--vu) * 0.35);
+  overflow: hidden;
+}
+
+#menu .menu-command {
+  min-width: 0;
+  padding: calc(var(--vu) * 0.3) calc(var(--vu) * 0.4);
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.28);
+  border: 1px solid rgba(255, 159, 28, 0.15);
+  border-radius: 4px;
+}
+
+#menu #season-pass-command,
+#menu #achievements-command:not(.hidden):last-child {
+  grid-column: 1 / -1;
+}
+
+#menu .homebase-command-info {
+  flex: 0 0 auto;
+  min-height: calc(var(--vu) * 4.7);
+  padding: calc(var(--vu) * 0.55) calc(var(--vu) * 0.7);
+  display: flex;
+  align-items: center;
+  border: 1px solid rgba(84, 218, 235, 0.24);
+  border-left: 3px solid rgba(84, 218, 235, 0.8);
+  border-radius: 4px;
+  background: linear-gradient(90deg, rgba(20, 63, 69, 0.32), rgba(5, 11, 14, 0.78));
+  color: rgba(211, 240, 244, 0.82);
+  font: 700 clamp(8.5px, calc(var(--font-xs) * 0.68), 11px)/1.3 'Space Mono', monospace;
+  overflow-wrap: anywhere;
+}
+
+#menu .menu-command .start-btn {
+  min-width: 0 !important;
+  min-height: 38px !important;
+  padding: 6px 8px !important;
+  font-size: clamp(9.5px, calc(var(--font-xs) * 0.78), 12.5px) !important;
+  font-weight: 800 !important;
+  letter-spacing: 0.05em !important;
+  line-height: 1.15 !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  text-align: center !important;
+}
+
+#menu .menu-command__status {
+  min-width: 0;
+  font-family: 'Space Mono', monospace;
+  font-size: clamp(8px, calc(var(--font-xs) * 0.62), 10.5px);
+  color: var(--text-muted);
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-align: center;
+  padding-top: 3px;
+}
+
+#menu .homebase-section-kicker {
+  font-size: clamp(8px, calc(var(--font-xs) * 0.68), 11px);
+  line-height: 1.2;
+}
+
+#menu .homebase-identity {
+  padding: calc(var(--vu) * 0.5) calc(var(--vu) * 0.7);
+  gap: calc(var(--vu) * 0.4);
+}
+
+#menu .homebase-identity .roster-id-row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) 36px;
+  align-items: center;
+  gap: calc(var(--vu) * 0.45);
+}
+
+#menu .homebase-identity .roster-callsign-label {
+  font-family: 'Space Mono', monospace;
+  font-size: clamp(9px, calc(var(--font-xs) * 0.75), 12px);
+  font-weight: 800;
+  color: var(--accent-primary);
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+}
+
+#menu .homebase-identity .operator-callsign-input {
+  min-height: 32px;
+  font-family: 'Space Mono', monospace;
+  font-size: clamp(12px, calc(var(--font-xs) * 1.05), 16px);
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-align: center;
+}
+
+#menu .homebase-identity #roster-randomize-btn {
+  width: 36px;
+  min-width: 36px;
+  min-height: 32px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#menu .homebase-identity__meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: calc(var(--vu) * 0.6);
+  flex-wrap: wrap;
+  font-size: clamp(8.5px, calc(var(--font-xs) * 0.68), 11.5px);
+  line-height: 1.25;
+}
+
+#menu .homebase-identity__meta .roster-id-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 6px;
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(77, 208, 125, 0.35);
+  border-radius: 3px;
+  white-space: nowrap;
+}
+
+#menu #homebase-loadout-summary {
+  font-family: 'Space Mono', monospace;
+  color: var(--text-muted);
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+#menu .hero-detail-panel__kicker,
+#menu .hero-detail-line1,
+#menu .hero-detail-line2 {
+  font-size: clamp(9px, calc(var(--font-xs) * 0.82), 13px);
+  line-height: 1.25;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+#menu .hero-stats-compact {
+  padding: calc(var(--vu) * 0.45) calc(var(--vu) * 0.7);
+  gap: calc(var(--vu) * 0.35);
+}
+
+#menu .hero-stat-compact-row {
+  display: grid;
+  grid-template-columns: calc(var(--vu) * 8.5) calc(var(--vu) * 6.5) minmax(calc(var(--vu) * 7.5), 1fr);
+  align-items: center;
+  gap: calc(var(--vu) * 0.5);
+  min-width: 0;
+}
+
+#menu .hero-stat-compact-label {
+  font-family: 'Space Mono', monospace;
+  font-size: clamp(9px, calc(var(--font-xs) * 0.74), 12px);
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  color: rgba(255, 255, 255, 0.65);
+  white-space: nowrap;
+}
+
+#menu .hero-stat-compact-value {
+  font-family: 'Space Mono', monospace;
+  font-size: clamp(9px, calc(var(--font-xs) * 0.8), 12px);
+  font-weight: 800;
+  text-align: center;
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+}
+
+#menu .hero-polish-slot {
+  min-height: 32px;
+  padding: calc(var(--vu) * 0.35) calc(var(--vu) * 0.7);
+}
+
+#menu .hero-polish-slot__label,
+#menu .hero-polish-slot__name {
+  font-size: clamp(9px, calc(var(--font-xs) * 0.8), 12.5px);
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+#menu .char-card {
+  padding: calc(var(--vu) * 0.8) calc(var(--vu) * 0.9);
+  grid-template-columns: minmax(0, 1fr) calc(var(--vu) * 3.6);
+  gap: calc(var(--vu) * 0.5);
+}
+
+#menu .char-kicker {
+  font-size: clamp(8.5px, calc(var(--font-xs) * 0.7), 11px);
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+#menu .char-name {
+  font-size: clamp(15px, calc(var(--vu) * 2.2), 22px);
+  font-weight: 900;
+  letter-spacing: 0.06em;
+}
+
+#menu .char-desc-line1,
+#menu .char-desc-line2 {
+  font-size: clamp(9px, calc(var(--font-xs) * 0.74), 12px);
+  line-height: 1.25;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+#menu .char-best-score {
+  font-size: clamp(8.5px, calc(var(--font-xs) * 0.68), 11px);
+  line-height: 1.2;
+  margin-top: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+#menu .hero-select-back-btn {
+  flex: 0 0 auto;
+  width: 100%;
+  margin-top: calc(var(--vu) * 0.35);
+  min-height: 40px;
+  padding: calc(var(--vu) * 0.5) calc(var(--vu) * 0.8);
+  font-size: clamp(9px, calc(var(--font-xs) * 0.75), 12px);
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Title actions live on the same right-hand deployment axis as the shared
+   pre-flight advance dock. The backing veil follows the controls so the key
+   art remains visible instead of being blurred on the empty side. */
+#splash::before {
+  left: auto;
+  right: 0;
+  background: linear-gradient(270deg, rgba(4, 6, 7, 0.94) 0%, rgba(4, 6, 7, 0.7) 58%, transparent 100%);
+  -webkit-mask-image: linear-gradient(270deg, black 62%, transparent 100%);
+  mask-image: linear-gradient(270deg, black 62%, transparent 100%);
+}
+
+.splash-content {
+  align-items: flex-end;
+  text-align: right;
+}
+
+.splash-subtitle {
+  margin-right: calc(var(--vu) * 0.2);
+  margin-left: 0;
+}
+
+#title-profile-hud,
+.title-profile-hud {
+  border-left: 1.5px solid rgba(0, 229, 255, 0.45) !important;
+  border-right: 5px solid #00e5ff !important;
+  text-align: left;
+}
+
+.loader-version-tag { text-align: right; }
+
+@keyframes title-menu-slide-in {
+  0% { opacity: 0; transform: translateX(40px); }
+  100% { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes title-btn-slide-in {
+  0% { opacity: 0; transform: translateX(30px); }
+  100% { opacity: 1; transform: translateX(0); }
+}
+
+.splash-mist__layer--tendrils {
+  background:
+    radial-gradient(circle 28% at 85% 72%, rgba(255, 160, 40, 0.12) 0%, rgba(100, 210, 230, 0.08) 40%, transparent 70%),
+    radial-gradient(circle 22% at 75% 85%, rgba(180, 225, 235, 0.1) 0%, transparent 65%);
+}
+
+@media (max-width: 1050px), (max-height: 680px) {
+  #menu {
+    --briefing-content-top: calc(var(--vu) * 7.7);
+    --briefing-content-bottom: calc(var(--vu) * 11.6);
+    --briefing-content-left: calc(var(--vu) * 12.2);
+    --briefing-content-right: calc(var(--vu) * 9.8);
+  }
+  #menu .module-row {
+    grid-template-columns: minmax(185px, 0.29fr) minmax(250px, 0.42fr) minmax(190px, 0.29fr);
+    gap: calc(var(--vu) * 0.75);
+  }
+  #menu .map-box,
+  #menu .preview-box,
+  #menu .char-selection { padding: calc(var(--vu) * 0.75); }
+  #menu .char-selection { gap: calc(var(--vu) * 0.55); }
+  #menu .map-box #game-container {
+    flex-basis: 32%;
+    min-height: 96px;
+    max-height: 145px;
+  }
+  #menu .menu-header-actions {
+    grid-auto-rows: minmax(38px, auto);
+    gap: calc(var(--vu) * 0.35);
+  }
+  #menu .menu-command .start-btn {
+    min-height: 34px !important;
+  }
+  #menu .menu-command,
+  #menu .homebase-telemetry .roster-telemetry-chip {
+    padding: calc(var(--vu) * 0.22);
+  }
+}
 
 /* Armory remains inside the stage but uses its space at desktop/Deck scales. */
 .armory-hud { padding: clamp(16px,2.2vh,34px) clamp(18px,2.4vw,44px); gap: clamp(10px,1.4vh,20px); }

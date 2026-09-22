@@ -367,49 +367,70 @@
                   <div class="map-box-door__panel map-box-door__panel--right"></div>
                 </div>
               </div>
+              <section class="homebase-telemetry" id="roster-run-telemetry" aria-labelledby="homebase-telemetry-title">
+                <div class="homebase-section-kicker" id="homebase-telemetry-title" data-i18n="ui.roster.telemetry_title">CAREER TELEMETRY</div>
+                <div class="homebase-telemetry__grid">
+                  <div class="roster-telemetry-chip"><span class="label" data-i18n="ui.roster.deepest_sector">DEEPEST SECTOR:</span> <b data-i18n="ui.roster.sector_0" id="roster-stat-depth">SECTOR 0</b></div>
+                  <div class="roster-telemetry-chip"><span class="label" data-i18n="ui.roster.total_distance">TOTAL DISTANCE:</span> <b id="roster-stat-distance">0u</b></div>
+                  <div class="roster-telemetry-chip"><span class="label" data-i18n="ui.roster.hostiles">HOSTILES:</span> <b data-i18n="ui.roster.0_eliminated" id="roster-stat-kills">0 ELIMINATED</b></div>
+                  <div class="roster-telemetry-chip"><span class="label" data-i18n="ui.roster.black_box">BLACK BOX:</span> <b data-i18n="ui.roster.none" id="roster-stat-blackbox">NONE</b></div>
+                </div>
+              </section>
               <div class="menu-header-actions">
                 <div data-i18n-aria-label="ui.menu.aria_label_operations_and_steam" class="menu-command-column" aria-label="Operations and Steam commands">
-                  <div class="menu-command">
-                    <button data-i18n-title="ui.menu.title_operator_roster_callsign" class="start-btn start-btn--roster" id="roster-btn" data-i18n="ui.hub.roster" title="Operator roster — callsign and equipped loadout">▣ ROSTER</button>
-                    <div class="menu-command__status" id="roster-command-status">0 / 0 ARSENAL</div>
-                  </div>
                   <div class="menu-command" id="steam-vault-command">
-                    <button data-i18n-title="ui.menu.title_steam_vault_view" class="start-btn start-btn--vault" id="steam-vault-btn" data-i18n="ui.hub.vault" title="Steam Vault — view Steam-owned cosmetics">◈ STEAM VAULT</button>
+                    <button class="start-btn start-btn--vault" id="steam-vault-btn" data-i18n="ui.hub.vault" aria-describedby="homebase-command-info">◈ STEAM VAULT</button>
                     <div class="menu-command__status" id="vault-command-status">OFFLINE</div>
                   </div>
                   <div class="menu-command hidden" id="archive-sims-command">
-                    <button data-i18n-title="ui.menu.title_archive_simulations_unlockable" class="start-btn start-btn--archive-sims" id="archive-sims-btn" data-i18n="ui.hub.archive_sims" title="Archive Simulations — unlockable story mini-games">◈ ARCHIVE SIMS</button>
+                    <button class="start-btn start-btn--archive-sims" id="archive-sims-btn" data-i18n="ui.hub.archive_sims" aria-describedby="homebase-command-info">◈ ARCHIVE SIMS</button>
                     <div data-i18n="ui.menu.rgb" class="menu-command__status" id="archive-sims-command-status">RGB</div>
                   </div>
                   <div class="menu-command menu-command--fab hidden" id="fabrication-command">
-                    <button data-i18n-title="ui.menu.title_fabrication_bay_print" class="start-btn start-btn--fab" id="fabrication-btn" title="Fabrication Bay — print gear from salvage (unlocks once the base is powered)">◇ FAB BAY</button>
+                    <button class="start-btn start-btn--fab" id="fabrication-btn" aria-describedby="homebase-command-info">◇ FAB BAY</button>
                     <div class="menu-command__status" id="fab-command-status">0 / 0 PRINTED</div>
                   </div>
                 </div>
                 <div data-i18n-aria-label="ui.menu.aria_label_records_and_dossier" class="menu-command-column" aria-label="Records and Dossier commands">
                   <div class="menu-command">
-                    <button data-i18n-title="ui.menu.title_bunker_archive_discovered" class="start-btn start-btn--archive" id="archive-btn" data-i18n="ui.hub.archive" title="Bunker Archive — discovered lore logs">◈ ARCHIVE</button>
+                    <button class="start-btn start-btn--archive" id="archive-btn" data-i18n="ui.hub.archive" aria-describedby="homebase-command-info">◈ ARCHIVE</button>
                     <div class="menu-command__status" id="archive-command-status">0 / 27 LOGS</div>
                   </div>
                   <div class="menu-command">
-                    <button data-i18n-title="ui.menu.title_field_codex_catalogued" class="start-btn start-btn--codex" id="codex-btn" data-i18n="ui.hub.codex" title="Field Codex — catalogued hostiles, infrastructure, and phenomena">❑ CODEX</button>
+                    <button class="start-btn start-btn--codex" id="codex-btn" data-i18n="ui.hub.codex" aria-describedby="homebase-command-info">❑ CODEX</button>
                     <div class="menu-command__status" id="codex-command-status">0 / 0 INTEL</div>
                   </div>
                   <div class="menu-command" id="season-pass-command">
-                    <button data-i18n-title="ui.menu.title_tactical_dossier_beta" class="start-btn start-btn--dossier" id="season-pass-btn" data-i18n="ui.hub.dossier" title="Tactical Dossier — Beta Season 1 progression">◈ DOSSIER</button>
+                    <button class="start-btn start-btn--dossier" id="season-pass-btn" data-i18n="ui.hub.dossier" aria-describedby="homebase-command-info">◈ DOSSIER</button>
                     <div class="menu-command__status" id="season-pass-command-status">TIER 0 / 50</div>
                   </div>
                   <div class="menu-command hidden" id="achievements-command">
-                    <button data-i18n-title="ui.menu.title_achievement_records_unlocked" class="start-btn start-btn--achievements" id="achievements-btn" data-i18n="ui.hub.achievements" title="Achievement records — unlocked run milestones">ACHIEVEMENTS</button>
+                    <button class="start-btn start-btn--achievements" id="achievements-btn" data-i18n="ui.hub.achievements" aria-describedby="homebase-command-info">ACHIEVEMENTS</button>
                     <div class="menu-command__status" id="achievements-command-status">LOCKED</div>
                   </div>
                 </div>
               </div>
+              <div class="homebase-command-info" id="homebase-command-info" aria-live="polite"></div>
+              <button type="button" class="hero-select-back-btn" id="hero-select-back-btn">
+                <span data-i18n="ui.menu.return_main">← RETURN TO MAIN MENU</span> <span data-i18n="ui.menu.esc">[ESC]</span>
+              </button>
               <div class="module-scanline"></div>
             </div>
 
             <!-- Module 2: Hero UI -->
             <div class="preview-box">
+              <section class="homebase-identity" aria-labelledby="homebase-identity-title">
+                <div class="homebase-section-kicker" id="homebase-identity-title" data-i18n="ui.roster.registration_title">OPERATIVE REGISTRATION</div>
+                <div class="roster-id-row">
+                  <label data-i18n="ui.roster.callsign" class="roster-callsign-label" for="roster-callsign-input">CALLSIGN:</label>
+                  <input data-i18n-placeholder="ui.roster.placeholder_agent_01" type="text" id="roster-callsign-input" class="operator-callsign-input" maxlength="16" placeholder="AGENT-01" autocomplete="off" spellcheck="false">
+                  <button type="button" class="dev-btn dev-btn--accent" id="roster-randomize-btn" aria-label="Randomize Callsign" data-i18n-aria-label="ui.roster.randomize">↻</button>
+                </div>
+                <div class="homebase-identity__meta">
+                  <span class="roster-id-badge"><span data-i18n="ui.roster.id_label">ID:</span> <span class="roster-id" id="roster-id">op-—</span></span>
+                  <span id="homebase-loadout-summary">FIELD LOADOUT // STANDARD ISSUE</span>
+                </div>
+              </section>
               <div class="hero-identity-block">
                 <div class="char-preview-stage" aria-hidden="true">
                   <img id="char-preview-fallback" class="char-preview-fallback" src="/Tank.full_v2.png" alt="" />
@@ -440,7 +461,7 @@
                   <span data-i18n="ui.menu.fast" class="hero-stat-compact-value" id="hero-stat-spd-val">FAST</span>
                 </div>
                 <div class="hero-stat-compact-row">
-                  <span data-i18n="ui.menu.o2_use" data-i18n-aria-label="ui.menu.aria_label_o2_consumption_rate" data-i18n-title="ui.menu.title_o2_consumption_rate" class="hero-stat-compact-label" aria-label="O2 Consumption Rate — Lower is Better" title="O₂ Consumption Rate — Lower value means suit oxygen drains slower">O₂ USE</span>
+                  <span id="hero-stat-o2-label" data-i18n="ui.menu.o2_use" data-i18n-aria-label="ui.menu.aria_label_o2_consumption_rate" class="hero-stat-compact-label" aria-label="O2 Consumption Rate — Lower is Better">O₂ USE</span>
                   <div class="hero-stat-pips" id="hero-stat-o2"></div>
                   <span data-i18n="ui.menu.low" class="hero-stat-compact-value" id="hero-stat-o2-val">LOW</span>
                 </div>
@@ -449,7 +470,7 @@
                   <div class="hero-stat-pips" id="hero-stat-loot"></div>
                   <span data-i18n="ui.menu.med" class="hero-stat-compact-value" id="hero-stat-loot-val">MED</span>
                 </div>
-                <button data-i18n-title="ui.menu.title_choose_operator_polish" type="button" class="hero-polish-slot" id="hero-polish-btn" title="Choose operator polish">
+                <button type="button" class="hero-polish-slot" id="hero-polish-btn" aria-describedby="homebase-command-info">
                   <span class="hero-polish-slot__swatch" id="hero-polish-swatch"></span>
                   <span class="hero-polish-slot__copy">
                     <span data-i18n="ui.menu.suit_polish" class="hero-polish-slot__label">SUIT POLISH</span>
@@ -500,26 +521,19 @@
                 </div>
                 <div class="char-icon">⚙</div>
               </div>
-              <button type="button" class="hero-select-back-btn" id="hero-select-back-btn">
-                <span data-i18n="ui.menu.return_main">← RETURN TO MAIN MENU</span> <span data-i18n="ui.menu.esc">[ESC]</span>
-              </button>
             </div>
           </div>
 
         </div>
       </div>
 
-      <!-- Action Row: prior contractor black box -->
-      <div class="action-row">
-        <div class="last-contractor hidden" id="last-contractor"></div>
-      </div>
     </div>
 
     <!-- INITIALIZE lives beside #menu, not inside it: #menu carries a 3D
          mouse-tilt transform and its panels use contain: layout paint, and
          either would trap the shared bottom-right advance slot
          (style.css .hb-advance-slot). Hidden whenever #menu is. -->
-    <button class="start-btn map-initialize-btn hb-advance-slot" id="start-game" data-i18n="ui.hub.initialize">INITIALIZE</button>
+    <button class="start-btn map-initialize-btn hb-advance-slot" id="start-game" data-i18n="ui.hub.enter_armory">ENTER ARMORY</button>
 
     <!-- Fullsize 3D Pre-Mission Armory (#armory-screen) -->
     <section data-i18n-aria-label="ui.armory.aria_label_pre_mission_armory" id="armory-screen" class="hidden" aria-label="Pre-Mission Armory">
@@ -571,51 +585,6 @@
           </div>
         </div>
         <div id="archive-log-detail-text" class="archive-log-detail-text"></div>
-      </div>
-    </div>
-
-    <!-- Operator Roster & Agent Dossier Modal -->
-    <div id="roster-modal" class="modal hidden" aria-hidden="true">
-      <div class="modal-content roster-modal-content">
-        <div class="terminal-scanline"></div>
-        <div class="roster-header">
-          <button class="close-modal" id="close-roster-modal">×</button>
-          <div class="roster-title" id="roster-title-label">▣ OPERATOR DOSSIER // DEPLOYMENT TELEMETRY</div>
-          <div class="roster-id-row">
-            <label data-i18n="ui.roster.callsign" class="roster-callsign-label" for="roster-callsign-input">CALLSIGN:</label>
-            <input data-i18n-placeholder="ui.roster.placeholder_agent_01" type="text" id="roster-callsign-input" class="operator-callsign-input" maxlength="16" placeholder="AGENT-01" autocomplete="off" spellcheck="false">
-            <button type="button" class="dev-btn dev-btn--accent" id="roster-randomize-btn" title="Randomize Callsign" data-i18n-title="ui.roster.randomize">🎲 RANDOM</button>
-          </div>
-          <!-- Run Telemetry Summary Block -->
-          <div id="roster-run-telemetry" class="roster-run-telemetry">
-            <div class="roster-telemetry-chip"><span class="label" data-i18n="ui.roster.deepest_sector">DEEPEST SECTOR:</span> <b data-i18n="ui.roster.sector_0" id="roster-stat-depth">SECTOR 0</b></div>
-            <div class="roster-telemetry-chip"><span class="label" data-i18n="ui.roster.total_distance">TOTAL DISTANCE:</span> <b id="roster-stat-distance">0u</b></div>
-            <div class="roster-telemetry-chip"><span class="label" data-i18n="ui.roster.hostiles">HOSTILES:</span> <b data-i18n="ui.roster.0_eliminated" id="roster-stat-kills">0 ELIMINATED</b></div>
-            <div class="roster-telemetry-chip"><span class="label" data-i18n="ui.roster.black_box">BLACK BOX:</span> <b data-i18n="ui.roster.none" id="roster-stat-blackbox">NONE</b></div>
-          </div>
-          <div class="roster-sub-bar">
-            <div class="roster-stat" id="roster-fab-count">ARSENAL: 0 / 0 SCHEMATICS FABRICATED</div>
-            <div class="roster-id-badge"><span data-i18n="ui.roster.id_label">ID:</span> <span class="roster-id" id="roster-id">op-—</span></div>
-          </div>
-        </div>
-        <div data-i18n="ui.roster.equipped_sidearm" class="roster-section-label">EQUIPPED SIDEARM</div>
-        <div id="roster-weapon-grid" class="roster-weapon-grid"></div>
-        <div data-i18n="ui.roster.equipped_steam_cosmetics" class="roster-section-label">EQUIPPED STEAM COSMETICS</div>
-        <div id="roster-cosmetics-row" class="roster-cosmetics-row">
-          <div class="roster-cosmetic-chip">
-            <span class="label" data-i18n="ui.roster.patch">PATCH:</span> <span data-i18n="ui.roster.none" id="roster-equipped-patch">NONE</span>
-          </div>
-          <div class="roster-cosmetic-chip">
-            <span class="label" data-i18n="ui.roster.decal">DECAL:</span> <span data-i18n="ui.roster.none" id="roster-equipped-decal">NONE</span>
-          </div>
-          <div class="roster-cosmetic-chip">
-            <span class="label" data-i18n="ui.roster.finish">FINISH:</span> <span data-i18n="ui.roster.none" id="roster-equipped-weapon-finish">NONE</span>
-          </div>
-        </div>
-        <div class="roster-hint" id="roster-hint" data-i18n="ui.roster.hint">Fabricate weapons in the FAB BAY to equip them here. Customize cosmetics in the STEAM VAULT.</div>
-        <div class="roster-footer-actions">
-          <button type="button" class="start-btn roster-confirm-btn hb-advance-slot" id="roster-confirm-btn">CONFIRM & DEPLOY</button>
-        </div>
       </div>
     </div>
 

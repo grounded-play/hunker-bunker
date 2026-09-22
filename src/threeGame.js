@@ -534,7 +534,7 @@ const PICKUP_COLLECT_DURATION = 0.2;
 export const WEAPON_CLIP_SIZE = 6;
 const WEAPON_RELOAD_DURATION = 1.25;
 export const WEAPON_FIRE_COOLDOWN = 0.14;
-export const WEAPON_AMMO_REFILL_INTERVAL = 10;
+export const WEAPON_AMMO_REFILL_INTERVAL = 6.0;
 const WEAPON_AMMO_REFILL_INTERVAL_REDUCTION = 2.1;
 const WEAPON_AMMO_REFILL_MIN_INTERVAL = 3.6;
 const WEAPON_BLOCKED_CUE_INTERVAL = 420;
@@ -4605,6 +4605,10 @@ export class ThreeGame {
             const overlay = await createPlayer3dOverlay({
                 targetHeight: this.playerSpriteScale * 0.98,
                 allowStatic: true,
+                wearableOverclocks: [
+                    window.loadout?.getEquippedRigModule?.(1, this.playerType) ?? null,
+                    window.loadout?.getEquippedRigModule?.(2, this.playerType) ?? null
+                ],
                 ...classVisuals[overlayType]
             });
             if (this.player !== playerRoot || this.playerType !== overlayType) {
@@ -7299,7 +7303,6 @@ export class ThreeGame {
             || isVisible('settings-popup')
             || isVisible('tactical-map-modal')
             || isVisible('codex-modal')
-            || isVisible('roster-modal')
             || isVisible('fabrication-modal')
             || isVisible('about-modal')
             || isVisible('dev-console-modal')
@@ -13078,6 +13081,7 @@ export class ThreeGame {
         if (this.playerType === 'TANK' && this.bank && this.bank.isSkillUnlocked('tank_plating_1')) {
             maxHp += 1;
         }
+        maxHp += Math.max(0, Number(this.loadoutMods?.maxHealthBonus) || 0);
         this.playerVitals.maxHp = maxHp;
         this.playerVitals.hp = Math.min(this.playerVitals.hp, this.playerVitals.maxHp);
         this.applyWeaponUpgrades();
@@ -13101,7 +13105,7 @@ export class ThreeGame {
         if (this.playerType === 'SCOUT' && this.bank && this.bank.isSkillUnlocked('scout_ammo_1')) {
             baseClipSize += 3;
         }
-        this.weaponClipSize = baseClipSize;
+        this.weaponClipSize = Math.max(1, baseClipSize + (Number(this.loadoutMods?.clipSizeBonus) || 0));
 
         let extraDamage = shotDamage;
         if (this.playerType === 'TANK' && this.bank && this.bank.isSkillUnlocked('tank_damage_1')) {
@@ -17462,6 +17466,7 @@ export class ThreeGame {
             100,
             (this.runRelics ?? []).filter((relic) => relic?.id === 'punctured_lung')
         );
+        this.playerVitals.maxO2 *= this.loadoutMods?.maxOxygenMultiplier ?? 1;
         this.playerVitals.o2 = this.playerVitals.maxO2;
         this.playerVitals.o2HealthTimer = 0;
         this.isPlayerDead = false;
@@ -25526,8 +25531,8 @@ export class ThreeGame {
                     ));
                     holeOverlayKeys.push(this.getWallKey(worldX, worldZ));
 
-                    // Seeded chance (~40%) to spawn a Fungal Spore Vent (Stage 1 Fungal Enemy) on hole tiles
-                    if (wallTypeRng() < 0.40) {
+                    // Seeded chance (~20%) to spawn a Fungal Spore Vent (Stage 1 Fungal Enemy) on hole tiles
+                    if (wallTypeRng() < 0.20) {
                         const placement = {
                             x: worldX,
                             z: worldZ,
@@ -27932,6 +27937,9 @@ export class ThreeGame {
             baseY,
             scale: placement.scale,
             rarity: placement.rarity ?? LOOT_RARITIES[0],
+            amount: placement.amount ?? (placement.type === 'ammo'
+                ? (placement.rarity?.key === 'legendary' ? 16 : (placement.rarity?.key === 'rare' ? 8 : 4))
+                : 1),
             burst,
             collectTimer: 0,
             collectLock: placement.collectLock ?? 0,
@@ -28275,7 +28283,12 @@ export class ThreeGame {
                             this.healPlayer(1);
                         }
                         window.dispatchEvent(new CustomEvent('pickup-collected', {
-                            detail: { type: pickupType, rarity, value: 1 }
+                            detail: {
+                                type: pickupType,
+                                rarity,
+                                value: 1,
+                                amount: pickup.userData?.amount ?? (pickupType === 'ammo' ? 4 : 1)
+                            }
                         }));
                     }
                     removals.push(pickup);
@@ -32234,24 +32247,12 @@ export class ThreeGame {
     // — reported as "holes are in the door" since doorway-adjacent wall
     // tiles roll through this same per-tile check.
     getHoleCutForLandform(landform) {
-        if (landform === LANDFORMS.MAZE) return 0.08;
-        if (landform === LANDFORMS.RUINS) return 0.08;
-        if (landform === LANDFORMS.FIELD) return 0.03;
+        if (landform === LANDFORMS.MAZE) return 0.015;
+        if (landform === LANDFORMS.RUINS) return 0.015;
+        if (landform === LANDFORMS.FIELD) return 0.01;
         if (landform === LANDFORMS.CANYON) return 0.0;
-        // CRATER was missing here (every other per-landform density table in
-        // this file -- addTerrainStepDressing's stepChanceByLandform, the
-        // damagedCut ladder below, the wallHeightScale switch -- explicitly
-        // tunes CRATER). Landing on the generic fallback meant it inherited
-        // hazardCut's fallback too (0.22 vs the ~0.05-0.12 every named
-        // landform gets), a 4-8x wider hazard-wall roll window than intended
-        // -- confirmed live via mountChunk producing 100+ individual
-        // hazard-wall meshes in a single crater chunk (hazard walls are
-        // deliberately kept as individual animated Meshes, so this alone
-        // was a major per-chunk mount-cost outlier). 0.05/0.08 mirrors
-        // stepChanceByLandform's CRATER value sitting between FIELD and
-        // MAZE/RUINS.
-        if (landform === LANDFORMS.CRATER) return 0.05;
-        return 0.06;
+        if (landform === LANDFORMS.CRATER) return 0.02;
+        return 0.015;
     }
 
     // Single source of truth for the hazard-wall roll threshold, shared by
@@ -32259,13 +32260,12 @@ export class ThreeGame {
     // damage-zone check below — same drift risk getHoleCutForLandform's
     // comment describes.
     getHazardCutForLandform(landform) {
-        if (landform === LANDFORMS.MAZE) return 0.12;
-        if (landform === LANDFORMS.RUINS) return 0.12;
-        if (landform === LANDFORMS.FIELD) return 0.05;
-        if (landform === LANDFORMS.CANYON) return 0.06;
-        // See getHoleCutForLandform's CRATER comment above.
-        if (landform === LANDFORMS.CRATER) return 0.08;
-        return 0.22;
+        if (landform === LANDFORMS.MAZE) return 0.06;
+        if (landform === LANDFORMS.RUINS) return 0.06;
+        if (landform === LANDFORMS.FIELD) return 0.03;
+        if (landform === LANDFORMS.CANYON) return 0.04;
+        if (landform === LANDFORMS.CRATER) return 0.05;
+        return 0.06;
     }
 
     // Deterministically recomputes the same wallTypeRoll mountChunk uses,
@@ -32348,6 +32348,8 @@ export class ThreeGame {
         const chunkX = Math.floor(worldX / this.chunkSize);
         const chunkY = Math.floor(worldY / this.chunkSize);
         if (this.bunkerBlastDoorState && chunkX === 0 && chunkY === 0) return null;
+        if (this.isInTutorialRing?.(chunkX, chunkY)) return null;
+        if (typeof this.getProceduralDoorAt === 'function' && this.getProceduralDoorAt(tileX, tileY)) return null;
         const holeCut = this.getHoleCutForLandform(this.getChunkLandform(chunkX, chunkY));
         if (holeCut <= 0) return null;
 
@@ -33467,10 +33469,19 @@ export class ThreeGame {
             // readable and collision-light. The old radial-room override made
             // a large chamber appear beside the start almost every run, then
             // populated it with props before the player had a clear route.
-            const roomMode = !tutorialRing && (isDestination
-                || regionalRoles.includes('ring')
-                || nearestRadialRoom <= this.chunkSize * 0.9
-                || random() < 0.24);
+            // Anti-bunching: Ensure procedural rooms do not cluster directly against
+            // an adjacent room neighbor unless it is an explicitly designated destination.
+            const hasAdjacentRoom = Boolean(
+                this.wfcMetadataCache?.get(`${chunkX - 1},${chunkY}`)?.roomInstances?.length ||
+                this.wfcMetadataCache?.get(`${chunkX + 1},${chunkY}`)?.roomInstances?.length ||
+                this.wfcMetadataCache?.get(`${chunkX},${chunkY - 1}`)?.roomInstances?.length ||
+                this.wfcMetadataCache?.get(`${chunkX},${chunkY + 1}`)?.roomInstances?.length
+            );
+            const roomMode = !tutorialRing && (isDestination || (!hasAdjacentRoom && (
+                regionalRoles.includes('ring')
+                || (nearestRadialRoom <= this.chunkSize * 0.9 && (Math.abs(chunkX + chunkY) % 2 === 0))
+                || random() < 0.20
+            )));
             if (!this.authoredWorldTiles) {
                 const architectural = generateArchitecturalMazeChunk(random, {
                     size: this.chunkSize,

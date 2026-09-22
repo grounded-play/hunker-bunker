@@ -81,6 +81,19 @@ describe('achievement checks', () => {
         expect(state.unlocked.quick_study).toBeTruthy();
     });
 
+    it('accumulates career distance and kills across completed runs', () => {
+        let state = createDefaultAchievementState();
+        state = applyAchievementEvent(state, 'run-end', {
+            outcome: 'death', distanceTravelled: 125.4, snailsKilled: 3
+        }, 1).state;
+        state = applyAchievementEvent(state, 'run-end', {
+            outcome: 'victory', distanceTravelled: 74.6, snailsKilled: 2
+        }, 2).state;
+
+        expect(state.stats.totalDistanceTravelled).toBe(200);
+        expect(state.stats.totalKills).toBe(5);
+    });
+
     it('unlocks hardened on the fifth death', () => {
         let state = createDefaultAchievementState();
         for (let i = 0; i < 4; i++) {

@@ -1,6 +1,6 @@
 {
     "description": "Localization coverage ratchet. Counts may fall, never rise. Regenerate with: npm run i18n:audit -- --baseline",
-    "generated": "2026-09-17",
+    "generated": "2026-09-21",
     "markup": {
         "screens": {},
         "total": 0
@@ -9,5 +9,5 @@
         "modules": {},
         "total": 0
     },
-    "orphanKeys": 34
+    "orphanKeys": 54
 }

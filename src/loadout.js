@@ -4,6 +4,7 @@
 
 import { getRecipe } from './fabricator.js';
 import { COMMUNITY_CLASS_MAP } from './data/communitySkins.js';
+import { EQUIPMENT_SCHEMA_VERSION, composeEquipmentModifiers, getEquipmentStatus } from './data/equipmentDefinitions.js';
 
 export const STORAGE_KEY_V2 = 'hb_loadout_v2';
 export const STORAGE_KEY_V1 = 'hb_loadout_v1';
@@ -390,70 +391,29 @@ export class LoadoutManager {
         };
 
         const lo = this.getClassLoadout(classId);
-        const activeMods = [lo.mod1Id, lo.mod2Id].filter(Boolean);
-
-        for (const id of activeMods) {
-            switch (String(id)) {
-                case '4140': // Cryo-Capacitor Overclock
-                    mods.cryoDurationMultiplier += 0.08;
-                    break;
-                case '4141': // Magnetic Scavenger Coil
-                    mods.scrapMagnetRadiusBonus += 0.20;
-                    break;
-                case '4142': // Bio-Hazard Filter Vent
-                    mods.gasDamageReduction += 0.12;
-                    break;
-                case '4143': // Kinetic Impact Bushing
-                    mods.kineticPierceBonus += 1;
-                    break;
-                case '4144': // Thermal Heat Exchanger
-                    mods.shieldRechargeDelayMultiplier -= 0.10;
-                    break;
-                case '4145': // Echo-Location Transceiver
-                    mods.hiddenRoomDetectionRange = 15;
-                    break;
-                case '4146': // Symbiotic Adrenaline Pump
-                    mods.lowHpSpeedBoostActive = true;
-                    break;
-                case '4147': // Zero-Point Flux Overdrive
-                    mods.dashRefundOnMultiKill = true;
-                    break;
-                case '4160': // Ballast Plating (+2 max HP, -15% move speed)
-                    mods.maxHealthBonus += 2;
-                    mods.moveSpeedMultiplier *= 0.85;
-                    break;
-                case '4161': // Scrap Furnace (Destroyed props drop salvage, -10% fire rate)
-                    mods.propsDropSalvage = true;
-                    mods.fireRateMultiplier *= 0.90;
-                    break;
-                case '4162': // Queen's Bane (+25% boss damage, -10% to all else)
-                    mods.bossDamageMultiplier *= 1.25;
-                    mods.nonBossDamageMultiplier *= 0.90;
-                    break;
-                case '4163': // Archivist Lens (Lore drops grant salvage, -1 starting clip)
-                    mods.loreDropsGrantSalvage = true;
-                    mods.clipSizeBonus -= 1;
-                    break;
-                case '4164': // Shard Conduit (+1 relic rarity tier, -10% max O2)
-                    mods.relicRarityTierBonus += 1;
-                    mods.maxOxygenMultiplier *= 0.90;
-                    break;
-                case '4165': // Duplicate Refiner (Duplicate relics become shards, -15% salvage)
-                    mods.duplicateRelicsToShards = true;
-                    mods.salvageValueMultiplier *= 0.85;
-                    break;
-                case '4166': // Pressure Seal (O2 drains 25% slower, -40% healing)
-                    mods.oxygenDrainMultiplier *= 0.75;
-                    mods.healingMultiplier *= 0.60;
-                    break;
-                case '4167': // Deep Anchor (Ring crossings cost no O2, crossings spawn an elite)
-                    mods.ringCrossingFreeO2 = true;
-                    mods.ringCrossingSpawnsElite = true;
-                    break;
-            }
+        const derived = composeEquipmentModifiers([lo.charmId, lo.mod1Id, lo.mod2Id]);
+        for (const [key, value] of Object.entries(derived)) {
+            if (typeof value === 'boolean') mods[key] = Boolean(mods[key]) || value;
+            else if (key.endsWith('Multiplier')) mods[key] = (mods[key] ?? 1) * value;
+            else if (key.endsWith('Range') || key.endsWith('Interval')) mods[key] = Math.max(mods[key] ?? 0, value);
+            else mods[key] = (mods[key] ?? 0) + value;
         }
-
         return mods;
+    }
+
+    getActiveEquipmentSnapshot(classId = this.activeClassId, mode = 'solo') {
+        const cls = normalizeClassId(classId);
+        const loadout = this.getClassLoadout(cls);
+        const ids = [loadout.charmId, loadout.mod1Id, loadout.mod2Id];
+        return Object.freeze({
+            schemaVersion: EQUIPMENT_SCHEMA_VERSION,
+            classId: cls,
+            mode: String(mode || 'solo'),
+            charmId: loadout.charmId,
+            overclockIds: Object.freeze([loadout.mod1Id, loadout.mod2Id]),
+            statuses: Object.freeze(ids.map(getEquipmentStatus).filter(Boolean)),
+            modifiers: Object.freeze({ ...this.getActiveModifiers(cls) })
+        });
     }
 
     getEquippedLabel(fabricator, classId = this.activeClassId) {

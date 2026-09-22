@@ -51,13 +51,12 @@ export async function bootToOperatorMenu(page) {
 
 // Drive the current production run-start flow all the way to a visible,
 // input-enabled gameplay canvas:
-// roster -> INITIALIZE -> Armory EMBARK -> SOLO deployment -> intro skip.
+// Homebase -> Armory -> Deployment Console -> intro skip.
 // Keeping this in one shared helper prevents gameplay specs from silently
 // measuring a hidden 0x0 menu/Armory canvas after the flow gains a new gate.
 export async function startRunAndSkipIntro(page) {
     const oneShotActions = [
         '#title-newrun-btn',
-        '#roster-confirm-btn',
         '#start-game',
         '#armory-btn-embark',
         '#net-deploy-btn'

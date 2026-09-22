@@ -15,6 +15,7 @@ import { ITEM_TYPE, getCatalogIdsByType, getCatalogEntry } from './itemOwnership
 import { getVoiceBank } from './data/voiceBanks.js';
 import { hudThemeInlineStyle, resolveHudTheme } from './hudThemes.js';
 import { unlockAllPolishes } from './operatorPolishes.js';
+import { getEquipmentStatus } from './data/equipmentDefinitions.js';
 import {
     ARCHETYPE_SKINS,
     CLASS_ARCHETYPES,
@@ -503,20 +504,27 @@ export function createArmoryUi({
         const cls = activeClass.toLowerCase();
         const loadout = loadoutManager.getClassLoadout(cls);
         const archetype = loadout.archetypeId || DEFAULT_ARCHETYPES[cls];
-        const modifiers = loadoutManager.getActiveModifiers(cls);
         const chassisSkinId = loadoutManager.getEquippedChassisSkinId?.();
         const selectedWeapon = pickerFields().weapon.currentName();
         const hudTheme = resolveHudTheme(loadoutManager.state.hudThemeId);
         const hudThemeStyle = hudThemeInlineStyle(loadoutManager.state.hudThemeId);
         const qaAudit = ownership.auditEquippableCatalog?.() ?? { total: 0, available: 0, complete: false };
 
-        const hasActiveOverclocks = Boolean(
-            (modifiers.scrapMagnetRadiusBonus > 0) ||
-            (modifiers.cryoDurationMultiplier > 1.0) ||
-            (modifiers.kineticPierceBonus > 0) ||
-            (modifiers.gasDamageReduction > 0) ||
-            modifiers.dashRefundOnMultiKill
-        );
+        const equipmentStatuses = [
+            { slot: 'CHARM', status: getEquipmentStatus(loadout.charmId), empty: 'NO WEAPON ATTUNEMENT' },
+            { slot: 'SUIT A', status: getEquipmentStatus(loadout.mod1Id), empty: 'EMPTY OPERATOR SOCKET' },
+            { slot: 'SUIT B', status: getEquipmentStatus(loadout.mod2Id), empty: 'EMPTY OPERATOR SOCKET' }
+        ];
+        const statusHtml = equipmentStatuses.map(({ slot, status, empty }) => status ? `
+            <div class="loadout-effect is-active" data-equipment-id="${status.id}">
+                <span class="loadout-effect__slot">${slot} · ${status.mount}</span>
+                <b>${status.name}</b>
+                <span>${status.summary}</span>
+            </div>` : `
+            <div class="loadout-effect">
+                <span class="loadout-effect__slot">${slot}</span>
+                <b>STANDBY</b><span>${empty}</span>
+            </div>`).join('');
 
         if (typeof document !== 'undefined') {
             const screen = document.getElementById('armory-screen');
@@ -619,54 +627,21 @@ export function createArmoryUi({
                             <div class="bench-row-two-col">
                                 <!-- RIG MOD 1 -->
                                 <div class="bench-field">
-                                    <label data-i18n="ui.armory.f_bay_a">OVERCLOCK — BAY A</label>
+                                <label>SUIT OVERCLOCK — BAY A</label>
                                     ${slotHtml('mod1')}
                                 </div>
 
                                 <!-- RIG MOD 2 -->
                                 <div class="bench-field">
-                                    <label data-i18n="ui.armory.f_bay_b">OVERCLOCK — BAY B</label>
+                                <label>SUIT OVERCLOCK — BAY B</label>
                                     ${slotHtml('mod2')}
                                 </div>
                             </div>
 
                             <!-- ACTIVE MODIFIERS TELEMETRY -->
                             <div class="modifiers-summary">
-                                <div class="modifiers-title" data-i18n="ui.armory.mods_title">◈ ACTIVE COMBAT OVERCLOCKS</div>
-                                ${hasActiveOverclocks ? `
-                                    <div class="modifiers-badges">
-                                        ${modifiers.scrapMagnetRadiusBonus > 0 ? `
-                                            <span class="mod-badge active">
-                                                <span class="mod-tag">[MAG]</span> Magnet: +${Math.round(modifiers.scrapMagnetRadiusBonus * 100)}%
-                                            </span>
-                                        ` : ''}
-                                        ${modifiers.cryoDurationMultiplier > 1.0 ? `
-                                            <span class="mod-badge active">
-                                                <span class="mod-tag">[CRYO]</span> Cryo: +${Math.round((modifiers.cryoDurationMultiplier - 1.0) * 100)}%
-                                            </span>
-                                        ` : ''}
-                                        ${modifiers.kineticPierceBonus > 0 ? `
-                                            <span class="mod-badge active">
-                                                <span class="mod-tag">[PRC]</span> Pierce: +${modifiers.kineticPierceBonus}
-                                            </span>
-                                        ` : ''}
-                                        ${modifiers.gasDamageReduction > 0 ? `
-                                            <span class="mod-badge active">
-                                                <span class="mod-tag">[BIO]</span> Gas Resist: -${Math.round(modifiers.gasDamageReduction * 100)}%
-                                            </span>
-                                        ` : ''}
-                                        ${modifiers.dashRefundOnMultiKill ? `
-                                            <span class="mod-badge active">
-                                                <span class="mod-tag">[DASH]</span> Multi-Kill Dash Refund: ACTIVE
-                                            </span>
-                                        ` : ''}
-                                    </div>
-                                ` : `
-                                    <div class="modifiers-standby">
-                                        <span class="standby-status-pill" data-i18n="ui.armory.standby">STANDBY</span>
-                                        <span class="standby-desc" data-i18n="ui.armory.standby_desc">NO OVERCLOCKS LINKED // BAYS A &amp; B READY</span>
-                                    </div>
-                                `}
+                                <div class="modifiers-title">◈ DEPLOYMENT LOADOUT STATUS</div>
+                                <div class="loadout-effects">${statusHtml}</div>
                             </div>
                         </section>
 

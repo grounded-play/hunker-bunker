@@ -1,6 +1,6 @@
 # Armory Asset Gaps
 
-Status: generated | Updated: 2026-09-11
+Status: generated | Updated: 2026-09-22
 | Regenerate: `npm run audit:armory-assets`
 
 Uses the same item lists and preview resolver as the Armory. Model paths are
@@ -9,10 +9,10 @@ pictures and green-backed icons; source artwork is retained unchanged.
 
 | Check | Count |
 | --- | ---: |
-| Items offered | 120 |
+| Items offered | 133 |
 | **No name** (renders as a bare itemdef id) | **0** |
 | **No icon on disk** (tile falls back to initials) | **0** |
-| Missing required 3D model | 5 |
+| Missing required 3D model | 6 |
 | Existing model needs visual replacement | 1 |
 | **Icon looks like an un-keyed green screen** (≥35% green) | **0** |
 
@@ -40,6 +40,7 @@ Decals are intentionally 2D and do not need a model.
 
 | Group | Id | Name |
 | --- | --- | --- |
+| weapon | `2200` | Chrome Plated Sidearm |
 | weapon | `5002` | QUICK STUDY Carbine |
 | weapon | `5006` | HUNKERED Autocannon |
 | weapon | `5009` | ARCHIVIST Arc Driver |

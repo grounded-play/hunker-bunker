@@ -15,15 +15,6 @@ test('decision montage: archive UI, skills tree, banked resources', async ({ pag
     await stubOfflineElectronAPI(page);
     await bootToOperatorMenu(page);
 
-    // bootToOperatorMenu can leave #roster-modal open (operator select) on
-    // top of #archive-btn's z-order — close it before interacting with the
-    // menu behind it.
-    const rosterModal = page.locator('#roster-modal');
-    if (await rosterModal.isVisible().catch(() => false)) {
-        await page.locator('#close-roster-modal').click();
-        await page.waitForTimeout(300);
-    }
-
     await page.locator('#archive-btn').click();
     await page.waitForTimeout(1_500);
     await page.locator('#close-archive-modal').click();

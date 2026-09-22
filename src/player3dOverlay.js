@@ -10,6 +10,7 @@ import { getCharmSocketTransform, resolveCharmModelOffset } from './charmSockets
 import { applyWeaponSheen } from './weaponSheenMaterial.js';
 import { isMaterialFinish, applyWeaponMaterialFinish } from './weaponFinishMaterial.js';
 import { CHARM_GLB_MAP } from './charmModels.js';
+import { createOperatorEquipmentController } from './operatorEquipmentSockets.js';
 
 // The 2D-to-3D generation pipeline's gltf-transform optimize pass applies
 // EXT_meshopt_compression; GLTFLoader throws "setMeshoptDecoder must be called
@@ -509,7 +510,8 @@ export async function createPlayer3dOverlay({
     modelUrl = MODEL_URL,
     animationModelUrl = null,
     animationBonePrefix = null,
-    allowStatic = false
+    allowStatic = false,
+    wearableOverclocks = []
 } = {}) {
     const [modelTemplate, animationGltf] = await Promise.all([
         loadCharacterTemplate(modelUrl),
@@ -532,6 +534,11 @@ export async function createPlayer3dOverlay({
     });
 
     const chestPatch = createOperatorPatch(root, { targetHeight });
+    const equipment = createOperatorEquipmentController(root);
+    await Promise.all([
+        equipment.set(1, wearableOverclocks?.[0] ?? null),
+        equipment.set(2, wearableOverclocks?.[1] ?? null)
+    ]);
 
     let rightHand = root.getObjectByName('mixamorig1:RightHand')
         ?? root.getObjectByName('mixamorig1RightHand');
@@ -677,6 +684,7 @@ export async function createPlayer3dOverlay({
         weapon,
         patch: chestPatch.root,
         setPatchImage(path) { chestPatch.setImage(path); },
+        setWearableOverclock(slot, itemId) { return equipment.set(slot, itemId); },
         setOperatorPolish(color = 0xffffff) {
             for (const state of polishMaterials) {
                 const polished = computeOperatorPolishMaterialState(
@@ -810,6 +818,7 @@ export async function createPlayer3dOverlay({
         },
         dispose() {
             chestPatch.dispose();
+            equipment.dispose();
             mixer.stopAllAction();
             root.traverse((object) => {
                 object.geometry?.dispose?.();

@@ -150,10 +150,17 @@ export function resolveRelayUrl() {
 export function getLocalLoadoutSummary(opClass) {
     if (typeof window === 'undefined' || !window.loadout) return null;
     const weapon = window.loadout.getEquippedLabel?.(window.fabricator, opClass) ?? 'UNARMED';
-    const hasCharm = Boolean(window.loadout.getEquippedCharmId?.(opClass));
+    const equipment = window.loadout.getActiveEquipmentSnapshot?.(opClass, 'deployment') ?? null;
+    const hasCharm = Boolean(equipment?.charmId ?? window.loadout.getEquippedCharmId?.(opClass));
     const chassisSkinId = window.loadout.getEquippedChassisSkinId?.() ?? null;
     const polishColor = getSelectedPolish(window.localStorage).color;
-    const summary = { weapon, hasCharm };
+    const summary = {
+        weapon,
+        hasCharm,
+        charmId: equipment?.charmId ?? null,
+        overclockIds: equipment?.overclockIds ?? [],
+        effectLabels: equipment?.statuses?.map((status) => `${status.name}: ${status.summary}`) ?? []
+    };
     if (chassisSkinId) summary.chassisSkinId = chassisSkinId;
     if (polishColor) summary.polishColor = polishColor;
     return summary;
@@ -1309,6 +1316,7 @@ export class MultiplayerLobby {
                         <div class="net-roster-class">
                             <span class="net-class-badge net-class--${classColor}">${normalizedClass}</span>
                             ${player.loadout?.weapon ? `<span class="net-roster-loadout">${player.loadout.weapon}${player.loadout.hasCharm ? ' ◆' : ''}</span>` : ''}
+                            ${player.loadout?.effectLabels?.length ? `<span class="net-roster-loadout net-roster-loadout--effects">${player.loadout.effectLabels.join(' // ')}</span>` : ''}
                         </div>
                         <div class="net-roster-ping">
                             <span class="net-ping-dot">●</span>

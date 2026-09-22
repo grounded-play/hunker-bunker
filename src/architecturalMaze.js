@@ -147,8 +147,8 @@ export function generateArchitecturalMazeChunk(random, {
         .filter(([, opening]) => opening?.open)
         .map(([side, opening]) => portalPoint(size, side, opening.offset));
     const shape = random() < 0.38 ? 'l' : random() < 0.52 ? 'octagonal' : 'rectangle';
-    const roomWidth = important ? 13 : 9 + Math.floor(random() * 5);
-    const roomDepth = important ? 13 : 8 + Math.floor(random() * 6);
+    const roomWidth = important ? 13 : 11 + Math.floor(random() * 3);
+    const roomDepth = important ? 13 : 10 + Math.floor(random() * 4);
     const bounds = {
         left: Math.max(3, center - Math.floor(roomWidth / 2)),
         right: Math.min(size - 4, center + Math.floor(roomWidth / 2)),
