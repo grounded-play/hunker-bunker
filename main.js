@@ -13397,6 +13397,8 @@ function wireHomebaseCommandInfo() {
     showDescription(controls.find((control) => !control.closest('.hidden')) ?? controls[0]);
 }
 
+let activePreviewType = 'TANK';
+
 function renderHomebaseConsole({ initializeCallsign = false } = {}) {
     const setTxt = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
     const callsignInput = document.getElementById('roster-callsign-input');
@@ -13729,7 +13731,6 @@ let previewFrameIndex = 0;
 let previewAnimationTimer = null;
 let previewDoorTimer = null;
 let pendingPreviewType = null;
-let activePreviewType = 'TANK';
 let scoutHeroPreview = null;
 void createScoutHeroPreview(preview3dCanvas)
     .then((preview) => {
