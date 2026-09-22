@@ -72,7 +72,7 @@ import { repackGeneratedSpriteAtlas } from './src/spriteAtlasRuntime.js';
 import { createScoutHeroPreview } from './src/scoutHeroPreview.js';
 import { createArmoryScene } from './src/armoryScene.js';
 import { createArmoryUi } from './src/armoryUi.js';
-import { initSteamVaultUI, loadVaultData, openSteamVaultModal, showSteamDropToast, renderSteamMilestoneGrants, grantVaultItem, resetDevVaultInventory, setDevInfiniteCacheMode, isDevInfiniteCacheMode, STEAM_ITEM_CATALOG } from './src/steamVaultUi.js';
+import { initSteamVaultUI, loadVaultData, openSteamVaultModal, showSteamDropToast, renderSteamMilestoneGrants, grantVaultItem, resetDevVaultInventory, setDevInfiniteCacheMode, isDevInfiniteCacheMode } from './src/steamVaultUi.js';
 import { initSeasonPassUI, cancelXpFeedback, beginSeasonRun, getSeasonRunSummary } from './src/seasonPassUi.js';
 import { preloadEnemy3dTemplates } from './src/enemy3dOverlay.js';
 import { initVoiceCallouts } from './src/voiceCallouts.js';
@@ -84,6 +84,7 @@ import { sideStoryManager, SIDE_STORIES_CONFIG, SIDE_STORY_STATUS } from './src/
 import { matureContentAudit } from './src/matureContentAudit.js';
 import { progressionWalkthrough } from './src/progressionWalkthrough.js';
 import { renderGameOverLeaderboard } from './src/leaderboardUi.js';
+import { flushPendingRunSubmits, submitRunWithRetryQueue } from './src/steam/runSubmitQueue.js';
 import { unlockSheenForMilestone, reconcileSheenUnlocks, unlockAllSheens } from './src/weaponSheens.js';
 import { OPERATOR_POLISHES, getSelectedPolish, getUnlockedPolishIds, selectPolish, unlockAllPolishes, unlockMilestonePolish } from './src/operatorPolishes.js';
 import { createOwnershipStore } from './src/itemOwnership.js';
@@ -1219,6 +1220,20 @@ function moveHeroSelectPanelFocus(code) {
         ?? document.querySelector('.char-selection .char-card');
     const heroBackBtn = document.getElementById('hero-select-back-btn');
 
+    if (active === heroBackBtn) {
+        const visibleCommands = getVisibleControllerFocusables(document.querySelector('.menu-header-actions'));
+        const target = isUp
+            ? (lastHeroMenuCommandFocus && visibleCommands.includes(lastHeroMenuCommandFocus)
+                ? lastHeroMenuCommandFocus
+                : visibleCommands.at(-1))
+            : isRight
+                ? (document.getElementById('hero-polish-btn') ?? selectedHero)
+                : isDown
+                    ? document.getElementById('start-game')
+                    : null;
+        return target ? focusControllerTarget(target, { playHover: true }) : true;
+    }
+
     if (settingsButton) {
         const target = isLeft
             ? document.getElementById('hero-polish-btn')
@@ -1358,7 +1373,7 @@ function moveMenuCommandGridFocus(code) {
         .filter((element) => element.matches('button, .steam-account-badge--menu'));
     const index = commands.indexOf(active);
     if (index < 0) return false;
-    const columnCount = 3;
+    const columnCount = 2;
     const columnIndex = index % columnCount;
     let target = null;
 
@@ -1367,7 +1382,7 @@ function moveMenuCommandGridFocus(code) {
     } else if (code === 'KeyS' || code === 'ArrowDown') {
         if (index + columnCount >= commands.length) {
             lastHeroMenuCommandFocus = active;
-            target = document.getElementById('start-game');
+            target = document.getElementById('hero-select-back-btn') ?? document.getElementById('start-game');
         } else {
             target = commands[index + columnCount];
         }
@@ -2862,13 +2877,17 @@ function updateDailyOpsUI() {
     }
 }
 
-function getDailyOpsPresentation() {
+// Today's Daily Ops record, shaped for the Deployment Briefing's DAILY OPS
+// card and goals panel (multiplayerLobby.js's updateDailyPanel).
+function getDailyOpsBriefingStatus() {
     const record = getDailyOpsRecord();
+    const date = getTodayDateString();
     return {
-        disabled: Boolean(record?.completed),
-        label: record?.completed
-            ? `${record.score ?? 0} PTS // ${record.grade ?? 'D'}`
-            : record?.attempted ? 'IN PROGRESS' : 'READY'
+        date,
+        seedLabel: `DAILY-${date}`,
+        state: record?.completed ? 'completed' : record?.attempted ? 'in_progress' : 'ready',
+        score: record?.score ?? 0,
+        grade: record?.grade ?? 'D'
     };
 }
 
@@ -3414,10 +3433,16 @@ function trackPickupCollected(event) {
 
     const previousValue = pickupCounterState[type] ?? 0;
     if (type === 'ammo') {
-        pickupCounterState.ammo = Math.min(activeAmmoCapacity, previousValue + 1);
-        window.hbLog?.('WEAPON', 'info', 'ammo-pickup-collected', { newTotal: pickupCounterState.ammo, maxCapacity: activeAmmoCapacity });
+        const amount = Number.isFinite(event?.detail?.amount)
+            ? Math.max(1, Math.floor(event.detail.amount))
+            : 4;
+        pickupCounterState.ammo = Math.min(activeAmmoCapacity, previousValue + amount);
+        window.hbLog?.('WEAPON', 'info', 'ammo-pickup-collected', { newTotal: pickupCounterState.ammo, maxCapacity: activeAmmoCapacity, amountGained: amount });
     } else {
-        pickupCounterState[type] = previousValue + 1;
+        const amount = type === 'coin' && Number.isFinite(event?.detail?.amount)
+            ? Math.max(1, event.detail.amount)
+            : 1;
+        pickupCounterState[type] = previousValue + amount;
     }
 
     const gainedValue = pickupCounterState[type] > previousValue;
@@ -4751,7 +4776,7 @@ function showGameOverScreen(stats, { isVictory = false, deathReason = 'hazard' }
     }
 
     // Score + rating
-    const score = window.game?.calculateRunScore?.(stats, { status: stats.missionStatus }, runStartTime) ?? 0;
+    const score = window.game?.calculateRunScore?.(stats, { status: stats.missionStatus }, runStartTime, endedAt) ?? 0;
     const rating = window.game?.getRunRating?.(score) ?? { grade: 'D', label: 'AGENT LOST — MINIMAL TELEMETRY' };
     const wasDailyOpsRun = _isDailyOpsRun;
     const dailyOpsDate = wasDailyOpsRun ? getTodayDateString() : null;
@@ -4811,8 +4836,11 @@ function showGameOverScreen(stats, { isVictory = false, deathReason = 'hazard' }
         window.profile?.recordMultiplayerRun?.({ mode: mpMode, isVictory });
     }
 
+    // The finalized-event listener (desktop only) starts the submit
+    // synchronously and parks its promise here, so the board is read after it.
+    latestRunSubmission = null;
     dispatchSteamRunScoreFinalized(steamRunPayload, window);
-    void renderGameOverLeaderboard(steamRunPayload);
+    void renderGameOverLeaderboard(steamRunPayload, { submission: latestRunSubmission });
 
     const scoreVal = document.getElementById('go-score-val');
     const ratingBadge = document.getElementById('go-rating-badge');
@@ -5052,7 +5080,7 @@ function resetRunToStartingState({
             stopFabTicker();
             refreshFabAccess();
             syncEquippedWeaponLabel();
-            renderRosterModal();
+            renderHomebaseConsole();
         }
 
         runStartTime = Date.now();
@@ -5420,13 +5448,10 @@ function updateMenuCommandStatuses() {
     };
     const foundLogs = new Set(getWorldMemory().logsFound ?? []).size;
     const printed = FAB_RECIPES.filter((recipe) => fabricator.isFabricated(recipe.id)).length;
-    const weapons = FAB_RECIPES.filter((recipe) => recipe.klass === 'WEAPON');
-    const armed = weapons.filter((recipe) => fabricator.isFabricated(recipe.id)).length;
 
     setText('archive-command-status', t('ui.hub.status_logs', { found: foundLogs, total: ALL_LORE_KEYS.length }));
     setText('codex-command-status', t('ui.hub.status_intel', { found: codexStore.getDiscoveredCount(), total: CODEX_TOTAL }));
     setText('fab-command-status', t('ui.hub.status_printed', { printed, total: FAB_RECIPES.length }));
-    setText('roster-command-status', t('ui.hub.status_armed', { armed, total: weapons.length }));
 }
 
 // Recovered-survivor portraits for log authors. Reused from the mothership
@@ -8270,11 +8295,6 @@ function ensureArmoryInitialized() {
                 onBack: () => closeArmoryScreen({ embark: false }),
                 onOpenVault: () => openSteamVaultModal(),
                 onOpenSettings: () => openSettingsModal(),
-                onDailyOps: () => {
-                    pendingArmoryEmbarkAction = beginDailyOpsRun;
-                    closeArmoryScreen({ embark: true });
-                },
-                getDailyOpsStatus: getDailyOpsPresentation,
                 onClassChange: (cls) => {
                     saveHeroType(cls);
                     document.querySelectorAll('.char-card').forEach((card) => {
@@ -8444,6 +8464,8 @@ if (startBtn) {
         const openDeploymentBriefing = () => {
             multiplayerLobby.openModal({
                 onLaunch: () => launchStandardRun({ resetBank: true, playIntro: true }),
+                onDailyLaunch: beginDailyOpsRun,
+                getDailyOpsStatus: getDailyOpsBriefingStatus,
                 onCancel: () => {
                     const playerType = getSelectedHeroType();
                     triggerDoorTransition(
@@ -8517,8 +8539,8 @@ function beginDailyOpsRun() {
 }
 
 // Compatibility for saves/alternate shells that still render the legacy
-// button. The primary Daily Ops entry now lives beside standard deployment in
-// the full-stage Armory.
+// button. The primary Daily Ops entry is the DAILY OPS mode card on the
+// post-Armory Deployment Briefing.
 const dailyOpsBtn = document.getElementById('daily-ops-btn');
 if (dailyOpsBtn) {
     dailyOpsBtn.addEventListener('click', () => openArmoryGate(beginDailyOpsRun));
@@ -11416,14 +11438,6 @@ document.addEventListener('keydown', (event) => {
             return;
         }
 
-        const rosterModal = document.getElementById('roster-modal');
-        if (rosterModal && !rosterModal.classList.contains('hidden')) {
-            rosterModal.classList.add('hidden');
-            rosterModal.setAttribute('aria-hidden', 'true');
-            event.preventDefault();
-            return;
-        }
-
         const armoryScreen = document.getElementById('armory-screen');
         if (armoryScreen && !armoryScreen.classList.contains('hidden')) {
             document.getElementById('armory-btn-back')?.click();
@@ -13353,30 +13367,46 @@ const TACTICAL_CALLSIGNS = Object.freeze([
     'SHADOW-5', 'RAVEN-7', 'STRIKER-4', 'BUNKER-1'
 ]);
 
-function renderRosterModal(mode = 'continue') {
-    const grid = document.getElementById('roster-weapon-grid');
-    if (!grid) return;
+const HOMEBASE_COMMAND_DESCRIPTIONS = Object.freeze({
+    'steam-vault-btn': 'ui.menu.title_steam_vault_view',
+    'archive-sims-btn': 'ui.menu.title_archive_simulations_unlockable',
+    'fabrication-btn': 'ui.menu.title_fabrication_bay_print',
+    'archive-btn': 'ui.menu.title_bunker_archive_discovered',
+    'codex-btn': 'ui.menu.title_field_codex_catalogued',
+    'season-pass-btn': 'ui.menu.title_tactical_dossier_beta',
+    'achievements-btn': 'ui.menu.title_achievement_records_unlocked',
+    'hero-polish-btn': 'ui.menu.title_choose_operator_polish'
+});
+
+function wireHomebaseCommandInfo() {
+    const panel = document.getElementById('homebase-command-info');
+    if (!panel) return;
+    const controls = Object.keys(HOMEBASE_COMMAND_DESCRIPTIONS)
+        .map((id) => document.getElementById(id))
+        .filter(Boolean);
+    const showDescription = (control) => {
+        const key = HOMEBASE_COMMAND_DESCRIPTIONS[control?.id];
+        if (key) panel.textContent = t(key);
+    };
+    controls.forEach((control) => {
+        if (control.dataset.commandInfoWired) return;
+        control.dataset.commandInfoWired = 'true';
+        control.addEventListener('pointerenter', () => showDescription(control));
+        control.addEventListener('focus', () => showDescription(control));
+    });
+    showDescription(controls.find((control) => !control.closest('.hidden')) ?? controls[0]);
+}
+
+function renderHomebaseConsole({ initializeCallsign = false } = {}) {
     const setTxt = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
-    const titleEl = document.getElementById('roster-title-label');
-    const confirmBtn = document.getElementById('roster-confirm-btn');
     const callsignInput = document.getElementById('roster-callsign-input');
     const randomizeBtn = document.getElementById('roster-randomize-btn');
-
-    if (titleEl) {
-        titleEl.textContent = mode === 'new_game'
-            ? 'NEW OPERATOR REGISTRATION'
-            : '▣ OPERATOR DOSSIER // SAVED RUN TRACKER';
-    }
-
-    if (confirmBtn) {
-        confirmBtn.textContent = mode === 'new_game'
-            ? 'CONFIRM CALLSIGN & DEPLOY'
-            : 'CONTINUE DEPLOYMENT';
-    }
+    document.getElementById('hero-stat-o2-label')
+        ?.setAttribute('aria-description', t('ui.menu.title_o2_consumption_rate'));
 
     if (callsignInput) {
         let currentCallsign = profile.getCallsign();
-        if (mode === 'new_game' && (!currentCallsign || currentCallsign === 'AGENT' || currentCallsign === 'AGENT-01')) {
+        if (initializeCallsign && (!currentCallsign || currentCallsign === 'AGENT' || currentCallsign === 'AGENT-01')) {
             currentCallsign = TACTICAL_CALLSIGNS[Math.floor(Math.random() * TACTICAL_CALLSIGNS.length)];
             profile.setCallsign(currentCallsign);
         }
@@ -13401,166 +13431,38 @@ function renderRosterModal(mode = 'continue') {
         });
     }
 
-    if (confirmBtn && !confirmBtn._wired) {
-        confirmBtn._wired = true;
-        confirmBtn.addEventListener('click', () => {
-            const modal = document.getElementById('roster-modal');
-            closeModalWithAnimation(modal, null, {
-                exitClass: 'roster-modal--deploying',
-                duration: 680
-            });
-            window.AudioManager?.play?.('ui_click', { volume: 0.5 });
-        });
-    }
-
     setTxt('roster-id', profile.getProfileId());
+    setTxt('homebase-loadout-summary', `${t('ui.hero_detail.field_loadout')} // ${loadout.getEquippedLabel(fabricator)}`);
 
-    // Populate Run Telemetry stats (reset to 0 on brand new operator registration)
+    // Profile identity and career totals survive NEW RUN. Never source these
+    // tiles from ThreeGame.getRunStats(): that object is the active expedition
+    // and is intentionally reset before Homebase opens.
     try {
-        const isNewGame = (mode === 'new_game');
-        const stats = isNewGame ? {} : (window.game?.getRunStats?.() ?? {});
-        const bbState = isNewGame ? null : blackBoxStore.load();
-        const depthVal = stats.depthTier ?? 0;
-        const distVal = stats.distanceTravelled ?? 0;
-        const killVal = stats.snailsKilled ?? 0;
+        const careerStats = achievementEngine.getState().stats ?? {};
+        const arcSignals = arcManager.getState().signals ?? {};
+        const depthVal = Number(arcSignals.deepestDepthTier) || 0;
+        const distVal = Number(careerStats.totalDistanceTravelled) || 0;
+        const killVal = Number(careerStats.totalKills) || 0;
+        const recoveredVal = Number(arcSignals.blackBoxesRecovered) || 0;
 
         setTxt('roster-stat-depth', t('ui.roster.stat_sector', { depth: depthVal }));
-        setTxt('roster-stat-distance', `${distVal}u`);
+        setTxt('roster-stat-distance', `${Math.round(distVal)}u`);
         setTxt('roster-stat-kills', t('ui.roster.stat_hostiles', { count: killVal }));
-        setTxt('roster-stat-blackbox', bbState?.active ? t('ui.roster.blackbox_recoverable', { depth: bbState.depth ?? 0 }) : t('ui.roster.blackbox_none'));
+        setTxt('roster-stat-blackbox', t('ui.roster.stat_blackboxes_recovered', { count: recoveredVal }));
     } catch {
         setTxt('roster-stat-depth', t('ui.roster.stat_sector', { depth: 0 }));
         setTxt('roster-stat-distance', '0u');
         setTxt('roster-stat-kills', t('ui.roster.stat_hostiles', { count: 0 }));
-        setTxt('roster-stat-blackbox', t('ui.roster.blackbox_none'));
-    }
-
-    // Render equipped Steam cosmetics (3 pre-blank placeholder cards showing NULL when unequipped)
-    const patchId = localStorage.getItem('hb_equipped_patch');
-    const decalId = localStorage.getItem('hb_equipped_decal');
-    const finishId = localStorage.getItem('hb_equipped_weapon_finish');
-
-    setTxt('roster-equipped-patch', patchId ? (STEAM_ITEM_CATALOG[Number(patchId)]?.name ?? t('ui.roster.equipped_none')) : t('ui.roster.equipped_none'));
-    setTxt('roster-equipped-decal', decalId ? (STEAM_ITEM_CATALOG[Number(decalId)]?.name ?? t('ui.roster.equipped_none')) : t('ui.roster.equipped_none'));
-    setTxt('roster-equipped-weapon-finish', finishId ? (STEAM_ITEM_CATALOG[Number(finishId)]?.name ?? t('ui.roster.equipped_none')) : t('ui.roster.equipped_none'));
-
-    // Make cosmetic cards clickable to open Steam Vault submenu
-    const cosmeticsRow = document.getElementById('roster-cosmetics-row');
-    if (cosmeticsRow && !cosmeticsRow._wired) {
-        cosmeticsRow._wired = true;
-        cosmeticsRow.querySelectorAll('.roster-cosmetic-chip').forEach((chip) => {
-            chip.style.cursor = 'pointer';
-            chip.title = t('ui.hub.vault_tooltip');
-            chip.addEventListener('click', () => {
-                window.AudioManager?.play?.('ui_click', { volume: 0.5 });
-                openSteamVaultModal();
-            });
-        });
+        setTxt('roster-stat-blackbox', t('ui.roster.stat_blackboxes_recovered', { count: 0 }));
     }
 
     const weapons = FAB_RECIPES.filter((r) => r.klass === 'WEAPON');
     const fabbedWeapons = weapons.filter((r) => fabricator.isFabricated(r.id));
-    const fabbed = fabbedWeapons.length;
-    setTxt('roster-fab-count', t('ui.roster.arsenal_count', { made: fabbed, total: weapons.length }));
-
-    grid.innerHTML = '';
-    if (fabbed === 0) {
-        // Single compact slot with one Fabricate button when 0 weapons are fabricated
-
-        const emptyCard = document.createElement('div');
-        emptyCard.className = 'roster-weapon-empty-slot';
-
-        const info = document.createElement('div');
-        info.className = 'roster-empty-info';
-
-        const icon = document.createElement('div');
-        icon.className = 'roster-empty-icon';
-        icon.textContent = '◇';
-
-        const textGroup = document.createElement('div');
-        textGroup.className = 'roster-empty-text';
-
-        const title = document.createElement('div');
-        title.className = 'roster-empty-title';
-        title.textContent = t('ui.roster.no_weapons');
-
-        const sub = document.createElement('div');
-        sub.className = 'roster-empty-sub';
-        sub.textContent = t('ui.roster.print_hint');
-
-        textGroup.appendChild(title);
-        textGroup.appendChild(sub);
-        info.appendChild(icon);
-        info.appendChild(textGroup);
-        emptyCard.appendChild(info);
-
-        const fabBtn = document.createElement('button');
-        fabBtn.className = 'roster-weapon__btn roster-weapon__btn--single-fab';
-        fabBtn.textContent = t('ui.fab.open_bay');
-        fabBtn.addEventListener('click', () => {
-            window.AudioManager?.play?.('ui_click', { volume: 0.5 });
-            openFabricationModal();
-        });
-        emptyCard.appendChild(fabBtn);
-        grid.appendChild(emptyCard);
-    } else {
-        const equippedId = loadout.getEquippedId();
-        for (const recipe of fabbedWeapons) {
-            const equipped = equippedId === recipe.id;
-
-            const card = document.createElement('div');
-            card.className = ['roster-weapon', equipped ? 'roster-weapon--equipped' : ''].filter(Boolean).join(' ');
-
-            const art = document.createElement('div');
-            art.className = 'roster-weapon__art';
-            const img = document.createElement('img');
-            img.loading = 'lazy'; img.decoding = 'async'; img.alt = recipe.name;
-            img.src = assetUrl(recipe.art);
-            img.addEventListener('error', () => { img.src = assetUrl('/bunker_junk_rare.png'); }, { once: true });
-            art.appendChild(img);
-            card.appendChild(art);
-
-            const name = document.createElement('div');
-            name.className = 'roster-weapon__name';
-            name.textContent = recipe.name;
-            name.title = recipe.name;
-            card.appendChild(name);
-
-            const btn = document.createElement('button');
-            btn.className = 'roster-weapon__btn';
-            if (equipped) {
-                btn.textContent = t('ui.roster.equipped'); btn.disabled = true; btn.classList.add('roster-weapon__btn--equipped');
-            } else {
-                btn.textContent = t('ui.roster.equip');
-                btn.addEventListener('click', () => {
-                    if (loadout.equip(recipe.id, fabricator)) {
-                        window.AudioManager?.play?.('ui_click', { volume: 0.5 });
-                        syncEquippedWeaponLabel();
-                        renderRosterModal(mode);
-                    } else {
-                        window.AudioManager?.play?.('ui_error', { volume: 0.5 });
-                    }
-                });
-            }
-            card.appendChild(btn);
-            grid.appendChild(card);
-        }
-    }
+    setTxt('fab-command-status', t('ui.hub.status_armed', { armed: fabbedWeapons.length, total: weapons.length }));
+    wireHomebaseCommandInfo();
 }
 
-document.getElementById('roster-btn')?.addEventListener('click', () => {
-    renderRosterModal();
-    const modal = document.getElementById('roster-modal');
-    if (modal) { modal.classList.remove('hidden'); modal.setAttribute('aria-hidden', 'false'); }
-});
-document.getElementById('close-roster-modal')?.addEventListener('click', () => {
-    const modal = document.getElementById('roster-modal');
-    closeModalWithAnimation(modal);
-});
-setupClickOutside('roster-modal', () => {
-    const modal = document.getElementById('roster-modal');
-    closeModalWithAnimation(modal);
-});
+renderHomebaseConsole();
 // Reflect a previously-equipped weapon on the HUD as soon as the page loads,
 // and keep it correct after a fresh fabrication completes.
 syncEquippedWeaponLabel();
@@ -13587,28 +13489,16 @@ setupClickOutside('language-select-popup', () => setLanguageSelectOpen(false));
 
 function getDoorImage(key) {
     const CLASS_DOORS = {
-        'SCOUT': [
-            '/door_bio_keyart_v2.webp',
-            '/door_bio_keyart_var2.jpg',
-            '/door_bio_keyart_var3.jpg'
-        ],
-        'TANK': [
-            '/door_nuclear_keyart_v2.webp',
-            '/door_nuclear_keyart_var2.jpg',
-            '/door_nuclear_keyart_var3.jpg'
-        ],
-        'ENGINEER': [
-            '/door_cryo_keyart_v2.webp',
-            '/door_cryo_keyart_var2.jpg',
-            '/door_cryo_keyart_var3.jpg'
-        ]
+        'SCOUT': '/door_bio_keyart_v2.webp',
+        'TANK': '/door_nuclear_keyart_v2.webp',
+        'ENGINEER': '/door_cryo_keyart_v2.webp'
     };
     const SPECIAL_DOORS = {
         'base': '/door_biomech_keyart_v2.webp',
         'win': '/door_alien_keyart_v2.webp',
         'lose': '/door_rust_keyart_v2.webp'
     };
-    const pickDoor = (entries) => entries[Math.floor(Math.random() * entries.length)];
+    const pickDoor = (entries) => Array.isArray(entries) ? entries[Math.floor(Math.random() * entries.length)] : entries;
 
     if (key === 'win') return assetUrl(SPECIAL_DOORS.win);
     if (key === 'lose') return assetUrl(SPECIAL_DOORS.lose);
@@ -13619,20 +13509,6 @@ function getDoorImage(key) {
     const activeClass = window.game?.playerType || getSelectedHeroType() || activePreviewType || 'SCOUT';
     const doors = CLASS_DOORS[activeClass];
     return assetUrl(doors ? pickDoor(doors) : SPECIAL_DOORS.base);
-}
-
-function getMapDoorImage(key) {
-    const MAP_CLASS_DOORS = {
-        'SCOUT': '/door_bio.png',
-        'TANK': '/door_nuclear.png',
-        'ENGINEER': '/door_cryo.png'
-    };
-    const SPECIAL_DOORS = {
-        'base': '/door_biomechanical.png'
-    };
-    if (MAP_CLASS_DOORS[key]) return assetUrl(MAP_CLASS_DOORS[key]);
-    const activeClass = window.game?.playerType || activePreviewType || 'SCOUT';
-    return assetUrl(MAP_CLASS_DOORS[activeClass] || SPECIAL_DOORS.base);
 }
 
 function preloadDoorAssets() {
@@ -14079,15 +13955,19 @@ function triggerHeroPreviewSwap(type) {
             mapDoor.className = 'map-box-door';
             mapDoor.setAttribute('aria-hidden', 'true');
             mapDoor.innerHTML = `
-                <div class="char-preview-door__panel char-preview-door__panel--top"></div>
-                <div class="char-preview-door__panel char-preview-door__panel--bottom"></div>
+                <div class="map-box-door__panel map-box-door__panel--top">
+                    <div class="map-box-door__texture"></div>
+                </div>
+                <div class="map-box-door__panel map-box-door__panel--bottom">
+                    <div class="map-box-door__texture"></div>
+                </div>
             `;
             gameContainer.appendChild(mapDoor);
         } else {
             gameContainer.appendChild(mapDoor);
         }
     }
-    const mapDoorImg = getMapDoorImage(targetType);
+    const mapDoorImg = doorImg;
 
     previewDoor.style.setProperty('--door-bg-image', `url('${doorImg}')`);
     if (mapDoor) {
@@ -14688,13 +14568,14 @@ document.addEventListener('DOMContentLoaded', async () => {
             runCheckpointStore.clear();
             window.game?.clearBlackBoxMarker?.();
             updateContinueButtonState();
-            renderRosterModal('new_game');
-            const modal = document.getElementById('roster-modal');
-            if (modal) {
-                modal.classList.remove('hidden');
-                modal.setAttribute('aria-hidden', 'false');
-            }
-            document.getElementById('roster-callsign-input')?.focus?.();
+            renderHomebaseConsole({ initializeCallsign: true });
+            const callsign = document.getElementById('roster-callsign-input');
+            const needsIdentityAttention = !profile.getCallsign()
+                || profile.getCallsign() === 'AGENT'
+                || profile.getCallsign() === 'AGENT-01';
+            (needsIdentityAttention
+                ? callsign
+                : document.querySelector('.char-selection .char-card.selected'))?.focus?.();
         });
     }
     if (titleNewRunBtn) {
@@ -15249,6 +15130,7 @@ let bootLongTaskObserver = null;
 let bootLongTasks = [];
 let lastSteamIdentityLogKey = null;
 let lastSteamBackendLogKey = null;
+let latestRunSubmission = null;
 
 function traceBootPhase(phase, details = null) {
     const now = performance.now();
@@ -15750,22 +15632,26 @@ if (window.electronAPI) {
             durationSeconds: 10
         });
 
-        window.electronAPI.submitSteamRunScore(payload).then((result) => {
-            if (result?.ok) {
+        latestRunSubmission = submitRunWithRetryQueue(payload, window.electronAPI.submitSteamRunScore).then((result) => {
+            if (result.ok) {
                 console.log(`[steam] leaderboard payload accepted (${payload.runId})`);
                 renderSteamMilestoneGrants(result.milestoneGrants);
-            } else if (!['steam_auth_unavailable', 'steam_backend_unreachable'].includes(result?.reason)) {
-                console.log(`[steam] leaderboard submit skipped: ${result?.reason ?? 'unknown'}`);
+            } else {
+                console.warn(`[steam] leaderboard submit ${result.queued ? 'queued for retry' : 'rejected'}: ${result.reason ?? 'unknown'}${result.errors ? ` ${JSON.stringify(result.errors)}` : ''}`);
             }
-        }).catch((err) => {
-            console.log(`[steam] leaderboard submit failed: ${err?.message ?? err}`);
+            return result;
         });
     });
+    const flushQueuedRunSubmits = () => flushPendingRunSubmits(window.electronAPI.submitSteamRunScore).then((summary) => {
+        if (summary.attempted > 0) console.log(`[steam] queued run submits: ${summary.accepted} accepted, ${summary.dropped} dropped, ${summary.remaining} still pending`);
+    }).catch(() => {});
     refreshSteamBridgeStatus().then(({ info } = {}) => {
         if (info?.active) console.log(`[steam] linked as ${info.persona} (app ${info.appId})`);
+        void flushQueuedRunSubmits();
     }).catch(() => {});
     window.setInterval(() => {
         void refreshSteamBridgeStatus();
+        void flushQueuedRunSubmits();
     }, 60000);
 
     loadVaultData().catch(() => null);

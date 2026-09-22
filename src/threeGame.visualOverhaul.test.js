@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { TiltShiftPassShader } from './threeGame.js';
+import { ShaderLib } from 'three';
+import { TiltShiftPassShader, softenDirectSpecularHighlights } from './threeGame.js';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
@@ -32,6 +33,52 @@ describe('Visual Overhaul Phase B & D (Surface Depth & Grade)', () => {
             expect(threeGameSource).toContain('hbWallNormalPerturb = (abs(vWorldNormal.y) > 0.5)');
             expect(threeGameSource).toContain('roughnessFactor = clamp(hbWallRoughness, 0.04, 1.0)');
             expect(threeGameSource).toContain('normal = normalize(normal + hbWallNormalPerturb)');
+        });
+    });
+
+    describe('Direct specular softening (no mirrored light bulbs on walls)', () => {
+        it('shades punctual lights with a raised roughness floor and restores it for IBL', () => {
+            const shader = { fragmentShader: ShaderLib.standard.fragmentShader };
+            softenDirectSpecularHighlights(shader);
+            const frag = shader.fragmentShader;
+            const raise = frag.indexOf('material.roughness = max(material.roughness, 0.60)');
+            const begin = frag.indexOf('#include <lights_fragment_begin>');
+            const restore = frag.indexOf('material.roughness = hbIblRoughness');
+            const maps = frag.indexOf('#include <lights_fragment_maps>');
+            expect(raise).toBeGreaterThan(-1);
+            expect(raise).toBeLessThan(begin);
+            expect(begin).toBeLessThan(restore);
+            expect(restore).toBeLessThan(maps);
+            expect(frag).toContain('material.dfg = texture2D( dfgLUT, vec2( material.roughness, dotNVms ) ).rg');
+        });
+
+        it('is applied to both the floor and wall materials', () => {
+            expect(threeGameSource.match(/softenDirectSpecularHighlights\(shader\);/g)).toHaveLength(2);
+        });
+
+        it('truncates flashlight beam at wall boundaries instead of bending vertices vertically', () => {
+            expect(threeGameSource).toContain('array[vi + 1] = 0;');
+            expect(threeGameSource).not.toContain('hit ? (this.wallHeight - 0.2) : 0');
+        });
+
+        it('sets player emitter glow renderOrder behind player sprite to avoid drawing on top of walls', () => {
+            expect(threeGameSource).toContain('this.playerEmitterGlow.renderOrder = 4;');
+        });
+
+        it('excludes player suit and glow point/spot lights from hitting the player model', async () => {
+            const { excludePlayerSelfLights } = await import('./player3dOverlay.js');
+            const mat = { onBeforeCompile: null };
+            excludePlayerSelfLights(mat);
+            expect(typeof mat.onBeforeCompile).toBe('function');
+            const shader = { fragmentShader: '#include <lights_fragment_begin>' };
+            mat.onBeforeCompile(shader);
+            expect(shader.fragmentShader).toContain('length( pointLight.position - geometryPosition ) < 2.2');
+            expect(shader.fragmentShader).toContain('directLight.color = vec3( 0.0 );');
+            expect(shader.fragmentShader).toContain('length( spotLight.position - geometryPosition ) < 1.6');
+        });
+
+        it('damps suitFillLight when player is near a wall to prevent wall overexposure', () => {
+            expect(threeGameSource).toContain('this.suitFillLight.intensity = SUIT_LIGHT_BASE_INTENSITY * lerp(1.05, 0.68, dayBlend) * (1 + movePulse) * wallGlowDamp;');
         });
     });
 });

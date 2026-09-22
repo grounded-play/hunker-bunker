@@ -3,7 +3,7 @@ import {
     REST_PHASES, STORY_DEADLINES, DIFFICULTY_CAP,
     createDayState, normalizeDayState, difficultyForDay, threatScaleForDay,
     beginSleep, completeRest, beginExpedition, resolveDeadline,
-    openDeadlines, deadlinesClosingTonight
+    openDeadlines, deadlinesClosingTonight, canRestNow
 } from './dayCycle.js';
 
 const sleepThrough = (state) => completeRest(beginSleep(state).state).state;
@@ -149,5 +149,34 @@ describe('deadline enforcement (regressions)', () => {
     it('deduplicates repeated ids in a save', () => {
         const s = normalizeDayState({ resolved: ['meridian_first_contact', 'meridian_first_contact'] });
         expect(s.resolved).toEqual(['meridian_first_contact']);
+    });
+});
+
+describe('canRestNow — the single rest rule', () => {
+    it('allows rest in a safe space while on expedition', () => {
+        const result = canRestNow(createDayState(), { safeSpace: true });
+        expect(result.allowed).toBe(true);
+        expect(result.nextDay).toBe(2);
+    });
+
+    it('refuses outside a safe space, mid-rest, near hostiles, or at a dead site', () => {
+        expect(canRestNow(createDayState(), { safeSpace: false }).reason).toBe('not_a_safe_space');
+        expect(canRestNow(beginSleep(createDayState()).state, { safeSpace: true }).reason).toBe('already_resting');
+        expect(canRestNow(createDayState(), { safeSpace: true, hostileNearby: true }).reason).toBe('hostiles_nearby');
+        expect(canRestNow(createDayState(), { safeSpace: true, siteStatus: 'robbed' }).reason).toBe('site_robbed');
+    });
+
+    it('withholds rest only while a contract at this site is live', () => {
+        expect(canRestNow(createDayState(), { safeSpace: true, hasActiveQuest: true }).allowed).toBe(false);
+        expect(canRestNow(createDayState(), { safeSpace: true, hasActiveQuest: false }).allowed).toBe(true);
+    });
+
+    // The gate must not depend on Act 2 camp phases: that is what made the
+    // SLEEP verb unreachable in ordinary play.
+    it('does not care which act or camp phase the world is in', () => {
+        const base = createDayState();
+        for (const siteStatus of ['alive', undefined, null]) {
+            expect(canRestNow(base, { safeSpace: true, siteStatus }).allowed).toBe(true);
+        }
     });
 });

@@ -9,7 +9,11 @@ import { createRateLimitOptions } from './rateLimit.js';
 const CLASS_VICTORY_PATCH_ITEMDEFID = Object.freeze({ SCOUT: 2000, TANK: 2001, ENGINEER: 2002 });
 
 const STEAM_PARTNER_API = 'https://partner.steam-api.com/ISteamLeaderboards';
+const STEAM_PLAYER_SUMMARIES_API = 'https://partner.steam-api.com/ISteamUser/GetPlayerSummaries/v2/';
+const PERSONA_CACHE_TTL_MS = 10 * 60 * 1000;
+const PERSONA_LOOKUP_TIMEOUT_MS = 3000;
 const leaderboardIdCache = new Map();
+const personaCache = new Map();
 const mockLeaderboardStore = new Map();
 
 const MOCK_LEADERBOARD_SEED = Object.freeze({
@@ -62,7 +66,11 @@ function hasBearerAuth(req) {
 }
 
 function normalizeLeaderboardEntries(data) {
-    const candidates = data?.response?.entries?.entry
+    // Valve's partner GetLeaderboardEntries/v1 shape is
+    // leaderboardEntryInformation.leaderboardEntries[{ steamID, score, rank, ugcid, detailData }];
+    // the rest are legacy fallbacks.
+    const candidates = data?.leaderboardEntryInformation?.leaderboardEntries
+        ?? data?.response?.entries?.entry
         ?? data?.response?.entries
         ?? data?.response?.entry
         ?? data?.entries
@@ -75,9 +83,9 @@ function normalizeLeaderboardEntries(data) {
             steamId64: String(entry.steamid ?? entry.steamId ?? entry.steamID ?? ''),
             score: Number(entry.score) || 0,
             rank: Number(entry.rank ?? entry.global_rank ?? entry.globalRank ?? 0) || 0,
-            persona: entry.persona ?? entry.name ?? 'Agent',
+            persona: entry.persona ?? entry.name ?? null,
             timestamp: entry.timestamp ? Number(entry.timestamp) * 1000 : null,
-            details: entry.details ?? null
+            details: entry.details ?? entry.detailData ?? null
         }))
         .filter((entry) => entry.steamId64);
 }
@@ -262,12 +270,72 @@ async function setLeaderboardScore({ appId, key, steamId64, target }) {
         method: 'POST',
         body: params
     });
+    const parsed = result.ok ? parseSetLeaderboardScoreResult(result.data) : null;
     return {
         ...result,
+        ...(parsed && !parsed.ok
+            ? { ok: false, reason: `steam_leaderboard_result_${parsed.resultCode}` }
+            : {}),
+        scoreChanged: parsed?.scoreChanged ?? false,
         target: target.name,
         leaderboardId: resolved.leaderboardId,
         score: target.score
     };
+}
+
+// SetLeaderboardScore/v1 answers HTTP 200 even when the write is refused;
+// the outcome is the body-level `result.result` EResult (1 = OK).
+export function parseSetLeaderboardScoreResult(data) {
+    const body = data?.result ?? data?.response ?? {};
+    const rawCode = typeof body === 'object' ? body.result : body;
+    const resultCode = rawCode == null || rawCode === '' ? null : Number(rawCode);
+    const scoreChanged = body.score_changed ?? body.scorechanged ?? body.params?.score_changed;
+    const globalRankNew = body.global_rank_new ?? null;
+    return {
+        ok: resultCode == null || resultCode === 1,
+        resultCode,
+        scoreChanged: scoreChanged === true || scoreChanged === 1 || scoreChanged === 'true' || scoreChanged === '1',
+        ...(globalRankNew != null ? { globalRankNew: Number(globalRankNew) } : {})
+    };
+}
+
+// Steam leaderboard entries carry only SteamIDs; names come from
+// GetPlayerSummaries. Best-effort: a failed lookup never fails the read.
+async function resolvePersonaNames(key, steamIds) {
+    const now = Date.now();
+    const missing = [...new Set(steamIds)].filter((id) => {
+        const cached = personaCache.get(id);
+        return !cached || cached.expiresAt <= now;
+    });
+    if (missing.length > 0 && typeof fetch === 'function') {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), PERSONA_LOOKUP_TIMEOUT_MS);
+        try {
+            for (let i = 0; i < missing.length; i += 100) {
+                const params = new URLSearchParams({ key, steamids: missing.slice(i, i + 100).join(',') });
+                const response = await fetch(`${STEAM_PLAYER_SUMMARIES_API}?${params.toString()}`, { signal: controller.signal });
+                if (!response.ok) break;
+                const data = JSON.parse(await response.text() || '{}');
+                for (const player of data?.response?.players ?? []) {
+                    if (player?.steamid && player.personaname) {
+                        personaCache.set(String(player.steamid), {
+                            persona: String(player.personaname),
+                            expiresAt: now + PERSONA_CACHE_TTL_MS
+                        });
+                    }
+                }
+            }
+        } catch {
+            // best-effort; fall through with whatever is cached
+        } finally {
+            clearTimeout(timeout);
+        }
+    }
+    return new Map(steamIds.map((id) => [id, personaCache.get(id)?.persona ?? null]));
+}
+
+export function clearPersonaCache() {
+    personaCache.clear();
 }
 
 export function clearLeaderboardCache() {
@@ -377,6 +445,9 @@ export async function getLeaderboardEntries({
         };
     }
 
+    const entries = normalizeLeaderboardEntries(result.data);
+    const unnamed = entries.filter((entry) => !entry.persona).map((entry) => entry.steamId64);
+    const personas = unnamed.length > 0 ? await resolvePersonaNames(key, unnamed) : new Map();
     return {
         ok: true,
         status: 200,
@@ -384,7 +455,10 @@ export async function getLeaderboardEntries({
         board: normalizedBoard,
         dataRequest: normalizedDataRequest,
         leaderboardId: resolved.leaderboardId,
-        entries: normalizeLeaderboardEntries(result.data)
+        entries: entries.map((entry) => ({
+            ...entry,
+            persona: entry.persona ?? personas.get(entry.steamId64) ?? 'Agent'
+        }))
     };
 }
 
@@ -525,14 +599,10 @@ export async function submitRunToSteamLeaderboards({ auth, payload } = {}) {
             steamId64: auth.steamId64,
             target
         });
-        // Valve's real SetLeaderboardScore response includes a
-        // score-changed indicator under response.params — field name/shape
-        // unverified against a live Steamworks app from this repo; falls
-        // back to false (no personal-best grant) if absent so a missing
-        // field never over-grants.
+        // result.score_changed from SetLeaderboardScore; absent -> false so a
+        // missing field never over-grants the personal-best cache.
         if (target.name === 'best_run_score') {
-            const params = scoreResult?.data?.response?.params ?? {};
-            isNewBestReal = params.score_changed === true || params.score_changed === 1 || params.scorechanged === 1;
+            isNewBestReal = scoreResult.ok && scoreResult.scoreChanged === true;
         }
         results.push(scoreResult);
     }
@@ -568,6 +638,7 @@ export function attachSteamLeaderboardRoutes(app) {
         if (config.configured || hasBearerAuth(req)) {
             auth = await authenticateSteamRequest(req);
             if (!auth.ok) {
+                res.locals.hbFailure = { reason: auth.reason ?? 'steam_auth_failed' };
                 res.status(Number(auth.status) || 401).json(auth);
                 return;
             }
@@ -592,6 +663,13 @@ export function attachSteamLeaderboardRoutes(app) {
             },
             payload: req.body?.payload
         });
+        if (!result.ok) {
+            res.locals.hbFailure = {
+                reason: result.reason ?? null,
+                ...(result.errors ? { errors: result.errors.slice(0, 8) } : {}),
+                ...(result.submitted ? { targets: result.submitted.filter((t) => !t.ok).map((t) => `${t.target}:${t.reason ?? t.status}`) } : {})
+            };
+        }
         res.status(Number(result.status) || (result.ok ? 200 : 500)).json(result);
     });
 

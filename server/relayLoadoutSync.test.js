@@ -68,7 +68,7 @@ describe('Server Relay: per-player loadout sync', () => {
         guest.emit('joinRoom', { roomCode, callsign: 'GUEST', opClass: 'SCOUT', loadout: { weapon: 'SPORE LANCE', hasCharm: false } });
 
         const payload = await newPlayerEvent;
-        expect(payload.loadout).toEqual({ weapon: 'SPORE LANCE', hasCharm: false });
+        expect(payload.loadout).toMatchObject({ weapon: 'SPORE LANCE', hasCharm: false });
     });
 
     it('includes each player\'s loadout in currentPlayers for a joining socket', async () => {
@@ -86,7 +86,7 @@ describe('Server Relay: per-player loadout sync', () => {
         const currentPlayers = await currentPlayersPromise;
 
         const hostEntry = Object.values(currentPlayers).find((p) => p.callsign === 'HOST');
-        expect(hostEntry.loadout).toEqual({ weapon: 'RAILGUN MK.II', hasCharm: true });
+        expect(hostEntry.loadout).toMatchObject({ weapon: 'RAILGUN MK.II', hasCharm: true });
     });
 
     it('defaults to a null loadout when none is supplied, rather than throwing', async () => {
@@ -123,6 +123,31 @@ describe('Server Relay: per-player loadout sync', () => {
         expect(entry.loadout.extraField).toBeUndefined();
     });
 
+    it('relays only validated equipment identifiers needed for remote rendering', async () => {
+        ({ httpServer, url } = await startTestServer());
+        const host = await connectClient(url);
+        sockets.push(host);
+        const currentPlayers = waitForEvent(host, 'currentPlayers');
+        host.emit('joinRoom', {
+            roomCode: 'LOADOUT-SYNC-EQUIPMENT-TEST', callsign: 'HOST', opClass: 'TANK',
+            loadout: {
+                weapon: 'SIEGE-BREAKER', hasCharm: true, schemaVersion: 2,
+                weaponArchetypeId: 'siege_breaker', weaponSkinId: '4102', charmId: '4131',
+                overclockIds: ['4160', 'not-real', '4161'],
+                effectLabels: ['Ballast Plating: +2 max health', { bad: true }]
+            }
+        });
+        const result = await currentPlayers;
+        expect(Object.values(result)[0].loadout).toMatchObject({
+            schemaVersion: 2,
+            weaponArchetypeId: 'siege_breaker',
+            weaponSkinId: '4102',
+            charmId: '4131',
+            overclockIds: ['4160'],
+            effectLabels: ['Ballast Plating: +2 max health']
+        });
+    });
+
     it('does not wipe a previously-synced loadout on a reconnect that sends no loadout data', async () => {
         ({ httpServer, url } = await startTestServer());
         const roomCode = 'LOADOUT-SYNC-RECONNECT-TEST';
@@ -137,6 +162,6 @@ describe('Server Relay: per-player loadout sync', () => {
         host.emit('joinRoom', { roomCode, callsign: 'HOST', opClass: 'TANK' });
 
         const result = await currentPlayers;
-        expect(Object.values(result)[0].loadout).toEqual({ weapon: 'RAILGUN MK.II', hasCharm: true });
+        expect(Object.values(result)[0].loadout).toMatchObject({ weapon: 'RAILGUN MK.II', hasCharm: true });
     });
 });

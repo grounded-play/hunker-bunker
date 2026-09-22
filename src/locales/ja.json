@@ -100,6 +100,7 @@
       "dossier": "◈ ドシエ",
       "achievements": "実績",
       "initialize": "開始",
+      "enter_armory": "武器庫へ",
       "vault_tooltip": "クリックして Steam ヴォールトのスキン一覧を開く",
       "status_logs": "ログ {found} / {total}",
       "status_intel": "情報 {found} / {total}",
@@ -254,7 +255,7 @@
       "f_voicebank": "代替無線ボイスバンク",
       "btn_return": "← メインメニューへ戻る",
       "btn_vault": "STEAMヴォールトと製造ベイ",
-      "btn_embark": "バンカーへ出発 >>",
+      "btn_embark": "出撃準備へ進む >>",
       "picker_title": "◆ 選択",
       "aria_settings": "設定を開く",
       "equipped": "装備中",
@@ -265,10 +266,13 @@
       "aria_label_pre_mission_armory": "任務前アーモリー"
     },
     "roster": {
+      "registration_title": "オペレーター登録",
+      "telemetry_title": "キャリア記録",
       "deepest_sector": "最深セクター：",
       "total_distance": "総距離：",
       "hostiles": "敵対勢力：",
       "black_box": "ブラックボックス：",
+      "black_boxes_recovered": "回収済みブラックボックス：",
       "patch": "パッチ：",
       "decal": "デカール：",
       "finish": "スキン：",
@@ -288,6 +292,7 @@
       "id_label": "ID：",
       "stat_sector": "セクター {depth}",
       "stat_hostiles": "敵性体 {count}",
+      "stat_blackboxes_recovered": "{count} 回収",
       "blackbox_recoverable": "回収可能（セクター {depth}）",
       "blackbox_none": "なし",
       "equipped_none": "なし",
@@ -1394,6 +1399,29 @@
     "snail": {
       "alt_player_chassis": "プレイヤー・シャーシ",
       "alt_snail_combatant": "スネイル戦闘体"
+    },
+    "daily_ops": {
+      "tag": "デイリー",
+      "card_meta": "1名 // 採点は1回のみ",
+      "perk_shared_sector": "共通デイリーセクター",
+      "perk_grade_targets": "評価目標",
+      "perk_leaderboard": "デイリーランキング",
+      "goals_title": "本日のデイリー目標",
+      "resets_midnight": "深夜0時にリセット",
+      "col_goal": "目標",
+      "col_requirement": "条件",
+      "description": "デイリー作戦：全オペレーターが本日のセクターに降下します。採点される挑戦は1回だけ。最終評価はデイリー作戦ランキングに登録されます。深夜0時にリセット。",
+      "earned": "達成",
+      "missed": "未達成",
+      "target": "目標",
+      "goal_attempt": "本日の作戦を完了",
+      "goal_attempt_req": "デイリー作戦を1回完了する（勝利・死亡問わず）",
+      "goal_grade": "評価 {grade}",
+      "goal_grade_req": "{score}点以上を獲得",
+      "goal_leaderboard": "ランキングに登録",
+      "goal_leaderboard_req": "スコアが本日のランキングに載る",
+      "deploy": "デイリー作戦に出撃",
+      "deploy_done": "また明日"
     }
   },
   "narrative": {

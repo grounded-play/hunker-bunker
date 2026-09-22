@@ -10,6 +10,7 @@ import { getCharmSocketTransform, resolveCharmModelOffset } from './charmSockets
 import { applyWeaponSheen } from './weaponSheenMaterial.js';
 import { isMaterialFinish, applyWeaponMaterialFinish } from './weaponFinishMaterial.js';
 import { CHARM_GLB_MAP } from './charmModels.js';
+import { createOperatorEquipmentController } from './operatorEquipmentSockets.js';
 
 // The 2D-to-3D generation pipeline's gltf-transform optimize pass applies
 // EXT_meshopt_compression; GLTFLoader throws "setMeshoptDecoder must be called
@@ -464,6 +465,41 @@ export function computeOperatorPolishMaterialState(baseColor, baseRoughness, bas
     };
 }
 
+export function excludePlayerSelfLights(material) {
+    if (!material) return material;
+    const previousOnBeforeCompile = material.onBeforeCompile;
+    material.onBeforeCompile = (shader, renderer) => {
+        if (typeof previousOnBeforeCompile === 'function') {
+            previousOnBeforeCompile(shader, renderer);
+        }
+        if (shader.fragmentShader && shader.fragmentShader.includes('#include <lights_fragment_begin>')) {
+            const modifiedLights = THREE.ShaderChunk.lights_fragment_begin
+                .replace(
+                    'getPointLightInfo( pointLight, geometryPosition, directLight );',
+                    `getPointLightInfo( pointLight, geometryPosition, directLight );
+                    if ( length( pointLight.position - geometryPosition ) < 2.2 ) {
+                        directLight.color = vec3( 0.0 );
+                        directLight.visible = false;
+                    }`
+                )
+                .replace(
+                    'getSpotLightInfo( spotLight, geometryPosition, directLight );',
+                    `getSpotLightInfo( spotLight, geometryPosition, directLight );
+                    if ( length( spotLight.position - geometryPosition ) < 1.6 ) {
+                        directLight.color = vec3( 0.0 );
+                        directLight.visible = false;
+                    }`
+                );
+            shader.fragmentShader = shader.fragmentShader.replace(
+                '#include <lights_fragment_begin>',
+                modifiedLights
+            );
+        }
+    };
+    material.customProgramCacheKey = () => 'excludePlayerSelfLights';
+    return material;
+}
+
 export async function createPlayer3dOverlay({
     targetHeight = 1.85,
     idleActionName = 'idle',
@@ -474,7 +510,9 @@ export async function createPlayer3dOverlay({
     modelUrl = MODEL_URL,
     animationModelUrl = null,
     animationBonePrefix = null,
-    allowStatic = false
+    allowStatic = false,
+    wearableOverclocks = [],
+    requireRigged = false
 } = {}) {
     const [modelTemplate, animationGltf] = await Promise.all([
         loadCharacterTemplate(modelUrl),
@@ -488,6 +526,18 @@ export async function createPlayer3dOverlay({
     root.name = 'Scout3dCosmeticOverlay';
     normalizeModel(root, targetHeight);
 
+    if (requireRigged) {
+        let hasSkinnedMesh = false;
+        let boneCount = 0;
+        root.traverse((object) => {
+            if (object.isSkinnedMesh) hasSkinnedMesh = true;
+            if (object.isBone) boneCount += 1;
+        });
+        if (!hasSkinnedMesh || boneCount < 8) {
+            throw new Error(`Operator asset is not animation-ready (skinned=${hasSkinnedMesh}, bones=${boneCount})`);
+        }
+    }
+
     root.traverse((object) => {
         if (!object.isMesh) return;
         object.castShadow = true;
@@ -497,6 +547,18 @@ export async function createPlayer3dOverlay({
     });
 
     const chestPatch = createOperatorPatch(root, { targetHeight });
+    const equipment = createOperatorEquipmentController(root);
+    const equipmentLoads = await Promise.allSettled([
+        equipment.set(1, wearableOverclocks?.[0] ?? null),
+        equipment.set(2, wearableOverclocks?.[1] ?? null)
+    ]);
+    for (const result of equipmentLoads) {
+        if (result.status === 'rejected') {
+            // A cosmetic socket is optional. Its asset failing must never take
+            // the operator (and the whole Armory preview) down with it.
+            console.warn('[player-3d-overlay] Wearable overclock failed to load:', result.reason);
+        }
+    }
 
     let rightHand = root.getObjectByName('mixamorig1:RightHand')
         ?? root.getObjectByName('mixamorig1RightHand');
@@ -559,6 +621,17 @@ export async function createPlayer3dOverlay({
             : cloneMaterial(object.material);
     });
 
+    // Ensure all meshes and equipment in the operator rig (including weapon,
+    // charm, and patch) ignore lights originating from the player's own body
+    // so suitFillLight and playerGlow illuminate the surroundings without peaking on the player.
+    root.traverse((object) => {
+        if (!object.isMesh || !object.material) return;
+        const materials = Array.isArray(object.material) ? object.material : [object.material];
+        for (const mat of materials) {
+            excludePlayerSelfLights(mat);
+        }
+    });
+
     const mixer = new THREE.AnimationMixer(root);
     const actions = new Map();
     // Keep animations embedded in the operator (for example Engineer's unique
@@ -592,6 +665,13 @@ export async function createPlayer3dOverlay({
     const activeIdleName = actions.has(idleActionName)
         ? idleActionName
         : (actions.has('idle') ? 'idle' : (actions.has('heroIdle') ? 'heroIdle' : (actions.size > 0 ? actions.keys().next().value : null)));
+    if (requireRigged) {
+        const idleClip = activeIdleName ? actions.get(activeIdleName)?.getClip?.() : null;
+        if (!idleClip || idleClip.tracks.length === 0) {
+            equipment.dispose();
+            throw new Error(`Operator asset has no usable idle animation (requested=${idleActionName})`);
+        }
+    }
     const idleActions = [...new Set([activeIdleName, 'idle', 'heroIdle'])].filter((name) => actions.has(name));
     const blendableActions = [
         ...idleActions,
@@ -631,6 +711,7 @@ export async function createPlayer3dOverlay({
         weapon,
         patch: chestPatch.root,
         setPatchImage(path) { chestPatch.setImage(path); },
+        setWearableOverclock(slot, itemId) { return equipment.set(slot, itemId); },
         setOperatorPolish(color = 0xffffff) {
             for (const state of polishMaterials) {
                 const polished = computeOperatorPolishMaterialState(
@@ -764,6 +845,7 @@ export async function createPlayer3dOverlay({
         },
         dispose() {
             chestPatch.dispose();
+            equipment.dispose();
             mixer.stopAllAction();
             root.traverse((object) => {
                 object.geometry?.dispose?.();

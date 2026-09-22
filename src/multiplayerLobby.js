@@ -8,6 +8,7 @@ import { planMultiplayerCrashSites } from './multiplayerCrashPlanner.js';
 import { clearMultiplayerSession, startMultiplayerRun } from './gameController.js';
 import { getSelectedPolish } from './operatorPolishes.js';
 import { t, onLocaleChange } from './i18n.js';
+import { RUN_GRADE_BANDS } from './runRating.js';
 import {
     createSteamLobby,
     joinSteamLobby,
@@ -28,8 +29,13 @@ export const MULTIPLAYER_MODES = Object.freeze({
     // is now the shared Deployment Briefing screen for every run, not just
     // multiplayer ones -- SOLO is a real segment alongside CO-OP/PVP, not a
     // separate flow that bypasses this screen entirely.
-    SOLO: 'solo'
+    SOLO: 'solo',
+    // Solo, date-seeded, one scored attempt per day. Launched through its own
+    // onDailyLaunch callback rather than onLaunch (see handleDeployButtonClick).
+    DAILY: 'daily'
 });
+
+const DAILY_GRADE_BANDS = RUN_GRADE_BANDS.filter((band) => band.minScore > 0);
 
 // Sprint 24 Milestone A item 4 (docs/sprint24-multiplayer-runtime-2026-08-19.md):
 // mint a short-lived session token from the relay's existing POST
@@ -141,13 +147,26 @@ export function resolveRelayUrl() {
 // main.js already exposes for this exact purpose (armory UI, HUD). null
 // outside a real game session (no window.loadout yet, e.g. very early boot)
 // rather than a placeholder value that would look like a real loadout.
-export function getLocalLoadoutSummary(opClass) {
+export function getLocalLoadoutSummary(opClass, mode = 'deployment') {
     if (typeof window === 'undefined' || !window.loadout) return null;
     const weapon = window.loadout.getEquippedLabel?.(window.fabricator, opClass) ?? 'UNARMED';
-    const hasCharm = Boolean(window.loadout.getEquippedCharmId?.(opClass));
+    const equipment = window.loadout.getActiveEquipmentSnapshot?.(opClass, mode) ?? null;
+    const classLoadout = window.loadout.getClassLoadout?.(opClass) ?? {};
+    const hasCharm = Boolean(equipment?.charmId ?? window.loadout.getEquippedCharmId?.(opClass));
     const chassisSkinId = window.loadout.getEquippedChassisSkinId?.() ?? null;
     const polishColor = getSelectedPolish(window.localStorage).color;
-    const summary = { weapon, hasCharm };
+    const summary = {
+        weapon,
+        hasCharm,
+        schemaVersion: equipment?.schemaVersion ?? 0,
+        weaponArchetypeId: classLoadout.archetypeId ?? null,
+        weaponSkinId: classLoadout.weaponSkinId ?? null,
+        charmId: equipment?.charmId ?? null,
+        overclockIds: equipment?.overclockIds ?? [],
+        effectLabels: equipment?.statuses?.map((status) => (
+            `${status.name}: ${status.active ? status.summary : status.modeStatus}`
+        )) ?? []
+    };
     if (chassisSkinId) summary.chassisSkinId = chassisSkinId;
     if (polishColor) summary.polishColor = polishColor;
     return summary;
@@ -285,6 +304,8 @@ export class MultiplayerLobby {
         modeSoloBtn?.addEventListener('click', () => this.setMode(MULTIPLAYER_MODES.SOLO));
         modeCoopBtn?.addEventListener('click', () => this.setMode(MULTIPLAYER_MODES.COOP));
         modePvpBtn?.addEventListener('click', () => this.setMode(MULTIPLAYER_MODES.PVP));
+        const modeDailyBtn = document.getElementById('net-mode-daily-btn');
+        modeDailyBtn?.addEventListener('click', () => this.setMode(MULTIPLAYER_MODES.DAILY));
 
         const connectBtn = document.getElementById('net-connect-btn');
         connectBtn?.addEventListener('click', () => this.toggleConnection());
@@ -328,12 +349,17 @@ export class MultiplayerLobby {
      *   and again (after setupMultiplayerNetwork) once a CO-OP/PVP deploy
      *   completes. onCancel: fired only by an explicit close ("x" button),
      *   never by the close-on-success path deploy already takes.
+     *   onDailyLaunch: main.js's beginDailyOpsRun, fired by DEPLOY while the
+     *   DAILY OPS card is active. getDailyOpsStatus: today's Daily Ops record
+     *   ({ date, seedLabel, state, score, grade }) for the goals panel.
      */
-    openModal({ onLaunch, onCancel } = {}) {
+    openModal({ onLaunch, onCancel, onDailyLaunch, getDailyOpsStatus } = {}) {
         const modal = document.getElementById('multiplayer-modal');
         if (!modal) return;
         this.onLaunch = onLaunch ?? null;
         this.onCancel = onCancel ?? null;
+        this.onDailyLaunch = onDailyLaunch ?? null;
+        this.getDailyOpsStatus = getDailyOpsStatus ?? null;
         // Reset to SOLO on every open rather than remembering last run's
         // CO-OP/PVP pick -- opening a live relay connection / creating a
         // Steam lobby is a real side effect a player choosing SOLO again
@@ -356,6 +382,7 @@ export class MultiplayerLobby {
         if (this.connected) this.disconnect();
         this.closeModal();
         this.onLaunch = null;
+        this.onDailyLaunch = null;
         const cancel = this.onCancel;
         this.onCancel = null;
         cancel?.();
@@ -370,7 +397,7 @@ export class MultiplayerLobby {
 
     setMode(mode) {
         this.currentMode = mode;
-        if (mode === MULTIPLAYER_MODES.SOLO) {
+        if (mode === MULTIPLAYER_MODES.SOLO || mode === MULTIPLAYER_MODES.DAILY) {
             // Backing out of a CO-OP/PVP pick to SOLO: don't leave a live
             // relay connection or Steam lobby sitting open behind the scenes
             // for a run that's about to launch solo.
@@ -418,7 +445,7 @@ export class MultiplayerLobby {
 
         const callsign = getLocalCallsign();
         const opClass = getLocalOperatorClass();
-        const loadout = getLocalLoadoutSummary(opClass);
+        const loadout = getLocalLoadoutSummary(opClass, this.currentMode);
 
         try {
             if (typeof window !== 'undefined') {
@@ -637,7 +664,7 @@ export class MultiplayerLobby {
         this.usingRelay = false;
         const callsign = getLocalCallsign();
         const opClass = getLocalOperatorClass();
-        const loadout = getLocalLoadoutSummary(opClass);
+        const loadout = getLocalLoadoutSummary(opClass, this.currentMode);
 
         this.players.clear();
         // No real server exists to arbitrate a ready-up gate against in this
@@ -929,6 +956,18 @@ export class MultiplayerLobby {
     // connection/ready/host state instead of always deploying instantly --
     // see the class-level comment on `localReady` for why this exists.
     handleDeployButtonClick() {
+        if (this.currentMode === MULTIPLAYER_MODES.DAILY) {
+            if (this.getDailyOpsStatus?.()?.state === 'completed') return;
+            clearMultiplayerSession();
+            window.AudioManager?.play?.('fx_menu_confirm', { volume: 0.4, bus: 'sfx' });
+            this.closeModal();
+            const launchDaily = this.onDailyLaunch;
+            this.onLaunch = null;
+            this.onDailyLaunch = null;
+            this.onCancel = null;
+            launchDaily?.();
+            return;
+        }
         if (this.currentMode === MULTIPLAYER_MODES.SOLO) {
             // No relay session, no roster, no crash-plan/multiplayer session
             // to set up -- SOLO is the Armory-embark launch action Armory
@@ -1155,12 +1194,15 @@ export class MultiplayerLobby {
         const isSolo = this.currentMode === MULTIPLAYER_MODES.SOLO;
         const isCoop = this.currentMode === MULTIPLAYER_MODES.COOP;
         const isPvp = this.currentMode === MULTIPLAYER_MODES.PVP;
+        const isDaily = this.currentMode === MULTIPLAYER_MODES.DAILY;
         const modeSoloBtn = document.getElementById('net-mode-solo-btn');
         const modeCoopBtn = document.getElementById('net-mode-coop-btn');
         const modePvpBtn = document.getElementById('net-mode-pvp-btn');
+        const modeDailyBtn = document.getElementById('net-mode-daily-btn');
         modeSoloBtn?.classList.toggle('active', isSolo);
         modeCoopBtn?.classList.toggle('active', isCoop);
         modePvpBtn?.classList.toggle('active', isPvp);
+        modeDailyBtn?.classList.toggle('active', isDaily);
 
         const soloIndicator = modeSoloBtn?.querySelector('.net-mode-card__indicator');
         const coopIndicator = modeCoopBtn?.querySelector('.net-mode-card__indicator');
@@ -1168,10 +1210,16 @@ export class MultiplayerLobby {
         if (soloIndicator) soloIndicator.textContent = isSolo ? t('ui.multiplayer.active_mode') : t('ui.multiplayer.select_mode');
         if (coopIndicator) coopIndicator.textContent = isCoop ? t('ui.multiplayer.active_mode') : t('ui.multiplayer.select_mode');
         if (pvpIndicator) pvpIndicator.textContent = isPvp ? t('ui.multiplayer.active_mode') : t('ui.multiplayer.select_mode');
+        const dailyIndicator = modeDailyBtn?.querySelector('.net-mode-card__indicator');
+        if (dailyIndicator) dailyIndicator.textContent = isDaily ? t('ui.multiplayer.active_mode') : t('ui.multiplayer.select_mode');
+        const dailyStatus = this.getDailyOpsStatus?.() ?? null;
+        this.renderDailyStatusChip(dailyStatus);
 
         const titleDesc = document.getElementById('net-mode-description');
         if (titleDesc) {
-            titleDesc.textContent = isSolo
+            titleDesc.textContent = isDaily
+                ? t('ui.daily_ops.description')
+                : isSolo
                 ? 'SOLO OPERATION: Deploy alone, no squad, no rivals. The outer ring answers to you and you alone.'
                 : isCoop
                     ? 'CO-OP EXPEDITION: Deploy joint squads through the outer ring. Shared salvage, synchronized telemetry, and emergency revival.'
@@ -1184,8 +1232,12 @@ export class MultiplayerLobby {
         // never going to connect to anything.
         const telemetryColumn = document.querySelector('.net-column--telemetry');
         const rosterColumn = document.querySelector('.net-column--roster');
-        telemetryColumn?.classList.toggle('hidden', isSolo);
-        rosterColumn?.classList.toggle('hidden', isSolo);
+        const dailyColumn = document.querySelector('.net-column--daily');
+        telemetryColumn?.classList.toggle('hidden', isSolo || isDaily);
+        rosterColumn?.classList.toggle('hidden', isSolo || isDaily);
+        dailyColumn?.classList.toggle('hidden', !isDaily);
+        document.querySelector('.net-main-grid')?.classList.toggle('net-main-grid--daily', isDaily);
+        if (isDaily) return this.updateDailyPanel(dailyStatus);
         if (isSolo) return this.updateDeployButtonForSolo();
 
         // Private lobby + password fields only make sense while hosting a
@@ -1270,6 +1322,7 @@ export class MultiplayerLobby {
                         <div class="net-roster-class">
                             <span class="net-class-badge net-class--${classColor}">${normalizedClass}</span>
                             ${player.loadout?.weapon ? `<span class="net-roster-loadout">${player.loadout.weapon}${player.loadout.hasCharm ? ' ◆' : ''}</span>` : ''}
+                            ${player.loadout?.effectLabels?.length ? `<span class="net-roster-loadout net-roster-loadout--effects">${player.loadout.effectLabels.join(' // ')}</span>` : ''}
                         </div>
                         <div class="net-roster-ping">
                             <span class="net-ping-dot">●</span>
@@ -1333,6 +1386,60 @@ export class MultiplayerLobby {
         if (deployBtn && !this.countdownInterval) {
             deployBtn.disabled = false;
             deployBtn.textContent = t('ui.lobby.deploy_solo');
+        }
+    }
+
+    renderDailyStatusChip(status) {
+        const chip = document.getElementById('net-daily-status-chip');
+        if (!chip) return;
+        const state = status?.state ?? 'ready';
+        chip.className = `net-daily-status-chip net-daily-status-chip--${state.replace('_', '-')}`;
+        chip.textContent = state === 'completed'
+            ? t('ui.archive.score_grade', { score: status.score ?? 0, grade: status.grade ?? 'D' })
+            : state === 'in_progress' ? t('ui.archive.in_progress') : t('ui.archive.ready');
+    }
+
+    // Today's goals, in the roster's row layout: the scored attempt itself,
+    // one row per grade band (the same bands the Game Over screen grades
+    // against), and the daily leaderboard post.
+    updateDailyPanel(status) {
+        const state = status?.state ?? 'ready';
+        const scored = state === 'completed';
+        const score = Number(status?.score) || 0;
+
+        const seedEl = document.getElementById('net-daily-seed');
+        if (seedEl) seedEl.textContent = status?.seedLabel ?? '';
+
+        const tag = (kind) => {
+            if (kind === 'earned') return `<span class="net-status-tag">${t('ui.daily_ops.earned')}</span>`;
+            if (kind === 'missed') return `<span class="net-status-tag net-status-tag--missed">${t('ui.daily_ops.missed')}</span>`;
+            return `<span class="net-status-tag net-status-tag--standby">${t('ui.daily_ops.target')}</span>`;
+        };
+        const row = (icon, name, requirement, kind) => `
+            <div class="net-roster-row net-daily-row ${kind === 'earned' ? 'net-daily-row--earned' : ''}">
+                <div class="net-daily-goal-name"><span class="net-daily-grade">${icon}</span><span>${name}</span></div>
+                <div class="net-daily-requirement">${requirement}</div>
+                <div class="net-roster-status">${tag(kind)}</div>
+            </div>`;
+
+        const list = document.getElementById('net-daily-goals');
+        if (list) {
+            list.innerHTML = [
+                row('◷', t('ui.daily_ops.goal_attempt'), t('ui.daily_ops.goal_attempt_req'), scored ? 'earned' : 'target'),
+                ...DAILY_GRADE_BANDS.map((band) => row(
+                    band.grade,
+                    t('ui.daily_ops.goal_grade', { grade: band.grade }),
+                    t('ui.daily_ops.goal_grade_req', { score: band.minScore }),
+                    !scored ? 'target' : score >= band.minScore ? 'earned' : 'missed'
+                )),
+                row('▲', t('ui.daily_ops.goal_leaderboard'), t('ui.daily_ops.goal_leaderboard_req'), scored ? 'earned' : 'target')
+            ].join('');
+        }
+
+        const deployBtn = document.getElementById('net-deploy-btn');
+        if (deployBtn && !this.countdownInterval) {
+            deployBtn.disabled = scored;
+            deployBtn.textContent = scored ? t('ui.daily_ops.deploy_done') : t('ui.daily_ops.deploy');
         }
     }
 }

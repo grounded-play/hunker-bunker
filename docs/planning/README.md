@@ -21,6 +21,10 @@ Status: canonical process index · Owner: repository maintainers · Updated:
 
 - [Armory continuation](armory-continuation-2026-09-09.md) records the completed no-scroll layout, accurate previews, and deployed weapon sheen/charm work. Remaining model production is tracked in the roadmap and generated asset inventory.
 
+- [Equipment effects and visual sockets](equipment-effects-and-visual-sockets-plan-2026-09-21.md) records the implemented weapon-charm/operator-overclock split, earnable attunement policy, PvP normalization, runtime effects, loadout status UI, and validated remote-player replication.
+
+- [Armory character rig readiness](armory-character-rig-readiness-2026-09-22.md) records the six hidden T-pose/missing chassis assets, the enforced live fallback, and the rig/idle acceptance contract required before they return to the picker.
+
 - [Roguelike VFX, lighting, and gameplay plan](roguelike-vfx-lighting-and-gameplay-plan-2026-09-09.md) defines the sensory and combat enhancement plan: dynamic shadow tracking, atmospheric lighting contrast, tilt-shift diorama bokeh, ballistic projectile tracers, biomechanical death bursts, and roguelike run loop polish.
 
 Closed plans are evidence, not a backlog. Unfinished work must be deliberately
@@ -40,3 +44,4 @@ copied into the roadmap with an owner/acceptance condition or explicitly cut.
 
 - [Authored set pieces, crash-site building, and run variety](authored-setpieces-crash-site-and-run-building-plan-2026-09-12.md) — central plan for deterministic procedural connectors between designed multi-chunk landmarks, a buildable run headquarters, seeded project combinations, the Ring 1 valley bridge, hospitals, camps, hives, objectives, and progression-safe expansion.
 - [Gate stage areas — detailed level design](gate-stage-areas-design-2026-09-12.md) — verified world/camera metrics, scale-preserving Blender structure pipeline, landmark and gate grammar, four distinct ring-gate verbs, and production-ready Ring 1→2 bridge design.
+- [Level design overhaul: macro rooms, wider corridors, hole pacing, and early-game ammo economy](level-design-rooms-hallways-ammo-and-holes-2026-09-21.md) — gameplay-driven level design overhaul: addresses early ammo starvation (+4 ammo yields, 42 starting reserve), cuts excessive wall pit holes by 80%, specifies 3–5m wide corridors, and outlines multi-chunk rooms with de-bunched macro topology.

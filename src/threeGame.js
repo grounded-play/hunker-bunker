@@ -1,3 +1,5 @@
+import { getRunRating } from './runRating.js';
+import { computeRunScore } from './runScore.js';
 import { getFieldWeaponProfile } from './fieldWeapon.js';
 import { buildRunResourceTelemetry } from './runTelemetry.js';
 import { createRelicPickup, animateRelicPickup, createImpactBurst, disposeExpeditionEffect } from './expeditionVfx.js';
@@ -184,7 +186,8 @@ import { HiveSite } from './hiveSite.js';
 import { describeDialogueProgress, leaderKeyFromName, nextDialogueBeat, isFinalStage } from './data/campDialogue.js';
 import { blackBoxStore } from './blackBox.js';
 import { runCheckpointStore } from './runCheckpoint.js';
-import { CHASSIS_SKIN_MODELS, createPlayer3dOverlay, ENGINEER_GESTURES } from './player3dOverlay.js';
+import { CHASSIS_SKIN_MODELS, createPlayer3dOverlay, ENGINEER_GESTURES, excludePlayerSelfLights } from './player3dOverlay.js';
+import { remoteEquipmentSignature, resolveRemoteEquipmentVisuals } from './remoteLoadout.js';
 
 export const MAYOR_TINA_PLAYER_VISUAL = Object.freeze({
     modelUrl: '/3d/runtime/secrets/mayor-tina-rigged.glb',
@@ -268,6 +271,7 @@ import {
     STORY_DEADLINES,
     beginExpedition,
     beginSleep,
+    canRestNow,
     completeRest,
     createDayState,
     deadlinesClosingTonight,
@@ -275,6 +279,16 @@ import {
     resolveDeadline,
     threatScaleForDay
 } from './dayCycle.js';
+import {
+    FATIGUE_STATE_KEY,
+    composeFatigueIntoLoadoutMods,
+    createFatigueState,
+    fatigueMaxHealthPenalty,
+    getFatigueStage,
+    normalizeFatigueState,
+    recordExpedition,
+    restoreOnSleep
+} from './fatigue.js';
 import {
     clampPositionToUnlockedRing,
     generateRadialMazeExpedition,
@@ -390,6 +404,45 @@ const SUIT_LOCAL_LIGHT_POOL_RADIUS = 5.7;
 const SUIT_LOCAL_LIGHT_POOL_OPACITY = 0.68;
 const SUIT_LIGHT_EMITTER_HEIGHT = 1.35;
 const SUIT_LIGHT_WALL_PADDING = 0.35;
+// Point/spot lights are infinitesimal emitters. On the glossy wall/floor
+// patches (roughness down to ~0.22) the analytic specular lobe collapses to a
+// tight white disc that reads as a mirrored light bulb -- most visibly the
+// playerGlow/suit lights hovering beside a wall. Direct lights are shaded with
+// at least this roughness; the IBL sky reflections keep the real value.
+const HB_DIRECT_SPECULAR_MIN_ROUGHNESS = 0.6;
+
+export function softenDirectSpecularHighlights(shader) {
+    shader.fragmentShader = shader.fragmentShader
+        .replace(
+            '#include <lights_fragment_begin>',
+            `
+            float hbIblRoughness = material.roughness;
+            material.roughness = max(material.roughness, ${HB_DIRECT_SPECULAR_MIN_ROUGHNESS.toFixed(2)});
+            #include <lights_fragment_begin>
+            `
+        )
+        .replace(
+            '#include <lights_fragment_maps>',
+            `
+            material.roughness = hbIblRoughness;
+            #ifdef STANDARD
+                material.dfg = texture2D( dfgLUT, vec2( material.roughness, dotNVms ) ).rg;
+            #endif
+            #include <lights_fragment_maps>
+            `
+        )
+        .replace(
+            '#include <lights_fragment_end>',
+            `
+            // Attenuate harsh point-blank analytical specular hot spots on walls and floors,
+            // while preserving indirect PBR environment reflections.
+            reflectedLight.directSpecular *= 0.35;
+            #include <lights_fragment_end>
+            `
+        );
+    return shader;
+}
+
 const O2_SAFE_LIGHT_COLOR = 0xb9fbff;
 const O2_SAFE_FILL_OPACITY = 0.16;
 const RADAR_STANDARD_TRACK_SECONDS = 5.0;
@@ -398,7 +451,18 @@ const RADAR_DANGER_COLOR = 0xff3344;
 const RADAR_HOLE_SCAN_PADDING = 2.25;
 const FOUNDRY_DISCOVERY_MIN_DISTANCE = 38;
 const FOUNDRY_DISCOVERY_MAX_DISTANCE = 58;
-const MENU_SHOWROOM_FLOOR_SIZE = 28;
+// The showroom floor has to cover the menu panel at any aspect ratio. The
+// panel is a wide strip (~2.2:1), and the showcase patrol walks the operative
+// well away from the spawn tile, so the plane is sized for the patrol box
+// rather than the camera and the grid texture tiles instead of stretching.
+// Dawn. Waking always lands here so a new campaign day reads as a new morning
+// rather than resuming wherever the short visual sky loop happened to be.
+const MORNING_TIME_OF_DAY = 0.26;
+const MENU_SHOWROOM_FLOOR_SIZE = 160;
+// World units per major grid cell. The floor snaps to this when it follows the
+// operative, so the grid scrolls underfoot instead of sliding with them.
+const MENU_GRID_CELL_WORLD = 1.5;
+const MENU_RETICLE_SIZE = 7.5;
 const MENU_SHOWROOM_FLOOR_OFFSET_X = 0;
 const MENU_SHOWROOM_FLOOR_OFFSET_Z = 0;
 // The crash site is an authored landmark inside the much larger procedural
@@ -493,7 +557,7 @@ const PICKUP_COLLECT_DURATION = 0.2;
 export const WEAPON_CLIP_SIZE = 6;
 const WEAPON_RELOAD_DURATION = 1.25;
 export const WEAPON_FIRE_COOLDOWN = 0.14;
-export const WEAPON_AMMO_REFILL_INTERVAL = 10;
+export const WEAPON_AMMO_REFILL_INTERVAL = 6.0;
 const WEAPON_AMMO_REFILL_INTERVAL_REDUCTION = 2.1;
 const WEAPON_AMMO_REFILL_MIN_INTERVAL = 3.6;
 const WEAPON_BLOCKED_CUE_INTERVAL = 420;
@@ -1529,6 +1593,7 @@ export class ThreeGame {
         // Campaign day/rest is distinct from the cosmetic time-of-day clock.
         // It survives runs and only advances through an explicit camp sleep.
         this.dayState = this.loadDayCycleState();
+        this.fatigueState = this.loadFatigueState();
         // Weather (Note 9): pooled Points field, biome/time-biased state machine.
         this.weather = {
             state: 'clear',
@@ -1607,6 +1672,7 @@ export class ThreeGame {
         this.recoilBloom = 0;
         this.runOverclocks = [];
         this.runRelics = [];
+        this.runShardCount = 0;
         this.activeSynergies = [];
         this.inRunLootDrops = [];
         this.snailsKilledThisRun = 0;
@@ -2138,6 +2204,7 @@ export class ThreeGame {
                 #endif
                 `
             );
+            softenDirectSpecularHighlights(shader);
 
             shader.fragmentShader = shader.fragmentShader.replace(
                 '#include <normal_fragment_maps>',
@@ -2388,6 +2455,7 @@ export class ThreeGame {
                 #endif
                 `
             );
+            softenDirectSpecularHighlights(shader);
 
             shader.fragmentShader = shader.fragmentShader.replace(
                 '#include <normal_fragment_maps>',
@@ -3622,8 +3690,13 @@ export class ThreeGame {
         );
     }
 
+    // Seamless tiling grid. One canvas tile covers MENU_GRID_CELL_WORLD world
+    // units; the plane repeats it, so the deck reads as an even grid at any
+    // panel aspect. Deliberately holds no rings or radial fade: anything
+    // centre-specific has to live on the reticle decal below, or it repeats
+    // once per cell and reads as noise.
     createMenuGridTexture() {
-        const size = 512;
+        const size = 256;
         const canvas = document.createElement('canvas');
         canvas.width = size;
         canvas.height = size;
@@ -3632,66 +3705,88 @@ export class ThreeGame {
         ctx.fillStyle = '#080a0d';
         ctx.fillRect(0, 0, size, size);
 
-        const drawGrid = (step, color, width) => {
-            ctx.strokeStyle = color;
-            ctx.lineWidth = width;
-            ctx.beginPath();
-            for (let x = 0; x <= size; x += step) {
-                ctx.moveTo(x + 0.5, 0);
-                ctx.lineTo(x + 0.5, size);
-            }
-            for (let y = 0; y <= size; y += step) {
-                ctx.moveTo(0, y + 0.5);
-                ctx.lineTo(size, y + 0.5);
-            }
-            ctx.stroke();
-        };
-
-        drawGrid(16, 'rgba(255, 255, 255, 0.05)', 1);
-        drawGrid(64, 'rgba(255, 255, 255, 0.16)', 1.5);
-        drawGrid(128, 'rgba(255, 255, 255, 0.32)', 2);
-
-        // Crosshairs at 64px grid intersections
-        ctx.strokeStyle = 'rgba(255, 255, 255, 0.55)';
-        ctx.lineWidth = 1.5;
-        const crossLen = 6;
-        for (let x = 64; x < size; x += 64) {
-            for (let y = 64; y < size; y += 64) {
-                ctx.beginPath();
-                ctx.moveTo(x - crossLen, y + 0.5);
-                ctx.lineTo(x + crossLen, y + 0.5);
-                ctx.moveTo(x + 0.5, y - crossLen);
-                ctx.lineTo(x + 0.5, y + crossLen);
-                ctx.stroke();
-            }
+        // Fine subdivisions, drawn inside the tile so they never land on the
+        // wrap seam.
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.17)';
+        for (let i = 1; i < 4; i++) {
+            const offset = Math.round((size / 4) * i);
+            ctx.fillRect(offset, 0, 1, size);
+            ctx.fillRect(0, offset, size, 1);
         }
 
-        // Concentric tactical range rings
+        // Major cell borders: drawn as a filled band starting at 0 so the tile
+        // to the left/above completes the line without a double-width seam.
+        const majorWidth = 2;
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.52)';
+        ctx.fillRect(0, 0, majorWidth, size);
+        ctx.fillRect(0, 0, size, majorWidth);
+
+        // Corner tick at every major intersection.
+        const tick = 10;
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.85)';
+        ctx.fillRect(0, 0, tick, majorWidth);
+        ctx.fillRect(0, 0, majorWidth, tick);
+        ctx.fillRect(size - tick, 0, tick, majorWidth);
+        ctx.fillRect(0, size - tick, majorWidth, tick);
+
+        const texture = new THREE.CanvasTexture(canvas);
+        texture.wrapS = THREE.RepeatWrapping;
+        texture.wrapT = THREE.RepeatWrapping;
+        texture.repeat.set(
+            MENU_SHOWROOM_FLOOR_SIZE / MENU_GRID_CELL_WORLD,
+            MENU_SHOWROOM_FLOOR_SIZE / MENU_GRID_CELL_WORLD
+        );
+        texture.colorSpace = THREE.SRGBColorSpace;
+        texture.anisotropy = Math.min(this.maxTextureAnisotropy ?? 1, 8);
+        return texture;
+    }
+
+    // Range rings and crosshair, on their own transparent decal so they can sit
+    // under the operative wherever the patrol takes them. This is the part the
+    // old single-texture floor could not do: its rings were pinned to the spawn
+    // tile and spent most of the patrol off-screen.
+    createMenuReticleTexture() {
+        const size = 512;
+        const canvas = document.createElement('canvas');
+        canvas.width = size;
+        canvas.height = size;
+        const ctx = canvas.getContext('2d');
         const center = size / 2;
-        const rings = [48, 96, 160, 220];
-        for (let i = 0; i < rings.length; i++) {
-            const r = rings[i];
-            ctx.strokeStyle = i === rings.length - 1 ? 'rgba(255, 255, 255, 0.45)' : 'rgba(255, 255, 255, 0.15)';
-            ctx.lineWidth = i === rings.length - 1 ? 2 : 1;
+
+        const rings = [88, 154, 214];
+        rings.forEach((radius, index) => {
+            ctx.strokeStyle = index === rings.length - 1
+                ? 'rgba(255, 255, 255, 0.55)'
+                : 'rgba(255, 255, 255, 0.30)';
+            ctx.lineWidth = index === rings.length - 1 ? 3 : 2;
             ctx.beginPath();
-            ctx.arc(center, center, r, 0, Math.PI * 2);
+            ctx.arc(center, center, radius, 0, Math.PI * 2);
+            ctx.stroke();
+        });
+
+        // Crosshair with a gap at the middle so the operative is never covered.
+        const gap = 34;
+        const reach = 232;
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(center - reach, center); ctx.lineTo(center - gap, center);
+        ctx.moveTo(center + gap, center);   ctx.lineTo(center + reach, center);
+        ctx.moveTo(center, center - reach); ctx.lineTo(center, center - gap);
+        ctx.moveTo(center, center + gap);   ctx.lineTo(center, center + reach);
+        ctx.stroke();
+
+        // Bearing ticks on the outer ring.
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.65)';
+        ctx.lineWidth = 3;
+        for (let i = 0; i < 8; i++) {
+            const angle = (Math.PI / 4) * i + Math.PI / 8;
+            const outer = rings[rings.length - 1];
+            ctx.beginPath();
+            ctx.moveTo(center + Math.cos(angle) * (outer - 12), center + Math.sin(angle) * (outer - 12));
+            ctx.lineTo(center + Math.cos(angle) * (outer + 8), center + Math.sin(angle) * (outer + 8));
             ctx.stroke();
         }
-
-        // Radial fade to deck edge
-        const grad = ctx.createRadialGradient(center, center, 140, center, center, 256);
-        grad.addColorStop(0, 'rgba(8, 10, 13, 0)');
-        grad.addColorStop(0.75, 'rgba(8, 10, 13, 0.55)');
-        grad.addColorStop(1, 'rgba(8, 10, 13, 1)');
-        ctx.fillStyle = grad;
-        ctx.fillRect(0, 0, size, size);
-
-        // Outer rim ring
-        ctx.strokeStyle = 'rgba(255, 255, 255, 0.7)';
-        ctx.lineWidth = 2.5;
-        ctx.beginPath();
-        ctx.arc(center, center, 248, 0, Math.PI * 2);
-        ctx.stroke();
 
         const texture = new THREE.CanvasTexture(canvas);
         texture.wrapS = THREE.ClampToEdgeWrapping;
@@ -3729,6 +3824,24 @@ export class ThreeGame {
         this.menuShowroomFloor.receiveShadow = true;
         this.menuShowroomFloor.visible = this.performanceProfile === 'menu';
         this.scene.add(this.menuShowroomFloor);
+
+        this.menuReticleTexture = this.createMenuReticleTexture();
+        this.menuShowroomReticle = new THREE.Mesh(
+            new THREE.PlaneGeometry(MENU_RETICLE_SIZE, MENU_RETICLE_SIZE),
+            new THREE.MeshBasicMaterial({
+                map: this.menuReticleTexture,
+                color: this.targetMenuGridColor.clone(),
+                transparent: true,
+                opacity: 0.85,
+                depthWrite: false,
+                depthTest: true
+            })
+        );
+        this.menuShowroomReticle.rotation.x = -Math.PI / 2;
+        this.menuShowroomReticle.renderOrder = 1;
+        this.menuShowroomReticle.visible = this.performanceProfile === 'menu';
+        this.scene.add(this.menuShowroomReticle);
+        this.positionMenuShowroomFloor();
 
         this.chunkGroups.visible = this.performanceProfile === 'gameplay';
         this.scene.add(this.chunkGroups);
@@ -4549,7 +4662,8 @@ export class ThreeGame {
                 }
             };
             const chassisSkinId = window.loadout?.getEquippedChassisSkinId?.();
-            const chassisModelUrl = chassisSkinId ? CHASSIS_SKIN_MODELS[String(chassisSkinId)] : null;
+            const chassisSupported = window.loadout?.isChassisSupportedForClass?.(this.playerType, chassisSkinId) ?? true;
+            const chassisModelUrl = chassisSkinId && chassisSupported ? CHASSIS_SKIN_MODELS[String(chassisSkinId)] : null;
             if (chassisModelUrl && classVisuals[overlayType]) {
                 classVisuals[overlayType] = {
                     ...classVisuals[overlayType],
@@ -4562,6 +4676,11 @@ export class ThreeGame {
             const overlay = await createPlayer3dOverlay({
                 targetHeight: this.playerSpriteScale * 0.98,
                 allowStatic: true,
+                requireRigged: true,
+                wearableOverclocks: [
+                    window.loadout?.getEquippedRigModule?.(1, this.playerType) ?? null,
+                    window.loadout?.getEquippedRigModule?.(2, this.playerType) ?? null
+                ],
                 ...classVisuals[overlayType]
             });
             if (this.player !== playerRoot || this.playerType !== overlayType) {
@@ -4577,6 +4696,15 @@ export class ThreeGame {
             this.player3dOverlay = overlay;
             this.updatePlayerDecalSprite();
             overlay.setOperatorPolish(this._playerPolishHex ?? 0xffffff);
+            overlay.root.traverse((child) => {
+                if (child.isMesh && child.material) {
+                    const mats = Array.isArray(child.material) ? child.material : [child.material];
+                    for (const m of mats) {
+                        excludePlayerSelfLights(m);
+                        m.needsUpdate = true;
+                    }
+                }
+            });
             if (typeof this.updatePlayerSpriteAnimation === 'function') {
                 this.updatePlayerSpriteAnimation(0, 0, 0, false, 0, 0);
             }
@@ -5046,6 +5174,7 @@ export class ThreeGame {
         group.position.set(spawn.x, 0, spawn.z);
 
         const opClass = playerData.opClass || 'SCOUT';
+        const equipmentVisuals = resolveRemoteEquipmentVisuals(opClass, playerData.loadout);
         const isPvP = this.multiplayerMode === 'pvp';
         const polishColor = playerData.polishColor || playerData.loadout?.polishColor || '#ffffff';
         const themeColor = isPvP ? 0xff4444 : (playerData.color || (opClass === 'SCOUT' ? 0x7dff5a : (opClass === 'TANK' ? 0xffb700 : 0x00e5ff)));
@@ -5110,7 +5239,10 @@ export class ThreeGame {
             id: playerData.id,
             callsign: playerData.callsign || 'OPERATIVE',
             opClass,
-            chassisSkinId: playerData.chassisSkinId || playerData.loadout?.chassisSkinId || null,
+            loadout: playerData.loadout ?? null,
+            equipmentVisuals,
+            equipmentSignature: remoteEquipmentSignature(equipmentVisuals),
+            chassisSkinId: equipmentVisuals.chassisSkinId,
             polishColor,
             mesh: group,
             sprite,
@@ -5154,12 +5286,31 @@ export class ThreeGame {
             remote.sprite?.material?.color?.set?.(polishColor);
             remote.overlay?.setOperatorPolish?.(polishColor);
         }
+        if (playerData.loadout) {
+            const equipmentVisuals = resolveRemoteEquipmentVisuals(remote.opClass, playerData.loadout);
+            const signature = remoteEquipmentSignature(equipmentVisuals);
+            remote.loadout = playerData.loadout;
+            if (signature !== remote.equipmentSignature) {
+                remote.equipmentVisuals = equipmentVisuals;
+                remote.equipmentSignature = signature;
+                remote.chassisSkinId = equipmentVisuals.chassisSkinId;
+                remote.overlayGeneration = (remote.overlayGeneration ?? 0) + 1;
+                remote.overlay?.dispose?.();
+                remote.overlay = null;
+                remote.overlayLoading = false;
+                if (remote.sprite) remote.sprite.visible = true;
+                void this.setupRemotePlayer3dOverlay?.(remote);
+            }
+        }
     }
 
     async setupRemotePlayer3dOverlay(remote) {
         if (!remote?.mesh || remote.overlay || remote.overlayLoading) return;
         if (!['SCOUT', 'ENGINEER', 'TANK'].includes(remote.opClass)) return;
         remote.overlayLoading = true;
+        const generation = (remote.overlayGeneration ?? 0) + 1;
+        remote.overlayGeneration = generation;
+        const equipment = remote.equipmentVisuals ?? resolveRemoteEquipmentVisuals(remote.opClass, remote.loadout);
 
         const classVisuals = {
             SCOUT: {
@@ -5167,7 +5318,8 @@ export class ThreeGame {
                 animationModelUrl: '/3d/scouting-scout/Scout.game.glb',
                 animationBonePrefix: 'mixamorig',
                 idleActionName: 'idle',
-                weaponArchetype: 'talon',
+                weaponArchetype: equipment.weaponArchetypeId,
+                weaponMount: { skinId: equipment.weaponSkinId, charmId: equipment.charmId },
                 allowStatic: true
             },
             ENGINEER: {
@@ -5175,7 +5327,8 @@ export class ThreeGame {
                 animationModelUrl: '/3d/scouting-scout/Scout.game.glb',
                 animationBonePrefix: 'mixamorig',
                 idleActionName: 'idle',
-                weaponArchetype: 'tesla_lock',
+                weaponArchetype: equipment.weaponArchetypeId,
+                weaponMount: { skinId: equipment.weaponSkinId, charmId: equipment.charmId },
                 allowStatic: true
             },
             TANK: {
@@ -5183,13 +5336,13 @@ export class ThreeGame {
                 animationModelUrl: '/3d/scouting-scout/Scout.game.glb',
                 animationBonePrefix: 'mixamorig',
                 idleActionName: 'idle',
-                weaponArchetype: 'siege_breaker',
-                weaponMount: { position: [0.03, 0.02, 0.03] },
+                weaponArchetype: equipment.weaponArchetypeId,
+                weaponMount: { position: [0.03, 0.02, 0.03], skinId: equipment.weaponSkinId, charmId: equipment.charmId },
                 allowStatic: true
             }
         };
 
-        const chassisSkinId = remote.chassisSkinId;
+        const chassisSkinId = equipment.chassisSkinId;
         const chassisModelUrl = chassisSkinId ? CHASSIS_SKIN_MODELS[String(chassisSkinId)] : null;
         if (chassisModelUrl && classVisuals[remote.opClass]) {
             classVisuals[remote.opClass] = {
@@ -5205,9 +5358,11 @@ export class ThreeGame {
             const overlay = await createPlayer3dOverlay({
                 targetHeight: (this.playerSpriteScale || 1.6) * 0.98,
                 allowStatic: true,
+                requireRigged: true,
+                wearableOverclocks: equipment.overclockIds,
                 ...classVisuals[remote.opClass]
             });
-            if (this.remotePlayers?.get(remote.id) !== remote || !remote.mesh.parent) {
+            if (this.remotePlayers?.get(remote.id) !== remote || !remote.mesh.parent || remote.overlayGeneration !== generation) {
                 overlay.dispose();
                 return;
             }
@@ -5233,7 +5388,7 @@ export class ThreeGame {
                 });
             }
         } finally {
-            remote.overlayLoading = false;
+            if (remote.overlayGeneration === generation) remote.overlayLoading = false;
         }
     }
 
@@ -6213,14 +6368,15 @@ export class ThreeGame {
             map: this.playerEmitterGlowTexture,
             color: 0xffffff,
             transparent: true,
-            opacity: 0.58,
+            opacity: 0,
             blending: THREE.AdditiveBlending,
             depthWrite: false,
             depthTest: true,
             fog: false
         }));
-        this.playerEmitterGlow.scale.set(0.72, 0.72, 1);
-        this.playerEmitterGlow.renderOrder = 8;
+        this.playerEmitterGlow.scale.set(0.01, 0.01, 1);
+        this.playerEmitterGlow.visible = false;
+        this.playerEmitterGlow.renderOrder = 4;
         this.scene.add(this.playerEmitterGlow);
 
         this.playerForwardLightTarget = new THREE.Object3D();
@@ -6869,7 +7025,19 @@ export class ThreeGame {
     }
 
     equipRunDrop(drop) {
-        if (!drop || drop.implemented === false || [...this.runOverclocks, ...this.runRelics].some((item) => item.id === drop.id)) return false;
+        if (!drop || drop.implemented === false) return false;
+        const duplicate = [...this.runOverclocks, ...this.runRelics].some((item) => item.id === drop.id);
+        if (duplicate) {
+            if (!this.loadoutMods?.duplicateRelicsToShards) return false;
+            const shardValues = { common: 1, rare: 2, mythic: 3, corrupted: 4 };
+            const amount = shardValues[drop.rarity] ?? 1;
+            this.runShardCount = (this.runShardCount ?? 0) + amount;
+            window.AudioManager?.play?.('item_pickup', { volume: 0.65 });
+            window.dispatchEvent(new CustomEvent('in-run-shards-earned', {
+                detail: { amount, total: this.runShardCount, sourceDrop: drop }
+            }));
+            return true;
+        }
         if (drop.type === 'overclock') {
             this.runOverclocks.push(drop);
         } else {
@@ -6891,6 +7059,7 @@ export class ThreeGame {
             overclocks: this.runOverclocks,
             relics: this.runRelics,
             synergies: this.activeSynergies,
+            shards: this.runShardCount ?? 0,
             poolOverclocks: WEAPON_OVERCLOCKS,
             poolRelics: SUIT_RELICS
         };
@@ -6905,6 +7074,8 @@ export class ThreeGame {
         this.inRunLootDrops = [];
         this.runOverclocks = [];
         this.runRelics = [];
+        this.runShardCount = 0;
+        this._deepAnchorSpawnedCrossings = new Set();
         this.activeSynergies = [];
         window.dispatchEvent(new CustomEvent('in-run-drops-reset', { detail: { timestamp: Date.now() } }));
     }
@@ -6999,6 +7170,7 @@ export class ThreeGame {
             this.weaponClipAmmo = Math.max(0, this.weaponClipAmmo - 1);
         }
         let fireCd = WEAPON_FIRE_COOLDOWN * (this.fieldWeapon?.cooldownMultiplier ?? 1);
+        fireCd /= Math.max(0.1, this.loadoutMods?.fireRateMultiplier ?? 1);
         this.weaponFireCooldown = fireCd;
         this.emitWeaponClipState();
 
@@ -7246,7 +7418,6 @@ export class ThreeGame {
             || isVisible('settings-popup')
             || isVisible('tactical-map-modal')
             || isVisible('codex-modal')
-            || isVisible('roster-modal')
             || isVisible('fabrication-modal')
             || isVisible('about-modal')
             || isVisible('dev-console-modal')
@@ -7497,7 +7668,13 @@ export class ThreeGame {
             baseMagnet = 5.0;
         }
         // Season 0 Rig Overclock Modules (docs/season-zero-protocol/03) — see LoadoutManager#getActiveModifiers
-        this.loadoutMods = window.loadout?.getActiveModifiers?.(resolvedType.toLowerCase()) ?? null;
+        this.loadoutMods = window.loadout?.getActiveModifiers?.(
+            resolvedType.toLowerCase(),
+            this.multiplayerMode === 'pvp' ? 'pvp' : (this.multiplayerMode === 'coop' ? 'coop' : 'solo')
+        ) ?? null;
+        // Fatigue rides the same bus as equipment, so every downstream
+        // `loadoutMods.X` read picks it up without a second code path.
+        this.loadoutMods = composeFatigueIntoLoadoutMods(this.loadoutMods, this.fatigueState);
         if (this.loadoutMods?.moveSpeedMultiplier) {
             this.moveSpeed *= this.loadoutMods.moveSpeedMultiplier;
         }
@@ -8026,7 +8203,7 @@ export class ThreeGame {
         const width = this.container.clientWidth || 1;
         const height = this.container.clientHeight || 1;
         const aspect = width / height;
-        const viewSize = this.performanceProfile === 'menu' ? 3.7 : 5.2;
+        const viewSize = this.performanceProfile === 'menu' ? 2.6 : 5.2;
 
         this.menuPixelRatio = cappedPixelRatio({
             width,
@@ -8081,14 +8258,24 @@ export class ThreeGame {
         }
     }
 
+    // Follows the operative, not the spawn tile. The showcase patrol walks them
+    // several cells away, and a spawn-pinned floor left them standing past its
+    // edge with the grid off-screen. Snapping to whole cells keeps the repeat
+    // phase fixed, so the grid scrolls underfoot instead of sliding along.
     positionMenuShowroomFloor() {
         if (!this.menuShowroomFloor) return;
         const spawn = this.getSpawnTile();
+        const anchorX = this.player?.position?.x ?? spawn.x;
+        const anchorZ = this.player?.position?.z ?? spawn.y;
+        const snap = (value) => Math.round(value / MENU_GRID_CELL_WORLD) * MENU_GRID_CELL_WORLD;
         this.menuShowroomFloor.position.set(
-            spawn.x + MENU_SHOWROOM_FLOOR_OFFSET_X,
+            snap(anchorX) + MENU_SHOWROOM_FLOOR_OFFSET_X,
             -0.005,
-            spawn.y + MENU_SHOWROOM_FLOOR_OFFSET_Z
+            snap(anchorZ) + MENU_SHOWROOM_FLOOR_OFFSET_Z
         );
+        if (this.menuShowroomReticle) {
+            this.menuShowroomReticle.position.set(anchorX, -0.004, anchorZ);
+        }
     }
 
     _flushDeferredAtlasProcessors() {
@@ -8211,6 +8398,9 @@ export class ThreeGame {
         }
         if (this.menuShowroomFloor) {
             this.menuShowroomFloor.visible = nextProfile === 'menu';
+        }
+        if (this.menuShowroomReticle) {
+            this.menuShowroomReticle.visible = nextProfile === 'menu';
         }
         if (nextProfile === 'menu' && this.darknessOverlay) {
             this.darknessOverlay.style.opacity = '0';
@@ -8623,12 +8813,28 @@ export class ThreeGame {
         }
 
         if (this.performanceProfile === 'menu') {
+            if (this.chunkGroups && this.chunkGroups.visible) {
+                this.chunkGroups.visible = false;
+            }
+            if (this.menuShowroomFloor && !this.menuShowroomFloor.visible) {
+                this.menuShowroomFloor.visible = true;
+            }
+            if (this.menuShowroomReticle && !this.menuShowroomReticle.visible) {
+                this.menuShowroomReticle.visible = true;
+            }
             if (this.darknessOverlay) this.darknessOverlay.style.opacity = '0';
             this.updateMenuShowcase(delta);
-            if (this.menuShowroomFloor?.material?.color && this.targetMenuGridColor) {
-                this.menuShowroomFloor.material.color.lerp(this.targetMenuGridColor, delta * 5);
+            if (this.targetMenuGridColor) {
+                if (this.menuShowroomFloor?.material?.color) {
+                    this.menuShowroomFloor.material.color.lerp(this.targetMenuGridColor, delta * 5);
+                }
+                if (this.menuShowroomReticle?.material?.color) {
+                    this.menuShowroomReticle.material.color.lerp(this.targetMenuGridColor, delta * 5);
+                }
             }
             this.updatePlayer(delta);
+            // After the patrol moves them: keep the deck under the operative.
+            this.positionMenuShowroomFloor?.();
             this.updateWeaponState(delta);
             this.updateCamera(delta);
             this.updateTransientEffects(delta, now);
@@ -13025,6 +13231,11 @@ export class ThreeGame {
         if (this.playerType === 'TANK' && this.bank && this.bank.isSkillUnlocked('tank_plating_1')) {
             maxHp += 1;
         }
+        maxHp += Math.max(0, Number(this.loadoutMods?.maxHealthBonus) || 0);
+        // Applied after the equipment clamp above, which only ever grants
+        // hearts. Floored at one: exhaustion can hollow an operator out, but it
+        // must never be the thing that kills them outright.
+        maxHp = Math.max(1, maxHp + fatigueMaxHealthPenalty(this.fatigueState));
         this.playerVitals.maxHp = maxHp;
         this.playerVitals.hp = Math.min(this.playerVitals.hp, this.playerVitals.maxHp);
         this.applyWeaponUpgrades();
@@ -13048,7 +13259,7 @@ export class ThreeGame {
         if (this.playerType === 'SCOUT' && this.bank && this.bank.isSkillUnlocked('scout_ammo_1')) {
             baseClipSize += 3;
         }
-        this.weaponClipSize = baseClipSize;
+        this.weaponClipSize = Math.max(1, baseClipSize + (Number(this.loadoutMods?.clipSizeBonus) || 0));
 
         let extraDamage = shotDamage;
         if (this.playerType === 'TANK' && this.bank && this.bank.isSkillUnlocked('tank_damage_1')) {
@@ -13716,6 +13927,10 @@ export class ThreeGame {
             this.damageScatterProp(sprite, amount);
             return;
         }
+        const bossTarget = Boolean(sprite?.userData?.isBoss || sprite?.userData?.queenFight || sprite?.userData?.sporesnailFight);
+        amount *= bossTarget
+            ? (this.loadoutMods?.bossDamageMultiplier ?? 1)
+            : (this.loadoutMods?.nonBossDamageMultiplier ?? 1);
         // Season 0 Cryo-Capacitor Overclock proc (itemdef 4140): 18% chance per hit to
         // freeze the target in place. cryoDurationMultiplier (default 1.0, +0.08 when
         // equipped) scales the freeze duration off a 1.0s base.
@@ -14968,6 +15183,11 @@ export class ThreeGame {
         window.dispatchEvent(new CustomEvent('objective-resolved', {
             detail: { id: 'retrieve-relic' }
         }));
+        if (this.loadoutMods?.loreDropsGrantSalvage) {
+            window.dispatchEvent(new CustomEvent('pickup-collected', {
+                detail: { type: 'coin', rarity: entry.drop.rarity, value: 1, amount: 1, source: 'archivist-lens' }
+            }));
+        }
     }
 
     clearLoreDrops() {
@@ -15838,6 +16058,50 @@ export class ThreeGame {
         }
     }
 
+    loadFatigueState() {
+        if (typeof localStorage === 'undefined') return createFatigueState();
+        try {
+            return normalizeFatigueState(JSON.parse(localStorage.getItem(FATIGUE_STATE_KEY) ?? 'null'));
+        } catch {
+            return createFatigueState();
+        }
+    }
+
+    persistFatigueState() {
+        this.fatigueState = normalizeFatigueState(this.fatigueState);
+        try {
+            if (typeof localStorage !== 'undefined') {
+                localStorage.setItem(FATIGUE_STATE_KEY, JSON.stringify(this.fatigueState));
+            }
+        } catch {
+            // Same contract as the day cycle: a privacy-mode storage failure
+            // must not strand the live session.
+        }
+        if (typeof window !== 'undefined' && typeof CustomEvent === 'function') {
+            const stage = getFatigueStage(this.fatigueState);
+            window.dispatchEvent(new CustomEvent('fatigue-changed', {
+                detail: {
+                    ...this.fatigueState,
+                    stageId: stage.id,
+                    stageLabel: stage.label,
+                    blurb: stage.blurb
+                }
+            }));
+        }
+        return this.fatigueState;
+    }
+
+    /**
+     * An expedition ended. Extraction and death both count: dying is not rest.
+     * This never advances the campaign day -- only sleeping does that -- so a
+     * bad run costs salvage and leaves the operator more tired, and the only
+     * cure for tired costs a day.
+     */
+    recordExpeditionEnded() {
+        this.fatigueState = recordExpedition(this.fatigueState);
+        return this.persistFatigueState();
+    }
+
     persistDayCycleState() {
         this.dayState = normalizeDayState(this.dayState);
         try {
@@ -15872,6 +16136,40 @@ export class ThreeGame {
         return normalizeDayState(this.dayState).expired.includes(id);
     }
 
+    /**
+     * Can the player sleep at this site? One rule for every bed: camp bedroll,
+     * bunker cot, outpost pod. The site-specific part is only "is this a safe
+     * space" -- the campaign-state part belongs to dayCycle.canRestNow().
+     */
+    canRestAt(_site, { status = 'alive', safeSpace = true } = {}) {
+        return canRestNow(this.dayState, {
+            safeSpace,
+            siteStatus: status,
+            hasActiveQuest: Boolean(this._activeCampQuest)
+            // hostileNearby stays false here: a camp interior is already a
+            // guarded safe zone. canRestNow supports the flag for beds placed
+            // somewhere that is not (an outpost pod out in the open).
+        });
+    }
+
+    /**
+     * Sleeping has to move the sky, or the day counter and the world disagree.
+     * timeOfDay is a short visual loop (dayCycleSeconds) that otherwise runs
+     * free of dayState.day; waking pins it to dawn so a new day looks like one.
+     */
+    setTimeOfDayToMorning() {
+        this.timeOfDay = MORNING_TIME_OF_DAY;
+        // Recompute the sky and the day/night lighting immediately at delta 0,
+        // so the morning is already on screen when the rest overlay lifts.
+        this.updateSky?.(0);
+        this.updateDayNightCycle?.(0);
+        if (typeof window !== 'undefined' && typeof CustomEvent === 'function') {
+            window.dispatchEvent(new CustomEvent('day-phase-changed', {
+                detail: { timeOfDay: this.timeOfDay, day: this.dayState?.day ?? 1 }
+            }));
+        }
+    }
+
     beginCampRest(camp, { confirmed = false } = {}) {
         const closing = deadlinesClosingTonight(this.dayState);
         if (!confirmed && closing.length > 0) {
@@ -15896,6 +16194,10 @@ export class ThreeGame {
         if (!rested.advanced) return false;
         this.dayState = rested.state;
         this.persistDayCycleState();
+        const recovered = restoreOnSleep(this.fatigueState);
+        this.fatigueState = recovered.state;
+        this.persistFatigueState?.();
+        this.setTimeOfDayToMorning?.();
         // The Foundry interior is the first authored between-day tableau. Its
         // existing pocket-plane isolation pauses surface combat while the
         // player shops, and exiting later returns them to this exact camp.
@@ -15909,6 +16211,8 @@ export class ThreeGame {
                 difficulty: rested.difficulty,
                 expired: rested.expired,
                 closing: sleeping.closing,
+                // What last night cost: null unless they slept from RAGGED or worse.
+                gainedScar: recovered.gainedScar,
                 safeSpace: enteredRestSpace ? 'foundry-interior' : 'camp-exterior'
             }
         }));
@@ -16154,16 +16458,17 @@ export class ThreeGame {
                     return { camp, action: 'active-verb', verb, gate, label: `${verb.label}${suffix}` };
                 }
             }
-            // Rest is deliberately the final dormant-camp verb: urgent camp
-            // story and progression cannot be skipped accidentally, but a
-            // settled camp always becomes the safe between-expedition space.
-            if (phase === 'dormant' && status === 'alive'
-                && !this._activeCampQuest
-                && this.dayState?.phase === REST_PHASES.EXPEDITION) {
+            // Rest stays the last verb offered here, so urgent camp story is
+            // never skipped by accident -- but whether rest is possible at all
+            // is dayCycle's canRestNow(), the same rule every other bed asks.
+            // It used to be an inline gate that additionally required an Act 2
+            // `dormant` camp, which is why this verb almost never appeared.
+            const restCheck = this.canRestAt(camp, { status });
+            if (restCheck.allowed) {
                 return {
                     camp,
                     action: 'rest',
-                    label: `SLEEP UNTIL DAY ${(this.dayState?.day ?? 1) + 1}`
+                    label: `SLEEP UNTIL DAY ${restCheck.nextDay}`
                 };
             }
             if (phase === 'camps_help' && !camp.aided) return { camp, action: 'aid', label: 'AID THE CAMP' };
@@ -17409,6 +17714,7 @@ export class ThreeGame {
             100,
             (this.runRelics ?? []).filter((relic) => relic?.id === 'punctured_lung')
         );
+        this.playerVitals.maxO2 *= this.loadoutMods?.maxOxygenMultiplier ?? 1;
         this.playerVitals.o2 = this.playerVitals.maxO2;
         this.playerVitals.o2HealthTimer = 0;
         this.isPlayerDead = false;
@@ -18175,7 +18481,8 @@ export class ThreeGame {
             }
         }
         const previousHp = this.playerVitals.hp;
-        this.playerVitals.hp = Math.min(this.playerVitals.maxHp, this.playerVitals.hp + Math.max(0, amount));
+        const tunedAmount = Math.max(0, amount) * (this.loadoutMods?.healingMultiplier ?? 1);
+        this.playerVitals.hp = Math.min(this.playerVitals.maxHp, this.playerVitals.hp + tunedAmount);
         if (this.playerVitals.hp === previousHp) return;
 
         this.emitHealthState();
@@ -18549,6 +18856,7 @@ export class ThreeGame {
             ...(this.completedRingCrossingMissionIds ?? []),
             ...(this.mazeAccessState?.completedObjectives ?? [])
         ]);
+        const priorCrossingState = this.ringCrossingState?.crossings ?? {};
         const result = reconcileWorldPlanRingCrossings(worldPlan, this.ringCrossingState, {
             builtGoalKeys: typeof this.getBuiltGoalKeys === 'function'
                 ? this.getBuiltGoalKeys()
@@ -18563,6 +18871,9 @@ export class ThreeGame {
         this._traversalUnlocks = result.traversalUnlocks;
         for (const crossingId of result.openCrossingIds) {
             this.mazeAccessState?.completedObjectives?.add(`ring-crossing-open:${crossingId}`);
+            if (priorCrossingState[crossingId]?.status !== 'open' && this.loadoutMods?.ringCrossingSpawnsElite) {
+                this.spawnDeepAnchorElite?.(crossingId);
+            }
         }
         for (const [doorId, door] of this.proceduralDoorStates ?? []) {
             if (!door?.ringCrossingId || door.state === 'destroyed') continue;
@@ -18574,6 +18885,48 @@ export class ThreeGame {
             });
         }
         return result;
+    }
+
+    spawnDeepAnchorElite(crossingId) {
+        if (!this.player || this._deepAnchorSpawnedCrossings?.has(crossingId)) return null;
+        this._deepAnchorSpawnedCrossings ??= new Set();
+        this.snailsEnabled = true;
+        const radius = 8;
+        let x = null;
+        let z = null;
+        for (let attempt = 0; attempt < 12; attempt += 1) {
+            const angle = (attempt / 12) * Math.PI * 2;
+            const candidateX = this.player.position.x + Math.cos(angle) * radius;
+            const candidateZ = this.player.position.z + Math.sin(angle) * radius;
+            if (!this.isSnailTileWalkable(Math.round(candidateX), Math.round(candidateZ))) continue;
+            x = candidateX;
+            z = candidateZ;
+            break;
+        }
+        if (!Number.isFinite(x) || !Number.isFinite(z)) return null;
+        this._deepAnchorSpawnedCrossings.add(crossingId);
+        const elite = this.createScatterInstance({
+            x, z,
+            type: this.currentBiomeKey === BIOME_KEYS.BIO ? 'sporesnail' : 'cybersnail',
+            scatterKey: `deep-anchor:${crossingId}`,
+            scale: 1.25,
+            rotation: 0,
+            tiltX: 0,
+            tiltZ: 0,
+            elevation: 0.1,
+            groupType: 'enemy',
+            phase: Math.random() * Math.PI * 2,
+            opacity: 1,
+            biomeTint: 0xffffff,
+            spawnedElite: true
+        });
+        if (!elite) return null;
+        const chunkX = Math.floor(x / this.chunkSize);
+        const chunkY = Math.floor(z / this.chunkSize);
+        (this.chunkMeshes.get(`${chunkX},${chunkY}`) ?? this.scene).add(elite);
+        this.scatterSprites.push(elite);
+        window.dispatchEvent(new CustomEvent('deep-anchor-elite-spawned', { detail: { crossingId } }));
+        return elite;
     }
 
     takeDamage(amount = 1, reason = 'hazard', sourceX = null, sourceZ = null) {
@@ -18795,6 +19148,7 @@ export class ThreeGame {
         if (this.isPlayerDead) return;
         if (this.performanceProfile && this.performanceProfile !== 'gameplay') return;
         this.isPlayerDead = true;
+        this.recordExpeditionEnded?.();
         this.cancelGoalModuleRise?.();
         this.clearCinematicCameraFocus?.();
         // A downed co-op operator becomes fully dead on a squad wipe or
@@ -18933,8 +19287,11 @@ export class ThreeGame {
         this.planeState = createPlaneStack();
         this.isInPocket = false;
         this._pocketCacheKey = null;
-        if (this.chunkGroups) this.chunkGroups.visible = true;
-        for (const group of this.chunkMeshes?.values() ?? []) group.visible = true;
+        const isGameplay = this.performanceProfile === 'gameplay';
+        if (this.chunkGroups) this.chunkGroups.visible = isGameplay;
+        for (const group of this.chunkMeshes?.values() ?? []) group.visible = isGameplay;
+        if (this.menuShowroomFloor) this.menuShowroomFloor.visible = !isGameplay;
+        if (this.menuShowroomReticle) this.menuShowroomReticle.visible = !isGameplay;
         for (const group of this.pocketGroups?.values() ?? []) group.visible = false;
         this._pocketHoleX = null;
         this._pocketHoleZ = null;
@@ -19146,6 +19503,7 @@ export class ThreeGame {
         }
         if (this.missionState) this.missionState.status = 'extracted';
         this.inputEnabled = false;
+        this.recordExpeditionEnded?.();
         // A clean extraction is a graceful run end -- nothing left to
         // crash-recover, and the salvage below is being deposited for real.
         runCheckpointStore.clear();
@@ -19183,36 +19541,21 @@ export class ThreeGame {
         }));
     }
 
-    calculateRunScore(runStats, missionState, startTime) {
-        const elapsedMinutes = (Date.now() - startTime) / 60000;
-        let score = 0;
-
-        if (missionState?.status === 'extracted') score += 500;
-        score += Math.floor((runStats.depthTier ?? 0) * (runStats.distanceTravelled ?? 0) * 0.08);
-
-        const r = this.runDepositedResources;
-        score += ((r.tech ?? 0) * 10) + ((r.coin ?? 0) * 5) + ((r.med ?? 0) * 3);
-        score += (runStats.snailsKilled ?? 0) * 40;
-
-        if (missionState?.status === 'extracted') {
-            score += 200;
-            if (this.playerVitals.hp >= this.playerVitals.maxHp) score += 100;
-        }
-
-        if (elapsedMinutes < 15) {
-            score += Math.max(0, Math.min(300, Math.floor((15 - elapsedMinutes) * 50)));
-        }
-        if (this.hadNearDeath) score += 100;
-
-        return Math.floor(score);
+    calculateRunScore(runStats, missionState, startTime, endedAt = Date.now()) {
+        return computeRunScore({
+            stats: {
+                ...runStats,
+                fullHealthAtEnd: this.playerVitals.hp >= this.playerVitals.maxHp,
+                hadNearDeath: this.hadNearDeath
+            },
+            missionStatus: missionState?.status ?? null,
+            depositedResources: this.runDepositedResources,
+            runMs: endedAt - startTime
+        });
     }
 
     getRunRating(score) {
-        if (score >= 2000) return { grade: 'S', label: 'EXEMPLARY FIELD PERFORMANCE' };
-        if (score >= 1500) return { grade: 'A', label: 'MISSION SUCCESSFUL' };
-        if (score >= 1000) return { grade: 'B', label: 'PARTIAL SUCCESS' };
-        if (score >= 500)  return { grade: 'C', label: 'MISSION FAILED — DATA RECOVERED' };
-        return { grade: 'D', label: 'AGENT LOST — MINIMAL TELEMETRY' };
+        return getRunRating(score);
     }
 
     getLoreText(key) {
@@ -20916,30 +21259,37 @@ export class ThreeGame {
         }
         // Player's own glow matters a little more in the dark.
         if (this.playerGlow) {
-            this.playerGlow.intensity = this.baseLightIntensity.playerGlow * lerp(2.6, 1.12, dayBlend);
-            this.playerGlow.distance = lerp(16.5, 10.8, dayBlend);
-            this.playerGlow.decay = lerp(1.35, 1.7, dayBlend);
+            const wallGlowDamp = THREE.MathUtils.clamp(((this._lastMinWallDist ?? 2.0) - 0.25) / 1.0, 0.45, 1.0);
+            this.playerGlow.intensity = this.baseLightIntensity.playerGlow * lerp(1.35, 0.8, dayBlend) * wallGlowDamp;
+            this.playerGlow.distance = lerp(13.5, 9.5, dayBlend);
+            this.playerGlow.decay = lerp(1.4, 1.7, dayBlend);
         }
         if (this.suitFillLight) {
             const movePulse = this.isMoving ? 0.14 * (0.5 + 0.5 * Math.sin(performance.now() * 0.011)) : 0;
-            this.suitFillLight.intensity = SUIT_LIGHT_BASE_INTENSITY * lerp(1.28, 0.74, dayBlend) * (1 + movePulse);
-            this.suitFillLight.distance = SUIT_LIGHT_BASE_DISTANCE * lerp(1.18, 0.92, dayBlend);
-            this.suitFillLight.decay = lerp(1.08, 1.32, dayBlend);
+            const wallGlowDamp = THREE.MathUtils.clamp(((this._lastMinWallDist ?? 2.0) - 0.25) / 1.0, 0.45, 1.0);
+            this.suitFillLight.intensity = SUIT_LIGHT_BASE_INTENSITY * lerp(1.05, 0.68, dayBlend) * (1 + movePulse) * wallGlowDamp;
+            this.suitFillLight.distance = SUIT_LIGHT_BASE_DISTANCE * lerp(1.1, 0.9, dayBlend);
+            this.suitFillLight.decay = lerp(1.2, 1.4, dayBlend);
         }
         if (this.playerForwardSpotLight) {
             const pulse = this.isMoving ? 0.08 * (0.5 + 0.5 * Math.sin(performance.now() * 0.013)) : 0;
-            this.playerForwardSpotLight.intensity = 5.8 * lerp(2.25, 0.82, dayBlend) * (1 + pulse);
-            this.playerForwardSpotLight.distance = SUIT_CONE_LIGHT_DISTANCE * lerp(1.32, 0.88, dayBlend);
-            this.playerForwardSpotLight.angle = SUIT_CONE_LIGHT_ANGLE * lerp(1.08, 0.92, dayBlend);
+            // Proximity damping: as the player approaches a wall face, softly attenuate
+            // the spotlight so it provides clean directional illumination instead of blowing out
+            // into a blinding white/yellow disc on the wall and player.
+            const wallProximityDamp = THREE.MathUtils.clamp(((this._lastMinWallDist ?? 2.0) - 0.25) / 1.25, 0.22, 1.0);
+            this.playerForwardSpotLight.intensity = 3.6 * lerp(1.35, 0.75, dayBlend) * (1 + pulse) * wallProximityDamp;
+            this.playerForwardSpotLight.distance = SUIT_CONE_LIGHT_DISTANCE * lerp(1.2, 0.88, dayBlend);
+            this.playerForwardSpotLight.angle = SUIT_CONE_LIGHT_ANGLE * lerp(1.05, 0.92, dayBlend);
         }
         if (this.playerForwardCone?.material) {
-            this.playerForwardCone.material.opacity = SUIT_CONE_VISUAL_OPACITY * lerp(0.72, 0.28, dayBlend);
+            const wallProximity = THREE.MathUtils.clamp(((this._lastMinWallDist ?? 2.0) - 0.35) / 1.25, 0.12, 1.0);
+            this.playerForwardCone.material.opacity = SUIT_CONE_VISUAL_OPACITY * lerp(0.65, 0.28, dayBlend) * wallProximity;
         }
         if (this.playerLightPool?.material) {
             this.playerLightPool.material.opacity = SUIT_LOCAL_LIGHT_POOL_OPACITY * lerp(1.85, 0.48, dayBlend);
         }
-        if (this.playerEmitterGlow?.material) {
-            this.playerEmitterGlow.material.opacity = 0.58 * lerp(1.16, 0.46, dayBlend);
+        if (this.playerEmitterGlow) {
+            this.playerEmitterGlow.visible = false;
         }
 
         if (this.disableFogOfWar) {
@@ -21004,7 +21354,7 @@ export class ThreeGame {
             this.playerLightPool.position.set(originX, 0.071, originZ);
         }
         if (this.playerEmitterGlow) {
-            this.playerEmitterGlow.position.set(originX, SUIT_LIGHT_EMITTER_HEIGHT, originZ);
+            this.playerEmitterGlow.visible = false;
         }
         const facingAngle = Math.atan2(dirX, dirZ);
         this.playerForwardCone.position.set(
@@ -21040,6 +21390,7 @@ export class ThreeGame {
         const haveWalls = this.performanceProfile === 'gameplay' && this.wallMeshes?.length > 0;
 
         if (!haveWalls) {
+            this._lastMinWallDist = SUIT_CONE_VISUAL_DISTANCE;
             // Menu / no geometry: restore the full unobstructed fan.
             for (let i = 0; i < rimAngles.length; i++) {
                 const angle = rimAngles[i];
@@ -21059,12 +21410,16 @@ export class ThreeGame {
         this._coneRayDir = this._coneRayDir ?? new THREE.Vector3();
         this._coneRayOrigin.set(originX, SUIT_LIGHT_EMITTER_HEIGHT, originZ);
 
+        let minHitDist = SUIT_CONE_VISUAL_DISTANCE;
         for (let i = 0; i < rimAngles.length; i++) {
             const angle = rimAngles[i];
             const worldAngle = facingAngle + angle;
             this._coneRayDir.set(Math.sin(worldAngle), 0, Math.cos(worldAngle));
             raycaster.set(this._coneRayOrigin, this._coneRayDir);
             const hit = raycaster.intersectObjects(this.wallMeshes, false)[0];
+            if (hit && hit.distance < minHitDist) {
+                minHitDist = hit.distance;
+            }
             const dist = hit
                 ? Math.max(0.4, hit.distance - SUIT_LIGHT_WALL_PADDING)
                 : SUIT_CONE_VISUAL_DISTANCE;
@@ -21072,9 +21427,12 @@ export class ThreeGame {
             // Rim stays in the cone's local frame (apex forward = +Z); the mesh
             // rotation already orients it, so only the local angle is used here.
             array[vi] = Math.sin(angle) * dist;
-            array[vi + 1] = hit ? (this.wallHeight - 0.2) : 0;
+            // Truncate the cone at the wall boundary without pulling vertices 2.6m vertically up
+            // into camera view, which stacked overlapping additive triangles into a blinding solid blob.
+            array[vi + 1] = 0;
             array[vi + 2] = Math.cos(angle) * dist;
         }
+        this._lastMinWallDist = minHitDist;
         attr.needsUpdate = true;
     }
 
@@ -25473,8 +25831,8 @@ export class ThreeGame {
                     ));
                     holeOverlayKeys.push(this.getWallKey(worldX, worldZ));
 
-                    // Seeded chance (~40%) to spawn a Fungal Spore Vent (Stage 1 Fungal Enemy) on hole tiles
-                    if (wallTypeRng() < 0.40) {
+                    // Seeded chance (~20%) to spawn a Fungal Spore Vent (Stage 1 Fungal Enemy) on hole tiles
+                    if (wallTypeRng() < 0.20) {
                         const placement = {
                             x: worldX,
                             z: worldZ,
@@ -27879,6 +28237,9 @@ export class ThreeGame {
             baseY,
             scale: placement.scale,
             rarity: placement.rarity ?? LOOT_RARITIES[0],
+            amount: placement.amount ?? (placement.type === 'ammo'
+                ? (placement.rarity?.key === 'legendary' ? 16 : (placement.rarity?.key === 'rare' ? 8 : 4))
+                : 1),
             burst,
             collectTimer: 0,
             collectLock: placement.collectLock ?? 0,
@@ -28222,7 +28583,14 @@ export class ThreeGame {
                             this.healPlayer(1);
                         }
                         window.dispatchEvent(new CustomEvent('pickup-collected', {
-                            detail: { type: pickupType, rarity, value: 1 }
+                            detail: {
+                                type: pickupType,
+                                rarity,
+                                value: 1,
+                                amount: pickup.userData?.amount ?? (pickupType === 'ammo'
+                                    ? 4
+                                    : (pickupType === 'coin' ? Math.max(1, this.loadoutMods?.salvageValueMultiplier ?? 1) : 1))
+                            }
                         }));
                     }
                     removals.push(pickup);
@@ -28410,6 +28778,7 @@ export class ThreeGame {
         const ammoCount = sprite.userData?.isAmmoLocker ? 3 : 1;
         const dropTypes = Array.from({ length: ammoCount }, () => 'ammo');
         if (!sprite.userData?.isAmmoLocker && Math.random() < 0.2) dropTypes.push('health');
+        if (this.loadoutMods?.propsDropSalvage) dropTypes.push('coin');
         let spawned = 0;
         for (let index = 0; index < dropTypes.length; index += 1) {
             const angle = (index / Math.max(dropTypes.length, 1)) * Math.PI * 2 + Math.random() * 0.35;
@@ -28580,8 +28949,13 @@ export class ThreeGame {
         // deeper rings bias this roll toward relics (see runDrops.js's
         // rollEnemyLootDrop / rollsRareRelic).
         const drop = rollEnemyLootDrop(Math.random, {
-            isElite, isBoss: isBossEnemy, ring: (this.currentDepthTier ?? 0) + 1,
-            excludedIds: [...(this.runOverclocks ?? []), ...(this.runRelics ?? []), ...(this.inRunLootDrops ?? []).map((pickup) => pickup.userData.item)].map((item) => item.id)
+            isElite,
+            isBoss: isBossEnemy,
+            ring: (this.currentDepthTier ?? 0) + 1 + Math.max(0, this.loadoutMods?.relicRarityTierBonus ?? 0),
+            excludedIds: [
+                ...(this.loadoutMods?.duplicateRelicsToShards ? [] : [...(this.runOverclocks ?? []), ...(this.runRelics ?? [])]),
+                ...(this.inRunLootDrops ?? []).map((pickup) => pickup.userData.item)
+            ].map((item) => item.id)
         });
         if (drop) {
             this.spawnPhysicalLootDrop?.(sprite.position?.x ?? 0, sprite.position?.z ?? 0, drop);
@@ -32181,24 +32555,12 @@ export class ThreeGame {
     // — reported as "holes are in the door" since doorway-adjacent wall
     // tiles roll through this same per-tile check.
     getHoleCutForLandform(landform) {
-        if (landform === LANDFORMS.MAZE) return 0.08;
-        if (landform === LANDFORMS.RUINS) return 0.08;
-        if (landform === LANDFORMS.FIELD) return 0.03;
+        if (landform === LANDFORMS.MAZE) return 0.015;
+        if (landform === LANDFORMS.RUINS) return 0.015;
+        if (landform === LANDFORMS.FIELD) return 0.01;
         if (landform === LANDFORMS.CANYON) return 0.0;
-        // CRATER was missing here (every other per-landform density table in
-        // this file -- addTerrainStepDressing's stepChanceByLandform, the
-        // damagedCut ladder below, the wallHeightScale switch -- explicitly
-        // tunes CRATER). Landing on the generic fallback meant it inherited
-        // hazardCut's fallback too (0.22 vs the ~0.05-0.12 every named
-        // landform gets), a 4-8x wider hazard-wall roll window than intended
-        // -- confirmed live via mountChunk producing 100+ individual
-        // hazard-wall meshes in a single crater chunk (hazard walls are
-        // deliberately kept as individual animated Meshes, so this alone
-        // was a major per-chunk mount-cost outlier). 0.05/0.08 mirrors
-        // stepChanceByLandform's CRATER value sitting between FIELD and
-        // MAZE/RUINS.
-        if (landform === LANDFORMS.CRATER) return 0.05;
-        return 0.06;
+        if (landform === LANDFORMS.CRATER) return 0.02;
+        return 0.015;
     }
 
     // Single source of truth for the hazard-wall roll threshold, shared by
@@ -32206,13 +32568,12 @@ export class ThreeGame {
     // damage-zone check below — same drift risk getHoleCutForLandform's
     // comment describes.
     getHazardCutForLandform(landform) {
-        if (landform === LANDFORMS.MAZE) return 0.12;
-        if (landform === LANDFORMS.RUINS) return 0.12;
-        if (landform === LANDFORMS.FIELD) return 0.05;
-        if (landform === LANDFORMS.CANYON) return 0.06;
-        // See getHoleCutForLandform's CRATER comment above.
-        if (landform === LANDFORMS.CRATER) return 0.08;
-        return 0.22;
+        if (landform === LANDFORMS.MAZE) return 0.06;
+        if (landform === LANDFORMS.RUINS) return 0.06;
+        if (landform === LANDFORMS.FIELD) return 0.03;
+        if (landform === LANDFORMS.CANYON) return 0.04;
+        if (landform === LANDFORMS.CRATER) return 0.05;
+        return 0.06;
     }
 
     // Deterministically recomputes the same wallTypeRoll mountChunk uses,
@@ -32295,6 +32656,8 @@ export class ThreeGame {
         const chunkX = Math.floor(worldX / this.chunkSize);
         const chunkY = Math.floor(worldY / this.chunkSize);
         if (this.bunkerBlastDoorState && chunkX === 0 && chunkY === 0) return null;
+        if (this.isInTutorialRing?.(chunkX, chunkY)) return null;
+        if (typeof this.getProceduralDoorAt === 'function' && this.getProceduralDoorAt(tileX, tileY)) return null;
         const holeCut = this.getHoleCutForLandform(this.getChunkLandform(chunkX, chunkY));
         if (holeCut <= 0) return null;
 
@@ -33414,10 +33777,19 @@ export class ThreeGame {
             // readable and collision-light. The old radial-room override made
             // a large chamber appear beside the start almost every run, then
             // populated it with props before the player had a clear route.
-            const roomMode = !tutorialRing && (isDestination
-                || regionalRoles.includes('ring')
-                || nearestRadialRoom <= this.chunkSize * 0.9
-                || random() < 0.24);
+            // Anti-bunching: Ensure procedural rooms do not cluster directly against
+            // an adjacent room neighbor unless it is an explicitly designated destination.
+            const hasAdjacentRoom = Boolean(
+                this.wfcMetadataCache?.get(`${chunkX - 1},${chunkY}`)?.roomInstances?.length ||
+                this.wfcMetadataCache?.get(`${chunkX + 1},${chunkY}`)?.roomInstances?.length ||
+                this.wfcMetadataCache?.get(`${chunkX},${chunkY - 1}`)?.roomInstances?.length ||
+                this.wfcMetadataCache?.get(`${chunkX},${chunkY + 1}`)?.roomInstances?.length
+            );
+            const roomMode = !tutorialRing && (isDestination || (!hasAdjacentRoom && (
+                regionalRoles.includes('ring')
+                || (nearestRadialRoom <= this.chunkSize * 0.9 && (Math.abs(chunkX + chunkY) % 2 === 0))
+                || random() < 0.20
+            )));
             if (!this.authoredWorldTiles) {
                 const architectural = generateArchitecturalMazeChunk(random, {
                     size: this.chunkSize,
@@ -34478,6 +34850,9 @@ export class ThreeGame {
         this.menuShowroomFloor?.geometry?.dispose?.();
         this.menuShowroomFloor?.material?.dispose?.();
         this.menuGridTexture?.dispose?.();
+        this.menuShowroomReticle?.geometry?.dispose?.();
+        this.menuShowroomReticle?.material?.dispose?.();
+        this.menuReticleTexture?.dispose?.();
         Object.values(this.scatterMaterials ?? {}).forEach((material) => material.dispose?.());
         Object.values(this.scatterPlaneMaterials ?? {}).forEach((material) => material.dispose?.());
         Object.values(this.scatterTextures ?? {}).forEach((texture) => texture.dispose?.());

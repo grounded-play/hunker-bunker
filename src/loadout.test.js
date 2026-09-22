@@ -105,6 +105,30 @@ describe('LoadoutManager', () => {
         expect(updatedMods.dashRefundOnMultiKill).toBe(true);
     });
 
+    it('requires earnable charm attunement rank and normalizes PvP equipment power', () => {
+        let tier = 2;
+        const lo = new LoadoutManager({ storage, attunementTierProvider: () => tier });
+        lo.equipCharm(4130);
+        lo.equipRigModule(1, 4160);
+        expect(lo.getActiveModifiers('scout').cryoDurationMultiplier).toBe(1);
+        expect(lo.getActiveEquipmentSnapshot('scout').statuses[0]).toMatchObject({ active: false });
+
+        tier = 3;
+        expect(lo.getActiveModifiers('scout').cryoDurationMultiplier).toBeCloseTo(1.05);
+        const pvp = lo.getActiveEquipmentSnapshot('scout', 'pvp');
+        expect(pvp.schemaVersion).toBe(2);
+        expect(pvp.modifiers.cryoDurationMultiplier).toBe(1);
+        expect(pvp.modifiers.maxHealthBonus).toBe(0);
+        expect(pvp.statuses.every((status) => status.modeStatus === 'DISABLED IN PVP')).toBe(true);
+    });
+
+    it('preserves an earned attunement charm when marketplace inventory is empty', () => {
+        const lo = new LoadoutManager({ storage, attunementTierProvider: () => 3 });
+        lo.equipCharm(4130);
+        lo.reconcileOwnership([]);
+        expect(lo.getEquippedCharmId('scout')).toBe('4130');
+    });
+
     it('resets persisted equipment back to default state', () => {
         const lo = new LoadoutManager({ storage });
         lo.equip('neon_smg', fakeFab('neon_smg'));
@@ -120,7 +144,7 @@ describe('LoadoutManager', () => {
     });
 
     it('manages isolated per-class loadouts and archetypes', () => {
-        const lo = new LoadoutManager({ storage });
+        const lo = new LoadoutManager({ storage, attunementTierProvider: () => 30 });
         expect(lo.getActiveArchetype('scout')).toBe('talon');
         expect(lo.getActiveArchetype('tank')).toBe('siege_breaker');
         expect(lo.getActiveArchetype('engineer')).toBe('tesla_lock');
@@ -140,7 +164,7 @@ describe('LoadoutManager', () => {
         expect(lo.getEquippedSkinId('tank')).toBe('4102');
         expect(lo.getEquippedCharmId('scout')).toBe('4130');
         expect(lo.getEquippedCharmId('tank')).toBe('4131');
-        expect(lo.getActiveModifiers('scout').cryoDurationMultiplier).toBeCloseTo(1.08);
+        expect(lo.getActiveModifiers('scout').cryoDurationMultiplier).toBeCloseTo(1.08 * 1.05);
         expect(lo.getActiveModifiers('tank').scrapMagnetRadiusBonus).toBeCloseTo(0.20);
 
         // Switch Scout archetype to Talon-C
@@ -202,12 +226,12 @@ describe('LoadoutManager', () => {
         expect(ARCHETYPE_SKINS.tesla_lock).toContain('4236'); // Grand Marshal
 
         // Sprint 34 chassis skins
-        expect(CLASS_CHASSIS_SKINS.scout).toContain('4200');
+        expect(CLASS_CHASSIS_SKINS.scout).not.toContain('4200');
         expect(CLASS_CHASSIS_SKINS.scout).toContain('4221');
-        expect(CLASS_CHASSIS_SKINS.tank).toContain('4207');
-        expect(CLASS_CHASSIS_SKINS.tank).toContain('4228');
-        expect(CLASS_CHASSIS_SKINS.engineer).toContain('4214');
-        expect(CLASS_CHASSIS_SKINS.engineer).toContain('4235');
+        expect(CLASS_CHASSIS_SKINS.tank).not.toContain('4207');
+        expect(CLASS_CHASSIS_SKINS.tank).not.toContain('4228');
+        expect(CLASS_CHASSIS_SKINS.engineer).not.toContain('4214');
+        expect(CLASS_CHASSIS_SKINS.engineer).not.toContain('4235');
     });
 });
 
@@ -231,7 +255,7 @@ describe('reconcileOwnership', () => {
     }
 
     function fullyEquipped(storage) {
-        const lo = new LoadoutManager({ storage });
+        const lo = new LoadoutManager({ storage, attunementTierProvider: () => 0 });
         lo.state.suit.chassisSkinId = '4112';
         lo.state.suit.decalId = '4120';
         lo.state.hudThemeId = '4150';

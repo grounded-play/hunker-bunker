@@ -15,7 +15,7 @@ export const HALLWAY_BUILD_CATALOG = Object.freeze([
     Object.freeze({
         id: 'short_connector',
         lengthRange: [8, 16],
-        widthRange: [1, 1],
+        widthRange: [1, 2],
         maxTurns: 1,
         elevationPolicy: 'flat',
         junctionEligible: false,
@@ -30,7 +30,7 @@ export const HALLWAY_BUILD_CATALOG = Object.freeze([
     Object.freeze({
         id: 'pressure_corridor',
         lengthRange: [14, 24],
-        widthRange: [1, 2],
+        widthRange: [2, 2],
         maxTurns: 2,
         elevationPolicy: 'flat',
         junctionEligible: false,
@@ -45,7 +45,7 @@ export const HALLWAY_BUILD_CATALOG = Object.freeze([
     Object.freeze({
         id: 'service_passage',
         lengthRange: [10, 20],
-        widthRange: [1, 1],
+        widthRange: [1, 2],
         maxTurns: 2,
         elevationPolicy: 'flat',
         junctionEligible: true,
@@ -60,7 +60,7 @@ export const HALLWAY_BUILD_CATALOG = Object.freeze([
     Object.freeze({
         id: 'canyon_causeway',
         lengthRange: [16, 28],
-        widthRange: [1, 1],
+        widthRange: [2, 2],
         maxTurns: 1,
         elevationPolicy: 'exposed',
         junctionEligible: false,
@@ -90,7 +90,7 @@ export const HALLWAY_BUILD_CATALOG = Object.freeze([
     Object.freeze({
         id: 'camp_approach',
         lengthRange: [10, 20],
-        widthRange: [1, 2],
+        widthRange: [2, 3],
         maxTurns: 2,
         elevationPolicy: 'flat',
         junctionEligible: true,

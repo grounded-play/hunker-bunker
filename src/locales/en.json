@@ -100,6 +100,7 @@
       "dossier": "◈ DOSSIER",
       "achievements": "ACHIEVEMENTS",
       "initialize": "INITIALIZE",
+      "enter_armory": "ENTER ARMORY",
       "vault_tooltip": "Click to open Steam Vault cosmetics submenu",
       "status_logs": "{found} / {total} LOGS",
       "status_intel": "{found} / {total} INTEL",
@@ -254,7 +255,7 @@
       "f_voicebank": "ALT RADIO VOICE BANK",
       "btn_return": "← RETURN TO MAIN MENU",
       "btn_vault": "STEAM VAULT & FAB BAY",
-      "btn_embark": "EMBARK TO BUNKER >>",
+      "btn_embark": "CONTINUE TO DEPLOYMENT >>",
       "picker_title": "◆ SELECT",
       "aria_settings": "Open Settings",
       "equipped": "EQUIPPED",
@@ -265,10 +266,13 @@
       "aria_label_pre_mission_armory": "Pre-Mission Armory"
     },
     "roster": {
+      "registration_title": "OPERATIVE REGISTRATION",
+      "telemetry_title": "CAREER TELEMETRY",
       "deepest_sector": "DEEPEST SECTOR:",
       "total_distance": "TOTAL DISTANCE:",
       "hostiles": "HOSTILES:",
       "black_box": "BLACK BOX:",
+      "black_boxes_recovered": "BLACK BOXES:",
       "patch": "PATCH:",
       "decal": "DECAL:",
       "finish": "FINISH:",
@@ -288,6 +292,7 @@
       "id_label": "ID:",
       "stat_sector": "SECTOR {depth}",
       "stat_hostiles": "{count} HOSTILES",
+      "stat_blackboxes_recovered": "{count} RECOVERED",
       "blackbox_recoverable": "RECOVERABLE (SECTOR {depth})",
       "blackbox_none": "NONE",
       "equipped_none": "NULL",
@@ -1394,6 +1399,29 @@
     "snail": {
       "alt_player_chassis": "Player Chassis",
       "alt_snail_combatant": "Snail Combatant"
+    },
+    "daily_ops": {
+      "tag": "DAILY",
+      "card_meta": "1 OPERATIVE // ONE SCORED ATTEMPT",
+      "perk_shared_sector": "SHARED DAILY SECTOR",
+      "perk_grade_targets": "GRADE TARGETS",
+      "perk_leaderboard": "DAILY LEADERBOARD",
+      "goals_title": "TODAY'S DAILY GOALS",
+      "resets_midnight": "RESETS AT MIDNIGHT",
+      "col_goal": "GOAL",
+      "col_requirement": "REQUIREMENT",
+      "description": "DAILY OPS: Every operative drops into today's sector. You get one scored attempt; the grade you finish on is posted to the Daily Ops leaderboard. Resets at midnight.",
+      "earned": "EARNED",
+      "missed": "MISSED",
+      "target": "TARGET",
+      "goal_attempt": "FILE TODAY'S RUN",
+      "goal_attempt_req": "Finish one Daily Ops run (win or die)",
+      "goal_grade": "GRADE {grade}",
+      "goal_grade_req": "Score {score}+ points",
+      "goal_leaderboard": "POST TO LEADERBOARD",
+      "goal_leaderboard_req": "Your score joins today's Daily Ops board",
+      "deploy": "DEPLOY DAILY OPS",
+      "deploy_done": "BACK TOMORROW"
     }
   },
   "narrative": {

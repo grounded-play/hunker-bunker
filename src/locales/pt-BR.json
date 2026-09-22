@@ -100,6 +100,7 @@
       "dossier": "◈ DOSSIÊ",
       "achievements": "CONQUISTAS",
       "initialize": "INICIALIZAR",
+      "enter_armory": "ENTRAR NO ARSENAL",
       "vault_tooltip": "Clique para abrir o submenu de cosméticos do Cofre Steam",
       "status_logs": "{found} / {total} REGISTROS",
       "status_intel": "{found} / {total} INTEL",
@@ -254,7 +255,7 @@
       "f_voicebank": "BANCO DE VOZ DE RÁDIO ALT",
       "btn_return": "← VOLTAR AO MENU PRINCIPAL",
       "btn_vault": "COFRE STEAM E OFICINA",
-      "btn_embark": "EMBARCAR PARA O BÚNKER >>",
+      "btn_embark": "CONTINUAR PARA IMPLANTAÇÃO >>",
       "picker_title": "◆ SELECIONAR",
       "aria_settings": "Abrir configurações",
       "equipped": "EQUIPADO",
@@ -265,10 +266,13 @@
       "aria_label_pre_mission_armory": "Arsenal pré-missão"
     },
     "roster": {
+      "registration_title": "REGISTRO DO OPERADOR",
+      "telemetry_title": "TELEMETRIA DE CARREIRA",
       "deepest_sector": "SETOR MAIS PROFUNDO:",
       "total_distance": "DISTÂNCIA TOTAL:",
       "hostiles": "HOSTIS:",
       "black_box": "CAIXA-PRETA:",
+      "black_boxes_recovered": "CAIXAS-PRETAS:",
       "patch": "INSÍGNIA:",
       "decal": "EMBLEMA:",
       "finish": "PINTURA:",
@@ -288,6 +292,7 @@
       "id_label": "ID:",
       "stat_sector": "SETOR {depth}",
       "stat_hostiles": "{count} HOSTIS",
+      "stat_blackboxes_recovered": "{count} RECUPERADAS",
       "blackbox_recoverable": "RECUPERÁVEL (SETOR {depth})",
       "blackbox_none": "NENHUMA",
       "equipped_none": "NULO",
@@ -1394,6 +1399,29 @@
     "snail": {
       "alt_player_chassis": "Chassi do jogador",
       "alt_snail_combatant": "Caracol combatente"
+    },
+    "daily_ops": {
+      "tag": "DIÁRIA",
+      "card_meta": "1 OPERATIVO // UMA TENTATIVA PONTUADA",
+      "perk_shared_sector": "SETOR DIÁRIO COMPARTILHADO",
+      "perk_grade_targets": "METAS DE NOTA",
+      "perk_leaderboard": "PLACAR DIÁRIO",
+      "goals_title": "METAS DIÁRIAS DE HOJE",
+      "resets_midnight": "REINICIA À MEIA-NOITE",
+      "col_goal": "META",
+      "col_requirement": "REQUISITO",
+      "description": "OPS DIÁRIAS: Todos os operativos caem no setor de hoje. Você tem uma tentativa pontuada; a nota final vai para o placar de Ops Diárias. Reinicia à meia-noite.",
+      "earned": "CONQUISTADO",
+      "missed": "PERDIDO",
+      "target": "ALVO",
+      "goal_attempt": "REGISTRE A MISSÃO DE HOJE",
+      "goal_attempt_req": "Termine uma missão de Ops Diárias (vença ou morra)",
+      "goal_grade": "NOTA {grade}",
+      "goal_grade_req": "Faça {score}+ pontos",
+      "goal_leaderboard": "ENVIAR AO PLACAR",
+      "goal_leaderboard_req": "Sua pontuação entra no placar de hoje",
+      "deploy": "IMPLANTAR OPS DIÁRIAS",
+      "deploy_done": "VOLTE AMANHÃ"
     }
   },
   "narrative": {

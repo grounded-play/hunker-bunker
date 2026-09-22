@@ -32,11 +32,6 @@ test('new-run intro keeps gameplay black, paused, and invulnerable until the fin
     // Debug UI must be explicitly enabled; a retail/new-game boot starts clean.
     await expect(page.locator('body')).not.toHaveClass(/show-debug/);
 
-    const rosterConfirm = page.locator('#roster-confirm-btn');
-    if (await rosterConfirm.isVisible().catch(() => false)) {
-        await rosterConfirm.click();
-        await page.waitForTimeout(200);
-    }
     await page.locator('#start-game').click();
 
     await page.locator('#transition-overlay.opening-h.active').waitFor({

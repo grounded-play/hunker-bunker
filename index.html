@@ -345,6 +345,11 @@
 
     <!-- Briefing Console (#menu) -->
     <div id="menu" class="hidden">
+      <!-- Presentation-only console glass. It sits above the background plate
+           and below every control, so its cropped corners, guide rails, and
+           advance dock can visually join the UI without intercepting input. -->
+      <div class="homebase-plate-overlay" aria-hidden="true"></div>
+      <div class="homebase-frame-overlay" aria-hidden="true"></div>
       <!-- Settings gear: pinned to top-right corner of menu, never displaced by layout -->
       <div class="menu-corner-settings">
         <button class="calibrate-btn open-settings-btn">⚙</button>
@@ -363,62 +368,90 @@
             <div class="map-box">
               <div id="game-container">
                 <div id="map-box-door" class="map-box-door" aria-hidden="true">
-                  <div class="map-box-door__panel map-box-door__panel--left"></div>
-                  <div class="map-box-door__panel map-box-door__panel--right"></div>
+                  <div class="map-box-door__panel map-box-door__panel--top">
+                    <div class="map-box-door__texture"></div>
+                  </div>
+                  <div class="map-box-door__panel map-box-door__panel--bottom">
+                    <div class="map-box-door__texture"></div>
+                  </div>
                 </div>
               </div>
+              <section class="homebase-telemetry" id="roster-run-telemetry" aria-labelledby="homebase-telemetry-title">
+                <div class="homebase-section-kicker" id="homebase-telemetry-title" data-i18n="ui.roster.telemetry_title">CAREER TELEMETRY</div>
+                <div class="homebase-telemetry__grid">
+                  <div class="roster-telemetry-chip"><span class="label" data-i18n="ui.roster.deepest_sector">DEEPEST SECTOR:</span> <b data-i18n="ui.roster.sector_0" id="roster-stat-depth">SECTOR 0</b></div>
+                  <div class="roster-telemetry-chip"><span class="label" data-i18n="ui.roster.total_distance">TOTAL DISTANCE:</span> <b id="roster-stat-distance">0u</b></div>
+                  <div class="roster-telemetry-chip"><span class="label" data-i18n="ui.roster.hostiles">HOSTILES:</span> <b data-i18n="ui.roster.0_eliminated" id="roster-stat-kills">0 ELIMINATED</b></div>
+                  <div class="roster-telemetry-chip"><span class="label" data-i18n="ui.roster.black_box">BLACK BOX:</span> <b data-i18n="ui.roster.none" id="roster-stat-blackbox">NONE</b></div>
+                </div>
+              </section>
               <div class="menu-header-actions">
                 <div data-i18n-aria-label="ui.menu.aria_label_operations_and_steam" class="menu-command-column" aria-label="Operations and Steam commands">
-                  <div class="menu-command">
-                    <button data-i18n-title="ui.menu.title_operator_roster_callsign" class="start-btn start-btn--roster" id="roster-btn" data-i18n="ui.hub.roster" title="Operator roster — callsign and equipped loadout">▣ ROSTER</button>
-                    <div class="menu-command__status" id="roster-command-status">0 / 0 ARSENAL</div>
-                  </div>
                   <div class="menu-command" id="steam-vault-command">
-                    <button data-i18n-title="ui.menu.title_steam_vault_view" class="start-btn start-btn--vault" id="steam-vault-btn" data-i18n="ui.hub.vault" title="Steam Vault — view Steam-owned cosmetics">◈ STEAM VAULT</button>
+                    <button class="start-btn start-btn--vault" id="steam-vault-btn" data-i18n="ui.hub.vault" aria-describedby="homebase-command-info">◈ STEAM VAULT</button>
                     <div class="menu-command__status" id="vault-command-status">OFFLINE</div>
                   </div>
                   <div class="menu-command hidden" id="archive-sims-command">
-                    <button data-i18n-title="ui.menu.title_archive_simulations_unlockable" class="start-btn start-btn--archive-sims" id="archive-sims-btn" data-i18n="ui.hub.archive_sims" title="Archive Simulations — unlockable story mini-games">◈ ARCHIVE SIMS</button>
+                    <button class="start-btn start-btn--archive-sims" id="archive-sims-btn" data-i18n="ui.hub.archive_sims" aria-describedby="homebase-command-info">◈ ARCHIVE SIMS</button>
                     <div data-i18n="ui.menu.rgb" class="menu-command__status" id="archive-sims-command-status">RGB</div>
                   </div>
                   <div class="menu-command menu-command--fab hidden" id="fabrication-command">
-                    <button data-i18n-title="ui.menu.title_fabrication_bay_print" class="start-btn start-btn--fab" id="fabrication-btn" title="Fabrication Bay — print gear from salvage (unlocks once the base is powered)">◇ FAB BAY</button>
+                    <button class="start-btn start-btn--fab" id="fabrication-btn" aria-describedby="homebase-command-info">◇ FAB BAY</button>
                     <div class="menu-command__status" id="fab-command-status">0 / 0 PRINTED</div>
                   </div>
                 </div>
                 <div data-i18n-aria-label="ui.menu.aria_label_records_and_dossier" class="menu-command-column" aria-label="Records and Dossier commands">
                   <div class="menu-command">
-                    <button data-i18n-title="ui.menu.title_bunker_archive_discovered" class="start-btn start-btn--archive" id="archive-btn" data-i18n="ui.hub.archive" title="Bunker Archive — discovered lore logs">◈ ARCHIVE</button>
+                    <button class="start-btn start-btn--archive" id="archive-btn" data-i18n="ui.hub.archive" aria-describedby="homebase-command-info">◈ ARCHIVE</button>
                     <div class="menu-command__status" id="archive-command-status">0 / 27 LOGS</div>
                   </div>
                   <div class="menu-command">
-                    <button data-i18n-title="ui.menu.title_field_codex_catalogued" class="start-btn start-btn--codex" id="codex-btn" data-i18n="ui.hub.codex" title="Field Codex — catalogued hostiles, infrastructure, and phenomena">❑ CODEX</button>
+                    <button class="start-btn start-btn--codex" id="codex-btn" data-i18n="ui.hub.codex" aria-describedby="homebase-command-info">❑ CODEX</button>
                     <div class="menu-command__status" id="codex-command-status">0 / 0 INTEL</div>
                   </div>
                   <div class="menu-command" id="season-pass-command">
-                    <button data-i18n-title="ui.menu.title_tactical_dossier_beta" class="start-btn start-btn--dossier" id="season-pass-btn" data-i18n="ui.hub.dossier" title="Tactical Dossier — Beta Season 1 progression">◈ DOSSIER</button>
+                    <button class="start-btn start-btn--dossier" id="season-pass-btn" data-i18n="ui.hub.dossier" aria-describedby="homebase-command-info">◈ DOSSIER</button>
                     <div class="menu-command__status" id="season-pass-command-status">TIER 0 / 50</div>
                   </div>
                   <div class="menu-command hidden" id="achievements-command">
-                    <button data-i18n-title="ui.menu.title_achievement_records_unlocked" class="start-btn start-btn--achievements" id="achievements-btn" data-i18n="ui.hub.achievements" title="Achievement records — unlocked run milestones">ACHIEVEMENTS</button>
+                    <button class="start-btn start-btn--achievements" id="achievements-btn" data-i18n="ui.hub.achievements" aria-describedby="homebase-command-info">ACHIEVEMENTS</button>
                     <div class="menu-command__status" id="achievements-command-status">LOCKED</div>
                   </div>
                 </div>
               </div>
-              <button class="start-btn map-initialize-btn" id="start-game" data-i18n="ui.hub.initialize">INITIALIZE</button>
+              <div class="homebase-command-info" id="homebase-command-info" aria-live="polite"></div>
+              <button type="button" class="hero-select-back-btn" id="hero-select-back-btn">
+                <span data-i18n="ui.menu.return_main">← RETURN TO MAIN MENU</span> <span data-i18n="ui.menu.esc">[ESC]</span>
+              </button>
               <div class="module-scanline"></div>
             </div>
 
             <!-- Module 2: Hero UI -->
             <div class="preview-box">
+              <section class="homebase-identity" aria-labelledby="homebase-identity-title">
+                <div class="homebase-section-kicker" id="homebase-identity-title" data-i18n="ui.roster.registration_title">OPERATIVE REGISTRATION</div>
+                <div class="roster-id-row">
+                  <label data-i18n="ui.roster.callsign" class="roster-callsign-label" for="roster-callsign-input">CALLSIGN:</label>
+                  <input data-i18n-placeholder="ui.roster.placeholder_agent_01" type="text" id="roster-callsign-input" class="operator-callsign-input" maxlength="16" placeholder="AGENT-01" autocomplete="off" spellcheck="false">
+                  <button type="button" class="dev-btn dev-btn--accent" id="roster-randomize-btn" aria-label="Randomize Callsign" data-i18n-aria-label="ui.roster.randomize">↻</button>
+                </div>
+                <div class="homebase-identity__meta">
+                  <span class="roster-id-badge"><span data-i18n="ui.roster.id_label">ID:</span> <span class="roster-id" id="roster-id">op-—</span></span>
+                  <span id="homebase-loadout-summary">FIELD LOADOUT // STANDARD ISSUE</span>
+                </div>
+              </section>
               <div class="hero-identity-block">
                 <div class="char-preview-stage" aria-hidden="true">
                   <img id="char-preview-fallback" class="char-preview-fallback" src="/Tank.full_v2.png" alt="" />
                   <canvas id="char-preview-sprite" width="256" height="256"></canvas>
                   <canvas id="char-preview-3d" class="hidden" width="320" height="320"></canvas>
                   <div id="char-preview-door" class="char-preview-door">
-                    <div class="char-preview-door__panel char-preview-door__panel--top"></div>
-                    <div class="char-preview-door__panel char-preview-door__panel--bottom"></div>
+                    <div class="char-preview-door__panel char-preview-door__panel--top">
+                      <div class="char-preview-door__texture"></div>
+                    </div>
+                    <div class="char-preview-door__panel char-preview-door__panel--bottom">
+                      <div class="char-preview-door__texture"></div>
+                    </div>
                     <div class="char-preview-door__panel char-preview-door__panel--left"></div>
                     <div class="char-preview-door__panel char-preview-door__panel--right"></div>
                   </div>
@@ -441,7 +474,7 @@
                   <span data-i18n="ui.menu.fast" class="hero-stat-compact-value" id="hero-stat-spd-val">FAST</span>
                 </div>
                 <div class="hero-stat-compact-row">
-                  <span data-i18n="ui.menu.o2_use" data-i18n-aria-label="ui.menu.aria_label_o2_consumption_rate" data-i18n-title="ui.menu.title_o2_consumption_rate" class="hero-stat-compact-label" aria-label="O2 Consumption Rate — Lower is Better" title="O₂ Consumption Rate — Lower value means suit oxygen drains slower">O₂ USE</span>
+                  <span id="hero-stat-o2-label" data-i18n="ui.menu.o2_use" data-i18n-aria-label="ui.menu.aria_label_o2_consumption_rate" class="hero-stat-compact-label" aria-label="O2 Consumption Rate — Lower is Better">O₂ USE</span>
                   <div class="hero-stat-pips" id="hero-stat-o2"></div>
                   <span data-i18n="ui.menu.low" class="hero-stat-compact-value" id="hero-stat-o2-val">LOW</span>
                 </div>
@@ -450,7 +483,7 @@
                   <div class="hero-stat-pips" id="hero-stat-loot"></div>
                   <span data-i18n="ui.menu.med" class="hero-stat-compact-value" id="hero-stat-loot-val">MED</span>
                 </div>
-                <button data-i18n-title="ui.menu.title_choose_operator_polish" type="button" class="hero-polish-slot" id="hero-polish-btn" title="Choose operator polish">
+                <button type="button" class="hero-polish-slot" id="hero-polish-btn" aria-describedby="homebase-command-info">
                   <span class="hero-polish-slot__swatch" id="hero-polish-swatch"></span>
                   <span class="hero-polish-slot__copy">
                     <span data-i18n="ui.menu.suit_polish" class="hero-polish-slot__label">SUIT POLISH</span>
@@ -501,20 +534,19 @@
                 </div>
                 <div class="char-icon">⚙</div>
               </div>
-              <button type="button" class="hero-select-back-btn" id="hero-select-back-btn">
-                <span data-i18n="ui.menu.return_main">← RETURN TO MAIN MENU</span> <span data-i18n="ui.menu.esc">[ESC]</span>
-              </button>
             </div>
           </div>
 
         </div>
       </div>
 
-      <!-- Action Row: prior contractor black box -->
-      <div class="action-row">
-        <div class="last-contractor hidden" id="last-contractor"></div>
-      </div>
     </div>
+
+    <!-- INITIALIZE lives beside #menu, not inside it: #menu carries a 3D
+         mouse-tilt transform and its panels use contain: layout paint, and
+         either would trap the shared bottom-right advance slot
+         (style.css .hb-advance-slot). Hidden whenever #menu is. -->
+    <button class="start-btn map-initialize-btn hb-advance-slot" id="start-game" data-i18n="ui.hub.enter_armory">ENTER ARMORY</button>
 
     <!-- Fullsize 3D Pre-Mission Armory (#armory-screen) -->
     <section data-i18n-aria-label="ui.armory.aria_label_pre_mission_armory" id="armory-screen" class="hidden" aria-label="Pre-Mission Armory">
@@ -566,51 +598,6 @@
           </div>
         </div>
         <div id="archive-log-detail-text" class="archive-log-detail-text"></div>
-      </div>
-    </div>
-
-    <!-- Operator Roster & Agent Dossier Modal -->
-    <div id="roster-modal" class="modal hidden" aria-hidden="true">
-      <div class="modal-content roster-modal-content">
-        <div class="terminal-scanline"></div>
-        <div class="roster-header">
-          <button class="close-modal" id="close-roster-modal">×</button>
-          <div class="roster-title" id="roster-title-label">▣ OPERATOR DOSSIER // DEPLOYMENT TELEMETRY</div>
-          <div class="roster-id-row">
-            <label data-i18n="ui.roster.callsign" class="roster-callsign-label" for="roster-callsign-input">CALLSIGN:</label>
-            <input data-i18n-placeholder="ui.roster.placeholder_agent_01" type="text" id="roster-callsign-input" class="operator-callsign-input" maxlength="16" placeholder="AGENT-01" autocomplete="off" spellcheck="false">
-            <button type="button" class="dev-btn dev-btn--accent" id="roster-randomize-btn" title="Randomize Callsign" data-i18n-title="ui.roster.randomize">🎲 RANDOM</button>
-          </div>
-          <!-- Run Telemetry Summary Block -->
-          <div id="roster-run-telemetry" class="roster-run-telemetry">
-            <div class="roster-telemetry-chip"><span class="label" data-i18n="ui.roster.deepest_sector">DEEPEST SECTOR:</span> <b data-i18n="ui.roster.sector_0" id="roster-stat-depth">SECTOR 0</b></div>
-            <div class="roster-telemetry-chip"><span class="label" data-i18n="ui.roster.total_distance">TOTAL DISTANCE:</span> <b id="roster-stat-distance">0u</b></div>
-            <div class="roster-telemetry-chip"><span class="label" data-i18n="ui.roster.hostiles">HOSTILES:</span> <b data-i18n="ui.roster.0_eliminated" id="roster-stat-kills">0 ELIMINATED</b></div>
-            <div class="roster-telemetry-chip"><span class="label" data-i18n="ui.roster.black_box">BLACK BOX:</span> <b data-i18n="ui.roster.none" id="roster-stat-blackbox">NONE</b></div>
-          </div>
-          <div class="roster-sub-bar">
-            <div class="roster-stat" id="roster-fab-count">ARSENAL: 0 / 0 SCHEMATICS FABRICATED</div>
-            <div class="roster-id-badge"><span data-i18n="ui.roster.id_label">ID:</span> <span class="roster-id" id="roster-id">op-—</span></div>
-          </div>
-        </div>
-        <div data-i18n="ui.roster.equipped_sidearm" class="roster-section-label">EQUIPPED SIDEARM</div>
-        <div id="roster-weapon-grid" class="roster-weapon-grid"></div>
-        <div data-i18n="ui.roster.equipped_steam_cosmetics" class="roster-section-label">EQUIPPED STEAM COSMETICS</div>
-        <div id="roster-cosmetics-row" class="roster-cosmetics-row">
-          <div class="roster-cosmetic-chip">
-            <span class="label" data-i18n="ui.roster.patch">PATCH:</span> <span data-i18n="ui.roster.none" id="roster-equipped-patch">NONE</span>
-          </div>
-          <div class="roster-cosmetic-chip">
-            <span class="label" data-i18n="ui.roster.decal">DECAL:</span> <span data-i18n="ui.roster.none" id="roster-equipped-decal">NONE</span>
-          </div>
-          <div class="roster-cosmetic-chip">
-            <span class="label" data-i18n="ui.roster.finish">FINISH:</span> <span data-i18n="ui.roster.none" id="roster-equipped-weapon-finish">NONE</span>
-          </div>
-        </div>
-        <div class="roster-hint" id="roster-hint" data-i18n="ui.roster.hint">Fabricate weapons in the FAB BAY to equip them here. Customize cosmetics in the STEAM VAULT.</div>
-        <div class="roster-footer-actions">
-          <button type="button" class="start-btn roster-confirm-btn" id="roster-confirm-btn">CONFIRM & DEPLOY</button>
-        </div>
       </div>
     </div>
 
@@ -2877,6 +2864,27 @@
             </div>
             <div data-i18n="ui.multiplayer.select_mode" class="net-mode-card__indicator">SELECT MODE</div>
           </button>
+
+          <!-- Daily Ops moved here from the Armory footer: it is a way to
+               deploy, so it sits with the other deployment modes. Solo-only;
+               selecting it shows today's goals in #net-daily-goals below. -->
+          <button type="button" class="net-mode-card net-mode-card--daily" id="net-mode-daily-btn">
+            <div class="net-mode-card__badge net-mode-card__badge--daily">
+              <span class="net-mode-card__icon">◷</span>
+              <span data-i18n="ui.daily_ops.tag" class="net-mode-card__tag">DAILY</span>
+              <span class="net-daily-status-chip" id="net-daily-status-chip"></span>
+            </div>
+            <div class="net-mode-card__info">
+              <div data-i18n="ui.hub.daily_ops" class="net-mode-card__title">DAILY OPS</div>
+              <div data-i18n="ui.daily_ops.card_meta" class="net-mode-card__meta">1 OPERATIVE // ONE SCORED ATTEMPT</div>
+            </div>
+            <div class="net-mode-card__perks">
+              <span data-i18n="ui.daily_ops.perk_shared_sector" class="net-perk-chip net-perk-chip--daily">SHARED DAILY SECTOR</span>
+              <span data-i18n="ui.daily_ops.perk_grade_targets" class="net-perk-chip net-perk-chip--daily">GRADE TARGETS</span>
+              <span data-i18n="ui.daily_ops.perk_leaderboard" class="net-perk-chip net-perk-chip--daily">DAILY LEADERBOARD</span>
+            </div>
+            <div data-i18n="ui.multiplayer.select_mode" class="net-mode-card__indicator">SELECT MODE</div>
+          </button>
         </div>
 
         <!-- Mode Mission Briefing Banner -->
@@ -3004,6 +3012,31 @@
             </div>
           </div>
 
+          <!-- Daily Ops goals: shown only while the DAILY OPS card is active
+               (multiplayerLobby.js's updateUiState), in place of the two
+               relay columns. Rows are rendered from main.js's Daily Ops
+               record, so earned/target states are today's real result. -->
+          <div class="net-column net-column--daily hidden">
+            <div class="net-panel-header">
+              <div class="net-panel-title-wrap">
+                <span data-i18n="ui.daily_ops.goals_title" class="net-panel-title">TODAY'S DAILY GOALS</span>
+                <span class="net-roster-count" id="net-daily-seed"></span>
+              </div>
+              <span data-i18n="ui.daily_ops.resets_midnight" class="net-panel-badge net-panel-badge--green">RESETS AT MIDNIGHT</span>
+            </div>
+
+            <div class="net-roster-container">
+              <div class="net-roster-header net-daily-header">
+                <span data-i18n="ui.daily_ops.col_goal">GOAL</span>
+                <span data-i18n="ui.daily_ops.col_requirement">REQUIREMENT</span>
+                <span data-i18n="ui.multiplayer.status">STATUS</span>
+              </div>
+              <div class="net-roster-list net-daily-goals" id="net-daily-goals">
+                <!-- Dynamically populated by JS -->
+              </div>
+            </div>
+          </div>
+
         </div>
 
         <!-- Footer Action Bar -->
@@ -3015,7 +3048,7 @@
           </div>
           <div class="net-modal-btn-row">
             <button data-i18n="ui.multiplayer.back_to_armory" type="button" class="start-btn net-back-btn" id="net-back-btn">← BACK TO ARMORY</button>
-            <button type="button" class="start-btn net-deploy-btn" id="net-deploy-btn">DEPLOY SQUAD</button>
+            <button type="button" class="start-btn net-deploy-btn hb-advance-slot" id="net-deploy-btn">DEPLOY SQUAD</button>
           </div>
         </div>
       </div>

@@ -100,6 +100,7 @@
       "dossier": "◈ EXPEDIENTE",
       "achievements": "LOGROS",
       "initialize": "INICIALIZAR",
+      "enter_armory": "ENTRAR A LA ARMERÍA",
       "vault_tooltip": "Haz clic para abrir el submenú de cosméticos de la Bóveda Steam",
       "status_logs": "{found} / {total} REGISTROS",
       "status_intel": "{found} / {total} INTEL",
@@ -254,7 +255,7 @@
       "f_voicebank": "BANCO DE VOZ DE RADIO ALT",
       "btn_return": "← VOLVER AL MENÚ PRINCIPAL",
       "btn_vault": "BÓVEDA DE STEAM Y TALLER",
-      "btn_embark": "EMBARCAR AL BÚNKER >>",
+      "btn_embark": "CONTINUAR AL DESPLIEGUE >>",
       "picker_title": "◆ SELECCIONAR",
       "aria_settings": "Abrir ajustes",
       "equipped": "EQUIPADO",
@@ -265,10 +266,13 @@
       "aria_label_pre_mission_armory": "Armería previa a la misión"
     },
     "roster": {
+      "registration_title": "REGISTRO DE OPERATIVO",
+      "telemetry_title": "TELEMETRÍA DE CARRERA",
       "deepest_sector": "SECTOR MÁS PROFUNDO:",
       "total_distance": "DISTANCIA TOTAL:",
       "hostiles": "HOSTILES:",
       "black_box": "CAJA NEGRA:",
+      "black_boxes_recovered": "CAJAS NEGRAS:",
       "patch": "PARCHE:",
       "decal": "CALCOMANÍA:",
       "finish": "ACABADO:",
@@ -288,6 +292,7 @@
       "id_label": "ID:",
       "stat_sector": "SECTOR {depth}",
       "stat_hostiles": "{count} HOSTILES",
+      "stat_blackboxes_recovered": "{count} RECUPERADAS",
       "blackbox_recoverable": "RECUPERABLE (SECTOR {depth})",
       "blackbox_none": "NINGUNA",
       "equipped_none": "NULO",
@@ -1394,6 +1399,29 @@
     "snail": {
       "alt_player_chassis": "Chasis del jugador",
       "alt_snail_combatant": "Caracol combatiente"
+    },
+    "daily_ops": {
+      "tag": "DIARIA",
+      "card_meta": "1 OPERATIVO // UN INTENTO PUNTUADO",
+      "perk_shared_sector": "SECTOR DIARIO COMPARTIDO",
+      "perk_grade_targets": "METAS DE CALIFICACIÓN",
+      "perk_leaderboard": "CLASIFICACIÓN DIARIA",
+      "goals_title": "METAS DIARIAS DE HOY",
+      "resets_midnight": "SE REINICIA A MEDIANOCHE",
+      "col_goal": "META",
+      "col_requirement": "REQUISITO",
+      "description": "OPS DIARIAS: Todos los operativos caen en el sector de hoy. Tienes un intento puntuado; la calificación final se publica en la clasificación de Ops Diarias. Se reinicia a medianoche.",
+      "earned": "LOGRADO",
+      "missed": "FALLADO",
+      "target": "OBJETIVO",
+      "goal_attempt": "COMPLETA LA MISIÓN DE HOY",
+      "goal_attempt_req": "Termina una misión de Ops Diarias (gana o muere)",
+      "goal_grade": "CALIFICACIÓN {grade}",
+      "goal_grade_req": "Consigue {score}+ puntos",
+      "goal_leaderboard": "PUBLICAR EN CLASIFICACIÓN",
+      "goal_leaderboard_req": "Tu puntaje entra al tablero de hoy",
+      "deploy": "DESPLEGAR OPS DIARIAS",
+      "deploy_done": "VUELVE MAÑANA"
     }
   },
   "narrative": {

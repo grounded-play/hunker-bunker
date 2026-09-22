@@ -705,8 +705,8 @@ describe('MultiplayerLobby', () => {
     });
 
     // docs/multiplayer-flow-and-lobby-bugs-2026-08-20.md Phase 3: the
-    // display-only loadout summary synced onto the roster (equipped weapon
-    // label + whether a charm is equipped) -- reused by connect(),
+    // display-only loadout summary synced onto the roster (weapon and the
+    // resolved three-slot equipment status) -- reused by connect(),
     // fallbackLocalSession(), and Phase 4's squad-manifest cutscene overlay.
     describe('getLocalLoadoutSummary', () => {
         afterEach(() => {
@@ -721,7 +721,14 @@ describe('MultiplayerLobby', () => {
 
             const summary = getLocalLoadoutSummary('TANK');
 
-            expect(summary).toEqual({ weapon: 'RAILGUN MK.II', hasCharm: true, polishColor: '#ffffff' });
+            expect(summary).toMatchObject({
+                weapon: 'RAILGUN MK.II',
+                hasCharm: true,
+                charmId: null,
+                overclockIds: [],
+                effectLabels: [],
+                polishColor: '#ffffff'
+            });
             expect(getEquippedLabel).toHaveBeenCalledWith(globalThis.window.fabricator, 'TANK');
             expect(getEquippedCharmId).toHaveBeenCalledWith('TANK');
         });
@@ -733,7 +740,14 @@ describe('MultiplayerLobby', () => {
                 fabricator: {}
             };
 
-            expect(getLocalLoadoutSummary('SCOUT')).toEqual({ weapon: 'SIDEARM', hasCharm: false, polishColor: '#ffffff' });
+            expect(getLocalLoadoutSummary('SCOUT')).toMatchObject({
+                weapon: 'SIDEARM',
+                hasCharm: false,
+                charmId: null,
+                overclockIds: [],
+                effectLabels: [],
+                polishColor: '#ffffff'
+            });
         });
 
         it('includes the selected operator polish color for remote rendering', () => {
@@ -776,7 +790,14 @@ describe('MultiplayerLobby', () => {
             lobby.fallbackLocalSession();
 
             const self = [...lobby.players.values()].find((p) => p.isSelf);
-            expect(self.loadout).toEqual({ weapon: 'ARC WELDER', hasCharm: true, polishColor: '#ffffff' });
+            expect(self.loadout).toMatchObject({
+                weapon: 'ARC WELDER',
+                hasCharm: true,
+                charmId: null,
+                overclockIds: [],
+                effectLabels: [],
+                polishColor: '#ffffff'
+            });
         });
 
         // A remote player's loadout arriving via the real currentPlayers/

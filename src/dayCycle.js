@@ -124,6 +124,36 @@ export function deadlinesClosingTonight(state) {
 }
 
 /**
+ * The single rule for "can the player sleep here, right now".
+ *
+ * Both the camp rest verb and any other bed (bunker cot, outpost pod) ask this
+ * one question, so rest cannot be reachable at one and silently unreachable at
+ * another. Before this existed the camp verb carried its own inline gate that
+ * also required an Act 2 `dormant` camp, which is why `SLEEP UNTIL DAY N`
+ * almost never appeared in normal play.
+ *
+ * `safeSpace` is the caller's assertion that this spot is somewhere a person
+ * could actually sleep; everything else is campaign state this module owns.
+ */
+export function canRestNow(state, {
+    safeSpace = false,
+    hostileNearby = false,
+    hasActiveQuest = false,
+    siteStatus = 'alive'
+} = {}) {
+    const s = normalizeDayState(state);
+    if (!safeSpace) return { allowed: false, reason: 'not_a_safe_space' };
+    if (s.phase !== REST_PHASES.EXPEDITION) return { allowed: false, reason: 'already_resting' };
+    if (hostileNearby) return { allowed: false, reason: 'hostiles_nearby' };
+    if (siteStatus && siteStatus !== 'alive') return { allowed: false, reason: `site_${siteStatus}` };
+    // An active contract at this site is the one story reason to withhold rest:
+    // sleeping through it would advance the day past a beat the player is
+    // mid-way through.
+    if (hasActiveQuest) return { allowed: false, reason: 'active_quest' };
+    return { allowed: true, reason: null, nextDay: s.day + 1 };
+}
+
+/**
  * Begin the sleep that ends a day.
  *
  * Separate from completeRest so the caller can play a sequence between them.

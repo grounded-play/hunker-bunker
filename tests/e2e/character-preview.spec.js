@@ -3,9 +3,6 @@ import { bootToOperatorMenu } from './helpers.js';
 
 test('every operator has a rendered sprite or packaged portrait fallback', async ({ page }) => {
     await bootToOperatorMenu(page);
-    if (await page.locator('#roster-modal').isVisible()) {
-        await page.locator('#close-roster-modal').click();
-    }
 
     for (const type of ['SCOUT', 'TANK', 'ENGINEER']) {
         await page.locator(`.char-card[data-type="${type}"]`).click();
@@ -35,7 +32,6 @@ test('every operator has a rendered sprite or packaged portrait fallback', async
 
 test('rapid class changes never expose a stale or blank center preview', async ({ page }) => {
     await bootToOperatorMenu(page);
-    if (await page.locator('#roster-modal').isVisible()) await page.locator('#close-roster-modal').click();
     const types = ['SCOUT', 'TANK', 'ENGINEER'];
     await page.evaluate((sequence) => {
         for (let index = 0; index < 50; index += 1) {

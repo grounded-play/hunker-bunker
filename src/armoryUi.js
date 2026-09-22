@@ -15,6 +15,7 @@ import { ITEM_TYPE, getCatalogIdsByType, getCatalogEntry } from './itemOwnership
 import { getVoiceBank } from './data/voiceBanks.js';
 import { hudThemeInlineStyle, resolveHudTheme } from './hudThemes.js';
 import { unlockAllPolishes } from './operatorPolishes.js';
+import { getEquipmentStatus } from './data/equipmentDefinitions.js';
 import {
     ARCHETYPE_SKINS,
     CLASS_ARCHETYPES,
@@ -108,8 +109,6 @@ export function createArmoryUi({
     onBack,
     onOpenVault,
     onOpenSettings,
-    onDailyOps,
-    getDailyOpsStatus,
     onClassChange,
     ownership,
     qaToolsEnabled = false
@@ -271,12 +270,23 @@ export function createArmoryUi({
             },
             charm: {
                 title: 'TACTICAL CHARM',
-                subtitle: 'WEAPON-MOUNTED TROPHY // SWINGS ON ITS SOCKET',
+                subtitle: 'WEAPON TROPHY // POWER REQUIRES EARNED ATTUNEMENT RANK',
                 noneLabel: 'NO CHARM',
                 ids: () => getCatalogIdsByType(ITEM_TYPE.CHARM),
+                options: () => buildEquipOptions({
+                    ids: getCatalogIdsByType(ITEM_TYPE.CHARM),
+                    selectedId: loadout.charmId,
+                    ownership
+                }).map((option) => loadoutManager.isCharmAttuned?.(option.id)
+                    ? { ...option, owned: true, disabled: false }
+                    : option),
                 current: () => (loadout.charmId ? String(loadout.charmId) : ''),
                 currentName: () => nameForItem(loadout.charmId, 'NO CHARM'),
-                apply: (value) => equipGuard(value, (v) => loadoutManager.equipCharm(cls, v)),
+                apply: (value) => equipGuard(
+                    value,
+                    (v) => loadoutManager.equipCharm(cls, v),
+                    { allowAttunedCharm: true }
+                ),
                 sound: 'sfx_charm_clink_heavy',
                 after: () => armoryScene?.updateFromLoadout(loadoutManager, cls)
             },
@@ -483,9 +493,10 @@ export function createArmoryUi({
     // Defence in depth behind the `disabled` attribute: a change event can
     // still arrive with a locked id (DOM edited, option re-enabled, stale
     // value), and equipping is the one thing ownership actually gates.
-    function equipGuard(rawValue, apply) {
+    function equipGuard(rawValue, apply, { allowAttunedCharm = false } = {}) {
         const value = rawValue || null;
-        if (value !== null && !ownership.canEquip(value)) {
+        const progressionLicensed = allowAttunedCharm && loadoutManager.isCharmAttuned?.(value);
+        if (value !== null && !ownership.canEquip(value) && !progressionLicensed) {
             playSound('sfx_ui_denied');
             render();
             return false;
@@ -505,21 +516,32 @@ export function createArmoryUi({
         const cls = activeClass.toLowerCase();
         const loadout = loadoutManager.getClassLoadout(cls);
         const archetype = loadout.archetypeId || DEFAULT_ARCHETYPES[cls];
-        const modifiers = loadoutManager.getActiveModifiers(cls);
         const chassisSkinId = loadoutManager.getEquippedChassisSkinId?.();
         const selectedWeapon = pickerFields().weapon.currentName();
-        const dailyOps = getDailyOpsStatus?.() ?? { label: 'READY', disabled: false };
         const hudTheme = resolveHudTheme(loadoutManager.state.hudThemeId);
         const hudThemeStyle = hudThemeInlineStyle(loadoutManager.state.hudThemeId);
         const qaAudit = ownership.auditEquippableCatalog?.() ?? { total: 0, available: 0, complete: false };
+        const attunementTier = loadoutManager.getCurrentAttunementTier?.() ?? Number.POSITIVE_INFINITY;
+        const equipmentStatus = (id) => getEquipmentStatus(id, {
+            mode: 'deployment',
+            attuned: loadoutManager.isCharmAttuned?.(id, attunementTier) ?? true
+        });
 
-        const hasActiveOverclocks = Boolean(
-            (modifiers.scrapMagnetRadiusBonus > 0) ||
-            (modifiers.cryoDurationMultiplier > 1.0) ||
-            (modifiers.kineticPierceBonus > 0) ||
-            (modifiers.gasDamageReduction > 0) ||
-            modifiers.dashRefundOnMultiKill
-        );
+        const equipmentStatuses = [
+            { slot: 'CHARM', status: equipmentStatus(loadout.charmId), empty: 'NO WEAPON ATTUNEMENT' },
+            { slot: 'SUIT A', status: equipmentStatus(loadout.mod1Id), empty: 'EMPTY OPERATOR SOCKET' },
+            { slot: 'SUIT B', status: equipmentStatus(loadout.mod2Id), empty: 'EMPTY OPERATOR SOCKET' }
+        ];
+        const statusHtml = equipmentStatuses.map(({ slot, status, empty }) => status ? `
+            <div class="loadout-effect ${status.active ? 'is-active' : 'is-inactive'}" data-equipment-id="${status.id}">
+                <span class="loadout-effect__slot">${slot} · ${status.mount} · ${status.modeStatus}</span>
+                <b>${status.name}</b>
+                <span>${status.summary}</span>
+            </div>` : `
+            <div class="loadout-effect">
+                <span class="loadout-effect__slot">${slot}</span>
+                <b>${t('ui.armory.standby')}</b><span>${empty || t('ui.armory.standby_desc')}</span>
+            </div>`).join('');
 
         if (typeof document !== 'undefined') {
             const screen = document.getElementById('armory-screen');
@@ -551,9 +573,12 @@ export function createArmoryUi({
                             ${ownership.isUnlockAll() ? `✓ QA UNLOCK ${qaAudit.available}/${qaAudit.total}` : `[QA] UNLOCK ALL ${qaAudit.available}/${qaAudit.total}`}
                         </button><button type="button" class="armory-debug-skins-btn" id="armory-debug-grant-kit-btn" title="Grant non-tradable synthetic marketplace items and test keys; never initiates a purchase">[QA] GRANT TEST KIT</button>` : ''}
                         <span class="status-cycle-hint" data-i18n="ui.armory.cycle_hint">[Q / E CYCLE]</span>
-                        <button type="button" class="calibrate-btn open-settings-btn armory-settings-btn" id="armory-settings-btn" title="Open Settings" aria-label="Open Settings" data-i18n-title="ui.armory.aria_settings" data-i18n-aria-label="ui.armory.aria_settings">⚙</button>
                     </div>
                 </header>
+
+                <div class="armory-corner-settings">
+                    <button type="button" class="calibrate-btn open-settings-btn armory-settings-btn" id="armory-settings-btn" title="Open Settings" aria-label="Open Settings" data-i18n-title="ui.armory.aria_settings" data-i18n-aria-label="ui.armory.aria_settings">⚙</button>
+                </div>
 
                 <div class="armory-main-layout">
                     <!-- 3D MODEL PREVIEW & LIVE READOUT (LEFT / CENTER) -->
@@ -622,54 +647,21 @@ export function createArmoryUi({
                             <div class="bench-row-two-col">
                                 <!-- RIG MOD 1 -->
                                 <div class="bench-field">
-                                    <label data-i18n="ui.armory.f_bay_a">OVERCLOCK — BAY A</label>
+                                <label>SUIT ${t('ui.armory.f_bay_a')}</label>
                                     ${slotHtml('mod1')}
                                 </div>
 
                                 <!-- RIG MOD 2 -->
                                 <div class="bench-field">
-                                    <label data-i18n="ui.armory.f_bay_b">OVERCLOCK — BAY B</label>
+                                <label>SUIT ${t('ui.armory.f_bay_b')}</label>
                                     ${slotHtml('mod2')}
                                 </div>
                             </div>
 
                             <!-- ACTIVE MODIFIERS TELEMETRY -->
                             <div class="modifiers-summary">
-                                <div class="modifiers-title" data-i18n="ui.armory.mods_title">◈ ACTIVE COMBAT OVERCLOCKS</div>
-                                ${hasActiveOverclocks ? `
-                                    <div class="modifiers-badges">
-                                        ${modifiers.scrapMagnetRadiusBonus > 0 ? `
-                                            <span class="mod-badge active">
-                                                <span class="mod-tag">[MAG]</span> Magnet: +${Math.round(modifiers.scrapMagnetRadiusBonus * 100)}%
-                                            </span>
-                                        ` : ''}
-                                        ${modifiers.cryoDurationMultiplier > 1.0 ? `
-                                            <span class="mod-badge active">
-                                                <span class="mod-tag">[CRYO]</span> Cryo: +${Math.round((modifiers.cryoDurationMultiplier - 1.0) * 100)}%
-                                            </span>
-                                        ` : ''}
-                                        ${modifiers.kineticPierceBonus > 0 ? `
-                                            <span class="mod-badge active">
-                                                <span class="mod-tag">[PRC]</span> Pierce: +${modifiers.kineticPierceBonus}
-                                            </span>
-                                        ` : ''}
-                                        ${modifiers.gasDamageReduction > 0 ? `
-                                            <span class="mod-badge active">
-                                                <span class="mod-tag">[BIO]</span> Gas Resist: -${Math.round(modifiers.gasDamageReduction * 100)}%
-                                            </span>
-                                        ` : ''}
-                                        ${modifiers.dashRefundOnMultiKill ? `
-                                            <span class="mod-badge active">
-                                                <span class="mod-tag">[DASH]</span> Multi-Kill Dash Refund: ACTIVE
-                                            </span>
-                                        ` : ''}
-                                    </div>
-                                ` : `
-                                    <div class="modifiers-standby">
-                                        <span class="standby-status-pill" data-i18n="ui.armory.standby">STANDBY</span>
-                                        <span class="standby-desc" data-i18n="ui.armory.standby_desc">NO OVERCLOCKS LINKED // BAYS A &amp; B READY</span>
-                                    </div>
-                                `}
+                                <div class="modifiers-title">${t('ui.armory.mods_title')} // DEPLOYMENT STATUS</div>
+                                <div class="loadout-effects">${statusHtml}</div>
                             </div>
                         </section>
 
@@ -719,10 +711,7 @@ export function createArmoryUi({
                     <button id="armory-btn-vault" class="armory-btn tertiary-btn">
                         <span data-i18n="ui.armory.btn_vault">STEAM VAULT &amp; FAB BAY</span> <span class="btn-keyhint">[V]</span>
                     </button>
-                    <button id="armory-btn-daily" class="armory-btn tertiary-btn armory-btn--daily" ${dailyOps.disabled ? 'disabled' : ''}>
-                        <span>${t('ui.hub.daily_ops')} // ${dailyOps.label}</span>
-                    </button>
-                    <button id="armory-btn-embark" class="armory-btn primary-btn embark-glow">
+                    <button id="armory-btn-embark" class="armory-btn primary-btn embark-glow hb-advance-slot">
                         <span data-i18n="ui.armory.btn_embark">EMBARK TO BUNKER &gt;&gt;</span> <span class="btn-keyhint">[ENTER / A]</span>
                     </button>
                 </footer>
@@ -849,11 +838,6 @@ export function createArmoryUi({
         container.querySelector?.('#armory-btn-vault')?.addEventListener?.('click', () => {
             playSound('ui_click_confirm1');
             onOpenVault?.();
-        });
-
-        container.querySelector?.('#armory-btn-daily')?.addEventListener?.('click', () => {
-            playSound('ui_click_confirm1');
-            onDailyOps?.();
         });
 
         container.querySelector?.('#armory-btn-embark')?.addEventListener?.('click', () => {

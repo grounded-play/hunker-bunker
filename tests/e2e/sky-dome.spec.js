@@ -12,7 +12,7 @@ async function bootToSkyReady(page) {
     await page.locator('body').click({ force: true }).catch(() => {});
 
     const selectors = [
-        '#title-newrun-btn', '#roster-confirm-btn', '#start-game',
+        '#title-newrun-btn', '#start-game',
         '#armory-btn-embark', '#net-deploy-btn',
         '#global-skip-intro-btn', '#mothership-choice-skip'
     ];

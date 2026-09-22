@@ -32,6 +32,11 @@ export const STEAM_LEADERBOARD_DEFS = Object.freeze({
 });
 
 const MAX_RUN_MS = 6 * 60 * 60 * 1000;
+// v2 (2026-09-15) only added telemetry fields to `stats`; nothing the score
+// recompute reads changed, so both stay accepted -- installed Steam builds
+// keep sending whichever version they shipped with. Bump this together with
+// src/steam/steamEvents.js (server/runPayloadContract.test.js enforces it).
+export const SUPPORTED_RUN_SCHEMA_VERSIONS = Object.freeze([1, 2]);
 const MAX_SCORE_DELTA = 0;
 
 function toInteger(value, fallback = 0) {
@@ -135,7 +140,7 @@ export function validateRunScorePayload(payload = {}) {
         return { ok: false, errors: ['payload_missing'] };
     }
 
-    if (Number(payload.schemaVersion) !== 1) errors.push('unsupported_schema');
+    if (!SUPPORTED_RUN_SCHEMA_VERSIONS.includes(Number(payload.schemaVersion))) errors.push('unsupported_schema');
     if (!String(payload.runId ?? '').startsWith('hb:')) errors.push('invalid_run_id');
     if (!['SCOUT', 'TANK', 'ENGINEER'].includes(payload.classType)) errors.push('invalid_class_type');
     if (!['victory', 'death'].includes(payload.outcome)) errors.push('invalid_outcome');

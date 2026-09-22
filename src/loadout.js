@@ -4,6 +4,7 @@
 
 import { getRecipe } from './fabricator.js';
 import { COMMUNITY_CLASS_MAP } from './data/communitySkins.js';
+import { EQUIPMENT_SCHEMA_VERSION, composeEquipmentModifiers, getEquipmentDefinition, getEquipmentStatus } from './data/equipmentDefinitions.js';
 
 export const STORAGE_KEY_V2 = 'hb_loadout_v2';
 export const STORAGE_KEY_V1 = 'hb_loadout_v1';
@@ -26,16 +27,27 @@ export const CLASS_ARCHETYPES = Object.freeze({
 // merely recolor it. Additional catalog chassis can be added here when their
 // corresponding runtime GLBs land.
 export const CLASS_CHASSIS_SKINS = Object.freeze({
-    scout: ['4113', '4115', '4118', '4200', '4221', '5001', '5003', '5004', ...(COMMUNITY_CLASS_MAP?.scout || [])],
-    tank: ['4114', '4117', '4119', '4207', '4228', '5005', '5007', '5008', ...(COMMUNITY_CLASS_MAP?.tank || [])],
-    engineer: ['4112', '4116', '4214', '4235', '5011', '5012', ...(COMMUNITY_CLASS_MAP?.engineer || [])]
+    // 4200/4207/4214/4228/4235 are static meshes with no skin binding;
+    // 5001 has no GLB. Keep unsupported bodies out of the picker until the
+    // asset audit can prove they animate instead of exposing a T-pose/blank.
+    scout: ['4113', '4115', '4118', '4221', '5003', '5004', ...(COMMUNITY_CLASS_MAP?.scout || [])],
+    tank: ['4114', '4117', '4119', '5005', '5007', '5008', ...(COMMUNITY_CLASS_MAP?.tank || [])],
+    engineer: ['4112', '4116', '5011', '5012', ...(COMMUNITY_CLASS_MAP?.engineer || [])]
 });
+
+export function isChassisSupportedForClass(classId, itemdefid) {
+    if (itemdefid == null) return true;
+    return (CLASS_CHASSIS_SKINS[normalizeClassId(classId)] ?? []).map(String).includes(String(itemdefid));
+}
 
 export const ARCHETYPE_SKINS = Object.freeze({
     talon: ['2200', '4100', '4105', '4201', '4222'],
-    talon_c: ['4101', '4104', '4108', '4110', '5002'],
-    siege_breaker: ['4102', '4106', '4107', '4208', '4229', '5006'],
-    tesla_lock: ['4103', '4109', '4111', '4215', '4236', '5009', '5010']
+    // Achievement weapon rewards 5002/5006/5009/5010 remain registered and
+    // unlockable, but their asset manifest is explicitly `pending`. Do not
+    // offer an emblem-backed tile that silently renders the factory gun.
+    talon_c: ['4101', '4104', '4108', '4110'],
+    siege_breaker: ['4102', '4106', '4107', '4208', '4229'],
+    tesla_lock: ['4103', '4109', '4111', '4215', '4236']
 });
 
 function normalizeClassId(classId) {
@@ -79,8 +91,9 @@ function createDefaultLoadoutState() {
 }
 
 export class LoadoutManager {
-    constructor({ storage = null } = {}) {
+    constructor({ storage = null, attunementTierProvider = null } = {}) {
         this.storage = storage ?? (typeof window !== 'undefined' ? window.localStorage : null);
+        this.attunementTierProvider = attunementTierProvider;
         this.activeClassId = 'scout';
         this.state = this.load();
         this.committedState = JSON.parse(JSON.stringify(this.state));
@@ -361,7 +374,24 @@ export class LoadoutManager {
         return this.state.suit.chassisSkinId;
     }
 
-    getActiveModifiers(classId = this.activeClassId) {
+    isChassisSupportedForClass(classId = this.activeClassId, itemdefid = this.state.suit.chassisSkinId) {
+        return isChassisSupportedForClass(classId, itemdefid);
+    }
+
+    getCurrentAttunementTier() {
+        const supplied = this.attunementTierProvider?.();
+        const live = supplied ?? (typeof window !== 'undefined' ? window.seasonPass?.getCurrentTier?.() : 0);
+        const tier = Number(live);
+        return Number.isFinite(tier) ? Math.max(0, Math.floor(tier)) : Number.POSITIVE_INFINITY;
+    }
+
+    isCharmAttuned(itemdefid, tier = this.getCurrentAttunementTier()) {
+        const definition = getEquipmentDefinition(itemdefid);
+        if (!definition || definition.family !== 'charm') return true;
+        return tier >= (definition.attunementRank ?? Number.POSITIVE_INFINITY);
+    }
+
+    getActiveModifiers(classId = this.activeClassId, mode = 'solo') {
         const mods = {
             cryoDurationMultiplier: 1.0,
             scrapMagnetRadiusBonus: 0.0,
@@ -390,70 +420,38 @@ export class LoadoutManager {
         };
 
         const lo = this.getClassLoadout(classId);
-        const activeMods = [lo.mod1Id, lo.mod2Id].filter(Boolean);
-
-        for (const id of activeMods) {
-            switch (String(id)) {
-                case '4140': // Cryo-Capacitor Overclock
-                    mods.cryoDurationMultiplier += 0.08;
-                    break;
-                case '4141': // Magnetic Scavenger Coil
-                    mods.scrapMagnetRadiusBonus += 0.20;
-                    break;
-                case '4142': // Bio-Hazard Filter Vent
-                    mods.gasDamageReduction += 0.12;
-                    break;
-                case '4143': // Kinetic Impact Bushing
-                    mods.kineticPierceBonus += 1;
-                    break;
-                case '4144': // Thermal Heat Exchanger
-                    mods.shieldRechargeDelayMultiplier -= 0.10;
-                    break;
-                case '4145': // Echo-Location Transceiver
-                    mods.hiddenRoomDetectionRange = 15;
-                    break;
-                case '4146': // Symbiotic Adrenaline Pump
-                    mods.lowHpSpeedBoostActive = true;
-                    break;
-                case '4147': // Zero-Point Flux Overdrive
-                    mods.dashRefundOnMultiKill = true;
-                    break;
-                case '4160': // Ballast Plating (+2 max HP, -15% move speed)
-                    mods.maxHealthBonus += 2;
-                    mods.moveSpeedMultiplier *= 0.85;
-                    break;
-                case '4161': // Scrap Furnace (Destroyed props drop salvage, -10% fire rate)
-                    mods.propsDropSalvage = true;
-                    mods.fireRateMultiplier *= 0.90;
-                    break;
-                case '4162': // Queen's Bane (+25% boss damage, -10% to all else)
-                    mods.bossDamageMultiplier *= 1.25;
-                    mods.nonBossDamageMultiplier *= 0.90;
-                    break;
-                case '4163': // Archivist Lens (Lore drops grant salvage, -1 starting clip)
-                    mods.loreDropsGrantSalvage = true;
-                    mods.clipSizeBonus -= 1;
-                    break;
-                case '4164': // Shard Conduit (+1 relic rarity tier, -10% max O2)
-                    mods.relicRarityTierBonus += 1;
-                    mods.maxOxygenMultiplier *= 0.90;
-                    break;
-                case '4165': // Duplicate Refiner (Duplicate relics become shards, -15% salvage)
-                    mods.duplicateRelicsToShards = true;
-                    mods.salvageValueMultiplier *= 0.85;
-                    break;
-                case '4166': // Pressure Seal (O2 drains 25% slower, -40% healing)
-                    mods.oxygenDrainMultiplier *= 0.75;
-                    mods.healingMultiplier *= 0.60;
-                    break;
-                case '4167': // Deep Anchor (Ring crossings cost no O2, crossings spawn an elite)
-                    mods.ringCrossingFreeO2 = true;
-                    mods.ringCrossingSpawnsElite = true;
-                    break;
-            }
+        const tier = this.getCurrentAttunementTier();
+        const derived = composeEquipmentModifiers([lo.charmId, lo.mod1Id, lo.mod2Id], {
+            mode,
+            isAttuned: (definition) => this.isCharmAttuned(definition.id, tier)
+        });
+        for (const [key, value] of Object.entries(derived)) {
+            if (typeof value === 'boolean') mods[key] = Boolean(mods[key]) || value;
+            else if (key.endsWith('Multiplier')) mods[key] = (mods[key] ?? 1) * value;
+            else if (key.endsWith('Range') || key.endsWith('Interval')) mods[key] = Math.max(mods[key] ?? 0, value);
+            else mods[key] = (mods[key] ?? 0) + value;
         }
-
         return mods;
+    }
+
+    getActiveEquipmentSnapshot(classId = this.activeClassId, mode = 'solo') {
+        const cls = normalizeClassId(classId);
+        const loadout = this.getClassLoadout(cls);
+        const ids = [loadout.charmId, loadout.mod1Id, loadout.mod2Id];
+        const attunementTier = this.getCurrentAttunementTier();
+        return Object.freeze({
+            schemaVersion: EQUIPMENT_SCHEMA_VERSION,
+            classId: cls,
+            mode: String(mode || 'solo'),
+            charmId: loadout.charmId,
+            overclockIds: Object.freeze([loadout.mod1Id, loadout.mod2Id]),
+            attunementTier,
+            statuses: Object.freeze(ids.map((id) => getEquipmentStatus(id, {
+                mode,
+                attuned: this.isCharmAttuned(id, attunementTier)
+            })).filter(Boolean)),
+            modifiers: Object.freeze({ ...this.getActiveModifiers(cls, mode) })
+        });
     }
 
     getEquippedLabel(fabricator, classId = this.activeClassId) {
@@ -512,7 +510,11 @@ export class LoadoutManager {
         // Per-class charms, weapon skins and rig modules.
         for (const cls of ['scout', 'tank', 'engineer']) {
             const lo = this.state.perClass[cls];
-            if (!owned(lo.charmId)) lo.charmId = null;
+            // Charm attunements are an earnable, non-market progression
+            // license. Once its rank is reached, the matching visual may be
+            // equipped locally even without a tradable Steam copy; buying the
+            // cosmetic before that rank never grants its gameplay power.
+            if (!owned(lo.charmId) && !this.isCharmAttuned(lo.charmId)) lo.charmId = null;
             if (!owned(lo.weaponSkinId)) lo.weaponSkinId = null;
             if (!owned(lo.mod1Id)) lo.mod1Id = null;
             if (!owned(lo.mod2Id)) lo.mod2Id = null;

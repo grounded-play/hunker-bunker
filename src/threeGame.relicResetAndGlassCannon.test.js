@@ -45,6 +45,7 @@ describe('Relic Lifecycle & Combat Counterplay (Astra COMBAT-01 / Bugs F3 & F6)'
         fakeGame.runOverclocks.push(glassCannon);
         fakeGame.runRelics.push(lastBreath);
         fakeGame.activeSynergies.push({ id: 'mock' });
+        fakeGame.runShardCount = 7;
 
         expect(fakeGame.runOverclocks).toHaveLength(1);
         expect(fakeGame.runRelics).toHaveLength(1);
@@ -54,7 +55,23 @@ describe('Relic Lifecycle & Combat Counterplay (Astra COMBAT-01 / Bugs F3 & F6)'
         expect(fakeGame.runOverclocks).toEqual([]);
         expect(fakeGame.runRelics).toEqual([]);
         expect(fakeGame.activeSynergies).toEqual([]);
+        expect(fakeGame.runShardCount).toBe(0);
         expect(dispatchedEvents.some((e) => e.type === 'in-run-drops-reset')).toBe(true);
+    });
+
+    it('converts a duplicate run relic into rarity-scaled shards when Duplicate Refiner is active', () => {
+        const lastBreath = SUIT_RELICS.find((r) => r.id === 'last_breath');
+        fakeGame.loadoutMods = { duplicateRelicsToShards: true };
+        fakeGame.runRelics.push(lastBreath);
+
+        expect(fakeGame.equipRunDrop(lastBreath)).toBe(true);
+        expect(fakeGame.runRelics).toEqual([lastBreath]);
+        expect(fakeGame.runShardCount).toBe(3);
+        expect(dispatchedEvents.find((event) => event.type === 'in-run-shards-earned')?.detail).toMatchObject({
+            amount: 3,
+            total: 3,
+            sourceDrop: lastBreath
+        });
     });
 
     it('F3 fix: takeDamage multiplies incoming damage when glass_cannon_core is equipped', () => {

@@ -27,9 +27,8 @@ test.describe('boot and main menu', () => {
     test('NEW RUN -> INITIALIZE starts a run and the HUD appears', async ({ page }) => {
         await bootToOperatorMenu(page);
 
-        // The current new-run flow opens the roster confirmation before
-        // deployment. Use the canonical helper so this smoke test exercises
-        // that real flow instead of trying to click through the modal.
+        // Use the canonical helper so the smoke test traverses Homebase,
+        // Armory, and the final Deployment Console.
         await startRunAndSkipIntro(page);
 
         // The seed label is intentionally debug-only. The HUD root is the
@@ -48,11 +47,11 @@ test.describe('boot and main menu', () => {
 
         await expect(page.locator('#splash')).toBeVisible();
         await expect(page.locator('#menu')).toBeHidden();
-        await expect(page.locator('#roster-modal')).toBeHidden();
 
         await page.locator('#transition-overlay.opening-h').waitFor({ state: 'visible' });
         await expect(page.locator('#splash')).toBeHidden();
         await expect(page.locator('#menu')).toBeVisible();
-        await expect(page.locator('#roster-modal')).toBeVisible();
+        await expect(page.locator('#roster-callsign-input')).toBeVisible();
+        await expect(page.locator('#start-game')).toHaveText('ENTER ARMORY');
     });
 });

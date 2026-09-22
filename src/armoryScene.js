@@ -14,29 +14,10 @@ import { applyWeaponSheen as tintWeapon, disposeWeaponSheen } from './weaponShee
 import { isMaterialFinish, applyWeaponMaterialFinish, disposeWeaponMaterialFinish } from './weaponFinishMaterial.js';
 import { getSelectedSheen } from './weaponSheens.js';
 import { getWeaponScaleForBounds, getWeaponCalibration } from './weaponCalibration.js';
+export { MOD_GLB_MAP } from './operatorEquipmentSockets.js';
 
 import { CHARM_GLB_MAP } from './charmModels.js';
 export { CHARM_GLB_MAP } from './charmModels.js';
-
-export const MOD_GLB_MAP = Object.freeze({
-    '4140': '/3d/runtime/new3ds/mod_cryo_capacitor.glb',
-    '4141': '/3d/runtime/new3ds/mod_magnetic_scavenger.glb',
-    // 4142/4143/4144 — same Hyper3D Rodin generation as 4137/4138 above.
-    '4142': '/3d/runtime/new3ds/mod_bio_hazard_filter.glb',
-    '4143': '/3d/runtime/new3ds/mod_kinetic_impact.glb',
-    '4144': '/3d/runtime/new3ds/mod_thermal_heat_exchanger.glb',
-    '4145': '/3d/runtime/new3ds/mod_echo_location_transceiver.glb',
-    '4146': '/3d/runtime/new3ds/mod_symbiotic_adrenaline_pump.glb',
-    '4147': '/3d/runtime/new3ds/mod_zero_point_flux.glb',
-    '4160': '/3d/runtime/new3ds/mod_ballast_plating.glb',
-    '4161': '/3d/runtime/new3ds/mod_scrap_furnace.glb',
-    '4162': '/3d/runtime/new3ds/mod_queens_bane.glb',
-    '4163': '/3d/runtime/new3ds/mod_archivist_lens.glb',
-    '4164': '/3d/runtime/new3ds/mod_shard_conduit.glb',
-    '4165': '/3d/runtime/new3ds/mod_duplicate_refiner.glb',
-    '4166': '/3d/runtime/new3ds/mod_pressure_seal.glb',
-    '4167': '/3d/runtime/new3ds/mod_deep_anchor.glb'
-});
 
 export const CHASSIS_SKIN_GLB_MAP = CHASSIS_SKIN_MODELS;
 
@@ -103,8 +84,11 @@ export async function createArmoryScene(canvas) {
     // the operator/weapon/bay layout intact rather than moving each piece and
     // re-deriving every prop offset around them.
     const STAGE_PAN_X = 0.62;
-    camera.position.set(0.15 + STAGE_PAN_X, 1.42, 3.75);
-    camera.lookAt(0.1 + STAGE_PAN_X, 1.15, 0);
+    // Leave a full-body safety margin for every class. The stage readout now
+    // lives beneath the weapon instead of across the operator's boots, so the
+    // camera can frame the complete silhouette without UI competing for it.
+    camera.position.set(0.15 + STAGE_PAN_X, 1.42, 4.2);
+    camera.lookAt(0.1 + STAGE_PAN_X, 1.08, 0);
 
     // ── Bunker Lighting ──────────────────────────────────────
     const hemiLight = new THREE.HemisphereLight(0x406080, 0x0a1018, 1.8);
@@ -340,7 +324,11 @@ export async function createArmoryScene(canvas) {
         };
 
         try {
-            const overlay = await createPlayer3dOverlay(config);
+            const overlay = await createPlayer3dOverlay({
+                ...config,
+                requireRigged: true,
+                wearableOverclocks: [currentMod1Mesh, currentMod2Mesh]
+            });
             if (gen !== loadGen) { overlay.dispose(); return; }
             currentOverlay = overlay;
             overlay.root.rotation.y = 0.35; // Angle slightly toward center weapon bench
@@ -355,6 +343,7 @@ export async function createArmoryScene(canvas) {
             applyDecalSprite(currentDecalId);
         } catch (err) {
             console.warn('[armoryScene] Failed loading operator overlay:', err);
+            if (customModel) await loadOperatorModel(classType, null);
         }
     }
 
@@ -408,14 +397,6 @@ export async function createArmoryScene(canvas) {
         charmPhysics.velX = 0;
         charmPhysics.velZ = 0;
     }
-
-    const mod1Socket = new THREE.Group();
-    mod1Socket.position.set(-0.12, 0.08, 0.05);
-    weaponPivot.add(mod1Socket);
-
-    const mod2Socket = new THREE.Group();
-    mod2Socket.position.set(-0.24, 0.08, 0.05);
-    weaponPivot.add(mod2Socket);
 
     let currentCharmMesh = null;
     let charmLoadGen = 0;
@@ -539,44 +520,12 @@ export async function createArmoryScene(canvas) {
 
     async function loadModAsset(slot, modItemdefId) {
         const gen = ++modLoadGen[slot];
-        const socket = slot === 2 ? mod2Socket : mod1Socket;
-        const current = slot === 2 ? currentMod2Mesh : currentMod1Mesh;
-
-        if (!modItemdefId || !MOD_GLB_MAP[String(modItemdefId)]) {
-            if (current) socket.remove(current);
-            if (slot === 2) currentMod2Mesh = null;
-            else currentMod1Mesh = null;
-            return;
-        }
-
-        const url = MOD_GLB_MAP[String(modItemdefId)];
+        if (slot === 2) currentMod2Mesh = modItemdefId || null;
+        else currentMod1Mesh = modItemdefId || null;
         try {
-            const gltf = await loadArmoryGltfCached(gltfLoader, url);
+            await currentOverlay?.setWearableOverclock?.(slot, modItemdefId || null);
             if (gen !== modLoadGen[slot]) return;
-            if (slot === 2 && currentMod2Mesh) mod2Socket.remove(currentMod2Mesh);
-            if (slot === 1 && currentMod1Mesh) mod1Socket.remove(currentMod1Mesh);
-
-            const model = gltf.scene.clone(true);
-            const bbox = new THREE.Box3().setFromObject(model);
-            const maxDim = Math.max(bbox.getSize(new THREE.Vector3()).length(), 0.001);
-            model.scale.setScalar(0.14 / maxDim); // Modular chip scale
-
-            model.traverse((child) => {
-                if (child.isMesh) {
-                    child.castShadow = true;
-                }
-            });
-
-            if (slot === 2) {
-                currentMod2Mesh = model;
-                mod2Socket.add(model);
-            } else {
-                currentMod1Mesh = model;
-                mod1Socket.add(model);
-            }
-        } catch (err) {
-            console.warn('[armoryScene] Failed to load mod asset:', err);
-        }
+        } catch (err) { console.warn('[armoryScene] Failed to mount operator overclock:', err); }
     }
 
     // ── Turntable Mouse / Touch Drag Controls ────────────────

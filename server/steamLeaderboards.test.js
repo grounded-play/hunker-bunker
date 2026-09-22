@@ -7,7 +7,9 @@ import {
     attachSteamLeaderboardRoutes,
     clearLeaderboardCache,
     clearMockLeaderboards,
+    clearPersonaCache,
     getLeaderboardEntries,
+    parseSetLeaderboardScoreResult,
     submitRunToSteamLeaderboards
 } from './steamLeaderboards.js';
 import { initDb, getMockInventory, setMockInventory } from './db.js';
@@ -109,6 +111,7 @@ afterEach(() => {
     globalThis.fetch = ORIGINAL_FETCH;
     clearLeaderboardCache();
     clearMockLeaderboards();
+    clearPersonaCache();
     vi.restoreAllMocks();
 });
 
@@ -379,6 +382,104 @@ describe('getLeaderboardEntries', () => {
         expect(url.searchParams.get('rangestart')).toBe('0');
         expect(url.searchParams.get('rangeend')).toBe('5');
         expect(url.searchParams.get('datarequest')).toBe('RequestGlobal');
+    });
+});
+
+// Response shapes below are Valve's documented partner Web API shapes
+// (ISteamLeaderboards/GetLeaderboardEntries/v1, SetLeaderboardScore/v1,
+// ISteamUser/GetPlayerSummaries/v2) -- not the invented `response.entries.entry`
+// shape the reader originally assumed, which made every live board read empty.
+describe('Valve partner API response shapes', () => {
+    const VALVE_ENTRIES = {
+        leaderboardEntryInformation: {
+            appID: 4957040,
+            leaderboardID: 101,
+            totalLeaderBoardEntryCount: 2,
+            leaderboardEntries: [
+                { steamID: '76561198000000011', score: 1550, rank: 1, ugcid: '-1', detailData: '' },
+                { steamID: '76561198000000012', score: 980, rank: 2, ugcid: '-1', detailData: '' }
+            ]
+        }
+    };
+
+    function routeFetch(routes) {
+        return vi.fn(async (url) => {
+            const href = String(url);
+            const match = Object.entries(routes).find(([fragment]) => href.includes(fragment));
+            if (!match) throw new Error(`unexpected fetch ${href}`);
+            const [, body] = match;
+            return { ok: true, status: 200, text: async () => JSON.stringify(body) };
+        });
+    }
+
+    it('reads leaderboardEntryInformation.leaderboardEntries and resolves persona names', async () => {
+        process.env.HB_STEAM_PUBLISHER_KEY = 'publisher-key';
+        process.env.HB_STEAM_LEADERBOARD_IDS = 'best_run_score:101';
+        globalThis.fetch = routeFetch({
+            '/GetLeaderboardEntries/': VALVE_ENTRIES,
+            '/GetPlayerSummaries/': {
+                response: {
+                    players: [
+                        { steamid: '76561198000000011', personaname: 'Aegis' },
+                        { steamid: '76561198000000012', personaname: 'Striker' }
+                    ]
+                }
+            }
+        });
+
+        const result = await getLeaderboardEntries({ boardName: 'best_run_score', count: 10 });
+
+        expect(result.ok).toBe(true);
+        expect(result.entries).toEqual([
+            expect.objectContaining({ steamId64: '76561198000000011', score: 1550, rank: 1, persona: 'Aegis' }),
+            expect.objectContaining({ steamId64: '76561198000000012', score: 980, rank: 2, persona: 'Striker' })
+        ]);
+        const summaryUrl = new URL(globalThis.fetch.mock.calls.find(([u]) => String(u).includes('GetPlayerSummaries'))[0]);
+        expect(summaryUrl.searchParams.get('steamids')).toBe('76561198000000011,76561198000000012');
+    });
+
+    it('still returns entries when the persona lookup fails', async () => {
+        process.env.HB_STEAM_PUBLISHER_KEY = 'publisher-key';
+        process.env.HB_STEAM_LEADERBOARD_IDS = 'best_run_score:101';
+        globalThis.fetch = vi.fn(async (url) => {
+            if (String(url).includes('GetPlayerSummaries')) throw new Error('network down');
+            return { ok: true, status: 200, text: async () => JSON.stringify(VALVE_ENTRIES) };
+        });
+
+        const result = await getLeaderboardEntries({ boardName: 'best_run_score', count: 10 });
+
+        expect(result.ok).toBe(true);
+        expect(result.entries).toHaveLength(2);
+        expect(result.entries[0].persona).toBe('Agent');
+    });
+
+    it('parses SetLeaderboardScore result codes and score_changed', () => {
+        expect(parseSetLeaderboardScoreResult({ result: { result: 1, score_changed: true, global_rank_new: 4 } }))
+            .toEqual({ ok: true, resultCode: 1, scoreChanged: true, globalRankNew: 4 });
+        expect(parseSetLeaderboardScoreResult({ result: { result: 1, score_changed: false } }))
+            .toMatchObject({ ok: true, scoreChanged: false });
+        expect(parseSetLeaderboardScoreResult({ result: { result: 8 } }))
+            .toMatchObject({ ok: false, resultCode: 8 });
+        // No body-level result at all: fall back to the HTTP status the caller already checked.
+        expect(parseSetLeaderboardScoreResult({})).toMatchObject({ ok: true, resultCode: null, scoreChanged: false });
+    });
+
+    it('fails a submit when Steam answers HTTP 200 with a non-OK result code', async () => {
+        process.env.HB_STEAM_PUBLISHER_KEY = 'publisher-key';
+        process.env.HB_STEAM_LEADERBOARD_IDS = 'best_run_score:101,survival_time_seconds:102,deepest_depth_score:103';
+        globalThis.fetch = vi.fn().mockResolvedValue({
+            ok: true,
+            status: 200,
+            text: async () => JSON.stringify({ result: { result: 8 } })
+        });
+
+        const result = await submitRunToSteamLeaderboards({
+            auth: { steamId64: '76561198000000000' },
+            payload: validPayload()
+        });
+
+        expect(result).toMatchObject({ ok: false, status: 502, reason: 'steam_leaderboard_submit_failed' });
+        expect(result.submitted[0]).toMatchObject({ ok: false, reason: 'steam_leaderboard_result_8' });
     });
 });
 

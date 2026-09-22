@@ -222,6 +222,7 @@ export function createDefaultAchievementState() {
         stats: {
             totalDeaths: 0,
             totalKills: 0,
+            totalDistanceTravelled: 0,
             maxKillsOneRun: 0,
             deepTierReachedAlive: false,
             runCount: 0,
@@ -429,6 +430,7 @@ function updateStatsForEvent(state, name, detail = {}) {
             state.stats.runCount += 1;
             const kills = Math.max(0, Number(detail.snailsKilled ?? detail.kills) || 0);
             state.stats.totalKills += kills;
+            state.stats.totalDistanceTravelled += Math.max(0, Number(detail.distanceTravelled) || 0);
             state.stats.maxKillsOneRun = Math.max(state.stats.maxKillsOneRun, kills);
             state.stats.maxRunMs = Math.max(state.stats.maxRunMs, Math.max(0, Number(detail.runMs) || 0));
             if ((Number(detail.depthTier) || 0) >= 2) state.stats.deepTierReachedAlive = true;

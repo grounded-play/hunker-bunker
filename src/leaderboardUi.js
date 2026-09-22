@@ -1,8 +1,22 @@
 import { t } from './i18n.js';
+import { describeRunSubmitResult } from './steam/runSubmitQueue.js';
 /**
  * Leaderboard UI Frontend Implementation
  * Extracted from main.js for modular UI architecture.
  */
+
+// The board is read after this run's submit settles, so the run just played
+// is in the list; capped so a slow uplink never leaves the panel spinning.
+export const RUN_SUBMIT_WAIT_MS = 5000;
+
+function waitForSubmission(submission, timeoutMs) {
+    if (!submission) return Promise.resolve(null);
+    let timer;
+    return Promise.race([
+        Promise.resolve(submission).catch(() => null),
+        new Promise((resolve) => { timer = setTimeout(() => resolve(null), timeoutMs); })
+    ]).finally(() => clearTimeout(timer));
+}
 
 export function formatLeaderboardScore(board, score) {
     if (board === 'survival_time_seconds') {
@@ -79,15 +93,21 @@ export function setGameOverLeaderboardState(statusText, entries = [], { board = 
     }
 }
 
-export async function renderGameOverLeaderboard(payload = {}) {
+export async function renderGameOverLeaderboard(payload = {}, { submission = null, submitWaitMs = RUN_SUBMIT_WAIT_MS } = {}) {
     const board = getGameOverLeaderboardBoard(payload);
     const label = getGameOverLeaderboardLabel(board);
-    setGameOverLeaderboardState(`RETRIEVING ${label}...`, [], { board, type: 'retrieving' });
 
     if (!window.electronAPI?.getSteamLeaderboard) {
         setGameOverLeaderboardState('LEADERBOARD OFFLINE - SCORE BANKED LOCALLY', [], { board, type: 'offline' });
         return;
     }
+
+    if (submission) setGameOverLeaderboardState(`UPLINKING SCORE TO ${label}...`, [], { board, type: 'retrieving' });
+    const submitResult = await waitForSubmission(submission, submitWaitMs);
+    const submitStatus = submitResult ? describeRunSubmitResult(submitResult) : null;
+    setGameOverLeaderboardState(`RETRIEVING ${label}...`, [], { board, type: 'retrieving' });
+
+    const offlineText = submitStatus && !submitResult.ok ? submitStatus.text : 'LEADERBOARD OFFLINE';
 
     try {
         const [result, identity] = await Promise.all([
@@ -96,13 +116,14 @@ export async function renderGameOverLeaderboard(payload = {}) {
         ]);
 
         if (!result?.ok) {
-            setGameOverLeaderboardState('LEADERBOARD OFFLINE - SCORE BANKED LOCALLY', [], { board, type: 'offline' });
+            setGameOverLeaderboardState(offlineText, [], { board, type: 'offline' });
             return;
         }
 
         const selfSteamId = identity?.steamId64 ?? (result.mock ? '76561198000000000' : null);
-        const status = result.mock ? `${label} - DEV MOCK` : `${label} - GLOBAL TOP 10`;
-        const type = result.mock ? 'mock' : 'live';
+        const baseStatus = result.mock ? `${label} - DEV MOCK` : `${label} - GLOBAL TOP 10`;
+        const status = submitStatus ? `${baseStatus} // ${submitStatus.text}` : baseStatus;
+        const type = result.mock ? 'mock' : (submitStatus && !submitResult.ok ? 'offline' : 'live');
 
         let entries = result.entries ?? [];
 
@@ -126,6 +147,6 @@ export async function renderGameOverLeaderboard(payload = {}) {
 
         setGameOverLeaderboardState(status, entries, { board, selfSteamId, type });
     } catch {
-        setGameOverLeaderboardState('LEADERBOARD OFFLINE - SCORE BANKED LOCALLY', [], { board, type: 'offline' });
+        setGameOverLeaderboardState(offlineText, [], { board, type: 'offline' });
     }
 }

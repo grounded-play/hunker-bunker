@@ -100,6 +100,7 @@
       "dossier": "◈ DOSSIER",
       "achievements": "ERFOLGE",
       "initialize": "INITIALISIEREN",
+      "enter_armory": "WAFFENKAMMER BETRETEN",
       "vault_tooltip": "Klicken, um das Steam-Tresor-Kosmetikmenü zu öffnen",
       "status_logs": "{found} / {total} LOGS",
       "status_intel": "{found} / {total} INTEL",
@@ -254,7 +255,7 @@
       "f_voicebank": "ALT-FUNK-STIMMBANK",
       "btn_return": "← ZURÜCK ZUM HAUPTMENÜ",
       "btn_vault": "STEAM-TRESOR & FERTIGUNG",
-      "btn_embark": "ZUM BUNKER AUFBRECHEN >>",
+      "btn_embark": "WEITER ZUM EINSATZ >>",
       "picker_title": "◆ AUSWÄHLEN",
       "aria_settings": "Einstellungen öffnen",
       "equipped": "AUSGERÜSTET",
@@ -265,10 +266,13 @@
       "aria_label_pre_mission_armory": "Waffenkammer vor der Mission"
     },
     "roster": {
+      "registration_title": "OPERATORREGISTRIERUNG",
+      "telemetry_title": "KARRIERE-TELEMETRIE",
       "deepest_sector": "TIEFSTER SEKTOR:",
       "total_distance": "GESAMTSTRECKE:",
       "hostiles": "FEINDE:",
       "black_box": "BLACKBOX:",
+      "black_boxes_recovered": "BLACKBOXEN:",
       "patch": "AUFNÄHER:",
       "decal": "ABZEICHEN:",
       "finish": "LACKIERUNG:",
@@ -288,6 +292,7 @@
       "id_label": "ID:",
       "stat_sector": "SEKTOR {depth}",
       "stat_hostiles": "{count} FEINDE",
+      "stat_blackboxes_recovered": "{count} GEBORGEN",
       "blackbox_recoverable": "BERGBAR (SEKTOR {depth})",
       "blackbox_none": "KEINE",
       "equipped_none": "KEINE",
@@ -1394,6 +1399,29 @@
     "snail": {
       "alt_player_chassis": "Spieler-Chassis",
       "alt_snail_combatant": "Schnecken-Kämpfer"
+    },
+    "daily_ops": {
+      "tag": "TÄGLICH",
+      "card_meta": "1 AGENT // EIN GEWERTETER VERSUCH",
+      "perk_shared_sector": "GEMEINSAMER TAGESSEKTOR",
+      "perk_grade_targets": "NOTENZIELE",
+      "perk_leaderboard": "TAGES-BESTENLISTE",
+      "goals_title": "HEUTIGE TAGESZIELE",
+      "resets_midnight": "RESET UM MITTERNACHT",
+      "col_goal": "ZIEL",
+      "col_requirement": "ANFORDERUNG",
+      "description": "TAGESEINSATZ: Alle Agenten landen im heutigen Sektor. Du hast einen gewerteten Versuch; deine Endnote wird in die Tageseinsatz-Bestenliste eingetragen. Reset um Mitternacht.",
+      "earned": "ERREICHT",
+      "missed": "VERFEHLT",
+      "target": "ZIEL",
+      "goal_attempt": "HEUTIGEN EINSATZ ABSCHLIESSEN",
+      "goal_attempt_req": "Einen Tageseinsatz beenden (Sieg oder Tod)",
+      "goal_grade": "NOTE {grade}",
+      "goal_grade_req": "{score}+ Punkte erzielen",
+      "goal_leaderboard": "IN BESTENLISTE EINTRAGEN",
+      "goal_leaderboard_req": "Deine Punkte kommen auf die heutige Tafel",
+      "deploy": "TAGESEINSATZ STARTEN",
+      "deploy_done": "MORGEN WIEDER"
     }
   },
   "narrative": {
