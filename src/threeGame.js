@@ -270,6 +270,7 @@ import {
     STORY_DEADLINES,
     beginExpedition,
     beginSleep,
+    canRestNow,
     completeRest,
     createDayState,
     deadlinesClosingTonight,
@@ -439,7 +440,14 @@ const RADAR_DANGER_COLOR = 0xff3344;
 const RADAR_HOLE_SCAN_PADDING = 2.25;
 const FOUNDRY_DISCOVERY_MIN_DISTANCE = 38;
 const FOUNDRY_DISCOVERY_MAX_DISTANCE = 58;
-const MENU_SHOWROOM_FLOOR_SIZE = 28;
+// Dawn. Waking always lands here so a new campaign day reads as a new morning
+// rather than resuming wherever the short visual sky loop happened to be.
+const MORNING_TIME_OF_DAY = 0.26;
+const MENU_SHOWROOM_FLOOR_SIZE = 160;
+// World units per major grid cell. The floor snaps to this when it follows the
+// operative, so the grid scrolls underfoot instead of sliding with them.
+const MENU_GRID_CELL_WORLD = 1.5;
+const MENU_RETICLE_SIZE = 7.5;
 const MENU_SHOWROOM_FLOOR_OFFSET_X = 0;
 const MENU_SHOWROOM_FLOOR_OFFSET_Z = 0;
 // The crash site is an authored landmark inside the much larger procedural
@@ -3665,8 +3673,13 @@ export class ThreeGame {
         );
     }
 
+    // Seamless tiling grid. One canvas tile covers MENU_GRID_CELL_WORLD world
+    // units; the plane repeats it, so the deck reads as an even grid at any
+    // panel aspect. Deliberately holds no rings or radial fade: anything
+    // centre-specific has to live on the reticle decal below, or it repeats
+    // once per cell and reads as noise.
     createMenuGridTexture() {
-        const size = 512;
+        const size = 256;
         const canvas = document.createElement('canvas');
         canvas.width = size;
         canvas.height = size;
@@ -3675,66 +3688,88 @@ export class ThreeGame {
         ctx.fillStyle = '#080a0d';
         ctx.fillRect(0, 0, size, size);
 
-        const drawGrid = (step, color, width) => {
-            ctx.strokeStyle = color;
-            ctx.lineWidth = width;
-            ctx.beginPath();
-            for (let x = 0; x <= size; x += step) {
-                ctx.moveTo(x + 0.5, 0);
-                ctx.lineTo(x + 0.5, size);
-            }
-            for (let y = 0; y <= size; y += step) {
-                ctx.moveTo(0, y + 0.5);
-                ctx.lineTo(size, y + 0.5);
-            }
-            ctx.stroke();
-        };
-
-        drawGrid(16, 'rgba(255, 255, 255, 0.05)', 1);
-        drawGrid(64, 'rgba(255, 255, 255, 0.16)', 1.5);
-        drawGrid(128, 'rgba(255, 255, 255, 0.32)', 2);
-
-        // Crosshairs at 64px grid intersections
-        ctx.strokeStyle = 'rgba(255, 255, 255, 0.55)';
-        ctx.lineWidth = 1.5;
-        const crossLen = 6;
-        for (let x = 64; x < size; x += 64) {
-            for (let y = 64; y < size; y += 64) {
-                ctx.beginPath();
-                ctx.moveTo(x - crossLen, y + 0.5);
-                ctx.lineTo(x + crossLen, y + 0.5);
-                ctx.moveTo(x + 0.5, y - crossLen);
-                ctx.lineTo(x + 0.5, y + crossLen);
-                ctx.stroke();
-            }
+        // Fine subdivisions, drawn inside the tile so they never land on the
+        // wrap seam.
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.17)';
+        for (let i = 1; i < 4; i++) {
+            const offset = Math.round((size / 4) * i);
+            ctx.fillRect(offset, 0, 1, size);
+            ctx.fillRect(0, offset, size, 1);
         }
 
-        // Concentric tactical range rings
+        // Major cell borders: drawn as a filled band starting at 0 so the tile
+        // to the left/above completes the line without a double-width seam.
+        const majorWidth = 2;
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.52)';
+        ctx.fillRect(0, 0, majorWidth, size);
+        ctx.fillRect(0, 0, size, majorWidth);
+
+        // Corner tick at every major intersection.
+        const tick = 10;
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.85)';
+        ctx.fillRect(0, 0, tick, majorWidth);
+        ctx.fillRect(0, 0, majorWidth, tick);
+        ctx.fillRect(size - tick, 0, tick, majorWidth);
+        ctx.fillRect(0, size - tick, majorWidth, tick);
+
+        const texture = new THREE.CanvasTexture(canvas);
+        texture.wrapS = THREE.RepeatWrapping;
+        texture.wrapT = THREE.RepeatWrapping;
+        texture.repeat.set(
+            MENU_SHOWROOM_FLOOR_SIZE / MENU_GRID_CELL_WORLD,
+            MENU_SHOWROOM_FLOOR_SIZE / MENU_GRID_CELL_WORLD
+        );
+        texture.colorSpace = THREE.SRGBColorSpace;
+        texture.anisotropy = Math.min(this.maxTextureAnisotropy ?? 1, 8);
+        return texture;
+    }
+
+    // Range rings and crosshair, on their own transparent decal so they can sit
+    // under the operative wherever the patrol takes them. This is the part the
+    // old single-texture floor could not do: its rings were pinned to the spawn
+    // tile and spent most of the patrol off-screen.
+    createMenuReticleTexture() {
+        const size = 512;
+        const canvas = document.createElement('canvas');
+        canvas.width = size;
+        canvas.height = size;
+        const ctx = canvas.getContext('2d');
         const center = size / 2;
-        const rings = [48, 96, 160, 220];
-        for (let i = 0; i < rings.length; i++) {
-            const r = rings[i];
-            ctx.strokeStyle = i === rings.length - 1 ? 'rgba(255, 255, 255, 0.45)' : 'rgba(255, 255, 255, 0.15)';
-            ctx.lineWidth = i === rings.length - 1 ? 2 : 1;
+
+        const rings = [88, 154, 214];
+        rings.forEach((radius, index) => {
+            ctx.strokeStyle = index === rings.length - 1
+                ? 'rgba(255, 255, 255, 0.55)'
+                : 'rgba(255, 255, 255, 0.30)';
+            ctx.lineWidth = index === rings.length - 1 ? 3 : 2;
             ctx.beginPath();
-            ctx.arc(center, center, r, 0, Math.PI * 2);
+            ctx.arc(center, center, radius, 0, Math.PI * 2);
+            ctx.stroke();
+        });
+
+        // Crosshair with a gap at the middle so the operative is never covered.
+        const gap = 34;
+        const reach = 232;
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(center - reach, center); ctx.lineTo(center - gap, center);
+        ctx.moveTo(center + gap, center);   ctx.lineTo(center + reach, center);
+        ctx.moveTo(center, center - reach); ctx.lineTo(center, center - gap);
+        ctx.moveTo(center, center + gap);   ctx.lineTo(center, center + reach);
+        ctx.stroke();
+
+        // Bearing ticks on the outer ring.
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.65)';
+        ctx.lineWidth = 3;
+        for (let i = 0; i < 8; i++) {
+            const angle = (Math.PI / 4) * i + Math.PI / 8;
+            const outer = rings[rings.length - 1];
+            ctx.beginPath();
+            ctx.moveTo(center + Math.cos(angle) * (outer - 12), center + Math.sin(angle) * (outer - 12));
+            ctx.lineTo(center + Math.cos(angle) * (outer + 8), center + Math.sin(angle) * (outer + 8));
             ctx.stroke();
         }
-
-        // Radial fade to deck edge
-        const grad = ctx.createRadialGradient(center, center, 140, center, center, 256);
-        grad.addColorStop(0, 'rgba(8, 10, 13, 0)');
-        grad.addColorStop(0.75, 'rgba(8, 10, 13, 0.55)');
-        grad.addColorStop(1, 'rgba(8, 10, 13, 1)');
-        ctx.fillStyle = grad;
-        ctx.fillRect(0, 0, size, size);
-
-        // Outer rim ring
-        ctx.strokeStyle = 'rgba(255, 255, 255, 0.7)';
-        ctx.lineWidth = 2.5;
-        ctx.beginPath();
-        ctx.arc(center, center, 248, 0, Math.PI * 2);
-        ctx.stroke();
 
         const texture = new THREE.CanvasTexture(canvas);
         texture.wrapS = THREE.ClampToEdgeWrapping;
@@ -3772,6 +3807,24 @@ export class ThreeGame {
         this.menuShowroomFloor.receiveShadow = true;
         this.menuShowroomFloor.visible = this.performanceProfile === 'menu';
         this.scene.add(this.menuShowroomFloor);
+
+        this.menuReticleTexture = this.createMenuReticleTexture();
+        this.menuShowroomReticle = new THREE.Mesh(
+            new THREE.PlaneGeometry(MENU_RETICLE_SIZE, MENU_RETICLE_SIZE),
+            new THREE.MeshBasicMaterial({
+                map: this.menuReticleTexture,
+                color: this.targetMenuGridColor.clone(),
+                transparent: true,
+                opacity: 0.85,
+                depthWrite: false,
+                depthTest: true
+            })
+        );
+        this.menuShowroomReticle.rotation.x = -Math.PI / 2;
+        this.menuShowroomReticle.renderOrder = 1;
+        this.menuShowroomReticle.visible = this.performanceProfile === 'menu';
+        this.scene.add(this.menuShowroomReticle);
+        this.positionMenuShowroomFloor();
 
         this.chunkGroups.visible = this.performanceProfile === 'gameplay';
         this.scene.add(this.chunkGroups);
@@ -8137,14 +8190,24 @@ export class ThreeGame {
         }
     }
 
+    // Follows the operative, not the spawn tile. The showcase patrol walks them
+    // several cells away, and a spawn-pinned floor left them standing past its
+    // edge with the grid off-screen. Snapping to whole cells keeps the repeat
+    // phase fixed, so the grid scrolls underfoot instead of sliding along.
     positionMenuShowroomFloor() {
         if (!this.menuShowroomFloor) return;
         const spawn = this.getSpawnTile();
+        const anchorX = this.player?.position?.x ?? spawn.x;
+        const anchorZ = this.player?.position?.z ?? spawn.y;
+        const snap = (value) => Math.round(value / MENU_GRID_CELL_WORLD) * MENU_GRID_CELL_WORLD;
         this.menuShowroomFloor.position.set(
-            spawn.x + MENU_SHOWROOM_FLOOR_OFFSET_X,
+            snap(anchorX) + MENU_SHOWROOM_FLOOR_OFFSET_X,
             -0.005,
-            spawn.y + MENU_SHOWROOM_FLOOR_OFFSET_Z
+            snap(anchorZ) + MENU_SHOWROOM_FLOOR_OFFSET_Z
         );
+        if (this.menuShowroomReticle) {
+            this.menuShowroomReticle.position.set(anchorX, -0.004, anchorZ);
+        }
     }
 
     _flushDeferredAtlasProcessors() {
@@ -8267,6 +8330,9 @@ export class ThreeGame {
         }
         if (this.menuShowroomFloor) {
             this.menuShowroomFloor.visible = nextProfile === 'menu';
+        }
+        if (this.menuShowroomReticle) {
+            this.menuShowroomReticle.visible = nextProfile === 'menu';
         }
         if (nextProfile === 'menu' && this.darknessOverlay) {
             this.darknessOverlay.style.opacity = '0';
@@ -8681,10 +8747,20 @@ export class ThreeGame {
         if (this.performanceProfile === 'menu') {
             if (this.darknessOverlay) this.darknessOverlay.style.opacity = '0';
             this.updateMenuShowcase(delta);
-            if (this.menuShowroomFloor?.material?.color && this.targetMenuGridColor) {
-                this.menuShowroomFloor.material.color.lerp(this.targetMenuGridColor, delta * 5);
+            if (this.menuShowroomReticle && !this.menuShowroomReticle.visible) {
+                this.menuShowroomReticle.visible = true;
+            }
+            if (this.targetMenuGridColor) {
+                if (this.menuShowroomFloor?.material?.color) {
+                    this.menuShowroomFloor.material.color.lerp(this.targetMenuGridColor, delta * 5);
+                }
+                if (this.menuShowroomReticle?.material?.color) {
+                    this.menuShowroomReticle.material.color.lerp(this.targetMenuGridColor, delta * 5);
+                }
             }
             this.updatePlayer(delta);
+            // After the patrol moves them: keep the deck under the operative.
+            this.positionMenuShowroomFloor?.();
             this.updateWeaponState(delta);
             this.updateCamera(delta);
             this.updateTransientEffects(delta, now);
@@ -15929,6 +16005,40 @@ export class ThreeGame {
         return normalizeDayState(this.dayState).expired.includes(id);
     }
 
+    /**
+     * Can the player sleep at this site? One rule for every bed: camp bedroll,
+     * bunker cot, outpost pod. The site-specific part is only "is this a safe
+     * space" -- the campaign-state part belongs to dayCycle.canRestNow().
+     */
+    canRestAt(_site, { status = 'alive', safeSpace = true } = {}) {
+        return canRestNow(this.dayState, {
+            safeSpace,
+            siteStatus: status,
+            hasActiveQuest: Boolean(this._activeCampQuest)
+            // hostileNearby stays false here: a camp interior is already a
+            // guarded safe zone. canRestNow supports the flag for beds placed
+            // somewhere that is not (an outpost pod out in the open).
+        });
+    }
+
+    /**
+     * Sleeping has to move the sky, or the day counter and the world disagree.
+     * timeOfDay is a short visual loop (dayCycleSeconds) that otherwise runs
+     * free of dayState.day; waking pins it to dawn so a new day looks like one.
+     */
+    setTimeOfDayToMorning() {
+        this.timeOfDay = MORNING_TIME_OF_DAY;
+        // Recompute the sky and the day/night lighting immediately at delta 0,
+        // so the morning is already on screen when the rest overlay lifts.
+        this.updateSky?.(0);
+        this.updateDayNightCycle?.(0);
+        if (typeof window !== 'undefined' && typeof CustomEvent === 'function') {
+            window.dispatchEvent(new CustomEvent('day-phase-changed', {
+                detail: { timeOfDay: this.timeOfDay, day: this.dayState?.day ?? 1 }
+            }));
+        }
+    }
+
     beginCampRest(camp, { confirmed = false } = {}) {
         const closing = deadlinesClosingTonight(this.dayState);
         if (!confirmed && closing.length > 0) {
@@ -15953,6 +16063,7 @@ export class ThreeGame {
         if (!rested.advanced) return false;
         this.dayState = rested.state;
         this.persistDayCycleState();
+        this.setTimeOfDayToMorning?.();
         // The Foundry interior is the first authored between-day tableau. Its
         // existing pocket-plane isolation pauses surface combat while the
         // player shops, and exiting later returns them to this exact camp.
@@ -16211,16 +16322,17 @@ export class ThreeGame {
                     return { camp, action: 'active-verb', verb, gate, label: `${verb.label}${suffix}` };
                 }
             }
-            // Rest is deliberately the final dormant-camp verb: urgent camp
-            // story and progression cannot be skipped accidentally, but a
-            // settled camp always becomes the safe between-expedition space.
-            if (phase === 'dormant' && status === 'alive'
-                && !this._activeCampQuest
-                && this.dayState?.phase === REST_PHASES.EXPEDITION) {
+            // Rest stays the last verb offered here, so urgent camp story is
+            // never skipped by accident -- but whether rest is possible at all
+            // is dayCycle's canRestNow(), the same rule every other bed asks.
+            // It used to be an inline gate that additionally required an Act 2
+            // `dormant` camp, which is why this verb almost never appeared.
+            const restCheck = this.canRestAt(camp, { status });
+            if (restCheck.allowed) {
                 return {
                     camp,
                     action: 'rest',
-                    label: `SLEEP UNTIL DAY ${(this.dayState?.day ?? 1) + 1}`
+                    label: `SLEEP UNTIL DAY ${restCheck.nextDay}`
                 };
             }
             if (phase === 'camps_help' && !camp.aided) return { camp, action: 'aid', label: 'AID THE CAMP' };
@@ -34542,6 +34654,9 @@ export class ThreeGame {
         this.menuShowroomFloor?.geometry?.dispose?.();
         this.menuShowroomFloor?.material?.dispose?.();
         this.menuGridTexture?.dispose?.();
+        this.menuShowroomReticle?.geometry?.dispose?.();
+        this.menuShowroomReticle?.material?.dispose?.();
+        this.menuReticleTexture?.dispose?.();
         Object.values(this.scatterMaterials ?? {}).forEach((material) => material.dispose?.());
         Object.values(this.scatterPlaneMaterials ?? {}).forEach((material) => material.dispose?.());
         Object.values(this.scatterTextures ?? {}).forEach((texture) => texture.dispose?.());

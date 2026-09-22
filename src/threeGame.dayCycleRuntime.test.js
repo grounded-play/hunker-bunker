@@ -103,3 +103,46 @@ describe('ThreeGame day-cycle runtime bridge', () => {
         expect(state.restsTaken).toBe(5);
     });
 });
+
+describe('sleeping moves the sky, and one rule governs every bed', () => {
+    beforeEach(() => installBrowserStubs());
+
+    // The two clocks used to be unrelated: timeOfDay is a short visual loop and
+    // dayState.day is the campaign day, so a night's sleep left the sky
+    // wherever it happened to be.
+    it('pins the sky to morning when the day advances', () => {
+        const game = {
+            dayState: createDayState(),
+            timeOfDay: 0.87, // deep night when the player bedded down
+            setInputEnabled: vi.fn(),
+            updateSky: vi.fn(),
+            updateDayNightCycle: vi.fn(),
+            persistDayCycleState: ThreeGame.prototype.persistDayCycleState,
+            setTimeOfDayToMorning: ThreeGame.prototype.setTimeOfDayToMorning
+        };
+
+        ThreeGame.prototype.beginCampRest.call(game, { id: 'camp_tallow', label: 'TALLOW' });
+
+        expect(game.dayState.day).toBe(2);
+        expect(game.timeOfDay).toBeGreaterThan(0.15);
+        expect(game.timeOfDay).toBeLessThan(0.45);
+        // Recomputed at once, so the morning is on screen as the overlay lifts.
+        expect(game.updateSky).toHaveBeenCalled();
+        expect(game.updateDayNightCycle).toHaveBeenCalled();
+    });
+
+    it('asks dayCycle for permission rather than an inline Act 2 gate', () => {
+        const game = { dayState: createDayState(), _activeCampQuest: null };
+        const allowed = ThreeGame.prototype.canRestAt.call(game, { id: 'camp_vesper' }, { status: 'alive' });
+        expect(allowed.allowed).toBe(true);
+        expect(allowed.nextDay).toBe(2);
+
+        // A live contract at the site is the one story reason rest is withheld.
+        const busy = { dayState: createDayState(), _activeCampQuest: { id: 'quest' } };
+        expect(ThreeGame.prototype.canRestAt.call(busy, { id: 'camp_vesper' }, { status: 'alive' }).allowed).toBe(false);
+
+        // A dead or robbed site is not a bed.
+        const robbed = { dayState: createDayState(), _activeCampQuest: null };
+        expect(ThreeGame.prototype.canRestAt.call(robbed, { id: 'camp_vesper' }, { status: 'robbed' }).allowed).toBe(false);
+    });
+});
