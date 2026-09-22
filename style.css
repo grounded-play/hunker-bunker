@@ -22683,6 +22683,59 @@ body.contrast-max .hud-panel {
   flex: 0 1 auto;
 }
 
+/* The same plate art as the #menu background, drawn again ON TOP of the
+   console with the bays cropped out, so the bunker structure reads as being in
+   front of the UI instead of only behind it. The holes are punched with mask
+   layers rather than a clip-path polygon because the window geometry is driven
+   by the --briefing-content-* and --advance-* custom properties, which are
+   already the single source of truth for where the bays sit.
+
+   Owns no hit testing: the ENTER ARMORY button and every panel underneath stay
+   fully clickable. */
+#menu .homebase-plate-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 8990;
+  pointer-events: none;
+  background: url('/menu_bg_v3.webp') center / 100% 100% no-repeat;
+  /* How far the plate laps over the edge of each bay. Without this the window
+     meets the panel edge exactly and the overlay is invisible -- the overlap is
+     what makes the structure read as being in FRONT of the console. */
+  --plate-lap: calc(var(--vu) * 1.25);
+  /* CSS mask layers are TOP-first, and each layer's composite operator combines
+     it with the accumulated result of the layers BELOW it. So the cropped-out
+     windows come first and the full-cover plate last: window XOR window XOR
+     plate leaves the plate with holes where the bays are. */
+  -webkit-mask-image:
+    linear-gradient(#000 0 0),
+    linear-gradient(#000 0 0),
+    linear-gradient(#000 0 0);
+  mask-image:
+    linear-gradient(#000 0 0),
+    linear-gradient(#000 0 0),
+    linear-gradient(#000 0 0);
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-position:
+    calc(var(--briefing-content-left) + var(--plate-lap)) calc(var(--briefing-content-top) + var(--plate-lap)),
+    calc(100% - var(--advance-right) + var(--vu) * 2.3 + var(--plate-lap)) calc(100% - var(--advance-bottom) + var(--vu) * 2.3 + var(--plate-lap)),
+    0 0;
+  mask-position:
+    calc(var(--briefing-content-left) + var(--plate-lap)) calc(var(--briefing-content-top) + var(--plate-lap)),
+    calc(100% - var(--advance-right) + var(--vu) * 2.3 + var(--plate-lap)) calc(100% - var(--advance-bottom) + var(--vu) * 2.3 + var(--plate-lap)),
+    0 0;
+  -webkit-mask-size:
+    calc(100% - var(--briefing-content-left) - var(--briefing-content-right) - var(--plate-lap) * 2) calc(100% - var(--briefing-content-top) - var(--briefing-content-bottom) - var(--plate-lap) * 2),
+    calc(var(--advance-width) + var(--vu) * 4.6 - var(--plate-lap) * 2) calc(var(--advance-height) + var(--vu) * 4.6 - var(--plate-lap) * 2),
+    100% 100%;
+  mask-size:
+    calc(100% - var(--briefing-content-left) - var(--briefing-content-right) - var(--plate-lap) * 2) calc(100% - var(--briefing-content-top) - var(--briefing-content-bottom) - var(--plate-lap) * 2),
+    calc(var(--advance-width) + var(--vu) * 4.6 - var(--plate-lap) * 2) calc(var(--advance-height) + var(--vu) * 4.6 - var(--plate-lap) * 2),
+    100% 100%;
+  -webkit-mask-composite: xor, xor, source-over;
+  mask-composite: exclude, exclude, add;
+}
+
 /* Transparent presentation layer over menu_bg_v3.webp. It deliberately owns
    no hit testing: the bevel, corner crops, bus lines, and button cradle can
    overlap controls without ever changing pointer/controller behavior. */
