@@ -1,6 +1,6 @@
 # Equipment Effects and Visual Socket Plan
 
-Status: proposed, not implemented · Date: 2026-09-21 · Owner: gameplay + character art
+Status: implementation complete; pending authored weapon GLBs tracked separately · Updated: 2026-09-22 · Owner: gameplay + character art
 
 ## Outcome
 
@@ -12,6 +12,8 @@ Make pre-run equipment readable and mechanically real in every supported run:
 - Effects and visuals work for Scout, Tank, and Engineer in Solo, Daily Ops, Co-op, and PvP, with explicit PvP normalization where needed.
 
 ## Current-state findings
+
+The findings below are the pre-implementation baseline retained for traceability.
 
 1. `LoadoutManager` already stores `charmId`, `mod1Id`, and `mod2Id` per class and resolves 16 overclock definitions through `getActiveModifiers()`.
 2. In `armoryScene.js`, `charmSocket`, `mod1Socket`, and `mod2Socket` are all children of `weaponPivot`. This is why Ballast Plating appears on the gun.
@@ -183,3 +185,18 @@ PvP uses one of two explicit policies per definition: `normalized` (fixed compet
 - Multiplayer: authoritative ID validation, late join, reconnect, remote rendering, PvP normalization.
 - Build gates: `npm test`, `npm run i18n:audit`, `npm run steam:claims:check`, `npm run build`, targeted Playwright visual suite.
 
+## 2026-09-22 implementation record
+
+- Added one equipment registry and immutable per-class snapshot for all charms and both suit slots.
+- Kept charms on calibrated weapon sockets; moved overclocks to bone-following operator sockets shared by Armory and gameplay.
+- Wired every declared 4130–4147 and 4160–4167 modifier to a runtime consumer, including lore salvage, relic-tier bias, duplicate run shards, and Deep Anchor's crossing elite.
+- Added a three-card Armory deployment-status readout showing mount, item, effect, and standby state; the deployment roster also carries the resolved effect labels.
+- Hid six chassis that cannot satisfy the animation contract and added a GLB skin/joint audit plus live idle fallback. See `armory-character-rig-readiness-2026-09-22.md`.
+- Verified Ballast Plating on Tank's chest, factory Scout/Tank/Engineer idle presentation, the no-scroll 1280×800 Armory layout, focused tests, asset audit, and production build.
+
+The remaining policy/network work was completed in the follow-up pass:
+
+- Charm effects now require an earnable account-rank attunement. Reaching that rank also grants a local non-market equipment license, so every player can use the effect and matching visual without purchasing a tradable copy; market ownership before the rank is cosmetic-only.
+- PvP explicitly disables all charm and suit-overclock power while retaining visual identity and status copy. Solo, Daily Ops, and Co-op retain the resolved PvE effects.
+- Schema-versioned archetype, weapon skin, charm, chassis, polish, and two overclock IDs are sanitized by the relay, preserved in the crash plan, validated again by the client, and rebuilt on remote 3D operators. Stale or incompatible IDs fail closed to factory visuals.
+- Pending achievement weapons `5002`, `5006`, `5009`, and `5010` are hidden instead of substituting a factory model. The procedural chrome finish `2200` correctly reuses its base weapon and no longer counts as a missing model.

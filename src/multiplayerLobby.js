@@ -147,19 +147,25 @@ export function resolveRelayUrl() {
 // main.js already exposes for this exact purpose (armory UI, HUD). null
 // outside a real game session (no window.loadout yet, e.g. very early boot)
 // rather than a placeholder value that would look like a real loadout.
-export function getLocalLoadoutSummary(opClass) {
+export function getLocalLoadoutSummary(opClass, mode = 'deployment') {
     if (typeof window === 'undefined' || !window.loadout) return null;
     const weapon = window.loadout.getEquippedLabel?.(window.fabricator, opClass) ?? 'UNARMED';
-    const equipment = window.loadout.getActiveEquipmentSnapshot?.(opClass, 'deployment') ?? null;
+    const equipment = window.loadout.getActiveEquipmentSnapshot?.(opClass, mode) ?? null;
+    const classLoadout = window.loadout.getClassLoadout?.(opClass) ?? {};
     const hasCharm = Boolean(equipment?.charmId ?? window.loadout.getEquippedCharmId?.(opClass));
     const chassisSkinId = window.loadout.getEquippedChassisSkinId?.() ?? null;
     const polishColor = getSelectedPolish(window.localStorage).color;
     const summary = {
         weapon,
         hasCharm,
+        schemaVersion: equipment?.schemaVersion ?? 0,
+        weaponArchetypeId: classLoadout.archetypeId ?? null,
+        weaponSkinId: classLoadout.weaponSkinId ?? null,
         charmId: equipment?.charmId ?? null,
         overclockIds: equipment?.overclockIds ?? [],
-        effectLabels: equipment?.statuses?.map((status) => `${status.name}: ${status.summary}`) ?? []
+        effectLabels: equipment?.statuses?.map((status) => (
+            `${status.name}: ${status.active ? status.summary : status.modeStatus}`
+        )) ?? []
     };
     if (chassisSkinId) summary.chassisSkinId = chassisSkinId;
     if (polishColor) summary.polishColor = polishColor;
@@ -439,7 +445,7 @@ export class MultiplayerLobby {
 
         const callsign = getLocalCallsign();
         const opClass = getLocalOperatorClass();
-        const loadout = getLocalLoadoutSummary(opClass);
+        const loadout = getLocalLoadoutSummary(opClass, this.currentMode);
 
         try {
             if (typeof window !== 'undefined') {
@@ -658,7 +664,7 @@ export class MultiplayerLobby {
         this.usingRelay = false;
         const callsign = getLocalCallsign();
         const opClass = getLocalOperatorClass();
-        const loadout = getLocalLoadoutSummary(opClass);
+        const loadout = getLocalLoadoutSummary(opClass, this.currentMode);
 
         this.players.clear();
         // No real server exists to arbitrate a ready-up gate against in this

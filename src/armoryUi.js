@@ -270,12 +270,23 @@ export function createArmoryUi({
             },
             charm: {
                 title: 'TACTICAL CHARM',
-                subtitle: 'WEAPON-MOUNTED TROPHY // SWINGS ON ITS SOCKET',
+                subtitle: 'WEAPON TROPHY // POWER REQUIRES EARNED ATTUNEMENT RANK',
                 noneLabel: 'NO CHARM',
                 ids: () => getCatalogIdsByType(ITEM_TYPE.CHARM),
+                options: () => buildEquipOptions({
+                    ids: getCatalogIdsByType(ITEM_TYPE.CHARM),
+                    selectedId: loadout.charmId,
+                    ownership
+                }).map((option) => loadoutManager.isCharmAttuned?.(option.id)
+                    ? { ...option, owned: true, disabled: false }
+                    : option),
                 current: () => (loadout.charmId ? String(loadout.charmId) : ''),
                 currentName: () => nameForItem(loadout.charmId, 'NO CHARM'),
-                apply: (value) => equipGuard(value, (v) => loadoutManager.equipCharm(cls, v)),
+                apply: (value) => equipGuard(
+                    value,
+                    (v) => loadoutManager.equipCharm(cls, v),
+                    { allowAttunedCharm: true }
+                ),
                 sound: 'sfx_charm_clink_heavy',
                 after: () => armoryScene?.updateFromLoadout(loadoutManager, cls)
             },
@@ -482,9 +493,10 @@ export function createArmoryUi({
     // Defence in depth behind the `disabled` attribute: a change event can
     // still arrive with a locked id (DOM edited, option re-enabled, stale
     // value), and equipping is the one thing ownership actually gates.
-    function equipGuard(rawValue, apply) {
+    function equipGuard(rawValue, apply, { allowAttunedCharm = false } = {}) {
         const value = rawValue || null;
-        if (value !== null && !ownership.canEquip(value)) {
+        const progressionLicensed = allowAttunedCharm && loadoutManager.isCharmAttuned?.(value);
+        if (value !== null && !ownership.canEquip(value) && !progressionLicensed) {
             playSound('sfx_ui_denied');
             render();
             return false;
@@ -509,21 +521,26 @@ export function createArmoryUi({
         const hudTheme = resolveHudTheme(loadoutManager.state.hudThemeId);
         const hudThemeStyle = hudThemeInlineStyle(loadoutManager.state.hudThemeId);
         const qaAudit = ownership.auditEquippableCatalog?.() ?? { total: 0, available: 0, complete: false };
+        const attunementTier = loadoutManager.getCurrentAttunementTier?.() ?? Number.POSITIVE_INFINITY;
+        const equipmentStatus = (id) => getEquipmentStatus(id, {
+            mode: 'deployment',
+            attuned: loadoutManager.isCharmAttuned?.(id, attunementTier) ?? true
+        });
 
         const equipmentStatuses = [
-            { slot: 'CHARM', status: getEquipmentStatus(loadout.charmId), empty: 'NO WEAPON ATTUNEMENT' },
-            { slot: 'SUIT A', status: getEquipmentStatus(loadout.mod1Id), empty: 'EMPTY OPERATOR SOCKET' },
-            { slot: 'SUIT B', status: getEquipmentStatus(loadout.mod2Id), empty: 'EMPTY OPERATOR SOCKET' }
+            { slot: 'CHARM', status: equipmentStatus(loadout.charmId), empty: 'NO WEAPON ATTUNEMENT' },
+            { slot: 'SUIT A', status: equipmentStatus(loadout.mod1Id), empty: 'EMPTY OPERATOR SOCKET' },
+            { slot: 'SUIT B', status: equipmentStatus(loadout.mod2Id), empty: 'EMPTY OPERATOR SOCKET' }
         ];
         const statusHtml = equipmentStatuses.map(({ slot, status, empty }) => status ? `
-            <div class="loadout-effect is-active" data-equipment-id="${status.id}">
-                <span class="loadout-effect__slot">${slot} · ${status.mount}</span>
+            <div class="loadout-effect ${status.active ? 'is-active' : 'is-inactive'}" data-equipment-id="${status.id}">
+                <span class="loadout-effect__slot">${slot} · ${status.mount} · ${status.modeStatus}</span>
                 <b>${status.name}</b>
                 <span>${status.summary}</span>
             </div>` : `
             <div class="loadout-effect">
                 <span class="loadout-effect__slot">${slot}</span>
-                <b>STANDBY</b><span>${empty}</span>
+                <b>${t('ui.armory.standby')}</b><span>${empty || t('ui.armory.standby_desc')}</span>
             </div>`).join('');
 
         if (typeof document !== 'undefined') {
@@ -627,20 +644,20 @@ export function createArmoryUi({
                             <div class="bench-row-two-col">
                                 <!-- RIG MOD 1 -->
                                 <div class="bench-field">
-                                <label>SUIT OVERCLOCK — BAY A</label>
+                                <label>SUIT ${t('ui.armory.f_bay_a')}</label>
                                     ${slotHtml('mod1')}
                                 </div>
 
                                 <!-- RIG MOD 2 -->
                                 <div class="bench-field">
-                                <label>SUIT OVERCLOCK — BAY B</label>
+                                <label>SUIT ${t('ui.armory.f_bay_b')}</label>
                                     ${slotHtml('mod2')}
                                 </div>
                             </div>
 
                             <!-- ACTIVE MODIFIERS TELEMETRY -->
                             <div class="modifiers-summary">
-                                <div class="modifiers-title">◈ DEPLOYMENT LOADOUT STATUS</div>
+                                <div class="modifiers-title">${t('ui.armory.mods_title')} // DEPLOYMENT STATUS</div>
                                 <div class="loadout-effects">${statusHtml}</div>
                             </div>
                         </section>

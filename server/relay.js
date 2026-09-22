@@ -86,9 +86,33 @@ function sanitizeString(value, maxLen = 32, fallback = 'AGENT') {
 // above rather than trusting shape or type.
 function sanitizeLoadout(value) {
     if (!value || typeof value !== 'object') return null;
+    const safeId = (raw, allowed) => {
+        const id = typeof raw === 'string' || typeof raw === 'number' ? String(raw).slice(0, 64) : null;
+        return id && allowed.has(id) ? id : null;
+    };
+    const charmIds = new Set(Array.from({ length: 10 }, (_, index) => String(4130 + index)));
+    const overclockIds = new Set([
+        ...Array.from({ length: 8 }, (_, index) => String(4140 + index)),
+        ...Array.from({ length: 8 }, (_, index) => String(4160 + index))
+    ]);
+    const archetypeIds = new Set(['talon', 'talon_c', 'siege_breaker', 'tesla_lock']);
     const sanitized = {
         weapon: sanitizeString(value.weapon, 40, 'UNARMED'),
-        hasCharm: Boolean(value.hasCharm)
+        hasCharm: Boolean(value.hasCharm),
+        schemaVersion: Number.isSafeInteger(value.schemaVersion) ? Math.max(0, Math.min(99, value.schemaVersion)) : 0,
+        weaponArchetypeId: safeId(value.weaponArchetypeId, archetypeIds),
+        weaponSkinId: typeof value.weaponSkinId === 'string' || typeof value.weaponSkinId === 'number'
+            ? String(value.weaponSkinId).slice(0, 64)
+            : null,
+        charmId: safeId(value.charmId, charmIds),
+        overclockIds: (Array.isArray(value.overclockIds) ? value.overclockIds : [])
+            .slice(0, 2)
+            .map((id) => safeId(id, overclockIds))
+            .filter(Boolean),
+        effectLabels: (Array.isArray(value.effectLabels) ? value.effectLabels : [])
+            .slice(0, 3)
+            .map((label) => sanitizeString(label, 120, ''))
+            .filter(Boolean)
     };
     if (value.chassisSkinId) sanitized.chassisSkinId = sanitizeString(value.chassisSkinId, 64, '');
     if (value.polishColor) sanitized.polishColor = sanitizeString(value.polishColor, 32, '');

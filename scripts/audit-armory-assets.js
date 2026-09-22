@@ -19,7 +19,9 @@ import { ITEM_TYPE, getCatalogIdsByType, getCatalogEntry } from '../src/itemOwne
 import { CATALOG_ITEMS } from '../src/armoryUi.js';
 import { getArmoryModel, getArmoryIcon, getArmoryOfferedIds, ARMORY_WEAPON_NAMES } from '../src/armoryAssets.js';
 import { ARMORY_PREVIEWS } from '../src/data/armoryPreviews.js';
+import { ACHIEVEMENT_COSMETICS } from '../src/data/achievementCosmetics.js';
 import { runChromaGreenScan, CHROMA_GREEN_ALLOWLIST } from './audit-chroma-green.js';
+import { isMaterialFinish } from '../src/weaponFinishMaterial.js';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const JSON_REPORT = path.join(ROOT, 'docs/reports/armory-asset-gaps.json');
@@ -36,6 +38,28 @@ function iconFor(id) { return getArmoryIcon(id, CATALOG_ITEMS[String(id)]?.icon)
 function publicExists(webPath) {
     if (!webPath) return false;
     return fs.existsSync(path.join(ROOT, 'public', webPath.replace(/^\//, '')));
+}
+
+function inspectGlbRig(webPath) {
+    if (!webPath || !webPath.toLowerCase().endsWith('.glb') || !publicExists(webPath)) return null;
+    try {
+        const buffer = fs.readFileSync(path.join(ROOT, 'public', webPath.replace(/^\//, '')));
+        if (buffer.length < 20 || buffer.readUInt32LE(0) !== 0x46546c67) return null;
+        const jsonLength = buffer.readUInt32LE(12);
+        const jsonType = buffer.readUInt32LE(16);
+        if (jsonType !== 0x4e4f534a || buffer.length < 20 + jsonLength) return null;
+        const gltf = JSON.parse(buffer.subarray(20, 20 + jsonLength).toString('utf8').replace(/\0+$/u, '').trim());
+        const skins = gltf.skins ?? [];
+        const jointCount = Math.max(0, ...skins.map((skin) => skin.joints?.length ?? 0));
+        return {
+            skinCount: skins.length,
+            jointCount,
+            embeddedAnimationCount: gltf.animations?.length ?? 0,
+            rigReady: skins.length > 0 && jointCount >= 8
+        };
+    } catch {
+        return { skinCount: 0, jointCount: 0, embeddedAnimationCount: 0, rigReady: false };
+    }
 }
 
 // Every id the Armory can offer, grouped the way the bench groups them.
@@ -68,6 +92,8 @@ export function auditArmoryAssets() {
             const icon = iconFor(id);
             const iconExists = publicExists(icon);
             const model = modelUrlFor(id);
+            const modelRequired = group !== 'decal' && !(group === 'weapon' && isMaterialFinish(id));
+            const rig = group === 'chassis' ? inspectGlbRig(model) : null;
             const greenRatio = icon && iconExists
                 ? (greenByFile.get(`public${icon}`) ?? 0)
                 : 0;
@@ -80,8 +106,10 @@ export function auditArmoryAssets() {
                 iconExists,
                 missingIcon: !icon || !iconExists,
                 model,
-                missingModel: group !== 'decal' && !publicExists(model),
-                modelRequired: group !== 'decal',
+                missingModel: modelRequired && !publicExists(model),
+                modelRequired,
+                rig,
+                rigReady: group !== 'chassis' || Boolean(rig?.rigReady),
                 needsModelRedo: id === 'frame:talon_c',
                 previewSource: ARMORY_PREVIEWS[id]?.source ?? 'catalog-art',
                 greenRatio,
@@ -91,12 +119,18 @@ export function auditArmoryAssets() {
         }
     }
 
+    const pendingHiddenWeapons = ACHIEVEMENT_COSMETICS
+        .filter((item) => item.slot === 'weapon' && item.modelStatus !== 'ready')
+        .map((item) => ({ id: String(item.itemdefid), name: item.name, modelStatus: item.modelStatus }));
+
     return {
         timestamp: new Date().toISOString(),
         total: rows.length,
         missingName: rows.filter((r) => r.missingName).length,
         missingIcon: rows.filter((r) => r.missingIcon).length,
         missingModel: rows.filter((r) => r.missingModel).length,
+        unriggedChassis: rows.filter((r) => r.group === 'chassis' && !r.rigReady).length,
+        pendingHiddenWeapons,
         needsModelRedo: rows.filter((r) => r.needsModelRedo).length,
         greenSuspect: rows.filter((r) => r.greenSuspect).length,
         rows
@@ -126,6 +160,8 @@ pictures and green-backed icons; source artwork is retained unchanged.
 | **No name** (renders as a bare itemdef id) | **${report.missingName}** |
 | **No icon on disk** (tile falls back to initials) | **${report.missingIcon}** |
 | Missing required 3D model | ${report.missingModel} |
+| **Offered chassis without a valid skin binding** | **${report.unriggedChassis}** |
+| Pending achievement weapons hidden from picker | ${report.pendingHiddenWeapons.length} |
 | Existing model needs visual replacement | ${report.needsModelRedo} |
 | **Icon looks like an un-keyed green screen** (≥${GREEN_SUSPECT_RATIO * 100}% green) | **${report.greenSuspect}** |
 
@@ -168,11 +204,35 @@ ${table(rows.filter((r) => r.missingModel), [
         ['Id', (r) => `\`${r.id}\``],
         ['Name', (r) => r.name ?? '—']
     ])}
-## 5. Existing models that need replacement
+## 5. Chassis rig readiness
+
+Only chassis with a GLTF skin and at least eight bound joints may be exposed by
+the Armory picker. Animation clips may be embedded or supplied by the shared
+operator animation pack.
+
+${table(rows.filter((r) => r.group === 'chassis' && !r.rigReady), [
+        ['Id', (r) => `\`${r.id}\``],
+        ['Name', (r) => r.name ?? '—'],
+        ['Skins', (r) => r.rig?.skinCount ?? 0],
+        ['Joints', (r) => r.rig?.jointCount ?? 0]
+    ])}
+## 6. Existing models that need replacement
 
 | Item | Current limitation | Next asset task |
 | --- | --- | --- |
 | Talon-C Carbine (\`frame:talon_c\`) | The shipped factory model is a blockout with simple untextured parts. The new preview accurately shows this proxy. | Author a finished, textured carbine model, preserve its grip and charm socket calibration, then regenerate its preview. |
+
+## 7. Pending achievement weapons hidden from the picker
+
+These ownership records remain intact, but the rewards are not exposed as
+factory-gun substitutes. Add a dedicated GLB and change the achievement asset
+manifest to \`ready\` before restoring them to \`ARCHETYPE_SKINS\`.
+
+${table(report.pendingHiddenWeapons, [
+        ['Id', (r) => `\`${r.id}\``],
+        ['Reward', (r) => r.name],
+        ['Status', (r) => r.modelStatus]
+    ])}
 
 This is a visual-review finding, separate from missing-file checks. The four
 previous green-backed charm/module icons now use transparent model renders;
@@ -187,11 +247,11 @@ function main() {
     fs.writeFileSync(MD_REPORT, renderMarkdown(report));
     console.log(`[armory-assets] ${report.total} offered | ${report.missingName} unnamed | `
         + `${report.missingIcon} without art | ${report.greenSuspect} green-screen | `
-        + `${report.missingModel} without a model`);
+        + `${report.missingModel} without a model | ${report.unriggedChassis} unrigged chassis`);
     // Reporting tool, not a gate: these are art tasks, and failing the build on
     // them would block unrelated work. --check is here for CI to opt in later.
-    if (check && report.missingName > 0) {
-        console.error('[armory-assets] items render as bare ids; add catalog entries');
+    if (check && (report.missingName > 0 || report.unriggedChassis > 0)) {
+        console.error('[armory-assets] picker contains unnamed items or chassis without a valid skin binding');
         process.exitCode = 1;
     }
 }

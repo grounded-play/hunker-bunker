@@ -187,6 +187,7 @@ import { describeDialogueProgress, leaderKeyFromName, nextDialogueBeat, isFinalS
 import { blackBoxStore } from './blackBox.js';
 import { runCheckpointStore } from './runCheckpoint.js';
 import { CHASSIS_SKIN_MODELS, createPlayer3dOverlay, ENGINEER_GESTURES, excludePlayerSelfLights } from './player3dOverlay.js';
+import { remoteEquipmentSignature, resolveRemoteEquipmentVisuals } from './remoteLoadout.js';
 
 export const MAYOR_TINA_PLAYER_VISUAL = Object.freeze({
     modelUrl: '/3d/runtime/secrets/mayor-tina-rigged.glb',
@@ -440,6 +441,10 @@ const RADAR_DANGER_COLOR = 0xff3344;
 const RADAR_HOLE_SCAN_PADDING = 2.25;
 const FOUNDRY_DISCOVERY_MIN_DISTANCE = 38;
 const FOUNDRY_DISCOVERY_MAX_DISTANCE = 58;
+// The showroom floor has to cover the menu panel at any aspect ratio. The
+// panel is a wide strip (~2.2:1), and the showcase patrol walks the operative
+// well away from the spawn tile, so the plane is sized for the patrol box
+// rather than the camera and the grid texture tiles instead of stretching.
 // Dawn. Waking always lands here so a new campaign day reads as a new morning
 // rather than resuming wherever the short visual sky loop happened to be.
 const MORNING_TIME_OF_DAY = 0.26;
@@ -1656,6 +1661,7 @@ export class ThreeGame {
         this.recoilBloom = 0;
         this.runOverclocks = [];
         this.runRelics = [];
+        this.runShardCount = 0;
         this.activeSynergies = [];
         this.inRunLootDrops = [];
         this.snailsKilledThisRun = 0;
@@ -4645,7 +4651,8 @@ export class ThreeGame {
                 }
             };
             const chassisSkinId = window.loadout?.getEquippedChassisSkinId?.();
-            const chassisModelUrl = chassisSkinId ? CHASSIS_SKIN_MODELS[String(chassisSkinId)] : null;
+            const chassisSupported = window.loadout?.isChassisSupportedForClass?.(this.playerType, chassisSkinId) ?? true;
+            const chassisModelUrl = chassisSkinId && chassisSupported ? CHASSIS_SKIN_MODELS[String(chassisSkinId)] : null;
             if (chassisModelUrl && classVisuals[overlayType]) {
                 classVisuals[overlayType] = {
                     ...classVisuals[overlayType],
@@ -4658,6 +4665,7 @@ export class ThreeGame {
             const overlay = await createPlayer3dOverlay({
                 targetHeight: this.playerSpriteScale * 0.98,
                 allowStatic: true,
+                requireRigged: true,
                 wearableOverclocks: [
                     window.loadout?.getEquippedRigModule?.(1, this.playerType) ?? null,
                     window.loadout?.getEquippedRigModule?.(2, this.playerType) ?? null
@@ -5155,6 +5163,7 @@ export class ThreeGame {
         group.position.set(spawn.x, 0, spawn.z);
 
         const opClass = playerData.opClass || 'SCOUT';
+        const equipmentVisuals = resolveRemoteEquipmentVisuals(opClass, playerData.loadout);
         const isPvP = this.multiplayerMode === 'pvp';
         const polishColor = playerData.polishColor || playerData.loadout?.polishColor || '#ffffff';
         const themeColor = isPvP ? 0xff4444 : (playerData.color || (opClass === 'SCOUT' ? 0x7dff5a : (opClass === 'TANK' ? 0xffb700 : 0x00e5ff)));
@@ -5219,7 +5228,10 @@ export class ThreeGame {
             id: playerData.id,
             callsign: playerData.callsign || 'OPERATIVE',
             opClass,
-            chassisSkinId: playerData.chassisSkinId || playerData.loadout?.chassisSkinId || null,
+            loadout: playerData.loadout ?? null,
+            equipmentVisuals,
+            equipmentSignature: remoteEquipmentSignature(equipmentVisuals),
+            chassisSkinId: equipmentVisuals.chassisSkinId,
             polishColor,
             mesh: group,
             sprite,
@@ -5263,12 +5275,31 @@ export class ThreeGame {
             remote.sprite?.material?.color?.set?.(polishColor);
             remote.overlay?.setOperatorPolish?.(polishColor);
         }
+        if (playerData.loadout) {
+            const equipmentVisuals = resolveRemoteEquipmentVisuals(remote.opClass, playerData.loadout);
+            const signature = remoteEquipmentSignature(equipmentVisuals);
+            remote.loadout = playerData.loadout;
+            if (signature !== remote.equipmentSignature) {
+                remote.equipmentVisuals = equipmentVisuals;
+                remote.equipmentSignature = signature;
+                remote.chassisSkinId = equipmentVisuals.chassisSkinId;
+                remote.overlayGeneration = (remote.overlayGeneration ?? 0) + 1;
+                remote.overlay?.dispose?.();
+                remote.overlay = null;
+                remote.overlayLoading = false;
+                if (remote.sprite) remote.sprite.visible = true;
+                void this.setupRemotePlayer3dOverlay?.(remote);
+            }
+        }
     }
 
     async setupRemotePlayer3dOverlay(remote) {
         if (!remote?.mesh || remote.overlay || remote.overlayLoading) return;
         if (!['SCOUT', 'ENGINEER', 'TANK'].includes(remote.opClass)) return;
         remote.overlayLoading = true;
+        const generation = (remote.overlayGeneration ?? 0) + 1;
+        remote.overlayGeneration = generation;
+        const equipment = remote.equipmentVisuals ?? resolveRemoteEquipmentVisuals(remote.opClass, remote.loadout);
 
         const classVisuals = {
             SCOUT: {
@@ -5276,7 +5307,8 @@ export class ThreeGame {
                 animationModelUrl: '/3d/scouting-scout/Scout.game.glb',
                 animationBonePrefix: 'mixamorig',
                 idleActionName: 'idle',
-                weaponArchetype: 'talon',
+                weaponArchetype: equipment.weaponArchetypeId,
+                weaponMount: { skinId: equipment.weaponSkinId, charmId: equipment.charmId },
                 allowStatic: true
             },
             ENGINEER: {
@@ -5284,7 +5316,8 @@ export class ThreeGame {
                 animationModelUrl: '/3d/scouting-scout/Scout.game.glb',
                 animationBonePrefix: 'mixamorig',
                 idleActionName: 'idle',
-                weaponArchetype: 'tesla_lock',
+                weaponArchetype: equipment.weaponArchetypeId,
+                weaponMount: { skinId: equipment.weaponSkinId, charmId: equipment.charmId },
                 allowStatic: true
             },
             TANK: {
@@ -5292,13 +5325,13 @@ export class ThreeGame {
                 animationModelUrl: '/3d/scouting-scout/Scout.game.glb',
                 animationBonePrefix: 'mixamorig',
                 idleActionName: 'idle',
-                weaponArchetype: 'siege_breaker',
-                weaponMount: { position: [0.03, 0.02, 0.03] },
+                weaponArchetype: equipment.weaponArchetypeId,
+                weaponMount: { position: [0.03, 0.02, 0.03], skinId: equipment.weaponSkinId, charmId: equipment.charmId },
                 allowStatic: true
             }
         };
 
-        const chassisSkinId = remote.chassisSkinId;
+        const chassisSkinId = equipment.chassisSkinId;
         const chassisModelUrl = chassisSkinId ? CHASSIS_SKIN_MODELS[String(chassisSkinId)] : null;
         if (chassisModelUrl && classVisuals[remote.opClass]) {
             classVisuals[remote.opClass] = {
@@ -5314,9 +5347,11 @@ export class ThreeGame {
             const overlay = await createPlayer3dOverlay({
                 targetHeight: (this.playerSpriteScale || 1.6) * 0.98,
                 allowStatic: true,
+                requireRigged: true,
+                wearableOverclocks: equipment.overclockIds,
                 ...classVisuals[remote.opClass]
             });
-            if (this.remotePlayers?.get(remote.id) !== remote || !remote.mesh.parent) {
+            if (this.remotePlayers?.get(remote.id) !== remote || !remote.mesh.parent || remote.overlayGeneration !== generation) {
                 overlay.dispose();
                 return;
             }
@@ -5342,7 +5377,7 @@ export class ThreeGame {
                 });
             }
         } finally {
-            remote.overlayLoading = false;
+            if (remote.overlayGeneration === generation) remote.overlayLoading = false;
         }
     }
 
@@ -6979,7 +7014,19 @@ export class ThreeGame {
     }
 
     equipRunDrop(drop) {
-        if (!drop || drop.implemented === false || [...this.runOverclocks, ...this.runRelics].some((item) => item.id === drop.id)) return false;
+        if (!drop || drop.implemented === false) return false;
+        const duplicate = [...this.runOverclocks, ...this.runRelics].some((item) => item.id === drop.id);
+        if (duplicate) {
+            if (!this.loadoutMods?.duplicateRelicsToShards) return false;
+            const shardValues = { common: 1, rare: 2, mythic: 3, corrupted: 4 };
+            const amount = shardValues[drop.rarity] ?? 1;
+            this.runShardCount = (this.runShardCount ?? 0) + amount;
+            window.AudioManager?.play?.('item_pickup', { volume: 0.65 });
+            window.dispatchEvent(new CustomEvent('in-run-shards-earned', {
+                detail: { amount, total: this.runShardCount, sourceDrop: drop }
+            }));
+            return true;
+        }
         if (drop.type === 'overclock') {
             this.runOverclocks.push(drop);
         } else {
@@ -7001,6 +7048,7 @@ export class ThreeGame {
             overclocks: this.runOverclocks,
             relics: this.runRelics,
             synergies: this.activeSynergies,
+            shards: this.runShardCount ?? 0,
             poolOverclocks: WEAPON_OVERCLOCKS,
             poolRelics: SUIT_RELICS
         };
@@ -7015,6 +7063,8 @@ export class ThreeGame {
         this.inRunLootDrops = [];
         this.runOverclocks = [];
         this.runRelics = [];
+        this.runShardCount = 0;
+        this._deepAnchorSpawnedCrossings = new Set();
         this.activeSynergies = [];
         window.dispatchEvent(new CustomEvent('in-run-drops-reset', { detail: { timestamp: Date.now() } }));
     }
@@ -7109,6 +7159,7 @@ export class ThreeGame {
             this.weaponClipAmmo = Math.max(0, this.weaponClipAmmo - 1);
         }
         let fireCd = WEAPON_FIRE_COOLDOWN * (this.fieldWeapon?.cooldownMultiplier ?? 1);
+        fireCd /= Math.max(0.1, this.loadoutMods?.fireRateMultiplier ?? 1);
         this.weaponFireCooldown = fireCd;
         this.emitWeaponClipState();
 
@@ -7606,7 +7657,10 @@ export class ThreeGame {
             baseMagnet = 5.0;
         }
         // Season 0 Rig Overclock Modules (docs/season-zero-protocol/03) — see LoadoutManager#getActiveModifiers
-        this.loadoutMods = window.loadout?.getActiveModifiers?.(resolvedType.toLowerCase()) ?? null;
+        this.loadoutMods = window.loadout?.getActiveModifiers?.(
+            resolvedType.toLowerCase(),
+            this.multiplayerMode === 'pvp' ? 'pvp' : (this.multiplayerMode === 'coop' ? 'coop' : 'solo')
+        ) ?? null;
         if (this.loadoutMods?.moveSpeedMultiplier) {
             this.moveSpeed *= this.loadoutMods.moveSpeedMultiplier;
         }
@@ -8135,7 +8189,7 @@ export class ThreeGame {
         const width = this.container.clientWidth || 1;
         const height = this.container.clientHeight || 1;
         const aspect = width / height;
-        const viewSize = this.performanceProfile === 'menu' ? 3.7 : 5.2;
+        const viewSize = this.performanceProfile === 'menu' ? 2.6 : 5.2;
 
         this.menuPixelRatio = cappedPixelRatio({
             width,
@@ -8745,11 +8799,17 @@ export class ThreeGame {
         }
 
         if (this.performanceProfile === 'menu') {
-            if (this.darknessOverlay) this.darknessOverlay.style.opacity = '0';
-            this.updateMenuShowcase(delta);
+            if (this.chunkGroups && this.chunkGroups.visible) {
+                this.chunkGroups.visible = false;
+            }
+            if (this.menuShowroomFloor && !this.menuShowroomFloor.visible) {
+                this.menuShowroomFloor.visible = true;
+            }
             if (this.menuShowroomReticle && !this.menuShowroomReticle.visible) {
                 this.menuShowroomReticle.visible = true;
             }
+            if (this.darknessOverlay) this.darknessOverlay.style.opacity = '0';
+            this.updateMenuShowcase(delta);
             if (this.targetMenuGridColor) {
                 if (this.menuShowroomFloor?.material?.color) {
                     this.menuShowroomFloor.material.color.lerp(this.targetMenuGridColor, delta * 5);
@@ -13849,6 +13909,10 @@ export class ThreeGame {
             this.damageScatterProp(sprite, amount);
             return;
         }
+        const bossTarget = Boolean(sprite?.userData?.isBoss || sprite?.userData?.queenFight || sprite?.userData?.sporesnailFight);
+        amount *= bossTarget
+            ? (this.loadoutMods?.bossDamageMultiplier ?? 1)
+            : (this.loadoutMods?.nonBossDamageMultiplier ?? 1);
         // Season 0 Cryo-Capacitor Overclock proc (itemdef 4140): 18% chance per hit to
         // freeze the target in place. cryoDurationMultiplier (default 1.0, +0.08 when
         // equipped) scales the freeze duration off a 1.0s base.
@@ -15101,6 +15165,11 @@ export class ThreeGame {
         window.dispatchEvent(new CustomEvent('objective-resolved', {
             detail: { id: 'retrieve-relic' }
         }));
+        if (this.loadoutMods?.loreDropsGrantSalvage) {
+            window.dispatchEvent(new CustomEvent('pickup-collected', {
+                detail: { type: 'coin', rarity: entry.drop.rarity, value: 1, amount: 1, source: 'archivist-lens' }
+            }));
+        }
     }
 
     clearLoreDrops() {
@@ -18345,7 +18414,8 @@ export class ThreeGame {
             }
         }
         const previousHp = this.playerVitals.hp;
-        this.playerVitals.hp = Math.min(this.playerVitals.maxHp, this.playerVitals.hp + Math.max(0, amount));
+        const tunedAmount = Math.max(0, amount) * (this.loadoutMods?.healingMultiplier ?? 1);
+        this.playerVitals.hp = Math.min(this.playerVitals.maxHp, this.playerVitals.hp + tunedAmount);
         if (this.playerVitals.hp === previousHp) return;
 
         this.emitHealthState();
@@ -18719,6 +18789,7 @@ export class ThreeGame {
             ...(this.completedRingCrossingMissionIds ?? []),
             ...(this.mazeAccessState?.completedObjectives ?? [])
         ]);
+        const priorCrossingState = this.ringCrossingState?.crossings ?? {};
         const result = reconcileWorldPlanRingCrossings(worldPlan, this.ringCrossingState, {
             builtGoalKeys: typeof this.getBuiltGoalKeys === 'function'
                 ? this.getBuiltGoalKeys()
@@ -18733,6 +18804,9 @@ export class ThreeGame {
         this._traversalUnlocks = result.traversalUnlocks;
         for (const crossingId of result.openCrossingIds) {
             this.mazeAccessState?.completedObjectives?.add(`ring-crossing-open:${crossingId}`);
+            if (priorCrossingState[crossingId]?.status !== 'open' && this.loadoutMods?.ringCrossingSpawnsElite) {
+                this.spawnDeepAnchorElite?.(crossingId);
+            }
         }
         for (const [doorId, door] of this.proceduralDoorStates ?? []) {
             if (!door?.ringCrossingId || door.state === 'destroyed') continue;
@@ -18744,6 +18818,48 @@ export class ThreeGame {
             });
         }
         return result;
+    }
+
+    spawnDeepAnchorElite(crossingId) {
+        if (!this.player || this._deepAnchorSpawnedCrossings?.has(crossingId)) return null;
+        this._deepAnchorSpawnedCrossings ??= new Set();
+        this.snailsEnabled = true;
+        const radius = 8;
+        let x = null;
+        let z = null;
+        for (let attempt = 0; attempt < 12; attempt += 1) {
+            const angle = (attempt / 12) * Math.PI * 2;
+            const candidateX = this.player.position.x + Math.cos(angle) * radius;
+            const candidateZ = this.player.position.z + Math.sin(angle) * radius;
+            if (!this.isSnailTileWalkable(Math.round(candidateX), Math.round(candidateZ))) continue;
+            x = candidateX;
+            z = candidateZ;
+            break;
+        }
+        if (!Number.isFinite(x) || !Number.isFinite(z)) return null;
+        this._deepAnchorSpawnedCrossings.add(crossingId);
+        const elite = this.createScatterInstance({
+            x, z,
+            type: this.currentBiomeKey === BIOME_KEYS.BIO ? 'sporesnail' : 'cybersnail',
+            scatterKey: `deep-anchor:${crossingId}`,
+            scale: 1.25,
+            rotation: 0,
+            tiltX: 0,
+            tiltZ: 0,
+            elevation: 0.1,
+            groupType: 'enemy',
+            phase: Math.random() * Math.PI * 2,
+            opacity: 1,
+            biomeTint: 0xffffff,
+            spawnedElite: true
+        });
+        if (!elite) return null;
+        const chunkX = Math.floor(x / this.chunkSize);
+        const chunkY = Math.floor(z / this.chunkSize);
+        (this.chunkMeshes.get(`${chunkX},${chunkY}`) ?? this.scene).add(elite);
+        this.scatterSprites.push(elite);
+        window.dispatchEvent(new CustomEvent('deep-anchor-elite-spawned', { detail: { crossingId } }));
+        return elite;
     }
 
     takeDamage(amount = 1, reason = 'hazard', sourceX = null, sourceZ = null) {
@@ -19103,8 +19219,11 @@ export class ThreeGame {
         this.planeState = createPlaneStack();
         this.isInPocket = false;
         this._pocketCacheKey = null;
-        if (this.chunkGroups) this.chunkGroups.visible = true;
-        for (const group of this.chunkMeshes?.values() ?? []) group.visible = true;
+        const isGameplay = this.performanceProfile === 'gameplay';
+        if (this.chunkGroups) this.chunkGroups.visible = isGameplay;
+        for (const group of this.chunkMeshes?.values() ?? []) group.visible = isGameplay;
+        if (this.menuShowroomFloor) this.menuShowroomFloor.visible = !isGameplay;
+        if (this.menuShowroomReticle) this.menuShowroomReticle.visible = !isGameplay;
         for (const group of this.pocketGroups?.values() ?? []) group.visible = false;
         this._pocketHoleX = null;
         this._pocketHoleZ = null;
@@ -28399,7 +28518,9 @@ export class ThreeGame {
                                 type: pickupType,
                                 rarity,
                                 value: 1,
-                                amount: pickup.userData?.amount ?? (pickupType === 'ammo' ? 4 : 1)
+                                amount: pickup.userData?.amount ?? (pickupType === 'ammo'
+                                    ? 4
+                                    : (pickupType === 'coin' ? Math.max(1, this.loadoutMods?.salvageValueMultiplier ?? 1) : 1))
                             }
                         }));
                     }
@@ -28588,6 +28709,7 @@ export class ThreeGame {
         const ammoCount = sprite.userData?.isAmmoLocker ? 3 : 1;
         const dropTypes = Array.from({ length: ammoCount }, () => 'ammo');
         if (!sprite.userData?.isAmmoLocker && Math.random() < 0.2) dropTypes.push('health');
+        if (this.loadoutMods?.propsDropSalvage) dropTypes.push('coin');
         let spawned = 0;
         for (let index = 0; index < dropTypes.length; index += 1) {
             const angle = (index / Math.max(dropTypes.length, 1)) * Math.PI * 2 + Math.random() * 0.35;
@@ -28758,8 +28880,13 @@ export class ThreeGame {
         // deeper rings bias this roll toward relics (see runDrops.js's
         // rollEnemyLootDrop / rollsRareRelic).
         const drop = rollEnemyLootDrop(Math.random, {
-            isElite, isBoss: isBossEnemy, ring: (this.currentDepthTier ?? 0) + 1,
-            excludedIds: [...(this.runOverclocks ?? []), ...(this.runRelics ?? []), ...(this.inRunLootDrops ?? []).map((pickup) => pickup.userData.item)].map((item) => item.id)
+            isElite,
+            isBoss: isBossEnemy,
+            ring: (this.currentDepthTier ?? 0) + 1 + Math.max(0, this.loadoutMods?.relicRarityTierBonus ?? 0),
+            excludedIds: [
+                ...(this.loadoutMods?.duplicateRelicsToShards ? [] : [...(this.runOverclocks ?? []), ...(this.runRelics ?? [])]),
+                ...(this.inRunLootDrops ?? []).map((pickup) => pickup.userData.item)
+            ].map((item) => item.id)
         });
         if (drop) {
             this.spawnPhysicalLootDrop?.(sprite.position?.x ?? 0, sprite.position?.z ?? 0, drop);

@@ -55,7 +55,10 @@ export function applyFabricatedRecipeOutput(recipe, { fabricator, loadout, game 
         const slot = openSlot ?? Number(replaceSlot);
         if (![1, 2].includes(slot)) return { ok: false, reason: 'slot_conflict', occupied: [current.mod1Id, current.mod2Id] };
         loadout.equipRigModule(targetClass, slot, output.itemdefid);
-        if (game) game.loadoutMods = loadout.getActiveModifiers(targetClass);
+        if (game) game.loadoutMods = loadout.getActiveModifiers(
+            targetClass,
+            game.multiplayerMode === 'pvp' ? 'pvp' : (game.multiplayerMode === 'coop' ? 'coop' : 'solo')
+        );
         return { ok: true, kind: 'mod', itemdefid: output.itemdefid, slot };
     }
     return { ok: false, reason: 'unsupported_output' };

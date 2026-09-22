@@ -43,6 +43,7 @@ describe('multiplayerCrashPlanner', () => {
         expect(p2.opClass).toBe('TANK');
         expect(p2.chassisSkinId).toBe('4114');
         expect(p2.polishColor).toBe('#ffd15a');
+        expect(p2.loadout).toMatchObject({ chassisSkinId: '4114', polishColor: '#ffd15a' });
 
         expect(plan.breachCorridors.length).toBe(1);
         expect(plan.breachCorridors[0].corridorArchetype).toBe('distress_conduit');

@@ -3439,7 +3439,10 @@ function trackPickupCollected(event) {
         pickupCounterState.ammo = Math.min(activeAmmoCapacity, previousValue + amount);
         window.hbLog?.('WEAPON', 'info', 'ammo-pickup-collected', { newTotal: pickupCounterState.ammo, maxCapacity: activeAmmoCapacity, amountGained: amount });
     } else {
-        pickupCounterState[type] = previousValue + 1;
+        const amount = type === 'coin' && Number.isFinite(event?.detail?.amount)
+            ? Math.max(1, event.detail.amount)
+            : 1;
+        pickupCounterState[type] = previousValue + amount;
     }
 
     const gainedValue = pickupCounterState[type] > previousValue;
@@ -13486,28 +13489,16 @@ setupClickOutside('language-select-popup', () => setLanguageSelectOpen(false));
 
 function getDoorImage(key) {
     const CLASS_DOORS = {
-        'SCOUT': [
-            '/door_bio_keyart_v2.webp',
-            '/door_bio_keyart_var2.jpg',
-            '/door_bio_keyart_var3.jpg'
-        ],
-        'TANK': [
-            '/door_nuclear_keyart_v2.webp',
-            '/door_nuclear_keyart_var2.jpg',
-            '/door_nuclear_keyart_var3.jpg'
-        ],
-        'ENGINEER': [
-            '/door_cryo_keyart_v2.webp',
-            '/door_cryo_keyart_var2.jpg',
-            '/door_cryo_keyart_var3.jpg'
-        ]
+        'SCOUT': '/door_bio_keyart_v2.webp',
+        'TANK': '/door_nuclear_keyart_v2.webp',
+        'ENGINEER': '/door_cryo_keyart_v2.webp'
     };
     const SPECIAL_DOORS = {
         'base': '/door_biomech_keyart_v2.webp',
         'win': '/door_alien_keyart_v2.webp',
         'lose': '/door_rust_keyart_v2.webp'
     };
-    const pickDoor = (entries) => entries[Math.floor(Math.random() * entries.length)];
+    const pickDoor = (entries) => Array.isArray(entries) ? entries[Math.floor(Math.random() * entries.length)] : entries;
 
     if (key === 'win') return assetUrl(SPECIAL_DOORS.win);
     if (key === 'lose') return assetUrl(SPECIAL_DOORS.lose);
@@ -13518,20 +13509,6 @@ function getDoorImage(key) {
     const activeClass = window.game?.playerType || getSelectedHeroType() || activePreviewType || 'SCOUT';
     const doors = CLASS_DOORS[activeClass];
     return assetUrl(doors ? pickDoor(doors) : SPECIAL_DOORS.base);
-}
-
-function getMapDoorImage(key) {
-    const MAP_CLASS_DOORS = {
-        'SCOUT': '/door_bio.png',
-        'TANK': '/door_nuclear.png',
-        'ENGINEER': '/door_cryo.png'
-    };
-    const SPECIAL_DOORS = {
-        'base': '/door_biomechanical.png'
-    };
-    if (MAP_CLASS_DOORS[key]) return assetUrl(MAP_CLASS_DOORS[key]);
-    const activeClass = window.game?.playerType || activePreviewType || 'SCOUT';
-    return assetUrl(MAP_CLASS_DOORS[activeClass] || SPECIAL_DOORS.base);
 }
 
 function preloadDoorAssets() {
@@ -13978,15 +13955,19 @@ function triggerHeroPreviewSwap(type) {
             mapDoor.className = 'map-box-door';
             mapDoor.setAttribute('aria-hidden', 'true');
             mapDoor.innerHTML = `
-                <div class="char-preview-door__panel char-preview-door__panel--top"></div>
-                <div class="char-preview-door__panel char-preview-door__panel--bottom"></div>
+                <div class="map-box-door__panel map-box-door__panel--top">
+                    <div class="map-box-door__texture"></div>
+                </div>
+                <div class="map-box-door__panel map-box-door__panel--bottom">
+                    <div class="map-box-door__texture"></div>
+                </div>
             `;
             gameContainer.appendChild(mapDoor);
         } else {
             gameContainer.appendChild(mapDoor);
         }
     }
-    const mapDoorImg = getMapDoorImage(targetType);
+    const mapDoorImg = doorImg;
 
     previewDoor.style.setProperty('--door-bg-image', `url('${doorImg}')`);
     if (mapDoor) {

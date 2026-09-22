@@ -372,12 +372,23 @@ describe('createArmoryUi ownership gating', () => {
         expect(html).not.toMatch(/data-value="comm_scout_foxhole_shadow"[^>]*aria-disabled/);
     });
 
-    it('names achievement reward chassis instead of showing a bare id', () => {
+    it('hides the GHOST chassis until its missing rigged model exists', () => {
         ownership.grantDev(5001, 1);
         mount();
         const html = openSlotHtml(container, 'chassis');
-        expect(html).toContain('data-value="5001"');
-        expect(html).toMatch(/GHOST/i);
+        expect(html).not.toContain('data-value="5001"');
+    });
+
+    it('hides pending achievement weapons until their authored GLBs exist', () => {
+        for (const id of [5002, 5006, 5009, 5010]) ownership.grantDev(id, 1);
+        mount();
+        for (const classButton of ['scout', 'tank', 'engineer']) {
+            container.querySelector(`[data-armory-class="${classButton}"]`)?.click();
+            const html = openSlotHtml(container, 'weapon');
+            for (const id of ['5002', '5006', '5009', '5010']) {
+                expect(html).not.toContain(`data-value="${id}"`);
+            }
+        }
     });
 
     it('renders an owned item enabled and without a locked label', () => {
@@ -414,6 +425,16 @@ describe('createArmoryUi ownership gating', () => {
         ownership.grantDev(4130, 1);
         openSlot(container, 'charm').dispatchEvent(tileClick('4130'));
         expect(String(loadoutManager.getClassLoadout('scout').charmId)).toBe('4130');
+    });
+
+    it('lets earned attunement rank equip a charm without a marketplace entitlement', () => {
+        loadoutManager = new LoadoutManager({ storage: makeStorage(), attunementTierProvider: () => 3 });
+        mount();
+        const html = openSlotHtml(container, 'charm');
+        expect(html).not.toMatch(/data-value="4130"[^>]*aria-disabled/);
+        container.querySelector('#armory-picker-grid').dispatchEvent(tileClick('4130'));
+        expect(loadoutManager.getEquippedCharmId('scout')).toBe('4130');
+        expect(loadoutManager.getActiveModifiers('scout').cryoDurationMultiplier).toBeCloseTo(1.05);
     });
 
     it('re-renders when a grant lands while the Armory is open', () => {

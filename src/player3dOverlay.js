@@ -511,7 +511,8 @@ export async function createPlayer3dOverlay({
     animationModelUrl = null,
     animationBonePrefix = null,
     allowStatic = false,
-    wearableOverclocks = []
+    wearableOverclocks = [],
+    requireRigged = false
 } = {}) {
     const [modelTemplate, animationGltf] = await Promise.all([
         loadCharacterTemplate(modelUrl),
@@ -525,6 +526,18 @@ export async function createPlayer3dOverlay({
     root.name = 'Scout3dCosmeticOverlay';
     normalizeModel(root, targetHeight);
 
+    if (requireRigged) {
+        let hasSkinnedMesh = false;
+        let boneCount = 0;
+        root.traverse((object) => {
+            if (object.isSkinnedMesh) hasSkinnedMesh = true;
+            if (object.isBone) boneCount += 1;
+        });
+        if (!hasSkinnedMesh || boneCount < 8) {
+            throw new Error(`Operator asset is not animation-ready (skinned=${hasSkinnedMesh}, bones=${boneCount})`);
+        }
+    }
+
     root.traverse((object) => {
         if (!object.isMesh) return;
         object.castShadow = true;
@@ -535,10 +548,17 @@ export async function createPlayer3dOverlay({
 
     const chestPatch = createOperatorPatch(root, { targetHeight });
     const equipment = createOperatorEquipmentController(root);
-    await Promise.all([
+    const equipmentLoads = await Promise.allSettled([
         equipment.set(1, wearableOverclocks?.[0] ?? null),
         equipment.set(2, wearableOverclocks?.[1] ?? null)
     ]);
+    for (const result of equipmentLoads) {
+        if (result.status === 'rejected') {
+            // A cosmetic socket is optional. Its asset failing must never take
+            // the operator (and the whole Armory preview) down with it.
+            console.warn('[player-3d-overlay] Wearable overclock failed to load:', result.reason);
+        }
+    }
 
     let rightHand = root.getObjectByName('mixamorig1:RightHand')
         ?? root.getObjectByName('mixamorig1RightHand');
@@ -645,6 +665,13 @@ export async function createPlayer3dOverlay({
     const activeIdleName = actions.has(idleActionName)
         ? idleActionName
         : (actions.has('idle') ? 'idle' : (actions.has('heroIdle') ? 'heroIdle' : (actions.size > 0 ? actions.keys().next().value : null)));
+    if (requireRigged) {
+        const idleClip = activeIdleName ? actions.get(activeIdleName)?.getClip?.() : null;
+        if (!idleClip || idleClip.tracks.length === 0) {
+            equipment.dispose();
+            throw new Error(`Operator asset has no usable idle animation (requested=${idleActionName})`);
+        }
+    }
     const idleActions = [...new Set([activeIdleName, 'idle', 'heroIdle'])].filter((name) => actions.has(name));
     const blendableActions = [
         ...idleActions,

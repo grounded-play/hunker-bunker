@@ -326,6 +326,7 @@ export async function createArmoryScene(canvas) {
         try {
             const overlay = await createPlayer3dOverlay({
                 ...config,
+                requireRigged: true,
                 wearableOverclocks: [currentMod1Mesh, currentMod2Mesh]
             });
             if (gen !== loadGen) { overlay.dispose(); return; }
@@ -342,6 +343,7 @@ export async function createArmoryScene(canvas) {
             applyDecalSprite(currentDecalId);
         } catch (err) {
             console.warn('[armoryScene] Failed loading operator overlay:', err);
+            if (customModel) await loadOperatorModel(classType, null);
         }
     }
 

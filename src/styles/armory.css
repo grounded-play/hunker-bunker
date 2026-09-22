@@ -389,6 +389,8 @@
   font: 700 clamp(6px, .48vw, 8px)/1.15 'Space Mono', monospace;
 }
 #armory-screen .loadout-effect.is-active { border-color: var(--armory-border); color: rgba(255,255,255,.82); }
+#armory-screen .loadout-effect.is-inactive { border-color: rgba(255, 174, 48, .55); color: rgba(255, 220, 170, .82); }
+#armory-screen .loadout-effect.is-inactive .loadout-effect__slot { color: #ffae30; }
 #armory-screen .loadout-effect__slot { color: var(--armory-accent); letter-spacing: .04em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 #armory-screen .loadout-effect b { color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 #armory-screen .loadout-effect > span:last-child { overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
