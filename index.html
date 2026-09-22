@@ -433,14 +433,14 @@
                 </div>
                 <div class="homebase-identity__meta">
                   <span class="roster-id-badge"><span data-i18n="ui.roster.id_label">ID:</span> <span class="roster-id" id="roster-id">op-—</span></span>
-                  <span id="homebase-loadout-summary">FIELD LOADOUT // STANDARD ISSUE</span>
+                  <span id="homebase-loadout-summary">CHASSIS SPECIFICATION // BULWARK FRAME</span>
                 </div>
               </section>
               <div class="hero-identity-block">
                 <div class="char-preview-stage" aria-hidden="true">
                   <img id="char-preview-fallback" class="char-preview-fallback" src="/Tank.full_v2.png" alt="" />
                   <canvas id="char-preview-sprite" width="256" height="256"></canvas>
-                  <canvas id="char-preview-3d" class="hidden" width="320" height="320"></canvas>
+                  <canvas id="char-preview-3d" class="hidden" width="480" height="480"></canvas>
                   <div id="char-preview-door" class="char-preview-door">
                     <div class="char-preview-door__panel char-preview-door__panel--top">
                       <div class="char-preview-door__texture"></div>
@@ -455,7 +455,7 @@
                 <div id="char-preview-name">TANK</div>
               </div>
               <div class="hero-detail-panel" id="hero-detail-panel">
-                <div data-i18n="ui.hero_detail.field_loadout" class="hero-detail-panel__kicker">FIELD LOADOUT</div>
+                <div data-i18n="ui.hero_detail.chassis_spec" class="hero-detail-panel__kicker">CHASSIS SPECIFICATION</div>
                 <div class="hero-detail-line1" id="hero-detail-active">—</div>
                 <div class="hero-detail-line2" id="hero-detail-passive">—</div>
               </div>
@@ -496,39 +496,60 @@
             <div class="char-selection">
               <div class="char-card" data-type="SCOUT">
                 <div class="char-info">
-                  <span data-i18n="ui.menu.recon_frame" class="char-kicker">RECON FRAME</span>
+                  <div class="char-header-row">
+                    <span data-i18n="ui.menu.recon_frame" class="char-kicker">RECON FRAME</span>
+                    <span data-i18n="ui.menu.role_infiltrator" class="char-role-badge">INFILTRATOR</span>
+                  </div>
                   <span data-i18n="ui.menu.scout" class="char-name">SCOUT</span>
                   <div class="char-desc-lines">
-                    <span data-i18n="ui.menu.sprint_burst" class="char-desc-line1">SPRINT BURST</span>
-                    <span data-i18n="ui.menu.wide_magnet" class="char-desc-line2">WIDE MAGNET</span>
+                    <span class="char-desc-line1"><span data-i18n="ui.menu.tag_active" class="char-desc-tag">ACTIVE:</span> <span data-i18n="ui.menu.sprint_burst">SPRINT BURST</span></span>
+                    <span class="char-desc-line2"><span data-i18n="ui.menu.tag_passive" class="char-desc-tag">PASSIVE:</span> <span data-i18n="ui.menu.wide_magnet">WIDE MAGNET</span></span>
+                  </div>
+                  <div class="char-spec-pills">
+                    <span data-i18n="ui.menu.spec_scout_mobility" class="char-spec-pill">MOBILITY: MAX</span>
+                    <span data-i18n="ui.menu.spec_scout_armor" class="char-spec-pill">ARMOR: LIGHT</span>
                   </div>
                   <span class="char-best-score" id="char-best-SCOUT"></span>
                 </div>
-                <div class="char-icon">↗</div>
+                <div class="char-icon" aria-hidden="true">↗</div>
               </div>
               <div class="char-card selected" data-type="TANK">
                 <div class="char-info">
-                  <span data-i18n="ui.menu.bulwark_frame" class="char-kicker">BULWARK FRAME</span>
+                  <div class="char-header-row">
+                    <span data-i18n="ui.menu.bulwark_frame" class="char-kicker">BULWARK FRAME</span>
+                    <span data-i18n="ui.menu.role_breacher" class="char-role-badge">BREACHER</span>
+                  </div>
                   <span data-i18n="ui.menu.tank" class="char-name">TANK</span>
                   <div class="char-desc-lines">
-                    <span data-i18n="ui.menu.brace" class="char-desc-line1">BRACE</span>
-                    <span data-i18n="ui.menu.low_o2_drain" class="char-desc-line2">LOW O₂ DRAIN</span>
+                    <span class="char-desc-line1"><span data-i18n="ui.menu.tag_active" class="char-desc-tag">ACTIVE:</span> <span data-i18n="ui.menu.brace">BRACE</span></span>
+                    <span class="char-desc-line2"><span data-i18n="ui.menu.tag_passive" class="char-desc-tag">PASSIVE:</span> <span data-i18n="ui.menu.low_o2_drain">LOW O₂ DRAIN</span></span>
+                  </div>
+                  <div class="char-spec-pills">
+                    <span data-i18n="ui.menu.spec_tank_defense" class="char-spec-pill">DEFENSE: MAX</span>
+                    <span data-i18n="ui.menu.spec_tank_armor" class="char-spec-pill">ARMOR: HEAVY</span>
                   </div>
                   <span class="char-best-score" id="char-best-TANK"></span>
                 </div>
-                <div class="char-icon">▰</div>
+                <div class="char-icon" aria-hidden="true">▰</div>
               </div>
               <div class="char-card" data-type="ENGINEER">
                 <div class="char-info">
-                  <span data-i18n="ui.menu.utility_frame" class="char-kicker">UTILITY FRAME</span>
+                  <div class="char-header-row">
+                    <span data-i18n="ui.menu.utility_frame" class="char-kicker">UTILITY FRAME</span>
+                    <span data-i18n="ui.menu.role_logistics" class="char-role-badge">LOGISTICS</span>
+                  </div>
                   <span data-i18n="ui.menu.engineer" class="char-name">ENGINEER</span>
                   <div class="char-desc-lines">
-                    <span data-i18n="ui.menu.reroute" class="char-desc-line1">REROUTE</span>
-                    <span data-i18n="ui.menu.cheaper_consoles" class="char-desc-line2">CHEAPER CONSOLES</span>
+                    <span class="char-desc-line1"><span data-i18n="ui.menu.tag_active" class="char-desc-tag">ACTIVE:</span> <span data-i18n="ui.menu.reroute">REROUTE</span></span>
+                    <span class="char-desc-line2"><span data-i18n="ui.menu.tag_passive" class="char-desc-tag">PASSIVE:</span> <span data-i18n="ui.menu.cheaper_consoles">CHEAPER CONSOLES</span></span>
+                  </div>
+                  <div class="char-spec-pills">
+                    <span data-i18n="ui.menu.spec_eng_utility" class="char-spec-pill">UTILITY: MAX</span>
+                    <span data-i18n="ui.menu.spec_eng_armor" class="char-spec-pill">ARMOR: HAZARD</span>
                   </div>
                   <span class="char-best-score" id="char-best-ENGINEER"></span>
                 </div>
-                <div class="char-icon">⚙</div>
+                <div class="char-icon" aria-hidden="true">⚙</div>
               </div>
             </div>
           </div>

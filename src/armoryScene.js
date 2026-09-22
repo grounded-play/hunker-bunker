@@ -392,6 +392,7 @@ export async function createArmoryScene(canvas) {
         charmSocket.scale.setScalar(transform.scale);
         charmSocket.userData.archetype = transform.archetype;
         charmSocket.userData.anchor = transform.anchor;
+        charmSocket.userData.cordDrop = transform.cordDrop;
         charmPhysics.angleX = 0;
         charmPhysics.angleZ = 0;
         charmPhysics.velX = 0;
@@ -509,6 +510,14 @@ export async function createArmoryScene(canvas) {
                     child.castShadow = true;
                 }
             });
+
+            // Authored tactile cord loop connecting weapon anchor to charm ring
+            const cordDrop = charmSocket.userData.cordDrop ?? 0.045;
+            const cordMat = new THREE.MeshStandardMaterial({ color: 0x24272c, roughness: 0.85, metalness: 0.2 });
+            const cordMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.0022, 0.0022, cordDrop, 6), cordMat);
+            cordMesh.position.set(0, cordDrop / 2 + 0.005, 0);
+            cordMesh.name = 'charmTactileCord';
+            model.add(cordMesh);
 
             currentCharmMesh = model;
             charmSocket.add(model);

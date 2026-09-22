@@ -22762,9 +22762,9 @@ body.contrast-max .hud-panel {
 }
 
 #menu .char-preview-stage {
-  width: min(72cqw, 72cqh, calc(var(--vu) * 21));
+  width: min(88cqw, 88cqh, calc(var(--vu) * 28));
   max-width: 100%;
-  max-height: calc(var(--vu) * 19);
+  max-height: calc(var(--vu) * 27);
   flex: 1 1 auto;
 }
 
@@ -23058,9 +23058,17 @@ body.contrast-max .hud-panel {
 }
 
 #menu .char-card {
-  padding: calc(var(--vu) * 0.8) calc(var(--vu) * 0.9);
+  padding: calc(var(--vu) * 0.75) calc(var(--vu) * 0.95);
   grid-template-columns: minmax(0, 1fr) calc(var(--vu) * 3.6);
   gap: calc(var(--vu) * 0.5);
+}
+
+#menu .char-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: calc(var(--vu) * 0.4);
+  margin-bottom: 2px;
 }
 
 #menu .char-kicker {
@@ -23071,10 +23079,40 @@ body.contrast-max .hud-panel {
   text-overflow: ellipsis;
 }
 
+#menu .char-role-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 1px 6px;
+  border-radius: 3px;
+  font-family: 'Space Mono', monospace;
+  font-size: clamp(8px, calc(var(--font-xs) * 0.65), 10px);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  background: rgba(var(--class-color-rgb, 255, 159, 28), 0.15);
+  color: var(--class-color, var(--accent-primary));
+  border: 1px solid rgba(var(--class-color-rgb, 255, 159, 28), 0.35);
+  text-transform: uppercase;
+  line-height: 1.2;
+}
+
 #menu .char-name {
   font-size: clamp(15px, calc(var(--vu) * 2.2), 22px);
   font-weight: 900;
   letter-spacing: 0.06em;
+}
+
+#menu .char-desc-lines {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 2px 0 3px;
+}
+
+#menu .char-desc-tag {
+  color: var(--class-color, var(--accent-primary));
+  font-weight: 700;
+  margin-right: 4px;
+  font-size: clamp(8.5px, calc(var(--font-xs) * 0.68), 10.5px);
 }
 
 #menu .char-desc-line1,
@@ -23084,6 +23122,35 @@ body.contrast-max .hud-panel {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+#menu .char-spec-pills {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 3px calc(var(--vu) * 0.35);
+  margin-top: 3px;
+}
+
+#menu .char-spec-pill {
+  display: inline-block;
+  font-family: 'Space Mono', monospace;
+  font-size: clamp(7.5px, calc(var(--font-xs) * 0.62), 9.5px);
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  color: rgba(220, 235, 245, 0.82);
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  padding: 1px 5px;
+  border-radius: 3px;
+  white-space: nowrap;
+  line-height: 1.2;
+}
+
+#menu .char-card.selected .char-spec-pill {
+  background: rgba(var(--class-color-rgb, 255, 159, 28), 0.14);
+  border-color: rgba(var(--class-color-rgb, 255, 159, 28), 0.35);
+  color: #fff;
 }
 
 #menu .char-best-score {

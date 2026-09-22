@@ -87,6 +87,17 @@
       "engineer": "エンジニア",
       "reroute": "再配線",
       "cheaper_consoles": "コンソール割安",
+      "role_infiltrator": "潜入兵",
+      "role_breacher": "突入兵",
+      "role_logistics": "補給兵",
+      "tag_active": "アクティブ:",
+      "tag_passive": "パッシブ:",
+      "spec_scout_mobility": "機動性: 最大",
+      "spec_scout_armor": "装甲: 軽装",
+      "spec_tank_defense": "防御力: 最大",
+      "spec_tank_armor": "装甲: 重装",
+      "spec_eng_utility": "ユーティリティ: 最大",
+      "spec_eng_armor": "装甲: 耐環境",
       "esc": "[ESC]",
       "return_main": "← メインメニューに戻る"
     },
@@ -392,7 +403,7 @@
       "accent_credits": "// クレジット"
     },
     "hero_detail": {
-      "field_loadout": "フィールド装備"
+      "chassis_spec": "シャシー仕様"
     },
     "archive": {
       "bunker_archive": "◈ バンカー・アーカイブ",

@@ -18,7 +18,7 @@ import { BankManager, FOUNDRY_ACTIVATION_COST } from './src/bank.js';
 import { ExpeditionReceipt } from './src/economyReceipt.js';
 import { renderReturnManifest } from './src/returnManifest.js';
 import { FabricatorManager, FAB_RECIPES, FAB_SPIN_COST, FABRICATOR_SITE_MAX_USES, applyFabricatedRecipeOutput, getFabricatedOutputIds } from './src/fabricator.js';
-import { ProfileManager, clearSaveData, exportSaveCode, importSaveCode } from './src/profile.js';
+import { ProfileManager, clearSaveData, exportSaveCode, importSaveCode, startNewCampaign } from './src/profile.js';
 import { LoadoutManager } from './src/loadout.js';
 import { CutsceneManager } from './src/cutscene.js';
 import { DEPTH_TIER_NAMES } from './src/data/loot.js';
@@ -13432,7 +13432,12 @@ function renderHomebaseConsole({ initializeCallsign = false } = {}) {
     }
 
     setTxt('roster-id', profile.getProfileId());
-    setTxt('homebase-loadout-summary', `${t('ui.hero_detail.field_loadout')} // ${loadout.getEquippedLabel(fabricator)}`);
+    const activeChassisSpec = activePreviewType === 'TANK'
+        ? `${t('ui.menu.bulwark_frame')} · ${t('ui.menu.spec_tank_armor')}`
+        : (activePreviewType === 'SCOUT'
+            ? `${t('ui.menu.recon_frame')} · ${t('ui.menu.spec_scout_armor')}`
+            : `${t('ui.menu.utility_frame')} · ${t('ui.menu.spec_eng_armor')}`);
+    setTxt('homebase-loadout-summary', `${t('ui.hero_detail.chassis_spec')} // ${activeChassisSpec}`);
 
     // Profile identity and career totals survive NEW RUN. Never source these
     // tiles from ThreeGame.getRunStats(): that object is the active expedition
@@ -13857,18 +13862,26 @@ async function syncHeroPreview(type) {
     if (!data) return;
 
     activePreviewType = type;
-    // The sprite is the posed, class-correct fallback while the replacement
-    // rig and its idle clip load. Never reveal the previous class or a bind
-    // pose just because an async GLB is late.
-    scoutHeroPreview?.setVisible(false);
-    previewSprite?.classList.remove('hidden');
-    if (previewName) previewName.textContent = data.name;
-    if (previewFallback) {
-        previewFallback.src = assetUrl(PREVIEW_PORTRAITS[type] ?? PREVIEW_PORTRAITS.SCOUT);
-        previewFallback.classList.remove('hidden');
+    const is3dActive = scoutHeroPreview && preview3dCanvas && !preview3dCanvas.classList.contains('hidden');
+    if (!is3dActive) {
+        scoutHeroPreview?.setVisible(false);
+        previewSprite?.classList.remove('hidden');
+        if (previewFallback) {
+            previewFallback.src = assetUrl(PREVIEW_PORTRAITS[type] ?? PREVIEW_PORTRAITS.SCOUT);
+            previewFallback.classList.remove('hidden');
+        }
+        previewFrameIndex = 0;
+        void renderPreviewFrame(type, previewFrameIndex);
     }
-    previewFrameIndex = 0;
-    void renderPreviewFrame(type, previewFrameIndex);
+    if (previewName) previewName.textContent = data.name;
+
+    const activeChassisSpec = type === 'TANK'
+        ? `${t('ui.menu.bulwark_frame')} · ${t('ui.menu.spec_tank_armor')}`
+        : (type === 'SCOUT'
+            ? `${t('ui.menu.recon_frame')} · ${t('ui.menu.spec_scout_armor')}`
+            : `${t('ui.menu.utility_frame')} · ${t('ui.menu.spec_eng_armor')}`);
+    const summaryEl = document.getElementById('homebase-loadout-summary');
+    if (summaryEl) summaryEl.textContent = `${t('ui.hero_detail.chassis_spec')} // ${activeChassisSpec}`;
 
     if (scoutHeroPreview) {
         const loaded = await Promise.race([
@@ -13878,10 +13891,16 @@ async function syncHeroPreview(type) {
             }),
             new Promise((resolve) => window.setTimeout(() => resolve(false), 8000))
         ]);
-        if (activePreviewType === type && loaded) {
-            scoutHeroPreview.setVisible(true);
-            previewSprite?.classList.add('hidden');
-            previewFallback?.classList.add('hidden');
+        if (activePreviewType === type) {
+            if (loaded) {
+                scoutHeroPreview.setVisible(true);
+                previewSprite?.classList.add('hidden');
+                previewFallback?.classList.add('hidden');
+            } else if (!is3dActive) {
+                scoutHeroPreview.setVisible(false);
+                previewSprite?.classList.remove('hidden');
+                previewFallback?.classList.remove('hidden');
+            }
         }
     }
 
@@ -14563,7 +14582,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         // of that chain.
         clearMultiplayerSession();
         transitionFromTitleToMenu(() => {
-            clearSaveData();
+            startNewCampaign();
             blackBoxStore.clear();
             runCheckpointStore.clear();
             window.game?.clearBlackBoxMarker?.();

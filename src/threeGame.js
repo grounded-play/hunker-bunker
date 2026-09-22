@@ -19179,6 +19179,7 @@ export class ThreeGame {
             `Depth tier: ${this.getDepthTierName(this.maxDepthTierReached)}.`,
             `Recoverable salvage: ${salvage.tech} TECH / ${salvage.coin} COIN / ${salvage.med} MED.`
         ].join(' ');
+        this.clearBlackBoxMarker?.();
         const blackBoxState = blackBoxStore.recordDeath({
             x: this.player?.position?.x ?? 0,
             z: this.player?.position?.z ?? 0,
@@ -19188,6 +19189,7 @@ export class ThreeGame {
             cause: reason,
             log: deathLog
         });
+        this._blackBoxState = blackBoxState;
         this.showBunkerLine(
             getDialogueLine('death', Math.random, this.buildLineDirectorContext().register)
             ?? 'SUIT FAILURE LOGGED. BLACK BOX ARMED.'

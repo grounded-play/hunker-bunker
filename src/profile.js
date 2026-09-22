@@ -167,6 +167,41 @@ export function importSaveCode(code, storage = null) {
 
 import { blackBoxStore } from './blackBox.js';
 
+// Campaign-specific keys that reset when starting a genuine NEW GAME / NEW CAMPAIGN.
+// Permanent keys (hb_profile, hb_season_pass, hb_item_ownership, hb_achievements,
+// hb_bank_v1, hb_fabricator_v1, hb_codex, hb_story_archive, hb_loadout) are preserved.
+export const CAMPAIGN_SPECIFIC_STORAGE_KEYS = Object.freeze([
+    'hb_arc_state',
+    'hb_act2_state',
+    'hb_side_stories',
+    'hb_run_checkpoint',
+    'hb_run_modifiers'
+]);
+
+/**
+ * Start a new campaign. Resets campaign narrative linchpins, story points,
+ * and active run checkpoints while preserving lifetime career stats, owned
+ * inventory, Dossier progress, unlocked achievements, and bank salvage.
+ */
+export function startNewCampaign(storage = null) {
+    try { blackBoxStore.recoverActive(); } catch { /* best effort */ }
+    const store = getStorage(storage);
+    if (!store) return 0;
+
+    let removed = 0;
+    for (const key of CAMPAIGN_SPECIFIC_STORAGE_KEYS) {
+        try {
+            if (store.getItem(key) !== null) {
+                store.removeItem(key);
+                removed++;
+            }
+        } catch {
+            // Ignore inaccessible records
+        }
+    }
+    return removed;
+}
+
 // Clear only persistent Hunker Bunker save records. Preferences such as audio
 // mix and key bindings intentionally live outside hb_* and survive a new game.
 export function clearSaveData(storage = null) {
@@ -188,3 +223,4 @@ export function clearSaveData(storage = null) {
     }
     return removed;
 }
+

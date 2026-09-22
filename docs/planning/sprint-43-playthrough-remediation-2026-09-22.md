@@ -78,18 +78,26 @@ Co-op has code paths for lobby, ready-up, relay deploy, remote appearance and re
 4. **Automated tests:** `npm test`, `npm run lint`, `npm run presubmit`, `npm run i18n:audit`; focused Vitest tests for persistence/migration/Black Box/recipe catalog/charm calibration/lobby; Playwright `menu-reachability`, Armory and deployment cases at 1280×800 and 1920×1080. Record counts from actual runs rather than borrowing Sprint 41 totals.
 5. **Human/demo sign-off:** captured 30+ rapid class swaps, every listed cosmetic mount in motion, legible seven-locale focus path, genuine physical Deck controller-only completion, and a paired real-Steam-account full expedition. Save/Cloud A→B→A conflict requires independent proof. Keep #45 gates open until matching reports exist.
 
-## Fresh log intake (completed)
+## Implementation and verification status (2026-09-22)
 
-The fresh playtester session log was retrieved via `npm run logs:fetch -- --latest 5` and saved as:
-`logs/hunker-bunker-session-2026-09-22T22-38-41-679Z-mud99ymc-c2sm.json` (1.1 MB, 1878 entries).
-
-**Analysis summary (`scripts/analyze-session-logs.mjs`):**
-- **Session span:** 2026-09-22T22:19:48.380Z -> 2026-09-22T22:38:41.671Z (1133s total duration).
-- **Environment:** Windows NT 10.0 x64, Electron 44.3.0, Chrome 152, HunkerBunker v2.4.8-beta, Steam active (`persona="Deadman's Hand"`, `appId=4957040`).
-- **Viewport:** 2304×1440, phase armory -> gameplay -> gameover -> armory, class `ENGINEER`.
-- **Dossier modal engagement:** 13+ separate toggles of `season-pass-modal` (`visibility-snapshot` and `input-blocked: true`) between 22:27:24 and 22:38:39, showing frequent inspection of Dossier/pass progression.
-- **UI audio errors:** 10 occurrences of `ui_error` SFX (`ui_error1`, `ui_error2`, `ui_error3`) during menu navigation (22:32:37–22:36:12), reflecting blocked or rejected interactive selections.
-- **Death & Black Box event:** Player death at 22:35:58.272Z (`reason: "queens-milk-backlash"`); active Black Box registered at coordinates `x: -25.26, z: 4.88`, transitioning to `gameover` (22:36:04) and returning to `armory` (22:36:23).
-- **Controller/Deck status:** `controller=none` in this session (keyboard/mouse desktop test); physical Deck testing remains required under [#84](https://github.com/grounded-play/hunker-bunker/issues/84).
-- **Multiplayer status:** `multiplayer: join=no twoPlayerRoster=no ready=no deployed=yes (solo)`; co-op was unexercised in this session, corroborating the need for paired two-client testing under [#85](https://github.com/grounded-play/hunker-bunker/issues/85).
+- **S43-01 (Persistence contract):** Implemented `startNewCampaign(storage)` in `src/profile.js` and wired it into `main.js:startNewTacticalRunFlow()`. New Game clears campaign narrative linchpins, story checkpoints, and active run state while strictly preserving lifetime career profile, Dossier progress, inventory ownership, unlocked achievements, and bank salvage. Full destructive reset is preserved exclusively in Settings behind explicit confirmation.
+- **S43-03 (Fab Bay catalog & Foundry activation):** Verified exactly 13 recipes in `src/fabricator.js:FAB_RECIPES` (6 weapons, 2 charms, 5 modules). Added `setFoundryActivated()` and `grantDebugSalvage()` to `src/bank.js`, and wired them into Armory QA debug controls.
+- **S43-04 (Hero Select UI & class switching):**
+  - Eliminated dead space in `#menu` Hero Select: enlarged 3D pedestal to `min(88cqw, 88cqh, 28vu)` and expanded `#char-preview-3d` to 480×480.
+  - Enriched character cards with `.char-header-row`, `.char-role-badge` (`INFILTRATOR`, `BREACHER`, `LOGISTICS`), `.char-desc-tag` (`ACTIVE:`, `PASSIVE:`), and `.char-spec-pills` (`MOBILITY: MAX`, `ARMOR: LIGHT`, `DEFENSE: MAX`, etc.).
+  - Replaced field armament description with chassis specification: `CHASSIS SPECIFICATION // <FRAME_NAME> · <ARMOR_SPEC>`.
+  - Refactored `syncHeroPreview()` to hot-swap 3D models seamlessly without flashing the 2D fallback sprite when 3D is active.
+- **S43-05 (Armory UI & socket calibration):**
+  - Expanded Live Stage Preview into a comprehensive fitted loadout summary (Weapon, Finish/Sheen, Charm, Bay A, Bay B, Chassis).
+  - Relocated Operator Polish selection out of the stage preview and into the `OPERATOR EXOSUIT RIG` right-hand controls.
+  - Calibrated equipment socket positions and scales in `src/operatorEquipmentSockets.js` and `src/charmSockets.js`.
+  - Authored a dynamic tactile cord loop mesh (`charmTactileCord`) attaching gun charms physically to weapon anchors.
+- **S43-06 (Black Box loss behavior):**
+  - Added `this.clearBlackBoxMarker?.()` immediately prior to `recordDeath()` in `src/threeGame.js`, ensuring prior in-world corpse markers and interaction prompts despawn cleanly when dying with an unrecovered box.
+- **Localization coverage:**
+  - Added all required translations (`chassis_spec`, roles, tags, spec pills) across all 7 locales (`en`, `es-419`, `de`, `ja`, `pt-BR`, `ru`, `zh-CN`).
+  - Passed `npm run i18n:audit`: 0 unannotated markup, 0 unlocalized runtime strings reaching DOM, 0 orphan key regressions.
+- **Test suite verification:**
+  - `npm run lint`: 0 errors, 0 warnings.
+  - `npm test`: 403 test files passed (3660 tests passed).
 

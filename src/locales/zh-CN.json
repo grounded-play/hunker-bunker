@@ -87,6 +87,17 @@
       "engineer": "工程兵",
       "reroute": "改道",
       "cheaper_consoles": "控制台更便宜",
+      "role_infiltrator": "渗透者",
+      "role_breacher": "突击者",
+      "role_logistics": "后勤兵",
+      "tag_active": "主动:",
+      "tag_passive": "被动:",
+      "spec_scout_mobility": "机动性: 最大",
+      "spec_scout_armor": "护甲: 轻型",
+      "spec_tank_defense": "防御力: 最大",
+      "spec_tank_armor": "护甲: 重型",
+      "spec_eng_utility": "多功能: 最大",
+      "spec_eng_armor": "护甲: 防化",
       "esc": "[ESC]",
       "return_main": "← 返回主菜单"
     },
@@ -392,7 +403,7 @@
       "accent_credits": "// 制作名单"
     },
     "hero_detail": {
-      "field_loadout": "野战配置"
+      "chassis_spec": "机体规格"
     },
     "archive": {
       "bunker_archive": "◈ 地堡档案",

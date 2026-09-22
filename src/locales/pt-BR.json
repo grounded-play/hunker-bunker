@@ -87,6 +87,17 @@
       "engineer": "ENGENHEIRO",
       "reroute": "REDIRECIONAR",
       "cheaper_consoles": "CONSOLES MAIS BARATOS",
+      "role_infiltrator": "INFILTRADOR",
+      "role_breacher": "INVASOR",
+      "role_logistics": "LOGÍSTICA",
+      "tag_active": "ATIVA:",
+      "tag_passive": "PASSIVA:",
+      "spec_scout_mobility": "MOBILIDADE: MÁX",
+      "spec_scout_armor": "ARMADURA: LEVE",
+      "spec_tank_defense": "DEFESA: MÁX",
+      "spec_tank_armor": "ARMADURA: PESADA",
+      "spec_eng_utility": "UTILIDADE: MÁX",
+      "spec_eng_armor": "ARMADURA: HAZARD",
       "esc": "[ESC]",
       "return_main": "← VOLTAR AO MENU PRINCIPAL"
     },
@@ -392,7 +403,7 @@
       "accent_credits": "// CRÉDITOS"
     },
     "hero_detail": {
-      "field_loadout": "EQUIPAMENTO DE CAMPO"
+      "chassis_spec": "ESPECIFICAÇÃO DO CHASSI"
     },
     "archive": {
       "bunker_archive": "◈ ARQUIVO DO BUNKER",

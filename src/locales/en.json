@@ -87,6 +87,17 @@
       "engineer": "ENGINEER",
       "reroute": "REROUTE",
       "cheaper_consoles": "CHEAPER CONSOLES",
+      "role_infiltrator": "INFILTRATOR",
+      "role_breacher": "BREACHER",
+      "role_logistics": "LOGISTICS",
+      "tag_active": "ACTIVE:",
+      "tag_passive": "PASSIVE:",
+      "spec_scout_mobility": "MOBILITY: MAX",
+      "spec_scout_armor": "ARMOR: LIGHT",
+      "spec_tank_defense": "DEFENSE: MAX",
+      "spec_tank_armor": "ARMOR: HEAVY",
+      "spec_eng_utility": "UTILITY: MAX",
+      "spec_eng_armor": "ARMOR: HAZARD",
       "esc": "[ESC]",
       "return_main": "← RETURN TO MAIN MENU"
     },
@@ -392,7 +403,7 @@
       "accent_credits": "// CREDITS"
     },
     "hero_detail": {
-      "field_loadout": "FIELD LOADOUT"
+      "chassis_spec": "CHASSIS SPECIFICATION"
     },
     "archive": {
       "bunker_archive": "◈ BUNKER ARCHIVE",

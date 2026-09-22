@@ -18,13 +18,13 @@ export const MOD_GLB_MAP = Object.freeze({
 const cache = new Map();
 const loader = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder);
 const SOCKETS = Object.freeze({
-    chest_center: { bones: ['Spine2', 'Spine1', 'Spine'], offset: [0, 0.03, 0.16], rotation: [0, 0, 0], size: .34 },
-    back_upper: { bones: ['Spine2', 'Spine1', 'Spine'], offset: [0, 0.04, -0.18], rotation: [0, Math.PI, 0], size: .30 },
-    helmet_side: { bones: ['Head'], offset: [.13, 0, .02], rotation: [0, 0, 0], size: .20 },
-    shoulder_left: { bones: ['LeftShoulder', 'LeftArm'], offset: [0, .02, .06], rotation: [0, 0, 0], size: .20 },
-    forearm_left: { bones: ['LeftForeArm', 'LeftArm'], offset: [0, .02, .04], rotation: [0, 0, 0], size: .18 },
-    forearm_right: { bones: ['RightForeArm', 'RightArm'], offset: [0, .02, .04], rotation: [0, 0, 0], size: .18 },
-    waist_back: { bones: ['Hips', 'Spine'], offset: [0, .08, -.16], rotation: [0, Math.PI, 0], size: .25 }
+    chest_center: { bones: ['Spine2', 'Spine1', 'Spine'], offset: [0, 0.04, 0.20], rotation: [0, 0, 0], size: .35 },
+    back_upper: { bones: ['Spine2', 'Spine1', 'Spine'], offset: [0, 0.05, -0.22], rotation: [0, Math.PI, 0], size: .32 },
+    helmet_side: { bones: ['Head'], offset: [.16, 0.02, .04], rotation: [0, 0, 0], size: .22 },
+    shoulder_left: { bones: ['LeftShoulder', 'LeftArm'], offset: [0, .05, .09], rotation: [0, 0, 0], size: .24 },
+    forearm_left: { bones: ['LeftForeArm', 'LeftArm'], offset: [0, .03, .07], rotation: [0, 0, 0], size: .22 },
+    forearm_right: { bones: ['RightForeArm', 'RightArm'], offset: [0, .03, .07], rotation: [0, 0, 0], size: .22 },
+    waist_back: { bones: ['Hips', 'Spine'], offset: [0, .09, -.19], rotation: [0, Math.PI, 0], size: .26 }
 });
 
 function findBone(root, suffixes) {

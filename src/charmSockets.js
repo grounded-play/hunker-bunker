@@ -2,11 +2,11 @@
 // archetype, never by charm, so a charm cannot hide a bad weapon transform.
 
 const SOCKETS = Object.freeze({
-    gg1: Object.freeze({ position: Object.freeze([0.18, -0.05, 0.06]), rotation: Object.freeze([0, 0, 0]), scale: 1, anchor: 'receiver-underbarrel' }),
-    talon: Object.freeze({ position: Object.freeze([0.15, -0.045, 0.055]), rotation: Object.freeze([0, 0, 0]), scale: 0.96, anchor: 'receiver-underbarrel' }),
-    talon_c: Object.freeze({ position: Object.freeze([0.19, -0.055, 0.07]), rotation: Object.freeze([0, 0, 0]), scale: 1.02, anchor: 'receiver-underbarrel' }),
-    siege_breaker: Object.freeze({ position: Object.freeze([0.24, -0.08, 0.08]), rotation: Object.freeze([0, 0, 0]), scale: 1.08, anchor: 'lower-receiver' }),
-    tesla_lock: Object.freeze({ position: Object.freeze([0.17, -0.06, 0.075]), rotation: Object.freeze([0, 0, 0]), scale: 1.0, anchor: 'power-cell-rail' })
+    gg1: Object.freeze({ position: Object.freeze([0.18, -0.05, 0.06]), rotation: Object.freeze([0, 0, 0]), scale: 1, anchor: 'receiver-underbarrel', cordDrop: 0.045 }),
+    talon: Object.freeze({ position: Object.freeze([0.15, -0.06, 0.055]), rotation: Object.freeze([0, 0, 0]), scale: 0.96, anchor: 'receiver-underbarrel', cordDrop: 0.04 }),
+    talon_c: Object.freeze({ position: Object.freeze([0.19, -0.07, 0.07]), rotation: Object.freeze([0, 0, 0]), scale: 1.02, anchor: 'receiver-underbarrel', cordDrop: 0.045 }),
+    siege_breaker: Object.freeze({ position: Object.freeze([0.22, -0.11, 0.10]), rotation: Object.freeze([0, 0, 0]), scale: 1.05, anchor: 'lower-receiver-loop', cordDrop: 0.055 }),
+    tesla_lock: Object.freeze({ position: Object.freeze([0.17, -0.075, 0.075]), rotation: Object.freeze([0, 0, 0]), scale: 1.0, anchor: 'power-cell-rail', cordDrop: 0.045 })
 });
 
 const FALLBACK_ARCHETYPE = 'gg1';
@@ -25,6 +25,7 @@ export function getCharmSocketTransform(archetypeId) {
         rotation: [...socket.rotation],
         scale: socket.scale,
         anchor: socket.anchor,
+        cordDrop: socket.cordDrop ?? 0.045,
         usedFallback: archetype !== String(archetypeId || '').trim().toLowerCase()
     };
 }

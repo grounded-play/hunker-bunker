@@ -87,6 +87,17 @@
       "engineer": "ИНЖЕНЕР",
       "reroute": "ПЕРЕНАПРАВИТЬ",
       "cheaper_consoles": "ДЕШЕВЛЕ КОНСОЛИ",
+      "role_infiltrator": "ДИВЕРСАНТ",
+      "role_breacher": "ШТУРМОВИК",
+      "role_logistics": "СНАБЖЕНИЕ",
+      "tag_active": "АКТИВНОЕ:",
+      "tag_passive": "ПАССИВНОЕ:",
+      "spec_scout_mobility": "МОБИЛЬНОСТЬ: МАКС",
+      "spec_scout_armor": "БРОНЯ: ЛЕГКАЯ",
+      "spec_tank_defense": "ЗАЩИТА: МАКС",
+      "spec_tank_armor": "БРОНЯ: ТЯЖЕЛАЯ",
+      "spec_eng_utility": "ПОДДЕРЖКА: МАКС",
+      "spec_eng_armor": "БРОНЯ: ЗАЩИТНАЯ",
       "esc": "[ESC]",
       "return_main": "← ВЕРНУТЬСЯ В ГЛАВНОЕ МЕНЮ"
     },
@@ -392,7 +403,7 @@
       "accent_credits": "// ТИТРЫ"
     },
     "hero_detail": {
-      "field_loadout": "ПОЛЕВОЕ СНАРЯЖЕНИЕ"
+      "chassis_spec": "СПЕЦИФИКАЦИЯ ШАССИ"
     },
     "archive": {
       "bunker_archive": "◈ АРХИВ БУНКЕРА",
