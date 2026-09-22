@@ -2121,7 +2121,6 @@ body:not(.controller-mode) .settings-choice-control > .settings-controller-hint 
   display: flex;
   flex-direction: column;
   gap: calc(var(--vu) * 1);
-  padding-bottom: calc(var(--advance-height) + var(--vu) * 2.2);
 }
 
 /* Homebase owns operator identity and career telemetry directly. These are
@@ -22650,10 +22649,11 @@ body.contrast-max .hud-panel {
 #menu .menu-command { min-height: 0; justify-content: center; padding: 4px; border: 1px solid rgba(255,159,28,.1); background: rgba(0,0,0,.18); }
 #menu .menu-command .start-btn { min-height: 44px !important; }
 
-/* Homebase frame fit and legibility pass. The background is authored to wrap
-   the 16:10 stage edge-to-edge. We stretch #menu to fill 100% of the viewport with
-   zero insets or borders so the ornate outer mechanical frame touches the stage perimeter,
-   and align the 3 bays with the recessed plates of menu_bg_v3.webp. */
+/* Homebase frame fit and legibility pass.
+   The background plate menu_bg_v3.webp is rendered edge-to-edge on #menu.
+   The foreground overlay menu_frame_overlay.webp sits in front of the console panels
+   and advance button, with transparent cutouts for each of the 3 bays and the advance slot.
+   All pointer-events pass through cleanly to the interactive controls beneath. */
 #menu {
   top: 0;
   right: 0;
@@ -22664,169 +22664,147 @@ body.contrast-max .hud-panel {
   padding: 0;
   border: none;
   border-radius: 0;
-  --briefing-content-top: calc(var(--vu) * 7.6);
-  --briefing-content-bottom: calc(var(--vu) * 11.6);
-  --briefing-content-left: calc(var(--vu) * 12.2);
-  --briefing-content-right: calc(var(--vu) * 10.4);
+  --briefing-content-top: calc(var(--vu) * 22);
+  --briefing-content-bottom: calc(var(--vu) * 19.25);
+  --briefing-content-left: calc(var(--vu) * 14.25);
+  --briefing-content-right: calc(var(--vu) * 14.25);
 }
 
 #menu .title-group {
-  padding: calc(var(--vu) * 1.5) 0 0 calc(var(--vu) * 2.8);
+  position: absolute;
+  top: calc(var(--vu) * 3);
+  left: calc(var(--vu) * 14.5);
+  z-index: 10;
+  padding: 0;
+}
+
+#menu .main-layout {
+  position: absolute;
+  top: calc(var(--vu) * 22);
+  bottom: calc(var(--vu) * 19.25);
+  left: calc(var(--vu) * 14.25);
+  right: calc(var(--vu) * 14.25);
+  width: calc(var(--vu) * 131.5);
+  height: calc(var(--vu) * 58.75);
+  padding: 0;
+  margin: 0;
+  display: flex;
+  align-items: stretch;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+#menu .console-cluster {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
 }
 
 #menu .module-row {
-  grid-template-columns: minmax(210px, 0.27fr) minmax(340px, 0.46fr) minmax(220px, 0.27fr);
-  gap: calc(var(--vu) * 1.35);
+  display: grid;
+  grid-template-columns: calc(var(--vu) * 32) calc(var(--vu) * 58.5) calc(var(--vu) * 32);
+  gap: calc(var(--vu) * 4.5);
+  width: 100%;
+  height: 100%;
+  align-items: stretch;
 }
 
 #menu .map-box,
 #menu .preview-box,
 #menu .char-selection {
   width: 100%;
+  height: 100%;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+  background: rgba(8, 11, 14, 0.72);
+  clip-path: none;
+  box-sizing: border-box;
+  min-height: 0;
+  overflow: hidden;
+}
+
+#menu .map-box {
+  padding: calc(var(--vu) * 1.6) calc(var(--vu) * 1.3) calc(var(--vu) * 1.4);
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--vu) * 0.45);
 }
 
 #menu .map-box #game-container {
-  flex: 0 0 34%;
+  flex: 0 0 auto;
   width: 100%;
-  min-height: 100px;
-  max-height: 165px;
+  height: calc(var(--vu) * 12);
+  min-height: 80px;
+  max-height: 140px;
   aspect-ratio: 16 / 9;
 }
 
+#menu .preview-box {
+  padding: calc(var(--vu) * 1.5) calc(var(--vu) * 1.6) calc(var(--vu) * 1.6);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: calc(var(--vu) * 0.35);
+}
+
 #menu .hero-identity-block {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 0;
   container-type: size;
 }
 
-/* The old 20vu cap left a large dead field in the center bay and made the
-   class-change doors look like a loose tile. Size against both dimensions of
-   the available hero row, with a generous stage-relative ceiling. */
 #menu .char-preview-stage {
-  width: min(86cqw, 86cqh, calc(var(--vu) * 29));
+  width: min(72cqw, 72cqh, calc(var(--vu) * 21));
   max-width: 100%;
-  flex: 0 1 auto;
+  max-height: calc(var(--vu) * 19);
+  flex: 1 1 auto;
 }
 
-/* The same plate art as the #menu background, drawn again ON TOP of the
-   console with the bays cropped out, so the bunker structure reads as being in
-   front of the UI instead of only behind it. The holes are punched with mask
-   layers rather than a clip-path polygon because the window geometry is driven
-   by the --briefing-content-* and --advance-* custom properties, which are
-   already the single source of truth for where the bays sit.
+#menu .char-selection {
+  padding: calc(var(--vu) * 1.8) calc(var(--vu) * 1.4) calc(var(--vu) * 1.6);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: calc(var(--vu) * 1);
+}
 
-   Owns no hit testing: the ENTER ARMORY button and every panel underneath stay
-   fully clickable. */
-#menu .homebase-plate-overlay {
+#menu .char-selection .char-card {
+  flex: 1 1 0;
+  min-height: 0;
+  margin: 0;
+}
+
+/* Foreground non-clickable biomechanical frame overlay.
+   Owns zero hit testing: clicks and touches pass right through to controls beneath. */
+.homebase-plate-overlay {
   position: absolute;
   inset: 0;
-  z-index: 8990;
+  width: 100%;
+  height: 100%;
+  z-index: 8002;
   pointer-events: none;
-  background: url('/menu_bg_v3.webp') center / 100% 100% no-repeat;
-  /* How far the plate laps over the edge of each bay. Without this the window
-     meets the panel edge exactly and the overlay is invisible -- the overlap is
-     what makes the structure read as being in FRONT of the console. */
-  --plate-lap: calc(var(--vu) * 1.25);
-  /* CSS mask layers are TOP-first, and each layer's composite operator combines
-     it with the accumulated result of the layers BELOW it. So the cropped-out
-     windows come first and the full-cover plate last: window XOR window XOR
-     plate leaves the plate with holes where the bays are. */
-  -webkit-mask-image:
-    linear-gradient(#000 0 0),
-    linear-gradient(#000 0 0),
-    linear-gradient(#000 0 0);
-  mask-image:
-    linear-gradient(#000 0 0),
-    linear-gradient(#000 0 0),
-    linear-gradient(#000 0 0);
-  -webkit-mask-repeat: no-repeat;
-  mask-repeat: no-repeat;
-  -webkit-mask-position:
-    calc(var(--briefing-content-left) + var(--plate-lap)) calc(var(--briefing-content-top) + var(--plate-lap)),
-    calc(100% - var(--advance-right) + var(--vu) * 2.3 + var(--plate-lap)) calc(100% - var(--advance-bottom) + var(--vu) * 2.3 + var(--plate-lap)),
-    0 0;
-  mask-position:
-    calc(var(--briefing-content-left) + var(--plate-lap)) calc(var(--briefing-content-top) + var(--plate-lap)),
-    calc(100% - var(--advance-right) + var(--vu) * 2.3 + var(--plate-lap)) calc(100% - var(--advance-bottom) + var(--vu) * 2.3 + var(--plate-lap)),
-    0 0;
-  -webkit-mask-size:
-    calc(100% - var(--briefing-content-left) - var(--briefing-content-right) - var(--plate-lap) * 2) calc(100% - var(--briefing-content-top) - var(--briefing-content-bottom) - var(--plate-lap) * 2),
-    calc(var(--advance-width) + var(--vu) * 4.6 - var(--plate-lap) * 2) calc(var(--advance-height) + var(--vu) * 4.6 - var(--plate-lap) * 2),
-    100% 100%;
-  mask-size:
-    calc(100% - var(--briefing-content-left) - var(--briefing-content-right) - var(--plate-lap) * 2) calc(100% - var(--briefing-content-top) - var(--briefing-content-bottom) - var(--plate-lap) * 2),
-    calc(var(--advance-width) + var(--vu) * 4.6 - var(--plate-lap) * 2) calc(var(--advance-height) + var(--vu) * 4.6 - var(--plate-lap) * 2),
-    100% 100%;
-  -webkit-mask-composite: xor, xor, source-over;
-  mask-composite: exclude, exclude, add;
+  background: url('/menu_frame_overlay.webp') center / 100% 100% no-repeat;
 }
 
-/* Transparent presentation layer over menu_bg_v3.webp. It deliberately owns
-   no hit testing: the bevel, corner crops, bus lines, and button cradle can
-   overlap controls without ever changing pointer/controller behavior. */
-#menu .homebase-frame-overlay {
-  position: absolute;
-  inset: calc(var(--vu) * 1.15);
-  z-index: 9000;
-  pointer-events: none;
-  clip-path: polygon(
-    calc(var(--vu) * 2.2) 0,
-    calc(100% - var(--vu) * 2.2) 0,
-    100% calc(var(--vu) * 2.2),
-    100% calc(100% - var(--vu) * 2.2),
-    calc(100% - var(--vu) * 2.2) 100%,
-    calc(var(--vu) * 2.2) 100%,
-    0 calc(100% - var(--vu) * 2.2),
-    0 calc(var(--vu) * 2.2)
-  );
-  background:
-    linear-gradient(90deg, rgba(75, 220, 238, 0.72), transparent 18%, transparent 82%, rgba(255, 159, 28, 0.72)) top / 100% 1px no-repeat,
-    linear-gradient(90deg, rgba(255, 159, 28, 0.5), transparent 28%, transparent 68%, rgba(75, 220, 238, 0.46)) bottom / 100% 1px no-repeat,
-    linear-gradient(180deg, rgba(75, 220, 238, 0.52), transparent 26%, transparent 76%, rgba(255, 159, 28, 0.5)) left / 1px 100% no-repeat,
-    linear-gradient(180deg, rgba(255, 159, 28, 0.52), transparent 25%, transparent 72%, rgba(75, 220, 238, 0.5)) right / 1px 100% no-repeat;
-  box-shadow:
-    inset 0 0 0 1px rgba(146, 224, 235, 0.11),
-    inset 0 0 calc(var(--vu) * 1.4) rgba(0, 0, 0, 0.78);
+#menu.hidden ~ .homebase-plate-overlay {
+  display: none !important;
 }
 
-#menu .homebase-frame-overlay::before {
-  content: "";
-  position: absolute;
-  inset: calc(var(--vu) * 1.1) calc(var(--vu) * 1.35);
-  background:
-    linear-gradient(90deg, rgba(75, 220, 238, 0.46), rgba(75, 220, 238, 0.46)) left top / calc(var(--vu) * 8) 1px no-repeat,
-    linear-gradient(180deg, rgba(75, 220, 238, 0.46), rgba(75, 220, 238, 0.46)) left top / 1px calc(var(--vu) * 5) no-repeat,
-    linear-gradient(270deg, rgba(255, 159, 28, 0.55), rgba(255, 159, 28, 0.55)) right top / calc(var(--vu) * 8) 1px no-repeat,
-    linear-gradient(180deg, rgba(255, 159, 28, 0.55), rgba(255, 159, 28, 0.55)) right top / 1px calc(var(--vu) * 5) no-repeat,
-    linear-gradient(90deg, rgba(75, 220, 238, 0.34), transparent) left bottom / calc(var(--vu) * 19) 1px no-repeat,
-    linear-gradient(270deg, rgba(255, 159, 28, 0.42), transparent) right bottom / calc(var(--vu) * 47) 1px no-repeat;
-  opacity: 0.9;
-}
-
-/* Physical cradle around the shared advance slot. The clipped corners echo
-   the background bezel while the long upper rail visually docks the button
-   into the same console frame used by the three bays. */
-#menu .homebase-frame-overlay::after {
-  content: "";
-  position: absolute;
-  right: calc(var(--advance-right) - var(--vu) * 2.3);
-  bottom: calc(var(--advance-bottom) - var(--vu) * 2.3);
-  width: calc(var(--advance-width) + var(--vu) * 2.4);
-  height: calc(var(--advance-height) + var(--vu) * 2.4);
-  clip-path: polygon(
-    calc(var(--vu) * 1.2) 0,
-    100% 0,
-    100% calc(100% - var(--vu) * 1.2),
-    calc(100% - var(--vu) * 1.2) 100%,
-    0 100%,
-    0 calc(var(--vu) * 1.2)
-  );
-  border: 1px solid rgba(255, 159, 28, 0.62);
-  background:
-    linear-gradient(135deg, rgba(255, 159, 28, 0.18), transparent 24%) top left / calc(var(--vu) * 5) 100% no-repeat,
-    linear-gradient(270deg, rgba(255, 159, 28, 0.12), transparent 45%),
-    rgba(3, 7, 9, 0.28);
-  box-shadow:
-    inset 0 0 0 1px rgba(255, 205, 122, 0.1),
-    0 0 calc(var(--vu) * 1.2) rgba(255, 159, 28, 0.13);
+/* ENTER ARMORY docked precisely into the bottom-right frame cradle slot */
+#game-viewport > #menu:not(.hidden) + #start-game {
+  right: calc(var(--vu) * 13.5) !important;
+  bottom: calc(var(--vu) * 5.25) !important;
+  width: calc(var(--vu) * 29.75) !important;
+  height: calc(var(--vu) * 5.75) !important;
+  z-index: 8001;
 }
 
 #menu .homebase-telemetry {
