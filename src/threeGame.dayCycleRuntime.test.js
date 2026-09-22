@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ThreeGame } from './threeGame.js';
 import { REST_PHASES, createDayState } from './dayCycle.js';
+import { createFatigueState, recordExpedition } from './fatigue.js';
 
 function installBrowserStubs() {
     const events = [];
@@ -144,5 +145,70 @@ describe('sleeping moves the sky, and one rule governs every bed', () => {
         // A dead or robbed site is not a bed.
         const robbed = { dayState: createDayState(), _activeCampQuest: null };
         expect(ThreeGame.prototype.canRestAt.call(robbed, { id: 'camp_vesper' }, { status: 'robbed' }).allowed).toBe(false);
+    });
+});
+
+describe('fatigue runtime wiring', () => {
+    beforeEach(() => installBrowserStubs());
+
+    const gameWith = (fatigueState) => ({
+        fatigueState,
+        persistFatigueState: ThreeGame.prototype.persistFatigueState,
+        recordExpeditionEnded: ThreeGame.prototype.recordExpeditionEnded
+    });
+
+    it('counts an ended expedition and persists it under its own key', () => {
+        const game = gameWith(createFatigueState());
+        game.recordExpeditionEnded();
+        expect(game.fatigueState.expeditionsSinceSleep).toBe(1);
+        expect(JSON.parse(localStorage.getItem('hb_fatigue')).expeditionsSinceSleep).toBe(1);
+        // The campaign day is untouched: only sleeping moves the clock.
+        expect(localStorage.getItem('hb_day_cycle')).toBe(null);
+    });
+
+    it('announces the stage so the HUD can read it without owning it', () => {
+        const events = [];
+        window.dispatchEvent = (event) => events.push(event);
+        const game = gameWith(createFatigueState());
+        game.recordExpeditionEnded();
+        const change = events.find((event) => event.type === 'fatigue-changed');
+        expect(change).toBeTruthy();
+        expect(change.detail.stageId).toBe('ALERT');
+    });
+
+    it('clears the ladder on sleep and reports the scar the night cost', () => {
+        const events = [];
+        window.dispatchEvent = (event) => events.push(event);
+        let fatigueState = createFatigueState();
+        for (let i = 0; i < 4; i += 1) fatigueState = recordExpedition(fatigueState);
+
+        const game = {
+            dayState: createDayState(),
+            fatigueState,
+            setInputEnabled: vi.fn(),
+            persistDayCycleState: ThreeGame.prototype.persistDayCycleState,
+            persistFatigueState: ThreeGame.prototype.persistFatigueState
+        };
+        ThreeGame.prototype.beginCampRest.call(game, { id: 'camp_tallow', label: 'TALLOW' });
+
+        expect(game.fatigueState.expeditionsSinceSleep).toBe(0);
+        expect(game.fatigueState.scars.length).toBe(1);
+        const restOpen = events.find((event) => event.type === 'day-rest-open');
+        expect(restOpen.detail.gainedScar).toBe(game.fatigueState.scars[0].id);
+    });
+
+    it('leaves no scar when the operator slept before it got bad', () => {
+        const events = [];
+        window.dispatchEvent = (event) => events.push(event);
+        const game = {
+            dayState: createDayState(),
+            fatigueState: recordExpedition(createFatigueState()),
+            setInputEnabled: vi.fn(),
+            persistDayCycleState: ThreeGame.prototype.persistDayCycleState,
+            persistFatigueState: ThreeGame.prototype.persistFatigueState
+        };
+        ThreeGame.prototype.beginCampRest.call(game, { id: 'camp_meridian', label: 'MERIDIAN' });
+        expect(game.fatigueState.scars).toEqual([]);
+        expect(events.find((event) => event.type === 'day-rest-open').detail.gainedScar).toBe(null);
     });
 });

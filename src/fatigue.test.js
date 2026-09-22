@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import {
     FATIGUE_SCARS,
+    composeFatigueIntoLoadoutMods,
+    fatigueMaxHealthPenalty,
     FATIGUE_STAGES,
     FATIGUE_STATE_KEY,
     createFatigueState,
@@ -178,5 +180,46 @@ describe('persistence', () => {
         const bogus = normalizeFatigueState({ scars: [{ id: 'NOT_A_SCAR', severity: 2 }, { id: 'TREMOR', severity: 99 }] });
         expect(bogus.scars.map((s) => s.id)).toEqual(['TREMOR']);
         expect(bogus.scars[0].severity).toBeLessThanOrEqual(3);
+    });
+});
+
+describe('composing into the loadout bus', () => {
+    const ragged = () => {
+        let state = createFatigueState();
+        for (let i = 0; i < 4; i += 1) state = recordExpedition(state);
+        return state;
+    };
+
+    it('multiplies multipliers and adds bonuses onto the existing mods', () => {
+        const base = { healingMultiplier: 0.6, scrapMagnetRadiusBonus: 2, fireRateMultiplier: 1.3 };
+        const merged = composeFatigueIntoLoadoutMods(base, ragged());
+        const solo = fatigueModifiers(ragged());
+        expect(merged.healingMultiplier).toBeCloseTo(0.6 * solo.healingMultiplier, 5);
+        expect(merged.scrapMagnetRadiusBonus).toBe(2 + solo.scrapMagnetRadiusBonus);
+        // Keys fatigue knows nothing about pass through untouched.
+        expect(merged.fireRateMultiplier).toBe(1.3);
+    });
+
+    it('never folds the heart penalty into a key the consumer clamps at zero', () => {
+        const merged = composeFatigueIntoLoadoutMods({}, ragged());
+        expect(merged.maxHealthBonus).toBeUndefined();
+        expect(fatigueMaxHealthPenalty(ragged())).toBeLessThan(0);
+        // ...and it is never a bonus.
+        expect(fatigueMaxHealthPenalty(createFatigueState())).toBe(0);
+    });
+
+    it('is a no-op at baseline, so a rested run plays exactly as before', () => {
+        const base = { healingMultiplier: 1, moveSpeedMultiplier: 1 };
+        let state = createFatigueState();
+        state = recordExpedition(state); // ALERT = baseline
+        const merged = composeFatigueIntoLoadoutMods(base, state);
+        expect(merged.healingMultiplier).toBe(1);
+        expect(merged.moveSpeedMultiplier).toBe(1);
+        expect(fatigueMaxHealthPenalty(state)).toBe(0);
+    });
+
+    it('tolerates a missing base object', () => {
+        expect(() => composeFatigueIntoLoadoutMods(null, createFatigueState())).not.toThrow();
+        expect(() => composeFatigueIntoLoadoutMods(undefined, null)).not.toThrow();
     });
 });

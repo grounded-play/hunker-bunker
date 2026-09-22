@@ -301,3 +301,31 @@ export function treatScar(state, scarId) {
         treated: true
     };
 }
+
+/**
+ * Merge fatigue into the loadout modifier bus so every downstream read of
+ * `loadoutMods.X` picks fatigue up through the existing code path rather than a
+ * parallel one.
+ *
+ * `maxHealthBonus` is deliberately NOT merged. The consumer clamps that key with
+ * Math.max(0, ...) because equipment only ever grants hearts; folding a negative
+ * in there would silently vanish whenever the player carries no health mod. The
+ * caller applies the heart penalty explicitly, with a floor, at the max-HP site.
+ */
+export const FATIGUE_BUS_EXCLUDED_KEYS = Object.freeze(['maxHealthBonus']);
+
+export function composeFatigueIntoLoadoutMods(baseMods, state) {
+    const fatigue = fatigueModifiers(state);
+    const merged = { ...(baseMods ?? {}) };
+    for (const [key, value] of Object.entries(fatigue)) {
+        if (FATIGUE_BUS_EXCLUDED_KEYS.includes(key)) continue;
+        if (key.endsWith('Multiplier')) merged[key] = (Number(merged[key]) || 1) * value;
+        else merged[key] = (Number(merged[key]) || 0) + value;
+    }
+    return merged;
+}
+
+/** The heart penalty the bus cannot carry. Never positive. */
+export function fatigueMaxHealthPenalty(state) {
+    return Math.min(0, fatigueModifiers(state).maxHealthBonus);
+}

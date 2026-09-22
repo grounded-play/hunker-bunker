@@ -280,6 +280,16 @@ import {
     threatScaleForDay
 } from './dayCycle.js';
 import {
+    FATIGUE_STATE_KEY,
+    composeFatigueIntoLoadoutMods,
+    createFatigueState,
+    fatigueMaxHealthPenalty,
+    getFatigueStage,
+    normalizeFatigueState,
+    recordExpedition,
+    restoreOnSleep
+} from './fatigue.js';
+import {
     clampPositionToUnlockedRing,
     generateRadialMazeExpedition,
     getMaxUnlockedRing,
@@ -1583,6 +1593,7 @@ export class ThreeGame {
         // Campaign day/rest is distinct from the cosmetic time-of-day clock.
         // It survives runs and only advances through an explicit camp sleep.
         this.dayState = this.loadDayCycleState();
+        this.fatigueState = this.loadFatigueState();
         // Weather (Note 9): pooled Points field, biome/time-biased state machine.
         this.weather = {
             state: 'clear',
@@ -7661,6 +7672,9 @@ export class ThreeGame {
             resolvedType.toLowerCase(),
             this.multiplayerMode === 'pvp' ? 'pvp' : (this.multiplayerMode === 'coop' ? 'coop' : 'solo')
         ) ?? null;
+        // Fatigue rides the same bus as equipment, so every downstream
+        // `loadoutMods.X` read picks it up without a second code path.
+        this.loadoutMods = composeFatigueIntoLoadoutMods(this.loadoutMods, this.fatigueState);
         if (this.loadoutMods?.moveSpeedMultiplier) {
             this.moveSpeed *= this.loadoutMods.moveSpeedMultiplier;
         }
@@ -13218,6 +13232,10 @@ export class ThreeGame {
             maxHp += 1;
         }
         maxHp += Math.max(0, Number(this.loadoutMods?.maxHealthBonus) || 0);
+        // Applied after the equipment clamp above, which only ever grants
+        // hearts. Floored at one: exhaustion can hollow an operator out, but it
+        // must never be the thing that kills them outright.
+        maxHp = Math.max(1, maxHp + fatigueMaxHealthPenalty(this.fatigueState));
         this.playerVitals.maxHp = maxHp;
         this.playerVitals.hp = Math.min(this.playerVitals.hp, this.playerVitals.maxHp);
         this.applyWeaponUpgrades();
@@ -16040,6 +16058,50 @@ export class ThreeGame {
         }
     }
 
+    loadFatigueState() {
+        if (typeof localStorage === 'undefined') return createFatigueState();
+        try {
+            return normalizeFatigueState(JSON.parse(localStorage.getItem(FATIGUE_STATE_KEY) ?? 'null'));
+        } catch {
+            return createFatigueState();
+        }
+    }
+
+    persistFatigueState() {
+        this.fatigueState = normalizeFatigueState(this.fatigueState);
+        try {
+            if (typeof localStorage !== 'undefined') {
+                localStorage.setItem(FATIGUE_STATE_KEY, JSON.stringify(this.fatigueState));
+            }
+        } catch {
+            // Same contract as the day cycle: a privacy-mode storage failure
+            // must not strand the live session.
+        }
+        if (typeof window !== 'undefined' && typeof CustomEvent === 'function') {
+            const stage = getFatigueStage(this.fatigueState);
+            window.dispatchEvent(new CustomEvent('fatigue-changed', {
+                detail: {
+                    ...this.fatigueState,
+                    stageId: stage.id,
+                    stageLabel: stage.label,
+                    blurb: stage.blurb
+                }
+            }));
+        }
+        return this.fatigueState;
+    }
+
+    /**
+     * An expedition ended. Extraction and death both count: dying is not rest.
+     * This never advances the campaign day -- only sleeping does that -- so a
+     * bad run costs salvage and leaves the operator more tired, and the only
+     * cure for tired costs a day.
+     */
+    recordExpeditionEnded() {
+        this.fatigueState = recordExpedition(this.fatigueState);
+        return this.persistFatigueState();
+    }
+
     persistDayCycleState() {
         this.dayState = normalizeDayState(this.dayState);
         try {
@@ -16132,6 +16194,9 @@ export class ThreeGame {
         if (!rested.advanced) return false;
         this.dayState = rested.state;
         this.persistDayCycleState();
+        const recovered = restoreOnSleep(this.fatigueState);
+        this.fatigueState = recovered.state;
+        this.persistFatigueState?.();
         this.setTimeOfDayToMorning?.();
         // The Foundry interior is the first authored between-day tableau. Its
         // existing pocket-plane isolation pauses surface combat while the
@@ -16146,6 +16211,8 @@ export class ThreeGame {
                 difficulty: rested.difficulty,
                 expired: rested.expired,
                 closing: sleeping.closing,
+                // What last night cost: null unless they slept from RAGGED or worse.
+                gainedScar: recovered.gainedScar,
                 safeSpace: enteredRestSpace ? 'foundry-interior' : 'camp-exterior'
             }
         }));
@@ -19081,6 +19148,7 @@ export class ThreeGame {
         if (this.isPlayerDead) return;
         if (this.performanceProfile && this.performanceProfile !== 'gameplay') return;
         this.isPlayerDead = true;
+        this.recordExpeditionEnded?.();
         this.cancelGoalModuleRise?.();
         this.clearCinematicCameraFocus?.();
         // A downed co-op operator becomes fully dead on a squad wipe or
@@ -19435,6 +19503,7 @@ export class ThreeGame {
         }
         if (this.missionState) this.missionState.status = 'extracted';
         this.inputEnabled = false;
+        this.recordExpeditionEnded?.();
         // A clean extraction is a graceful run end -- nothing left to
         // crash-recover, and the salvage below is being deposited for real.
         runCheckpointStore.clear();
