@@ -1063,7 +1063,7 @@
     "martha_camp_walk.png",
     "martha_camp_walk_v2.png",
     "menu_bg.webp",
-    "menu_bg_v2.webp",
+    "menu_bg_v3.webp",
     "module_hull_matrix.png",
     "module_o2_generator.png",
     "module_radar_dish.png",
@@ -9351,6 +9351,11 @@
     {
       "path": "menu_bg_v2.webp",
       "bytes": 70844,
+      "classification": "unknown"
+    },
+    {
+      "path": "menu_bg_v3.webp",
+      "bytes": 61928,
       "classification": "runtime-required"
     },
     {
