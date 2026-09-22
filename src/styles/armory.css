@@ -229,206 +229,513 @@
 .bench-stack {
   display: flex;
   flex-direction: column;
-  gap: calc(var(--vu) * 1.2);
-}
-/* Compact bench: all fitted slots share one screen, including the suit. */
-#armory-screen .armory-main-layout { grid-template-columns: minmax(0, 1fr) clamp(340px, 31vw, 440px); }
-#armory-screen .armory-controls-sidebar {
-  overflow-x: hidden;
-  overflow-y: auto;
-  gap: 10px;
-  align-self: stretch;
-  min-height: 0;
-  max-height: 100%;
-  scrollbar-width: thin;
-  scrollbar-color: var(--armory-border, rgba(0, 240, 255, 0.4)) transparent;
-}
-#armory-screen .armory-controls-sidebar::-webkit-scrollbar {
-  width: 5px;
-}
-#armory-screen .armory-controls-sidebar::-webkit-scrollbar-thumb {
-  background: var(--armory-border, rgba(0, 240, 255, 0.4));
-  border-radius: 3px;
-}
-#armory-screen .armory-panel { padding: 8px 12px; gap: 6px; flex-shrink: 0; }
-#armory-screen .panel-header h2 { font-size: 16px; line-height: 1.15; letter-spacing: .06em; }
-#armory-screen .bench-field label { font-size: 10px; line-height: 1.3; }
-#armory-screen .bench-stack { display: grid; gap: 8px; }
-#armory-screen .armory-slot { min-height: 48px; padding: 5px; gap: 8px; font-size: 11px; }
-#armory-screen .armory-slot__art { width: 34px; height: 34px; }
-#armory-screen .armory-slot__name { white-space: normal; overflow-wrap: anywhere; line-height: 1.2; }
-#armory-screen .armory-slot__hint { font-size: 8px; }
-#armory-screen .bench-row-two-col .armory-slot__hint { display: none; }
-#armory-screen .modifiers-summary { padding-top: 7px; margin-top: 0; }
-#armory-screen .modifiers-title, #armory-screen .telemetry-title { font-size: 10px; }
-#armory-screen .modifiers-standby { gap: 8px; padding: 6px; }
-#armory-screen .standby-desc, #armory-screen .mod-badge { font-size: 9px; line-height: 1.25; }
-#armory-screen .telemetry-box { padding: 7px 9px; }
-#armory-screen .telemetry-item { font-size: 10px; line-height: 1.3; }
-#armory-screen .field-value { font-size: 10px; }
-#armory-screen .armory-stage-readout { flex-wrap: wrap; padding: 9px 12px; gap: 8px; max-width: 600px; }
-#armory-screen .armory-stage-readout__title { font-size: 13px; line-height: 1.3; white-space: normal; }
-#armory-screen .armory-stage-readout__details { font-size: 10px; line-height: 1.4; flex-wrap: wrap; }
-#armory-screen .armory-stage-readout__hint { display: none; }
-#armory-screen .armory-title { font-size: clamp(18px, 1.45vw, 22px); letter-spacing: .05em; }
-#armory-screen .armory-tag { font-size: 9px; }
-#armory-screen .armory-title-box { max-width: 48%; }
-
-/* Equal cards sized against the actual viewport by calculatePickerLayout. */
-#armory-picker-modal .armory-picker-modal-content {
-  width: fit-content; max-width: calc(100vw - 48px); max-height: calc(100vh - 32px);
-  margin: 0; padding: 24px !important; overflow: visible; box-sizing: border-box;
-  background: linear-gradient(145deg, rgba(9, 19, 28, .98), rgba(4, 9, 15, .99));
-  color: var(--text-primary); border: 1px solid var(--armory-accent, #00e5ff) !important;
-}
-#armory-picker-modal .armory-picker-title { font-size: 22px; line-height: 1.2; padding-right: 32px; }
-#armory-picker-modal .armory-picker-subtitle { font-size: 10px; margin: 8px 0 16px; line-height: 1.3; }
-#armory-picker-modal .armory-picker { gap: 8px; grid-template-columns: repeat(var(--picker-cols), calc(var(--picker-art) + 12px)); }
-#armory-picker-modal .armory-tile { padding: 5px; gap: 5px; min-width: 0; font-size: 10px; line-height: 1.25; border-radius: 4px; }
-#armory-picker-modal .armory-tile__art { width: var(--picker-art); height: var(--picker-art); aspect-ratio: auto; }
-#armory-picker-modal .armory-tile__name { height: 30px; min-height: 30px; line-height: 15px; overflow-wrap: anywhere; }
-#armory-picker-modal .armory-tile__badge { font-size: 7px; }
-#armory-picker-modal .armory-picker-readout { max-width: 100%; min-height: 40px; gap: 8px; margin-top: 12px; padding-top: 10px; font-size: 11px; line-height: 1.35; flex-direction: column; }
-#armory-picker-readout-name { max-width: 100%; overflow-wrap: anywhere; }
-#armory-picker-readout-state { color: var(--text-muted); font-size: 10px; }
-#armory-picker-modal .armory-tile.is-selected { border-color: var(--armory-accent, #00e5ff); }
-#armory-picker-modal .armory-tile__swatch { background: linear-gradient(140deg, #ffffff55, transparent 45%, #00000099), var(--tile-swatch); }
-@media (max-height: 740px) {
-  #armory-screen .armory-panel { padding: 7px 10px; gap: 6px; }
-  #armory-screen .armory-controls-sidebar { gap: 6px; overflow: hidden; }
-  #armory-screen .armory-panel { gap: 4px; }
-  #armory-screen .panel-header { padding-bottom: 3px; }
-  #armory-screen .panel-header h2 { font-size: 14px; }
-  #armory-screen .bench-field { gap: 1px; }
-  #armory-screen .bench-field label { font-size: 8px; line-height: 1.15; }
-  #armory-screen .armory-slot { min-height: 38px; padding: 3px 5px; }
-  #armory-screen .armory-slot__art { width: 28px; height: 28px; }
-  #armory-screen .armory-slot__name { font-size: 10px; line-height: 1.1; }
-  #armory-screen .modifiers-summary { padding: 4px 8px; }
-  #armory-screen .modifiers-title { margin-bottom: 2px; font-size: 8px; }
-  #armory-screen .modifiers-standby { padding: 2px; }
-  #armory-screen .standby-desc { font-size: 8px; }
-  #armory-screen .telemetry-box { display: flex; flex-wrap: wrap; gap: 4px 10px; }
-  #armory-screen .telemetry-title { width: 100%; }
-  #armory-screen .telemetry-item { gap: 6px; }
-}
-@media (prefers-reduced-motion: reduce) {
-  #armory-picker-modal .armory-tile, #armory-screen .armory-slot { transition: none; }
+  gap: calc(var(--vu) * 0.6);
 }
 
-#armory-picker-grid { justify-content: center; }
-#armory-picker-modal .close-modal { top: 12px; right: 12px; width: 28px; height: 28px; font-size: 20px; }
-#armory-screen .telemetry-box { display: flex; flex-wrap: wrap; gap: 4px 10px; }
-#armory-screen .telemetry-title { width: 100%; }
-#armory-screen .telemetry-item { gap: 6px; }
-#armory-screen .armory-stage-readout { display: grid; grid-template-columns: minmax(0, 1fr) auto; width: min(100%, 600px); }
+/* ── Armory Main Composition & Scaling ───────────────────────────────
+   Built on the game standard tokens (--vu, --vu-text, --font-*) so the
+   entire bench scales proportionally on every resolution from 1280x800
+   up to 4K displays without ever requiring a scrollbar or overlapping. */
 
-#armory-screen .bench-row-two-col .armory-slot { flex: 1; }
+#armory-screen .armory-header {
+  padding-right: calc(var(--corner-settings-size, calc(var(--vu) * 4.4)) + calc(var(--vu) * 1.6));
+}
 
-/* Fixed-fit Armory composition. This screen is a single equipment console,
-   never a scrolling document: both benches scale into the available rail. */
-#armory-screen .armory-controls-sidebar {
+#armory-screen .armory-corner-settings {
+  position: absolute !important;
+  top: var(--corner-settings-top, calc(var(--vu) * 1.8)) !important;
+  right: var(--corner-settings-right, calc(var(--vu) * 2.4)) !important;
+  left: auto !important;
+  bottom: auto !important;
+  pointer-events: auto !important;
+  z-index: 10000 !important;
+}
+
+#armory-screen .armory-main-layout {
   display: grid;
-  grid-template-rows: minmax(0, 1.42fr) minmax(0, 0.92fr);
-  gap: clamp(5px, .7vh, 9px);
-  overflow: hidden !important;
-  scrollbar-width: none;
-}
-
-#armory-screen .armory-controls-sidebar::-webkit-scrollbar { display: none; }
-
-#armory-screen .armory-panel {
+  grid-template-columns: minmax(0, 1fr) min(calc(var(--vu) * 46), 40vw);
+  align-items: stretch;
+  gap: calc(var(--vu) * 2);
+  min-height: 0;
   height: 100%;
-  min-height: 0;
-  max-height: 100%;
-  padding: clamp(6px, .75vh, 10px) clamp(8px, .7vw, 12px);
-  gap: clamp(2px, .42vh, 5px);
-  overflow: hidden;
+  pointer-events: none;
 }
 
-#armory-screen .panel-header {
-  flex: 0 0 auto;
-  padding-bottom: clamp(2px, .3vh, 4px);
-}
-
-#armory-screen .panel-header h2 {
-  font-size: clamp(13px, 1vw, 17px);
-  line-height: 1.05;
-}
-
-#armory-screen .panel-icon svg { width: 15px; height: 15px; }
-#armory-screen .bench-field { min-height: 0; gap: 1px; }
-#armory-screen .bench-field label { font-size: clamp(7px, .58vw, 9px); line-height: 1.1; }
-#armory-screen .bench-row-two-col { gap: clamp(4px, .45vw, 7px); min-height: 0; }
-#armory-screen .bench-stack { gap: clamp(4px, .45vw, 7px); min-height: 0; }
-
-#armory-screen .armory-slot {
-  min-height: clamp(34px, 4.4vh, 43px);
-  padding: 3px 5px;
-  gap: 6px;
-}
-
-#armory-screen .armory-slot__art {
-  width: clamp(25px, 3.4vh, 32px);
-  height: clamp(25px, 3.4vh, 32px);
-}
-
-#armory-screen .armory-slot__name { font-size: clamp(8px, .67vw, 11px); line-height: 1.08; }
-#armory-screen .armory-slot__hint { font-size: 7px; }
-#armory-screen .modifiers-summary { min-height: 0; margin-top: 0; padding: clamp(3px, .45vh, 6px); }
-#armory-screen .modifiers-title { margin-bottom: 2px; font-size: clamp(7px, .58vw, 9px); }
-#armory-screen .loadout-effects { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; }
-#armory-screen .loadout-effect {
+#armory-screen .armory-stage-column {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: flex-end;
+  pointer-events: none;
   min-width: 0;
-  padding: 4px 5px;
-  display: grid;
-  gap: 1px;
-  border: 1px solid rgba(148, 163, 184, .18);
-  background: rgba(0, 0, 0, .24);
-  color: rgba(148, 163, 184, .72);
-  font: 700 clamp(6px, .48vw, 8px)/1.15 'Space Mono', monospace;
+  height: 100%;
 }
-#armory-screen .loadout-effect.is-active { border-color: var(--armory-border); color: rgba(255,255,255,.82); }
-#armory-screen .loadout-effect.is-inactive { border-color: rgba(255, 174, 48, .55); color: rgba(255, 220, 170, .82); }
-#armory-screen .loadout-effect.is-inactive .loadout-effect__slot { color: #ffae30; }
-#armory-screen .loadout-effect__slot { color: var(--armory-accent); letter-spacing: .04em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-#armory-screen .loadout-effect b { color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-#armory-screen .loadout-effect > span:last-child { overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
-#armory-screen .modifiers-standby { min-height: 0; padding: 3px 5px; gap: 6px; }
-#armory-screen .standby-desc,
-#armory-screen .mod-badge { font-size: clamp(7px, .56vw, 9px); line-height: 1.15; }
-#armory-screen .standby-status-pill { padding: 2px 5px; font-size: 8px; }
-#armory-screen .armory-hud-theme-preview { min-height: 27px; padding: 2px 5px; }
 
-/* Dock the live readout beneath the floating weapon, clear of the operator.
-   Its portrait proportions use vertical space instead of spanning the feet. */
-#armory-screen .armory-stage-column { position: relative; justify-content: initial; }
+/* Dock the live readout in the bottom-right of the stage column,
+   fully clear of both the operator (on the left) and the floating weapon (above). */
 #armory-screen .armory-stage-readout {
-  position: absolute;
-  top: clamp(225px, 37%, 360px);
-  right: clamp(8px, 2.2vw, 34px);
-  width: clamp(255px, 24vw, 360px);
-  max-width: 46%;
-  min-height: clamp(118px, 16vh, 154px);
+  position: relative;
+  align-self: flex-end;
+  width: min(calc(var(--vu) * 44), 92%);
+  max-width: none;
   margin: 0;
-  padding: clamp(9px, 1.1vh, 14px);
+  margin-bottom: calc(var(--vu) * 0.4);
+  padding: calc(var(--vu) * 0.8) calc(var(--vu) * 1.2);
   display: flex;
   flex-direction: column;
   align-items: stretch;
   justify-content: center;
-  gap: clamp(7px, .9vh, 11px);
+  gap: calc(var(--vu) * 0.7);
+  pointer-events: auto;
+  background: linear-gradient(160deg, rgba(5, 14, 23, 0.92), rgba(3, 7, 13, 0.88));
+  border: 1.5px solid var(--armory-border);
+  border-bottom: 2.5px solid var(--armory-accent);
+  border-radius: 8px;
+  box-shadow: 0 0 24px var(--armory-glow), inset 0 0 16px rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(10px);
+  box-sizing: border-box;
 }
 
-#armory-screen .armory-stage-readout__info { gap: 4px; }
-#armory-screen .armory-stage-readout__title { white-space: normal; font-size: clamp(11px, .85vw, 14px); }
-#armory-screen .armory-stage-readout__details { flex-direction: column; gap: 2px; line-height: 1.25; }
-#armory-screen .armory-stage-readout__chip { overflow-wrap: anywhere; }
-#armory-screen .armory-stage-readout__polish { width: 100%; justify-content: flex-start; white-space: normal; }
+#armory-screen .armory-stage-readout__info {
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--vu) * 0.25);
+  min-width: 0;
+}
 
-@media (max-width: 1180px), (max-height: 700px) {
-  #armory-screen .armory-controls-sidebar { grid-template-rows: minmax(0, 1.38fr) minmax(0, .88fr); gap: 5px; }
-  #armory-screen .armory-panel { padding: 5px 8px; gap: 2px; }
-  #armory-screen .armory-slot { min-height: 32px; }
-  #armory-screen .armory-hud-theme-preview { display: none; }
-  #armory-screen .armory-stage-readout { top: 35%; width: clamp(235px, 27vw, 310px); min-height: 108px; }
+#armory-screen .armory-stage-readout__eyebrow {
+  color: var(--armory-accent);
+  font-weight: 800;
+  font-family: 'Space Mono', monospace;
+  font-size: calc(var(--font-xs) * 0.72);
+  letter-spacing: 0.08em;
+}
+
+#armory-screen .armory-stage-readout__title {
+  color: #ffffff;
+  font-weight: 900;
+  font-size: calc(var(--font-xs) * 0.9);
+  line-height: 1.2;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+#armory-screen .armory-stage-readout__details {
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--vu) * 0.2);
+  font-family: 'Space Mono', monospace;
+  font-size: calc(var(--font-xs) * 0.7);
+  color: var(--text-muted);
+  line-height: 1.25;
+}
+
+#armory-screen .armory-stage-readout__chip {
+  overflow-wrap: anywhere;
+}
+
+#armory-screen .armory-stage-readout__chip b {
+  color: var(--armory-accent);
+}
+
+#armory-screen .armory-stage-readout__polish {
+  display: flex;
+  align-items: center;
+  gap: calc(var(--vu) * 0.7);
+  text-align: left;
+  color: var(--text-main);
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--armory-border);
+  border-radius: 4px;
+  padding: calc(var(--vu) * 0.45) calc(var(--vu) * 0.8);
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: all 0.2s ease;
+  box-sizing: border-box;
+}
+
+#armory-screen .armory-stage-readout__polish:hover {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: var(--armory-accent);
+  box-shadow: 0 0 12px var(--armory-glow);
+}
+
+#armory-screen .armory-stage-readout__polish-swatch {
+  width: calc(var(--vu) * 1.5);
+  height: calc(var(--vu) * 1.5);
+  flex: 0 0 calc(var(--vu) * 1.5);
+  border-radius: 50%;
+  background: var(--armory-accent);
+  box-shadow: 0 0 8px var(--armory-accent);
+}
+
+#armory-screen .armory-stage-readout__polish small {
+  font-family: 'Space Mono', monospace;
+  font-size: calc(var(--font-xs) * 0.6);
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+  display: block;
+}
+
+#armory-screen .armory-stage-readout__polish b {
+  font-size: calc(var(--font-xs) * 0.7);
+  letter-spacing: 0.04em;
+  display: block;
+}
+
+#armory-screen .armory-stage-readout__hint {
+  display: none;
+}
+
+/* ── Sidebar & Bench Panels ───────────────────────────────────────── */
+#armory-screen .armory-controls-sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--vu) * 0.85);
+  align-self: stretch;
+  min-height: 0;
+  max-height: 100%;
+  overflow: hidden !important;
+  scrollbar-width: none;
+  pointer-events: auto;
+  width: 100%;
+}
+
+#armory-screen .armory-controls-sidebar::-webkit-scrollbar {
+  display: none;
+}
+
+#armory-screen .armory-panel {
+  padding: calc(var(--vu) * 0.7) calc(var(--vu) * 1.1);
+  gap: calc(var(--vu) * 0.45);
+  flex: 0 0 auto;
+  min-height: 0;
+  max-height: none;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+#armory-screen .panel-header {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: calc(var(--vu) * 0.8);
+  border-bottom: 1px solid var(--armory-border);
+  padding-bottom: calc(var(--vu) * 0.35);
+}
+
+#armory-screen .panel-header h2 {
+  font-family: 'Rajdhani', 'Outfit', sans-serif;
+  font-size: calc(var(--font-sm) * 0.95);
+  font-weight: 800;
+  line-height: 1.1;
+  letter-spacing: 0.07em;
+  color: #ffffff;
+  margin: 0;
+  text-transform: uppercase;
+}
+
+#armory-screen .panel-icon svg {
+  width: calc(var(--vu) * 2);
+  height: calc(var(--vu) * 2);
+}
+
+#armory-screen .bench-field {
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--vu) * 0.2);
+  min-width: 0;
+}
+
+#armory-screen .bench-field label {
+  font-family: 'Outfit', sans-serif;
+  font-size: calc(var(--font-xs) * 0.72);
+  font-weight: 800;
+  line-height: 1.15;
+  letter-spacing: 0.08em;
+  color: #94a3b8;
+}
+
+#armory-screen .bench-row-two-col {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: calc(var(--vu) * 0.7);
+  align-items: start;
+  min-height: 0;
+}
+
+#armory-screen .bench-stack {
+  display: grid;
+  gap: calc(var(--vu) * 0.6);
+  min-height: 0;
+}
+
+#armory-screen .armory-slot {
+  min-height: calc(var(--vu) * 4.2);
+  padding: calc(var(--vu) * 0.4) calc(var(--vu) * 0.7);
+  gap: calc(var(--vu) * 0.6);
+  font: 800 calc(var(--font-xs) * 0.8) / 1.15 'Space Mono', monospace;
+  box-sizing: border-box;
+}
+
+#armory-screen .armory-slot__art {
+  width: calc(var(--vu) * 3.2);
+  height: calc(var(--vu) * 3.2);
+  flex: 0 0 calc(var(--vu) * 3.2);
+}
+
+#armory-screen .armory-slot__name {
+  font-size: calc(var(--font-xs) * 0.8);
+  line-height: 1.15;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+#armory-screen .armory-slot__hint {
+  font-size: calc(var(--font-xs) * 0.62);
+  letter-spacing: 0.1em;
+}
+
+#armory-screen .bench-row-two-col .armory-slot__hint {
+  display: none;
+}
+
+#armory-screen .bench-row-two-col .armory-slot {
+  width: 100%;
+}
+
+#armory-screen .modifiers-summary {
+  margin-top: 0;
+  padding: calc(var(--vu) * 0.4) calc(var(--vu) * 0.7);
+  background: rgba(5, 12, 22, 0.92);
+  border: 1px solid var(--armory-border);
+  border-radius: 6px;
+  min-height: 0;
+  box-sizing: border-box;
+}
+
+#armory-screen .modifiers-title {
+  margin-bottom: calc(var(--vu) * 0.3);
+  font-family: 'Outfit', sans-serif;
+  font-size: calc(var(--font-xs) * 0.7);
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  color: var(--armory-accent);
+}
+
+#armory-screen .loadout-effects {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: calc(var(--vu) * 0.4);
+}
+
+#armory-screen .loadout-effect {
+  min-width: 0;
+  padding: calc(var(--vu) * 0.35) calc(var(--vu) * 0.5);
+  display: grid;
+  gap: calc(var(--vu) * 0.15);
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  background: rgba(0, 0, 0, 0.3);
+  color: rgba(148, 163, 184, 0.8);
+  font: 700 calc(var(--font-xs) * 0.6) / 1.15 'Space Mono', monospace;
+  box-sizing: border-box;
+}
+
+#armory-screen .loadout-effect.is-active {
+  border-color: var(--armory-border);
+  color: rgba(255, 255, 255, 0.86);
+}
+
+#armory-screen .loadout-effect.is-inactive {
+  border-color: rgba(255, 174, 48, 0.55);
+  color: rgba(255, 220, 170, 0.86);
+}
+
+#armory-screen .loadout-effect.is-inactive .loadout-effect__slot {
+  color: #ffae30;
+}
+
+#armory-screen .loadout-effect__slot {
+  color: var(--armory-accent);
+  letter-spacing: 0.04em;
+  font-size: calc(var(--font-xs) * 0.58);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+#armory-screen .loadout-effect b {
+  color: #fff;
+  font-size: calc(var(--font-xs) * 0.62);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+#armory-screen .loadout-effect > span:last-child {
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  line-height: 1.15;
+}
+
+#armory-screen .armory-hud-theme-preview {
+  margin-top: calc(var(--vu) * 0.3);
+  padding: calc(var(--vu) * 0.3) calc(var(--vu) * 0.6);
+  min-height: calc(var(--vu) * 2.8);
+  display: flex;
+  align-items: center;
+  gap: calc(var(--vu) * 0.6);
+  border: 1px solid var(--armory-border);
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.4);
+  font: 700 calc(var(--font-xs) * 0.58) / 1.15 'Space Mono', monospace;
+  box-sizing: border-box;
+}
+
+#armory-screen .armory-hud-theme-preview__copy {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  gap: 1px;
+}
+
+#armory-screen .armory-hud-theme-preview__copy b {
+  color: #fff;
+  font-size: calc(var(--font-xs) * 0.62);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+#armory-screen .armory-hud-theme-preview__copy small {
+  color: var(--text-muted);
+  font-size: calc(var(--font-xs) * 0.54);
+}
+
+/* ── Equal Cards Sized by calculatePickerLayout ───────────────────── */
+#armory-picker-modal .armory-picker-modal-content {
+  width: fit-content;
+  max-width: calc(100vw - 48px);
+  max-height: calc(100vh - 32px);
+  margin: 0;
+  padding: calc(var(--vu) * 2.4) !important;
+  overflow: visible;
+  box-sizing: border-box;
+  background: linear-gradient(145deg, rgba(9, 19, 28, 0.98), rgba(4, 9, 15, 0.99));
+  color: var(--text-primary);
+  border: 1px solid var(--armory-accent, #00e5ff) !important;
+}
+
+#armory-picker-modal .armory-picker-title {
+  font-size: calc(var(--font-sm) * 1.1);
+  line-height: 1.2;
+  padding-right: 32px;
+}
+
+#armory-picker-modal .armory-picker-subtitle {
+  font-size: calc(var(--font-xs) * 0.72);
+  margin: calc(var(--vu) * 0.8) 0 calc(var(--vu) * 1.6);
+  line-height: 1.3;
+}
+
+#armory-picker-modal .armory-picker {
+  gap: calc(var(--vu) * 0.8);
+  grid-template-columns: repeat(var(--picker-cols), calc(var(--picker-art) + 12px));
+}
+
+#armory-picker-modal .armory-tile {
+  padding: calc(var(--vu) * 0.5);
+  gap: calc(var(--vu) * 0.5);
+  min-width: 0;
+  font-size: calc(var(--font-xs) * 0.7);
+  line-height: 1.25;
+  border-radius: 4px;
+}
+
+#armory-picker-modal .armory-tile__art {
+  width: var(--picker-art);
+  height: var(--picker-art);
+  aspect-ratio: auto;
+}
+
+#armory-picker-modal .armory-tile__name {
+  height: calc(var(--vu) * 3);
+  min-height: calc(var(--vu) * 3);
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+
+#armory-picker-modal .armory-tile__badge {
+  font-size: calc(var(--font-xs) * 0.5);
+}
+
+#armory-picker-modal .armory-picker-readout {
+  max-width: 100%;
+  min-height: calc(var(--vu) * 4);
+  gap: calc(var(--vu) * 0.8);
+  margin-top: calc(var(--vu) * 1.2);
+  padding-top: calc(var(--vu) * 1);
+  font-size: calc(var(--font-xs) * 0.75);
+  line-height: 1.35;
+  flex-direction: column;
+}
+
+#armory-picker-readout-name {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+
+#armory-picker-readout-state {
+  color: var(--text-muted);
+  font-size: calc(var(--font-xs) * 0.65);
+}
+
+#armory-picker-modal .armory-tile.is-selected {
+  border-color: var(--armory-accent, #00e5ff);
+}
+
+#armory-picker-modal .armory-tile__swatch {
+  background: linear-gradient(140deg, #ffffff55, transparent 45%, #00000099), var(--tile-swatch);
+}
+
+#armory-picker-grid {
+  justify-content: center;
+}
+
+#armory-picker-modal .close-modal {
+  top: 12px;
+  right: 12px;
+  width: 28px;
+  height: 28px;
+  font-size: 20px;
+}
+
+@media (max-height: 720px) {
+  #armory-screen .armory-controls-sidebar {
+    gap: calc(var(--vu) * 0.5);
+  }
+  #armory-screen .armory-panel {
+    padding: calc(var(--vu) * 0.5) calc(var(--vu) * 0.8);
+    gap: calc(var(--vu) * 0.3);
+  }
+  #armory-screen .armory-slot {
+    min-height: calc(var(--vu) * 3.6);
+    padding: calc(var(--vu) * 0.3) calc(var(--vu) * 0.5);
+  }
+  #armory-screen .armory-slot__art {
+    width: calc(var(--vu) * 2.7);
+    height: calc(var(--vu) * 2.7);
+    flex: 0 0 calc(var(--vu) * 2.7);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #armory-picker-modal .armory-tile, #armory-screen .armory-slot {
+    transition: none;
+  }
 }

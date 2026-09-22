@@ -573,9 +573,12 @@ export function createArmoryUi({
                             ${ownership.isUnlockAll() ? `✓ QA UNLOCK ${qaAudit.available}/${qaAudit.total}` : `[QA] UNLOCK ALL ${qaAudit.available}/${qaAudit.total}`}
                         </button><button type="button" class="armory-debug-skins-btn" id="armory-debug-grant-kit-btn" title="Grant non-tradable synthetic marketplace items and test keys; never initiates a purchase">[QA] GRANT TEST KIT</button>` : ''}
                         <span class="status-cycle-hint" data-i18n="ui.armory.cycle_hint">[Q / E CYCLE]</span>
-                        <button type="button" class="calibrate-btn open-settings-btn armory-settings-btn" id="armory-settings-btn" title="Open Settings" aria-label="Open Settings" data-i18n-title="ui.armory.aria_settings" data-i18n-aria-label="ui.armory.aria_settings">⚙</button>
                     </div>
                 </header>
+
+                <div class="armory-corner-settings">
+                    <button type="button" class="calibrate-btn open-settings-btn armory-settings-btn" id="armory-settings-btn" title="Open Settings" aria-label="Open Settings" data-i18n-title="ui.armory.aria_settings" data-i18n-aria-label="ui.armory.aria_settings">⚙</button>
+                </div>
 
                 <div class="armory-main-layout">
                     <!-- 3D MODEL PREVIEW & LIVE READOUT (LEFT / CENTER) -->

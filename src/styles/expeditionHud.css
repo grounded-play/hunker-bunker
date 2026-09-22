@@ -83,8 +83,8 @@
 #ui .hud-corner-settings,
 #game-container.fullscreen-mode ~ #ui .hud-corner-settings {
   position: absolute !important;
-  top: 14px !important;
-  right: 16px !important;
+  top: var(--corner-settings-top, calc(var(--vu) * 1.8)) !important;
+  right: var(--corner-settings-right, calc(var(--vu) * 2.4)) !important;
   left: auto !important;
   bottom: auto !important;
   z-index: 17100 !important;

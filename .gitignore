@@ -40,7 +40,7 @@ server/data/*
 
 # Claude Code local/session state (machine-specific paths, PID locks) —
 # .claude/skills/ (project-scoped installed skills) IS meant to be committed.
-.claude/settings.local.json
+.claude/settings.local.json*
 .claude/scheduled_tasks.lock
 
 # Lighthouse

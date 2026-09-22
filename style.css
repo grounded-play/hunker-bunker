@@ -5898,23 +5898,46 @@ input:checked+.slider:before {
   margin-bottom: 0;
 }
 
-/* Gear button: absolutely pinned to top-right of #ui, independent of all flex layouts */
-.hud-corner-settings {
-  position: absolute !important;
-  top: calc(var(--vu) * 4) !important;
-  right: calc(var(--vu) * 4) !important;
-  left: auto !important;
-  pointer-events: auto !important;
-  z-index: 8000 !important;
+/* Universal Top-Right Settings Gear Anchor
+   Pinned to the exact same top-right coordinates across every screen in the game:
+   Briefing Menu (#menu), Armory (#armory-screen), and Gameplay HUD (#ui). */
+:root, #game-viewport {
+  --corner-settings-top: calc(var(--vu) * 1.8);
+  --corner-settings-right: calc(var(--vu) * 2.4);
+  --corner-settings-size: calc(var(--vu) * 4.4);
 }
 
-/* Gear button: pinned to top-right corner of #menu, matches menu padding */
-.menu-corner-settings {
-  position: absolute;
-  top: calc(var(--vu) * 1.8);
-  right: calc(var(--vu) * 2.4);
-  pointer-events: auto;
-  z-index: 10000;
+.hud-corner-settings,
+.menu-corner-settings,
+.armory-corner-settings {
+  position: absolute !important;
+  top: var(--corner-settings-top) !important;
+  right: var(--corner-settings-right) !important;
+  left: auto !important;
+  bottom: auto !important;
+  pointer-events: auto !important;
+  z-index: 10000 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  margin: 0 !important;
+}
+
+.hud-corner-settings .open-settings-btn,
+.menu-corner-settings .open-settings-btn,
+.armory-corner-settings .open-settings-btn {
+  width: var(--corner-settings-size) !important;
+  height: var(--corner-settings-size) !important;
+  min-width: 44px !important;
+  min-height: 44px !important;
+  box-sizing: border-box !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  font-size: calc(var(--vu) * 2.2) !important;
+  line-height: 1 !important;
+  padding: 0 !important;
+  margin: 0 !important;
 }
 
 .hud-header__left {
