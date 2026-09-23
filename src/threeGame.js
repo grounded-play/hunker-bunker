@@ -474,6 +474,8 @@ const SUIT_LIGHT_WALL_PADDING = 0.35;
 // at least this roughness; the IBL sky reflections keep the real value.
 const HB_DIRECT_SPECULAR_MIN_ROUGHNESS = 0.6;
 
+const DAMAGE_PIP_TEXTURE_CACHE_MAX = 48;
+
 export function disposeTransientEffect(game, effect) {
     if (!effect) return;
     if (typeof effect.dispose === 'function') {
@@ -483,10 +485,12 @@ export function disposeTransientEffect(game, effect) {
     }
     const target = effect.mesh ?? effect;
     if (target && target.isObject3D) {
+        // Resources flagged `userData.shared` are pooled across effects and
+        // outlive any one of them.
         target.traverse?.((child) => {
-            child.material?.map?.dispose?.();
+            if (!child.material?.map?.userData?.shared) child.material?.map?.dispose?.();
             child.material?.dispose?.();
-            child.geometry?.dispose?.();
+            if (!child.geometry?.userData?.shared) child.geometry?.dispose?.();
         });
         if (target.parent) target.parent.remove(target);
         else game?.scene?.remove?.(target);
@@ -23379,8 +23383,16 @@ export class ThreeGame {
         splash.position.set(x, surfaceY, z);
         splash.renderOrder = 1;
 
+        if (!this._rainSplashGeometry) {
+            this._rainSplashGeometry = {
+                ring: new THREE.RingGeometry(0.06, 0.13, 16),
+                droplet: new THREE.CircleGeometry(0.024, 10)
+            };
+            this._rainSplashGeometry.ring.userData.shared = true;
+            this._rainSplashGeometry.droplet.userData.shared = true;
+        }
         const ring = new THREE.Mesh(
-            new THREE.RingGeometry(0.06, 0.13, 16),
+            this._rainSplashGeometry.ring,
             new THREE.MeshBasicMaterial({
                 color: 0xb7d4eb,
                 transparent: true,
@@ -23394,7 +23406,7 @@ export class ThreeGame {
         ring.renderOrder = 1;
         splash.add(ring);
 
-        const dropletGeo = new THREE.CircleGeometry(0.024, 10);
+        const dropletGeo = this._rainSplashGeometry.droplet;
         const droplets = [];
         const dropletCount = 3 + Math.floor(Math.random() * 2);
         for (let i = 0; i < dropletCount; i++) {
@@ -23446,9 +23458,7 @@ export class ThreeGame {
                 }
             },
             dispose: () => {
-                ring.geometry.dispose();
                 ring.material.dispose();
-                dropletGeo.dispose();
                 for (const droplet of droplets) {
                     droplet.mesh.material.dispose();
                 }
@@ -30842,7 +30852,13 @@ export class ThreeGame {
         }, 80);
     }
 
-    spawnDamagePip(x, z, amount) {
+    // Pip labels repeat constantly (-1, -2, SEALED), so each distinct label is
+    // drawn and uploaded once and shared; only past the cap does a pip get a
+    // texture of its own that dies with it.
+    getDamagePipTexture(label) {
+        if (!this._damagePipTextures) this._damagePipTextures = new Map();
+        const cached = this._damagePipTextures.get(label);
+        if (cached) return { texture: cached, owned: false };
         const canvas = document.createElement('canvas');
         canvas.width = 64;
         canvas.height = 64;
@@ -30851,12 +30867,19 @@ export class ThreeGame {
         ctx.font = 'bold 36px "Outfit", sans-serif';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
+        ctx.fillText(label, 32, 32);
+        const texture = new THREE.CanvasTexture(canvas);
+        if (this._damagePipTextures.size >= DAMAGE_PIP_TEXTURE_CACHE_MAX) return { texture, owned: true };
+        texture.userData.shared = true;
+        this._damagePipTextures.set(label, texture);
+        return { texture, owned: false };
+    }
+
+    spawnDamagePip(x, z, amount) {
         // Also used for non-numeric status text (e.g. fillHoleAt's 'SEALED'
         // pip) — only round when it's actually a damage number.
         const displayAmount = Number.isFinite(amount) ? Math.round(amount) : amount;
-        ctx.fillText(`-${displayAmount}`, 32, 32);
-
-        const texture = new THREE.CanvasTexture(canvas);
+        const { texture, owned } = this.getDamagePipTexture(`-${displayAmount}`);
         const material = new THREE.SpriteMaterial({ map: texture, transparent: true });
         const sprite = new THREE.Sprite(material);
         sprite.position.set(x + (Math.random() - 0.5) * 0.4, 0.8, z + (Math.random() - 0.5) * 0.4);
@@ -30875,7 +30898,7 @@ export class ThreeGame {
             dispose: () => {
                 if (sprite.parent) sprite.parent.remove(sprite);
                 else this.scene.remove(sprite);
-                texture.dispose();
+                if (owned) texture.dispose();
                 material.dispose();
             }
         };
