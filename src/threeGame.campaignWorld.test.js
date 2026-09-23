@@ -110,6 +110,21 @@ describe('live campaign world integration', () => {
         expect(resumed.mazeState.access.completedObjectives).toContain('restored-power');
     });
 
+    it('opens a crossing from a recorded boss defeat even when the lifecycle state lacks it', () => {
+        campaignWorldStore.reset();
+        campaignWorldStore.getOrCreate({ seed: 917 });
+        const world = game();
+        world.beginCampaignExpedition();
+        const plan = world.ensureAuthoredWorldPlan();
+        const crossing = plan.ringCrossings[0];
+        world.proceduralDoorStates.set('threshold', { id: 'threshold', ringCrossingId: crossing.id, state: 'locked' });
+        // An older save: the defeat is recorded by goal key only.
+        world.defeatedMilestoneBosses.add('o2Bubble');
+        expect(world.completeRingCrossingMission(crossing.requirements.missionId)).toBe(true);
+        expect(world.ringCrossingState.crossings[crossing.id].status).toBe('open');
+        expect(world.proceduralDoorStates.get('threshold').state).toBe('open');
+    });
+
     it('isolates fixed daily and multiplayer worlds from campaign progress', () => {
         campaignWorldStore.reset();
         const saved = campaignWorldStore.getOrCreate({ seed: 12 });

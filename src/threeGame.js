@@ -19908,7 +19908,14 @@ export class ThreeGame {
                     .filter(([, built]) => Boolean(built))
                     .map(([goalKey]) => goalKey)),
             completedMissionIds,
-            milestoneLifecycle: this.milestoneBossLifecycleState
+            milestoneLifecycle: this.milestoneBossLifecycleState,
+            // defeatedMilestoneBosses stores GOAL keys ('hullExpansion');
+            // crossings key on milestone IDs. Map them, so a recorded defeat
+            // still opens its crossing when the lifecycle state lacks it (an
+            // older or migrated save).
+            defeatedMilestoneIds: [...(this.defeatedMilestoneBosses ?? [])]
+                .map((goalKey) => getMilestoneForGoal(goalKey)?.milestoneId)
+                .filter(Boolean)
         });
         this.ringCrossingState = result.state;
         this._openCrossings = result.openCrossingIds;
