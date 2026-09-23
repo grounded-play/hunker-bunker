@@ -178,6 +178,14 @@ export function buildSteamRunScorePayload({
     };
 }
 
+/**
+ * The leaderboards rank expeditions. A PvP match is a duel with its own
+ * scoring, so it never posts there (the first Steam Deck PvP session did).
+ */
+export function isRankedRunPayload(payload) {
+    return Boolean(payload) && !(payload.multiplayer?.isMultiplayer && payload.multiplayer?.mode === 'pvp');
+}
+
 export function dispatchSteamRunScoreFinalized(payload, target = globalThis?.window) {
     if (!target || typeof target.dispatchEvent !== 'function' || typeof CustomEvent !== 'function') {
         return false;

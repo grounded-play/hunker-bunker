@@ -49,7 +49,7 @@ import {
 } from './src/accessibilitySettings.js';
 import { ACHIEVEMENT_DEFS, AchievementEngine, getAchievementProgress, getSecretGateState, hasAnyUnlock, saveAchievements } from './src/achievements.js';
 import { SteamAchievementSync } from './src/steamAchievementSync.js';
-import { STEAM_RUN_SCORE_FINALIZED_EVENT, buildSteamRunScorePayload, dispatchSteamRunScoreFinalized } from './src/steam/steamEvents.js';
+import { STEAM_RUN_SCORE_FINALIZED_EVENT, buildSteamRunScorePayload, dispatchSteamRunScoreFinalized, isRankedRunPayload } from './src/steam/steamEvents.js';
 import { syncSteamStats } from './src/steamStats.js';
 import { loadRgbSave, saveRgbSave, markUnlocked as markRgbUnlocked, shouldUnlockRgb, unlockChapter as unlockRgbChapter, isChapterUnlocked as isRgbChapterUnlocked } from './src/minigames/rgb/save.js';
 import { mountRgb } from './src/minigames/rgb/runtime.js';
@@ -5348,6 +5348,17 @@ function renderGameOverAct2Summary() {
             ${oneLiner}
         </div>
     `;
+}
+
+// The results screen covers the run; stop drawing the world under it (see
+// ThreeGame.setWorldRenderSuspended). Observed rather than set in show/hide,
+// since several paths open and close the modal directly.
+{
+    const gameOverModalForRender = document.getElementById('game-over-modal');
+    if (gameOverModalForRender && typeof MutationObserver !== 'undefined') {
+        const syncWorldRender = () => window.game?.setWorldRenderSuspended?.(!gameOverModalForRender.classList.contains('hidden'));
+        new MutationObserver(syncWorldRender).observe(gameOverModalForRender, { attributes: true, attributeFilter: ['class'] });
+    }
 }
 
 function hideGameOverScreen() {
@@ -15262,6 +15273,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             { key: 'ui_error1', url: '/audio/vg2/ui_error1.wav' },
             { key: 'ui_error2', url: '/audio/vg2/ui_error2.wav' },
             { key: 'ui_error3', url: '/audio/vg2/ui_error3.wav' },
+            // Played by the game-over screen; it had no file of its own.
+            { key: 'terminal_deny', url: '/audio/vg2/ui_error3.wav' },
             { key: 'ui_scan_ping1', url: '/audio/vg2/ui_scan_ping1.wav' },
             { key: 'ui_scan_ping2', url: '/audio/vg2/ui_scan_ping2.wav' },
             { key: 'ui_scan_ping3', url: '/audio/vg2/ui_scan_ping3.wav' },
@@ -16444,6 +16457,10 @@ if (window.electronAPI) {
     window.addEventListener(STEAM_RUN_SCORE_FINALIZED_EVENT, (event) => {
         const payload = event?.detail;
         if (!payload || !window.electronAPI?.submitSteamRunScore) return;
+        if (!isRankedRunPayload(payload)) {
+            console.log(`[steam] PvP run not submitted to leaderboards (${payload.runId})`);
+            return;
+        }
         showDeveloperCommentary('leaderboard');
         recordSteamTimelineEvent('run_end', payload.outcome === 'victory' ? 'Extraction Complete' : 'Run Ended', `Score ${payload.score ?? 0} submitted for trusted ranking.`, {
             icon: payload.outcome === 'victory' ? 'victory' : 'run_end',

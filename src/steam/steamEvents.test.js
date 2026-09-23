@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildSteamRunScorePayload } from './steamEvents.js';
+import { buildSteamRunScorePayload, isRankedRunPayload } from './steamEvents.js';
 
 describe('buildSteamRunScorePayload', () => {
     it('builds normalized leaderboard targets for a normal failed run', () => {
@@ -145,5 +145,14 @@ describe('buildSteamRunScorePayload', () => {
             medkitsTraded: 2,
             o2Traded: 3
         });
+    });
+});
+
+describe('isRankedRunPayload', () => {
+    it('keeps PvP matches off the expedition leaderboards', () => {
+        expect(isRankedRunPayload({ multiplayer: { isMultiplayer: true, mode: 'pvp' } })).toBe(false);
+        expect(isRankedRunPayload({ multiplayer: { isMultiplayer: true, mode: 'coop' } })).toBe(true);
+        expect(isRankedRunPayload({ multiplayer: { isMultiplayer: false, mode: null } })).toBe(true);
+        expect(isRankedRunPayload(null)).toBe(false);
     });
 });

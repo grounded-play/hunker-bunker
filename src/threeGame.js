@@ -626,6 +626,10 @@ const O2_DRAIN_RATE_DANGER_MULT = 1.5;
 const O2_HEALTH_DRAIN_INTERVAL = 1;
 const BASE_HEARTS = 3;
 const UPGRADED_HEARTS = 4;
+// PvP is a duel between equals: every operator gets the same hearts, with no
+// campaign hull, class plating, equipment or fatigue. The first Steam Deck PvP
+// session entered at 2 hearts after two solo deaths.
+const PVP_HEARTS = UPGRADED_HEARTS;
 // DEPTH_TIER_NAMES / DEPTH_TIER_LOOT_CONFIG / getDepthLootConfig now live in
 // src/data/loot.js (imported above).
 
@@ -5165,6 +5169,7 @@ export class ThreeGame {
 
         this.isMultiplayer = true;
         this.multiplayerMode = session.mode || MULTIPLAYER_SPAWN_MODES.COOP;
+        if (this.multiplayerMode === MULTIPLAYER_SPAWN_MODES.PVP && this.bank) this.syncPersistentUpgrades?.();
         this.multiplayerRoomCode = session.roomCode || 'SECTOR-7';
         this.multiplayerCrashPlan = session.crashPlan || null;
         this.remotePlayers = new Map();
@@ -5318,8 +5323,10 @@ export class ThreeGame {
             this.netSocket.off('hostChanged');
             this.netSocket = null;
         }
+        const leavingPvp = this.multiplayerMode === MULTIPLAYER_SPAWN_MODES.PVP;
         this.isMultiplayer = false;
         this.multiplayerMode = null;
+        if (leavingPvp && this.bank) this.syncPersistentUpgrades?.();
         // Shared world beats are deduped per session. Without clearing, a
         // second co-op run would treat a beat it already saw (the O2 build,
         // say) as a replay and silently skip it.
@@ -8682,7 +8689,12 @@ export class ThreeGame {
         if (Math.abs(this.renderer.getPixelRatio() - targetPixelRatio) > 0.001) {
             this.renderer.setPixelRatio(targetPixelRatio);
         }
-        this.renderer.shadowMap.enabled = nextProfile === 'gameplay';
+        // shadowMap.enabled is a shader cache key. Flipping it with the profile
+        // recompiled every material on each death, results screen and
+        // redeploy -- the worst Steam Deck stalls (up to 2.7 s). Once gameplay
+        // turns shadows on they stay on; menus only stop updating the map.
+        if (nextProfile === 'gameplay') this.renderer.shadowMap.enabled = true;
+        this.renderer.shadowMap.autoUpdate = nextProfile === 'gameplay';
         this.resize();
         if (nextProfile === 'gameplay') {
             // Hardware status is known before deployment in packaged builds;
@@ -8741,7 +8753,7 @@ export class ThreeGame {
             // Keep the shadow variant stable while adaptive mode lowers pixel
             // cost. Toggling shadowMap at runtime caused a
             // visible lighting drop and texture/shader shimmer on some drivers.
-            this.renderer.shadowMap.enabled = this.performanceProfile === 'gameplay';
+            if (this.performanceProfile === 'gameplay') this.renderer.shadowMap.enabled = true;
         }
         this.tiltShiftOverlay?.classList?.toggle?.(
             'is-active',
@@ -8865,6 +8877,10 @@ export class ThreeGame {
             });
         }
         return this._hardwareCapabilities;
+    }
+
+    setWorldRenderSuspended(suspended) {
+        this.worldRenderSuspended = Boolean(suspended);
     }
 
     renderWithPerf(label = 'frame:render') {
@@ -9013,6 +9029,11 @@ export class ThreeGame {
         // one boolean test per call in a shipping frame.
         const fp = this.frameProfiler ?? (this.frameProfiler = createFrameProfiler());
         const renderFrame = () => {
+            // Behind the results screen the world was still drawn in full --
+            // 28 chunks at 0.5-1.7 s a frame on Steam Deck for half a minute.
+            // The canvas keeps its last frame, which is all the dimmed
+            // backdrop shows; simulation above keeps running.
+            if (this.worldRenderSuspended) return;
             const frameIntervals = this.frameIntervalTracker
                 ?? (this.frameIntervalTracker = createFrameIntervalTracker());
             frameIntervals.record(this.performanceProfile, performance.now());
@@ -13547,6 +13568,7 @@ export class ThreeGame {
         // hearts. Floored at one: exhaustion can hollow an operator out, but it
         // must never be the thing that kills them outright.
         maxHp = Math.max(1, maxHp + fatigueMaxHealthPenalty(this.fatigueState));
+        if (this.isMultiplayer && this.multiplayerMode === MULTIPLAYER_SPAWN_MODES.PVP) maxHp = PVP_HEARTS;
         this.playerVitals.maxHp = maxHp;
         this.playerVitals.hp = Math.min(this.playerVitals.hp, this.playerVitals.maxHp);
         this.applyWeaponUpgrades();
