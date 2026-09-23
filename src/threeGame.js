@@ -5170,6 +5170,11 @@ export class ThreeGame {
         this.isMultiplayer = true;
         this.multiplayerMode = session.mode || MULTIPLAYER_SPAWN_MODES.COOP;
         if (this.multiplayerMode === MULTIPLAYER_SPAWN_MODES.PVP) {
+            this.currentRunModifier = null;
+            if (this.bunkerDirector?.setRunCards) {
+                this.bunkerDirector.setRunCards({ seed: 'default', cards: [], effects: {} });
+            }
+            this.clearMission?.();
             if (this.bank) this.syncPersistentUpgrades?.();
             if (this.playerVitals) {
                 this.playerVitals.maxHp = PVP_HEARTS;
@@ -7466,6 +7471,7 @@ export class ThreeGame {
 
         presentationTelemetry.emit('WEAPON', PRESENTATION_EVENTS.WEAPON.SHOT_ACCEPTED, {
             weaponType: this.currentWeaponType || 'plasma_carbine',
+            source,
             clipRemaining: this.weaponClipAmmo,
             reserveRemaining: this.getAvailableAmmo()
         });
@@ -7493,8 +7499,8 @@ export class ThreeGame {
         return true;
     }
 
-    triggerControllerFire() {
-        return this.fireWeaponAtCurrentAim();
+    triggerControllerFire({ source = 'controller' } = {}) {
+        return this.fireWeaponAtCurrentAim({ source });
     }
 
     triggerGameplayMelee({ source = 'manual' } = {}) {
@@ -7568,7 +7574,7 @@ export class ThreeGame {
             this.tryFireWeapon(this.heldFireClientX, this.heldFireClientY);
             return;
         }
-        this.fireWeaponAtCurrentAim();
+        this.fireWeaponAtCurrentAim({ source: this._canvasPointerType || 'pointer' });
     }
 
     setKeyState(code, pressed) {
@@ -9374,7 +9380,16 @@ export class ThreeGame {
 
     syncRunModifierCards() {
         const modifier = this.currentRunModifier;
-        if (!modifier || this._syncedRunModifier === modifier) return;
+        if (!modifier) {
+            if (this._syncedRunModifier !== null) {
+                this._syncedRunModifier = null;
+                if (this.bunkerDirector?.setRunCards) {
+                    this.bunkerDirector.setRunCards({ seed: 'default', cards: [], effects: {} });
+                }
+            }
+            return;
+        }
+        if (this._syncedRunModifier === modifier) return;
         this._syncedRunModifier = modifier;
         if (modifier.cards?.length && this.bunkerDirector?.setRunCards) {
             this.bunkerDirector.setRunCards({
@@ -14878,6 +14893,29 @@ export class ThreeGame {
             }
         }
         return true;
+    }
+
+    // Everything a session export needs to replay or compare a route: which
+    // campaign and expedition, which generator, and who else was in the room.
+    getSessionRouteIdentifiers() {
+        return {
+            campaignSeed: this._campaignWorldSeed ?? null,
+            runEntropy: Number.isFinite(this.runEntropy) ? this.runEntropy : null,
+            expeditionIndex: Number.isInteger(this.expeditionIndex) ? this.expeditionIndex : null,
+            expeditionSeed: this.expeditionSeed ?? null,
+            expeditionCondition: this.activeExpedition?.condition?.id ?? null,
+            routeLayoutVersion: this.getRouteLayoutVersion?.() ?? null,
+            globalSeedOffset: this.globalSeedOffset ?? 0,
+            descentIndex: this._descentIndex ?? 0,
+            missionType: this.missionState?.type ?? null,
+            multiplayer: this.isMultiplayer ? {
+                mode: this.multiplayerMode ?? null,
+                roomCode: this.multiplayerRoomCode ?? null,
+                role: this.isMultiplayerHost ? 'host' : 'guest',
+                localPlayerId: this.multiplayerLocalPlayerId ?? null,
+                peers: this.remotePlayers?.size ?? 0
+            } : null
+        };
     }
 
     // A campaign keeps the route generation it was created with; see
@@ -24230,7 +24268,7 @@ export class ThreeGame {
             this.hasActiveAim = true;
         }
 
-        return this.fireWeaponAtCurrentAim();
+        return this.fireWeaponAtCurrentAim({ source: this._canvasPointerType || 'pointer' });
     }
 
     spawnPlayerShot(normX, normZ) {

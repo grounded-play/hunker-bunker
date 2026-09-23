@@ -513,6 +513,13 @@ function setAppPhase(phase) {
     // This used to only ever hide it, leaving the reveal to the first mousemove
     // -- so a player who deployed and moved with WASD had no reticle at all.
     if (isGameplay) {
+        debugLog.info('INPUT', 'deploy-input-provenance', {
+            mode: steamInputState.lastInputMode,
+            isSteamDeck: steamInputState.isSteamDeck,
+            activeActionSet: mainActionRouter.getActionSet(),
+            primaryControllerType: steamInputState.primaryControllerType,
+            controllerCount: steamInputState.controllerCount
+        });
         showGameplayCrosshairAtRest();
         startReticleRefresh();
     } else {
@@ -660,7 +667,12 @@ window.HunkerInputState = {
     isControllerPrompt: () => isSteamControllerInputActive(),
     getLastInputMode: () => steamInputState.lastInputMode,
     getPrimaryControllerType: () => steamInputState.primaryControllerType,
-    getState: () => ({ ...steamInputState })
+    getActiveActionSet: () => mainActionRouter.getActionSet(),
+    getState: () => ({
+        ...steamInputState,
+        activeActionSet: mainActionRouter.getActionSet(),
+        requestedActionSet: window.__hbSteamInputPhaseRequest ?? null
+    })
 };
 
 function syncSteamInputPhase(phaseOverride = null) {
@@ -760,6 +772,14 @@ function setLastInputMode(mode, { refresh = true } = {}) {
 
     if (changed && refresh) refreshInteractivePromptKeys();
     if (changed && isController) ensureControllerMenuFocus();
+    if (changed) {
+        debugLog.info('INPUT', 'input-mode-changed', {
+            mode: normalized,
+            isSteamDeck: steamInputState.isSteamDeck,
+            activeActionSet: mainActionRouter.getActionSet(),
+            primaryControllerType: steamInputState.primaryControllerType
+        });
+    }
     return changed;
 }
 
@@ -2404,7 +2424,7 @@ function handleSteamGameplayInput(controller) {
     window.game?.setCameraRotationInput?.(aimX);
 
     if (controller.fire) {
-        window.game?.triggerControllerFire?.();
+        window.game?.triggerControllerFire?.({ source: 'controller' });
     }
     if (controller.interact && !prev.interact) {
         window.game?.triggerGameplayInteract?.();
@@ -5407,18 +5427,25 @@ function resetRunToStartingState({
             classType: window.game?.playerType ?? getSelectedHeroType()
         });
         const act2Run = isAct2RunActive();
+        const isPvp = Boolean((window.game?.isMultiplayer || window.activeMultiplayerSession)
+            && (window.game?.multiplayerMode === 'pvp' || window.activeMultiplayerSession?.mode === 'pvp'));
         const campaign = !window.game?.fixedRunEntropy && !window.game?.isMultiplayer
             ? campaignWorldStore.getOrCreate() : null;
         const challengeSeed = campaign
             ? deriveExpeditionSeed(campaign.seed, campaign.expeditionIndex + 1)
             : Number(window.game?.globalSeedOffset) >>> 0;
         const missionRandom = window.game?.createSeededRandom?.(challengeSeed ^ 0x4d49534e) ?? Math.random;
-        currentMission = act2Run ? null : assignMission(missionRandom, { seeded: true });
+        currentMission = (act2Run || isPvp) ? null : assignMission(missionRandom, { seeded: true });
         const runModifierSeed = (window.game?.isMultiplayer || window.activeMultiplayerSession)
             && (window.activeMultiplayerSession?.seed || window.game?.multiplayerRoomCode)
             ? `run-${window.activeMultiplayerSession?.seed || window.game?.multiplayerRoomCode}`
             : `expedition-${challengeSeed}`;
-        currentRunModifier = pickRunModifier(Math.random, { seed: runModifierSeed, recentKeys: [] });
+        currentRunModifier = isPvp ? null : pickRunModifier(Math.random, { seed: runModifierSeed, recentKeys: [] });
+        if (isPvp) {
+            activeRunCards = [];
+            const cardStrip = document.getElementById('hud-run-cards');
+            if (cardStrip) cardStrip.classList.add('hidden');
+        }
 
         resetPickupCounter();
         if (window.game) window.game.currentRunModifier = currentRunModifier;

@@ -84,3 +84,13 @@ After release blockers have an evidence path, compare the first five minutes and
 
 - 2026-09-23 — `8da53de`: co-op transition authority implementation and automated coverage; paired packaged proof still open.
 - 2026-09-23 — evening Deck PvP capture ingested as one-client evidence; ticket plan and master register updated with bounded follow-ups.
+- 2026-09-23 — Sprint 45.2 implementation on `dev/sprint-46`:
+  - World render suspension behind `#game-over-modal` (`GAP-RN-10`, `GAP-RN-11`).
+  - Sticky shadow shader key (`shadowMap.enabled = true`) on Steam Deck with `autoUpdate` toggle (`GAP-RN-10`).
+  - Fair PvP suite (`GAP-PV-01` to `GAP-PV-07`): symmetric 4 hearts ignoring fatigue, 3.0s spawn protection, Black Box farm suppression, client/server leaderboard blocks, monotonic 400ms debounced blast door sequencing, and outgoing hit telemetry.
+  - PvE mission and modifier bypass in PvP (`GAP-PV-05`).
+  - Controller trigger fire provenance (`source: 'controller'`), `shot-accepted` provenance, active action set logging on deploy and mode change, and input diagnostics (`GAP-GP-13`).
+  - High-frequency telemetry windowed sampling via `sessionLogSampler.js` (`GAP-TS-04`).
+  - Audio alias for `terminal_deny` (`GAP-AU-01`).
+  - Pointer hover focus race condition fix in `main.js` controller navigation.
+  - Verification: 441/441 test files (4,018 tests) passing; Playwright E2E focus and Steam Input tests passing. Hardware verification remains open pending physical Deck runs.

@@ -4,11 +4,13 @@
 // accepts cheat & diagnostic commands, and offers level/category filtering.
 
 import { describeDevice, exportSessionLog, uploadSessionLog } from './sessionLogSink.js';
+import { createSessionLogSampler, SAMPLED_SUMMARY_CATEGORY } from './sessionLogSampler.js';
 
 export class DebugLogger {
     constructor() {
         this.logs = [];
         this.sessionLogs = [];
+        this.sessionLogSampler = createSessionLogSampler();
         this.sessionStartedAt = new Date();
         this.demoStartedAt = null;
         this.demoMarkers = [];
@@ -237,7 +239,8 @@ export class DebugLogger {
         };
 
         this.logs.push(entry);
-        this.sessionLogs.push(entry);
+        if (this.sessionLogSampler.retain(entry, now.getTime())) this.sessionLogs.push(entry);
+        if (category !== SAMPLED_SUMMARY_CATEGORY) this.flushSampledSessionEvents(now.getTime());
         if (this.sessionLogs.length > this.maxSessionLogs) {
             const overflow = this.sessionLogs.length - this.maxSessionLogs;
             this.sessionLogs.splice(0, overflow);
@@ -248,6 +251,12 @@ export class DebugLogger {
         }
 
         this.notifySubscribers(entry);
+    }
+
+    // Writes the sampler's per-window counts as one session entry.
+    flushSampledSessionEvents(nowMs, { force = false } = {}) {
+        const summary = this.sessionLogSampler?.flush(nowMs, { force });
+        if (summary) this.pushLog('info', SAMPLED_SUMMARY_CATEGORY, ['sampled-events', summary]);
     }
 
     debug(category, message, ...details) {
@@ -785,6 +794,7 @@ export class DebugLogger {
     }
 
     buildSessionCapture() {
+        this.flushSampledSessionEvents?.(Date.now(), { force: true });
         const game = typeof window !== 'undefined' ? (window.game ?? window.threeGame) : null;
         const inputState = typeof window !== 'undefined'
             ? window.HunkerInputState?.getState?.() ?? null
@@ -810,7 +820,15 @@ export class DebugLogger {
                 maxMessageChars: 12000,
                 identifiers: {
                     build: globalThis.__HB_BUILD_INFO__ ?? null,
-                    seed: game?.seed ?? game?.worldSeed ?? game?.missionState?.seed ?? null,
+                    seed: game?.seed ?? game?.worldSeed ?? game?.missionState?.seed ?? game?._campaignWorldSeed ?? game?.runEntropy ?? null,
+                    route: game?.getSessionRouteIdentifiers?.() ?? null,
+                    input: typeof window !== 'undefined' ? {
+                        requestedActionSet: window.__hbSteamInputPhaseRequest ?? null,
+                        activeActionSet: window.HunkerInputState?.getActiveActionSet?.() ?? null,
+                        lastInputMode: inputState?.lastInputMode ?? null,
+                        primaryControllerType: inputState?.primaryControllerType ?? null,
+                        isSteamDeck: inputState?.isSteamDeck ?? false
+                    } : null,
                     encounterId: game?.activeBossEncounterId ?? null,
                     entityId: game?.activeInteractiveConsole?.userData?.entityId ?? null,
                     plane: activePlaneId === 'foundry-interior'

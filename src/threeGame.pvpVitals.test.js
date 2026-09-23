@@ -74,6 +74,18 @@ describe('PvP hearts are the same for every operator', () => {
         expect(damaged.playerVitals.maxHp).toBe(4);
         expect(damaged.playerVitals.hp).toBe(4);
     });
+
+    it('clears missions and run modifiers on PvP entry (GAP-PV-05)', () => {
+        const game = operator();
+        game.currentRunModifier = { id: 'camp_paranoia', cards: [{ key: 'camp_paranoia' }] };
+        const setRunCards = vi.fn();
+        game.bunkerDirector = { setRunCards };
+        game.clearMission = vi.fn();
+        game.setupMultiplayerNetwork({ mode: 'pvp' });
+        expect(game.currentRunModifier).toBeNull();
+        expect(setRunCards).toHaveBeenCalledWith({ seed: 'default', cards: [], effects: {} });
+        expect(game.clearMission).toHaveBeenCalled();
+    });
 });
 
 describe('PvP spawn protection and death rules', () => {

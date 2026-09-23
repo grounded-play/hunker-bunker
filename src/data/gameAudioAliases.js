@@ -18,6 +18,7 @@ export const GAME_AUDIO_ALIASES = Object.freeze({
     boss_kill: 'enemy_death_snail',
     killstreak_stinger: 'fx_achievement',
     item_pickup: 'xp_tick',
+    terminal_deny: 'ui_error3',
     // Turret fire is a gunshot, not the Engineer ability's deployment sting.
     turret_fire: 'weapon_fire_sidearm'
 });
