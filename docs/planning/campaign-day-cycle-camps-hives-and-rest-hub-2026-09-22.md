@@ -245,16 +245,25 @@ Unchanged and already implemented in `src/dayCycle.js` `STORY_DEADLINES`: Meridi
 
 ### Remaining
 
-- **Creep and camp condition have no world presence yet.** `hb_overnight_v1`
-  records that a hive spread a ring or a camp fell to `breached`, and the ledger
-  reports it, but nothing stamps creep tiles or changes a camp's dressing. That
-  is the next visible step.
-- **Scar treatment has no vendor.** `treatScar()` exists and is tested; no camp
-  medic calls it yet.
-- **Strain audio.** §2.4 allows muffling; only the visual treatment shipped.
-- **Ring stage requirements are read-only.** The checklist describes the four
-  conditions; it does not yet author sub-steps (girder hauls, power couplings)
-  underneath them.
+- **Ring mission and boss stages have no sub-steps.** The goal stage now breaks
+  into prerequisite / resources / install because each has a truth source. The
+  mission and milestone stages stay single booleans until something tracks their
+  intermediate progress.
+- **Creep is cosmetic.** Decals stamp and persist, but creep does not yet block
+  movement, damage, or change spawns. It marks territory; it does not hold it.
+- **Camp condition does not feed the economy.** A breached camp looks breached
+  and loses its stores visually, but trade prices and verb availability are
+  unchanged by it.
+
+### Shipped after Phases A-E
+
+| Item | Where |
+|---|---|
+| Creep on the ground, deterministic and idempotent | `planCreepDecals()`, `stampOvernightCreep()` |
+| Camp raid wear | `CAMP_CONDITION_DRESSING`, `setOvernightCondition()` |
+| Camp medic scar treatment | `nextTreatableScar()`, `treatScarAtCamp()` |
+| Strain audio muffling | folded into `survivalTension.js` (which also had no caller before) |
+| Ship goal sub-steps | `describeShipGoalSteps()` |
 
 ### Verification
 
