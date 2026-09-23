@@ -562,17 +562,15 @@
   color: var(--armory-accent);
   letter-spacing: 0.04em;
   font-size: calc(var(--font-xs) * 0.6);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
 
 #armory-screen .loadout-effect b {
   color: #fff;
   font-size: calc(var(--font-xs) * 0.66);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
 
 #armory-screen .loadout-effect > span:last-child {

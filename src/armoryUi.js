@@ -14,7 +14,7 @@ import {
 import { ITEM_TYPE, getCatalogIdsByType, getCatalogEntry } from './itemOwnership.js';
 import { getVoiceBank } from './data/voiceBanks.js';
 import { hudThemeInlineStyle, resolveHudTheme } from './hudThemes.js';
-import { unlockAllPolishes } from './operatorPolishes.js';
+import { getSelectedPolish, unlockAllPolishes } from './operatorPolishes.js';
 import { getEquipmentStatus } from './data/equipmentDefinitions.js';
 import {
     ARCHETYPE_SKINS,
@@ -517,7 +517,10 @@ export function createArmoryUi({
         const loadout = loadoutManager.getClassLoadout(cls);
         const archetype = loadout.archetypeId || DEFAULT_ARCHETYPES[cls];
         const chassisSkinId = loadoutManager.getEquippedChassisSkinId?.();
-        const selectedWeapon = pickerFields().weapon.currentName();
+        const fields = pickerFields();
+        const selectedWeapon = fields.weapon.currentName();
+        const selectedSheen = fields.sheen.currentName();
+        const selectedPolish = getSelectedPolish().name;
         const hudTheme = resolveHudTheme(loadoutManager.state.hudThemeId);
         const hudThemeStyle = hudThemeInlineStyle(loadoutManager.state.hudThemeId);
         const qaAudit = ownership.auditEquippableCatalog?.() ?? { total: 0, available: 0, complete: false };
@@ -589,10 +592,15 @@ export function createArmoryUi({
                                 <div class="armory-stage-readout__title">${activeClass.toUpperCase()} // ${ARCHETYPE_NAMES[archetype] || archetype}</div>
                                 <div class="armory-stage-readout__details">
                                     <span class="armory-stage-readout__chip"><b data-i18n="ui.armory.weapon_label">WEAPON:</b> ${selectedWeapon}</span>
+                                    <span class="armory-stage-readout__chip"><b data-i18n="ui.armory.f_sheen">WEAPON SHEEN:</b> ${selectedSheen}</span>
+                                    <span class="armory-stage-readout__chip"><b data-i18n="ui.armory.sheen_kicker">OPERATOR SHEEN:</b> ${selectedPolish}</span>
                                     <span class="armory-stage-readout__chip"><b data-i18n="ui.armory.chassis_label">CHASSIS:</b> ${nameForItem(chassisSkinId, 'STANDARD')}</span>
-                                    <span class="armory-stage-readout__chip"><b>CHARM:</b> ${nameForItem(loadout.charmId, 'NONE')}</span>
-                                    <span class="armory-stage-readout__chip"><b>BAY A:</b> ${nameForItem(loadout.mod1Id, 'EMPTY')}</span>
-                                    <span class="armory-stage-readout__chip"><b>BAY B:</b> ${nameForItem(loadout.mod2Id, 'EMPTY')}</span>
+                                    <span class="armory-stage-readout__chip"><b data-i18n="ui.armory.f_charm">CHARM:</b> ${fields.charm.currentName()}</span>
+                                    <span class="armory-stage-readout__chip"><b data-i18n="ui.armory.f_bay_a">BAY A:</b> ${fields.mod1.currentName()}</span>
+                                    <span class="armory-stage-readout__chip"><b data-i18n="ui.armory.f_bay_b">BAY B:</b> ${fields.mod2.currentName()}</span>
+                                    <span class="armory-stage-readout__chip"><b data-i18n="ui.armory.f_patch">PATCH:</b> ${fields.decal.currentName()}</span>
+                                    <span class="armory-stage-readout__chip"><b data-i18n="ui.armory.f_hud">HUD:</b> ${fields.hud.currentName()}</span>
+                                    <span class="armory-stage-readout__chip"><b data-i18n="ui.armory.f_voicebank">RADIO:</b> ${fields.voicebank.currentName()}</span>
                                 </div>
                             </div>
                             <div class="armory-stage-readout__hint" data-i18n="ui.armory.stage_hint">DRAG 3D STAGE TO INSPECT OPERATOR &amp; WEAPON</div>
@@ -858,7 +866,7 @@ export function createArmoryUi({
             if (onOpenSettings) {
                 onOpenSettings();
             } else {
-                document.querySelector('#menu .open-settings-btn')?.click?.();
+                document.querySelector('.menu-corner-settings .open-settings-btn')?.click?.();
             }
         });
 

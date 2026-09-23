@@ -28,6 +28,39 @@ export const RADIAL_SITE_RULES = Object.freeze({
 // rolling a different obstacle each seed made every gate read as generic.
 // opensTraversal names the world change that clearing it produces — ring 2's
 // bridge is what physically spans the canyon once its mission is done.
+// How far off the ideal radius a gate may sit, as a fraction of the gap between
+// the rings it separates.
+//
+// Tuned against plan validity, not taste. A wider band buys more placements but
+// starts eating the route chunks the territory planner needs for hive and camp
+// territories: at 0.5 with a chunk-size floor, 5 of 100 seeds could no longer
+// allocate a 6-chunk territory and produced an invalid plan. 0.25 with no floor
+// holds 100/100 valid while still giving each gate many homes.
+export const GATE_PLACEMENT_BAND_FRACTION = 0.25;
+
+/**
+ * Can a gate on this spine chunk have a far-side door?
+ *
+ * Only if one of its neighbours in the spine sequence sits orthogonally beside
+ * it: the far side is named from the delta between the two chunks, and a
+ * diagonal delta has no cardinal name.
+ */
+export function hasOrthogonalSpineNeighbor(spineChunkKeys, key) {
+    if (!Array.isArray(spineChunkKeys) || typeof key !== 'string') return false;
+    const [chunkX, chunkY] = key.split(',').map(Number);
+    if (!Number.isFinite(chunkX) || !Number.isFinite(chunkY)) return false;
+    for (let index = 0; index < spineChunkKeys.length; index += 1) {
+        if (spineChunkKeys[index] !== key) continue;
+        for (const neighborKey of [spineChunkKeys[index + 1], spineChunkKeys[index - 1]]) {
+            if (typeof neighborKey !== 'string') continue;
+            const [nx, ny] = neighborKey.split(',').map(Number);
+            if (!Number.isFinite(nx) || !Number.isFinite(ny)) continue;
+            if (Math.abs(nx - chunkX) + Math.abs(ny - chunkY) === 1) return true;
+        }
+    }
+    return false;
+}
+
 export const RING_BLOCKER_FEATURES = Object.freeze([
     Object.freeze({ type: 'blast_bulkhead', mission: 'restore_ring_power', door: 'bulkhead', opensTraversal: null }),
     Object.freeze({ type: 'collapsed_bridge', mission: 'restore_canyon_crossing', door: 'gantry', opensTraversal: 'bridge' }),
@@ -493,8 +526,15 @@ export function generateRadialMazeExpedition(seed = 1, { chunkSize = CHUNK_SIZE 
     );
     for (const blocker of blockers) {
         const targetRadius = (RADIAL_RING_RADII[blocker.ring] + RADIAL_RING_RADII[blocker.blocksRing]) / 2;
-        const candidate = topology.spineChunkKeys
+        // A gate needs a far-side door, and selectRingCrossingFarSide() can only
+        // name one when the gate's neighbour in the spine SEQUENCE is
+        // orthogonally adjacent -- a diagonal step has no cardinal side. The old
+        // argmin satisfied this by luck; picking freely does not, so the
+        // requirement is explicit here instead of being rediscovered as a gate
+        // that never opens.
+        const ranked = topology.spineChunkKeys
             .filter((key) => !takenBlockerChunks.has(key))
+            .filter((key) => hasOrthogonalSpineNeighbor(topology.spineChunkKeys, key))
             .map((key) => {
                 const [chunkX, chunkY] = key.split(',').map(Number);
                 return {
@@ -504,7 +544,19 @@ export function generateRadialMazeExpedition(seed = 1, { chunkSize = CHUNK_SIZE 
                     delta: Math.abs(Math.hypot(chunkX * chunkSize, chunkY * chunkSize) - targetRadius)
                 };
             })
-            .sort((a, b) => a.delta - b.delta)[0];
+            .sort((a, b) => a.delta - b.delta);
+        // Taking ranked[0] was a deterministic argmin with no random() call, so
+        // the same spine chunk won every run: across 60 seeds ring-3-gate never
+        // moved off 2,7. Any spine chunk inside the band between the ring this
+        // gate guards and the ring it opens is an equally legitimate home for
+        // it, so the run seed chooses among them. The band is a fraction of the
+        // ring gap, which keeps a gate from drifting into a neighbouring ring.
+        const ringGap = Math.abs(RADIAL_RING_RADII[blocker.blocksRing] - RADIAL_RING_RADII[blocker.ring]);
+        const band = ringGap * GATE_PLACEMENT_BAND_FRACTION;
+        const eligible = ranked.filter((entry) => entry.delta <= (ranked[0]?.delta ?? 0) + band);
+        const candidate = eligible.length > 0
+            ? eligible[Math.floor(random() * eligible.length)] ?? eligible[0]
+            : ranked[0];
         if (!candidate) continue;
         takenBlockerChunks.add(candidate.key);
         blocker.chunkX = candidate.chunkX;

@@ -5,15 +5,15 @@ export async function createScoutHeroPreview(canvas) {
     if (!canvas) throw new Error('Scout hero preview requires a canvas');
     const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
     renderer.setPixelRatio(Math.min(globalThis.devicePixelRatio ?? 1, 2));
-    renderer.setSize(320, 320, false);
+    renderer.setSize(480, 480, false);
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 1.08;
 
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(30, 1, 0.01, 30);
-    camera.position.set(2.75, 1.35, 4.0);
-    camera.lookAt(0, 1.05, 0);
+    camera.position.set(2.05, 1.25, 2.95);
+    camera.lookAt(0, 1.0, 0);
     scene.add(new THREE.HemisphereLight(0xdaf4ff, 0x18202a, 2.15));
     const key = new THREE.DirectionalLight(0xffffff, 3.1);
     key.position.set(3, 5, 4);

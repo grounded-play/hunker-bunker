@@ -1,7 +1,7 @@
 import express from 'express';
 import http from 'http';
 import { initDb } from './db.js';
-import { attachRelay } from './relay.js';
+import { attachRelay, isEquivalentLoopbackOrigin } from './relay.js';
 import { attachSteamAuthRoutes } from './steamAuth.js';
 import { attachSteamLeaderboardRoutes } from './steamLeaderboards.js';
 import { attachSteamInventoryRoutes } from './steamInventory.js';
@@ -33,7 +33,10 @@ if (ALLOWED_ORIGINS.length === 0) {
 }
 
 function isAllowedOrigin(origin) {
-    return !origin || ALLOWED_ORIGINS.length === 0 || ALLOWED_ORIGINS.includes(origin);
+    return !origin
+        || ALLOWED_ORIGINS.length === 0
+        || ALLOWED_ORIGINS.includes(origin)
+        || isEquivalentLoopbackOrigin(origin, ALLOWED_ORIGINS);
 }
 
 app.use((req, res, next) => {

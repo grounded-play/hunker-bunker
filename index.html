@@ -431,7 +431,7 @@
                   <button type="button" class="dev-btn dev-btn--accent" id="roster-randomize-btn" aria-label="Randomize Callsign" data-i18n-aria-label="ui.roster.randomize">↻</button>
                 </div>
                 <div class="homebase-identity__meta">
-                  <span class="roster-id-badge"><span data-i18n="ui.roster.id_label">ID:</span> <span class="roster-id" id="roster-id">op-—</span></span>
+                  <span class="roster-id-badge hidden"><span class="roster-id" id="roster-id">op-—</span></span>
                   <span id="homebase-loadout-summary">CHASSIS SPECIFICATION // BULWARK FRAME</span>
                 </div>
               </section>
@@ -453,40 +453,42 @@
                 </div>
                 <div id="char-preview-name">TANK</div>
               </div>
-              <div class="hero-detail-panel" id="hero-detail-panel">
-                <div data-i18n="ui.hero_detail.chassis_spec" class="hero-detail-panel__kicker">CHASSIS SPECIFICATION</div>
-                <div class="hero-detail-line1" id="hero-detail-active">—</div>
-                <div class="hero-detail-line2" id="hero-detail-passive">—</div>
-              </div>
-              <div class="hero-stats-compact" id="hero-stats-row">
-                <div data-i18n-aria-label="ui.menu.aria_label_s_o_u"
-                  class="hero-stats-compact__title"
-                  aria-label="S.O.U.L — Speed, O2 Usage, Loot-Range"
-                >S.O.U.L</div>
-                <div class="hero-stat-compact-row">
-                  <span data-i18n="ui.menu.speed" class="hero-stat-compact-label">SPEED</span>
-                  <div class="hero-stat-pips" id="hero-stat-spd"></div>
-                  <span data-i18n="ui.menu.fast" class="hero-stat-compact-value" id="hero-stat-spd-val">FAST</span>
+              <div class="hero-specs-row">
+                <div class="hero-detail-panel" id="hero-detail-panel">
+                  <div data-i18n="ui.hero_detail.chassis_spec" class="hero-detail-panel__kicker">CHASSIS SPECIFICATION</div>
+                  <div class="hero-detail-line1" id="hero-detail-active">—</div>
+                  <div class="hero-detail-line2" id="hero-detail-passive">—</div>
                 </div>
-                <div class="hero-stat-compact-row">
-                  <span id="hero-stat-o2-label" data-i18n="ui.menu.o2_use" data-i18n-aria-label="ui.menu.aria_label_o2_consumption_rate" class="hero-stat-compact-label" aria-label="O2 Consumption Rate — Lower is Better">O₂ USE</span>
-                  <div class="hero-stat-pips" id="hero-stat-o2"></div>
-                  <span data-i18n="ui.menu.low" class="hero-stat-compact-value" id="hero-stat-o2-val">LOW</span>
+                <div class="hero-stats-compact" id="hero-stats-row">
+                  <div data-i18n-aria-label="ui.menu.aria_label_s_o_u"
+                    class="hero-stats-compact__title"
+                    aria-label="S.O.U.L — Speed, O2 Usage, Loot-Range"
+                  >S.O.U.L</div>
+                  <div class="hero-stat-compact-row">
+                    <span data-i18n="ui.menu.speed" class="hero-stat-compact-label">SPEED</span>
+                    <div class="hero-stat-pips" id="hero-stat-spd"></div>
+                    <span data-i18n="ui.menu.fast" class="hero-stat-compact-value" id="hero-stat-spd-val">FAST</span>
+                  </div>
+                  <div class="hero-stat-compact-row">
+                    <span id="hero-stat-o2-label" data-i18n="ui.menu.o2_use" data-i18n-aria-label="ui.menu.aria_label_o2_consumption_rate" class="hero-stat-compact-label" aria-label="O2 Consumption Rate — Lower is Better">O₂ USE</span>
+                    <div class="hero-stat-pips" id="hero-stat-o2"></div>
+                    <span data-i18n="ui.menu.low" class="hero-stat-compact-value" id="hero-stat-o2-val">LOW</span>
+                  </div>
+                  <div class="hero-stat-compact-row">
+                    <span data-i18n="ui.menu.loot_mag" data-i18n-aria-label="ui.menu.aria_label_loot_magnet_range" class="hero-stat-compact-label" aria-label="Loot magnet range">LOOT-MAG</span>
+                    <div class="hero-stat-pips" id="hero-stat-loot"></div>
+                    <span data-i18n="ui.menu.med" class="hero-stat-compact-value" id="hero-stat-loot-val">MED</span>
+                  </div>
+                  <button type="button" class="hero-polish-slot" id="hero-polish-btn" aria-describedby="homebase-command-info">
+                    <span class="hero-polish-slot__swatch" id="hero-polish-swatch"></span>
+                    <span class="hero-polish-slot__copy">
+                      <span data-i18n="ui.menu.suit_polish" class="hero-polish-slot__label">SUIT POLISH</span>
+                      <span class="hero-polish-slot__name" id="hero-polish-name">STANDARD ISSUE</span>
+                    </span>
+                    <span class="hero-polish-slot__count" id="hero-polish-count">1/16</span>
+                  </button>
+                  <div class="module-scanline"></div>
                 </div>
-                <div class="hero-stat-compact-row">
-                  <span data-i18n="ui.menu.loot_mag" data-i18n-aria-label="ui.menu.aria_label_loot_magnet_range" class="hero-stat-compact-label" aria-label="Loot magnet range">LOOT-MAG</span>
-                  <div class="hero-stat-pips" id="hero-stat-loot"></div>
-                  <span data-i18n="ui.menu.med" class="hero-stat-compact-value" id="hero-stat-loot-val">MED</span>
-                </div>
-                <button type="button" class="hero-polish-slot" id="hero-polish-btn" aria-describedby="homebase-command-info">
-                  <span class="hero-polish-slot__swatch" id="hero-polish-swatch"></span>
-                  <span class="hero-polish-slot__copy">
-                    <span data-i18n="ui.menu.suit_polish" class="hero-polish-slot__label">SUIT POLISH</span>
-                    <span class="hero-polish-slot__name" id="hero-polish-name">STANDARD ISSUE</span>
-                  </span>
-                  <span class="hero-polish-slot__count" id="hero-polish-count">1/16</span>
-                </button>
-                <div class="module-scanline"></div>
               </div>
               <div class="module-scanline"></div>
             </div>
@@ -586,10 +588,30 @@
         <div class="terminal-scanline"></div>
         <div class="archive-header">
           <button class="close-modal" id="close-archive-modal">×</button>
-          <div data-i18n="ui.archive.bunker_archive" class="archive-title">◈ BUNKER ARCHIVE</div>
+          <div id="archive-console-title" data-i18n="ui.archive.bunker_archive" class="archive-title">◈ BUNKER ARCHIVE</div>
           <div id="archive-summary" class="archive-summary">LOGS RECOVERED: 0 / 27</div>
         </div>
-        <div id="archive-log-list" class="archive-log-list"></div>
+        <div class="archive-console-tabs" role="tablist" aria-labelledby="archive-console-title">
+          <button id="archive-tab-lore" class="archive-console-tab active" type="button" role="tab" aria-selected="true" aria-controls="archive-panel-lore" data-archive-tab="lore" data-i18n="ui.archive.lore_logs">LORE LOGS</button>
+          <button id="archive-tab-dossier" class="archive-console-tab" type="button" role="tab" aria-selected="false" aria-controls="archive-panel-dossier" data-archive-tab="dossier" data-i18n="ui.hub.dossier">DOSSIER</button>
+          <button id="archive-tab-endings" class="archive-console-tab" type="button" role="tab" aria-selected="false" aria-controls="archive-panel-endings" data-archive-tab="endings" data-i18n="ui.archive.story_endings">STORY ENDINGS</button>
+          <button id="archive-tab-achievements" class="archive-console-tab" type="button" role="tab" aria-selected="false" aria-controls="archive-panel-achievements" data-archive-tab="achievements" data-i18n="ui.hub.achievements">ACHIEVEMENTS</button>
+        </div>
+        <div class="archive-console-body">
+          <section id="archive-panel-lore" class="archive-console-panel" role="tabpanel" aria-labelledby="archive-tab-lore">
+            <div id="archive-log-list" class="archive-log-list"></div>
+          </section>
+          <section id="archive-panel-dossier" class="archive-console-panel hidden" role="tabpanel" aria-labelledby="archive-tab-dossier">
+            <div id="archive-dossier-summary" class="archive-console-grid"></div>
+          </section>
+          <section id="archive-panel-endings" class="archive-console-panel hidden" role="tabpanel" aria-labelledby="archive-tab-endings">
+            <div id="archive-endings-grid" class="ending-archive-grid"></div>
+          </section>
+          <section id="archive-panel-achievements" class="archive-console-panel hidden" role="tabpanel" aria-labelledby="archive-tab-achievements">
+            <div id="archive-achievements-summary" class="archive-console-section-summary"></div>
+            <div id="archive-achievements-grid" class="achievements-grid archive-achievements-grid"></div>
+          </section>
+        </div>
       </div>
     </div>
 
@@ -2436,6 +2458,10 @@
             <input data-i18n-placeholder="ui.settings.placeholder_agent" type="text" id="operator-callsign" data-i18n-aria-label="ui.aria.callsign_input" class="operator-callsign-input" maxlength="16" placeholder="AGENT" autocomplete="off" spellcheck="false" aria-label="Operator callsign">
           </div>
           <div class="setting-item">
+            <span data-i18n="ui.settings.operator_id">OPERATOR ID</span>
+            <span id="settings-operator-id" class="setting-val-display font-mono">OP-—</span>
+          </div>
+          <div class="setting-item">
             <span data-i18n="ui.settings.cloud_sync">STEAM CLOUD SYNC</span>
             <span id="setting-steam-cloud-status" class="setting-val-display" data-state="checking">CHECKING…</span>
           </div>
@@ -2924,6 +2950,38 @@
           <div class="net-mode-description" id="net-mode-description">
             CO-OP EXPEDITION: Deploy joint squads through the outer ring. Shared salvage, synchronized telemetry, and emergency revival.
           </div>
+        </div>
+
+        <!-- Shared deployment intelligence. Solo uses this as its primary
+             briefing; Co-op keeps it visible above relay/roster controls. -->
+        <div class="net-deployment-ledger hidden" id="net-deployment-ledger">
+          <section class="net-ledger-panel" aria-labelledby="net-career-ledger-title">
+            <div class="net-ledger-title" id="net-career-ledger-title" data-i18n="ui.multiplayer.career_ledger">CAREER LEDGER</div>
+            <div class="net-ledger-stats">
+              <span><b id="net-career-runs">0</b><small data-i18n="ui.multiplayer.runs">RUNS</small></span>
+              <span><b id="net-career-deaths">0</b><small data-i18n="ui.multiplayer.deaths">DEATHS</small></span>
+              <span><b id="net-career-victories">0</b><small data-i18n="ui.multiplayer.victories">VICTORIES</small></span>
+              <span><b id="net-career-depth">SURFACE</b><small data-i18n="ui.multiplayer.deepest">DEEPEST</small></span>
+            </div>
+          </section>
+          <section class="net-ledger-panel" aria-labelledby="net-campaign-ledger-title">
+            <div class="net-ledger-title" id="net-campaign-ledger-title" data-i18n="ui.multiplayer.campaign_ledger">CURRENT CAMPAIGN</div>
+            <div class="net-ledger-stats">
+              <span><b id="net-campaign-runs">0</b><small data-i18n="ui.multiplayer.attempts">ATTEMPTS</small></span>
+              <span><b id="net-campaign-deaths">0</b><small data-i18n="ui.multiplayer.lives_lost">LIVES LOST</small></span>
+              <span><b id="net-campaign-day">1</b><small data-i18n="ui.multiplayer.day">DAY</small></span>
+              <span><b id="net-campaign-depth">SURFACE</b><small data-i18n="ui.multiplayer.depth">DEPTH</small></span>
+            </div>
+            <div class="net-ledger-context" id="net-campaign-story">ACT I // HUMAN PRELUDE</div>
+          </section>
+          <section class="net-ledger-panel net-ledger-panel--recovery" aria-labelledby="net-recovery-title">
+            <div class="net-ledger-title" id="net-recovery-title" data-i18n="ui.multiplayer.black_box_recovery">BLACK BOX RECOVERY</div>
+            <div class="net-ledger-context" id="net-black-box-summary">NO ACTIVE RECOVERY SIGNAL</div>
+          </section>
+          <section class="net-ledger-panel net-ledger-panel--objectives" aria-labelledby="net-objectives-title">
+            <div class="net-ledger-title" id="net-objectives-title" data-i18n="ui.multiplayer.tracked_objectives">TRACKED OBJECTIVES</div>
+            <div class="net-objective-list" id="net-briefing-objectives"></div>
+          </section>
         </div>
 
         <!-- Main Split Grid -->

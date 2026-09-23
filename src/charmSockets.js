@@ -54,3 +54,21 @@ export function resolveCharmModelOffset(bounds) {
     const centreZ = (min.z + max.z) / 2;
     return [-centreX, -max.y, -centreZ];
 }
+
+/**
+ * A closed, authored hanging loop in socket-local coordinates. The weapon
+ * anchor owns this path; the charm is mounted at its lowest point instead of
+ * scaling a straight cylinder as part of the charm mesh.
+ */
+export function getCharmCordLoopPoints(cordDrop = 0.045, loopWidth = null) {
+    const drop = Math.max(0.02, Number(cordDrop) || 0.045);
+    const width = Math.max(0.006, Number(loopWidth) || drop * 0.24);
+    return [
+        [-width, 0, 0],
+        [-width * 1.15, -drop * 0.48, 0.002],
+        [0, -drop, 0.004],
+        [width * 1.15, -drop * 0.48, -0.002],
+        [width, 0, 0],
+        [0, -drop * 0.12, 0.003]
+    ];
+}

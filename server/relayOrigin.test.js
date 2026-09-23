@@ -24,6 +24,12 @@ describe('isAllowedRelayOrigin', () => {
         expect(isAllowedRelayOrigin('https://evil.example', allowed)).toBe(false);
     });
 
+    it('treats localhost and 127.0.0.1 as the same loopback origin on the same port', () => {
+        expect(isAllowedRelayOrigin('http://127.0.0.1:5173', ['http://localhost:5173'])).toBe(true);
+        expect(isAllowedRelayOrigin('http://localhost:5173', ['http://127.0.0.1:5173'])).toBe(true);
+        expect(isAllowedRelayOrigin('http://127.0.0.1:5174', ['http://localhost:5173'])).toBe(false);
+    });
+
     it('allows a missing Origin header (packaged Electron often sends none) even with an allowlist configured', () => {
         const allowed = ['https://hunkerbunker.netlify.app'];
         expect(isAllowedRelayOrigin(undefined, allowed)).toBe(true);

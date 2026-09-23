@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { getCharmSocketRegistry, getCharmSocketTransform, resolveCharmModelOffset } from './charmSockets.js';
+import { getCharmCordLoopPoints, getCharmSocketRegistry, getCharmSocketTransform, resolveCharmModelOffset } from './charmSockets.js';
 
 describe('per-archetype charm sockets', () => {
     it('has distinct named sockets for every weapon archetype', () => {
@@ -40,5 +40,15 @@ describe('resolveCharmModelOffset', () => {
 
     it('returns a usable offset for a degenerate bounding box', () => {
         expect(resolveCharmModelOffset(null).every(Number.isFinite)).toBe(true);
+    });
+});
+
+describe('authored charm cord loop', () => {
+    it('forms a two-sided closed-loop path with the charm mount at the lowest point', () => {
+        const points = getCharmCordLoopPoints(0.06);
+        expect(points).toHaveLength(6);
+        expect(points[0][0]).toBeLessThan(0);
+        expect(points[4][0]).toBeGreaterThan(0);
+        expect(Math.min(...points.map((point) => point[1]))).toBeCloseTo(-0.06, 5);
     });
 });

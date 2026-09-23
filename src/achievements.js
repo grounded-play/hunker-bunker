@@ -227,6 +227,7 @@ export function createDefaultAchievementState() {
             deepTierReachedAlive: false,
             runCount: 0,
             victories: 0,
+            maxDepthTier: 0,
             maxRunMs: 0,
             loreDrops: 0,
             loreDropIds: [],
@@ -433,6 +434,7 @@ function updateStatsForEvent(state, name, detail = {}) {
             state.stats.totalDistanceTravelled += Math.max(0, Number(detail.distanceTravelled) || 0);
             state.stats.maxKillsOneRun = Math.max(state.stats.maxKillsOneRun, kills);
             state.stats.maxRunMs = Math.max(state.stats.maxRunMs, Math.max(0, Number(detail.runMs) || 0));
+            state.stats.maxDepthTier = Math.max(state.stats.maxDepthTier, Math.max(0, Math.floor(Number(detail.depthTier) || 0)));
             if ((Number(detail.depthTier) || 0) >= 2) state.stats.deepTierReachedAlive = true;
             if (detail.outcome === 'death') state.stats.totalDeaths += 1;
             if (detail.outcome === 'victory') state.stats.victories += 1;

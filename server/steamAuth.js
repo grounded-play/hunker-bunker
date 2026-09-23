@@ -34,6 +34,18 @@ function isHexTicket(value) {
         && /^[0-9a-f]+$/i.test(value);
 }
 
+// Browser/LAN development has no Steam client from which to request a real
+// encrypted app ticket. The renderer deliberately sends a zero-filled ticket
+// in that environment so it can still exercise the authenticated Socket.IO
+// path. Treat that one sentinel as a development identity before contacting
+// Steam, even when a publisher key is configured for the local mock store.
+// Production and HB_ALLOW_DEV_STEAM_AUTH=false never take this path.
+function isDevPlaceholderTicket(value) {
+    return isDevFallbackAllowed()
+        && isHexTicket(value)
+        && /^0+$/.test(value);
+}
+
 function normalizeIdentity(value) {
     const identity = String(value ?? DEFAULT_STEAM_AUTH_IDENTITY).trim();
     if (!identity) return DEFAULT_STEAM_AUTH_IDENTITY;
@@ -481,10 +493,13 @@ export function attachSteamAuthRoutes(app) {
     });
 
     app.post('/steam/session', steamRouteRateLimit, async (req, res) => {
-        const auth = await verifySteamSessionTicket({
-            ticketHex: req.body?.ticketHex,
-            identity: req.body?.identity
-        });
+        const ticketHex = req.body?.ticketHex;
+        const auth = isDevPlaceholderTicket(ticketHex)
+            ? createDevSteamAuth(req.body?.identity)
+            : await verifySteamSessionTicket({
+                ticketHex,
+                identity: req.body?.identity
+            });
 
         const result = auth.ok
             ? auth

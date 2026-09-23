@@ -37,6 +37,15 @@ export const MULTIPLAYER_MODES = Object.freeze({
 
 const DAILY_GRADE_BANDS = RUN_GRADE_BANDS.filter((band) => band.minScore > 0);
 
+function escapeBriefingText(value) {
+    return String(value ?? '')
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#39;');
+}
+
 // Sprint 24 Milestone A item 4 (docs/sprint24-multiplayer-runtime-2026-08-19.md):
 // mint a short-lived session token from the relay's existing POST
 // /steam/session route before connecting the socket, so the handshake
@@ -353,13 +362,14 @@ export class MultiplayerLobby {
      *   DAILY OPS card is active. getDailyOpsStatus: today's Daily Ops record
      *   ({ date, seedLabel, state, score, grade }) for the goals panel.
      */
-    openModal({ onLaunch, onCancel, onDailyLaunch, getDailyOpsStatus } = {}) {
+    openModal({ onLaunch, onCancel, onDailyLaunch, getDailyOpsStatus, getDeploymentBriefing } = {}) {
         const modal = document.getElementById('multiplayer-modal');
         if (!modal) return;
         this.onLaunch = onLaunch ?? null;
         this.onCancel = onCancel ?? null;
         this.onDailyLaunch = onDailyLaunch ?? null;
         this.getDailyOpsStatus = getDailyOpsStatus ?? null;
+        this.getDeploymentBriefing = getDeploymentBriefing ?? null;
         // Reset to SOLO on every open rather than remembering last run's
         // CO-OP/PVP pick -- opening a live relay connection / creating a
         // Steam lobby is a real side effect a player choosing SOLO again
@@ -1214,6 +1224,9 @@ export class MultiplayerLobby {
         if (dailyIndicator) dailyIndicator.textContent = isDaily ? t('ui.multiplayer.active_mode') : t('ui.multiplayer.select_mode');
         const dailyStatus = this.getDailyOpsStatus?.() ?? null;
         this.renderDailyStatusChip(dailyStatus);
+        const showDeploymentLedger = isSolo || isCoop;
+        document.getElementById('net-deployment-ledger')?.classList.toggle('hidden', !showDeploymentLedger);
+        if (showDeploymentLedger) this.renderDeploymentBriefing(this.getDeploymentBriefing?.() ?? {});
 
         const titleDesc = document.getElementById('net-mode-description');
         if (titleDesc) {
@@ -1236,7 +1249,9 @@ export class MultiplayerLobby {
         telemetryColumn?.classList.toggle('hidden', isSolo || isDaily);
         rosterColumn?.classList.toggle('hidden', isSolo || isDaily);
         dailyColumn?.classList.toggle('hidden', !isDaily);
-        document.querySelector('.net-main-grid')?.classList.toggle('net-main-grid--daily', isDaily);
+        const mainGrid = document.querySelector('.net-main-grid');
+        mainGrid?.classList.toggle('net-main-grid--daily', isDaily);
+        mainGrid?.classList.toggle('hidden', isSolo);
         if (isDaily) return this.updateDailyPanel(dailyStatus);
         if (isSolo) return this.updateDeployButtonForSolo();
 
@@ -1387,6 +1402,56 @@ export class MultiplayerLobby {
             deployBtn.disabled = false;
             deployBtn.textContent = t('ui.lobby.deploy_solo');
         }
+    }
+
+    renderDeploymentBriefing(snapshot = {}) {
+        const setText = (id, value) => {
+            const element = document.getElementById(id);
+            if (element) element.textContent = String(value ?? '0');
+        };
+        const career = snapshot.career ?? {};
+        const campaign = snapshot.campaign ?? {};
+        setText('net-career-runs', career.runs ?? 0);
+        setText('net-career-deaths', career.deaths ?? 0);
+        setText('net-career-victories', career.victories ?? 0);
+        setText('net-career-depth', career.deepestDepth ?? t('ui.lobby.surface'));
+        setText('net-campaign-runs', campaign.runs ?? 0);
+        setText('net-campaign-deaths', campaign.deaths ?? 0);
+        setText('net-campaign-day', campaign.day ?? 1);
+        setText('net-campaign-depth', campaign.deepestDepth ?? t('ui.lobby.surface'));
+        setText('net-campaign-story', campaign.storyProgress ?? t('ui.lobby.story_prelude'));
+
+        const blackBox = snapshot.blackBox ?? {};
+        const salvage = blackBox.salvage ?? {};
+        setText('net-black-box-summary', blackBox.active
+            ? t('ui.lobby.black_box_active', {
+                depth: blackBox.depth ?? 0,
+                tech: salvage.tech ?? 0,
+                coin: salvage.coin ?? 0,
+                med: salvage.med ?? 0
+            })
+            : t('ui.lobby.black_box_clear'));
+
+        const objectiveList = document.getElementById('net-briefing-objectives');
+        if (!objectiveList) return;
+        const daily = snapshot.daily ?? {};
+        const dailyState = daily.state === 'completed'
+            ? t('ui.archive.score_grade', { score: daily.score ?? 0, grade: daily.grade ?? 'D' })
+            : daily.state === 'in_progress' ? t('ui.archive.in_progress') : t('ui.archive.ready');
+        const objectives = [
+            { title: t('ui.daily_ops.tag'), progress: dailyState },
+            ...(snapshot.seasonObjectives ?? []).map((objective) => ({
+                title: objective.title,
+                progress: `${Math.min(Number(objective.progress) || 0, Number(objective.target) || 0)} / ${Number(objective.target) || 0}`
+            }))
+        ];
+        objectiveList.innerHTML = objectives.length > 0
+            ? objectives.map((objective) => `
+                <div class="net-objective-row">
+                    <span>${escapeBriefingText(objective.title)}</span>
+                    <b>${escapeBriefingText(objective.progress)}</b>
+                </div>`).join('')
+            : `<div class="net-objective-row"><span>${escapeBriefingText(t('ui.lobby.no_tracked_objectives'))}</span><b>--</b></div>`;
     }
 
     renderDailyStatusChip(status) {

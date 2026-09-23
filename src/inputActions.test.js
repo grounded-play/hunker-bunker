@@ -6,6 +6,7 @@ import {
     createActionRouter,
     hasControllerContinuePress,
     menuKeyboardDirection,
+    spatialFocusIndex,
     wrapMenuIndex,
     shouldPreferBrowserGamepad
 } from './inputActions.js';
@@ -228,6 +229,27 @@ describe('createActionRouter', () => {
         router.setActionSet(ACTION_SETS.MENU);
         router.setActionSet(ACTION_SETS.ARCHIVE);
         expect(router.deriveActions(held).actions.confirm).toBe(true);
+    });
+});
+
+describe('deterministic spatial focus routing', () => {
+    const rect = (left, top, width = 40, height = 30) => ({ left, top, width, height });
+    const grid = [rect(0, 0), rect(100, 0), rect(0, 100), rect(100, 100)];
+
+    it('moves through a two-dimensional grid instead of DOM order', () => {
+        expect(spatialFocusIndex(grid, 0, 'right')).toBe(1);
+        expect(spatialFocusIndex(grid, 0, 'down')).toBe(2);
+        expect(spatialFocusIndex(grid, 3, 'left')).toBe(2);
+        expect(spatialFocusIndex(grid, 3, 'up')).toBe(1);
+    });
+
+    it('wraps to the opposite visual edge on each axis', () => {
+        expect(spatialFocusIndex(grid, 1, 'right')).toBe(0);
+        expect(spatialFocusIndex(grid, 2, 'down')).toBe(0);
+    });
+
+    it('prefers a nearby row over a diagonally distant control', () => {
+        expect(spatialFocusIndex([rect(0, 0), rect(80, 10), rect(60, 200)], 0, 'right')).toBe(1);
     });
 });
 

@@ -512,7 +512,8 @@ export async function createPlayer3dOverlay({
     animationBonePrefix = null,
     allowStatic = false,
     wearableOverclocks = [],
-    requireRigged = false
+    requireRigged = false,
+    operatorClass = null
 } = {}) {
     const [modelTemplate, animationGltf] = await Promise.all([
         loadCharacterTemplate(modelUrl),
@@ -547,7 +548,10 @@ export async function createPlayer3dOverlay({
     });
 
     const chestPatch = createOperatorPatch(root, { targetHeight });
-    const equipment = createOperatorEquipmentController(root);
+    const inferredOperatorClass = /engineer/i.test(modelUrl)
+        ? 'ENGINEER'
+        : /tank/i.test(modelUrl) ? 'TANK' : 'SCOUT';
+    const equipment = createOperatorEquipmentController(root, { classType: operatorClass ?? inferredOperatorClass });
     const equipmentLoads = await Promise.allSettled([
         equipment.set(1, wearableOverclocks?.[0] ?? null),
         equipment.set(2, wearableOverclocks?.[1] ?? null)
