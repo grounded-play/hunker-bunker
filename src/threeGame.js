@@ -417,6 +417,17 @@ import { SHOWROOM_CHUNK_X, SHOWROOM_CHUNK_Y } from './debugWorldLayout.js';
 import { PRESENTATION_EVENTS, presentationTelemetry } from './presentationTelemetry.js';
 import { summarizeSceneLights, diffLightCounts } from './lightingReport.js';
 import { t } from './i18n.js';
+import {
+    COOP_ROLE,
+    COOP_TRANSITION_EVENTS,
+    announcesBossEvent,
+    bossAddScatterKey,
+    coopRole,
+    coopTransitionDedupeKey,
+    descentSeedOffset,
+    runsBossEventLocally,
+    shouldApplyDescent
+} from './coopTransitions.js';
 
 /**
  * Boss display names by spawn type. Was an eight-branch if/else assigning
@@ -1649,6 +1660,8 @@ export class ThreeGame {
         this.chunkGroups = new THREE.Group();
         this._chunkTemplateCache = new Map();
         this.globalSeedOffset = 0;
+        this._descentIndex = 0;
+        this._descentBaseOffset = null;
         // Geography belongs to the campaign; expedition challenges get their
         // own seed. Fixed daily/multiplayer worlds bypass this local save.
         this.fixedRunEntropy = false;
@@ -5196,6 +5209,8 @@ export class ThreeGame {
         if (session.seed != null) {
             this.fixedRunEntropy = true;
             this.globalSeedOffset = hashSeed(session.seed) | 0;
+            this._descentIndex = 0;
+            this._descentBaseOffset = null;
         }
 
         const crashParticipants = partitionCrashPlanPlayers(
@@ -5323,6 +5338,8 @@ export class ThreeGame {
         // of multiplayer flags.
         this.fixedRunEntropy = false;
         this.globalSeedOffset = 0;
+        this._descentIndex = 0;
+        this._descentBaseOffset = null;
     }
 
     getOrCreateRemotePlayer(playerData) {
@@ -5973,8 +5990,10 @@ export class ThreeGame {
 
         this._appliedWorldEvents = this._appliedWorldEvents ?? new Set();
 
-        let dedupeKey = null;
-        if (event === 'wall-destroyed') {
+        let dedupeKey = coopTransitionDedupeKey(event, detail);
+        if (dedupeKey) {
+            // Irreversible co-op transitions carry their own keys.
+        } else if (event === 'wall-destroyed') {
             dedupeKey = `${event}:${detail.wallKey ?? `${detail.worldX},${detail.worldZ}`}`;
         } else if (event === 'bunker-door-toggled' || event === 'procedural-door-toggled' || event === 'bunker-line' || event === 'enemy-projectile-spawned') {
             // Door toggles are stateful transitions guarded by their respective states below;
@@ -6078,6 +6097,14 @@ export class ThreeGame {
             this._blackBoxState = null;
             this.arcManager?.recordSignal?.({ blackBoxesRecovered: 1 });
             this.arcManager?.evaluate?.();
+        } else if (event === COOP_TRANSITION_EVENTS.MILESTONE_DEFEATED) {
+            this.applyRemoteMilestoneDefeat(detail);
+        } else if (event === COOP_TRANSITION_EVENTS.ELEVATOR_DESCENDED) {
+            if (shouldApplyDescent(this._descentIndex, detail)) this.applyDescent(detail, { fromRemote: true });
+        } else if (event === COOP_TRANSITION_EVENTS.BOSS_FIGHT_EVENT) {
+            this.applyRemoteBossFightEvent(detail);
+        } else if (event === COOP_TRANSITION_EVENTS.BOSS_ADDS) {
+            this.applyRemoteBossAdds(detail);
         } else if (event === 'lore-terminal-read') {
             if (detail.loreKey) {
                 this._readLoreKeys = this._readLoreKeys ?? new Set();
@@ -14105,8 +14132,11 @@ export class ThreeGame {
         for (const event of events) this.handleQueenFightEvent(event, sprite);
     }
 
-    handleQueenFightEvent(event, sprite) {
+    handleQueenFightEvent(event, sprite, { fromRemote = false } = {}) {
         const data = sprite.userData;
+        const role = coopRole(this);
+        if (!fromRemote && !runsBossEventLocally(role, event.type)) return;
+        if (!fromRemote && announcesBossEvent(role, event.type)) this.announceBossFightEvent(sprite, 'queen', event);
         switch (event.type) {
             case 'phase': {
                 const line = QUEEN_PHASE_LINES[event.phase];
@@ -14172,38 +14202,94 @@ export class ThreeGame {
 
     spawnQueenAdds(sprite, addType, count) {
         const parent = sprite.parent;
-        if (!parent) return;
+        if (!parent) return 0;
+        // Adds are the host's to spawn in co-op; guests take its placements.
+        if (coopRole(this) === COOP_ROLE.GUEST) return 0;
         const offsets = [[1.4, 1.4], [-1.4, -1.4], [1.4, -1.4], [-1.4, 1.4], [2.2, 0], [-2.2, 0]];
-        let spawned = 0;
+        const placements = [];
         for (const [dx, dz] of offsets) {
-            if (spawned >= count) break;
+            if (placements.length >= count) break;
             const tx = sprite.position.x + dx;
             const tz = sprite.position.z + dz;
             if (!this.isSnailTileWalkable(Math.round(tx), Math.round(tz))) continue;
-            const placement = {
-                x: tx,
-                z: tz,
-                type: addType,
-                scatterKey: `${sprite.userData.scatterKey}:add:${Date.now()}:${spawned}`,
-                scale: 1.0,
+            placements.push({ x: tx, z: tz, type: addType, scale: 1.0, elevation: 0.1 });
+        }
+        return this.spawnBossAdds(sprite, 'queenAdd', placements);
+    }
+
+    // Spawns a boss's adds with keys every client shares, then (as host)
+    // announces the exact placements so guests spawn the same ones.
+    spawnBossAdds(sprite, flag, placements, { fromRemote = false } = {}) {
+        const parent = sprite?.parent;
+        if (!parent || !placements.length) return 0;
+        const data = sprite.userData;
+        const bossKey = data.scatterKey ?? 'boss';
+        const keyed = placements.map((placement) => ({
+            ...placement,
+            scatterKey: placement.scatterKey ?? bossAddScatterKey(bossKey, (data.addSequence = (data.addSequence ?? 0) + 1))
+        }));
+        let spawned = 0;
+        for (const placement of keyed) {
+            if (this.scatterSprites.some((other) => other.userData?.scatterKey === placement.scatterKey)) continue;
+            const add = this.createScatterInstance({
                 rotation: 0,
                 tiltX: 0,
                 tiltZ: 0,
-                elevation: 0.1,
                 groupType: 'minion',
                 phase: Math.random() * Math.PI * 2,
                 opacity: 1,
-                biomeTint: 0x88ff88
-            };
-            const add = this.createScatterInstance(placement);
+                biomeTint: 0x88ff88,
+                ...placement
+            });
             if (!add) continue;
-            add.userData.queenAdd = true;
+            add.userData[flag] = true;
             parent.add(add);
             this.scatterSprites.push(add);
-            this.spawnGearPoofEffect(tx, tz, 'bio_spores');
+            this.spawnGearPoofEffect(placement.x, placement.z, 'bio_spores');
             spawned += 1;
         }
         if (spawned) window.AudioManager?.playMetalStress?.({ volume: 0.5, playbackRate: 0.5, force: true });
+        if (!fromRemote && spawned && coopRole(this) === COOP_ROLE.HOST) {
+            data.addAnnouncements = (data.addAnnouncements ?? 0) + 1;
+            this.broadcastSharedWorldEvent?.(COOP_TRANSITION_EVENTS.BOSS_ADDS, {
+                bossKey,
+                sequence: data.addAnnouncements,
+                flag,
+                placements: keyed.map(({ x, z, type, scale, elevation, scatterKey }) => ({ x, z, type, scale, elevation, scatterKey }))
+            });
+        }
+        return spawned;
+    }
+
+    announceBossFightEvent(sprite, kind, event) {
+        const data = sprite.userData;
+        data.fightAnnouncements = (data.fightAnnouncements ?? 0) + 1;
+        this.broadcastSharedWorldEvent?.(COOP_TRANSITION_EVENTS.BOSS_FIGHT_EVENT, {
+            bossKey: data.scatterKey,
+            sequence: data.fightAnnouncements,
+            kind,
+            type: event.type,
+            phase: event.phase ?? null
+        });
+    }
+
+    applyRemoteBossFightEvent(detail) {
+        const sprite = (this.scatterSprites ?? []).find((entry) => entry.userData?.scatterKey === detail.bossKey);
+        if (!sprite || sprite.userData?.burstTriggered) return false;
+        const event = { type: detail.type, phase: detail.phase ?? undefined };
+        if (detail.kind === 'queen') this.handleQueenFightEvent(event, sprite, { fromRemote: true });
+        else this.handleSporesnailFightEvent(event, sprite, { fromRemote: true });
+        return true;
+    }
+
+    applyRemoteBossAdds(detail) {
+        const placements = Array.isArray(detail.placements) ? detail.placements.slice(0, 8) : [];
+        const valid = placements.filter((placement) => Number.isFinite(placement?.x) && Number.isFinite(placement?.z)
+            && typeof placement.type === 'string' && this.scatterMaterials?.[placement.type] && typeof placement.scatterKey === 'string');
+        const sprite = (this.scatterSprites ?? []).find((entry) => entry.userData?.scatterKey === detail.bossKey);
+        if (!sprite || !valid.length) return 0;
+        const flag = detail.flag === 'sporesnailAdd' ? 'sporesnailAdd' : 'queenAdd';
+        return this.spawnBossAdds(sprite, flag, valid, { fromRemote: true });
     }
 
     applyPlayerDamageToEnemy(sprite, amount, { fromNetwork = false, reporterId = null } = {}) {
@@ -14324,8 +14410,11 @@ export class ThreeGame {
         for (const event of events) this.handleSporesnailFightEvent(event, sprite);
     }
 
-    handleSporesnailFightEvent(event, sprite) {
+    handleSporesnailFightEvent(event, sprite, { fromRemote = false } = {}) {
         const data = sprite.userData;
+        const role = coopRole(this);
+        if (!fromRemote && !runsBossEventLocally(role, event.type)) return;
+        if (!fromRemote && announcesBossEvent(role, event.type)) this.announceBossFightEvent(sprite, 'sporesnail', event);
         switch (event.type) {
             case 'weakpoint-open':
                 data.weakpointOpen = true;
@@ -14359,42 +14448,19 @@ export class ThreeGame {
     spawnSporesnailAdds(sprite, count = 2) {
         const parent = sprite.parent;
         if (!parent) return 0;
+        if (coopRole(this) === COOP_ROLE.GUEST) return 0;
         const spawnOffset = [
             [1.2, 1.2], [-1.2, -1.2], [1.2, -1.2], [-1.2, 1.2]
         ];
-        let spawnedCount = 0;
+        const placements = [];
         for (const [dx, dz] of spawnOffset) {
+            if (placements.length >= count) break;
             const tx = sprite.position.x + dx;
             const tz = sprite.position.z + dz;
-            if (this.isSnailTileWalkable(Math.round(tx), Math.round(tz))) {
-                const placement = {
-                    x: tx,
-                    z: tz,
-                    type: 'sporesnail',
-                    scatterKey: `${sprite.userData.scatterKey}:minion:${Date.now()}:${spawnedCount}`,
-                    scale: 0.9 + Math.random() * 0.2,
-                    rotation: 0,
-                    tiltX: 0,
-                    tiltZ: 0,
-                    elevation: 0.09,
-                    groupType: 'minion',
-                    phase: Math.random() * Math.PI,
-                    opacity: 1,
-                    biomeTint: 0x88ff88
-                };
-                const minion = this.createScatterInstance(placement);
-                if (minion) {
-                    minion.userData.sporesnailAdd = true;
-                    parent.add(minion);
-                    this.scatterSprites.push(minion);
-                    this.spawnGearPoofEffect(tx, tz, 'bio_spores');
-                    spawnedCount += 1;
-                    if (spawnedCount >= count) break;
-                }
-            }
+            if (!this.isSnailTileWalkable(Math.round(tx), Math.round(tz))) continue;
+            placements.push({ x: tx, z: tz, type: 'sporesnail', scale: 0.9 + Math.random() * 0.2, elevation: 0.09 });
         }
-        window.AudioManager?.playMetalStress?.({ volume: 0.5, playbackRate: 0.5, force: true });
-        return spawnedCount;
+        return this.spawnBossAdds(sprite, 'sporesnailAdd', placements);
     }
 
     // ── Act 2: the PregAlien loop (src/act2.js drives the ladder) ──────────
@@ -22333,16 +22399,51 @@ export class ThreeGame {
     resolveElevatorChoice(choice = 'extract') {
         if (this.missionState?.status !== 'elevator_ready') return;
         if (choice === 'descend') {
-            this.missionState.status = 'active';
-            this.missionState.extractionTimer = 0;
-            this.missionState.targetDepth = Math.max(this.missionState.targetDepth ?? 0, this.getActiveO2GeneratorDistance() + 90);
-            this.globalSeedOffset = (this.globalSeedOffset + 7919) | 0;
-            this.syncVisibleChunks(true);
-            this.showBunkerLine('DESCENT CONFIRMED. DEEPER SECTOR INDEX LOADED. THIS WAS A CHOICE.');
-            window.dispatchEvent(new CustomEvent('elevator-descended'));
+            this._descentBaseOffset ??= this.globalSeedOffset | 0;
+            const descentIndex = (this._descentIndex ?? 0) + 1;
+            const detail = {
+                descentIndex,
+                seedOffset: descentSeedOffset(this._descentBaseOffset, descentIndex),
+                targetDepth: Math.max(this.missionState.targetDepth ?? 0, this.getActiveO2GeneratorDistance() + 90)
+            };
+            this.applyDescent(detail);
+            // The seed offset travels absolute, so both clients load the same
+            // deeper sector no matter who chose it or how often it arrives.
+            this.broadcastSharedWorldEvent?.(COOP_TRANSITION_EVENTS.ELEVATOR_DESCENDED, detail);
             return;
         }
         this.handleExtraction({ skipElevator: true });
+    }
+
+    applyDescent({ descentIndex, seedOffset, targetDepth }, { fromRemote = false } = {}) {
+        this._descentBaseOffset ??= this.globalSeedOffset | 0;
+        this._descentIndex = descentIndex;
+        if (this.missionState) {
+            this.missionState.status = 'active';
+            this.missionState.extractionTimer = 0;
+            if (Number.isFinite(targetDepth)) this.missionState.targetDepth = Math.max(this.missionState.targetDepth ?? 0, targetDepth);
+        }
+        this.globalSeedOffset = seedOffset | 0;
+        this.syncVisibleChunks?.(true);
+        this.showBunkerLine?.('DESCENT CONFIRMED. DEEPER SECTOR INDEX LOADED. THIS WAS A CHOICE.', { fromRemote });
+        // handleSharedWorldEvent re-dispatches remote beats itself.
+        if (!fromRemote) window.dispatchEvent(new CustomEvent('elevator-descended', { detail: { descentIndex } }));
+    }
+
+    // A guest's copy of a milestone boss can be a snapshot replica with no
+    // milestone identity, and its lifecycle never saw the fight go active --
+    // so the host's announcement is how the defeat, and the crossing it
+    // opens, reaches that guest.
+    applyRemoteMilestoneDefeat(detail) {
+        const definition = getMilestoneById(detail?.milestoneId);
+        if (!definition || this.defeatedMilestoneBosses?.has(definition.goalKey)) return false;
+        this.defeatedMilestoneBosses?.add(definition.goalKey);
+        this.reconcileMilestoneBossLifecycle?.();
+        this.reconcileAuthoredWorldProgression?.();
+        const defeatedCount = Math.max(this.killedBosses?.size ?? 0, this.defeatedMilestoneBosses?.size ?? 0);
+        if (defeatedCount >= 3) this.activateExtractionGuidance?.('sector_purged');
+        this.persistCampaignWorld?.();
+        return true;
     }
 
     onNewChunkDiscovered(chunkX, chunkY) {
@@ -30656,6 +30757,12 @@ export class ThreeGame {
                     const milestoneDef = getMilestoneById(sprite.userData.milestoneId);
                     if (milestoneDef) this.defeatedMilestoneBosses.add(milestoneDef.goalKey);
                     this.reconcileAuthoredWorldProgression?.();
+                    if (coopRole(this) === COOP_ROLE.HOST) {
+                        this.broadcastSharedWorldEvent?.(COOP_TRANSITION_EVENTS.MILESTONE_DEFEATED, {
+                            milestoneId: sprite.userData.milestoneId,
+                            encounterId: sprite.userData.milestoneEncounterId ?? null
+                        });
+                    }
                     const defeatedCount = Math.max(this.killedBosses?.size ?? 0, this.defeatedMilestoneBosses?.size ?? 0);
                     if (defeatedCount >= 3) {
                         this.activateExtractionGuidance('sector_purged');
