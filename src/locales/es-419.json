@@ -1156,7 +1156,8 @@
       "defeat_guard": "DERROTA AL GUARDIA PARA DESBLOQUEAR LA CAJA NEGRA",
       "recover_black_box": "RECUPERAR CAJA NEGRA",
       "recover_final": "RECUPERAR COMPONENTE FINAL",
-      "interact": "INTERACTUAR"
+      "interact": "INTERACTUAR",
+      "rest_end_day": "DESCANSAR — TERMINAR DÍA {day}"
     },
     "telemeter": {
       "passive_scan": "ESCANEO DE SUPERFICIE // PASIVO",

@@ -1156,7 +1156,8 @@
       "defeat_guard": "DERROTE O GUARDA PARA DESBLOQUEAR A CAIXA-PRETA",
       "recover_black_box": "RECUPERAR CAIXA-PRETA",
       "recover_final": "RECUPERAR COMPONENTE FINAL",
-      "interact": "INTERAGIR"
+      "interact": "INTERAGIR",
+      "rest_end_day": "DESCANSAR — ENCERRAR DIA {day}"
     },
     "telemeter": {
       "passive_scan": "VARREDURA DE SUPERFÍCIE // PASSIVA",

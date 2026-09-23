@@ -1156,7 +1156,8 @@
       "defeat_guard": "击败守卫以解锁黑匣子",
       "recover_black_box": "回收黑匣子",
       "recover_final": "回收最终组件",
-      "interact": "交互"
+      "interact": "交互",
+      "rest_end_day": "休息 — 结束第 {day} 天"
     },
     "telemeter": {
       "passive_scan": "地表扫描 // 被动",

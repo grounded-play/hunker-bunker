@@ -1156,7 +1156,8 @@
       "defeat_guard": "WÄCHTER BESIEGEN, UM DIE BLACKBOX FREIZUSCHALTEN",
       "recover_black_box": "BLACKBOX BERGEN",
       "recover_final": "LETZTE KOMPONENTE BERGEN",
-      "interact": "INTERAGIEREN"
+      "interact": "INTERAGIEREN",
+      "rest_end_day": "RASTEN — TAG {day} BEENDEN"
     },
     "telemeter": {
       "passive_scan": "OBERFLÄCHENSCAN // PASSIV",

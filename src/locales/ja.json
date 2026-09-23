@@ -1156,7 +1156,8 @@
       "defeat_guard": "守衛を倒してブラックボックスを解放せよ",
       "recover_black_box": "ブラックボックスを回収",
       "recover_final": "最終コンポーネントを回収",
-      "interact": "調べる"
+      "interact": "調べる",
+      "rest_end_day": "休息 — {day}日目を終える"
     },
     "telemeter": {
       "passive_scan": "地表スキャン // パッシブ",

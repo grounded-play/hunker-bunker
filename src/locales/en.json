@@ -1156,7 +1156,8 @@
       "defeat_guard": "DEFEAT GUARD TO UNLOCK BLACK BOX",
       "recover_black_box": "RECOVER BLACK BOX",
       "recover_final": "RECOVER FINAL COMPONENT",
-      "interact": "INTERACT"
+      "interact": "INTERACT",
+      "rest_end_day": "REST — END DAY {day}"
     },
     "telemeter": {
       "passive_scan": "SURFACE SCAN // PASSIVE",

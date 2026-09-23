@@ -459,6 +459,11 @@ const FOUNDRY_DISCOVERY_MAX_DISTANCE = 58;
 // Dawn. Waking always lands here so a new campaign day reads as a new morning
 // rather than resuming wherever the short visual sky loop happened to be.
 const MORNING_TIME_OF_DAY = 0.26;
+// The operator's cot, offset from the bunker spawn so it sits inside the hab
+// rather than on the airlock threshold. Reachable from a little further than a
+// normal prop: a bed the player has to hunt for is a bed they will not use.
+const BUNKER_COT_OFFSET = Object.freeze({ x: -2.4, z: 1.9 });
+const BUNKER_COT_REACH = 2.6;
 const MENU_SHOWROOM_FLOOR_SIZE = 160;
 // World units per major grid cell. The floor snaps to this when it follows the
 // operative, so the grid scrolls underfoot instead of sliding with them.
@@ -3849,6 +3854,34 @@ export class ThreeGame {
         this.setupCrashedShips();
         this.setupBunkerBlastDoor();
         this.setupBaseDefenseTurret();
+        this.setupBunkerCot();
+    }
+
+    /**
+     * The operator's cot. A bed the player cannot see is a bed they will not
+     * use, so the rest point gets a prop rather than being an invisible
+     * trigger volume. Cosmetic only: getRestPointAt() is the authority on
+     * whether rest is offered, and it works whether or not this texture loads.
+     */
+    setupBunkerCot() {
+        const point = this.getBunkerRestPoint();
+        const material = new THREE.SpriteMaterial({
+            transparent: true,
+            alphaTest: 0.05,
+            depthWrite: true,
+            depthTest: true
+        });
+        const sprite = new THREE.Sprite(material);
+        sprite.scale.set(2.1, 1.4, 1);
+        sprite.position.set(point.x, 0.7, point.z);
+        sprite.visible = this.performanceProfile === 'gameplay';
+        sprite.userData = { isBunkerCot: true };
+        this.bunkerCotSprite = sprite;
+        this.scene.add(sprite);
+        this.loadKeyedSpriteTexture?.('/prop_camp_cot.png', 15, (tex) => {
+            material.map = tex;
+            material.needsUpdate = true;
+        });
     }
 
     setupCrashedShips() {
@@ -6866,6 +6899,7 @@ export class ThreeGame {
         handled = this.interactWithLoreTerminal() || handled;
         if (!handled) handled = this.interactWithCaveEntrance();
         if (!handled) handled = this.interactWithAct2Camp();
+        if (!handled) handled = this.interactWithBunkerCot();
         if (!handled) handled = this.interactWithScientist();
         if (!handled) handled = this.interactWithHiveSite();
         if (!handled) handled = this.interactWithCampQuestObject();
@@ -8402,6 +8436,9 @@ export class ThreeGame {
         }
         if (this.menuShowroomReticle) {
             this.menuShowroomReticle.visible = nextProfile === 'menu';
+        }
+        if (this.bunkerCotSprite) {
+            this.bunkerCotSprite.visible = nextProfile === 'gameplay';
         }
         if (nextProfile === 'menu' && this.darknessOverlay) {
             this.darknessOverlay.style.opacity = '0';
@@ -14172,6 +14209,8 @@ export class ThreeGame {
         this.updateCampPrompt(phase);
         this.updateScientistPromptState();
         this.updateWandererPromptState();
+        // Last, so a camp verb at the same spot always wins the prompt.
+        this.updateRestPrompt?.();
     }
 
     // Camp defense turrets: friendly artillery in Act 1, the first hostile
@@ -16135,6 +16174,80 @@ export class ThreeGame {
 
     isDayDeadlineExpired(id) {
         return normalizeDayState(this.dayState).expired.includes(id);
+    }
+
+    /**
+     * Sleep at the bunker cot. Routes through the same beginCampRest() the camp
+     * bedrolls use -- confirmation on a closing deadline, overnight ledger,
+     * morning -- so there is one sleep sequence, not two.
+     */
+    interactWithBunkerCot() {
+        if (!this.isGameplayInputActive?.() || !this.player) return false;
+        const point = this.getRestPointAt(this.player.position.x, this.player.position.z);
+        if (!point) return false;
+        return this.beginCampRest(point) !== false;
+    }
+
+    /**
+     * Show the rest prompt while the player stands at a bed. Reuses the shared
+     * action prompt rather than adding a second prompt surface.
+     */
+    updateRestPrompt() {
+        if (typeof document === 'undefined') return;
+        const promptEl = document.getElementById('console-hud-prompt');
+        if (!promptEl) return;
+        const actionText = promptEl.querySelector('.prompt-text');
+        const point = this.player && this.isGameplayInputActive?.()
+            ? this.getRestPointAt(this.player.position.x, this.player.position.z)
+            : null;
+
+        if (point) {
+            if (actionText) {
+                actionText.textContent = t('ui.prompt.rest_end_day', { day: point.nextDay });
+                actionText.dataset.restPrompt = '1';
+            }
+            const promptKey = promptEl.querySelector('.prompt-key');
+            if (promptKey) {
+                const label = this.getPromptKeyLabel('E');
+                promptKey.textContent = label;
+                promptKey.classList.toggle('prompt-key--tap', label === 'TAP');
+            }
+            promptEl.classList.add('visible');
+            promptEl.classList.remove('hidden');
+            return;
+        }
+
+        // Only ever retract our own prompt: another system may own it now.
+        if (actionText?.dataset?.restPrompt === '1') {
+            delete actionText.dataset.restPrompt;
+            promptEl.classList.add('hidden');
+            promptEl.classList.remove('visible');
+        }
+    }
+
+    /** Where the bunker cot stands, in world coordinates. */
+    getBunkerRestPoint() {
+        const spawn = this.getSpawnTile?.() ?? null;
+        return {
+            id: 'bunker_cot',
+            label: 'BUNKER COT',
+            x: (spawn?.x ?? 0) + BUNKER_COT_OFFSET.x,
+            z: (spawn?.y ?? 0) + BUNKER_COT_OFFSET.z
+        };
+    }
+
+    /**
+     * The rest point the player is standing at, or null. Asks canRestAt() --
+     * the same rule the camp verb uses -- so the cot can never disagree with a
+     * bedroll about whether sleeping is allowed right now.
+     */
+    getRestPointAt(x, z) {
+        if (!Number.isFinite(x) || !Number.isFinite(z)) return null;
+        const cot = this.getBunkerRestPoint();
+        if (Math.hypot(cot.x - x, cot.z - z) > BUNKER_COT_REACH) return null;
+        const check = this.canRestAt(cot, { status: 'alive', safeSpace: true });
+        if (!check.allowed) return null;
+        return { ...cot, nextDay: check.nextDay };
     }
 
     /**
