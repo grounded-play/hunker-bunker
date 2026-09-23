@@ -12,10 +12,21 @@ updates:
     open-pull-requests-limit: 5
     commit-message:
       prefix: "deps"
+    # Keep critical, fragile framework versions locked down unless manually audited
+    ignore:
+      - dependency-name: "electron"
+        update-types: ["version-update:semver-minor", "version-update:semver-patch"]
+      - dependency-name: "steamworks.js"
+        update-types: ["version-update:semver-minor", "version-update:semver-patch"]
+      - dependency-name: "vite"
+        update-types: ["version-update:semver-minor"]
     groups:
       npm-minor-and-patch:
         patterns:
           - "*"
+        exclude-patterns:
+          - "electron"
+          - "steamworks.js"
         update-types:
           - "minor"
           - "patch"
