@@ -1549,6 +1549,11 @@
         "collapsed_approach": "> TOR RING {ring} — DER ZUGANG IST EINGESTÜRZT. FINDE EINEN WEG DURCH DEN SCHUTT",
         "infested_approach": "> TOR RING {ring} — DER ZUGANG WIMMELT VON FEINDEN",
         "blackout": "> TOR RING {ring} — NETZ TOT. DER ZUGANG LIEGT IM DUNKELN"
+      },
+      "overnight": {
+        "creep_contact": "> STOCKGEFLECHT UNTER DEN FÜSSEN — BEWEGUNG VERLANGSAMT, O₂ SINKT SCHNELLER",
+        "creep_burn": "> STOCKGEFLECHT VOLL AUSGEBREITET — ES BRENNT. RUNTER DAVON.",
+        "camp_shored_up": "> {site}: VERTEIDIGUNG VERSTÄRKT"
       }
     }
   },

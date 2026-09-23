@@ -304,6 +304,16 @@ import {
     runOvernight
 } from './overnightBridge.js';
 import {
+    applyShoreUp,
+    buildCreepZones,
+    CREEP_EFFECTS,
+    creepAt,
+    creepSpawnMultiplier,
+    getCampConditionEffects,
+    planShoreUp,
+    scaleCampPrice
+} from './overnightConsequences.js';
+import {
     clampPositionToUnlockedRing,
     generateRadialMazeExpedition,
     ROUTE_LAYOUT_VERSION,
@@ -9099,6 +9109,7 @@ export class ThreeGame {
             fp.measure('updateAct2', () => this.updateAct2(delta));
             fp.measure('updateCamps', () => this.updateCamps(delta));
             fp.measure('updateHiveSites', () => this.updateHiveSites(delta));
+            fp.measure('updateOvernightCreep', () => this.updateOvernightCreep?.(delta));
             fp.measure('updateInfectionPressure', () => this.updateInfectionPressure(delta));
             fp.measure('updateHazardZoneDamage', () => this.updateHazardZoneDamage(delta));
             fp.measure('updateCampQuest', () => this.updateCampQuest(delta));
@@ -15644,7 +15655,7 @@ export class ThreeGame {
 
     getCampFavorCost(record = {}) {
         const bond = Math.max(0, Math.floor(Number(record.bond) || 0));
-        return CAMP_FAVOR_BASE_COST + bond * 3;
+        return scaleCampPrice(CAMP_FAVOR_BASE_COST + bond * 3, this.getCampCondition?.(record.id) ?? 'secure');
     }
 
     getCampFavorQuestId(record = {}) {
@@ -15707,6 +15718,10 @@ export class ThreeGame {
     // per camp, ever" here -- there's no live per-run concept of "current
     // ring" yet (that's still Phase 6.1/6.3, not wired into gameplay).
     getCampActiveVerbGate(camp) {
+        // An overrun camp cannot spare its signature favour.
+        if (!getCampConditionEffects(this.getCampCondition?.(camp.id)).activeVerb) {
+            return { allowed: false, reason: 'camp_overrun' };
+        }
         this._campVerbLastUsedMs ??= {};
         this._campVerbUsedOnce ??= {};
         const nowMs = performance.now();
@@ -16292,7 +16307,7 @@ export class ThreeGame {
             if (!isCampLevelFortified(camp.level) && camp.level < ACT2_CAMP_MAX_LEVEL) {
                 options.push({
                     action: 'fortify',
-                    label: `FORTIFY PERIMETER — ${campSupportCost(camp.level)} SHELLS`,
+                    label: `FORTIFY PERIMETER — ${this.getCampSupportCost(camp)} SHELLS`,
                     desc: 'Raise their defense grid: turrets and searchlights at the perimeter checkpoint. Consequence: camp level +1, bond +1.'
                 });
             }
@@ -16495,6 +16510,72 @@ export class ThreeGame {
     applyOvernightWorldPresence() {
         this.applyCampOvernightConditions();
         this.stampOvernightCreep();
+        this._creepZones = null;
+    }
+
+    // Creep zones from the stored night, rebuilt at most once a second (hive
+    // records and overnight state change on sleeps and choices, not per frame).
+    getCreepZones() {
+        const now = typeof performance !== 'undefined' ? performance.now() : Date.now();
+        if (!this._creepZones || now - (this._creepZonesAt ?? 0) > 1000) {
+            this._creepZones = buildCreepZones(this.act2?.getState?.().hives ?? [], this.overnightState);
+            this._creepZonesAt = now;
+        }
+        return this._creepZones;
+    }
+
+    // What the creep under the carrier costs this frame: slow and O2 are
+    // read by movement and the O2 drain; full-spread creep also burns.
+    updateOvernightCreep(delta = 0.016) {
+        if (!this.player || this.performanceProfile !== 'gameplay' || this.isPlayerDead) {
+            this._creepHere = null;
+            return null;
+        }
+        const here = creepAt(this.getCreepZones(), this.player.position.x, this.player.position.z);
+        if (here && here.hiveId !== this._creepHere?.hiveId) {
+            window.dispatchEvent(new CustomEvent('creep-contact', { detail: { hiveId: here.hiveId, rings: here.rings } }));
+        }
+        this._creepHere = here;
+        if (here?.burns && !this.godMode) {
+            this._creepBurnTimer = (this._creepBurnTimer ?? 0) + delta;
+            if (this._creepBurnTimer >= CREEP_EFFECTS.burnIntervalSeconds) {
+                this._creepBurnTimer = 0;
+                this.takeDamage?.(1, 'hive-creep', this.player.position.x, this.player.position.z);
+            }
+        } else {
+            this._creepBurnTimer = 0;
+        }
+        return here;
+    }
+
+    getCampCondition(campId) {
+        return normalizeOvernightState(this.overnightState).camps[campId]?.condition ?? 'secure';
+    }
+
+    getCampSupportCost(camp) {
+        return scaleCampPrice(campSupportCost(camp.level), this.getCampCondition(camp.id));
+    }
+
+    // Pay to walk a breached or overrun camp one step back toward secure.
+    shoreUpCamp(camp) {
+        const plan = planShoreUp(this.getCampCondition(camp.id));
+        if (!plan) return false;
+        if (!this.bank?.canAffordShells?.(plan.cost)) {
+            window.AudioManager?.play?.('ui_error', { volume: 0.45 });
+            window.dispatchEvent(new CustomEvent('camp-support-denied', {
+                detail: { campId: camp.id, campLabel: camp.label, cost: plan.cost }
+            }));
+            return true;
+        }
+        this.bank.spendShells(plan.cost);
+        this.overnightState = applyShoreUp(normalizeOvernightState(this.overnightState), camp.id, plan);
+        this.persistOvernightState?.();
+        this.applyCampOvernightConditions();
+        window.AudioManager?.play?.('class_lock', { volume: 0.45, playbackRate: 1.1 });
+        window.dispatchEvent(new CustomEvent('camp-shored-up', {
+            detail: { campId: camp.id, campLabel: camp.label, from: plan.from, to: plan.to, cost: plan.cost }
+        }));
+        return true;
     }
 
     applyCampOvernightConditions() {
@@ -16632,17 +16713,20 @@ export class ThreeGame {
      */
     treatScarAtCamp(camp, scarId) {
         if (!scarId) return false;
-        if (!this.bank?.canAffordShells?.(SCAR_TREATMENT_COST)) {
+        const condition = this.getCampCondition?.(camp?.id) ?? 'secure';
+        if (!getCampConditionEffects(condition).medic) return false;
+        const cost = scaleCampPrice(SCAR_TREATMENT_COST, condition);
+        if (!this.bank?.canAffordShells?.(cost)) {
             window.AudioManager?.play?.('ui_error', { volume: 0.45 });
             window.dispatchEvent(new CustomEvent('camp-support-denied', {
-                detail: { campId: camp?.id ?? null, campLabel: camp?.label ?? '', cost: SCAR_TREATMENT_COST }
+                detail: { campId: camp?.id ?? null, campLabel: camp?.label ?? '', cost }
             }));
             return true;
         }
 
         const result = treatScar(this.fatigueState, scarId);
         if (!result.treated) return false;
-        this.bank.spendShells(SCAR_TREATMENT_COST);
+        this.bank.spendShells(cost);
         this.fatigueState = result.state;
         this.persistFatigueState?.();
         window.AudioManager?.play?.('ui_scan_ping', { volume: 0.4, playbackRate: 0.9 });
@@ -16652,7 +16736,7 @@ export class ThreeGame {
                 campLabel: camp?.label ?? '',
                 scarId,
                 severity: result.state.scars.find((scar) => scar.id === scarId)?.severity ?? 1,
-                cost: SCAR_TREATMENT_COST
+                cost
             }
         }));
         return true;
@@ -16737,7 +16821,11 @@ export class ThreeGame {
      * bunker cot, outpost pod. The site-specific part is only "is this a safe
      * space" -- the campaign-state part belongs to dayCycle.canRestNow().
      */
-    canRestAt(_site, { status = 'alive', safeSpace = true } = {}) {
+    canRestAt(site, { status = 'alive', safeSpace = true } = {}) {
+        // A breached camp is not a safe bed, whatever else the day allows.
+        if (site?.id && !getCampConditionEffects(this.getCampCondition?.(site.id)).rest) {
+            return { allowed: false, reason: 'camp-unsafe' };
+        }
         return canRestNow(this.dayState, {
             safeSpace,
             siteStatus: status,
@@ -17027,7 +17115,7 @@ export class ThreeGame {
                 return {
                     camp,
                     action: 'support',
-                    label: `${fortifies ? 'FORTIFY PERIMETER' : 'SUPPORT CAMP'} — ${campSupportCost(camp.level)} SHELLS`
+                    label: `${fortifies ? 'FORTIFY PERIMETER' : 'SUPPORT CAMP'} — ${this.getCampSupportCost(camp)} SHELLS`
                 };
             }
             if (phase === 'dormant' && status === 'alive' && !this._activeCampQuest) {
@@ -17057,21 +17145,34 @@ export class ThreeGame {
                     const suffix = gate.allowed ? ''
                         : gate.reason === 'on_cooldown' ? ' (RECOVERING)'
                             : gate.reason === 'insufficient_resources' ? ' (NEEDS SUPPLIES)'
-                                : ' (UNAVAILABLE)';
+                                : gate.reason === 'camp_overrun' ? ' (CAMP OVERRUN)'
+                                    : ' (UNAVAILABLE)';
                     return { camp, action: 'active-verb', verb, gate, label: `${verb.label}${suffix}` };
                 }
+            }
+            // A breached or overrun camp asks for help before anything else:
+            // the night's damage is the first thing a returning player sees.
+            const condition = this.getCampCondition(camp.id);
+            const shoreUp = status === 'alive' ? planShoreUp(condition) : null;
+            if (shoreUp) {
+                return {
+                    camp,
+                    action: 'shore-up',
+                    label: `SHORE UP DEFENCES (${condition.toUpperCase()}) — ${shoreUp.cost} SHELLS`
+                };
             }
             // A camp medic can quiet a scar, never clear it. Offered before
             // rest so a player who walks in wrecked is shown the treatment
             // before the bed, which is the order they would want them in.
-            if (phase === 'dormant' && status === 'alive') {
+            // A breached camp's medic is busy with its own wounded.
+            if (phase === 'dormant' && status === 'alive' && getCampConditionEffects(condition).medic) {
                 const treatable = nextTreatableScar(this.fatigueState);
                 if (treatable) {
                     return {
                         camp,
                         action: 'treat-scar',
                         scarId: treatable.id,
-                        label: `TREAT ${treatable.id.replace(/_/g, ' ')} — ${SCAR_TREATMENT_COST} SHELLS`
+                        label: `TREAT ${treatable.id.replace(/_/g, ' ')} — ${scaleCampPrice(SCAR_TREATMENT_COST, condition)} SHELLS`
                     };
                 }
             }
@@ -17529,6 +17630,7 @@ export class ThreeGame {
         const { camp, action } = actionable;
 
         if (action === 'treat-scar') return this.treatScarAtCamp(camp, actionable.scarId);
+        if (action === 'shore-up') return this.shoreUpCamp(camp);
 
         if (action === 'rest') return this.beginCampRest(camp);
 
@@ -17703,7 +17805,8 @@ export class ThreeGame {
 
     // Shared by the Act 1 support prompt and the modal's FORTIFY choice.
     supportCamp(camp) {
-        const cost = campSupportCost(camp.level);
+        // A strained or breached camp is short of everything: help costs more.
+        const cost = this.getCampSupportCost(camp);
         if (!this.bank?.canAffordShells?.(cost)) {
             window.AudioManager?.play?.('ui_error', { volume: 0.45 });
             window.dispatchEvent(new CustomEvent('camp-support-denied', {
@@ -21343,7 +21446,9 @@ export class ThreeGame {
                 * (this.currentBiomeO2DrainMult ?? 1.0)
                 * (this._sprintO2DrainMult ?? 1.0)
                 // THIN AIR run modifier: reserves are poor beyond the ship field.
-                * (this.getRunCardEffects().survival?.o2DrainMult ?? (this.currentRunModifier?.id === 'thin_air' ? 1.4 : 1.0));
+                * (this.getRunCardEffects().survival?.o2DrainMult ?? (this.currentRunModifier?.id === 'thin_air' ? 1.4 : 1.0))
+                // Overnight hive creep: spore-thick air.
+                * (this._creepHere?.o2DrainMultiplier ?? 1.0);
             if (typeof window !== 'undefined' && window.npcDialogueTreeManager?.activePerks?.has?.('tallows_seductive_warmth')) {
                 drainRate *= 0.80; // Seductive warmth protects against freezing drain
             }
@@ -21615,6 +21720,8 @@ export class ThreeGame {
             if (this.loadoutMods?.lowHpSpeedBoostActive && (this.health / (this.maxHealth || 100)) < 0.25) {
                 speed *= 1.15;
             }
+            // Overnight hive creep drags at the stride (overnightConsequences.js).
+            if (this._creepHere && !this.noclip) speed *= this._creepHere.speedMultiplier;
             // Bonded hives part the infested ground for their kin.
             if (this.currentBiomeKey === BIOME_KEYS.BIO && this._bondedHiveSpeedMultiplier > 1) {
                 speed *= this._bondedHiveSpeedMultiplier;
@@ -28308,7 +28415,9 @@ export class ThreeGame {
             === GATE_CHALLENGES.INFESTED_APPROACH;
         const snailDensityMult = (Number.isFinite(cardDensityMult) && cardDensityMult > 0 ? cardDensityMult : 1)
             * (this.getExpeditionEffects?.().world.enemyDensityMultiplier ?? 1)
-            * (infestedGate ? GATE_CHALLENGE_TUNING.infestedDensityMultiplier : 1);
+            * (infestedGate ? GATE_CHALLENGE_TUNING.infestedDensityMultiplier : 1)
+            // Overnight hive creep breeds hostiles in the chunks it reaches.
+            * creepSpawnMultiplier(this.getCreepZones?.() ?? [], chunkX, chunkY, this.chunkSize);
         const snailSpawnConfig = snailDensityMult !== 1
             ? {
                 maxCount: Math.max(0, Math.round(baseSnailSpawnConfig.maxCount * snailDensityMult)),

@@ -1549,6 +1549,11 @@
         "collapsed_approach": "> 第{ring}环闸门 — 通道已坍塌。在瓦砾中找出路",
         "infested_approach": "> 第{ring}环闸门 — 通道里满是敌人",
         "blackout": "> 第{ring}环闸门 — 电网失效。通道一片漆黑"
+      },
+      "overnight": {
+        "creep_contact": "> 脚下是巢穴蔓生物 — 移动变慢，氧气消耗加快",
+        "creep_burn": "> 巢穴蔓生物已完全扩散 — 它会灼烧。快离开。",
+        "camp_shored_up": "> {site}的防御已加固"
       }
     }
   },

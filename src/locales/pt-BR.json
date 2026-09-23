@@ -1549,6 +1549,11 @@
         "collapsed_approach": "> PORTÃO DO ANEL {ring} — O ACESSO DESABOU. ENCONTRE CAMINHO PELOS ESCOMBROS",
         "infested_approach": "> PORTÃO DO ANEL {ring} — O ACESSO ESTÁ INFESTADO DE HOSTIS",
         "blackout": "> PORTÃO DO ANEL {ring} — REDE MORTA. O ACESSO ESTÁ NO ESCURO"
+      },
+      "overnight": {
+        "creep_contact": "> CRESCIMENTO DA COLMEIA SOB OS PÉS — MOVIMENTO LENTO, O₂ CAINDO MAIS RÁPIDO",
+        "creep_burn": "> CRESCIMENTO DA COLMEIA NO MÁXIMO — ELE QUEIMA. SAIA DAÍ.",
+        "camp_shored_up": "> {site}: DEFESAS REFORÇADAS"
       }
     }
   },

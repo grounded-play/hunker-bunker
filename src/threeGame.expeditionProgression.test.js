@@ -493,6 +493,8 @@ describe('camp fortify choice', () => {
             supportCamp: vi.fn(() => true)
         };
         world.buildCampChoiceOptions = ThreeGame.prototype.buildCampChoiceOptions;
+        world.getCampSupportCost = ThreeGame.prototype.getCampSupportCost;
+        world.getCampCondition = ThreeGame.prototype.getCampCondition;
         world.resolveCampChoice = ThreeGame.prototype.resolveCampChoice;
         world.getCampById = () => camp;
         const camp = { id: 'camp_meridian', label: 'MERIDIAN', level, leaderName: 'Martha' };

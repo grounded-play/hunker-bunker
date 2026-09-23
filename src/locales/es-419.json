@@ -1549,6 +1549,11 @@
         "collapsed_approach": "> PUERTA DEL ANILLO {ring} — EL ACCESO SE DERRUMBÓ. ABRE PASO ENTRE LOS ESCOMBROS",
         "infested_approach": "> PUERTA DEL ANILLO {ring} — EL ACCESO ESTÁ PLAGADO DE HOSTILES",
         "blackout": "> PUERTA DEL ANILLO {ring} — RED CAÍDA. EL ACCESO ESTÁ A OSCURAS"
+      },
+      "overnight": {
+        "creep_contact": "> CRECIMIENTO DE COLMENA BAJO LOS PIES — MOVIMIENTO LENTO, O₂ BAJA MÁS RÁPIDO",
+        "creep_burn": "> CRECIMIENTO DE COLMENA AL MÁXIMO — QUEMA. SAL DE AHÍ.",
+        "camp_shored_up": "> {site}: DEFENSAS REFORZADAS"
       }
     }
   },

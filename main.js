@@ -6472,6 +6472,17 @@ window.addEventListener('gate-challenge', (event) => {
     if (key && isGameplayHudActive()) showBiomePrompt(t(key, { ring }));
 });
 
+window.addEventListener('creep-contact', (event) => {
+    if (!isGameplayHudActive()) return;
+    const burns = Number(event?.detail?.rings) >= 3;
+    showBiomePrompt(t(burns ? 'ui.expedition.overnight.creep_burn' : 'ui.expedition.overnight.creep_contact'));
+});
+
+window.addEventListener('camp-shored-up', (event) => {
+    const site = COMPOUND_SITE_KEYS[event?.detail?.campId] ? t(COMPOUND_SITE_KEYS[event.detail.campId]) : '';
+    if (isGameplayHudActive()) showBiomePrompt(t('ui.expedition.overnight.camp_shored_up', { site }));
+});
+
 window.addEventListener('world-transformed', (event) => {
     const { type, id, outcome } = event?.detail ?? {};
     const site = COMPOUND_SITE_KEYS[id] ? t(COMPOUND_SITE_KEYS[id]) : '';

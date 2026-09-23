@@ -1549,6 +1549,11 @@
         "collapsed_approach": "> RING {ring} GATE — THE APPROACH HAS COLLAPSED. FIND A WAY THROUGH THE RUBBLE",
         "infested_approach": "> RING {ring} GATE — THE APPROACH IS CRAWLING WITH HOSTILES",
         "blackout": "> RING {ring} GATE — GRID DEAD. THE APPROACH RUNS DARK"
+      },
+      "overnight": {
+        "creep_contact": "> HIVE CREEP UNDERFOOT — MOVEMENT SLOWED, O₂ DRAINING FASTER",
+        "creep_burn": "> HIVE CREEP AT FULL SPREAD — IT BURNS. GET OFF IT.",
+        "camp_shored_up": "> {site} DEFENCES SHORED UP"
       }
     }
   },

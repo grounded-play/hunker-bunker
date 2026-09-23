@@ -1549,6 +1549,11 @@
         "collapsed_approach": "> リング{ring}ゲート — 進入路が崩落した。瓦礫の中に道を探せ",
         "infested_approach": "> リング{ring}ゲート — 進入路に敵がひしめいている",
         "blackout": "> リング{ring}ゲート — 電力網が停止。進入路は闇の中"
+      },
+      "overnight": {
+        "creep_contact": "> 足元に巣の侵食 — 移動速度低下、O₂の消費が増加",
+        "creep_burn": "> 巣の侵食が最大 — 焼けつく。すぐに離れろ。",
+        "camp_shored_up": "> {site}の防備を補強した"
       }
     }
   },
