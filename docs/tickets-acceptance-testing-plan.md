@@ -1,256 +1,191 @@
-# Acceptance Testing Plan: Tickets #45, #51, #52, and #53
+# Acceptance Testing Plan: Tickets #45, #51, #52, #53, and #85
 
-Comprehensive physical and packaged verification protocol for closing open Steam release blocker tickets on **Hunker Bunker** (`2.4.0-beta` / Sprint 31+).
+Status: maintained acceptance reference · Updated: 2026-09-23 · Evidence review: after each packaged paired run · Current evidence: [Steam Deck evening capture](reports/session-log-analysis-2026-09-23-deck-pvp-session.md)
 
----
+This plan is the local checklist for release-gate evidence. It distinguishes PvP (#51) from co-op PvE (#85), performance (#52), controller-only Steam Deck acceptance (#53), and the parent ship gate (#45). #86 is log-intake support work, not a substitute for any acceptance run.
 
-## 1. Overview and Scope
+## 1. Current ticket state from the latest export
 
-This document defines the actionable, repeatable testing protocol required to resolve and close the four active release-gate issues:
+The latest reviewed capture is one 12-minute Steam Deck session from packaged `v2.4.11-beta` commit `aafe429fae34`, branch `dev/sprint-45`. It includes solo play and a Steam-lobby PvP segment, but only the Deck client log is available.
 
-| Issue | Title | Primary Focus | Required Environment |
-| :--- | :--- | :--- | :--- |
-| **[#51](https://github.com/grounded-play/hunker-bunker/issues/51)** | Certify Sprint 31 PvP fixes with two packaged Steam accounts | Proportional PvP damage, 3D avatar & polish sync, squad-wipe / match lifecycle | 2 physical Steam accounts on Steam relay |
-| **[#52](https://github.com/grounded-play/hunker-bunker/issues/52)** | Profile and remediate packaged GPU and frame-pacing regression | Main-thread sector staging stalls, draw calls, GPU memory, frame pacing | Packaged Desktop build on physical GPU |
-| **[#53](https://github.com/grounded-play/hunker-bunker/issues/53)** | Complete physical Steam Deck controller-only acceptance | 1280×800 UI readability, Steam Input action sets, suspend/resume, thermals | Physical Steam Deck in Gaming Mode |
-| **[#45](https://github.com/grounded-play/hunker-bunker/issues/45)** | Ship gates: acceptance backlog for premium Steam release | Umbrella release certification, Steam review compliance, Cloud round-trip | Multi-environment master acceptance |
+| Ticket | Local status | What the capture adds | What remains required |
+| --- | --- | --- | --- |
+| #45 | **Open** | Physical packaged evidence exists for one client. | Every dependent gate below, plus Cloud/save and human proof run. |
+| #51 — PvP certification | **Partial, one-sided** | Lobby, ready, deploy, remote 3D readiness, inbound damage, one `pvp-rival` death, and respawn. | Paired hit evidence, full result/reconnect, and all PvP rule gates. |
+| #52 — performance | **Open** | Effects sampled 0–64 (final 13); p50 84.7 ms, p95 223.6 ms, p99 519.5 ms, max 4.614 s. | Fixed-route before/after benchmark and measured remediation. |
+| #53 — Deck controller-only | **Open** | Package ran on physical Deck at 1280×800. | Controller-only attestation and route; input events alone cannot prove it. |
+| #85 — two-account co-op PvE | **Open / unaffected** | None; PvP does not qualify as co-op evidence. | Paired host/guest expedition through boss and Act 2 descent. |
+| #86 — log intake | Evidence added | This report documents a new capture. | Maintain readable, paired capture workflow; do not infer ticket closure. |
 
-> [!IMPORTANT]
-> In accordance with repository policy, **no issue checkbox may be marked as resolved based solely on code review or automated unit tests**. Checkboxes must be backed by dated evidence reports stored under `docs/reports/` with build SHA, telemetry log, and exact hardware specs.
+No checkbox may be closed from source inspection, automated tests, or a single-client log alone.
 
----
+## 2. Common evidence contract
 
-## 2. Test Environment and Device Matrix
+### Required metadata
 
-```mermaid
-graph TD
-    subgraph Host Infrastructure
-        Relay["Steam Relay / Tuesday Cinema Club<br/>https://steam.tuesdaycinema.club"]
-        SessionDrop["Session Log Dropbox<br/>POST /logs/session"]
-    end
+Every report under `docs/reports/` must record:
 
-    subgraph Test Clients
-        Deck["Steam Deck (Physical)<br/>1280x800 SteamOS 3.5+<br/>Controller-Only (Ticket #53)"]
-        PC1["Desktop Rig A (Windows 10/11)<br/>RTX 2070 Super / Dedicated GPU<br/>Primary Profiling & PvP Host (Tickets #51, #52)"]
-        PC2["Desktop Rig B / Secondary<br/>Steam Account 2<br/>PvP Client Peer (Ticket #51)"]
-    end
+- package version, commit/SHA, build time, branch, and dirty state;
+- tester, account role (host/guest), platform, display mode/resolution, and controller/input setup;
+- session ID, room code, route, route seed where exported, start/end time, and whether the capture is complete;
+- local filename and server-upload filename/SHA for every participating client;
+- a criterion-by-criterion pass, fail, or not-observed conclusion with links to event IDs/timestamps, screenshots/video, or human notes.
 
-    Deck --> Relay
-    PC1 --> Relay
-    PC2 --> Relay
-    Deck -.-> SessionDrop
-    PC1 -.-> SessionDrop
-    PC2 -.-> SessionDrop
-```
+Current diagnostics export the build identity but expose a `null` seed and no expedition-index field. Record intended seed/index outside the log until the export is extended.
 
-### Required Hardware and Software Configuration
+### Upload and pairing procedure
 
-1. **Physical Steam Deck (LCD or OLED):**
-   - SteamOS 3.5 or newer, Gaming Mode (no Desktop Mode, no keyboard/mouse attached).
-   - Display: Native 1280×800 resolution, 60Hz (optional 40Hz test sweep).
-2. **Primary Desktop Rig (Windows 10/11):**
-   - Physical discrete GPU (NVIDIA GeForce RTX 2070 Super or equivalent AMD Radeon GPU).
-   - Display: 1920×1080 native 16:9 display.
-   - Primary Steam account (Account A: `BUNKER-1`).
-3. **Secondary Rig / Steam Account:**
-   - Laptop or desktop running Steam client with secondary paid Steam account (Account B: `RAVEN-7`).
-4. **Backend Services:**
-   - Active relay container and Caddy proxy reachable at `https://steam.tuesdaycinema.club`.
+1. Package the exact candidate, then record its version/SHA before launch.
+2. For multiplayer, start both clients from the same package and write down their roles and room code.
+3. Near the end of the route—and immediately after a failure worth preserving—open the debug console and run `uploadlogs` on **each client**.
+4. Record the two hosted filenames/SHAs. Run `npm run logs:analyze -- <host-log> <guest-log>` and inspect the raw events cited by the report.
+5. `exportlogs` saves a local copy. It does not replace `uploadlogs`; retain it only as fallback evidence when an upload fails.
 
----
+The analyzer's yes/no fields mean that a signal exists in that capture, not that a ticket passes. In particular, its `longTasks` field and `PERF` “Long task window” diagnostics are different signals.
 
-## 3. Test Plan for Ticket #51: Two-Account Packaged PvP Certification
+## 3. Ticket #51 — two-account packaged PvP certification
 
 ### Objective
-Certify that proportional PvP combat damage (10 server points = 1 heart loss, preventing 1-shot kills), remote 3D chassis and locomotion synchronization, and match end-state resolution function correctly across two distinct, real Steam accounts in a packaged Steam build.
 
-### Pre-conditions
-- Build packaged via `npm run steam:package` from the latest `dev/sprint-34` / `mothership` commit.
-- Account A and Account B are Steam friends, both logged into Steam.
-- Ensure backend relay is reachable (`https://steam.tuesdaycinema.club/health`).
+Certify a fair, observable PvP lifecycle for two real Steam accounts in a packaged build. The acceptance route must demonstrate both directions of damage and clean resolution; it must not assume that PvP uses co-op downed/crawl behavior.
 
-### Step-by-Step Test Procedure
+### Preconditions
 
-```mermaid
-sequenceDiagram
-    autonumber
-    actor PlayerA as Host (Account A: Engineer)
-    participant Relay as Steam Relay Server
-    actor PlayerB as Guest (Account B: Tank)
+- Both clients run the exact recorded packaged build and are authenticated Steam accounts.
+- Relay health is checked before the run; record the result in the report.
+- The current intended PvP HP/loadout policy is written into the report **before** testing. If the product rule is normalized health, both players must start equally even when their solo fatigue states differ.
+- Use a dedicated test room and capture the room code, player roles, chassis/loadouts, and map/ruleset.
+- Both clients have `uploadlogs` available and a local `exportlogs` fallback.
 
-    PlayerA->>Relay: Host PvP Lobby (Custom Mode, Room STEAM-xxx)
-    PlayerB->>Relay: Accept Steam Invite / Join Room
-    Note over PlayerA,PlayerB: Select different chassis & cosmetic finishes in Armory
-    PlayerA->>Relay: Ready Up
-    PlayerB->>Relay: Ready Up
-    Relay->>PlayerA: Match Deploy Broadcast
-    Relay->>PlayerB: Match Deploy Broadcast
+### Required PvP cases
 
-    Note over PlayerA,PlayerB: Sector Entry: Verify Remote 3D Mesh & Polish (<= 200ms)
-    
-    PlayerB->>PlayerA: Fires standard weapon shot (10 server damage)
-    Note over PlayerA: Health checks: 3/3 HP -> 2/3 HP (Single Heart Loss Verified)
-    PlayerB->>PlayerA: Fires second standard weapon shot (10 damage)
-    Note over PlayerA: Health checks: 2/3 HP -> 1/3 HP
-    PlayerB->>PlayerA: Fires lethal shot
-    Note over PlayerA: Downed/Crawl state triggered with visible animation
+| Case | Verification target | Procedure | Pass evidence |
+| --- | --- | --- | --- |
+| 51-TC01 | Lobby and roster | Host a PvP room; guest joins through Steam; both ready, then guest un-readies/re-readies once. | Both logs agree on roster, ready state, room, and deploy event. |
+| 51-TC02 | Remote avatar handoff | Observe the remote chassis during deploy, movement, sprint, turn, and weapon use. | Full 3D readiness timing recorded on both clients. Existing target is ≤200 ms without placeholder fallback; the latest Deck capture recorded about 678 ms fallback and therefore does not pass this case. |
+| 51-TC03 | Bidirectional server verdict | A shoots B, then B shoots A under the same controlled weapon/range setup. | Each side logs shot intent, relay/server verdict, recipient health change, and attribution. A local projectile alone is insufficient. |
+| 51-TC04 | HP/loadout normalization | Repeat 51-TC03 with players intentionally carrying different solo fatigue states, if fatigue exists outside PvP. | Observed PvP maximum HP/loadout behavior matches the written ruleset; no unexplained campaign-fatigue advantage. |
+| 51-TC05 | Death, kill, and respawn | Reduce each player to zero in turn; observe the configured PvP death flow and respawn. | Both logs agree on killer/victim/reason, respawn location, health, protection timer if intended, and collision-safe placement. PvP direct death is acceptable if it is the specified mode behavior; do not require co-op crawl/downed state. |
+| 51-TC06 | Spawn fairness | Immediately after each respawn, test separation, invulnerability/protection timing if designed, and collision/depenetration. | Paired position/timing evidence; no unsupported conclusion that a single death proves camping. |
+| 51-TC07 | Rewards and persistence | Perform a PvP death and inspect Black Box, objective XP, season XP, polish, salvage, and save state. Repeat enough times to distinguish an intended one-off from a repeatable loop. | The observed result matches the published PvP reward rule; no accidental campaign reward leakage. |
+| 51-TC08 | Leaderboard segregation | End a PvP run that would otherwise produce a score. | The report records the final server disposition and target. PvP must be excluded from or explicitly segregated from generic/PvE-run boards. |
+| 51-TC09 | PvP ruleset boundaries | Inspect missions, run cards, environmental damage, doors, and other shared-world systems. | Each item is explicitly allowed, removed, or re-themed; unresolved behavior stays open rather than being assumed a defect or feature. |
+| 51-TC10 | Door/event sequencing | Both players interact with the same door in a controlled sequence, including near-simultaneous use. | Paired events establish the actual sequence and final state. Change protocol only after reproduction identifies the failure mode. |
+| 51-TC11 | Disconnect and result cleanup | Have host and guest separately leave/restart during an active match, then complete a normal result path. | No hang; the remaining player gets a clear outcome; reconnect/migration behavior matches mode policy; both captures record cleanup. |
 
-    Note over PlayerA,PlayerB: Environmental Checks: Oxygen drain & Canyon fall
-    PlayerA->>PlayerA: Fall into abyss -> Clean reset/death attribution
-    Note over PlayerA,PlayerB: Verify Match End Screen, Stats, and Clean Disconnect
-```
+### #51 closure package
 
-### Detailed Test Cases
+- both raw hosted captures plus local fallbacks if needed;
+- timestamped video/screenshots for avatar presentation and result UI;
+- a table mapping 51-TC01 through 51-TC11 to evidence;
+- explicit decisions for HP/fatigue, rewards, leaderboard target, PvE systems, and reconnect policy;
+- a dated report. Any failed or unobserved case keeps #51 open.
 
-| Case ID | Verification Target | Execution Action | Expected Result |
-| :--- | :--- | :--- | :--- |
-| **51-TC01** | Lobby & Avatar Handshake | Account A hosts; Account B joins via Steam overlay. Select different chassis classes and weapon polish. | Both players appear in roster; loadout and chassis sync without placeholder fallback. |
-| **51-TC02** | Remote 3D Model & Locomotion | Both players deploy into Sector 1. Observe peer while moving, sprinting, and turning. | Full 3D model upgrades in under 200ms; walk/run cycles sync smoothly without micro-teleportation. |
-| **51-TC03** | Damage Scaling (Anti-One-Shot) | Player B fires a single primary shot hitting Player A. | Player A loses exactly 1 heart (3/3 &rarr; 2/3). Does **not** trigger an instant death or 3-heart wipe. |
-| **51-TC04** | Downed State & Attribution | Player B continues firing until Player A hits 0 HP. | Player A enters downed state with crawl animation. Player B is credited with the down. |
-| **51-TC05** | Environmental Damage | Player B stands in hazard / depletes oxygen; Player A jumps into canyon abyss. | Oxygen starvation ticks 1 heart progressively; canyon fall causes instant death with attribution `chasm-fall`. |
-| **51-TC06** | Match Cleanup & Reconnect | Player A closes game during active match. | Relay handles host migration or clean match termination; Player B receives proper UI exit prompt without hang. |
-
-### Evidence Collection
-- Both players open debug console (`~`) and execute `exportlogs` (which automatically uploads the session to `https://steam.tuesdaycinema.club/logs/session` and preserves local fallback).
-- Save report as `docs/reports/sprint-31-pvp-certification-<YYYY-MM-DD>.md`.
-
----
-
-## 4. Test Plan for Ticket #52: Packaged GPU & Frame-Pacing Profiling
+## 4. Ticket #52 — packaged performance and frame pacing
 
 ### Objective
-Profile sustained frame pacing and eliminate the main-thread freeze observed in Log 18/Log 19 on physical desktop GPU hardware.
 
-### Benchmark Route Specification
-- **Hardware:** Desktop PC with NVIDIA GeForce RTX 2070 Super (or physical GPU).
-- **Settings:** Resolution 1920×1080, Fullscreen, Quality: High, VSync: Off (for uncapped frame profiling).
-- **Seed:** Authoritative fixed seed: `SEED-ALPHA-1092` (or fixed Cryo-sector seed).
-- **Route:** Title &rarr; Airlock Staging &rarr; Sector 1 Main Corridor &rarr; Combat Encounter (3+ Mycelium Stalkers) &rarr; Ring 1 Gate Crossing (180 seconds total).
+Measure and remediate a reproducible packaged performance problem. This is not a request to infer a root cause from one final telemetry snapshot.
 
-### Profiling Procedure
+### Benchmark contract
 
-```mermaid
-graph LR
-    A[Launch Packaged Build with --enable-logging] --> B[Airlock Staging Phase]
-    B -->|Monitor Staging| C{Asset Pre-load Check}
-    C -->|Asynchronous| D[Sector Entry: 0ms Freeze]
-    C -->|Synchronous Stalls| E[Main-Thread Block > 1000ms]
-    D --> F[Run 180s Benchmark Route]
-    F --> G[Extract Session Metrics]
-    G --> H[Compare against Log 18 & 19 Baseline]
-```
+Before each run, document one fixed route, package, display mode, quality tier, device/GPU/driver, and timing target. Do not compare unmatched routes or devices.
 
-### Measurement Protocol
+The prior desktop target remains: 60 FPS nominal, p50 ≤16.6 ms, p95 ≤20 ms, p99 ≤25 ms, no more than three diagnostic windows ≥100 ms, and no unexplained >500 ms frame window over the specified route. A Deck target must explicitly declare the chosen 40 Hz or 60 Hz mode before testing. The current Deck p50 of 84.7 ms and max of 4.614 s fails either candidate frame-cap route.
 
-1. **Pre-Staging Sector Stalls (Root Cause from Log 19):**
-   - Monitor the 5 critical GLB assets:
-     - `prop_base_defense_turret.glb`
-     - `cybersnail_dead.glb`
-     - `bunker_junk_rare.glb`
-     - `prop_body_human_frozen.glb`
-     - `prop_conduit_hub.glb`
-   - **Target:** Main-thread pause during sector entry transition must be `< 150 ms` (eliminating the 8,574 ms freeze).
-2. **Sustained Gameplay Telemetry:**
-   - Collect frame times over 180 seconds:
-     - Average FPS: $\ge 60\text{ FPS}$
-     - $p50$ frame time: $\le 16.6\text{ ms}$
-     - $p95$ frame time: $\le 20.0\text{ ms}$
-     - $p99$ frame time: $\le 25.0\text{ ms}$
-     - Long tasks ($\ge 100\text{ ms}$): $\le 3$ occurrences throughout the entire run.
-     - Peak GPU Memory: $\le 450\text{ MB}$ (geometry + textures).
-3. **Adaptive Quality Stability:**
-   - Confirm adaptive quality scaler does not drop resolution or disable post-processing under normal 1080p combat.
+### Required route and metrics
 
-### Evidence Collection
-- Run `exportlogs` from console at run completion.
-- Record session duration, memory, and frame stats.
-- Commit comparison report to `docs/reports/packaged-gpu-pacing-benchmark-<YYYY-MM-DD>.md`.
+1. Capture a cold launch, staging, sector entry, combat encounter, game-over/result transition, return to menu, and a second deploy.
+2. Repeat on the same package and device after the proposed remediation.
+3. Report observed and retained frame-interval counts; p50/p95/p99/max; `PERF` diagnostic-window count and maximum; GPU query average/max/drops; heap; estimated GPU memory; programs/geometries/textures/chunks/effects; and the active quality profile.
+4. Trace the candidate path before changing it. The latest capture makes shader/profile/chunk/material work and the game-over transition plausible targets; it does not prove their causality.
+5. Run the relevant regression suite after a confirmed code fix, then re-run the physical benchmark. Automated coverage does not pass #52 by itself.
 
----
+### #52 closure package
 
-## 5. Test Plan for Ticket #53: Steam Deck Controller-Only Acceptance
+- matched before/after package captures and settings table;
+- precise instrumented cause or an honestly labelled remaining unknown;
+- fixed-route metrics meeting the predeclared target;
+- video or human observation for visible freezes; and
+- a dated report linked from #45.
+
+## 5. Ticket #53 — physical Steam Deck controller-only acceptance
 
 ### Objective
-Certify that the packaged Steam build runs with 100% controller accessibility at native 1280×800 on physical Steam Deck hardware without touch/mouse assistance.
 
-### Pre-conditions
-- Physical Steam Deck in standard Gaming Mode.
-- No Bluetooth keyboard, mouse, or touch input used during test execution.
-- Steam Input layout set to official *Hunker Bunker Default Gamepad* template.
+Certify that the packaged Steam build is usable at native 1280×800 in Gaming Mode using controller input only. A Deck controller in diagnostics, or pointer/keyboard-style synthesized events, cannot certify this on its own.
 
-### Navigation and Gameplay Verification Matrix
+### Preconditions
 
-| Category | Action / Screen | Verification Procedure | Pass Criteria |
-| :--- | :--- | :--- | :--- |
-| **Boot & Menus** | Title &rarr; Main Menu | Boot game; press `A` on controller at title prompt. | Focus moves cleanly to menu buttons; active button shows visible neon highlight. |
-| **Armory & Loadout** | Operator Selection | Navigate tabs using `LB` / `RB`. Select weapon and polish using D-pad / `A`. | All chassis and item cards focusable; tooltips do not clip off-screen. |
-| **Cinematics** | Opening Cutscenes | Trigger intro cinematic. Hold `B` or press `Start` to skip. | Skip gauge fills; skipping immediately frees player controls with no lingering audio or locked camera. |
-| **Steam Input Sets** | Action Set Switching | Open pause menu mid-combat (`Start`); close menu (`B`). | Input switches seamlessly between `Gameplay` and `Menu` sets; sticks never freeze or remain pinned to menu mode. |
-| **HUD & Readability** | 1280×800 Inspection | Observe vital hearts, oxygen meter, minimap icons, ammo counter, and modal popups. | Fonts are crisp, legible at arm's length (Deck handheld distance), text does not truncate or overlap. |
-| **Gameplay Controls** | Core Combat Loop | Move (`Left Stick`), aim (`Right Stick`), fire (`RT`), sprint (`L3`), interact/read log (`X`), reload (`X`), dash/dodge (`B`). | Zero deadzone anomalies; aim sensitivity is responsive with analog smoothing. |
-| **Power Lifecycle** | Suspend & Resume | Put Steam Deck to sleep (Power Button) during Sector 1 combat. Wait 30 seconds. Power on. | Game resumes immediately into paused or active state without audio crackle, WebGL context loss, or crash. |
-| **Thermals & Battery** | Sustained Play (15 min) | Play continuously through Sector 1 and Sector 2. Monitor SteamOS Performance Overlay (Level 2). | Solid 60 FPS (or 40Hz cap); GPU temp $\le 75^\circ\text{C}$; power draw $\le 15\text{W}$. |
+- Steam Deck in Gaming Mode, native 1280×800; record LCD/OLED, SteamOS version, selected refresh cap, and official Steam Input layout.
+- No mouse, keyboard, touch, or Desktop Mode assistance. Tester attests to this in the report.
+- Log the active Steam Input action set at title, menu, map/pause, gameplay, death/result, and extraction/return.
 
-### Evidence Collection
-- Export session log via debug console (`exportlogs`).
-- Capture 2–3 screenshots showing HUD readability and modal presentation.
-- Commit final report to `docs/reports/steam-deck-physical-acceptance-<YYYY-MM-DD>.md`.
+### Controller-only route
 
----
+| Area | Route | Pass evidence |
+| --- | --- | --- |
+| Boot and menus | Title → main menu → settings → hero selection | Every control is reachable; focus is visible; no pointer assistance. |
+| Armory and progression | Armory, loadout, cosmetics, Archives, Fab Bay | Tabs, cards, tooltips, text entry/virtual keyboard, and back paths remain accessible and legible. |
+| Deployment and map | Select/deploy, tactical map open/close, pause | Expected action-set transitions recorded; no frozen/pinned controls or focus loops. |
+| Core gameplay | Move, aim, fire, reload, sprint, ability, interact, scan, map, dodge | All mapped actions work at the documented layout; accepted-action provenance is available. |
+| HUD and modals | Combat, prompts, death/result, extraction/return | Text/readouts are legible at handheld distance; no clipping/overlap; human screenshots/video support the judgment. |
+| Lifecycle | Suspend for 30 seconds during combat, resume, exit/relaunch | Expected pause/resume, no crash/context loss/audio corruption, and a captured lifecycle event or explicit observation. |
+| Sustained route | Complete the selected 15–30 minute route | Meets the declared Deck performance target; record thermals/battery only if a human measurement is available. |
 
-## 6. Master Ship Gates (#45) Resolution Mapping
+### #53 closure package
 
-Once tickets #51, #52, and #53 pass their respective hardware protocols, issue #45 can be updated and closed according to this dependency mapping:
+- `uploadlogs` capture plus local fallback;
+- tester attestation and 2–3 screenshots/video clips;
+- action-set/provenance evidence and the full route matrix; and
+- physical performance/lifecycle result. Missing human observations remain unverified rather than inferred from logs.
 
-```mermaid
-graph TD
-    T51[Ticket #51 Passed<br/>PvP Co-op Packaged Evidence] --> G1[Gate: Two-Account Co-op/PvP Certification]
-    T52[Ticket #52 Passed<br/>GPU Frame Pacing & Freeze Fix] --> G2[Gate: Packaged Desktop 16:9 Performance]
-    T52 --> G3[Gate: No Unexplained Gameplay Stalls]
-    T53[Ticket #53 Passed<br/>Steam Deck Controller Certification] --> G4[Gate: Packaged 1280x800 Deck Acceptance]
-    T53 --> G5[Gate: Full Controller Support Store Tag]
+## 6. Ticket #85 — two-account packaged co-op PvE proof
 
-    G1 --> T45[Issue #45: Master Ship Gates Release]
-    G2 --> T45
-    G3 --> T45
-    G4 --> T45
-    G5 --> T45
-```
+This is deliberately separate from #51. The current source implementation (`8da53de`) has automated coverage for co-op boss authority and Act 2 descent propagation, but no physical paired co-op expedition evidence.
 
-### Closure Checklist for Issue #45
+| Case | Required co-op proof |
+| --- | --- |
+| 85-TC01 | Host/guest Steam lobby, roster, ready/re-ready, deploy, remote avatar, and loadout agreement. |
+| 85-TC02 | Both players damage a boss; host/guest agree on HP, phase, weakpoint, add spawn/cleanup, and milestone outcome. |
+| 85-TC03 | Trigger Act 2 descent; logs agree on absolute seed offset, expedition index, sector identity, and spawn state. |
+| 85-TC04 | Complete an expedition/return or a controlled failure; verify reconnect/failover policy and no divergent world state. |
+| 85-TC05 | Upload both logs; attach a side-by-side evidence table with matching timestamps and build IDs. |
 
-- [ ] **Two-real-Steam-account packaged co-op certification** &rarr; Verify dated report from Ticket #51.
-- [ ] **Real Steam Cloud round trip** &rarr; Verify Save machine A &rarr; Steam Cloud &rarr; Restore Machine B.
-- [ ] **Packaged desktop 16:9 visual/performance acceptance** &rarr; Verify dated report from Ticket #52.
-- [ ] **Packaged 1280×800 / Steam Deck acceptance** &rarr; Verify dated report from Ticket #53.
-- [ ] **No unexplained release-blocking gameplay stalls** &rarr; Verify 8.57s GLB staging freeze is documented resolved in Ticket #52.
-- [ ] **Human Proof Run / first-hour acceptance** &rarr; Complete an observed unassisted play session with a fresh player.
-- [ ] **Steam Review Compliance:**
-  - [ ] Store library hero, capsule, logo match Valve guidance.
-  - [ ] AI disclosure questionnaire reflects current assets.
-  - [ ] Controller support claims validated by Deck certification.
-  - [ ] SteamOS / Linux compatibility verified.
+#85 stays open until all five cases have paired packaged evidence. A PvP run cannot satisfy any of them.
 
----
+## 7. Parent ship gate: ticket #45
 
-## 7. Execution Quick Reference
+#45 may move only when its dependent evidence packages are complete:
 
-When executing these verification runs, use the following standardized CLI commands:
+- [ ] #51 paired packaged PvP certification, if PvP remains in scope for release.
+- [ ] #52 fixed-route packaged performance acceptance on its declared target devices.
+- [ ] #53 physical Deck controller-only route and lifecycle acceptance.
+- [ ] #85 paired two-account co-op PvE expedition.
+- [ ] two-machine Steam Cloud/save round trip, including conflict/offline handling.
+- [ ] packaged desktop visual/performance acceptance and a human first-hour proof run.
+- [ ] current Steam review/compliance claims, controller support claims, and Linux/SteamOS claims tied to matching evidence.
+
+## 8. Quick reference
 
 ```bash
-# 1. Package the authoritative build for physical testing
+# Package the recorded candidate
 npm run steam:package
 
-# 2. Run local pre-flight checks before distributing build
+# Run local checks before distributing it
 npm run presubmit
 npm test
 npm run lint
 
-# 3. Retrieve uploaded test logs from the central server
-node scripts/fetch-session-logs.mjs
+# In the packaged game console, on each participating client
+uploadlogs
 
-# 4. In-game: Export and upload session telemetry
-# Press `~` to open the console and type:
+# Optional local fallback copy
 exportlogs
+
+# Retrieve and compare the hosted logs
+npm run logs:fetch -- --latest 5
+npm run logs:analyze -- logs/<host-capture>.json logs/<guest-capture>.json
 ```
+
+Use [the session-log review runbook](session-log-review-runbook.md) for upload, retrieval, and evidence interpretation. Raw logs remain ignored; durable conclusions belong in the dated report and this ticket matrix.

@@ -17,13 +17,12 @@ Checked against the code on `dev/sprint-45` after the register was written. Seve
 | GAP-GP-05 | **Stale.** The chasm badge already reads `IMPASSABLE CANYON // ROUTE VIA CONNECTED BRIDGE`. | — |
 | GAP-GP-07 | **Resolved.** Route topologies carry a reachability result from `mazeTiers`' disjoint-route search; `validateRadialMazeExpedition` rejects an unreachable Queen. Two disjoint routes are reported, not required: generation-2 gates are deliberately route cut points. | `7b7c514` |
 | GAP-GP-09 | **Stale.** Every ship goal rolls one of three objective packages per campaign. | `de1df0e`, `08722c0` |
-| GAP-MP-01 | **Partial.** Guest hits on bosses reach the host and a peer's fight HP (and so its phase) follows the host snapshot; networked hits no longer pick up the receiver's loadout multiplier. Boss adds and phase lines still run per client. | `0fc84c6` |
+| GAP-MP-01 | **Implemented + automated; paired packaged acceptance open.** Boss phases, weakpoints and adds now use one authority with shared add keys; milestone defeats reach replica guests. | `8da53de`, `src/threeGame.coopTransitions.test.js` |
 | GAP-TS-01 | **Stale / resolved.** The boot helper reaches gameplay; the failures were a per-test budget smaller than the helper's own deadline and a corpse test racing other corpses. `enemy-gibs` 3/3 and `gameplay-aim-cursor` 5/5 pass. | `59d0eeb` |
 | GAP-TS-02 | **Resolved.** Report links are repo-relative; `scripts/audit-docs.js` passes. | `1c0d69e` |
-| GAP-MP-01 (follow-up) | **Resolved in code (Sprint 45.2).** Boss phases, weakpoints and adds are host-authoritative with shared add keys; milestone defeats reach replica guests. Needs a paired host/guest packaged log. | `8da53de` |
-| GAP-MP-02 | **Resolved in code (Sprint 45.2).** Act 2 descent carries an absolute seed offset and index; both clients load the same sector. Needs a paired packaged log. | `8da53de` |
+| GAP-MP-02 | **Implemented + automated; paired packaged acceptance open.** Act 2 descent carries an absolute seed offset and index for replica clients. | `8da53de`, `src/threeGame.coopTransitions.test.js` |
 
-**2026-09-23 evening Deck PvP session** ([analysis](session-log-analysis-2026-09-23-deck-pvp-session.md)): the transient-effect cap holds on hardware (≤13 live), but gameplay frame pacing still fails (p50 84.7 ms, max 4.6 s) for new reasons, and PvP works end to end with rule defects. New gaps are in §9.
+**2026-09-23 evening Deck PvP session** ([analysis](session-log-analysis-2026-09-23-deck-pvp-session.md)): one physical Deck capture sampled transient effects from 0–64 (final 13), but gameplay frame pacing remains unacceptable (p50 84.7 ms, max 4.6 s). It proves one local, incoming-damage PvP lifecycle only; paired PvP and co-op acceptance remain open. New gaps are in §9.
 
 ---
 
@@ -316,20 +315,16 @@ This document establishes the comprehensive, forensic register of all known gaps
 ## 6. Multiplayer, Steam & Backend Gaps
 
 ### GAP-MP-01: Co-op Boss Fight Damage and State Desync
-- **Status:** Documented multiplayer gap.
-- **Evidence:** `src/threeGame.js:14202`.
-- **Finding:** Plain enemy hits (`damageSnail`) are host-authoritative and synced across peers. However, boss fights (`queenFight` and `sporesnailFight`) are explicitly bypassed in `isSyncableCoopHit`:
-  ```javascript
-  // Boss fights (queenFight/sporesnailFight, both branch out below) are not synced yet -- documented gap.
-  ```
-  In a co-op match, boss HP, phase transitions, and vulnerable states desynchronize between host and clients.
-- **Action Required:** Implement host-authoritative network event synchronization for `boss_sporesnail` and `queenFight`.
+- **Status:** **Implemented + automated; hardware acceptance open.**
+- **Evidence:** `8da53de`; `src/threeGame.coopTransitions.test.js`.
+- **Finding:** The former boss-authority gap is addressed in source: irreversible boss beats, weakpoints, adds, and milestone defeats have one authority and shared replica propagation.
+- **Action Required:** Run a packaged host/guest co-op expedition with both logs uploaded. Confirm boss HP/phase/add/milestone agreement before marking accepted.
 
 ### GAP-MP-02: Act 2 Descent Multiplayer Global Seed Drift
-- **Status:** Documented multiplayer gap.
-- **Evidence:** `src/threeGame.js:5169`.
-- **Finding:** Scoped to the initial shared world only. If players trigger Act-2 descent at different moments, `this.globalSeedOffset += 7919` runs per-client without network sync, causing procedural generation to diverge between clients.
-- **Action Required:** Sync Act-2 descent and the updated `globalSeedOffset` through `server/relay.js`.
+- **Status:** **Implemented + automated; hardware acceptance open.**
+- **Evidence:** `8da53de`; `src/threeGame.coopTransitions.test.js`.
+- **Finding:** Act 2 descent now carries an absolute seed offset and expedition index to replica clients rather than relying on each client to mutate its own offset.
+- **Action Required:** In the same paired packaged co-op run, record host and guest sector/seed state across Act 2 descent.
 
 ### GAP-MP-03: Two-Account Production Co-op Expedition Uncertified
 - **Status:** Open acceptance blocker.
@@ -429,23 +424,44 @@ This document establishes the comprehensive, forensic register of all known gaps
 
 ---
 
+### 8.1 Session-derived release actions (added 2026-09-23)
+
+These rows supplement the historical matrix above; their evidence, scope, and non-closure rules are in §9 and the linked session report.
+
+| Pri | ID | Focus | Ticket / acceptance dependency |
+| :---: | :--- | :--- | :--- |
+| P0 | GAP-RN-10 | Deck frame-pacing trace and measured remediation | #52 |
+| P0 | GAP-PV-01 | Normalize/decide PvP HP and fatigue policy | #51 |
+| P0 | GAP-PV-04 | Block PvP submissions to generic/PvE-run boards | #51 |
+| P1 | GAP-RN-11 | Trace game-over / gameplay-profile transition cost | #52 |
+| P1 | GAP-RN-12 | Define and verify a measured Deck quality tier | #52, #53 |
+| P1 | GAP-PV-02 | Paired respawn protection/separation test | #51 |
+| P1 | GAP-PV-03 | Decide and test PvP Black Box/XP behavior | #51 |
+| P1 | GAP-PV-07 | Add paired hit-verdict/attribution telemetry | #51 |
+| P1 | GAP-GP-13 | Controller action-set and input-provenance evidence | #53 |
+| P2 | GAP-PV-05 | Decide whether PvE cards/missions belong in PvP | #51 |
+| P2 | GAP-PV-06 | Reproduce door-event churn before changing protocol | #51 |
+| P2 | GAP-TS-04 | Aggregate high-frequency session diagnostics | #86 intake unchanged; future evidence review |
+| P3 | GAP-AU-01 | Supply or alias `terminal_deny` | future acceptance |
+
+---
+
 ## 9. Findings from the 2026-09-23 Evening Steam Deck PvP Session
 
-Source: [session-log-analysis-2026-09-23-deck-pvp-session.md](session-log-analysis-2026-09-23-deck-pvp-session.md) — packaged `v2.4.11-beta` (`aafe429`), Steam Deck, solo then Steam-lobby PvP. One client's log only.
+Source: [session-log-analysis-2026-09-23-deck-pvp-session.md](session-log-analysis-2026-09-23-deck-pvp-session.md) — packaged `v2.4.11-beta` (`aafe429`), Steam Deck, solo then Steam-lobby PvP. One client's log only. “Observed” below is limited to that client; “traced” cites source behavior; neither closes an acceptance ticket without its specified paired or hardware evidence.
 
-| ID | Pri | Gap | Evidence | Action |
+| ID | Pri | Gap | Evidence | Action / ticket state |
 | :--- | :---: | :--- | :--- | :--- |
-| GAP-RN-09 | P0 | Shader-program storms: programs 5→130 and 169→434 with the worst stalls (up to 2.7 s); `setPerformanceProfile` toggles `shadowMap.enabled` (a shader key) on every gameplay↔menu switch, and materials arriving with later chunks / the remote avatar are not prewarmed. | long-task windows 21:31:57–21:32:02, 21:39:09–21:40:12 | Keep the shadow key fixed per session on Deck; prewarm remote-avatar and newly mounted chunk materials off the critical frame. |
-| GAP-RN-10 | P0 | The results/game-over screen keeps rendering the full gameplay world (28 chunks) at 0.5–1.7 s per frame for ~35 s. | 12 windows 21:37:42–21:38:08, profile `gameplay` | Pause or drop to the menu render path while the game-over screen covers the scene. |
-| GAP-RN-11 | P1 | The Deck adaptive profile lowers only pixel ratio; shadows, post-processing and 20 point lights stay on; steady frames ~85 ms. | `adaptive-gameplay-quality-engaged` `shadows:true, postprocessing:true` | Decide the Deck tier from measured frame time; drop shadows/post first. |
-| GAP-PV-01 | P0 | Campaign fatigue lowers max HP inside PvP (Deck entered with 2 hearts). | HP 5→4→2; `fatigueMaxHealthPenalty` in `getMaxHp` | PvP uses a fixed, symmetric loadout HP. |
-| GAP-PV-02 | P1 | No respawn protection or spawn separation; killed and respawned on the spawn point. | death at (9.7, 3.7) 48 s after deploy; depenetration on respawn | Spawn invulnerability window and rotating/opposed spawns. |
-| GAP-PV-03 | P1 | PvP deaths drop a Black Box worth +50 objective XP; farmable. | `black-box-recovered` 21:40:15 | No Black Box or objective XP from PvP deaths. |
-| GAP-PV-04 | P0 | PvP runs submit to the PvE leaderboards. | `leaderboard payload accepted (…run-STEAM-…)`; no mode guard in the submit path | Never submit PvP runs to PvE boards. |
-| GAP-PV-05 | P2 | PvE mission and run cards active in PvP. | mapping mission, `camp_paranoia` cards | Decide PvP ruleset; strip or re-theme. |
-| GAP-PV-06 | P2 | Bunker door ping-pong: 11 toggles in 19 s with duplicate remote echoes. | `bunker-door-toggled` 21:40:58–21:41:17 | State-based door event (absolute open state + sequence), not a toggle. |
-| GAP-PV-07 | P1 | No outgoing PvP hit telemetry; hit registration cannot be judged from one side. | only `player-damaged` logged | Log `pvp-hit-dealt` / `pvp-hit-confirmed` with the relay verdict. |
-| GAP-GP-11 | P1 | Fire input arrived as mouse pointer (607/607) and `lastInputMode` stayed `keyboard` in PvP — the game's Steam Input gameplay layout was not active. | `fire-input source: pointer` | Confirm layout on device; publish the Steam Input manifest; log the active action set on deploy. |
-| GAP-TS-04 | P2 | Log volume: held-fire, reticle and audio entries are ~70% of a 12-minute log. | 1,321 WEAPON / 445 RETICLE / 867 AUDIO | Sample or aggregate per-frame input/audio logging. |
-| GAP-AU-01 | P3 | `terminal_deny` audio missing. | `audioMissing` ×3 | Add or alias the cue. |
-
+| GAP-RN-10 | P0 | Deck frame pacing remains far below release acceptance; transition/program correlations need a causal trace. | 3,600 retained gameplay intervals: p50 84.7 ms, p95 223.6 ms, p99 519.5 ms, max 4.614 s; 428 PERF diagnostic windows. `shadowMap.enabled` is a shader key, but that is a hypothesis rather than the captured root cause. | Instrument profile/chunk/material/shader work, fix the measured path, and compare a fixed packaged route. **#52 open.** |
+| GAP-RN-11 | P1 | Game-over/gameplay-profile transition has an unmeasured rendering/workload risk. | During game-over, `gameplay` profile and 28 chunks remain present for 11 816–1,679 ms diagnostic windows over ~34 s. | Trace the transition before deciding whether to suspend world work or change profile. **#52 open.** |
+| GAP-RN-12 | P1 | Deck quality tier is not yet justified by a successful hardware route. | Adaptive quality reports pixel ratio 0.85, visible-chunk radius 1, shadows enabled, and post-processing enabled. | Set a measured Deck tier and reproduce the fixed route. **#52/#53 open.** |
+| GAP-PV-01 | P0 | Local campaign fatigue reaches PvP health. | The local Deck enters PvP at 2/2 after solo deaths; source applies fatigue modifiers without a PvP exclusion. | Decide normalized/symmetric PvP health and test accounts with different fatigue state. **#51 partial.** |
+| GAP-PV-02 | P1 | Spawn/respawn fairness needs a paired test. | One incoming PvP death, respawn start at (9, 3), and relocation/depenetration occur locally. | Test protection window, separation, and collision on both clients; this does not prove camping today. **#51 partial.** |
+| GAP-PV-03 | P1 | PvP death can trigger Black Box recovery and objective XP. | Local Black Box recovery occurs about 8 seconds after respawn, then +50 objective XP; `handleDeath` has no PvP guard. | Decide intended rewards and repeat the route to assess exploitability. **#51 partial.** |
+| GAP-PV-04 | P0 | PvP submits through generic run leaderboard targets. | PvP score 400 and accepted payload are observed; client/server target builders lack a multiplayer-mode guard. | Exclude or segregate PvP submissions server-side and prove final disposition. **#51 partial.** |
+| GAP-PV-05 | P2 | PvE missions and run cards appear in PvP. | Mapping objective and `camp_paranoia` cards observed. | Make an explicit PvP ruleset decision. **#51 partial.** |
+| GAP-PV-06 | P2 | Door-event churn needs reproduction. | Ten door-toggle events in 19 seconds, including repeated remote traffic. | Use paired logs to establish cause before changing an absolute-state/sequence protocol. **#51 partial.** |
+| GAP-PV-07 | P1 | Outgoing PvP hit result is not observable from the current log. | 21 accepted PvP shots/projectiles; no recipient health, relay verdict, or kill event; `rivalKills` 0. | Add intent/verdict/recipient/kill telemetry and require both logs. **#51 partial.** |
+| GAP-GP-13 | P1 | Deck input provenance cannot certify a controller-only route. | 607 total `fire-input` events use `pointer`; final `lastInputMode` is `keyboard`. A Deck controller is present, but Steam Input can synthesize these events. | Record active action set and accepted-action provenance; run a no-alternate-input route. **#53 open.** |
+| GAP-TS-04 | P2 | High-frequency diagnostics obscure long-run review. | WEAPON 1,321 + RETICLE 445 + AUDIO 882 = 2,648 / 3,726 entries (71.1%). | Aggregate/summarize frequent input, reticle, and audio events. **#86 intake status unchanged.** |
+| GAP-AU-01 | P3 | `terminal_deny` cue is absent. | `audioMissing` occurs three times. | Add or alias the cue and confirm in a package. |
