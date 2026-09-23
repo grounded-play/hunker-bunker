@@ -307,7 +307,9 @@
       "blackbox_recoverable": "BERGBAR (SEKTOR {depth})",
       "blackbox_none": "KEINE",
       "equipped_none": "KEINE",
-      "arsenal_count": "ARSENAL: {made} / {total} WAFFEN GEFERTIGT"
+      "arsenal_count": "ARSENAL: {made} / {total} WAFFEN GEFERTIGT",
+      "condition": "ZUSTAND:",
+      "condition_nominal": "NORMAL"
     },
     "dlg": {
       "channel": "MUTTERSCHIFF-UPLINK KANAL 7",
@@ -634,7 +636,8 @@
     "vitals": {
       "vitals": "VITALWERTE",
       "aria_label_health": "Gesundheit",
-      "cover": "DECKUNG"
+      "cover": "DECKUNG",
+      "fatigue": "ERMÜDUNG"
     },
     "queens_ledger_hud": {
       "obedience_0_seats_1_4": "♛ GEHORSAM 0 · SITZE 1/4 · VEKTOR: INSTABIL"

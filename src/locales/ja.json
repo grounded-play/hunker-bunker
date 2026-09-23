@@ -307,7 +307,9 @@
       "blackbox_recoverable": "回収可能（セクター {depth}）",
       "blackbox_none": "なし",
       "equipped_none": "なし",
-      "arsenal_count": "アーセナル：武器 {made} / {total} 製造済み"
+      "arsenal_count": "アーセナル：武器 {made} / {total} 製造済み",
+      "condition": "状態:",
+      "condition_nominal": "正常"
     },
     "dlg": {
       "channel": "マザーシップ通信チャンネル7",
@@ -634,7 +636,8 @@
     "vitals": {
       "vitals": "バイタル",
       "aria_label_health": "体力",
-      "cover": "遮蔽"
+      "cover": "遮蔽",
+      "fatigue": "疲労"
     },
     "queens_ledger_hud": {
       "obedience_0_seats_1_4": "♛ 服従度 0 · 議席 1/4 · ベクトル：不安定"

@@ -329,3 +329,43 @@ export function composeFatigueIntoLoadoutMods(baseMods, state) {
 export function fatigueMaxHealthPenalty(state) {
     return Math.min(0, fatigueModifiers(state).maxHealthBonus);
 }
+
+/**
+ * What sprinting costs at this stage.
+ *
+ * Sprint is never taken away (design doc §2.4): deleting a core verb for most
+ * of a run reads as a broken build, while pricing it leaves the player holding
+ * the decision. Exhaustion therefore makes the same sprint burn more oxygen and
+ * carry slightly less speed -- and `speedBonusScale` scales only the BONUS, so
+ * a sprinting operator is never slower than one who is walking.
+ */
+export function sprintPricing(state) {
+    const stage = getFatigueStage(state).id;
+    switch (stage) {
+        case 'STRAINED': return { o2DrainMultiplier: 1.15, speedBonusScale: 0.97 };
+        case 'RAGGED': return { o2DrainMultiplier: 1.35, speedBonusScale: 0.92 };
+        case 'LONG_DARK': return { o2DrainMultiplier: 1.6, speedBonusScale: 0.85 };
+        default: return { o2DrainMultiplier: 1, speedBonusScale: 1 };
+    }
+}
+
+/**
+ * The operator's standing condition, for the Homebase dossier line.
+ *
+ * Scars only -- not the wake ladder. The ladder is a property of the current
+ * expedition and is already on the HUD; this line is what the operator carries
+ * between runs, which is the part a player plans around.
+ *
+ * Returns null when there is nothing to report, so the caller can fall back to
+ * its own localized "nominal" string rather than this module inventing copy.
+ */
+export function describeScars(state) {
+    const scars = normalizeFatigueState(state).scars;
+    if (scars.length === 0) return null;
+    return scars
+        .map((scar) => {
+            const label = SCAR_BY_ID.get(scar.id)?.label ?? scar.id;
+            return scar.severity > 1 ? `${label} x${scar.severity}` : label;
+        })
+        .join(' / ');
+}

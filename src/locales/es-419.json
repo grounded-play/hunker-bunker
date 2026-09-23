@@ -307,7 +307,9 @@
       "blackbox_recoverable": "RECUPERABLE (SECTOR {depth})",
       "blackbox_none": "NINGUNA",
       "equipped_none": "NULO",
-      "arsenal_count": "ARSENAL: {made} / {total} ARMAS FABRICADAS"
+      "arsenal_count": "ARSENAL: {made} / {total} ARMAS FABRICADAS",
+      "condition": "CONDICIÓN:",
+      "condition_nominal": "NORMAL"
     },
     "dlg": {
       "channel": "CANAL 7 DE ENLACE CON LA NODRIZA",
@@ -634,7 +636,8 @@
     "vitals": {
       "vitals": "CONSTANTES",
       "aria_label_health": "Salud",
-      "cover": "COBERTURA"
+      "cover": "COBERTURA",
+      "fatigue": "FATIGA"
     },
     "queens_ledger_hud": {
       "obedience_0_seats_1_4": "♛ OBEDIENCIA 0 · ASIENTOS 1/4 · VECTOR: INESTABLE"

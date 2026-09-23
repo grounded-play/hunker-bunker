@@ -287,7 +287,8 @@ import {
     getFatigueStage,
     normalizeFatigueState,
     recordExpedition,
-    restoreOnSleep
+    restoreOnSleep,
+    sprintPricing
 } from './fatigue.js';
 import {
     clampPositionToUnlockedRing,
@@ -20183,8 +20184,12 @@ export class ThreeGame {
 
     updateSprintState(_delta) {
         const active = Boolean(this.sprinting) && this.isGameplayInputActive() && (this.playerVitals?.o2 ?? 0) > 0;
-        this._sprintMoveSpeedMult = active ? 1.6 : 1.0;
-        this._sprintO2DrainMult = active ? 2.5 : 1.0;
+        // Fatigue prices sprint, it never revokes it: `active` above is
+        // untouched. A tired operator still sprints -- it just costs more air
+        // and carries a little less of the bonus.
+        const pricing = sprintPricing(this.fatigueState);
+        this._sprintMoveSpeedMult = active ? 1 + (0.6 * pricing.speedBonusScale) : 1.0;
+        this._sprintO2DrainMult = active ? 2.5 * pricing.o2DrainMultiplier : 1.0;
         if (active && !this._wasSprinting) {
             if (typeof window !== 'undefined') window.AudioManager?.play('fx_scout_sprint', { volume: 0.45, bus: 'sfx' });
         }

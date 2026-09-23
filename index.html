@@ -121,6 +121,7 @@
     })();
   </script>
   <div id="game-viewport">
+    <div id="fatigue-strain-overlay" aria-hidden="true"></div>
     <script>
       (function () {
         try {
@@ -347,9 +348,6 @@
     <div id="menu" class="hidden">
 
       <!-- Settings gear: pinned to top-right corner of menu, never displaced by layout -->
-      <div class="menu-corner-settings">
-        <button class="calibrate-btn open-settings-btn">⚙</button>
-      </div>
       <div class="header-bar">
         <div class="title-group">
           <h1 class="title-small"><span>HUNKER</span><span>BUNKER</span></h1>
@@ -379,6 +377,7 @@
                   <div class="roster-telemetry-chip"><span class="label" data-i18n="ui.roster.total_distance">TOTAL DISTANCE:</span> <b id="roster-stat-distance">0u</b></div>
                   <div class="roster-telemetry-chip"><span class="label" data-i18n="ui.roster.hostiles">HOSTILES:</span> <b data-i18n="ui.roster.0_eliminated" id="roster-stat-kills">0 ELIMINATED</b></div>
                   <div class="roster-telemetry-chip"><span class="label" data-i18n="ui.roster.black_box">BLACK BOX:</span> <b data-i18n="ui.roster.none" id="roster-stat-blackbox">NONE</b></div>
+                  <div class="roster-telemetry-chip"><span class="label" data-i18n="ui.roster.condition">CONDITION:</span> <b data-i18n="ui.roster.condition_nominal" id="roster-stat-condition">NOMINAL</b></div>
                 </div>
               </section>
               <div class="menu-header-actions">
@@ -557,6 +556,14 @@
         </div>
       </div>
 
+    </div>
+
+    <!-- Settings gear: sits beside #menu rather than inside it, because
+         #menu carries a 3D mouse-tilt transform that shifted the gear as
+         the mouse moved. Same stage slot as the Armory and HUD gears
+         (style.css "Settings gear: one slot, every screen"). -->
+    <div class="menu-corner-settings">
+      <button class="calibrate-btn open-settings-btn">⚙</button>
     </div>
 
     <!-- INITIALIZE lives beside #menu, not inside it: #menu carries a 3D
@@ -1291,6 +1298,10 @@
                 <div class="vitals-panel__o2-bar" id="vitals-o2-bar"></div>
               </div>
               <span class="vitals-panel__o2-pct" id="vitals-o2-pct">100%</span>
+            </div>
+            <div class="vitals-panel__fatigue-row hidden" id="vitals-fatigue-row">
+              <span data-i18n="ui.vitals.fatigue" class="vitals-panel__o2-label">FATIGUE</span>
+              <span class="vitals-panel__fatigue-stage" id="vitals-fatigue-stage"></span>
             </div>
             <div class="vitals-panel__o2-row vitals-panel__cover-row hidden" id="vitals-cover-row">
               <span data-i18n="ui.vitals.cover" class="vitals-panel__o2-label" id="vitals-cover-label">COVER</span>

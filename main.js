@@ -85,6 +85,7 @@ import { matureContentAudit } from './src/matureContentAudit.js';
 import { progressionWalkthrough } from './src/progressionWalkthrough.js';
 import { renderGameOverLeaderboard } from './src/leaderboardUi.js';
 import { flushPendingRunSubmits, submitRunWithRetryQueue } from './src/steam/runSubmitQueue.js';
+import { FATIGUE_STATE_KEY, describeScars, normalizeFatigueState } from './src/fatigue.js';
 import { unlockSheenForMilestone, reconcileSheenUnlocks, unlockAllSheens } from './src/weaponSheens.js';
 import { OPERATOR_POLISHES, getSelectedPolish, getUnlockedPolishIds, selectPolish, unlockAllPolishes, unlockMilestonePolish } from './src/operatorPolishes.js';
 import { createOwnershipStore } from './src/itemOwnership.js';
@@ -1269,7 +1270,7 @@ function moveHeroSelectPanelFocus(code) {
         const index = Math.max(0, focusableElements.indexOf(active));
         let target = null;
         if (isUp) {
-            if (index === 0) target = document.querySelector('#menu .menu-corner-settings .open-settings-btn');
+            if (index === 0) target = document.querySelector('.menu-corner-settings .open-settings-btn');
             else target = focusableElements[index - 1];
         } else if (isDown) {
             if (index < focusableElements.length - 1) target = focusableElements[index + 1];
@@ -1278,7 +1279,7 @@ function moveHeroSelectPanelFocus(code) {
             if (active === heroBackBtn) target = document.getElementById('start-game');
             else target = document.getElementById('hero-polish-btn');
         } else if (isRight) {
-            target = document.querySelector('#menu .menu-corner-settings .open-settings-btn');
+            target = document.querySelector('.menu-corner-settings .open-settings-btn');
         }
         return target ? focusControllerTarget(target, { playHover: true }) : true;
     }
@@ -1289,7 +1290,7 @@ function moveHeroSelectPanelFocus(code) {
             : isLeft
                 ? (lastHeroMenuCommandFocus ?? getVisibleControllerFocusables(document.querySelector('.menu-header-actions'))[0])
                 : isUp
-                    ? document.querySelector('#menu .menu-corner-settings .open-settings-btn')
+                    ? document.querySelector('.menu-corner-settings .open-settings-btn')
                     : document.getElementById('start-game');
         return target ? focusControllerTarget(target, { playHover: true }) : true;
     }
@@ -13378,6 +13379,18 @@ const HOMEBASE_COMMAND_DESCRIPTIONS = Object.freeze({
     'hero-polish-btn': 'ui.menu.title_choose_operator_polish'
 });
 
+// Scars the operator still carries, for the Homebase CONDITION line. Reads the
+// same hb_fatigue save the runtime writes; the "nothing wrong" copy is owned
+// here because src/fatigue.js holds no localized strings.
+function describeOperatorCondition() {
+    try {
+        const raw = JSON.parse(localStorage.getItem(FATIGUE_STATE_KEY) ?? 'null');
+        return describeScars(normalizeFatigueState(raw)) ?? t('ui.roster.condition_nominal');
+    } catch {
+        return t('ui.roster.condition_nominal');
+    }
+}
+
 function wireHomebaseCommandInfo() {
     const panel = document.getElementById('homebase-command-info');
     if (!panel) return;
@@ -13456,11 +13469,13 @@ function renderHomebaseConsole({ initializeCallsign = false } = {}) {
         setTxt('roster-stat-distance', `${Math.round(distVal)}u`);
         setTxt('roster-stat-kills', t('ui.roster.stat_hostiles', { count: killVal }));
         setTxt('roster-stat-blackbox', t('ui.roster.stat_blackboxes_recovered', { count: recoveredVal }));
+        setTxt('roster-stat-condition', describeOperatorCondition());
     } catch {
         setTxt('roster-stat-depth', t('ui.roster.stat_sector', { depth: 0 }));
         setTxt('roster-stat-distance', '0u');
         setTxt('roster-stat-kills', t('ui.roster.stat_hostiles', { count: 0 }));
         setTxt('roster-stat-blackbox', t('ui.roster.stat_blackboxes_recovered', { count: 0 }));
+        setTxt('roster-stat-condition', t('ui.roster.condition_nominal'));
     }
 
     const weapons = FAB_RECIPES.filter((r) => r.klass === 'WEAPON');

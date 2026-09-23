@@ -307,7 +307,9 @@
       "blackbox_recoverable": "МОЖНО ИЗВЛЕЧЬ (СЕКТОР {depth})",
       "blackbox_none": "НЕТ",
       "equipped_none": "НЕТ",
-      "arsenal_count": "АРСЕНАЛ: СОБРАНО ОРУЖИЯ {made} / {total}"
+      "arsenal_count": "АРСЕНАЛ: СОБРАНО ОРУЖИЯ {made} / {total}",
+      "condition": "СОСТОЯНИЕ:",
+      "condition_nominal": "НОРМА"
     },
     "dlg": {
       "channel": "КАНАЛ СВЯЗИ С МАТКОЙ 7",
@@ -634,7 +636,8 @@
     "vitals": {
       "vitals": "ЖИЗНЕННЫЕ ПОКАЗАТЕЛИ",
       "aria_label_health": "Здоровье",
-      "cover": "УКРЫТИЕ"
+      "cover": "УКРЫТИЕ",
+      "fatigue": "УСТАЛОСТЬ"
     },
     "queens_ledger_hud": {
       "obedience_0_seats_1_4": "♛ ПОВИНОВЕНИЕ 0 · МЕСТА 1/4 · ВЕКТОР: НЕСТАБИЛЕН"

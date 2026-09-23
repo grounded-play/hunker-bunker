@@ -307,7 +307,9 @@
       "blackbox_recoverable": "RECUPERÁVEL (SETOR {depth})",
       "blackbox_none": "NENHUMA",
       "equipped_none": "NULO",
-      "arsenal_count": "ARSENAL: {made} / {total} ARMAS FABRICADAS"
+      "arsenal_count": "ARSENAL: {made} / {total} ARMAS FABRICADAS",
+      "condition": "CONDIÇÃO:",
+      "condition_nominal": "NORMAL"
     },
     "dlg": {
       "channel": "CANAL 7 DE UPLINK DA NAVE-MÃE",
@@ -634,7 +636,8 @@
     "vitals": {
       "vitals": "SINAIS VITAIS",
       "aria_label_health": "Vida",
-      "cover": "COBERTURA"
+      "cover": "COBERTURA",
+      "fatigue": "FADIGA"
     },
     "queens_ledger_hud": {
       "obedience_0_seats_1_4": "♛ OBEDIÊNCIA 0 · ASSENTOS 1/4 · VETOR: INSTÁVEL"

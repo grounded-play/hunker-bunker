@@ -307,7 +307,9 @@
       "blackbox_recoverable": "可回收（区域 {depth}）",
       "blackbox_none": "无",
       "equipped_none": "无",
-      "arsenal_count": "军械库：已制造 {made} / {total} 件武器"
+      "arsenal_count": "军械库：已制造 {made} / {total} 件武器",
+      "condition": "状态:",
+      "condition_nominal": "正常"
     },
     "dlg": {
       "channel": "母舰上行链路 7 号频道",
@@ -634,7 +636,8 @@
     "vitals": {
       "vitals": "生命体征",
       "aria_label_health": "生命值",
-      "cover": "掩体"
+      "cover": "掩体",
+      "fatigue": "疲劳"
     },
     "queens_ledger_hud": {
       "obedience_0_seats_1_4": "♛ 服从度 0 · 席位 1/4 · 向量：不稳定"

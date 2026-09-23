@@ -307,7 +307,9 @@
       "blackbox_recoverable": "RECOVERABLE (SECTOR {depth})",
       "blackbox_none": "NONE",
       "equipped_none": "NULL",
-      "arsenal_count": "ARSENAL: {made} / {total} WEAPONS FABRICATED"
+      "arsenal_count": "ARSENAL: {made} / {total} WEAPONS FABRICATED",
+      "condition": "CONDITION:",
+      "condition_nominal": "NOMINAL"
     },
     "dlg": {
       "channel": "MOTHERSHIP UPLINK CHANNEL 7",
@@ -634,7 +636,8 @@
     "vitals": {
       "vitals": "VITALS",
       "aria_label_health": "Health",
-      "cover": "COVER"
+      "cover": "COVER",
+      "fatigue": "FATIGUE"
     },
     "queens_ledger_hud": {
       "obedience_0_seats_1_4": "♛ OBEDIENCE 0 · SEATS 1/4 · VECTOR: UNSTABLE"

@@ -6,10 +6,12 @@ import {
     FATIGUE_STAGES,
     FATIGUE_STATE_KEY,
     createFatigueState,
+    describeScars,
     fatigueModifiers,
     getFatigueStage,
     normalizeFatigueState,
     recordExpedition,
+    sprintPricing,
     restoreOnSleep,
     treatScar
 } from './fatigue.js';
@@ -221,5 +223,53 @@ describe('composing into the loadout bus', () => {
     it('tolerates a missing base object', () => {
         expect(() => composeFatigueIntoLoadoutMods(null, createFatigueState())).not.toThrow();
         expect(() => composeFatigueIntoLoadoutMods(undefined, null)).not.toThrow();
+    });
+});
+
+describe('sprint pricing', () => {
+    const at = (n) => {
+        let state = createFatigueState();
+        for (let i = 0; i < n; i += 1) state = recordExpedition(state);
+        return state;
+    };
+
+    it('is free at baseline', () => {
+        expect(sprintPricing(at(1))).toEqual({ o2DrainMultiplier: 1, speedBonusScale: 1 });
+    });
+
+    it('gets steadily more expensive, never cheaper', () => {
+        const costs = [1, 2, 3, 4, 5].map((n) => sprintPricing(at(n)).o2DrainMultiplier);
+        for (let i = 1; i < costs.length; i += 1) {
+            expect(costs[i]).toBeGreaterThanOrEqual(costs[i - 1]);
+        }
+        expect(costs.at(-1)).toBeGreaterThan(costs[0]);
+    });
+
+    // The verb must survive: sprint is priced, never removed.
+    it('never scales the speed bonus to zero at any stage', () => {
+        for (let n = 0; n <= 8; n += 1) {
+            const { speedBonusScale } = sprintPricing(at(n));
+            expect(speedBonusScale).toBeGreaterThan(0.5);
+            expect(speedBonusScale).toBeLessThanOrEqual(1);
+        }
+    });
+});
+
+describe('describeScars', () => {
+    it('reports nothing when the operator is unmarked', () => {
+        expect(describeScars(createFatigueState())).toBe(null);
+        expect(describeScars(null)).toBe(null);
+    });
+
+    it('names each scar and marks severity above the first tier', () => {
+        const state = normalizeFatigueState({
+            scars: [{ id: 'TREMOR', severity: 2 }, { id: 'HYPERVIGILANCE', severity: 1 }]
+        });
+        expect(describeScars(state)).toBe('TREMOR x2 / HYPERVIGILANCE');
+    });
+
+    // Copy for the empty case belongs to the caller, which owns localization.
+    it('never invents a "nothing wrong" string of its own', () => {
+        expect(describeScars(createFatigueState())).toBe(null);
     });
 });
