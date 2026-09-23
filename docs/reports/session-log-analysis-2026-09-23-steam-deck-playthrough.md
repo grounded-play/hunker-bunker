@@ -45,7 +45,7 @@ During a full 34.5-minute playthrough on the physical Steam Deck, the user encou
   - `23:29:20.077Z`: `play camp_fire_loop`
   - In `src/camp.js` lines 1171-1182, `camp_fire_loop` volume is modulated between `dist <= 2.0` (maxVol) and `dist < 20.0`. The player was inside the 20-meter perimeter of the camp, heard the crackling fire, but saw empty terrain.
 - **Root Cause in Code:**
-  1. **Visibility Property Mismatch:** In [src/threeGame.js](file:///home/caveman/Desktop/icecave/hunker-bunker/src/threeGame.js#L6170):
+  1. **Visibility Property Mismatch:** In [src/threeGame.js](../../src/threeGame.js#L6170):
      ```javascript
      root.visible = owner ? Boolean(owner.isVisible) : source.visible;
      ...
@@ -53,7 +53,7 @@ During a full 34.5-minute playthrough on the physical Steam Deck, the user encou
      source.userData.replacedBy3d = true;
      source.visible = false;
      ```
-     When `ensureAct2Camps()` registers 3D models for camp leaders and props via `setupWorld3dReplacement(camp.npcSprite, modelType, { owner: camp, ownerKey: 'npc3d' })`, it checks `owner.isVisible`. In [src/camp.js](file:///home/caveman/Desktop/icecave/hunker-bunker/src/camp.js#L1150), `SurvivorCamp` defines `get isRevealed()`, but does **NOT** define `isVisible`! `camp.isVisible` is `undefined`, so `Boolean(owner.isVisible)` evaluates to `false`. Line 6176 then sets `source.visible = false`. As a result, **both the 2D billboard sprite and the 3D GLB model are made invisible**.
+     When `ensureAct2Camps()` registers 3D models for camp leaders and props via `setupWorld3dReplacement(camp.npcSprite, modelType, { owner: camp, ownerKey: 'npc3d' })`, it checks `owner.isVisible`. In [src/camp.js](../../src/camp.js#L1150), `SurvivorCamp` defines `get isRevealed()`, but does **NOT** define `isVisible`! `camp.isVisible` is `undefined`, so `Boolean(owner.isVisible)` evaluates to `false`. Line 6176 then sets `source.visible = false`. As a result, **both the 2D billboard sprite and the 3D GLB model are made invisible**.
   2. **Initial Terrain Ground Anchoring:** When camps are constructed at `(x, z)` before the underlying terrain chunk heightmap is completely mounted, `sampleTerrainHeight` returns `{ height: 0, anchored: false }`. If the procedural terrain is elevated, the camp sits buried below the visual mesh until `reanchorUnanchoredCamps` executes.
 
 ### Issue 2: Steam Deck Controls Wonky (Start & Map Glitching, No Secondary Attack)
@@ -63,11 +63,11 @@ During a full 34.5-minute playthrough on the physical Steam Deck, the user encou
   - Repeated switches between `gameplay` and `menu` phases when pressing Start or Map.
 - **Root Cause in Code:**
   1. **Dual Polling Loop Conflict for Tactical Map:**
-     When `toggleTacticalMapModal()` is invoked (via Start, View, or D-pad Up), it initiates an independent requestAnimationFrame loop in [main.js:11340-11351](file:///home/caveman/Desktop/icecave/hunker-bunker/main.js#L11340) running `pollTacticalMapGamepadInput()`. Simultaneously, the main loop in [main.js:2307](file:///home/caveman/Desktop/icecave/hunker-bunker/main.js#L2307) continues polling `pollGamepads()`. Because `toggleTacticalMapModal` does not notify Steam Input to switch the active action set from `gameplay` to `menu`, both systems read the same physical button presses. Pressing Start or Map triggers both closing and reopening in the same tick.
+     When `toggleTacticalMapModal()` is invoked (via Start, View, or D-pad Up), it initiates an independent requestAnimationFrame loop in [main.js:11340-11351](../../main.js#L11340) running `pollTacticalMapGamepadInput()`. Simultaneously, the main loop in [main.js:2307](../../main.js#L2307) continues polling `pollGamepads()`. Because `toggleTacticalMapModal` does not notify Steam Input to switch the active action set from `gameplay` to `menu`, both systems read the same physical button presses. Pressing Start or Map triggers both closing and reopening in the same tick.
   2. **Start / Pause Button Handler Glitch:**
-     [main.js:1771](file:///home/caveman/Desktop/icecave/hunker-bunker/main.js#L1771) (`triggerControllerPauseAction`) falls back to `document.querySelector('.open-settings-btn')?.click()`. If the settings popup is opened without synchronizing modal focus and disabling gameplay inputs, inputs leak through, producing repeated `ui_error` sounds.
+     [main.js:1771](../../main.js#L1771) (`triggerControllerPauseAction`) falls back to `document.querySelector('.open-settings-btn')?.click()`. If the settings popup is opened without synchronizing modal focus and disabling gameplay inputs, inputs leak through, producing repeated `ui_error` sounds.
   3. **No Secondary Attack Mapped on Controller:**
-     In [scripts/build-steam-input-configs.js:201-227](file:///home/caveman/Desktop/icecave/hunker-bunker/scripts/build-steam-input-configs.js#L201), the Steam Deck controller configuration maps:
+     In [scripts/build-steam-input-configs.js:201-227](../../scripts/build-steam-input-configs.js#L201), the Steam Deck controller configuration maps:
      - Left Trigger (LT): `sprint`
      - Right Trigger (RT): `fire`
      - Face Y: `ability` (Melee / Smash)
@@ -82,19 +82,19 @@ During a full 34.5-minute playthrough on the physical Steam Deck, the user encou
   - Final State: `snailsKilled: 6, missionStatus: "objective_complete", missionLabel: "CONTAINMENT: CLEAR SIX HOSTILES"`.
 - **Root Cause in Code:**
   1. **No Dynamic Bridge Building System:**
-     Chasms display inspect badges stating `CHASM // GLACIAL CANYON CHASM EDGE // SUB-LEVEL VOID // FALL HAZARD` ([src/threeGame.js:11029](file:///home/caveman/Desktop/icecave/hunker-bunker/src/threeGame.js#L11029)). Because players construct base turrets and modules at the ship fabricator, players logically assumed bridges can be constructed across chasms. In reality, bridges are purely static room features generated during world creation by [src/verticalWfc.js](file:///home/caveman/Desktop/icecave/hunker-bunker/src/verticalWfc.js) (`applyVerticalBridgeFeature`). If a procedural canyon cuts between rings without an authored WFC bridge tile, that passage is permanently impassable.
+     Chasms display inspect badges stating `CHASM // GLACIAL CANYON CHASM EDGE // SUB-LEVEL VOID // FALL HAZARD` ([src/threeGame.js:11029](../../src/threeGame.js#L11029)). Because players construct base turrets and modules at the ship fabricator, players logically assumed bridges can be constructed across chasms. In reality, bridges are purely static room features generated during world creation by [src/verticalWfc.js](../../src/verticalWfc.js) (`applyVerticalBridgeFeature`). If a procedural canyon cuts between rings without an authored WFC bridge tile, that passage is permanently impassable.
   2. **Missing Post-Boss Objective / Extraction Flow:**
-     In [src/threeGame.js:27610-27625](file:///home/caveman/Desktop/icecave/hunker-bunker/src/threeGame.js#L27610), there are only 3 milestone bosses (`boss_cybersnail`, `boss_cryosnail`, `boss_sporesnail`). Once all three are defeated, `killedBosses.size === 3`, but no extraction beacon, bunker evacuation route, or return prompt is displayed. The player is left wandering in bio-caves with no indication of what to do next.
+     In [src/threeGame.js:27610-27625](../../src/threeGame.js#L27610), there are only 3 milestone bosses (`boss_cybersnail`, `boss_cryosnail`, `boss_sporesnail`). Once all three are defeated, `killedBosses.size === 3`, but no extraction beacon, bunker evacuation route, or return prompt is displayed. The player is left wandering in bio-caves with no indication of what to do next.
 
 ### Issue 4: Map Layout Repetition & Invisible Room Colliders
 - **Log Evidence:**
   - Seed: `expedition-86397316`, Active Biome: `BIO SECTOR`, Depth Tier: 1.
 - **Root Cause in Code:**
   1. **Hardcoded Crash Site & Tutorial Ring:**
-     - In [src/threeGame.js:35221-35257](file:///home/caveman/Desktop/icecave/hunker-bunker/src/threeGame.js#L35221) (`clearSpawnArea`), Chunk (0,0) is hardcoded to a fixed rectangle `{ left: 2, right: 16, top: 4, bottom: 17 }` with a single centered north door.
-     - In [src/threeGame.js:34919](file:///home/caveman/Desktop/icecave/hunker-bunker/src/threeGame.js#L34919) (`isInTutorialRing`), all 8 surrounding chunks (`Math.max(|x|, |y|) === 1`) are forced to use the restricted "tutorial-flagged" tile subset. As a result, the entire opening quadrant is structurally identical across all runs.
+     - In [src/threeGame.js:35221-35257](../../src/threeGame.js#L35221) (`clearSpawnArea`), Chunk (0,0) is hardcoded to a fixed rectangle `{ left: 2, right: 16, top: 4, bottom: 17 }` with a single centered north door.
+     - In [src/threeGame.js:34919](../../src/threeGame.js#L34919) (`isInTutorialRing`), all 8 surrounding chunks (`Math.max(|x|, |y|) === 1`) are forced to use the restricted "tutorial-flagged" tile subset. As a result, the entire opening quadrant is structurally identical across all runs.
   2. **Invisible Collision Hulls for Replaced 3D Props:**
-     In [src/threeGame.js:32946](file:///home/caveman/Desktop/icecave/hunker-bunker/src/threeGame.js#L32946) (`canOccupyPosition`):
+     In [src/threeGame.js:32946](../../src/threeGame.js#L32946) (`canOccupyPosition`):
      ```javascript
      if (prop.visible === false && !prop.userData.replacedBy3d) continue;
      ```
@@ -114,16 +114,16 @@ During a full 34.5-minute playthrough on the physical Steam Deck, the user encou
   1. **Uncapped Transient Effect Accumulation:**
      Wall destruction (`destroyWall` -> `spawnPhysicalBurst`, `spawnTextureBurstEffect`), projectile impacts, snail trails (`spawnVisualSnailTrail`), and damage floating text (`spawnDamageNumber`) push into `this.transientEffects` without an overall pool cap.
   2. **Per-Frame Traversal of 3,000+ Objects:**
-     In [src/threeGame.js:32774-32838](file:///home/caveman/Desktop/icecave/hunker-bunker/src/threeGame.js#L32774) (`updateTransientEffects`), the loop processes all 3,277 items every frame, updating transforms and calling `applyFogOfWarOpacity`, which traverses child hierarchies and inspects materials.
+     In [src/threeGame.js:32774-32838](../../src/threeGame.js#L32774) (`updateTransientEffects`), the loop processes all 3,277 items every frame, updating transforms and calling `applyFogOfWarOpacity`, which traverses child hierarchies and inspects materials.
   3. **Per-Frame Geometry Allocation in Shockwaves:**
-     In [src/threeGame.js:31928-31929](file:///home/caveman/Desktop/icecave/hunker-bunker/src/threeGame.js#L31928):
+     In [src/threeGame.js:31928-31929](../../src/threeGame.js#L31928):
      ```javascript
      ring.geometry.dispose();
      ring.geometry = new THREE.RingGeometry(Math.max(0.1, r - 0.25), r + 0.05, 32);
      ```
      Shockwave rings allocate a brand new `RingGeometry` on the GPU **every single frame** of their lifetime instead of scaling an existing geometry.
   4. **Canvas Texture & Material Leak in Damage Numbers:**
-     In [src/threeGame.js:29778](file:///home/caveman/Desktop/icecave/hunker-bunker/src/threeGame.js#L29778), each hit creates a `new THREE.CanvasTexture(canvas)` and `new THREE.SpriteMaterial()`. `material.dispose()` does not dispose the underlying texture, leaking WebGL textures until garbage collected.
+     In [src/threeGame.js:29778](../../src/threeGame.js#L29778), each hit creates a `new THREE.CanvasTexture(canvas)` and `new THREE.SpriteMaterial()`. `material.dispose()` does not dispose the underlying texture, leaking WebGL textures until garbage collected.
 
 ### Issue 6: Steam Deck FPS Counter (SteamOS Gamescope vs Game Loop)
 - **Explanation:**
@@ -136,18 +136,18 @@ During a full 34.5-minute playthrough on the physical Steam Deck, the user encou
 ## 3. Required Engineering Fixes & Remediation Plan
 
 ### Fix 1: Camp & 3D Replacement Visibility
-- In [src/camp.js](file:///home/caveman/Desktop/icecave/hunker-bunker/src/camp.js), expose an explicit `isVisible` getter:
+- In [src/camp.js](../../src/camp.js), expose an explicit `isVisible` getter:
   ```javascript
   get isVisible() {
       return Boolean(this.revealed && this.group && this.group.visible);
   }
   ```
-- In [src/threeGame.js:6170](file:///home/caveman/Desktop/icecave/hunker-bunker/src/threeGame.js#L6170), make replacement visibility check both `isRevealed` and `isVisible`:
+- In [src/threeGame.js:6170](../../src/threeGame.js#L6170), make replacement visibility check both `isRevealed` and `isVisible`:
   ```javascript
   const ownerVisible = owner ? Boolean(owner.isVisible ?? owner.isRevealed ?? true) : source.visible;
   root.visible = ownerVisible;
   ```
-- In `canOccupyPosition` ([src/threeGame.js:32946](file:///home/caveman/Desktop/icecave/hunker-bunker/src/threeGame.js#L32946)), verify that if `prop.userData.replacedBy3d` is true, the 3D model root is actually attached and visible before blocking player movement:
+- In `canOccupyPosition` ([src/threeGame.js:32946](../../src/threeGame.js#L32946)), verify that if `prop.userData.replacedBy3d` is true, the 3D model root is actually attached and visible before blocking player movement:
   ```javascript
   const root = prop.userData.world3dRoot;
   if (prop.visible === false) {
