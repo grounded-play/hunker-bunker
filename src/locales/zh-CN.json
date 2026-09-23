@@ -138,6 +138,7 @@
       "desktop_controls": "键鼠操作",
       "cat_operator": "操作员与系统数据",
       "callsign": "操作员呼号",
+      "operator_id": "操作员ID",
       "cloud_sync": "STEAM 云同步",
       "save_data": "存档数据",
       "new_game_reset": "重置新游戏",

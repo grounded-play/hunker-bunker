@@ -423,18 +423,6 @@
 
             <!-- Module 2: Hero UI -->
             <div class="preview-box">
-              <section class="homebase-identity" aria-labelledby="homebase-identity-title">
-                <div class="homebase-section-kicker" id="homebase-identity-title" data-i18n="ui.roster.registration_title">OPERATIVE REGISTRATION</div>
-                <div class="roster-id-row">
-                  <label data-i18n="ui.roster.callsign" class="roster-callsign-label" for="roster-callsign-input">CALLSIGN:</label>
-                  <input data-i18n-placeholder="ui.roster.placeholder_agent_01" type="text" id="roster-callsign-input" class="operator-callsign-input" maxlength="16" placeholder="AGENT-01" autocomplete="off" spellcheck="false">
-                  <button type="button" class="dev-btn dev-btn--accent" id="roster-randomize-btn" aria-label="Randomize Callsign" data-i18n-aria-label="ui.roster.randomize">↻</button>
-                </div>
-                <div class="homebase-identity__meta">
-                  <span class="roster-id-badge hidden"><span class="roster-id" id="roster-id">op-—</span></span>
-                  <span id="homebase-loadout-summary">CHASSIS SPECIFICATION // BULWARK FRAME</span>
-                </div>
-              </section>
               <div class="hero-identity-block">
                 <div class="char-preview-stage" aria-hidden="true">
                   <img id="char-preview-fallback" class="char-preview-fallback" src="/Tank.full_v2.png" alt="" />
@@ -451,8 +439,20 @@
                     <div class="char-preview-door__panel char-preview-door__panel--right"></div>
                   </div>
                 </div>
-                <div id="char-preview-name">TANK</div>
+                <div id="char-preview-name" class="hidden">TANK</div>
               </div>
+              <section class="homebase-identity" aria-labelledby="homebase-identity-title">
+                <div class="homebase-section-kicker" id="homebase-identity-title" data-i18n="ui.roster.registration_title">OPERATIVE REGISTRATION</div>
+                <div class="roster-id-row">
+                  <label data-i18n="ui.roster.callsign" class="roster-callsign-label" for="roster-callsign-input">CALLSIGN:</label>
+                  <input data-i18n-placeholder="ui.roster.placeholder_agent_01" type="text" id="roster-callsign-input" class="operator-callsign-input" maxlength="16" placeholder="AGENT-01" autocomplete="off" spellcheck="false">
+                  <button type="button" class="dev-btn dev-btn--accent" id="roster-randomize-btn" aria-label="Randomize Callsign" data-i18n-aria-label="ui.roster.randomize">↻</button>
+                </div>
+                <div class="homebase-identity__meta hidden">
+                  <span class="roster-id-badge hidden"><span data-i18n="ui.roster.id_label">ID:</span> <span class="roster-id" id="roster-id">op-—</span></span>
+                  <span id="homebase-loadout-summary">CHASSIS SPECIFICATION // BULWARK FRAME</span>
+                </div>
+              </section>
               <div class="hero-specs-row">
                 <div class="hero-detail-panel" id="hero-detail-panel">
                   <div data-i18n="ui.hero_detail.chassis_spec" class="hero-detail-panel__kicker">CHASSIS SPECIFICATION</div>

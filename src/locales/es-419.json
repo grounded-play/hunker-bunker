@@ -138,6 +138,7 @@
       "desktop_controls": "CONTROLES DE ESCRITORIO",
       "cat_operator": "OPERADOR Y DATOS DEL SISTEMA",
       "callsign": "INDICATIVO DEL OPERADOR",
+      "operator_id": "ID DEL OPERADOR",
       "cloud_sync": "SINCRONIZACIÓN STEAM CLOUD",
       "save_data": "DATOS GUARDADOS",
       "new_game_reset": "REINICIO DE PARTIDA",

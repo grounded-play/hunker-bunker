@@ -138,6 +138,7 @@
       "desktop_controls": "DESKTOP CONTROLS",
       "cat_operator": "OPERATOR & SYSTEM DATA",
       "callsign": "OPERATOR CALLSIGN",
+      "operator_id": "OPERATOR ID",
       "cloud_sync": "STEAM CLOUD SYNC",
       "save_data": "SAVE DATA",
       "new_game_reset": "NEW GAME RESET",

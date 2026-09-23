@@ -11,9 +11,9 @@ export async function createScoutHeroPreview(canvas) {
     renderer.toneMappingExposure = 1.08;
 
     const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(30, 1, 0.01, 30);
-    camera.position.set(2.05, 1.25, 2.95);
-    camera.lookAt(0, 1.0, 0);
+    const camera = new THREE.PerspectiveCamera(32, 1, 0.01, 30);
+    camera.position.set(2.28, 1.16, 3.28);
+    camera.lookAt(0, 0.98, 0);
     scene.add(new THREE.HemisphereLight(0xdaf4ff, 0x18202a, 2.15));
     const key = new THREE.DirectionalLight(0xffffff, 3.1);
     key.position.set(3, 5, 4);
@@ -25,13 +25,12 @@ export async function createScoutHeroPreview(canvas) {
     let activeType = 'SCOUT';
     let activePolish = 0xffffff;
     let overlay = await createPlayer3dOverlay({
-        targetHeight: 2.05,
+        targetHeight: 1.95,
         idleActionName: 'heroIdle',
         weaponVisible: false
     });
-    // Keep the portrait centered on the Scout's face and upper torso instead
-    // of letting the bottom of the preview window swallow the model.
-    overlay.root.position.y += 0.04;
+    // Keep the portrait centered without clipping boots or helmet
+    overlay.root.position.y = 0.0;
     overlay.root.rotation.y = Math.atan2(camera.position.x, camera.position.z);
     overlay.setOperatorPolish(activePolish);
     scene.add(overlay.root);
@@ -42,8 +41,9 @@ export async function createScoutHeroPreview(canvas) {
         const generation = ++loadGeneration;
         if (nextType === activeType) return true;
         const configs = {
-            SCOUT: { idleActionName: 'heroIdle', weaponVisible: false },
+            SCOUT: { targetHeight: 1.95, idleActionName: 'heroIdle', weaponVisible: false },
             ENGINEER: {
+                targetHeight: 1.95,
                 modelUrl: '/3d/runtime/engineer-rigged-gestures.glb',
                 animationModelUrl: '/3d/scouting-scout/Scout.game.glb',
                 animationBonePrefix: 'mixamorig',
@@ -52,6 +52,7 @@ export async function createScoutHeroPreview(canvas) {
                 weaponEnabled: true,
             },
             TANK: {
+                targetHeight: 1.86,
                 modelUrl: '/3d/runtime/tank-rigged.glb',
                 animationModelUrl: '/3d/scouting-scout/Scout.game.glb',
                 animationBonePrefix: 'mixamorig',
@@ -61,7 +62,7 @@ export async function createScoutHeroPreview(canvas) {
                 weaponMount: { position: [0.03, 0.02, 0.03] }
             }
         };
-        const nextOverlay = await createPlayer3dOverlay({ targetHeight: 2.05, ...configs[nextType] });
+        const nextOverlay = await createPlayer3dOverlay({ ...configs[nextType] });
         if (disposed || generation !== loadGeneration) {
             nextOverlay.dispose();
             return false;
@@ -77,7 +78,7 @@ export async function createScoutHeroPreview(canvas) {
         activeType = nextType;
         weaponReady = false;
         idleState.idleActionName = nextType === 'SCOUT' ? 'heroIdle' : configs[nextType].idleActionName;
-        overlay.root.position.y += 0.04;
+        overlay.root.position.y = 0.0;
         overlay.root.rotation.y = Math.atan2(camera.position.x, camera.position.z);
         scene.add(overlay.root);
         overlay.update(0, idleState);

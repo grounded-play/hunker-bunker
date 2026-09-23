@@ -138,6 +138,7 @@
       "desktop_controls": "УПРАВЛЕНИЕ НА ПК",
       "cat_operator": "ОПЕРАТОР И СИСТЕМНЫЕ ДАННЫЕ",
       "callsign": "ПОЗЫВНОЙ ОПЕРАТОРА",
+      "operator_id": "ID ОПЕРАТОРА",
       "cloud_sync": "СИНХРОНИЗАЦИЯ STEAM CLOUD",
       "save_data": "ДАННЫЕ СОХРАНЕНИЯ",
       "new_game_reset": "СБРОС ДЛЯ НОВОЙ ИГРЫ",
