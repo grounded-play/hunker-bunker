@@ -1330,6 +1330,22 @@ function moveHeroSelectPanelFocus(code) {
     }
 
     if (previewRail) {
+        // The rail stacks the callsign row (input + randomize) above the
+        // polish slot. Up/Down walk it in order and only leave at its ends;
+        // Left/Right move along the callsign row before leaving the rail.
+        // Jumping straight out left the callsign row unreachable.
+        const railItems = getVisibleControllerFocusables(previewRail);
+        const railIndex = railItems.indexOf(active);
+        if (railIndex >= 0 && (isUp || isDown)) {
+            const next = railItems[railIndex + (isUp ? -1 : 1)];
+            if (next) return focusControllerTarget(next, { playHover: true });
+        }
+        const row = active?.closest?.('.roster-id-row');
+        if (row && (isLeft || isRight)) {
+            const rowItems = getVisibleControllerFocusables(row);
+            const next = rowItems[rowItems.indexOf(active) + (isLeft ? -1 : 1)];
+            if (next) return focusControllerTarget(next, { playHover: true });
+        }
         const target = isRight
             ? (selectedHero ?? heroBackBtn ?? document.getElementById('start-game'))
             : isLeft
@@ -1395,7 +1411,17 @@ function moveOperatorPolishGridFocus(code) {
     let nextIndex = index;
     if (code === 'KeyA' || code === 'ArrowLeft') nextIndex = index % columnCount === 0 ? index + columnCount - 1 : index - 1;
     if (code === 'KeyD' || code === 'ArrowRight') nextIndex = index % columnCount === columnCount - 1 ? index - columnCount + 1 : index + 1;
-    if (code === 'KeyW' || code === 'ArrowUp') nextIndex = (index - columnCount + chips.length) % chips.length;
+    if (code === 'KeyW' || code === 'ArrowUp') {
+        // The close button sits above the grid; wrapping to the bottom row
+        // left it unreachable without a pointer.
+        if (index < columnCount) {
+            const close = document.getElementById('close-operator-polish-modal');
+            if (close && getVisibleControllerFocusables(close.parentElement).includes(close)) {
+                return focusControllerTarget(close, { playHover: true });
+            }
+        }
+        nextIndex = (index - columnCount + chips.length) % chips.length;
+    }
     if (code === 'KeyS' || code === 'ArrowDown') nextIndex = (index + columnCount) % chips.length;
     return focusControllerTarget(chips[nextIndex], { playHover: true });
 }
@@ -1526,7 +1552,27 @@ document.addEventListener('keydown', (event) => {
     focusControllerTarget(focusables[nextIndex]);
 });
 
-const controllerFocusObserver = new MutationObserver(() => {
+// Several surfaces open by removing `hidden` alone while their markup keeps
+// aria-hidden="true" (About, the dev console, Operator Polish). Every control
+// inside an aria-hidden subtree is skipped by getVisibleControllerFocusables,
+// so the modal opened with nothing focusable -- and hidden from screen
+// readers. Keep a focus root's aria-hidden in step with its `hidden` class; a
+// root mid-exit (closeModalWithAnimation's is-exiting) keeps its own value.
+const FOCUS_ROOT_ID_SET = new Set(STEAM_INPUT_FOCUS_ROOT_IDS);
+function syncFocusRootAriaHidden(records) {
+    for (const record of records) {
+        const root = record.target;
+        if (record.attributeName !== 'class' || !FOCUS_ROOT_ID_SET.has(root.id)) continue;
+        if (root.classList.contains('hidden')) {
+            if (root.getAttribute('aria-hidden') !== 'true') root.setAttribute('aria-hidden', 'true');
+        } else if (!root.classList.contains('is-exiting') && root.getAttribute('aria-hidden') === 'true') {
+            root.setAttribute('aria-hidden', 'false');
+        }
+    }
+}
+
+const controllerFocusObserver = new MutationObserver((records) => {
+    syncFocusRootAriaHidden(records);
     queueMicrotask(() => {
         const root = getControllerFocusRoot();
         syncSteamInputPhase();
@@ -15808,6 +15854,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                             'custom-cursor-enabled'
                         );
                         ensureControllerMenuFocus();
+                        // Doors fully open: the title takes input from here.
+                        traceBootPhase('title-interactive');
                     },
                     'base'
                 );

@@ -10,6 +10,20 @@
 // boot the game must go through this helper rather than clicking body
 // straight after `goto`.
 export async function bootToTitleSplash(page) {
+    const splash = await revealTitleSplash(page);
+    // The splash appears while the boot doors are still closing; they then
+    // open and settle focus. A spec that starts driving menus before that saw
+    // the splash re-shown and focus moved mid-test. main.js marks the moment
+    // the title takes input.
+    await page.waitForFunction(
+        () => performance.getEntriesByName('hb:title-interactive').length > 0,
+        null,
+        { timeout: 60_000 }
+    ).catch(() => {});
+    return splash;
+}
+
+async function revealTitleSplash(page) {
     await page.goto('/');
     await page.waitForLoadState('domcontentloaded');
     await page.waitForFunction(() => typeof window.HunkerTriggerBoot === 'function', null, { timeout: 30_000 });
