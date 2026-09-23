@@ -41,6 +41,7 @@ const RESERVATION_ROLE_PRIORITY = Object.freeze({
     finale: 2,
     campTerritory: 3,
     hiveTerritory: 3,
+    territoryRoom: 3,
     campObjective: 4,
     fallbackResourceRoute: 5,
     alternativeResourceRoute: 6,

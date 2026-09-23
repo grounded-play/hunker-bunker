@@ -1,4 +1,5 @@
-import { createFreshRunEntropy, mixRunEntropy } from './runEntropy.js';
+import { createFreshRunEntropy } from './runEntropy.js';
+import { deriveExpeditionSeed, createExpeditionProfile } from './expeditionSystem.js';
 
 export const CAMPAIGN_WORLD_STORAGE_KEY = 'hb_campaign_world_v1';
 export const CAMPAIGN_WORLD_VERSION = 1;
@@ -16,22 +17,38 @@ function getStorage(storage) {
     try { return globalThis.window?.localStorage ?? null; } catch { return null; }
 }
 
-// Terrain uses the campaign seed. Encounters can use a different reproducible
-// stream each deployment without moving camps, objectives, or opened routes.
-export function deriveExpeditionSeed(seed, expeditionIndex = 0) {
-    return mixRunEntropy(seed, 0x45585044, expeditionIndex + 1);
-}
+// Re-export deriveExpeditionSeed for backward compatibility
+export { deriveExpeditionSeed };
 
 function normalize(raw) {
     if (!raw || raw.version !== CAMPAIGN_WORLD_VERSION || !isSeed(raw.seed)) return null;
     const expeditionIndex = Number.isSafeInteger(raw.expeditionIndex) && raw.expeditionIndex >= 0
         ? raw.expeditionIndex
         : 0;
+    const expeditionSeed = deriveExpeditionSeed(raw.seed, expeditionIndex);
+    const activeExpedition = raw.activeExpedition && typeof raw.activeExpedition === 'object'
+        ? clone(raw.activeExpedition)
+        : createExpeditionProfile(raw.seed, expeditionIndex);
+    const worldTransformations = raw.worldTransformations && typeof raw.worldTransformations === 'object'
+        ? {
+            bridgesConstructed: Array.isArray(raw.worldTransformations.bridgesConstructed) ? [...raw.worldTransformations.bridgesConstructed] : [],
+            campsFortified: Array.isArray(raw.worldTransformations.campsFortified) ? [...raw.worldTransformations.campsFortified] : [],
+            hivesTransformed: (raw.worldTransformations.hivesTransformed && typeof raw.worldTransformations.hivesTransformed === 'object') ? clone(raw.worldTransformations.hivesTransformed) : {},
+            shortcutsOpened: Array.isArray(raw.worldTransformations.shortcutsOpened) ? [...raw.worldTransformations.shortcutsOpened] : []
+        }
+        : {
+            bridgesConstructed: [],
+            campsFortified: [],
+            hivesTransformed: {},
+            shortcutsOpened: []
+        };
     return {
         version: CAMPAIGN_WORLD_VERSION,
         seed: raw.seed,
         expeditionIndex,
-        expeditionSeed: deriveExpeditionSeed(raw.seed, expeditionIndex),
+        expeditionSeed,
+        activeExpedition,
+        worldTransformations,
         mazeState: raw.mazeState && typeof raw.mazeState === 'object' && !Array.isArray(raw.mazeState)
             ? clone(raw.mazeState)
             : null
@@ -94,11 +111,19 @@ export function createCampaignWorldStore({
         if (current) return current;
         const candidate = isSeed(seed) ? seed : createSeed();
         const campaignSeed = isSeed(candidate) ? candidate : createFreshRunEntropy();
+        const activeExpedition = createExpeditionProfile(campaignSeed, 0);
         return write({
             version: CAMPAIGN_WORLD_VERSION,
             seed: campaignSeed,
             expeditionIndex: 0,
-            expeditionSeed: deriveExpeditionSeed(campaignSeed, 0),
+            expeditionSeed: activeExpedition.expeditionSeed,
+            activeExpedition,
+            worldTransformations: {
+                bridgesConstructed: [],
+                campsFortified: [],
+                hivesTransformed: {},
+                shortcutsOpened: []
+            },
             mazeState: null
         });
     }
@@ -124,11 +149,46 @@ export function createCampaignWorldStore({
         beginExpedition() {
             const current = getOrCreate();
             const expeditionIndex = current.expeditionIndex + 1;
+            const activeExpedition = createExpeditionProfile(current.seed, expeditionIndex);
             return write({
                 ...current,
                 expeditionIndex,
-                expeditionSeed: deriveExpeditionSeed(current.seed, expeditionIndex)
+                expeditionSeed: activeExpedition.expeditionSeed,
+                activeExpedition
             });
+        },
+        recordWorldTransformation(type, id, details = {}) {
+            const current = getOrCreate();
+            const transformations = clone(current.worldTransformations) || {
+                bridgesConstructed: [],
+                campsFortified: [],
+                hivesTransformed: {},
+                shortcutsOpened: []
+            };
+            if (type === 'bridge' && !transformations.bridgesConstructed.includes(id)) {
+                transformations.bridgesConstructed.push(id);
+            } else if (type === 'camp_fortified' && !transformations.campsFortified.includes(id)) {
+                transformations.campsFortified.push(id);
+            } else if (type === 'hive_transformed') {
+                transformations.hivesTransformed[id] = { ...details, timestamp: Date.now() };
+            } else if (type === 'shortcut' && !transformations.shortcutsOpened.includes(id)) {
+                transformations.shortcutsOpened.push(id);
+            }
+            write({ ...current, worldTransformations: transformations });
+            return clone(transformations);
+        },
+        getWorldTransformations() {
+            const current = read();
+            return clone(current?.worldTransformations ?? {
+                bridgesConstructed: [],
+                campsFortified: [],
+                hivesTransformed: {},
+                shortcutsOpened: []
+            });
+        },
+        getActiveExpedition() {
+            const current = read();
+            return clone(current?.activeExpedition ?? null);
         },
         saveMazeState,
         saveProgress: saveMazeState,

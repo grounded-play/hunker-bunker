@@ -124,9 +124,45 @@ describe('campaign world continuity', () => {
         storage.setItem(CAMPAIGN_WORLD_STORAGE_KEY, JSON.stringify({
             version: 1, seed: 12, expeditionIndex: -100, expeditionSeed: 123, mazeState: []
         }));
-        expect(createCampaignWorldStore({ storage }).getState()).toEqual({
-            version: 1, seed: 12, expeditionIndex: 0, expeditionSeed: deriveExpeditionSeed(12, 0), mazeState: null
+        const state = createCampaignWorldStore({ storage }).getState();
+        expect(state).toMatchObject({
+            version: 1,
+            seed: 12,
+            expeditionIndex: 0,
+            expeditionSeed: deriveExpeditionSeed(12, 0),
+            mazeState: null,
+            worldTransformations: {
+                bridgesConstructed: [],
+                campsFortified: [],
+                hivesTransformed: {},
+                shortcutsOpened: []
+            }
         });
+        expect(state.activeExpedition).toBeDefined();
+        expect(state.activeExpedition.expeditionIndex).toBe(0);
+    });
+
+    it('tracks world transformations persistently across expeditions', () => {
+        const storage = makeStorage();
+        const store = createCampaignWorldStore({ storage, createSeed: () => 777 });
+        store.getOrCreate();
+
+        store.recordWorldTransformation('bridge', 'canyon_chasm_bridge');
+        store.recordWorldTransformation('camp_fortified', 'camp_meridian');
+        store.recordWorldTransformation('hive_transformed', 'hive_alpha', { choice: 'cleansed', modifier: 'speed_resin' });
+        store.recordWorldTransformation('shortcut', 'bunker_conduit_shortcut');
+
+        const transformations = store.getWorldTransformations();
+        expect(transformations.bridgesConstructed).toEqual(['canyon_chasm_bridge']);
+        expect(transformations.campsFortified).toEqual(['camp_meridian']);
+        expect(transformations.hivesTransformed['hive_alpha'].choice).toBe('cleansed');
+        expect(transformations.shortcutsOpened).toEqual(['bunker_conduit_shortcut']);
+
+        // Persists across expedition roll
+        store.beginExpedition();
+        const afterRoll = store.getWorldTransformations();
+        expect(afterRoll.bridgesConstructed).toEqual(['canyon_chasm_bridge']);
+        expect(afterRoll.campsFortified).toEqual(['camp_meridian']);
     });
 
     it('rejects nonserializable snapshots and leaves earned progress intact', () => {
