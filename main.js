@@ -59,6 +59,7 @@ import { getControllerGlyphLabel } from './src/inputGlyphs.js';
 import {
     ACTION_SETS,
     MENU_FOCUS_ROOT_IDS,
+    shouldPointerRestoreMouseMode,
     actionSetForAppPhase,
     createActionRouter,
     hasControllerContinuePress,
@@ -79,6 +80,7 @@ import { preloadEnemy3dTemplates } from './src/enemy3dOverlay.js';
 import { initVoiceCallouts } from './src/voiceCallouts.js';
 import { multiplayerLobby } from './src/multiplayerLobby.js';
 import { campaignLedger } from './src/campaignLedger.js';
+import { campaignWorldStore, deriveExpeditionSeed } from './src/campaignWorld.js';
 import { clearMultiplayerSession } from './src/gameController.js';
 import { playerTradeManager, TRADEABLE_RESOURCES } from './src/playerTrade.js';
 import { npcDialogueTreeManager, NPC_DIALOGUE_TREES } from './src/npcDialogueTrees.js';
@@ -2479,6 +2481,18 @@ window.addEventListener('keydown', (event) => {
 
 window.addEventListener('pointerdown', (event) => {
     if (!event.isTrusted) return;
+    lastPointerModePosition = { x: event.clientX, y: event.clientY };
+    setLastInputMode('keyboard');
+}, true);
+
+// Moving the pointer counts as using the mouse, not only clicking it. The Deck
+// trackpad slides the cursor without ever pressing, so without this the UI
+// stayed in controller mode after any stick or button input and the cursor
+// drifted over controls that never highlighted.
+let lastPointerModePosition = null;
+window.addEventListener('pointermove', (event) => {
+    if (!shouldPointerRestoreMouseMode(event, lastPointerModePosition)) return;
+    lastPointerModePosition = { x: event.clientX, y: event.clientY };
     setLastInputMode('keyboard');
 }, true);
 
@@ -4606,12 +4620,12 @@ document.getElementById('debug-unlock-all-polishes')?.addEventListener('click', 
 });
 
 // ---- Game Over Screen ----
-function assignMission() {
+function assignMission(random = Math.random, { seeded = false } = {}) {
     const key = 'hb_season_one_expedition_history';
     let history = [];
     try { history = JSON.parse(localStorage.getItem(key) ?? '[]'); } catch { /* new history */ }
     if (!Array.isArray(history)) history = [];
-    const mission = nextSeasonExpedition(history);
+    const mission = nextSeasonExpedition(seeded ? [] : history, random);
     localStorage.setItem(key, JSON.stringify([...history, mission.id].slice(-2)));
     return mission;
 }
@@ -5175,14 +5189,21 @@ function resetRunToStartingState({
             classType: window.game?.playerType ?? getSelectedHeroType()
         });
         const act2Run = isAct2RunActive();
-        currentMission = act2Run ? null : assignMission();
+        const campaign = !window.game?.fixedRunEntropy && !window.game?.isMultiplayer
+            ? campaignWorldStore.getOrCreate() : null;
+        const challengeSeed = campaign
+            ? deriveExpeditionSeed(campaign.seed, campaign.expeditionIndex + 1)
+            : Number(window.game?.globalSeedOffset) >>> 0;
+        const missionRandom = window.game?.createSeededRandom?.(challengeSeed ^ 0x4d49534e) ?? Math.random;
+        currentMission = act2Run ? null : assignMission(missionRandom, { seeded: true });
         const runModifierSeed = (window.game?.isMultiplayer || window.activeMultiplayerSession)
             && (window.activeMultiplayerSession?.seed || window.game?.multiplayerRoomCode)
             ? `run-${window.activeMultiplayerSession?.seed || window.game?.multiplayerRoomCode}`
-            : undefined;
-        currentRunModifier = pickRunModifier(Math.random, runModifierSeed ? { seed: runModifierSeed } : {});
+            : `expedition-${challengeSeed}`;
+        currentRunModifier = pickRunModifier(Math.random, { seed: runModifierSeed, recentKeys: [] });
 
         resetPickupCounter();
+        if (window.game) window.game.currentRunModifier = currentRunModifier;
         window.game?.respawnPlayer?.({ resetRunState: true, skipEffects, deferChunkMount });
         if (currentMission) {
             window.game?.initMission?.(currentMission);
@@ -8563,17 +8584,8 @@ async function openArmoryGate(embarkAction, { skipDoor = false } = {}) {
 function launchStandardRun({ resetBank = false, playIntro = false } = {}) {
     const playerType = getSelectedHeroType();
     saveHeroType(playerType);
-    // Standard solo deployments always roll a fresh world. Daily Ops and an
-    // active multiplayer session are the two modes allowed to retain a
-    // fixed shared seed -- multiplayer's replays this exact function via
-    // the #start-game click chain (src/gameController.js's
-    // startMultiplayerRun), running AFTER ThreeGame.setupMultiplayerNetwork
-    // already pinned fixedRunEntropy/globalSeedOffset to the match's shared
-    // seed (see that method's own comment: without this guard, this
-    // unconditional reset silently wiped that sync out before world
-    // generation ever ran, since this fires before respawnPlayer's own
-    // seed-reset logic). isMultiplayer is already correctly set by that
-    // point, so it's a reliable gate here.
+    // Solo geography resumes the campaign. Fixed daily/multiplayer layouts
+    // remain separate from the locally saved campaign seed and progression.
     _isDailyOpsRun = false;
     if (window.game && !window.game.isMultiplayer) {
         window.game.fixedRunEntropy = false;
@@ -8672,10 +8684,10 @@ function beginDailyOpsRun() {
             saveDailyOpsRecord({ attempted: true, completed: false, date: getTodayDateString() });
             _isDailyOpsRun = true;
             if (window.game) {
-                // Retain the date-derived Daily Ops theme, but roll a fresh
-                // topology for every deployment instead of pinning one layout.
+                // A daily operation shares its date-derived layout and never
+                // reads or advances the solo campaign's world snapshot.
                 window.game.globalSeedOffset = getDailySeedInt();
-                window.game.fixedRunEntropy = false;
+                window.game.fixedRunEntropy = true;
             }
             document.body.classList.add('mission-intro-active');
             const deploymentHold = suspendGameForFullscreenVideo();
@@ -14856,6 +14868,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         clearMultiplayerSession();
         transitionFromTitleToMenu(() => {
             startNewCampaign();
+            arcManager.reset();
+            act2Manager.reset();
+            sideStoryManager.state = sideStoryManager.load();
+            sideStoryManager.notifyChange();
+            window.game?.resetCampaignState?.();
             window.game?.clearBlackBoxMarker?.();
             updateContinueButtonState();
             renderHomebaseConsole({ initializeCallsign: true });

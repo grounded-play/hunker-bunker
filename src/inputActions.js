@@ -268,3 +268,29 @@ export function createActionRouter() {
         }
     };
 }
+
+/**
+ * Real pointer movement has to hand the UI back to mouse mode.
+ *
+ * The UI used to leave controller mode only on keydown and pointerdown. On a
+ * Steam Deck the trackpad MOVES the pointer without clicking, so once anything
+ * had been done with the stick or buttons, sliding the trackpad no longer moved
+ * the selection -- the cursor drifted over controls that never highlighted.
+ *
+ * Touch is excluded because the Deck's touchscreen emits synthetic moves while
+ * a finger rests on it, and the jitter threshold stops a controller-driven or
+ * sub-pixel event from flapping the mode back and forth.
+ */
+export const POINTER_MODE_MOVEMENT_THRESHOLD_PX = 6;
+
+export function shouldPointerRestoreMouseMode(event, lastPosition = null) {
+    if (!event?.isTrusted) return false;
+    const pointerType = event.pointerType;
+    if (pointerType && pointerType !== 'mouse' && pointerType !== 'pen') return false;
+    const x = Number(event.clientX);
+    const y = Number(event.clientY);
+    if (!Number.isFinite(x) || !Number.isFinite(y)) return false;
+    if (!lastPosition || !Number.isFinite(lastPosition.x) || !Number.isFinite(lastPosition.y)) return true;
+    const travelled = Math.abs(x - lastPosition.x) + Math.abs(y - lastPosition.y);
+    return travelled >= POINTER_MODE_MOVEMENT_THRESHOLD_PX;
+}
