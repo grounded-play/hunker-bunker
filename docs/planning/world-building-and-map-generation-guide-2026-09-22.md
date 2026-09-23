@@ -1,7 +1,7 @@
 # World Building & Map Generation Guide
 
 **Date:** 2026-09-22
-**Status:** Diagnosis measured, design proposed, one fix shipped
+**Status:** Diagnosis measured; Step 1 (gate variety) shipped and ratcheted; Steps 2-4 open
 **Scope:** Why every run feels like the same map, what the generator actually varies, and the design that makes a run predictable in structure but never identical in shape.
 
 ---
@@ -166,6 +166,54 @@ This is the change that makes corridors, room shapes and door positions stop rep
 Beats already have a fixed order (`STORY_DEADLINES`, `HIVE_TERRITORY_BEATS`: warning → approach → outer nest → choice chamber → consequence → escape). What varies should be the room each beat is staged in, drawn from rooms that satisfy the beat's requirements (a choice chamber needs a defensible interior; a warning needs a sightline).
 
 **Acceptance:** beat order is identical across runs; the chunk hosting each beat is not.
+
+---
+
+## 4A. Shipped since this guide was written
+
+| Change | Where | Effect |
+|---|---|---|
+| Gate placement reads the seed | `mazeExpedition.js` | Ring gates went from **1–3** placements across 60 seeds to **10–31**. `ring-3-gate` no longer sits at `2,7` every run. |
+| Gate band tuned against plan validity | `GATE_PLACEMENT_BAND_FRACTION` | A wider band ate the route chunks the territory planner needs: at 0.5 with a chunk-size floor, 5 of 100 seeds produced an invalid plan. 0.25 with no floor holds 100/100 valid. |
+| Gates require an orthogonal spine neighbour | `hasOrthogonalSpineNeighbor()` | A far-side door is named from the delta between two chunks, and a diagonal delta has no cardinal name. The old argmin satisfied this by luck. |
+| A crossing never accepts a doorless structure | `authoredWorldRuntime.js` | Setpiece claims legitimately cover crossing chunks, but only the claim's PIVOT produces a room. A gate on a non-pivot module had no threshold and no `gate_control`: it looked right and could never be opened. |
+| Camps re-anchor when terrain arrives | `threeGame.js` | The invisible Camp Meridian bug. |
+| Variety ratchet | `mazeExpedition.gateVariety.test.js` | Fails if any gate drops below 8 distinct placements across 60 seeds. |
+
+### What the measurements still say is fixed
+
+Re-running the sweep from §1.1 after those changes:
+
+- gate placements: **10 / 13 / 18 / 31** distinct across 60 seeds (was 2 / 2 / 1 / 3)
+- reservation role inventory: **still 1 distinct** — unchanged, and still the biggest remaining source of sameness
+- setpiece ids: **still 1 distinct**
+
+So arrangement now varies; **content does not**. That is exactly what §4 Step 2 addresses and it is the next thing a player would notice.
+
+---
+
+## 4B. Vertical slice: prove it on Meridian, ring-1 oxygen, and Suture
+
+The brief for the wider expedition system is right that the destination should have a consistent purpose while the journey varies. It is also right that this must be proven on one slice before all five rings, because generation, objectives and consequences only reveal their replayability when played.
+
+**Scope — build only these, and play them:**
+
+| Element | Fixed (the contract) | Variable (per campaign) |
+|---|---|---|
+| Ring-1 ship goal | Always `o2Bubble`, always ends at `o2_control` | Which room family hosts the console, and the route to it |
+| Camp Meridian | Always a survivor camp with Kaelen, always offers a choice | Approach, which quest it offers, what aiding it costs |
+| Suture Hive | Always the 6-beat territory arc (`HIVE_TERRITORY_BEATS`) | Which beats are hostile, and the escape route |
+| ring-1-gate | Always gated on goal + mission + boss | Where it sits (now seeded), and which face opens |
+
+**Out of scope until the slice is played:** rings 2–4, the other two camps, the other two hives, and any new setpiece catalogue work.
+
+**The questions the slice has to answer, and how to tell:**
+
+1. *Do two campaigns feel different?* Play three seeds to the ring-1 crossing and record the route taken, the rooms entered and the choice made at Meridian. If the answers rhyme, the variety is cosmetic.
+2. *Does the choice at Meridian change anything downstream?* Aiding it should visibly change the camp (it already does, via `CAMP_CONDITION_DRESSING`) and change what the hive approach costs.
+3. *Is the world legibly the same campaign?* The day counter, deadlines and scars must carry across, or variety reads as amnesia.
+
+**Concurrency note:** `src/campaignWorld.js`, `src/territoryStructures.js` and `src/threeGame.expeditionChoices.test.js` are in flight from another agent as of 2026-09-22 and cover much of this ground. Coordinate before starting Step 2 or 3 below — two generators for the same slice is the failure mode this guide exists to prevent.
 
 ---
 
