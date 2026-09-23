@@ -65,6 +65,7 @@ const {
 const { isQaToolsEnabled, normalizeBetaName } = require('./qa-tools.cjs');
 const { PUBLISHED_ACHIEVEMENT_KEYS } = require('./steam-achievement-catalog.cjs');
 const { parseConnectLobbyArg } = require('./steam-lobby.cjs');
+const { enableDevTooling } = require('./dev-tools.cjs');
 
 const DEV = process.env.ELECTRON_DEV === '1';
 const DEV_URL = process.env.ELECTRON_DEV_URL ?? 'http://localhost:5173';
@@ -1216,8 +1217,8 @@ function createWindow() {
     win.on('blur', () => recordSteamDiagnostic('info', 'window_blur', 'Game window lost focus'));
 
     if (DEV) {
+        // DevTools opens through electron-debug (see enableDevTooling).
         win.loadURL(DEV_URL);
-        win.webContents.openDevTools({ mode: 'detach' });
     } else {
         win.loadFile(path.join(__dirname, '..', 'dist', 'index.html'));
     }
@@ -1258,8 +1259,11 @@ app.on('second-instance', (_event, commandLine) => {
     }
 });
 
-app.whenReady().then(() => {
+app.whenReady().then(async () => {
     loadSaveFile();
+    await enableDevTooling({ dev: DEV }).catch((error) => {
+        console.warn(`[dev-tools] unavailable: ${error?.message ?? error}`);
+    });
     createWindow();
 
     // Cold-start +connect_lobby (parsed from this process's own argv at
