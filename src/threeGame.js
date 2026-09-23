@@ -5169,7 +5169,14 @@ export class ThreeGame {
 
         this.isMultiplayer = true;
         this.multiplayerMode = session.mode || MULTIPLAYER_SPAWN_MODES.COOP;
-        if (this.multiplayerMode === MULTIPLAYER_SPAWN_MODES.PVP && this.bank) this.syncPersistentUpgrades?.();
+        if (this.multiplayerMode === MULTIPLAYER_SPAWN_MODES.PVP) {
+            if (this.bank) this.syncPersistentUpgrades?.();
+            if (this.playerVitals) {
+                this.playerVitals.maxHp = PVP_HEARTS;
+                this.playerVitals.hp = PVP_HEARTS;
+                this.emitVitalsState?.();
+            }
+        }
         this.multiplayerRoomCode = session.roomCode || 'SECTOR-7';
         this.multiplayerCrashPlan = session.crashPlan || null;
         this.remotePlayers = new Map();
@@ -5665,6 +5672,14 @@ export class ThreeGame {
             const remote = this.remotePlayers.get(data.targetId);
             const remoteDamage = Number.isFinite(data.damage) ? data.damage : 1;
             remote.hp = Math.max(0, remote.hp - remoteDamage);
+            if (data.attackerId === this.netSocket?.id || !data.attackerId) {
+                debugLog.info('WEAPON', 'pvp-hit-confirmed', {
+                    targetId: data.targetId,
+                    damage: remoteDamage,
+                    remainingHp: remote.hp
+                });
+                window.AudioManager?.play?.('ui_scan_ping', { volume: 0.35, playbackRate: 1.6, bus: 'sfx' });
+            }
             if (remote.hp === 0) {
                 remote.isDown = true;
                 remote.overlay?.setDowned?.(true);
@@ -5923,6 +5938,11 @@ export class ThreeGame {
 
     reportProjectileRivalHit(rival, projectile) {
         if (!rival?.id || !this.netSocket) return false;
+        debugLog.info('WEAPON', 'pvp-hit-dealt', {
+            targetId: rival.id,
+            originX: projectile?.mesh?.position?.x ?? 0,
+            originZ: projectile?.mesh?.position?.z ?? 0
+        });
         this.netSocket.emit('weaponHit', {
             targetId: rival.id,
             originX: projectile.mesh.position.x,
@@ -6027,6 +6047,11 @@ export class ThreeGame {
         if (isEcho) return false;
 
         if (event === 'bunker-door-toggled') {
+            const seq = Number(detail.seq);
+            if (Number.isFinite(seq)) {
+                if (seq <= (this._bunkerBlastDoorSequence ?? 0)) return false;
+                this._bunkerBlastDoorSequence = seq;
+            }
             if (this.bunkerBlastDoorState && typeof detail.open === 'boolean') {
                 if (this.bunkerBlastDoorState.open !== detail.open) {
                     this.toggleBunkerBlastDoor({ fromRemote: true });
@@ -7937,7 +7962,10 @@ export class ThreeGame {
         ) ?? null;
         // Fatigue rides the same bus as equipment, so every downstream
         // `loadoutMods.X` read picks it up without a second code path.
-        this.loadoutMods = composeFatigueIntoLoadoutMods(this.loadoutMods, this.fatigueState);
+        // GAP-PV-01: fatigue does not apply to PvP duels.
+        if (!(this.isMultiplayer && this.multiplayerMode === MULTIPLAYER_SPAWN_MODES.PVP)) {
+            this.loadoutMods = composeFatigueIntoLoadoutMods(this.loadoutMods, this.fatigueState);
+        }
         // The expedition's condition rides the same bus, but the pre-expedition
         // mods are kept so the next deployment can swap conditions without
         // rebuilding the whole operator (see applyExpeditionPlayerEffects).
@@ -9682,6 +9710,10 @@ export class ThreeGame {
     }
 
     ensureBlackBoxMarker() {
+        if (this.isMultiplayer && this.multiplayerMode === MULTIPLAYER_SPAWN_MODES.PVP) {
+            this.clearBlackBoxMarker();
+            return;
+        }
         const state = blackBoxStore.load();
         this._blackBoxState = state;
         const shouldShow = Boolean(state.active);
@@ -10205,6 +10237,12 @@ export class ThreeGame {
 
     toggleBunkerBlastDoor({ fromRemote = false } = {}) {
         if (!this.bunkerBlastDoorState || this.bunkerBlastDoorState.destroyed) return;
+        const now = typeof performance !== 'undefined' ? performance.now() : Date.now();
+        if (!fromRemote && this._lastBunkerBlastDoorToggleAt && now - this._lastBunkerBlastDoorToggleAt < 400) return;
+        if (!fromRemote) {
+            this._lastBunkerBlastDoorToggleAt = now;
+            this._bunkerBlastDoorSequence = (this._bunkerBlastDoorSequence ?? 0) + 1;
+        }
         const state = this.bunkerBlastDoorState;
         state.open = !state.open;
         state.targetY = state.open ? -2.4 : 1.4;
@@ -10225,11 +10263,14 @@ export class ThreeGame {
         });
 
         window.dispatchEvent(new CustomEvent('bunker-door-toggled', {
-            detail: { open: state.open, fromRemote }
+            detail: { open: state.open, fromRemote, seq: this._bunkerBlastDoorSequence }
         }));
 
         if (!fromRemote && this.isMultiplayer) {
-            this.broadcastSharedWorldEvent('bunker-door-toggled', { open: state.open });
+            this.broadcastSharedWorldEvent('bunker-door-toggled', {
+                open: state.open,
+                seq: this._bunkerBlastDoorSequence
+            });
         }
     }
 
@@ -10239,6 +10280,8 @@ export class ThreeGame {
     }
 
     resetBunkerBlastDoor() {
+        this._bunkerBlastDoorSequence = 0;
+        this._lastBunkerBlastDoorToggleAt = 0;
         const state = this.bunkerBlastDoorState;
         if (!state) return;
         state.open = false;
@@ -20363,6 +20406,8 @@ export class ThreeGame {
         if (this.cinematicLock) return false; // untouchable during scripted sequences
         if (this.isInPocket) return false; // untouchable while resolving a fall inside a pocket
         if (this.iFrameTimer > 0 && reason !== 'abyss') return false;
+        // GAP-PV-02: spawn protection prevents instant spawn-camping on respawn.
+        if (this.spawnInvulnerabilityTimer > 0 && reason !== 'abyss') return false;
         if (sourceX != null && sourceZ != null && this.player?.position) {
             const containmentClamped = shouldBlockAttackPath(
                 { x: sourceX, z: sourceZ },
@@ -20605,17 +20650,21 @@ export class ThreeGame {
             `Depth tier: ${this.getDepthTierName(this.maxDepthTierReached)}.`,
             `Recoverable salvage: ${salvage.tech} TECH / ${salvage.coin} COIN / ${salvage.med} MED.`
         ].join(' ');
+        const isPvp = this.isMultiplayer && this.multiplayerMode === MULTIPLAYER_SPAWN_MODES.PVP;
         this.clearBlackBoxMarker?.();
-        const blackBoxState = blackBoxStore.recordDeath({
-            x: this.player?.position?.x ?? 0,
-            z: this.player?.position?.z ?? 0,
-            depth: this.maxDepthTierReached,
-            classType: this.playerType,
-            salvage,
-            cause: reason,
-            log: deathLog
-        });
-        this._blackBoxState = blackBoxState;
+        let blackBoxState = null;
+        if (!isPvp) {
+            blackBoxState = blackBoxStore.recordDeath({
+                x: this.player?.position?.x ?? 0,
+                z: this.player?.position?.z ?? 0,
+                depth: this.maxDepthTierReached,
+                classType: this.playerType,
+                salvage,
+                cause: reason,
+                log: deathLog
+            });
+            this._blackBoxState = blackBoxState;
+        }
         this.showBunkerLine(
             getDialogueLine('death', Math.random, this.buildLineDirectorContext().register)
             ?? 'SUIT FAILURE LOGGED. BLACK BOX ARMED.'
@@ -20748,6 +20797,9 @@ export class ThreeGame {
         this.playerGlow.position.set(spawn.x, 1.6, spawn.z);
         this.playerMarker.position.set(spawn.x, this.playerMarkerHeight, spawn.z);
         this.updatePlayerForwardLight(1, { immediate: true });
+        if (this.isMultiplayer && this.multiplayerMode === MULTIPLAYER_SPAWN_MODES.PVP) {
+            this.spawnInvulnerabilityTimer = 3.0;
+        }
 
         if (resetRunState) {
             this.resetBunkerBlastDoor();
@@ -22039,6 +22091,7 @@ export class ThreeGame {
         this.dashCooldownTimer = Math.max(0, (this.dashCooldownTimer ?? 0) - delta);
         this.meleeCooldownTimer = Math.max(0, (this.meleeCooldownTimer ?? 0) - delta);
         this.iFrameTimer = Math.max(0, (this.iFrameTimer ?? 0) - delta);
+        this.spawnInvulnerabilityTimer = Math.max(0, (this.spawnInvulnerabilityTimer ?? 0) - delta);
         this.perfectReloadBuffTimer = Math.max(0, (this.perfectReloadBuffTimer ?? 0) - delta);
         this.recoilBloom = Math.max(0, (this.recoilBloom ?? 0) - 1.2 * delta);
 

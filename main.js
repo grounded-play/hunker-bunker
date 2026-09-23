@@ -4966,6 +4966,7 @@ function clearAllTimers() {
 function showGameOverScreen(stats, { isVictory = false, deathReason = 'hazard' } = {}) {
     // ── Resets & State Cleanups on Game Over ──
     setAppPhase('gameover');
+    window.game?.setWorldRenderSuspended?.(true);
     dialogueManager?.cancelDialogue();
     dialogueManager?.cancelTutorial();
     cutsceneManager?.finishActiveRun(true);
@@ -5362,6 +5363,7 @@ function renderGameOverAct2Summary() {
 }
 
 function hideGameOverScreen() {
+    window.game?.setWorldRenderSuspended?.(false);
     const modal = document.getElementById('game-over-modal');
     if (modal) modal.classList.add('hidden');
 }
@@ -15087,7 +15089,7 @@ function initTacticalCursor() {
     function handleHoverTargetSync(rawTarget, { playBlip = false } = {}) {
         const target = resolveInteractiveFocusTarget(rawTarget);
         if (!target) return null;
-        if (currentHoverTarget !== target) {
+        if (currentHoverTarget !== target || document.activeElement !== target) {
             currentHoverTarget = target;
             cursor.classList.add('cursor-hovering');
             if (document.activeElement !== target) {
@@ -15115,11 +15117,9 @@ function initTacticalCursor() {
         const target = resolveInteractiveFocusTarget(e.target);
         if (target) {
             const related = resolveInteractiveFocusTarget(e.relatedTarget);
-            if (related !== currentHoverTarget) {
-                currentHoverTarget = related;
-                if (!related) {
-                    cursor.classList.remove('cursor-hovering');
-                }
+            if (!related) {
+                currentHoverTarget = null;
+                cursor.classList.remove('cursor-hovering');
             }
         }
     });

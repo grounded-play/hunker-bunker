@@ -36,6 +36,10 @@ Final GPU telemetry is 18.77 ms average and 56.32 ms maximum across 1,772 sample
 
 **Ticket result:** no performance ticket closes from this capture. The effect ceiling has sampled hardware evidence; frame pacing does not meet release acceptance. See `GAP-RN-10` through `GAP-RN-12` in the register.
 
+### Current-source follow-up (not evidence from this capture)
+
+After the captured package, `2d0032a` implemented two candidate mitigations: it suspends the `ThreeGame` world-render path while `#game-over-modal` is visible, and it keeps `shadowMap.enabled` stable after gameplay first enables it while using `shadowMap.autoUpdate` for profile changes. Focused unit tests cover the render-suspension guard and fake-renderer profile flags. They do **not** exercise the modal observer, real shader compilation, the packaged Deck route, or its frame metrics. `GAP-RN-10` and `GAP-RN-11` are therefore **implemented + unit-tested, hardware-open**.
+
 ## 2. PvP — one incoming-damage lifecycle is proven
 
 The Deck joined a Steam PvP room, completed ready/deploy, created a remote avatar, received inbound `pvp-rival` damage, died once, and respawned. The remote avatar used a sprite fallback before 3D readiness for about 678 ms; that misses the existing #51 target of a sub-200 ms full-3D handoff without placeholder fallback.
@@ -51,6 +55,10 @@ The Deck joined a Steam PvP room, completed ready/deploy, created a remote avata
 | P7 | Outgoing hit confirmation is not present in this capture. | The PvP segment has 117 fire attempts: 21 accepted shot/projectile events and 96 blocked attempts. There is no locally logged relay verdict or rival health change; `rivalKills` is 0. | observed instrumentation gap; paired capture plus `pvp-hit-dealt`/`pvp-hit-confirmed` telemetry required (`GAP-PV-07`). |
 
 The tester's account that shots landed is valuable playtest context, but it is not independently verified by this one-sided log. The capture proves incoming damage to the Deck, not bidirectional damage, remote kill credit, or a completed PvP match.
+
+### Current-source follow-up (not evidence from this capture)
+
+`2d0032a` now sets PvP maximum health to a fixed four hearts, excluding campaign fatigue, hull, class plating, and equipment; it re-syncs vitals on PvP enter/leave. It also skips PvP leaderboard submission in the client and makes server validation reject it with `pvp_run_not_ranked`. Focused unit tests cover the max-HP rule and the client/server helper behavior. A paired packaged PvP run and a deployed-backend check are still required to verify the actual mode flow, full health refill, and final server disposition. Thus `GAP-PV-01` and `GAP-PV-04` are **implemented + unit-tested, acceptance-open**.
 
 ## 3. Controller/input evidence
 
@@ -82,10 +90,10 @@ This evidence must not be used to close the following requirements:
 | Ticket / gap | Updated local status from this capture |
 | --- | --- |
 | #45 | **Open.** Parent release gate; no dependent acceptance gate passes here. |
-| #51 / PvP certification | **Partial, one-sided.** Lobby/ready/deploy, remote 3D readiness, inbound damage, one death, and respawn are observed. The fallback timing, fatigue/HP, Black Box/XP, leaderboard, spawn, door, outbound telemetry, reconnect, and paired-evidence gates remain open. |
-| #52 / performance | **Open.** Sampled effect count never exceeded 64, but p50 is 84.7 ms and max is 4.614 s. The capture is not a matched benchmark or causal diagnosis. |
+| #51 / PvP certification | **Partial, one-sided.** Lobby/ready/deploy, remote 3D readiness, inbound damage, one death, and respawn are observed. Current source has unit-tested fixed hearts and client/server leaderboard guards, but the fallback timing, rewards, spawn, door, outbound telemetry, deployed backend, reconnect, and paired-evidence gates remain open. |
+| #52 / performance | **Open.** Sampled effect count never exceeded 64, but p50 is 84.7 ms and max is 4.614 s. Current source has unit-tested render-suspension/shadow-stability mitigations; the capture is still not a matched re-benchmark or causal validation. |
 | #53 / Deck controller-only | **Open.** This is a physical Deck package capture, but pointer/keyboard event provenance cannot certify a controller-only route. |
 | #85 / two-account co-op proof | **Open and unaffected.** This was PvP and only one client capture is available; it is not co-op PvE acceptance. |
-| #86 / log intake | Additional evidence ingested. This report does not alter the ticket's prior intake status. |
+| #86 / log intake | Additional evidence ingested. `terminal_deny` is now aliased in current source, but requires a packaged audio check; this report does not alter the ticket's prior intake status. |
 
 New and updated local gaps are registered in §9 of the [master register](master-known-gaps-and-debt-register-2026-09-23.md). The executable protocol is in the [acceptance plan](../tickets-acceptance-testing-plan.md).
