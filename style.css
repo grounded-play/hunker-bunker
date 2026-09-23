@@ -966,12 +966,35 @@ body {
   width: 58%;
   height: 100%;
   background: linear-gradient(90deg, rgba(4, 6, 7, 0.94) 0%, rgba(4, 6, 7, 0.7) 58%, transparent 100%);
-  backdrop-filter: blur(4px);
-  -webkit-backdrop-filter: blur(4px);
+  /* No backdrop-filter: the frost is .splash-frost below. A backdrop blur
+     depends on the compositor sampling what is behind it, and on the Steam
+     Deck (Electron under Gamescope) it did not render at all. */
   -webkit-mask-image: linear-gradient(90deg, black 62%, transparent 100%);
   mask-image: linear-gradient(90deg, black 62%, transparent 100%);
   z-index: -1;
   pointer-events: none;
+}
+
+/* The title menu's frosted glass: a blurred copy of the key art, masked to the
+   menu side and painted under the dark veil (#splash::before, z -1). An
+   ordinary filter blur of its own background renders everywhere, unlike a
+   backdrop-filter, which never drew on the Steam Deck. Background values are
+   inherited so the copy tracks the parallax shift exactly. */
+.splash-frost {
+  position: absolute;
+  inset: 0;
+  z-index: -2;
+  pointer-events: none;
+  background-color: transparent;
+  background-image: inherit;
+  background-position: inherit;
+  background-size: inherit;
+  background-repeat: inherit;
+  filter: blur(9px) saturate(0.85);
+  /* Blur pulls the box edges inward; scaling hides the soft rim. */
+  transform: scale(1.04);
+  -webkit-mask-image: linear-gradient(90deg, black 0%, black 36%, transparent 58%);
+  mask-image: linear-gradient(90deg, black 0%, black 36%, transparent 58%);
 }
 
 /* A restrained pointer-following reflection gives the wet metal depth without
@@ -23735,6 +23758,17 @@ body.contrast-max .hud-panel {
   background: linear-gradient(270deg, rgba(4, 6, 7, 0.94) 0%, rgba(4, 6, 7, 0.7) 58%, transparent 100%);
   -webkit-mask-image: linear-gradient(270deg, black 62%, transparent 100%);
   mask-image: linear-gradient(270deg, black 62%, transparent 100%);
+}
+
+/* The frost follows the veil to the right-hand menu side. The veil's darkest
+   stop is eased slightly so the frosted art actually reads through it. */
+.splash-frost {
+  -webkit-mask-image: linear-gradient(270deg, black 0%, black 36%, transparent 58%);
+  mask-image: linear-gradient(270deg, black 0%, black 36%, transparent 58%);
+}
+
+#splash::before {
+  background: linear-gradient(270deg, rgba(4, 6, 7, 0.84) 0%, rgba(4, 6, 7, 0.62) 58%, transparent 100%);
 }
 
 .splash-content {
