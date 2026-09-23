@@ -398,6 +398,15 @@ import { buildRevealedChunkCells, roomsReachedByScan } from './mapReveal.js';
 import { groupDangerZones, lipEdgeQuads } from './dangerZones.js';
 import { GATE_CHALLENGES, GATE_CHALLENGE_TUNING, planGateChallenges } from './gateChallenges.js';
 import {
+    activePackageConsequence,
+    applyPackageReward,
+    completePackageStep,
+    getObjectivePackage,
+    nextPackageStep,
+    normalizeObjectivePackageState,
+    PACKAGE_SITES
+} from './objectivePackages.js';
+import {
     ENEMY_SPRITE_LAYOUTS,
     STATIC_ENEMY_SPRITE_PATHS,
     getEnemyDirectionRow,
@@ -1080,6 +1089,14 @@ const SNAIL_MOVE_SPEED = 1.2;
 // Hostiles spawned around a harvested hive carry its grievance: faster, not
 // tougher, so the choice reads as a change in pressure rather than a stat wall.
 const HARVESTED_HIVE_ENRAGE_SPEED = 1.25;
+// Objective-package step prompts (objectivePackages.js). Prompt and tracker
+// labels are literal like every other camp/hive prompt in this file.
+const PACKAGE_STEP_LABELS = Object.freeze({
+    recover_regulator: 'RECOVER THE O₂ REGULATOR',
+    reroute_gate_power: 'REROUTE RING POWER AT THE GATE CONSOLE',
+    restart_o2_room: 'RESTART THE O₂ ROOM ON REROUTED POWER',
+    negotiate_supply: 'NEGOTIATE MERIDIAN\'S O₂ REGULATOR'
+});
 const SNAIL_ENRAGED_MOVE_SPEED = 2.1;
 const SNAIL_ENRAGED_TINT = 0xff4a4a;
 const SNAIL_HIT_RADIUS = 0.62;
@@ -7005,6 +7022,7 @@ export class ThreeGame {
         if (!handled) handled = this.interactWithScientist();
         if (!handled) handled = this.interactWithHiveSite();
         if (!handled) handled = this.interactWithBioConduit?.() ?? false;
+        if (!handled) handled = this.interactWithObjectivePackage?.() ?? false;
         if (!handled) handled = this.interactWithCampQuestObject();
         if (!handled) handled = this.interactWithWanderer();
         if (!handled) handled = this.interactWithHoleTile();
@@ -9110,6 +9128,7 @@ export class ThreeGame {
             fp.measure('updateCamps', () => this.updateCamps(delta));
             fp.measure('updateHiveSites', () => this.updateHiveSites(delta));
             fp.measure('updateOvernightCreep', () => this.updateOvernightCreep?.(delta));
+            fp.measure('updateObjectivePackage', () => this.updateObjectivePackage?.());
             fp.measure('updateInfectionPressure', () => this.updateInfectionPressure(delta));
             fp.measure('updateHazardZoneDamage', () => this.updateHazardZoneDamage(delta));
             fp.measure('updateCampQuest', () => this.updateCampQuest(delta));
@@ -11691,8 +11710,15 @@ export class ThreeGame {
         };
     }
 
+    // The console price after this campaign's objective package pays out.
+    getGoalBuildCost(goalKey) {
+        const base = this.bank?.getGoalCost?.(goalKey) ?? null;
+        const state = this.getObjectivePackageState?.();
+        return state ? applyPackageReward(base, state, goalKey) : base;
+    }
+
     renderGoalCard(ship, bankState, cardConfig) {
-        const rawCost = this.bank.getGoalCost(cardConfig.goalKey) ?? {};
+        const rawCost = this.getGoalBuildCost(cardConfig.goalKey) ?? {};
         const cost = this.getEffectiveCost(rawCost);
         const unlocked = Boolean(bankState?.unlocks?.[cardConfig.goalKey]);
         const prereqMet = cardConfig.prereqKey
@@ -12525,7 +12551,7 @@ export class ThreeGame {
     }
 
     attemptGoalUnlock(ship, cardConfig) {
-        const rawCost = this.bank.getGoalCost(cardConfig.goalKey);
+        const rawCost = this.getGoalBuildCost(cardConfig.goalKey);
         if (!rawCost) {
             window.AudioManager?.play('ui_error', { volume: 0.58 });
             this.renderConsoleBanking(ship);
@@ -16411,6 +16437,8 @@ export class ThreeGame {
         this._restoredAuthoredWorldIdentity = null;
         campaignWorldStore.reset();
         this._recordedWorldTransformations = new Set();
+        this.objectivePackageState = null;
+        this._restoredObjectivePackage = null;
         this.expeditionIndex = 0;
         this.expeditionSeed = null;
         this.setActiveExpedition?.(null);
@@ -17161,6 +17189,16 @@ export class ThreeGame {
                     label: `SHORE UP DEFENCES (${condition.toUpperCase()}) — ${shoreUp.cost} SHELLS`
                 };
             }
+            // This campaign's O2 package may run through Meridian's own regulator.
+            const supplyStep = this.getPendingPackageStep?.(PACKAGE_SITES.MERIDIAN);
+            if (supplyStep && camp.id === 'camp_meridian' && status === 'alive') {
+                return {
+                    camp,
+                    action: 'o2-supply',
+                    step: supplyStep,
+                    label: `NEGOTIATE O₂ REGULATOR — ${supplyStep.shells} SHELLS`
+                };
+            }
             // A camp medic can quiet a scar, never clear it. Offered before
             // rest so a player who walks in wrecked is shown the treatment
             // before the bed, which is the order they would want them in.
@@ -17631,6 +17669,7 @@ export class ThreeGame {
 
         if (action === 'treat-scar') return this.treatScarAtCamp(camp, actionable.scarId);
         if (action === 'shore-up') return this.shoreUpCamp(camp);
+        if (action === 'o2-supply') return this.negotiateO2Supply(camp, actionable.step);
 
         if (action === 'rest') return this.beginCampRest(camp);
 
@@ -19666,6 +19705,163 @@ export class ThreeGame {
         return entry;
     }
 
+    // ── Objective packages (objectivePackages.js) ──
+    getObjectivePackageState() {
+        if (this.objectivePackageState) return this.objectivePackageState;
+        const seed = this.worldPlan?.seed ?? this.runEntropy;
+        if (!Number.isFinite(Number(seed))) return null;
+        this.objectivePackageState = normalizeObjectivePackageState(this._restoredObjectivePackage, seed);
+        return this.objectivePackageState;
+    }
+
+    // The package's next step, if it happens at `site` and still matters (the
+    // O2 bubble is not yet built).
+    getPendingPackageStep(site) {
+        if (this.bank?.getState?.()?.unlocks?.o2Bubble) return null;
+        const step = nextPackageStep(this.getObjectivePackageState());
+        return step && (!site || step.site === site) ? step : null;
+    }
+
+    // World position of a package site, or null while it is not resolvable.
+    getPackageSitePosition(site) {
+        const plan = this.worldPlan;
+        if (site === PACKAGE_SITES.O2_ROOM) {
+            const resolved = resolveObjectiveTarget({
+                reservationId: 'goal:o2Bubble:objective',
+                interactionAnchorId: 'o2_control',
+                exactRevealed: true
+            }, { worldPlan: plan, chunkStructures: this.wfcMetadataCache, worldOffset: { x: 0, z: 0 } });
+            if (Number.isFinite(resolved?.x) && Number.isFinite(resolved?.z)) return { x: resolved.x, z: resolved.z };
+            const reservation = plan?.reservations?.find((entry) => entry.id === 'goal:o2Bubble:objective');
+            return Number.isInteger(reservation?.chunkX)
+                ? { x: (reservation.chunkX + 0.5) * this.chunkSize, z: (reservation.chunkY + 0.5) * this.chunkSize }
+                : null;
+        }
+        if (site === PACKAGE_SITES.RING1_GATE_CONTROL) {
+            const crossing = plan?.ringCrossings?.find((entry) => entry.ring === 1);
+            if (!crossing) return null;
+            const control = (this.wfcMetadataCache?.get(crossing.chunkKey)?.accessSources ?? [])
+                .find((source) => source.id === `${crossing.id}:mission-control`);
+            return Number.isFinite(control?.localX)
+                ? { x: crossing.chunkX * this.chunkSize + control.localX, z: crossing.chunkY * this.chunkSize + control.localY }
+                : { x: (crossing.chunkX + 0.5) * this.chunkSize, z: (crossing.chunkY + 0.5) * this.chunkSize };
+        }
+        if (site === PACKAGE_SITES.MERIDIAN) {
+            const camp = (this.camps ?? []).find((entry) => entry.id === 'camp_meridian');
+            return camp?.pos ? { ...camp.pos } : this.getAuthoredSitePosition?.('camp_meridian') ?? null;
+        }
+        return null;
+    }
+
+    // Tracker + compass toward the next step, and a prompt when standing at a
+    // room/console step (Meridian's step is a camp prompt instead).
+    updateObjectivePackage() {
+        const registry = typeof window !== 'undefined' ? window.objectiveRegistry : null;
+        const step = this.performanceProfile === 'gameplay' ? this.getPendingPackageStep() : null;
+        if (!step) {
+            if (this._packageTracked) {
+                registry?.resolveObjective?.('o2-package', 'complete');
+                this._packageTracked = false;
+            }
+            this.setPackagePrompt(null);
+            return null;
+        }
+        const definition = getObjectivePackage(this.getObjectivePackageState());
+        const target = this.getPackageSitePosition(step.site);
+        const done = this.objectivePackageState.completedSteps.length;
+        registry?.trackObjective?.({
+            id: 'o2-package',
+            source: 'objective-package',
+            label: `O₂ OPTION — ${PACKAGE_STEP_LABELS[step.id] ?? step.id}`,
+            current: done,
+            target: definition.steps.length,
+            priority: 35,
+            compass: target,
+            persistent: true
+        });
+        this._packageTracked = true;
+        const near = target && this.player && step.site !== PACKAGE_SITES.MERIDIAN
+            && Math.hypot(this.player.position.x - target.x, this.player.position.z - target.z) <= 2.4;
+        this.setPackagePrompt(near ? PACKAGE_STEP_LABELS[step.id] : null);
+        return step;
+    }
+
+    setPackagePrompt(label) {
+        if (label === this._packagePromptLabel) return;
+        this._packagePromptLabel = label;
+        if (label) window.dispatchEvent(new CustomEvent('camp-prompt-nearby', { detail: { label } }));
+        else if (!this._hivePromptLabel && !this._campPromptLabel) window.dispatchEvent(new CustomEvent('camp-prompt-clear'));
+    }
+
+    interactWithObjectivePackage() {
+        if (!this.isGameplayInputActive?.() || !this.player) return false;
+        const step = this.getPendingPackageStep();
+        if (!step || step.site === PACKAGE_SITES.MERIDIAN) return false;
+        const target = this.getPackageSitePosition(step.site);
+        if (!target || Math.hypot(this.player.position.x - target.x, this.player.position.z - target.z) > 2.4) return false;
+        return this.advanceObjectivePackage(step);
+    }
+
+    negotiateO2Supply(camp, step) {
+        if (!step || step.id !== this.getPendingPackageStep(PACKAGE_SITES.MERIDIAN)?.id) return false;
+        if (!this.bank?.canAffordShells?.(step.shells)) {
+            window.AudioManager?.play?.('ui_error', { volume: 0.45 });
+            window.dispatchEvent(new CustomEvent('camp-support-denied', {
+                detail: { campId: camp.id, campLabel: camp.label, cost: step.shells }
+            }));
+            return true;
+        }
+        this.bank.spendShells(step.shells);
+        return this.advanceObjectivePackage(step);
+    }
+
+    advanceObjectivePackage(step) {
+        const result = completePackageStep(this.getObjectivePackageState(), step.id);
+        if (!result.advanced) return false;
+        this.objectivePackageState = result.state;
+        window.AudioManager?.play?.('ui_scan_ping', { volume: 0.5, playbackRate: 1.1 });
+        window.dispatchEvent(new CustomEvent('objective-package-step', {
+            detail: { packageId: result.state.packageId, stepId: step.id, completed: result.completedNow }
+        }));
+        if (result.completedNow) this.applyObjectivePackageConsequence();
+        this.persistCampaignWorld?.();
+        return true;
+    }
+
+    applyObjectivePackageConsequence() {
+        const consequence = activePackageConsequence(this.getObjectivePackageState());
+        if (consequence?.kind === 'meridian_strained') {
+            this.act2?.adjustCampBond?.('camp_meridian', consequence.bond ?? 1);
+            const stored = normalizeOvernightState(this.overnightState);
+            if ((stored.camps.camp_meridian?.condition ?? 'secure') === 'secure') {
+                stored.camps.camp_meridian = { ...(stored.camps.camp_meridian ?? { neglectNights: 0 }), condition: 'strained' };
+                this.overnightState = stored;
+                this.persistOvernightState?.();
+                this.applyCampOvernightConditions?.();
+            }
+        }
+        window.dispatchEvent(new CustomEvent('objective-package-complete', {
+            detail: { packageId: this.objectivePackageState.packageId, consequence: consequence?.kind ?? null }
+        }));
+        return consequence;
+    }
+
+    getThinAirMultiplier() {
+        const consequence = activePackageConsequence(this.objectivePackageState);
+        if (consequence?.kind !== 'thin_air_room' || !this.player) return 1;
+        const reservation = this.worldPlan?.reservations?.find((entry) => entry.id === 'goal:o2Bubble:objective');
+        if (!Number.isInteger(reservation?.chunkX)) return 1;
+        const inRoomChunk = Math.floor(this.player.position.x / this.chunkSize) === reservation.chunkX
+            && Math.floor(this.player.position.z / this.chunkSize) === reservation.chunkY;
+        return inRoomChunk ? consequence.o2DrainMultiplier : 1;
+    }
+
+    isRerouteBlackoutChunk(chunkKey) {
+        if (activePackageConsequence(this.objectivePackageState)?.kind !== 'ring1_blackout' || !this.worldPlan) return false;
+        const ring1 = planGateChallenges(this.worldPlan).find((entry) => entry.ring === 1);
+        return Boolean(ring1?.approachChunkKeys.includes(chunkKey));
+    }
+
     getTerritoryRoomCenter(siteId, beatKey) {
         if (!this.authoredWorldTiles) return null;
         const plan = this.ensureAuthoredWorldPlan?.() ?? this.worldPlan;
@@ -20508,6 +20704,12 @@ export class ThreeGame {
         if (resetRunState) {
             this.syncWorldTransformations?.();
             this.announceExpeditionBriefing();
+            const pending = this.getPendingPackageStep?.();
+            if (pending && this.performanceProfile === 'gameplay') {
+                window.dispatchEvent(new CustomEvent('objective-package-briefing', {
+                    detail: { packageId: this.objectivePackageState.packageId, stepId: pending.id }
+                }));
+            }
         }
         window.dispatchEvent(new CustomEvent('player-respawned', {
             detail: {
@@ -21455,7 +21657,9 @@ export class ThreeGame {
                 // THIN AIR run modifier: reserves are poor beyond the ship field.
                 * (this.getRunCardEffects().survival?.o2DrainMult ?? (this.currentRunModifier?.id === 'thin_air' ? 1.4 : 1.0))
                 // Overnight hive creep: spore-thick air.
-                * (this._creepHere?.o2DrainMultiplier ?? 1.0);
+                * (this._creepHere?.o2DrainMultiplier ?? 1.0)
+                // A stripped O2 room (regulator recovery) never breathes right again.
+                * (this.getThinAirMultiplier?.() ?? 1.0);
             if (typeof window !== 'undefined' && window.npcDialogueTreeManager?.activePerks?.has?.('tallows_seductive_warmth')) {
                 drainRate *= 0.80; // Seductive warmth protects against freezing drain
             }
@@ -22500,9 +22704,14 @@ export class ThreeGame {
             this._expeditionSparking = atmosphere.sparking;
         }
         // A blacked-out gate approach: the grid that lit it is dead.
-        const blackout = this.player && this.getGateChallengeForChunk?.(
-            `${Math.floor(this.player.position.x / this.chunkSize)},${Math.floor(this.player.position.z / this.chunkSize)}`
-        )?.challenge === GATE_CHALLENGES.BLACKOUT;
+        const playerChunkKey = this.player
+            ? `${Math.floor(this.player.position.x / this.chunkSize)},${Math.floor(this.player.position.z / this.chunkSize)}`
+            : null;
+        const blackout = Boolean(playerChunkKey) && (
+            this.getGateChallengeForChunk?.(playerChunkKey)?.challenge === GATE_CHALLENGES.BLACKOUT
+            // Rerouted ring power: the ring-1 approach stays dark for good.
+            || Boolean(this.isRerouteBlackoutChunk?.(playerChunkKey))
+        );
         if (blackout) {
             this.ambientLight.intensity *= GATE_CHALLENGE_TUNING.blackoutLightMultiplier;
             this.directionalLight.intensity *= GATE_CHALLENGE_TUNING.blackoutLightMultiplier;
@@ -35035,7 +35244,8 @@ export class ThreeGame {
                 seed: this.worldPlan?.seed ?? null,
                 version: this.worldPlan?.version ?? null,
                 completedMissionIds: [...(this.completedRingCrossingMissionIds ?? [])]
-            }
+            },
+            objectivePackage: this.objectivePackageState ?? null
         };
     }
 
@@ -35063,6 +35273,9 @@ export class ThreeGame {
         if (raw.ringCrossings) {
             this.ringCrossingState = raw.ringCrossings;
         }
+        // Normalized lazily against the world seed (getObjectivePackageState).
+        this._restoredObjectivePackage = raw.objectivePackage ?? null;
+        this.objectivePackageState = null;
         if (raw.authoredWorld) {
             // Saved data must never override a runtime rollback. A currently
             // enabled runtime may resume an enabled save, while an instance

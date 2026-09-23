@@ -6472,6 +6472,32 @@ window.addEventListener('gate-challenge', (event) => {
     if (key && isGameplayHudActive()) showBiomePrompt(t(key, { ring }));
 });
 
+const O2_PACKAGE_KEYS = Object.freeze({
+    regulator_recovery: { briefing: 'ui.expedition.o2_package.briefing.regulator_recovery', complete: 'ui.expedition.o2_package.complete.regulator_recovery' },
+    power_reroute: { briefing: 'ui.expedition.o2_package.briefing.power_reroute', complete: 'ui.expedition.o2_package.complete.power_reroute' },
+    camp_supply: { briefing: 'ui.expedition.o2_package.briefing.camp_supply', complete: 'ui.expedition.o2_package.complete.camp_supply' }
+});
+
+window.addEventListener('objective-package-briefing', (event) => {
+    const keys = O2_PACKAGE_KEYS[event?.detail?.packageId];
+    if (!keys) return;
+    // Deploy-time, like the expedition briefing: wait for the HUD to be live.
+    const startedAt = Date.now();
+    const present = () => {
+        if (isGameplayHudActive() && !document.body.classList.contains('mission-intro-active')) {
+            showBiomePrompt(t(keys.briefing));
+        } else if (Date.now() - startedAt < EXPEDITION_BRIEFING_WAIT_MS) {
+            setTimeout(present, 500);
+        }
+    };
+    present();
+});
+
+window.addEventListener('objective-package-complete', (event) => {
+    const keys = O2_PACKAGE_KEYS[event?.detail?.packageId];
+    if (keys && isGameplayHudActive()) showBiomePrompt(t(keys.complete));
+});
+
 window.addEventListener('creep-contact', (event) => {
     if (!isGameplayHudActive()) return;
     const burns = Number(event?.detail?.rings) >= 3;

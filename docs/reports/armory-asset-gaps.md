@@ -1,6 +1,6 @@
 # Armory Asset Gaps
 
-Status: generated | Updated: 2026-09-22
+Status: generated | Updated: 2026-09-23
 | Regenerate: `npm run audit:armory-assets`
 
 Uses the same item lists and preview resolver as the Armory. Model paths are

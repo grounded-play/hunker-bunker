@@ -1554,6 +1554,18 @@
         "creep_contact": "> HIVE CREEP UNDERFOOT — MOVEMENT SLOWED, O₂ DRAINING FASTER",
         "creep_burn": "> HIVE CREEP AT FULL SPREAD — IT BURNS. GET OFF IT.",
         "camp_shored_up": "> {site} DEFENCES SHORED UP"
+      },
+      "o2_package": {
+        "briefing": {
+          "regulator_recovery": "> O₂ OPTION: STRIP THE RING-1 O₂ ROOM'S REGULATOR AND THE BUBBLE COSTS HALF. THE ROOM WON'T BREATHE RIGHT AFTER.",
+          "power_reroute": "> O₂ OPTION: REROUTE RING POWER AT THE GATE CONSOLE, THEN RESTART THE O₂ ROOM. BUBBLE FREE — THE GATE APPROACH GOES DARK FOR GOOD.",
+          "camp_supply": "> O₂ OPTION: MERIDIAN WILL SELL ITS OWN REGULATOR. HALF-COST BUBBLE, A STRONGER BOND — AND A CAMP LEFT SHORT."
+        },
+        "complete": {
+          "regulator_recovery": "> REGULATOR RECOVERED — O₂ BUBBLE AT HALF COST. THE O₂ ROOM IS RUNNING ON THIN AIR NOW.",
+          "power_reroute": "> RING POWER REROUTED — O₂ BUBBLE BUILD IS FREE. THE RING-1 GATE APPROACH HAS GONE DARK.",
+          "camp_supply": "> MERIDIAN'S REGULATOR IS YOURS — O₂ BUBBLE AT HALF COST. MERIDIAN IS STRAINED WITHOUT IT."
+        }
       }
     }
   },

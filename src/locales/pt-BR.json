@@ -1554,6 +1554,18 @@
         "creep_contact": "> CRESCIMENTO DA COLMEIA SOB OS PÉS — MOVIMENTO LENTO, O₂ CAINDO MAIS RÁPIDO",
         "creep_burn": "> CRESCIMENTO DA COLMEIA NO MÁXIMO — ELE QUEIMA. SAIA DAÍ.",
         "camp_shored_up": "> {site}: DEFESAS REFORÇADAS"
+      },
+      "o2_package": {
+        "briefing": {
+          "regulator_recovery": "> OPÇÃO DE O₂: RETIRE O REGULADOR DA SALA DE O₂ DO ANEL 1 E A BOLHA CUSTA METADE. A SALA NÃO VAI RESPIRAR DIREITO DEPOIS.",
+          "power_reroute": "> OPÇÃO DE O₂: DESVIE A ENERGIA DO ANEL NO CONSOLE DO PORTÃO E REINICIE A SALA DE O₂. BOLHA GRÁTIS — O ACESSO AO PORTÃO FICA ESCURO PARA SEMPRE.",
+          "camp_supply": "> OPÇÃO DE O₂: MERIDIAN VAI VENDER O PRÓPRIO REGULADOR. BOLHA PELA METADE, UM VÍNCULO MAIS FORTE — E UM ACAMPAMENTO EM FALTA."
+        },
+        "complete": {
+          "regulator_recovery": "> REGULADOR RECUPERADO — BOLHA DE O₂ PELA METADE. A SALA DE O₂ AGORA FUNCIONA COM AR RAREFEITO.",
+          "power_reroute": "> ENERGIA DO ANEL DESVIADA — BOLHA DE O₂ GRÁTIS. O ACESSO AO PORTÃO DO ANEL 1 APAGOU.",
+          "camp_supply": "> O REGULADOR DE MERIDIAN É SEU — BOLHA DE O₂ PELA METADE. MERIDIAN FICA SOB PRESSÃO SEM ELE."
+        }
       }
     }
   },

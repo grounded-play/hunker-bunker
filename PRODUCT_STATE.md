@@ -28,7 +28,7 @@ Status vocabulary:
 
 | Area | Current truth | Remaining acceptance or constraint |
 | --- | --- | --- |
-| Core expedition | Act 1 & 2 playable; seeded expedition system, multi-room camp/hive compounds, physical world transformations (canyon bridge, camp turrets, bio-conduits), 10 motion endings, faction state, and Depth Contract wired end to end. | A recorded 35–45 minute new-player Proof Run remains open. Objective packages per ship goal are still the same primary/alternative/fallback trio (`ringManifest.js`). Crossings are proven walkable on the stamped grid across 12 seeds (`src/crossingNavigation.test.js`); generation-1 campaigns keep their geography, so most of their gates are locked by the ring boundary rather than the door. |
+| Core expedition | Act 1 & 2 playable; seeded expedition system, multi-room camp/hive compounds, physical world transformations (canyon bridge, camp turrets, bio-conduits), 10 motion endings, faction state, and Depth Contract wired end to end. | A recorded 35–45 minute new-player Proof Run remains open. The first ship goal (O₂) has three campaign-rolled optional packages with lasting consequences (`src/objectivePackages.js`); hull, radar and reactor still use the single primary/alternative/fallback trio (`ringManifest.js`). Crossings are proven walkable on the stamped grid across 12 seeds (`src/crossingNavigation.test.js`); generation-1 campaigns keep their geography, so most of their gates are locked by the ring boundary rather than the door. |
 | Depth Contract | Ring pressure, O₂ deltas, salvage multipliers, crossing ritual, and director aggression are implemented and tested. | Elite promotion is connected through `eliteEnemies.js`; loot distinguishes promoted elites from wounded enrage. Human comprehension, elite audio and balance remain open. |
 | Relics | All 8 transformative relics are runtime-wired and tested. | Build diversity and exploit/balance playtesting remain open. |
 | Co-op | Host-authoritative enemy sync, roster/loadout sync, ready-up, reconnect, and host failover are code-backed. | Two real Steam accounts completing one production expedition remains open. |
@@ -47,7 +47,7 @@ Status vocabulary:
 | Mayor Tina | Hostile lifecycle wired with warning hit, cup removal, grounded actor chase with attack cooldown, and clean reset. | Packaged visual sign-off remains open. |
 | Retail asset budget | Budget raised from 2705 MiB to 2725 MiB in Sprint 40 to accommodate Wave 2 radio takes, persona art, and ending cinematics; presubmit check passes cleanly. | Web/source audit does not certify Steam packaging or clear external actor rights. |
 | Presentation | Phase A visual overhaul landed: AgX tone mapping, PMREM deep space reflections on 94 PBR materials, and selective bloom. Upgraded tilt-shift bokeh, dynamic shadows, 3D tracers, death bursts, and camera trauma shake. | Phase B surface depth (derived normal/roughness maps) and hardware visual sign-off remain open. |
-| Automated suite | `npm test` passes **3,939 tests across 427 files** as of 2026-09-23; 9/9 Playwright E2E browser tests pass; lint (0 errors), presubmit, and production web/media build pass cleanly. | Hardware-only behavior and a full expedition are not covered by this count. |
+| Automated suite | `npm test` passes **3,948 tests across 429 files** as of 2026-09-23; 9/9 Playwright E2E browser tests pass; lint (0 errors), presubmit, and production web/media build pass cleanly. | Hardware-only behavior and a full expedition are not covered by this count. |
 
 ## Current milestone
 
