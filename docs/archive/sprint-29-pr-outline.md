@@ -35,9 +35,9 @@ Sprint 29 advances Hunker Bunker on the `dev/sprint-29` branch, delivering `v2.3
 - [ ] Register new models in `world3dOverlay.js`, `enemy3dOverlay.js`, and `armoryScene.js`.
 
 ### Wanderers & Companions
-- [ ] Expand quest objectives for all 6 Wanderer archetypes in `src/wandererSystem.js`.
+- [x] Expand quest objectives for all 6 Wanderer archetypes in `src/wandererSystem.js`.
 - [ ] Add distinct companion voice/SFX callouts on combat assist actions.
-- [ ] Unit tests for multi-stage companion progression.
+- [x] Unit tests for multi-stage companion progression.
 
 ### Steam Deck & Performance
 - [ ] Run packaged Electron profiling for 60 FPS frame pacing.
