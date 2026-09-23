@@ -7146,6 +7146,50 @@ export class ThreeGame {
         return mesh;
     }
 
+    /**
+     * Terrain height plus whether it is real.
+     *
+     * getTerrainHeightAt() cannot distinguish "the ground here is GROUND" from
+     * "this chunk has not streamed in yet, have a default" -- both return the
+     * same number. Anything that ANCHORS a set piece to the ground needs that
+     * difference, or it will bury the piece at the default height and never
+     * learn better.
+     */
+    sampleTerrainHeight(worldX, worldZ) {
+        const height = this.getTerrainHeightAt(worldX, worldZ);
+        return { height, anchored: this.hasLoadedTerrainAt(worldX, worldZ) };
+    }
+
+    hasLoadedTerrainAt(worldX, worldZ) {
+        if (!Number.isFinite(worldX) || !Number.isFinite(worldZ)) return false;
+        const chunkX = Math.floor(Math.round(worldX) / this.chunkSize);
+        const chunkY = Math.floor(Math.round(worldZ) / this.chunkSize);
+        const chunk = this.chunkCache?.get(`${chunkX},${chunkY}`);
+        return Boolean(chunk && Array.isArray(chunk.heightmap) && chunk.heightmap.length > 0);
+    }
+
+    /**
+     * Re-anchor any revealed camp that was placed before its chunk existed.
+     *
+     * Camps are revealed the moment the story says so -- after the first boss,
+     * from across the map -- which is long before their chunk streams in. The
+     * height sample fell back to GROUND, so a camp sitting on raised terrain
+     * was left buried under the floor: present in the objective list, invisible
+     * in the world.
+     */
+    reanchorUnanchoredCamps() {
+        let reanchored = 0;
+        for (const camp of this.camps ?? []) {
+            if (!camp?.revealed || camp._groundAnchored) continue;
+            const pos = camp.getPosition?.() ?? camp.pos ?? null;
+            if (!pos || !this.hasLoadedTerrainAt(pos.x, pos.z)) continue;
+            camp.reveal(pos.x, pos.z, this.getTerrainHeightAt(pos.x, pos.z));
+            camp._groundAnchored = true;
+            reanchored += 1;
+        }
+        return reanchored;
+    }
+
     getTerrainHeightAt(worldX, worldZ) {
         if (!Number.isFinite(worldX) || !Number.isFinite(worldZ)) {
             return TERRAIN_HEIGHTS.GROUND;
@@ -14260,6 +14304,7 @@ export class ThreeGame {
             }
         }
 
+        this.reanchorUnanchoredCamps?.();
         this.updateCampCivilians(delta);
         this.updateCampTurrets(delta, phase);
         this.updateCampPrompt(phase);
@@ -15016,7 +15061,11 @@ export class ThreeGame {
             // Camps are full set pieces, not floating overlays. Anchor the
             // foundation to the sampled terrain after validating its entire
             // nine-unit footprint above.
-            camp.reveal(x, z, this.getTerrainHeightAt?.(x, z) ?? 0);
+            // Remember whether this height came from real terrain. If it did
+            // not, reanchorUnanchoredCamps() fixes it once the chunk arrives.
+            const ground = this.sampleTerrainHeight?.(x, z) ?? { height: 0, anchored: false };
+            camp.reveal(x, z, ground.height);
+            camp._groundAnchored = ground.anchored;
             camp.setLevel(record.level);
             camp.setAided(record.aided);
             camp.setStatus(record.status);
