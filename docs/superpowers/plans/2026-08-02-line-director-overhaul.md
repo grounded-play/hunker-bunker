@@ -1,6 +1,6 @@
 # Ambient Line Director Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
 
 **Goal:** Replace random, uncoordinated HUD commentary (Director ambient taunts + Mothership reactive event lines) with a single context-scored arbiter, so lines only fire when they actually match the player's real depth/danger/objective state, and the two systems stop talking over each other.
 
@@ -42,7 +42,7 @@
 - Produces (for the context snapshot Task 3 will build): `{ register?: 'corporate'|'glitched'|'reverent', depthTier?: number, danger?: number (0..1), objectiveSource?: string|null }`.
 - Consumes: nothing from other tasks.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Create `src/lineDirector.test.js`:
 
@@ -158,12 +158,12 @@ describe('LineDirector', () => {
 });
 ```
 
-- [ ] **Step 2: Run the tests to verify they fail**
+- [x] **Step 2: Run the tests to verify they fail**
 
 Run: `npx vitest run src/lineDirector.test.js`
 Expected: FAIL — `Cannot find module './lineDirector.js'` (file doesn't exist yet).
 
-- [ ] **Step 3: Implement `src/lineDirector.js`**
+- [x] **Step 3: Implement `src/lineDirector.js`**
 
 ```js
 // Context-scored arbiter for ambient/reactive HUD commentary. Given a pool
@@ -286,12 +286,12 @@ export class LineDirector {
 }
 ```
 
-- [ ] **Step 4: Run the tests to verify they pass**
+- [x] **Step 4: Run the tests to verify they pass**
 
 Run: `npx vitest run src/lineDirector.test.js`
 Expected: PASS, all 12 tests green. (This exact implementation was prototyped and verified against this exact test list before being written into this plan.)
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/lineDirector.js src/lineDirector.test.js
@@ -310,7 +310,7 @@ git commit -m "feat: add context-scored LineDirector arbiter for HUD commentary"
 - Consumes: the pool entry shape produced by Task 1.
 - Produces: `export const DIRECTOR_AMBIENT_LINES` (array), `export const MOTHERSHIP_REACTIVE_LINES` (array) — both consumed by Task 3 and Task 4 respectively.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Create `src/data/lineDirectorPools.test.js`:
 
@@ -379,12 +379,12 @@ describe('MOTHERSHIP_REACTIVE_LINES', () => {
 });
 ```
 
-- [ ] **Step 2: Run the tests to verify they fail**
+- [x] **Step 2: Run the tests to verify they fail**
 
 Run: `npx vitest run src/data/lineDirectorPools.test.js`
 Expected: FAIL — `Cannot find module './lineDirectorPools.js'`.
 
-- [ ] **Step 3: Implement `src/data/lineDirectorPools.js`**
+- [x] **Step 3: Implement `src/data/lineDirectorPools.js`**
 
 This copies the existing line text verbatim from `src/data/dialogueLines.js`'s `director` pools (all 3 registers, unchanged as noted in Global Constraints) and from `main.js`'s `fireMothershipReactiveLine` `lines` object, adding tags. `director_depth_disapproval` and its glitched/reverent counterparts get `depthTier: { min: 2 }` since they're the ones referencing depth explicitly — this is the direct fix for the reported "gone too deep" line firing regardless of actual depth.
 
@@ -454,12 +454,12 @@ export const MOTHERSHIP_REACTIVE_LINES = Object.freeze([
 
 Note: the original `lines` object in `main.js` did not include a `specimen_notices`-adjacent `first_deposit` trigger comment (that hookup was already dead/no-op — see Task 4 Step 3) but the line text itself (`'SALVAGE RECEIVED. BANK SECURE. CONTINUE OPERATIONS.'`) is preserved here in case a future caller wires up `first_deposit` properly; it is harmless to keep since nothing currently requests it, and `MOTHERSHIP_REACTIVE_LINES`'s integrity tests don't require every id to be actively requested.
 
-- [ ] **Step 4: Run the tests to verify they pass**
+- [x] **Step 4: Run the tests to verify they pass**
 
 Run: `npx vitest run src/data/lineDirectorPools.test.js`
 Expected: PASS, all 6 tests green.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/data/lineDirectorPools.js src/data/lineDirectorPools.test.js
@@ -477,7 +477,7 @@ git commit -m "feat: add tagged line pools for Director ambient and Mothership r
 - Consumes: `LineDirector` from `src/lineDirector.js` (Task 1), `DIRECTOR_AMBIENT_LINES` from `src/data/lineDirectorPools.js` (Task 2), `getSuitRegister` from `src/data/dialogueLines.js` (already exists, exported at `dialogueLines.js:179`).
 - Produces: `this.lineDirector` (instance property, also assigned to `window.lineDirector`), `this.buildLineDirectorContext()` (instance method returning `{ register, depthTier, danger, objectiveSource }`) — consumed by Task 4.
 
-- [ ] **Step 1: Add imports**
+- [x] **Step 1: Add imports**
 
 In `src/threeGame.js`, change line 61:
 
@@ -498,7 +498,7 @@ import { LineDirector } from './lineDirector.js';
 import { DIRECTOR_AMBIENT_LINES } from './data/lineDirectorPools.js';
 ```
 
-- [ ] **Step 2: Instantiate the arbiter in the constructor**
+- [x] **Step 2: Instantiate the arbiter in the constructor**
 
 In `src/threeGame.js`, immediately after line 1144 (`this.bunkerDirector = new BunkerDirector();`), add:
 
@@ -507,7 +507,7 @@ In `src/threeGame.js`, immediately after line 1144 (`this.bunkerDirector = new B
         if (typeof window !== 'undefined') window.lineDirector = this.lineDirector;
 ```
 
-- [ ] **Step 3: Add `buildLineDirectorContext()`**
+- [x] **Step 3: Add `buildLineDirectorContext()`**
 
 Add this method directly after `showBunkerLine` (after line 6102, i.e. right after the closing `}` of `showBunkerLine`):
 
@@ -529,7 +529,7 @@ Add this method directly after `showBunkerLine` (after line 6102, i.e. right aft
     }
 ```
 
-- [ ] **Step 4: Tick the arbiter's clock each frame**
+- [x] **Step 4: Tick the arbiter's clock each frame**
 
 In `updateBunkerDirector` (`src/threeGame.js:4912-4929`), add one line right after the early-return guards:
 
@@ -542,7 +542,7 @@ In `updateBunkerDirector` (`src/threeGame.js:4912-4929`), add one line right aft
         // ...rest of the function is unchanged
 ```
 
-- [ ] **Step 5: Rewire the `patrol` and `taunt` cases**
+- [x] **Step 5: Rewire the `patrol` and `taunt` cases**
 
 In `executeDirectorAction` (`src/threeGame.js:4931-4954`), replace:
 
@@ -608,7 +608,7 @@ with:
 
 Note the `taunt` case no longer falls back to `showBunkerLine('')` — `showBunkerLine` already no-ops on falsy text (`src/threeGame.js:6100`, `if (!text) return;`), so `if (line) this.showBunkerLine(line.text);` is equivalent to the old `?? ''` fallback but skips a pointless empty-text dispatch when nothing was eligible. `getDialogueLine` remains imported and used elsewhere (`terminalChoice` at line 6505, `death` at line 11751) — do not remove that import.
 
-- [ ] **Step 6: Reset the arbiter alongside the Director on respawn**
+- [x] **Step 6: Reset the arbiter alongside the Director on respawn**
 
 In the `resetRunState` block inside `respawnPlayer` (`src/threeGame.js`), directly after line `this.bunkerDirector?.reset();` (line 11855), add:
 
@@ -616,17 +616,17 @@ In the `resetRunState` block inside `respawnPlayer` (`src/threeGame.js`), direct
             this.lineDirector?.reset();
 ```
 
-- [ ] **Step 7: Run the full test suite**
+- [x] **Step 7: Run the full test suite**
 
 Run: `npx vitest run`
 Expected: PASS — all existing tests green, including `src/data/dialogueLines.test.js` (untouched) and the new `src/lineDirector.test.js` / `src/data/lineDirectorPools.test.js` from Tasks 1-2.
 
-- [ ] **Step 8: Manual smoke check**
+- [x] **Step 8: Manual smoke check**
 
 Run: `node --check src/threeGame.js`
 Expected: no syntax errors.
 
-- [ ] **Step 9: Commit**
+- [x] **Step 9: Commit**
 
 ```bash
 git add src/threeGame.js
@@ -644,7 +644,7 @@ git commit -m "feat: route Director ambient taunts through LineDirector"
 - Consumes: `window.lineDirector` and `window.game.buildLineDirectorContext()` (Task 3), `MOTHERSHIP_REACTIVE_LINES` from `src/data/lineDirectorPools.js` (Task 2).
 - Produces: nothing new consumed elsewhere — `fireMothershipReactiveLine(trigger)` keeps its existing call sites and signature unchanged.
 
-- [ ] **Step 1: Add the import**
+- [x] **Step 1: Add the import**
 
 Near the other `./src/data/*` imports at the top of `main.js` (e.g. next to any existing `dialogueLines.js` import, or alongside the other `./src/*` imports around line 2-11), add:
 
@@ -652,7 +652,7 @@ Near the other `./src/data/*` imports at the top of `main.js` (e.g. next to any 
 import { MOTHERSHIP_REACTIVE_LINES } from './src/data/lineDirectorPools.js';
 ```
 
-- [ ] **Step 2: Remove the now-redundant module-level state**
+- [x] **Step 2: Remove the now-redundant module-level state**
 
 Delete these four lines (`main.js:1482-1485`):
 
@@ -665,7 +665,7 @@ const MOTHERSHIP_REACTIVE_CRITICAL = new Set(['hp_critical', 'objective_found', 
 
 (This bookkeeping moves into `LineDirector`'s cooldown/history model via the `once`/`cooldownClass`/`bypassSharedCooldown` tags authored in Task 2.)
 
-- [ ] **Step 3: Remove the dead no-op listener**
+- [x] **Step 3: Remove the dead no-op listener**
 
 Delete this listener (`main.js:4163-4169`) — its body is empty (a comment with no code) and it references the `_mothershipFiredTriggers` Set removed in Step 2:
 
@@ -679,7 +679,7 @@ window.addEventListener('pickup-collected', (event) => {
 });
 ```
 
-- [ ] **Step 4: Rewrite `fireMothershipReactiveLine`**
+- [x] **Step 4: Rewrite `fireMothershipReactiveLine`**
 
 Replace (`main.js:4135-4161`):
 
@@ -725,7 +725,7 @@ function fireMothershipReactiveLine(trigger) {
 
 (`line.text` already carries the `> MOTHERSHIP: ` prefix — it was baked into each pool entry by the `mothershipLine()` helper in Task 2, so the call site no longer needs to add it.)
 
-- [ ] **Step 5: Remove the redundant run-reset lines**
+- [x] **Step 5: Remove the redundant run-reset lines**
 
 The Director/LineDirector reset now happens once, in `threeGame.js`'s `respawnPlayer` (Task 3 Step 6), which already runs on every run-reset (`main.js` calls `window.game?.respawnPlayer?.({ resetRunState: true, ... })` immediately after this block). Delete these two lines (`main.js:3383-3384`):
 
@@ -734,17 +734,17 @@ The Director/LineDirector reset now happens once, in `threeGame.js`'s `respawnPl
         _lastMothershipBroadcastAt = 0;
 ```
 
-- [ ] **Step 6: Run the full test suite**
+- [x] **Step 6: Run the full test suite**
 
 Run: `npx vitest run`
 Expected: PASS — all tests green.
 
-- [ ] **Step 7: Manual smoke check**
+- [x] **Step 7: Manual smoke check**
 
 Run: `node --check main.js`
 Expected: no syntax errors.
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
 git add main.js

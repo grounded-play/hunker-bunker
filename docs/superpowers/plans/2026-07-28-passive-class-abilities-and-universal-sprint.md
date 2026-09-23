@@ -1,6 +1,6 @@
 # Passive Class Abilities & Universal Sprint Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
 
 **Goal:** Replace the per-class, F-key-triggered, cooldown-gated "class ability" (SCOUT sprint burst / TANK brace / ENGINEER reroute) with always-on passives (SCOUT EVASIVE, TANK BULWARK, ENGINEER AUTO-TURRET), and add a standalone hold-to-sprint mechanic usable by every class.
 
@@ -30,7 +30,7 @@
 - Produces: `CLASS_STATS[type]` now has shape `{ moveSpeed, o2DrainMult, pickupMagnetRadius, projectileDamage, passiveName, passiveDescription }` (no more `abilityKey`/`abilityLabel`/`abilityCooldown`/`abilityDuration`/`unlockSkill`).
 - Produces: `resolveClassPassiveStats(playerType)` — reads `this.bank`, returns `{ slowResistMult, reloadSpeedMult, blockChance, tankRegenEnabled, turretInterval, turretFireInterval, turretDuration }`. Called by Task 2 (`_initClassPassives`).
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Create `src/threeGame.classPassives.test.js`:
 
@@ -106,12 +106,12 @@ describe('resolveClassPassiveStats', () => {
 });
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `npx vitest run src/threeGame.classPassives.test.js`
 Expected: FAIL — `resolveClassPassiveStats is not a function`.
 
-- [ ] **Step 3: Replace CLASS_STATS**
+- [x] **Step 3: Replace CLASS_STATS**
 
 Replace `src/threeGame.js:116-120`:
 
@@ -123,7 +123,7 @@ const CLASS_STATS = {
 };
 ```
 
-- [ ] **Step 4: Add `resolveClassPassiveStats()`**
+- [x] **Step 4: Add `resolveClassPassiveStats()`**
 
 Add after `resolveFallDamage()` (near `src/threeGame.js:10862`):
 
@@ -163,12 +163,12 @@ Add after `resolveFallDamage()` (near `src/threeGame.js:10862`):
     }
 ```
 
-- [ ] **Step 5: Run test to verify it passes**
+- [x] **Step 5: Run test to verify it passes**
 
 Run: `npx vitest run src/threeGame.classPassives.test.js`
 Expected: PASS (9 tests).
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add src/threeGame.js src/threeGame.classPassives.test.js
@@ -187,7 +187,7 @@ git commit -m "feat(class): add resolveClassPassiveStats and passive CLASS_STATS
 - Consumes: `CLASS_STATS[type].passiveName/passiveDescription` (Task 1), `resolveClassPassiveStats()` (Task 1).
 - Produces: `this.sprinting` (bool), `updateSprintState(delta)`, `_initClassPassives()` (replaces `_initClassAbility`), `getClassPassiveInfo()` (replaces `getClassAbilityInfo`). Consumed by Task 3/4/5 (`_initClassPassives` is where their runtime timers get reset) and Task 7 (main.js reads `getClassPassiveInfo`).
 
-- [ ] **Step 1: Write the failing sprint test**
+- [x] **Step 1: Write the failing sprint test**
 
 Create `src/threeGame.sprint.test.js`:
 
@@ -269,12 +269,12 @@ describe('setVirtualInputSprint — gamepad/touch hold state', () => {
 });
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `npx vitest run src/threeGame.sprint.test.js`
 Expected: FAIL — `updateSprintState is not a function`.
 
-- [ ] **Step 3: Add sprint state fields to the constructor**
+- [x] **Step 3: Add sprint state fields to the constructor**
 
 In `src/threeGame.js`, right after `this.pickupMagnetRadius = _initialStats.pickupMagnetRadius ?? PICKUP_MAGNET_RADIUS;` (line 727), add:
 
@@ -285,7 +285,7 @@ In `src/threeGame.js`, right after `this.pickupMagnetRadius = _initialStats.pick
         this._wasSprinting = false;
 ```
 
-- [ ] **Step 4: Add `updateSprintState(delta)`**
+- [x] **Step 4: Add `updateSprintState(delta)`**
 
 Add it next to the other `update*` methods (e.g. right before `updateVitals(delta)` at line 11707):
 
@@ -301,12 +301,12 @@ Add it next to the other `update*` methods (e.g. right before `updateVitals(delt
     }
 ```
 
-- [ ] **Step 5: Run test to verify it passes (sprint state + key handling only so far)**
+- [x] **Step 5: Run test to verify it passes (sprint state + key handling only so far)**
 
 Run: `npx vitest run src/threeGame.sprint.test.js`
 Expected: still FAIL on the `setKeyState`/`setVirtualInputSprint` tests — those methods haven't been rewritten yet. Continue to the next steps.
 
-- [ ] **Step 6: Rewrite `setKeyState` and `setVirtualInputSprint`, delete `triggerSprintBurst`**
+- [x] **Step 6: Rewrite `setKeyState` and `setVirtualInputSprint`, delete `triggerSprintBurst`**
 
 Replace `src/threeGame.js:3601-3611` (`setKeyState`):
 
@@ -336,12 +336,12 @@ Replace `src/threeGame.js:3631-3643` (`setVirtualInputSprint` and `triggerSprint
 
 (`triggerSprintBurst` is deleted — nothing else calls it after this task.)
 
-- [ ] **Step 7: Run test to verify it passes**
+- [x] **Step 7: Run test to verify it passes**
 
 Run: `npx vitest run src/threeGame.sprint.test.js`
 Expected: PASS (6 tests).
 
-- [ ] **Step 8: Remove the F-key/gamepad ability trigger and the old classAbility system**
+- [x] **Step 8: Remove the F-key/gamepad ability trigger and the old classAbility system**
 
 Delete the ability keydown block at `src/threeGame.js:3127-3131`:
 
@@ -503,7 +503,7 @@ Replace the call site at `src/threeGame.js:4513`:
 
 (was `this.updateClassAbility(delta);`)
 
-- [ ] **Step 9: Remove the `classAbility.active`-gated dead bonuses**
+- [x] **Step 9: Remove the `classAbility.active`-gated dead bonuses**
 
 In `fireWeaponAtCurrentAim()`, delete (`src/threeGame.js:3546-3548`):
 
@@ -552,7 +552,7 @@ to:
             let refillRate = generatorState.refillRate * refillMult;
 ```
 
-- [ ] **Step 10: Rewire movement/O2 to the renamed sprint multipliers, remove `fortifyActive`**
+- [x] **Step 10: Rewire movement/O2 to the renamed sprint multipliers, remove `fortifyActive`**
 
 In `updatePlayer()`, replace (`src/threeGame.js:11934-11935`):
 
@@ -618,17 +618,17 @@ with:
             this._sprintMoveSpeedMult = Math.max(this._sprintMoveSpeedMult ?? 1, 2.5);
 ```
 
-- [ ] **Step 11: Run the full test suite**
+- [x] **Step 11: Run the full test suite**
 
 Run: `npm test`
 Expected: PASS — no test previously covered `classAbility`/`triggerClassAbility`/`triggerSprintBurst` (confirmed absent from the repo before this plan), so no regressions are expected. `src/threeGame.sprint.test.js` and `src/threeGame.classPassives.test.js` pass.
 
-- [ ] **Step 12: Lint**
+- [x] **Step 12: Lint**
 
 Run: `npx eslint src/threeGame.js src/threeGame.sprint.test.js`
 Expected: no errors.
 
-- [ ] **Step 13: Commit**
+- [x] **Step 13: Commit**
 
 ```bash
 git add src/threeGame.js src/threeGame.sprint.test.js
@@ -647,7 +647,7 @@ git commit -m "feat(class): remove triggered class-ability system, add universal
 - Consumes: `this.slowResistMult`, `this.reloadSpeedMult` (set by `_initClassPassives`/`updatePlayerType` via Task 1+2).
 - Produces: `applyPlayerSlow(duration)` — new shared helper other systems call instead of assigning `this.playerSlowTimer` directly.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Append to `src/threeGame.classPassives.test.js`:
 
@@ -712,12 +712,12 @@ describe('startReload — SCOUT passive reload speed', () => {
 
 Add `beforeEach`/`afterEach`/`describe` to the existing `import` line at the top of the file (change to `import { describe, expect, it, beforeEach, afterEach } from 'vitest';`).
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `npx vitest run src/threeGame.classPassives.test.js`
 Expected: FAIL — `applyPlayerSlow is not a function`; `weaponReloadDuration` undefined.
 
-- [ ] **Step 3: Add `applyPlayerSlow()` and use it at all three slow-inflicting call sites**
+- [x] **Step 3: Add `applyPlayerSlow()` and use it at all three slow-inflicting call sites**
 
 Add near `updateSprintState` in `src/threeGame.js`:
 
@@ -735,7 +735,7 @@ Replace the three direct assignments:
 
 `src/threeGame.js:19111` — `this.playerSlowTimer = 2.5; // Cryosnail slows player on hit` → `this.applyPlayerSlow(2.5); // Cryosnail slows player on hit (SCOUT passive reduces this)`
 
-- [ ] **Step 4: Add `weaponReloadDuration` field and use it in `startReload`/`emitWeaponClipState`**
+- [x] **Step 4: Add `weaponReloadDuration` field and use it in `startReload`/`emitWeaponClipState`**
 
 In the constructor, next to `this.weaponReloadTimer = 0;` (`src/threeGame.js:844`), add:
 
@@ -774,17 +774,17 @@ with:
             : 0;
 ```
 
-- [ ] **Step 5: Run test to verify it passes**
+- [x] **Step 5: Run test to verify it passes**
 
 Run: `npx vitest run src/threeGame.classPassives.test.js`
 Expected: PASS (all tests including the new ones).
 
-- [ ] **Step 6: Run full suite + lint**
+- [x] **Step 6: Run full suite + lint**
 
 Run: `npm test && npx eslint src/threeGame.js src/threeGame.classPassives.test.js`
 Expected: PASS, no lint errors.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add src/threeGame.js src/threeGame.classPassives.test.js
@@ -803,7 +803,7 @@ git commit -m "feat(scout): add EVASIVE passive — slow-resistance and reload s
 - Consumes: `this.blockChance`, `this.tankRegenEnabled` (Task 1/2).
 - Produces: `updateTankRegen(delta)`, called from the main loop next to `updateSprintState`.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Append to `src/threeGame.classPassives.test.js`:
 
@@ -905,12 +905,12 @@ describe('updateTankRegen — TANK passive regeneration', () => {
 });
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `npx vitest run src/threeGame.classPassives.test.js`
 Expected: FAIL — block-chance tests fail (no such check in `takeDamage` yet), `updateTankRegen is not a function`.
 
-- [ ] **Step 3: Add the block-chance check to `takeDamage()`**
+- [x] **Step 3: Add the block-chance check to `takeDamage()`**
 
 In `src/threeGame.js`, right after the existing early-return guards and before `const previousHp = this.playerVitals.hp;` (i.e. immediately after the `if (this.missionState?.status === 'inactive') return;` line), add:
 
@@ -922,7 +922,7 @@ In `src/threeGame.js`, right after the existing early-return guards and before `
         }
 ```
 
-- [ ] **Step 4: Add `updateTankRegen(delta)`**
+- [x] **Step 4: Add `updateTankRegen(delta)`**
 
 Add next to `updateSprintState`:
 
@@ -950,17 +950,17 @@ Wire it into the main loop next to the `updateSprintState` call (`src/threeGame.
         this.updateTankRegen(delta);
 ```
 
-- [ ] **Step 5: Run test to verify it passes**
+- [x] **Step 5: Run test to verify it passes**
 
 Run: `npx vitest run src/threeGame.classPassives.test.js`
 Expected: PASS.
 
-- [ ] **Step 6: Run full suite + lint**
+- [x] **Step 6: Run full suite + lint**
 
 Run: `npm test && npx eslint src/threeGame.js src/threeGame.classPassives.test.js`
 Expected: PASS, no lint errors.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add src/threeGame.js src/threeGame.classPassives.test.js
@@ -979,7 +979,7 @@ git commit -m "feat(tank): add BULWARK passive — block chance and passive rege
 - Consumes: `this.turretInterval`, `this.turretFireInterval`, `this.turretDuration` (Task 1/2), `spawnProjectile({x,z,vx,vz,ttl,damage,radius})` (existing, `isEnemy` defaults false), `isEnemyType(type)` (existing).
 - Produces: `updateEngineerTurret(delta)`, `deployEngineerTurret()`, `despawnEngineerTurret()`, `fireEngineerTurret()`, `findNearestEnemyWithinRange(x, z, range)`. Dispatches `engineer-turret-tick` CustomEvent, consumed by Task 7 (main.js HUD).
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Append to `src/threeGame.classPassives.test.js`:
 
@@ -1103,12 +1103,12 @@ describe('updateEngineerTurret — deploy/despawn cycle', () => {
 });
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `npx vitest run src/threeGame.classPassives.test.js`
 Expected: FAIL — `findNearestEnemyWithinRange`/`fireEngineerTurret`/`updateEngineerTurret`/`deployEngineerTurret`/`despawnEngineerTurret` are not functions.
 
-- [ ] **Step 3: Add the turret constants and runtime fields**
+- [x] **Step 3: Add the turret constants and runtime fields**
 
 Near the other `PROJECTILE_*` constants (`src/threeGame.js:195-198`), add:
 
@@ -1124,7 +1124,7 @@ In the constructor, next to the sprint fields added in Task 2, add:
         this.turretCooldownTimer = 0;
 ```
 
-- [ ] **Step 4: Add `findNearestEnemyWithinRange`, `deployEngineerTurret`, `despawnEngineerTurret`, `fireEngineerTurret`, `updateEngineerTurret`**
+- [x] **Step 4: Add `findNearestEnemyWithinRange`, `deployEngineerTurret`, `despawnEngineerTurret`, `fireEngineerTurret`, `updateEngineerTurret`**
 
 Add these next to `_spawnSprintTrail()`:
 
@@ -1245,17 +1245,17 @@ Wire `updateEngineerTurret` into the main loop next to `updateTankRegen` (`src/t
         this.updateEngineerTurret(delta);
 ```
 
-- [ ] **Step 5: Run test to verify it passes**
+- [x] **Step 5: Run test to verify it passes**
 
 Run: `npx vitest run src/threeGame.classPassives.test.js`
 Expected: PASS.
 
-- [ ] **Step 6: Run full suite + lint**
+- [x] **Step 6: Run full suite + lint**
 
 Run: `npm test && npx eslint src/threeGame.js src/threeGame.classPassives.test.js`
 Expected: PASS, no lint errors.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add src/threeGame.js src/threeGame.classPassives.test.js
@@ -1272,7 +1272,7 @@ git commit -m "feat(engineer): add AUTO-TURRET passive"
 **Interfaces:**
 - Consumes: nothing new — `id`/`cost`/`prereqs`/`prereqMode`/`requiredGoal`/`requiredO2Level`/`row`/`col` are unchanged; only `label`/`desc` strings change to match the values `resolveClassPassiveStats()` (Task 1) actually implements.
 
-- [ ] **Step 1: Update SCOUT nodes**
+- [x] **Step 1: Update SCOUT nodes**
 
 In `src/bank.js`, replace the three SCOUT special-tree nodes' `label`/`desc` (ids/costs/prereqs/rows unchanged):
 
@@ -1292,7 +1292,7 @@ In `src/bank.js`, replace the three SCOUT special-tree nodes' `label`/`desc` (id
             desc: 'EVASIVE passive fully negates enemy slow/freeze effects.',
 ```
 
-- [ ] **Step 2: Update TANK nodes**
+- [x] **Step 2: Update TANK nodes**
 
 `tank_special_unlock` (`src/bank.js:94-102`):
 ```js
@@ -1310,7 +1310,7 @@ In `src/bank.js`, replace the three SCOUT special-tree nodes' `label`/`desc` (id
             desc: 'Passively regenerate +1 heart every 60s while below max suit integrity.',
 ```
 
-- [ ] **Step 3: Update ENGINEER nodes**
+- [x] **Step 3: Update ENGINEER nodes**
 
 `engineer_special_unlock` (`src/bank.js:150-158`):
 ```js
@@ -1328,17 +1328,17 @@ In `src/bank.js`, replace the three SCOUT special-tree nodes' `label`/`desc` (id
             desc: 'AUTO-TURRET redeploy cooldown reduced to 15s (from 20s).',
 ```
 
-- [ ] **Step 4: Run the skill tree nav test**
+- [x] **Step 4: Run the skill tree nav test**
 
 Run: `npx vitest run src/threeGame.skillTreeNav.test.js`
 Expected: PASS (this test covers tree navigation/structure, not label text, so it should be unaffected — confirms `id`/`prereqs`/`row`/`col` weren't accidentally changed).
 
-- [ ] **Step 5: Lint**
+- [x] **Step 5: Lint**
 
 Run: `npx eslint src/bank.js`
 Expected: no errors.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add src/bank.js
@@ -1357,7 +1357,7 @@ git commit -m "docs(skilltree): relabel class-special nodes as passive-strength 
 **Interfaces:**
 - Consumes: `window.game.getClassPassiveInfo()` (Task 2), `engineer-turret-tick` CustomEvent (Task 5), `window.game.playerType`.
 
-- [ ] **Step 1: Fix gamepad sprint to be hold-based, remove the dead ability trigger**
+- [x] **Step 1: Fix gamepad sprint to be hold-based, remove the dead ability trigger**
 
 In `handleSteamGameplayInput()`, replace (`main.js:890-901`):
 
@@ -1390,7 +1390,7 @@ with:
 
 Remove the now-unused `ability: Boolean(controller.ability),` line from the `updateControllerInputMemory` call (`main.js:908`).
 
-- [ ] **Step 2: Remove the old ability HUD event listeners and pointerdown trigger**
+- [x] **Step 2: Remove the old ability HUD event listeners and pointerdown trigger**
 
 Delete the pointerdown handler (`main.js:4281-4284`):
 
@@ -1403,7 +1403,7 @@ document.getElementById('class-ability-panel')?.addEventListener('pointerdown', 
 
 Delete the three listeners `class-ability-activated`, `class-ability-ended`, `ability-cooldown-tick` (`main.js:4291-4329`).
 
-- [ ] **Step 3: Add the `engineer-turret-tick` listener**
+- [x] **Step 3: Add the `engineer-turret-tick` listener**
 
 Add in their place:
 
@@ -1428,7 +1428,7 @@ window.addEventListener('engineer-turret-tick', (event) => {
 });
 ```
 
-- [ ] **Step 4: Rewrite `syncAbilityPanelLabel` for the static passive readout**
+- [x] **Step 4: Rewrite `syncAbilityPanelLabel` for the static passive readout**
 
 Replace `syncAbilityPanelLabel()` (`main.js:4348-4364`):
 
@@ -1451,7 +1451,7 @@ function syncAbilityPanelLabel() {
 }
 ```
 
-- [ ] **Step 5: Update index.html default markup**
+- [x] **Step 5: Update index.html default markup**
 
 In `index.html:746-751`, remove the now-inaccurate default title and text:
 
@@ -1467,7 +1467,7 @@ In `index.html:746-751`, remove the now-inaccurate default title and text:
 
 (Removed the `role="button"`-implying `title="Sprint Burst [F]"` attribute since the panel is no longer clickable; `role="button"`/`tabindex="-1"` left as-is since they don't functionally matter once there's no pointerdown handler, and removing them isn't required by the spec.)
 
-- [ ] **Step 6: CSS — static-passive bar hiding, remove dead ability-active-* rules**
+- [x] **Step 6: CSS — static-passive bar hiding, remove dead ability-active-* rules**
 
 In `style.css`, replace the locked-state rules at `style.css:6200-6216` with a static-passive rule (same selector nesting style):
 
@@ -1479,16 +1479,16 @@ In `style.css`, replace the locked-state rules at `style.css:6200-6216` with a s
 
 Delete the three dead viewport rules at `style.css:9899-9929` (`#game-viewport.ability-active-sprint::after`, `#game-viewport.ability-active-fortify::after`, `#game-viewport.ability-active-overclock::after`) — nothing dispatches `class-ability-activated`/`ability-active-*` classes anymore after Task 2.
 
-- [ ] **Step 7: Manual smoke test**
+- [x] **Step 7: Manual smoke test**
 
 Run the dev server and, in the browser: switch between SCOUT/TANK/ENGINEER in the class select, confirm the bottom-HUD panel shows EVASIVE/BULWARK/AUTO-TURRET (hover shows the description tooltip); confirm the bar-track is hidden for SCOUT/TANK and animates (cooling → ready → active → cooling) for ENGINEER as a turret deploys; hold Shift/gamepad-sprint and confirm the player moves faster with a dust trail and faster O2 drain, for all three classes; release Shift and confirm speed/drain return to normal.
 
-- [ ] **Step 8: Run full suite + lint**
+- [x] **Step 8: Run full suite + lint**
 
 Run: `npm test && npx eslint main.js`
 Expected: PASS, no lint errors.
 
-- [ ] **Step 9: Commit**
+- [x] **Step 9: Commit**
 
 ```bash
 git add main.js index.html style.css
@@ -1501,21 +1501,21 @@ git commit -m "feat(hud): repurpose ability panel as passive readout, wire turre
 
 **Files:** none (verification only)
 
-- [ ] **Step 1: Run the full test suite**
+- [x] **Step 1: Run the full test suite**
 
 Run: `npm test`
 Expected: all suites pass, including every new/modified file from Tasks 1-7.
 
-- [ ] **Step 2: Run lint across all touched files**
+- [x] **Step 2: Run lint across all touched files**
 
 Run: `npx eslint src/threeGame.js src/bank.js main.js src/threeGame.sprint.test.js src/threeGame.classPassives.test.js`
 Expected: no errors.
 
-- [ ] **Step 3: Grep-verify no dangling references to the removed system**
+- [x] **Step 3: Grep-verify no dangling references to the removed system**
 
 Run: `grep -rn "classAbility\|triggerClassAbility\|triggerSprintBurst\|abilityKey\|abilityLabel\|abilityCooldown\|abilityDuration\|isSpecialAbilityUnlocked\|getClassAbilityInfo\|class-ability-activated\|class-ability-ended\|ability-cooldown-tick\|ability-active-" src/threeGame.js main.js index.html style.css src/bank.js`
 Expected: no matches (confirms full removal — everything left is intentionally-named new code like `class-ability-panel` DOM id, which is kept per the design's "repurpose the HUD slot" decision).
 
-- [ ] **Step 4: Report results to the user**
+- [x] **Step 4: Report results to the user**
 
 Summarize: tests passing, lint clean, grep clean, manual smoke test outcome from Task 7 Step 7.

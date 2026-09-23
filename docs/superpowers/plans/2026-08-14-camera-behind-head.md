@@ -1,6 +1,6 @@
 # Behind-the-Head Orbit Camera Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
 
 **Goal:** Replace the fixed isometric gameplay camera with an over-the-shoulder
 camera that orbits to stay behind the player's facing direction, driven by a
@@ -71,7 +71,7 @@ Playwright (`tests/e2e/*.spec.js`).
 **Interfaces:**
 - Produces: `wrapAngle(angle): number`, `stepAngleTowards(current, target, rate, delta): number`, `planarBasisFromOffsetAzimuth(azimuth): { forward: {x,y}, right: {x,y} }`, `aimVectorFromYaw(yaw): {x, z}` — all consumed by Task 2+ in `threeGame.js`.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 ```js
 // src/cameraYaw.test.js
@@ -140,12 +140,12 @@ describe('aimVectorFromYaw', () => {
 });
 ```
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 Run: `npx vitest run src/cameraYaw.test.js`
 Expected: FAIL — `Cannot find module './cameraYaw.js'`
 
-- [ ] **Step 3: Write the implementation**
+- [x] **Step 3: Write the implementation**
 
 ```js
 // src/cameraYaw.js
@@ -176,12 +176,12 @@ export function aimVectorFromYaw(yaw) {
 }
 ```
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 
 Run: `npx vitest run src/cameraYaw.test.js`
 Expected: PASS (all 8 tests)
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/cameraYaw.js src/cameraYaw.test.js
@@ -200,7 +200,7 @@ git commit -m "feat: add pure yaw/basis math for the orbit camera"
 - Consumes: `wrapAngle`, `planarBasisFromOffsetAzimuth`, `aimVectorFromYaw` from `./cameraYaw.js` (Task 1).
 - Produces: `this.facingYaw` (number, radians), `this.cameraAzimuth` (number, radians), `this.cameraOrbitRadius` (number), `this.facingPlanarForward`/`this.facingPlanarRight` (`THREE.Vector2`), `this.updateFacingYaw(yaw)` (method) — consumed by Task 3 (camera), Task 4 (movement/facing row), Task 5 (mouse), Task 7 (gamepad).
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 ```js
 // src/threeGame.facingYaw.test.js
@@ -243,12 +243,12 @@ describe('updateFacingYaw', () => {
 });
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `npx vitest run src/threeGame.facingYaw.test.js`
 Expected: FAIL — `game.updateFacingYaw is not a function` (`ThreeGame.prototype.updateFacingYaw` is undefined)
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 Add the import near the top of `src/threeGame.js`, immediately after the existing `import { assetUrl } from './assetUrl.js';` line:
 
@@ -310,17 +310,17 @@ Add the new method anywhere among the other `updateAimFromClient`-adjacent metho
     }
 ```
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `npx vitest run src/threeGame.facingYaw.test.js`
 Expected: PASS (both tests)
 
-- [ ] **Step 5: Run the full unit suite to check nothing else broke**
+- [x] **Step 5: Run the full unit suite to check nothing else broke**
 
 Run: `npx vitest run`
 Expected: PASS. (`getFacingRow` still reads `cameraPlanarRight/Forward` at this point — unchanged until Task 4 — so this is expected to be a no-op for existing tests.)
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add src/threeGame.js src/threeGame.facingYaw.test.js
@@ -339,7 +339,7 @@ git commit -m "feat: add facingYaw state driving aim direction and facing basis"
 - Consumes: `stepAngleTowards`, `planarBasisFromOffsetAzimuth`, `wrapAngle` from `./cameraYaw.js` (Task 1); `this.facingYaw`, `this.cameraAzimuth`, `this.cameraOrbitRadius` (Task 2).
 - Produces: `this.cameraAzimuth` now updates every frame; `this.cameraOffset`/`this.cameraPlanarForward`/`this.cameraPlanarRight` now track it. Nothing outside this task reads a new symbol.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 At the top of `src/threeGame.facingYaw.test.js`, add two more imports to the existing import block so it reads:
 
@@ -422,12 +422,12 @@ describe('snapCameraToPlayer orbit', () => {
 });
 ```
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 Run: `npx vitest run src/threeGame.facingYaw.test.js`
 Expected: FAIL — `cameraAzimuth` stays at its initial value (updateCamera doesn't touch it yet).
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 First, add `stepAngleTowards` to the `cameraYaw.js` import Task 2 added near the top of `src/threeGame.js` (it currently reads `import { wrapAngle, planarBasisFromOffsetAzimuth, aimVectorFromYaw } from './cameraYaw.js';` — add `stepAngleTowards` to that list). Then add `const CAMERA_ROT_SPEED = 4.0;` on its own line immediately before `export class ThreeGame {`, right after the existing `const keyedSpriteTextureCache = new Map();` line. This project's `npm run lint` fails the build on unused symbols, so this constant must land in the same commit as its first use, below.
 
@@ -479,17 +479,17 @@ Replace `snapCameraToPlayer` (current lines 17263-17272):
     }
 ```
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 
 Run: `npx vitest run src/threeGame.facingYaw.test.js`
 Expected: PASS (all tests in the file)
 
-- [ ] **Step 5: Run the full unit suite**
+- [x] **Step 5: Run the full unit suite**
 
 Run: `npx vitest run`
 Expected: PASS
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add src/threeGame.js src/threeGame.facingYaw.test.js
@@ -508,7 +508,7 @@ git commit -m "feat: orbit the gameplay camera behind facingYaw with eased azimu
 - Consumes: `this.facingPlanarForward`/`this.facingPlanarRight` (Task 2).
 - Produces: nothing new — this task finishes wiring gameplay code onto what Task 2 introduced.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Append to `src/threeGame.facingYaw.test.js`:
 
@@ -562,12 +562,12 @@ describe('fire/melee direction no longer falls back to the camera basis', () => 
 });
 ```
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 Run: `npx vitest run src/threeGame.facingYaw.test.js`
 Expected: FAIL — `getFacingRow`/`getWorldDirectionForFacingRow` still read `cameraPlanarRight/Forward`, so the divergent-basis test returns the camera-basis answer instead of 0.
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 In `getFacingRow` (current lines 16332-16339), replace `this.cameraPlanarRight`/`this.cameraPlanarForward` with `this.facingPlanarRight`/`this.facingPlanarForward`:
 
@@ -636,17 +636,17 @@ In `updateWeaponState` (current lines 16443-16460), delete the two idle-aim-deca
 
 (the rest of the function, starting from whatever followed `this.updateHeldFire();` in the original, is unchanged.)
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 
 Run: `npx vitest run src/threeGame.facingYaw.test.js`
 Expected: PASS (all tests)
 
-- [ ] **Step 5: Run the full unit suite**
+- [x] **Step 5: Run the full unit suite**
 
 Run: `npx vitest run`
 Expected: PASS. If `src/threeGame.combatMovement.test.js`'s "keeps legs on movement and torso on mouse aim" test fails, check whether it depends on `cameraPlanarForward/Right` — it doesn't (it mocks `getFacingRow` directly), so it should be unaffected.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add src/threeGame.js src/threeGame.facingYaw.test.js
@@ -669,7 +669,7 @@ This task is DOM/browser-API-driven (pointer lock isn't implemented in
 Vitest's jsdom environment), so it has no unit test — it's verified by the
 Playwright e2e suite in Task 8 and by manual playtest.
 
-- [ ] **Step 1: Add pointer-lock state and the prompt element**
+- [x] **Step 1: Add pointer-lock state and the prompt element**
 
 In `index.html`, add a new prompt element right after the existing block at `index.html:1101-1141` (following the `hud-action-prompt` convention used by e.g. `#lore-hud-prompt`):
 
@@ -682,7 +682,7 @@ In `index.html`, add a new prompt element right after the existing block at `ind
 
 In `src/threeGame.js`, add `this._pointerLocked = false;` immediately after the `this.updateFacingYaw(Math.PI / 2);` line added in Task 2 (inside the constructor).
 
-- [ ] **Step 2: Wire pointer-lock request into pointerdown, remove old absolute-cursor aim calls**
+- [x] **Step 2: Wire pointer-lock request into pointerdown, remove old absolute-cursor aim calls**
 
 Replace `handleCanvasPointerDown` (current lines 4177-4219):
 
@@ -736,7 +736,7 @@ Replace `handleCanvasPointerMove` (current lines 4221-4235):
         };
 ```
 
-- [ ] **Step 3: Add pointer-lock lifecycle methods and listeners**
+- [x] **Step 3: Add pointer-lock lifecycle methods and listeners**
 
 First, add `const MOUSE_LOOK_SENSITIVITY = 0.0025;` on its own line immediately before `export class ThreeGame {`, next to the `CAMERA_ROT_SPEED` constant Task 3 added there. This project's `npm run lint` fails the build on unused symbols, so this constant must land in the same commit as its first use, in `handleMouseLookMove` below.
 
@@ -786,7 +786,7 @@ Add matching teardown next to the existing `removeEventListener` calls at curren
         document.removeEventListener('mousemove', this.handleMouseLookMove);
 ```
 
-- [ ] **Step 4: Release pointer lock when a blocking overlay opens**
+- [x] **Step 4: Release pointer lock when a blocking overlay opens**
 
 At the very top of `updateCamera(delta)` (before the azimuth-easing block added in Task 3), add:
 
@@ -796,12 +796,12 @@ At the very top of `updateCamera(delta)` (before the azimuth-easing block added 
         }
 ```
 
-- [ ] **Step 5: Manual smoke test**
+- [x] **Step 5: Manual smoke test**
 
 Run: `npm run dev`, open the game, start a run, click the canvas.
 Expected: cursor disappears (pointer-locked), the `#mouse-look-prompt` element hides, moving the mouse turns the character and the camera eases in behind them. Pressing Esc releases lock and the prompt reappears.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add src/threeGame.js index.html
@@ -821,7 +821,7 @@ git commit -m "feat: drive facingYaw from pointer-locked mouse-look during gamep
 - Consumes: `this.isGameplayInputActive()`, `this._pointerLocked` (Task 5).
 - Produces: nothing new — pure UI correctness follow-on.
 
-- [ ] **Step 1: Add the crosshair element**
+- [x] **Step 1: Add the crosshair element**
 
 In `index.html`, add near the `#mouse-look-prompt` element added in Task 5:
 
@@ -831,7 +831,7 @@ In `index.html`, add near the `#mouse-look-prompt` element added in Task 5:
 
 (Reuses the existing `--crosshair-color` CSS variable already set by the crosshair-color settings in `main.js:1780`.)
 
-- [ ] **Step 2: Show it during gameplay, hide it otherwise**
+- [x] **Step 2: Show it during gameplay, hide it otherwise**
 
 In `src/threeGame.js`, extend `updateMouseLookPrompt` (added in Task 5) to also drive the crosshair — rename its body to cover both:
 
@@ -854,7 +854,7 @@ Call `this.updateMouseLookPrompt();` once per frame from inside `updateCamera(de
         this.updateMouseLookPrompt();
 ```
 
-- [ ] **Step 3: Freeze the legacy tactical cursor while pointer-locked**
+- [x] **Step 3: Freeze the legacy tactical cursor while pointer-locked**
 
 In `main.js`'s `initTacticalCursor`, inside the existing `window.addEventListener('mousemove', (e) => { ... })` handler, add a guard immediately after the existing `if (e.isControllerSynthetic) return;` line:
 
@@ -862,12 +862,12 @@ In `main.js`'s `initTacticalCursor`, inside the existing `window.addEventListene
         if (document.pointerLockElement) return;
 ```
 
-- [ ] **Step 4: Manual smoke test**
+- [x] **Step 4: Manual smoke test**
 
 Run: `npm run dev`, start a run.
 Expected: a small centered dot (in the player's chosen crosshair color) is visible during gameplay and does not move as the camera orbits. Opening a menu hides it; the old mechanical cursor no longer jumps/lags around the screen once pointer lock is engaged.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add index.html src/threeGame.js main.js
@@ -889,7 +889,7 @@ No unit test — `main.js` has no existing unit-test harness (it's the app
 bootstrap with module-load-time DOM side effects); verified via Task 8's
 e2e coverage and manual controller testing.
 
-- [ ] **Step 1: Add the yaw sensitivity constant**
+- [x] **Step 1: Add the yaw sensitivity constant**
 
 Immediately after `const CONTROLLER_CURSOR_SENSITIVITY = 1;` (current line 1435):
 
@@ -897,7 +897,7 @@ Immediately after `const CONTROLLER_CURSOR_SENSITIVITY = 1;` (current line 1435)
 const CONTROLLER_YAW_SENSITIVITY = 0.0025;
 ```
 
-- [ ] **Step 2: Repoint the trackpad/gyro delta path**
+- [x] **Step 2: Repoint the trackpad/gyro delta path**
 
 Replace `applyControllerCursorAim` (current lines 1449-1484):
 
@@ -916,7 +916,7 @@ function applyControllerCursorAim(controller) {
 }
 ```
 
-- [ ] **Step 3: Repoint the absolute right-stick path**
+- [x] **Step 3: Repoint the absolute right-stick path**
 
 Replace the block spanning current lines 1497-1519 in `handleSteamGameplayInput`:
 
@@ -931,12 +931,12 @@ Replace the block spanning current lines 1497-1519 in `handleSteamGameplayInput`
 
 (This drops the `anchor`/`lastPlayerAnchor` cursor-drift bookkeeping entirely — it existed only to keep an absolute on-screen cursor glued to the player as they moved, which no longer applies once aim is a yaw rather than a screen position. `getAimCursorAnchor`/`lastPlayerAnchor` stay defined for `handleSteamMenuInput`'s unrelated menu-cursor use — do not delete their declarations.)
 
-- [ ] **Step 4: Manual smoke test**
+- [x] **Step 4: Manual smoke test**
 
 Connect a gamepad (or use Steam Input / browser Gamepad API dev tooling already in the project), start a run.
 Expected: right stick immediately sets facing direction (no cursor visible), left stick moves relative to that facing, camera eases in behind.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add main.js
@@ -966,7 +966,7 @@ dot. This task replaces the old cursor-tracking assertions with assertions
 against the new crosshair/yaw model; it does not silently delete coverage
 of "is aim visually readable during controller play," it re-targets it.
 
-- [ ] **Step 1: Replace the spec**
+- [x] **Step 1: Replace the spec**
 
 ```js
 import { test, expect } from '@playwright/test';
@@ -1065,12 +1065,12 @@ test.describe('gameplay facing yaw (mouse + gamepad)', () => {
 });
 ```
 
-- [ ] **Step 2: Run the rewritten spec**
+- [x] **Step 2: Run the rewritten spec**
 
 Run: `npx playwright test tests/e2e/gameplay-aim-cursor.spec.js`
 Expected: PASS (all 4 tests)
 
-- [ ] **Step 3: Run the full e2e suite for regressions**
+- [x] **Step 3: Run the full e2e suite for regressions**
 
 Run: `npm run test:e2e`
 Expected: PASS. Investigate any failures in other specs that assumed the
@@ -1078,12 +1078,12 @@ old fixed-camera angle or absolute-cursor aim (search the failing spec for
 `updateAimFromClient`, `cameraOffset`, or literal camera-position assertions
 tied to the old constant `(8, 10, 8)` offset).
 
-- [ ] **Step 4: Run the full unit suite one more time**
+- [x] **Step 4: Run the full unit suite one more time**
 
 Run: `npx vitest run`
 Expected: PASS
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add tests/e2e/gameplay-aim-cursor.spec.js

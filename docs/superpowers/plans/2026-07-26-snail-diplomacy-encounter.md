@@ -1,6 +1,6 @@
 # Snail Diplomacy Encounter Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
 
 **Goal:** Touching a wild snail in Act 2 pauses the world into a turn-based
 Fight/Talk/Flee encounter, species-gated on `infectionStage`; winning Talk
@@ -78,7 +78,7 @@ and `completeHiveQuest(id, questId, bondDelta)`.
   `Act2Manager.completeHiveQuest(id, questId, bondDelta)` (both already
   exist, verified at `act2.js:789` and `act2.js:941`).
 
-- [ ] **Step 1: Reproduce the bug in isolation**
+- [x] **Step 1: Reproduce the bug in isolation**
 
 Create `src/threeGame.deathBeat.test.js`:
 
@@ -110,14 +110,14 @@ describe('death_beat quest flag', () => {
 });
 ```
 
-- [ ] **Step 2: Run it to confirm the helper itself is sound**
+- [x] **Step 2: Run it to confirm the helper itself is sound**
 
 Run: `npx vitest run src/threeGame.deathBeat.test.js`
 Expected: PASS (this test exercises the *fixed* shape via a local helper,
 proving the real fix will work — Step 3 applies that same shape to the
 actual call site).
 
-- [ ] **Step 3: Fix the real call site**
+- [x] **Step 3: Fix the real call site**
 
 In `src/threeGame.js`, replace:
 
@@ -146,13 +146,13 @@ with:
 (`bondDelta: 0` — this is marking a beat seen, not a bond-earning
 completion.)
 
-- [ ] **Step 4: Run the full suite to confirm nothing else called the old names**
+- [x] **Step 4: Run the full suite to confirm nothing else called the old names**
 
 Run: `npx vitest run`
 Expected: all pass (this file isn't imported by vitest directly, so this
 only confirms no other test referenced the old method names).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/threeGame.js src/threeGame.deathBeat.test.js
@@ -185,7 +185,7 @@ extended."
   - `EncounterState` shape: `{ snailType, snailHp, snailMaxHp, resolve, resolveMax, outcome }` where `outcome` is `null | 'fight_win' | 'befriend' | 'fled'` (player-HP-loss-to-zero is read by the caller from real player HP, not tracked here — see Task 8).
 - Consumes: nothing (pure module, no imports beyond none needed).
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Create `src/snailEncounter.test.js`:
 
@@ -306,12 +306,12 @@ describe('resolveFlee', () => {
 });
 ```
 
-- [ ] **Step 2: Run to verify failure**
+- [x] **Step 2: Run to verify failure**
 
 Run: `npx vitest run src/snailEncounter.test.js`
 Expected: FAIL — `Cannot find module './snailEncounter.js'`
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 Create `src/snailEncounter.js`:
 
@@ -395,12 +395,12 @@ export function resolveFlee(state) {
 }
 ```
 
-- [ ] **Step 4: Run to verify all pass**
+- [x] **Step 4: Run to verify all pass**
 
 Run: `npx vitest run src/snailEncounter.test.js`
 Expected: PASS, 12 tests.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/snailEncounter.js src/snailEncounter.test.js
@@ -432,7 +432,7 @@ quest-flag check yet, though `ctx.questFlags` is already passed into it via
   Existing callers that never set `next.questFlag` are unaffected (the new
   check is skipped when `next.questFlag` is undefined).
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Find the existing `describe` block for `nextDialogueBeat`/`meetsRequirements`
 in `src/data/campDialogue.test.js` (there is existing coverage of `next`
@@ -482,12 +482,12 @@ import { nextDialogueBeat, isFinalStage, meetsRequirements } from './campDialogu
 (Match whatever the existing import line already has and add
 `meetsRequirements` to it.)
 
-- [ ] **Step 2: Run to verify failure**
+- [x] **Step 2: Run to verify failure**
 
 Run: `npx vitest run src/data/campDialogue.test.js`
 Expected: FAIL — `meetsRequirements is not exported` / not a function.
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 In `src/data/campDialogue.js`, change:
 
@@ -517,12 +517,12 @@ export function meetsRequirements(next = {}, ctx = {}) {
 (Only the `function` → `export function` change and the one new `if`
 line — everything else identical.)
 
-- [ ] **Step 4: Run to verify pass**
+- [x] **Step 4: Run to verify pass**
 
 Run: `npx vitest run src/data/campDialogue.test.js`
 Expected: PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/data/campDialogue.js src/data/campDialogue.test.js
@@ -556,7 +556,7 @@ questFlags.snail_befriended rather than postReveal."
     kind since there is exactly one scientist).
 - Consumes: nothing new.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Add to `src/act2.test.js` (match the existing file's import style and
 `describe` grouping conventions):
@@ -610,12 +610,12 @@ describe('Act2Manager scientist dialogue', () => {
 });
 ```
 
-- [ ] **Step 2: Run to verify failure**
+- [x] **Step 2: Run to verify failure**
 
 Run: `npx vitest run src/act2.test.js`
 Expected: FAIL — `state.scientist` is `undefined`, `completeScientistQuest is not a function`.
 
-- [ ] **Step 3: Implement — `normalizeAct2State`**
+- [x] **Step 3: Implement — `normalizeAct2State`**
 
 In `src/act2.js`, add a normalizer function near `normalizeCamp`/`normalizeHive`:
 
@@ -648,7 +648,7 @@ In `normalizeAct2State`, add one line to the `normalized` object literal:
     };
 ```
 
-- [ ] **Step 4: Implement — `_findSpeaker` and `completeScientistQuest`**
+- [x] **Step 4: Implement — `_findSpeaker` and `completeScientistQuest`**
 
 Change `_findSpeaker`:
 
@@ -675,18 +675,18 @@ Add `completeScientistQuest` near `completeCampQuest`/`completeHiveQuest`:
     }
 ```
 
-- [ ] **Step 5: Run to verify pass**
+- [x] **Step 5: Run to verify pass**
 
 Run: `npx vitest run src/act2.test.js`
 Expected: PASS.
 
-- [ ] **Step 6: Run the full suite**
+- [x] **Step 6: Run the full suite**
 
 Run: `npx vitest run`
 Expected: all pass — this confirms adding a field to `normalizeAct2State`'s
 output didn't break any snapshot-style assertion elsewhere.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add src/act2.js src/act2.test.js
@@ -718,7 +718,7 @@ camps."
   needed there.
 - Consumes: `meetsRequirements`'s `questFlag` support from Task 3.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Replace the weak placeholder test from Task 3 (delete the
 `describe('meetsRequirements questFlag gate', ...)` block added there) and
@@ -767,12 +767,12 @@ describe('scientist dialogue ladder', () => {
 Update the import line to include `LEADER_DIALOGUE` and `LEADER_KEYS` if
 not already imported in the test file.
 
-- [ ] **Step 2: Run to verify failure**
+- [x] **Step 2: Run to verify failure**
 
 Run: `npx vitest run src/data/campDialogue.test.js`
 Expected: FAIL — `Cannot read properties of undefined (reading 'stages')`.
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 Add to `LEADER_DIALOGUE` in `src/data/campDialogue.js` (alongside
 `kaelen`/`martha`/`briggs`/`nahl`/`vey`/`rhun`):
@@ -819,12 +819,12 @@ Add to `LEADER_DIALOGUE` in `src/data/campDialogue.js` (alongside
 (Final stage has no `next` — matches every other leader's stage 3, e.g.
 `kaelen`'s stage 3 in the existing file has no `next` either.)
 
-- [ ] **Step 4: Run to verify pass**
+- [x] **Step 4: Run to verify pass**
 
 Run: `npx vitest run src/data/campDialogue.test.js`
 Expected: PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/data/campDialogue.js src/data/campDialogue.test.js
@@ -851,7 +851,7 @@ meetsRequirements extension rather than the usual postReveal."
 - Consumes: nothing new yet — this task only proves the pause mechanism
   and mounts empty markup; Task 8 wires real content into it.
 
-- [ ] **Step 1: Add the modal markup**
+- [x] **Step 1: Add the modal markup**
 
 In `index.html`, add near the other modals (e.g. right after
 `#mothership-dialogue`'s closing tag):
@@ -882,7 +882,7 @@ In `index.html`, add near the other modals (e.g. right after
     </div>
 ```
 
-- [ ] **Step 2: Add minimal styling**
+- [x] **Step 2: Add minimal styling**
 
 In `style.css`, add:
 
@@ -975,7 +975,7 @@ In `style.css`, add:
 }
 ```
 
-- [ ] **Step 3: Register the modal in `hasBlockingGameplayOverlay`**
+- [x] **Step 3: Register the modal in `hasBlockingGameplayOverlay`**
 
 In `src/threeGame.js`, change:
 
@@ -1016,19 +1016,19 @@ to:
 
 (One line added, nothing else touched.)
 
-- [ ] **Step 4: Manual verification (no automated test for this step — it's pure DOM wiring)**
+- [x] **Step 4: Manual verification (no automated test for this step — it's pure DOM wiring)**
 
 This step has no meaningful unit test (it's one boolean OR clause reading
 `document.getElementById`, already exercised structurally by every other
 entry in the same list). Verification is deferred to Task 8, where the
 modal is actually shown/hidden by real game logic and can be checked live.
 
-- [ ] **Step 5: Run the full suite and build to confirm nothing broke**
+- [x] **Step 5: Run the full suite and build to confirm nothing broke**
 
 Run: `npx vitest run && npx eslint . && npx vite build`
 Expected: all green.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add index.html style.css src/threeGame.js
@@ -1059,7 +1059,7 @@ change yet: nothing shows this modal until Task 8."
   `this.isEnemyType(type)` (existing), `SNAIL_ATTACK_RADIUS` (existing
   module constant, value `1.1`).
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 This method needs `this.player`, `this.scatterSprites`, and THREE sprite
 objects — not something to construct a real `ThreeGame` for in a unit
@@ -1092,12 +1092,12 @@ describe('computeTrailPosition', () => {
 });
 ```
 
-- [ ] **Step 2: Run to verify failure**
+- [x] **Step 2: Run to verify failure**
 
 Run: `npx vitest run src/companionFollow.test.js`
 Expected: FAIL — `Cannot find module './companionFollow.js'`
 
-- [ ] **Step 3: Implement the pure helper**
+- [x] **Step 3: Implement the pure helper**
 
 Create `src/companionFollow.js`:
 
@@ -1116,12 +1116,12 @@ export function computeTrailPosition(playerPos, facingDir, trailDistance) {
 }
 ```
 
-- [ ] **Step 4: Run to verify pass**
+- [x] **Step 4: Run to verify pass**
 
 Run: `npx vitest run src/companionFollow.test.js`
 Expected: PASS.
 
-- [ ] **Step 5: Wire `updateCompanions` into `threeGame.js`**
+- [x] **Step 5: Wire `updateCompanions` into `threeGame.js`**
 
 Add a new method (near `updateScatter`):
 
@@ -1206,13 +1206,13 @@ Call it from the main update chain, right after `this.updateScatter(delta, now);
         this.updateCompanions(delta);
 ```
 
-- [ ] **Step 6: Run the full suite, lint, and build**
+- [x] **Step 6: Run the full suite, lint, and build**
 
 Run: `npx vitest run && npx eslint . && npx vite build`
 Expected: all green. (No live-game test yet — `this.companions` is always
 empty until Task 8 populates it, so this is inert but present and wired.)
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add src/companionFollow.js src/companionFollow.test.js src/threeGame.js
@@ -1244,7 +1244,7 @@ playable feature.
 - Produces: `ThreeGame.encounterState` (null when not in an encounter),
   `ThreeGame.openSnailEncounter(sprite)`, `ThreeGame.closeSnailEncounter()`.
 
-- [ ] **Step 1: Replace the snail contact-damage branch**
+- [x] **Step 1: Replace the snail contact-damage branch**
 
 In `updateSnailBehavior` (`threeGame.js:18378`), change:
 
@@ -1297,7 +1297,7 @@ returns early so the existing branch below never double-fires for a snail
 that just opened an encounter. Boss snails, crawlers, and every other enemy
 type fall through to the unchanged existing branch.)
 
-- [ ] **Step 2: Implement `openSnailEncounter`, `closeSnailEncounter`, and button wiring**
+- [x] **Step 2: Implement `openSnailEncounter`, `closeSnailEncounter`, and button wiring**
 
 Add these methods near `updateSnailBehavior`:
 
@@ -1413,7 +1413,7 @@ Add these methods near `updateSnailBehavior`:
 Add `this.encounterState = null;` and `this._encounterSprite = null;`
 alongside `this.companions = []` in the constructor.
 
-- [ ] **Step 3: Wire the buttons and imports**
+- [x] **Step 3: Wire the buttons and imports**
 
 Add the import at the top of `threeGame.js`:
 
@@ -1446,7 +1446,7 @@ document.getElementById('snail-encounter-flee-btn')?.addEventListener('click', (
 });
 ```
 
-- [ ] **Step 4: Wire quest-objective resolution**
+- [x] **Step 4: Wire quest-objective resolution**
 
 Find where other `objective-resolve`-style or `ObjectiveRegistry` events
 are consumed in `main.js` (search `resolveObjective(` in `main.js`) and add
@@ -1463,7 +1463,7 @@ window.addEventListener('objective-resolve', (event) => {
 `resolveObjective(` call sites first and match whatever variable name the
 registry instance uses there instead of assuming `objectiveRegistry`.)
 
-- [ ] **Step 5: Manual verification**
+- [x] **Step 5: Manual verification**
 
 Run the dev server (`npm run dev`), reach Act 2 (or use existing debug/dev
 console helpers if the codebase has a way to fast-forward act2 state —
@@ -1478,12 +1478,12 @@ and confirm:
 - Winning via Talk closes the modal and the snail now follows the player.
 - Talking to Dr. Okonkwo-Vass afterward reaches her final stage.
 
-- [ ] **Step 6: Run the full suite, lint, and build**
+- [x] **Step 6: Run the full suite, lint, and build**
 
 Run: `npx vitest run && npx eslint . && npx vite build`
 Expected: all green.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add src/threeGame.js main.js
@@ -1520,7 +1520,7 @@ out of scope per that doc."
   `triggerGameplayInteract()` alongside its 12 existing sibling calls.
 - Consumes: `LEADER_DIALOGUE.scientist` (Task 5), `s.scientist` (Task 4).
 
-- [ ] **Step 1: Extend `leaderKeyFor` and `talkToLeader`**
+- [x] **Step 1: Extend `leaderKeyFor` and `talkToLeader`**
 
 Change:
 
@@ -1565,7 +1565,7 @@ Add `getScientistRecord` near `getCampRecord`/`getHiveRecord`:
     }
 ```
 
-- [ ] **Step 2: Add placement and the interact method**
+- [x] **Step 2: Add placement and the interact method**
 
 Add near `interactWithAct2Camp`:
 
@@ -1606,7 +1606,7 @@ per-frame HUD prompt updates already run (search for where
 alongside — match the existing per-frame prompt update grouping rather
 than adding a new stray call site).
 
-- [ ] **Step 3: Add the HUD prompt element**
+- [x] **Step 3: Add the HUD prompt element**
 
 In `index.html`, alongside the other `hud-action-prompt` elements:
 
@@ -1622,7 +1622,7 @@ In `index.html`, alongside the other `hud-action-prompt` elements:
 match its inner-span structure exactly rather than guessing, since the
 shared CSS likely targets specific child selectors.)
 
-- [ ] **Step 4: Test the pure parts**
+- [x] **Step 4: Test the pure parts**
 
 `interactWithScientist`/`updateScientistPromptState` need a live `ThreeGame`
 and DOM, so there's no isolated unit test for the wiring itself — but
@@ -1633,19 +1633,19 @@ suite to confirm no regression:
 Run: `npx vitest run`
 Expected: all pass.
 
-- [ ] **Step 5: Manual verification**
+- [x] **Step 5: Manual verification**
 
 With the dev server running and Act 2 active, walk to `camp_meridian`,
 approach the offset position, confirm the "TALK — DR. OKONKWO-VASS" prompt
 appears distinctly from the camp leader's own prompt, and pressing E opens
 her dialogue.
 
-- [ ] **Step 6: Run lint and build**
+- [x] **Step 6: Run lint and build**
 
 Run: `npx eslint . && npx vite build`
 Expected: both green.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add src/threeGame.js index.html style.css

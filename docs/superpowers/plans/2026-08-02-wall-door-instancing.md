@@ -1,6 +1,6 @@
 # Wall & Door Instancing Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
 
 **Goal:** Collapse the dominant remaining draw-call cost (individual `Mesh` objects for wall tiles, standard-wall decorations, and door sub-parts) into chunk-level `InstancedMesh` pools, without changing wall damage/destroy/raycast/decal behavior or visual appearance.
 
@@ -39,7 +39,7 @@
 - Produces: `WallInstanceRecord` shape: `{ isWall: true, isInstancedWall: true, wallKey, wallHp, maxWallHp, wallVariant, wallHeightScale, chunkX, chunkY, localX, localY, worldX, worldZ, chunkKey, roomId, roomWallStyle, destroyed: false, instancedMesh: null, instanceIndex: -1, userData: <self> }`.
 - Consumes: nothing from other tasks.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Add to `src/threeGame.destructibleWalls.test.js` (new `describe` block, alongside the existing ones):
 
@@ -87,12 +87,12 @@ describe('createWallInstanceRecord — instanced wall identity record', () => {
 });
 ```
 
-- [ ] **Step 2: Run the tests to verify they fail**
+- [x] **Step 2: Run the tests to verify they fail**
 
 Run: `npx vitest run src/threeGame.destructibleWalls.test.js -t "createWallInstanceRecord"`
 Expected: FAIL — `ThreeGame.prototype.createWallInstanceRecord is not a function`.
 
-- [ ] **Step 3: Add the constructor init**
+- [x] **Step 3: Add the constructor init**
 
 In `src/threeGame.js`, find this line (search for the exact text — it's in the `ThreeGame` constructor):
 
@@ -110,7 +110,7 @@ Immediately after it, add:
         this._wallInstanceIndex = new Map();
 ```
 
-- [ ] **Step 4: Add `createWallInstanceRecord`**
+- [x] **Step 4: Add `createWallInstanceRecord`**
 
 In `src/threeGame.js`, find the `configureWallMesh` method (search for `configureWallMesh(wall, {`). Immediately **before** it, add this new method:
 
@@ -164,17 +164,17 @@ In `src/threeGame.js`, find the `configureWallMesh` method (search for `configur
 
 ```
 
-- [ ] **Step 5: Run the tests to verify they pass**
+- [x] **Step 5: Run the tests to verify they pass**
 
 Run: `npx vitest run src/threeGame.destructibleWalls.test.js`
 Expected: PASS — all tests in the file, including the two new ones and every pre-existing one (unaffected, since nothing existing was changed).
 
-- [ ] **Step 6: Run the full suite and check syntax**
+- [x] **Step 6: Run the full suite and check syntax**
 
 Run: `npx vitest run` — expect no regressions (baseline before this task: 1088 passing).
 Run: `node --check src/threeGame.js` — expect clean.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add src/threeGame.js src/threeGame.destructibleWalls.test.js
@@ -193,7 +193,7 @@ git commit -m "feat: add wall instance index infrastructure for InstancedMesh wa
 - Consumes: nothing from Task 1.
 - Produces: `computeExteriorWallJitter(worldX, worldZ) -> { offsetX: number, offsetZ: number, rotationY: number }` — pulled out of `configureWallMesh`'s inline jitter block so both the individual-wall path (`configureWallMesh`, unchanged behavior) and the new instanced-matrix-building path (Task 3) use the exact same math, rather than duplicating it by hand and risking drift.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Add to `src/threeGame.destructibleWalls.test.js`:
 
@@ -229,12 +229,12 @@ describe('computeExteriorWallJitter — shared position/rotation jitter for exte
 });
 ```
 
-- [ ] **Step 2: Run the tests to verify they fail**
+- [x] **Step 2: Run the tests to verify they fail**
 
 Run: `npx vitest run src/threeGame.destructibleWalls.test.js -t "computeExteriorWallJitter"`
 Expected: FAIL — `ThreeGame.prototype.computeExteriorWallJitter is not a function`.
 
-- [ ] **Step 3: Extract the helper and use it in `configureWallMesh`**
+- [x] **Step 3: Extract the helper and use it in `configureWallMesh`**
 
 In `src/threeGame.js`, find this exact block inside `configureWallMesh` (search for `Apply organic jitter to exterior/canyon-facing wall segments`):
 
@@ -281,17 +281,17 @@ Then add the new method immediately **before** `configureWallMesh` (search for `
 
 ```
 
-- [ ] **Step 4: Run the tests to verify they pass**
+- [x] **Step 4: Run the tests to verify they pass**
 
 Run: `npx vitest run src/threeGame.destructibleWalls.test.js`
 Expected: PASS — all tests, including the two new ones. The extraction must not change `configureWallMesh`'s behavior for individual walls (same seed, same math, just relocated).
 
-- [ ] **Step 5: Run the full suite**
+- [x] **Step 5: Run the full suite**
 
 Run: `npx vitest run` — expect no regressions.
 Run: `node --check src/threeGame.js` — expect clean.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add src/threeGame.js src/threeGame.destructibleWalls.test.js
@@ -309,7 +309,7 @@ git commit -m "refactor: extract computeExteriorWallJitter shared by individual 
 - Consumes: `this._wallInstanceIndex` (Task 1), `createWallInstanceRecord` (Task 1), `computeExteriorWallJitter` (Task 2).
 - Produces: for each mounted chunk, one `THREE.InstancedMesh` per distinct `roomStyleId` bucket (using `this.wallGeometry`/`this.wallMaterial`), each pool's `userData.isWall = true` (so the existing `wallMeshes` collection loop at `syncVisibleChunks` picks it up unchanged — see Global Constraints), and each pool's `onBeforeRender` stamping `uLandformId`/`uRoomStyleId` once per pool (not per wall). `_wallInstanceIndex` gains one entry per standard/damaged wall tile mounted, with `instancedMesh`/`instanceIndex` pointing at its pool slot.
 
-- [ ] **Step 1: Replace the hazard/damaged/standard wall branches**
+- [x] **Step 1: Replace the hazard/damaged/standard wall branches**
 
 In `src/threeGame.js`, inside `mountChunk`'s per-tile loop, find this exact block (search for `Hazard Wall (pulsing warning siren)`) — it spans the hazard, damaged, and standard branches through the end of the standard branch's decoration `if/else if` chain:
 
@@ -663,7 +663,7 @@ Replace it with (hazard branch unchanged; damaged/standard branches now push int
 
 Note: `pushWallInstanceMatrix`, `pushDecorationMatrix`, and `roomStyleIdFor` are local closures defined in Step 2 below (placed before the loop, same scope as the existing `rubbleMatrices`/`addCliffInstance` locals) — Task 3 implements `pushWallInstanceMatrix` fully; Task 4 implements `pushDecorationMatrix`/`roomStyleIdFor` fully. To keep Task 3 independently testable, its Step 2 stubs `pushDecorationMatrix` as a no-op and `roomStyleIdFor` returning `null` — Task 4 replaces both stubs with real implementations (same file region, no other call site changes needed).
 
-- [ ] **Step 2: Add the bucket-building locals and `pushWallInstanceMatrix`, build pools after the loop**
+- [x] **Step 2: Add the bucket-building locals and `pushWallInstanceMatrix`, build pools after the loop**
 
 In `src/threeGame.js`, find this exact block (search for `const rubbleMatrices = [];`):
 
@@ -753,7 +753,7 @@ Immediately **before** it, add the pool-building pass:
 
 ```
 
-- [ ] **Step 3: Stub the not-yet-implemented decoration hook**
+- [x] **Step 3: Stub the not-yet-implemented decoration hook**
 
 Task 4 implements `pushDecorationMatrix` for real. For Task 3 to be independently testable/runnable right now, add a temporary no-op stub in the same local-closures block from Step 2 (immediately after the `pushWallInstanceMatrix` closure):
 
@@ -762,14 +762,14 @@ Task 4 implements `pushDecorationMatrix` for real. For Task 3 to be independentl
         const pushDecorationMatrix = () => {};
 ```
 
-- [ ] **Step 4: Run the full suite**
+- [x] **Step 4: Run the full suite**
 
 Run: `npx vitest run`
 Expected: PASS, no regressions. This task doesn't add new direct unit tests of its own (the wall-tile loop's only test coverage today is indirect, via chunk-generation tests that don't inspect mesh counts) — correctness here is verified in Task 6 once damage/destroy round-trips through the new index, and in the manual verification step at the end of this plan.
 
 Run: `node --check src/threeGame.js` — expect clean.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/threeGame.js
@@ -787,7 +787,7 @@ git commit -m "feat: instance standard+damaged walls into per-roomStyleId Instan
 - Consumes: `pushWallInstanceMatrix`'s sibling closures from Task 3 (same local scope), `roomStyleIdFor` (Task 3).
 - Produces: real `pushDecorationMatrix(type, wallMatrix, roomStyleId, localMatrix)` — composes `wallMatrix * localMatrix` (preserving the current parent-child visual: the decoration inherits the wall's jittered position and height-scale) and pushes into the correct per-type bucket. Pillar/bracket bucket by `roomStyleId` (shared `wallMaterial`); vent/pipe use one flat pool per chunk each (separate plain materials, no shader constraint — confirmed by reading `ventMaterial`/`pipeMaterial`'s definitions, both plain `MeshBasicMaterial`).
 
-- [ ] **Step 1: Replace the stub with the real implementation**
+- [x] **Step 1: Replace the stub with the real implementation**
 
 In `src/threeGame.js`, find the stub added in Task 3 Step 3:
 
@@ -824,7 +824,7 @@ Replace it with:
 
 Then update Task 3's three `pushDecorationMatrix(...)` call sites (`'pillar'`, `'bracket'`, `'vent'`, `'pipe'`) to pass the room info object instead of a raw `roomStyleId` number, since `roomStyleIdFor` (Task 3) returns `{ roomStyleId, roomId, roomWallStyle }`. Find each of these four call sites (search for `pushDecorationMatrix('pillar'`, `pushDecorationMatrix('bracket'`, `pushDecorationMatrix('vent'`, `pushDecorationMatrix('pipe'`) and change the third argument from `roomStyleIdFor(chunkX, chunkY, localX, localY)` to the same expression — **no change needed**, since `roomStyleIdFor` already returns the full `{ roomStyleId, roomId, roomWallStyle }` object (Task 3 wrote it that way in anticipation of this task), and the vent/pipe call sites already pass `null` (unused by the vent/pipe branch above, which ignores `roomInfo`). Confirm this by re-reading Task 3's Step 1 diff — no edit is actually required here; this step exists to document why the shapes line up.
 
-- [ ] **Step 2: Build the four decoration pools after the wall-pool-building pass**
+- [x] **Step 2: Build the four decoration pools after the wall-pool-building pass**
 
 In `src/threeGame.js`, find the wall-pool-building loop added in Task 3 Step 2 (search for `metaList.forEach((opts, idx) => {`) and locate its closing `}` followed by `group.add(pool);` and the loop's closing `}`:
 
@@ -899,13 +899,13 @@ Immediately **after** this block (still before `if (this.rubbleGeometry && this.
 
 Note: `pillar`/`bracket` pools deliberately do **not** set `userData.isWall = true` (unlike the wall pools in Task 3) — they must not be swept into `this.wallMeshes` (they'd be spurious raycast/occlusion targets that were never part of `wallMeshes` before this change either, since decorations were plain children of a wall Mesh, never pushed into `wallMeshes` themselves).
 
-- [ ] **Step 2: Run the full suite**
+- [x] **Step 2: Run the full suite**
 
 Run: `npx vitest run`
 Expected: PASS, no regressions.
 Run: `node --check src/threeGame.js` — expect clean.
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add src/threeGame.js
@@ -923,7 +923,7 @@ git commit -m "feat: instance standard-wall pillar/bracket/vent/pipe decorations
 - Consumes: nothing from Tasks 1-4 (independent — doors are unaffected by wall instancing).
 - Produces: two chunk-level `InstancedMesh` pools (ribs, panels) replacing 5 of a door's ~8 sub-meshes. Door slab, status bar, and buttons stay individual `Mesh` objects exactly as today (status bar/buttons are state-dependent, per the spec's door-scope decision).
 
-- [ ] **Step 1: Replace the rib/panel creation with matrix collection**
+- [x] **Step 1: Replace the rib/panel creation with matrix collection**
 
 In `src/threeGame.js`, inside `mountChunk`'s door-tile branch, find this exact block (search for `for (const ribOffset of [-0.28, 0, 0.28]) {`):
 
@@ -1009,7 +1009,7 @@ Replace it with (ribs are relative to the door slab's own position/rotation, whi
 
 **Note:** the original code positioned `rib`/`panel` at local offsets from `0` since they were `doorMesh.add(...)` children (inheriting `doorMesh.position`), and it positioned `button` at a LOCAL offset (`button.position.z = 0.125`) since it was `panel.add(button)` — a child of the panel. Since panels are no longer individual objects (instanced) and buttons must stay individual (state-dependent, click targets — see `isProceduralDoorControl`), buttons are now positioned in **world space directly** (`panelWorldX/panelWorldZ + 0.125` offset baked in), matching the previous *effective* world position exactly (local child offsets composed with the panel's world position produce the same final world coordinates either way). The rib matrix's height offset (`0.42`) replaces what was previously an inherited Y from `doorMesh`'s vertical animation — **this is a deliberate, spec-agreed simplification**: since ribs are purely decorative and doors open by moving down (`doorMesh.userData.openY`), instanced ribs will not follow an open door's downward slide the way a real child would have. Flag this as a behavior change for the task reviewer to confirm against the spec's door-scope decision before merging (the spec said ribs/panels are "purely static," which was true for position but did not explicitly discuss the open-animation-following behavior — this is a real, visible gap the reviewer must weigh in on, not silently accept).
 
-- [ ] **Step 2: Declare the matrix arrays and build the two pools**
+- [x] **Step 2: Declare the matrix arrays and build the two pools**
 
 In `src/threeGame.js`, find the same local-closures block from Task 3 Step 2 (search for `const decorationScratch = new THREE.Matrix4();` added in Task 4) and add two more array declarations immediately after it:
 
@@ -1045,13 +1045,13 @@ Then find the decoration-pool-building block added in Task 4 Step 2 (search for 
 
 Note: `ribGeometry`/`ribMaterial`/`panelGeometry`/`panelMaterial` were previously created fresh per rib/panel (one `new THREE.BoxGeometry(...)`/`new THREE.MeshStandardMaterial(...)` per instance, per door). This change creates ONE geometry/material per chunk instead (shared across every door's ribs/panels in that chunk) — consistent with every other instanced pool in this file, and strictly cheaper (was already wasteful to allocate N identical geometries/materials per door).
 
-- [ ] **Step 3: Run the full suite**
+- [x] **Step 3: Run the full suite**
 
 Run: `npx vitest run`
 Expected: PASS, no regressions.
 Run: `node --check src/threeGame.js` — expect clean.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add src/threeGame.js
@@ -1070,7 +1070,7 @@ git commit -m "feat: instance door ribs and control panels, flag open-animation 
 - Consumes: `this._wallInstanceIndex` (Task 1), pools from Task 3 (`instancedMesh`/`instanceIndex` on each record).
 - Produces: `findWallMeshAt` returns an instanced-wall record (not just real Meshes) when the coordinate matches one; `damageWall`/`destroyWall`/`updateWallDamageColor` branch on `wall.isInstancedWall`; chunk unmount clears that chunk's entries from `_wallInstanceIndex`.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Add to `src/threeGame.destructibleWalls.test.js`:
 
@@ -1185,12 +1185,12 @@ describe('instanced wall damage/destroy — via _wallInstanceIndex', () => {
 });
 ```
 
-- [ ] **Step 2: Run the tests to verify they fail**
+- [x] **Step 2: Run the tests to verify they fail**
 
 Run: `npx vitest run src/threeGame.destructibleWalls.test.js -t "instanced wall damage/destroy"`
 Expected: FAIL — `findWallMeshAt` only checks `this.wallMeshes` (a real-Mesh array), so it returns `null`; the other two tests fail for the same underlying reason (no instanced-wall branch exists yet).
 
-- [ ] **Step 3: Update `findWallMeshAt`**
+- [x] **Step 3: Update `findWallMeshAt`**
 
 In `src/threeGame.js`, find:
 
@@ -1212,7 +1212,7 @@ Replace it with:
     }
 ```
 
-- [ ] **Step 4: Branch `updateWallDamageColor` on `isInstancedWall`**
+- [x] **Step 4: Branch `updateWallDamageColor` on `isInstancedWall`**
 
 In `src/threeGame.js`, find:
 
@@ -1291,7 +1291,7 @@ Replace it with:
     }
 ```
 
-- [ ] **Step 5: Branch `markWallTileDestroyed` and `destroyWall` on `isInstancedWall`**
+- [x] **Step 5: Branch `markWallTileDestroyed` and `destroyWall` on `isInstancedWall`**
 
 In `src/threeGame.js`, find:
 
@@ -1368,7 +1368,7 @@ Replace it with:
 
 (`markWallTileDestroyed` — called by `destroyWall` just above this block, via `this.markWallTileDestroyed(worldX, worldZ)` — already does the instance-matrix zeroing and index cleanup for the instanced case, so this second block only needs to skip the individual-Mesh-only operations for instanced walls, not duplicate the zeroing.)
 
-- [ ] **Step 6: Clean up `_wallInstanceIndex` on chunk unmount**
+- [x] **Step 6: Clean up `_wallInstanceIndex` on chunk unmount**
 
 In `src/threeGame.js`, find (inside `syncVisibleChunks`):
 
@@ -1393,7 +1393,7 @@ Replace it with:
             }
 ```
 
-- [ ] **Step 7: Write the failing chunk-unmount test**
+- [x] **Step 7: Write the failing chunk-unmount test**
 
 Add to `src/threeGame.chunkVariation.test.js` (near the existing `clearLoadedChunksForRunReset` describe block):
 
@@ -1430,17 +1430,17 @@ describe('syncVisibleChunks — _wallInstanceIndex cleanup on chunk unmount', ()
 });
 ```
 
-- [ ] **Step 8: Run the tests to verify they pass**
+- [x] **Step 8: Run the tests to verify they pass**
 
 Run: `npx vitest run src/threeGame.destructibleWalls.test.js src/threeGame.chunkVariation.test.js`
 Expected: PASS — all tests including the new ones, and every pre-existing test unchanged (individual-wall paths untouched by the added branches).
 
-- [ ] **Step 9: Run the full suite**
+- [x] **Step 9: Run the full suite**
 
 Run: `npx vitest run` — expect no regressions.
 Run: `node --check src/threeGame.js` — expect clean.
 
-- [ ] **Step 10: Commit**
+- [x] **Step 10: Commit**
 
 ```bash
 git add src/threeGame.js src/threeGame.destructibleWalls.test.js src/threeGame.chunkVariation.test.js
@@ -1459,7 +1459,7 @@ git commit -m "feat: branch wall damage/destroy/find/cleanup on isInstancedWall"
 - Consumes: `this._wallInstanceIndex` (Task 1), the fact that `intersectObjects` against an `InstancedMesh` returns `.instanceId` in the hit result (standard Three.js raycasting behavior, no change needed to the raycast call itself — see spec's "Raycasting" section).
 - Produces: `checkProjectileWallHit` returns `{ point, normalX, normalZ, wall }` where `wall` is either a real Mesh (hazard wall) or an instanced-wall record resolved via `hit.object.userData.isInstancedWallPool` + `hit.instanceId` — same return shape callers already expect (`14896`: `this.damageWall(wallHit.wall, ...)`; `14901`: `wallHit.wall?.userData?.wallKey`).
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Add to `src/threeGame.destructibleWalls.test.js`:
 
@@ -1494,12 +1494,12 @@ describe('checkProjectileWallHit — resolves instanced-wall hits by instanceId'
 });
 ```
 
-- [ ] **Step 2: Run the test to verify it fails**
+- [x] **Step 2: Run the test to verify it fails**
 
 Run: `npx vitest run src/threeGame.destructibleWalls.test.js -t "checkProjectileWallHit"`
 Expected: FAIL — `ThreeGame.prototype.findWallByPoolInstance is not a function`.
 
-- [ ] **Step 3: Add `findWallByPoolInstance` and use it in `checkProjectileWallHit`**
+- [x] **Step 3: Add `findWallByPoolInstance` and use it in `checkProjectileWallHit`**
 
 In `src/threeGame.js`, find `checkProjectileWallHit` (search for `checkProjectileWallHit(projectile) {`) and add this new method immediately **before** it:
 
@@ -1560,17 +1560,17 @@ Replace it with:
         return { point: hit.point, normalX: nx, normalZ: nz, wall };
 ```
 
-- [ ] **Step 4: Run the tests to verify they pass**
+- [x] **Step 4: Run the tests to verify they pass**
 
 Run: `npx vitest run src/threeGame.destructibleWalls.test.js`
 Expected: PASS — all tests.
 
-- [ ] **Step 5: Run the full suite**
+- [x] **Step 5: Run the full suite**
 
 Run: `npx vitest run` — expect no regressions.
 Run: `node --check src/threeGame.js` — expect clean.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add src/threeGame.js src/threeGame.destructibleWalls.test.js
