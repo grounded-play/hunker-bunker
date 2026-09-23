@@ -31,6 +31,7 @@ test.describe('enemy dismemberment', () => {
             const pz = game.player?.position?.z ?? 0;
             const sprite = game.spawnEnemyInstance?.('cybersnail', px + 3, pz + 3);
             if (!sprite) return null;
+            window.__gibsTarget = sprite;
             // The overlay loads the GLB lazily; gibs need it present.
             for (let i = 0; i < 120; i++) {
                 if (sprite.userData.enemy3dVisual?.root) break;
@@ -42,14 +43,12 @@ test.describe('enemy dismemberment', () => {
 
     async function killEnemy(page) {
         return page.evaluate(() => {
-            const game = window.game;
-            const sprite = game.scatterSprites?.find?.(
-                (s) => s?.userData?.type === 'cybersnail' && !s.userData.burstTriggered
-            ) ?? game.scene.children.find(
-                (c) => c?.userData?.type === 'cybersnail' && !c.userData.burstTriggered
-            );
-            if (!sprite) return false;
-            game.damageSnail(sprite, 999);
+            // Kill the enemy spawnEnemy made, not the first cybersnail in the
+            // world: a live run has others, anywhere, doing anything.
+            const sprite = window.__gibsTarget;
+            if (!sprite || sprite.userData.burstTriggered) return false;
+            window.__gibsKilledAt = { x: sprite.position.x, z: sprite.position.z };
+            window.game.damageSnail(sprite, 999);
             return true;
         });
     }
@@ -106,18 +105,15 @@ test.describe('enemy dismemberment', () => {
 
     test('the corpse still drops so shells stay collectable', async ({ page }) => {
         await page.evaluate(() => window.localStorage.setItem('hb_gore', 'on'));
-        const before = await page.evaluate(() => window.game.corpses?.length ?? 0);
         expect(await spawnEnemy(page)).toBe(true);
         expect(await killEnemy(page)).toBe(true);
-        await expect.poll(
-            () => page.evaluate(() => window.game.corpses?.length ?? 0),
-            { timeout: 5_000 }
-        ).toBeGreaterThan(before);
-
-        const collectable = await page.evaluate(
-            () => window.game.corpses.some((c) => c.userData?.shellValue > 0 && !c.userData.collected)
-        );
-        expect(collectable).toBe(true);
+        // Match the corpse by where the enemy died. Counting the whole corpse
+        // list raced every other corpse in the run decaying or being touched.
+        await expect.poll(() => page.evaluate(() => {
+            const at = window.__gibsKilledAt;
+            return (window.game.corpses ?? []).some((c) => c.userData?.shellValue > 0
+                && Math.hypot(c.position.x - at.x, c.position.z - at.z) < 0.05);
+        }), { timeout: 5_000 }).toBe(true);
     });
 
     test('the Settings toggle suppresses the gibs', async ({ page }) => {

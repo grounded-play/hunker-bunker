@@ -4,7 +4,8 @@ import {
     createCampaignWorldStore,
     deriveExpeditionSeed
 } from './campaignWorld.js';
-import { generateRadialMazeExpedition } from './mazeExpedition.js';
+import { generateRadialMazeExpedition, LEGACY_ROUTE_LAYOUT_VERSION, ROUTE_LAYOUT_VERSION } from './mazeExpedition.js';
+import { createExpeditionProfile } from './expeditionSystem.js';
 import { exportSaveCode, importSaveCode, resetActiveAttempt, startNewCampaign } from './profile.js';
 
 function makeStorage() {
@@ -30,6 +31,20 @@ function completedRoute() {
 }
 
 describe('campaign world continuity', () => {
+    it('creates new campaigns on the current route generation and keeps old saves on theirs', () => {
+        const storage = makeStorage();
+        const store = createCampaignWorldStore({ storage, createSeed: () => 4040 });
+        expect(store.getOrCreate().layoutVersion).toBe(ROUTE_LAYOUT_VERSION);
+        expect(store.beginExpedition().layoutVersion).toBe(ROUTE_LAYOUT_VERSION);
+
+        const legacy = makeStorage();
+        legacy.setItem(CAMPAIGN_WORLD_STORAGE_KEY, JSON.stringify({ version: 1, seed: 77, expeditionIndex: 3, mazeState: null }));
+        const resumed = createCampaignWorldStore({ storage: legacy });
+        expect(resumed.getState().layoutVersion).toBe(LEGACY_ROUTE_LAYOUT_VERSION);
+        expect(resumed.beginExpedition().layoutVersion).toBe(LEGACY_ROUTE_LAYOUT_VERSION);
+        expect(JSON.parse(legacy.getItem(CAMPAIGN_WORLD_STORAGE_KEY)).layoutVersion).toBe(LEGACY_ROUTE_LAYOUT_VERSION);
+    });
+
     it('preserves terrain through deployment, active-attempt reset, and a fresh session', () => {
         const storage = makeStorage();
         const first = createCampaignWorldStore({ storage, createSeed: () => 8128 });
@@ -124,9 +139,99 @@ describe('campaign world continuity', () => {
         storage.setItem(CAMPAIGN_WORLD_STORAGE_KEY, JSON.stringify({
             version: 1, seed: 12, expeditionIndex: -100, expeditionSeed: 123, mazeState: []
         }));
-        expect(createCampaignWorldStore({ storage }).getState()).toEqual({
-            version: 1, seed: 12, expeditionIndex: 0, expeditionSeed: deriveExpeditionSeed(12, 0), mazeState: null
+        const state = createCampaignWorldStore({ storage }).getState();
+        expect(state).toMatchObject({
+            version: 1,
+            seed: 12,
+            expeditionIndex: 0,
+            expeditionSeed: deriveExpeditionSeed(12, 0),
+            mazeState: null,
+            worldTransformations: {
+                bridgesConstructed: [],
+                campsFortified: [],
+                hivesTransformed: {},
+                shortcutsOpened: []
+            }
         });
+        expect(state.activeExpedition).toBeDefined();
+        expect(state.activeExpedition.expeditionIndex).toBe(0);
+    });
+
+    it('tracks world transformations persistently across expeditions', () => {
+        const storage = makeStorage();
+        const store = createCampaignWorldStore({ storage, createSeed: () => 777 });
+        store.getOrCreate();
+
+        store.recordWorldTransformation('bridge', 'canyon_chasm_bridge');
+        store.recordWorldTransformation('camp_fortified', 'camp_meridian');
+        store.recordWorldTransformation('hive_transformed', 'hive_alpha', { choice: 'cleansed', modifier: 'speed_resin' });
+        store.recordWorldTransformation('shortcut', 'bunker_conduit_shortcut');
+
+        const transformations = store.getWorldTransformations();
+        expect(transformations.bridgesConstructed).toEqual(['canyon_chasm_bridge']);
+        expect(transformations.campsFortified).toEqual(['camp_meridian']);
+        expect(transformations.hivesTransformed['hive_alpha'].choice).toBe('cleansed');
+        expect(transformations.shortcutsOpened).toEqual(['bunker_conduit_shortcut']);
+
+        // Persists across expedition roll
+        store.beginExpedition();
+        const afterRoll = store.getWorldTransformations();
+        expect(afterRoll.bridgesConstructed).toEqual(['canyon_chasm_bridge']);
+        expect(afterRoll.campsFortified).toEqual(['camp_meridian']);
+    });
+
+    it('repairs a mismatched active expedition while retaining campaign geography and earned progress', () => {
+        const storage = makeStorage();
+        storage.setItem(CAMPAIGN_WORLD_STORAGE_KEY, JSON.stringify({
+            version: 1,
+            seed: 8128,
+            expeditionIndex: 7,
+            layoutVersion: LEGACY_ROUTE_LAYOUT_VERSION,
+            activeExpedition: createExpeditionProfile(999, 2),
+            mazeState: completedRoute()
+        }));
+        const state = createCampaignWorldStore({ storage }).getState();
+        expect(state.activeExpedition).toEqual(createExpeditionProfile(8128, 7));
+        expect(state).toMatchObject({ layoutVersion: LEGACY_ROUTE_LAYOUT_VERSION, mazeState: completedRoute() });
+    });
+
+    it('normalizes malformed transformation lists without dropping valid world changes', () => {
+        const storage = makeStorage();
+        storage.setItem(CAMPAIGN_WORLD_STORAGE_KEY, JSON.stringify({
+            version: 1, seed: 8128, expeditionIndex: 1,
+            worldTransformations: {
+                bridgesConstructed: ['ring-1-gate', null, '', 8, 'ring-1-gate'],
+                campsFortified: ['camp_meridian', {}],
+                hivesTransformed: { hive_suture: { outcome: 'bonded' }, hive_relay: ['broken'] },
+                shortcutsOpened: 'shortcut'
+            }
+        }));
+        expect(createCampaignWorldStore({ storage }).getWorldTransformations()).toEqual({
+            bridgesConstructed: ['ring-1-gate'], campsFortified: ['camp_meridian'],
+            hivesTransformed: { hive_suture: { outcome: 'bonded' } }, shortcutsOpened: []
+        });
+    });
+
+    it('does not create a campaign for delayed world changes and records repeated outcomes once', () => {
+        const storage = makeStorage();
+        const store = createCampaignWorldStore({ storage });
+        expect(store.recordWorldTransformation('bridge', 'ring-1-gate')).toBeNull();
+        expect(store.getState()).toBeNull();
+        store.getOrCreate({ seed: 0 });
+        store.recordWorldTransformation('bridge', 'ring-1-gate');
+        store.recordWorldTransformation('hive_transformed', 'hive_suture', { outcome: 'bonded' });
+        const saved = storage.getItem(CAMPAIGN_WORLD_STORAGE_KEY);
+        store.recordWorldTransformation('bridge', 'ring-1-gate');
+        store.recordWorldTransformation('hive_transformed', 'hive_suture', { outcome: 'bonded' });
+        const circular = {};
+        circular.self = circular;
+        expect(store.recordWorldTransformation('hive_transformed', 'hive_suture', circular)).toBeNull();
+        expect(store.recordWorldTransformation('__proto__', 'invalid')).toBeNull();
+        expect(store.recordWorldTransformation('hive_transformed', '__proto__', {})).toBeNull();
+        expect(storage.getItem(CAMPAIGN_WORLD_STORAGE_KEY)).toBe(saved);
+        store.reset();
+        expect(store.recordWorldTransformation('bridge', 'ring-2-gate')).toBeNull();
+        expect(store.getState()).toBeNull();
     });
 
     it('rejects nonserializable snapshots and leaves earned progress intact', () => {

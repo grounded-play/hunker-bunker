@@ -966,12 +966,35 @@ body {
   width: 58%;
   height: 100%;
   background: linear-gradient(90deg, rgba(4, 6, 7, 0.94) 0%, rgba(4, 6, 7, 0.7) 58%, transparent 100%);
-  backdrop-filter: blur(4px);
-  -webkit-backdrop-filter: blur(4px);
+  /* No backdrop-filter: the frost is .splash-frost below. A backdrop blur
+     depends on the compositor sampling what is behind it, and on the Steam
+     Deck (Electron under Gamescope) it did not render at all. */
   -webkit-mask-image: linear-gradient(90deg, black 62%, transparent 100%);
   mask-image: linear-gradient(90deg, black 62%, transparent 100%);
   z-index: -1;
   pointer-events: none;
+}
+
+/* The title menu's frosted glass: a blurred copy of the key art, masked to the
+   menu side and painted under the dark veil (#splash::before, z -1). An
+   ordinary filter blur of its own background renders everywhere, unlike a
+   backdrop-filter, which never drew on the Steam Deck. Background values are
+   inherited so the copy tracks the parallax shift exactly. */
+.splash-frost {
+  position: absolute;
+  inset: 0;
+  z-index: -2;
+  pointer-events: none;
+  background-color: transparent;
+  background-image: inherit;
+  background-position: inherit;
+  background-size: inherit;
+  background-repeat: inherit;
+  filter: blur(9px) saturate(0.85);
+  /* Blur pulls the box edges inward; scaling hides the soft rim. */
+  transform: scale(1.04);
+  -webkit-mask-image: linear-gradient(90deg, black 0%, black 36%, transparent 58%);
+  mask-image: linear-gradient(90deg, black 0%, black 36%, transparent 58%);
 }
 
 /* A restrained pointer-following reflection gives the wet metal depth without
@@ -7326,6 +7349,20 @@ html.boot-cursor-hidden * {
   cursor: none !important;
 }
 
+/* Movies, cinematics, cutscenes and door transitions (main.js
+   PRESENTATION_LAYER_SELECTOR): no native pointer, tactical cursor or
+   gameplay reticle on top of the presentation. */
+html.presentation-cursor-hidden,
+html.presentation-cursor-hidden * {
+  cursor: none !important;
+}
+
+html.presentation-cursor-hidden #tactical-cursor,
+html.presentation-cursor-hidden #gameplay-crosshair,
+html.presentation-cursor-hidden .virtual-gamepad-cursor {
+  display: none !important;
+}
+
 html.boot-cursor-hidden #tactical-cursor {
   display: none !important;
   opacity: 0 !important;
@@ -9735,6 +9772,139 @@ body.mission-intro-active #game-container canvas {
   letter-spacing: 1.2px;
   text-transform: uppercase;
   line-height: 1.35;
+}
+
+/* ── Expedition briefing + compound location title ────────── */
+/* Top center, below the right-aligned vitals header and clear of the
+   right-hand notification deck. Both fade out on their own timers. */
+.expedition-briefing-card {
+  position: absolute;
+  top: calc(var(--vu) * 12.5);
+  left: 50%;
+  width: min(calc(var(--vu) * 60), 86vw);
+  box-sizing: border-box;
+  border: 1.5px solid rgba(133, 208, 255, 0.72);
+  border-radius: 8px;
+  background: rgba(8, 13, 18, 0.92);
+  box-shadow:
+    0 0 22px rgba(66, 152, 219, 0.22),
+    inset 0 0 8px rgba(115, 203, 255, 0.12);
+  padding: calc(var(--vu) * 1.6) calc(var(--vu) * 2.4);
+  z-index: 17000;
+  opacity: 0;
+  transform: translate(-50%, calc(var(--vu) * -2));
+  transition: opacity 320ms ease-out, transform 360ms ease-out;
+  pointer-events: none;
+  font-family: 'Outfit', sans-serif;
+  text-align: center;
+}
+
+.expedition-briefing-card.visible {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+
+.expedition-briefing-card.hidden,
+.compound-location-title.hidden,
+.compound-location-title__tag.hidden {
+  display: none !important;
+}
+
+.expedition-briefing-card__kicker {
+  font-size: var(--font-xs);
+  font-weight: 800;
+  letter-spacing: 2px;
+  color: rgba(158, 224, 255, 0.85);
+}
+
+.expedition-briefing-card__title {
+  margin-top: calc(var(--vu) * 0.5);
+  font-size: calc(var(--vu) * 3);
+  font-weight: 900;
+  letter-spacing: 2px;
+  color: #e4f7ff;
+  text-transform: uppercase;
+}
+
+.expedition-briefing-card__tagline {
+  margin-top: calc(var(--vu) * 0.4);
+  font-size: calc(var(--vu) * 1.7);
+  color: rgba(214, 238, 255, 0.86);
+}
+
+.expedition-briefing-card__effect {
+  margin-top: calc(var(--vu) * 1);
+  font-size: calc(var(--vu) * 1.6);
+  font-weight: 700;
+  color: #ffd166;
+  line-height: 1.4;
+}
+
+.expedition-briefing-card__meta {
+  margin-top: calc(var(--vu) * 0.9);
+  padding-top: calc(var(--vu) * 0.8);
+  border-top: 1px solid rgba(133, 208, 255, 0.28);
+  font-size: var(--font-xs);
+  font-weight: 800;
+  letter-spacing: 1.2px;
+  color: rgba(193, 237, 255, 0.9);
+}
+
+.compound-location-title {
+  position: absolute;
+  /* Below the header row (vitals / sidearm / integrity end near 5.7vu). */
+  top: calc(var(--vu) * 7);
+  left: 50%;
+  max-width: min(calc(var(--vu) * 64), 80vw);
+  display: flex;
+  align-items: center;
+  gap: calc(var(--vu) * 1.2);
+  padding: calc(var(--vu) * 0.7) calc(var(--vu) * 2);
+  border-top: 1px solid rgba(133, 208, 255, 0.55);
+  border-bottom: 1px solid rgba(133, 208, 255, 0.55);
+  background: linear-gradient(90deg, transparent, rgba(8, 13, 18, 0.82) 18%, rgba(8, 13, 18, 0.82) 82%, transparent);
+  z-index: 16900;
+  opacity: 0;
+  transform: translate(-50%, 0);
+  transition: opacity 420ms ease-out;
+  pointer-events: none;
+  font-family: 'Outfit', sans-serif;
+  white-space: nowrap;
+}
+
+.compound-location-title.visible {
+  opacity: 1;
+}
+
+.compound-location-title__text {
+  font-size: calc(var(--vu) * 1.9);
+  font-weight: 800;
+  letter-spacing: 3px;
+  color: #e4f7ff;
+  text-transform: uppercase;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.compound-location-title__tag {
+  font-size: var(--font-xs);
+  font-weight: 900;
+  letter-spacing: 1px;
+  color: #081016;
+  background: #ffd166;
+  border-radius: 3px;
+  padding: calc(var(--vu) * 0.2) calc(var(--vu) * 0.7);
+}
+
+body.mission-intro-active .expedition-briefing-card,
+body.mission-intro-active .compound-location-title {
+  opacity: 0 !important;
+}
+
+/* Siblings of #ui inside #game-viewport, so #ui's own hiding misses them. */
+body.hud-hidden .expedition-briefing-card,
+body.hud-hidden .compound-location-title {
+  display: none !important;
 }
 
 /* ── Radio Transmission CRT Prompt ─────────────────────────── */
@@ -23588,6 +23758,17 @@ body.contrast-max .hud-panel {
   background: linear-gradient(270deg, rgba(4, 6, 7, 0.94) 0%, rgba(4, 6, 7, 0.7) 58%, transparent 100%);
   -webkit-mask-image: linear-gradient(270deg, black 62%, transparent 100%);
   mask-image: linear-gradient(270deg, black 62%, transparent 100%);
+}
+
+/* The frost follows the veil to the right-hand menu side. The veil's darkest
+   stop is eased slightly so the frosted art actually reads through it. */
+.splash-frost {
+  -webkit-mask-image: linear-gradient(270deg, black 0%, black 36%, transparent 58%);
+  mask-image: linear-gradient(270deg, black 0%, black 36%, transparent 58%);
+}
+
+#splash::before {
+  background: linear-gradient(270deg, rgba(4, 6, 7, 0.84) 0%, rgba(4, 6, 7, 0.62) 58%, transparent 100%);
 }
 
 .splash-content {

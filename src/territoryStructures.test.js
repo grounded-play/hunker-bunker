@@ -1,11 +1,19 @@
 import { describe, expect, it } from 'vitest';
-import { createTerritoryRoomBuild, TERRITORY_SITE_PROFILES } from './territoryStructures.js';
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+import {
+    createTerritoryRoomBuild,
+    getTerritoryLocation,
+    TERRITORY_BEAT_KEYS,
+    TERRITORY_SITE_PROFILES
+} from './territoryStructures.js';
 import { rotateRoomBuild, validateRoomBuild } from './roomBuilds.js';
 import { buildWorldPlan, validateWorldPlan } from './ringManifest.js';
-import { generateRadialMazeExpedition } from './mazeExpedition.js';
+import { generateRadialMazeExpedition, LEGACY_ROUTE_LAYOUT_VERSION, ROUTE_LAYOUT_VERSION } from './mazeExpedition.js';
 import { resolveAuthoredChunkStructure } from './authoredWorldRuntime.js';
 import { CHUNK_SIZE } from './tileCatalog.js';
 import { portalPoint } from './architecturalMaze.js';
+import { planChunkRoomEncounters } from './roomEncounters.js';
 
 const WALKABLE = new Set(['.', 'D', 'R', 'B', 'L']);
 const SIDES = { '0,-1': 'north', '1,0': 'east', '0,1': 'south', '-1,0': 'west' };
@@ -40,9 +48,9 @@ function connectedCells(grid, start) {
 }
 
 describe('playable camp and hive territories', () => {
-    it('materializes all six connected named chambers per site across the seed portfolio', () => {
+    it.each([LEGACY_ROUTE_LAYOUT_VERSION, ROUTE_LAYOUT_VERSION])('materializes all six connected named chambers per site across the seed portfolio (route generation %i)', (layoutVersion) => {
         for (const seed of [1, 3, 33, 44, 91, 200, 8128, 65535]) {
-            const plan = buildWorldPlan(generateRadialMazeExpedition(seed));
+            const plan = buildWorldPlan(generateRadialMazeExpedition(seed, { layoutVersion }));
             expect(validateWorldPlan(plan)).toEqual({ valid: true, errors: [] });
             const structures = new Map();
             for (const territory of plan.territories) {
@@ -54,7 +62,7 @@ describe('playable camp and hive territories', () => {
                     const result = resolveAuthoredChunkStructure(() => 0.5, plan, {
                         chunkX: reservation.chunkX, chunkY: reservation.chunkY, openings
                     });
-                    expect(result.status, `${seed}: ${reservation.id}`).toBe('accepted');
+                    expect(result.status, `v${layoutVersion} ${seed}: ${reservation.id}`).toBe('accepted');
                     expect(result.structure.rooms[0]).toMatchObject({
                         siteId: reservation.siteId, territoryBeatKey: reservation.territoryBeatKey
                     });
@@ -120,5 +128,109 @@ describe('playable camp and hive territories', () => {
                 }
             }
         }
+    });
+
+    const threeGameSource = readFileSync(fileURLToPath(new URL('./threeGame.js', import.meta.url)), 'utf8');
+    const allBuilds = () => Object.entries(TERRITORY_SITE_PROFILES).flatMap(([siteId, profile]) => (
+        TERRITORY_BEAT_KEYS[profile.family].flatMap((beatKey) => [0, 1, 2].map((variant) => createTerritoryRoomBuild({
+            siteId, roomFamily: profile.family, territoryBeatKey: beatKey, territoryVariant: variant
+        })))
+    ));
+
+    it('dresses every beat with its own fixture set drawn from registered props', () => {
+        for (const [siteId, profile] of Object.entries(TERRITORY_SITE_PROFILES)) {
+            const fingerprints = new Set();
+            for (const beatKey of TERRITORY_BEAT_KEYS[profile.family]) {
+                const build = createTerritoryRoomBuild({ siteId, roomFamily: profile.family, territoryBeatKey: beatKey, territoryVariant: 0 });
+                expect(build.structuralAnchors.length, `${siteId}:${beatKey}`).toBeGreaterThanOrEqual(3);
+                fingerprints.add(build.structuralAnchors.map((anchor) => anchor.type).join('|'));
+                for (const anchor of build.structuralAnchors) {
+                    expect(threeGameSource, `${siteId}:${beatKey} ${anchor.type}`)
+                        .toMatch(new RegExp(`\\b${anchor.type}:\\s*this\\.load(KeyedSprite|Scatter)Texture`));
+                }
+            }
+            expect(fingerprints.size, siteId).toBe(TERRITORY_BEAT_KEYS[profile.family].length);
+        }
+    });
+
+    it('never dresses one site in another site\'s signature machinery', () => {
+        const siteProps = new Map(Object.entries(TERRITORY_SITE_PROFILES)
+            .flatMap(([siteId, profile]) => [[profile.signature, siteId], [profile.service, siteId]]));
+        for (const build of allBuilds()) {
+            for (const anchor of build.structuralAnchors) {
+                const owner = siteProps.get(anchor.type);
+                if (owner) expect(owner, `${build.id} ${anchor.type}`).toBe(build.siteId);
+            }
+        }
+    });
+
+    it('gives each beat three distinct layouts and keeps its encounter square open', () => {
+        const byBeat = new Map();
+        for (const build of allBuilds()) {
+            const key = `${build.siteId}:${build.territoryBeatKey}`;
+            if (!byBeat.has(key)) byBeat.set(key, new Set());
+            byBeat.get(key).add(build.pattern.join('\n'));
+            for (const zone of build.encounterZones) {
+                for (let y = zone.y; y < zone.y + zone.h; y += 1) {
+                    for (let x = zone.x; x < zone.x + zone.w; x += 1) expect(build.pattern[y][x], build.id).toBe('.');
+                }
+            }
+            expect(validateRoomBuild(build), build.id).toEqual([]);
+        }
+        for (const [key, layouts] of byBeat) expect(layouts.size, key).toBe(3);
+    });
+
+    it('marks the compound fixtures the world-change systems anchor to', () => {
+        for (const siteId of ['camp_meridian', 'camp_tallow', 'camp_vesper']) {
+            const perimeter = createTerritoryRoomBuild({ siteId, roomFamily: 'camp', territoryBeatKey: 'perimeter' });
+            expect(perimeter.structuralAnchors.some((anchor) => anchor.role === 'turret_platform')).toBe(true);
+            const workshop = createTerritoryRoomBuild({ siteId, roomFamily: 'camp', territoryBeatKey: 'service' });
+            expect(workshop.structuralAnchors.find((anchor) => anchor.role === 'workbench').type)
+                .toBe(TERRITORY_SITE_PROFILES[siteId].service);
+        }
+        const chamber = createTerritoryRoomBuild({ siteId: 'hive_relay', roomFamily: 'hive', territoryBeatKey: 'choice_chamber' });
+        expect(chamber.structuralAnchors.find((anchor) => anchor.role === 'synapse_spire').type).toBe('prop_hive_relay_antenna');
+    });
+
+    it('names compound locations for the HUD title card', () => {
+        expect(getTerritoryLocation('camp_meridian', 'service')).toEqual({
+            siteId: 'camp_meridian', siteLabel: 'Meridian', family: 'camp', beatKey: 'service', beatLabel: 'Workshop', safe: true
+        });
+        expect(getTerritoryLocation('hive_suture', 'choice_chamber')).toMatchObject({ family: 'hive', beatLabel: 'Communion chamber' });
+        expect(getTerritoryLocation('hive_suture', 'service')).toBeNull();
+        expect(getTerritoryLocation('nowhere', 'central')).toBeNull();
+    });
+
+    it('garrisons the defended nest once its ring opens and keeps the communion chamber quiet', () => {
+        const plan = buildWorldPlan(generateRadialMazeExpedition(44, { layoutVersion: ROUTE_LAYOUT_VERSION }));
+        const stamp = (beatKey) => {
+            const reservation = plan.reservations.find((entry) => entry.siteId === 'hive_suture'
+                && entry.territoryBeatKey === beatKey && !entry.conditional);
+            const { structure } = resolveAuthoredChunkStructure(() => 0.5, plan, {
+                chunkX: reservation.chunkX, chunkY: reservation.chunkY, openings: openingsFor(plan, reservation)
+            });
+            return { reservation, structure };
+        };
+        let seededRandom = 7;
+        const random = () => {
+            seededRandom = (seededRandom * 16807) % 2147483647;
+            return seededRandom / 2147483647;
+        };
+        const nest = stamp('outer_nest');
+        const [garrison] = planChunkRoomEncounters(nest.structure.rooms, nest.structure.grid, random, { depthTier: 2, maxUnlockedRing: 5 });
+        expect(garrison.spawns.length).toBeGreaterThan(0);
+        expect(garrison.spawns.length).toBeLessThanOrEqual(5);
+        const zone = nest.structure.rooms[0].encounterZones[0];
+        const bounds = zone.bounds ?? { minX: zone.x, minY: zone.y, maxX: zone.x + zone.w - 1, maxY: zone.y + zone.h - 1 };
+        for (const spawn of garrison.spawns) {
+            expect(spawn.x >= bounds.minX && spawn.x <= bounds.maxX && spawn.y >= bounds.minY && spawn.y <= bounds.maxY).toBe(true);
+        }
+        const [locked] = planChunkRoomEncounters(nest.structure.rooms, nest.structure.grid, random, {
+            depthTier: 2, maxUnlockedRing: nest.reservation.ring - 1
+        });
+        expect(locked.spawns).toEqual([]);
+        const chamber = stamp('choice_chamber');
+        const [quiet] = planChunkRoomEncounters(chamber.structure.rooms, chamber.structure.grid, random, { depthTier: 2, maxUnlockedRing: 5 });
+        expect(quiet.spawns).toEqual([]);
     });
 });

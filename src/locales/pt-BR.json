@@ -1471,6 +1471,126 @@
       "goal_leaderboard_req": "Sua pontuação entra no placar de hoje",
       "deploy": "IMPLANTAR OPS DIÁRIAS",
       "deploy_done": "VOLTE AMANHÃ"
+    },
+    "expedition": {
+      "kicker": "EXPEDIÇÃO {index} // CONDIÇÕES DO SETOR",
+      "threat": "AMEAÇA {level}",
+      "salvage": "RECUPERAÇÃO ×{value}",
+      "bounty": "RECOMPENSA: {label}",
+      "location": "{site} · {room}",
+      "first_visit": "NOVO",
+      "conditions": {
+        "glacial_gale": {
+          "name": "VENDAVAL GLACIAL",
+          "tagline": "Nevasca abaixo de zero. O gelo cobre os corredores.",
+          "effect": "Passada mais rápida · O₂ cai 10% mais rápido · Crio dura 25% mais · Hostis mais lentos · Abates crio congelam o bando"
+        },
+        "spore_bloom": {
+          "name": "FLORAÇÃO DE ESPOROS",
+          "tagline": "Névoa tóxica de esporos flutua pelos corredores abertos.",
+          "effect": "O₂ cai 12% mais rápido · Patrulhas mais densas · Caracóis de esporos estouram com recuperação extra"
+        },
+        "bio_resin_surge": {
+          "name": "ONDA DE BIORRESINA",
+          "tagline": "Maré alta da colmeia. Enxames rondam os perímetros.",
+          "effect": "Hostis 18% mais rápidos · Patrulhas mais densas · A resina freia seus passos · Colheitas de colmeia rendem +50%"
+        },
+        "geothermal_arc": {
+          "name": "ARCO GEOTÉRMICO",
+          "tagline": "Condutos sobrecarregados faíscam nas anteparas danificadas.",
+          "effect": "Surto de escudo: um escudo de 20 pontos que recarrega antes · Abates podem descarregar em você"
+        },
+        "subzero_stillness": {
+          "name": "QUIETUDE SUBZERO",
+          "tagline": "Silêncio sinistro. Caçadores de elite dominam as rotas.",
+          "effect": "Poucas patrulhas · Chance de elite ×2,5 · Salas ocultas detectadas de mais longe"
+        }
+      },
+      "bounties": {
+        "salvage_run": "Extraia mais de 120 de sucata de corredores profundos",
+        "eliminate_elite": "Elimine um caçador mutante do setor",
+        "scout_compound": "Infiltre e mapeie um complexo distante",
+        "clearing_breach": "Destrua 6 paredes divisórias estruturais"
+      },
+      "sites": {
+        "camp_meridian": "COMPLEXO MERIDIAN",
+        "camp_tallow": "COMPLEXO TALLOW",
+        "camp_vesper": "COMPLEXO VESPER",
+        "hive_suture": "COLMEIA SUTURE",
+        "hive_relay": "COLMEIA RELAY",
+        "hive_carapace": "COLMEIA CARAPACE"
+      },
+      "rooms": {
+        "camp": {
+          "approach": "ACESSO DO SINAL",
+          "perimeter": "PERÍMETRO DEFENSIVO",
+          "central": "ÁREA COMUM",
+          "service": "OFICINA",
+          "leader_quest": "SALA DE COMANDO",
+          "exit": "PARTIDA DA MISSÃO"
+        },
+        "hive": {
+          "warning": "CÂMARA DE ALERTA",
+          "approach": "ACESSO CONTAMINADO",
+          "outer_nest": "NINHO DEFENDIDO",
+          "choice_chamber": "CÂMARA DE COMUNHÃO",
+          "consequence": "BERÇÁRIO DE RESINA",
+          "escape": "CONDUTO DE FUGA"
+        }
+      },
+      "transformed": {
+        "bridge": "> TRAVESSIA DO CÂNION COM PONTE — O ABISMO É TRANSPONÍVEL",
+        "camp_fortified": "> {site} FORTIFICADO — TORRETAS SEGURAM O PERÍMETRO",
+        "hive_bonded": "> {site} VINCULADA — O SOLO INFESTADO SE ABRE PARA VOCÊ",
+        "hive_harvested": "> {site} COLHIDA — SUA CRIA CORRE ENFURECIDA"
+      },
+      "gate_challenges": {
+        "elite_warden": "> PORTÃO DO ANEL {ring} — UM GUARDIÃO DE ELITE DEFENDE A PASSAGEM",
+        "collapsed_approach": "> PORTÃO DO ANEL {ring} — O ACESSO DESABOU. ENCONTRE CAMINHO PELOS ESCOMBROS",
+        "infested_approach": "> PORTÃO DO ANEL {ring} — O ACESSO ESTÁ INFESTADO DE HOSTIS",
+        "blackout": "> PORTÃO DO ANEL {ring} — REDE MORTA. O ACESSO ESTÁ NO ESCURO"
+      },
+      "overnight": {
+        "creep_contact": "> CRESCIMENTO DA COLMEIA SOB OS PÉS — MOVIMENTO LENTO, O₂ CAINDO MAIS RÁPIDO",
+        "creep_burn": "> CRESCIMENTO DA COLMEIA NO MÁXIMO — ELE QUEIMA. SAIA DAÍ.",
+        "camp_shored_up": "> {site}: DEFESAS REFORÇADAS"
+      },
+      "objective_package": {
+        "briefing": {
+          "regulator_recovery": "> OPÇÃO DE O₂: RETIRE O REGULADOR DA SALA DE O₂ DO ANEL 1 E A BOLHA CUSTA METADE. A SALA NÃO VAI RESPIRAR DIREITO DEPOIS.",
+          "power_reroute": "> OPÇÃO DE O₂: DESVIE A ENERGIA DO ANEL NO CONSOLE DO PORTÃO E REINICIE A SALA DE O₂. BOLHA GRÁTIS — O ACESSO AO PORTÃO FICA ESCURO PARA SEMPRE.",
+          "camp_supply": "> OPÇÃO DE O₂: MERIDIAN VAI VENDER O PRÓPRIO REGULADOR. BOLHA PELA METADE, UM VÍNCULO MAIS FORTE — E UM ACAMPAMENTO EM FALTA.",
+          "hull_plate_salvage": "> OPÇÃO DE CASCO: CORTE PLACAS DA BAIA DE FABRICAÇÃO DO ANEL 2 E O CASCO CUSTA METADE. O BARULHO VAI ATRAIR O ANEL PARA O PORTÃO.",
+          "tallow_resin_seal": "> OPÇÃO DE CASCO: TALLOW VAI VENDER A RESINA QUE VEDA AS PRÓPRIAS PAREDES. CASCO PELA METADE, UM VÍNCULO MAIS FORTE — E UM ACAMPAMENTO EM FALTA.",
+          "suture_chitin_graft": "> OPÇÃO DE CASCO: COLHA QUITINA NO BERÇÁRIO DE SUTURE E O CASCO SAI DE GRAÇA. A COLMEIA VAI SE ESPALHAR PARA PRODUZIR MAIS.",
+          "mast_power_reroute": "> OPÇÃO DE RADAR: PUXE ENERGIA DO ANEL NO PORTÃO DO ANEL 3 E DEPOIS ALINHE O MASTRO. RADAR GRÁTIS — O ACESSO AO PORTÃO FICA ESCURO PARA SEMPRE.",
+          "vesper_scope_trade": "> OPÇÃO DE RADAR: VESPER VAI TROCAR A MIRA DE PONTARIA. RADAR PELA METADE, UM VÍNCULO MAIS FORTE — E UM ACAMPAMENTO MEIO CEGO.",
+          "relay_signal_tap": "> OPÇÃO DE RADAR: CONECTE-SE AO NERVO DE SINAL DE RELAY E O RADAR CUSTA METADE. A COLMEIA VAI CRESCER PARA CURÁ-LO.",
+          "core_scavenge": "> OPÇÃO DE REATOR: ARRANQUE O NÚCLEO DO COMPRESSOR DO ANEL 4 E O REATOR CUSTA METADE. A SALA NÃO VAI RESPIRAR DIREITO DEPOIS.",
+          "carapace_heat_siphon": "> OPÇÃO DE REATOR: SUGUE O CALOR DA NINHADA NO BERÇÁRIO DE CARAPACE E O REATOR SAI DE GRAÇA. A COLMEIA VAI SE ESPALHAR PARA SE AQUECER.",
+          "gate_capacitor_draw": "> OPÇÃO DE REATOR: DRENE OS CAPACITORES DO PORTÃO DO ANEL 4 E DEPOIS CARREGUE O COMPRESSOR. REATOR PELA METADE — O PORTÃO MORTO VAI ATRAIR A COLMEIA."
+        },
+        "complete": {
+          "regulator_recovery": "> REGULADOR RECUPERADO — BOLHA DE O₂ PELA METADE. A SALA DE O₂ AGORA FUNCIONA COM AR RAREFEITO.",
+          "power_reroute": "> ENERGIA DO ANEL DESVIADA — BOLHA DE O₂ GRÁTIS. O ACESSO AO PORTÃO DO ANEL 1 APAGOU.",
+          "camp_supply": "> O REGULADOR DE MERIDIAN É SEU — BOLHA DE O₂ PELA METADE. MERIDIAN FICA SOB PRESSÃO SEM ELE.",
+          "hull_plate_salvage": "> PLACAS CORTADAS — EXPANSÃO DO CASCO PELA METADE. O ACESSO AO PORTÃO DO ANEL 2 ESTÁ INFESTADO.",
+          "tallow_resin_seal": "> A VEDAÇÃO DE RESINA DE TALLOW É SUA — EXPANSÃO DO CASCO PELA METADE. TALLOW FICA SOB PRESSÃO SEM ELA.",
+          "suture_chitin_graft": "> QUITINA ENXERTADA — EXPANSÃO DO CASCO GRÁTIS. O CRESCIMENTO DE SUTURE ALCANÇA MAIS LONGE.",
+          "mast_power_reroute": "> ENERGIA DO ANEL DESVIADA — NÓ DE RADAR GRÁTIS. O ACESSO AO PORTÃO DO ANEL 3 APAGOU.",
+          "vesper_scope_trade": "> A MIRA DE VESPER É SUA — NÓ DE RADAR PELA METADE. VESPER FICA SOB PRESSÃO SEM ELA.",
+          "relay_signal_tap": "> NERVO DE SINAL GRAMPEADO — NÓ DE RADAR PELA METADE. O CRESCIMENTO DE RELAY ALCANÇA MAIS LONGE.",
+          "core_scavenge": "> NÚCLEO ARRANCADO — REATOR PELA METADE. AQUELA SALA AGORA FUNCIONA COM AR RAREFEITO.",
+          "carapace_heat_siphon": "> CALOR DA NINHADA SUGADO — REATOR GRÁTIS. O CRESCIMENTO DE CARAPACE ALCANÇA MAIS LONGE.",
+          "gate_capacitor_draw": "> CAPACITORES DRENADOS — REATOR PELA METADE. O ACESSO AO PORTÃO DO ANEL 4 ESTÁ INFESTADO."
+        }
+      },
+      "extraction": {
+        "tracker": "VOLTE À NAVE PARA A EXTRAÇÃO",
+        "landmark": "ECLUSA DE EXTRAÇÃO",
+        "line_objective": "OBJETIVO CONCLUÍDO. ECLUSA DE EXTRAÇÃO ARMADA. VOLTE À NAVE.",
+        "line_purged": "SETOR PURGADO. ECLUSA DE EXTRAÇÃO ATIVA. VOLTE À NAVE."
+      }
     }
   },
   "narrative": {

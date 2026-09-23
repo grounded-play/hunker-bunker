@@ -349,6 +349,10 @@ export class SurvivorCamp {
         this.level = 0;
         this.barricades = [];
         this.turrets = [];
+        this.searchlights = [];
+        // Offset from the camp heart to its defensive perimeter room, when the
+        // camp sits in a multi-room compound. See setPerimeterAnchor.
+        this.perimeterOffset = null;
         this.dressingModels = [];
         this.elapsed = 0;
         this.pos = { x: 0, z: 0 };
@@ -842,8 +846,7 @@ export class SurvivorCamp {
         // the reveal, you are what it was built to shock.
         while (this.turrets.length < Math.max(0, next - 1)) {
             const i = this.turrets.length;
-            const angle = i === 0 ? -0.55 : 2.45;
-            const offset = { x: Math.cos(angle) * 3.55, z: Math.sin(angle) * 3.55 };
+            const offset = this.turretOffset(i);
             const group = new THREE.Group();
             const mast = new THREE.Mesh(
                 new THREE.CylinderGeometry(0.07, 0.1, 0.9, 6),
@@ -874,7 +877,89 @@ export class SurvivorCamp {
                 cooldown: 1 + Math.random() * 2
             });
         }
+        this.syncSearchlights();
         this.updatePropVisuals();
+    }
+
+    // Compound camps put their defense grid at the checkpoint the player walks
+    // through on the way in, not around the fire. Turrets flank the axis from
+    // the heart to the perimeter room; a lone camp keeps the old fire ring.
+    turretOffset(index) {
+        const perimeter = this.perimeterOffset;
+        if (perimeter) {
+            const length = Math.hypot(perimeter.x, perimeter.z) || 1;
+            const spread = index === 0 ? -2.4 : 2.4;
+            return {
+                x: perimeter.x + (-perimeter.z / length) * spread,
+                z: perimeter.z + (perimeter.x / length) * spread
+            };
+        }
+        const angle = index === 0 ? -0.55 : 2.45;
+        return { x: Math.cos(angle) * 3.55, z: Math.sin(angle) * 3.55 };
+    }
+
+    setPerimeterAnchor(worldPos) {
+        this.perimeterOffset = worldPos && Number.isFinite(worldPos.x) && Number.isFinite(worldPos.z)
+            ? { x: worldPos.x - this.pos.x, z: worldPos.z - this.pos.z }
+            : null;
+        this.turrets.forEach((turret, index) => {
+            turret.offset = this.turretOffset(index);
+            turret.group?.position.set(turret.offset.x, turret.group.position.y, turret.offset.z);
+        });
+        for (const light of this.searchlights) light.group.removeFromParent();
+        this.searchlights = [];
+        this.syncSearchlights();
+    }
+
+    isFortified() {
+        return this.level >= CAMP_AFTERMATH_FORTIFIED_LEVEL;
+    }
+
+    // Halogen masts that sweep the perimeter once the camp is fortified.
+    // Unlit additive cones rather than SpotLights: a runtime light changes
+    // the scene's light count and recompiles every lit material mid-run.
+    syncSearchlights() {
+        if (!this.group || !this.perimeterOffset || !this.isFortified() || this.searchlights.length) return;
+        for (let i = 0; i < 2; i += 1) {
+            const offset = this.turretOffset(i);
+            const group = new THREE.Group();
+            group.position.set(offset.x * 1.02, 0, offset.z * 1.02);
+            const mast = new THREE.Mesh(
+                new THREE.CylinderGeometry(0.06, 0.09, 2.4, 6),
+                new THREE.MeshStandardMaterial({ color: 0x3a444d, metalness: 0.7, roughness: 0.4 })
+            );
+            mast.position.y = 1.2;
+            group.add(mast);
+            const head = new THREE.Group();
+            head.position.y = 2.4;
+            const lamp = new THREE.Mesh(
+                new THREE.SphereGeometry(0.16, 10, 8),
+                new THREE.MeshBasicMaterial({ color: 0xfff2c4 })
+            );
+            head.add(lamp);
+            const beamMat = new THREE.MeshBasicMaterial({
+                color: 0xfff2c4,
+                transparent: true,
+                opacity: 0.1,
+                depthWrite: false,
+                blending: THREE.AdditiveBlending,
+                side: THREE.DoubleSide
+            });
+            const beam = new THREE.Mesh(new THREE.ConeGeometry(1.5, 5.5, 16, 1, true), beamMat);
+            // Tip at the lamp, mouth on the ground ahead of the mast.
+            beam.position.set(0, -1.1, 2.2);
+            beam.rotation.x = -1.15;
+            head.add(beam);
+            group.add(head);
+            this.group.add(group);
+            this.searchlights.push({ group, head, beam, beamMat, phase: i * Math.PI });
+        }
+        this.updateSearchlightVisibility();
+    }
+
+    updateSearchlightVisibility() {
+        const lit = !this.destroyed && this.status !== 'culled';
+        for (const light of this.searchlights) light.beam.visible = lit;
     }
 
     // World position of a turret.
@@ -932,6 +1017,7 @@ export class SurvivorCamp {
     }
 
     updatePropVisuals() {
+        this.updateSearchlightVisibility();
         if (!this.propSprites) return;
         const wear = getCampConditionDressing(this.overnightCondition);
         const lit = this.status !== 'culled' && !wear.fireDoused;
@@ -1149,6 +1235,10 @@ export class SurvivorCamp {
 
     get isRevealed() { return this.revealed; }
 
+    get isVisible() {
+        return Boolean(this.revealed && this.group && this.group.visible !== false);
+    }
+
     getPosition() { return this.built ? { ...this.pos } : null; }
 
     distanceTo(x, z) {
@@ -1214,6 +1304,9 @@ export class SurvivorCamp {
         }
         if (this.signalColumn?.visible && this.signalMat) {
             this.signalMat.opacity = 0.2 + (Math.sin(this.elapsed * 1.6) + 1) * 0.05;
+        }
+        for (const light of this.searchlights) {
+            light.head.rotation.y = Math.sin(this.elapsed * 0.55 + light.phase) * 0.95;
         }
         if (this.lockdownStrobe?.visible && this.lockdownStrobeMat) {
             // Hard on/off blink — a warning, not a glow.

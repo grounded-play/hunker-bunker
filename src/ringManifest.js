@@ -243,6 +243,10 @@ function makeCoreReservations(expedition, ring) {
             ring,
             role: 'ringCrossing',
             blockerId: blocker.id,
+            // What the gate physically is (collapsed_bridge, blast_bulkhead,
+            // ...). Setpieces match this, not a ring number, so a bridge
+            // setpiece can only ever dress the gate whose mission is a bridge.
+            blockerFeature: blocker.feature ?? null,
             roomFamily: 'gate',
             placement: sourcePlacement(blocker)
         }));

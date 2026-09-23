@@ -147,7 +147,7 @@ describe('spawnDamagePip — non-numeric status text', () => {
             })
         };
 
-        const fakeThis = { scene: { add: () => {}, remove: () => {} }, transientEffects: [] };
+        const fakeThis = { scene: { add: () => {}, remove: () => {} }, transientEffects: [], getDamagePipTexture: ThreeGame.prototype.getDamagePipTexture };
         ThreeGame.prototype.spawnDamagePip.call(fakeThis, 0, 0, 'SEALED');
 
         expect(fillText).toHaveBeenCalledWith('-SEALED', 32, 32);

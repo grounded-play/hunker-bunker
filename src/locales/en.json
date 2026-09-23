@@ -910,7 +910,7 @@
     "controls": {
       "steam_deck": "STEAM DECK:",
       "desktop": "DESKTOP:",
-      "deck_hint": "Left stick moves or navigates · Right stick aims and controls the visible pointer · A accepts/interacts · B backs out/dodges · Menu opens settings.",
+      "deck_hint": "Left stick moves or navigates · Right stick aims and controls visible pointer · RT Fire · Y / RB Smash (Secondary Attack) · A accepts/interacts · B backs out/dodges · Menu opens settings.",
       "desktop_hint": "Click a slot, then press a key to bind it. ESC cancels."
     },
     "mothership_dialogue": {
@@ -1471,6 +1471,126 @@
       "goal_leaderboard_req": "Your score joins today's Daily Ops board",
       "deploy": "DEPLOY DAILY OPS",
       "deploy_done": "BACK TOMORROW"
+    },
+    "expedition": {
+      "kicker": "EXPEDITION {index} // SECTOR CONDITIONS",
+      "threat": "THREAT {level}",
+      "salvage": "SALVAGE ×{value}",
+      "bounty": "BOUNTY: {label}",
+      "location": "{site} · {room}",
+      "first_visit": "NEW",
+      "conditions": {
+        "glacial_gale": {
+          "name": "GLACIAL GALE",
+          "tagline": "Sub-zero blizzard. Ice slicks the corridors.",
+          "effect": "Faster footing · O₂ drains 10% faster · Cryo holds 25% longer · Hostiles slowed · Cryo kills freeze their pack"
+        },
+        "spore_bloom": {
+          "name": "SPORE BLOOM",
+          "tagline": "Toxic spore mist drifts through unsealed halls.",
+          "effect": "O₂ drains 12% faster · Denser patrols · Spore snails burst with extra salvage"
+        },
+        "bio_resin_surge": {
+          "name": "BIO-RESIN SURGE",
+          "tagline": "Hive high tide. Swarmers stalk the perimeters.",
+          "effect": "Hostiles 18% faster · Denser patrols · Resin slows your stride · Hive harvests yield +50%"
+        },
+        "geothermal_arc": {
+          "name": "GEOTHERMAL ARC",
+          "tagline": "Overloaded conduits arc across damaged bulkheads.",
+          "effect": "Shield surge: a 20-point shield that recharges sooner · Kills may arc into you"
+        },
+        "subzero_stillness": {
+          "name": "SUB-ZERO STILLNESS",
+          "tagline": "Eerie silence. Elite stalkers own the routes.",
+          "effect": "Sparse patrols · Elite odds ×2.5 · Hidden rooms sensed farther"
+        }
+      },
+      "bounties": {
+        "salvage_run": "Extract 120+ scrap from deep corridors",
+        "eliminate_elite": "Eliminate a mutated sector stalker",
+        "scout_compound": "Infiltrate and map an outlying compound",
+        "clearing_breach": "Smash 6 structural wall dividers"
+      },
+      "sites": {
+        "camp_meridian": "MERIDIAN COMPOUND",
+        "camp_tallow": "TALLOW COMPOUND",
+        "camp_vesper": "VESPER COMPOUND",
+        "hive_suture": "HIVE SUTURE",
+        "hive_relay": "HIVE RELAY",
+        "hive_carapace": "HIVE CARAPACE"
+      },
+      "rooms": {
+        "camp": {
+          "approach": "SIGNAL APPROACH",
+          "perimeter": "DEFENSIVE PERIMETER",
+          "central": "COMMON GROUND",
+          "service": "WORKSHOP BAY",
+          "leader_quest": "COMMAND ROOM",
+          "exit": "MISSION DEPARTURE"
+        },
+        "hive": {
+          "warning": "WARNING CHAMBER",
+          "approach": "CONTAMINATED APPROACH",
+          "outer_nest": "DEFENDED NEST",
+          "choice_chamber": "COMMUNION CHAMBER",
+          "consequence": "RESIN NURSERY",
+          "escape": "ESCAPE CONDUIT"
+        }
+      },
+      "transformed": {
+        "bridge": "> CANYON CROSSING BRIDGED — THE CHASM IS WALKABLE",
+        "camp_fortified": "> {site} FORTIFIED — TURRETS HOLD THE PERIMETER",
+        "hive_bonded": "> {site} BONDED — INFESTED GROUND PARTS FOR YOU",
+        "hive_harvested": "> {site} HARVESTED — ITS BROOD RUNS ENRAGED"
+      },
+      "gate_challenges": {
+        "elite_warden": "> RING {ring} GATE — AN ELITE WARDEN HOLDS THE THRESHOLD",
+        "collapsed_approach": "> RING {ring} GATE — THE APPROACH HAS COLLAPSED. FIND A WAY THROUGH THE RUBBLE",
+        "infested_approach": "> RING {ring} GATE — THE APPROACH IS CRAWLING WITH HOSTILES",
+        "blackout": "> RING {ring} GATE — GRID DEAD. THE APPROACH RUNS DARK"
+      },
+      "overnight": {
+        "creep_contact": "> HIVE CREEP UNDERFOOT — MOVEMENT SLOWED, O₂ DRAINING FASTER",
+        "creep_burn": "> HIVE CREEP AT FULL SPREAD — IT BURNS. GET OFF IT.",
+        "camp_shored_up": "> {site} DEFENCES SHORED UP"
+      },
+      "objective_package": {
+        "briefing": {
+          "regulator_recovery": "> O₂ OPTION: STRIP THE RING-1 O₂ ROOM'S REGULATOR AND THE BUBBLE COSTS HALF. THE ROOM WON'T BREATHE RIGHT AFTER.",
+          "power_reroute": "> O₂ OPTION: REROUTE RING POWER AT THE GATE CONSOLE, THEN RESTART THE O₂ ROOM. BUBBLE FREE — THE GATE APPROACH GOES DARK FOR GOOD.",
+          "camp_supply": "> O₂ OPTION: MERIDIAN WILL SELL ITS OWN REGULATOR. HALF-COST BUBBLE, A STRONGER BOND — AND A CAMP LEFT SHORT.",
+          "hull_plate_salvage": "> HULL OPTION: CUT PLATING FROM THE RING-2 FABRICATION BAY AND THE HULL COSTS HALF. THE NOISE WILL DRAW THE RING TO ITS GATE.",
+          "tallow_resin_seal": "> HULL OPTION: TALLOW WILL SELL THE RESIN THAT SEALS THEIR OWN WALLS. HALF-COST HULL, A STRONGER BOND — AND A CAMP LEFT SHORT.",
+          "suture_chitin_graft": "> HULL OPTION: HARVEST CHITIN FROM SUTURE'S NURSERY AND THE HULL IS FREE. THE HIVE WILL SPREAD TO MAKE MORE.",
+          "mast_power_reroute": "> RADAR OPTION: TAP RING POWER AT THE RING-3 GATE, THEN ALIGN THE MAST. RADAR FREE — THE GATE APPROACH GOES DARK FOR GOOD.",
+          "vesper_scope_trade": "> RADAR OPTION: VESPER WILL TRADE ITS TARGETING SCOPE. HALF-COST RADAR, A STRONGER BOND — AND A CAMP LEFT HALF-BLIND.",
+          "relay_signal_tap": "> RADAR OPTION: SPLICE INTO RELAY'S SIGNAL NERVE AND THE RADAR COSTS HALF. THE HIVE WILL GROW TO HEAL IT.",
+          "core_scavenge": "> REACTOR OPTION: PULL THE RING-4 COMPRESSOR CORE AND THE REACTOR COSTS HALF. THE ROOM WON'T BREATHE RIGHT AFTER.",
+          "carapace_heat_siphon": "> REACTOR OPTION: SIPHON BROOD HEAT FROM CARAPACE'S NURSERY AND THE REACTOR IS FREE. THE HIVE WILL SPREAD TO KEEP WARM.",
+          "gate_capacitor_draw": "> REACTOR OPTION: DRAIN THE RING-4 GATE CAPACITORS, THEN CHARGE THE COMPRESSOR. HALF-COST REACTOR — THE DEAD GATE WILL DRAW THE HIVE."
+        },
+        "complete": {
+          "regulator_recovery": "> REGULATOR RECOVERED — O₂ BUBBLE AT HALF COST. THE O₂ ROOM IS RUNNING ON THIN AIR NOW.",
+          "power_reroute": "> RING POWER REROUTED — O₂ BUBBLE BUILD IS FREE. THE RING-1 GATE APPROACH HAS GONE DARK.",
+          "camp_supply": "> MERIDIAN'S REGULATOR IS YOURS — O₂ BUBBLE AT HALF COST. MERIDIAN IS STRAINED WITHOUT IT.",
+          "hull_plate_salvage": "> HULL PLATING CUT — HULL EXPANSION AT HALF COST. THE RING-2 GATE APPROACH IS SWARMING NOW.",
+          "tallow_resin_seal": "> TALLOW'S RESIN SEAL IS YOURS — HULL EXPANSION AT HALF COST. TALLOW IS STRAINED WITHOUT IT.",
+          "suture_chitin_graft": "> CHITIN GRAFTED — HULL EXPANSION IS FREE. SUTURE'S CREEP REACHES FURTHER NOW.",
+          "mast_power_reroute": "> RING POWER TAPPED — RADAR NODE IS FREE. THE RING-3 GATE APPROACH HAS GONE DARK.",
+          "vesper_scope_trade": "> VESPER'S SCOPE IS YOURS — RADAR NODE AT HALF COST. VESPER IS STRAINED WITHOUT IT.",
+          "relay_signal_tap": "> SIGNAL NERVE TAPPED — RADAR NODE AT HALF COST. RELAY'S CREEP REACHES FURTHER NOW.",
+          "core_scavenge": "> COMPRESSOR CORE PULLED — REACTOR AT HALF COST. THAT ROOM IS RUNNING ON THIN AIR NOW.",
+          "carapace_heat_siphon": "> BROOD HEAT SIPHONED — REACTOR IS FREE. CARAPACE'S CREEP REACHES FURTHER NOW.",
+          "gate_capacitor_draw": "> CAPACITORS DRAINED — REACTOR AT HALF COST. THE RING-4 GATE APPROACH IS SWARMING NOW."
+        }
+      },
+      "extraction": {
+        "tracker": "RETURN TO SHIP FOR EXTRACTION",
+        "landmark": "EXTRACTION AIRLOCK",
+        "line_objective": "OBJECTIVE COMPLETE. EXTRACTION AIRLOCK ARMED. RETURN TO SHIP.",
+        "line_purged": "SECTOR PURGED. EXTRACTION AIRLOCK ACTIVE. RETURN TO SHIP."
+      }
     }
   },
   "narrative": {

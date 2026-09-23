@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { applyBlackChromaKey } from './textureKeying.js';
 import { assetUrl } from './assetUrl.js';
+import { deriveHiveOutcome, HIVE_OUTCOMES } from './worldTransformations.js';
 
 const ALIEN_SPRITESHEETS = {
     'hive_suture': '/alien_nahl_walk.png',
@@ -177,6 +178,11 @@ export class HiveSite {
         this.color = ALIEN_COLORS[id] ?? 0x8cff96;
         this.eggsAudio = null;
         this.wasHurt = false;
+        // The compound's resolved fate: bio-flora where the being was bonded,
+        // thorn pods where it was harvested. See setWorldOutcome.
+        this.worldOutcome = null;
+        this.outcomeGroup = null;
+        this.outcomeParts = [];
     }
 
     createAlienDrone({ angle = 0, radius = 1.6, scale = 1 } = {}) {
@@ -395,6 +401,7 @@ export class HiveSite {
         this.group = group;
         this.built = true;
         this.syncSignalColumn();
+        this.setWorldOutcome(this.worldOutcome);
     }
 
     reveal(x, z) {
@@ -511,6 +518,10 @@ export class HiveSite {
     update(delta) {
         if (!this.built || !this.revealed) return;
         this.elapsed += delta;
+        for (const part of this.outcomeParts) {
+            const beat = 1 + Math.sin(this.elapsed * 2.2 + part.userData.phase) * 0.18;
+            part.userData.pulse?.scale.setScalar(beat);
+        }
 
         // Dynamic eggs hum volume and panning based on player distance
         if (this.eggsAudio) {
@@ -634,7 +645,79 @@ export class HiveSite {
         if (Number.isFinite(record.bond)) this.setBond(record.bond);
         this.networked = Boolean(record.networked);
         if (record.status) this.setStatus(record.status);
+        this.setWorldOutcome(deriveHiveOutcome(record));
         this.updatePropVisuals();
+    }
+
+    // Unlit meshes only: a runtime light would recompile every lit material.
+    setWorldOutcome(outcome) {
+        // A record can sync before build(); the same outcome is then still
+        // owed its meshes once a group exists.
+        if ((outcome ?? null) === this.worldOutcome && (this.outcomeGroup || !this.group || !outcome)) return;
+        this.worldOutcome = outcome ?? null;
+        this.outcomeGroup?.traverse((child) => {
+            child.geometry?.dispose?.();
+            child.material?.dispose?.();
+        });
+        this.outcomeGroup?.removeFromParent();
+        this.outcomeGroup = null;
+        this.outcomeParts = [];
+        if (!this.group || !this.worldOutcome) return;
+        const group = new THREE.Group();
+        group.userData = { kind: 'hive-outcome', hiveId: this.id, outcome: this.worldOutcome };
+        const bonded = this.worldOutcome === HIVE_OUTCOMES.BONDED;
+        const count = bonded ? 9 : 11;
+        for (let i = 0; i < count; i += 1) {
+            const angle = (i / count) * Math.PI * 2 + (bonded ? 0.2 : 0.5);
+            const radius = 3.1 + ((i * 7) % 5) * 0.28;
+            const part = new THREE.Group();
+            part.position.set(Math.cos(angle) * radius, 0, Math.sin(angle) * radius);
+            if (bonded) {
+                const stalk = new THREE.Mesh(
+                    new THREE.CylinderGeometry(0.03, 0.05, 0.7, 5),
+                    new THREE.MeshBasicMaterial({ color: 0x2f7a5a })
+                );
+                stalk.position.y = 0.35;
+                const bulb = new THREE.Mesh(
+                    new THREE.SphereGeometry(0.14, 8, 6),
+                    new THREE.MeshBasicMaterial({ color: 0x7dffcf })
+                );
+                bulb.position.y = 0.74;
+                part.add(stalk, bulb);
+                part.userData.pulse = bulb;
+            } else {
+                const thorn = new THREE.Mesh(
+                    new THREE.ConeGeometry(0.22, 0.95, 6),
+                    new THREE.MeshBasicMaterial({ color: 0x3a1218 })
+                );
+                thorn.position.y = 0.47;
+                thorn.rotation.z = ((i % 3) - 1) * 0.35;
+                const pod = new THREE.Mesh(
+                    new THREE.SphereGeometry(0.1, 8, 6),
+                    new THREE.MeshBasicMaterial({ color: 0xff3b3b })
+                );
+                pod.position.y = 0.2;
+                pod.position.x = 0.2;
+                part.add(thorn, pod);
+                part.userData.pulse = pod;
+            }
+            part.userData.phase = i * 0.7;
+            group.add(part);
+            this.outcomeParts.push(part);
+        }
+        if (bonded) {
+            const cleansed = new THREE.Mesh(
+                new THREE.RingGeometry(2.7, 4.6, 40),
+                new THREE.MeshBasicMaterial({
+                    color: 0x7dffcf, transparent: true, opacity: 0.12, depthWrite: false, side: THREE.DoubleSide
+                })
+            );
+            cleansed.rotation.x = -Math.PI / 2;
+            cleansed.position.y = 0.021;
+            group.add(cleansed);
+        }
+        this.group.add(group);
+        this.outcomeGroup = group;
     }
 
     get isRevealed() { return this.revealed; }

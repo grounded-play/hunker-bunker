@@ -9,7 +9,19 @@ const ALLOWED_EMPTY_SURFACES = new Set([
     'rgb-root',
     // Built from the <option>s of whichever dropdown opened it, so it is empty
     // until then. controller-focus.spec.js exercises its generated buttons.
-    'select-picker-overlay'
+    'select-picker-overlay',
+    // In-run dialogue surfaces. style.css suppresses them under
+    // html.phase-menu, so they cannot render from the title screen this audit
+    // runs on.
+    'leader-conversation-modal',
+    'npc-dialogue-modal',
+    'mothership-dialogue',
+    // The Armory builds its whole UI when it opens (armoryUi.js); the static
+    // shell has no controls.
+    'armory-screen',
+    // Laid out only while a Steam Vault item reveal plays; its claim button
+    // has no box in the idle vault.
+    'vault-reveal-overlay'
 ]);
 
 test.describe('complete menu keyboard and Steam Deck reachability', () => {
@@ -40,14 +52,30 @@ test.describe('complete menu keyboard and Steam Deck reachability', () => {
             }));
             const output = [];
 
+            // Left/Right on a focused select or slider changes its value, as it
+            // should for a player. Here that committed real changes: the debug
+            // console's teleport select ran `tp nexus`, whose modal opened a
+            // moment later and stole focus from a later surface's pass. The
+            // audit checks navigation, so value commits stop at the window and
+            // every value is put back afterwards.
+            const swallowCommit = (event) => event.stopImmediatePropagation();
+            window.addEventListener('change', swallowCommit, true);
+            window.addEventListener('input', swallowCommit, true);
+            const valueControls = Array.from(document.querySelectorAll('select, input'));
+            const savedValues = valueControls.map((control) => [control, control.value, control.checked]);
+            const debugConsole = document.getElementById('hb-debug-console');
+            const debugConsoleDisplay = debugConsole?.style.display ?? '';
             for (const root of roots) {
+                // A nested surface (the vault reveal inside the Steam Vault)
+                // opens over its parent, so its ancestors stay open with it.
+                const open = new Set(roots.filter((candidate) => candidate === root || candidate.contains(root)));
                 for (const candidate of roots) {
-                    candidate.classList.toggle('hidden', candidate !== root);
-                    candidate.setAttribute('aria-hidden', candidate === root ? 'false' : 'true');
+                    candidate.classList.toggle('hidden', !open.has(candidate));
+                    candidate.setAttribute('aria-hidden', open.has(candidate) ? 'false' : 'true');
                 }
-                root.classList.remove('hidden');
-                root.setAttribute('aria-hidden', 'false');
-                if (root.id === 'hb-debug-console') root.style.display = 'flex';
+                // The debug console hides with display rather than a class;
+                // leaving it shown after its own pass let it own focus later.
+                if (debugConsole) debugConsole.style.display = root === debugConsole ? 'flex' : debugConsoleDisplay;
                 await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
 
                 const targets = Array.from(root.querySelectorAll(selector)).filter(isVisible);
@@ -112,6 +140,12 @@ test.describe('complete menu keyboard and Steam Deck reachability', () => {
                 targets.forEach((target) => { delete target.dataset.menuAuditKey; });
             }
 
+            for (const [control, value, checked] of savedValues) {
+                control.value = value;
+                control.checked = checked;
+            }
+            window.removeEventListener('change', swallowCommit, true);
+            window.removeEventListener('input', swallowCommit, true);
             for (const state of saved) {
                 state.root.className = state.className;
                 state.root.style.display = state.display;

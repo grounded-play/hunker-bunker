@@ -213,6 +213,8 @@
 
     <!-- Splash Screen (Monolithic) -->
     <div id="splash" class="hidden">
+      <!-- Frosted copy of the key art behind the title menu (see .splash-frost). -->
+      <div class="splash-frost" aria-hidden="true"></div>
       <!-- Steam Account Profile Badge -->
       <div data-i18n-aria-label="ui.splash_steam_badge.aria_label_open_steam_profile" data-i18n-title="ui.splash_steam_badge.title_click_to_open" id="splash-steam-badge" class="steam-account-badge" role="button" tabindex="0"
         aria-label="Open Steam profile" title="Click to open Steam Overlay profile">
@@ -339,7 +341,7 @@
 
         <div class="credits-footer">
           <span data-i18n="ui.about.thank_you_for_deploying" class="credits-footer-thankyou">THANK YOU FOR DEPLOYING</span>
-          <span id="about-modal-sys-ver" class="credits-footer-ver">SYS VER: 2.4.7-BETA // ACTIVE</span>
+          <span id="about-modal-sys-ver" class="credits-footer-ver">SYS VER: 2.4.11-BETA // ACTIVE</span>
         </div>
       </div>
     </div>
@@ -1562,6 +1564,20 @@
       </div>
     </div>
 
+    <!-- Deployment conditions and compound room names: top center, clear of the
+         right-hand notification deck. Filled from ui.expedition.* by main.js. -->
+    <div id="expedition-briefing-card" class="expedition-briefing-card hidden" role="status" aria-live="polite">
+      <div id="expedition-briefing-kicker" class="expedition-briefing-card__kicker"></div>
+      <div id="expedition-briefing-title" class="expedition-briefing-card__title"></div>
+      <div id="expedition-briefing-tagline" class="expedition-briefing-card__tagline"></div>
+      <div id="expedition-briefing-effect" class="expedition-briefing-card__effect"></div>
+      <div id="expedition-briefing-meta" class="expedition-briefing-card__meta"></div>
+    </div>
+    <div id="compound-location-title" class="compound-location-title hidden" aria-live="polite">
+      <span id="compound-location-text" class="compound-location-title__text"></span>
+      <span id="compound-location-tag" class="compound-location-title__tag hidden"></span>
+    </div>
+
     <!-- Mission/action prompts sit below the popup deck -->
     <div class="hud-mission-stack">
       <div id="biome-hud-prompt" class="biome-hud-prompt hidden" aria-live="polite">
@@ -2732,7 +2748,7 @@
       <div class="modal-content controls-panel">
         <button class="close-modal controls-close" id="close-controls">×</button>
         <h2 class="modal-title" data-i18n="ui.modal.controls">CONTROLS</h2>
-        <p class="controls-hint"><strong data-i18n="ui.controls.steam_deck">STEAM DECK:</strong> <span data-i18n="ui.controls.deck_hint">Left stick moves or navigates · Right stick aims and controls the visible pointer · A accepts/interacts · B backs out/dodges · Menu opens settings.</span></p>
+        <p class="controls-hint"><strong data-i18n="ui.controls.steam_deck">STEAM DECK:</strong> <span data-i18n="ui.controls.deck_hint">Left stick moves or navigates · Right stick aims and controls visible pointer · RT Fire · Y / RB Smash (Secondary Attack) · A accepts/interacts · B backs out/dodges · Menu opens settings.</span></p>
         <p class="controls-hint"><strong data-i18n="ui.controls.desktop">DESKTOP:</strong> <span data-i18n="ui.controls.desktop_hint">Click a slot, then press a key to bind it. ESC cancels.</span></p>
         <div class="controls-list" id="controls-list"></div>
         <div class="controls-actions">

@@ -1,6 +1,6 @@
 # WFC Tile-Based Maze Generation (Phase 1 core engine) Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
 
 **Goal:** Replace the MAZE landform's DFS+erosion generation with a WFC
 tile-catalog engine (§1-§6 of `docs/superpowers/specs/2026-07-27-wfc-tile-maze-generation-design.md`),
@@ -47,7 +47,7 @@ engine existing first and is a separate follow-up plan.
   pattern: string[7], sockets: { n, e, s, w } }`), `oppositeSide(side)`,
   `rotatePatternCW(pattern)`, `rotateSocketsCW(sockets)`.
 
-- [ ] **Step 1: Write the failing tests for the rotation helpers and socket/pattern consistency**
+- [x] **Step 1: Write the failing tests for the rotation helpers and socket/pattern consistency**
 
 ```js
 // src/tileCatalog.test.js
@@ -119,12 +119,12 @@ describe('TILE_CATALOG self-consistency', () => {
 });
 ```
 
-- [ ] **Step 2: Run the tests to verify they fail (module doesn't exist yet)**
+- [x] **Step 2: Run the tests to verify they fail (module doesn't exist yet)**
 
 Run: `npx vitest run src/tileCatalog.test.js`
 Expected: FAIL — `Cannot find module './tileCatalog.js'`
 
-- [ ] **Step 3: Write `src/tileCatalog.js`**
+- [x] **Step 3: Write `src/tileCatalog.js`**
 
 ```js
 // A catalog of authored 7x7 meta-tiles used by the WFC generator
@@ -333,12 +333,12 @@ export const TILE_CATALOG = Object.freeze([
 ]);
 ```
 
-- [ ] **Step 4: Run the tests to verify they pass**
+- [x] **Step 4: Run the tests to verify they pass**
 
 Run: `npx vitest run src/tileCatalog.test.js`
 Expected: PASS (all tests green)
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/tileCatalog.js src/tileCatalog.test.js
@@ -359,7 +359,7 @@ git commit -m "feat: add WFC tile catalog with 22 tiles from 8 rotated base shap
   9 resolved tile objects (index `my * 3 + mx`), always fully resolved
   (never contains `null`/`undefined`).
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 ```js
 // src/wfcGenerator.test.js
@@ -425,12 +425,12 @@ describe('collapseChunkLattice', () => {
 });
 ```
 
-- [ ] **Step 2: Run the tests to verify they fail**
+- [x] **Step 2: Run the tests to verify they fail**
 
 Run: `npx vitest run src/wfcGenerator.test.js`
 Expected: FAIL — `Cannot find module './wfcGenerator.js'`
 
-- [ ] **Step 3: Write `src/wfcGenerator.js` (collapse only, no stamping/reachability yet)**
+- [x] **Step 3: Write `src/wfcGenerator.js` (collapse only, no stamping/reachability yet)**
 
 ```js
 import { TILE_CATALOG, SOCKET, oppositeSide } from './tileCatalog.js';
@@ -549,7 +549,7 @@ export function collapseChunkLattice(random) {
 }
 ```
 
-- [ ] **Step 4: Run the tests to verify they pass**
+- [x] **Step 4: Run the tests to verify they pass**
 
 Run: `npx vitest run src/wfcGenerator.test.js`
 Expected: PASS. If any seed fails the connectivity assertion, re-check
@@ -557,7 +557,7 @@ Expected: PASS. If any seed fails the connectivity assertion, re-check
 (a common mistake is checking connectivity but still returning the
 disconnected result).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/wfcGenerator.js src/wfcGenerator.test.js
@@ -577,7 +577,7 @@ git commit -m "feat: add WFC collapse solver for the 3x3 chunk meta-tile lattice
 - Produces: `stampLattice(lattice, chunkSize)` → `string[][]` grid of
   `'#'`/`'.'` characters, `chunkSize x chunkSize`.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 ```js
 // append to src/wfcGenerator.test.js
@@ -639,12 +639,12 @@ describe('stampLattice', () => {
 });
 ```
 
-- [ ] **Step 2: Run the tests to verify they fail**
+- [x] **Step 2: Run the tests to verify they fail**
 
 Run: `npx vitest run src/wfcGenerator.test.js`
 Expected: FAIL — `stampLattice is not a function`
 
-- [ ] **Step 3: Add `stampLattice` to `src/wfcGenerator.js`**
+- [x] **Step 3: Add `stampLattice` to `src/wfcGenerator.js`**
 
 ```js
 // add near the top, alongside the other tileCatalog import
@@ -670,7 +670,7 @@ export function stampLattice(lattice, chunkSize) {
 }
 ```
 
-- [ ] **Step 4: Run the tests to verify they pass**
+- [x] **Step 4: Run the tests to verify they pass**
 
 Run: `npx vitest run src/wfcGenerator.test.js`
 Expected: PASS. The "byte-identical shared borders" property from the spec
@@ -678,7 +678,7 @@ Expected: PASS. The "byte-identical shared borders" property from the spec
 if it fails, the most likely cause is a socket/pattern mismatch introduced
 in Task 1, not a bug in `stampLattice` itself.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/wfcGenerator.js src/wfcGenerator.test.js
@@ -704,7 +704,7 @@ down (`19920-19943`) also run for MAZE. All of that goes away for MAZE —
 the WFC grid replaces the DFS carve entirely, and Task 5 will add the
 detail pass in its place.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 ```js
 // src/threeGame.wfcMaze.test.js
@@ -777,14 +777,14 @@ describe('buildChunk — WFC MAZE generation', () => {
 });
 ```
 
-- [ ] **Step 2: Run the test to verify it fails**
+- [x] **Step 2: Run the test to verify it fails**
 
 Run: `npx vitest run src/threeGame.wfcMaze.test.js`
 Expected: FAIL (the grid is still DFS-generated, so reachability likely
 still passes but is coincidental — the real signal is Step 4 below; run it
 now mainly to confirm the fake harness itself loads without error).
 
-- [ ] **Step 3: Modify `buildChunk` in `src/threeGame.js`**
+- [x] **Step 3: Modify `buildChunk` in `src/threeGame.js`**
 
 Replace the DFS carve + MAZE branch. The full carve loop
 (`src/threeGame.js:19826-19883`, everything from `const grid = ...` through
@@ -922,12 +922,12 @@ Add the import at the top of `src/threeGame.js` (near the existing
 import { collapseChunkLattice, stampLattice } from './wfcGenerator.js';
 ```
 
-- [ ] **Step 4: Run the tests to verify they pass**
+- [x] **Step 4: Run the tests to verify they pass**
 
 Run: `npx vitest run src/threeGame.wfcMaze.test.js`
 Expected: PASS
 
-- [ ] **Step 5: Run the full existing test suite to check for regressions**
+- [x] **Step 5: Run the full existing test suite to check for regressions**
 
 Run: `npx vitest run`
 Expected: PASS, except `src/threeGame.chunkVariation.test.js` and
@@ -937,7 +937,7 @@ no longer true. If they fail, update their MAZE-specific assertions to
 match the new WFC pipeline (their non-MAZE-landform assertions should be
 unaffected and must still pass unchanged).
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add src/threeGame.js src/threeGame.wfcMaze.test.js src/threeGame.chunkVariation.test.js src/threeGame.widenChunkCorridors.test.js
@@ -959,7 +959,7 @@ The confirmed bug: `clearSpawnArea`'s doorway corridor is carved at a fixed
 `localX 4..13` range, independent of `ensureChunkPortals`' actual computed
 south offset. This task makes the doorway target the real offset.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 ```js
 // src/threeGame.crashSiteDoor.test.js
@@ -996,13 +996,13 @@ describe('clearSpawnArea — door/portal alignment', () => {
 });
 ```
 
-- [ ] **Step 2: Run the test to verify it fails**
+- [x] **Step 2: Run the test to verify it fails**
 
 Run: `npx vitest run src/threeGame.crashSiteDoor.test.js`
 Expected: FAIL for at least some seeds — the fixed `localX 4..13` range
 doesn't cover every possible `portalX` (which ranges over `1,3,5,...,17`).
 
-- [ ] **Step 3: Modify `clearSpawnArea` in `src/threeGame.js`**
+- [x] **Step 3: Modify `clearSpawnArea` in `src/threeGame.js`**
 
 Replace the hardcoded doorway block (`src/threeGame.js:20149-20164`) with
 one centered on the real south portal offset:
@@ -1063,12 +1063,12 @@ center column — a sensible default since `ensureChunkPortals` itself forces
 at least one edge open elsewhere in that case
 (`src/threeGame.js:19992-19994`).
 
-- [ ] **Step 4: Run the test to verify it passes**
+- [x] **Step 4: Run the test to verify it passes**
 
 Run: `npx vitest run src/threeGame.crashSiteDoor.test.js`
 Expected: PASS for all 40 seeds
 
-- [ ] **Step 5: Run the full test suite**
+- [x] **Step 5: Run the full test suite**
 
 Run: `npx vitest run`
 Expected: PASS (this change only affects chunk (0,0), which no other test
@@ -1076,7 +1076,7 @@ should be asserting exact fixed doorway coordinates for — if one does,
 update it to check `doorCenterX`-relative bounds instead of the old
 literals).
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add src/threeGame.js src/threeGame.crashSiteDoor.test.js
@@ -1097,7 +1097,7 @@ git commit -m "fix: crash-site doorway now targets the real south portal offset"
   additive, optional second parameter; existing single-argument call sites
   (Task 2/3/4 tests, `buildChunk`) keep working unchanged unless they opt in.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 ```js
 // append to src/wfcGenerator.test.js
@@ -1138,13 +1138,13 @@ describe('getChunkLandform — tutorial ring uses tutorial-only tiles', () => {
 });
 ```
 
-- [ ] **Step 2: Run the tests to verify they fail**
+- [x] **Step 2: Run the tests to verify they fail**
 
 Run: `npx vitest run src/wfcGenerator.test.js src/threeGame.wfcMaze.test.js`
 Expected: FAIL — `collapseChunkLattice` doesn't accept an options argument
 yet (the tutorial-only test throws or returns non-tutorial tiles).
 
-- [ ] **Step 3: Add the `tutorialOnly` option to `collapseChunkLattice`**
+- [x] **Step 3: Add the `tutorialOnly` option to `collapseChunkLattice`**
 
 In `src/wfcGenerator.js`, thread an options object through so
 `attemptCollapse`/`fallbackLattice` can restrict the domain:
@@ -1238,7 +1238,7 @@ grid, not the first draft — self-review before running tests.)
 Update the call site: `return fallbackLattice(tutorialOnly);` in
 `collapseChunkLattice`.
 
-- [ ] **Step 4: Wire the tutorial ring into `buildChunk`/`getChunkLandform`**
+- [x] **Step 4: Wire the tutorial ring into `buildChunk`/`getChunkLandform`**
 
 In `src/threeGame.js`, add a Chebyshev-distance helper and use it in
 `buildChunk`'s WFC branch (from Task 4):
@@ -1259,17 +1259,17 @@ Add this method near `getChunkLandform` (`src/threeGame.js:19953`). Then in
     }
 ```
 
-- [ ] **Step 5: Run the tests to verify they pass**
+- [x] **Step 5: Run the tests to verify they pass**
 
 Run: `npx vitest run src/wfcGenerator.test.js src/threeGame.wfcMaze.test.js`
 Expected: PASS
 
-- [ ] **Step 6: Run the full test suite**
+- [x] **Step 6: Run the full test suite**
 
 Run: `npx vitest run`
 Expected: PASS
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add src/wfcGenerator.js src/wfcGenerator.test.js src/threeGame.js src/threeGame.wfcMaze.test.js
@@ -1291,7 +1291,7 @@ git commit -m "feat: tutorial-only tile selection for the crash-site ring"
   footprint intersects it.
 - Produces: `ThreeGame.prototype.runMazeDetailPass(grid, random, latticeBoundaryCells)`.
 
-- [ ] **Step 1: Write the failing test for protected-cell support**
+- [x] **Step 1: Write the failing test for protected-cell support**
 
 ```js
 // append to src/generator.test.js
@@ -1307,13 +1307,13 @@ describe('MarkovGenerator protectedCells', () => {
 });
 ```
 
-- [ ] **Step 2: Run the test to verify it fails**
+- [x] **Step 2: Run the test to verify it fails**
 
 Run: `npx vitest run src/generator.test.js`
 Expected: FAIL — the rule rewrites `x=1` to `.` since `protectedCells` is
 currently ignored.
 
-- [ ] **Step 3: Add `protectedCells` support to `src/generator.js`**
+- [x] **Step 3: Add `protectedCells` support to `src/generator.js`**
 
 ```js
 export class MarkovGenerator {
@@ -1364,7 +1364,7 @@ export class MarkovGenerator {
 }
 ```
 
-- [ ] **Step 4: Run the test to verify it passes**
+- [x] **Step 4: Run the test to verify it passes**
 
 Run: `npx vitest run src/generator.test.js`
 Expected: PASS. Also re-run the full suite once here —
@@ -1373,7 +1373,7 @@ paths per Task 4) constructs a fresh `MarkovGenerator` each call and never
 sets `protectedCells`, so it defaults to `null`/empty and behaves exactly as
 before: `npx vitest run` → PASS.
 
-- [ ] **Step 5: Write the failing test for the maze detail pass**
+- [x] **Step 5: Write the failing test for the maze detail pass**
 
 ```js
 // append to src/threeGame.wfcMaze.test.js
@@ -1406,12 +1406,12 @@ Note: this test imports `collapseChunkLattice`/`stampLattice` — add that
 import line to `src/threeGame.wfcMaze.test.js` if not already present from
 Task 4/6.
 
-- [ ] **Step 6: Run the test to verify it fails**
+- [x] **Step 6: Run the test to verify it fails**
 
 Run: `npx vitest run src/threeGame.wfcMaze.test.js`
 Expected: FAIL — `runMazeDetailPass is not a function`
 
-- [ ] **Step 7: Add `runMazeDetailPass` to `src/threeGame.js`**
+- [x] **Step 7: Add `runMazeDetailPass` to `src/threeGame.js`**
 
 Add near `runMarkovPass` (`src/threeGame.js:20029-20043`), which stays
 unchanged and in place for non-MAZE landforms:
@@ -1454,23 +1454,23 @@ Task 4):
     } else {
 ```
 
-- [ ] **Step 8: Run the tests to verify they pass**
+- [x] **Step 8: Run the tests to verify they pass**
 
 Run: `npx vitest run src/threeGame.wfcMaze.test.js`
 Expected: PASS
 
-- [ ] **Step 9: Run the full test suite**
+- [x] **Step 9: Run the full test suite**
 
 Run: `npx vitest run`
 Expected: PASS
 
-- [ ] **Step 10: Run lint**
+- [x] **Step 10: Run lint**
 
 Run: `npx eslint src/tileCatalog.js src/wfcGenerator.js src/generator.js src/threeGame.js`
 Expected: no errors (warnings acceptable only if pre-existing in
 `threeGame.js` — do not introduce new ones)
 
-- [ ] **Step 11: Commit**
+- [x] **Step 11: Commit**
 
 ```bash
 git add src/generator.js src/generator.test.js src/threeGame.js src/threeGame.wfcMaze.test.js

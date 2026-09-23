@@ -4,6 +4,8 @@ import { ThreeGame } from './threeGame.js';
 import { Act2Manager, ACT2_MAX_BOND } from './act2.js';
 import { HiveSite } from './hiveSite.js';
 import { CAMP_QUESTS } from './data/campQuests.js';
+import { WEAPON_OVERCLOCKS, SUIT_RELICS } from './runDrops.js';
+import { selectHarvestOverclock } from './worldTransformations.js';
 
 function manager() {
     const values = new Map();
@@ -155,6 +157,33 @@ function makeHiveGame(hiveId = 'hive_suture') {
 }
 
 describe('hive choices apply once and change the physical site', () => {
+    it('harvest rewards exclude equipped and pending overclocks', () => {
+        const game = makeHiveGame();
+        const overclockPool = [...WEAPON_OVERCLOCKS, ...SUIT_RELICS].filter((entry) => entry.type === 'overclock');
+        const equipped = selectHarvestOverclock(overclockPool);
+        const pending = selectHarvestOverclock(overclockPool, [equipped.id]);
+        game.runOverclocks = [equipped];
+        game.inRunLootDrops = [{ userData: { item: pending } }];
+        game.spawnPhysicalLootDrop = vi.fn();
+        game.resolveHiveChoice('hive-harvest', { hiveId: game.hive.id });
+        expect(game.spawnPhysicalLootDrop).toHaveBeenCalledTimes(1);
+        const [, , reward] = game.spawnPhysicalLootDrop.mock.calls[0];
+        expect([equipped.id, pending.id]).not.toContain(reward.id);
+        expect(reward.implemented).not.toBe(false);
+        game.resolveHiveChoice('hive-harvest', { hiveId: game.hive.id });
+        expect(game.spawnPhysicalLootDrop).toHaveBeenCalledTimes(1);
+    });
+
+    it('keeps the resource payout without spawning unusable overclocks when the pool is exhausted', () => {
+        const game = makeHiveGame();
+        game.runOverclocks = [...WEAPON_OVERCLOCKS, ...SUIT_RELICS].filter((entry) => entry.type === 'overclock' && entry.implemented !== false);
+        game.spawnPhysicalLootDrop = vi.fn();
+        game.resolveHiveChoice('hive-harvest', { hiveId: game.hive.id });
+        expect(game.spawnPhysicalLootDrop).not.toHaveBeenCalled();
+        expect(game.bank.addShells).toHaveBeenCalledExactlyOnceWith(12);
+        expect(game.bank.deposit).toHaveBeenCalledWith({ med: 3, tech: 3, coin: 3 });
+    });
+
     it('harvesting empties the hive and pays once even if the modal submits again', () => {
         const game = makeHiveGame();
         const payload = { hiveId: game.hive.id };

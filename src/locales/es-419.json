@@ -1471,6 +1471,126 @@
       "goal_leaderboard_req": "Tu puntaje entra al tablero de hoy",
       "deploy": "DESPLEGAR OPS DIARIAS",
       "deploy_done": "VUELVE MAÑANA"
+    },
+    "expedition": {
+      "kicker": "EXPEDICIÓN {index} // CONDICIONES DEL SECTOR",
+      "threat": "AMENAZA {level}",
+      "salvage": "RECUPERACIÓN ×{value}",
+      "bounty": "RECOMPENSA: {label}",
+      "location": "{site} · {room}",
+      "first_visit": "NUEVO",
+      "conditions": {
+        "glacial_gale": {
+          "name": "VENDAVAL GLACIAL",
+          "tagline": "Ventisca bajo cero. El hielo cubre los pasillos.",
+          "effect": "Pisada más rápida · O₂ baja 10 % más rápido · Crio dura 25 % más · Hostiles ralentizados · Las bajas crio congelan a su manada"
+        },
+        "spore_bloom": {
+          "name": "FLORACIÓN DE ESPORAS",
+          "tagline": "Niebla tóxica de esporas recorre los pasillos abiertos.",
+          "effect": "O₂ baja 12 % más rápido · Patrullas más densas · Los caracoles de esporas sueltan recuperación extra"
+        },
+        "bio_resin_surge": {
+          "name": "OLEADA DE BIORRESINA",
+          "tagline": "Marea alta de la colmena. Enjambres acechan los perímetros.",
+          "effect": "Hostiles 18 % más rápidos · Patrullas más densas · La resina frena tu paso · Las cosechas de colmena rinden +50 %"
+        },
+        "geothermal_arc": {
+          "name": "ARCO GEOTÉRMICO",
+          "tagline": "Conductos sobrecargados chispean en mamparos dañados.",
+          "effect": "Pulso de escudo: un escudo de 20 puntos que se recarga antes · Las bajas pueden descargarse en ti"
+        },
+        "subzero_stillness": {
+          "name": "QUIETUD BAJO CERO",
+          "tagline": "Silencio inquietante. Acechadores de élite dominan las rutas.",
+          "effect": "Pocas patrullas · Probabilidad de élite ×2,5 · Salas ocultas detectadas desde más lejos"
+        }
+      },
+      "bounties": {
+        "salvage_run": "Extrae más de 120 de chatarra de pasillos profundos",
+        "eliminate_elite": "Elimina a un acechador mutado del sector",
+        "scout_compound": "Infiltra y cartografía un complejo remoto",
+        "clearing_breach": "Destruye 6 muros divisorios estructurales"
+      },
+      "sites": {
+        "camp_meridian": "COMPLEJO MERIDIAN",
+        "camp_tallow": "COMPLEJO TALLOW",
+        "camp_vesper": "COMPLEJO VESPER",
+        "hive_suture": "COLMENA SUTURE",
+        "hive_relay": "COLMENA RELAY",
+        "hive_carapace": "COLMENA CARAPACE"
+      },
+      "rooms": {
+        "camp": {
+          "approach": "ACCESO DE SEÑAL",
+          "perimeter": "PERÍMETRO DEFENSIVO",
+          "central": "ÁREA COMÚN",
+          "service": "TALLER",
+          "leader_quest": "SALA DE MANDO",
+          "exit": "SALIDA DE MISIÓN"
+        },
+        "hive": {
+          "warning": "CÁMARA DE ADVERTENCIA",
+          "approach": "ACCESO CONTAMINADO",
+          "outer_nest": "NIDO DEFENDIDO",
+          "choice_chamber": "CÁMARA DE COMUNIÓN",
+          "consequence": "CRIADERO DE RESINA",
+          "escape": "CONDUCTO DE ESCAPE"
+        }
+      },
+      "transformed": {
+        "bridge": "> CRUCE DEL CAÑÓN CON PUENTE — EL ABISMO ES TRANSITABLE",
+        "camp_fortified": "> {site} FORTIFICADO — LAS TORRETAS SOSTIENEN EL PERÍMETRO",
+        "hive_bonded": "> {site} VINCULADA — EL SUELO INFESTADO SE ABRE PARA TI",
+        "hive_harvested": "> {site} COSECHADA — SU CRÍA CORRE ENFURECIDA"
+      },
+      "gate_challenges": {
+        "elite_warden": "> PUERTA DEL ANILLO {ring} — UN GUARDIÁN DE ÉLITE CUSTODIA EL UMBRAL",
+        "collapsed_approach": "> PUERTA DEL ANILLO {ring} — EL ACCESO SE DERRUMBÓ. ABRE PASO ENTRE LOS ESCOMBROS",
+        "infested_approach": "> PUERTA DEL ANILLO {ring} — EL ACCESO ESTÁ PLAGADO DE HOSTILES",
+        "blackout": "> PUERTA DEL ANILLO {ring} — RED CAÍDA. EL ACCESO ESTÁ A OSCURAS"
+      },
+      "overnight": {
+        "creep_contact": "> CRECIMIENTO DE COLMENA BAJO LOS PIES — MOVIMIENTO LENTO, O₂ BAJA MÁS RÁPIDO",
+        "creep_burn": "> CRECIMIENTO DE COLMENA AL MÁXIMO — QUEMA. SAL DE AHÍ.",
+        "camp_shored_up": "> {site}: DEFENSAS REFORZADAS"
+      },
+      "objective_package": {
+        "briefing": {
+          "regulator_recovery": "> OPCIÓN DE O₂: DESMONTA EL REGULADOR DE LA SALA DE O₂ DEL ANILLO 1 Y LA BURBUJA CUESTA LA MITAD. LA SALA NO VOLVERÁ A RESPIRAR BIEN.",
+          "power_reroute": "> OPCIÓN DE O₂: DESVÍA LA ENERGÍA DEL ANILLO EN LA CONSOLA DE LA PUERTA Y REINICIA LA SALA DE O₂. BURBUJA GRATIS — EL ACCESO A LA PUERTA QUEDA A OSCURAS PARA SIEMPRE.",
+          "camp_supply": "> OPCIÓN DE O₂: MERIDIAN VENDERÁ SU PROPIO REGULADOR. BURBUJA A MITAD DE PRECIO, UN VÍNCULO MÁS FUERTE — Y UN CAMPAMENTO CON CARENCIAS.",
+          "hull_plate_salvage": "> OPCIÓN DE CASCO: CORTA PLACAS DE LA BAHÍA DE FABRICACIÓN DEL ANILLO 2 Y EL CASCO CUESTA LA MITAD. EL RUIDO ATRAERÁ AL ANILLO HACIA SU PUERTA.",
+          "tallow_resin_seal": "> OPCIÓN DE CASCO: TALLOW VENDERÁ LA RESINA QUE SELLA SUS PROPIOS MUROS. CASCO A MITAD DE PRECIO, UN VÍNCULO MÁS FUERTE — Y UN CAMPAMENTO CON CARENCIAS.",
+          "suture_chitin_graft": "> OPCIÓN DE CASCO: COSECHA QUITINA EN EL CRIADERO DE SUTURE Y EL CASCO SALE GRATIS. LA COLMENA SE EXTENDERÁ PARA PRODUCIR MÁS.",
+          "mast_power_reroute": "> OPCIÓN DE RADAR: TOMA ENERGÍA DEL ANILLO EN LA PUERTA DEL ANILLO 3 Y LUEGO ALINEA EL MÁSTIL. RADAR GRATIS — EL ACCESO A LA PUERTA QUEDA A OSCURAS PARA SIEMPRE.",
+          "vesper_scope_trade": "> OPCIÓN DE RADAR: VESPER CAMBIARÁ SU MIRA DE PUNTERÍA. RADAR A MITAD DE PRECIO, UN VÍNCULO MÁS FUERTE — Y UN CAMPAMENTO MEDIO CIEGO.",
+          "relay_signal_tap": "> OPCIÓN DE RADAR: CONÉCTATE AL NERVIO DE SEÑAL DE RELAY Y EL RADAR CUESTA LA MITAD. LA COLMENA CRECERÁ PARA SANARLO.",
+          "core_scavenge": "> OPCIÓN DE REACTOR: EXTRAE EL NÚCLEO DEL COMPRESOR DEL ANILLO 4 Y EL REACTOR CUESTA LA MITAD. LA SALA NO VOLVERÁ A RESPIRAR BIEN.",
+          "carapace_heat_siphon": "> OPCIÓN DE REACTOR: SIFONA EL CALOR DE LA CRÍA EN EL CRIADERO DE CARAPACE Y EL REACTOR SALE GRATIS. LA COLMENA SE EXTENDERÁ PARA MANTENERSE CALIENTE.",
+          "gate_capacitor_draw": "> OPCIÓN DE REACTOR: DESCARGA LOS CONDENSADORES DE LA PUERTA DEL ANILLO 4 Y LUEGO CARGA EL COMPRESOR. REACTOR A MITAD DE PRECIO — LA PUERTA MUERTA ATRAERÁ A LA COLMENA."
+        },
+        "complete": {
+          "regulator_recovery": "> REGULADOR RECUPERADO — BURBUJA DE O₂ A MITAD DE PRECIO. LA SALA DE O₂ FUNCIONA CON AIRE ENRARECIDO.",
+          "power_reroute": "> ENERGÍA DEL ANILLO DESVIADA — BURBUJA DE O₂ GRATIS. EL ACCESO A LA PUERTA DEL ANILLO 1 SE APAGÓ.",
+          "camp_supply": "> EL REGULADOR DE MERIDIAN ES TUYO — BURBUJA DE O₂ A MITAD DE PRECIO. MERIDIAN QUEDA EN TENSIÓN SIN ÉL.",
+          "hull_plate_salvage": "> PLACAS CORTADAS — AMPLIACIÓN DE CASCO A MITAD DE PRECIO. EL ACCESO A LA PUERTA DEL ANILLO 2 ESTÁ INFESTADO.",
+          "tallow_resin_seal": "> EL SELLO DE RESINA DE TALLOW ES TUYO — AMPLIACIÓN DE CASCO A MITAD DE PRECIO. TALLOW QUEDA EN TENSIÓN SIN ÉL.",
+          "suture_chitin_graft": "> QUITINA INJERTADA — AMPLIACIÓN DE CASCO GRATIS. EL CRECIMIENTO DE SUTURE LLEGA MÁS LEJOS.",
+          "mast_power_reroute": "> ENERGÍA DEL ANILLO DERIVADA — NODO DE RADAR GRATIS. EL ACCESO A LA PUERTA DEL ANILLO 3 SE APAGÓ.",
+          "vesper_scope_trade": "> LA MIRA DE VESPER ES TUYA — NODO DE RADAR A MITAD DE PRECIO. VESPER QUEDA EN TENSIÓN SIN ELLA.",
+          "relay_signal_tap": "> NERVIO DE SEÑAL INTERVENIDO — NODO DE RADAR A MITAD DE PRECIO. EL CRECIMIENTO DE RELAY LLEGA MÁS LEJOS.",
+          "core_scavenge": "> NÚCLEO EXTRAÍDO — REACTOR A MITAD DE PRECIO. ESA SALA FUNCIONA CON AIRE ENRARECIDO.",
+          "carapace_heat_siphon": "> CALOR DE LA CRÍA SIFONADO — REACTOR GRATIS. EL CRECIMIENTO DE CARAPACE LLEGA MÁS LEJOS.",
+          "gate_capacitor_draw": "> CONDENSADORES DESCARGADOS — REACTOR A MITAD DE PRECIO. EL ACCESO A LA PUERTA DEL ANILLO 4 ESTÁ INFESTADO."
+        }
+      },
+      "extraction": {
+        "tracker": "REGRESA A LA NAVE PARA LA EXTRACCIÓN",
+        "landmark": "ESCLUSA DE EXTRACCIÓN",
+        "line_objective": "OBJETIVO CUMPLIDO. ESCLUSA DE EXTRACCIÓN LISTA. REGRESA A LA NAVE.",
+        "line_purged": "SECTOR PURGADO. ESCLUSA DE EXTRACCIÓN ACTIVA. REGRESA A LA NAVE."
+      }
     }
   },
   "narrative": {

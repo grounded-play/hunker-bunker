@@ -98,6 +98,8 @@ describe('isHoleTile / mountChunk agreement', () => {
         const hole = findFirstHole(fakeThis);
         const pingedIds = new Set();
         fakeThis.spawnHoleDangerOutline = vi.fn();
+        fakeThis.spawnDangerZoneOutline = vi.fn();
+        fakeThis.planRadarDangerZones = ThreeGame.prototype.planRadarDangerZones;
 
         ThreeGame.prototype.scanDangerHoles.call(fakeThis, hole.x, hole.y, 0.1, pingedIds);
 

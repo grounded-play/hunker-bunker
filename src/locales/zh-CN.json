@@ -1471,6 +1471,126 @@
       "goal_leaderboard_req": "你的分数将进入今日排行榜",
       "deploy": "部署每日行动",
       "deploy_done": "明天再来"
+    },
+    "expedition": {
+      "kicker": "远征 {index} // 区域状况",
+      "threat": "威胁 {level}",
+      "salvage": "回收 ×{value}",
+      "bounty": "悬赏：{label}",
+      "location": "{site} · {room}",
+      "first_visit": "新",
+      "conditions": {
+        "glacial_gale": {
+          "name": "冰川狂风",
+          "tagline": "零下暴雪。走廊结满薄冰。",
+          "effect": "步伐更快 · 氧气消耗加快10% · 冷冻持续延长25% · 敌人减速 · 击杀冰霜敌人会冻结其同伴"
+        },
+        "spore_bloom": {
+          "name": "孢子绽放",
+          "tagline": "有毒孢子雾飘过未封闭的大厅。",
+          "effect": "氧气消耗加快12% · 巡逻更密集 · 孢子蜗牛爆出额外回收物"
+        },
+        "bio_resin_surge": {
+          "name": "生物树脂潮涌",
+          "tagline": "巢穴涨潮。虫群在外围潜行。",
+          "effect": "敌人加速18% · 巡逻更密集 · 树脂拖慢脚步 · 巢穴收割产出+50%"
+        },
+        "geothermal_arc": {
+          "name": "地热电弧",
+          "tagline": "过载的导管在受损舱壁上迸出电弧。",
+          "effect": "护盾涌动：一面更快充能的20点护盾 · 击杀可能向你放电"
+        },
+        "subzero_stillness": {
+          "name": "零下寂静",
+          "tagline": "诡异的寂静。精英猎手盘踞路线。",
+          "effect": "巡逻稀少 · 精英几率×2.5 · 更远距离感知隐藏房间"
+        }
+      },
+      "bounties": {
+        "salvage_run": "从深层走廊回收120以上废料",
+        "eliminate_elite": "消灭一只变异的区域猎手",
+        "scout_compound": "潜入并测绘一处外围据点",
+        "clearing_breach": "摧毁6面结构隔墙"
+      },
+      "sites": {
+        "camp_meridian": "子午据点",
+        "camp_tallow": "塔洛据点",
+        "camp_vesper": "维斯珀据点",
+        "hive_suture": "缝合巢穴",
+        "hive_relay": "中继巢穴",
+        "hive_carapace": "甲壳巢穴"
+      },
+      "rooms": {
+        "camp": {
+          "approach": "信号入口",
+          "perimeter": "防御外围",
+          "central": "公共广场",
+          "service": "工坊",
+          "leader_quest": "指挥室",
+          "exit": "任务出口"
+        },
+        "hive": {
+          "warning": "警示之室",
+          "approach": "污染通道",
+          "outer_nest": "守卫之巢",
+          "choice_chamber": "交融之室",
+          "consequence": "树脂育房",
+          "escape": "逃生导管"
+        }
+      },
+      "transformed": {
+        "bridge": "> 峡谷通道已架桥 — 深渊可以通行",
+        "camp_fortified": "> {site} 已加固 — 炮塔守住外围",
+        "hive_bonded": "> 已与{site}结缘 — 感染之地为你让路",
+        "hive_harvested": "> 已收割{site} — 其幼体陷入狂暴"
+      },
+      "gate_challenges": {
+        "elite_warden": "> 第{ring}环闸门 — 一名精英守卫把守着入口",
+        "collapsed_approach": "> 第{ring}环闸门 — 通道已坍塌。在瓦砾中找出路",
+        "infested_approach": "> 第{ring}环闸门 — 通道里满是敌人",
+        "blackout": "> 第{ring}环闸门 — 电网失效。通道一片漆黑"
+      },
+      "overnight": {
+        "creep_contact": "> 脚下是巢穴蔓生物 — 移动变慢，氧气消耗加快",
+        "creep_burn": "> 巢穴蔓生物已完全扩散 — 它会灼烧。快离开。",
+        "camp_shored_up": "> {site}的防御已加固"
+      },
+      "objective_package": {
+        "briefing": {
+          "regulator_recovery": "> 氧气方案：拆下第1环氧气室的调节器，气泡造价减半。那个房间之后就再也不能正常换气了。",
+          "power_reroute": "> 氧气方案：在闸门控制台改接环路电力，然后重启氧气室。气泡免费 — 闸门通道将永远陷入黑暗。",
+          "camp_supply": "> 氧气方案：子午据点愿意卖出自己的调节器。气泡半价，关系更紧密 — 但据点会陷入短缺。",
+          "hull_plate_salvage": "> 船体方案：从第2环制造舱切下装甲板，船体造价减半。噪音会把整环的敌人引到闸门。",
+          "tallow_resin_seal": "> 船体方案：塔洛据点愿意卖出密封自家墙壁的树脂。船体半价，关系更紧密 — 但据点会陷入短缺。",
+          "suture_chitin_graft": "> 船体方案：在缝合巢穴的育房收割甲壳，船体免费。巢穴会扩张来长出更多。",
+          "mast_power_reroute": "> 雷达方案：在第3环闸门接出环路电力，然后校准桅杆。雷达免费 — 闸门通道将永远陷入黑暗。",
+          "vesper_scope_trade": "> 雷达方案：维斯珀据点愿意交换它的瞄准镜。雷达半价，关系更紧密 — 但据点会半盲。",
+          "relay_signal_tap": "> 雷达方案：接入中继巢穴的信号神经，雷达造价减半。巢穴会生长来修复它。",
+          "core_scavenge": "> 反应堆方案：拔出第4环压缩机核心，反应堆造价减半。那个房间之后就再也不能正常换气了。",
+          "carapace_heat_siphon": "> 反应堆方案：在甲壳巢穴的育房抽取幼体热量，反应堆免费。巢穴会扩张来保暖。",
+          "gate_capacitor_draw": "> 反应堆方案：放空第4环闸门的电容，然后给压缩机充能。反应堆半价 — 失效的闸门会引来巢穴。"
+        },
+        "complete": {
+          "regulator_recovery": "> 调节器已回收 — 氧气泡半价。氧气室现在只剩稀薄空气。",
+          "power_reroute": "> 环路电力已改接 — 氧气泡免费建造。第1环闸门通道已经熄灭。",
+          "camp_supply": "> 子午据点的调节器归你了 — 氧气泡半价。失去它后子午据点陷入紧张。",
+          "hull_plate_salvage": "> 装甲板已切下 — 船体扩建半价。第2环闸门通道现在敌群密布。",
+          "tallow_resin_seal": "> 塔洛的树脂密封归你了 — 船体扩建半价。失去它后塔洛据点陷入紧张。",
+          "suture_chitin_graft": "> 甲壳已嫁接 — 船体扩建免费。缝合巢穴的蔓生物蔓延得更远了。",
+          "mast_power_reroute": "> 环路电力已接出 — 雷达节点免费。第3环闸门通道已经熄灭。",
+          "vesper_scope_trade": "> 维斯珀的瞄准镜归你了 — 雷达节点半价。失去它后维斯珀据点陷入紧张。",
+          "relay_signal_tap": "> 信号神经已接入 — 雷达节点半价。中继巢穴的蔓生物蔓延得更远了。",
+          "core_scavenge": "> 压缩机核心已拔出 — 反应堆半价。那个房间现在只剩稀薄空气。",
+          "carapace_heat_siphon": "> 幼体热量已抽取 — 反应堆免费。甲壳巢穴的蔓生物蔓延得更远了。",
+          "gate_capacitor_draw": "> 电容已放空 — 反应堆半价。第4环闸门通道现在敌群密布。"
+        }
+      },
+      "extraction": {
+        "tracker": "返回飞船撤离",
+        "landmark": "撤离气闸",
+        "line_objective": "目标完成。撤离气闸已就绪。返回飞船。",
+        "line_purged": "区域已肃清。撤离气闸已启动。返回飞船。"
+      }
     }
   },
   "narrative": {

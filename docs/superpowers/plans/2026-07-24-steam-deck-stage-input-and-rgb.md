@@ -1,6 +1,6 @@
 # Steam Deck-First Stage/Input + RGB Archive Sim Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
 
 **Goal:** Implement the executable asks of `docs/steam-deck-first-display-and-input-spec.md` (canonical 1280×800 stage, semantic Steam Input incl. `archive` action set, touch/mobile removal) and then the RGB mini-game per `docs/mini-games/rgb/` (state prototype + gray-box runtime + unlock/menu integration).
 
@@ -37,11 +37,11 @@
 - `toStagePoint(hostX, hostY, transform) -> { x, y, inside }` (logical stage coords; `inside` = within 0..1280/0..800)
 - `isInsideSafeFrame(x, y, margin)` -> boolean
 
-- [ ] Write failing tests: 16:10 host maps scale exactly; 16:9 host (1920×1080) letterboxes horizontally with `offsetX = (1920 - 1080/800*1280)/2`; ultrawide mattes sides; pointer round-trip; degenerate host returns identity.
-- [ ] Run `npx vitest run src/stage.test.js` — expect FAIL (module missing).
-- [ ] Implement `src/stage.js` (pure functions, no DOM).
-- [ ] `npx vitest run src/stage.test.js` — PASS.
-- [ ] Commit `feat: add 1280x800 logical stage transform module`.
+- [x] Write failing tests: 16:10 host maps scale exactly; 16:9 host (1920×1080) letterboxes horizontally with `offsetX = (1920 - 1080/800*1280)/2`; ultrawide mattes sides; pointer round-trip; degenerate host returns identity.
+- [x] Run `npx vitest run src/stage.test.js` — expect FAIL (module missing).
+- [x] Implement `src/stage.js` (pure functions, no DOM).
+- [x] `npx vitest run src/stage.test.js` — PASS.
+- [x] Commit `feat: add 1280x800 logical stage transform module`.
 
 ### Task 2: Stage integration (world + overlay wrapper)
 
@@ -56,10 +56,10 @@
 
 Key detail: `ThreeGame.resize()` (`src/threeGame.js:3658`) already sizes camera + renderer from `this.container.clientWidth/Height`, and canvas pointer math uses `getBoundingClientRect()` (`src/threeGame.js:2830`), so once `#game-container` is laid out to the stage rect, world aspect is fixed at 1.6 and raycasting stays correct with no threeGame changes.
 
-- [ ] Add the wrapper + CSS + refreshGameLayout wiring.
-- [ ] Verify: `npm run build` clean; boot dev server, screenshot at 1280×800, 1920×1080, ultrawide — 16:10 composition centered with matte, HUD scaled uniformly (Playwright viewport captures).
-- [ ] Run existing e2e smoke (`npx playwright test tests/e2e/bunker-tree*` or fastest suite) to confirm no boot regression.
-- [ ] Commit `feat: route world and overlay UI through canonical 16:10 stage`.
+- [x] Add the wrapper + CSS + refreshGameLayout wiring.
+- [x] Verify: `npm run build` clean; boot dev server, screenshot at 1280×800, 1920×1080, ultrawide — 16:10 composition centered with matte, HUD scaled uniformly (Playwright viewport captures).
+- [x] Run existing e2e smoke (`npx playwright test tests/e2e/bunker-tree*` or fastest suite) to confirm no boot regression.
+- [x] Commit `feat: route world and overlay UI through canonical 16:10 stage`.
 
 ### Task 3: Steam Input manifest — archive action set + missing actions
 
@@ -86,8 +86,8 @@ Add to `gameplay`: `sprint`. Add `menu` actions: `menu_tab_left`, `menu_tab_righ
 
 Plus matching `localization.english` entries.
 
-- [ ] Edit manifest; validate VDF braces by eye + any existing steam audit script (`npm run steam:audit-depot` if applicable).
-- [ ] Commit `feat: add archive action set and missing semantic actions to Steam Input manifest`.
+- [x] Edit manifest; validate VDF braces by eye + any existing steam audit script (`npm run steam:audit-depot` if applicable).
+- [x] Commit `feat: add archive action set and missing semantic actions to Steam Input manifest`.
 
 ### Task 4: Semantic action layer
 
@@ -99,9 +99,9 @@ Plus matching `localization.english` entries.
 **Interfaces:**
 - Consumes: mapped pad snapshot from `mapBrowserGamepad` (`src/browserGamepad.js`).
 - Produces: `ACTION_SETS = { MENU:'menu', GAMEPLAY:'gameplay', ARCHIVE:'archive' }`; `createActionRouter()` with `setActionSet(name)`, `getActionSet()`, `deriveActions(padSnapshot) -> { set, actions }` where archive set yields `{ focus:{x,y}, confirm, inventory, back, reveal, pause }` edge-triggered booleans (`justPressed` semantics via internal previous-frame state); menu set yields navigate/confirm/back/tabLeft/tabRight/pause.
-- [ ] Failing tests: set switching; archive mapping (confirm=A/`interact`, back=B/`menuBack`, inventory=Y/`ability`, reveal=X/`reload` hold, focus from move stick + dpad); edge triggering (held button fires once).
-- [ ] Implement; tests PASS; lint clean.
-- [ ] Commit `feat: add semantic action router with archive action set`.
+- [x] Failing tests: set switching; archive mapping (confirm=A/`interact`, back=B/`menuBack`, inventory=Y/`ability`, reveal=X/`reload` hold, focus from move stick + dpad); edge triggering (held button fires once).
+- [x] Implement; tests PASS; lint clean.
+- [x] Commit `feat: add semantic action router with archive action set`.
 
 ### Task 5: Remove touch/mobile support
 
@@ -113,10 +113,10 @@ Plus matching `localization.english` entries.
 
 Desktop compass at `#desktop-compass` already carries compass behavior — nothing to migrate, only verify it still updates (main.js ~4543–4623).
 
-- [ ] Delete in the order index.html → main.js → style.css, keeping the app booting between edits (`npm run build` after each file).
-- [ ] Grep for stragglers: `grep -rn "touch\|Touch" main.js index.html | grep -v pointerType` and review each survivor (allowed: ordinary pointer-event plumbing).
-- [ ] `npm run lint && npm test && npm run build`; boot + screenshot to confirm HUD intact and compass alive.
-- [ ] Commit `feat!: remove touch/mobile input targets per Steam Deck-first spec`.
+- [x] Delete in the order index.html → main.js → style.css, keeping the app booting between edits (`npm run build` after each file).
+- [x] Grep for stragglers: `grep -rn "touch\|Touch" main.js index.html | grep -v pointerType` and review each survivor (allowed: ordinary pointer-event plumbing).
+- [x] `npm run lint && npm test && npm run build`; boot + screenshot to confirm HUD intact and compass alive.
+- [x] Commit `feat!: remove touch/mobile input targets per Steam Deck-first spec`.
 
 ### Task 6: Safe-frame & type tokens
 
@@ -124,9 +124,9 @@ Desktop compass at `#desktop-compass` already carries compass behavior — nothi
 - Modify: `style.css` (`:root` tokens: `--hb-safe-hud: 32px; --hb-safe-text: 48px; --hb-text-floor: 18px;`)
 - Modify: `docs/steam-deck-first-display-and-input-spec.md` — no edit; instead create `docs/steam-deck-migration-status.md` recording what shipped (Phases 1–3 + partial 4) and the remaining manual work (Phase 4 per-screen audit, Phase 5 hardware acceptance) as checklists.
 
-- [ ] Add tokens; point stage-root padding of HUD anchors at them where trivially applicable (HUD top/bottom bars).
-- [ ] Write status doc.
-- [ ] Commit `docs: record steam-deck migration status; add safe-frame/type tokens`.
+- [x] Add tokens; point stage-root padding of HUD anchors at them where trivially applicable (HUD top/bottom bars).
+- [x] Write status doc.
+- [x] Commit `docs: record steam-deck migration status; add safe-frame/type tokens`.
 
 ---
 
@@ -139,8 +139,8 @@ Desktop compass at `#desktop-compass` already carries compass behavior — nothi
 
 **Produces:** `CHAPTERS` ordered array (`parking_lot`, `warehouse`, `incident_review`, `medi_kiosk`, `server_room`, `sector_four`); per-chapter `{ id, title, goal, hotspots: [{ id, label, x, y, w, h, lines, grants?, evidence?, flags?, requires?, timeCost?, once? }], choices, requiredBeats, hints: [h1,h2,h3] }`; `ITEMS` (albuterol bottle, drawing, notebook, badge, phone, wire cutters); `EVIDENCE_IDS = ['camera_discrepancy','swab_photo','payroll_record','kiosk_record','training_profile']`; ending/game-over card text (System Loop, Ashes & Survival, Open Hand, Crushed, Lockout); content warning text. Hotspot coordinates are authored in 1280×800 stage space.
 
-- [ ] Author data from `scene-flow.md`/`narrative-script.md` (beats, optional choices, carry-forward flags exactly as specced).
-- [ ] Commit with Task 8 (content is exercised by state tests).
+- [x] Author data from `scene-flow.md`/`narrative-script.md` (beats, optional choices, carry-forward flags exactly as specced).
+- [x] Commit with Task 8 (content is exercised by state tests).
 
 ### Task 8: RGB state machine + ending predicates
 
@@ -154,9 +154,9 @@ Desktop compass at `#desktop-compass` already carries compass behavior — nothi
 - Predicates: `canExpose(state)` (training_profile + 3 others; `marisol_witness` counts only if `noticedMarisolPressure`), `resolveOutcome(state)` → `'system_loop'|'open_hand'|'ashes_survival'|null`, `gameOver(state)` → `'crushed'|'lockout'|null`.
 - Guarantees under test: timeBand may close optional routes but every ending stays reachable; kiosk medicine never times out without explicit attempts; failure returns to sequence start (checkpoint unchanged on game over).
 
-- [ ] Failing tests covering: each ending trigger, both game overs, expose evidence math incl. Marisol substitution both ways, timeBand gating (band 3 blocks billing agent but not endings), rescue assist by calibration tier.
-- [ ] Implement minimal `state.js`; tests PASS.
-- [ ] Commit `feat: add RGB archive-sim pure state machine with tested ending predicates`.
+- [x] Failing tests covering: each ending trigger, both game overs, expose evidence math incl. Marisol substitution both ways, timeBand gating (band 3 blocks billing agent but not endings), rescue assist by calibration tier.
+- [x] Implement minimal `state.js`; tests PASS.
+- [x] Commit `feat: add RGB archive-sim pure state machine with tested ending predicates`.
 
 ### Task 9: RGB save schema + migration
 
@@ -166,8 +166,8 @@ Desktop compass at `#desktop-compass` already carries compass behavior — nothi
 
 **Produces:** `RGB_SAVE_KEY = 'hb_minigame_rgb_v1'`; `loadRgbSave(storage)` → validated `{ version:1, unlocked, checkpoint, endingsSeen, gameOversSeen, settings:{hints}, run }` with corrupt-JSON/wrong-shape recovery to fresh default; `saveRgbSave(storage, save)`; `markUnlocked`, `recordEnding`, `recordGameOver`, `saveCheckpoint`; `migrateRgbSave(raw)` (v1 passthrough scaffold with unknown-version reset).
 
-- [ ] Failing tests: fresh default; round-trip; corrupt string recovery; unknown version reset preserving nothing; endings dedupe.
-- [ ] Implement; PASS; commit `feat: add RGB save record with migration and corrupt-save recovery`.
+- [x] Failing tests: fresh default; round-trip; corrupt string recovery; unknown version reset preserving nothing; endings dedupe.
+- [x] Implement; PASS; commit `feat: add RGB save record with migration and corrupt-save recovery`.
 
 ### Task 10: Unlock gate + title toast
 
@@ -175,8 +175,8 @@ Desktop compass at `#desktop-compass` already carries compass behavior — nothi
 - Modify: `main.js` — where `recordSpecimen0047OriginIfFound` succeeds (grep call site), also `markUnlocked` the RGB save and queue a title-screen toast `ARCHIVE SIMULATION RECOVERED / RGB: RIVERSIDE GLOBAL 'BOTICS` on next title return; dispatch `rgb-unlocked`.
 - Test: extend `src/minigames/rgb/save.test.js` or add small unit around the pure unlock helper `shouldUnlockRgb({ specimen0047Recorded })`.
 
-- [ ] Wire + test; unlock persists across reload (storage-backed).
-- [ ] Commit `feat: unlock RGB archive sim from Specimen 0047 codex completion`.
+- [x] Wire + test; unlock persists across reload (storage-backed).
+- [x] Commit `feat: unlock RGB archive sim from Specimen 0047 codex completion`.
 
 ### Task 11: Gray-box runtime
 
@@ -190,10 +190,10 @@ Desktop compass at `#desktop-compass` already carries compass behavior — nothi
 - Input: keyboard (arrows/WASD focus, E/Enter confirm, Tab inventory, Esc back/pause, hold Q reveal) + `createActionRouter` archive set; pointer click parity.
 - Behavior: hotspot focus ring w/ predictable order; hold-reveal shows all hotspots; inventory strip; dialogue/recap panel; choice lists; chapter transitions via state module; ending + game-over cards with `RETRY RESCUE / LOAD CHAPTER / EXIT SIMULATION`; timers pause in menus (gray-box has no real-time timers — timeBand only); events `rgb-started`, `rgb-checkpoint`, `rgb-ending-reached`, `rgb-completed`.
 
-- [ ] Build runtime chapter-generic (data-driven), not six bespoke scenes.
-- [ ] Verify keyboard-only full path to each ending manually via dev server.
-- [ ] `npm run lint && npm test && npm run build`.
-- [ ] Commit `feat: add RGB gray-box DOM runtime on the shared 16:10 stage`.
+- [x] Build runtime chapter-generic (data-driven), not six bespoke scenes.
+- [x] Verify keyboard-only full path to each ending manually via dev server.
+- [x] `npm run lint && npm test && npm run build`.
+- [x] Commit `feat: add RGB gray-box DOM runtime on the shared 16:10 stage`.
 
 ### Task 12: Title menu integration
 
@@ -201,17 +201,17 @@ Desktop compass at `#desktop-compass` already carries compass behavior — nothi
 - Modify: `index.html` — `ARCHIVE SIMS` button after `#title-achievements-btn` (hidden until unlocked) + submenu panel showing RGB completion/endings.
 - Modify: `main.js` — routing: show button when save.unlocked; open submenu; warn (non-destructively) if an active field run exists; launch via `mountRgb`; exit returns to title; never mutate run save.
 
-- [ ] Wire; verify active-run save untouched after enter/exit (compare `hb_profile_v1`/run keys before/after).
-- [ ] Commit `feat: add ARCHIVE SIMS title menu with RGB launch routing`.
+- [x] Wire; verify active-run save untouched after enter/exit (compare `hb_profile_v1`/run keys before/after).
+- [x] Commit `feat: add ARCHIVE SIMS title menu with RGB launch routing`.
 
 ### Task 13: E2E smoke
 
 **Files:**
 - Create: `tests/e2e/rgb-archive-sim.spec.js`
 
-- [ ] Playwright: seed localStorage with unlocked RGB save → boot title → ARCHIVE SIMS visible → launch → keyboard-drive chapter 1 required beats → assert checkpoint advances and persists.
-- [ ] Full gates: `npm run lint && npm test && npm run build && npx playwright test tests/e2e/rgb-archive-sim.spec.js`.
-- [ ] Commit `test: add RGB unlock/launch/chapter-1 e2e smoke`.
+- [x] Playwright: seed localStorage with unlocked RGB save → boot title → ARCHIVE SIMS visible → launch → keyboard-drive chapter 1 required beats → assert checkpoint advances and persists.
+- [x] Full gates: `npm run lint && npm test && npm run build && npx playwright test tests/e2e/rgb-archive-sim.spec.js`.
+- [x] Commit `test: add RGB unlock/launch/chapter-1 e2e smoke`.
 
 ---
 

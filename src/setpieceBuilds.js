@@ -63,7 +63,8 @@ export function validateSetpieceCatalog(catalog = SETPIECE_BUILD_CATALOG) {
 function isEligible(blueprint, reservation) {
     const eligibility = blueprint.eligibility ?? {};
     return (!eligibility.roles?.length || eligibility.roles.includes(reservation.role))
-        && (!eligibility.rings?.length || eligibility.rings.includes(reservation.ring));
+        && (!eligibility.rings?.length || eligibility.rings.includes(reservation.ring))
+        && (!eligibility.blockerFeatures?.length || eligibility.blockerFeatures.includes(reservation.blockerFeature));
 }
 
 export function allocateSetpieceClaim(reservation, {

@@ -138,7 +138,7 @@ To wire this complete system into the existing codebase, the following component
 ## 6. Development Checklist
 
 - [x] **3D Assets & Animations Ready:** All 30 models converted and mapped in `src/data/communitySkins.js`.
-- [ ] **State Machine & Storage:** Implement `src/wandererSystem.js` with persistence.
-- [ ] **3D Follow AI Integration:** Upgrade `threeGame.js` companion pipeline from 2D sprites to 3D GLBs.
-- [ ] **Intermission Encounter Modal:** Build Befriend / Chase Off UI in `src/intermissionUi.js`.
+- [x] **State Machine & Storage:** Implement `src/wandererSystem.js` with persistence.
+- [x] **3D Follow AI Integration:** Upgrade `threeGame.js` companion pipeline from 2D sprites to 3D GLBs.
+- [x] **Intermission Encounter Modal:** Build Befriend / Chase Off UI (shipped as `src/wandererModal.js`).
 - [ ] **Quest & Unlock Pipeline:** Wire quest completion callbacks to grant permanent skin access in `src/loadout.js`.

@@ -15,8 +15,13 @@ export const SETPIECE_BUILD_CATALOG = Object.freeze([
             Object.freeze({ dx: 0, dy: -1 })
         ]),
         pivot: Object.freeze({ dx: 0, dy: 0 }),
+        // Keyed to the gate it depicts. It used to say `rings: [1]`, while
+        // the canonical blocker list (mazeExpedition.js) puts the blast
+        // bulkhead on ring 1 and the collapsed bridge -- the gate whose
+        // mission restores a canyon crossing and whose opening lays a bridge
+        // -- on ring 2. The bridge setpiece dressed the wrong gate.
         eligibility: Object.freeze({
-            rings: Object.freeze([1]),
+            blockerFeatures: Object.freeze(['collapsed_bridge']),
             biomes: Object.freeze(['active', 'cryo']),
             roles: Object.freeze(['ringCrossing'])
         }),

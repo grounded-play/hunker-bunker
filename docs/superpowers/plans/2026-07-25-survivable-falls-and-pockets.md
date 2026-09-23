@@ -1,6 +1,6 @@
 # Survivable Falls & Under-Layer Pockets Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
 
 **Goal:** Replace the instant-kill hole/pit hazard with a survivable fall into a small generated pocket, gated by a persistent upgrade that lets a player survive a second fall in the same run.
 
@@ -27,7 +27,7 @@
 **Interfaces:**
 - Produces: `findFarthestFloorCell(grid, startX, startY)` — exported function. `grid` is an array-of-arrays of `'#'`/`'.'` cells (same shape `buildChunk` produces). Returns `{ x, y, distance }` for the floor cell reachable from `(startX, startY)` with the greatest shortest-path distance (BFS, 4-directional), or `null` if `(startX, startY)` isn't itself an open floor cell. Later tasks use this to place the pocket's climb-up point.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Add to `src/landforms.test.js` (after the existing `describe('connectPortalsInward', ...)` block):
 
@@ -66,12 +66,12 @@ describe('findFarthestFloorCell', () => {
 });
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `npx vitest run src/landforms.test.js -t "findFarthestFloorCell"`
 Expected: FAIL — `findFarthestFloorCell is not a function` (not exported yet).
 
-- [ ] **Step 3: Write minimal implementation**
+- [x] **Step 3: Write minimal implementation**
 
 Add to `src/landforms.js`, near `reachableFloorCells` (after its closing brace, around line 124):
 
@@ -104,12 +104,12 @@ export function findFarthestFloorCell(grid, startX, startY) {
 }
 ```
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `npx vitest run src/landforms.test.js -t "findFarthestFloorCell"`
 Expected: PASS (3 tests)
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/landforms.js src/landforms.test.js
@@ -127,7 +127,7 @@ git commit -m "feat: add findFarthestFloorCell BFS helper for pocket climb point
 **Interfaces:**
 - Produces: `TIER2_UPGRADE_ORDER` includes `'fallHardening'`; `TIER2_UPGRADE_CONFIGS.fallHardening` follows the exact shape of `stimCache`/`deconFilters`. Later tasks read it via `this.bank?.getState?.()?.tier2Unlocks?.fallHardening` — the exact same pattern already used for `suitThermal`/`deconFilters`/`stimCache` in `src/threeGame.js`.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Add to `src/bank.test.js` (inside the existing `describe('BankManager', ...)` block, near the other tier2/goal tests):
 
@@ -148,12 +148,12 @@ Add `TIER2_UPGRADE_ORDER, TIER2_UPGRADE_CONFIGS` to the existing import line at 
 import { BankManager, FOUNDRY_ACTIVATION_COST, GOAL_COSTS, O2_GENERATOR_UPGRADES, shellPriceOf, TIER2_UPGRADE_ORDER, TIER2_UPGRADE_CONFIGS } from './bank.js';
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `npx vitest run src/bank.test.js -t "fallHardening"`
 Expected: FAIL — `expect(received).toContain(expected)` with `fallHardening` not in the array.
 
-- [ ] **Step 3: Write minimal implementation**
+- [x] **Step 3: Write minimal implementation**
 
 In `src/bank.js`, modify `TIER2_UPGRADE_ORDER` (line 285-289):
 
@@ -180,7 +180,7 @@ And add to `TIER2_UPGRADE_CONFIGS` (inside the object, after `stimCache`, before
 
 Also add `fallHardening: false` to `createDefaultState()`'s `tier2Unlocks` object (near line 342-345, alongside `suitThermal`/`deconFilters`) — check the exact current keys there first (`stimCache` may or may not already be listed) and add `fallHardening: false` following the same style.
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `npx vitest run src/bank.test.js -t "fallHardening"`
 Expected: PASS
@@ -188,7 +188,7 @@ Expected: PASS
 Then run the full bank suite to confirm nothing else assumes a fixed `TIER2_UPGRADE_ORDER` length: `npx vitest run src/bank.test.js`
 Expected: all PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/bank.js src/bank.test.js
@@ -207,7 +207,7 @@ git commit -m "feat: add IMPACT DAMPENERS fall-hardening tier-2 upgrade"
 - Consumes: `TIER2_UPGRADE_CONFIGS`/`tier2Unlocks.fallHardening` from Task 2 (already read via `this.bank?.getState?.()`, no new import needed — `BankManager` is already imported in `src/threeGame.js`).
 - Produces: `ThreeGame.prototype.resolveFallDamage()` — returns a whole-number damage amount, halved (still whole, floored at 1) when `fallHardening` is unlocked. `takeDamage` gains a `reason === 'fall'` path that (unlike `'abyss'`) respects `iFrameTimer`, and a new `this.isInPocket` guard that blocks all damage while a player is inside a pocket (added in Task 6, but the guard clause itself is added here since it lives in `takeDamage`). Task 6 consumes `resolveFallDamage()`.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Add to `src/threeGame.damageRounding.test.js` (new `describe` block at the end):
 
@@ -268,7 +268,7 @@ describe('takeDamage — fall reason respects iFrames, abyss does not', () => {
 });
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `npx vitest run src/threeGame.damageRounding.test.js -t "resolveFallDamage"`
 Expected: FAIL — `ThreeGame.prototype.resolveFallDamage is not a function`.
@@ -276,7 +276,7 @@ Expected: FAIL — `ThreeGame.prototype.resolveFallDamage is not a function`.
 Run: `npx vitest run src/threeGame.damageRounding.test.js -t "isInPocket"`
 Expected: FAIL — `hp` drops to `1`, not `3` (guard doesn't exist yet).
 
-- [ ] **Step 3: Write minimal implementation**
+- [x] **Step 3: Write minimal implementation**
 
 Add a new constant near `PROJECTILE_DAMAGE` (`src/threeGame.js:210`):
 
@@ -317,12 +317,12 @@ Modify `takeDamage` (`src/threeGame.js:10056-10065` before this plan's edits —
 
 (Only the new `if (this.isInPocket) return;` line is added — the rest of the method body is unchanged from its current state.)
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `npx vitest run src/threeGame.damageRounding.test.js`
 Expected: all PASS, including the 5 new tests.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/threeGame.js src/threeGame.damageRounding.test.js
@@ -341,7 +341,7 @@ git commit -m "feat: add resolveFallDamage and an isInPocket damage guard"
 - Consumes: `findFarthestFloorCell` (Task 1, import from `./landforms.js`), the existing `carveCell`/`carvePassage`/`shuffleDirections`/`createSeededRandom`/`hashTile`/`getWallKey`/`runEntropy` methods.
 - Produces: `ThreeGame.prototype.generatePocket(holeWorldX, holeWorldZ)` — returns `{ grid, size, centerCell, climbPoint: { x, y } }` (grid coordinates, not world coordinates). Caches by `getWallKey(holeWorldX, holeWorldZ)` in `this.pocketCache` (a `Map`, initialized in the constructor). Task 5 (mounting) and Task 6 (orchestration) consume this return shape.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Add to `src/threeGame.chunkVariation.test.js` (new `describe` block at the end, reusing the file's existing `makeFakeChunkGame` helper — extend it to also carry `getWallKey`, `pocketCache`, and `findFarthestFloorCell`... actually `findFarthestFloorCell` is a plain import used directly by `generatePocket`, not a `this` method, so no fakeThis wiring needed for it):
 
@@ -403,12 +403,12 @@ describe('generatePocket — per-hole, per-run pocket layout', () => {
 });
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `npx vitest run src/threeGame.chunkVariation.test.js -t "generatePocket"`
 Expected: FAIL — `ThreeGame.prototype.generatePocket is not a function`.
 
-- [ ] **Step 3: Write minimal implementation**
+- [x] **Step 3: Write minimal implementation**
 
 Add a new constant near `FALL_DAMAGE_BASE`. **This must stay odd** — `carveCell`/`carvePassage` work in half-density "cell space" (`grid position = cellIndex * 2 + 1`, see `src/threeGame.js:19291-19304`), and the DFS starts at `Math.floor(cellCount / 2)`. That expression only lands exactly on the grid's true center when `cellCount` is odd (verified against the real chunk carve: `chunkCellCount = 9`, `Math.floor(9/2) = 4`, `4*2+1 = 9` = the true center of a 19-wide grid). An even count would land one cell off-center — not broken, but needlessly imprecise:
 
@@ -474,12 +474,12 @@ import { LANDFORMS, pickLandform, applyLandform, applyRingRoadSystem, applyCanyo
 
 Add `this.pocketCache = new Map();` to the constructor, alongside `this.chunkCache = new Map();` (`src/threeGame.js:742`).
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `npx vitest run src/threeGame.chunkVariation.test.js`
 Expected: all PASS, including the 4 new tests.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/threeGame.js src/threeGame.chunkVariation.test.js
@@ -498,7 +498,7 @@ git commit -m "feat: add generatePocket — seeded, cached, per-run pocket layou
 - Consumes: `generatePocket` (Task 4), existing `this.wallGeometry`/`this.wallMaterial`/`this.floorGeometry`/`this.floorMaterial`/`configureWallMesh`/`createSnailDropPlacement`/`createPickupInstance`/`this.ventGeometry`/`this.ventMaterial`.
 - Produces: `ThreeGame.prototype.mountPocket(holeWorldX, holeWorldZ)` — returns the mounted `THREE.Group`, cached in `this.pocketGroups` (a `Map`, keyed the same way as `pocketCache`). A new `LANDFORM_SHADER_ID.pocket = 5` entry and a matching tint branch in the wall shader's fragment code. Task 6 consumes `mountPocket`'s returned group and its world-position math.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Add to `src/threeGame.chunkVariation.test.js`:
 
@@ -549,12 +549,12 @@ describe('mountPocket — pocket geometry mounting', () => {
 });
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `npx vitest run src/threeGame.chunkVariation.test.js -t "mountPocket"`
 Expected: FAIL — `ThreeGame.prototype.mountPocket is not a function`.
 
-- [ ] **Step 3: Write minimal implementation**
+- [x] **Step 3: Write minimal implementation**
 
 Add the shader-tint ID next to the existing `LANDFORM_SHADER_ID` map (`src/threeGame.js`, added earlier in this branch alongside `WALL_HP_CANYON_BONUS`):
 
@@ -658,7 +658,7 @@ Add `mountPocket` as a new method, near `mountChunk`:
     }
 ```
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `npx vitest run src/threeGame.chunkVariation.test.js`
 Expected: all PASS, including the 2 new tests.
@@ -666,7 +666,7 @@ Expected: all PASS, including the 2 new tests.
 Run the full suite once to confirm the shader edit didn't break anything: `npx vitest run`
 Expected: all PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/threeGame.js src/threeGame.chunkVariation.test.js
@@ -685,7 +685,7 @@ git commit -m "feat: add mountPocket — walls, floor, loot, and climb marker ge
 - Consumes: `resolveFallDamage` (Task 3), `mountPocket`/`generatePocket` (Tasks 4-5), existing `takeDamage`, `setInputEnabled`, `chunkMeshes`, `getTileType`/`getCachedTileType`/`canOccupyPosition`.
 - Produces: `ThreeGame.prototype.enterPocket(holeWorldX, holeWorldZ)` and `ThreeGame.prototype.exitPocket()`. Rewires `updatePlayer`'s fall-resolution branch to call `enterPocket` instead of `takeDamage(999, 'abyss')`, and its fall-trigger branch to remember which hole tile triggered the fall. **Also patches `getTileType`/`getCachedTileType` to resolve against the pocket's own grid while `isInPocket` is true** — without this, every collision/walkability check in the game (`isSnailTileWalkable` delegates straight to `getTileType`; `canOccupyPosition` calls it directly too) would keep reading the *surface* chunk's grid at the player's world X/Z, since those functions have no pocket awareness at all. The player would either be unable to move in the pocket, or walk straight through its walls. This was caught during this plan's self-review, not in the original spec — the spec's "reuse existing X/Z collision" constraint is honored, but *redirecting* that collision to the right grid while underground is new, necessary logic.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Add to `src/threeGame.chunkVariation.test.js`:
 
@@ -793,7 +793,7 @@ describe('getTileType — pocket-aware collision redirection', () => {
 });
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `npx vitest run src/threeGame.chunkVariation.test.js -t "enterPocket"`
 Expected: FAIL — `ThreeGame.prototype.enterPocket is not a function`.
@@ -801,7 +801,7 @@ Expected: FAIL — `ThreeGame.prototype.enterPocket is not a function`.
 Run: `npx vitest run src/threeGame.chunkVariation.test.js -t "getTileType"`
 Expected: FAIL — the first assertion throws `should not touch the surface chunk system while in a pocket` (current `getTileType` has no pocket awareness at all and falls straight through to `getOrCreateChunk`).
 
-- [ ] **Step 3: Write minimal implementation**
+- [x] **Step 3: Write minimal implementation**
 
 Add `enterPocket`/`exitPocket` as new methods, near `mountPocket`:
 
@@ -934,7 +934,7 @@ Add `this.isInPocket = false;` and clear `_pocketHoleX`/`_pocketHoleZ` to the ex
         this._pocketHoleZ = null;
 ```
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `npx vitest run src/threeGame.chunkVariation.test.js`
 Expected: all PASS, including the 2 `enterPocket`/`exitPocket` tests and the 2 `getTileType` tests.
@@ -942,7 +942,7 @@ Expected: all PASS, including the 2 `enterPocket`/`exitPocket` tests and the 2 `
 Run the full suite: `npx vitest run`
 Expected: all PASS (no regressions in the fall-trigger/reset code paths this touched, or in any of the many existing call sites of `getTileType`/`canOccupyPosition`).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/threeGame.js src/threeGame.chunkVariation.test.js
@@ -961,7 +961,7 @@ git commit -m "feat: wire falling to enterPocket/exitPocket and redirect collisi
 - Consumes: `exitPocket` (Task 6), the existing `#hole-hud-prompt` DOM element (no `index.html` changes — the same element's copy switches between "FILL HOLE" and "CLIMB UP" depending on `this.isInPocket`).
 - Produces: `ThreeGame.prototype.interactWithPocketClimbPoint()` — wired into `triggerGameplayInteract()` alongside the other `interactWith*` calls.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Add to `src/threeGame.holeTiles.test.js`:
 
@@ -1019,12 +1019,12 @@ describe('interactWithPocketClimbPoint', () => {
 });
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `npx vitest run src/threeGame.holeTiles.test.js -t "interactWithPocketClimbPoint"`
 Expected: FAIL — `ThreeGame.prototype.interactWithPocketClimbPoint is not a function`.
 
-- [ ] **Step 3: Write minimal implementation**
+- [x] **Step 3: Write minimal implementation**
 
 Add `interactWithPocketClimbPoint` as a new method, near `interactWithHoleTile` (`src/threeGame.js:18766`):
 
@@ -1132,7 +1132,7 @@ Extend the existing hole-HUD-prompt block (`src/threeGame.js:5004-5038`) to show
 
 (Only the `promptLabel` variable and the new `if (this.isInPocket) { ... } else { ...existing check... }` branch are new; the existing surface-hole loop moves unchanged into the `else`.)
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `npx vitest run src/threeGame.holeTiles.test.js`
 Expected: all PASS, including the 3 new tests.
@@ -1140,7 +1140,7 @@ Expected: all PASS, including the 3 new tests.
 Run the full suite and lint: `npx vitest run && npx eslint .`
 Expected: all PASS, lint clean.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/threeGame.js src/threeGame.holeTiles.test.js
@@ -1156,12 +1156,12 @@ git commit -m "feat: add climb-up interaction and reuse the hole HUD prompt for 
 
 **Note on bridging:** the spec's "avoid the fall entirely" requirement is intentionally covered by zero new code — the existing `fillHoleAt`/`interactWithHoleTile` action (untouched by this plan) already turns a hole permanently safe via the same "PRESS E" prompt. Nothing in Tasks 1-7 changes that path; it's confirmed still working by the existing `src/threeGame.holeTiles.test.js` coverage, which this plan doesn't modify.
 
-- [ ] **Step 1: Start the dev server if not already running**
+- [x] **Step 1: Start the dev server if not already running**
 
 Run: `curl -s -o /dev/null -w "%{http_code}\n" http://localhost:5173/`
 Expected: `200`. If not, run `npm run dev -- --port 5173 --strictPort` in the background first.
 
-- [ ] **Step 2: Write a throwaway Playwright script to force a fall and observe the result**
+- [x] **Step 2: Write a throwaway Playwright script to force a fall and observe the result**
 
 Create `tests/e2e/zzz-verify-pocket.spec.js` (temporary — delete after this task):
 
@@ -1235,12 +1235,12 @@ test('falling through a hole drops the player into a survivable pocket', async (
 });
 ```
 
-- [ ] **Step 3: Run it**
+- [x] **Step 3: Run it**
 
 Run: `npx playwright test tests/e2e/zzz-verify-pocket.spec.js --project=chromium --workers=1`
 Expected: 1 passed. If the hole-search loop finds nothing within range, increase the scan radius or move the player toward a non-spawn chunk first (spawn chunks clear a hole-free radius, per `clearSpawnArea`).
 
-- [ ] **Step 4: Take a screenshot for a manual visual sanity check**
+- [x] **Step 4: Take a screenshot for a manual visual sanity check**
 
 ```js
 // add just before the final assertion, temporarily:
@@ -1249,7 +1249,7 @@ await page.screenshot({ path: '/tmp/pocket-check.png' });
 
 Read the screenshot. Confirm: the pocket reads visually distinct (darker/cooler tint from the new pocket wall tint), the player and camera are both visible (not occluded by the hidden surface chunk), and the loot pickup and vent climb marker are visible somewhere in frame.
 
-- [ ] **Step 5: Delete the throwaway spec and confirm the full suite is still green**
+- [x] **Step 5: Delete the throwaway spec and confirm the full suite is still green**
 
 ```bash
 rm tests/e2e/zzz-verify-pocket.spec.js
@@ -1260,7 +1260,7 @@ npm run build
 
 Expected: all tests pass, lint clean, build succeeds.
 
-- [ ] **Step 6: Commit** (only if Step 4 surfaced a real bug that needed a code fix — otherwise this task produces no commit, since it's verification-only)
+- [x] **Step 6: Commit** (only if Step 4 surfaced a real bug that needed a code fix — otherwise this task produces no commit, since it's verification-only)
 
 ```bash
 git add -A

@@ -527,6 +527,16 @@
                         }
                     }
                 } }
+            "button_back_right_upper" { "activators"
+                {
+                    "Full_Press"
+                    {
+                        "bindings"
+                        {
+                            "binding" "game_action gameplay ability, Smash"
+                        }
+                    }
+                } }
         }
     }
     "group"

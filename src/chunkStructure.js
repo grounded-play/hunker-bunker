@@ -231,6 +231,7 @@ export function buildAuthoredRoomChunkStructure(random, {
         room.siteId = build.siteId;
         room.territoryBeatKey = build.territoryBeatKey;
         room.label = build.label;
+        if (build.encounterProfile) room.encounterProfile = build.encounterProfile;
     }
     const siteAnchors = build.centerAnchor ? [{
         ...build.centerAnchor,

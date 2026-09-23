@@ -2,6 +2,10 @@ import { test, expect } from '@playwright/test';
 import { bootToOperatorMenu, startRunAndSkipIntro } from './helpers.js';
 
 test.describe('gameplay facing yaw (mouse + gamepad)', () => {
+    // The boot helper alone may spend its full 120s deadline on a cold boot,
+    // which is the config's whole per-test budget; the body needs room too.
+    test.describe.configure({ timeout: 300_000 });
+
     test('clicking the game canvas hides the mouse-look prompt without requiring pointer lock', async ({ page }) => {
         await bootToOperatorMenu(page);
         await startRunAndSkipIntro(page);
@@ -28,7 +32,6 @@ test.describe('gameplay facing yaw (mouse + gamepad)', () => {
     });
 
     test('third-person mouse aim keeps the camera still in center and edge-turns progressively', async ({ page }) => {
-        test.setTimeout(180_000);
         await bootToOperatorMenu(page);
         await startRunAndSkipIntro(page);
 
@@ -56,7 +59,6 @@ test.describe('gameplay facing yaw (mouse + gamepad)', () => {
     });
 
     test('gamepad right-stick turns third-person facing while the crosshair stays centered', async ({ page }) => {
-        test.setTimeout(180_000);
         await bootToOperatorMenu(page);
         await startRunAndSkipIntro(page);
 

@@ -476,14 +476,14 @@ This sprint is complete when all of the following are true:
 - [ ] Lighting remains stable through the defined movement route and scene transitions.
 - [ ] Season animations use distinct reward-family endings.
 - [ ] Burst effects render in front of the reward object and behind the readable card.
-- [ ] Chroma-green artifacts are removed from runtime 2D presentation assets.
+- [x] Chroma-green artifacts are removed from runtime 2D presentation assets.
 - [ ] XP feedback is hidden at rest, event-driven, styled, and audible.
 - [ ] Season-pass collection shows the item, confirmation, audio, and correct 3D/2D preview.
 - [ ] Weapon scale is calibrated for gameplay and preview contexts.
 - [ ] Charms use correct per-weapon attachment transforms.
 - [ ] Walking is grounded at walk, strafe, stop, and sprint speeds.
 - [ ] Desktop and Steam Deck-sized visual checks pass.
-- [ ] Tests and audits pass, with unrelated failures documented.
+- [x] Tests and audits pass, with unrelated failures documented.
 
 ## 16. Log16 findings and evidence update
 

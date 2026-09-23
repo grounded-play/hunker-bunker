@@ -1,6 +1,6 @@
 {
   "name": "hunker-bunker",
-  "version": "2.4.9-beta",
+  "version": "2.4.11-beta",
   "description": "A biomechanical survival roguelike set beneath the frozen surface of Cocytus IV.",
   "author": "Tuesday Cinema Club",
   "private": true,
@@ -8,6 +8,7 @@
   "main": "electron/main.cjs",
   "scripts": {
     "dev": "vite --host",
+    "dev:headless": "cross-env NODE_ENV=development xvfb-run --server-args='-screen 0 1024x768x24' electron .",
     "server": "nodemon server/index.js",
     "server:start": "node server/index.js",
     "server:local": "node --env-file=.env.loco --watch server/index.js",
@@ -71,7 +72,9 @@
     "trailer:build": "node scripts/build-trailer.js",
     "logs:fetch": "node scripts/fetch-session-logs.mjs",
     "logs:analyze": "node scripts/analyze-session-logs.mjs",
-    "audit:economy-icons": "python3 scripts/fix-chroma-economy-icons.py --check"
+    "audit:economy-icons": "python3 scripts/fix-chroma-economy-icons.py --check",
+    "electron:dev:headless": "concurrently \"vite\" \"wait-on http://localhost:5173 && xvfb-run --server-args='-screen 0 1024x768x24' cross-env ELECTRON_DEV=1 electron .\"",
+    "electron:debug:remote": "concurrently \"vite\" \"wait-on http://localhost:5173 && xvfb-run --server-args='-screen 0 1024x768x24' cross-env ELECTRON_DEV=1 electron --remote-debugging-port=9222 .\""
   },
   "build": {
     "appId": "com.icecave.hunkerbunker",
@@ -134,6 +137,8 @@
     "wait-on": "^9.1.0"
   },
   "dependencies": {
+    "electron-debug": "^5.0.0",
+    "electron-devtools-installer": "^4.0.0",
     "express": "^5.2.1",
     "express-rate-limit": "^8.7.0",
     "socket.io": "^4.8.3",

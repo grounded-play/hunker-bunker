@@ -264,9 +264,17 @@ export const ROOM_BUILD_CATALOG = Object.freeze([
             { x: 3, y: 4, w: 2, h: 3 },
             { x: 12, y: 4, w: 2, h: 3 }
         ]),
+        // Flank sockets as well as approach/far side: the route may turn or
+        // branch inside a gate chunk (north in, east out), and with only a
+        // straight n/s pair no rotation matched, so the crossing fell back to
+        // a best-effort room with one opening unconnected -- a dead-end gate
+        // room the route bypassed on the ledges outside it. Every opening now
+        // gets a door; the crossing's own door is still the outward one.
         sockets: [
             { id: 'approach', side: 's', width: 3, required: true },
-            { id: 'farSide', side: 'n', width: 3, required: false }
+            { id: 'farSide', side: 'n', width: 3, required: false },
+            { id: 'flankEast', side: 'e', width: 3, required: false },
+            { id: 'flankWest', side: 'w', width: 3, required: false }
         ],
         rotationPolicy: 'cardinal',
         tierEligibility: [1, 2, 3, 4],

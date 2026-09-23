@@ -62,10 +62,10 @@ The baseline starting into Sprint 29:
 
 ## 3. Sprint 29 Verification Checklist
 
-- [ ] `npm run lint` passes with 0 errors / 0 warnings.
-- [ ] `npm run presubmit` validates all asset checksums, audio files, and catalog ItemDefs.
-- [ ] `npm run audit:dependencies` reports 0 unused or unmapped dependencies.
-- [ ] `npm run build` succeeds and confirms clean asset bundling.
+- [x] `npm run lint` passes with 0 errors / 0 warnings.
+- [x] `npm run presubmit` validates all asset checksums, audio files, and catalog ItemDefs.
+- [x] `npm run audit:dependencies` reports 0 unused or unmapped dependencies.
+- [x] `npm run build` succeeds and confirms clean asset bundling.
 - [ ] `npm run coverage` maintains >98% statement coverage.
 - [ ] Packaged Electron builds for Linux and Windows succeed with unpacked 3D models.
-- [ ] Versioning documented and updated across all release tracking ledgers.
+- [x] Versioning documented and updated across all release tracking ledgers.

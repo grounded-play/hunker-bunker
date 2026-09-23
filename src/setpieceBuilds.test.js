@@ -8,7 +8,11 @@ import {
     validateSetpieceCatalog
 } from './setpieceBuilds.js';
 
-const reservation = { id: 'ring-1:crossing', role: 'ringCrossing', ring: 1, chunkX: 4, chunkY: 5 };
+// The canonical collapsed bridge is the ring 2 gate (mazeExpedition.js
+// RING_BLOCKER_FEATURES); the bridge setpiece is keyed to that feature.
+const reservation = {
+    id: 'ring-2:crossing', role: 'ringCrossing', ring: 2, blockerFeature: 'collapsed_bridge', chunkX: 4, chunkY: 5
+};
 
 describe('setpiece blueprint foundation', () => {
     it('validates the data-only catalog', () => {
@@ -30,6 +34,13 @@ describe('setpiece blueprint foundation', () => {
         const claim = allocateSetpieceClaim(reservation, { availableChunkKeys: ['3,5', '4,5', '5,5'] });
         expect(claim.rotation).toBe(1);
         expect(claim.chunkKeys).toEqual(['3,5', '4,5', '5,5']);
+    });
+
+    it('never dresses a gate that is not a collapsed bridge as a bridge', () => {
+        const options = { availableChunkKeys: ['4,4', '4,5', '4,6'] };
+        for (const blockerFeature of ['blast_bulkhead', 'hive_membrane', 'flooded_service_tunnel', undefined]) {
+            expect(allocateSetpieceClaim({ ...reservation, ring: 1, blockerFeature }, options), String(blockerFeature)).toBeNull();
+        }
     });
 
     it('degrades cleanly when the footprint is blocked', () => {

@@ -11,6 +11,9 @@ import {
     computeReachableRings,
     computeRingWalkDistances,
     computeTopologyDistances,
+    deriveRouteCoil,
+    LEGACY_ROUTE_LAYOUT_VERSION,
+    ROUTE_LAYOUT_VERSION,
     clampPositionToUnlockedRing,
     isChunkOnRingBarrier,
     findConflictingChunkReservations,
@@ -209,6 +212,72 @@ describe('authoritative regional snake-and-rings topology', () => {
             }
             const queen = plan.nodes.find((node) => node.id === 'queen_chamber');
             expect(`${queen.chunkX},${queen.chunkY}`).toBe(plan.topology.queenChunkKey);
+        }
+    });
+
+    it('coils each campaign spine its own way from a fixed north departure', () => {
+        const chiralities = new Set();
+        for (let seed = 1; seed <= 40; seed += 1) {
+            const coil = deriveRouteCoil(seed, ROUTE_LAYOUT_VERSION);
+            expect(deriveRouteCoil(seed, ROUTE_LAYOUT_VERSION)).toEqual(coil);
+            chiralities.add(coil.chirality);
+            expect(coil.baseTurns).toBeGreaterThanOrEqual(2.05);
+            expect(coil.baseTurns).toBeLessThan(2.4);
+            const topology = generateRegionalRouteTopology(seed, { phase: 0.4, layoutVersion: ROUTE_LAYOUT_VERSION });
+            expect(topology.spineChunkKeys.slice(0, 3)).toEqual(['0,0', '0,-1', '0,-2']);
+            // The first sideways step follows the winding direction.
+            const firstTurn = topology.spineChunkKeys.map((key) => Number(key.split(',')[0])).find((x) => x !== 0);
+            expect(Math.sign(firstTurn), `seed ${seed}`).toBe(coil.chirality);
+        }
+        expect([...chiralities].sort()).toEqual([-1, 1]);
+    });
+
+    it('keeps legacy campaigns on the exact geography they were saved against', () => {
+        expect(deriveRouteCoil(99, LEGACY_ROUTE_LAYOUT_VERSION))
+            .toEqual({ chirality: 1, baseTurns: 2.2, wobbleFrequency: 7, wobbleAmplitude: 0.16 });
+        for (const seed of [1, 200, 8128]) {
+            const legacy = generateRadialMazeExpedition(seed, { layoutVersion: LEGACY_ROUTE_LAYOUT_VERSION });
+            expect(generateRadialMazeExpedition(seed)).toEqual(legacy);
+            expect(legacy.layoutVersion).toBe(LEGACY_ROUTE_LAYOUT_VERSION);
+            const current = generateRadialMazeExpedition(seed, { layoutVersion: ROUTE_LAYOUT_VERSION });
+            expect(current.topology.routeEdges).not.toEqual(legacy.topology.routeEdges);
+        }
+        // Pins the legacy spine so a generator edit cannot silently move
+        // every pre-versioning save.
+        expect(generateRegionalRouteTopology(8128).spineChunkKeys.slice(0, 12)).toEqual([
+            '0,0', '0,-1', '0,-2', '1,-2', '1,-1', '2,-1', '2,0', '3,0', '3,1', '3,2', '2,2', '2,3'
+        ]);
+    });
+
+    it('produces valid, progressable plans on the current generation', () => {
+        for (let seed = 1; seed <= 60; seed += 1) {
+            const plan = generateRadialMazeExpedition(seed, { layoutVersion: ROUTE_LAYOUT_VERSION });
+            expect(validateRadialMazeExpedition(plan), `seed ${seed}`).toEqual({ valid: true, errors: [] });
+            const routeKeys = new Set(plan.topology.routeChunks.map((chunk) => `${chunk.chunkX},${chunk.chunkY}`));
+            for (const site of [...plan.nodes, ...plan.blockers]) {
+                expect(routeKeys.has(`${site.chunkX ?? 0},${site.chunkY ?? 0}`), `${seed}:${site.id}`).toBe(true);
+            }
+        }
+    });
+
+    it('keeps the queen deep down the snake for every coil', () => {
+        for (let seed = 1; seed <= 30; seed += 1) {
+            const plan = generateRadialMazeExpedition(seed, { layoutVersion: ROUTE_LAYOUT_VERSION });
+            expect(plan.topology.spineChunkKeys.length, `seed ${seed}`).toBeGreaterThan(35);
+            expect(computeTopologyDistances(plan.topology).get(plan.topology.queenChunkKey), `seed ${seed}`)
+                .toBeGreaterThan(80);
+        }
+    });
+
+    it('spreads each camp and hive across the compass between campaigns', () => {
+        for (const siteId of ['camp_meridian', 'camp_tallow', 'hive_suture', 'hive_relay']) {
+            const quadrants = new Set();
+            for (let seed = 1; seed <= 24; seed += 1) {
+                const node = generateRadialMazeExpedition(seed, { layoutVersion: ROUTE_LAYOUT_VERSION })
+                    .nodes.find((entry) => entry.id === siteId);
+                quadrants.add(`${Math.sign(node.chunkX) >= 0 ? 'E' : 'W'}${Math.sign(node.chunkY) >= 0 ? 'S' : 'N'}`);
+            }
+            expect(quadrants.size, siteId).toBeGreaterThanOrEqual(3);
         }
     });
 

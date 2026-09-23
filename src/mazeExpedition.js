@@ -3,6 +3,7 @@
 // and route lengths are generated per run.
 
 import { CHUNK_SIZE } from './tileCatalog.js';
+import { findDisjointRoutes, hasTwoRoutesToQueen } from './mazeTiers.js';
 
 // Ring radii are world units, but what the player traverses is chunks — so
 // these must scale with CHUNK_SIZE or the rings collapse onto one another.
@@ -203,6 +204,48 @@ function connectChunkPoints(from, to, preferHorizontal, visit) {
     return { x, y };
 }
 
+// Route layout generations. A campaign's geography is fixed for its life:
+// saves key destroyed walls, explored cells and door state by world
+// position, so a campaign keeps the generation it was created with.
+//   1 -- one counter-clockwise coil for every seed, and a raw xorshift seed
+//        whose first draw is near zero for small seeds (seeds 1..~1000 all
+//        shared one site phase).
+//   2 -- seed-mixed streams and a per-campaign coil (deriveRouteCoil).
+export const LEGACY_ROUTE_LAYOUT_VERSION = 1;
+export const ROUTE_LAYOUT_VERSION = 2;
+
+const LEGACY_ROUTE_COIL = Object.freeze({ chirality: 1, baseTurns: 2.2, wobbleFrequency: 7, wobbleAmplitude: 0.16 });
+
+// Murmur3's finalizer: spreads nearby seeds across the whole 32-bit range
+// before they reach xorshift, whose first outputs track the seed's magnitude.
+function mixSeed(seed) {
+    let hash = (Number(seed) >>> 0) ^ 0x9e3779b9;
+    hash = Math.imul(hash ^ (hash >>> 16), 0x85ebca6b);
+    hash = Math.imul(hash ^ (hash >>> 13), 0xc2b2ae35);
+    hash ^= hash >>> 16;
+    return (hash >>> 0) || 1;
+}
+
+/**
+ * How the campaign's spine coils. Drawn from its own stream so the route's
+ * edge-ordering stream is untouched. Every campaign still leaves the crash
+ * site through the north blast door (startAngle), but the snake may wind
+ * either way, coil tighter or looser, and wobble at its own rhythm, so two
+ * campaigns meet their camps and gates from different sides and in a
+ * different rhythm. Turn counts stay in a band that keeps the queen far
+ * enough down the snake for every ring's content.
+ */
+export function deriveRouteCoil(seed = 1, layoutVersion = ROUTE_LAYOUT_VERSION) {
+    if (layoutVersion < ROUTE_LAYOUT_VERSION) return { ...LEGACY_ROUTE_COIL };
+    const random = seededRandom(mixSeed((Number(seed) ^ 0x434f494c) >>> 0));
+    return {
+        chirality: random() < 0.5 ? 1 : -1,
+        baseTurns: 2.05 + random() * 0.35,
+        wobbleFrequency: 5 + Math.floor(random() * 5),
+        wobbleAmplitude: 0.1 + random() * 0.1
+    };
+}
+
 /**
  * Builds the authoritative, streamed chunk graph for one run.
  *
@@ -215,7 +258,8 @@ function connectChunkPoints(from, to, preferHorizontal, visit) {
 export function generateRegionalRouteTopology(seed = 1, {
     chunkSize = CHUNK_SIZE,
     radii = RADIAL_RING_RADII,
-    phase = 0
+    phase = 0,
+    layoutVersion = LEGACY_ROUTE_LAYOUT_VERSION
 } = {}) {
     const random = seededRandom((Number(seed) ^ 0x44595354) >>> 0);
     const routeChunks = new Map();
@@ -247,12 +291,13 @@ export function generateRegionalRouteTopology(seed = 1, {
     const snakeControlPoints = [{ x: 0, y: 0 }, { x: 0, y: -1 }, { x: 0, y: -2 }];
     const sampleCount = outerRadius * 18;
     const startAngle = -Math.PI / 2 + phase * 0.12;
+    const { chirality, baseTurns, wobbleFrequency, wobbleAmplitude } = deriveRouteCoil(seed, layoutVersion);
     for (let index = 1; index <= sampleCount; index += 1) {
         const t = index / sampleCount;
         const radius = 1.6 + t * (outerRadius - 1.2);
-        const turns = 2.2 + t * 0.65;
-        const angle = startAngle + t * Math.PI * 2 * turns
-            + Math.sin(t * Math.PI * 7 + phase) * 0.16;
+        const turns = baseTurns + t * 0.65;
+        const angle = startAngle + chirality * (t * Math.PI * 2 * turns
+            + Math.sin(t * Math.PI * wobbleFrequency + phase) * wobbleAmplitude);
         const point = {
             x: roundCoordinate(Math.cos(angle) * radius),
             y: roundCoordinate(Math.sin(angle) * radius)
@@ -300,7 +345,7 @@ export function generateRegionalRouteTopology(seed = 1, {
     const uniqueSpineChunkKeys = [...new Set(spineChunkKeys)];
     const queenChunkKey = uniqueSpineChunkKeys.at(-1);
     const boundsRadius = outerRadius + 2;
-    return {
+    const topology = {
         version: 1,
         chunkSize,
         boundsRadius,
@@ -311,6 +356,8 @@ export function generateRegionalRouteTopology(seed = 1, {
         routeChunks: [...routeChunks.values()],
         routeEdges: [...routeEdges]
     };
+    topology.reachability = validateExpeditionRouteReachability(topology);
+    return topology;
 }
 
 export function topologyHasChunk(topology, chunkX, chunkY) {
@@ -320,6 +367,61 @@ export function topologyHasChunk(topology, chunkX, chunkY) {
 export function topologyHasEdge(topology, aX, aY, bX, bY) {
     const edge = routeEdgeKey(chunkKey(aX, aY), chunkKey(bX, bY));
     return Boolean(topology?.routeEdges?.includes(edge));
+}
+
+/**
+ * Builds an adjacency Map from a regional route topology's routeEdges.
+ *
+ * @param {object} topology - Output from generateRegionalRouteTopology
+ * @returns {Map<string, string[]>}
+ */
+export function buildTopologyAdjacency(topology) {
+    const adjacency = new Map((topology?.routeChunks ?? []).map((chunk) => [
+        chunkKey(chunk.chunkX, chunk.chunkY),
+        []
+    ]));
+    for (const edge of topology?.routeEdges ?? []) {
+        const [a, b] = edge.split('|');
+        if (!adjacency.has(a)) adjacency.set(a, []);
+        if (!adjacency.has(b)) adjacency.set(b, []);
+        adjacency.get(a).push(b);
+        adjacency.get(b).push(a);
+    }
+    return adjacency;
+}
+
+/**
+ * Validates expedition route reachability using anti-softlock disjoint route discovery.
+ * Ensures the Queen / final tier is strictly reachable from the spawn / start point.
+ *
+ * @param {object} topology - Output from generateRegionalRouteTopology
+ * @returns {{ valid: boolean, routeCount: number, hasAlternativeRoute: boolean, routes: string[][], errors: string[] }}
+ */
+export function validateExpeditionRouteReachability(topology) {
+    if (!topology || !topology.startChunkKey || !topology.queenChunkKey) {
+        return {
+            valid: false,
+            routeCount: 0,
+            hasAlternativeRoute: false,
+            routes: [],
+            errors: ['Invalid topology or missing start/queen chunk keys']
+        };
+    }
+    const adjacency = buildTopologyAdjacency(topology);
+    const routes = findDisjointRoutes(adjacency, topology.startChunkKey, topology.queenChunkKey, 2);
+    const hasAlternativeRoute = hasTwoRoutesToQueen(adjacency, topology.startChunkKey, topology.queenChunkKey);
+    const reachable = routes.length >= 1;
+    const errors = [];
+    if (!reachable) {
+        errors.push(`Queen chunk (${topology.queenChunkKey}) is unreachable from start (${topology.startChunkKey})`);
+    }
+    return {
+        valid: reachable,
+        routeCount: routes.length,
+        hasAlternativeRoute,
+        routes,
+        errors
+    };
 }
 
 // Dijkstra over the physically streamed chunk graph. Edges are unit-weight
@@ -360,8 +462,11 @@ export function computeTopologyDistances(topology, startKey = topology?.startChu
     return distances;
 }
 
-export function generateRadialMazeExpedition(seed = 1, { chunkSize = CHUNK_SIZE } = {}) {
-    const random = seededRandom(seed);
+export function generateRadialMazeExpedition(seed = 1, {
+    chunkSize = CHUNK_SIZE,
+    layoutVersion = LEGACY_ROUTE_LAYOUT_VERSION
+} = {}) {
+    const random = seededRandom(layoutVersion >= ROUTE_LAYOUT_VERSION ? mixSeed(seed) : seed);
     const phase = random() * Math.PI * 2;
     const nodes = [{
         id: 'o2_ship',
@@ -467,6 +572,7 @@ export function generateRadialMazeExpedition(seed = 1, { chunkSize = CHUNK_SIZE 
 
     const topology = generateRegionalRouteTopology(seed, {
         phase,
+        layoutVersion,
         radii: RADIAL_RING_RADII
     });
 
@@ -520,6 +626,9 @@ export function generateRadialMazeExpedition(seed = 1, { chunkSize = CHUNK_SIZE 
     // their target radii are close.
     // Seed with the chunks the story nodes already own, so a gate never lands
     // on top of a camp, hive or the Queen either.
+    const gateCutChunks = layoutVersion >= ROUTE_LAYOUT_VERSION
+        ? findRouteCutChunks(topology, topology.startChunkKey, topology.queenChunkKey)
+        : new Set();
     const takenBlockerChunks = new Set(
         nodes.filter((node) => node.chunkX != null)
             .map((node) => `${node.chunkX},${node.chunkY}`)
@@ -535,6 +644,11 @@ export function generateRadialMazeExpedition(seed = 1, { chunkSize = CHUNK_SIZE 
         const ranked = topology.spineChunkKeys
             .filter((key) => !takenBlockerChunks.has(key))
             .filter((key) => hasOrthogonalSpineNeighbor(topology.spineChunkKeys, key))
+            // Generation 2 only (geography is versioned): a gate must be a
+            // chunk every route to the queen passes through. Generation 1
+            // could park a gate on a spur the spine enters and leaves by the
+            // same side, leaving its door opening onto nothing.
+            .filter((key) => layoutVersion < ROUTE_LAYOUT_VERSION || gateCutChunks.has(key))
             .map((key) => {
                 const [chunkX, chunkY] = key.split(',').map(Number);
                 return {
@@ -571,6 +685,7 @@ export function generateRadialMazeExpedition(seed = 1, { chunkSize = CHUNK_SIZE 
 
     return {
         seed: Number(seed) >>> 0,
+        layoutVersion,
         phase,
         radii: [...RADIAL_RING_RADII],
         nodes,
@@ -579,6 +694,43 @@ export function generateRadialMazeExpedition(seed = 1, { chunkSize = CHUNK_SIZE 
         edges,
         topology
     };
+}
+
+/**
+ * Route chunks every path from `startKey` to `goalKey` must pass through: the
+ * cut points between them. One BFS per candidate over the route graph -- a few
+ * hundred chunks, once per plan.
+ */
+export function findRouteCutChunks(topology, startKey, goalKey) {
+    const graph = new Map();
+    for (const edge of topology?.routeEdges ?? []) {
+        const [a, b] = edge.split('|');
+        if (!graph.has(a)) graph.set(a, []);
+        if (!graph.has(b)) graph.set(b, []);
+        graph.get(a).push(b);
+        graph.get(b).push(a);
+    }
+    const reaches = (removed) => {
+        const seen = new Set([startKey]);
+        const queue = [startKey];
+        while (queue.length) {
+            const current = queue.shift();
+            if (current === goalKey) return true;
+            for (const next of graph.get(current) ?? []) {
+                if (next === removed || seen.has(next)) continue;
+                seen.add(next);
+                queue.push(next);
+            }
+        }
+        return false;
+    };
+    const cuts = new Set();
+    if (!graph.has(startKey) || !graph.has(goalKey) || !reaches(null)) return cuts;
+    for (const key of topology.spineChunkKeys ?? []) {
+        if (key === startKey || key === goalKey || cuts.has(key)) continue;
+        if (!reaches(key)) cuts.add(key);
+    }
+    return cuts;
 }
 
 function ringNodeIds(ring) {
@@ -782,6 +934,12 @@ export function validateRadialMazeExpedition(plan) {
     }
     for (const blocker of plan?.blockers ?? []) {
         if (!blocker.missionId || !blocker.feature) errors.push(`${blocker.id} is not mission-backed`);
+    }
+    if (plan?.topology) {
+        const reachability = validateExpeditionRouteReachability(plan.topology);
+        if (!reachability.valid) {
+            errors.push(...reachability.errors);
+        }
     }
     return { valid: errors.length === 0, errors };
 }

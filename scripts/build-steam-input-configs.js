@@ -163,10 +163,13 @@ function buildControllerConfig(controllerType) {
         button_back_left: ['sprint', 'Sprint'],
         button_back_right: ['interact', 'Interact']
     };
-    // L4 is a convenient dedicated map button on Steam Deck. Keep View/Back as
-    // the universal fallback, and emit this extra source only for Deck hardware.
+    // L4 is a convenient dedicated map button on Steam Deck. R4 gives a
+    // dedicated secondary-attack / smash grip button without lifting the thumb off
+    // the aim stick. Keep View/Back as the universal fallback, and emit these
+    // extra sources only for Deck hardware.
     if (controllerType === 'controller_neptune') {
         gameplaySwitches.button_back_left_upper = ['toggle_map', 'Tactical Map'];
+        gameplaySwitches.button_back_right_upper = ['ability', 'Smash'];
     }
     const groups = [
         faceGroup(0, 'menu', {

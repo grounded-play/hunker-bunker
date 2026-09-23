@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { ThreeGame } from './threeGame.js';
-import { generateRadialMazeExpedition } from './mazeExpedition.js';
+import { generateRadialMazeExpedition, ROUTE_LAYOUT_VERSION } from './mazeExpedition.js';
 import { buildWorldPlan } from './ringManifest.js';
 import { createMilestoneBossLifecycleState } from './milestoneBossLifecycle.js';
 
@@ -8,7 +8,7 @@ import { createMilestoneBossLifecycleState } from './milestoneBossLifecycle.js';
  * A ring crossing must always end up with a threshold and a gate control.
  *
  * Setpiece claims legitimately cover crossing chunks -- the collapsed bridge IS
- * the ring-1 gate -- but only the claim's PIVOT chunk produces a room. When the
+ * the ring-2 gate -- but only the claim's PIVOT chunk produces a room. When the
  * gate landed on a non-pivot module, the resolver accepted the doorless setpiece
  * module: the chunk looked right, had no door and no mission console, and the
  * ring could never be opened. Seeded gate placement made that far more
@@ -28,9 +28,11 @@ function topologyEdgeOpening(worldPlan, axis, edgeX, edgeY) {
     };
 }
 
-function buildGateChunk(seed) {
-    const worldPlan = buildWorldPlan(generateRadialMazeExpedition(seed));
-    const crossing = worldPlan.ringCrossings[0];
+function buildGateChunk(seed, layoutVersion = undefined) {
+    const worldPlan = buildWorldPlan(generateRadialMazeExpedition(seed, { layoutVersion }));
+    // The setpiece-claimed gate: the collapsed bridge (ring 2).
+    const crossing = worldPlan.ringCrossings.find((entry) => entry.blockerFeature === 'collapsed_bridge')
+        ?? worldPlan.ringCrossings[0];
     const fakeThis = {
         chunkSize: 49,
         chunkCellCount: 24,
@@ -113,5 +115,17 @@ describe('ring crossing chunks keep their threshold', () => {
             expect((metadata.doors ?? []).filter((d) => d.ringCrossingId === crossing.id)).toHaveLength(1);
         }
         expect(checked, 'sweep found no non-pivot gate chunks — it has gone stale').toBeGreaterThan(0);
+    });
+
+    // The same regression on the current route generation, whose coils put
+    // gates on non-pivot modules at different seeds.
+    it('keeps the threshold on non-pivot gates of the current route generation', () => {
+        for (const seed of [6, 9]) {
+            const { crossing, metadata, onSetpiece, onSetpiecePivot } = buildGateChunk(seed, ROUTE_LAYOUT_VERSION);
+            expect(onSetpiece && onSetpiecePivot === false, `seed ${seed} no longer lands on a non-pivot module`).toBe(true);
+            expect(metadata.generatorId, `seed ${seed}`).not.toBe('authored-setpiece');
+            expect((metadata.doors ?? []).filter((d) => d.ringCrossingId === crossing.id)).toHaveLength(1);
+            expect((metadata.accessSources ?? []).some((source) => source.id === `${crossing.id}:mission-control`)).toBe(true);
+        }
     });
 });

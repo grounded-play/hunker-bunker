@@ -77,7 +77,7 @@ const version = packageJson.version;
 // hardcoded literal that had to be edited in lockstep with every bump, which is
 // exactly the drift this audit exists to catch.
 const expectedVersion = version;
-const expectedBranch = 'dev/sprint-41';
+const expectedBranch = 'dev/sprint-45';
 
 const synchronizedFiles = [
   'PRODUCT_STATE.md',
