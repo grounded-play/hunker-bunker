@@ -1396,7 +1396,8 @@
       "callsign": "呼号 {callsign}",
       "listen_hint": "先倾听，再决定你想如何帮忙。",
       "quote": "“{text}”",
-      "next_action": "你的下一步行动将改变发射清单与结局走向。"
+      "next_action": "你的下一步行动将改变发射清单与结局走向。",
+      "scar_gained": "昨夜留下了印记: {scar}"
     },
     "title": {
       "pregalien_command": "PREGALIEN | 虫巢指挥",

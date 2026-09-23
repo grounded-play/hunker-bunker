@@ -12186,6 +12186,15 @@ window.addEventListener('day-rest-open', (event) => {
     if (detail.expired?.length) {
         showBiomePrompt(`> MISSED SIGNALS CLOSED: ${detail.expired.join(', ').replaceAll('_', ' ').toUpperCase()}`);
     }
+    // The overnight ledger: one line per real change, already written by
+    // simulateOvernight(). Rendered rather than re-derived, so the debrief can
+    // never disagree with what the simulation actually did.
+    for (const line of detail.ledger ?? []) {
+        if (line?.text) showBiomePrompt(`> ${line.text}`);
+    }
+    if (detail.gainedScar) {
+        showBiomePrompt(`> ${t('ui.camp.scar_gained', { scar: String(detail.gainedScar).replaceAll('_', ' ') })}`);
+    }
     openFabricationModal();
 });
 

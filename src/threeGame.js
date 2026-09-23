@@ -291,6 +291,12 @@ import {
     sprintPricing
 } from './fatigue.js';
 import {
+    OVERNIGHT_STATE_KEY,
+    createOvernightState,
+    normalizeOvernightState,
+    runOvernight
+} from './overnightBridge.js';
+import {
     clampPositionToUnlockedRing,
     generateRadialMazeExpedition,
     getMaxUnlockedRing,
@@ -1600,6 +1606,7 @@ export class ThreeGame {
         // It survives runs and only advances through an explicit camp sleep.
         this.dayState = this.loadDayCycleState();
         this.fatigueState = this.loadFatigueState();
+        this.overnightState = this.loadOvernightState();
         // Weather (Note 9): pooled Points field, biome/time-biased state machine.
         this.weather = {
             state: 'clear',
@@ -16098,6 +16105,47 @@ export class ThreeGame {
         }
     }
 
+    loadOvernightState() {
+        if (typeof localStorage === 'undefined') return createOvernightState();
+        try {
+            return normalizeOvernightState(JSON.parse(localStorage.getItem(OVERNIGHT_STATE_KEY) ?? 'null'));
+        } catch {
+            return createOvernightState();
+        }
+    }
+
+    persistOvernightState() {
+        this.overnightState = normalizeOvernightState(this.overnightState);
+        try {
+            if (typeof localStorage !== 'undefined') {
+                localStorage.setItem(OVERNIGHT_STATE_KEY, JSON.stringify(this.overnightState));
+            }
+        } catch {
+            // Same contract as the day cycle: never strand the live session.
+        }
+        return this.overnightState;
+    }
+
+    /**
+     * Resolve the night the player just slept through and return its ledger for
+     * the morning debrief. Reads live act2 records so the simulation reacts to
+     * the camps the player actually supplied and the hives they actually left
+     * standing.
+     */
+    simulateNightPassed() {
+        const world = this.act2?.getState?.() ?? null;
+        const night = runOvernight({
+            day: this.dayState?.day ?? 1,
+            difficulty: threatScaleForDay(this.dayState?.day ?? 1, { hp: 1, speed: 1 }).hp,
+            campRecords: world?.camps ?? [],
+            hiveRecords: world?.hives ?? [],
+            overnightState: this.overnightState
+        });
+        this.overnightState = night.state;
+        this.persistOvernightState();
+        return night.result;
+    }
+
     loadFatigueState() {
         if (typeof localStorage === 'undefined') return createFatigueState();
         try {
@@ -16311,6 +16359,7 @@ export class ThreeGame {
         const recovered = restoreOnSleep(this.fatigueState);
         this.fatigueState = recovered.state;
         this.persistFatigueState?.();
+        const night = this.simulateNightPassed?.() ?? null;
         this.setTimeOfDayToMorning?.();
         // The Foundry interior is the first authored between-day tableau. Its
         // existing pocket-plane isolation pauses surface combat while the
@@ -16327,6 +16376,10 @@ export class ThreeGame {
                 closing: sleeping.closing,
                 // What last night cost: null unless they slept from RAGGED or worse.
                 gainedScar: recovered.gainedScar,
+                // One line per real change; the morning debrief renders these
+                // rather than re-deriving what happened.
+                ledger: night?.ledger ?? [],
+                threat: night?.threat ?? null,
                 safeSpace: enteredRestSpace ? 'foundry-interior' : 'camp-exterior'
             }
         }));

@@ -1396,7 +1396,8 @@
       "callsign": "CODINOME {callsign}",
       "listen_hint": "Ouça e então decida como quer ajudar.",
       "quote": "“{text}”",
-      "next_action": "Sua próxima ação muda o manifesto de lançamento e o vetor do final."
+      "next_action": "Sua próxima ação muda o manifesto de lançamento e o vetor do final.",
+      "scar_gained": "A NOITE DEIXOU SUA MARCA: {scar}"
     },
     "title": {
       "pregalien_command": "PREGALIEN | COMANDO DA COLMEIA",

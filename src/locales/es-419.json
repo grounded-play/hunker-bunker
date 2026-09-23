@@ -1396,7 +1396,8 @@
       "callsign": "DISTINTIVO {callsign}",
       "listen_hint": "Escucha y luego decide cómo quieres ayudar.",
       "quote": "«{text}»",
-      "next_action": "Tu próxima acción cambia el manifiesto de lanzamiento y el vector del final."
+      "next_action": "Tu próxima acción cambia el manifiesto de lanzamiento y el vector del final.",
+      "scar_gained": "LA NOCHE DEJÓ SU MARCA: {scar}"
     },
     "title": {
       "pregalien_command": "PREGALIEN | MANDO DE LA COLMENA",
