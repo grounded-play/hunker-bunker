@@ -23130,7 +23130,7 @@ body.contrast-max .hud-panel {
 }
 
 /* ENTER ARMORY docked precisely into the bottom-right frame cradle slot */
-#game-viewport > #menu:not(.hidden) + #start-game {
+#game-viewport > #menu:not(.hidden) ~ #start-game {
   right: calc(var(--vu) * 13.5) !important;
   bottom: calc(var(--vu) * 5.25) !important;
   width: calc(var(--vu) * 29.75) !important;
@@ -23957,7 +23957,7 @@ html.phase-gameplay #tactical-telemeter-box {
   transform: none;
 }
 
-#game-viewport > #menu.hidden + #start-game {
+#game-viewport > #menu.hidden ~ #start-game {
   display: none !important;
 }
 
@@ -24065,6 +24065,6 @@ html.phase-gameplay #tactical-telemeter-box {
 }
 
 /* Hidden with the menu it belongs to, now that it is no longer inside it. */
-#game-viewport > #menu.hidden + .menu-corner-settings {
+#game-viewport > #menu.hidden ~ .menu-corner-settings {
   display: none !important;
 }

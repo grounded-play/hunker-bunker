@@ -706,8 +706,7 @@ function recordSteamTimelineEvent(type, title, description, {
 }
 
 function isSteamControllerInputActive() {
-    return steamInputState.lastInputMode === 'controller'
-        || (steamInputState.isSteamDeck && steamInputState.controllerCount > 0);
+    return steamInputState.lastInputMode === 'controller';
 }
 
 function getPromptKeyText(defaultKey = 'E', action = 'interact') {
@@ -760,7 +759,7 @@ function setLastInputMode(mode, { refresh = true } = {}) {
     }
 
     if (changed && refresh) refreshInteractivePromptKeys();
-    if (isController) ensureControllerMenuFocus();
+    if (changed && isController) ensureControllerMenuFocus();
     return changed;
 }
 
@@ -804,6 +803,16 @@ function isFocusRootOpen(element) {
         && isElementVisible(element);
 }
 
+function isElementInFocusRoot(root, element) {
+    if (!root || !element) return false;
+    if (root.contains(element)) return true;
+    if (root.id === 'menu') {
+        if (element.id === 'start-game') return true;
+        if (element.closest?.('.menu-corner-settings')) return true;
+    }
+    return false;
+}
+
 function getVisibleControllerFocusables(root = document) {
     if (!root) return [];
     const selector = [
@@ -812,9 +821,17 @@ function getVisibleControllerFocusables(root = document) {
         'textarea:not([disabled])',
         'select:not([disabled])',
         'a[href]',
+        '.char-card',
         '[tabindex]:not([tabindex="-1"])'
     ].join(', ');
-    return Array.from(root.querySelectorAll(selector)).filter((element) => {
+    const elements = Array.from(root.querySelectorAll(selector));
+    if (root.id === 'menu') {
+        const settingsBtn = document.querySelector('.menu-corner-settings .open-settings-btn');
+        if (settingsBtn && !elements.includes(settingsBtn)) elements.push(settingsBtn);
+        const startGame = document.getElementById('start-game');
+        if (startGame && !elements.includes(startGame)) elements.push(startGame);
+    }
+    return elements.filter((element) => {
         if (!isElementVisible(element)) return false;
         if (element.disabled || element.getAttribute('aria-disabled') === 'true') return false;
         if (element.closest('.hidden, [hidden], [inert]')) return false;
@@ -1143,20 +1160,20 @@ function syncControllerFocusBoundary() {
     let closingInvoker = null;
 
     if (nextRoot !== activeControllerFocusRoot) {
-        if (isModalFocusRoot(nextRoot) && active && active !== document.body && !nextRoot.contains(active)) {
+        if (isModalFocusRoot(nextRoot) && active && active !== document.body && !isElementInFocusRoot(nextRoot, active)) {
             controllerFocusInvokers.set(nextRoot, active);
         }
         if (isModalFocusRoot(activeControllerFocusRoot)) {
             closingInvoker = controllerFocusInvokers.get(activeControllerFocusRoot) ?? null;
         }
-        if (activeControllerFocusRoot?.contains?.(active)) {
+        if (isElementInFocusRoot(activeControllerFocusRoot, active)) {
             controllerFocusMemory.set(activeControllerFocusRoot, active);
         }
         activeControllerFocusRoot = nextRoot;
     }
 
     if (!nextRoot) return null;
-    if (active && active !== document.body && nextRoot.contains(active)) return active;
+    if (active && active !== document.body && isElementInFocusRoot(nextRoot, active)) return active;
 
     const focusables = getVisibleControllerFocusables(nextRoot);
     const remembered = controllerFocusMemory.get(nextRoot);
@@ -1175,7 +1192,7 @@ function moveControllerFocus(delta) {
     if (!focusables.length) return null;
 
     let index = focusables.indexOf(document.activeElement);
-    if (index < 0 || (root && !root.contains(document.activeElement))) {
+    if (index < 0 || (root && !isElementInFocusRoot(root, document.activeElement))) {
         const preferred = getPreferredControllerFocusTarget(root, focusables);
         if (preferred) {
             index = focusables.indexOf(preferred);
@@ -1513,7 +1530,7 @@ const controllerFocusObserver = new MutationObserver(() => {
     queueMicrotask(() => {
         const root = getControllerFocusRoot();
         syncSteamInputPhase();
-        if (root !== activeControllerFocusRoot || isSteamControllerInputActive() || isModalFocusRoot(root)) {
+        if (root !== activeControllerFocusRoot || (steamInputState.lastInputMode === 'controller' && (isSteamControllerInputActive() || isModalFocusRoot(root)))) {
             syncControllerFocusBoundary();
         }
     });
@@ -1649,7 +1666,7 @@ function activateControllerFocusedElement() {
     const root = getControllerFocusRoot();
     const focusables = getVisibleControllerFocusables(root ?? document);
     let activeElement = document.activeElement;
-    if (!activeElement || activeElement === document.body || (root && !root.contains(activeElement))) {
+    if (!activeElement || activeElement === document.body || (root && !isElementInFocusRoot(root, activeElement))) {
         activeElement = getPreferredControllerFocusTarget(root, focusables);
         if (activeElement) focusControllerTarget(activeElement);
     }
@@ -1803,6 +1820,12 @@ function handleSteamInputSnapshot(snapshot = {}) {
         || previousDeck !== steamInputState.isSteamDeck
         || previousCount !== steamInputState.controllerCount) {
         debugLog.info('INPUT', 'Steam Input state changed', window.__hbSteamInputState);
+    }
+
+    if (previousDeck !== steamInputState.isSteamDeck && steamInputState.isSteamDeck && steamInputState.controllerCount > 0) {
+        if (steamInputState.lastInputMode !== 'controller') {
+            setLastInputMode('controller', { refresh: false });
+        }
     }
 
     if (steamInputState.anyInput) {
@@ -1994,7 +2017,7 @@ function handleSteamMenuInput(actions) {
     ));
 
     const root = getControllerFocusRoot();
-    if (!document.activeElement || document.activeElement === document.body || !root?.contains?.(document.activeElement)) {
+    if (steamInputState.lastInputMode === 'controller' && (!document.activeElement || document.activeElement === document.body || !isElementInFocusRoot(root, document.activeElement))) {
         const focusables = getVisibleControllerFocusables(root ?? document);
         const preferred = getPreferredControllerFocusTarget(root, focusables);
         if (preferred) focusControllerTarget(preferred);
