@@ -6151,6 +6151,10 @@ export class ThreeGame {
                 this.damageSnail(sprite, remainingHp);
             } else if (Number.isFinite(state.hp) && state.hp >= 0) {
                 sprite.userData.hp = state.hp;
+                // A boss fight's phases follow its HP, so the host's HP moves
+                // this peer's fight into the same phase.
+                const fight = sprite.userData.queenFight ?? sprite.userData.sporesnailFight;
+                if (fight && !fight.defeated) fight.hp = Math.min(fight.maxHp, state.hp);
             }
             applied += 1;
         }
@@ -14201,26 +14205,35 @@ export class ThreeGame {
             this.damageScatterProp(sprite, amount);
             return;
         }
-        const bossTarget = Boolean(sprite?.userData?.isBoss || sprite?.userData?.queenFight || sprite?.userData?.sporesnailFight);
-        amount *= bossTarget
-            ? (this.loadoutMods?.bossDamageMultiplier ?? 1)
-            : (this.loadoutMods?.nonBossDamageMultiplier ?? 1);
-        // Season 0 Cryo-Capacitor Overclock proc (itemdef 4140): 18% chance per hit to
-        // freeze the target in place. cryoDurationMultiplier (default 1.0, +0.08 when
-        // equipped) scales the freeze duration off a 1.0s base.
-        const cryoMult = this.loadoutMods?.cryoDurationMultiplier ?? 1.0;
-        if (sprite?.userData && cryoMult > 1.0 && Math.random() < 0.18) {
-            sprite.userData.frozenTimer = Math.max(sprite.userData.frozenTimer ?? 0, 1.0 * cryoMult);
+        // A hit that arrived over the network (a broadcast, or a guest's
+        // report the host is resolving) already carries the shooter's own
+        // loadout. Scaling it again here multiplied it by the receiver's.
+        const localHit = !fromNetwork && reporterId == null;
+        if (localHit) {
+            const bossTarget = Boolean(sprite?.userData?.isBoss || sprite?.userData?.queenFight || sprite?.userData?.sporesnailFight);
+            amount *= bossTarget
+                ? (this.loadoutMods?.bossDamageMultiplier ?? 1)
+                : (this.loadoutMods?.nonBossDamageMultiplier ?? 1);
+            // Season 0 Cryo-Capacitor Overclock proc (itemdef 4140): 18% chance per hit to
+            // freeze the target in place. cryoDurationMultiplier (default 1.0, +0.08 when
+            // equipped) scales the freeze duration off a 1.0s base.
+            const cryoMult = this.loadoutMods?.cryoDurationMultiplier ?? 1.0;
+            if (sprite?.userData && cryoMult > 1.0 && Math.random() < 0.18) {
+                sprite.userData.frozenTimer = Math.max(sprite.userData.frozenTimer ?? 0, 1.0 * cryoMult);
+            }
         }
         // Sprint 24 Milestone A co-op enemy hit-sync, now host-authoritative
         // for the first cut (docs/sprint24-multiplayer-runtime-2026-08-19.md):
         // only for the plain damageSnail path below, and only for
         // locally-originated hits (never re-broadcast a hit that itself
         // arrived from the network, or every enemy hit in a 2-player run
-        // would ping-pong forever). Boss fights (queenFight/sporesnailFight,
-        // both branch out below) are not synced yet -- documented gap.
+        // would ping-pong forever). Boss fights go through the same path: a
+        // guest's boss hit used to land only on its own copy, and the host's
+        // next snapshot overwrote it, so guests could not hurt a boss. The
+        // host resolves the hit against its own fight (armour, weakpoint) and
+        // its snapshot carries the boss's HP to everyone.
         const isSyncableCoopHit = !fromNetwork && this.isMultiplayer && this.multiplayerMode !== 'pvp' && this.netSocket
-            && sprite?.userData?.type && !sprite.userData?.queenFight && !sprite.userData?.sporesnailFight;
+            && sprite?.userData?.type;
         if (isSyncableCoopHit) {
             // Sprint 26: scatterKey (createChunkScatterPlacements's
             // `${chunkX},${chunkY}:${indexInChunk}:${type}`, already set on
