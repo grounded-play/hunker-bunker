@@ -12,7 +12,7 @@
   <a href="https://app.netlify.com/projects/hunkerbunker/deploys"><img src="https://api.netlify.com/api/v1/badges/3d99b6f8-2e77-4a86-8292-1fffe5c9c308/deploy-status" alt="Netlify Status"></a>
   <a href="https://discord.gg/XXwwz3rauu"><img src="https://img.shields.io/badge/Discord-Join%20Server-5865F2?logo=discord&logoColor=white" alt="Discord Server"></a>
   <a href="https://opensource.org/licenses/MIT"><img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="License: MIT"></a>
-  <a href="https://threejs.org/"><img src="https://img.shields.io/badge/Three.js-r185-00e5ff.svg?logo=three.js" alt="Three.js"></a>
+  <a href="https://threejs.org/"><img src="https://img.shields.io/badge/Three.js-r186-00e5ff.svg?logo=three.js" alt="Three.js"></a>
 </p>
 
 > **Crash in. Scavenge O2. Upgrade your suit. Survive the depths.**  
@@ -20,9 +20,9 @@
 
 🎮 **[Play Live Browser Build](https://hunkerbunker.netlify.app/)** • 💬 **[Join Discord Server](https://discord.gg/XXwwz3rauu)** • 📚 **[Documentation Map](docs/README.md)**
 
-> **Status (2026-09-18):** Sprint 41 is active on `dev/sprint-41` at `v2.4.7-beta`, staged for release off the `v2.4.4-beta` baseline. Localization is now complete on both axes — **0 unannotated markup strings and 0 unlocalized runtime strings**, with 1,898 keys per locale at exact parity and the narrative catalog fully translated in all 7 languages. Alongside it: Alternate Radio Voice Banks with custom in-game personas and personalized crash sequences (Soviet Sub-Commander & AURA, 104 slots / 208 takes), 10 fully rendered motion ending cinematics, Phase A AgX tone mapping & IBL reflections, and 52 playtest stability tickets (DP-01 through DP-52).
+> **Status (2026-09-23):** Sprint 45 is on `dev/sprint-45` at `v2.4.11-beta`, in release PR [#92](https://github.com/grounded-play/hunker-bunker/pull/92) to `mothership` pending a hardware QA session. Each deployment of a campaign now plays differently while the campaign keeps its geography and story: seeded expedition conditions, six-room camp and hive compounds, per-campaign gate challenges and objective packages for every ship goal, and choices that physically change the world. Sprint 45.1 fixes the P0 findings of the 2026-09-23 Steam Deck playthrough (tactical-map input, extraction guidance, transient-effect churn, collision, co-op boss damage) and makes every menu surface reachable by controller.
 >
-> Verified locally on 2026-09-18: **3,566 passing tests across 395 files** (100% green), **9/9 Playwright E2E browser tests** across all 7 locales, clean lint, and `npm run i18n:audit` reporting zero on every axis. See [`docs/releases/v2.4.7-beta.md`](docs/releases/v2.4.7-beta.md), [`docs/planning/localization-coverage-audit-and-plan-2026-09-16.md`](docs/planning/localization-coverage-audit-and-plan-2026-09-16.md), [`docs/planning/sprint-41-audit-and-roadmap.md`](docs/planning/sprint-41-audit-and-roadmap.md), [Product State](PRODUCT_STATE.md), and [`docs/planning/`](docs/planning/) for current work and tagged releases.
+> Verified locally on 2026-09-23: **3,995 passing tests across 437 files**, clean lint, `npm run i18n:audit` unchanged across 7 locales, and the docs and dependency audits passing. Of the 112 Playwright tests, the gameplay, keyboard, menu-reachability and controller-focus specs were run; all pass except one pre-existing pointer-hover focus test. Nothing in this release has been checked on physical Steam Deck hardware, in a packaged build or in two-account co-op. See [`docs/releases/v2.4.11-beta.md`](docs/releases/v2.4.11-beta.md), [`docs/releases/v2.4.10-beta.md`](docs/releases/v2.4.10-beta.md), the [known-gaps register](docs/reports/master-known-gaps-and-debt-register-2026-09-23.md) and [Product State](PRODUCT_STATE.md).
 
 ---
 
@@ -44,7 +44,8 @@
 
 ## ⚡ Core Features
 
-- **Procedural Bunker Runs**: WebGL-powered isometric corridors with dynamic fog of war, environmental hazards, and O2 survival pressure — no two runs share a layout.
+- **Persistent Campaigns, Seeded Expeditions**: A campaign keeps one world — its rings, gates, camps and hives — while every deployment rolls its own condition (gale, spore bloom, resin surge, geothermal arc, stillness) with real gameplay effects, fresh corridor rubble and a briefing. New campaigns get their own route shape, gate challenges and an optional objective package for each ship goal, with a reward and a lasting consequence.
+- **A World That Remembers**: Bridge the canyon, fortify a camp's perimeter, bond with or harvest a hive — each choice changes the map for the rest of the campaign. Overnight, hive creep spreads and camps strain; radar scans lift the fog on the tactical map as they sweep.
 - **Deep Localization (7 Languages)**: Complete localization across **English (`en`)**, **German (`de`)**, **Latin American Spanish (`es-419`)**, **Japanese (`ja`)**, **Brazilian Portuguese (`pt-BR`)**, **Russian (`ru`)**, and **Simplified Chinese (`zh-CN`)** — 0 unannotated markup, 0 unlocalized runtime strings, 1,898 keys per locale at exact parity, live in-session switching, and a coverage ratchet (`npm run i18n:audit`) that fails CI if any of those regress.
 - **Alternate Radio Voice Banks & Personas**: Equip the grizzled Soviet Sub-Commander (`4148`) or tactical AI AURA (`4149`) with 104 callout slots (208 authentic takes), intro cutscene HUD persona cards, and customized opening crash dialogue.
 - **10 Branching Motion Endings**: Survivor encounters, faction standing with the Meridian/Tallow/Vesper camps, and hive diplomacy determine which of ten fully-rendered 3D motion cinematic endings with dedicated audio beds you achieve.
@@ -98,6 +99,8 @@ npm run dev
 ```
 > Open **`http://localhost:5173`** in your browser.
 
+For the desktop shell, `npm run electron:dev` runs Electron against the dev server with DevTools detached and the F12 / Ctrl+Shift+I and F5 / Ctrl+R shortcuts. Set `HB_DEVTOOLS_OPEN=0` to keep DevTools closed, or list Chrome Web Store extension IDs in `HB_DEVTOOLS_EXTENSIONS` (comma-separated) to install them.
+
 ### 🧪 Verification & Build
 
 ```bash
@@ -105,7 +108,10 @@ npm test         # Run the complete unit and integration test suite
 npm run coverage # Run tests and generate the coverage report
 npm run lint     # Check formatting & code safety
 npm run build    # Compile production WebGL bundle
+npx playwright test tests/e2e/<spec>.spec.js  # Browser specs (each cold-boots the game; allow ~30s–3m per test)
 ```
+
+Other agents or editors changing `src/` make a watched Vite server reload the page mid-test; run browser specs against a server without HMR when the tree is busy.
 
 The badges above report the latest merged `mothership` workflow results. Pull
 request checks may be newer; use the PR checks view when validating an
@@ -115,7 +121,7 @@ unmerged branch.
 
 ## 🛠️ Tech Architecture
 
-- **WebGL 3D Engine**: Powered by **Three.js** (r185) with procedural dungeon generation, dynamic fog of war, and WebAudio spatial soundscapes.
+- **WebGL 3D Engine**: Powered by **Three.js** (r186) with procedural dungeon generation, dynamic fog of war, and WebAudio spatial soundscapes.
 - **Desktop & Steam Shell**: Built with **Electron** featuring native **Steamworks** integration for Steam Cloud saves, Steam Input, real Steam Lobbies (Friends invite, Join Game, Rich Presence), and 24 Steam Achievements.
 - **Trusted Relay Server**: Node.js & Express server running in **Docker Compose** behind **Caddy** (`steam.tuesdaycinema.club`), enforcing verified score validation for 5 Steam Leaderboards and Steam-session-authenticated multiplayer.
 
