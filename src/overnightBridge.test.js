@@ -7,6 +7,8 @@ import {
     isCampDefensible,
     isHiveSettled,
     normalizeOvernightState,
+    planAllCreepDecals,
+    planCreepDecals,
     runOvernight,
     toSimInputs
 } from './overnightBridge.js';
@@ -129,5 +131,60 @@ describe('overnight state', () => {
     it('handles a world with no camps or hives at all', () => {
         expect(() => runOvernight({ day: 1 })).not.toThrow();
         expect(runOvernight({ day: 1 }).result.ledger).toEqual([]);
+    });
+});
+
+describe('creep world presence', () => {
+    const hive = { hiveId: 'hive_suture', x: 100, z: 200, creepRings: 2 };
+
+    it('stamps nothing until the creep has actually spread', () => {
+        expect(planCreepDecals({ ...hive, creepRings: 0 })).toEqual([]);
+        expect(planCreepDecals({ hiveId: '', x: 1, z: 1, creepRings: 3 })).toEqual([]);
+        // A hive with no recorded position cannot be stamped.
+        expect(planCreepDecals({ hiveId: 'hive_relay', x: null, z: null, creepRings: 2 })).toEqual([]);
+    });
+
+    // A patch that rearranges itself every load reads as a bug, not as growth.
+    it('is deterministic for the same hive and ring count', () => {
+        expect(planCreepDecals(hive)).toEqual(planCreepDecals(hive));
+    });
+
+    it('gives different hives different patches', () => {
+        const a = planCreepDecals(hive);
+        const b = planCreepDecals({ ...hive, hiveId: 'hive_relay' });
+        expect(a[0]).not.toEqual(b[0]);
+    });
+
+    it('grows outward one ring at a time and keeps earlier rings in place', () => {
+        const one = planCreepDecals({ ...hive, creepRings: 1 });
+        const two = planCreepDecals({ ...hive, creepRings: 2 });
+        expect(two.length).toBeGreaterThan(one.length);
+        // The first ring is unchanged when the second appears.
+        expect(two.slice(0, one.length)).toEqual(one);
+        const maxRadius = (p) => Math.max(...p.map((d) => Math.hypot(d.x - hive.x, d.z - hive.z)));
+        expect(maxRadius(two)).toBeGreaterThan(maxRadius(one));
+    });
+
+    it('thins out as it reaches, and only uses real decal art', () => {
+        const decals = planCreepDecals({ ...hive, creepRings: 3 });
+        const inner = decals.find((d) => d.ring === 1);
+        const outer = decals.find((d) => d.ring === 3);
+        expect(outer.scale).toBeLessThan(inner.scale);
+        for (const decal of decals) {
+            expect(['decal_growth_creep_1', 'decal_growth_creep_2']).toContain(decal.type);
+        }
+    });
+
+    it('plans every hive from stored state in one pass', () => {
+        const state = applyOvernight(createOvernightState(), {
+            camps: [],
+            hives: [{ id: 'hive_suture', creepRings: 1 }, { id: 'hive_relay', creepRings: 0 }]
+        });
+        const decals = planAllCreepDecals(
+            [{ id: 'hive_suture', x: 10, z: 10 }, { id: 'hive_relay', x: 50, z: 50 }],
+            state
+        );
+        expect(decals.every((d) => d.hiveId === 'hive_suture')).toBe(true);
+        expect(decals.length).toBeGreaterThan(0);
     });
 });

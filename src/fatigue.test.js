@@ -9,6 +9,8 @@ import {
     describeScars,
     fatigueModifiers,
     getFatigueStage,
+    nextTreatableScar,
+    SCAR_TREATMENT_COST,
     normalizeFatigueState,
     recordExpedition,
     sprintPricing,
@@ -271,5 +273,35 @@ describe('describeScars', () => {
     // Copy for the empty case belongs to the caller, which owns localization.
     it('never invents a "nothing wrong" string of its own', () => {
         expect(describeScars(createFatigueState())).toBe(null);
+    });
+});
+
+describe('camp medic treatment targets', () => {
+    it('offers nothing when the operator is unmarked', () => {
+        expect(nextTreatableScar(createFatigueState())).toBe(null);
+    });
+
+    it('works on the worst treatable scar first', () => {
+        const state = normalizeFatigueState({
+            scars: [{ id: 'TREMOR', severity: 2 }, { id: 'HYPERVIGILANCE', severity: 3 }]
+        });
+        expect(nextTreatableScar(state).id).toBe('HYPERVIGILANCE');
+    });
+
+    // Offering to treat the untreatable would promise a cure that does not exist.
+    it('never offers the untreatable scar', () => {
+        const state = normalizeFatigueState({ scars: [{ id: 'BLUNTED', severity: 3 }] });
+        expect(nextTreatableScar(state)).toBe(null);
+    });
+
+    // A scar already walked down to its floor has nothing left to give.
+    it('does not offer a scar that is already at its floor', () => {
+        const state = normalizeFatigueState({ scars: [{ id: 'TREMOR', severity: 1 }] });
+        expect(nextTreatableScar(state)).toBe(null);
+    });
+
+    it('charges a cost the caller can check against shells', () => {
+        expect(SCAR_TREATMENT_COST).toBeGreaterThan(0);
+        expect(Number.isInteger(SCAR_TREATMENT_COST)).toBe(true);
     });
 });

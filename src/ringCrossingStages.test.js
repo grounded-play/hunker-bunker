@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest';
 import {
     RING_CROSSING_STAGE_IDS,
     describeRingCrossingStages,
+    describeShipGoalSteps,
+    getShipGoalPrerequisite,
     getShipGoalAnchor,
     summarizeRingCrossing,
     summarizeRingRoute
@@ -120,5 +122,52 @@ describe('crossing stages', () => {
     it('treats a missing live record as nothing done, never as done', () => {
         const stages = describeRingCrossingStages(plan, { crossings: {} }, 'cross_1');
         expect(stages.every((stage) => stage.done === false)).toBe(true);
+    });
+});
+
+describe('ship goal sub-steps', () => {
+    it('derives the prerequisite from the authored ring order', () => {
+        expect(getShipGoalPrerequisite('o2Bubble')).toBe(null);
+        expect(getShipGoalPrerequisite('hullExpansion').goalKey).toBe('o2Bubble');
+        expect(getShipGoalPrerequisite('reactorCompressor').goalKey).toBe('radarNode');
+        expect(getShipGoalPrerequisite('nonsense')).toBe(null);
+    });
+
+    it('authors only steps that something can actually mark done', () => {
+        const steps = describeShipGoalSteps('hullExpansion', { built: false, canAfford: false, prereqBuilt: false });
+        expect(steps.map((s) => s.id)).toEqual(['prerequisite', 'resources', 'install']);
+        expect(steps.every((s) => s.done === false)).toBe(true);
+        // The install step points at the console the player has to reach.
+        expect(steps.at(-1).anchorId).toBe('hull_fabrication_console');
+    });
+
+    it('drops the prerequisite step for the first ring, which has none', () => {
+        expect(describeShipGoalSteps('o2Bubble').map((s) => s.id)).toEqual(['resources', 'install']);
+    });
+
+    it('ticks resources once the parts are banked, and stays ticked after building', () => {
+        const affordable = describeShipGoalSteps('o2Bubble', { canAfford: true });
+        expect(affordable.find((s) => s.id === 'resources').done).toBe(true);
+        expect(affordable.find((s) => s.id === 'install').done).toBe(false);
+
+        const done = describeShipGoalSteps('o2Bubble', { built: true, canAfford: false });
+        expect(done.every((s) => s.done)).toBe(true);
+    });
+
+    it('hangs the sub-steps off the goal stage of a crossing', () => {
+        const stages = describeRingCrossingStages(plan, state, 'cross_2', {
+            builtGoalKeys: new Set(['o2Bubble']),
+            canAffordGoal: () => true
+        });
+        const goal = stages.find((s) => s.id === RING_CROSSING_STAGE_IDS.GOAL);
+        expect(goal.steps.find((s) => s.id === 'prerequisite').done).toBe(true);
+        expect(goal.steps.find((s) => s.id === 'resources').done).toBe(true);
+        expect(goal.steps.find((s) => s.id === 'install').done).toBe(false);
+    });
+
+    it('treats a missing context as nothing known, never as done', () => {
+        const stages = describeRingCrossingStages(plan, state, 'cross_2');
+        const goal = stages.find((s) => s.id === RING_CROSSING_STAGE_IDS.GOAL);
+        expect(goal.steps.every((s) => s.done === false)).toBe(true);
     });
 });

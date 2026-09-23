@@ -140,3 +140,62 @@ export function runOvernight({ day = 1, difficulty = null, campRecords = [], hiv
     const result = simulateOvernight({ day, difficulty, ...inputs });
     return { state: applyOvernight(overnightState, result), result };
 }
+
+/**
+ * Where a hive's creep shows on the ground.
+ *
+ * Deterministic from the hive id and ring index, never random: the same save
+ * must stamp the same patch every load, or a player who walks away and comes
+ * back sees the infestation rearrange itself. Returns placements only -- the
+ * caller owns meshes, chunks and textures.
+ */
+const CREEP_DECAL_TYPES = Object.freeze(['decal_growth_creep_1', 'decal_growth_creep_2']);
+const CREEP_DECALS_PER_RING = 7;
+const CREEP_RING_SPACING = 3.1;
+
+function hash32(text) {
+    let hash = 2166136261;
+    for (let i = 0; i < text.length; i += 1) {
+        hash ^= text.charCodeAt(i);
+        hash = Math.imul(hash, 16777619);
+    }
+    return hash >>> 0;
+}
+
+export function planCreepDecals({ hiveId = '', x = 0, z = 0, creepRings = 0 } = {}) {
+    const rings = clampInt(creepRings, 0, 3, 0);
+    if (!hiveId || rings <= 0 || !Number.isFinite(x) || !Number.isFinite(z)) return [];
+
+    const placements = [];
+    for (let ring = 1; ring <= rings; ring += 1) {
+        const radius = ring * CREEP_RING_SPACING;
+        for (let index = 0; index < CREEP_DECALS_PER_RING; index += 1) {
+            const seed = hash32(`${hiveId}:${ring}:${index}`);
+            // Jitter is derived from the seed too, so it is stable per save.
+            const angle = ((index / CREEP_DECALS_PER_RING) * Math.PI * 2) + (((seed >>> 8) % 100) / 100 - 0.5) * 0.55;
+            const spread = radius + (((seed >>> 16) % 100) / 100 - 0.5) * 1.4;
+            placements.push({
+                hiveId,
+                ring,
+                type: CREEP_DECAL_TYPES[seed % CREEP_DECAL_TYPES.length],
+                x: x + Math.cos(angle) * spread,
+                z: z + Math.sin(angle) * spread,
+                rotation: ((seed >>> 4) % 628) / 100,
+                // Outer rings are thinner: the infestation fades as it reaches.
+                scale: 1.35 - (ring - 1) * 0.22
+            });
+        }
+    }
+    return placements;
+}
+
+/** Every creep placement the stored overnight state implies, across all hives. */
+export function planAllCreepDecals(hiveRecords = [], overnightState = null) {
+    const stored = normalizeOvernightState(overnightState);
+    return (Array.isArray(hiveRecords) ? hiveRecords : []).flatMap((record) => planCreepDecals({
+        hiveId: record?.id ?? '',
+        x: record?.x,
+        z: record?.z,
+        creepRings: stored.hives[record?.id]?.creepRings ?? 0
+    }));
+}

@@ -286,15 +286,20 @@ import {
     fatigueMaxHealthPenalty,
     getFatigueStage,
     normalizeFatigueState,
+    SCAR_TREATMENT_COST,
+    nextTreatableScar,
     recordExpedition,
     restoreOnSleep,
-    sprintPricing
+    sprintPricing,
+    treatScar
 } from './fatigue.js';
 import { summarizeRingRoute } from './ringCrossingStages.js';
+import { syncSurvivalTension } from './survivalTension.js';
 import {
     OVERNIGHT_STATE_KEY,
     createOvernightState,
     normalizeOvernightState,
+    planAllCreepDecals,
     runOvernight
 } from './overnightBridge.js';
 import {
@@ -8254,7 +8259,7 @@ export class ThreeGame {
         const width = this.container.clientWidth || 1;
         const height = this.container.clientHeight || 1;
         const aspect = width / height;
-        const viewSize = this.performanceProfile === 'menu' ? 2.6 : 5.2;
+        const viewSize = this.performanceProfile === 'menu' ? 1.4 : 5.2;
 
         this.menuPixelRatio = cappedPixelRatio({
             width,
@@ -8952,6 +8957,7 @@ export class ThreeGame {
             fp.measure('updateBiomeAtmosphere', () => this.biomeAtmosphere?.update(delta, this.player ? this.player.position : { x: 0, y: 0, z: 0 }));
             fp.measure('updateWeather', () => this.updateWeather(delta));
             fp.measure('updateDayNightCycle', () => this.updateDayNightCycle(delta));
+            this.updateSurvivalTension?.();
             // After updateDayNightCycle: it resets fog colour from the biome
             // palette every frame, so the sky has to take the last word on it.
             fp.measure('updateSky', () => this.updateSky(delta));
@@ -11941,7 +11947,15 @@ export class ThreeGame {
      */
     describeRingRouteProgress() {
         const plan = this.worldPlan ?? null;
-        const route = summarizeRingRoute(plan, this.ringCrossingState);
+        // Live context so the goal stage's sub-steps reflect what the bank
+        // actually holds, rather than showing a checkbox nothing can tick.
+        const route = summarizeRingRoute(plan, this.ringCrossingState, {
+            builtGoalKeys: typeof this.getBuiltGoalKeys === 'function' ? this.getBuiltGoalKeys() : null,
+            canAffordGoal: (goalKey) => {
+                const cost = this.bank?.getGoalUpgradeCost?.(goalKey, 1) ?? null;
+                return cost ? Boolean(this.bank?.canAfford?.(cost)) : false;
+            }
+        });
         if (!route.active) {
             return route.crossings.length > 0 ? t('ui.console.ring_route_open') : '--';
         }
@@ -16178,7 +16192,69 @@ export class ThreeGame {
         });
         this.overnightState = night.state;
         this.persistOvernightState();
+        // The night has to show in the world, not only in the ledger.
+        this.applyOvernightWorldPresence();
         return night.result;
+    }
+
+    /**
+     * Put the night on the ground: creep patches around hives that spread, and
+     * raid wear on camps that did not hold. Called after a rest resolves and
+     * again when the world is rebuilt, so a reload shows the same damage.
+     */
+    applyOvernightWorldPresence() {
+        this.applyCampOvernightConditions();
+        this.stampOvernightCreep();
+    }
+
+    applyCampOvernightConditions() {
+        const stored = normalizeOvernightState(this.overnightState);
+        for (const camp of this.camps ?? []) {
+            const condition = stored.camps[camp?.id]?.condition ?? 'secure';
+            camp?.setOvernightCondition?.(condition);
+        }
+    }
+
+    /**
+     * Re-stamp every creep decal from stored state. Clears its own sprites
+     * first so this is idempotent: calling it twice leaves one patch, not two.
+     */
+    stampOvernightCreep() {
+        for (const sprite of this._overnightCreepSprites ?? []) {
+            sprite.parent?.remove(sprite);
+            const index = this.scatterSprites?.indexOf(sprite) ?? -1;
+            if (index >= 0) this.scatterSprites.splice(index, 1);
+        }
+        this._overnightCreepSprites = [];
+        if (this.performanceProfile !== 'gameplay') return 0;
+
+        const hives = this.act2?.getState?.().hives ?? [];
+        const placements = planAllCreepDecals(hives, this.overnightState);
+        for (const placement of placements) {
+            const sprite = this.createScatterInstance?.({
+                x: placement.x,
+                z: placement.z,
+                type: placement.type,
+                scatterKey: `overnight-creep:${placement.hiveId}:${placement.ring}:${placement.x.toFixed(2)}`,
+                scale: placement.scale,
+                rotation: placement.rotation,
+                tiltX: 0,
+                tiltZ: 0,
+                elevation: 0.035,
+                groupType: 'decal',
+                phase: 0,
+                opacity: 1,
+                biomeTint: 0xffffff
+            });
+            if (!sprite) continue;
+            const chunkX = Math.floor(placement.x / this.chunkSize);
+            const chunkY = Math.floor(placement.z / this.chunkSize);
+            const group = this.chunkMeshes?.get(`${chunkX},${chunkY}`) ?? this.scene;
+            group.add(sprite);
+            this.scatterSprites?.push(sprite);
+            this._overnightCreepSprites.push(sprite);
+        }
+        return this._overnightCreepSprites.length;
     }
 
     loadFatigueState() {
@@ -16257,6 +16333,39 @@ export class ThreeGame {
 
     isDayDeadlineExpired(id) {
         return normalizeDayState(this.dayState).expired.includes(id);
+    }
+
+    /**
+     * Pay a camp medic to walk one scar down a tier. Never clears it: a treated
+     * scar is quieter, never absent, so the cost of a hard campaign stays on
+     * the operator's record.
+     */
+    treatScarAtCamp(camp, scarId) {
+        if (!scarId) return false;
+        if (!this.bank?.canAffordShells?.(SCAR_TREATMENT_COST)) {
+            window.AudioManager?.play?.('ui_error', { volume: 0.45 });
+            window.dispatchEvent(new CustomEvent('camp-support-denied', {
+                detail: { campId: camp?.id ?? null, campLabel: camp?.label ?? '', cost: SCAR_TREATMENT_COST }
+            }));
+            return true;
+        }
+
+        const result = treatScar(this.fatigueState, scarId);
+        if (!result.treated) return false;
+        this.bank.spendShells(SCAR_TREATMENT_COST);
+        this.fatigueState = result.state;
+        this.persistFatigueState?.();
+        window.AudioManager?.play?.('ui_scan_ping', { volume: 0.4, playbackRate: 0.9 });
+        window.dispatchEvent(new CustomEvent('scar-treated', {
+            detail: {
+                campId: camp?.id ?? null,
+                campLabel: camp?.label ?? '',
+                scarId,
+                severity: result.state.scars.find((scar) => scar.id === scarId)?.severity ?? 1,
+                cost: SCAR_TREATMENT_COST
+            }
+        }));
+        return true;
     }
 
     /**
@@ -16658,6 +16767,20 @@ export class ThreeGame {
                             : gate.reason === 'insufficient_resources' ? ' (NEEDS SUPPLIES)'
                                 : ' (UNAVAILABLE)';
                     return { camp, action: 'active-verb', verb, gate, label: `${verb.label}${suffix}` };
+                }
+            }
+            // A camp medic can quiet a scar, never clear it. Offered before
+            // rest so a player who walks in wrecked is shown the treatment
+            // before the bed, which is the order they would want them in.
+            if (phase === 'dormant' && status === 'alive') {
+                const treatable = nextTreatableScar(this.fatigueState);
+                if (treatable) {
+                    return {
+                        camp,
+                        action: 'treat-scar',
+                        scarId: treatable.id,
+                        label: `TREAT ${treatable.id.replace(/_/g, ' ')} — ${SCAR_TREATMENT_COST} SHELLS`
+                    };
                 }
             }
             // Rest stays the last verb offered here, so urgent camp story is
@@ -17112,6 +17235,8 @@ export class ThreeGame {
         const actionable = this.getActionableCampAt(this.player.position.x, this.player.position.z);
         if (!actionable) return false;
         const { camp, action } = actionable;
+
+        if (action === 'treat-scar') return this.treatScarAtCamp(camp, actionable.scarId);
 
         if (action === 'rest') return this.beginCampRest(camp);
 
@@ -20381,6 +20506,32 @@ export class ThreeGame {
         if (this.turretCooldownTimer <= 0) {
             this.deployEngineerTurret();
         }
+    }
+
+    /**
+     * Drive the survival-tension mix: suffocation and daze muffling from
+     * vitals, plus the duller mix exhaustion brings. One owner for the low-pass
+     * filter -- a second caller would fight this one for the same node.
+     *
+     * Only pushed when the inputs actually change, so a steady state is not
+     * re-scheduling an audio ramp every frame.
+     */
+    updateSurvivalTension() {
+        const stageId = getFatigueStage(this.fatigueState).id;
+        const vitals = this.playerVitals ?? {};
+        const key = `${stageId}|${Math.round(vitals.o2 ?? 0)}|${vitals.hp ?? 0}|${vitals.maxHp ?? 0}`;
+        if (key === this._survivalTensionKey) return;
+        this._survivalTensionKey = key;
+        syncSurvivalTension({
+            vitals: {
+                o2: vitals.o2 ?? 100,
+                maxO2: vitals.maxO2 ?? 100,
+                hp: vitals.hp ?? 3,
+                maxHp: vitals.maxHp ?? 3
+            },
+            audioManager: typeof window !== 'undefined' ? window.AudioManager : null,
+            fatigueStageId: stageId
+        });
     }
 
     updateSprintState(_delta) {

@@ -369,3 +369,21 @@ export function describeScars(state) {
         })
         .join(' / ');
 }
+
+/** Shells a camp medic charges per tier of treatment. */
+export const SCAR_TREATMENT_COST = 45;
+
+/**
+ * The scar a medic would work on next, or null when there is nothing to do.
+ *
+ * Picks the worst treatable scar, so a player who can only afford one session
+ * gets the one that is hurting most. BLUNTED is never returned -- it is the
+ * untreatable end state, and offering it would promise a cure that does not
+ * exist.
+ */
+export function nextTreatableScar(state) {
+    const scars = normalizeFatigueState(state).scars
+        .filter((scar) => SCAR_BY_ID.get(scar.id)?.treatable !== false && scar.severity > 1)
+        .sort((a, b) => b.severity - a.severity || a.id.localeCompare(b.id));
+    return scars[0] ?? null;
+}

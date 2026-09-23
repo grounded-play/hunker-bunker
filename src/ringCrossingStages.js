@@ -34,6 +34,36 @@ export function getShipGoalAnchor(goalKey) {
 }
 
 /**
+ * Sub-steps beneath a ship-goal stage.
+ *
+ * Only steps with a real truth source are authored. The reconciler knows
+ * whether a goal is BUILT; the bank knows whether the parts are banked; the
+ * goal order knows what has to exist first. Those three are derivable, so those
+ * three are the steps. Inventing "haul the girders" with nothing to mark it
+ * done would put a checkbox on screen that never ticks.
+ */
+export function describeShipGoalSteps(goalKey, { built = false, canAfford = false, prereqBuilt = true } = {}) {
+    const anchor = getShipGoalAnchor(goalKey);
+    if (!anchor) return [];
+    const prerequisite = getShipGoalPrerequisite(goalKey);
+    const steps = [];
+    if (prerequisite) {
+        steps.push({ id: 'prerequisite', goalKey: prerequisite.goalKey, done: Boolean(prereqBuilt) });
+    }
+    steps.push({ id: 'resources', done: Boolean(built || canAfford) });
+    steps.push({ id: 'install', anchorId: anchor.anchorId, done: Boolean(built) });
+    return steps;
+}
+
+/** The goal that must exist before this one, from the authored ring order. */
+export function getShipGoalPrerequisite(goalKey) {
+    const index = MANDATORY_SHIP_GOALS.findIndex((goal) => goal.goalKey === goalKey);
+    if (index <= 0) return null;
+    const previous = MANDATORY_SHIP_GOALS[index - 1];
+    return { goalKey: previous.goalKey, ring: previous.ring, anchorId: previous.objectiveAnchorId };
+}
+
+/**
  * Ordered stages for one crossing.
  *
  * The order is the order the conditions actually fall: the previous crossing
@@ -45,7 +75,7 @@ export function getShipGoalAnchor(goalKey) {
  * crossings have no boss) is omitted rather than reported as an unmeetable
  * requirement.
  */
-export function describeRingCrossingStages(plan, state, crossingId) {
+export function describeRingCrossingStages(plan, state, crossingId, context = {}) {
     const definition = plan?.ringCrossings?.find((entry) => entry?.id === crossingId) ?? null;
     if (!definition) return [];
 
@@ -62,11 +92,17 @@ export function describeRingCrossingStages(plan, state, crossingId) {
         });
     }
     if (requirements.goalKey) {
+        const prerequisite = getShipGoalPrerequisite(requirements.goalKey);
         stages.push({
             id: RING_CROSSING_STAGE_IDS.GOAL,
             done: Boolean(live?.goalBuilt),
             goalKey: requirements.goalKey,
-            anchor: getShipGoalAnchor(requirements.goalKey)
+            anchor: getShipGoalAnchor(requirements.goalKey),
+            steps: describeShipGoalSteps(requirements.goalKey, {
+                built: Boolean(live?.goalBuilt),
+                canAfford: Boolean(context.canAffordGoal?.(requirements.goalKey)),
+                prereqBuilt: !prerequisite || Boolean(context.builtGoalKeys?.has?.(prerequisite.goalKey))
+            })
         });
     }
     if (requirements.missionId) {
@@ -92,8 +128,8 @@ export function describeRingCrossingStages(plan, state, crossingId) {
  * Progress summary for a crossing: how many stages are done, which one is next,
  * and whether the crossing is open. `next` is null once everything is met.
  */
-export function summarizeRingCrossing(plan, state, crossingId) {
-    const stages = describeRingCrossingStages(plan, state, crossingId);
+export function summarizeRingCrossing(plan, state, crossingId, context = {}) {
+    const stages = describeRingCrossingStages(plan, state, crossingId, context);
     const done = stages.filter((stage) => stage.done).length;
     const next = stages.find((stage) => !stage.done) ?? null;
     return {
@@ -110,8 +146,8 @@ export function summarizeRingCrossing(plan, state, crossingId) {
  * Every crossing in plan order. The first entry that is not open is the one the
  * player is actually working on, which is what a route panel wants to lead with.
  */
-export function summarizeRingRoute(plan, state) {
-    const summaries = (plan?.ringCrossings ?? []).map((entry) => summarizeRingCrossing(plan, state, entry.id));
+export function summarizeRingRoute(plan, state, context = {}) {
+    const summaries = (plan?.ringCrossings ?? []).map((entry) => summarizeRingCrossing(plan, state, entry.id, context));
     const active = summaries.find((summary) => summary.status !== RING_CROSSING_STATES.OPEN) ?? null;
     return { crossings: summaries, active };
 }
