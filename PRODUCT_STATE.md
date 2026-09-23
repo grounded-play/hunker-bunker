@@ -5,7 +5,7 @@ and worklogs are evidence or history; they do not override this file. Update a
 row when its implementation or acceptance state changes and link to evidence
 instead of duplicating it here.
 
-Last verified: 2026-09-23 · Sprint 45 · `dev/sprint-45` · `v2.4.10-beta` (repository automation and headless-browser checks only; see [release notes](docs/releases/v2.4.10-beta.md) for evidence scope)
+Last verified: 2026-09-23 · Sprint 45 · `dev/sprint-45` · `v2.4.11-beta` (repository automation and headless-browser checks only; see [release notes](docs/releases/v2.4.11-beta.md) for evidence scope)
 
 Released in `v2.4.4-beta` and already on `mothership` (`e017b06`): the first deep localization sweep (7 languages, 0 unlocalized runtime strings), Alternate Radio Voice Banks (104 cue slots / 208 takes), all 10 rendered motion ending cinematics, Phase A AgX tone mapping & IBL reflections, and 52 playtest stability tickets (DP-01 through DP-52).
 
@@ -47,10 +47,10 @@ Status vocabulary:
 | Mayor Tina | Hostile lifecycle wired with warning hit, cup removal, grounded actor chase with attack cooldown, and clean reset. | Packaged visual sign-off remains open. |
 | Retail asset budget | Budget raised from 2705 MiB to 2725 MiB in Sprint 40 to accommodate Wave 2 radio takes, persona art, and ending cinematics; presubmit check passes cleanly. | Web/source audit does not certify Steam packaging or clear external actor rights. |
 | Presentation | Phase A visual overhaul landed: AgX tone mapping, PMREM deep space reflections on 94 PBR materials, and selective bloom. Upgraded tilt-shift bokeh, dynamic shadows, 3D tracers, death bursts, and camera trauma shake. | Phase B surface depth (derived normal/roughness maps) and hardware visual sign-off remain open. |
-| Automated suite | `npm test` passes **3,958 tests across 429 files** as of 2026-09-23; 9/9 Playwright E2E browser tests pass; lint (0 errors), presubmit, and production web/media build pass cleanly. | Hardware-only behavior and a full expedition are not covered by this count. |
+| Automated suite | `npm test` passes **3,990 tests across 436 files** as of 2026-09-23; 9/9 Playwright E2E browser tests pass; lint (0 errors), presubmit, and production web/media build pass cleanly. | Hardware-only behavior and a full expedition are not covered by this count. |
 
 ## Current milestone
 
-Sprint 45 is active on `dev/sprint-45` (`v2.4.10-beta`). Its focus is seeded expedition variety, compound multi-room structures, meaningful choices & physical world transformations, and progression consistency across Steam playthroughs.
+Sprint 45 is active on `dev/sprint-45` (`v2.4.11-beta`, Sprint 45.1 hotfixes on top of `v2.4.10-beta`). Its focus is seeded expedition variety, compound multi-room structures, meaningful choices & physical world transformations, and progression consistency across Steam playthroughs.
 The executable plan and 10-sprint retrospective audit are in [docs/planning/sprint-41-audit-and-roadmap.md](docs/planning/sprint-41-audit-and-roadmap.md); the wider sequence is in [docs/planning/repository-roadmap.md](docs/planning/repository-roadmap.md).
 
