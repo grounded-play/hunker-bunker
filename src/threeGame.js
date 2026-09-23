@@ -475,6 +475,12 @@ const SUIT_LIGHT_WALL_PADDING = 0.35;
 const HB_DIRECT_SPECULAR_MIN_ROUGHNESS = 0.6;
 
 const DAMAGE_PIP_TEXTURE_CACHE_MAX = 48;
+// Impact and frost rings grow by scale, so every ring can share one geometry
+// per shape instead of building and disposing one per effect.
+export const SHARED_GROUND_SHOCKWAVE_GEOMETRY = new THREE.RingGeometry(0.08, 0.16, 24);
+SHARED_GROUND_SHOCKWAVE_GEOMETRY.userData.shared = true;
+export const SHARED_FROST_SHOCKWAVE_GEOMETRY = new THREE.RingGeometry(0.1, 0.25, 32);
+SHARED_FROST_SHOCKWAVE_GEOMETRY.userData.shared = true;
 
 export function disposeTransientEffect(game, effect) {
     if (!effect) return;
@@ -20715,6 +20721,7 @@ export class ThreeGame {
             window.resetPickupCounter?.();
             this.depletedGearPileKeys.clear();
             this.killedBosses.clear();
+            this._sectorPurgedAnnounced = false;
             this.killedEnemyScatterKeys.clear();
             this.playerSlowTimer = 0;
             this.playerPoisonTimer = 0;
@@ -20841,11 +20848,48 @@ export class ThreeGame {
         window.objectiveRegistry?.trackObjective?.(trackPayload);
     }
 
+    // Point the player home once a run's work is done: a mission objective
+    // completing, or every milestone boss falling. The target is the crashed
+    // ship, as in the compass's own extraction branch.
+    activateExtractionGuidance(reason = 'objective_complete') {
+        const purged = reason === 'sector_purged';
+        if (purged) {
+            if (this._sectorPurgedAnnounced) return;
+            this._sectorPurgedAnnounced = true;
+        }
+        const ship = this.crashedShips?.find((entry) => entry.type === this.playerType) ?? this.crashedShips?.[0];
+        const airlockPos = ship
+            ? { x: ship.tileX, z: ship.tileZ }
+            : { x: CRASH_SITE_CENTER, z: CRASH_SITE_CENTER };
+        if (typeof window !== 'undefined') {
+            window.objectiveRegistry?.trackObjective?.({
+                id: 'mission:extraction',
+                source: 'mission',
+                label: t('ui.expedition.extraction.tracker'),
+                priority: 1,
+                compass: { x: airlockPos.x, z: airlockPos.z }
+            });
+            window.dispatchEvent(new CustomEvent('extraction-ready', {
+                detail: { reason, airlockPos }
+            }));
+        }
+        this.explorationTracker?.registerLandmark?.('extraction_airlock', {
+            x: airlockPos.x,
+            z: airlockPos.z,
+            label: t('ui.expedition.extraction.landmark'),
+            type: 'objective'
+        });
+        this.showBunkerLine?.(purged
+            ? t('ui.expedition.extraction.line_purged')
+            : t('ui.expedition.extraction.line_objective'));
+    }
+
     clearMission() {
         this.missionState = { type: null, label: '', status: 'inactive', extractionTimer: 0, killCount: 0, targetKills: 0, targetDepth: 0 };
         this._extractionLockdownFired = false;
         this._blockedExtractionSignalFired = false;
         window.objectiveRegistry?.resolveObjective?.('mission:active', 'abandoned');
+        window.objectiveRegistry?.resolveObjective?.('mission:extraction', 'abandoned');
         window.dispatchEvent(new CustomEvent('extraction-progress', {
             detail: { progress: 0, active: false }
         }));
@@ -20853,6 +20897,7 @@ export class ThreeGame {
 
     handleExtraction({ skipElevator = false } = {}) {
         if (this.missionState?.status === 'extracted') return;
+        window.objectiveRegistry?.resolveObjective?.('mission:extraction', 'complete');
         if (!skipElevator && this.missionState?.status !== 'elevator_ready') {
             this.startElevatorDownSequence();
             return;
@@ -21320,6 +21365,7 @@ export class ThreeGame {
                 this.missionState.status = 'objective_complete';
                 const uplink = this.getMothershipUplinkReadiness();
                 window.objectiveRegistry?.resolveObjective?.('mission:active', 'complete');
+                this.activateExtractionGuidance('mapping_complete');
                 window.dispatchEvent(new CustomEvent('mission-objective-complete', {
                     detail: { type: 'mapping', uplinkReady: uplink.ready, uplink }
                 }));
@@ -22136,6 +22182,7 @@ export class ThreeGame {
                 this.missionState.status = 'objective_complete';
                 const uplink = this.getMothershipUplinkReadiness();
                 window.objectiveRegistry?.resolveObjective?.('mission:active', 'complete');
+                this.activateExtractionGuidance('survey_complete');
                 window.dispatchEvent(new CustomEvent('mission-objective-complete', {
                     detail: { type: 'survey', uplinkReady: uplink.ready, uplink }
                 }));
@@ -24715,8 +24762,7 @@ export class ThreeGame {
             });
         }
 
-        // 2. Expanding ground shockwave ring
-        const ringGeo = new THREE.RingGeometry(0.08, 0.16, 24);
+        // 2. Expanding ground shockwave ring (reuses shared static geometry to eliminate heap churn)
         const ringMat = new THREE.MeshBasicMaterial({
             color: shockColor,
             transparent: true,
@@ -24725,7 +24771,7 @@ export class ThreeGame {
             side: THREE.DoubleSide,
             blending: THREE.AdditiveBlending
         });
-        const ringMesh = new THREE.Mesh(ringGeo, ringMat);
+        const ringMesh = new THREE.Mesh(SHARED_GROUND_SHOCKWAVE_GEOMETRY, ringMat);
         ringMesh.rotation.x = -Math.PI / 2;
         ringMesh.position.set(x, terrainY + 0.04, z);
         this.scene.add(ringMesh);
@@ -24744,7 +24790,6 @@ export class ThreeGame {
                 ringMat.opacity = 0.85 * (1 - progress);
             },
             dispose() {
-                ringGeo.dispose();
                 ringMat.dispose();
             }
         });
@@ -30177,6 +30222,7 @@ export class ThreeGame {
                                 this.missionState.status = 'objective_complete';
                                 const uplink = this.getMothershipUplinkReadiness();
                                 window.objectiveRegistry?.resolveObjective?.('mission:active', 'complete');
+                                this.activateExtractionGuidance('retrieval_complete');
                                 window.dispatchEvent(new CustomEvent('mission-objective-complete', {
                                     detail: { type: 'retrieval', uplinkReady: uplink.ready, uplink }
                                 }));
@@ -30585,6 +30631,7 @@ export class ThreeGame {
                 this.missionState.status = 'objective_complete';
                 const uplink = this.getMothershipUplinkReadiness();
                 window.objectiveRegistry?.resolveObjective?.('mission:active', 'complete');
+                this.activateExtractionGuidance('elimination_complete');
                 window.dispatchEvent(new CustomEvent('mission-objective-complete', {
                     detail: { type: 'elimination', uplinkReady: uplink.ready, uplink }
                 }));
@@ -30609,6 +30656,10 @@ export class ThreeGame {
                     const milestoneDef = getMilestoneById(sprite.userData.milestoneId);
                     if (milestoneDef) this.defeatedMilestoneBosses.add(milestoneDef.goalKey);
                     this.reconcileAuthoredWorldProgression?.();
+                    const defeatedCount = Math.max(this.killedBosses?.size ?? 0, this.defeatedMilestoneBosses?.size ?? 0);
+                    if (defeatedCount >= 3) {
+                        this.activateExtractionGuidance('sector_purged');
+                    }
                 }
             }
             if (sprite.userData.isMilestone && sprite.userData.sourceGoalKey === 'o2Bubble') {
@@ -33030,7 +33081,7 @@ export class ThreeGame {
 
     spawnFrostShockwaveEffect(x, z, maxRadius = 4.5) {
         const ring = new THREE.Mesh(
-            new THREE.RingGeometry(0.1, 0.25, 32),
+            SHARED_FROST_SHOCKWAVE_GEOMETRY,
             new THREE.MeshBasicMaterial({
                 color: 0x88ccff,
                 transparent: true,
@@ -33056,7 +33107,6 @@ export class ThreeGame {
                 ring.material.opacity = 0.8 * (1 - t);
             },
             dispose: () => {
-                ring.geometry?.dispose?.();
                 ring.material?.dispose?.();
             }
         });
@@ -33907,6 +33957,14 @@ export class ThreeGame {
     }
 
     updateTransientEffects(delta) {
+        // registerTransientEffect caps new effects; this also catches any that
+        // were pushed onto the list directly.
+        const MAX_POOL = 64;
+        while (this.transientEffects.length > MAX_POOL) {
+            const oldest = this.transientEffects.shift();
+            if (oldest) this.disposeTransientEffect(oldest);
+        }
+
         const removals = [];
 
         for (const effect of this.transientEffects) {
@@ -33979,13 +34037,15 @@ export class ThreeGame {
             }
         }
 
-        for (const effect of removals) {
-            this.disposeTransientEffect(effect);
-        }
-
-        this.transientEffects = this.transientEffects.filter((effect) => !removals.includes(effect));
-        if (this._wallDecals?.length) {
-            this._wallDecals = this._wallDecals.filter((effect) => !removals.includes(effect));
+        if (removals.length > 0) {
+            const removalSet = new Set(removals);
+            for (const effect of removals) {
+                this.disposeTransientEffect(effect);
+            }
+            this.transientEffects = this.transientEffects.filter((effect) => !removalSet.has(effect));
+            if (this._wallDecals?.length) {
+                this._wallDecals = this._wallDecals.filter((effect) => !removalSet.has(effect));
+            }
         }
     }
 
@@ -34011,9 +34071,16 @@ export class ThreeGame {
                     return false;
                 }
 
+                const isModulePhysical = (sprite, root3d) => {
+                    if (!sprite) return false;
+                    if (sprite.visible) return true;
+                    if (sprite.userData?.replacedBy3d && root3d?.parent && root3d.visible !== false) return true;
+                    return false;
+                };
+
                 const modulePositions = [
                     {
-                        enabled: Boolean(ship.o2ModuleSprite?.visible),
+                        enabled: isModulePhysical(ship.o2ModuleSprite, ship.o2Module3d),
                         x: Number.isFinite(ship.o2ModuleX)
                             ? ship.o2ModuleX
                             : ship.tileX + (ship.o2ModuleOffset?.x ?? O2_MODULE_OFFSET.x),
@@ -34022,7 +34089,7 @@ export class ThreeGame {
                             : ship.tileZ + (ship.o2ModuleOffset?.z ?? O2_MODULE_OFFSET.z)
                     },
                     {
-                        enabled: Boolean(ship.hullModuleSprite?.visible),
+                        enabled: isModulePhysical(ship.hullModuleSprite, ship.hullModule3d),
                         x: Number.isFinite(ship.hullModuleX)
                             ? ship.hullModuleX
                             : ship.tileX + (ship.hullModuleOffset?.x ?? MODULE_OFFSETS.hullMatrix.x),
@@ -34031,7 +34098,7 @@ export class ThreeGame {
                             : ship.tileZ + (ship.hullModuleOffset?.z ?? MODULE_OFFSETS.hullMatrix.z)
                     },
                     {
-                        enabled: Boolean(ship.radarModuleSprite?.visible),
+                        enabled: isModulePhysical(ship.radarModuleSprite, ship.radarModule3d),
                         x: Number.isFinite(ship.radarModuleX)
                             ? ship.radarModuleX
                             : ship.tileX + (ship.radarModuleOffset?.x ?? MODULE_OFFSETS.radarDish.x),
@@ -34040,7 +34107,7 @@ export class ThreeGame {
                             : ship.tileZ + (ship.radarModuleOffset?.z ?? MODULE_OFFSETS.radarDish.z)
                     },
                     {
-                        enabled: Boolean(ship.reactorModuleSprite?.visible),
+                        enabled: isModulePhysical(ship.reactorModuleSprite, ship.reactorModule3d),
                         x: Number.isFinite(ship.reactorModuleX)
                             ? ship.reactorModuleX
                             : ship.tileX + (ship.reactorModuleOffset?.x ?? MODULE_OFFSETS.reactorCompressor.x),

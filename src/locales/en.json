@@ -1584,6 +1584,12 @@
           "carapace_heat_siphon": "> BROOD HEAT SIPHONED — REACTOR IS FREE. CARAPACE'S CREEP REACHES FURTHER NOW.",
           "gate_capacitor_draw": "> CAPACITORS DRAINED — REACTOR AT HALF COST. THE RING-4 GATE APPROACH IS SWARMING NOW."
         }
+      },
+      "extraction": {
+        "tracker": "RETURN TO SHIP FOR EXTRACTION",
+        "landmark": "EXTRACTION AIRLOCK",
+        "line_objective": "OBJECTIVE COMPLETE. EXTRACTION AIRLOCK ARMED. RETURN TO SHIP.",
+        "line_purged": "SECTOR PURGED. EXTRACTION AIRLOCK ACTIVE. RETURN TO SHIP."
       }
     }
   },

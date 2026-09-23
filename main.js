@@ -664,10 +664,10 @@ window.HunkerInputState = {
 };
 
 function syncSteamInputPhase(phaseOverride = null) {
-    const modalMenuOpen = appPhase !== 'archive' && STEAM_INPUT_FOCUS_ROOT_IDS.some((id) => {
+    const modalMenuOpen = appPhase !== 'archive' && (isFocusRootOpen(document.getElementById('tactical-map-modal')) || STEAM_INPUT_FOCUS_ROOT_IDS.some((id) => {
         if (id === 'rgb-root' || id === 'splash' || id === 'menu') return false;
         return isFocusRootOpen(document.getElementById(id));
-    });
+    }));
     const effectivePhase = phaseOverride
         ?? (modalMenuOpen ? 'menu' : appPhase);
     // Exposed for hardware/E2E diagnosis: this is the action set the game is
@@ -1769,6 +1769,7 @@ function getControllerBackTarget(root) {
 }
 
 let lastModalCloseTimestamp = 0;
+let lastTacticalMapToggleTimestamp = 0;
 
 function triggerControllerPauseAction() {
     const settingsPopup = document.getElementById('settings-popup');
@@ -1990,7 +1991,7 @@ function updateVirtualGamepadCursorPosition(clientX, clientY, visible = true) {
 function handleSteamMenuInput(actions) {
     const tacticalMapModal = document.getElementById('tactical-map-modal');
     if (tacticalMapModal && !tacticalMapModal.classList.contains('hidden')) {
-        if (actions.back || actions.pause || actions.toggleMap) {
+        if (performance.now() - lastTacticalMapToggleTimestamp >= 250 && (actions.back || actions.pause || actions.toggleMap)) {
             toggleTacticalMapModal(false);
             return;
         }
@@ -2309,7 +2310,7 @@ function handleSteamGameplayInput(controller) {
     const tacticalMapModal = document.getElementById('tactical-map-modal');
     const isMapOpen = tacticalMapModal && !tacticalMapModal.classList.contains('hidden');
     if (isMapOpen) {
-        if ((controller.dash && !prev.dash) || (controller.toggleMap && !prev.toggleMap) || (controller.pause && !prev.pause)) {
+        if (performance.now() - lastTacticalMapToggleTimestamp >= 250 && ((controller.dash && !prev.dash) || (controller.toggleMap && !prev.toggleMap) || (controller.pause && !prev.pause))) {
             toggleTacticalMapModal(false);
         }
         updateControllerInputMemory(controller, {
@@ -11344,9 +11345,11 @@ function pollTacticalMapGamepadInput() {
     if (closeButtonPressed) {
         if (!tacticalMapState.prevCloseButtonPressed) {
             tacticalMapState.prevCloseButtonPressed = true;
-            lastModalCloseTimestamp = performance.now();
-            toggleTacticalMapModal(false);
-            return;
+            if (performance.now() - lastTacticalMapToggleTimestamp >= 250) {
+                lastModalCloseTimestamp = performance.now();
+                toggleTacticalMapModal(false);
+                return;
+            }
         }
     } else {
         tacticalMapState.prevCloseButtonPressed = false;
@@ -11756,11 +11759,22 @@ function toggleTacticalMapModal(forceState) {
     // === false) is always allowed so an in-progress close can't get stuck.
     if (shouldOpen && appPhase !== 'gameplay') return;
 
+    const now = performance.now();
+    const isExplicit = typeof forceState === 'boolean';
+    if (!isExplicit && now - lastTacticalMapToggleTimestamp < 250) {
+        return;
+    }
+    lastTacticalMapToggleTimestamp = now;
+
     const info = document.getElementById('tactical-telemeter-box');
     document.getElementById(shouldOpen ? 'expanded-map-info' : 'hud-map-info')?.append(info);
     if (shouldOpen) {
         modal.classList.remove('hidden');
         modal.setAttribute('aria-hidden', 'false');
+        // The View/Start press that opened the map is usually still held on
+        // the map's first poll; count it as already seen so the map needs a
+        // fresh press to close instead of shutting on the frame it opened.
+        tacticalMapState.prevCloseButtonPressed = true;
         if (!tacticalMapAnimFrame) {
             const updateLoop = () => {
                 const modalNow = document.getElementById('tactical-map-modal');
@@ -11774,6 +11788,7 @@ function toggleTacticalMapModal(forceState) {
             };
             tacticalMapAnimFrame = requestAnimationFrame(updateLoop);
         }
+        syncSteamInputPhase('menu');
     } else {
         modal.classList.add('hidden');
         modal.setAttribute('aria-hidden', 'true');
@@ -11781,8 +11796,8 @@ function toggleTacticalMapModal(forceState) {
             cancelAnimationFrame(tacticalMapAnimFrame);
             tacticalMapAnimFrame = null;
         }
+        syncSteamInputPhase();
     }
-    syncSteamInputPhase();
 }
 
 document.getElementById('close-tactical-map-modal')?.addEventListener('click', () => toggleTacticalMapModal(false));

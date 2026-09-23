@@ -1584,6 +1584,12 @@
           "carapace_heat_siphon": "> 幼体热量已抽取 — 反应堆免费。甲壳巢穴的蔓生物蔓延得更远了。",
           "gate_capacitor_draw": "> 电容已放空 — 反应堆半价。第4环闸门通道现在敌群密布。"
         }
+      },
+      "extraction": {
+        "tracker": "返回飞船撤离",
+        "landmark": "撤离气闸",
+        "line_objective": "目标完成。撤离气闸已就绪。返回飞船。",
+        "line_purged": "区域已肃清。撤离气闸已启动。返回飞船。"
       }
     }
   },

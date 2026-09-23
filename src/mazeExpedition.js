@@ -3,6 +3,7 @@
 // and route lengths are generated per run.
 
 import { CHUNK_SIZE } from './tileCatalog.js';
+import { findDisjointRoutes, hasTwoRoutesToQueen } from './mazeTiers.js';
 
 // Ring radii are world units, but what the player traverses is chunks — so
 // these must scale with CHUNK_SIZE or the rings collapse onto one another.
@@ -344,7 +345,7 @@ export function generateRegionalRouteTopology(seed = 1, {
     const uniqueSpineChunkKeys = [...new Set(spineChunkKeys)];
     const queenChunkKey = uniqueSpineChunkKeys.at(-1);
     const boundsRadius = outerRadius + 2;
-    return {
+    const topology = {
         version: 1,
         chunkSize,
         boundsRadius,
@@ -355,6 +356,8 @@ export function generateRegionalRouteTopology(seed = 1, {
         routeChunks: [...routeChunks.values()],
         routeEdges: [...routeEdges]
     };
+    topology.reachability = validateExpeditionRouteReachability(topology);
+    return topology;
 }
 
 export function topologyHasChunk(topology, chunkX, chunkY) {
@@ -364,6 +367,61 @@ export function topologyHasChunk(topology, chunkX, chunkY) {
 export function topologyHasEdge(topology, aX, aY, bX, bY) {
     const edge = routeEdgeKey(chunkKey(aX, aY), chunkKey(bX, bY));
     return Boolean(topology?.routeEdges?.includes(edge));
+}
+
+/**
+ * Builds an adjacency Map from a regional route topology's routeEdges.
+ *
+ * @param {object} topology - Output from generateRegionalRouteTopology
+ * @returns {Map<string, string[]>}
+ */
+export function buildTopologyAdjacency(topology) {
+    const adjacency = new Map((topology?.routeChunks ?? []).map((chunk) => [
+        chunkKey(chunk.chunkX, chunk.chunkY),
+        []
+    ]));
+    for (const edge of topology?.routeEdges ?? []) {
+        const [a, b] = edge.split('|');
+        if (!adjacency.has(a)) adjacency.set(a, []);
+        if (!adjacency.has(b)) adjacency.set(b, []);
+        adjacency.get(a).push(b);
+        adjacency.get(b).push(a);
+    }
+    return adjacency;
+}
+
+/**
+ * Validates expedition route reachability using anti-softlock disjoint route discovery.
+ * Ensures the Queen / final tier is strictly reachable from the spawn / start point.
+ *
+ * @param {object} topology - Output from generateRegionalRouteTopology
+ * @returns {{ valid: boolean, routeCount: number, hasAlternativeRoute: boolean, routes: string[][], errors: string[] }}
+ */
+export function validateExpeditionRouteReachability(topology) {
+    if (!topology || !topology.startChunkKey || !topology.queenChunkKey) {
+        return {
+            valid: false,
+            routeCount: 0,
+            hasAlternativeRoute: false,
+            routes: [],
+            errors: ['Invalid topology or missing start/queen chunk keys']
+        };
+    }
+    const adjacency = buildTopologyAdjacency(topology);
+    const routes = findDisjointRoutes(adjacency, topology.startChunkKey, topology.queenChunkKey, 2);
+    const hasAlternativeRoute = hasTwoRoutesToQueen(adjacency, topology.startChunkKey, topology.queenChunkKey);
+    const reachable = routes.length >= 1;
+    const errors = [];
+    if (!reachable) {
+        errors.push(`Queen chunk (${topology.queenChunkKey}) is unreachable from start (${topology.startChunkKey})`);
+    }
+    return {
+        valid: reachable,
+        routeCount: routes.length,
+        hasAlternativeRoute,
+        routes,
+        errors
+    };
 }
 
 // Dijkstra over the physically streamed chunk graph. Edges are unit-weight
@@ -876,6 +934,12 @@ export function validateRadialMazeExpedition(plan) {
     }
     for (const blocker of plan?.blockers ?? []) {
         if (!blocker.missionId || !blocker.feature) errors.push(`${blocker.id} is not mission-backed`);
+    }
+    if (plan?.topology) {
+        const reachability = validateExpeditionRouteReachability(plan.topology);
+        if (!reachability.valid) {
+            errors.push(...reachability.errors);
+        }
     }
     return { valid: errors.length === 0, errors };
 }

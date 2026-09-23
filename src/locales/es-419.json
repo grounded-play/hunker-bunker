@@ -1584,6 +1584,12 @@
           "carapace_heat_siphon": "> CALOR DE LA CRÍA SIFONADO — REACTOR GRATIS. EL CRECIMIENTO DE CARAPACE LLEGA MÁS LEJOS.",
           "gate_capacitor_draw": "> CONDENSADORES DESCARGADOS — REACTOR A MITAD DE PRECIO. EL ACCESO A LA PUERTA DEL ANILLO 4 ESTÁ INFESTADO."
         }
+      },
+      "extraction": {
+        "tracker": "REGRESA A LA NAVE PARA LA EXTRACCIÓN",
+        "landmark": "ESCLUSA DE EXTRACCIÓN",
+        "line_objective": "OBJETIVO CUMPLIDO. ESCLUSA DE EXTRACCIÓN LISTA. REGRESA A LA NAVE.",
+        "line_purged": "SECTOR PURGADO. ESCLUSA DE EXTRACCIÓN ACTIVA. REGRESA A LA NAVE."
       }
     }
   },

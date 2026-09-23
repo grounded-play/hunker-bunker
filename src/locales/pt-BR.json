@@ -1584,6 +1584,12 @@
           "carapace_heat_siphon": "> CALOR DA NINHADA SUGADO — REATOR GRÁTIS. O CRESCIMENTO DE CARAPACE ALCANÇA MAIS LONGE.",
           "gate_capacitor_draw": "> CAPACITORES DRENADOS — REATOR PELA METADE. O ACESSO AO PORTÃO DO ANEL 4 ESTÁ INFESTADO."
         }
+      },
+      "extraction": {
+        "tracker": "VOLTE À NAVE PARA A EXTRAÇÃO",
+        "landmark": "ECLUSA DE EXTRAÇÃO",
+        "line_objective": "OBJETIVO CONCLUÍDO. ECLUSA DE EXTRAÇÃO ARMADA. VOLTE À NAVE.",
+        "line_purged": "SETOR PURGADO. ECLUSA DE EXTRAÇÃO ATIVA. VOLTE À NAVE."
       }
     }
   },

@@ -1584,6 +1584,12 @@
           "carapace_heat_siphon": "> BRUTWÄRME ABGEZAPFT — REAKTOR GRATIS. CARAPACES GEFLECHT REICHT JETZT WEITER.",
           "gate_capacitor_draw": "> KONDENSATOREN GELEERT — REAKTOR ZUM HALBEN PREIS. DER TORZUGANG VON RING 4 WIMMELT JETZT."
         }
+      },
+      "extraction": {
+        "tracker": "ZUM SCHIFF ZURÜCKKEHREN – EXTRAKTION",
+        "landmark": "EXTRAKTIONSSCHLEUSE",
+        "line_objective": "ZIEL ERFÜLLT. EXTRAKTIONSSCHLEUSE BEREIT. KEHR ZUM SCHIFF ZURÜCK.",
+        "line_purged": "SEKTOR GESÄUBERT. EXTRAKTIONSSCHLEUSE AKTIV. KEHR ZUM SCHIFF ZURÜCK."
       }
     }
   },
