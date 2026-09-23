@@ -290,6 +290,7 @@ import {
     restoreOnSleep,
     sprintPricing
 } from './fatigue.js';
+import { summarizeRingRoute } from './ringCrossingStages.js';
 import {
     OVERNIGHT_STATE_KEY,
     createOvernightState,
@@ -465,6 +466,14 @@ const FOUNDRY_DISCOVERY_MAX_DISTANCE = 58;
 // Dawn. Waking always lands here so a new campaign day reads as a new morning
 // rather than resuming wherever the short visual sky loop happened to be.
 const MORNING_TIME_OF_DAY = 0.26;
+// Stage label lookups for the ring-route readout, kept as explicit keys so the
+// i18n audit can see each reference.
+const RING_ROUTE_STAGE_LABELS = Object.freeze({
+    previous_crossing: () => t('ui.console.ring_route_stages.previous_crossing'),
+    ship_goal: () => t('ui.console.ring_route_stages.ship_goal'),
+    ring_mission: () => t('ui.console.ring_route_stages.ring_mission'),
+    milestone_boss: () => t('ui.console.ring_route_stages.milestone_boss')
+});
 // The operator's cot, offset from the bunker spawn so it sits inside the hab
 // rather than on the airlock threshold. Reachable from a little further than a
 // normal prop: a bed the player has to hunt for is a bed they will not use.
@@ -11924,6 +11933,31 @@ export class ThreeGame {
         return null;
     }
 
+    /**
+     * One line for the terminal: how far along the ring route the player is and
+     * what the next unmet stage of the active crossing is. Derived from the
+     * same plan and state the crossing reconciler already owns, so the readout
+     * cannot drift from whether the door actually opens.
+     */
+    describeRingRouteProgress() {
+        const plan = this.worldPlan ?? null;
+        const route = summarizeRingRoute(plan, this.ringCrossingState);
+        if (!route.active) {
+            return route.crossings.length > 0 ? t('ui.console.ring_route_open') : '--';
+        }
+        // Keys are written out rather than built from the stage id: the i18n
+        // audit resolves references statically, and a template-literal key
+        // reads to it as an orphaned translation.
+        const stageName = route.active.next
+            ? (RING_ROUTE_STAGE_LABELS[route.active.next.id]?.() ?? route.active.next.id)
+            : '';
+        return t('ui.console.ring_route_progress', {
+            done: route.active.completed,
+            total: route.active.total,
+            stage: stageName
+        });
+    }
+
     renderTerminalObjectiveJournal(bankState, activeGoal) {
         const day = this.dayState?.day ?? 1;
         const phase = String(this.dayState?.phase ?? REST_PHASES.EXPEDITION).replace(/_/g, ' ').toUpperCase();
@@ -11938,6 +11972,7 @@ export class ThreeGame {
         setText('terminal-log-day', t('ui.console.day_n', { day }));
         setText('terminal-log-phase', phase);
         setText('terminal-log-light', lightIsDay ? t('ui.console.daylight') : t('ui.console.night_ops'));
+        setText('terminal-log-route', this.describeRingRouteProgress?.() ?? '--');
         setText('terminal-log-transition', t('ui.console.transition_in', {
             phase: lightIsDay ? t('ui.console.dusk') : t('ui.console.dawn'),
             time: `${String(Math.floor(transitionSeconds / 60)).padStart(2, '0')}:${String(transitionSeconds % 60).padStart(2, '0')}`

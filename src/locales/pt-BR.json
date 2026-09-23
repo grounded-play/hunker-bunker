@@ -789,7 +789,8 @@
       "aria_label_optional_base_defense": "Defesa opcional da base",
       "defense_turret": "TORRE DE DEFESA",
       "optional_north_door_defense_repairing": "Defesa opcional da porta norte. Reparar o suporte de vida não constrói uma torre.",
-      "bunker_tree_cross_linked_protocols": "ÁRVORE DO BUNKER // PROTOCOLOS INTERLIGADOS"
+      "bunker_tree_cross_linked_protocols": "ÁRVORE DO BUNKER // PROTOCOLOS INTERLIGADOS",
+      "ring_route": "ROTA DO ANEL"
     },
     "terminal_bank": {
       "current_run_stats": "ESTATÍSTICAS DA CORRIDA ATUAL",
@@ -1189,7 +1190,15 @@
       "base_status": "STATUS DA BASE {type} {state}",
       "active_exosuit": "[EXOTRAJE ATIVO]",
       "standby": "[EM ESPERA]",
-      "field_stabilizer": "ESTABILIZADOR DE CAMPO {type}"
+      "field_stabilizer": "ESTABILIZADOR DE CAMPO {type}",
+      "ring_route_progress": "{done}/{total} · {stage}",
+      "ring_route_open": "ROTA ABERTA",
+      "ring_route_stages": {
+        "previous_crossing": "TRAVESSIA ANTERIOR",
+        "ship_goal": "META DA NAVE",
+        "ring_mission": "MISSÃO DO ANEL",
+        "milestone_boss": "MARCO"
+      }
     },
     "journal": {
       "day_time": "D{day} {minute}:{second}",

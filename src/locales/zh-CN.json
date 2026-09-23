@@ -789,7 +789,8 @@
       "aria_label_optional_base_defense": "可选基地防御",
       "defense_turret": "防御炮塔",
       "optional_north_door_defense_repairing": "可选的北门防御。修复生命维持系统不会建造炮塔。",
-      "bunker_tree_cross_linked_protocols": "地堡树 // 交叉链接协议"
+      "bunker_tree_cross_linked_protocols": "地堡树 // 交叉链接协议",
+      "ring_route": "环形路线"
     },
     "terminal_bank": {
       "current_run_stats": "本次征程数据",
@@ -1189,7 +1190,15 @@
       "base_status": "{type} 基地状态 {state}",
       "active_exosuit": "[当前外骨骼]",
       "standby": "[待机]",
-      "field_stabilizer": "{type} 力场稳定器"
+      "field_stabilizer": "{type} 力场稳定器",
+      "ring_route_progress": "{done}/{total} · {stage}",
+      "ring_route_open": "路线开通",
+      "ring_route_stages": {
+        "previous_crossing": "前一通道",
+        "ship_goal": "舰船目标",
+        "ring_mission": "环形任务",
+        "milestone_boss": "里程碑"
+      }
     },
     "journal": {
       "day_time": "D{day} {minute}:{second}",

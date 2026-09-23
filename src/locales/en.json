@@ -789,7 +789,8 @@
       "aria_label_optional_base_defense": "Optional base defense",
       "defense_turret": "DEFENSE TURRET",
       "optional_north_door_defense_repairing": "Optional north-door defense. Repairing life support does not build a turret.",
-      "bunker_tree_cross_linked_protocols": "BUNKER TREE // CROSS-LINKED PROTOCOLS"
+      "bunker_tree_cross_linked_protocols": "BUNKER TREE // CROSS-LINKED PROTOCOLS",
+      "ring_route": "RING ROUTE"
     },
     "terminal_bank": {
       "current_run_stats": "CURRENT RUN STATS",
@@ -1189,7 +1190,15 @@
       "base_status": "{type} BASE STATUS {state}",
       "active_exosuit": "[ACTIVE EXOSUIT]",
       "standby": "[STANDBY]",
-      "field_stabilizer": "{type} FIELD STABILIZER"
+      "field_stabilizer": "{type} FIELD STABILIZER",
+      "ring_route_progress": "{done}/{total} · {stage}",
+      "ring_route_open": "ROUTE OPEN",
+      "ring_route_stages": {
+        "previous_crossing": "PRIOR CROSSING",
+        "ship_goal": "SHIP GOAL",
+        "ring_mission": "RING MISSION",
+        "milestone_boss": "MILESTONE"
+      }
     },
     "journal": {
       "day_time": "D{day} {minute}:{second}",

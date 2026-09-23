@@ -789,7 +789,8 @@
       "aria_label_optional_base_defense": "任意の基地防衛",
       "defense_turret": "防衛タレット",
       "optional_north_door_defense_repairing": "北扉の任意防衛。生命維持の修理ではタレットは建たない。",
-      "bunker_tree_cross_linked_protocols": "バンカー・ツリー // 相互連結プロトコル"
+      "bunker_tree_cross_linked_protocols": "バンカー・ツリー // 相互連結プロトコル",
+      "ring_route": "リングルート"
     },
     "terminal_bank": {
       "current_run_stats": "現在のランの統計",
@@ -1189,7 +1190,15 @@
       "base_status": "{type} 基地状態 {state}",
       "active_exosuit": "[稼働中エクソスーツ]",
       "standby": "[待機]",
-      "field_stabilizer": "{type} フィールド安定装置"
+      "field_stabilizer": "{type} フィールド安定装置",
+      "ring_route_progress": "{done}/{total} · {stage}",
+      "ring_route_open": "ルート開通",
+      "ring_route_stages": {
+        "previous_crossing": "前の通過点",
+        "ship_goal": "艦の目標",
+        "ring_mission": "リング任務",
+        "milestone_boss": "マイルストーン"
+      }
     },
     "journal": {
       "day_time": "D{day} {minute}:{second}",

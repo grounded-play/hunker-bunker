@@ -789,7 +789,8 @@
       "aria_label_optional_base_defense": "Дополнительная оборона базы",
       "defense_turret": "ОБОРОНИТЕЛЬНАЯ ТУРЕЛЬ",
       "optional_north_door_defense_repairing": "Дополнительная оборона северной двери. Ремонт жизнеобеспечения не строит турель.",
-      "bunker_tree_cross_linked_protocols": "ДЕРЕВО БУНКЕРА // СВЯЗАННЫЕ ПРОТОКОЛЫ"
+      "bunker_tree_cross_linked_protocols": "ДЕРЕВО БУНКЕРА // СВЯЗАННЫЕ ПРОТОКОЛЫ",
+      "ring_route": "КОЛЬЦЕВОЙ МАРШРУТ"
     },
     "terminal_bank": {
       "current_run_stats": "СТАТИСТИКА ТЕКУЩЕГО ЗАБЕГА",
@@ -1189,7 +1190,15 @@
       "base_status": "СТАТУС БАЗЫ {type} {state}",
       "active_exosuit": "[АКТИВНЫЙ ЭКЗОКОСТЮМ]",
       "standby": "[ОЖИДАНИЕ]",
-      "field_stabilizer": "ПОЛЕВОЙ СТАБИЛИЗАТОР {type}"
+      "field_stabilizer": "ПОЛЕВОЙ СТАБИЛИЗАТОР {type}",
+      "ring_route_progress": "{done}/{total} · {stage}",
+      "ring_route_open": "МАРШРУТ ОТКРЫТ",
+      "ring_route_stages": {
+        "previous_crossing": "ПРЕДЫДУЩИЙ ПЕРЕХОД",
+        "ship_goal": "ЦЕЛЬ КОРАБЛЯ",
+        "ring_mission": "МИССИЯ КОЛЬЦА",
+        "milestone_boss": "ВЕХА"
+      }
     },
     "journal": {
       "day_time": "Д{day} {minute}:{second}",

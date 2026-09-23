@@ -789,7 +789,8 @@
       "aria_label_optional_base_defense": "Optionale Basisverteidigung",
       "defense_turret": "VERTEIDIGUNGSGESCHÜTZ",
       "optional_north_door_defense_repairing": "Optionale Verteidigung der Nordtür. Die Reparatur der Lebenserhaltung baut kein Geschütz.",
-      "bunker_tree_cross_linked_protocols": "BUNKER-BAUM // VERKNÜPFTE PROTOKOLLE"
+      "bunker_tree_cross_linked_protocols": "BUNKER-BAUM // VERKNÜPFTE PROTOKOLLE",
+      "ring_route": "RINGROUTE"
     },
     "terminal_bank": {
       "current_run_stats": "AKTUELLE RUN-STATISTIK",
@@ -1189,7 +1190,15 @@
       "base_status": "{type} BASIS-STATUS {state}",
       "active_exosuit": "[AKTIVER EXOANZUG]",
       "standby": "[BEREITSCHAFT]",
-      "field_stabilizer": "{type} FELDSTABILISATOR"
+      "field_stabilizer": "{type} FELDSTABILISATOR",
+      "ring_route_progress": "{done}/{total} · {stage}",
+      "ring_route_open": "ROUTE OFFEN",
+      "ring_route_stages": {
+        "previous_crossing": "VORIGER ÜBERGANG",
+        "ship_goal": "SCHIFFSZIEL",
+        "ring_mission": "RINGMISSION",
+        "milestone_boss": "MEILENSTEIN"
+      }
     },
     "journal": {
       "day_time": "T{day} {minute}:{second}",
