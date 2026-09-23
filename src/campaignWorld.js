@@ -1,5 +1,5 @@
 import { createFreshRunEntropy } from './runEntropy.js';
-import { deriveExpeditionSeed, createExpeditionProfile } from './expeditionSystem.js';
+import { deriveExpeditionSeed, createExpeditionProfile, normalizeExpeditionProfile } from './expeditionSystem.js';
 import { LEGACY_ROUTE_LAYOUT_VERSION, ROUTE_LAYOUT_VERSION } from './mazeExpedition.js';
 
 export const CAMPAIGN_WORLD_STORAGE_KEY = 'hb_campaign_world_v1';
@@ -21,28 +21,37 @@ function getStorage(storage) {
 // Re-export deriveExpeditionSeed for backward compatibility
 export { deriveExpeditionSeed };
 
+function validTransformationId(id) {
+    return typeof id === 'string' && id.length > 0
+        && !['__proto__', 'constructor', 'prototype'].includes(id);
+}
+
+function normalizeWorldTransformations(raw) {
+    const ids = (values) => Array.isArray(values) ? [...new Set(values.filter(validTransformationId))] : [];
+    const hivesTransformed = {};
+    const hiveRecords = raw?.hivesTransformed && typeof raw.hivesTransformed === 'object'
+        && !Array.isArray(raw.hivesTransformed) ? raw.hivesTransformed : {};
+    for (const [id, details] of Object.entries(hiveRecords)) {
+        if (validTransformationId(id) && details && typeof details === 'object' && !Array.isArray(details)) {
+            hivesTransformed[id] = clone(details);
+        }
+    }
+    return {
+        bridgesConstructed: ids(raw?.bridgesConstructed),
+        campsFortified: ids(raw?.campsFortified),
+        hivesTransformed,
+        shortcutsOpened: ids(raw?.shortcutsOpened)
+    };
+}
+
 function normalize(raw) {
     if (!raw || raw.version !== CAMPAIGN_WORLD_VERSION || !isSeed(raw.seed)) return null;
     const expeditionIndex = Number.isSafeInteger(raw.expeditionIndex) && raw.expeditionIndex >= 0
         ? raw.expeditionIndex
         : 0;
     const expeditionSeed = deriveExpeditionSeed(raw.seed, expeditionIndex);
-    const activeExpedition = raw.activeExpedition && typeof raw.activeExpedition === 'object'
-        ? clone(raw.activeExpedition)
-        : createExpeditionProfile(raw.seed, expeditionIndex);
-    const worldTransformations = raw.worldTransformations && typeof raw.worldTransformations === 'object'
-        ? {
-            bridgesConstructed: Array.isArray(raw.worldTransformations.bridgesConstructed) ? [...raw.worldTransformations.bridgesConstructed] : [],
-            campsFortified: Array.isArray(raw.worldTransformations.campsFortified) ? [...raw.worldTransformations.campsFortified] : [],
-            hivesTransformed: (raw.worldTransformations.hivesTransformed && typeof raw.worldTransformations.hivesTransformed === 'object') ? clone(raw.worldTransformations.hivesTransformed) : {},
-            shortcutsOpened: Array.isArray(raw.worldTransformations.shortcutsOpened) ? [...raw.worldTransformations.shortcutsOpened] : []
-        }
-        : {
-            bridgesConstructed: [],
-            campsFortified: [],
-            hivesTransformed: {},
-            shortcutsOpened: []
-        };
+    const activeExpedition = normalizeExpeditionProfile(raw.activeExpedition, raw.seed, expeditionIndex);
+    const worldTransformations = normalizeWorldTransformations(raw.worldTransformations);
     return {
         version: CAMPAIGN_WORLD_VERSION,
         seed: raw.seed,
@@ -165,21 +174,27 @@ export function createCampaignWorldStore({
             });
         },
         recordWorldTransformation(type, id, details = {}) {
-            const current = getOrCreate();
-            const transformations = clone(current.worldTransformations) || {
-                bridgesConstructed: [],
-                campsFortified: [],
-                hivesTransformed: {},
-                shortcutsOpened: []
-            };
-            if (type === 'bridge' && !transformations.bridgesConstructed.includes(id)) {
-                transformations.bridgesConstructed.push(id);
-            } else if (type === 'camp_fortified' && !transformations.campsFortified.includes(id)) {
-                transformations.campsFortified.push(id);
+            const current = read();
+            if (!current || !validTransformationId(id)) return null;
+            const transformations = normalizeWorldTransformations(current.worldTransformations);
+            const listKey = type === 'bridge' ? 'bridgesConstructed'
+                : type === 'camp_fortified' ? 'campsFortified'
+                    : type === 'shortcut' ? 'shortcutsOpened' : null;
+            if (listKey) {
+                if (transformations[listKey].includes(id)) return clone(transformations);
+                transformations[listKey].push(id);
             } else if (type === 'hive_transformed') {
-                transformations.hivesTransformed[id] = { ...details, timestamp: Date.now() };
-            } else if (type === 'shortcut' && !transformations.shortcutsOpened.includes(id)) {
-                transformations.shortcutsOpened.push(id);
+                let savedDetails;
+                try { savedDetails = clone(details); } catch { return null; }
+                if (!savedDetails || typeof savedDetails !== 'object' || Array.isArray(savedDetails)) return null;
+                delete savedDetails.timestamp;
+                const previousDetails = { ...transformations.hivesTransformed[id] };
+                delete previousDetails.timestamp;
+                if (JSON.stringify(previousDetails) === JSON.stringify(savedDetails)
+                    && Object.hasOwn(transformations.hivesTransformed, id)) return clone(transformations);
+                transformations.hivesTransformed[id] = { ...savedDetails, timestamp: Date.now() };
+            } else {
+                return null;
             }
             write({ ...current, worldTransformations: transformations });
             return clone(transformations);

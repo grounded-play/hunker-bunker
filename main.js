@@ -1939,17 +1939,46 @@ function ensureVirtualGamepadCursor() {
     return virtualGamepadCursor;
 }
 
+// Every full-screen presentation layer: movies (boss, class and interstitial
+// videos all play in .class-intro-overlay), still cinematics, the crash
+// cutscene, RGB cinematics and the blast-door transition. No pointer of any
+// kind belongs on top of these.
+const PRESENTATION_LAYER_SELECTOR = '.fullscreen-video-overlay:not(.hidden), '
+    + '.cinematic-overlay:not(.hidden), '
+    + '.class-intro-overlay:not(.is-closing), '
+    + '.cinematic-still-overlay:not(.is-closing), '
+    + '#cutscene-overlay.is-active, '
+    + '.rgb-cinematic--visible, '
+    + '#transition-overlay.active';
+
+function isPresentationLayerActive() {
+    return Boolean(document.querySelector(PRESENTATION_LAYER_SELECTOR));
+}
+
+// Hides the native pointer, the tactical cursor and the gameplay reticle
+// while a presentation layer is up. Mutation records are already batched
+// per task, so the check runs straight from the observer: waiting for a
+// frame let the pointer flash over the first frames of a movie.
+function syncPresentationCursor() {
+    const active = isPresentationLayerActive();
+    const root = document.documentElement;
+    if (root.classList.contains('presentation-cursor-hidden') !== active) {
+        root.classList.toggle('presentation-cursor-hidden', active);
+    }
+}
+if (typeof MutationObserver !== 'undefined' && document.body) {
+    new MutationObserver(syncPresentationCursor).observe(document.body, {
+        subtree: true,
+        childList: true,
+        attributes: true,
+        attributeFilter: ['class']
+    });
+}
+
 function updateVirtualGamepadCursorPosition(clientX, clientY, visible = true) {
     const cursor = ensureVirtualGamepadCursor();
     if (!cursor) return;
-    const isMovie = Boolean(document.querySelector(
-        '.fullscreen-video-overlay:not(.hidden), '
-        + '.cinematic-overlay:not(.hidden), '
-        + '.class-intro-overlay:not(.is-closing), '
-        + '.cinematic-still-overlay:not(.is-closing), '
-        + '#cutscene-overlay.is-active, '
-        + '.rgb-cinematic--visible'
-    ));
+    const isMovie = isPresentationLayerActive();
     if (!visible || isMovie) {
         cursor.classList.add('hidden');
         return;
@@ -2195,6 +2224,18 @@ function applyReticleState(crosshair) {
     return visible;
 }
 
+// A reticle parked on a HUD panel (e.g. where the deploy click left the
+// pointer, right over RADAR SCAN) reads as a broken control, not an aim point.
+const HUD_PANEL_SELECTOR = '.hud-header, .level-indicator, #pickup-counter-panel, #desktop-compass, '
+    + '.hud-stack-card, .hud-mission-stack > *, .hud-corner-settings, #loop-step-hud, '
+    + '#expedition-briefing-card, #compound-location-title';
+
+function isPointOverHudPanel(clientX, clientY) {
+    if (!Number.isFinite(clientX) || !Number.isFinite(clientY)) return false;
+    const element = document.elementFromPoint(clientX, clientY);
+    return Boolean(element?.closest?.(HUD_PANEL_SELECTOR));
+}
+
 function updateGameplayCrosshair(clientX, clientY, visible = true) {
     const crosshair = document.getElementById('gameplay-crosshair');
     if (!crosshair) return;
@@ -2203,7 +2244,10 @@ function updateGameplayCrosshair(clientX, clientY, visible = true) {
     lastReticleVisibleIntent = visible;
     const stateAllowsVisible = applyReticleState(crosshair);
     const shouldShow = visible && stateAllowsVisible && appPhase === 'gameplay'
-        && Boolean(window.game?.isGameplayInputActive?.());
+        && Boolean(window.game?.isGameplayInputActive?.())
+        // Never at the viewport origin for want of a position.
+        && Number.isFinite(lastReticleClientX) && Number.isFinite(lastReticleClientY)
+        && !isPointOverHudPanel(lastReticleClientX, lastReticleClientY);
     crosshair.classList.toggle('hidden', !shouldShow);
     if (shouldShow && Number.isFinite(clientX) && Number.isFinite(clientY)) {
         crosshair.style.left = `${clientX}px`;
@@ -4057,6 +4101,78 @@ function scheduleTopHudNotificationTimer() {
     }, duration);
 }
 
+// The left column (level indicator -> loot) and right column (notification
+// deck -> mission stack) are separately positioned, but each upper block
+// grows at runtime: run-modifier chips wrap under the level indicator, and
+// radio cards vary in height and deck depth. Fixed CSS tops guessed those
+// heights and lost, so the lower block is pinned under the measured bottom.
+const HUD_COLUMN_GAP_PX = 8;
+
+// Natural (stylesheet) top per element, re-measured only when its classes or
+// the viewport change: clearing the inline top on every pass would restart
+// the mission stack's `top` transition and make it twitch.
+const hudNaturalTops = new WeakMap();
+
+function naturalTopOf(element, parentTop) {
+    const signature = `${element.className}|${window.innerWidth}x${window.innerHeight}`;
+    const cached = hudNaturalTops.get(element);
+    if (cached?.signature === signature) return cached.top;
+    const inline = element.style.top;
+    const pinned = element.style.getPropertyValue('--hud-pinned-top');
+    element.style.removeProperty('top');
+    element.style.removeProperty('--hud-pinned-top');
+    const top = element.getBoundingClientRect().top - parentTop;
+    if (inline) element.style.top = inline;
+    if (pinned) element.style.setProperty('--hud-pinned-top', pinned);
+    hudNaturalTops.set(element, { signature, top });
+    return top;
+}
+
+function pinBelow(upperBottom, lower) {
+    const parentTop = (lower.offsetParent ?? document.body).getBoundingClientRect().top;
+    const natural = naturalTopOf(lower, parentTop);
+    const needed = upperBottom + HUD_COLUMN_GAP_PX - parentTop;
+    if (needed <= natural + 0.5) {
+        lower.style.removeProperty('top');
+        lower.style.removeProperty('--hud-pinned-top');
+        return;
+    }
+    const next = `${Math.round(needed)}px`;
+    // Both: a plain inline top for stylesheets that leave `top` alone, and
+    // the variable for override sheets that pin it with !important.
+    if (lower.style.top !== next) lower.style.top = next;
+    if (lower.style.getPropertyValue('--hud-pinned-top') !== next) lower.style.setProperty('--hud-pinned-top', next);
+}
+
+function isShown(element) {
+    if (!element) return false;
+    const rect = element.getBoundingClientRect();
+    return rect.width > 0 && rect.height > 0 && getComputedStyle(element).display !== 'none';
+}
+
+function syncHudColumnLayout() {
+    const level = document.querySelector('.level-indicator');
+    const loot = document.getElementById('pickup-counter-panel');
+    if (isShown(level) && isShown(loot)) {
+        const a = level.getBoundingClientRect();
+        const b = loot.getBoundingClientRect();
+        // Only when they share a column; narrow layouts move the loot panel.
+        if (Math.min(a.right, b.right) - Math.max(a.left, b.left) > 0) pinBelow(a.bottom, loot);
+        else {
+            loot.style.removeProperty('top');
+            loot.style.removeProperty('--hud-pinned-top');
+        }
+    }
+    const mission = document.querySelector('.hud-mission-stack');
+    if (mission) {
+        const cards = [...document.querySelectorAll('.hud-notification-stack .hud-stack-card')].filter(isShown);
+        if (cards.length) pinBelow(Math.max(...cards.map((card) => card.getBoundingClientRect().bottom)), mission);
+        else mission.style.removeProperty('top');
+    }
+}
+window.syncHudColumnLayout = syncHudColumnLayout;
+window.addEventListener('resize', () => requestAnimationFrame(syncHudColumnLayout));
+
 function updateHudNotificationDeck() {
     const stack = document.querySelector('.hud-notification-stack');
     if (!stack) return;
@@ -4071,6 +4187,7 @@ function updateHudNotificationDeck() {
     stack.classList.toggle('has-decked-cards', hasCards);
     document.querySelector('.hud-mission-stack')?.classList.toggle('is-below-notifications', hasCards);
     scheduleTopHudNotificationTimer();
+    requestAnimationFrame(syncHudColumnLayout);
 }
 window.updateHudNotificationDeck = updateHudNotificationDeck;
 
@@ -6342,6 +6459,19 @@ window.addEventListener('location-discovered', (event) => {
     fadeHudCard(card, COMPOUND_LOCATION_VISIBLE_MS, compoundLocationTimerRef);
 });
 
+const GATE_CHALLENGE_KEYS = Object.freeze({
+    elite_warden: 'ui.expedition.gate_challenges.elite_warden',
+    collapsed_approach: 'ui.expedition.gate_challenges.collapsed_approach',
+    infested_approach: 'ui.expedition.gate_challenges.infested_approach',
+    blackout: 'ui.expedition.gate_challenges.blackout'
+});
+
+window.addEventListener('gate-challenge', (event) => {
+    const { challenge, ring } = event?.detail ?? {};
+    const key = GATE_CHALLENGE_KEYS[challenge];
+    if (key && isGameplayHudActive()) showBiomePrompt(t(key, { ring }));
+});
+
 window.addEventListener('world-transformed', (event) => {
     const { type, id, outcome } = event?.detail ?? {};
     const site = COMPOUND_SITE_KEYS[id] ? t(COMPOUND_SITE_KEYS[id]) : '';
@@ -7194,7 +7324,15 @@ function installHudCompass() {
         syncHudCompassVisibility();
         updateHudCompass();
         const now = performance.now();
-        if (!desktopCompass.classList.contains('hidden') && now - (step.lastMapDraw ?? 0) >= 200) {
+        // Cards slide and chips wrap without firing resize; keep the columns
+        // clear on the same light cadence as the minimap.
+        if (now - (step.lastHudLayout ?? 0) >= 250) {
+            syncHudColumnLayout();
+            step.lastHudLayout = now;
+        }
+        // Redraw faster while a radar pulse is sweeping so the reveal animates.
+        const mapInterval = isRadarScanAnimating(window.game?.lastRadarScan, now) ? 50 : 200;
+        if (!desktopCompass.classList.contains('hidden') && now - (step.lastMapDraw ?? 0) >= mapInterval) {
             drawTacticalMapOverlay('hud-blueprint-canvas', true);
             if (document.getElementById('tactical-telemeter-box')?.classList.contains('hidden')) {
                 window.game?.updateTacticalTelemeter?.(null);
@@ -11187,6 +11325,39 @@ function pollTacticalMapGamepadInput() {
     if (pad.buttons?.[5]?.pressed) adjustTacticalMapZoom(0.02);
 }
 
+// Unscanned space: a dim diagonal static, so fog reads as "unknown" rather
+// than as empty floor. One tile per document, reused by both map canvases.
+let mapFogTile = null;
+function getMapFogPattern(ctx) {
+    if (!mapFogTile) {
+        mapFogTile = document.createElement('canvas');
+        mapFogTile.width = 16;
+        mapFogTile.height = 16;
+        const tile = mapFogTile.getContext('2d');
+        if (tile) {
+            tile.fillStyle = '#070d14';
+            tile.fillRect(0, 0, 16, 16);
+            tile.strokeStyle = 'rgba(120, 160, 190, 0.09)';
+            tile.lineWidth = 1;
+            tile.beginPath();
+            tile.moveTo(0, 16);
+            tile.lineTo(16, 0);
+            tile.moveTo(-4, 4);
+            tile.lineTo(4, -4);
+            tile.moveTo(12, 20);
+            tile.lineTo(20, 12);
+            tile.stroke();
+            tile.fillStyle = 'rgba(160, 190, 210, 0.07)';
+            for (const [x, y] of [[3, 5], [11, 2], [7, 12], [14, 9]]) tile.fillRect(x, y, 1, 1);
+        }
+    }
+    return ctx.createPattern(mapFogTile, 'repeat');
+}
+
+function isRadarScanAnimating(scan, now = performance.now()) {
+    return Boolean(scan && now - scan.at < (scan.duration ?? 1200) + 600);
+}
+
 function drawTacticalMapOverlay(canvasId = 'tactical-map-canvas', compact = false) {
     const view = compact ? { zoom: 2.6, panX: 0, panY: 0, debugRevealAll: false } : tacticalMapState;
     const canvas = document.getElementById(canvasId);
@@ -11198,7 +11369,7 @@ function drawTacticalMapOverlay(canvasId = 'tactical-map-canvas', compact = fals
     const height = canvas.height;
     ctx.clearRect(0, 0, width, height);
 
-    ctx.fillStyle = '#04080e';
+    ctx.fillStyle = getMapFogPattern(ctx) ?? '#04080e';
     ctx.fillRect(0, 0, width, height);
 
     const mapState = window.game?.getTacticalMapState?.() ?? {
@@ -11285,15 +11456,59 @@ function drawTacticalMapOverlay(canvasId = 'tactical-map-canvas', compact = fals
             continue;
         }
 
+        // Scanned ground cuts a clean hole in the fog before it is painted,
+        // so revealed space and unscanned space never blend together.
+        const cellPixels = Math.max(1.2, cellSize + 0.25);
+        ctx.globalAlpha = 1;
+        ctx.fillStyle = '#02060b';
         for (const cell of chunk.cells ?? []) {
             const p = worldToMap(chunk.chunkX * chunkSize + cell.x, chunk.chunkY * chunkSize + cell.y);
             if (p.x < -cellSize || p.x > width || p.y < -cellSize || p.y > height) continue;
-            ctx.globalAlpha = cell.kind === 'door' ? 1 : cell.kind === 'room' ? 0.72 : 0.5;
-            ctx.fillStyle = cell.kind === 'door' ? '#ffd15c' : cell.kind === 'room' ? mapPrimary : mapSecondary;
-            ctx.fillRect(p.x, p.y, Math.max(1.2, cellSize + 0.25), Math.max(1.2, cellSize + 0.25));
+            ctx.fillRect(p.x, p.y, cellPixels, cellPixels);
+        }
+        for (const cell of chunk.cells ?? []) {
+            const p = worldToMap(chunk.chunkX * chunkSize + cell.x, chunk.chunkY * chunkSize + cell.y);
+            if (p.x < -cellSize || p.x > width || p.y < -cellSize || p.y > height) continue;
+            ctx.globalAlpha = cell.kind === 'door' ? 1 : cell.kind === 'room' ? 0.72 : cell.kind === 'wall' ? 0.3 : 0.5;
+            ctx.fillStyle = cell.kind === 'door' ? '#ffd15c'
+                : cell.kind === 'room' ? mapPrimary
+                    : cell.kind === 'wall' ? '#8fb3c7'
+                        : mapSecondary;
+            ctx.fillRect(p.x, p.y, cellPixels, cellPixels);
         }
     }
     ctx.globalAlpha = 1;
+
+    // A radar pulse sweeps outward on the map as it does in the world, and
+    // the ground it just uncovered flashes before settling into the map.
+    const radarScan = mapState.radarScan;
+    const scanAge = radarScan ? performance.now() - radarScan.at : Infinity;
+    if (radarScan && scanAge < (radarScan.duration ?? 1200) + 600) {
+        const sweep = Math.min(1, scanAge / (radarScan.duration ?? 1200));
+        const flash = Math.max(0, 1 - scanAge / ((radarScan.duration ?? 1200) + 600));
+        if (flash > 0 && radarScan.freshCells?.size) {
+            ctx.fillStyle = '#e8fbff';
+            const flashPixels = Math.max(1.2, cellSize + 0.25);
+            for (const key of radarScan.freshCells) {
+                const [wx, wz] = key.split(',').map(Number);
+                if (Math.hypot(wx - radarScan.x, wz - radarScan.z) > sweep * (radarScan.radius + 3)) continue;
+                const p = worldToMap(wx, wz);
+                if (p.x < -cellSize || p.x > width || p.y < -cellSize || p.y > height) continue;
+                ctx.globalAlpha = 0.55 * flash;
+                ctx.fillRect(p.x, p.y, flashPixels, flashPixels);
+            }
+        }
+        if (sweep < 1) {
+            const center = worldToMap(radarScan.x, radarScan.z);
+            ctx.beginPath();
+            ctx.arc(center.x, center.y, sweep * radarScan.radius * cellSize, 0, Math.PI * 2);
+            ctx.globalAlpha = 0.85 * (1 - sweep * sweep);
+            ctx.strokeStyle = '#00d2ff';
+            ctx.lineWidth = compact ? 1.5 : 2;
+            ctx.stroke();
+        }
+        ctx.globalAlpha = 1;
+    }
 
     // Render recent traversal as independently fading segments. A single
     // opaque path made old runs accumulate into a permanent map scribble.

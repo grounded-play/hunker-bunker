@@ -1543,6 +1543,12 @@
         "camp_fortified": "> {site} FORTIFIED — TURRETS HOLD THE PERIMETER",
         "hive_bonded": "> {site} BONDED — INFESTED GROUND PARTS FOR YOU",
         "hive_harvested": "> {site} HARVESTED — ITS BROOD RUNS ENRAGED"
+      },
+      "gate_challenges": {
+        "elite_warden": "> RING {ring} GATE — AN ELITE WARDEN HOLDS THE THRESHOLD",
+        "collapsed_approach": "> RING {ring} GATE — THE APPROACH HAS COLLAPSED. FIND A WAY THROUGH THE RUBBLE",
+        "infested_approach": "> RING {ring} GATE — THE APPROACH IS CRAWLING WITH HOSTILES",
+        "blackout": "> RING {ring} GATE — GRID DEAD. THE APPROACH RUNS DARK"
       }
     }
   },

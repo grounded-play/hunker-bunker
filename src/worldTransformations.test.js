@@ -99,7 +99,7 @@ describe('world transformations', () => {
         expect(next.id).not.toBe(best.id);
         expect(next.implemented).not.toBe(false);
         const all = WEAPON_OVERCLOCKS.filter((drop) => drop.implemented !== false).map((drop) => drop.id);
-        expect(selectHarvestOverclock(WEAPON_OVERCLOCKS, all).id).toBe(best.id);
+        expect(selectHarvestOverclock(WEAPON_OVERCLOCKS, all)).toBeNull();
         expect(selectHarvestOverclock([], [])).toBeNull();
     });
 

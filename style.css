@@ -7326,6 +7326,20 @@ html.boot-cursor-hidden * {
   cursor: none !important;
 }
 
+/* Movies, cinematics, cutscenes and door transitions (main.js
+   PRESENTATION_LAYER_SELECTOR): no native pointer, tactical cursor or
+   gameplay reticle on top of the presentation. */
+html.presentation-cursor-hidden,
+html.presentation-cursor-hidden * {
+  cursor: none !important;
+}
+
+html.presentation-cursor-hidden #tactical-cursor,
+html.presentation-cursor-hidden #gameplay-crosshair,
+html.presentation-cursor-hidden .virtual-gamepad-cursor {
+  display: none !important;
+}
+
 html.boot-cursor-hidden #tactical-cursor {
   display: none !important;
   opacity: 0 !important;

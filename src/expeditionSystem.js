@@ -197,7 +197,8 @@ export function deriveExpeditionSeed(campaignSeed, expeditionIndex = 0) {
 }
 
 export function createExpeditionProfile(campaignSeed, expeditionIndex = 0) {
-    const normIndex = Math.max(0, Math.floor(Number(expeditionIndex) || 0));
+    const requestedIndex = Math.floor(Number(expeditionIndex));
+    const normIndex = Number.isSafeInteger(requestedIndex) && requestedIndex >= 0 ? requestedIndex : 0;
     const seed = deriveExpeditionSeed(Number(campaignSeed) >>> 0, normIndex);
     
     // Deterministic selection based on expedition seed
@@ -222,6 +223,25 @@ export function createExpeditionProfile(campaignSeed, expeditionIndex = 0) {
         obstacleKey,
         title: `EXPEDITION ${normIndex + 1} — ${condition.name.toUpperCase()}`,
         briefing: `${condition.tagline} · THREAT LEVEL ${threatIndex}`
+    };
+}
+
+// Imported profiles may predate current tuning. Retain a valid deployment's
+// selected condition and bounty, while repairing its identity and refreshing
+// catalog text/numbers. A profile from another campaign cannot supply weather.
+export function normalizeExpeditionProfile(raw, campaignSeed, expeditionIndex) {
+    const generated = createExpeditionProfile(campaignSeed, expeditionIndex);
+    if (!raw || Array.isArray(raw) || raw.campaignSeed !== generated.campaignSeed
+        || raw.expeditionIndex !== generated.expeditionIndex
+        || raw.expeditionSeed !== generated.expeditionSeed) return generated;
+    const condition = EXPEDITION_CONDITIONS.find((entry) => entry.id === raw.condition?.id) ?? generated.condition;
+    const bounty = EXPEDITION_BOUNTIES.find((entry) => entry.id === raw.bounty?.id) ?? generated.bounty;
+    return {
+        ...generated,
+        condition,
+        bounty,
+        title: `EXPEDITION ${generated.expeditionIndex + 1} — ${condition.name.toUpperCase()}`,
+        briefing: `${condition.tagline} · THREAT LEVEL ${generated.threatIndex}`
     };
 }
 

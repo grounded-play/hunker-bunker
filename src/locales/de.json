@@ -1543,6 +1543,12 @@
         "camp_fortified": "> {site} BEFESTIGT — GESCHÜTZE HALTEN DEN RING",
         "hive_bonded": "> {site} VERBUNDEN — VERSEUCHTER BODEN WEICHT FÜR DICH",
         "hive_harvested": "> {site} GEERNTET — SEINE BRUT TOBT"
+      },
+      "gate_challenges": {
+        "elite_warden": "> TOR RING {ring} — EIN ELITE-WÄCHTER HÄLT DIE SCHWELLE",
+        "collapsed_approach": "> TOR RING {ring} — DER ZUGANG IST EINGESTÜRZT. FINDE EINEN WEG DURCH DEN SCHUTT",
+        "infested_approach": "> TOR RING {ring} — DER ZUGANG WIMMELT VON FEINDEN",
+        "blackout": "> TOR RING {ring} — NETZ TOT. DER ZUGANG LIEGT IM DUNKELN"
       }
     }
   },

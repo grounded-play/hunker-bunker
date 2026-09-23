@@ -116,15 +116,15 @@ const OVERCLOCK_RARITY_RANK = Object.freeze({ common: 0, rare: 1, mythic: 2, cor
 
 /**
  * The exotic overclock a radical harvest tears out of the hive: the rarest
- * implemented weapon overclock the carrier does not already run. Falls back
- * to any implemented one, and to null when the catalog has none.
+ * implemented weapon overclock the carrier does not already hold or have
+ * waiting on the ground. Exhausting that pool leaves the resource payout.
  */
 export function selectHarvestOverclock(pool, heldIds = []) {
     const held = new Set(heldIds);
     const ranked = (pool ?? [])
         .filter((drop) => drop?.type === 'overclock' && drop.implemented !== false)
         .sort((a, b) => (OVERCLOCK_RARITY_RANK[b.rarity] ?? 0) - (OVERCLOCK_RARITY_RANK[a.rarity] ?? 0));
-    return ranked.find((drop) => !held.has(drop.id)) ?? ranked[0] ?? null;
+    return ranked.find((drop) => !held.has(drop.id)) ?? null;
 }
 
 export function isWithinHarvestedHiveRange(x, z, harvestedHivePositions, radius = HARVESTED_HIVE_ENRAGE_RADIUS) {

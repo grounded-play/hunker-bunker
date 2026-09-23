@@ -384,7 +384,9 @@
 #ui .pickup-counter-panel,
 #game-container.fullscreen-mode ~ #ui .pickup-counter-panel {
   position: absolute !important;
-  top: 132px !important;
+  /* main.js syncHudColumnLayout sets --hud-pinned-top when run-modifier
+     chips make the level indicator taller than this default slot. */
+  top: var(--hud-pinned-top, 132px) !important;
   left: 16px !important;
   right: auto !important;
   bottom: auto !important;
@@ -923,7 +925,7 @@
   .desktop-compass { width: clamp(200px, 18vw, 260px); padding: 10px; bottom: 18px; border: 1px solid #28515b; border-left: 2px solid #41b9c8; border-radius: 5px; background: rgba(5, 14, 19, .92); }
   .desktop-compass__header { font-size: 10px; letter-spacing: .1em; }
   .level-indicator { width: 172px; padding: 9px 11px; border-radius: 5px; }
-  .pickup-counter-panel { top: 132px; width: 172px; padding: 8px 11px; }
+  .pickup-counter-panel { top: var(--hud-pinned-top, 132px); width: 172px; padding: 8px 11px; }
   .pickup-counter-panel__row { padding: 2px 0; font-size: 11px; }
   .hud-header { left: 208px; gap: 7px; }
   .weapon-status-panel, .ship-status-panel, .vitals-panel--topbar, .class-ability-panel { border-radius: 5px; box-shadow: none; }

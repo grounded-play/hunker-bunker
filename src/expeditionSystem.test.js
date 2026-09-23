@@ -5,6 +5,7 @@ import {
     EXPEDITION_CONDITION_EFFECTS,
     deriveExpeditionSeed,
     createExpeditionProfile,
+    normalizeExpeditionProfile,
     getExpeditionEffects,
     composeExpeditionIntoLoadoutMods,
     scaleExpeditionSalvage,
@@ -87,6 +88,21 @@ describe('expeditionSystem', () => {
         const pString = createExpeditionProfile('5555', '3');
         expect(pString.expeditionIndex).toBe(3);
         expect(pString.campaignSeed).toBe(5555);
+        expect(createExpeditionProfile(100, Infinity)).toEqual(createExpeditionProfile(100, 0));
+        expect(createExpeditionProfile(100, Number.MAX_SAFE_INTEGER + 1)).toEqual(createExpeditionProfile(100, 0));
+    });
+
+    it('retains valid saved condition choices but refreshes tuning and rejects another deployment identity', () => {
+        const saved = createExpeditionProfile(100, 2);
+        const condition = EXPEDITION_CONDITIONS.find((entry) => entry.id !== saved.condition.id);
+        const stale = { ...saved, condition: { ...condition, scrapMultiplier: 99 }, threatIndex: 99 };
+        const normalized = normalizeExpeditionProfile(stale, 100, 2);
+        expect(normalized.condition).toEqual(condition);
+        expect(normalized.threatIndex).toBe(saved.threatIndex);
+        expect(normalized.title).toContain(condition.name.toUpperCase());
+        expect(normalizeExpeditionProfile(stale, 101, 2)).toEqual(createExpeditionProfile(101, 2));
+        expect(normalizeExpeditionProfile(stale, 100, 3)).toEqual(createExpeditionProfile(100, 3));
+        expect(normalizeExpeditionProfile([], 100, 2)).toEqual(saved);
     });
 
     it('gives every condition a real, distinct gameplay effect', () => {

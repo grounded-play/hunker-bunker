@@ -5,11 +5,16 @@ and worklogs are evidence or history; they do not override this file. Update a
 row when its implementation or acceptance state changes and link to evidence
 instead of duplicating it here.
 
-Last verified: 2026-09-18 · Sprint 41 · `dev/sprint-41` · `v2.4.7-beta`
+Last verified: 2026-09-23 · Sprint 45 · `dev/sprint-45` · `v2.4.9-beta`
 
 Released in `v2.4.4-beta` and already on `mothership` (`e017b06`): the first deep localization sweep (7 languages, 0 unlocalized runtime strings), Alternate Radio Voice Banks (104 cue slots / 208 takes), all 10 rendered motion ending cinematics, Phase A AgX tone mapping & IBL reflections, and 52 playtest stability tickets (DP-01 through DP-52).
 
-Staged on `dev/sprint-41` and **not yet merged**: localization closed out on the second axis (0 unannotated markup, down from 52; content catalogs at 100%; 1,898 keys per locale at exact parity), the Steam Vault empty-state fix, voice unlock and Soviet Commander Russian dialogue work, and `three` 0.186.0.
+Staged on `dev/sprint-45` and **active in verification**:
+- **Seeded Expedition System**: 5 distinct environmental conditions (`glacial_gale`, `spore_bloom`, `bio_resin_surge`, `geothermal_arc`, `subzero_stillness`) altering lighting, fog, ambient audio, sprint vapor, and kill signatures; tactical briefing cards with dynamic obstacles and combat bounties.
+- **Multi-Room Compounds**: 12 distinct authored room layouts across Survivor Camps and Alien Hives (6 rooms each) with localized location entry title banners across all 7 languages.
+- **Physical World Transformations**: Ring 2 canyon bridge construction with traversable 3D steel deck; camp perimeter fortification with automated defense turrets; hive choice consequences (communion bio-conduit shortcut to crash site vs radical harvest exotic weapon overclock payout).
+- **Radar & Tactical Map**: Room-reach-bounded radar pulse sweep with animated reveal and textured fog-of-war.
+- **Inter-Campaign Deterministic Variety**: Procedural campaign layouts vary deterministically between seeds while maintaining save-file spatial stability.
 
 Status vocabulary:
 
@@ -21,7 +26,7 @@ Status vocabulary:
 
 | Area | Current truth | Remaining acceptance or constraint |
 | --- | --- | --- |
-| Core expedition | Act 1 is playable; Act 2, queen fight, all 10 rendered motion endings, faction state, and Depth Contract are wired end to end. | A recorded 35–45 minute new-player Proof Run remains open. |
+| Core expedition | Act 1 & 2 playable; seeded expedition system, multi-room camp/hive compounds, physical world transformations (canyon bridge, camp turrets, bio-conduits), 10 motion endings, faction state, and Depth Contract wired end to end. | A recorded 35–45 minute new-player Proof Run remains open. |
 | Depth Contract | Ring pressure, O₂ deltas, salvage multipliers, crossing ritual, and director aggression are implemented and tested. | Elite promotion is connected through `eliteEnemies.js`; loot distinguishes promoted elites from wounded enrage. Human comprehension, elite audio and balance remain open. |
 | Relics | All 8 transformative relics are runtime-wired and tested. | Build diversity and exploit/balance playtesting remain open. |
 | Co-op | Host-authoritative enemy sync, roster/loadout sync, ready-up, reconnect, and host failover are code-backed. | Two real Steam accounts completing one production expedition remains open. |
@@ -40,10 +45,10 @@ Status vocabulary:
 | Mayor Tina | Hostile lifecycle wired with warning hit, cup removal, grounded actor chase with attack cooldown, and clean reset. | Packaged visual sign-off remains open. |
 | Retail asset budget | Budget raised from 2705 MiB to 2725 MiB in Sprint 40 to accommodate Wave 2 radio takes, persona art, and ending cinematics; presubmit check passes cleanly. | Web/source audit does not certify Steam packaging or clear external actor rights. |
 | Presentation | Phase A visual overhaul landed: AgX tone mapping, PMREM deep space reflections on 94 PBR materials, and selective bloom. Upgraded tilt-shift bokeh, dynamic shadows, 3D tracers, death bursts, and camera trauma shake. | Phase B surface depth (derived normal/roughness maps) and hardware visual sign-off remain open. |
-| Automated suite | `npm test` passes **3,548 tests across 392 files** as of 2026-09-16; 9/9 Playwright E2E browser tests pass; lint (0 errors), presubmit, and production web/media build pass cleanly. | Hardware-only behavior and a full expedition are not covered by this count. |
+| Automated suite | `npm test` passes **3,903 tests across 422 files** as of 2026-09-23; 9/9 Playwright E2E browser tests pass; lint (0 errors), presubmit, and production web/media build pass cleanly. | Hardware-only behavior and a full expedition are not covered by this count. |
 
 ## Current milestone
 
-Sprint 41 is active on `dev/sprint-41`, developing from the `v2.4.5-beta` baseline toward `v2.4.6-beta`. Its focus is architecture kit GLB in-world routing, faction prop placement, theme matrix hole closures, Visual Overhaul Phase B (derived normal/roughness maps), multi-chunk setpiece allocator integration, and debug module code splitting.
+Sprint 45 is active on `dev/sprint-45` (`v2.4.9-beta`). Its focus is seeded expedition variety, compound multi-room structures, meaningful choices & physical world transformations, and progression consistency across Steam playthroughs.
 The executable plan and 10-sprint retrospective audit are in [docs/planning/sprint-41-audit-and-roadmap.md](docs/planning/sprint-41-audit-and-roadmap.md); the wider sequence is in [docs/planning/repository-roadmap.md](docs/planning/repository-roadmap.md).
 

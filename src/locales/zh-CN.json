@@ -1543,6 +1543,12 @@
         "camp_fortified": "> {site} 已加固 — 炮塔守住外围",
         "hive_bonded": "> 已与{site}结缘 — 感染之地为你让路",
         "hive_harvested": "> 已收割{site} — 其幼体陷入狂暴"
+      },
+      "gate_challenges": {
+        "elite_warden": "> 第{ring}环闸门 — 一名精英守卫把守着入口",
+        "collapsed_approach": "> 第{ring}环闸门 — 通道已坍塌。在瓦砾中找出路",
+        "infested_approach": "> 第{ring}环闸门 — 通道里满是敌人",
+        "blackout": "> 第{ring}环闸门 — 电网失效。通道一片漆黑"
       }
     }
   },

@@ -1543,6 +1543,12 @@
         "camp_fortified": "> {site} FORTIFICADO — LAS TORRETAS SOSTIENEN EL PERÍMETRO",
         "hive_bonded": "> {site} VINCULADA — EL SUELO INFESTADO SE ABRE PARA TI",
         "hive_harvested": "> {site} COSECHADA — SU CRÍA CORRE ENFURECIDA"
+      },
+      "gate_challenges": {
+        "elite_warden": "> PUERTA DEL ANILLO {ring} — UN GUARDIÁN DE ÉLITE CUSTODIA EL UMBRAL",
+        "collapsed_approach": "> PUERTA DEL ANILLO {ring} — EL ACCESO SE DERRUMBÓ. ABRE PASO ENTRE LOS ESCOMBROS",
+        "infested_approach": "> PUERTA DEL ANILLO {ring} — EL ACCESO ESTÁ PLAGADO DE HOSTILES",
+        "blackout": "> PUERTA DEL ANILLO {ring} — RED CAÍDA. EL ACCESO ESTÁ A OSCURAS"
       }
     }
   },

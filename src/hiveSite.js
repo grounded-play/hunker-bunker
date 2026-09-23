@@ -655,6 +655,10 @@ export class HiveSite {
         // owed its meshes once a group exists.
         if ((outcome ?? null) === this.worldOutcome && (this.outcomeGroup || !this.group || !outcome)) return;
         this.worldOutcome = outcome ?? null;
+        this.outcomeGroup?.traverse((child) => {
+            child.geometry?.dispose?.();
+            child.material?.dispose?.();
+        });
         this.outcomeGroup?.removeFromParent();
         this.outcomeGroup = null;
         this.outcomeParts = [];

@@ -383,6 +383,9 @@ import {
 } from './worldTransformations.js';
 import { createCrossingBridgeMesh } from './crossingBridge.js';
 import { getTerritoryLocation } from './territoryStructures.js';
+import { buildRevealedChunkCells, roomsReachedByScan } from './mapReveal.js';
+import { groupDangerZones, lipEdgeQuads } from './dangerZones.js';
+import { GATE_CHALLENGES, GATE_CHALLENGE_TUNING, planGateChallenges } from './gateChallenges.js';
 import {
     ENEMY_SPRITE_LAYOUTS,
     STATIC_ENEMY_SPRITE_PATHS,
@@ -14673,7 +14676,7 @@ export class ThreeGame {
     // A campaign keeps the route generation it was created with; see
     // ROUTE_LAYOUT_VERSION. Everything unsaved uses the current generator.
     getRouteLayoutVersion() {
-        if (this.fixedRunEntropy || this.isMultiplayer || !this._campaignWorldSeed) return ROUTE_LAYOUT_VERSION;
+        if (this.fixedRunEntropy || this.isMultiplayer || this._campaignWorldSeed == null) return ROUTE_LAYOUT_VERSION;
         const state = campaignWorldStore.getState();
         return state?.seed === this._campaignWorldSeed ? state.layoutVersion : ROUTE_LAYOUT_VERSION;
     }
@@ -14952,6 +14955,9 @@ export class ThreeGame {
 
     buildHiveChoiceOptions(record) {
         const options = [];
+        const parleyExpired = record.id === 'hive_suture'
+            && this.isDayDeadlineExpired?.('hive_suture_parley');
+        const bondBenefit = 'Bond 3 opens a passage from the escape room to the ship and adds 6% movement speed in bio sectors (15% total cap).';
         const dead = ['slain', 'queen_consumed', 'expired_by_cure'].includes(record.status);
         const gone = ['rescued', 'aboard', 'abandoned'].includes(record.status);
         if (dead || gone) {
@@ -14981,16 +14987,21 @@ export class ThreeGame {
                 options.push({
                     action: 'hive-final',
                     hiveId: record.id,
-                    label: 'ACCEPT THEIR OATH',
-                    desc: 'Their rite completes; they are fully yours. Consequence: The queen loses a hand.'
+                    label: parleyExpired ? 'ACCEPT THEIR OATH — MISSED' : 'ACCEPT THEIR OATH',
+                    desc: parleyExpired ? 'The parley window closed while you slept.'
+                        : `Complete their rite and earn full trust. ${bondBenefit}`,
+                    disabled: Boolean(parleyExpired)
                 });
             }
         }
+        const fullyTended = record.bond >= ACT2_MAX_BOND && record.extractionLevel <= 0;
         options.push({
             action: 'hive-tend',
             hiveId: record.id,
-            label: 'RETURN RESOURCES — 5 SHELLS',
-            desc: `Give back what was taken. Consequence: Bond ${record.bond}/${ACT2_MAX_BOND}; heals one extraction wound.`
+            label: fullyTended ? 'HIVE FULLY TENDED' : 'RETURN RESOURCES — 5 SHELLS',
+            desc: fullyTended ? 'Full trust; no extraction wounds remain.'
+                : `Gain 1 bond (${record.bond}/${ACT2_MAX_BOND}) and heal one extraction wound. ${bondBenefit}`,
+            disabled: fullyTended
         });
 
         const questByHive = {
@@ -15002,8 +15013,7 @@ export class ThreeGame {
         if (quest) {
             const done = record.questFlags?.[quest.id] === 'done';
             const locked = record.bond < 2;
-            const deadlineExpired = record.id === 'hive_suture'
-                && this.isDayDeadlineExpired?.('hive_suture_parley');
+            const deadlineExpired = parleyExpired;
             options.push({
                 action: 'hive-quest',
                 hiveId: record.id,
@@ -15013,7 +15023,7 @@ export class ThreeGame {
                         : locked ? `${quest.label} — LOCKED` : quest.label,
                 desc: deadlineExpired && !done
                     ? 'The parley window closed while you slept.'
-                    : locked && !done ? `Requires bond 2. Current bond ${record.bond}.` : quest.desc,
+                    : locked && !done ? `Requires bond 2. Current bond ${record.bond}.` : `${quest.desc} Gain 1 bond. ${bondBenefit}`,
                 disabled: done || locked || deadlineExpired
             });
         }
@@ -15022,7 +15032,7 @@ export class ThreeGame {
             action: 'hive-network',
             hiveId: record.id,
             label: record.networked ? 'CHORUS LINKED' : 'LINK THE CHORUS',
-            desc: 'Wire this hive into the synapse. Consequence: Networked = true. All living hives linked brings chorus online.',
+            desc: 'Light this hive\'s synapse ring. Link every living hive to bring the chorus online.',
             disabled: record.networked
         });
 
@@ -15041,7 +15051,7 @@ export class ThreeGame {
             action: 'hive-harvest',
             hiveId: record.id,
             label: 'HARVEST THE HIVE',
-            desc: 'Strip it for parts. Consequence: OBEDIENCE +1, SEATS +0. (Kills the being, queen approves)'
+            desc: 'Kill the being for 12 shells, 3 of each resource and an unclaimed overclock when available. Gain 1 obedience. Lose its bond bonus and passage; new nearby hostiles move faster, and a guardian attacks.'
         });
 
         if (this.act2.getState().queenStatus === 'aboard') {
@@ -15126,7 +15136,12 @@ export class ThreeGame {
             this.bank?.addShells?.(12);
             // The radical harvest's exotic payout: an overclock ripped from
             // the hive's core, dropped where the being died.
-            const overclock = selectHarvestOverclock(WEAPON_OVERCLOCKS, (this.runOverclocks ?? []).map((drop) => drop.id));
+            const unavailableOverclocks = [
+                ...(this.runOverclocks ?? []),
+                ...(this.inRunLootDrops ?? []).map((pickup) => pickup.userData?.item)
+            ].filter(Boolean).map((drop) => drop.id);
+            const overclockPool = [...WEAPON_OVERCLOCKS, ...SUIT_RELICS].filter((drop) => drop.type === 'overclock');
+            const overclock = selectHarvestOverclock(overclockPool, unavailableOverclocks);
             if (overclock) this.spawnPhysicalLootDrop?.(hive.pos.x + 1.2, hive.pos.z, overclock);
             this.spawnGearPoofEffect(hive.pos.x, hive.pos.z, 'bunker_junk_rare');
             this.triggerCameraShake?.(0.3, 0.5);
@@ -16382,6 +16397,7 @@ export class ThreeGame {
         this._recordedWorldTransformations = new Set();
         this.expeditionIndex = 0;
         this.expeditionSeed = null;
+        this.setActiveExpedition?.(null);
         this.dayState = createDayState();
         this.fatigueState = createFatigueState();
         this.overnightState = createOvernightState();
@@ -18908,21 +18924,15 @@ export class ThreeGame {
                 const [chunkX, chunkY] = key.split(',').map(Number);
                 const grid = this.chunkCache.get(key);
                 if (!grid) continue;
-                const rooms = this.wfcMetadataCache?.get(key)?.roomInstances ?? [];
-                const roomCells = new Set(rooms
-                    .filter((room) => this.discoveredMapRoomKeys?.has(`${key}:${room.id}`))
-                    .flatMap((room) => room.footprint ?? [])
-                    .map((cell) => `${cell.x},${cell.y}`));
-                const cells = [];
-                for (let y = 0; y < grid.length; y += 1) {
-                    for (let x = 0; x < (grid[y]?.length ?? 0); x += 1) {
-                        const tile = grid[y][x];
-                        if (!['.', 'D', 'R', 'B', 'L', 'O'].includes(tile)) continue;
-                        const worldKey = `${chunkX * this.chunkSize + x},${chunkY * this.chunkSize + y}`;
-                        if (rooms.length > 0 && !roomCells.has(`${x},${y}`) && !this.discoveredMapCellKeys?.has(worldKey)) continue;
-                        cells.push({ x, y, kind: tile === 'D' ? 'door' : roomCells.has(`${x},${y}`) ? 'room' : 'hall' });
-                    }
-                }
+                const cells = buildRevealedChunkCells(grid, {
+                    chunkKey: key,
+                    chunkX,
+                    chunkY,
+                    chunkSize: this.chunkSize,
+                    rooms: this.wfcMetadataCache?.get(key)?.roomInstances ?? [],
+                    discoveredRoomKeys: this.discoveredMapRoomKeys ?? new Set(),
+                    discoveredCellKeys: this.discoveredMapCellKeys ?? new Set()
+                });
                 detailedChunks.push({ key, chunkX, chunkY, cells });
             }
             this._cachedDetailedChunks = detailedChunks;
@@ -18965,6 +18975,9 @@ export class ThreeGame {
             home: { x: CRASH_SITE_CENTER, z: CRASH_SITE_CENTER },
             chunkSize: this.chunkSize,
             detailedChunks,
+            // The last radar pulse, so the map can animate the reveal and
+            // flash what it just uncovered.
+            radarScan: this.lastRadarScan ?? null,
             scannedPaths,
             breadcrumbTrail: this.explorationTracker ? this.explorationTracker.getBreadcrumbTrail() : [],
             routeChunks: topology?.routeChunks ?? [],
@@ -18986,6 +18999,7 @@ export class ThreeGame {
         const localX = Math.round(this.player.position.x - chunkX * this.chunkSize);
         const localY = Math.round(this.player.position.z - chunkY * this.chunkSize);
         const chunkKey = `${chunkX},${chunkY}`;
+        if (chunkKey !== this._lastDiscoveryChunkKey) this.enterGateChallengeChunk?.(chunkKey);
 
         if (this._lastDiscoveryChunkKey === chunkKey && this._lastDiscoveryLocalX === localX && this._lastDiscoveryLocalY === localY) {
             return;
@@ -19024,7 +19038,9 @@ export class ThreeGame {
         if (territoryRoom) this.announceTerritoryLocation(territoryRoom);
         else if (!chunkRooms.some((room) => room.siteId)) this._currentTerritoryLocationKey = null;
         for (const room of chunkRooms) {
-            if ((room.footprint ?? []).some((cell) => cell.x === localX && cell.y === localY)) {
+            // Authored rooms carry `interior` instead of a WFC `footprint`.
+            const walkCells = room.footprint?.length ? room.footprint : (room.interior ?? []);
+            if (walkCells.some((cell) => cell.x === localX && cell.y === localY)) {
                 const roomKey = `${chunkKey}:${room.id}`;
                 if (!this.discoveredMapRoomKeys.has(roomKey)) {
                     this.discoveredMapRoomKeys.add(roomKey);
@@ -19227,7 +19243,7 @@ export class ThreeGame {
                     if (status === 'culled' || (this.isAct2Active?.() && ['alive', 'robbed'].includes(status))) continue;
                 } else if (room.siteId?.startsWith('hive_')) {
                     const status = this.getHiveRecord?.(room.siteId)?.status;
-                    if (['harvested', 'destroyed'].includes(status)) continue;
+                    if (['slain', 'queen_consumed', 'expired_by_cure', 'aboard'].includes(status)) continue;
                 }
                 const isSafe = Boolean(
                     room.isSafe === true
@@ -19512,6 +19528,40 @@ export class ThreeGame {
         return this.completedRingCrossingMissionIds.size !== previousSize;
     }
 
+    // This campaign's gate challenges (gateChallenges.js), indexed by the
+    // chunks they cover. A challenge ends when its crossing opens.
+    getGateChallengeForChunk(chunkKey) {
+        if (!this.authoredWorldTiles || !this.worldPlan) return null;
+        if (this._gateChallengeIndexSeed !== this.worldPlan.seed) {
+            this._gateChallengeIndex = new Map();
+            for (const entry of planGateChallenges(this.worldPlan)) {
+                for (const key of entry.approachChunkKeys) {
+                    if (!this._gateChallengeIndex.has(key)) this._gateChallengeIndex.set(key, entry);
+                }
+            }
+            this._gateChallengeIndexSeed = this.worldPlan.seed;
+        }
+        const entry = this._gateChallengeIndex.get(chunkKey);
+        if (!entry || this._openCrossings?.has?.(entry.crossingId)) return null;
+        return entry;
+    }
+
+    enterGateChallengeChunk(chunkKey) {
+        const entry = this.getGateChallengeForChunk(chunkKey);
+        if (!entry) return null;
+        this._announcedGateChallenges ??= new Set();
+        if (!this._announcedGateChallenges.has(entry.crossingId)) {
+            this._announcedGateChallenges.add(entry.crossingId);
+            window.dispatchEvent(new CustomEvent('gate-challenge', {
+                detail: { crossingId: entry.crossingId, ring: entry.ring, challenge: entry.challenge }
+            }));
+        }
+        if (entry.challenge === GATE_CHALLENGES.ELITE_WARDEN && chunkKey === entry.gateChunkKey) {
+            this.spawnDeepAnchorElite?.(entry.crossingId);
+        }
+        return entry;
+    }
+
     getTerritoryRoomCenter(siteId, beatKey) {
         if (!this.authoredWorldTiles) return null;
         const plan = this.ensureAuthoredWorldPlan?.() ?? this.worldPlan;
@@ -19522,7 +19572,7 @@ export class ThreeGame {
     // and multiplayer worlds are rebuilt from scratch every run, so their
     // changes stay live-only, exactly like their maze progress.
     recordWorldTransformation(type, id, details = {}) {
-        if (this.fixedRunEntropy || this.isMultiplayer || !this._campaignWorldSeed) return false;
+        if (this.fixedRunEntropy || this.isMultiplayer || this._campaignWorldSeed == null) return false;
         if (campaignWorldStore.getState()?.seed !== this._campaignWorldSeed) return false;
         const key = `${type}:${id}:${details.outcome ?? ''}`;
         this._recordedWorldTransformations ??= new Set();
@@ -19642,6 +19692,17 @@ export class ThreeGame {
     // the crash site, skipping the ring routes home.
     syncBioConduits(hivesTransformed = {}) {
         this.bioConduits ??= new Map();
+        // A later betrayal replaces the bond's benefits with the harvest's
+        // consequences immediately, including a conduit already in view.
+        for (const [hiveId, group] of this.bioConduits) {
+            if (hivesTransformed[hiveId]?.outcome === HIVE_OUTCOMES.BONDED) continue;
+            group.removeFromParent();
+            group.traverse((child) => {
+                child.geometry?.dispose?.();
+                child.material?.dispose?.();
+            });
+            this.bioConduits.delete(hiveId);
+        }
         for (const [hiveId, entry] of Object.entries(hivesTransformed)) {
             if (entry?.outcome !== HIVE_OUTCOMES.BONDED || this.bioConduits.has(hiveId)) continue;
             const center = this.getTerritoryRoomCenter?.(hiveId, 'escape');
@@ -19708,14 +19769,19 @@ export class ThreeGame {
     }
 
     interactWithBioConduit() {
-        if (!this.isGameplayInputActive?.() || !this.player) return false;
+        if (!this.isGameplayInputActive?.() || !this.player || this.isPlayerDead || this.isInPocket) return false;
         const conduit = this.getBioConduitAt(this.player.position.x, this.player.position.z);
         if (!conduit) return false;
         const spawn = this.getSpawnTile();
-        this.spawnPhysicalBurst?.(this.player.position.x, this.player.position.z, { color: 0x7dffcf, count: 16, upward: 0.3, spread: 1.4 });
-        this.player.position.x = spawn.x + 1.5;
-        this.player.position.z = spawn.y + 1.5;
-        this.syncVisibleChunks?.(true);
+        const destination = typeof this.resolveSpawnPoint === 'function'
+            ? this.resolveSpawnPoint(spawn.x, spawn.y)
+            : { x: spawn.x, z: spawn.y ?? spawn.z };
+        if (destination.exhausted) return false;
+        const origin = { x: this.player.position.x, z: this.player.position.z };
+        // Share respawn's collision-safe landing and teleport's camera,
+        // lights, map depth and chunk refresh instead of moving only x/z.
+        if (!this.teleportPlayerTo(destination.x, destination.z, { safeFloor: false })) return false;
+        this.spawnPhysicalBurst?.(origin.x, origin.z, { color: 0x7dffcf, count: 16, upward: 0.3, spread: 1.4 });
         this.spawnPhysicalBurst?.(this.player.position.x, this.player.position.z, { color: 0x7dffcf, count: 16, upward: 0.3, spread: 1.4 });
         window.AudioManager?.play?.('class_lock', { volume: 0.45, playbackRate: 0.7 });
         window.dispatchEvent(new CustomEvent('bio-conduit-traversed', { detail: { hiveId: conduit.hiveId } }));
@@ -20109,6 +20175,7 @@ export class ThreeGame {
         this._traversalUnlocks = [];
         this.clearCrossingBridges?.();
         this.clearBioConduits?.();
+        this._announcedGateChallenges = new Set();
         this._currentTerritoryLocationKey = null;
         this.wfcMetadataCache?.clear();
         this.proceduralDoorStates?.clear();
@@ -20685,23 +20752,100 @@ export class ThreeGame {
         });
     }
 
-    scanDangerHoles(scanX, scanZ, currentRadius, pingedIds) {
-        const scanRadius = Math.max(0, currentRadius);
-        const minX = Math.floor(scanX - scanRadius - RADAR_HOLE_SCAN_PADDING);
-        const maxX = Math.ceil(scanX + scanRadius + RADAR_HOLE_SCAN_PADDING);
-        const minZ = Math.floor(scanZ - scanRadius - RADAR_HOLE_SCAN_PADDING);
-        const maxZ = Math.ceil(scanZ + scanRadius + RADAR_HOLE_SCAN_PADDING);
-
-        for (let tileZ = minZ; tileZ <= maxZ; tileZ += 1) {
-            for (let tileX = minX; tileX <= maxX; tileX += 1) {
-                const id = `hole:${tileX},${tileZ}`;
-                if (pingedIds.has(id)) continue;
-
+    // Every lethal tile a pulse can reach, grouped into connected zones.
+    // Planned once per scan over the full radius so a canyon rim is judged
+    // whole, not in the slices the sweep happens to cover each frame.
+    planRadarDangerZones(scanX, scanZ, radius) {
+        const reach = Math.max(0, radius) + RADAR_HOLE_SCAN_PADDING;
+        const dangerTiles = new Map();
+        for (let tileZ = Math.floor(scanZ - reach); tileZ <= Math.ceil(scanZ + reach); tileZ += 1) {
+            for (let tileX = Math.floor(scanX - reach); tileX <= Math.ceil(scanX + reach); tileX += 1) {
                 const holeInfo = this.getHoleVisualInfo(tileX, tileZ, { requireCached: true });
-                pingedIds.add(id);
-                this.spawnHoleDangerOutline(holeInfo);
+                if (holeInfo) dangerTiles.set(`${holeInfo.x},${holeInfo.z}`, holeInfo);
             }
         }
+        const walkable = new Set(['.', 'D', VERTICAL_TILE.RAMP, VERTICAL_TILE.BRIDGE, VERTICAL_TILE.LADDER, LEDGE_TILE]);
+        return groupDangerZones(
+            dangerTiles,
+            (x, z) => walkable.has(this.getCachedTileType(x, z)),
+            { x: scanX, z: scanZ }
+        );
+    }
+
+    scanDangerHoles(scanX, scanZ, currentRadius, pingedIds, zones = null) {
+        const plannedZones = zones ?? this.planRadarDangerZones(scanX, scanZ, currentRadius);
+        for (const zone of plannedZones) {
+            const id = `zone:${zone.key}`;
+            if (pingedIds.has(id)) continue;
+            const single = zone.tiles.length === 1;
+            // A zone nobody can step off (no walkable lip) is not a danger.
+            if (!single && zone.lipEdges.length === 0) continue;
+            const distance = single
+                ? Math.hypot(zone.tiles[0].x - scanX, zone.tiles[0].z - scanZ)
+                : zone.minDistance;
+            if (distance > currentRadius + RADAR_HOLE_SCAN_PADDING) continue;
+            pingedIds.add(id);
+            for (const tile of zone.tiles) pingedIds.add(`hole:${tile.x},${tile.z}`);
+            // A lone pit keeps its round ring; anything larger is one zone.
+            if (single) this.spawnHoleDangerOutline(zone.tiles[0]);
+            else this.spawnDangerZoneOutline(zone);
+        }
+    }
+
+    spawnDangerZoneOutline(zone, { duration = RADAR_DANGER_TRACK_SECONDS } = {}) {
+        if (!zone?.lipEdges?.length || !this.scene) return null;
+        const quadGeometry = (quads, y) => {
+            const positions = new Float32Array(quads.length * 18);
+            quads.forEach(([x0, z0, x1, z1], index) => {
+                positions.set([
+                    x0, y, z0, x0, y, z1, x1, y, z0,
+                    x1, y, z0, x0, y, z1, x1, y, z1
+                ], index * 18);
+            });
+            const geometry = new THREE.BufferGeometry();
+            geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+            return geometry;
+        };
+        const makeMaterial = (opacity) => new THREE.MeshBasicMaterial({
+            color: RADAR_DANGER_COLOR,
+            transparent: true,
+            opacity,
+            depthTest: false,
+            depthWrite: false,
+            side: THREE.DoubleSide
+        });
+        const bandGeometry = quadGeometry(zone.lipTiles.map(({ x, z }) => [x - 0.5, z - 0.5, x + 0.5, z + 0.5]), 0.07);
+        const lipGeometry = quadGeometry(lipEdgeQuads(zone.lipEdges), 0.08);
+        const bandMaterial = makeMaterial(0.16);
+        const lipMaterial = makeMaterial(0.92);
+        const group = new THREE.Group();
+        group.name = `radar-danger-zone:${zone.key}`;
+        const band = new THREE.Mesh(bandGeometry, bandMaterial);
+        const lip = new THREE.Mesh(lipGeometry, lipMaterial);
+        band.renderOrder = 9996;
+        lip.renderOrder = 9997;
+        group.add(band, lip);
+        this.scene.add(group);
+
+        registerTransientEffect(this, {
+            mesh: group,
+            age: 0,
+            duration,
+            update: (dt, age) => {
+                const t = Math.min(age / duration, 1);
+                const fade = 1 - t * t;
+                const pulse = 0.82 + Math.sin(age * 9.0) * 0.18;
+                lipMaterial.opacity = 0.92 * fade * pulse;
+                bandMaterial.opacity = 0.16 * fade * (0.9 + Math.sin(age * 4.5) * 0.1);
+            },
+            dispose: () => {
+                bandGeometry.dispose();
+                lipGeometry.dispose();
+                bandMaterial.dispose();
+                lipMaterial.dispose();
+            }
+        });
+        return group;
     }
 
     recordRadarScanDiscovery(px, pz, radius) {
@@ -20712,6 +20856,7 @@ export class ThreeGame {
         this.discoveredMapRoomKeys ??= new Set();
         this.discoveredMapCellKeys ??= new Set();
 
+        const freshCells = new Set();
         const gridRadius = Math.ceil((radius + this.chunkSize * 0.5) / this.chunkSize);
         const centerChunkX = Math.floor(px / this.chunkSize);
         const centerChunkY = Math.floor(pz / this.chunkSize);
@@ -20732,9 +20877,12 @@ export class ThreeGame {
                 if (Math.hypot(chunkCenterX - px, chunkCenterZ - pz) <= radius + this.chunkSize) {
                     this.discoveredMapChunkKeys.add(key);
 
-                    for (const room of this.wfcMetadataCache?.get(key)?.roomInstances ?? []) {
-                        this.discoveredMapRoomKeys.add(`${key}:${room.id}`);
-                    }
+                    // Only rooms the pulse actually reaches. Everything else
+                    // in the chunk stays fogged until scanned or walked.
+                    const rooms = roomsReachedByScan(this.wfcMetadataCache?.get(key)?.roomInstances, {
+                        chunkX, chunkY, chunkSize: this.chunkSize, x: px, z: pz, radius
+                    });
+                    for (const room of rooms) this.discoveredMapRoomKeys.add(`${key}:${room.id}`);
 
                     for (let y = 0; y < grid.length; y++) {
                         for (let x = 0; x < (grid[y]?.length ?? 0); x++) {
@@ -20743,7 +20891,9 @@ export class ThreeGame {
                             const worldX = chunkMinX + x;
                             const worldZ = chunkMinZ + y;
                             if (Math.hypot(worldX - px, worldZ - pz) <= radius + 3) {
-                                this.discoveredMapCellKeys.add(`${worldX},${worldZ}`);
+                                const cellKey = `${worldX},${worldZ}`;
+                                if (!this.discoveredMapCellKeys.has(cellKey)) freshCells.add(cellKey);
+                                this.discoveredMapCellKeys.add(cellKey);
                             }
                         }
                     }
@@ -20751,6 +20901,17 @@ export class ThreeGame {
             }
         }
 
+        // The map caches its revealed cells; without this a scan only showed
+        // up the next time the carrier happened to step onto a new cell.
+        this._detailedChunksDirty = true;
+        this.lastRadarScan = {
+            x: px,
+            z: pz,
+            radius,
+            at: performance.now(),
+            duration: 1200,
+            freshCells
+        };
         this.checkMappingMissionComplete();
     }
 
@@ -20842,6 +21003,7 @@ export class ThreeGame {
         this.scene.add(scanGroup);
 
         const pingedIds = new Set();
+        const dangerZones = this.planRadarDangerZones(px, pz, maxRadius);
 
         registerTransientEffect(this, {
             mesh: scanGroup,
@@ -20871,7 +21033,7 @@ export class ThreeGame {
                     }
                 }
 
-                this.scanDangerHoles(px, pz, currentRadius, pingedIds);
+                this.scanDangerHoles(px, pz, currentRadius, pingedIds, dangerZones);
 
                 for (const pickup of this.pickupMeshes) {
                     if (!pickup || pingedIds.has(pickup.uuid)) continue;
@@ -22215,7 +22377,15 @@ export class ThreeGame {
             }
             this._expeditionSparking = atmosphere.sparking;
         }
-        const minAmbientFloor = atmosphere?.sparking ? 0.3 : 0.45;
+        // A blacked-out gate approach: the grid that lit it is dead.
+        const blackout = this.player && this.getGateChallengeForChunk?.(
+            `${Math.floor(this.player.position.x / this.chunkSize)},${Math.floor(this.player.position.z / this.chunkSize)}`
+        )?.challenge === GATE_CHALLENGES.BLACKOUT;
+        if (blackout) {
+            this.ambientLight.intensity *= GATE_CHALLENGE_TUNING.blackoutLightMultiplier;
+            this.directionalLight.intensity *= GATE_CHALLENGE_TUNING.blackoutLightMultiplier;
+        }
+        const minAmbientFloor = blackout ? 0.22 : atmosphere?.sparking ? 0.3 : 0.45;
         if (this.ambientLight.intensity < minAmbientFloor) {
             this.ambientLight.intensity = minAmbientFloor;
         }
@@ -25529,10 +25699,13 @@ export class ThreeGame {
         }
         for (const anchor of metadata.anchors ?? []) protect(anchor.x ?? anchor.localX, anchor.y ?? anchor.localY, 1);
         for (const source of metadata.accessSources ?? []) protect(source.localX, source.localY, 1);
+        // A collapsed gate approach is choked every deployment, not by chance.
+        const collapsed = this.getGateChallengeForChunk?.(chunkKey)?.challenge === GATE_CHALLENGES.COLLAPSED_APPROACH;
         const cells = planExpeditionObstacles(grid, {
             expeditionSeed: this.activeExpedition.expeditionSeed,
             chunkKey,
-            protectedCells
+            protectedCells,
+            ...(collapsed ? { chance: 1, maxPiles: GATE_CHALLENGE_TUNING.collapsedMaxPiles, attempts: 40 } : {})
         });
         for (const { x, y } of cells) grid[y][x] = '#';
         metadata.expeditionObstacles = cells;
@@ -28123,8 +28296,11 @@ export class ThreeGame {
         // consumer, so the blurb's density half was text only. Scale both the
         // per-chunk budget and the roll chance so the promised delta is real.
         const cardDensityMult = Number(this.getRunCardEffects?.()?.spawnBias?.snailDensityMult);
+        const infestedGate = this.getGateChallengeForChunk?.(`${chunkX},${chunkY}`)?.challenge
+            === GATE_CHALLENGES.INFESTED_APPROACH;
         const snailDensityMult = (Number.isFinite(cardDensityMult) && cardDensityMult > 0 ? cardDensityMult : 1)
-            * (this.getExpeditionEffects?.().world.enemyDensityMultiplier ?? 1);
+            * (this.getExpeditionEffects?.().world.enemyDensityMultiplier ?? 1)
+            * (infestedGate ? GATE_CHALLENGE_TUNING.infestedDensityMultiplier : 1);
         const snailSpawnConfig = snailDensityMult !== 1
             ? {
                 maxCount: Math.max(0, Math.round(baseSnailSpawnConfig.maxCount * snailDensityMult)),
@@ -34949,14 +35125,18 @@ export class ThreeGame {
             // readable and collision-light. The old radial-room override made
             // a large chamber appear beside the start almost every run, then
             // populated it with props before the player had a clear route.
-            // Anti-bunching: Ensure procedural rooms do not cluster directly against
-            // an adjacent room neighbor unless it is an explicitly designated destination.
-            const hasAdjacentRoom = Boolean(
+            // Space optional rooms by coordinate parity. Loaded neighbors are
+            // not a generation input: visiting from another direction or
+            // reloading must reconstruct the same campaign's rooms and doors.
+            // Preserve the legacy generator's policy behind the rollback flag.
+            const hasAdjacentRoom = this.authoredWorldTiles
+                ? Math.abs(chunkX + chunkY) % 2 === 1
+                : Boolean(
                 this.wfcMetadataCache?.get(`${chunkX - 1},${chunkY}`)?.roomInstances?.length ||
                 this.wfcMetadataCache?.get(`${chunkX + 1},${chunkY}`)?.roomInstances?.length ||
                 this.wfcMetadataCache?.get(`${chunkX},${chunkY - 1}`)?.roomInstances?.length ||
                 this.wfcMetadataCache?.get(`${chunkX},${chunkY + 1}`)?.roomInstances?.length
-            );
+                );
             const roomMode = !tutorialRing && (isDestination || (!hasAdjacentRoom && (
                 regionalRoles.includes('ring')
                 || (nearestRadialRoom <= this.chunkSize * 0.9 && (Math.abs(chunkX + chunkY) % 2 === 0))

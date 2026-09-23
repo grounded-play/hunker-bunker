@@ -7,8 +7,10 @@ import { createMilestoneBossLifecycleState, MILESTONE_BOSS_EVENT_TYPES } from '.
 import { createExpeditionProfile, EXPEDITION_CONDITIONS } from './expeditionSystem.js';
 import { SurvivorCamp } from './camp.js';
 import { HiveSite } from './hiveSite.js';
+import { Act2Manager } from './act2.js';
 import { resolveAuthoredChunkStructure } from './authoredWorldRuntime.js';
 import { buildWorldPlan } from './ringManifest.js';
+import { GATE_CHALLENGES, planGateChallenges } from './gateChallenges.js';
 import { generateRadialMazeExpedition, LEGACY_ROUTE_LAYOUT_VERSION, ROUTE_LAYOUT_VERSION } from './mazeExpedition.js';
 
 let events;
@@ -37,7 +39,9 @@ const METHODS = [
     'getTerritoryRoomCenter', 'recordWorldTransformation', 'syncCrossingBridges', 'ensureCrossingBridge',
     'clearCrossingBridges', 'syncWorldTransformations', 'announceTerritoryLocation', 'getRouteLayoutVersion',
     'applyExpeditionObstacles', 'isInTutorialRing', 'applyExpeditionDeathEffect',
-    'syncBioConduits', 'clearBioConduits', 'getBioConduitAt', 'interactWithBioConduit', 'applyCrossingBridgeTiles'
+    'syncBioConduits', 'clearBioConduits', 'getBioConduitAt', 'interactWithBioConduit', 'applyCrossingBridgeTiles',
+    'resolveSpawnPoint', 'teleportPlayerTo', 'resolveHiveChoice',
+    'getGateChallengeForChunk', 'enterGateChallengeChunk'
 ];
 
 function game(overrides = {}) {
@@ -429,6 +433,54 @@ describe('physical world changes', () => {
     });
 });
 
+describe('campaign gate challenges', () => {
+    const setup = () => {
+        campaignWorldStore.getOrCreate({ seed: 917 });
+        const world = game({ spawnDeepAnchorElite: vi.fn() });
+        world.beginCampaignExpedition();
+        const plan = world.ensureAuthoredWorldPlan();
+        return { world, plan, challenges: planGateChallenges(plan) };
+    };
+
+    it('announces a gate challenge once per run and wakes the warden only at the gate', () => {
+        const { world, challenges } = setup();
+        for (const entry of challenges) {
+            const approach = entry.approachChunkKeys.find((key) => key !== entry.gateChunkKey);
+            world.enterGateChallengeChunk(approach);
+            world.enterGateChallengeChunk(entry.gateChunkKey);
+            world.enterGateChallengeChunk(entry.gateChunkKey);
+        }
+        const announced = events.filter((event) => event.type === 'gate-challenge').map((event) => event.detail.crossingId);
+        expect(announced).toEqual(challenges.map((entry) => entry.crossingId));
+        const warden = challenges.find((entry) => entry.challenge === GATE_CHALLENGES.ELITE_WARDEN);
+        expect(world.spawnDeepAnchorElite.mock.calls.map(([id]) => id).every((id) => id === warden.crossingId)).toBe(true);
+        expect(world.spawnDeepAnchorElite).toHaveBeenCalled();
+    });
+
+    it('lifts a gate challenge once its crossing is open', () => {
+        const { world, plan, challenges } = setup();
+        const first = challenges.find((entry) => entry.ring === 1);
+        expect(world.getGateChallengeForChunk(first.gateChunkKey)?.crossingId).toBe(first.crossingId);
+        openCrossing(world, plan.ringCrossings.find((crossing) => crossing.id === first.crossingId));
+        expect(world.getGateChallengeForChunk(first.gateChunkKey)).toBeNull();
+    });
+
+    it('chokes a collapsed approach with rubble every deployment', () => {
+        const { world, challenges } = setup();
+        const collapsed = challenges.find((entry) => entry.challenge === GATE_CHALLENGES.COLLAPSED_APPROACH);
+        const key = collapsed.approachChunkKeys.find((chunk) => chunk !== collapsed.gateChunkKey);
+        const [cx, cy] = key.split(',').map(Number);
+        world.wfcMetadataCache = new Map([[key, { generatorId: 'architectural-connector', roomInstances: [], doors: [] }]]);
+        const hall = () => Array.from({ length: 49 }, (_, y) => Array.from({ length: 49 }, (_, x) => (
+            x === 0 || y === 0 || x === 48 || y === 48 ? '#' : '.'
+        )));
+        for (let index = 1; index <= 6; index += 1) {
+            world.setActiveExpedition(createExpeditionProfile(917, index));
+            expect(world.applyExpeditionObstacles(hall(), cx, cy).length, `deployment ${index}`).toBeGreaterThan(4);
+        }
+    });
+});
+
 describe('camp fortify choice', () => {
     const campStub = (level, status = 'alive') => {
         const record = { id: 'camp_meridian', level, status, bond: 1, dialogueStage: 0, questFlags: {} };
@@ -469,8 +521,11 @@ describe('bonded hive bio-conduit', () => {
             getHiveRecord: (id) => ({ status: id === 'hive_suture' ? 'bonded' : 'slain' }),
             isGameplayInputActive: () => true,
             getSpawnTile: () => ({ x: 24, y: 24 }),
+            canOccupyPosition: (x, z) => x >= 24 && z >= 24,
+            isPlayerOverAnyHole: () => false,
             spawnPhysicalBurst: vi.fn(),
-            syncVisibleChunks: vi.fn()
+            syncVisibleChunks: vi.fn(),
+            emitDepthTierChanged: vi.fn()
         });
         world.beginCampaignExpedition();
         world.syncWorldTransformations();
@@ -480,14 +535,66 @@ describe('bonded hive bio-conduit', () => {
         world.syncWorldTransformations();
         expect(world.scene.children.filter((child) => child.userData?.kind === 'bio-conduit')).toHaveLength(1);
 
-        world.player = { position: { x: escape.x + 40, z: escape.z } };
+        world.player = { position: new THREE.Vector3(escape.x + 40, 0, escape.z) };
         expect(world.interactWithBioConduit()).toBe(false);
         world.player.position.x = escape.x + 0.5;
         expect(world.interactWithBioConduit()).toBe(true);
-        expect(world.player.position).toEqual({ x: 25.5, z: 25.5 });
+        expect(world.player.position).toEqual(new THREE.Vector3(24, 0, 24));
+        expect(world.syncVisibleChunks).toHaveBeenCalledExactlyOnceWith(true);
+        expect(world.emitDepthTierChanged).toHaveBeenCalledWith(0);
         expect(events.some((event) => event.type === 'bio-conduit-traversed' && event.detail.hiveId === 'hive_suture')).toBe(true);
         world.clearBioConduits();
         expect(world.scene.children).toHaveLength(0);
+    });
+
+    it('removes a bonded hive\'s passage and movement benefit when the actual harvest choice replaces the bond', () => {
+        campaignWorldStore.getOrCreate({ seed: 31 });
+        const scene = new THREE.Scene();
+        const act2 = new Act2Manager({ storage: { getItem: () => null, setItem: () => {} } });
+        const hive = new HiveSite(scene, { id: 'hive_suture' });
+        hive.reveal(40, 50);
+        const world = game({
+            scene, act2, hives: [hive],
+            getHiveById: (id) => id === hive.id ? hive : null,
+            getHiveRecord: (id) => act2.getState().hives.find((entry) => entry.id === id),
+            bank: { getState: () => ({ unlocks: {} }), deposit: vi.fn(), addShells: vi.fn() },
+            spawnGearPoofEffect: vi.fn(), spawnHiveHarvestBoss: vi.fn()
+        });
+        world.beginCampaignExpedition();
+        act2.adjustHiveBond(hive.id, 3);
+        world.syncWorldTransformations();
+        const conduit = world.bioConduits.get(hive.id);
+        const dispose = vi.spyOn(conduit.children[0].geometry, 'dispose');
+        expect(world._bondedHiveSpeedMultiplier).toBeCloseTo(1.06);
+
+        expect(world.resolveHiveChoice('hive-harvest', { hiveId: hive.id })).toBe(true);
+        expect(world.bioConduits.has(hive.id)).toBe(false);
+        expect(conduit.parent).toBeNull();
+        expect(dispose).toHaveBeenCalledTimes(1);
+        expect(world.getBioConduitAt(conduit.position.x, conduit.position.z)).toBeNull();
+        expect(world._bondedHiveSpeedMultiplier).toBe(1);
+        expect(world._harvestedHivePositions).toEqual([{ x: 40, z: 50 }]);
+        expect(hive.worldOutcome).toBe('harvested');
+        world.syncWorldTransformations();
+        expect(world.bioConduits.size).toBe(0);
+    });
+
+    it('rejects a conduit landing when the safe-spawn search finds only void', () => {
+        const world = game({
+            player: { position: new THREE.Vector3(1, 0, 1) },
+            isGameplayInputActive: () => true,
+            getSpawnTile: () => ({ x: 24, y: 24 }),
+            canOccupyPosition: () => false,
+            isPlayerOverAnyHole: () => true,
+            syncVisibleChunks: vi.fn()
+        });
+        const conduit = new THREE.Group();
+        conduit.position.set(1, 0, 1);
+        world.bioConduits = new Map([['hive_suture', conduit]]);
+        expect(world.interactWithBioConduit()).toBe(false);
+        expect(world.player.position).toEqual(new THREE.Vector3(1, 0, 1));
+        expect(world.syncVisibleChunks).not.toHaveBeenCalled();
+        expect(events.some((event) => event.type === 'bio-conduit-traversed')).toBe(false);
     });
 });
 

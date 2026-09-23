@@ -1543,6 +1543,12 @@
         "camp_fortified": "> {site} 要塞化 — タレットが防衛線を守る",
         "hive_bonded": "> {site} と絆を結んだ — 汚染地帯が道を開く",
         "hive_harvested": "> {site} を収穫した — 幼体が激昂している"
+      },
+      "gate_challenges": {
+        "elite_warden": "> リング{ring}ゲート — 精鋭の番人が門を守っている",
+        "collapsed_approach": "> リング{ring}ゲート — 進入路が崩落した。瓦礫の中に道を探せ",
+        "infested_approach": "> リング{ring}ゲート — 進入路に敵がひしめいている",
+        "blackout": "> リング{ring}ゲート — 電力網が停止。進入路は闇の中"
       }
     }
   },

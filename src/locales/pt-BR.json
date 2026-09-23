@@ -1543,6 +1543,12 @@
         "camp_fortified": "> {site} FORTIFICADO — TORRETAS SEGURAM O PERÍMETRO",
         "hive_bonded": "> {site} VINCULADA — O SOLO INFESTADO SE ABRE PARA VOCÊ",
         "hive_harvested": "> {site} COLHIDA — SUA CRIA CORRE ENFURECIDA"
+      },
+      "gate_challenges": {
+        "elite_warden": "> PORTÃO DO ANEL {ring} — UM GUARDIÃO DE ELITE DEFENDE A PASSAGEM",
+        "collapsed_approach": "> PORTÃO DO ANEL {ring} — O ACESSO DESABOU. ENCONTRE CAMINHO PELOS ESCOMBROS",
+        "infested_approach": "> PORTÃO DO ANEL {ring} — O ACESSO ESTÁ INFESTADO DE HOSTIS",
+        "blackout": "> PORTÃO DO ANEL {ring} — REDE MORTA. O ACESSO ESTÁ NO ESCURO"
       }
     }
   },
