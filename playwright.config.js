@@ -15,9 +15,10 @@ export default defineConfig({
     // sees during this sprint. 60s then proved tight again once
     // startRunAndSkipIntro became an unblock-until-live loop (its 45s
     // worst case is the boot alone, leaving nothing for the actual test
-    // body under load) — 120s gives the body real room without masking
-    // hangs, since the boot helper still hard-fails at 45s.
-    timeout: 120_000,
+    // body under load) — 120s gave the body room while the helper hard-failed
+    // at 45s. The helper's deadline is now 120s, so a 120s test budget could
+    // be spent entirely on the boot: 300s leaves the body its own room.
+    timeout: 300_000,
     expect: { timeout: 10_000 },
     fullyParallel: false,
     workers: 1,
