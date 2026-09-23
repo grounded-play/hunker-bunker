@@ -8,7 +8,7 @@ import { createMilestoneBossLifecycleState } from './milestoneBossLifecycle.js';
  * A ring crossing must always end up with a threshold and a gate control.
  *
  * Setpiece claims legitimately cover crossing chunks -- the collapsed bridge IS
- * the ring-1 gate -- but only the claim's PIVOT chunk produces a room. When the
+ * the ring-2 gate -- but only the claim's PIVOT chunk produces a room. When the
  * gate landed on a non-pivot module, the resolver accepted the doorless setpiece
  * module: the chunk looked right, had no door and no mission console, and the
  * ring could never be opened. Seeded gate placement made that far more
@@ -30,7 +30,9 @@ function topologyEdgeOpening(worldPlan, axis, edgeX, edgeY) {
 
 function buildGateChunk(seed, layoutVersion = undefined) {
     const worldPlan = buildWorldPlan(generateRadialMazeExpedition(seed, { layoutVersion }));
-    const crossing = worldPlan.ringCrossings[0];
+    // The setpiece-claimed gate: the collapsed bridge (ring 2).
+    const crossing = worldPlan.ringCrossings.find((entry) => entry.blockerFeature === 'collapsed_bridge')
+        ?? worldPlan.ringCrossings[0];
     const fakeThis = {
         chunkSize: 49,
         chunkCellCount: 24,
@@ -118,7 +120,7 @@ describe('ring crossing chunks keep their threshold', () => {
     // The same regression on the current route generation, whose coils put
     // gates on non-pivot modules at different seeds.
     it('keeps the threshold on non-pivot gates of the current route generation', () => {
-        for (const seed of [2, 3]) {
+        for (const seed of [6, 9]) {
             const { crossing, metadata, onSetpiece, onSetpiecePivot } = buildGateChunk(seed, ROUTE_LAYOUT_VERSION);
             expect(onSetpiece && onSetpiecePivot === false, `seed ${seed} no longer lands on a non-pivot module`).toBe(true);
             expect(metadata.generatorId, `seed ${seed}`).not.toBe('authored-setpiece');

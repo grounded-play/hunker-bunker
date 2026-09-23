@@ -117,13 +117,149 @@ export function deriveMaxUnlockedRing(plan, crossingState) {
  * reachable ring and the next ring, so a topology detour cannot grant early
  * access while physical crossing art is still behind the feature flag.
  */
+// Chunks the carrier must cross to reach a locked gate even though they lie
+// past its radial boundary. The lock is radial, but routes are not: when the
+// route dips inward to reach a gate (both approach chunks farther from the
+// ship than the gate itself) a purely radial boundary stopped the carrier
+// short of the gate, so the ring could never be opened. Keep every chunk on
+// the spine's approach whose entry border lies beyond the boundary; the
+// gate's far side is never on it, so the lock still holds.
+const lockedApproachCache = new WeakMap();
+
+function segmentDistance(anchorX, anchorZ, ax, az, bx, bz) {
+    const dx = bx - ax;
+    const dz = bz - az;
+    const lengthSq = dx * dx + dz * dz;
+    const t = lengthSq ? Math.max(0, Math.min(1, ((anchorX - ax) * dx + (anchorZ - az) * dz) / lengthSq)) : 0;
+    return Math.hypot(anchorX - (ax + t * dx), anchorZ - (az + t * dz));
+}
+
+// Nearest distance from the anchor to the border two orthogonal chunks share.
+function sharedBorderDistance(a, b, anchorX, anchorZ, chunkSize) {
+    const [ax, ay] = a.split(',').map(Number);
+    const [bx, by] = b.split(',').map(Number);
+    if (ax !== bx) {
+        const x = Math.max(ax, bx) * chunkSize;
+        return segmentDistance(anchorX, anchorZ, x, ay * chunkSize, x, (ay + 1) * chunkSize);
+    }
+    const zEdge = Math.max(ay, by) * chunkSize;
+    return segmentDistance(anchorX, anchorZ, ax * chunkSize, zEdge, (ax + 1) * chunkSize, zEdge);
+}
+
+export function getLockedApproachChunks(worldPlan, ring, { anchor = { x: 0, z: 0 }, chunkSize = 49, boundary }) {
+    const crossing = worldPlan?.ringCrossings?.find((entry) => entry.ring === ring);
+    const topology = worldPlan?.topology;
+    if (!crossing?.chunkKey || !topology?.routeEdges || !Number.isFinite(boundary)) return new Set();
+    let perPlan = lockedApproachCache.get(worldPlan);
+    if (!perPlan) lockedApproachCache.set(worldPlan, (perPlan = new Map()));
+    const cacheKey = `${ring}|${anchor.x},${anchor.z}|${chunkSize}|${boundary}`;
+    if (perPlan.has(cacheKey)) return perPlan.get(cacheKey);
+
+    const neighbours = new Map();
+    for (const edge of topology.routeEdges) {
+        const [a, b] = edge.split('|');
+        if (!neighbours.has(a)) neighbours.set(a, new Set());
+        if (!neighbours.has(b)) neighbours.set(b, new Set());
+        neighbours.get(a).add(b);
+        neighbours.get(b).add(a);
+    }
+    // Walk the spine -- the canonical route out from the crash site --
+    // backwards from the gate. Using the spine, not a shortest path, keeps
+    // this on the near side: where ring loops run round a gate, a shortest
+    // path could arrive from the far side and unlock it. Consecutive spine
+    // points can be diagonal; the route joins them through one shared chunk.
+    const spine = topology.spineChunkKeys ?? [];
+    const approach = new Set();
+    const gateIndex = spine.indexOf(crossing.chunkKey);
+    if (gateIndex >= 0) {
+        approach.add(crossing.chunkKey);
+        let child = crossing.chunkKey;
+        for (let index = gateIndex - 1; index >= 0; index -= 1) {
+            const previous = spine[index];
+            const steps = neighbours.get(child)?.has(previous)
+                ? [previous]
+                : [[...(neighbours.get(child) ?? [])].find((key) => neighbours.get(key)?.has(previous)), previous];
+            let reachedBoundary = false;
+            for (const step of steps) {
+                if (!step) { reachedBoundary = true; break; }
+                if (sharedBorderDistance(step, child, anchor.x, anchor.z, chunkSize) <= boundary) {
+                    reachedBoundary = true;
+                    break;
+                }
+                approach.add(step);
+                child = step;
+            }
+            if (reachedBoundary) break;
+        }
+    }
+    perPlan.set(cacheKey, approach);
+    return approach;
+}
+
+// Exact lock for a gate every route must pass through: the carrier may be
+// anywhere reachable from the crash site without crossing the gate chunk,
+// plus the gate chunk itself (so its console and door can be worked).
+// Returns null when the gate is not a cut point -- generation-1 ring loops
+// can run round a gate -- and the radial boundary has to stand in.
+const lockedRegionCache = new WeakMap();
+
+/**
+ * A generation-1 gate can sit on a spur: a chunk the route enters and leaves
+ * by the same side. Its gate room then has a single door, and the mission
+ * console is behind it -- locking that door made the gate impossible to
+ * work. A spur never gates passage anyway (the ring boundary does), so its
+ * door must stay open.
+ */
+export function isRingCrossingSpur(worldPlan, crossingId) {
+    const crossing = worldPlan?.ringCrossings?.find((entry) => entry.id === crossingId);
+    if (!crossing?.chunkKey) return false;
+    const degree = (worldPlan.topology?.routeEdges ?? [])
+        .filter((edge) => edge.split('|').includes(crossing.chunkKey)).length;
+    return degree > 0 && degree < 2;
+}
+
+export function getLockedGateRegion(worldPlan, ring) {
+    const crossing = worldPlan?.ringCrossings?.find((entry) => entry.ring === ring);
+    const topology = worldPlan?.topology;
+    if (!crossing?.chunkKey || !topology?.routeEdges) return null;
+    let perPlan = lockedRegionCache.get(worldPlan);
+    if (!perPlan) lockedRegionCache.set(worldPlan, (perPlan = new Map()));
+    if (perPlan.has(ring)) return perPlan.get(ring);
+    const neighbours = new Map();
+    for (const edge of topology.routeEdges) {
+        const [a, b] = edge.split('|');
+        if (!neighbours.has(a)) neighbours.set(a, []);
+        if (!neighbours.has(b)) neighbours.set(b, []);
+        neighbours.get(a).push(b);
+        neighbours.get(b).push(a);
+    }
+    const start = topology.startChunkKey ?? '0,0';
+    const allowed = new Set([start]);
+    const queue = [start];
+    while (queue.length) {
+        const current = queue.shift();
+        for (const next of neighbours.get(current) ?? []) {
+            if (next === crossing.chunkKey || allowed.has(next)) continue;
+            allowed.add(next);
+            queue.push(next);
+        }
+    }
+    const goal = topology.queenChunkKey;
+    // If the queen is still reachable without the gate, it is not a cut point.
+    const region = goal && allowed.has(goal)
+        ? null
+        : { allowed: new Set([...allowed, crossing.chunkKey]), routeChunks: new Set(neighbours.keys()) };
+    perPlan.set(ring, region);
+    return region;
+}
+
 export function clampPositionToAuthoredRing(
     x,
     z,
     anchor,
     maxUnlockedRing,
     radialRingRadii = [0, 108, 201, 304, 413, 529],
-    { worldPlan = null, chunkSize = 49 } = {}
+    { worldPlan = null, chunkSize = 49, previous = null } = {}
 ) {
     const ring = Math.max(0, Math.min(radialRingRadii.length - 1, Math.floor(maxUnlockedRing)));
     if (ring >= radialRingRadii.length - 1) return { x, z, blocked: false };
@@ -146,7 +282,34 @@ export function clampPositionToAuthoredRing(
     const dx = (Number(x) || 0) - anchorX;
     const dz = (Number(z) || 0) - anchorZ;
     const distance = Math.hypot(dx, dz);
+    const chunkKey = `${Math.floor((Number(x) || 0) / chunkSize)},${Math.floor((Number(z) || 0) / chunkSize)}`;
+    const region = worldPlan ? getLockedGateRegion(worldPlan, ring) : null;
+    // Route chunks follow the exact lock; off-route ground (canyon, ledges
+    // between route chunks) keeps the radial boundary below.
+    if (region?.routeChunks.has(chunkKey)) {
+        if (region.allowed.has(chunkKey)) return { x, z, blocked: false };
+        if (Number.isFinite(previous?.x) && Number.isFinite(previous?.z)) {
+            return { x: previous.x, z: previous.z, blocked: true };
+        }
+        // No last legal position (first frame, a teleport): the gate chunk
+        // is always open, so fall back into it.
+        const crossing = worldPlan.ringCrossings.find((entry) => entry.ring === ring);
+        return {
+            x: (crossing.chunkX + 0.5) * chunkSize,
+            z: (crossing.chunkY + 0.5) * chunkSize,
+            blocked: true
+        };
+    }
     if (distance <= boundary || distance === 0) return { x, z, blocked: false };
+    if (worldPlan) {
+        const approach = getLockedApproachChunks(worldPlan, ring, { anchor: { x: anchorX, z: anchorZ }, chunkSize, boundary });
+        if (!region && approach.has(chunkKey)) return { x, z, blocked: false };
+        // Step back to where the carrier last legally stood: a radial
+        // projection from a route that dips inward can land inside a wall.
+        if (Number.isFinite(previous?.x) && Number.isFinite(previous?.z)) {
+            return { x: previous.x, z: previous.z, blocked: true };
+        }
+    }
     const scale = boundary / distance;
     return {
         x: anchorX + dx * scale,
@@ -166,6 +329,45 @@ export function selectRingCrossingFarSide(worldPlan, crossingId, availableSides 
     const topology = worldPlan?.topology;
     if (!crossing?.chunkKey || !Array.isArray(topology?.spineChunkKeys)) return null;
     const allowed = new Set(availableSides);
+    const [gateX, gateY] = crossing.chunkKey.split(',').map(Number);
+    const sideOf = (key) => {
+        const [nx, ny] = String(key).split(',').map(Number);
+        return SIDE_BY_DELTA[`${nx - gateX},${ny - gateY}`] ?? null;
+    };
+    // 1. Exact: where every route passes through the gate, the far side is
+    //    whichever neighbour lies in the part of the world it locks away.
+    const region = getLockedGateRegion(worldPlan, crossing.ring);
+    if (region) {
+        const farSides = (topology.routeEdges ?? [])
+            .map((edge) => edge.split('|'))
+            .filter((pair) => pair.includes(crossing.chunkKey))
+            .map((pair) => pair.find((key) => key !== crossing.chunkKey))
+            .filter((key) => !region.allowed.has(key))
+            .map(sideOf)
+            .filter((side) => side && allowed.has(side))
+            .sort();
+        if (farSides.length) return farSides[0];
+    }
+    // 2. The spine's next point. Consecutive spine points can be diagonal;
+    //    the route then joins them through one shared chunk, which is the
+    //    real next step. Previously a diagonal "next" matched no side and the
+    //    fallback below picked the PREVIOUS point -- stamping the locked
+    //    crossing door on the side facing the ship.
+    const routeNeighbours = new Set((topology.routeEdges ?? [])
+        .map((edge) => edge.split('|'))
+        .filter((pair) => pair.includes(crossing.chunkKey))
+        .map((pair) => pair.find((key) => key !== crossing.chunkKey)));
+    const spineIndex = topology.spineChunkKeys.indexOf(crossing.chunkKey);
+    const spineNext = spineIndex >= 0 ? topology.spineChunkKeys[spineIndex + 1] : null;
+    if (spineNext) {
+        const direct = routeNeighbours.has(spineNext) ? spineNext : null;
+        const bridging = direct ?? [...routeNeighbours].find((key) => (topology.routeEdges ?? []).some((edge) => {
+            const pair = edge.split('|');
+            return pair.includes(key) && pair.includes(spineNext);
+        }));
+        const side = bridging ? sideOf(bridging) : null;
+        if (side && allowed.has(side)) return side;
+    }
     const matchingIndices = topology.spineChunkKeys
         .map((key, index) => key === crossing.chunkKey ? index : -1)
         .filter((index) => index >= 0);

@@ -158,6 +158,7 @@ import { resolveObjectiveTarget, toObjectiveCompass } from './objectiveTargetRes
 import { buildRingCrossingPlan } from './ringCrossings.js';
 import {
     clampPositionToAuthoredRing,
+    isRingCrossingSpur,
     reconcileWorldPlanRingCrossings,
     resolveAuthoredChunkStructure,
     selectRingCrossingFarSide
@@ -19818,7 +19819,9 @@ export class ThreeGame {
         }
         for (const [doorId, door] of this.proceduralDoorStates ?? []) {
             if (!door?.ringCrossingId || door.state === 'destroyed') continue;
-            const isOpen = result.openCrossingIds.has(door.ringCrossingId);
+            // Includes saves that stored a spur's single door as locked.
+            const isOpen = result.openCrossingIds.has(door.ringCrossingId)
+                || isRingCrossingSpur(worldPlan, door.ringCrossingId);
             this.proceduralDoorStates.set(doorId, {
                 ...door,
                 state: isOpen ? 'open' : 'locked',
@@ -21851,7 +21854,8 @@ export class ThreeGame {
                 this.getRadialMazePlan?.()?.radii,
                 {
                     worldPlan: this.worldPlan,
-                    chunkSize: this.chunkSize
+                    chunkSize: this.chunkSize,
+                    previous: this._lastRingAllowedPosition ?? null
                 }
             )
             : clampPositionToUnlockedRing(
@@ -21863,6 +21867,10 @@ export class ThreeGame {
         if (result.blocked) {
             this.player.position.x = result.x;
             this.player.position.z = result.z;
+        } else {
+            this._lastRingAllowedPosition ??= { x: 0, z: 0 };
+            this._lastRingAllowedPosition.x = this.player.position.x;
+            this._lastRingAllowedPosition.z = this.player.position.z;
         }
     }
 
@@ -35534,9 +35542,11 @@ export class ThreeGame {
                         Math.hypot(chunkX + sideVectors[b].dx, chunkY + sideVectors[b].dy)
                         - Math.hypot(chunkX + sideVectors[a].dx, chunkY + sideVectors[a].dy)
                     ))[0];
+                const spurCrossing = availableDoorSides.length < 2 || isRingCrossingSpur(this.worldPlan, crossingId);
                 gatePlan.doors = gatePlan.doors.map((door) => {
                     if (door.side !== outwardSide) return door;
-                    const isOpen = crossingStatus === 'open';
+                    // A spur's only door leads to the console: never lock it.
+                    const isOpen = crossingStatus === 'open' || spurCrossing;
                     return {
                         ...door,
                         state: isOpen ? 'open' : 'locked',

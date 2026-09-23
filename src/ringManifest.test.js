@@ -257,7 +257,7 @@ describe('WorldPlan handoff contract', () => {
         expect(first.ringCrossings).toHaveLength(4);
         expect(first.setpieceClaims).toHaveLength(1);
         expect(first.setpieceClaims[0]).toMatchObject({
-            reservationId: 'crossing:ring-1-gate',
+            reservationId: 'crossing:ring-2-gate',
             setpieceId: 'crossing_valley_bridge_v1',
             stage: 'ruined'
         });

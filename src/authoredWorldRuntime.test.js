@@ -7,6 +7,7 @@ import {
     AUTHORED_STRUCTURE_FALLBACK_REASONS,
     AUTHORED_STRUCTURE_RESOLUTION,
     clampPositionToAuthoredRing,
+    getLockedGateRegion,
     deriveMaxUnlockedRing,
     normalizeWorldPlanRingCrossings,
     reconcileWorldPlanRingCrossings,
@@ -110,28 +111,36 @@ describe('WorldPlan crossing runtime adapter', () => {
 
     // This used to hardcode an axis per gate (n/s for 1-2, e/w for 3-4), which
     // only held while gate placement was a deterministic argmin that dropped
-    // every gate on the same chunk every run. Gates are seeded now, so the
-    // fixture asserts the real contract instead of the memorized answer: given
-    // the sides a chunk actually has, the far side is a cardinal direction
-    // pointing at that gate's neighbour along the spine.
-    it('names a far side that points along the spine', () => {
+    // every gate on the same chunk every run. It then accepted EITHER spine
+    // neighbour, which let a real bug through: when the next spine point was
+    // diagonal, the far side fell back to the PREVIOUS one and the locked
+    // crossing door faced the ship. The contract now: the far side leads away
+    // from the crash site -- into the region the gate locks away when every
+    // route passes through it, otherwise toward the spine's next point.
+    it('names a far side that leads away from the ship', () => {
         const ALL_SIDES = ['n', 's', 'e', 'w'];
         const DELTA_BY_SIDE = { n: [0, -1], s: [0, 1], e: [1, 0], w: [-1, 0] };
-
-        for (const crossing of worldPlan.ringCrossings) {
-            const side = selectRingCrossingFarSide(worldPlan, crossing.id, ALL_SIDES);
-            expect(side, `${crossing.id} far side`).not.toBe(null);
-            expect(ALL_SIDES).toContain(side);
-
-            // The named side must land on a chunk that is this gate's neighbour
-            // in the spine sequence -- that is what makes it the FAR side.
-            const [chunkX, chunkY] = crossing.chunkKey.split(',').map(Number);
-            const [dx, dy] = DELTA_BY_SIDE[side];
-            const neighborKey = `${chunkX + dx},${chunkY + dy}`;
-            const spine = worldPlan.topology.spineChunkKeys;
-            const adjacentInSpine = spine.some((key, index) => key === crossing.chunkKey
-                && (spine[index + 1] === neighborKey || spine[index - 1] === neighborKey));
-            expect(adjacentInSpine, `${crossing.id} far side ${side} follows the spine`).toBe(true);
+        for (const plan of [worldPlan, realWorldPlan(1), realWorldPlan(8128)]) {
+            for (const crossing of plan.ringCrossings) {
+                const side = selectRingCrossingFarSide(plan, crossing.id, ALL_SIDES);
+                expect(side, `${crossing.id} far side`).not.toBe(null);
+                const [chunkX, chunkY] = crossing.chunkKey.split(',').map(Number);
+                const [dx, dy] = DELTA_BY_SIDE[side];
+                const neighborKey = `${chunkX + dx},${chunkY + dy}`;
+                const region = getLockedGateRegion(plan, crossing.ring);
+                const spine = plan.topology.spineChunkKeys;
+                const index = spine.indexOf(crossing.chunkKey);
+                if (region) {
+                    expect(region.allowed.has(neighborKey), `${crossing.id} far side ${side} leads beyond the gate`).toBe(false);
+                } else {
+                    const next = spine[index + 1];
+                    const bridges = plan.topology.routeEdges.some((edge) => edge.split('|').includes(neighborKey) && edge.split('|').includes(next));
+                    expect(neighborKey === next || bridges, `${crossing.id} far side ${side} heads to the spine's next point`).toBe(true);
+                }
+                if (spine[index - 1] !== spine[index + 1]) {
+                    expect(neighborKey, `${crossing.id} far side never faces the ship`).not.toBe(spine[index - 1]);
+                }
+            }
         }
     });
 
@@ -159,9 +168,10 @@ describe('WorldPlan reservation runtime adapter', () => {
     });
 
     it('tries cardinal rotations deterministically and preserves accepted structure metadata', () => {
-        const reservation = worldPlan.reservations.find((entry) => (
-            entry.role === 'ringCrossing' && entry.ring === 3
-        ));
+        // Gate rooms now carry sockets on every side, so this uses a
+        // straight-through objective room that must rotate to fit its route.
+        const worldPlan = realWorldPlan(6);
+        const reservation = worldPlan.reservations.find((entry) => entry.id === 'goal:radarNode:objective');
         const result = resolveAuthoredChunkStructure(seededRandom(44), worldPlan, {
             chunkX: reservation.chunkX,
             chunkY: reservation.chunkY,
@@ -174,7 +184,7 @@ describe('WorldPlan reservation runtime adapter', () => {
         expect(result.diagnostics.attemptedRotations).toEqual([0, 1]);
         expect(result.diagnostics.acceptedRotationSteps).toBe(1);
         expect(result.diagnostics.rejectedSockets).toEqual([
-            { rotationSteps: 0, skippedSockets: ['east', 'west'] }
+            { rotationSteps: 0, skippedSockets: ['north', 'south'] }
         ]);
         expect(result.structure).toMatchObject({
             reservationId: reservation.id,
@@ -188,6 +198,24 @@ describe('WorldPlan reservation runtime adapter', () => {
         });
         expect(result.structure.rooms[0].reservationId).toBe(reservation.id);
         expect(result.structure.anchors.every((anchor) => anchor.reservationId === reservation.id)).toBe(true);
+    });
+
+    it('fits every ring crossing room to its route without a best-effort fallback', () => {
+        for (const seed of [1, 3, 7, 8, 44, 200, 8128]) {
+            const plan = realWorldPlan(seed);
+            for (const reservation of plan.reservations.filter((entry) => entry.role === 'ringCrossing')) {
+                const result = resolveAuthoredChunkStructure(seededRandom(44), plan, {
+                    chunkX: reservation.chunkX,
+                    chunkY: reservation.chunkY,
+                    openings: topologyOpenings(plan, reservation),
+                    chunkSize: 35
+                });
+                const label = `seed ${seed} ${reservation.id}`;
+                expect(result.status, label).toBe(AUTHORED_STRUCTURE_RESOLUTION.ACCEPTED);
+                expect(result.diagnostics.crossingBestEffort, label).toBeUndefined();
+                expect(result.diagnostics.rejectedSockets, label).toEqual([]);
+            }
+        }
     });
 
     it('rejects a room that would silently drop a required topology opening', () => {
@@ -236,7 +264,7 @@ describe('WorldPlan reservation runtime adapter', () => {
     it('resolves an authored multi-chunk setpiece structure when claimed by the world plan', () => {
         // This seed fits all three bridge modules without borrowing a camp
         // or hive room. Other seeds correctly degrade to the pivot module.
-        const fullPlan = realWorldPlan(3);
+        const fullPlan = realWorldPlan(7);
         const setpieceClaim = fullPlan.setpieceClaims?.[0];
         expect(setpieceClaim).toBeDefined();
         const outerModule = setpieceClaim.modules.find((m) => !fullPlan.reservations.some((r) => r.chunkKey === m.chunkKey))

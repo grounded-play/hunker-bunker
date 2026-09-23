@@ -568,6 +568,9 @@ export function generateRadialMazeExpedition(seed = 1, {
     // their target radii are close.
     // Seed with the chunks the story nodes already own, so a gate never lands
     // on top of a camp, hive or the Queen either.
+    const gateCutChunks = layoutVersion >= ROUTE_LAYOUT_VERSION
+        ? findRouteCutChunks(topology, topology.startChunkKey, topology.queenChunkKey)
+        : new Set();
     const takenBlockerChunks = new Set(
         nodes.filter((node) => node.chunkX != null)
             .map((node) => `${node.chunkX},${node.chunkY}`)
@@ -583,6 +586,11 @@ export function generateRadialMazeExpedition(seed = 1, {
         const ranked = topology.spineChunkKeys
             .filter((key) => !takenBlockerChunks.has(key))
             .filter((key) => hasOrthogonalSpineNeighbor(topology.spineChunkKeys, key))
+            // Generation 2 only (geography is versioned): a gate must be a
+            // chunk every route to the queen passes through. Generation 1
+            // could park a gate on a spur the spine enters and leaves by the
+            // same side, leaving its door opening onto nothing.
+            .filter((key) => layoutVersion < ROUTE_LAYOUT_VERSION || gateCutChunks.has(key))
             .map((key) => {
                 const [chunkX, chunkY] = key.split(',').map(Number);
                 return {
@@ -628,6 +636,43 @@ export function generateRadialMazeExpedition(seed = 1, {
         edges,
         topology
     };
+}
+
+/**
+ * Route chunks every path from `startKey` to `goalKey` must pass through: the
+ * cut points between them. One BFS per candidate over the route graph -- a few
+ * hundred chunks, once per plan.
+ */
+export function findRouteCutChunks(topology, startKey, goalKey) {
+    const graph = new Map();
+    for (const edge of topology?.routeEdges ?? []) {
+        const [a, b] = edge.split('|');
+        if (!graph.has(a)) graph.set(a, []);
+        if (!graph.has(b)) graph.set(b, []);
+        graph.get(a).push(b);
+        graph.get(b).push(a);
+    }
+    const reaches = (removed) => {
+        const seen = new Set([startKey]);
+        const queue = [startKey];
+        while (queue.length) {
+            const current = queue.shift();
+            if (current === goalKey) return true;
+            for (const next of graph.get(current) ?? []) {
+                if (next === removed || seen.has(next)) continue;
+                seen.add(next);
+                queue.push(next);
+            }
+        }
+        return false;
+    };
+    const cuts = new Set();
+    if (!graph.has(startKey) || !graph.has(goalKey) || !reaches(null)) return cuts;
+    for (const key of topology.spineChunkKeys ?? []) {
+        if (key === startKey || key === goalKey || cuts.has(key)) continue;
+        if (!reaches(key)) cuts.add(key);
+    }
+    return cuts;
 }
 
 function ringNodeIds(ring) {
