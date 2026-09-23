@@ -399,12 +399,13 @@ import { groupDangerZones, lipEdgeQuads } from './dangerZones.js';
 import { GATE_CHALLENGES, GATE_CHALLENGE_TUNING, planGateChallenges } from './gateChallenges.js';
 import {
     activePackageConsequence,
+    activePackageConsequences,
     applyPackageReward,
     completePackageStep,
     getObjectivePackage,
     nextPackageStep,
     normalizeObjectivePackageState,
-    PACKAGE_SITES
+    PACKAGE_GOAL_ORDER
 } from './objectivePackages.js';
 import {
     ENEMY_SPRITE_LAYOUTS,
@@ -1095,7 +1096,21 @@ const PACKAGE_STEP_LABELS = Object.freeze({
     recover_regulator: 'RECOVER THE O₂ REGULATOR',
     reroute_gate_power: 'REROUTE RING POWER AT THE GATE CONSOLE',
     restart_o2_room: 'RESTART THE O₂ ROOM ON REROUTED POWER',
-    negotiate_supply: 'NEGOTIATE MERIDIAN\'S O₂ REGULATOR'
+    negotiate_supply: 'NEGOTIATE MERIDIAN\'S O₂ REGULATOR',
+    cut_hull_plates: 'CUT HULL PLATING FROM THE FABRICATION BAY',
+    buy_resin_seal: 'BUY TALLOW\'S RESIN HULL SEAL',
+    harvest_chitin: 'HARVEST CHITIN PLATES IN SUTURE\'S NURSERY',
+    tap_gate_power: 'TAP RING POWER AT THE GATE CONSOLE',
+    align_radar_mast: 'ALIGN THE RADAR MAST ON TAPPED POWER',
+    trade_for_scope: 'TRADE FOR VESPER\'S TARGETING SCOPE',
+    splice_relay_nerve: 'SPLICE INTO RELAY\'S SIGNAL NERVE',
+    pull_compressor_core: 'PULL THE COMPRESSOR CORE',
+    siphon_brood_heat: 'SIPHON BROOD HEAT IN CARAPACE\'S NURSERY',
+    drain_gate_capacitors: 'DRAIN THE GATE CAPACITORS',
+    charge_compressor: 'CHARGE THE COMPRESSOR FROM THE CAPACITORS'
+});
+const PACKAGE_GOAL_LABELS = Object.freeze({
+    o2Bubble: 'O₂', hullExpansion: 'HULL', radarNode: 'RADAR', reactorCompressor: 'REACTOR'
 });
 const SNAIL_ENRAGED_MOVE_SPEED = 2.1;
 const SNAIL_ENRAGED_TINT = 0xff4a4a;
@@ -17189,14 +17204,14 @@ export class ThreeGame {
                     label: `SHORE UP DEFENCES (${condition.toUpperCase()}) — ${shoreUp.cost} SHELLS`
                 };
             }
-            // This campaign's O2 package may run through Meridian's own regulator.
-            const supplyStep = this.getPendingPackageStep?.(PACKAGE_SITES.MERIDIAN);
-            if (supplyStep && camp.id === 'camp_meridian' && status === 'alive') {
+            // This campaign's goal package may run through this camp's stores.
+            const dealStep = status === 'alive' ? this.getPendingPackageStep?.(`camp:${camp.id}`) : null;
+            if (dealStep) {
                 return {
                     camp,
-                    action: 'o2-supply',
-                    step: supplyStep,
-                    label: `NEGOTIATE O₂ REGULATOR — ${supplyStep.shells} SHELLS`
+                    action: 'package-deal',
+                    step: dealStep,
+                    label: `${PACKAGE_STEP_LABELS[dealStep.id] ?? 'NEGOTIATE'} — ${dealStep.shells} SHELLS`
                 };
             }
             // A camp medic can quiet a scar, never clear it. Offered before
@@ -17669,7 +17684,7 @@ export class ThreeGame {
 
         if (action === 'treat-scar') return this.treatScarAtCamp(camp, actionable.scarId);
         if (action === 'shore-up') return this.shoreUpCamp(camp);
-        if (action === 'o2-supply') return this.negotiateO2Supply(camp, actionable.step);
+        if (action === 'package-deal') return this.negotiatePackageDeal(camp, actionable.step);
 
         if (action === 'rest') return this.beginCampRest(camp);
 
@@ -19714,31 +19729,39 @@ export class ThreeGame {
         return this.objectivePackageState;
     }
 
-    // The package's next step, if it happens at `site` and still matters (the
-    // O2 bubble is not yet built).
-    getPendingPackageStep(site) {
-        if (this.bank?.getState?.()?.unlocks?.o2Bubble) return null;
-        const step = nextPackageStep(this.getObjectivePackageState());
-        return step && (!site || step.site === site) ? step : null;
+    // Packages follow the build order: only the next unbuilt goal's option is
+    // in play, so the tracker shows one clear next step.
+    getCurrentPackageGoal() {
+        const unlocks = this.bank?.getState?.()?.unlocks ?? {};
+        return PACKAGE_GOAL_ORDER.find((goalKey) => !unlocks[goalKey]) ?? null;
+    }
+
+    // The current goal's next step, optionally only if it happens at `siteKey`.
+    getPendingPackageStep(siteKey = null) {
+        const goalKey = this.getCurrentPackageGoal();
+        if (!goalKey) return null;
+        const step = nextPackageStep(this.getObjectivePackageState(), goalKey);
+        return step && (!siteKey || step.site.key === siteKey) ? step : null;
     }
 
     // World position of a package site, or null while it is not resolvable.
     getPackageSitePosition(site) {
         const plan = this.worldPlan;
-        if (site === PACKAGE_SITES.O2_ROOM) {
+        if (site?.kind === 'goal_room') {
+            const reservationId = `goal:${site.goalKey}:objective`;
+            const reservation = plan?.reservations?.find((entry) => entry.id === reservationId);
             const resolved = resolveObjectiveTarget({
-                reservationId: 'goal:o2Bubble:objective',
-                interactionAnchorId: 'o2_control',
+                reservationId,
+                interactionAnchorId: reservation?.objectiveAnchorId,
                 exactRevealed: true
             }, { worldPlan: plan, chunkStructures: this.wfcMetadataCache, worldOffset: { x: 0, z: 0 } });
-            if (Number.isFinite(resolved?.x) && Number.isFinite(resolved?.z)) return { x: resolved.x, z: resolved.z };
-            const reservation = plan?.reservations?.find((entry) => entry.id === 'goal:o2Bubble:objective');
+            if (resolved?.exact && Number.isFinite(resolved.x)) return { x: resolved.x, z: resolved.z };
             return Number.isInteger(reservation?.chunkX)
                 ? { x: (reservation.chunkX + 0.5) * this.chunkSize, z: (reservation.chunkY + 0.5) * this.chunkSize }
                 : null;
         }
-        if (site === PACKAGE_SITES.RING1_GATE_CONTROL) {
-            const crossing = plan?.ringCrossings?.find((entry) => entry.ring === 1);
+        if (site?.kind === 'gate_control') {
+            const crossing = plan?.ringCrossings?.find((entry) => entry.ring === site.ring);
             if (!crossing) return null;
             const control = (this.wfcMetadataCache?.get(crossing.chunkKey)?.accessSources ?? [])
                 .find((source) => source.id === `${crossing.id}:mission-control`);
@@ -19746,41 +19769,49 @@ export class ThreeGame {
                 ? { x: crossing.chunkX * this.chunkSize + control.localX, z: crossing.chunkY * this.chunkSize + control.localY }
                 : { x: (crossing.chunkX + 0.5) * this.chunkSize, z: (crossing.chunkY + 0.5) * this.chunkSize };
         }
-        if (site === PACKAGE_SITES.MERIDIAN) {
-            const camp = (this.camps ?? []).find((entry) => entry.id === 'camp_meridian');
-            return camp?.pos ? { ...camp.pos } : this.getAuthoredSitePosition?.('camp_meridian') ?? null;
+        if (site?.kind === 'camp') {
+            const found = (this.camps ?? []).find((entry) => entry.id === site.campId);
+            return found?.pos ? { ...found.pos } : this.getAuthoredSitePosition?.(site.campId) ?? null;
+        }
+        if (site?.kind === 'hive_nursery') {
+            // The resin nursery, not the heart: the hive's own verbs live there.
+            return this.getTerritoryRoomCenter?.(site.hiveId, 'consequence')
+                ?? (() => {
+                    const hive = (this.hives ?? []).find((entry) => entry.id === site.hiveId);
+                    return hive?.pos ? { x: hive.pos.x + 3, z: hive.pos.z + 3 } : null;
+                })();
         }
         return null;
     }
 
     // Tracker + compass toward the next step, and a prompt when standing at a
-    // room/console step (Meridian's step is a camp prompt instead).
+    // room/console/nursery step (camp steps are camp prompts instead).
     updateObjectivePackage() {
         const registry = typeof window !== 'undefined' ? window.objectiveRegistry : null;
+        const goalKey = this.getCurrentPackageGoal();
         const step = this.performanceProfile === 'gameplay' ? this.getPendingPackageStep() : null;
         if (!step) {
             if (this._packageTracked) {
-                registry?.resolveObjective?.('o2-package', 'complete');
+                registry?.resolveObjective?.('goal-package', 'complete');
                 this._packageTracked = false;
             }
             this.setPackagePrompt(null);
             return null;
         }
-        const definition = getObjectivePackage(this.getObjectivePackageState());
+        const definition = getObjectivePackage(this.getObjectivePackageState(), goalKey);
         const target = this.getPackageSitePosition(step.site);
-        const done = this.objectivePackageState.completedSteps.length;
         registry?.trackObjective?.({
-            id: 'o2-package',
+            id: 'goal-package',
             source: 'objective-package',
-            label: `O₂ OPTION — ${PACKAGE_STEP_LABELS[step.id] ?? step.id}`,
-            current: done,
+            label: `${PACKAGE_GOAL_LABELS[goalKey] ?? 'GOAL'} OPTION — ${PACKAGE_STEP_LABELS[step.id] ?? step.id}`,
+            current: this.objectivePackageState.goals[goalKey].completedSteps.length,
             target: definition.steps.length,
             priority: 35,
             compass: target,
             persistent: true
         });
         this._packageTracked = true;
-        const near = target && this.player && step.site !== PACKAGE_SITES.MERIDIAN
+        const near = target && this.player && step.site.kind !== 'camp'
             && Math.hypot(this.player.position.x - target.x, this.player.position.z - target.z) <= 2.4;
         this.setPackagePrompt(near ? PACKAGE_STEP_LABELS[step.id] : null);
         return step;
@@ -19796,18 +19827,19 @@ export class ThreeGame {
     interactWithObjectivePackage() {
         if (!this.isGameplayInputActive?.() || !this.player) return false;
         const step = this.getPendingPackageStep();
-        if (!step || step.site === PACKAGE_SITES.MERIDIAN) return false;
+        if (!step || step.site.kind === 'camp') return false;
         const target = this.getPackageSitePosition(step.site);
         if (!target || Math.hypot(this.player.position.x - target.x, this.player.position.z - target.z) > 2.4) return false;
         return this.advanceObjectivePackage(step);
     }
 
-    negotiateO2Supply(camp, step) {
-        if (!step || step.id !== this.getPendingPackageStep(PACKAGE_SITES.MERIDIAN)?.id) return false;
+    // A camp step: buy the camp's part of the job with shells.
+    negotiatePackageDeal(targetCamp, step) {
+        if (!step || step.id !== this.getPendingPackageStep(`camp:${targetCamp?.id}`)?.id) return false;
         if (!this.bank?.canAffordShells?.(step.shells)) {
             window.AudioManager?.play?.('ui_error', { volume: 0.45 });
             window.dispatchEvent(new CustomEvent('camp-support-denied', {
-                detail: { campId: camp.id, campLabel: camp.label, cost: step.shells }
+                detail: { campId: targetCamp.id, campLabel: targetCamp.label, cost: step.shells }
             }));
             return true;
         }
@@ -19815,51 +19847,82 @@ export class ThreeGame {
         return this.advanceObjectivePackage(step);
     }
 
+    // Kept for the O2 name used by earlier callers.
+    negotiateO2Supply(targetCamp, step) {
+        return this.negotiatePackageDeal(targetCamp, step);
+    }
+
     advanceObjectivePackage(step) {
-        const result = completePackageStep(this.getObjectivePackageState(), step.id);
+        const goalKey = this.getCurrentPackageGoal();
+        const result = completePackageStep(this.getObjectivePackageState(), goalKey, step.id);
         if (!result.advanced) return false;
         this.objectivePackageState = result.state;
+        const packageId = result.state.goals[goalKey].packageId;
         window.AudioManager?.play?.('ui_scan_ping', { volume: 0.5, playbackRate: 1.1 });
         window.dispatchEvent(new CustomEvent('objective-package-step', {
-            detail: { packageId: result.state.packageId, stepId: step.id, completed: result.completedNow }
+            detail: { goalKey, packageId, stepId: step.id, completed: result.completedNow }
         }));
-        if (result.completedNow) this.applyObjectivePackageConsequence();
+        if (result.completedNow) this.applyObjectivePackageConsequence(goalKey);
         this.persistCampaignWorld?.();
         return true;
     }
 
-    applyObjectivePackageConsequence() {
-        const consequence = activePackageConsequence(this.getObjectivePackageState());
-        if (consequence?.kind === 'meridian_strained') {
-            this.act2?.adjustCampBond?.('camp_meridian', consequence.bond ?? 1);
+    applyObjectivePackageConsequence(goalKey = this.getCurrentPackageGoal()) {
+        const consequence = activePackageConsequence(this.getObjectivePackageState(), goalKey);
+        if (consequence?.kind === 'camp_strained') {
+            this.act2?.adjustCampBond?.(consequence.campId, consequence.bond ?? 1);
             const stored = normalizeOvernightState(this.overnightState);
-            if ((stored.camps.camp_meridian?.condition ?? 'secure') === 'secure') {
-                stored.camps.camp_meridian = { ...(stored.camps.camp_meridian ?? { neglectNights: 0 }), condition: 'strained' };
+            if ((stored.camps[consequence.campId]?.condition ?? 'secure') === 'secure') {
+                stored.camps[consequence.campId] = { ...(stored.camps[consequence.campId] ?? { neglectNights: 0 }), condition: 'strained' };
                 this.overnightState = stored;
                 this.persistOvernightState?.();
                 this.applyCampOvernightConditions?.();
             }
+        } else if (consequence?.kind === 'hive_creep') {
+            // Taking from the hive makes it spread: the creep reaches a ring
+            // further, with everything creep already does (overnightConsequences).
+            const stored = normalizeOvernightState(this.overnightState);
+            const current = stored.hives[consequence.hiveId]?.creepRings ?? 0;
+            stored.hives[consequence.hiveId] = { creepRings: Math.min(3, current + (consequence.rings ?? 1)) };
+            this.overnightState = stored;
+            this.persistOvernightState?.();
+            this.applyOvernightWorldPresence?.();
         }
         window.dispatchEvent(new CustomEvent('objective-package-complete', {
-            detail: { packageId: this.objectivePackageState.packageId, consequence: consequence?.kind ?? null }
+            detail: { goalKey, packageId: this.objectivePackageState.goals[goalKey].packageId, consequence: consequence?.kind ?? null }
         }));
         return consequence;
     }
 
     getThinAirMultiplier() {
-        const consequence = activePackageConsequence(this.objectivePackageState);
-        if (consequence?.kind !== 'thin_air_room' || !this.player) return 1;
-        const reservation = this.worldPlan?.reservations?.find((entry) => entry.id === 'goal:o2Bubble:objective');
-        if (!Number.isInteger(reservation?.chunkX)) return 1;
-        const inRoomChunk = Math.floor(this.player.position.x / this.chunkSize) === reservation.chunkX
-            && Math.floor(this.player.position.z / this.chunkSize) === reservation.chunkY;
-        return inRoomChunk ? consequence.o2DrainMultiplier : 1;
+        if (!this.player || !this.objectivePackageState) return 1;
+        const chunkX = Math.floor(this.player.position.x / this.chunkSize);
+        const chunkY = Math.floor(this.player.position.z / this.chunkSize);
+        for (const consequence of activePackageConsequences(this.objectivePackageState)) {
+            if (consequence.kind !== 'thin_air_room') continue;
+            const reservation = this.worldPlan?.reservations?.find((entry) => entry.id === `goal:${consequence.goalKey}:objective`);
+            if (reservation?.chunkX === chunkX && reservation?.chunkY === chunkY) return consequence.o2DrainMultiplier;
+        }
+        return 1;
+    }
+
+    // Gate approaches a completed package changed for good.
+    getPackageGateEffect(chunkKey, kind) {
+        if (!this.objectivePackageState || !this.worldPlan) return false;
+        const rings = activePackageConsequences(this.objectivePackageState)
+            .filter((consequence) => consequence.kind === kind)
+            .map((consequence) => consequence.ring);
+        if (!rings.length) return false;
+        return planGateChallenges(this.worldPlan)
+            .some((entry) => rings.includes(entry.ring) && entry.approachChunkKeys.includes(chunkKey));
     }
 
     isRerouteBlackoutChunk(chunkKey) {
-        if (activePackageConsequence(this.objectivePackageState)?.kind !== 'ring1_blackout' || !this.worldPlan) return false;
-        const ring1 = planGateChallenges(this.worldPlan).find((entry) => entry.ring === 1);
-        return Boolean(ring1?.approachChunkKeys.includes(chunkKey));
+        return this.getPackageGateEffect(chunkKey, 'gate_blackout');
+    }
+
+    isPackageInfestedChunk(chunkKey) {
+        return this.getPackageGateEffect(chunkKey, 'gate_infested');
     }
 
     getTerritoryRoomCenter(siteId, beatKey) {
@@ -20706,8 +20769,9 @@ export class ThreeGame {
             this.announceExpeditionBriefing();
             const pending = this.getPendingPackageStep?.();
             if (pending && this.performanceProfile === 'gameplay') {
+                const goalKey = this.getCurrentPackageGoal();
                 window.dispatchEvent(new CustomEvent('objective-package-briefing', {
-                    detail: { packageId: this.objectivePackageState.packageId, stepId: pending.id }
+                    detail: { goalKey, packageId: this.objectivePackageState.goals[goalKey].packageId, stepId: pending.id }
                 }));
             }
         }
@@ -28631,7 +28695,7 @@ export class ThreeGame {
             === GATE_CHALLENGES.INFESTED_APPROACH;
         const snailDensityMult = (Number.isFinite(cardDensityMult) && cardDensityMult > 0 ? cardDensityMult : 1)
             * (this.getExpeditionEffects?.().world.enemyDensityMultiplier ?? 1)
-            * (infestedGate ? GATE_CHALLENGE_TUNING.infestedDensityMultiplier : 1)
+            * ((infestedGate || this.isPackageInfestedChunk?.(`${chunkX},${chunkY}`)) ? GATE_CHALLENGE_TUNING.infestedDensityMultiplier : 1)
             // Overnight hive creep breeds hostiles in the chunks it reaches.
             * creepSpawnMultiplier(this.getCreepZones?.() ?? [], chunkX, chunkY, this.chunkSize);
         const snailSpawnConfig = snailDensityMult !== 1

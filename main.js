@@ -6472,14 +6472,24 @@ window.addEventListener('gate-challenge', (event) => {
     if (key && isGameplayHudActive()) showBiomePrompt(t(key, { ring }));
 });
 
-const O2_PACKAGE_KEYS = Object.freeze({
-    regulator_recovery: { briefing: 'ui.expedition.o2_package.briefing.regulator_recovery', complete: 'ui.expedition.o2_package.complete.regulator_recovery' },
-    power_reroute: { briefing: 'ui.expedition.o2_package.briefing.power_reroute', complete: 'ui.expedition.o2_package.complete.power_reroute' },
-    camp_supply: { briefing: 'ui.expedition.o2_package.briefing.camp_supply', complete: 'ui.expedition.o2_package.complete.camp_supply' }
+// Literal keys for the i18n audit (see EXPEDITION_CONDITION_KEYS).
+const OBJECTIVE_PACKAGE_KEYS = Object.freeze({
+    regulator_recovery: { briefing: 'ui.expedition.objective_package.briefing.regulator_recovery', complete: 'ui.expedition.objective_package.complete.regulator_recovery' },
+    power_reroute: { briefing: 'ui.expedition.objective_package.briefing.power_reroute', complete: 'ui.expedition.objective_package.complete.power_reroute' },
+    camp_supply: { briefing: 'ui.expedition.objective_package.briefing.camp_supply', complete: 'ui.expedition.objective_package.complete.camp_supply' },
+    hull_plate_salvage: { briefing: 'ui.expedition.objective_package.briefing.hull_plate_salvage', complete: 'ui.expedition.objective_package.complete.hull_plate_salvage' },
+    tallow_resin_seal: { briefing: 'ui.expedition.objective_package.briefing.tallow_resin_seal', complete: 'ui.expedition.objective_package.complete.tallow_resin_seal' },
+    suture_chitin_graft: { briefing: 'ui.expedition.objective_package.briefing.suture_chitin_graft', complete: 'ui.expedition.objective_package.complete.suture_chitin_graft' },
+    mast_power_reroute: { briefing: 'ui.expedition.objective_package.briefing.mast_power_reroute', complete: 'ui.expedition.objective_package.complete.mast_power_reroute' },
+    vesper_scope_trade: { briefing: 'ui.expedition.objective_package.briefing.vesper_scope_trade', complete: 'ui.expedition.objective_package.complete.vesper_scope_trade' },
+    relay_signal_tap: { briefing: 'ui.expedition.objective_package.briefing.relay_signal_tap', complete: 'ui.expedition.objective_package.complete.relay_signal_tap' },
+    core_scavenge: { briefing: 'ui.expedition.objective_package.briefing.core_scavenge', complete: 'ui.expedition.objective_package.complete.core_scavenge' },
+    carapace_heat_siphon: { briefing: 'ui.expedition.objective_package.briefing.carapace_heat_siphon', complete: 'ui.expedition.objective_package.complete.carapace_heat_siphon' },
+    gate_capacitor_draw: { briefing: 'ui.expedition.objective_package.briefing.gate_capacitor_draw', complete: 'ui.expedition.objective_package.complete.gate_capacitor_draw' }
 });
 
 window.addEventListener('objective-package-briefing', (event) => {
-    const keys = O2_PACKAGE_KEYS[event?.detail?.packageId];
+    const keys = OBJECTIVE_PACKAGE_KEYS[event?.detail?.packageId];
     if (!keys) return;
     // Deploy-time, like the expedition briefing: wait for the HUD to be live.
     const startedAt = Date.now();
@@ -6494,7 +6504,7 @@ window.addEventListener('objective-package-briefing', (event) => {
 });
 
 window.addEventListener('objective-package-complete', (event) => {
-    const keys = O2_PACKAGE_KEYS[event?.detail?.packageId];
+    const keys = OBJECTIVE_PACKAGE_KEYS[event?.detail?.packageId];
     if (keys && isGameplayHudActive()) showBiomePrompt(t(keys.complete));
 });
 
